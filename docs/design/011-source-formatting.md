@@ -21,7 +21,7 @@ The parser records layout in `grammar.LineBreak` values. A `LineBreak` belongs t
 |:--|:--|
 | `Comments` | Comments on their own lines before the node, in source order. Each `Comment` records whether a blank line precedes it |
 | `Blank` | Whether a blank line directly precedes the node |
-| `Trailing` | The comment at the end of the line that starts with the node |
+| `Trailing` | The comment at the end of the line that starts with the node. When several comments end the line, it is one comment that holds them all (`Run` lists them), written as they were |
 
 Line breaks are recorded at:
 

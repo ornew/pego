@@ -2,6 +2,7 @@ package sourceast
 
 import (
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
@@ -10,7 +11,7 @@ import (
 func TestPositionsAndOwnership(t *testing.T) {
 	input := "😀\r\nβ\rγ\npackage p"
 	p := NewPositions(input)
-	m := Metadata{Start: 7, End: 16, Leading: " leading\r\n", Trailing: " trailing", Detached: []string{"", " detached\n"}}
+	m := Metadata{Start: 7, End: 16, Leading: " leading\r\n", Trailing: []string{" trailing"}, Detached: []string{"", " detached\n"}}
 	s, err := p.Source(m)
 	if err != nil {
 		t.Fatal(err)
@@ -18,7 +19,7 @@ func TestPositionsAndOwnership(t *testing.T) {
 	if s.Pos != (grammar.Pos{Line: 4, Col: 1}) || s.End != (grammar.Pos{Line: 4, Col: 10}) {
 		t.Fatalf("positions: %+v", s)
 	}
-	if s.LeadingComments != m.Leading || s.TrailingComments != m.Trailing || !reflect.DeepEqual(s.LeadingDetachedComments, m.Detached) {
+	if s.LeadingComments != m.Leading || !slices.Equal(s.TrailingComments, m.Trailing) || !reflect.DeepEqual(s.LeadingDetachedComments, m.Detached) {
 		t.Fatalf("ownership changed: %+v", s)
 	}
 	s.LeadingDetachedComments[1] = "changed"
@@ -49,7 +50,7 @@ func TestPackageClause(t *testing.T) {
 func TestSetSpanPreservesOwnership(t *testing.T) {
 	p := NewPositions("// 😀\r\ntype T = { Text string } // trailing")
 	dst := grammar.SourceInfo{
-		LeadingComments: " leading\r\n", TrailingComments: " trailing",
+		LeadingComments: " leading\r\n", TrailingComments: []string{" trailing"},
 		LeadingDetachedComments: []string{"", " detached\n"},
 		DiagnosticPos:           grammar.Pos{Line: 2, Col: 6},
 	}
@@ -59,7 +60,7 @@ func TestSetSpanPreservesOwnership(t *testing.T) {
 	if dst.Pos != (grammar.Pos{Line: 2, Col: 1}) || dst.End != (grammar.Pos{Line: 2, Col: 16}) {
 		t.Fatalf("span: %+v", dst)
 	}
-	if dst.LeadingComments != " leading\r\n" || dst.TrailingComments != " trailing" || !reflect.DeepEqual(dst.LeadingDetachedComments, []string{"", " detached\n"}) || dst.DiagnosticPos != (grammar.Pos{Line: 2, Col: 6}) {
+	if dst.LeadingComments != " leading\r\n" || !slices.Equal(dst.TrailingComments, []string{" trailing"}) || !reflect.DeepEqual(dst.LeadingDetachedComments, []string{"", " detached\n"}) || dst.DiagnosticPos != (grammar.Pos{Line: 2, Col: 6}) {
 		t.Fatalf("span update replaced ownership or diagnostic position: %+v", dst)
 	}
 	before := dst
@@ -75,7 +76,7 @@ func TestItems(t *testing.T) {
 	p := NewPositions("a b c d")
 	head := Lead{Leading: " head\n", Detached: []string{" d0\n"}, HasNext: true}
 	items := []*Item{
-		{Start: 0, End: 1, Trailing: " t0\n", Next: Lead{Leading: " l1\n", HasNext: true}},
+		{Start: 0, End: 1, Trailing: []string{" t0\n"}, Next: Lead{Leading: " l1\n", HasNext: true}},
 		{Start: 2, End: 3, Next: Lead{Leading: " unowned\n"}},
 		{Start: 4, End: 5, Next: Lead{Leading: " l3\n", HasNext: true}},
 		nil,
@@ -85,7 +86,7 @@ func TestItems(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got[0].LeadingComments != " head\n" || !reflect.DeepEqual(got[0].LeadingDetachedComments, []string{" d0\n"}) || got[0].TrailingComments != " t0\n" {
+	if got[0].LeadingComments != " head\n" || !reflect.DeepEqual(got[0].LeadingDetachedComments, []string{" d0\n"}) || !slices.Equal(got[0].TrailingComments, []string{" t0\n"}) {
 		t.Fatalf("first: %+v", got[0])
 	}
 	if got[1].LeadingComments != " l1\n" || got[1].Pos.Col != 3 {

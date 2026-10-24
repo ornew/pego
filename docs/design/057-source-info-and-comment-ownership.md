@@ -41,7 +41,7 @@ type SourceInfo struct {
     Pos                     Pos
     End                     Pos
     LeadingComments         string
-    TrailingComments        string
+    TrailingComments        []string
     LeadingDetachedComments []string
     DiagnosticPos           Pos
 }
@@ -57,8 +57,8 @@ Embed this value in source-bearing declarations, fields, expressions, actions,
 attributes, pragmas, Operators Rule entries and explicit source grouping nodes.
 `End` is exclusive; both positions use the existing line/column units. A span
 is one continuous source interval: it excludes leading and trailing comments
-owned at its boundaries, but includes comments inside the interval. Leading/
-trailing values are normalized strings;
+owned at its boundaries, but includes comments inside the interval. Leading
+values are normalized strings and trailing values are lists of them;
 each detached entry is one comment paragraph. Normalized comment text preserves
 newlines and conventional whitespace after comment markers. Empty values are
 zero values and may be omitted in JSON. Clone detached slices rather than
@@ -90,7 +90,7 @@ do not use mutable global state. Apply the following transitions:
 | Event | Collector action |
 | --- | --- |
 | File start | Disable previous-token attachment; no prior token exists. |
-| Inline comment | Flush immediately as provisional trailing and disable further trailing attachment. A following comment-only run starts a new group; it never extends the inline comment. |
+| Inline comment | Flush each comment on the line of the previous token immediately as a trailing group when a line break, a closing delimiter, `;` or EOF follows the last of them (the last may be a line comment), and disable further trailing attachment. When a token follows them on that line, flush only the first as provisional trailing. A following comment-only run starts a new group; it never extends the inline comments. |
 | Consecutive `//` comments | Combine into one group. |
 | Block comment | Flush any pending group, then start a distinct group. Switching from block to line comments also flushes. Empty tokens such as `/**/` still count as groups. |
 | Blank line | Flush pending group, then disable previous-token attachment. |
@@ -159,7 +159,7 @@ without these optional metadata objects decodes to zero values. Example:
     "pos": {"line": 10, "col": 1},
     "end": {"line": 10, "col": 18},
     "leadingComments": " leading for B\n",
-    "trailingComments": " B trailing\n",
+    "trailingComments": [" B trailing\n"],
     "leadingDetachedComments": [" detached for the next declaration\n"]
   }
 }
@@ -258,8 +258,9 @@ source adapter (`internal/sourceast`, `Positions.Claim`) replays the claims the
 hand-written parser makes as it completes nodes, inner before outer: the node
 completed last at a token takes its groups and the inner node loses them, a gap
 with no next token leads nobody, a node completed again by a later suffix keeps
-what it took, and a node keeps its trailing group before a separator unless the
-gap after the separator has one. No group moves between gaps. The same rule
+what it took, and a node keeps its trailing groups before a comma separator unless the
+gap after it has one, and after a `;` the groups of the gap after it follow
+the ones before it. No group moves between gaps. The same rule
 covers statements, which complete outermost, and every operand, member marker,
 closing delimiter and header of a rule expression, value expression or type.
 Parity with the hand-written frontend, including the diagnostic position, is

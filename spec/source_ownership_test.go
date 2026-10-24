@@ -116,7 +116,7 @@ func canonicalOwners(t *testing.T, src string, root *pego.Node) map[string]gramm
 			source := sourceField(t, s, "Source")
 			items = append(items, &sourceast.Item{
 				Start: int(span.Start()), End: int(span.End()),
-				Trailing: source.Field("Trailing").(string), Next: canonicalLead(t, sourceField(t, source, "Next")),
+				Trailing: stringList(source, "Trailing"), Next: canonicalLead(t, sourceField(t, source, "Next")),
 			})
 			kind = append(kind, k)
 		}
@@ -157,7 +157,7 @@ func canonicalOwners(t *testing.T, src string, root *pego.Node) map[string]gramm
 			if pkg, ok := n.Field("Pkg").(*pego.Node); ok && pkg != nil && pkg.Type() == "Pkg" {
 				meta := sourceField(t, pkg, "Source")
 				span := sourceField(t, meta, "Span")
-				m := sourceast.Metadata{Start: int(span.Start()), End: int(span.End()), Leading: meta.Field("Leading").(string), Trailing: meta.Field("Trailing").(string)}
+				m := sourceast.Metadata{Start: int(span.Start()), End: int(span.End()), Leading: meta.Field("Leading").(string), Trailing: stringList(meta, "Trailing")}
 				for _, c := range elems(sourceField(t, meta, "Detached")) {
 					m.Detached = append(m.Detached, c.Field("Text").(string))
 				}
@@ -247,6 +247,7 @@ var ownershipCorpus = []string{
 	"rule a = \"x\" /* amb */ rule b = \"y\"",
 	"rule a = \"x\"; // after semicolon\n// next\nrule b = \"y\"",
 	"rule a = \"x\" /* before */ ; /* after */\nrule b = \"y\"",
+	"type T = {\n A int /* x */ /* y */\n B string /*y1*//*y2*/ // y3\n}\nrule r = \"a\" /* a1 */ /* a2 */ \"b\" /* b1 */ /* b2 */\n",
 	"rule s = \"s\" /* s1 */ /* s2 */ ; // s3\nrule t = \"t\" /* t1 */ ; /* t2 */\n",
 	"type T = { A int /* x1 */ /* x2 */ ; B string /* y1 */ /* y2 */\n}\nrule z = \"z\" /* z1 */ /* z2 */\n",
 	"rule a = \"x\" // inline\n// standalone\n\nrule b = \"y\"",
@@ -328,7 +329,7 @@ func TestCanonicalOwnerParityNegativeControl(t *testing.T) {
 	}
 	got := canonicalOwners(t, src, n)
 	a := got["RuleDef@2:1"]
-	if a.LeadingComments != " lead\n" || a.TrailingComments != " trail\n" {
+	if a.LeadingComments != " lead\n" || !reflect.DeepEqual(a.TrailingComments, []string{" trail\n"}) {
 		t.Fatalf("unexpected owner %+v", a)
 	}
 	if b := got["RuleDef@4:1"]; b.LeadingComments != " next\n" {

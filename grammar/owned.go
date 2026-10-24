@@ -80,26 +80,35 @@ func ownedLeadFrom(s *SourceInfo, blank bool) *LineBreak {
 }
 
 // ownedTrailing returns the break that writes the trailing comment s owns at
-// the end of its line, or nil. A comment over several lines is one block
-// comment.
+// the end of its line, or nil. Each string is one comment, written after the
+// one before it; a comment over several lines is one block comment.
 func ownedTrailing(s *SourceInfo, b *LineBreak) *LineBreak {
-	if b != nil || s.TrailingComments == "" {
+	if b != nil || len(s.TrailingComments) == 0 {
 		return nil
 	}
-	text := s.TrailingComments
-	cs := ownedComments(text)
-	c := cs[0]
-	if len(cs) > 1 {
-		// A comment over several lines is one block comment.
-		c = &Comment{Text: "/*" + continuationLines(strings.ReplaceAll(text, "*/", "* /")) + "*/"}
+	var texts []string
+	for _, text := range s.TrailingComments {
+		cs := ownedComments(text)
+		if len(cs) == 0 {
+			continue
+		}
+		if len(cs) > 1 {
+			// A group over several lines is one block comment.
+			cs = []*Comment{{Text: "/*" + continuationLines(strings.ReplaceAll(text, "*/", "* /")) + "*/"}}
+		}
+		texts = append(texts, cs[0].Text)
 	}
-	return &LineBreak{Trailing: c, TrailingEnds: strings.HasPrefix(c.Text, "//")}
+	if len(texts) == 0 {
+		return nil
+	}
+	c := &Comment{Text: strings.Join(texts, " ")}
+	return &LineBreak{Trailing: c, TrailingEnds: strings.HasPrefix(texts[len(texts)-1], "//")}
 }
 
 // ownsComments reports whether Format writes comments that s owns, because b
 // is nil.
 func ownsComments(s *SourceInfo, b *LineBreak) bool {
-	return b == nil && (s.LeadingComments != "" || s.TrailingComments != "" || len(s.LeadingDetachedComments) > 0)
+	return b == nil && (s.LeadingComments != "" || len(s.TrailingComments) > 0 || len(s.LeadingDetachedComments) > 0)
 }
 
 // inlineOwnedComment returns the block comment that s owns when it is only one

@@ -11,9 +11,10 @@ import (
 // Start and End are zero-based rune offsets; End is exclusive. Comment ownership
 // has already been determined by the grammar and is copied without relocation.
 type Metadata struct {
-	Start, End        int
-	Leading, Trailing string
-	Detached          []string
+	Start, End int
+	Leading    string
+	Trailing   []string
+	Detached   []string
 }
 
 // Positions converts rune offsets using the manual frontend's newline policy.
@@ -47,7 +48,7 @@ func (p *Positions) Source(m Metadata) (grammar.SourceInfo, error) {
 	}
 	return grammar.SourceInfo{
 		Pos: p.boundaries[m.Start], End: p.boundaries[m.End],
-		LeadingComments: m.Leading, TrailingComments: m.Trailing,
+		LeadingComments: m.Leading, TrailingComments: append([]string(nil), m.Trailing...),
 		LeadingDetachedComments: append([]string(nil), m.Detached...),
 	}, nil
 }
@@ -94,7 +95,7 @@ type Lead struct {
 // group and the Lead of the element that follows.
 type Item struct {
 	Start, End int
-	Trailing   string
+	Trailing   []string
 	Next       Lead
 }
 

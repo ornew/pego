@@ -22,6 +22,10 @@ type Comment struct {
 	Content string
 	// Blank reports whether a blank line precedes the comment.
 	Blank bool
+	// Run lists the comments that this one stands for when several comments end
+	// the same line, with Text and Content holding all of them: the formatter
+	// writes them together, as they were. AllComments returns them separately.
+	Run []*Comment
 }
 
 // LineBreak describes the start of a line in PEGO source: the comments
@@ -35,7 +39,8 @@ type LineBreak struct {
 	// Blank reports whether a blank line directly precedes the node.
 	Blank bool
 	// Trailing is the comment at the end of the line that starts with the
-	// node, if any.
+	// node, if any. When several comments end the line, it stands for all of
+	// them (see Comment.Run).
 	Trailing *Comment
 	// TrailingEnds reports whether a line break follows Trailing in the source
 	// before the next token, rather than that token following it on the same
@@ -355,5 +360,23 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 		}
 	}
 	add(g.File.EndBreak)
+	return expandRuns(cs)
+}
+
+// expandRuns replaces each comment that stands for a run of comments by them.
+func expandRuns(cs []*Comment) []*Comment {
+	for i, c := range cs {
+		if c != nil && len(c.Run) > 0 {
+			out := append([]*Comment(nil), cs[:i]...)
+			for _, c := range cs[i:] {
+				if c != nil && len(c.Run) > 0 {
+					out = append(out, c.Run...)
+				} else {
+					out = append(out, c)
+				}
+			}
+			return out
+		}
+	}
 	return cs
 }

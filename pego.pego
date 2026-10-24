@@ -24,19 +24,17 @@ type PkgBody = { Name Ident }
 // of the next sibling. A container records the boundary after its opening
 // delimiter in Head for the first element.
 type SourceSpan ~ PkgBody | TypeDefBody | TypeAliasBody | VarDefBody | RuleDefBody | FieldBody | OperatorsSkipBody | OperatorsOperandBody | OperatorsLevelBody | OperatorsOperatorBody | InitFieldBody
-type SourceMetadata = { Span SourceSpan; Leading string; Trailing string; Detached []SourceComment; Next SourceLead }
-type SourceItem = { Trailing string; Next SourceLead }
+type SourceMetadata = { Span SourceSpan; Leading string; Trailing []string; Detached []SourceComment; Next SourceLead }
+type SourceItem = { Trailing []string; Next SourceLead }
 type SourceLead = { Leading string; Detached []SourceComment; HasNext bool }
 type SourceComment = { Text string }
 // A gap is the trivia between two tokens that holds at least one comment. Its
 // node spans exactly that trivia, so a source node starting where a gap ends
 // can lead it and a node ending where a gap starts can trail it. The grammar
-// keeps the groups of each gap; the adapter assigns them to owners. Later holds the
-// groups that follow a trailing block comment on its line before a closing
-// delimiter, a semicolon or the end of the input, which no token leads.
-type CommentGap = { Trailing string; HasTrailing bool; Later []SourceComment; Leading string; Detached []SourceComment; HasNext bool }
+// keeps the groups of each gap; the adapter assigns them to owners.
+type CommentGap = { Trailing []string; HasTrailing bool; Leading string; Detached []SourceComment; HasNext bool }
 type GapFlag = {}
-type SourceBoundary = { Trailing string; Leading string; Detached []SourceComment; HasNext bool }
+type SourceBoundary = { Trailing []string; Leading string; Detached []SourceComment; HasNext bool }
 type Decl ~ TypeDef | TypeAlias | VarDef | RuleDef | error
 type TypeDecl ~ TypeDef | TypeAlias
 type TypeDef = { Name Ident; Type DefinedType; Comments []Comment; SourceSpan TypeDefBody; Source SourceItem }
@@ -621,29 +619,24 @@ rule escape_char = "u{" [0-9a-fA-F]+ "}" / "u" [0-9a-fA-F] #repeat(4) / [ntrfvab
 // statement accepts: an unrecognizable boundary has no comments and no next owner.
 rule source_head SourceLead = b:(source_remaining / source_empty_boundary) => SourceLead{Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
 rule source_head_open SourceLead = b:(source_after_opener_boundary / source_empty_boundary) => SourceLead{Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
-rule source_empty_boundary SourceBoundary = _ => SourceBoundary{Trailing: "", Leading: "", Detached: list(), HasNext: false}
+rule source_empty_boundary SourceBoundary = _ => SourceBoundary{Trailing: list(), Leading: "", Detached: list(), HasNext: false}
 
 // The boundary after a statement. A separator, when present, is a token of its own
 // with its own boundary after it: a trailing group there follows the groups before
 // the separator, and the next sibling's leading groups come from the boundary after it.
-// The groups that follow a trailing block comment on its line before the end of the
-// scope belong to the statement, after that comment.
 rule source_item_tail SourceItem = (
-    source_tail_after_separator_trailing / source_tail_after_separator / source_tail_later / source_tail_plain / source_tail_empty
+    source_tail_after_separator_trailing / source_tail_after_separator / source_tail_plain / source_tail_empty
 )
 rule source_tail_after_separator_trailing SourceItem = (
-    &l1:source_later_groups t1:source_after_boundary source_semis &l2:source_later_groups t2:source_after_boundary_trailing
-) => SourceItem{Trailing: $t1.Trailing + foldl("", $l1, (s, x) => s + x.Text) + $t2.Trailing + foldl("", $l2, (s, x) => s + x.Text), Next: SourceLead{Leading: $t2.Leading, Detached: $t2.Detached, HasNext: $t2.HasNext}}
+    t1:source_after_boundary source_semis t2:source_after_boundary_trailing
+) => SourceItem{Trailing: concat($t1.Trailing, $t2.Trailing).([]string), Next: SourceLead{Leading: $t2.Leading, Detached: $t2.Detached, HasNext: $t2.HasNext}}
 rule source_tail_after_separator SourceItem = (
-    &l1:source_later_groups t1:source_after_boundary source_semis t2:source_after_boundary
-) => SourceItem{Trailing: $t1.Trailing + foldl("", $l1, (s, x) => s + x.Text), Next: SourceLead{Leading: $t2.Leading, Detached: $t2.Detached, HasNext: $t2.HasNext}}
-rule source_tail_later SourceItem = (
-    &l:source_later_list t:source_after_boundary
-) => SourceItem{Trailing: $t.Trailing + foldl("", $l, (s, x) => s + x.Text), Next: SourceLead{Leading: $t.Leading, Detached: $t.Detached, HasNext: $t.HasNext}}
+    t1:source_after_boundary source_semis t2:source_after_boundary
+) => SourceItem{Trailing: $t1.Trailing, Next: SourceLead{Leading: $t2.Leading, Detached: $t2.Detached, HasNext: $t2.HasNext}}
 rule source_tail_plain SourceItem = (
     t:source_after_boundary
 ) => SourceItem{Trailing: $t.Trailing, Next: SourceLead{Leading: $t.Leading, Detached: $t.Detached, HasNext: $t.HasNext}}
-rule source_tail_empty SourceItem = _ => SourceItem{Trailing: "", Next: SourceLead{Leading: "", Detached: list(), HasNext: false}}
+rule source_tail_empty SourceItem = _ => SourceItem{Trailing: list(), Next: SourceLead{Leading: "", Detached: list(), HasNext: false}}
 rule source_semis = ";" (-source_trivia* ";")*
 rule source_trivia = source_space / source_line_comment / source_block_comment
 // Constructor fields have a comma as their separator.
@@ -658,40 +651,48 @@ rule source_comma_after_separator SourceItem = (
 ) => SourceItem{Trailing: $t1.Trailing, Next: SourceLead{Leading: $t2.Leading, Detached: $t2.Detached, HasNext: $t2.HasNext}}
 
 rule source_after_boundary SourceBoundary = (
-    source_inline_line_boundary / source_inline_block_boundary / source_ambiguous_block_boundary
+    source_inline_line_boundary / source_inline_run_boundary / source_inline_block_boundary / source_ambiguous_block_boundary
     / source_newline_boundary / source_remaining
 )
 rule source_inline_line_boundary SourceBoundary = (
     -source_horizontal c:source_line_comment b:source_remaining
-) => SourceBoundary{Trailing: $c.Text, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+) => SourceBoundary{Trailing: list($c.Text), Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+// The comments on the line of the previous token all trail it when a line break or
+// the end of the scope follows them: block comments, then at most one line comment.
+rule source_inline_run_boundary SourceBoundary = (
+    xs:(-source_horizontal c:source_block_comment)+ y:source_run_tail b:source_remaining
+) => SourceBoundary{Trailing: concat(map($xs, (x) => x.$c.Text), $y).([]string), Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+rule source_run_tail []string = source_run_line / source_run_end
+rule source_run_line []string = -source_horizontal c:source_line_comment => list($c.Text)
+rule source_run_end []string = &(source_horizontal (source_nl / source_scope_end)) => list()
 rule source_inline_block_boundary SourceBoundary = (
     -source_horizontal c:source_block_comment &(source_horizontal (source_nl / source_comment_start / source_scope_end))
     b:source_remaining
-) => SourceBoundary{Trailing: $c.Text, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+) => SourceBoundary{Trailing: list($c.Text), Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
 // The boundary after an opening delimiter or a comma. One inline block ending on
 // the next token's line leads that token there.
 rule source_after_opener_boundary SourceBoundary = (
-    source_inline_line_boundary / source_inline_block_boundary / source_opener_block_boundary
+    source_inline_line_boundary / source_inline_run_boundary / source_inline_block_boundary / source_opener_block_boundary
     / source_newline_boundary / source_remaining
 )
 rule source_opener_block_boundary SourceBoundary = (
     -source_horizontal c:source_block_comment -source_horizontal &source_next_token
-) => SourceBoundary{Trailing: "", Leading: $c.Text, Detached: list(), HasNext: true}
+) => SourceBoundary{Trailing: list(), Leading: $c.Text, Detached: list(), HasNext: true}
 // One inline block ending on the next token's line is ambiguous, not trailing.
 rule source_ambiguous_block_boundary SourceBoundary = (
     -source_horizontal c:source_block_comment -source_horizontal &source_next_token
-) => SourceBoundary{Trailing: "", Leading: "", Detached: list($c), HasNext: true}
+) => SourceBoundary{Trailing: list(), Leading: "", Detached: list($c), HasNext: true}
 rule source_newline_boundary SourceBoundary = (
-    -source_horizontal -source_nl -source_horizontal c:(source_first_trailing / source_empty_comment) b:source_remaining
-) => SourceBoundary{Trailing: $c.Text, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+    -source_horizontal -source_nl -source_horizontal c:source_first_trailing b:source_remaining
+) => SourceBoundary{Trailing: list($c.Text), Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
 // A boundary that has a trailing group, even an empty one. After a separator it
 // replaces the trailing group found before the separator.
 rule source_after_boundary_trailing SourceBoundary = (
-    source_inline_line_boundary / source_inline_block_boundary / source_newline_trailing_boundary
+    source_inline_line_boundary / source_inline_run_boundary / source_inline_block_boundary / source_newline_trailing_boundary
 )
 rule source_newline_trailing_boundary SourceBoundary = (
     -source_horizontal -source_nl -source_horizontal c:source_first_trailing b:source_remaining
-) => SourceBoundary{Trailing: $c.Text, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+) => SourceBoundary{Trailing: list($c.Text), Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
 
 // A first standalone group can trail the previous declaration when a blank
 // line, another group, or the end of a scope flushes it before the next token.
@@ -701,10 +702,10 @@ rule source_first_trailing SourceComment = (
 rule source_remaining SourceBoundary = source_scope_tail / source_next_boundary
 rule source_scope_tail SourceBoundary = (
     -source_space* xs:(c:source_comment -source_space*)* &source_scope_end
-) => SourceBoundary{Trailing: "", Leading: "", Detached: map($xs, (x) => x.$c), HasNext: false}
+) => SourceBoundary{Trailing: list(), Leading: "", Detached: map($xs, (x) => x.$c), HasNext: false}
 rule source_next_boundary SourceBoundary = (
     -source_space* detached:(c:source_detached_group -source_space*)* lead:(source_leading_group / source_empty_comment) -source_space* &source_next_token
-) => SourceBoundary{Trailing: "", Leading: $lead.Text, Detached: map($detached, (x) => x.$c), HasNext: true}
+) => SourceBoundary{Trailing: list(), Leading: $lead.Text, Detached: map($detached, (x) => x.$c), HasNext: true}
 rule source_empty_comment SourceComment = _ => SourceComment{Text: ""}
 rule source_detached_group SourceComment = (
     c:source_line_group &source_line_flush / c:source_block_comment &source_block_flush
@@ -750,26 +751,11 @@ rule source_bracket = (ident_char / ")" / "]" / "}") "["
 rule source_gap_run = -source_space* (source_line_comment / source_block_comment) (source_space / source_line_comment / source_block_comment)*
 rule source_gap_head CommentGap = (
     ^^ &source_gap_run &b:(source_remaining / source_empty_boundary) -source_gap_run
-) => CommentGap{Trailing: "", HasTrailing: false, Later: list(), Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+) => CommentGap{Trailing: list(), HasTrailing: false, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
 rule source_gap CommentGap = (
-    &source_gap_run &b:(source_after_boundary / source_empty_boundary) &l:source_later_groups t:source_gap_flag? -source_gap_run
-) => CommentGap{Trailing: $b.Trailing, HasTrailing: $t != nil, Later: $l, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+    &source_gap_run &b:(source_after_boundary / source_empty_boundary) t:source_gap_flag? -source_gap_run
+) => CommentGap{Trailing: $b.Trailing, HasTrailing: $t != nil, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
 rule source_open_gap CommentGap = (
-    &source_gap_run &b:(source_after_opener_boundary / source_empty_boundary) &l:source_later_groups t:source_gap_flag? -source_gap_run
-) => CommentGap{Trailing: $b.Trailing, HasTrailing: $t != nil, Later: $l, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
-// The groups after a trailing block comment that start on the line where the group
-// before them ends, when nothing but comments is left before the end of the scope.
-rule source_later_groups []SourceComment = source_later_list / source_no_groups
-rule source_no_groups []SourceComment = _ => list()
-rule source_later_list []SourceComment = source_later_blocks / source_later_line
-rule source_later_blocks []SourceComment = (
-    -source_horizontal (source_nl -source_horizontal)? source_block_comment xs:(-source_horizontal c:source_block_comment)+
-    y:source_later_last source_later_end
-) => concat(map($xs, (x) => x.$c), $y).([]SourceComment)
-rule source_later_last []SourceComment = source_later_last_line / source_no_groups
-rule source_later_last_line []SourceComment = -source_horizontal l:source_line_group => list($l)
-rule source_later_line []SourceComment = (
-    -source_horizontal (source_nl -source_horizontal)? source_block_comment -source_horizontal l:source_line_group source_later_end
-) => list($l)
-rule source_later_end = -source_space* (source_comment -source_space*)* &source_scope_end
+    &source_gap_run &b:(source_after_opener_boundary / source_empty_boundary) t:source_gap_flag? -source_gap_run
+) => CommentGap{Trailing: $b.Trailing, HasTrailing: $t != nil, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
 rule source_gap_flag GapFlag = &source_after_boundary_trailing => GapFlag{}

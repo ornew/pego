@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -93,7 +94,7 @@ func TestCanonicalNodeParityNegativeControl(t *testing.T) {
 	if s := got[nodeKey("Seq", sourceInfoAt(3, 3, 3, 6))]; s.LeadingComments != "" {
 		t.Fatalf("an inner node keeps no group of an outer one: %+v", s)
 	}
-	if r := got[nodeKey("Ref", sourceInfoAt(4, 5, 4, 6))]; r.TrailingComments != " trail\n" {
+	if r := got[nodeKey("Ref", sourceInfoAt(4, 5, 4, 6))]; !slices.Equal(r.TrailingComments, []string{" trail\n"}) {
 		t.Fatalf("the operand before a comment owns it: %+v", r)
 	}
 	manual, err := pego.ParseGrammar(strings.Replace(src, "// trail", "// other", 1))

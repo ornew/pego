@@ -2,6 +2,7 @@ package syntax
 
 import (
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -27,7 +28,7 @@ rule main (Alias) = v1:"x" => (
 	innerType := typ.Type.(*grammar.TypeGroup)
 	action := g.Rules()[0].Action.(*grammar.TermGroup)
 	innerAction := action.Term.(*grammar.TermGroup)
-	if innerType.LeadingComments != " type documentation\n" || innerType.TrailingComments != " type tail\n" || innerAction.LeadingComments != " action documentation\n" || innerAction.TrailingComments != " action tail\n" {
+	if innerType.LeadingComments != " type documentation\n" || !slices.Equal(innerType.TrailingComments, []string{" type tail\n"}) || innerAction.LeadingComments != " action documentation\n" || !slices.Equal(innerAction.TrailingComments, []string{" action tail\n"}) {
 		t.Fatalf("group ownership: %+v %+v", innerType.SourceInfo, innerAction.SourceInfo)
 	}
 	if typ.Pos != (grammar.Pos{Line: 2, Col: 14}) || typ.End != (grammar.Pos{Line: 5, Col: 2}) || action.Pos != (grammar.Pos{Line: 6, Col: 31}) || action.End != (grammar.Pos{Line: 9, Col: 2}) {
@@ -60,7 +61,7 @@ rule main (Alias) = v1:"x" => (
 	}
 	gotType := reparsed.Types()[1].(*grammar.TypeAlias).Type.(*grammar.TypeGroup).Type.(*grammar.TypeGroup)
 	gotAction := reparsed.Rules()[0].Action.(*grammar.TermGroup).Term.(*grammar.TermGroup)
-	if gotType.LeadingComments != innerType.LeadingComments || gotType.TrailingComments != innerType.TrailingComments || gotAction.LeadingComments != innerAction.LeadingComments || gotAction.TrailingComments != innerAction.TrailingComments {
+	if gotType.LeadingComments != innerType.LeadingComments || !slices.Equal(gotType.TrailingComments, innerType.TrailingComments) || gotAction.LeadingComments != innerAction.LeadingComments || !slices.Equal(gotAction.TrailingComments, innerAction.TrailingComments) {
 		t.Fatalf("owner paths changed:\n%s\n%+v %+v", out, gotType.SourceInfo, gotAction.SourceInfo)
 	}
 }

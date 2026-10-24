@@ -1,6 +1,9 @@
 package sourceast
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
 func TestClaim(t *testing.T) {
 	// "a /*l*/ b /*t*/ c": a gap before b with a leading group and one after b
@@ -9,7 +12,7 @@ func TestClaim(t *testing.T) {
 	in := "a /*l*/ b /*t*/ c"
 	gaps := []Gap{
 		{Start: 1, End: 8, Leading: "l", HasNext: true},
-		{Start: 9, End: 16, Trailing: "t", HasTrailing: true, HasNext: true},
+		{Start: 9, End: 16, Trailing: []string{"t"}, HasTrailing: true, HasNext: true},
 	}
 	nodes := []Node{
 		{Events: []Event{{8, 9}}, Created: Unset},   // b
@@ -21,13 +24,13 @@ func TestClaim(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got[0].LeadingComments != "" || got[0].TrailingComments != "" {
+	if got[0].LeadingComments != "" || len(got[0].TrailingComments) != 0 {
 		t.Fatalf("an inner node keeps groups an outer node takes: %+v", got[0])
 	}
-	if got[2].LeadingComments != "l" || got[2].TrailingComments != "t" {
+	if got[2].LeadingComments != "l" || !slices.Equal(got[2].TrailingComments, []string{"t"}) {
 		t.Fatalf("the outermost node takes the groups at its tokens: %+v", got[2])
 	}
-	if got[1].TrailingComments != "" {
+	if len(got[1].TrailingComments) != 0 {
 		t.Fatalf("a node that ends where a later node does loses the trailing group: %+v", got[1])
 	}
 	if got[3].LeadingComments != "" {
@@ -41,19 +44,19 @@ func TestClaimBoundaries(t *testing.T) {
 	// separator has one.
 	in := "(a /*t*/ ; /*u*/ )"
 	gaps := []Gap{
-		{Start: 2, End: 9, Trailing: "t", HasTrailing: true, HasNext: true},
-		{Start: 10, End: 17, Trailing: "u", HasTrailing: true, HasNext: false},
+		{Start: 2, End: 9, Trailing: []string{"t"}, HasTrailing: true, HasNext: true},
+		{Start: 10, End: 17, Trailing: []string{"u"}, HasTrailing: true, HasNext: false},
 	}
 	nodes := []Node{{Events: []Event{{1, 2}}, Later: []int{10}, Created: Unset}}
 	got, err := NewPositions(in).Claim(gaps, nodes)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got[0].TrailingComments != "u" {
+	if !slices.Equal(got[0].TrailingComments, []string{"u"}) {
 		t.Fatalf("a trailing group after the separator replaces the one before it: %+v", got[0])
 	}
 	gaps[1].HasTrailing = false
-	if got, _ = NewPositions(in).Claim(gaps, nodes); got[0].TrailingComments != "t" {
+	if got, _ = NewPositions(in).Claim(gaps, nodes); !slices.Equal(got[0].TrailingComments, []string{"t"}) {
 		t.Fatalf("a separator without a trailing group keeps the earlier one: %+v", got[0])
 	}
 	gaps[0].HasNext = false

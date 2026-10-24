@@ -41,7 +41,7 @@ func TestCanonicalPackageMetadataParity(t *testing.T) {
 				for _, comment := range elems(sourceField(t, metadata, "Detached")) {
 					detached = append(detached, comment.Field("Text").(string))
 				}
-				m := sourceast.Metadata{Start: int(span.Start()), End: int(span.End()), Leading: metadata.Field("Leading").(string), Trailing: metadata.Field("Trailing").(string), Detached: detached}
+				m := sourceast.Metadata{Start: int(span.Start()), End: int(span.End()), Leading: metadata.Field("Leading").(string), Trailing: stringList(metadata, "Trailing"), Detached: detached}
 				adapted := &grammar.Grammar{}
 				if err := sourceast.NewPositions(src).PackageClause(adapted, sourceText(t, pkg, "Name"), m); err != nil {
 					t.Fatal(err)

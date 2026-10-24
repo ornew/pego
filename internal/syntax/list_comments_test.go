@@ -71,7 +71,7 @@ func TestFormatListCommentOnLaterLine(t *testing.T) {
 		t.Fatal(err)
 	}
 	arg := ast.Rules()[0].Action.(*grammar.Call).Args[0].(grammar.SourceNode).Source()
-	if arg.TrailingComments != "" {
+	if len(arg.TrailingComments) != 0 {
 		t.Fatalf("the first argument trails %q", arg.TrailingComments)
 	}
 }

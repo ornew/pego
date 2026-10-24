@@ -7,7 +7,7 @@ import (
 )
 
 func TestSourceInfoJSON(t *testing.T) {
-	source := SourceInfo{Pos: Pos{Line: 2, Col: 3}, End: Pos{Line: 4, Col: 5}, DiagnosticPos: Pos{Line: 3, Col: 7}, LeadingComments: " leading\n", TrailingComments: " tail\n", LeadingDetachedComments: []string{"first\n", ""}}
+	source := SourceInfo{Pos: Pos{Line: 2, Col: 3}, End: Pos{Line: 4, Col: 5}, DiagnosticPos: Pos{Line: 3, Col: 7}, LeadingComments: " leading\n", TrailingComments: []string{" tail\n"}, LeadingDetachedComments: []string{"first\n", ""}}
 	g := expressionGrammar(&Literal{SourceInfo: source, Value: "x"})
 	g.File.SourceInfo = source
 	g.File.Pkg.Name = "p"

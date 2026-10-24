@@ -65,7 +65,7 @@ rule z = "z" /* z1 */ /* z2 */
 	}
 	out := grammar.Format(decoded)
 	for _, c := range []string{"a1 ", "x1 ", "y1 ", "w1 ", "e1 ", "f1 ", "g1 ", "z1 "} {
-		want := "/* " + c + " " + c[:1] + "2 */"
+		want := "/* " + c + "*/ /* " + c[:1] + "2 */"
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q\n%s", want, out)
 		}
@@ -87,9 +87,9 @@ func TestTrailingGroupsAcrossSemicolonJSON(t *testing.T) {
 		}
 		var got string
 		if r, ok := g.File.Decls[0].(*grammar.RuleDef); ok {
-			got = r.TrailingComments
+			got = strings.Join(r.TrailingComments, "")
 		} else if d, ok := g.File.Decls[0].(*grammar.TypeDef); ok {
-			got = d.Type.(*grammar.StructType).Fields[0].TrailingComments
+			got = strings.Join(d.Type.(*grammar.StructType).Fields[0].TrailingComments, "")
 		}
 		if got != tc.want {
 			t.Errorf("%q: trailing %q, want %q", tc.src, got, tc.want)

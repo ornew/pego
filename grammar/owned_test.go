@@ -8,7 +8,10 @@ import "testing"
 func TestFormatWritesOwnedComments(t *testing.T) {
 	rule := func(leading, trailing string, detached ...string) *Grammar {
 		r := &RuleDef{Name: "r", Expr: &Literal{Value: "a"}}
-		r.LeadingComments, r.TrailingComments, r.LeadingDetachedComments = leading, trailing, detached
+		r.LeadingComments, r.LeadingDetachedComments = leading, detached
+		if trailing != "" {
+			r.TrailingComments = []string{trailing}
+		}
 		return &Grammar{File: File{Decls: []Decl{r}}}
 	}
 	for _, tc := range []struct {

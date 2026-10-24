@@ -2,6 +2,8 @@ package syntax
 
 import (
 	"reflect"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
@@ -88,8 +90,8 @@ func TestLexerCommentBoundaries(t *testing.T) {
 			if b == nil {
 				b = &commentBoundary{hasNext: true}
 			}
-			if b.trailing != tc.trailing || b.leading != tc.leading || !reflect.DeepEqual(b.detached, tc.detached) {
-				t.Fatalf("trailing=%q leading=%q detached=%q; want %q %q %q", b.trailing, b.leading, b.detached, tc.trailing, tc.leading, tc.detached)
+			if strings.Join(b.trailing, "") != tc.trailing || b.leading != tc.leading || !reflect.DeepEqual(b.detached, tc.detached) {
+				t.Fatalf("trailing=%q leading=%q detached=%q; want %q %q %q", strings.Join(b.trailing, ""), b.leading, b.detached, tc.trailing, tc.leading, tc.detached)
 			}
 		})
 	}
@@ -111,12 +113,12 @@ func TestSourceCommentOwners(t *testing.T) {
 	}
 	for _, check := range checks {
 		s := check.source
-		if s.LeadingComments != check.leading || s.TrailingComments != check.trailing || !reflect.DeepEqual(s.LeadingDetachedComments, check.detached) {
+		if s.LeadingComments != check.leading || strings.Join(s.TrailingComments, "") != check.trailing || !reflect.DeepEqual(s.LeadingDetachedComments, check.detached) {
 			t.Fatalf("source=%+v", s)
 		}
 	}
 	child := g.Rules()[0].Expr.(grammar.SourceNode).Source()
-	if child.LeadingComments != "" || child.TrailingComments != "" {
+	if child.LeadingComments != "" || len(child.TrailingComments) != 0 {
 		t.Fatalf("comments duplicated on child: %+v", child)
 	}
 	if len(g.AllComments()) != 10 {
@@ -168,7 +170,7 @@ rule main = operators {
 	}{
 		{field, "field"}, {&op.SkipSource, "skip"}, {op.Operands[0].Source(), "operand"}, {op.Levels[0].Source(), "level"}, {op.Levels[0].Operators[0].Source(), "operator"},
 	} {
-		if check.s.LeadingComments != " "+check.name+"\n" || check.s.TrailingComments != " "+check.name+" tail\n" {
+		if check.s.LeadingComments != " "+check.name+"\n" || !slices.Equal(check.s.TrailingComments, []string{" " + check.name + " tail\n"}) {
 			t.Errorf("%s: %+v", check.name, check.s)
 		}
 	}
@@ -232,7 +234,7 @@ func TestSourceSpansAndDiagnostics(t *testing.T) {
 		t.Fatal(err)
 	}
 	r := g.Rules()[0]
-	if r.Pos != (grammar.Pos{Line: 2, Col: 1}) || r.End != (grammar.Pos{Line: 2, Col: 13}) || r.LeadingComments != " doc\r\n" || r.TrailingComments != " tail\r\n" {
+	if r.Pos != (grammar.Pos{Line: 2, Col: 1}) || r.End != (grammar.Pos{Line: 2, Col: 13}) || r.LeadingComments != " doc\r\n" || !slices.Equal(r.TrailingComments, []string{" tail\r\n"}) {
 		t.Fatalf("CRLF/rune metadata=%+v", r.SourceInfo)
 	}
 }

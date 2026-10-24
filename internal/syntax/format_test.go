@@ -110,7 +110,7 @@ func ownerMap(g *grammar.Grammar) map[string]string {
 		case reflect.Struct:
 			if v.Type() == info {
 				s := v.Interface().(grammar.SourceInfo)
-				if s.LeadingComments != "" || s.TrailingComments != "" || len(s.LeadingDetachedComments) > 0 {
+				if s.LeadingComments != "" || len(s.TrailingComments) != 0 || len(s.LeadingDetachedComments) > 0 {
 					out[path] = fmt.Sprintf("leading %q trailing %q detached %q", s.LeadingComments, s.TrailingComments, s.LeadingDetachedComments)
 				}
 				return
@@ -383,7 +383,7 @@ func TestCommentsAndSourceInfoInJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(data), `"leadingComments": " file\n"`) || !strings.Contains(string(data), `"trailingComments": " result\n"`) {
+	if !strings.Contains(string(data), `"leadingComments": " file\n"`) || !strings.Contains(string(data), `"trailingComments": [`) || !strings.Contains(string(data), `" result\n"`) {
 		t.Fatalf("owned comments absent: %s", data)
 	}
 	if strings.Contains(string(data), "// file") || strings.Contains(string(data), "PackageBreak") {
@@ -393,7 +393,7 @@ func TestCommentsAndSourceInfoInJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if decoded.File.Pkg.SourceInfo.LeadingComments != " file\n" || decoded.Rules()[0].TrailingComments != " result\n" {
+	if decoded.File.Pkg.SourceInfo.LeadingComments != " file\n" || !slices.Equal(decoded.Rules()[0].TrailingComments, []string{" result\n"}) {
 		t.Fatal("owned comments lost")
 	}
 }

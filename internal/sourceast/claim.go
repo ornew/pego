@@ -2,7 +2,6 @@ package sourceast
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/ornew/pego/grammar"
 )
@@ -10,15 +9,13 @@ import (
 // Gap is the canonical record of the trivia between two tokens when it holds a
 // comment. Start and End are zero-based rune offsets of the trivia: Start is
 // where the token before it ends and End where the token after it starts. The
-// groups are determined by the grammar; HasTrailing tells a trailing group that
-// is empty from none, Later the groups that follow a trailing block comment on
-// its line before the end of the scope, and HasNext whether a token follows that can own the
-// leading groups.
+// groups are determined by the grammar; Trailing lists the comments that trail
+// the token before the gap, HasTrailing tells that there are some, and HasNext
+// whether a token follows that can own the leading groups.
 type Gap struct {
 	Start, End  int
-	Trailing    string
+	Trailing    []string
 	HasTrailing bool
-	Later       []string
 	Leading     string
 	Detached    []string
 	HasNext     bool
@@ -39,16 +36,12 @@ type Event struct{ Start, End int }
 // gave the node before it completed it, Unset if none: when it differs from
 // where the node starts, it is the position of the token a diagnostic about
 // the node is about, such as an operator. Joined lists the ends of semicolons
-// that follow the node: the trailing group after one is appended to the node's
-// trailing groups instead of replacing them. Groups tells that the node, a
-// statement, owns the groups that follow each trailing group on its line before
-// a closing delimiter, a semicolon or the end of the input (Gap.Later), after
-// that trailing group.
+// that follow the node: the trailing comments after one are appended to the node's
+// instead of replacing them.
 type Node struct {
 	Events  []Event
 	Later   []int
 	Joined  []int
-	Groups  bool
 	Created int
 }
 
@@ -78,16 +71,10 @@ func (p *Positions) Claim(gaps []Gap, nodes []Node) ([]grammar.SourceInfo, error
 	at := func(off int) grammar.Pos { return p.boundaries[off] }
 	parts := make([][]int, len(nodes)) // the gaps whose trailing groups a node owns, in order
 	render := func(n int) {
-		var b strings.Builder
+		out[n].TrailingComments = nil
 		for _, gi := range parts[n] {
-			b.WriteString(gaps[gi].Trailing)
-			if nodes[n].Groups {
-				for _, l := range gaps[gi].Later {
-					b.WriteString(l)
-				}
-			}
+			out[n].TrailingComments = append(out[n].TrailingComments, gaps[gi].Trailing...)
 		}
-		out[n].TrailingComments = b.String()
 	}
 	claimTrailing := func(n int, at int, join bool) {
 		gi, ok := byStart[at]

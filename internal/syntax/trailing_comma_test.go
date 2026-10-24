@@ -193,7 +193,7 @@ func TestListCommaCommentTrailsElement(t *testing.T) {
 			case *grammar.TupleLit:
 				args = x.Elems
 			}
-			if got := args[0].(grammar.SourceNode).Source().TrailingComments; got != tc.want {
+			if got := strings.Join(args[0].(grammar.SourceNode).Source().TrailingComments, ""); got != tc.want {
 				t.Fatalf("the trailing comment of the first element is %q, want %q", got, tc.want)
 			}
 		})

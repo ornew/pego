@@ -6,6 +6,10 @@ package grammar
 //
 // Comment strings omit their markers and preserve content and line endings.
 // LeadingDetachedComments contains separate paragraphs before the node.
+// TrailingComments lists the comments at the end of the node's line, one string
+// per comment in source order: every comment on the line of the node's last
+// token, when a line break or the end of a scope follows them, and for a
+// comment-only group after a line break, that group.
 //
 // Format writes a comment string that ends in a line break as line comments,
 // and any other string as one block comment, with a space before its closing
@@ -20,7 +24,7 @@ type SourceInfo struct {
 	Pos                     Pos           `json:"pos,omitempty"`
 	End                     Pos           `json:"end,omitempty"`
 	LeadingComments         string        `json:"leadingComments,omitempty"`
-	TrailingComments        string        `json:"trailingComments,omitempty"`
+	TrailingComments        []string      `json:"trailingComments,omitempty"`
 	LeadingDetachedComments []string      `json:"leadingDetachedComments,omitempty"`
 	// DiagnosticPos identifies a diagnostic token when it differs from Pos,
 	// such as an operator inside a binary expression.

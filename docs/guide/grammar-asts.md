@@ -203,8 +203,9 @@ func report(n any) {
 `Pos` and `End` are the node's half-open source span; `End` is exclusive. The
 span excludes leading and trailing comments owned at its boundaries, but
 includes comments inside that continuous source interval.
-`LeadingComments` and `TrailingComments` hold normalized text, and each entry
-in `LeadingDetachedComments` is one paragraph. Comment markers are removed;
+`LeadingComments` holds normalized text, each entry in `TrailingComments` is
+one comment at the end of the node's line, and each entry in
+`LeadingDetachedComments` is one paragraph. Comment markers are removed;
 line endings and content whitespace are retained according to the grammar
 comment-normalization contract. `DiagnosticPos` preserves a diagnostic token
 that differs from the span start; `Diagnostic()` returns it when valid and

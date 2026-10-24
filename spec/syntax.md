@@ -405,12 +405,9 @@ rule source_empty_boundary = _
 // The boundary after a statement. A separator, when present, is a token of its own
 // with its own boundary after it: a trailing group there follows the groups before
 // the separator, and the next sibling's leading groups come from the boundary after it.
-// The groups that follow a trailing block comment on its line before the end of the
-// scope belong to the statement, after that comment.
-rule source_item_tail = source_tail_after_separator_trailing / source_tail_after_separator / source_tail_later / source_tail_plain / source_tail_empty
-rule source_tail_after_separator_trailing = &source_later_groups source_after_boundary source_semis &source_later_groups source_after_boundary_trailing
-rule source_tail_after_separator = &source_later_groups source_after_boundary source_semis source_after_boundary
-rule source_tail_later = &source_later_list source_after_boundary
+rule source_item_tail = source_tail_after_separator_trailing / source_tail_after_separator / source_tail_plain / source_tail_empty
+rule source_tail_after_separator_trailing = source_after_boundary source_semis source_after_boundary_trailing
+rule source_tail_after_separator = source_after_boundary source_semis source_after_boundary
 rule source_tail_plain = source_after_boundary
 rule source_tail_empty = _
 rule source_semis = ";" (-source_trivia* ";")*
@@ -421,10 +418,16 @@ rule source_comma_after_separator_trailing = source_after_boundary "," source_af
 rule source_comma_after_separator = source_after_boundary "," source_after_opener_boundary
 
 rule source_after_boundary = (
-    source_inline_line_boundary / source_inline_block_boundary / source_ambiguous_block_boundary
+    source_inline_line_boundary / source_inline_run_boundary / source_inline_block_boundary / source_ambiguous_block_boundary
     / source_newline_boundary / source_remaining
 )
 rule source_inline_line_boundary = -source_horizontal source_line_comment source_remaining
+// The comments on the line of the previous token all trail it when a line break or
+// the end of the scope follows them: block comments, then at most one line comment.
+rule source_inline_run_boundary = (-source_horizontal source_block_comment)+ source_run_tail source_remaining
+rule source_run_tail = source_run_line / source_run_end
+rule source_run_line = -source_horizontal source_line_comment
+rule source_run_end = &(source_horizontal (source_nl / source_scope_end))
 rule source_inline_block_boundary = (
     -source_horizontal source_block_comment &(source_horizontal (source_nl / source_comment_start / source_scope_end))
     source_remaining
@@ -432,16 +435,16 @@ rule source_inline_block_boundary = (
 // The boundary after an opening delimiter or a comma. One inline block ending on
 // the next token's line leads that token there.
 rule source_after_opener_boundary = (
-    source_inline_line_boundary / source_inline_block_boundary / source_opener_block_boundary
+    source_inline_line_boundary / source_inline_run_boundary / source_inline_block_boundary / source_opener_block_boundary
     / source_newline_boundary / source_remaining
 )
 rule source_opener_block_boundary = -source_horizontal source_block_comment -source_horizontal &source_next_token
 // One inline block ending on the next token's line is ambiguous, not trailing.
 rule source_ambiguous_block_boundary = -source_horizontal source_block_comment -source_horizontal &source_next_token
-rule source_newline_boundary = -source_horizontal -source_nl -source_horizontal (source_first_trailing / source_empty_comment) source_remaining
+rule source_newline_boundary = -source_horizontal -source_nl -source_horizontal source_first_trailing source_remaining
 // A boundary that has a trailing group, even an empty one. After a separator it
 // replaces the trailing group found before the separator.
-rule source_after_boundary_trailing = source_inline_line_boundary / source_inline_block_boundary / source_newline_trailing_boundary
+rule source_after_boundary_trailing = source_inline_line_boundary / source_inline_run_boundary / source_inline_block_boundary / source_newline_trailing_boundary
 rule source_newline_trailing_boundary = -source_horizontal -source_nl -source_horizontal source_first_trailing source_remaining
 
 // A first standalone group can trail the previous declaration when a blank
@@ -486,21 +489,8 @@ rule source_bracket = (ident_char / ")" / "]" / "}") "["
 // A gap starts with a comment, after any space, and runs to the next token.
 rule source_gap_run = -source_space* (source_line_comment / source_block_comment) (source_space / source_line_comment / source_block_comment)*
 rule source_gap_head = ^^ &source_gap_run &(source_remaining / source_empty_boundary) -source_gap_run
-rule source_gap = &source_gap_run &(source_after_boundary / source_empty_boundary) &source_later_groups source_gap_flag? -source_gap_run
-rule source_open_gap = &source_gap_run &(source_after_opener_boundary / source_empty_boundary) &source_later_groups source_gap_flag? -source_gap_run
-// The groups after a trailing block comment that start on the line where the group
-// before them ends, when nothing but comments is left before the end of the scope.
-rule source_later_groups = source_later_list / source_no_groups
-rule source_no_groups = _
-rule source_later_list = source_later_blocks / source_later_line
-rule source_later_blocks = (
-    -source_horizontal (source_nl -source_horizontal)? source_block_comment (-source_horizontal source_block_comment)+
-    source_later_last source_later_end
-)
-rule source_later_last = source_later_last_line / source_no_groups
-rule source_later_last_line = -source_horizontal source_line_group
-rule source_later_line = -source_horizontal (source_nl -source_horizontal)? source_block_comment -source_horizontal source_line_group source_later_end
-rule source_later_end = -source_space* (source_comment -source_space*)* &source_scope_end
+rule source_gap = &source_gap_run &(source_after_boundary / source_empty_boundary) source_gap_flag? -source_gap_run
+rule source_open_gap = &source_gap_run &(source_after_opener_boundary / source_empty_boundary) source_gap_flag? -source_gap_run
 rule source_gap_flag = &source_after_boundary_trailing
 ```
 

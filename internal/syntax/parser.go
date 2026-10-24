@@ -118,6 +118,8 @@ func ParseExpr(src string) (expr grammar.Expr, err error) {
 }
 
 type parser struct {
+	// semi is the line break whose trailing comment was taken before a semicolon.
+	semi *grammar.LineBreak
 	toks []token
 	i    int
 	// inlined is one more than the index of the token whose inline gap was
@@ -285,42 +287,32 @@ func (p *parser) statement() func() {
 	return func() { p.layout, p.layoutDepth, p.layoutStart = layout, depth, start }
 }
 
-// joinLater returns the trailing comment c of the token before t as one comment together with
-// the comments that follow it on its line, when t ends a statement or a list and the parser gives
-// those groups to the same node (see sourceTrailing). The comments leave t.
-func (p *parser) joinLater(t *token, c *grammar.Comment) *grammar.Comment {
-	if t.source == nil || len(t.source.later) == 0 {
+// takeRun returns the comment c at the end of the line of the token before t, together with the
+// comments after it on that line that all trail the same token (see collectComments), as one
+// comment. Those comments leave t.
+func (t *token) takeRun(c *grammar.Comment) *grammar.Comment {
+	if t.source == nil || t.source.run <= 1 || c != t.lineComment || len(t.comments) < t.source.run-1 {
 		return c
 	}
-	merged := *c
-	blocks := strings.HasPrefix(c.Text, "/*")
-	n := 0
-	for n < len(t.comments) && t.comments[n].Pos.Line == merged.End.Line {
-		next := t.comments[n]
-		merged.Text += " " + next.Text
-		merged.Content += next.Content
-		merged.End = next.End
-		blocks = blocks && strings.HasPrefix(next.Text, "/*")
-		n++
-	}
-	if n == 0 {
-		return c
-	}
-	if blocks {
-		// One block comment, as the node owns them: written again, it has the same owner.
-		merged.Text = "/*" + strings.ReplaceAll(merged.Content, "*/", "* /") + "*/"
+	n := t.source.run - 1
+	for _, next := range t.comments[:n] {
+		c = joinComments(c, next)
 	}
 	t.comments = t.comments[n:]
-	return &merged
+	t.source.run = 0
+	return c
 }
 
-// trailingLater joins the comment at the end of the previous line, and those after it on that
-// line, into one trailing comment, before a break whose statement owns them (see joinLater).
-func (p *parser) trailingLater() {
-	t := &p.toks[p.i]
-	if c := t.lineComment; c != nil && p.cur != nil && p.cur.Trailing == nil {
-		t.lineComment = p.joinLater(t, c)
+// joinComments returns the comments a and b, which share a line, as one comment.
+func joinComments(a, b *grammar.Comment) *grammar.Comment {
+	run := func(c *grammar.Comment) []*grammar.Comment {
+		if len(c.Run) > 0 {
+			return c.Run
+		}
+		return []*grammar.Comment{c}
 	}
+	return &grammar.Comment{Pos: a.Pos, End: b.End, Text: a.Text + " " + b.Text, Content: a.Content + b.Content, Blank: a.Blank,
+		Run: append(append([]*grammar.Comment(nil), run(a)...), run(b)...)}
 }
 
 // takeComments moves the comments before token i to the current line
@@ -329,8 +321,10 @@ func (p *parser) takeComments(i int) {
 	t := &p.toks[i]
 	if p.cur != nil {
 		if t.lineComment != nil && t.kind == tPunct && t.text == ";" && p.cur.Trailing == nil {
-			// A comment before a semicolon trails the statement it ends.
-			p.cur.Trailing = p.joinLater(t, t.lineComment)
+			// A comment before a semicolon trails the statement it ends; a comment after the
+			// semicolon, on its line, follows it (see lineBreak).
+			p.cur.Trailing = t.takeRun(t.lineComment)
+			p.semi = p.cur
 			t.lineComment = nil
 		}
 		if t.lineComment != nil {
@@ -347,14 +341,23 @@ func (p *parser) takeComments(i int) {
 // the line break recorded before.
 func (p *parser) lineBreak() *grammar.LineBreak {
 	t := &p.toks[p.i]
+	c := t.lineComment
+	trails := c != nil && p.cur != nil && p.cur.Trailing == nil
+	after := c != nil && !trails && p.cur != nil && p.cur == p.semi && (c.End.Line < t.pos.Line || t.endsScope())
+	if trails || after {
+		c = t.takeRun(c)
+	}
 	b := &grammar.LineBreak{Comments: t.comments, Blank: t.blankBefore}
-	if c := t.lineComment; c != nil {
-		if p.cur != nil && p.cur.Trailing == nil {
-			p.cur.Trailing = c
-			p.cur.TrailingEnds = c.End.Line < t.pos.Line
-		} else {
-			b.Comments = p.appendComments([]*grammar.Comment{c}, b.Comments)
-		}
+	switch {
+	case trails:
+		p.cur.Trailing = c
+		p.cur.TrailingEnds = c.End.Line < t.pos.Line
+	case after:
+		// The comments after the semicolon follow those before it, as they own them together.
+		p.cur.Trailing = joinComments(p.cur.Trailing, c)
+		p.cur.TrailingEnds = c.End.Line < t.pos.Line
+	case c != nil:
+		b.Comments = p.appendComments([]*grammar.Comment{c}, b.Comments)
 	}
 	t.lineComment, t.comments = nil, nil
 	p.cur = b
@@ -371,7 +374,6 @@ func (p *parser) lineBreak() *grammar.LineBreak {
 // brace starts no statement, so the comment before it trails the last one.
 func (p *parser) statementBreak() *grammar.LineBreak {
 	t := &p.toks[p.i]
-	p.trailingLater()
 	c := t.lineComment
 	if c == nil || len(t.comments) != 0 || t.text == "}" || !strings.HasPrefix(c.Text, "/*") || c.End.Line != t.pos.Line {
 		return p.lineBreak()
@@ -463,10 +465,8 @@ func (p *parser) file() *grammar.Grammar {
 		}()
 		restore()
 		p.source(&g.File.Pkg.SourceInfo, packageStart)
-		p.sourceLater(&g.File.Pkg.SourceInfo)
 		p.declarationEnd()
 		p.sourceTrailing(&g.File.Pkg.SourceInfo)
-		p.sourceLater(&g.File.Pkg.SourceInfo)
 	}
 	for p.tok().kind != tEOF {
 		start := p.i
@@ -496,15 +496,12 @@ func (p *parser) file() *grammar.Grammar {
 			p.next()
 		}
 		if statement != nil {
-			p.sourceLater(statement.Source())
 		}
 		p.declarationEnd()
 		if statement != nil {
 			p.sourceTrailing(statement.Source())
-			p.sourceLater(statement.Source())
 		}
 	}
-	p.trailingLater()
 	g.File.EndBreak = p.lineBreak()
 	g.File.HeaderComments = p.headerComments
 	g.File.Pos = p.toks[0].pos
@@ -834,7 +831,6 @@ func (p *parser) structFields() (fields []*grammar.Field, closeBreak *grammar.Li
 		gap := p.takeGapContents()
 		field := &grammar.Field{SourceInfo: grammar.SourceInfo{Pos: fname.pos}, Name: fname.text, HeaderComments: gap, Type: p.typeExpr(), Break: fb}
 		p.source(field, fieldStart)
-		p.sourceLater(field.Source())
 		fields = append(fields, field)
 		restore()
 		if !p.separator() && !p.is("}") && !p.tok().lineBefore {
@@ -842,7 +838,6 @@ func (p *parser) structFields() (fields []*grammar.Field, closeBreak *grammar.Li
 			panic(bail{})
 		}
 		p.sourceTrailing(field.Source())
-		p.sourceLater(field.Source())
 	}
 	oneLine = !p.multiline(open, p.i)
 	p.expect("}")
@@ -1192,7 +1187,6 @@ func (p *parser) operatorsRule() (sourceResult *grammar.OperatorsRule) {
 			pr.Skip = p.choice()
 			pr.SkipBreak = b
 			p.source(&pr.SkipSource, itemStart)
-			p.sourceLater(&pr.SkipSource)
 			itemSource = &pr.SkipSource
 		case p.accept("operand"):
 			operandPos := p.toks[p.i-1].pos
@@ -1202,7 +1196,6 @@ func (p *parser) operatorsRule() (sourceResult *grammar.OperatorsRule) {
 			}
 			pr.Operands = append(pr.Operands, o)
 			p.source(o, itemStart)
-			p.sourceLater(o.Source())
 			itemSource = o.Source()
 		case p.accept("level"):
 			p.header = true
@@ -1227,14 +1220,11 @@ func (p *parser) operatorsRule() (sourceResult *grammar.OperatorsRule) {
 				op := p.operatorsRuleOperator()
 				op.Break = ob
 				l.Operators = append(l.Operators, op)
-				p.sourceLater(op.Source())
 				p.itemEnd()
 				p.sourceTrailing(op.Source())
-				p.sourceLater(op.Source())
 			}
 			pr.Levels = append(pr.Levels, l)
 			p.source(l, itemStart)
-			p.sourceLater(l.Source())
 			itemSource = l.Source()
 		default:
 			p.errorf("expected 'skip', 'operand', 'level', or '}', found %s", p.tok())
@@ -1244,7 +1234,6 @@ func (p *parser) operatorsRule() (sourceResult *grammar.OperatorsRule) {
 		p.itemEnd()
 		if itemSource != nil {
 			p.sourceTrailing(itemSource)
-			p.sourceLater(itemSource)
 		}
 	}
 	return pr
@@ -1837,6 +1826,9 @@ func (p *parser) primary() (sourceResult grammar.Expr) {
 			// A comment on the line of the last token trails that token, whatever
 			// line breaks the group holds before it.
 			last := p.toks[p.i].lineComment
+			if last != nil {
+				last = p.toks[p.i].takeRun(last)
+			}
 			p.toks[p.i].lineComment = nil
 			group.CloseBreak = p.lineBreak()
 			group.CloseBreak.Last = last

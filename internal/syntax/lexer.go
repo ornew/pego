@@ -47,6 +47,12 @@ type token struct {
 	source *commentBoundary
 }
 
+// endsScope reports whether the token ends the scope of the comments before it: a closing
+// delimiter, a semicolon or the end of the file.
+func (t token) endsScope() bool {
+	return t.kind == tEOF || t.kind == tPunct && (t.text == ")" || t.text == "]" || t.text == "}" || t.text == ";")
+}
+
 // opensList reports whether the token opens a list or separates its elements.
 func (t token) opensList() bool {
 	if t.kind != tPunct {
