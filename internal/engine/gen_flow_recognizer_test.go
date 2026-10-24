@@ -104,3 +104,28 @@ func TestGeneratedFlowRecognizerNegativeControl(t *testing.T) {
 		t.Fatalf("the mutant child failed without a recognition mismatch:\n%s", out)
 	}
 }
+
+// TestFlowRecognizerGuardsChoiceAlternatives checks that the recognizer printed from Flow IR guards
+// the alternatives of choices by their first character, as the direct printer does. Without the
+// Analyze pass before Guards, the guards are not set: this grammar then prints 4 first-character
+// guards instead of 12, and the alternatives are tried at every position.
+func TestFlowRecognizerGuardsChoiceAlternatives(t *testing.T) {
+	t.Setenv("PEGO_TEST_ORDINARY", "1")
+	g, err := parseTest(`rule main = item* !.
+rule item = uq / ident / sq
+rule uq = [uU] "&" "\"" [^"]+ "\""
+rule ident = [a-z]+ / "\"" [^"]+ "\""
+rule sq = "'" [^']* "'" / [uU] "&'" [^']* "'"
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, err := generateCode(g, GenOptions{Start: "main", Package: "gen", Recognize: true, flowRecognizer: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	guards := regexp.MustCompile(`if !\(x\d+ && \(x\d+ == `).FindAll(code, -1)
+	if len(guards) < 12 {
+		t.Errorf("the Flow recognizer has %d first-character guards on the choice alternatives, want at least 12", len(guards))
+	}
+}

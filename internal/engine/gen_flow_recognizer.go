@@ -42,6 +42,10 @@ func (g *generator) startRecFlow(rec *Program) error {
 		return err
 	}
 	core.RewriteTerms(m, core.TermOptions{TextDispatch: !g.disableLiteralTextDispatch, FieldCompare: !g.boxedComparisons})
+	// Guards read the First sets that Analyze computes, as core_build does: without this pass the
+	// alternatives of a choice get no first-character guard, and the Flow form calls the rules of
+	// the later alternatives at every position (duckdb: block_comment, 84k calls against none).
+	core.Analyze(m)
 	core.Guards(m, g.lean && !g.disableGuardedClasses)
 	repeats := followRepeats(m, origin)
 	core.Scans(m)

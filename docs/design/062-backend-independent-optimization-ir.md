@@ -76,6 +76,8 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   entries, variables or methods. If the text is shared, the rule takes the direct path and reuses that helper, as
   `dgen` does without the switch. Without the lookup, the Flow copy of a shared keyword rule duplicates a large
   helper. When the Parse table is printed from Flow IR, the exact-text sharing works again and the lookup is removed.
+  The recognizer's Core pipeline runs `Analyze` before `Guards`, as the table's pipeline does: `Guards` reads the
+  first terminals that `Analyze` computes, so the reverse order leaves the alternatives of choices unguarded.
 - Work-control specialization exists three times: the closure backend compiles a second, metered closure
   graph (`controlledDispatch`); generated Go duplicates each function through `go/ast`
   (`specializeOrdinaryMethods`, `rewriteOrdinaryControl`, `foldOrdinaryControl`, `compactOrdinaryPeeks`,
