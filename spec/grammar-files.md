@@ -155,9 +155,7 @@ a prefix operator, after the `=` of `skip=`, and inside the parentheses of
 `Close` fields keep them with the lines of the tokens around them. `Open`, `Eq` and `Sep` keep those after the `(` and after `skip` of `#recover` and before the `/` of an alternative in its choice, and `Last` of the break before the `)` of a group keeps the comment that trails the group's last token. The comments between the tokens of `#repeat(...)` stay in its `Spelling` field. The comments inside attribute arguments,
 lambda parameters and `#repeat(...)` are layout only: unlike owned comments they
 are not part of the JSON AST. Other source forms remain outside this increment's
-coverage. Comment owners across statements separated by `;` on one line are not
-fully preserved, and a level written on one line with a comment after its closing
-brace is not formatted idempotently.
+coverage.
 
 #### Comment Grouping and Ownership
 
@@ -170,6 +168,7 @@ decide it.
 |:--|:--|
 | Start of the file | No previous token exists, so no group can trail |
 | A comment on the line of the previous token | It forms a group at once. Every comment on that line trails the previous token when a line break, a closing delimiter, a `;` or the end of the file follows them; each is a group of its own, and at most the last is a line comment. When a token follows them on that line, only the first can trail that token. A comment-only run on the lines after them is a new group; it never extends them |
+| A comment on the line of an opening delimiter `{`, `(` or `[` | The delimiter is not a node, so nothing can own a group that trails it. The comments lead the next token as if they stood on lines of their own: the last group leads it and the earlier groups are detached. Before the closing delimiter, as in `{ // c` and then `}`, they stay the group of the delimiter. The formatter writes them on the line of the delimiter when it formats source, and before the first item when it formats JSON |
 | Consecutive `//` comments | One group |
 | A block comment | It starts a distinct group and ends any pending group. Switching between block and line comments also ends the pending group. An empty block comment such as `/**/` is a group |
 | A blank line | Ends the pending group, and no later group can trail the previous token |

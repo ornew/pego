@@ -35,6 +35,7 @@ var nodeBases = []string{
 	"rule a = b => x < y == z\n",
 	"type T = { A []int; B *string; C (int, string); D {E int}; F A | B & C; G node[X]; H _|_ }\n",
 	"type U ~ A | B | C\ntype V = node[T]\ntype W ~ (A)\n",
+	"type T = {/*a*/ // b\n A int\n}\nrule e = operators { // c\n operand \"1\"\n level { // d\n infix left \"+\" }\n}\n",
 	"rule a = operators {\n skip \" \"\n operand \"1\" => N{}\n level l { prefix \"-\" => N{}\n infix left \"+\" b; postfix \"!\" }\n}\n",
 	"rule a []T = x\n",
 	"rule a = b => {x; y := 2\n z}\n",

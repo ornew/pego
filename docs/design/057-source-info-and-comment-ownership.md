@@ -239,7 +239,11 @@ boundary before it, so each boundary is recorded once after the item it
 follows: the item's own trailing group (`Source`) and the `SourceLead` (leading
 group, detached groups and whether an owner follows) of the next item (`Next`).
 A list's first element takes its lead from the `Head` recorded after the
-opening delimiter, or the start of the file. The source adapter
+opening delimiter, or the start of the file. The comments on the line of the
+delimiter belong to that head, since the delimiter is not a node and could not
+own a trailing group: they lead the first element as if they stood on lines of
+their own, and only a closing delimiter right after them keeps them with the
+delimiter. The source adapter
 (`internal/sourceast`, `Positions.Items`) joins these records into
 `grammar.SourceInfo` without moving a group between boundaries. Parity with the
 hand-written frontend is tested over crafted comment cases and every grammar in

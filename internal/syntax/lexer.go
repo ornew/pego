@@ -53,6 +53,11 @@ func (t token) endsScope() bool {
 	return t.kind == tEOF || t.kind == tPunct && (t.text == ")" || t.text == "]" || t.text == "}" || t.text == ";")
 }
 
+// opensScope reports whether the token is an opening delimiter.
+func (t token) opensScope() bool {
+	return t.opensList() && t.text != ","
+}
+
 // opensList reports whether the token opens a list or separates its elements.
 func (t token) opensList() bool {
 	if t.kind != tPunct {
@@ -290,7 +295,7 @@ func lexContext(ctx context.Context, src string, errs *errorList) (toks []token,
 					cs[i+1] = c
 				}
 			}
-			t.source = collectCommentsWithCheck(previous, l.prev.opensList(), t, cs, l.cancelCheck())
+			t.source = collectCommentsWithCheck(previous, l.prev.opensList(), l.prev.opensScope(), t, cs, l.cancelCheck())
 		}
 		toks = append(toks, t)
 		l.prev = t

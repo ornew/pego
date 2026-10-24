@@ -103,6 +103,5 @@ Tests check this, and that every grammar in `examples/` reparses to the same AST
 
 ## Limitations
 
-- Comment owners across statements separated by `;` on one line are not fully preserved, and a level written on one line with a comment after its closing brace, such as `level { infix left "+" } // c`, is not formatted idempotently.
 - A rule body keeps line breaks at its top-level choice and sequences. Source-only PEG, type and action group nodes preserve layout and comment ownership inside their explicit delimiters. `TypeGroup` and `TermGroup` keep raw line placement in `OpenBreak`, `BodyBreak`, `CloseBreak` and `OneLine`, separate from normalized `SourceInfo` ownership. Other internal line breaks, including those inside Operators Rule operands and operators, are joined, and comments there move to the nearest preceding line.
 - Alignment that `Format` does not produce itself (for example, aligned columns in Operators Rule levels) is not kept.

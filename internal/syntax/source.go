@@ -23,15 +23,18 @@ type commentBoundary struct {
 	trailingOwner *grammar.SourceInfo
 }
 
-func collectComments(previous grammar.Pos, opens bool, next token, comments []*grammar.Comment) *commentBoundary {
-	return collectCommentsWithCheck(previous, opens, next, comments, nil)
+func collectComments(previous grammar.Pos, opens, opener bool, next token, comments []*grammar.Comment) *commentBoundary {
+	return collectCommentsWithCheck(previous, opens, opener, next, comments, nil)
 }
 
 // collectCommentsWithCheck groups the comments between two tokens. opens
-// reports that the token before them is an opening delimiter or a comma.
-func collectCommentsWithCheck(previous grammar.Pos, opens bool, next token, comments []*grammar.Comment, check func()) *commentBoundary {
+// reports that the token before them is an opening delimiter or a comma, and
+// opener that it is an opening delimiter. An opening delimiter is not a node, so
+// the comments on its line lead the next token as if they were on lines of their
+// own, unless a closing delimiter follows them.
+func collectCommentsWithCheck(previous grammar.Pos, opens, opener bool, next token, comments []*grammar.Comment, check func()) *commentBoundary {
 	b := &commentBoundary{}
-	canPrevious := previous.IsValid()
+	canPrevious := previous.IsValid() && !(opener && !next.endsScope())
 	inlineEnd := 0
 	groups := 0
 	var pending []*grammar.Comment
@@ -53,7 +56,7 @@ func collectCommentsWithCheck(previous grammar.Pos, opens bool, next token, comm
 	}
 	last := previous
 	scopeEnd := next.endsScope()
-	if canPrevious && comments[0].Pos.Line == previous.Line {
+	if previous.IsValid() && comments[0].Pos.Line == previous.Line {
 		// The comments on the line of the previous token are all trailing when a line break or
 		// the end of a scope follows them; otherwise only the first is a group of its own.
 		n := 1
@@ -63,17 +66,23 @@ func collectCommentsWithCheck(previous grammar.Pos, opens bool, next token, comm
 		if !scopeEnd && next.pos.Line <= comments[n-1].End.Line {
 			n = 1
 		}
-		inRun = true
-		for _, c := range comments[:n] {
-			pending = []*grammar.Comment{c}
-			flush() // Inline comments never absorb following comment-only lines.
+		if !canPrevious {
+			// The comments of an opening delimiter's line lead the next token, but the layout
+			// keeps them on that line as one run.
+			b.run = n
+		} else {
+			inRun = true
+			for _, c := range comments[:n] {
+				pending = []*grammar.Comment{c}
+				flush() // Inline comments never absorb following comment-only lines.
+			}
+			inRun = false
+			b.run = n
+			last = comments[n-1].End
+			inlineEnd = last.Line
+			canPrevious = false
+			comments = comments[n:]
 		}
-		inRun = false
-		b.run = n
-		last = comments[n-1].End
-		inlineEnd = last.Line
-		canPrevious = false
-		comments = comments[n:]
 	}
 	for i, c := range comments {
 		if check != nil && i&255 == 0 {
@@ -115,7 +124,9 @@ func collectCommentsWithCheck(previous grammar.Pos, opens bool, next token, comm
 			b.trailing, b.hasTrailing, b.run = nil, false, 0
 		}
 		canPrevious = false
-		flush()
+		if !opens {
+			flush()
+		}
 	}
 	if !scopeEnd && pending != nil {
 		b.leading = joinCommentContent(pending, check)

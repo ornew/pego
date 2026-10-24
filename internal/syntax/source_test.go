@@ -51,7 +51,7 @@ func TestLexerCommentBoundaries(t *testing.T) {
 		{"inline block after a comma leads", "comma", " /* next */ next", "", " next ", nil},
 		{"inline block after a semicolon stays ambiguous", "semicolon", " /* next */ next", "", "", []string{" next "}},
 		{"opener block ending on the next line", "opener", " /* next\n */ next", "", " next\n", nil},
-		{"two inline blocks after an opener", "opener", " /* previous */ /* next */ next", " previous ", " next ", nil},
+		{"two inline blocks after an opener", "opener", " /* previous */ /* next */ next", "", " next ", []string{" previous "}},
 		{"closing inline block on prior line", "after", " /* previous */\n}", " previous ", "", nil},
 		{"EOF inline block", "after", " /* previous */", " previous ", "", nil},
 		{"CRLF", "start", "// first\r\n// second\r\nnext", "", " first\r\n second\r\n", nil},
