@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"math/rand"
 	"strings"
 	"testing"
@@ -262,5 +263,86 @@ func TestIgnoreCaseDocumentAndStream(t *testing.T) {
 	}
 	if count != 2 {
 		t.Fatalf("stream emitted %d elements, want 2", count)
+	}
+}
+
+// TestIgnoreCaseAttributeFormRejected checks that the attribute spelling of the pragma is rejected
+// with the spelling to use.
+func TestIgnoreCaseAttributeFormRejected(t *testing.T) {
+	if msg := compileError(t, `rule main = "a" @ignorecase`); !strings.Contains(msg, "use #ignorecase") {
+		t.Fatalf("attribute form: %v", msg)
+	}
+}
+
+// TestIgnoreCaseMissingInPragmaScope checks that #missing inside the annotated expression inserts
+// the literal as written, while the expectation of the same literal keeps the suffix.
+func TestIgnoreCaseMissingInPragmaScope(t *testing.T) {
+	prog := compile(t, `rule main = ("Sel" #missing $$) #ignorecase`)
+	n, errs := requireInsertions(t, prog, "", ParseOptions{MissingTokens: 2}, 1)
+	insertions := missingNodes(t, n)
+	if len(insertions) != 1 {
+		t.Fatalf("missing nodes: %v", insertions)
+	}
+	if expected, _ := insertions[0].fields.Get("expected"); expected != "Sel" {
+		t.Fatalf("inserted spelling %q, want Sel (errors %v)", expected, errs)
+	}
+	if !strings.Contains(fmt.Sprint(errs), `"Sel"i`) {
+		t.Fatalf("expectation lacks the suffix: %v", errs)
+	}
+}
+
+// TestIgnoreCaseDocumentAndStreamBackends runs the incremental Document and the stream parse on
+// every backend that supports them, with case-insensitive literals.
+func TestIgnoreCaseDocumentAndStreamBackends(t *testing.T) {
+	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		prog := compile(t, `rule main = "select"i " " "x" $$`)
+		doc, err := prog.NewDocumentWith("main", "SELECT x", ParseOptions{Backend: b})
+		if err != nil {
+			t.Fatal(b, err)
+		}
+		if _, err := doc.Parse(); err != nil {
+			t.Fatal(b, "document: ", err)
+		}
+		if err := doc.EditBatch(doc.Version(), TextEdit{Start: 0, End: 1, Text: "s"}); err != nil {
+			t.Fatal(b, err)
+		}
+		if _, err := doc.Parse(); err != nil {
+			t.Fatal(b, "edited document: ", err)
+		}
+		if err := doc.EditBatch(doc.Version(), TextEdit{Start: 7, End: 8, Text: "y"}); err != nil {
+			t.Fatal(b, err)
+		}
+		if _, err := doc.Parse(); err == nil {
+			t.Fatal(b, "edited document with a wrong letter parsed")
+		}
+
+		stream := compile(t, `rule main = ("ab"i #atomic)* #stream`)
+		count := 0
+		if err := stream.ParseStreamWith("main", strings.NewReader("ABab"), func(*Node) error { count++; return nil }, ParseOptions{Backend: b}); err != nil {
+			t.Fatal(b, "stream: ", err)
+		}
+		if count != 2 {
+			t.Fatalf("%v: stream emitted %d elements, want 2", b, count)
+		}
+	}
+}
+
+// TestIgnoreCaseExpectationBackends checks that the expectation of a case-insensitive literal keeps
+// its suffix on every backend that parses such a literal.
+func TestIgnoreCaseExpectationBackends(t *testing.T) {
+	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		for _, c := range []struct {
+			src, want string
+		}{
+			{`rule main = "select"i`, `"select"i`},
+			{`rule main = ("select") #ignorecase`, `"select"i`},
+			{`rule main = "select"`, `"select"`},
+		} {
+			prog := compile(t, c.src)
+			_, err := prog.ParseWith("main", "x", ParseOptions{Backend: b})
+			if err == nil || !strings.Contains(err.Error(), c.want) {
+				t.Fatalf("%v %q: error %v, want the expectation %s", b, c.src, err, c.want)
+			}
+		}
 	}
 }

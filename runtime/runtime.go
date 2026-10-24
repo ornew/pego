@@ -2881,6 +2881,51 @@ func (p *Parser) MatchLiteral(rs []rune, text string, desc ExpID, build bool) (*
 	return p.NewNode(Node{RawKind: RawKindMatch, RawStart: int32(start), RawEnd: int32(p.Pos), RawText: p.LiteralText(start, text), RawTerminal: true, RawFresh: true}), true
 }
 
+// MatchLiteralFold is MatchLiteral for a case-insensitive literal. rs is the literal with each ASCII
+// letter lowercased, and each input character is folded the same way before it is compared, so
+// only ASCII letters ignore case. The node text is the consumed input. Peek records the examined
+// characters and the work of each one, so the loop needs no bookkeeping of its own.
+func (p *Parser) MatchLiteralFold(rs []rune, desc ExpID, build bool) (*Node, bool) {
+	start := p.Pos
+	for _, want := range rs {
+		got, size, ok := p.Peek()
+		if !ok || foldASCIIRune(got) != want {
+			p.Expect(start, desc)
+			return nil, false
+		}
+		p.Pos += size
+	}
+	if !build {
+		return nil, true
+	}
+	return p.NewNode(Node{RawKind: RawKindMatch, RawStart: int32(start), RawEnd: int32(p.Pos), RawText: p.Text(start, p.Pos), RawTerminal: true, RawFresh: true}), true
+}
+
+// MatchLiteralFoldOrdinary is MatchLiteralFold in an ordinary parse (ExpectOrdinary).
+func (p *Parser) MatchLiteralFoldOrdinary(rs []rune, desc ExpID, build bool) (*Node, bool) {
+	start := p.Pos
+	for _, want := range rs {
+		got, size, ok := p.PeekOrdinary()
+		if !ok || foldASCIIRune(got) != want {
+			p.ExpectOrdinary(start, desc)
+			return nil, false
+		}
+		p.Pos += size
+	}
+	if !build {
+		return nil, true
+	}
+	return p.NewNodeOrdinary(Node{RawKind: RawKindMatch, RawStart: int32(start), RawEnd: int32(p.Pos), RawText: p.Text(start, p.Pos), RawTerminal: true, RawFresh: true}), true
+}
+
+// foldASCIIRune maps A-Z to a-z and leaves every other rune as it is.
+func foldASCIIRune(r rune) rune {
+	if 'A' <= r && r <= 'Z' {
+		return r + ('a' - 'A')
+	}
+	return r
+}
+
 // matchReplacementLiteral is the cold path for raw-byte mismatches. An
 // invalid input byte and valid U+FFFD decode alike, but occupy different sizes.
 func (p *Parser) matchReplacementLiteral(rs []rune, text string, desc ExpID, build bool) (*Node, bool) {

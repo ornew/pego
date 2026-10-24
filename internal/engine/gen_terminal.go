@@ -36,7 +36,13 @@ const minTerminalLeaves = core.MinTerminalLeaves
 // expression containing a choice. It returns ok false for any other expression.
 func terminalLeaves(e grammar.Expr) (leaves int, choice, ok bool) {
 	switch e := e.(type) {
-	case *grammar.Literal, *grammar.CharClass:
+	case *grammar.Literal:
+		if e.IgnoreCase {
+			// Terminal programs compare exact literals only; a folded literal takes the general path.
+			return 0, false, false
+		}
+		return 1, false, true
+	case *grammar.CharClass:
 		return 1, false, true
 	case *grammar.Seq:
 		for _, it := range e.Items {
@@ -252,7 +258,7 @@ func (t *terminalProgram) first(e grammar.Expr) (*grammar.CharClass, expID, bool
 	g := t.g
 	switch e := e.(type) {
 	case *grammar.Literal:
-		if e.Value == "" {
+		if e.Value == "" || e.IgnoreCase {
 			break
 		}
 		r, _ := utf8.DecodeRuneInString(e.Value)

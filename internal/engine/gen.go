@@ -189,9 +189,6 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 	if prog.hasMissing {
 		return nil, missingUnsupported("generated parsers")
 	}
-	if prog.foldsLiterals {
-		return nil, foldUnsupported("generated Go parsers")
-	}
 	start, err := prog.startRule(opts.Start)
 	if err != nil {
 		return nil, err
@@ -1324,6 +1321,10 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 	var b strings.Builder
 	switch e := e.(type) {
 	case *grammar.Literal:
+		if e.IgnoreCase {
+			fmt.Fprintf(&b, "\treturn p.MatchLiteralFold(%s, %d, %v)\n", g.literal(string(foldedRunes([]rune(e.Value)))), g.desc(literalDesc(e)), build)
+			break
+		}
 		value := literalValue(e.Value)
 		v := g.literal(value)
 		fmt.Fprintf(&b, "\treturn p.MatchLiteral(%s, %q, %d, %v)\n", v, value, g.desc(strconv.Quote(e.Value)), build)
@@ -1631,6 +1632,15 @@ func (g *generator) first(e grammar.Expr, depth int, seen map[string]bool) (stri
 			break
 		}
 		r, _ := utf8.DecodeRuneInString(e.Value)
+		if e.IgnoreCase {
+			// The next character matches the first code point in either case of an ASCII letter.
+			f := foldASCIIRune(r)
+			cond := fmt.Sprintf("ch == %d", f)
+			if 'a' <= f && f <= 'z' {
+				cond += fmt.Sprintf(" || ch == %d", f-('a'-'A'))
+			}
+			return cond, g.desc(literalDesc(e)), depth, true
+		}
 		return fmt.Sprintf("ch == %d", r), g.desc(strconv.Quote(e.Value)), depth, true
 	case *grammar.CharClass:
 		return negateCondition(g.controlledClassReject(e)), g.desc(charClassString(e)), depth, true

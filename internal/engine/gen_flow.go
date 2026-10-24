@@ -567,6 +567,9 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 		}
 		return "(!WorkControlsEnabled || p.Control == nil) && (" + cond + ")"
 	case *flow.MatchLit:
+		if x.Lit.Fold {
+			return fmt.Sprintf("p.Parser.MatchLiteralFold(%s, %d, false)", g.literal(string(foldedRunes([]rune(x.Lit.Text)))), p.desc(x.Lit.Exp))
+		}
 		lit := g.literal(x.Lit.Text)
 		var desc expID
 		if x.Lit.Text == "" {

@@ -1370,6 +1370,11 @@ export interface Lit {
   bytes: number[];
 }
 
+// foldASCII maps A-Z to a-z and leaves every other code point as it is.
+function foldASCII(r: number): number {
+  return r >= 65 && r <= 90 ? r + 32 : r;
+}
+
 export class Parser {
   observation: Observation | null = null; // set for the duration of an observed parse
   readonly g: Grammar;
@@ -2422,6 +2427,25 @@ export class Parser {
       return null;
     }
     return new Node("string", "", start, this.pos, lit.text, noNodes, noFields, true, true);
+  }
+
+  // matchLiteralFold matches a case-insensitive literal. lit.cps holds the literal with each ASCII
+  // letter lowercased; each input character is folded the same way before it is compared.
+  matchLiteralFold(lit: Lit, desc: number, build: boolean): R {
+    this.stepWork();
+    const start = this.pos;
+    for (const want of lit.cps) {
+      const got = this.peek();
+      if (got < 0 || foldASCII(got) !== want) {
+        this.expect(start, desc);
+        return undefined;
+      }
+      this.pos += this.psize;
+    }
+    if (!build) {
+      return null;
+    }
+    return new Node("string", "", start, this.pos, this.text(start, this.pos), noNodes, noFields, true, true);
   }
 
   // Keep replacement decoding off the successful byte-comparison path.

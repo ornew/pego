@@ -384,6 +384,25 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 	}
 	switch e := e.(type) {
 	case *grammar.Literal:
+		if e.IgnoreCase {
+			// Compared rune by rune in the runtime, without the in-place comparison of the exact
+			// literal. The node holds the consumed input.
+			lit := g.literal(string(foldedRunes([]rune(e.Value))))
+			desc := g.desc(literalDesc(e))
+			var start string
+			if build {
+				start = d.decl("x", "int")
+				d.line("%s = p.Pos", start)
+			}
+			ok := d.ok()
+			d.failIf(fmt.Sprintf("_, %s = p.%sMatchLiteralFold(%s, %d, false); !%s", ok, g.pick("", "Parser."), lit, desc, ok), fail)
+			if !build {
+				return "nil"
+			}
+			v := d.decl("v", d.g.valType())
+			d.line("%s = %s", v, d.match(d.rd(start), fmt.Sprintf("p.Text(%s, p.Pos)", d.rd(start))))
+			return v
+		}
 		value := literalValue(e.Value)
 		lit := g.literal(value)
 		desc := g.desc(strconv.Quote(e.Value))

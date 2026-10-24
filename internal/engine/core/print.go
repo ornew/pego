@@ -98,7 +98,11 @@ func (p *printer) node(n Node, d int) {
 	}
 	switch n := n.(type) {
 	case *Lit:
-		p.line(d, "lit %q", n.Text)
+		if n.Fold {
+			p.line(d, "lit %qi", n.Text)
+		} else {
+			p.line(d, "lit %q", n.Text)
+		}
 	case *ClassNode:
 		p.line(d, "class %s", classString(n.Class))
 	case *Any:

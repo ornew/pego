@@ -587,7 +587,7 @@ func (l *lowerer) lit(n *core.Lit, build bool, fail *Label) Expr {
 	}
 	ok := l.ok()
 	match := &Set{Dst: []LValue{&Discard{}, ok}, X: []Expr{&MatchLit{Lit: n}}}
-	if k := len([]rune(n.Text)); k > 0 && k <= l.opts.InlineLiterals {
+	if k := len([]rune(n.Text)); k > 0 && k <= l.opts.InlineLiterals && !n.Fold {
 		// The code points compared in place; MatchLit records the expectation when they differ.
 		if !l.dead {
 			l.used[fail] = true
@@ -602,7 +602,11 @@ func (l *lowerer) lit(n *core.Lit, build bool, fail *Label) Expr {
 	}
 	v := l.decl("v", TypeValue)
 	var text Expr = &Str{S: n.Text}
-	if strings.ContainsRune(n.Text, '�') {
+	switch {
+	case n.Fold:
+		// The input matched may differ in case from the literal: the node holds the input.
+		text = &Text{Start: use(start)}
+	case strings.ContainsRune(n.Text, '�'):
 		text = &LiteralText{Start: use(start), Lit: n.Text}
 	}
 	l.set(v, &NewMatch{Start: use(start), Text: text})

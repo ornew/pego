@@ -1608,6 +1608,18 @@ func (p *TParser) MatchLiteral(rs []rune, text string, desc ExpID, build bool) (
 	return p.NewMatch(start, p.Pos, p.LiteralText(start, text), true), true
 }
 
+// MatchLiteralFold is MatchLiteral for a case-insensitive literal (see Parser.MatchLiteralFold).
+func (p *TParser) MatchLiteralFold(rs []rune, desc ExpID, build bool) (any, bool) {
+	start := p.Pos
+	if _, ok := p.Parser.MatchLiteralFold(rs, desc, false); !ok {
+		return nil, false
+	}
+	if !build {
+		return nil, true
+	}
+	return p.NewMatch(start, p.Pos, p.Text(start, p.Pos), true), true
+}
+
 // MatchLiteralOrdinary is MatchLiteral in an ordinary parse (parser.ExpectOrdinary).
 func (p *TParser) MatchLiteralOrdinary(rs []rune, text string, desc ExpID, build bool) (any, bool) {
 	start := p.Pos

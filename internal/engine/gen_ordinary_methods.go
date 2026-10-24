@@ -332,7 +332,7 @@ func rewriteOrdinaryControl(root goast.Node) {
 // the nil-control branch calls instead (the runtime writes them by hand).
 func ordinaryHelperName(name string) bool {
 	switch name {
-	case "NewNode", "NewTerminal", "NewBranch", "NewMatch", "SetCapture", "Expect", "Peek", "MatchLiteral", "MatchAny",
+	case "NewNode", "NewTerminal", "NewBranch", "NewMatch", "SetCapture", "Expect", "Peek", "MatchLiteral", "MatchLiteralFold", "MatchAny",
 		"AtEnd", "AtLineStart", "AtEndBatch", "AtLineStartBatch", "AtLineEnd", "InputWork":
 		return true
 	}

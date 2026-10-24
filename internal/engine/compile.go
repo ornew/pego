@@ -14,9 +14,6 @@ import (
 // Program is a compiled grammar. It can be used by multiple parses concurrently.
 type Program struct {
 	hasMissing bool // immutable syntax metadata; bytecode/generation are unsupported
-	// foldsLiterals reports that a normalized literal matches ASCII letters in either case. Only
-	// the closure backend supports it; bytecode, serialization and generation do not yet.
-	foldsLiterals bool
 	// shapeControl is the compilation's cancellation control while the program is being built, so that
 	// the shape analysis of rule bodies (shapeElems) polls it; nil otherwise.
 	shapeControl *compileControl
@@ -476,7 +473,6 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 	c.checkSpliceCycles(rules)
 	c.declareVars(g)
 	prog.markMissingRules(control)
-	prog.markFoldedLiterals(control)
 	if flags == nil {
 		c.an = analyzeControlled(rules, control)
 	} else if len(flags) != len(prog.rules) {

@@ -84,6 +84,9 @@ type Effects struct {
 type Lit struct {
 	base
 	Text string
+	// Fold makes the literal case-insensitive: each ASCII letter of the input matches either case
+	// of the same letter in Text, which is written as the grammar wrote it.
+	Fold bool
 	// Exp is the expectation the literal records on failure.
 	Exp ExpID
 }

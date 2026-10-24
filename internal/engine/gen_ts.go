@@ -73,9 +73,6 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	if prog.hasMissing {
 		return nil, missingUnsupported("generated parsers")
 	}
-	if prog.foldsLiterals {
-		return nil, foldUnsupported("generated TypeScript parsers")
-	}
 	start, err := prog.startRule(opts.Start)
 	if err != nil {
 		return nil, err
@@ -684,6 +681,14 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 	var b strings.Builder
 	switch e := e.(type) {
 	case *grammar.Literal:
+		if e.IgnoreCase {
+			folded := string(foldedRunes([]rune(e.Value)))
+			v, shared := g.literalName(folded)
+			if !shared {
+				fmt.Fprintf(&g.vars, "const %s: Lit = { text: %s, cps: %s, bytes: %s };\n", v, tsString(folded), tsInts([]rune(folded)), tsInts([]byte(folded)))
+			}
+			return fmt.Sprintf("p.matchLiteralFold(%s, %d, %v)", v, g.desc(literalDesc(e)), build)
+		}
 		value := literalValue(e.Value)
 		v, shared := g.literalName(value)
 		if !shared {
