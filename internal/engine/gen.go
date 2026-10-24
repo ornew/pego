@@ -759,7 +759,8 @@ func (g *generator) rules() {
 				bodies[r] = g.directLeanBody(r, d)
 				continue
 			}
-		} else if directLeanOK(r) {
+		}
+		if g.table != "trules" && directLeanOK(r) {
 			// Value-free Node rules retain one for generic calls and external entry, whose
 			// caller owns depth.
 			if d := g.directRule(r); d != nil {

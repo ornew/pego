@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
+	"sort"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -62,15 +65,43 @@ func invertClassTests(code []byte) []byte {
 	})
 }
 
-// TestGeneratedFlowRecognizerMutantChild runs the parity test with the wrong class tests
-// of invertClassTests. It runs only as a child of TestGeneratedFlowRecognizerNegativeControl.
+// guardFirstCharacter matches the first-character guard of a literal alternative in generated code,
+// with the character it tests.
+var guardFirstCharacter = regexp.MustCompile(`if !\(x(\d+) && \(x(\d+) == (\d+)\)\) && p\.Depth`)
+
+// shiftGuardFirstCharacters changes the character of every literal guard to the next one, as a printer
+// would if it read the first set of an alternative one character off. An alternative whose first
+// character is skipped by the guard is then never tried, so the parity test must reject it.
+func shiftGuardFirstCharacters(code []byte) []byte {
+	return guardFirstCharacter.ReplaceAllFunc(code, func(m []byte) []byte {
+		sub := guardFirstCharacter.FindSubmatch(m)
+		c, _ := strconv.Atoi(string(sub[3]))
+		return []byte(fmt.Sprintf("if !(x%s && (x%s == %d)) && p.Depth", sub[1], sub[2], c+1))
+	})
+}
+
+// flowRecognizerMutants are the wrong recognizers of the negative control, by PEGO_FLOW_MUTANT value.
+// A dropped guard is not among them: a guard only skips an alternative that cannot match, so dropping
+// one keeps the results and only the guard test in TestFlowRecognizerGuardsChoiceAlternatives sees it.
+var flowRecognizerMutants = map[string]func([]byte) []byte{
+	"class": invertClassTests,
+	"guard": shiftGuardFirstCharacters,
+}
+
+// TestGeneratedFlowRecognizerMutantChild runs the parity test with the mutant that PEGO_FLOW_MUTANT
+// names. It runs only as a child of TestGeneratedFlowRecognizerNegativeControl.
 func TestGeneratedFlowRecognizerMutantChild(t *testing.T) {
-	if os.Getenv("PEGO_FLOW_MUTANT") != "1" {
+	name := os.Getenv("PEGO_FLOW_MUTANT")
+	if name == "" {
 		t.Skip("run by TestGeneratedFlowRecognizerNegativeControl")
+	}
+	mutate, ok := flowRecognizerMutants[name]
+	if !ok {
+		t.Fatalf("unknown mutant %q", name)
 	}
 	mutated := 0
 	flowRecognizerMutant = func(code []byte) []byte {
-		mutant := invertClassTests(code)
+		mutant := mutate(code)
 		if !bytes.Equal(mutant, code) {
 			mutated++
 		}
@@ -80,35 +111,40 @@ func TestGeneratedFlowRecognizerMutantChild(t *testing.T) {
 	cases := genCorpus(t)
 	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, GenOptions{})
 	if mutated == 0 {
-		t.Fatal("the mutant changes no class test")
+		t.Fatalf("the %s mutant changes no generated recognizer", name)
 	}
 }
 
-// TestGeneratedFlowRecognizerNegativeControl checks that the parity test rejects a recognizer with a
-// wrong class test: the mutant child must fail.
+// TestGeneratedFlowRecognizerNegativeControl checks that the parity test rejects each wrong recognizer
+// of flowRecognizerMutants: the mutant child must fail with a recognition mismatch.
 func TestGeneratedFlowRecognizerNegativeControl(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	cmd := exec.Command(os.Args[0], "-test.run=^TestGeneratedFlowRecognizerMutantChild$", "-test.count=1")
-	cmd.Env = append(os.Environ(), "PEGO_FLOW_MUTANT=1")
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("the mutant passed the parity test:\n%s", out)
-	}
-	if !strings.Contains(string(out), "--- FAIL: TestGeneratedFlowRecognizerMutantChild") {
-		t.Fatalf("the mutant child did not fail its test:\n%s", out)
-	}
-	// The rejection must come from the recognition comparison, not from a failure to build.
-	if !strings.Contains(string(out), "recognize: ") {
-		t.Fatalf("the mutant child failed without a recognition mismatch:\n%s", out)
+	for name := range flowRecognizerMutants {
+		t.Run(name, func(t *testing.T) {
+			cmd := exec.Command(os.Args[0], "-test.run=^TestGeneratedFlowRecognizerMutantChild$", "-test.count=1")
+			cmd.Env = append(os.Environ(), "PEGO_FLOW_MUTANT="+name)
+			out, err := cmd.CombinedOutput()
+			if err == nil {
+				t.Fatalf("the %s mutant passed the parity test:\n%s", name, out)
+			}
+			if !strings.Contains(string(out), "--- FAIL: TestGeneratedFlowRecognizerMutantChild") {
+				t.Fatalf("the %s mutant child did not fail its test:\n%s", name, out)
+			}
+			// The rejection must come from the recognition comparison, not from a failure to build.
+			if !strings.Contains(string(out), "recognize: ") {
+				t.Fatalf("the %s mutant child failed without a recognition mismatch:\n%s", name, out)
+			}
+		})
 	}
 }
 
-// TestFlowRecognizerGuardsChoiceAlternatives checks that the recognizer printed from Flow IR guards
-// the alternatives of choices by their first character, as the direct printer does. Without the
-// Analyze pass before Guards, the guards are not set: this grammar then prints 4 first-character
-// guards instead of 12, and the alternatives are tried at every position.
+// TestFlowRecognizerGuardsChoiceAlternatives checks that the recognizer printed from Flow IR guards the
+// alternatives of choices by the same first characters as the direct recognizer. The guards are
+// compared as conditions with the variable names removed, so the test does not depend on how either
+// printer numbers its variables. Without the Analyze pass before Guards, the Flow route prints no
+// guards for these choices and the comparison fails.
 func TestFlowRecognizerGuardsChoiceAlternatives(t *testing.T) {
 	t.Setenv("PEGO_TEST_ORDINARY", "1")
 	g, err := parseTest(`rule main = item* !.
@@ -120,12 +156,69 @@ rule sq = "'" [^']* "'" / [uU] "&'" [^']* "'"
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, GenOptions{Start: "main", Package: "gen", Recognize: true})
+	guardsOf := func(opts GenOptions) []string {
+		t.Helper()
+		code, err := generateCode(g, opts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var conds []string
+		for _, m := range guardCondition.FindAllSubmatch(code, -1) {
+			conds = append(conds, string(variableName.ReplaceAll(m[1], []byte("x"))))
+		}
+		sort.Strings(conds)
+		return conds
+	}
+	flow := guardsOf(GenOptions{Start: "main", Package: "gen", Recognize: true})
+	direct := guardsOf(GenOptions{Start: "main", Package: "gen", Recognize: true, directRecognizer: true})
+	if len(direct) == 0 {
+		t.Fatal("the direct recognizer prints no guards: the test exercises nothing")
+	}
+	if !slices.Equal(flow, direct) {
+		t.Errorf("the Flow recognizer guards %d alternatives, the direct recognizer %d:\nflow:   %q\ndirect: %q", len(flow), len(direct), flow, direct)
+	}
+}
+
+// guardCondition matches the first-character guard of a choice alternative in generated code, and
+// variableName the numbered variables of the generated code.
+var (
+	guardCondition = regexp.MustCompile(`if !\((x\d+ && \([^\n]*?\))\) && p\.Depth`)
+	variableName   = regexp.MustCompile(`x\d+`)
+)
+
+// TestFlowRecognizerFallbackMatchesDirect checks the fallback of the Flow route: a rule whose Flow form
+// is refused takes the direct lean path, as it does with the direct recognizer. The output with every
+// eligible rule refused must equal the output of the direct recognizer.
+func TestFlowRecognizerFallbackMatchesDirect(t *testing.T) {
+	t.Setenv("PEGO_TEST_ORDINARY", "1")
+	src := "rule main = ws item* !.\nrule ws = ([ ] / comment)*\nrule comment = \"--\" [^\\n]* / block_comment\nrule block_comment = \"/*\" (block_comment / !\"*/\" .)* \"*/\"\nrule item = [a-z]+ / [0-9]+\n"
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}
-	guards := regexp.MustCompile(`if !\(x\d+ && \(x\d+ == `).FindAll(code, -1)
-	if len(guards) < 12 {
-		t.Errorf("the Flow recognizer has %d first-character guards on the choice alternatives, want at least 12", len(guards))
+	gen := func(opts GenOptions) []byte {
+		t.Helper()
+		code, err := generateCode(g, opts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return code
+	}
+	direct := gen(GenOptions{Start: "main", Package: "gen", Recognize: true, directRecognizer: true})
+	refused := 0
+	refuseFlowRecDirect = func(r *rule) bool {
+		if recFlowEligible(r) {
+			refused++
+			return true
+		}
+		return false
+	}
+	t.Cleanup(func() { refuseFlowRecDirect = nil })
+	fallback := gen(GenOptions{Start: "main", Package: "gen", Recognize: true})
+	if refused == 0 {
+		t.Fatal("no rule was refused: the fallback is not exercised")
+	}
+	if !bytes.Equal(fallback, direct) {
+		t.Errorf("the fallback of %d refused rules differs from the direct recognizer", refused)
 	}
 }

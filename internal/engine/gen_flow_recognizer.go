@@ -35,6 +35,10 @@ func recFlowEligible(r *rule) bool {
 
 // startRecFlow builds the Core IR of the recognizer rec, with the passes of the recognizer table
 // (no terminal programs and no class runs), for printing its eligible rules from Flow IR.
+// startRecFlow runs the passes of typedCore that the Node recognizer uses: rewrites, Analyze, Guards,
+// scans and the repeats, which followRepeats keeps in step with the scans. It omits Terminals and
+// ClassRuns, which typedCore runs only for lean typed rules (leanTyped): the Node recognizer writes
+// its terminals and classes as the direct printer does, as inline tests.
 func (g *generator) startRecFlow(rec *Program) error {
 	origin := map[core.Node]grammar.Expr{}
 	m, err := buildCoreFrom(rec, origin)
@@ -88,7 +92,14 @@ func (g *generator) sharedDirectBody(r *rule) bool {
 // flowRecDirect prints the eligible rule r of the recognizer from Flow IR as a direct rule, or
 // returns nil if the printed function would read its start or context, which a value-free body
 // does not need.
+// refuseFlowRecDirect, if set by a test, makes flowRecDirect refuse the rules it selects, so that the
+// fallback of the Flow route to the direct printer is exercised. No manifest grammar reaches the fallback.
+var refuseFlowRecDirect func(*rule) bool
+
 func (g *generator) flowRecDirect(r *rule) *direct {
+	if refuseFlowRecDirect != nil && refuseFlowRecDirect(r) {
+		return nil
+	}
 	cr := g.flow.m.Rules[r.id]
 	if !flow.LocalRule(cr) {
 		return nil
