@@ -737,6 +737,12 @@ func (v *valueInference) isSeq(e grammar.Expr) bool {
 		switch x := ungroupExpr(e).(type) {
 		case *grammar.Seq:
 			return true
+		case *grammar.Attributed:
+			// An attribute other than recovery only labels e; recovery makes it one element.
+			if recovers(x) {
+				return false
+			}
+			e = x.Expr
 		case *grammar.Ref:
 			body, ok := v.prog.spliceBody(x.Name)
 			if !ok || v.spliced[x.Name] || seen[x.Name] {

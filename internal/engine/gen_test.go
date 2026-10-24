@@ -228,6 +228,7 @@ rule e = operators {
 	cases = append(cases, typedFrameLayoutCases...)
 	cases = append(cases, typedRecoveryCases...)
 	cases = append(cases, typedLocalLayoutCases...)
+	cases = append(cases, attributeShapeCases...)
 	// Grammars of typed values with their inputs, from reviews of the typed runtime: each was a
 	// case where it differed from converting the result of Parse.
 	typed, _ := filepath.Glob("testdata/typed/*.pego")

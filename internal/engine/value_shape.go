@@ -27,13 +27,19 @@ func (p *Program) spliceBody(name string) (grammar.Expr, bool) {
 	return nil, false
 }
 
-// isSeq reports whether e is a sequence, as grouped or as the body of a splice rule it calls.
+// isSeq reports whether e is a sequence, as grouped, with attributes other than recovery, or as the body of a splice rule it calls.
 func isSeq(p *Program, e grammar.Expr) bool {
 	var seen map[string]bool
 	for {
 		switch x := ungroupExpr(e).(type) {
 		case *grammar.Seq:
 			return true
+		case *grammar.Attributed:
+			// An attribute other than recovery only labels e; recovery makes it one element.
+			if recovers(x) {
+				return false
+			}
+			e = x.Expr
 		case *grammar.Ref:
 			body, ok := p.spliceBody(x.Name)
 			if !ok || seen[x.Name] {
