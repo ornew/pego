@@ -631,15 +631,21 @@ func (g *generator) literal(value string) string {
 	return name
 }
 
+// seedDescs starts the table of expectation descriptions with the fixed ones.
+func (g *generator) seedDescs() {
+	if g.descIDs != nil {
+		return
+	}
+	g.descIDs = map[string]expID{}
+	for i, d := range fixedDescs {
+		g.descs = append(g.descs, d)
+		g.descIDs[d] = expID(i)
+	}
+}
+
 // desc returns the expectation ID of description s, adding it to the table.
 func (g *generator) desc(s string) expID {
-	if g.descIDs == nil {
-		g.descIDs = map[string]expID{}
-		for i, d := range fixedDescs {
-			g.descs = append(g.descs, d)
-			g.descIDs[d] = expID(i)
-		}
-	}
+	g.seedDescs()
 	if id, ok := g.descIDs[s]; ok {
 		return id
 	}

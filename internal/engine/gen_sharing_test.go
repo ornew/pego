@@ -188,3 +188,25 @@ func BenchmarkGeneratedSharing(b *testing.B) {
 		}
 	}
 }
+
+// A rollback to a snapshot taken before the first expectation description was added must keep the
+// fixed descriptions: they take the first IDs, which the runtime names.
+func TestGeneratedRollbackKeepsFixedDescs(t *testing.T) {
+	g := &generator{table: "rules"}
+	snap := g.snapshot()
+	if id := g.desc(`"discarded"`); int(id) != len(fixedDescs) {
+		t.Fatalf("first description has ID %d, want %d", id, len(fixedDescs))
+	}
+	g.rollback(snap)
+	if id := g.desc(`"kept"`); int(id) != len(fixedDescs) {
+		t.Fatalf("description after the rollback has ID %d, want %d", id, len(fixedDescs))
+	}
+	for i, want := range fixedDescs {
+		if g.descs[i] != want {
+			t.Fatalf("description %d is %q, want %q", i, g.descs[i], want)
+		}
+	}
+	if g.desc(fixedDescs[0]) != 0 {
+		t.Fatalf("the fixed description %q lost its ID", fixedDescs[0])
+	}
+}

@@ -1159,6 +1159,7 @@ type genSnapshot struct {
 }
 
 func (g *generator) snapshot() genSnapshot {
+	g.seedDescs() // a rollback must not remove the fixed descriptions
 	var decisions, terms int
 	if d := g.decisions; d != nil {
 		decisions, terms = len(d.log), len(d.terms)
