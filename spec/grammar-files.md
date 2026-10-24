@@ -19,7 +19,7 @@ package example
 type Number = node[string]
 @start
 rule main Number = ([0-9]+) #atomic
-rule expr Expr = operators { ... }
+rule expr Expr = #operators { ... }
 ```
 
 A hard newline separates top-level Declaration Statements; a semicolon may also
@@ -371,7 +371,7 @@ used as names when the surrounding syntax expects a name.
   uses its Action Expression to build the value from the whole match; it cannot
   be attached to an individual alternative of a choice.
 - An Operators Rule is a specialized Rule Definition written
-  `rule <name> [<Type>] = operators { ... }`. It defines operands and operator
+  `rule <name> [<Type>] = #operators { ... }`. It defines operands and operator
   entries rather than an ordinary Rule Expression; entries may have Value
   Actions as described in [Operators Rule](operators-rule.md). A Value Action
   after the closing brace may be omitted or use the explicit `=> ...`

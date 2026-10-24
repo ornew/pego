@@ -65,7 +65,7 @@ rule word Word = t:([a-z]+) #atomic => Word{Text: text($t)}`, strings.Repeat("ab
 		{`rule main = first:item rest:(-"," value:item)* $$ => concat(list($first), map($rest, (e) => e.$value))
 rule item = [a-z]+`, strings.TrimSuffix(strings.Repeat("abc,", 80), ",")},
 		{`rule main = expr $$
-rule expr = operators {
+rule expr = #operators {
  operand "a"
  level additive { infix left "+" }
  level { prefix "-" }

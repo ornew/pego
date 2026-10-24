@@ -247,7 +247,7 @@ rule field Field = (
 rule field_body FieldBody = (
     name:(ident @error(message="expected field name")) -ws t:(type_expr @error(message="expected field type"))
 ) => FieldBody{Name: $name, Type: $t}
-rule type_expr Type = operators {
+rule type_expr Type = #operators {
     skip ws
     operand bottom
     operand !retired_type name:ident args:type_args => TypeApp{Name: $name, Args: $args}
@@ -330,7 +330,7 @@ rule decl_attr_line_end []Comment = cs:horizontal -nl rest:comments => concat($c
 rule whole_action Action = "=>" -ws a:(action @error(message="expected value action after '=>'")) => $a
 // The spacing before an action belongs to the action, so a rule without one ends at its expression.
 rule trailing_action Action = -ws a:whole_action => $a
-rule rule_expr RuleExpr = operators {
+rule rule_expr RuleExpr = #operators {
     skip ws
     operand rule_group / predicate / level_call / bottom / top / begin_input / begin_line / end_input / end_line / any / cut / string / char_class / rule_ref
     level ordered_choice { infix left "/" => Choice{L: $lhs, R: $rhs} }
@@ -425,7 +425,7 @@ rule ops_rule_plain OperatorsRule = o:ops_rule_expr -(-ws &("#" !("ignorecase" !
 // Operators Rule items and each level recover independently. An absent level
 // name remains nil; level(rule, name) can target only named levels.
 rule ops_rule_expr OperatorsRule = (
-    "operators" !ident_char -ws &"{" #cut "{" {ml := false} &head:source_head_open items:(i:ops_stmt)*
+    "#operators" !ident_char -ws &"{" #cut "{" {ml := false} &head:source_head_open items:(i:ops_stmt)*
     cs:comments -("}" @error(message="expected closing brace for operators"))
 ) => OperatorsRule{Items: map($items, (x) => x.$i), Comments: $cs, Head: $head}
 rule ops_stmt OperatorsStmt = (
@@ -492,7 +492,7 @@ rule action_bind_stmt ActionBind = (
     name:ident -ws ":=" -ws x:(action_expr @error(message="expected binding value"))
 ) => ActionBind{Name: $name, Expr: $x}
 rule action_expr ActionExpr = lambda / action_ops
-rule action_ops ActionExpr = operators {
+rule action_ops ActionExpr = #operators {
     skip (!(ws "[" !"]") ws)
     operand list_constructor / constructor / call / action_tuple / action_group / int / string / true_lit / false_lit / nil_lit / capture_ref / var_ref
     level disjunction { infix left "||" => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }

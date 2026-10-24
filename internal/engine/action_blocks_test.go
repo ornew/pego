@@ -14,7 +14,7 @@ func TestActionBlocksUnsupported(t *testing.T) {
 		`var x int
 rule a = "x" => {x:=1; x<10; 2}`,
 		`rule a = ("x" => {1})`,
-		`rule a = operators { operand "x" => {1}; level { infix left "+" => {1} } }`,
+		`rule a = #operators { operand "x" => {1}; level { infix left "+" => {1} } }`,
 	} {
 		g, err := parseTest(src)
 		if err != nil {

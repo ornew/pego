@@ -139,7 +139,7 @@ func TestSemanticInteriorWalksCancel(t *testing.T) {
 		})
 	})
 	t.Run("rule-header", func(t *testing.T) {
-		a := analyze("rule expr " + strings.Repeat("T ", 1024) + "= operators { infix left")
+		a := analyze("rule expr " + strings.Repeat("T ", 1024) + "= #operators { infix left")
 		i := semanticLastIdent(t, a, "left")
 		at := semanticBodyPrefixChecks(t, a, i, false) + 2
 		assertOccurrencePhaseCancels(t, at, func(c *renderControl) (any, *rpcError) { return a.inOperatorsBodyControlled(i, c), nil })

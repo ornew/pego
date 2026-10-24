@@ -18,7 +18,7 @@ type Expr ~ Num | Name | Bin | Neg | Call
 @start
 rule main Expr = e:expr ws $$ => $e
 
-rule expr Expr = operators {
+rule expr Expr = #operators {
     skip ws
     operand num
     operand call

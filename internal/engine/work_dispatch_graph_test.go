@@ -18,7 +18,7 @@ func TestWorkDocumentAlternatesDispatchGraphs(t *testing.T) {
 rule item = "a"`,
 		`rule main = expr $$
 
-rule expr = operators {
+rule expr = #operators {
     operand "a"
     level {
         infix left "+"
@@ -27,7 +27,7 @@ rule expr = operators {
 	} {
 		prog := compile(t, source)
 		text := strings.Repeat("a", 80)
-		if strings.Contains(source, "operators {") {
+		if strings.Contains(source, "#operators {") {
 			text = strings.TrimSuffix(strings.Repeat("a+", 40), "+")
 		}
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {

@@ -33,7 +33,7 @@ var typedRecoveryWorkloads = []struct{ name, src, accepted, recovered, errors st
 	{"ordinary", `rule expr Expr = atom #recover(skip=[^;]+)
 rule atom Atom = t:("é" "b" "c") #atomic => Atom{Text: text($t)}
 `, "ébc;", "?;", "1"},
-	{"OperatorsRule", `rule expr Expr = operators {
+	{"OperatorsRule", `rule expr Expr = #operators {
     operand atom #recover(skip="?")
     level { postfix ("[" atom "]") #recover(skip="[?]") => Post{X: $lhs} }
 }

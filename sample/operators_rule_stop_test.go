@@ -13,7 +13,7 @@ import (
 func TestOperatorsRuleStopCheckOwnershipAndCacheBound(t *testing.T) {
 	const levels = 70
 	var src strings.Builder
-	src.WriteString("rule main = e $$\nrule e = operators { operand \"a\"; ")
+	src.WriteString("rule main = e $$\nrule e = #operators { operand \"a\"; ")
 	for i := range levels {
 		fmt.Fprintf(&src, "level { infix none \"<%d>\" }; ", i)
 	}
@@ -47,7 +47,7 @@ func TestOperatorsRuleStopCheckOwnershipAndCacheBound(t *testing.T) {
 
 func TestOperatorsRulePendingNestedScopes(t *testing.T) {
 	ast, err := pego.ParseGrammar(`rule main = e $$
-rule e = operators {
+rule e = #operators {
     operand "a"
     level { infix none "<" }
     level { infix none "=" }
@@ -86,7 +86,7 @@ rule e = operators {
 
 func TestOperatorsRuleScopeWorkBudget(t *testing.T) {
 	ast, err := pego.ParseGrammar(`rule main = e $$
-rule e = operators {
+rule e = #operators {
     operand "a"
     level { postfix "!" }
 }`)

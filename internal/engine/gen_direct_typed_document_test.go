@@ -58,7 +58,7 @@ rule atom Token = t:([aé😀]) #atomic => Token{Text: text($t)}`, []string{"a",
 		{`type Atom = { Text string }
 type Sum = { L Expr; R Expr }
 type Expr ~ Atom | Sum
-rule main Expr = operators {
+rule main Expr = #operators {
  operand atom
  operand "(" x:main ")" => $x
  level add { infix left "+" => Sum{L: $lhs, R: $rhs} }
@@ -66,7 +66,7 @@ rule main Expr = operators {
 rule atom Atom = t:([aé😀]) #atomic => Atom{Text: text($t)}`, []string{"a", "a+a", "(a+a)+é", "a+", "(a"}},
 		{`type Token = { Text string }
 rule main Token = expression
-rule expression Token = operators {
+rule expression Token = #operators {
  operand atom
 }
 rule atom Token = t:([aé😀]) #atomic => Token{Text: text($t)}`, []string{"a", "é", "😀", "", "aa"}},

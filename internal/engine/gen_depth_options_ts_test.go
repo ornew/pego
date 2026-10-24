@@ -24,7 +24,7 @@ rule n = "(" n ")" / "é"`, []string{"é", "(é)", "((é))", "((((é))))", "?"}}
 		{"left", `rule main = n
 rule n = n "+" "é" / "(" n ")" / "é"`, []string{"é", "é+é+é", "((é))", "?"}},
 		{"operatorsRule", `rule main = n
-rule n = operators {
+rule n = #operators {
     operand "(" n ")" / "é"
     level { prefix "-" }
     level { infix right "^" }

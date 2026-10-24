@@ -17,7 +17,7 @@ func operatorsNamedNodeCases() []genCase {
 		{"operators named tuple", `type Expr = node[_]
 type Other = node[string]
 rule main Expr = e:expr ws $$ => $e
-rule expr Expr = operators {
+rule expr Expr = #operators {
     skip ws
     operand num
     operand "(" e:expr ws ")" => $e
@@ -34,7 +34,7 @@ rule num Expr = [0-9]+ #atomic
 rule ws = [ ]*`, []string{"", "1", "1+2", "1+2*3", "-1+2", "1+-2", "2!", "(1+2)[3]*4", "1+2!+3", "1 + (2 - 3) * 4", "2^3^4", "-2^3", "1+", "-", "1[2][3]!", "((1))"}},
 		{"operators without a named type", `type Expr ~ node[_]
 rule main = e:expr ws $$ => $e
-rule expr Expr = operators {
+rule expr Expr = #operators {
     skip ws
     operand num
     operand "(" e:expr ws ")" => $e
@@ -47,7 +47,7 @@ rule ws = [ ]*`, []string{"", "1", "1+2", "-1+2!", "(1+2)!"}},
 		{"operators named through an alias", `type Expr = node[_]
 type Alias ~ Expr
 rule main Alias = e:expr ws $$ => $e
-rule expr Alias = operators {
+rule expr Alias = #operators {
     skip ws
     operand num
     operand "(" e:expr ws ")" => $e
@@ -232,9 +232,9 @@ func main() {
 func TestOperatorsRuleNamedNodeTypeRuntimeError(t *testing.T) {
 	const defs = "type Expr = node[string]\nrule num Expr = [0-9]+ #atomic\n"
 	for _, tc := range []struct{ src, static string }{
-		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" => 1 }\n}", "operatorsRule expr produces int, which cannot be converted to Expr"},
-		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" }\n}", "operators of expr without an action produce a tuple node"},
-		{"rule expr Expr = operators {\n operand num\n level { prefix \"-\" }\n}", "operators of expr without an action produce a tuple node"},
+		{"rule expr Expr = #operators {\n operand num\n level { infix left \"+\" => 1 }\n}", "operatorsRule expr produces int, which cannot be converted to Expr"},
+		{"rule expr Expr = #operators {\n operand num\n level { infix left \"+\" }\n}", "operators of expr without an action produce a tuple node"},
+		{"rule expr Expr = #operators {\n operand num\n level { prefix \"-\" }\n}", "operators of expr without an action produce a tuple node"},
 	} {
 		if got := compileMessage(t, defs+tc.src); !strings.Contains(got, tc.static) {
 			t.Errorf("%q: checked compilation: got %q, want an error containing %q", tc.src, got, tc.static)
@@ -266,10 +266,10 @@ func TestOperatorsRuleWithoutNamedNodeTypeKeepsTuples(t *testing.T) {
 func TestOperatorsRuleNamedNodeTypeErrors(t *testing.T) {
 	const defs = "type Expr = node[string]\ntype S = { A int }\nrule num Expr = [0-9]+ #atomic\n"
 	for _, tc := range []struct{ src, want string }{
-		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" }\n}", "operators of expr without an action produce a tuple node, which cannot be converted to Expr"},
-		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" => S{A: 1} }\n}", "operatorsRule expr produces S, which cannot be converted to Expr"},
-		{"rule expr Expr = operators {\n operand num\n level { prefix \"-\" => 1 }\n}", "which cannot be converted to Expr"},
-		{"type Num = node[string]\nrule expr Expr = operators {\n operand n2\n level { infix left \"+\" => Expr{$op} }\n}\nrule n2 Num = [0-9]+ #atomic", "operand of expr produces Num, which is not assignable to Expr; an operand is not converted: declare the operand rule as Expr, or declare expr as a join that includes Num"},
+		{"rule expr Expr = #operators {\n operand num\n level { infix left \"+\" }\n}", "operators of expr without an action produce a tuple node, which cannot be converted to Expr"},
+		{"rule expr Expr = #operators {\n operand num\n level { infix left \"+\" => S{A: 1} }\n}", "operatorsRule expr produces S, which cannot be converted to Expr"},
+		{"rule expr Expr = #operators {\n operand num\n level { prefix \"-\" => 1 }\n}", "which cannot be converted to Expr"},
+		{"type Num = node[string]\nrule expr Expr = #operators {\n operand n2\n level { infix left \"+\" => Expr{$op} }\n}\nrule n2 Num = [0-9]+ #atomic", "operand of expr produces Num, which is not assignable to Expr; an operand is not converted: declare the operand rule as Expr, or declare expr as a join that includes Num"},
 	} {
 		g, err := parseTest(defs + tc.src)
 		if err != nil {

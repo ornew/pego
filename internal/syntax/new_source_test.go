@@ -15,7 +15,7 @@ rule main Box = (
     (n:number {x := len($n)} {x > 0}) @error(message="expected a box")
 ) => Box{Value: $n}
 rule number Num = t:([0-9]+) #atomic => Num{Text: text($t)}
-rule expr Num = operators {
+rule expr Num = #operators {
     operand number
     level additive { infix left "+" => $lhs }
 }

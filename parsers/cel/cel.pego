@@ -48,7 +48,7 @@ rule main Expr = ws e:expr ws $$ => $e
 // Expr = ConditionalOr ["?" ConditionalOr ":" Expr] and a level for each of the other precedences, all left
 // associative. The then branch is parsed at the level of ||, as the production says. A rule for each level, with
 // the operands folded to the left, took as long as a Operators Rule.
-rule expr Expr = operators {
+rule expr Expr = #operators {
     skip ws
     operand unary
     level { infix right "?" ws then:level(expr, or) ws ":" => Conditional{Cond: $lhs, Then: $then, Else: $rhs} }
@@ -72,7 +72,7 @@ rule neg_unary Expr = ops:(o:"-" -ws)+ m:member => foldr($m, $ops, (acc, i) => U
 // capture, and Optional says whether it matched, so that three lines do the work of five: the Operators Rule loop tries every
 // line at the end of every operand, and five took 13% more time to build the AST of a long expression. A left
 // recursive rule for each suffix took 51% more time to recognize typical expressions and 70% more a long one.
-rule member Expr = operators {
+rule member Expr = #operators {
     skip ws
     operand primary
     level {

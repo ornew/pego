@@ -298,7 +298,7 @@ rule e = e "+" t / e "-" t / t
 rule t = t "*" f / f
 rule f = "(" e ")" / [0-9]`, nil},
 		{"OperatorsRule levels, non-associative and level-restricted calls", `rule main = e $$
-rule e = operators {
+rule e = #operators {
     skip " "*
     operand [0-9]+
     operand "(" e ")"
@@ -352,12 +352,12 @@ func TestReviewRegressions(t *testing.T) {
 rule main = n:"a" {k := len($n)} ({k == 1} "x")* "y"`, "axy"},
 		// The parser ends an Operators Rule expression before an infix operator that no operand follows.
 		{`rule main = e "+" $$
-rule e = operators {
+rule e = #operators {
     operand "a"
     level { infix left "+" }
 }`, "a+"},
 		{`rule main = "[" e ","? "]" $$
-rule e = operators {
+rule e = #operators {
     operand "a"
     level { infix left "," }
 }`, "[a,]"},
@@ -634,7 +634,7 @@ rule r = "x" / "y"`)
 
 	// Operators of OperatorsRule levels that only level-restricted calls skip are not counted.
 	p = compile(t, `rule main = level(e, mul) $$
-rule e = operators {
+rule e = #operators {
     operand "a"
     level { infix left "+" }
     level mul { infix left "*" }

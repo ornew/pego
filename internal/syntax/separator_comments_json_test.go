@@ -12,7 +12,7 @@ import (
 func TestCommentsBeforeSemicolonJSON(t *testing.T) {
 	src := `package p /* a */ ;
 type T = { A int /* x */ ; B string /* y */ ; C int }
-var v = 1 /* z */; rule r = "a" /* w */ ; rule ops = operators { operand "n" /* e */ ; level { infix left "+" /* f */ ; prefix "-" } /* g */ ; operand "m" }
+var v = 1 /* z */; rule r = "a" /* w */ ; rule ops = #operators { operand "n" /* e */ ; level { infix left "+" /* f */ ; prefix "-" } /* g */ ; operand "m" }
 `
 	g, err := Parse(src)
 	if err != nil {
@@ -47,7 +47,7 @@ func TestLaterCommentGroupsJSON(t *testing.T) {
 	src := `package p /* a1 */ /* a2 */ ;
 type T = { A int /* x1 */ /* x2 */ ; B string /* y1 */ /* y2 */
 }
-rule r = "a" /* w1 */ /* w2 */ ; rule ops = operators { operand "n" /* e1 */ /* e2 */ ; level { infix left "+" /* f1 */ /* f2 */ } /* g1 */ /* g2 */
+rule r = "a" /* w1 */ /* w2 */ ; rule ops = #operators { operand "n" /* e1 */ /* e2 */ ; level { infix left "+" /* f1 */ /* f2 */ } /* g1 */ /* g2 */
 }
 rule z = "z" /* z1 */ /* z2 */
 `

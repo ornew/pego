@@ -23,7 +23,7 @@ type Expr ~ Number | Binary
 @start
 rule main Expr = e:expr $$ => $e
 
-rule expr Expr = operators {
+rule expr Expr = #operators {
     operand number
     level additive { infix left "+" / "-" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
 }
@@ -70,7 +70,7 @@ type Expr ~ Number | Binary | Unary
 @start
 rule main Expr = e:expr ws $$ => $e
 
-rule expr Expr = operators {
+rule expr Expr = #operators {
     skip ws
     operand number
     operand "(" e:expr ws ")" => $e

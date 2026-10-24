@@ -229,7 +229,7 @@ rule e = e ";" #missing / "x"`)
 
 func TestMissingTokensOperatorsCandidates(t *testing.T) {
 	infix := compile(t, `rule main = e $$
-rule e = operators {
+rule e = #operators {
     operand "a"
     level { infix left "+" #missing }
 }`)
@@ -238,7 +238,7 @@ rule e = operators {
 		t.Fatal("discarded operator candidate leaked")
 	}
 	postfix := compile(t, `rule main = e $$
-rule e = operators {
+rule e = #operators {
     operand "a"
     level { postfix "!" #missing }
 }`)
@@ -246,7 +246,7 @@ rule e = operators {
 		t.Fatal("empty postfix was applied", n, err)
 	}
 	nullable := compile(t, `rule main = e $$
-rule e = operators {
+rule e = #operators {
     operand ""
     level { infix left "+" #missing }
 }`)

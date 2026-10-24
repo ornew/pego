@@ -137,20 +137,20 @@ func TestShadowedAlternative(t *testing.T) {
 		{name: "explicit failure with a message", src: `rule main = "hello" / _|_ @error(message="expected hello")`},
 		{name: "nested choice", src: `rule main = "(" ("<" / "<=") ")"`,
 			want: []string{"1:24 error shadowed-alternative"}},
-		{name: "operatorsRule operands", src: "rule main = operators {\n    operand \"a\"\n    operand \"ab\"\n    level { infix left \"+\" }\n}",
+		{name: "operatorsRule operands", src: "rule main = #operators {\n    operand \"a\"\n    operand \"ab\"\n    level { infix left \"+\" }\n}",
 			want: []string{"3:13 error shadowed-alternative"}, msg: "operand 2"},
-		{name: "operatorsRule duplicate operator", src: "rule main = operators {\n    operand [0-9]\n    level { infix left \"+\"; infix left \"+\" }\n}",
+		{name: "operatorsRule duplicate operator", src: "rule main = #operators {\n    operand [0-9]\n    level { infix left \"+\"; infix left \"+\" }\n}",
 			want: []string{"3:29 error shadowed-alternative"}, msg: "is never selected"},
-		{name: "operatorsRule operands with the ignorecase pragma", src: "rule main = operators {\n    operand \"a\"\n    operand \"ab\"\n    level { infix left \"+\" }\n} #ignorecase",
+		{name: "operatorsRule operands with the ignorecase pragma", src: "rule main = #operators {\n    operand \"a\"\n    operand \"ab\"\n    level { infix left \"+\" }\n} #ignorecase",
 			want: []string{"3:13 error shadowed-alternative"}, msg: "operand 2"},
-		{name: "operatorsRule folded operand shadows an exact one", src: "rule main = operators {\n    operand \"a\"i\n    operand \"A\"\n}",
+		{name: "operatorsRule folded operand shadows an exact one", src: "rule main = #operators {\n    operand \"a\"i\n    operand \"A\"\n}",
 			want: []string{"3:13 error shadowed-alternative"}},
-		{name: "operatorsRule operators of different kinds", src: "rule main = operators {\n    operand [0-9]\n    level { prefix \"-\"; infix left \"-\" }\n}"},
-		{name: "operatorsRule longest match", src: "rule main = operators {\n    operand [0-9]\n    level { infix left \"<\"; infix left \"<=\" }\n}"},
+		{name: "operatorsRule operators of different kinds", src: "rule main = #operators {\n    operand [0-9]\n    level { prefix \"-\"; infix left \"-\" }\n}"},
+		{name: "operatorsRule longest match", src: "rule main = #operators {\n    operand [0-9]\n    level { infix left \"<\"; infix left \"<=\" }\n}"},
 		{name: "operatorsRule operators on levels a call can leave out",
-			src: "rule main = level(e, b) \"!\"\nrule e = operators {\n    operand [0-9]\n    level a { infix left \"+\" }\n    level b { infix left \"+\" }\n}"},
+			src: "rule main = level(e, b) \"!\"\nrule e = #operators {\n    operand [0-9]\n    level a { infix left \"+\" }\n    level b { infix left \"+\" }\n}"},
 		{name: "operatorsRule operators on levels no call leaves out",
-			src:  "rule main = e \"!\"\nrule e = operators {\n    operand [0-9]\n    level a { infix left \"+\" }\n    level b { infix left \"+\" }\n}",
+			src:  "rule main = e \"!\"\nrule e = #operators {\n    operand [0-9]\n    level a { infix left \"+\" }\n    level b { infix left \"+\" }\n}",
 			want: []string{"5:15 error shadowed-alternative"}},
 	})
 }
@@ -244,9 +244,9 @@ func TestUnusedCapture(t *testing.T) {
 			msg: "the action does not refer to it", fix: true},
 		{name: "text struct", src: "type T = { Text string }\nrule main T = t:(a:\"x\") => T{Text: text($t)}", want: []string{"2:18 warning unused-capture"},
 			msg: "the action does not refer to it"},
-		{name: "operatorsRule operator action", src: "rule main = operators {\n    operand [0-9]\n    level { infix left o:\"+\" => $lhs }\n}",
+		{name: "operatorsRule operator action", src: "rule main = #operators {\n    operand [0-9]\n    level { infix left o:\"+\" => $lhs }\n}",
 			want: []string{"3:24 warning unused-capture"}},
-		{name: "operatorsRule operator without action", src: "rule main = operators {\n    operand [0-9]\n    level { infix left o:\"+\" }\n}"},
+		{name: "operatorsRule operator without action", src: "rule main = #operators {\n    operand [0-9]\n    level { infix left o:\"+\" }\n}"},
 	})
 }
 
@@ -276,7 +276,7 @@ func TestUnreachableRule(t *testing.T) {
 		{name: "unused", src: "rule main = \"a\"\nrule x = \"b\"\nrule y = x", want: []string{
 			"2:1 warning unreachable-rule", "3:1 warning unreachable-rule"}},
 		{name: "used in attributes and operatorsRule", src: "rule main = (e \";\") #recover(skip=s)\nrule s = [^;]+\n" +
-			"rule e = operators {\n    operand n\n    level { infix left o }\n}\nrule n = [0-9]\nrule o = \"+\""},
+			"rule e = #operators {\n    operand n\n    level { infix left o }\n}\nrule n = [0-9]\nrule o = \"+\""},
 		{name: "one start rule", src: "@start\nrule main = \"a\"\nrule x = \"b\"",
 			want: []string{"3:1 warning unreachable-rule"}, msg: "rule x is never used: main does not call it"},
 		// Every start rule is where parsing may begin, so the rules it reaches are used.

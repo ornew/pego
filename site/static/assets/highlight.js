@@ -153,9 +153,6 @@ function classifyPegoTokens(code, tokens) {
       } else if (frame.kind === "operators" && frame.start && ["skip", "operand", "level", "prefix", "postfix", "infix"].includes(text)) {
         t.cls = "keyword";
         frame.listNext = text === "level";
-      } else if (!frame.value && text === "operators" && prevText === "=" && frames.length === 1) {
-        t.cls = "keyword";
-        frame.listNext = true;
       } else if (!frame.value && text === "level" && nextText === "(" && next.from === t.to) {
         t.cls = "keyword";
       } else if (["left", "right", "none"].includes(text) && previous?.cls === "keyword" && prevText === "infix") {
@@ -163,6 +160,11 @@ function classifyPegoTokens(code, tokens) {
       } else if (frame.value && ["true", "false", "nil"].includes(text)) {
         t.cls = "keyword";
       }
+      frame.start = false;
+    } else if (t.cls === "attr" && text === "#operators" && prevText === "=" && !frame.value && frames.length === 1) {
+      // The pragma that starts an Operators Rule is a keyword.
+      t.cls = "keyword";
+      frame.listNext = true;
       frame.start = false;
     } else if (t.cls === "punct") {
       if (text === "=>") frame.value = true;

@@ -36,7 +36,7 @@ func TestLeftRecursionRetainsReachableSuffixes(t *testing.T) {
 		`{false}`, `$$`, `r1`, `operatorsRule_value`, `level(operatorsRule_value, lv)`,
 	} {
 		t.Run(prior, func(t *testing.T) {
-			p := compile(t, fmt.Sprintf("rule r1 = r2?\nrule r2 = ((\"a\" / r1 / \"\\n\") / %s / (r2 / $$)) #repeat(0, 1)\nrule operatorsRule_value = operators {\n    operand _\n    level lv { postfix \"!\" }\n}", prior))
+			p := compile(t, fmt.Sprintf("rule r1 = r2?\nrule r2 = ((\"a\" / r1 / \"\\n\") / %s / (r2 / $$)) #repeat(0, 1)\nrule operatorsRule_value = #operators {\n    operand _\n    level lv { postfix \"!\" }\n}", prior))
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				n, err := p.ParseWith("r2", "", ParseOptions{Backend: backend})
 				if err != nil || n.String() != `[nil]@r2` {

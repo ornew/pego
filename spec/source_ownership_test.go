@@ -266,18 +266,18 @@ var ownershipCorpus = []string{
 	"type W = { // w1\n B int\n}\n",
 	"type W = { /*a*/ // w1\n // w2\n B int\n}\n",
 	"type R = { /*a*/ // b\n A int }",
-	"rule e = operators {/*a*/ /*b*/ // c\n operand \"1\"\n}\n",
-	"rule e = operators { // o\n operand \"1\"\n level {/*a*/ // c\n infix left \"+\"\n }\n}\n",
+	"rule e = #operators {/*a*/ /*b*/ // c\n operand \"1\"\n}\n",
+	"rule e = #operators { // o\n operand \"1\"\n level {/*a*/ // c\n infix left \"+\"\n }\n}\n",
 	"type T = { /* x */ }\n",
 	"type T = { // x\n}\n",
 	"type T = { /* x */ A int /* y */ }",
 	"type T = node[string] // n\n// next\ntype U ~ T",
-	"rule x = operators { // open\n // skip\n skip \" \"* // skip trail\n // operand\n operand \"1\" => N{} // operand trail\n level l { // level open\n // p\n prefix \"-\" => N{} // p trail\n infix left \"+\" // i trail\n } // level trail\n}\n",
-	"rule x = operators {\n operand \"1\"; // a\n // b\n operand \"2\" // c\n // d\n}\n",
-	"rule x = operators { skip \" \"; operand \"a\"; level { infix left \"+\" ; postfix \"!\" } }",
-	"rule x = operators {\n level { // c\n }\n}",
-	"rule x = operators {\n operand \"1\" // a\n} #ignorecase // after\n// next\nrule y = \"a\"i // b\n",
-	"rule x = operators { operand \"1\" } /* a */ #ignorecase /* b */ => ...\n",
+	"rule x = #operators { // open\n // skip\n skip \" \"* // skip trail\n // operand\n operand \"1\" => N{} // operand trail\n level l { // level open\n // p\n prefix \"-\" => N{} // p trail\n infix left \"+\" // i trail\n } // level trail\n}\n",
+	"rule x = #operators {\n operand \"1\"; // a\n // b\n operand \"2\" // c\n // d\n}\n",
+	"rule x = #operators { skip \" \"; operand \"a\"; level { infix left \"+\" ; postfix \"!\" } }",
+	"rule x = #operators {\n level { // c\n }\n}",
+	"rule x = #operators {\n operand \"1\" // a\n} #ignorecase // after\n// next\nrule y = \"a\"i // b\n",
+	"rule x = #operators { operand \"1\" } /* a */ #ignorecase /* b */ => ...\n",
 	"rule x = \"a\" => N{A: 1, // a1\n // lead b\n B: 2 /* b */, /* c */ C: 3} // after",
 	"rule x = \"a\" => N{ // open\n A: 1 // a\n , // comma\n B: 2 // b\n // end\n}",
 	"rule x = \"a\" => N{A: 1,}\n",
@@ -314,7 +314,7 @@ var ownershipCorpus = []string{
 	"rule a = b => N{\n // l\n A: 1 /* a */, // b\n B: 2 // c\n // end\n}\n",
 	"rule a = b => []N{ // open\n}\nrule c = b => []N{\n // l\n 1 /* a */, 2\n}[0]\n",
 	"rule a = b => (1 /* a */, 2 /* b */,)\n",
-	"rule a = operators {\n operand /* a */ b /* b */ => /* c */ N{} /* d */\n level { infix /* e */ left /* f */ \"+\" /* g */ }\n}\n",
+	"rule a = #operators {\n operand /* a */ b /* b */ => /* c */ N{} /* d */\n level { infix /* e */ left /* f */ \"+\" /* g */ }\n}\n",
 }
 
 func TestCanonicalOwnerParity(t *testing.T) {
@@ -406,8 +406,8 @@ var emptyStatements = []string{
 	"package p // t\n; // t2\nrule a = \"x\"",
 	"type T = { A int\n; B int }",
 	"rule a = {x\n; y}",
-	"rule x = operators { operand \"1\";; operand \"2\" }",
-	"rule x = operators { level { infix left \"+\" // c\n; postfix \"!\" } }",
+	"rule x = #operators { operand \"1\";; operand \"2\" }",
+	"rule x = #operators { level { infix left \"+\" // c\n; postfix \"!\" } }",
 }
 
 func TestEmptyStatementsAreRejected(t *testing.T) {

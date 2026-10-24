@@ -25,7 +25,7 @@ func TestOperatorsRuleStopSelectionStatus(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			ast, err := pego.ParseGrammar(`rule main = e $$
-rule e = operators { skip " "*; operand "a"; ` + c.levels + ` }`)
+rule e = #operators { skip " "*; operand "a"; ` + c.levels + ` }`)
 			if err != nil {
 				t.Fatal(err)
 			}

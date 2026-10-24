@@ -53,7 +53,7 @@ func TestGeneratedTSWorkControlOperatorsRuleCapturePreservation(t *testing.T) {
  type Op = { Token node[string] }
  type Box = { Token node[string]; Rhs Expr }
  type Expr ~ Word | Box
- rule main Expr = operators {
+ rule main Expr = #operators {
   operand word
   level { prefix ` + sequence + ` => Box{Token:$c0,Rhs:$rhs} }
  }
@@ -163,7 +163,7 @@ type Box = {
 
 type Expr ~ Word | Box
 
-rule main Expr = operators {
+rule main Expr = #operators {
     operand word
     level {
         prefix (bad #repeat(512) #atomic) => Box{Token: $op, Rhs: $rhs}

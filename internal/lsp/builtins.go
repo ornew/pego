@@ -60,6 +60,8 @@ var pragmas = []builtin{
 		doc: "Matches the wrapped input as one string node without building child values."},
 	{name: "cut", signature: "#cut", snippet: "cut",
 		doc: "Stands in place of an expression and commits the innermost enclosing choice of the rule to the current alternative."},
+	{name: "operators", signature: "#operators { ... }", snippet: "operators {\n\toperand $1\n}",
+		doc: "Declares an Operators Rule: the whole body of a rule, parsing expressions from operands and operators at binding levels."},
 	{name: "repeat", signature: "#repeat(min,max)", snippet: "repeat(${1:min},${2:max})",
 		doc: "Repeats the preceding expression. One count is exact; an omitted bound is zero or unbounded."},
 	{name: "missing", signature: "#missing", snippet: "missing",
@@ -72,8 +74,6 @@ var pragmas = []builtin{
 
 // Keywords offered by completion where a parsing expression or a definition may start.
 var statementKeywords = []string{"rule", "type", "var"}
-
-var bodyKeywords = []string{"operators"}
 
 var operatorsRuleKeywords = []string{"skip", "operand", "level", "prefix", "postfix", "infix"}
 

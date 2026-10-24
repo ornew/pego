@@ -21,8 +21,8 @@ func TestReservedIdentifierPrefix(t *testing.T) {
 		`rule main = v1:"x" => map($v1, (_item) => _item)`,
 		`rule main = v1:"x" => map($v1, (_) => $v1)`,
 		`rule main = level(expr, _tight)`,
-		`rule expr = operators { operand "x"; level _tight { postfix "!" } }`,
-		`rule expr = operators { operand "x"; level _ { postfix "!" } }`,
+		`rule expr = #operators { operand "x"; level _tight { postfix "!" } }`,
+		`rule expr = #operators { operand "x"; level _ { postfix "!" } }`,
 	} {
 		t.Run(src, func(t *testing.T) {
 			g, err := Parse(src)
@@ -45,7 +45,7 @@ func TestReservedIdentifierPrefix(t *testing.T) {
 	// A rule name may begin with an underscore, which hides the rule.
 	for _, src := range []string{`rule _main = "x"`, `rule main = _helper
 rule _helper = "x"`, `rule main = level(_expr, tight)
-rule _expr = operators { operand "x"; level tight { postfix "!" } }`} {
+rule _expr = #operators { operand "x"; level tight { postfix "!" } }`} {
 		g, err := Parse(src)
 		if err != nil {
 			t.Fatalf("%s: %v", src, err)

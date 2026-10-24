@@ -106,7 +106,7 @@ func TestDefaultValueOperatorsRule(t *testing.T) {
 		"type Num = { Text string }",
 		"type Bin = { L node[_]; R node[_] }",
 		"rule main = e $$",
-		"rule e = operators {",
+		"rule e = #operators {",
 		"    operand t:([0-9]+) #atomic => Num{Text: text($t)}",
 		"    operand \"(\" x:e \")\" => $x",
 		"    level add { infix left \"+\" => Bin{L: $lhs, R: $rhs} }",
@@ -117,7 +117,7 @@ func TestDefaultValueOperatorsRule(t *testing.T) {
 	)
 	stripped := lines(
 		"rule main = e $$",
-		"rule e = operators {",
+		"rule e = #operators {",
 		"    operand t:([0-9]+) #atomic",
 		"    operand \"(\" x:e \")\"",
 		"    level add { infix left \"+\" }",

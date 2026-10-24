@@ -13,7 +13,7 @@ func TestGeneratedRuleBodiesAreSpecialized(t *testing.T) {
 	g, err := parseTest(`type Text = { Text string }
 rule main Text = (a:("a"* #atomic) "b") #recover(skip="?") => Text{Text: text($a)}
 rule recursive Text = t:(recursive "+" "a" / "a") #atomic => Text{Text: text($t)}
-rule expr Text = operators {
+rule expr Text = #operators {
  operand main
  level sum { infix left "+" => $lhs }
 }`)

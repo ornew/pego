@@ -55,7 +55,7 @@ rule part W = t:("a") #atomic => W{Text: text($t)}`, "!", `check(count("part","e
 type B = { Left Expr; Right Expr }
 type Expr ~ W | B
 rule main Expr = l:level(expr, product) "+" r:expr => B{Left:$l,Right:$r}
-rule expr Expr = operators {operand num;level sum {infix left "+" => B{Left:$lhs,Right:$rhs}};level product {infix left "*" => B{Left:$lhs,Right:$rhs}}}
+rule expr Expr = #operators {operand num;level sum {infix left "+" => B{Left:$lhs,Right:$rhs}};level product {infix left "*" => B{Left:$lhs,Right:$rhs}}}
 rule num W = t:([0-9]+) #atomic => W{Text: text($t)}`, "1+2*3", `check(events.some(e=>e.rule==="expr"&&e.kind==="enter"&&e.level>0),"named level");`},
 		{"unicode", `type W = { Text string }
 rule main W = t:(part part) #atomic => W{Text: text($t)}

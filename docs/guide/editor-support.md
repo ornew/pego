@@ -181,7 +181,7 @@ everything it supports in its reply to `initialize`, and uses UTF-16 positions, 
 - Inferred types, type errors and other compile errors appear only when the file has no syntax error. A file with a
   syntax error is not compiled, because the definitions the parser skipped would show up as undefined everywhere.
 - While the file has syntax errors, rename is refused, and navigation and hover work for the definitions that parse.
-  After an error, the parser skips to the next `rule`, `operators`, or `type`
+  After an error, the parser skips to the next `rule` or `type`
 keyword, so one broken definition does not hide later Declaration Statements.
 - Captures (`$name`), Operators Rule level names and lambda parameters cannot be navigated to or renamed. Completion after `$`
   lists the labels of the whole definition, but not those that the action cannot read: an [inline

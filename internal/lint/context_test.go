@@ -137,7 +137,7 @@ func TestRunContextOrdinaryParity(t *testing.T) {
 	for _, source := range []string{
 		lintManyRules(),
 		"// lint:ignore shadowed-alternative reason\nrule main = \"a\" / \"ab\"",
-		`rule main = operators { operand [0-9]; level sum { infix left "+" } }`,
+		`rule main = #operators { operand [0-9]; level sum { infix left "+" } }`,
 		`rule main = "" / "a"`,
 		`rule main = ("a" #cut "b") / ""`,
 	} {

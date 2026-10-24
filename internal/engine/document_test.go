@@ -20,7 +20,7 @@ rule list = list "," item / item
 rule item = [a-z]+ #atomic
 rule pos Pos = "@" n:name => Pos{At: $n.Start, Name: $n}
 rule name = [a-z]+ #atomic
-rule expr = operators {
+rule expr = #operators {
     operand [0-9]+ #atomic
     operand "(" x:expr ")" => $x
     level { infix left "+" / "-" }

@@ -74,7 +74,7 @@ rule item = ("a" #atomic ";") #recover(skip=[^;]+ ";")`
 func TestRecoverInLookahead(t *testing.T) {
 	check(t, `rule main = r1 "ab" / r1 _
 rule r1 = &p0 p0
-rule p0 = operators {
+rule p0 = #operators {
     operand "a"
     operand "(" p0 ")"
     level { postfix "!" ";" #recover(skip=[^;]* ";") }
@@ -151,7 +151,7 @@ func TestRecoveryPragmaSyntaxErrors(t *testing.T) {
 // reported.
 func TestRecoverInOperatorsRuleOperator(t *testing.T) {
 	prog := compile(t, `rule main = e $$
-rule e = operators {
+rule e = #operators {
     operand [0-9]+ #atomic
     level { postfix "(" [0-9]+ #recover(skip=[^)\n]+) #atomic ")" }
 }`)

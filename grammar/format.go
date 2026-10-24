@@ -448,7 +448,7 @@ func (p *printer) ruleDef(r *RuleDef) {
 	}
 	p.write(" = ")
 	if pr, attributed := RuleOperators(r.Expr); pr != nil {
-		p.write("operators ")
+		p.write("#operators ")
 		p.operatorsRule(pr, "")
 		if attributed != nil {
 			for _, a := range attributed.Attrs {

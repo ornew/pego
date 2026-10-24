@@ -260,7 +260,7 @@ rule inner = "b"* #stream
 // a level the rule lacks, or a level of a rule that has none, is an error.
 func TestCoreBuildCallLevels(t *testing.T) {
 	prog := coreProgram(t, `rule main = level(e, product) "+" e
-rule e = operators {
+rule e = #operators {
     operand [0-9]
     level sum { infix left "+" }
     level product { infix left "*" }

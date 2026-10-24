@@ -91,7 +91,7 @@ rule main = {x := (1); (x == 1)} "a"`,
 		`type T = { Text (string) }
 type Alias ~ (T)
 rule main (Alias) = n:([0-9]+) => (T{Text: (text($n))})`,
-		`rule main = operators { skip " "*; operand [0-9]+; operand "(" main ")"; level { infix left "+" / "-" } }`,
+		`rule main = #operators { skip " "*; operand [0-9]+; operand "(" main ")"; level { infix left "+" / "-" } }`,
 		`rule main = "a" @error(nil, "bad")`,
 		`rule main = "a" @error("a", message="b")`,
 		`rule main = "a" @atomic`,

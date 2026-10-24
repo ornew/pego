@@ -11,7 +11,7 @@ import (
 // time exponential in its length.
 func TestWalkHiddenCaptures(t *testing.T) {
 	prog := compileBare(t, `rule main = x
-rule x = operators {
+rule x = #operators {
     operand "x"
     level { prefix "-" }
 }`, Options{})
@@ -39,7 +39,7 @@ rule x = operators {
 // takes visits linear in its length.
 func TestWalkElementCaptures(t *testing.T) {
 	prog := compileBare(t, `rule main = x
-rule x = operators {
+rule x = #operators {
     operand "x"
     level { prefix "-" }
 }`, Options{SourceInfo: true})

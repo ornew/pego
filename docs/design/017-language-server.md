@@ -88,7 +88,7 @@ Each version of a document is analyzed once, when a request or a diagnostics not
 
 1. `syntax.Tokenize` splits the text into tokens, comments included, with their start and end positions.
 2. `syntax.ParsePartial` parses the text and returns the grammar even when there are errors.
-   The parser skips from an error to the next `rule`, `operators`, or `type` declaration, so the grammar holds every definition that parsed;
+   The parser skips from an error to the next `rule` or `type` declaration, so the grammar holds every definition that parsed;
    navigation, hover and symbols keep working in the rest of a file that has an error.
 3. If there is no syntax error, `engine.Compile` compiles and type checks the grammar, and `Program.RuleType` gives
    the declared or inferred type of each rule.

@@ -51,7 +51,7 @@ rule part W = t:("a") #atomic => W{Text: text($t)}`, input: "!", checks: `if cou
 type B = { Left Expr; Right Expr }
 type Expr ~ W | B
 rule main Expr = l:level(expr, product) "+" r:expr => B{Left:$l,Right:$r}
-rule expr Expr = operators {operand num;level sum {infix left "+" => B{Left:$lhs,Right:$rhs}};level product {infix left "*" => B{Left:$lhs,Right:$rhs}}}
+rule expr Expr = #operators {operand num;level sum {infix left "+" => B{Left:$lhs,Right:$rhs}};level product {infix left "*" => B{Left:$lhs,Right:$rhs}}}
 rule num W = t:([0-9]+) #atomic => W{Text: text($t)}`, input: "1+2*3", checks: `nested:=false;for _,e:=range events {if e.Rule=="expr"&&e.Kind==TraceEnter&&e.Level>0 {nested=true}};if !nested {t.Fatal("missing level",events)}`},
 		{name: "mixed", grammar: `type W = { Text string }
 rule main W = t:(part) #atomic => W{Text: text($t)}

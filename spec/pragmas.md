@@ -1,7 +1,7 @@
 # Pragmas
 
 A `#` pragma changes the behavior or structure of the immediately preceding
-expression, except `#cut`, which stands where an expression would. Pragmas apply from left to right in written order. Parenthesize a
+expression, except `#cut` and `#operators`, which stand where an expression would. Pragmas apply from left to right in written order. Parenthesize a
 sequence when a pragma should apply to the complete sequence rather than its
 final item. Character classes in square brackets are primary Rule Expression forms, not pragmas.
 Diagnostic and metadata `@` attributes are defined separately in
@@ -25,6 +25,7 @@ The name is adjacent to `#`, and an argument list is adjacent to its name:
 | `#atomic` | Returns one string node and suppresses construction of the values of the elements inside it |
 | `#ignorecase` | Makes the string literals written in the annotated expression case-insensitive, for ASCII letters; see [`#ignorecase`](#ignorecase) |
 | `#cut` | Stands in place of an expression and commits the enclosing choice; see [Cut](parser-expressions.md#cut). It takes no arguments: `#cut(` is an error |
+| `#operators { ... }` | Declares an [Operators Rule](operators-rule.md). It MUST be the whole body of a rule, with its `{` on the same line; anywhere else it is a syntax error |
 
 ## `#ignorecase`
 
@@ -56,7 +57,7 @@ An [Operators Rule](operators-rule.md) is the whole body of its rule, so the
 pragma follows its closing brace on the same line:
 
 ```pego
-rule expr = operators {
+rule expr = #operators {
     skip " "*
     operand "one" / [0-9]
     level { infix left "plus" }

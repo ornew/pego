@@ -40,7 +40,7 @@ func TestFixPositional(t *testing.T) {
 		{"rule main = (b) \"x\" => $1\nrule b = \"b\"", "rule main = b:(b) \"x\" => $b\nrule b = \"b\"", []string{"bx"}},
 		{"rule main = \"é\" \"b\" => $2", "rule main = \"é\" v2:\"b\" => $v2", []string{"éb"}},
 		{"type T struct { A Match }\nrule main T = \"a\" -- \"b\" => T{A: $2}", "type T = { A node[string] }\nrule main T = \"a\" #cut v2:\"b\" => T{A: $v2}", nil},
-		{"rule main = operators {\n    operand \"(\" main \")\" => $2\n    operand [0-9]\n    level { infix left \"+\" => list($lhs, $rhs) }\n}", "rule main = operators {\n    operand \"(\" main:main \")\" => $main\n    operand [0-9]\n    level { infix left \"+\" => list($lhs, $rhs) }\n}", []string{"1+(2+3)"}},
+		{"rule main = #operators {\n    operand \"(\" main \")\" => $2\n    operand [0-9]\n    level { infix left \"+\" => list($lhs, $rhs) }\n}", "rule main = #operators {\n    operand \"(\" main:main \")\" => $main\n    operand [0-9]\n    level { infix left \"+\" => list($lhs, $rhs) }\n}", []string{"1+(2+3)"}},
 	} {
 		got, err := syntax.Fix(tc.in)
 		if err != nil {

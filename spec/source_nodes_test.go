@@ -460,7 +460,7 @@ func (s *shaper) operators(n *pego.Node) {
 			s.t.Fatalf("unexpected operators item %s", it.Type())
 		}
 	}
-	s.created(s.span("OperatorsRule", n), nextToken(s.src, n.Start()+len("operators")))
+	s.created(s.span("OperatorsRule", n), nextToken(s.src, n.Start()+len("#operators")))
 }
 
 // Value expressions.

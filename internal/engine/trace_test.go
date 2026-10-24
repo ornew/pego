@@ -301,7 +301,7 @@ rule a = a "x" / "y"`,
 			// Operands are parsed by the OperatorsRule loop; a rule called with a level reports it.
 			name: "operatorsRule levels",
 			src: `rule main = level(e, sum) $$
-rule e = operators {
+rule e = #operators {
     operand n
     level { infix left "-" }
     level sum { infix left "+" }

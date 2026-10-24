@@ -15,7 +15,7 @@ var actionLifecycleCases = []genCase{
 	{"nil allocating action", nilActionStream, []string{"", "a", "aaa", "ab"}},
 	{"nil OperatorsRule action", `type V = { N int }
 rule main = e $$
-rule e = operators {
+rule e = #operators {
     operand "a" => foldl(nil, list(V{N: 1}), (acc, v) => nil)
     level { postfix "!" => foldl(nil, list(V{N: 2}), (acc, v) => nil) }
 }`, []string{"a", "a!", "a!!", "a?"}},

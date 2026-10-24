@@ -207,7 +207,7 @@ rule line = ^ [a-z]* #atomic $ "\n"`, []string{"ab\ncd\n", "ab\n\nc\n", "ab\nc",
 rule e = e "+" t / t
 rule t = [0-9]+ #atomic`, []string{"1+2;3;", "1+;", "1+2+3;4+5;"}},
 	{"operators elements", `rule main = (e ";") * #stream $$
-rule e = operators {
+rule e = #operators {
     operand [0-9]+ #atomic
     level { infix left "+" }
     level { prefix "-" }

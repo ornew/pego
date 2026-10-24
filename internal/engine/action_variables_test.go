@@ -19,14 +19,14 @@ rule leaf = "a"`, []string{"a", "ab", "ac", "ad"}},
 	{"operatorsRule operand action variables", `type V = { N int }
 var x int
 rule main = {x := 1} r "b" / {x := 2} r "c" / {x := 3} r "d" / {x := 4} r
-rule r = operators {
+rule r = #operators {
     operand leaf => V{N: x}
 }
 rule leaf = "a"`, []string{"a", "ab", "ac", "ad"}},
 	{"operatorsRule prefix action variables", `type V = { N int }
 var x int
 rule main = {x := 1} r "b" / {x := 2} r "c" / {x := 3} r "d" / {x := 4} r
-rule r = operators {
+rule r = #operators {
     operand leaf
     level { prefix "-" => V{N: x} }
 }
@@ -34,7 +34,7 @@ rule leaf = "a"`, []string{"-a", "-ab", "-ac", "-ad"}},
 	{"operatorsRule infix action variables", `type V = { N int }
 var x int
 rule main = {x := 1} r "b" / {x := 2} r "c" / {x := 3} r "d" / {x := 4} r
-rule r = operators {
+rule r = #operators {
     operand leaf
     level { infix left "+" => V{N: x} }
 }
@@ -42,7 +42,7 @@ rule leaf = "a"`, []string{"a+a", "a+ab", "a+ac", "a+ad"}},
 	{"operatorsRule postfix action variables", `type V = { N int }
 var x int
 rule main = {x := 1} r "b" / {x := 2} r "c" / {x := 3} r "d" / {x := 4} r
-rule r = operators {
+rule r = #operators {
     operand leaf
     level { postfix "!" => V{N: x} }
 }

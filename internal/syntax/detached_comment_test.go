@@ -13,8 +13,8 @@ func TestFormatKeepsDetachedCommentAfterBrace(t *testing.T) {
 		name, src string
 	}{
 		{"in a struct", "type T = {\n\n    // t4\n\n    A int\n}\n"},
-		{"in an operators rule", "rule r = operators {\n\n    // t4\n\n    skip \" \"\n}\n"},
-		{"in a level", "rule r = operators {\n    level {\n\n        // t4\n\n        infix left \"+\"\n    }\n}\n"},
+		{"in an operators rule", "rule r = #operators {\n\n    // t4\n\n    skip \" \"\n}\n"},
+		{"in a level", "rule r = #operators {\n    level {\n\n        // t4\n\n        infix left \"+\"\n    }\n}\n"},
 		{"in a block", "rule r = \"a\" {\n\n    // t4\n\n    x := 1\n}\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -33,8 +33,8 @@ func TestFormatJSONKeepsDetachedParagraphs(t *testing.T) {
 	}{
 		{"fields", "type T = {\n    A int\n\n    // r5\n\n    B string\n}\n"},
 		{"first field", "type T = {\n\n    // r5\n\n    A int\n}\n"},
-		{"operands", "rule r = operators {\n    operand \"n\"\n\n    // r5\n\n    operand \"m\"\n}\n"},
-		{"operators", "rule r = operators {\n    level {\n        infix left \"+\"\n\n        // r5\n\n        infix left \"-\"\n    }\n}\n"},
+		{"operands", "rule r = #operators {\n    operand \"n\"\n\n    // r5\n\n    operand \"m\"\n}\n"},
+		{"operators", "rule r = #operators {\n    level {\n        infix left \"+\"\n\n        // r5\n\n        infix left \"-\"\n    }\n}\n"},
 		{"trailing over lines", "rule r = \"a\" // s1\n// t1\nrule q = \"b\"\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

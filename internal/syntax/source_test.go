@@ -146,7 +146,7 @@ func TestSourceDeclarationChildren(t *testing.T) {
 }
 
 
-rule main = operators {
+rule main = #operators {
  // skip
  skip " "*; // skip tail
  // operand

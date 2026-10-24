@@ -45,7 +45,7 @@ rule main =  (assign / blank)* $$
 rule assign =  n:name " = " e:expr "\n"
 rule name =  [a-z_]+ #atomic
 rule blank =  "\n"
-rule expr = operators {
+rule expr = #operators {
     operand [0-9]+ #atomic
     operand "(" x:expr ")" => $x
     level { infix left "+" / "-" }

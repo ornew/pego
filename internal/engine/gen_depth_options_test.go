@@ -77,7 +77,7 @@ rule main Word = t:(n) #atomic => Word{Text: text($t)}
 rule n Word = t:(n "+" "é" / "(" n ")" / "é") #atomic => Word{Text: text($t)}`, []string{"é", "é+é+é", "(é)", "((é+é))", "é+", "?"}},
 		{"OperatorsRule", `type Word = { Text string }
 rule main Word = t:(n) #atomic => Word{Text: text($t)}
-rule n Word = operators {
+rule n Word = #operators {
     operand w:base => $w
     operand "(" w:n ")" => $w
     level { prefix "-" => $rhs }

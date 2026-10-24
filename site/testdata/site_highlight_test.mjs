@@ -137,13 +137,13 @@ test("TypeScript highlighting preserves ordinary identifiers and source text", (
 
 test("PEGO highlighting follows expressions, pragmas and nested comments", () => {
   const source = 'rule main Result = "/*" [#] {n := 1} @error(message="x") #atomic => Result{}\n'
-    + '/* outer\n/* inner */ tail */\nrule expr = operators { operand main } // line\n';
+    + '/* outer\n/* inner */ tail */\nrule expr = #operators { operand main } // line\n';
   const tokens = tokenize(source, "pego");
   const words = cls => tokens.filter(t => t.cls === cls).map(t => source.slice(t.from, t.to));
   assert.deepEqual(words("comment"), ['/* outer\n/* inner */ tail */', '// line']);
   assert.deepEqual(words("attr"), ['@error', '#atomic']);
   assert.deepEqual(words("rule"), ['main', 'expr']);
-  assert.ok(words("keyword").includes('operators'));
+  assert.ok(words("keyword").includes('#operators'));
   assert.ok(words("punct").includes(':='));
   assert.ok(words("punct").includes('{'));
   assert.ok(words("type").includes('Result'));
@@ -166,7 +166,7 @@ test("PEGO highlighting restricts identifiers to ASCII", () => {
 
 
 test("PEGO words are contextual and action braces restore PEG context", () => {
-  const source = 'rule type = "x"\nrule main = type type:operand {type := 1} => {type; Result{}}\nrule expr = operators { operand type; level prefix { infix left "+" => Result{} }; level { prefix type } }';
+  const source = 'rule type = "x"\nrule main = type type:operand {type := 1} => {type; Result{}}\nrule expr = #operators { operand type; level prefix { infix left "+" => Result{} }; level { prefix type } }';
   const tokens = tokenize(source, "pego");
   const words = (cls) => tokens.filter((t) => t.cls === cls).map((t) => source.slice(t.from,t.to));
   assert.ok(words("rule").includes("type"));

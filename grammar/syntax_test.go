@@ -16,7 +16,7 @@ package sample
 
 type Node = { Text node[string] }
 rule main Node = {count:=0} x:((v1:"a" => Node{Text: $v1}) #repeat(2, 3) #atomic @error(message="a") #recover(skip=";")) #stream => Node{Text: $x}
-rule expr Node = operators {
+rule expr Node = #operators {
  skip " "*
  operand "x" @error(message="x") => Node{}
  level { infix left "+" => Node{} }

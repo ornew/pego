@@ -36,7 +36,7 @@ const typedFrameLayoutOperatorsRuleWorkload = `type Atom = { Text string }
 type Post = { X Expr; Items []node[string]; N int; Missing *node[string] }
 type Expr ~ Atom | Post
 rule main Expr = e:expr $$ => $e
-rule expr Expr = operators {
+rule expr Expr = #operators {
     skip " "*
     operand atom
     level {

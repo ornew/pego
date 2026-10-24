@@ -12,7 +12,7 @@ import (
 	"github.com/ornew/pego/sample"
 )
 
-const sampleRHSLevels = `rule e = operators {
+const sampleRHSLevels = `rule e = #operators {
     operand "a"
     level { prefix "~"; infix left "!" }
 }`
@@ -26,72 +26,72 @@ func TestSampleOperatorsRuleIncompleteRHS(t *testing.T) {
 		{"nested incomplete prefix", `e "!~~"`, sampleRHSLevels, "a!~~", true, false},
 		{"complete prefix", "e", sampleRHSLevels, "a!~a", true, false},
 		{"nested complete prefix", "e", sampleRHSLevels, "a!~~a", true, false},
-		{"fallback operand", "e", `rule e = operators {
+		{"fallback operand", "e", `rule e = #operators {
     operand "a" / "~"
     level { prefix "~"; infix left "!" }
 }`, "a!~", true, false},
-		{"longest prefix", "e", `rule e = operators {
+		{"longest prefix", "e", `rule e = #operators {
     operand "a"
     level { prefix "~"; prefix "~~"; infix left "!" }
 }`, "a!~~a", true, false},
-		{"longest failed prefix", `e "!~~x"`, `rule e = operators {
+		{"longest failed prefix", `e "!~~x"`, `rule e = #operators {
     operand "a" / "~x"
     level { prefix "~"; prefix "~~"; infix left "!" }
 }`, "a!~~x", true, false},
-		{"named entry incomplete", `level(e, tight) "!~"`, `rule e = operators {
+		{"named entry incomplete", `level(e, tight) "!~"`, `rule e = #operators {
     operand "a"
     level { prefix "~" }
     level tight { infix left "!" }
 }`, "a!~", true, false},
-		{"named entry complete", "level(e, tight)", `rule e = operators {
+		{"named entry complete", "level(e, tight)", `rule e = #operators {
     operand "a"
     level { prefix "~" }
     level tight { infix left "!" }
 }`, "a!~a", true, false},
-		{"Unicode trivia", "e", `rule e = operators {
+		{"Unicode trivia", "e", `rule e = #operators {
     skip " "*
     operand "α"
     level { prefix "¬"; infix left "!" }
 }`, "α ! ¬ α", true, false},
-		{"nullable operand", "e", `rule e = operators {
+		{"nullable operand", "e", `rule e = #operators {
     operand "a" / ""
     level { prefix "~"; infix left "!" }
 }`, "a!~", true, false},
-		{"consuming nullable prefix", `e "!~"`, `rule e = operators {
+		{"consuming nullable prefix", `e "!~"`, `rule e = #operators {
     operand "a"
     level { prefix "~"?; infix left "!" }
 }`, "a!~", true, false},
-		{"empty infix", "e", `rule e = operators {
+		{"empty infix", "e", `rule e = #operators {
     operand ""
     level { infix left "" }
 }`, "", true, false},
-		{"later tighter cut", `e "!a*x"`, `rule e = operators {
+		{"later tighter cut", `e "!a*x"`, `rule e = #operators {
     operand "a"
     level { infix left "!" }
     level { infix left "*" #cut "b" }
 }`, "a!a*x", true, false},
-		{"cut first tie caller", `e "!~"`, `rule e = operators {
+		{"cut first tie caller", `e "!~"`, `rule e = #operators {
     operand "a" / "~"
     level { prefix "~" #cut; prefix "~"; infix left "!" }
 }`, "a!~", true, false},
-		{"plain first tie fallback", "e", `rule e = operators {
+		{"plain first tie fallback", "e", `rule e = #operators {
     operand "a" / "~"
     level { prefix "~"; prefix "~" #cut; infix left "!" }
 }`, "a!~", true, false},
-		{"outer cut cannot stop", `e "!~"`, `rule e = operators {
+		{"outer cut cannot stop", `e "!~"`, `rule e = #operators {
     operand "a"
     level { prefix "~"; infix left "!" #cut }
 }`, "a!~", false, false},
 		{"complete RHS cannot stop", `e "!~a"`, sampleRHSLevels, "a!~a", false, true},
-		{"nullable complete cannot stop", `e "!~"`, `rule e = operators {
+		{"nullable complete cannot stop", `e "!~"`, `rule e = #operators {
     operand "a" / ""
     level { prefix "~"; infix left "!" }
 }`, "a!~", false, true},
-		{"cut first tie rejects fallback", "e", `rule e = operators {
+		{"cut first tie rejects fallback", "e", `rule e = #operators {
     operand "a" / "~"
     level { prefix "~" #cut; prefix "~"; infix left "!" }
 }`, "a!~", false, false},
-		{"plain first tie consumes RHS", `e "!~"`, `rule e = operators {
+		{"plain first tie consumes RHS", `e "!~"`, `rule e = #operators {
     operand "a" / "~"
     level { prefix "~"; prefix "~" #cut; infix left "!" }
 }`, "a!~", false, false},

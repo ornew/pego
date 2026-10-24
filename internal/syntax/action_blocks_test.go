@@ -53,8 +53,8 @@ func TestActionBlocksSource(t *testing.T) {
 func TestStatementNewlines(t *testing.T) {
 	for _, src := range []string{
 		"rule a =\n b", "rule a = b\n c", "rule a = b\n => 1",
-		"rule a = b =>\n 1", "rule a = operators {\n operand a\n b\n}",
-		"rule a = operators {\n operand a\n => 1\n}",
+		"rule a = b =>\n 1", "rule a = #operators {\n operand a\n b\n}",
+		"rule a = #operators {\n operand a\n => 1\n}",
 		"rule a = {x :=\n 1}", "rule a = {x\n + 1}",
 	} {
 		if _, err := Parse(src); err == nil {
@@ -65,7 +65,7 @@ func TestStatementNewlines(t *testing.T) {
 		"rule a = (\n b\n c\n)",
 		"  rule a = b\n\trule b = c", "rule a = b; rule b = c",
 		"rule a = b => (\n 1 +\n 2\n)",
-		"rule a = operators {\n operand (\n a\n b\n) => (\n 1\n)\n level { infix left (\n \"+\" / \"-\"\n) }\n}",
+		"rule a = #operators {\n operand (\n a\n b\n) => (\n 1\n)\n level { infix left (\n \"+\" / \"-\"\n) }\n}",
 		"rule a = {x := (\n 1 +\n 2\n)}",
 	} {
 		if _, err := Parse(src); err != nil {
@@ -104,7 +104,7 @@ func TestGroupedMultilineTypeExpressions(t *testing.T) {
 
 func TestUnnamedOperatorsLevels(t *testing.T) {
 	src := `rule main = level(expr, named)
-rule expr = operators {
+rule expr = #operators {
  operand "x"
  level { infix left "+" }
  level named { infix left "*" }
@@ -159,7 +159,7 @@ func TestMalformedExpressionsReturnErrors(t *testing.T) {
 }
 
 func TestOperatorsGroupedComments(t *testing.T) {
-	src := `rule main = operators { skip (/* skip */ " "*); operand (/* operand */ "x"); level { infix left (/* operator */ "+") } }`
+	src := `rule main = #operators { skip (/* skip */ " "*); operand (/* operand */ "x"); level { infix left (/* operator */ "+") } }`
 	for i := 0; i < 2; i++ {
 		g, err := Parse(src)
 		if err != nil {

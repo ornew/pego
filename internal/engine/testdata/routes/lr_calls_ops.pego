@@ -2,7 +2,7 @@
 // actions read the leaders' captures through text().
 rule main string = e:lst $$ => $e
 rule lst string = (l:lst ";" o:ops => $l + ";" + text($o)) / (o:ops => $o)
-rule ops string = operators {
+rule ops string = #operators {
     skip " "*
     operand "[" s:lst "]" => "[" + text($s) + "]"
     operand p:path => text($p)

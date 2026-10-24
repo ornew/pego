@@ -39,7 +39,7 @@ type Prefix = { X Expr; Tag int; Text node[string] }
 type Expr ~ Atom | Prefix
 var n int
 rule main Expr = {n := 0} e:expr $$ => $e
-rule expr Expr = operators {
+rule expr Expr = #operators {
     skip (" " #cut "!")*
     operand x:"a" #atomic #cut => Prefix{X: Atom{Text: "a"}, Tag: n, Text: $x}
     operand x:"-x" #atomic #cut => Prefix{X: Atom{Text: "-x"}, Tag: n, Text: $x}

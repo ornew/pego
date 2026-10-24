@@ -136,7 +136,7 @@ rule guarded = !hidden leaf
 rule recovered = leaf #recover(skip=hidden)
 rule missing = absent
 rule independent = "independent"
-rule expr = operators {
+rule expr = #operators {
     operand leaf
     level { infix left "+" }
     level mul { infix left "*" }

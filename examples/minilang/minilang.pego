@@ -56,7 +56,7 @@ rule exprStmt ExprStmt = x:expr ws ";" => ExprStmt{X: $x}
 // When no expression is found, report a message instead of the list of expected alternatives.
 rule expr Expr = e:operation @error(message="expected an expression") => $e
 
-rule operation Expr = operators {
+rule operation Expr = #operators {
     skip ws
     operand number
     operand string

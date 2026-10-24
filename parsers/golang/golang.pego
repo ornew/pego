@@ -504,7 +504,7 @@ rule starExpr StarExpr = "*" !"=" -ws x:unaryExpr => StarExpr{X: $x}
 // go/parser allows only after a name, a selector, an index or an array, struct or map type: the
 // other operands and suffixes do not match before a "{" (any "{" after them would be an error).
 rule primaryExpr Expr = o:primaryOperand !(-sp [.\[({]) / o:operatorsExpr => $o
-rule operatorsExpr Expr = operators {
+rule operatorsExpr Expr = #operators {
     skip sp
     operand primaryOperand
     level {
@@ -541,7 +541,7 @@ rule elementValue Expr = elidedLit / expr
 rule elidedLit CompositeLit = v:litValue => CompositeLit{Elts: $v}
 
 // go and defer: the same, except that a call followed by the end of the statement is not applied.
-rule goPrimary Expr = operators {
+rule goPrimary Expr = #operators {
     skip sp
     operand primaryOperand
     level {
@@ -590,7 +590,7 @@ rule hstarExpr StarExpr = "*" !"=" -ws x:hunaryExpr => StarExpr{X: $x}
 // Only array, struct and map types take a composite literal here. A parenthesized one followed by
 // "{" is an error in go/parser, not the end of the header.
 rule hprimaryExpr Expr = o:hoperand !(-sp [.\[(]) / o:hoperatorsExpr => $o
-rule hoperatorsExpr Expr = operators {
+rule hoperatorsExpr Expr = #operators {
     skip sp
     operand hoperand
     level {
@@ -610,7 +610,7 @@ rule compositeLitH CompositeLit = t:(arrayType / structType / mapType) -sp v:lit
 rule parenCompositeType = "(" -ws (parenCompositeType / arrayType / structType / mapType) -sp ")"
 
 // The type switch guard: the same, except that .(type) before "{" is not applied.
-rule guardPrimary Expr = operators {
+rule guardPrimary Expr = #operators {
     skip sp
     operand hoperand
     level {

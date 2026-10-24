@@ -129,7 +129,7 @@ func TestIgnoreCaseExpectations(t *testing.T) {
 // annotated expression of an Operators Rule.
 func TestIgnoreCaseOperatorsRule(t *testing.T) {
 	src := `rule main = e:expr $$
-rule expr = operators {
+rule expr = #operators {
     operand [0-9]
     level { infix left "plus"i }
 }
@@ -152,7 +152,7 @@ rule expr = operators {
 // accepted only as that pragma.
 func TestIgnoreCaseOperatorsRulePragma(t *testing.T) {
 	src := `rule main = e:expr $$
-rule expr = operators {
+rule expr = #operators {
     skip " "*
     operand "one" / [0-9]
     level { infix left "plus" }
@@ -178,8 +178,8 @@ rule expr = operators {
 		t.Fatalf("without the pragma: got %s, want error", got)
 	}
 	for _, bad := range []string{
-		"rule expr = operators { operand [0-9] } #atomic\n",
-		"rule expr = operators { operand [0-9] } #missing\n",
+		"rule expr = #operators { operand [0-9] } #atomic\n",
+		"rule expr = #operators { operand [0-9] } #missing\n",
 	} {
 		if _, err := parseTest("rule main = expr $$\n" + bad); err == nil || !strings.Contains(err.Error(), "only #ignorecase may follow an Operators Rule") {
 			t.Fatalf("%q: got error %v", bad, err)

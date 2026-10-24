@@ -35,8 +35,8 @@ var nodeBases = []string{
 	"rule a = b => x < y == z\n",
 	"type T = { A []int; B *string; C (int, string); D {E int}; F A | B & C; G node[X]; H _|_ }\n",
 	"type U ~ A | B | C\ntype V = node[T]\ntype W ~ (A)\n",
-	"type T = {/*a*/ // b\n A int\n}\nrule e = operators { // c\n operand \"1\"\n level { // d\n infix left \"+\" }\n}\n",
-	"rule a = operators {\n skip \" \"\n operand \"1\" => N{}\n level l { prefix \"-\" => N{}\n infix left \"+\" b; postfix \"!\" }\n}\n",
+	"type T = {/*a*/ // b\n A int\n}\nrule e = #operators { // c\n operand \"1\"\n level { // d\n infix left \"+\" }\n}\n",
+	"rule a = #operators {\n skip \" \"\n operand \"1\" => N{}\n level l { prefix \"-\" => N{}\n infix left \"+\" b; postfix \"!\" }\n}\n",
 	"rule a []T = x\n",
 	"rule a = b => {x; y := 2\n z}\n",
 	"rule a = b => N{A: x, B: y,}\n",
@@ -44,7 +44,7 @@ var nodeBases = []string{
 	"type T = {\n A int; // a\n B int;\n}\ntype U ~ A\n",
 	"rule a = (\n x // t\n / y\n)* z\n",
 	"rule a = b => (i) => N{A: i} + map(list($x), (j) => j) + $x.(*[]int) + x[0][1]\n",
-	"rule e = operators {\n operand \"1\"\n level a {\n prefix \"-\" ;\n infix left \"+\" ; infix right \"^\"\n}\n} => ...\n",
+	"rule e = #operators {\n operand \"1\"\n level a {\n prefix \"-\" ;\n infix left \"+\" ; infix right \"^\"\n}\n} => ...\n",
 	"rule a = x:y* @error(message=\"x\") @a() @b(nil) @c(1,)\n",
 	"rule a = \"😀\" 😀? // ß\n",
 	"rule a = b => N{\n A: 1, // a\n B: 2 // b\n} // n\n",
@@ -55,7 +55,7 @@ var nodeBases = []string{
 	"rule a = \"x\"i \"y\"i? (\"z\")i b\nrule i = \"x\"i #missing\n",
 	"rule a = (\"x\" / b \"y\") #ignorecase #atomic\nrule b = \"x\" #missing #ignorecase\n",
 	"rule a = \"x\" #ignorecase \"y\" @foo #ignorecase c #missing\n",
-	"rule e = operators {\n operand \"1\"\n level l { infix left \"+\" }\n} #ignorecase\nrule f = operators { operand \"2\" } /* c */ #ignorecase => ...\n",
+	"rule e = #operators {\n operand \"1\"\n level l { infix left \"+\" }\n} #ignorecase\nrule f = #operators { operand \"2\" } /* c */ #ignorecase => ...\n",
 }
 
 // TestCanonicalVarTrailingComment checks that the comment after a variable declaration without a

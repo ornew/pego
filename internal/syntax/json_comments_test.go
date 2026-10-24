@@ -27,7 +27,7 @@ rule main = a:"a" => T{A: 1, B: "x"} // trailing main
 /* Leading of other. */
 rule other = "x" // trailing other
 
-rule ops = operators {
+rule ops = #operators {
     // leading skip
     skip " " // trailing skip
     // leading operand

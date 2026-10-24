@@ -91,7 +91,7 @@ func TestInferenceKeepsLargeFiniteRecursiveTypes(t *testing.T) {
 func TestInferenceOperatorsRuleImplicitDependencies(t *testing.T) {
 	p := compile(t, `type P = {}
 rule main = expression
-rule expression = operators {
+rule expression = #operators {
     operand "a"
     level { postfix "!" => list($lhs) }
 }

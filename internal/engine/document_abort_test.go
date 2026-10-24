@@ -18,7 +18,7 @@ rule x N = t:(x "a" / "a") #atomic => N{X: 1 / (2 - len($t))}`, "aa", "aaa", "di
 rule x = x "a" / nested
 rule nested = "(" nested ")" / "a"`, "((a))", "a", "nesting too deep", 3},
 		{"OperatorsRule depth", `rule main = e $$
-rule e = operators {
+rule e = #operators {
     operand "x"
     level { prefix "-" }
 }`, "---x", "x", "nesting too deep", 4},

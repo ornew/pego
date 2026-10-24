@@ -64,7 +64,7 @@ rule first = "a"
 rule second = "b"`, "!", `if count("first",TraceSkipped)!=1 || count("second",TraceSkipped)!=1 {t.Fatal(events)}`},
 		{"operators", `rule main = level(expr, product) "+" expr
 rule num = [0-9]+
-rule expr = operators {operand num;level sum {infix left "+"};level product {infix left "*"}}`, "1+2*3", `nested:=false;for _,e:=range events {if e.Rule=="expr"&&e.Kind==TraceEnter&&e.Level>0 {nested=true}};if !nested {t.Fatal("missing binding levels",events)}`},
+rule expr = #operators {operand num;level sum {infix left "+"};level product {infix left "*"}}`, "1+2*3", `nested:=false;for _,e:=range events {if e.Rule=="expr"&&e.Kind==TraceEnter&&e.Level>0 {nested=true}};if !nested {t.Fatal("missing binding levels",events)}`},
 		{"actions", `type N = { Text string }
 rule main N = a:token {len($a) > 0} => N{Text: text($a)}
 rule token = [a-z]+`, "abc", `if count("token",TraceEnter)!=1 {t.Fatal(events)}`},

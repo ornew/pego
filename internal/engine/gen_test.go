@@ -72,7 +72,7 @@ rule ds = "s" => "str"
 `, []string{"iz", "sz", "sy", "sw", "i", ""}},
 		{"a cast binding in an Operators Rule operand", `var x int
 rule main = e $$
-rule e = operators {
+rule e = #operators {
     operand d:dyn {x := $d.(int)}
     level { infix left "+" }
 }
@@ -85,7 +85,7 @@ rule main = {d := 1} item "|" {d := 2} item "|" item $$
 rule item = {d == 1} "x" / {d == 2} "y" / {d == 0} "z"
 `, []string{"x|y|z", "x|y|x", "z|y|z", "x|x|z", ""}},
 		{"Operators Rule explicit default action", `rule main = e $$
-rule e = operators {
+rule e = #operators {
     operand "α"
     level { infix left "+" }
 } => ...`, []string{"α", "α+α", "α+α+α", "α+", "+α", ""}},
@@ -97,7 +97,7 @@ rule cached = "é" / "ab"
 rule plain = "é" / guarded
 rule guarded = {n == 2} "a"
 rule recovering = ("é" ";") #recover(skip="?")
-rule prefixed = operators {
+rule prefixed = #operators {
     operand "é"
     level { prefix "-" }
 }
@@ -197,7 +197,7 @@ rule r = {n == 1} "a" / {n == 2} "b"`, []string{"ax", "b", "ay", "bx"}},
 		// a predicate but aborts the parse in a value action.
 		{"action environments", actionEnvironmentGrammar, []string{"a", "a%b", "(a)", "((ab?))", "#x:a", "#x:((b))", "#x:(#y:b!)", "((b))", "a!!", "a!", "(((a)))", "~a", "a(#t:b)c?", "[a,bc]", "[]", "(#q:[x])y", "a)", ""}},
 		{"empty prefix and postfix", `rule main = e $$
-rule e = operators {
+rule e = #operators {
     operand "x"
     level { prefix "-"? }
     level { postfix "!"? }
@@ -205,7 +205,7 @@ rule e = operators {
 		// An empty operand and an empty infix operator: an application that consumes nothing ends
 		// the expression.
 		{"empty operand and infix", `rule main = e $$
-rule e = operators {
+rule e = #operators {
     operand "a"?
     level { infix left _ }
 }`, []string{"a", "", "aa"}},
@@ -300,7 +300,7 @@ rule leaf = "x"`, []string{strings.Repeat("(", DefaultMaxDepth-3) + "x" + string
 	// Chains of prefix and right-associative operators count against the limit too (a OperatorsRule
 	// expression parses them by recursion).
 	cases = append(cases, genCase{"operatorsRule nesting limit", `rule main = x
-rule x = operators {
+rule x = #operators {
     operand "x"
     level { infix right "^" }
     level { prefix "-" }

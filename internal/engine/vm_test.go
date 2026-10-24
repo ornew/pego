@@ -61,7 +61,7 @@ func TestBackendsMatchOnStream(t *testing.T) {
 func TestIterativeDeepNesting(t *testing.T) {
 	prog := compile(t, `rule main = e $$
 rule e = "(" e ")" / x
-rule x = operators {
+rule x = #operators {
     operand "x"
     level { infix right "^" }
     level { prefix "-" }
@@ -90,7 +90,7 @@ rule x = operators {
 // backend: they fail with an error instead of consuming unbounded stack or frame storage.
 func TestOperatorsRuleNestingLimit(t *testing.T) {
 	prog := compile(t, `rule main = x $$
-rule x = operators {
+rule x = #operators {
     operand "x"
     level { infix right "^" }
     level { prefix "-" }
@@ -114,7 +114,7 @@ rule x = operators {
 
 func TestOperatorsRuleDepthBoundaries(t *testing.T) {
 	const src = `rule main = (e ";" / "-;" / "x^;")* $$
-rule e = operators {
+rule e = #operators {
     operand "x"
     level { infix right "^" }
     level { infix left "+" }
@@ -156,7 +156,7 @@ rule e = operators {
 
 func TestOperatorsRuleStreamDepthLimit(t *testing.T) {
 	prog := compile(t, `rule main = (e ";")* #stream $$
-rule e = operators {
+rule e = #operators {
     operand "x"
     level { infix right "^" }
     level { prefix "-" }

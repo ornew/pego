@@ -577,7 +577,7 @@ rule fn_single Name = n:function_name_token &(ws "(") => Name{Parts: list($n)}
 // The operators are ordered as the %left/%right declarations of the grammar of DuckDB order their tokens, from
 // the loosest. An operator that takes its right operand itself (postfix with r:...) is one whose rule has a
 // precedence of its own in the grammar (see comments at the levels).
-rule expr Expr = operators {
+rule expr Expr = #operators {
     skip ws
     operand star_primary
     operand chained
@@ -650,7 +650,7 @@ rule op_rhs_prefix Unary = o:qual_op ws x:(op_rhs_prefix / level(expr, lv_add)) 
 
 // b_expr: the expressions that may be the lower bound of BETWEEN, a default value, ...: no AND, OR, NOT, IS NULL,
 // LIKE, IN, BETWEEN, COLLATE or AT TIME ZONE.
-rule b_expr Expr = operators {
+rule b_expr Expr = #operators {
     skip ws
     operand chained
     level lv_is {
@@ -703,7 +703,7 @@ rule any_source Expr = any_source_query / paren_expr
 rule any_source_query Subquery = q:select_with_parens => Subquery{Query: $q}
 // the right side of IN that is not parenthesized: columnref_opt_indirection | indirection_expr
 rule in_source Expr = indirection_expr / in_column
-rule in_column Expr = operators {
+rule in_column Expr = #operators {
     skip ws
     operand column_ref
     level lv_chain {
@@ -726,7 +726,7 @@ rule c_expr Expr = chained
 // reference of the grammar of DuckDB, which no method call can follow: x[1].f() is a syntax error, but (x)[1].f() is
 // not.
 rule chained Expr = col_chained / call_chained
-rule col_chained Expr = operators {
+rule col_chained Expr = #operators {
     skip ws
     operand plain_column
     level lv_chain {
@@ -735,7 +735,7 @@ rule col_chained Expr = operators {
         postfix "[" ws lo:expr? ws colon ws (d:"-" ws colon ws st:expr? / hi:expr? (ws colon ws st:expr?)?) ws "]" => Indirection{X: $lhs, Step: SliceStep{Lo: $lo, Hi: $hi, Stride: $st, Dash: len($d) > 0}}
     }
 }
-rule call_chained Expr = operators {
+rule call_chained Expr = #operators {
     skip ws
     operand primary_other
     level lv_chain {
@@ -1053,7 +1053,7 @@ rule materialized node[string] = (MATERIALIZED / NOT ws MATERIALIZED) #atomic
 
 // ---- Set operations ----
 
-rule select_body QueryBody = operators {
+rule select_body QueryBody = #operators {
     skip ws
     operand select_core
     operand from_first
@@ -1206,7 +1206,7 @@ rule from_list_opt_comma []TableRef = first:table_ref rest:(-ws -"," -ws t:table
 // table_ref and its joins: a join is left associative unless it needs a qualification that comes after its
 // right side (a JOIN b JOIN c ON x ON y), so the right side of a qualified join is a table_ref of its own. The
 // joins that need none take only a table without joins, which makes them left associative.
-rule table_ref TableRef = operators {
+rule table_ref TableRef = #operators {
     skip ws
     operand table_primary
 

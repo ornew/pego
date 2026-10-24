@@ -106,7 +106,7 @@ type Expr ~ Atom | Post
 
 rule main Expr = e:expr $$ => $e
 
-rule expr Expr = operators {
+rule expr Expr = #operators {
     skip (" " "!") #recover(skip=" " "?")
     operand atom
     level {

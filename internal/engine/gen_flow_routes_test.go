@@ -102,7 +102,7 @@ func TestFlowRoutesBuild(t *testing.T) {
 func TestFlowRoutesRejected(t *testing.T) {
 	base := `rule main = a $$
 rule a = a "+" "x" / "x"
-rule o = operators {
+rule o = #operators {
     operand "x"
     level { infix left "+" }
 }
@@ -126,10 +126,10 @@ rule o = operators {
 		},
 	}
 	for _, src := range []string{
-		"rule main = a $$\nrule a = a \"+\" (operators { operand \"x\" }) / \"x\"\n",
-		"rule main = a $$\nrule a = operators { operand \"x\" } #recover(skip=\"y\")\n",
-		"rule main = (operators { operand \"x\" })* $$\n",
-		"rule main = &operators { operand \"x\" } \"x\" $$\n",
+		"rule main = a $$\nrule a = a \"+\" (#operators { operand \"x\" }) / \"x\"\n",
+		"rule main = a $$\nrule a = #operators { operand \"x\" } #recover(skip=\"y\")\n",
+		"rule main = (#operators { operand \"x\" })* $$\n",
+		"rule main = &#operators { operand \"x\" } \"x\" $$\n",
 	} {
 		if _, err := parseTest(src); err == nil {
 			t.Errorf("parse %q: accepted", src)

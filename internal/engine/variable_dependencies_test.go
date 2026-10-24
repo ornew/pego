@@ -190,7 +190,7 @@ rule optional = {opt == 1} "d"
 rule repeated = {rep == 1} "e"
 rule attributed = "f" #recover(skip=recovery)
 rule recovery = {recoverVar == 1} "g"
-rule pr = operators {
+rule pr = #operators {
     skip skipRule
     operand operandRule => V{N: operandVar}
     level { prefix prefixRule => V{N: prefixVar}; infix left infixRule => V{N: infixVar}; postfix postfixRule => V{N: postfixVar} }

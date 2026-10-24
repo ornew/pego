@@ -48,7 +48,7 @@ rule main = "a" {x := (y) => 1}`, `functions can only be passed to filter, foldl
 		{`type Op = { X node[string] }
 rule main Op = "a"`, `rule main produces node[string], which is not assignable to Op`},
 		{`type E = { X node[string] }
-rule e E = operators {
+rule e E = #operators {
     operand v1:"1" => E{X: $v1}
     level { infix left "+" }
 }`, `operators of e without an action produce a tuple node, which is not assignable to E`},

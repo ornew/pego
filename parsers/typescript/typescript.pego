@@ -1154,7 +1154,7 @@ rule arrowBody ConciseBody = block / assignmentExpressionInner
 // which fails without a rule call or an expectation. For the same reason skip, which the Operators Rule loop runs before
 // each operator and operand, is sp behind a silent test of whether it has anything to skip (here and in the other
 // Operators Rules).
-rule binaryExpression Expression = operators {
+rule binaryExpression Expression = #operators {
     skip &[ \t\u{b}\u{c}\u{a0}\u{85}\u{1680}\u{2000}-\u{200b}\u{202f}\u{205f}\u{3000}\u{feff}/] sp
     operand unaryExpression
     level {
@@ -1266,7 +1266,7 @@ rule jsxPrimaryExpression Expression = (
 // (canFollowTypeArgumentsInExpression); otherwise < is a comparison.
 // As in binaryExpression, each postfix operator starts with a silent test of its first character (or of a line
 // break or "/" before it), and the operand that is almost always the one, primaryExpression, comes first.
-rule leftHandSideExpression Expression = operators {
+rule leftHandSideExpression Expression = #operators {
     skip &[ \t\u{b}\u{c}\u{a0}\u{85}\u{1680}\u{2000}-\u{200b}\u{202f}\u{205f}\u{3000}\u{feff}/] sp
     operand primaryExpression
     operand superExpression
@@ -1286,7 +1286,7 @@ rule leftHandSideExpression Expression = operators {
     }
 }
 // The same without instantiation expressions, for heritage clauses, which take type arguments of their own.
-rule heritageExpression Expression = operators {
+rule heritageExpression Expression = #operators {
     skip &[ \t\u{b}\u{c}\u{a0}\u{85}\u{1680}\u{2000}-\u{200b}\u{202f}\u{205f}\u{3000}\u{feff}/] sp
     operand primaryExpression
     operand superExpression
@@ -1306,7 +1306,7 @@ rule heritageExpression Expression = operators {
 }
 // The target of new: member accesses, element accesses, tagged templates and non-null assertions, without
 // calls or optional chains (parseMemberExpressionRest with allowOptionalChain = false).
-rule newTarget Expression = operators {
+rule newTarget Expression = #operators {
     skip &[ \t\u{b}\u{c}\u{a0}\u{85}\u{1680}\u{2000}-\u{200b}\u{202f}\u{205f}\u{3000}\u{feff}/] sp
     operand primaryExpression
     operand superKeyword
@@ -1590,7 +1590,7 @@ rule inferTypeParameter TypeParameter = (
 ) => TypeParameter{Name: $n, Constraint: $ct}
 
 // Array types, indexed access types and the JSDoc postfixes ! and ?, on the same line.
-rule postfixType TypeNode = operators {
+rule postfixType TypeNode = #operators {
     skip &[ \t\u{b}\u{c}\u{a0}\u{85}\u{1680}\u{2000}-\u{200b}\u{202f}\u{205f}\u{3000}\u{feff}/] sp
     operand nonArrayType
     level {
@@ -1601,7 +1601,7 @@ rule postfixType TypeNode = operators {
     }
 }
 // The same without the postfix ?, for the optional elements of tuples.
-rule postfixTypeNoQuestion TypeNode = operators {
+rule postfixTypeNoQuestion TypeNode = #operators {
     skip &[ \t\u{b}\u{c}\u{a0}\u{85}\u{1680}\u{2000}-\u{200b}\u{202f}\u{205f}\u{3000}\u{feff}/] sp
     operand nonArrayType
     level {

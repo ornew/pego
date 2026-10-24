@@ -299,7 +299,7 @@ type E = {}
 		},
 		{
 			name: "operatorsRule",
-			in: `rule e = operators { // operators
+			in: `rule e = #operators { // operators
     skip ws
     // operands
     operand num                      // number
@@ -312,7 +312,7 @@ type E = {}
     // end of operatorsRule
 }
 `,
-			want: `rule e = operators { // operators
+			want: `rule e = #operators { // operators
     skip ws
     // operands
     operand num                      // number
@@ -346,8 +346,8 @@ rule b = p / q // two
 		},
 		{
 			name: "operatorsRule body on its own line",
-			in:   "rule e = operators {\n    operand x\n    level { prefix \"-\" }\n}\n",
-			want: "rule e = operators {\n    operand x\n    level { prefix \"-\" }\n}\n",
+			in:   "rule e = #operators {\n    operand x\n    level { prefix \"-\" }\n}\n",
+			want: "rule e = #operators {\n    operand x\n    level { prefix \"-\" }\n}\n",
 		},
 		{
 			name: "end of file",

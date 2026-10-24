@@ -39,7 +39,7 @@ func TestGeneratedTypedOperatorsRuleActionWorkload(t *testing.T) {
 type Post = { X Expr; Items []node[string]; N int }
 type Expr ~ Atom | Post
 rule main Expr = e:expr $$ => $e
-rule expr Expr = operators {
+rule expr Expr = #operators {
     skip " "*
     operand atom
     level {

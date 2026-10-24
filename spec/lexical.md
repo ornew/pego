@@ -79,7 +79,7 @@ for type and field names; see [Names](types.md#names).
 
 ### Contextual Words
 
-The words `infix`, `level`, `operand`, `operators`, `package`, `postfix`,
+The words `infix`, `level`, `operand`, `package`, `postfix`,
 `prefix`, `rule`, `skip`, `struct`, `terminal`, `type`, and `var` are contextual
 words, not globally reserved identifiers. They are interpreted as syntax only
 where the grammar expects a Declaration Statement or Operators Rule item. In a name

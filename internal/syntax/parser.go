@@ -443,7 +443,7 @@ func (p *parser) ident() token {
 
 var keywords = map[string]bool{
 	"package": true, "type": true, "rule": true, "var": true, "struct": true, "terminal": true,
-	"operators": true, "skip": true, "operand": true, "level": true, "prefix": true,
+	"skip": true, "operand": true, "level": true, "prefix": true,
 	"postfix": true, "infix": true,
 }
 
@@ -941,7 +941,12 @@ func (p *parser) ruleDef() (sourceResult *grammar.RuleDef) {
 	p.expect("=")
 	p.header = false
 	rd.HeaderComments = p.headerContents(headerFrom)
-	if !p.boundary() && p.is("operators") && p.peek(1).kind == tPunct && p.peek(1).text == "{" && !p.peek(1).lineBefore {
+	if !p.boundary() && p.isOldOperatorsStart() {
+		p.errorf("an Operators Rule is written #operators { ... }; run pego fix to rewrite operators {")
+		panic(bail{})
+	}
+	if !p.boundary() && p.isOperatorsStart() {
+		p.next()
 		p.next()
 		// Items inside an operators block have their own separators.
 		p.layout = false
@@ -1137,7 +1142,7 @@ func (p *parser) bodySequence() (sourceResult grammar.Expr) {
 // the same line. The pragma covers the literals of the whole rule; no other pragma is accepted
 // there.
 func (p *parser) operatorsBody() (sourceResult grammar.Expr) {
-	sourceStart := p.i - 1 // The caller consumed the operators keyword.
+	sourceStart := p.i - 2 // The caller consumed #operators.
 	start := p.toks[sourceStart].pos
 	var e grammar.Expr = p.operatorsRule()
 	wrapped := false
@@ -1160,7 +1165,7 @@ func (p *parser) operatorsBody() (sourceResult grammar.Expr) {
 }
 
 func (p *parser) operatorsRule() (sourceResult *grammar.OperatorsRule) {
-	sourceStart := p.i - 1 // The caller consumed the operators keyword.
+	sourceStart := p.i - 2 // The caller consumed #operators.
 	defer func() {
 		if sourceResult != nil {
 			p.sourceNode(sourceResult, sourceStart)
@@ -1352,7 +1357,7 @@ func (p *parser) startsPrimary() bool {
 			// "[" is a character class written without a space before it, an error.
 			return true
 		case "#":
-			return p.isCut()
+			return p.isCut() || p.isOperatorsStart()
 		}
 	}
 	return false
@@ -1524,6 +1529,9 @@ func (p *parser) pragma(e grammar.Expr, start grammar.Pos) (sourceResult grammar
 	if p.nest == 0 && p.atLineStart() {
 		br = p.lineBreak()
 	}
+	if p.isOperatorsStart() {
+		p.operatorsPlacementError()
+	}
 	pos := p.expect("#").pos
 	if p.tok().spaceBefore {
 		p.errorf("pragma name must immediately follow '#'")
@@ -1645,6 +1653,53 @@ func (p *parser) isCut() bool {
 	}
 	n := p.peek(1)
 	return n.kind == tIdent && n.text == "cut" && !n.spaceBefore
+}
+
+// isOperatorsStart reports whether the current tokens are #operators and the { of its block on the
+// same line. As the whole body of a rule they start an Operators Rule; anywhere else they are an
+// error.
+func (p *parser) isOperatorsStart() bool {
+	if !p.is("#") {
+		return false
+	}
+	n, b := p.peek(1), p.peek(2)
+	return n.kind == tIdent && n.text == "operators" && !n.spaceBefore && b.kind == tPunct && b.text == "{" && !b.lineBefore
+}
+
+// isOldOperatorsStart reports whether the body of a rule starts like an Operators Rule written
+// without the pragma: operators, a { on the same line, and an item that starts with one of the
+// item words followed by something that cannot continue a term. A body such as operators {x == 1}
+// is a reference to a rule named operators followed by a predicate.
+func (p *parser) isOldOperatorsStart() bool {
+	if !p.is("operators") {
+		return false
+	}
+	open := p.peek(1)
+	if open.kind != tPunct || open.text != "{" || open.lineBefore {
+		return false
+	}
+	word, next := p.peek(2), p.peek(3)
+	if word.kind != tIdent {
+		return false
+	}
+	switch word.text {
+	case "skip", "operand", "level", "prefix", "postfix", "infix":
+	default:
+		return false
+	}
+	switch next.kind {
+	case tString, tCharClass, tIdent:
+		return true
+	case tPunct:
+		return next.text == "{" || next.text == "(" && next.spaceBefore
+	}
+	return false
+}
+
+// operatorsPlacementError reports #operators { where an expression or a pragma stands.
+func (p *parser) operatorsPlacementError() {
+	p.errorf("an Operators Rule must be the whole body of a rule")
+	panic(bail{})
 }
 
 func (p *parser) repeatCount() int {
@@ -1843,6 +1898,9 @@ func (p *parser) primary() (sourceResult grammar.Expr) {
 			}
 			return &grammar.Predicate{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Term: term, OpenBreak: block.OpenBreak, Breaks: block.Breaks, CloseBreak: block.CloseBreak, OneLine: block.OneLine}
 		case "#":
+			if p.isOperatorsStart() {
+				p.operatorsPlacementError()
+			}
 			if p.isCut() {
 				p.next()
 				p.next()

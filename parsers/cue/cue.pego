@@ -310,7 +310,7 @@ rule word_any Expr = bottom / ident_q / ident / bool_lit / null_lit / kwident / 
 rule operand_digit Expr = &[0-9.] n:number => $n
 rule operand_other Expr = struct_lit / list_lit / strlit / paren_expr
 rule ident_q Expr = i:ident sp q:"?" !colon_ahead => PostfixExpr{X: $i, Op: $q}
-rule full_expr Expr = operators {
+rule full_expr Expr = #operators {
     skip sp
     operand operand_any
 

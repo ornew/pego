@@ -665,7 +665,7 @@ rule comp_op Op = (
 // instead of descending through a rule for each of the nine levels. `**` binds tighter than the
 // unary operators on its left (-x ** y is -(x ** y)) and takes a unary operator on its right
 // (x ** -y), as in Python's grammar. This is 3 to 8% faster than a rule for each level.
-rule bitwise_or Expr = operators {
+rule bitwise_or Expr = #operators {
     skip ws
     operand await_expr
     operand primary
@@ -692,7 +692,7 @@ rule await_expr Await = kw_await -ws v:primary => Await{Value: $v}
 // returned without running the Operators Rule.
 rule primary Expr = atom_only / primary_chain
 rule atom_only Expr = a:atom !(ws ([(\[] / "." !"..")) => $a
-rule primary_chain Expr = operators {
+rule primary_chain Expr = #operators {
     skip ws
     operand atom
     level {
@@ -837,7 +837,7 @@ rule paren_single_target Expr = "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws 
 rule store_name Name = n:ident => Name{Id: text($n), Ctx: "Store"}
 
 // The value of an attribute or subscript target: a primary followed by another trailer.
-rule t_primary Expr = operators {
+rule t_primary Expr = #operators {
     skip ws
     operand a:atom &(ws t_lookahead) => $a
     level {

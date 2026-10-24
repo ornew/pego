@@ -35,10 +35,10 @@ rule mp W = &(. "!") v:rA {$v == nil || $v != nil} "!" => W{V: $v}
 rule mq W = &(. "~") v:rB {$v == nil || $v != nil} "~" => W{V: $v}
 rule rA ` + rt + ` = v:val => $v.(` + typ + `)
 rule rB ` + rt + ` = v:val => $v.(` + typ + `)
-rule rC ` + rt + ` = operators {
+rule rC ` + rt + ` = #operators {
     operand v:val => $v.(` + typ + `)
 }
-rule rD ` + rt + ` = operators {
+rule rD ` + rt + ` = #operators {
     operand v:val => $v.(` + typ + `)
 }
 rule rE ` + rt + ` = v:sc "=" => $v.(` + typ + `)
@@ -79,10 +79,10 @@ rule mp W = &(. "!") v:rA {$v == nil || $v != nil} "!" => W{V: $v}
 rule mq W = &(. "~") v:rB {$v == nil || $v != nil} "~" => W{V: $v}
 rule rA ` + rt + ` = v:val => $v.(` + typ + `)
 rule rB ` + rt + ` = v:val => $v.(` + typ + `)
-rule rC ` + rt + ` = operators {
+rule rC ` + rt + ` = #operators {
     operand v:val => $v.(` + typ + `)
 }
-rule rD ` + rt + ` = operators {
+rule rD ` + rt + ` = #operators {
     operand v:val => $v.(` + typ + `)
 }
 rule rE ` + rt + ` = v:sc "=" => $v.(` + typ + `)
@@ -301,7 +301,7 @@ rule val _ = "v" => Int{Text: "v"}
 			"rule dynamic produces _, which is not assignable to Int"},
 		{"a node type", "rule main = s:static p:pass => S{F: Int{Text: \"\"}}\nrule pass node[_] = val\n",
 			"rule pass produces _, which is not assignable to node[_]"},
-		{"an Operators Rule operand", "rule main = s:static o:ops => S{F: Int{Text: \"\"}}\nrule ops Int | O = operators {\n    operand val\n    operand \"o\" => Int{Text: \"o\"}\n    level { infix left \"+\" => Int{Text: \"+\"} }\n}\n",
+		{"an Operators Rule operand", "rule main = s:static o:ops => S{F: Int{Text: \"\"}}\nrule ops Int | O = #operators {\n    operand val\n    operand \"o\" => Int{Text: \"o\"}\n    level { infix left \"+\" => Int{Text: \"+\"} }\n}\n",
 			"produces _, which is not assignable to Int | O"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -313,7 +313,7 @@ rule val _ = "v" => Int{Text: "v"}
 	src := decls + `rule main = s:static d:dynamic p:pass o:ops => S{F: $d}
 rule dynamic Int = v:val => $v.(Int)
 rule pass node[_] = v:val => $v.(node[_])
-rule ops Int | O = operators {
+rule ops Int | O = #operators {
     operand v:val => $v.(Int | O)
     operand "o" => Int{Text: "o"}
     level { infix left "+" => Int{Text: "+"} }
@@ -384,7 +384,7 @@ rule rr []Int = v:val ("@" #recover(skip="@")) => $v.([]Int)
 rule ml W = "<" v:lr => W{V: $v}
 rule me W = v:e => W{V: $v}
 rule lr []Int = (v:lr "^" / v:val "#") => $v.([]Int)
-rule e []Int = operators {
+rule e []Int = #operators {
     operand "o" => []Int{Int{Text: "o"}}
     level { infix left "+" v:val => $v.([]Int) }
     level { prefix "!" v:val => $v.([]Int) }
@@ -454,7 +454,7 @@ func TestOperatorResultChecks(t *testing.T) {
 const terminalOperatorsRuleGrammar = `type Int terminal
 type S = { F Int }
 rule main = v:e => S{F: $v}
-rule e Int = operators {
+rule e Int = #operators {
     operand v:val => $v
     level { infix left "+" v:val => $v }
 }
@@ -466,7 +466,7 @@ rule val _ = "m"
 const textStructOperatorsRuleGrammar = `type Int = { Text string }
 type S = { F Int }
 rule main = v:e => S{F: $v}
-rule e Int = operators {
+rule e Int = #operators {
     operand v:val => $v
     level { infix left "+" v:val => $v }
 }
@@ -478,7 +478,7 @@ var terminalOperatorsRuleInputs = []string{"m", "m+m", "m+", ""}
 func TestTerminalOperatorsRuleNeedsAction(t *testing.T) {
 	for _, src := range []string{terminalOperatorsRuleGrammar, `type Num terminal
 rule main = e
-rule e Num = operators {
+rule e Num = #operators {
     operand [0-9]+
     level { infix left "+" }
 }

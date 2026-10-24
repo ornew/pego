@@ -237,7 +237,7 @@ type Alias ~ (
 )
 rule main = x:"a" #atomic @custom(nil, true, message="expected a") => map(list($x), (item) => Item{Value: item})
 rule grouped = ("a" => A{}) => ...
-rule expression = operators {
+rule expression = #operators {
  skip " "*
  operand [0-9]+
  level { infix left "+" => Bin{L: $lhs, R: $rhs} }
@@ -330,8 +330,8 @@ func TestSourceGrammarRecovery(t *testing.T) {
 		{"declaration", "rule broken =\nrule after = \"ok\"", "expected rule expression", 2},
 		{"header", "rule = \"bad\"; rule after = \"ok\"", "expected rule name", 2},
 		{"field", "type T = {\n Broken\n Good node\n}\nrule after = \"ok\"", "expected field type", 2},
-		{"operand", "rule expression = operators {\n operand\n operand \"ok\"\n level { infix left \"+\" }\n}\nrule after = \"ok\"", "expected operand expression", 2},
-		{"operator", "rule expression = operators {\n operand \"ok\"\n level {\n infix left\n postfix \"!\"\n }\n}\nrule after = \"ok\"", "expected infix expression", 2},
+		{"operand", "rule expression = #operators {\n operand\n operand \"ok\"\n level { infix left \"+\" }\n}\nrule after = \"ok\"", "expected operand expression", 2},
+		{"operator", "rule expression = #operators {\n operand \"ok\"\n level {\n infix left\n postfix \"!\"\n }\n}\nrule after = \"ok\"", "expected infix expression", 2},
 		{"action", "rule predicate = {\n x :=\n true\n}\nrule after = \"ok\"", "expected binding value", 2},
 		{"literal delimiter", "type T = { Bad = \"}\", Good node }\nrule after = \"ok\"", "expected field type", 2},
 		{"comment delimiter", "type T = { Bad = /* } */ 1; Good node }\nrule after = \"ok\"", "expected field type", 2},

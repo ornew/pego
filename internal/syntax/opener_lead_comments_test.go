@@ -36,8 +36,8 @@ func TestCommentsAfterAnOpeningBraceFormatAndJSON(t *testing.T) {
 		{"line comment", "type W = { // w1\n    B int\n}\n", "type W = {\n    // w1\n    B int\n}\n"},
 		{"block and line comment", "type W = { /*a*/ // w1\n    B int\n}\n", "type W = {\n\n    /*a */\n\n    // w1\n    B int\n}\n"},
 		{"one-line struct", "type R = { /*a*/ // b\n    A int\n}\n", "type R = {\n\n    /*a */\n\n    // b\n    A int\n}\n"},
-		{"operators", "rule e = operators { /*a*/ /*b*/ // c\n    operand \"1\"\n}\n", "rule e = operators {\n\n    /*a */\n\n    /*b */\n\n    // c\n    operand \"1\"\n}\n"},
-		{"level", "rule e = operators {\n    operand \"1\"\n    level { /*a*/ // c\n        infix left \"+\"\n    }\n}\n", "rule e = operators {\n    operand \"1\"\n    level {\n\n        /*a */\n\n        // c\n        infix left \"+\"\n    }\n}\n"},
+		{"operators", "rule e = #operators { /*a*/ /*b*/ // c\n    operand \"1\"\n}\n", "rule e = #operators {\n\n    /*a */\n\n    /*b */\n\n    // c\n    operand \"1\"\n}\n"},
+		{"level", "rule e = #operators {\n    operand \"1\"\n    level { /*a*/ // c\n        infix left \"+\"\n    }\n}\n", "rule e = #operators {\n    operand \"1\"\n    level {\n\n        /*a */\n\n        // c\n        infix left \"+\"\n    }\n}\n"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			if out := checkFormat(t, c.src); out != c.src {

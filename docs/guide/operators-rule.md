@@ -5,7 +5,7 @@ precedence and associativity. PEGO gives you three ways to write them:
 
 | Technique | You write | Typical size |
 |:--|:--|:--|
-| **Operators Rule** (`rule expr = operators { ... }`) | A table: operands, then one `level` per precedence level, each with its operators | One rule |
+| **Operators Rule** (`rule expr = #operators { ... }`) | A table: operands, then one `level` per precedence level, each with its operators | One rule |
 | **Left-recursive rules** | One rule per level, each of the form `level = level OP next / next` | One rule per level |
 | **Precedence chain** | One rule per level, each a repetition `next (OP next)*` folded with `foldl` | One rule per level |
 
@@ -44,7 +44,7 @@ type Expr ~ node[string] | Binary | Unary
 @start
 rule main Expr = e:expr ws $$ => $e
 
-rule expr Expr = operators {
+rule expr Expr = #operators {
     skip ws
     operand number
     operand "(" e:expr ws ")" => $e
@@ -363,7 +363,7 @@ type Member = { X Expr; Name node[string] }
 type Expr ~ node[string] | Comma | Assign | Cond | Bin | Unary | Call | Index | Member
 
 @start
-rule expr Expr = operators {
+rule expr Expr = #operators {
     skip ws
     operand number
     operand ident
@@ -458,7 +458,7 @@ type Neg = { X E }
 type E ~ node[string] | Bin | App | Neg
 
 @start
-rule e E = operators {
+rule e E = #operators {
     skip ws
     operand num
     operand id
@@ -500,7 +500,7 @@ type Fact = { X E }
 type E ~ node[string] | Neg | Fact
 
 @start(default)
-rule same E = operators {
+rule same E = #operators {
     operand num
     level mixed {
         prefix "-" => Neg{X: $rhs}
@@ -509,7 +509,7 @@ rule same E = operators {
 }
 
 @start
-rule tighter E = operators {
+rule tighter E = #operators {
     operand num
     level prefix { prefix "-" => Neg{X: $rhs} }
     level postfix { postfix "!" => Fact{X: $lhs} }
@@ -538,7 +538,7 @@ carries the rule name and the captures `lhs`, `op` and `rhs`:
 ```pego
 // raw.pego
 @start
-rule e = operators {
+rule e = #operators {
     operand [0-9]+ #atomic
     level additive { infix left "+" }
     level multiplicative { infix left "*" }
@@ -587,7 +587,7 @@ declared join that includes `node[_]` accepts the tuples, as `type E ~ node[_] |
 // raw-typed.pego
 type Bin = { L node[string]; Op node[string]; R node[string] }
 @start
-rule t Bin = operators {
+rule t Bin = #operators {
     operand num
     level additive { infix left "+" }
 }
@@ -603,7 +603,7 @@ pego: raw-typed.pego:4:1: operatorsRule t produces node[string], which is not as
 raw-typed.pego:4:1: operators of t without an action produce a tuple node, which is not assignable to Bin
 ```
 
-A rule declared with exactly a named node type, as `type E = node[_]` and `rule t E = operators { ... }`, converts every
+A rule declared with exactly a named node type, as `type E = node[_]` and `rule t E = #operators { ... }`, converts every
 operator node it builds to `E`, at every nesting level, with or without an action; the tuple above then has type `E`, and
 typed output yields `*E` for each operator. Operands are not converted: each operand rule must produce `E` itself (declare
 it `rule num E = ...`), or the Operators Rule must be declared as a join that includes the operand types.
@@ -619,7 +619,7 @@ type Paren = { X E }
 type E ~ node[string] | Paren
 
 @start
-rule e E = operators {
+rule e E = #operators {
     operand num
     operand "(" e:e ")" => Paren{X: $e}
 }
@@ -668,7 +668,7 @@ can call any rule; and the rules of a statement grammar call the rule that holds
 
 ## Pitfalls
 
-**The words `operators`, `rule`, `operand`, `level`, `skip`, `prefix`, `postfix` and `infix` are keywords.** A rule called
+**The words `rule`, `operand`, `level`, `skip`, `prefix`, `postfix` and `infix` are keywords.** A rule called
 `operand` can be defined, but every reference to it is a syntax error (`expected an expression, found 'operand'`);
 pick another name such as `atom`. The complete list is in
 [Lexical Structure](../../spec/lexical.md#keywords).
@@ -678,7 +678,7 @@ pick another name such as `atom`. The complete list is in
 ```pego
 // operand-lr.pego
 @start
-rule e = operators {
+rule e = #operators {
     operand e "!"
     operand [0-9]+
     level additive { infix left "+" }
@@ -712,14 +712,14 @@ type Cond = { C E; T E; F E }
 type E ~ node[string] | Cond
 
 @start(default)
-rule loose E = operators {
+rule loose E = #operators {
     skip ws
     operand num
     operand id
     level conditional { infix right "?" t:loose ":" => Cond{C: $lhs, T: $t, F: $rhs} }
 }
 @start
-rule tight E = operators {
+rule tight E = #operators {
     skip ws
     operand num
     operand id
@@ -763,7 +763,7 @@ type E ~ node[string] | Bin | Un | Post
 @start
 rule main E = e:e $$ => $e
 
-rule e E = operators {
+rule e E = #operators {
     skip ws
     operand num
     level additive { infix left "+" => Bin{L: $lhs, Op: $op, R: $rhs} }
@@ -798,7 +798,7 @@ type Not = { X E }
 type E ~ node[string] | Bin | Not
 
 @start
-rule e E = operators {
+rule e E = #operators {
     skip ws
     operand id
     level logical_or { infix left "or" !idchar => Bin{L: $lhs, Op: $op, R: $rhs} }
@@ -831,12 +831,12 @@ quietly ends early. A cut (`#cut`) in the operator part commits to the operator:
 type Bin = { L E; Op node[(node[string],)]; R E }
 type E ~ node[string] | Bin
 
-rule plain E = operators {
+rule plain E = #operators {
     skip ws
     operand num
     level additive { infix left "+" => Bin{L: $lhs, Op: $op, R: $rhs} }
 }
-rule committed E = operators {
+rule committed E = #operators {
     skip ws
     operand num
     level additive { infix left "+" #cut => Bin{L: $lhs, Op: $op, R: $rhs} }
@@ -874,7 +874,7 @@ and expressions are one Operators Rule, nested in each other. The pieces that ma
 ```pego
 rule expr Expr = e:operation @error(message="expected an expression") => $e
 
-rule operation Expr = operators {
+rule operation Expr = #operators {
     skip ws
     operand number
     operand string

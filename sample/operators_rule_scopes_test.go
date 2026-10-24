@@ -13,7 +13,7 @@ import (
 	"github.com/ornew/pego/sample"
 )
 
-const scopeNoneLevels = `rule e = operators {
+const scopeNoneLevels = `rule e = #operators {
     operand "a"
     level { infix none "<" }
     level { infix none "=" }
@@ -27,73 +27,73 @@ func TestSampleOperatorsRuleRHSScope(t *testing.T) {
 		{"nested then enclosing", "e", scopeNoneLevels, "a<a=a=a", true},
 		{"short control", "e", scopeNoneLevels, "a<a=a", true},
 		{"three levels", "e", scopeNoneLevels[:len(scopeNoneLevels)-1] + ` level { infix none ":" } }`, "a<a=a:a:a", true},
-		{"prefix RHS", "e", `rule e = operators {
+		{"prefix RHS", "e", `rule e = #operators {
     operand "a"
     level { prefix "~"; infix none "<" }
     level { infix none "=" }
 }`, "~a=a=a", true},
-		{"nested prefixes", "e", `rule e = operators {
+		{"nested prefixes", "e", `rule e = #operators {
     operand "a"
     level { prefix "~" }
     level { prefix "@" }
     level { infix none ":" }
 }`, "~@a:a:a:a", true},
-		{"restricted prefix", "level(e, tight)", `rule e = operators {
+		{"restricted prefix", "level(e, tight)", `rule e = #operators {
     operand "a"
     level { prefix "~"; infix none "<" }
     level tight { infix none "=" }
 }`, "~a=a=a", true},
-		{"explicit inner call", "e", `rule e = operators {
+		{"explicit inner call", "e", `rule e = #operators {
     operand "(" inner ")" / "a"
     level { infix none "<" }
     level { infix none "=" }
 }
 rule inner = e`, "a<a=(a=a)", true},
-		{"right RHS same level", "e", `rule e = operators {
+		{"right RHS same level", "e", `rule e = #operators {
     operand "a"
     level { infix right "^"; infix none "=" }
 }`, "a^a=a=a", true},
-		{"left resets same frame", "e", `rule e = operators {
+		{"left resets same frame", "e", `rule e = #operators {
     operand "a"
     level { infix none "="; infix left "+" }
 }`, "a=a+a=a", true},
-		{"right resets same frame", "e", `rule e = operators {
+		{"right resets same frame", "e", `rule e = #operators {
     operand "a"
     level { infix none "="; infix right "+" }
 }`, "a=a+a=a", true},
-		{"loose reset", "e", `rule e = operators {
+		{"loose reset", "e", `rule e = #operators {
     operand "a"
     level { infix left "|" }
     level { infix none "<" }
     level { infix none "=" }
 }`, "a<a=a|a<a=a", true},
-		{"inner postfix preserves parent", "e", `rule e = operators {
+		{"inner postfix preserves parent", "e", `rule e = #operators {
     operand "a"
     level { infix none "<" }
     level { infix none "="; postfix "!" }
 }`, "a<a=a!<a", false},
-		{"postfix reset", "e", `rule e = operators {
+		{"postfix reset", "e", `rule e = #operators {
     operand "a"
     level { infix none "<" }
     level { infix none "="; postfix "!" }
 }`, "a<a=a=a!=a", true},
 		{"caller boundary", `e "=" e`, scopeNoneLevels, "a=a=a", true},
-		{"Unicode trivia", "e", `rule e = operators {
+		{"Unicode trivia", "e", `rule e = #operators {
     skip " "*
     operand "α"
     level { infix none "<" }
     level { infix none "=" }
 }`, " α < α = α = α", true},
-		{"past64 levels", "e", `rule e = operators { operand "a"; ` + strings.Repeat("level {}; ", 69) + `level { infix none "<" }; level { infix none "=" } }`, "a<a=a=a", true},
+		{"past64 levels", "e", `rule e = #operators { operand "a"; ` + strings.Repeat("level {}; ", 69) + `level { infix none "<" }; level { infix none "=" } }`, "a<a=a=a", true},
 		{"nested repeated root none", "e", scopeNoneLevels, "a<a=a=a=a", false},
 		{"standalone none", "e", scopeNoneLevels, "a=a=a", false},
 		{"three level repeated", "e", scopeNoneLevels[:len(scopeNoneLevels)-1] + ` level { infix none ":" } }`, "a:a:a", false},
-		{"prefix repeated outer", "e", `rule e = operators {
+		{"prefix repeated outer", "e", `rule e = #operators {
     operand "a"
     level { prefix "~" }
     level { infix none "=" }
 }`, "~a=a=a=a", false},
-		{"invalid explicit inner", "e", `rule e = operators {
+		{"invalid explicit inner", "e", `rule e = #operators {
     operand "(" inner ")" / "a"
     level { infix none "<" }
     level { infix none "=" }

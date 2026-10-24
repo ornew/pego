@@ -19,7 +19,7 @@ type Expr ~ Num | Str | Bool | Field | Binary | Not
 @start
 rule main Expr = ws e:expr ws $$ => $e
 
-rule expr Expr = operators {
+rule expr Expr = #operators {
     skip ws
     operand num
     operand str

@@ -14,7 +14,7 @@ An Operators Rule is a dedicated rule declaration. The *shapes* of operands and 
 Operands and operator parts can call ordinary rules and other Operators Rule declarations, so PEG handles the syntax inside expressions (parentheses, call arguments and so on).
 
 ```pego
-rule expr Expr = operators {
+rule expr Expr = #operators {
     skip ws
     operand number / ident / "(" e:expr ")" => $e
 
@@ -70,7 +70,7 @@ Operator    = "prefix"  Expr ("=>" Action)?
 Assoc       = "left" / "right" / "none"
 ```
 
-- An Operators Rule uses the dedicated `rule name [Type] = operators { ... }` declaration and cannot appear inside another parsing expression.
+- An Operators Rule uses the dedicated `rule name [Type] = #operators { ... }` declaration and cannot appear inside another parsing expression.
 - `Expr` is an ordinary parser expression. The expression written for an operator is called the **operator part**.
 - Items are separated by newlines (`skip`, `operand`, `level`, `prefix`, `postfix` and `infix` are keywords that appear only at the start of an item).
 - An action after `=>` belongs to the operator or operand on that line.
@@ -101,7 +101,7 @@ When a parser expression calls an Operators Rule with a level name, as in `level
 A call without a level, `expr`, starts at `parse(0)`.
 
 ```pego
-rule expr Expr = operators {
+rule expr Expr = #operators {
     operand number / ident / "(" e:expr ")" => $e
     level { infix left "," => Comma{L: $lhs, R: $rhs} }
     level assignment { infix right "=" => Assign{L: $lhs, R: $rhs} }
@@ -209,7 +209,7 @@ Captures inside the operator part (`then:expr` and so on) can also be referenced
 
 ## Types
 
-- For `rule e T = operators { ... }`, the results of `operand` and of every operator action must be of type `T`.
+- For `rule e T = #operators { ... }`, the results of `operand` and of every operator action must be of type `T`.
 - `$lhs` and `$rhs` have type `T`.
 - If the rule has no type (`node`), an operator without an action produces the default CST node (next section). If the rule has a type, every operator must have an action.
 

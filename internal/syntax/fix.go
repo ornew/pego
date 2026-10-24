@@ -29,6 +29,7 @@ import (
 //     or has captures; "T{s}" becomes "T{Text: s}"; and text($x) and $x.Value become $x.Text
 //     where x captures a call of a rule of a terminal type. $x.Value also becomes $x.Text where
 //     x captures a call of a rule of a struct { Text string };
+//   - an Operators Rule "rule r = #operators { ... }" becomes "rule r = #operators { ... }";
 //   - a struct "type T = { Text string }" that rules make from the text they match,
 //     "rule r T = t:(e) #atomic => T{Text: text($t)}", and no other constructor makes, becomes
 //     the named node type "type T = node[string]", and those rules become "rule r T = (e) #atomic";
@@ -131,6 +132,9 @@ func fixTokens(src string, toks []token) string {
 		switch {
 		case is(i, tPunct, "--"):
 			replace(t, "#cut")
+		case depth == 0 && is(i, tPunct, "=") && is(i+1, tIdent, "operators") && is(i+2, tPunct, "{") && !toks[i+2].lineBefore:
+			// An Operators Rule is the pragma #operators { ... } at the start of a rule body.
+			replace(toks[i+1], "#operators")
 		case depth == 0 && is(i, tIdent, "type") && i+2 < len(toks) && toks[i+1].kind == tIdent:
 			switch {
 			case is(i+2, tIdent, "struct"):

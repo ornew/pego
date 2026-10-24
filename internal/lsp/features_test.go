@@ -461,24 +461,24 @@ func TestCompletion(t *testing.T) {
 	uri := "file:///comp.pego"
 	// Each line is a context; the cursor is at the end of the line unless noted.
 	lines := []string{
-		"type Num = { Text string }",                       // 0
-		"type P = { A Num; B Num }",                        // 1
-		"type Q = { A Num; ",                               // 2: a field name
-		"type R = { A Nu",                                  // 3: a field type
-		"rule num ",                                        // 4: the type of a rule
-		"rule a = n ",                                      // 5: a rule name
-		"rule b = x:num @",                                 // 6: an attribute
-		"rule c = x:num y:num => $",                        // 7: a capture after $
-		"rule d = x:num => foldl($x, $x, (acc, e) => ",     // 8: in a lambda body
-		"rule e = x:num => $x.",                            // 9: a member
-		"rule f = x:num {",                                 // 10: in a predicate
-		"rule g = operators { operand num; level { infix ", // 11: an associativity
-		"rule h = \"// not a comment",                      // 12: in a string
-		"// rule i =",                                      // 13: in a comment
-		"rule j = x:num => $x",                             // 14: typing a capture name
-		"type ",                                            // 15: the name of a new type
-		"type S ",                                          // 16: after a type name
-		"rule k = operators { operand ",                    // 17: an operand of a operatorsRule expression
+		"type Num = { Text string }",                        // 0
+		"type P = { A Num; B Num }",                         // 1
+		"type Q = { A Num; ",                                // 2: a field name
+		"type R = { A Nu",                                   // 3: a field type
+		"rule num ",                                         // 4: the type of a rule
+		"rule a = n ",                                       // 5: a rule name
+		"rule b = x:num @",                                  // 6: an attribute
+		"rule c = x:num y:num => $",                         // 7: a capture after $
+		"rule d = x:num => foldl($x, $x, (acc, e) => ",      // 8: in a lambda body
+		"rule e = x:num => $x.",                             // 9: a member
+		"rule f = x:num {",                                  // 10: in a predicate
+		"rule g = #operators { operand num; level { infix ", // 11: an associativity
+		"rule h = \"// not a comment",                       // 12: in a string
+		"// rule i =",                                       // 13: in a comment
+		"rule j = x:num => $x",                              // 14: typing a capture name
+		"type ",                                             // 15: the name of a new type
+		"type S ",                                           // 16: after a type name
+		"rule k = #operators { operand ",                    // 17: an operand of a operatorsRule expression
 		"rule l = xs:num* => foldl($xs, $xs, (acc, e) => $", // 18: captures only, not parameters
 		"rule m = xs:num* => list(map($xs, (e) => e), ",     // 19: after a lambda's body
 		"rule n = x:(a b) => ",                              // 20: a rule action, not a lambda
@@ -508,7 +508,7 @@ func TestCompletion(t *testing.T) {
 		{3, -1, sorted(userTypes, builtinTypeNames, statementKeywords)},
 		{4, -1, sorted(userTypes, builtinTypeNames)},
 		{5, -1, sorted(rules, statementKeywords)},
-		{5, 8, sorted(rules, statementKeywords, bodyKeywords)},
+		{5, 8, sorted(rules, statementKeywords)},
 		{6, -1, []string{"diagnostic", "error"}},
 		{7, -1, []string{"x", "y"}},
 		{8, -1, sorted([]string{"Num", "P", "Q", "R", "acc", "concat", "e", "filter", "foldl", "foldr", "len", "list", "map", "text"}, termKeywords)},
@@ -665,14 +665,14 @@ func semanticTokenTexts(t *testing.T, c *testClient, uri, src string) []string {
 func TestSemanticTokens(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///sem.pego"
-	src := "type N = { Text string } // c\n@start(default)\nrule ab = x:n \"s😀\" [a] #stream => P{F: len($x).Start}\nrule n N = operators {\n    operand a\n    level { infix left \"+\" }\n}\nrule bind = {v := 1}\nrule lam = xs:n* => map($xs, (e) => e)"
+	src := "type N = { Text string } // c\n@start(default)\nrule ab = x:n \"s😀\" [a] #stream => P{F: len($x).Start}\nrule n N = #operators {\n    operand a\n    level { infix left \"+\" }\n}\nrule bind = {v := 1}\nrule lam = xs:n* => map($xs, (e) => e)"
 	got := semanticTokenTexts(t, c, uri, src)
 	want := []string{
 		"type keyword", "N type.declaration", "Text property.declaration", "string type.defaultLibrary", "// c comment",
 		"start decorator", "rule keyword", "ab function.declaration", "x variable.declaration", "n function", `"s😀" string`, "[a] regexp",
 		"stream decorator", "P type", "F property", "len function.defaultLibrary", "$x parameter",
 		"Start property.defaultLibrary",
-		"rule keyword", "n function.declaration", "N type", "operators keyword", "operand keyword", "a function", "level keyword",
+		"rule keyword", "n function.declaration", "N type", "operators decorator", "operand keyword", "a function", "level keyword",
 		"infix keyword", "left keyword", `"+" string`, "rule keyword", "bind function.declaration", "v variable.declaration", "1 number",
 		"rule keyword", "lam function.declaration", "xs variable.declaration", "n function", "map function.defaultLibrary",
 		"$xs parameter", "e parameter",

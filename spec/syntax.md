@@ -101,7 +101,7 @@ rule node_type = (
 rule field_spec = !(comments "}") field
 rule field = comments field_body &source_item_tail field_end
 rule field_body = ident -ws type_expr
-rule type_expr = operators {
+rule type_expr = #operators {
     skip ws
     operand bottom
     operand !retired_type ident type_args
@@ -157,7 +157,7 @@ rule decl_attr_line_end = horizontal -nl comments
 rule whole_action = "=>" -ws action
 // The spacing before an action belongs to the action, so a rule without one ends at its expression.
 rule trailing_action = -ws whole_action
-rule rule_expr = operators {
+rule rule_expr = #operators {
     skip ws
     operand rule_group / predicate / level_call / bottom / top / begin_input / begin_line / end_input / end_line / any / cut / string / char_class / rule_ref
     level ordered_choice { infix left "/" }
@@ -240,7 +240,7 @@ rule ops_rule_plain = ops_rule_expr -(-ws &("#" !("ignorecase" !ident_char)) _|_
 // Operators Rule items and each level recover independently. An absent level
 // name remains nil; level(rule, name) can target only named levels.
 rule ops_rule_expr = (
-    "operators" !ident_char -ws &"{" #cut "{" {ml := false} &source_head_open ops_stmt*
+    "#operators" !ident_char -ws &"{" #cut "{" {ml := false} &source_head_open ops_stmt*
     comments -"}"
 )
 rule ops_stmt = (
@@ -285,7 +285,7 @@ rule action_block_value = -comments action_stmt -item_end
 rule action_stmt = action_bind_stmt / action_expr
 rule action_bind_stmt = ident -ws ":=" -ws action_expr
 rule action_expr = lambda / action_ops
-rule action_ops = operators {
+rule action_ops = #operators {
     skip !(ws "[" !"]") ws
     operand list_constructor / constructor / call / action_tuple / action_group / int / string / true_lit / false_lit / nil_lit / capture_ref / var_ref
     level disjunction { infix left "||" }

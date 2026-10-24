@@ -65,7 +65,7 @@ rule atom Atom = t:([a-z]+ ";") #atomic => Atom{Text: text($t)}
 type Post = { X Expr; Text node[_] | error }
 type Expr ~ Atom | Post
 rule main Expr = e:expr $$ => $e
-rule expr Expr = operators {
+rule expr Expr = #operators {
     skip (" " "!") #recover(skip=" " "?")
     operand atom
     level {

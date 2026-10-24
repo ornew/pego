@@ -7,7 +7,7 @@ import (
 
 // arith is a grammar with an Operators Rule expression that builds a CST (no actions).
 const arith = `rule main = e $$
-rule e = operators {
+rule e = #operators {
     skip " "*
     operand [0-9]+ #atomic / "(" x:e ")"
     level { infix none "==" }
@@ -70,7 +70,7 @@ rule ident = [a-z]+ #atomic
 rule args = (
     first:level(e, assignment) rest:(" "* "," r:level(e, assignment))*
 ) => concat(list($first), map($rest, (x) => x.$r))
-rule e Expr = operators {
+rule e Expr = #operators {
     skip " "*
     operand num
     operand ident
@@ -121,7 +121,7 @@ func TestOperatorsRuleJuxtaposition(t *testing.T) {
 	check(t, `type App = { F Expr; X Expr }
 type Expr ~ App | node[string]
 rule main = x:e $$ => $x
-rule e Expr = operators {
+rule e Expr = #operators {
     skip " "*
     operand [a-z]+ #atomic
     level { infix left "+" => App{F: $lhs, X: $rhs} }
@@ -134,7 +134,7 @@ rule e Expr = operators {
 
 func TestOperatorsRuleCut(t *testing.T) {
 	src := `rule main = e "+"?
-rule e = operators {
+rule e = #operators {
     operand [0-9]+ #atomic
     level { infix left "+" #cut }
 }`
@@ -145,7 +145,7 @@ rule e = operators {
 		fails("1+", `1:3: syntax error: expected [0-9]`),
 	)
 	check(t, `rule main = e "+"?
-rule e = operators {
+rule e = #operators {
     operand [0-9]+ #atomic
     level { infix left "+" }
 }`,
@@ -155,7 +155,7 @@ rule e = operators {
 
 func TestOperatorsRulePrefixFallback(t *testing.T) {
 	check(t, `rule main = e
-rule e = operators {
+rule e = #operators {
     operand "!" / [0-9]+ #atomic
     level { prefix "!" }
 }`,
@@ -168,7 +168,7 @@ rule e = operators {
 func TestOperatorsRuleLevelMemo(t *testing.T) {
 	// The same position yields different results at different binding levels.
 	check(t, `rule main = a:level(e, mul) "+" b:e
-rule e = operators {
+rule e = #operators {
     operand [0-9]+ #atomic
     level { infix left "+" }
     level mul { infix left "*" }
@@ -185,7 +185,7 @@ type Expr ~ Atom | Prefix | Binary | Postfix
 
 rule main = x:level(e, mul) $$ => $x
 rule atom Atom = t:("é" / "x" / "y" / "z") #atomic => Atom{Text: text($t)}
-rule e Expr = operators {
+rule e Expr = #operators {
     operand atom
     level loose {
         prefix "~" => Prefix{Op: $op, X: $rhs}
@@ -231,27 +231,27 @@ func TestOperatorsRuleRestrictedPrefix(t *testing.T) {
 
 func TestOperatorsRuleCompileErrors(t *testing.T) {
 	for _, tc := range []struct{ src, want string }{
-		{`rule e = operators {
+		{`rule e = #operators {
     operand e "x" / "1"
 }`, `operand of e calls e at its start (left recursion)`},
-		{`rule e = operators {
+		{`rule e = #operators {
     operand "1"
     level { infix left lhs:"+" }
 }`, `capture name lhs is reserved in operatorsRule operators`},
-		{`rule e = operators {
+		{`rule e = #operators {
     operand "1"
     level { prefix "-" => $lhs }
 }`, `undefined capture $lhs`},
-		{`rule e = operators {
+		{`rule e = #operators {
     operand "1"
     level a {}
     level a {}
 }`, `duplicate level name a`},
-		{`rule e = operators {
+		{`rule e = #operators {
     level { prefix "-" }
 }`, `operatorsRule needs at least one operand`},
 		{`rule main = level(e, nope)
-rule e = operators {
+rule e = #operators {
     operand "1"
 }`, `rule e has no level nope`},
 		{`rule main = "(" operators rule { operand "1" } ")"`, `syntax error`},
@@ -274,7 +274,7 @@ rule e = operators {
 // are not applied, instead of being applied forever.
 func TestOperatorsRuleEmptyPrefixAndPostfix(t *testing.T) {
 	check(t, `rule main = e $$
-rule e = operators {
+rule e = #operators {
     operand "x"
     level { prefix "-"? }
     level { postfix "!"? }
@@ -290,14 +290,14 @@ rule e = operators {
 // match empty, the loop would never end.
 func TestOperatorsRuleEmptyApplication(t *testing.T) {
 	check(t, `rule main = e $$
-rule e = operators {
+rule e = #operators {
     operand "a"?
     level { infix left _ }
 }`,
 		ok("a", `((lhs:"a"@e op:() nil)@e)@main`),
 		ok("", `((nil op:() nil)@e)@main`))
 	check(t, `rule main = e $$
-rule e = operators {
+rule e = #operators {
     operand "a"?
     level { postfix "!"? }
 }`,

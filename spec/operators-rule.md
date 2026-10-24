@@ -5,6 +5,10 @@ expressions by declaring operator parts at binding levels, each with a
 precedence and an associativity. Operand and operator shapes are ordinary Rule Expressions.
 Their combination follows a parsing algorithm inspired by Pratt parsing.
 
+An Operators Rule is written with the `#operators` pragma, which stands where an expression would and
+is valid only as the whole body of a rule: `rule e = #operators { ... }`. Anywhere else it is a syntax
+error. The word `operators` has no special meaning and is an ordinary identifier.
+
 ```pego
 type Num = node[string]
 type Ident = node[string]
@@ -18,7 +22,7 @@ type Index = { X Expr; Index Expr }
 type Member = { X Expr; Name Ident }
 type Expr ~ Num | Ident | Comma | Assign | Cond | Bin | Unary | Call | Index | Member
 
-rule expr Expr = operators {
+rule expr Expr = #operators {
     skip ws
     operand number
     operand ident
@@ -49,7 +53,7 @@ rule ws = [ \t\r\n]*
 ## Syntax
 
 ```text
-rule <name> [<Type Expression>] = operators {
+rule <name> [<Type Expression>] = #operators {
     skip <Rule Expression>
     operand <Rule Expression> [=> <action>]
     level [<level name>] {
@@ -276,7 +280,7 @@ applies to `N`, as an ordinary rule converts its value (see
 
 ```pego
 type Expr = node[_]
-rule expr Expr = operators {
+rule expr Expr = #operators {
     operand num
     level { infix left "+" }
     level { prefix "-" }
@@ -310,7 +314,7 @@ The value of an `operand` item without an action appears unchanged; with source
 information, a node that it creates is labeled with the name of the rule.
 
 ```pego
-rule e = operators {
+rule e = #operators {
     operand [0-9]+ #atomic
     level additive { infix left "+" }
     level multiplicative { infix left "*" }

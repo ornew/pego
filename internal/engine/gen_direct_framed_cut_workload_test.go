@@ -28,7 +28,7 @@ rule expr Doc = previous:expr ";" #cut items:(x:[a-z] #atomic #cut -",") #repeat
 type Post = { X Expr; Items []node[string]; N int }
 type Expr ~ Atom | Post
 rule main Expr = e:expr $$ => $e
-rule expr Expr = operators {
+rule expr Expr = #operators {
     skip (" " #cut)*
     operand a:atom #cut => $a
     level {

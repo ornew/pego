@@ -355,7 +355,7 @@ func (a *analysis) ruleHoverControlled(d *definition, control *renderControl) st
 		head += " " + t
 	}
 	if pr, _ := grammar.RuleOperators(d.rule.Expr); pr != nil {
-		head += " = operators { ... }"
+		head += " = #operators { ... }"
 	}
 	parts := []string{code(head)}
 	if note != "" {

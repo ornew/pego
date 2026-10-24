@@ -1,6 +1,6 @@
 // Operators Rule lines that recover: an operand, an operator and the skip line.
 rule main string = e:ops $$ => $e
-rule ops string = operators {
+rule ops string = #operators {
     skip (" " / "#" [^#]* #recover(skip=[^ ]*))*
     operand d:([0-9]+ #recover(skip=[a-z]*)) => "n"
     operand "(" e:ops ")" => "(" + $e + ")"

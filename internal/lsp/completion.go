@@ -248,9 +248,6 @@ func (a *analysis) completeControlled(off int, control *renderControl) []Complet
 		return keywordItems([]string{"left", "right", "none"})
 	}
 	items = append(items, a.ruleItemsControlled(control)...)
-	if prev == eq {
-		items = append(items, keywordItems(bodyKeywords)...)
-	}
 	if operatorsRule {
 		items = append(items, keywordItems(operatorsRuleKeywords)...)
 	}
@@ -332,7 +329,13 @@ func (a *analysis) ruleBodyStartControlled(st, prev int, control *renderControl)
 func (a *analysis) scanBodyControlled(eq, prev int, control *renderControl) (value, operatorsRule bool) {
 	control.poll()
 	first := a.significantTokenControlled(eq+1, control)
-	operatorsRule = a.isIdent(first, "operators") && a.isPunct(a.significantTokenControlled(first+1, control), "{")
+	// The token before the { that opens the Operators Rule block.
+	opener := first
+	if a.isPunct(first, "#") {
+		name := a.significantTokenControlled(first+1, control)
+		operatorsRule = a.isIdent(name, "operators") && a.isPunct(a.significantTokenControlled(name+1, control), "{")
+		opener = name
+	}
 	// Each PEG group has its own action context. Closing an inline group or
 	// a predicate restores the enclosing parsing-expression context.
 	type frame struct {
@@ -357,7 +360,7 @@ func (a *analysis) scanBodyControlled(eq, prev int, control *renderControl) (val
 			case "(":
 				stack = append(stack, frame{close: ")", value: top.value})
 			case "{":
-				list := operatorsRule && (previous == first || top.list && (a.isIdent(previous, "level") || a.isIdent(a.previousSignificantTokenControlled(previous-1, control), "level")))
+				list := operatorsRule && (previous == opener || top.list && (a.isIdent(previous, "level") || a.isIdent(a.previousSignificantTokenControlled(previous-1, control), "level")))
 				stack = append(stack, frame{close: "}", value: !list, list: list})
 			case "[":
 				stack = append(stack, frame{close: "]", value: top.value})

@@ -13,7 +13,7 @@ func TestPositionalCaptureCompileErrors(t *testing.T) {
 		{`rule main = "a" "b" => $3`, `1:24: positional capture $3 is removed; name the element with a capture`},
 		{`rule main = {x := $1} "a"
 rule b = "b"`, `1:19: positional capture $1 is removed; name the element with a capture`},
-		{`rule e = operators {
+		{`rule e = #operators {
     operand "1"
     level { infix left "+" => $1 }
 }`, `3:31: positional capture $1 is removed; name the element with a capture`},

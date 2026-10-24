@@ -103,7 +103,7 @@ func TestTrailingCommaLists(t *testing.T) {
 		// The lines of a list break the construct around it, which would read as lines next time.
 		{"block", "rule r = \"a\" {f(1,)} \"b\"\n", "rule r = \"a\" {\n    f(\n        1,\n    )\n} \"b\"\n"},
 		{"group with an action", "rule r = (\"a\" => f(1,)) \"b\"\n", "rule r = (\n    \"a\" => f(\n        1,\n    )\n) \"b\"\n"},
-		{"operators", "rule e Expr = operators {\n    operand n:int => f(1,)\n    level { infix left \"+\" => g(1, 2,) }\n    level { infix left \"-\" => g(1, 2) }\n}\n", "rule e Expr = operators {\n    operand n:int => f(\n        1,\n    )\n    level {\n        infix left \"+\" => g(\n            1,\n            2,\n        )\n    }\n    level { infix left \"-\" => g(1, 2) }\n}\n"},
+		{"operators", "rule e Expr = #operators {\n    operand n:int => f(1,)\n    level { infix left \"+\" => g(1, 2,) }\n    level { infix left \"-\" => g(1, 2) }\n}\n", "rule e Expr = #operators {\n    operand n:int => f(\n        1,\n    )\n    level {\n        infix left \"+\" => g(\n            1,\n            2,\n        )\n    }\n    level { infix left \"-\" => g(1, 2) }\n}\n"},
 		// Lists that take no trailing comma keep their form.
 		{"lambda parameters", "rule r = \"a\" => map(list(), (a, b) => a)\n", "rule r = \"a\" => map(list(), (a, b) => a)\n"},
 		{"repeat bounds", "rule r = \"a\" #repeat(1, 2)\n", "rule r = \"a\" #repeat(1, 2)\n"},

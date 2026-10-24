@@ -60,7 +60,7 @@ func TestValueTypes(t *testing.T) {
 		{`rule a = ("a" / -"b" -"c") "d"`, "a", `node[(*node[string], node[string])]`},
 		{`rule a = (("a")?)? "d"`, "a", `node[(*node[string], node[string])]`},
 		// Operator lines produce tuple nodes.
-		{"rule e = operators {\n    operand n\n    level { infix left \"+\" }\n    level { prefix \"-\" }\n}\nrule n = [0-9]+", "e",
+		{"rule e = #operators {\n    operand n\n    level { infix left \"+\" }\n    level { prefix \"-\" }\n}\nrule n = [0-9]+", "e",
 			`n | node[(e, node[string], e), {"lhs": 0, "op": 1, "rhs": 2}] | node[(node[string], e), {"op": 0, "rhs": 1}]`},
 		// A rule with an action has the action's type, in which a capture has the type of its value.
 		{`rule a = x:"1"* => $x`, "a", `node[[]node[string]]`},
@@ -198,7 +198,7 @@ func TestValueActionTypes(t *testing.T) {
 		{"type Foo = { Name node[string] }\nrule a = x:\"x\" => Foo{Name: $x}", "a", `Foo`},
 		{"type Foo = { Items []node[string] }\nrule a = x:\"x\"* => Foo{Items: $x.Value}", "a", `Foo`},
 		// Operators Rule actions see $lhs, $op and $rhs.
-		{"rule e = operators {\n    operand n:[0-9]+ => $n.Value\n    level { infix left \"+\" => $op }\n}", "e", `[]node[string] | node[string]`},
+		{"rule e = #operators {\n    operand n:[0-9]+ => $n.Value\n    level { infix left \"+\" => $op }\n}", "e", `[]node[string] | node[string]`},
 		// A declared type is the rule's type, node[_] included.
 		{"type Foo = {}\nrule a Foo = _ => Foo{}", "a", `Foo`},
 		{`rule a node[_] = x:"x" => $x`, "a", `node[_]`},
@@ -373,9 +373,9 @@ rule main = "a" {x := (y) => 1}`, "functions can only be passed to filter, foldl
 		{"rule main = x:n => $x.(P)\n" + castRules, "cannot cast Num to P"},
 		{"type Int = { Text string }\nvar x int\nrule main = {x := 1} \"x\" => []Int{x}", "cannot use int as Int in list constructor"},
 		{"type Int = { Text string }\nrule main = d:dyn => []Int{$d}\nrule dyn _ = ds / di\nrule ds = \"b\" => \"s\"\nrule di = _ => 1", "cannot use _ as Int in list constructor: the type of the value is not known; convert it with a cast, as in value.(Int)"},
-		{"type E = { X node[string] }\nrule e E = operators {\n    operand v1:\"1\" => E{X: $v1}\n    level { infix left \"+\" }\n}",
+		{"type E = { X node[string] }\nrule e E = #operators {\n    operand v1:\"1\" => E{X: $v1}\n    level { infix left \"+\" }\n}",
 			"operators of e without an action produce a tuple node, which is not assignable to E"},
-		{"type E = { X node[string] }\nrule e E = operators {\n    operand \"1\"\n}", "operatorsRule e produces node[string], which is not assignable to E"},
+		{"type E = { X node[string] }\nrule e E = #operators {\n    operand \"1\"\n}", "operatorsRule e produces node[string], which is not assignable to E"},
 	} {
 		_, errs := valueTypesOf(t, tc.src)
 		found := false

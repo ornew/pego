@@ -59,7 +59,7 @@ func TestCompletionCurrentContextsProtocol(t *testing.T) {
 		{"type Box = { Text string; Count int }\nrule main = \"a\" => Box{Text: \"a\", |}", []string{"Count"}, []string{"Text", "len"}},
 		{"rule main = \"a\" #recover(|)", []string{"skip"}, []string{"len", "main"}},
 		{"rule main = \"a\" #recover(skip=|)", []string{"main"}, []string{"len", "skip"}},
-		{"rule expr = operators {\n operand [0-9]\n level sum { infix left \"+\" }\n level product { infix left \"*\" }\n}\nrule main = level(expr, |)", []string{"sum", "product"}, []string{"expr", "len", "rule"}},
+		{"rule expr = #operators {\n operand [0-9]\n level sum { infix left \"+\" }\n level product { infix left \"*\" }\n}\nrule main = level(expr, |)", []string{"sum", "product"}, []string{"expr", "len", "rule"}},
 		{"rule main = \"a\" // |", nil, []string{"main", "rule", "skip"}},
 	} {
 		t.Run(tc.source, func(t *testing.T) {
@@ -95,7 +95,7 @@ func TestCommentAssociativityCurrentSyntaxProtocol(t *testing.T) {
 		for _, assoc := range []string{"left", "right", "none"} {
 			c := newInitialized(t)
 			uri := "file:///associativity.pego"
-			source := "@start" + newline + "rule main = operators {" + newline + "operand [0-9]" + newline + "level { infix " + assoc + " ( // 😀 gap" + newline + "// second" + newline + "\"+\" ) }" + newline + "}"
+			source := "@start" + newline + "rule main = #operators {" + newline + "operand [0-9]" + newline + "level { infix " + assoc + " ( // 😀 gap" + newline + "// second" + newline + "\"+\" ) }" + newline + "}"
 			if diags := c.open(uri, source); len(diags) != 0 {
 				t.Fatalf("current grammar diagnostics: %+v", diags)
 			}
@@ -140,8 +140,8 @@ func TestPlainDocumentationPreservesCode(t *testing.T) {
 func TestRejectedHeaderCommentsProtocol(t *testing.T) {
 	for _, source := range []string{
 		"@start\nrule main = \"a\" @ /* gap */ error(message=\"e\")",
-		"@start\nrule main = operators { operand [0-9]; level { infix /* gap */ left \"+\" } }",
-		"@start\nrule main = operators {\noperand [0-9]\nlevel { infix // gap\nleft \"+\" }\n}",
+		"@start\nrule main = #operators { operand [0-9]; level { infix /* gap */ left \"+\" } }",
+		"@start\nrule main = #operators {\noperand [0-9]\nlevel { infix // gap\nleft \"+\" }\n}",
 	} {
 		c := newInitialized(t)
 		if diagnostics := c.open("file:///invalid-header.pego", source); len(diagnostics) == 0 {

@@ -19,7 +19,7 @@ func rhsCheck(t *testing.T, rules string) (*info, *operatorsRuleCheck) {
 }
 
 func TestOperatorsRuleRHSStatus(t *testing.T) {
-	simple := `rule e = operators {
+	simple := `rule e = #operators {
     operand "a"
     level { prefix "~"; infix left "!" }
 }`
@@ -34,105 +34,105 @@ func TestOperatorsRuleRHSStatus(t *testing.T) {
 		{"complete final", simple, "!~a", true, matched, 3},
 		{"stable partial", simple, "!~a", false, matched, 3},
 		{"nested complete", simple, "!~~a", true, matched, 4},
-		{"prefix own bound", `rule e = operators {
+		{"prefix own bound", `rule e = #operators {
     operand "a"
     level { prefix "~" }
     level { infix left "+" }
     level { infix left "!" }
 }`, "!~a+a", true, matched, 5},
-		{"nested none returns", `rule e = operators {
+		{"nested none returns", `rule e = #operators {
     operand "a"
     level { infix left "!" }
     level { infix none "<" }
     level { infix none "=" }
 }`, "!a<a=a=a", true, matched, 8},
-		{"right none frames", `rule e = operators {
+		{"right none frames", `rule e = #operators {
     operand "a"
     level { infix left "!" }
     level { infix right "^"; infix none "=" }
 }`, "!a^a=a=a", true, matched, 8},
-		{"postfix resets none", `rule e = operators {
+		{"postfix resets none", `rule e = #operators {
     operand "a"
     level { infix left "!" }
     level { infix none "="; postfix "#" }
 }`, "!a=a#=a", true, matched, 7},
-		{"prefix fallback", `rule e = operators {
+		{"prefix fallback", `rule e = #operators {
     operand "a" / "~"
     level { prefix "~"; infix left "!" }
 }`, "!~", true, matched, 2},
-		{"longest failed no shorter", `rule e = operators {
+		{"longest failed no shorter", `rule e = #operators {
     operand "a" / "~x"
     level { prefix "~"; prefix "~~"; infix left "!" }
 }`, "!~~x", true, failed, 0},
-		{"longer prefix incomplete", `rule e = operators {
+		{"longer prefix incomplete", `rule e = #operators {
     operand "a"
     level { prefix "~"; prefix "~~"; infix left "!" }
 }`, "!~", false, more, 0},
-		{"nullable prefix consumes", `rule e = operators {
+		{"nullable prefix consumes", `rule e = #operators {
     operand "a"
     level { prefix "~"?; infix left "!" }
 }`, "!~", true, failed, 0},
-		{"empty prefix excluded", `rule e = operators {
+		{"empty prefix excluded", `rule e = #operators {
     operand "a"
     level { prefix ""; infix left "!" }
 }`, "!a", true, matched, 2},
-		{"empty postfix trivia rollback", `rule e = operators {
+		{"empty postfix trivia rollback", `rule e = #operators {
     skip " "*
     operand "a"
     level { infix left "!"; postfix "" }
 }`, "!a ", true, matched, 2},
-		{"nud skip retained on fallback", `rule e = operators {
+		{"nud skip retained on fallback", `rule e = #operators {
     skip " "*
     operand "a" / "~"
     level { prefix "~"; infix left "!" }
 }`, "! ~", true, matched, 3},
-		{"tail skip rollback", `rule e = operators {
+		{"tail skip rollback", `rule e = #operators {
     skip " "*
     operand "a"
     level { infix left "!" }
     level { infix left "*" }
 }`, "!a *x", true, matched, 2},
-		{"empty infix nullable progress", `rule e = operators {
+		{"empty infix nullable progress", `rule e = #operators {
     skip " "*
     operand "a" / ""
     level { infix left "!" }
     level { infix left "" }
 }`, "! a ", true, matched, 4},
-		{"later cut unknown", `rule e = operators {
+		{"later cut unknown", `rule e = #operators {
     operand "a"
     level { infix left "!" }
     level { infix left "*" #cut "b" }
 }`, "!a*x", true, unknown, 0},
-		{"ineligible cut candidate unknown", `rule e = operators {
+		{"ineligible cut candidate unknown", `rule e = #operators {
     operand "a"
     level { infix left "!"; infix left "*" #cut "b" }
 }`, "!a*x", true, unknown, 0},
-		{"unsafe future tail partial", `rule e = operators {
+		{"unsafe future tail partial", `rule e = #operators {
     operand "a"
     level { infix left "!" }
     level { infix left "*" #cut "b" }
 }`, "!a", false, more, 0},
-		{"unsafe future tail final", `rule e = operators {
+		{"unsafe future tail final", `rule e = #operators {
     operand "a"
     level { infix left "!" }
     level { infix left "*" #cut "b" }
 }`, "!a", true, matched, 2},
-		{"prefix cut unknown", `rule e = operators {
+		{"prefix cut unknown", `rule e = #operators {
     operand "a"
     level { prefix "~" #cut; infix left "!" }
 }`, "!~", true, unknown, 0},
-		{"operand predicate unknown", `rule e = operators {
+		{"operand predicate unknown", `rule e = #operators {
     operand "a" {true}
     level { infix left "!" }
 }`, "!a", true, unknown, 0},
-		{"explicit OperatorsRule ref unknown", `rule e = operators {
+		{"explicit OperatorsRule ref unknown", `rule e = #operators {
     operand inner
     level { infix left "!" }
 }
-rule inner = operators {
+rule inner = #operators {
     operand "a"
 }`, "!a", true, unknown, 0},
-		{"left recursion unknown", `rule e = operators {
+		{"left recursion unknown", `rule e = #operators {
     operand atom
     level { infix left "!" }
 }
@@ -154,16 +154,16 @@ rule atom = atom "a" / "a"`, "!a", true, unknown, 0},
 
 func TestOperatorsRuleRHSRecursiveWorkBudget(t *testing.T) {
 	for _, c := range []struct{ name, rules, text string }{
-		{"prefix", `rule e = operators {
+		{"prefix", `rule e = #operators {
     operand "a"
     level { prefix "~"; infix left "!" }
 }`, "!" + strings.Repeat("~", matchSteps) + "a"},
-		{"right", `rule e = operators {
+		{"right", `rule e = #operators {
     operand "a"
     level { infix left "!" }
     level { infix right "^" }
 }`, "!" + strings.Repeat("a^", matchSteps) + "a"},
-		{"empty right", `rule e = operators {
+		{"empty right", `rule e = #operators {
     operand ""
     level { infix left "!" }
     level { infix right "" }
@@ -178,7 +178,7 @@ func TestOperatorsRuleRHSRecursiveWorkBudget(t *testing.T) {
 			}
 		})
 	}
-	in, check := rhsCheck(t, `rule e = operators {
+	in, check := rhsCheck(t, `rule e = #operators {
     operand "a"
     level { prefix "~"; infix left "!" }
 }`)
@@ -190,7 +190,7 @@ func TestOperatorsRuleRHSRecursiveWorkBudget(t *testing.T) {
 }
 
 func TestOperatorsRulePrefixDeclarationTie(t *testing.T) {
-	in, check := rhsCheck(t, `rule e = operators {
+	in, check := rhsCheck(t, `rule e = #operators {
     operand "a"
     level { prefix "~"; infix left "!" }
     level { prefix "~" }
@@ -203,7 +203,7 @@ func TestOperatorsRulePrefixDeclarationTie(t *testing.T) {
 }
 
 func TestOperatorsRuleStableNestedWitness(t *testing.T) {
-	in, check := rhsCheck(t, `rule e = operators {
+	in, check := rhsCheck(t, `rule e = #operators {
     operand "a"
     level { prefix "~"; infix left "!" }
 }`)

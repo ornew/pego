@@ -1,7 +1,7 @@
 // Operators Rule lines with repeated captures, lookaheads with captures and predicates, cuts,
 // @error and @diagnostic.
 rule main string = e:ops $$ => $e
-rule ops string = operators {
+rule ops string = #operators {
     operand xs:(x:[a-z] y:[0-9]?)+ => text($xs)
     operand "(" _|_ e:ops ")" @error(message="close") => "(" + $e + ")"
     operand &(a:[0-9] {text($a) != "0"}) n:[0-9]+ @diagnostic(name="num") => text($n)

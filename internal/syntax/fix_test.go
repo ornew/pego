@@ -45,6 +45,11 @@ func TestFix(t *testing.T) {
 		{"rule struct_x = \"struct\" // type A struct", "rule struct_x = \"struct\" // type A struct"},
 		{"type K terminal\ntype P = {\n  type K\n  struct K\n}", "type K = node[string]\ntype P = {\n  type K\n  struct K\n}"},
 		{"type K terminal\ntype P struct { type K; struct K }", "type K = node[string]\ntype P = { type K; struct K }"},
+		// An Operators Rule starts with the pragma #operators.
+		{"rule e = operators {\n    operand \"x\"\n}", "rule e = #operators {\n    operand \"x\"\n}"},
+		{"rule e Expr = operators{ operand \"x\" }", "rule e Expr = #operators { operand \"x\" }"},
+		{"rule e = operators { operand \"x\" } #ignorecase", "rule e = #operators { operand \"x\" } #ignorecase"},
+		{"rule operators = \"x\"\nrule e = \"a\" operators {1 == 1}", "rule operators = \"x\"\nrule e = \"a\" operators {1 == 1}"},
 		{`rule a = "a"`, `rule a = "a"`},
 	} {
 		got, err := Fix(tc.in)

@@ -60,12 +60,12 @@ func TestFormatKeepsOwnersOfSharedLines(t *testing.T) {
 	tests := []struct{ name, src string }{
 		{"declarations", "package p; // a\nvar v = 1; /* b */ rule r = \"a\"; /* c */ type U ~ int // d\n"},
 		{"struct fields", "type T = { A int; /* y */ B string; C int } // z\nrule r = \"a\"\n"},
-		{"operators rule", "rule ops = operators { operand \"n\"; /* e */ level { infix left \"+\"; /* f */ prefix \"-\" }; operand \"m\" // h\n}\n"},
-		{"opening braces", "type T = { /* a */ A int }\nrule ops = operators { /* b */ operand \"n\"; level { /* c */ infix left \"+\" } }\n"},
-		{"before semicolons", "package p /* a */ ;\ntype T = { A int /* x */ ; B string /* y */ ; C int }\nvar v = 1 /* z */; rule r = \"a\" /* w */ ; rule ops = operators { operand \"n\" /* e */ ; level { infix left \"+\" /* f */ ; prefix \"-\" } /* g */ ; operand \"m\" }\n"},
+		{"operators rule", "rule ops = #operators { operand \"n\"; /* e */ level { infix left \"+\"; /* f */ prefix \"-\" }; operand \"m\" // h\n}\n"},
+		{"opening braces", "type T = { /* a */ A int }\nrule ops = #operators { /* b */ operand \"n\"; level { /* c */ infix left \"+\" } }\n"},
+		{"before semicolons", "package p /* a */ ;\ntype T = { A int /* x */ ; B string /* y */ ; C int }\nvar v = 1 /* z */; rule r = \"a\" /* w */ ; rule ops = #operators { operand \"n\" /* e */ ; level { infix left \"+\" /* f */ ; prefix \"-\" } /* g */ ; operand \"m\" }\n"},
 		{"field gaps", "type T = {\n\tA /* x */ /* y */ int\n\tB /* z */ string\n}\nrule r = \"a\"\n"},
-		{"later groups", "package p /* a1 */ /* a2 */ ;\ntype T = { A int /* x1 */ /* x2 */ ; B string /* y1 */ /* y2 */\n}\nrule r = \"a\" /* w1 */ /* w2 */ ; rule ops = operators { operand \"n\" /* e1 */ /* e2 */ ; level { infix left \"+\" /* f1 */ /* f2 */ } /* g1 */ /* g2 */\n}\nrule z = \"z\" /* z1 */ /* z2 */\n"},
-		{"level", "rule ops = operators {\n\toperand \"n\"\n\tlevel { /* a */ infix left \"+\" /* b */ } // c\n}\n"},
+		{"later groups", "package p /* a1 */ /* a2 */ ;\ntype T = { A int /* x1 */ /* x2 */ ; B string /* y1 */ /* y2 */\n}\nrule r = \"a\" /* w1 */ /* w2 */ ; rule ops = #operators { operand \"n\" /* e1 */ /* e2 */ ; level { infix left \"+\" /* f1 */ /* f2 */ } /* g1 */ /* g2 */\n}\nrule z = \"z\" /* z1 */ /* z2 */\n"},
+		{"level", "rule ops = #operators {\n\toperand \"n\"\n\tlevel { /* a */ infix left \"+\" /* b */ } // c\n}\n"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

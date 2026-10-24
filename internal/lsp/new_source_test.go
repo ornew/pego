@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewSourceServices(t *testing.T) {
-	src := "type N = { Text string }\n/* A number\nwith a name. */\n@start\nrule main = v1:digit @error(message=\"number\") => $v1\nrule expr N = operators {\n    operand digit\n    level { infix left \"+\" => $lhs }\n}\nrule digit N = t:([0-9]+) #atomic => N{Text: text($t)}\n"
+	src := "type N = { Text string }\n/* A number\nwith a name. */\n@start\nrule main = v1:digit @error(message=\"number\") => $v1\nrule expr N = #operators {\n    operand digit\n    level { infix left \"+\" => $lhs }\n}\nrule digit N = t:([0-9]+) #atomic => N{Text: text($t)}\n"
 	a := analyze(src)
 	if len(a.diags) != 0 {
 		t.Fatalf("diagnostics: %+v", a.diags)
@@ -17,13 +17,13 @@ func TestNewSourceServices(t *testing.T) {
 	if main == nil || expr == nil {
 		t.Fatalf("rules: %+v", a.rules)
 	}
-	if !strings.HasPrefix(src[main.start:main.end], "@start\nrule main =") || !strings.HasPrefix(src[expr.start:expr.end], "rule expr N = operators") || strings.Contains(src[expr.start:expr.end], "#atomic") {
+	if !strings.HasPrefix(src[main.start:main.end], "@start\nrule main =") || !strings.HasPrefix(src[expr.start:expr.end], "rule expr N = #operators") || strings.Contains(src[expr.start:expr.end], "#atomic") {
 		t.Fatalf("definition ranges: main=%q expr=%q", src[main.start:main.end], src[expr.start:expr.end])
 	}
 	if main.doc != "A number\nwith a name." {
 		t.Fatalf("documentation: %q", main.doc)
 	}
-	if hover := a.ruleHover(expr); !strings.Contains(hover, "rule expr N = operators") {
+	if hover := a.ruleHover(expr); !strings.Contains(hover, "rule expr N = #operators") {
 		t.Fatalf("hover: %s", hover)
 	}
 	for _, tok := range a.toks {
@@ -76,14 +76,14 @@ func TestNewSourceAttributeAndCommentContexts(t *testing.T) {
 	src := `type N = { X node[string] }
 rule digit = [0-9]
 @start
-rule expr N = operators { operand digit:digit => N{X:$digit} }`
+rule expr N = #operators { operand digit:digit => N{X:$digit} }`
 
 	a := analyze(src)
 	if len(a.diags) != 0 {
 		t.Fatalf("diagnostics: %+v", a.diags)
 	}
 	d := a.rules["expr"]
-	if d == nil || !strings.HasPrefix(src[d.start:d.end], "@start\nrule expr N = operators") {
+	if d == nil || !strings.HasPrefix(src[d.start:d.end], "@start\nrule expr N = #operators") {
 		t.Fatalf("definition: %+v", d)
 	}
 	off := strings.Index(src, "N{X:")

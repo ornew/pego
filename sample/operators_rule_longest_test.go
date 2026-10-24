@@ -12,68 +12,68 @@ import (
 
 func TestSampleOperatorsRuleLongestCallerStops(t *testing.T) {
 	for _, c := range []struct{ name, body, rules, input string }{
-		{"postfix", `level(e, tight) "!?" "a"`, `rule e = operators {
+		{"postfix", `level(e, tight) "!?" "a"`, `rule e = #operators {
     operand "a"
     level { postfix "!?" }
     level tight { postfix "!" }
 }`, "a!?a"},
-		{"infix", `level(e, tight) "!?" "a"`, `rule e = operators {
+		{"infix", `level(e, tight) "!?" "a"`, `rule e = #operators {
     operand "a"
     level { infix left "!?" }
     level tight { infix left "!" }
 }`, "a!?a"},
-		{"mixed postfix winner", `level(e, tight) "!?" "a"`, `rule e = operators {
+		{"mixed postfix winner", `level(e, tight) "!?" "a"`, `rule e = #operators {
     operand "a"
     level { postfix "!?" }
     level tight { infix left "!" }
 }`, "a!?a"},
-		{"mixed infix winner", `level(e, tight) "!?" "a"`, `rule e = operators {
+		{"mixed infix winner", `level(e, tight) "!?" "a"`, `rule e = #operators {
     operand "a"
     level { infix left "!?" }
     level tight { postfix "!" }
 }`, "a!?a"},
-		{"first declaration tie", `level(e, tight) "!" "a"`, `rule e = operators {
+		{"first declaration tie", `level(e, tight) "!" "a"`, `rule e = #operators {
     operand "a"
     level { postfix "!" }
     level tight { postfix "!" }
 }`, "a!a"},
-		{"closed none winner", `e "<=" "a"`, `rule e = operators {
+		{"closed none winner", `e "<=" "a"`, `rule e = #operators {
     operand "a" / "=a"
     level { infix left "<" }
     level { infix none "<=" }
 }`, "a<=a<=a"},
-		{"Unicode skip", `level(e, tight) " ¬? α"`, `rule e = operators {
+		{"Unicode skip", `level(e, tight) " ¬? α"`, `rule e = #operators {
     skip " "*
     operand "α"
     level { postfix "¬?" }
     level tight { postfix "¬" }
 }`, "α ¬? α"},
-		{"empty postfix", `level(e, tight) "!"`, `rule e = operators {
+		{"empty postfix", `level(e, tight) "!"`, `rule e = #operators {
     operand "a"
     level { postfix "" }
     level tight {}
 }`, "a!"},
-		{"uncertain cut part", `level(e, tight) "!?" "a"`, `rule e = operators {
+		{"uncertain cut part", `level(e, tight) "!?" "a"`, `rule e = #operators {
     operand "a"
     level { postfix "!?" #cut }
     level tight { postfix "!" }
 }`, "a!?a"},
-		{"true postfix continuation", `level(e, tight)`, `rule e = operators {
+		{"true postfix continuation", `level(e, tight)`, `rule e = #operators {
     operand "a"
     level { postfix "!?" }
     level tight { postfix "!" }
 }`, "a!"},
-		{"true infix continuation", `level(e, tight)`, `rule e = operators {
+		{"true infix continuation", `level(e, tight)`, `rule e = #operators {
     operand "a"
     level { infix left "!?" }
     level tight { infix left "!" }
 }`, "a!a"},
-		{"infix prefix RHS", `level(e, tight)`, `rule e = operators {
+		{"infix prefix RHS", `level(e, tight)`, `rule e = #operators {
     operand "a"
     level { prefix "~" }
     level tight { infix left "!" }
 }`, "a!~a"},
-		{"infix without RHS", `level(e, tight) "!"`, `rule e = operators {
+		{"infix without RHS", `level(e, tight) "!"`, `rule e = #operators {
     operand "a"
     level { infix left "!?" }
     level tight { infix left "!" }

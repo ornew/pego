@@ -18,7 +18,7 @@ func TestNormalizationCopyOnChangeParity(t *testing.T) {
 type Alias ~ (Number)
 var count int
 rule main (Alias) = {count := (1)} {(count == 1)} n:([0-9]+) => (Number{Text: (text($n))})`,
-		`rule main = operators {
+		`rule main = #operators {
     skip " "*
     operand [0-9]+
     operand "(" main ")"
@@ -163,7 +163,7 @@ func BenchmarkAttributeNormalization(b *testing.B) {
 		"plain":      `rule main = "a"? (&"b" / !"x") "b"+ $$`,
 		"attributes": `rule main = ("a" @error("as")) "b" @error(message="bs") $$`,
 		"pragmas":    `rule main = ("a" #repeat(1, 3) #atomic ";") #recover(skip=[^;]+ ";") $$`,
-		"operators":  `rule main = operators { skip " "*; operand [0-9]+; operand "(" main ")"; level { infix left "+" / "-" }; level product { infix left "*" / "/" } }`,
+		"operators":  `rule main = #operators { skip " "*; operand [0-9]+; operand "(" main ")"; level { infix left "+" / "-" }; level product { infix left "*" / "/" } }`,
 	}
 	source, err := os.ReadFile("../../pego.pego")
 	if err != nil {

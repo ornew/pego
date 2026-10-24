@@ -74,11 +74,11 @@ rule _main_1 = y:[^;]+ => text($y)`, []string{"ab;cd;", "ab;1x;cd;", "1x;", "ab"
 		{"stream", `rule main = (x:[a-z]+ #atomic ";" => text($x))* #stream`, `rule main = _main_1* #stream
 rule _main_1 = x:[a-z]+ #atomic ";" => text($x)`, []string{"", "ab;", "ab;cd;", "ab"}},
 		{"operators rule operand", `type N = { T string }
-rule main = operators {
+rule main = #operators {
     operand (t:[0-9]+ #atomic => N{T: text($t)})
     level { infix left "+" }
 }`, `type N = { T string }
-rule main = operators {
+rule main = #operators {
     operand _main_1
     level { infix left "+" }
 }

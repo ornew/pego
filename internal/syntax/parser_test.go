@@ -91,7 +91,7 @@ rule group Node = "(" e:expr ")" => $e
 rule number Number = t:([0-9]+ #atomic) => Number{Text: text($t)}
 rule main = ^^ expr $$
 
-rule e = operators {
+rule e = #operators {
     skip ws
     operand number / "(" e:e ")" => $e
     level { infix right "?" then:e ":" => Cond{Cond: $lhs, Then: $then, Else: $rhs} }
@@ -168,7 +168,7 @@ func TestParseErrors(t *testing.T) {
 		{`type A B`, `1:8: expected '=' or '~', found 'B'`},
 		{`type A = node[string, int]`, `a node type takes one type argument: type A = node[T]`},
 		{`type A = node`, `1:8: expected '{' or 'node[' after '='`},
-		{`rule a = operators { level { infix "+" } }`, `1:36: expected 'left', 'right', or 'none', found "+"`},
+		{`rule a = #operators { level { infix "+" } }`, `1:37: expected 'left', 'right', or 'none', found "+"`},
 		{`rule a = x => A{X 1}`, `1:19: expected ',', found 1`},
 		{"rule a = %\nrule b = c", `1:10: expected an expression, found '%'`},
 		{"rule a = `", "1:10: unexpected character '`'"},
