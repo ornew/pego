@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -592,6 +593,33 @@ func TestCaptureMemberCompletion(t *testing.T) {
 	} {
 		if got := completionLabels(c, uri, tc.line, len([]rune(lines[tc.line]))); !reflect.DeepEqual(got, tc.want) {
 			t.Errorf("line %d (%q):\ngot  %q\nwant %q", tc.line, lines[tc.line], got, tc.want)
+		}
+	}
+}
+
+// TestOperatorsPragmaCompletion checks that #operators is offered after "#" only where a rule body
+// starts, and not in the middle of an expression or after the = of a var.
+func TestOperatorsPragmaCompletion(t *testing.T) {
+	c := newInitialized(t)
+	defer c.exit()
+	for i, tc := range []struct {
+		src  string
+		want bool
+	}{
+		{"rule a = #", true},
+		{"rule a Expr = #", true},
+		{"rule a = \"x\" #", false},
+		{"rule a = (#", false},
+		{"var v = #", false},
+	} {
+		uri := fmt.Sprintf("file:///operators-pragma-%d.pego", i)
+		c.open(uri, tc.src)
+		got := completionLabels(c, uri, 0, len([]rune(tc.src)))
+		if has := slices.Contains(got, "operators"); has != tc.want {
+			t.Errorf("%q: operators offered %v, want %v (%q)", tc.src, has, tc.want, got)
+		}
+		if !slices.Contains(got, "cut") {
+			t.Errorf("%q: cut not offered (%q)", tc.src, got)
 		}
 	}
 }

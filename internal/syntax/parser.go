@@ -945,6 +945,10 @@ func (p *parser) ruleDef() (sourceResult *grammar.RuleDef) {
 		p.errorf("an Operators Rule is written #operators { ... }; run pego fix to rewrite operators {")
 		panic(bail{})
 	}
+	if !p.boundary() && p.isOperatorsWord() && !p.isOperatorsStart() {
+		p.errorf("#operators must be followed by { on the same line")
+		panic(bail{})
+	}
 	if !p.boundary() && p.isOperatorsStart() {
 		p.next()
 		p.next()
@@ -1667,18 +1671,23 @@ func (p *parser) isOperatorsStart() bool {
 }
 
 // isOldOperatorsStart reports whether the body of a rule starts like an Operators Rule written
-// without the pragma: operators, a { on the same line, and an item that starts with one of the
-// item words followed by something that cannot continue a term. A body such as operators {x == 1}
-// is a reference to a rule named operators followed by a predicate.
-func (p *parser) isOldOperatorsStart() bool {
-	if !p.is("operators") {
+// without the pragma. See oldOperatorsStart.
+func (p *parser) isOldOperatorsStart() bool { return oldOperatorsStart(p.peek) }
+
+// oldOperatorsStart reports whether the tokens from at(0) are the start of an Operators Rule
+// written without the pragma: operators, a { on the same line, and an item that starts with one
+// of the item words followed by something that cannot continue a term. A body such as
+// operators {x == 1} or operators {level {x} > 0} is a reference to a rule named operators
+// followed by a predicate. The parser's hint and pego fix both use it.
+func oldOperatorsStart(at func(int) token) bool {
+	if t := at(0); t.kind != tIdent || t.text != "operators" {
 		return false
 	}
-	open := p.peek(1)
+	open := at(1)
 	if open.kind != tPunct || open.text != "{" || open.lineBefore {
 		return false
 	}
-	word, next := p.peek(2), p.peek(3)
+	word, next := at(2), at(3)
 	if word.kind != tIdent {
 		return false
 	}
@@ -1691,9 +1700,28 @@ func (p *parser) isOldOperatorsStart() bool {
 	case tString, tCharClass, tIdent:
 		return true
 	case tPunct:
-		return next.text == "{" || next.text == "(" && next.spaceBefore
+		if next.text == "{" {
+			// level { infix ...; a predicate {x} holds no operator word.
+			if in := at(4); word.text == "level" && in.kind == tIdent {
+				switch in.text {
+				case "prefix", "postfix", "infix":
+					return true
+				}
+			}
+			return false
+		}
+		return next.text == "(" && next.spaceBefore
 	}
 	return false
+}
+
+// isOperatorsWord reports whether the current tokens are #operators, whether or not a { follows.
+func (p *parser) isOperatorsWord() bool {
+	if !p.is("#") {
+		return false
+	}
+	n := p.peek(1)
+	return n.kind == tIdent && n.text == "operators" && !n.spaceBefore
 }
 
 // operatorsPlacementError reports #operators { where an expression or a pragma stands.

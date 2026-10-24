@@ -551,3 +551,34 @@ func TestSourceGrammarPackageRecovery(t *testing.T) {
 		}
 	}
 }
+
+// TestSourceGrammarOperatorsPlacement checks that the source grammar and the reference parser
+// agree on where #operators { is valid: only as the whole body of a rule, with its { on the same
+// line.
+func TestSourceGrammarOperatorsPlacement(t *testing.T) {
+	p, _ := sourceGrammar(t)
+	for _, tc := range []struct {
+		name, src string
+		valid     bool
+	}{
+		{"whole body", `rule a = #operators { operand "x" }`, true},
+		{"typed body", "type T = { Text string }\nrule a T = #operators { operand \"x\" }", true},
+		{"after an expression", `rule a = "a" #operators { operand "x" }`, false},
+		{"in a group", `rule a = ("a" / #operators { operand "x" })`, false},
+		{"brace on the next line", "rule a = #operators\n{ operand \"x\" }", false},
+		{"no brace", `rule a = #operators`, false},
+		{"arguments", `rule a = #operators( operand "x" )`, false},
+		{"reference and predicate", `rule operators = "x"` + "\n" + `rule a = operators {1 == 1}`, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, refErr := pego.ParseGrammar(tc.src)
+			_, err := p.Parse(tc.src, pego.RecognizeOnly())
+			if (refErr == nil) != tc.valid {
+				t.Errorf("reference parser: valid %v, want %v (%v)", refErr == nil, tc.valid, refErr)
+			}
+			if (err == nil) != tc.valid {
+				t.Errorf("source grammar: valid %v, want %v (%v)", err == nil, tc.valid, err)
+			}
+		})
+	}
+}

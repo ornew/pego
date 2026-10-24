@@ -50,6 +50,9 @@ func TestFix(t *testing.T) {
 		{"rule e Expr = operators{ operand \"x\" }", "rule e Expr = #operators { operand \"x\" }"},
 		{"rule e = operators { operand \"x\" } #ignorecase", "rule e = #operators { operand \"x\" } #ignorecase"},
 		{"rule operators = \"x\"\nrule e = \"a\" operators {1 == 1}", "rule operators = \"x\"\nrule e = \"a\" operators {1 == 1}"},
+		{"rule operators = \"x\"\nrule e = operators {x == 1}", "rule operators = \"x\"\nrule e = operators {x == 1}"},
+		{"rule operators = \"x\"\nrule e = operators {level {x} > 0}", "rule operators = \"x\"\nrule e = operators {level {x} > 0}"},
+		{"rule e = operators {\n    level { infix left \"+\" }\n}", "rule e = #operators {\n    level { infix left \"+\" }\n}"},
 		{`rule a = "a"`, `rule a = "a"`},
 	} {
 		got, err := Fix(tc.in)
@@ -62,6 +65,26 @@ func TestFix(t *testing.T) {
 		}
 		if _, err := Parse(got); err != nil {
 			t.Errorf("Fix(%q) = %q does not parse: %v", tc.in, got, err)
+		}
+	}
+}
+
+// pego fix rewrites operators { only where it starts a rule body: after the = of a type or a var,
+// operators { is not the old spelling, even if the result is not valid.
+func TestFixOperatorsOnlyInRuleBody(t *testing.T) {
+	for _, in := range []string{
+		"type T = operators {A int}",
+		"var v = operators {A int}",
+		"var v = operators {operand \"x\"}",
+		"type T = operators {operand \"x\"}",
+	} {
+		got, err := Fix(in)
+		if err != nil {
+			t.Errorf("Fix(%q): %v", in, err)
+			continue
+		}
+		if strings.Contains(got, "#operators") {
+			t.Errorf("Fix(%q) = %q rewrote operators outside a rule body", in, got)
 		}
 	}
 }

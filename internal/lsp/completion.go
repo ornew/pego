@@ -162,7 +162,17 @@ func (a *analysis) completeControlled(off int, control *renderControl) []Complet
 	case "@":
 		return directiveItems(attributes)
 	case "#":
-		return directiveItems(pragmas)
+		if a.atRuleBodyStartControlled(prev, control) {
+			return directiveItems(pragmas)
+		}
+		// #operators is the whole body of a rule, so it is offered only where one starts.
+		var list []builtin
+		for _, b := range pragmas {
+			if b.name != "operators" {
+				list = append(list, b)
+			}
+		}
+		return directiveItems(list)
 	case "$":
 		capture = true
 	}
@@ -308,6 +318,22 @@ func (a *analysis) valueItemsControlled(control *renderControl) []CompletionItem
 		items = append(items, CompletionItem{Label: v, Kind: completionKindVariable, Detail: "variable"})
 	}
 	return items
+}
+
+// atRuleBodyStartControlled reports whether the token hash, a "#", is the first token of the body
+// of a rule: the token before it is the "=" that follows the rule's header.
+func (a *analysis) atRuleBodyStartControlled(hash int, control *renderControl) bool {
+	control.poll()
+	eq := a.previousSignificantTokenControlled(hash-1, control)
+	if eq < 0 || !a.isPunct(eq, "=") {
+		return false
+	}
+	st := eq
+	for st >= 0 && !a.isDefKeyword(st) {
+		control.poll()
+		st--
+	}
+	return st >= 0 && a.isIdent(st, "rule") && a.ruleBodyStartControlled(st, eq, control) == eq
 }
 
 // ruleBodyStart returns the equals sign of the rule whose keyword is token st, if it

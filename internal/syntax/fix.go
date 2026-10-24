@@ -29,7 +29,7 @@ import (
 //     or has captures; "T{s}" becomes "T{Text: s}"; and text($x) and $x.Value become $x.Text
 //     where x captures a call of a rule of a terminal type. $x.Value also becomes $x.Text where
 //     x captures a call of a rule of a struct { Text string };
-//   - an Operators Rule "rule r = #operators { ... }" becomes "rule r = #operators { ... }";
+//   - an Operators Rule "rule r = operators { ... }" becomes "rule r = #operators { ... }";
 //   - a struct "type T = { Text string }" that rules make from the text they match,
 //     "rule r T = t:(e) #atomic => T{Text: text($t)}", and no other constructor makes, becomes
 //     the named node type "type T = node[string]", and those rules become "rule r T = (e) #atomic";
@@ -120,6 +120,16 @@ func fixTokens(src string, toks []token) string {
 	// depth counts open brackets, so that only a "type" at the top level, which starts a
 	// declaration, is rewritten: struct fields may be named type or struct.
 	depth := 0
+	// header is set from the keyword rule of a declaration to the = that starts its body.
+	header := false
+	at := func(i int) func(int) token {
+		return func(k int) token {
+			if i+k < len(toks) {
+				return toks[i+k]
+			}
+			return toks[len(toks)-1]
+		}
+	}
 	for i, t := range toks {
 		if t.kind == tPunct {
 			switch t.text {
@@ -129,10 +139,19 @@ func fixTokens(src string, toks []token) string {
 				depth = max(depth-1, 0)
 			}
 		}
+		wasHeader := header
+		if depth == 0 {
+			switch {
+			case is(i, tIdent, "rule") && i+1 < len(toks) && toks[i+1].kind == tIdent:
+				header = true
+			case is(i, tPunct, "="), is(i, tIdent, "type"), is(i, tIdent, "var"):
+				header = false
+			}
+		}
 		switch {
 		case is(i, tPunct, "--"):
 			replace(t, "#cut")
-		case depth == 0 && is(i, tPunct, "=") && is(i+1, tIdent, "operators") && is(i+2, tPunct, "{") && !toks[i+2].lineBefore:
+		case depth == 0 && wasHeader && is(i, tPunct, "=") && oldOperatorsStart(at(i+1)):
 			// An Operators Rule is the pragma #operators { ... } at the start of a rule body.
 			replace(toks[i+1], "#operators")
 		case depth == 0 && is(i, tIdent, "type") && i+2 < len(toks) && toks[i+1].kind == tIdent:

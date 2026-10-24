@@ -59,7 +59,7 @@ The design therefore combines the strengths of both.
 ## Syntax
 
 ```
-OperatorsRule = "operators" "rule" Name Type? "{" OperatorsRuleItem* "}"
+OperatorsRule = "rule" Name Type? "=" "#operators" "{" OperatorsRuleItem* "}"
 OperatorsRuleItem = Skip / Operand / Level
 Skip        = "skip" Expr
 Operand     = "operand" Expr ("=>" Action)?
