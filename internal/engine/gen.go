@@ -573,6 +573,11 @@ type generator struct {
 	streamStart *rule
 	streamBody  bool
 	streamErr   error
+	// plainCalled holds the plain rules that a generated call refers to by their wrapper
+	// (ruleCall). wrappers are the methods of the plain rules, which dropUnusedWrappers keeps only
+	// for the rules in plainCalled.
+	plainCalled map[*rule]bool
+	wrappers    []wrapperSpan
 	// fieldTypes names the field type variable of each checked constructed field, result and cast (by
 	// *grammar.FieldInit or checkInfo.results key), numbered separately so that checks do not
 	// rename other generated names (runtime/fieldcheck.go).
@@ -737,6 +742,11 @@ func (g *generator) recovers() bool {
 	return found
 }
 
+// directRouteHook is called with the rule table and the rule for each rule that takes a direct route
+// in rules: the lean route of a Node or recognizer table, and the Flow route of the recognizer
+// table. Tests set it to check the route that is chosen, not the text of the generated code.
+var directRouteHook func(table string, r *rule)
+
 func (g *generator) rules() {
 	init := &g.init
 	methodsBefore := g.methods.String()
@@ -755,6 +765,9 @@ func (g *generator) rules() {
 			}
 		} else if g.flow != nil && g.table == "recRules" && recFlowEligible(r) && !g.sharedDirectBody(r) {
 			if d := g.flowRecDirect(r); d != nil {
+				if directRouteHook != nil {
+					directRouteHook(g.table, r)
+				}
 				directs[r] = d
 				bodies[r] = g.directLeanBody(r, d)
 				continue
@@ -764,6 +777,9 @@ func (g *generator) rules() {
 			// Value-free Node rules retain one for generic calls and external entry, whose
 			// caller owns depth.
 			if d := g.directRule(r); d != nil {
+				if directRouteHook != nil {
+					directRouteHook(g.table, r)
+				}
 				directs[r] = d
 				bodies[r] = g.directLeanBody(r, d)
 				continue
@@ -918,11 +934,13 @@ func (g *generator) rules() {
 		if g.table == "trules" {
 			g.typedCall(r, bodies[r], scopes[r], nil)
 		} else if r.plain {
+			start := g.methods.Len()
 			if d := directs[r]; d != nil {
 				g.directMethod(r, d, fmt.Sprintf("%s%d", g.plainPrefix(), r.id), "called as by invokePlain", true)
 			} else {
 				g.plainCall(r, bodies[r])
 			}
+			g.wrappers = append(g.wrappers, wrapperSpan{r: r, start: start, end: g.methods.Len()})
 		}
 	}
 	if r := g.streamStart; r != nil && g.table == "rules" {
@@ -940,6 +958,7 @@ func (g *generator) rules() {
 		fmt.Fprintf(init, "\tstreamRule = new(Rule)\n\t*streamRule = *rules[%d]\n\tstreamRule.Scope = %s\n\tstreamRule.Body = func(p *Parser, _ int) (*Node, bool) { return %s(p) }\n", r.id, goStrings(s.names), body)
 		g.methods.WriteString("// streamRule is the start rule of ParseStream.\nvar streamRule *Rule\n\n")
 	}
+	g.dropUnusedWrappers()
 	if g.table != "rules" {
 		return // the recognizer shares the struct fields
 	}
@@ -1136,6 +1155,32 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 	fmt.Fprintf(m, "\tv, ok := %s(p)\n\tp.Depth--\n\tp.Frame, p.Cut = prevFrame, prevCut\n\tp.DropTrail(trail)\n\tif ok {\n", body)
 	finish("f")
 	m.WriteString("\t}\n\tp.Env = prevEnv\n\tp.FreeFrame(f)\n\treturn v, ok\n}\n\n")
+}
+
+// wrapperSpan is the span [start, end) of the methods of a plain rule's wrapper in generator.methods.
+type wrapperSpan struct {
+	r          *rule
+	start, end int
+}
+
+// dropUnusedWrappers removes the wrappers of the plain rules that no generated call refers to. It
+// runs after the bodies and the stream body, which are the last generated calls, so that a wrapper
+// is kept exactly when a call of it was generated. Spans are removed from the last one to the first,
+// so the earlier spans keep their offsets.
+func (g *generator) dropUnusedWrappers() {
+	text := g.methods.String()
+	for i := len(g.wrappers) - 1; i >= 0; i-- {
+		w := g.wrappers[i]
+		if !strings.HasPrefix(text[w.start:w.end], "// ") || !strings.HasSuffix(text[w.start:w.end], "}\n\n") {
+			panic(fmt.Sprintf("internal error: the wrapper of %s is not at its recorded span", w.r.name))
+		}
+		if !g.plainCalled[w.r] {
+			text = text[:w.start] + text[w.end:]
+		}
+	}
+	g.wrappers = nil
+	g.methods.Reset()
+	g.methods.WriteString(text)
 }
 
 // plainPrefix is the prefix of the methods written by plainCall, and seenVar the variable that
@@ -1517,6 +1562,10 @@ func (g *generator) ruleCall(r *rule, min int) string {
 	case r.plain && !operatorsRule:
 		// Never memoized and without captures: call does nothing but invokePlain, which a
 		// method of its own does with a direct call of the body (see plainCalls).
+		if g.plainCalled == nil {
+			g.plainCalled = map[*rule]bool{}
+		}
+		g.plainCalled[r] = true
 		return fmt.Sprintf("%s%d(p)", g.plainPrefix(), r.id)
 	case g.table == "trules" && !operatorsRule && !r.leader:
 		// The typed runtime calls a method of the rule's own (typedCall).

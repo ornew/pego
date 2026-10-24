@@ -37,18 +37,22 @@ rule left = left "+" "é" / "é"
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The depth comparison below runs the recognizer table (recRules), so the route is checked there.
+	taken := map[string]bool{}
+	directRouteHook = func(table string, r *rule) { taken[table+"/"+r.name] = true }
 	code, err := generateCode(g, GenOptions{Package: "depth", Start: "main", Recognize: true})
+	directRouteHook = nil
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"main", "one", "two", "three", "four", "five"} {
-		if !strings.Contains(string(code), "// "+name+", called as by invokePlain (body inlined)") {
-			t.Fatalf("no direct route for %s", name)
+		if !taken["recRules/"+name] {
+			t.Fatalf("no direct route for %s in recRules", name)
 		}
 	}
 	for _, name := range []string{"cap", "bind", "cut", "recovering", "expression", "left"} {
-		if strings.Contains(string(code), "// "+name+", called as by invokePlain (body inlined)") {
-			t.Fatalf("unsupported direct route for %s", name)
+		if taken["recRules/"+name] {
+			t.Fatalf("unsupported direct route for %s in recRules", name)
 		}
 	}
 	if !strings.Contains(string(code), "var pegoGrammar = rt.NewGrammar(100000)") {
