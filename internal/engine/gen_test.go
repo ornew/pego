@@ -33,6 +33,12 @@ rule main R = {s := s + "!"} g:grow "," h:grow "," t:test $$ => R{N: n + $g + $h
 rule grow int = {n := n + 1} "a" => n
 rule test bool = "y" {b == false} => b == false
 `, []string{"a,a,y", "a,a,x", "a,a,", "a,", "y", ""}},
+		// Case-insensitive literals: a suffix and a pragma. Their first characters are both cases, so a
+		// guard of such an alternative must test both.
+		{"case-insensitive literal alternatives", `rule main = (kw / id)+ !.
+rule kw = "select"i / "from"i / "x"
+rule id = [a-z]+`, []string{"SELECT", "select", "From fRoM", "sel x", "Xx", "x", "", "1"}},
+		{"ignorecase group", `rule main = (("ab" / "cd") #ignorecase "e" / "x") !.`, []string{"ABe", "cdE", "CDe", "ABE", "x", "xe", "", "ab", "cde"}},
 		// item is called three times at the same position under different values of d, so a memo
 		// entry made for d = 2 would serve the call with d = 3 if d were left out of the key.
 		{"memo entries are keyed by the variables the rule reads", `var d int

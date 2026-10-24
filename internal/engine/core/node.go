@@ -37,8 +37,11 @@ func (b *base) Attrs() *Attrs { return &b.attrs }
 // the current position, after entering Depth rule calls (Call and Nest) on the way.
 type First struct {
 	// Lit reports a literal, whose first code point is Rune; otherwise Class is the class.
-	Lit   bool
-	Rune  rune
+	Lit  bool
+	Rune rune
+	// Fold reports that the literal is case-insensitive and Rune an ASCII lower-case letter: the
+	// first character is Rune or its upper-case form.
+	Fold  bool
 	Class *Class
 	// Exp is the expectation the node records when the next character cannot begin it: that of
 	// the literal or the class.

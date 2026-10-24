@@ -600,6 +600,9 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 		var cond string
 		if x.Guard.Lit {
 			cond = fmt.Sprintf("ch == %d", x.Guard.Rune)
+			if x.Guard.Fold {
+				cond = fmt.Sprintf("ch == %d || ch == %d", x.Guard.Rune, x.Guard.Rune-('a'-'A'))
+			}
 		} else {
 			cond = negateCondition(g.controlledClassReject(grammarClass(x.Guard.Class)))
 		}

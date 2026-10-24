@@ -274,6 +274,9 @@ func firstString(m *Module, f *First) string {
 	s := classString(f.Class)
 	if f.Lit {
 		s = strconv.QuoteRune(f.Rune)
+		if f.Fold {
+			s += "i"
+		}
 	}
 	if f.Depth > 0 {
 		s += fmt.Sprintf("+%d", f.Depth)

@@ -203,3 +203,30 @@ func TestPassesScanPreconditions(t *testing.T) {
 		t.Errorf("scan of any character: %+v", s)
 	}
 }
+
+// TestPassesGuardFoldedLiteral checks the guard of a case-insensitive literal: an ASCII letter
+// stands for both its cases, and anything else for itself.
+func TestPassesGuardFoldedLiteral(t *testing.T) {
+	fold := func(s string) *Lit { l := lit(s); l.Fold = true; return l }
+	// a = "Select"i "x" / "from"i / "1"i / "é"i / "r"
+	m := valueFree(module(rule(0, "a", choice(seq(fold("Select"), lit("x")), fold("from"), fold("1"), fold("é"), lit("r")))))
+	passes(t, m, guardsPass(false))
+	got := PrintNode(m, m.Rules[0].Body, false)
+	want := `choice
+  alt guard='s'i
+    seq
+      lit "Select"i
+      lit "x"
+  alt guard='f'i
+    lit "from"i
+  alt guard='1'
+    lit "1"i
+  alt guard='é'
+    lit "é"i
+  alt guard='r'
+    lit "r"
+`
+	if got != want {
+		t.Errorf("got:\n%s\nwant:\n%s", got, want)
+	}
+}

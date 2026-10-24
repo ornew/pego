@@ -224,10 +224,12 @@ func (a *analyzer) firsts(n Node) {
 func (a *analyzer) head(n Node) *First {
 	switch n := n.(type) {
 	case *Lit:
-		// A case-insensitive literal has no first code point to dispatch on: its first character
-		// may be either case of an ASCII letter, which a First cannot express yet.
-		if n.Text != "" && !n.Fold {
+		if n.Text != "" {
 			r, _ := utf8.DecodeRuneInString(n.Text)
+			if n.Fold && ('A' <= r && r <= 'Z' || 'a' <= r && r <= 'z') {
+				// Only ASCII letters fold: the first character is either case of r.
+				return &First{Lit: true, Fold: true, Rune: r | 0x20, Exp: n.Exp}
+			}
 			return &First{Lit: true, Rune: r, Exp: n.Exp}
 		}
 	case *ClassNode:

@@ -21,10 +21,12 @@ The folded form does not use the in-place comparison of short literals (M130). E
 character costs one `Peek` and one fold. The generated first-character condition of a
 folded alternative is two comparisons (`ch == 115 || ch == 83`).
 
-Limits: the typed Go path reads the Core first set, which is empty for a folded literal,
-so its choices run without the first-character guard, and terminal programs (record 111)
-do not take folded literals. Both are conservative and affect speed only. They are a
-follow-up optimization item.
+The typed Go path reads the Core first set. For a folded literal whose first character is an
+ASCII letter, the first set holds that letter in lower case with a fold flag, and the guard is
+the same two comparisons. Any other first character is an exact one-character first set: the
+fold is ASCII-only, so a non-ASCII letter keeps only its own code point. Terminal programs
+(record 111) do not take folded literals, so a large value-free choice of keywords takes the
+general path.
 
 ## Method
 
@@ -64,6 +66,35 @@ The folded parser runs in about two thirds of the class-form time (a median of 3
 on this input. The generated source is 62% smaller. Only this one grammar and input were
 measured; the cause of the speed difference was not isolated.
 
+## Folded Literals in the Core First Set
+
+The grammar is `parsers/duckdb/duckdb.pego` with its 350 keyword rules, such as
+`rule SELECT = [sS][eE][lL][eE][cC][tT] ![...]`, rewritten as `rule SELECT = "select"i ![...]`
+by a script (a regular expression over the rule lines). Both builds generate the typed Go
+parser (`-types -typed-only -runtime import`) and the untyped recognizer (`-recognize`), and
+the same grammar file is compiled by the closure and bytecode backends at run time. The input
+is the duckdb benchmark script of about 256 KB, as written and lower-cased. Timing: six rounds
+interleaved over the build before the change, the build after it and a second copy of the build
+before it (the noise band), `-benchtime=2s`, medians in ms:
+
+| Benchmark | Before | After | After vs before | Noise copy vs before |
+|:--|--:|--:|--:|--:|
+| Generated typed, upper case | 62.66 | 58.05 | -7.4% | +0.2% |
+| Generated typed, lower case | 63.01 | 58.09 | -7.8% | -0.8% |
+| Generated recognize, upper / lower | 42.87 / 42.69 | 42.49 / 42.54 | -0.9% / -0.4% | +0.1% / +0.4% |
+| Closure recognize, upper / lower | 114.03 / 112.84 | 114.91 / 112.72 | +0.8% / -0.1% | -0.4% / -0.9% |
+| Bytecode recognize, upper / lower | 138.43 / 137.67 | 137.63 / 137.82 | -0.6% / +0.1% | -0.5% / -0.1% |
+| Iterative bytecode recognize, upper / lower | 165.47 / 165.06 | 164.89 / 165.40 | -0.4% / +0.2% | 0.0% / -0.4% |
+
+Only the typed Go parser changes: it ran without the guard before. The closure, both
+bytecode backends and the generated recognizer differ inside the noise band. The generated typed `parser.go` grows from 1.39 MB to
+1.48 MB with the guards. The generated code of `parsers/duckdb` as written, with class-form
+keywords, is byte-identical before and after.
+
+Tests: `TestPassesGuardFoldedLiteral` checks the first sets, and `TestIgnoreCaseGeneratedGo`,
+`TestIgnoreCaseGeneratedTS` and `TestIgnoreCaseGeneratedTypedGo` check mixed-case input against
+the closure backend. Leaving the upper case out of the guard makes them fail.
+
 ## Correctness and Tradeoffs
 
 - The fold is ASCII-only, as for the suffix: `"é"i` does not match `É`, and the Kelvin
@@ -78,5 +109,4 @@ measured; the cause of the speed difference was not isolated.
 
 The runtime helper is the `Peek` loop. A second helper with an in-place comparison was not
 built: the folded form already beats the class form, and the loop is shared with the
-non-exact paths. Folded literals in the Core first set and in terminal programs are the
-follow-up optimization item; the measured gap that motivates them is not yet measured.
+non-exact paths.

@@ -240,6 +240,9 @@ func opLines(o *core.OperatorsRule, e *grammar.OperatorsRule) ([]*core.OpLine, [
 // next character and the expectation.
 func guardString(g *generator, m *core.Module, f *core.First) (string, string) {
 	if f.Lit {
+		if f.Fold {
+			return fmt.Sprintf("ch == %d || ch == %d", f.Rune, f.Rune-('a'-'A')), m.Exps[f.Exp]
+		}
 		return fmt.Sprintf("ch == %d", f.Rune), m.Exps[f.Exp]
 	}
 	e := &grammar.CharClass{Negated: f.Class.Negated}
