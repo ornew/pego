@@ -137,10 +137,16 @@ func canonicalEngine(v any) (any, error) {
 	return v, nil
 }
 
+// typedGenericNode is the "type" of a canonical typed value that is a generic TNode[...]. A field
+// declared as an anonymous node type, such as node[string], holds a generic node, which has no Go
+// counterpart for the named node type the engine's value may keep; canonicalDifferences takes it
+// to match any engine "type" or none.
+const typedGenericNode = "\x00generic node"
+
 // canonicalTyped returns the canonical form of a typed value, from the tree canonicalValueSource
 // builds. It maps the typed shapes to the engine's:
-//   - a node (a struct with "node") is {"start", "end", "value"}, with "type" for a named node type
-//     (a generic TNode[...] has none);
+//   - a node (a struct with "node") is {"start", "end", "value", "type"}, where "type" is the named
+//     node type, or typedGenericNode for a generic TNode[...];
 //   - a struct with a span is {"type", "start", "end", "fields"}, the engine's struct shape; the
 //     "span" marker, which the Go representation adds, is dropped;
 //   - a struct without a span whose fields are E0, E1, ... is a tuple, which is an array;
@@ -180,7 +186,9 @@ func canonicalTyped(v any) (any, error) {
 				return nil, err
 			}
 			out := map[string]any{"start": v["start"], "end": v["end"], "value": value}
-			if !strings.HasPrefix(name, "TNode[") {
+			if strings.HasPrefix(name, "TNode[") {
+				out["type"] = typedGenericNode
+			} else {
 				out["type"] = name
 			}
 			return out, nil
@@ -308,6 +316,8 @@ func canonicalDifferences(a, b any, path string, fieldsObject bool, out *[]strin
 				x, inA := a[k]
 				y, inB := b[k]
 				switch {
+				case k == "type" && x == typedGenericNode:
+					// A generic typed node matches the engine's node whatever its named type.
 				case inA && inB:
 					canonicalDifferences(x, y, path+"."+k, isStruct && k == "fields", out)
 				case inA && fieldsObject && canonicalUnsetZero(x):
@@ -473,6 +483,36 @@ func TestCanonicalUnsetFieldsAreDeclaredOnly(t *testing.T) {
 		{"unset declared field", map[string]any{"type": "R", "fields": map[string]any{"N": nil, "S": ""}}, map[string]any{"type": "R", "fields": map[string]any{}}, 0},
 		{"zero key outside fields", map[string]any{"type": "R", "fields": map[string]any{}, "Extra": 0.0}, map[string]any{"type": "R", "fields": map[string]any{}}, 1},
 		{"non-zero unset field", map[string]any{"type": "R", "fields": map[string]any{"C": 2.0}}, map[string]any{"type": "R", "fields": map[string]any{}}, 1},
+	}
+	for _, c := range cases {
+		var diffs []string
+		canonicalDifferences(c.typed, c.eng, "$", false, &diffs)
+		if len(diffs) != c.diffs {
+			t.Errorf("%s: %d differences %v, want %d", c.name, len(diffs), diffs, c.diffs)
+		}
+	}
+}
+
+// TestCanonicalGenericNodeType checks that a generic typed node matches an engine node with or
+// without a named type, and that a named typed node still differs from another named type or none.
+func TestCanonicalGenericNodeType(t *testing.T) {
+	node := func(typ any) map[string]any {
+		n := map[string]any{"start": 0.0, "end": 1.0, "value": "a"}
+		if typ != nil {
+			n["type"] = typ
+		}
+		return n
+	}
+	cases := []struct {
+		name       string
+		typed, eng map[string]any
+		diffs      int
+	}{
+		{"generic and named", node(typedGenericNode), node("Num"), 0},
+		{"generic and plain", node(typedGenericNode), node(nil), 0},
+		{"named and other named", node("Num"), node("Word"), 1},
+		{"named and plain", node("Num"), node(nil), 1},
+		{"generic with another value", map[string]any{"start": 0.0, "end": 1.0, "value": "b", "type": typedGenericNode}, node("Num"), 1},
 	}
 	for _, c := range cases {
 		var diffs []string
