@@ -109,6 +109,8 @@ pego parse -g toy.pego -i $'let = 2;\nprint 1;\n'
 ```text
 {
   "type": "Program",
+  "start": 0,
+  "end": 18,
   "fields": {
     "Body": [
       {
@@ -118,6 +120,8 @@ pego parse -g toy.pego -i $'let = 2;\nprint 1;\n'
       },
       {
         "type": "Print",
+        "start": 9,
+        "end": 17,
         "fields": {
           "Value": {
             "start": 15,

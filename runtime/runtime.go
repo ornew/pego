@@ -4252,6 +4252,9 @@ func writeJSONValue(w io.Writer, value any) error {
 						err = out.encoded(value.Type())
 					}
 					if err == nil {
+						err = writeJSONRange(&out, value, `,"start":`)
+					}
+					if err == nil {
 						err = out.raw(`,"fields":{`)
 					}
 					frame.fields = value.RawFields.sorted()

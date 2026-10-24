@@ -88,11 +88,11 @@ fmt.Println(string(out))
 ```
 
 ```text
-{"type":"Pair","fields":{"Key":{"start":0,"end":3,"value":"abc"},"Value":{"start":4,"end":6,"value":"12"}}}
+{"type":"Pair","start":0,"end":8,"fields":{"Key":{"start":0,"end":3,"value":"abc"},"Value":{"start":4,"end":6,"value":"12"}}}
 ```
 
 A node of a string, a tuple or a list is `{"start": S, "end": E, "value": V}`, where `V` is a string, an array for a
-tuple or a list, or `null` for an optional that did not match. A struct is `{"type": T, "fields": {...}}`, and an `int`
+tuple or a list, or `null` for an optional that did not match. A struct is `{"type": T, "start": S, "end": E, "fields": {...}}`, with the range of the rule that built it, and an `int`
 or a `bool` that an action returned is a bare JSON number or boolean. The keys of `fields` are sorted, so the output
 is deterministic. This is also what `pego parse` prints by default. Nodes cannot be decoded back from JSON; the JSON is
 for inspection and for exchanging results with other programs.

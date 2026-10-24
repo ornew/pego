@@ -12,7 +12,7 @@ import (
 
 // referenceJSON builds the JSON shape of a value with encoding/json, without invoking
 // Node.MarshalJSON: a string, tuple or list node is {start, end, value} (with rule when it has
-// one), and a struct is {type, fields}. It is intentionally used only for shallow, acyclic test
+// one), and a struct is {type, start, end, fields}. It is intentionally used only for shallow, acyclic test
 // values without captures.
 func referenceJSON(n *Node) any {
 	if n == nil {
@@ -26,6 +26,8 @@ func referenceJSON(n *Node) any {
 	}
 	type structValue struct {
 		Type   string         `json:"type"`
+		Start  int32          `json:"start"`
+		End    int32          `json:"end"`
 		Fields map[string]any `json:"fields"`
 	}
 	switch n.shape() {
@@ -42,7 +44,7 @@ func referenceJSON(n *Node) any {
 	for _, field := range n.RawFields {
 		fields[field.Name] = referenceField(field.Value)
 	}
-	return structValue{n.Type(), fields}
+	return structValue{n.Type(), n.RawStart, n.RawEnd, fields}
 }
 
 func referenceField(value any) any {
@@ -334,7 +336,7 @@ func TestNodeWriteJSONSliceIdentityIgnoresCapacity(t *testing.T) {
 		t.Fatalf("capacity-limited slice cycle = %v, want UnsupportedValueError", err)
 	}
 	// Reject the first re-entry, before emitting another list delimiter.
-	const wantPrefix = `{"type":"","fields":{"x":[`
+	const wantPrefix = `{"type":"","start":0,"end":0,"fields":{"x":[`
 	if prefix.String() != wantPrefix {
 		t.Fatalf("cycle prefix = %q, want %q", prefix.String(), wantPrefix)
 	}

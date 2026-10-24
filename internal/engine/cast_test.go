@@ -53,11 +53,11 @@ func TestCastAcrossBackends(t *testing.T) {
 
 func TestCastValues(t *testing.T) {
 	for _, tc := range []struct{ src, input, want string }{
-		{"rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, "12", `"type":"Num","fields":{"Text":"12"}`},
+		{"rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, "12", `"type":"Num","start":0,"end":2,"fields":{"Text":"12"}`},
 		{"rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, "ab", "cannot cast node[[]_] to Num"},
 		{"rule main = x:(n+ / w) $$ => $x.([]Num)\n" + castRules, "ab", "cannot cast node[[]_] to []Num"},
 		{"rule main = x:(n / w)? $$ => $x.(*Num)\n" + castRules, "", "null"},
-		{"rule main = x:(pair / w) $$ => $x.(P).N\n" + castRules, "1=", `"type":"Num","fields":{"Text":"1"}`},
+		{"rule main = x:(pair / w) $$ => $x.(P).N\n" + castRules, "1=", `"type":"Num","start":0,"end":1,"fields":{"Text":"1"}`},
 		{"rule main = \"\\n\" r\nrule r = x:(n / w) $$ => $x.(Num)\n" + castRules, "\nab", "cannot cast node[[]_] to Num at input position 1 (line 2, column 1); cast at grammar position 2:29"},
 		{"rule main = x:(n / w) ({$x.(Num) == $x} \"!\" / \"?\") $$\n" + castRules, "a?", `"value":"?"`},
 	} {

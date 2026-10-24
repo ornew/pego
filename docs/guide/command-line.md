@@ -111,6 +111,8 @@ Without `-f sexpr` the value is printed as JSON, for `abc=12`:
   "value": [
     {
       "type": "Pair",
+      "start": 0,
+      "end": 6,
       "fields": {
         "Key": {
           "start": 0,
@@ -128,7 +130,7 @@ Without `-f sexpr` the value is printed as JSON, for `abc=12`:
 }
 ```
 
-A node is an object with `start`, `end` and `value`; a struct is an object with `type` and `fields`. The tree has no rule names
+A node is an object with `start`, `end` and `value`; a struct is an object with `type`, `start`, `end` and `fields`. The tree has no rule names
 or capture names unless you ask for them with `-source-info`, which adds a `rule` to each node (and `captures` to a tuple that
 has them) in JSON, and `@rule` suffixes and `name:` labels in S-expressions:
 

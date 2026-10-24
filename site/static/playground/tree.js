@@ -3,10 +3,11 @@ import { escapeHTML } from "../assets/highlight.js";
 
 // The tree is the JSON of pego parse: a node is an object with start and end, whose value is a
 // string or an array (a tuple or a list) and which may name its rule and captures; an error value
-// has an error message instead of a value; a struct is an object with type and fields; a tuple or
-// list value is an array; any other value is a plain JSON value.
+// has an error message instead of a value; a struct is an object with type, start, end and fields,
+// whose range is that of its rule; a tuple or list value is an array; any other value is a plain
+// JSON value.
 const isNode = (v) => v !== null && typeof v === "object" && typeof v.start === "number";
-const isStruct = (v) => v !== null && typeof v === "object" && !Array.isArray(v) && typeof v.type === "string";
+const isStruct = (v) => v !== null && typeof v === "object" && !Array.isArray(v) && typeof v.type === "string" && v.fields !== null && typeof v.fields === "object";
 const isComposite = (v) => Array.isArray(v) || isStruct(v) || (isNode(v) && Array.isArray(v.value));
 const PAGE_SIZE = 100, INITIAL_ROWS = 400, MAX_ROWS = 5000;
 
@@ -40,8 +41,8 @@ function nodeChildren(v) {
   };
 }
 
-// span returns the range of the input that v covers: a node's own, or that of the nodes inside a
-// struct or an array; null when it has none. Ranges of values without their own are cached.
+// span returns the range of the input that v covers: that of a node or a struct, or that of the
+// nodes inside an array; null when it has none. Ranges of values without their own are cached.
 const spans = new WeakMap();
 function span(v) {
   if (isNode(v)) return [v.start, v.end];
@@ -61,6 +62,9 @@ const short = (t) => JSON.stringify(t.length > 80 ? t.slice(0, 80) + "…" : t);
 
 // summary returns the HTML of the row of v after its label.
 function summary(v) {
+  if (isStruct(v)) {
+    return `<span class="n-type n-type-user">${escapeHTML(v.type)}</span> <span class="n-span">${v.start}–${v.end}</span>`;
+  }
   if (isNode(v)) {
     let html = "";
     if (typeof v.error === "string") {
@@ -73,7 +77,6 @@ function summary(v) {
     if (v.rule) html += `<span class="n-rule">@${escapeHTML(v.rule)}</span>`;
     return html + ` <span class="n-span">${v.start}–${v.end}</span>`;
   }
-  if (isStruct(v)) return `<span class="n-type n-type-user">${escapeHTML(v.type)}</span>`;
   if (Array.isArray(v)) return `<span class="n-type n-type-builtin">[${v.length}]</span>`;
   return `<span class="n-value">${escapeHTML(v === null ? "nil" : JSON.stringify(v))}</span>`;
 }

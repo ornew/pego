@@ -30,7 +30,7 @@ The result panel has six tabs:
 
 | Tab | Contents |
 |:--|:--|
-| **Tree** | The tree as a collapsible outline: a string node's text, a tuple or list node with its number of elements, an error value with its message, a struct with its type and fields, the span `start–end` of each node in the chosen unit, and, with **Source info**, the rule (`@rule`) of each node and the capture names that label its elements. Hovering a node highlights its span in the input, clicking selects it, and double-clicking (or Enter) selects the text in the input editor. Moving the caret in the input reveals the deepest node under it |
+| **Tree** | The tree as a collapsible outline: a string node's text, a tuple or list node with its number of elements, an error value with its message, a struct with its type, fields and span, the span `start–end` of each node in the chosen unit, and, with **Source info**, the rule (`@rule`) of each node and the capture names that label its elements. Hovering a node highlights its span in the input, clicking selects it, and double-clicking (or Enter) selects the text in the input editor. Moving the caret in the input reveals the deepest node under it |
 | **JSON** | The tree exactly as `pego parse` prints it |
 | **S-expression** | The tree as `pego parse -f sexpr` prints it, highlighted: struct and named node types, field and capture labels, rule suffixes, strings, numbers and keywords such as `nil` and `error` |
 | **Rules & types** | The rules with their declared types, and the types of the grammar. Click a name to jump to its definition, or "parse from here" to make the rule the start rule |

@@ -64,8 +64,8 @@ printf 'a=1\nbb=22\nccc=x\n' | pego parse -g kv.pego -stream
 ```
 
 ```text
-{"type":"Pair","fields":{"Key":{"start":0,"end":1,"value":"a"},"Value":{"start":2,"end":3,"value":"1"}}}
-{"type":"Pair","fields":{"Key":{"start":4,"end":6,"value":"bb"},"Value":{"start":7,"end":9,"value":"22"}}}
+{"type":"Pair","start":0,"end":4,"fields":{"Key":{"start":0,"end":1,"value":"a"},"Value":{"start":2,"end":3,"value":"1"}}}
+{"type":"Pair","start":4,"end":10,"fields":{"Key":{"start":4,"end":6,"value":"bb"},"Value":{"start":7,"end":9,"value":"22"}}}
 pego: 3:5: syntax error: expected [0-9]
 ```
 

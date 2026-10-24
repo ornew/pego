@@ -202,7 +202,7 @@ A value encodes with `encoding/json` as follows.
 |:--|:--|
 | A string, tuple or list node | An object with the members `start`, `end` and `value`: a string, or an array of the encodings of the elements, in which a missing element is `null` |
 | An error value | An object with the members `start`, `end`, `error` (the message) and, for a missing token, `expected` |
-| A struct | An object with the members `type` and `fields`; the `fields` object has its keys in lexicographic order, so the encoding is deterministic |
+| A struct | An object with the members `type`, `start`, `end` and `fields`; `start` and `end` are the range of the rule that built it, and the `fields` object has its keys in lexicographic order, so the encoding is deterministic |
 | A tuple or list value | An array |
 | `int`, `string`, `bool`, `nil` | A number, a string, a boolean, `null` |
 

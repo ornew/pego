@@ -12,7 +12,7 @@ import (
 
 // referenceJSON builds the JSON shape of a value with encoding/json, without invoking
 // Node.MarshalJSON: a string, tuple or list node is {start, end, value} (with rule when it has
-// one), and a struct is {type, fields}. It is intentionally used only for shallow, acyclic test
+// one), and a struct is {type, start, end, fields}. It is intentionally used only for shallow, acyclic test
 // values without captures.
 func referenceJSON(n *Node) any {
 	if n == nil {
@@ -26,6 +26,8 @@ func referenceJSON(n *Node) any {
 	}
 	type structValue struct {
 		Type   string         `json:"type"`
+		Start  int32          `json:"start"`
+		End    int32          `json:"end"`
 		Fields map[string]any `json:"fields"`
 	}
 	switch n.shape() {
@@ -42,7 +44,7 @@ func referenceJSON(n *Node) any {
 	for _, field := range n.fields {
 		fields[field.Name] = referenceField(field.Value)
 	}
-	return structValue{n.Type(), fields}
+	return structValue{n.Type(), n.start, n.end, fields}
 }
 
 func referenceField(value any) any {
@@ -330,11 +332,34 @@ func TestNodeWriteJSONSliceIdentityIgnoresCapacity(t *testing.T) {
 		t.Fatalf("capacity-limited slice cycle = %v, want UnsupportedValueError", err)
 	}
 	// Reject the first re-entry, before emitting another list delimiter.
-	const wantPrefix = `{"type":"","fields":{"x":[`
+	const wantPrefix = `{"type":"","start":0,"end":0,"fields":{"x":[`
 	if prefix.String() != wantPrefix {
 		t.Fatalf("cycle prefix = %q, want %q", prefix.String(), wantPrefix)
 	}
 	if data, err := root.MarshalJSON(); data != nil || !errors.As(err, &cycle) {
 		t.Fatalf("MarshalJSON cycle = %q, %v, want nil bytes and UnsupportedValueError", data, err)
+	}
+}
+
+// A struct encodes the range of the rule that built it, which includes the input that the rule
+// skips at its ends, not the range of the nodes inside it.
+func TestStructJSONHasRuleRange(t *testing.T) {
+	program := compileBare(t, `type P = { A node[string] }
+rule main P = ws a:w ws $$ => P{A: $a}
+rule w node[string] = [a-z]+ #atomic
+rule ws = [ ]*`)
+	const want = `{"type":"P","start":0,"end":6,"fields":{"A":{"start":2,"end":4,"value":"ab"}}}`
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		n, err := program.ParseWith("main", "  ab  ", ParseOptions{Backend: backend})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := n.MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(got) != want {
+			t.Errorf("%s: %s, want %s", backend, got, want)
+		}
 	}
 }

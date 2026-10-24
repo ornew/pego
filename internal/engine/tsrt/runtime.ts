@@ -188,7 +188,7 @@ export class Node {
     for (const f of sortedFields(this.fields)) {
       fs[f.name] = typeof f.value === "bigint" ? Number(f.value) : f.value;
     }
-    return { type: this.type, fields: fs };
+    return { type: this.type, start: this.start, end: this.end, fields: fs };
   }
 }
 
@@ -477,7 +477,7 @@ export function marshalValue(v: Value, out: (string | Pending)[]): void {
       marshalElements(v.children, out);
       return;
   }
-  out.push('{"type":' + quoteJSON(v.type) + ',"fields":{');
+  out.push('{"type":' + quoteJSON(v.type) + ',"start":' + v.start + ',"end":' + v.end + ',"fields":{');
   sortedFields(v.fields).forEach((f, i) => {
     out.push((i > 0 ? "," : "") + quoteJSON(f.name) + ":", new Pending(f.value));
   });
