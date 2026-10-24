@@ -246,6 +246,10 @@ const (
 	// SPREAD n, t: pop the value a splice rule returned and push its n elements: the children of the
 	// tuple node it returned if t is 1, else its one element (n is 1) or none (n is 0).
 	OpSpread
+	// STRF s, d, b: match the ASCII-folded string s of the string table, comparing each input
+	// character folded the same way (A-Z as a-z). B is the expectation (the literal with its
+	// suffix i), and if b is 1, push a string node with the consumed input as its text.
+	OpStrFold
 )
 
 // Expression instructions
@@ -338,7 +342,7 @@ var opNames = map[Op]string{
 	OpCall: "CALL", OpOperatorsRule: "OPERATORS_RULE", OpPred: "PRED", OpBind: "BIND", OpLabel: "LABEL",
 	OpEndLabel: "ENDLABEL", OpRecover: "RECOVER", OpEndRecover: "ENDRECOVER", OpEndSkip: "ENDSKIP",
 	OpReturn: "RETURN", OpEnd: "END", OpScan: "SCAN", OpGuard: "GUARD",
-	OpRepeatWide: "REPEATW", OpScanWide: "SCANW",
+	OpRepeatWide: "REPEATW", OpScanWide: "SCANW", OpStrFold: "STRF",
 	EInt: "EINT", EStr: "ESTR", EBool: "EBOOL", ENil: "ENIL", ECap: "ECAP", EItem: "EITEM",
 	ELocal: "ELOCAL", EVar: "EVAR", EMember: "EMEMBER", ENew: "ENEW", EBin: "EBIN", EUnary: "EUNARY",
 	EAnd: "EAND", EOr: "EOR", EBoolChk: "EBOOLCHK", EFunc: "EFUNC", ECall: "ECALL", ERet: "ERET",

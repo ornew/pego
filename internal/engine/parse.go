@@ -110,9 +110,6 @@ func (prog *Program) rule(b Backend, name string) (*rule, error) {
 	if prog.hasMissing && prog.backend(b) != Closure {
 		return nil, missingUnsupported("bytecode backends")
 	}
-	if prog.foldsLiterals && prog.backend(b) != Closure {
-		return nil, foldUnsupported("bytecode backends")
-	}
 	var r *rule
 	switch prog.backend(b) {
 	case Bytecode:

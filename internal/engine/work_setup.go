@@ -96,8 +96,8 @@ func (prog *Program) preflightRule(b Backend, name string, stream bool) (bool, e
 }
 
 func (prog *Program) prepareControlledRule(b Backend, name string, c *workControl) (*rule, error) {
-	if !workControlsEnabled || c == nil || prog.backend(b) == Closure || prog.foldsLiterals {
-		return prog.rule(b, name) // rule reports the backends that do not support case-insensitive literals
+	if !workControlsEnabled || c == nil || prog.backend(b) == Closure {
+		return prog.rule(b, name)
 	}
 	c.check()
 	m := prog.Module()

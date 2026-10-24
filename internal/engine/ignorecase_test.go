@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"math/rand"
 	"strings"
 	"testing"
 
@@ -145,19 +146,59 @@ rule expr = operators {
 	}
 }
 
-// TestIgnoreCaseBackendsUnsupported checks that the backends that do not support case-insensitive
-// literals yet refuse the program, and that a program without them keeps its backends.
-func TestIgnoreCaseBackendsUnsupported(t *testing.T) {
-	folded := compile(t, `rule main = "select"i`)
-	if _, err := folded.ParseWith("main", "SELECT", ParseOptions{Backend: Bytecode}); err == nil || !strings.Contains(err.Error(), "not supported") {
-		t.Fatalf("bytecode parse: %v", err)
+// TestIgnoreCaseBackendsAgree checks that the bytecode backends produce the closure backend's results
+// for case-insensitive literals, and that a serialized program loads with the same results in every
+// mode. The plain literal keeps working in the same programs.
+func TestIgnoreCaseBackendsAgree(t *testing.T) {
+	for _, c := range []struct {
+		src    string
+		inputs []string
+	}{
+		{`rule main = "select"i`, []string{"SELECT", "sElEcT", "selec", "SELECTS", ""}},
+		{`rule main = ("ab"i "c" / "AB" "d")`, []string{"ABc", "abd", "ABd", "Abx"}},
+		{`rule main = "é"i`, []string{"é", "É"}},
+		{`rule main = "café"i`, []string{"CAFé", "CAFÉ", "cafe"}},
+		{"rule main = (\"x\" !\"ab\" .*) #ignorecase", []string{"XAB", "XAC", "xab"}},
+		{`rule main = "a"i"b"`, []string{"Ab", "AB"}},
+		{`rule main = "k"i`, []string{"K", "k", "\u212a"}},
+		{`rule main = "plain" "Mixed"i`, []string{"plainmixed", "plainMIXED", "PLAINMIXED"}},
+	} {
+		prog := compile(t, c.src)
+		folded := 0
+		for _, in := range prog.Module().Code {
+			if in.Op == OpStrFold {
+				folded++
+			}
+		}
+		if folded == 0 {
+			t.Fatalf("%s: no folded string instruction", c.src)
+		}
+		for _, in := range c.inputs {
+			checkBackends(t, prog, "main", in)
+		}
+		checkCompiledRoundTrip(t, prog, c.inputs)
 	}
-	if _, err := folded.Marshal("main", CompiledParse); err == nil || !strings.Contains(err.Error(), "not supported") {
-		t.Fatalf("compiled grammar: %v", err)
+}
+
+// TestIgnoreCaseRandomAgreement compares the closure and bytecode backends on seeded random inputs
+// over letters of both cases, non-ASCII letters, and the Kelvin sign, which is not ASCII.
+func TestIgnoreCaseRandomAgreement(t *testing.T) {
+	alphabet := []rune("aAbBkK\u00e9\u00c9\u212ac")
+	rng := rand.New(rand.NewSource(79))
+	programs := []*Program{
+		compile(t, `rule main = ("ab"i "k" / "AK"i "c")+ "é"i`),
+		compile(t, "rule main = (\"Ab\" \"Kk\"i) #ignorecase"),
+		compile(t, `rule main = ("kk"i !"c"i .) / "AB"`),
 	}
-	plain := compile(t, `rule main = "select"`)
-	if n, err := plain.ParseWith("main", "select", ParseOptions{Backend: Bytecode}); err != nil || n.Text() != "select" {
-		t.Fatalf("bytecode parse of a plain literal: %v", err)
+	for _, prog := range programs {
+		for i := 0; i < 300; i++ {
+			n := rng.Intn(9)
+			in := make([]rune, n)
+			for j := range in {
+				in[j] = alphabet[rng.Intn(len(alphabet))]
+			}
+			checkBackends(t, prog, "main", string(in))
+		}
 	}
 }
 

@@ -172,9 +172,6 @@ func (prog *Program) Marshal(start string, mode CompiledMode) ([]byte, error) {
 	if prog.hasMissing {
 		return nil, missingUnsupported("compiled grammar serialization")
 	}
-	if prog.foldsLiterals {
-		return nil, foldUnsupported("compiled grammar serialization")
-	}
 	if start != "" {
 		if err := prog.CheckStart(start); err != nil {
 			return nil, err

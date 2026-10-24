@@ -415,7 +415,7 @@ func validateModule(m *Module) error {
 	for ip, x := range m.Code {
 		n := len(m.Code)
 		switch x.Op {
-		case OpStr:
+		case OpStr, OpStrFold:
 			str(int(x.A))
 			str(int(x.B))
 			flag(x.C, 1)

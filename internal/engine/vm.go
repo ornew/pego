@@ -501,6 +501,15 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			if in.C == 1 {
 				p.push(p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.literalText(start, vm.literals[in.A]), terminal: true, fresh: true}))
 			}
+		case OpStrFold:
+			start := p.pos
+			if !p.matchLiteralFold(vm.runes[in.A]) {
+				p.expect(start, numFixedDescs+expID(in.B))
+				goto fail
+			}
+			if in.C == 1 {
+				p.push(p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true, fresh: true}))
+			}
 		case OpClass:
 			ch, size, ok := p.peek()
 			if !ok || !vm.has(p, in.A, ch) {

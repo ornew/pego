@@ -108,7 +108,7 @@ func (m *Module) Disassemble() string {
 func (m *Module) operands(in Instr, str func(int) string, names func([]int) string) string {
 	a, bb, c := int(in.A), int(in.B), int(in.C)
 	switch in.Op {
-	case OpStr:
+	case OpStr, OpStrFold:
 		return fmt.Sprintf("%s build=%d", str(a), c)
 	case OpClass:
 		return fmt.Sprintf("%s build=%d", str(bb), c)

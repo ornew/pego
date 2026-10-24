@@ -13,9 +13,6 @@ func (prog *Program) Module() *Module {
 	if prog.hasMissing {
 		panic(missingUnsupported("bytecode module construction"))
 	}
-	if prog.foldsLiterals {
-		panic(foldUnsupported("bytecode module construction"))
-	}
 	prog.moduleOnce.Do(func() {
 		c := &bcompiler{prog: prog, m: &Module{SourceInfo: prog.sourceInfo, DefaultValue: prog.defaultValue}, strs: map[string]int{}}
 		c.compile()
@@ -256,7 +253,17 @@ func (c *bcompiler) guard(alt grammar.Expr) int {
 		cl = c.class(t)
 	case *grammar.Literal:
 		r, _ := utf8.DecodeRuneInString(t.Value)
-		c.m.Classes = append(c.m.Classes, Class{Ranges: []rune{r, r}, Desc: int(c.str(quote(t.Value)))})
+		ranges := []rune{r, r}
+		if t.IgnoreCase {
+			// A case-insensitive literal's first character matches either case of an ASCII letter.
+			f := foldASCIIRune(r)
+			ranges = []rune{f, f}
+			if 'a' <= f && f <= 'z' {
+				upper := f - ('a' - 'A')
+				ranges = []rune{upper, upper, f, f}
+			}
+		}
+		c.m.Classes = append(c.m.Classes, Class{Ranges: ranges, Desc: int(c.str(literalDesc(t)))})
 		cl = int32(len(c.m.Classes) - 1)
 	default:
 		return -1
@@ -349,7 +356,11 @@ func (c *bcompiler) elems(e grammar.Expr, s *scope) {
 func (c *bcompiler) leaf(e grammar.Expr, s *scope, build bool) {
 	switch e := e.(type) {
 	case *grammar.Literal:
-		c.emit(OpStr, c.str(e.Value), c.str(quote(e.Value)), b2i(build))
+		if e.IgnoreCase {
+			c.emit(OpStrFold, c.str(string(foldedRunes([]rune(e.Value)))), c.str(literalDesc(e)), b2i(build))
+		} else {
+			c.emit(OpStr, c.str(e.Value), c.str(quote(e.Value)), b2i(build))
+		}
 	case *grammar.CharClass:
 		c.emit(OpClass, c.class(e), c.str(charClassString(e)), b2i(build))
 	case *grammar.Any:
