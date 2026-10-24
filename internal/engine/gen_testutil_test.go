@@ -184,7 +184,11 @@ func generateCode(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return mergeGenerated(files), nil
+	code := mergeGenerated(files)
+	if opts.flowRecognizer && flowRecognizerMutant != nil {
+		code = flowRecognizerMutant(code)
+	}
+	return code, nil
 }
 
 // mergeGenerated joins the Go files of a generated package into one file. The types package of
