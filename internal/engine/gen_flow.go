@@ -239,6 +239,18 @@ func (p *flowPrinter) declare(n *flow.Names) {
 	fmt.Fprintf(&p.g.vars, "var %s = %s\n", p.names[n], goStrings(n.List))
 }
 
+// untyped reports whether the printer writes the Node runtime's code (the recognizer table).
+func (p *flowPrinter) untyped() bool { return p.g.table == "recRules" }
+
+// matcher returns the parser whose methods match literals: the embedded Node parser of a typed
+// parser, or the Node parser itself.
+func (p *flowPrinter) matcher() string {
+	if p.untyped() {
+		return "p"
+	}
+	return "p.Parser"
+}
+
 // write writes s unless the current point is unreachable.
 func (p *flowPrinter) write(s string) {
 	if !p.dead {
@@ -565,10 +577,16 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 		if g.document {
 			return "p.Document == nil && (!WorkControlsEnabled || p.Control == nil) && (" + cond + ")"
 		}
+		if p.untyped() {
+			// The Node runtime's generated code of a parser without work controls has no such check.
+			// flowRecognizer is never set with work controls (generate), so the untyped form is the
+			// one without them.
+			return cond
+		}
 		return "(!WorkControlsEnabled || p.Control == nil) && (" + cond + ")"
 	case *flow.MatchLit:
 		if x.Lit.Fold {
-			return fmt.Sprintf("p.Parser.MatchLiteralFold(%s, %d, false)", g.literal(string(foldedRunes([]rune(x.Lit.Text)))), p.desc(x.Lit.Exp))
+			return fmt.Sprintf("%s.MatchLiteralFold(%s, %d, false)", p.matcher(), g.literal(string(foldedRunes([]rune(x.Lit.Text)))), p.desc(x.Lit.Exp))
 		}
 		lit := g.literal(x.Lit.Text)
 		var desc expID
@@ -577,7 +595,7 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 		} else {
 			desc = p.desc(x.Lit.Exp)
 		}
-		return fmt.Sprintf("p.Parser.MatchLiteral(%s, %q, %d, false)", lit, x.Lit.Text, desc)
+		return fmt.Sprintf("%s.MatchLiteral(%s, %q, %d, false)", p.matcher(), lit, x.Lit.Text, desc)
 	case *flow.GuardFails:
 		var cond string
 		if x.Guard.Lit {

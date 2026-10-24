@@ -77,6 +77,9 @@ type GenOptions struct {
 	// keepNodes keeps the untyped Node rule functions of a typed-only parser. generate sets it
 	// itself, when a typed entry point converts the Node result.
 	keepNodes bool
+	// flowRecognizer prints the eligible rules of the recognizer from Flow IR (startRecFlow). It is
+	// off by default: the generated output is the same without it until it is switched on.
+	flowRecognizer bool
 	// keepComments keeps the comments of unexported generated code, which tests read as route markers.
 	keepComments bool
 	// disableKeepNodes leaves the Node rule functions out of a typed-only parser that needs them
@@ -198,7 +201,7 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
-	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap}
+	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, flowRecognizer: opts.flowRecognizer && !opts.WorkControls && !opts.Document && !opts.Observability, prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap}
 	if opts.Stream {
 		gen.streamStart = start
 	}
@@ -221,7 +224,13 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 			return nil, err
 		}
 		gen.prog, gen.table = rec, "recRules"
+		if gen.flowRecognizer {
+			if err := gen.startRecFlow(rec); err != nil {
+				return nil, err
+			}
+		}
 		gen.rules()
+		gen.flow = nil
 		gen.prog, gen.table = prog, "rules"
 		if gen.tableErr != nil {
 			return nil, gen.tableErr
@@ -531,6 +540,8 @@ type generator struct {
 	flow       *flowState
 	flowRules  int
 	flowFrames int
+	// flowRecognizer is set when the recognizer's eligible rules are printed from Flow IR.
+	flowRecognizer bool
 	// nodeScopes records the frame layouts shared by typed rule metadata.
 	nodeScopes map[*rule][]string
 	// decisions, if set, receives the lowering decisions (gen_decisions.go).
@@ -734,6 +745,12 @@ func (g *generator) rules() {
 			// Typed direct rules need no separate body; Flow IR prints every typed rule.
 			if d := g.flowDirectRule(r); d != nil {
 				directs[r] = d
+				continue
+			}
+		} else if g.flow != nil && g.table == "recRules" && recFlowEligible(r) {
+			if d := g.flowRecDirect(r); d != nil {
+				directs[r] = d
+				bodies[r] = g.directLeanBody(r, d)
 				continue
 			}
 		} else if directLeanOK(r) {
