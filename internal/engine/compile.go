@@ -1547,17 +1547,7 @@ func isStream(e grammar.Expr) bool {
 // or an element of a sequence) and reports whether it is present.
 func (c *compiler) checkStream(body grammar.Expr) bool {
 	control := c.control
-	top := map[grammar.Expr]bool{}
-	items := []grammar.Expr{body}
-	if seq, ok := body.(*grammar.Seq); ok {
-		items = seq.Items
-	}
-	for _, it := range items {
-		top[it] = true
-		if c, ok := it.(*grammar.Capture); ok {
-			top[c.Expr] = true
-		}
-	}
+	top := streamTops(body)
 	n := 0
 	walkExprControlled(body, func(e grammar.Expr) {
 		if !isStream(e) {
@@ -1577,6 +1567,64 @@ func (c *compiler) checkStream(body grammar.Expr) bool {
 		}
 	}, control)
 	return n > 0
+}
+
+// streamTops returns the expressions of a rule body where #stream is allowed: the body, the items
+// of its top-level sequence (also those of a sequence grouped in an item) and the expression a
+// capture of such an item holds, each with the groups and the attributes other than #recover and
+// #missing around it.
+func streamTops(body grammar.Expr) map[grammar.Expr]bool {
+	top := map[grammar.Expr]bool{}
+	var mark func(e grammar.Expr)
+	mark = func(e grammar.Expr) {
+		for e != nil {
+			top[e] = true
+			switch x := e.(type) {
+			case *grammar.Group:
+				e = x.Expr
+			case *grammar.Attributed:
+				if recovers(x) {
+					return
+				}
+				e = x.Expr
+			case *grammar.Capture:
+				mark(x.Expr)
+				return
+			default:
+				return
+			}
+		}
+	}
+	var items func(e grammar.Expr)
+	items = func(e grammar.Expr) {
+		if seq, ok := seeThrough(e).(*grammar.Seq); ok {
+			for _, it := range seq.Items {
+				mark(it)
+				items(it)
+			}
+		}
+	}
+	mark(body)
+	items(body)
+	return top
+}
+
+// seeThrough returns e without the groups and the attributes other than #recover and #missing
+// around it.
+func seeThrough(e grammar.Expr) grammar.Expr {
+	for {
+		switch x := e.(type) {
+		case *grammar.Group:
+			e = x.Expr
+		case *grammar.Attributed:
+			if recovers(x) {
+				return e
+			}
+			e = x.Expr
+		default:
+			return e
+		}
+	}
 }
 
 func predicateCaptures(e grammar.Expr) map[string]bool { return predicateCapturesControlled(e, nil) }

@@ -228,6 +228,11 @@ rule line = [a-z]+ #atomic "\n"`, []string{strings.Repeat("abc\n", 3000) + "x1\n
 	// The start rule is memoized at 0 after the memo before it was pruned.
 	{"recursive start", `rule main = item* #stream
 rule item = "(" main ")" / [a-z] / "[" main "]" / "(" [0-9]`, []string{strings.Repeat("x", 3000), strings.Repeat("(a)", 1000), "[a(b)]c(1", "(1"}},
+	// The groups and attributes around the stream repetition or its sequence do not change what
+	// streams.
+	{"stream in an attributed sequence", `rule main = (([a-z] #atomic)* #stream "!") @diagnostic(name="x") $$`, []string{"ab!", "!", "", "a"}},
+	{"stream in an attributed group", `rule main = (item* #stream) @diagnostic(name="items") "." $$
+rule item = [a-z] #atomic`, []string{"ab.", "a", ".", "ab"}},
 	// Each growth of the start rule allocates its capture frame again.
 	{"left recursive start", `rule main = a:(main "x")? b:item* #stream c:"."?
 rule item = q:[a-z] #atomic`, []string{"ab.", "a", "", "ab.x"}},

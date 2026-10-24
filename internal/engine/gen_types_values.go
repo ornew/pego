@@ -324,7 +324,7 @@ func streamValue(p *Program, rd *grammar.RuleDef) (ty, bool) {
 	walkExpr(rd.Expr, func(e grammar.Expr) {
 		if a, ok := e.(*grammar.Attributed); ok {
 			for _, at := range a.Attrs {
-				if r, ok := ungroupExpr(a.Expr).(*grammar.Repeat); ok && at.Name == "stream" {
+				if r, ok := seeThrough(a.Expr).(*grammar.Repeat); ok && at.Name == "stream" {
 					rep = r
 				}
 			}

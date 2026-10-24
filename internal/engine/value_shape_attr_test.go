@@ -1,7 +1,9 @@
 package engine
 
 import (
+	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 )
 
@@ -75,6 +77,56 @@ func TestAttributeAroundStreamRepetition(t *testing.T) {
 		}
 		if _, err := Generate(g, GenOptions{Start: "main", Module: "x/y", Types: true, Stream: true}); err != nil {
 			t.Errorf("%s: %v", src, err)
+		}
+	}
+}
+
+// TestStreamSeesThroughGroupsAndAttributes checks that #stream placement looks through groups
+// and through attributes other than #recover and #missing, on every backend.
+func TestStreamSeesThroughGroupsAndAttributes(t *testing.T) {
+	same := [][2]string{
+		{`rule main = (("a")* #stream "b") @diagnostic(name="x")`, `rule main = ("a"* #stream "b")`},
+		{`rule main = (("a")* #stream "b") @diagnostic(name="x")`, `rule main = ("a")* #stream "b"`},
+		{`rule main = (x:("a")* #stream) @diagnostic(name="x") "b"`, `rule main = x:("a")* #stream "b"`},
+		{`rule main = ((("a")* #stream) @diagnostic(name="x") "b") @error("want b")`, `rule main = ("a")* #stream "b"`},
+	}
+	inputs := []string{"aaab", "b", "aab"}
+	for _, c := range same {
+		attr, plain := compile(t, c[0]), compile(t, c[1])
+		for _, backend := range []Backend{Default, Bytecode, BytecodeIterative} {
+			for _, in := range inputs {
+				run := func(p *Program) (string, error) {
+					var got []string
+					err := p.ParseStreamWith("main", strings.NewReader(in), func(n *Node) error {
+						got = append(got, fmt.Sprint(n))
+						return nil
+					}, ParseOptions{Backend: backend})
+					return strings.Join(got, ","), err
+				}
+				g, gerr := run(attr)
+				w, werr := run(plain)
+				if in == "aaab" && g == "" {
+					t.Errorf("%s backend=%v input=%q: no elements", c[0], backend, in)
+				}
+				if g != w || (gerr == nil) != (werr == nil) {
+					t.Errorf("%s backend=%v input=%q: elements %q err %v, plain %q err %v", c[0], backend, in, g, gerr, w, werr)
+				}
+			}
+		}
+	}
+	for _, src := range []string{
+		`rule main = ("a"* #stream) #recover(skip=[^;]+ ";") "b"`,
+		`rule main = (("a"* #stream) #recover(skip=[^;]+ ";") "b") @diagnostic(name="x")`,
+		`rule main = ("a"* #stream "b") / "c"`,
+		`rule main = ("a"* #stream / "c") "b"`,
+		`rule main = (("a"* #stream) "b")* "c"`,
+	} {
+		g, err := parseTest(src)
+		if err != nil {
+			t.Fatalf("%s: %v", src, err)
+		}
+		if _, err := Compile(g, Options{}); err == nil {
+			t.Errorf("%s: compiled, want a #stream placement error", src)
 		}
 	}
 }

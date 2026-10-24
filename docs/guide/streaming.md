@@ -253,7 +253,8 @@ next chunk shows it is not followed by another letter, and `ef` until the end of
 The rules that matter when you write a grammar, in short:
 
 - `#stream` goes on a repetition (`*`, `+` or `#repeat(n,m)`) that is the body of a rule or an item of its top-level
-  sequence, such as `items:record* #stream`, and a rule has at most one.
+  sequence, such as `items:record* #stream`, and a rule has at most one. Groups and attributes other than
+  `#recover` and `#missing` around them, such as `@diagnostic`, do not change the top level.
 - Only the **start rule** streams. `ParseStream` fails with `rule main has no #stream repetition` if the start rule has
   none, even when a rule it calls does; use `Parser.WithStart` to stream from another rule. Everywhere else the
   repetition is an ordinary one.

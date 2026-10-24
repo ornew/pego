@@ -25,7 +25,7 @@ the `#stream` repetition of the start rule.
 
 | Property | Definition |
 |:--|:--|
-| Placement | `#stream` MUST annotate a repetition (`*`, `+` or `#repeat(n,m)`) that is the body of a rule, an item of the body's top-level sequence, or the expression captured by such an item (`items:record* #stream`) |
+| Placement | `#stream` MUST annotate a repetition (`*`, `+` or `#repeat(n,m)`) that is the body of a rule, an item of the body's top-level sequence, or the expression captured by such an item (`items:record* #stream`); groups and attributes other than `#recover` and `#missing` around the body, an item or a capture do not change what is top level |
 | Arguments | `#stream` takes none |
 | Multiplicity | A rule body has at most one `#stream` |
 | Streaming rule | Only the start rule of the parse, at call depth 1, streams. In every other call of a rule that contains `#stream`, the repetition is an ordinary repetition |

@@ -104,22 +104,6 @@ type coreBuilder struct {
 	streamTop map[grammar.Expr]bool
 }
 
-// streamTops returns the expressions of a rule body where #stream is allowed (checkStream).
-func streamTops(body grammar.Expr) map[grammar.Expr]bool {
-	top := map[grammar.Expr]bool{}
-	items := []grammar.Expr{body}
-	if seq, ok := body.(*grammar.Seq); ok {
-		items = append(items, seq.Items...)
-	}
-	for _, it := range items {
-		top[it] = true
-		if c, ok := it.(*grammar.Capture); ok {
-			top[c.Expr] = true
-		}
-	}
-	return top
-}
-
 // callLevel returns the minimum binding level of a call of the rule r (core.Call.Level).
 func callLevel(e *grammar.Ref, r *rule) (int, error) {
 	if e.Level == "" {
