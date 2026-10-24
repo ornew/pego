@@ -95,6 +95,9 @@ func canonicalGaps(t *testing.T, root *pego.Node) []sourceast.Gap {
 		gap := sourceast.Gap{Start: g.Start(), End: g.End()}
 		gap.Trailing, _ = g.Field("Trailing").(string)
 		gap.HasTrailing, _ = g.Field("HasTrailing").(bool)
+		for _, c := range listNodes(g, "Later") {
+			gap.Later = append(gap.Later, c.Field("Text").(string))
+		}
 		gap.Leading, _ = g.Field("Leading").(string)
 		gap.HasNext, _ = g.Field("HasNext").(bool)
 		for _, c := range listNodes(g, "Detached") {
@@ -134,6 +137,13 @@ func (s *shaper) created(i, off int) int {
 
 func (s *shaper) later(i int, at []int) { s.nodes[i].Later = append(s.nodes[i].Later, at...) }
 
+// joined records the semicolons after node i, whose trailing groups follow its
+// own. A statement owns the later groups of its gaps as well.
+func (s *shaper) joined(i int, at []int, statement bool) {
+	s.nodes[i].Joined = append(s.nodes[i].Joined, at...)
+	s.nodes[i].Groups = statement
+}
+
 func (s *shaper) hide(i int) { s.hidden[i] = true }
 
 // list adds the nodes of the elements of a comma-separated list. The outermost
@@ -158,14 +168,18 @@ func flatten(n *pego.Node, typ string) []*pego.Node {
 func (s *shaper) statement(label string, n *pego.Node, sep []int) {
 	span := sourceField(s.t, n, "SourceSpan")
 	i := s.span(label, span)
-	s.later(i, sep)
+	if label == "FieldInit" {
+		s.later(i, sep)
+		return
+	}
+	s.joined(i, sep, true)
 }
 
 func (s *shaper) file(root *pego.Node) {
 	if pkg, ok := root.Field("Pkg").(*pego.Node); ok && pkg != nil && pkg.Type() == "Pkg" {
 		span := sourceField(s.t, sourceField(s.t, pkg, "Source"), "Span")
 		i := s.span("Pkg", span)
-		s.later(i, separators(s.src, span.End(), ';', 1<<30))
+		s.joined(i, separators(s.src, span.End(), ';', 1<<30), true)
 	}
 	for _, d := range listNodes(root, "Decls") {
 		s.decl(d)
@@ -454,7 +468,7 @@ func (s *shaper) block(n *pego.Node, label string) {
 	for _, st := range stmts {
 		s.action(st)
 		// A statement takes the trailing group after its separator too.
-		s.later(len(s.nodes)-1, separators(s.src, st.End(), ';', 1))
+		s.joined(len(s.nodes)-1, separators(s.src, st.End(), ';', 1), false)
 	}
 	if label == "Block" {
 		s.span("Block", n)

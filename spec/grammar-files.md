@@ -85,7 +85,7 @@ nodes that stand on lines of their own when the grammar has no layout, as after
 rule declarations, the fields of a struct type, and the `skip`, `operand`,
 `level` and operator lines of an operators rule. Detached paragraphs come first,
 each after a blank line, then the leading comments directly before the node; a
-trailing comment goes at the end of the node's last line. The declaration
+trailing comment goes at the end of the node's last line, as one block comment when the node owns the groups that follow its trailing comment on that line before a `;`, a closing delimiter or the end of the file. A trailing group after a `;` follows the groups before it in the same string, in order, so a statement ends with all the comments of its line. The declaration
 attributes of a rule own comments the same way: an attribute follows the one
 before it on its line unless it owns leading or detached comments or follows a
 trailing comment, and a lone block comment detached between two attributes of a
@@ -107,10 +107,14 @@ block comment between two of them is detached, so it is written on lines of its
 own, set off by blank lines, before the next statement. The
 owned comments of other nodes, such as the expressions of a rule body, are in
 the JSON but have no place in the formatted output without layout. Comments
-that no node owns are not in the JSON: those at the end of the file, those that follow
-the trailing comment of a statement before a `;` or a closing delimiter, between the
-tokens of a rule expression and inside the lists whose layout is kept apart,
-such as attribute arguments.
+that no node owns are not in the JSON: those on lines of their own before a
+closing delimiter or at the end of the file, those that follow the trailing
+comment of an expression or of any node that is not a statement, and those that
+follow the trailing comment of a statement on a line of their own or when a
+token follows on the same line, those between the tokens of a rule expression and
+those inside the lists whose layout is kept apart, such as attribute arguments.
+Joining several block comments into one string drops the boundary between them,
+so `/*a*//*b*/` comes back as the one comment `/*ab*/`.
 
 The canonical `pego.pego` grammar and its source adapter assign the same spans
 and owners as the hand-written frontend to every source-bearing node: the
@@ -171,7 +175,7 @@ decide it.
 | A group ends while trailing is possible | The first such group trails the previous token and later groups are detached |
 | A group ends while trailing is not possible | It is detached; the last group that no blank line ended leads the next token |
 | The next token is on the line of the previous token, or a block comment that could trail ends on the line of the next token | If exactly one group exists, it is detached and not guessed to trail or lead, unless the previous token is an opening delimiter (`(`, `[`, `{`) or a comma, when that group leads the next token. With several groups, the first trails the previous token, the groups in between are detached and the last leads the next token |
-| A closing delimiter, a statement separator `;`, or the end of the file | The same rules apply, except that a block comment on the line of the previous token trails the previous token. Other groups are detached even when no next token exists; they have no owner, and the formatter keeps their original tokens |
+| A closing delimiter, a statement separator `;`, or the end of the file | The same rules apply, except that a block comment on the line of the previous token trails the previous token. The groups that follow that comment on its line belong to the package clause, declaration, struct field or operators line that ends there, in the same trailing string, in order. Other groups are detached even when no next token exists; they have no owner, and the formatter keeps their original tokens |
 
 Ownership then follows the construct:
 

@@ -285,6 +285,44 @@ func (p *parser) statement() func() {
 	return func() { p.layout, p.layoutDepth, p.layoutStart = layout, depth, start }
 }
 
+// joinLater returns the trailing comment c of the token before t as one comment together with
+// the comments that follow it on its line, when t ends a statement or a list and the parser gives
+// those groups to the same node (see sourceTrailing). The comments leave t.
+func (p *parser) joinLater(t *token, c *grammar.Comment) *grammar.Comment {
+	if t.source == nil || len(t.source.later) == 0 {
+		return c
+	}
+	merged := *c
+	blocks := strings.HasPrefix(c.Text, "/*")
+	n := 0
+	for n < len(t.comments) && t.comments[n].Pos.Line == merged.End.Line {
+		next := t.comments[n]
+		merged.Text += " " + next.Text
+		merged.Content += next.Content
+		merged.End = next.End
+		blocks = blocks && strings.HasPrefix(next.Text, "/*")
+		n++
+	}
+	if n == 0 {
+		return c
+	}
+	if blocks {
+		// One block comment, as the node owns them: written again, it has the same owner.
+		merged.Text = "/*" + strings.ReplaceAll(merged.Content, "*/", "* /") + "*/"
+	}
+	t.comments = t.comments[n:]
+	return &merged
+}
+
+// trailingLater joins the comment at the end of the previous line, and those after it on that
+// line, into one trailing comment, before a break whose statement owns them (see joinLater).
+func (p *parser) trailingLater() {
+	t := &p.toks[p.i]
+	if c := t.lineComment; c != nil && p.cur != nil && p.cur.Trailing == nil {
+		t.lineComment = p.joinLater(t, c)
+	}
+}
+
 // takeComments moves the comments before token i to the current line
 // break.
 func (p *parser) takeComments(i int) {
@@ -292,7 +330,7 @@ func (p *parser) takeComments(i int) {
 	if p.cur != nil {
 		if t.lineComment != nil && t.kind == tPunct && t.text == ";" && p.cur.Trailing == nil {
 			// A comment before a semicolon trails the statement it ends.
-			p.cur.Trailing = t.lineComment
+			p.cur.Trailing = p.joinLater(t, t.lineComment)
 			t.lineComment = nil
 		}
 		if t.lineComment != nil {
@@ -333,6 +371,7 @@ func (p *parser) lineBreak() *grammar.LineBreak {
 // brace starts no statement, so the comment before it trails the last one.
 func (p *parser) statementBreak() *grammar.LineBreak {
 	t := &p.toks[p.i]
+	p.trailingLater()
 	c := t.lineComment
 	if c == nil || len(t.comments) != 0 || t.text == "}" || !strings.HasPrefix(c.Text, "/*") || c.End.Line != t.pos.Line {
 		return p.lineBreak()
@@ -424,8 +463,10 @@ func (p *parser) file() *grammar.Grammar {
 		}()
 		restore()
 		p.source(&g.File.Pkg.SourceInfo, packageStart)
+		p.sourceLater(&g.File.Pkg.SourceInfo)
 		p.declarationEnd()
 		p.sourceTrailing(&g.File.Pkg.SourceInfo)
+		p.sourceLater(&g.File.Pkg.SourceInfo)
 	}
 	for p.tok().kind != tEOF {
 		start := p.i
@@ -454,11 +495,16 @@ func (p *parser) file() *grammar.Grammar {
 		if p.i == start {
 			p.next()
 		}
+		if statement != nil {
+			p.sourceLater(statement.Source())
+		}
 		p.declarationEnd()
 		if statement != nil {
 			p.sourceTrailing(statement.Source())
+			p.sourceLater(statement.Source())
 		}
 	}
+	p.trailingLater()
 	g.File.EndBreak = p.lineBreak()
 	g.File.HeaderComments = p.headerComments
 	g.File.Pos = p.toks[0].pos
@@ -788,6 +834,7 @@ func (p *parser) structFields() (fields []*grammar.Field, closeBreak *grammar.Li
 		gap := p.takeGapContents()
 		field := &grammar.Field{SourceInfo: grammar.SourceInfo{Pos: fname.pos}, Name: fname.text, HeaderComments: gap, Type: p.typeExpr(), Break: fb}
 		p.source(field, fieldStart)
+		p.sourceLater(field.Source())
 		fields = append(fields, field)
 		restore()
 		if !p.separator() && !p.is("}") && !p.tok().lineBefore {
@@ -795,6 +842,7 @@ func (p *parser) structFields() (fields []*grammar.Field, closeBreak *grammar.Li
 			panic(bail{})
 		}
 		p.sourceTrailing(field.Source())
+		p.sourceLater(field.Source())
 	}
 	oneLine = !p.multiline(open, p.i)
 	p.expect("}")
@@ -1144,6 +1192,7 @@ func (p *parser) operatorsRule() (sourceResult *grammar.OperatorsRule) {
 			pr.Skip = p.choice()
 			pr.SkipBreak = b
 			p.source(&pr.SkipSource, itemStart)
+			p.sourceLater(&pr.SkipSource)
 			itemSource = &pr.SkipSource
 		case p.accept("operand"):
 			operandPos := p.toks[p.i-1].pos
@@ -1153,6 +1202,7 @@ func (p *parser) operatorsRule() (sourceResult *grammar.OperatorsRule) {
 			}
 			pr.Operands = append(pr.Operands, o)
 			p.source(o, itemStart)
+			p.sourceLater(o.Source())
 			itemSource = o.Source()
 		case p.accept("level"):
 			p.header = true
@@ -1177,11 +1227,14 @@ func (p *parser) operatorsRule() (sourceResult *grammar.OperatorsRule) {
 				op := p.operatorsRuleOperator()
 				op.Break = ob
 				l.Operators = append(l.Operators, op)
+				p.sourceLater(op.Source())
 				p.itemEnd()
 				p.sourceTrailing(op.Source())
+				p.sourceLater(op.Source())
 			}
 			pr.Levels = append(pr.Levels, l)
 			p.source(l, itemStart)
+			p.sourceLater(l.Source())
 			itemSource = l.Source()
 		default:
 			p.errorf("expected 'skip', 'operand', 'level', or '}', found %s", p.tok())
@@ -1191,6 +1244,7 @@ func (p *parser) operatorsRule() (sourceResult *grammar.OperatorsRule) {
 		p.itemEnd()
 		if itemSource != nil {
 			p.sourceTrailing(itemSource)
+			p.sourceLater(itemSource)
 		}
 	}
 	return pr

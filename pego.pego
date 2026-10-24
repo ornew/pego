@@ -31,8 +31,10 @@ type SourceComment = { Text string }
 // A gap is the trivia between two tokens that holds at least one comment. Its
 // node spans exactly that trivia, so a source node starting where a gap ends
 // can lead it and a node ending where a gap starts can trail it. The grammar
-// keeps the groups of each gap; the adapter assigns them to owners.
-type CommentGap = { Trailing string; HasTrailing bool; Leading string; Detached []SourceComment; HasNext bool }
+// keeps the groups of each gap; the adapter assigns them to owners. Later holds the
+// groups that follow a trailing block comment on its line before a closing
+// delimiter, a semicolon or the end of the input, which no token leads.
+type CommentGap = { Trailing string; HasTrailing bool; Later []SourceComment; Leading string; Detached []SourceComment; HasNext bool }
 type GapFlag = {}
 type SourceBoundary = { Trailing string; Leading string; Detached []SourceComment; HasNext bool }
 type Decl ~ TypeDef | TypeAlias | VarDef | RuleDef | error
@@ -622,17 +624,22 @@ rule source_head_open SourceLead = b:(source_after_opener_boundary / source_empt
 rule source_empty_boundary SourceBoundary = _ => SourceBoundary{Trailing: "", Leading: "", Detached: list(), HasNext: false}
 
 // The boundary after a statement. A separator, when present, is a token of its own
-// with its own boundary after it: a trailing group there replaces the one before the
-// separator, and the next sibling's leading groups come from the boundary after it.
+// with its own boundary after it: a trailing group there follows the groups before
+// the separator, and the next sibling's leading groups come from the boundary after it.
+// The groups that follow a trailing block comment on its line before the end of the
+// scope belong to the statement, after that comment.
 rule source_item_tail SourceItem = (
-    source_tail_after_separator_trailing / source_tail_after_separator / source_tail_plain / source_tail_empty
+    source_tail_after_separator_trailing / source_tail_after_separator / source_tail_later / source_tail_plain / source_tail_empty
 )
 rule source_tail_after_separator_trailing SourceItem = (
-    source_after_boundary source_semis t2:source_after_boundary_trailing
-) => SourceItem{Trailing: $t2.Trailing, Next: SourceLead{Leading: $t2.Leading, Detached: $t2.Detached, HasNext: $t2.HasNext}}
+    &l1:source_later_groups t1:source_after_boundary source_semis &l2:source_later_groups t2:source_after_boundary_trailing
+) => SourceItem{Trailing: $t1.Trailing + foldl("", $l1, (s, x) => s + x.Text) + $t2.Trailing + foldl("", $l2, (s, x) => s + x.Text), Next: SourceLead{Leading: $t2.Leading, Detached: $t2.Detached, HasNext: $t2.HasNext}}
 rule source_tail_after_separator SourceItem = (
-    t1:source_after_boundary source_semis t2:source_after_boundary
-) => SourceItem{Trailing: $t1.Trailing, Next: SourceLead{Leading: $t2.Leading, Detached: $t2.Detached, HasNext: $t2.HasNext}}
+    &l1:source_later_groups t1:source_after_boundary source_semis t2:source_after_boundary
+) => SourceItem{Trailing: $t1.Trailing + foldl("", $l1, (s, x) => s + x.Text), Next: SourceLead{Leading: $t2.Leading, Detached: $t2.Detached, HasNext: $t2.HasNext}}
+rule source_tail_later SourceItem = (
+    &l:source_later_list t:source_after_boundary
+) => SourceItem{Trailing: $t.Trailing + foldl("", $l, (s, x) => s + x.Text), Next: SourceLead{Leading: $t.Leading, Detached: $t.Detached, HasNext: $t.HasNext}}
 rule source_tail_plain SourceItem = (
     t:source_after_boundary
 ) => SourceItem{Trailing: $t.Trailing, Next: SourceLead{Leading: $t.Leading, Detached: $t.Detached, HasNext: $t.HasNext}}
@@ -743,11 +750,26 @@ rule source_bracket = (ident_char / ")" / "]" / "}") "["
 rule source_gap_run = -source_space* (source_line_comment / source_block_comment) (source_space / source_line_comment / source_block_comment)*
 rule source_gap_head CommentGap = (
     ^^ &source_gap_run &b:(source_remaining / source_empty_boundary) -source_gap_run
-) => CommentGap{Trailing: "", HasTrailing: false, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+) => CommentGap{Trailing: "", HasTrailing: false, Later: list(), Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
 rule source_gap CommentGap = (
-    &source_gap_run &b:(source_after_boundary / source_empty_boundary) t:source_gap_flag? -source_gap_run
-) => CommentGap{Trailing: $b.Trailing, HasTrailing: $t != nil, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+    &source_gap_run &b:(source_after_boundary / source_empty_boundary) &l:source_later_groups t:source_gap_flag? -source_gap_run
+) => CommentGap{Trailing: $b.Trailing, HasTrailing: $t != nil, Later: $l, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
 rule source_open_gap CommentGap = (
-    &source_gap_run &b:(source_after_opener_boundary / source_empty_boundary) t:source_gap_flag? -source_gap_run
-) => CommentGap{Trailing: $b.Trailing, HasTrailing: $t != nil, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+    &source_gap_run &b:(source_after_opener_boundary / source_empty_boundary) &l:source_later_groups t:source_gap_flag? -source_gap_run
+) => CommentGap{Trailing: $b.Trailing, HasTrailing: $t != nil, Later: $l, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+// The groups after a trailing block comment that start on the line where the group
+// before them ends, when nothing but comments is left before the end of the scope.
+rule source_later_groups []SourceComment = source_later_list / source_no_groups
+rule source_no_groups []SourceComment = _ => list()
+rule source_later_list []SourceComment = source_later_blocks / source_later_line
+rule source_later_blocks []SourceComment = (
+    -source_horizontal (source_nl -source_horizontal)? source_block_comment xs:(-source_horizontal c:source_block_comment)+
+    y:source_later_last source_later_end
+) => concat(map($xs, (x) => x.$c), $y).([]SourceComment)
+rule source_later_last []SourceComment = source_later_last_line / source_no_groups
+rule source_later_last_line []SourceComment = -source_horizontal l:source_line_group => list($l)
+rule source_later_line []SourceComment = (
+    -source_horizontal (source_nl -source_horizontal)? source_block_comment -source_horizontal l:source_line_group source_later_end
+) => list($l)
+rule source_later_end = -source_space* (source_comment -source_space*)* &source_scope_end
 rule source_gap_flag GapFlag = &source_after_boundary_trailing => GapFlag{}

@@ -247,6 +247,8 @@ var ownershipCorpus = []string{
 	"rule a = \"x\" /* amb */ rule b = \"y\"",
 	"rule a = \"x\"; // after semicolon\n// next\nrule b = \"y\"",
 	"rule a = \"x\" /* before */ ; /* after */\nrule b = \"y\"",
+	"rule s = \"s\" /* s1 */ /* s2 */ ; // s3\nrule t = \"t\" /* t1 */ ; /* t2 */\n",
+	"type T = { A int /* x1 */ /* x2 */ ; B string /* y1 */ /* y2 */\n}\nrule z = \"z\" /* z1 */ /* z2 */\n",
 	"rule a = \"x\" // inline\n// standalone\n\nrule b = \"y\"",
 	"rule a = \"x\"\n// standalone\n\n// lead\nrule b = \"y\"",
 	"rule a = \"x\"\n/* one */\n/* two */\nrule b = \"y\"",

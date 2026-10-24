@@ -13,10 +13,15 @@ import (
 type commentBoundary struct {
 	leading, trailing string
 	detached          []string
-	hasTrailing       bool
-	hasNext           bool
-	leadingOwner      *grammar.SourceInfo
-	trailingOwner     *grammar.SourceInfo
+	// later are the groups that follow the trailing comment on its line before a closing
+	// delimiter, a semicolon or the end of the file, which no node leads; a statement that
+	// ends there owns them after its trailing comment.
+	later         []string
+	laterOwner    *grammar.SourceInfo
+	hasTrailing   bool
+	hasNext       bool
+	leadingOwner  *grammar.SourceInfo
+	trailingOwner *grammar.SourceInfo
 }
 
 func collectComments(previous grammar.Pos, opens bool, next token, comments []*grammar.Comment) *commentBoundary {
@@ -31,6 +36,10 @@ func collectCommentsWithCheck(previous grammar.Pos, opens bool, next token, comm
 	inlineEnd := 0
 	groups := 0
 	var pending []*grammar.Comment
+	// sameLine[i] reports that detached group i starts on the line where the group
+	// before it ends.
+	var sameLine []bool
+	var groupEnd grammar.Pos
 	flush := func() {
 		if pending == nil {
 			return
@@ -42,7 +51,9 @@ func collectCommentsWithCheck(previous grammar.Pos, opens bool, next token, comm
 			canPrevious = false
 		} else {
 			b.detached = append(b.detached, content)
+			sameLine = append(sameLine, groupEnd.IsValid() && pending[0].Pos.Line == groupEnd.Line)
 		}
+		groupEnd = pending[len(pending)-1].End
 		pending = nil
 		groups++
 	}
@@ -96,6 +107,11 @@ func collectCommentsWithCheck(previous grammar.Pos, opens bool, next token, comm
 		}
 		canPrevious = false
 		flush()
+	}
+	if scopeEnd && b.hasTrailing {
+		for i := 0; i < len(b.detached) && sameLine[i]; i++ {
+			b.later = append(b.later, b.detached[i])
+		}
 	}
 	if !scopeEnd && pending != nil {
 		b.leading = joinCommentContent(pending, check)
@@ -260,12 +276,30 @@ func (p *parser) source(node grammar.SourceNode, start int) {
 }
 
 func (p *parser) sourceTrailing(s *grammar.SourceInfo) {
-	if b := p.toks[p.i].source; b != nil && b.hasTrailing {
-		if old := b.trailingOwner; old != nil && old != s {
+	if b := p.toks[p.i].source; b != nil && b.hasTrailing && b.trailingOwner != s {
+		if old := b.trailingOwner; old != nil {
 			old.TrailingComments = ""
+		}
+		// The group after a semicolon follows the groups before it, when the node owns them.
+		if p.i > 0 && p.toks[p.i-1].kind == tPunct && p.toks[p.i-1].text == ";" {
+			if before := p.toks[p.i-1].source; before != nil && before.trailingOwner == s {
+				s.TrailingComments += b.trailing
+				b.trailingOwner = s
+				return
+			}
 		}
 		s.TrailingComments = b.trailing
 		b.trailingOwner = s
+	}
+}
+
+// sourceLater gives a statement that ends at the current token, after sourceTrailing, the groups
+// that follow its trailing comment on its line when the token closes a list or ends the file or
+// the statement with a semicolon, in order, in the same string.
+func (p *parser) sourceLater(s *grammar.SourceInfo) {
+	if b := p.toks[p.i].source; b != nil && b.hasTrailing && b.trailingOwner == s && b.laterOwner != s {
+		b.laterOwner = s
+		s.TrailingComments += strings.Join(b.later, "")
 	}
 }
 
