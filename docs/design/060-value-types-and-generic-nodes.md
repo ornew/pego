@@ -124,9 +124,9 @@ The examples below omit `C`.
 A rule without an action is an implicit `node` rule; `rule a node = ...` states
 it explicitly and still infers the type arguments. Rules may now produce any
 value, so arbitrary ASTs can be built. Because captures are no longer fields,
-a captured subtree appears in the tree once. Capture names, the producing rule,
-capture indexes and the operator level can be compiled into source information
-on request.
+a captured subtree appears in the tree once. Source information, which is opt-in,
+holds the producing rule of each node and the capture names with their
+locations; it does not record an operator's binding level.
 
 ### Type Definitions and Aliases
 
@@ -223,7 +223,7 @@ and every guide. Saved bytecode and schema formats need new versions.
 - **Operator lines produce tuple nodes.** Without an action, an infix line
   produces `node[(L, Op, R)]`, a prefix line `node[(Op, R)]` and a postfix line
   `node[(L, Op)]`, with `C` mapping `lhs`, `op` and `rhs`. Actions keep using
-  `$lhs`, `$op` and `$rhs`. The binding level is opt-in source information.
+  `$lhs`, `$op` and `$rhs`.
 - **Recovery is an explicit join.** `a #recover(...)` and a literal with
   `#missing` have type `A | error`. Missing tokens become `error` values that
   record the expected token at run time. `error` is not implicitly assignable
