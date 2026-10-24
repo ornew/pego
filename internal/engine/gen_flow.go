@@ -369,7 +369,7 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 		p.write(fmt.Sprintf("p.MergeExpected(%s, %s)\n", p.expr(s.Far), p.expr(s.Exps)))
 	case *flow.MergeRenamed:
 		p.read(s.Far, s.Exps)
-		p.write(fmt.Sprintf("p.MergeExpected(%s, RenamedExpected(p.Parser, %s, %d))\n", p.expr(s.Far), p.expr(s.Exps), p.desc(s.Exp)))
+		p.write(fmt.Sprintf("p.MergeExpected(%s, RenamedExpected(%s, %s, %d))\n", p.expr(s.Far), p.matcher(), p.expr(s.Exps), p.desc(s.Exp)))
 	case *flow.PushKid:
 		p.read(s.X)
 		if p.frame {
