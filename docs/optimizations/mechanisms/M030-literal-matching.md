@@ -10,7 +10,10 @@ range. A mismatch still leaves position after the matched prefix and examines
 the differing character. Lazy stream input keeps its reader-aware fallback. VM
 literal arrays are prepared once; generated literal matchers use their runtime's
 input representation. Short in-place Go comparisons and unboxed action text
-comparison have independent eligibility.
+comparison have independent eligibility. Case-insensitive literals have no in-place or
+whole-input path: generated runtimes match them rune by rune through `Peek`
+(`MatchLiteralFold`), and the VMs use the folded string instruction `STRF`. See record
+119.
 
 ## Scope and State
 

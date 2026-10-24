@@ -28,7 +28,8 @@ largest of them, a 1,300-leaf trie, took 142 KB on its own.
 **Eligible expressions.** The expression must be all of the following:
 
 - made only of literals, character classes, sequences, choices, options, negative
-  lookaheads, discards and atomic groups;
+  lookaheads, discards and atomic groups, none of them case-insensitive (a folded
+  literal takes the general path; see record 119);
 - contain a choice;
 - have at least 16 literals and classes;
 - produce no value (a discard, a lookahead, or a rule whose value is unused).

@@ -15,6 +15,12 @@ skipped calls. The VMs encode guards in `GUARD` instructions; generated parsers
 emit equivalent tests. Alternatives that pass still execute in their original
 order.
 
+A case-insensitive literal (`"x"i`, or a literal under `#ignorecase`) is guarded by
+both cases of its first ASCII letter in the VMs and in the generated Go and TypeScript
+parsers. The typed Go path reads the Core first set, which has no first terminal for such
+a literal, so its alternatives run without the guard. This affects speed only; see record
+119.
+
 ## Scope and State
 
 Applied by default to eligible choices in closure, both VMs, generated Go
