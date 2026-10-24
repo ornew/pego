@@ -265,6 +265,8 @@ var ownershipCorpus = []string{
 	"rule x = operators {\n operand \"1\"; // a\n // b\n operand \"2\" // c\n // d\n}\n",
 	"rule x = operators { skip \" \"; operand \"a\"; level { infix left \"+\" ; postfix \"!\" } }",
 	"rule x = operators {\n level { // c\n }\n}",
+	"rule x = operators {\n operand \"1\" // a\n} #ignorecase // after\n// next\nrule y = \"a\"i // b\n",
+	"rule x = operators { operand \"1\" } /* a */ #ignorecase /* b */ => ...\n",
 	"rule x = \"a\" => N{A: 1, // a1\n // lead b\n B: 2 /* b */, /* c */ C: 3} // after",
 	"rule x = \"a\" => N{ // open\n A: 1 // a\n , // comma\n B: 2 // b\n // end\n}",
 	"rule x = \"a\" => N{A: 1,}\n",

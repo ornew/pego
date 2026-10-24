@@ -441,9 +441,15 @@ func (p *printer) ruleDef(r *RuleDef) {
 		p.write(" " + formatType(r.Type, p.control))
 	}
 	p.write(" = ")
-	if pr, ok := r.Expr.(*OperatorsRule); ok {
+	if pr, attributed := RuleOperators(r.Expr); pr != nil {
 		p.write("operators ")
 		p.operatorsRule(pr, "")
+		if attributed != nil {
+			for _, a := range attributed.Attrs {
+				pollFormat(p.control)
+				p.write(" " + attributeGap(a, p.control) + formatAttribute(a, p.control))
+			}
+		}
 	} else {
 		if r.BodyBreak != nil || r.ActionBreak != nil || expressionLayoutControlled(r.Expr, p.control) {
 			p.write("(")

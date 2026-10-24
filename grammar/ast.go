@@ -983,3 +983,19 @@ func (*Binary) term()          {}
 func (*Unary) term()           {}
 func (*Cast) term()            {}
 func (*Bind) term()            {}
+
+// RuleOperators returns the Operators Rule that e is, or that e holds when the
+// pragma #ignorecase follows its block. It returns nil for any other
+// expression. The Attributed that carries the pragma is returned beside it, or
+// nil.
+func RuleOperators(e Expr) (*OperatorsRule, *Attributed) {
+	switch e := e.(type) {
+	case *OperatorsRule:
+		return e, nil
+	case *Attributed:
+		if pr, ok := e.Expr.(*OperatorsRule); ok {
+			return pr, e
+		}
+	}
+	return nil, nil
+}

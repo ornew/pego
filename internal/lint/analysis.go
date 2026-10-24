@@ -629,7 +629,7 @@ func (a *analysis) matchPrefix(e grammar.Expr, t string) matchResult {
 		if r == nil || e.Level != "" || a.leftRecursive[e.Name] {
 			break
 		}
-		if _, operatorsRule := r.Expr.(*grammar.OperatorsRule); operatorsRule {
+		if pr, _ := grammar.RuleOperators(r.Expr); pr != nil {
 			break
 		}
 		key := matchKey{e.Name, t}
@@ -705,7 +705,7 @@ func (a *analysis) fails(e grammar.Expr, t string) bool {
 		if r == nil || e.Level != "" || a.busy[e.Name] {
 			return false
 		}
-		if _, operatorsRule := r.Expr.(*grammar.OperatorsRule); operatorsRule {
+		if pr, _ := grammar.RuleOperators(r.Expr); pr != nil {
 			return false
 		}
 		a.busy[e.Name] = true

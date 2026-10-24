@@ -57,13 +57,16 @@ rule <name> [<Type Expression>] = operators {
         postfix <operator part> [=> <action>]
         infix (left | right | none) <operator part> [=> <action>]
     }
-}
+} [#ignorecase]
 ```
 
 - An Operators Rule uses a dedicated
   `rule <name> [<Type Expression>] = operators` form. It cannot
   appear inside another Rule Expression. Its optional type follows the rule
   name; when omitted, the type is inferred from operands and operators.
+- `#ignorecase` may follow the closing `}` on the same line and makes the
+  string literals of the whole rule case-insensitive (see
+  [`#ignorecase`](pragmas.md#ignorecase)). No other pragma may follow it.
 - An action after an `operand` or operator declaration uses `=>` and applies to
   that complete operand or operator entry.
 - A rule-level Value Action after the closing `}` may be omitted or use the

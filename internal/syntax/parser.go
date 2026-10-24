@@ -833,7 +833,7 @@ func (p *parser) ruleDef() (sourceResult *grammar.RuleDef) {
 		p.next()
 		// Items inside an operators block have their own separators.
 		p.layout = false
-		rd.Expr = p.operatorsRule()
+		rd.Expr = p.operatorsBody()
 		p.layout = true
 		if !p.boundary() && p.is("=>") {
 			if p.tok().lineBefore {
@@ -1019,6 +1019,32 @@ func (p *parser) bodySequence() (sourceResult grammar.Expr) {
 		s.Breaks = breaks
 	}
 	return s
+}
+
+// operatorsBody parses an Operators Rule and the #ignorecase pragma that may follow its block on
+// the same line. The pragma covers the literals of the whole rule; no other pragma is accepted
+// there.
+func (p *parser) operatorsBody() (sourceResult grammar.Expr) {
+	sourceStart := p.i - 1 // The caller consumed the operators keyword.
+	start := p.toks[sourceStart].pos
+	var e grammar.Expr = p.operatorsRule()
+	wrapped := false
+	for !p.boundary() && p.is("#") && !p.isCut() && !p.tok().lineBefore {
+		operator := p.takeInlineGap()
+		if next := p.peek(1); next.text != "ignorecase" {
+			p.errorf("only #ignorecase may follow an Operators Rule, found #%s", next.text)
+			panic(bail{})
+		}
+		e = p.pragma(e, start)
+		wrapped = true
+		if a, ok := e.(*grammar.Attributed); ok && operator != nil {
+			a.Attrs[len(a.Attrs)-1].Layout = &grammar.SourceLayout{Before: operator}
+		}
+	}
+	if wrapped {
+		p.sourceNode(e, sourceStart)
+	}
+	return e
 }
 
 func (p *parser) operatorsRule() (sourceResult *grammar.OperatorsRule) {

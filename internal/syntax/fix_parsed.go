@@ -60,7 +60,7 @@ func fixParsed(src string, positional bool) (string, []int, map[string]bool, err
 				site(ia.Expr, ia.Action)
 			}
 		})
-		if or, ok := rd.Expr.(*grammar.OperatorsRule); ok {
+		if or, _ := grammar.RuleOperators(rd.Expr); or != nil {
 			for _, op := range or.Operands {
 				site(op.Expr, op.Action)
 			}
@@ -306,7 +306,7 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms
 		if t == "" {
 			continue
 		}
-		if _, ok := rd.Expr.(*grammar.OperatorsRule); ok {
+		if pr, _ := grammar.RuleOperators(rd.Expr); pr != nil {
 			return nil, nil, fmt.Errorf("%d:%d: rule %s of terminal type %s is an operators rule; give it an action before running pego fix", rd.Pos.Line, rd.Pos.Col, rd.Name, ref.Name)
 		}
 		taken := map[string]bool{}

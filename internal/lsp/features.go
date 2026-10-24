@@ -354,7 +354,7 @@ func (a *analysis) ruleHoverControlled(d *definition, control *renderControl) st
 	default:
 		head += " " + t
 	}
-	if _, ok := d.rule.Expr.(*grammar.OperatorsRule); ok {
+	if pr, _ := grammar.RuleOperators(d.rule.Expr); pr != nil {
 		head += " = operators { ... }"
 	}
 	parts := []string{code(head)}

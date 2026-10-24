@@ -313,7 +313,7 @@ rule rule_decl RuleDef = (
 rule rule_def_body RuleDefBody = (
     attrs:(a:attr gap:decl_attr_gap)*
     "rule" -word_end #cut name:(ident @error(message="expected rule name")) -ws t:type_expr? -ws
-    -("=" @error(message="expected '=' after rule header")) -ws x:(ops_rule_expr / rule_expr)
+    -("=" @error(message="expected '=' after rule header")) -ws x:(ops_rule_body / rule_expr)
     @error(message="expected rule expression") a:trailing_action?
 ) => RuleDefBody{
     Attrs: map($attrs, (x) => x.$a),
@@ -417,6 +417,11 @@ rule attr_named AttrNamed = (
 rule attr_value AttrValue = true_lit / false_lit / nil_lit / signed_int / string / rule_expr
 rule signed_int Int = (("-" -ws)? digit+ #atomic) #atomic
 
+// #ignorecase may follow the block of an Operators Rule on its line, and covers the literals of the
+// whole rule. No other pragma may.
+rule ops_rule_body RuleExpr = ops_rule_ignorecase / ops_rule_plain
+rule ops_rule_ignorecase IgnoreCase = o:ops_rule_expr -ws "#ignorecase" !ident_char !("(") => IgnoreCase{X: $o}
+rule ops_rule_plain OperatorsRule = o:ops_rule_expr -(-ws &("#" !("ignorecase" !ident_char)) _|_ @error(message="only #ignorecase may follow an Operators Rule"))? => $o
 // Operators Rule items and each level recover independently. An absent level
 // name remains nil; level(rule, name) can target only named levels.
 rule ops_rule_expr OperatorsRule = (

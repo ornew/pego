@@ -147,6 +147,46 @@ rule expr = operators {
 	}
 }
 
+// TestIgnoreCaseOperatorsRulePragma checks that #ignorecase after the block of an Operators Rule
+// makes the literals of its operands, skip and operators case-insensitive, and that it is
+// accepted only as that pragma.
+func TestIgnoreCaseOperatorsRulePragma(t *testing.T) {
+	src := `rule main = e:expr $$
+rule expr = operators {
+    skip " "*
+    operand "one" / [0-9]
+    level { infix left "plus" }
+} #ignorecase
+`
+	program := compile(t, src)
+	for _, c := range []struct{ input, want string }{
+		{"ONE PLUS 1", "ok ONE PLUS 1"},
+		{"one plus one", "ok one plus one"},
+		{"1PlUs2", "ok 1PlUs2"},
+		{"1+2", "error"},
+	} {
+		for _, unit := range []PositionUnit{CodePoints, Bytes} {
+			if got := ignoreCaseOutcome(t, program, c.input, unit); got != c.want {
+				t.Fatalf("%s input %q: got %s, want %s", unit, c.input, got, c.want)
+			}
+		}
+		checkBackends(t, program, "main", c.input)
+	}
+	// Without the pragma the same rule is exact.
+	exact := compile(t, strings.Replace(src, "} #ignorecase", "}", 1))
+	if got := ignoreCaseOutcome(t, exact, "1PLUS2", CodePoints); got != "error" {
+		t.Fatalf("without the pragma: got %s, want error", got)
+	}
+	for _, bad := range []string{
+		"rule expr = operators { operand [0-9] } #atomic\n",
+		"rule expr = operators { operand [0-9] } #missing\n",
+	} {
+		if _, err := parseTest("rule main = expr $$\n" + bad); err == nil || !strings.Contains(err.Error(), "only #ignorecase may follow an Operators Rule") {
+			t.Fatalf("%q: got error %v", bad, err)
+		}
+	}
+}
+
 // TestIgnoreCaseBackendsAgree checks that the bytecode backends produce the closure backend's results
 // for case-insensitive literals, and that a serialized program loads with the same results in every
 // mode. The plain literal keeps working in the same programs.

@@ -39,11 +39,10 @@ rule select = "select"i
 ```
 
 The pragma is lexical. It reaches the literals of `e` at any depth: under a
-sequence, a choice, a repetition, a lookahead (`!` and `&`) or a capture, in the
-expression arguments of other pragmas, and in the operands, operators and skip
-expression of an [Operators Rule](operators-rule.md) written in `e`. It does
-not reach a rule that `e` calls, and it does not change a character class, which
-is already a set of characters. Folding is ASCII only, as for the suffix:
+sequence, a choice, a repetition, a lookahead (`!` and `&`) or a capture, and in
+the expression arguments of other pragmas. It does not reach a rule that `e`
+calls, and it does not change a character class, which is already a set of
+characters. Folding is ASCII only, as for the suffix:
 `"é" #ignorecase` matches `é` and not `É`.
 
 The pragma takes no arguments. Its expectations show each case-insensitive
@@ -52,6 +51,21 @@ literal with its suffix, so `("select") #ignorecase` expects `"select"i`. The
 and without any change of case. The pragma follows an expression, like the other
 behavioral pragmas, and applies from left to right, so `"a" #ignorecase "b"`
 folds only `"a"`.
+
+An [Operators Rule](operators-rule.md) is the whole body of its rule, so the
+pragma follows its closing brace on the same line:
+
+```pego
+rule expr = operators {
+    skip " "*
+    operand "one" / [0-9]
+    level { infix left "plus" }
+} #ignorecase
+```
+
+The pragma then covers the literals of the operands, the operators and the skip
+expression of the rule. It is the only pragma that may follow an Operators
+Rule; any other is a syntax error.
 
 ## `#recover`
 

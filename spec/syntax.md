@@ -148,7 +148,7 @@ rule rule_decl = comments rule_def_body &source_item_tail stmt_end
 rule rule_def_body = (
     (attr decl_attr_gap)*
     "rule" -word_end #cut ident -ws type_expr? -ws
-    -"=" -ws (ops_rule_expr / rule_expr) trailing_action?
+    -"=" -ws (ops_rule_body / rule_expr) trailing_action?
 )
 // Declaration attributes may share a line; the last one ends its line before "rule".
 rule decl_attr_gap = decl_attr_same_line / decl_attr_line_end
@@ -232,6 +232,11 @@ rule attr_named = ident -ws "=" -ws attr_value
 rule attr_value = true_lit / false_lit / nil_lit / signed_int / string / rule_expr
 rule signed_int = (("-" -ws)? digit+ #atomic) #atomic
 
+// #ignorecase may follow the block of an Operators Rule on its line, and covers the literals of the
+// whole rule. No other pragma may.
+rule ops_rule_body = ops_rule_ignorecase / ops_rule_plain
+rule ops_rule_ignorecase = ops_rule_expr -ws "#ignorecase" !ident_char !"("
+rule ops_rule_plain = ops_rule_expr -(-ws &("#" !("ignorecase" !ident_char)) _|_)?
 // Operators Rule items and each level recover independently. An absent level
 // name remains nil; level(rule, name) can target only named levels.
 rule ops_rule_expr = (

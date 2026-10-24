@@ -86,7 +86,7 @@ func analyze(g *grammar.Grammar, start string) *info {
 	}
 	for i, r := range g.Rules() {
 		ri := &ruleInfo{def: r, index: i, height: inf, length: inf, stops: map[int]*operatorsRuleStop{}}
-		if pr, ok := r.Expr.(*grammar.OperatorsRule); ok {
+		if pr, _ := grammar.RuleOperators(r.Expr); pr != nil {
 			ri.operatorsRule = pr
 			ri.levels = map[string]int{}
 			for j, l := range pr.Levels {

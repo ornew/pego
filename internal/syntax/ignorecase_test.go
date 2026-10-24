@@ -126,3 +126,49 @@ func TestIgnoreCaseSuffixToken(t *testing.T) {
 		}
 	}
 }
+
+// TestIgnoreCaseOperatorsRulePragma checks that #ignorecase follows the block of an Operators Rule,
+// stays attached to it through the formatter and JSON, and that no other pragma does.
+func TestIgnoreCaseOperatorsRulePragma(t *testing.T) {
+	src := "rule main = operators {\n    operand \"a\"\n} #ignorecase\n"
+	g, err := Parse(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var body grammar.Expr
+	for _, d := range g.File.Decls {
+		if rd, ok := d.(*grammar.RuleDef); ok && rd.Name == "main" {
+			body = rd.Expr
+		}
+	}
+	pr, attributed := grammar.RuleOperators(body)
+	if pr == nil || attributed == nil || len(attributed.Attrs) != 1 || attributed.Attrs[0].Name != "ignorecase" || !attributed.Attrs[0].Pragma {
+		t.Fatalf("body: %#v", body)
+	}
+	if out := checkFormat(t, src); out != src {
+		t.Fatalf("formatted output:\n%s\nwant:\n%s", out, src)
+	}
+	data, err := grammar.MarshalJSON(g)
+	if err != nil {
+		t.Fatal(err)
+	}
+	back, err := grammar.UnmarshalJSON(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := grammar.Format(back), grammar.Format(g); got != want || !strings.Contains(got, "} #ignorecase") {
+		t.Fatalf("formatted JSON round trip:\n%s\nwant:\n%s", got, want)
+	}
+	for _, bad := range []string{
+		"rule main = operators { operand \"a\" } #atomic\n",
+		"rule main = operators { operand \"a\" } #ignorecase #atomic\n",
+		"rule main = operators { operand \"a\" } #ignorecase(x)\n",
+	} {
+		if _, err := Parse(bad); err == nil {
+			t.Fatalf("%q was accepted", bad)
+		}
+	}
+	if _, err := Parse("rule main = operators { operand \"a\" } #atomic\n"); err == nil || !strings.Contains(err.Error(), "only #ignorecase may follow an Operators Rule") {
+		t.Fatalf("other pragma: %v", err)
+	}
+}

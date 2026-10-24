@@ -42,7 +42,7 @@ func (a *analysis) contextualItemsControlled(prev, off int, control *renderContr
 			if a.isPunct(comma, ",") && comma <= prev {
 				var items []CompletionItem
 				if d := a.rules[a.toks[first].Text]; d != nil {
-					if op, ok := d.rule.Expr.(*grammar.OperatorsRule); ok {
+					if op, _ := grammar.RuleOperators(d.rule.Expr); op != nil {
 						for _, level := range op.Levels {
 							control.poll()
 							if level.Name != "" {

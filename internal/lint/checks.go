@@ -610,7 +610,7 @@ func (l *linter) unusedCaptures() {
 
 	l.eachRule(func(r *grammar.RuleDef) {
 		control.poll()
-		if pr, ok := r.Expr.(*grammar.OperatorsRule); ok {
+		if pr, _ := grammar.RuleOperators(r.Expr); pr != nil {
 			for _, o := range pr.Operands {
 				control.poll()
 				if o.Action != nil {
@@ -817,7 +817,7 @@ func (l *linter) duplicateCaptures() {
 
 	l.eachRule(func(r *grammar.RuleDef) {
 		control.poll()
-		if pr, ok := r.Expr.(*grammar.OperatorsRule); ok {
+		if pr, _ := grammar.RuleOperators(r.Expr); pr != nil {
 			for _, o := range pr.Operands {
 				control.poll()
 				l.scopeDuplicates(o.Expr)
@@ -1000,7 +1000,7 @@ func (l *linter) rightRecursion() {
 	a := l.an
 	l.eachRule(func(r *grammar.RuleDef) {
 		control.poll()
-		if _, ok := r.Expr.(*grammar.OperatorsRule); ok {
+		if pr, _ := grammar.RuleOperators(r.Expr); pr != nil {
 			return
 		}
 		var found *grammar.Ref
