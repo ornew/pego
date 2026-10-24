@@ -21,9 +21,12 @@ import (
 // this same encoder.
 //
 // Regenerate the golden only when a change of a Core pass's decisions is intended and justified,
-// and review the diff: a regenerated golden makes a broken pass pass. Regeneration needs a tree
-// whose generator records the typed decisions (its dec.log holds table "trules"); this tree does
-// not, and the writer refuses to run here. It is driven by the environment:
+// and review the diff: a regenerated golden makes a broken pass pass. The writer records the
+// typed decisions of the tree it runs in, so regeneration needs a tree whose generator records
+// them as "trules" entries of dec.log for every grammar of the golden. The writer refuses to write
+// when the grammars it records differ from the grammars of the existing golden, which a tree whose
+// generator prints typed rules without recording them (Flow IR) does not match. It is driven by the
+// environment:
 //
 //	PEGO_TYPED_DECISIONS_OUT=<absolute path> go test -run TestWriteTypedDecisions ./internal/engine/
 //
@@ -184,7 +187,14 @@ func TestWriteTypedDecisions(t *testing.T) {
 	for _, mode := range coreGenModes {
 		modes = append(modes, mode.name)
 		perMode[mode.name] = map[string]string{}
-		for name, dec := range typedDecisionsGrammars(t, mode) {
+		grammars := typedDecisionsGrammars(t, mode)
+		var gnames []string
+		for name := range grammars {
+			gnames = append(gnames, name)
+		}
+		sort.Strings(gnames) // the conditions are interned in this order, so it must be fixed
+		for _, name := range gnames {
+			dec := grammars[name]
 			for _, d := range dec.log {
 				if d.table == "trules" {
 					records++
@@ -200,6 +210,28 @@ func TestWriteTypedDecisions(t *testing.T) {
 	}
 	if records == 0 {
 		t.Fatal("the generator records no typed decisions in this tree; regenerate from a tree that does")
+	}
+	if _, err := os.Stat(typedDecisionsGolden); err == nil {
+		readTypedDecisions(t)
+		var missing, extra []string
+		for k := range typedDecisionsFile.lines {
+			if _, ok := perMode[k.mode][k.grammar]; !ok {
+				missing = append(missing, k.mode+" "+k.grammar)
+			}
+		}
+		for _, m := range modes {
+			for name := range perMode[m] {
+				if _, ok := typedDecisionsFile.lines[typedDecisionsKey{m, name}]; !ok {
+					extra = append(extra, m+" "+name)
+				}
+			}
+		}
+		if len(missing) != 0 || len(extra) != 0 {
+			sort.Strings(missing)
+			sort.Strings(extra)
+			t.Fatalf("this tree records typed decisions for other grammars than %s: missing %v, extra %v; "+
+				"regenerate from the tree the golden was written from", typedDecisionsGolden, missing, extra)
+		}
 	}
 	var sorted []string
 	for name := range names {
@@ -237,6 +269,20 @@ func TestWriteTypedDecisions(t *testing.T) {
 
 // typedDecisionsKey identifies the decisions of a grammar in a mode.
 type typedDecisionsKey struct{ mode, grammar string }
+
+// typedDecisionsGrammarsOf returns the names of the grammars that the golden file holds decisions
+// for in the mode. The caller may modify the map.
+func typedDecisionsGrammarsOf(t *testing.T, mode string) map[string]bool {
+	t.Helper()
+	readTypedDecisions(t)
+	out := map[string]bool{}
+	for k := range typedDecisionsFile.lines {
+		if k.mode == mode {
+			out[k.grammar] = true
+		}
+	}
+	return out
+}
 
 // typedDecisionsFile is the golden file, read once: the lines of each mode and grammar, and the
 // condition texts.
@@ -307,6 +353,15 @@ func loadTypedDecisions(t *testing.T, mode, name string, dec *genDecisions) {
 	if !ok {
 		t.Fatalf("%s %s: no typed decisions in %s", mode, name, typedDecisionsGolden)
 	}
+	// The golden replaces the typed entries the generator recorded itself, such as the Operators
+	// Rule scopes that Flow IR records, so each comparison reads the frozen decisions only.
+	kept := dec.log[:0]
+	for _, d := range dec.log {
+		if d.table != "trules" {
+			kept = append(kept, d)
+		}
+	}
+	dec.log = kept
 	prog := dec.gen.prog
 	all := append(append([]*rule(nil), prog.rules...), prog.twins...)
 	exprsOf := map[int][]grammar.Expr{}

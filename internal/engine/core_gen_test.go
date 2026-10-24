@@ -177,12 +177,24 @@ func coreGenerations(t *testing.T, mode coreGenMode) []coreGenerated1 {
 	if out, ok := coreGenerated[mode.name]; ok {
 		return out
 	}
+	// The grammars are those of the golden file in this mode, so a grammar whose typed decisions
+	// are not recorded cannot drop out of the comparisons silently.
+	want := typedDecisionsGrammarsOf(t, mode.name)
 	var out []coreGenerated1
 	for _, gc := range append(schemaCorpus(t), coreExtraGrammars...) {
-		if dec, ok := coreGenerate(gc.src, mode.opts); ok && writesTyped(dec) {
-			loadTypedDecisions(t, mode.name, gc.name, dec)
-			out = append(out, coreGenerated1{gc.name, dec})
+		if !want[gc.name] {
+			continue
 		}
+		dec, ok := coreGenerate(gc.src, mode.opts)
+		if !ok {
+			t.Fatalf("%s %s: the grammar does not generate", mode.name, gc.name)
+		}
+		loadTypedDecisions(t, mode.name, gc.name, dec)
+		out = append(out, coreGenerated1{gc.name, dec})
+		delete(want, gc.name)
+	}
+	if len(want) != 0 {
+		t.Fatalf("%s: grammars of %s are not in the corpus: %v", mode.name, typedDecisionsGolden, want)
 	}
 	if len(out) < 100 {
 		t.Fatalf("%s: %d grammars", mode.name, len(out))
@@ -191,12 +203,10 @@ func coreGenerations(t *testing.T, mode coreGenMode) []coreGenerated1 {
 	return out
 }
 
-// writesTyped reports that the generator wrote the typed rules: it does not where no entry point
-// parses with them (a start rule whose value is converted from the Node tree).
+// writesTyped reports that the generator recorded typed decisions for the grammar. It is the filter
+// of the writer of the golden file (core_typed_decisions_test.go): the Core comparisons take their
+// grammars from the golden, because Flow IR prints some typed rules without recording them.
 func writesTyped(dec *genDecisions) bool {
-	if dec.gen != nil && dec.gen.flowRules > 0 {
-		return true
-	}
 	for _, d := range dec.log {
 		if d.table == "trules" {
 			return true
