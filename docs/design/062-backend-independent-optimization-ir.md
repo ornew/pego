@@ -541,7 +541,11 @@ stage of its first consumer, so its differential tests and negative controls run
    the recognizer's rules are compared with the generator's from this stage, once the generator's
    projections for those rules match Core IR. Gate as stage 1 plus the Document and stream differential tests and the Node, recognition, Document and stream
    benchmarks. Then remove `generator.expr`, the rest of the Go term lowering and the remaining `go/ast`
-   passes.
+   passes. Terminal programs (`gen_terminal.go`) are owned by no stage: `terminalTable` has a caller in the
+   Flow IR emitter (`gen_flow.go`) and one in `dgen` (`gen_direct.go`), which stage 2 removes. Stage 2 keeps
+   the Node target calling `terminalTable` in the same way, so Node output keeps the program and does not
+   fall back to straight-line code, and the emitter stays where it is. Moving the emitter is not part of
+   any stage here, because it is a Go emission helper shared by Flow IR, not a lowering of the AST.
 3. **TypeScript.** Gate: the TypeScript parity tests in `bench` and `internal/engine`, TypeScript event
    streams, and the TypeScript benchmarks (`bench/ts-*.mjs`). Then remove `tsGen.expr`, the TypeScript term
    lowering and the condition rewriting.
