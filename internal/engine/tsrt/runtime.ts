@@ -200,10 +200,8 @@ export class TypedNode extends Node {
   /** @internal The shape of the node it was converted from (shapeString, shapeTuple or shapeList). */
   readonly base: number;
 
-  constructor(type: string, from: Node, base: number) {
-    // The node keeps what it holds now: the rule that made a fresh node may still change it.
-    super(type, "", from.start, from.end, from.text, from.fresh ? from.children.slice() : from.children, from.fields.slice(), false, from.terminal);
-    this.labeled = from.labeled;
+  constructor(type: string, start: number, end: number, text: string, children: readonly (Node | null)[], fields: readonly NodeField[], terminal: boolean, base: number) {
+    super(type, "", start, end, text, children, fields, false, terminal);
     this.base = base;
   }
 }
@@ -219,7 +217,13 @@ export function convertNode(typ: string, v: Value): Node | null {
   if (shape > shapeList) {
     return null;
   }
-  return v.type === typ ? v : new TypedNode(typ, v, shape);
+  if (v.type === typ) {
+    return v;
+  }
+  // The node keeps what it holds now: the rule that made a fresh node may still change it.
+  const n = new TypedNode(typ, v.start, v.end, v.text, v.fresh ? v.children.slice() : v.children, v.fields.slice(), v.terminal, shape);
+  n.labeled = v.labeled;
+  return n;
 }
 
 // Shapes of a Node: what it stands for in the value model.
@@ -2968,9 +2972,15 @@ export class Parser {
         kids = [lhs, opv, rhs];
         fields = [{ name: "lhs", value: lhs }, { name: "op", value: opv }, { name: "rhs", value: rhs }];
     }
+    if (r.opNodeType !== "") {
+      // The node of the operators' named node type, built without the tuple node it converts from.
+      const t = new TypedNode(r.opNodeType, start, end, "", kids, fields, false, shapeTuple);
+      t.labeled = this.sourceInfo;
+      return t;
+    }
     const n = new Node("tuple", this.sourceInfo ? r.name : "", start, end, "", kids, fields, false, false);
     n.labeled = this.sourceInfo;
-    return r.opNodeType !== "" ? this.convertOperator(r, n) : n;
+    return n;
   }
 
   // convertOperator converts v, the value of an operator of rule r, to the named node type of the
