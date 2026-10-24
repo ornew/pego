@@ -119,13 +119,13 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 | [G120](mechanisms/G120-lsp-position-checkpoints.md) | LSP UTF-16/code-point checkpoints | Editor preprocessing only; backend cells N/A | — | — | — | — | — | — | Default editor path | None maintained |
 | [G125](mechanisms/G125-bounded-diagnostic-prefixes.md) | Bound displayed lint expression prefixes | CLI/LSP lint diagnostics only; runtime backend cells N/A | — | — | — | — | — | — | Default lint path | None maintained |
 | [G130](mechanisms/G130-generated-literal-sharing.md) | Share generated literal tables | GN/TG default; TS experimental/private off | — | — | — | ✓ | ✓ | Private off | Go default; TS off | GenOptions.disableLiteralSharing; enableTSLiteralSharing (off) |
-| [G140](mechanisms/G140-typed-local-cuts.md) | Local cuts in ordinary direct typed rules | TG default eligible; disableTypedCuts | — | — | — | — | Partial | — | Default | GenOptions.disableTypedCuts |
-| [G150](mechanisms/G150-typed-left-recursion-bodies.md) | Inline typed LR leader bodies | TG default eligible; disableTypedLRBodies | — | — | — | — | Partial | — | Default | GenOptions.disableTypedLRBodies |
-| [G160](mechanisms/G160-typed-operators-line-bodies.md) | Inline typed Operators Rule line bodies | TG default eligible; disableTypedOperatorsRuleBodies | — | — | — | — | Partial | — | Default | GenOptions.disableTypedOperatorsRuleBodies |
-| [G170](mechanisms/G170-typed-framed-cuts.md) | Scoped cuts in unfinished typed bodies | TG default eligible; disableTypedFramedCuts | — | — | — | — | Partial | — | Default | GenOptions.disableTypedFramedCuts |
-| [G180](mechanisms/G180-typed-frame-layouts.md) | Match direct framed capture layouts | TG default eligible; disableTypedFrameLayouts | — | — | — | — | Partial | — | Default | GenOptions.disableTypedFrameLayouts |
-| [G190](mechanisms/G190-typed-recovery-bodies.md) | Inline eligible typed recovery bodies | TG default eligible; disableTypedRecoveryBodies | — | — | — | — | Partial | — | Default | GenOptions.disableTypedRecoveryBodies |
-| [G200](mechanisms/G200-typed-local-capture-layouts.md) | Complete typed Go-local capture layouts | TG default eligible; disableTypedLocalLayouts | — | — | — | — | Partial | — | Default | GenOptions.disableTypedLocalLayouts |
+| [G140](mechanisms/G140-typed-local-cuts.md) | Local cuts in ordinary direct typed rules | TG default eligible | — | — | — | — | Partial | — | Default | None maintained |
+| [G150](mechanisms/G150-typed-left-recursion-bodies.md) | Inline typed LR leader bodies | TG default eligible | — | — | — | — | Partial | — | Default | None maintained |
+| [G160](mechanisms/G160-typed-operators-line-bodies.md) | Inline typed Operators Rule line bodies | TG default eligible | — | — | — | — | Partial | — | Default | None maintained |
+| [G170](mechanisms/G170-typed-framed-cuts.md) | Scoped cuts in unfinished typed bodies | TG default eligible | — | — | — | — | Partial | — | Default | None maintained |
+| [G180](mechanisms/G180-typed-frame-layouts.md) | Match direct framed capture layouts | TG default eligible | — | — | — | — | Partial | — | Default | None maintained |
+| [G190](mechanisms/G190-typed-recovery-bodies.md) | Inline eligible typed recovery bodies | TG default eligible | — | — | — | — | Partial | — | Default | None maintained |
+| [G200](mechanisms/G200-typed-local-capture-layouts.md) | Complete typed Go-local capture layouts | TG default eligible | — | — | — | — | Partial | — | Default | None maintained |
 
 Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](055-tracing-hook-on-the-call-path.md) remain in the evidence archive but are not optimization mechanisms: the first covers grammar-author output choices and the second measures tracing-instrumentation cost.
 

@@ -533,8 +533,8 @@ stage of its first consumer, so its differential tests and negative controls run
    rejected by `flow.LocalRule`, but they are printed through the framed-body and Operators Rule lowering.
    The Node and recognizer tables still print through `dgen` and `generator.expr`, which stage 2 removes.
    The typed dispatch does not fall back: a typed rule or Operators Rule line that Flow IR does not print
-   makes generation fail. Typed output has no `dgen` branches, no `directTypedRules` option and no switches
-   for them; `dgen` prints the Node and recognizer tables. Then remove `dgen`, the typed parts of
+   makes generation fail. Typed output has no `dgen` branches and no switches for them; `dgen` prints the Node and
+   recognizer tables. Then remove `dgen`, the typed parts of
    `generator.expr` and of the Go term lowering, `gen_prune.go` and the typed uses of the ordinary-method
    passes.
 2. **Go Node, recognizer, Document and stream output**, with the recognition specialization. The terms of
