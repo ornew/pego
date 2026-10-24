@@ -44,6 +44,13 @@ func ignoreCaseLines(t *testing.T, src string, inputs []string) string {
 // it, and compares its output with want. It is the untyped form of runGeneratedNamedNodeProgram.
 func runGeneratedUntypedProgram(t *testing.T, src, body, want string) {
 	t.Helper()
+	runGeneratedProgramWith(t, src, GenOptions{Package: "p", Start: "main"}, body, want)
+}
+
+// runGeneratedProgramWith is runGeneratedUntypedProgram with the generation options opts, which
+// must name package p and start rule main.
+func runGeneratedProgramWith(t *testing.T, src string, opts GenOptions, body, want string) {
+	t.Helper()
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -55,7 +62,7 @@ func runGeneratedUntypedProgram(t *testing.T, src, body, want string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, GenOptions{Package: "p", Start: "main"})
+	code, err := generateCode(g, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,4 +160,66 @@ func TestIgnoreCaseGeneratedExpectation(t *testing.T) {
 	}
 	body := "func main() {\n\t_, err := p.Parse(\"x\")\n\tfmt.Println(err)\n}\n"
 	runGeneratedUntypedProgram(t, ignoreCaseGenGrammar, body, err.Error()+"\n")
+}
+
+// ignoreCaseDocEdit is one edit replacing runes [start, end) of the document text with text.
+type ignoreCaseDocEdit struct {
+	start, end int
+	text       string
+}
+
+// ignoreCaseDocInput and ignoreCaseDocEdits drive the generated Document. The edits move the text
+// between accepted and rejected folded spellings, and they reparse the document after each one.
+const ignoreCaseDocInput = "SELECT xY"
+
+var ignoreCaseDocEdits = []ignoreCaseDocEdit{
+	{0, 6, "from"}, {4, 5, ""}, {4, 4, " "}, {5, 6, "z"}, {5, 6, "X"}, {0, 4, "Sel"}, {3, 3, "ect"},
+}
+
+// ignoreCaseDocWant replays the edits on the closure backend, parsing the whole text after the
+// initial parse and after each edit.
+func ignoreCaseDocWant(t *testing.T) string {
+	t.Helper()
+	prog := compile(t, ignoreCaseGenGrammar)
+	var b strings.Builder
+	show := func(text []rune) {
+		n, err := prog.ParseWith("main", string(text), ParseOptions{Backend: Closure})
+		if err != nil {
+			b.WriteString("error\n")
+			return
+		}
+		fmt.Fprintf(&b, "ok %s\n", string(text[n.Start():n.End()]))
+	}
+	text := []rune(ignoreCaseDocInput)
+	show(text)
+	for _, e := range ignoreCaseDocEdits {
+		next := append([]rune{}, text[:e.start]...)
+		next = append(next, []rune(e.text)...)
+		text = append(next, text[e.end:]...)
+		show(text)
+	}
+	return b.String()
+}
+
+// ignoreCaseDocBody runs the same initial parse and edits on the generated Document and prints
+// the result of each parse as ignoreCaseDocWant does.
+func ignoreCaseDocBody() string {
+	var edits strings.Builder
+	for _, e := range ignoreCaseDocEdits {
+		fmt.Fprintf(&edits, "\t\t{%d, %d, %s},\n", e.start, e.end, strconv.Quote(e.text))
+	}
+	return "func main() {\n\td, err := p.NewDocument(" + strconv.Quote(ignoreCaseDocInput) + ")\n" +
+		"\tif err != nil {\n\t\tpanic(err)\n\t}\n" +
+		"\tshow := func() {\n\t\tn, err := d.Parse()\n\t\tif err != nil {\n\t\t\tfmt.Println(\"error\")\n\t\t\treturn\n\t\t}\n" +
+		"\t\tr := []rune(d.Text())\n\t\tfmt.Printf(\"ok %s\\n\", string(r[n.Start():n.End()]))\n\t}\n" +
+		"\tshow()\n\tfor _, e := range []struct {\n\t\tstart, end int\n\t\ttext       string\n\t}{\n" + edits.String() +
+		"\t} {\n\t\tif err := d.Edit(e.start, e.end, e.text); err != nil {\n\t\t\tpanic(err)\n\t\t}\n\t\tshow()\n\t}\n}\n"
+}
+
+// TestIgnoreCaseGeneratedDocument checks that a generated Document, which reparses after each edit
+// of folded literals, agrees with the closure backend after every edit.
+func TestIgnoreCaseGeneratedDocument(t *testing.T) {
+	needsWorkControls(t)
+	want := ignoreCaseDocWant(t)
+	runGeneratedProgramWith(t, ignoreCaseGenGrammar, GenOptions{Package: "p", Start: "main", Document: true}, ignoreCaseDocBody(), want)
 }
