@@ -70,6 +70,12 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   Guards are emitted in six places.
 - Generated typed Go is printed from Flow IR. Its rules and Operators Rule lines have no `dgen` route and no
   private switch; `dgen` prints only the Node and recognizer tables.
+- Transitional, while the Parse table is still printed by `dgen`: a recognizer rule printed from Flow IR first asks
+  whether its value-free direct body is already a generated helper (`sharedDirectBody`, `gen_flow_recognizer.go`).
+  The lookup prints the direct body under a snapshot and rolls it back, so it reserves no names and adds no table
+  entries, variables or methods. If the text is shared, the rule takes the direct path and reuses that helper, as
+  `dgen` does without the switch. Without the lookup, the Flow copy of a shared keyword rule duplicates a large
+  helper. When the Parse table is printed from Flow IR, the exact-text sharing works again and the lookup is removed.
 - Work-control specialization exists three times: the closure backend compiles a second, metered closure
   graph (`controlledDispatch`); generated Go duplicates each function through `go/ast`
   (`specializeOrdinaryMethods`, `rewriteOrdinaryControl`, `foldOrdinaryControl`, `compactOrdinaryPeeks`,

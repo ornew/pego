@@ -59,6 +59,28 @@ func (g *generator) startRecFlow(rec *Program) error {
 	return nil
 }
 
+// sharedDirectBody reports whether the value-free direct body of the eligible rule r is the text of
+// a helper that is already generated, such as the body of the same rule in the Parse table. The
+// direct body is printed under a snapshot and rolled back, so the lookup reserves no names and
+// adds no table entries, variables or methods.
+//
+// Transitional: the direct printer shares helpers by exact text (methodName). A Flow copy of such a
+// rule has a different text, so without this lookup the recognizer would generate its own copy. When
+// the Parse table is printed from Flow IR, the text match works again and this lookup is removed.
+func (g *generator) sharedDirectBody(r *rule) bool {
+	if g.disableMethodSharing {
+		return false
+	}
+	snap := g.snapshot()
+	defer g.rollback(snap)
+	d := g.directRule(r)
+	if d == nil {
+		return false
+	}
+	_, ok := g.methodNames[generatedMethod{g.recv() + "/" + g.valType(), g.directLeanText(d)}]
+	return ok
+}
+
 // flowRecDirect prints the eligible rule r of the recognizer from Flow IR as a direct rule, or
 // returns nil if the printed function would read its start or context, which a value-free body
 // does not need.

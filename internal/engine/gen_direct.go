@@ -1383,6 +1383,11 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 // directLeanBody provides the rule-table body for external entry and generic
 // fallback calls. Its caller owns depth and failure rollback, so it adds neither.
 func (g *generator) directLeanBody(r *rule, d *direct) string {
+	return g.method(r.name+" (value-free body inlined)", g.directLeanText(d))
+}
+
+// directLeanText returns the text of the method body of the value-free direct rule d.
+func (g *generator) directLeanText(d *direct) string {
 	var b strings.Builder
 	var vs []dvar
 	if d.succeed {
@@ -1396,7 +1401,7 @@ func (g *generator) directLeanBody(r *rule, d *direct) string {
 	if d.fail {
 		b.WriteString("fail:\nreturn nil, false\n")
 	}
-	return g.method(r.name+" (value-free body inlined)", b.String())
+	return b.String()
 }
 
 func directHasRecovery(e grammar.Expr) bool {

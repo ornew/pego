@@ -753,7 +753,7 @@ func (g *generator) rules() {
 				directs[r] = d
 				continue
 			}
-		} else if g.flow != nil && g.table == "recRules" && recFlowEligible(r) {
+		} else if g.flow != nil && g.table == "recRules" && recFlowEligible(r) && !g.sharedDirectBody(r) {
 			if d := g.flowRecDirect(r); d != nil {
 				directs[r] = d
 				bodies[r] = g.directLeanBody(r, d)
