@@ -66,7 +66,7 @@ type InlineComment = { Start node[string]; Body node[string]; End node[string] }
 type RuleDef = { Attrs []Attr; Name Ident; Type *Type; Expr RuleExpr; Action *Action; Comments []Comment; SourceSpan RuleDefBody; Source SourceItem }
 type RuleDefBody = { Attrs []Attr; AttrComments []Comment; Name Ident; Type *Type; Expr RuleExpr; Action *Action }
 type RuleExpr ~ (
-    RuleRef | LevelCall | RuleGroup | InlineAction | Sequence | Choice | Discard | Lookahead | Top | Bottom | BeginLine | BeginInput | EndLine | EndInput | Any | Cut | String | CharClass | Optional | ZeroOrMore | OneOrMore | Repeat | Capture | Predicate | Atomic | Stream | MissingPragma | Recover | Attributed | OperatorsRule
+    RuleRef | LevelCall | RuleGroup | InlineAction | Sequence | Choice | Discard | Lookahead | Top | Bottom | BeginLine | BeginInput | EndLine | EndInput | Any | Cut | String | CharClass | Optional | ZeroOrMore | OneOrMore | Repeat | Capture | Predicate | Atomic | Stream | MissingPragma | IgnoreCase | Recover | Attributed | OperatorsRule
 )
 type RuleRef = { Name Ident }
 type LevelCall = { Rule Ident; Level Ident }
@@ -97,6 +97,7 @@ type Predicate = { Actions []ActionStmt; Comments []Comment }
 type Atomic = { X RuleExpr }
 type Stream = { X RuleExpr }
 type MissingPragma = { X RuleExpr }
+type IgnoreCase = { X RuleExpr }
 type Recover = { X RuleExpr; Skip RuleExpr }
 type Attributed = { X RuleExpr; Attr Attr }
 type Attr = { Name Ident; Args []*AttrValue; KwArgs []AttrNamed }
@@ -346,6 +347,7 @@ rule rule_expr RuleExpr = operators {
         postfix "#atomic" !ident_char (empty_args / !("(")) => Atomic{X: $lhs}
         postfix "#stream" !ident_char (empty_args / !("(")) => Stream{X: $lhs}
         postfix "#missing" !ident_char !("(") => MissingPragma{X: $lhs}
+        postfix "#ignorecase" !ident_char !("(") => IgnoreCase{X: $lhs}
         postfix "#repeat" !ident_char bounds:repeat_args => Repeat{X: $lhs, Min: $bounds.Min, Max: $bounds.Max, Range: $bounds.Range}
         postfix "#recover" !ident_char sync:recover_args => Recover{X: $lhs, Skip: $sync}
         postfix a:attr => Attributed{X: $lhs, Attr: $a}
@@ -598,7 +600,7 @@ rule ident Ident = (ident_start ident_char*) #atomic
 rule ident_start = [a-zA-Z_]
 rule ident_char = [a-zA-Z0-9_]
 rule digit = [0-9]
-rule string String = ("\"" ("\\" escape_char / [^"\\\n])* "\"" #atomic) #atomic
+rule string String = ("\"" ("\\" escape_char / [^"\\\n])* "\"" #atomic ("i" !ident_char)?) #atomic
 rule char_class CharClass = (
     "[" not:"^"? items:(char_class_rng / char_class_chr)+
     -("]" @error(message="expected closing bracket for character class"))

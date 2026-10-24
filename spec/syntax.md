@@ -174,6 +174,7 @@ rule rule_expr = operators {
         postfix "#atomic" !ident_char (empty_args / !"(")
         postfix "#stream" !ident_char (empty_args / !"(")
         postfix "#missing" !ident_char !"("
+        postfix "#ignorecase" !ident_char !"("
         postfix "#repeat" !ident_char repeat_args
         postfix "#recover" !ident_char recover_args
         postfix attr
@@ -380,7 +381,7 @@ rule ident = (ident_start ident_char*) #atomic
 rule ident_start = [a-zA-Z_]
 rule ident_char = [a-zA-Z0-9_]
 rule digit = [0-9]
-rule string = ("\"" ("\\" escape_char / [^"\\\n])* "\"" #atomic) #atomic
+rule string = ("\"" ("\\" escape_char / [^"\\\n])* "\"" #atomic ("i" !ident_char)?) #atomic
 rule char_class = (
     "[" "^"? (char_class_rng / char_class_chr)+
     -"]"

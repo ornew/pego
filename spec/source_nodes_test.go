@@ -336,7 +336,7 @@ func (s *shaper) rule(n *pego.Node) {
 		s.rule(x)
 		s.rule(fieldNode(n, "Skip"))
 		s.pragma("Recovery", n, x)
-	case "Attributed", "MissingPragma":
+	case "Attributed", "MissingPragma", "IgnoreCase":
 		s.attributed(n)
 	case "Predicate":
 		s.block(n, "Predicate")
@@ -347,12 +347,17 @@ func (s *shaper) rule(n *pego.Node) {
 	}
 }
 
-// attributed adds the one node that a run of attributes and #missing pragmas
+// bareLayer reports a pragma without arguments, which the source tree records as a layer of its own.
+func bareLayer(n *pego.Node) bool {
+	return n.Type() == "MissingPragma" || n.Type() == "IgnoreCase"
+}
+
+// attributed adds the one node that a run of attributes and bare pragmas
 // becomes. It is completed again by every suffix after the first.
 func (s *shaper) attributed(n *pego.Node) {
 	var layers []*pego.Node // outermost first
 	base := n
-	for base.Type() == "Attributed" || base.Type() == "MissingPragma" {
+	for base.Type() == "Attributed" || bareLayer(base) {
 		layers = append(layers, base)
 		base = fieldNode(base, "X")
 	}
@@ -360,7 +365,7 @@ func (s *shaper) attributed(n *pego.Node) {
 	var events []sourceast.Event
 	for i := len(layers) - 1; i >= 0; i-- {
 		layer := layers[i]
-		if layer.Type() == "MissingPragma" {
+		if bareLayer(layer) {
 			hash := nextToken(s.src, fieldNode(layer, "X").End())
 			events = append(events,
 				sourceast.Event{Start: hash, End: layer.End()},
