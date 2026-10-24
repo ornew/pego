@@ -92,7 +92,7 @@ func (d *dgen) nodeRepeat(e *grammar.Repeat, s *dscope, build bool, fail, field 
 	if field != "" {
 		d.line("clear(%s.Vals)", d.rd(frame))
 	}
-	m := d.mark(s, e.Expr, true)
+	m := d.mark(e.Expr)
 	if own {
 		d.line("%s = p.Frame", prev)
 		if field == "" {

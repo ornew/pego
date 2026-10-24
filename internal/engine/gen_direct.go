@@ -42,8 +42,8 @@ func directOK(r *rule) bool {
 	return directEligible(r)
 }
 
-// directEligible keeps cut support local to typed direct rules. Node bodies
-// retain their existing eligibility and runtime-owned cut scopes.
+// directEligible reports whether dgen prints r as a direct rule. Left-recursion leaders and bodies
+// that directExprOK rejects, such as those with a cut, stay on the runtime path.
 func directEligible(r *rule) bool {
 	if r.leader {
 		return false
@@ -320,11 +320,10 @@ func bindsVars(e grammar.Expr) bool {
 type dmark struct {
 	pos, rec, env string
 	frameMark     string
-	saves         [][2]string // capture variable, saved value
 }
 
-// mark saves the state before e; with saves, also the captures e may set in the scope s.
-func (d *dgen) mark(s *dscope, e grammar.Expr, saves bool) dmark {
+// mark saves the state before e.
+func (d *dgen) mark(e grammar.Expr) dmark {
 	if d.nodeBody {
 		v := d.decl("x", "Mark")
 		d.line("%s = p.Mark()", v)
@@ -357,12 +356,6 @@ func (d *dgen) reset(m dmark) {
 	}
 	if m.env != "" {
 		d.line("p.Env = %s", d.rd(m.env))
-	}
-	for _, kv := range m.saves {
-		if d.g.goWorkControls {
-			d.step()
-		}
-		d.line("%s = %s", kv[0], d.rd(kv[1]))
 	}
 }
 
@@ -512,7 +505,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 	case *grammar.Repeat:
 		return d.repeat(e, s, build, fail)
 	case *grammar.Optional:
-		m := d.mark(s, e.Expr, true)
+		m := d.mark(e.Expr)
 		var v string
 		if build {
 			v = d.decl("v", d.g.valType())
@@ -557,7 +550,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		}
 		return "nil"
 	case *grammar.Not:
-		m := d.mark(s, e.Expr, true)
+		m := d.mark(e.Expr)
 		d.line("p.Silent++")
 		f := d.label()
 		prevCut := d.cut
@@ -684,7 +677,7 @@ func (d *dgen) cutFail(cut, fail string, cleanup ...string) {
 
 func (d *dgen) choice(e *grammar.Choice, s *dscope, build bool, fail string) string {
 	g := d.g
-	m := d.mark(s, e, true)
+	m := d.mark(e)
 	var v, ch, more string
 	if build {
 		v = d.decl("v", d.g.valType())
@@ -774,7 +767,7 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 	count := d.decl("x", "int")
 	d.line("%s = 0", count)
 	d.loop(e.Max)
-	m := d.mark(s, e.Expr, !own)
+	m := d.mark(e.Expr)
 	f := d.label()
 	v, cut := d.cutExpr(e.Expr, es, build, f)
 	if own {
@@ -923,7 +916,7 @@ func (d *dgen) projectRepeat(e *grammar.Repeat, field, fail string) string {
 	start, base, count := d.decl("x", "int"), d.decl("x", "int"), d.decl("x", "int")
 	d.line("%s, %s, %s = p.Pos, len(p.KidStack), 0", start, base, count)
 	d.loop(e.Max)
-	m := d.mark(es, e.Expr, false)
+	m := d.mark(e.Expr)
 	d.clearScope(es, e.Expr)
 	f := d.label()
 	_, cut := d.cutExpr(e.Expr, es, false, f)
