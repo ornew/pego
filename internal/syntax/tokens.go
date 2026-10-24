@@ -107,6 +107,14 @@ func tokenizeContext(ctx context.Context, src string) ([]Token, error) {
 		case tPunct:
 			tok.Kind = TokenPunct
 		}
+		if tok.Kind == TokenIdent && tok.Text == "i" && len(out) > 0 {
+			// The i right after a string literal is its case-insensitive suffix, and the parser reads
+			// it that way too, so the literal is one token.
+			if last := &out[len(out)-1]; last.Kind == TokenString && last.End == tok.Pos {
+				last.End = tok.End
+				continue
+			}
+		}
 		out = append(out, tok)
 	}
 	return out, nil

@@ -95,3 +95,34 @@ func TestIgnoreCaseFormatAndJSON(t *testing.T) {
 		t.Fatalf("JSON round trip changed the grammar:\n%s\nwant:\n%s", again, data)
 	}
 }
+
+// TestIgnoreCaseSuffixToken checks that the suffix of a case-insensitive literal extends its string
+// token, while an i after a space or an identifier is a separate token.
+func TestIgnoreCaseSuffixToken(t *testing.T) {
+	for _, c := range []struct {
+		src    string
+		kinds  []TokenKind
+		texts  []string
+		suffix bool
+	}{
+		{src: `rule main = "select"i`, kinds: []TokenKind{TokenIdent, TokenIdent, TokenPunct, TokenString}, texts: []string{"rule", "main", "=", "select"}, suffix: true},
+		{src: `rule main = "a" i`, kinds: []TokenKind{TokenIdent, TokenIdent, TokenPunct, TokenString, TokenIdent}, texts: []string{"rule", "main", "=", "a", "i"}},
+		{src: `rule main = "a"ia`, kinds: []TokenKind{TokenIdent, TokenIdent, TokenPunct, TokenString, TokenIdent}, texts: []string{"rule", "main", "=", "a", "ia"}},
+	} {
+		toks := Tokenize(c.src)
+		if len(toks) != len(c.texts) {
+			t.Fatalf("%q: %d tokens, want %d", c.src, len(toks), len(c.texts))
+		}
+		for i, tok := range toks {
+			if tok.Text != c.texts[i] || tok.Kind != c.kinds[i] {
+				t.Errorf("%q: token %d is %v %q, want %v %q", c.src, i, tok.Kind, tok.Text, c.kinds[i], c.texts[i])
+			}
+		}
+		if c.suffix {
+			last := toks[len(toks)-1]
+			if got := last.End.Col - last.Pos.Col; got != len(`"select"i`) {
+				t.Errorf("%q: string token spans %d columns, want the suffix included", c.src, got)
+			}
+		}
+	}
+}
