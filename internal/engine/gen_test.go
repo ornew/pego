@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -641,8 +640,10 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 	var imports, parsers, converters strings.Builder
 	var inputs [][]string
 	var wantErr []string
-	// wantValue holds the engine's values, as JSON, of the inputs of engineValueCases.
-	var wantValue []string
+	// wantValue holds the canonical form of the engine's value of each input, and accepted tells
+	// which inputs the engine accepts; the canonical typed values of accepted inputs must equal it.
+	var wantValue []any
+	var accepted []bool
 	typedRuntime := 0
 	for i, c := range cases {
 		g, err := parseTest(c.src)
@@ -670,13 +671,20 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 		for _, in := range c.inputs {
 			n, err := prog.Parse("main", in)
 			wantErr = append(wantErr, fmt.Sprint(err))
-			value := ""
-			if engineValueCases[c.name] && err == nil {
-				b, err := json.Marshal(n)
-				if err != nil {
-					t.Fatalf("%s: input %q: %v", c.name, in, err)
+			accepted = append(accepted, err == nil)
+			var value any
+			if err == nil {
+				b, merr := json.Marshal(n)
+				if merr != nil {
+					t.Fatalf("%s: input %q: %v", c.name, in, merr)
 				}
-				value = string(b)
+				var engineJSON any
+				if merr := json.Unmarshal(b, &engineJSON); merr != nil {
+					t.Fatalf("%s: input %q: %v", c.name, in, merr)
+				}
+				if value, merr = canonicalEngine(engineJSON); merr != nil {
+					t.Fatalf("%s: input %q: engine value: %v", c.name, in, merr)
+				}
 			}
 			wantValue = append(wantValue, value)
 		}
@@ -687,6 +695,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
+	"strings"
 	"sync"
 `+imports.String()+`)
 
@@ -714,6 +724,7 @@ func typeName(v any) string {
 	return string(out)
 }
 
+`+canonicalValueSource+`
 func main() {
 	var inputs [][][]byte
 	data, _ := os.ReadFile(os.Args[1])
@@ -730,7 +741,7 @@ func main() {
 					fmt.Fprintf(os.Stderr, "MISMATCH %d %q (bytes: %v)\n typed %s %s\n conv  %s %s\n", i, s, bytes, typeName(v), typed, typeName(cv), conv)
 				}
 				if !bytes {
-					b, _ := json.Marshal(map[string]any{"value": v, "type": fmt.Sprintf("%T", v), "err": fmt.Sprint(err)})
+					b, _ := json.Marshal(map[string]any{"value": v, "canonical": canonicalValue(reflect.ValueOf(v)), "type": fmt.Sprintf("%T", v), "err": fmt.Sprint(err)})
 					fmt.Println(string(b))
 				}
 			}
@@ -801,14 +812,24 @@ func main() {
 		}
 		got = append(got, r)
 	}
+	canonical := make([]json.RawMessage, len(lines))
+	for i, l := range lines {
+		var r struct{ Canonical json.RawMessage }
+		if err := json.Unmarshal([]byte(l), &r); err != nil {
+			t.Fatalf("%v: %s", err, l)
+		}
+		canonical[i] = r.Canonical
+	}
 	k := 0
 	for _, c := range cases {
 		for _, in := range c.inputs {
 			if got[k].Err != wantErr[k] {
 				t.Errorf("%s: input %q: error %s, want %s", c.name, in, got[k].Err, wantErr[k])
 			}
-			if wantValue[k] != "" && !sameJSON(got[k].Value, wantValue[k]) {
-				t.Errorf("%s: input %q: typed value %s, want the engine's %s", c.name, in, got[k].Value, wantValue[k])
+			if accepted[k] {
+				if err := canonicalTypedMatches(canonical[k], wantValue[k]); err != nil {
+					t.Errorf("%s: input %q: typed value %s: %v", c.name, in, got[k].Value, err)
+				}
 			}
 			if want, ok := aliasTypedGoldens[c.name]; ok && in == "éé" && string(got[k].Value) != want {
 				t.Errorf("%s: typed alias value is %s, want %s", c.name, got[k].Value, want)
@@ -853,47 +874,4 @@ func inputBytes(inputs [][]string) [][][]byte {
 		}
 	}
 	return out
-}
-
-// sameJSON reports whether the JSON texts a, of a typed value, and b, of the engine's value,
-// encode the same value. A typed tuple encodes as an object of the fields E0, E1, ..., which the
-// comparison reads as the array the engine's tuple encodes as.
-func sameJSON(a []byte, b string) bool {
-	var x, y any
-	if json.Unmarshal(a, &x) != nil || json.Unmarshal([]byte(b), &y) != nil {
-		return false
-	}
-	return reflect.DeepEqual(typedTupleArrays(x), y)
-}
-
-// typedTupleArrays returns the JSON value v with the objects of typed tuples as arrays.
-func typedTupleArrays(v any) any {
-	switch v := v.(type) {
-	case map[string]any:
-		elems := make([]any, len(v))
-		tuple := len(v) > 0
-		for k, x := range v {
-			i, err := strconv.Atoi(strings.TrimPrefix(k, "E"))
-			if !strings.HasPrefix(k, "E") || err != nil || i < 0 || i >= len(v) || fmt.Sprintf("E%d", i) != k {
-				tuple = false
-				break
-			}
-			elems[i] = typedTupleArrays(x)
-		}
-		if tuple {
-			return elems
-		}
-		out := make(map[string]any, len(v))
-		for k, x := range v {
-			out[k] = typedTupleArrays(x)
-		}
-		return out
-	case []any:
-		out := make([]any, len(v))
-		for i, x := range v {
-			out[i] = typedTupleArrays(x)
-		}
-		return out
-	}
-	return v
 }

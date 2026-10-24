@@ -11,7 +11,7 @@ import (
 // are not nodes: the results of their alternatives' actions or of the rules they call. The typed
 // runtime finishes a leader's value itself, so the value must survive that, wherever the leader
 // is captured, and a node built over it must keep the positions the engine gives it. The typed
-// parsers' values are compared with the engine's (engineValueCases).
+// parsers' values are compared with the engine's like those of every other corpus case.
 var typedLeaderValueCases = []genCase{
 	{"typed leader reads its own value", `rule main string = e:e $$ => $e
 rule e string = (l:e "," o:o => $l + $o) / (o:o => $o)
@@ -39,16 +39,6 @@ rule p string = (l:p "." x:[a-z] => $l + text($x)) / (x:[a-z] => text($x))`, []s
 	{"typed leader in a tuple node", `rule main = v:q $$ => ($v.Start, $v.End, $v.Value[0], text($v.Value[1]))
 rule q = p "!"
 rule p string = (l:p "." x:[a-z] => $l + text($x)) / (x:[a-z] => text($x))`, []string{"a!", "a.b!", "a.b.c!", "!", "a."}},
-}
-
-// engineValueCases names the cases of the typed corpus whose typed values testGeneratedTypesCorpus
-// compares with the engine's values, not only with the reference route's.
-var engineValueCases = map[string]bool{}
-
-func init() {
-	for _, c := range typedLeaderValueCases {
-		engineValueCases[c.name] = true
-	}
 }
 
 // TestGeneratedTypedLeaderValues compares the values of typed parsers with the engine's for
