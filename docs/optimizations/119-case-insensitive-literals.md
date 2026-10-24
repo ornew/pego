@@ -110,3 +110,11 @@ the closure backend. Leaving the upper case out of the guard makes them fail.
 The runtime helper is the `Peek` loop. A second helper with an in-place comparison was not
 built: the folded form already beats the class form, and the loop is shared with the
 non-exact paths.
+
+Folded literals stay out of terminal programs (record 111). A program that takes them, with
+an operation that folds each input character as `MatchLiteralFold` does, was built and
+measured on the keyword grammar of the method above, written as a discarded choice of 19
+folded keywords (`-kw`) over the same 16 KiB input, in the typed Go parser: the straight-line
+code takes a median of 464 microseconds and the program 691 (+49%), against a noise band of
++2.8%, from eight interleaved rounds of three runs. The interpreted program costs more than
+the guarded straight-line code it replaces, so the exclusion is a decision, not a gap.
