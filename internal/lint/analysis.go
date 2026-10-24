@@ -525,7 +525,9 @@ func (a *analysis) matchPrefix(e grammar.Expr, t string) matchResult {
 	inexact := matchResult{ok: true}
 	switch e := analysisExprControlled(e, control).(type) {
 	case *grammar.Literal:
-		if strings.HasPrefix(t, e.Value) {
+		// A case-insensitive literal matches the input that begins with any case of it, and the
+		// folding keeps byte lengths, so the rest of t begins after len(e.Value) bytes.
+		if e.IgnoreCase && hasPrefixFold(t, e.Value) || !e.IgnoreCase && strings.HasPrefix(t, e.Value) {
 			return ok(t[len(e.Value):])
 		}
 	case *grammar.CharClass:
@@ -658,6 +660,9 @@ func (a *analysis) fails(e grammar.Expr, t string) bool {
 
 	switch e := analysisExprControlled(e, control).(type) {
 	case *grammar.Literal:
+		if e.IgnoreCase {
+			return !hasPrefixFold(t, e.Value) && !hasPrefixFold(e.Value, t)
+		}
 		return !strings.HasPrefix(t, e.Value) && !strings.HasPrefix(e.Value, t)
 	case *grammar.CharClass:
 		r, _ := utf8.DecodeRuneInString(t)
@@ -717,6 +722,28 @@ func hasLooseCut(e grammar.Expr) bool {
 	return grammaranalysis.HasLooseCut(e)
 }
 
+// hasPrefixFold reports whether s begins with p when the ASCII letters of both are compared in
+// lowercase, as for case-insensitive literals. It works on bytes, so invalid UTF-8 is kept as it is.
+func hasPrefixFold(s, p string) bool {
+	if len(p) > len(s) {
+		return false
+	}
+	for i := 0; i < len(p); i++ {
+		if asciiLower(s[i]) != asciiLower(p[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// asciiLower maps A-Z to a-z and leaves every other byte as it is.
+func asciiLower(c byte) byte {
+	if 'A' <= c && c <= 'Z' {
+		return c + ('a' - 'A')
+	}
+	return c
+}
+
 // prefixResult is the result of prefix.
 type prefixResult struct {
 	s string
@@ -731,6 +758,10 @@ func (a *analysis) prefix(e grammar.Expr) prefixResult {
 
 	switch e := analysisExprControlled(e, control).(type) {
 	case *grammar.Literal:
+		if e.IgnoreCase {
+			// Every match begins with some case of the literal, not with one string: no prefix is known.
+			return prefixResult{"", false}
+		}
 		return prefixResult{e.Value, true}
 	case *grammar.CharClass:
 		if len(e.Ranges) == 1 && e.Ranges[0].Lo == e.Ranges[0].Hi && !e.Negated {
@@ -876,7 +907,7 @@ func sameControlled(x, y grammar.Expr, caps bool, control *lintControl) bool {
 		return ok && x.Name == y.Name && x.Level == y.Level
 	case *grammar.Literal:
 		y, ok := y.(*grammar.Literal)
-		return ok && x.Value == y.Value
+		return ok && x.Value == y.Value && x.IgnoreCase == y.IgnoreCase
 	case *grammar.CharClass:
 		y, ok := y.(*grammar.CharClass)
 		return ok && x.Negated == y.Negated && sameRangesControlled(normalizeControlled(x.Ranges, control), normalizeControlled(y.Ranges, control), control)
