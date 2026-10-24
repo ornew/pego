@@ -265,6 +265,15 @@ func (p *parser) gapContents() []string {
 	return out
 }
 
+// takeGapContents is gapContents for a gap the formatter writes from the owner,
+// so the comments leave the token.
+func (p *parser) takeGapContents() []string {
+	out := p.gapContents()
+	t := &p.toks[p.i]
+	t.lineComment, t.comments = nil, nil
+	return out
+}
+
 // boundary marks a new statement outside the current expression's delimiters.
 func (p *parser) boundary() bool {
 	return p.layout && p.layoutDepth == 0 && p.i > p.layoutStart && p.tok().lineBefore
@@ -281,6 +290,11 @@ func (p *parser) statement() func() {
 func (p *parser) takeComments(i int) {
 	t := &p.toks[i]
 	if p.cur != nil {
+		if t.lineComment != nil && t.kind == tPunct && t.text == ";" && p.cur.Trailing == nil {
+			// A comment before a semicolon trails the statement it ends.
+			p.cur.Trailing = t.lineComment
+			t.lineComment = nil
+		}
 		if t.lineComment != nil {
 			p.cur.Comments = append(p.cur.Comments, t.lineComment)
 		}
@@ -314,12 +328,19 @@ func (p *parser) lineBreak() *grammar.LineBreak {
 // the line of that token is not a trailing comment of the line before: it is
 // detached from the token, so it takes lines of its own before the token, set
 // off by blank lines. It does so only when that comment is the only one before
-// the token; with several, the first still trails the line before. A closing
+// the token; with several, the first still trails the line before. A block
+// comment of one line between two tokens of that line is detached the same way. A closing
 // brace starts no statement, so the comment before it trails the last one.
 func (p *parser) statementBreak() *grammar.LineBreak {
 	t := &p.toks[p.i]
 	c := t.lineComment
-	if c == nil || len(t.comments) != 0 || t.text == "}" || !strings.HasPrefix(c.Text, "/*") || c.Pos.Line == c.End.Line || c.End.Line != t.pos.Line {
+	if c == nil || len(t.comments) != 0 || t.text == "}" || !strings.HasPrefix(c.Text, "/*") || c.End.Line != t.pos.Line {
+		return p.lineBreak()
+	}
+	// A block comment on one line is detached only between two tokens of that
+	// line, as after a semicolon; after an opening brace it leads the statement, and
+	// at the end of a line it trails the statement.
+	if c.Pos.Line == c.End.Line && (p.i == 0 || p.toks[p.i-1].end.Line != c.Pos.Line || p.toks[p.i-1].text == "{") {
 		return p.lineBreak()
 	}
 	t.lineComment = nil
@@ -764,7 +785,7 @@ func (p *parser) structFields() (fields []*grammar.Field, closeBreak *grammar.Li
 		restore := p.statement()
 		fieldStart := p.i
 		fname := p.ident()
-		gap := p.gapContents()
+		gap := p.takeGapContents()
 		field := &grammar.Field{SourceInfo: grammar.SourceInfo{Pos: fname.pos}, Name: fname.text, HeaderComments: gap, Type: p.typeExpr(), Break: fb}
 		p.source(field, fieldStart)
 		fields = append(fields, field)
@@ -1104,6 +1125,7 @@ func (p *parser) operatorsRule() (sourceResult *grammar.OperatorsRule) {
 	}()
 
 	pr := &grammar.OperatorsRule{SourceInfo: grammar.SourceInfo{Pos: p.expect("{").pos}}
+	p.leadAfterOpen()
 	for {
 		b := p.statementBreak()
 		if p.accept("}") {
@@ -1143,8 +1165,9 @@ func (p *parser) operatorsRule() (sourceResult *grammar.OperatorsRule) {
 			p.expect("{")
 			p.header = false
 			p.layout, p.layoutDepth = false, 0
+			p.leadAfterOpen()
 			for {
-				ob := p.lineBreak()
+				ob := p.statementBreak()
 				if p.is("}") {
 					l.CloseBreak = ob
 					l.OneLine = !p.multiline(open, p.i)
@@ -1171,6 +1194,15 @@ func (p *parser) operatorsRule() (sourceResult *grammar.OperatorsRule) {
 		}
 	}
 	return pr
+}
+
+// leadAfterOpen makes a block comment between an opening brace and the first
+// token after it, on that line, lead that token; it does not trail the line
+// break recorded before.
+func (p *parser) leadAfterOpen() {
+	if c := p.tok().lineComment; c != nil && strings.HasPrefix(c.Text, "/*") && c.End.Line == p.tok().pos.Line {
+		p.cur = nil
+	}
 }
 
 func (p *parser) itemEnd() {

@@ -289,11 +289,8 @@ func (p *printer) closeBlock(b *LineBreak, indent string) {
 }
 
 // fieldComments returns the comments to write between the name and the type of a field: those that
-// it owns, when it has no layout.
+// it owns.
 func fieldComments(f *Field) string {
-	if f.Break != nil {
-		return ""
-	}
 	return inlineHeaderComments(f.HeaderComments)
 }
 
@@ -890,7 +887,7 @@ func (p *printer) operatorsRule(pr *OperatorsRule, indent string) {
 		empty := noComments(l.CloseBreak)
 		for _, op := range l.Operators {
 			pollFormat(p.control)
-			empty = empty && noComments(op.Break) && !ownsComments(&op.SourceInfo, op.Break)
+			empty = empty && noComments(op.Break) && !ownsComments(&op.SourceInfo, op.Break) && (op.Break == nil || op.Break.Trailing == nil)
 		}
 		switch {
 		case empty && (len(l.Operators) == 0 || l.OneLine) && p.tryOneLine(func() {

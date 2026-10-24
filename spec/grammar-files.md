@@ -101,7 +101,10 @@ are written after the keyword, or after the field name. A string that ends in
 a line break is written as `//` lines, and any other string as a block comment,
 which is also how a trailing comment over several lines is written. A text that
 was a block comment ending in a line break therefore comes back as line
-comments, and the spacing inside a block comment is the normalized one. The
+comments, and the spacing inside a block comment is the normalized one. Formatting
+source keeps each owner when statements share a line separated by `;`: a lone
+block comment between two of them is detached, so it is written on lines of its
+own, set off by blank lines, before the next statement. The
 owned comments of other nodes, such as the expressions of a rule body, are in
 the JSON but have no place in the formatted output without layout. Comments
 that no node owns are not in the JSON: those at the end of the file, those that follow
