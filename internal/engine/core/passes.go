@@ -13,7 +13,14 @@ const MinTerminalLeaves = 16
 // containing a choice. It returns ok false for any other expression.
 func TerminalLeaves(n Node) (leaves int, choice, ok bool) {
 	switch n := n.(type) {
-	case *Lit, *ClassNode:
+	case *Lit:
+		if n.Fold {
+			// Terminal programs compare exact literals only, so a case-insensitive literal is
+			// not a terminal leaf, as in the generator's own count.
+			return 0, false, false
+		}
+		return 1, false, true
+	case *ClassNode:
 		return 1, false, true
 	case *Seq:
 		for _, it := range n.Items {

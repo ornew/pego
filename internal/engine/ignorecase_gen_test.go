@@ -223,3 +223,35 @@ func TestIgnoreCaseGeneratedDocument(t *testing.T) {
 	want := ignoreCaseDocWant(t)
 	runGeneratedProgramWith(t, ignoreCaseGenGrammar, GenOptions{Package: "p", Start: "main", Document: true}, ignoreCaseDocBody(), want)
 }
+
+// ignoreCaseTerminalGrammar holds a value-free choice with more literals than a terminal program
+// needs (core.MinTerminalLeaves), some of them case-insensitive. The typed generator must keep
+// the choice on the general path instead of lowering it to a terminal program.
+const ignoreCaseTerminalGrammar = `package k
+@start
+rule main = (kw ws)* !.
+rule kw = !("alpha"i / "beta" / "gamma"i / "delta" / "epsilon"i / "zeta" / "eta"i / "theta" / "iota"i / "kappa" / "lambda"i / "mu" / "nu"i / "xi" / "omicron"i / "pi" / "rho"i / "sigma" / "tau"i / "upsilon") [a-z]+ / "alpha"i / "beta" / "gamma"i / "delta" / "epsilon"i / "zeta" / "eta"i / "theta" / "iota"i / "kappa" / "lambda"i / "mu" / "nu"i / "xi" / "omicron"i / "pi" / "rho"i / "sigma" / "tau"i / "upsilon"
+rule ws = " "*
+`
+
+// TestIgnoreCaseGeneratedTypedTerminal checks that typed generation of a large value-free choice
+// with case-insensitive literals does not fail and agrees with the closure backend.
+func TestIgnoreCaseGeneratedTypedTerminal(t *testing.T) {
+	// Terminal programs are for parsers without work controls.
+	t.Setenv("PEGO_TEST_ORDINARY", "1")
+	inputs := []string{"", "alpha", "ALPHA", "Beta", "BETA", "beta", "upsilon", "UPSILON", "xi", "Xi", "XI", "alpha BETA", "alphax", "ALPHAX", "tau Tau sigma", "SIGMA"}
+	prog := compile(t, ignoreCaseTerminalGrammar)
+	var want, list strings.Builder
+	for _, in := range inputs {
+		if _, err := prog.ParseWith("main", in, ParseOptions{Backend: Closure}); err != nil {
+			want.WriteString("error\n")
+		} else {
+			want.WriteString("ok\n")
+		}
+		fmt.Fprintf(&list, "\t\t%s,\n", strconv.Quote(in))
+	}
+	body := "func main() {\n\tfor _, s := range []string{\n" + list.String() + "\t} {\n" +
+		"\t\t_, err := p.ParseAST(s)\n\t\tif err != nil {\n\t\t\tfmt.Println(\"error\")\n\t\t\tcontinue\n\t\t}\n" +
+		"\t\tfmt.Println(\"ok\")\n\t}\n}\n"
+	runGeneratedNamedNodeProgram(t, ignoreCaseTerminalGrammar, body, want.String())
+}
