@@ -112,7 +112,8 @@ own, set off by blank lines, before the next statement. The
 owned comments of other nodes, such as the expressions of a rule body, are in
 the JSON but have no place in the formatted output without layout. Comments
 that no node owns are not in the JSON: those on lines of their own before a
-closing delimiter or at the end of the file, those that follow the first
+closing delimiter or at the end of the file, those inside delimiters that
+enclose nothing else, such as `{ /* e */ }`, those that follow the first
 comment on a line when a token follows them on that line, those between the
 tokens of a rule expression and those inside the lists whose layout is kept
 apart, such as attribute arguments.
