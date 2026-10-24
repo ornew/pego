@@ -257,6 +257,33 @@ func TestIgnoreCaseMissingSpelling(t *testing.T) {
 	}
 }
 
+// TestIgnoreCaseMissingSpellingBackends checks that the closure backend, the only one that recovers
+// from missing tokens, inserts the spelling written in a case-insensitive literal for #missing, from
+// the suffix and from the pragma, and that the expectation keeps the suffix. The bytecode backends
+// reject missing-token recovery.
+func TestIgnoreCaseMissingSpellingBackends(t *testing.T) {
+	for _, src := range []string{
+		`rule main = "Sel"i #missing $$`,
+		`rule main = ("Sel" #missing $$) #ignorecase`,
+		`rule main = "Sel" #missing #ignorecase $$`,
+	} {
+		prog := compile(t, src)
+		for _, backend := range []Backend{Closure, Default} {
+			n, errs := requireInsertions(t, prog, "", ParseOptions{MissingTokens: 2, Backend: backend}, 1)
+			insertions := missingNodes(t, n)
+			if len(insertions) != 1 {
+				t.Fatalf("%s: backend %v: missing nodes: %v", src, backend, insertions)
+			}
+			if expected, _ := insertions[0].fields.Get("expected"); expected != "Sel" {
+				t.Fatalf("%s: backend %v: inserted spelling %q, want Sel (errors %v)", src, backend, expected, errs)
+			}
+			if !strings.Contains(fmt.Sprint(errs), `"Sel"i`) {
+				t.Fatalf("%s: backend %v: expectation lacks the suffix: %v", src, backend, errs)
+			}
+		}
+	}
+}
+
 // TestIgnoreCasePragmaReachesArguments checks that the pragma folds the literals of a recovery
 // skip expression written in the annotated expression, and that the skip is not a called rule.
 func TestIgnoreCasePragmaReachesArguments(t *testing.T) {

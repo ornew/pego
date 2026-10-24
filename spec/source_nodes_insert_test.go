@@ -50,6 +50,9 @@ var nodeBases = []string{
 	"rule a T[U] = b\ntype X = {A (B, C)}\n",
 	"var x int\nvar y = 1 // c\nvar z bool // d\nvar w string = \"s\" // e\n",
 	"var x int /* a */ = /* b */ 1\nvar y /* c */ bool\n// f\nvar z = true;\nvar w = -1 // g\n",
+	"rule a = \"x\"i \"y\"i? (\"z\")i b\nrule i = \"x\"i #missing\n",
+	"rule a = (\"x\" / b \"y\") #ignorecase #atomic\nrule b = \"x\" #missing #ignorecase\n",
+	"rule a = \"x\" #ignorecase \"y\" @foo #ignorecase c #missing\n",
 	"rule e = operators {\n operand \"1\"\n level l { infix left \"+\" }\n} #ignorecase\nrule f = operators { operand \"2\" } /* c */ #ignorecase => ...\n",
 }
 
