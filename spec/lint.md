@@ -74,6 +74,7 @@ than the nesting limit, which can make any call fail.
 | `right-recursion` | hint | A list written as right recursion |
 | `positions` | hint | `.Start` or `.End` read in a rule that is used repeatedly |
 | `long-lookahead` | hint | A lookahead that repeats `.` or a class that admits line breaks |
+| `case-insensitive-literal` | hint | A run of `[sS]`-style classes that spells a word |
 | `lint-directive` | warning | A directive that names an unknown check or suppresses nothing |
 
 #### `shadowed-alternative`
@@ -170,6 +171,13 @@ an edit, nor those of the rules that call it.
 A lookahead that repeats `.` or a negated class that admits line breaks, such as
 `&([^!]* ($$ / "!"))`, can examine any amount of input. Lookaheads through other
 rules are not reported.
+
+#### `case-insensitive-literal`
+
+Two or more consecutive classes in a sequence that each match one ASCII letter
+in both cases, such as `[sS] [eE] [lL] [eE] [cC] [tT]`, spell a word
+case-insensitively. Write `"select"i` (or `"select" #ignorecase`). Any other
+item between classes ends the run.
 
 ### Suppressing Findings
 

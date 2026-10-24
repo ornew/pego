@@ -133,7 +133,7 @@ func TestLintList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"shadowed-alternative  error", "unused-capture", "right-recursion", "hint"} {
+	for _, want := range []string{"shadowed-alternative      error", "unused-capture", "right-recursion", "hint"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in\n%s", want, out)
 		}

@@ -100,6 +100,7 @@ const (
 	CheckRightRecursion     = "right-recursion"
 	CheckPositions          = "positions"
 	CheckLongLookahead      = "long-lookahead"
+	CheckCaseInsensitive    = "case-insensitive-literal"
 	CheckDirective          = "lint-directive"
 )
 
@@ -117,6 +118,7 @@ var Checks = []Check{
 	{CheckRightRecursion, Hint, "a list written as right recursion instead of a repetition"},
 	{CheckPositions, Hint, ".Start or .End in a rule used repeatedly, which blocks reuse in incremental parsing"},
 	{CheckLongLookahead, Hint, "a lookahead that can examine input across lines, which blocks reuse in incremental parsing"},
+	{CheckCaseInsensitive, Hint, "a run of [sS]-style classes that spells a word, which a literal with #ignorecase writes more clearly and faster"},
 	{CheckDirective, Warning, "a lint:ignore comment that names an unknown check or suppresses nothing"},
 }
 
@@ -167,6 +169,7 @@ func runControlled(g *grammar.Grammar, start string, opts Options, control *lint
 		{CheckRightRecursion, (*linter).rightRecursion},
 		{CheckPositions, func(l *linter) { l.positions(start) }},
 		{CheckLongLookahead, (*linter).longLookaheads},
+		{CheckCaseInsensitive, (*linter).caseInsensitiveLiterals},
 	} {
 		control.check()
 		if !opts.Disable[c.name] {

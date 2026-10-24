@@ -1250,3 +1250,76 @@ func ungroupTypeControlled(t grammar.TypeExpr, control *lintControl) grammar.Typ
 		t = g.Type
 	}
 }
+
+// --- case-insensitive-literal (hint) ---
+
+// caseInsensitiveLiterals reports, in each sequence, a run of two or more consecutive classes
+// that each match one ASCII letter in both cases, such as [sS] [eE] [lL] [eE] [cC] [tT].
+func (l *linter) caseInsensitiveLiterals() {
+	control := l.control
+	control.poll()
+
+	l.eachRule(func(r *grammar.RuleDef) {
+		control.poll()
+		walkExprControlled(r.Expr, func(e grammar.Expr) {
+			control.poll()
+			seq, ok := analysisExprControlled(e, control).(*grammar.Seq)
+			if !ok {
+				return
+			}
+			var word []byte
+			var first grammar.Expr
+			flush := func() {
+				if len(word) >= 2 {
+					text := string(word)
+					l.report(CheckCaseInsensitive, Hint, posOfControlled(first, control), fmt.Sprintf("write %qi", text),
+						"%s spells %q case-insensitively; write %qi (or %q #ignorecase)", classRun(word), text, text, text)
+				}
+				word, first = nil, nil
+			}
+			for _, item := range seq.Items {
+				control.poll()
+				if c, ok := casePairLetter(analysisExprControlled(item, control)); ok {
+					if first == nil {
+						first = item
+					}
+					word = append(word, c)
+					continue
+				}
+				flush()
+			}
+			flush()
+		}, control)
+	})
+}
+
+// casePairLetter returns the lower-case letter of a class that is exactly the two cases of one
+// ASCII letter, such as [sS] or [Ss].
+func casePairLetter(e grammar.Expr) (byte, bool) {
+	c, ok := e.(*grammar.CharClass)
+	if !ok || c.Negated || len(c.Ranges) != 2 {
+		return 0, false
+	}
+	for _, r := range c.Ranges {
+		if r.Lo != r.Hi {
+			return 0, false
+		}
+	}
+	a, b := c.Ranges[0].Lo, c.Ranges[1].Lo
+	if a >= 'A' && a <= 'Z' {
+		a, b = b, a
+	}
+	if a < 'a' || a > 'z' || b != a-'a'+'A' {
+		return 0, false
+	}
+	return byte(a), true
+}
+
+// classRun shows the classes that spell word, such as [sS] [eE].
+func classRun(word []byte) string {
+	parts := make([]string, len(word))
+	for i, c := range word {
+		parts[i] = fmt.Sprintf("[%c%c]", c, c-'a'+'A')
+	}
+	return strings.Join(parts, " ")
+}

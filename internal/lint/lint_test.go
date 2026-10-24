@@ -324,6 +324,22 @@ func TestLongLookahead(t *testing.T) {
 	})
 }
 
+func TestCaseInsensitiveLiteral(t *testing.T) {
+	runCases(t, []lintCase{
+		{name: "keyword", src: "rule main = [sS][eE][lL][eE][cC][tT] \"x\"", want: []string{"1:13 hint case-insensitive-literal"},
+			msg: `[sS] [eE] [lL] [eE] [cC] [tT] spells "select" case-insensitively; write "select"i (or "select" #ignorecase)`},
+		{name: "two letters", src: `rule main = [aA][bB]`, want: []string{"1:13 hint case-insensitive-literal"}},
+		{name: "lower first or upper first", src: `rule main = [Aa][bB]`, want: []string{"1:13 hint case-insensitive-literal"}},
+		{name: "one class", src: `rule main = [aA] "x"`},
+		{name: "a literal breaks the run", src: `rule main = [sS] "el" [eE]`},
+		{name: "partial run", src: `rule main = "x" [fF][rR] "!" [oO] [mM]`,
+			want: []string{"1:17 hint case-insensitive-literal", "1:30 hint case-insensitive-literal"}},
+		{name: "not a pair", src: `rule main = [aB][bB] [a-z][A-Z] [^aA][bB] [aAb][bB]`},
+		{name: "not a letter", src: `rule main = [1!][2@]`},
+		{name: "in a group", src: `rule main = "x" ([sS][eE] / "y")`, want: []string{"1:18 hint case-insensitive-literal"}},
+	})
+}
+
 func TestDirectives(t *testing.T) {
 	runCases(t, []lintCase{
 		{name: "before the rule", src: "// lint:ignore unused-capture the action needs only a\nrule main = (\n    a:\"x\"\n    b:\"y\"\n) => $a"},

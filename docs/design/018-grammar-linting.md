@@ -102,6 +102,7 @@ test below found this case.
 | `right-recursion` | hint | A rule continues a list by calling itself at its end |
 | `positions` | hint | A rule that is used repeatedly reads `startPos` or `endPos` |
 | `long-lookahead` | hint | A lookahead repeats over any character |
+| `case-insensitive-literal` | hint | Consecutive `[sS]`-style classes spell a word |
 | `lint-directive` | warning | A `lint:ignore` comment names an unknown check or suppresses nothing |
 
 ### `shadowed-alternative`
@@ -202,6 +203,8 @@ They complement `pego profile`, which needs an input, with what the grammar's sh
   `&([^!]* ($$ / "!"))`. Repetitions in rules that the lookahead calls are not followed: whitespace and comment rules
   (`&(ws ":")`) end soon in practice, and following them reported every such lookahead in `examples/golang` and
   `examples/python`.
+- `case-insensitive-literal`: in a sequence, a maximal run of two or more non-negated classes that each hold exactly the two
+  cases of one ASCII letter. A literal or other item ends the run, so `[sS] "el" [eE]` is not reported.
 
 ## Suppression
 

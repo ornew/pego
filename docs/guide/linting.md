@@ -161,6 +161,7 @@ fail.
 | [`right-recursion`](#right-recursion) | hint | Lists written as right recursion |
 | [`positions`](#positions) | hint | `.Start` and `.End` in rules used repeatedly |
 | [`long-lookahead`](#long-lookahead) | hint | Lookaheads that scan any character |
+| [`case-insensitive-literal`](#case-insensitive-literal) | hint | `[sS][eE]...` spelling a word |
 | [`lint-directive`](#suppressing-findings) | warning | `lint:ignore` comments that name an unknown check or suppress nothing |
 
 An inline action `(expr => action)` is checked as the rule it stands for, with its own captures and cuts, so every check looks inside it. Its findings are reported at their place in the source, in the rule that holds the inline action, and a `lint:ignore` before that rule covers them.
@@ -345,6 +346,16 @@ rule line = text "\n" &([^!]* ($$ / "!")) // looks ahead to the next "!", across
 A lookahead that repeats `.` or a negated class that admits line breaks can examine any amount of input, and an edit
 anywhere in what it examined invalidates the rule's results in a `Document`. Lookaheads through other rules
 (`&(ws ":")`) are not reported: those are usually whitespace and tokens, which end soon.
+
+### `case-insensitive-literal`
+
+```pego
+rule SELECT = [sS][eE][lL][eE][cC][tT] !ident_char // write "select"i
+```
+
+Consecutive classes that each match the two cases of one ASCII letter spell a word case-insensitively. `"select"i`
+(or `"select" #ignorecase`) says so directly. A literal or any other item between the classes ends the run, and a
+partial run is reported with only its own letters.
 
 ## Suppressing Findings
 
