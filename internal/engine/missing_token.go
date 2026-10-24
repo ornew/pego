@@ -292,6 +292,22 @@ func missingUnsupported(operation string) error {
 	return fmt.Errorf("missing-token recovery is not supported for %s; use Closure whole-input parsing or recognition", operation)
 }
 
+// markFoldedLiterals records whether any rule has a case-insensitive literal.
+func (prog *Program) markFoldedLiterals(control *compileControl) {
+	for _, r := range prog.rules {
+		walkExprControlled(r.def.Expr, func(e grammar.Expr) {
+			if l, ok := e.(*grammar.Literal); ok && l.IgnoreCase {
+				prog.foldsLiterals = true
+			}
+		}, control)
+	}
+}
+
+// foldUnsupported is the error of an operation that does not yet support case-insensitive literals.
+func foldUnsupported(operation string) error {
+	return fmt.Errorf("case-insensitive literals are not supported for %s yet; use the Closure backend", operation)
+}
+
 func (prog *Program) admitMissing(o ParseOptions, stream bool) error {
 	if o.MissingTokens < 0 {
 		return fmt.Errorf("missing token limit must be nonnegative")

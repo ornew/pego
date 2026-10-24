@@ -339,7 +339,7 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 		for _, source := range e.Attrs {
 			n.control.poll()
 			a := n.attribute(source)
-			pragma := a.Name == "repeat" || a.Name == "atomic" || a.Name == "recover" || a.Name == "stream" || a.Name == "missing"
+			pragma := a.Name == "repeat" || a.Name == "atomic" || a.Name == "recover" || a.Name == "stream" || a.Name == "missing" || a.Name == "ignorecase"
 			if pragma && !a.Pragma {
 				n.error(a, "is a pragma; use #"+a.Name)
 				continue
@@ -357,6 +357,12 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 					n.error(a, "takes no arguments")
 				}
 				inner = &grammar.Atomic{SourceInfo: grammar.SourceInfo{Pos: a.Diagnostic()}, Expr: inner}
+				continue
+			case "ignorecase":
+				if len(a.Args)+len(a.KwArgs) != 0 {
+					n.error(a, "takes no arguments")
+				}
+				inner = foldLiterals(inner)
 				continue
 			case "error":
 				a = n.bind(a, "message")
@@ -505,4 +511,222 @@ func (n *attributeNormalizer) typeDecl(td grammar.TypeDecl) grammar.TypeDecl {
 		}
 	}
 	return td
+}
+
+// foldLiterals returns e with each string literal in it set to match ASCII letters in either case,
+// for #ignorecase. The literals are the ones written in e, its pragma arguments and an Operators
+// Rule's operands, operators and skip; a called rule and a character class are not changed. Nodes
+// that hold no such literal are shared with the result, and the source tree is not modified.
+func foldLiterals(e grammar.Expr) grammar.Expr {
+	switch e := e.(type) {
+	case *grammar.Literal:
+		if e.IgnoreCase {
+			return e
+		}
+		copy := *e
+		copy.IgnoreCase = true
+		return &copy
+	case *grammar.Group:
+		if child := foldLiterals(e.Expr); child != e.Expr {
+			copy := *e
+			copy.Expr = child
+			return &copy
+		}
+	case *grammar.InlineAction:
+		if child := foldLiterals(e.Expr); child != e.Expr {
+			copy := *e
+			copy.Expr = child
+			return &copy
+		}
+	case *grammar.Repeat:
+		if child := foldLiterals(e.Expr); child != e.Expr {
+			copy := *e
+			copy.Expr = child
+			return &copy
+		}
+	case *grammar.Optional:
+		if child := foldLiterals(e.Expr); child != e.Expr {
+			copy := *e
+			copy.Expr = child
+			return &copy
+		}
+	case *grammar.And:
+		if child := foldLiterals(e.Expr); child != e.Expr {
+			copy := *e
+			copy.Expr = child
+			return &copy
+		}
+	case *grammar.Not:
+		if child := foldLiterals(e.Expr); child != e.Expr {
+			copy := *e
+			copy.Expr = child
+			return &copy
+		}
+	case *grammar.Stream:
+		if child := foldLiterals(e.Expr); child != e.Expr {
+			copy := *e
+			copy.Expr = child
+			return &copy
+		}
+	case *grammar.Atomic:
+		if child := foldLiterals(e.Expr); child != e.Expr {
+			copy := *e
+			copy.Expr = child
+			return &copy
+		}
+	case *grammar.Discard:
+		if child := foldLiterals(e.Expr); child != e.Expr {
+			copy := *e
+			copy.Expr = child
+			return &copy
+		}
+	case *grammar.Capture:
+		if child := foldLiterals(e.Expr); child != e.Expr {
+			copy := *e
+			copy.Expr = child
+			return &copy
+		}
+	case *grammar.Recovery:
+		child, skip := foldLiterals(e.Expr), foldLiterals(e.Skip)
+		if child != e.Expr || skip != e.Skip {
+			copy := *e
+			copy.Expr, copy.Skip = child, skip
+			return &copy
+		}
+	case *grammar.Seq:
+		if items, changed := foldExprs(e.Items); changed {
+			copy := *e
+			copy.Items = items
+			return &copy
+		}
+	case *grammar.Choice:
+		if alts, changed := foldExprs(e.Alts); changed {
+			copy := *e
+			copy.Alts = alts
+			return &copy
+		}
+	case *grammar.Attributed:
+		inner := foldLiterals(e.Expr)
+		attrs, changed := e.Attrs, false
+		for i, a := range e.Attrs {
+			if b := foldAttribute(a); b != a {
+				if !changed {
+					attrs = append([]*grammar.Attribute(nil), e.Attrs...)
+					changed = true
+				}
+				attrs[i] = b
+			}
+		}
+		if inner != e.Expr || changed {
+			copy := *e
+			copy.Expr, copy.Attrs = inner, attrs
+			return &copy
+		}
+	case *grammar.OperatorsRule:
+		skip := foldLiterals(e.Skip)
+		operands := make([]*grammar.OperatorsRuleOperand, len(e.Operands))
+		operandsChanged := false
+		for i, o := range e.Operands {
+			operands[i] = o
+			if x := foldLiterals(o.Expr); x != o.Expr {
+				copy := *o
+				copy.Expr = x
+				operands[i] = &copy
+				operandsChanged = true
+			}
+		}
+		levels := make([]*grammar.OperatorsRuleLevel, len(e.Levels))
+		levelsChanged := false
+		for i, l := range e.Levels {
+			levels[i] = l
+			ops := make([]*grammar.OperatorsRuleOperator, len(l.Operators))
+			opsChanged := false
+			for j, o := range l.Operators {
+				ops[j] = o
+				if x := foldLiterals(o.Expr); x != o.Expr {
+					copy := *o
+					copy.Expr = x
+					ops[j] = &copy
+					opsChanged = true
+				}
+			}
+			if opsChanged {
+				copy := *l
+				copy.Operators = ops
+				levels[i] = &copy
+				levelsChanged = true
+			}
+		}
+		if skip != e.Skip || operandsChanged || levelsChanged {
+			copy := *e
+			copy.Skip = skip
+			if operandsChanged {
+				copy.Operands = operands
+			}
+			if levelsChanged {
+				copy.Levels = levels
+			}
+			return &copy
+		}
+	}
+	return e
+}
+
+// foldExprs applies foldLiterals to each expression, and reports whether any changed.
+func foldExprs(items []grammar.Expr) ([]grammar.Expr, bool) {
+	var out []grammar.Expr
+	for i, it := range items {
+		if f := foldLiterals(it); f != it {
+			if out == nil {
+				out = append([]grammar.Expr(nil), items...)
+			}
+			out[i] = f
+		}
+	}
+	if out == nil {
+		return items, false
+	}
+	return out, true
+}
+
+// foldAttribute applies foldLiterals to the expression arguments of a, and returns a if none change.
+func foldAttribute(a *grammar.Attribute) *grammar.Attribute {
+	var args []any
+	argsChanged := false
+	for i, v := range a.Args {
+		if e, ok := v.(grammar.Expr); ok {
+			if f := foldLiterals(e); f != e {
+				if args == nil {
+					args = append([]any(nil), a.Args...)
+				}
+				args[i] = f
+				argsChanged = true
+			}
+		}
+	}
+	var kw map[string]any
+	for k, v := range a.KwArgs {
+		if e, ok := v.(grammar.Expr); ok {
+			if f := foldLiterals(e); f != e {
+				if kw == nil {
+					kw = map[string]any{}
+					for k2, v2 := range a.KwArgs {
+						kw[k2] = v2
+					}
+				}
+				kw[k] = f
+			}
+		}
+	}
+	if !argsChanged && kw == nil {
+		return a
+	}
+	copy := *a
+	if argsChanged {
+		copy.Args = args
+	}
+	if kw != nil {
+		copy.KwArgs = kw
+	}
+	return &copy
 }

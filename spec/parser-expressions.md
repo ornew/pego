@@ -108,7 +108,7 @@ The following rules determine the shape of the tree.
 | `label:a` | capture | yes |
 | `{ term }` | [Predicate Action](predicates.md) | no |
 | `@name(...)` | diagnostic/metadata [attribute](attributes.md) | depends on the attribute |
-| `#atomic`, `#repeat(...)`, `#recover(...)`, `#missing`, `#stream` | behavioral/structural pragma | depends on the pragma |
+| `#atomic`, `#repeat(...)`, `#recover(...)`, `#missing`, `#stream`, `#ignorecase` | behavioral/structural pragma | depends on the pragma |
 
 "Consumes input" states whether the expression can advance the input position.
 

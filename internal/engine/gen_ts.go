@@ -73,6 +73,9 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	if prog.hasMissing {
 		return nil, missingUnsupported("generated parsers")
 	}
+	if prog.foldsLiterals {
+		return nil, foldUnsupported("generated TypeScript parsers")
+	}
 	start, err := prog.startRule(opts.Start)
 	if err != nil {
 		return nil, err

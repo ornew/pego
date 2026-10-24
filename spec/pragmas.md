@@ -23,7 +23,35 @@ The name is adjacent to `#`, and an argument list is adjacent to its name:
 | `#repeat(n,m)` | Repeats from `n` through `m` times |
 | `#stream` | Hands each element of a repetition to the caller as soon as it matches in a stream parse |
 | `#atomic` | Returns one string node and suppresses construction of the values of the elements inside it |
+| `#ignorecase` | Makes the string literals written in the annotated expression case-insensitive, for ASCII letters; see [`#ignorecase`](#ignorecase) |
 | `#cut` | Stands in place of an expression and commits the enclosing choice; see [Cut](parser-expressions.md#cut). It takes no arguments: `#cut(` is an error |
+
+## `#ignorecase`
+
+`e #ignorecase` makes every string literal written in `e` match the ASCII
+letters of its characters in either case. A literal written with the suffix
+`i`, such as `"select"i`, is case-insensitive without the pragma (see
+[String Literals](lexical.md#string-literals)).
+
+```pego
+rule keyword = ("select" / "from") #ignorecase
+rule select = "select"i
+```
+
+The pragma is lexical. It reaches the literals of `e` at any depth: under a
+sequence, a choice, a repetition, a lookahead (`!` and `&`) or a capture, in the
+expression arguments of other pragmas, and in the operands, operators and skip
+expression of an [Operators Rule](operators-rule.md) written in `e`. It does
+not reach a rule that `e` calls, and it does not change a character class, which
+is already a set of characters. Folding is ASCII only, as for the suffix:
+`"é" #ignorecase` matches `é` and not `É`.
+
+The pragma takes no arguments. Its expectations show each case-insensitive
+literal with its suffix, so `("select") #ignorecase` expects `"select"i`. The
+`#missing` pragma inserts the spelling written in the literal, without the suffix
+and without any change of case. The pragma follows an expression, like the other
+behavioral pragmas, and applies from left to right, so `"a" #ignorecase "b"`
+folds only `"a"`.
 
 ## `#recover`
 

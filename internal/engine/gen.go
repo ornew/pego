@@ -189,6 +189,9 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 	if prog.hasMissing {
 		return nil, missingUnsupported("generated parsers")
 	}
+	if prog.foldsLiterals {
+		return nil, foldUnsupported("generated Go parsers")
+	}
 	start, err := prog.startRule(opts.Start)
 	if err != nil {
 		return nil, err

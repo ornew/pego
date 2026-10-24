@@ -725,6 +725,21 @@ func (p *parser) matchLiteral(rs []rune, bs []byte) bool {
 	return true
 }
 
+// matchLiteralFold advances past a case-insensitive literal if the input matches it. rs are the
+// folded runes of the literal (foldedRunes), and each input rune is folded before the comparison.
+// It decodes the input rune by rune, as matchLiteralRunes does, so both position units agree.
+func (p *parser) matchLiteralFold(rs []rune) bool {
+	for _, want := range rs {
+		p.inputWork(1)
+		got, size, ok := p.peek()
+		if !ok || foldASCIIRune(got) != want {
+			return false
+		}
+		p.pos += size
+	}
+	return true
+}
+
 // literalHasReplacement bounds the grammar-side scan after a byte mismatch.
 // Only visited literal runes consume steps; they do not inspect input.
 func (p *parser) literalHasReplacement(rs []rune) bool {

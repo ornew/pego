@@ -14,6 +14,9 @@ import (
 // Program is a compiled grammar. It can be used by multiple parses concurrently.
 type Program struct {
 	hasMissing bool // immutable syntax metadata; bytecode/generation are unsupported
+	// foldsLiterals reports that a normalized literal matches ASCII letters in either case. Only
+	// the closure backend supports it; bytecode, serialization and generation do not yet.
+	foldsLiterals bool
 	// shapeControl is the compilation's cancellation control while the program is being built, so that
 	// the shape analysis of rule bodies (shapeElems) polls it; nil otherwise.
 	shapeControl *compileControl
@@ -473,6 +476,7 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 	c.checkSpliceCycles(rules)
 	c.declareVars(g)
 	prog.markMissingRules(control)
+	prog.markFoldedLiterals(control)
 	if flags == nil {
 		c.an = analyzeControlled(rules, control)
 	} else if len(flags) != len(prog.rules) {
@@ -850,6 +854,33 @@ func hasCapturesControlled(e grammar.Expr, control *compileControl) bool {
 
 func quote(s string) string { return strconv.Quote(s) }
 
+// literalDesc is the expectation text of a literal, as written: a case-insensitive literal keeps its
+// suffix i.
+func literalDesc(e *grammar.Literal) string {
+	if e.IgnoreCase {
+		return quote(e.Value) + "i"
+	}
+	return quote(e.Value)
+}
+
+// foldASCIIRune maps A-Z to a-z and leaves every other rune as it is: the folding of #ignorecase
+// and of the suffix i, which is ASCII only.
+func foldASCIIRune(r rune) rune {
+	if 'A' <= r && r <= 'Z' {
+		return r + ('a' - 'A')
+	}
+	return r
+}
+
+// foldedRunes returns rs with foldASCIIRune applied to each rune.
+func foldedRunes(rs []rune) []rune {
+	out := make([]rune, len(rs))
+	for i, r := range rs {
+		out[i] = foldASCIIRune(r)
+	}
+	return out
+}
+
 // expr compiles the expression. If build is false, it only matches without building values.
 // expr adds the closure expression-dispatch charge around the compiled matcher.
 func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
@@ -866,8 +897,23 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 	switch e := e.(type) {
 	case *grammar.Literal:
 		value := literalValue(e.Value)
+		desc := c.desc(literalDesc(e))
+		if e.IgnoreCase {
+			rs := foldedRunes([]rune(value))
+			return func(p *parser) (*Node, bool) {
+				start := p.pos
+				if !p.matchLiteralFold(rs) {
+					p.expect(start, desc)
+					return nil, false
+				}
+				if !build {
+					return nil, true
+				}
+				// The node holds the input as matched: its letters may differ in case from the literal.
+				return p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true, fresh: true}), true
+			}
+		}
 		rs, bs := []rune(value), []byte(value)
-		desc := c.desc(quote(e.Value))
 		return func(p *parser) (*Node, bool) {
 			start := p.pos
 			if !p.matchLiteral(rs, bs) {
@@ -1208,7 +1254,11 @@ func (c *compiler) first(e grammar.Expr) firstGuard {
 	switch t, depth := firstTerminalControlled(c.prog, e, 0, map[string]bool{}, c.control); t := t.(type) {
 	case *grammar.Literal:
 		r0, _ := utf8.DecodeRuneInString(t.Value)
-		return firstGuard{func(_ *parser, r rune) bool { return r == r0 }, c.desc(quote(t.Value)), depth}
+		if t.IgnoreCase {
+			f0 := foldASCIIRune(r0)
+			return firstGuard{func(_ *parser, r rune) bool { return foldASCIIRune(r) == f0 }, c.desc(literalDesc(t)), depth}
+		}
+		return firstGuard{func(_ *parser, r rune) bool { return r == r0 }, c.desc(literalDesc(t)), depth}
 	case *grammar.CharClass:
 		return firstGuard{classAcceptControlled(t, c.control), c.desc(charClassStringControlled(t, c.control)), depth}
 	}

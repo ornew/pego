@@ -108,6 +108,16 @@ actions.
 "if" "\n" "say \"hi\"" "😀"
 ```
 
+A string literal MAY be followed directly by the suffix `i`, written `"select"i`.
+The suffix makes the ASCII letters of the literal match in either case. The `i`
+MUST immediately follow the closing quote, with no space between them, and no
+identifier character may follow it: in `"x" i` the `i` is a rule reference, and
+in `"x"ia` the identifier `ia` is a rule reference. Folding is ASCII only: `A`-`Z`
+and `a`-`z` match each other, and every other character matches only itself, so
+`"é"i` matches `é` and not `É`. A suffix inside the [`#ignorecase`](pragmas.md#ignorecase)
+pragma is redundant and allowed. An expectation shows a case-insensitive literal
+with its suffix, as written: `"select"i`.
+
 ### Character Classes
 
 A character class matches one Unicode character selected by its

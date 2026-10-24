@@ -13,6 +13,9 @@ func (prog *Program) Module() *Module {
 	if prog.hasMissing {
 		panic(missingUnsupported("bytecode module construction"))
 	}
+	if prog.foldsLiterals {
+		panic(foldUnsupported("bytecode module construction"))
+	}
 	prog.moduleOnce.Do(func() {
 		c := &bcompiler{prog: prog, m: &Module{SourceInfo: prog.sourceInfo, DefaultValue: prog.defaultValue}, strs: map[string]int{}}
 		c.compile()
