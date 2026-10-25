@@ -105,15 +105,19 @@ returned diagnostic cannot change memoized errors or diagnostics from a later pa
 not detach the Node graph, which may still share nodes with the mutable Document; use `Node.Clone` when needed.
 
 For eligible grammars, `ParseAST` matches typed values directly and reuses a private typed memo separate from the
-Node memo. Each call uses fresh invocation arenas, and only completed entries whose examined frontier remains
-before an edit are retained; provisional and left-recursive entries are discarded. The public typed graph is
-cloned before return, so later parses cannot overwrite prior results and caller mutation cannot change private
-memo values or later results. Repeated references to the same slice view are preserved; slice capacity and
-arbitrary overlapping views are not part of the contract. CST `Node` values in fields that require concrete PEGO
-nodes, `_` values, and grammars with field-reading actions remain on the existing Node conversion path. That path
-converts the completed Node result for each call. Parsing, diagnostic copying and publication use the same
-invocation controller; interruption returns the result's zero value and clears reusable state as needed for a
-retry. The `Document` remains mutable and is not an immutable snapshot.
+Node memo. Each call uses fresh invocation arenas, and only completed entries whose examined frontier remains before
+an edit are retained; provisional and left-recursive entries are discarded. A published typed value is frozen: the
+parse publishes the value it built, and later parses reuse the same values, so results share values with the
+Document and with earlier results, as Node values do. Results are therefore read-only. Modifying a result, including
+a value reached through a `node[_]` field, can change what later parses return. `CloneAST(value)` returns a copy that
+shares nothing with the Document or with other results, so the caller may modify it; aliases within the value are
+preserved. Every published slice has capacity equal to its length, so appending to one result cannot write into
+another. Diagnostics are copied on publication, because they are parser state that a later parse could otherwise
+share. CST `Node` values in fields that require concrete PEGO nodes, `_` values, and grammars with field-reading
+actions remain on the existing Node conversion path. That path converts the completed Node result for each call.
+Parsing, diagnostic copying and publication use the same invocation controller; interruption returns the result's
+zero value and clears reusable state as needed for a retry. The `Document` remains mutable and is not an immutable
+snapshot.
 
 ### Initial Direct Typed Document Implementation
 
@@ -126,11 +130,11 @@ arenas so later parses cannot overwrite values returned earlier.
 Edit invalidation keeps only completed typed entries before the edit whose examined frontier also remains before
 it; entries dependent on left-recursion growth, provisional results, or the edited suffix are discarded. Generated
 wrappers memoize calls that batch generation otherwise optimizes away, while generation without a Document keeps
-the existing batch source path. Before publishing a result, the implementation makes an ownership-preserving typed copy
-where cached or scratch storage could be observable. It preserves cycles, aliases and repeated references to the
-same slice view; unused slice capacity and arbitrary overlapping slice views are not preserved, matching
-`Node.Clone`'s ownership boundary. Parsing and copying use the same invocation controls. If either is interrupted,
-the typed result's zero value is returned and the cache state required for a clean retry is cleared.
+the existing batch source path. Publication freezes the typed value without a per-call copy. The generated code writes a value only while it
+builds it, before publication: slices are carved with three-index bounds from chunks, and no later code writes into a
+published value. Later parses reuse published values, and `CloneAST` is the only way to obtain a detached copy.
+Parsing and publication use the same invocation controls. If either is interrupted, the typed result's zero value is
+returned and the cache state required for a clean retry is cleared.
 
 Compare against both the exact parent revision and a same-source control with direct typed Document matching
 disabled. Measure batch parsing, fresh Document parsing, warm parsing and edit-plus-parse, along with retained
@@ -367,30 +371,51 @@ expensive grammars or typical editor workloads.
 
 ### Local Measurements for Direct Typed Document Matching
 
-Three serial alternating 200 ms comparisons used Go 1.27.1 on an Apple M3 Max (darwin/arm64), with
-`GOMAXPROCS=16`, `GOGC=100` and `GOMEMLIMIT=off`. The baseline revision was `d827b2cd139d52661bb8624d8acffd83a6715647`;
-the candidate was also compared with a same-source generation control that disables direct typed Document
-matching. Generated batch parsers were byte-identical to the baseline only when Document generation was disabled.
-The fixture contains 4,096 records. Median times for the same-source enabled/disabled comparison were:
+The measurements ran on an Apple M3 Max (darwin/arm64) with Go 1.27.1, `GOMAXPROCS=16` and `GOMAXPROCS=1`. The
+candidate revision is `4b6597df`, which publishes shared frozen results. The base is `origin/main` at `a0f7ceaa`,
+which copies each published result per call. Both arms use the same generated fixture of 4,096 records: a batch `[]Item` grammar with a near-EOF
+edit benchmark. Each arm runs ten interleaved rounds of two identical copies, and the table reports the mean of the
+two arms' medians of `ns/op`. The allocation and retained-heap figures come from one profiled run at 200 iterations
+(`memprofilerate=1`) and from a fresh process per probe.
 
-| Operation | Unit | Disabled | Direct typed | Change |
+| Operation (4,096 records) | Unit | Base | Shared | Ratio |
 | --- | --- | ---: | ---: | ---: |
-| Fresh `Document.ParseAST` | CodePoints | 1,877,110 ns/op | 1,635,546 ns/op | 12.9% faster |
-| Fresh `Document.ParseAST` | Bytes | 1,789,732 ns/op | 1,517,239 ns/op | 15.2% faster |
-| Warm parse, no edit | CodePoints | 740,582 ns/op | 725,403 ns/op | 2.1% faster |
-| Warm parse, no edit | Bytes | 652,045 ns/op | 636,601 ns/op | 2.4% faster |
-| Near-EOF edit + parse | CodePoints | 1,073,922 ns/op | 1,234,443 ns/op | 14.9% slower |
-| Near-EOF edit + parse | Bytes | 969,329 ns/op | 1,106,552 ns/op | 14.2% slower |
+| Near-EOF edit + parse | CodePoints | 1,647,018 ns/op | 459,974 ns/op | 0.28 |
+| Near-EOF edit + parse | Bytes | 1,514,588 ns/op | 281,251 ns/op | 0.19 |
+| Warm parse, no edit | CodePoints | 1,048,042 ns/op | 95,330 ns/op | 0.09 |
+| Warm parse, no edit | Bytes | 968,385 ns/op | 7,898 ns/op | 0.01 |
+| Node control (`NearEOFControl`) | CodePoints | 575,978 ns/op | 576,931 ns/op | 1.00 |
+| Batch typed control (`TypedNearEOFControl`) | CodePoints | 359,799 ns/op | 365,385 ns/op | 1.02 |
+| Conversion control (`TypedNearEOFConversionControl`) | CodePoints | 1,170,736 ns/op | 1,204,554 ns/op | 1.03 |
 
-For 4,096-record near-EOF edit + parse, cumulative allocation increased from 3,148,532 to 3,735,004 B/op
-in CodePoints (18.6%) and from 3,435,252 to 3,890,651 B/op in Bytes (13.3%). At 256 records, B/op rose by
-about 30–33%. Retained-heap probes on the 4,096-record fixture found about 33–36% less retained memory with no
-edits and 26–29% less after 32 edits. The probes kept the Document alive and dropped each returned result; they
-measure post-GC retained heap above a baseline taken after building the input, not peak memory or retained result
-history.
-The three 200 ms pairs are focused pilot samples on one synthetic grammar, not a statistical performance
-guarantee; they do not establish workload-wide gains. Direct typed Document matching remains opt-in with these
-costs; improving the near-EOF edit path remains separate work.
+At `GOMAXPROCS=1` the near-EOF edit ratios are 0.23 (CodePoints) and 0.15 (Bytes); the warm no-edit ratios are 0.08 and
+0.01; the controls are between 0.99 and 1.02. Identical copies of the same arm differ by up to about 3%, so the control
+ratios are unchanged within that spread.
+
+Per near-EOF edit at 4,096 records in CodePoints, cumulative allocation falls from 4,824,124 to 756,809 B/op, and the
+allocation count falls from 8,430 to 33. The control allocation is unchanged: 831,871 to 829,213 B/op for the batch typed control and
+3,151,443 to 3,151,458 B/op for the conversion control.
+
+Retained heap after GC, above a baseline taken after building the input, with the Document alive and each returned
+result dropped:
+
+| Probe (4,096 records) | Base | Shared |
+| --- | ---: | ---: |
+| CodePoints, no edits | 1,851,744 B (92 objects) | 1,846,440 B (87 objects) |
+| CodePoints, 32 edits | 2,131,392 B (125 objects) | 1,928,968 B (112 objects) |
+| Bytes, no edits | 2,110,800 B (86 objects) | 2,110,816 B (87 objects) |
+| Bytes, 32 edits | 2,371,968 B (95 objects) | 2,175,216 B (92 objects) |
+
+The benchmark fixture is synthetic, and these are focused samples on one grammar. They do not establish a
+workload-wide gain. The allocation profile of the shared path is dominated by per-parse setup (`PushKid` and
+`setSource`), not by publication.
+
+Caller mutation is visible to later results, as with Node values. The shared-result tests cover immutability, prefix
+sharing, outer slices, interruption, random edits, left-recursion growth, operators and a `node[_]` field; each has a
+negative control that makes it fail. For a `node[_]` field holding a list, a parse after an edit does not change an
+earlier result, so the published value does not alias mutable parser state.
+
+
 
 ### Local Measurements for Generated Go Node Streams
 

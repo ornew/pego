@@ -37,13 +37,15 @@ values such as maps remain shared. `ParseStats` has `Evaluated` and `Reused` fie
 This first generated implementation retains memo entries wholly before an edit and discards the suffix, rather
 than moving suffix nodes. `Edit` scans and copies retained prefix entries, so its cost can grow with document
 length. The generated batch functions remain available. `-document` can be combined with `-types`: eligible
-grammars use direct typed matching with a private memo and fresh invocation arenas. The published typed graph is
-cloned so later parses cannot overwrite prior results and caller mutation cannot change private memo values or
-later results. Results preserve cycles, aliases and repeated references to the same slice view, but not slice
-capacity or arbitrary overlapping views. Other grammars use the existing Node Document and convert its final
-result on each call; generic `Node` members may share the mutable Document graph, so call `Node.Clone` when a detached
-tree is needed. The conversion fallback applies to `any` and node results, struct fields requiring PEGO nodes, or actions
-and predicates that read struct fields.
+grammars use direct typed matching with a private memo and fresh invocation arenas. A typed result is
+read-only and shared, as Node values are: later parses reuse the values of earlier results, so a result can share
+values with the Document and with other results. Modifying a result can change what later parses return, including
+through a `node[_]` field. Call `CloneAST(value)` to get a copy that shares nothing with the Document or with other
+results; the copy can be modified freely, and aliases within it are preserved. Every returned slice has capacity equal
+to its length, so appending to one result cannot write into another. Other grammars use the existing Node Document and
+convert its final result on each call; generic `Node` members may share the mutable Document graph, so call
+`Node.Clone` when a detached tree is needed. The conversion fallback applies to `any` and node results, struct fields
+requiring PEGO nodes, or actions and predicates that read struct fields.
 
 ## Diagnostics, Limits and Combinations
 
