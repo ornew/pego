@@ -1,7 +1,7 @@
 # Documentation Style
 
 How the PEGO documentation is organized and written. It applies to the tutorial, the guides, the cookbook and the
-specification; design records and optimization records follow their own templates. Pages that break a rule that a test
+specification; design pages, design records and optimization records follow their own rules. Pages that break a rule that a test
 checks fail `cd site && go test ./...`; the rest is checked in review.
 
 ## Kinds of Pages
@@ -14,6 +14,7 @@ Every page has one job, and a reader should be able to tell which from the direc
 | Guide | `docs/guide/` | Explains one feature in depth, for a reader who has a use for it | [TEMPLATE.md](guide/TEMPLATE.md) |
 | Cookbook | `docs/cookbook/` | Solves one concrete task with complete, runnable files | [TEMPLATE.md](cookbook/TEMPLATE.md) |
 | Specification | `spec/` | Defines the behavior that implementations must have | [TEMPLATE.md](../spec/TEMPLATE.md) |
+| Design overview | `docs/design/` | Describes how the system is built today: architecture and internal representations | None; a page opens with what it describes |
 | Design record | `docs/design/records/` | Records a decision, its alternatives and its validation | [000-template.md](design/records/000-template.md) |
 | Optimization record | `docs/optimizations/` | Records a measured mechanism | [000-template.md](optimizations/000-template.md) |
 

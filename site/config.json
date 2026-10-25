@@ -426,12 +426,16 @@
       "match": [
         "examples/README.md",
         "docs/*.md",
+        "docs/design/*.md",
         "docs/optimizations/*.md",
         "docs/optimizations/mechanisms/*.md"
       ],
       "first": [
         "examples/README.md",
         "docs/development.md",
+        "docs/design/README.md",
+        "docs/design/architecture.md",
+        "docs/design/intermediate-representations.md",
         "docs/benchmarks.md",
         "docs/performance.md",
         "docs/optimizations/README.md"
@@ -516,6 +520,9 @@
     "docs/design/records/README.md",
     "examples/README.md",
     "docs/development.md",
+    "docs/design/README.md",
+    "docs/design/architecture.md",
+    "docs/design/intermediate-representations.md",
     "docs/benchmarks.md",
     "docs/performance.md",
     "docs/optimizations/README.md",
