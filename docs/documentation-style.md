@@ -101,6 +101,20 @@ Every example is run, and its output is pasted from that run. An example that a 
 - Tag every fence. Grammars are `pego`, Go is `go`, TypeScript is `ts`, JSON is `json`, shell commands are `bash`
   (not `sh` or `console`), and the output of a program or a command is `text`. An untagged fence is a mistake.
   `TestCodeFenceLanguages` enforces this.
+- Draw a diagram as a `mermaid` fence when it has more than a handful of nodes, branches or labeled edges; the site
+  renders it in the reader's color theme and keeps the fence text where scripts do not run. Keep a small sketch
+  (a short pipeline or a tree of a few lines) as a `text` fence, which reads the same everywhere. A diagram shows
+  structure; a label is a word or two, and the prose carries the explanation. Only pages that contain a `mermaid`
+  fence load the renderer.
+
+  ```mermaid
+  flowchart LR
+    A[Grammar text] --> B[Syntax tree]
+    B --> C{Valid?}
+    C -- yes --> D[Program]
+    C -- no --> E[Diagnostics]
+  ```
+
 - Put a command and its output in separate blocks, the command first, with no `$` prompt, so a reader can copy the
   command. `TestNoCommandPrompts` enforces this.
 - Write a complete `package main` program when the program is the point, and statement fragments otherwise, never half a

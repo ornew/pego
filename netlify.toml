@@ -34,8 +34,10 @@
   for = "/*"
   [headers.values]
     # 'wasm-unsafe-eval' lets the playground compile pego.wasm; nothing else is loaded from
-    # elsewhere or run inline.
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'"
+    # elsewhere or run inline. 'unsafe-inline' for styles is needed by Mermaid, which builds diagram
+    # SVG with inline styles while rendering (site/static/assets/mermaid.js); no page uses inline
+    # styles itself (site tests enforce it), and scripts stay restricted to this site.
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 

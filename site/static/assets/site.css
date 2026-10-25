@@ -618,3 +618,14 @@ pre.decl { font-size: 13.5px; }
     padding: 8px 12px;
   }
 }
+
+/* Mermaid diagrams: assets/mermaid.js renders one image per color theme. */
+figure.mermaid { margin: 1rem 0; text-align: center; overflow-x: auto; }
+figure.mermaid img { max-width: 100%; height: auto; }
+figure.mermaid .mermaid-dark { display: none; }
+:root[data-theme="dark"] figure.mermaid .mermaid-light { display: none; }
+:root[data-theme="dark"] figure.mermaid .mermaid-dark { display: inline; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) figure.mermaid .mermaid-light { display: none; }
+  :root:not([data-theme="light"]) figure.mermaid .mermaid-dark { display: inline; }
+}

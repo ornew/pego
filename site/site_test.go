@@ -82,6 +82,36 @@ func TestBuild(t *testing.T) {
 		}
 	}
 
+	// Only pages with a mermaid fence load the diagram renderer, and the vendored build it loads exists.
+	withFence := 0
+	err = filepath.WalkDir(out, func(p string, d fs.DirEntry, err error) error {
+		if err != nil || filepath.Ext(p) != ".html" {
+			return err
+		}
+		data, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		fence := strings.Contains(string(data), `class="language-mermaid"`)
+		loader := strings.Contains(string(data), `assets/mermaid.js"`)
+		if fence {
+			withFence++
+		}
+		if fence != loader {
+			t.Errorf("%s: mermaid fence %v, renderer script %v", p, fence, loader)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if withFence == 0 {
+		t.Error("no page has a mermaid fence; documentation-style.md shows one")
+	}
+	if _, err := os.Stat(filepath.Join(out, "assets", "vendor", "mermaid-11.12.0.min.js")); err != nil {
+		t.Errorf("vendored Mermaid is not published: %v", err)
+	}
+
 	// No page needs 'unsafe-inline' in the Content-Security-Policy of netlify.toml.
 	err = filepath.WalkDir(out, func(p string, d fs.DirEntry, err error) error {
 		if err != nil || filepath.Ext(p) != ".html" {
@@ -109,12 +139,12 @@ func TestBuild(t *testing.T) {
 		"reference/pego/index.html": {
 			`id="CompileSource"`, `id="Parser.Parse"`, "type Node struct", `id="Node.Clone"`, "pkg.go.dev",
 		},
-		"reference/grammar/index.html":  {`id="Format"`, `id="Grammar.Rules"`, "type RuleDef struct"},
-		"reference/cli/index.html":      {`id="cmd-parse"`, "<code>-g string</code>", "-backend string", `id="commands"`},
-		"docs/design/records/index.html":        {"012. Typed Values in Generated Parsers", "Implemented"},
-		"docs/optimizations/index.html": {"Optimization Catalog", "001. Value-free rule bodies", "076. Inline value-free plain generated Go rules", "077. Inline value-building and memoized Node expressions in generated Go parsers"},
-		"docs/performance/index.html":   {`id="1-value-free-rule-bodies-value-free-twins-transient-rules-0b2c903"`, `id="76-inline-value-free-plain-generated-go-rules"`, `id="77-inline-value-building-and-memoized-node-expressions-in-generated-go-parsers"`},
-		"playground/index.html":         {`id="pg-grammar"`, `src="../playground/app.js"`, `href="../playground/playground.css"`},
+		"reference/grammar/index.html":   {`id="Format"`, `id="Grammar.Rules"`, "type RuleDef struct"},
+		"reference/cli/index.html":       {`id="cmd-parse"`, "<code>-g string</code>", "-backend string", `id="commands"`},
+		"docs/design/records/index.html": {"012. Typed Values in Generated Parsers", "Implemented"},
+		"docs/optimizations/index.html":  {"Optimization Catalog", "001. Value-free rule bodies", "076. Inline value-free plain generated Go rules", "077. Inline value-building and memoized Node expressions in generated Go parsers"},
+		"docs/performance/index.html":    {`id="1-value-free-rule-bodies-value-free-twins-transient-rules-0b2c903"`, `id="76-inline-value-free-plain-generated-go-rules"`, `id="77-inline-value-building-and-memoized-node-expressions-in-generated-go-parsers"`},
+		"playground/index.html":          {`id="pg-grammar"`, `src="../playground/app.js"`, `href="../playground/playground.css"`},
 		"docs/guide/running-parsers/index.html": {
 			`id="compiled-grammars"`, `href="../../../spec/"`, `<pre><code class="language-pego">`,
 		},
@@ -831,6 +861,22 @@ func TestNavTitle(t *testing.T) {
 	} {
 		if got := navTitle(tc.p); got != tc.want {
 			t.Errorf("navTitle(%s) = %q, want %q", tc.p.Src, got, tc.want)
+		}
+	}
+}
+
+func TestHasMermaidFence(t *testing.T) {
+	for src, want := range map[string]bool{
+		"```mermaid\nflowchart LR\n```\n": true,
+		"~~~mermaid\nx\n~~~\n":            true,
+		"   ```mermaid  \nx\n```\n":       true,
+		"```text\nmermaid\n```\n":         false,
+		"```mermaidjs\nx\n```\n":          false,
+		"The ```mermaid fence\n":          false,
+		"":                                false,
+	} {
+		if got := hasMermaidFence([]byte(src)); got != want {
+			t.Errorf("hasMermaidFence(%q) = %v, want %v", src, got, want)
 		}
 	}
 }

@@ -111,9 +111,15 @@ preview hosts available. These rules take effect when Netlify deploys the
 updated configuration; the local preview server does not apply them.
 
 The configuration also sets a strict `Content-Security-Policy`: the pages load scripts, styles and data only from the
-site itself, and need no inline scripts or styles; `'wasm-unsafe-eval'` allows compiling `pego.wasm`. The
+site itself, and need no inline scripts or styles; `'wasm-unsafe-eval'` allows compiling `pego.wasm`, and styles may
+be inline only because Mermaid sets them while it renders a diagram. The
 WebAssembly binaries and their hashed runtime scripts are cached for a year (`immutable`); the other files are
 revalidated on each visit, Netlify's default.
+
+Diagrams are written as `mermaid` fences. Only pages that contain one load `assets/mermaid.js`, which loads the pinned
+Mermaid build vendored in `assets/vendor/` (the policy allows no remote scripts), renders each diagram once per color
+theme and shows the matching image; the fence text remains where scripts do not run. To upgrade Mermaid, replace the
+vendored file and its name, and update the version in `assets/mermaid.js`.
 
 
 ## Tests

@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -52,6 +53,9 @@ func Build(cfg Config) (Stats, error) {
 				section = "Project"
 			}
 			p := &Page{Src: q.Source, URL: strings.TrimSuffix(q.Output, "index.html"), Title: q.Title, Nav: q.NavTitle, Section: section, Kind: "doc", Description: q.Description, SourceURL: cfg.GitHub + "/blob/" + cfg.Ref + "/" + q.Source}
+			if data, err := os.ReadFile(filepath.Join(cfg.Repo, filepath.FromSlash(q.Source))); err == nil && hasMermaidFence(data) {
+				p.Scripts = append(p.Scripts, mermaidScript)
+			}
 			for _, h := range q.Headings {
 				if h.Level >= 2 && h.Level <= 3 {
 					p.TOC = append(p.TOC, Heading{ID: h.ID, Text: h.Title, Level: h.Level})
@@ -282,3 +286,11 @@ func Build(cfg Config) (Stats, error) {
 	}
 	return stats(cfg.Out, len(result.Pages))
 }
+
+// mermaidScript renders the Mermaid fences of a page; only pages that contain one load it.
+const mermaidScript = "assets/mermaid.js"
+
+var mermaidFenceRe = regexp.MustCompile("(?m)^ {0,3}(?:```+|~~~+)[ \\t]*mermaid[ \\t]*$")
+
+// hasMermaidFence reports whether the Markdown source has a fenced code block of language mermaid.
+func hasMermaidFence(src []byte) bool { return mermaidFenceRe.Match(src) }
