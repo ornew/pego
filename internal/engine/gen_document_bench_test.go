@@ -40,12 +40,43 @@ func TestGeneratedDocumentBenchmarkFixtureCompiles(t *testing.T) {
 	}
 }
 
+// documentBenchNodeGrammar is the grammar of the Node fixture variants.
+const documentBenchNodeGrammar = `rule main = record+ $$
+rule record = k:"é" ":" v:("0" / "1") ";"`
+
+// documentBenchTypedGrammar is the grammar of the typed fixture variants. Its start rule projects a
+// list of nodes, which is typed as a list of Item only through the field projection $xs.Value.
+const documentBenchTypedGrammar = `type Item = { Key node[string]; Value node[string]; N int; S string; B bool }
+rule main []Item = xs:item* => $xs.Value
+rule item Item = k:[a-zé😀]+ #atomic "=" v:[0-9]+ #atomic ";" => Item{Key: $k, Value: $v, N: len($v), S: text($k), B: true}`
+
+// TestGeneratedDocumentBenchmarkFixtureGrammarsTypeCheck generates the typed and Node fixture variants
+// without writing files and without skipping, so that a grammar of the fixture that no longer type-checks
+// fails the normal suite rather than a benchmark run.
+func TestGeneratedDocumentBenchmarkFixtureGrammarsTypeCheck(t *testing.T) {
+	node, err := parseTest(documentBenchNodeGrammar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := generateCode(node, GenOptions{Package: "generateddocument", Start: "main", Document: true}); err != nil {
+		t.Fatal(err)
+	}
+	typed, err := parseTest(documentBenchTypedGrammar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, convert := range []bool{false, true} {
+		if _, err := generateCode(typed, GenOptions{Package: "typeddocument", Start: "main", Types: true, Document: true, convertTypes: convert}); err != nil {
+			t.Fatalf("convertTypes=%v: %v", convert, err)
+		}
+	}
+}
+
 // writeGeneratedDocumentBenchmarkFixture writes the benchmark module of the Document fixture into dir.
 func writeGeneratedDocumentBenchmarkFixture(t testing.TB, dir string) {
 	t.Helper()
 	observability := os.Getenv("PEGO_GENERATED_DOCUMENT_OBSERVABILITY") == "1"
-	g, err := parseTest(`rule main = record+ $$
-rule record = k:"é" ":" v:("0" / "1") ";"`)
+	g, err := parseTest(documentBenchNodeGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,9 +95,7 @@ rule record = k:"é" ":" v:("0" / "1") ";"`)
 			t.Fatal(err)
 		}
 	}
-	typedGrammar, err := parseTest(`type Item = { Key node[string]; Value node[string]; N int; S string; B bool }
-rule main []Item = xs:item* => $xs.Value
-rule item Item = k:[a-zé😀]+ #atomic "=" v:[0-9]+ #atomic ";" => Item{Key: $k, Value: $v, N: len($v), S: text($k), B: true}`)
+	typedGrammar, err := parseTest(documentBenchTypedGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}
