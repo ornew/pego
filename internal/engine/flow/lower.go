@@ -127,7 +127,7 @@ func LowerFrame(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, bu
 	if !l.dead {
 		f.Value = v
 	}
-	return f, nil
+	return verified(f)
 }
 
 // Lower lowers the rule r of the module m, a LocalRule, to the function name. Analyze must have
@@ -153,6 +153,15 @@ func Lower(m *core.Module, r *core.Rule, name string, opts Options) (*Func, erro
 	body := l.node(r.Body, s, r.Want, f.Fail)
 	if !l.dead {
 		l.finish(r, s, body)
+	}
+	return verified(f)
+}
+
+// verified returns f if Verify accepts it: a function that breaks an invariant is a lowering error, not
+// something for the printer to write.
+func verified(f *Func) (*Func, error) {
+	if err := Verify(f); err != nil {
+		return nil, fmt.Errorf("internal error: %w", err)
 	}
 	return f, nil
 }

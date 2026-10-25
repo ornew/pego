@@ -455,3 +455,22 @@ func TestSubexprsCoversExprFields(t *testing.T) {
 		}
 	}
 }
+
+// TestLowerVerifies checks that lowering returns an error, rather than a function, when Verify rejects
+// the function it built: a Node function that holds a typed value operation is not printed.
+func TestLowerVerifies(t *testing.T) {
+	newFunc := func(body ...Stmt) *Func {
+		return &Func{Name: "f", Body: body, Fail: &Label{Name: "fail"},
+			Start: &Var{Name: "start", Type: TypeInt, Entry: true}, Result: &Var{Name: "v", Type: TypeValue, Entry: true},
+			Ctx: &Var{Name: "c", Type: TypeCtx, Entry: true}}
+	}
+	f := newFunc(&Set{Dst: []LValue{RegPos}, X: []Expr{&NewMatch{Start: &Int{}, Text: &Str{}}}})
+	f.Node = true
+	if g, err := verified(f); err == nil || g != nil || !strings.Contains(err.Error(), "typed match in a Node function") {
+		t.Errorf("verified: got %v, %v", g, err)
+	}
+	good := newFunc()
+	if g, err := verified(good); err != nil || g != good {
+		t.Errorf("verified of a valid function: got %v, %v", g, err)
+	}
+}
