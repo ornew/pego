@@ -239,8 +239,8 @@ func (p *flowPrinter) declare(n *flow.Names) {
 	fmt.Fprintf(&p.g.vars, "var %s = %s\n", p.names[n], goStrings(n.List))
 }
 
-// untyped reports whether the printer writes the Node runtime's code (the recognizer table).
-func (p *flowPrinter) untyped() bool { return p.g.table == "recRules" }
+// untyped reports whether the printer writes the Node runtime's code (the Node and recognizer tables).
+func (p *flowPrinter) untyped() bool { return p.g.table == "recRules" || p.g.table == "rules" }
 
 // matcher returns the parser whose methods match literals: the embedded Node parser of a typed
 // parser, or the Node parser itself.

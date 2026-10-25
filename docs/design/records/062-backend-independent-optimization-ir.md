@@ -70,17 +70,14 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   Guards are emitted in six places.
 - Generated typed Go is printed from Flow IR. Its rules and Operators Rule lines have no `dgen` route and no
   private switch; `dgen` prints only the Node and recognizer tables.
-- The recognizer table of an ordinary Node parser is printed from Flow IR for the rules that `recFlowEligible`
-  accepts (`startRecFlow`, `gen_flow_recognizer.go`). `dgen` prints the other recognizer rules, and every
-  recognizer rule of a work-control, Document or observability build, where the Flow route does not apply.
-  The private `directRecognizer` option makes `dgen` print all recognizer rules; the parity test uses it as the
-  oracle of the Flow route and nothing else sets it.
-- Transitional, while the Parse table is still printed by `dgen`: a recognizer rule printed from Flow IR first asks
-  whether its value-free direct body is already a generated helper (`sharedDirectBody`, `gen_flow_recognizer.go`).
-  The lookup prints the direct body under a snapshot and rolls it back, so it reserves no names and adds no table
-  entries, variables or methods. If the text is shared, the rule takes the direct path and reuses that helper, as
-  `dgen` does without the switch. Without the lookup, the Flow copy of a shared keyword rule duplicates a large
-  helper. When the Parse table is printed from Flow IR, the exact-text sharing works again and the lookup is removed.
+- The value-free rules of an ordinary Node parser are printed from Flow IR: the lean rules of the Node table and the
+  rules of the recognizer table that `recFlowEligible` accepts (`startRecFlow`, `gen_flow_recognizer.go`). `dgen`
+  prints the other rules of both tables, and every rule of a work-control, Document, observability or typed-only build, where
+  the Flow route does not apply. The private `directRecognizer` and `directNodeRules` options make `dgen` print all
+  recognizer rules and all lean Node rules; the parity tests use them as the oracle of the Flow route and nothing
+  else sets them. Both tables print through the same Flow printer, so a rule with the same text in the two tables
+  is one shared helper by exact-text sharing. The Flow form has no `_ = x` line for a variable it reads nowhere,
+  which `dgen` writes.
   The recognizer's Core pipeline runs `Analyze` before `Guards`, as the table's pipeline does: `Guards` reads the
   first terminals that `Analyze` computes, so the reverse order leaves the alternatives of choices unguarded.
 - Work-control specialization exists three times: the closure backend compiles a second, metered closure
@@ -544,7 +541,8 @@ stage of its first consumer, so its differential tests and negative controls run
    `generator.expr` (measured at 92050aae at the four exits: the direct rule, the framed body, the rule body
    and the Operators Rule lines). Left-recursion leaders, `#recover`, nested calls and Operators Rules are
    rejected by `flow.LocalRule`, but they are printed through the framed-body and Operators Rule lowering.
-   The Node and recognizer tables still print through `dgen` and `generator.expr`, which stage 2 removes.
+   The framed rules of the Node table, the Operators Rule lines, the stream body, Documents, work controls and
+   observability still print through `dgen` and `generator.expr`, which stage 2 removes.
    The typed dispatch does not fall back: a typed rule or Operators Rule line that Flow IR does not print
    makes generation fail. Typed output has no `dgen` branches and no switches for them; `dgen` prints the Node and
    recognizer tables. Then remove `dgen`, the typed parts of

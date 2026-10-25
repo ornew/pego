@@ -198,8 +198,8 @@ use the effects that Core IR computed to know what must be kept.
 
 ## How Targets Use the Result
 
-A target takes Core IR, Flow IR or neither. Generated Go for typed parsers and for eligible recognizer rules is printed
-from Flow IR; other generated Go, the closure backend, the bytecode compiler and generated TypeScript read the grammar
+A target takes Core IR, Flow IR or neither. Generated Go for typed parsers and for the value-free rules of the Node parser and its
+recognizer is printed from Flow IR; other generated Go, the closure backend, the bytecode compiler and generated TypeScript read the grammar
 or the compiled rules directly. Actions and predicates are printed from the grammar terms that Core nodes record,
 because their text belongs to the target language. Which target uses which representation is expected to change as
 more of them move onto Core IR; the generator code and record 062 are the current statement.

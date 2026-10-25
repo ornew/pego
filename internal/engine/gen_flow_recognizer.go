@@ -9,16 +9,17 @@ import (
 	"github.com/ornew/pego/internal/engine/flow"
 )
 
-// Recognizers printed from Flow IR.
+// Value-free rules of the Node runtime printed from Flow IR.
 //
-// The rules of a recognizer (recRules) that recFlowEligible
-// accepts are built as Core IR, lowered by flow.Lower and printed by flowPrinter for the untyped
-// Node runtime, in place of the direct rules of dgen. The other rules keep their printer, in the
-// same output. The ordinary passes run on the whole output afterwards, so a printed rule gets its
-// ordinary branch as a generated one does.
+// The rules of a recognizer (recRules) and the lean rules of the Node table (rules) that
+// recFlowEligible accepts are built as Core IR, lowered by flow.Lower and printed by flowPrinter for
+// the untyped Node runtime, in place of the direct rules of dgen. The other rules keep their printer,
+// in the same output. Both tables share the helpers whose printed text is equal. The ordinary passes
+// run on the whole output afterwards, so a printed rule gets its ordinary branch as a generated one does.
 
-// recFlowEligible reports whether the rule r of a recognizer is printed from Flow IR: a plain
-// value-free rule whose body has no predicate, bind or capture.
+// recFlowEligible reports whether the rule r of the Node table or of the recognizer table is printed
+// from Flow IR: a rule that the direct printer prints as a lean value-free rule (directLeanOK) and
+// whose body has no capture or predicate.
 func recFlowEligible(r *rule) bool {
 	if !directLeanOK(r) {
 		return false
@@ -33,11 +34,11 @@ func recFlowEligible(r *rule) bool {
 	return ok
 }
 
-// startRecFlow builds the Core IR of the recognizer rec, with the passes of the recognizer table
-// (no terminal programs and no class runs), for printing its eligible rules from Flow IR.
-// startRecFlow runs the passes of typedCore that the Node recognizer uses: rewrites, Analyze, Guards,
-// scans and the repeats, which followRepeats keeps in step with the scans. It omits Terminals and
-// ClassRuns, which typedCore runs only for lean typed rules (leanTyped): the Node recognizer writes
+// startRecFlow builds the Core IR of the program rec (the recognizer, or the program of the Node table),
+// with the passes of the untyped tables (no terminal programs and no class runs), for printing its
+// eligible rules from Flow IR. It runs the passes of typedCore that the Node runtime's rules use:
+// rewrites, Analyze, Guards, scans and the repeats, which followRepeats keeps in step with the scans.
+// It omits Terminals and ClassRuns, which typedCore runs only for lean typed rules (leanTyped): the Node recognizer writes
 // its terminals and classes as the direct printer does, as inline tests.
 func (g *generator) startRecFlow(rec *Program) error {
 	origin := map[core.Node]grammar.Expr{}
@@ -65,28 +66,6 @@ func (g *generator) startRecFlow(rec *Program) error {
 		InlineLiterals: maxInlineLiteral, Observe: g.observability}
 	g.flow = &flowState{m: m, origin: origin, opts: opts, rules: append(append([]*rule(nil), rec.rules...), rec.twins...)}
 	return nil
-}
-
-// sharedDirectBody reports whether the value-free direct body of the eligible rule r is the text of
-// a helper that is already generated, such as the body of the same rule in the Parse table. The
-// direct body is printed under a snapshot and rolled back, so the lookup reserves no names and
-// adds no table entries, variables or methods.
-//
-// Transitional: the direct printer shares helpers by exact text (methodName). A Flow copy of such a
-// rule has a different text, so without this lookup the recognizer would generate its own copy. When
-// the Parse table is printed from Flow IR, the text match works again and this lookup is removed.
-func (g *generator) sharedDirectBody(r *rule) bool {
-	if g.disableMethodSharing {
-		return false
-	}
-	snap := g.snapshot()
-	defer g.rollback(snap)
-	d := g.directRule(r)
-	if d == nil {
-		return false
-	}
-	_, ok := g.methodNames[generatedMethod{g.recv() + "/" + g.valType(), g.directLeanText(d)}]
-	return ok
 }
 
 // flowRecDirect prints the eligible rule r of the recognizer from Flow IR as a direct rule, or

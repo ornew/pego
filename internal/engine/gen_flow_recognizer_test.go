@@ -31,7 +31,7 @@ func TestGeneratedFlowRecognizerParity(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		off, err := generateCode(g, GenOptions{Start: "main", Package: "gen", Recognize: true, directRecognizer: true})
+		off, err := generateCode(g, GenOptions{Start: "main", Package: "gen", Recognize: true, directRecognizer: true, directNodeRules: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -47,7 +47,9 @@ func TestGeneratedFlowRecognizerParity(t *testing.T) {
 		t.Fatal("the Flow route changes no generated recognizer: the parity test exercises nothing")
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	t.Run("direct recognizer", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{directRecognizer: true}) })
+	t.Run("direct recognizer", func(t *testing.T) {
+		testGeneratedParsersCorpus(t, goBin, cases, GenOptions{directRecognizer: true, directNodeRules: true})
+	})
 	t.Run("flow recognizer", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{}) })
 }
 
@@ -170,7 +172,7 @@ rule sq = "'" [^']* "'" / [uU] "&'" [^']* "'"
 		return conds
 	}
 	flow := guardsOf(GenOptions{Start: "main", Package: "gen", Recognize: true})
-	direct := guardsOf(GenOptions{Start: "main", Package: "gen", Recognize: true, directRecognizer: true})
+	direct := guardsOf(GenOptions{Start: "main", Package: "gen", Recognize: true, directRecognizer: true, directNodeRules: true})
 	if len(direct) == 0 {
 		t.Fatal("the direct recognizer prints no guards: the test exercises nothing")
 	}
@@ -204,7 +206,7 @@ func TestFlowRecognizerFallbackMatchesDirect(t *testing.T) {
 		}
 		return code
 	}
-	direct := gen(GenOptions{Start: "main", Package: "gen", Recognize: true, directRecognizer: true})
+	direct := gen(GenOptions{Start: "main", Package: "gen", Recognize: true, directRecognizer: true, directNodeRules: true})
 	refused := 0
 	refuseFlowRecDirect = func(r *rule) bool {
 		if recFlowEligible(r) {

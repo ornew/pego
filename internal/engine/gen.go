@@ -83,6 +83,10 @@ type GenOptions struct {
 	// directRecognizer prints the recognizer's rules with the direct printer even where the Flow route
 	// applies (startRecFlow). The parity test uses it as the oracle of the Flow route; nothing else sets it.
 	directRecognizer bool
+	// directNodeRules prints the lean value-free rules of the Node table with the direct printer even
+	// where the Flow route applies (startRecFlow). The parity test uses it as the oracle of that route;
+	// nothing else sets it.
+	directNodeRules bool
 	// keepComments keeps the comments of unexported generated code, which tests read as route markers.
 	keepComments bool
 	// disableKeepNodes leaves the Node rule functions out of a typed-only parser that needs them
@@ -227,7 +231,7 @@ func generateOnce(g *grammar.Grammar, opts GenOptions, live, collect *liveRules)
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
-	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, flowRecognizer: !opts.directRecognizer && !opts.WorkControls && !opts.Document && !opts.Observability, prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, live: live, collect: collect}
+	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, flowRecognizer: !opts.directRecognizer && !opts.WorkControls && !opts.Document && !opts.Observability, flowNode: !opts.directNodeRules && !opts.WorkControls && !opts.Document && !opts.Observability && !opts.TypedOnly, prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, live: live, collect: collect}
 	if live != nil {
 		gen.seedDescs()
 		for _, d := range live.descs[len(gen.descs):] {
@@ -242,7 +246,13 @@ func generateOnce(g *grammar.Grammar, opts GenOptions, live, collect *liveRules)
 		gen.decisions, opts.decisions.gen = opts.decisions, gen
 	}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
+	if gen.flowNode {
+		if err := gen.startRecFlow(prog); err != nil {
+			return nil, err
+		}
+	}
 	gen.rules()
+	gen.flow = nil
 	if gen.streamErr != nil {
 		return nil, gen.streamErr
 	}
@@ -583,6 +593,8 @@ type generator struct {
 	flowFrames int
 	// flowRecognizer is set when the recognizer's eligible rules are printed from Flow IR.
 	flowRecognizer bool
+	// flowNode is set when the eligible rules of the Node table are printed from Flow IR.
+	flowNode bool
 	// nodeScopes records the frame layouts shared by typed rule metadata.
 	nodeScopes map[*rule][]string
 	// decisions, if set, receives the lowering decisions (gen_decisions.go).
@@ -791,8 +803,8 @@ func (g *generator) recovers() bool {
 }
 
 // directRouteHook is called with the rule table and the rule for each rule that takes a direct route
-// in rules: the lean route of a Node or recognizer table, and the Flow route of the recognizer
-// table. Tests set it to check the route that is chosen, not the text of the generated code.
+// in rules: the lean route of a Node or recognizer table, and the Flow route of either table. Tests set
+// it to check the route that is chosen, not the text of the generated code.
 var directRouteHook func(table string, r *rule)
 
 func (g *generator) rules() {
@@ -817,7 +829,7 @@ func (g *generator) rules() {
 				directs[r] = d
 				continue
 			}
-		} else if g.flow != nil && g.table == "recRules" && recFlowEligible(r) && !g.sharedDirectBody(r) {
+		} else if g.flow != nil && (g.table == "recRules" || g.table == "rules") && recFlowEligible(r) {
 			if d := g.flowRecDirect(r); d != nil {
 				if directRouteHook != nil && g.collect == nil {
 					directRouteHook(g.table, r)

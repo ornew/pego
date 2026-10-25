@@ -424,6 +424,11 @@ func TestVerifyRejects(t *testing.T) {
 			m.Starts = []int{0}
 			return m
 		}, "stream not at the top of a start rule"},
+		{"stream below a label below the top", func() *Module {
+			m := module(rule(0, "a", &Label{Body: seq(lit("b"), &Opt{Body: &Stream{Repeat: &Repeat{Max: -1, Body: lit("a")}}})}))
+			m.Starts = []int{0}
+			return m
+		}, "stream not at the top of a start rule"},
 		{"terminal", func() *Module {
 			return module(rule(0, "a", &Terminal{Body: seq(lit("a"), &Any{})}))
 		}, "terminal: Any"},
@@ -627,6 +632,24 @@ func TestVerifyRejects(t *testing.T) {
 				t.Fatalf("Verify: %v, want an error containing %q", err, c.want)
 			}
 		})
+	}
+}
+
+// TestVerifyAcceptsStreamInLabeledSequence checks that a stream in a sequence that a label wraps, or in
+// a sequence nested in a label, is at the top of a start rule, as in the grammar.
+func TestVerifyAcceptsStreamInLabeledSequence(t *testing.T) {
+	stream := func() *Stream { return &Stream{Repeat: &Repeat{Max: -1, Body: lit("a")}} }
+	for name, body := range map[string]Node{
+		"label around the sequence": &Label{Body: seq(stream(), lit("!"))},
+		"label around the stream":   seq(&Label{Body: stream()}, lit("!")),
+		"nested labeled sequence":   seq(&Label{Body: seq(lit("b"), stream())}, lit("!")),
+	} {
+		m := module(rule(0, "a", body))
+		m.Starts = []int{0}
+		Analyze(m)
+		if err := Verify(m); err != nil {
+			t.Errorf("%s: %v", name, err)
+		}
 	}
 }
 
