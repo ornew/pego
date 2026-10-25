@@ -172,7 +172,7 @@ func (v *valueInference) checkResult(key any, rd *grammar.RuleDef, t ty) {
 	if k, ok := key.(interface{ Diagnostic() grammar.Pos }); ok {
 		pos = k.Diagnostic()
 	}
-	v.errorf(pos, "cannot use %s as %s in result of rule %s: the type of the value is not known; convert it with a cast, as in value.(%s)", v.expand(t), d, rd.Name, d)
+	v.errorf(pos, "cannot use %s as %s in result of rule %s: the type of the value is not known; convert it with a cast, as in value.(%s)", v.display(t), d, rd.Name, d)
 }
 
 // declared checks the value t of the rule rd against its declared type, which is then the rule's
@@ -185,14 +185,14 @@ func (v *valueInference) declared(rd *grammar.RuleDef, t ty) ty {
 	if dn, ok := v.prog.ruleNodeType(rd); ok {
 		// The rule converts its value to its named node type.
 		if !v.convertible(t, dn) {
-			v.errorf(rd.Diagnostic(), "rule %s produces %s, which cannot be converted to %s", rd.Name, v.expand(t), dn)
+			v.errorf(rd.Diagnostic(), "rule %s produces %s, which cannot be converted to %s", rd.Name, v.display(t), dn)
 			return dn
 		}
 		v.checkResult(rd, rd, t)
 		return dn
 	}
 	if !v.assignable(t, d) {
-		v.errorf(rd.Diagnostic(), "rule %s produces %s, which is not assignable to %s%s", rd.Name, v.expand(t), d, v.castHint(t, d))
+		v.errorf(rd.Diagnostic(), "rule %s produces %s, which is not assignable to %s%s", rd.Name, v.display(t), d, v.castHint(t, d))
 		return d
 	}
 	if _, ok := rd.Expr.(*grammar.OperatorsRule); !ok {
@@ -238,6 +238,22 @@ func (v *valueInference) expandSeen(t ty, seen map[string]bool) ty {
 		}
 		return t
 	}
+}
+
+// display returns t as a diagnostic prints it: expanded at the top level, with a reference to a
+// rule that declares a type, at any depth, replaced by that type. A reference to a rule without a
+// declared type keeps the rule's name.
+func (v *valueInference) display(t ty) ty {
+	return mapTy(v.expand(t), func(u ty) (ty, bool) {
+		r, ok := u.(ruleTy)
+		if !ok {
+			return nil, false
+		}
+		if rd := v.rules[r.name]; rd != nil && rd.Type != nil {
+			return v.resolve(rd.Type), true
+		}
+		return nil, false
+	})
 }
 
 // alts returns the arguments of the expanded join t, or t itself.
@@ -359,9 +375,9 @@ func (v *valueInference) convertTerm(t *grammar.New, n nodeTy, env *valueEnv) ty
 		v.rec.proven[t] = v.convertible(x, n) && !v.needsCast(x, n.underlying())
 	}
 	if !v.convertible(x, n) {
-		v.errorf(t.Diagnostic(), "cannot convert %s to %s%s", v.expand(x), n, v.castHint(x, n.underlying()))
+		v.errorf(t.Diagnostic(), "cannot convert %s to %s%s", v.display(x), n, v.castHint(x, n.underlying()))
 	} else if v.needsCast(x, n.underlying()) {
-		v.errorf(t.Diagnostic(), "cannot convert %s to %s: the type of the value is not known; convert it with a cast first, as in %s{value.(%s)}", v.expand(x), n, t.Type, n.underlying())
+		v.errorf(t.Diagnostic(), "cannot convert %s to %s: the type of the value is not known; convert it with a cast first, as in %s{value.(%s)}", v.display(x), n, t.Type, n.underlying())
 	}
 	return n
 }
@@ -540,9 +556,9 @@ func (v *valueInference) termType(t grammar.Term, env *valueEnv) ty {
 				if ft := v.resolve(f.Type); ft == tyBottom {
 					// A field without values is reported where it is declared.
 				} else if !v.assignable(vt, ft) {
-					v.errorf(fi.Diagnostic(), "cannot use %s as %s in field %s of %s%s", v.expand(vt), ft, fi.Name, t.Type, v.castHint(vt, ft))
+					v.errorf(fi.Diagnostic(), "cannot use %s as %s in field %s of %s%s", v.display(vt), ft, fi.Name, t.Type, v.castHint(vt, ft))
 				} else if newFieldType(ft) != nil && v.needsCast(vt, ft) {
-					v.errorf(fi.Diagnostic(), "cannot use %s as %s in field %s of %s: the type of the value is not known; convert it with a cast, as in value.(%s)", v.expand(vt), ft, fi.Name, t.Type, ft)
+					v.errorf(fi.Diagnostic(), "cannot use %s as %s in field %s of %s: the type of the value is not known; convert it with a cast, as in value.(%s)", v.display(vt), ft, fi.Name, t.Type, ft)
 				}
 			}
 		}
@@ -561,7 +577,7 @@ func (v *valueInference) termType(t grammar.Term, env *valueEnv) ty {
 		for _, item := range t.Items {
 			it := v.term(item, env)
 			if elem != tyAny && v.unknown(it) || !v.assignable(it, elem) {
-				v.errorf(termPos(item, t.Diagnostic()), "cannot use %s as %s in list constructor%s", v.expand(it), elem, v.castHint(it, elem))
+				v.errorf(termPos(item, t.Diagnostic()), "cannot use %s as %s in list constructor%s", v.display(it), elem, v.castHint(it, elem))
 			}
 		}
 		return listTy{elem}
@@ -570,7 +586,7 @@ func (v *valueInference) termType(t grammar.Term, env *valueEnv) ty {
 	case *grammar.Cast:
 		x, to := v.term(t.X, env), v.resolve(t.Type)
 		if to != tyBottom && !v.overlaps(x, to, 0) { // a cast to _|_ is reported where names are resolved
-			v.errorf(t.Diagnostic(), "cannot cast %s to %s", v.expand(x), to)
+			v.errorf(t.Diagnostic(), "cannot cast %s to %s", v.display(x), to)
 		}
 		return to
 	case *grammar.Lambda:
@@ -583,7 +599,7 @@ func (v *valueInference) termType(t grammar.Term, env *valueEnv) ty {
 			want = tyBool
 		}
 		if !v.assignable(x, want) {
-			v.errorf(t.Diagnostic(), "invalid operand %s for unary %s", v.expand(x), t.Op)
+			v.errorf(t.Diagnostic(), "invalid operand %s for unary %s", v.display(x), t.Op)
 		}
 		return want
 	case *grammar.Binary:
@@ -598,7 +614,7 @@ func (v *valueInference) binary(t *grammar.Binary, env *valueEnv) ty {
 	l, r := v.term(t.L, env), v.term(t.R, env)
 	both := func(want ty) bool { return v.assignable(l, want) && v.assignable(r, want) }
 	bad := func() ty {
-		v.errorf(t.Diagnostic(), "invalid operands %s and %s for %s", v.expand(l), v.expand(r), t.Op)
+		v.errorf(t.Diagnostic(), "invalid operands %s and %s for %s", v.display(l), v.display(r), t.Op)
 		return tyAny
 	}
 	switch t.Op {
@@ -857,7 +873,7 @@ func capType(caps []capIndex, name string) (ty, bool) {
 func (v *valueInference) elemOf(fn string, x ty, pos grammar.Pos) ty {
 	t, ok := v.elemsOf(x)
 	if !ok {
-		v.errorf(pos, "%s: expected a list, got %s", fn, v.expand(x))
+		v.errorf(pos, "%s: expected a list, got %s", fn, v.display(x))
 		return tyAny
 	}
 	return t

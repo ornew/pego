@@ -63,6 +63,32 @@ rule e E = #operators {
 	}
 }
 
+// TestDiagnosticNamesRuleTypes checks that a diagnostic names a rule call inside a compound type by
+// the rule's declared type, and a rule without one by its name.
+func TestDiagnosticNamesRuleTypes(t *testing.T) {
+	const head = `type Item = { Key node[string] }
+rule typed Item = k:[a-z]+ #atomic ";" => Item{Key: $k}
+rule untyped = [a-z]+ ";"
+`
+	for _, tc := range []struct{ name, rule, want string }{
+		{"typed element", `rule main []Item = typed*`, `rule main produces node[[]Item], which is not assignable to []Item`},
+		{"captured typed element", `rule main []Item = xs:typed* => $xs`, `rule main produces node[[]Item], which is not assignable to []Item`},
+		{"untyped element", `rule main []Item = untyped*`, `rule main produces node[[]untyped], which is not assignable to []Item`},
+		{"tuple element", `rule main Item = typed typed`, `rule main produces node[(Item, Item)], which is not assignable to Item`},
+		{"untyped tuple element", `rule main Item = untyped untyped`, `rule main produces node[(untyped, untyped)], which is not assignable to Item`},
+		{"optional element", `rule main Item = typed?`, `rule main produces *Item, which is not assignable to Item`},
+		{"nested lists", `rule main Item = (typed*)*`, `rule main produces node[[]node[[]Item]], which is not assignable to Item`},
+		{"tuple with a list", `rule main []Item = typed typed*`, `rule main produces node[(Item, node[[]Item])], which is not assignable to []Item`},
+		{"join", `rule main Item = typed / untyped*`, `rule main produces Item | node[[]untyped], which is not assignable to Item`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := compileError(t, head+"@start\n"+tc.rule); !strings.Contains(got, tc.want) {
+				t.Errorf("got  %s\nwant %s", got, tc.want)
+			}
+		})
+	}
+}
+
 // TestWellTyped checks that well-typed grammars compile.
 func TestWellTyped(t *testing.T) {
 	for _, src := range []string{

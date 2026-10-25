@@ -606,9 +606,9 @@ func (v *valueInference) predicates(e grammar.Expr, env *valueEnv) {
 			if d := v.prog.vars.lookup(a.Name); d != nil {
 				switch {
 				case !v.assignable(t, d.typ):
-					v.errorf(a.Diagnostic(), "cannot use %s as %s in the binding of variable %s%s", v.expand(t), d.typ, a.Name, v.castHint(t, d.typ))
+					v.errorf(a.Diagnostic(), "cannot use %s as %s in the binding of variable %s%s", v.display(t), d.typ, a.Name, v.castHint(t, d.typ))
 				case v.needsCast(t, d.typ):
-					v.errorf(a.Diagnostic(), "cannot use %s as %s in the binding of variable %s: the type of the value is not known; convert it with a cast, as in value.(%s)", v.expand(t), d.typ, a.Name, d.typ)
+					v.errorf(a.Diagnostic(), "cannot use %s as %s in the binding of variable %s: the type of the value is not known; convert it with a cast, as in value.(%s)", v.display(t), d.typ, a.Name, d.typ)
 				}
 			}
 		} else {
@@ -1016,7 +1016,7 @@ func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.Operator
 				if tuples[i] {
 					v.errorf(rd.Diagnostic(), "operators of %s without an action produce a tuple node, which cannot be converted to %s", rd.Name, d)
 				} else {
-					v.errorf(rd.Diagnostic(), "operatorsRule %s produces %s, which cannot be converted to %s", rd.Name, v.expand(t), d)
+					v.errorf(rd.Diagnostic(), "operatorsRule %s produces %s, which cannot be converted to %s", rd.Name, v.display(t), d)
 				}
 				continue
 			}
@@ -1027,9 +1027,9 @@ func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.Operator
 			if tuples[i] {
 				v.errorf(rd.Diagnostic(), "operators of %s without an action produce a tuple node, which is not assignable to %s", rd.Name, d)
 			} else if converts && !operators[i] {
-				v.errorf(rd.Diagnostic(), "operand of %s produces %s, which is not assignable to %s; an operand is not converted: declare the operand rule as %s, or declare %s as a join that includes %s", rd.Name, v.expand(t), d, d, rd.Name, v.expand(t))
+				v.errorf(rd.Diagnostic(), "operand of %s produces %s, which is not assignable to %s; an operand is not converted: declare the operand rule as %s, or declare %s as a join that includes %s", rd.Name, v.display(t), d, d, rd.Name, v.display(t))
 			} else {
-				v.errorf(rd.Diagnostic(), "operatorsRule %s produces %s, which is not assignable to %s", rd.Name, v.expand(t), d)
+				v.errorf(rd.Diagnostic(), "operatorsRule %s produces %s, which is not assignable to %s", rd.Name, v.display(t), d)
 			}
 		}
 		if bad || converts {
