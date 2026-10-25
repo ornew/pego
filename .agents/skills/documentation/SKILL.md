@@ -9,8 +9,10 @@ description: Maintain PEGO user documentation, contracts, design records and dev
   learning paths, features and runnable task recipes.
 - Contracts: `spec/` defines normative grammar, parser and bytecode behavior.
   Keep tutorials and development history out of specifications.
-- Current design: `docs/design/` describes the architecture and internal
-  representations as implemented; keep it present-tense and in step with code.
+- Current design: `docs/design/` explains the stable base design (stages,
+  representations, invariants, reasons). The code is the source of truth: do not
+  copy field lists, file inventories or per-function detail; point to the
+  package instead. Draw structure as Mermaid when it has more than a few nodes.
 - Decisions: `docs/design/records/` records problem, decision, alternatives and
   validation; distinguish proposed, accepted and implemented work.
 - Development: `docs/development.md` and `docs/site.md` cover contribution and

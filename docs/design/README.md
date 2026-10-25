@@ -5,9 +5,9 @@ How PEGO is built today, and the records of the decisions that shaped it. Read t
 
 | Page | Contents |
 |:--|:--|
-| [Architecture](architecture.md) | The stages from grammar source to a running or generated parser, the backends, Documents, streams, observability, and which package owns each mechanism |
-| [Core and Flow IR](intermediate-representations.md) | The two internal representations of the generated route: nodes, effects, verifier invariants, passes, text forms and the targets that consume them |
+| [Architecture](architecture.md) | How a grammar becomes a parser: the stages and why they are separate, the backends, Documents, streams, observability and the invariants that cut across packages |
+| [Core and Flow IR](intermediate-representations.md) | Why there are two internal representations, what each is for, and how optimization works on them, with a worked example |
 | [Design records](records/) | One record per decision, with its alternatives, validation and status |
 
-The pages above describe what the code does. A record explains why a decision was taken and may describe work that is
+The pages above describe the ideas and invariants that the code does not show on its own; the code is the source of truth for details. A record explains why a decision was taken and may describe work that is
 proposed or only partly implemented; its status says which.

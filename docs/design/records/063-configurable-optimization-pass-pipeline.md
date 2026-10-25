@@ -21,8 +21,7 @@ The default pipeline reproduces today's generated output byte for byte. Users se
 
 ## Motivation
 
-The as-is inventory is in [Running the Passes Today](../intermediate-representations.md#running-the-passes-today).
-It shows the following.
+The passes run as follows today, and this is the inventory the proposal starts from.
 
 - The sequence is written twice. `generator.typedCore` (`internal/engine/core_build.go`) runs `Terminals`,
   `RewriteTerms`, `Analyze`, `Guards`, `Scans`, `ClassRuns`, `Analyze`, `Verify`. `generator.startRecFlow`
@@ -264,7 +263,7 @@ Go API (`GenerateGo`) is what the build tooling of other projects calls. The opt
 - Profiles: `speed` output equals the default output byte for byte; each profile's parsers pass the existing
   generated-parser corpus.
 
-All of the above are proposed; none is done.
+None of these tests exists yet; they land with the pipeline.
 
 ## Performance and Results
 
