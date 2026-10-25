@@ -1,6 +1,7 @@
 package generateddocumentbench
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 
@@ -21,8 +22,8 @@ func BenchmarkBatchGenerationFlag(b *testing.B) {
 	input := strings.Repeat("é:0;", benchmarkRecords)
 	for _, unit := range []struct {
 		name        string
-		withoutUnit generatedbatch.Unit
-		withUnit    generateddocument.Unit
+		withoutUnit generatedbatch.PositionUnit
+		withUnit    generateddocument.PositionUnit
 	}{
 		{"CodePoints", generatedbatch.CodePoints, generateddocument.CodePoints},
 		{"Bytes", generatedbatch.Bytes, generateddocument.Bytes},
@@ -57,5 +58,42 @@ func BenchmarkBatchGenerationFlag(b *testing.B) {
 				batchWithDocumentResult = node
 			}
 		})
+	}
+}
+
+// BenchmarkNearEOFControl is the same-source disabled control of BenchmarkNearEOFEditAndParse:
+// the batch Parse of the generated package compiled without Document support, applied to the
+// two near-EOF inputs in the same order.
+func BenchmarkNearEOFControl(b *testing.B) {
+	for _, records := range []int{256, 4096} {
+		base := strings.Repeat("é:0;", records)
+		alternate := base[:len(base)-2] + "1;"
+		for _, unit := range []struct {
+			name string
+			unit generatedbatch.PositionUnit
+		}{
+			{"CodePoints", generatedbatch.CodePoints},
+			{"Bytes", generatedbatch.Bytes},
+		} {
+			b.Run(strconv.Itoa(records)+"/"+unit.name, func(b *testing.B) {
+				option := generatedbatch.WithUnit(unit.unit)
+				if _, err := generatedbatch.Parse(alternate, option); err != nil {
+					b.Fatal(err)
+				}
+				b.ReportAllocs()
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					input := alternate
+					if i&1 != 0 {
+						input = base
+					}
+					node, err := generatedbatch.Parse(input, option)
+					if err != nil {
+						b.Fatal(err)
+					}
+					batchWithoutDocumentResult = node
+				}
+			})
+		}
 	}
 }

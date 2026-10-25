@@ -24,7 +24,7 @@ func TestGeneratedTypedDocumentBenchmarkPreflight(t *testing.T) {
 	for _, records := range []int{256, 4096} {
 		base := typedBenchmarkInput(records)
 		alternate := base[:len(base)-2] + "4;"
-		for _, unit := range []typeddocument.Unit{typeddocument.CodePoints, typeddocument.Bytes} {
+		for _, unit := range []typeddocument.PositionUnit{typeddocument.CodePoints, typeddocument.Bytes} {
 			pos := len(base) - 2
 			if unit == typeddocument.CodePoints {
 				pos = utf8.RuneCountInString(base) - 2
@@ -56,8 +56,8 @@ func BenchmarkTypedBatchGenerationFlag(b *testing.B) {
 		input := typedBenchmarkInput(records)
 		for _, unit := range []struct {
 			name         string
-			batchUnit    typedbatch.Unit
-			documentUnit typeddocument.Unit
+			batchUnit    typedbatch.PositionUnit
+			documentUnit typeddocument.PositionUnit
 		}{
 			{"CodePoints", typedbatch.CodePoints, typeddocument.CodePoints},
 			{"Bytes", typedbatch.Bytes, typeddocument.Bytes},
@@ -103,7 +103,7 @@ func BenchmarkTypedDocumentNearEOF(b *testing.B) {
 		base := typedBenchmarkInput(records)
 		for _, unit := range []struct {
 			name string
-			unit typeddocument.Unit
+			unit typeddocument.PositionUnit
 		}{
 			{"CodePoints", typeddocument.CodePoints},
 			{"Bytes", typeddocument.Bytes},
@@ -148,7 +148,7 @@ func BenchmarkTypedDocumentNoEdit(b *testing.B) {
 		base := typedBenchmarkInput(records)
 		for _, unit := range []struct {
 			name string
-			unit typeddocument.Unit
+			unit typeddocument.PositionUnit
 		}{
 			{"CodePoints", typeddocument.CodePoints},
 			{"Bytes", typeddocument.Bytes},
@@ -179,7 +179,7 @@ func BenchmarkTypedDocumentNoEdit(b *testing.B) {
 func BenchmarkTypedDocumentFresh(b *testing.B) {
 	for _, unit := range []struct {
 		name string
-		unit typeddocument.Unit
+		unit typeddocument.PositionUnit
 	}{{"CodePoints", typeddocument.CodePoints}, {"Bytes", typeddocument.Bytes}} {
 		b.Run(unit.name, func(b *testing.B) {
 			input := typedBenchmarkInput(4096)
@@ -208,7 +208,7 @@ func TestGeneratedTypedDocumentRetained(t *testing.T) {
 	}
 	for _, unit := range []struct {
 		name string
-		unit typeddocument.Unit
+		unit typeddocument.PositionUnit
 	}{{"CodePoints", typeddocument.CodePoints}, {"Bytes", typeddocument.Bytes}} {
 		for _, edits := range []int{0, 32} {
 			func() {
