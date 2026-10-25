@@ -132,10 +132,13 @@ func (g *generator) flowFrameBody(r *rule, scope *scope) string {
 // its frame body, or returns "" if r takes another route. The rule is eligible (flowNodeFrameOK) when
 // dgen prints it as a direct Node body, its Core body is a framed body and its action reads only
 // captures of the frame; the runtime owns depth, memo, frame, action and finish, as for the body dgen
-// prints.
+// prints. With work controls (Options.Work) no framed body is printed from Flow IR: the matcher that
+// generator.expr writes for it charges steps where Flow IR does not (it tries the alternatives of a
+// choice that Flow's guards skip and charges dead ones differently), so the limits of a parse would
+// fail at another step.
 func (g *generator) flowNodeFrameBody(r *rule, scope *scope) string {
 	cr, ok := g.flowNodeFrameOK(r)
-	if !ok {
+	if !ok || g.flow.opts.Work {
 		return ""
 	}
 	if !g.flow.opts.Node {
@@ -203,12 +206,14 @@ func hasProjection(n core.Node) bool {
 // it has recovery: Flow IR builds the typed runtime's error values there, which the Node runtime does not
 // take. Nothing else needs a check. The lines of an Operators Rule have no projected repetitions
 // (ruleProjections gives none for one), so Core IR and the tables agree on the shape of every capture, and
-// the checker lets an action name only captures of its line.
+// the checker lets an action name only captures of its line. With work controls (Options.Work) the lines of
+// the Node and recognizer tables are not printed from Flow IR, for the reason flowNodeFrameBody gives; the
+// runtime also charges the entry of a line, which a Flow-lowered line charges again.
 func (g *generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope *scope, build bool) string {
 	if g.flow == nil || l == nil || !flowLineOK(e) || !flow.FramedBody(l.Body) {
 		return ""
 	}
-	if g.table != "trules" && !directFrameExprOK(e, true, false) {
+	if g.table != "trules" && (!directFrameExprOK(e, true, false) || g.flow.opts.Work) {
 		return ""
 	}
 	f, err := flow.LowerFrame(g.flow.m, g.flow.m.Rules[g.cur.id], l.Body, l.Scope, build, g.cur.name, g.flow.opts)
@@ -684,10 +689,8 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 		if g.document {
 			return "p.Document == nil && (!WorkControlsEnabled || p.Control == nil) && (" + cond + ")"
 		}
-		if p.untyped() {
+		if p.untyped() && !g.flow.opts.Work {
 			// The Node runtime's generated code of a parser without work controls has no such check.
-			// flowRecognizer is never set with work controls (generate), so the untyped form is the
-			// one without them.
 			return cond
 		}
 		return "(!WorkControlsEnabled || p.Control == nil) && (" + cond + ")"

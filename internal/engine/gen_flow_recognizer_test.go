@@ -18,12 +18,13 @@ import (
 // TestGeneratedFlowRecognizerParity runs the generated recognizers printed from Flow IR against the
 // engine, on the generated-corpus harness, with the recognizers of the same corpus printed by the
 // direct printer (directRecognizer) as the other side of the comparison.
-// The fixtures are generated without work controls, which the Flow route requires.
-func TestGeneratedFlowRecognizerParity(t *testing.T) {
+// It runs for the fixtures with and without work controls.
+func TestGeneratedFlowRecognizerParity(t *testing.T) { eachMode(t, testGeneratedFlowRecognizerParity) }
+
+func testGeneratedFlowRecognizerParity(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	t.Setenv("PEGO_TEST_ORDINARY", "1")
 	cases := genCorpus(t)
 	changed := 0
 	for _, c := range cases {

@@ -74,7 +74,7 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   lean rules, and the framed rules whose bodies `flow.FramedBody` accepts (no leaders, cuts or recovery, and no
   Nest, Operators Rule or Terminal node), together with the recognizer rules that `recFlowEligible` accepts
   (`startRecFlow`, `gen_flow_recognizer.go`). `dgen` prints the other rules of both tables, and every rule of a
-  work-control, Document, observability or typed-only build, where the Flow route does not apply. The private
+  Document, observability or typed-only build, where the Flow route does not apply. The private
   `directRecognizer` and `directNodeRules` options make `dgen` print all recognizer rules and all Node rules;
   the parity tests use them as the oracle of the Flow route and nothing else sets them. Both tables print through
   the same Flow printer, so a rule with the same text in the two tables is one shared helper by exact-text
@@ -89,6 +89,12 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   projected repetitions, so Core IR and the tables agree on the shape of every capture. The tests compare the
   generated text outside the lines (everything the line matchers do not reach) with the output of the other printer,
   and compare the behavior of the parsers inside the lines with the engine.
+  A work-control build prints from Flow IR only the rules that `dgen` prints directly, with the charges `dgen`
+  writes. Its framed bodies and Operators Rule lines stay with `generator.expr`: the matchers it writes charge
+  steps differently from Flow IR (it tries the alternatives of a choice that Flow's guards skip, charges dead
+  branches differently, and a line's matcher is charged by the runtime that calls it), so a limit would fail at
+  another step. The tests build each parser with both routes and compare, at every limit around the totals,
+  the error text of Parse and Recognize for steps and for input work, and the polls of the context.
   The recognizer's Core pipeline runs `Analyze` before `Guards`, as the table's pipeline does: `Guards` reads the
   first terminals that `Analyze` computes, so the reverse order leaves the alternatives of choices unguarded.
 - Work-control specialization exists three times: the closure backend compiles a second, metered closure

@@ -18063,7 +18063,6 @@ func q63(p *rt.Parser) (*rt.Node, bool) {
 		var ok, x9 bool
 		start = p.Pos
 		p.Enter()
-		_ = x1
 		x1 = 0
 		for {
 			x2 = p.Pos
@@ -18141,7 +18140,6 @@ func q63(p *rt.Parser) (*rt.Node, bool) {
 	var ok, x9 bool
 	start = p.Pos
 	p.Enter()
-	_ = x1
 	p.StepWork()
 	p.StepWork()
 	x1 = 0

@@ -30956,7 +30956,6 @@ func q23(p *rt.Parser) (*rt.Node, bool) {
 		var ok bool
 		start = p.Pos
 		p.Enter()
-		_ = x1
 		x1 = 0
 		for {
 			x2 = p.Pos
@@ -30990,7 +30989,6 @@ func q23(p *rt.Parser) (*rt.Node, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x1
 	p.StepWork()
 	p.StepWork()
 	x1 = 0
@@ -31028,7 +31026,6 @@ func q24(p *rt.Parser) (*rt.Node, bool) {
 		var ok bool
 		start = p.Pos
 		p.Enter()
-		_ = x1
 		x1 = 0
 		for {
 			x2 = p.Pos
@@ -31062,7 +31059,6 @@ func q24(p *rt.Parser) (*rt.Node, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x1
 	p.StepWork()
 	p.StepWork()
 	x1 = 0
@@ -31272,7 +31268,6 @@ func q29(p *rt.Parser) (*rt.Node, bool) {
 		var ok bool
 		start = p.Pos
 		p.Enter()
-		_ = x1
 		if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit41, "*", 21, false); !ok {
@@ -31311,7 +31306,6 @@ func q29(p *rt.Parser) (*rt.Node, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x1
 	p.StepWork()
 	p.StepWork()
 	p.StepWork()

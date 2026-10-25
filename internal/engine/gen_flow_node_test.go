@@ -17,11 +17,13 @@ import (
 // harness with the lean rules of the Node table printed from Flow IR, against the engine, and with the
 // recognizers printed from Flow IR as well. The route must be taken for some rule of every table, so that
 // the test cannot pass without exercising it.
-func TestGeneratedFlowNodeParity(t *testing.T) {
+func TestGeneratedFlowNodeParity(t *testing.T) { eachMode(t, testGeneratedFlowNodeParity) }
+
+func testGeneratedFlowNodeParity(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	t.Setenv("PEGO_TEST_ORDINARY", "1")
+	controls := fixtureWorkControls()
 	cases := genCorpus(t)
 	taken := map[string]int{}
 	directRouteHook = func(table string, r *rule) { taken[table]++ }
@@ -40,6 +42,13 @@ func TestGeneratedFlowNodeParity(t *testing.T) {
 	}
 	directRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil
 	for _, table := range []string{"rules", "recRules"} {
+		if controls {
+			// With work controls only the rules dgen prints take the Flow route (flowNodeFrameBody).
+			if operators[table] != 0 || framed[table] != 0 {
+				t.Errorf("%d framed rules and %d Operators Rule lines of the %s table are printed from Flow IR with work controls", framed[table], operators[table], table)
+			}
+			continue
+		}
 		if operators[table] == 0 {
 			t.Errorf("no Operators Rule line of the %s table is printed from Flow IR: the parity test does not cover them", table)
 		}
@@ -59,7 +68,7 @@ func TestGeneratedFlowNodeParity(t *testing.T) {
 
 // unreadBlank matches the line that dgen writes for the variables of a rule that its body never reads.
 // Flow IR declares a variable only for what its function reads, so the Flow form has no such line.
-var unreadBlank = regexp.MustCompile(`(?m)^\t_(, _)* = x\d+(, x\d+)*\n`)
+var unreadBlank = regexp.MustCompile(`(?m)^\t+_(, _)* = x\d+(, x\d+)*\n`)
 
 // operatorGrammars are the checked-in grammars with an Operators Rule.
 var operatorGrammars = map[string]bool{"cel": true, "cue": true, "duckdb": true, "golang": true, "python": true, "typescript": true}
@@ -68,62 +77,76 @@ var operatorGrammars = map[string]bool{"cel": true, "cue": true, "duckdb": true,
 // both tables printed from Flow IR and with dgen (directNodeRules and directRecognizer), and checks that
 // the output is equal except for the blank assignments of unread variables, which only dgen writes. The
 // bodies agree with dgen's projections of the Node table's actions, and so do the actions themselves.
+// It runs for parsers without and with work controls; with them only the rules dgen prints are printed
+// from Flow IR, so the output is equal for every grammar.
 func TestFlowNodeRulesMatchDirect(t *testing.T) {
 	if testing.Short() {
 		t.Skip("generates the large parsers twice")
 	}
 	names := []string{"json", "cel", "cue", "duckdb", "golang", "python", "xml", "yaml", "csv", "typescript"}
 	sort.Strings(names)
-	for _, name := range names {
-		t.Run(name, func(t *testing.T) {
-			src, err := os.ReadFile(filepath.Join("..", "..", "parsers", name, name+".pego"))
-			if err != nil {
-				t.Fatal(err)
-			}
-			g, err := parseTest(string(src))
-			if err != nil {
-				t.Fatal(err)
-			}
-			gen := func(o GenOptions) []byte {
-				o.Package, o.Module, o.Runtime, o.Recognize = "x", "example.com/x", RuntimeImport, true
-				files, err := Generate(g, o)
+	for _, form := range []struct {
+		name     string
+		controls bool
+	}{{"ordinary", false}, {"controls", true}} {
+		for _, name := range names {
+			t.Run(name+"/"+form.name, func(t *testing.T) {
+				src, err := os.ReadFile(filepath.Join("..", "..", "parsers", name, name+".pego"))
 				if err != nil {
 					t.Fatal(err)
 				}
-				return mergeGenerated(files)
-			}
-			taken, framed, operators := 0, 0, 0
-			directRouteHook = func(table string, r *rule) {
-				if table == "rules" {
-					taken++
+				g, err := parseTest(string(src))
+				if err != nil {
+					t.Fatal(err)
 				}
-			}
-			framedRouteHook = func(table string, r *rule) { framed++ }
-			operatorsRouteHook = func(table string, r *rule) { operators++ }
-			flow := gen(GenOptions{})
-			directRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil
-			if operators == 0 && operatorGrammars[name] {
-				t.Errorf("no Operators Rule line of %s is printed from Flow IR", name)
-			}
-			if taken == 0 {
-				t.Errorf("no rule of the Node table of %s takes the Flow route", name)
-			}
-			if framed == 0 {
-				t.Errorf("no framed rule of the Node table of %s takes the Flow route", name)
-			}
-			direct := gen(GenOptions{directNodeRules: true, directRecognizer: true})
-			if operatorGrammars[name] {
-				// The old printers do not print the lines as Flow IR does: compare outside them (lineResidue).
-				do, fo := lineResidue(unreadBlank.ReplaceAll(flow, nil), unreadBlank.ReplaceAll(direct, nil))
-				if len(do) > 0 || len(fo) > 0 {
-					t.Errorf("outside the Operators Rule lines, the Flow output of %s has %d chunks that dgen's lacks (first: %s) and dgen's has %d that Flow's lacks (first: %s)", name, len(fo), summary(fo), len(do), summary(do))
+				gen := func(o GenOptions) []byte {
+					o.Package, o.Module, o.Runtime, o.Recognize, o.WorkControls = "x", "example.com/x", RuntimeImport, true, form.controls
+					files, err := Generate(g, o)
+					if err != nil {
+						t.Fatal(err)
+					}
+					return mergeGenerated(files)
 				}
-				return
-			}
-			if string(unreadBlank.ReplaceAll(flow, nil)) != string(unreadBlank.ReplaceAll(direct, nil)) {
-				t.Errorf("the Flow Node rules of %s differ from dgen beyond blank assignments of unread variables (%d and %d bytes)", name, len(flow), len(direct))
-			}
-		})
+				taken, framed, operators := 0, 0, 0
+				directRouteHook = func(table string, r *rule) {
+					if table == "rules" {
+						taken++
+					}
+				}
+				framedRouteHook = func(table string, r *rule) { framed++ }
+				operatorsRouteHook = func(table string, r *rule) { operators++ }
+				flow := gen(GenOptions{})
+				directRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil
+				if taken == 0 {
+					t.Errorf("no rule of the Node table of %s takes the Flow route", name)
+				}
+				if form.controls {
+					// Framed bodies and lines are left to generator.expr (flowNodeFrameBody): the routes are not taken.
+					if framed != 0 || operators != 0 {
+						t.Errorf("%d framed bodies and %d Operators Rule lines of %s are printed from Flow IR with work controls", framed, operators, name)
+					}
+				} else {
+					if operators == 0 && operatorGrammars[name] {
+						t.Errorf("no Operators Rule line of %s is printed from Flow IR", name)
+					}
+					if framed == 0 {
+						t.Errorf("no framed rule of the Node table of %s takes the Flow route", name)
+					}
+				}
+				direct := gen(GenOptions{directNodeRules: true, directRecognizer: true})
+				if operatorGrammars[name] && !form.controls {
+					// The old printers do not print the lines as Flow IR does: compare outside them (lineResidue).
+					do, fo := lineResidue(unreadBlank.ReplaceAll(flow, nil), unreadBlank.ReplaceAll(direct, nil))
+					if len(do) > 0 || len(fo) > 0 {
+						t.Errorf("outside the Operators Rule lines, the Flow output of %s has %d chunks that dgen's lacks (first: %s) and dgen's has %d that Flow's lacks (first: %s)", name, len(fo), summary(fo), len(do), summary(do))
+					}
+					return
+				}
+				if string(unreadBlank.ReplaceAll(flow, nil)) != string(unreadBlank.ReplaceAll(direct, nil)) {
+					t.Errorf("the Flow Node rules of %s differ from dgen beyond blank assignments of unread variables (%d and %d bytes)", name, len(flow), len(direct))
+				}
+			})
+		}
 	}
 }
 
@@ -159,11 +182,12 @@ rule item = [a-z] #atomic`,
 // engine, with the rules of both tables printed from Flow IR. A recognizer runs the actions of the rules
 // that predicates make value-needed, so the repetitions of its Flow-printed rules must gather what those
 // actions read.
-func TestFlowNodeRecognizersOnGrammars(t *testing.T) {
+func TestFlowNodeRecognizersOnGrammars(t *testing.T) { eachMode(t, testFlowNodeRecognizersOnGrammars) }
+
+func testFlowNodeRecognizersOnGrammars(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	t.Setenv("PEGO_TEST_ORDINARY", "1")
 	var cases []genCase
 	for _, name := range []string{"json", "cel", "cue", "duckdb", "golang", "python", "xml", "yaml", "csv", "typescript"} {
 		dir := filepath.Join("..", "..", "parsers", name)
