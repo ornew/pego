@@ -41,7 +41,7 @@ The evidence below was measured at commit `4e2f3763` with Go 1.27.1 on an Apple 
 | Closure | `compiler.expr`/`exprMatcher` and helpers in `compile.go`, attributes in `attrs.go` | 720 |
 | Bytecode, shared by the recursive and iterative VMs | `bcompiler.match`/`elems`/`leaf`/`void` and helpers in `bcompile.go` | 490 |
 | Generated Go Node and recognizer | `generator.expr` and helpers in `gen.go`, one Go function per expression | 455 |
-| Generated typed Go | Flow IR prints every typed rule and Operators Rule line; generation fails on a typed rule Flow IR does not print. `dgen` in `gen_direct.go` and `gen_direct_node.go` prints the Node and recognizer tables, falling back to `generator.expr` | 1,770 |
+| Generated typed Go | Flow IR prints every typed rule and Operators Rule line, and the lean and framed rules of ordinary Node and recognizer tables that it accepts; generation fails on a typed rule Flow IR does not print. `dgen` in `gen_direct.go` and `gen_direct_node.go` prints the remaining Node and recognizer rules, falling back to `generator.expr` | 1,770 |
 | Terminal programs | `terminalProgram` in `gen_terminal.go` | 260 |
 | Generated TypeScript | `tsGen.expr` and helpers in `gen_ts.go` | 400 |
 
@@ -70,14 +70,20 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   Guards are emitted in six places.
 - Generated typed Go is printed from Flow IR. Its rules and Operators Rule lines have no `dgen` route and no
   private switch; `dgen` prints only the Node and recognizer tables.
-- The value-free rules of an ordinary Node parser are printed from Flow IR: the lean rules of the Node table and the
-  rules of the recognizer table that `recFlowEligible` accepts (`startRecFlow`, `gen_flow_recognizer.go`). `dgen`
-  prints the other rules of both tables, and every rule of a work-control, Document, observability or typed-only build, where
-  the Flow route does not apply. The private `directRecognizer` and `directNodeRules` options make `dgen` print all
-  recognizer rules and all lean Node rules; the parity tests use them as the oracle of the Flow route and nothing
-  else sets them. Both tables print through the same Flow printer, so a rule with the same text in the two tables
-  is one shared helper by exact-text sharing. The Flow form has no `_ = x` line for a variable it reads nowhere,
-  which `dgen` writes.
+- The rules of an ordinary Node parser that `flowNodeFrameOK` accepts are printed from Flow IR in both tables: the
+  lean rules, and the framed rules whose bodies `flow.FramedBody` accepts (no leaders, cuts or recovery, and no
+  Nest, Operators Rule or Terminal node), together with the recognizer rules that `recFlowEligible` accepts
+  (`startRecFlow`, `gen_flow_recognizer.go`). `dgen` prints the other rules of both tables, and every rule of a
+  work-control, Document, observability or typed-only build, where the Flow route does not apply. The private
+  `directRecognizer` and `directNodeRules` options make `dgen` print all recognizer rules and all Node rules;
+  the parity tests use them as the oracle of the Flow route and nothing else sets them. Both tables print through
+  the same Flow printer, so a rule with the same text in the two tables is one shared helper by exact-text
+  sharing. A Node function is lowered with `Options.Node`, which makes it build `NewTerminalNode` and
+  `NewBranchNode` values and keeps frames out of the frame trail; Verify rejects the typed value ops in it and
+  the Node ops in a typed function. The Flow form has no `_ = x` line for a variable it reads nowhere, which
+  `dgen` writes; apart from those lines the output of all ten checked-in grammars is equal to `dgen`'s. The
+  recognizer's table writes its actions without projections, so a recognizer rule whose body Core IR projects is
+  printed by `dgen`.
   The recognizer's Core pipeline runs `Analyze` before `Guards`, as the table's pipeline does: `Guards` reads the
   first terminals that `Analyze` computes, so the reverse order leaves the alternatives of choices unguarded.
 - Work-control specialization exists three times: the closure backend compiles a second, metered closure

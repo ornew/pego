@@ -187,6 +187,22 @@ rule num = [0-9]+ #atomic`, []string{"1+2-3;4,5,6", "1;2", "1-;2"}},
 		{"projected and indexed repetition", `type L = { Items []node[string]; Rest node[_]; N int }
 rule main = first:x rest:(-"," r:x)* => L{Items: concat(list($first), map($rest, (e) => e.$r)), Rest: $rest, N: len($rest)}
 rule x = [a-z]+ #atomic`, []string{"a,b,c", "a", "a,"}},
+		// A predicate reads a capture, so the rules called within it build values in the recognizer and
+		// keep their actions. The action of imp reads a projected capture of a repetition with map.
+		{"recognizer action over a projected repetition", `type Import = { Names []Alias }
+type Alias = { Name string }
+rule main = x:stmts {text($x) != ""} !.
+rule stmts = imp+
+rule imp Import = "import" ws f:al r:(-ws -"," -ws a:al)* ";" => Import{Names: concat(list($f), map($r, (x) => x.$a))}
+rule al Alias = n:name => Alias{Name: text($n)}
+rule ws = " "*
+rule name = [a-z]+ #atomic`, []string{"import a;", "import a, b ,c;import d;", "import a,;", "import ;", "import a,b", ""}},
+		// The projected repetition reuses one frame for all elements. In the second alternative the
+		// predicate reads b, which only the first sets, so it must see the capture unset, not the value
+		// of an earlier element.
+		{"projected repetition clears its frame", `type L = { Items []node[string] }
+rule main = xs:(a:item ("+" b:item / "-" {len(text($b)) == 0}) ",")* "." => L{Items: map($xs, (e) => e.$a)}
+rule item = [a-z]+ #atomic`, []string{"x+y,z-,.", "x-,z-,.", "x+y,z+w,.", "x+y,z-,w", "x+y,z-", "x+y,z", "x+y,.", ".", ""}},
 		{"runtime error", `type A = { N int }
 rule main = x:"a"* #atomic => A{N: 10 / len($x)}`, []string{"aa", ""}},
 		// Integers are 64-bit and wrap around; the operands depend on the input.

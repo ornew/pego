@@ -802,10 +802,14 @@ func (g *generator) recovers() bool {
 	return found
 }
 
-// directRouteHook is called with the rule table and the rule for each rule that takes a direct route
-// in rules: the lean route of a Node or recognizer table, and the Flow route of either table. Tests set
-// it to check the route that is chosen, not the text of the generated code.
+// directRouteHook is called with the rule table and the rule for each rule that takes the lean route
+// in rules, in a Node or recognizer table. Tests set it to check the route that is chosen, not the text
+// of the generated code.
 var directRouteHook func(table string, r *rule)
+
+// framedRouteHook is called with the rule table and the rule for each rule whose framed body is printed
+// from Flow IR (flowNodeFrameBody), in a Node or recognizer table. Tests set it as directRouteHook.
+var framedRouteHook func(table string, r *rule)
 
 func (g *generator) rules() {
 	init := &g.init
@@ -857,6 +861,13 @@ func (g *generator) rules() {
 		}
 		if _, ok := r.def.Expr.(*grammar.OperatorsRule); !ok {
 			if g.table != "trules" {
+				if body := g.flowNodeFrameBody(r, s); body != "" {
+					if framedRouteHook != nil && g.collect == nil {
+						framedRouteHook(g.table, r)
+					}
+					bodies[r] = body
+					continue
+				}
 				if body := g.directNodeBody(r, s); body != "" {
 					bodies[r] = body
 					continue

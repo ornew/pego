@@ -25,7 +25,9 @@ func TestGeneratedFlowNodeParity(t *testing.T) {
 	cases := genCorpus(t)
 	taken := map[string]int{}
 	directRouteHook = func(table string, r *rule) { taken[table]++ }
-	t.Cleanup(func() { directRouteHook = nil })
+	framed := map[string]int{}
+	framedRouteHook = func(table string, r *rule) { framed[table]++ }
+	t.Cleanup(func() { directRouteHook, framedRouteHook = nil, nil })
 	for _, c := range cases {
 		g, err := parseTest(c.src)
 		if err != nil {
@@ -35,12 +37,19 @@ func TestGeneratedFlowNodeParity(t *testing.T) {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 	}
-	directRouteHook = nil
+	directRouteHook, framedRouteHook = nil, nil
+	for _, table := range []string{"rules", "recRules"} {
+		if framed[table] == 0 {
+			t.Errorf("no framed rule of the %s table is printed from Flow IR: the parity test does not cover them", table)
+		}
+	}
 	if taken["rules"] == 0 {
 		t.Fatal("no rule of the Node table takes a direct route: the parity test exercises nothing")
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	t.Run("direct node rules", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{directNodeRules: true}) })
+	t.Run("direct node rules", func(t *testing.T) {
+		testGeneratedParsersCorpus(t, goBin, cases, GenOptions{directNodeRules: true, directRecognizer: true})
+	})
 	t.Run("flow node rules", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{}) })
 }
 
@@ -48,9 +57,10 @@ func TestGeneratedFlowNodeParity(t *testing.T) {
 // Flow IR declares a variable only for what its function reads, so the Flow form has no such line.
 var unreadBlank = regexp.MustCompile(`(?m)^\t_(, _)* = x\d+(, x\d+)*\n`)
 
-// TestFlowNodeRulesMatchDirect generates the Node parsers of the checked-in grammars with the lean rules
-// of the Node table printed from Flow IR and with dgen, and checks that the output is equal except for the
-// blank assignments of unread variables, which only dgen writes.
+// TestFlowNodeRulesMatchDirect generates the Node parsers of the checked-in grammars with the rules of
+// both tables printed from Flow IR and with dgen (directNodeRules and directRecognizer), and checks that
+// the output is equal except for the blank assignments of unread variables, which only dgen writes. The
+// bodies agree with dgen's projections of the Node table's actions, and so do the actions themselves.
 func TestFlowNodeRulesMatchDirect(t *testing.T) {
 	if testing.Short() {
 		t.Skip("generates the large parsers twice")
@@ -75,18 +85,22 @@ func TestFlowNodeRulesMatchDirect(t *testing.T) {
 				}
 				return mergeGenerated(files)
 			}
-			taken := 0
+			taken, framed := 0, 0
 			directRouteHook = func(table string, r *rule) {
 				if table == "rules" {
 					taken++
 				}
 			}
+			framedRouteHook = func(table string, r *rule) { framed++ }
 			flow := gen(GenOptions{})
-			directRouteHook = nil
+			directRouteHook, framedRouteHook = nil, nil
 			if taken == 0 {
 				t.Errorf("no rule of the Node table of %s takes the Flow route", name)
 			}
-			direct := gen(GenOptions{directNodeRules: true})
+			if framed == 0 {
+				t.Errorf("no framed rule of the Node table of %s takes the Flow route", name)
+			}
+			direct := gen(GenOptions{directNodeRules: true, directRecognizer: true})
 			if string(unreadBlank.ReplaceAll(flow, nil)) != string(unreadBlank.ReplaceAll(direct, nil)) {
 				t.Errorf("the Flow Node rules of %s differ from dgen beyond blank assignments of unread variables (%d and %d bytes)", name, len(flow), len(direct))
 			}
@@ -119,4 +133,39 @@ rule item = [a-z] #atomic`,
 			}
 		}
 	}
+}
+
+// TestFlowNodeRecognizersOnGrammars runs the generated recognizers and parsers of the ten checked-in
+// grammars on the .txt inputs of their test data (the valid ones and the erroneous ones), against the
+// engine, with the rules of both tables printed from Flow IR. A recognizer runs the actions of the rules
+// that predicates make value-needed, so the repetitions of its Flow-printed rules must gather what those
+// actions read.
+func TestFlowNodeRecognizersOnGrammars(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds generated consumers")
+	}
+	t.Setenv("PEGO_TEST_ORDINARY", "1")
+	var cases []genCase
+	for _, name := range []string{"json", "cel", "cue", "duckdb", "golang", "python", "xml", "yaml", "csv", "typescript"} {
+		dir := filepath.Join("..", "..", "parsers", name)
+		src, err := os.ReadFile(filepath.Join(dir, name+".pego"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		gc := genCase{name: name, src: string(src)}
+		files, err := filepath.Glob(filepath.Join(dir, "testdata", "*.txt"))
+		if err != nil || len(files) == 0 {
+			t.Fatalf("%s: no test data inputs (%v)", name, err)
+		}
+		for _, f := range files {
+			in, err := os.ReadFile(f)
+			if err != nil {
+				t.Fatal(err)
+			}
+			gc.inputs = append(gc.inputs, string(in))
+		}
+		cases = append(cases, gc)
+	}
+	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
+	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
 }

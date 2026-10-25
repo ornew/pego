@@ -64,6 +64,8 @@ func (g *generator) startFlow() error {
 // flowOptions returns the options of lowering the typed rules of the Core IR m, while the typed
 // table is generated.
 func (g *generator) flowOptions(m *core.Module) flow.Options {
+	// Node is false: the options of the Node and recognizer tables (startRecFlow) are built apart, and
+	// a function lowered with one set of options is never printed for the other runtime.
 	return flow.Options{Work: !g.noWork, Recovers: flow.Recovers(m), ClassTables: g.leanTyped(),
 		GuardedClasses: g.lean && !g.disableGuardedClasses, InlineLiterals: maxInlineLiteral, Observe: g.observability}
 }
@@ -114,6 +116,9 @@ func (g *generator) flowFrameBody(r *rule, scope *scope) string {
 	if !ok || !flow.FramedBody(cr.Body) || !slices.Equal(core.SlotNames(cr.Scope), g.nodeScopes[r]) {
 		return ""
 	}
+	if g.flow.opts.Node {
+		panic("internal error: a typed rule is lowered with the options of the Node tables")
+	}
 	f, err := flow.LowerFrame(g.flow.m, cr, cr.Body, cr.Scope, cr.Want, r.name, g.flow.opts)
 	if err != nil {
 		panic(err) // FramedBody holds
@@ -121,6 +126,74 @@ func (g *generator) flowFrameBody(r *rule, scope *scope) string {
 	g.cur, g.proj = r, g.projections(r)
 	defer func() { g.proj = nil }()
 	return g.flowFramed(f, cr.Scope, scope, r.name+" ("+comment+")")
+}
+
+// flowNodeFrameBody prints the body of the rule r of the Node table from Flow IR as the matcher of
+// its frame body, or returns "" if r takes another route. The rule is eligible (flowNodeFrameOK) when
+// dgen prints it as a direct Node body, its Core body is a framed body and its action reads only
+// captures of the frame; the runtime owns depth, memo, frame, action and finish, as for the body dgen
+// prints.
+func (g *generator) flowNodeFrameBody(r *rule, scope *scope) string {
+	cr, ok := g.flowNodeFrameOK(r)
+	if !ok {
+		return ""
+	}
+	if !g.flow.opts.Node {
+		panic("internal error: a Node rule is lowered with the options of the typed table")
+	}
+	f, err := flow.LowerFrame(g.flow.m, cr, cr.Body, cr.Scope, !r.lean, r.name, g.flow.opts)
+	if err != nil {
+		panic(err) // FramedBody holds
+	}
+	g.cur, g.proj = r, g.projections(r)
+	defer func() { g.proj = nil }()
+	return g.flowFramed(f, cr.Scope, scope, r.name+" (Node body inlined)")
+}
+
+// flowNodeFrameOK reports whether the rule r of the Node or recognizer table is printed from Flow IR as
+// a framed body, with its Core rule.
+//
+// Core IR gathers the values of a projected repetition (Project), and the actions that read it expect
+// that shape. The Node table writes its actions with the projections of the rule (generator.projections),
+// which are the ones Core IR makes, so a Core-lowered body agrees with them. The recognizer's table writes
+// its actions without projections, so a body that Core IR projects is not eligible there.
+func (g *generator) flowNodeFrameOK(r *rule) (*core.Rule, bool) {
+	if g.flow == nil || g.table == "trules" || !directOK(r) {
+		return nil, false
+	}
+	cr := g.flow.m.Rules[r.id]
+	if !flow.FramedBody(cr.Body) {
+		return nil, false
+	}
+	// The recognizer's table writes the actions of its rules without projections, where Core IR gathers
+	// the values of a projected repetition: the actions would read a list of another shape.
+	if g.table == "recRules" && hasProjection(cr.Body) {
+		return nil, false
+	}
+	if r.action != nil {
+		known := newScope()
+		for _, sl := range cr.Scope {
+			known.slot(sl.Name)
+		}
+		if !frameRefsKnown(r.action, known) {
+			return nil, false
+		}
+	}
+	return cr, true
+}
+
+// hasProjection reports whether n contains a projected repetition or a capture of one.
+func hasProjection(n core.Node) bool {
+	found := false
+	core.Walk(n, func(n core.Node) {
+		switch n := n.(type) {
+		case *core.Repeat:
+			found = found || n.Project != ""
+		case *core.Capture:
+			found = found || n.Project != ""
+		}
+	})
+	return found
 }
 
 // flowOperatorsRuleBody prints the line l of the Operators Rule g.cur, whose expression is e, from
@@ -176,7 +249,7 @@ func (g *generator) flowFramed(f *flow.Func, slots []core.Slot, scope *scope, co
 	var vars []dvar
 	var unread []string
 	for _, v := range f.Vars {
-		vars = append(vars, dvar{v.Name, goType(v.Type)})
+		vars = append(vars, dvar{v.Name, p.goType(v.Type)})
 		if !p.reads[v] {
 			unread = append(unread, v.Name)
 		}
@@ -198,6 +271,22 @@ func goType(t flow.Type) string {
 	return [...]string{flow.TypeInt: "int", flow.TypeBool: "bool", flow.TypeRune: "rune", flow.TypeValue: "any",
 		flow.TypeEnv: "*Env", flow.TypeExpMark: "ExpMark", flow.TypeExpIDs: "[]ExpID", flow.TypeVals: "[]any",
 		flow.TypeCtx: "*TActCtx", flow.TypeMark: "Mark", flow.TypeFrame: "*TCaptureFrame", flow.TypeError: "*SyntaxError"}[t]
+}
+
+// goType returns the Go type of a variable of the function printed: the types of the Node runtime
+// where the printer writes its code, otherwise those of the typed runtime.
+func (p *flowPrinter) goType(t flow.Type) string {
+	if p.untyped() {
+		switch t {
+		case flow.TypeValue:
+			return "*Node"
+		case flow.TypeVals:
+			return "[]*Node"
+		case flow.TypeFrame:
+			return "*CaptureFrame"
+		}
+	}
+	return goType(t)
 }
 
 // flowPrinter prints the body of a Flow IR function as the statements of a direct rule or, if
@@ -383,7 +472,9 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 	case *flow.Append:
 		p.read(&flow.Use{V: s.Vals}, s.X)
 		x := p.expr(s.X)
-		if s.Spread {
+		if s.Spread && p.untyped() {
+			x = x + ".RawChildren..."
+		} else if s.Spread {
 			x = fmt.Sprintf("AsTval(%s).TKids()...", x)
 		}
 		p.write(fmt.Sprintf("%s = append(%s, %s)\n", s.Vals.Name, s.Vals.Name, x))
@@ -621,6 +712,14 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 		return strconv.Quote(x.S)
 	case *flow.NewMatch:
 		return fmt.Sprintf("p.NewMatch(%s, p.Pos, %s, true)", p.expr(x.Start), p.expr(x.Text))
+	case *flow.NewTerminalNode:
+		return fmt.Sprintf("p.NewTerminal(%s, %s)", p.expr(x.Start), p.expr(x.Text))
+	case *flow.NewBranchNode:
+		kind := "RawKindSeq"
+		if x.List {
+			kind = "RawKindList"
+		}
+		return fmt.Sprintf("p.NewBranch(%s, %s, %s)", kind, p.expr(x.Start), p.expr(x.Kids))
 	case *flow.NewNode:
 		typ := "tuple"
 		if x.List {
@@ -628,6 +727,9 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 		}
 		return fmt.Sprintf("p.NewNode(%q, %s, p.Pos, %s)", typ, p.expr(x.Start), p.expr(x.Kids))
 	case *flow.NewVals:
+		if p.untyped() {
+			return fmt.Sprintf("p.Nodes(%d)[:0]", x.N)
+		}
 		return fmt.Sprintf("p.NewVals(%d)[:0]", x.N)
 	case *flow.Kids:
 		return fmt.Sprintf("p.Kids(%s)", p.expr(x.Base))
@@ -640,6 +742,10 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 	case *flow.AttachCaptures:
 		v := p.expr(x.X)
 		name := p.scopeNames(x.Names)
+		if x.Frame != nil && p.untyped() {
+			// The Node runtime's AttachCaptures takes the frame.
+			return fmt.Sprintf("p.AttachCaptures(%s, %s, %s, %s, p.Pos)", v, name, x.Frame.Name, p.expr(x.Start))
+		}
 		if x.Frame != nil {
 			return fmt.Sprintf("p.AttachCaptures(%s, %s, %s.Vals, %s, p.Pos)", v, name, x.Frame.Name, p.expr(x.Start))
 		}
