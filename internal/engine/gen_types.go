@@ -259,18 +259,28 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 	if g.directTypedDocument {
 		publication := t.documentClone(&b, st)
 		result := t.dconv(st, "v", "a")
-		fmt.Fprintf(&entries, `// ParseAST directly parses the Document and returns independently owned typed values.
+		fmt.Fprintf(&entries, `// ParseAST directly parses the Document and returns typed values. The values are shared with the
+// Document and with earlier results, so a caller that modifies one may change later results, as with
+// Node values. CloneAST returns an independent copy.
 func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
 %s o, err := d.ResolveParseOptions(opts)
  if err != nil { var zero %s; return zero, err }
  a := &tslabs{}
- c := &typedDocumentClone{}
- return TypedDocumentParse(d.Document, trules[%d], o, a, c, func(v any) %s {
-  value := %s
+ return TypedDocumentParse(d.Document, trules[%d], o, a, func(v any) %s {
   return %s
  })
 }
-`, t.goType(st), generatedDocumentParseGuard(t.goType(st)), t.goType(st), start.id, t.goType(st), result, publication)
+
+// CloneAST returns a copy of a value that ParseAST returned. The copy shares nothing with the
+// Document or with other results, so the caller may modify it; aliases within value are preserved.
+func CloneAST(value %s) %s {
+ c := &typedDocumentClone{}
+ out := %s
+ c.Finish()
+ c.Release()
+ return out
+}
+`, t.goType(st), generatedDocumentParseGuard(t.goType(st)), t.goType(st), start.id, t.goType(st), result, t.goType(st), t.goType(st), publication)
 	}
 	if len(t.nodeTypes) > 0 {
 		// Registered by tinit when the typed runtime is used; the value helpers compare with it.

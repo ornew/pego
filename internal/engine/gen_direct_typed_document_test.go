@@ -199,12 +199,19 @@ func poisonValue(v reflect.Value,seen map[uintptr]bool){
  case reflect.Bool:if v.CanSet(){v.SetBool(!v.Bool())}
  }
 }
-func TestReturnedValuesAreOwned(t *testing.T){
+// TestReturnedValuesAreReadOnlyShared pins the contract that results are shared, read-only values,
+// as Node values are: a caller that mutates a result may change what later parses return (see
+// TestSharedResultMutationIsVisibleLater in the shared contract tests), so this test does not
+// require the Document to stay correct after such a mutation. It requires what the contract
+// promises: CloneAST returns a copy that mutating the result cannot reach.
+func TestReturnedValuesAreReadOnlyShared(t *testing.T){
  for _,input:=range inputs{
   d,err:=NewDocument(input);if err!=nil{t.Fatal(err)}
   value,_:=d.ParseAST()
+  want,_:=ParseAST(d.Text(),WithUnit(CodePoints))
+  detached:=CloneAST(value)
   poisonValue(reflect.ValueOf(value),make(map[uintptr]bool))
-  assertDirect(t,d,CodePoints)
+  if !reflect.DeepEqual(detached,want){t.Fatalf("input %q: CloneAST changed when the result was mutated",input)}
  }
 }
 type syntaxErrorContext struct {context.Context; polls int; err error; done chan struct{}}
