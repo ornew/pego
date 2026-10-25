@@ -52,6 +52,9 @@ type Func struct {
 	// Work reports a function lowered with work controls (Options.Work); Verify then checks the
 	// charging of work (verifyWork).
 	Work bool
+	// Entered reports a framed function whose caller charged the step of entering it, so that it does
+	// not charge the steps of its root node: verifyWork takes the entry as the function's first charge.
+	Entered bool
 }
 
 // Type is the type of a variable.

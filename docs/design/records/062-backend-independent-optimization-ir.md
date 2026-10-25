@@ -89,12 +89,19 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   projected repetitions, so Core IR and the tables agree on the shape of every capture. The tests compare the
   generated text outside the lines (everything the line matchers do not reach) with the output of the other printer,
   and compare the behavior of the parsers inside the lines with the engine.
-  A work-control build prints from Flow IR only the rules that `dgen` prints directly, with the charges `dgen`
-  writes. Its framed bodies and Operators Rule lines stay with `generator.expr`: the matchers it writes charge
-  steps differently from Flow IR (it tries the alternatives of a choice that Flow's guards skip, charges dead
-  branches differently, and a line's matcher is charged by the runtime that calls it), so a limit would fail at
-  another step. The tests build each parser with both routes and compare, at every limit around the totals,
-  the error text of Parse and Recognize for steps and for input work, and the polls of the context.
+  A work-control build prints the same rules from Flow IR, with the charges Flow IR makes explicit: a `Step` for
+  each step of `Attrs.Steps` on entering a node, and the input work of each `Peek`. These need not equal the
+  counts of the matchers `generator.expr` writes, because the spec lets the work of a parse depend on the
+  backend and the generated artifact: Flow's choice guards skip alternatives that the matchers try and charge,
+  it charges dead branches differently, and the runtime charges the entry of an operand or operator line of an Operators Rule (not of
+  its skip), so the function lowered for the line (`flow.LowerLine`) leaves that step out (`Func.Entered`) and `Verify` counts the
+  entry as its first charge. The charge model that every build keeps is checked instead of the counts:
+  `Verify` rejects a function lowered with work controls that consumes input, or ends an iteration of a loop
+  without a counter, on a path that has charged neither a step, a rule call nor the input work of a `Peek`;
+  the tests then build each parser with both routes and check, over the generated corpus and the testdata of the
+  checked-in grammars, that limit errors are well formed, that the input work and the results equal the direct
+  build's, that the context is polled at the runtime's cadence, and that the steps stay within a bounded factor
+  of the direct build's (the largest observed is 1.19 on the corpus and 1.005 on the grammars' testdata).
   The recognizer's Core pipeline runs `Analyze` before `Guards`, as the table's pipeline does: `Guards` reads the
   first terminals that `Analyze` computes, so the reverse order leaves the alternatives of choices unguarded.
 - Work-control specialization exists three times: the closure backend compiles a second, metered closure
@@ -433,8 +440,8 @@ Flow IR passes:
 - **Block merging and jump threading**: an exit to a block that only exits again goes to the outer label;
   empty blocks and unused labels disappear.
 - **Charge placement**: charges coalesce within straight-line code, under the invariants that each loop
-  iteration and each call charges at least one step, that input work is charged before the input is
-  inspected, and that no charge moves across a commit. Without work controls, charges are not lowered at
+  iteration charges a step or the input work of a character it reads, that each call charges at least one step,
+  that input work is charged before the input is inspected, and that no charge moves across a commit. Without work controls, charges are not lowered at
   all.
 - **Mode lowering**: the ordinary and the controlled variants of a function, batch and Document input
   access, and position-unit fast paths (such as reading decoded code points in place) are separate Flow IR
@@ -658,7 +665,7 @@ the hoisted `any` variables or the missing analyses behind them.
   the two checks, run at the nesting limit; an elided value with a raising conversion; a `NEST` without
   its cut base; and a Document family that inlines a transient rule that Documents memoize, which the
   Document reuse statistics and the rule events of a traced Document parse must expose.
-- **Work controls.** The charge invariants are tested directly: limits stop every looping and recursive
+- **Work controls.** The charge invariants are tested directly (`Verify` for lowered functions): limits stop every looping and recursive
   grammar in the work tests, and interruptions stay fatal in every mode.
 
 ## Performance and Results

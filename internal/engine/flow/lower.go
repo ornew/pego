@@ -107,11 +107,27 @@ func FramedBody(n core.Node) bool {
 // framed function name of the rule r: the body of a left-recursion leader or of a rule that
 // recovers, or a line of an Operators Rule of r. Analyze must have run on m.
 func LowerFrame(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, build bool, name string, opts Options) (*Func, error) {
+	return lowerFrame(m, r, n, slots, build, name, opts, false)
+}
+
+// LowerLine is LowerFrame for an operand or operator line of an Operators Rule that the Node runtime
+// enters: the runtime charges the step of entering the line when it calls it (with work controls), so the
+// function does not charge the steps of its root node again (Func.Entered). The skip of a rule is called
+// without such a charge, and the typed table's lines are not entered by the Node runtime: both use
+// LowerFrame.
+func LowerLine(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, build bool, name string, opts Options) (*Func, error) {
+	return lowerFrame(m, r, n, slots, build, name, opts, true)
+}
+
+func lowerFrame(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, build bool, name string, opts Options, entered bool) (*Func, error) {
 	if !FramedBody(n) {
 		return nil, fmt.Errorf("a body of rule %s is not lowered to a framed function", r.Name)
 	}
-	f := &Func{Name: name, Rule: r, Fail: &Label{Name: "fail"}, Frame: true, Node: opts.Node, Work: opts.Work, Binds: n.Attrs().Eff.Set&core.EffBind != 0}
+	f := &Func{Name: name, Rule: r, Fail: &Label{Name: "fail"}, Frame: true, Node: opts.Node, Work: opts.Work, Entered: entered && opts.Work, Binds: n.Attrs().Eff.Set&core.EffBind != 0}
 	l := &lowerer{m: m, opts: opts, f: f, used: map[*Label]bool{}, frame: true}
+	if f.Entered {
+		l.entered = n
+	}
 	l.stack = []*[]Stmt{&f.Body}
 	core.Walk(n, func(n core.Node) {
 		if _, ok := n.(*core.Cut); ok {
@@ -168,10 +184,12 @@ func verified(f *Func) (*Func, error) {
 }
 
 type lowerer struct {
-	m    *core.Module
-	opts Options
-	f    *Func
-	n    int
+	// entered is the root of a function whose caller charged its entry (Func.Entered), or nil.
+	entered core.Node
+	m       *core.Module
+	opts    Options
+	f       *Func
+	n       int
 	// stack holds the statement lists being written, the innermost last.
 	stack []*[]Stmt
 	// dead reports that the current point is unreachable; used holds the labels exited to from
@@ -294,7 +312,11 @@ func (l *lowerer) step() {
 
 // steps charges the steps of entering the node n (Attrs.Steps).
 func (l *lowerer) steps(n core.Node) {
-	for i := 0; i < n.Attrs().Steps; i++ {
+	k := n.Attrs().Steps
+	if n == l.entered {
+		k-- // the caller charged one step for entering the function (Func.Entered)
+	}
+	for i := 0; i < k; i++ {
 		l.step()
 	}
 }

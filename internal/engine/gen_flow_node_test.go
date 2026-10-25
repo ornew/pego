@@ -23,7 +23,6 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	controls := fixtureWorkControls()
 	cases := genCorpus(t)
 	taken := map[string]int{}
 	directRouteHook = func(table string, r *rule) { taken[table]++ }
@@ -42,13 +41,6 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 	}
 	directRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil
 	for _, table := range []string{"rules", "recRules"} {
-		if controls {
-			// With work controls only the rules dgen prints take the Flow route (flowNodeFrameBody).
-			if operators[table] != 0 || framed[table] != 0 {
-				t.Errorf("%d framed rules and %d Operators Rule lines of the %s table are printed from Flow IR with work controls", framed[table], operators[table], table)
-			}
-			continue
-		}
 		if operators[table] == 0 {
 			t.Errorf("no Operators Rule line of the %s table is printed from Flow IR: the parity test does not cover them", table)
 		}
@@ -77,8 +69,8 @@ var operatorGrammars = map[string]bool{"cel": true, "cue": true, "duckdb": true,
 // both tables printed from Flow IR and with dgen (directNodeRules and directRecognizer), and checks that
 // the output is equal except for the blank assignments of unread variables, which only dgen writes. The
 // bodies agree with dgen's projections of the Node table's actions, and so do the actions themselves.
-// It runs for parsers without and with work controls; with them only the rules dgen prints are printed
-// from Flow IR, so the output is equal for every grammar.
+// It runs for parsers without and with work controls; the text of a work-control build equals dgen's as
+// well outside the Operators Rule lines (lineResidue), because the rules print alike from the same Attrs.Steps.
 func TestFlowNodeRulesMatchDirect(t *testing.T) {
 	if testing.Short() {
 		t.Skip("generates the large parsers twice")
@@ -120,21 +112,14 @@ func TestFlowNodeRulesMatchDirect(t *testing.T) {
 				if taken == 0 {
 					t.Errorf("no rule of the Node table of %s takes the Flow route", name)
 				}
-				if form.controls {
-					// Framed bodies and lines are left to generator.expr (flowNodeFrameBody): the routes are not taken.
-					if framed != 0 || operators != 0 {
-						t.Errorf("%d framed bodies and %d Operators Rule lines of %s are printed from Flow IR with work controls", framed, operators, name)
-					}
-				} else {
-					if operators == 0 && operatorGrammars[name] {
-						t.Errorf("no Operators Rule line of %s is printed from Flow IR", name)
-					}
-					if framed == 0 {
-						t.Errorf("no framed rule of the Node table of %s takes the Flow route", name)
-					}
+				if operators == 0 && operatorGrammars[name] {
+					t.Errorf("no Operators Rule line of %s is printed from Flow IR", name)
+				}
+				if framed == 0 {
+					t.Errorf("no framed rule of the Node table of %s takes the Flow route", name)
 				}
 				direct := gen(GenOptions{directNodeRules: true, directRecognizer: true})
-				if operatorGrammars[name] && !form.controls {
+				if operatorGrammars[name] {
 					// The old printers do not print the lines as Flow IR does: compare outside them (lineResidue).
 					do, fo := lineResidue(unreadBlank.ReplaceAll(flow, nil), unreadBlank.ReplaceAll(direct, nil))
 					if len(do) > 0 || len(fo) > 0 {

@@ -19,11 +19,12 @@ import (
 //     and the context poll counts every 4096 units; a parse limited by MaxSteps alone is not bounded by
 //     such a loop.
 //
-// A path is followed through ifs, blocks and exits; a path that ends in an Exit leaves the loop or block
-// it names with the charge state it has.
+// A function whose caller charged its entry (Func.Entered) starts charged. A path is followed through
+// ifs, blocks and exits; a path that ends in an Exit leaves the loop or block it names with the charge
+// state it has.
 func verifyWork(f *Func) error {
 	w := &workVerifier{f: f, exits: map[*Label]*exitState{}}
-	w.stmts(f.Body, false)
+	w.stmts(f.Body, f.Entered)
 	return w.err
 }
 

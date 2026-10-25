@@ -81,6 +81,11 @@ func TestVerifyWorkCharges(t *testing.T) {
 	if err := Verify(early); err == nil || !strings.Contains(err.Error(), "Advance before a charge") {
 		t.Errorf("an Advance before a charge: got %v", err)
 	}
+	entered := newFunc(&Advance{N: &Int{N: 1}})
+	entered.Entered = true
+	if err := Verify(entered); err != nil {
+		t.Errorf("a function whose caller charged its entry: %v", err)
+	}
 	// A loop that ends by its bound, perhaps before any iteration, leaves the state uncharged even when
 	// its only exit has charged.
 	bounded := newFunc(&Loop{Label: loop, Counter: ok, Max: 3, Body: []Stmt{

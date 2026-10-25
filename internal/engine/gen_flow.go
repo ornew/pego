@@ -132,13 +132,12 @@ func (g *generator) flowFrameBody(r *rule, scope *scope) string {
 // its frame body, or returns "" if r takes another route. The rule is eligible (flowNodeFrameOK) when
 // dgen prints it as a direct Node body, its Core body is a framed body and its action reads only
 // captures of the frame; the runtime owns depth, memo, frame, action and finish, as for the body dgen
-// prints. With work controls (Options.Work) no framed body is printed from Flow IR: the matcher that
-// generator.expr writes for it charges steps where Flow IR does not (it tries the alternatives of a
-// choice that Flow's guards skip and charges dead ones differently), so the limits of a parse would
-// fail at another step.
+// prints. With work controls (Options.Work) the body charges the steps Flow IR makes explicit, which
+// differ in count from the matcher generator.expr writes (Flow's guards skip alternatives that
+// generator.expr tries); the limits of a parse hold at Flow's own charges.
 func (g *generator) flowNodeFrameBody(r *rule, scope *scope) string {
 	cr, ok := g.flowNodeFrameOK(r)
-	if !ok || g.flow.opts.Work {
+	if !ok {
 		return ""
 	}
 	if !g.flow.opts.Node {
@@ -206,17 +205,22 @@ func hasProjection(n core.Node) bool {
 // it has recovery: Flow IR builds the typed runtime's error values there, which the Node runtime does not
 // take. Nothing else needs a check. The lines of an Operators Rule have no projected repetitions
 // (ruleProjections gives none for one), so Core IR and the tables agree on the shape of every capture, and
-// the checker lets an action name only captures of its line. With work controls (Options.Work) the lines of
-// the Node and recognizer tables are not printed from Flow IR, for the reason flowNodeFrameBody gives; the
-// runtime also charges the entry of a line, which a Flow-lowered line charges again.
-func (g *generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope *scope, build bool) string {
+// the checker lets an action name only captures of its line. With work controls (Options.Work) the runtime charges the
+// step of entering an operand or operator line of the Node and recognizer tables (entered), and the function
+// charges the steps of the nodes below the line's root, as Flow IR makes them explicit. The skip of a rule
+// is called without that charge (entered is false), so its function charges all of its steps.
+func (g *generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope *scope, build, entered bool) string {
 	if g.flow == nil || l == nil || !flowLineOK(e) || !flow.FramedBody(l.Body) {
 		return ""
 	}
-	if g.table != "trules" && (!directFrameExprOK(e, true, false) || g.flow.opts.Work) {
+	if g.table != "trules" && !directFrameExprOK(e, true, false) {
 		return ""
 	}
-	f, err := flow.LowerFrame(g.flow.m, g.flow.m.Rules[g.cur.id], l.Body, l.Scope, build, g.cur.name, g.flow.opts)
+	lower := flow.LowerFrame
+	if g.table != "trules" && entered {
+		lower = flow.LowerLine // the Node runtime charges the entry of an operand or operator line (see flow.LowerLine)
+	}
+	f, err := lower(g.flow.m, g.flow.m.Rules[g.cur.id], l.Body, l.Scope, build, g.cur.name, g.flow.opts)
 	if err != nil {
 		panic(fmt.Errorf("line of Operators Rule %s in table %s: %w", g.cur.name, g.table, err)) // FramedBody holds
 	}
