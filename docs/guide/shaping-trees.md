@@ -3,10 +3,10 @@
 A PEGO grammar does two jobs: it decides which input is valid, and it decides what **tree** you get back. This guide is
 about the tree that every grammar produces without any extra work and how to shape it with captures, atomic (`#atomic`)
 and discard (`-`). [Declaring Types](types.md) describes the typed nodes of a grammar, and [Actions](actions.md) shows how
-to replace the tree with a typed AST built by [actions](../../spec/actions.md).
+to replace the tree with a typed AST built by [actions](../../spec/language/actions.md).
 
-The guide complements the normative chapters [Rule Expressions](../../spec/parser-expressions.md),
-[Type System](../../spec/types.md) and [Actions](../../spec/actions.md); read them for the exact rules. Here the focus
+The guide complements the normative chapters [Rule Expressions](../../spec/language/parser-expressions.md),
+[Type System](../../spec/language/types.md) and [Actions](../../spec/language/actions.md); read them for the exact rules. Here the focus
 is on how and why to use each feature. For operator expressions (`foldl` chains
 versus Operators Rule Declaration Statements), see the companion guide [Operators Rule](operators-rule.md).
 
@@ -278,7 +278,7 @@ error value or a struct, and the methods that fit the kind read it: `Start()` an
 and `Elems()`, `Field(name)` and `Fields()` for the fields of a struct, and `Value()`. `Rule()` and the capture names are
 there only if the parser was compiled with `pego.WithSourceInfo()`. Reading values is covered in
 [Reading Trees](reading-trees.md), walking the tree and selecting nodes by position in [Walking
-Trees](walking-trees.md), and the node model is defined in [Nodes and Values](../../spec/nodes.md).
+Trees](walking-trees.md), and the node model is defined in [Nodes and Values](../../spec/runtime/nodes.md).
 
 ## Performance Guidelines
 

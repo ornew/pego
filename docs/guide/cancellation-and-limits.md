@@ -35,11 +35,11 @@ Input work counts inspected input elements and steps count backend execution wor
 limit, and backtracking never refunds them. An interruption is fatal to the parse and `#recover` cannot consume it,
 so a batch parse returns no partial result. Cancellation is cooperative: a parser cannot preempt a blocked reader or
 a callback of yours. The exact rules are in
-[Cancellation and Work Limits](../../spec/parsing.md#cancellation-and-work-limits); the
+[Cancellation and Work Limits](../../spec/runtime/parsing.md#cancellation-and-work-limits); the
 [Streaming](streaming.md#cancelling-a-stream) guide shows how to cancel caller-owned I/O.
 
 ## Related Topics
 
 - [Running Parsers](running-parsers.md): results, errors and concurrency.
 - [Streaming](streaming.md): cancelling a stream whose input is caller-owned I/O.
-- [Cancellation and Work Limits](../../spec/parsing.md#cancellation-and-work-limits): the exact rules.
+- [Cancellation and Work Limits](../../spec/runtime/parsing.md#cancellation-and-work-limits): the exact rules.

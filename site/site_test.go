@@ -430,23 +430,23 @@ func TestResolveLink(t *testing.T) {
 	from := &Page{Src: "docs/guide/runtime.md", URL: "docs/guide/runtime/"}
 	s.add(from)
 	s.add(&Page{Src: "spec/README.md", URL: "spec/"})
-	s.add(&Page{Src: "spec/operators-rule.md", URL: "spec/operators-rule/"})
+	s.add(&Page{Src: "spec/language/operators-rule.md", URL: "spec/language/operators-rule/"})
 	s.add(&Page{Src: "README.md", URL: ""})
 	for _, tc := range []struct{ dest, want string }{
 		{"https://example.com/a.md", "https://example.com/a.md"},
 		{"#backends", "#backends"},
-		{"../../spec/operators-rule.md#levels", "../../../spec/operators-rule/#levels"},
+		{"../../spec/language/operators-rule.md#levels", "../../../spec/language/operators-rule/#levels"},
 		{"../../spec/", "../../../spec/"},
 		{"../../spec/README.md", "../../../spec/"},
 		{"../../README.md", "../../../"},
 		{"../../examples/calculator/calc.pego", "https://github.com/ornew/pego/blob/main/examples/calculator/calc.pego"},
 		{"../../examples/calculator/", "https://github.com/ornew/pego/tree/main/examples/calculator"},
 		// Links relative to the repository root and percent-encoded paths work on GitHub too.
-		{"/spec/operators-rule.md#levels", "../../../spec/operators-rule/#levels"},
+		{"/spec/language/operators-rule.md#levels", "../../../spec/language/operators-rule/#levels"},
 		{"/examples/calculator/calc.pego", "https://github.com/ornew/pego/blob/main/examples/calculator/calc.pego"},
 		{"/", "../../../"},
-		{"%2E%2E/%2E%2E/spec/operators-rule.md", "../../../spec/operators-rule/"},
-		{"../../spec/operators-rule.md#caf%C3%A9", "../../../spec/operators-rule/#caf%C3%A9"},
+		{"%2E%2E/%2E%2E/spec/language/operators-rule.md", "../../../spec/language/operators-rule/"},
+		{"../../spec/language/operators-rule.md#caf%C3%A9", "../../../spec/language/operators-rule/#caf%C3%A9"},
 	} {
 		if got := s.resolveLink(from, tc.dest); got != tc.want {
 			t.Errorf("resolveLink(%q) = %q, want %q", tc.dest, got, tc.want)
@@ -616,17 +616,19 @@ func TestNavigation(t *testing.T) {
 			intro[site(l[1])] = true
 		}
 	}
-	if got, want := strings.Join(names, ", "), "Tutorial, Guides, Cookbook, Specification, Reference, Parsers, Project"; got != want {
+	if got, want := strings.Join(names, ", "), "Tutorial, Guides, Cookbook, Specification, Grammar Language, Parser and Runtime, Core IR, Bytecode, Reference, Parsers, Project"; got != want {
 		t.Errorf("sections = %s, want %s", got, want)
 	}
-	if want := map[string]bool{"docs/tutorial/": true, "docs/guide/": true, "docs/cookbook/": true, "spec/": true, "parsers/": true}; !maps.Equal(intro, want) {
+	if want := map[string]bool{"docs/tutorial/": true, "docs/guide/": true, "docs/cookbook/": true, "spec/": true, "spec/language/": true, "spec/runtime/": true, "spec/core-ir/": true, "spec/bytecode/": true, "parsers/": true}; !maps.Equal(intro, want) {
 		t.Errorf("pages titled Introduction = %v, want %v", intro, want)
 	}
 	// The tutorial and the specification are numbered series: the navigation numbers their
 	// pages, and each page names its place above its title. The glossary stays unnumbered.
 	for _, tc := range []struct{ page, label, nav string }{
 		{"docs/tutorial/structured-input", "Lesson 2 of 10", "2. Parsing Structured Input"},
-		{"spec/parser-expressions", "Chapter 5", "5. Rule Expressions"},
+		{"spec/language/parser-expressions", "Chapter 5", "5. Rule Expressions"},
+		{"spec/runtime/lint", "Chapter 9", "9. Grammar Lint"},
+		{"spec/core-ir/invariants", "Chapter 5", "5. Invariants"},
 	} {
 		content, err := os.ReadFile(filepath.Join(out, filepath.FromSlash(tc.page), "index.html"))
 		if err != nil {

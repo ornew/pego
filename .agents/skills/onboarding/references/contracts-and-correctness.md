@@ -1,8 +1,8 @@
 # Contracts and Correctness
 
 The [specification](../../../../spec/README.md) defines supported behavior;
-[parsing](../../../../spec/parsing.md) covers result and position units, errors,
-Documents and backend equivalence. [Rule expressions](../../../../spec/parser-expressions.md)
+[parsing](../../../../spec/runtime/parsing.md) covers result and position units, errors,
+Documents and backend equivalence. [Rule expressions](../../../../spec/language/parser-expressions.md)
 defines ordered choice, greedy repetition, scoped cut, capture rollback and left
 recursion. Check these contracts before changing a parser path: a local speedup can
 alter a distant parse result, expectation or recovered error.

@@ -7,7 +7,7 @@
 > **Note**: Superseded by the saved-program decision of
 > [Backend-Independent Optimization IR](062-backend-independent-optimization-ir.md#decisions): a compiled grammar
 > holds the module of one mode, and a file saved in recognize mode holds the recognizer's module
-> ([Compiled Grammars](../../../spec/compiled-grammars.md)). The record keeps the original decision.
+> ([Compiled Grammars](../../../spec/runtime/compiled-grammars.md)). The record keeps the original decision.
 
 ## Summary
 
@@ -27,14 +27,14 @@ already has a recognition compilation mode and `valueNeededRules`: rules supplyi
 transitive callees retain value construction/actions. Other rules suppress values and actions. Recognition can
 therefore report predicate-dependent evaluation behavior even though unrelated action errors disappear.
 
-Normal [bytecode](../../../spec/bytecode.md#rule-table) contains value-free twins only for eligible discarded CST calls.
+Normal [bytecode](../../../spec/bytecode/README.md#rule-table) contains value-free twins only for eligible discarded CST calls.
 Twins are not a complete recognizer: action/terminal rules, Operators Rule declarations, LR cycles, streaming rules and selected
 start rules may have no such twin. Matching a full module with CALL.keep=0 or discarding the final tree still
 executes actions and builds intermediate values. A recognizer must preserve predicate capture dependencies,
 variable reads and diagnostics, not simply jump to an arbitrary duplicate name in the rule table.
 
 A container stores the instruction-set version 26, the main module and optional AST, as
-[spec/bytecode.md](../../../spec/bytecode.md) defines. Loading validates
+[spec/bytecode/README.md](../../../spec/bytecode/README.md) defines. Loading validates
 checksum, tables, operands and recovery regions; it does not establish general termination or recheck all
 type/stack behavior. Recognition bundles keep the trusted-module restriction.
 

@@ -14,7 +14,7 @@ roughly linear in the input. It is on by default, **automatic, and has no public
   and an entry that is never reused only costs memory. A rule whose calls do repeat is memoized from the first call
   for the rest of the parse.
 - Rules in a left-recursive cycle are not memoized one by one; only the cycle's leader, the rule that grows the seed, is.
-- Rules that read [variables](../../spec/predicates.md#interaction-with-memoization) are memoized per combination of
+- Rules that read [variables](../../spec/language/predicates.md#interaction-with-memoization) are memoized per combination of
   those variables' values, so memoization never changes the result; it only changes the cost.
 
 What this means for you:

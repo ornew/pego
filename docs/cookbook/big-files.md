@@ -166,4 +166,4 @@ memory figures vary by a few MiB from run to run.)
 - **CSV.** [Sum a column of a big CSV file](sum-a-csv-column.md) streams the grammar of [parsers/csv](../../parsers/csv/).
 - **A header.** [Read a header and then records](header-and-records.md) makes the header an element.
 
-See [spec/pragmas.md](../../spec/pragmas.md) for the rules of `#stream`.
+See [spec/language/pragmas.md](../../spec/language/pragmas.md) for the rules of `#stream`.

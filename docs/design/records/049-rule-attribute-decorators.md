@@ -37,5 +37,5 @@ semantics, add declaration metadata, or reorder annotations.
 
 Documentation and tools should show postfix expression annotations only.
 Ordinary rules and Operators Rule declarations do not accept a declaration
-prefix attribute. See [Attributes](../../../spec/attributes.md) for
+prefix attribute. See [Attributes](../../../spec/language/attributes.md) for
 the selected syntax.

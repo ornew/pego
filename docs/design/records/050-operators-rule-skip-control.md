@@ -6,7 +6,7 @@
 
 ## Summary
 
-Investigate control over the implicit trivia skip that an Operators Rule declaration inserts before operands and operator parts. The current [Operators Rule specification](../../../spec/operators-rule.md#skip) documents one rule-level `skip` expression applied at both boundaries. An operator whose spelling is whitespace can therefore compete with ordinary skipped trivia, as in a whitespace-as-infix interpretation of `a b`.
+Investigate control over the implicit trivia skip that an Operators Rule declaration inserts before operands and operator parts. The current [Operators Rule specification](../../../spec/language/operators-rule.md#skip) documents one rule-level `skip` expression applied at both boundaries. An operator whose spelling is whitespace can therefore compete with ordinary skipped trivia, as in a whitespace-as-infix interpretation of `a b`.
 
 This draft investigates three independent axes: whether to suppress only the implicit pre-entry skip or also skips inside an operator part; whether the control is local to an Operators Rule operator/expression or propagates into referenced rules; and whether its scope is per operator, a region (illustratively `(a b c) #noskip`), or a future global opt-in. The current explicit-trivia workaround is the control case. No scope, policy, or syntax is selected.
 

@@ -4,7 +4,7 @@ Turn a grammar into a parser in Go, call it, and read what comes back. This guid
 parser, start rules, results and errors, concurrency and how to choose among the features of the engine. Cancellation
 and work limits, parsing a prefix, position units, backends and recognition mode have guides of their own. It assumes you
 can write a grammar; the [language specification](../../spec/README.md) defines the language, and
-[Parsing](../../spec/parsing.md) defines what a parse returns.
+[Parsing](../../spec/runtime/parsing.md) defines what a parse returns.
 
 All examples use one small grammar, `pairs.pego`, that reads `key=value` pairs separated by optional semicolons:
 
@@ -242,7 +242,7 @@ if errors.As(err, &se) {
 
 `Pos` is the offset in the [position unit](position-units.md), `Line` and `Col` are 1-based, `Expected` lists what would
 have been accepted, and `Messages` holds the messages set with `@error`. `se.Message()` is the text without the
-position. Use [`@diagnostic`](../../spec/attributes.md#diagnostic) to give an expression a concise expected-item name
+position. Use [`@diagnostic`](../../spec/language/attributes.md#diagnostic) to give an expression a concise expected-item name
 while preserving its failure position and explicit `@error` messages.
 
 A `*pego.Parser` is **safe for concurrent use**: share one among goroutines and call `Parse` on all of them (each call

@@ -187,7 +187,7 @@ pego gen -g <grammar> -module <import path> [-pkg <package>] [-runtime embed|imp
 | `-work-controls` | off | Go only. Generate the work-controlled form of the parser, which supports `WithContext` and `WithWorkLimits` and exports them from the package. Without it the parser holds the ordinary form of its functions and nothing that charges work, which is about half the source, and a parse that passes a control option returns an error (see [cancellation and work limits](generated-go-api.md#cancellation-and-work-limits)). With `-document` it also keeps the form that serves a Document, so the saving is a few percent |
 | `-observability` | off | Emit opt-in tracing and profiling for Go or TypeScript parsers; combines with `-types`, `-recognize`, and Go `-document` and `-stream` (see [generated parser tracing and profiling](debugging.md#generated-go-node-and-typed-traces)) |
 | `-max-depth` | `0` | Default nested rule-call limit in the generated parser; zero selects 100,000, a positive value overrides it, and negatives fail generation |
-| `-default-value` | off | Make the parser return the default node tree: value actions and declared rule types are dropped, predicates still run (see [Default Values](../../spec/actions.md#default-values)). Cannot be combined with `-types` |
+| `-default-value` | off | Make the parser return the default node tree: value actions and declared rule types are dropped, predicates still run (see [Default Values](../../spec/language/actions.md#default-values)). Cannot be combined with `-types` |
 | `-nodoc` | off | Leave out the package comment (`// Package p is a parser generated from a PEGO grammar.`), for a package that has its own documentation in another file |
 
 Details:
@@ -311,13 +311,13 @@ machinery, which the generated code only has when you ask for it:
 - Cancellation and work limits are `WithContext` and `WithWorkLimits` in the engine and in generated Go with `-work-controls`, and the
   `signal`, `maxInputWork` and `maxSteps` options in TypeScript; see
   [Cancellation and Work Limits](cancellation-and-limits.md) and the
-  [specification](../../spec/generated-parsers.md#compatibility-and-support).
+  [specification](../../spec/runtime/generated-parsers.md#compatibility-and-support).
 - There is no choice of backend, because the generated code is a backend of its own, and no `Parser.Grammar()`, saving
   or loading, because the grammar is gone at run time.
 - `#missing` works only in the engine's Closure backend for whole-input parsing and recognition, and the generator
   rejects grammars that use it.
 
-The [specification](../../spec/generated-parsers.md#compatibility-and-support) has the complete table.
+The [specification](../../spec/runtime/generated-parsers.md#compatibility-and-support) has the complete table.
 
 Notes:
 

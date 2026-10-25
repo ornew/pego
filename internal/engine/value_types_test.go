@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// The value types of rules follow the value model (spec/types.md).
+// The value types of rules follow the value model (spec/language/types.md).
 func TestValueTypes(t *testing.T) {
 	for _, tc := range []struct{ src, rule, want string }{
 		// The examples of the record.
@@ -82,7 +82,7 @@ func TestValueTypes(t *testing.T) {
 // Every rule of the repository grammars has a value type.
 func TestValueTypesOfRepositoryGrammars(t *testing.T) {
 	var paths []string
-	for _, pattern := range []string{"../../examples/*/*.pego", "../../parsers/*/*.pego", "../../spec/*.pego"} {
+	for _, pattern := range []string{"../../examples/*/*.pego", "../../parsers/*/*.pego", "../../spec/*/*.pego"} {
 		m, err := filepath.Glob(pattern)
 		if err != nil {
 			t.Fatal(err)

@@ -5,7 +5,7 @@ rules it calls and the types their output references; `pego.WithAllSchemaRules()
 declared types. A structural query searches the values of an
 actual parse result. Together they let a tool inspect the shape of a grammar and find values without generating code or
 serializing a result. These Go APIs are experimental; the schema JSON format is versioned. The contract is defined in
-[Output Schemas and Structural Queries](../../spec/schemas-and-queries.md).
+[Output Schemas and Structural Queries](../../spec/runtime/schemas-and-queries.md).
 
 ```go
 package main
@@ -106,4 +106,4 @@ Keep in mind:
 ## Related Topics
 
 - [Reading Trees](reading-trees.md): reading the nodes that a query returns.
-- [Generated Parsers](../../spec/generated-parsers.md): the typed values that generated Go parsers return.
+- [Generated Parsers](../../spec/runtime/generated-parsers.md): the typed values that generated Go parsers return.

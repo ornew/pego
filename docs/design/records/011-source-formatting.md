@@ -70,7 +70,7 @@ A string that ends in a line break becomes `//` lines and any other string a blo
 A comma-separated list in brackets follows one rule, as in other formatters: it is written on one line unless it ends in a trailing comma or holds a comment that needs its own line, and then each element has a line of its own and a comma.
 The parser records the trailing comma in `TrailingComma` instead of the source lines, so the layout depends on what the author wrote on purpose, not on where the line breaks happened to fall.
 The comma that a one-element tuple needs does not count.
-A block comment between two tokens of one line does not break the list: its owner is decided by that line (see [Comment Grouping and Ownership](../../../spec/grammar-files.md#comment-grouping-and-ownership)).
+A block comment between two tokens of one line does not break the list: its owner is decided by that line (see [Comment Grouping and Ownership](../../../spec/language/grammar-files.md#comment-grouping-and-ownership)).
 After an opening delimiter or a comma it leads the next element, and before the closing delimiter it trails the last one, so writing the list on lines keeps the owner: the comment takes a line before the element, or goes after the comma of the last element.
 A block comment that ends its line does break it, and goes after the comma of its element, where it still trails the element.
 Type lists, attribute arguments and lambda parameters follow the same rules as the lists of terms.

@@ -4,7 +4,7 @@ The right-hand side of a rule is a Rule Expression. This guide is about writing 
 choosing between alternatives, repeating, looking ahead, committing with a cut, handling white space and tokens,
 and reading keywords. Each section ends with the mistake that goes with it. What the expressions produce is the
 subject of [Shaping Trees](shaping-trees.md); the exact meaning of every expression is defined in
-[Rule Expressions](../../spec/parser-expressions.md).
+[Rule Expressions](../../spec/language/parser-expressions.md).
 
 All examples run with `pego parse -g <file> -s <rule> -f sexpr -i <input>`.
 
@@ -108,7 +108,7 @@ pego: 1:4: syntax error: expected "(", [ \t]
 Without the cut, `if x` falls through to the second alternative and parses as a different construct. With it,
 the grammar says that after `if` a parenthesis must follow, and the error names it. A cut also keeps a repetition from
 stopping quietly: if an iteration fails after a cut, the whole repetition fails instead of ending before that
-iteration. The scope of a cut is defined in [Cut](../../spec/parser-expressions.md#cut).
+iteration. The scope of a cut is defined in [Cut](../../spec/language/parser-expressions.md#cut).
 
 ## White Space and Tokens
 

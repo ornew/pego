@@ -5,7 +5,7 @@ broader checks for the changed surface. [Development testing](../../../../docs/d
 explains the test layers. The root Go module, ready-made parsers and site are separate
 modules: root tests cannot stand in for `parsers/test.sh` or site checks. Generator or
 runtime changes require regeneration and checks of affected generated consumers;
-`AGENTS.md` gives the current required commands. `go generate ./spec` applies when
+`AGENTS.md` gives the current required commands. `go generate ./spec/language` applies when
 the generated grammar-syntax page changes. Check the diff after generation so output
 and its source stay together.
 

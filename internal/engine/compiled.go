@@ -9,7 +9,7 @@ import (
 )
 
 // The compiled grammar format (.pegoc), specified in the File format section of
-// spec/bytecode.md. A file holds one execution-only compile result: the module of one mode.
+// spec/bytecode/README.md. A file holds one execution-only compile result: the module of one mode.
 //
 //	magic    "PEGOC\x00"
 //	version  1 byte (compiledVersion)

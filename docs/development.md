@@ -25,7 +25,7 @@ This document describes the repository layout and architecture, how to run tests
 | `site/` | Web site generator (a separate Go module): landing page, docs, reference and playground; see [website maintenance](site.md) |
 | `netlify.toml` | Netlify build, headers and canonical-domain redirects; see [website maintenance](site.md) |
 | `bench/` | Benchmarks comparing the backends with each other and with standard-library parsers (`gen/` holds generated parsers). Results are in [benchmarks.md](benchmarks.md), generated with `go run ./bench/report` (`report/`) from the raw results in `results.txt`. `node bench/ts-literal.mjs [runtime.ts]` measures the embedded TS literal matcher, excluding input/rule setup, trees and error construction; its optional path compares checkouts. |
-| `spec/` | Language specification, including the bytecode and VM specification ([bytecode.md](../spec/bytecode.md)) |
+| `spec/` | The specifications: grammar language, parser and runtime, Core IR, and bytecode and VM ([bytecode](../spec/bytecode/README.md)) |
 | `docs/tutorial/` | The ordered tutorial series ([index](tutorial/README.md)) |
 | `docs/guide/` | Task-oriented guides to each feature ([index](guide/README.md)) |
 | `docs/cookbook/` | Recipes: complete, runnable solutions to concrete tasks ([index](cookbook/README.md)) |
@@ -48,7 +48,7 @@ This document describes the repository layout and architecture, how to run tests
 | Grammar intake | `internal/syntax/`, `grammar/` | Parses source or JSON into the public AST; opt-in strict JSON intake checks unknown and duplicate keys ([design 028](design/records/028-strict-grammar-json-intake.md)); formatting preserves comments and layout. |
 | Compiler and analysis | `internal/engine/compile.go`, `analysis.go`, `check.go` | Checks types, analyzes calls and dependencies, and compiles expressions. |
 | Runtime | `runtime.go`, `operators_rule.go`, `attrs.go`, `eval.go`, `alloc.go`, `stream_prefix.go`, `stream_undo.go`, `stream_stack.go` | Implements ordered choice, backtracking, actions, recovery and Operators Rule selection; whole-input memo bookkeeping uses sparse seen pages above its rule/input cutoffs ([record 087](optimizations/087-sparse-deferred-memo-seen-pages.md)); streaming commits reuse capture frames ([record 085](optimizations/085-reuse-stream-capture-frames.md)) and isolate prefix storage while batching inactive-scratch cleanup ([record 089](optimizations/089-isolate-stream-prefixes-and-batch-scratch-cleanup.md)). |
-| Bytecode | `bytecode.go`, `bcompile.go`, `vm.go`, `ivm.go` | Runs the same grammar semantics with recursive and iterative VMs; see the [bytecode specification](../spec/bytecode.md). |
+| Bytecode | `bytecode.go`, `bcompile.go`, `vm.go`, `ivm.go` | Runs the same grammar semantics with recursive and iterative VMs; see the [bytecode specification](../spec/bytecode/README.md). |
 | Input and documents | `input.go`, `stream_text.go`, `document.go`, `resume.go` | Tracks position units, streaming input, versioned atomic edit batches, edits and resumable repetitions; VM-backed Documents reuse cleared stacks ([record 086](optimizations/086-reuse-document-vm-values.md)), and streaming shares bounded immutable text snapshots ([record 088](optimizations/088-share-bounded-stream-text-snapshots.md)). |
 | Compiled grammars | `compiled.go`, `modulefile.go` | Saves and loads the bytecode module of one mode (parse, recognize or document) and serves only that mode's operations. |
 | Code generation | `gen.go`, `gen_direct.go`, `runtime/`, `gen_ts.go`, `gen_ts_files.go`, `tsrt/` | Emits standalone Go and TypeScript parsers; exact generated helpers are shared where enabled ([090](optimizations/090-share-identical-generated-helpers.md)), eligible literal-text predicates use switch dispatch ([091](optimizations/091-specialize-pure-literal-text-disjunctions.md)), and generated Node capture scratch is bounded at recycle ([092](optimizations/092-reuse-generated-node-capture-scratch.md)). |
@@ -123,7 +123,7 @@ The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for i
 
 `sample` tests generate inputs for every example grammar and every grammar of the engine's test corpus (`internal/engine/sample_test.go`, through `export_test.go`) and parse them on every backend.
 
-`go generate ./spec` renders the simple grammar view from `pego.pego` and `spec/syntax.md.tmpl`; edit the template rather than the generated page. `spec/source_grammar_test.go` verifies the simplified display against the canonical source grammar, checks concrete trees and recovery across backends, and builds a generated typed Go consumer. `spec/syntax_test.go` runs the grammar of [Grammar Syntax](../spec/syntax.md) on every `.pego` file and every `pego` code block of the repository and requires it to agree with the parser of `internal/syntax`.
+`go generate ./spec/language` renders the simple grammar view from `pego.pego` and `spec/language/syntax.md.tmpl`; edit the template rather than the generated page. `spec/language/source_grammar_test.go` verifies the simplified display against the canonical source grammar, checks concrete trees and recovery across backends, and builds a generated typed Go consumer. `spec/language/syntax_test.go` runs the grammar of [Grammar Syntax](../spec/language/syntax.md) on every `.pego` file and every `pego` code block of the repository and requires it to agree with the parser of `internal/syntax`.
 
 `cd site && go test ./...` builds the site and checks its pages and links; `go test ./playground` runs the WebAssembly smoke test when Node is installed.
 Production site builds retain the published current WASM/runtime pair alongside the new pair, using a bounded
@@ -219,7 +219,7 @@ Reference data kept in a parser's `testdata` refers to the upstream text by file
 | Done | | Predicate Actions (`{ ... }`) |
 | Done | | Attributes (`@...`) and behavioral pragmas (`#...`) |
 | Done | | Consuming skip recovery (`#recover`) and error messages (`@error`) |
-| Partial | | Opt-in nonempty-literal insertion ([`#missing`](../spec/pragmas.md#missing)): Closure whole-input Node parsing and recognition only; VM, generated parsers, Document, streams and binary serialization are unsupported |
+| Partial | | Opt-in nonempty-literal insertion ([`#missing`](../spec/language/pragmas.md#missing)): Closure whole-input Node parsing and recognition only; VM, generated parsers, Document, streams and binary serialization are unsupported |
 | Done | Actions | Single-statement Predicate Actions (`{term}` or `{name := term}`) and Value Actions (`=> term`) on ordinary rules; Operators Rule declaration actions use default CST behavior |
 | Not implemented | | Multiple-statement Predicate Actions and braced Value Actions (`=> { ... }`) parse/format/AST only; compilation rejects them |
 | Done | | Inline Value Actions (`(expression => term)`, a hidden rule at its position; braced inline blocks are rejected) |

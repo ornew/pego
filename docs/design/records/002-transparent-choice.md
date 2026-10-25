@@ -4,7 +4,7 @@
 - **Author**: Gemini
 - **Date**: 2025-06-29
 
-> **Note (2026-10)**: Implemented by the engine rewrite. A choice returns the value of the matched alternative and never creates a node. See the rules for values and CST construction in [spec/parser-expressions.md](../../../spec/parser-expressions.md).
+> **Note (2026-10)**: Implemented by the engine rewrite. A choice returns the value of the matched alternative and never creates a node. See the rules for values and CST construction in [spec/language/parser-expressions.md](../../../spec/language/parser-expressions.md).
 
 ## Abstract
 

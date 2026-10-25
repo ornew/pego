@@ -15,7 +15,7 @@ types instead of `*Node`.
 ### Where the Types Come From
 
 The type checker already infers a type for every rule and checks every action against the declared types (see
-[spec/types.md](../../../spec/types.md)). It now keeps what it inferred (`Program.typed`: the type of each rule, the
+[spec/language/types.md](../../../spec/language/types.md)). It now keeps what it inferred (`Program.typed`: the type of each rule, the
 fields of each struct type and the resolved alias types), and the generator maps those types to Go:
 
 | Grammar type | Go type |

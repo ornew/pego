@@ -130,8 +130,8 @@ Every example is run, and its output is pasted from that run. An example that a 
 ## Before Committing a Page
 
 1. Run the examples of the page, and compare the output that the page shows with the output that you get.
-2. Run `cd site && go test -count=1 ./...` and `go test ./spec/`. They check link directions, headings and the
+2. Run `cd site && go test -count=1 ./...` and `go test ./spec/...`. They check link directions, headings and the
    anchors of links. The build check of [website maintenance](site.md) checks the links of the rendered site.
 3. Update the index of the directory, `site/config.json` and the pages that link to a page that you moved or split.
-4. Regenerate generated pages (`docs/benchmarks.md`, `spec/syntax.md`) instead of editing them.
+4. Regenerate generated pages (`docs/benchmarks.md`, `spec/language/syntax.md`) instead of editing them.
 5. Read the page once as the reader it is for, without the context of the change.

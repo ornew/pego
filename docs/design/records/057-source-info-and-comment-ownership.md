@@ -109,8 +109,8 @@ Atomic and Attributed follow their production's return path and must not
 duplicate ownership merely because spans share a boundary. The root grammar and
 manual parser must produce the same owner paths.
 
-The executable fixture [`spec/testdata/comment-boundaries.pego`](../../../spec/testdata/comment-boundaries.pego)
-and focused test [`spec/comment_boundary_test.go`](../../../spec/comment_boundary_test.go)
+The executable fixture [`spec/language/testdata/comment-boundaries.pego`](../../../spec/language/testdata/comment-boundaries.pego)
+and focused test [`spec/language/comment_boundary_test.go`](../../../spec/language/comment_boundary_test.go)
 exercise the boundary record and package/rule owner construction directly. The
 focused matrix covers 34 boundary cases across three backends and two position
 units, plus direct package/rule construction and a generated typed Go consumer.

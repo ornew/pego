@@ -27,7 +27,7 @@ Without the option, this input fails as it does today.
 
 ## Motivation and Scope
 
-[Current recovery](../../../spec/pragmas.md#recover) rewinds a failed expression and consumes a nonempty skip.
+[Current recovery](../../../spec/language/pragmas.md#recover) rewinds a failed expression and consumes a nonempty skip.
 Both [design 006](006-error-reporting-and-recovery.md) and `recoverAttr` in
 [runtime/runtime.go](../../../runtime/runtime.go) deliberately reject an empty skip. Removing that check
 would neither identify an expected token nor give repetitions, memoization or backtracking an insertion contract.

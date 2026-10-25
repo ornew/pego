@@ -22,7 +22,7 @@ position units. It does not work with `RecognizeOnly` (`ParseStream` returns an 
 [Incremental parsing](incremental.md): a `Document` is always parsed as a whole, so the two do not combine.
 
 The design is in [design record 007](../design/records/007-streaming-and-incremental-parsing.md); the pragma is specified in
-[spec/pragmas.md](../../spec/pragmas.md#stream).
+[spec/language/pragmas.md](../../spec/language/pragmas.md#stream).
 
 Recognition treats `#stream` as an ordinary repetition and invokes no callbacks. Captures needed by element
 predicates still work, but element values are not collected or decorated with captures. This applies to both VM
@@ -270,10 +270,10 @@ The rules that matter when you write a grammar, in short:
   character before it is kept, so `^` still works at the start of the next element.
 - A `Parser` can run many `ParseStream` calls at once.
 
-The [specification](../../spec/streaming.md#contract) states each of these exactly.
+The [specification](../../spec/runtime/streaming.md#contract) states each of these exactly.
 
 Misplaced `#stream` pragmas are compile errors; the specification lists them under
-[Validation and Errors](../../spec/streaming.md#validation-and-errors).
+[Validation and Errors](../../spec/runtime/streaming.md#validation-and-errors).
 
 ## Positions and Text
 
@@ -408,7 +408,7 @@ recovered errors:
    purpose: return a sentinel error and compare against it.
 3. **The reader fails.** Any error from `Read` other than `io.EOF` is returned as it is. Elements completed before it are
    delivered; an element cut in two by the failure is not.
-4. **Recovered errors.** With [`#recover`](../../spec/pragmas.md#recover) inside the element, a bad element becomes
+4. **Recovered errors.** With [`#recover`](../../spec/language/pragmas.md#recover) inside the element, a bad element becomes
    an error value (delivered like any other element) and parsing continues. At the end, `ParseStream` returns the
    recorded errors as `pego.SyntaxErrors`, even though every element was delivered. Treat that as "success with
    diagnostics" and use `errors.As(err, &recovered)` to tell it from a fatal `*SyntaxError`. By default all recovered
@@ -430,7 +430,7 @@ terminal error is a `*pego.TruncatedSyntaxErrors`, which you inspect with `error
 The callback still receives every committed recovery, and errors that the callback stores itself are not bounded. The
 diagnostic options are for streams only; `Parse`, `ParsePrefix` and `Document` reject them. `WithContext` and
 `WithWorkLimits` cover the callbacks too, but a callback or reader that is blocked in your code cannot be preempted. The
-[specification](../../spec/streaming.md#recovered-errors) defines the counts, their saturation, tracing and the order of
+[specification](../../spec/runtime/streaming.md#recovered-errors) defines the counts, their saturation, tracing and the order of
 the reports.
 
 A panic from your reader or callback propagates with its original value on every backend,
@@ -448,7 +448,7 @@ An action may construct temporary nodes and return `nil`; the callback then rece
 released. Variable bindings do not accumulate over the records already consumed, but large variable values, active
 rollback points and memo keys keep their own data alive. To measure these costs in your workload, see the
 [performance measurement method](../performance.md#how-to-measure) and the
-[specification](../../spec/streaming.md#memory).
+[specification](../../spec/runtime/streaming.md#memory).
 
 What a stream parse releases as it goes:
 
@@ -603,7 +603,7 @@ starts a goroutine for you. Stopping a stream that waits for a quiet reader need
 ## See Also
 
 - [Incremental parsing](incremental.md): reparsing a text after edits.
-- [spec/pragmas.md](../../spec/pragmas.md#stream): the `#stream` behavioral pragma.
+- [spec/language/pragmas.md](../../spec/language/pragmas.md#stream): the `#stream` behavioral pragma.
 - [Error Messages](error-messages.md): `@error` and the shape of `SyntaxError`.
 - [Recovering from Errors](recovery.md): `#recover` and recovered errors.
 - [Runtime](running-parsers.md): backends, position units and the other parse options.

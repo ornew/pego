@@ -10,7 +10,8 @@ At the start of every development session, use the `onboarding` skill in
 ## Documentation map
 
 - `README.md`: project overview and documentation index.
-- `spec/`: normative grammar, parser and bytecode contracts.
+- `spec/`: normative specifications: `language/` (grammar), `runtime/` (parser and runtime),
+  `core-ir/` and `bytecode/`.
 - `docs/tutorial/`, `docs/guide/`, `docs/cookbook/`: learning and usage.
 - `docs/design/`: architecture and internal representations as implemented;
   `docs/design/records/`: decisions; `docs/optimizations/`: measured mechanisms.
@@ -33,7 +34,7 @@ with implementation changes; regenerate generated files.
   `parsers/test.sh`. For site changes, run `cd site && go test ./...` and the
   site build/check commands in `docs/site.md`.
 - Keep generated benchmark reports/results unedited by hand and align
-  `spec/bytecode.md` with VM changes.
+  `spec/bytecode/README.md` with VM changes.
 - GitHub Actions are temporarily paused: do not trigger, rerun, cancel, poll or
   enable workflows. Keep 32-bit and ready-made parser work deferred.
   Required local validation still applies.

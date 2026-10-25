@@ -58,7 +58,7 @@ pego parse -g <grammar> [-s <rule>] [-i <input>] [-f json|sexpr] [-stream] [-che
 | `-unit` | `codepoints` | Position unit |
 | `-backend` | chosen for the grammar | `closure`, `bytecode` or `bytecode-iterative` |
 | `-source-info` | off | Record the rule of each node and the names of captures, and print them |
-| `-default-value` | off | Drop value actions and declared rule types, so the parse returns the default node tree; predicates still run (see [Default Values](../../spec/actions.md#default-values)) |
+| `-default-value` | off | Drop value actions and declared rule types, so the parse returns the default node tree; predicates still run (see [Default Values](../../spec/language/actions.md#default-values)) |
 | `-stream` | off | Print each `#stream` element as soon as it matches, one per line (see [streaming.md](streaming.md)) |
 
 ```bash

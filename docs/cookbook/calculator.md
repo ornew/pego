@@ -197,4 +197,4 @@ z * 2            0 undefined variable "z"
   [examples/calculator](../../examples/calculator/) has both.
 
 See [Operators Rule](../guide/operators-rule.md) for operator tables, associativity and level-restricted calls, and
-[Operators Rule](../../spec/operators-rule.md) for the rules.
+[Operators Rule](../../spec/language/operators-rule.md) for the rules.

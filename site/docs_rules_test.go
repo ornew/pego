@@ -430,7 +430,7 @@ func TestLinkAllowed(t *testing.T) {
 	}
 	for _, c := range []struct{ rel, dest, want string }{
 		{"spec/a.md", "../docs/guide/x.md#y", "docs/guide/x.md"},
-		{"docs/guide/a.md", "/spec/types.md", "spec/types.md"},
+		{"docs/guide/a.md", "/spec/language/types.md", "spec/language/types.md"},
 		{"docs/guide/a.md", "https://github.com/ornew/pego/blob/main/docs/guide/editor-support.md", "docs/guide/editor-support.md"},
 		{"docs/guide/a.md", "b%20c.md", "docs/guide/b c.md"},
 		{"docs/guide/a.md", "../tutorial/", "docs/tutorial"},
@@ -474,8 +474,8 @@ func TestDirectoryAndSiteLinkKinds(t *testing.T) {
 		{"docs/benchmarks.md", kindPerf},
 		{"spec", kindSpec},
 		{"spec/types", kindSpec},
-		{"spec/syntax.md", kindSpec},
-		{"spec/testdata/x.pego", kindOther},
+		{"spec/language/syntax.md", kindSpec},
+		{"spec/language/testdata/x.pego", kindOther},
 		{"examples/x.pego", kindOther},
 		{"README.md", kindProject},
 		{"AGENTS.md", kindProject},

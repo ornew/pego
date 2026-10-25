@@ -13,7 +13,7 @@ This record describes the design of stream parsing, which starts parsing before 
 ### Committing Elements
 
 Because PEG backtracks, whether the result for a range of input will be part of the final result is, in general, not known until the end of the input.
-The design therefore lets the grammar author mark where the input may be split, with the `#stream` pragma (see [spec/pragmas.md](../../../spec/pragmas.md)).
+The design therefore lets the grammar author mark where the input may be split, with the `#stream` pragma (see [spec/language/pragmas.md](../../../spec/language/pragmas.md)).
 
 - `#stream` can be attached only to a repetition at the top level of the start rule's body. No choice encloses the top level of the start rule's body, so once an element of the repetition has matched, parsing never returns to a point before it.
 - Every repetition stops after its first successful iteration that consumes no input, then checks its minimum. The empty iteration counts once; a stream emits it before checking the minimum. Ordinary, projected, resumed and generated loops use the same rule. A reused empty tail must end resumption even if deletion has reduced the count below the minimum, rather than matching an extra empty element to make up the difference.

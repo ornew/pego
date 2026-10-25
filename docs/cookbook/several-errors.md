@@ -157,4 +157,4 @@ The program exits with status 1, because there were errors.
   memory](big-files.md).
 - **Editors.** A language server needs exactly this: errors with positions and a tree of what could be read.
 
-See [Attributes](../../spec/attributes.md#error) for `@error` and [Pragmas](../../spec/pragmas.md#recover) for `#recover`.
+See [Attributes](../../spec/language/attributes.md#error) for `@error` and [Pragmas](../../spec/language/pragmas.md#recover) for `#recover`.

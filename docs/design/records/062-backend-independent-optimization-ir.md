@@ -176,7 +176,7 @@ s and 412 MB of resident memory for a 6.9 MB `parser.go`.
 
 A rewrite is correct when the following are unchanged for every input and every option; everything else,
 such as node identity and the number of times an action runs, is free
-([Memoization](../../../spec/parsing.md#memoization)).
+([Memoization](../../../spec/runtime/parsing.md#memoization)).
 
 | Observable | Where it lives in Core IR |
 |:--|:--|
@@ -186,14 +186,14 @@ such as node identity and the number of times an action runs, is free
 | Whether an action or conversion error, a nesting-limit error or a missing-token-limit error occurs, and which first | The raise effect, ordered by evaluation order |
 | Positions in both units | Positions are opaque; primitives advance by characters, never by a unit count fixed at build time |
 | Stream elements already delivered | The commit effect: a delivered element stays delivered. Which prefix is delivered before an interruption depends on work counts, which are implementation-specific |
-| Engine trace and profile events: an enter and an exit event for every rule call, with `Failure`, `Recovered`, `Text` and `Examined`, and the `Profile` counts ([Engine Tracing](../../../spec/observability.md#engine-tracing)) | `Call` nodes; in closures and the VMs these parses run the call-preserving family, which keeps every call (see [Rule Calls in Each Target](#rule-calls-in-each-target)) |
-| Generated trace and profile events: the rule calls of the generated route and `TraceSkipped` ([Generated Go Batch Tracing](../../../spec/observability.md#generated-go-batch-tracing)); in Documents, the known examined frontier ([Generated Go Document Tracing and Profiling](../../../spec/observability.md#generated-go-document-tracing-and-profiling)) | `Call` nodes and the trace points of `Nest` in observable builds; guard peeks and `Nest` bodies in Document variants read input through recording primitives |
-| Document results equal those of a parse from scratch; statistics are implementation-specific ([Reuse](../../../spec/documents.md#reuse)) | Input reads happen only in primitives, which record what they examined |
-| Work interruption | Fatal, never absorbed; counts are implementation-specific ([Cancellation and Work Limits](../../../spec/parsing.md#cancellation-and-work-limits)) |
+| Engine trace and profile events: an enter and an exit event for every rule call, with `Failure`, `Recovered`, `Text` and `Examined`, and the `Profile` counts ([Engine Tracing](../../../spec/runtime/observability.md#engine-tracing)) | `Call` nodes; in closures and the VMs these parses run the call-preserving family, which keeps every call (see [Rule Calls in Each Target](#rule-calls-in-each-target)) |
+| Generated trace and profile events: the rule calls of the generated route and `TraceSkipped` ([Generated Go Batch Tracing](../../../spec/runtime/observability.md#generated-go-batch-tracing)); in Documents, the known examined frontier ([Generated Go Document Tracing and Profiling](../../../spec/runtime/observability.md#generated-go-document-tracing-and-profiling)) | `Call` nodes and the trace points of `Nest` in observable builds; guard peeks and `Nest` bodies in Document variants read input through recording primitives |
+| Document results equal those of a parse from scratch; statistics are implementation-specific ([Reuse](../../../spec/runtime/documents.md#reuse)) | Input reads happen only in primitives, which record what they examined |
+| Work interruption | Fatal, never absorbed; counts are implementation-specific ([Cancellation and Work Limits](../../../spec/runtime/parsing.md#cancellation-and-work-limits)) |
 
 Some existing optimizations are not equivalences but specializations that the contract allows only in a
 mode: recognition drops actions whose values predicates do not need, and with them their errors
-([Modes](../../../spec/parsing.md#modes)); a parse without work controls charges nothing; a parse that neither
+([Modes](../../../spec/runtime/parsing.md#modes)); a parse without work controls charges nothing; a parse that neither
 reuses results nor reports examined input, such as a generated batch parse (which reports `ExaminedKnown`
 false), needs no examined-range recording. Core IR keeps the two apart: **rewrites** preserve every
 observable above in every mode, and **mode specializations** produce a rule variant for one mode and may
@@ -206,7 +206,7 @@ select the call-preserving family (see [Rule Calls in Each Target](#rule-calls-i
 A Core module holds the start rules, the interned expectation strings and character classes, the checked
 types, the declared variables, and the rules. A rule holds its name, its value type, its capture scope
 (slots with checked types), its finish (Value Action, capture attachment and named-node conversion, as in
-[Rule Completion](../../../spec/bytecode.md#rule-completion)), its Operators Rule table if it has one, and its call
+[Rule Completion](../../../spec/bytecode/README.md#rule-completion)), its Operators Rule table if it has one, and its call
 policy: memoized, transient, plain, left-recursion leader, splice, the variables it reads, and its variant
 key (value or value-free, recognition, work-control and Document modes, observability, and for closures
 and bytecode the family). These are the
@@ -231,12 +231,12 @@ Expression nodes:
 | `Scan(class, min, max)`, `ClassRun(classes)`, `Terminal(program)` | Value-free terminal forms | Rewrites |
 
 `Nest(rule, body)` is a scope node with every effect of a rule call except memoization
-([Rule Calls](../../../spec/bytecode.md#rule-calls), [Body Evaluation](../../../spec/bytecode.md#body-evaluation)):
+([Rule Calls](../../../spec/bytecode/README.md#rule-calls), [Body Evaluation](../../../spec/bytecode/README.md#body-evaluation)):
 
 - it is a cut barrier: a cut in the body commits only choices inside it, as a cut never extends beyond its
-  rule ([Cut](../../../spec/parser-expressions.md#cut));
+  rule ([Cut](../../../spec/language/parser-expressions.md#cut));
 - it opens a variable scope, so bindings made in the body are not visible after it, on success or failure
-  ([Variables](../../../spec/predicates.md#variables));
+  ([Variables](../../../spec/language/predicates.md#variables));
 - the body has its own capture slots, separate from the caller's;
 - on failure it removes the errors recovered inside it, resets the position and, while `#missing` insertion
   is active, resets the missing-token state;
@@ -297,7 +297,7 @@ Core IR invariants, checked by a verifier after every pass in tests:
 | Value elision (want none) | Allowed only where building the value cannot raise: a conversion that the checker proves, such as a rule result converted to a named node type, has no raise effect, while an action may raise and keeps its evaluation. This covers value-free bodies, twins, Operators Rule lines and projections. The value-needed analysis decides want for the recognition specialization, which may also drop raising actions. |
 | Terminal lowering | Value-free regions of literals, classes, sequences, choices, options and negative lookaheads become `Scan`, `ClassRun` or `Terminal`, which consume the same input and record the same expectations at the same positions ([record 111](../../optimizations/111-terminal-programs.md)). The emitter chooses a table or straight-line code by size. |
 | Case-pair class folding | A run of classes each holding one letter in both cases, such as `[kK] [eE] [yY]`, becomes a `ClassRun` with a case-folding fast path; on failure it records the class of the failing position, not a literal. |
-| Depth-check merging | An outer and an inner `Nest` check merge into one check of both levels only if, from the outer entry, the inner `Nest` is reached on every path and nothing before it can fail, raise or commit, and, in observable builds, no event lies between them. Otherwise a parse that fails normally before the inner call would abort with a nesting-limit error, which is fatal ([Limits](../../../spec/parsing.md#limits)). |
+| Depth-check merging | An outer and an inner `Nest` check merge into one check of both levels only if, from the outer entry, the inner `Nest` is reached on every path and nothing before it can fail, raise or commit, and, in observable builds, no event lies between them. Otherwise a parse that fails normally before the inner call would abort with a nesting-limit error, which is fatal ([Limits](../../../spec/runtime/parsing.md#limits)). |
 
 A rewrite is justified in a comment by these obligations and in tests by differential runs against the
 pipeline without it (see [Testing](#testing)).
@@ -305,8 +305,8 @@ pipeline without it (see [Testing](#testing)).
 ### Rule Calls in Each Target
 
 A traced or profiled parse (`WithTrace`, `WithProfile`) reports an enter and an exit event for every rule
-call, and a Document parse memoizes transient rules ([Engine Tracing](../../../spec/observability.md#engine-tracing),
-[Rule Calls](../../../spec/bytecode.md#rule-calls)). Both are options of a parse. The closure backend and the
+call, and a Document parse memoizes transient rules ([Engine Tracing](../../../spec/runtime/observability.md#engine-tracing),
+[Rule Calls](../../../spec/bytecode/README.md#rule-calls)). Both are options of a parse. The closure backend and the
 VMs share one program between these parses and all others and decide at every call whether to take the
 plain path (`r.plain && !p.noPlain` in `compile.go`, `vm.go` and `ivm.go`; `setTrace` in `trace.go` and
 every Document parse in `document.go` set `noPlain`). Recognition and, in the closure backend, work
@@ -448,7 +448,7 @@ text.
 **Bytecode.** Bytecode is emitted from Core IR optimized by the bytecode pipeline. The instruction set is a
 choice-point machine: `CHOICE` saves the whole state (position, value-stack and entry-stack heights,
 repetition states, capture trail, environment, recovered errors, frame) as one entry, and values live on a
-stack ([VM State](../../../spec/bytecode.md#vm-state), [Failure](../../../spec/bytecode.md#failure)). Flow IR's
+stack ([VM State](../../../spec/bytecode/README.md#vm-state), [Failure](../../../spec/bytecode/README.md#failure)). Flow IR's
 selective saves, registers and slots have no instructions to lower to, while every node that the bytecode
 pipeline declares has one: `Choice` to `CHOICE`/`COMMIT`, `Guard` to `GUARD`, `Repeat` to
 `REPEAT`/`ITER`/`NEXT`/`ENDREPEAT`, projections to `NEXT` mode 3, `Scan` to `SCAN`, `Look` to
@@ -458,14 +458,14 @@ and `Nest` to two scope instructions:
 | Instruction | Operands | Semantics |
 |:--|:--|:--|
 | `NEST` | A rule | Begin an inlined call of rule A. Charge one work step; increment the call depth and end the parse with the nesting-limit error if it exceeds the limit; save the state and the start position; push a nest entry; create a new frame sized for rule A's scope. |
-| `ENDNEST` | A rule, B keep | The body succeeded. If rule A's body is valued (not a value-free twin or value-free body; see [Rule Table](../../../spec/bytecode.md#rule-table)), pop the body value; otherwise the body value is nil. Remove the nest entry, keep the nest's frame for completion, and restore the caller's frame and the capture trail as [Body Evaluation](../../../spec/bytecode.md#body-evaluation) does; perform [Rule Completion](../../../spec/bytecode.md#rule-completion) of rule A with the body value and the nest's frame from the saved start position; restore the environment, decrement the depth, and push the value if B is 1. |
+| `ENDNEST` | A rule, B keep | The body succeeded. If rule A's body is valued (not a value-free twin or value-free body; see [Rule Table](../../../spec/bytecode/README.md#rule-table)), pop the body value; otherwise the body value is nil. Remove the nest entry, keep the nest's frame for completion, and restore the caller's frame and the capture trail as [Body Evaluation](../../../spec/bytecode/README.md#body-evaluation) does; perform [Rule Completion](../../../spec/bytecode/README.md#rule-completion) of rule A with the body value and the nest's frame from the saved start position; restore the environment, decrement the depth, and push the value if B is 1. |
 
 On failure, a nest entry restores the state, which resets the position and removes the errors recovered
 inside it, decrements the depth and continues failing. `CUT` stops at a nest entry as it stops at the base
 of a rule body.
 
 Load-time validation checks nest regions structurally, as it checks recovery regions; as for all code,
-the loader does not verify stack use ([Load-Time Validation](../../../spec/bytecode.md#load-time-validation)):
+the loader does not verify stack use ([Load-Time Validation](../../../spec/bytecode/README.md#load-time-validation)):
 
 - every `NEST` begins a contiguous region that ends at a unique `ENDNEST` naming the same rule;
 - every jump target and every target recorded by an instruction inside a region (`CHOICE`, `COMMIT`,
@@ -476,13 +476,13 @@ the loader does not verify stack use ([Load-Time Validation](../../../spec/bytec
   `ENDREPEAT`), lookahead (`LOOK` to `ENDLOOK`) and label (`LABEL` to `ENDLABEL`) opened inside a region
   closes inside it;
 - a region contains no `RETURN`, no `END` and no stream-mode `NEXT` (mode 2): a `#stream` repetition
-  streams only in the start rule's body at call depth 1 ([Match Instructions](../../../spec/bytecode.md#match-instructions)),
+  streams only in the start rule's body at call depth 1 ([Match Instructions](../../../spec/bytecode/README.md#match-instructions)),
   and an inlined body never runs there, so the compiler emits mode 1;
 - slot operands inside a region are in rule A's scope; rule A is not a leader, has no Operators Rule and
   is not memoized in the module's family; a call-preserving module contains no `NEST`.
 
 The recursive and iterative VMs share `step` and the call stages
-([Execution Models](../../../spec/bytecode.md#execution-models)), so both get the instructions from one
+([Execution Models](../../../spec/bytecode/README.md#execution-models)), so both get the instructions from one
 implementation, and the recognizer's modules, which a recognize-mode file saves, are the bytecode of the
 recognition specialization in each family.
 
@@ -515,7 +515,7 @@ The public API and the grammar language do not change. The bytecode instruction 
 gets a new version. A saved file holds one module of one mode: a parse-mode file the inlined family's, a
 document-mode file the call-preserving family's, and a recognize-mode file the recognition specialization
 of the inlined family. Loaders reject earlier versions, which are compiled again; the format keeps no compatibility before the first
-release. `spec/bytecode.md` specifies the two instructions, their failure handling and cut base, the
+release. `spec/bytecode/README.md` specifies the two instructions, their failure handling and cut base, the
 families and which parses use each, the derivation of `plain`, the file layout and the load-time checks.
 Generated Go and TypeScript change in internal names and shape, not in API. Work counts may change, which
 the specification allows.

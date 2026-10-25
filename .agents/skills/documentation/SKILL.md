@@ -7,7 +7,8 @@ description: Maintain PEGO user documentation, contracts, design records and dev
 
 - User docs: `docs/tutorial/`, `docs/guide/`, and `docs/cookbook/` explain
   learning paths, features and runnable task recipes.
-- Contracts: `spec/` defines normative grammar, parser and bytecode behavior.
+- Contracts: `spec/` holds separate specifications (`language/`, `runtime/`, `core-ir/`,
+  `bytecode/`) for normative grammar, parser, IR and bytecode behavior.
   Keep tutorials and development history out of specifications.
 - Current design: `docs/design/` explains the stable base design (stages,
   representations, invariants, reasons). The code is the source of truth: do not

@@ -94,7 +94,7 @@ Tracing, profiling, explanations and work limits are not afterthoughts bolted on
 run a program also has a way to report what it did. The design rule is that the cost when observation is off must be
 a single predictable check, and that observation never changes what the parser accepts or returns. Generated code gets
 the same features through variants of the generated text, so the plain build stays free of them. The user-facing
-contract is [Observability](../../spec/observability.md).
+contract is [Observability](../../spec/runtime/observability.md).
 
 ## Invariants That Cut Across Packages
 

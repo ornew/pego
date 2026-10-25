@@ -211,7 +211,7 @@ name|all` serve development and advanced use, such as isolating a miscompilation
 profile is applied first and `-no-opt` removes optimizations from it, so `-optimize size -no-opt guards` is `size`
 without `guards`. The name `-optimize` avoids the rule profiler's `pego profile` and `WithProfile`. The flags are
 described in the command-line reference only; no guide explains individual optimizations, and the
-[specification of generated parsers](../../../spec/generated-parsers.md) does not change, because it constrains the
+[specification of generated parsers](../../../spec/runtime/generated-parsers.md) does not change, because it constrains the
 parser's behavior, not the generated code. Optimization names follow the pass set, which record 062 expects to
 change.
 

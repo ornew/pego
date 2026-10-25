@@ -11,8 +11,8 @@ precedence and associativity. PEGO gives you three ways to write them:
 
 This guide builds the same calculator in all three styles, compares the trees and error messages they produce, and
 helps you choose. It relies on [Shaping Trees](shaping-trees.md), [Declaring Types](types.md) and [Actions](actions.md) for captures, types and `foldl`; the normative
-text is in [Operators Rule](../../spec/operators-rule.md) and
-[Left recursion](../../spec/parser-expressions.md#left-recursion), and the reasoning behind the design in
+text is in [Operators Rule](../../spec/language/operators-rule.md) and
+[Left recursion](../../spec/language/parser-expressions.md#left-recursion), and the reasoning behind the design in
 [design record 005](../design/records/005-operators-rule.md) and [design record 003](../design/records/003-packrat-parsing.md).
 
 To follow along, put each grammar in the file named on its first line and run the commands shown (`pego` is the tool
@@ -668,10 +668,10 @@ can call any rule; and the rules of a statement grammar call the rule that holds
 
 ## Pitfalls
 
-**The words `rule`, `operand`, `level`, `skip`, `prefix`, `postfix` and `infix` are keywords.** A rule called
+**The words `rule`, `operand`, `level`, `skip`, `prefix`, `postfix` and `infix` are contextual words.** A rule called
 `operand` can be defined, but every reference to it is a syntax error (`expected an expression, found 'operand'`);
 pick another name such as `atom`. The complete list is in
-[Lexical Structure](../../spec/lexical.md#keywords).
+[Lexical Structure](../../spec/language/lexical.md#contextual-words).
 
 **An operand cannot call its own rule at the start.** It would be left recursion inside the loop. The compiler says so:
 
@@ -697,7 +697,7 @@ Write `!` as a postfix operator instead.
 
 **A cut can prevent prefix-to-operand fallback.** If no prefix part matches and a candidate failed after `#cut`, the
 Operators Rule fails: `prefix "-" #cut "z"` does not fall back to `operand "-x"` on `-x`. A mismatch before a cut still
-allows fallback. The [parsing rules](../../spec/operators-rule.md#parsing-rules) define the scopes of candidates and
+allows fallback. The [parsing rules](../../spec/language/operators-rule.md#parsing-rules) define the scopes of candidates and
 cuts.
 
 **`skip` is not inserted inside an operator part or an operand, and trailing whitespace is not consumed.** In

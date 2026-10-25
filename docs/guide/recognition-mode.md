@@ -32,7 +32,7 @@ What it does not do:
   `rule main Ratio =  a:[0-9]+ #atomic "/" b:[0-9]+ #atomic $$ => Ratio{Num: len($a) / (len($b) - len($b))} `, the input `12/34`
   fails a full parse with `action in main: division by zero` but is accepted by recognition (`pego parse -check` prints
   `ok`). Use recognition for syntax checks, and a full parse where action errors matter.
-- Captures that [predicates](../../spec/predicates.md) read are still built, since a predicate can depend on them.
+- Captures that [predicates](../../spec/language/predicates.md) read are still built, since a predicate can depend on them.
 - A compiled grammar recognizes when it is saved in recognize mode (`pego compile -mode recognize`, or
   `Marshal(pego.CompiledRecognize)`), on the bytecode backends. A file in another mode returns an error that names
   the mode it needs, and traced or profiled recognition needs the grammar source. The [compiled grammars

@@ -6,7 +6,7 @@
   "include": [
     "README.md",
     "docs/**/*.md",
-    "spec/*.md",
+    "spec/**/*.md",
     "examples/README.md",
     "parsers/README.md",
     "parsers/*/README.md",
@@ -294,97 +294,126 @@
         "spec/*.md"
       ],
       "index": "spec/README.md",
+      "first": [
+        "spec/glossary.md"
+      ]
+    },
+    {
+      "title": "Grammar Language",
+      "match": [
+        "spec/language/*.md"
+      ],
+      "index": "spec/language/README.md",
       "children": [
         {
           "title": "Language Basics",
           "match": [
-            "spec/overview.md",
-            "spec/lexical.md",
-            "spec/grammar-files.md"
+            "spec/language/overview.md",
+            "spec/language/lexical.md",
+            "spec/language/grammar-files.md"
           ],
           "first": [
-            "spec/overview.md",
-            "spec/lexical.md",
-            "spec/grammar-files.md"
+            "spec/language/overview.md",
+            "spec/language/lexical.md",
+            "spec/language/grammar-files.md"
           ]
         },
         {
           "title": "Types and Expressions",
           "match": [
-            "spec/types.md",
-            "spec/parser-expressions.md",
-            "spec/operators-rule.md",
-            "spec/predicates.md",
-            "spec/actions.md",
-            "spec/type-checking.md"
+            "spec/language/types.md",
+            "spec/language/parser-expressions.md",
+            "spec/language/operators-rule.md",
+            "spec/language/predicates.md",
+            "spec/language/actions.md",
+            "spec/language/type-checking.md"
           ],
           "first": [
-            "spec/types.md",
-            "spec/parser-expressions.md",
-            "spec/operators-rule.md",
-            "spec/predicates.md",
-            "spec/actions.md",
-            "spec/type-checking.md"
+            "spec/language/types.md",
+            "spec/language/parser-expressions.md",
+            "spec/language/operators-rule.md",
+            "spec/language/predicates.md",
+            "spec/language/actions.md",
+            "spec/language/type-checking.md"
           ]
         },
         {
           "title": "Annotations and Syntax",
           "match": [
-            "spec/attributes.md",
-            "spec/pragmas.md",
-            "spec/syntax.md"
+            "spec/language/attributes.md",
+            "spec/language/pragmas.md",
+            "spec/language/syntax.md"
           ],
           "first": [
-            "spec/attributes.md",
-            "spec/pragmas.md",
-            "spec/syntax.md"
+            "spec/language/attributes.md",
+            "spec/language/pragmas.md",
+            "spec/language/syntax.md"
           ]
-        },
+        }
+      ]
+    },
+    {
+      "title": "Parser and Runtime",
+      "match": [
+        "spec/runtime/*.md"
+      ],
+      "index": "spec/runtime/README.md",
+      "children": [
         {
           "title": "Parsing and Results",
           "match": [
-            "spec/parsing.md",
-            "spec/nodes.md",
-            "spec/documents.md",
-            "spec/streaming.md"
+            "spec/runtime/parsing.md",
+            "spec/runtime/nodes.md",
+            "spec/runtime/documents.md",
+            "spec/runtime/streaming.md"
           ],
           "first": [
-            "spec/parsing.md",
-            "spec/nodes.md",
-            "spec/documents.md",
-            "spec/streaming.md"
+            "spec/runtime/parsing.md",
+            "spec/runtime/nodes.md",
+            "spec/runtime/documents.md",
+            "spec/runtime/streaming.md"
           ]
         },
         {
           "title": "Tools and Formats",
           "match": [
-            "spec/observability.md",
-            "spec/compiled-grammars.md",
-            "spec/generated-parsers.md",
-            "spec/schemas-and-queries.md",
-            "spec/lint.md"
+            "spec/runtime/observability.md",
+            "spec/runtime/compiled-grammars.md",
+            "spec/runtime/generated-parsers.md",
+            "spec/runtime/schemas-and-queries.md",
+            "spec/runtime/lint.md"
           ],
           "first": [
-            "spec/observability.md",
-            "spec/compiled-grammars.md",
-            "spec/generated-parsers.md",
-            "spec/schemas-and-queries.md",
-            "spec/lint.md"
-          ]
-        },
-        {
-          "title": "Portable Virtual Machine",
-          "match": [
-            "spec/bytecode.md"
-          ],
-          "first": [
-            "spec/bytecode.md"
+            "spec/runtime/observability.md",
+            "spec/runtime/compiled-grammars.md",
+            "spec/runtime/generated-parsers.md",
+            "spec/runtime/schemas-and-queries.md",
+            "spec/runtime/lint.md"
           ]
         }
-      ],
-      "first": [
-        "spec/glossary.md"
       ]
+    },
+    {
+      "title": "Core IR",
+      "match": [
+        "spec/core-ir/*.md"
+      ],
+      "index": "spec/core-ir/README.md",
+      "first": [
+        "spec/core-ir/modules.md",
+        "spec/core-ir/nodes.md",
+        "spec/core-ir/terms.md",
+        "spec/core-ir/attributes.md",
+        "spec/core-ir/invariants.md",
+        "spec/core-ir/text-form.md"
+      ]
+    },
+    {
+      "title": "Bytecode",
+      "match": [
+        "spec/bytecode/*.md"
+      ],
+      "index": "spec/bytecode/README.md"
     },
     {
       "title": "Reference",
@@ -532,7 +561,7 @@
     "docs/site.md"
   ],
   "redirects": {
-    "/spec/pratt/": "/spec/operators-rule/",
+    "/spec/pratt/": "/spec/language/operators-rule/",
     "/docs/design/records/005-pratt-expressions/": "/docs/design/records/005-operators-rule/",
     "/docs/design/records/050-pratt-skip-control/": "/docs/design/records/050-operators-rule-skip-control/",
     "/docs/optimizations/009-value-free-pratt-lines-discarding-trivia-in-example-grammars-936857c/": "/docs/optimizations/009-value-free-operators-rule-lines-discarding-trivia-in-example-grammars-936857c/",

@@ -70,7 +70,7 @@ information, a capture that labels an element is visited only as that element, s
 the tree however deeply operators nest. A shared node is visited once for each incoming edge, and a cycle
 on the active path returns a `*pego.CycleError`, which `errors.As` can inspect. The order of the visits, the cursor
 methods `At` and `Range`, and the rule that the unit of the cursor must be the unit of the parse are defined in
-[Traversal](../../spec/nodes.md#traversal). Generated Go parsers expose the same walker as `Walk`.
+[Traversal](../../spec/runtime/nodes.md#traversal). Generated Go parsers expose the same walker as `Walk`.
 
 Use `Node.WriteJSON` instead of `json.Marshal` for very deep results: it writes the graph without recursion, whereas
 `encoding/json` gives up beyond its own nesting limit.

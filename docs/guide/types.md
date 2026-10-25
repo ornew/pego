@@ -3,7 +3,7 @@
 A grammar can declare the types of the values that its rules produce: structs with named fields and joins of types.
 Declared types turn mistakes in actions into compile-time errors and give generated parsers real Go types. This
 guide shows how to declare them and how rule result types are inferred. The grammars run like those in [Shaping
-Trees](shaping-trees.md), which also explains how to run them. The exact rules are in the [Type System](../../spec/types.md)
+Trees](shaping-trees.md), which also explains how to run them. The exact rules are in the [Type System](../../spec/language/types.md)
 chapter.
 
 ## Structs and Joins
@@ -165,7 +165,7 @@ Table{Entries: [("a" "=" "1") ("b" "=" "2")]}
 
 Inference follows rule dependencies, so a long helper chain keeps its result type regardless of definition order.
 Recursive types that keep expanding have conservative growth budgets and may lose their precise types; stable helpers retain
-their types. See the [inference limits](../../spec/type-checking.md#type-inference) for the exact fallback rules.
+their types. See the [inference limits](../../spec/language/type-checking.md#type-inference) for the exact fallback rules.
 
 Declare types on the rules whose values flow into struct fields, and on recursive rules; leave helpers inferred. The
 type shows up in the error messages, for example when a field expects an `int` and the rule returns a node:

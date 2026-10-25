@@ -89,7 +89,7 @@ func readIndexGroups(t *testing.T, index string) []indexGroup {
 // the navigation does.
 func TestIndexesMatchNavigation(t *testing.T) {
 	secs := readNavConfig(t)
-	for _, name := range []string{"Cookbook", "Specification"} {
+	for _, name := range []string{"Cookbook", "Grammar Language", "Parser and Runtime"} {
 		sec := secs[name]
 		groups := readIndexGroups(t, sec.Index)
 		var got, want []string
@@ -103,7 +103,7 @@ func TestIndexesMatchNavigation(t *testing.T) {
 			t.Errorf("%s: the groups of %s are\n  %s\nbut the navigation has\n  %s", name, sec.Index, strings.Join(got, "\n  "), strings.Join(want, "\n  "))
 		}
 	}
-	for _, name := range []string{"Tutorial", "Specification"} {
+	for _, name := range []string{"Tutorial", "Grammar Language", "Parser and Runtime", "Core IR"} {
 		sec := secs[name]
 		var order []string
 		for _, child := range sec.Children {

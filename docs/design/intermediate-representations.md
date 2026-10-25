@@ -5,7 +5,7 @@ page explains why there are two, what each one is for, and how optimization work
 tables, node inventories and call sites: those change often and the code, starting with the package comments of
 `internal/engine/core` and `internal/engine/flow`, is their source of truth. The reasons behind the design are in
 [record 062](records/062-backend-independent-optimization-ir.md); the whole system is in
-[Architecture](architecture.md). Nothing here is a public API or part of the [specification](../../spec/README.md).
+[Architecture](architecture.md). The exact definitions are in the [Core IR Specification](../../spec/core-ir/README.md), including the [text form](../../spec/core-ir/text-form.md), which prints the module of this page's example in full. Nothing here is a public API.
 
 ## Two Levels
 
@@ -53,15 +53,10 @@ observe: the input consumed, the expectations recorded at the farthest failure, 
 
 ### Kinds of Node
 
-Nodes fall into a few families, and a new node should fit one of them.
-
-- **Matching:** literals, classes, any-character, anchors.
-- **Combining:** sequence, choice with its alternatives, option, repetition, lookahead.
-- **Structure:** calls to rules, captures and the scopes that hold them, text and drop wrappers.
-- **Control:** cut, recovery, and the nodes for left recursion and Operators Rules.
-- **Terms:** a small typed language for actions and predicates (field reads, comparisons, constructors).
-- **Optimized forms** introduced by passes: a scan, a run of classes, a terminal program. Each stands for a
-  specific, simpler expression with the same behavior.
+Nodes fall into a few families: matching, combining, structure (calls, captures, scopes), control (cut, recovery, left
+recursion, Operators Rules), the terms of actions, and the optimized forms that passes introduce. The exact kinds and
+what each one means are defined in the [Core IR Specification](../../spec/core-ir/nodes.md); a new node should fit one of
+the families.
 
 ### What the Verifier Guarantees
 
@@ -77,7 +72,7 @@ principle it guarantees four things.
   represent.
 - **Types are complete** in a typed module: every term, slot and rule value has a checked type.
 
-The list of individual checks is the code of `core.Verify`.
+The individual invariants are listed in [Invariants](../../spec/core-ir/invariants.md).
 
 ## Optimization
 

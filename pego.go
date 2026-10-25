@@ -178,7 +178,7 @@ const (
 	DefaultBackend = engine.Default
 	// Closure compiles parsing expressions into Go closures.
 	Closure = engine.Closure
-	// Bytecode runs language-independent bytecode (see spec/bytecode.md) on a VM that uses Go
+	// Bytecode runs language-independent bytecode (see spec/bytecode/README.md) on a VM that uses Go
 	// recursion for rule calls.
 	Bytecode = engine.Bytecode
 	// BytecodeIterative runs the bytecode on a VM that keeps rule calls on its own stack, so deeply

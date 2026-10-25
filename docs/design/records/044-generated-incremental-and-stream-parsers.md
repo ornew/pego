@@ -16,7 +16,7 @@ TypeScript Documents/streams are not implemented.
 ## Existing Contracts and Goals
 
 [Design 007](007-streaming-and-incremental-parsing.md), [Document](../../../internal/engine/document.go),
-[resume.go](../../../internal/engine/resume.go), and [stream pragma](../../../spec/pragmas.md#stream) define the
+[resume.go](../../../internal/engine/resume.go), and [stream pragma](../../../spec/language/pragmas.md#stream) define the
 engine reference. The current generated Go path supports a Node `Document` with an optional typed `ParseAST`, and a
 Node Reader stream. Generated TS still uses synchronous recursive expression functions
 ([design 013](013-typescript-generation.md)) and has no Document or stream API. Retaining a runtime's input and
@@ -24,7 +24,7 @@ memo across calls alone does not implement edit invalidation or suspension.
 
 Documents must match fresh-parse semantic results after every legal edit, including diagnostics and action values,
 when parsing completes within the configured resources. The depth-limit outcome is an explicit exception: under the
-physical nesting contract in [Parsing](../../../spec/parsing.md#memoization), memo-answered calls do not nest, so a
+physical nesting contract in [Parsing](../../../spec/runtime/parsing.md#memoization), memo-answered calls do not nest, so a
 near-limit parse can succeed or fail depending on memoization. Document equivalence does not add logical-depth
 accounting or require cache flushing to force equal near-limit resource errors. Streamed elements must match the
 engine's committed sequence and remain valid after subsequent input is discarded.

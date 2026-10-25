@@ -7,7 +7,7 @@
 ## Summary
 
 This record describes the design of syntax error reporting (positions and expectations, `@error`) and of the `#recover` pragma, which recovers from an error and continues parsing.
-For the specification, see [Attributes](../../../spec/attributes.md) and [Pragmas](../../../spec/pragmas.md).
+For the specification, see [Attributes](../../../spec/language/attributes.md) and [Pragmas](../../../spec/language/pragmas.md).
 
 ## Error Reporting
 

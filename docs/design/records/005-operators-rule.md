@@ -4,7 +4,7 @@
 - **Author**: @ornew
 - **Date**: 2026-10-07
 
-> **Note (2026-10)**: Implemented in `internal/engine/operators_rule.go`. The CST field names were changed to match the engine rewrite (see the CST section of [spec/operators-rule.md](../../../spec/operators-rule.md)).
+> **Note (2026-10)**: Implemented in `internal/engine/operators_rule.go`. The CST field names were changed to match the engine rewrite (see the CST section of [spec/language/operators-rule.md](../../../spec/language/operators-rule.md)).
 
 ## Summary
 
@@ -187,7 +187,7 @@ named-level calls do not remove those operators from the entire result tree.
 ### Backtracking and Cut
 
 - If an operator part matches but its right operand fails to parse, the operator is not applied: parsing backs up to before the operator and returns `lhs` (as in PEG, the failure is absorbed by backtracking).
-- If a [cut](../../../spec/parser-expressions.md) (`--`) was passed inside the operator part, parsing does not back up and the whole Operators Rule fails. For example, writing `infix left "+" --` makes an input with no expression after `+` an error.
+- If a [cut](../../../spec/language/parser-expressions.md) (`--`) was passed inside the operator part, parsing does not back up and the whole Operators Rule fails. For example, writing `infix left "+" --` makes an input with no expression after `+` an error.
 
 ### Non-Associative Operators
 
@@ -289,4 +289,4 @@ This section records the options considered and the reasons for the choices made
 
 ## Open Questions
 
-1. **Error reporting**: messages for cases such as a missing right operand after an operator. The candidate approach is to use engine-generated messages by default and let an [attribute](../../../spec/attributes.md) on the operator's line (`@error`) override them. The default on failure of the right operand is to back up (a cut `--` makes it an explicit error). To be decided together with the overall design of error reporting ("Detailed error reporting" in the roadmap).
+1. **Error reporting**: messages for cases such as a missing right operand after an operator. The candidate approach is to use engine-generated messages by default and let an [attribute](../../../spec/language/attributes.md) on the operator's line (`@error`) override them. The default on failure of the right operand is to back up (a cut `--` makes it an explicit error). To be decided together with the overall design of error reporting ("Detailed error reporting" in the roadmap).

@@ -100,7 +100,7 @@ Build the export from the checked grammar/type information behind `pego.Parser`,
 
 ## Persistence
 
-A compiled grammar holds only the bytecode of one mode ([Compiled Grammars](../../../spec/compiled-grammars.md)), so the schema is not persisted. A parser loaded from a compiled grammar returns an error matching `ErrSchemaUnavailable` that asks for the schema to be exported from the grammar source; a program that needs the schema next to a compiled grammar exports it with `pego schema` and ships the JSON file.
+A compiled grammar holds only the bytecode of one mode ([Compiled Grammars](../../../spec/runtime/compiled-grammars.md)), so the schema is not persisted. A parser loaded from a compiled grammar returns an error matching `ErrSchemaUnavailable` that asks for the schema to be exported from the grammar source; a program that needs the schema next to a compiled grammar exports it with `pego schema` and ships the JSON file.
 
 ## Compatibility and Backend Support
 

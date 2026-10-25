@@ -4,7 +4,7 @@ A successful parse returns a tree of `*pego.Node`. This guide shows how to read 
 printing, JSON, reading a whole tree and typed values. [Walking Trees](walking-trees.md) visits and selects nodes
 without writing the recursion, and [Output Schemas and Structural Queries](output-schemas-and-queries.md) describes and
 searches the output of a grammar. How a grammar shapes the tree is the subject of [Shaping Trees](shaping-trees.md);
-the exact node model is defined in [Nodes and Values](../../spec/nodes.md).
+the exact node model is defined in [Nodes and Values](../../spec/runtime/nodes.md).
 
 The examples use the grammar `pairs.pego`:
 
@@ -107,12 +107,12 @@ suffixes and `name:` labels. The grammar `kv.pego` is `rule main = k:key ":" v:n
 (k:"a"@key ":" v:"1"@num)@main
 ```
 
-The forms are defined in [Text Rendering and JSON Encoding](../../spec/nodes.md#text-rendering).
+The forms are defined in [Text Rendering and JSON Encoding](../../spec/runtime/nodes.md#text-rendering).
 
 Default values are also opt-in. A parser compiled with `pego.WithDefaultValue()` (the `-default-value` flag of
 `pego parse`) drops the value actions and the declared rule types before it compiles the grammar, so every rule
 returns the default node tree even when the grammar has actions. Predicates still run, and the rules whose values
-predicates read keep their actions. The exact rules are in [Default Values](../../spec/actions.md#default-values).
+predicates read keep their actions. The exact rules are in [Default Values](../../spec/language/actions.md#default-values).
 
 ## Reading a Whole Tree
 
@@ -204,7 +204,7 @@ lambda. A tuple or list node would be visited with `n.Elems()`; an element is `n
 `Node` is a generic representation. A generated Go parser built with `-types` also returns the result as values of Go
 types that mirror the types of the grammar, so a type switch replaces field lookups and type assertions. See
 [Typed Values](generated-typed-values.md) and the mapping defined in
-[Generated Parsers](../../spec/generated-parsers.md#typed-values).
+[Generated Parsers](../../spec/runtime/generated-parsers.md#typed-values).
 
 ## Related Topics
 

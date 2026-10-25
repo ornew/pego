@@ -33,7 +33,7 @@ Consequences, all of which can be read off the numbers in the next section:
   rules, are re-evaluated whenever they lie after an edit.
 - **Recovered errors block shifting.** An entry that contains a recovered error is dropped when it lies after the edit,
   because the error message contains its position. It is one entry per bad line.
-- **Variables are fine.** Rules that read [variables](../../spec/predicates.md#interaction-with-memoization) are memoized
+- **Variables are fine.** Rules that read [variables](../../spec/language/predicates.md#interaction-with-memoization) are memoized
   per combination of variable values and reused like any other (see the table below).
 
 **Long repetitions resume.** The rule that contains the edit runs again, and with it any repetition in it, such as the

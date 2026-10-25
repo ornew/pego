@@ -2,8 +2,8 @@
 
 This guide explains how PEGO reports syntax errors and how to make the messages useful: what an error contains, how to
 get it out on the command line and in Go, and how to label the places where a user can go wrong. It is a companion to the
-normative text on [attributes](../../spec/attributes.md) (`@error`) and [syntax
-errors](../../spec/parsing.md#syntax-errors). [Recovering from Errors](recovery.md) continues with keeping the parse
+normative text on [attributes](../../spec/language/attributes.md) (`@error`) and [syntax
+errors](../../spec/runtime/parsing.md#syntax-errors). [Recovering from Errors](recovery.md) continues with keeping the parse
 going after an error.
 
 Contents:
@@ -96,7 +96,7 @@ pego: 1:1: syntax error: expected "(", [0-9]
 
 Lines and columns are 1-based. A tab counts as one column, and only a line feed starts a new line (in CRLF text, the
 carriage return is the last column of its line). Columns are counted in the
-[position unit](../../spec/parsing.md#positions): code points by default, bytes with `-unit bytes`
+[position unit](../../spec/runtime/parsing.md#positions): code points by default, bytes with `-unit bytes`
 (`pego.WithUnit(pego.Bytes)` in Go). The two differ only after non-ASCII text:
 
 ```pego
@@ -124,7 +124,7 @@ pego: 1:3: syntax error: expected "x"
 ### What Is Not in the List
 
 Failures inside a lookahead (`&a`, `!a`), Predicate Actions (`{ ... }`) and bottom (`_|_`) add nothing to the list, and
-failures inside the `skip` of a [Operators Rule](../../spec/operators-rule.md#skip) are ignored. A lookahead that fails
+failures inside the `skip` of a [Operators Rule](../../spec/language/operators-rule.md#skip) are ignored. A lookahead that fails
 usually means "this alternative is not allowed here", not "something else was expected". The consequence is that an
 error caused only by such an expression is reported without any expected item, at the farthest position that did
 record something, often the start of the input:
@@ -383,7 +383,7 @@ the second alternative gets to column 3, and the label of the first one is gone.
 
 ### Labels on Predicate Actions and on `_|_`
 
-A [predicate](../../spec/predicates.md) that fails records nothing, so a failed check shows up as a bare
+A [predicate](../../spec/language/predicates.md) that fails records nothing, so a failed check shows up as a bare
 `syntax error`. Attach `@error` to it. The same goes for a rule that exists only to report a message: `_|_` always
 fails and can carry the label:
 

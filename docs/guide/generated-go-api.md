@@ -191,7 +191,7 @@ share no namespace with `parser.go` and `api.go`: a grammar type may be called `
 other name of the parser package, and is then used as `types.Node`. The types package declares `TNode`, `Error`,
 `PegoHooks` and, where used, `Unit`, `TupleN` and `PegoNodeTypes` itself, and generation fails if a grammar type has one
 of those names. Declarations that you add by hand to the generated packages must not reuse the names they declare. The
-[generated parser contract](../../spec/generated-parsers.md) lists the rule.
+[generated parser contract](../../spec/runtime/generated-parsers.md) lists the rule.
 
 ## Related Topics
 

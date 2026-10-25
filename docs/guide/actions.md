@@ -3,7 +3,7 @@
 An action replaces the tree of a rule with a value that you compute from its captures, usually a typed node. This guide
 shows how to write actions, the built-in functions and lambdas, how positions of constructed nodes are assigned, and
 recipes for lists and left- and right-associative chains. The grammars run like those in [Shaping
-Trees](shaping-trees.md), which also explains how to run them. The exact rules are in the [Actions](../../spec/actions.md)
+Trees](shaping-trees.md), which also explains how to run them. The exact rules are in the [Actions](../../spec/language/actions.md)
 chapter. For operator expressions (`foldl` chains versus Operators Rule Declaration Statements) see [Operators
 Rule](operators-rule.md).
 
@@ -163,7 +163,7 @@ rule pair (node[string], node[string]) = a:"a" b:"b" => ($a, $b)
 The function arguments are **lambdas**. They can only be written as arguments of `map`, `filter`, `foldl` and `foldr`, and
 inside them the parameters are variables, referred to by name without `$`: `acc`, `x`. A lambda can also read the captures
 of the enclosing rule with `$`. The function passed to `map` may produce any value and `filter`'s predicate a
-Boolean. The [specification](../../spec/actions.md#built-in-functions) defines each function exactly: element types, `nil`
+Boolean. The [specification](../../spec/language/actions.md#built-in-functions) defines each function exactly: element types, `nil`
 and `Error` arguments, evaluation order and what happens when a callback fails.
 
 ```pego
@@ -209,7 +209,7 @@ Pairs{Items: [Pair{A: "k", B: "a"} Pair{A: "k", B: "b"}]}
 ```
 
 Action expressions also support the arithmetic, comparison and boolean operators listed in the
-[Actions chapter](../../spec/actions.md#operators-and-functions). There is no conditional expression, so branch on the grammar side
+[Actions chapter](../../spec/language/actions.md#operators-and-functions). There is no conditional expression, so branch on the grammar side
 (separate rules or alternatives) rather than inside actions.
 
 ## Positions

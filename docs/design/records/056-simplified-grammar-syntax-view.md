@@ -91,11 +91,11 @@ It rejects combining the mode with `-w` or `-l`; it is output-only. Ordinary
 
 ### Generated Documentation
 
-Use `spec/syntax.md.tmpl` as the Markdown template, with one fenced-code
+Use `spec/language/syntax.md.tmpl` as the Markdown template, with one fenced-code
 placeholder for the full grammar and one for the simplified view. Generate
-`spec/syntax.md` from the exact root `pego.pego` bytes for the full section and
+`spec/language/syntax.md` from the exact root `pego.pego` bytes for the full section and
 from the parsed grammar plus the same projection used by the Go API for the
-simple section. `go generate ./spec` refreshes the page deterministically.
+simple section. `go generate ./spec/language` refreshes the page deterministically.
 Keep the result as ordinary Markdown so the current site
 publisher, navigation and code highlighting continue to work. State that the
 simplified view is for readability and may not preserve value-dependent

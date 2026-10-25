@@ -480,7 +480,7 @@ if (result.error instanceof ParseInterruptionError) {
 A parse is synchronous and does not yield to the event loop, so a timer such as `AbortSignal.timeout` cannot fire during
 the call: use `maxSteps` and `maxInputWork` for a bound that holds, and a signal that is already aborted or a worker
 that you terminate for cancellation. The units of the limits are explained in
-[Cancellation and Work Limits](../../spec/parsing.md#cancellation-and-work-limits).
+[Cancellation and Work Limits](../../spec/runtime/parsing.md#cancellation-and-work-limits).
 
 ## Deep Nesting and the JavaScript Stack
 
@@ -540,7 +540,7 @@ Generated TypeScript supports every feature of the grammar language: Rule Expres
 `-recognize`) for matching without a tree, and `signal`, `maxInputWork`, `maxSteps` and `maxDepth` in the options-aware
 entry points. It has no `#stream` and `ParseStream`, and no `Document`: `#stream` is an ordinary repetition, as in Go.
 Typed values (`-types`) give interfaces and aliases and `parseAST`/`parseASTWithOptions` for the configured start rule,
-while `parse` still returns Nodes. The [specification](../../spec/generated-parsers.md#compatibility-and-support) has
+while `parse` still returns Nodes. The [specification](../../spec/runtime/generated-parsers.md#compatibility-and-support) has
 the complete table of what each target supports.
 
 ## Keeping Generated Code Up to Date

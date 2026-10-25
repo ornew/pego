@@ -101,7 +101,7 @@ Runtime and compiler paths must honor the wrapper's failure boundary. In particu
 
 Grammars without `@diagnostic` retain their existing behavior. Older implementations reject the new attribute as unknown, making it an opt-in grammar feature. The JSON AST already has an attributed-expression representation; verify strict JSON and bytecode compatibility before implementation, and use an explicit format revision if existing serialized forms cannot carry the required behavior safely.
 
-Update `spec/attributes.md`, grammar and diagnostic guides, formatter and LSP attribute help. The postfix spelling applies to expressions. [Design 049](049-rule-attribute-decorators.md) records the rejected declaration-prefix alternative.
+Update `spec/language/attributes.md`, grammar and diagnostic guides, formatter and LSP attribute help. The postfix spelling applies to expressions. [Design 049](049-rule-attribute-decorators.md) records the rejected declaration-prefix alternative.
 
 ## Alternatives Considered
 

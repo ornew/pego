@@ -97,10 +97,10 @@ catch people out:
   beginning and the end of the fragment before calling `ParsePrefix`.
 - Grammars that contain `#missing` are not supported, and neither is a positive `WithMissingTokens` limit.
 
-The complete rules are in [Prefix Parsing](../../spec/parsing.md#prefix-parsing).
+The complete rules are in [Prefix Parsing](../../spec/runtime/parsing.md#prefix-parsing).
 
 ## Related Topics
 
 - [Running Parsers](running-parsers.md): start rules and the whole-input `Parse`.
 - [Position Units](position-units.md): the unit of the consumption fields.
-- [Prefix Parsing](../../spec/parsing.md#prefix-parsing): the complete rules.
+- [Prefix Parsing](../../spec/runtime/parsing.md#prefix-parsing): the complete rules.

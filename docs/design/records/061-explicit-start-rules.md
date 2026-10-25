@@ -55,7 +55,7 @@ other rules. The tools cannot tell which rules a grammar means as entries.
 ### Public Behavior and Contracts
 
 `@start` and `@start(default)` are declaration attributes of a rule, defined
-in [Grammar Files](../../../spec/grammar-files.md#start-rules). The argument of
+in [Grammar Files](../../../spec/language/grammar-files.md#start-rules). The argument of
 `@start` is the bare identifier `default` and nothing else. A grammar is
 invalid when:
 
@@ -64,7 +64,7 @@ invalid when:
 - more than one rule is `@start(default)`;
 - a rule is marked `@start` twice;
 - `@start` has any other argument;
-- a [hidden rule](../../../spec/actions.md#hidden-rules), whose name begins with
+- a [hidden rule](../../../spec/language/actions.md#hidden-rules), whose name begins with
   `_`, is marked `@start`;
 - a rule has a declaration attribute other than `@start`.
 

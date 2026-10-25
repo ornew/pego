@@ -27,10 +27,10 @@ A conservative consumer rebuilds its indexes from the latest `Snapshot` when it 
 unavailable output, a gap in revisions or a full-refresh marker, and keeps the edit cursor separate from the version
 of the last displayed `Snapshot`. Notifications never promise a minimal difference between trees. The kinds of events,
 what counts as a change and how interruption is reported are defined in
-[Change Notifications](../../spec/documents.md#change-notifications).
+[Change Notifications](../../spec/runtime/documents.md#change-notifications).
 
 ## Related Topics
 
 - [Incremental Parsing](incremental.md): the model, the API and `Snapshot`.
 - [Incremental Parsing Performance](incremental-performance.md): what the notifications cost.
-- [Documents](../../spec/documents.md#change-notifications): the normative definition of the events.
+- [Documents](../../spec/runtime/documents.md#change-notifications): the normative definition of the events.

@@ -52,7 +52,7 @@ Choosing:
 - Use **code points** (the default) when positions are shown to people as character counts, or are exchanged with a
   system that counts characters (editors and language servers often count UTF-16 units, which neither unit matches).
 - Invalid UTF-8 is read as one U+FFFD character per invalid byte, so positions stay well defined; the decoding rules
-  and their effect on the text of string nodes are in [Positions](../../spec/parsing.md#positions).
+  and their effect on the text of string nodes are in [Positions](../../spec/runtime/parsing.md#positions).
 
 The [benchmarks](../benchmarks.md#parsing-time-position-unit-bytes) show almost no speed difference between the units.
 The CLI flag is `-unit codepoints|bytes`.
@@ -61,4 +61,4 @@ The CLI flag is `-unit codepoints|bytes`.
 
 - [Running Parsers](running-parsers.md): compiling and calling a parser.
 - [Reading Trees](reading-trees.md): reading `Start` and `End` of a node.
-- [Positions](../../spec/parsing.md#positions): the definition of units and decoding.
+- [Positions](../../spec/runtime/parsing.md#positions): the definition of units and decoding.

@@ -7,8 +7,8 @@ down into the rules a rule calls, and **lookahead** that can look at the input w
 how they work and how to combine them, with complete grammars for matching tags, indentation-based blocks,
 here-documents and similar constructs.
 
-It complements the normative text in [Predicates and Variables](../../spec/predicates.md), [Parsing
-Expressions](../../spec/parser-expressions.md) (captures, lookahead) and [Attributes](../../spec/attributes.md) and [Pragmas](../../spec/pragmas.md). For
+It complements the normative text in [Predicates and Variables](../../spec/language/predicates.md), [Parsing
+Expressions](../../spec/language/parser-expressions.md) (captures, lookahead) and [Attributes](../../spec/language/attributes.md) and [Pragmas](../../spec/language/pragmas.md). For
 error messages and recovery, see [Error Messages](error-messages.md) and [Recovering from Errors](recovery.md).
 
 Contents:
@@ -33,7 +33,7 @@ A Predicate Action `{ expr }` evaluates an expression where it stands in a seque
 evaluation is an error, and succeeds otherwise**. It consumes no input and has no value, like a lookahead whose test is
 computed instead of matched.
 
-The expression uses the same language as a [Value Action](../../spec/actions.md): operators, `len`, `text`, and so on. It can
+The expression uses the same language as a [Value Action](../../spec/language/actions.md): operators, `len`, `text`, and so on. It can
 read the captures `$label` made **earlier in the same rule**. Three consequences are worth remembering.
 
 **Only `false` is false.** A predicate that evaluates to the integer `0` succeeds. Always write the comparison:
@@ -126,7 +126,7 @@ A nonempty block `{ a; b; c }` is shorthand for adjacent Predicate Actions at th
 right and stop at the first false result or error. Bindings are visible to later statements and follow the usual
 backtracking rules. A block creates no variable or capture scope, consumes no input and adds no rule boundary. Empty
 blocks are compile-time errors, and Value Actions have no block form: they use the single term after `=>`. The
-[Predicates and Variables](../../spec/predicates.md#predicate-actions) chapter defines blocks.
+[Predicates and Variables](../../spec/language/predicates.md#predicate-actions) chapter defines blocks.
 
 ### Variables
 
@@ -333,7 +333,7 @@ A packrat parser caches the result of a rule at each input position, so that bac
 that reads variables does not depend on the position alone: the same rule at the same position can succeed with one
 `indent` and fail with another. PEGO therefore keys the cache by the position **and the values of the variables the rule
 can read** in predicates and actions, including Operators Rule actions, directly or through the rules it calls (see the
-[specification](../../spec/predicates.md#interaction-with-memoization)). A cached result is reused only when
+[specification](../../spec/language/predicates.md#interaction-with-memoization)). A cached result is reused only when
 those values are equal, so memoization never changes what a parse returns, only what it costs.
 
 What this means when you write a grammar:

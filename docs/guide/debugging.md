@@ -486,7 +486,7 @@ _, err := pairsparser.Parse(input,
 
 Filtering a rule includes its named descendants, and unknown names match nothing. Depth starts at one for the start
 rule. `TraceSkipped` is not paired with an exit event, and in batch parses `Examined` is not a complete input range
-(`ExaminedKnown` is false). The [specification](../../spec/observability.md#generated-go-batch-tracing) defines the
+(`ExaminedKnown` is false). The [specification](../../spec/runtime/observability.md#generated-go-batch-tracing) defines the
 events, the filters and what an aborted parse omits.
 
 With `-types`, `ParseAST` and `ParseRuleAST` accept the same trace options. This
@@ -680,7 +680,7 @@ The same option works with `parseRuleWithOptions`, `recognizeWithOptions` and, w
 A `Profile` aggregates across parses but cannot be shared by concurrent calls, and a snapshot is a copy that later
 parses do not change. The counters are the camel-case counterparts of the generated Go profile; `time` and `selfTime`
 are in milliseconds, measured with the host's `performance.now()` clock, and the flags `examinedKnown`
-and `wastedKnown` are false. The [specification](../../spec/observability.md#generated-typescript-batch-profiling)
+and `wastedKnown` are false. The [specification](../../spec/runtime/observability.md#generated-typescript-batch-profiling)
 defines every counter, including when a snapshot taken inside a trace callback leaves out the current call.
 
 Profiling requires `performance.now()`; without it, a profiled invocation returns an `Error`, and there is no

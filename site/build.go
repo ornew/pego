@@ -99,8 +99,10 @@ var numberedSections = map[string]struct {
 	StateTotal bool
 	Skip       map[string]bool // pages outside the series
 }{
-	"Tutorial":      {Word: "Lesson", StateTotal: true},
-	"Specification": {Word: "Chapter", Skip: map[string]bool{"spec/glossary.md": true}},
+	"Tutorial":           {Word: "Lesson", StateTotal: true},
+	"Grammar Language":   {Word: "Chapter"},
+	"Parser and Runtime": {Word: "Chapter"},
+	"Core IR":            {Word: "Chapter", Skip: map[string]bool{"spec/core-ir/README.md": true}},
 }
 
 // numberSeries numbers the pages of a numbered section in the order the navigation shows them:

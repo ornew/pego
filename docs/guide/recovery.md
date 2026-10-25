@@ -2,8 +2,8 @@
 
 This guide shows how to keep parsing after a syntax error, so that one run reports every problem in a file and returns a
 tree that is complete except at the broken places. It builds on [Error Messages](error-messages.md) and is a companion
-to the normative text on [pragmas](../../spec/pragmas.md) (`#recover` and `#missing`) and
-[syntax errors](../../spec/parsing.md#syntax-errors).
+to the normative text on [pragmas](../../spec/language/pragmas.md) (`#recover` and `#missing`) and
+[syntax errors](../../spec/runtime/parsing.md#syntax-errors).
 
 Contents:
 
@@ -383,7 +383,7 @@ Document, streams and compiled grammar serialization do not support this
 initial feature. The budget includes abandoned attempts and left-recursion seed
 replay, so a limit of 16 does not guarantee acceptance of a tree with 16 missing
 nodes. The [pragma
-specification](../../spec/pragmas.md#missing) defines the full contract.
+specification](../../spec/language/pragmas.md#missing) defines the full contract.
 
 ## Recipes
 

@@ -30,6 +30,114 @@
   to = "/docs/design/records/:record"
   status = 301
 
+# The specification was split into several specifications under /spec/. A rule without force applies
+# only where no page exists at the requested path, and /spec/bytecode/ keeps its address.
+[[redirects]]
+  from = "/spec/overview"
+  to = "/spec/language/overview"
+  status = 301
+
+[[redirects]]
+  from = "/spec/lexical"
+  to = "/spec/language/lexical"
+  status = 301
+
+[[redirects]]
+  from = "/spec/grammar-files"
+  to = "/spec/language/grammar-files"
+  status = 301
+
+[[redirects]]
+  from = "/spec/types"
+  to = "/spec/language/types"
+  status = 301
+
+[[redirects]]
+  from = "/spec/parser-expressions"
+  to = "/spec/language/parser-expressions"
+  status = 301
+
+[[redirects]]
+  from = "/spec/operators-rule"
+  to = "/spec/language/operators-rule"
+  status = 301
+
+[[redirects]]
+  from = "/spec/predicates"
+  to = "/spec/language/predicates"
+  status = 301
+
+[[redirects]]
+  from = "/spec/actions"
+  to = "/spec/language/actions"
+  status = 301
+
+[[redirects]]
+  from = "/spec/type-checking"
+  to = "/spec/language/type-checking"
+  status = 301
+
+[[redirects]]
+  from = "/spec/attributes"
+  to = "/spec/language/attributes"
+  status = 301
+
+[[redirects]]
+  from = "/spec/pragmas"
+  to = "/spec/language/pragmas"
+  status = 301
+
+[[redirects]]
+  from = "/spec/syntax"
+  to = "/spec/language/syntax"
+  status = 301
+
+[[redirects]]
+  from = "/spec/parsing"
+  to = "/spec/runtime/parsing"
+  status = 301
+
+[[redirects]]
+  from = "/spec/nodes"
+  to = "/spec/runtime/nodes"
+  status = 301
+
+[[redirects]]
+  from = "/spec/documents"
+  to = "/spec/runtime/documents"
+  status = 301
+
+[[redirects]]
+  from = "/spec/streaming"
+  to = "/spec/runtime/streaming"
+  status = 301
+
+[[redirects]]
+  from = "/spec/observability"
+  to = "/spec/runtime/observability"
+  status = 301
+
+[[redirects]]
+  from = "/spec/compiled-grammars"
+  to = "/spec/runtime/compiled-grammars"
+  status = 301
+
+[[redirects]]
+  from = "/spec/generated-parsers"
+  to = "/spec/runtime/generated-parsers"
+  status = 301
+
+[[redirects]]
+  from = "/spec/schemas-and-queries"
+  to = "/spec/runtime/schemas-and-queries"
+  status = 301
+
+[[redirects]]
+  from = "/spec/lint"
+  to = "/spec/runtime/lint"
+  status = 301
+
+
 [[headers]]
   for = "/*"
   [headers.values]
