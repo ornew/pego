@@ -35,7 +35,7 @@ ivmOnce`](../../../internal/engine/compile.go),
 [`Program.Module`](../../../internal/engine/bcompile.go), [`Program.recognizer
 and rule`](../../../internal/engine/parse.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [E040](E040-recognition-lowering.md), [M070](M070-vm-predecoded-match-data.md).

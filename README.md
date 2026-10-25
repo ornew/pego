@@ -196,7 +196,7 @@ left-recursive), an indentation-based outline format and a small programming lan
 | [Development guide](docs/development.md) | Repository layout, architecture, language support and tests |
 | [Bytecode specification](spec/bytecode.md) | Instruction set and VM semantics, for porting the runtime |
 | [Benchmarks](docs/benchmarks.md) · [Performance](docs/performance.md) · [Optimization catalog](docs/optimizations/README.md) | How fast, and how it got there |
-| [Design records](docs/design/) | Decisions and their rationale |
+| [Design records](docs/design/records/) | Decisions and their rationale |
 
 ## Contributing
 

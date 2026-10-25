@@ -43,7 +43,7 @@ Source owners: [`ruleProjections`](../../../internal/engine/project.go),
 repetition lowering`](../../../internal/engine/bcompile.go),
 [`tsGen.projectRepeat`](../../../internal/engine/gen_ts.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [E010](E010-value-free-rule-bodies.md), [E060](E060-concat-input-fusion.md).

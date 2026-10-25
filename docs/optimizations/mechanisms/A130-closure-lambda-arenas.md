@@ -33,7 +33,7 @@ Evidence records:
 Source owners: [`closure.apply, keep and evaluation
 arenas`](../../../internal/engine/eval.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A040](A040-action-operand-scratch.md), [A190](A190-evaluation-context-reuse.md).

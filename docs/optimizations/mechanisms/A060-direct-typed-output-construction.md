@@ -35,9 +35,9 @@ Evidence records: [048](../048-a-typed-runtime-for-parseast.md).
 Source owners: [`typed constructors and conversion
 generation`](../../../internal/engine/gen_types.go),
 [`tparser`](../../../runtime/typed.go), [`typed runtime
-design`](../../design/012-typed-values.md).
+design`](../../design/records/012-typed-values.md).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [G060](G060-ordinary-typed-direct-rules.md), [A070](A070-typed-output-bootstrap.md), [A250](A250-typed-object-slabs.md), [A260](A260-typed-list-slabs.md).

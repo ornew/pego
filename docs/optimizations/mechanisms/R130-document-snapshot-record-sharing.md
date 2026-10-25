@@ -41,7 +41,7 @@ sharing`](../../../internal/engine/snapshot.go), [`default
 policy`](../../../internal/engine/snapshot_sharing_enabled.go), [`copy
 comparator`](../../../internal/engine/snapshot_sharing_reference.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [R140](R140-share-document-snapshot-child-runs.md), [R150](R150-cache-snapshot-child-run-descriptors.md), [R090](R090-moving-document-trees.md).

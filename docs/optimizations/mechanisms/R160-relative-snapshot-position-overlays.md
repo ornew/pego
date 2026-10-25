@@ -40,7 +40,7 @@ the live Document/cache. Other backends/workloads remain unmeasured; no adoption
 established.
 
 See [record 100](../100-relative-snapshot-position-overlays.md),
-[snapshot design](../../design/032-versioned-document-snapshots.md),
+[snapshot design](../../design/records/032-versioned-document-snapshots.md),
 [`shareSnapshotGraph`](../../../internal/engine/snapshot.go), and the
 [enabled](../../../internal/engine/snapshot_position_enabled.go)/
 [default](../../../internal/engine/snapshot_position_reference.go) representations.

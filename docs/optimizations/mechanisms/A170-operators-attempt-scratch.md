@@ -37,7 +37,7 @@ state`](../../../internal/engine/ivm.go), [`generated
 longest`](../../../runtime/runtime.go), [`typed Operators Rule
 attempts`](../../../runtime/typed.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [E030](E030-operators-line-value-elision.md), [A030](A030-parser-frame-reuse.md), [G160](G160-typed-operators-line-bodies.md).

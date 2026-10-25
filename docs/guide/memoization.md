@@ -26,7 +26,7 @@ What this means for you:
   skips, so that more of a previous parse can be reused.
 - **Generated parsers memoize in the same way.** Memoization decisions are made by the same analysis and are saved in
   `.pegoc` files.
-- The design is in [003-packrat-parsing.md](../design/003-packrat-parsing.md), and the history of how the engine's
+- The design is in [003-packrat-parsing.md](../design/records/003-packrat-parsing.md), and the history of how the engine's
   speed was tuned (including the memo table) in [performance.md](../performance.md).
 
 ## Related Topics

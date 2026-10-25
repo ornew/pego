@@ -37,7 +37,7 @@ replacement`](../../../internal/engine/runtime.go), [`generated environment
 binding`](../../../runtime/runtime.go), [`TypeScript persistent
 environment`](../../../internal/engine/tsrt/runtime.ts).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [R010](R010-per-position-memo-chains.md), [G090](G090-variable-read-components.md).

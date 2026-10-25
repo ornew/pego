@@ -83,7 +83,7 @@ program. The playground therefore limits nesting more than the engine does:
   is. Encoding a tree as JSON or an S-expression takes stack for each level.
 
 The limits leave a margin of more than two over what overflowed in measurements (see
-[design record 016](../design/016-web-site-and-playground.md#nesting-and-the-browsers-stack)). If a parse still
+[design record 016](../design/records/016-web-site-and-playground.md#nesting-and-the-browsers-stack)). If a parse still
 overflows the stack, the worker is restarted and the status says so.
 
 ### Shared Links

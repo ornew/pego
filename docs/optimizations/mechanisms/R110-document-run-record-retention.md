@@ -38,7 +38,7 @@ Source owners: [`Document.runGen and run-map
 publication`](../../../internal/engine/document.go), [`run
 replacement`](../../../internal/engine/resume.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [R100](R100-document-repetition-resumption.md).

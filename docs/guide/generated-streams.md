@@ -21,7 +21,7 @@ handing elements over. Recovered diagnostics are returned together as `SyntaxErr
 lines stay absolute. With `-work-controls`, `WithContext` and `WithWorkLimits`, and `WithMaxDepth` and, with `-observability`, tracing and profiling
 apply to the whole invocation; a cancelled or limited stream checks between reads and elements, and a reader blocked
 in `Read` is not interrupted. `-stream` cannot be combined with `-lang ts`. The measurements are in
-[design record 044](../design/044-generated-incremental-and-stream-parsers.md#local-measurements-for-generated-go-node-streams).
+[design record 044](../design/records/044-generated-incremental-and-stream-parsers.md#local-measurements-for-generated-go-node-streams).
 
 ## Pull Iteration and Diagnostic Controls
 

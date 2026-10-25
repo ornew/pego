@@ -40,7 +40,7 @@ Source owners:
 immutability and reference
 checks`](../../../internal/engine/normalize_attributes_test.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [G080](G080-equal-capture-type-reuse.md), [G090](G090-variable-read-components.md).

@@ -39,7 +39,7 @@ Evidence records: [003](../003-node-fields-as-a-slice-54a5774.md),
 Source owners: [`Node and nodeKind`](../../../internal/engine/node.go),
 [`generated Node and Fields`](../../../runtime/runtime.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A020](A020-node-and-list-slabs.md), [A110](A110-expected-set-ids.md).

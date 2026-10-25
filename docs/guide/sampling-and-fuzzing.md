@@ -17,7 +17,7 @@ Every input you get has been parsed with the parser and accepted without errors,
 `#recover`. The same grammar, options and seed give the same inputs (see [below](#on-the-command-line) for how far
 that holds).
 
-The design is in [design record 015](../design/015-input-generation.md).
+The design is in [design record 015](../design/records/015-input-generation.md).
 How generated inputs fit into a test suite for a grammar is in [testing grammars](testing-grammars.md).
 
 - [On the command line](#on-the-command-line)

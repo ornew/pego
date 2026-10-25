@@ -38,7 +38,7 @@ bytecode`](../../../internal/engine/bcompile.go), [`all rule/twin
 generation`](../../../internal/engine/gen.go), [`TypeScript twin rule
 generation`](../../../internal/engine/gen_ts.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [E010](E010-value-free-rule-bodies.md), [R010](R010-per-position-memo-chains.md), [M060](M060-left-recursion-growth.md).

@@ -40,7 +40,7 @@ releaseScratch`](../../../internal/engine/input.go),
 pool`](../../../runtime/runtime.go), [`typed pool and
 release`](../../../runtime/typed.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A080](A080-generated-node-capture-scratch.md), [A100](A100-document-vm-value-stack.md).

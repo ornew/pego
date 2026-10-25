@@ -9,7 +9,7 @@ description: Maintain PEGO user documentation, contracts, design records and dev
   learning paths, features and runnable task recipes.
 - Contracts: `spec/` defines normative grammar, parser and bytecode behavior.
   Keep tutorials and development history out of specifications.
-- Decisions: `docs/design/` records problem, decision, alternatives and
+- Decisions: `docs/design/records/` records problem, decision, alternatives and
   validation; distinguish proposed, accepted and implemented work.
 - Development: `docs/development.md` and `docs/site.md` cover contribution and
   site workflows. `docs/performance.md` and `docs/optimizations/` hold method,

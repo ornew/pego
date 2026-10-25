@@ -39,7 +39,7 @@ compilation`](../../../internal/engine/compile.go),
 emission`](../../../internal/engine/gen.go), [`TypeScript line
 emission`](../../../internal/engine/gen_ts.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [E010](E010-value-free-rule-bodies.md), [G160](G160-typed-operators-line-bodies.md), [A170](A170-operators-attempt-scratch.md).

@@ -43,7 +43,7 @@ Source owners: [`parser.firstCall`](../../../internal/engine/runtime.go),
 firstCall`](../../../runtime/runtime.go), [`TypeScript
 firstCall`](../../../internal/engine/tsrt/runtime.ts).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [R030](R030-sparse-seen-position-storage.md), [R120](R120-transient-rule-memo-policy.md).

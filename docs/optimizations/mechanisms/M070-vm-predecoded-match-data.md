@@ -38,7 +38,7 @@ Source owners: [`newVMProgram, vmProgram.runes, bytes and
 ascii`](../../../internal/engine/vm.go), [`iterative VM literal/class
 execution`](../../../internal/engine/ivm.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [M020](M020-character-class-tests.md), [M030](M030-literal-matching.md), [G020](G020-lazy-backend-preparation.md).

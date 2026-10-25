@@ -48,7 +48,7 @@ selection`](../../../internal/engine/sparse_memo.go),
 sparse pages`](../../../runtime/runtime.go), [`TypeScript sparse
 seen pages`](../../../internal/engine/tsrt/runtime.ts).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [R020](R020-deferred-memoization.md), [A160](A160-whole-input-scratch-pooling.md).

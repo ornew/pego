@@ -33,7 +33,7 @@ Source owners: [`peek emission and
 dgen.single`](../../../internal/engine/gen_direct.go), [`input
 preparation`](../../../runtime/runtime.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [G100](G100-generated-node-body-inlining.md), [G060](G060-ordinary-typed-direct-rules.md), [M130](M130-short-literal-comparisons.md).

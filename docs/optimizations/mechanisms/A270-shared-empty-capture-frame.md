@@ -36,7 +36,7 @@ and invokePlain`](../../../internal/engine/runtime.go), [`generated empty
 frame`](../../../runtime/runtime.go),
 [`Parser.newFrame`](../../../internal/engine/tsrt/runtime.ts).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [M050](M050-plain-rule-calls.md), [A180](A180-typed-frame-reuse.md).

@@ -12,7 +12,7 @@ func init() {
 	// at about 1,450 nested rule calls with the closure and bytecode backends and at trees nested
 	// about 880 levels deep; Node 24's stack holds about twice as much. The limits leave a margin
 	// of more than two, because a rule call takes more stack in rules with more deeply nested
-	// expressions. See docs/design/016-web-site-and-playground.md.
+	// expressions. See docs/design/records/016-web-site-and-playground.md.
 	maxDepth = 600
 	maxTreeDepth = 400
 }

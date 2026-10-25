@@ -6,7 +6,7 @@
 //	go run . [-repo ..] [-out dist] [-wasm=true] [-wasm-mode=go] [-check=true] [-serve localhost:8080]
 //
 // Everything is generated from the repository at build time; nothing in the output is meant to be
-// edited or committed. See docs/guide/playground.md and docs/design/016-web-site-and-playground.md.
+// edited or committed. See docs/guide/playground.md and docs/design/records/016-web-site-and-playground.md.
 package main
 
 import (

@@ -22,7 +22,7 @@ The controls are private and default-off. They affect generated Go typed `ParseA
 
 ## Reproduction
 
-See the retained-output fixture and benchmark commands in [design 034](../design/034-typed-output-liveness.md). The exact-parent baseline was `d55229fef1c7ade37e9cc208892e0cb20c5a3caa`. A same-generator reference disabled cleanup while preserving generated workload shape; its seven committed parser outputs matched byte-for-byte. The test generator selected cleanup with `enableTypedOutputSweep` or `enableBoundedTypedOutputSweep`; the same-generator reference used neither option. Direct and Node-to-typed conversion comparisons enabled the corresponding option. These controls and fixtures are part of the recorded implementation and can be reproduced from the linked design procedure. Build each benchmark test binary before measuring process RSS, then run only that binary under `/usr/bin/time -l` so compilation is excluded. Do not infer effects for other backends or output paths.
+See the retained-output fixture and benchmark commands in [design 034](../design/records/034-typed-output-liveness.md). The exact-parent baseline was `d55229fef1c7ade37e9cc208892e0cb20c5a3caa`. A same-generator reference disabled cleanup while preserving generated workload shape; its seven committed parser outputs matched byte-for-byte. The test generator selected cleanup with `enableTypedOutputSweep` or `enableBoundedTypedOutputSweep`; the same-generator reference used neither option. Direct and Node-to-typed conversion comparisons enabled the corresponding option. These controls and fixtures are part of the recorded implementation and can be reproduced from the linked design procedure. Build each benchmark test binary before measuring process RSS, then run only that binary under `/usr/bin/time -l` so compilation is excluded. Do not infer effects for other backends or output paths.
 
 ## Results
 
@@ -33,7 +33,7 @@ The ordinary phase used Go 1.27.1 on an Apple M3 Max (darwin/arm64), with `GOMAX
 | Bounded sweep | 0.988218–1.021221 | 0.998874–1.042010 | +20 to +118 |
 | Full sweep | 1.320125–4.024776 | 1.676096–5.218507 | +568 to +20,339 |
 
-These ordinary-workload observations do not determine the default policy. Earlier prototype measurements from other source revisions are summarized only as historical context in [design 034](../design/034-typed-output-liveness.md).
+These ordinary-workload observations do not determine the default policy. Earlier prototype measurements from other source revisions are summarized only as historical context in [design 034](../design/records/034-typed-output-liveness.md).
 
 The direct generated-typed path was also measured on five shapes in both position units. For an input with an 8-rune prefix of `é` characters plus the fixture suffix, paired median time ratios were 2.056291–3.146894× for bounded sweep and 1.616556–3.025611× for full sweep; bounded added 1,624–1,788 B/op and 4–10 allocations, while full sweep added 503–732 B/op and 4–11 allocations. For an input with a 1,048,576-rune prefix of `é` characters (2 MiB UTF-8) plus the fixture suffix, time ratios were 0.996282–1.035022× (bounded) and 0.994009–1.035215× (full), close to parity. These small-input costs remain a material tradeoff.
 

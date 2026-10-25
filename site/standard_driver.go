@@ -75,15 +75,15 @@ func Build(cfg Config) (Stats, error) {
 				p.Nav = "Home"
 				p.SourceURL = ""
 			}
-			if q.Source == "docs/design/README.md" {
+			if q.Source == "docs/design/records/README.md" {
 				p.Src = ""
 				p.SourceURL = ""
 				p.Nav = "Overview"
 			}
 			s.add(p)
-			if q.Source == "docs/design/README.md" {
+			if q.Source == "docs/design/records/README.md" {
 				s.bySrc[q.Source] = p
-				s.byDir["docs/design"] = p
+				s.byDir["docs/design/records"] = p
 			}
 			mapped[q] = p
 		}

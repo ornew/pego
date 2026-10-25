@@ -42,7 +42,7 @@ recognition/emission`](../../../internal/engine/gen.go), [`TypeScript literal
 switch emission`](../../../internal/engine/gen_ts.go), [`route and unsafe-shape
 checks`](../../../internal/engine/gen_literal_text_dispatch_test.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [M120](M120-unboxed-text-comparisons.md), [G130](G130-generated-literal-sharing.md).

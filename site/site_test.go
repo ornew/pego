@@ -111,7 +111,7 @@ func TestBuild(t *testing.T) {
 		},
 		"reference/grammar/index.html":  {`id="Format"`, `id="Grammar.Rules"`, "type RuleDef struct"},
 		"reference/cli/index.html":      {`id="cmd-parse"`, "<code>-g string</code>", "-backend string", `id="commands"`},
-		"docs/design/index.html":        {"012. Typed Values in Generated Parsers", "Implemented"},
+		"docs/design/records/index.html":        {"012. Typed Values in Generated Parsers", "Implemented"},
 		"docs/optimizations/index.html": {"Optimization Catalog", "001. Value-free rule bodies", "076. Inline value-free plain generated Go rules", "077. Inline value-building and memoized Node expressions in generated Go parsers"},
 		"docs/performance/index.html":   {`id="1-value-free-rule-bodies-value-free-twins-transient-rules-0b2c903"`, `id="76-inline-value-free-plain-generated-go-rules"`, `id="77-inline-value-building-and-memoized-node-expressions-in-generated-go-parsers"`},
 		"playground/index.html":         {`id="pg-grammar"`, `src="../playground/app.js"`, `href="../playground/playground.css"`},
@@ -665,7 +665,7 @@ func TestNavigation(t *testing.T) {
 	if project.Name == "" || project.Collapsible {
 		t.Fatal("Project links should remain visible in an ordinary section")
 	}
-	designPage := filepath.Join(out, "docs", "design", "042-responsive-lsp-analysis-and-code-actions", "index.html")
+	designPage := filepath.Join(out, "docs", "design", "records", "042-responsive-lsp-analysis-and-code-actions", "index.html")
 	record, err := os.ReadFile(designPage)
 	if err != nil {
 		t.Fatal(err)
@@ -697,14 +697,14 @@ func TestNavigation(t *testing.T) {
 	for _, link := range ordinaryLinks {
 		href := site(link[1])
 		ordinary[href] = html.UnescapeString(link[3])
-		if strings.HasPrefix(href, "docs/design/") && href != "docs/design/" {
+		if strings.HasPrefix(href, "docs/design/records/") && href != "docs/design/records/" {
 			t.Errorf("numbered design record is directly exposed outside its disclosure: %s", href)
 		}
 		if strings.HasPrefix(href, "docs/optimizations/") && href != "docs/optimizations/" {
 			t.Errorf("individual optimization appears in the sidebar: %s", href)
 		}
 	}
-	if ordinary["docs/design/"] != "" || ordinary["docs/optimizations/"] != "Optimizations" || ordinary["docs/development/"] != "Development" {
+	if ordinary["docs/design/records/"] != "" || ordinary["docs/optimizations/"] != "Optimizations" || ordinary["docs/development/"] != "Development" {
 		t.Errorf("ordinary Project links are missing: %v", ordinary)
 	}
 	group := groupRe.FindStringSubmatch(projectHTML)
@@ -719,19 +719,19 @@ func TestNavigation(t *testing.T) {
 		t.Error("numbered-record disclosure has no visible summary")
 	}
 	groupLinks := sidebarLinkRe.FindAllStringSubmatch(group[1], -1)
-	if len(groupLinks) == 0 || html.UnescapeString(groupLinks[0][3]) != "Overview" || site(groupLinks[0][1]) != "docs/design/" {
+	if len(groupLinks) == 0 || html.UnescapeString(groupLinks[0][3]) != "Overview" || site(groupLinks[0][1]) != "docs/design/records/" {
 		t.Errorf("Design Records disclosure does not start with its Overview link: %v", groupLinks)
 	}
 	overviewCount := 0
 	for _, link := range groupLinks {
-		if site(link[1]) == "docs/design/" {
+		if site(link[1]) == "docs/design/records/" {
 			overviewCount++
 		}
 	}
 	if overviewCount != 1 {
 		t.Errorf("Design Records disclosure has %d Overview links, want one", overviewCount)
 	}
-	entries, err := filepath.Glob(filepath.Join("..", "docs", "design", "[0-9][0-9][0-9]-*.md"))
+	entries, err := filepath.Glob(filepath.Join("..", "docs", "design", "records", "[0-9][0-9][0-9]-*.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -740,13 +740,13 @@ func TestNavigation(t *testing.T) {
 		sourcePath := strings.TrimPrefix(filepath.ToSlash(entry), "../")
 		wantDesignPages = append(wantDesignPages, urlOf(sourcePath))
 	}
-	wantDesignPages = append([]string{"docs/design/"}, wantDesignPages...)
+	wantDesignPages = append([]string{"docs/design/records/"}, wantDesignPages...)
 	var designPages []string
 	var currentIsActive bool
 	for _, link := range sidebarLinkRe.FindAllStringSubmatch(group[1], -1) {
 		href := site(link[1])
 		designPages = append(designPages, href)
-		if href == "docs/design/042-responsive-lsp-analysis-and-code-actions/" && link[2] == " aria-current=\"page\"" {
+		if href == "docs/design/records/042-responsive-lsp-analysis-and-code-actions/" && link[2] == " aria-current=\"page\"" {
 			currentIsActive = true
 		}
 	}
@@ -756,7 +756,7 @@ func TestNavigation(t *testing.T) {
 	if !currentIsActive {
 		t.Error("current design record is not marked active inside the closed disclosure")
 	}
-	indexPage, err := os.ReadFile(filepath.Join(out, "docs", "design", "index.html"))
+	indexPage, err := os.ReadFile(filepath.Join(out, "docs", "design", "records", "index.html"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -780,7 +780,7 @@ func TestNavigation(t *testing.T) {
 	for _, link := range regexp.MustCompile(`<a class="(prev|next)" href="([^"]*)"`).FindAllStringSubmatch(string(pager[1]), -1) {
 		pagerLinks[link[1]] = site(link[2])
 	}
-	wantPager := map[string]string{"prev": "docs/design/041-missing-token-recovery/", "next": "docs/design/043-generated-parser-observability/"}
+	wantPager := map[string]string{"prev": "docs/design/records/041-missing-token-recovery/", "next": "docs/design/records/043-generated-parser-observability/"}
 	if !maps.Equal(pagerLinks, wantPager) {
 		t.Errorf("design record footer pager = %v, want %v", pagerLinks, wantPager)
 	}
@@ -798,16 +798,16 @@ func TestNavigation(t *testing.T) {
 	for _, e := range searchEntries {
 		searchPages[e.URL] = true
 	}
-	for _, page := range []string{"docs/design/012-typed-values/", "docs/optimizations/077-inline-node-expressions-in-generated-go-parsers/"} {
+	for _, page := range []string{"docs/design/records/012-typed-values/", "docs/optimizations/077-inline-node-expressions-in-generated-go-parsers/"} {
 		if !searchPages[page] {
 			t.Errorf("search index omits %s", page)
 		}
 	}
-	designIndex, err := os.ReadFile(filepath.Join(out, "docs", "design", "index.html"))
+	designIndex, err := os.ReadFile(filepath.Join(out, "docs", "design", "records", "index.html"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(designIndex), "docs/design/012-typed-values/") {
+	if !strings.Contains(string(designIndex), "docs/design/records/012-typed-values/") {
 		t.Error("Design Records index omits its detail page")
 	}
 	optimizationIndex, err := os.ReadFile(filepath.Join(out, "docs", "optimizations", "index.html"))

@@ -102,7 +102,7 @@ func (s *Site) renderLanding() error {
 		{"spec/", "The normative definition of the PEGO grammar language."},
 		{"reference/", "The Go API and the command-line tool, generated from the source."},
 		{"examples/", "Small grammars that show the features: a calculator, an outline and a small language."},
-		{"docs/design/", "The decisions behind PEGO and their rationale."},
+		{"docs/design/records/", "The decisions behind PEGO and their rationale."},
 	} {
 		q := s.page(c.url)
 		if q == nil {

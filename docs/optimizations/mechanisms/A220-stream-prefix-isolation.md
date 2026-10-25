@@ -36,7 +36,7 @@ Source owners: [`prefix allocation
 policy`](../../../internal/engine/stream_prefix.go), [`nodeChunks and stream
 root protection`](../../../internal/engine/runtime.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A200](A200-stream-capture-frame-reuse.md), [A230](A230-stream-undo-cleanup.md), [A240](A240-stream-vm-stack-cleanup.md).

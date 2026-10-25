@@ -21,7 +21,7 @@ position units. It does not work with `RecognizeOnly` (`ParseStream` returns an 
 `-types` also `ParseStreamAST` and `IterateAST` for typed elements ([Code generation](generated-streams.md)). If the problem is the opposite one, a text that stays in memory and is edited again and again, see
 [Incremental parsing](incremental.md): a `Document` is always parsed as a whole, so the two do not combine.
 
-The design is in [design record 007](../design/007-streaming-and-incremental-parsing.md); the pragma is specified in
+The design is in [design record 007](../design/records/007-streaming-and-incremental-parsing.md); the pragma is specified in
 [spec/pragmas.md](../../spec/pragmas.md#stream).
 
 Recognition treats `#stream` as an ordinary repetition and invokes no callbacks. Captures needed by element
@@ -607,4 +607,4 @@ starts a goroutine for you. Stopping a stream that waits for a quiet reader need
 - [Error Messages](error-messages.md): `@error` and the shape of `SyntaxError`.
 - [Recovering from Errors](recovery.md): `#recover` and recovered errors.
 - [Runtime](running-parsers.md): backends, position units and the other parse options.
-- [Design record 007](../design/007-streaming-and-incremental-parsing.md).
+- [Design record 007](../design/records/007-streaming-and-incremental-parsing.md).

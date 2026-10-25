@@ -51,7 +51,7 @@ emission`](../../../internal/engine/bcompile.go), [`generated choice
 guards`](../../../internal/engine/gen.go), [`TypeScript choice
 guards`](../../../internal/engine/gen_ts.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [M020](M020-character-class-tests.md), [M080](M080-direct-code-point-access.md).

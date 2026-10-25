@@ -38,7 +38,7 @@ A good deal of the time you can use both: the engine in tools and tests, and the
 
 The generated parser returns the **same tree and the same errors** as the engine, so switching between them does not
 change what your code sees. The test suite checks this for every grammar in `examples/`
-([design record 008](../design/008-code-generation.md)).
+([design record 008](../design/records/008-code-generation.md)).
 
 ## Quick Start
 
@@ -293,7 +293,7 @@ from 1.169–3.164× depending on workload and execution path. These are synthet
 measurements, not workload-wide estimates. Focused `WithProfile` runs were
 3.8–26.9× ordinary time and added about 45–395 KB/op and 25–50 allocations/op
 across the measured cases; see
-[design 043](../design/043-generated-parser-observability.md#performance-and-results)
+[design 043](../design/records/043-generated-parser-observability.md#performance-and-results)
 for scope and generation costs. Focused TypeScript profiles measured 1.58–4.02×
 ordinary time, depending on API and fixture; see the TypeScript profile
 measurements in design 043 for conditions and limits.

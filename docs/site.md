@@ -47,7 +47,7 @@ The build output (`site/dist`) is not committed.
 | URL | Source |
 |:--|:--|
 | `/` | The landing page, assembled from [`README.md`](../README.md): the tagline and introduction, a live example with the README's grammar, the feature list under "Why PEGO" as cards, and the following sections |
-| `/docs/tutorial/`, `/docs/guide/`, `/spec/`, `/docs/design/`, `/docs/…`, `/examples/` | The Markdown files of the repository, rendered at build time. Links between Markdown files (relative, relative to the repository root like `/spec/types.md`, or percent-encoded) become links between pages; links to other files of the repository go to GitHub. The design records get a generated index |
+| `/docs/tutorial/`, `/docs/guide/`, `/spec/`, `/docs/design/records/`, `/docs/…`, `/examples/` | The Markdown files of the repository, rendered at build time. Links between Markdown files (relative, relative to the repository root like `/spec/types.md`, or percent-encoded) become links between pages; links to other files of the repository go to GitHub. The design records get a generated index |
 | `/reference/` | The API reference of packages `pego`, `grammar` and `runtime`, generated from the Go source with `go/doc`, and the reference of the `pego` command, generated from what the command prints: its usage message and `pego <command> -h` for every command it lists. Types that are aliases of internal types (such as `Node`) show the definition and methods of the internal type |
 | `/playground/` | The playground: `app.js`, `worker.js`, content-hashed `wasm/pego-<hash>.wasm` and `runtime/wasm_exec-<hash>.js`, plus `assets.json` pairing current/previous Go and optional TinyGo generations; every page records the current Go WASM in `<html data-wasm>` and dual builds also record `data-tinygo-wasm`. The stable `wasm_exec.js` supports pre-manifest workers |
 | `/search-index.json` | The text of every page, for the search box in the header (press `/`) |
@@ -96,7 +96,7 @@ The first upgrade from a pre-manifest site reads its playground HTML and stable 
 immutable deploy URL recorded in the manifest. Missing or invalid published assets fail the build; a genuinely missing
 playground initializes a first deployment. Keep production publication sequential. Rollbacks and manually promoted
 previews need `-previous-site` set to the deployment being replaced; retention does not coordinate concurrent promotions.
-To deliberately reset retention, pass `-previous-site ''`. See [the asset-retention design](design/023-playground-asset-retention.md)
+To deliberately reset retention, pass `-previous-site ''`. See [the asset-retention design](design/records/023-playground-asset-retention.md)
 for the format, bounds and bootstrap limitations.
 
 [`netlify.toml`](../netlify.toml) at the root of the repository configures Netlify: the default build command is
@@ -145,7 +145,7 @@ decoding excludes compression/encoding, browser DOM, worker and WebAssembly cost
 ## Changing the Site
 
 - **The grammar reference** in `spec/syntax.md` is generated with `go generate ./spec` from `pego.pego` and `spec/syntax.md.tmpl`; it publishes the simplified syntax view and links to the canonical full grammar in `pego.pego` on GitHub.
-- **A new document** in `docs/guide/`, `docs/tutorial/`, `spec/`, `docs/design/` or `docs/` appears in its section
+- **A new document** in `docs/guide/`, `docs/tutorial/`, `spec/`, `docs/design/records/` or `docs/` appears in its section
   automatically through the include rules in [`site/config.json`](../site/config.json).
   Add a section match there for a new documentation directory; unmatched pages otherwise appear under Other.
   Front matter can control publication, navigation, search, titles and routes without changing Markdown bodies.

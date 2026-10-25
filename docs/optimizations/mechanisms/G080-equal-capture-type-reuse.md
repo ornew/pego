@@ -36,7 +36,7 @@ Source owners: [`equal captured type
 merge`](../../../internal/engine/check.go), [`immutable inferred type
 structures`](../../../internal/engine/types.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [G030](G030-constructor-dependency-analysis.md), [G085](G085-action-free-positional-items.md).

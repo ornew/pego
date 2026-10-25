@@ -5,7 +5,7 @@
 // syntax, compile and type errors as diagnostics. It answers formatting, go to definition, find
 // references, document highlights, document symbols, hover, rename, completion and semantic token
 // requests. Each document is analyzed on its own: a .pego file is a whole grammar. The design is
-// in docs/design/017-language-server.md.
+// in docs/design/records/017-language-server.md.
 package lsp
 
 import (

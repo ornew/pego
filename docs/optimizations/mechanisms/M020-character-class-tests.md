@@ -42,7 +42,7 @@ and VM class tests`](../../../internal/engine/vm.go), [`class test
 emission`](../../../internal/engine/gen.go), [`TypeScript class test
 emission`](../../../internal/engine/gen_ts.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [M070](M070-vm-predecoded-match-data.md), [M040](M040-character-scan-loops.md), [M080](M080-direct-code-point-access.md).

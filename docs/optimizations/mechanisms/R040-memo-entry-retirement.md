@@ -41,7 +41,7 @@ splice`](../../../internal/engine/memo.go), [`left-recursion seed
 ownership`](../../../internal/engine/runtime.go), [`Document edit
 invalidation`](../../../internal/engine/document.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [M060](M060-left-recursion-growth.md), [A050](A050-streaming-state-reuse.md), [R070](R070-document-memo-edits.md).

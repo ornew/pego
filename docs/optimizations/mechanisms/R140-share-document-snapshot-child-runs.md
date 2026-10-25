@@ -42,7 +42,7 @@ Source owners: [`shareSnapshotChildren and
 snapshotChildChunks`](../../../internal/engine/snapshot.go), [`flat child
 comparator`](../../../internal/engine/snapshot_child_chunks_reference.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [R130](R130-document-snapshot-record-sharing.md), [R150](R150-cache-snapshot-child-run-descriptors.md).

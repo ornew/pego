@@ -1,6 +1,6 @@
 # Netlify configuration for the PEGO web site: the landing page, the documentation rendered from
 # the repository's Markdown, the API reference and the playground. The build needs only Go; see
-# docs/guide/playground.md and docs/design/016-web-site-and-playground.md.
+# docs/guide/playground.md and docs/design/records/016-web-site-and-playground.md.
 
 [build]
   command = "sh site/build.sh"
@@ -22,6 +22,13 @@
   to = "https://pego.ornew.net/:splat"
   status = 301
   force = true
+
+# The design records moved to /docs/design/records/. A rule without force applies only where no page
+# exists at the requested path, so the pages that now live under /docs/design/ are not redirected.
+[[redirects]]
+  from = "/docs/design/:record"
+  to = "/docs/design/records/:record"
+  status = 301
 
 [[headers]]
   for = "/*"

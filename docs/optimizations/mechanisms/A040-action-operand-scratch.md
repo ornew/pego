@@ -47,7 +47,7 @@ evalCtx`](../../../runtime/runtime.go), [`typed evaluation
 scratch`](../../../runtime/typed.go), [`Parser action
 context`](../../../internal/engine/tsrt/runtime.ts).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A190](A190-evaluation-context-reuse.md), [A130](A130-closure-lambda-arenas.md), [A150](A150-vm-position-and-lambda-chunks.md).

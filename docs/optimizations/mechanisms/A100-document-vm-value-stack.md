@@ -39,7 +39,7 @@ values`](../../../internal/engine/document.go), [`VM value cache
 policy`](../../../internal/engine/document_vm_values.go), [`ownership and
 trimming checks`](../../../internal/engine/document_vm_values_test.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [R100](R100-document-repetition-resumption.md), [A240](A240-stream-vm-stack-cleanup.md).

@@ -35,7 +35,7 @@ useCtx`](../../../runtime/runtime.go), [`typed
 context`](../../../runtime/typed.go),
 [`Parser.useCtx`](../../../internal/engine/tsrt/runtime.ts).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A040](A040-action-operand-scratch.md), [A130](A130-closure-lambda-arenas.md).

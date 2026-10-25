@@ -4,7 +4,7 @@
 //
 // The checks work on the grammar AST alone. Each check reports only what it can prove from the
 // grammar (the exceptions are the performance hints, which have the severity Hint); see
-// docs/design/018-grammar-linting.md for the reasoning behind each one.
+// docs/design/records/018-grammar-linting.md for the reasoning behind each one.
 package lint
 
 import (

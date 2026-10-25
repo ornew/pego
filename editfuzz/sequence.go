@@ -9,7 +9,7 @@
 //
 // Fuzz generates sequences from a seed and an initial-text corpus, Replay runs a saved sequence and
 // Minimize shortens a failing one while it fails the same way. The design is described in
-// docs/design/037-replayable-edit-fuzzing.md.
+// docs/design/records/037-replayable-edit-fuzzing.md.
 package editfuzz
 
 import (

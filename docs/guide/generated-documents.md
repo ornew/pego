@@ -51,8 +51,8 @@ Both `Document.Parse` and `Document.ParseAST` return owned syntax diagnostics: r
 their `Expected` and `Messages` slices are copied; ordinary failures are freshly constructed. Mutating a returned
 error cannot affect memoized errors or a later parse. Parsing, diagnostic copying and typed publication share one
 work budget; interruption returns the result type's zero value and clears reusable state as needed for a retry.
-`-document` cannot be combined with `-lang ts`; engine-only Document controls such as `EditBatch` are separate work. See the [direct typed measurements](../design/044-generated-incremental-and-stream-parsers.md#local-measurements-for-direct-typed-document-matching)
-and the [conversion fallback measurements](../design/044-generated-incremental-and-stream-parsers.md#local-measurements-for-typed-go-document-conversion).
+`-document` cannot be combined with `-lang ts`; engine-only Document controls such as `EditBatch` are separate work. See the [direct typed measurements](../design/records/044-generated-incremental-and-stream-parsers.md#local-measurements-for-direct-typed-document-matching)
+and the [conversion fallback measurements](../design/records/044-generated-incremental-and-stream-parsers.md#local-measurements-for-typed-go-document-conversion).
 
 ## Related Topics
 

@@ -41,7 +41,7 @@ Source owners: [`compiler.scanRepeat`](../../../internal/engine/compile.go),
 [`dgen.scan`](../../../internal/engine/gen_direct.go),
 [`tsGen.scanRepeat`](../../../internal/engine/gen_ts.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [E010](E010-value-free-rule-bodies.md), [M020](M020-character-class-tests.md).

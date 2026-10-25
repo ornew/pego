@@ -4,7 +4,7 @@
 files. Any editor with an LSP client can use it to show the errors of a grammar as you type, format it, jump between
 rules and types, show the type a rule produces, rename and complete names.
 This guide explains what the server does, how to set up an editor, and its limits. The design is recorded in
-[design record 017](../design/017-language-server.md).
+[design record 017](../design/records/017-language-server.md).
 
 - [Installing the server](#installing-the-server)
 - [What the server does](#what-the-server-does)

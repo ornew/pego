@@ -38,7 +38,7 @@ Source owners: [`concat element evaluation`](../../../internal/engine/eval.go),
 [`concat emission`](../../../internal/engine/gen.go), [`concat
 emission`](../../../internal/engine/gen_ts.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [E050](E050-projected-repetition-values.md), [A040](A040-action-operand-scratch.md).

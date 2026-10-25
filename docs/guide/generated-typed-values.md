@@ -126,7 +126,7 @@ stars text 42
   to a third of the memory (JSON 6.7 → 3.1 ms and 10.4 → 2.4 MB on a 262 KB input, less than `Recognize`; XML, the
   left-recursive calculator and the outline grammar alike; the Operators Rule calculator about 11% faster). Otherwise
   `ParseAST` runs `Parse` and converts the tree, about 10% slower than `Parse` (minilang). The
-  [design record](../design/012-typed-values.md) explains both. The types, their conversions and the typed rules add about
+  [design record](../design/records/012-typed-values.md) explains both. The types, their conversions and the typed rules add about
   as much code to `parser.go` as the parser itself.
 - **Scratch reuse.** The typed runtime clears discarded undo entries after rollback, rule return and captured
   repetition elements. Parser recycling also clears saved-capture backing slices, so overwritten values do not remain

@@ -38,7 +38,7 @@ marks`](../../../internal/engine/runtime.go), [`generated expectation
 filter`](../../../runtime/runtime.go), [`VM label/recovery
 state`](../../../internal/engine/vm.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A110](A110-expected-set-ids.md).

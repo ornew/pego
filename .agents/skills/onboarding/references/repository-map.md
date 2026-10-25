@@ -15,7 +15,7 @@ before choosing an edit location:
 | Ready-made parsers, playground and site | `parsers/`, `playground/`, `site/` |
 
 Use [specification index](../../../../spec/README.md) for supported language and
-parsing contracts. Use [design records](../../../../docs/design/000-template.md) for
+parsing contracts. Use [design records](../../../../docs/design/records/000-template.md) for
 decisions and proposals, and [development status](../../../../docs/development.md#language-feature-status)
 to distinguish them from shipped behavior. Use the [guide index](../../../../docs/guide/README.md)
 for user-facing workflows. For optimization mechanisms and applicability, use the

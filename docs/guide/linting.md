@@ -15,7 +15,7 @@ input. The linter finds them, and other likely mistakes, by reading the grammar 
 
 Findings can also be suppressed with comments in the grammar ([Suppressing findings](#suppressing-findings)). The
 design, and how the checks are kept free of false positives, is in
-[design record 018](../design/018-grammar-linting.md).
+[design record 018](../design/records/018-grammar-linting.md).
 
 - [On the command line](#on-the-command-line)
 - [From Go](#from-go)

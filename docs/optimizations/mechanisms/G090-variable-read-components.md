@@ -35,7 +35,7 @@ Evidence records:
 Source owners: [`ruleVariables and dependency
 components`](../../../internal/engine/analysis.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [R010](R010-per-position-memo-chains.md), [R050](R050-bounded-variable-bindings.md).

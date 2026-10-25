@@ -48,7 +48,7 @@ analysis`](../../../internal/engine/compile.go), [`recognizer
 generation`](../../../internal/engine/gen.go), [`generated recognize entry
 point`](../../../internal/engine/gen_ts.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [E010](E010-value-free-rule-bodies.md), [G020](G020-lazy-backend-preparation.md), [A160](A160-whole-input-scratch-pooling.md).

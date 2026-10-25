@@ -37,9 +37,9 @@ broad speed claim.
 Evidence records: [094](../094-generated-typed-output-liveness.md).
 
 Source owners: [`ownership and measurement
-design`](../../design/034-typed-output-liveness.md).
+design`](../../design/records/034-typed-output-liveness.md).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A070](A070-typed-output-bootstrap.md).

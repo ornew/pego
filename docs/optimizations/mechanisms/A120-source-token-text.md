@@ -36,7 +36,7 @@ Source owners: [`input.text and buildOffs`](../../../internal/engine/input.go),
 [`generated text extraction`](../../../runtime/runtime.go),
 [`TypeScript text extraction`](../../../internal/engine/tsrt/runtime.ts).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [R080](R080-lazy-code-point-offsets.md), [A210](A210-bounded-stream-text-snapshots.md).

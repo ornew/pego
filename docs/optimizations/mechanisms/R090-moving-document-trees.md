@@ -41,7 +41,7 @@ handling`](../../../internal/engine/runtime.go), [`Node generation and
 Clone`](../../../internal/engine/node.go), [`edit log and result
 shift`](../../../internal/engine/document.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [R130](R130-document-snapshot-record-sharing.md), [R140](R140-share-document-snapshot-child-runs.md).

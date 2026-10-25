@@ -37,7 +37,7 @@ cache`](../../../internal/engine/stream_text_snapshots.go), [`copy
 reference`](../../../internal/engine/stream_text_snapshots_reference.go),
 [`input.text`](../../../internal/engine/input.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A120](A120-source-token-text.md), [A050](A050-streaming-state-reuse.md).

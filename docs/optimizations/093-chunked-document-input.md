@@ -13,7 +13,7 @@ indexed sequence of ranges. Edits split and replace ranges. Above 512 pieces,
 the current text is compacted into one piece while remaining in piece-based
 storage. Promotion is one-way; later shrinking does not restore flat storage.
 Ordinary batch and stream parsing retain their contiguous paths. See
-[design 051](../design/051-chunked-document-input.md) for text ownership,
+[design 051](../design/records/051-chunked-document-input.md) for text ownership,
 UTF-8 boundary behavior and correctness contracts.
 
 ## Applicability

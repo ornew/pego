@@ -45,7 +45,7 @@ Source owners: [`memoTable.get and put`](../../../internal/engine/memo.go),
 table`](../../../runtime/runtime.go), [`TypeScript memo
 entries`](../../../internal/engine/tsrt/runtime.ts).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [R020](R020-deferred-memoization.md), [R040](R040-memo-entry-retirement.md), [R050](R050-bounded-variable-bindings.md), [G090](G090-variable-read-components.md).

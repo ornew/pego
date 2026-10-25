@@ -36,7 +36,7 @@ Source owners: [`undo backing
 cleanup`](../../../internal/engine/stream_undo.go), [`parser.commit and
 pruning`](../../../internal/engine/input.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A050](A050-streaming-state-reuse.md), [A240](A240-stream-vm-stack-cleanup.md).

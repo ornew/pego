@@ -12,7 +12,7 @@ At the start of every development session, use the `onboarding` skill in
 - `README.md`: project overview and documentation index.
 - `spec/`: normative grammar, parser and bytecode contracts.
 - `docs/tutorial/`, `docs/guide/`, `docs/cookbook/`: learning and usage.
-- `docs/design/`: decisions; `docs/optimizations/`: measured mechanisms.
+- `docs/design/records/`: decisions; `docs/optimizations/`: measured mechanisms.
 - `docs/development.md`, `docs/site.md`, `docs/performance.md`: development,
   site maintenance and performance method/status.
 - `site/`: Nanosite configuration and wrapper; `bench/`: benchmark sources.

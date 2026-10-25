@@ -6,7 +6,7 @@ describes mechanisms and their evidence; commits provide chronology. Its
 mechanism pages and backend table describe current applicability; numbered
 records preserve scoped historical evidence. Same-source reference controls
 are added incrementally under
-[design 024](design/024-optimization-mechanism-controls.md).
+[design 024](design/records/024-optimization-mechanism-controls.md).
 Update the catalog in the same commit as an optimization. Correctness-only fixes do not belong in the catalog; record measured performance impact in their commit messages.
 
 Keep a summary with the baseline commit, candidate change, workload, environment, sample method,
@@ -27,7 +27,7 @@ document describes the benchmarks, analyzes the results, and records how they ca
 
 This analysis describes the generated full-suite snapshot in [benchmarks.md](benchmarks.md), measured on 2026-10-23 at commit `744322a0` (Go 1.27.1, Apple M3 Max, darwin/arm64, 16 cores, `GOMAXPROCS=16`). The measured tree differs from that commit only in the report template; the code is unchanged. It contains 217 benchmark cases, three samples per case, and took 889.039 seconds. This is one revision's snapshot, not a before-and-after comparison; ratios below compare operations within this run and do not attribute changes to a particular mechanism.
 Work-control behavior and its generated-Go cost are described in
-[design 033](design/033-cancellable-parses-and-work-budgets.md) and
+[design 033](design/records/033-cancellable-parses-and-work-budgets.md) and
 [optimization record 096](optimizations/096-specialize-generated-go-method-helpers.md).
 The snapshot measures active controls on JSON and XML (`WorkControlModes`, `ControlledParse`); the ordinary parsing
 benchmarks run with the controls inactive. Relative to the inactive mode on the three interpreters in both position
@@ -39,7 +39,7 @@ the same allocation counts. Generated Go with finite work limits takes 1.43–1.
 
 **Typed values.** `ParseAST` directly constructs values for JSON, CSV, XML, both calculator grammars and Outline. For those six direct workloads, it takes 0.69–0.94× generated CodePoints `Parse` time and allocates 0.27–0.41× its bytes. Minilang and Recovery use converted output: `ParseAST` takes 0.96× and 0.97× generated `Parse` time and allocates 0.28× and 0.30× its bytes, respectively. On JSON and XML, direct `ParseAST` takes 0.95× and 1.08× standard-library time, with 1.18× and 1.25× its allocated bytes. These operations return different structures and should not be treated as equivalent outputs. CSV constructs typed `File`, `Record` and `Field` values directly.
 
-Generated typed-output liveness cleanup is not implemented. Its scope and measurement gates are in [design 034](design/034-typed-output-liveness.md); [record 094](optimizations/094-generated-typed-output-liveness.md) holds the measured candidate.
+Generated typed-output liveness cleanup is not implemented. Its scope and measurement gates are in [design 034](design/records/034-typed-output-liveness.md); [record 094](optimizations/094-generated-typed-output-liveness.md) holds the measured candidate.
 A separate generated-Go typed-allocation bootstrap and its focused measurements are recorded in [optimization record 098](optimizations/098-bootstrap-generated-typed-output-allocations.md); they are not part of this full-suite snapshot.
 
 **Recognition.** Across all eight workloads in CodePoints, closure recognition takes 0.63–0.80× closure Node-parse time, while generated recognition takes 0.36–0.67× generated Node-parse time. Simple grammars can recognize with zero allocations; predicates that read values (XML tag names, Outline indentation), left-recursion growth and recovery still require values or state. Typed `ParseAST` takes 1.80× generated `Recognize` time on JSON and 1.92× on XML because it returns typed values.

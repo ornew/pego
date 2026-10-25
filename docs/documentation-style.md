@@ -14,7 +14,7 @@ Every page has one job, and a reader should be able to tell which from the direc
 | Guide | `docs/guide/` | Explains one feature in depth, for a reader who has a use for it | [TEMPLATE.md](guide/TEMPLATE.md) |
 | Cookbook | `docs/cookbook/` | Solves one concrete task with complete, runnable files | [TEMPLATE.md](cookbook/TEMPLATE.md) |
 | Specification | `spec/` | Defines the behavior that implementations must have | [TEMPLATE.md](../spec/TEMPLATE.md) |
-| Design record | `docs/design/` | Records a decision, its alternatives and its validation | [000-template.md](design/000-template.md) |
+| Design record | `docs/design/records/` | Records a decision, its alternatives and its validation | [000-template.md](design/records/000-template.md) |
 | Optimization record | `docs/optimizations/` | Records a measured mechanism | [000-template.md](optimizations/000-template.md) |
 
 A page that does two jobs is two pages. A guide that grows a section a reader would look for on its own, or that

@@ -39,7 +39,7 @@ directLeanBody`](../../../internal/engine/gen_direct.go),
 [`generator.directNodeBody`](../../../internal/engine/gen_direct_node.go),
 [`Node route selection`](../../../internal/engine/gen.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [G060](G060-ordinary-typed-direct-rules.md), [M080](M080-direct-code-point-access.md), [M130](M130-short-literal-comparisons.md).

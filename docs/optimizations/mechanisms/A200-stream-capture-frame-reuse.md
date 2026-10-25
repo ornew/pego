@@ -36,7 +36,7 @@ Source owners: [`stream frame
 allocation/commit`](../../../internal/engine/runtime.go), [`frame reuse
 selection`](../../../internal/engine/stream_frame_scratch.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A050](A050-streaming-state-reuse.md), [A220](A220-stream-prefix-isolation.md).

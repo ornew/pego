@@ -4,7 +4,7 @@ package engine
 // around the one function all backends call for a rule (parser.call), so that an ordinary parse
 // pays for it with a single nil check per call of a rule that is not plain; plain calls, which
 // skip call, take that path only when the parser allows it (parser.noPlain), which a traced
-// parse does not. See docs/design/014-tracing-and-profiling.md.
+// parse does not. See docs/design/records/014-tracing-and-profiling.md.
 
 // TraceKind tells whether a TraceEvent starts or ends a rule call.
 type TraceKind uint8

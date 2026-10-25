@@ -18,7 +18,7 @@
 // candidates where it can tell, evaluating predicates on the text it generated and checking what the
 // parser would match as the text grows, and retries otherwise; what it cannot evaluate, such as
 // predicates over the results of actions, is handled only by generating and checking. The design is
-// described in docs/design/015-input-generation.md.
+// described in docs/design/records/015-input-generation.md.
 //
 // With WithCoverage, the generator prefers rules and alternatives that no accepted input has exercised
 // yet, and Coverage reports those that remain. Invalid generates near-miss invalid inputs: single

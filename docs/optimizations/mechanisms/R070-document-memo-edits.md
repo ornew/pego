@@ -38,7 +38,7 @@ Source owners: [`memoTable.splice`](../../../internal/engine/memo.go),
 [`advanceEntry`](../../../internal/engine/document.go), [`callBegin edit
 advancement`](../../../internal/engine/runtime.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [R090](R090-moving-document-trees.md), [R100](R100-document-repetition-resumption.md).

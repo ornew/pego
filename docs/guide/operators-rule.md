@@ -13,7 +13,7 @@ This guide builds the same calculator in all three styles, compares the trees an
 helps you choose. It relies on [Shaping Trees](shaping-trees.md), [Declaring Types](types.md) and [Actions](actions.md) for captures, types and `foldl`; the normative
 text is in [Operators Rule](../../spec/operators-rule.md) and
 [Left recursion](../../spec/parser-expressions.md#left-recursion), and the reasoning behind the design in
-[design record 005](../design/005-operators-rule.md) and [design record 003](../design/003-packrat-parsing.md).
+[design record 005](../design/records/005-operators-rule.md) and [design record 003](../design/records/003-packrat-parsing.md).
 
 To follow along, put each grammar in the file named on its first line and run the commands shown (`pego` is the tool
 from `go install github.com/ornew/pego/cmd/pego@latest`, or `go run ./cmd/pego` in a checkout). The Operators Rule and the

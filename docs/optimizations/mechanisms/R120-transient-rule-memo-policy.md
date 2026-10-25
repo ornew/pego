@@ -35,7 +35,7 @@ Source owners: [`transientRules`](../../../internal/engine/compile.go),
 Document memo decision`](../../../internal/engine/runtime.go), [`transient rule
 metadata emission`](../../../internal/engine/gen_ts.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [R020](R020-deferred-memoization.md), [M050](M050-plain-rule-calls.md).

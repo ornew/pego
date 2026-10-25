@@ -440,10 +440,10 @@
         {
           "title": "Design Records",
           "match": [
-            "docs/design/*.md"
+            "docs/design/records/*.md"
           ],
           "first": [
-            "docs/design/README.md"
+            "docs/design/records/README.md"
           ],
           "collapsed": true
         }
@@ -481,7 +481,7 @@
     },
     {
       "match": [
-        "docs/design/README.md"
+        "docs/design/records/README.md"
       ],
       "values": {
         "navTitle": "Overview"
@@ -490,8 +490,8 @@
   ],
   "recordIndexes": [
     {
-      "source": "docs/design/README.md",
-      "directory": "docs/design",
+      "source": "docs/design/records/README.md",
+      "directory": "docs/design/records",
       "title": "Design Records",
       "introduction": "Each record explains a decision in the design of PEGO and the alternatives that were considered.",
       "includeTemplate": true,
@@ -513,21 +513,21 @@
     }
   ],
   "pagerOrder": [
-    "docs/design/README.md",
+    "docs/design/records/README.md",
     "examples/README.md",
     "docs/development.md",
     "docs/benchmarks.md",
     "docs/performance.md",
     "docs/optimizations/README.md",
     "docs/commit-messages.md",
-    "docs/design/*.md",
+    "docs/design/records/*.md",
     "docs/ref*.md",
     "docs/site.md"
   ],
   "redirects": {
     "/spec/pratt/": "/spec/operators-rule/",
-    "/docs/design/005-pratt-expressions/": "/docs/design/005-operators-rule/",
-    "/docs/design/050-pratt-skip-control/": "/docs/design/050-operators-rule-skip-control/",
+    "/docs/design/records/005-pratt-expressions/": "/docs/design/records/005-operators-rule/",
+    "/docs/design/records/050-pratt-skip-control/": "/docs/design/records/050-operators-rule-skip-control/",
     "/docs/optimizations/009-value-free-pratt-lines-discarding-trivia-in-example-grammars-936857c/": "/docs/optimizations/009-value-free-operators-rule-lines-discarding-trivia-in-example-grammars-936857c/",
     "/docs/optimizations/013-allocation-free-pratt-attempts-and-pooled-pratt-frames-in-the-engine-and-vms/": "/docs/optimizations/013-allocation-free-operators-rule-attempts-and-pooled-operators-rule-frames-in-the-engine-and-vms/",
     "/docs/optimizations/080-inline-eligible-typed-pratt-lines/": "/docs/optimizations/080-inline-eligible-typed-operators-rule-lines/",

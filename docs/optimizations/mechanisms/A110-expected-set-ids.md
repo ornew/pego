@@ -38,7 +38,7 @@ keep`](../../../internal/engine/runtime.go),
 expectation IDs`](../../../runtime/runtime.go), [`TypeScript
 description IDs`](../../../internal/engine/tsrt/runtime.ts).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [M100](M100-absent-expectation-filter.md).

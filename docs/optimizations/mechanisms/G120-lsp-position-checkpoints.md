@@ -31,7 +31,7 @@ Evidence records: [065](../065-position-conversion-in-the-language-server.md).
 Source owners: [`text index checkpoints and
 conversions`](../../../internal/lsp/text.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [M090](M090-diagnostic-line-index.md).

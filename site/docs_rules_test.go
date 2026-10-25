@@ -468,7 +468,7 @@ func TestDirectoryAndSiteLinkKinds(t *testing.T) {
 		{"docs/guide", kindGuide},
 		{"docs/guide/a.md", kindGuide},
 		{"docs/tutorials-old.md", kindProject},
-		{"docs/design/001-a.md", kindDesign},
+		{"docs/design/records/001-a.md", kindDesign},
 		{"docs/optimizations/001-a.md", kindOptim},
 		{"docs/performance.md", kindPerf},
 		{"docs/benchmarks.md", kindPerf},

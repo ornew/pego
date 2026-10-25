@@ -39,7 +39,7 @@ lowering`](../../../internal/engine/gen_direct_node.go), [`GenOptions private
 typed controls`](../../../internal/engine/gen.go), [`runtime invocation
 ownership`](../../../runtime/typed.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [G140](G140-typed-local-cuts.md), [G150](G150-typed-left-recursion-bodies.md), [G160](G160-typed-operators-line-bodies.md), [G200](G200-typed-local-capture-layouts.md).

@@ -41,7 +41,7 @@ tracking`](../../../runtime/runtime.go), [`typed
 tracking`](../../../runtime/typed.go), [`TypeScript
 cleanup`](../../../internal/engine/tsrt/runtime.ts).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A040](A040-action-operand-scratch.md), [A090](A090-typed-output-liveness-cleanup.md).

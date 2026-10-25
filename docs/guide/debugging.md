@@ -519,7 +519,7 @@ typed batch parsers. Typed no-callback runs added about 48 B/op with unchanged a
 counts; callback cost depends on parser path and workload, and the measured
 callbacks store scalar event fields rather than logging. These are not
 workload-wide estimates. See
-[design 043](../design/043-generated-parser-observability.md#performance-and-results).
+[design 043](../design/records/043-generated-parser-observability.md#performance-and-results).
 
 #### Profiling Generated Go Batch Parsers
 
@@ -558,7 +558,7 @@ was 3.8–26.9× the ordinary package time depending on API and fixture, adding
 about 45–395 KB/op and 25–50 allocations/op across the measured cases. The
 current generator without a profile was near parity with the prior
 trace-only generator. These are noisy, workload-specific comparisons, not a
-general estimate; see [design 043](../design/043-generated-parser-observability.md#generated-go-profile-measurements).
+general estimate; see [design 043](../design/records/043-generated-parser-observability.md#generated-go-profile-measurements).
 TypeScript batch profiling has its own `Profile` API, described below.
 
 #### Tracing and Profiling Generated Go Documents
@@ -658,7 +658,7 @@ In focused synthetic runs,
 no-callback option APIs ranged from 0.991–1.044× ordinary time, while parse
 callback profiles ranged from 1.052–1.288× depending on workload and filter; paired
 results were noisy and are not a general performance estimate. See
-[design 043](../design/043-generated-parser-observability.md#typescript-batch-measurements)
+[design 043](../design/records/043-generated-parser-observability.md#typescript-batch-measurements)
 for the measurement scope and limits.
 
 #### Profiling Generated TypeScript Batch Parsers
@@ -685,7 +685,7 @@ defines every counter, including when a snapshot taken inside a trace callback l
 
 Profiling requires `performance.now()`; without it, a profiled invocation returns an `Error`, and there is no
 `Date.now()` fallback. Profiled runs took 1.58 to 4.02 times as long as ordinary ones in focused Node 24.19
-measurements; see [design 043](../design/043-generated-parser-observability.md#typescript-profile-measurements) for the
+measurements; see [design 043](../design/records/043-generated-parser-observability.md#typescript-profile-measurements) for the
 conditions and limits. The specification covers clock failures and callback errors.
 
 ## Costs and Limits
@@ -695,7 +695,7 @@ measurements are linked above.
 
 - **Off, tracing costs nothing measurable.** A parse without `WithTrace` pays one pointer check per rule call that goes
   through the engine's general call path; plain calls of small rules skip that path and pay nothing. See
-  [design 014](../design/014-tracing-and-profiling.md#cost) for the details.
+  [design 014](../design/records/014-tracing-and-profiling.md#cost) for the details.
 - **On, a parse is several times slower**, mostly in the trace function. Profiles therefore show relative times.
 - **The trace shows the calls the backend makes.** The backends do not skip the same calls that cannot match the next
   character, so their traces can differ. With and without tracing, the results and errors are the same on every

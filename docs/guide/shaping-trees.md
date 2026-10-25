@@ -173,7 +173,7 @@ pego parse -g cst.pego -s cap -f sexpr -source-info -i 'xy'
 
 `same` yields the node labeled `@one`, not `@same`. The choice `alt` yields a string node or a tuple depending on the
 alternative, which is why it is called *transparent* (the reasoning is in
-[design record 002](../design/002-transparent-choice.md)). In `cap`, the capture `k` names the first element of the
+[design record 002](../design/records/002-transparent-choice.md)). In `cap`, the capture `k` names the first element of the
 tuple; see [Captures](#captures).
 
 **Only valued elements are in the tuple.** In `"(" expr ")"` the two parentheses are elements of the tuple, next to the

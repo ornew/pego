@@ -43,7 +43,7 @@ selection`](../../../internal/engine/gen.go), [`work-control method
 generation`](../../../internal/engine/gen_ordinary_methods.go), [`metered
 runtime helpers`](../../../runtime/work.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [G010](G010-generated-helper-sharing.md), [G060](G060-ordinary-typed-direct-rules.md).

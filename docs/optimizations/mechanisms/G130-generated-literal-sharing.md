@@ -35,7 +35,7 @@ Source owners: [`generator literal registry`](../../../internal/engine/gen.go),
 [`speculative registry rollback`](../../../internal/engine/gen_direct.go),
 [`TypeScript literal sharing selection`](../../../internal/engine/gen_ts.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [G010](G010-generated-helper-sharing.md), [G070](G070-literal-text-predicates.md).

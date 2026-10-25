@@ -40,7 +40,7 @@ resumeRepeat`](../../../internal/engine/resume.go), [`VM repetition run
 sites`](../../../internal/engine/vm.go), [`saved runs and
 eligibility`](../../../internal/engine/document.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [R110](R110-document-run-record-retention.md), [A100](A100-document-vm-value-stack.md).

@@ -34,7 +34,7 @@ Source owners: [`dgen literal comparison
 emission`](../../../internal/engine/gen_direct.go),
 [`parser.matchLiteral`](../../../runtime/runtime.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [M080](M080-direct-code-point-access.md), [M030](M030-literal-matching.md).

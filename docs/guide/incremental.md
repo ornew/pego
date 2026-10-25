@@ -29,7 +29,7 @@ Document. Generated Go provides `NewDocument`, `Text`, `Edit`, `Parse`, `Stats` 
 To observe edits and parse outcomes for downstream indexes or highlights, enable
 the opt-in [Document change notifications](document-changes.md) before editing.
 
-The design is in [design record 007](../design/007-streaming-and-incremental-parsing.md).
+The design is in [design record 007](../design/records/007-streaming-and-incremental-parsing.md).
 
 The model, the API and a walkthrough with `Stats` are below. Three more guides continue: [What Incremental Parsing
 Reuses](incremental-reuse.md) explains which results survive an edit and how to write grammars that keep more of them,
@@ -179,7 +179,7 @@ existing API requires `*Node`; each call creates a separate graph.
 
 ## Managing Reuse History
 
-An editor can choose when to release a document's incremental reuse history. For example, after a large replacement or when a file has been idle, call `doc.ResetHistory()` and let the next `doc.Parse()` build a fresh memo. This is an explicit policy decision; the parser applies no automatic byte threshold. Reset keeps the text, its version, the selected unit and backend, construction defaults and the last parse's `Stats`. Earlier returned trees stop moving through future reuse after reset, though movement from parses before reset is not undone. See [design record 035](../design/035-incremental-cache-controls.md) for the cache-control contract.
+An editor can choose when to release a document's incremental reuse history. For example, after a large replacement or when a file has been idle, call `doc.ResetHistory()` and let the next `doc.Parse()` build a fresh memo. This is an explicit policy decision; the parser applies no automatic byte threshold. Reset keeps the text, its version, the selected unit and backend, construction defaults and the last parse's `Stats`. Earlier returned trees stop moving through future reuse after reset, though movement from parses before reset is not undone. See [design record 035](../design/records/035-incremental-cache-controls.md) for the cache-control contract.
 
 ```go
 before := doc.CacheStats()

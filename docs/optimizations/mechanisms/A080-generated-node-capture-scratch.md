@@ -39,7 +39,7 @@ Source owners: [`node frame/slot scratch and parser
 release`](../../../runtime/runtime.go), [`capture scratch
 checks`](../../../internal/engine/gen_frame_scratch_test.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A020](A020-node-and-list-slabs.md), [A160](A160-whole-input-scratch-pooling.md).

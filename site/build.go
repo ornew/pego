@@ -202,7 +202,7 @@ func isOptimizationDetail(f string) bool {
 	return strings.HasPrefix(f, "docs/optimizations/") && f != "docs/optimizations/README.md"
 }
 
-var designRecordFileRe = regexp.MustCompile(`^docs/design/[0-9]{3}-.+\.md$`)
+var designRecordFileRe = regexp.MustCompile(`^docs/design/records/[0-9]{3}-.+\.md$`)
 
 func isDesignRecord(f string) bool { return designRecordFileRe.MatchString(f) }
 

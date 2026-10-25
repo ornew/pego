@@ -38,7 +38,7 @@ Source owners: [`parser.newNode, nodes, fields and
 kids`](../../../internal/engine/runtime.go), [`generated ptrSlab and node/list
 allocation`](../../../runtime/runtime.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A010](A010-compact-node-representation.md), [A250](A250-typed-object-slabs.md), [A260](A260-typed-list-slabs.md).

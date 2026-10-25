@@ -13,7 +13,7 @@ This document describes the repository layout and architecture, how to run tests
 | `internal/lsp/` | Language Server Protocol server for `.pego` files (`pego lsp`): JSON-RPC over standard input and output, document sync, diagnostics, formatting, navigation, hover, rename, completion, semantic tokens |
 | `editors/vscode/` | VS Code extension (Node.js, not part of the Go module): language configuration, TextMate grammar (`syntaxes/pego.tmLanguage.json`) and a client that starts `pego lsp` |
 | `sample/` | Generation of inputs that a grammar accepts, coverage reports, near-miss invalid inputs and a fuzzing helper (`Generate`, `New`, `Seed`). Public package. |
-| `pego.pego` | Typed source grammar and recoverable syntax tree; the generated source-parser integration is [proposed](design/054-generated-grammar-source-parser.md). |
+| `pego.pego` | Typed source grammar and recoverable syntax tree; the generated source-parser integration is [proposed](design/records/054-generated-grammar-source-parser.md). |
 | `internal/syntax/` | Lexer and parser for PEGO source code (source → `grammar.Grammar`) |
 | `internal/engine/` | Compiler, static analysis, parser runtime, action evaluation, bytecode VMs and Go and TypeScript code generation |
 | `runtime/` | Runtime package of generated Go parsers, imported by them or copied into them (`github.com/ornew/pego/runtime`) |
@@ -30,7 +30,7 @@ This document describes the repository layout and architecture, how to run tests
 | `docs/guide/` | Task-oriented guides to each feature ([index](guide/README.md)) |
 | `docs/cookbook/` | Recipes: complete, runnable solutions to concrete tasks ([index](cookbook/README.md)) |
 | `docs/documentation-style.md` | How the documentation is organized and written: page kinds, link directions, titles, voice and examples |
-| `docs/design/` | Design records; [template](design/000-template.md) for new proposals |
+| `docs/design/records/` | Design records; [template](design/records/000-template.md) for new proposals |
 | `docs/optimizations/` | Numbered optimization history, measured evidence and backend applicability ([catalog](optimizations/README.md)); measurement method and latest analysis remain in [performance.md](performance.md) |
 
 ## Architecture
@@ -44,7 +44,7 @@ This document describes the repository layout and architecture, how to run tests
 
 | Component | Main files | Responsibility |
 |:--|:--|:--|
-| Grammar intake | `internal/syntax/`, `grammar/` | Parses source or JSON into the public AST; opt-in strict JSON intake checks unknown and duplicate keys ([design 028](design/028-strict-grammar-json-intake.md)); formatting preserves comments and layout. |
+| Grammar intake | `internal/syntax/`, `grammar/` | Parses source or JSON into the public AST; opt-in strict JSON intake checks unknown and duplicate keys ([design 028](design/records/028-strict-grammar-json-intake.md)); formatting preserves comments and layout. |
 | Compiler and analysis | `internal/engine/compile.go`, `analysis.go`, `check.go` | Checks types, analyzes calls and dependencies, and compiles expressions. |
 | Runtime | `runtime.go`, `operators_rule.go`, `attrs.go`, `eval.go`, `alloc.go`, `stream_prefix.go`, `stream_undo.go`, `stream_stack.go` | Implements ordered choice, backtracking, actions, recovery and Operators Rule selection; whole-input memo bookkeeping uses sparse seen pages above its rule/input cutoffs ([record 087](optimizations/087-sparse-deferred-memo-seen-pages.md)); streaming commits reuse capture frames ([record 085](optimizations/085-reuse-stream-capture-frames.md)) and isolate prefix storage while batching inactive-scratch cleanup ([record 089](optimizations/089-isolate-stream-prefixes-and-batch-scratch-cleanup.md)). |
 | Bytecode | `bytecode.go`, `bcompile.go`, `vm.go`, `ivm.go` | Runs the same grammar semantics with recursive and iterative VMs; see the [bytecode specification](../spec/bytecode.md). |
@@ -54,7 +54,7 @@ This document describes the repository layout and architecture, how to run tests
 | Language tools | `internal/lint/`, `internal/lsp/`, `editors/vscode/` | Provides static checks, editor requests and the VS Code client. |
 | Input generation | `sample/` | Generates accepted inputs and coverage; generated inputs are checked by the parser. |
 
-Files without a directory are in `internal/engine/`. Optimization evidence is in the [catalog](optimizations/README.md); contracts and proposals are in `spec/` and `docs/design/`.
+Files without a directory are in `internal/engine/`. Optimization evidence is in the [catalog](optimizations/README.md); contracts and proposals are in `spec/` and `docs/design/records/`.
 
 ### Runtime
 
@@ -69,7 +69,7 @@ Nesting limits and tracing apply to rule calls. `Document` can reuse memo entrie
 repetitions; stream parsing emits elements and discards input already committed by the grammar.
 Core and generated Go/TypeScript parsing also support invocation-local cancellation and
 input-work/execution-step limits; streams and Documents use the same interruption
-contract. See [design 033](design/033-cancellable-parses-and-work-budgets.md)
+contract. See [design 033](design/records/033-cancellable-parses-and-work-budgets.md)
 for backend scope, cleanup and measured costs.
 
 ### Code Generation
@@ -77,18 +77,18 @@ for backend scope, cleanup and measured costs.
 Generated Go and TypeScript parsers embed their runtime and depend only on their standard libraries. Generated Go
 has direct paths for supported rules and general per-expression fallback; typed Go also emits inferred Go types
 and `ParseAST`/`ParseRuleAST` for configured-start and named rules
-([design 029](design/029-typed-named-rule-parsing.md)). Generation defaults (`WithGeneratedMaxDepth`, `gen -max-depth`) and invocation-local depth
-options are implemented ([design 022](design/022-generated-parser-depth-limits.md)); Go entry points accept
+([design 029](design/records/029-typed-named-rule-parsing.md)). Generation defaults (`WithGeneratedMaxDepth`, `gen -max-depth`) and invocation-local depth
+options are implemented ([design 022](design/records/022-generated-parser-depth-limits.md)); Go entry points accept
 functional `ParseOption`s, and TypeScript adds options-aware entry points. With `WithTypes` or `-types`, TypeScript
 exports grammar declarations and configured-start `parseAST` conversion ([guide](guide/typescript.md#typed-values),
-[design 030](design/030-typed-typescript-values.md)). Generated paths preserve the engine's tree, error, depth,
+[design 030](design/records/030-typed-typescript-values.md)). Generated paths preserve the engine's tree, error, depth,
 action and memo semantics.
 
 Generated Go `-document` can be combined with `-types`; `Document.ParseAST` directly matches and reuses typed
 memo entries when the grammar meets the batch typed runtime's eligibility rules. Other result types use Node
 conversion. Returned typed graphs are cloned per invocation, while CST Node members may share the mutable
 Document graph. See the [incremental parsing guide](guide/incremental.md) and
-[design 044](design/044-generated-incremental-and-stream-parsers.md).
+[design 044](design/records/044-generated-incremental-and-stream-parsers.md).
 
 Generated Go `-stream` adds a Node `ParseStream` that follows the engine's Reader stream contract, and with
 `-types` a `ParseStreamAST` that converts each element; it cannot yet be combined with TypeScript.
@@ -97,7 +97,7 @@ Generated Go `-stream` adds a Node `ParseStream` that follows the engine's Reade
 call counts with the engine across chunkings, units, controls, observability and Document generation; changes to
 the stream runtime should keep it and the bounded-memory consumer in `TestGeneratedStreamAPI` passing.
 
-Generated Go typed-output cleanup is not implemented; the measured full-sweep and bounded candidates and their limits are in [design 034](design/034-typed-output-liveness.md) and [optimization record 094](optimizations/094-generated-typed-output-liveness.md).
+Generated Go typed-output cleanup is not implemented; the measured full-sweep and bounded candidates and their limits are in [design 034](design/records/034-typed-output-liveness.md) and [optimization record 094](optimizations/094-generated-typed-output-liveness.md).
 
 ## Testing
 
@@ -128,7 +128,7 @@ The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for i
 Production site builds retain the published current WASM/runtime pair alongside the new pair, using a bounded
 asset manifest and immutable deploy source. Workers select the matching hashed Go runtime; previews/local builds
 do not automatically read production assets. Hash/HTTP failures stop retention before local output is cleared.
-[Design 023](design/023-playground-asset-retention.md) describes one-generation retention, bootstrap and sequential
+[Design 023](design/records/023-playground-asset-retention.md) describes one-generation retention, bootstrap and sequential
 publication limits; `site/assets_test.go` and `worker_assets_test.mjs` cover its build and worker contracts.
 Playground shared-link navigation applies every normalized option and tab even when grammar/input are unchanged;
 only parse-affecting changes schedule parsing, preserving editor scroll on tab-only navigation. Actual-app

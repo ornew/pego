@@ -46,7 +46,7 @@ state`](../../../runtime/typed.go),
 [`retained-output
 fixture`](../../../internal/engine/gen_typed_output_retention_test.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A250](A250-typed-object-slabs.md), [A260](A260-typed-list-slabs.md), [A090](A090-typed-output-liveness-cleanup.md).

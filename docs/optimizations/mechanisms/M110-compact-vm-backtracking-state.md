@@ -31,7 +31,7 @@ Evidence records: [033](../033-smaller-vm-entries.md).
 Source owners: [`entry and label stack`](../../../internal/engine/vm.go),
 [`iterative VM entry execution`](../../../internal/engine/ivm.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A030](A030-parser-frame-reuse.md), [M100](M100-absent-expectation-filter.md).

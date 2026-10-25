@@ -39,7 +39,7 @@ Source owners: [`input.discard and
 parser.commit`](../../../internal/engine/input.go),
 [`memoTable.prune`](../../../internal/engine/memo.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A200](A200-stream-capture-frame-reuse.md), [A210](A210-bounded-stream-text-snapshots.md), [A220](A220-stream-prefix-isolation.md), [A230](A230-stream-undo-cleanup.md), [A240](A240-stream-vm-stack-cleanup.md).

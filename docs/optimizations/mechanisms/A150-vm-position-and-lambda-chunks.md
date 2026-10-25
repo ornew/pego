@@ -35,7 +35,7 @@ newFunc`](../../../internal/engine/alloc.go), [`PUSHPOS and EFUNC
 evaluation`](../../../internal/engine/vm.go), [`iterative value
 consumers`](../../../internal/engine/ivm.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [A040](A040-action-operand-scratch.md), [A130](A130-closure-lambda-arenas.md).

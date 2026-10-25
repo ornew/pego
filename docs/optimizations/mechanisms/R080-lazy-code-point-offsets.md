@@ -37,7 +37,7 @@ Evidence records:
 Source owners: [`input.buildOffs and text`](../../../internal/engine/input.go),
 [`Document input-table retention`](../../../internal/engine/document.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [G110](G110-one-pass-code-point-preparation.md), [A120](A120-source-token-text.md).

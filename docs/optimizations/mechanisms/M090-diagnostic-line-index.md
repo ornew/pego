@@ -35,7 +35,7 @@ lineCol`](../../../internal/engine/input.go), [`generated line
 lookup`](../../../runtime/runtime.go), [`TypeScript line
 index`](../../../internal/engine/tsrt/runtime.ts).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [G110](G110-one-pass-code-point-preparation.md), [G120](G120-lsp-position-checkpoints.md).

@@ -35,7 +35,7 @@ Source owners: [`typed structural
 emitter`](../../../internal/engine/gen_direct.go), [`framed body
 emission`](../../../internal/engine/gen_direct_node.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [G170](G170-typed-framed-cuts.md), [G180](G180-typed-frame-layouts.md), [G190](G190-typed-recovery-bodies.md).

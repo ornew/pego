@@ -52,7 +52,7 @@ lowering`](../../../internal/engine/gen.go), [`direct body build
 mode`](../../../internal/engine/gen_direct.go), [`TypeScript body build
 mode`](../../../internal/engine/gen_ts.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [E020](E020-value-free-rule-twins.md), [E030](E030-operators-line-value-elision.md), [E040](E040-recognition-lowering.md), [R120](R120-transient-rule-memo-policy.md).

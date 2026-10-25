@@ -35,9 +35,9 @@ Evidence records: [023](../023-splicing-the-text-of-a-document-in-place.md),
 
 Source owners: [`useDocumentPieces`](../../../internal/engine/document.go),
 [`piece input`](../../../internal/engine/document_pieces.go), [`storage
-contract`](../../design/051-chunked-document-input.md).
+contract`](../../design/records/051-chunked-document-input.md).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [R070](R070-document-memo-edits.md), [R080](R080-lazy-code-point-offsets.md).

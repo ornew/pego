@@ -38,7 +38,7 @@ interning`](../../../internal/engine/gen.go), [`generator.snapshot and
 rollback`](../../../internal/engine/gen_direct.go), [`TypeScript sharing
 policy`](../../../internal/engine/gen_ts.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [G130](G130-generated-literal-sharing.md), [G100](G100-generated-node-body-inlining.md).

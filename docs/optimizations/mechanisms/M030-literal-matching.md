@@ -38,7 +38,7 @@ Source owners: [`parser.matchLiteral`](../../../internal/engine/input.go),
 [`generated literal matcher`](../../../runtime/runtime.go),
 [`TypeScript literal matcher`](../../../internal/engine/tsrt/runtime.ts).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [M070](M070-vm-predecoded-match-data.md), [M120](M120-unboxed-text-comparisons.md), [M130](M130-short-literal-comparisons.md).

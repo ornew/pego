@@ -39,7 +39,7 @@ comparison instructions`](../../../internal/engine/vm.go), [`text comparison
 emission`](../../../internal/engine/gen.go), [`TypeScript text comparison
 emission`](../../../internal/engine/gen_ts.go).
 
-The [comparison policy](../../design/024-optimization-mechanism-controls.md)
+The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
 Related mechanisms: [G070](G070-literal-text-predicates.md), [A120](A120-source-token-text.md).

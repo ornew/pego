@@ -383,7 +383,7 @@ function byteTextHex(text: string): string {
 
 Use this for text from a Bytes parse; CodePoints text is decoded and normalized.
 There is no typed serializer or direct typed matcher in this implementation.
-See [design 030](../design/030-typed-typescript-values.md) for ownership and
+See [design 030](../design/records/030-typed-typescript-values.md) for ownership and
 validation gates.
 
 ## Input, Positions and Units
@@ -506,7 +506,7 @@ nesting too deep: the JavaScript stack overflowed at 2292 rule calls
 ```
 
 That is the way in which a TypeScript parser differs from the engine in practice: input the engine accepts can exhaust
-a small stack (the [design record](../design/013-typescript-generation.md#limitations) lists the others, which only
+a small stack (the [design record](../design/records/013-typescript-generation.md#limitations) lists the others, which only
 input that is not valid UTF-8 can show). To accept deeper input, give the parser a bigger stack. Each nested rule call takes about 1 KB:
 
 - In a **worker thread**, set the stack size. With 128 MB, the parentheses grammar reaches the limit of 100,000:
@@ -579,7 +579,7 @@ console.log(isDeepStrictEqual(want, got) ? "same" : "different");
 ```
 
 PEGO's own tests do this for every grammar in `examples/` and the engine's test grammars, in both units, with the
-inputs as strings and as bytes ([design record 013](../design/013-typescript-generation.md)).
+inputs as strings and as bytes ([design record 013](../design/records/013-typescript-generation.md)).
 
 Large character classes, including negated classes and ranges, are supported
 in strict TypeScript builds.
