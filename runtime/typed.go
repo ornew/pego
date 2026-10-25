@@ -1035,26 +1035,31 @@ type typedDocumentMeta struct {
 	provisional bool
 }
 
+// invalidate drops the memo entries that an edit at start can change, relinking the chains in place.
+// No parse runs during an edit (Document.parsing rejects it), and published values are copies, so no
+// TParser or result refers to the chains while they change. Entries whose examined frontier reaches
+// start, growing entries and provisional entries are dropped, as are all entries from start onward.
 func (d *typedDocumentState) invalidate(start int) {
-	kept := make([]*tmemoEntry, min(start, len(d.slots)))
-	meta := make(map[*tmemoEntry]typedDocumentMeta, min(len(d.meta), start))
-	var entries tarena[tmemoEntry]
-	for pos, head := range d.slots[:len(kept)] {
-		for e := head; e != nil; e = e.next {
+	kept := min(start, len(d.slots))
+	for pos := kept; pos < len(d.slots); pos++ {
+		for e := d.slots[pos]; e != nil; e = e.next {
+			delete(d.meta, e)
+		}
+		d.slots[pos] = nil
+	}
+	for pos := range kept {
+		link := &d.slots[pos]
+		for e := *link; e != nil; e = *link {
 			m, complete := d.meta[e]
-			if !complete || e.growing || m.provisional || m.examined > start {
+			if complete && !e.growing && !m.provisional && m.examined <= start {
+				link = &e.next
 				continue
 			}
-			out := entries.one()
-			*out = *e
-			// Environments, expectations and private diagnostic slices are immutable.
-			// Their arenas are never recycled; only the memo chain link needs copying.
-			out.next = kept[pos]
-			kept[pos] = out
-			meta[out] = m
+			delete(d.meta, e)
+			*link = e.next
 		}
 	}
-	d.slots, d.meta = kept, meta
+	d.slots = d.slots[:kept]
 }
 
 // DocumentCall memoizes typed rule entries (rule.DocMemo), including generated
