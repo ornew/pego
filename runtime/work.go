@@ -361,9 +361,13 @@ func (p *Parser) setControlledSource(s string) {
 }
 
 func (p *Parser) literalHasReplacement(rs []rune) bool {
-	if !WorkControlsEnabled || p.Control == nil {
-		return slices.Contains(rs, utf8.RuneError)
+	if WorkControlsEnabled && p.Control != nil {
+		return p.literalHasReplacementControlled(rs)
 	}
+	return slices.Contains(rs, utf8.RuneError)
+}
+
+func (p *Parser) literalHasReplacementControlled(rs []rune) bool {
 	for _, r := range rs {
 		p.StepWork()
 		if r == utf8.RuneError {
@@ -445,9 +449,13 @@ func (p *Parser) valueWork(n int) {
 }
 
 func (p *Parser) compareText(l, r string) int {
-	if !WorkControlsEnabled || p.Control == nil {
-		return strings.Compare(l, r)
+	if WorkControlsEnabled && p.Control != nil {
+		return p.compareTextControlled(l, r)
 	}
+	return strings.Compare(l, r)
+}
+
+func (p *Parser) compareTextControlled(l, r string) int {
 	for off, end := 0, min(len(l), len(r)); off < end; {
 		n := min(valueWorkChunk, end-off)
 		p.valueWork(2 * n)
@@ -472,9 +480,13 @@ func (p *Parser) TextEqual(l, r string) bool {
 // stringBinary handles only string pairs; callers retain their existing
 // runtime's scalar, pointer-identity and invalid-operand behavior.
 func (p *Parser) stringBinary(op string, l, r any) (any, bool) {
-	if !WorkControlsEnabled || p.Control == nil {
-		return nil, false
+	if WorkControlsEnabled && p.Control != nil {
+		return p.stringBinaryControlled(op, l, r)
 	}
+	return nil, false
+}
+
+func (p *Parser) stringBinaryControlled(op string, l, r any) (any, bool) {
 	ls, lok := l.(string)
 	rs, rok := r.(string)
 	if !lok || !rok {
@@ -576,10 +588,14 @@ func checkedTextSize(size, width int) int {
 }
 
 func copyWork[T any](p *Parser, dst, src []T) {
-	if !WorkControlsEnabled || p.Control == nil {
-		copy(dst, src)
+	if WorkControlsEnabled && p.Control != nil {
+		copyWorkControlled(p, dst, src)
 		return
 	}
+	copy(dst, src)
+}
+
+func copyWorkControlled[T any](p *Parser, dst, src []T) {
 	// Engine callers use disjoint storage; overlapping moves need their own
 	// direction-aware implementation rather than a chunked forward copy.
 	for off, end := 0, min(len(dst), len(src)); off < end; {
@@ -593,9 +609,13 @@ func copyWork[T any](p *Parser, dst, src []T) {
 // growWork bounds the explicit copy of existing values when capacity must
 // grow. Allocation and runtime zeroing remain nonpreemptible intervals.
 func growWork[T any](p *Parser, values []T, extra int) []T {
-	if !WorkControlsEnabled || p.Control == nil {
-		return slices.Grow(values, extra)
+	if WorkControlsEnabled && p.Control != nil {
+		return growWorkControlled(p, values, extra)
 	}
+	return slices.Grow(values, extra)
+}
+
+func growWorkControlled[T any](p *Parser, values []T, extra int) []T {
 	if extra < 0 {
 		return slices.Grow(values, extra) // reject negative growth before spare-capacity checks
 	}
@@ -618,9 +638,13 @@ func growWork[T any](p *Parser, values []T, extra int) []T {
 }
 
 func appendWork[T any](p *Parser, dst, src []T) []T {
-	if !WorkControlsEnabled || p.Control == nil {
-		return append(dst, src...)
+	if WorkControlsEnabled && p.Control != nil {
+		return appendWorkControlled(p, dst, src)
 	}
+	return append(dst, src...)
+}
+
+func appendWorkControlled[T any](p *Parser, dst, src []T) []T {
 	for off := 0; off < len(src); {
 		n := min(valueWorkChunk, len(src)-off)
 		p.valueWork(n)
@@ -633,9 +657,13 @@ func appendWork[T any](p *Parser, dst, src []T) []T {
 // equalExpected preserves the native snapshot-identity fast path while charging
 // each comparison under active work controls. Snapshots are never modified.
 func (p *Parser) equalExpected(a, b []ExpID) bool {
-	if !WorkControlsEnabled || p.Control == nil {
-		return slices.Equal(a, b)
+	if WorkControlsEnabled && p.Control != nil {
+		return p.equalExpectedControlled(a, b)
 	}
+	return slices.Equal(a, b)
+}
+
+func (p *Parser) equalExpectedControlled(a, b []ExpID) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -652,10 +680,14 @@ func (p *Parser) equalExpected(a, b []ExpID) bool {
 // and explicit moves are bounded; allocation and GC remain nonpreemptible.
 // Published or memoized errors must never be passed to this helper.
 func (p *Parser) sortExpected(values []string) {
-	if !WorkControlsEnabled || p.Control == nil {
-		sort.Strings(values)
+	if WorkControlsEnabled && p.Control != nil {
+		p.sortExpectedControlled(values)
 		return
 	}
+	sort.Strings(values)
+}
+
+func (p *Parser) sortExpectedControlled(values []string) {
 	if len(values) < 2 {
 		return
 	}
@@ -698,9 +730,13 @@ func (p *Parser) sortExpected(values []string) {
 // Public post-return Error/Message calls remain caller work. The local builder
 // owns its immutable output and is never pooled or written after return.
 func (p *Parser) RecoveryErrorText(e *SyntaxError) string {
-	if !WorkControlsEnabled || p.Control == nil {
-		return e.Error()
+	if WorkControlsEnabled && p.Control != nil {
+		return p.recoveryErrorTextControlled(e)
 	}
+	return e.Error()
+}
+
+func (p *Parser) recoveryErrorTextControlled(e *SyntaxError) string {
 	prefix := fmt.Sprintf("%d:%d: ", e.Line, e.Col) // bounded integer formatting
 	intro, sep := "", "; "
 	parts := e.Messages
@@ -869,10 +905,14 @@ func (p *Parser) bindControlled(name string, val any) {
 }
 
 func clearWork[T any](p *Parser, values []T) {
-	if !WorkControlsEnabled || p.Control == nil {
-		clear(values)
+	if WorkControlsEnabled && p.Control != nil {
+		clearWorkControlled(p, values)
 		return
 	}
+	clear(values)
+}
+
+func clearWorkControlled[T any](p *Parser, values []T) {
 	for off := 0; off < len(values); {
 		n := min(valueWorkChunk, len(values)-off)
 		p.valueWork(n)
@@ -921,9 +961,13 @@ func (p *Parser) memoGet(rule, pos, min int, key []any) *memoEntry {
 			return nil
 		}
 	}
-	if !WorkControlsEnabled || p.Control == nil {
-		return p.memo.get(rule, pos, min, key)
+	if WorkControlsEnabled && p.Control != nil {
+		return p.memoGetControlled(rule, pos, min, key)
 	}
+	return p.memo.get(rule, pos, min, key)
+}
+
+func (p *Parser) memoGetControlled(rule, pos, min int, key []any) *memoEntry {
 	p.StepWork()
 	if pos >= len(p.memo.slots) {
 		return nil
@@ -943,10 +987,14 @@ func (p *Parser) memoPut(rule, pos, min int, key []any, e *memoEntry) {
 			return
 		}
 	}
-	if !WorkControlsEnabled || p.Control == nil {
-		p.memo.put(rule, pos, min, key, e)
+	if WorkControlsEnabled && p.Control != nil {
+		p.memoPutControlled(rule, pos, min, key, e)
 		return
 	}
+	p.memo.put(rule, pos, min, key, e)
+}
+
+func (p *Parser) memoPutControlled(rule, pos, min int, key []any, e *memoEntry) {
 	p.StepWork()
 	slots := p.memo.slots
 	if pos >= len(slots) {
@@ -981,9 +1029,11 @@ func (p *Parser) memoPut(rule, pos, min int, key []any, e *memoEntry) {
 	slots[pos] = e
 }
 
-func (p *Parser) controlledFirstCall(r *Rule) bool {
+// controlledFirstCallPrepare charges and grows the first-call bookkeeping of a controlled parse; the
+// ordinary FirstCall body then runs on the grown state.
+func (p *Parser) controlledFirstCallPrepare(r *Rule) {
 	if r.Seen < 0 {
-		return false
+		return
 	}
 	p.StepWork()
 	t := &p.memo
@@ -1026,15 +1076,18 @@ func (p *Parser) controlledFirstCall(r *Rule) bool {
 			t.seen = seen
 		}
 	}
-	return p.firstCallOrdinary(r)
 }
 
 // Graph helpers account for normal construction and capture restoration.
 // Release/recycle, DropKids/DropTrail and arena reset remain unconditional.
 func (p *Parser) valueField(fs Fields, name string) (any, bool) {
-	if !WorkControlsEnabled || p.Control == nil {
-		return fs.Get(name)
+	if WorkControlsEnabled && p.Control != nil {
+		return p.valueFieldControlled(fs, name)
 	}
+	return fs.Get(name)
+}
+
+func (p *Parser) valueFieldControlled(fs Fields, name string) (any, bool) {
 	for _, f := range fs {
 		p.StepWork()
 		if p.rawValueEqual(f.Name, name) {
@@ -1044,10 +1097,14 @@ func (p *Parser) valueField(fs Fields, name string) (any, bool) {
 	return nil, false
 }
 func (p *Parser) setValueField(fs *Fields, name string, v any) {
-	if !WorkControlsEnabled || p.Control == nil {
-		fs.set(name, v)
+	if WorkControlsEnabled && p.Control != nil {
+		p.setValueFieldControlled(fs, name, v)
 		return
 	}
+	fs.set(name, v)
+}
+
+func (p *Parser) setValueFieldControlled(fs *Fields, name string, v any) {
 	for i := range *fs {
 		p.StepWork()
 		if p.rawValueEqual((*fs)[i].Name, name) {
@@ -1068,9 +1125,13 @@ func (p *Parser) undoCaptures(from int) {
 }
 
 func (c *ActCtx) Fold(fn string, right bool, acc, list any, f func(acc, item any) any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return rtFold(fn, right, acc, list, f)
+	if WorkControlsEnabled && c.P.Control != nil {
+		return c.foldControlled(fn, right, acc, list, f)
 	}
+	return rtFold(fn, right, acc, list, f)
+}
+
+func (c *ActCtx) foldControlled(fn string, right bool, acc, list any, f func(acc, item any) any) any {
 	items := c.ListItems(fn, list)
 	for i := range items {
 		c.P.StepWork()
@@ -1103,10 +1164,14 @@ func (p *Parser) actionErrorText(parts ...string) string {
 // evalErrorf accepts the engine's fixed %s/%d leaf formats. The inactive path
 // retains fmt semantics; active formatting splits known pieces before copying.
 func (p *Parser) evalErrorf(format string, args ...any) {
-	if !WorkControlsEnabled || p == nil || p.Control == nil {
-		evalErrorf(format, args...)
+	if WorkControlsEnabled && p != nil && p.Control != nil {
+		p.evalErrorfControlled(format, args...)
 		return
 	}
+	evalErrorf(format, args...)
+}
+
+func (p *Parser) evalErrorfControlled(format string, args ...any) {
 	parts := make([]string, 0, 2*len(args)+1)
 	arg, start := 0, 0
 	for i := 0; i < len(format); i++ {
@@ -1143,33 +1208,49 @@ func (p *Parser) wrapEvalError(where, message string) error {
 }
 
 func (c *ActCtx) Unary(op string, v any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return rtUnary(op, v)
+	if WorkControlsEnabled && c.P.Control != nil {
+		return c.unaryControlled(op, v)
 	}
+	return rtUnary(op, v)
+}
+
+func (c *ActCtx) unaryControlled(op string, v any) any {
 	return rtUnaryWork(c.P, op, v)
 }
 func (c *ActCtx) And(l any, r func() any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return rtAnd(l, r)
+	if WorkControlsEnabled && c.P.Control != nil {
+		return c.andControlled(l, r)
 	}
+	return rtAnd(l, r)
+}
+
+func (c *ActCtx) andControlled(l any, r func() any) any {
 	if !rtBoolWork(c.P, "&&", l) {
 		return false
 	}
 	return rtBoolWork(c.P, "&&", r())
 }
 func (c *ActCtx) Or(l any, r func() any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return rtOr(l, r)
+	if WorkControlsEnabled && c.P.Control != nil {
+		return c.orControlled(l, r)
 	}
+	return rtOr(l, r)
+}
+
+func (c *ActCtx) orControlled(l any, r func() any) any {
 	if rtBoolWork(c.P, "||", l) {
 		return true
 	}
 	return rtBoolWork(c.P, "||", r())
 }
 func (c *ActCtx) ListItems(fn string, v any) []*Node {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return listItems(fn, v)
+	if WorkControlsEnabled && c.P.Control != nil {
+		return c.listItemsControlled(fn, v)
 	}
+	return listItems(fn, v)
+}
+
+func (c *ActCtx) listItemsControlled(fn string, v any) []*Node {
 	return listItemsWork(c.P, fn, v)
 }
 func (c *ActCtx) asNode(fn string, v any) *Node {

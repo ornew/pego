@@ -1423,12 +1423,8 @@ func (p *Parser) FirstCall(r *Rule) bool {
 		return false // streams memoize on the first call, as the engine does
 	}
 	if WorkControlsEnabled && p.Control != nil {
-		return p.controlledFirstCall(r)
+		p.controlledFirstCallPrepare(r)
 	}
-	return p.firstCallOrdinary(r)
-}
-
-func (p *Parser) firstCallOrdinary(r *Rule) bool {
 	if r.Seen < 0 {
 		return false
 	}
@@ -3807,6 +3803,15 @@ func (p *Parser) longest(ops []*OperatorsRuleOp) (best operatorsRuleAttempt, cut
 
 func (p *Parser) apply(a *operatorsRuleAttempt) {
 	p.Pos, p.Env = a.end, a.env
+	if len(a.errs) != 0 {
+		p.applyErrors(a)
+	}
+}
+
+// applyErrors is the recovery-error replay of apply, kept out of line so that apply inlines.
+//
+//go:noinline
+func (p *Parser) applyErrors(a *operatorsRuleAttempt) {
 	p.Recovered = p.copyErrors(p.Recovered, a.errs)
 }
 

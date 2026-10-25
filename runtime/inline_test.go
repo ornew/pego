@@ -25,6 +25,7 @@ var hotInline = []string{
 	"(*Parser).Restore",
 	"(*Parser).SetCaptureOrdinary",
 	"(*Parser).StepWork",
+	"(*Parser).apply",
 	"(*Parser).inputWorkOrdinary",
 	"(*Node).End",
 	"(*Node).Rule",
@@ -36,6 +37,7 @@ var hotInline = []string{
 	"(*TMatch).TStruct",
 	"(*TMatch).TText",
 	"(*TParser).ClassFast",
+	"(*TParser).apply",
 }
 
 func TestHotPathHooksInline(t *testing.T) {

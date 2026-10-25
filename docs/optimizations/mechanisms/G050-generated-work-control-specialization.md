@@ -36,7 +36,9 @@ Active-control samples are noisy. The feature's total overhead versus
 pre-control main remains measurable; specialization does not establish parity
 with that historical baseline.
 
-Evidence records: [096](../096-specialize-generated-go-method-helpers.md).
+Record 121 moves the controlled bodies of the shared runtime helpers out of line so that the helpers inline in ordinary parses; it is 0.2% to 3.4% faster in run time than before.
+
+Evidence records: [096](../096-specialize-generated-go-method-helpers.md), [121](../121-inactive-work-control-checks.md).
 
 Source owners: [`ordinary method specialization
 selection`](../../../internal/engine/gen.go), [`work-control method

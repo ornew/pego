@@ -930,10 +930,22 @@ type tmemoEntry struct {
 	growing  bool
 }
 
-func (p *TParser) memoGet(rule, pos, min int, key []any) *tmemoEntry {
-	if !WorkControlsEnabled || p.Control == nil {
-		return p.memoGetOrdinary(rule, pos, min, key)
+func (p *TParser) memoGet(rule, pos, min int, env []any) *tmemoEntry {
+	if WorkControlsEnabled && p.Control != nil {
+		return p.memoGetControlled(rule, pos, min, env)
 	}
+	if pos >= len(p.memoSlots) {
+		return nil
+	}
+	for e := p.memoSlots[pos]; e != nil; e = e.next {
+		if e.rule == int32(rule) && e.min == int32(min) && sameValues(e.env, env) {
+			return e
+		}
+	}
+	return nil
+}
+
+func (p *TParser) memoGetControlled(rule, pos, min int, key []any) *tmemoEntry {
 	p.StepWork()
 	if pos >= len(p.memoSlots) {
 		return nil
@@ -947,23 +959,34 @@ func (p *TParser) memoGet(rule, pos, min int, key []any) *tmemoEntry {
 	return nil
 }
 
-func (p *TParser) memoGetOrdinary(rule, pos, min int, env []any) *tmemoEntry {
-	if pos >= len(p.memoSlots) {
-		return nil
-	}
-	for e := p.memoSlots[pos]; e != nil; e = e.next {
-		if e.rule == int32(rule) && e.min == int32(min) && sameValues(e.env, env) {
-			return e
-		}
-	}
-	return nil
-}
-
-func (p *TParser) memoPut(rule, pos, min int, key []any, e *tmemoEntry) {
-	if !WorkControlsEnabled || p.Control == nil {
-		p.memoPutOrdinary(rule, pos, min, key, e)
+func (p *TParser) memoPut(rule, pos, min int, env []any, e *tmemoEntry) {
+	if WorkControlsEnabled && p.Control != nil {
+		p.memoPutControlled(rule, pos, min, env, e)
 		return
 	}
+	if pos >= len(p.memoSlots) {
+		if pos < cap(p.memoSlots) {
+			p.memoSlots = p.memoSlots[:pos+1]
+		} else {
+			grown := make([]*tmemoEntry, pos+1, max(2*cap(p.memoSlots), pos+1, 64))
+			copy(grown, p.memoSlots)
+			p.memoSlots = grown
+		}
+	}
+	e.rule, e.min, e.env = int32(rule), int32(min), env
+	link := &p.memoSlots[pos]
+	for x := *link; x != nil; link, x = &x.next, x.next {
+		if x.rule == e.rule && x.min == e.min && sameValues(x.env, env) {
+			e.next = x.next
+			*link = e
+			return
+		}
+	}
+	e.next = p.memoSlots[pos]
+	p.memoSlots[pos] = e
+}
+
+func (p *TParser) memoPutControlled(rule, pos, min int, key []any, e *tmemoEntry) {
 	p.StepWork()
 	slots := p.memoSlots
 	if pos >= len(slots) {
@@ -994,29 +1017,6 @@ func (p *TParser) memoPut(rule, pos, min int, key []any, e *tmemoEntry) {
 	}
 	e.next = slots[pos]
 	slots[pos] = e
-}
-
-func (p *TParser) memoPutOrdinary(rule, pos, min int, env []any, e *tmemoEntry) {
-	if pos >= len(p.memoSlots) {
-		if pos < cap(p.memoSlots) {
-			p.memoSlots = p.memoSlots[:pos+1]
-		} else {
-			grown := make([]*tmemoEntry, pos+1, max(2*cap(p.memoSlots), pos+1, 64))
-			copy(grown, p.memoSlots)
-			p.memoSlots = grown
-		}
-	}
-	e.rule, e.min, e.env = int32(rule), int32(min), env
-	link := &p.memoSlots[pos]
-	for x := *link; x != nil; link, x = &x.next, x.next {
-		if x.rule == e.rule && x.min == e.min && sameValues(x.env, env) {
-			e.next = x.next
-			*link = e
-			return
-		}
-	}
-	e.next = p.memoSlots[pos]
-	p.memoSlots[pos] = e
 }
 
 // --- Typed Document memo ---
@@ -2336,6 +2336,15 @@ func (p *TParser) longest(ops []*TOperatorsRuleOp) (best toperatorsRuleAttempt, 
 
 func (p *TParser) apply(a *toperatorsRuleAttempt) {
 	p.Pos, p.Env = a.end, a.env
+	if len(a.errs) != 0 {
+		p.applyErrors(a)
+	}
+}
+
+// applyErrors is the recovery-error replay of apply, kept out of line so that apply inlines.
+//
+//go:noinline
+func (p *TParser) applyErrors(a *toperatorsRuleAttempt) {
 	p.Recovered = p.copyErrors(p.Recovered, a.errs)
 }
 
@@ -2553,10 +2562,14 @@ func (c *TActCtx) Binary(op string, l, r any) any {
 
 func (p *TParser) PushKid(v any) { p.StepWork(); p.KidStack = append(p.KidStack, v) }
 func (p *TParser) setValueField(n *TSeq, name string, v any) {
-	if !WorkControlsEnabled || p.Control == nil {
-		n.set(name, v)
+	if WorkControlsEnabled && p.Control != nil {
+		p.setValueFieldControlled(n, name, v)
 		return
 	}
+	n.set(name, v)
+}
+
+func (p *TParser) setValueFieldControlled(n *TSeq, name string, v any) {
 	for i := range n.fields {
 		p.StepWork()
 		if p.rawValueEqual(n.fields[i].name, name) {
@@ -2576,9 +2589,13 @@ func (p *TParser) undoCaptures(from int) {
 }
 
 func (p *TParser) valueField(n TVal, name string) (any, bool) {
-	if !WorkControlsEnabled || p.Control == nil {
-		return n.TField(name)
+	if WorkControlsEnabled && p.Control != nil {
+		return p.valueFieldControlled(n, name)
 	}
+	return n.TField(name)
+}
+
+func (p *TParser) valueFieldControlled(n TVal, name string) (any, bool) {
 	t, transient := n.(*TSeq)
 	if !transient {
 		if controlled, ok := n.(tfieldWorker); ok {
@@ -2595,9 +2612,13 @@ func (p *TParser) valueField(n TVal, name string) (any, bool) {
 	return nil, true
 }
 func (c *TActCtx) Fold(fn string, right bool, acc, list any, f func(acc, item any) any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return trtFold(fn, right, acc, list, f)
+	if WorkControlsEnabled && c.P.Control != nil {
+		return c.foldControlled(fn, right, acc, list, f)
 	}
+	return trtFold(fn, right, acc, list, f)
+}
+
+func (c *TActCtx) foldControlled(fn string, right bool, acc, list any, f func(acc, item any) any) any {
 	items := c.ListItems(fn, list)
 	for i := range items {
 		c.P.StepWork()
@@ -2738,38 +2759,58 @@ func tasNodeWork(p *Parser, fn string, v any) any {
 }
 
 func (c *TActCtx) Unary(op string, v any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return trtUnary(op, v)
+	if WorkControlsEnabled && c.P.Control != nil {
+		return c.unaryControlled(op, v)
 	}
+	return trtUnary(op, v)
+}
+
+func (c *TActCtx) unaryControlled(op string, v any) any {
 	return trtUnaryWork(c.P.Parser, op, v)
 }
 func (c *TActCtx) And(l any, r func() any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return trtAnd(l, r)
+	if WorkControlsEnabled && c.P.Control != nil {
+		return c.andControlled(l, r)
 	}
+	return trtAnd(l, r)
+}
+
+func (c *TActCtx) andControlled(l any, r func() any) any {
 	if !trtBoolWork(c.P.Parser, "&&", l) {
 		return false
 	}
 	return trtBoolWork(c.P.Parser, "&&", r())
 }
 func (c *TActCtx) Or(l any, r func() any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return trtOr(l, r)
+	if WorkControlsEnabled && c.P.Control != nil {
+		return c.orControlled(l, r)
 	}
+	return trtOr(l, r)
+}
+
+func (c *TActCtx) orControlled(l any, r func() any) any {
 	if trtBoolWork(c.P.Parser, "||", l) {
 		return true
 	}
 	return trtBoolWork(c.P.Parser, "||", r())
 }
 func (c *TActCtx) ListItems(fn string, v any) []any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return tlistItems(fn, v)
+	if WorkControlsEnabled && c.P.Control != nil {
+		return c.listItemsControlled(fn, v)
 	}
+	return tlistItems(fn, v)
+}
+
+func (c *TActCtx) listItemsControlled(fn string, v any) []any {
 	return tlistItemsWork(c.P.Parser, fn, v)
 }
 func (c *TActCtx) asNode(fn string, v any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return tasNode(fn, v)
+	if WorkControlsEnabled && c.P.Control != nil {
+		return c.asNodeControlled(fn, v)
 	}
+	return tasNode(fn, v)
+}
+
+func (c *TActCtx) asNodeControlled(fn string, v any) any {
 	return tasNodeWork(c.P.Parser, fn, v)
 }

@@ -257,6 +257,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [118. TypeScript operator nodes are built directly](118-typescript-operator-nodes-built-directly.md)
 - [119. Case-insensitive literals in generated parsers](119-case-insensitive-literals.md)
 - [120. Unreachable rule bodies in generated parsers](120-unreachable-rule-bodies.md)
+- [121. Inactive work-control checks in the generated Go runtime](121-inactive-work-control-checks.md)
 
 ## Experiments That Did Not Pay Off
 
