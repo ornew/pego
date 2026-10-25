@@ -48,7 +48,7 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *Node, er
 	p.maxDepth = o.maxDepth(o.Backend)
 	p.deferMemo = true
 	if o.MissingTokens > 0 && active.hasMissing {
-		p.missing = &missingTokenState{limit: o.MissingTokens}
+		p.missing, p.missingLen = &missingTokenState{limit: o.MissingTokens}, 0
 	}
 	p.setTrace(o.Trace)
 	n, err = active.run(p, o.Backend, start)

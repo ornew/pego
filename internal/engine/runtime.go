@@ -50,6 +50,9 @@ type parser struct {
 	// recovered holds the syntax errors recovered by #recover. Backtracking undoes them.
 	recovered []*SyntaxError
 	missing   *missingTokenState // invocation-local opt-in insertion accounting
+	// missingLen is len(missing.path), or 0 without missing. It lives here so that mark and reset
+	// need no pointer chase or call on strict parses.
+	missingLen int
 	// diagnosed is the prefix of recovered already delivered to the stream diagnostic callback.
 	diagnosed int
 
@@ -315,11 +318,11 @@ type mark struct {
 }
 
 func (p *parser) mark() mark {
-	return mark{pos: p.pos, env: p.env, trail: len(p.trail), recovered: len(p.recovered), missing: p.missingMark()}
+	return mark{pos: p.pos, env: p.env, trail: len(p.trail), recovered: len(p.recovered), missing: p.missingLen}
 }
 
 func (p *parser) reset(m mark) {
-	if p.missing != nil {
+	if p.missingLen > m.missing {
 		p.resetMissing(m.missing)
 	}
 	p.pos = m.pos

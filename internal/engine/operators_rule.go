@@ -183,6 +183,15 @@ func (p *parser) longest(ops []*operatorsRuleOp) (best operatorsRuleAttempt, cut
 
 func (p *parser) apply(a *operatorsRuleAttempt) {
 	p.pos, p.env = a.end, a.env
+	if p.missing != nil || len(a.errs) != 0 {
+		p.applyRecovered(a)
+	}
+}
+
+// applyRecovered replays the recovery errors, and under missing-token support the missing-token
+// events, of an applied operator. It is separate so that apply stays inlinable: the common strict
+// parse has neither.
+func (p *parser) applyRecovered(a *operatorsRuleAttempt) {
 	if p.missing == nil {
 		p.recovered = appendWork(p, p.recovered, a.errs)
 	} else {

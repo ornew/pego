@@ -300,7 +300,7 @@ func (p *parser) releaseScratch() {
 // may retain its parser, so detach private references after recycling scratch.
 // Node storage is separately allocated and remains owned by returned results.
 func (p *parser) releaseBatchScratch() {
-	p.missing = nil
+	p.missing, p.missingLen = nil, 0
 	p.releaseScratch()
 	p.releaseTraceReferences()
 }

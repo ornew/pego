@@ -34,10 +34,7 @@ type missingTokenState struct {
 }
 
 func (p *parser) missingMark() int {
-	if p.missing == nil {
-		return 0
-	}
-	return len(p.missing.path)
+	return p.missingLen
 }
 
 func (p *parser) resetMissing(mark int) {
@@ -51,6 +48,7 @@ func (p *parser) resetMissing(mark int) {
 	}
 	clear(s.path[mark:])
 	s.path = s.path[:mark]
+	p.missingLen = mark
 }
 
 func (p *parser) missingEvents(mark int) []missingTokenEvent {
@@ -80,6 +78,7 @@ func (p *parser) installMissing(event missingTokenEvent, charge bool) bool {
 	}
 	s.installed[event.site] = true
 	s.path = append(s.path, event)
+	p.missingLen = len(s.path)
 	return true
 }
 
