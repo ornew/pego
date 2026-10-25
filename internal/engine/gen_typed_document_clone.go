@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-// documentClone emits an owned publication path for the private values retained
-// by a typed Document. Cloning uses an explicit task stack for recursive structs.
+// documentClone emits the CloneAST path, which copies the private values retained
+// by a typed Document into independent values. Cloning uses an explicit task stack for recursive structs.
 func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 	var methods, tasks strings.Builder
 	listNames := map[string]string{}

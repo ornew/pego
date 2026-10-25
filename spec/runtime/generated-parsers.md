@@ -230,8 +230,12 @@ With `-document`, the Go package gains `NewDocument(text string, opts ...ParseOp
   discards memo history so that a later call can retry.
 - A `Document` is for one goroutine. A returned tree can share nodes with later
   parses; `Node.Clone` makes a detached copy that preserves cycles and repeated
-  references. With `-types`, the typed graph that `ParseAST` publishes is detached
-  from the document, and caller mutation cannot change later results.
+  references. With `-types`, `ParseAST` returns read-only values that share storage
+  with the document and with earlier results. Caller mutation can therefore change
+  what later results contain, as with `Node` values. `CloneAST(value)` returns an
+  independent copy that shares nothing with the document or other results, and
+  preserves aliases within the copy. Every slice in a returned value has capacity
+  equal to its length, so `append` on a result cannot write into another result.
 - The returned `SyntaxError` values and their `Expected` and `Messages` slices are
   owned by the caller. Parsing, diagnostic copying and typed publication share one
   work budget.

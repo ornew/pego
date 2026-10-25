@@ -34,9 +34,10 @@ values such as maps remain shared. `ParseStats` has `Evaluated` and `Reused` fie
 
 ## What Is Kept Between Parses
 
-This first generated implementation retains memo entries wholly before an edit and discards the suffix, rather
-than moving suffix nodes. `Edit` scans and copies retained prefix entries, so its cost can grow with document
-length. The generated batch functions remain available. `-document` can be combined with `-types`: eligible
+Both kinds of Document retain memo entries wholly before an edit and discard the suffix, rather than moving suffix
+nodes. The Node Document copies the retained prefix entries during `Edit`, so its cost can grow with document
+length. A typed Document scans the retained prefix and relinks its entries in place, without copying them. The
+generated batch functions remain available. `-document` can be combined with `-types`: eligible
 grammars use direct typed matching with a private memo and fresh invocation arenas. A typed result is
 read-only and shared, as Node values are: later parses reuse the values of earlier results, so a result can share
 values with the Document and with other results. Modifying a result can change what later parses return, including

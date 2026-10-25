@@ -111,9 +111,10 @@ parse publishes the value it built, and later parses reuse the same values, so r
 Document and with earlier results, as Node values do. Results are therefore read-only. Modifying a result, including
 a value reached through a `node[_]` field, can change what later parses return. `CloneAST(value)` returns a copy that
 shares nothing with the Document or with other results, so the caller may modify it; aliases within the value are
-preserved. Every published slice has capacity equal to its length, so appending to one result cannot write into
-another. Diagnostics are copied on publication, because they are parser state that a later parse could otherwise
-share. CST `Node` values in fields that require concrete PEGO nodes, `_` values, and grammars with field-reading
+preserved. Every slice in a published value has capacity equal to its length, so appending to one result cannot write
+into another. Diagnostics returned as error results are copied on publication, because they are parser state that a
+later parse could otherwise share. An `*Error` inside a typed result points at the memo's error and shares its
+`Expected` and `Messages` slices with it. Under the read-only contract this is intended, and `CloneAST` copies them. CST `Node` values in fields that require concrete PEGO nodes, `_` values, and grammars with field-reading
 actions remain on the existing Node conversion path. That path converts the completed Node result for each call.
 Parsing, diagnostic copying and publication use the same invocation controller; interruption returns the result's
 zero value and clears reusable state as needed for a retry. The `Document` remains mutable and is not an immutable
@@ -251,8 +252,8 @@ are invalid after edits; abort/cancel drops all partial memo/resumption state be
 failure may keep valid cache entries.
 
 The current Node Document takes a conservative approach: an edit retains only completed memo entries wholly before
-the edit and discards the suffix; it copies retained prefix entries and does not move suffix Nodes. It does not
-resume repetitions. Any broader reuse must retain the exact
+the edit and discards the suffix; it copies retained prefix entries and does not move suffix Nodes. The typed
+Document relinks its retained entries in place instead. Neither resumes repetitions. Any broader reuse must retain the exact
 restrictions for predicates/variable reads, enclosing capture writes, recovered errors, provisional LR seeds and
 positional values on length-changing edits. Every empty successful iteration counts once and stops. Preserve
 repetition finite maxima/minima, cut scope, Operators Rule candidate-local diagnostics, and lookahead expectations.
@@ -372,9 +373,9 @@ expensive grammars or typical editor workloads.
 ### Local Measurements for Direct Typed Document Matching
 
 The measurements ran on an Apple M3 Max (darwin/arm64) with Go 1.27.1, `GOMAXPROCS=16` and `GOMAXPROCS=1`. The
-candidate revision is `4b6597df`, which publishes shared frozen results. The base is `origin/main` at `a0f7ceaa`,
-which copies each published result per call. Both arms use the same generated fixture of 4,096 records: a batch `[]Item` grammar with a near-EOF
-edit benchmark. Each arm runs ten interleaved rounds of two identical copies, and the table reports the mean of the
+measured candidate is `4b6597df`, which publishes shared frozen results. The measured base is `origin/main` at
+`a0f7ceaa`. Both arms use the same generated fixture of 4,096 records: a batch `[]Item` grammar with a near-EOF edit
+benchmark. Each arm runs ten interleaved rounds of two identical copies, and the table reports the mean of the
 two arms' medians of `ns/op`. The allocation and retained-heap figures come from one profiled run at 200 iterations
 (`memprofilerate=1`) and from a fresh process per probe.
 
@@ -391,6 +392,11 @@ two arms' medians of `ns/op`. The allocation and retained-heap figures come from
 At `GOMAXPROCS=1` the near-EOF edit ratios are 0.23 (CodePoints) and 0.15 (Bytes); the warm no-edit ratios are 0.08 and
 0.01; the controls are between 0.99 and 1.02. Identical copies of the same arm differ by up to about 3%, so the control
 ratios are unchanged within that spread.
+
+The warm no-edit CodePoints time is about 12 times the Bytes time because each CodePoints parse decodes the whole
+input again. `setSource` builds a rune slice and an offset table on every call, about 272 KB per operation, while Bytes
+reads the source string directly and allocates about 35 KB. In a CPU profile of the warm CodePoints benchmark,
+`setSource` accounts for about 90% of the time under `ParseAST`. This record does not change that cost.
 
 Per near-EOF edit at 4,096 records in CodePoints, cumulative allocation falls from 4,824,124 to 756,809 B/op, and the
 allocation count falls from 8,430 to 33. The control allocation is unchanged: 831,871 to 829,213 B/op for the batch typed control and
@@ -411,11 +417,9 @@ workload-wide gain. The allocation profile of the shared path is dominated by pe
 `setSource`), not by publication.
 
 Caller mutation is visible to later results, as with Node values. The shared-result tests cover immutability, prefix
-sharing, outer slices, interruption, random edits, left-recursion growth, operators and a `node[_]` field; each has a
+sharing, outer slices, interruption, random edits, left-recursion growth, operators, recovered error values and a `node[_]` field; each has a
 negative control that makes it fail. For a `node[_]` field holding a list, a parse after an edit does not change an
 earlier result, so the published value does not alias mutable parser state.
-
-
 
 ### Local Measurements for Generated Go Node Streams
 

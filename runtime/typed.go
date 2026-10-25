@@ -1036,8 +1036,8 @@ type typedDocumentMeta struct {
 }
 
 // invalidate drops the memo entries that an edit at start can change, relinking the chains in place.
-// No parse runs during an edit (Document.parsing rejects it), and published values are copies, so no
-// TParser or result refers to the chains while they change. Entries whose examined frontier reaches
+// No parse runs during an edit (Document.parsing rejects it), and results hold values, not memo entries
+// or chains, so no TParser or result refers to the chains while they change. Entries whose examined frontier reaches
 // start, growing entries and provisional entries are dropped, as are all entries from start onward.
 func (d *typedDocumentState) invalidate(start int) {
 	kept := min(start, len(d.slots))

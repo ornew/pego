@@ -95,8 +95,11 @@ a caller's mutation cannot change memoized errors or a later parse. Ordinary par
 failures are newly constructed; caller-supplied errors such as `Context.Err` keep
 their identity. This does not detach the mutable `Node` graph, which MAY share
 nodes with the document, and nodes that an earlier parse returned MAY be moved in
-place by a later one. Parsing and diagnostic publication use the same invocation
-controls. If publication is interrupted, no result is returned and reusable
+place by a later one. Typed values returned by a generated parser's
+`Document.ParseAST` are read-only and shared with the document and earlier results;
+its generated `CloneAST` returns an independent copy (see
+[Generated Parsers](generated-parsers.md)). Parsing and diagnostic publication use
+the same invocation controls. If publication is interrupted, no result is returned and reusable
 execution state is cleared for retry.
 
 ### Statistics
