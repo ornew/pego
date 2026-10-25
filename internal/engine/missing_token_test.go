@@ -493,6 +493,10 @@ func TestMissingTokensMemoSeedContextAndRecycledPointers(t *testing.T) {
 }
 
 func TestMissingTokensTypeOnlyGrammarCannotBeLowered(t *testing.T) {
+	eachMode(t, testMissingTokensTypeOnlyGrammarCannotBeLowered)
+}
+
+func testMissingTokensTypeOnlyGrammarCannotBeLowered(t *testing.T) {
 	prog := compile(t, `type Item ~ missing
 rule main = "a"`)
 	if n, err := prog.Parse("main", "a"); n == nil || err != nil {

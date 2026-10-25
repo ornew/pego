@@ -83,7 +83,9 @@ func TestNodeTypesCheckedAtCompileTime(t *testing.T) {
 	}
 }
 
-func TestNodeTypesGeneratedGoParity(t *testing.T) {
+func TestNodeTypesGeneratedGoParity(t *testing.T) { eachMode(t, testNodeTypesGeneratedGoParity) }
+
+func testNodeTypesGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	testGeneratedParsersCorpus(t, goBin, nodeTypeCases(), GenOptions{})
 	testGeneratedTypesCorpus(t, goBin, nodeTypeCases(), GenOptions{})

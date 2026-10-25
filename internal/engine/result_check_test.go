@@ -287,7 +287,9 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 // not statically known to fit the rule's declared type is rejected when the grammar is compiled,
 // whether or not the rule has an action, and a cast is the only check, which compiled files and
 // generated parsers keep.
-func TestRuleResultChecksAreSelective(t *testing.T) {
+func TestRuleResultChecksAreSelective(t *testing.T) { eachMode(t, testRuleResultChecksAreSelective) }
+
+func testRuleResultChecksAreSelective(t *testing.T) {
 	const decls = `type Int = { Text string }
 type S = { F Int }
 type O = { X Int }
@@ -513,7 +515,9 @@ func resultCheckCases() []genCase {
 		genCase{"text struct Operators Rule", textStructOperatorsRuleGrammar, terminalOperatorsRuleInputs})
 }
 
-func TestGeneratedRuleResultChecks(t *testing.T) {
+func TestGeneratedRuleResultChecks(t *testing.T) { eachMode(t, testGeneratedRuleResultChecks) }
+
+func testGeneratedRuleResultChecks(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}

@@ -9,7 +9,9 @@ import (
 
 // PEGO_TYPED_POOL_DIR preserves this generated fixture for standalone heap and
 // throughput measurements. Normal tests use an automatically removed directory.
-func TestGeneratedTypedPoolRetention(t *testing.T) {
+func TestGeneratedTypedPoolRetention(t *testing.T) { eachMode(t, testGeneratedTypedPoolRetention) }
+
+func testGeneratedTypedPoolRetention(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -54,7 +56,9 @@ rule repeated A = t:((x:"b") #repeat(2) #cut) => A{Text: text($t)}`)
 // TestGeneratedUntypedPoolRetention verifies that the untyped generated parser
 // does not keep an oversized source after release, and that a returned short
 // terminal remains valid while the parser is reset.
-func TestGeneratedUntypedPoolRetention(t *testing.T) {
+func TestGeneratedUntypedPoolRetention(t *testing.T) { eachMode(t, testGeneratedUntypedPoolRetention) }
+
+func testGeneratedUntypedPoolRetention(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

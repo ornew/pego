@@ -6,6 +6,10 @@ import (
 )
 
 func TestGeneratedNodeFrameScratchCorpus(t *testing.T) {
+	eachMode(t, testGeneratedNodeFrameScratchCorpus)
+}
+
+func testGeneratedNodeFrameScratchCorpus(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated parsers")
 	}

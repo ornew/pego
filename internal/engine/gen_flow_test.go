@@ -217,18 +217,17 @@ func TestFlowTypedCorpus(t *testing.T) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
-	for _, ordinary := range []string{"", "1"} {
-		t.Run("ordinary="+ordinary, func(t *testing.T) {
-			t.Setenv("PEGO_TEST_ORDINARY", ordinary)
-			testGeneratedTypesCorpus(t, goBin, generatedTypesCases(t), GenOptions{convertTypes: true})
-		})
-	}
+	eachMode(t, func(t *testing.T) {
+		testGeneratedTypesCorpus(t, goBin, generatedTypesCases(t), GenOptions{convertTypes: true})
+	})
 }
 
 // TestFlowTypedObservable builds observable typed parsers printed from Flow IR, with nodes and
 // typed-only, for the typed test grammars (a bounded part of the corpus), and checks them against
 // the parsers dgen prints without observability and against the engine's errors.
-func TestFlowTypedObservable(t *testing.T) {
+func TestFlowTypedObservable(t *testing.T) { eachMode(t, testFlowTypedObservable) }
+
+func testFlowTypedObservable(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

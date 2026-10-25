@@ -184,6 +184,10 @@ func TestTypedTraceLifecycle(t *testing.T){
 `
 
 func TestGeneratedTracePrivateTypeNamesRemainInvalid(t *testing.T) {
+	eachMode(t, testGeneratedTracePrivateTypeNamesRemainInvalid)
+}
+
+func testGeneratedTracePrivateTypeNamesRemainInvalid(t *testing.T) {
 	for _, name := range []string{"observation", "observationCall", "tracePanic"} {
 		g, err := parseTest("type " + name + " = { Text string }\nrule main = \"a\"")
 		if err != nil {

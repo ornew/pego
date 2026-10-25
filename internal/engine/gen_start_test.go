@@ -35,7 +35,9 @@ func startEntryWant(t *testing.T) string {
 }
 
 // Generated Go parsers enter only start rules, by name or by default, with the interpreter's errors.
-func TestGeneratedGoStartRules(t *testing.T) {
+func TestGeneratedGoStartRules(t *testing.T) { eachMode(t, testGeneratedGoStartRules) }
+
+func testGeneratedGoStartRules(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

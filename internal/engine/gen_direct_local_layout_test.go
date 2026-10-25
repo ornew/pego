@@ -74,7 +74,9 @@ rule body Doc = (
 `, []string{"é!", "é?", "é", "z", "", "é!!"}},
 }
 
-func TestGeneratedTypedLocalLayouts(t *testing.T) {
+func TestGeneratedTypedLocalLayouts(t *testing.T) { eachMode(t, testGeneratedTypedLocalLayouts) }
+
+func testGeneratedTypedLocalLayouts(t *testing.T) {
 	for _, c := range typedLocalLayoutCases {
 		ast, err := parseTest(c.src)
 		if err != nil {
@@ -105,6 +107,10 @@ func localBodyInlined(code []byte) bool {
 }
 
 func TestGeneratedTypedLocalLayoutControls(t *testing.T) {
+	eachMode(t, testGeneratedTypedLocalLayoutControls)
+}
+
+func testGeneratedTypedLocalLayoutControls(t *testing.T) {
 	for _, path := range []string{"../../examples/calculator/calc.pego", "../../parsers/typescript/typescript.pego"} {
 		src, err := os.ReadFile(path)
 		if err != nil {

@@ -19,6 +19,10 @@ func TestVarLines(t *testing.T) {
 
 // A generated rule method declares the variables of one type together.
 func TestGeneratedMethodsGroupVariables(t *testing.T) {
+	eachMode(t, testGeneratedMethodsGroupVariables)
+}
+
+func testGeneratedMethodsGroupVariables(t *testing.T) {
 	g, err := parseTest("rule main = (item \";\")* $$\nrule item = (\"a\" / \"b\")? (\"c\" / \"d\")? [a-z]* / [0-9]+ \"!\"\n")
 	if err != nil {
 		t.Fatal(err)

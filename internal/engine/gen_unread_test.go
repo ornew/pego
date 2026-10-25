@@ -161,6 +161,10 @@ rule leaf Leaf = d:[0-9]+ => Leaf{N: len($d)}
 // arguments of the constructor call. The two fields fail with different errors, so the generated
 // parser can only agree with the engine if it evaluates them in the same order.
 func TestGeneratedTypedConstructorEvaluationOrder(t *testing.T) {
+	eachMode(t, testGeneratedTypedConstructorEvaluationOrder)
+}
+
+func testGeneratedTypedConstructorEvaluationOrder(t *testing.T) {
 	const a, b = `A: list(1, 2)[len($x) + 3]`, `B: list(1)[len($y) + 7]`
 	rule := func(first, second string) string {
 		return "type Result = { A int; B int }\nrule main Result = x:\"a\"? y:\"b\"? => Result{" + first + ", " + second + "}\n"

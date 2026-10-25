@@ -41,7 +41,9 @@ func TestGeneratedSparseMemoSmallTable(t *testing.T) {
 
 // PEGO_SPARSE_MEMO_GENERATED_DIR preserves the generated fixture for
 // separately built timing and allocation measurements.
-func TestGeneratedSparseMemo(t *testing.T) {
+func TestGeneratedSparseMemo(t *testing.T) { eachMode(t, testGeneratedSparseMemo) }
+
+func testGeneratedSparseMemo(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

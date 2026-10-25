@@ -242,7 +242,9 @@ rule item = q:[a-z] #atomic`, []string{"ab.", "a", "", "ab.x"}},
 // engine's ParseStream: emitted elements, the reader calls made before each,
 // and the final error, for reader chunkings, reader errors, emit errors and a
 // nil callback, in both position units.
-func TestGeneratedStreamMatchesEngine(t *testing.T) {
+func TestGeneratedStreamMatchesEngine(t *testing.T) { eachMode(t, testGeneratedStreamMatchesEngine) }
+
+func testGeneratedStreamMatchesEngine(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -503,7 +505,9 @@ func engineStream(prog *Program, v streamRun) string {
 	return string(b)
 }
 
-func TestGenerateStreamOptions(t *testing.T) {
+func TestGenerateStreamOptions(t *testing.T) { eachMode(t, testGenerateStreamOptions) }
+
+func testGenerateStreamOptions(t *testing.T) {
 	g, err := parseTest(`rule main = item* #stream $$
 rule item = "a"
 rule other = "b"`)
@@ -589,6 +593,10 @@ rule item I = c:[a-z] ";" => I{C: $c}`, "", []string{"<a;b;>", "<>", "<a;b"}},
 // value, and its errors and number of elements with ParseStream, for reader
 // chunkings, reader errors, emit errors and a nil callback, in both units.
 func TestGeneratedTypedStreamMatchesBatch(t *testing.T) {
+	eachMode(t, testGeneratedTypedStreamMatchesBatch)
+}
+
+func testGeneratedTypedStreamMatchesBatch(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -839,6 +847,10 @@ func main() {
 // the rule table of the ordinary output appear unchanged in the stream output,
 // whose stream body comes in addition.
 func TestGenerateStreamKeepsBatchBodies(t *testing.T) {
+	eachMode(t, testGenerateStreamKeepsBatchBodies)
+}
+
+func testGenerateStreamKeepsBatchBodies(t *testing.T) {
 	cases := append([]genCase(nil), streamCorpus...)
 	for _, c := range genCorpus(t) {
 		if strings.Contains(c.src, "#stream") {

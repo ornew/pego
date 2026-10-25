@@ -68,7 +68,9 @@ func TestGeneratedSharingIdentity(t *testing.T) {
 	}
 }
 
-func TestGeneratedSharingDeterministic(t *testing.T) {
+func TestGeneratedSharingDeterministic(t *testing.T) { eachMode(t, testGeneratedSharingDeterministic) }
+
+func testGeneratedSharingDeterministic(t *testing.T) {
 	g, err := parseTest(`rule main = a "!" / a "?"
 rule a = ("é" / "ab")+ #atomic`)
 	if err != nil {
@@ -121,6 +123,10 @@ rule a = ("é" / "ab")+ #atomic`)
 }
 
 func TestGeneratedUnsharedParsersMatchEngine(t *testing.T) {
+	eachMode(t, testGeneratedUnsharedParsersMatchEngine)
+}
+
+func testGeneratedUnsharedParsersMatchEngine(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

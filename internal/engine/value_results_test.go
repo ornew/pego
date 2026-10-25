@@ -73,7 +73,9 @@ func TestValueResults(t *testing.T) {
 	}
 }
 
-func TestValueResultsGeneratedGoParity(t *testing.T) {
+func TestValueResultsGeneratedGoParity(t *testing.T) { eachMode(t, testValueResultsGeneratedGoParity) }
+
+func testValueResultsGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	testGeneratedParsersCorpus(t, goBin, valueResultCases(), GenOptions{})
 	testGeneratedTypesCorpus(t, goBin, valueResultCases(), GenOptions{convertTypes: true})

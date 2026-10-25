@@ -10,7 +10,9 @@ import (
 
 // PEGO_GENERATED_SHARING_DIR preserves standalone controls for prebuilt
 // parsing, generation-size, compiler-cost and binary-size measurements.
-func TestGeneratedSharingWorkloads(t *testing.T) {
+func TestGeneratedSharingWorkloads(t *testing.T) { eachMode(t, testGeneratedSharingWorkloads) }
+
+func testGeneratedSharingWorkloads(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds standalone controls")
 	}
@@ -175,6 +177,10 @@ if(process.argv.includes("--check")) {
 `
 
 func TestGeneratedSharingFailedLowering(t *testing.T) {
+	eachMode(t, testGeneratedSharingFailedLowering)
+}
+
+func testGeneratedSharingFailedLowering(t *testing.T) {
 	c := typedLocalLayoutCases[0]
 	p := compile(t, c.src)
 	g := &generator{prog: p, table: "rules"}

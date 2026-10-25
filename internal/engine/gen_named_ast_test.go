@@ -43,7 +43,9 @@ rule recoverList Items | error = nonemptyItems #recover(skip="?")
 rule recoveryElements [](S | error) = xs:(s:structure #recover(skip="?"))+ => map($xs, (x) => x.$s)
 `
 
-func TestGeneratedNamedAST(t *testing.T) {
+func TestGeneratedNamedAST(t *testing.T) { eachMode(t, testGeneratedNamedAST) }
+
+func testGeneratedNamedAST(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumer fixtures")
 	}
@@ -98,7 +100,9 @@ func TestGeneratedNamedAST(t *testing.T) {
 	}
 }
 
-func TestGeneratedNamedASTUntypedAndTS(t *testing.T) {
+func TestGeneratedNamedASTUntypedAndTS(t *testing.T) { eachMode(t, testGeneratedNamedASTUntypedAndTS) }
+
+func testGeneratedNamedASTUntypedAndTS(t *testing.T) {
 	g, err := parseTest(namedASTGrammar)
 	if err != nil {
 		t.Fatal(err)
@@ -122,6 +126,10 @@ func TestGeneratedNamedASTUntypedAndTS(t *testing.T) {
 // TestGeneratedNamedASTScalarResults checks that a rule producing an int, string or bool gets that
 // type as its typed result, and that a node rule declared as an int is still rejected.
 func TestGeneratedNamedASTScalarResults(t *testing.T) {
+	eachMode(t, testGeneratedNamedASTScalarResults)
+}
+
+func testGeneratedNamedASTScalarResults(t *testing.T) {
 	for _, tc := range []struct{ source, want string }{
 		{`rule main = "a" => 1`, "(int, error)"},
 		{`rule main = "a" => "s"`, "(string, error)"},
@@ -220,7 +228,9 @@ func TestNamedOwnership(t *testing.T) {
 
 // XML is only a workload: named fragments must agree with existing wrappers,
 // with spans relative to the fragment rather than the synthetic document.
-func TestGeneratedNamedASTXMLFragments(t *testing.T) {
+func TestGeneratedNamedASTXMLFragments(t *testing.T) { eachMode(t, testGeneratedNamedASTXMLFragments) }
+
+func testGeneratedNamedASTXMLFragments(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated XML workload")
 	}
@@ -299,6 +309,10 @@ func TestXMLFragments(t *testing.T) {
 `
 
 func TestGeneratedNamedASTSuccessfulNil(t *testing.T) {
+	eachMode(t, testGeneratedNamedASTSuccessfulNil)
+}
+
+func testGeneratedNamedASTSuccessfulNil(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated nil-result consumers")
 	}

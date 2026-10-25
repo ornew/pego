@@ -165,6 +165,10 @@ func TestOperatorsRuleNamedNodeTypeDocument(t *testing.T) {
 // Generated Go parsers, plain and typed, and generated TypeScript parsers build the same trees as
 // the engine for Operators Rules with and without a named node type.
 func TestOperatorsRuleNamedNodeTypeGenerated(t *testing.T) {
+	eachMode(t, testOperatorsRuleNamedNodeTypeGenerated)
+}
+
+func testOperatorsRuleNamedNodeTypeGenerated(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
@@ -188,6 +192,10 @@ func TestOperatorsRuleNamedNodeTypeGenerated(t *testing.T) {
 // Typed Go yields *Expr for every operator node of an Operators Rule declared with Expr, at every
 // nesting level.
 func TestGeneratedTypedOperatorsRuleNamedNodeType(t *testing.T) {
+	eachMode(t, testGeneratedTypedOperatorsRuleNamedNodeType)
+}
+
+func testGeneratedTypedOperatorsRuleNamedNodeType(t *testing.T) {
 	runGeneratedNamedNodeProgram(t, operatorsNamedNodeCases()[0].src, `func walk(v any) string {
 	x, ok := v.(*p.Expr)
 	if !ok {

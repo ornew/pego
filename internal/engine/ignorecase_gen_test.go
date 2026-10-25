@@ -108,7 +108,9 @@ func ignoreCaseGoBody(inputs []string) string {
 
 // TestIgnoreCaseGeneratedGo checks that the generated Go parser agrees with the closure backend on
 // case-insensitive literals.
-func TestIgnoreCaseGeneratedGo(t *testing.T) {
+func TestIgnoreCaseGeneratedGo(t *testing.T) { eachMode(t, testIgnoreCaseGeneratedGo) }
+
+func testIgnoreCaseGeneratedGo(t *testing.T) {
 	want := ignoreCaseLines(t, ignoreCaseGenGrammar, ignoreCaseGenInputs)
 	runGeneratedUntypedProgram(t, ignoreCaseGenGrammar, ignoreCaseGoBody(ignoreCaseGenInputs), want)
 }
@@ -131,7 +133,9 @@ func TestIgnoreCaseGeneratedTS(t *testing.T) {
 
 // TestIgnoreCaseGeneratedTypedGo checks that the typed Go parser accepts exactly the inputs that the
 // closure backend accepts, for case-insensitive literals in a choice and in a sequence.
-func TestIgnoreCaseGeneratedTypedGo(t *testing.T) {
+func TestIgnoreCaseGeneratedTypedGo(t *testing.T) { eachMode(t, testIgnoreCaseGeneratedTypedGo) }
+
+func testIgnoreCaseGeneratedTypedGo(t *testing.T) {
 	prog := compile(t, ignoreCaseGenGrammar)
 	var want strings.Builder
 	for _, in := range ignoreCaseGenInputs {
@@ -154,6 +158,10 @@ func TestIgnoreCaseGeneratedTypedGo(t *testing.T) {
 // TestIgnoreCaseGeneratedExpectation checks that the generated Go parser reports the same error as
 // the closure backend, whose expectation of a case-insensitive literal keeps its suffix.
 func TestIgnoreCaseGeneratedExpectation(t *testing.T) {
+	eachMode(t, testIgnoreCaseGeneratedExpectation)
+}
+
+func testIgnoreCaseGeneratedExpectation(t *testing.T) {
 	_, err := compile(t, ignoreCaseGenGrammar).ParseWith("main", "x", ParseOptions{Backend: Closure})
 	if err == nil {
 		t.Fatal("the closure backend parsed x")

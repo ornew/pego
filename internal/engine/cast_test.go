@@ -152,7 +152,9 @@ func TestCastSyntax(t *testing.T) {
 	}
 }
 
-func TestCastGeneratedGoParity(t *testing.T) {
+func TestCastGeneratedGoParity(t *testing.T) { eachMode(t, testCastGeneratedGoParity) }
+
+func testCastGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	testGeneratedParsersCorpus(t, goBin, castCases(), GenOptions{})
 	testGeneratedParsersCorpus(t, goBin, castCases(), GenOptions{SourceInfo: true})

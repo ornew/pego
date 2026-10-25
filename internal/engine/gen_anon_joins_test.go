@@ -141,6 +141,10 @@ func TestGeneratedTypedAnonymousJoinTypeScript(t *testing.T) {
 
 // The typed parsers of anonymous joins compile and convert like the Node route.
 func TestGeneratedTypedAnonymousJoinValues(t *testing.T) {
+	eachMode(t, testGeneratedTypedAnonymousJoinValues)
+}
+
+func testGeneratedTypedAnonymousJoinValues(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -246,6 +250,10 @@ rule a A = t:[a-z] => A{X: text($t)}`)
 
 // The compiled parsers of joins of one node and error convert like the Node route.
 func TestGeneratedTypedAnonymousJoinOneNodeAndErrorValues(t *testing.T) {
+	eachMode(t, testGeneratedTypedAnonymousJoinOneNodeAndErrorValues)
+}
+
+func testGeneratedTypedAnonymousJoinOneNodeAndErrorValues(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

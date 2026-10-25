@@ -102,7 +102,9 @@ func generateReach(t *testing.T, src string, opts GenOptions) []byte {
 // TestUnreachableBodiesAreLeftOut checks that the bodies of rules that nothing can enter are not
 // printed, that the printed code calls nothing it does not define, and that the output without
 // the pruning has more bodies.
-func TestUnreachableBodiesAreLeftOut(t *testing.T) {
+func TestUnreachableBodiesAreLeftOut(t *testing.T) { eachMode(t, testUnreachableBodiesAreLeftOut) }
+
+func testUnreachableBodiesAreLeftOut(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		src  string
@@ -258,6 +260,10 @@ func runReach(t *testing.T, src string, opts GenOptions, hook func(*liveRules)) 
 }
 
 func TestUnreachableBodiesRunLikeTheFullOutput(t *testing.T) {
+	eachMode(t, testUnreachableBodiesRunLikeTheFullOutput)
+}
+
+func testUnreachableBodiesRunLikeTheFullOutput(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -300,7 +306,9 @@ func TestUnreachableBodiesRunLikeTheFullOutput(t *testing.T) {
 // TestUnreachableRootControls is the negative control of the reachability: the same differential
 // run with a root left out of the first pass's result must show the missing Body at run time (the
 // output compiles; the rule's slot is nil).
-func TestUnreachableRootControls(t *testing.T) {
+func TestUnreachableRootControls(t *testing.T) { eachMode(t, testUnreachableRootControls) }
+
+func testUnreachableRootControls(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -361,6 +369,10 @@ func TestUnreachableRootControls(t *testing.T) {
 // TestUnreachableCalleeFailsGeneration checks that a generated call of a rule that the first pass
 // found unreachable fails generation, and that a reachable rule without a Body does as well.
 func TestUnreachableCalleeFailsGeneration(t *testing.T) {
+	eachMode(t, testUnreachableCalleeFailsGeneration)
+}
+
+func testUnreachableCalleeFailsGeneration(t *testing.T) {
 	g, err := syntax.Parse(reachTwinGrammar)
 	if err != nil {
 		t.Fatal(err)

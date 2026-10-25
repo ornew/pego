@@ -10,7 +10,9 @@ import (
 
 // TestGeneratedActionTracking inspects state after real generated rules have
 // run, including direct typed constructors that bypass tctx.finish.
-func TestGeneratedActionTracking(t *testing.T) {
+func TestGeneratedActionTracking(t *testing.T) { eachMode(t, testGeneratedActionTracking) }
+
+func testGeneratedActionTracking(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -131,7 +133,9 @@ for (const unit of [CodePoints, Bytes]) {
 
 // Inspect the live environment before returning from a generated rule: rule
 // return restores the caller's environment and would conceal retained history.
-func TestGeneratedEnvironmentBindings(t *testing.T) {
+func TestGeneratedEnvironmentBindings(t *testing.T) { eachMode(t, testGeneratedEnvironmentBindings) }
+
+func testGeneratedEnvironmentBindings(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

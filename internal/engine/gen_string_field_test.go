@@ -79,7 +79,9 @@ rule b = t:[0-9]+ #atomic => B{Text: text($t)}`, []string{"ab", "12", ""}}, fals
 	}
 }
 
-func TestGeneratedStringFieldReads(t *testing.T) {
+func TestGeneratedStringFieldReads(t *testing.T) { eachMode(t, testGeneratedStringFieldReads) }
+
+func testGeneratedStringFieldReads(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}

@@ -140,6 +140,10 @@ rule atom Atom = t:("a" @error(message="atom")) #atomic => Atom{Text: text($t)}
 }
 
 func TestGeneratedTypedOperatorsRuleBodies(t *testing.T) {
+	eachMode(t, testGeneratedTypedOperatorsRuleBodies)
+}
+
+func testGeneratedTypedOperatorsRuleBodies(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

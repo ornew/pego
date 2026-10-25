@@ -10,7 +10,9 @@ import (
 
 // PEGO_TYPED_CUT_DIR preserves both latest-generator variants so their test
 // binaries can be built once and measured in alternating benchmark runs.
-func TestGeneratedTypedCutWorkload(t *testing.T) {
+func TestGeneratedTypedCutWorkload(t *testing.T) { eachMode(t, testGeneratedTypedCutWorkload) }
+
+func testGeneratedTypedCutWorkload(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

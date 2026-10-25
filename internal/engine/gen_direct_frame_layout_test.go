@@ -50,7 +50,9 @@ rule expr Doc = #operators {
 `, []string{"é", "z", "", "é?"}},
 }
 
-func TestGeneratedTypedFrameLayouts(t *testing.T) {
+func TestGeneratedTypedFrameLayouts(t *testing.T) { eachMode(t, testGeneratedTypedFrameLayouts) }
+
+func testGeneratedTypedFrameLayouts(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

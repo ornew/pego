@@ -8,6 +8,10 @@ import (
 )
 
 func TestGeneratedGoActionContextAndExpressions(t *testing.T) {
+	eachMode(t, testGeneratedGoActionContextAndExpressions)
+}
+
+func testGeneratedGoActionContextAndExpressions(t *testing.T) {
 	grammar, err := parseTest(`type Result = { Text string }
 rule main Result = (leaf / [a-z]) => Result{Text: "ok"}
 rule leaf = "a"
@@ -46,6 +50,10 @@ func TestGeneratedRuntimeWritesStringPartsWithoutConcatenation(t *testing.T) {
 }
 
 func TestGeneratedDirectActionErrorContextAndParserReuse(t *testing.T) {
+	eachMode(t, testGeneratedDirectActionErrorContextAndParserReuse)
+}
+
+func testGeneratedDirectActionErrorContextAndParserReuse(t *testing.T) {
 	cases := []genCase{{
 		name: "typed/direct_action_error_context_and_reuse",
 		src: `type Result = { N int }

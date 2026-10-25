@@ -88,12 +88,9 @@ func TestFlowRoutesBuild(t *testing.T) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
-	for _, ordinary := range []string{"", "1"} {
-		t.Run("ordinary="+ordinary, func(t *testing.T) {
-			t.Setenv("PEGO_TEST_ORDINARY", ordinary)
-			testGeneratedTypesCorpus(t, goBin, routeCases(t), GenOptions{convertTypes: true}, 1)
-		})
-	}
+	eachMode(t, func(t *testing.T) {
+		testGeneratedTypesCorpus(t, goBin, routeCases(t), GenOptions{convertTypes: true}, 1)
+	})
 }
 
 // TestFlowRoutesRejected checks that an Operators Rule is accepted only as a whole rule body:

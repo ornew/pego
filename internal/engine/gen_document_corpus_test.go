@@ -17,6 +17,10 @@ import (
 // including insertions at the start and end and their removal, in both
 // position units.
 func TestGeneratedDocumentsMatchBatchOnCorpus(t *testing.T) {
+	eachMode(t, testGeneratedDocumentsMatchBatchOnCorpus)
+}
+
+func testGeneratedDocumentsMatchBatchOnCorpus(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

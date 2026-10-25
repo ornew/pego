@@ -137,7 +137,9 @@ rule main N = t:[�] $$ => N{T: $t}`, []string{"\xff", "\x80", "\xc3", "�", "
 
 // Go string literals preserve invalid bytes; JSON input fixtures would replace
 // them before the generated parser sees them.
-func TestGeneratedInvalidUTF8Literals(t *testing.T) {
+func TestGeneratedInvalidUTF8Literals(t *testing.T) { eachMode(t, testGeneratedInvalidUTF8Literals) }
+
+func testGeneratedInvalidUTF8Literals(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated parsers")
 	}

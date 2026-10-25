@@ -29,6 +29,10 @@ rule name = [a-z]+ #atomic
 }
 
 func TestGeneratedNodeDirectFrameRoutes(t *testing.T) {
+	eachMode(t, testGeneratedNodeDirectFrameRoutes)
+}
+
+func testGeneratedNodeDirectFrameRoutes(t *testing.T) {
 	for _, src := range []string{
 		`type N = { Items []node[string] }
 rule main N = items:(x:[a-z] #atomic ",")+ $$ => N{Items: map($items, (e) => e.$x)}`,
@@ -51,7 +55,9 @@ rule main = n:[0-9] #atomic {size := len($n)} {size == 1} "é" $$ => $n`,
 
 // Returned trees must outlive the pooled parser's frames and construction
 // stacks, including when a later parse fails or uses external rule entry.
-func TestGeneratedNodeDirectRetention(t *testing.T) {
+func TestGeneratedNodeDirectRetention(t *testing.T) { eachMode(t, testGeneratedNodeDirectRetention) }
+
+func testGeneratedNodeDirectRetention(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -108,7 +114,9 @@ func TestRetainedTrees(t *testing.T) {
 // Require the optimized Node route so parity tests cannot silently test only
 // the old expression-method emitter. A memoized action rule must still enter
 // through call and leave finalization to the ordinary runtime wrapper.
-func TestGeneratedNodeDirectRoutes(t *testing.T) {
+func TestGeneratedNodeDirectRoutes(t *testing.T) { eachMode(t, testGeneratedNodeDirectRoutes) }
+
+func testGeneratedNodeDirectRoutes(t *testing.T) {
 	for _, c := range nodeDirectCases {
 		t.Run(c.name, func(t *testing.T) {
 			g, err := parseTest(c.src)

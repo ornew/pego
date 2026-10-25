@@ -32,7 +32,9 @@ rule word Word = t:([a-zé]+) #atomic => Word{Text: text($t)}`
 // A separate typed consumer observes pointer identity rather than comparing
 // serialized duplicate values. Both direct construction and Node conversion
 // must retain the same element objects through filtering and aliases.
-func TestGeneratedTypedFilterIdentity(t *testing.T) {
+func TestGeneratedTypedFilterIdentity(t *testing.T) { eachMode(t, testGeneratedTypedFilterIdentity) }
+
+func testGeneratedTypedFilterIdentity(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated typed consumers")
 	}

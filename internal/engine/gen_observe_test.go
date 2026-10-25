@@ -9,7 +9,9 @@ import (
 	"testing"
 )
 
-func TestGeneratedTraceOptions(t *testing.T) {
+func TestGeneratedTraceOptions(t *testing.T) { eachMode(t, testGeneratedTraceOptions) }
+
+func testGeneratedTraceOptions(t *testing.T) {
 	g, err := parseTest(`rule main = "a"`)
 	if err != nil {
 		t.Fatal(err)

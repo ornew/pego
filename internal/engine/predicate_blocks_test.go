@@ -183,6 +183,10 @@ func predicateBlockGeneratedCases() []genCase {
 }
 
 func TestPredicateBlocksGeneratedGoParity(t *testing.T) {
+	eachMode(t, testPredicateBlocksGeneratedGoParity)
+}
+
+func testPredicateBlocksGeneratedGoParity(t *testing.T) {
 	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), predicateBlockGeneratedCases(), GenOptions{})
 }
 

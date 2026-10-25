@@ -50,7 +50,9 @@ func TestTextStructsAcrossBackends(t *testing.T) {
 	}
 }
 
-func TestGeneratedTextStructs(t *testing.T) {
+func TestGeneratedTextStructs(t *testing.T) { eachMode(t, testGeneratedTextStructs) }
+
+func testGeneratedTextStructs(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}

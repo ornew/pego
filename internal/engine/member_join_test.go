@@ -140,6 +140,10 @@ func typedJoinMemberCases() []genCase {
 }
 
 func TestMemberAccessOnJoinGeneratedGoParity(t *testing.T) {
+	eachMode(t, testMemberAccessOnJoinGeneratedGoParity)
+}
+
+func testMemberAccessOnJoinGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	testGeneratedParsersCorpus(t, goBin, append(joinMemberCases(), typedJoinMemberCases()...), GenOptions{})
 	testGeneratedTypesCorpus(t, goBin, joinMemberCases(), GenOptions{convertTypes: true}, 0)

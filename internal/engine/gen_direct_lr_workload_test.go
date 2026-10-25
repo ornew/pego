@@ -10,7 +10,9 @@ import (
 
 // PEGO_TYPED_LR_DIR preserves both same-generator routes for prebuilt paired
 // benchmarks. Normal tests remove the fixture modules automatically.
-func TestGeneratedTypedLRWorkload(t *testing.T) {
+func TestGeneratedTypedLRWorkload(t *testing.T) { eachMode(t, testGeneratedTypedLRWorkload) }
+
+func testGeneratedTypedLRWorkload(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -26,6 +28,10 @@ func TestGeneratedTypedLRWorkload(t *testing.T) {
 }
 
 func TestGeneratedTypedLRActionWorkload(t *testing.T) {
+	eachMode(t, testGeneratedTypedLRActionWorkload)
+}
+
+func testGeneratedTypedLRActionWorkload(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

@@ -11,7 +11,9 @@ import (
 	"testing"
 )
 
-func TestGeneratedMaxDepthValidation(t *testing.T) {
+func TestGeneratedMaxDepthValidation(t *testing.T) { eachMode(t, testGeneratedMaxDepthValidation) }
+
+func testGeneratedMaxDepthValidation(t *testing.T) {
 	g, err := parseTest(`rule main = "x"`)
 	if err != nil {
 		t.Fatal(err)
@@ -64,7 +66,9 @@ func TestGeneratedMaxDepthValidation(t *testing.T) {
 
 // Differentially exercise every rule-call owner, including first-character
 // dispatch and typed direct/conversion routes, with small predictable ceilings.
-func TestGeneratedDepthOptions(t *testing.T) {
+func TestGeneratedDepthOptions(t *testing.T) { eachMode(t, testGeneratedDepthOptions) }
+
+func testGeneratedDepthOptions(t *testing.T) {
 	if testing.Short() {
 		t.Skip("runs generated code")
 	}

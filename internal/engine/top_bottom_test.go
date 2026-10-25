@@ -292,7 +292,9 @@ func TestTopBottomSchema(t *testing.T) {
 	}
 }
 
-func TestTopBottomGeneratedGoParity(t *testing.T) {
+func TestTopBottomGeneratedGoParity(t *testing.T) { eachMode(t, testTopBottomGeneratedGoParity) }
+
+func testTopBottomGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	testGeneratedParsersCorpus(t, goBin, topBottomCases(), GenOptions{})
 	// A field of type _, like one of type any, keeps the reference runtime.

@@ -331,7 +331,9 @@ func TestNegativeMaximumDocumentsAndStreams(t *testing.T) {
 
 // Generated parsers retain negative maxima directly in their implementation-int
 // loops. Check their accepted hand-built AST contract beside bytecode lowering.
-func TestGeneratedNegativeMaximum(t *testing.T) {
+func TestGeneratedNegativeMaximum(t *testing.T) { eachMode(t, testGeneratedNegativeMaximum) }
+
+func testGeneratedNegativeMaximum(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated parsers")
 	}

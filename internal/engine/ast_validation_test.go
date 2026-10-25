@@ -37,6 +37,10 @@ func TestCompileMalformedAST(t *testing.T) {
 }
 
 func TestMalformedASTEntryPointsAndPosition(t *testing.T) {
+	eachMode(t, testMalformedASTEntryPointsAndPosition)
+}
+
+func testMalformedASTEntryPointsAndPosition(t *testing.T) {
 	e := &grammar.Optional{SourceInfo: grammar.SourceInfo{Pos: grammar.Pos{Line: 3, Col: 4}}}
 	e.Expr = e
 	g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "p", Expr: e}}}}

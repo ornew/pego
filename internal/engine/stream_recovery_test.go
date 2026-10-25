@@ -13,7 +13,9 @@ import (
 
 const streamRecoveryError = "#recover cannot wrap a #stream repetition; recover inside each element instead"
 
-func TestStreamRecoveryRejected(t *testing.T) {
+func TestStreamRecoveryRejected(t *testing.T) { eachMode(t, testStreamRecoveryRejected) }
+
+func testStreamRecoveryRejected(t *testing.T) {
 	for _, pragmas := range []string{`#stream #recover(skip=.*)`, `#recover(skip=.*) #stream`} {
 		src := `rule main = "ab" #repeat(2) ` + pragmas + ` $$`
 		g, err := parseTest(src)

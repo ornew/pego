@@ -21,7 +21,9 @@ rule main = ("s" &(wide "!") wide "!" / "m" (wide "!" / wide "?") / "r" (wide #r
 rule wide Token = t:("é" (` + strings.Join(choices, " / ") + `)) #atomic => Token{Text: text($t)}`
 }
 
-func TestGeneratedExpectationRecords(t *testing.T) {
+func TestGeneratedExpectationRecords(t *testing.T) { eachMode(t, testGeneratedExpectationRecords) }
+
+func testGeneratedExpectationRecords(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

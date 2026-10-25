@@ -44,7 +44,9 @@ rule p string = (l:p "." x:[a-z] => $l + text($x)) / (x:[a-z] => text($x))`, []s
 // TestGeneratedTypedLeaderValues compares the values of typed parsers with the engine's for
 // leaders whose values are not nodes, in both position units and on the reference route of
 // Node conversion. TestGeneratedTypes covers the cases again within its corpus.
-func TestGeneratedTypedLeaderValues(t *testing.T) {
+func TestGeneratedTypedLeaderValues(t *testing.T) { eachMode(t, testGeneratedTypedLeaderValues) }
+
+func testGeneratedTypedLeaderValues(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

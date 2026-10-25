@@ -9,6 +9,10 @@ import (
 
 // PEGO_TYPED_OPERATORS_RULE_DIR preserves latest-generator controls for paired timing.
 func TestGeneratedTypedOperatorsRuleWorkload(t *testing.T) {
+	eachMode(t, testGeneratedTypedOperatorsRuleWorkload)
+}
+
+func testGeneratedTypedOperatorsRuleWorkload(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -26,6 +30,10 @@ func TestGeneratedTypedOperatorsRuleWorkload(t *testing.T) {
 }
 
 func TestGeneratedTypedOperatorsRuleActionWorkload(t *testing.T) {
+	eachMode(t, testGeneratedTypedOperatorsRuleActionWorkload)
+}
+
+func testGeneratedTypedOperatorsRuleActionWorkload(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

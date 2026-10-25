@@ -13,6 +13,10 @@ import (
 // PEGO_DEPTH_BENCH_DIR preserves the standalone workloads for serialized,
 // paired measurements; generation and compilation remain outside parse timing.
 func TestGeneratedDepthBenchmarkWorkloads(t *testing.T) {
+	eachMode(t, testGeneratedDepthBenchmarkWorkloads)
+}
+
+func testGeneratedDepthBenchmarkWorkloads(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds standalone benchmark controls")
 	}

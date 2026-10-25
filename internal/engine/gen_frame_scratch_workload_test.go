@@ -24,6 +24,10 @@ rule recovering = x:("é" "!") #recover(skip="?") $$ => $x
 // PEGO_NODE_FRAME_TYPESCRIPT adds the unchanged TypeScript grammar workload.
 // This test validates fixtures without running their benchmarks.
 func TestGeneratedNodeFrameScratchWorkloads(t *testing.T) {
+	eachMode(t, testGeneratedNodeFrameScratchWorkloads)
+}
+
+func testGeneratedNodeFrameScratchWorkloads(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated fixtures")
 	}

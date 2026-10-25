@@ -10,6 +10,10 @@ import (
 // not shadow the fields the struct promotes from the embedded Span: the Go field gets a trailing
 // underscore, so Start and End keep reading the span.
 func TestGeneratedTypedFieldsNamedLikeSpanFields(t *testing.T) {
+	eachMode(t, testGeneratedTypedFieldsNamedLikeSpanFields)
+}
+
+func testGeneratedTypedFieldsNamedLikeSpanFields(t *testing.T) {
 	g, err := parseTest(`type Thing = { Start int; End int }
 rule main Thing = a:"a" => Thing{Start: 7, End: 8}`)
 	if err != nil {

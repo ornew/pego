@@ -73,7 +73,9 @@ rule expr = (expr "+" "a" / "a") #recover(skip=";")
 `, []string{"a", "a+a+a", "a+", ";", "a+a?", "", "b"}},
 }
 
-func TestGeneratedTypedLRBodies(t *testing.T) {
+func TestGeneratedTypedLRBodies(t *testing.T) { eachMode(t, testGeneratedTypedLRBodies) }
+
+func testGeneratedTypedLRBodies(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

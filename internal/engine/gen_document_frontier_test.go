@@ -14,6 +14,10 @@ import (
 // body for its call and its invocation only without Documents, since a Document reads the
 // position the invocation leaves at its failure.
 func TestGeneratedDocumentFrontierAfterFailure(t *testing.T) {
+	eachMode(t, testGeneratedDocumentFrontierAfterFailure)
+}
+
+func testGeneratedDocumentFrontierAfterFailure(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds standalone generated Document consumers")
 	}

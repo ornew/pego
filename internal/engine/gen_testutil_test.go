@@ -6,8 +6,11 @@ import (
 	goparser "go/parser"
 	"go/scanner"
 	"go/token"
+	"maps"
 	"os"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -18,19 +21,90 @@ import (
 // The engine tests build the programs they generate in temporary directories. The generated code
 // imports the runtime package of this module, so their go.mod files require and replace it.
 
-// fixtureWorkControls reports whether the generated fixtures have work controls. They do by default, so
-// that the tests of cancellation and limits can use them. With PEGO_TEST_ORDINARY=1 they are generated
-// without, the form that most parsers have, and the tests that use a control (WithContext,
-// WithWorkLimits) skip (see needsWorkControls); the rest of the suite then checks the ordinary-only output.
-func fixtureWorkControls() bool { return os.Getenv("PEGO_TEST_ORDINARY") == "" }
+// The generated fixtures are built in two forms: with work controls, so that the tests of
+// cancellation and limits can use them, and without, the form that most parsers have. Tests that
+// build fixtures run in both forms (eachMode); tests that use a control (WithContext,
+// WithWorkLimits) run with controls only (needsWorkControls); tests of the ordinary-only output
+// pin the ordinary form (t.Setenv(modeEnv, "1")).
+//
+// The form of a fixture is the value of modeEnv: "0" with work controls and "1" without. Unset,
+// it selects both forms. Set in the environment of go test, "0" or "1" restricts the run to
+// that form, and the tests that need controls then skip under "1".
+const modeEnv = "PEGO_TEST_ORDINARY"
 
-// needsWorkControls skips a test that passes a control option to its fixtures when the fixtures are
-// generated without work controls.
+// fixtureWorkControls reports whether the generated fixtures have work controls. A test that
+// builds fixtures reaches it inside eachMode, needsWorkControls or a pinned mode; one that
+// does not is recorded and fails the run (see TestMain), because it would exercise one form only.
+func fixtureWorkControls() bool {
+	switch os.Getenv(modeEnv) {
+	case "0":
+		return true
+	case "1":
+		return false
+	}
+	noteUnwrappedFixture()
+	return true
+}
+
+var (
+	unwrappedMu    sync.Mutex
+	unwrappedTests = map[string]bool{}
+)
+
+// noteUnwrappedFixture records the test that asks for a fixture without a form. Benchmarks and
+// other callers outside a Test function are not recorded.
+func noteUnwrappedFixture() {
+	pcs := make([]uintptr, 64)
+	frames := runtime.CallersFrames(pcs[:runtime.Callers(2, pcs)])
+	for {
+		f, more := frames.Next()
+		name := f.Function[strings.LastIndex(f.Function, "/")+1:]
+		if _, name, ok := strings.Cut(name, "."); ok && strings.HasPrefix(name, "Test") && !strings.HasPrefix(name, "TestMain") {
+			unwrappedMu.Lock()
+			unwrappedTests[strings.SplitN(name, ".", 2)[0]] = true
+			unwrappedMu.Unlock()
+			return
+		}
+		if !more {
+			return
+		}
+	}
+}
+
+// unwrappedFixtureTests returns the sorted names of the tests recorded by noteUnwrappedFixture.
+func unwrappedFixtureTests() []string {
+	unwrappedMu.Lock()
+	defer unwrappedMu.Unlock()
+	return slices.Sorted(maps.Keys(unwrappedTests))
+}
+
+// fixtureModes are the forms in which eachMode runs a test, by subtest name.
+var fixtureModes = []struct{ name, value string }{{"controls", "0"}, {"ordinary", "1"}}
+
+// eachMode runs body once per form of the generated fixtures, as the subtests "controls" and
+// "ordinary". When modeEnv is set in the environment, it runs body once, in that form.
+func eachMode(t *testing.T, body func(t *testing.T)) {
+	t.Helper()
+	if os.Getenv(modeEnv) != "" {
+		body(t)
+		return
+	}
+	for _, m := range fixtureModes {
+		t.Run(m.name, func(t *testing.T) {
+			t.Setenv(modeEnv, m.value)
+			body(t)
+		})
+	}
+}
+
+// needsWorkControls makes the fixtures of a test that passes a control option have work
+// controls, and skips it when they are restricted to the ordinary form.
 func needsWorkControls(t testing.TB) {
 	t.Helper()
-	if !fixtureWorkControls() {
+	if os.Getenv(modeEnv) == "1" {
 		t.Skip("uses work controls; the fixtures are generated without them")
 	}
+	t.Setenv(modeEnv, "0")
 }
 
 func init() {

@@ -229,6 +229,10 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 // runs: a value statically known to fit needs nothing, a value of an unknown type is rejected
 // when the grammar is compiled, and a cast is the only check, one ECAST for each cast.
 func TestConstructedFieldChecksAreSelective(t *testing.T) {
+	eachMode(t, testConstructedFieldChecksAreSelective)
+}
+
+func testConstructedFieldChecksAreSelective(t *testing.T) {
 	const decls = `type Int = { Text string }
 type S = { Static Int; Var int; Dynamic Int; Elements []Int; Union *Int; Untyped _; Empty []Int; Joined []Int }
 var x int
@@ -339,6 +343,10 @@ func fieldCheckCases() []genCase {
 }
 
 func TestGeneratedConstructedFieldChecks(t *testing.T) {
+	eachMode(t, testGeneratedConstructedFieldChecks)
+}
+
+func testGeneratedConstructedFieldChecks(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}

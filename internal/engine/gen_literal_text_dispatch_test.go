@@ -13,6 +13,10 @@ import (
 )
 
 func TestLiteralTextPredicateDispatchGeneration(t *testing.T) {
+	eachMode(t, testLiteralTextPredicateDispatchGeneration)
+}
+
+func testLiteralTextPredicateDispatchGeneration(t *testing.T) {
 	const source = `rule main = w:[a-z]+ #atomic {text($w) == "a" || "b" == text($w)} $$`
 	g, err := parseTest(source)
 	if err != nil {
@@ -49,6 +53,10 @@ func TestLiteralTextPredicateDispatchGeneration(t *testing.T) {
 }
 
 func TestLiteralTextPredicateDispatchRejectsUnsafeShapes(t *testing.T) {
+	eachMode(t, testLiteralTextPredicateDispatchRejectsUnsafeShapes)
+}
+
+func testLiteralTextPredicateDispatchRejectsUnsafeShapes(t *testing.T) {
 	cases := []string{
 		`rule main = w:[a-z]+ #atomic {text($w) == "a" || len($w) == 1} $$`,
 		`rule main = x:[a-z] #atomic y:[a-z] #atomic {text($x) == "a" || text($y) == "b"} $$`,
@@ -74,6 +82,10 @@ rule main = w:[a-z]+ #atomic {result := text($w) == "a" || text($w) == "b"} $$`,
 }
 
 func TestLiteralTextPredicateDispatchDisabledParity(t *testing.T) {
+	eachMode(t, testLiteralTextPredicateDispatchDisabledParity)
+}
+
+func testLiteralTextPredicateDispatchDisabledParity(t *testing.T) {
 	var cases []genCase
 	for _, c := range genCorpus(t) {
 		if strings.HasPrefix(c.name, "literal text ") {

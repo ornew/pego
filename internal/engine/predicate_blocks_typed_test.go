@@ -9,6 +9,10 @@ import (
 // These declared typed-result fixtures force typed runtime execution; ordinary
 // Node parser parity alone does not cover generated typed Predicate Actions.
 func TestPredicateBlocksGeneratedTypedParity(t *testing.T) {
+	eachMode(t, testPredicateBlocksGeneratedTypedParity)
+}
+
+func testPredicateBlocksGeneratedTypedParity(t *testing.T) {
 	cases := []genCase{
 		{"typed bindings", `type Word = { Text string }
 type Row = { Word Word; Code int }

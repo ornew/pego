@@ -283,7 +283,9 @@ func resultJSON(n *Node, err error) string {
 // TestGeneratedParsersMatchEngine checks that generated parsers return the same results as the engine:
 // the same trees, positions included, and the same errors, and that Recognize returns the errors of
 // the engine's recognition.
-func TestGeneratedParsersMatchEngine(t *testing.T) {
+func TestGeneratedParsersMatchEngine(t *testing.T) { eachMode(t, testGeneratedParsersMatchEngine) }
+
+func testGeneratedParsersMatchEngine(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -521,7 +523,9 @@ func main() {
 	}
 }
 
-func TestGenerateErrors(t *testing.T) {
+func TestGenerateErrors(t *testing.T) { eachMode(t, testGenerateErrors) }
+
+func testGenerateErrors(t *testing.T) {
 	g, _ := syntax.Parse("@start\nrule main = \"a\" b\nrule b = \"b\"")
 	if _, err := generateCode(g, GenOptions{Package: "p", Start: "nope"}); err == nil || err.Error() != "rule nope is not defined" {
 		t.Errorf("got %v", err)
@@ -601,7 +605,9 @@ rule num Num = t:([0-9]+) #atomic => Num{Text: text($t)}`
 // TestGeneratedTypes checks ParseAST of parsers generated with Types: it compiles for every
 // grammar of the corpus and returns the errors of Parse, and it converts the trees of
 // typedGrammar into the expected values.
-func TestGeneratedTypes(t *testing.T) {
+func TestGeneratedTypes(t *testing.T) { eachMode(t, testGeneratedTypes) }
+
+func testGeneratedTypes(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

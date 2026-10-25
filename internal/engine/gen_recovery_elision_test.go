@@ -11,6 +11,10 @@ import (
 // TestGeneratedDocumentsMatchBatchOnCorpus, TestGeneratedUnsharedParsersMatchEngine and
 // TestGeneratedConstructedFieldChecks, which fail when the rollback is dropped under recovery.
 func TestGeneratedRecoveredRollbackOnlyWithRecovery(t *testing.T) {
+	eachMode(t, testGeneratedRecoveredRollbackOnlyWithRecovery)
+}
+
+func testGeneratedRecoveredRollbackOnlyWithRecovery(t *testing.T) {
 	const plain = `rule main = (item ";")* $$
 rule item = [a-z]+ #atomic / [0-9]+ #atomic
 `

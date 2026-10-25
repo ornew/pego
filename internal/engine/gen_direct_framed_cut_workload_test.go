@@ -9,6 +9,10 @@ import (
 // PEGO_TYPED_FRAMED_CUT_DIR preserves current direct/reference modules for
 // separate-binary paired benchmarks without any generated runtime selector.
 func TestGeneratedTypedFramedCutWorkloads(t *testing.T) {
+	eachMode(t, testGeneratedTypedFramedCutWorkloads)
+}
+
+func testGeneratedTypedFramedCutWorkloads(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

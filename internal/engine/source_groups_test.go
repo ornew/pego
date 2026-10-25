@@ -6,7 +6,9 @@ import (
 	"github.com/ornew/pego/grammar"
 )
 
-func TestSourceGroupsExecutableParity(t *testing.T) {
+func TestSourceGroupsExecutableParity(t *testing.T) { eachMode(t, testSourceGroupsExecutableParity) }
+
+func testSourceGroupsExecutableParity(t *testing.T) {
 	const grouped = `type Number = { Text string }
 type Alias ~ (Number)
 type Value = { Number (Alias); Items ([]Alias); Flag (bool) }

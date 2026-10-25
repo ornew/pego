@@ -147,7 +147,9 @@ func TestGeneratedDocumentCloneCyclicAndSharedSlices(t *testing.T) {
 	}
 }
 
-func TestGenerateDocumentCombinations(t *testing.T) {
+func TestGenerateDocumentCombinations(t *testing.T) { eachMode(t, testGenerateDocumentCombinations) }
+
+func testGenerateDocumentCombinations(t *testing.T) {
 	g, err := parseTest("rule main = \"a\"")
 	if err != nil {
 		t.Fatal(err)

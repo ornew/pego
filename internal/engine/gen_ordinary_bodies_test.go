@@ -10,6 +10,10 @@ import (
 // Every generated rule-body function (a top-level function charging StepWork first) must have the
 // parser parameter p, so that no body silently misses its ordinary specialization.
 func TestGeneratedRuleBodiesAreSpecialized(t *testing.T) {
+	eachMode(t, testGeneratedRuleBodiesAreSpecialized)
+}
+
+func testGeneratedRuleBodiesAreSpecialized(t *testing.T) {
 	g, err := parseTest(`type Text = { Text string }
 rule main Text = (a:("a"* #atomic) "b") #recover(skip="?") => Text{Text: text($a)}
 rule recursive Text = t:(recursive "+" "a" / "a") #atomic => Text{Text: text($t)}

@@ -93,6 +93,10 @@ func spliceWantLeaves(name, input string, tokens []string) []string {
 // A hidden rule that calls itself where it takes one element has the node of the call as the
 // element. The typed values of every generated route keep the tokens of the node tree, in order.
 func TestGeneratedRecursiveSpliceTypesKeepTheTree(t *testing.T) {
+	eachMode(t, testGeneratedRecursiveSpliceTypesKeepTheTree)
+}
+
+func testGeneratedRecursiveSpliceTypesKeepTheTree(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

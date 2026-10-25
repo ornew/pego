@@ -142,7 +142,9 @@ func TestFilterCompiledInstructionSet(t *testing.T) {
 	t.Fatal("fixture emitted no filter call")
 }
 
-func TestFilterGeneratedGoParity(t *testing.T) {
+func TestFilterGeneratedGoParity(t *testing.T) { eachMode(t, testFilterGeneratedGoParity) }
+
+func testFilterGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	testGeneratedParsersCorpus(t, goBin, filterCases(), GenOptions{})
 	testGeneratedTypesCorpus(t, goBin, filterCases(), GenOptions{})

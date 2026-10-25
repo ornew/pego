@@ -12,6 +12,10 @@ import (
 )
 
 func TestInvalidCharacterClassEntryPoints(t *testing.T) {
+	eachMode(t, testInvalidCharacterClassEntryPoints)
+}
+
+func testInvalidCharacterClassEntryPoints(t *testing.T) {
 	for _, cr := range []grammar.CharRange{{Lo: -1, Hi: 'z'}, {Lo: 'a', Hi: 0xd800}, {Lo: 0xdfff, Hi: utf8.MaxRune}, {Lo: 0, Hi: utf8.MaxRune + 1}, {Lo: 'z', Hi: 'a'}} {
 		t.Run(fmt.Sprintf("%x-%x", cr.Lo, cr.Hi), func(t *testing.T) {
 			cc := &grammar.CharClass{SourceInfo: grammar.SourceInfo{Pos: grammar.Pos{Line: 3, Col: 7}}, Ranges: []grammar.CharRange{cr}}

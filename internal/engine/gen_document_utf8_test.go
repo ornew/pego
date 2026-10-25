@@ -11,6 +11,10 @@ import (
 // invalid bytes were separate characters, so results that examined them must
 // not be reused.
 func TestGeneratedDocumentCompletesUTF8Prefix(t *testing.T) {
+	eachMode(t, testGeneratedDocumentCompletesUTF8Prefix)
+}
+
+func testGeneratedDocumentCompletesUTF8Prefix(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}

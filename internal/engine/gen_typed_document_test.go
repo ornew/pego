@@ -90,6 +90,10 @@ func TestTypedDocumentConversionBudget(t *testing.T) {
 }
 
 func TestGenerateTypedDocumentNilAndRecovery(t *testing.T) {
+	eachMode(t, testGenerateTypedDocumentNilAndRecovery)
+}
+
+func testGenerateTypedDocumentNilAndRecovery(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}
@@ -157,6 +161,10 @@ func TestNilAndRecovery(t *testing.T) {
 // A union with an open member, such as node, has a Go interface of its own that the open
 // values implement; a Document clones them through that interface.
 func TestGenerateTypedDocumentOpenUnion(t *testing.T) {
+	eachMode(t, testGenerateTypedDocumentOpenUnion)
+}
+
+func testGenerateTypedDocumentOpenUnion(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a standalone generated parser")
 	}
@@ -215,6 +223,10 @@ func anysF(xs []First) []any { out := []any{}; for _, x := range xs { out = appe
 }
 
 func TestGenerateTypedDocumentNameCollisions(t *testing.T) {
+	eachMode(t, testGenerateTypedDocumentNameCollisions)
+}
+
+func testGenerateTypedDocumentNameCollisions(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a standalone generated parser")
 	}
@@ -265,6 +277,10 @@ func TestCollision(t *testing.T) {
 }
 
 func TestGenerateObservedDocumentNameCollisions(t *testing.T) {
+	eachMode(t, testGenerateObservedDocumentNameCollisions)
+}
+
+func testGenerateObservedDocumentNameCollisions(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a standalone generated parser")
 	}

@@ -218,7 +218,9 @@ rule item = [a-z]`
 	}
 }
 
-func TestIndexGeneratedGoParity(t *testing.T) {
+func TestIndexGeneratedGoParity(t *testing.T) { eachMode(t, testIndexGeneratedGoParity) }
+
+func testIndexGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	testGeneratedParsersCorpus(t, goBin, indexCases(), GenOptions{})
 	testGeneratedTypesCorpus(t, goBin, indexCases(), GenOptions{})

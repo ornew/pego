@@ -8,6 +8,10 @@ import (
 )
 
 func TestOperatorsRuleWholeActionRejection(t *testing.T) {
+	eachMode(t, testOperatorsRuleWholeActionRejection)
+}
+
+func testOperatorsRuleWholeActionRejection(t *testing.T) {
 	const message = "whole-rule actions are not supported for Operators Rules"
 	for _, action := range []string{"nil", "$1", "Unknown{}", "(nil)", "($1)", "(Unknown{})"} {
 		t.Run(action, func(t *testing.T) {
@@ -72,6 +76,10 @@ func TestOperatorsRuleWholeActionRejection(t *testing.T) {
 }
 
 func TestOperatorsRuleExplicitDefaultAction(t *testing.T) {
+	eachMode(t, testOperatorsRuleExplicitDefaultAction)
+}
+
+func testOperatorsRuleExplicitDefaultAction(t *testing.T) {
 	const source = `rule main = #operators {
     operand "α"
     level { infix left "+" }

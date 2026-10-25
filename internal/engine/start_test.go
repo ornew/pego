@@ -71,7 +71,9 @@ func TestStartRuleErrors(t *testing.T) {
 // A hidden rule cannot be a start rule: @start on it is an error at the
 // attribute, whether the program is compiled or generated, and the rules
 // behind inline actions never become start rules.
-func TestStartHiddenRule(t *testing.T) {
+func TestStartHiddenRule(t *testing.T) { eachMode(t, testStartHiddenRule) }
+
+func testStartHiddenRule(t *testing.T) {
 	const hidden = "rule _x is hidden: a hidden rule cannot be a start rule"
 	for _, tc := range []struct{ src, want string }{
 		{"@start\nrule _x = \"x\"\n", "1:1: " + hidden},

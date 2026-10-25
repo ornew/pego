@@ -169,6 +169,10 @@ func TestDefaultValueCompiledRoundTrip(t *testing.T) {
 }
 
 func TestDefaultValueGeneratedRejectsTypes(t *testing.T) {
+	eachMode(t, testDefaultValueGeneratedRejectsTypes)
+}
+
+func testDefaultValueGeneratedRejectsTypes(t *testing.T) {
 	g := mustParse("rule main = \"a\" => 1")
 	if _, err := generateCode(g, GenOptions{Package: "p", Start: "main", Types: true, DefaultValue: true}); err == nil || !strings.Contains(err.Error(), "default values") {
 		t.Errorf("typed output with default values: %v", err)

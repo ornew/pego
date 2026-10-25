@@ -16,6 +16,10 @@ import (
 // sequences, and each Node Parse and typed ParseAST must match a batch parse
 // of the current text, in both position units.
 func TestGeneratedDocumentInvalidUTF8EditEquivalence(t *testing.T) {
+	eachMode(t, testGeneratedDocumentInvalidUTF8EditEquivalence)
+}
+
+func testGeneratedDocumentInvalidUTF8EditEquivalence(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated Documents")
 	}

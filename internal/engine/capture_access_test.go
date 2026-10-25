@@ -157,6 +157,10 @@ func TestCaptureAccessSyntax(t *testing.T) {
 }
 
 func TestCaptureAccessGeneratedGoParity(t *testing.T) {
+	eachMode(t, testCaptureAccessGeneratedGoParity)
+}
+
+func testCaptureAccessGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	testGeneratedParsersCorpus(t, goBin, captureAccessCases(), GenOptions{})
 	testGeneratedTypesCorpus(t, goBin, captureAccessCases(), GenOptions{})

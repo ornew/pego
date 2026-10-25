@@ -9,6 +9,10 @@ import (
 // PEGO_TYPED_LOCAL_LAYOUT_DIR preserves generated controls for benchmarks of
 // prebuilt binaries, independently of source generation and compilation.
 func TestGeneratedTypedLocalLayoutWorkloads(t *testing.T) {
+	eachMode(t, testGeneratedTypedLocalLayoutWorkloads)
+}
+
+func testGeneratedTypedLocalLayoutWorkloads(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

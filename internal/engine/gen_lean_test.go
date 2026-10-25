@@ -12,7 +12,9 @@ import (
 
 // External rule-table entry and nested direct calls must count the same rule
 // depth. A small generated limit exercises both routes without large inputs.
-func TestGeneratedLeanDepth(t *testing.T) {
+func TestGeneratedLeanDepth(t *testing.T) { eachMode(t, testGeneratedLeanDepth) }
+
+func testGeneratedLeanDepth(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

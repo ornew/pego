@@ -10,7 +10,9 @@ import (
 
 // PEGO_TYPED_CHUNK_DIR retains both generated paths for paired allocation
 // measurements. Normal test runs remove the fixtures automatically.
-func TestGeneratedTypedChunkOwnership(t *testing.T) {
+func TestGeneratedTypedChunkOwnership(t *testing.T) { eachMode(t, testGeneratedTypedChunkOwnership) }
+
+func testGeneratedTypedChunkOwnership(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

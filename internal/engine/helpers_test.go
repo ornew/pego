@@ -146,7 +146,12 @@ func TestMain(m *testing.M) {
 	// tens of gigabytes of builds to the cache. Commands that set GOFLAGS add it themselves.
 	// -mod=mod lets the temporary modules that replace this module resolve it without a go.sum.
 	os.Setenv("GOFLAGS", strings.TrimSpace(os.Getenv("GOFLAGS")+" -trimpath -mod=mod"))
-	m.Run()
+	code := m.Run()
+	if names := unwrappedFixtureTests(); len(names) > 0 {
+		fmt.Fprintf(os.Stderr, "FAIL: tests build generated fixtures without choosing their form: %s\nWrap the test body in eachMode, or call needsWorkControls, or pin the form with t.Setenv(modeEnv, \"1\")\n", strings.Join(names, ", "))
+		code = 1
+	}
+	os.Exit(code)
 }
 
 func lines(s ...string) string { return strings.Join(s, "\n") }

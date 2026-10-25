@@ -95,7 +95,9 @@ func TestTreeRuntimeParity(t *testing.T) {
 // Compile the emitted single-file parser and exercise the same depth, cycle,
 // encoding and cursor regressions used by the core. This catches imports and
 // typed-name collisions that direct runtime package tests cannot establish.
-func TestGeneratedTreeTraversal(t *testing.T) {
+func TestGeneratedTreeTraversal(t *testing.T) { eachMode(t, testGeneratedTreeTraversal) }
+
+func testGeneratedTreeTraversal(t *testing.T) {
 	if testing.Short() {
 		t.Skip("runs generated code")
 	}
@@ -155,6 +157,10 @@ func TestGeneratedTreeTraversal(t *testing.T) {
 // DuckDB supplies Inspect(any, func(any) bool) for its typed AST. Compile its actual
 // helper beside a fresh generated parser and exercise both traversal surfaces.
 func TestGeneratedDuckDBInspectCompatibility(t *testing.T) {
+	eachMode(t, testGeneratedDuckDBInspectCompatibility)
+}
+
+func testGeneratedDuckDBInspectCompatibility(t *testing.T) {
 	grammar, err := parseTest("type Leaf = { Text string }\nrule main Leaf = t:(\"é\") #atomic => Leaf{Text: text($t)}\n")
 	if err != nil {
 		t.Fatal(err)

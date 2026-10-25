@@ -35,7 +35,9 @@ rule main Alias = t:("a") #atomic => Word{Text: text($t)}`
 
 // Compile a separate consumer: compiling the generated package alone does not
 // detect missing exports, and aliases must preserve assignment compatibility.
-func TestGeneratedAliasExports(t *testing.T) {
+func TestGeneratedAliasExports(t *testing.T) { eachMode(t, testGeneratedAliasExports) }
+
+func testGeneratedAliasExports(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

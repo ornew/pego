@@ -9,6 +9,10 @@ import (
 )
 
 func TestGenerateDocumentDiagnosticOwnership(t *testing.T) {
+	eachMode(t, testGenerateDocumentDiagnosticOwnership)
+}
+
+func testGenerateDocumentDiagnosticOwnership(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}

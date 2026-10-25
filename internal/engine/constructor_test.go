@@ -113,7 +113,9 @@ rule main = {value := 1} {Int{Text: list(value, "a")[0].(string)} != nil} "x" / 
 	}
 }
 
-func TestGeneratedNodeConstructors(t *testing.T) {
+func TestGeneratedNodeConstructors(t *testing.T) { eachMode(t, testGeneratedNodeConstructors) }
+
+func testGeneratedNodeConstructors(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
