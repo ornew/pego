@@ -459,6 +459,153 @@ func TestVerifyRejects(t *testing.T) {
 			m.Typed = true
 			return m
 		}, "slot x has no type"},
+		{"rule ID", func() *Module {
+			return module(rule(1, "a", lit("a")))
+		}, "ID 1 at index 0"},
+		{"rule without body", func() *Module {
+			return module(rule(0, "a", nil))
+		}, "rule a: no body"},
+		{"start rule", func() *Module {
+			m := module(rule(0, "a", lit("a")))
+			m.Starts = []int{3}
+			return m
+		}, "start: no rule 3"},
+		{"nest of a missing rule", func() *Module {
+			return module(rule(0, "a", &Nest{Rule: 3, Body: lit("a")}))
+		}, "no rule 3"},
+		{"action finish without action", func() *Module {
+			r := rule(0, "a", lit("a"))
+			r.Finish = Finish{Kind: FinishAction}
+			return module(r)
+		}, "action finish without action"},
+		{"call graph size", func() *Module {
+			m := module(rule(0, "a", lit("a")))
+			m.SCC = nil
+			return m
+		}, "call graph of 1 and 0 rules for 1 rules"},
+		{"cyclic flags", func() *Module {
+			m := module(rule(0, "a", &Opt{Body: &Call{Rule: 0}}))
+			m.Cyclic[0] = false
+			return m
+		}, "cyclic [false]"},
+		{"missing without literal", func() *Module {
+			return module(rule(0, "a", &Missing{Lit: &Lit{}}))
+		}, "missing without literal"},
+		{"slot of an operators rule line", func() *Module {
+			// The rule has the slot, but the line's own scope does not.
+			o := &OperatorsRule{Operands: []*OpLine{{Body: &Capture{Slot: 0, Name: "x", Body: lit("a")}}}}
+			return module(rule(0, "a", o, "x"))
+		}, "slot 0 x not in scope []"},
+		{"slot of a nest", func() *Module {
+			// The enclosing rule has the slot x, but the Nest has the scope of rule a, which has y.
+			return module(
+				rule(0, "a", lit("a"), "y"),
+				rule(1, "b", &Nest{Rule: 0, Body: &Capture{Slot: 0, Name: "x", Body: lit("a")}}, "x"),
+			)
+		}, "slot 0 x not in scope [y]"},
+		{"stream in a capture of a capture", func() *Module {
+			stream := &Stream{Repeat: &Repeat{Max: -1, Body: lit("a")}}
+			inner := &Capture{Slot: 1, Name: "y", Body: stream}
+			m := module(rule(0, "a", seq(&Capture{Slot: 0, Name: "x", Body: inner}), "x", "y"))
+			m.Starts = []int{0}
+			return m
+		}, "stream not at the top of a start rule"},
+		{"class expectation", func() *Module {
+			m := module(rule(0, "a", class('a', 'z')))
+			m.Classes[0].Exp = 99
+			return m
+		}, "class [a-z]: no expectation 99"},
+		{"label expectation", func() *Module {
+			m := module(rule(0, "a", &Label{Body: lit("a")}))
+			m.Rules[0].Body.(*Label).Exp = 99
+			return m
+		}, "label: no expectation 99"},
+		{"guard expectation", func() *Module {
+			// The alternative's literal has the unknown expectation, and the guard equals its first
+			// terminal, so only the expectation is wrong.
+			c := choice(lit("a"), lit("b"))
+			m := module(rule(0, "a", c))
+			c.Alts[1].Body.(*Lit).Exp = 99
+			c.Alts[1].Guard = &First{Lit: true, Rune: 'b', Exp: 99}
+			return m
+		}, "alternative 1: no expectation 99"},
+		{"guarded class behind a call", func() *Module {
+			// The alternative begins with a class only through a call, so a guard that consumed it
+			// would not have read the class itself.
+			c := choice(lit("a"), &Call{Rule: 1})
+			m := module(rule(0, "a", c), rule(1, "b", class('x', 'y')))
+			cl := m.Rules[1].Body.(*ClassNode).Class
+			c.Alts[1].Guard = &First{Class: cl, Exp: cl.Exp, Depth: 1}
+			c.Alts[1].GuardedClass = true
+			return m
+		}, "guarded class: alternative does not begin with class"},
+		{"repetition minimum", func() *Module {
+			return module(rule(0, "a", &Repeat{Min: -1, Max: -1, Body: lit("a")}))
+		}, "repetition bounds -1, -1"},
+		{"repetition maximum", func() *Module {
+			return module(rule(0, "a", &Repeat{Min: 2, Max: 1, Body: lit("a")}))
+		}, "repetition bounds 2, 1"},
+		{"scan minimum", func() *Module {
+			return module(rule(0, "a", &Scan{Min: -1, Max: -1}))
+		}, "scan bounds -1, -1"},
+		{"scan maximum", func() *Module {
+			return module(rule(0, "a", &Scan{Min: 2, Max: 1}))
+		}, "scan bounds 2, 1"},
+		{"scan class", func() *Module {
+			m := module(rule(0, "a", &Scan{Class: class('a', 'z').Class, Min: 0, Max: -1}))
+			m.Rules[0].Body.(*Scan).Class = &Class{Ranges: []Range{{'a', 'z'}}}
+			return m
+		}, "is not the module's"},
+		{"scan wants a value", func() *Module {
+			n := &Scan{Min: 0, Max: -1}
+			n.Attrs().Want = true
+			return module(rule(0, "a", n))
+		}, "scan wants a value"},
+		{"class run without classes", func() *Module {
+			return module(rule(0, "a", &ClassRun{}))
+		}, "class run of 0 classes"},
+		{"class run wants a value", func() *Module {
+			n := &ClassRun{Classes: []*Class{class('a', 'z').Class}}
+			n.Attrs().Want = true
+			return module(rule(0, "a", n))
+		}, "class run of 1 classes, want true"},
+		{"class run class", func() *Module {
+			c := &ClassRun{Classes: []*Class{class('a', 'z').Class, class('0', '9').Class}}
+			m := module(rule(0, "a", c))
+			c.Classes[1] = &Class{Ranges: []Range{{'0', '9'}}}
+			return m
+		}, "is not the module's"},
+		{"terminal wants a value", func() *Module {
+			n := &Terminal{Body: lit("a")}
+			n.Attrs().Want = true
+			return module(rule(0, "a", n))
+		}, "terminal wants a value"},
+		{"value in negative lookahead", func() *Module {
+			body := lit("a")
+			body.Attrs().Want = true
+			return module(rule(0, "a", &Look{Neg: true, Body: body}))
+		}, "the body of negative lookahead wants a value"},
+		{"value in recovery skip", func() *Module {
+			skip := lit("a")
+			skip.Attrs().Want = true
+			return module(rule(0, "a", &Recover{Body: lit("b"), Skip: skip}))
+		}, "the body of recovery skip wants a value"},
+		{"capture in drop", func() *Module {
+			return module(rule(0, "a", &Drop{Body: &Capture{Slot: 0, Name: "x", Body: lit("a")}}, "x"))
+		}, "inside drop"},
+		{"untyped field compare operand", func() *Module {
+			l, r := &Const{Value: 1}, &Const{Value: 2}
+			fc := &FieldCompare{Op: "==", L: Operand{X: l, Type: "int"}, R: Operand{X: r}}
+			for _, t := range []Term{fc, l, r} {
+				SetType(t, "int")
+			}
+			rl := rule(0, "a", lit("a"))
+			rl.Type = "T"
+			rl.Finish = Finish{Kind: FinishAction, Action: fc}
+			m := module(rl)
+			m.Typed = true
+			return m
+		}, "operand without type"},
 		{"untyped term", func() *Module {
 			r := rule(0, "a", lit("a"))
 			r.Type = "T"
@@ -471,8 +618,9 @@ func TestVerifyRejects(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			m := c.mod()
-			if !strings.Contains(c.want, "no rule") {
-				Analyze(m) // Analyze requires valid rule references.
+			// Analyze requires valid rule references, rule IDs and class runs.
+			if !strings.Contains(c.want, "no rule") && !strings.Contains(c.want, "at index") && !strings.Contains(c.want, "class run of 0") {
+				Analyze(m)
 			}
 			err := Verify(m)
 			if err == nil || !strings.Contains(err.Error(), c.want) {
