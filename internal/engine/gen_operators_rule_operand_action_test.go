@@ -51,4 +51,9 @@ rule e Expr = #operators {
     operand x:"i" #atomic => Atom{Text: $x}
     level { infix left "+" => Sum{L: $lhs, R: $rhs, At: 1} }
 }`, []string{"i", "i+i", "i+i+i", "i+"}},
+	{"operatorsRule operand reading a capture of a repetition", `rule main = v:e $$ => $v
+rule e = #operators {
+    operand r:(f:"j")+ => $r
+    level { infix left "+" }
+}`, []string{"j", "jj", "j+jj", "jj+j+j", "+", "j+", ""}},
 }

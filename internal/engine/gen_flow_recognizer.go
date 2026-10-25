@@ -85,7 +85,7 @@ func (g *generator) flowRecDirect(r *rule) *direct {
 	}
 	f, err := flow.Lower(g.flow.m, cr, r.name, g.flow.opts)
 	if err != nil {
-		panic(err) // LocalRule holds
+		panic(fmt.Errorf("rule %s of table %s: %w", r.name, g.table, err)) // LocalRule holds
 	}
 	g.cur, g.proj = r, g.projections(r)
 	defer func() { g.proj = nil }()

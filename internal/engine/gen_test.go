@@ -246,6 +246,9 @@ rule e = #operators {
 	cases = append(cases, typedLRBodyCases...)
 	cases = append(cases, typedOperatorsRuleBodyCases...)
 	cases = append(cases, operatorsRuleOperandActionCases...)
+	for _, c := range operatorsLineFallbackCases {
+		cases = append(cases, c.genCase)
+	}
 	cases = append(cases, typedFramedCutCases(t)...)
 	cases = append(cases, typedFrameLayoutCases...)
 	cases = append(cases, typedRecoveryCases...)

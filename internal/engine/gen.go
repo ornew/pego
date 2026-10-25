@@ -811,6 +811,21 @@ var directRouteHook func(table string, r *rule)
 // from Flow IR (flowNodeFrameBody), in a Node or recognizer table. Tests set it as directRouteHook.
 var framedRouteHook func(table string, r *rule)
 
+// operatorsRouteHook is called with the rule table and the Operators Rule for each line of a Node or
+// recognizer table that is printed from Flow IR. Tests set it as directRouteHook.
+var operatorsRouteHook func(table string, r *rule)
+
+// operatorsFallbackHook is called as operatorsRouteHook for each line of a Node or recognizer table whose
+// Flow route is on and that is printed by generator.expr instead, because the line is not eligible.
+var operatorsFallbackHook func(table string, r *rule)
+
+// lineFallback reports a line that the Flow route of a Node or recognizer table left to generator.expr.
+func (g *generator) lineFallback() {
+	if g.table != "trules" && g.flow != nil && operatorsFallbackHook != nil && g.collect == nil {
+		operatorsFallbackHook(g.table, g.cur)
+	}
+}
+
 func (g *generator) rules() {
 	init := &g.init
 	methodsBefore := g.methods.String()
@@ -1923,6 +1938,7 @@ func (g *generator) operatorsRule(r *rule, e *grammar.OperatorsRule) {
 		}
 		m := g.flowOperatorsRuleBody(skip, e.Skip, s, false)
 		if m == "" {
+			g.lineFallback()
 			g.failTyped("the skip of an Operators Rule of rule " + g.cur.name)
 			m = g.expr(e.Skip, s, false)
 		}
@@ -1977,6 +1993,7 @@ func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, opera
 	build := !g.cur.novalue && !leanLine(action, locals)
 	m := g.flowOperatorsRuleBody(l, e, s, build)
 	if m == "" {
+		g.lineFallback()
 		g.failTyped("a line of an Operators Rule of rule " + g.cur.name)
 		m = g.expr(e, s, build)
 	}

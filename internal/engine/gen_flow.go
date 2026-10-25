@@ -82,7 +82,7 @@ func (g *generator) flowDirectRule(r *rule) *direct {
 	}
 	f, err := flow.Lower(g.flow.m, cr, r.name, g.flow.opts)
 	if err != nil {
-		panic(err) // LocalRule holds
+		panic(fmt.Errorf("rule %s of table %s: %w", r.name, g.table, err)) // LocalRule holds
 	}
 	g.cur, g.proj = r, g.projections(r)
 	defer func() { g.proj = nil }()
@@ -121,7 +121,7 @@ func (g *generator) flowFrameBody(r *rule, scope *scope) string {
 	}
 	f, err := flow.LowerFrame(g.flow.m, cr, cr.Body, cr.Scope, cr.Want, r.name, g.flow.opts)
 	if err != nil {
-		panic(err) // FramedBody holds
+		panic(fmt.Errorf("rule %s of table %s: %w", r.name, g.table, err)) // FramedBody holds
 	}
 	g.cur, g.proj = r, g.projections(r)
 	defer func() { g.proj = nil }()
@@ -143,7 +143,7 @@ func (g *generator) flowNodeFrameBody(r *rule, scope *scope) string {
 	}
 	f, err := flow.LowerFrame(g.flow.m, cr, cr.Body, cr.Scope, !r.lean, r.name, g.flow.opts)
 	if err != nil {
-		panic(err) // FramedBody holds
+		panic(fmt.Errorf("rule %s of table %s: %w", r.name, g.table, err)) // FramedBody holds
 	}
 	g.cur, g.proj = r, g.projections(r)
 	defer func() { g.proj = nil }()
@@ -196,26 +196,42 @@ func hasProjection(n core.Node) bool {
 	return found
 }
 
-// flowOperatorsRuleBody prints the line l of the Operators Rule g.cur, whose expression is e, from
-// Flow IR, or returns "" if Flow IR does not print the line that way.
+// flowOperatorsRuleBody prints the line l of the Operators Rule g.cur, whose expression is e, from Flow
+// IR, or returns "" if Flow IR does not print the line that way.
+//
+// In the typed table every line is printed from Flow IR. In the Node and recognizer tables a line is, unless
+// it has recovery: Flow IR builds the typed runtime's error values there, which the Node runtime does not
+// take. Nothing else needs a check. The lines of an Operators Rule have no projected repetitions
+// (ruleProjections gives none for one), so Core IR and the tables agree on the shape of every capture, and
+// the checker lets an action name only captures of its line.
 func (g *generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope *scope, build bool) string {
 	if g.flow == nil || l == nil || !flowLineOK(e) || !flow.FramedBody(l.Body) {
 		return ""
 	}
+	if g.table != "trules" && !directFrameExprOK(e, true, false) {
+		return ""
+	}
 	f, err := flow.LowerFrame(g.flow.m, g.flow.m.Rules[g.cur.id], l.Body, l.Scope, build, g.cur.name, g.flow.opts)
 	if err != nil {
-		panic(err) // FramedBody holds
+		panic(fmt.Errorf("line of Operators Rule %s in table %s: %w", g.cur.name, g.table, err)) // FramedBody holds
 	}
 	prev := g.proj
 	g.proj = nil // the actions of the lines use no projections of the rule
 	defer func() { g.proj = prev }()
+	if g.table != "trules" {
+		if operatorsRouteHook != nil && g.collect == nil {
+			operatorsRouteHook(g.table, g.cur)
+		}
+		return g.flowFramed(f, l.Scope, scope, g.cur.name+" (OperatorsRule body inlined)")
+	}
 	return g.flowFramed(f, l.Scope, scope, g.cur.name+" (typed OperatorsRule body inlined)")
 }
 
 // flowOperatorsRule returns the Core IR of the Operators Rule r, or nil if its lines are not
-// printed from Flow IR.
+// printed from Flow IR: the typed table prints them all from it, the Node and recognizer tables
+// when their Flow route is on (flowOperatorsRuleBody decides each line).
 func (g *generator) flowOperatorsRule(r *rule) *core.OperatorsRule {
-	if g.flow == nil || g.table != "trules" {
+	if g.flow == nil || g.table != "trules" && !g.flow.opts.Node {
 		return nil
 	}
 	o, _ := g.flow.m.Rules[r.id].Body.(*core.OperatorsRule)

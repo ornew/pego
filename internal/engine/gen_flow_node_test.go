@@ -25,9 +25,10 @@ func TestGeneratedFlowNodeParity(t *testing.T) {
 	cases := genCorpus(t)
 	taken := map[string]int{}
 	directRouteHook = func(table string, r *rule) { taken[table]++ }
-	framed := map[string]int{}
+	framed, operators := map[string]int{}, map[string]int{}
 	framedRouteHook = func(table string, r *rule) { framed[table]++ }
-	t.Cleanup(func() { directRouteHook, framedRouteHook = nil, nil })
+	operatorsRouteHook = func(table string, r *rule) { operators[table]++ }
+	t.Cleanup(func() { directRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil })
 	for _, c := range cases {
 		g, err := parseTest(c.src)
 		if err != nil {
@@ -37,8 +38,11 @@ func TestGeneratedFlowNodeParity(t *testing.T) {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 	}
-	directRouteHook, framedRouteHook = nil, nil
+	directRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil
 	for _, table := range []string{"rules", "recRules"} {
+		if operators[table] == 0 {
+			t.Errorf("no Operators Rule line of the %s table is printed from Flow IR: the parity test does not cover them", table)
+		}
 		if framed[table] == 0 {
 			t.Errorf("no framed rule of the %s table is printed from Flow IR: the parity test does not cover them", table)
 		}
@@ -56,6 +60,9 @@ func TestGeneratedFlowNodeParity(t *testing.T) {
 // unreadBlank matches the line that dgen writes for the variables of a rule that its body never reads.
 // Flow IR declares a variable only for what its function reads, so the Flow form has no such line.
 var unreadBlank = regexp.MustCompile(`(?m)^\t_(, _)* = x\d+(, x\d+)*\n`)
+
+// operatorGrammars are the checked-in grammars with an Operators Rule.
+var operatorGrammars = map[string]bool{"cel": true, "cue": true, "duckdb": true, "golang": true, "python": true, "typescript": true}
 
 // TestFlowNodeRulesMatchDirect generates the Node parsers of the checked-in grammars with the rules of
 // both tables printed from Flow IR and with dgen (directNodeRules and directRecognizer), and checks that
@@ -85,15 +92,19 @@ func TestFlowNodeRulesMatchDirect(t *testing.T) {
 				}
 				return mergeGenerated(files)
 			}
-			taken, framed := 0, 0
+			taken, framed, operators := 0, 0, 0
 			directRouteHook = func(table string, r *rule) {
 				if table == "rules" {
 					taken++
 				}
 			}
 			framedRouteHook = func(table string, r *rule) { framed++ }
+			operatorsRouteHook = func(table string, r *rule) { operators++ }
 			flow := gen(GenOptions{})
-			directRouteHook, framedRouteHook = nil, nil
+			directRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil
+			if operators == 0 && operatorGrammars[name] {
+				t.Errorf("no Operators Rule line of %s is printed from Flow IR", name)
+			}
 			if taken == 0 {
 				t.Errorf("no rule of the Node table of %s takes the Flow route", name)
 			}
@@ -101,6 +112,14 @@ func TestFlowNodeRulesMatchDirect(t *testing.T) {
 				t.Errorf("no framed rule of the Node table of %s takes the Flow route", name)
 			}
 			direct := gen(GenOptions{directNodeRules: true, directRecognizer: true})
+			if operatorGrammars[name] {
+				// The old printers do not print the lines as Flow IR does: compare outside them (lineResidue).
+				do, fo := lineResidue(unreadBlank.ReplaceAll(flow, nil), unreadBlank.ReplaceAll(direct, nil))
+				if len(do) > 0 || len(fo) > 0 {
+					t.Errorf("outside the Operators Rule lines, the Flow output of %s has %d chunks that dgen's lacks (first: %s) and dgen's has %d that Flow's lacks (first: %s)", name, len(fo), summary(fo), len(do), summary(do))
+				}
+				return
+			}
 			if string(unreadBlank.ReplaceAll(flow, nil)) != string(unreadBlank.ReplaceAll(direct, nil)) {
 				t.Errorf("the Flow Node rules of %s differ from dgen beyond blank assignments of unread variables (%d and %d bytes)", name, len(flow), len(direct))
 			}

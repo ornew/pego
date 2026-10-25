@@ -41,7 +41,7 @@ The evidence below was measured at commit `4e2f3763` with Go 1.27.1 on an Apple 
 | Closure | `compiler.expr`/`exprMatcher` and helpers in `compile.go`, attributes in `attrs.go` | 720 |
 | Bytecode, shared by the recursive and iterative VMs | `bcompiler.match`/`elems`/`leaf`/`void` and helpers in `bcompile.go` | 490 |
 | Generated Go Node and recognizer | `generator.expr` and helpers in `gen.go`, one Go function per expression | 455 |
-| Generated typed Go | Flow IR prints every typed rule and Operators Rule line, and the lean and framed rules of ordinary Node and recognizer tables that it accepts; generation fails on a typed rule Flow IR does not print. `dgen` in `gen_direct.go` and `gen_direct_node.go` prints the remaining Node and recognizer rules, falling back to `generator.expr` | 1,770 |
+| Generated typed Go | Flow IR prints every typed rule and Operators Rule line, and the lean and framed rules and the Operators Rule lines of ordinary Node and recognizer tables that it accepts; generation fails on a typed rule Flow IR does not print. `dgen` in `gen_direct.go` and `gen_direct_node.go` prints the remaining Node and recognizer rules, falling back to `generator.expr` | 1,770 |
 | Terminal programs | `terminalProgram` in `gen_terminal.go` | 260 |
 | Generated TypeScript | `tsGen.expr` and helpers in `gen_ts.go` | 400 |
 
@@ -84,6 +84,11 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   `dgen` writes; apart from those lines the output of all ten checked-in grammars is equal to `dgen`'s. The
   recognizer's table writes its actions without projections, so a recognizer rule whose body Core IR projects is
   printed by `dgen`.
+  The lines of an Operators Rule in both tables are printed from Flow IR as framed bodies, except a line with
+  `#recover`, which Flow IR would build with the typed runtime's error values. Operators Rules have no
+  projected repetitions, so Core IR and the tables agree on the shape of every capture. The tests compare the
+  generated text outside the lines (everything the line matchers do not reach) with the output of the other printer,
+  and compare the behavior of the parsers inside the lines with the engine.
   The recognizer's Core pipeline runs `Analyze` before `Guards`, as the table's pipeline does: `Guards` reads the
   first terminals that `Analyze` computes, so the reverse order leaves the alternatives of choices unguarded.
 - Work-control specialization exists three times: the closure backend compiles a second, metered closure
