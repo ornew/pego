@@ -29,6 +29,16 @@ const sharingAnyGrammar = `type Holder = { Xs node[_] }
 @start
 rule main Holder = xs:(x:[a-z] ";")+ => Holder{Xs: $xs}`
 
+// sharingRecoverGrammar recovers from bad items, so a published list and a field hold error values
+// that share the memo's error and diagnostic slices, and a left-recursive list is rebuilt on edits.
+const sharingRecoverGrammar = `type Token = { Text string }
+type Box = { Token Token | error }
+type Pair = { Boxes []Box; Head Box }
+rule main Pair = h:item xs:chain => Pair{Boxes: concat(list($h), $xs), Head: $h}
+rule chain []Box = (c:chain i:item => concat($c, list($i))) / (i:item => list($i))
+rule item Box = t:(token #recover(skip=[^;]+ ";")) => Box{Token: $t}
+rule token Token = t:("a;" @error(message="want token")) #atomic => Token{Text: text($t)}`
+
 const sharingOperatorsGrammar = `type Atom = { Text string }
 type Sum = { L Expr; R Expr }
 type Expr ~ Atom | Sum
@@ -68,6 +78,7 @@ func sharingPackages(t *testing.T, tests map[string]string) {
 		{"slab", sharingListGrammar, true},
 		{"ops", sharingOperatorsGrammar, false},
 		{"anyf", sharingAnyGrammar, false},
+		{"rec", sharingRecoverGrammar, false},
 	} {
 		g, err := parseTest(pkg.grammar)
 		if err != nil {
@@ -578,6 +589,7 @@ func TestSharedTypedDocumentContract(t *testing.T) {
 		"ops/shared_test.go":  sharingOpsTest,
 		"slab/shared_test.go": sharingSlabTest,
 		"anyf/shared_test.go": sharingAnyTest,
+		"rec/shared_test.go":  sharingRecoverTest,
 	})
 }
 
@@ -642,6 +654,102 @@ func TestSharedAnyFieldIsDetachedFromParserState(t *testing.T) {
 	}
 	if !reflect.DeepEqual(first, snapshot) {
 		t.Fatal("a parse after an edit changed an earlier node[_] value: it aliases parser state")
+	}
+}
+`
+
+// sharingRecoverTest edits a document of valid and recovered items at random, and after every step
+// checks the fresh parse, the new result and every earlier result against the snapshot taken when
+// it was published.
+const sharingRecoverTest = `package rec
+
+import (
+	"fmt"
+	"math/rand"
+	"reflect"
+	"strings"
+	"testing"
+
+	. "sharedtypeddocument/rec/types"
+)
+
+func recText(pieces []string) string { return strings.Join(pieces, "") }
+
+// countErrors counts the generated error values reachable from v.
+func countErrors(v reflect.Value) int {
+	switch v.Kind() {
+	case reflect.Pointer, reflect.Interface:
+		if v.IsNil() {
+			return 0
+		}
+		if v.Kind() == reflect.Pointer && v.Type().Elem().Name() == "Error" {
+			return 1
+		}
+		return countErrors(v.Elem())
+	case reflect.Struct:
+		n := 0
+		for i := 0; i < v.NumField(); i++ {
+			n += countErrors(v.Field(i))
+		}
+		return n
+	case reflect.Slice:
+		n := 0
+		for i := 0; i < v.Len(); i++ {
+			n += countErrors(v.Index(i))
+		}
+		return n
+	}
+	return 0
+}
+
+func TestSharedRecoverErrorValuesKeepEarlierResults(t *testing.T) {
+	pieces := []string{"a;", "b;", "a;x;", "cc;"}
+	rng := rand.New(rand.NewSource(37))
+	d, err := NewDocument(recText(pieces))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var kept, snaps []*Pair
+	errorValues := 0
+	for step := 0; step < 300; step++ {
+		// Recovered items are reported as the error, next to the value; both must match a fresh parse.
+		got, gerr := d.ParseAST()
+		want, werr := ParseAST(recText(pieces))
+		if !reflect.DeepEqual(got, want) || fmt.Sprint(gerr) != fmt.Sprint(werr) {
+			t.Fatalf("step %d: result of %q differs from a fresh parse: %v vs %v", step, recText(pieces), gerr, werr)
+		}
+		errorValues += countErrors(reflect.ValueOf(got))
+		kept = append(kept, got)
+		snaps = append(snaps, CloneAST(got))
+		for k := range kept {
+			if !reflect.DeepEqual(CloneAST(kept[k]), snaps[k]) {
+				t.Fatalf("step %d: result %d changed after a later parse", step, k)
+			}
+		}
+		// Replace a range of whole items with one or two random items, keeping at least one item.
+		i := rng.Intn(len(pieces))
+		j := i + rng.Intn(len(pieces)-i+1)
+		repl := make([]string, 1+rng.Intn(2))
+		for k := range repl {
+			repl[k] = []string{"a;", "b;", "a;x;", "cc;"}[rng.Intn(4)]
+		}
+		start := len(recText(pieces[:i]))
+		end := start + len(recText(pieces[i:j]))
+		if err := d.Edit(start, end, recText(repl)); err != nil {
+			t.Fatal(err)
+		}
+		pieces = append(append(append([]string{}, pieces[:i]...), repl...), pieces[j:]...)
+		if len(pieces) > 12 {
+			// Keep the document short, so that the snapshots stay cheap to compare.
+			cur := recText(pieces)
+			pieces = pieces[len(pieces)-8:]
+			if err := d.Edit(0, len(cur), recText(pieces)); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	if errorValues == 0 {
+		t.Fatal("no error values were published; the recovery path was not exercised")
 	}
 }
 `
