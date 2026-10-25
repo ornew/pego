@@ -1,6 +1,6 @@
 # 063. Configurable Optimization Pass Pipeline
 
-- **Status**: Proposed
+- **Status**: Accepted
 - **Author**: @ornew
 - **Date**: 2026-10-25
 
@@ -16,8 +16,8 @@ scattered booleans. This design makes a pass a declared unit and the sequence a 
 - named flag sets (generation profiles `speed`, `memory` and `size`) select a coherent set of optimizations;
 - the module can be printed after any pass.
 
-The default pipeline reproduces today's generated output byte for byte. The record proposes, and leaves to the maintainers,
-how much of this reaches users through `pego gen` and the Go options.
+The default pipeline reproduces today's generated output byte for byte. Users select a profile with `pego gen
+-optimize`, and per-optimization flags and the IR dump are available as options for development and advanced use.
 
 ## Motivation
 
@@ -169,7 +169,7 @@ memory on the checked-in parsers, and the measured result goes in the profile's 
 `disableTypedListSlabs`, `disableTypedOutputBootstrap`) are candidates for the `memory` profile
 but are not Core passes; whether a profile also sets them is an open question.
 
-The word "profile" already names the rule profiler (`pego profile`, `WithProfile`). See the open questions.
+The word "profile" already names the rule profiler (`pego profile`, `WithProfile`), so the flag that selects a profile is `-optimize`.
 
 ### Print After Pass
 
@@ -194,24 +194,27 @@ Each step is its own commit and can be reverted alone.
 
 ### User-Facing Surface
 
-The mechanism is internal. What a user can reach is a decision for the maintainers, with these options.
+Three surfaces were considered.
 
 **Option A: Internal only.** Flags exist for tests and diagnostics through the private `GenOptions` fields. `pego gen`
 and the Go options do not change. Profiles are not offered.
 
-**Option B: Profiles.** `pego gen -profile speed|memory|size` and a Go option `WithGenerationProfile` select a profile.
+**Option B: Profiles.** `pego gen -optimize speed|memory|size` and a Go option `WithOptimize` select a profile.
 Per-pass flags stay internal.
 
 **Option C: Profiles and per-optimization flags.** Option B plus `pego gen -no-opt name[,name]` and
 `WithoutOptimizations(names ...string)`, for reproducing a miscompilation or measuring one optimization, and
 `-print-after name|all` (with a Go callback) for the IR dump.
 
-Recommendation: **B, with the per-pass flags and `-print-after` reachable only as documented diagnostics.** Profiles
-answer a question users have (how big and how fast), and no user needs to know the pass names. A flag per pass as a
-public contract would fix the names and the set of passes, which record 062 expects to change. The diagnostics belong
-in the debugging guide, marked as not stable, not in the specification: the
-[specification of generated parsers](../../../spec/generated-parsers.md) does not constrain generated code, only the
-parser's behavior.
+Decision: **C, with the profile flag named `-optimize`.** `pego gen -optimize speed|memory|size` and the Go option
+`WithOptimize` select a profile; `-no-opt name[,name]`, `WithoutOptimizations(names ...string)` and `-print-after
+name|all` serve development and advanced use, such as isolating a miscompilation or measuring one optimization. A
+profile is applied first and `-no-opt` removes optimizations from it, so `-optimize size -no-opt guards` is `size`
+without `guards`. The name `-optimize` avoids the rule profiler's `pego profile` and `WithProfile`. The flags are
+described in the command-line reference only; no guide explains individual optimizations, and the
+[specification of generated parsers](../../../spec/generated-parsers.md) does not change, because it constrains the
+parser's behavior, not the generated code. Optimization names follow the pass set, which record 062 expects to
+change.
 
 Any option leaves the generated API, results, errors and events unchanged. Documentation changes are the command-line
 reference and the code-generation guide; the specification does not change.
@@ -273,13 +276,8 @@ documented; until then they do not ship.
 
 ## Limitations and Open Questions
 
-- **The user-facing surface** (Options A, B and C). The maintainers decide, and whether to ship profiles at all.
-- **The name.** "Profile" collides with `pego profile` and `WithProfile`, which profile rules. Alternatives are
-  `-preset`, `-optimize` (as in `-optimize speed`) or `-target-profile`.
 - **What `memory` and `size` contain.** Their flag sets are hypotheses until measured. Whether they also set the
   typed slab controls, and whether `size` also changes the runtime embedded in the parser, is open.
-- **Whether a profile may be combined with per-flag overrides** (`-profile size -no-opt guards` versus an
-  `+name`/`-name` syntax) if Option C is chosen.
 - **Granularity of `term-rewrites`.** Each rewrite (`TextEq`, `ConcatFused`, `ProjectedMap`) could have its own flag. Today
   no printer reads the rewritten terms, so a flag changes only the Core IR, and splitting it earns nothing until the
   Flow printer takes terms from Core.
