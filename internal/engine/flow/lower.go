@@ -110,7 +110,7 @@ func LowerFrame(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, bu
 	if !FramedBody(n) {
 		return nil, fmt.Errorf("a body of rule %s is not lowered to a framed function", r.Name)
 	}
-	f := &Func{Name: name, Rule: r, Fail: &Label{Name: "fail"}, Frame: true, Node: opts.Node, Binds: n.Attrs().Eff.Set&core.EffBind != 0}
+	f := &Func{Name: name, Rule: r, Fail: &Label{Name: "fail"}, Frame: true, Node: opts.Node, Work: opts.Work, Binds: n.Attrs().Eff.Set&core.EffBind != 0}
 	l := &lowerer{m: m, opts: opts, f: f, used: map[*Label]bool{}, frame: true}
 	l.stack = []*[]Stmt{&f.Body}
 	core.Walk(n, func(n core.Node) {
@@ -141,6 +141,7 @@ func Lower(m *core.Module, r *core.Rule, name string, opts Options) (*Func, erro
 		Result: &Var{Name: "v", Type: TypeValue, Entry: true},
 		Ctx:    &Var{Name: "c", Type: TypeCtx, Entry: true},
 		Node:   opts.Node,
+		Work:   opts.Work,
 		Binds:  r.Body.Attrs().Eff.Set&core.EffBind != 0}
 	l := &lowerer{m: m, opts: opts, f: f, used: map[*Label]bool{}}
 	l.stack = []*[]Stmt{&f.Body}

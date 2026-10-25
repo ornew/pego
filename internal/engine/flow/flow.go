@@ -49,6 +49,9 @@ type Func struct {
 	// NewBranchNode). A function builds the values of one runtime: a Node function has no typed value
 	// operation, and a typed function has no Node one (Verify).
 	Node bool
+	// Work reports a function lowered with work controls (Options.Work); Verify then checks the
+	// charging of work (verifyWork).
+	Work bool
 }
 
 // Type is the type of a variable.
