@@ -601,70 +601,70 @@ var lit31 = []rune(")")
 var lit34 = []rune(",")
 var scope33 = []string{"p"}
 var scope38 = []string{"x"}
-var lit42 = []rune("let")
-var lit43 = []rune("fn")
-var lit44 = []rune("if")
-var lit45 = []rune("else")
-var lit46 = []rune("while")
-var lit47 = []rune("return")
+var lit42 = []rune(".")
+var lit44 = []rune("\"")
+var lit46 = []rune("\\")
 var lit48 = []rune("true")
 var lit49 = []rune("false")
-var lit52 = []rune(".")
-var lit54 = []rune("\"")
-var lit56 = []rune("\\")
-var lit65 = []rune("//")
-var sh66 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}
-var sh67 = rt.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}
-var sh78 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}
-var sh79 = rt.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}
-var sh80 = rt.Shaper{Elems: true, K: 8, Mode: 2, Tuple: true, Shared: false}
-var sh81 = rt.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}
-var sh82 = rt.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}
-var sh83 = rt.Shaper{Elems: true, K: 10, Mode: 2, Tuple: true, Shared: false}
-var sh84 = rt.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}
-var sh85 = rt.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}
+var lit51 = []rune("//")
+var sh52 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}
+var sh53 = rt.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}
+var lit55 = []rune("let")
+var lit56 = []rune("if")
+var lit57 = []rune("else")
+var lit58 = []rune("while")
+var lit59 = []rune("return")
+var lit60 = []rune("fn")
+var sh61 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}
+var sh62 = rt.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}
+var sh63 = rt.Shaper{Elems: true, K: 8, Mode: 2, Tuple: true, Shared: false}
+var sh64 = rt.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}
+var sh65 = rt.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}
+var sh66 = rt.Shaper{Elems: true, K: 10, Mode: 2, Tuple: true, Shared: false}
+var sh67 = rt.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}
+var sh68 = rt.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}
 
 var rulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh67, Seen: -1, Scope: 1},
-	{Name: "stmts", Value: &sh78, Flags: rt.RuleMemo, Scope: 2},
-	{Name: "block", Value: &sh79, Flags: rt.RuleMemo, Seen: 1, Scope: 1},
-	{Name: "stmt", Value: &sh78, Seen: -1, Scope: 3},
-	{Name: "let", Value: &sh80, Seen: -1, Scope: 4},
-	{Name: "assign", Value: &sh81, Seen: -1, Scope: 5},
-	{Name: "if", Value: &sh82, Flags: rt.RuleMemo, Seen: 2, Scope: 6},
-	{Name: "else", Value: &sh79, Seen: -1, Scope: 7},
-	{Name: "while", Value: &sh79, Seen: -1, Scope: 8},
-	{Name: "return", Value: &sh79, Seen: -1, Scope: 9},
-	{Name: "func", Value: &sh83, Seen: -1, Scope: 10},
-	{Name: "params", Value: &sh67, Seen: -1, Scope: 11},
-	{Name: "exprStmt", Value: &sh84, Seen: -1, Scope: 7},
-	{Name: "expr", Value: &sh78, Flags: rt.RuleMemo, Seen: 3, Scope: 12},
+	{Name: "main", Value: &sh53, Seen: -1, Scope: 1},
+	{Name: "stmts", Value: &sh61, Flags: rt.RuleMemo, Scope: 2},
+	{Name: "block", Value: &sh62, Flags: rt.RuleMemo, Seen: 1, Scope: 1},
+	{Name: "stmt", Value: &sh61, Seen: -1, Scope: 3},
+	{Name: "let", Value: &sh63, Seen: -1, Scope: 4},
+	{Name: "assign", Value: &sh64, Seen: -1, Scope: 5},
+	{Name: "if", Value: &sh65, Flags: rt.RuleMemo, Seen: 2, Scope: 6},
+	{Name: "else", Value: &sh62, Seen: -1, Scope: 7},
+	{Name: "while", Value: &sh62, Seen: -1, Scope: 8},
+	{Name: "return", Value: &sh62, Seen: -1, Scope: 9},
+	{Name: "func", Value: &sh66, Seen: -1, Scope: 10},
+	{Name: "params", Value: &sh53, Seen: -1, Scope: 11},
+	{Name: "exprStmt", Value: &sh67, Seen: -1, Scope: 7},
+	{Name: "expr", Value: &sh61, Flags: rt.RuleMemo, Seen: 3, Scope: 12},
 	{Name: "operation", Flags: rt.RuleMemo, Seen: 4},
-	{Name: "args", Value: &sh67, Flags: rt.RuleMemo, Seen: 5, Scope: 11},
-	{Name: "ident", Value: &sh66, Flags: rt.RuleMemo, Seen: 6},
-	{Name: "name", Value: &sh78, Flags: rt.RuleMemo, Seen: 7, Scope: 13},
-	{Name: "keyword", Value: &sh85, Seen: -1},
-	{Name: "idchar", Value: &sh66, Seen: -1},
-	{Name: "number", Value: &sh66, Seen: -1},
-	{Name: "string", Value: &sh84, Seen: -1, Scope: 3},
-	{Name: "strchars", Value: &sh66, Seen: -1},
-	{Name: "bool", Value: &sh66, Seen: -1},
-	{Name: "kw_let", Value: &sh85, Seen: -1},
-	{Name: "kw_fn", Value: &sh85, Seen: -1},
-	{Name: "kw_if", Value: &sh85, Seen: -1},
-	{Name: "kw_else", Value: &sh85, Seen: -1},
-	{Name: "kw_while", Value: &sh85, Seen: -1},
-	{Name: "kw_return", Value: &sh85, Seen: -1},
-	{Name: "ws", Value: &sh66, Seen: -1},
-	{Name: "ws", Value: &sh66, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_let", Value: &sh85, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_if", Value: &sh85, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_else", Value: &sh85, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_while", Value: &sh85, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_return", Value: &sh85, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_fn", Value: &sh85, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "keyword", Value: &sh85, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "idchar", Value: &sh66, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "args", Value: &sh53, Flags: rt.RuleMemo, Seen: 5, Scope: 11},
+	{Name: "ident", Value: &sh52, Flags: rt.RuleMemo, Seen: 6},
+	{Name: "name", Value: &sh61, Flags: rt.RuleMemo, Seen: 7, Scope: 13},
+	{Name: "keyword", Value: &sh68, Seen: -1},
+	{Name: "idchar", Value: &sh52, Seen: -1},
+	{Name: "number", Value: &sh52, Seen: -1},
+	{Name: "string", Value: &sh67, Seen: -1, Scope: 3},
+	{Name: "strchars", Value: &sh52, Seen: -1},
+	{Name: "bool", Value: &sh52, Seen: -1},
+	{Name: "kw_let", Value: &sh68, Seen: -1},
+	{Name: "kw_fn", Value: &sh68, Seen: -1},
+	{Name: "kw_if", Value: &sh68, Seen: -1},
+	{Name: "kw_else", Value: &sh68, Seen: -1},
+	{Name: "kw_while", Value: &sh68, Seen: -1},
+	{Name: "kw_return", Value: &sh68, Seen: -1},
+	{Name: "ws", Value: &sh52, Seen: -1},
+	{Name: "ws", Value: &sh52, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_let", Value: &sh68, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_if", Value: &sh68, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_else", Value: &sh68, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_while", Value: &sh68, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_return", Value: &sh68, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_fn", Value: &sh68, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "keyword", Value: &sh68, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "idchar", Value: &sh52, Flags: rt.RuleNovalue, Seen: -1},
 }
 
 var rulesStrs = [...][]string{
@@ -692,59 +692,59 @@ var rulesExtras = [...]rt.RuleExtra{
 	{Id: 23, Where: "", NodeType: "Bool", OpNodeType: ""},
 }
 
-var lit96 = []rune("[")
-var lit101 = []rune("]")
-var lit104 = []rune("?")
-var lit108 = []rune(":")
-var lit111 = []rune("||")
-var lit113 = []rune("&&")
-var lit115 = []rune("==")
-var lit117 = []rune("!=")
-var lit119 = []rune("<=")
-var lit121 = []rune(">=")
-var lit123 = []rune("<")
-var lit125 = []rune(">")
-var lit128 = []rune("+")
-var lit130 = []rune("-")
-var lit133 = []rune("*")
-var lit135 = []rune("/")
-var lit137 = []rune("%")
-var lit140 = []rune("!")
-var scope155 = []string{}
-var scope178 = []string{}
+var lit79 = []rune("[")
+var lit84 = []rune("]")
+var lit87 = []rune("?")
+var lit91 = []rune(":")
+var lit94 = []rune("||")
+var lit96 = []rune("&&")
+var lit98 = []rune("==")
+var lit100 = []rune("!=")
+var lit102 = []rune("<=")
+var lit104 = []rune(">=")
+var lit106 = []rune("<")
+var lit108 = []rune(">")
+var lit111 = []rune("+")
+var lit113 = []rune("-")
+var lit116 = []rune("*")
+var lit118 = []rune("/")
+var lit120 = []rune("%")
+var lit123 = []rune("!")
+var scope138 = []string{}
+var scope153 = []string{}
 
 var recRulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh67, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "stmts", Value: &sh78, Flags: rt.RuleMemo | rt.RuleNovalue},
-	{Name: "block", Value: &sh79, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 1},
-	{Name: "stmt", Value: &sh78, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "let", Value: &sh80, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "assign", Value: &sh81, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "if", Value: &sh82, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 2},
-	{Name: "else", Value: &sh79, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "while", Value: &sh79, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "return", Value: &sh79, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "func", Value: &sh83, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "params", Value: &sh67, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "exprStmt", Value: &sh84, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "expr", Value: &sh78, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 3},
+	{Name: "main", Value: &sh53, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "stmts", Value: &sh61, Flags: rt.RuleMemo | rt.RuleNovalue},
+	{Name: "block", Value: &sh62, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 1},
+	{Name: "stmt", Value: &sh61, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "let", Value: &sh63, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "assign", Value: &sh64, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "if", Value: &sh65, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 2},
+	{Name: "else", Value: &sh62, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "while", Value: &sh62, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "return", Value: &sh62, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "func", Value: &sh66, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "params", Value: &sh53, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "exprStmt", Value: &sh67, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "expr", Value: &sh61, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 3},
 	{Name: "operation", Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 4},
-	{Name: "args", Value: &sh67, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 5},
-	{Name: "ident", Value: &sh66, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 6},
-	{Name: "name", Value: &sh78, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 7},
-	{Name: "keyword", Value: &sh85, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "idchar", Value: &sh66, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "number", Value: &sh66, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "string", Value: &sh84, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "strchars", Value: &sh66, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "bool", Value: &sh66, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_let", Value: &sh85, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_fn", Value: &sh85, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_if", Value: &sh85, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_else", Value: &sh85, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_while", Value: &sh85, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_return", Value: &sh85, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ws", Value: &sh66, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "args", Value: &sh53, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 5},
+	{Name: "ident", Value: &sh52, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 6},
+	{Name: "name", Value: &sh61, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 7},
+	{Name: "keyword", Value: &sh68, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "idchar", Value: &sh52, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "number", Value: &sh52, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "string", Value: &sh67, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "strchars", Value: &sh52, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "bool", Value: &sh52, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_let", Value: &sh68, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_fn", Value: &sh68, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_if", Value: &sh68, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_else", Value: &sh68, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_while", Value: &sh68, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_return", Value: &sh68, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ws", Value: &sh52, Flags: rt.RuleNovalue, Seen: -1},
 }
 
 var recRulesStrs = [...][]string{
@@ -845,80 +845,80 @@ func init() {
 	rules[13].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e37(p) }
 	rules[13].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
 	rules[14].OperatorsRule = &rt.OperatorsRule{
-		Skip: e86,
+		Skip: e69,
 		Operands: []*rt.OperatorsRuleLine{
-			&rt.OperatorsRuleLine{Scope: []string{}, M: e87, Action: nil, Value: sh66},
-			&rt.OperatorsRuleLine{Scope: []string{}, M: e88, Action: nil, Value: sh66},
-			&rt.OperatorsRuleLine{Scope: []string{}, M: e89, Action: nil, Value: sh66},
-			&rt.OperatorsRuleLine{Scope: []string{}, M: e90, Action: nil, Value: sh66},
-			&rt.OperatorsRuleLine{Scope: []string{"e"}, M: e95, Action: func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }, Value: sh79},
-			&rt.OperatorsRuleLine{Scope: []string{"xs"}, M: e103, Action: func(c *rt.ActCtx) any {
+			&rt.OperatorsRuleLine{Scope: []string{}, M: e70, Action: nil, Value: sh52},
+			&rt.OperatorsRuleLine{Scope: []string{}, M: e71, Action: nil, Value: sh52},
+			&rt.OperatorsRuleLine{Scope: []string{}, M: e72, Action: nil, Value: sh52},
+			&rt.OperatorsRuleLine{Scope: []string{}, M: e73, Action: nil, Value: sh52},
+			&rt.OperatorsRuleLine{Scope: []string{"e"}, M: e78, Action: func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }, Value: sh62},
+			&rt.OperatorsRuleLine{Scope: []string{"xs"}, M: e86, Action: func(c *rt.ActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return c.NewStruct("ArrayLit", "Elems", func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return c.Cap(0) }()) }())
 				}()
-			}, Value: sh79},
+			}, Value: sh62},
 		},
-		Prefix: []*rt.OperatorsRuleOp{{Id: 6, Kind: "prefix", Assoc: "", Level: 7, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e142, Action: func(c *rt.ActCtx) any {
+		Prefix: []*rt.OperatorsRuleOp{{Id: 6, Kind: "prefix", Assoc: "", Level: 7, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e125, Action: func(c *rt.ActCtx) any {
 			return func() any {
 				c.P.StepWork()
 				return c.NewStruct("Unary", "Op", func() any { c.P.StepWork(); return rt.UnboxValue(c.Op) }(), "X", func() any { c.P.StepWork(); return rt.UnboxValue(c.Rhs) }())
 			}()
-		}, Value: sh66}}},
-		Led: []*rt.OperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "right", Level: 1, Line: &rt.OperatorsRuleLine{Scope: []string{"t"}, M: e110, Action: func(c *rt.ActCtx) any {
+		}, Value: sh52}}},
+		Led: []*rt.OperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "right", Level: 1, Line: &rt.OperatorsRuleLine{Scope: []string{"t"}, M: e93, Action: func(c *rt.ActCtx) any {
 			return func() any {
 				c.P.StepWork()
 				return c.NewStruct("Cond", "Cond", func() any { c.P.StepWork(); return rt.UnboxValue(c.Lhs) }(), "Then", func() any { c.P.StepWork(); return c.Cap(0) }(), "Else", func() any { c.P.StepWork(); return rt.UnboxValue(c.Rhs) }())
 			}()
-		}, Value: sh79}},
-			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e112, Action: func(c *rt.ActCtx) any {
+		}, Value: sh62}},
+			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e95, Action: func(c *rt.ActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return c.NewStruct("Binary", "Left", func() any { c.P.StepWork(); return rt.UnboxValue(c.Lhs) }(), "Op", func() any { c.P.StepWork(); return rt.UnboxValue(c.Op) }(), "Right", func() any { c.P.StepWork(); return rt.UnboxValue(c.Rhs) }())
 				}()
-			}, Value: sh66}},
-			{Id: 2, Kind: "infix", Assoc: "left", Level: 3, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e114, Action: func(c *rt.ActCtx) any {
+			}, Value: sh52}},
+			{Id: 2, Kind: "infix", Assoc: "left", Level: 3, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e97, Action: func(c *rt.ActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return c.NewStruct("Binary", "Left", func() any { c.P.StepWork(); return rt.UnboxValue(c.Lhs) }(), "Op", func() any { c.P.StepWork(); return rt.UnboxValue(c.Op) }(), "Right", func() any { c.P.StepWork(); return rt.UnboxValue(c.Rhs) }())
 				}()
-			}, Value: sh66}},
-			{Id: 3, Kind: "infix", Assoc: "none", Level: 4, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e127, Action: func(c *rt.ActCtx) any {
+			}, Value: sh52}},
+			{Id: 3, Kind: "infix", Assoc: "none", Level: 4, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e110, Action: func(c *rt.ActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return c.NewStruct("Binary", "Left", func() any { c.P.StepWork(); return rt.UnboxValue(c.Lhs) }(), "Op", func() any { c.P.StepWork(); return rt.UnboxValue(c.Op) }(), "Right", func() any { c.P.StepWork(); return rt.UnboxValue(c.Rhs) }())
 				}()
-			}, Value: sh66}},
-			{Id: 4, Kind: "infix", Assoc: "left", Level: 5, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e132, Action: func(c *rt.ActCtx) any {
+			}, Value: sh52}},
+			{Id: 4, Kind: "infix", Assoc: "left", Level: 5, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e115, Action: func(c *rt.ActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return c.NewStruct("Binary", "Left", func() any { c.P.StepWork(); return rt.UnboxValue(c.Lhs) }(), "Op", func() any { c.P.StepWork(); return rt.UnboxValue(c.Op) }(), "Right", func() any { c.P.StepWork(); return rt.UnboxValue(c.Rhs) }())
 				}()
-			}, Value: sh66}},
-			{Id: 5, Kind: "infix", Assoc: "left", Level: 6, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e139, Action: func(c *rt.ActCtx) any {
+			}, Value: sh52}},
+			{Id: 5, Kind: "infix", Assoc: "left", Level: 6, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e122, Action: func(c *rt.ActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return c.NewStruct("Binary", "Left", func() any { c.P.StepWork(); return rt.UnboxValue(c.Lhs) }(), "Op", func() any { c.P.StepWork(); return rt.UnboxValue(c.Op) }(), "Right", func() any { c.P.StepWork(); return rt.UnboxValue(c.Rhs) }())
 				}()
-			}, Value: sh66}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.OperatorsRuleLine{Scope: []string{"xs"}, M: e146, Action: func(c *rt.ActCtx) any {
+			}, Value: sh52}},
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.OperatorsRuleLine{Scope: []string{"xs"}, M: e129, Action: func(c *rt.ActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return c.NewStruct("Call", "Fn", func() any { c.P.StepWork(); return rt.UnboxValue(c.Lhs) }(), "Args", func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return c.Cap(0) }()) }())
 				}()
-			}, Value: sh79}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.OperatorsRuleLine{Scope: []string{"i"}, M: e149, Action: func(c *rt.ActCtx) any {
+			}, Value: sh62}},
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.OperatorsRuleLine{Scope: []string{"i"}, M: e132, Action: func(c *rt.ActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return c.NewStruct("Index", "X", func() any { c.P.StepWork(); return rt.UnboxValue(c.Lhs) }(), "Index", func() any { c.P.StepWork(); return c.Cap(0) }())
 				}()
-			}, Value: sh79}},
-			{Id: 9, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.OperatorsRuleLine{Scope: []string{"n"}, M: e153, Action: func(c *rt.ActCtx) any {
+			}, Value: sh62}},
+			{Id: 9, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.OperatorsRuleLine{Scope: []string{"n"}, M: e136, Action: func(c *rt.ActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return c.NewStruct("Member", "X", func() any { c.P.StepWork(); return rt.UnboxValue(c.Lhs) }(), "Name", func() any { c.P.StepWork(); return c.Cap(0) }())
 				}()
-			}, Value: sh84}}},
+			}, Value: sh67}}},
 	}
 	rules[14].Body = func(p *rt.Parser, min int) (*rt.Node, bool) { return p.OperatorsRuleParse(rules[14], min) }
 	rules[15].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e39(p) }
@@ -936,29 +936,8 @@ func init() {
 	rules[16].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e40(p) }
 	rules[17].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e41(p) }
 	rules[17].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
-	rules[18].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e50(p) }
-	rules[19].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e51(p) }
-	rules[20].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e53(p) }
-	rules[21].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e55(p) }
+	rules[21].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e45(p) }
 	rules[21].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
-	rules[22].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e57(p) }
-	rules[23].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e58(p) }
-	rules[24].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e59(p) }
-	rules[25].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e60(p) }
-	rules[26].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e61(p) }
-	rules[27].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e62(p) }
-	rules[28].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e63(p) }
-	rules[29].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e64(p) }
-	rules[30].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e68(p) }
-	rules[31].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e69(p) }
-	rules[32].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e70(p) }
-	rules[33].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e71(p) }
-	rules[34].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e72(p) }
-	rules[35].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e73(p) }
-	rules[36].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e74(p) }
-	rules[37].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e75(p) }
-	rules[38].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e76(p) }
-	rules[39].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e77(p) }
 	pegoGrammar.StructFields["ArrayLit"] = map[string]bool{"Elems": true}
 	pegoGrammar.TypeKinds["ArrayLit"] = rt.KindOf("ArrayLit", "")
 	pegoGrammar.StructFields["Assign"] = map[string]bool{"Target": true, "Value": true}
@@ -997,58 +976,36 @@ func init() {
 	pegoGrammar.NodeTypes["String"] = rt.NewNodeTypeKinds("String")
 	recRules = rt.NewRules(recRulesSpec[:], recRulesStrs[:], recRulesExtras[:])
 	pegoRecGrammar.SetRules(recRules, 8)
-	recRules[0].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e154(p) }
-	recRules[1].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e156(p) }
-	recRules[2].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e157(p) }
-	recRules[3].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e167(p) }
-	recRules[4].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e168(p) }
-	recRules[5].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e169(p) }
-	recRules[6].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e170(p) }
-	recRules[7].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e171(p) }
-	recRules[8].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e172(p) }
-	recRules[9].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e173(p) }
-	recRules[10].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e174(p) }
-	recRules[11].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e175(p) }
-	recRules[12].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e176(p) }
-	recRules[13].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e177(p) }
+	recRules[0].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e137(p) }
+	recRules[1].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e139(p) }
+	recRules[2].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e140(p) }
+	recRules[6].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e151(p) }
+	recRules[13].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e152(p) }
 	recRules[14].OperatorsRule = &rt.OperatorsRule{
-		Skip: e193,
+		Skip: e157,
 		Operands: []*rt.OperatorsRuleLine{
-			&rt.OperatorsRuleLine{Scope: []string{}, M: e194, Action: nil, Value: sh66},
-			&rt.OperatorsRuleLine{Scope: []string{}, M: e195, Action: nil, Value: sh66},
-			&rt.OperatorsRuleLine{Scope: []string{}, M: e196, Action: nil, Value: sh66},
-			&rt.OperatorsRuleLine{Scope: []string{}, M: e197, Action: nil, Value: sh66},
-			&rt.OperatorsRuleLine{Scope: []string{}, M: e199, Action: nil, Value: sh79},
-			&rt.OperatorsRuleLine{Scope: []string{}, M: e202, Action: nil, Value: sh79},
+			&rt.OperatorsRuleLine{Scope: []string{}, M: e158, Action: nil, Value: sh52},
+			&rt.OperatorsRuleLine{Scope: []string{}, M: e159, Action: nil, Value: sh52},
+			&rt.OperatorsRuleLine{Scope: []string{}, M: e160, Action: nil, Value: sh52},
+			&rt.OperatorsRuleLine{Scope: []string{}, M: e161, Action: nil, Value: sh52},
+			&rt.OperatorsRuleLine{Scope: []string{}, M: e163, Action: nil, Value: sh62},
+			&rt.OperatorsRuleLine{Scope: []string{}, M: e166, Action: nil, Value: sh62},
 		},
-		Prefix: []*rt.OperatorsRuleOp{{Id: 6, Kind: "prefix", Assoc: "", Level: 7, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e223, Action: nil, Value: sh66}}},
-		Led: []*rt.OperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "right", Level: 1, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e205, Action: nil, Value: sh79}},
-			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e206, Action: nil, Value: sh66}},
-			{Id: 2, Kind: "infix", Assoc: "left", Level: 3, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e207, Action: nil, Value: sh66}},
-			{Id: 3, Kind: "infix", Assoc: "none", Level: 4, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e214, Action: nil, Value: sh66}},
-			{Id: 4, Kind: "infix", Assoc: "left", Level: 5, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e217, Action: nil, Value: sh66}},
-			{Id: 5, Kind: "infix", Assoc: "left", Level: 6, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e221, Action: nil, Value: sh66}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e224, Action: nil, Value: sh79}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e225, Action: nil, Value: sh79}},
-			{Id: 9, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e228, Action: nil, Value: sh84}}},
+		Prefix: []*rt.OperatorsRuleOp{{Id: 6, Kind: "prefix", Assoc: "", Level: 7, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e187, Action: nil, Value: sh52}}},
+		Led: []*rt.OperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "right", Level: 1, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e169, Action: nil, Value: sh62}},
+			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e170, Action: nil, Value: sh52}},
+			{Id: 2, Kind: "infix", Assoc: "left", Level: 3, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e171, Action: nil, Value: sh52}},
+			{Id: 3, Kind: "infix", Assoc: "none", Level: 4, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e178, Action: nil, Value: sh52}},
+			{Id: 4, Kind: "infix", Assoc: "left", Level: 5, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e181, Action: nil, Value: sh52}},
+			{Id: 5, Kind: "infix", Assoc: "left", Level: 6, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e185, Action: nil, Value: sh52}},
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e188, Action: nil, Value: sh62}},
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e189, Action: nil, Value: sh62}},
+			{Id: 9, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e192, Action: nil, Value: sh67}}},
 	}
 	recRules[14].Body = func(p *rt.Parser, min int) (*rt.Node, bool) { return p.OperatorsRuleParse(recRules[14], min) }
-	recRules[15].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e179(p) }
-	recRules[16].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e180(p) }
-	recRules[17].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e181(p) }
-	recRules[18].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e182(p) }
-	recRules[19].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e77(p) }
-	recRules[20].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e183(p) }
-	recRules[21].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e184(p) }
-	recRules[22].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e185(p) }
-	recRules[23].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e186(p) }
-	recRules[24].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e187(p) }
-	recRules[25].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e188(p) }
-	recRules[26].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e189(p) }
-	recRules[27].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e190(p) }
-	recRules[28].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e191(p) }
-	recRules[29].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e192(p) }
-	recRules[30].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e69(p) }
+	recRules[15].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e154(p) }
+	recRules[16].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e155(p) }
+	recRules[17].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e156(p) }
 	pegoGrammar.Starts = []string{"main"}
 	pegoGrammar.DefaultStart = "main"
 	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"{\"", "\"}\"", "\"let\"", "\"fn\"", "\"if\"", "\"while\"", "\"return\"", "[^;{}\\n]", "\";\"", "\"=\"", "\"(\"", "\")\"", "\",\"", "expected an expression", "[a-zA-Z_]", "expected a name", "\"else\"", "\"true\"", "\"false\"", "[a-zA-Z0-9_]", "[0-9]", "\".\"", "\"\\\"\"", "[^\"\\\\\\n]", "\"\\\\\"", "[ \\t\\r\\n]", "\"//\"", "[^\\n]", "\"[\"", "\"]\"", "\"?\"", "\":\"", "\"||\"", "\"&&\"", "\"==\"", "\"!=\"", "\"<=\"", "\">=\"", "\"<\"", "\">\"", "\"+\"", "\"-\"", "\"*\"", "\"/\"", "\"%\"", "\"!\""}
@@ -1057,133 +1014,133 @@ func init() {
 	defer tinit()
 	trules[0].Entry = u0
 
-	trules[3].Body = func(p *rt.TParser, _ int) (any, bool) { return e231(p) }
+	trules[3].Body = func(p *rt.TParser, _ int) (any, bool) { return e195(p) }
 	trules[3].Action = ta3
 
 	trules[14].OperatorsRule = &rt.TOperatorsRule{
-		Skip: e246,
+		Skip: e210,
 		Operands: []*rt.TOperatorsRuleLine{
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e247, Action: nil, Value: sh66},
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e248, Action: nil, Value: sh66},
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e249, Action: nil, Value: sh66},
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e250, Action: nil, Value: sh66},
-			&rt.TOperatorsRuleLine{Scope: []string{"e"}, M: e251, Action: func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }, Value: sh79},
-			&rt.TOperatorsRuleLine{Scope: []string{"xs"}, M: e252, Action: func(c *rt.TActCtx) any {
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e211, Action: nil, Value: sh52},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e212, Action: nil, Value: sh52},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e213, Action: nil, Value: sh52},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e214, Action: nil, Value: sh52},
+			&rt.TOperatorsRuleLine{Scope: []string{"e"}, M: e215, Action: func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }, Value: sh62},
+			&rt.TOperatorsRuleLine{Scope: []string{"xs"}, M: e216, Action: func(c *rt.TActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return func() any {
-						f_253 := func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
-						return tmk_ArrayLit(c, true, f_253)
+						f_217 := func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
+						return tmk_ArrayLit(c, true, f_217)
 					}()
 				}()
-			}, Value: sh79},
+			}, Value: sh62},
 		},
-		Prefix: []*rt.TOperatorsRuleOp{{Id: 6, Kind: "prefix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e278, Action: func(c *rt.TActCtx) any {
+		Prefix: []*rt.TOperatorsRuleOp{{Id: 6, Kind: "prefix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e242, Action: func(c *rt.TActCtx) any {
 			return func() any {
 				c.P.StepWork()
 				return func() any {
-					f_279 := func() any { c.P.StepWork(); return (c.Op) }()
-					f_280 := func() any { c.P.StepWork(); return (c.Rhs) }()
-					return tmk_Unary(c, true, f_279, f_280)
+					f_243 := func() any { c.P.StepWork(); return (c.Op) }()
+					f_244 := func() any { c.P.StepWork(); return (c.Rhs) }()
+					return tmk_Unary(c, true, f_243, f_244)
 				}()
 			}()
-		}, Value: sh66}}},
-		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "right", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t"}, M: e254, Action: func(c *rt.TActCtx) any {
+		}, Value: sh52}}},
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "right", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t"}, M: e218, Action: func(c *rt.TActCtx) any {
 			return func() any {
 				c.P.StepWork()
 				return func() any {
-					f_255 := func() any { c.P.StepWork(); return (c.Lhs) }()
-					f_256 := func() any { c.P.StepWork(); return c.Cap(0) }()
-					f_257 := func() any { c.P.StepWork(); return (c.Rhs) }()
-					return tmk_Cond(c, true, f_255, f_256, f_257)
+					f_219 := func() any { c.P.StepWork(); return (c.Lhs) }()
+					f_220 := func() any { c.P.StepWork(); return c.Cap(0) }()
+					f_221 := func() any { c.P.StepWork(); return (c.Rhs) }()
+					return tmk_Cond(c, true, f_219, f_220, f_221)
 				}()
 			}()
-		}, Value: sh79}},
-			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e258, Action: func(c *rt.TActCtx) any {
+		}, Value: sh62}},
+			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e222, Action: func(c *rt.TActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return func() any {
-						f_259 := func() any { c.P.StepWork(); return (c.Lhs) }()
-						f_260 := func() any { c.P.StepWork(); return (c.Op) }()
-						f_261 := func() any { c.P.StepWork(); return (c.Rhs) }()
-						return tmk_Binary(c, true, f_259, f_260, f_261)
+						f_223 := func() any { c.P.StepWork(); return (c.Lhs) }()
+						f_224 := func() any { c.P.StepWork(); return (c.Op) }()
+						f_225 := func() any { c.P.StepWork(); return (c.Rhs) }()
+						return tmk_Binary(c, true, f_223, f_224, f_225)
 					}()
 				}()
-			}, Value: sh66}},
-			{Id: 2, Kind: "infix", Assoc: "left", Level: 3, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e262, Action: func(c *rt.TActCtx) any {
+			}, Value: sh52}},
+			{Id: 2, Kind: "infix", Assoc: "left", Level: 3, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e226, Action: func(c *rt.TActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return func() any {
-						f_263 := func() any { c.P.StepWork(); return (c.Lhs) }()
-						f_264 := func() any { c.P.StepWork(); return (c.Op) }()
-						f_265 := func() any { c.P.StepWork(); return (c.Rhs) }()
-						return tmk_Binary(c, true, f_263, f_264, f_265)
+						f_227 := func() any { c.P.StepWork(); return (c.Lhs) }()
+						f_228 := func() any { c.P.StepWork(); return (c.Op) }()
+						f_229 := func() any { c.P.StepWork(); return (c.Rhs) }()
+						return tmk_Binary(c, true, f_227, f_228, f_229)
 					}()
 				}()
-			}, Value: sh66}},
-			{Id: 3, Kind: "infix", Assoc: "none", Level: 4, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e266, Action: func(c *rt.TActCtx) any {
+			}, Value: sh52}},
+			{Id: 3, Kind: "infix", Assoc: "none", Level: 4, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e230, Action: func(c *rt.TActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return func() any {
-						f_267 := func() any { c.P.StepWork(); return (c.Lhs) }()
-						f_268 := func() any { c.P.StepWork(); return (c.Op) }()
-						f_269 := func() any { c.P.StepWork(); return (c.Rhs) }()
-						return tmk_Binary(c, true, f_267, f_268, f_269)
+						f_231 := func() any { c.P.StepWork(); return (c.Lhs) }()
+						f_232 := func() any { c.P.StepWork(); return (c.Op) }()
+						f_233 := func() any { c.P.StepWork(); return (c.Rhs) }()
+						return tmk_Binary(c, true, f_231, f_232, f_233)
 					}()
 				}()
-			}, Value: sh66}},
-			{Id: 4, Kind: "infix", Assoc: "left", Level: 5, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e270, Action: func(c *rt.TActCtx) any {
+			}, Value: sh52}},
+			{Id: 4, Kind: "infix", Assoc: "left", Level: 5, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e234, Action: func(c *rt.TActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return func() any {
-						f_271 := func() any { c.P.StepWork(); return (c.Lhs) }()
-						f_272 := func() any { c.P.StepWork(); return (c.Op) }()
-						f_273 := func() any { c.P.StepWork(); return (c.Rhs) }()
-						return tmk_Binary(c, true, f_271, f_272, f_273)
+						f_235 := func() any { c.P.StepWork(); return (c.Lhs) }()
+						f_236 := func() any { c.P.StepWork(); return (c.Op) }()
+						f_237 := func() any { c.P.StepWork(); return (c.Rhs) }()
+						return tmk_Binary(c, true, f_235, f_236, f_237)
 					}()
 				}()
-			}, Value: sh66}},
-			{Id: 5, Kind: "infix", Assoc: "left", Level: 6, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e274, Action: func(c *rt.TActCtx) any {
+			}, Value: sh52}},
+			{Id: 5, Kind: "infix", Assoc: "left", Level: 6, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e238, Action: func(c *rt.TActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return func() any {
-						f_275 := func() any { c.P.StepWork(); return (c.Lhs) }()
-						f_276 := func() any { c.P.StepWork(); return (c.Op) }()
-						f_277 := func() any { c.P.StepWork(); return (c.Rhs) }()
-						return tmk_Binary(c, true, f_275, f_276, f_277)
+						f_239 := func() any { c.P.StepWork(); return (c.Lhs) }()
+						f_240 := func() any { c.P.StepWork(); return (c.Op) }()
+						f_241 := func() any { c.P.StepWork(); return (c.Rhs) }()
+						return tmk_Binary(c, true, f_239, f_240, f_241)
 					}()
 				}()
-			}, Value: sh66}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.TOperatorsRuleLine{Scope: []string{"xs"}, M: e281, Action: func(c *rt.TActCtx) any {
+			}, Value: sh52}},
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.TOperatorsRuleLine{Scope: []string{"xs"}, M: e245, Action: func(c *rt.TActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return func() any {
-						f_282 := func() any { c.P.StepWork(); return (c.Lhs) }()
-						f_283 := func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
-						return tmk_Call(c, true, f_282, f_283)
+						f_246 := func() any { c.P.StepWork(); return (c.Lhs) }()
+						f_247 := func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
+						return tmk_Call(c, true, f_246, f_247)
 					}()
 				}()
-			}, Value: sh79}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.TOperatorsRuleLine{Scope: []string{"i"}, M: e284, Action: func(c *rt.TActCtx) any {
+			}, Value: sh62}},
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.TOperatorsRuleLine{Scope: []string{"i"}, M: e248, Action: func(c *rt.TActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return func() any {
-						f_285 := func() any { c.P.StepWork(); return (c.Lhs) }()
-						f_286 := func() any { c.P.StepWork(); return c.Cap(0) }()
-						return tmk_Index(c, true, f_285, f_286)
+						f_249 := func() any { c.P.StepWork(); return (c.Lhs) }()
+						f_250 := func() any { c.P.StepWork(); return c.Cap(0) }()
+						return tmk_Index(c, true, f_249, f_250)
 					}()
 				}()
-			}, Value: sh79}},
-			{Id: 9, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.TOperatorsRuleLine{Scope: []string{"n"}, M: e287, Action: func(c *rt.TActCtx) any {
+			}, Value: sh62}},
+			{Id: 9, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.TOperatorsRuleLine{Scope: []string{"n"}, M: e251, Action: func(c *rt.TActCtx) any {
 				return func() any {
 					c.P.StepWork()
 					return func() any {
-						f_288 := func() any { c.P.StepWork(); return (c.Lhs) }()
-						f_289 := func() any { c.P.StepWork(); return c.Cap(0) }()
-						return tmk_Member(c, true, f_288, f_289)
+						f_252 := func() any { c.P.StepWork(); return (c.Lhs) }()
+						f_253 := func() any { c.P.StepWork(); return c.Cap(0) }()
+						return tmk_Member(c, true, f_252, f_253)
 					}()
 				}()
-			}, Value: sh84}}},
+			}, Value: sh67}}},
 	}
 	trules[14].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[14], min) }
 
@@ -2922,374 +2879,7 @@ fail:
 	return nil, false
 }
 
-func e50(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x1, x10, x14, x18, x22, x26, x30, x34, x38 int
-		var x2 []*rt.Node
-		var x3, x40 rt.Mark
-		var v4, v11, v15, v19, v23, v27, v31, v35, v39, v42 *rt.Node
-		var x6 rune
-		var x7, ok bool
-		x1 = p.Pos
-		x2 = p.Nodes(1)[:0]
-		x3 = p.Mark()
-		x6, _, x7 = p.NextOrdinary()
-		if !(x7 && (x6 == 108)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 7)
-			goto L8_ordinary
-		}
-		x10 = p.Pos
-		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116 {
-			p.Pos += 3
-		} else if _, ok = p.MatchLiteralOrdinary(lit42, "let", 7, false); !ok {
-			goto L9_ordinary
-		}
-		v11 = p.NewTerminalOrdinary(x10, "let")
-		v4 = v11
-		goto L5_ordinary
-	L9_ordinary:
-		p.Reset(x3)
-	L8_ordinary:
-		if !(x7 && (x6 == 102)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 8)
-			goto L12_ordinary
-		}
-		x14 = p.Pos
-		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110 {
-			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit43, "fn", 8, false); !ok {
-			goto L13_ordinary
-		}
-		v15 = p.NewTerminalOrdinary(x14, "fn")
-		v4 = v15
-		goto L5_ordinary
-	L13_ordinary:
-		p.Reset(x3)
-	L12_ordinary:
-		if !(x7 && (x6 == 105)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 9)
-			goto L16_ordinary
-		}
-		x18 = p.Pos
-		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
-			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit44, "if", 9, false); !ok {
-			goto L17_ordinary
-		}
-		v19 = p.NewTerminalOrdinary(x18, "if")
-		v4 = v19
-		goto L5_ordinary
-	L17_ordinary:
-		p.Reset(x3)
-	L16_ordinary:
-		if !(x7 && (x6 == 101)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 21)
-			goto L20_ordinary
-		}
-		x22 = p.Pos
-		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
-			p.Pos += 4
-		} else if _, ok = p.MatchLiteralOrdinary(lit45, "else", 21, false); !ok {
-			goto L21_ordinary
-		}
-		v23 = p.NewTerminalOrdinary(x22, "else")
-		v4 = v23
-		goto L5_ordinary
-	L21_ordinary:
-		p.Reset(x3)
-	L20_ordinary:
-		if !(x7 && (x6 == 119)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 10)
-			goto L24_ordinary
-		}
-		x26 = p.Pos
-		if _, ok = p.MatchLiteralOrdinary(lit46, "while", 10, false); !ok {
-			goto L25_ordinary
-		}
-		v27 = p.NewTerminalOrdinary(x26, "while")
-		v4 = v27
-		goto L5_ordinary
-	L25_ordinary:
-		p.Reset(x3)
-	L24_ordinary:
-		if !(x7 && (x6 == 114)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 11)
-			goto L28_ordinary
-		}
-		x30 = p.Pos
-		if _, ok = p.MatchLiteralOrdinary(lit47, "return", 11, false); !ok {
-			goto L29_ordinary
-		}
-		v31 = p.NewTerminalOrdinary(x30, "return")
-		v4 = v31
-		goto L5_ordinary
-	L29_ordinary:
-		p.Reset(x3)
-	L28_ordinary:
-		if !(x7 && (x6 == 116)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 22)
-			goto L32_ordinary
-		}
-		x34 = p.Pos
-		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
-			p.Pos += 4
-		} else if _, ok = p.MatchLiteralOrdinary(lit48, "true", 22, false); !ok {
-			goto L33_ordinary
-		}
-		v35 = p.NewTerminalOrdinary(x34, "true")
-		v4 = v35
-		goto L5_ordinary
-	L33_ordinary:
-		p.Reset(x3)
-	L32_ordinary:
-		if !(x7 && (x6 == 102)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 23)
-			goto L36_ordinary
-		}
-		x38 = p.Pos
-		if _, ok = p.MatchLiteralOrdinary(lit49, "false", 23, false); !ok {
-			goto L37_ordinary
-		}
-		v39 = p.NewTerminalOrdinary(x38, "false")
-		v4 = v39
-		goto L5_ordinary
-	L37_ordinary:
-		p.Reset(x3)
-	L36_ordinary:
-		goto fail_ordinary
-	L5_ordinary:
-		x2 = append(x2, v4)
-		x40 = p.Mark()
-		p.Silent++
-		if _, ok = r39(p); !ok {
-			goto L41_ordinary
-		}
-		p.Silent--
-		p.Reset(x40)
-		goto fail_ordinary
-	L41_ordinary:
-		p.Silent--
-		p.Reset(x40)
-		v42 = p.NewBranchOrdinary(rt.RawKindSeq, x1, x2)
-		return v42, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var x1, x10, x14, x18, x22, x26, x30, x34, x38 int
-	var x2 []*rt.Node
-	var x3, x40 rt.Mark
-	var v4, v11, v15, v19, v23, v27, v31, v35, v39, v42 *rt.Node
-	var x6 rune
-	var x7, ok bool
-	p.StepWork()
-	x1 = p.Pos
-	x2 = p.Nodes(1)[:0]
-	p.StepWork()
-	x3 = p.Mark()
-	if p.Pos < len(p.In) {
-		p.InputWork(1)
-		x6, _, x7 = p.In[p.Pos], 1, true
-	} else {
-		x6, _, x7 = p.Peek()
-	}
-	if !(x7 && (x6 == 108)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 7)
-		goto L8
-	}
-	p.StepWork()
-	x10 = p.Pos
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116) {
-		p.Pos += 3
-	} else if _, ok = p.MatchLiteral(lit42, "let", 7, false); !ok {
-		goto L9
-	}
-	v11 = p.NewTerminal(x10, "let")
-	v4 = v11
-	goto L5
-L9:
-	p.Reset(x3)
-L8:
-	if !(x7 && (x6 == 102)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 8)
-		goto L12
-	}
-	p.StepWork()
-	x14 = p.Pos
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110) {
-		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit43, "fn", 8, false); !ok {
-		goto L13
-	}
-	v15 = p.NewTerminal(x14, "fn")
-	v4 = v15
-	goto L5
-L13:
-	p.Reset(x3)
-L12:
-	if !(x7 && (x6 == 105)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 9)
-		goto L16
-	}
-	p.StepWork()
-	x18 = p.Pos
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102) {
-		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit44, "if", 9, false); !ok {
-		goto L17
-	}
-	v19 = p.NewTerminal(x18, "if")
-	v4 = v19
-	goto L5
-L17:
-	p.Reset(x3)
-L16:
-	if !(x7 && (x6 == 101)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 21)
-		goto L20
-	}
-	p.StepWork()
-	x22 = p.Pos
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101) {
-		p.Pos += 4
-	} else if _, ok = p.MatchLiteral(lit45, "else", 21, false); !ok {
-		goto L21
-	}
-	v23 = p.NewTerminal(x22, "else")
-	v4 = v23
-	goto L5
-L21:
-	p.Reset(x3)
-L20:
-	if !(x7 && (x6 == 119)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 10)
-		goto L24
-	}
-	p.StepWork()
-	x26 = p.Pos
-	if _, ok = p.MatchLiteral(lit46, "while", 10, false); !ok {
-		goto L25
-	}
-	v27 = p.NewTerminal(x26, "while")
-	v4 = v27
-	goto L5
-L25:
-	p.Reset(x3)
-L24:
-	if !(x7 && (x6 == 114)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 11)
-		goto L28
-	}
-	p.StepWork()
-	x30 = p.Pos
-	if _, ok = p.MatchLiteral(lit47, "return", 11, false); !ok {
-		goto L29
-	}
-	v31 = p.NewTerminal(x30, "return")
-	v4 = v31
-	goto L5
-L29:
-	p.Reset(x3)
-L28:
-	if !(x7 && (x6 == 116)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 22)
-		goto L32
-	}
-	p.StepWork()
-	x34 = p.Pos
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101) {
-		p.Pos += 4
-	} else if _, ok = p.MatchLiteral(lit48, "true", 22, false); !ok {
-		goto L33
-	}
-	v35 = p.NewTerminal(x34, "true")
-	v4 = v35
-	goto L5
-L33:
-	p.Reset(x3)
-L32:
-	if !(x7 && (x6 == 102)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 23)
-		goto L36
-	}
-	p.StepWork()
-	x38 = p.Pos
-	if _, ok = p.MatchLiteral(lit49, "false", 23, false); !ok {
-		goto L37
-	}
-	v39 = p.NewTerminal(x38, "false")
-	v4 = v39
-	goto L5
-L37:
-	p.Reset(x3)
-L36:
-	goto fail
-L5:
-	x2 = append(x2, v4)
-	p.StepWork()
-	x40 = p.Mark()
-	p.Silent++
-	p.StepWork()
-	if _, ok = r39(p); !ok {
-		goto L41
-	}
-	p.Silent--
-	p.Reset(x40)
-	goto fail
-L41:
-	p.Silent--
-	p.Reset(x40)
-	v42 = p.NewBranch(rt.RawKindSeq, x1, x2)
-	return v42, true
-fail:
-	return nil, false
-}
-
-func e51(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var ch rune
-		var size, x1 int
-		var ok bool
-		var v2 *rt.Node
-		ch, size, ok = p.NextOrdinary()
-		if !ok || !(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95) {
-			p.ExpectOrdinary(p.Pos, 24)
-			goto fail_ordinary
-		}
-		x1 = p.Pos
-		p.Pos += size
-		v2 = p.NewTerminalOrdinary(x1, p.Text(x1, p.Pos))
-		return v2, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var ch rune
-	var size, x1 int
-	var ok bool
-	var v2 *rt.Node
-	p.StepWork()
-	if p.Pos < len(p.In) {
-		p.InputWork(1)
-		ch, size, ok = p.In[p.Pos], 1, true
-	} else {
-		ch, size, ok = p.Peek()
-	}
-	if !ok || !(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95) {
-		p.Expect(p.Pos, 24)
-		goto fail
-	}
-	x1 = p.Pos
-	p.Pos += size
-	v2 = p.NewTerminal(x1, p.Text(x1, p.Pos))
-	return v2, true
-fail:
-	return nil, false
-}
-
-func e53(p *rt.Parser) (*rt.Node, bool) {
+func e43(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var x1, size, x2, x6 int
 		var ch rune
@@ -3313,7 +2903,7 @@ func e53(p *rt.Parser) (*rt.Node, bool) {
 		x3 = p.Mark()
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit52, ".", 26, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit42, ".", 26, false); !ok {
 			goto L4_ordinary
 		}
 		x6 = 0
@@ -3373,7 +2963,7 @@ func e53(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
 		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit52, ".", 26, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit42, ".", 26, false); !ok {
 		goto L4
 	}
 	p.StepWork()
@@ -3405,13 +2995,13 @@ fail:
 	return nil, false
 }
 
-func e55(p *rt.Parser) (*rt.Node, bool) {
+func e45(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var ok bool
 		var v2 *rt.Node
 		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit54, "\"", 27, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit44, "\"", 27, false); !ok {
 			goto fail_ordinary
 		}
 		if v2, ok = r22(p); !ok {
@@ -3420,7 +3010,7 @@ func e55(p *rt.Parser) (*rt.Node, bool) {
 		p.SetCaptureOrdinary(0, v2)
 		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit54, "\"", 27, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit44, "\"", 27, false); !ok {
 			goto fail_ordinary
 		}
 		return nil, true
@@ -3435,7 +3025,7 @@ func e55(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 34) {
 		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit54, "\"", 27, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit44, "\"", 27, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -3447,7 +3037,7 @@ func e55(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 34) {
 		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit54, "\"", 27, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit44, "\"", 27, false); !ok {
 		goto fail
 	}
 	return nil, true
@@ -3455,7 +3045,7 @@ fail:
 	return nil, false
 }
 
-func e57(p *rt.Parser) (*rt.Node, bool) {
+func e47(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var x1, size int
 		var x3, x5 rt.Mark
@@ -3487,7 +3077,7 @@ func e57(p *rt.Parser) (*rt.Node, bool) {
 			}
 			if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 				p.Pos++
-			} else if _, ok = p.MatchLiteralOrdinary(lit56, "\\", 29, false); !ok {
+			} else if _, ok = p.MatchLiteralOrdinary(lit46, "\\", 29, false); !ok {
 				goto L12_ordinary
 			}
 			_, size, ok = p.NextOrdinary()
@@ -3561,7 +3151,7 @@ func e57(p *rt.Parser) (*rt.Node, bool) {
 		p.StepWork()
 		if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 92) {
 			p.Pos++
-		} else if _, ok = p.MatchLiteral(lit56, "\\", 29, false); !ok {
+		} else if _, ok = p.MatchLiteral(lit46, "\\", 29, false); !ok {
 			goto L12
 		}
 		p.StepWork()
@@ -3594,7 +3184,7 @@ func e57(p *rt.Parser) (*rt.Node, bool) {
 	return v13, true
 }
 
-func e58(p *rt.Parser) (*rt.Node, bool) {
+func e50(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var x1 int
 		var x2, x10 rt.Mark
@@ -3712,425 +3302,7 @@ fail:
 	return nil, false
 }
 
-func e59(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x1, x3 int
-		var x2 []*rt.Node
-		var ok bool
-		var v4, v7 *rt.Node
-		var x5 rt.Mark
-		x1 = p.Pos
-		x2 = p.Nodes(1)[:0]
-		x3 = p.Pos
-		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116 {
-			p.Pos += 3
-		} else if _, ok = p.MatchLiteralOrdinary(lit42, "let", 7, false); !ok {
-			goto fail_ordinary
-		}
-		v4 = p.NewTerminalOrdinary(x3, "let")
-		x2 = append(x2, v4)
-		x5 = p.Mark()
-		p.Silent++
-		if _, ok = r39(p); !ok {
-			goto L6_ordinary
-		}
-		p.Silent--
-		p.Reset(x5)
-		goto fail_ordinary
-	L6_ordinary:
-		p.Silent--
-		p.Reset(x5)
-		v7 = p.NewBranchOrdinary(rt.RawKindSeq, x1, x2)
-		return v7, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var x1, x3 int
-	var x2 []*rt.Node
-	var ok bool
-	var v4, v7 *rt.Node
-	var x5 rt.Mark
-	p.StepWork()
-	x1 = p.Pos
-	x2 = p.Nodes(1)[:0]
-	p.StepWork()
-	x3 = p.Pos
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116) {
-		p.Pos += 3
-	} else if _, ok = p.MatchLiteral(lit42, "let", 7, false); !ok {
-		goto fail
-	}
-	v4 = p.NewTerminal(x3, "let")
-	x2 = append(x2, v4)
-	p.StepWork()
-	x5 = p.Mark()
-	p.Silent++
-	p.StepWork()
-	if _, ok = r39(p); !ok {
-		goto L6
-	}
-	p.Silent--
-	p.Reset(x5)
-	goto fail
-L6:
-	p.Silent--
-	p.Reset(x5)
-	v7 = p.NewBranch(rt.RawKindSeq, x1, x2)
-	return v7, true
-fail:
-	return nil, false
-}
-
-func e60(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x1, x3 int
-		var x2 []*rt.Node
-		var ok bool
-		var v4, v7 *rt.Node
-		var x5 rt.Mark
-		x1 = p.Pos
-		x2 = p.Nodes(1)[:0]
-		x3 = p.Pos
-		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110 {
-			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit43, "fn", 8, false); !ok {
-			goto fail_ordinary
-		}
-		v4 = p.NewTerminalOrdinary(x3, "fn")
-		x2 = append(x2, v4)
-		x5 = p.Mark()
-		p.Silent++
-		if _, ok = r39(p); !ok {
-			goto L6_ordinary
-		}
-		p.Silent--
-		p.Reset(x5)
-		goto fail_ordinary
-	L6_ordinary:
-		p.Silent--
-		p.Reset(x5)
-		v7 = p.NewBranchOrdinary(rt.RawKindSeq, x1, x2)
-		return v7, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var x1, x3 int
-	var x2 []*rt.Node
-	var ok bool
-	var v4, v7 *rt.Node
-	var x5 rt.Mark
-	p.StepWork()
-	x1 = p.Pos
-	x2 = p.Nodes(1)[:0]
-	p.StepWork()
-	x3 = p.Pos
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110) {
-		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit43, "fn", 8, false); !ok {
-		goto fail
-	}
-	v4 = p.NewTerminal(x3, "fn")
-	x2 = append(x2, v4)
-	p.StepWork()
-	x5 = p.Mark()
-	p.Silent++
-	p.StepWork()
-	if _, ok = r39(p); !ok {
-		goto L6
-	}
-	p.Silent--
-	p.Reset(x5)
-	goto fail
-L6:
-	p.Silent--
-	p.Reset(x5)
-	v7 = p.NewBranch(rt.RawKindSeq, x1, x2)
-	return v7, true
-fail:
-	return nil, false
-}
-
-func e61(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x1, x3 int
-		var x2 []*rt.Node
-		var ok bool
-		var v4, v7 *rt.Node
-		var x5 rt.Mark
-		x1 = p.Pos
-		x2 = p.Nodes(1)[:0]
-		x3 = p.Pos
-		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
-			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit44, "if", 9, false); !ok {
-			goto fail_ordinary
-		}
-		v4 = p.NewTerminalOrdinary(x3, "if")
-		x2 = append(x2, v4)
-		x5 = p.Mark()
-		p.Silent++
-		if _, ok = r39(p); !ok {
-			goto L6_ordinary
-		}
-		p.Silent--
-		p.Reset(x5)
-		goto fail_ordinary
-	L6_ordinary:
-		p.Silent--
-		p.Reset(x5)
-		v7 = p.NewBranchOrdinary(rt.RawKindSeq, x1, x2)
-		return v7, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var x1, x3 int
-	var x2 []*rt.Node
-	var ok bool
-	var v4, v7 *rt.Node
-	var x5 rt.Mark
-	p.StepWork()
-	x1 = p.Pos
-	x2 = p.Nodes(1)[:0]
-	p.StepWork()
-	x3 = p.Pos
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102) {
-		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit44, "if", 9, false); !ok {
-		goto fail
-	}
-	v4 = p.NewTerminal(x3, "if")
-	x2 = append(x2, v4)
-	p.StepWork()
-	x5 = p.Mark()
-	p.Silent++
-	p.StepWork()
-	if _, ok = r39(p); !ok {
-		goto L6
-	}
-	p.Silent--
-	p.Reset(x5)
-	goto fail
-L6:
-	p.Silent--
-	p.Reset(x5)
-	v7 = p.NewBranch(rt.RawKindSeq, x1, x2)
-	return v7, true
-fail:
-	return nil, false
-}
-
-func e62(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x1, x3 int
-		var x2 []*rt.Node
-		var ok bool
-		var v4, v7 *rt.Node
-		var x5 rt.Mark
-		x1 = p.Pos
-		x2 = p.Nodes(1)[:0]
-		x3 = p.Pos
-		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
-			p.Pos += 4
-		} else if _, ok = p.MatchLiteralOrdinary(lit45, "else", 21, false); !ok {
-			goto fail_ordinary
-		}
-		v4 = p.NewTerminalOrdinary(x3, "else")
-		x2 = append(x2, v4)
-		x5 = p.Mark()
-		p.Silent++
-		if _, ok = r39(p); !ok {
-			goto L6_ordinary
-		}
-		p.Silent--
-		p.Reset(x5)
-		goto fail_ordinary
-	L6_ordinary:
-		p.Silent--
-		p.Reset(x5)
-		v7 = p.NewBranchOrdinary(rt.RawKindSeq, x1, x2)
-		return v7, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var x1, x3 int
-	var x2 []*rt.Node
-	var ok bool
-	var v4, v7 *rt.Node
-	var x5 rt.Mark
-	p.StepWork()
-	x1 = p.Pos
-	x2 = p.Nodes(1)[:0]
-	p.StepWork()
-	x3 = p.Pos
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101) {
-		p.Pos += 4
-	} else if _, ok = p.MatchLiteral(lit45, "else", 21, false); !ok {
-		goto fail
-	}
-	v4 = p.NewTerminal(x3, "else")
-	x2 = append(x2, v4)
-	p.StepWork()
-	x5 = p.Mark()
-	p.Silent++
-	p.StepWork()
-	if _, ok = r39(p); !ok {
-		goto L6
-	}
-	p.Silent--
-	p.Reset(x5)
-	goto fail
-L6:
-	p.Silent--
-	p.Reset(x5)
-	v7 = p.NewBranch(rt.RawKindSeq, x1, x2)
-	return v7, true
-fail:
-	return nil, false
-}
-
-func e63(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x1, x3 int
-		var x2 []*rt.Node
-		var ok bool
-		var v4, v7 *rt.Node
-		var x5 rt.Mark
-		x1 = p.Pos
-		x2 = p.Nodes(1)[:0]
-		x3 = p.Pos
-		if _, ok = p.MatchLiteralOrdinary(lit46, "while", 10, false); !ok {
-			goto fail_ordinary
-		}
-		v4 = p.NewTerminalOrdinary(x3, "while")
-		x2 = append(x2, v4)
-		x5 = p.Mark()
-		p.Silent++
-		if _, ok = r39(p); !ok {
-			goto L6_ordinary
-		}
-		p.Silent--
-		p.Reset(x5)
-		goto fail_ordinary
-	L6_ordinary:
-		p.Silent--
-		p.Reset(x5)
-		v7 = p.NewBranchOrdinary(rt.RawKindSeq, x1, x2)
-		return v7, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var x1, x3 int
-	var x2 []*rt.Node
-	var ok bool
-	var v4, v7 *rt.Node
-	var x5 rt.Mark
-	p.StepWork()
-	x1 = p.Pos
-	x2 = p.Nodes(1)[:0]
-	p.StepWork()
-	x3 = p.Pos
-	if _, ok = p.MatchLiteral(lit46, "while", 10, false); !ok {
-		goto fail
-	}
-	v4 = p.NewTerminal(x3, "while")
-	x2 = append(x2, v4)
-	p.StepWork()
-	x5 = p.Mark()
-	p.Silent++
-	p.StepWork()
-	if _, ok = r39(p); !ok {
-		goto L6
-	}
-	p.Silent--
-	p.Reset(x5)
-	goto fail
-L6:
-	p.Silent--
-	p.Reset(x5)
-	v7 = p.NewBranch(rt.RawKindSeq, x1, x2)
-	return v7, true
-fail:
-	return nil, false
-}
-
-func e64(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x1, x3 int
-		var x2 []*rt.Node
-		var ok bool
-		var v4, v7 *rt.Node
-		var x5 rt.Mark
-		x1 = p.Pos
-		x2 = p.Nodes(1)[:0]
-		x3 = p.Pos
-		if _, ok = p.MatchLiteralOrdinary(lit47, "return", 11, false); !ok {
-			goto fail_ordinary
-		}
-		v4 = p.NewTerminalOrdinary(x3, "return")
-		x2 = append(x2, v4)
-		x5 = p.Mark()
-		p.Silent++
-		if _, ok = r39(p); !ok {
-			goto L6_ordinary
-		}
-		p.Silent--
-		p.Reset(x5)
-		goto fail_ordinary
-	L6_ordinary:
-		p.Silent--
-		p.Reset(x5)
-		v7 = p.NewBranchOrdinary(rt.RawKindSeq, x1, x2)
-		return v7, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var x1, x3 int
-	var x2 []*rt.Node
-	var ok bool
-	var v4, v7 *rt.Node
-	var x5 rt.Mark
-	p.StepWork()
-	x1 = p.Pos
-	x2 = p.Nodes(1)[:0]
-	p.StepWork()
-	x3 = p.Pos
-	if _, ok = p.MatchLiteral(lit47, "return", 11, false); !ok {
-		goto fail
-	}
-	v4 = p.NewTerminal(x3, "return")
-	x2 = append(x2, v4)
-	p.StepWork()
-	x5 = p.Mark()
-	p.Silent++
-	p.StepWork()
-	if _, ok = r39(p); !ok {
-		goto L6
-	}
-	p.Silent--
-	p.Reset(x5)
-	goto fail
-L6:
-	p.Silent--
-	p.Reset(x5)
-	v7 = p.NewBranch(rt.RawKindSeq, x1, x2)
-	return v7, true
-fail:
-	return nil, false
-}
-
-func e68(p *rt.Parser) (*rt.Node, bool) {
+func e54(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var x1, x2, size, x13, x17, x19, x21, x22, x26 int
 		var x4, x6, x24 rt.Mark
@@ -4169,7 +3341,7 @@ func e68(p *rt.Parser) (*rt.Node, bool) {
 			x19 = p.Pos
 			if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47 {
 				p.Pos += 2
-			} else if _, ok = p.MatchLiteralOrdinary(lit65, "//", 31, false); !ok {
+			} else if _, ok = p.MatchLiteralOrdinary(lit51, "//", 31, false); !ok {
 				goto L16_ordinary
 			}
 			v20 = p.NewTerminalOrdinary(x19, "//")
@@ -4185,7 +3357,7 @@ func e68(p *rt.Parser) (*rt.Node, bool) {
 				x26 = p.Pos
 				p.Pos += size
 				v27 = p.NewTerminalOrdinary(x26, p.Text(x26, p.Pos))
-				v28 = p.ScopeValue(sh66, v27, x24.Pos)
+				v28 = p.ScopeValue(sh52, v27, x24.Pos)
 				p.KidStack = append(p.KidStack, v28)
 				if p.Pos == x24.Pos {
 					break
@@ -4198,7 +3370,7 @@ func e68(p *rt.Parser) (*rt.Node, bool) {
 			v29 = p.NewBranchOrdinary(rt.RawKindList, x21, p.Kids(x22))
 			x18 = append(x18, v29)
 			v30 = p.NewBranchOrdinary(rt.RawKindSeq, x17, x18)
-			v31, _ = p.ShapeSingle(sh67, v30, x6.Pos)
+			v31, _ = p.ShapeSingle(sh53, v30, x6.Pos)
 			v7 = v31
 			goto L8_ordinary
 		L16_ordinary:
@@ -4206,7 +3378,7 @@ func e68(p *rt.Parser) (*rt.Node, bool) {
 		L15_ordinary:
 			goto L5_ordinary
 		L8_ordinary:
-			v32 = p.ScopeValue(sh66, v7, x4.Pos)
+			v32 = p.ScopeValue(sh52, v7, x4.Pos)
 			p.KidStack = append(p.KidStack, v32)
 			if p.Pos == x4.Pos {
 				break
@@ -4273,7 +3445,7 @@ func e68(p *rt.Parser) (*rt.Node, bool) {
 		x19 = p.Pos
 		if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47) {
 			p.Pos += 2
-		} else if _, ok = p.MatchLiteral(lit65, "//", 31, false); !ok {
+		} else if _, ok = p.MatchLiteral(lit51, "//", 31, false); !ok {
 			goto L16
 		}
 		v20 = p.NewTerminal(x19, "//")
@@ -4296,7 +3468,7 @@ func e68(p *rt.Parser) (*rt.Node, bool) {
 			x26 = p.Pos
 			p.Pos += size
 			v27 = p.NewTerminal(x26, p.Text(x26, p.Pos))
-			v28 = p.ScopeValue(sh66, v27, x24.Pos)
+			v28 = p.ScopeValue(sh52, v27, x24.Pos)
 			p.KidStack = append(p.KidStack, v28)
 			if p.Pos == x24.Pos {
 				break
@@ -4309,7 +3481,7 @@ func e68(p *rt.Parser) (*rt.Node, bool) {
 		v29 = p.NewBranch(rt.RawKindList, x21, p.Kids(x22))
 		x18 = append(x18, v29)
 		v30 = p.NewBranch(rt.RawKindSeq, x17, x18)
-		v31, _ = p.ShapeSingle(sh67, v30, x6.Pos)
+		v31, _ = p.ShapeSingle(sh53, v30, x6.Pos)
 		v7 = v31
 		goto L8
 	L16:
@@ -4317,7 +3489,7 @@ func e68(p *rt.Parser) (*rt.Node, bool) {
 	L15:
 		goto L5
 	L8:
-		v32 = p.ScopeValue(sh66, v7, x4.Pos)
+		v32 = p.ScopeValue(sh52, v7, x4.Pos)
 		p.KidStack = append(p.KidStack, v32)
 		if p.Pos == x4.Pos {
 			break
@@ -4333,786 +3505,6 @@ func e68(p *rt.Parser) (*rt.Node, bool) {
 
 func e69(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		var v *rt.Node
-		var x2, x3, x5, x6, size int
-		var x8, ch rune
-		var x9, ok bool
-		for {
-			x2, x3 = p.Pos, len(p.Recovered)
-			x5, x6 = p.Pos, len(p.Recovered)
-			x8, _, x9 = p.NextOrdinary()
-			if !(x9 && (x8 == 32 || x8 == 9 || x8 == 13 || x8 == 10)) && p.Depth <= p.MaxDepth {
-				p.ExpectOrdinary(p.Pos, 30)
-				goto L10_ordinary
-			}
-			ch, size, ok = p.NextOrdinary()
-			if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
-				p.ExpectOrdinary(p.Pos, 30)
-				goto L11_ordinary
-			}
-			p.Pos += size
-			goto L7_ordinary
-		L11_ordinary:
-			p.Restore(x5, x6)
-		L10_ordinary:
-			if !(x9 && (x8 == 47)) && p.Depth <= p.MaxDepth {
-				p.ExpectOrdinary(p.Pos, 31)
-				goto L12_ordinary
-			}
-			if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47 {
-				p.Pos += 2
-			} else if _, ok = p.MatchLiteralOrdinary(lit65, "//", 31, false); !ok {
-				goto L13_ordinary
-			}
-			for {
-				ch, size, ok = p.NextOrdinary()
-				if !ok || (ch == 10) {
-					p.ExpectOrdinary(p.Pos, 32)
-					break
-				}
-				p.Pos += size
-			}
-			goto L7_ordinary
-		L13_ordinary:
-			p.Restore(x5, x6)
-		L12_ordinary:
-			goto L4_ordinary
-		L7_ordinary:
-			if p.Pos == x2 {
-				break
-			}
-			continue
-		L4_ordinary:
-			p.Restore(x2, x3)
-			break
-		}
-		v = nil
-		return v, true
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var x2, x3, x5, x6, size int
-	var x8, ch rune
-	var x9, ok bool
-	p.StepWork()
-	for {
-		x2, x3 = p.Pos, len(p.Recovered)
-		p.StepWork()
-		x5, x6 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			p.InputWork(1)
-			x8, _, x9 = p.In[p.Pos], 1, true
-		} else {
-			x8, _, x9 = p.Peek()
-		}
-		if !(x9 && (x8 == 32 || x8 == 9 || x8 == 13 || x8 == 10)) && p.Depth <= p.MaxDepth {
-			p.Expect(p.Pos, 30)
-			goto L10
-		}
-		p.StepWork()
-		if p.Pos < len(p.In) {
-			p.InputWork(1)
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.Peek()
-		}
-		if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
-			p.Expect(p.Pos, 30)
-			goto L11
-		}
-		p.Pos += size
-		goto L7
-	L11:
-		p.Restore(x5, x6)
-	L10:
-		if !(x9 && (x8 == 47)) && p.Depth <= p.MaxDepth {
-			p.Expect(p.Pos, 31)
-			goto L12
-		}
-		p.StepWork()
-		p.StepWork()
-		if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47) {
-			p.Pos += 2
-		} else if _, ok = p.MatchLiteral(lit65, "//", 31, false); !ok {
-			goto L13
-		}
-		p.StepWork()
-		for {
-			if p.Pos < len(p.In) {
-				p.InputWork(1)
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.Peek()
-			}
-			if !ok || (ch == 10) {
-				p.Expect(p.Pos, 32)
-				break
-			}
-			p.Pos += size
-		}
-		goto L7
-	L13:
-		p.Restore(x5, x6)
-	L12:
-		goto L4
-	L7:
-		if p.Pos == x2 {
-			break
-		}
-		continue
-	L4:
-		p.Restore(x2, x3)
-		break
-	}
-	v = nil
-	return v, true
-}
-
-func e70(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		var x1, x2 int
-		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116 {
-			p.Pos += 3
-		} else if _, ok = p.MatchLiteralOrdinary(lit42, "let", 7, false); !ok {
-			goto fail_ordinary
-		}
-		x1, x2 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if _, ok = r39(p); !ok {
-			goto L3_ordinary
-		}
-		p.Silent--
-		p.Restore(x1, x2)
-		goto fail_ordinary
-	L3_ordinary:
-		p.Silent--
-		p.Restore(x1, x2)
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	var x1, x2 int
-	p.StepWork()
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116) {
-		p.Pos += 3
-	} else if _, ok = p.MatchLiteral(lit42, "let", 7, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	p.StepWork()
-	if _, ok = r39(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e71(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		var x1, x2 int
-		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
-			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit44, "if", 9, false); !ok {
-			goto fail_ordinary
-		}
-		x1, x2 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if _, ok = r39(p); !ok {
-			goto L3_ordinary
-		}
-		p.Silent--
-		p.Restore(x1, x2)
-		goto fail_ordinary
-	L3_ordinary:
-		p.Silent--
-		p.Restore(x1, x2)
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	var x1, x2 int
-	p.StepWork()
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102) {
-		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit44, "if", 9, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	p.StepWork()
-	if _, ok = r39(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e72(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		var x1, x2 int
-		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
-			p.Pos += 4
-		} else if _, ok = p.MatchLiteralOrdinary(lit45, "else", 21, false); !ok {
-			goto fail_ordinary
-		}
-		x1, x2 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if _, ok = r39(p); !ok {
-			goto L3_ordinary
-		}
-		p.Silent--
-		p.Restore(x1, x2)
-		goto fail_ordinary
-	L3_ordinary:
-		p.Silent--
-		p.Restore(x1, x2)
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	var x1, x2 int
-	p.StepWork()
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101) {
-		p.Pos += 4
-	} else if _, ok = p.MatchLiteral(lit45, "else", 21, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	p.StepWork()
-	if _, ok = r39(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e73(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		var x1, x2 int
-		if _, ok = p.MatchLiteralOrdinary(lit46, "while", 10, false); !ok {
-			goto fail_ordinary
-		}
-		x1, x2 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if _, ok = r39(p); !ok {
-			goto L3_ordinary
-		}
-		p.Silent--
-		p.Restore(x1, x2)
-		goto fail_ordinary
-	L3_ordinary:
-		p.Silent--
-		p.Restore(x1, x2)
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	var x1, x2 int
-	p.StepWork()
-	p.StepWork()
-	if _, ok = p.MatchLiteral(lit46, "while", 10, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	p.StepWork()
-	if _, ok = r39(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e74(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		var x1, x2 int
-		if _, ok = p.MatchLiteralOrdinary(lit47, "return", 11, false); !ok {
-			goto fail_ordinary
-		}
-		x1, x2 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if _, ok = r39(p); !ok {
-			goto L3_ordinary
-		}
-		p.Silent--
-		p.Restore(x1, x2)
-		goto fail_ordinary
-	L3_ordinary:
-		p.Silent--
-		p.Restore(x1, x2)
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	var x1, x2 int
-	p.StepWork()
-	p.StepWork()
-	if _, ok = p.MatchLiteral(lit47, "return", 11, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	p.StepWork()
-	if _, ok = r39(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e75(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		var x1, x2 int
-		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110 {
-			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit43, "fn", 8, false); !ok {
-			goto fail_ordinary
-		}
-		x1, x2 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if _, ok = r39(p); !ok {
-			goto L3_ordinary
-		}
-		p.Silent--
-		p.Restore(x1, x2)
-		goto fail_ordinary
-	L3_ordinary:
-		p.Silent--
-		p.Restore(x1, x2)
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	var x1, x2 int
-	p.StepWork()
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110) {
-		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit43, "fn", 8, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	p.StepWork()
-	if _, ok = r39(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e76(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var x1, x2, x22, x23 int
-		var x4 rune
-		var x5, ok bool
-		x1, x2 = p.Pos, len(p.Recovered)
-		x4, _, x5 = p.NextOrdinary()
-		if !(x5 && (x4 == 108)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 7)
-			goto L6_ordinary
-		}
-		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116 {
-			p.Pos += 3
-		} else if _, ok = p.MatchLiteralOrdinary(lit42, "let", 7, false); !ok {
-			goto L7_ordinary
-		}
-		goto L3_ordinary
-	L7_ordinary:
-		p.Restore(x1, x2)
-	L6_ordinary:
-		if !(x5 && (x4 == 102)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 8)
-			goto L8_ordinary
-		}
-		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110 {
-			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit43, "fn", 8, false); !ok {
-			goto L9_ordinary
-		}
-		goto L3_ordinary
-	L9_ordinary:
-		p.Restore(x1, x2)
-	L8_ordinary:
-		if !(x5 && (x4 == 105)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 9)
-			goto L10_ordinary
-		}
-		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
-			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit44, "if", 9, false); !ok {
-			goto L11_ordinary
-		}
-		goto L3_ordinary
-	L11_ordinary:
-		p.Restore(x1, x2)
-	L10_ordinary:
-		if !(x5 && (x4 == 101)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 21)
-			goto L12_ordinary
-		}
-		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
-			p.Pos += 4
-		} else if _, ok = p.MatchLiteralOrdinary(lit45, "else", 21, false); !ok {
-			goto L13_ordinary
-		}
-		goto L3_ordinary
-	L13_ordinary:
-		p.Restore(x1, x2)
-	L12_ordinary:
-		if !(x5 && (x4 == 119)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 10)
-			goto L14_ordinary
-		}
-		if _, ok = p.MatchLiteralOrdinary(lit46, "while", 10, false); !ok {
-			goto L15_ordinary
-		}
-		goto L3_ordinary
-	L15_ordinary:
-		p.Restore(x1, x2)
-	L14_ordinary:
-		if !(x5 && (x4 == 114)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 11)
-			goto L16_ordinary
-		}
-		if _, ok = p.MatchLiteralOrdinary(lit47, "return", 11, false); !ok {
-			goto L17_ordinary
-		}
-		goto L3_ordinary
-	L17_ordinary:
-		p.Restore(x1, x2)
-	L16_ordinary:
-		if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 22)
-			goto L18_ordinary
-		}
-		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
-			p.Pos += 4
-		} else if _, ok = p.MatchLiteralOrdinary(lit48, "true", 22, false); !ok {
-			goto L19_ordinary
-		}
-		goto L3_ordinary
-	L19_ordinary:
-		p.Restore(x1, x2)
-	L18_ordinary:
-		if !(x5 && (x4 == 102)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 23)
-			goto L20_ordinary
-		}
-		if _, ok = p.MatchLiteralOrdinary(lit49, "false", 23, false); !ok {
-			goto L21_ordinary
-		}
-		goto L3_ordinary
-	L21_ordinary:
-		p.Restore(x1, x2)
-	L20_ordinary:
-		goto fail_ordinary
-	L3_ordinary:
-		p.StepWork()
-		x22, x23 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if _, ok = r39(p); !ok {
-			goto L24_ordinary
-		}
-		p.Silent--
-		p.Restore(x22, x23)
-		goto fail_ordinary
-	L24_ordinary:
-		p.Silent--
-		p.Restore(x22, x23)
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var x1, x2, x22, x23 int
-	var x4 rune
-	var x5, ok bool
-	p.StepWork()
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if p.Pos < len(p.In) {
-		p.InputWork(1)
-		x4, _, x5 = p.In[p.Pos], 1, true
-	} else {
-		x4, _, x5 = p.Peek()
-	}
-	if !(x5 && (x4 == 108)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 7)
-		goto L6
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116) {
-		p.Pos += 3
-	} else if _, ok = p.MatchLiteral(lit42, "let", 7, false); !ok {
-		goto L7
-	}
-	goto L3
-L7:
-	p.Restore(x1, x2)
-L6:
-	if !(x5 && (x4 == 102)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 8)
-		goto L8
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110) {
-		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit43, "fn", 8, false); !ok {
-		goto L9
-	}
-	goto L3
-L9:
-	p.Restore(x1, x2)
-L8:
-	if !(x5 && (x4 == 105)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 9)
-		goto L10
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102) {
-		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit44, "if", 9, false); !ok {
-		goto L11
-	}
-	goto L3
-L11:
-	p.Restore(x1, x2)
-L10:
-	if !(x5 && (x4 == 101)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 21)
-		goto L12
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101) {
-		p.Pos += 4
-	} else if _, ok = p.MatchLiteral(lit45, "else", 21, false); !ok {
-		goto L13
-	}
-	goto L3
-L13:
-	p.Restore(x1, x2)
-L12:
-	if !(x5 && (x4 == 119)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 10)
-		goto L14
-	}
-	p.StepWork()
-	if _, ok = p.MatchLiteral(lit46, "while", 10, false); !ok {
-		goto L15
-	}
-	goto L3
-L15:
-	p.Restore(x1, x2)
-L14:
-	if !(x5 && (x4 == 114)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 11)
-		goto L16
-	}
-	p.StepWork()
-	if _, ok = p.MatchLiteral(lit47, "return", 11, false); !ok {
-		goto L17
-	}
-	goto L3
-L17:
-	p.Restore(x1, x2)
-L16:
-	if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 22)
-		goto L18
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101) {
-		p.Pos += 4
-	} else if _, ok = p.MatchLiteral(lit48, "true", 22, false); !ok {
-		goto L19
-	}
-	goto L3
-L19:
-	p.Restore(x1, x2)
-L18:
-	if !(x5 && (x4 == 102)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 23)
-		goto L20
-	}
-	p.StepWork()
-	if _, ok = p.MatchLiteral(lit49, "false", 23, false); !ok {
-		goto L21
-	}
-	goto L3
-L21:
-	p.Restore(x1, x2)
-L20:
-	goto fail
-L3:
-	p.StepWork()
-	x22, x23 = p.Pos, len(p.Recovered)
-	p.Silent++
-	p.StepWork()
-	if _, ok = r39(p); !ok {
-		goto L24
-	}
-	p.Silent--
-	p.Restore(x22, x23)
-	goto fail
-L24:
-	p.Silent--
-	p.Restore(x22, x23)
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e77(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ch rune
-		var size int
-		var ok bool
-		ch, size, ok = p.NextOrdinary()
-		if !ok || !(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95) {
-			p.ExpectOrdinary(p.Pos, 24)
-			goto fail_ordinary
-		}
-		p.Pos += size
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ch rune
-	var size int
-	var ok bool
-	p.StepWork()
-	if p.Pos < len(p.In) {
-		p.InputWork(1)
-		ch, size, ok = p.In[p.Pos], 1, true
-	} else {
-		ch, size, ok = p.Peek()
-	}
-	if !ok || !(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95) {
-		p.Expect(p.Pos, 24)
-		goto fail
-	}
-	p.Pos += size
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e86(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
 		return r31(p)
 	}
 
@@ -5120,7 +3512,7 @@ func e86(p *rt.Parser) (*rt.Node, bool) {
 	return r31(p)
 }
 
-func e87(p *rt.Parser) (*rt.Node, bool) {
+func e70(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return r20(p)
 	}
@@ -5129,7 +3521,7 @@ func e87(p *rt.Parser) (*rt.Node, bool) {
 	return r20(p)
 }
 
-func e88(p *rt.Parser) (*rt.Node, bool) {
+func e71(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return p.Call(rules[21], 0)
 	}
@@ -5138,7 +3530,7 @@ func e88(p *rt.Parser) (*rt.Node, bool) {
 	return p.Call(rules[21], 0)
 }
 
-func e89(p *rt.Parser) (*rt.Node, bool) {
+func e72(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return r23(p)
 	}
@@ -5147,7 +3539,7 @@ func e89(p *rt.Parser) (*rt.Node, bool) {
 	return r23(p)
 }
 
-func e90(p *rt.Parser) (*rt.Node, bool) {
+func e73(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return p.Call(rules[16], 0)
 	}
@@ -5156,7 +3548,7 @@ func e90(p *rt.Parser) (*rt.Node, bool) {
 	return p.Call(rules[16], 0)
 }
 
-func e91(p *rt.Parser) (*rt.Node, bool) {
+func e74(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return p.MatchLiteralOrdinary(lit30, "(", 15, false)
 	}
@@ -5165,7 +3557,7 @@ func e91(p *rt.Parser) (*rt.Node, bool) {
 	return p.MatchLiteral(lit30, "(", 15, false)
 }
 
-func e92(p *rt.Parser) (*rt.Node, bool) {
+func e75(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return p.Call(rules[14], 0)
 	}
@@ -5174,9 +3566,9 @@ func e92(p *rt.Parser) (*rt.Node, bool) {
 	return p.Call(rules[14], 0)
 }
 
-func e93(p *rt.Parser) (*rt.Node, bool) {
+func e76(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		v, ok := e92(p)
+		v, ok := e75(p)
 		if ok {
 			p.SetCaptureOrdinary(0, v)
 		}
@@ -5184,14 +3576,14 @@ func e93(p *rt.Parser) (*rt.Node, bool) {
 	}
 
 	p.StepWork()
-	v, ok := e92(p)
+	v, ok := e75(p)
 	if ok {
 		p.SetCapture(0, v)
 	}
 	return nil, ok
 }
 
-func e94(p *rt.Parser) (*rt.Node, bool) {
+func e77(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return p.MatchLiteralOrdinary(lit31, ")", 16, false)
 	}
@@ -5200,49 +3592,49 @@ func e94(p *rt.Parser) (*rt.Node, bool) {
 	return p.MatchLiteral(lit31, ")", 16, false)
 }
 
-func e95(p *rt.Parser) (*rt.Node, bool) {
+func e78(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		if _, ok := e91(p); !ok {
+		if _, ok := e74(p); !ok {
 			return nil, false
 		}
-		if _, ok := e93(p); !ok {
+		if _, ok := e76(p); !ok {
 			return nil, false
 		}
-		if _, ok := e86(p); !ok {
+		if _, ok := e69(p); !ok {
 			return nil, false
 		}
-		if _, ok := e94(p); !ok {
+		if _, ok := e77(p); !ok {
 			return nil, false
 		}
 		return nil, true
 	}
 
 	p.StepWork()
-	if _, ok := e91(p); !ok {
+	if _, ok := e74(p); !ok {
 		return nil, false
 	}
-	if _, ok := e93(p); !ok {
+	if _, ok := e76(p); !ok {
 		return nil, false
 	}
-	if _, ok := e86(p); !ok {
+	if _, ok := e69(p); !ok {
 		return nil, false
 	}
-	if _, ok := e94(p); !ok {
+	if _, ok := e77(p); !ok {
 		return nil, false
 	}
 	return nil, true
 }
 
-func e97(p *rt.Parser) (*rt.Node, bool) {
+func e80(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit96, "[", 33, false)
+		return p.MatchLiteralOrdinary(lit79, "[", 33, false)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit96, "[", 33, false)
+	return p.MatchLiteral(lit79, "[", 33, false)
 }
 
-func e98(p *rt.Parser) (*rt.Node, bool) {
+func e81(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return p.Call(rules[15], 0)
 	}
@@ -5251,12 +3643,12 @@ func e98(p *rt.Parser) (*rt.Node, bool) {
 	return p.Call(rules[15], 0)
 }
 
-func e99(p *rt.Parser) (*rt.Node, bool) {
+func e82(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		m0 := p.Mark()
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e98(p)
+		v, ok := e81(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -5273,7 +3665,7 @@ func e99(p *rt.Parser) (*rt.Node, bool) {
 	m0 := p.Mark()
 	prevCut := p.Cut
 	p.Cut = false
-	v, ok := e98(p)
+	v, ok := e81(p)
 	cut := p.Cut
 	p.Cut = prevCut
 	if ok {
@@ -5286,9 +3678,9 @@ func e99(p *rt.Parser) (*rt.Node, bool) {
 	return nil, true
 }
 
-func e100(p *rt.Parser) (*rt.Node, bool) {
+func e83(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		v, ok := e99(p)
+		v, ok := e82(p)
 		if ok {
 			p.SetCaptureOrdinary(0, v)
 		}
@@ -5296,67 +3688,67 @@ func e100(p *rt.Parser) (*rt.Node, bool) {
 	}
 
 	p.StepWork()
-	v, ok := e99(p)
+	v, ok := e82(p)
 	if ok {
 		p.SetCapture(0, v)
 	}
 	return nil, ok
 }
 
-func e102(p *rt.Parser) (*rt.Node, bool) {
+func e85(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit101, "]", 34, false)
+		return p.MatchLiteralOrdinary(lit84, "]", 34, false)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit101, "]", 34, false)
+	return p.MatchLiteral(lit84, "]", 34, false)
 }
 
-func e103(p *rt.Parser) (*rt.Node, bool) {
+func e86(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		if _, ok := e97(p); !ok {
+		if _, ok := e80(p); !ok {
 			return nil, false
 		}
-		if _, ok := e100(p); !ok {
+		if _, ok := e83(p); !ok {
 			return nil, false
 		}
-		if _, ok := e86(p); !ok {
+		if _, ok := e69(p); !ok {
 			return nil, false
 		}
-		if _, ok := e102(p); !ok {
+		if _, ok := e85(p); !ok {
 			return nil, false
 		}
 		return nil, true
 	}
 
 	p.StepWork()
-	if _, ok := e97(p); !ok {
+	if _, ok := e80(p); !ok {
 		return nil, false
 	}
-	if _, ok := e100(p); !ok {
+	if _, ok := e83(p); !ok {
 		return nil, false
 	}
-	if _, ok := e86(p); !ok {
+	if _, ok := e69(p); !ok {
 		return nil, false
 	}
-	if _, ok := e102(p); !ok {
+	if _, ok := e85(p); !ok {
 		return nil, false
 	}
 	return nil, true
 }
 
-func e105(p *rt.Parser) (*rt.Node, bool) {
+func e88(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit104, "?", 35, true)
+		return p.MatchLiteralOrdinary(lit87, "?", 35, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit104, "?", 35, true)
+	return p.MatchLiteral(lit87, "?", 35, true)
 }
 
-func e106(p *rt.Parser) (*rt.Node, bool) {
+func e89(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		v, ok := e92(p)
+		v, ok := e75(p)
 		if ok {
 			p.SetCaptureOrdinary(0, v)
 		}
@@ -5364,14 +3756,14 @@ func e106(p *rt.Parser) (*rt.Node, bool) {
 	}
 
 	p.StepWork()
-	v, ok := e92(p)
+	v, ok := e75(p)
 	if ok {
 		p.SetCapture(0, v)
 	}
 	return v, ok
 }
 
-func e107(p *rt.Parser) (*rt.Node, bool) {
+func e90(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return r30(p)
 	}
@@ -5380,35 +3772,35 @@ func e107(p *rt.Parser) (*rt.Node, bool) {
 	return r30(p)
 }
 
-func e109(p *rt.Parser) (*rt.Node, bool) {
+func e92(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit108, ":", 36, true)
+		return p.MatchLiteralOrdinary(lit91, ":", 36, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit108, ":", 36, true)
+	return p.MatchLiteral(lit91, ":", 36, true)
 }
 
-func e110(p *rt.Parser) (*rt.Node, bool) {
+func e93(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		start := p.Pos
 		kids := p.Nodes(4)[:0]
-		if v, ok := e105(p); !ok {
+		if v, ok := e88(p); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if v, ok := e106(p); !ok {
+		if v, ok := e89(p); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if v, ok := e107(p); !ok {
+		if v, ok := e90(p); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if v, ok := e109(p); !ok {
+		if v, ok := e92(p); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -5419,22 +3811,22 @@ func e110(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	start := p.Pos
 	kids := p.Nodes(4)[:0]
-	if v, ok := e105(p); !ok {
+	if v, ok := e88(p); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if v, ok := e106(p); !ok {
+	if v, ok := e89(p); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if v, ok := e107(p); !ok {
+	if v, ok := e90(p); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if v, ok := e109(p); !ok {
+	if v, ok := e92(p); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -5442,79 +3834,79 @@ func e110(p *rt.Parser) (*rt.Node, bool) {
 	return p.NewBranch(rt.RawKindSeq, start, kids), true
 }
 
-func e112(p *rt.Parser) (*rt.Node, bool) {
+func e95(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit111, "||", 37, true)
+		return p.MatchLiteralOrdinary(lit94, "||", 37, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit111, "||", 37, true)
+	return p.MatchLiteral(lit94, "||", 37, true)
 }
 
-func e114(p *rt.Parser) (*rt.Node, bool) {
+func e97(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit113, "&&", 38, true)
+		return p.MatchLiteralOrdinary(lit96, "&&", 38, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit113, "&&", 38, true)
+	return p.MatchLiteral(lit96, "&&", 38, true)
 }
 
-func e116(p *rt.Parser) (*rt.Node, bool) {
+func e99(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit115, "==", 39, true)
+		return p.MatchLiteralOrdinary(lit98, "==", 39, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit115, "==", 39, true)
+	return p.MatchLiteral(lit98, "==", 39, true)
 }
 
-func e118(p *rt.Parser) (*rt.Node, bool) {
+func e101(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit117, "!=", 40, true)
+		return p.MatchLiteralOrdinary(lit100, "!=", 40, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit117, "!=", 40, true)
+	return p.MatchLiteral(lit100, "!=", 40, true)
 }
 
-func e120(p *rt.Parser) (*rt.Node, bool) {
+func e103(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit119, "<=", 41, true)
+		return p.MatchLiteralOrdinary(lit102, "<=", 41, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit119, "<=", 41, true)
+	return p.MatchLiteral(lit102, "<=", 41, true)
 }
 
-func e122(p *rt.Parser) (*rt.Node, bool) {
+func e105(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit121, ">=", 42, true)
+		return p.MatchLiteralOrdinary(lit104, ">=", 42, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit121, ">=", 42, true)
+	return p.MatchLiteral(lit104, ">=", 42, true)
 }
 
-func e124(p *rt.Parser) (*rt.Node, bool) {
+func e107(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit123, "<", 43, true)
+		return p.MatchLiteralOrdinary(lit106, "<", 43, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit123, "<", 43, true)
+	return p.MatchLiteral(lit106, "<", 43, true)
 }
 
-func e126(p *rt.Parser) (*rt.Node, bool) {
+func e109(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit125, ">", 44, true)
+		return p.MatchLiteralOrdinary(lit108, ">", 44, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit125, ">", 44, true)
+	return p.MatchLiteral(lit108, ">", 44, true)
 }
 
-func e127(p *rt.Parser) (*rt.Node, bool) {
+func e110(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		m0 := p.Mark()
 		ch, _, more := p.PeekOrdinary()
@@ -5523,7 +3915,7 @@ func e127(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e116(p)
+			v, ok := e99(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -5539,7 +3931,7 @@ func e127(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e118(p)
+			v, ok := e101(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -5555,7 +3947,7 @@ func e127(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e120(p)
+			v, ok := e103(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -5571,7 +3963,7 @@ func e127(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e122(p)
+			v, ok := e105(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -5587,7 +3979,7 @@ func e127(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e124(p)
+			v, ok := e107(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -5603,7 +3995,7 @@ func e127(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e126(p)
+			v, ok := e109(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -5626,7 +4018,7 @@ func e127(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e116(p)
+		v, ok := e99(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -5643,7 +4035,7 @@ func e127(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e118(p)
+		v, ok := e101(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -5660,7 +4052,7 @@ func e127(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e120(p)
+		v, ok := e103(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -5677,7 +4069,7 @@ func e127(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e122(p)
+		v, ok := e105(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -5694,7 +4086,7 @@ func e127(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e124(p)
+		v, ok := e107(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -5711,7 +4103,7 @@ func e127(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e126(p)
+		v, ok := e109(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -5725,25 +4117,25 @@ func e127(p *rt.Parser) (*rt.Node, bool) {
 	return nil, false
 }
 
-func e129(p *rt.Parser) (*rt.Node, bool) {
+func e112(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit128, "+", 45, true)
+		return p.MatchLiteralOrdinary(lit111, "+", 45, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit128, "+", 45, true)
+	return p.MatchLiteral(lit111, "+", 45, true)
 }
 
-func e131(p *rt.Parser) (*rt.Node, bool) {
+func e114(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit130, "-", 46, true)
+		return p.MatchLiteralOrdinary(lit113, "-", 46, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit130, "-", 46, true)
+	return p.MatchLiteral(lit113, "-", 46, true)
 }
 
-func e132(p *rt.Parser) (*rt.Node, bool) {
+func e115(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		m0 := p.Mark()
 		ch, _, more := p.PeekOrdinary()
@@ -5752,7 +4144,7 @@ func e132(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e129(p)
+			v, ok := e112(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -5768,7 +4160,7 @@ func e132(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e131(p)
+			v, ok := e114(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -5791,7 +4183,7 @@ func e132(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e129(p)
+		v, ok := e112(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -5808,7 +4200,7 @@ func e132(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e131(p)
+		v, ok := e114(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -5822,34 +4214,34 @@ func e132(p *rt.Parser) (*rt.Node, bool) {
 	return nil, false
 }
 
-func e134(p *rt.Parser) (*rt.Node, bool) {
+func e117(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit133, "*", 47, true)
+		return p.MatchLiteralOrdinary(lit116, "*", 47, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit133, "*", 47, true)
+	return p.MatchLiteral(lit116, "*", 47, true)
 }
 
-func e136(p *rt.Parser) (*rt.Node, bool) {
+func e119(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit135, "/", 48, true)
+		return p.MatchLiteralOrdinary(lit118, "/", 48, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit135, "/", 48, true)
+	return p.MatchLiteral(lit118, "/", 48, true)
 }
 
-func e138(p *rt.Parser) (*rt.Node, bool) {
+func e121(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit137, "%", 49, true)
+		return p.MatchLiteralOrdinary(lit120, "%", 49, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit137, "%", 49, true)
+	return p.MatchLiteral(lit120, "%", 49, true)
 }
 
-func e139(p *rt.Parser) (*rt.Node, bool) {
+func e122(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		m0 := p.Mark()
 		ch, _, more := p.PeekOrdinary()
@@ -5858,7 +4250,7 @@ func e139(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e134(p)
+			v, ok := e117(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -5874,7 +4266,7 @@ func e139(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e136(p)
+			v, ok := e119(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -5890,7 +4282,7 @@ func e139(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e138(p)
+			v, ok := e121(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -5913,7 +4305,7 @@ func e139(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e134(p)
+		v, ok := e117(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -5930,7 +4322,7 @@ func e139(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e136(p)
+		v, ok := e119(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -5947,7 +4339,7 @@ func e139(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e138(p)
+		v, ok := e121(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -5961,16 +4353,16 @@ func e139(p *rt.Parser) (*rt.Node, bool) {
 	return nil, false
 }
 
-func e141(p *rt.Parser) (*rt.Node, bool) {
+func e124(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit140, "!", 50, true)
+		return p.MatchLiteralOrdinary(lit123, "!", 50, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit140, "!", 50, true)
+	return p.MatchLiteral(lit123, "!", 50, true)
 }
 
-func e142(p *rt.Parser) (*rt.Node, bool) {
+func e125(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		m0 := p.Mark()
 		ch, _, more := p.PeekOrdinary()
@@ -5979,7 +4371,7 @@ func e142(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e131(p)
+			v, ok := e114(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -5995,7 +4387,7 @@ func e142(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e141(p)
+			v, ok := e124(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -6018,7 +4410,7 @@ func e142(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e131(p)
+		v, ok := e114(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -6035,7 +4427,7 @@ func e142(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e141(p)
+		v, ok := e124(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -6049,7 +4441,7 @@ func e142(p *rt.Parser) (*rt.Node, bool) {
 	return nil, false
 }
 
-func e143(p *rt.Parser) (*rt.Node, bool) {
+func e126(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return p.MatchLiteralOrdinary(lit30, "(", 15, true)
 	}
@@ -6058,9 +4450,9 @@ func e143(p *rt.Parser) (*rt.Node, bool) {
 	return p.MatchLiteral(lit30, "(", 15, true)
 }
 
-func e144(p *rt.Parser) (*rt.Node, bool) {
+func e127(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		v, ok := e99(p)
+		v, ok := e82(p)
 		if ok {
 			p.SetCaptureOrdinary(0, v)
 		}
@@ -6068,14 +4460,14 @@ func e144(p *rt.Parser) (*rt.Node, bool) {
 	}
 
 	p.StepWork()
-	v, ok := e99(p)
+	v, ok := e82(p)
 	if ok {
 		p.SetCapture(0, v)
 	}
 	return v, ok
 }
 
-func e145(p *rt.Parser) (*rt.Node, bool) {
+func e128(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return p.MatchLiteralOrdinary(lit31, ")", 16, true)
 	}
@@ -6084,26 +4476,26 @@ func e145(p *rt.Parser) (*rt.Node, bool) {
 	return p.MatchLiteral(lit31, ")", 16, true)
 }
 
-func e146(p *rt.Parser) (*rt.Node, bool) {
+func e129(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		start := p.Pos
 		kids := p.Nodes(4)[:0]
-		if v, ok := e143(p); !ok {
+		if v, ok := e126(p); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if v, ok := e144(p); !ok {
+		if v, ok := e127(p); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if v, ok := e107(p); !ok {
+		if v, ok := e90(p); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if v, ok := e145(p); !ok {
+		if v, ok := e128(p); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -6114,22 +4506,22 @@ func e146(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	start := p.Pos
 	kids := p.Nodes(4)[:0]
-	if v, ok := e143(p); !ok {
+	if v, ok := e126(p); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if v, ok := e144(p); !ok {
+	if v, ok := e127(p); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if v, ok := e107(p); !ok {
+	if v, ok := e90(p); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if v, ok := e145(p); !ok {
+	if v, ok := e128(p); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -6137,44 +4529,44 @@ func e146(p *rt.Parser) (*rt.Node, bool) {
 	return p.NewBranch(rt.RawKindSeq, start, kids), true
 }
 
-func e147(p *rt.Parser) (*rt.Node, bool) {
+func e130(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit96, "[", 33, true)
+		return p.MatchLiteralOrdinary(lit79, "[", 33, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit96, "[", 33, true)
+	return p.MatchLiteral(lit79, "[", 33, true)
 }
 
-func e148(p *rt.Parser) (*rt.Node, bool) {
+func e131(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit101, "]", 34, true)
+		return p.MatchLiteralOrdinary(lit84, "]", 34, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit101, "]", 34, true)
+	return p.MatchLiteral(lit84, "]", 34, true)
 }
 
-func e149(p *rt.Parser) (*rt.Node, bool) {
+func e132(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		start := p.Pos
 		kids := p.Nodes(4)[:0]
-		if v, ok := e147(p); !ok {
+		if v, ok := e130(p); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if v, ok := e106(p); !ok {
+		if v, ok := e89(p); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if v, ok := e107(p); !ok {
+		if v, ok := e90(p); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if v, ok := e148(p); !ok {
+		if v, ok := e131(p); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -6185,22 +4577,22 @@ func e149(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	start := p.Pos
 	kids := p.Nodes(4)[:0]
-	if v, ok := e147(p); !ok {
+	if v, ok := e130(p); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if v, ok := e106(p); !ok {
+	if v, ok := e89(p); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if v, ok := e107(p); !ok {
+	if v, ok := e90(p); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if v, ok := e148(p); !ok {
+	if v, ok := e131(p); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -6208,16 +4600,16 @@ func e149(p *rt.Parser) (*rt.Node, bool) {
 	return p.NewBranch(rt.RawKindSeq, start, kids), true
 }
 
-func e150(p *rt.Parser) (*rt.Node, bool) {
+func e133(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit52, ".", 26, true)
+		return p.MatchLiteralOrdinary(lit42, ".", 26, true)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit52, ".", 26, true)
+	return p.MatchLiteral(lit42, ".", 26, true)
 }
 
-func e151(p *rt.Parser) (*rt.Node, bool) {
+func e134(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return p.Call(rules[17], 0)
 	}
@@ -6226,9 +4618,9 @@ func e151(p *rt.Parser) (*rt.Node, bool) {
 	return p.Call(rules[17], 0)
 }
 
-func e152(p *rt.Parser) (*rt.Node, bool) {
+func e135(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		v, ok := e151(p)
+		v, ok := e134(p)
 		if ok {
 			p.SetCaptureOrdinary(0, v)
 		}
@@ -6236,28 +4628,28 @@ func e152(p *rt.Parser) (*rt.Node, bool) {
 	}
 
 	p.StepWork()
-	v, ok := e151(p)
+	v, ok := e134(p)
 	if ok {
 		p.SetCapture(0, v)
 	}
 	return v, ok
 }
 
-func e153(p *rt.Parser) (*rt.Node, bool) {
+func e136(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		start := p.Pos
 		kids := p.Nodes(3)[:0]
-		if v, ok := e150(p); !ok {
+		if v, ok := e133(p); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if v, ok := e107(p); !ok {
+		if v, ok := e90(p); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
 		}
-		if v, ok := e152(p); !ok {
+		if v, ok := e135(p); !ok {
 			return nil, false
 		} else {
 			kids = append(kids, v)
@@ -6268,17 +4660,17 @@ func e153(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	start := p.Pos
 	kids := p.Nodes(3)[:0]
-	if v, ok := e150(p); !ok {
+	if v, ok := e133(p); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if v, ok := e107(p); !ok {
+	if v, ok := e90(p); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
 	}
-	if v, ok := e152(p); !ok {
+	if v, ok := e135(p); !ok {
 		return nil, false
 	} else {
 		kids = append(kids, v)
@@ -6292,7 +4684,7 @@ func r20(p *rt.Parser) (*rt.Node, bool) {
 		prevEnv, prevCut := p.Env, p.Cut
 		p.Cut = false
 		p.Enter()
-		v, ok := e53(p)
+		v, ok := e43(p)
 		p.Depth--
 		p.Cut = prevCut
 		p.Trail = p.Trail[:trail]
@@ -6310,7 +4702,7 @@ func r20(p *rt.Parser) (*rt.Node, bool) {
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
 	p.Enter()
-	v, ok := e53(p)
+	v, ok := e43(p)
 	p.Depth--
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]
@@ -6329,7 +4721,7 @@ func r22(p *rt.Parser) (*rt.Node, bool) {
 		prevEnv, prevCut := p.Env, p.Cut
 		p.Cut = false
 		p.Enter()
-		v, ok := e57(p)
+		v, ok := e47(p)
 		p.Depth--
 		p.Cut = prevCut
 		p.Trail = p.Trail[:trail]
@@ -6347,7 +4739,7 @@ func r22(p *rt.Parser) (*rt.Node, bool) {
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
 	p.Enter()
-	v, ok := e57(p)
+	v, ok := e47(p)
 	p.Depth--
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]
@@ -6366,7 +4758,7 @@ func r23(p *rt.Parser) (*rt.Node, bool) {
 		prevEnv, prevCut := p.Env, p.Cut
 		p.Cut = false
 		p.Enter()
-		v, ok := e58(p)
+		v, ok := e50(p)
 		p.Depth--
 		p.Cut = prevCut
 		p.Trail = p.Trail[:trail]
@@ -6384,7 +4776,7 @@ func r23(p *rt.Parser) (*rt.Node, bool) {
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
 	p.Enter()
-	v, ok := e58(p)
+	v, ok := e50(p)
 	p.Depth--
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]
@@ -6403,7 +4795,7 @@ func r30(p *rt.Parser) (*rt.Node, bool) {
 		prevEnv, prevCut := p.Env, p.Cut
 		p.Cut = false
 		p.Enter()
-		v, ok := e68(p)
+		v, ok := e54(p)
 		p.Depth--
 		p.Cut = prevCut
 		p.Trail = p.Trail[:trail]
@@ -6421,7 +4813,7 @@ func r30(p *rt.Parser) (*rt.Node, bool) {
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
 	p.Enter()
-	v, ok := e68(p)
+	v, ok := e54(p)
 	p.Depth--
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]
@@ -6465,7 +4857,7 @@ func r31(p *rt.Parser) (*rt.Node, bool) {
 			}
 			if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47 {
 				p.Pos += 2
-			} else if _, ok = p.MatchLiteralOrdinary(lit65, "//", 31, false); !ok {
+			} else if _, ok = p.MatchLiteralOrdinary(lit51, "//", 31, false); !ok {
 				goto L13_ordinary
 			}
 			for {
@@ -6540,7 +4932,7 @@ func r31(p *rt.Parser) (*rt.Node, bool) {
 		p.StepWork()
 		if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47) {
 			p.Pos += 2
-		} else if _, ok = p.MatchLiteral(lit65, "//", 31, false); !ok {
+		} else if _, ok = p.MatchLiteral(lit51, "//", 31, false); !ok {
 			goto L13
 		}
 		p.StepWork()
@@ -6585,7 +4977,7 @@ func r32(p *rt.Parser) (*rt.Node, bool) {
 		p.Enter()
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116 {
 			p.Pos += 3
-		} else if _, ok = p.MatchLiteralOrdinary(lit42, "let", 7, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit55, "let", 7, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -6618,7 +5010,7 @@ func r32(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116) {
 		p.Pos += 3
-	} else if _, ok = p.MatchLiteral(lit42, "let", 7, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit55, "let", 7, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -6652,7 +5044,7 @@ func r33(p *rt.Parser) (*rt.Node, bool) {
 		p.Enter()
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
 			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit44, "if", 9, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit56, "if", 9, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -6685,7 +5077,7 @@ func r33(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102) {
 		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit44, "if", 9, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit56, "if", 9, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -6719,7 +5111,7 @@ func r34(p *rt.Parser) (*rt.Node, bool) {
 		p.Enter()
 		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
 			p.Pos += 4
-		} else if _, ok = p.MatchLiteralOrdinary(lit45, "else", 21, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit57, "else", 21, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -6752,7 +5144,7 @@ func r34(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101) {
 		p.Pos += 4
-	} else if _, ok = p.MatchLiteral(lit45, "else", 21, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit57, "else", 21, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -6784,7 +5176,7 @@ func r35(p *rt.Parser) (*rt.Node, bool) {
 		var ok bool
 		start, rec = p.Pos, len(p.Recovered)
 		p.Enter()
-		if _, ok = p.MatchLiteralOrdinary(lit46, "while", 10, false); !ok {
+		if _, ok = p.MatchLiteralOrdinary(lit58, "while", 10, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -6815,7 +5207,7 @@ func r35(p *rt.Parser) (*rt.Node, bool) {
 	p.Enter()
 	p.StepWork()
 	p.StepWork()
-	if _, ok = p.MatchLiteral(lit46, "while", 10, false); !ok {
+	if _, ok = p.MatchLiteral(lit58, "while", 10, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -6847,7 +5239,7 @@ func r36(p *rt.Parser) (*rt.Node, bool) {
 		var ok bool
 		start, rec = p.Pos, len(p.Recovered)
 		p.Enter()
-		if _, ok = p.MatchLiteralOrdinary(lit47, "return", 11, false); !ok {
+		if _, ok = p.MatchLiteralOrdinary(lit59, "return", 11, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -6878,7 +5270,7 @@ func r36(p *rt.Parser) (*rt.Node, bool) {
 	p.Enter()
 	p.StepWork()
 	p.StepWork()
-	if _, ok = p.MatchLiteral(lit47, "return", 11, false); !ok {
+	if _, ok = p.MatchLiteral(lit59, "return", 11, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -6912,7 +5304,7 @@ func r37(p *rt.Parser) (*rt.Node, bool) {
 		p.Enter()
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110 {
 			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit43, "fn", 8, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit60, "fn", 8, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -6945,7 +5337,7 @@ func r37(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110) {
 		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit43, "fn", 8, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit60, "fn", 8, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -6986,7 +5378,7 @@ func r38(p *rt.Parser) (*rt.Node, bool) {
 		}
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116 {
 			p.Pos += 3
-		} else if _, ok = p.MatchLiteralOrdinary(lit42, "let", 7, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit55, "let", 7, false); !ok {
 			goto L7_ordinary
 		}
 		goto L3_ordinary
@@ -6999,7 +5391,7 @@ func r38(p *rt.Parser) (*rt.Node, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110 {
 			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit43, "fn", 8, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit60, "fn", 8, false); !ok {
 			goto L9_ordinary
 		}
 		goto L3_ordinary
@@ -7012,7 +5404,7 @@ func r38(p *rt.Parser) (*rt.Node, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
 			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit44, "if", 9, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit56, "if", 9, false); !ok {
 			goto L11_ordinary
 		}
 		goto L3_ordinary
@@ -7025,7 +5417,7 @@ func r38(p *rt.Parser) (*rt.Node, bool) {
 		}
 		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
 			p.Pos += 4
-		} else if _, ok = p.MatchLiteralOrdinary(lit45, "else", 21, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit57, "else", 21, false); !ok {
 			goto L13_ordinary
 		}
 		goto L3_ordinary
@@ -7036,7 +5428,7 @@ func r38(p *rt.Parser) (*rt.Node, bool) {
 			p.ExpectOrdinary(p.Pos, 10)
 			goto L14_ordinary
 		}
-		if _, ok = p.MatchLiteralOrdinary(lit46, "while", 10, false); !ok {
+		if _, ok = p.MatchLiteralOrdinary(lit58, "while", 10, false); !ok {
 			goto L15_ordinary
 		}
 		goto L3_ordinary
@@ -7047,7 +5439,7 @@ func r38(p *rt.Parser) (*rt.Node, bool) {
 			p.ExpectOrdinary(p.Pos, 11)
 			goto L16_ordinary
 		}
-		if _, ok = p.MatchLiteralOrdinary(lit47, "return", 11, false); !ok {
+		if _, ok = p.MatchLiteralOrdinary(lit59, "return", 11, false); !ok {
 			goto L17_ordinary
 		}
 		goto L3_ordinary
@@ -7124,7 +5516,7 @@ func r38(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116) {
 		p.Pos += 3
-	} else if _, ok = p.MatchLiteral(lit42, "let", 7, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit55, "let", 7, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -7138,7 +5530,7 @@ L6:
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110) {
 		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit43, "fn", 8, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit60, "fn", 8, false); !ok {
 		goto L9
 	}
 	goto L3
@@ -7152,7 +5544,7 @@ L8:
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102) {
 		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit44, "if", 9, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit56, "if", 9, false); !ok {
 		goto L11
 	}
 	goto L3
@@ -7166,7 +5558,7 @@ L10:
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101) {
 		p.Pos += 4
-	} else if _, ok = p.MatchLiteral(lit45, "else", 21, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit57, "else", 21, false); !ok {
 		goto L13
 	}
 	goto L3
@@ -7178,7 +5570,7 @@ L12:
 		goto L14
 	}
 	p.StepWork()
-	if _, ok = p.MatchLiteral(lit46, "while", 10, false); !ok {
+	if _, ok = p.MatchLiteral(lit58, "while", 10, false); !ok {
 		goto L15
 	}
 	goto L3
@@ -7190,7 +5582,7 @@ L14:
 		goto L16
 	}
 	p.StepWork()
-	if _, ok = p.MatchLiteral(lit47, "return", 11, false); !ok {
+	if _, ok = p.MatchLiteral(lit59, "return", 11, false); !ok {
 		goto L17
 	}
 	goto L3
@@ -7298,7 +5690,7 @@ fail:
 	return nil, false
 }
 
-func e154(p *rt.Parser) (*rt.Node, bool) {
+func e137(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var v *rt.Node
 		var ok bool
@@ -7342,7 +5734,7 @@ fail:
 	return nil, false
 }
 
-func e156(p *rt.Parser) (*rt.Node, bool) {
+func e139(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var x1, x2 *rt.CaptureFrame
 		var x4 rt.Mark
@@ -7350,7 +5742,7 @@ func e156(p *rt.Parser) (*rt.Node, bool) {
 		for {
 			x4 = p.Mark()
 			x2 = p.Frame
-			x1 = p.NewFrame(len(scope155))
+			x1 = p.NewFrame(len(scope138))
 			p.Frame = x1
 			if _, ok = q30(p); !ok {
 				goto L5_ordinary
@@ -7380,7 +5772,7 @@ func e156(p *rt.Parser) (*rt.Node, bool) {
 	for {
 		x4 = p.Mark()
 		x2 = p.Frame
-		x1 = p.NewFrame(len(scope155))
+		x1 = p.NewFrame(len(scope138))
 		p.Frame = x1
 		p.StepWork()
 		p.StepWork()
@@ -7406,7 +5798,7 @@ func e156(p *rt.Parser) (*rt.Node, bool) {
 	return nil, true
 }
 
-func e157(p *rt.Parser) (*rt.Node, bool) {
+func e140(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var ok bool
 		if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
@@ -7459,7 +5851,7 @@ fail:
 	return nil, false
 }
 
-func e158(p *rt.Parser) (*rt.Node, bool) {
+func e141(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return q4(p)
 	}
@@ -7468,7 +5860,7 @@ func e158(p *rt.Parser) (*rt.Node, bool) {
 	return q4(p)
 }
 
-func e159(p *rt.Parser) (*rt.Node, bool) {
+func e142(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return q10(p)
 	}
@@ -7477,7 +5869,7 @@ func e159(p *rt.Parser) (*rt.Node, bool) {
 	return q10(p)
 }
 
-func e160(p *rt.Parser) (*rt.Node, bool) {
+func e143(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return p.Call(recRules[6], 0)
 	}
@@ -7486,7 +5878,7 @@ func e160(p *rt.Parser) (*rt.Node, bool) {
 	return p.Call(recRules[6], 0)
 }
 
-func e161(p *rt.Parser) (*rt.Node, bool) {
+func e144(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return q8(p)
 	}
@@ -7495,7 +5887,7 @@ func e161(p *rt.Parser) (*rt.Node, bool) {
 	return q8(p)
 }
 
-func e162(p *rt.Parser) (*rt.Node, bool) {
+func e145(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return q9(p)
 	}
@@ -7504,7 +5896,7 @@ func e162(p *rt.Parser) (*rt.Node, bool) {
 	return q9(p)
 }
 
-func e163(p *rt.Parser) (*rt.Node, bool) {
+func e146(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return p.Call(recRules[2], 0)
 	}
@@ -7513,7 +5905,7 @@ func e163(p *rt.Parser) (*rt.Node, bool) {
 	return p.Call(recRules[2], 0)
 }
 
-func e164(p *rt.Parser) (*rt.Node, bool) {
+func e147(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return q5(p)
 	}
@@ -7522,7 +5914,7 @@ func e164(p *rt.Parser) (*rt.Node, bool) {
 	return q5(p)
 }
 
-func e165(p *rt.Parser) (*rt.Node, bool) {
+func e148(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return q12(p)
 	}
@@ -7531,7 +5923,7 @@ func e165(p *rt.Parser) (*rt.Node, bool) {
 	return q12(p)
 }
 
-func e166(p *rt.Parser) (*rt.Node, bool) {
+func e149(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		m0 := p.Mark()
 		ch, _, more := p.PeekOrdinary()
@@ -7540,7 +5932,7 @@ func e166(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e158(p)
+			v, ok := e141(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -7556,7 +5948,7 @@ func e166(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e159(p)
+			v, ok := e142(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -7572,7 +5964,7 @@ func e166(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e160(p)
+			v, ok := e143(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -7588,7 +5980,7 @@ func e166(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e161(p)
+			v, ok := e144(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -7604,7 +5996,7 @@ func e166(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e162(p)
+			v, ok := e145(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -7620,7 +6012,7 @@ func e166(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e163(p)
+			v, ok := e146(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -7634,7 +6026,7 @@ func e166(p *rt.Parser) (*rt.Node, bool) {
 		{
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e164(p)
+			v, ok := e147(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -7648,7 +6040,7 @@ func e166(p *rt.Parser) (*rt.Node, bool) {
 		{
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e165(p)
+			v, ok := e148(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -7671,7 +6063,7 @@ func e166(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e158(p)
+		v, ok := e141(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -7688,7 +6080,7 @@ func e166(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e159(p)
+		v, ok := e142(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -7705,7 +6097,7 @@ func e166(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e160(p)
+		v, ok := e143(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -7722,7 +6114,7 @@ func e166(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e161(p)
+		v, ok := e144(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -7739,7 +6131,7 @@ func e166(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e162(p)
+		v, ok := e145(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -7756,7 +6148,7 @@ func e166(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e163(p)
+		v, ok := e146(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -7770,7 +6162,7 @@ func e166(p *rt.Parser) (*rt.Node, bool) {
 	{
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e164(p)
+		v, ok := e147(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -7784,7 +6176,7 @@ func e166(p *rt.Parser) (*rt.Node, bool) {
 	{
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e165(p)
+		v, ok := e148(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -7798,204 +6190,16 @@ func e166(p *rt.Parser) (*rt.Node, bool) {
 	return nil, false
 }
 
-func e167(p *rt.Parser) (*rt.Node, bool) {
+func e150(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.RecoverAttr(e166, e20, false)
+		return p.RecoverAttr(e149, e20, false)
 	}
 
 	p.StepWork()
-	return p.RecoverAttr(e166, e20, false)
+	return p.RecoverAttr(e149, e20, false)
 }
 
-func e168(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		if _, ok = q24(p); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q30(p); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = p.Call(recRules[17], 0); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q30(p); !ok {
-			goto fail_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit23, "=", 14, false); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = p.Call(recRules[13], 0); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q30(p); !ok {
-			goto fail_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 59 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit17, ";", 13, false); !ok {
-			goto fail_ordinary
-		}
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	p.StepWork()
-	p.StepWork()
-	if _, ok = q24(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if _, ok = q30(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	p.StepWork()
-	if _, ok = p.Call(recRules[17], 0); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if _, ok = q30(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 61) {
-		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit23, "=", 14, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	p.StepWork()
-	if _, ok = p.Call(recRules[13], 0); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if _, ok = q30(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 59) {
-		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit17, ";", 13, false); !ok {
-		goto fail
-	}
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e169(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		var x1, x2 int
-		if _, ok = p.Call(recRules[13], 0); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q30(p); !ok {
-			goto fail_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit23, "=", 14, false); !ok {
-			goto fail_ordinary
-		}
-		x1, x2 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit23, "=", 14, false); !ok {
-			goto L3_ordinary
-		}
-		p.Silent--
-		p.Restore(x1, x2)
-		goto fail_ordinary
-	L3_ordinary:
-		p.Silent--
-		p.Restore(x1, x2)
-		if _, ok = p.Call(recRules[13], 0); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q30(p); !ok {
-			goto fail_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 59 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit17, ";", 13, false); !ok {
-			goto fail_ordinary
-		}
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	var x1, x2 int
-	p.StepWork()
-	p.StepWork()
-	p.StepWork()
-	if _, ok = p.Call(recRules[13], 0); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if _, ok = q30(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 61) {
-		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit23, "=", 14, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 61) {
-		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit23, "=", 14, false); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	p.StepWork()
-	p.StepWork()
-	if _, ok = p.Call(recRules[13], 0); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if _, ok = q30(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 59) {
-		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit17, ";", 13, false); !ok {
-		goto fail
-	}
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e170(p *rt.Parser) (*rt.Node, bool) {
+func e151(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var ok bool
 		var x1 rt.Mark
@@ -8062,480 +6266,7 @@ fail:
 	return nil, false
 }
 
-func e171(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok, x5 bool
-		var x1, x2 int
-		var x4 rune
-		if _, ok = q30(p); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q27(p); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q30(p); !ok {
-			goto fail_ordinary
-		}
-		x1, x2 = p.Pos, len(p.Recovered)
-		x4, _, x5 = p.NextOrdinary()
-		if !(x5 && (x4 == 105)) && p.Depth+2 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 9)
-			goto L6_ordinary
-		}
-		if _, ok = p.Call(recRules[6], 0); !ok {
-			goto L7_ordinary
-		}
-		goto L3_ordinary
-	L7_ordinary:
-		p.Restore(x1, x2)
-	L6_ordinary:
-		if !(x5 && (x4 == 123)) && p.Depth+1 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 5)
-			goto L8_ordinary
-		}
-		if _, ok = p.Call(recRules[2], 0); !ok {
-			goto L9_ordinary
-		}
-		goto L3_ordinary
-	L9_ordinary:
-		p.Restore(x1, x2)
-	L8_ordinary:
-		goto fail_ordinary
-	L3_ordinary:
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok, x5 bool
-	var x1, x2 int
-	var x4 rune
-	p.StepWork()
-	p.StepWork()
-	if _, ok = q30(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if _, ok = q27(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if _, ok = q30(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if p.Pos < len(p.In) {
-		p.InputWork(1)
-		x4, _, x5 = p.In[p.Pos], 1, true
-	} else {
-		x4, _, x5 = p.Peek()
-	}
-	if !(x5 && (x4 == 105)) && p.Depth+2 <= p.MaxDepth {
-		p.Expect(p.Pos, 9)
-		goto L6
-	}
-	p.StepWork()
-	if _, ok = p.Call(recRules[6], 0); !ok {
-		goto L7
-	}
-	goto L3
-L7:
-	p.Restore(x1, x2)
-L6:
-	if !(x5 && (x4 == 123)) && p.Depth+1 <= p.MaxDepth {
-		p.Expect(p.Pos, 5)
-		goto L8
-	}
-	p.StepWork()
-	if _, ok = p.Call(recRules[2], 0); !ok {
-		goto L9
-	}
-	goto L3
-L9:
-	p.Restore(x1, x2)
-L8:
-	goto fail
-L3:
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e172(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		if _, ok = q28(p); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = p.Call(recRules[13], 0); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q30(p); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = p.Call(recRules[2], 0); !ok {
-			goto fail_ordinary
-		}
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	p.StepWork()
-	p.StepWork()
-	if _, ok = q28(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	p.StepWork()
-	if _, ok = p.Call(recRules[13], 0); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if _, ok = q30(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	p.StepWork()
-	if _, ok = p.Call(recRules[2], 0); !ok {
-		goto fail
-	}
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e173(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		var x1, x2 int
-		if _, ok = q29(p); !ok {
-			goto fail_ordinary
-		}
-		x1, x2 = p.Pos, len(p.Recovered)
-		if _, ok = p.Call(recRules[13], 0); !ok {
-			goto L3_ordinary
-		}
-		goto L4_ordinary
-	L3_ordinary:
-		p.Restore(x1, x2)
-	L4_ordinary:
-		p.StepWork()
-		if _, ok = q30(p); !ok {
-			goto fail_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 59 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit17, ";", 13, false); !ok {
-			goto fail_ordinary
-		}
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	var x1, x2 int
-	p.StepWork()
-	p.StepWork()
-	if _, ok = q29(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.StepWork()
-	if _, ok = p.Call(recRules[13], 0); !ok {
-		goto L3
-	}
-	goto L4
-L3:
-	p.Restore(x1, x2)
-L4:
-	p.StepWork()
-	if _, ok = q30(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 59) {
-		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit17, ";", 13, false); !ok {
-		goto fail
-	}
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e174(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		var x1, x2 int
-		if _, ok = q25(p); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q30(p); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = p.Call(recRules[17], 0); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q30(p); !ok {
-			goto fail_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit30, "(", 15, false); !ok {
-			goto fail_ordinary
-		}
-		x1, x2 = p.Pos, len(p.Recovered)
-		if _, ok = q11(p); !ok {
-			goto L3_ordinary
-		}
-		goto L4_ordinary
-	L3_ordinary:
-		p.Restore(x1, x2)
-	L4_ordinary:
-		p.StepWork()
-		if _, ok = q30(p); !ok {
-			goto fail_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit31, ")", 16, false); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q30(p); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = p.Call(recRules[2], 0); !ok {
-			goto fail_ordinary
-		}
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	var x1, x2 int
-	p.StepWork()
-	p.StepWork()
-	if _, ok = q25(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if _, ok = q30(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	p.StepWork()
-	if _, ok = p.Call(recRules[17], 0); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if _, ok = q30(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
-		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit30, "(", 15, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.StepWork()
-	if _, ok = q11(p); !ok {
-		goto L3
-	}
-	goto L4
-L3:
-	p.Restore(x1, x2)
-L4:
-	p.StepWork()
-	if _, ok = q30(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 41) {
-		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit31, ")", 16, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if _, ok = q30(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	p.StepWork()
-	if _, ok = p.Call(recRules[2], 0); !ok {
-		goto fail
-	}
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e175(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		var x2, x3 int
-		if _, ok = p.Call(recRules[17], 0); !ok {
-			goto fail_ordinary
-		}
-		for {
-			x2, x3 = p.Pos, len(p.Recovered)
-			if _, ok = q30(p); !ok {
-				goto L4_ordinary
-			}
-			if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
-				p.Pos++
-			} else if _, ok = p.MatchLiteralOrdinary(lit34, ",", 17, false); !ok {
-				goto L4_ordinary
-			}
-			if _, ok = q30(p); !ok {
-				goto L4_ordinary
-			}
-			if _, ok = p.Call(recRules[17], 0); !ok {
-				goto L4_ordinary
-			}
-			if p.Pos == x2 {
-				break
-			}
-			continue
-		L4_ordinary:
-			p.Restore(x2, x3)
-			break
-		}
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	var x2, x3 int
-	p.StepWork()
-	p.StepWork()
-	p.StepWork()
-	if _, ok = p.Call(recRules[17], 0); !ok {
-		goto fail
-	}
-	p.StepWork()
-	p.StepWork()
-	for {
-		x2, x3 = p.Pos, len(p.Recovered)
-		p.StepWork()
-		p.StepWork()
-		p.StepWork()
-		if _, ok = q30(p); !ok {
-			goto L4
-		}
-		p.StepWork()
-		p.StepWork()
-		if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 44) {
-			p.Pos++
-		} else if _, ok = p.MatchLiteral(lit34, ",", 17, false); !ok {
-			goto L4
-		}
-		p.StepWork()
-		p.StepWork()
-		if _, ok = q30(p); !ok {
-			goto L4
-		}
-		p.StepWork()
-		p.StepWork()
-		if _, ok = p.Call(recRules[17], 0); !ok {
-			goto L4
-		}
-		if p.Pos == x2 {
-			break
-		}
-		continue
-	L4:
-		p.Restore(x2, x3)
-		break
-	}
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e176(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		if _, ok = p.Call(recRules[13], 0); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q30(p); !ok {
-			goto fail_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 59 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit17, ";", 13, false); !ok {
-			goto fail_ordinary
-		}
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	p.StepWork()
-	p.StepWork()
-	p.StepWork()
-	if _, ok = p.Call(recRules[13], 0); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if _, ok = q30(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 59) {
-		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit17, ";", 13, false); !ok {
-		goto fail
-	}
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e177(p *rt.Parser) (*rt.Node, bool) {
+func e152(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var x1 rt.ExpMark
 		var x2 int
@@ -8583,7 +6314,7 @@ fail:
 	return nil, false
 }
 
-func e179(p *rt.Parser) (*rt.Node, bool) {
+func e154(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var ok bool
 		var x1, x2 *rt.CaptureFrame
@@ -8594,7 +6325,7 @@ func e179(p *rt.Parser) (*rt.Node, bool) {
 		for {
 			x4 = p.Mark()
 			x2 = p.Frame
-			x1 = p.NewFrame(len(scope178))
+			x1 = p.NewFrame(len(scope153))
 			p.Frame = x1
 			if _, ok = q30(p); !ok {
 				goto L5_ordinary
@@ -8637,7 +6368,7 @@ func e179(p *rt.Parser) (*rt.Node, bool) {
 	for {
 		x4 = p.Mark()
 		x2 = p.Frame
-		x1 = p.NewFrame(len(scope178))
+		x1 = p.NewFrame(len(scope153))
 		p.Frame = x1
 		p.StepWork()
 		p.StepWork()
@@ -8672,7 +6403,7 @@ fail:
 	return nil, false
 }
 
-func e180(p *rt.Parser) (*rt.Node, bool) {
+func e155(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var x1, x4 rt.Mark
 		var ok bool
@@ -8765,7 +6496,7 @@ fail:
 	return nil, false
 }
 
-func e181(p *rt.Parser) (*rt.Node, bool) {
+func e156(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var x1 rt.ExpMark
 		var x2 int
@@ -8813,1025 +6544,13 @@ fail:
 	return nil, false
 }
 
-func e182(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var x1, x2, x22, x23 int
-		var x4 rune
-		var x5, ok bool
-		x1, x2 = p.Pos, len(p.Recovered)
-		x4, _, x5 = p.NextOrdinary()
-		if !(x5 && (x4 == 108)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 7)
-			goto L6_ordinary
-		}
-		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116 {
-			p.Pos += 3
-		} else if _, ok = p.MatchLiteralOrdinary(lit42, "let", 7, false); !ok {
-			goto L7_ordinary
-		}
-		goto L3_ordinary
-	L7_ordinary:
-		p.Restore(x1, x2)
-	L6_ordinary:
-		if !(x5 && (x4 == 102)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 8)
-			goto L8_ordinary
-		}
-		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110 {
-			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit43, "fn", 8, false); !ok {
-			goto L9_ordinary
-		}
-		goto L3_ordinary
-	L9_ordinary:
-		p.Restore(x1, x2)
-	L8_ordinary:
-		if !(x5 && (x4 == 105)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 9)
-			goto L10_ordinary
-		}
-		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
-			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit44, "if", 9, false); !ok {
-			goto L11_ordinary
-		}
-		goto L3_ordinary
-	L11_ordinary:
-		p.Restore(x1, x2)
-	L10_ordinary:
-		if !(x5 && (x4 == 101)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 21)
-			goto L12_ordinary
-		}
-		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
-			p.Pos += 4
-		} else if _, ok = p.MatchLiteralOrdinary(lit45, "else", 21, false); !ok {
-			goto L13_ordinary
-		}
-		goto L3_ordinary
-	L13_ordinary:
-		p.Restore(x1, x2)
-	L12_ordinary:
-		if !(x5 && (x4 == 119)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 10)
-			goto L14_ordinary
-		}
-		if _, ok = p.MatchLiteralOrdinary(lit46, "while", 10, false); !ok {
-			goto L15_ordinary
-		}
-		goto L3_ordinary
-	L15_ordinary:
-		p.Restore(x1, x2)
-	L14_ordinary:
-		if !(x5 && (x4 == 114)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 11)
-			goto L16_ordinary
-		}
-		if _, ok = p.MatchLiteralOrdinary(lit47, "return", 11, false); !ok {
-			goto L17_ordinary
-		}
-		goto L3_ordinary
-	L17_ordinary:
-		p.Restore(x1, x2)
-	L16_ordinary:
-		if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 22)
-			goto L18_ordinary
-		}
-		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
-			p.Pos += 4
-		} else if _, ok = p.MatchLiteralOrdinary(lit48, "true", 22, false); !ok {
-			goto L19_ordinary
-		}
-		goto L3_ordinary
-	L19_ordinary:
-		p.Restore(x1, x2)
-	L18_ordinary:
-		if !(x5 && (x4 == 102)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 23)
-			goto L20_ordinary
-		}
-		if _, ok = p.MatchLiteralOrdinary(lit49, "false", 23, false); !ok {
-			goto L21_ordinary
-		}
-		goto L3_ordinary
-	L21_ordinary:
-		p.Restore(x1, x2)
-	L20_ordinary:
-		goto fail_ordinary
-	L3_ordinary:
-		p.StepWork()
-		x22, x23 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if _, ok = q19(p); !ok {
-			goto L24_ordinary
-		}
-		p.Silent--
-		p.Restore(x22, x23)
-		goto fail_ordinary
-	L24_ordinary:
-		p.Silent--
-		p.Restore(x22, x23)
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var x1, x2, x22, x23 int
-	var x4 rune
-	var x5, ok bool
-	p.StepWork()
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if p.Pos < len(p.In) {
-		p.InputWork(1)
-		x4, _, x5 = p.In[p.Pos], 1, true
-	} else {
-		x4, _, x5 = p.Peek()
-	}
-	if !(x5 && (x4 == 108)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 7)
-		goto L6
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116) {
-		p.Pos += 3
-	} else if _, ok = p.MatchLiteral(lit42, "let", 7, false); !ok {
-		goto L7
-	}
-	goto L3
-L7:
-	p.Restore(x1, x2)
-L6:
-	if !(x5 && (x4 == 102)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 8)
-		goto L8
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110) {
-		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit43, "fn", 8, false); !ok {
-		goto L9
-	}
-	goto L3
-L9:
-	p.Restore(x1, x2)
-L8:
-	if !(x5 && (x4 == 105)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 9)
-		goto L10
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102) {
-		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit44, "if", 9, false); !ok {
-		goto L11
-	}
-	goto L3
-L11:
-	p.Restore(x1, x2)
-L10:
-	if !(x5 && (x4 == 101)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 21)
-		goto L12
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101) {
-		p.Pos += 4
-	} else if _, ok = p.MatchLiteral(lit45, "else", 21, false); !ok {
-		goto L13
-	}
-	goto L3
-L13:
-	p.Restore(x1, x2)
-L12:
-	if !(x5 && (x4 == 119)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 10)
-		goto L14
-	}
-	p.StepWork()
-	if _, ok = p.MatchLiteral(lit46, "while", 10, false); !ok {
-		goto L15
-	}
-	goto L3
-L15:
-	p.Restore(x1, x2)
-L14:
-	if !(x5 && (x4 == 114)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 11)
-		goto L16
-	}
-	p.StepWork()
-	if _, ok = p.MatchLiteral(lit47, "return", 11, false); !ok {
-		goto L17
-	}
-	goto L3
-L17:
-	p.Restore(x1, x2)
-L16:
-	if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 22)
-		goto L18
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101) {
-		p.Pos += 4
-	} else if _, ok = p.MatchLiteral(lit48, "true", 22, false); !ok {
-		goto L19
-	}
-	goto L3
-L19:
-	p.Restore(x1, x2)
-L18:
-	if !(x5 && (x4 == 102)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 23)
-		goto L20
-	}
-	p.StepWork()
-	if _, ok = p.MatchLiteral(lit49, "false", 23, false); !ok {
-		goto L21
-	}
-	goto L3
-L21:
-	p.Restore(x1, x2)
-L20:
-	goto fail
-L3:
-	p.StepWork()
-	x22, x23 = p.Pos, len(p.Recovered)
-	p.Silent++
-	p.StepWork()
-	if _, ok = q19(p); !ok {
-		goto L24
-	}
-	p.Silent--
-	p.Restore(x22, x23)
-	goto fail
-L24:
-	p.Silent--
-	p.Restore(x22, x23)
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e183(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ch rune
-		var size, x1, x2, x3, x6 int
-		var ok bool
-		x1 = 0
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || !(ch >= 48 && ch <= 57) {
-				p.ExpectOrdinary(p.Pos, 25)
-				break
-			}
-			p.Pos += size
-			x1++
-		}
-		if x1 < 1 {
-			goto fail_ordinary
-		}
-		x2, x3 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit52, ".", 26, false); !ok {
-			goto L4_ordinary
-		}
-		x6 = 0
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || !(ch >= 48 && ch <= 57) {
-				p.ExpectOrdinary(p.Pos, 25)
-				break
-			}
-			p.Pos += size
-			x6++
-		}
-		if x6 < 1 {
-			goto L4_ordinary
-		}
-		goto L5_ordinary
-	L4_ordinary:
-		p.Restore(x2, x3)
-	L5_ordinary:
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ch rune
-	var size, x1, x2, x3, x6 int
-	var ok bool
-	p.StepWork()
-	p.StepWork()
-	p.StepWork()
-	x1 = 0
-	for {
-		if p.Pos < len(p.In) {
-			p.InputWork(1)
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.Peek()
-		}
-		if !ok || !(ch >= 48 && ch <= 57) {
-			p.Expect(p.Pos, 25)
-			break
-		}
-		p.Pos += size
-		x1++
-	}
-	if x1 < 1 {
-		goto fail
-	}
-	p.StepWork()
-	x2, x3 = p.Pos, len(p.Recovered)
-	p.StepWork()
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
-		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit52, ".", 26, false); !ok {
-		goto L4
-	}
-	p.StepWork()
-	x6 = 0
-	for {
-		if p.Pos < len(p.In) {
-			p.InputWork(1)
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.Peek()
-		}
-		if !ok || !(ch >= 48 && ch <= 57) {
-			p.Expect(p.Pos, 25)
-			break
-		}
-		p.Pos += size
-		x6++
-	}
-	if x6 < 1 {
-		goto L4
-	}
-	goto L5
-L4:
-	p.Restore(x2, x3)
-L5:
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e184(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit54, "\"", 27, false); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q22(p); !ok {
-			goto fail_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit54, "\"", 27, false); !ok {
-			goto fail_ordinary
-		}
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	p.StepWork()
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 34) {
-		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit54, "\"", 27, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	p.StepWork()
-	if _, ok = q22(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 34) {
-		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit54, "\"", 27, false); !ok {
-		goto fail
-	}
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e185(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var x2, x3, x5, x6, size int
-		var x8, ch rune
-		var x9, ok bool
-		for {
-			x2, x3 = p.Pos, len(p.Recovered)
-			x5, x6 = p.Pos, len(p.Recovered)
-			x8, _, x9 = p.NextOrdinary()
-			if !(x9 && (!(x8 == 34 || x8 == 92 || x8 == 10))) && p.Depth <= p.MaxDepth {
-				p.ExpectOrdinary(p.Pos, 28)
-				goto L10_ordinary
-			}
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 34 || ch == 92 || ch == 10) {
-				p.ExpectOrdinary(p.Pos, 28)
-				goto L11_ordinary
-			}
-			p.Pos += size
-			goto L7_ordinary
-		L11_ordinary:
-			p.Restore(x5, x6)
-		L10_ordinary:
-			if !(x9 && (x8 == 92)) && p.Depth <= p.MaxDepth {
-				p.ExpectOrdinary(p.Pos, 29)
-				goto L12_ordinary
-			}
-			if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
-				p.Pos++
-			} else if _, ok = p.MatchLiteralOrdinary(lit56, "\\", 29, false); !ok {
-				goto L13_ordinary
-			}
-			_, size, ok = p.NextOrdinary()
-			if !ok {
-				p.ExpectOrdinary(p.Pos, rt.IdAny)
-				goto L13_ordinary
-			}
-			p.Pos += size
-			goto L7_ordinary
-		L13_ordinary:
-			p.Restore(x5, x6)
-		L12_ordinary:
-			goto L4_ordinary
-		L7_ordinary:
-			if p.Pos == x2 {
-				break
-			}
-			continue
-		L4_ordinary:
-			p.Restore(x2, x3)
-			break
-		}
-		v = nil
-		return v, true
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var x2, x3, x5, x6, size int
-	var x8, ch rune
-	var x9, ok bool
-	p.StepWork()
-	p.StepWork()
-	for {
-		x2, x3 = p.Pos, len(p.Recovered)
-		p.StepWork()
-		x5, x6 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			p.InputWork(1)
-			x8, _, x9 = p.In[p.Pos], 1, true
-		} else {
-			x8, _, x9 = p.Peek()
-		}
-		if !(x9 && (!(x8 == 34 || x8 == 92 || x8 == 10))) && p.Depth <= p.MaxDepth {
-			p.Expect(p.Pos, 28)
-			goto L10
-		}
-		p.StepWork()
-		if p.Pos < len(p.In) {
-			p.InputWork(1)
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.Peek()
-		}
-		if !ok || (ch == 34 || ch == 92 || ch == 10) {
-			p.Expect(p.Pos, 28)
-			goto L11
-		}
-		p.Pos += size
-		goto L7
-	L11:
-		p.Restore(x5, x6)
-	L10:
-		if !(x9 && (x8 == 92)) && p.Depth <= p.MaxDepth {
-			p.Expect(p.Pos, 29)
-			goto L12
-		}
-		p.StepWork()
-		p.StepWork()
-		if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 92) {
-			p.Pos++
-		} else if _, ok = p.MatchLiteral(lit56, "\\", 29, false); !ok {
-			goto L13
-		}
-		p.StepWork()
-		if p.Pos < len(p.In) {
-			p.InputWork(1)
-			_, size, ok = p.In[p.Pos], 1, true
-		} else {
-			_, size, ok = p.Peek()
-		}
-		if !ok {
-			p.Expect(p.Pos, rt.IdAny)
-			goto L13
-		}
-		p.Pos += size
-		goto L7
-	L13:
-		p.Restore(x5, x6)
-	L12:
-		goto L4
-	L7:
-		if p.Pos == x2 {
-			break
-		}
-		continue
-	L4:
-		p.Restore(x2, x3)
-		break
-	}
-	v = nil
-	return v, true
-}
-
-func e186(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var x1, x2, x10, x11 int
-		var x4 rune
-		var x5, ok bool
-		x1, x2 = p.Pos, len(p.Recovered)
-		x4, _, x5 = p.NextOrdinary()
-		if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 22)
-			goto L6_ordinary
-		}
-		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
-			p.Pos += 4
-		} else if _, ok = p.MatchLiteralOrdinary(lit48, "true", 22, false); !ok {
-			goto L7_ordinary
-		}
-		goto L3_ordinary
-	L7_ordinary:
-		p.Restore(x1, x2)
-	L6_ordinary:
-		if !(x5 && (x4 == 102)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 23)
-			goto L8_ordinary
-		}
-		if _, ok = p.MatchLiteralOrdinary(lit49, "false", 23, false); !ok {
-			goto L9_ordinary
-		}
-		goto L3_ordinary
-	L9_ordinary:
-		p.Restore(x1, x2)
-	L8_ordinary:
-		goto fail_ordinary
-	L3_ordinary:
-		p.StepWork()
-		x10, x11 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if _, ok = q19(p); !ok {
-			goto L12_ordinary
-		}
-		p.Silent--
-		p.Restore(x10, x11)
-		goto fail_ordinary
-	L12_ordinary:
-		p.Silent--
-		p.Restore(x10, x11)
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var x1, x2, x10, x11 int
-	var x4 rune
-	var x5, ok bool
-	p.StepWork()
-	p.StepWork()
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if p.Pos < len(p.In) {
-		p.InputWork(1)
-		x4, _, x5 = p.In[p.Pos], 1, true
-	} else {
-		x4, _, x5 = p.Peek()
-	}
-	if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 22)
-		goto L6
-	}
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101) {
-		p.Pos += 4
-	} else if _, ok = p.MatchLiteral(lit48, "true", 22, false); !ok {
-		goto L7
-	}
-	goto L3
-L7:
-	p.Restore(x1, x2)
-L6:
-	if !(x5 && (x4 == 102)) && p.Depth <= p.MaxDepth {
-		p.Expect(p.Pos, 23)
-		goto L8
-	}
-	p.StepWork()
-	if _, ok = p.MatchLiteral(lit49, "false", 23, false); !ok {
-		goto L9
-	}
-	goto L3
-L9:
-	p.Restore(x1, x2)
-L8:
-	goto fail
-L3:
-	p.StepWork()
-	x10, x11 = p.Pos, len(p.Recovered)
-	p.Silent++
-	p.StepWork()
-	if _, ok = q19(p); !ok {
-		goto L12
-	}
-	p.Silent--
-	p.Restore(x10, x11)
-	goto fail
-L12:
-	p.Silent--
-	p.Restore(x10, x11)
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e187(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		var x1, x2 int
-		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116 {
-			p.Pos += 3
-		} else if _, ok = p.MatchLiteralOrdinary(lit42, "let", 7, false); !ok {
-			goto fail_ordinary
-		}
-		x1, x2 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if _, ok = q19(p); !ok {
-			goto L3_ordinary
-		}
-		p.Silent--
-		p.Restore(x1, x2)
-		goto fail_ordinary
-	L3_ordinary:
-		p.Silent--
-		p.Restore(x1, x2)
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	var x1, x2 int
-	p.StepWork()
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116) {
-		p.Pos += 3
-	} else if _, ok = p.MatchLiteral(lit42, "let", 7, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	p.StepWork()
-	if _, ok = q19(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e188(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		var x1, x2 int
-		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110 {
-			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit43, "fn", 8, false); !ok {
-			goto fail_ordinary
-		}
-		x1, x2 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if _, ok = q19(p); !ok {
-			goto L3_ordinary
-		}
-		p.Silent--
-		p.Restore(x1, x2)
-		goto fail_ordinary
-	L3_ordinary:
-		p.Silent--
-		p.Restore(x1, x2)
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	var x1, x2 int
-	p.StepWork()
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110) {
-		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit43, "fn", 8, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	p.StepWork()
-	if _, ok = q19(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e189(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		var x1, x2 int
-		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
-			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit44, "if", 9, false); !ok {
-			goto fail_ordinary
-		}
-		x1, x2 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if _, ok = q19(p); !ok {
-			goto L3_ordinary
-		}
-		p.Silent--
-		p.Restore(x1, x2)
-		goto fail_ordinary
-	L3_ordinary:
-		p.Silent--
-		p.Restore(x1, x2)
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	var x1, x2 int
-	p.StepWork()
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102) {
-		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit44, "if", 9, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	p.StepWork()
-	if _, ok = q19(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e190(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		var x1, x2 int
-		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
-			p.Pos += 4
-		} else if _, ok = p.MatchLiteralOrdinary(lit45, "else", 21, false); !ok {
-			goto fail_ordinary
-		}
-		x1, x2 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if _, ok = q19(p); !ok {
-			goto L3_ordinary
-		}
-		p.Silent--
-		p.Restore(x1, x2)
-		goto fail_ordinary
-	L3_ordinary:
-		p.Silent--
-		p.Restore(x1, x2)
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	var x1, x2 int
-	p.StepWork()
-	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101) {
-		p.Pos += 4
-	} else if _, ok = p.MatchLiteral(lit45, "else", 21, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	p.StepWork()
-	if _, ok = q19(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e191(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		var x1, x2 int
-		if _, ok = p.MatchLiteralOrdinary(lit46, "while", 10, false); !ok {
-			goto fail_ordinary
-		}
-		x1, x2 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if _, ok = q19(p); !ok {
-			goto L3_ordinary
-		}
-		p.Silent--
-		p.Restore(x1, x2)
-		goto fail_ordinary
-	L3_ordinary:
-		p.Silent--
-		p.Restore(x1, x2)
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	var x1, x2 int
-	p.StepWork()
-	p.StepWork()
-	if _, ok = p.MatchLiteral(lit46, "while", 10, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	p.StepWork()
-	if _, ok = q19(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
-func e192(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		var x1, x2 int
-		if _, ok = p.MatchLiteralOrdinary(lit47, "return", 11, false); !ok {
-			goto fail_ordinary
-		}
-		x1, x2 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if _, ok = q19(p); !ok {
-			goto L3_ordinary
-		}
-		p.Silent--
-		p.Restore(x1, x2)
-		goto fail_ordinary
-	L3_ordinary:
-		p.Silent--
-		p.Restore(x1, x2)
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
-	p.StepWork()
-	var v *rt.Node
-	var ok bool
-	var x1, x2 int
-	p.StepWork()
-	p.StepWork()
-	if _, ok = p.MatchLiteral(lit47, "return", 11, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	p.StepWork()
-	if _, ok = q19(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	return v, true
-fail:
-	return nil, false
-}
-
 func q3(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
 		prevEnv, prevCut := p.Env, p.Cut
 		p.Cut = false
 		p.Enter()
-		v, ok := e167(p)
+		v, ok := e150(p)
 		p.Depth--
 		p.Cut = prevCut
 		p.Trail = p.Trail[:trail]
@@ -9849,7 +6568,7 @@ func q3(p *rt.Parser) (*rt.Node, bool) {
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
 	p.Enter()
-	v, ok := e167(p)
+	v, ok := e150(p)
 	p.Depth--
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]
@@ -10609,7 +7328,7 @@ fail:
 	return nil, false
 }
 
-func e193(p *rt.Parser) (*rt.Node, bool) {
+func e157(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return q30(p)
 	}
@@ -10618,7 +7337,7 @@ func e193(p *rt.Parser) (*rt.Node, bool) {
 	return q30(p)
 }
 
-func e194(p *rt.Parser) (*rt.Node, bool) {
+func e158(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return q20(p)
 	}
@@ -10627,7 +7346,7 @@ func e194(p *rt.Parser) (*rt.Node, bool) {
 	return q20(p)
 }
 
-func e195(p *rt.Parser) (*rt.Node, bool) {
+func e159(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return q21(p)
 	}
@@ -10636,7 +7355,7 @@ func e195(p *rt.Parser) (*rt.Node, bool) {
 	return q21(p)
 }
 
-func e196(p *rt.Parser) (*rt.Node, bool) {
+func e160(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return q23(p)
 	}
@@ -10645,7 +7364,7 @@ func e196(p *rt.Parser) (*rt.Node, bool) {
 	return q23(p)
 }
 
-func e197(p *rt.Parser) (*rt.Node, bool) {
+func e161(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return p.Call(recRules[16], 0)
 	}
@@ -10654,7 +7373,7 @@ func e197(p *rt.Parser) (*rt.Node, bool) {
 	return p.Call(recRules[16], 0)
 }
 
-func e198(p *rt.Parser) (*rt.Node, bool) {
+func e162(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return p.Call(recRules[14], 0)
 	}
@@ -10663,40 +7382,40 @@ func e198(p *rt.Parser) (*rt.Node, bool) {
 	return p.Call(recRules[14], 0)
 }
 
-func e199(p *rt.Parser) (*rt.Node, bool) {
+func e163(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		if _, ok := e91(p); !ok {
+		if _, ok := e74(p); !ok {
 			return nil, false
 		}
-		if _, ok := e198(p); !ok {
+		if _, ok := e162(p); !ok {
 			return nil, false
 		}
-		if _, ok := e193(p); !ok {
+		if _, ok := e157(p); !ok {
 			return nil, false
 		}
-		if _, ok := e94(p); !ok {
+		if _, ok := e77(p); !ok {
 			return nil, false
 		}
 		return nil, true
 	}
 
 	p.StepWork()
-	if _, ok := e91(p); !ok {
+	if _, ok := e74(p); !ok {
 		return nil, false
 	}
-	if _, ok := e198(p); !ok {
+	if _, ok := e162(p); !ok {
 		return nil, false
 	}
-	if _, ok := e193(p); !ok {
+	if _, ok := e157(p); !ok {
 		return nil, false
 	}
-	if _, ok := e94(p); !ok {
+	if _, ok := e77(p); !ok {
 		return nil, false
 	}
 	return nil, true
 }
 
-func e200(p *rt.Parser) (*rt.Node, bool) {
+func e164(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return p.Call(recRules[15], 0)
 	}
@@ -10705,12 +7424,12 @@ func e200(p *rt.Parser) (*rt.Node, bool) {
 	return p.Call(recRules[15], 0)
 }
 
-func e201(p *rt.Parser) (*rt.Node, bool) {
+func e165(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		m0 := p.Mark()
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e200(p)
+		v, ok := e164(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -10727,7 +7446,7 @@ func e201(p *rt.Parser) (*rt.Node, bool) {
 	m0 := p.Mark()
 	prevCut := p.Cut
 	p.Cut = false
-	v, ok := e200(p)
+	v, ok := e164(p)
 	cut := p.Cut
 	p.Cut = prevCut
 	if ok {
@@ -10740,163 +7459,163 @@ func e201(p *rt.Parser) (*rt.Node, bool) {
 	return nil, true
 }
 
-func e202(p *rt.Parser) (*rt.Node, bool) {
+func e166(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		if _, ok := e97(p); !ok {
+		if _, ok := e80(p); !ok {
 			return nil, false
 		}
-		if _, ok := e201(p); !ok {
+		if _, ok := e165(p); !ok {
 			return nil, false
 		}
-		if _, ok := e193(p); !ok {
+		if _, ok := e157(p); !ok {
 			return nil, false
 		}
-		if _, ok := e102(p); !ok {
-			return nil, false
-		}
-		return nil, true
-	}
-
-	p.StepWork()
-	if _, ok := e97(p); !ok {
-		return nil, false
-	}
-	if _, ok := e201(p); !ok {
-		return nil, false
-	}
-	if _, ok := e193(p); !ok {
-		return nil, false
-	}
-	if _, ok := e102(p); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-func e203(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit104, "?", 35, false)
-	}
-
-	p.StepWork()
-	return p.MatchLiteral(lit104, "?", 35, false)
-}
-
-func e204(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit108, ":", 36, false)
-	}
-
-	p.StepWork()
-	return p.MatchLiteral(lit108, ":", 36, false)
-}
-
-func e205(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		if _, ok := e203(p); !ok {
-			return nil, false
-		}
-		if _, ok := e198(p); !ok {
-			return nil, false
-		}
-		if _, ok := e193(p); !ok {
-			return nil, false
-		}
-		if _, ok := e204(p); !ok {
+		if _, ok := e85(p); !ok {
 			return nil, false
 		}
 		return nil, true
 	}
 
 	p.StepWork()
-	if _, ok := e203(p); !ok {
+	if _, ok := e80(p); !ok {
 		return nil, false
 	}
-	if _, ok := e198(p); !ok {
+	if _, ok := e165(p); !ok {
 		return nil, false
 	}
-	if _, ok := e193(p); !ok {
+	if _, ok := e157(p); !ok {
 		return nil, false
 	}
-	if _, ok := e204(p); !ok {
+	if _, ok := e85(p); !ok {
 		return nil, false
 	}
 	return nil, true
 }
 
-func e206(p *rt.Parser) (*rt.Node, bool) {
+func e167(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit111, "||", 37, false)
+		return p.MatchLiteralOrdinary(lit87, "?", 35, false)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit111, "||", 37, false)
+	return p.MatchLiteral(lit87, "?", 35, false)
 }
 
-func e207(p *rt.Parser) (*rt.Node, bool) {
+func e168(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit113, "&&", 38, false)
+		return p.MatchLiteralOrdinary(lit91, ":", 36, false)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit113, "&&", 38, false)
+	return p.MatchLiteral(lit91, ":", 36, false)
 }
 
-func e208(p *rt.Parser) (*rt.Node, bool) {
+func e169(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit115, "==", 39, false)
+		if _, ok := e167(p); !ok {
+			return nil, false
+		}
+		if _, ok := e162(p); !ok {
+			return nil, false
+		}
+		if _, ok := e157(p); !ok {
+			return nil, false
+		}
+		if _, ok := e168(p); !ok {
+			return nil, false
+		}
+		return nil, true
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit115, "==", 39, false)
+	if _, ok := e167(p); !ok {
+		return nil, false
+	}
+	if _, ok := e162(p); !ok {
+		return nil, false
+	}
+	if _, ok := e157(p); !ok {
+		return nil, false
+	}
+	if _, ok := e168(p); !ok {
+		return nil, false
+	}
+	return nil, true
 }
 
-func e209(p *rt.Parser) (*rt.Node, bool) {
+func e170(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit117, "!=", 40, false)
+		return p.MatchLiteralOrdinary(lit94, "||", 37, false)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit117, "!=", 40, false)
+	return p.MatchLiteral(lit94, "||", 37, false)
 }
 
-func e210(p *rt.Parser) (*rt.Node, bool) {
+func e171(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit119, "<=", 41, false)
+		return p.MatchLiteralOrdinary(lit96, "&&", 38, false)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit119, "<=", 41, false)
+	return p.MatchLiteral(lit96, "&&", 38, false)
 }
 
-func e211(p *rt.Parser) (*rt.Node, bool) {
+func e172(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit121, ">=", 42, false)
+		return p.MatchLiteralOrdinary(lit98, "==", 39, false)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit121, ">=", 42, false)
+	return p.MatchLiteral(lit98, "==", 39, false)
 }
 
-func e212(p *rt.Parser) (*rt.Node, bool) {
+func e173(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit123, "<", 43, false)
+		return p.MatchLiteralOrdinary(lit100, "!=", 40, false)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit123, "<", 43, false)
+	return p.MatchLiteral(lit100, "!=", 40, false)
 }
 
-func e213(p *rt.Parser) (*rt.Node, bool) {
+func e174(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit125, ">", 44, false)
+		return p.MatchLiteralOrdinary(lit102, "<=", 41, false)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit125, ">", 44, false)
+	return p.MatchLiteral(lit102, "<=", 41, false)
 }
 
-func e214(p *rt.Parser) (*rt.Node, bool) {
+func e175(p *rt.Parser) (*rt.Node, bool) {
+	if p.Control == nil {
+		return p.MatchLiteralOrdinary(lit104, ">=", 42, false)
+	}
+
+	p.StepWork()
+	return p.MatchLiteral(lit104, ">=", 42, false)
+}
+
+func e176(p *rt.Parser) (*rt.Node, bool) {
+	if p.Control == nil {
+		return p.MatchLiteralOrdinary(lit106, "<", 43, false)
+	}
+
+	p.StepWork()
+	return p.MatchLiteral(lit106, "<", 43, false)
+}
+
+func e177(p *rt.Parser) (*rt.Node, bool) {
+	if p.Control == nil {
+		return p.MatchLiteralOrdinary(lit108, ">", 44, false)
+	}
+
+	p.StepWork()
+	return p.MatchLiteral(lit108, ">", 44, false)
+}
+
+func e178(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		m0 := p.Mark()
 		ch, _, more := p.PeekOrdinary()
@@ -10905,7 +7624,7 @@ func e214(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e208(p)
+			v, ok := e172(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -10921,7 +7640,7 @@ func e214(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e209(p)
+			v, ok := e173(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -10937,7 +7656,7 @@ func e214(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e210(p)
+			v, ok := e174(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -10953,7 +7672,7 @@ func e214(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e211(p)
+			v, ok := e175(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -10969,7 +7688,7 @@ func e214(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e212(p)
+			v, ok := e176(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -10985,7 +7704,7 @@ func e214(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e213(p)
+			v, ok := e177(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -11008,7 +7727,7 @@ func e214(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e208(p)
+		v, ok := e172(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -11025,7 +7744,7 @@ func e214(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e209(p)
+		v, ok := e173(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -11042,7 +7761,7 @@ func e214(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e210(p)
+		v, ok := e174(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -11059,7 +7778,7 @@ func e214(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e211(p)
+		v, ok := e175(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -11076,7 +7795,7 @@ func e214(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e212(p)
+		v, ok := e176(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -11093,7 +7812,7 @@ func e214(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e213(p)
+		v, ok := e177(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -11107,25 +7826,25 @@ func e214(p *rt.Parser) (*rt.Node, bool) {
 	return nil, false
 }
 
-func e215(p *rt.Parser) (*rt.Node, bool) {
+func e179(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit128, "+", 45, false)
+		return p.MatchLiteralOrdinary(lit111, "+", 45, false)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit128, "+", 45, false)
+	return p.MatchLiteral(lit111, "+", 45, false)
 }
 
-func e216(p *rt.Parser) (*rt.Node, bool) {
+func e180(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit130, "-", 46, false)
+		return p.MatchLiteralOrdinary(lit113, "-", 46, false)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit130, "-", 46, false)
+	return p.MatchLiteral(lit113, "-", 46, false)
 }
 
-func e217(p *rt.Parser) (*rt.Node, bool) {
+func e181(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		m0 := p.Mark()
 		ch, _, more := p.PeekOrdinary()
@@ -11134,7 +7853,7 @@ func e217(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e215(p)
+			v, ok := e179(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -11150,7 +7869,7 @@ func e217(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e216(p)
+			v, ok := e180(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -11173,7 +7892,7 @@ func e217(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e215(p)
+		v, ok := e179(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -11190,7 +7909,7 @@ func e217(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e216(p)
+		v, ok := e180(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -11204,34 +7923,34 @@ func e217(p *rt.Parser) (*rt.Node, bool) {
 	return nil, false
 }
 
-func e218(p *rt.Parser) (*rt.Node, bool) {
+func e182(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit133, "*", 47, false)
+		return p.MatchLiteralOrdinary(lit116, "*", 47, false)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit133, "*", 47, false)
+	return p.MatchLiteral(lit116, "*", 47, false)
 }
 
-func e219(p *rt.Parser) (*rt.Node, bool) {
+func e183(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit135, "/", 48, false)
+		return p.MatchLiteralOrdinary(lit118, "/", 48, false)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit135, "/", 48, false)
+	return p.MatchLiteral(lit118, "/", 48, false)
 }
 
-func e220(p *rt.Parser) (*rt.Node, bool) {
+func e184(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit137, "%", 49, false)
+		return p.MatchLiteralOrdinary(lit120, "%", 49, false)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit137, "%", 49, false)
+	return p.MatchLiteral(lit120, "%", 49, false)
 }
 
-func e221(p *rt.Parser) (*rt.Node, bool) {
+func e185(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		m0 := p.Mark()
 		ch, _, more := p.PeekOrdinary()
@@ -11240,7 +7959,7 @@ func e221(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e218(p)
+			v, ok := e182(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -11256,7 +7975,7 @@ func e221(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e219(p)
+			v, ok := e183(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -11272,7 +7991,7 @@ func e221(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e220(p)
+			v, ok := e184(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -11295,7 +8014,7 @@ func e221(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e218(p)
+		v, ok := e182(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -11312,7 +8031,7 @@ func e221(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e219(p)
+		v, ok := e183(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -11329,7 +8048,7 @@ func e221(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e220(p)
+		v, ok := e184(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -11343,16 +8062,16 @@ func e221(p *rt.Parser) (*rt.Node, bool) {
 	return nil, false
 }
 
-func e222(p *rt.Parser) (*rt.Node, bool) {
+func e186(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit140, "!", 50, false)
+		return p.MatchLiteralOrdinary(lit123, "!", 50, false)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit140, "!", 50, false)
+	return p.MatchLiteral(lit123, "!", 50, false)
 }
 
-func e223(p *rt.Parser) (*rt.Node, bool) {
+func e187(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		m0 := p.Mark()
 		ch, _, more := p.PeekOrdinary()
@@ -11361,7 +8080,7 @@ func e223(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e216(p)
+			v, ok := e180(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -11377,7 +8096,7 @@ func e223(p *rt.Parser) (*rt.Node, bool) {
 		} else {
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e222(p)
+			v, ok := e186(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -11400,7 +8119,7 @@ func e223(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e216(p)
+		v, ok := e180(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -11417,7 +8136,7 @@ func e223(p *rt.Parser) (*rt.Node, bool) {
 	} else {
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e222(p)
+		v, ok := e186(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -11431,82 +8150,82 @@ func e223(p *rt.Parser) (*rt.Node, bool) {
 	return nil, false
 }
 
-func e224(p *rt.Parser) (*rt.Node, bool) {
+func e188(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		if _, ok := e91(p); !ok {
+		if _, ok := e74(p); !ok {
 			return nil, false
 		}
-		if _, ok := e201(p); !ok {
+		if _, ok := e165(p); !ok {
 			return nil, false
 		}
-		if _, ok := e193(p); !ok {
+		if _, ok := e157(p); !ok {
 			return nil, false
 		}
-		if _, ok := e94(p); !ok {
+		if _, ok := e77(p); !ok {
 			return nil, false
 		}
 		return nil, true
 	}
 
 	p.StepWork()
-	if _, ok := e91(p); !ok {
+	if _, ok := e74(p); !ok {
 		return nil, false
 	}
-	if _, ok := e201(p); !ok {
+	if _, ok := e165(p); !ok {
 		return nil, false
 	}
-	if _, ok := e193(p); !ok {
+	if _, ok := e157(p); !ok {
 		return nil, false
 	}
-	if _, ok := e94(p); !ok {
+	if _, ok := e77(p); !ok {
 		return nil, false
 	}
 	return nil, true
 }
 
-func e225(p *rt.Parser) (*rt.Node, bool) {
+func e189(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		if _, ok := e97(p); !ok {
+		if _, ok := e80(p); !ok {
 			return nil, false
 		}
-		if _, ok := e198(p); !ok {
+		if _, ok := e162(p); !ok {
 			return nil, false
 		}
-		if _, ok := e193(p); !ok {
+		if _, ok := e157(p); !ok {
 			return nil, false
 		}
-		if _, ok := e102(p); !ok {
+		if _, ok := e85(p); !ok {
 			return nil, false
 		}
 		return nil, true
 	}
 
 	p.StepWork()
-	if _, ok := e97(p); !ok {
+	if _, ok := e80(p); !ok {
 		return nil, false
 	}
-	if _, ok := e198(p); !ok {
+	if _, ok := e162(p); !ok {
 		return nil, false
 	}
-	if _, ok := e193(p); !ok {
+	if _, ok := e157(p); !ok {
 		return nil, false
 	}
-	if _, ok := e102(p); !ok {
+	if _, ok := e85(p); !ok {
 		return nil, false
 	}
 	return nil, true
 }
 
-func e226(p *rt.Parser) (*rt.Node, bool) {
+func e190(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		return p.MatchLiteralOrdinary(lit52, ".", 26, false)
+		return p.MatchLiteralOrdinary(lit42, ".", 26, false)
 	}
 
 	p.StepWork()
-	return p.MatchLiteral(lit52, ".", 26, false)
+	return p.MatchLiteral(lit42, ".", 26, false)
 }
 
-func e227(p *rt.Parser) (*rt.Node, bool) {
+func e191(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		return p.Call(recRules[17], 0)
 	}
@@ -11515,28 +8234,28 @@ func e227(p *rt.Parser) (*rt.Node, bool) {
 	return p.Call(recRules[17], 0)
 }
 
-func e228(p *rt.Parser) (*rt.Node, bool) {
+func e192(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		if _, ok := e226(p); !ok {
+		if _, ok := e190(p); !ok {
 			return nil, false
 		}
-		if _, ok := e193(p); !ok {
+		if _, ok := e157(p); !ok {
 			return nil, false
 		}
-		if _, ok := e227(p); !ok {
+		if _, ok := e191(p); !ok {
 			return nil, false
 		}
 		return nil, true
 	}
 
 	p.StepWork()
-	if _, ok := e226(p); !ok {
+	if _, ok := e190(p); !ok {
 		return nil, false
 	}
-	if _, ok := e193(p); !ok {
+	if _, ok := e157(p); !ok {
 		return nil, false
 	}
-	if _, ok := e227(p); !ok {
+	if _, ok := e191(p); !ok {
 		return nil, false
 	}
 	return nil, true
@@ -11558,7 +8277,7 @@ func q18(p *rt.Parser) (*rt.Node, bool) {
 		}
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116 {
 			p.Pos += 3
-		} else if _, ok = p.MatchLiteralOrdinary(lit42, "let", 7, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit55, "let", 7, false); !ok {
 			goto L7_ordinary
 		}
 		goto L3_ordinary
@@ -11571,7 +8290,7 @@ func q18(p *rt.Parser) (*rt.Node, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110 {
 			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit43, "fn", 8, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit60, "fn", 8, false); !ok {
 			goto L9_ordinary
 		}
 		goto L3_ordinary
@@ -11584,7 +8303,7 @@ func q18(p *rt.Parser) (*rt.Node, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
 			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit44, "if", 9, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit56, "if", 9, false); !ok {
 			goto L11_ordinary
 		}
 		goto L3_ordinary
@@ -11597,7 +8316,7 @@ func q18(p *rt.Parser) (*rt.Node, bool) {
 		}
 		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
 			p.Pos += 4
-		} else if _, ok = p.MatchLiteralOrdinary(lit45, "else", 21, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit57, "else", 21, false); !ok {
 			goto L13_ordinary
 		}
 		goto L3_ordinary
@@ -11608,7 +8327,7 @@ func q18(p *rt.Parser) (*rt.Node, bool) {
 			p.ExpectOrdinary(p.Pos, 10)
 			goto L14_ordinary
 		}
-		if _, ok = p.MatchLiteralOrdinary(lit46, "while", 10, false); !ok {
+		if _, ok = p.MatchLiteralOrdinary(lit58, "while", 10, false); !ok {
 			goto L15_ordinary
 		}
 		goto L3_ordinary
@@ -11619,7 +8338,7 @@ func q18(p *rt.Parser) (*rt.Node, bool) {
 			p.ExpectOrdinary(p.Pos, 11)
 			goto L16_ordinary
 		}
-		if _, ok = p.MatchLiteralOrdinary(lit47, "return", 11, false); !ok {
+		if _, ok = p.MatchLiteralOrdinary(lit59, "return", 11, false); !ok {
 			goto L17_ordinary
 		}
 		goto L3_ordinary
@@ -11696,7 +8415,7 @@ func q18(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116) {
 		p.Pos += 3
-	} else if _, ok = p.MatchLiteral(lit42, "let", 7, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit55, "let", 7, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -11710,7 +8429,7 @@ L6:
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110) {
 		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit43, "fn", 8, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit60, "fn", 8, false); !ok {
 		goto L9
 	}
 	goto L3
@@ -11724,7 +8443,7 @@ L8:
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102) {
 		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit44, "if", 9, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit56, "if", 9, false); !ok {
 		goto L11
 	}
 	goto L3
@@ -11738,7 +8457,7 @@ L10:
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101) {
 		p.Pos += 4
-	} else if _, ok = p.MatchLiteral(lit45, "else", 21, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit57, "else", 21, false); !ok {
 		goto L13
 	}
 	goto L3
@@ -11750,7 +8469,7 @@ L12:
 		goto L14
 	}
 	p.StepWork()
-	if _, ok = p.MatchLiteral(lit46, "while", 10, false); !ok {
+	if _, ok = p.MatchLiteral(lit58, "while", 10, false); !ok {
 		goto L15
 	}
 	goto L3
@@ -11762,7 +8481,7 @@ L14:
 		goto L16
 	}
 	p.StepWork()
-	if _, ok = p.MatchLiteral(lit47, "return", 11, false); !ok {
+	if _, ok = p.MatchLiteral(lit59, "return", 11, false); !ok {
 		goto L17
 	}
 	goto L3
@@ -11894,7 +8613,7 @@ func q20(p *rt.Parser) (*rt.Node, bool) {
 		x2, x3 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit52, ".", 26, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit42, ".", 26, false); !ok {
 			goto L4_ordinary
 		}
 		x6 = 0
@@ -11957,7 +8676,7 @@ func q20(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
 		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit52, ".", 26, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit42, ".", 26, false); !ok {
 		goto L4
 	}
 	p.StepWork()
@@ -12001,7 +8720,7 @@ func q21(p *rt.Parser) (*rt.Node, bool) {
 		p.Enter()
 		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit54, "\"", 27, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit44, "\"", 27, false); !ok {
 			goto fail_ordinary
 		}
 		if _, ok = q22(p); !ok {
@@ -12009,7 +8728,7 @@ func q21(p *rt.Parser) (*rt.Node, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit54, "\"", 27, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit44, "\"", 27, false); !ok {
 			goto fail_ordinary
 		}
 		v = nil
@@ -12031,7 +8750,7 @@ func q21(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 34) {
 		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit54, "\"", 27, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit44, "\"", 27, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -12042,7 +8761,7 @@ func q21(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 34) {
 		p.Pos++
-	} else if _, ok = p.MatchLiteral(lit54, "\"", 27, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit44, "\"", 27, false); !ok {
 		goto fail
 	}
 	v = nil
@@ -12085,7 +8804,7 @@ func q22(p *rt.Parser) (*rt.Node, bool) {
 			}
 			if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 				p.Pos++
-			} else if _, ok = p.MatchLiteralOrdinary(lit56, "\\", 29, false); !ok {
+			} else if _, ok = p.MatchLiteralOrdinary(lit46, "\\", 29, false); !ok {
 				goto L13_ordinary
 			}
 			_, size, ok = p.NextOrdinary()
@@ -12159,7 +8878,7 @@ func q22(p *rt.Parser) (*rt.Node, bool) {
 		p.StepWork()
 		if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 92) {
 			p.Pos++
-		} else if _, ok = p.MatchLiteral(lit56, "\\", 29, false); !ok {
+		} else if _, ok = p.MatchLiteral(lit46, "\\", 29, false); !ok {
 			goto L13
 		}
 		p.StepWork()
@@ -12326,7 +9045,7 @@ func q24(p *rt.Parser) (*rt.Node, bool) {
 		p.Enter()
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116 {
 			p.Pos += 3
-		} else if _, ok = p.MatchLiteralOrdinary(lit42, "let", 7, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit55, "let", 7, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -12359,7 +9078,7 @@ func q24(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116) {
 		p.Pos += 3
-	} else if _, ok = p.MatchLiteral(lit42, "let", 7, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit55, "let", 7, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -12393,7 +9112,7 @@ func q25(p *rt.Parser) (*rt.Node, bool) {
 		p.Enter()
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110 {
 			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit43, "fn", 8, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit60, "fn", 8, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -12426,7 +9145,7 @@ func q25(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110) {
 		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit43, "fn", 8, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit60, "fn", 8, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -12460,7 +9179,7 @@ func q26(p *rt.Parser) (*rt.Node, bool) {
 		p.Enter()
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
 			p.Pos += 2
-		} else if _, ok = p.MatchLiteralOrdinary(lit44, "if", 9, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit56, "if", 9, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -12493,7 +9212,7 @@ func q26(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102) {
 		p.Pos += 2
-	} else if _, ok = p.MatchLiteral(lit44, "if", 9, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit56, "if", 9, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -12527,7 +9246,7 @@ func q27(p *rt.Parser) (*rt.Node, bool) {
 		p.Enter()
 		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
 			p.Pos += 4
-		} else if _, ok = p.MatchLiteralOrdinary(lit45, "else", 21, false); !ok {
+		} else if _, ok = p.MatchLiteralOrdinary(lit57, "else", 21, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -12560,7 +9279,7 @@ func q27(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101) {
 		p.Pos += 4
-	} else if _, ok = p.MatchLiteral(lit45, "else", 21, false); !ok {
+	} else if _, ok = p.MatchLiteral(lit57, "else", 21, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -12592,7 +9311,7 @@ func q28(p *rt.Parser) (*rt.Node, bool) {
 		var ok bool
 		start, rec = p.Pos, len(p.Recovered)
 		p.Enter()
-		if _, ok = p.MatchLiteralOrdinary(lit46, "while", 10, false); !ok {
+		if _, ok = p.MatchLiteralOrdinary(lit58, "while", 10, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -12623,7 +9342,7 @@ func q28(p *rt.Parser) (*rt.Node, bool) {
 	p.Enter()
 	p.StepWork()
 	p.StepWork()
-	if _, ok = p.MatchLiteral(lit46, "while", 10, false); !ok {
+	if _, ok = p.MatchLiteral(lit58, "while", 10, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -12655,7 +9374,7 @@ func q29(p *rt.Parser) (*rt.Node, bool) {
 		var ok bool
 		start, rec = p.Pos, len(p.Recovered)
 		p.Enter()
-		if _, ok = p.MatchLiteralOrdinary(lit47, "return", 11, false); !ok {
+		if _, ok = p.MatchLiteralOrdinary(lit59, "return", 11, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -12686,7 +9405,7 @@ func q29(p *rt.Parser) (*rt.Node, bool) {
 	p.Enter()
 	p.StepWork()
 	p.StepWork()
-	if _, ok = p.MatchLiteral(lit47, "return", 11, false); !ok {
+	if _, ok = p.MatchLiteral(lit59, "return", 11, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -12742,7 +9461,7 @@ func q30(p *rt.Parser) (*rt.Node, bool) {
 			}
 			if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47 {
 				p.Pos += 2
-			} else if _, ok = p.MatchLiteralOrdinary(lit65, "//", 31, false); !ok {
+			} else if _, ok = p.MatchLiteralOrdinary(lit51, "//", 31, false); !ok {
 				goto L13_ordinary
 			}
 			for {
@@ -12817,7 +9536,7 @@ func q30(p *rt.Parser) (*rt.Node, bool) {
 		p.StepWork()
 		if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47) {
 			p.Pos += 2
-		} else if _, ok = p.MatchLiteral(lit65, "//", 31, false); !ok {
+		} else if _, ok = p.MatchLiteral(lit51, "//", 31, false); !ok {
 			goto L13
 		}
 		p.StepWork()
@@ -12853,7 +9572,7 @@ func q30(p *rt.Parser) (*rt.Node, bool) {
 	return v, true
 }
 
-func e231(p *rt.TParser) (any, bool) {
+func e195(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var x4, size, x37 int
 		var x2, x9, x38 rt.Mark
@@ -13223,7 +9942,7 @@ func i0(p *rt.TParser) (any, bool) {
 		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		p.Where = "main"
 		v = func() any {
-			return func() any { f_229 := func() any { return k1 }(); return tmk_Program(c, true, f_229) }()
+			return func() any { f_193 := func() any { return k1 }(); return tmk_Program(c, true, f_193) }()
 		}()
 		p.Depth--
 		return v, true
@@ -13259,7 +9978,7 @@ func i0(p *rt.TParser) (any, bool) {
 	p.Where = "main"
 	v = func() any {
 		c.P.StepWork()
-		return func() any { f_229 := func() any { c.P.StepWork(); return k1 }(); return tmk_Program(c, true, f_229) }()
+		return func() any { f_193 := func() any { c.P.StepWork(); return k1 }(); return tmk_Program(c, true, f_193) }()
 	}()
 	p.Depth--
 	return v, true
@@ -13433,7 +10152,7 @@ func i2(p *rt.TParser) (any, bool) {
 		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		p.Where = "block"
 		v = func() any {
-			return func() any { f_230 := func() any { return k1 }(); return tmk_Block(c, true, f_230) }()
+			return func() any { f_194 := func() any { return k1 }(); return tmk_Block(c, true, f_194) }()
 		}()
 		p.Depth--
 		return v, true
@@ -13476,7 +10195,7 @@ func i2(p *rt.TParser) (any, bool) {
 	p.Where = "block"
 	v = func() any {
 		c.P.StepWork()
-		return func() any { f_230 := func() any { c.P.StepWork(); return k1 }(); return tmk_Block(c, true, f_230) }()
+		return func() any { f_194 := func() any { c.P.StepWork(); return k1 }(); return tmk_Block(c, true, f_194) }()
 	}()
 	p.Depth--
 	return v, true
@@ -13514,7 +10233,7 @@ func i3(p *rt.TParser) (any, bool) {
 		p.Enter()
 		start := p.Pos
 		_ = start
-		v, ok := e231(p)
+		v, ok := e195(p)
 		p.Depth--
 		p.Frame, p.Cut = prevFrame, prevCut
 		p.DropTrail(trail)
@@ -13533,7 +10252,7 @@ func i3(p *rt.TParser) (any, bool) {
 	p.Enter()
 	start := p.Pos
 	_ = start
-	v, ok := e231(p)
+	v, ok := e195(p)
 	p.Depth--
 	p.Frame, p.Cut = prevFrame, prevCut
 	p.DropTrail(trail)
@@ -13607,9 +10326,9 @@ func i4(p *rt.TParser) (any, bool) {
 		p.Where = "let"
 		v = func() any {
 			return func() any {
-				f_232 := func() any { return k1 }()
-				f_233 := func() any { return k4 }()
-				return tmk_Let(c, true, f_232, f_233)
+				f_196 := func() any { return k1 }()
+				f_197 := func() any { return k4 }()
+				return tmk_Let(c, true, f_196, f_197)
 			}()
 		}()
 		p.Depth--
@@ -13672,9 +10391,9 @@ func i4(p *rt.TParser) (any, bool) {
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_232 := func() any { c.P.StepWork(); return k1 }()
-			f_233 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Let(c, true, f_232, f_233)
+			f_196 := func() any { c.P.StepWork(); return k1 }()
+			f_197 := func() any { c.P.StepWork(); return k4 }()
+			return tmk_Let(c, true, f_196, f_197)
 		}()
 	}()
 	p.Depth--
@@ -13752,9 +10471,9 @@ func i5(p *rt.TParser) (any, bool) {
 		p.Where = "assign"
 		v = func() any {
 			return func() any {
-				f_234 := func() any { return k1 }()
-				f_235 := func() any { return k7 }()
-				return tmk_Assign(c, true, f_234, f_235)
+				f_198 := func() any { return k1 }()
+				f_199 := func() any { return k7 }()
+				return tmk_Assign(c, true, f_198, f_199)
 			}()
 		}()
 		p.Depth--
@@ -13824,9 +10543,9 @@ L6:
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_234 := func() any { c.P.StepWork(); return k1 }()
-			f_235 := func() any { c.P.StepWork(); return k7 }()
-			return tmk_Assign(c, true, f_234, f_235)
+			f_198 := func() any { c.P.StepWork(); return k1 }()
+			f_199 := func() any { c.P.StepWork(); return k7 }()
+			return tmk_Assign(c, true, f_198, f_199)
 		}()
 	}()
 	p.Depth--
@@ -13898,10 +10617,10 @@ func i6(p *rt.TParser) (any, bool) {
 		p.Where = "if"
 		v = func() any {
 			return func() any {
-				f_236 := func() any { return k1 }()
-				f_237 := func() any { return k4 }()
-				f_238 := func() any { return k7 }()
-				return tmk_If(c, true, f_236, f_237, f_238)
+				f_200 := func() any { return k1 }()
+				f_201 := func() any { return k4 }()
+				f_202 := func() any { return k7 }()
+				return tmk_If(c, true, f_200, f_201, f_202)
 			}()
 		}()
 		p.Depth--
@@ -13958,10 +10677,10 @@ L13:
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_236 := func() any { c.P.StepWork(); return k1 }()
-			f_237 := func() any { c.P.StepWork(); return k4 }()
-			f_238 := func() any { c.P.StepWork(); return k7 }()
-			return tmk_If(c, true, f_236, f_237, f_238)
+			f_200 := func() any { c.P.StepWork(); return k1 }()
+			f_201 := func() any { c.P.StepWork(); return k4 }()
+			f_202 := func() any { c.P.StepWork(); return k7 }()
+			return tmk_If(c, true, f_200, f_201, f_202)
 		}()
 	}()
 	p.Depth--
@@ -14163,9 +10882,9 @@ func i8(p *rt.TParser) (any, bool) {
 		p.Where = "while"
 		v = func() any {
 			return func() any {
-				f_239 := func() any { return k1 }()
-				f_240 := func() any { return k4 }()
-				return tmk_While(c, true, f_239, f_240)
+				f_203 := func() any { return k1 }()
+				f_204 := func() any { return k4 }()
+				return tmk_While(c, true, f_203, f_204)
 			}()
 		}()
 		p.Depth--
@@ -14208,9 +10927,9 @@ func i8(p *rt.TParser) (any, bool) {
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_239 := func() any { c.P.StepWork(); return k1 }()
-			f_240 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_While(c, true, f_239, f_240)
+			f_203 := func() any { c.P.StepWork(); return k1 }()
+			f_204 := func() any { c.P.StepWork(); return k4 }()
+			return tmk_While(c, true, f_203, f_204)
 		}()
 	}()
 	p.Depth--
@@ -14272,7 +10991,7 @@ func i9(p *rt.TParser) (any, bool) {
 		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		p.Where = "return"
 		v = func() any {
-			return func() any { f_241 := func() any { return k1 }(); return tmk_Return(c, true, f_241) }()
+			return func() any { f_205 := func() any { return k1 }(); return tmk_Return(c, true, f_205) }()
 		}()
 		p.Depth--
 		return v, true
@@ -14321,7 +11040,7 @@ L7:
 	p.Where = "return"
 	v = func() any {
 		c.P.StepWork()
-		return func() any { f_241 := func() any { c.P.StepWork(); return k1 }(); return tmk_Return(c, true, f_241) }()
+		return func() any { f_205 := func() any { c.P.StepWork(); return k1 }(); return tmk_Return(c, true, f_205) }()
 	}()
 	p.Depth--
 	return v, true
@@ -14405,10 +11124,10 @@ func i10(p *rt.TParser) (any, bool) {
 		p.Where = "func"
 		v = func() any {
 			return func() any {
-				f_242 := func() any { return k1 }()
-				f_243 := func() any { return c.Concat(func() any { return k4 }()) }()
-				f_244 := func() any { return k12 }()
-				return tmk_Func(c, true, f_242, f_243, f_244)
+				f_206 := func() any { return k1 }()
+				f_207 := func() any { return c.Concat(func() any { return k4 }()) }()
+				f_208 := func() any { return k12 }()
+				return tmk_Func(c, true, f_206, f_207, f_208)
 			}()
 		}()
 		p.Depth--
@@ -14489,10 +11208,10 @@ L10:
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_242 := func() any { c.P.StepWork(); return k1 }()
-			f_243 := func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return k4 }()) }()
-			f_244 := func() any { c.P.StepWork(); return k12 }()
-			return tmk_Func(c, true, f_242, f_243, f_244)
+			f_206 := func() any { c.P.StepWork(); return k1 }()
+			f_207 := func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return k4 }()) }()
+			f_208 := func() any { c.P.StepWork(); return k12 }()
+			return tmk_Func(c, true, f_206, f_207, f_208)
 		}()
 	}()
 	p.Depth--
@@ -14697,7 +11416,7 @@ func i12(p *rt.TParser) (any, bool) {
 		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		p.Where = "exprStmt"
 		v = func() any {
-			return func() any { f_245 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_245) }()
+			return func() any { f_209 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_209) }()
 		}()
 		p.Depth--
 		return v, true
@@ -14734,7 +11453,7 @@ func i12(p *rt.TParser) (any, bool) {
 	p.Where = "exprStmt"
 	v = func() any {
 		c.P.StepWork()
-		return func() any { f_245 := func() any { c.P.StepWork(); return k1 }(); return tmk_ExprStmt(c, true, f_245) }()
+		return func() any { f_209 := func() any { c.P.StepWork(); return k1 }(); return tmk_ExprStmt(c, true, f_209) }()
 	}()
 	p.Depth--
 	return v, true
@@ -14838,7 +11557,7 @@ fail:
 	return nil, false
 }
 
-func e246(p *rt.TParser) (any, bool) {
+func e210(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var ok bool
 		if _, ok = s31(p); !ok {
@@ -14860,7 +11579,7 @@ fail:
 	return nil, false
 }
 
-func e247(p *rt.TParser) (any, bool) {
+func e211(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var ok bool
 		var v1 any
@@ -14884,7 +11603,7 @@ fail:
 	return nil, false
 }
 
-func e248(p *rt.TParser) (any, bool) {
+func e212(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var ok bool
 		var v1 any
@@ -14908,7 +11627,7 @@ fail:
 	return nil, false
 }
 
-func e249(p *rt.TParser) (any, bool) {
+func e213(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var ok bool
 		var v1 any
@@ -14932,7 +11651,7 @@ fail:
 	return nil, false
 }
 
-func e250(p *rt.TParser) (any, bool) {
+func e214(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var ok bool
 		var v1 any
@@ -14956,7 +11675,7 @@ fail:
 	return nil, false
 }
 
-func e251(p *rt.TParser) (any, bool) {
+func e215(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var ok bool
 		var v2 any
@@ -15013,14 +11732,14 @@ fail:
 	return nil, false
 }
 
-func e252(p *rt.TParser) (any, bool) {
+func e216(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var ok bool
 		var x2 rt.Mark
 		var v3, v6 any
 		if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit96, "[", 33, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit79, "[", 33, false); !ok {
 			goto fail_ordinary
 		}
 		x2 = p.Mark()
@@ -15039,7 +11758,7 @@ func e252(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit101, "]", 34, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit84, "]", 34, false); !ok {
 			goto fail_ordinary
 		}
 		return nil, true
@@ -15055,7 +11774,7 @@ func e252(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 91) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit96, "[", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit79, "[", 33, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -15079,7 +11798,7 @@ L5:
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 93) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit101, "]", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit84, "]", 34, false); !ok {
 		goto fail
 	}
 	return nil, true
@@ -15087,7 +11806,7 @@ fail:
 	return nil, false
 }
 
-func e254(p *rt.TParser) (any, bool) {
+func e218(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var x1, x3, x8 int
 		var x2 []any
@@ -15098,7 +11817,7 @@ func e254(p *rt.TParser) (any, bool) {
 		x3 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 63 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit104, "?", 35, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit87, "?", 35, false); !ok {
 			goto fail_ordinary
 		}
 		v4 = p.NewMatchOrdinary(x3, p.Pos, "?", true)
@@ -15115,7 +11834,7 @@ func e254(p *rt.TParser) (any, bool) {
 		x8 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit108, ":", 36, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit91, ":", 36, false); !ok {
 			goto fail_ordinary
 		}
 		v9 = p.NewMatchOrdinary(x8, p.Pos, ":", true)
@@ -15138,7 +11857,7 @@ func e254(p *rt.TParser) (any, bool) {
 	x3 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 63) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit104, "?", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit87, "?", 35, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatch(x3, p.Pos, "?", true)
@@ -15159,7 +11878,7 @@ func e254(p *rt.TParser) (any, bool) {
 	x8 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 58) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit108, ":", 36, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit91, ":", 36, false); !ok {
 		goto fail
 	}
 	v9 = p.NewMatch(x8, p.Pos, ":", true)
@@ -15170,7 +11889,7 @@ fail:
 	return nil, false
 }
 
-func e258(p *rt.TParser) (any, bool) {
+func e222(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var x1 int
 		var ok bool
@@ -15178,7 +11897,7 @@ func e258(p *rt.TParser) (any, bool) {
 		x1 = p.Pos
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 124 && p.In[p.Pos+1] == 124 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit111, "||", 37, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit94, "||", 37, false); !ok {
 			goto fail_ordinary
 		}
 		v2 = p.NewMatchOrdinary(x1, p.Pos, "||", true)
@@ -15195,7 +11914,7 @@ func e258(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 124 && p.In[p.Pos+1] == 124) {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit111, "||", 37, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit94, "||", 37, false); !ok {
 		goto fail
 	}
 	v2 = p.NewMatch(x1, p.Pos, "||", true)
@@ -15204,7 +11923,7 @@ fail:
 	return nil, false
 }
 
-func e262(p *rt.TParser) (any, bool) {
+func e226(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var x1 int
 		var ok bool
@@ -15212,7 +11931,7 @@ func e262(p *rt.TParser) (any, bool) {
 		x1 = p.Pos
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 38 && p.In[p.Pos+1] == 38 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit113, "&&", 38, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit96, "&&", 38, false); !ok {
 			goto fail_ordinary
 		}
 		v2 = p.NewMatchOrdinary(x1, p.Pos, "&&", true)
@@ -15229,7 +11948,7 @@ func e262(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 38 && p.In[p.Pos+1] == 38) {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit113, "&&", 38, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit96, "&&", 38, false); !ok {
 		goto fail
 	}
 	v2 = p.NewMatch(x1, p.Pos, "&&", true)
@@ -15238,7 +11957,7 @@ fail:
 	return nil, false
 }
 
-func e266(p *rt.TParser) (any, bool) {
+func e230(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var x1 rt.Mark
 		var v2, v9, v13, v17, v21, v25, v29 any
@@ -15254,7 +11973,7 @@ func e266(p *rt.TParser) (any, bool) {
 		x8 = p.Pos
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 61 && p.In[p.Pos+1] == 61 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit115, "==", 39, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit98, "==", 39, false); !ok {
 			goto L7_ordinary
 		}
 		v9 = p.NewMatchOrdinary(x8, p.Pos, "==", true)
@@ -15270,7 +11989,7 @@ func e266(p *rt.TParser) (any, bool) {
 		x12 = p.Pos
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 33 && p.In[p.Pos+1] == 61 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit117, "!=", 40, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit100, "!=", 40, false); !ok {
 			goto L11_ordinary
 		}
 		v13 = p.NewMatchOrdinary(x12, p.Pos, "!=", true)
@@ -15286,7 +12005,7 @@ func e266(p *rt.TParser) (any, bool) {
 		x16 = p.Pos
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 61 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit119, "<=", 41, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit102, "<=", 41, false); !ok {
 			goto L15_ordinary
 		}
 		v17 = p.NewMatchOrdinary(x16, p.Pos, "<=", true)
@@ -15302,7 +12021,7 @@ func e266(p *rt.TParser) (any, bool) {
 		x20 = p.Pos
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 62 && p.In[p.Pos+1] == 61 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit121, ">=", 42, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit104, ">=", 42, false); !ok {
 			goto L19_ordinary
 		}
 		v21 = p.NewMatchOrdinary(x20, p.Pos, ">=", true)
@@ -15318,7 +12037,7 @@ func e266(p *rt.TParser) (any, bool) {
 		x24 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit123, "<", 43, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit106, "<", 43, false); !ok {
 			goto L23_ordinary
 		}
 		v25 = p.NewMatchOrdinary(x24, p.Pos, "<", true)
@@ -15334,7 +12053,7 @@ func e266(p *rt.TParser) (any, bool) {
 		x28 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 62 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit125, ">", 44, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit108, ">", 44, false); !ok {
 			goto L27_ordinary
 		}
 		v29 = p.NewMatchOrdinary(x28, p.Pos, ">", true)
@@ -15372,7 +12091,7 @@ func e266(p *rt.TParser) (any, bool) {
 	x8 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 61 && p.In[p.Pos+1] == 61) {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit115, "==", 39, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit98, "==", 39, false); !ok {
 		goto L7
 	}
 	v9 = p.NewMatch(x8, p.Pos, "==", true)
@@ -15389,7 +12108,7 @@ L6:
 	x12 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 33 && p.In[p.Pos+1] == 61) {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit117, "!=", 40, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit100, "!=", 40, false); !ok {
 		goto L11
 	}
 	v13 = p.NewMatch(x12, p.Pos, "!=", true)
@@ -15406,7 +12125,7 @@ L10:
 	x16 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 61) {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit119, "<=", 41, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit102, "<=", 41, false); !ok {
 		goto L15
 	}
 	v17 = p.NewMatch(x16, p.Pos, "<=", true)
@@ -15423,7 +12142,7 @@ L14:
 	x20 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 62 && p.In[p.Pos+1] == 61) {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit121, ">=", 42, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit104, ">=", 42, false); !ok {
 		goto L19
 	}
 	v21 = p.NewMatch(x20, p.Pos, ">=", true)
@@ -15440,7 +12159,7 @@ L18:
 	x24 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 60) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit123, "<", 43, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "<", 43, false); !ok {
 		goto L23
 	}
 	v25 = p.NewMatch(x24, p.Pos, "<", true)
@@ -15457,7 +12176,7 @@ L22:
 	x28 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 62) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, ">", 44, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ">", 44, false); !ok {
 		goto L27
 	}
 	v29 = p.NewMatch(x28, p.Pos, ">", true)
@@ -15473,7 +12192,7 @@ fail:
 	return nil, false
 }
 
-func e270(p *rt.TParser) (any, bool) {
+func e234(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var x1 rt.Mark
 		var v2, v9, v13 any
@@ -15489,7 +12208,7 @@ func e270(p *rt.TParser) (any, bool) {
 		x8 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 43 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit128, "+", 45, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit111, "+", 45, false); !ok {
 			goto L7_ordinary
 		}
 		v9 = p.NewMatchOrdinary(x8, p.Pos, "+", true)
@@ -15505,7 +12224,7 @@ func e270(p *rt.TParser) (any, bool) {
 		x12 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit130, "-", 46, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit113, "-", 46, false); !ok {
 			goto L11_ordinary
 		}
 		v13 = p.NewMatchOrdinary(x12, p.Pos, "-", true)
@@ -15543,7 +12262,7 @@ func e270(p *rt.TParser) (any, bool) {
 	x8 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit128, "+", 45, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit111, "+", 45, false); !ok {
 		goto L7
 	}
 	v9 = p.NewMatch(x8, p.Pos, "+", true)
@@ -15560,7 +12279,7 @@ L6:
 	x12 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit130, "-", 46, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit113, "-", 46, false); !ok {
 		goto L11
 	}
 	v13 = p.NewMatch(x12, p.Pos, "-", true)
@@ -15576,7 +12295,7 @@ fail:
 	return nil, false
 }
 
-func e274(p *rt.TParser) (any, bool) {
+func e238(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var x1 rt.Mark
 		var v2, v9, v13, v17 any
@@ -15592,7 +12311,7 @@ func e274(p *rt.TParser) (any, bool) {
 		x8 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit133, "*", 47, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit116, "*", 47, false); !ok {
 			goto L7_ordinary
 		}
 		v9 = p.NewMatchOrdinary(x8, p.Pos, "*", true)
@@ -15608,7 +12327,7 @@ func e274(p *rt.TParser) (any, bool) {
 		x12 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 47 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit135, "/", 48, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit118, "/", 48, false); !ok {
 			goto L11_ordinary
 		}
 		v13 = p.NewMatchOrdinary(x12, p.Pos, "/", true)
@@ -15624,7 +12343,7 @@ func e274(p *rt.TParser) (any, bool) {
 		x16 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 37 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit137, "%", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit120, "%", 49, false); !ok {
 			goto L15_ordinary
 		}
 		v17 = p.NewMatchOrdinary(x16, p.Pos, "%", true)
@@ -15662,7 +12381,7 @@ func e274(p *rt.TParser) (any, bool) {
 	x8 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 42) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit133, "*", 47, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit116, "*", 47, false); !ok {
 		goto L7
 	}
 	v9 = p.NewMatch(x8, p.Pos, "*", true)
@@ -15679,7 +12398,7 @@ L6:
 	x12 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 47) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit135, "/", 48, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit118, "/", 48, false); !ok {
 		goto L11
 	}
 	v13 = p.NewMatch(x12, p.Pos, "/", true)
@@ -15696,7 +12415,7 @@ L10:
 	x16 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 37) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit137, "%", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit120, "%", 49, false); !ok {
 		goto L15
 	}
 	v17 = p.NewMatch(x16, p.Pos, "%", true)
@@ -15712,7 +12431,7 @@ fail:
 	return nil, false
 }
 
-func e278(p *rt.TParser) (any, bool) {
+func e242(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var x1 rt.Mark
 		var v2, v9, v13 any
@@ -15728,7 +12447,7 @@ func e278(p *rt.TParser) (any, bool) {
 		x8 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit130, "-", 46, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit113, "-", 46, false); !ok {
 			goto L7_ordinary
 		}
 		v9 = p.NewMatchOrdinary(x8, p.Pos, "-", true)
@@ -15744,7 +12463,7 @@ func e278(p *rt.TParser) (any, bool) {
 		x12 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 33 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit140, "!", 50, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit123, "!", 50, false); !ok {
 			goto L11_ordinary
 		}
 		v13 = p.NewMatchOrdinary(x12, p.Pos, "!", true)
@@ -15782,7 +12501,7 @@ func e278(p *rt.TParser) (any, bool) {
 	x8 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit130, "-", 46, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit113, "-", 46, false); !ok {
 		goto L7
 	}
 	v9 = p.NewMatch(x8, p.Pos, "-", true)
@@ -15799,7 +12518,7 @@ L6:
 	x12 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 33) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit140, "!", 50, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit123, "!", 50, false); !ok {
 		goto L11
 	}
 	v13 = p.NewMatch(x12, p.Pos, "!", true)
@@ -15815,7 +12534,7 @@ fail:
 	return nil, false
 }
 
-func e281(p *rt.TParser) (any, bool) {
+func e245(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var x1, x3, x12 int
 		var x2 []any
@@ -15915,7 +12634,7 @@ fail:
 	return nil, false
 }
 
-func e284(p *rt.TParser) (any, bool) {
+func e248(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var x1, x3, x8 int
 		var x2 []any
@@ -15926,7 +12645,7 @@ func e284(p *rt.TParser) (any, bool) {
 		x3 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit96, "[", 33, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit79, "[", 33, false); !ok {
 			goto fail_ordinary
 		}
 		v4 = p.NewMatchOrdinary(x3, p.Pos, "[", true)
@@ -15943,7 +12662,7 @@ func e284(p *rt.TParser) (any, bool) {
 		x8 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit101, "]", 34, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit84, "]", 34, false); !ok {
 			goto fail_ordinary
 		}
 		v9 = p.NewMatchOrdinary(x8, p.Pos, "]", true)
@@ -15966,7 +12685,7 @@ func e284(p *rt.TParser) (any, bool) {
 	x3 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 91) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit96, "[", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit79, "[", 33, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatch(x3, p.Pos, "[", true)
@@ -15987,7 +12706,7 @@ func e284(p *rt.TParser) (any, bool) {
 	x8 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 93) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit101, "]", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit84, "]", 34, false); !ok {
 		goto fail
 	}
 	v9 = p.NewMatch(x8, p.Pos, "]", true)
@@ -15998,7 +12717,7 @@ fail:
 	return nil, false
 }
 
-func e287(p *rt.TParser) (any, bool) {
+func e251(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var x1, x3 int
 		var x2 []any
@@ -16009,7 +12728,7 @@ func e287(p *rt.TParser) (any, bool) {
 		x3 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit52, ".", 26, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit42, ".", 26, false); !ok {
 			goto fail_ordinary
 		}
 		v4 = p.NewMatchOrdinary(x3, p.Pos, ".", true)
@@ -16041,7 +12760,7 @@ func e287(p *rt.TParser) (any, bool) {
 	x3 = p.Pos
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit52, ".", 26, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit42, ".", 26, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatch(x3, p.Pos, ".", true)
@@ -16271,7 +12990,7 @@ func v16(p *rt.TParser) (any, bool) {
 		}
 		v9 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 		bv = rt.TFreshNode(v9)
-		v = p.ScopeValue(sh66, v9, start)
+		v = p.ScopeValue(sh52, v9, start)
 		if n := rt.AsTval(v); n != nil {
 			n.TSetFresh(false)
 		}
@@ -16336,7 +13055,7 @@ L4:
 	}
 	v9 = p.NewMatch(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v9)
-	v = p.ScopeValue(sh66, v9, start)
+	v = p.ScopeValue(sh52, v9, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16471,7 +13190,7 @@ func s20(p *rt.TParser) (any, bool) {
 		x3, x4 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit52, ".", 26, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit42, ".", 26, false); !ok {
 			goto L5_ordinary
 		}
 		x7 = 0
@@ -16493,7 +13212,7 @@ func s20(p *rt.TParser) (any, bool) {
 	L6_ordinary:
 		v8 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 		bv = rt.TFreshNode(v8)
-		v = p.ScopeValue(sh66, v8, start)
+		v = p.ScopeValue(sh52, v8, start)
 		if n := rt.AsTval(v); n != nil {
 			n.TSetFresh(false)
 		}
@@ -16541,7 +13260,7 @@ func s20(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit52, ".", 26, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit42, ".", 26, false); !ok {
 		goto L5
 	}
 	p.StepWork()
@@ -16569,7 +13288,7 @@ L5:
 L6:
 	v8 = p.NewMatch(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v8)
-	v = p.ScopeValue(sh66, v8, start)
+	v = p.ScopeValue(sh52, v8, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16611,7 +13330,7 @@ func i21(p *rt.TParser) (any, bool) {
 		p.Enter()
 		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit54, "\"", 27, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit44, "\"", 27, false); !ok {
 			goto fail_ordinary
 		}
 		if v3, ok = s22(p); !ok {
@@ -16620,7 +13339,7 @@ func i21(p *rt.TParser) (any, bool) {
 		k1 = v3
 		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit54, "\"", 27, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit44, "\"", 27, false); !ok {
 			goto fail_ordinary
 		}
 		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -16645,7 +13364,7 @@ func i21(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 34) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit54, "\"", 27, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit44, "\"", 27, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -16657,7 +13376,7 @@ func i21(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 34) {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit54, "\"", 27, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit44, "\"", 27, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -16704,7 +13423,7 @@ func s22(p *rt.TParser) (any, bool) {
 			}
 			if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 				p.Pos++
-			} else if _, ok = p.Parser.MatchLiteral(lit56, "\\", 29, false); !ok {
+			} else if _, ok = p.Parser.MatchLiteral(lit46, "\\", 29, false); !ok {
 				goto L14_ordinary
 			}
 			_, size, ok = p.NextOrdinary()
@@ -16729,7 +13448,7 @@ func s22(p *rt.TParser) (any, bool) {
 		}
 		v15 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 		bv = rt.TFreshNode(v15)
-		v = p.ScopeValue(sh66, v15, start)
+		v = p.ScopeValue(sh52, v15, start)
 		if n := rt.AsTval(v); n != nil {
 			n.TSetFresh(false)
 		}
@@ -16786,7 +13505,7 @@ func s22(p *rt.TParser) (any, bool) {
 		p.StepWork()
 		if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 92) {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit56, "\\", 29, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit46, "\\", 29, false); !ok {
 			goto L14
 		}
 		p.StepWork()
@@ -16817,7 +13536,7 @@ func s22(p *rt.TParser) (any, bool) {
 	}
 	v15 = p.NewMatch(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v15)
-	v = p.ScopeValue(sh66, v15, start)
+	v = p.ScopeValue(sh52, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16877,7 +13596,7 @@ func s23(p *rt.TParser) (any, bool) {
 		p.Restore(x11, x12)
 		v14 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 		bv = rt.TFreshNode(v14)
-		v = p.ScopeValue(sh66, v14, start)
+		v = p.ScopeValue(sh52, v14, start)
 		if n := rt.AsTval(v); n != nil {
 			n.TSetFresh(false)
 		}
@@ -16951,7 +13670,7 @@ L13:
 	p.Restore(x11, x12)
 	v14 = p.NewMatch(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v14)
-	v = p.ScopeValue(sh66, v14, start)
+	v = p.ScopeValue(sh52, v14, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -17004,7 +13723,7 @@ func s30(p *rt.TParser) (any, bool) {
 			x21 = p.Pos
 			if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47 {
 				p.Pos += 2
-			} else if _, ok = p.Parser.MatchLiteral(lit65, "//", 31, false); !ok {
+			} else if _, ok = p.Parser.MatchLiteral(lit51, "//", 31, false); !ok {
 				goto L18_ordinary
 			}
 			v22 = p.NewMatchOrdinary(x21, p.Pos, "//", true)
@@ -17020,7 +13739,7 @@ func s30(p *rt.TParser) (any, bool) {
 				x29 = p.Pos
 				p.Pos += size
 				v30 = p.NewMatchOrdinary(x29, p.Pos, p.Text(x29, p.Pos), true)
-				v31 = p.ScopeValue(sh66, v30, x26)
+				v31 = p.ScopeValue(sh52, v30, x26)
 				p.PushKid(v31)
 				if p.Pos == x26 {
 					break
@@ -17033,7 +13752,7 @@ func s30(p *rt.TParser) (any, bool) {
 			v32 = p.NewNodeOrdinary("list", x23, p.Pos, p.Kids(x24))
 			x20 = append(x20, v32)
 			v33 = p.NewNodeOrdinary("tuple", x19, p.Pos, x20)
-			v34, _ = p.ShapeSingle(sh67, v33, x7)
+			v34, _ = p.ShapeSingle(sh53, v33, x7)
 			v9 = v34
 			goto L10_ordinary
 		L18_ordinary:
@@ -17041,7 +13760,7 @@ func s30(p *rt.TParser) (any, bool) {
 		L17_ordinary:
 			goto L6_ordinary
 		L10_ordinary:
-			v35 = p.ScopeValue(sh66, v9, x4)
+			v35 = p.ScopeValue(sh52, v9, x4)
 			p.PushKid(v35)
 			if p.Pos == x4 {
 				break
@@ -17052,7 +13771,7 @@ func s30(p *rt.TParser) (any, bool) {
 			break
 		}
 		v36 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-		v = p.ScopeValue(sh66, v36, start)
+		v = p.ScopeValue(sh52, v36, start)
 		if n := rt.AsTval(v); n != nil {
 			n.TSetFresh(false)
 		}
@@ -17114,7 +13833,7 @@ func s30(p *rt.TParser) (any, bool) {
 		x21 = p.Pos
 		if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47) {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit65, "//", 31, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit51, "//", 31, false); !ok {
 			goto L18
 		}
 		v22 = p.NewMatch(x21, p.Pos, "//", true)
@@ -17137,7 +13856,7 @@ func s30(p *rt.TParser) (any, bool) {
 			x29 = p.Pos
 			p.Pos += size
 			v30 = p.NewMatch(x29, p.Pos, p.Text(x29, p.Pos), true)
-			v31 = p.ScopeValue(sh66, v30, x26)
+			v31 = p.ScopeValue(sh52, v30, x26)
 			p.PushKid(v31)
 			if p.Pos == x26 {
 				break
@@ -17150,7 +13869,7 @@ func s30(p *rt.TParser) (any, bool) {
 		v32 = p.NewNode("list", x23, p.Pos, p.Kids(x24))
 		x20 = append(x20, v32)
 		v33 = p.NewNode("tuple", x19, p.Pos, x20)
-		v34, _ = p.ShapeSingle(sh67, v33, x7)
+		v34, _ = p.ShapeSingle(sh53, v33, x7)
 		v9 = v34
 		goto L10
 	L18:
@@ -17158,7 +13877,7 @@ func s30(p *rt.TParser) (any, bool) {
 	L17:
 		goto L6
 	L10:
-		v35 = p.ScopeValue(sh66, v9, x4)
+		v35 = p.ScopeValue(sh52, v9, x4)
 		p.PushKid(v35)
 		if p.Pos == x4 {
 			break
@@ -17169,7 +13888,7 @@ func s30(p *rt.TParser) (any, bool) {
 		break
 	}
 	v36 = p.NewNode("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(sh66, v36, start)
+	v = p.ScopeValue(sh52, v36, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -17208,7 +13927,7 @@ func s31(p *rt.TParser) (any, bool) {
 			}
 			if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47 {
 				p.Pos += 2
-			} else if _, ok = p.Parser.MatchLiteral(lit65, "//", 31, false); !ok {
+			} else if _, ok = p.Parser.MatchLiteral(lit51, "//", 31, false); !ok {
 				goto L13_ordinary
 			}
 			for {
@@ -17283,7 +14002,7 @@ func s31(p *rt.TParser) (any, bool) {
 		p.StepWork()
 		if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47) {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit65, "//", 31, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit51, "//", 31, false); !ok {
 			goto L13
 		}
 		p.StepWork()
@@ -17328,7 +14047,7 @@ func s32(p *rt.TParser) (any, bool) {
 		p.Enter()
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116 {
 			p.Pos += 3
-		} else if _, ok = p.Parser.MatchLiteral(lit42, "let", 7, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit55, "let", 7, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -17361,7 +14080,7 @@ func s32(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116) {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit42, "let", 7, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, "let", 7, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -17395,7 +14114,7 @@ func s33(p *rt.TParser) (any, bool) {
 		p.Enter()
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit44, "if", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit56, "if", 9, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -17428,7 +14147,7 @@ func s33(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102) {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit44, "if", 9, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit56, "if", 9, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -17462,7 +14181,7 @@ func s34(p *rt.TParser) (any, bool) {
 		p.Enter()
 		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
 			p.Pos += 4
-		} else if _, ok = p.Parser.MatchLiteral(lit45, "else", 21, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit57, "else", 21, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -17495,7 +14214,7 @@ func s34(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101) {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit45, "else", 21, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit57, "else", 21, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -17527,7 +14246,7 @@ func s35(p *rt.TParser) (any, bool) {
 		var ok bool
 		start, rec = p.Pos, len(p.Recovered)
 		p.Enter()
-		if _, ok = p.Parser.MatchLiteral(lit46, "while", 10, false); !ok {
+		if _, ok = p.Parser.MatchLiteral(lit58, "while", 10, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -17558,7 +14277,7 @@ func s35(p *rt.TParser) (any, bool) {
 	p.Enter()
 	p.StepWork()
 	p.StepWork()
-	if _, ok = p.Parser.MatchLiteral(lit46, "while", 10, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit58, "while", 10, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -17590,7 +14309,7 @@ func s36(p *rt.TParser) (any, bool) {
 		var ok bool
 		start, rec = p.Pos, len(p.Recovered)
 		p.Enter()
-		if _, ok = p.Parser.MatchLiteral(lit47, "return", 11, false); !ok {
+		if _, ok = p.Parser.MatchLiteral(lit59, "return", 11, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -17621,7 +14340,7 @@ func s36(p *rt.TParser) (any, bool) {
 	p.Enter()
 	p.StepWork()
 	p.StepWork()
-	if _, ok = p.Parser.MatchLiteral(lit47, "return", 11, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit59, "return", 11, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -17655,7 +14374,7 @@ func s37(p *rt.TParser) (any, bool) {
 		p.Enter()
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit43, "fn", 8, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit60, "fn", 8, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
@@ -17688,7 +14407,7 @@ func s37(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110) {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit43, "fn", 8, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit60, "fn", 8, false); !ok {
 		goto fail
 	}
 	p.StepWork()
@@ -17729,7 +14448,7 @@ func s38(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116 {
 			p.Pos += 3
-		} else if _, ok = p.Parser.MatchLiteral(lit42, "let", 7, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit55, "let", 7, false); !ok {
 			goto L7_ordinary
 		}
 		goto L3_ordinary
@@ -17742,7 +14461,7 @@ func s38(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit43, "fn", 8, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit60, "fn", 8, false); !ok {
 			goto L9_ordinary
 		}
 		goto L3_ordinary
@@ -17755,7 +14474,7 @@ func s38(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit44, "if", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit56, "if", 9, false); !ok {
 			goto L11_ordinary
 		}
 		goto L3_ordinary
@@ -17768,7 +14487,7 @@ func s38(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
 			p.Pos += 4
-		} else if _, ok = p.Parser.MatchLiteral(lit45, "else", 21, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit57, "else", 21, false); !ok {
 			goto L13_ordinary
 		}
 		goto L3_ordinary
@@ -17779,7 +14498,7 @@ func s38(p *rt.TParser) (any, bool) {
 			p.ExpectOrdinary(p.Pos, 10)
 			goto L14_ordinary
 		}
-		if _, ok = p.Parser.MatchLiteral(lit46, "while", 10, false); !ok {
+		if _, ok = p.Parser.MatchLiteral(lit58, "while", 10, false); !ok {
 			goto L15_ordinary
 		}
 		goto L3_ordinary
@@ -17790,7 +14509,7 @@ func s38(p *rt.TParser) (any, bool) {
 			p.ExpectOrdinary(p.Pos, 11)
 			goto L16_ordinary
 		}
-		if _, ok = p.Parser.MatchLiteral(lit47, "return", 11, false); !ok {
+		if _, ok = p.Parser.MatchLiteral(lit59, "return", 11, false); !ok {
 			goto L17_ordinary
 		}
 		goto L3_ordinary
@@ -17867,7 +14586,7 @@ func s38(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116) {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit42, "let", 7, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, "let", 7, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -17881,7 +14600,7 @@ L6:
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 110) {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit43, "fn", 8, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit60, "fn", 8, false); !ok {
 		goto L9
 	}
 	goto L3
@@ -17895,7 +14614,7 @@ L8:
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102) {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit44, "if", 9, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit56, "if", 9, false); !ok {
 		goto L11
 	}
 	goto L3
@@ -17909,7 +14628,7 @@ L10:
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101) {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit45, "else", 21, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit57, "else", 21, false); !ok {
 		goto L13
 	}
 	goto L3
@@ -17921,7 +14640,7 @@ L12:
 		goto L14
 	}
 	p.StepWork()
-	if _, ok = p.Parser.MatchLiteral(lit46, "while", 10, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit58, "while", 10, false); !ok {
 		goto L15
 	}
 	goto L3
@@ -17933,7 +14652,7 @@ L14:
 		goto L16
 	}
 	p.StepWork()
-	if _, ok = p.Parser.MatchLiteral(lit47, "return", 11, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit59, "return", 11, false); !ok {
 		goto L17
 	}
 	goto L3

@@ -256,6 +256,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [117. Straight-line actions and no unread variables in generated parsers](117-straight-line-generated-actions.md)
 - [118. TypeScript operator nodes are built directly](118-typescript-operator-nodes-built-directly.md)
 - [119. Case-insensitive literals in generated parsers](119-case-insensitive-literals.md)
+- [120. Unreachable rule bodies in generated parsers](120-unreachable-rule-bodies.md)
 
 ## Experiments That Did Not Pay Off
 

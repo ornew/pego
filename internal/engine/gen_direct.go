@@ -1156,6 +1156,8 @@ type genSnapshot struct {
 	n, descs, literals, methodKeys int
 	fieldTypes                     int
 	shapers                        int
+	edges                          int
+	reachErr                       error
 }
 
 func (g *generator) snapshot() genSnapshot {
@@ -1164,11 +1166,19 @@ func (g *generator) snapshot() genSnapshot {
 	if d := g.decisions; d != nil {
 		decisions, terms = len(d.log), len(d.terms)
 	}
-	return genSnapshot{decisions: decisions, terms: terms, workClasses: len(g.workClassKeys), shapers: len(g.shaperKeys), vars: g.vars.String(), methods: g.methods.String(), n: g.n,
+	var edges int
+	if g.collect != nil {
+		edges = len(g.collect.log)
+	}
+	return genSnapshot{edges: edges, reachErr: g.reachErr, decisions: decisions, terms: terms, workClasses: len(g.workClassKeys), shapers: len(g.shaperKeys), vars: g.vars.String(), methods: g.methods.String(), n: g.n,
 		descs: len(g.descs), literals: len(g.literalKeys), methodKeys: len(g.methodKeys), fieldTypes: len(g.fieldTypeKeys)}
 }
 
 func (g *generator) rollback(s genSnapshot) {
+	if g.collect != nil {
+		g.collect.log = g.collect.log[:s.edges]
+	}
+	g.reachErr = s.reachErr
 	if d := g.decisions; d != nil {
 		d.log, d.terms = d.log[:s.decisions], d.terms[:s.terms]
 	}

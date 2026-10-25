@@ -23,6 +23,15 @@ Generate Go source code for a parser that depends only on the standard library, 
 Because the grammar is not interpreted at run time, no grammar loading or compilation is needed, and expression evaluation is optimized by the Go compiler.
 The node representation (`Node`) and the JSON format are the same as the engine's, so replacing the engine with a generated parser, or the reverse, gives the same results.
 
+### Reachable Rules
+
+A generated Node or recognizer parser prints the body of a rule only if something can enter it:
+a start rule, or a rule that a printed body calls through its slot or its wrapper. A rule that
+is referenced only from value-free contexts is entered through its twin, so its original body is
+left out, and so are the bodies that only it calls. The generator finds the entered rules in a
+first pass over the Node and recognizer tables and prints the second pass from them; it fails if a printed call reaches a rule that
+was left out. The typed tables and the TypeScript generator are not pruned. See [record 120](../optimizations/120-unreachable-rule-bodies.md).
+
 ### Direct Rules
 
 The Node generator inlines eligible value-free plain `Recognize` rules and skip twins used by `Parse`, plus
