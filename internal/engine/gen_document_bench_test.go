@@ -2,6 +2,7 @@ package engine
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -15,6 +16,33 @@ func TestGeneratedDocumentBenchmarkFixture(t *testing.T) {
 	if dir == "" {
 		t.Skip("set PEGO_GENERATED_DOCUMENT_BENCH_DIR to export the benchmark fixture")
 	}
+	writeGeneratedDocumentBenchmarkFixture(t, dir)
+}
+
+// TestGeneratedDocumentBenchmarkFixtureGenerates generates the fixture into a temporary directory in
+// every mode, so that a grammar or generator error in the fixture fails the normal suite.
+func TestGeneratedDocumentBenchmarkFixtureGenerates(t *testing.T) {
+	writeGeneratedDocumentBenchmarkFixture(t, t.TempDir())
+}
+
+// TestGeneratedDocumentBenchmarkFixtureCompiles compiles and vets the generated module, so that the
+// benchmark files cannot drift from the generated API. It needs the go tool, so it is skipped in -short.
+func TestGeneratedDocumentBenchmarkFixtureCompiles(t *testing.T) {
+	if testing.Short() {
+		t.Skip("compiles the generated benchmark module")
+	}
+	dir := t.TempDir()
+	writeGeneratedDocumentBenchmarkFixture(t, dir)
+	cmd := exec.Command("go", "vet", "./...")
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("generated benchmark module: %v\n%s", err, out)
+	}
+}
+
+// writeGeneratedDocumentBenchmarkFixture writes the benchmark module of the Document fixture into dir.
+func writeGeneratedDocumentBenchmarkFixture(t testing.TB, dir string) {
+	t.Helper()
 	observability := os.Getenv("PEGO_GENERATED_DOCUMENT_OBSERVABILITY") == "1"
 	g, err := parseTest(`rule main = record+ $$
 rule record = k:"é" ":" v:("0" / "1") ";"`)
