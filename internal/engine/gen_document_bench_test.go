@@ -70,16 +70,24 @@ rule item Item = k:[a-zé😀]+ #atomic "=" v:[0-9]+ #atomic ";" => Item{Key: $k
 	if err != nil {
 		t.Fatal(err)
 	}
+	// typeddocumentconv is the disabled control of direct typed Document matching: the same
+	// source with Document generation, but Document.ParseAST converts the Node result. It
+	// is a separate package, so the fixture compares both paths in one run.
 	for _, variant := range []struct {
-		name     string
-		document bool
+		name         string
+		document     bool
+		convertNodes bool
 	}{
-		{"typedbatch", false},
-		{"typeddocument", true},
+		{"typedbatch", false, false},
+		{"typeddocument", true, false},
+		{"typeddocumentconv", true, true},
 	} {
-		code, err := generateCode(typedGrammar, GenOptions{Package: variant.name, Start: "main", Types: true, Document: variant.document, Observability: observability, convertTypes: os.Getenv("PEGO_GENERATED_DOCUMENT_CONVERSION_REFERENCE") == "1"})
+		code, err := generateCode(typedGrammar, GenOptions{Package: variant.name, Start: "main", Types: true, Document: variant.document, Observability: observability, convertTypes: variant.convertNodes})
 		if err != nil {
 			t.Fatal(err)
+		}
+		if got := strings.Contains(string(code), "TypedDocumentParse("); got != (variant.document && !variant.convertNodes) {
+			t.Fatalf("%s: direct typed Document matching present = %v", variant.name, got)
 		}
 		if err := writeGeneratedDocumentBenchmarkFile(dir, filepath.Join(variant.name, "parser.go"), code); err != nil {
 			t.Fatal(err)
@@ -111,7 +119,7 @@ rule item Item = k:[a-zé😀]+ #atomic "=" v:[0-9]+ #atomic ";" => Item{Key: $k
 			t.Fatal(err)
 		}
 	}
-	for _, name := range []string{"batch_bench_test.go", "typed_bench_test.go", "generateddocument/document_bench_test.go"} {
+	for _, name := range []string{"batch_bench_test.go", "typed_bench_test.go", "typed_control_bench_test.go", "generateddocument/document_bench_test.go"} {
 		source, err := os.ReadFile(filepath.Join("testdata", "generated_document_bench", name))
 		if err != nil {
 			t.Fatal(err)
