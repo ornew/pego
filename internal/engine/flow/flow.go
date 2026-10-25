@@ -45,6 +45,10 @@ type Func struct {
 	Frame bool
 	Value Expr
 	Cut   *Var
+	// Node reports a function that builds the values of the Node runtime (NewTerminalNode,
+	// NewBranchNode). A function builds the values of one runtime: a Node function has no typed value
+	// operation, and a typed function has no Node one (Verify).
+	Node bool
 }
 
 // Type is the type of a variable.
@@ -386,6 +390,18 @@ type NewNode struct {
 	Start, Kids Expr
 }
 
+// NewTerminalNode is a terminal of the Node runtime from Start to the position, with the text Text.
+// Only a Node function (Func.Node) builds it; a typed function builds NewMatch.
+type NewTerminalNode struct{ Start, Text Expr }
+
+// NewBranchNode is a branch of the Node runtime from Start to the position: a sequence, or with List a
+// list, of the children Kids. Only a Node function (Func.Node) builds it; a typed function builds
+// NewNode.
+type NewBranchNode struct {
+	List        bool
+	Start, Kids Expr
+}
+
 // NewVals is an empty list of values with room for N.
 type NewVals struct{ N int }
 
@@ -506,52 +522,54 @@ type CtxFinish struct {
 	X Expr
 }
 
-func (*Use) expr()            {}
-func (*Read) expr()           {}
-func (*RecLen) expr()         {}
-func (*KidsLen) expr()        {}
-func (*Nil) expr()            {}
-func (*Int) expr()            {}
-func (*Bool) expr()           {}
-func (*Not) expr()            {}
-func (*Or) expr()             {}
-func (*Cmp) expr()            {}
-func (*HasLit) expr()         {}
-func (*MatchLit) expr()       {}
-func (*MatchClass) expr()     {}
-func (*InClass) expr()        {}
-func (*GuardFails) expr()     {}
-func (*AtAnchor) expr()       {}
-func (*SkipTerminal) expr()   {}
-func (*SkipClasses) expr()    {}
-func (*CallRule) expr()       {}
-func (*Isolate) expr()        {}
-func (*Unisolate) expr()      {}
-func (*Text) expr()           {}
-func (*LiteralText) expr()    {}
-func (*Str) expr()            {}
-func (*NewMatch) expr()       {}
-func (*NewNode) expr()        {}
-func (*NewVals) expr()        {}
-func (*Kids) expr()           {}
-func (*ShapeSingle) expr()    {}
-func (*ShapeCapture) expr()   {}
-func (*ScopeValue) expr()     {}
-func (*AttachCaptures) expr() {}
-func (*FreshNode) expr()      {}
-func (*ConvertResult) expr()  {}
-func (*UseCtx) expr()         {}
-func (*Pred) expr()           {}
-func (*Bind) expr()           {}
-func (*Eval) expr()           {}
-func (*CtxFinish) expr()      {}
-func (*MarkState) expr()      {}
-func (*MarkPos) expr()        {}
-func (*NewFrame) expr()       {}
-func (*FrameVal) expr()       {}
-func (*Keep) expr()           {}
-func (*MakeError) expr()      {}
-func (*ErrorValue) expr()     {}
+func (*Use) expr()             {}
+func (*Read) expr()            {}
+func (*RecLen) expr()          {}
+func (*KidsLen) expr()         {}
+func (*Nil) expr()             {}
+func (*Int) expr()             {}
+func (*Bool) expr()            {}
+func (*Not) expr()             {}
+func (*Or) expr()              {}
+func (*Cmp) expr()             {}
+func (*HasLit) expr()          {}
+func (*MatchLit) expr()        {}
+func (*MatchClass) expr()      {}
+func (*InClass) expr()         {}
+func (*GuardFails) expr()      {}
+func (*AtAnchor) expr()        {}
+func (*SkipTerminal) expr()    {}
+func (*SkipClasses) expr()     {}
+func (*CallRule) expr()        {}
+func (*Isolate) expr()         {}
+func (*Unisolate) expr()       {}
+func (*Text) expr()            {}
+func (*LiteralText) expr()     {}
+func (*Str) expr()             {}
+func (*NewMatch) expr()        {}
+func (*NewNode) expr()         {}
+func (*NewTerminalNode) expr() {}
+func (*NewBranchNode) expr()   {}
+func (*NewVals) expr()         {}
+func (*Kids) expr()            {}
+func (*ShapeSingle) expr()     {}
+func (*ShapeCapture) expr()    {}
+func (*ScopeValue) expr()      {}
+func (*AttachCaptures) expr()  {}
+func (*FreshNode) expr()       {}
+func (*ConvertResult) expr()   {}
+func (*UseCtx) expr()          {}
+func (*Pred) expr()            {}
+func (*Bind) expr()            {}
+func (*Eval) expr()            {}
+func (*CtxFinish) expr()       {}
+func (*MarkState) expr()       {}
+func (*MarkPos) expr()         {}
+func (*NewFrame) expr()        {}
+func (*FrameVal) expr()        {}
+func (*Keep) expr()            {}
+func (*MakeError) expr()       {}
+func (*ErrorValue) expr()      {}
 
 // Results returns the number of results of x: 2 for the operations that have two, 1 otherwise.
 func Results(x Expr) int {
@@ -560,6 +578,63 @@ func Results(x Expr) int {
 		return 2
 	}
 	return 1
+}
+
+// Subexprs calls f with each expression that x directly holds, in order.
+func Subexprs(x Expr, f func(Expr)) {
+	each := func(xs ...Expr) {
+		for _, y := range xs {
+			if y != nil {
+				f(y)
+			}
+		}
+	}
+	switch x := x.(type) {
+	case *Not:
+		each(x.X)
+	case *Or:
+		each(x.X, x.Y)
+	case *Cmp:
+		each(x.L, x.R)
+	case *Unisolate:
+		each(x.Mark)
+	case *Text:
+		each(x.Start)
+	case *LiteralText:
+		each(x.Start)
+	case *NewMatch:
+		each(x.Start, x.Text)
+	case *NewNode:
+		each(x.Start, x.Kids)
+	case *NewTerminalNode:
+		each(x.Start, x.Text)
+	case *NewBranchNode:
+		each(x.Start, x.Kids)
+	case *Kids:
+		each(x.Base)
+	case *ShapeSingle:
+		each(x.X, x.Start)
+	case *ShapeCapture:
+		each(x.X, x.Start)
+	case *ScopeValue:
+		each(x.X, x.Start)
+	case *AttachCaptures:
+		each(x.X, x.Start)
+	case *Keep:
+		each(x.Exps)
+	case *MakeError:
+		each(x.Far, x.Exps)
+	case *ErrorValue:
+		each(x.Start, x.X)
+	case *FreshNode:
+		each(x.X)
+	case *ConvertResult:
+		each(x.X, x.Owned)
+	case *UseCtx:
+		each(x.Start)
+	case *CtxFinish:
+		each(x.X)
+	}
 }
 
 // Uses calls f with each variable that x reads, in order.
@@ -590,6 +665,12 @@ func Uses(x Expr, f func(*Var)) {
 		Uses(x.Start, f)
 		Uses(x.Text, f)
 	case *NewNode:
+		Uses(x.Start, f)
+		Uses(x.Kids, f)
+	case *NewTerminalNode:
+		Uses(x.Start, f)
+		Uses(x.Text, f)
+	case *NewBranchNode:
 		Uses(x.Start, f)
 		Uses(x.Kids, f)
 	case *Kids:

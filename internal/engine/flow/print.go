@@ -269,6 +269,14 @@ func (p *printer) expr(x Expr) string {
 			kind = "list"
 		}
 		return kind + "(" + p.exprs(x.Start, x.Kids) + ")"
+	case *NewTerminalNode:
+		return "terminal(" + p.exprs(x.Start, x.Text) + ")"
+	case *NewBranchNode:
+		kind := "branch"
+		if x.List {
+			kind = "branchlist"
+		}
+		return kind + "(" + p.exprs(x.Start, x.Kids) + ")"
 	case *NewVals:
 		return fmt.Sprintf("vals(%d)", x.N)
 	case *Kids:

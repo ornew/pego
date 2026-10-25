@@ -198,8 +198,14 @@ func (v *verifier) stmt(s Stmt) error {
 	case *ClearVals:
 		return v.use(s.F)
 	case *DropTrail:
+		if v.f.Node {
+			return fmt.Errorf("%s: frame trail in a Node function", v.f.Name)
+		}
 		return v.expr(s.M)
 	case *FreeFrame:
+		if v.f.Node {
+			return fmt.Errorf("%s: frame release in a Node function", v.f.Name)
+		}
 		return v.use(s.F)
 	case *AppendError:
 		return v.expr(s.X)
@@ -222,6 +228,9 @@ func (v *verifier) expr(xs ...Expr) error {
 	for _, x := range xs {
 		if x == nil {
 			return fmt.Errorf("missing expression")
+		}
+		if err := v.runtime(x); err != nil {
+			return err
 		}
 		Uses(x, func(u *Var) {
 			if err == nil {
@@ -253,4 +262,50 @@ func exits(ss []Stmt, l *Label) bool {
 	}
 	walk(ss)
 	return found
+}
+
+// runtime checks that the value operations of x belong to the runtime of the function: a Node
+// function builds NewTerminalNode and NewBranchNode and has no typed value operation, and a typed
+// function has no Node one.
+func (v *verifier) runtime(x Expr) error {
+	var typed, node string
+	// Pred, Bind and the other expressions are valid in both runtimes: the printer writes each with the
+	// context of its table. The typed value operations listed here are the ones the runtimes differ in.
+	switch x := x.(type) {
+	case *NewMatch:
+		typed = "match"
+	case *NewNode:
+		typed = "node"
+	case *ErrorValue:
+		typed = "error value"
+	case *FreshNode:
+		typed = "fresh node"
+	case *ConvertResult:
+		typed = "result conversion"
+	case *UseCtx, *CtxFinish, *Eval:
+		typed = "action context"
+	case *AttachCaptures:
+		// The Node runtime attaches the captures of a frame; the values of local variables are the
+		// typed runtime's form.
+		if v.f.Node && x.Vals != nil {
+			typed = "capture values of local variables"
+		}
+	case *NewTerminalNode:
+		node = "terminal"
+	case *NewBranchNode:
+		node = "branch"
+	}
+	switch {
+	case typed != "" && v.f.Node:
+		return fmt.Errorf("%s: typed %s in a Node function", v.f.Name, typed)
+	case node != "" && !v.f.Node:
+		return fmt.Errorf("%s: Node %s in a typed function", v.f.Name, node)
+	}
+	var err error
+	Subexprs(x, func(y Expr) {
+		if err == nil {
+			err = v.runtime(y)
+		}
+	})
+	return err
 }

@@ -49,6 +49,10 @@ type Options struct {
 	InlineLiterals int
 	// Observe reports the alternatives that the guards of choices skip (ObserveSkip).
 	Observe bool
+	// Node builds the values of the Node runtime (NewTerminalNode, NewBranchNode) in place of the typed
+	// ones, in the functions it lowers (Func.Node). It holds for every function of a module's lowering,
+	// so the options of the Node and recognizer tables are never shared with the typed table's.
+	Node bool
 }
 
 // Recovers reports whether the module has a Recover, which appends recovered errors.
@@ -106,7 +110,7 @@ func LowerFrame(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, bu
 	if !FramedBody(n) {
 		return nil, fmt.Errorf("a body of rule %s is not lowered to a framed function", r.Name)
 	}
-	f := &Func{Name: name, Rule: r, Fail: &Label{Name: "fail"}, Frame: true, Binds: n.Attrs().Eff.Set&core.EffBind != 0}
+	f := &Func{Name: name, Rule: r, Fail: &Label{Name: "fail"}, Frame: true, Node: opts.Node, Binds: n.Attrs().Eff.Set&core.EffBind != 0}
 	l := &lowerer{m: m, opts: opts, f: f, used: map[*Label]bool{}, frame: true}
 	l.stack = []*[]Stmt{&f.Body}
 	core.Walk(n, func(n core.Node) {
@@ -136,6 +140,7 @@ func Lower(m *core.Module, r *core.Rule, name string, opts Options) (*Func, erro
 		Start:  &Var{Name: "start", Type: TypeInt, Entry: true},
 		Result: &Var{Name: "v", Type: TypeValue, Entry: true},
 		Ctx:    &Var{Name: "c", Type: TypeCtx, Entry: true},
+		Node:   opts.Node,
 		Binds:  r.Body.Attrs().Eff.Set&core.EffBind != 0}
 	l := &lowerer{m: m, opts: opts, f: f, used: map[*Label]bool{}}
 	l.stack = []*[]Stmt{&f.Body}
@@ -418,7 +423,7 @@ func (l *lowerer) node(n core.Node, s *scope, build bool, fail *Label) Expr {
 			l.set(start, pos)
 			l.failIf(nil, &Not{X: &MatchClass{Class: n.Class}}, fail)
 			v := l.decl("v", TypeValue)
-			l.set(v, &NewMatch{Start: use(start), Text: &Text{Start: use(start)}})
+			l.set(v, l.match(use(start), &Text{Start: use(start)}))
 			return use(v)
 		}
 		ch, size, ok := l.shared("ch", TypeRune), l.shared("size", TypeInt), l.ok()
@@ -524,7 +529,7 @@ func (l *lowerer) node(n core.Node, s *scope, build bool, fail *Label) Expr {
 			return &Nil{}
 		}
 		v := l.decl("v", TypeValue)
-		l.set(v, &NewMatch{Start: use(start), Text: &Text{Start: use(start)}})
+		l.set(v, l.match(use(start), &Text{Start: use(start)}))
 		return use(v)
 	case *core.Drop:
 		l.node(n.Body, s, false, fail)
@@ -609,7 +614,7 @@ func (l *lowerer) lit(n *core.Lit, build bool, fail *Label) Expr {
 	case strings.ContainsRune(n.Text, '�'):
 		text = &LiteralText{Start: use(start), Lit: n.Text}
 	}
-	l.set(v, &NewMatch{Start: use(start), Text: text})
+	l.set(v, l.match(use(start), text))
 	return use(v)
 }
 
@@ -622,7 +627,7 @@ func (l *lowerer) single(size *Var, build bool) Expr {
 	start, v := l.decl("x", TypeInt), l.decl("v", TypeValue)
 	l.set(start, pos)
 	l.emit(&Advance{N: use(size)})
-	l.set(v, &NewMatch{Start: use(start), Text: &Text{Start: use(start)}})
+	l.set(v, l.match(use(start), &Text{Start: use(start)}))
 	return use(v)
 }
 
@@ -635,7 +640,7 @@ func (l *lowerer) guardedClass(build bool) Expr {
 	start, v := l.decl("x", TypeInt), l.decl("v", TypeValue)
 	l.set(start, pos)
 	l.emit(&Advance{N: use(l.guardedSize)})
-	l.set(v, &NewMatch{Start: use(start), Text: &Text{Start: use(start)}})
+	l.set(v, l.match(use(start), &Text{Start: use(start)}))
 	return use(v)
 }
 
@@ -663,7 +668,7 @@ func (l *lowerer) seq(n *core.Seq, s *scope, build bool, fail *Label) Expr {
 		return &Nil{}
 	}
 	v := l.decl("v", TypeValue)
-	l.set(v, &NewNode{Start: use(start), Kids: use(kids)})
+	l.set(v, l.branch(false, use(start), use(kids)))
 	return use(v)
 }
 
@@ -848,7 +853,7 @@ func (l *lowerer) repeat(n *core.Repeat, s *scope, build bool, fail *Label) Expr
 		return &Nil{}
 	}
 	list := l.decl("v", TypeValue)
-	l.set(list, &NewNode{List: true, Start: use(start), Kids: &Kids{Base: use(base)}})
+	l.set(list, l.branch(true, use(start), &Kids{Base: use(base)}))
 	return use(list)
 }
 
@@ -957,7 +962,7 @@ func (l *lowerer) projectRepeat(n *core.Repeat, fail *Label) Expr {
 		l.failIf(nil, &Cmp{Op: "<", L: use(count), R: &Int{N: n.Min}}, fail, &DropKids{Base: use(base)})
 	}
 	v := l.decl("v", TypeValue)
-	l.set(v, &NewNode{List: true, Start: use(start), Kids: &Kids{Base: use(base)}})
+	l.set(v, l.branch(true, use(start), &Kids{Base: use(base)}))
 	return use(v)
 }
 
@@ -1129,7 +1134,8 @@ func (l *lowerer) frameRepeat(n *core.Repeat, s *scope, build bool, fail *Label)
 			}
 		}
 		l.emit(&DeclareNames{N: names})
-		if field == "" {
+		if field == "" && !l.opts.Node {
+			// The Node runtime does not recycle capture frames or keep a trail of them.
 			l.emit(&DropTrail{M: use(m.state)})
 			l.emit(&FreeFrame{F: frame})
 		}
@@ -1168,7 +1174,7 @@ func (l *lowerer) frameRepeat(n *core.Repeat, s *scope, build bool, fail *Label)
 		return &Nil{}
 	}
 	list := l.decl("v", TypeValue)
-	l.set(list, &NewNode{List: true, Start: use(start), Kids: &Kids{Base: use(base)}})
+	l.set(list, l.branch(true, use(start), &Kids{Base: use(base)}))
 	return use(list)
 }
 
@@ -1233,4 +1239,20 @@ func (l *lowerer) recover(n *core.Recover, s *scope, build bool, fail *Label) Ex
 		return &Nil{}
 	}
 	return use(v)
+}
+
+// match returns the value of a match from start with the text, built for the runtime of the function.
+func (l *lowerer) match(start, text Expr) Expr {
+	if l.opts.Node {
+		return &NewTerminalNode{Start: start, Text: text}
+	}
+	return &NewMatch{Start: start, Text: text}
+}
+
+// branch returns the node of the children kids from start, built for the runtime of the function.
+func (l *lowerer) branch(list bool, start, kids Expr) Expr {
+	if l.opts.Node {
+		return &NewBranchNode{List: list, Start: start, Kids: kids}
+	}
+	return &NewNode{List: list, Start: start, Kids: kids}
 }
