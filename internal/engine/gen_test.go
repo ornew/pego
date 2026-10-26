@@ -255,6 +255,45 @@ rule e = #operators {
     operand "x"
     level { infix left "+" }
 }`, []string{"ex", "ex+x", "ex+", "eq", "e", "e+", ""}},
+		// Left-recursion leaders, whose growth the runtime drives around the printed body: a leader called at one
+		// position by several alternatives and lookaheads (its memo entry is read as a seed and as a result), nested
+		// leaders, a leader with a cut, captures in the growing alternative, and inputs that fail after a seed.
+		{"leader with memoized callers", `rule main = (&e "!" / e "?" / e) $$
+rule e = e "+" t / t
+rule t = [0-9]+ #atomic`, []string{"1+2", "1+2!", "1+2?", "1+2+3?", "1+", "+", "1", "12+3+45!", "1+2x", "5+6+7?", "9", ""}},
+		{"nested left recursion", `rule main = e $$
+rule e = e "+" t / t
+rule t = t "*" f / f
+rule f = [0-9] / "(" e ")"`, []string{"1+2*3", "(1+2)*3", "1+*2", "1*", "(1+", "1+2*(3+4)*5", "((1))", "()", ""}},
+		{"leader with a cut", `rule main = e $$
+rule e = e "+" #cut t / t
+rule t = [0-9]+ #atomic`, []string{"1", "1+2", "1+2+3", "1+", "1+2+", "1+x", "1x", "5+6+7", ""}},
+		{"leader in lookaheads", `rule main = (&(e "x") e "x" / !(e "y") e "z") $$
+rule e = e "+" t / t
+rule t = [0-9]+ #atomic`, []string{"1+2x", "1+2z", "1+2y", "1x", "1z", "z", "1+x", ""}},
+		{"leader with captures", `rule main = e $$
+rule e = l:e "+" r:t / t
+rule t = [0-9]+ #atomic`, []string{"1+2+3", "1", "1+", "+1", "7+8+9", ""}},
+		// More shapes of leaders: an indirect cycle, mutual leaders, a hidden leader behind an optional prefix, a leader
+		// behind lookahead prefixes, sibling alternatives that start with a leader, a leader in a repetition, and a
+		// leader choice with several operators; the inputs fail after a seed and at the prefixes.
+		{"indirect leader cycle", `rule main = a $$
+rule a = b "x" / "n"
+rule b = a "y" / "m"`, []string{"n", "nyx", "nyxyx", "mx", "ny", "nyxy", "nx", "x", "m", ""}},
+		{"mutual leaders", `rule main = a $$
+rule a = a "x" / b "y" / "n"
+rule b = b "z" / a "w" / "m"`, []string{"n", "nx", "nwy", "nxwy", "mzy", "mzzy", "nwzy", "nw", "nwz", "y", ""}},
+		{"hidden leader behind an optional prefix", `rule main = "q"? a $$
+rule a = a "x" / "n"`, []string{"n", "nx", "qnxx", "qn", "q", "qx", "xn", ""}},
+		{"leader behind lookahead prefixes", `rule main = &"n" !"nz" a $$ / "z" a "!" $$
+rule a = a "x" / "n"`, []string{"nxx", "nz", "n", "znx!", "znx", "z", "zx!", ""}},
+		{"sibling alternatives starting with a leader", `rule main = (a "1" / a "2" / a) $$
+rule a = a "x" / "n"`, []string{"n", "nx1", "nxx2", "nxx", "nx3", "n1", "x", ""}},
+		{"leader in a repetition", `rule main = (a ";")* $$
+rule a = a "x" / "n"`, []string{"n;", "nx;n;", "nxx;nx;", "n", "nx;nxy;", "n;;", ";", ""}},
+		{"leader choice with several operators", `rule main = e $$
+rule e = e "+" t / e "-" t / e "|" t / t
+rule t = [0-9]+ #atomic`, []string{"1", "1+2-3|4", "1+2-", "1|", "12+34-5", "+1", "1+2+3-4+5", "1*2", ""}},
 		{"memo keyed by variables", `var n int
 rule main = {n := 1} r "x" / {n := 2} r .*
 rule r = {n == 1} "a" / {n == 2} "b"`, []string{"ax", "b", "ay", "bx"}},

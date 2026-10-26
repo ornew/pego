@@ -91,6 +91,50 @@ var flowRecognizerMutants = map[string]func([]byte) []byte{
 	"guard":   shiftGuardFirstCharacters,
 	"capture": dropCaptures,
 	"cut":     dropCuts,
+	// A leader's growth is the runtime's: the printed body only reads the seed through a call of its own rule.
+	// The mutants change those calls, as a printer would if it guarded the left-recursive alternative by a
+	// wrong first set or lost the value the seed gives.
+	"seed-guard": guardSeedReads,
+	"seed-value": dropSeedValues,
+}
+
+var (
+	ruleBodyRef = regexp.MustCompile(`(?m)^\t(rules|recRules)\[(\d+)\]\.Body = func\(p \*rt\.Parser, _ int\) \(\*rt\.Node, bool\) \{ return (e\d+)\(p\) \}$`)
+	funcBody    = func(name string) *regexp.Regexp {
+		return regexp.MustCompile(`(?ms)^func ` + name + `\(p \*rt\.Parser\) \(\*rt\.Node, bool\) \{\n.*?^\}\n`)
+	}
+)
+
+// mutateSelfCalls rewrites the calls that the body function of each rule makes to the rule itself: the call
+// expression `p.Call(table[i], 0)` becomes repl(call).
+func mutateSelfCalls(code []byte, repl func(call string) string) []byte {
+	out := code
+	for _, m := range ruleBodyRef.FindAllSubmatch(code, -1) {
+		call := fmt.Sprintf("p.Call(%s[%s], 0)", m[1], m[2])
+		fn := funcBody(string(m[3]))
+		loc := fn.FindIndex(out)
+		if loc == nil {
+			continue
+		}
+		body := strings.ReplaceAll(string(out[loc[0]:loc[1]]), call, repl(call))
+		out = append(append(append([]byte(nil), out[:loc[0]]...), body...), out[loc[1]:]...)
+	}
+	return out
+}
+
+// guardSeedReads reads the seed only where the next character is "1", as if the first set of the other
+// alternatives were taken for that of the left-recursive one: on other inputs the alternative is skipped.
+func guardSeedReads(code []byte) []byte {
+	return mutateSelfCalls(code, func(call string) string {
+		return "func() (*rt.Node, bool) { if p.Pos >= len(p.In) || p.In[p.Pos] != '1' { return nil, false }; return " + call + " }()"
+	})
+}
+
+// dropSeedValues makes the call of the rule itself succeed or fail as before but give no value.
+func dropSeedValues(code []byte) []byte {
+	return mutateSelfCalls(code, func(call string) string {
+		return "func() (*rt.Node, bool) { _, ok := " + call + "; return nil, ok }()"
+	})
 }
 
 var setCut = regexp.MustCompile(`(?m)^(\t+cut\d+) = true$`)

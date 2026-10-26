@@ -174,12 +174,14 @@ func (g *generator) flowStreamBody(r *rule, scope *scope) string {
 }
 
 // flowFrameExprOK reports whether the body of the rule r is one that Flow IR prints as a framed body of the
-// Node or recognizer table: as directOK, except that a body may cut. Flow IR lowers a cut as the typed table does
-// (a flag per backtracking point, published to the runtime's cut flag on return, as generator.expr's rule wrapper
-// leaves it), so the runtime's frame, memo and finish ownership are the same. Left-recursion leaders and bodies
+// Node or recognizer table: as directOK, except that a body may cut, and that the rule may be a left-recursion
+// leader. Flow IR lowers a cut as the typed table does (a flag per backtracking point, published to the runtime's
+// cut flag on return, as generator.expr's rule wrapper leaves it), so the runtime's frame, memo and finish
+// ownership are the same. The runtime owns the growth of a leader's seed around its body, so the body is the
+// matcher of any other rule; its left-recursive alternatives have no first set and are never guarded. Only bodies
 // with recovery keep the direct printer.
 func flowFrameExprOK(r *rule) bool {
-	return !r.leader && directFrameExprOK(r.bodyExpr(), true, false)
+	return directFrameExprOK(r.bodyExpr(), true, false)
 }
 
 // flowNodeFrameOK reports whether the rule r of the Node or recognizer table is printed from Flow IR as

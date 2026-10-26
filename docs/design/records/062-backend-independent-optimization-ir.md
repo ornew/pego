@@ -71,7 +71,7 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
 - Generated typed Go is printed from Flow IR. Its rules and Operators Rule lines have no `dgen` route and no
   private switch; `dgen` prints only the Node and recognizer tables.
 - The rules of an ordinary Node parser that `flowNodeFrameOK` accepts are printed from Flow IR in both tables: the
-  lean rules, and the framed rules whose bodies `flow.FramedBody` accepts (no leaders, cuts or recovery, and no
+  lean rules, and the framed rules whose bodies `flow.FramedBody` accepts (no recovery, and no
   Nest, Operators Rule or Terminal node), together with the recognizer rules that `recFlowEligible` accepts
   (`startRecFlow`, `gen_flow_recognizer.go`). `dgen` prints the other rules of both tables. A typed-only
   build has Node rules only when a typed entry point converts the Node result of a rule (`keepNodes`); they print
@@ -93,12 +93,20 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   (Flow's guards skip alternatives that `dgen` tries, and work controls charge Flow's steps), so the tests compare
   behavior instead: the generated parsers run as the engine on inputs that fail near and after cuts (error
   position, expected set and message), with observation events and profile counts, Documents and the work-control
-  invariants, and a mutant that drops every cut fails that comparison. What `dgen` still prints in both tables are
-  the left-recursion leaders and the bodies with a recovery (`directFallbackHook` lists them for a test); the tests
-  assert that no other rule falls back, and that capture rules, captured repetitions and cut rules take the Flow
-  route. The text of the rules without a cut equals `dgen`'s for the ten grammars, the recognizers run as the
-  engine's on the generated-grammar corpus and the testdata of the ten grammars in both forms, and a mutant that
-  drops the recording of captures fails that comparison.
+  invariants, and a mutant that drops every cut fails that comparison. The body of a left-recursion leader prints
+  from Flow IR the same way, in both tables and as the stream body of a start rule: the runtime owns the growth of
+  the seed (`call`, `growBegin`, `growStep` and `growEnd` around the body, the memo entry that a left-recursive call
+  reads as the seed, the dependency counts of those reads and the merging of the expected sets of the iterations),
+  and the generated code supplies the body that it evaluates for each iteration. A left-recursive alternative has no
+  first set, so Flow never guards it and it always reads the seed. The tests run leader grammars with memoized
+  callers, lookaheads, nesting, cuts and captures against the engine on inputs that fail after a seed, with
+  observation, Documents (evaluated and reused counts included), work controls and `ParseStream`; mutants that
+  guard the left-recursive alternative by a wrong first set and that drop the value of the seed read fail that
+  comparison. What `dgen` still prints in both tables are the bodies with a recovery (`directFallbackHook` lists
+  them for a test); the tests assert that no other rule falls back, and that capture rules, captured repetitions, cut
+  rules and leaders take the Flow route. The text of the rules without a cut or leader equals `dgen`'s for the ten
+  grammars, the recognizers run as the engine's on the generated-grammar corpus and the testdata of the ten
+  grammars in both forms, and a mutant that drops the recording of captures fails that comparison.
   The lines of an Operators Rule in both tables are printed from Flow IR as framed bodies, except a line with
   `#recover`, which Flow IR would build with the typed runtime's error values. Operators Rules have no
   projected repetitions, so Core IR and the tables agree on the shape of every capture. The tests compare the
@@ -632,7 +640,7 @@ stage of its first consumer, so its differential tests and negative controls run
    `generator.expr` (measured at 92050aae at the four exits: the direct rule, the framed body, the rule body
    and the Operators Rule lines). Left-recursion leaders, `#recover`, nested calls and Operators Rules are
    rejected by `flow.LocalRule`, but they are printed through the framed-body and Operators Rule lowering.
-   Documents, and the stream body of a start rule that Flow IR does not print (a left-recursion leader, a body with
+   Documents, and the stream body of a start rule that Flow IR does not print (a body with
    recovery), still print through `dgen` and `generator.expr`, which stage 2 removes.
    The typed dispatch does not fall back: a typed rule or Operators Rule line that Flow IR does not print
    makes generation fail. Typed output has no `dgen` branches and no switches for them; `dgen` prints the Node and

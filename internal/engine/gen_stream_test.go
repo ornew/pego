@@ -254,6 +254,16 @@ rule word = [a-z]+ #atomic`, []string{"ab;1;cd;", "1;ab", "ab;;", ";"}},
 	{"recovery in the start rule", `rule main = (word ";" #recover(skip=[^;]* ";"))* #stream $$
 rule word = [a-z]+ #atomic`, []string{"ab;1;cd;", "1;ab", "ab;;", ";"}},
 	// Each growth of the start rule allocates its capture frame again.
+	// A leader that grows through an optional prefix of itself before the streamed elements, with a mandatory end.
+	{"left recursive start choice", `rule main = (main "+")? item* #stream "."
+rule item = q:[a-z] #atomic`, []string{"ab.", "ab.+c.", "ab.+c.+d.", ".", "+", "ab", "ab.+", ""}},
+	// An indirect cycle and mutual leaders through the start rule, whose elements stream after the cycle.
+	{"indirect leader start", `rule main = (a "y")? item* #stream "."
+rule a = main "x" / "n"
+rule item = q:[a-z] #atomic`, []string{"ab.", "nxy.", "ab.xyab.", "ab.xy", "n", "", "ab.x"}},
+	{"mutual leader start", `rule main = (a "w")? item* #stream "."
+rule a = main "x" / a "v" / "n"
+rule item = q:[a-z] #atomic`, []string{"nw.", "nvw.", "nvvw.", "ab.xwc.", "nwab.xvw.", "nwab", "nv", "w.", ""}},
 	{"left recursive start", `rule main = a:(main "x")? b:item* #stream c:"."?
 rule item = q:[a-z] #atomic`, []string{"ab.", "a", "", "ab.x"}},
 }

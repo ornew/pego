@@ -12,11 +12,11 @@ import (
 // the other rules do (flowFrameExprOK). Flow IR lowers a cut as in the typed table: a flag per backtracking
 // point, which the function reads from and publishes to the runtime's cut flag at its outermost scope. The
 // runtime keeps the frame, memo, depth and finish of the rule, so a cut changes no runtime semantics. What
-// still prints from the direct printer is a left-recursion leader or a body with a recovery. The generated
-// parsers of the corpus run as the engine's, in both forms and with observation, documents and work controls
-// (the corpus cases "cuts in every scope" and "cut with captures and a projected repetition" fail near and
-// after cuts, so that the errors show whether the alternatives after a cut were tried); the tests here
-// assert the route.
+// still prints from the direct printer is a body with a recovery (a left-recursion leader takes the Flow route
+// as well, gen_flow_leaders_test.go). The generated parsers of the corpus run as the engine's, in both forms and
+// with observation, documents and work controls (the corpus cases "cuts in every scope" and "cut with captures
+// and a projected repetition" fail near and after cuts, so that the errors show whether the alternatives after
+// a cut were tried); the tests here assert the route.
 
 // hasRecovery reports a recovery in e, read from the expression itself.
 func hasRecovery(e grammar.Expr) (found bool) {
@@ -44,7 +44,7 @@ func hasCut(e grammar.Expr) (found bool) {
 }
 
 // TestFlowCutsPrintFromFlow checks the route of the rules with cuts: over the corpus and the ten grammars, in
-// the ordinary and the work-controlled forms, a rule with a cut that is not a leader and has no recovery takes
+// the ordinary and the work-controlled forms, a rule with a cut that has no recovery takes
 // the Flow route in the Node and recognizer tables, and the direct printer prints no other rule with a cut.
 func TestFlowCutsPrintFromFlow(t *testing.T) {
 	if testing.Short() {
@@ -58,14 +58,14 @@ func TestFlowCutsPrintFromFlow(t *testing.T) {
 			framedRouteHook = func(table string, r *rule) {
 				if hasCut(r.bodyExpr()) {
 					taken[table]++
-					if r.leader || hasRecovery(r.bodyExpr()) {
-						bad = append(bad, fmt.Sprintf("%s %s printed from Flow IR but is a leader or recovers", table, r.name))
+					if hasRecovery(r.bodyExpr()) {
+						bad = append(bad, fmt.Sprintf("%s %s printed from Flow IR but recovers", table, r.name))
 					}
 				}
 			}
 			directFallbackHook = func(table, route string, r *rule) {
-				if hasCut(r.bodyExpr()) && !r.leader && !hasRecovery(r.bodyExpr()) {
-					bad = append(bad, fmt.Sprintf("%s %s (%s) cuts without a leader or recovery", table, r.name, route))
+				if hasCut(r.bodyExpr()) && !hasRecovery(r.bodyExpr()) {
+					bad = append(bad, fmt.Sprintf("%s %s (%s) cuts without a recovery", table, r.name, route))
 				}
 			}
 			defer func() { framedRouteHook, directFallbackHook = nil, nil }()
