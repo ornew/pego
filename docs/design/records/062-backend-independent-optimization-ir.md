@@ -73,8 +73,9 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
 - The rules of an ordinary Node parser that `flowNodeFrameOK` accepts are printed from Flow IR in both tables: the
   lean rules, and the framed rules whose bodies `flow.FramedBody` accepts (no leaders, cuts or recovery, and no
   Nest, Operators Rule or Terminal node), together with the recognizer rules that `recFlowEligible` accepts
-  (`startRecFlow`, `gen_flow_recognizer.go`). `dgen` prints the other rules of both tables, and every rule of a
-  typed-only build, where the Flow route does not apply. The private
+  (`startRecFlow`, `gen_flow_recognizer.go`). `dgen` prints the other rules of both tables. A typed-only
+  build has Node rules only when a typed entry point converts the Node result of a rule (`keepNodes`); they print
+  from Flow IR like those of any Node build, and the tests below cover that case. The private
   `directRecognizer` and `directNodeRules` options make `dgen` print all recognizer rules and all Node rules;
   the parity tests use them as the oracle of the Flow route and nothing else sets them. Both tables print through
   the same Flow printer, so a rule with the same text in the two tables is one shared helper by exact-text
@@ -125,6 +126,14 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   the evaluation and reuse counts must be equal, and the result must equal a parse from scratch. Mutants that
   read the multi-character literals, the single-character literals, the peeks or all of them in place in a
   Document parse change the reports and fail that comparison.
+  The tests of the typed-only case force `keepNodes` on the ten grammars and compare the Node rules with
+  `dgen`'s in the ordinary and work-controlled forms (equal beyond blank assignments of unread variables; the
+  grammars with an Operators Rule only by route, since the numbering of shared literals differs between the
+  printers). Behaviorally, six grammars whose entry points convert Nodes (a sequence, recovery, a fold, a
+  left-recursive leader, a cut with an environment, an Operators Rule) are compared with the `dgen` build and with a
+  parser that has every entry point on values, errors with positions and depth errors; a mutated grammar changes
+  the transcript. The corpus is not a text oracle here: `dgen` prints alternatives that are dead in Core IR and
+  Flow IR drops them.
   An observability build prints the same rules from Flow IR with the same observation hooks: the enter and exit
   events of rule calls come from the runtime and the rule wrappers, and the one report the matchers write, the
   skipped report of an alternative that a choice guard skips (`ObserveSkip`), is a Flow statement printed by the same
