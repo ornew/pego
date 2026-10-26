@@ -81,7 +81,9 @@ func TestFlowNodeRulesMatchDirect(t *testing.T) {
 	for _, form := range []struct {
 		name              string
 		controls, observe bool
-	}{{"ordinary", false, false}, {"controls", true, false}, {"observability", false, true}, {"observability+controls", true, true}} {
+		document          bool
+	}{{"ordinary", false, false, false}, {"controls", true, false, false}, {"observability", false, true, false}, {"observability+controls", true, true, false},
+		{"document", false, false, true}, {"document+controls", true, false, true}} {
 		for _, name := range names {
 			t.Run(name+"/"+form.name, func(t *testing.T) {
 				src, err := os.ReadFile(filepath.Join("..", "..", "parsers", name, name+".pego"))
@@ -93,7 +95,7 @@ func TestFlowNodeRulesMatchDirect(t *testing.T) {
 					t.Fatal(err)
 				}
 				gen := func(o GenOptions) []byte {
-					o.Package, o.Module, o.Runtime, o.Recognize, o.WorkControls, o.Observability = "x", "example.com/x", RuntimeImport, true, form.controls, form.observe
+					o.Package, o.Module, o.Runtime, o.Recognize, o.WorkControls, o.Observability, o.Document = "x", "example.com/x", RuntimeImport, true, form.controls, form.observe, form.document
 					files, err := Generate(g, o)
 					if err != nil {
 						t.Fatal(err)

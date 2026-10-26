@@ -118,6 +118,11 @@ func (v *verifier) stmt(s Stmt) error {
 		v.open, v.loops = v.open[:len(v.open)-1], v.loops[:len(v.loops)-1]
 		return err
 	case *If:
+		if v.f.Document {
+			if err := documentRead(v.f, s); err != nil {
+				return err
+			}
+		}
 		if s.Init != nil {
 			if err := v.stmt(s.Init); err != nil {
 				return err
@@ -322,4 +327,59 @@ func (v *verifier) runtime(x Expr) error {
 		}
 	})
 	return err
+}
+
+// documentRead checks the condition of the If s in a function lowered for Documents: a read of the input in
+// place (HasLit) is the whole condition, and the alternative is the recording primitive (MatchLit), which the
+// target takes when the parse is a Document's; otherwise a Document parse would read without recording how far
+// it examined.
+func documentRead(f *Func, s *If) error {
+	inPlace := false
+	var walk func(x Expr)
+	walk = func(x Expr) {
+		if _, ok := x.(*HasLit); ok {
+			inPlace = true
+		}
+		Subexprs(x, walk)
+	}
+	walk(s.Cond)
+	if !inPlace {
+		return nil
+	}
+	if _, ok := s.Cond.(*HasLit); !ok {
+		return fmt.Errorf("%s: an in-place read is part of a larger condition in a Document function", f.Name)
+	}
+	if !containsMatchLit(s.Else) {
+		return fmt.Errorf("%s: an in-place read without the recording primitive as its alternative in a Document function", f.Name)
+	}
+	return nil
+}
+
+func containsMatchLit(ss []Stmt) bool {
+	found := false
+	var walk func(ss []Stmt)
+	walk = func(ss []Stmt) {
+		for _, s := range ss {
+			switch s := s.(type) {
+			case *Set:
+				for _, x := range s.X {
+					if _, ok := x.(*MatchLit); ok {
+						found = true
+					}
+				}
+			case *If:
+				if s.Init != nil {
+					walk([]Stmt{s.Init})
+				}
+				walk(s.Then)
+				walk(s.Else)
+			case *Block:
+				walk(s.Body)
+			case *Loop:
+				walk(s.Body)
+			}
+		}
+	}
+	walk(ss)
+	return found
 }

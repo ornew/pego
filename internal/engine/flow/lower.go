@@ -58,6 +58,11 @@ type Options struct {
 	// gathering it, when the invocation streams (StreamOn), and gathers it otherwise. The function is the
 	// body of the start rule that ParseStream runs.
 	Stream bool
+	// Document lowers for a build with Documents. A parse of a Document records how far it examined the input
+	// in the primitives that read it; the form that reads input in place (HasLit) is then valid only with
+	// the recording primitive (MatchLit) as its alternative, which the target takes when the parse is a
+	// Document's. Verify rejects an in-place read without one in a function lowered with it (Func.Document).
+	Document bool
 }
 
 // Recovers reports whether the module has a Recover, which appends recovered errors.
@@ -128,7 +133,7 @@ func lowerFrame(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, bu
 	if !FramedBody(n) {
 		return nil, fmt.Errorf("a body of rule %s is not lowered to a framed function", r.Name)
 	}
-	f := &Func{Name: name, Rule: r, Fail: &Label{Name: "fail"}, Frame: true, Node: opts.Node, Work: opts.Work, Entered: entered && opts.Work, Binds: n.Attrs().Eff.Set&core.EffBind != 0}
+	f := &Func{Name: name, Rule: r, Fail: &Label{Name: "fail"}, Frame: true, Node: opts.Node, Work: opts.Work, Document: opts.Document, Entered: entered && opts.Work, Binds: n.Attrs().Eff.Set&core.EffBind != 0}
 	l := &lowerer{m: m, opts: opts, f: f, used: map[*Label]bool{}, frame: true}
 	if f.Entered {
 		l.entered = n
@@ -158,12 +163,13 @@ func Lower(m *core.Module, r *core.Rule, name string, opts Options) (*Func, erro
 		return nil, fmt.Errorf("rule %s is not lowered to a local function", r.Name)
 	}
 	f := &Func{Name: name, Rule: r, Fail: &Label{Name: "fail"},
-		Start:  &Var{Name: "start", Type: TypeInt, Entry: true},
-		Result: &Var{Name: "v", Type: TypeValue, Entry: true},
-		Ctx:    &Var{Name: "c", Type: TypeCtx, Entry: true},
-		Node:   opts.Node,
-		Work:   opts.Work,
-		Binds:  r.Body.Attrs().Eff.Set&core.EffBind != 0}
+		Start:    &Var{Name: "start", Type: TypeInt, Entry: true},
+		Result:   &Var{Name: "v", Type: TypeValue, Entry: true},
+		Ctx:      &Var{Name: "c", Type: TypeCtx, Entry: true},
+		Node:     opts.Node,
+		Work:     opts.Work,
+		Document: opts.Document,
+		Binds:    r.Body.Attrs().Eff.Set&core.EffBind != 0}
 	l := &lowerer{m: m, opts: opts, f: f, used: map[*Label]bool{}}
 	l.stack = []*[]Stmt{&f.Body}
 	core.Walk(r.Body, func(n core.Node) {

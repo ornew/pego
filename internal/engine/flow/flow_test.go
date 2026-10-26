@@ -514,3 +514,80 @@ func TestLowerStream(t *testing.T) {
 		t.Errorf("the stream lowering keeps the gathering of elements for the parses that do not stream:\n%s", stream)
 	}
 }
+
+// A Document parse records how far it examined the input in the primitives that read it, so a Document function
+// reads a literal in place only where the primitive follows as the alternative, and Verify rejects the other
+// forms: an in-place read that is part of a larger condition or has no primitive to fall back to.
+func TestVerifyDocumentReads(t *testing.T) {
+	lit := &core.Lit{Text: "ab"}
+	m, r := valueFree(lit)
+	build := func(document bool) *Func {
+		f, err := Lower(m, r, "r", Options{InlineLiterals: 4, Document: document})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return f
+	}
+	f := build(true)
+	if err := Verify(f); err != nil {
+		t.Fatalf("a Document function with the primitive as the alternative of its in-place read: %v", err)
+	}
+	// find returns the If whose condition is the in-place read.
+	var find func(ss []Stmt) *If
+	find = func(ss []Stmt) *If {
+		for _, s := range ss {
+			switch s := s.(type) {
+			case *If:
+				if _, ok := s.Cond.(*HasLit); ok {
+					return s
+				}
+				if x := find(s.Then); x != nil {
+					return x
+				}
+				if x := find(s.Else); x != nil {
+					return x
+				}
+			case *Block:
+				if x := find(s.Body); x != nil {
+					return x
+				}
+			case *Loop:
+				if x := find(s.Body); x != nil {
+					return x
+				}
+			}
+		}
+		return nil
+	}
+	read := find(f.Body)
+	if read == nil {
+		t.Fatalf("no in-place read in:\n%s", String(f))
+	}
+	saved := *read
+	check := func(name, want string) {
+		t.Run(name, func(t *testing.T) {
+			err := Verify(f)
+			if err == nil || !strings.Contains(err.Error(), want) {
+				t.Errorf("got %v, want an error containing %q", err, want)
+			}
+		})
+		*read = saved
+	}
+	read.Else = nil
+	check("no primitive", "without the recording primitive")
+	read.Cond = &Or{X: saved.Cond, Y: &Not{X: saved.Cond}}
+	check("larger condition", "part of a larger condition")
+	if err := Verify(f); err != nil {
+		t.Fatalf("restored: %v", err)
+	}
+	// Outside a Document function the same read stands alone.
+	g := build(false)
+	if read := find(g.Body); read == nil {
+		t.Fatalf("no in-place read in:\n%s", String(g))
+	} else {
+		read.Else = nil
+		if err := Verify(g); err != nil && strings.Contains(err.Error(), "recording primitive") {
+			t.Errorf("a function that is not a Document function: %v", err)
+		}
+	}
+}

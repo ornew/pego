@@ -67,7 +67,7 @@ func (g *generator) flowOptions(m *core.Module) flow.Options {
 	// Node is false: the options of the Node and recognizer tables (startRecFlow) are built apart, and
 	// a function lowered with one set of options is never printed for the other runtime.
 	return flow.Options{Work: !g.noWork, Recovers: flow.Recovers(m), ClassTables: g.leanTyped(),
-		GuardedClasses: g.lean && !g.disableGuardedClasses, InlineLiterals: maxInlineLiteral, Observe: g.observability}
+		GuardedClasses: g.lean && !g.disableGuardedClasses, InlineLiterals: maxInlineLiteral, Observe: g.observability, Document: g.document}
 }
 
 // flowDirectRule prints the rule r from Flow IR as a direct rule, or returns nil if r is not
@@ -87,6 +87,7 @@ func (g *generator) flowDirectRule(r *rule) *direct {
 	g.cur, g.proj = r, g.projections(r)
 	defer func() { g.proj = nil }()
 	p := newFlowPrinter(g, false)
+	p.document = f.Document
 	p.stmts(f.Body)
 	out := &direct{fail: p.used[f.Fail], succeed: !p.dead, binds: f.Binds, start: p.reads[f.Start], ctx: p.reads[f.Ctx]}
 	var unread []string
@@ -271,6 +272,7 @@ func (g *generator) flowOperatorsRule(r *rule) *core.OperatorsRule {
 // with the comment, as finishFrameBody does, and sets scope to its capture scope.
 func (g *generator) flowFramed(f *flow.Func, slots []core.Slot, scope *scope, comment string) string {
 	p := newFlowPrinter(g, true)
+	p.document = f.Document
 	p.stmts(f.Body)
 	// The function publishes the cut flag of its outermost scope on return.
 	publish := func() {
@@ -339,7 +341,10 @@ func (p *flowPrinter) goType(t flow.Type) string {
 type flowPrinter struct {
 	g     *generator
 	frame bool
-	b     strings.Builder
+	// document reports that the function is lowered for Documents (flow.Func.Document): its in-place reads
+	// are guarded by p.Document == nil, so that a Document parse reads through the recording primitives.
+	document bool
+	b        strings.Builder
 	// dead reports that the current point is unreachable. used holds the labels exited to from
 	// reachable points, reads the variables read there, and loops the labels of loops.
 	dead  bool
@@ -472,7 +477,7 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 			size = s.Size.Name
 		}
 		guard := "p.Pos < len(p.In)"
-		if p.g.document {
+		if p.document {
 			guard = "p.Document == nil && " + guard
 		}
 		// The inlined read charges its input work and leaves a Document's examined range to Peek.
@@ -717,7 +722,7 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 				cond += fmt.Sprintf(" && p.In[p.Pos+%d] == %d", i, r)
 			}
 		}
-		if g.document {
+		if p.document {
 			return "p.Document == nil && (!WorkControlsEnabled || p.Control == nil) && (" + cond + ")"
 		}
 		if p.untyped() && !g.flow.opts.Work {

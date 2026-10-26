@@ -52,6 +52,9 @@ type Func struct {
 	// Work reports a function lowered with work controls (Options.Work); Verify then checks the
 	// charging of work (verifyWork).
 	Work bool
+	// Document reports a function lowered for a build with Documents (Options.Document); Verify then checks
+	// that every in-place read has the recording primitive as its alternative.
+	Document bool
 	// Entered reports a framed function whose caller charged the step of entering it, so that it does
 	// not charge the steps of its root node: verifyWork takes the entry as the function's first charge.
 	Entered bool

@@ -74,7 +74,7 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   lean rules, and the framed rules whose bodies `flow.FramedBody` accepts (no leaders, cuts or recovery, and no
   Nest, Operators Rule or Terminal node), together with the recognizer rules that `recFlowEligible` accepts
   (`startRecFlow`, `gen_flow_recognizer.go`). `dgen` prints the other rules of both tables, and every rule of a
-  Document or typed-only build, where the Flow route does not apply. The private
+  typed-only build, where the Flow route does not apply. The private
   `directRecognizer` and `directNodeRules` options make `dgen` print all recognizer rules and all Node rules;
   the parity tests use them as the oracle of the Flow route and nothing else sets them. Both tables print through
   the same Flow printer, so a rule with the same text in the two tables is one shared helper by exact-text
@@ -109,6 +109,22 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   (`generator.expr` rather than the direct Node body), so a text comparison with it is not possible. Mutants that
   drop the stream start, drop or misplace a delivery, or deliver after the zero-width check change the compared
   reports.
+  A Documents build (`-document`) prints the same rules from Flow IR, lowered with `Options.Document`. A Document
+  parse reuses a rule's result after an edit only if the edit lies outside the range the rule examined, which the
+  runtime reads (`Peek`, `MatchLiteral`, `Call`, each calling `documentTouch`) record. Generated code also reads
+  literals and characters in place for ordinary parses, which records nothing, so the printers guard every in-place
+  read with `p.Document == nil` and the Document branch of a method (`specializeOrdinaryMethods`) falls through to
+  the recording primitives. At the IR level, `Verify` states what keeps those reads recorded: in a function lowered
+  with `Options.Document` a `HasLit` condition must stand alone and have a `MatchLit` in its alternative, and the
+  printer, which prints the guard for exactly those functions, is not given another way to print it. The
+  generated text of the Node and recognizer tables of the ten grammars equals `dgen`'s under the rules above,
+  also with `-document`. Behaviorally, the Documents of the generated-grammar corpus, shape grammars that look
+  past the end of a result (multi-character, negative, sequence, any-character and class lookaheads) and the ten
+  grammars are compared with those of the `dgen` build after the same pseudo-random sequences of edits (up to
+  300 per input, including edits that fail): after every edit and a second parse, the result, the error and
+  the evaluation and reuse counts must be equal, and the result must equal a parse from scratch. Mutants that
+  read the multi-character literals, the single-character literals, the peeks or all of them in place in a
+  Document parse change the reports and fail that comparison.
   An observability build prints the same rules from Flow IR with the same observation hooks: the enter and exit
   events of rule calls come from the runtime and the rule wrappers, and the one report the matchers write, the
   skipped report of an alternative that a choice guard skips (`ObserveSkip`), is a Flow statement printed by the same

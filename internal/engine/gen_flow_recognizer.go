@@ -63,7 +63,7 @@ func (g *generator) startRecFlow(rec *Program) error {
 	}
 	// Classes are inline tests, as the Node runtime's generated code writes them.
 	opts := flow.Options{Work: !g.noWork, Recovers: flow.Recovers(m), GuardedClasses: g.lean && !g.disableGuardedClasses,
-		InlineLiterals: maxInlineLiteral, Observe: g.observability, Node: true}
+		InlineLiterals: maxInlineLiteral, Observe: g.observability, Node: true, Document: g.document}
 	g.flow = &flowState{m: m, origin: origin, opts: opts, rules: append(append([]*rule(nil), rec.rules...), rec.twins...)}
 	return nil
 }
@@ -90,6 +90,7 @@ func (g *generator) flowRecDirect(r *rule) *direct {
 	g.cur, g.proj = r, g.projections(r)
 	defer func() { g.proj = nil }()
 	p := newFlowPrinter(g, false)
+	p.document = f.Document
 	p.stmts(f.Body)
 	if p.reads[f.Start] || p.reads[f.Ctx] {
 		return nil
