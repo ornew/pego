@@ -30,9 +30,8 @@ func hasCaptureOfRepeat(e grammar.Expr) (capture, repeated bool) {
 }
 
 // TestFlowRecognizerPrintsCapturesFromFlow checks the route of the rules with captures: over the corpus and the
-// ten grammars, in the ordinary and the work-controlled forms, every rule of the Node and recognizer tables that
-// the direct printer still prints has a recovery, and the rules with
-// captures (and with captured repetitions) take the Flow route.
+// ten grammars, in the ordinary and the work-controlled forms, no rule of the Node and recognizer tables falls back
+// to the direct printer, and the rules with captures (and with captured repetitions) take the Flow route.
 func TestFlowRecognizerPrintsCapturesFromFlow(t *testing.T) {
 	if testing.Short() {
 		t.Skip("generates the corpus")
@@ -61,9 +60,7 @@ func TestFlowRecognizerPrintsCapturesFromFlow(t *testing.T) {
 			}
 			directFallbackHook = func(table, route string, r *rule) {
 				fellBack[r] = true
-				if !hasRecovery(r.bodyExpr()) {
-					bad = append(bad, fmt.Sprintf("%s %s (%s)", table, r.name, route))
-				}
+				bad = append(bad, fmt.Sprintf("%s %s (%s)", table, r.name, route))
 			}
 			defer func() { directRouteHook, framedRouteHook, directFallbackHook = nil, nil, nil }()
 			for _, c := range cases {
@@ -76,7 +73,7 @@ func TestFlowRecognizerPrintsCapturesFromFlow(t *testing.T) {
 				}
 				if len(bad) > 0 {
 					sort.Strings(bad)
-					t.Fatalf("%s: rules without a recovery that the direct printer prints: %v", c.name, bad)
+					t.Fatalf("%s: rules that the direct printer prints: %v", c.name, bad)
 				}
 			}
 			for _, k := range []string{"recRules lean with captures", "recRules framed with captures", "recRules framed with a captured repetition", "rules framed with a captured repetition"} {

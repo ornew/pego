@@ -316,6 +316,8 @@ func (p *printer) expr(x Expr) string {
 		return "error(" + p.exprs(x.Far, x.Exps) + ")"
 	case *ErrorValue:
 		return "errorvalue(" + p.exprs(x.Start, x.X) + ")"
+	case *NewErrorNode:
+		return "errornode(" + p.exprs(x.Start, x.X) + ")"
 	case *FreshNode:
 		return "fresh(" + p.expr(x.X) + ")"
 	case *ConvertResult:

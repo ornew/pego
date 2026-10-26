@@ -174,14 +174,15 @@ func (g *generator) flowStreamBody(r *rule, scope *scope) string {
 }
 
 // flowFrameExprOK reports whether the body of the rule r is one that Flow IR prints as a framed body of the
-// Node or recognizer table: as directOK, except that a body may cut, and that the rule may be a left-recursion
-// leader. Flow IR lowers a cut as the typed table does (a flag per backtracking point, published to the runtime's
-// cut flag on return, as generator.expr's rule wrapper leaves it), so the runtime's frame, memo and finish
-// ownership are the same. The runtime owns the growth of a leader's seed around its body, so the body is the
-// matcher of any other rule; its left-recursive alternatives have no first set and are never guarded. Only bodies
-// with recovery keep the direct printer.
+// Node or recognizer table: as directOK, except that a body may cut or recover, and that the rule may be a
+// left-recursion leader. Flow IR lowers a cut as the typed table does (a flag per backtracking point,
+// published to the runtime's cut flag on return, as generator.expr's rule wrapper leaves it), so the
+// runtime's frame, memo and finish ownership are the same. The runtime owns the growth of a leader's seed
+// around its body, so the body is the matcher of any other rule; its left-recursive alternatives have no
+// first set and are never guarded. The runtime's RecoverAttr sequence is lowered inline, with NewErrorNode
+// building the error node.
 func flowFrameExprOK(r *rule) bool {
-	return directFrameExprOK(r.bodyExpr(), true, false)
+	return directFrameExprOK(r.bodyExpr(), true, true)
 }
 
 // flowNodeFrameOK reports whether the rule r of the Node or recognizer table is printed from Flow IR as
@@ -215,19 +216,19 @@ func (g *generator) flowNodeFrameOK(r *rule) (*core.Rule, bool) {
 // flowOperatorsRuleBody prints the line l of the Operators Rule g.cur, whose expression is e, from Flow
 // IR, or returns "" if Flow IR does not print the line that way.
 //
-// In the typed table every line is printed from Flow IR. In the Node and recognizer tables a line is, unless
-// it has recovery: Flow IR builds the typed runtime's error values there, which the Node runtime does not
-// take. Nothing else needs a check. The lines of an Operators Rule have no projected repetitions
-// (ruleProjections gives none for one), so Core IR and the tables agree on the shape of every capture, and
-// the checker lets an action name only captures of its line. With work controls (Options.Work) the runtime charges the
-// step of entering an operand or operator line of the Node and recognizer tables (entered), and the function
-// charges the steps of the nodes below the line's root, as Flow IR makes them explicit. The skip of a rule
-// is called without that charge (entered is false), so its function charges all of its steps.
+// In the typed table every line is printed from Flow IR, as in the Node and recognizer tables (a line with
+// recovery builds its error node with NewErrorNode there). Nothing needs a check. The lines of an Operators
+// Rule have no projected repetitions (ruleProjections gives none for one), so Core IR and the tables agree
+// on the shape of every capture, and the checker lets an action name only captures of its line. With work
+// controls (Options.Work) the runtime charges the step of entering an operand or operator line of the Node
+// and recognizer tables (entered), and the function charges the steps of the nodes below the line's root,
+// as Flow IR makes them explicit. The skip of a rule is called without that charge (entered is false), so
+// its function charges all of its steps.
 func (g *generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope *scope, build, entered bool) string {
 	if g.flow == nil || l == nil || !flowLineOK(e) || !flow.FramedBody(l.Body) {
 		return ""
 	}
-	if g.table != "trules" && !directFrameExprOK(e, true, false) {
+	if g.table != "trules" && !directFrameExprOK(e, true, true) {
 		return ""
 	}
 	lower := flow.LowerFrame
@@ -817,6 +818,8 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 	case *flow.ErrorValue:
 		start := p.expr(x.Start)
 		return fmt.Sprintf("NewTError(%s, p.Pos, p.Text(%s, p.Pos), p.RecoveryErrorText(%s))", start, start, p.expr(x.X))
+	case *flow.NewErrorNode:
+		return fmt.Sprintf("p.NewErrorNode(%s, %s)", p.expr(x.Start), p.expr(x.X))
 	case *flow.FreshNode:
 		return fmt.Sprintf("TFreshNode(%s)", p.expr(x.X))
 	case *flow.ConvertResult:

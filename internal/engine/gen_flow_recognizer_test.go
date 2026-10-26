@@ -96,7 +96,31 @@ var flowRecognizerMutants = map[string]func([]byte) []byte{
 	// wrong first set or lost the value the seed gives.
 	"seed-guard": guardSeedReads,
 	"seed-value": dropSeedValues,
+	// The recovery of a body is inline: the error is recorded, the skip must make progress and starts from the mark.
+	"recover-record": dropRecoveredErrors,
+	"recover-zero":   dropZeroProgressCheck,
+	"recover-rewind": skipWithoutRewind,
 }
+
+var (
+	recordRecovered = regexp.MustCompile(`p\.Recovered = append\(p\.Recovered, (\w+)\)`)
+	zeroProgress    = regexp.MustCompile(`(?m)^(\t+if p\.Pos == x\d+\.Pos)( \{\n\t+goto L\d+\n\t+\}\n)`)
+	skipRewind      = regexp.MustCompile(`(?m)^(\t+x\d+ = p\.Keep\(x\d+\)\n)\t+p\.Reset\(x\d+\)\n`)
+)
+
+// dropRecoveredErrors recovers without recording the error, as a printer would if it lost the append.
+func dropRecoveredErrors(code []byte) []byte {
+	return recordRecovered.ReplaceAll(code, []byte("_ = $1"))
+}
+
+// dropZeroProgressCheck accepts a skip that consumed nothing (the condition stays, so that its label is used).
+func dropZeroProgressCheck(code []byte) []byte {
+	return zeroProgress.ReplaceAll(code, []byte("$1 && false$2"))
+}
+
+// skipWithoutRewind skips from the position where the body failed, not from the mark. A failed skip needs no
+// mutant of its own: every caller of a recovery (a rule, a choice, a repetition) resets to its own mark.
+func skipWithoutRewind(code []byte) []byte { return skipRewind.ReplaceAll(code, []byte("$1")) }
 
 var (
 	ruleBodyRef = regexp.MustCompile(`(?m)^\t(rules|recRules)\[(\d+)\]\.Body = func\(p \*rt\.Parser, _ int\) \(\*rt\.Node, bool\) \{ return (e\d+)\(p\) \}$`)

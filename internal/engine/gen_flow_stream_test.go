@@ -105,19 +105,14 @@ func testFlowStreamBodyIsBatchBody(t *testing.T) {
 		t.Fatal("no stream body is printed from Flow IR: the test exercises nothing")
 	}
 	t.Logf("%d stream bodies from Flow IR; %d kept by the direct printer: %v", flowN, len(fallbacks), fallbacks)
-	// A start rule keeps the direct printer only if its body recovers; a left-recursion leader takes the
-	// Flow route, because the runtime owns its growth and the body is the same framed matcher.
-	for _, want := range []string{"recovery in the start rule"} {
-		if !slices.ContainsFunc(fallbacks, func(f string) bool { return strings.HasPrefix(f, want+"/") }) {
-			t.Errorf("the start rule of %q is expected to keep the direct printer, but did not fall back", want)
-		}
+	// Every start rule prints from Flow IR: a left-recursion leader and a body with a recovery use the framed body
+	// of any other rule, and the stream repetition delivers the elements.
+	if len(fallbacks) > 0 {
+		t.Errorf("start rules kept by the direct printer: %v", fallbacks)
 	}
-	for _, want := range []string{"left recursive start", "left recursive start choice", "indirect leader start", "mutual leader start"} {
+	for _, want := range []string{"left recursive start", "left recursive start choice", "indirect leader start", "mutual leader start", "recovery in the start rule", "stream element recovery"} {
 		if !slices.ContainsFunc(flowed, func(f string) bool { return strings.HasPrefix(f, want+"/") }) {
-			t.Errorf("the left-recursive start rule of %q is expected to print from Flow IR, but did not", want)
-		}
-		if slices.ContainsFunc(fallbacks, func(f string) bool { return strings.HasPrefix(f, want+"/") }) {
-			t.Errorf("the left-recursive start rule of %q fell back to the direct printer", want)
+			t.Errorf("the start rule of %q is expected to print from Flow IR, but did not", want)
 		}
 	}
 }

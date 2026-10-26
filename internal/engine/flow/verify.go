@@ -313,6 +313,8 @@ func (v *verifier) runtime(x Expr) error {
 		node = "terminal"
 	case *NewBranchNode:
 		node = "branch"
+	case *NewErrorNode:
+		node = "error node"
 	}
 	switch {
 	case typed != "" && v.f.Node:

@@ -163,10 +163,10 @@ func summary(chunks []string) string {
 	return first
 }
 
-// operatorsLineFallbackCases are Operators Rules with a line that the Flow route does not print: the line
-// is left to generator.expr, and the parsers must still match the engine (they are in the generated
-// corpus). rule is the Operators Rule with the line.
-var operatorsLineFallbackCases = []struct {
+// operatorsLineRecoveryCases are Operators Rules with a line that recovers, which the Flow route prints as it
+// prints the other lines; the parsers must match the engine (they are in the generated corpus). rule is the
+// Operators Rule with the line.
+var operatorsLineRecoveryCases = []struct {
 	genCase
 	rule string
 }{
@@ -175,14 +175,18 @@ rule e = #operators {
     operand ("i" ";") #recover(skip="?")
     level { infix left "+" }
 }`, []string{"i;", "i;+i;", "i?+i;", "?", "i;+", "i", ""}}, "e"},
+	{genCase{"Operators Rule operand with a cut in the recovered body", `rule main = v:e $$ => $v
+rule e = #operators {
+    operand ("i" #cut ";") #recover(skip="?")
+    level { infix left "+" }
+}`, []string{"i;", "i;+i;", "i?+i;", "?", "i;+", "i", "ix", ""}}, "e"},
 }
 
-// TestOperatorsLinesFallBack checks that a line outside the eligibility contract of
-// flowOperatorsRuleBody (recovery) is printed by generator.expr in the
-// Node table, with no line of the rule printed from Flow IR in its place.
-func TestOperatorsLinesFallBack(t *testing.T) {
+// TestOperatorsLinesWithRecoveryPrintFromFlow checks that a line with recovery is printed from Flow IR in the
+// Node and recognizer tables, and that no line of the rule falls back to generator.expr.
+func TestOperatorsLinesWithRecoveryPrintFromFlow(t *testing.T) {
 	t.Setenv("PEGO_TEST_ORDINARY", "1")
-	for _, c := range operatorsLineFallbackCases {
+	for _, c := range operatorsLineRecoveryCases {
 		t.Run(c.name, func(t *testing.T) {
 			g, err := parseTest(c.src)
 			if err != nil {
@@ -195,9 +199,13 @@ func TestOperatorsLinesFallBack(t *testing.T) {
 			if _, err := generateCode(g, GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
 				t.Fatal(err)
 			}
-			key := "rules/" + c.rule
-			if fell[key] == 0 {
-				t.Errorf("no line of %s falls back to generator.expr in the Node table (fell back %v, from Flow IR %v)", c.rule, fell, flowed)
+			if len(fell) > 0 {
+				t.Errorf("lines of %s fall back to generator.expr: %v", c.rule, fell)
+			}
+			for _, table := range []string{"rules", "recRules"} {
+				if flowed[table+"/"+c.rule] == 0 {
+					t.Errorf("no line of %s is printed from Flow IR in the %s table (%v)", c.rule, table, flowed)
+				}
 			}
 		})
 	}

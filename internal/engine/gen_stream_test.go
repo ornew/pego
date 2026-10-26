@@ -264,6 +264,12 @@ rule item = q:[a-z] #atomic`, []string{"ab.", "nxy.", "ab.xyab.", "ab.xy", "n", 
 	{"mutual leader start", `rule main = (a "w")? item* #stream "."
 rule a = main "x" / a "v" / "n"
 rule item = q:[a-z] #atomic`, []string{"nw.", "nvw.", "nvvw.", "ab.xwc.", "nwab.xvw.", "nwab", "nv", "w.", ""}},
+	// Cuts and recovery in streamed elements and in a leader start rule.
+	{"stream element with a cut and recovery", `rule main = stmt* #stream $$
+rule stmt = ("(" #cut word ")") #recover(skip=[^)]* ")") / word ";"
+rule word = [a-z]+ #atomic`, []string{"(ab)cd;", "(1)ab;", "(ab", "(1", "cd;(ab)", ";", ""}},
+	{"leader start rule with recovery", `rule main = (main "+")? item* #stream "."
+rule item = ([a-z] ";") #recover(skip=[^;.]* ";")`, []string{"a;b;.", "a;b;.+c;.", "ab;.", "1;.", "a;.+", "a;.+1;.", ""}},
 	{"left recursive start", `rule main = a:(main "x")? b:item* #stream c:"."?
 rule item = q:[a-z] #atomic`, []string{"ab.", "a", "", "ab.x"}},
 }

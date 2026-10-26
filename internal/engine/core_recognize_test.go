@@ -74,7 +74,10 @@ func recognizeDifferences(c *coreGenCase, n *coreDecisionCounts) ([]string, int)
 // TestCoreMatchesRecognizer compares the Core IR of the recognizers of the corpus with the
 // generated recognizers (recognizeAspects). The one known difference is in the guards: a capture
 // that no predicate reads builds nothing in Core IR, so the class it captures can be a guarded
-// class, where the generator's guard sees a capture and the class tests the character again.
+// class, where the generator's guard sees a capture and the class tests the character again. The other
+// is in the rules that recover: the generator does not guard an alternative that begins with a class there,
+// where Core IR does (and Flow IR prints that guard). Only that case is excused, and the test below it
+// requires the guarded class in Core IR.
 func TestCoreMatchesRecognizer(t *testing.T) {
 	for _, mode := range []coreGenMode{
 		{"lean", GenOptions{Recognize: true}},
@@ -123,6 +126,20 @@ func TestCoreMatchesRecognizer(t *testing.T) {
 			if len(errs) != 0 || diverged != want {
 				t.Errorf("uncaptured class: %v, %d guarded classes of uncaptured classes, want %d", errs, diverged, want)
 			}
+			// The recovering rule: the choice after the recovering alternative is guarded by its class in Core IR
+			// (lean parsers), which the generator does not do. It must be excused as exactly that, not missed.
+			dec, ok = coreGenerate("rule main = x* $$\nrule x = (\"a\" \"b\") #recover(skip=[^;]*) / [0-9]\n", mode.opts)
+			if !ok {
+				t.Fatal("recovering rule: does not generate")
+			}
+			c, err = coreRecognizeCase("recovering rule", dec)
+			if err != nil {
+				t.Fatal(err)
+			}
+			errs, diverged = recognizeDifferences(c, &coreDecisionCounts{})
+			if len(errs) != 0 || diverged != want {
+				t.Errorf("recovering rule: %v, %d guarded classes of the generator's unguarded alternatives, want %d", errs, diverged, want)
+			}
 		})
 	}
 }
@@ -141,7 +158,7 @@ func capturedGuardedClasses(c *coreGenCase) map[string]bool {
 			}
 			for i, a := range ch.Alts {
 				e, _ := c.altOrigin(ch, i)
-				if !a.GuardedClass || !capturesFirst(e) {
+				if !a.GuardedClass || !(capturesFirst(e) || (hasRecovery(r.bodyExpr()) && guardedFirst(e) != nil)) {
 					continue
 				}
 				out[fmt.Sprintf("guard: rule %s: alternative %s: guarded class true, generator false", r.name, grammar.FormatExpr(e))] = true

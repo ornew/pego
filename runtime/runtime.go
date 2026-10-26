@@ -3166,7 +3166,16 @@ func (p *Parser) RecoverAttr(m, skip matcher, build bool) (*Node, bool) {
 	if !build {
 		return nil, true
 	}
-	return p.NewNode(Node{RawKind: kindError, RawStart: int32(m0.Pos), RawEnd: int32(p.Pos), RawText: p.Text(m0.Pos, p.Pos), RawFields: Fields{{"message", p.RecoveryErrorText(e)}}, RawFresh: true, RawTerminal: true}), true
+	return p.NewErrorNode(m0.Pos, e), true
+}
+
+// NewErrorNode returns the node that stands for the input from start to the current position, which a
+// recovery (#recover) skipped after the syntax error e: an error node with the message of e, allocated like
+// NewNode.
+//
+// NewErrorNode is for generated parsers; not a stable API.
+func (p *Parser) NewErrorNode(start int, e *SyntaxError) *Node {
+	return p.NewNode(Node{RawKind: kindError, RawStart: int32(start), RawEnd: int32(p.Pos), RawText: p.Text(start, p.Pos), RawFields: Fields{{"message", p.RecoveryErrorText(e)}}, RawFresh: true, RawTerminal: true})
 }
 
 // --- Actions and predicates ---

@@ -71,7 +71,7 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
 - Generated typed Go is printed from Flow IR. Its rules and Operators Rule lines have no `dgen` route and no
   private switch; `dgen` prints only the Node and recognizer tables.
 - The rules of an ordinary Node parser that `flowNodeFrameOK` accepts are printed from Flow IR in both tables: the
-  lean rules, and the framed rules whose bodies `flow.FramedBody` accepts (no recovery, and no
+  lean rules, and the framed rules whose bodies `flow.FramedBody` accepts (no
   Nest, Operators Rule or Terminal node), together with the recognizer rules that `recFlowEligible` accepts
   (`startRecFlow`, `gen_flow_recognizer.go`). `dgen` prints the other rules of both tables. A typed-only
   build has Node rules only when a typed entry point converts the Node result of a rule (`keepNodes`); they print
@@ -102,13 +102,16 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   callers, lookaheads, nesting, cuts and captures against the engine on inputs that fail after a seed, with
   observation, Documents (evaluated and reused counts included), work controls and `ParseStream`; mutants that
   guard the left-recursive alternative by a wrong first set and that drop the value of the seed read fail that
-  comparison. What `dgen` still prints in both tables are the bodies with a recovery (`directFallbackHook` lists
-  them for a test); the tests assert that no other rule falls back, and that capture rules, captured repetitions, cut
-  rules and leaders take the Flow route. The text of the rules without a cut or leader equals `dgen`'s for the ten
+  comparison. The bodies with a recovery are printed from Flow IR too: Node functions build the error node with
+  `NewErrorNode` (the typed form keeps `ErrorValue` and its printed text), which calls the runtime's
+  `Parser.NewErrorNode`, the construction `RecoverAttr` uses. The tests assert that no rule falls back, and that
+  capture rules, captured repetitions, cut rules, leaders and recovery rules (also with a cut or a leader) take the
+  Flow route; mutants that drop the recording, the zero-progress check or the reset after a failed skip fail the
+  comparison. The text of the rules without a cut or leader equals `dgen`'s for the ten
   grammars, the recognizers run as the engine's on the generated-grammar corpus and the testdata of the ten
   grammars in both forms, and a mutant that drops the recording of captures fails that comparison.
-  The lines of an Operators Rule in both tables are printed from Flow IR as framed bodies, except a line with
-  `#recover`, which Flow IR would build with the typed runtime's error values. Operators Rules have no
+  The lines of an Operators Rule in both tables are printed from Flow IR as framed bodies, including a line with
+  `#recover`. Operators Rules have no
   projected repetitions, so Core IR and the tables agree on the shape of every capture. The tests compare the
   generated text outside the lines (everything the line matchers do not reach) with the output of the other printer,
   and compare the behavior of the parsers inside the lines with the engine.
@@ -640,8 +643,7 @@ stage of its first consumer, so its differential tests and negative controls run
    `generator.expr` (measured at 92050aae at the four exits: the direct rule, the framed body, the rule body
    and the Operators Rule lines). Left-recursion leaders, `#recover`, nested calls and Operators Rules are
    rejected by `flow.LocalRule`, but they are printed through the framed-body and Operators Rule lowering.
-   Documents, and the stream body of a start rule that Flow IR does not print (a body with
-   recovery), still print through `dgen` and `generator.expr`, which stage 2 removes.
+   Documents still print through `dgen` and `generator.expr`, which stage 2 removes.
    The typed dispatch does not fall back: a typed rule or Operators Rule line that Flow IR does not print
    makes generation fail. Typed output has no `dgen` branches and no switches for them; `dgen` prints the Node and
    recognizer tables. Then remove `dgen`, the typed parts of

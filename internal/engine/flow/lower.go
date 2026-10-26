@@ -1290,7 +1290,7 @@ func (l *lowerer) recover(n *core.Recover, s *scope, build bool, fail *Label) Ex
 		l.set(err, &MakeError{Far: use(far), Exps: use(exps)})
 		l.emit(&AppendError{X: use(err)})
 		if build {
-			l.set(v, &ErrorValue{Start: m.at(), X: use(err)})
+			l.set(v, l.errorValue(m.at(), use(err)))
 		}
 		l.exit(done)
 		l.close(bs)
@@ -1306,6 +1306,15 @@ func (l *lowerer) recover(n *core.Recover, s *scope, build bool, fail *Label) Ex
 		return &Nil{}
 	}
 	return use(v)
+}
+
+// errorValue returns the value of the recovered error err over the input from start, built for the runtime of
+// the function.
+func (l *lowerer) errorValue(start, err Expr) Expr {
+	if l.opts.Node {
+		return &NewErrorNode{Start: start, X: err}
+	}
+	return &ErrorValue{Start: start, X: err}
 }
 
 // match returns the value of a match from start with the text, built for the runtime of the function.

@@ -294,6 +294,56 @@ rule a = a "x" / "n"`, []string{"n;", "nx;n;", "nxx;nx;", "n", "nx;nxy;", "n;;",
 		{"leader choice with several operators", `rule main = e $$
 rule e = e "+" t / e "-" t / e "|" t / t
 rule t = [0-9]+ #atomic`, []string{"1", "1+2-3|4", "1+2-", "1|", "12+34-5", "+1", "1+2+3-4+5", "1*2", ""}},
+		// Recovery in the shapes that the bodies of rules take: a statement list whose skip can consume nothing, a
+		// recovery after a cut, a recovery of a leader, and nested recoveries, with inputs that recover, fail to
+		// skip, make no progress and fail after a recovered error.
+		{"recovery in a statement list", `rule main = (stmt ";")* $$
+rule stmt = ([a-z]+ #atomic "=" [0-9]+ #atomic) #recover(skip=[^;]*)`,
+			[]string{"a=1;b=2;", "a=;b=2;", "a;b=2;", "=;", "a=1;b", "a=1;;", ";", ""}},
+		{"recovery whose skip fails after consuming", `rule main = stmt* $$
+rule stmt = ("a" "=" [0-9]+) #recover(skip=[^;]+ ";") / [0-9]`,
+			[]string{"a=1", "ax;", "ax", "ax;1", "axy", "a=1ax;", "a=1ax", "1a", ""}},
+		{"recovery after a cut", `rule main = item* $$
+rule item = ("(" #cut [a-z]+ ")") #recover(skip=[^()]*) / [a-z]`,
+			[]string{"(a)", "(a", "(1)b", "(a)(b)", "x", "(", "(1", "(a(b)", ""}},
+		{"recovery of a leader", `rule main = e $$
+rule e = (e "+" n) #recover(skip=[^+]+) / n
+rule n = [0-9]+ #atomic`, []string{"1+2", "1+x", "x", "1+x+3", "1+", "1+2+x+4", "+", ""}},
+		{"nested recoveries", `rule main = (a ";")+ $$
+rule a = ("(" ("x" #recover(skip=[^)]+)) ")") #recover(skip=[^;]+)`,
+			[]string{"(x);", "(y);", "(;", "(x;", "z;", "(xy);(x);", "(y;(x);", ""}},
+		// Adversarial shapes of recovery: a cut in a recovered body with later alternatives, a cut in the skip, a
+		// recovery inside a leader body and a leader wrapped in a recovery, a failure at the far choice, a
+		// skip that fails after consuming or consumes nothing, recovery under & and !, and an error node as a
+		// capture value, in a capture group and in a projected repetition.
+		{"cut in a recovered body before later alternatives", `rule main = item* $$
+rule item = ("(" #cut [a-z]+ ")") #recover(skip=[^()]*) / "(" "x" ")" / [a-z]`,
+			[]string{"(a)", "(x)", "(1)", "(a", "(x", "b(x)", "((", "(1)(x)", "(1)b", ""}},
+		{"cut in the skip of a recovery", `rule main = item* $$
+rule item = ("a" "=" [0-9]+) #recover(skip=[^;]* #cut ";") / [0-9]`,
+			[]string{"a=1", "a=x;", "a=x", "a=x;a=1;", "5", ";", "a=x;5", "a=x;;", ""}},
+		{"recovery inside a leader body", `rule main = e $$
+rule e = e "+" (n #recover(skip=[^+]*)) / n
+rule n = [0-9]+ #atomic`, []string{"1+2", "1+x", "1+x+3", "1+", "x", "1++2", "1+2+", ""}},
+		{"leader wrapped in a recovery", `rule main = e $$
+rule e = (e "+" n / n) #recover(skip=[^+]*)
+rule n = [0-9]+ #atomic`, []string{"1+2", "1+x", "x+1", "1+x+y", "1+", "x", "", "1+2+3"}},
+		{"recovery with a far failing choice", `rule main = (item ";")* $$
+rule item = ("a" "b" "c") #recover(skip="x") / "d" "e" / "f"`,
+			[]string{"abc;", "abd;", "ab;", "axx;", "ax;", "de;", "dd;", "f;", "x;", ";", ""}},
+		{"recovery with a zero-consumption skip", `rule main = (item ";")* $$
+rule item = ("a" "b") #recover(skip=[x]*)`, []string{"ab;", "a;", "ax;", "axx;", ";", "x;", "ab", ""}},
+		{"recovery under a lookahead", `rule main = &(("a" "b") #recover(skip="x")) [a-z]* $$`,
+			[]string{"ab", "ax", "a", "x", "abc", "axc", ""}},
+		{"recovery under a negative lookahead", `rule main = !(("a" "b") #recover(skip="x")) [a-z]* $$`,
+			[]string{"b", "ac", "ab", "ax", "xx", "", "aby"}},
+		{"error node as a capture value", `rule main = v:stmt ";" => $v
+rule stmt = ("a" "=" [0-9]+) #recover(skip=[^;]*)`, []string{"a=1;", "a=;", "x;", "a;", "a=1", ""}},
+		{"error node in a capture group", `rule main = g:(s:stmt ";") r:[a-z]* $$ => ($g, $r)
+rule stmt = ("a" "=" [0-9]+) #recover(skip=[^;]*)`, []string{"a=1;bc", "a=;bc", "x;", "a;b", ";", ""}},
+		{"error node in a projected repetition", `rule main = xs:item* $$ => $xs
+rule item = s:stmt ";" => $s
+rule stmt = ("a" "=" [0-9]+) #recover(skip=[^;]*)`, []string{"a=1;a=2;", "a=1;x;a=3;", "x;y;", "a=1;a=", ";", ""}},
 		{"memo keyed by variables", `var n int
 rule main = {n := 1} r "x" / {n := 2} r .*
 rule r = {n == 1} "a" / {n == 2} "b"`, []string{"ax", "b", "ay", "bx"}},
@@ -331,7 +381,7 @@ rule e = #operators {
 	cases = append(cases, typedLRBodyCases...)
 	cases = append(cases, typedOperatorsRuleBodyCases...)
 	cases = append(cases, operatorsRuleOperandActionCases...)
-	for _, c := range operatorsLineFallbackCases {
+	for _, c := range operatorsLineRecoveryCases {
 		cases = append(cases, c.genCase)
 	}
 	cases = append(cases, typedFramedCutCases(t)...)

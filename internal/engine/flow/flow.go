@@ -496,6 +496,13 @@ type ErrorValue struct {
 	X     Expr
 }
 
+// NewErrorNode is the value of a recovered error X in the Node runtime over the input from Start to the
+// position: an error node. Only a Node function (Func.Node) builds it; a typed function builds ErrorValue.
+type NewErrorNode struct {
+	Start Expr
+	X     Expr
+}
+
 // FreshNode is X if it is a node its maker still owns, or nil.
 type FreshNode struct{ X Expr }
 
@@ -594,6 +601,7 @@ func (*FrameVal) expr()        {}
 func (*Keep) expr()            {}
 func (*MakeError) expr()       {}
 func (*ErrorValue) expr()      {}
+func (*NewErrorNode) expr()    {}
 
 // Results returns the number of results of x: 2 for the operations that have two, 1 otherwise.
 func Results(x Expr) int {
@@ -649,6 +657,8 @@ func Subexprs(x Expr, f func(Expr)) {
 	case *MakeError:
 		each(x.Far, x.Exps)
 	case *ErrorValue:
+		each(x.Start, x.X)
+	case *NewErrorNode:
 		each(x.Start, x.X)
 	case *FreshNode:
 		each(x.X)
@@ -727,6 +737,9 @@ func Uses(x Expr, f func(*Var)) {
 		Uses(x.Far, f)
 		Uses(x.Exps, f)
 	case *ErrorValue:
+		Uses(x.Start, f)
+		Uses(x.X, f)
+	case *NewErrorNode:
 		Uses(x.Start, f)
 		Uses(x.X, f)
 	case *FreshNode:
