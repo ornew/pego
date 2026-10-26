@@ -32,7 +32,8 @@ case node != nil:
 ```
 
 Input work counts inspected input elements and steps count backend execution work; neither is a time or memory
-limit, and backtracking never refunds them. An interruption is fatal to the parse and `#recover` cannot consume it,
+limit, and backtracking never refunds them. Scanning input, such as a repeated character class, may charge only input
+work, so set `MaxInputWork` to bound the work on large input; `MaxSteps` alone does not. An interruption is fatal to the parse and `#recover` cannot consume it,
 so a batch parse returns no partial result. Cancellation is cooperative: a parser cannot preempt a blocked reader or
 a callback of yours. The exact rules are in
 [Cancellation and Work Limits](../../spec/runtime/parsing.md#cancellation-and-work-limits); the

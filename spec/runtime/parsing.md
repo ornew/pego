@@ -295,7 +295,10 @@ In the Go API, `WithContext(ctx)` supplies the context and
 `WithWorkLimits(WorkLimits{MaxInputWork, MaxSteps})` the limits. Input work
 counts inspected elements of the input representation; steps count backend
 execution work. Charges are not rolled back by backtracking, and their values
-depend on the backend, the position unit and the generated artifact. A cancelled
+depend on the backend, the position unit and the generated artifact. Reading
+input MAY charge only input work: a loop that only scans input, such as a
+repeated character class, can run without charging steps, so `MaxSteps` alone
+does not bound scanning and `MaxInputWork` is the limit that does. A cancelled
 context returns the error of the context (`errors.Is(err, context.Canceled)` or
 `context.DeadlineExceeded`); an exhausted limit returns an error that matches
 `pego.ErrWorkLimit`, and `errors.As` with `*pego.WorkLimitError` gives the

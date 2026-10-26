@@ -128,7 +128,8 @@ func WithContext(ctx context.Context) ParseOption { return rt.WithContext(ctx) }
 func WithWorkLimits(limits WorkLimits) ParseOption { return rt.WithWorkLimits(limits) }
 
 // WorkLimits bounds cumulative engine work for one parse invocation. A zero
-// limit leaves that counter unlimited.
+// limit leaves that counter unlimited. Scanning input may charge only input
+// work, so MaxSteps alone does not bound it; MaxInputWork does.
 type WorkLimits = rt.WorkLimits
 
 // WorkLimitKind identifies the counter that exhausted its limit.

@@ -170,7 +170,9 @@ Node-to-typed conversion.
 `MaxInputWork` counts cumulative inspected input elements, including input
 preparation, repeated scans and text extraction. `MaxSteps` counts execution
 and per-element work in actions, memo lookup, graph/list construction, capture
-rollback, diagnostics and typed conversion. Counts depend on the generated
+rollback, diagnostics and typed conversion. A loop that only scans input, such
+as a repeated character class, charges input work and no steps, so only
+`MaxInputWork` bounds it. Counts depend on the generated
 artifact and position unit; a limit is not a character count, memory cap, or
 elapsed-time limit. Backtracking never refunds work. Depth remains a separate
 limit.

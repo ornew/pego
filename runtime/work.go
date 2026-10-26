@@ -13,7 +13,8 @@ import (
 )
 
 // WorkLimits bounds cumulative engine work for one parse invocation. A zero
-// limit leaves that counter unlimited.
+// limit leaves that counter unlimited. Scanning input may charge only input
+// work, so MaxSteps alone does not bound it; MaxInputWork does.
 type WorkLimits struct {
 	MaxInputWork uint64
 	MaxSteps     uint64
