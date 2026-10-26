@@ -121,7 +121,9 @@ func TestSparseMemoTypedRetentionAndTrimming(t *testing.T) {
 			t.Fatal("typed pool discarded sparse backing at its input budget")
 		}
 		dir := p.memo.pages[0]
-		if dir.last != nil || dir.at != 0 || dir.pages[0] != nil || chunk[0][0] != 0 || p.memo.bitPages.n != 0 || p.memo.calls[0] != (seenCalls{}) {
+		// A directory keeps its storage but starts the next parse empty, so that the charges of growing
+		// it are the parse's own.
+		if dir.last != nil || dir.at != 0 || len(dir.pages) != 0 || dir.pages[:1][0] != nil || chunk[0][0] != 0 || p.memo.bitPages.n != 0 || p.memo.calls[0] != (seenCalls{}) {
 			t.Fatal("retained sparse scratch preserved first-call state")
 		}
 		p.n, p.memo.stride, p.memo.sparse, p.Pos = limit, 65, true, 0

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -30,7 +31,7 @@ func assertSlotPointers(t *testing.T, got, want []*memoEntry) {
 }
 
 func TestWorkMemoPutSlotGrowthIsAtomic(t *testing.T) {
-	table := &memoTable{slots: make([]*memoEntry, 512)}
+	table := &memoTable{slots: make([]*memoEntry, 511)}
 	for i := range table.slots {
 		table.slots[i] = &memoEntry{pos: i, rule: int32(i)}
 	}
@@ -38,14 +39,14 @@ func TestWorkMemoPutSlotGrowthIsAtomic(t *testing.T) {
 	oldPointers := slotPointers(oldHeader)
 	newEntry := &memoEntry{node: &Node{text: "published after retry"}}
 	p := memoStorageParser(table, WorkLimits{MaxSteps: 130})
-	key := memoKey{rule: 7, pos: 512}
+	key := memoKey{rule: 7, pos: 511}
 
 	err := catchFatal(t, func() { p.memoPut(key, newEntry) })
 	if !errors.Is(err, ErrWorkLimit) {
 		t.Fatalf("slot growth error = %v, want ErrWorkLimit", err)
 	}
-	if len(table.slots) != 512 || cap(table.slots) != cap(oldHeader) {
-		t.Fatalf("failed growth published slot header len/cap %d/%d, want 512/%d", len(table.slots), cap(table.slots), cap(oldHeader))
+	if len(table.slots) != 511 || cap(table.slots) != cap(oldHeader) {
+		t.Fatalf("failed growth published slot header len/cap %d/%d, want 511/%d", len(table.slots), cap(table.slots), cap(oldHeader))
 	}
 	assertSlotPointers(t, table.slots, oldPointers)
 	if newEntry.pos != 0 || newEntry.rule != 0 || newEntry.env != nil {
@@ -54,13 +55,13 @@ func TestWorkMemoPutSlotGrowthIsAtomic(t *testing.T) {
 
 	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 10_000})
 	p.memoPut(key, newEntry)
-	if len(table.slots) != 513 {
-		t.Fatalf("retry slot length = %d, want 513", len(table.slots))
+	if len(table.slots) != 512 {
+		t.Fatalf("retry slot length = %d, want 512", len(table.slots))
 	}
-	if table.slots[512] != newEntry {
-		t.Fatalf("retry slot = %p, want candidate at index 512", table.slots[512])
+	if table.slots[511] != newEntry {
+		t.Fatalf("retry slot = %p, want candidate at index 511", table.slots[511])
 	}
-	assertSlotPointers(t, table.slots[:512], oldPointers)
+	assertSlotPointers(t, table.slots[:511], oldPointers)
 }
 
 func seedSeenTable(words, capacity int) *memoTable {
@@ -118,14 +119,14 @@ func TestWorkMemoSeenSpareCapacityClearInterruption(t *testing.T) {
 	if !reflect.DeepEqual(table.seen, old) {
 		t.Fatal("failed clear changed words in the published seen slice")
 	}
-	for i := 512; i < 640; i++ {
-		if backing[i] != 0 {
-			t.Fatalf("completed clear chunk left word %d = %#x", i, backing[i])
-		}
+	// The growth is charged in chunks: the limit stops it at the first chunk that does not fit.
+	if !strings.Contains(err.Error(), "requested 128") {
+		t.Fatalf("seen growth charge was not chunked: %v", err)
 	}
-	for i := 640; i < len(backing); i++ {
+	// The charge precedes any write: an interrupted growth touches no storage.
+	for i := 512; i < len(backing); i++ {
 		if backing[i] != ^uint64(0) {
-			t.Fatalf("interrupted clear reached word %d beyond its completed chunk", i)
+			t.Fatalf("interrupted growth wrote word %d", i)
 		}
 	}
 	if table.calls != nil {

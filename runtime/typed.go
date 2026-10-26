@@ -990,11 +990,12 @@ func (p *TParser) memoPutControlled(rule, pos, min int, key []any, e *tmemoEntry
 	p.StepWork()
 	slots := p.memoSlots
 	if pos >= len(slots) {
+		p.growthWork(len(slots), pos+1)
 		if pos < cap(slots) {
 			slots = slots[:pos+1]
 		} else {
 			grown := make([]*tmemoEntry, pos+1, max(2*cap(slots), pos+1, 64))
-			copyWork(p.Parser, grown, slots)
+			copy(grown, slots)
 			slots = grown
 		}
 	}

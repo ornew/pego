@@ -38,7 +38,6 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
-	"runtime/debug"
 	"strings"
 	"time"
 IMPORTS)
@@ -122,10 +121,9 @@ func report(p probe, s string) string {
 			}
 		}
 		total := lo
-		// A limit below the total fails, in the way a work-limit error is shaped. A limit at the total may
-		// fail: growing a memo table is charged by the pooled parser's state, which the total of an earlier
-		// run in the process changed.
-		points := map[uint64]bool{}
+		// A limit below the total fails, in the way a work-limit error is shaped; a limit at the total
+		// does not, whatever the pooled parsers hold.
+		points := map[uint64]bool{total: true}
 		for n := uint64(1); n <= 8 && n < total; n++ {
 			points[n] = true
 		}
@@ -135,11 +133,11 @@ func report(p probe, s string) string {
 		points[total-1] = true
 		bad := 0
 		for n := range points {
-			if n < 1 || n >= total {
+			if n < 1 || n > total {
 				continue
 			}
 			limited, msg, shape := at(p, s, counter, n)
-			if n < total && !limited || shape != "" {
+			if n < total && !limited || n == total && limited || shape != "" {
 				bad++
 				fmt.Printf("# counter=%d n=%d total=%d limited=%v %q %q\n", counter, n, total, limited, msg, shape)
 			}
@@ -171,10 +169,8 @@ func main() {
 		}
 		return
 	}
-	// A parser from the pool of the runtime keeps the memo tables that earlier parses grew, and growing
-	// a table is charged; a collection empties the pool at a time the process does not control. Without
-	// collections, the charges of a run depend on the runs before it alone, which are the same in both builds.
-	debug.SetGCPercent(-1)
+	// Collections empty the pool of the runtime at times the process does not control; the charges
+	// of a run must not depend on them.
 	var i int
 	fmt.Sscan(os.Args[2], &i)
 	for j, in := range inputs[i] {

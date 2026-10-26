@@ -1519,6 +1519,7 @@ func (t *memoTable) resetSeen(limit int) {
 	for i := range t.pages {
 		dir := &t.pages[i]
 		clear(dir.pages)
+		dir.pages = dir.pages[:0] // the length of a directory is the parse's own
 		dir.last, dir.at = nil, 0
 	}
 	t.bitPages.reset()

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/bits"
 	"slices"
 	"sort"
 	"strconv"
@@ -607,35 +608,24 @@ func copyWorkControlled[T any](p *Parser, dst, src []T) {
 	}
 }
 
-// growWork bounds the explicit copy of existing values when capacity must
-// grow. Allocation and runtime zeroing remain nonpreemptible intervals.
-func growWork[T any](p *Parser, values []T, extra int) []T {
-	if WorkControlsEnabled && p.Control != nil {
-		return growWorkControlled(p, values, extra)
+// growthWork charges the copy that growing a table from oldLen to newLen entries stands for. The
+// charge is a function of the two lengths alone: it falls where the length crosses a power of two,
+// as doubling would copy, and never depends on the spare capacity that an earlier parse left in a
+// pooled parser, so a parse is charged the same wherever its storage came from. The physical copy
+// follows the charge and is not charged again.
+func (p *Parser) growthWork(oldLen, newLen int) {
+	if oldLen > 0 && bits.Len(uint(newLen)) > bits.Len(uint(oldLen)) {
+		p.chargeValues(oldLen)
 	}
-	return slices.Grow(values, extra)
 }
 
-func growWorkControlled[T any](p *Parser, values []T, extra int) []T {
-	if extra < 0 {
-		return slices.Grow(values, extra) // reject negative growth before spare-capacity checks
+// chargeValues charges n values in chunks, so that a limit or cancellation is seen between them.
+func (p *Parser) chargeValues(n int) {
+	for n > 0 {
+		c := min(valueWorkChunk, n)
+		p.valueWork(c)
+		n -= c
 	}
-	if extra <= cap(values)-len(values) {
-		return values
-	}
-	maxInt := int(^uint(0) >> 1)
-	if extra > maxInt-len(values) {
-		return slices.Grow(values, extra) // preserve the library's invalid-size panic
-	}
-	capacity := len(values) + extra
-	if cap(values) <= maxInt/2 {
-		// Keep repeated single-element additions amortized; allocating only
-		// the exact new length would repeatedly copy the accumulated prefix.
-		capacity = max(capacity, 2*cap(values))
-	}
-	out := make([]T, len(values), capacity)
-	copyWork(p, out, values)
-	return out
 }
 
 func appendWork[T any](p *Parser, dst, src []T) []T {
@@ -999,11 +989,12 @@ func (p *Parser) memoPutControlled(rule, pos, min int, key []any, e *memoEntry) 
 	p.StepWork()
 	slots := p.memo.slots
 	if pos >= len(slots) {
+		p.growthWork(len(slots), pos+1)
 		if pos < cap(slots) {
 			slots = slots[:pos+1]
 		} else {
 			grown := make([]*memoEntry, pos+1, max(2*cap(slots), pos+1, 64))
-			copyWork(p, grown, slots)
+			copy(grown, slots)
 			slots = grown
 		}
 	}
@@ -1043,21 +1034,25 @@ func (p *Parser) controlledFirstCallPrepare(r *Rule) {
 	}
 	if !t.calls[r.Seen].eager && t.sparse {
 		if len(t.pages) != t.stride {
-			p.StepWork()
+			// No step of its own: whether the directory table exists is the pooled parser's state.
 			t.pages = make([]seenRulePages, t.stride)
 		}
 		dir := &t.pages[r.Seen]
 		at := p.Pos >> 10
 		if at >= len(dir.pages) {
-			pages := growWork(p, dir.pages, at+1-len(dir.pages))
-			dir.pages = pages[:at+1]
+			// The directory is empty at the start of a parse, so its length is the parse's own.
+			p.growthWork(len(dir.pages), at+1)
+			dir.pages = slices.Grow(dir.pages, at+1-len(dir.pages))[:at+1]
 		}
 		if dir.pages[at] == nil {
 			p.StepWork()
-			// Reserve capacity before alloc's append so copying a large arena
-			// directory uses the invocation's bounded copy helper.
-			if t.bitPages.n/64 == len(t.bitPages.chunks) {
-				t.bitPages.chunks = growWork(p, t.bitPages.chunks, 1)
+			// A page that starts a chunk is a demand of the parse; whether the chunk exists already
+			// is the pooled parser's state. Reserve the capacity alloc appends into here.
+			if n := t.bitPages.n; n%64 == 0 {
+				p.growthWork(n/64, n/64+1)
+				if n/64 == len(t.bitPages.chunks) {
+					t.bitPages.chunks = slices.Grow(t.bitPages.chunks, 1)
+				}
 			}
 			dir.pages[at] = t.bitPages.alloc()
 		}
@@ -1066,13 +1061,15 @@ func (p *Parser) controlledFirstCallPrepare(r *Rule) {
 		w := (p.Pos*t.stride + r.Seen) >> 6
 		if w >= len(t.seen) {
 			n := len(t.seen) + max(w+1-len(t.seen), len(t.seen), 64)
+			// The new words are the work, whether they come from spare capacity or an allocation.
+			p.chargeValues(n - len(t.seen))
 			seen := t.seen
 			if n <= cap(seen) {
 				seen = seen[:n]
-				clearWork(p, seen[len(t.seen):])
+				clear(seen[len(t.seen):])
 			} else {
 				seen = make([]uint64, n)
-				copyWork(p, seen, t.seen)
+				copy(seen, t.seen)
 			}
 			t.seen = seen
 		}

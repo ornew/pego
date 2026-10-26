@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"math/bits"
 	"strings"
 	"unicode/utf8"
 
@@ -15,6 +16,26 @@ const valueWorkChunk = 128
 func (p *parser) valueWork(n int) {
 	if workControlsEnabled && p.control != nil {
 		p.control.charge(0, uint64(n))
+	}
+}
+
+// growthWork charges the copy that growing a table from oldLen to newLen entries stands for. The
+// charge is a function of the two lengths alone: it falls where the length crosses a power of two,
+// as doubling would copy, and never depends on the spare capacity that an earlier parse left in a
+// pooled parser, so a parse is charged the same wherever its storage came from. The physical copy
+// follows the charge and is not charged again.
+func (p *parser) growthWork(oldLen, newLen int) {
+	if oldLen > 0 && bits.Len(uint(newLen)) > bits.Len(uint(oldLen)) {
+		p.chargeValues(oldLen)
+	}
+}
+
+// chargeValues charges n values in chunks, so that a limit or cancellation is seen between them.
+func (p *parser) chargeValues(n int) {
+	for n > 0 {
+		c := min(valueWorkChunk, n)
+		p.valueWork(c)
+		n -= c
 	}
 }
 

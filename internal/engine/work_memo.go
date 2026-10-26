@@ -113,11 +113,12 @@ func (p *parser) memoPut(k memoKey, e *memoEntry) {
 	}
 	slots := t.slots
 	if i >= len(slots) {
+		p.growthWork(len(slots), i+1)
 		if i < cap(slots) {
 			slots = slots[:i+1]
 		} else {
 			grown := make([]*memoEntry, i+1, max(2*cap(slots), i+1, 64))
-			copyWork(p, grown, slots)
+			copy(grown, slots)
 			slots = grown
 		}
 	}
@@ -159,13 +160,15 @@ func (p *parser) memoFirstCall(pos, r int) bool {
 		w := i >> 6
 		if w >= len(t.seen) {
 			n := len(t.seen) + max(w+1-len(t.seen), len(t.seen), 64)
+			// The new words are the work, whether they come from spare capacity or an allocation.
+			p.chargeValues(n - len(t.seen))
 			seen := t.seen
 			if n <= cap(seen) {
 				seen = seen[:n]
-				clearWork(p, seen[len(t.seen):])
+				clear(seen[len(t.seen):])
 			} else {
 				seen = make([]uint64, n)
-				copyWork(p, seen, t.seen)
+				copy(seen, t.seen)
 			}
 			// The original estimator now needs only scalar operations. Keep
 			// its discount and eager thresholds, and publish after all copies.
