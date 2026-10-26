@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -78,9 +79,9 @@ func TestFlowNodeRulesMatchDirect(t *testing.T) {
 	names := []string{"json", "cel", "cue", "duckdb", "golang", "python", "xml", "yaml", "csv", "typescript"}
 	sort.Strings(names)
 	for _, form := range []struct {
-		name     string
-		controls bool
-	}{{"ordinary", false}, {"controls", true}} {
+		name              string
+		controls, observe bool
+	}{{"ordinary", false, false}, {"controls", true, false}, {"observability", false, true}, {"observability+controls", true, true}} {
 		for _, name := range names {
 			t.Run(name+"/"+form.name, func(t *testing.T) {
 				src, err := os.ReadFile(filepath.Join("..", "..", "parsers", name, name+".pego"))
@@ -92,7 +93,7 @@ func TestFlowNodeRulesMatchDirect(t *testing.T) {
 					t.Fatal(err)
 				}
 				gen := func(o GenOptions) []byte {
-					o.Package, o.Module, o.Runtime, o.Recognize, o.WorkControls = "x", "example.com/x", RuntimeImport, true, form.controls
+					o.Package, o.Module, o.Runtime, o.Recognize, o.WorkControls, o.Observability = "x", "example.com/x", RuntimeImport, true, form.controls, form.observe
 					files, err := Generate(g, o)
 					if err != nil {
 						t.Fatal(err)
@@ -119,6 +120,16 @@ func TestFlowNodeRulesMatchDirect(t *testing.T) {
 					t.Errorf("no framed rule of the Node table of %s takes the Flow route", name)
 				}
 				direct := gen(GenOptions{directNodeRules: true, directRecognizer: true})
+				if form.observe {
+					// The reports of skipped alternatives are the observed events the matchers write. Both printers
+					// write them at the same sites, except that Flow IR repeats the matcher of a line that dgen
+					// shares among lines (the observation tests compare the events themselves), so the counts are
+					// equal for the grammars without an Operators Rule.
+					fs, ds := bytes.Count(flow, []byte("p.Observation.Skipped(")), bytes.Count(direct, []byte("p.Observation.Skipped("))
+					if fs == 0 && name != "csv" && name != "json" || ds == 0 && fs != 0 || !operatorGrammars[name] && fs != ds {
+						t.Errorf("%s: %d skipped-alternative reports from Flow IR, %d from dgen", name, fs, ds)
+					}
+				}
 				if operatorGrammars[name] {
 					// The old printers do not print the lines as Flow IR does: compare outside them (lineResidue).
 					do, fo := lineResidue(unreadBlank.ReplaceAll(flow, nil), unreadBlank.ReplaceAll(direct, nil))

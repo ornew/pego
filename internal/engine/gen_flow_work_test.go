@@ -408,6 +408,14 @@ func TestFlowNodeWorkInvariantsOnGrammars(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds the large parsers twice")
 	}
+	cases := grammarCases(t)
+	checkWorkInvariants(t, cases, "")
+}
+
+// grammarCases returns the ten checked-in grammars with the inputs of their testdata directories (the .txt
+// files of up to 3 KB, at most six each).
+func grammarCases(t *testing.T) []genCase {
+	t.Helper()
 	var cases []genCase
 	for _, name := range []string{"json", "cel", "cue", "duckdb", "golang", "python", "xml", "yaml", "csv", "typescript"} {
 		src, err := os.ReadFile(filepath.Join("..", "..", "parsers", name, name+".pego"))
@@ -422,10 +430,22 @@ func TestFlowNodeWorkInvariantsOnGrammars(t *testing.T) {
 				c.inputs = append(c.inputs, string(b))
 			}
 		}
+		c.inputs = append(c.inputs, grammarOperatorInputs[name]...)
 		if len(c.inputs) == 0 {
 			t.Fatalf("%s: no inputs in testdata", name)
 		}
 		cases = append(cases, c)
 	}
-	checkWorkInvariants(t, cases, "")
+	return cases
+}
+
+// grammarOperatorInputs are short inputs that use many operators of the grammars with an Operators Rule, so
+// that the guards of the choices of operator tokens skip some alternatives and the lines match others.
+var grammarOperatorInputs = map[string][]string{
+	"duckdb":     {"SELECT a BETWEEN 1 + 2 AND 3 - 4, b BETWEEN 7 / 8 % 9 AND 5 * 6, c BETWEEN 1 AND 2 // 3, d BETWEEN 4 ^ 5 AND 6 ** 7;\n", "SELECT 1 / 2, 3 % 4, 5 * 6, 7 - 8, 9 + 10, 2 ^ 3, 6 // 4, 1 < 2, 1 >= 2, a AND b OR NOT c;\n"},
+	"cel":        {"1 / 2 % 3 * 4 - 5 + 6 < 7 && 8 >= 9 || !x", "a ? b : c", "-x + y * z"},
+	"cue":        {"x: 1 / 2 * 3 - 4 + 5 & !true | 6 < 7 && 8 || 9\n"},
+	"golang":     {"package p\nfunc f() {\n\tx = a / b * c % d - e + f << 1 >> 2 & g | h ^ i &^ j && !k || l < m\n}\n"},
+	"python":     {"x = a / b * c % d - e + f ** 2 // 3 << 1 >> 2 & g | h ^ i and not j or k < l\n"},
+	"typescript": {"x = a / b * c % d - e + f ** 2 << 1 >> 2 >>> 3 & g | h ^ i && !j || k < l ?? m;\n"},
 }

@@ -74,7 +74,7 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   lean rules, and the framed rules whose bodies `flow.FramedBody` accepts (no leaders, cuts or recovery, and no
   Nest, Operators Rule or Terminal node), together with the recognizer rules that `recFlowEligible` accepts
   (`startRecFlow`, `gen_flow_recognizer.go`). `dgen` prints the other rules of both tables, and every rule of a
-  Document, observability or typed-only build, where the Flow route does not apply. The private
+  Document or typed-only build, where the Flow route does not apply. The private
   `directRecognizer` and `directNodeRules` options make `dgen` print all recognizer rules and all Node rules;
   the parity tests use them as the oracle of the Flow route and nothing else sets them. Both tables print through
   the same Flow printer, so a rule with the same text in the two tables is one shared helper by exact-text
@@ -89,6 +89,14 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   projected repetitions, so Core IR and the tables agree on the shape of every capture. The tests compare the
   generated text outside the lines (everything the line matchers do not reach) with the output of the other printer,
   and compare the behavior of the parsers inside the lines with the engine.
+  An observability build prints the same rules from Flow IR with the same observation hooks: the enter and exit
+  events of rule calls come from the runtime and the rule wrappers, and the one report the matchers write, the
+  skipped report of an alternative that a choice guard skips (`ObserveSkip`), is a Flow statement printed by the same
+  `traceSkip` as the direct printer's. The trace event streams and `Profile` counts of the Flow and direct builds are
+  equal on the generated-grammar corpus, four shape grammars and the testdata, operator-heavy and damaged inputs of the
+  ten grammars, in the ordinary and work-controlled forms; mutants that drop, move or reorder a skipped report change
+  the compared reports. The generated text equals `dgen`'s under the rules above, and the count of skipped reports
+  differs only where Flow repeats a line matcher that `dgen` shares.
   A work-control build prints the same rules from Flow IR, with the charges Flow IR makes explicit: a `Step` for
   each step of `Attrs.Steps` on entering a node, and the input work of each `Peek`. These need not equal the
   counts of the matchers `generator.expr` writes, because the spec lets the work of a parse depend on the
@@ -565,8 +573,7 @@ stage of its first consumer, so its differential tests and negative controls run
    `generator.expr` (measured at 92050aae at the four exits: the direct rule, the framed body, the rule body
    and the Operators Rule lines). Left-recursion leaders, `#recover`, nested calls and Operators Rules are
    rejected by `flow.LocalRule`, but they are printed through the framed-body and Operators Rule lowering.
-   The framed rules of the Node table, the Operators Rule lines, the stream body, Documents, work controls and
-   observability still print through `dgen` and `generator.expr`, which stage 2 removes.
+   The stream body and Documents still print through `dgen` and `generator.expr`, which stage 2 removes.
    The typed dispatch does not fall back: a typed rule or Operators Rule line that Flow IR does not print
    makes generation fail. Typed output has no `dgen` branches and no switches for them; `dgen` prints the Node and
    recognizer tables. Then remove `dgen`, the typed parts of
