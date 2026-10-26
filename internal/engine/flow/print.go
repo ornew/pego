@@ -123,6 +123,10 @@ func (p *printer) stmt(s Stmt, d int) {
 		p.line(d, "push %s", p.expr(s.X))
 	case *DropKids:
 		p.line(d, "drop kids %s", p.expr(s.Base))
+	case *StreamStart:
+		p.line(d, "stream start")
+	case *EmitStream:
+		p.line(d, "emit %s", p.expr(s.X))
 	case *Append:
 		spread := ""
 		if s.Spread {
@@ -221,6 +225,8 @@ func (p *printer) expr(x Expr) string {
 		return "reclen"
 	case *KidsLen:
 		return "kidslen"
+	case *StreamOn:
+		return "streaming"
 	case *Nil:
 		return "nil"
 	case *Int:

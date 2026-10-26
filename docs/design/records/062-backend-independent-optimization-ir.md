@@ -89,6 +89,26 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   projected repetitions, so Core IR and the tables agree on the shape of every capture. The tests compare the
   generated text outside the lines (everything the line matchers do not reach) with the output of the other printer,
   and compare the behavior of the parsers inside the lines with the engine.
+  The body of the start rule that `ParseStream` runs is printed from Flow IR as a framed Node function lowered with
+  `Options.Stream`, for the rules that print as framed bodies above. `core.Stream` is lowered as the repetition
+  of a stream parse: `StreamStart` before the loop, and, in place of gathering the element, `EmitStream` of the
+  committed element (nil for a value-free repetition) followed by the zero-width check, each guarded by `StreamOn`
+  (a stream parse with a callback, at the top call of the start rule), so that a parse without a callback or at depth
+  above one gathers as the batch body does. The operations exist only in framed Node functions (`Verify`), and
+  the stream repetition is never projected. Labels, groups and captures around the `#stream` repetition are the
+  Core nodes that lower as in batch bodies (`streamTops`, `topNodes`). The tests check the stream body in two
+  ways. Structurally, the body equals the rule's batch body with the stream statements removed, and each variant
+  of the body (two in a work-controlled build) has exactly one `StreamStart` before the loop and one delivery
+  inside it; mutants that move the start into or after the loop or duplicate a delivery fail that check. The
+  placement of the start is not checked behaviorally. Behaviorally, `ParseStream` and its iterators are compared
+  with the engine's (the elements and the reader calls before each, the diagnostics and the final error), and the
+  trace events, profile and elements of the Flow stream body with `dgen`'s, for the stream corpus (diagnostic and
+  error labels on the repetition, captures and actions per element, recursive start rules, environment and
+  lookahead, recovery in the element and in the start rule), the generated-grammar corpus and the CSV grammar, in
+  the ordinary, work-controlled and observability forms; `dgen`'s stream body has another form
+  (`generator.expr` rather than the direct Node body), so a text comparison with it is not possible. Mutants that
+  drop the stream start, drop or misplace a delivery, or deliver after the zero-width check change the compared
+  reports.
   An observability build prints the same rules from Flow IR with the same observation hooks: the enter and exit
   events of rule calls come from the runtime and the rule wrappers, and the one report the matchers write, the
   skipped report of an alternative that a choice guard skips (`ObserveSkip`), is a Flow statement printed by the same
@@ -573,7 +593,8 @@ stage of its first consumer, so its differential tests and negative controls run
    `generator.expr` (measured at 92050aae at the four exits: the direct rule, the framed body, the rule body
    and the Operators Rule lines). Left-recursion leaders, `#recover`, nested calls and Operators Rules are
    rejected by `flow.LocalRule`, but they are printed through the framed-body and Operators Rule lowering.
-   The stream body and Documents still print through `dgen` and `generator.expr`, which stage 2 removes.
+   Documents, and the stream body of a start rule that Flow IR does not print (a left-recursion leader, a body with
+   recovery), still print through `dgen` and `generator.expr`, which stage 2 removes.
    The typed dispatch does not fall back: a typed rule or Operators Rule line that Flow IR does not print
    makes generation fail. Typed output has no `dgen` branches and no switches for them; `dgen` prints the Node and
    recognizer tables. Then remove `dgen`, the typed parts of

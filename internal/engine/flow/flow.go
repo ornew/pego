@@ -193,6 +193,14 @@ type PushKid struct{ X Expr }
 // DropKids truncates the stack of gathered values to Base.
 type DropKids struct{ Base Expr }
 
+// StreamStart begins the stream of a stream parse: the repetition that delivers its elements is about
+// to run (runtime StreamStart). It is guarded by StreamOn.
+type StreamStart struct{}
+
+// EmitStream delivers the committed element X, which is nil for a value-free repetition, to the
+// callback of a stream parse; the parse has consumed input up to the position.
+type EmitStream struct{ X Expr }
+
 // Append appends X to the list Vals; with Spread, the children of the tuple node X.
 type Append struct {
 	Vals   *Var
@@ -254,6 +262,8 @@ func (*MergeExpected) stmt() {}
 func (*MergeRenamed) stmt()  {}
 func (*PushKid) stmt()       {}
 func (*DropKids) stmt()      {}
+func (*StreamStart) stmt()   {}
+func (*EmitStream) stmt()    {}
 func (*Append) stmt()        {}
 func (*SetWhere) stmt()      {}
 func (*DropCreated) stmt()   {}
@@ -306,6 +316,10 @@ type RecLen struct{}
 
 // KidsLen is the height of the stack of gathered values.
 type KidsLen struct{}
+
+// StreamOn reports that the invocation delivers the elements of its #stream repetition: a stream
+// parse with a callback, at the top call of its start rule.
+type StreamOn struct{}
 
 // Nil is the nil value.
 type Nil struct{}
@@ -532,6 +546,7 @@ func (*Use) expr()             {}
 func (*Read) expr()            {}
 func (*RecLen) expr()          {}
 func (*KidsLen) expr()         {}
+func (*StreamOn) expr()        {}
 func (*Nil) expr()             {}
 func (*Int) expr()             {}
 func (*Bool) expr()            {}

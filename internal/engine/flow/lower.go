@@ -53,6 +53,11 @@ type Options struct {
 	// ones, in the functions it lowers (Func.Node). It holds for every function of a module's lowering,
 	// so the options of the Node and recognizer tables are never shared with the typed table's.
 	Node bool
+	// Stream lowers the #stream repetition (core.Stream) of a framed Node function as the repetition that
+	// delivers its elements in a stream parse: it hands each committed element to the callback instead of
+	// gathering it, when the invocation streams (StreamOn), and gathers it otherwise. The function is the
+	// body of the start rule that ParseStream runs.
+	Stream bool
 }
 
 // Recovers reports whether the module has a Recover, which appends recovered errors.
@@ -208,6 +213,8 @@ type lowerer struct {
 	guardedSize *Var
 	// frame reports a framed function.
 	frame bool
+	// streaming is the repetition of the Stream node being lowered in a stream parse (Options.Stream).
+	streaming *core.Repeat
 }
 
 // scope is a capture scope: its slots and the variables made for them.
@@ -487,6 +494,12 @@ func (l *lowerer) node(n core.Node, s *scope, build bool, fail *Label) Expr {
 		return l.choice(n, s, build, fail)
 	case *core.Stream:
 		l.steps(n.Repeat)
+		if l.opts.Stream {
+			if !l.frame || !l.opts.Node || n.Repeat.Project != "" {
+				panic("flow: a stream repetition is lowered in a framed Node function and is not projected")
+			}
+			l.streaming = n.Repeat
+		}
 		return l.repeat(n.Repeat, s, build, fail)
 	case *core.Repeat:
 		return l.repeat(n, s, build, fail)
@@ -1133,6 +1146,10 @@ func (l *lowerer) frameRepeat(n *core.Repeat, s *scope, build bool, fail *Label)
 	}
 	count := l.decl("x", TypeInt)
 	l.set(count, &Int{})
+	stream := n == l.streaming
+	if stream {
+		l.emit(&If{Cond: &StreamOn{}, Then: []Stmt{&StreamStart{}}})
+	}
 	lp := l.newLoop(n.Max)
 	if field != "" {
 		l.emit(&ClearVals{F: frame})
@@ -1173,6 +1190,18 @@ func (l *lowerer) frameRepeat(n *core.Repeat, s *scope, build bool, fail *Label)
 		}
 	}
 	l.emit(&Inc{V: count})
+	if stream {
+		// The element is delivered and committed, not retained.
+		var x Expr = &Nil{}
+		if build {
+			x = v
+		}
+		l.emit(&If{Cond: &StreamOn{}, Then: []Stmt{
+			&EmitStream{X: x},
+			&If{Cond: &Cmp{Op: "==", L: pos, R: m.at()}, Then: []Stmt{&Exit{To: lp.Label}}},
+			&Continue{To: lp.Label},
+		}})
+	}
 	if build {
 		l.emit(&PushKid{X: v})
 	}

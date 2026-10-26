@@ -152,6 +152,26 @@ func (g *generator) flowNodeFrameBody(r *rule, scope *scope) string {
 	return g.flowFramed(f, cr.Scope, scope, r.name+" (Node body inlined)")
 }
 
+// flowStreamBody prints the body of the start rule r of ParseStream from Flow IR as the matcher of its
+// frame body, with the repetition of its #stream delivering the elements (flow.Options.Stream), or
+// returns "" if the rule is not printed that way: a rule is eligible as for flowNodeFrameBody. The
+// capture layout of the printed body must be the batch body's, which the action addresses by slot.
+func (g *generator) flowStreamBody(r *rule, scope *scope) string {
+	cr, ok := g.flowNodeFrameOK(r)
+	if !ok || !g.flow.opts.Node || g.directStream {
+		return ""
+	}
+	opts := g.flow.opts
+	opts.Stream = true
+	f, err := flow.LowerFrame(g.flow.m, cr, cr.Body, cr.Scope, !r.lean, r.name, opts)
+	if err != nil {
+		panic(fmt.Errorf("stream body of rule %s: %w", r.name, err)) // FramedBody holds
+	}
+	g.cur, g.proj = r, g.projections(r)
+	defer func() { g.proj = nil }()
+	return g.flowFramed(f, cr.Scope, scope, r.name+" (stream body)")
+}
+
 // flowNodeFrameOK reports whether the rule r of the Node or recognizer table is printed from Flow IR as
 // a framed body, with its Core rule.
 //
@@ -491,6 +511,11 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 		} else {
 			p.write(fmt.Sprintf("p.PushKid(%s)\n", p.expr(s.X)))
 		}
+	case *flow.StreamStart:
+		p.write("p.StreamStart()\n")
+	case *flow.EmitStream:
+		p.read(s.X)
+		p.write(fmt.Sprintf("p.EmitStream(%s, p.Pos)\n", p.expr(s.X)))
 	case *flow.DropKids:
 		p.read(s.Base)
 		p.write(fmt.Sprintf("p.DropKids(%s)\n", p.expr(s.Base)))
@@ -665,6 +690,8 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 		return "len(p.Recovered)"
 	case *flow.KidsLen:
 		return "len(p.KidStack)"
+	case *flow.StreamOn:
+		return "p.Stream != nil && p.Stream.Emit != nil && p.Depth == 1"
 	case *flow.Nil:
 		return "nil"
 	case *flow.Int:

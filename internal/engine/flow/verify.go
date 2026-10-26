@@ -187,6 +187,15 @@ func (v *verifier) stmt(s Stmt) error {
 		return v.expr(s.X)
 	case *DropKids:
 		return v.expr(s.Base)
+	case *StreamStart:
+		if !v.f.Node || !v.f.Frame {
+			return fmt.Errorf("%s: stream start outside a framed Node function", v.f.Name)
+		}
+	case *EmitStream:
+		if !v.f.Node || !v.f.Frame {
+			return fmt.Errorf("%s: stream element outside a framed Node function", v.f.Name)
+		}
+		return v.expr(s.X)
 	case *Append:
 		if err := v.use(s.Vals); err != nil {
 			return err

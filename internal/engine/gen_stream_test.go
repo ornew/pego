@@ -233,6 +233,26 @@ rule item = "(" main ")" / [a-z] / "[" main "]" / "(" [0-9]`, []string{strings.R
 	{"stream in an attributed sequence", `rule main = (([a-z] #atomic)* #stream "!") @diagnostic(name="x") $$`, []string{"ab!", "!", "", "a"}},
 	{"stream in an attributed group", `rule main = (item* #stream) @diagnostic(name="items") "." $$
 rule item = [a-z] #atomic`, []string{"ab.", "a", ".", "ab"}},
+	// Shapes around the stream repetition and its elements: a diagnostic or an error label on the repetition
+	// itself, captures with an action in each element, a recursive start rule that keeps captures, the
+	// environment changed by an element and read by a predicate and a lookahead after it, recovery in the
+	// element rule, and recovery in the start rule (which keeps the direct printer).
+	{"diagnostic on the repetition", `rule main = (item* #stream @diagnostic(name="items")) "." $$
+rule item = [a-z] #atomic`, []string{"ab.", "a", ".", "ab1"}},
+	{"error label on the repetition", `rule main = (item* #stream @error(message="expected items")) "." $$
+rule item = [a-z] #atomic`, []string{"ab.", "a", ".", "ab1"}},
+	{"element captures and actions", `rule main = h:"#" rs:item* #stream t:"!"? => ($h, len($rs), $t)
+rule item = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic ";" => ($k, $v)`, []string{"#a=1;b=22;!", "#a=1;b=;", "#", "#a=1;b=2"}},
+	{"recursive start with captures", `rule main = a:item* #stream b:"."? => ($a, $b)
+rule item = ("(" m:main ")" => $m) / (x:[a-z] #atomic => $x)`, []string{"a(b)c.", "((a)", "(a(b))", strings.Repeat("(", 40) + "a" + strings.Repeat(")", 40)}},
+	{"environment, predicate and lookahead", `var n int
+rule main = {n := 0} item* #stream &"!" $$ "!"
+rule item = "a" {n := n + 1} / "b" {n > 1} / "c" !"d"`, []string{"aab!", "ab!", "aacc!", "acd!", "b"}},
+	{"recovery in the element rule", `rule main = stmt* #stream $$
+rule stmt = (word ";") #recover(skip=[^;]* ";")
+rule word = [a-z]+ #atomic`, []string{"ab;1;cd;", "1;ab", "ab;;", ";"}},
+	{"recovery in the start rule", `rule main = (word ";" #recover(skip=[^;]* ";"))* #stream $$
+rule word = [a-z]+ #atomic`, []string{"ab;1;cd;", "1;ab", "ab;;", ";"}},
 	// Each growth of the start rule allocates its capture frame again.
 	{"left recursive start", `rule main = a:(main "x")? b:item* #stream c:"."?
 rule item = q:[a-z] #atomic`, []string{"ab.", "a", "", "ab.x"}},

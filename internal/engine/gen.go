@@ -87,6 +87,9 @@ type GenOptions struct {
 	// where the Flow route applies (startRecFlow). The parity test uses it as the oracle of that route;
 	// nothing else sets it.
 	directNodeRules bool
+	// directStream prints the stream body of ParseStream with the direct printer even where the Flow route
+	// applies (flowStreamBody). The parity tests use it as the oracle of that route; nothing else sets it.
+	directStream bool
 	// keepComments keeps the comments of unexported generated code, which tests read as route markers.
 	keepComments bool
 	// disableKeepNodes leaves the Node rule functions out of a typed-only parser that needs them
@@ -231,7 +234,7 @@ func generateOnce(g *grammar.Grammar, opts GenOptions, live, collect *liveRules)
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
-	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, flowRecognizer: !opts.directRecognizer && !opts.Document, flowNode: !opts.directNodeRules && !opts.Document && !opts.TypedOnly, prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, live: live, collect: collect}
+	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, flowRecognizer: !opts.directRecognizer && !opts.Document, flowNode: !opts.directNodeRules && !opts.Document && !opts.TypedOnly, directStream: opts.directStream, prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, live: live, collect: collect}
 	if live != nil {
 		gen.seedDescs()
 		for _, d := range live.descs[len(gen.descs):] {
@@ -595,6 +598,8 @@ type generator struct {
 	flowRecognizer bool
 	// flowNode is set when the eligible rules of the Node table are printed from Flow IR.
 	flowNode bool
+	// directStream keeps the stream body of ParseStream off the Flow route.
+	directStream bool
 	// nodeScopes records the frame layouts shared by typed rule metadata.
 	nodeScopes map[*rule][]string
 	// decisions, if set, receives the lowering decisions (gen_decisions.go).
@@ -818,6 +823,20 @@ var operatorsRouteHook func(table string, r *rule)
 // operatorsFallbackHook is called as operatorsRouteHook for each line of a Node or recognizer table whose
 // Flow route is on and that is printed by generator.expr instead, because the line is not eligible.
 var operatorsFallbackHook func(table string, r *rule)
+
+// streamRouteHook is called with the rule table and the rule for each ParseStream start rule whose
+// stream body is printed from Flow IR (flowStreamBody). Tests set it as directRouteHook.
+var streamRouteHook func(table string, r *rule)
+
+// streamFallbackHook is called as streamRouteHook for each ParseStream start rule of a build whose Flow
+// route is on and whose stream body is printed by generator.expr instead, because the rule is not eligible.
+var streamFallbackHook func(table string, r *rule)
+
+func (g *generator) lineFallbackStream(r *rule) {
+	if g.flow != nil && streamFallbackHook != nil && g.collect == nil {
+		streamFallbackHook(g.table, r)
+	}
+}
 
 // lineFallback reports a line that the Flow route of a Node or recognizer table left to generator.expr.
 func (g *generator) lineFallback() {
@@ -1060,10 +1079,18 @@ func (g *generator) rules() {
 		// ParseStream calls a copy of the start rule whose body emits the
 		// #stream elements, generated last so that the batch code is the same
 		// as without streams. Its captures have a layout of their own.
-		g.cur, g.proj, g.streamBody = r, g.projections(r), true
 		s := newScope()
-		body := g.expr(r.bodyExpr(), s, !r.lean)
-		g.proj, g.streamBody = nil, false
+		body := g.flowStreamBody(r, s)
+		if body != "" {
+			if streamRouteHook != nil && g.collect == nil {
+				streamRouteHook(g.table, r)
+			}
+		} else {
+			g.lineFallbackStream(r)
+			g.cur, g.proj, g.streamBody = r, g.projections(r), true
+			body = g.expr(r.bodyExpr(), s, !r.lean)
+			g.proj, g.streamBody = nil, false
+		}
 		if strings.Join(s.names, "\x00") != strings.Join(scopes[r].names, "\x00") {
 			// The copied action addresses captures by the batch body's slots.
 			g.streamErr = fmt.Errorf("internal error: the stream body of %s has a different capture layout", r.name)

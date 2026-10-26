@@ -331,6 +331,12 @@ func TestVerifyRejects(t *testing.T) {
 			f.Node = true
 			return f
 		}(), "frame release in a Node function"},
+		{"stream start in a typed function", newFunc(&StreamStart{}), "stream start outside a framed Node function"},
+		{"stream element in a local Node function", func() *Func {
+			f := newFunc(&EmitStream{X: &Nil{}})
+			f.Node = true
+			return f
+		}(), "stream element outside a framed Node function"},
 		{"undeclared cut flag", func() *Func {
 			return &Func{Name: "f", Fail: &Label{Name: "fail"}, Frame: true, Cut: &Var{Name: "cut1", Type: TypeBool}}
 		}(), "not declared"},
@@ -472,5 +478,39 @@ func TestLowerVerifies(t *testing.T) {
 	good := newFunc()
 	if g, err := verified(good); err != nil || g != good {
 		t.Errorf("verified of a valid function: got %v, %v", g, err)
+	}
+}
+
+// TestLowerStream checks the lowering of a #stream repetition in a framed Node function: with Options.Stream
+// it starts the stream and delivers each element instead of gathering it, guarded by StreamOn; without the
+// option it is the batch repetition, which has none of these operations.
+func TestLowerStream(t *testing.T) {
+	m := &core.Module{Rules: []*core.Rule{nil}}
+	rep := &core.Repeat{Min: 0, Max: -1, Body: &core.Lit{Text: "a"}}
+	rep.Body.Attrs().Steps = 1
+	body := &core.Stream{Repeat: rep}
+	r := &core.Rule{Name: "main", Body: body}
+	m.Rules[0] = r
+	lower := func(stream bool) string {
+		f, err := LowerFrame(m, r, body, nil, true, "main", Options{Node: true, Stream: stream})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := Verify(f); err != nil {
+			t.Fatal(err)
+		}
+		return String(f)
+	}
+	batch, stream := lower(false), lower(true)
+	for _, op := range []string{"stream start", "emit ", "streaming"} {
+		if strings.Contains(batch, op) {
+			t.Errorf("the batch lowering has %q:\n%s", op, batch)
+		}
+		if !strings.Contains(stream, op) {
+			t.Errorf("the stream lowering lacks %q:\n%s", op, stream)
+		}
+	}
+	if strings.Count(stream, "push ") != strings.Count(batch, "push ") {
+		t.Errorf("the stream lowering keeps the gathering of elements for the parses that do not stream:\n%s", stream)
 	}
 }
