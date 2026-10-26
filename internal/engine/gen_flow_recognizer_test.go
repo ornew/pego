@@ -90,6 +90,15 @@ var flowRecognizerMutants = map[string]func([]byte) []byte{
 	"class":   invertClassTests,
 	"guard":   shiftGuardFirstCharacters,
 	"capture": dropCaptures,
+	"cut":     dropCuts,
+}
+
+var setCut = regexp.MustCompile(`(?m)^(\t+cut\d+) = true$`)
+
+// dropCuts drops every cut, as a printer would if it lowered a cut to nothing: the alternatives after a
+// cut are tried again.
+func dropCuts(code []byte) []byte {
+	return setCut.ReplaceAll(code, []byte("$1 = false"))
 }
 
 var setCapture = regexp.MustCompile(`p\.SetCapture\w*\((\d+), (\w+)\)`)

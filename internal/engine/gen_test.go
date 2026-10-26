@@ -219,6 +219,42 @@ rule main = x:"a"* #atomic => A{N: 10 / len($x)}`, []string{"aa", ""}},
 		{"integer boundaries", integerBoundaryGrammar, []string{"a", "aa", ""}},
 		{"cut and lookahead", `rule main = ("a" #cut "b" / "a" #cut "c") rest
 rule rest = &x:"!" "!"? !"?" .*`, []string{"ab!x", "ac", "ab?"}},
+		// Cuts in every backtracking scope of a body: the alternatives of a choice, an optional, a repetition and a
+		// called rule, with inputs that fail near and after each cut, so that the error position and the expected
+		// set show whether the alternatives after a cut were tried.
+		{"cuts in every scope", `rule main = item* $$
+rule item = "let" #cut " " name "=" num ";" / "if" #cut "(" name ")" (block / item) / "w" ("x" #cut "y")? "x"? "z" / "r" ("a" #cut "b")* "a" "c" / name ";" / "!" !("a" #cut "b") .
+rule block = "{" item* "}"
+rule name = [a-z]+ #atomic
+rule num = [0-9]+`, []string{"let a=1;", "let a=;", "let a;", "let;", "if;", "if(a)b;", "if(a){b;c;}", "if(a)", "if a", "wxyz", "wxz", "wz", "wxq", "rabac", "rabbc", "rac", "rc", "x;", "!b", "!ab", "!a", "a;b;", "", "?"}},
+		// A body with captures, a projected repetition and an action whose rule cuts after its opening bracket: the
+		// calls after the cut cannot fall back to another alternative of the repetition.
+		{"cut with captures and a projected repetition", `type Call = { Fn node[string]; Args []node[string] }
+type Prog = { Calls []Call }
+rule main Prog = cs:(c:call ";")* "." => Prog{Calls: map($cs, (e) => e.$c)}
+rule call Call = f:name "(" #cut args:(a:name ","?)* ")" => Call{Fn: $f, Args: map($args, (e) => e.$a)}
+rule name = [a-z]+ #atomic`, []string{"f(a,b);g();.", "f(a b);.", "f(a,;", "f;", "f(a", "g(.", ".", "", "f(a);g(b", "f(1);", "f(a);;."}},
+		// Where a cut is committed and where it is discarded, one grammar for each shape, with inputs that
+		// succeed, fail at the cut and fail after it.
+		{"cut in an inner alternative of a nested choice", `rule main = ("a" ("b" #cut "c" / "b" "d") / "a" "e") "!"? $$`,
+			[]string{"abc", "abc!", "abd", "ae", "ae!", "abx", "a", "ab", ""}},
+		{"cut inside a positive lookahead", `rule main = (&("a" #cut "b") "a" / "a") "c"? $$`,
+			[]string{"ab", "abc", "ac", "a", "ax", ""}},
+		{"cut in a rule called from a negative lookahead", `rule main = (!guard "a" "c" / "a") "x"? $$
+rule guard = "a" #cut "b"`, []string{"ac", "acx", "ab", "abx", "a", "ad", ""}},
+		{"top-level cut in a called rule", `rule main = (w "!" / "w" "?") $$
+rule w = "w" #cut "o"`, []string{"wo!", "wo?", "w?", "wx", "wo", "w", ""}},
+		{"memoized rule with a cut called at one position", `rule main = (&m m "x" / m "y") $$
+rule m = "a" #cut "b" / "a" "c"`, []string{"abx", "aby", "ab", "acx", "ax", "a", ""}},
+		{"optional with a cut followed by input", `rule main = "a" ("b" #cut "c")? "d" $$`,
+			[]string{"ad", "abcd", "abd", "abc", "abcx", "a", ""}},
+		{"two cuts in a repetition inside a choice", `rule main = ("(" ("a" #cut "b" #cut "c")* ")" / "(" "a" ")") $$`,
+			[]string{"()", "(abc)", "(abcabc)", "(ab)", "(a)", "(abca)", "(abx)", "(ax)", "("}},
+		{"cut before a call of an Operators Rule", `rule main = "e" #cut e $$ / "e" "q" $$
+rule e = #operators {
+    operand "x"
+    level { infix left "+" }
+}`, []string{"ex", "ex+x", "ex+", "eq", "e", "e+", ""}},
 		{"memo keyed by variables", `var n int
 rule main = {n := 1} r "x" / {n := 2} r .*
 rule r = {n == 1} "a" / {n == 2} "b"`, []string{"ax", "b", "ay", "bx"}},

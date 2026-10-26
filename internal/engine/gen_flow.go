@@ -173,15 +173,25 @@ func (g *generator) flowStreamBody(r *rule, scope *scope) string {
 	return g.flowFramed(f, cr.Scope, scope, r.name+" (stream body)")
 }
 
+// flowFrameExprOK reports whether the body of the rule r is one that Flow IR prints as a framed body of the
+// Node or recognizer table: as directOK, except that a body may cut. Flow IR lowers a cut as the typed table does
+// (a flag per backtracking point, published to the runtime's cut flag on return, as generator.expr's rule wrapper
+// leaves it), so the runtime's frame, memo and finish ownership are the same. Left-recursion leaders and bodies
+// with recovery keep the direct printer.
+func flowFrameExprOK(r *rule) bool {
+	return !r.leader && directFrameExprOK(r.bodyExpr(), true, false)
+}
+
 // flowNodeFrameOK reports whether the rule r of the Node or recognizer table is printed from Flow IR as
 // a framed body, with its Core rule.
 //
 // Core IR gathers the values of a projected repetition (Project), and the actions that read it expect
 // that shape. The Node table writes its actions with the projections of the rule (generator.projections),
 // which are the ones Core IR makes, so a Core-lowered body agrees with them. The recognizer's table writes
-// its actions without projections, so a body that Core IR projects is not eligible there.
+// its actions without projections, so its Core IR is built without them (buildCoreProjecting) and agrees with
+// them as well; either table's body is eligible when its action reads only captures of the frame.
 func (g *generator) flowNodeFrameOK(r *rule) (*core.Rule, bool) {
-	if g.flow == nil || g.table == "trules" || !directOK(r) {
+	if g.flow == nil || g.table == "trules" || !flowFrameExprOK(r) {
 		return nil, false
 	}
 	cr := g.flow.m.Rules[r.id]
