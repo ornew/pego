@@ -29286,7 +29286,6 @@ func q1(p *rt.Parser) (*rt.Node, bool) {
 		var x32 rune
 		start = p.Pos
 		p.Enter()
-		_, _ = x14, x17
 		for {
 			x2 = p.Pos
 			if _, ok = p.Call(recRules[2], 0); !ok {
@@ -29449,7 +29448,6 @@ func q1(p *rt.Parser) (*rt.Node, bool) {
 	var x32 rune
 	start = p.Pos
 	p.Enter()
-	_, _ = x14, x17
 	p.StepWork()
 	p.StepWork()
 	p.StepWork()
@@ -29910,7 +29908,6 @@ func q8(p *rt.Parser) (*rt.Node, bool) {
 		var ok bool
 		start = p.Pos
 		p.Enter()
-		_ = x1
 		x1 = 0
 		for {
 			x2 = p.Pos
@@ -29958,7 +29955,6 @@ func q8(p *rt.Parser) (*rt.Node, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x1
 	p.StepWork()
 	p.StepWork()
 	p.StepWork()

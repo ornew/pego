@@ -83,8 +83,14 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   `NewBranchNode` values and keeps frames out of the frame trail; Verify rejects the typed value ops in it and
   the Node ops in a typed function. The Flow form has no `_ = x` line for a variable it reads nowhere, which
   `dgen` writes; apart from those lines the output of all ten checked-in grammars is equal to `dgen`'s. The
-  recognizer's table writes its actions without projections, so a recognizer rule whose body Core IR projects is
-  printed by `dgen`.
+  recognizer's table writes its actions for the values of an unprojected repetition (`generator.projections` is
+  empty there), so the Core IR of the recognizer is built without projections (`buildCoreProjecting`): a captured
+  repetition of a recognizer rule builds its elements with their captures, as `dgen` does, and the rules with
+  captures print like any other rule. What `dgen` still prints in both tables are the left-recursion leaders and
+  the bodies with a cut or recovery (`directFallbackHook` lists them for a test); the tests assert that no other
+  rule falls back, and that capture rules and captured repetitions take the Flow route. The text equals `dgen`'s
+  for the ten grammars, the recognizers run as the engine's on the generated-grammar corpus and the testdata of
+  the ten grammars in both forms, and a mutant that drops the recording of captures fails that comparison.
   The lines of an Operators Rule in both tables are printed from Flow IR as framed bodies, except a line with
   `#recover`, which Flow IR would build with the typed runtime's error values. Operators Rules have no
   projected repetitions, so Core IR and the tables agree on the shape of every capture. The tests compare the

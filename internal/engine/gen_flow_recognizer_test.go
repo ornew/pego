@@ -87,8 +87,17 @@ func shiftGuardFirstCharacters(code []byte) []byte {
 // A dropped guard is not among them: a guard only skips an alternative that cannot match, so dropping
 // one keeps the results and only the guard test in TestFlowRecognizerGuardsChoiceAlternatives sees it.
 var flowRecognizerMutants = map[string]func([]byte) []byte{
-	"class": invertClassTests,
-	"guard": shiftGuardFirstCharacters,
+	"class":   invertClassTests,
+	"guard":   shiftGuardFirstCharacters,
+	"capture": dropCaptures,
+}
+
+var setCapture = regexp.MustCompile(`p\.SetCapture\w*\((\d+), (\w+)\)`)
+
+// dropCaptures drops the recording of every capture, as a printer would if it took the captures of a rule
+// without a value for dead: the actions and predicates that read them fail.
+func dropCaptures(code []byte) []byte {
+	return setCapture.ReplaceAll(code, []byte("_ = $2"))
 }
 
 // TestGeneratedFlowRecognizerMutantChild runs the parity test with the mutant that PEGO_FLOW_MUTANT

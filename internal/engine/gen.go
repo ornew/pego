@@ -159,6 +159,16 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	return generate(g, opts)
 }
 
+// directFallbackHook, if set by a test, is called for each rule of the Node and recognizer tables that the
+// direct printer prints although Flow IR is enabled for the table, with the printer's route.
+var directFallbackHook func(table, route string, r *rule)
+
+func directFallback(g *generator, route string, r *rule) {
+	if directFallbackHook != nil && g.collect == nil && g.table != "trules" && g.flow != nil {
+		directFallbackHook(g.table, route, r)
+	}
+}
+
 // generate generates the files of Generate (other than for RuntimeOnly). It generates twice: the
 // first pass records which rules of the Node and recognizer tables a generated call or an entry
 // point can reach (liveRules), and the second leaves out the bodies of the others.
@@ -234,9 +244,10 @@ func generateOnce(g *grammar.Grammar, opts GenOptions, live, collect *liveRules)
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
-	// A parser generated to record decisions (tests of the typed lowering) prints its Node rules with dgen, whose
-	// decisions the recording tests index by position in the output.
-	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, flowRecognizer: !opts.directRecognizer, flowNode: !opts.directNodeRules && opts.decisions == nil, directStream: opts.directStream, prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, live: live, collect: collect}
+	// A parser generated to record decisions (tests of the typed lowering and of the Core comparisons)
+	// prints its Node and recognizer rules with dgen, whose decisions the recording tests index by
+	// position in the output.
+	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, flowRecognizer: !opts.directRecognizer && opts.decisions == nil, flowNode: !opts.directNodeRules && opts.decisions == nil, directStream: opts.directStream, prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, live: live, collect: collect}
 	if live != nil {
 		gen.seedDescs()
 		for _, d := range live.descs[len(gen.descs):] {
@@ -885,6 +896,7 @@ func (g *generator) rules() {
 			// Value-free Node rules retain one for generic calls and external entry, whose
 			// caller owns depth.
 			if d := g.directRule(r); d != nil {
+				directFallback(g, "direct rule", r)
 				if directRouteHook != nil && g.collect == nil {
 					directRouteHook(g.table, r)
 				}
@@ -905,6 +917,7 @@ func (g *generator) rules() {
 					continue
 				}
 				if body := g.directNodeBody(r, s); body != "" {
+					directFallback(g, "direct body", r)
 					bodies[r] = body
 					continue
 				}
@@ -915,6 +928,7 @@ func (g *generator) rules() {
 				g.failTyped("the body of rule " + r.name)
 				continue
 			}
+			directFallback(g, "expression", r)
 			g.cur, g.proj = r, g.projections(r)
 			bodies[r] = g.expr(r.bodyExpr(), s, !r.lean)
 			g.proj = nil

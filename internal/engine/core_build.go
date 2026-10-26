@@ -38,9 +38,17 @@ func buildCore(prog *Program) (*core.Module, error) {
 // buildCoreFrom is buildCore that also records, in origin if it is not nil, the expression each
 // node is built from (the innermost one, for nodes built from a chain of expressions).
 func buildCoreFrom(prog *Program, origin map[core.Node]grammar.Expr) (*core.Module, error) {
+	return buildCoreProjecting(prog, origin, true)
+}
+
+// buildCoreProjecting is buildCoreFrom; if project is false, no repetition gathers the values of a capture
+// (ruleProjections is ignored), the shape of the values the recognizer's table writes its actions for
+// (generator.projections).
+func buildCoreProjecting(prog *Program, origin map[core.Node]grammar.Expr, project bool) (*core.Module, error) {
 	all := append(append([]*rule(nil), prog.rules...), prog.twins...)
 	b := &coreBuilder{prog: prog, m: &core.Module{Rules: make([]*core.Rule, len(all))}, origin: origin,
 		exps: map[string]core.ExpID{}, classes: map[string]*core.Class{}, starts: map[*rule]bool{}}
+	b.noProject = !project
 	b.rec = prog.valueRecord()
 	for _, d := range fixedDescs {
 		b.exp(d)
@@ -86,6 +94,8 @@ type coreBuilder struct {
 	prog *Program
 	m    *core.Module
 	cur  *rule
+	// noProject builds no projected repetition: proj stays empty.
+	noProject bool
 	// proj holds the projected repetition captures of the rule being built (ruleProjections).
 	proj map[string]string
 	// final is the action whose value is the result of the rule or line being built.
@@ -218,7 +228,9 @@ func (b *coreBuilder) rule(r *rule) (*core.Rule, error) {
 		cr.Finish = core.Finish{Kind: core.FinishSplice}
 		return cr, nil
 	}
-	b.proj = ruleProjections(b.prog, r)
+	if !b.noProject {
+		b.proj = ruleProjections(b.prog, r)
+	}
 	defer func() { b.proj = nil }()
 	body := r.bodyExpr()
 	b.streamTop = streamTops(body)

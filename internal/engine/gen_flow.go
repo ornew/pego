@@ -188,11 +188,6 @@ func (g *generator) flowNodeFrameOK(r *rule) (*core.Rule, bool) {
 	if !flow.FramedBody(cr.Body) {
 		return nil, false
 	}
-	// The recognizer's table writes the actions of its rules without projections, where Core IR gathers
-	// the values of a projected repetition: the actions would read a list of another shape.
-	if g.table == "recRules" && hasProjection(cr.Body) {
-		return nil, false
-	}
 	if r.action != nil {
 		known := newScope()
 		for _, sl := range cr.Scope {
@@ -203,20 +198,6 @@ func (g *generator) flowNodeFrameOK(r *rule) (*core.Rule, bool) {
 		}
 	}
 	return cr, true
-}
-
-// hasProjection reports whether n contains a projected repetition or a capture of one.
-func hasProjection(n core.Node) bool {
-	found := false
-	core.Walk(n, func(n core.Node) {
-		switch n := n.(type) {
-		case *core.Repeat:
-			found = found || n.Project != ""
-		case *core.Capture:
-			found = found || n.Project != ""
-		}
-	})
-	return found
 }
 
 // flowOperatorsRuleBody prints the line l of the Operators Rule g.cur, whose expression is e, from Flow

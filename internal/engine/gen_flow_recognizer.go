@@ -18,8 +18,8 @@ import (
 // run on the whole output afterwards, so a printed rule gets its ordinary branch as a generated one does.
 
 // recFlowEligible reports whether the rule r of the Node table or of the recognizer table is printed
-// from Flow IR: a rule that the direct printer prints as a lean value-free rule (directLeanOK) and
-// whose body has no capture or predicate.
+// from Flow IR: a rule that the direct printer prints as a lean value-free rule (directLeanOK). Its captures
+// are Flow statements as in any rule; a semantic predicate keeps a rule out of directLeanOK.
 func recFlowEligible(r *rule) bool {
 	if !directLeanOK(r) {
 		return false
@@ -27,7 +27,7 @@ func recFlowEligible(r *rule) bool {
 	ok := true
 	walkExpr(r.bodyExpr(), func(e grammar.Expr) {
 		switch e.(type) {
-		case *grammar.Capture, *grammar.Predicate:
+		case *grammar.Predicate:
 			ok = false
 		}
 	})
@@ -42,7 +42,7 @@ func recFlowEligible(r *rule) bool {
 // its terminals and classes as the direct printer does, as inline tests.
 func (g *generator) startRecFlow(rec *Program) error {
 	origin := map[core.Node]grammar.Expr{}
-	m, err := buildCoreFrom(rec, origin)
+	m, err := buildCoreProjecting(rec, origin, g.table != "recRules")
 	if err != nil {
 		return err
 	}

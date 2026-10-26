@@ -197,6 +197,16 @@ rule imp Import = "import" ws f:al r:(-ws -"," -ws a:al)* ";" => Import{Names: c
 rule al Alias = n:name => Alias{Name: text($n)}
 rule ws = " "*
 rule name = [a-z]+ #atomic`, []string{"import a;", "import a, b ,c;import d;", "import a,;", "import ;", "import a,b", ""}},
+		// Captures nested in a captured repetition, with a projected repetition in its elements: the recognizer runs the
+		// action of table (a predicate reads it) over the unprojected shapes of both repetitions.
+		{"nested captured repetitions", `type Cell = { Name string }
+type Row = { Cells []Cell }
+type Table = { Rows []Row; N int }
+rule main = t:table {$t.N >= 0} !.
+rule table Table = "{" rs:(r:row ";")* "}" => Table{Rows: map($rs, (e) => e.$r), N: len($rs)}
+rule row Row = f:cell rest:(-"," c:cell)* => Row{Cells: concat(list($f), map($rest, (e) => e.$c))}
+rule cell Cell = n:name => Cell{Name: text($n)}
+rule name = [a-z]+ #atomic`, []string{"{a,b;c;}", "{a;}", "{}", "{a,;}", "{a,b}", "{a,b;c,d,e;f;}", "{;}", "x", ""}},
 		// The projected repetition reuses one frame for all elements. In the second alternative the
 		// predicate reads b, which only the first sets, so it must see the capture unset, not the value
 		// of an earlier element.
