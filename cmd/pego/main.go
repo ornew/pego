@@ -103,7 +103,8 @@ Commands:
       -types, types for the grammar's types and ParseAST (parseAST in TypeScript),
       which returns the result as typed values, are generated too.
       -document adds a Go incremental Document; with -types it also provides
-      Document.ParseAST. It cannot be combined with -lang ts.
+      Document.ParseAST. Without -work-controls the Document runs without
+      work charges. It cannot be combined with -lang ts.
       -stream adds Go ParseStream, which reads an io.Reader and passes each
       committed element of the start rule's #stream repetition to a callback.
       It cannot be combined with -types or -lang ts.
@@ -112,8 +113,10 @@ Commands:
       entry points.
       -work-controls generates the work-controlled form of the Go parser, which
       supports WithContext and WithWorkLimits; without it those options are not
-      exported and a parse that passes them fails. It cannot be combined with
-      -lang ts.
+      exported, the parser has no code that charges work, and a parse that
+      passes them fails. The parser has this one form only: a parse that sets
+      no limit runs the same code. Generate a second parser without the
+      option to have the plain form too. It cannot be combined with -lang ts.
       -typed-only generates only the typed entry points (ParseAST and its
       siblings), without Parse, ParseRule and Recognize. It needs -types and
       cannot be combined with -recognize, -document, -stream or -lang ts.

@@ -18,10 +18,10 @@ Three changes shrink the output without changing what a parse does.
 1. **Work controls on request.** The generation flag `-work-controls`
    (`pego.WithWorkControls`) emits the work-controlled form. Without it the
    ordinary specialization replaces each body, so a function exists once; with
-   `-document` the function keeps a second form for the Document, with no charge
+   `-document` the function is the form that serves a Document, with no charge
    and no control read (the typed constructors and the closures of actions
-   charge nothing either), so the saving is a few percent (a fixture of 3 rules:
-   74,282 bytes with controls, 70,641 without). The
+   charge nothing either), which is 7% smaller than the controlled form (a
+   fixture of 3 rules: 41,179 bytes with controls, 38,138 without). The
    package then exports none of `WithContext`, `WithWorkLimits` and their types,
    and the runtime grammar records `NoWorkControls`, so a control option passed
    through the runtime returns an error instead of being ignored. Parsers that
@@ -47,8 +47,8 @@ parser generated with work controls behaves as before.
 | Execution profile | Status | Reason |
 |:--|:--|:--|
 | Generated Go Node, recognition and typed output | Applied | Same generator |
-| Generated Go with `-work-controls` | Partial | Keeps both forms; helpers 2 and 3 apply |
-| Generated Go with `-document`, without `-work-controls` | Partial | Keeps the ordinary form and the form that serves a Document, with the charges and control reads of the latter removed |
+| Generated Go with `-work-controls` | Partial | One controlled form; helpers 2 and 3 apply |
+| Generated Go with `-document`, without `-work-controls` | Partial | One form that serves a Document, without charges and control reads |
 | Closure, bytecode and iterative VMs | Not applicable | No generated source |
 | Generated TypeScript | Not applied | Separate generator and runtime |
 
@@ -101,8 +101,8 @@ The root suite (the differential tests of every backend against generated code,
 the generation checks and the work-control tests), the tests of each parser module
 and the up-to-date check of the generated files pass. A new test generates a
 parser without work controls, checks that no charge, control read or work type is
-left (with and without `-document`), that it is under two thirds of the controlled
-size, that it compiles and that each entry point (`Parse`, `Recognize`, `ParseAST`,
+left (with and without `-document`), that it is smaller than the controlled
+parser, that it compiles and that each entry point (`Parse`, `Recognize`, `ParseAST`,
 `ParseRule`) rejects both control options. A second test builds a parser with every
 entry point, a Document, a stream, left recursion and recovery both ways and
 compares what the entry points return for inputs that include invalid UTF-8, byte

@@ -14,8 +14,8 @@ import (
 // The rules of a recognizer (recRules) and the lean rules of the Node table (rules) that
 // recFlowEligible accepts are built as Core IR, lowered by flow.Lower and printed by flowPrinter for
 // the untyped Node runtime. The other rules print their framed body from Flow IR as well
-// (flowNodeFrameBody), in the same output. Both tables share the helpers whose printed text is equal. The ordinary passes
-// run on the whole output afterwards, so a printed rule gets its ordinary branch as a generated one does.
+// (flowNodeFrameBody), in the same output. Both tables share the helpers whose printed text is equal. The text passes
+// run on the whole output afterwards.
 
 // recFlowEligible reports whether the rule r of the Node table or of the recognizer table is printed
 // from Flow IR as a direct rule: a lean value-free rule (directLeanOK). Its captures

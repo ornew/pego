@@ -1,67 +1,52 @@
-# G050: Generated Work-Control Specialization
+# G050: One Generated Form per Option Set
 
-Resource checks can cost ordinary generated parsing even when no work control is
-active. Specializing ordinary functions avoids some nil-control checks while
-preserving metered invocation behavior.
+Resource checks can cost generated parsing even when no work control is active. A generated Go
+parser therefore has one form of its functions, chosen at generation time by the options.
 
 ## Mechanism and Invariants
 
 The generator prints each execution function (rule bodies and other functions taking the parser
-as their first parameter) once, and writes the places where the controlled and the ordinary form
-differ as text fragments of that one traversal. A fragment holds the controlled alternative, the
-ordinary one and, for a Document, the form that remains without work controls. Both forms therefore
-share names, scope variables and the decision which variables are unread. The ordinary alternatives
-are:
+as their first parameter) once, from Flow IR, in the form the options select:
 
-- the 16 runtime helpers that have a hand-written `Ordinary` form (`NewNode`, `NewTerminal`,
+- Without `-work-controls` and without `-document` the parser holds the ordinary form only: the
+  16 runtime helpers that have a hand-written `Ordinary` form (`NewNode`, `NewTerminal`,
   `NewBranch`, `NewMatch`, `SetCapture`, `Expect`, `Peek`, `MatchLiteral`, `MatchLiteralFold`,
-  `MatchAny`, `AtEnd`, `AtLineStart`, `AtEndBatch`, `AtLineStartBatch`, `AtLineEnd`, `InputWork`);
-- no step or input-work charges, no control reads in conditions and class tests, and a compact
-  peek;
-- labels with the suffix `_ordinary`, since the branch sits inside the controlled function.
+  `MatchAny`, `AtEnd`, `AtLineStart`, `AtEndBatch`, `AtLineStartBatch`, `AtLineEnd`, `InputWork`),
+  no step or input-work charges, no control reads in conditions and class tests, and a compact
+  peek. A parse that passes a control option fails.
+- With `-work-controls` the parser holds the controlled form only: step and input-work charges,
+  the general runtime helpers and class tests that consult the control. A parse that sets no
+  limit runs the same code; the few inline tests of `p.Control` (in literal and large-class
+  tests) take the unmetered path, and the helpers test the control themselves.
+- With `-document` the in-place reads of literals and characters carry the guard
+  `p.Document == nil`, so that a Document parse reaches the primitives that record what a rule
+  examined. Without `-work-controls` that form has no charges and no control reads.
 
-Before formatting, the text is cut into the controlled form, which is the generated file, and the
-ordinary form. A splice moves the bodies of the ordinary form, formatted by themselves, into the
-functions of the same name as a branch that runs under `p.Control == nil` (and
-`p.Document == nil` in a parser with Documents). In a Document parser without work controls the
-branch runs under `p.Document == nil` and the rest form replaces the body that follows it. Metered
-paths retain their checks, cancellation and budgets. Broader helper cloning and an additional
-method split were measured and rejected. Work accounting is a resource contract, not an
-optimization in itself.
+There is no second body, no run-time choice between forms, and no splice. Metered paths keep their
+checks, cancellation and budgets. Work accounting is a resource contract, not an optimization in
+itself. A user who needs both forms generates two parsers.
 
 ## Scope and State
 
-Applied by default in generated Go Node/recognition and typed Go output, and only to
-parsers with work controls (`-work-controls`) or Documents (`-document`): their
-function bodies gain a branch for ordinary parses. A parser generated with neither has
-only the ordinary form, which the Flow printer prints directly (helper names with the
-`Ordinary` suffix, no control reads, no step charges), and a parse that passes a
-control option fails.
-Closure, VMs and TypeScript work-control implementations do not use this Go
-mechanism.
-
-## Reference Control
-
-Private generation control `disableOrdinaryWorkSpecialization` produces the
-same-source unspecialized route.
+Applied by default in generated Go Node/recognition and typed Go output. Closure, VMs and
+TypeScript work-control implementations do not use this Go mechanism.
 
 ## Evidence and Implementation
 
-Record 096 reports same-source ordinary Node/recognition median ratios of
-0.760–0.969 and typed ratios 0.815–0.936 against specialization disabled.
-Active-control samples are noisy. The feature's total overhead versus
-pre-control main remains measurable; specialization does not establish parity
-with that historical baseline.
+A parser generated with `-work-controls` has one controlled form of its functions. The `parser.go` of
+the same parser generated without the option is 0.50 to 0.85 of its size (every grammar of `parsers/`,
+Node-only, with `-types`, with `-types -recognize` or with `-types -typed-only`; larger grammars save
+more, and duckdb with `-typed-only` is the smallest at 0.50). A parse that sets no limit runs
+the controlled form without a fast path: on the YAML and CSV benchmark inputs it is slower than a
+parse of a parser generated without `-work-controls` by 17% (YAML `Parse`), 27% (YAML `Recognize`),
+27% (CSV `Parse`) and 69% (CSV `Recognize`). Records
+[096](../096-specialize-generated-go-method-helpers.md) and
+[121](../121-inactive-work-control-checks.md) hold earlier measurements of the ordinary body of a
+function and of the inlined runtime helpers.
 
-Record 121 moves the controlled bodies of the shared runtime helpers out of line so that the helpers inline in ordinary parses; it is 0.2% to 3.4% faster in run time than before.
-
-Evidence records: [096](../096-specialize-generated-go-method-helpers.md), [121](../121-inactive-work-control-checks.md).
-
-Source owners: [`fragments and form
-selection`](../../../internal/engine/gen_form.go), [`ordinary body
-splice`](../../../internal/engine/gen_ordinary_splice.go), [`execution function
-identity and helper names`](../../../internal/engine/gen_ordinary_names.go), [`metered
-runtime helpers`](../../../runtime/work.go).
+Source owners: [`Flow printer`](../../../internal/engine/gen_flow.go), [`helper
+names`](../../../internal/engine/gen_helper_names.go), [`metered runtime
+helpers`](../../../runtime/work.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

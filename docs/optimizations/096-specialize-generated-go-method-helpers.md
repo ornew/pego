@@ -1,6 +1,6 @@
 # 096. Specialize Generated Go Work-Control Methods
 
-- **Status**: Adopted
+- **Status**: Superseded by [G050](mechanisms/G050-generated-work-control-specialization.md): a generated parser has one form of each function, so the branch this record measures is not in the output
 - **Date**: 2026-10-14
 
 ## Problem and Mechanism
@@ -26,8 +26,8 @@ adopted.
 
 | Execution profile | Applied / Partial / Not applied / Not applicable | Reason |
 |:--|:--|:--|
-| Generated Go ordinary Node parse and recognition | Applied | Invocation-local nil-control branch and four helper families |
-| Generated Go typed parsing | Applied | Direct typed bodies and Node-to-typed conversion matching |
+| Generated Go ordinary Node parse and recognition | Not applied | A parser has one form of each function; no function has an invocation-local nil-control branch |
+| Generated Go typed parsing | Not applied | The typed bodies are not duplicated either; one form per parser |
 | Closure and bytecode backends | Not applicable | Different execution paths |
 | Generated TypeScript | Not applicable | No corresponding implementation was measured |
 
@@ -37,33 +37,11 @@ The 131-profile comparison used Go 1.27.1 on an Apple M3 Max
 (darwin/arm64), with `GOMAXPROCS=16`, `GOGC=100` and `GOMEMLIMIT=off`.
 Three alternating 500 ms samples compared main `77f12f2` with the source-pinned
 candidate in this implementation, based on work-control baseline `186e1b0`. The candidate included a source-format fix and regression
-tests. Samples were serialized. The opt-in
-`TestGeneratedOrdinaryWorkBenchmarkOverlay` writes enabled and disabled
-generation overlays for the seven benchmark parser packages; enabled output
-must match the checked-in generated source byte-for-byte. The same-source
-ablation disables only the specializer while leaving work controls enabled.
+tests. Samples were serialized. The same-source ablation disabled only the specializer while leaving work controls enabled.
 The fixed-allocation check uses 100 iterations and five alternating pairs.
 Build benchmark binaries before timing and alternate processes under the same
 environment; the existing active-control harnesses do not pre-parse before
 timing.
-
-
-```bash
-export GOMAXPROCS=16 GOGC=100 GOMEMLIMIT=off
-PEGO_ORDINARY_WORK_OVERLAY=/tmp/ordinary-work-overlay \
-  go test ./internal/engine -run '^TestGeneratedOrdinaryWorkBenchmarkOverlay$' -count=1
-
-# Build both variants before timing; alternate these binaries in fresh processes.
-go test -overlay=/tmp/ordinary-work-overlay/enabled.json \
-  -c -o /tmp/ordinary-enabled.test ./bench
-go test -overlay=/tmp/ordinary-work-overlay/disabled.json \
-  -c -o /tmp/ordinary-disabled.test ./bench
-cd bench
-/tmp/ordinary-enabled.test -test.run '^$' \
-  -test.bench '^Benchmark(Parse|Recognize)$/./^generated' \
-  -test.benchmem -test.benchtime 500ms -test.count 1
-# Repeat the command with ordinary-disabled.test, alternating at least three pairs.
-```
 
 The internal transform accepts only emitted execution methods. The registry
 identifies the receiver and method together; missing or duplicate anchors,
@@ -135,9 +113,7 @@ broader gains or parity outside the measured profiles and three consumer sizes.
 Local verification used Go 1.27.1, Node.js 24.19.0 and TypeScript 5.9.3.
 `go test -timeout=30m ./...` passed all 18 root-module packages; the engine
 package took 851.406 seconds. The two skipped engine tests are opt-in artifact
-writers, not semantic coverage. The ordinary-work overlay writer was exercised
-separately and verified all seven production benchmark parser packages.
-`go generate ./parsers ./bench`, every parser module in `parsers/test.sh`, site
+writers, not semantic coverage. `go generate ./parsers ./bench`, every parser module in `parsers/test.sh`, site
 tests and the actual site build/link check passed (229 pages, 257 files).
 Independent source and evidence review found no unresolved material findings.
 These checks describe local output, not remote CI or deployed behavior.

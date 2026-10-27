@@ -117,8 +117,9 @@ const (
   exports `WithContext`, `WithWorkLimits`, `WorkLimits`, `WorkLimitKind`,
   `WorkLimitError`, `ErrWorkLimit`, `InputWorkLimit` and `StepWorkLimit`. A parser
   generated without them holds no code that charges work or reads a control: one
-  form of each function, or, with `-document`, the ordinary form and the form that
-  serves a Document. A parse that passes either option with a context or a limit,
+  form of each function; with `-document` it is the form that serves a Document, without
+  charges. A parser generated with work controls has the controlled form only, and a parse that
+  sets no limit runs it unchanged. A parse that passes either option with a context or a limit,
   from the runtime package, returns an error that the parser was generated without
   work controls; no option is ignored. A nil context and a zero `WorkLimits` set no
   control and are accepted.

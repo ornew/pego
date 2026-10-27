@@ -109,10 +109,8 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
 - A Documents build (`-document`) prints the same rules, lowered with `Options.Document`. A Document parse reuses a
   rule's result after an edit only if the edit lies outside the range the rule examined, which the runtime reads
   (`Peek`, `MatchLiteral`, `Call`, each calling `documentTouch`) record. Generated code also reads literals and
-  characters in place for ordinary parses, which records nothing, so the printers guard every in-place read with
-  `p.Document == nil`; a Document runs the controlled body, or in a parser without work controls the rest
-  form that follows the ordinary branch (the splice inserts the branch), and so falls through to the
-  recording primitives. At the IR level, `Verify` states what keeps those reads recorded: in a function lowered with
+  characters in place, which records nothing, so the printers guard every in-place read with
+  `p.Document == nil`; a Document parse takes the recording primitives that follow the guard. At the IR level, `Verify` states what keeps those reads recorded: in a function lowered with
   `Options.Document` a `HasLit` condition must stand alone and have a `MatchLit` in its alternative, and the
   printer, which prints the guard for exactly those functions, is not given another way to print it.
 - An observability build prints the same rules with the same observation hooks: the enter and exit events of rule
@@ -160,10 +158,9 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
     at a character that its guard rejects (`TestCoreGuardsAreSound`), and a mutant that narrows the guards fails.
   The recognizer's Core pipeline runs `Analyze` before `Guards`, as the table's pipeline does: `Guards` reads the
   first terminals that `Analyze` computes, so the reverse order leaves the alternatives of choices unguarded.
-- Work-control specialization exists three times: the closure backend compiles a second, metered closure
-  graph (`controlledDispatch`); generated Go duplicates each function through `go/ast`
-  passes (a specialization that renames helpers and labels, passes that fold control reads, compact peeks and
-  strip charges); TypeScript rewrites printed conditions with regular expressions (`tsWorkCond`).
+- Work-control specialization exists twice in the compilers that duplicate code: the closure backend compiles a
+  second, metered closure graph (`controlledDispatch`), and TypeScript rewrites printed conditions with regular
+  expressions (`tsWorkCond`). Generated Go prints one form of each function, chosen by the options.
 - Code is shared as strings. TypeScript reuses the Go conditions of `generator.first` and
   `controlledClassReject` after rewriting `==` to `===` and rebalancing `&&`/`||` by parenthesis counting
   (`tsCond`, `tsBalancedCondition`). Helper sharing
@@ -499,11 +496,10 @@ Flow IR passes:
   iteration charges a step or the input work of a character it reads, that each call charges at least one step,
   that input work is charged before the input is inspected, and that no charge moves across a commit. Without work controls, charges are not lowered at
   all.
-- **Mode lowering**: the ordinary and the controlled variants of a function are printed in one traversal of
-  the Flow IR. The places where they differ (charges, control reads, the helper names, peeks, labels) are
-  text fragments with a controlled and an ordinary alternative, and a splice moves the ordinary bodies into
-  the controlled functions as a branch. They are not separate Flow IR functions because both forms then
-  share one set of generated names and one resolution of unread variables. Batch and Document input
+- **Mode lowering**: a generated parser has one form of each function, chosen by the options: the ordinary
+  form without work controls and Documents, the controlled form otherwise. The places where they differ
+  (charges, control reads, the helper names, peeks) are printed from the same Flow IR by the one printer;
+  a parser that needs both forms is two generated parsers. Batch and Document input
   access and position-unit fast paths (such as reading decoded code points in place) are lowered as
   separate Flow IR functions selected by the caller.
 
