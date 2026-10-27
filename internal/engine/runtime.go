@@ -121,7 +121,7 @@ type parser struct {
 	activeSeed          *memoEntry
 	resumed             int         // elements reused by resumeRepeat (for tests)
 	freeRuns            []*runState // runStates of finished VM repetitions (newRunState)
-	// scratch holds the pooled buffers the parser uses (newPooledParser), or nil.
+	// scratch holds the pooled buffers the parser uses (acquirePooledParser), or nil.
 	scratch *scratch
 	// nodeChunks counts the node chunks allocated since the last splitChunks.
 	// A negative count tracks the exact-size prefix budget before #stream.

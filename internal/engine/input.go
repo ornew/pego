@@ -247,14 +247,6 @@ type scratch struct {
 // maxScratch is the size, in elements, beyond which a buffer is not kept for later parses.
 const maxScratch = 1 << 22
 
-// newPooledParser is newParser with buffers left by earlier parses of prog. The caller passes the
-// parser to releaseScratch when the parse has returned.
-func newPooledParser(prog *Program, s string, unit PositionUnit, offsets bool) *parser {
-	p := acquirePooledParser(prog)
-	p.input = newTextInputIn(s, unit, offsets, p.scratch)
-	return p
-}
-
 // acquirePooledParser separates scratch acquisition from input initialization,
 // so a caller can arm release before controlled decoding can interrupt.
 func acquirePooledParser(prog *Program) *parser {
@@ -267,7 +259,7 @@ func acquirePooledParser(prog *Program) *parser {
 	return p
 }
 
-// releaseScratch returns the buffers of a parser made by newPooledParser for later parses.
+// releaseScratch returns the buffers of a parser made by acquirePooledParser for later parses.
 func (p *parser) releaseScratch() {
 	p.control = nil
 	sc := p.scratch

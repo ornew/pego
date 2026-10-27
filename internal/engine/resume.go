@@ -72,7 +72,7 @@ func (c *compiler) resumable(e grammar.Expr) bool {
 	return ok
 }
 
-// anyCapture reports whether e contains a capture anywhere, lookaheads included.
+// anyCaptureControlled reports whether e contains a capture anywhere, lookaheads included.
 func anyCaptureControlled(e grammar.Expr, control *compileControl) bool {
 	control.poll()
 	found := false
@@ -405,5 +405,3 @@ func (p *parser) freeRunState(r *runState) {
 	clearWork(p, r.post)
 	p.freeRuns = append(p.freeRuns, r)
 }
-
-func anyCapture(e grammar.Expr) bool { return anyCaptureControlled(e, nil) }

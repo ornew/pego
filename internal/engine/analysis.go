@@ -372,16 +372,6 @@ func ruleVariablesControlled(rules []*grammar.RuleDef, control *compileControl) 
 	return out
 }
 
-func termReadsVars(t grammar.Term) bool {
-	found := false
-	walkTerm(t, func(x grammar.Term) {
-		if _, ok := x.(*grammar.VarRef); ok {
-			found = true
-		}
-	})
-	return found
-}
-
 // walkExpr visits the expression and its subexpressions in preorder.
 func walkExprControlled(e grammar.Expr, f func(grammar.Expr), control *compileControl) {
 	if control == nil {
@@ -495,10 +485,6 @@ func walkTerm(t grammar.Term, f func(grammar.Term)) {
 	}
 }
 
-func tarjan(rules []*grammar.RuleDef, edges map[string][]string) [][]string {
-	return tarjanControlled(rules, edges, nil)
-}
-
 func tarjanControlled(rules []*grammar.RuleDef, edges map[string][]string, control *compileControl) [][]string {
 	index := map[string]int{}
 	low := map[string]int{}
@@ -547,11 +533,6 @@ func tarjanControlled(rules []*grammar.RuleDef, edges map[string][]string, contr
 	return sccs
 }
 
-// findCycle finds one cycle within the SCC that does not pass through a leader.
-func findCycle(scc []string, edges map[string][]string, in, leaders map[string]bool) []string {
-	return findCycleControlled(scc, edges, in, leaders, nil)
-}
-
 func findCycleControlled(scc []string, edges map[string][]string, in, leaders map[string]bool, control *compileControl) []string {
 	state := map[string]int{} // 0: unvisited, 1: in progress, 2: done
 	var path []string
@@ -590,11 +571,6 @@ func findCycleControlled(scc []string, edges map[string][]string, in, leaders ma
 		}
 	}
 	return nil
-}
-
-// propagate adds to set the rules that call rules in set (transitively).
-func propagate(rules []*grammar.RuleDef, calls map[string][]string, set map[string]bool) {
-	propagateControlled(rules, calls, set, nil)
 }
 
 func propagateControlled(rules []*grammar.RuleDef, calls map[string][]string, set map[string]bool, control *compileControl) {
@@ -641,12 +617,6 @@ func walkRuleTermsControlled(r *grammar.RuleDef, f func(grammar.Term), control *
 			}
 		}
 	}, control)
-}
-
-// ruleUsesPositions reports whether the rule's actions or predicates read a position: a member
-// Start or End, which may also be a struct field of that name.
-func ruleUsesPositions(r *grammar.RuleDef) bool {
-	return ruleUsesPositionsControlled(r, nil)
 }
 
 func ruleUsesPositionsControlled(r *grammar.RuleDef, control *compileControl) bool {

@@ -128,14 +128,6 @@ func (p *parser) valueEqual(l, r any) bool {
 	return equal(l, r)
 }
 
-// textEqual reports whether two strings are equal as valueEqual does.
-func (p *parser) textEqual(l, r string) bool {
-	if workControlsEnabled && p.control != nil {
-		return len(l) == len(r) && p.compareText(l, r) == 0
-	}
-	return l == r
-}
-
 func (p *parser) valueBinary(op string, l, r any) (any, error) {
 	if !workControlsEnabled || p.control == nil {
 		return binaryOp(op, l, r)

@@ -159,7 +159,7 @@ type rule struct {
 	// initVals are the initial values of vars, in the same order (nil when vars is empty).
 	initVals []any
 	// transient reports that the rule is not memoized in ordinary parses (it is memoized only by
-	// the incremental Document) (transientRules).
+	// the incremental Document) (transientRulesControlled).
 	transient bool
 	// seen is the rule's index among the rules whose memoization is deferred to the second call at a
 	// position (parser.firstCall), or -1.
@@ -655,19 +655,6 @@ func (c *compiler) twinOf(r *rule) *rule {
 	return r.twin
 }
 
-// transientRules returns the rules that are never re-evaluated at the same position even without
-// memoization.
-//   - Rules that call no other rules: re-evaluating them just rescans the input once.
-//   - Rules referenced only once in the grammar: they are re-evaluated at the same position only
-//     when their single caller is re-evaluated at the same position. Following the callers
-//     eventually reaches a memoized rule or the start rule.
-//
-// When the caller is memoized, memoizing such a rule never yields reuse, so it only adds the
-// cost of the memo.
-func transientRules(rules []*grammar.RuleDef) map[string]bool {
-	return transientRulesControlled(rules, nil)
-}
-
 func transientRulesControlled(rules []*grammar.RuleDef, control *compileControl) map[string]bool {
 	refs := map[string]int{}
 	for _, rd := range rules {
@@ -684,7 +671,7 @@ func transientRulesControlled(rules []*grammar.RuleDef, control *compileControl)
 	return out
 }
 
-// predicateCaptures returns the names of the captures referenced by predicates in the expression.
+// predicateCapturesControlled returns the names of the captures referenced by predicates in the expression.
 func predicateCapturesControlled(e grammar.Expr, control *compileControl) map[string]bool {
 	control.poll()
 	names := map[string]bool{}
@@ -701,7 +688,7 @@ func predicateCapturesControlled(e grammar.Expr, control *compileControl) map[st
 	return names
 }
 
-// valueNeededRules returns the rules that must build values even in a program that builds no
+// valueNeededRulesControlled returns the rules that must build values even in a program that builds no
 // tree: the rules called within captures referenced by predicates, and every rule they call. With
 // streams, also the rules with a #stream repetition (see Program.ParseStream) and every rule they call.
 func valueNeededRulesControlled(rules []*grammar.RuleDef, control *compileControl, streams bool) map[string]bool {
@@ -748,7 +735,7 @@ func startsUpper(name string) bool {
 	return unicode.IsUpper(r)
 }
 
-// hasStream reports whether the expression contains #stream.
+// hasStreamControlled reports whether the expression contains #stream.
 func hasStreamControlled(e grammar.Expr, control *compileControl) bool {
 	control.poll()
 	found := false
@@ -797,7 +784,7 @@ func elementScopedControlled(e grammar.Expr, control *compileControl) bool {
 	return hasCapturesControlled(e, control) || predicatesReadCapturesControlled(e, control)
 }
 
-// predicatesReadCaptures reports whether a predicate in e refers to a capture.
+// predicatesReadCapturesControlled reports whether a predicate in e refers to a capture.
 func predicatesReadCapturesControlled(e grammar.Expr, control *compileControl) bool {
 	control.poll()
 	found := false
@@ -1627,17 +1614,7 @@ func seeThrough(e grammar.Expr) grammar.Expr {
 	}
 }
 
-func predicateCaptures(e grammar.Expr) map[string]bool { return predicateCapturesControlled(e, nil) }
-
-func valueNeededRules(rules []*grammar.RuleDef) map[string]bool {
-	return valueNeededRulesControlled(rules, nil, false)
-}
-
-func hasStream(e grammar.Expr) bool { return hasStreamControlled(e, nil) }
-
 func elementScoped(e grammar.Expr) bool { return elementScopedControlled(e, nil) }
-
-func predicatesReadCaptures(e grammar.Expr) bool { return predicatesReadCapturesControlled(e, nil) }
 
 func hasCaptures(e grammar.Expr) bool { return hasCapturesControlled(e, nil) }
 

@@ -399,10 +399,6 @@ func (c *evalCtx) newStruct(typ string, names []string, vals []any) (*Node, erro
 	return n, nil
 }
 
-func unaryOp(op string, x any) (any, error) {
-	return (*parser)(nil).valueUnary(op, x)
-}
-
 func (p *parser) valueUnary(op string, x any) (any, error) {
 	switch op {
 	case "-":
@@ -807,10 +803,6 @@ func (p *parser) index(l, i any) (any, error) {
 		return nil, p.actionError("index ", strconv.Itoa(n), " out of range for ", strconv.Itoa(len(items)), " elements")
 	}
 	return unboxNode(items[n]), nil
-}
-
-func listItems(fn string, v any) ([]*Node, error) {
-	return (*parser)(nil).valueListItems(fn, v)
 }
 
 func (p *parser) valueListItems(fn string, v any) ([]*Node, error) {

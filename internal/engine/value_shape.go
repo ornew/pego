@@ -248,8 +248,3 @@ func scopeValueOf(prog *Program, e grammar.Expr) func(p *parser, v *Node, start 
 	}
 	return func(_ *parser, v *Node, _ int) *Node { return sh.one(v) }
 }
-
-// spliceTuple reports whether the value of a splice rule with the body e is the node of a tuple,
-// which its callers flatten (as for isElems), rather than its one element. The value of a splice
-// rule is the result of its body as it is, without the captures of the body.
-func spliceTuple(prog *Program, e grammar.Expr) bool { return isElems(prog, e) }

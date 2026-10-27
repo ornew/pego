@@ -34,7 +34,7 @@ Evidence records:
 [057](../057-pooling-the-scratch-memory-of-whole-input-parses.md),
 [058](../058-pooling-the-scratch-memory-of-generated-parse-and-recognize.md).
 
-Source owners: [`newPooledParser and
+Source owners: [`acquirePooledParser and
 releaseScratch`](../../../internal/engine/input.go),
 [`Program.scratch`](../../../internal/engine/compile.go), [`generated parser
 pool`](../../../runtime/runtime.go), [`typed pool and

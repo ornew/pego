@@ -20,7 +20,7 @@ import (
 //   - the action uses no $n, which could reach the same list (it is an element of the body);
 //   - no predicate reads $x, and the names x and f are captured only once in the rule;
 //   - f is captured in every element (an item of the element's sequence), with a value that is
-//     never nil (nonNil): otherwise an element can have no record, and $e.$f would be an error.
+//     never nil (nonNilControlled): otherwise an element can have no record, and $e.$f would be an error.
 func ruleProjectionsControlled(prog *Program, r *rule, control *compileControl) map[string]string {
 	control.poll()
 	if prog.noProjections || r.action == nil || usesItemsControlled(r.action, control) {
@@ -177,7 +177,7 @@ func projectedMap(t *grammar.Call, proj map[string]string, local func(string) bo
 	return x, true
 }
 
-// markProjectedMaps adds to set the map calls in the action t that read a projected capture.
+// markProjectedMapsControlled adds to set the map calls in the action t that read a projected capture.
 func markProjectedMapsControlled(t grammar.Term, proj map[string]string, set map[*grammar.Call]bool, control *compileControl) {
 	control.poll()
 	var walk func(t grammar.Term, shadow map[string]bool)
@@ -255,7 +255,7 @@ func projField(t grammar.Term) (string, bool) {
 	return strings.TrimPrefix(m.Name, "$"), true
 }
 
-// directCapture returns the capture of name that e makes unconditionally: e itself, or an item of
+// directCaptureControlled returns the capture of name that e makes unconditionally: e itself, or an item of
 // the sequence e (also behind @error, which changes no value).
 func directCaptureControlled(e grammar.Expr, name string, control *compileControl) *grammar.Capture {
 	control.poll()
@@ -284,7 +284,7 @@ func directCaptureControlled(e grammar.Expr, name string, control *compileContro
 	return nil
 }
 
-// nonNil reports whether the value of e, built as a capture builds it, is never nil. A rule's
+// nonNilControlled reports whether the value of e, built as a capture builds it, is never nil. A rule's
 // value is never nil when its action makes a struct or returns a
 // capture whose value is never nil, or when it has no action and its body's value is never nil
 // (without the type checker's results, which the engine computes after compiling).
@@ -341,7 +341,7 @@ func nonNilControlled(prog *Program, e grammar.Expr, seen map[string]bool, contr
 	return false
 }
 
-// lineNonNil reports whether a rule body or Operators Rule line e with the action t never has a nil value.
+// lineNonNilControlled reports whether a rule body or Operators Rule line e with the action t never has a nil value.
 func lineNonNilControlled(prog *Program, e grammar.Expr, t grammar.Term, operator bool, seen map[string]bool, control *compileControl) bool {
 	control.poll()
 	switch t := t.(type) {
@@ -359,7 +359,7 @@ func lineNonNilControlled(prog *Program, e grammar.Expr, t grammar.Term, operato
 	return false
 }
 
-// usesItems reports whether the action refers to the body's elements ($n).
+// usesItemsControlled reports whether the action refers to the body's elements ($n).
 func usesItemsControlled(t grammar.Term, control *compileControl) bool {
 	control.poll()
 	found := false
@@ -375,21 +375,3 @@ func usesItemsControlled(t grammar.Term, control *compileControl) bool {
 func ruleProjections(prog *Program, r *rule) map[string]string {
 	return ruleProjectionsControlled(prog, r, nil)
 }
-
-func markProjectedMaps(t grammar.Term, proj map[string]string, set map[*grammar.Call]bool) {
-	markProjectedMapsControlled(t, proj, set, nil)
-}
-
-func directCapture(e grammar.Expr, name string) *grammar.Capture {
-	return directCaptureControlled(e, name, nil)
-}
-
-func nonNil(prog *Program, e grammar.Expr, seen map[string]bool) bool {
-	return nonNilControlled(prog, e, seen, nil)
-}
-
-func lineNonNil(prog *Program, e grammar.Expr, t grammar.Term, operator bool, seen map[string]bool) bool {
-	return lineNonNilControlled(prog, e, t, operator, seen, nil)
-}
-
-func usesItems(t grammar.Term) bool { return usesItemsControlled(t, nil) }

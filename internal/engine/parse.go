@@ -151,18 +151,6 @@ func (prog *Program) descs(b Backend) []string {
 	return prog.descTable
 }
 
-// hasRule reports whether the rule name is defined.
-func (prog *Program) hasRule(name string) bool {
-	if hiddenRule(name) {
-		return false
-	}
-	if prog.Grammar == nil {
-		_, err := prog.rule(Bytecode, name)
-		return err == nil
-	}
-	return prog.byName[name] != nil
-}
-
 // recoverParse turns an aborted parse (fatal) into an error. Runtime faults in bytecode
 // execution are reported as errors caused by an invalid module.
 func recoverParse(x any, b Backend, err *error) {

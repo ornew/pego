@@ -5,13 +5,6 @@ import (
 	"github.com/ornew/pego/internal/grammaranalysis"
 )
 
-// predicateBlock lowers a nonempty statement block to ordinary predicates.
-// A block in one expression position uses the grouped adjacent sequence;
-// enclosing sequences flatten its statements through expandPredicateBlocks.
-func predicateBlock(e *grammar.Predicate, block *grammar.Block) grammar.Expr {
-	return predicateBlockControlled(e, block, nil)
-}
-
 func predicateBlockControlled(e *grammar.Predicate, block *grammar.Block, control *compileControl) grammar.Expr {
 	var poll func()
 	if control != nil {
@@ -35,12 +28,6 @@ func predicateBlockControlled(e *grammar.Predicate, block *grammar.Block, contro
 		SourceInfo: e.SourceInfo,
 		Items:      items,
 	}
-}
-
-// expandPredicateBlocks preserves adjacency's CST shape in a sequence.
-// Explicit grouping and wrappers remain ordinary single-expression positions.
-func expandPredicateBlocks(source, normalized []grammar.Expr) ([]grammar.Expr, bool) {
-	return expandPredicateBlocksControlled(source, normalized, nil)
 }
 
 func expandPredicateBlocksControlled(source, normalized []grammar.Expr, control *compileControl) ([]grammar.Expr, bool) {

@@ -62,17 +62,6 @@ func (n *Node) Type() string { return n.kind.typeName() }
 // an action, or "".
 func (n *Node) Rule() string { return n.kind.ruleName() }
 
-// nodeJSON is the JSON form of a Node.
-type nodeJSON struct {
-	Type     string  `json:"type"`
-	Rule     string  `json:"rule,omitempty"`
-	Start    int32   `json:"start"`
-	End      int32   `json:"end"`
-	Text     string  `json:"text,omitempty"`
-	Children []*Node `json:"children,omitempty"`
-	Fields   Fields  `json:"fields,omitempty"`
-}
-
 // MarshalJSON encodes the node as an object (see Node).
 func (n *Node) MarshalJSON() ([]byte, error) {
 	var b bytes.Buffer
