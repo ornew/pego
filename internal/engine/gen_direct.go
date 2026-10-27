@@ -189,69 +189,6 @@ func walkChildren(t grammar.Term, f func(grammar.Term)) {
 	}
 }
 
-// genSnapshot is the state of the generator a failed direct compilation rolls back.
-type genSnapshot struct {
-	workClasses                    int
-	vars, methods                  string
-	n, descs, literals, methodKeys int
-	fieldTypes                     int
-	shapers                        int
-	edges                          int
-	reachErr                       error
-}
-
-func (g *generator) snapshot() genSnapshot {
-	g.seedDescs() // a rollback must not remove the fixed descriptions
-	var edges int
-	if g.collect != nil {
-		edges = len(g.collect.log)
-	}
-	return genSnapshot{edges: edges, reachErr: g.reachErr, workClasses: len(g.workClassKeys), shapers: len(g.shaperKeys), vars: g.vars.String(), methods: g.methods.String(), n: g.n,
-		descs: len(g.descs), literals: len(g.literalKeys), methodKeys: len(g.methodKeys), fieldTypes: len(g.fieldTypeKeys)}
-}
-
-func (g *generator) rollback(s genSnapshot) {
-	if g.collect != nil {
-		g.collect.log = g.collect.log[:s.edges]
-	}
-	g.reachErr = s.reachErr
-	for _, key := range g.workClassKeys[s.workClasses:] {
-		delete(g.workClassNames, key)
-	}
-	clear(g.workClassKeys[s.workClasses:])
-	g.workClassKeys = g.workClassKeys[:s.workClasses]
-	for _, key := range g.shaperKeys[s.shapers:] {
-		delete(g.shaperNames, key)
-	}
-	g.shaperKeys = g.shaperKeys[:s.shapers]
-	g.vars.Reset()
-	g.vars.WriteString(s.vars)
-	if g.methods.Len() != len(s.methods) {
-		g.methods.Reset()
-		g.methods.WriteString(s.methods)
-	}
-	for _, value := range g.literalKeys[s.literals:] {
-		delete(g.literalNames, value)
-	}
-	clear(g.literalKeys[s.literals:])
-	g.literalKeys = g.literalKeys[:s.literals]
-	for _, key := range g.methodKeys[s.methodKeys:] {
-		delete(g.methodNames, key)
-	}
-	clear(g.methodKeys[s.methodKeys:])
-	g.methodKeys = g.methodKeys[:s.methodKeys]
-	g.n = s.n
-	for _, x := range g.descs[s.descs:] {
-		delete(g.descIDs, x)
-	}
-	g.descs = g.descs[:s.descs]
-	for _, key := range g.fieldTypeKeys[s.fieldTypes:] {
-		delete(g.fieldTypes, key)
-	}
-	clear(g.fieldTypeKeys[s.fieldTypes:])
-	g.fieldTypeKeys = g.fieldTypeKeys[:s.fieldTypes]
-}
-
 // direct is a direct rule's compiled body: the declarations and statements of the method that
 // calls it, up to the rule's value in v (success falls through; failure jumps to fail).
 type direct struct {
