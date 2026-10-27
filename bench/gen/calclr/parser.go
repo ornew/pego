@@ -291,7 +291,7 @@ func init() {
 	defer tinit()
 	trules[0].Entry = u0
 	trules[1].Body = func(p *rt.TParser, _ int) (any, bool) { return e31(p) }
-	trules[3].Body = func(p *rt.TParser, _ int) (any, bool) { return e35(p) }
+	trules[3].Body = func(p *rt.TParser, _ int) (any, bool) { return e32(p) }
 }
 
 func e1(p *rt.Parser) (*rt.Node, bool) {
@@ -1524,7 +1524,7 @@ fail:
 	return nil, false
 }
 
-func e35(p *rt.TParser) (any, bool) {
+func e32(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	var x1 rt.Mark
 	var v2, v5, v7 any
@@ -1682,7 +1682,7 @@ L8:
 	k16 = v18
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "add"
-	v = func() any { f_32 := k1; f_33 := k4; f_34 := k16; return tmk_Binary(c, true, f_32, f_33, f_34) }()
+	v = tmk_Binary(c, true, k1, k4, k16)
 	p.Depth--
 	return v, true
 fail:
@@ -1785,7 +1785,7 @@ L8:
 	k18 = v20
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "mul"
-	v = func() any { f_36 := k1; f_37 := k4; f_38 := k18; return tmk_Binary(c, true, f_36, f_37, f_38) }()
+	v = tmk_Binary(c, true, k1, k4, k18)
 	p.Depth--
 	return v, true
 fail:
@@ -1915,7 +1915,7 @@ L5:
 	k13 = v15
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "neg"
-	v = func() any { f_39 := k1; f_40 := k13; return tmk_Unary(c, true, f_39, f_40) }()
+	v = tmk_Unary(c, true, k1, k13)
 	p.Depth--
 	return v, true
 fail:
@@ -2009,7 +2009,7 @@ func i8(p *rt.TParser) (any, bool) {
 	k8 = v10
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "pow"
-	v = func() any { f_41 := k1; f_42 := k4; f_43 := k8; return tmk_Binary(c, true, f_41, f_42, f_43) }()
+	v = tmk_Binary(c, true, k1, k4, k8)
 	p.Depth--
 	return v, true
 fail:

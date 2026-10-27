@@ -282,33 +282,10 @@ func init() {
 			&rt.TOperatorsRuleLine{Scope: []string{}, M: e31, Action: nil, Value: sh5},
 			&rt.TOperatorsRuleLine{Scope: []string{"e"}, M: e32, Action: func(c *rt.TActCtx) any { return c.Cap(0) }, Value: sh11},
 		},
-		Prefix: []*rt.TOperatorsRuleOp{{Id: 2, Kind: "prefix", Assoc: "", Level: 3, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e41, Action: func(c *rt.TActCtx) any {
-			return func() any { f_42 := (c.Op); f_43 := (c.Rhs); return tmk_Unary(c, true, f_42, f_43) }()
-		}, Value: sh5}}},
-		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "left", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e33, Action: func(c *rt.TActCtx) any {
-			return func() any {
-				f_34 := (c.Lhs)
-				f_35 := (c.Op)
-				f_36 := (c.Rhs)
-				return tmk_Binary(c, true, f_34, f_35, f_36)
-			}()
-		}, Value: sh5}},
-			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e37, Action: func(c *rt.TActCtx) any {
-				return func() any {
-					f_38 := (c.Lhs)
-					f_39 := (c.Op)
-					f_40 := (c.Rhs)
-					return tmk_Binary(c, true, f_38, f_39, f_40)
-				}()
-			}, Value: sh5}},
-			{Id: 3, Kind: "infix", Assoc: "right", Level: 4, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e44, Action: func(c *rt.TActCtx) any {
-				return func() any {
-					f_45 := (c.Lhs)
-					f_46 := (c.Op)
-					f_47 := (c.Rhs)
-					return tmk_Binary(c, true, f_45, f_46, f_47)
-				}()
-			}, Value: sh5}}},
+		Prefix: []*rt.TOperatorsRuleOp{{Id: 2, Kind: "prefix", Assoc: "", Level: 3, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e35, Action: func(c *rt.TActCtx) any { return tmk_Unary(c, true, (c.Op), (c.Rhs)) }, Value: sh5}}},
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "left", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e33, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), (c.Op), (c.Rhs)) }, Value: sh5}},
+			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e34, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), (c.Op), (c.Rhs)) }, Value: sh5}},
+			{Id: 3, Kind: "infix", Assoc: "right", Level: 4, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e36, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), (c.Op), (c.Rhs)) }, Value: sh5}}},
 	}
 	trules[1].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[1], min) }
 }
@@ -1205,7 +1182,7 @@ fail:
 	return nil, false
 }
 
-func e37(p *rt.TParser) (any, bool) {
+func e34(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	var x1 rt.Mark
 	var v2, v9, v13, v17 any
@@ -1278,7 +1255,7 @@ fail:
 	return nil, false
 }
 
-func e41(p *rt.TParser) (any, bool) {
+func e35(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	var x1 rt.Mark
 	var v2, v9, v13 any
@@ -1334,7 +1311,7 @@ fail:
 	return nil, false
 }
 
-func e44(p *rt.TParser) (any, bool) {
+func e36(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	var x1 int
 	var ok bool

@@ -1190,7 +1190,7 @@ L12:
 	k7 = v10
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "item"
-	v = func() any { f_20 := k4; f_21 := c.Concat(k7); return tmk_Item(c, true, f_20, f_21) }()
+	v = tmk_Item(c, true, k4, c.Concat(k7))
 	p.Depth--
 	return v, true
 fail:

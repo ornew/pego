@@ -279,7 +279,10 @@ func init() {
 	rules[0].Action = func(c *rt.ActCtx) any { return c.NewStruct("File", "Records", c.Member(c.Cap(0), "Value")) }
 	rules[1].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e6(p) }
 	rules[1].Action = func(c *rt.ActCtx) any {
-		return c.NewStruct("Record", "Fields", func() any { b := len(c.P.KidStack); c.PushList(c.Cap(0)); c.PushItems(c.Cap(1)); return c.EndList(b) }())
+		b_15 := len(c.P.KidStack)
+		c.PushList(c.Cap(0))
+		c.PushItems(c.Cap(1))
+		return c.NewStruct("Record", "Fields", c.EndList(b_15))
 	}
 	pegoGrammar.StructFields["File"] = map[string]bool{"Records": true}
 	pegoGrammar.TypeKinds["File"] = rt.KindOf("File", "")
@@ -288,7 +291,7 @@ func init() {
 	pegoGrammar.NodeTypes["Field"] = rt.NewNodeTypeKinds("Field")
 	recRules = rt.NewRules(recRulesSpec[:], recRulesStrs[:], recRulesExtras[:])
 	pegoRecGrammar.SetRules(recRules, 0)
-	recRules[0].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e15(p) }
+	recRules[0].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e16(p) }
 	pegoGrammar.Starts = []string{"main"}
 	pegoGrammar.DefaultStart = "main"
 	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"\\ufeff\"", "\",\"", "\"\\\"\"", "[^\"]", "\"\\\"\\\"\"", "[^,\"\\r\\n]", "\"\\r\"", "[^\\n]", "\"\\r\\n\"", "\"\\n\""}
@@ -682,7 +685,7 @@ fail:
 	return nil, false
 }
 
-func e15(p *rt.Parser) (*rt.Node, bool) {
+func e16(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var v *rt.Node
 	var x1, x5 int
@@ -1098,7 +1101,7 @@ L5:
 	_ = p.NewNode("tuple", x1, p.Pos, x2)
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "main"
-	v = func() any { f_16 := c.Member(k6, "Value"); return tmk_File(c, true, f_16) }()
+	v = tmk_File(c, true, c.Member(k6, "Value"))
 	p.Depth--
 	return v, true
 fail:
@@ -1182,10 +1185,12 @@ L2:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "record"
-	v = func() any {
-		f_17 := func() any { b := len(c.P.KidStack); c.PushList(k3); c.PushItems(k6); return c.EndList(b) }()
-		return tmk_Record(c, true, f_17)
-	}()
+	{
+		b_17 := len(c.P.KidStack)
+		c.PushList(k3)
+		c.PushItems(k6)
+		v = tmk_Record(c, true, c.EndList(b_17))
+	}
 	p.Depth--
 	return v, true
 fail:

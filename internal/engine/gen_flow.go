@@ -371,6 +371,8 @@ type flowPrinter struct {
 	// names holds the package variables of the capture names of scopes, declared on first use
 	// unless a DeclareNames statement declares them.
 	names map[*flow.Names]string
+	// pre holds the statements the expression printed last needs before it: those of the term of an Eval.
+	pre string
 }
 
 func newFlowPrinter(g *generator, frame bool) *flowPrinter {
@@ -632,6 +634,9 @@ func (p *flowPrinter) ifStmt(s *flow.If, kw string) {
 // set returns the assignment s, whose reads are certain.
 func (p *flowPrinter) set(s *flow.Set) string {
 	dst, xs := p.setParts(s)
+	if p.pre != "" {
+		panic("flow printer: a conditional assignment of an Eval")
+	}
 	return strings.Join(dst, ", ") + " = " + strings.Join(xs, ", ")
 }
 
@@ -661,12 +666,22 @@ func (p *flowPrinter) setParts(s *flow.Set) (dst, xs []string) {
 func (p *flowPrinter) setStmt(s *flow.Set) {
 	if p.dead {
 		p.setParts(s)
+		p.pre = ""
 		return
 	}
 	uses := p.vars.begin()
 	dst, xs := p.setParts(s)
 	p.vars.end()
-	st := &varStmt{uses: uses, pure: len(dst) == len(xs) && pureValues(xs)}
+	// The statements an Eval needs run in a block of their own, so that their temporaries are not
+	// declared across a goto.
+	pre := p.pre
+	p.pre = ""
+	if pre != "" {
+		if len(s.X) != 1 {
+			panic("flow printer: an assignment of an Eval with other values")
+		}
+	}
+	st := &varStmt{uses: uses, pure: pre == "" && len(dst) == len(xs) && pureValues(xs)}
 	for i, d := range s.Dst {
 		v, _ := d.(*flow.Var)
 		st.targets = append(st.targets, v)
@@ -681,7 +696,11 @@ func (p *flowPrinter) setStmt(s *flow.Set) {
 				out[i] = "_"
 			}
 		}
-		return strings.Join(out, ", ") + " = " + strings.Join(xs, ", ") + "\n"
+		assign := strings.Join(out, ", ") + " = " + strings.Join(xs, ", ") + "\n"
+		if pre != "" {
+			return "{ " + pre + assign + "}\n"
+		}
+		return assign
 	}
 	p.b.WriteString(p.vars.add(st))
 }
@@ -951,7 +970,9 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 		defer p.caps(x.Caps)()
 		g.final = g.cur.action
 		defer func() { g.final = nil }()
-		return g.term(g.cur.action, newScope(), nil)
+		stmts, expr := g.stmts(func() string { return g.term(g.cur.action, newScope(), nil) })
+		p.pre += stmts
+		return expr
 	case *flow.CtxFinish:
 		return fmt.Sprintf("%s.Finish(%s)", x.C.Name, p.expr(x.X))
 	}
@@ -996,17 +1017,17 @@ func (p *flowPrinter) not(x flow.Expr) string {
 	case *flow.Pred:
 		if x.Caps.Vars == nil {
 			// The term reads the current frame.
-			return fmt.Sprintf("!p.Predicate(func(c *%s) any { return %s })", g.ctxType(), g.predicateTerm(p.term(x.Node), frameScope(x.Caps), nil))
+			return fmt.Sprintf("!p.Predicate(func(c *%s) any { %s })", g.ctxType(), g.predicateBody(p.term(x.Node), frameScope(x.Caps), nil))
 		}
 		defer p.caps(x.Caps)()
-		return fmt.Sprintf("!p.Predicate(func(c *TActCtx) any { return %s })", g.predicateTerm(p.term(x.Node), newScope(), nil))
+		return fmt.Sprintf("!p.Predicate(func(c *TActCtx) any { %s })", g.predicateBody(p.term(x.Node), newScope(), nil))
 	case *flow.Bind:
 		b := p.term(x.Node).(*grammar.Bind)
 		if x.Caps.Vars == nil {
-			return fmt.Sprintf("!p.Bind(%q, func(c *%s) any { return %s })", b.Name, g.ctxType(), g.term(b.Value, frameScope(x.Caps), nil))
+			return fmt.Sprintf("!p.Bind(%q, func(c *%s) any { %s })", b.Name, g.ctxType(), g.termBody(b.Value, frameScope(x.Caps), nil))
 		}
 		defer p.caps(x.Caps)()
-		return fmt.Sprintf("!p.Bind(%q, func(c *TActCtx) any { return %s })", b.Name, g.term(b.Value, newScope(), nil))
+		return fmt.Sprintf("!p.Bind(%q, func(c *TActCtx) any { %s })", b.Name, g.termBody(b.Value, newScope(), nil))
 	}
 	return "!" + p.expr(x)
 }

@@ -1080,11 +1080,11 @@ var rulesExtras = [...]rt.RuleExtra{
 	{Id: 71, Where: "", NodeType: "Nmtoken", OpNodeType: ""},
 }
 
-var scope169 = []string{}
-var scope178 = []string{"n"}
-var scope180 = []string{}
-var scope182 = []string{}
+var scope173 = []string{}
+var scope182 = []string{"n"}
+var scope184 = []string{}
 var scope186 = []string{}
+var scope190 = []string{}
 
 var recRulesSpec = [...]rt.RuleSpec{
 	{Name: "main", Value: &sh158, Flags: rt.RuleNovalue, Seen: -1},
@@ -1176,7 +1176,7 @@ var recRulesExtras = [...]rt.RuleExtra{
 	{Id: 69, Where: "", NodeType: "Name", OpNodeType: ""},
 }
 
-var scope209 = []string{"n"}
+var scope195 = []string{"n"}
 
 func init() {
 	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
@@ -1224,11 +1224,17 @@ func init() {
 	}
 	rules[33].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e77(p) }
 	rules[33].Action = func(c *rt.ActCtx) any {
-		return c.NewStruct("Choice", "Items", func() any { b := len(c.P.KidStack); c.PushList(c.Cap(0)); c.PushItems(c.Cap(1)); return c.EndList(b) }(), "Occur", c.Cap(2))
+		b_168 := len(c.P.KidStack)
+		c.PushList(c.Cap(0))
+		c.PushItems(c.Cap(1))
+		return c.NewStruct("Choice", "Items", c.EndList(b_168), "Occur", c.Cap(2))
 	}
 	rules[34].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e80(p) }
 	rules[34].Action = func(c *rt.ActCtx) any {
-		return c.NewStruct("Sequence", "Items", func() any { b := len(c.P.KidStack); c.PushList(c.Cap(0)); c.PushItems(c.Cap(1)); return c.EndList(b) }(), "Occur", c.Cap(2))
+		b_169 := len(c.P.KidStack)
+		c.PushList(c.Cap(0))
+		c.PushItems(c.Cap(1))
+		return c.NewStruct("Sequence", "Items", c.EndList(b_169), "Occur", c.Cap(2))
 	}
 	rules[35].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e82(p) }
 	rules[36].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e83(p) }
@@ -1243,11 +1249,17 @@ func init() {
 	}
 	rules[44].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e106(p) }
 	rules[44].Action = func(c *rt.ActCtx) any {
-		return c.NewStruct("NotationType", "Names", func() any { b := len(c.P.KidStack); c.PushList(c.Cap(0)); c.PushItems(c.Cap(1)); return c.EndList(b) }())
+		b_170 := len(c.P.KidStack)
+		c.PushList(c.Cap(0))
+		c.PushItems(c.Cap(1))
+		return c.NewStruct("NotationType", "Names", c.EndList(b_170))
 	}
 	rules[45].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e108(p) }
 	rules[45].Action = func(c *rt.ActCtx) any {
-		return c.NewStruct("Enumeration", "Values", func() any { b := len(c.P.KidStack); c.PushList(c.Cap(0)); c.PushItems(c.Cap(1)); return c.EndList(b) }())
+		b_171 := len(c.P.KidStack)
+		c.PushList(c.Cap(0))
+		c.PushItems(c.Cap(1))
+		return c.NewStruct("Enumeration", "Values", c.EndList(b_171))
 	}
 	rules[47].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e112(p) }
 	rules[47].Action = func(c *rt.ActCtx) any {
@@ -1335,24 +1347,24 @@ func init() {
 	pegoGrammar.NodeTypes["YesNo"] = rt.NewNodeTypeKinds("YesNo")
 	recRules = rt.NewRules(recRulesSpec[:], recRulesStrs[:], recRulesExtras[:])
 	pegoRecGrammar.SetRules(recRules, 16)
-	recRules[0].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e168(p) }
-	recRules[1].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e170(p) }
-	recRules[10].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e171(p) }
-	recRules[11].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e172(p) }
-	recRules[13].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e173(p) }
-	recRules[19].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e174(p) }
-	recRules[20].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e175(p) }
-	recRules[22].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e176(p) }
-	recRules[25].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e177(p) }
-	recRules[32].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e179(p) }
-	recRules[33].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e181(p) }
-	recRules[34].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e183(p) }
-	recRules[35].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e184(p) }
-	recRules[49].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e185(p) }
-	recRules[55].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e187(p) }
-	recRules[57].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e188(p) }
-	recRules[66].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e189(p) }
-	recRules[71].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e190(p) }
+	recRules[0].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e172(p) }
+	recRules[1].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e174(p) }
+	recRules[10].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e175(p) }
+	recRules[11].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e176(p) }
+	recRules[13].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e177(p) }
+	recRules[19].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e178(p) }
+	recRules[20].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e179(p) }
+	recRules[22].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e180(p) }
+	recRules[25].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e181(p) }
+	recRules[32].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e183(p) }
+	recRules[33].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e185(p) }
+	recRules[34].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e187(p) }
+	recRules[35].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e188(p) }
+	recRules[49].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e189(p) }
+	recRules[55].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e191(p) }
+	recRules[57].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e192(p) }
+	recRules[66].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e193(p) }
+	recRules[71].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e194(p) }
 	pegoGrammar.Starts = []string{"main"}
 	pegoGrammar.DefaultStart = "main"
 	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"\\ufeff\"", "\"<!--\"", "\"<?\"", "\"<?xml\"", "\"?>\"", "\"version\"", "\"\\\"\"", "\"'\"", "\"1.\"", "[0-9]", "\"encoding\"", "[A-Za-z]", "[A-Za-z0-9._\\-]", "\"standalone\"", "\"yes\"", "\"no\"", "\"=\"", "\"-->\"", "[.-\\ud7ff -,\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"-\"", "the processing instruction target xml is reserved (an XML declaration must come first)", "[@-\\ud7ff ->\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"?\"", "\">\"", "\"<!DOCTYPE\"", "\"[\"", "\"]\"", "\"<!ELEMENT\"", "\"<!ATTLIST\"", "\"<!NOTATION\"", "\"%\"", "\";\"", "\"SYSTEM\"", "\"PUBLIC\"", "[#-\\ud7ff -!\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "[(-\\ud7ff -&\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "[a-zA-Z0-9 \\r\\n\\-\\'()+,./:=?;!*#@$_%]", "[a-zA-Z0-9 \\r\\n\\-()+,./:=?;!*#@$_%]", "\"EMPTY\"", "\"ANY\"", "\"(\"", "\"#PCDATA\"", "\"|\"", "\")*\"", "\")\"", "\",\"", "[a-zA-Z_:À-ÖØ-öø-˿Ͱ-ͽͿ-\\u1fff\\u200c-\\u200d⁰-\\u218fⰀ-\\u2fef、-\\ud7ff豈-﷏ﷰ-�𐀀-\\U000effff]", "[*+?]", "\"#REQUIRED\"", "\"#IMPLIED\"", "\"#FIXED\"", "\"NOTATION\"", "\"CDATA\"", "\"IDREFS\"", "\"IDREF\"", "\"ID\"", "\"ENTITY\"", "\"ENTITIES\"", "\"NMTOKENS\"", "\"NMTOKEN\"", "\"<!ENTITY\"", "\"NDATA\"", "[\\'-\\ud7ff -!#-$\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "[(-\\ud7ff -$\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"<\"", "\"/>\"", "\"</\"", "mismatched end tag", "[=-\\ud7ff\\'-; -!#-%\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "[=-\\ud7ff(-; -%\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"<![CDATA[\"", "[\\^-\\ud7ff=-\\\\\\'-; -%\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"]>\"", "\"]]>\"", "[\\^-\\ud7ff -\\\\\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"&\"", "\"&#x\"", "[0-9a-fA-F]", "\"&#\"", "[a-zA-Z0-9_:.\\-·À-ÖØ-öø-ͽͿ-\\u1fff\\u200c-\\u200d‿-⁀⁰-\\u218fⰀ-\\u2fef、-\\ud7ff豈-﷏ﷰ-�𐀀-\\U000effff]", "[ \\t\\r\\n]"}
@@ -6529,7 +6541,7 @@ fail:
 	return nil, false
 }
 
-func e168(p *rt.Parser) (*rt.Node, bool) {
+func e172(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var v *rt.Node
 	var x1, x4, x7 int
@@ -6600,7 +6612,7 @@ fail:
 	return nil, false
 }
 
-func e170(p *rt.Parser) (*rt.Node, bool) {
+func e174(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var x1, x2 *rt.CaptureFrame
 	var x4 rt.Mark
@@ -6611,7 +6623,7 @@ func e170(p *rt.Parser) (*rt.Node, bool) {
 	for {
 		x4 = p.Mark()
 		x2 = p.Frame
-		x1 = p.NewFrame(len(scope169))
+		x1 = p.NewFrame(len(scope173))
 		p.Frame = x1
 		p.StepWork()
 		p.StepWork()
@@ -6644,7 +6656,7 @@ fail:
 	return nil, false
 }
 
-func e171(p *rt.Parser) (*rt.Node, bool) {
+func e175(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var ok bool
 	p.StepWork()
@@ -6667,7 +6679,7 @@ fail:
 	return nil, false
 }
 
-func e172(p *rt.Parser) (*rt.Node, bool) {
+func e176(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var ok bool
 	p.StepWork()
@@ -6693,7 +6705,7 @@ fail:
 	return nil, false
 }
 
-func e173(p *rt.Parser) (*rt.Node, bool) {
+func e177(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var ok bool
 	var x4 int
@@ -6757,7 +6769,7 @@ fail:
 	return nil, false
 }
 
-func e174(p *rt.Parser) (*rt.Node, bool) {
+func e178(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var x1 rt.Mark
 	var x3 rune
@@ -6801,7 +6813,7 @@ fail:
 	return nil, false
 }
 
-func e175(p *rt.Parser) (*rt.Node, bool) {
+func e179(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var ok bool
 	p.StepWork()
@@ -6823,7 +6835,7 @@ fail:
 	return nil, false
 }
 
-func e176(p *rt.Parser) (*rt.Node, bool) {
+func e180(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var x1 rt.Mark
 	var x3 rune
@@ -6895,7 +6907,7 @@ fail:
 	return nil, false
 }
 
-func e177(p *rt.Parser) (*rt.Node, bool) {
+func e181(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var x1 rt.Mark
 	var x3 rune
@@ -6967,7 +6979,7 @@ fail:
 	return nil, false
 }
 
-func e179(p *rt.Parser) (*rt.Node, bool) {
+func e183(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var ok, x20 bool
 	var x2, x3, x9 int
@@ -6997,7 +7009,7 @@ func e179(p *rt.Parser) (*rt.Node, bool) {
 	for {
 		x7 = p.Mark()
 		x5 = p.Frame
-		x4 = p.NewFrame(len(scope178))
+		x4 = p.NewFrame(len(scope182))
 		p.Frame = x4
 		p.StepWork()
 		x9 = p.Pos
@@ -7029,7 +7041,7 @@ func e179(p *rt.Parser) (*rt.Node, bool) {
 		v13 = p.NewBranch(rt.RawKindSeq, x9, x10)
 		v14 = p.ScopeValue(sh72, v13, x7.Pos)
 		p.Frame = x5
-		v15 = p.AttachCaptures(v14, scope178, x4, x7.Pos, p.Pos)
+		v15 = p.AttachCaptures(v14, scope182, x4, x7.Pos, p.Pos)
 		p.KidStack = append(p.KidStack, v15)
 		if p.Pos == x7.Pos {
 			break
@@ -7094,7 +7106,7 @@ fail:
 	return nil, false
 }
 
-func e181(p *rt.Parser) (*rt.Node, bool) {
+func e185(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var ok bool
 	var x1, x2 *rt.CaptureFrame
@@ -7122,7 +7134,7 @@ func e181(p *rt.Parser) (*rt.Node, bool) {
 	for {
 		x4 = p.Mark()
 		x2 = p.Frame
-		x1 = p.NewFrame(len(scope180))
+		x1 = p.NewFrame(len(scope184))
 		p.Frame = x1
 		p.StepWork()
 		p.StepWork()
@@ -7187,7 +7199,7 @@ fail:
 	return nil, false
 }
 
-func e183(p *rt.Parser) (*rt.Node, bool) {
+func e187(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var ok bool
 	var x1, x2 *rt.CaptureFrame
@@ -7213,7 +7225,7 @@ func e183(p *rt.Parser) (*rt.Node, bool) {
 	for {
 		x4 = p.Mark()
 		x2 = p.Frame
-		x1 = p.NewFrame(len(scope182))
+		x1 = p.NewFrame(len(scope186))
 		p.Frame = x1
 		p.StepWork()
 		p.StepWork()
@@ -7274,7 +7286,7 @@ fail:
 	return nil, false
 }
 
-func e184(p *rt.Parser) (*rt.Node, bool) {
+func e188(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var x1 rt.Mark
 	var x3 rune
@@ -7330,7 +7342,7 @@ fail:
 	return nil, false
 }
 
-func e185(p *rt.Parser) (*rt.Node, bool) {
+func e189(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var x1 rt.Mark
 	var x3 rune
@@ -7402,7 +7414,7 @@ fail:
 	return nil, false
 }
 
-func e187(p *rt.Parser) (*rt.Node, bool) {
+func e191(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var ok, x11 bool
 	var x19 int
@@ -7430,7 +7442,7 @@ func e187(p *rt.Parser) (*rt.Node, bool) {
 	for {
 		x6 = p.Mark()
 		x4 = p.Frame
-		x3 = p.NewFrame(len(scope186))
+		x3 = p.NewFrame(len(scope190))
 		p.Frame = x3
 		p.StepWork()
 		p.StepWork()
@@ -7542,7 +7554,7 @@ fail:
 	return nil, false
 }
 
-func e188(p *rt.Parser) (*rt.Node, bool) {
+func e192(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var x1 rt.Mark
 	var x3 rune
@@ -7614,7 +7626,7 @@ fail:
 	return nil, false
 }
 
-func e189(p *rt.Parser) (*rt.Node, bool) {
+func e193(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var x1 rt.Mark
 	var ok, x5 bool
@@ -7653,7 +7665,7 @@ fail:
 	return nil, false
 }
 
-func e190(p *rt.Parser) (*rt.Node, bool) {
+func e194(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	var x1 int
 	var x2 rt.Mark
@@ -10977,14 +10989,7 @@ L19:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "main"
-	v = func() any {
-		f_191 := k4
-		f_192 := c.Concat(k11, k21)
-		f_193 := k14
-		f_194 := k24
-		f_195 := k27
-		return tmk_Document(c, true, f_191, f_192, f_193, f_194, f_195)
-	}()
+	v = tmk_Document(c, true, k4, c.Concat(k11, k21), k14, k24, k27)
 	p.Depth--
 	return v, true
 fail:
@@ -11184,7 +11189,7 @@ L16:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "xml_decl"
-	v = func() any { f_196 := k1; f_197 := k4; f_198 := k11; return tmk_XMLDecl(c, true, f_196, f_197, f_198) }()
+	v = tmk_XMLDecl(c, true, k1, k4, k11)
 	p.Depth--
 	return v, true
 fail:
@@ -11920,7 +11925,7 @@ L13:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "pi"
-	v = func() any { f_199 := k1; f_200 := k10; return tmk_PI(c, true, f_199, f_200) }()
+	v = tmk_PI(c, true, k1, k10)
 	p.Depth--
 	return v, true
 fail:
@@ -12121,12 +12126,7 @@ L15:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "doctype"
-	v = func() any {
-		f_201 := k1
-		f_202 := k5
-		f_203 := c.Concat(k12)
-		return tmk_Doctype(c, true, f_201, f_202, f_203)
-	}()
+	v = tmk_Doctype(c, true, k1, k5, c.Concat(k12))
 	p.Depth--
 	return v, true
 fail:
@@ -12457,7 +12457,7 @@ func i20(p *rt.TParser) (any, bool) {
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "system_id"
-	v = func() any { f_204 := k1; return tmk_ExternalID(c, true, nil, f_204) }()
+	v = tmk_ExternalID(c, true, nil, k1)
 	p.Depth--
 	return v, true
 fail:
@@ -12510,7 +12510,7 @@ func i21(p *rt.TParser) (any, bool) {
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "public_id"
-	v = func() any { f_205 := k1; f_206 := k4; return tmk_ExternalID(c, true, f_205, f_206) }()
+	v = tmk_ExternalID(c, true, k1, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -12919,7 +12919,7 @@ func i28(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "element_decl"
-	v = func() any { f_207 := k1; f_208 := k4; return tmk_ElementDecl(c, true, f_207, f_208) }()
+	v = tmk_ElementDecl(c, true, k1, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -13151,7 +13151,7 @@ func i32(p *rt.TParser) (any, bool) {
 		x10 = append(x10, v12)
 		v13 = p.NewNode("tuple", x9, p.Pos, x10)
 		v14 = p.ScopeValue(sh72, v13, x6)
-		v15 = p.AttachCaptures(v14, scope209, []any{k7}, x6, p.Pos)
+		v15 = p.AttachCaptures(v14, scope195, []any{k7}, x6, p.Pos)
 		p.PushKid(v15)
 		if p.Pos == x6 {
 			break
@@ -13212,10 +13212,7 @@ L23:
 L18:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "mixed"
-	v = func() any {
-		f_210 := c.MapList(k1, func(l_211 any) any { return c.Member((l_211), "$n") })
-		return tmk_Mixed(c, true, f_210)
-	}()
+	v = tmk_Mixed(c, true, c.MapList(k1, func(l_196 any) any { return c.Member((l_196), "$n") }))
 	p.Depth--
 	return v, true
 fail:
@@ -13333,11 +13330,12 @@ L19:
 	k14 = v17
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "choice"
-	v = func() any {
-		f_212 := func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k4); return c.EndList(b) }()
-		f_213 := k14
-		return tmk_Choice(c, true, f_212, f_213)
-	}()
+	{
+		b_197 := len(c.P.KidStack)
+		c.PushList(k1)
+		c.PushItems(k4)
+		v = tmk_Choice(c, true, c.EndList(b_197), k14)
+	}
 	p.Depth--
 	return v, true
 fail:
@@ -13450,11 +13448,12 @@ L19:
 	k14 = v17
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "sequence"
-	v = func() any {
-		f_214 := func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k4); return c.EndList(b) }()
-		f_215 := k14
-		return tmk_Sequence(c, true, f_214, f_215)
-	}()
+	{
+		b_198 := len(c.P.KidStack)
+		c.PushList(k1)
+		c.PushItems(k4)
+		v = tmk_Sequence(c, true, c.EndList(b_198), k14)
+	}
 	p.Depth--
 	return v, true
 fail:
@@ -13580,7 +13579,7 @@ L9:
 	k4 = v7
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "name_particle"
-	v = func() any { f_216 := k1; f_217 := k4; return tmk_NameParticle(c, true, f_216, f_217) }()
+	v = tmk_NameParticle(c, true, k1, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -13699,11 +13698,7 @@ func i38(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "attlist_decl"
-	v = func() any {
-		f_218 := k1
-		f_219 := c.NewList(c.ListItems("map", k4))
-		return tmk_AttlistDecl(c, true, f_218, f_219)
-	}()
+	v = tmk_AttlistDecl(c, true, k1, c.NewList(c.ListItems("map", k4)))
 	p.Depth--
 	return v, true
 fail:
@@ -13808,13 +13803,7 @@ L16:
 L12:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "att_def"
-	v = func() any {
-		f_220 := k1
-		f_221 := k4
-		f_222 := k8
-		f_223 := k10
-		return tmk_AttDef(c, true, f_220, f_221, f_222, f_223)
-	}()
+	v = tmk_AttDef(c, true, k1, k4, k8, k10)
 	p.Depth--
 	return v, true
 fail:
@@ -14202,10 +14191,12 @@ func i44(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "notation_type"
-	v = func() any {
-		f_224 := func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k4); return c.EndList(b) }()
-		return tmk_NotationType(c, true, f_224)
-	}()
+	{
+		b_199 := len(c.P.KidStack)
+		c.PushList(k1)
+		c.PushItems(k4)
+		v = tmk_NotationType(c, true, c.EndList(b_199))
+	}
 	p.Depth--
 	return v, true
 fail:
@@ -14301,10 +14292,12 @@ func i45(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "enumeration"
-	v = func() any {
-		f_225 := func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k4); return c.EndList(b) }()
-		return tmk_Enumeration(c, true, f_225)
-	}()
+	{
+		b_200 := len(c.P.KidStack)
+		c.PushList(k1)
+		c.PushItems(k4)
+		v = tmk_Enumeration(c, true, c.EndList(b_200))
+	}
 	p.Depth--
 	return v, true
 fail:
@@ -14487,14 +14480,7 @@ L11:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ge_decl"
-	v = func() any {
-		f_226 := any(false)
-		f_227 := k1
-		f_228 := k5
-		f_229 := k7
-		f_230 := k9
-		return tmk_EntityDecl(c, true, f_226, f_227, f_228, f_229, f_230)
-	}()
+	v = tmk_EntityDecl(c, true, any(false), k1, k5, k7, k9)
 	p.Depth--
 	return v, true
 fail:
@@ -14595,13 +14581,7 @@ L9:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "pe_decl"
-	v = func() any {
-		f_231 := any(true)
-		f_232 := k1
-		f_233 := k5
-		f_234 := k7
-		return tmk_EntityDecl(c, true, f_231, f_232, f_233, f_234, nil)
-	}()
+	v = tmk_EntityDecl(c, true, any(true), k1, k5, k7, nil)
 	p.Depth--
 	return v, true
 fail:
@@ -14897,7 +14877,7 @@ func i52(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "notation_decl"
-	v = func() any { f_235 := k1; f_236 := k4; return tmk_NotationDecl(c, true, f_235, f_236) }()
+	v = tmk_NotationDecl(c, true, k1, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -15017,7 +14997,7 @@ L7:
 L8:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "public_notation"
-	v = func() any { f_237 := k1; f_238 := k5; return tmk_ExternalID(c, true, f_237, f_238) }()
+	v = tmk_ExternalID(c, true, k1, k5)
 	p.Depth--
 	return v, true
 fail:
@@ -15190,12 +15170,7 @@ L24:
 L19:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "element"
-	v = func() any {
-		f_239 := k1
-		f_240 := c.NewList(c.ListItems("map", k4))
-		f_241 := c.Concat(k15)
-		return tmk_Element(c, true, f_239, f_240, f_241)
-	}()
+	v = tmk_Element(c, true, k1, c.NewList(c.ListItems("map", k4)), c.Concat(k15))
 	p.Depth--
 	return v, true
 fail:
@@ -15240,7 +15215,7 @@ func i56(p *rt.TParser) (any, bool) {
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "attribute"
-	v = func() any { f_242 := k1; f_243 := k4; return tmk_Attribute(c, true, f_242, f_243) }()
+	v = tmk_Attribute(c, true, k1, k4)
 	p.Depth--
 	return v, true
 fail:

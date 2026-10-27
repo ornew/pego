@@ -59,12 +59,15 @@ rule leaf Leaf = d:[0-9]+ => Leaf{N: len($d)}
 			t.Errorf("generated source contains %q", bad)
 		}
 	}
-	// Written in declaration order the fields are the arguments; out of order the temporaries keep
-	// the order written.
+	// Written in declaration order the fields are the arguments; out of order the temporaries, assigned
+	// before the call, keep the order written, without a function literal.
+	if strings.Contains(src, "func() any") {
+		t.Errorf("generated source contains a function literal around a term:\n%s", src)
+	}
 	if !strings.Contains(src, "tmk_Leaf(c, true, c.Length(") {
 		t.Errorf("fields in declaration order are not the arguments:\n%s", src)
 	}
-	m := regexp.MustCompile(`(f_\d+) := \w+; (f_\d+) := \w+; return tmk_Pair\(c, true, (f_\d+), (f_\d+)\)`).FindStringSubmatch(src)
+	m := regexp.MustCompile(`(f_\d+) := \w+\n\s*(f_\d+) := \w+\n\s*v = tmk_Pair\(c, true, (f_\d+), (f_\d+)\)`).FindStringSubmatch(src)
 	if m == nil || m[1] != m[4] || m[2] != m[3] {
 		t.Errorf("fields out of order do not keep the order written:\n%s", src)
 	}
@@ -101,6 +104,40 @@ rule main Result = x:"a"? y:"b"? => Result{A: list(1, 2)[len($x) + 3], C: list(1
 	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, GenOptions{convertTypes: true}, 1)
 	// Negative control: the two orders fail differently, so a parser that swapped them would
 	// differ from the engine.
+	first := compile(t, rule(a, b))
+	second := compile(t, rule(b, a))
+	_, err1 := first.Parse("main", "")
+	_, err2 := second.Parse("main", "")
+	if err1 == nil || err2 == nil || err1.Error() == err2.Error() {
+		t.Fatalf("the order of evaluation is not observable: %v / %v", err1, err2)
+	}
+}
+
+// TestGeneratedTermStatementsEvaluationOrder checks the order of evaluation of the operands of a term when one
+// of them needs statements before its expression (the fused concat pushes its elements one by one). The
+// operands before it are assigned to temporaries first, so that their error still wins. The two operands
+// fail with different errors, so the generated parser can only agree with the engine if it evaluates them in
+// the order written.
+func TestGeneratedTermStatementsEvaluationOrder(t *testing.T) {
+	eachMode(t, testGeneratedTermStatementsEvaluationOrder)
+}
+
+func testGeneratedTermStatementsEvaluationOrder(t *testing.T) {
+	const a, b = `list(1)[len($x) + 3]`, `len(concat(list(1), list(list(1)[len($y) + 7])))`
+	rule := func(first, second string) string {
+		return "type Result = { N int }\nrule main Result = x:\"a\"? y:\"b\"? => Result{N: list(" + first + ", " + second + ")[0]}\n"
+	}
+	sum := func(first, second string) string {
+		return "type Result = { N int }\nrule main Result = x:\"a\"? y:\"b\"? => Result{N: " + first + " + " + second + "}\n"
+	}
+	cases := []genCase{
+		{"typed/statements_after_operand", rule(a, b), []string{"", "a", "b", "ab"}},
+		{"typed/statements_in_first_operand", rule(b, a), []string{"", "a", "b", "ab"}},
+		{"typed/statements_after_binary_operand", sum(a, b), []string{"", "a", "b", "ab"}},
+		{"typed/statements_in_first_binary_operand", sum(b, a), []string{"", "a", "b", "ab"}},
+	}
+	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, GenOptions{convertTypes: true}, 1)
+	// Negative control: the two orders fail differently.
 	first := compile(t, rule(a, b))
 	second := compile(t, rule(b, a))
 	_, err1 := first.Parse("main", "")
