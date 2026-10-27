@@ -17,7 +17,10 @@ as their first parameter) once, from Flow IR, in the form the options select:
 - With `-work-controls` the parser holds the controlled form only: step and input-work charges,
   the general runtime helpers and class tests that consult the control. A parse that sets no
   limit runs the same code; the few inline tests of `p.Control` (in literal and large-class
-  tests) take the unmetered path, and the helpers test the control themselves.
+  tests) take the unmetered path, and the helpers test the control themselves. The terms of an
+  action carry no charge, and neither do the generated constructors of typed values: only
+  repetition is charged, by the runtime's loops over the elements of a list (`map`, `filter`,
+  `foldl`, `foldr`), one step per element.
 - With `-document` the in-place reads of literals and characters carry the guard
   `p.Document == nil`, so that a Document parse reaches the primitives that record what a rule
   examined. Without `-work-controls` that form has no charges and no control reads.

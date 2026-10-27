@@ -495,7 +495,9 @@ Flow IR passes:
 - **Charge placement**: charges coalesce within straight-line code, under the invariants that each loop
   iteration charges a step or the input work of a character it reads, that each call charges at least one step,
   that input work is charged before the input is inspected, and that no charge moves across a commit. Without work controls, charges are not lowered at
-  all.
+  all. The terms of an action are straight-line code run once per matched rule, so they carry no charge;
+  only repetition is charged, by the runtime built-ins that call lambdas (`map`, `filter`, `foldl`,
+  `foldr`): each charges one step per element, so nested lambdas charge once per call.
 - **Mode lowering**: a generated parser has one form of each function, chosen by the options: the ordinary
   form without work controls and Documents, the controlled form otherwise. The places where they differ
   (charges, control reads, the helper names, peeks) are printed from the same Flow IR by the one printer;
@@ -513,8 +515,15 @@ or charges; in a Document variant every input read goes through a recording prim
 block. A jump out of a block skips only declarations inside it, so slots use `:=` with concrete types.
 Go 1.27.1 accepts this and rejects a `goto` that jumps over a declaration in the same block
 (`goto fail jumps over declaration of n`), which is why today's code hoists every variable. Labels are
-printed only when used. Pure terms print as Go expressions; a term that needs statements (a charge, a
-loop) prints them before the expression instead of a function literal. Runtime names are qualified while
+printed only when used. Pure terms print as Go expressions; a term that needs statements (the fused
+`concat`, which pushes its elements one by one, and the temporaries of a typed constructor whose fields are
+written out of order) prints them before the expression instead of a function literal: in the body of a rule
+action or predicate, or in a block of its own where Flow IR assigns the value of an action, so that the
+temporaries are not declared across a `goto`. If an operand needs statements, the operands before it are
+assigned to temporaries first, ahead of those statements, so they are still evaluated first and the first
+error wins. Function literals remain only where evaluation is on demand: the right operand of `&&` and `||`,
+the bodies of lambdas, and the functions of rule actions, predicates and bindings that the runtime calls; the
+`switch` of a predicate on literal texts is statements in its body. Runtime names are qualified while
 printing, and the source passes through `go/format` once. Values cross rule boundaries as `any`, because
 `TRule.Body`, `TParser.Call` and the typed memo entries hold `any` (see [Decisions](#decisions)).
 
@@ -769,7 +778,8 @@ Each enabled pass records its measured effect in the [optimization catalog](../.
    cut after any completed stage.
 8. **Work counts.** Charge placement may change the work counts of generated artifacts under the progress
    invariants of [Flow IR](#flow-ir), as the specification makes counts implementation-specific; tests that
-   pin counts are updated.
+   pin counts are updated. The step counts of generated parsers do not include the terms of actions and the
+   fields of typed constructors, and the closure backend and the bytecode VMs charge them differently.
 9. **Overlap within a stage.** The old and the new path run side by side behind a private switch only
    within one stage, because comparison on the same source is the main correctness evidence; the switch is
    removed when the default flips.
