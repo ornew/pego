@@ -2388,9 +2388,7 @@ func e16(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var ok bool
 		var v2 *rt.Node
-		if !p.Bind("n", func(c *rt.ActCtx) any {
-			return func() any { return c.Unary("-", func() any { return any(1) }()) }()
-		}) {
+		if !p.Bind("n", func(c *rt.ActCtx) any { return func() any { return c.Unary("-", func() any { return any(1) }()) }() }) {
 			goto fail_ordinary
 		}
 		if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { return any("block-in") }() }) {
@@ -5305,9 +5303,7 @@ func e57(p *rt.Parser) (*rt.Node, bool) {
 		}) {
 			goto fail_ordinary
 		}
-		if !p.Bind("n", func(c *rt.ActCtx) any {
-			return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
-		}) {
+		if !p.Bind("n", func(c *rt.ActCtx) any { return func() any { return c.Length(func() any { return c.Cap(0) }()) }() }) {
 			goto fail_ordinary
 		}
 		x11, x12 = p.Pos, len(p.KidStack)
@@ -5882,9 +5878,7 @@ func e64(p *rt.Parser) (*rt.Node, bool) {
 		}) {
 			goto fail_ordinary
 		}
-		if !p.Bind("n", func(c *rt.ActCtx) any {
-			return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
-		}) {
+		if !p.Bind("n", func(c *rt.ActCtx) any { return func() any { return c.Length(func() any { return c.Cap(0) }()) }() }) {
 			goto fail_ordinary
 		}
 		x10, x11 = p.Pos, len(p.KidStack)
@@ -7301,9 +7295,7 @@ func e94(p *rt.Parser) (*rt.Node, bool) {
 		}) {
 			goto L133_ordinary
 		}
-		if !p.Bind("n", func(c *rt.ActCtx) any {
-			return func() any { return c.Length(func() any { return c.Cap(4) }()) }()
-		}) {
+		if !p.Bind("n", func(c *rt.ActCtx) any { return func() any { return c.Length(func() any { return c.Cap(4) }()) }() }) {
 			goto L133_ordinary
 		}
 		x136 = p.Pos
@@ -7474,9 +7466,7 @@ func e94(p *rt.Parser) (*rt.Node, bool) {
 			}) {
 				goto L181_ordinary
 			}
-			if !p.Bind("n", func(c *rt.ActCtx) any {
-				return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
-			}) {
+			if !p.Bind("n", func(c *rt.ActCtx) any { return func() any { return c.Length(func() any { return c.Cap(0) }()) }() }) {
 				goto L181_ordinary
 			}
 			goto L182_ordinary
@@ -19978,9 +19968,7 @@ fail:
 func e213(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var ok bool
-		if !p.Bind("n", func(c *rt.ActCtx) any {
-			return func() any { return c.Unary("-", func() any { return any(1) }()) }()
-		}) {
+		if !p.Bind("n", func(c *rt.ActCtx) any { return func() any { return c.Unary("-", func() any { return any(1) }()) }() }) {
 			goto fail_ordinary
 		}
 		if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { return any("block-in") }() }) {
@@ -21786,9 +21774,7 @@ func e228(p *rt.Parser) (*rt.Node, bool) {
 		}) {
 			goto fail_ordinary
 		}
-		if !p.Bind("n", func(c *rt.ActCtx) any {
-			return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
-		}) {
+		if !p.Bind("n", func(c *rt.ActCtx) any { return func() any { return c.Length(func() any { return c.Cap(0) }()) }() }) {
 			goto fail_ordinary
 		}
 		x12 = 0
@@ -22213,9 +22199,7 @@ func e233(p *rt.Parser) (*rt.Node, bool) {
 		}) {
 			goto fail_ordinary
 		}
-		if !p.Bind("n", func(c *rt.ActCtx) any {
-			return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
-		}) {
+		if !p.Bind("n", func(c *rt.ActCtx) any { return func() any { return c.Length(func() any { return c.Cap(0) }()) }() }) {
 			goto fail_ordinary
 		}
 		x12 = 0
@@ -23157,9 +23141,7 @@ func e241(p *rt.Parser) (*rt.Node, bool) {
 		}) {
 			goto L59_ordinary
 		}
-		if !p.Bind("n", func(c *rt.ActCtx) any {
-			return func() any { return c.Length(func() any { return c.Cap(1) }()) }()
-		}) {
+		if !p.Bind("n", func(c *rt.ActCtx) any { return func() any { return c.Length(func() any { return c.Cap(1) }()) }() }) {
 			goto L59_ordinary
 		}
 		x60 = p.Pos
@@ -23326,9 +23308,7 @@ func e241(p *rt.Parser) (*rt.Node, bool) {
 			}) {
 				goto L101_ordinary
 			}
-			if !p.Bind("n", func(c *rt.ActCtx) any {
-				return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
-			}) {
+			if !p.Bind("n", func(c *rt.ActCtx) any { return func() any { return c.Length(func() any { return c.Cap(0) }()) }() }) {
 				goto L101_ordinary
 			}
 			goto L102_ordinary
@@ -36538,9 +36518,7 @@ func i1(p *rt.TParser) (any, bool) {
 			return func() any {
 				f_284 := func() any {
 					return c.Concat(func() any { return k4 }(), func() any {
-						return c.MapList(func() any { return k15 }(), func(l_285 any) any {
-							return func() any { return c.Member(func() any { return l_285 }(), "$d") }()
-						})
+						return c.MapList(func() any { return k15 }(), func(l_285 any) any { return func() any { return c.Member(func() any { return l_285 }(), "$d") }() })
 					}())
 				}()
 				return tmk_Stream(c, true, f_284)
@@ -37559,9 +37537,7 @@ func i12(p *rt.TParser) (any, bool) {
 		start = p.Pos
 		prevEnv = p.Env
 		p.Enter()
-		if !p.Bind("n", func(c *rt.TActCtx) any {
-			return func() any { return c.Unary("-", func() any { return any(1) }()) }()
-		}) {
+		if !p.Bind("n", func(c *rt.TActCtx) any { return func() any { return c.Unary("-", func() any { return any(1) }()) }() }) {
 			goto fail_ordinary
 		}
 		if !p.Bind("c", func(c *rt.TActCtx) any { return func() any { return any("block-in") }() }) {
@@ -38204,9 +38180,7 @@ func i18(p *rt.TParser) (any, bool) {
 		v = func() any {
 			return func() any {
 				f_299 := func() any { return k1 }()
-				f_300 := func() any {
-					return c.List(func() any { return k4 }(), func() any { return k7 }())
-				}()
+				f_300 := func() any { return c.List(func() any { return k4 }(), func() any { return k7 }()) }()
 				return tmk_Directive(c, true, f_299, f_300)
 			}()
 		}()
@@ -38674,9 +38648,7 @@ func i22(p *rt.TParser) (any, bool) {
 		v = func() any {
 			return func() any {
 				f_301 := func() any { return k15 }()
-				f_302 := func() any {
-					return c.NewList(c.ListItems("map", func() any { return k18 }()))
-				}()
+				f_302 := func() any { return c.NewList(c.ListItems("map", func() any { return k18 }())) }()
 				return tmk_Directive(c, true, f_301, f_302)
 			}()
 		}()
@@ -41912,9 +41884,7 @@ func i46(p *rt.TParser) (any, bool) {
 		}) {
 			goto fail_ordinary
 		}
-		if !p.Bind("n", func(c *rt.TActCtx) any {
-			return func() any { return c.Length(func() any { return k4 }()) }()
-		}) {
+		if !p.Bind("n", func(c *rt.TActCtx) any { return func() any { return c.Length(func() any { return k4 }()) }() }) {
 			goto fail_ordinary
 		}
 		x13, x14 = p.Pos, len(p.KidStack)
@@ -41954,9 +41924,7 @@ func i46(p *rt.TParser) (any, bool) {
 		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		p.Where = "l_block_sequence"
 		v = func() any {
-			return c.MapList(func() any { return k11 }(), func(l_314 any) any {
-				return func() any { return c.Member(func() any { return l_314 }(), "$e") }()
-			})
+			return c.MapList(func() any { return k11 }(), func(l_314 any) any { return func() any { return c.Member(func() any { return l_314 }(), "$e") }() })
 		}()
 		v = c.Finish(v)
 		p.Depth--
@@ -42562,9 +42530,7 @@ func i50(p *rt.TParser) (any, bool) {
 					return func() any {
 						b := len(c.P.KidStack)
 						c.PushList(func() any { return k1 }())
-						c.PushMap(func() any { return k4 }(), func(l_317 any) any {
-							return func() any { return c.Member(func() any { return l_317 }(), "$e") }()
-						})
+						c.PushMap(func() any { return k4 }(), func(l_317 any) any { return func() any { return c.Member(func() any { return l_317 }(), "$e") }() })
 						return c.EndList(b)
 					}()
 				}()
@@ -42713,9 +42679,7 @@ func i51(p *rt.TParser) (any, bool) {
 		}) {
 			goto fail_ordinary
 		}
-		if !p.Bind("n", func(c *rt.TActCtx) any {
-			return func() any { return c.Length(func() any { return k4 }()) }()
-		}) {
+		if !p.Bind("n", func(c *rt.TActCtx) any { return func() any { return c.Length(func() any { return k4 }()) }() }) {
 			goto fail_ordinary
 		}
 		x12, x13, x14 = p.Pos, len(p.KidStack), 0
@@ -42747,9 +42711,7 @@ func i51(p *rt.TParser) (any, bool) {
 		k11 = v20
 		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		p.Where = "l_block_mapping"
-		v = func() any {
-			return c.NewList(c.ListItems("map", func() any { return k11 }()))
-		}()
+		v = func() any { return c.NewList(c.ListItems("map", func() any { return k11 }())) }()
 		v = c.Finish(v)
 		p.Depth--
 		p.Env = prevEnv
@@ -44674,9 +44636,7 @@ func i62(p *rt.TParser) (any, bool) {
 		}) {
 			goto L142_ordinary
 		}
-		if !p.Bind("n", func(c *rt.TActCtx) any {
-			return func() any { return c.Length(func() any { return k38 }()) }()
-		}) {
+		if !p.Bind("n", func(c *rt.TActCtx) any { return func() any { return c.Length(func() any { return k38 }()) }() }) {
 			goto L142_ordinary
 		}
 		x145 = p.Pos
@@ -44844,9 +44804,7 @@ func i62(p *rt.TParser) (any, bool) {
 			}) {
 				goto L190_ordinary
 			}
-			if !p.Bind("n", func(c *rt.TActCtx) any {
-				return func() any { return c.Length(func() any { return k174 }()) }()
-			}) {
+			if !p.Bind("n", func(c *rt.TActCtx) any { return func() any { return c.Length(func() any { return k174 }()) }() }) {
 				goto L190_ordinary
 			}
 			goto L191_ordinary
@@ -47080,10 +47038,7 @@ func i72(p *rt.TParser) (any, bool) {
 		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		p.Where = "properties_node"
 		v = func() any {
-			return func() any {
-				f_331 := func() any { return k4 }()
-				return tmk_Scalar(c, true, f_331, nil, nil, nil)
-			}()
+			return func() any { f_331 := func() any { return k4 }(); return tmk_Scalar(c, true, f_331, nil, nil, nil) }()
 		}()
 		p.Depth--
 		return v, true
@@ -47756,9 +47711,7 @@ func i77(p *rt.TParser) (any, bool) {
 			return func() any {
 				b := len(c.P.KidStack)
 				c.PushList(func() any { return k1 }())
-				c.PushMap(func() any { return k7 }(), func(l_336 any) any {
-					return func() any { return c.Member(func() any { return l_336 }(), "$e") }()
-				})
+				c.PushMap(func() any { return k7 }(), func(l_336 any) any { return func() any { return c.Member(func() any { return l_336 }(), "$e") }() })
 				return c.EndList(b)
 			}()
 		}()

@@ -1333,6 +1333,7 @@ func e8(p *rt.Parser) (*rt.Node, bool) {
 		var x12, ch rune
 		var x13, ok bool
 		var x41 *rt.SyntaxError
+
 		x2 = p.Mark()
 		x3 = p.Isolate(p.Pos)
 		x9 = p.Mark()
@@ -5760,6 +5761,7 @@ func e94(p *rt.Parser) (*rt.Node, bool) {
 		var x9, ch rune
 		var x10, ok bool
 		var x30 *rt.SyntaxError
+
 		x1 = p.Mark()
 		x2 = p.Isolate(p.Pos)
 		x7 = p.Mark()
@@ -9468,6 +9470,7 @@ func e120(p *rt.TParser) (any, bool) {
 		var x12, ch rune
 		var x13, ok bool
 		var x41 *rt.SyntaxError
+
 		x2 = p.Mark()
 		x3 = p.Isolate(p.Pos)
 		x9 = p.Mark()
@@ -9930,9 +9933,7 @@ func i1(p *rt.TParser) (any, bool) {
 		k1 = v11
 		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		p.Where = "stmts"
-		v = func() any {
-			return c.NewList(c.ListItems("map", func() any { return k1 }()))
-		}()
+		v = func() any { return c.NewList(c.ListItems("map", func() any { return k1 }())) }()
 		v = c.Finish(v)
 		p.Depth--
 		return v, true

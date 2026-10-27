@@ -598,9 +598,7 @@ func e5(p *rt.Parser) (*rt.Node, bool) {
 		}) {
 			goto fail_ordinary
 		}
-		if !p.Bind("indent", func(c *rt.ActCtx) any {
-			return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
-		}) {
+		if !p.Bind("indent", func(c *rt.ActCtx) any { return func() any { return c.Length(func() any { return c.Cap(0) }()) }() }) {
 			goto fail_ordinary
 		}
 		if v10, ok = p.Call(rules[1], 0); !ok {
@@ -1311,9 +1309,7 @@ func e19(p *rt.Parser) (*rt.Node, bool) {
 		}) {
 			goto fail_ordinary
 		}
-		if !p.Bind("indent", func(c *rt.ActCtx) any {
-			return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
-		}) {
+		if !p.Bind("indent", func(c *rt.ActCtx) any { return func() any { return c.Length(func() any { return c.Cap(0) }()) }() }) {
 			goto fail_ordinary
 		}
 		if _, ok = p.Call(recRules[1], 0); !ok {
@@ -1841,9 +1837,7 @@ func i1(p *rt.TParser) (any, bool) {
 		k1 = v13
 		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		p.Where = "block"
-		v = func() any {
-			return c.NewList(c.ListItems("map", func() any { return k1 }()))
-		}()
+		v = func() any { return c.NewList(c.ListItems("map", func() any { return k1 }())) }()
 		v = c.Finish(v)
 		p.Depth--
 		return v, true
@@ -2117,9 +2111,7 @@ func i3(p *rt.TParser) (any, bool) {
 		}) {
 			goto fail_ordinary
 		}
-		if !p.Bind("indent", func(c *rt.TActCtx) any {
-			return func() any { return c.Length(func() any { return k7 }()) }()
-		}) {
+		if !p.Bind("indent", func(c *rt.TActCtx) any { return func() any { return c.Length(func() any { return k7 }()) }() }) {
 			goto fail_ordinary
 		}
 		if v12, ok = u1(p); !ok {

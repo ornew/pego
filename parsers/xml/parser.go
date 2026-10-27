@@ -19050,9 +19050,7 @@ func i0(p *rt.TParser) (any, bool) {
 		v = func() any {
 			return func() any {
 				f_191 := func() any { return k4 }()
-				f_192 := func() any {
-					return c.Concat(func() any { return k11 }(), func() any { return k21 }())
-				}()
+				f_192 := func() any { return c.Concat(func() any { return k11 }(), func() any { return k21 }()) }()
 				f_193 := func() any { return k14 }()
 				f_194 := func() any { return k24 }()
 				f_195 := func() any { return k27 }()
@@ -19226,9 +19224,7 @@ func i1(p *rt.TParser) (any, bool) {
 		}
 		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		p.Where = "misc_list"
-		v = func() any {
-			return c.NewList(c.ListItems("map", func() any { return k1 }()))
-		}()
+		v = func() any { return c.NewList(c.ListItems("map", func() any { return k1 }())) }()
 		v = c.Finish(v)
 		p.Depth--
 		return v, true
@@ -21414,9 +21410,7 @@ func i16(p *rt.TParser) (any, bool) {
 		}
 		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		p.Where = "int_subset"
-		v = func() any {
-			return c.NewList(c.ListItems("map", func() any { return k1 }()))
-		}()
+		v = func() any { return c.NewList(c.ListItems("map", func() any { return k1 }())) }()
 		v = c.Finish(v)
 		p.Depth--
 		return v, true
@@ -21940,10 +21934,7 @@ func i20(p *rt.TParser) (any, bool) {
 		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		p.Where = "system_id"
 		v = func() any {
-			return func() any {
-				f_204 := func() any { return k1 }()
-				return tmk_ExternalID(c, true, nil, f_204)
-			}()
+			return func() any { f_204 := func() any { return k1 }(); return tmk_ExternalID(c, true, nil, f_204) }()
 		}()
 		p.Depth--
 		return v, true
@@ -23253,9 +23244,7 @@ func i32(p *rt.TParser) (any, bool) {
 		v = func() any {
 			return func() any {
 				f_210 := func() any {
-					return c.MapList(func() any { return k1 }(), func(l_211 any) any {
-						return func() any { return c.Member(func() any { return l_211 }(), "$n") }()
-					})
+					return c.MapList(func() any { return k1 }(), func(l_211 any) any { return func() any { return c.Member(func() any { return l_211 }(), "$n") }() })
 				}()
 				return tmk_Mixed(c, true, f_210)
 			}()
@@ -24268,9 +24257,7 @@ func i38(p *rt.TParser) (any, bool) {
 		v = func() any {
 			return func() any {
 				f_218 := func() any { return k1 }()
-				f_219 := func() any {
-					return c.NewList(c.ListItems("map", func() any { return k4 }()))
-				}()
+				f_219 := func() any { return c.NewList(c.ListItems("map", func() any { return k4 }())) }()
 				return tmk_AttlistDecl(c, true, f_218, f_219)
 			}()
 		}()
@@ -26970,9 +26957,7 @@ func i55(p *rt.TParser) (any, bool) {
 		v = func() any {
 			return func() any {
 				f_239 := func() any { return k1 }()
-				f_240 := func() any {
-					return c.NewList(c.ListItems("map", func() any { return k4 }()))
-				}()
+				f_240 := func() any { return c.NewList(c.ListItems("map", func() any { return k4 }())) }()
 				f_241 := func() any { return c.Concat(func() any { return k15 }()) }()
 				return tmk_Element(c, true, f_239, f_240, f_241)
 			}()

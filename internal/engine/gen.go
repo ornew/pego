@@ -429,7 +429,7 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		case opts.Document:
 			guard += " && p.Document == nil"
 		}
-		if whole, err = specializeOrdinaryMethods(whole, methods, guard, !opts.WorkControls); err != nil {
+		if whole, err = spliceOrdinaryBodies(whole, opts.Package, paired, methods, guard, !opts.WorkControls); err != nil {
 			return nil, err
 		}
 		if oracleHook != nil {
