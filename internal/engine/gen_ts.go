@@ -493,44 +493,6 @@ func (g *tsGen) action(t grammar.Term, s *scope, locals map[string]string) strin
 	return name
 }
 
-// tsUsesCtx reports whether the TypeScript expression term makes of t refers to the evaluation
-// context c. locals are as for term.
-func tsUsesCtx(t grammar.Term, locals map[string]string) bool {
-	switch t := t.(type) {
-	case *grammar.IntLit, *grammar.StringLit, *grammar.BoolLit, *grammar.NilLit:
-		return false
-	case *grammar.CaptureRef:
-		l, ok := locals[t.Name]
-		return !ok || strings.HasPrefix(l, "c.")
-	case *grammar.Call:
-		if t.Func != "foldl" && t.Func != "foldr" {
-			return true
-		}
-		for _, a := range t.Args {
-			if tsUsesCtx(a, locals) {
-				return true
-			}
-		}
-		return false
-	case *grammar.Lambda:
-		inner := map[string]string{}
-		for k, v := range locals {
-			inner[k] = v
-		}
-		for _, p := range t.Params {
-			inner[p] = p
-		}
-		return tsUsesCtx(t.Body, inner)
-	case *grammar.Binary:
-		return tsUsesCtx(t.L, locals) || tsUsesCtx(t.R, locals)
-	case *grammar.Unary:
-		return tsUsesCtx(t.X, locals)
-	case *grammar.Cast:
-		return true // castValue raises its error through the context
-	}
-	return true // IndexRef, VarRef, Member, New
-}
-
 func (g *tsGen) rules() {
 	init := &g.init
 	bodies := map[*rule]string{}
