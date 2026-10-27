@@ -17701,11 +17701,7 @@ L17:
 	L28:
 		p.Pos = x27
 	L29:
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 55) {
 			p.ExpectOrdinary(p.Pos, 133)
 			goto L26
@@ -17740,11 +17736,7 @@ L22:
 	L36:
 		p.Pos = x35
 	L37:
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 57) {
 			p.ExpectOrdinary(p.Pos, 113)
 			goto L34
@@ -18204,11 +18196,7 @@ func s305(p *rt.TParser) (any, bool) {
 			p.Pos = x33
 			goto L32
 		L35:
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
 				p.ExpectOrdinary(p.Pos, 115)
 				goto L32
@@ -20322,11 +20310,7 @@ func s307(p *rt.TParser) (any, bool) {
 			p.Pos = x25
 			goto L24
 		L27:
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch == 32 || ch == 9 || ch == 13) {
 				p.ExpectOrdinary(p.Pos, 101)
 				goto L24
@@ -24267,11 +24251,7 @@ func s357(p *rt.TParser) (any, bool) {
 			p.Pos = x17
 			goto L16
 		L19:
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95) {
 				p.ExpectOrdinary(p.Pos, 123)
 				goto L16
@@ -24356,11 +24336,7 @@ func s359(p *rt.TParser) (any, bool) {
 	L5:
 		p.Pos = x4
 	L6:
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
 			p.ExpectOrdinary(p.Pos, 140)
 			goto L3
@@ -24408,11 +24384,7 @@ func s360(p *rt.TParser) (any, bool) {
 	L5:
 		p.Pos = x4
 	L6:
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 55) {
 			p.ExpectOrdinary(p.Pos, 133)
 			goto L3
@@ -24460,11 +24432,7 @@ func s361(p *rt.TParser) (any, bool) {
 	L5:
 		p.Pos = x4
 	L6:
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 48 || ch == 49) {
 			p.ExpectOrdinary(p.Pos, 141)
 			goto L3
@@ -24665,11 +24633,7 @@ L16:
 L15:
 	goto fail
 L2:
-	if p.Pos < len(p.In) {
-		ch, size, ok = p.In[p.Pos], 1, true
-	} else {
-		ch, size, ok = p.PeekOrdinary()
-	}
+	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 112 || ch == 80) {
 		p.ExpectOrdinary(p.Pos, 139)
 		goto fail
@@ -25860,11 +25824,7 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-	if p.Pos < len(p.In) {
-		_, size, ok = p.In[p.Pos], 1, true
-	} else {
-		_, size, ok = p.PeekOrdinary()
-	}
+	_, size, ok = p.NextOrdinary()
 	if !ok {
 		p.ExpectOrdinary(p.Pos, rt.IdAny)
 		goto fail
@@ -25898,11 +25858,7 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-	if p.Pos < len(p.In) {
-		_, size, ok = p.In[p.Pos], 1, true
-	} else {
-		_, size, ok = p.PeekOrdinary()
-	}
+	_, size, ok = p.NextOrdinary()
 	if !ok {
 		p.ExpectOrdinary(p.Pos, rt.IdAny)
 		goto fail
@@ -25942,11 +25898,7 @@ func s379(p *rt.TParser) (any, bool) {
 	L5:
 		p.Pos = x4
 	L6:
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 57) {
 			p.ExpectOrdinary(p.Pos, 113)
 			goto L3

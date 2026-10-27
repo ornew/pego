@@ -2946,11 +2946,7 @@ func i23(p *rt.TParser) (any, bool) {
 L5:
 	p.Pos = x4
 L6:
-	if p.Pos < len(p.In) {
-		ch, size, ok = p.In[p.Pos], 1, true
-	} else {
-		ch, size, ok = p.PeekOrdinary()
-	}
+	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch == 95) {
 		p.ExpectOrdinary(p.Pos, 7)
 		goto L2
@@ -3692,11 +3688,7 @@ L9:
 	p.Pos = x2
 	goto fail
 L3:
-	if p.Pos < len(p.In) {
-		ch, size, ok = p.In[p.Pos], 1, true
-	} else {
-		ch, size, ok = p.PeekOrdinary()
-	}
+	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 117 || ch == 85) {
 		p.ExpectOrdinary(p.Pos, 33)
 		goto fail

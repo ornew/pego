@@ -9409,11 +9409,7 @@ L7:
 L21:
 	p.Pos = x20
 L22:
-	if p.Pos < len(p.In) {
-		ch, size, ok = p.In[p.Pos], 1, true
-	} else {
-		ch, size, ok = p.PeekOrdinary()
-	}
+	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 48 || ch == 49) {
 		p.ExpectOrdinary(p.Pos, 76)
 		goto L19
@@ -9431,11 +9427,7 @@ L22:
 	L27:
 		p.Pos = x26
 	L28:
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 48 || ch == 49) {
 			p.ExpectOrdinary(p.Pos, 76)
 			goto L25
@@ -9472,11 +9464,7 @@ L18:
 L32:
 	p.Pos = x31
 L33:
-	if p.Pos < len(p.In) {
-		ch, size, ok = p.In[p.Pos], 1, true
-	} else {
-		ch, size, ok = p.PeekOrdinary()
-	}
+	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 48 && ch <= 55) {
 		p.ExpectOrdinary(p.Pos, 78)
 		goto L30
@@ -9494,11 +9482,7 @@ L33:
 	L38:
 		p.Pos = x37
 	L39:
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 55) {
 			p.ExpectOrdinary(p.Pos, 78)
 			goto L36
@@ -15979,11 +15963,7 @@ L6:
 L20:
 	p.Pos = x19
 L21:
-	if p.Pos < len(p.In) {
-		ch, size, ok = p.In[p.Pos], 1, true
-	} else {
-		ch, size, ok = p.PeekOrdinary()
-	}
+	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 48 || ch == 49) {
 		p.ExpectOrdinary(p.Pos, 76)
 		goto L18
@@ -16001,11 +15981,7 @@ L21:
 	L26:
 		p.Pos = x25
 	L27:
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 48 || ch == 49) {
 			p.ExpectOrdinary(p.Pos, 76)
 			goto L24
@@ -16042,11 +16018,7 @@ L17:
 L31:
 	p.Pos = x30
 L32:
-	if p.Pos < len(p.In) {
-		ch, size, ok = p.In[p.Pos], 1, true
-	} else {
-		ch, size, ok = p.PeekOrdinary()
-	}
+	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 48 && ch <= 55) {
 		p.ExpectOrdinary(p.Pos, 78)
 		goto L29
@@ -16064,11 +16036,7 @@ L32:
 	L37:
 		p.Pos = x36
 	L38:
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 55) {
 			p.ExpectOrdinary(p.Pos, 78)
 			goto L35
@@ -16571,11 +16539,7 @@ func s255(p *rt.TParser) (any, bool) {
 	L5:
 		p.Pos = x4
 	L6:
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 57) {
 			p.ExpectOrdinary(p.Pos, 60)
 			goto L3
@@ -16623,11 +16587,7 @@ func s256(p *rt.TParser) (any, bool) {
 	L5:
 		p.Pos = x4
 	L6:
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 57) {
 			p.ExpectOrdinary(p.Pos, 60)
 			goto L3
@@ -16686,11 +16646,7 @@ L2:
 L7:
 	p.Pos = x6
 L8:
-	if p.Pos < len(p.In) {
-		ch, size, ok = p.In[p.Pos], 1, true
-	} else {
-		ch, size, ok = p.PeekOrdinary()
-	}
+	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 48 && ch <= 57) {
 		p.ExpectOrdinary(p.Pos, 60)
 		goto L4
@@ -16708,11 +16664,7 @@ L8:
 	L13:
 		p.Pos = x12
 	L14:
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 57) {
 			p.ExpectOrdinary(p.Pos, 60)
 			goto L11
@@ -16773,11 +16725,7 @@ L3:
 L5:
 	p.Pos = x4
 L6:
-	if p.Pos < len(p.In) {
-		ch, size, ok = p.In[p.Pos], 1, true
-	} else {
-		ch, size, ok = p.PeekOrdinary()
-	}
+	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 48 && ch <= 57) {
 		p.ExpectOrdinary(p.Pos, 60)
 		goto fail
@@ -16795,11 +16743,7 @@ L6:
 	L11:
 		p.Pos = x10
 	L12:
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 57) {
 			p.ExpectOrdinary(p.Pos, 60)
 			goto L9

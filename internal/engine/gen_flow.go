@@ -717,8 +717,6 @@ func (p *flowPrinter) peekStmt(s *flow.Peek) {
 	if p.dead {
 		return
 	}
-	// The statement that a label stands before is not compacted.
-	compact := p.b.Len() != p.labelEnd
 	st := &varStmt{targets: []*flow.Var{s.Ch, s.Size, s.OK}}
 	st.text = func(dead func(*flow.Var) bool) string {
 		name := func(v *flow.Var) string {
@@ -729,11 +727,8 @@ func (p *flowPrinter) peekStmt(s *flow.Peek) {
 		}
 		ch, size, ok := name(s.Ch), name(s.Size), name(s.OK)
 		controlled := fmt.Sprintf("if %s {\n%s%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[3]s, %[4]s, %[5]s = p.Peek()\n}\n", guard, work, ch, size, ok)
-		if compact {
-			// The inlined read and its fallback are one call of the runtime, which the compiler inlines.
-			return p.g.form(controlled, fmt.Sprintf("%s, %s, %s = p.NextOrdinary()\n", ch, size, ok))
-		}
-		return p.g.form(controlled, fmt.Sprintf("if %s {\n%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[2]s, %[3]s, %[4]s = p.PeekOrdinary()\n}\n", guard, ch, size, ok))
+		// The inlined read and its fallback are one call of the runtime, which the compiler inlines.
+		return p.g.form(controlled, fmt.Sprintf("%s, %s, %s = p.NextOrdinary()\n", ch, size, ok))
 	}
 	p.b.WriteString(p.vars.add(st))
 }
