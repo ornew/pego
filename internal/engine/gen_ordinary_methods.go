@@ -364,36 +364,3 @@ func multilineLiteral(root goast.Node) bool {
 	})
 	return found
 }
-
-// stripNoControlWork removes every remaining step charge statement, in the typed constructors and
-// converters and the closures of actions. A parser generated without work controls never has a
-// control, so the charges would do nothing.
-func stripNoControlWork(src []byte) ([]byte, error) {
-	fset := token.NewFileSet()
-	file, err := goparser.ParseFile(fset, "", src, goparser.ParseComments)
-	if err != nil {
-		return nil, err
-	}
-	type span struct{ from, to int }
-	var cuts []span
-	goast.Inspect(file, func(n goast.Node) bool {
-		e, ok := n.(*goast.ExprStmt)
-		if !ok {
-			return true
-		}
-		if c, ok := e.X.(*goast.CallExpr); ok && len(c.Args) == 0 {
-			if sel, ok := c.Fun.(*goast.SelectorExpr); ok && sel.Sel.Name == "StepWork" && ordinaryReceiver(sel.X) {
-				cuts = append(cuts, span{fset.Position(e.Pos()).Offset, fset.Position(e.End()).Offset})
-			}
-		}
-		return true
-	})
-	var out []byte
-	at := 0
-	for _, c := range cuts {
-		out = append(out, src[at:c.from]...)
-		at = c.to
-	}
-	out = append(out, src[at:]...)
-	return format.Source(out)
-}

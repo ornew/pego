@@ -427,11 +427,6 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		if whole, err = specializeOrdinaryMethods(whole, gen.methods.String(), guard, !opts.WorkControls); err != nil {
 			return nil, err
 		}
-		if !opts.WorkControls {
-			if whole, err = stripNoControlWork(whole); err != nil {
-				return nil, err
-			}
-		}
 	}
 	body := shakeVars(strings.TrimPrefix(string(whole), "package "+opts.Package+"\n"))
 	var tp *typesPackage
@@ -439,11 +434,6 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	if opts.Types {
 		if typesFile, tp, err = opts.typesFile(typesBody); err != nil {
 			return nil, err
-		}
-		if !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization {
-			if typesFile, err = stripNoControlWork(typesFile); err != nil {
-				return nil, err
-			}
 		}
 	}
 	body, err = qualifyRuntime(opts.runtimeImport(), body, info, tp)
