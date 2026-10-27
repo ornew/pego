@@ -465,7 +465,6 @@ func init() {
 	trules = rt.NewTRules(rules)
 	defer tinit()
 	trules[0].Entry = u0
-
 }
 
 func e1(p *rt.Parser) (*rt.Node, bool) {

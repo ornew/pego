@@ -5,16 +5,23 @@ import (
 	"sort"
 )
 
-// A rule of the Node table (rules) or the recognizer table (recRules) has a Go body and the
-// functions that body calls. The generator prints them only for the rules that something can enter:
-// the start rules, which the generated entry points and Starts reach, and the rules a printed body
-// calls. A rule that the compiler routes through its value-free twin (compile.go, the Ref case) has
+// A rule of the Node table (rules), the recognizer table (recRules) or the typed table (trules) has
+// a Go body and the functions that body calls. The generator prints them only for the rules that
+// something can enter: the start rules, which the generated entry points and Starts reach (for the
+// typed table, the start rules whose typed entry point calls the rule's Entry), and the rules a
+// printed body calls. A rule that the compiler routes through its value-free twin (compile.go, the Ref case) has
 // an original that only value contexts call, so a rule referenced only from value-free contexts has
 // an original body that nothing calls, and so on transitively.
 //
 // generate finds the reachable rules with a first pass whose calls (ruleCall) are the edges, and a
-// second pass leaves out the others. The rule tables still list every rule: only the Body, Action
-// and OperatorsRule assignments and the functions of an unreachable rule are left out.
+// second pass leaves out the others. The rule tables still list every rule: only the Body, Action,
+// Entry and OperatorsRule assignments and the functions of an unreachable rule are left out. What a
+// left-out rule would have declared (its expectations, literals, class tables and typed helpers) is
+// not declared either, so the IDs of what remains are those of the second pass.
+//
+// The expectation table that the Node and recognizer tables fix (descs) is the one of the first
+// pass up to the end of those tables, because a left-out rule of them keeps its table row. The
+// typed table has no such rows, so the expectations of its left-out rules are not in any table.
 
 // ruleKey names what of a rule is entered: its slot in the rule table (the Body that p.Call and
 // InvokePlain run), or the wrapper function of a plain rule, which a call of it (ruleCall) uses
@@ -38,7 +45,7 @@ type liveRules struct {
 	edges  map[ruleKey]map[ruleKey]bool // the rules a rule's printed body calls, from log
 	scopes map[ruleKey][]string         // the capture layout of each rule, which its table row lists
 	descs  []string                     // the expectation table, whose IDs the printed bodies keep
-	roots  []ruleKey                    // the start rules of both tables
+	roots  []ruleKey                    // the start rules of the tables and the entries of the typed table
 	reach  map[ruleKey]bool
 }
 
@@ -95,7 +102,10 @@ func (l *liveRules) missingBodies(table string, printed map[ruleKey]bool) []rule
 
 // pruned reports whether the second pass leaves out everything of rule r of the current table.
 func (g *generator) pruned(r *rule) bool {
-	return g.live != nil && g.table != "trules" && !g.live.reach[ruleKey{g.table, r.id, false}] && !g.live.reach[ruleKey{g.table, r.id, true}]
+	if g.live == nil || g.keepTableRules && g.table != "trules" {
+		return false
+	}
+	return !g.live.reach[ruleKey{g.table, r.id, false}] && !g.live.reach[ruleKey{g.table, r.id, true}]
 }
 
 // slotReached reports whether the Body of rule r is printed: something enters the rule through its
@@ -114,9 +124,6 @@ func (g *generator) endRule() { g.emittingOK = false }
 // noteCall records a call of r from the body being generated, through its wrapper or its slot, and
 // checks in the second pass that the callee was not left out.
 func (g *generator) noteCall(r *rule, wrapper bool) {
-	if g.table == "trules" {
-		return
-	}
 	to := ruleKey{g.table, r.id, wrapper}
 	if g.collect != nil {
 		from := rootKey
@@ -125,7 +132,7 @@ func (g *generator) noteCall(r *rule, wrapper bool) {
 		}
 		g.collect.log = append(g.collect.log, ruleEdge{from, to})
 	}
-	if g.live != nil && !g.live.reach[to] && g.reachErr == nil {
+	if g.live != nil && !g.live.reach[to] && g.reachErr == nil && (g.table == "trules" || !g.keepTableRules) {
 		g.reachErr = fmt.Errorf("internal error: a generated call reaches the rule %s of %s, whose body is left out", r.name, g.table)
 	}
 }
@@ -150,10 +157,10 @@ func (g *generator) finishReach(prog, rec *Program) error {
 				roots = append(roots, ruleKey{"recRules", rec.byName[name].id, false})
 			}
 		}
+		roots = append(roots, g.typedRoots...)
 		g.collect.roots = roots
 		g.collect.buildEdges()
 		g.collect.reachFrom(roots)
-		g.collect.descs = append([]string(nil), g.descs...)
 	}
 	if g.live == nil {
 		return nil
@@ -162,6 +169,9 @@ func (g *generator) finishReach(prog, rec *Program) error {
 		return g.reachErr
 	}
 	for _, table := range []string{"rules", "recRules"} {
+		if g.keepTableRules {
+			break // the Node and recognizer rules are all kept
+		}
 		if miss := g.live.missingBodies(table, g.bodySet); len(miss) > 0 {
 			return fmt.Errorf("internal error: the reachable rule slot %s[%d] has no Body", table, miss[0].id)
 		}

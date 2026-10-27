@@ -351,7 +351,6 @@ func init() {
 			}, Value: sh5}}},
 	}
 	trules[1].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[1], min) }
-
 }
 
 func e1(p *rt.Parser) (*rt.Node, bool) {

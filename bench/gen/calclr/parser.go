@@ -317,9 +317,7 @@ func init() {
 	defer tinit()
 	trules[0].Entry = u0
 	trules[1].Body = func(p *rt.TParser, _ int) (any, bool) { return e31(p) }
-
 	trules[3].Body = func(p *rt.TParser, _ int) (any, bool) { return e35(p) }
-
 }
 
 func e1(p *rt.Parser) (*rt.Node, bool) {

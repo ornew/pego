@@ -15,11 +15,11 @@ every call through the rule slot, so there the twins and originals follow the ca
 same way. On the 14 grammars of the output manifest, between 34% and 44% of the generated Node
 source belonged to such bodies.
 
-The generator now runs twice. The first pass, which stops after the Node and recognizer tables, records, for each rule table (`rules`,
-`recRules`), the rule slots and wrapper functions that each printed body calls (`ruleCall`),
-dropping the calls of attempts that were rolled back. The roots are the start rules of both
-tables, which the generated entry points and `Starts` reach, and the calls generated outside a
-rule body, which are those of the stream body. A worklist over the recorded calls gives the
+The generator runs twice. The first pass records, for each rule table (`rules`,
+`recRules`, and `trules` of typed output), the rule slots and wrapper functions that each printed body calls (`ruleCall`),
+dropping the calls of attempts that were rolled back. The roots are the start rules of the Node and recognizer
+tables, which the generated entry points and `Starts` reach, the typed rules whose `Entry` a typed entry point runs,
+and the calls generated outside a rule body, which are those of the stream body. A worklist over the recorded calls gives the
 entered (rule, slot or wrapper) pairs. The second pass prints only those:
 
 - a rule with neither its slot nor its wrapper entered has no body, no helper functions and no
@@ -27,13 +27,22 @@ entered (rule, slot or wrapper) pairs. The second pass prints only those:
 - a plain rule that is called only through its wrapper keeps the wrapper and the helpers it
   uses, and has no `Body` assignment and, when the wrapper is the direct form, no body
   function;
-- the rule table rows, the expectation table and the capture layouts are the same as before, so
-  every ID in the printed code keeps its value.
+- the rule table rows, the expectation table of the Node and recognizer tables and their capture layouts are the
+  same as before, so every ID in the printed Node and recognizer code keeps its value;
+- a typed rule that nothing enters has no `Body`, `Action`, `Entry`, method, capture layout, expectation, literal, class
+  table or term. The typed table has no rows of its own to keep (`NewTRules` builds it from the rule table), so the
+  expectations and tables that only such rules would have used are not declared and the IDs of the rest are numbered
+  without them. A typed rule has an `Entry` only if a typed entry point runs it;
+- the fixed conversion helpers (`astInt`, `astKid`, `astNew`, ...) and the package variables of a rule body (capture
+  layouts, literals, shapers, class tables and steps) are kept only if the printed code names them, directly or through
+  another kept variable (`gen_shake.go`; a lexical scan of the identifiers, which can keep an unused one and never drops a
+  used one). The scan runs after the passes that edit the text of the functions, which can leave a variable unused.
 
 The second pass fails generation if a printed call reaches a rule that was left out, and if an
 entered slot has no printed `Body`, so a missing root cannot become a nil `Body` at run time.
-Typed-only output is generated in one pass as before: it prints few Node functions, and its
-typed code shares the literals and shapers that their generation declares.
+A typed-only parser has no Node or recognizer rule to leave out when its entry points do not convert Nodes. When they
+do (an action reads a field of a struct), it prints the Node rules that the entry points reach, under the same checks as
+any other output, and the typed rules that nothing enters are left out.
 
 ## Results
 
@@ -77,13 +86,45 @@ decisions printed by `-gcflags=-m` differ only by the removed functions. What ch
 addresses of the functions, because 22 functions around them are gone, so the difference is
 attributed to code layout; it was not reproduced as a difference in the code that runs.
 
-Generation time of `pego gen` (five runs each, medians): the first pass stops after the Node and
-recognizer tables, so the output is generated once in full. duckdb Node with recognizer
-6.39 s before and 3.85 s after, duckdb typed 7.13 s and 5.21 s, golang Node with recognizer
+Generation time of `pego gen` for the Node and recognizer tables (five runs each, medians), compared with a generator
+that prints every rule: duckdb Node with recognizer 6.39 s before and 3.85 s after, duckdb typed 7.13 s and 5.21 s, golang Node with recognizer
 1.77 s and 1.22 s, golang typed 1.59 s and 1.24 s: the smaller output costs less to format.
+
+### Typed tables
+
+The typed rules are part of the two passes, and the fixed helpers and one-line package variables are kept only if
+named. The output equals that of a generator that prints all typed rules and then removes, from the printed source, what
+only an `Entry` of a rule other than a start rule could reach (a parse and format of the whole file), except that the
+expectations, literals, shapers, class tables and capture layouts of left-out rules are not numbered; that removal finds
+nothing in the output of any of the ten checked-in parsers. Bytes of `parser.go` (all rules printed then removed, as
+printed now): cel 117,685 and 117,673; csv 48,274 and 48,273; cue 409,807 and 409,786; duckdb 1,651,194 and 1,651,168;
+golang 540,810 and 540,772; json 116,593 and 116,592; python 626,651 and 626,610; typescript 984,343 and 984,251; xml
+636,623 and 636,622; yaml 1,171,445 and 1,171,435. The tables change little because the removal already took the code;
+what changes is the numbering and one pass over the source, which is gone. The Node outputs of the manifest shrink where
+the scan finds an unused one-line variable (cue node: 16 unused work-class range tables, 409,246 to 388,932 bytes).
+
+Generation time of `pego gen` (five runs each, medians, same machine and session), compared with that generator:
+duckdb typed-only 2.71 s before, 1.90 s after; yaml with types, recognizer and work controls 1.09 s before,
+0.61 s after.
+
+Speed was checked on the generated yaml and duckdb parsers and on the benchmarks of `bench` that do not use
+them (a control), eleven alternating rounds, `-benchtime=2s`, medians, as the change against the build before
+(the spread of the rounds is 3 to 6 %, 12 % for the CSV standard-library control):
+
+| Benchmark | Before | Change |
+|:--|--:|--:|
+| yaml Parse | 18.43 ms | +0.3% |
+| yaml Recognize | 10.35 ms | -0.8% |
+| yaml ParseAST | 11.92 ms | -0.7% |
+| duckdb ParseAST | 61.03 ms | -0.5% |
+| Incremental document, closure | 146.8 us | +1.9% |
+| Stream, closure | 85.9 ms | +2.1% |
+
+The other Incremental and Stream cases differ by -0.2% to +1.4%; `encoding/csv`, which no change touches,
+differs by -1.9%.
 
 ## Limits
 
-Only the Node and recognizer tables of the Go generator are pruned. The typed tables (`trules`)
-and the TypeScript generator, which has the same twin redirect, are not. Typed-only output is
-generated in one pass and is unchanged.
+The Go generator prunes its Node, recognizer and typed tables; the TypeScript generator, which has the same
+twin redirect, does not. The expectation table that the Node and recognizer tables fix is kept whole, also in
+typed-only output, where the Node functions are not printed or only those that the entry points reach are.

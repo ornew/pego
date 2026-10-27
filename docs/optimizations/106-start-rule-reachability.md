@@ -13,17 +13,17 @@ and standalone methods stayed in the source, including those no call site names
 because the grammar uses the rule only through its value form or only inside other
 rules' inlined bodies.
 
-The generator now drops the `Entry` registrations of rules that no function outside
-`init` names by index (the start rules, which `ParseAST` and `ParseRuleAST` name),
-and then drops the unexported functions and package variables that nothing
-reachable names. A function counts as naming another when it contains the
-identifier, unless the parser resolves that identifier to a local variable or
-parameter. Generated bodies name their locals `v<N>` and `x<N>`, the same names as
-package-level functions, so counting the locals would keep functions that no call
-names, along with everything they reach. Identifiers that the parser does not resolve,
-such as selectors and keys, still count, which keeps a little more than needed and
-never less. If anything reads the table other than by a constant index, nothing is
-dropped.
+The generator registers an `Entry` only for the rules that a typed entry point
+runs (the start rules, which `ParseAST` and `ParseRuleAST` name). A first pass records
+which typed rules the entry points and the printed typed bodies call, and the second
+pass prints only those rules ([record 120](120-unreachable-rule-bodies.md)): a rule
+that no call names has no method, scope, class table or term, and the fixed
+conversion helpers that no typed code names are left out. The Results below measure
+an earlier form of the mechanism that worked on the printed source: it dropped the
+registrations and then the unexported functions and package variables that nothing
+reachable named, ignoring identifiers that the parser resolved to a local variable or
+parameter, because generated bodies name their locals `v<N>` and `x<N>`, the same names
+as package-level functions.
 
 ## Results
 
@@ -74,10 +74,11 @@ machine and are not reported.
 
 ## Correctness and Tradeoffs
 
-Unit tests prune synthetic source (start rule kept, unreachable function and
-variable dropped, a read of the whole table keeps everything, a local variable or
-parameter keeps nothing, pruning is idempotent). The engine tests, the root suite and `parsers/test.sh` pass with
-pruned output.
+The engine tests check that the typed output sets one `Entry` (the start rule's), that
+it leaves out the methods of a rule no start rule reaches, that a callee the first pass
+left out fails generation, and that the parser with the unreached rules left out
+returns what the one that keeps them returns. The engine tests, the root suite and
+`parsers/test.sh` pass.
 
 ## Decision and Limits
 

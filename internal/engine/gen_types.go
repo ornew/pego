@@ -68,10 +68,18 @@ func (g *generator) typedGo(start *rule, conv bool) (typedOutput, error) {
 `
 	st := ruleType(start)
 	directStart := !conv && t.runtimeOK(st)
+	enter := func(r *rule) {
+		g.typedRoots = append(g.typedRoots, ruleKey{"trules", r.id, true})
+		if g.typedEntry == nil {
+			g.typedEntry = map[int]bool{}
+		}
+		g.typedEntry[r.id] = true
+	}
 	g.directTypedDocument = g.document && directStart
 	needTyped, needNodes := false, false
 	if directStart {
 		needTyped = true
+		enter(start)
 		result := t.dconv(st, "v", "a")
 		fmt.Fprintf(&entries, `%s// It builds the values directly, without the nodes Parse returns.
 func ParseAST(input string, opts ...ParseOption) (%s, error) {
@@ -206,6 +214,7 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 		}
 		if !conv && t.runtimeOK(x) {
 			needTyped = true
+			enter(r)
 			result := t.dconv(x, "v", "a")
 			fmt.Fprintf(&named, "\t\ta := &tslabs{}\n\t\treturn TParseResolved(trules[%d], input, o, a, func(v any) %s { return %s })\n", r.id, t.goType(x), result)
 		} else {
@@ -220,23 +229,26 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 		}
 	}
 	named.WriteString("\tdefault:\n\t\treturn nil, pegoGrammar.StartError(name)\n\t}\n}\n")
-	b.WriteString(astHelpers)
+	units := append([]shakeUnit(nil), astHelperUnits...)
 	bootstrap := !g.disableTypedOutputBootstrap
-	if g.disableTypedObjectSlabs {
-		b.WriteString(astIndividualObjectHelper)
-	} else if bootstrap {
-		b.WriteString(astBootstrapObjectHelper)
-	} else {
-		b.WriteString(astObjectSlabHelper)
+	switch {
+	case g.disableTypedObjectSlabs:
+		units = append(units, shakeUnit{"astNew", astIndividualObjectHelper})
+	case bootstrap:
+		units = append(units, shakeUnit{"astNew", astBootstrapObjectHelper})
+	default:
+		units = append(units, shakeUnit{"astNew", astObjectSlabHelper})
 	}
-	if g.disableTypedListSlabs {
-		b.WriteString(astIndividualListHelper)
-	} else if bootstrap {
-		b.WriteString(astBootstrapListHelper)
-	} else {
-		b.WriteString(astListSlabHelper)
+	switch {
+	case g.disableTypedListSlabs:
+		units = append(units, shakeUnit{"astSlice", astIndividualListHelper})
+	case bootstrap:
+		units = append(units, shakeUnit{"astSlice", astBootstrapListHelper})
+	default:
+		units = append(units, shakeUnit{"astSlice", astListSlabHelper})
 	}
 	if g.directTypedDocument {
+		enter(start)
 		_ = t.dconv(st, "v", "a")
 	}
 	if needTyped {
@@ -292,7 +304,17 @@ func CloneAST(value %s) %s {
 	if err := t.checkTypesNames(); err != nil {
 		return typedOutput{}, err
 	}
-	return typedOutput{parser: b.String(), types: tb.String(), needNodes: needNodes}, nil
+	// The helpers come first; only those that the typed code names are kept.
+	code := b.String()
+	kept := keptUnits(units, code, g.methods.String(), g.init.String(), g.vars.String())
+	var parser strings.Builder
+	for i, u := range units {
+		if kept[i] {
+			parser.WriteString(u.text)
+		}
+	}
+	parser.WriteString(code)
+	return typedOutput{parser: parser.String(), types: tb.String(), needNodes: needNodes}, nil
 }
 
 type typedGen struct {
@@ -1319,11 +1341,16 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 	b.WriteString("}\n\nfunc (a *tslabs) SetWorkControl(c *WorkControl) { a.control = c }\nfunc (a *tslabs) stepWork() { if WorkControlsEnabled && a.control != nil { a.control.Charge(0, 1) } }\n\n")
 }
 
-// astHelpers are the conversion helpers of typed values.
-const astHelpers = `func astNode(v any) *Node { n, _ := v.(*Node); return n }
-func astIsNil(v any) bool  { n, ok := v.(*Node); return v == nil || ok && n == nil }
+// astHelperUnits are the conversion helpers of typed values; typedGo keeps those that the typed
+// code names (shakeUnit). The object and list helpers that follow them are chosen by the options.
+var astHelperUnits = []shakeUnit{
+	{"astNode", `func astNode(v any) *Node { n, _ := v.(*Node); return n }
 
-// astKid returns the value of element i of a tuple node's children (nil if there is none).
+`},
+	{"astIsNil", `func astIsNil(v any) bool  { n, ok := v.(*Node); return v == nil || ok && n == nil }
+
+`},
+	{"astKid", `// astKid returns the value of element i of a tuple node's children (nil if there is none).
 func astKid(kids []*Node, i int) any {
 	if i < len(kids) {
 		return UnboxNode(kids[i])
@@ -1331,30 +1358,44 @@ func astKid(kids []*Node, i int) any {
 	return nil
 }
 
-// The value of a rule, and a list element, holds an int, string or bool in a box.
+`},
+	{"astInt", `// astInt returns the int that the box of a rule value or a list element holds.
 func astInt(v any) int       { i, _ := UnboxValue(v).(int); return i }
+
+`},
+	{"astString", `// astString returns the string that the box of a rule value or a list element holds.
 func astString(v any) string { s, _ := UnboxValue(v).(string); return s }
+
+`},
+	{"astBool", `// astBool returns the bool that the box of a rule value or a list element holds.
 func astBool(v any) bool     { x, _ := UnboxValue(v).(bool); return x }
-func astPtrInt(v any) *int {
+
+`},
+	{"astPtrInt", `func astPtrInt(v any) *int {
 	if i, ok := UnboxValue(v).(int); ok {
 		return &i
 	}
 	return nil
 }
-func astPtrString(v any) *string {
+
+`},
+	{"astPtrString", `func astPtrString(v any) *string {
 	if s, ok := UnboxValue(v).(string); ok {
 		return &s
 	}
 	return nil
 }
-func astPtrBool(v any) *bool {
+
+`},
+	{"astPtrBool", `func astPtrBool(v any) *bool {
 	if x, ok := UnboxValue(v).(bool); ok {
 		return &x
 	}
 	return nil
 }
 
-// astChunk owns unused values and the next allocation size for one type.
+`},
+	{"astChunk", `// astChunk owns unused values and the next allocation size for one type.
 // Handed-out values are never reused, even when a parse discards them.
 type astChunk[T any] struct {
 	free []T
@@ -1378,7 +1419,8 @@ func (s *astChunk[T]) grow(n, initial, limit int) {
 	}
 }
 
-`
+`},
+}
 
 const astObjectSlabHelper = `// astNew returns a new zero value from a chunk that grows from 8 to 256 values.
 func astNew[T any](s *astChunk[T]) *T {

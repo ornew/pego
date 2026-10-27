@@ -25,12 +25,12 @@ The node representation (`Node`) and the JSON format are the same as the engine'
 
 ### Reachable Rules
 
-A generated Node or recognizer parser prints the body of a rule only if something can enter it:
-a start rule, or a rule that a printed body calls through its slot or its wrapper. A rule that
+A generated Node, recognizer or typed parser prints the body of a rule only if something can enter it:
+a start rule (for the typed table, a start rule that a typed entry point runs), or a rule that a printed body calls through its slot or its wrapper. A rule that
 is referenced only from value-free contexts is entered through its twin, so its original body is
 left out, and so are the bodies that only it calls. The generator finds the entered rules in a
-first pass over the Node and recognizer tables and prints the second pass from them; it fails if a printed call reaches a rule that
-was left out. The typed tables and the TypeScript generator are not pruned. See [record 120](../../optimizations/120-unreachable-rule-bodies.md).
+first pass over the Node, recognizer and typed tables and prints the second pass from them; it fails if a printed call reaches a rule that
+was left out. What a left-out typed rule would have declared (its expectations, literals, class tables and typed helpers) is not declared either. The TypeScript generator is not pruned. See [record 120](../../optimizations/120-unreachable-rule-bodies.md).
 
 ### Direct Rules
 

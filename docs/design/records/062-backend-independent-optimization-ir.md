@@ -213,7 +213,7 @@ func i0(p *pegort.TParser) (any, bool) {
 
 The post-passes also dominate generation time. `GenerateGo` with `WithTypes()` on the DuckDB grammar took
 16.6 s per run (three runs); of the CPU samples under `generate`, `qualifyRuntime` had 51.6 %,
-`specializeOrdinaryMethods` 24.5 %, `pruneTypedEntries` 8.6 %, `stripNoControlWork` 7.5 % and the final
+`specializeOrdinaryMethods` 24.5 %, the removal of unreached typed entries 8.6 %, `stripNoControlWork` 7.5 % and the final
 `go/format.Source` 5.4 %; compilation and emission had less than 2 %. `qualifyRuntime` inserts each
 qualifier by copying the rest of the source, which is quadratic and can be fixed independently of this
 design. `pego gen -types -typed-only` on the same grammar took 4.0 s; with Node output as well it took 14.9
@@ -581,7 +581,6 @@ separate interpreter is maintained.
 | Terminal programs (`gen_terminal.go`) | `Terminal` nodes; the emitter keeps the runtime table format |
 | Recognizer program and recognize-mode modules | Recognition specialization of Core IR in each family; bytecode emitted from it |
 | Helper sharing by printed body ([record 090](../../optimizations/090-share-identical-generated-helpers.md)) | Structural sharing of identical Flow IR functions before printing |
-| `pruneTypedEntries` | Reachability from start rules on Core IR |
 | Compile-cancellation copies (`…Controlled`) | The pass driver polls the compile control between and within passes |
 
 ### Compatibility and Backend Support
@@ -621,7 +620,7 @@ stage of its first consumer, so its differential tests and negative controls run
    and Operators Rules are rejected by `flow.LocalRule`, but they are printed through the framed-body and
    Operators Rule lowering. The typed dispatch does not fall back: a typed rule or Operators Rule line that Flow
    IR does not print makes generation fail. Then remove the typed parts of the Go term
-   lowering, `gen_prune.go` and the typed uses of the ordinary-method passes.
+   lowering and the typed uses of the ordinary-method passes.
 2. **Go Node, recognizer, Document and stream output**, with the recognition specialization. The recognizer's
    table writes its actions without projections, so the decision goldens freeze no terms for its rules. Gate as
    stage 1 plus the Document and stream tests and the Node, recognition, Document and stream benchmarks. The

@@ -43,9 +43,11 @@ func ParseRule(name, input string, opts ...rt.ParseOption) (*rt.Node, error) {
 	return rt.RunParseResolved(r, input, o)
 }
 
-func astInt(v any) int       { i, _ := rt.UnboxValue(v).(int); return i }
+func astInt(v any) int { i, _ := rt.UnboxValue(v).(int); return i }
+
 func astString(v any) string { s, _ := rt.UnboxValue(v).(string); return s }
-func astBool(v any) bool     { x, _ := rt.UnboxValue(v).(bool); return x }
+
+func astBool(v any) bool { x, _ := rt.UnboxValue(v).(bool); return x }
 
 type astChunk[T any] struct {
 	free      []T
@@ -986,8 +988,7 @@ var scope313 = []string{"e"}
 var scope315 = []string{"e"}
 var scope329 = []string{"sp"}
 var scope330 = []string{"sp"}
-
-var scope336 = []string{"e"}
+var scope335 = []string{"e"}
 
 func init() {
 	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
@@ -1487,7 +1488,6 @@ func init() {
 	trules = rt.NewTRules(rules)
 	defer tinit()
 	trules[0].Entry = s0
-
 }
 
 func e1(p *rt.Parser) (*rt.Node, bool) {
@@ -47081,8 +47081,8 @@ func i72(p *rt.TParser) (any, bool) {
 		p.Where = "properties_node"
 		v = func() any {
 			return func() any {
-				f_332 := func() any { return k4 }()
-				return tmk_Scalar(c, true, f_332, nil, nil, nil)
+				f_331 := func() any { return k4 }()
+				return tmk_Scalar(c, true, f_331, nil, nil, nil)
 			}()
 		}()
 		p.Depth--
@@ -47135,8 +47135,8 @@ L3:
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_332 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Scalar(c, true, f_332, nil, nil, nil)
+			f_331 := func() any { c.P.StepWork(); return k4 }()
+			return tmk_Scalar(c, true, f_331, nil, nil, nil)
 		}()
 	}()
 	p.Depth--
@@ -47470,10 +47470,10 @@ func i76(p *rt.TParser) (any, bool) {
 		p.Where = "c_flow_sequence"
 		v = func() any {
 			return func() any {
-				f_333 := func() any { return k2 }()
-				f_334 := func() any { return any(true) }()
-				f_335 := func() any { return c.Concat(func() any { return k20 }()) }()
-				return tmk_Sequence(c, true, f_333, f_334, f_335)
+				f_332 := func() any { return k2 }()
+				f_333 := func() any { return any(true) }()
+				f_334 := func() any { return c.Concat(func() any { return k20 }()) }()
+				return tmk_Sequence(c, true, f_332, f_333, f_334)
 			}()
 		}()
 		p.Depth--
@@ -47629,10 +47629,10 @@ L25:
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_333 := func() any { c.P.StepWork(); return k2 }()
-			f_334 := func() any { c.P.StepWork(); return any(true) }()
-			f_335 := func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return k20 }()) }()
-			return tmk_Sequence(c, true, f_333, f_334, f_335)
+			f_332 := func() any { c.P.StepWork(); return k2 }()
+			f_333 := func() any { c.P.StepWork(); return any(true) }()
+			f_334 := func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return k20 }()) }()
+			return tmk_Sequence(c, true, f_332, f_333, f_334)
 		}()
 	}()
 	p.Depth--
@@ -47720,7 +47720,7 @@ func i77(p *rt.TParser) (any, bool) {
 		L24_ordinary:
 			v25 = p.NewNodeOrdinary("tuple", x15, p.Pos, x16)
 			v26 = p.ScopeValue(sh4, v25, x12)
-			v27 = p.AttachCaptures(v26, scope336, []any{k13}, x12, p.Pos)
+			v27 = p.AttachCaptures(v26, scope335, []any{k13}, x12, p.Pos)
 			p.PushKid(v27)
 			if p.Pos == x12 {
 				break
@@ -47756,8 +47756,8 @@ func i77(p *rt.TParser) (any, bool) {
 			return func() any {
 				b := len(c.P.KidStack)
 				c.PushList(func() any { return k1 }())
-				c.PushMap(func() any { return k7 }(), func(l_337 any) any {
-					return func() any { return c.Member(func() any { return l_337 }(), "$e") }()
+				c.PushMap(func() any { return k7 }(), func(l_336 any) any {
+					return func() any { return c.Member(func() any { return l_336 }(), "$e") }()
 				})
 				return c.EndList(b)
 			}()
@@ -47844,7 +47844,7 @@ L6:
 	L24:
 		v25 = p.NewNode("tuple", x15, p.Pos, x16)
 		v26 = p.ScopeValue(sh4, v25, x12)
-		v27 = p.AttachCaptures(v26, scope336, []any{k13}, x12, p.Pos)
+		v27 = p.AttachCaptures(v26, scope335, []any{k13}, x12, p.Pos)
 		p.PushKid(v27)
 		if p.Pos == x12 {
 			break
@@ -47887,8 +47887,8 @@ L31:
 		return func() any {
 			b := len(c.P.KidStack)
 			c.PushList(func() any { c.P.StepWork(); return k1 }())
-			c.PushMap(func() any { c.P.StepWork(); return k7 }(), func(l_337 any) any {
-				return func() any { c.P.StepWork(); return c.Member(func() any { c.P.StepWork(); return (l_337) }(), "$e") }()
+			c.PushMap(func() any { c.P.StepWork(); return k7 }(), func(l_336 any) any {
+				return func() any { c.P.StepWork(); return c.Member(func() any { c.P.StepWork(); return (l_336) }(), "$e") }()
 			})
 			return c.EndList(b)
 		}()
@@ -48126,10 +48126,10 @@ func i79(p *rt.TParser) (any, bool) {
 		p.Where = "c_flow_mapping"
 		v = func() any {
 			return func() any {
-				f_338 := func() any { return k2 }()
-				f_339 := func() any { return any(true) }()
-				f_340 := func() any { return c.Concat(func() any { return k20 }()) }()
-				return tmk_Mapping(c, true, f_338, f_339, f_340)
+				f_337 := func() any { return k2 }()
+				f_338 := func() any { return any(true) }()
+				f_339 := func() any { return c.Concat(func() any { return k20 }()) }()
+				return tmk_Mapping(c, true, f_337, f_338, f_339)
 			}()
 		}()
 		p.Depth--
@@ -48285,10 +48285,10 @@ L25:
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_338 := func() any { c.P.StepWork(); return k2 }()
-			f_339 := func() any { c.P.StepWork(); return any(true) }()
-			f_340 := func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return k20 }()) }()
-			return tmk_Mapping(c, true, f_338, f_339, f_340)
+			f_337 := func() any { c.P.StepWork(); return k2 }()
+			f_338 := func() any { c.P.StepWork(); return any(true) }()
+			f_339 := func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return k20 }()) }()
+			return tmk_Mapping(c, true, f_337, f_338, f_339)
 		}()
 	}()
 	p.Depth--
@@ -48851,9 +48851,9 @@ func i84(p *rt.TParser) (any, bool) {
 		p.Where = "empty_pair"
 		v = func() any {
 			return func() any {
-				f_341 := func() any { return k1 }()
-				f_342 := func() any { return k4 }()
-				return tmk_Pair(c, true, f_341, f_342)
+				f_340 := func() any { return k1 }()
+				f_341 := func() any { return k4 }()
+				return tmk_Pair(c, true, f_340, f_341)
 			}()
 		}()
 		p.Depth--
@@ -48888,9 +48888,9 @@ func i84(p *rt.TParser) (any, bool) {
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_341 := func() any { c.P.StepWork(); return k1 }()
-			f_342 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Pair(c, true, f_341, f_342)
+			f_340 := func() any { c.P.StepWork(); return k1 }()
+			f_341 := func() any { c.P.StepWork(); return k4 }()
+			return tmk_Pair(c, true, f_340, f_341)
 		}()
 	}()
 	p.Depth--
@@ -49057,9 +49057,9 @@ func i86(p *rt.TParser) (any, bool) {
 		p.Where = "ns_flow_map_yaml_key_entry"
 		v = func() any {
 			return func() any {
-				f_343 := func() any { return k1 }()
-				f_344 := func() any { return k4 }()
-				return tmk_Pair(c, true, f_343, f_344)
+				f_342 := func() any { return k1 }()
+				f_343 := func() any { return k4 }()
+				return tmk_Pair(c, true, f_342, f_343)
 			}()
 		}()
 		p.Depth--
@@ -49110,9 +49110,9 @@ L8:
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_343 := func() any { c.P.StepWork(); return k1 }()
-			f_344 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Pair(c, true, f_343, f_344)
+			f_342 := func() any { c.P.StepWork(); return k1 }()
+			f_343 := func() any { c.P.StepWork(); return k4 }()
+			return tmk_Pair(c, true, f_342, f_343)
 		}()
 	}()
 	p.Depth--
@@ -49253,9 +49253,9 @@ func i88(p *rt.TParser) (any, bool) {
 		p.Where = "c_ns_flow_map_empty_key_entry"
 		v = func() any {
 			return func() any {
-				f_345 := func() any { return k1 }()
-				f_346 := func() any { return k4 }()
-				return tmk_Pair(c, true, f_345, f_346)
+				f_344 := func() any { return k1 }()
+				f_345 := func() any { return k4 }()
+				return tmk_Pair(c, true, f_344, f_345)
 			}()
 		}()
 		p.Depth--
@@ -49290,9 +49290,9 @@ func i88(p *rt.TParser) (any, bool) {
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_345 := func() any { c.P.StepWork(); return k1 }()
-			f_346 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Pair(c, true, f_345, f_346)
+			f_344 := func() any { c.P.StepWork(); return k1 }()
+			f_345 := func() any { c.P.StepWork(); return k4 }()
+			return tmk_Pair(c, true, f_344, f_345)
 		}()
 	}()
 	p.Depth--
@@ -49585,9 +49585,9 @@ func i91(p *rt.TParser) (any, bool) {
 		p.Where = "c_ns_flow_map_json_key_entry"
 		v = func() any {
 			return func() any {
-				f_347 := func() any { return k4 }()
-				f_348 := func() any { return k7 }()
-				return tmk_Pair(c, true, f_347, f_348)
+				f_346 := func() any { return k4 }()
+				f_347 := func() any { return k7 }()
+				return tmk_Pair(c, true, f_346, f_347)
 			}()
 		}()
 		p.Depth--
@@ -49662,9 +49662,9 @@ L11:
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_347 := func() any { c.P.StepWork(); return k4 }()
-			f_348 := func() any { c.P.StepWork(); return k7 }()
-			return tmk_Pair(c, true, f_347, f_348)
+			f_346 := func() any { c.P.StepWork(); return k4 }()
+			f_347 := func() any { c.P.StepWork(); return k7 }()
+			return tmk_Pair(c, true, f_346, f_347)
 		}()
 	}()
 	p.Depth--
@@ -50017,9 +50017,9 @@ func i95(p *rt.TParser) (any, bool) {
 		p.Where = "ns_flow_pair"
 		v = func() any {
 			return func() any {
-				f_349 := func() any { return any(true) }()
-				f_350 := func() any { return c.List(func() any { return k1 }()) }()
-				return tmk_Mapping(c, true, nil, f_349, f_350)
+				f_348 := func() any { return any(true) }()
+				f_349 := func() any { return c.List(func() any { return k1 }()) }()
+				return tmk_Mapping(c, true, nil, f_348, f_349)
 			}()
 		}()
 		p.Depth--
@@ -50075,9 +50075,9 @@ L5:
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_349 := func() any { c.P.StepWork(); return any(true) }()
-			f_350 := func() any { c.P.StepWork(); return c.List(func() any { c.P.StepWork(); return k1 }()) }()
-			return tmk_Mapping(c, true, nil, f_349, f_350)
+			f_348 := func() any { c.P.StepWork(); return any(true) }()
+			f_349 := func() any { c.P.StepWork(); return c.List(func() any { c.P.StepWork(); return k1 }()) }()
+			return tmk_Mapping(c, true, nil, f_348, f_349)
 		}()
 	}()
 	p.Depth--
@@ -50215,9 +50215,9 @@ func i97(p *rt.TParser) (any, bool) {
 		p.Where = "ns_flow_pair_yaml_key_entry"
 		v = func() any {
 			return func() any {
-				f_351 := func() any { return k1 }()
-				f_352 := func() any { return k4 }()
-				return tmk_Pair(c, true, f_351, f_352)
+				f_350 := func() any { return k1 }()
+				f_351 := func() any { return k4 }()
+				return tmk_Pair(c, true, f_350, f_351)
 			}()
 		}()
 		p.Depth--
@@ -50252,9 +50252,9 @@ func i97(p *rt.TParser) (any, bool) {
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_351 := func() any { c.P.StepWork(); return k1 }()
-			f_352 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Pair(c, true, f_351, f_352)
+			f_350 := func() any { c.P.StepWork(); return k1 }()
+			f_351 := func() any { c.P.StepWork(); return k4 }()
+			return tmk_Pair(c, true, f_350, f_351)
 		}()
 	}()
 	p.Depth--
@@ -50445,9 +50445,9 @@ func i99(p *rt.TParser) (any, bool) {
 		p.Where = "c_ns_flow_pair_json_key_entry"
 		v = func() any {
 			return func() any {
-				f_353 := func() any { return k1 }()
-				f_354 := func() any { return k4 }()
-				return tmk_Pair(c, true, f_353, f_354)
+				f_352 := func() any { return k1 }()
+				f_353 := func() any { return k4 }()
+				return tmk_Pair(c, true, f_352, f_353)
 			}()
 		}()
 		p.Depth--
@@ -50482,9 +50482,9 @@ func i99(p *rt.TParser) (any, bool) {
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_353 := func() any { c.P.StepWork(); return k1 }()
-			f_354 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Pair(c, true, f_353, f_354)
+			f_352 := func() any { c.P.StepWork(); return k1 }()
+			f_353 := func() any { c.P.StepWork(); return k4 }()
+			return tmk_Pair(c, true, f_352, f_353)
 		}()
 	}()
 	p.Depth--
@@ -50745,9 +50745,9 @@ func i101(p *rt.TParser) (any, bool) {
 		p.Where = "plain_node"
 		v = func() any {
 			return func() any {
-				f_355 := func() any { return k2 }()
-				f_356 := func() any { return c.Text(func() any { return k11 }()) }()
-				return tmk_Scalar(c, true, f_355, nil, nil, f_356)
+				f_354 := func() any { return k2 }()
+				f_355 := func() any { return c.Text(func() any { return k11 }()) }()
+				return tmk_Scalar(c, true, f_354, nil, nil, f_355)
 			}()
 		}()
 		p.Depth--
@@ -50820,9 +50820,9 @@ L5:
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_355 := func() any { c.P.StepWork(); return k2 }()
-			f_356 := func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return k11 }()) }()
-			return tmk_Scalar(c, true, f_355, nil, nil, f_356)
+			f_354 := func() any { c.P.StepWork(); return k2 }()
+			f_355 := func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return k11 }()) }()
+			return tmk_Scalar(c, true, f_354, nil, nil, f_355)
 		}()
 	}()
 	p.Depth--
@@ -50899,10 +50899,10 @@ func i111(p *rt.TParser) (any, bool) {
 		p.Where = "c_double_quoted"
 		v = func() any {
 			return func() any {
-				f_357 := func() any { return k2 }()
-				f_358 := func() any { return any(2) }()
-				f_359 := func() any { return c.Text(func() any { return k11 }()) }()
-				return tmk_Scalar(c, true, f_357, f_358, nil, f_359)
+				f_356 := func() any { return k2 }()
+				f_357 := func() any { return any(2) }()
+				f_358 := func() any { return c.Text(func() any { return k11 }()) }()
+				return tmk_Scalar(c, true, f_356, f_357, nil, f_358)
 			}()
 		}()
 		p.Depth--
@@ -50975,10 +50975,10 @@ L5:
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_357 := func() any { c.P.StepWork(); return k2 }()
-			f_358 := func() any { c.P.StepWork(); return any(2) }()
-			f_359 := func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return k11 }()) }()
-			return tmk_Scalar(c, true, f_357, f_358, nil, f_359)
+			f_356 := func() any { c.P.StepWork(); return k2 }()
+			f_357 := func() any { c.P.StepWork(); return any(2) }()
+			f_358 := func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return k11 }()) }()
+			return tmk_Scalar(c, true, f_356, f_357, nil, f_358)
 		}()
 	}()
 	p.Depth--
@@ -51055,10 +51055,10 @@ func i119(p *rt.TParser) (any, bool) {
 		p.Where = "c_single_quoted"
 		v = func() any {
 			return func() any {
-				f_360 := func() any { return k2 }()
-				f_361 := func() any { return any(1) }()
-				f_362 := func() any { return c.Text(func() any { return k11 }()) }()
-				return tmk_Scalar(c, true, f_360, f_361, nil, f_362)
+				f_359 := func() any { return k2 }()
+				f_360 := func() any { return any(1) }()
+				f_361 := func() any { return c.Text(func() any { return k11 }()) }()
+				return tmk_Scalar(c, true, f_359, f_360, nil, f_361)
 			}()
 		}()
 		p.Depth--
@@ -51131,10 +51131,10 @@ L5:
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_360 := func() any { c.P.StepWork(); return k2 }()
-			f_361 := func() any { c.P.StepWork(); return any(1) }()
-			f_362 := func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return k11 }()) }()
-			return tmk_Scalar(c, true, f_360, f_361, nil, f_362)
+			f_359 := func() any { c.P.StepWork(); return k2 }()
+			f_360 := func() any { c.P.StepWork(); return any(1) }()
+			f_361 := func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return k11 }()) }()
+			return tmk_Scalar(c, true, f_359, f_360, nil, f_361)
 		}()
 	}()
 	p.Depth--

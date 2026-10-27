@@ -1013,10 +1013,8 @@ func init() {
 	trules = rt.NewTRules(rules)
 	defer tinit()
 	trules[0].Entry = u0
-
 	trules[3].Body = func(p *rt.TParser, _ int) (any, bool) { return e120(p) }
 	trules[3].Action = ta3
-
 	trules[14].OperatorsRule = &rt.TOperatorsRule{
 		Skip: e135,
 		Operands: []*rt.TOperatorsRuleLine{
@@ -1143,7 +1141,6 @@ func init() {
 			}, Value: sh53}}},
 	}
 	trules[14].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[14], min) }
-
 }
 
 func e1(p *rt.Parser) (*rt.Node, bool) {

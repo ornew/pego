@@ -87,6 +87,9 @@ func TestGeneratedLocalVariables(t *testing.T) {
 		{"work controls", GenOptions{Types: true, WorkControls: true}, false},
 		{"document", GenOptions{Types: true, Document: true}, false},
 		{"nodes", GenOptions{}, true},
+		{"typed only", GenOptions{Types: true, TypedOnly: true}, true},
+		{"recognize", GenOptions{Types: true, Recognize: true}, true},
+		{"observability", GenOptions{Types: true, Observability: true}, true},
 	}
 	checked := 0
 	cases := genCorpus(t)
@@ -128,5 +131,51 @@ func TestLocalErrorsDetectsUnusedVariable(t *testing.T) {
 	got := localErrors(t, files)
 	if len(got) != 3 {
 		t.Fatalf("errors = %q, want an unused x, an unused y and an undefined z", got)
+	}
+}
+
+// TestShakeVarsMutantFailsToCompile is the negative control of the shaking: dropping every
+// shakable variable, as a shaking that kept nothing would, leaves the generated code of each
+// corpus grammar that declares one with an undefined name.
+func TestShakeVarsMutantFailsToCompile(t *testing.T) {
+	declared, failed := 0, 0
+	for _, c := range genCorpus(t) {
+		g, err := parseTest(c.src)
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		files, err := Generate(g, GenOptions{Types: true, Package: "p", Start: "main", Runtime: RuntimeImport, Module: "example.com/p"})
+		if err != nil {
+			t.Errorf("%s: %v", c.name, err)
+			continue
+		}
+		var mutated []GeneratedFile
+		dropped := 0
+		for _, f := range files {
+			if f.Path == "parser.go" {
+				var keep []string
+				for _, l := range strings.SplitAfter(string(f.Content), "\n") {
+					if shakableVar.MatchString(l) {
+						dropped++
+						continue
+					}
+					keep = append(keep, l)
+				}
+				f.Content = []byte(strings.Join(keep, ""))
+			}
+			mutated = append(mutated, f)
+		}
+		if dropped == 0 {
+			continue
+		}
+		declared++
+		if len(localErrors(t, mutated)) > 0 {
+			failed++
+		} else {
+			t.Errorf("%s: dropping %d shakable variables left code that compiles: the shaking keeps nothing that it needs to keep", c.name, dropped)
+		}
+	}
+	if declared == 0 || failed != declared {
+		t.Errorf("%d of %d grammars with shakable variables failed to compile after dropping them", failed, declared)
 	}
 }
