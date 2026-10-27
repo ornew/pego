@@ -1740,7 +1740,7 @@ func r19(p *rt.Parser) (*rt.Node, bool) {
 			goto L5_ordinary
 		}
 		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116)) {
+		if !ok || !(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116) {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L6_ordinary
 		}
@@ -3062,7 +3062,7 @@ func q9(p *rt.Parser) (*rt.Node, bool) {
 			goto L5_ordinary
 		}
 		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116)) {
+		if !ok || !(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116) {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L6_ordinary
 		}
@@ -5399,7 +5399,7 @@ func s19(p *rt.TParser) (any, bool) {
 			goto L5_ordinary
 		}
 		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116)) {
+		if !ok || !(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116) {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L6_ordinary
 		}

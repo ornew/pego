@@ -25340,7 +25340,7 @@ func s384(p *rt.TParser) (any, bool) {
 	x1 = 0
 	for x1 < 2 {
 		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch == 114 || ch == 82 || ch == 98 || ch == 66 || ch == 117 || ch == 85 || ch == 102 || ch == 70 || ch == 116 || ch == 84)) {
+		if !ok || !(ch == 114 || ch == 82 || ch == 98 || ch == 66 || ch == 117 || ch == 85 || ch == 102 || ch == 70 || ch == 116 || ch == 84) {
 			p.ExpectOrdinary(p.Pos, 113)
 			break
 		}
@@ -25881,7 +25881,7 @@ L11:
 	x23 = 0
 	for {
 		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 32 || ch == 45)) {
+		if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 32 || ch == 45) {
 			p.ExpectOrdinary(p.Pos, 132)
 			break
 		}
@@ -28533,7 +28533,7 @@ L11:
 	x23 = 0
 	for {
 		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 32 || ch == 45)) {
+		if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 32 || ch == 45) {
 			p.ExpectOrdinary(p.Pos, 132)
 			break
 		}

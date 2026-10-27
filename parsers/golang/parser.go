@@ -24771,7 +24771,7 @@ func s365(p *rt.TParser) (any, bool) {
 	}
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
-	if !(x5 && (!(!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 39)))) && p.Depth <= p.MaxDepth {
+	if !(x5 && (x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 39)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 146)
 		goto L6
 	}
@@ -24855,7 +24855,7 @@ func s367(p *rt.TParser) (any, bool) {
 	}
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
-	if !(x5 && (!(!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 34)))) && p.Depth <= p.MaxDepth {
+	if !(x5 && (x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 34)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 147)
 		goto L6
 	}

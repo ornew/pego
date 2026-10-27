@@ -4093,7 +4093,7 @@ L4:
 	x9 = 0
 	for {
 		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 95 || ch == 46 || ch == 45 || ch == 47 || ch == 32)) {
+		if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 95 || ch == 46 || ch == 45 || ch == 47 || ch == 32) {
 			p.ExpectOrdinary(p.Pos, 78)
 			break
 		}
@@ -4245,7 +4245,7 @@ func s49(p *rt.TParser) (any, bool) {
 	p.Enter()
 	for {
 		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch == 32 || ch == 9 || ch == 13 || ch == 10 || ch == 12)) {
+		if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10 || ch == 12) {
 			p.ExpectOrdinary(p.Pos, 79)
 			break
 		}
@@ -4268,7 +4268,7 @@ func s49(p *rt.TParser) (any, bool) {
 		}
 		for {
 			ch, size, ok = p.NextOrdinary()
-			if !ok || (!(ch == 32 || ch == 9 || ch == 13 || ch == 10 || ch == 12)) {
+			if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10 || ch == 12) {
 				p.ExpectOrdinary(p.Pos, 79)
 				break
 			}
@@ -5488,7 +5488,7 @@ func v58(p *rt.TParser) (any, bool) {
 	}
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
-	if !(x5 && (!(!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 34 || x4 == 39 || x4 == 92 || x4 == 63 || x4 == 96)))) && p.Depth <= p.MaxDepth {
+	if !(x5 && (x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 34 || x4 == 39 || x4 == 92 || x4 == 63 || x4 == 96)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 47)
 		goto L6
 	}

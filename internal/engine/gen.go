@@ -1980,7 +1980,7 @@ func (g *generator) controlledClassReject(e *grammar.CharClass) string {
 	}
 	// The ordinary form tests the class without a control; the name is allocated all the same, so
 	// that the other generated names keep their numbers.
-	return g.formRest(fmt.Sprintf("((WorkControlsEnabled && p.Control != nil && p.RejectWorkClass(ch, %s, %v)) || ((!WorkControlsEnabled || p.Control == nil) && (%s)))", name, e.Negated, ordinary), "("+ordinary+")", "("+ordinary+")")
+	return g.formRest(fmt.Sprintf("((WorkControlsEnabled && p.Control != nil && p.RejectWorkClass(ch, %s, %v)) || ((!WorkControlsEnabled || p.Control == nil) && (%s)))", name, e.Negated, ordinary), ordinary, ordinary)
 }
 
 // atEnd and atLineStart name the runtime methods that test the anchors; a parser without

@@ -13525,7 +13525,7 @@ L58:
 L61:
 	p.Pos = x49
 L60:
-	if !(x53 && (!(!(x52 == 101 || x52 == 69 || x52 == 98 || x52 == 66 || x52 == 120 || x52 == 88 || x52 == 110 || x52 == 78)))) && p.Depth <= p.MaxDepth {
+	if !(x53 && (x52 == 101 || x52 == 69 || x52 == 98 || x52 == 66 || x52 == 120 || x52 == 88 || x52 == 110 || x52 == 78)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 12)
 		goto L62
 	}
@@ -66087,7 +66087,7 @@ func v1023(p *rt.TParser) (any, bool) {
 	p.Enter()
 	for {
 		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch == 9 || ch == 10 || ch == 12 || ch == 13 || ch == 32 || ch == 160 || ch >= 8192 && ch <= 8203 || ch == 8239 || ch == 8287 || ch == 8288 || ch == 12288 || ch == 65279)) {
+		if !ok || !(ch == 9 || ch == 10 || ch == 12 || ch == 13 || ch == 32 || ch == 160 || ch >= 8192 && ch <= 8203 || ch == 8239 || ch == 8287 || ch == 8288 || ch == 12288 || ch == 65279) {
 			p.ExpectOrdinary(p.Pos, 5)
 			break
 		}
@@ -66100,7 +66100,7 @@ func v1023(p *rt.TParser) (any, bool) {
 		}
 		for {
 			ch, size, ok = p.NextOrdinary()
-			if !ok || (!(ch == 9 || ch == 10 || ch == 12 || ch == 13 || ch == 32 || ch == 160 || ch >= 8192 && ch <= 8203 || ch == 8239 || ch == 8287 || ch == 8288 || ch == 12288 || ch == 65279)) {
+			if !ok || !(ch == 9 || ch == 10 || ch == 12 || ch == 13 || ch == 32 || ch == 160 || ch >= 8192 && ch <= 8203 || ch == 8239 || ch == 8287 || ch == 8288 || ch == 12288 || ch == 65279) {
 				p.ExpectOrdinary(p.Pos, 5)
 				break
 			}
@@ -66372,7 +66372,7 @@ func v1029(p *rt.TParser) (any, bool) {
 	p.Silent++
 	x3 = p.Pos
 	x6, x5, x7 = p.NextOrdinary()
-	if !(x7 && (!(!(x6 == 101 || x6 == 69 || x6 == 98 || x6 == 66 || x6 == 120 || x6 == 88 || x6 == 110 || x6 == 78)))) && p.Depth <= p.MaxDepth {
+	if !(x7 && (x6 == 101 || x6 == 69 || x6 == 98 || x6 == 66 || x6 == 120 || x6 == 88 || x6 == 110 || x6 == 78)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 12)
 		goto L8
 	}
@@ -69175,7 +69175,7 @@ L5:
 L8:
 	p.Pos = x1
 L7:
-	if !(x4 && (!(!(x3 >= 97 && x3 <= 122 || x3 >= 65 && x3 <= 90 || x3 == 95 || x3 >= 128 && x3 <= 159 || x3 >= 161 && x3 <= 8191 || x3 >= 8204 && x3 <= 8238 || x3 >= 8240 && x3 <= 8286 || x3 >= 8289 && x3 <= 12287 || x3 >= 12289 && x3 <= 65278 || x3 >= 65280 && x3 <= 1114111)))) && p.Depth+1 <= p.MaxDepth {
+	if !(x4 && (x3 >= 97 && x3 <= 122 || x3 >= 65 && x3 <= 90 || x3 == 95 || x3 >= 128 && x3 <= 159 || x3 >= 161 && x3 <= 8191 || x3 >= 8204 && x3 <= 8238 || x3 >= 8240 && x3 <= 8286 || x3 >= 8289 && x3 <= 12287 || x3 >= 12289 && x3 <= 65278 || x3 >= 65280 && x3 <= 1114111)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 11)
 		goto L9
 	}
@@ -69184,7 +69184,7 @@ L7:
 	}
 	for {
 		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95 || ch >= 128 && ch <= 159 || ch >= 161 && ch <= 8191 || ch >= 8204 && ch <= 8238 || ch >= 8240 && ch <= 8286 || ch >= 8289 && ch <= 12287 || ch >= 12289 && ch <= 65278 || ch >= 65280 && ch <= 1114111)) {
+		if !ok || !(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95 || ch >= 128 && ch <= 159 || ch >= 161 && ch <= 8191 || ch >= 8204 && ch <= 8238 || ch >= 8240 && ch <= 8286 || ch >= 8289 && ch <= 12287 || ch >= 12289 && ch <= 65278 || ch >= 65280 && ch <= 1114111) {
 			p.ExpectOrdinary(p.Pos, 77)
 			break
 		}
@@ -79351,7 +79351,7 @@ func s1374(p *rt.TParser) (any, bool) {
 		x19 = 0
 		for {
 			ch, size, ok = p.NextOrdinary()
-			if !ok || (!(ch == 9 || ch == 10 || ch == 12 || ch == 13 || ch == 32)) {
+			if !ok || !(ch == 9 || ch == 10 || ch == 12 || ch == 13 || ch == 32) {
 				p.ExpectOrdinary(p.Pos, 33)
 				break
 			}
