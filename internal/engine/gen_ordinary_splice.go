@@ -11,14 +11,15 @@ import (
 )
 
 // spliceOrdinaryBodies gives the generated execution functions of whole a branch for ordinary
-// parses, which runs under guard (p.Control == nil, and outside a Document if the parser has
-// Documents). The bodies of the branches come from the paired text that the printer wrote: the
-// ordinary form of the text is formatted by itself and its function bodies are moved into the
-// controlled functions of the same name. The controlled bodies stay unchanged.
+// parses. The bodies of the branches come from the paired text that the printer wrote: the ordinary
+// form of the text is formatted by itself and its function bodies are moved into the controlled
+// functions of the same name, the branch running under guard (p.Control == nil, with
+// && p.Document == nil in a parser with Documents). The controlled bodies stay unchanged.
 //
-// A parser without work controls (noControls) has no controls to check, so the form that remains for
-// a Document is the one with only the Document's own behavior, the rest form of the text, and the
-// branch is the whole body.
+// A parser without work controls (noControls) has no controls to check; its guard is
+// p.Document == nil, and what follows the branch for a Document is not the controlled body but the
+// rest form of the text, which charges nothing and reads no control. The branch and the rest form
+// then replace the whole body.
 func spliceOrdinaryBodies(whole []byte, pkg, paired, executionSource, guard string, noControls bool) ([]byte, error) {
 	methods, err := ordinaryExecutionMethods(executionSource)
 	if err != nil {

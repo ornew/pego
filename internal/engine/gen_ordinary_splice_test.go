@@ -135,87 +135,29 @@ func TestGeneratedOrdinaryGuardExcludesDocuments(t *testing.T) {
 	}
 }
 
-func TestOrdinaryTransformLabelsAndSynchronousLambda(t *testing.T) {
-	method := `func e0(p *Parser) (int,bool) {
- p.StepWork()
- c := p.UseCtx(ActCtx{P:p})
- _ = func() int {p.InputWork(1); if c.P.Control != nil {return 1}; return 0}()
- loop: for {if p.Pos>0 {break loop}; p.Pos++; goto done}
- done: return p.Pos,true
- }`
-	src, err := specializeOrdinaryMethods([]byte("package fixture\n"+method), method, "p.Control == nil", false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	f := ordinaryFunctions(t, src)[ordinaryMethodKey{"Parser", "e0"}]
-	guard := f.Body.List[0].(*goast.IfStmt)
-	labels, branches := map[string]bool{}, 0
-	goast.Inspect(guard.Body, func(n goast.Node) bool {
-		switch x := n.(type) {
-		case *goast.LabeledStmt:
-			labels[x.Label.Name] = true
-		case *goast.BranchStmt:
-			if x.Label != nil {
-				if !strings.HasSuffix(x.Label.Name, "_ordinary") {
-					t.Fatal("unrenamed branch")
-				}
-				branches++
-			}
-		case *goast.CallExpr:
-			if s, ok := x.Fun.(*goast.SelectorExpr); ok && (s.Sel.Name == "StepWork" || s.Sel.Name == "InputWork") {
-				t.Fatal("retained work call")
-			}
-		case *goast.SelectorExpr:
-			if ordinaryControl(x) {
-				t.Fatal("retained control read")
-			}
-		}
-		return true
-	})
-	if !labels["loop_ordinary"] || !labels["done_ordinary"] || branches != 2 {
-		t.Fatal("label coverage")
-	}
+// pairedFixture writes a function whose charge is a fragment, the way the printer does.
+func pairedFixture(g *generator) string {
+	return "func e0(p *Parser) (int, bool) {\n" + g.formRest("p.StepWork()\n", "", "") + "// marker\ns := \"} {\"\nreturn len(s), true\n}\n"
 }
 
-func TestOrdinaryTransformFailsOnEmitterDrift(t *testing.T) {
-	method := `func e0(p *Parser)(int,bool){return 0,true}`
-	for _, tc := range []struct{ src, methods string }{
-		{"package fixture", method},
-		{"package fixture\n" + method, ""},
-		{"package fixture\nfunc e0(p *Parser)(int,bool){p.Control=nil;return 0,true}", method},
-		{"package fixture\n" + method, `func e0(q *Parser)(int,bool){return 0,true}`},
-		{"package fixture\nfunc e0(p *Parser)(int,bool){q:=&p.Control;_=q;return 0,true}", method},
-		{"package fixture\nfunc e0(p *Parser)(int,bool){p:=other;_=p;return 0,true}", method},
-		{"package fixture\n" + method, method + "\n" + method},
-	} {
-		if _, err := specializeOrdinaryMethods([]byte(tc.src), tc.methods, "p.Control == nil", false); err == nil {
-			t.Fatal("accepted emitter drift")
-		}
-	}
-}
-
-func TestOrdinaryTransformPreservesCommentsAndFormatting(t *testing.T) {
-	method := `func e0(p *Parser) (int, bool) {
- // controlled marker
- p.StepWork()
- s := "} {"
- return len(s), true
- }`
+func TestSpliceOrdinaryBodiesPlacesTheOrdinaryForm(t *testing.T) {
 	helper := `func (p *Parser) NewNode(v Node) *Node {
  p.StepWork()
  return &v
  }`
-	// Large original offsets must not interpret clone positions in the
-	// original FileSet or scatter a short helper across artificial lines.
-	source := "package fixture\n" + strings.Repeat("// padding\n", 20000) + method + "\n" + helper
-	result, err := specializeOrdinaryMethods([]byte(source), method, "p.Control == nil", false)
+	g := &generator{pairs: true}
+	paired := pairedFixture(g)
+	controlled := selectForm(paired, formControlled)
+	// Large original offsets must not interpret positions of the ordinary text in the file set of
+	// the controlled text.
+	source := "package fixture\n" + strings.Repeat("// padding\n", 20000) + controlled + "\n" + helper
+	result, err := spliceOrdinaryBodies([]byte(source), "fixture", paired, controlled, "p.Control == nil", false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Count(string(result), "// controlled marker") != 1 {
+	if strings.Count(string(result), "// marker") != 1 {
 		t.Fatal("controlled comment lost or duplicated")
 	}
-	// The runtime defines the ordinary helpers; the transform leaves runtime methods as they are.
 	if strings.Contains(string(result), "func (p *Parser) NewNodeOrdinary") {
 		t.Fatal("derived an ordinary helper")
 	}
@@ -225,7 +167,67 @@ func TestOrdinaryTransformPreservesCommentsAndFormatting(t *testing.T) {
 	f := ordinaryFunctions(t, result)[ordinaryMethodKey{"Parser", "e0"}]
 	ordinary := f.Body.List[0].(*goast.IfStmt).Body
 	if ordinaryTokens(t, ordinary) != ordinaryTokens(t, &goast.BlockStmt{List: f.Body.List[1:][1:]}) {
-		// The controlled-only initial work call is absent from the ordinary branch.
+		// The controlled-only charge is absent from the ordinary branch.
 		t.Fatal("brace-like literal or return expression changed")
+	}
+}
+
+func TestSpliceOrdinaryBodiesFailsOnEmitterDrift(t *testing.T) {
+	g := &generator{pairs: true}
+	paired := pairedFixture(g)
+	controlled := selectForm(paired, formControlled)
+	other := `func e1(p *Parser)(int,bool){return 0,true}`
+	for _, tc := range []struct{ name, src, paired, methods, want string }{
+		{"function missing from the source", "package fixture", paired, controlled, "missing generated function Parser.e0"},
+		{"no execution function", "package fixture\n" + controlled, paired, "", "missing generated execution functions"},
+		{"renamed parameter", "package fixture\n" + controlled, paired, `func e0(q *Parser)(int,bool){return 0,true}`, "missing generated execution functions"},
+		{"duplicate execution function", "package fixture\n" + controlled, paired, controlled + "\n" + controlled, "duplicate generated execution function e0"},
+		{"function missing from the source of another", "package fixture\n" + controlled, paired, controlled + other, "missing generated function Parser.e1"},
+		{"function missing from the paired text", "package fixture\n" + controlled, other, controlled, "missing ordinary form of generated function e0"},
+	} {
+		_, err := spliceOrdinaryBodies([]byte(tc.src), "fixture", tc.paired, tc.methods, "p.Control == nil", false)
+		if err == nil || !strings.Contains(err.Error(), tc.want) {
+			t.Errorf("%s: error %v, want %q", tc.name, err, tc.want)
+		}
+	}
+}
+
+// A parser without work controls has no controlled body next to the branch: a Document runs the rest
+// form of the body.
+func TestSpliceOrdinaryBodiesDocumentOnly(t *testing.T) {
+	g := &generator{pairs: true}
+	paired := "func e0(p *Parser) (int, bool) {\n" + g.formRest("p.StepWork()\n", "", "") +
+		g.formRest("n := p.Control\n", "n := nilControl\n", "n := restControl\n") + "return 0, true\n}\n"
+	controlled := selectForm(paired, formControlled)
+	result, err := spliceOrdinaryBodies([]byte("package fixture\n"+controlled), "fixture", paired, controlled, "p.Document == nil", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := ordinaryFunctions(t, result)[ordinaryMethodKey{"Parser", "e0"}]
+	branch, ok := f.Body.List[0].(*goast.IfStmt)
+	if !ok || !strings.Contains(ordinaryTokens(t, branch.Cond), "Document") {
+		t.Fatalf("the body does not start with the branch under p.Document == nil:\n%s", result)
+	}
+	got := ordinaryTokens(t, branch.Body)
+	if !strings.Contains(got, "nilControl") || strings.Contains(got, "restControl") || strings.Contains(got, "Control ;") {
+		t.Errorf("unexpected ordinary branch: %s", got)
+	}
+	rest := ordinaryTokens(t, &goast.BlockStmt{List: f.Body.List[1:]})
+	if !strings.Contains(rest, "restControl") || strings.Contains(rest, "StepWork") || strings.Contains(rest, "nilControl") {
+		t.Errorf("unexpected rest form: %s", rest)
+	}
+	if len(f.Body.List) != 3 {
+		t.Errorf("the body has %d statements, want the branch and the two of the rest form", len(f.Body.List))
+	}
+}
+
+func TestSpliceOrdinaryBodiesMissingRestForm(t *testing.T) {
+	// A fragment that holds a whole function lets the forms disagree about which functions exist.
+	fn := func(name string) string { return "func " + name + "(p *Parser) (int, bool) {\nreturn 0, true\n}\n" }
+	paired := formStart + fn("e0") + formOrdinary + fn("e0") + formRest + fn("e1") + formEnd
+	controlled := selectForm(paired, formControlled)
+	_, err := spliceOrdinaryBodies([]byte("package fixture\n"+controlled), "fixture", paired, controlled, "p.Document == nil", true)
+	if err == nil || !strings.Contains(err.Error(), "missing rest form of generated function e0") {
+		t.Errorf("error %v, want the missing rest form", err)
 	}
 }

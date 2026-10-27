@@ -24,6 +24,10 @@ const (
 	formEnd      = "\x03"
 )
 
+// formMutant is set by tests to break the ordinary alternative of a fragment and see that the
+// checks on the generated branches notice.
+var formMutant func(controlled, ordinary string) string
+
 // textForm is a form of generated text.
 type textForm int
 
@@ -42,6 +46,9 @@ func (g *generator) form(controlled, ordinary string) string {
 
 // formRest is form with the text that stays in a Document's form of a parser without work controls.
 func (g *generator) formRest(controlled, ordinary, rest string) string {
+	if formMutant != nil {
+		ordinary = formMutant(controlled, ordinary)
+	}
 	switch {
 	case g.ordinary:
 		return ordinary

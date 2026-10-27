@@ -432,9 +432,6 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		if whole, err = spliceOrdinaryBodies(whole, opts.Package, paired, methods, guard, !opts.WorkControls); err != nil {
 			return nil, err
 		}
-		if oracleHook != nil {
-			oracleHook(opts.Package, paired)
-		}
 	}
 	body := shakeVars(strings.TrimPrefix(string(whole), "package "+opts.Package+"\n"))
 	var tp *typesPackage

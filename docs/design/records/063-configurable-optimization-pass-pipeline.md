@@ -62,8 +62,8 @@ negative-control test. This record gives that rule a mechanism.
 - Passes over Flow IR. Flow IR has no optimization passes today (lowering makes the choices; see
   [Flow IR](../intermediate-representations.md#flow-ir)). The manager is written for Core IR and can host Flow passes
   when they exist.
-- The textual passes that rewrite generated Go (`gen_ordinary_methods.go`,
-  `qualifyRuntime`). Record 062 removes them as their work moves into Flow IR.
+- The textual pass that rewrites generated Go (`qualifyRuntime`). Record 062 removes it as its work moves
+  into Flow IR.
 - The closure backend, bytecode and TypeScript, which do not use Core IR today.
 - Changes to what a parser does. Flags and profiles change generated code, never results, errors or events.
 - A textual pipeline language such as LLVM's `-passes=`.

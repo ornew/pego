@@ -110,7 +110,8 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   rule's result after an edit only if the edit lies outside the range the rule examined, which the runtime reads
   (`Peek`, `MatchLiteral`, `Call`, each calling `documentTouch`) record. Generated code also reads literals and
   characters in place for ordinary parses, which records nothing, so the printers guard every in-place read with
-  `p.Document == nil` and the Document branch of a method (`specializeOrdinaryMethods`) falls through to the
+  `p.Document == nil`; a Document runs the controlled body, or in a parser without work controls the rest
+  form that follows the ordinary branch (the splice inserts the branch), and so falls through to the
   recording primitives. At the IR level, `Verify` states what keeps those reads recorded: in a function lowered with
   `Options.Document` a `HasLit` condition must stand alone and have a `MatchLit` in its alternative, and the
   printer, which prints the guard for exactly those functions, is not given another way to print it.
@@ -161,8 +162,8 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   first terminals that `Analyze` computes, so the reverse order leaves the alternatives of choices unguarded.
 - Work-control specialization exists three times: the closure backend compiles a second, metered closure
   graph (`controlledDispatch`); generated Go duplicates each function through `go/ast`
-  (`specializeOrdinaryMethods`, `rewriteOrdinaryControl`, `foldOrdinaryControl`, `compactOrdinaryPeeks`,
-  `stripNoControlWork`); TypeScript rewrites printed conditions with regular expressions (`tsWorkCond`).
+  passes (a specialization that renames helpers and labels, passes that fold control reads, compact peeks and
+  strip charges); TypeScript rewrites printed conditions with regular expressions (`tsWorkCond`).
 - Code is shared as strings. TypeScript reuses the Go conditions of `generator.first` and
   `controlledClassReject` after rewriting `==` to `===` and rebalancing `&&`/`||` by parenthesis counting
   (`tsCond`, `tsBalancedCondition`). Helper sharing
@@ -213,7 +214,7 @@ func i0(p *pegort.TParser) (any, bool) {
 
 The post-passes also dominate generation time. `GenerateGo` with `WithTypes()` on the DuckDB grammar took
 16.6 s per run (three runs); of the CPU samples under `generate`, `qualifyRuntime` had 51.6 %,
-`specializeOrdinaryMethods` 24.5 %, the removal of unreached typed entries 8.6 %, `stripNoControlWork` 7.5 % and the final
+the ordinary-method specialization 24.5 %, the removal of unreached typed entries 8.6 %, the charge stripping 7.5 % and the final
 `go/format.Source` 5.4 %; compilation and emission had less than 2 %. `qualifyRuntime` inserts each
 qualifier by copying the rest of the source, which is quadratic and can be fixed independently of this
 design. `pego gen -types -typed-only` on the same grammar took 4.0 s; with Node output as well it took 14.9
@@ -498,9 +499,13 @@ Flow IR passes:
   iteration charges a step or the input work of a character it reads, that each call charges at least one step,
   that input work is charged before the input is inspected, and that no charge moves across a commit. Without work controls, charges are not lowered at
   all.
-- **Mode lowering**: the ordinary and the controlled variants of a function, batch and Document input
-  access, and position-unit fast paths (such as reading decoded code points in place) are separate Flow IR
-  functions selected by the caller, replacing the source-level specialization.
+- **Mode lowering**: the ordinary and the controlled variants of a function are printed in one traversal of
+  the Flow IR. The places where they differ (charges, control reads, the helper names, peeks, labels) are
+  text fragments with a controlled and an ordinary alternative, and a splice moves the ordinary bodies into
+  the controlled functions as a branch. They are not separate Flow IR functions because both forms then
+  share one set of generated names and one resolution of unread variables. Batch and Document input
+  access and position-unit fast paths (such as reading decoded code points in place) are lowered as
+  separate Flow IR functions selected by the caller.
 
 Flow IR invariants: every slot is declared in the innermost block that contains all its uses and is
 assigned before it is read; an exit names an enclosing block; every loop iteration consumes input, exits,
