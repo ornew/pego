@@ -284,7 +284,7 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 		m.WriteString("\treturn v, true\n")
 	}
 	if d.fail {
-		m.WriteString("fail:\n\tp.Depth--\n")
+		m.WriteString(g.label("fail") + ":\n\tp.Depth--\n")
 		if rec {
 			m.WriteString("\tp.Restore(start, rec)\n")
 		} else if restore {
@@ -317,7 +317,7 @@ func (g *generator) directLeanText(d *direct) string {
 		b.WriteString("return v, true\n")
 	}
 	if d.fail {
-		b.WriteString("fail:\nreturn nil, false\n")
+		b.WriteString(g.label("fail") + ":\nreturn nil, false\n")
 	}
 	return b.String()
 }

@@ -226,7 +226,7 @@ func generateOnce(g *grammar.Grammar, opts GenOptions, live, collect *liveRules)
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
-	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, ordinary: !opts.WorkControls && !opts.Document && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, live: live, collect: collect, keepTableRules: opts.TypedOnly && !opts.keepNodes}
+	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, ordinary: !opts.WorkControls && !opts.Document && !opts.disableOrdinaryWorkSpecialization, pairs: (opts.WorkControls || opts.Document) && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, live: live, collect: collect, keepTableRules: opts.TypedOnly && !opts.keepNodes}
 	if live != nil {
 		gen.seedDescs()
 		for _, d := range live.descs[len(gen.descs):] {
@@ -412,9 +412,12 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	out.WriteString(gen.init.String())
 	out.WriteString("}\n\n")
 	out.WriteString(gen.methods.String())
-	whole, err := format.Source([]byte("package " + opts.Package + "\n" + out.String()))
+	paired := out.String()
+	methods := selectForm(gen.methods.String(), formControlled)
+	typesBody = selectForm(typesBody, formControlled)
+	whole, err := format.Source([]byte("package " + opts.Package + "\n" + selectForm(paired, formControlled)))
 	if err != nil {
-		return nil, fmt.Errorf("generated code does not compile: %w\n%s", err, out.String())
+		return nil, fmt.Errorf("generated code does not compile: %w\n%s", err, selectForm(paired, formControlled))
 	}
 	if !opts.disableOrdinaryWorkSpecialization && !gen.ordinary {
 		// A parser without work controls and Documents prints its bodies in the ordinary form only
@@ -426,8 +429,11 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		case opts.Document:
 			guard += " && p.Document == nil"
 		}
-		if whole, err = specializeOrdinaryMethods(whole, gen.methods.String(), guard, !opts.WorkControls); err != nil {
+		if whole, err = specializeOrdinaryMethods(whole, methods, guard, !opts.WorkControls); err != nil {
 			return nil, err
+		}
+		if oracleHook != nil {
+			oracleHook(opts.Package, paired)
 		}
 	}
 	body := shakeVars(strings.TrimPrefix(string(whole), "package "+opts.Package+"\n"))
@@ -552,7 +558,10 @@ type generator struct {
 	// no control exists to charge: the statements, and the closures that only held one.
 	noWork bool
 	// ordinary prints the bodies in their ordinary form only (no work controls and no Documents).
-	ordinary            bool
+	ordinary bool
+	// pairs prints the fragments of gen_form.go: the parser has work controls or Documents and its
+	// execution functions get a branch for ordinary parses.
+	pairs               bool
 	directTypedDocument bool
 	document            bool
 	workClassNames      map[string]string
@@ -1322,7 +1331,7 @@ func (g *generator) operand(t grammar.Term, s *scope, locals map[string]string) 
 			return raw
 		}
 		// The step that term charges for the member read.
-		return "func() TOperand { c.P.StepWork(); return " + raw + " }()"
+		return g.form("func() TOperand { c.P.StepWork(); return "+raw+" }()", "func() TOperand { return "+ordinaryResult(raw)+" }()")
 	}
 	return "TOperand{V: " + g.term(t, s, locals) + "}"
 }
@@ -1332,7 +1341,7 @@ func (g *generator) step(recv string) string {
 	if g.noWork {
 		return ""
 	}
-	return recv + ".StepWork()\n"
+	return g.formRest(recv+".StepWork()\n", "", "")
 }
 
 func (g *generator) frameVar() string { return g.pick("EmptyFrame", "EmptyTFrame") }
@@ -1647,7 +1656,7 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 	if !g.goWorkControls || g.noWork {
 		return raw
 	}
-	return "func() any { c.P.StepWork(); return " + raw + " }()"
+	return g.form("func() any { c.P.StepWork(); return "+raw+" }()", "func() any { return "+ordinaryResult(raw)+" }()")
 }
 
 func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) string {
@@ -1972,12 +1981,9 @@ func (g *generator) controlledClassReject(e *grammar.CharClass) string {
 			g.vars.WriteString("}\n")
 		}
 	}
-	if g.ordinary {
-		// The class is tested without a control; the name is allocated all the same, so that the
-		// other generated names keep their numbers.
-		return "(" + ordinary + ")"
-	}
-	return fmt.Sprintf("((WorkControlsEnabled && p.Control != nil && p.RejectWorkClass(ch, %s, %v)) || ((!WorkControlsEnabled || p.Control == nil) && (%s)))", name, e.Negated, ordinary)
+	// The ordinary form tests the class without a control; the name is allocated all the same, so
+	// that the other generated names keep their numbers.
+	return g.formRest(fmt.Sprintf("((WorkControlsEnabled && p.Control != nil && p.RejectWorkClass(ch, %s, %v)) || ((!WorkControlsEnabled || p.Control == nil) && (%s)))", name, e.Negated, ordinary), "("+ordinary+")", "("+ordinary+")")
 }
 
 // atEnd and atLineStart name the runtime methods that test the anchors; a parser without
@@ -2000,10 +2006,19 @@ func (g *generator) atLineStart() string {
 // parser generated without work controls and without Documents has no controlled form of its
 // bodies, so they call the Ordinary form of the method.
 func (g *generator) helper(name string) string {
-	if g.ordinary && ordinaryHelperName(name) {
-		return name + "Ordinary"
+	if ordinaryHelperName(name) {
+		return g.form(name, name+"Ordinary")
 	}
 	return name
+}
+
+// label names a label of an execution function; the ordinary branch has its own copies of the labels
+// of the function it is inserted into.
+func (g *generator) label(name string) string {
+	if g.ordinary {
+		return name
+	}
+	return g.form(name, name+"_ordinary")
 }
 
 // leanTyped reports whether typed rule bodies are emitted in their ordinary form only.
@@ -2079,4 +2094,14 @@ func classBits(e *grammar.CharClass) (ascii [2]uint64, wide []rune) {
 		}
 	}
 	return ascii, wide
+}
+
+// ordinaryResult is the result expression of a closure in the ordinary form, which has no
+// parentheses around a name that is the whole result.
+func ordinaryResult(raw string) string {
+	raw = selectForm(raw, formOrdinaryText)
+	if n := len(raw); n > 2 && raw[0] == '(' && raw[n-1] == ')' && token.IsIdentifier(raw[1:n-1]) {
+		return raw[1 : n-1]
+	}
+	return raw
 }

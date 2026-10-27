@@ -205,6 +205,9 @@ func specializeOrdinaryMethods(src []byte, executionSource, guard string, noCont
 		if err != nil {
 			return nil, err
 		}
+		if oracleOld != nil {
+			oracleOld(fn.Name.Name, text)
+		}
 		brace := fset.Position(fn.Body.Lbrace).Offset
 		if noControls {
 			// The controls are absent in this parser, so the form that remains for a Document is the

@@ -294,7 +294,7 @@ func (g *generator) flowFramed(f *flow.Func, slots []core.Slot, scope *scope, co
 		p.write(fmt.Sprintf("return %s, true\n", p.expr(f.Value)))
 	}
 	if p.used[f.Fail] {
-		p.b.WriteString("fail:\n")
+		p.b.WriteString(p.g.label("fail") + ":\n")
 		p.labelEnd = p.b.Len()
 		p.dead = false
 		publish()
@@ -454,7 +454,7 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 	case *flow.Block:
 		p.stmts(s.Body)
 		if p.used[s.Label] {
-			fmt.Fprintf(&p.b, "%s:\n", s.Label.Name)
+			fmt.Fprintf(&p.b, "%s:\n", p.g.label(s.Label.Name))
 			p.labelEnd = p.b.Len()
 			p.dead = false
 		}
@@ -485,7 +485,7 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 		if p.loops[s.To] {
 			p.b.WriteString("break\n")
 		} else {
-			fmt.Fprintf(&p.b, "goto %s\n", s.To.Name)
+			fmt.Fprintf(&p.b, "goto %s\n", p.g.label(s.To.Name))
 		}
 		p.dead = true
 	case *flow.Continue:
@@ -496,7 +496,12 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 	case *flow.Inc:
 		p.incStmt(s.V)
 	case *flow.Step:
-		p.write("p.StepWork()\n")
+		// A charge directly after a label stays in the ordinary form, like a peek there is not compacted.
+		ordinary := ""
+		if p.b.Len() == p.labelEnd {
+			ordinary = "p.StepWork()\n"
+		}
+		p.write(p.g.formRest("p.StepWork()\n", ordinary, ordinary))
 	case *flow.Silent:
 		if s.Delta > 0 {
 			p.write("p.Silent++\n")
@@ -589,10 +594,7 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 		// the report, except in the ordinary form, which has none.
 		if trace := p.g.traceSkip(p.g.flow.origin[s.Alt]); trace != "" {
 			trace = strings.TrimPrefix(trace, "\n")
-			if !p.g.ordinary {
-				trace += "\n"
-			}
-			p.write(trace)
+			p.write(p.g.form(trace+"\n", trace))
 		}
 	default:
 		panic(fmt.Sprintf("flow printer: statement %T", s))
@@ -716,7 +718,7 @@ func (p *flowPrinter) peekStmt(s *flow.Peek) {
 		return
 	}
 	// The statement that a label stands before is not compacted.
-	compact := p.g.ordinary && p.b.Len() != p.labelEnd
+	compact := p.b.Len() != p.labelEnd
 	st := &varStmt{targets: []*flow.Var{s.Ch, s.Size, s.OK}}
 	st.text = func(dead func(*flow.Var) bool) string {
 		name := func(v *flow.Var) string {
@@ -726,11 +728,12 @@ func (p *flowPrinter) peekStmt(s *flow.Peek) {
 			return v.Name
 		}
 		ch, size, ok := name(s.Ch), name(s.Size), name(s.OK)
+		controlled := fmt.Sprintf("if %s {\n%s%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[3]s, %[4]s, %[5]s = p.Peek()\n}\n", guard, work, ch, size, ok)
 		if compact {
 			// The inlined read and its fallback are one call of the runtime, which the compiler inlines.
-			return fmt.Sprintf("%s, %s, %s = p.NextOrdinary()\n", ch, size, ok)
+			return p.g.form(controlled, fmt.Sprintf("%s, %s, %s = p.NextOrdinary()\n", ch, size, ok))
 		}
-		return fmt.Sprintf("if %s {\n%s%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[3]s, %[4]s, %[5]s = p.%[6]s()\n}\n", guard, work, ch, size, ok, p.g.helper("Peek"))
+		return p.g.form(controlled, fmt.Sprintf("if %s {\n%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[2]s, %[3]s, %[4]s = p.PeekOrdinary()\n}\n", guard, ch, size, ok))
 	}
 	p.b.WriteString(p.vars.add(st))
 }
@@ -834,16 +837,13 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 			}
 		}
 		if p.document {
-			return "p.Document == nil && (!WorkControlsEnabled || p.Control == nil) && (" + cond + ")"
+			return g.formRest("p.Document == nil && (!WorkControlsEnabled || p.Control == nil) && ("+cond+")", "p.Document == nil && ("+cond+")", "p.Document == nil && ("+cond+")")
 		}
 		if p.untyped() && !g.flow.opts.Work {
 			// The Node runtime's generated code of a parser without work controls has no such check.
 			return cond
 		}
-		if g.ordinary {
-			return cond
-		}
-		return "(!WorkControlsEnabled || p.Control == nil) && (" + cond + ")"
+		return g.formRest("(!WorkControlsEnabled || p.Control == nil) && ("+cond+")", cond, cond)
 	case *flow.MatchLit:
 		if x.Lit.Fold {
 			return fmt.Sprintf("%s.%s(%s, %d, false)", p.matcher(), p.helper("MatchLiteralFold"), g.literal(string(foldedRunes([]rune(x.Lit.Text)))), p.desc(x.Lit.Exp))

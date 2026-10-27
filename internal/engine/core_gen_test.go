@@ -219,7 +219,7 @@ func guardString(g *generator, m *core.Module, f *core.First) (string, string) {
 	for _, r := range f.Class.Ranges {
 		e.Ranges = append(e.Ranges, grammar.CharRange{Lo: r.Lo, Hi: r.Hi})
 	}
-	cond := negateCondition(g.controlledClassReject(e))
+	cond := selectForm(negateCondition(g.controlledClassReject(e)), formControlled)
 	return workClassName.ReplaceAllString(cond, "workClass"), m.Exps[f.Exp]
 }
 
