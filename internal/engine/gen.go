@@ -570,7 +570,7 @@ type generator struct {
 	disableTypedListSlabs       bool
 	disableTypedOutputBootstrap bool
 	// flow holds the Core IR of the typed rules while they are printed from Flow IR, or nil;
-	// flowRules counts the rules printed from Flow IR as direct rules and flowFrames the bodies
+	// flowRules counts the rules printed from Flow IR as flat rules and flowFrames the bodies
 	// and lines printed as matchers of runtime-owned frames.
 	flow       *flowState
 	flowRules  int
@@ -588,8 +588,8 @@ type generator struct {
 	// final is the struct constructor that makes an action's result in the typed runtime: its
 	// range is the rule's (see tctx.result), so it computes none and is not recorded as created.
 	final grammar.Term
-	// caps maps capture names to the Go variables that hold them in a direct rule of the typed
-	// runtime (see gen_direct.go), instead of frame slots.
+	// caps maps capture names to the Go variables that hold them in a flat rule of the typed
+	// runtime (see gen_flowrule.go), instead of frame slots.
 	caps    map[string]string
 	vars    strings.Builder
 	init    strings.Builder
@@ -789,21 +789,21 @@ func (g *generator) recovers() bool {
 	return found
 }
 
-// directRouteHook is called with the rule table and the rule for each rule that takes the lean route
+// leanRouteHook is called with the rule table and the rule for each rule that takes the lean route
 // in rules, in a Node or recognizer table. Tests set it to check the route that is chosen, not the text
 // of the generated code.
-var directRouteHook func(table string, r *rule)
+var leanRouteHook func(table string, r *rule)
 
 // framedRouteHook is called with the rule table and the rule for each rule whose framed body is printed
-// from Flow IR (flowNodeFrameBody), in a Node or recognizer table. Tests set it as directRouteHook.
+// from Flow IR (flowNodeFrameBody), in a Node or recognizer table. Tests set it as leanRouteHook.
 var framedRouteHook func(table string, r *rule)
 
 // operatorsRouteHook is called with the rule table and the Operators Rule for each line of a Node or
-// recognizer table that is printed from Flow IR. Tests set it as directRouteHook.
+// recognizer table that is printed from Flow IR. Tests set it as leanRouteHook.
 var operatorsRouteHook func(table string, r *rule)
 
 // streamRouteHook is called with the rule table and the rule for each ParseStream start rule whose
-// stream body is printed from Flow IR (flowStreamBody). Tests set it as directRouteHook.
+// stream body is printed from Flow IR (flowStreamBody). Tests set it as leanRouteHook.
 var streamRouteHook func(table string, r *rule)
 
 func (g *generator) rules() {
@@ -811,7 +811,7 @@ func (g *generator) rules() {
 	methodsBefore := g.methods.String()
 	bodies := map[*rule]string{}
 	scopes := map[*rule]*scope{}
-	directs := map[*rule]*direct{}
+	flats := map[*rule]*flatRule{}
 	all := append(append([]*rule(nil), g.prog.rules...), g.prog.twins...)
 	for _, r := range all {
 		s := newScope()
@@ -823,22 +823,22 @@ func (g *generator) rules() {
 		}
 		g.beginRule(r)
 		if g.table == "trules" {
-			// Typed direct rules need no separate body; Flow IR prints every typed rule.
-			if d := g.flowDirectRule(r); d != nil {
-				directs[r] = d
+			// Typed flat rules need no separate body; Flow IR prints every typed rule.
+			if d := g.flowTypedRule(r); d != nil {
+				flats[r] = d
 				continue
 			}
 		} else if recFlowEligible(r) {
-			// flowRecDirect returns nil for a rule whose printed function would read its start or context, and
+			// flowRecRule returns nil for a rule whose printed function would read its start or context, and
 			// for one whose types it cannot name; such a rule takes its framed body below and is called through
 			// the rule table (plainCall).
-			if d := g.flowRecDirect(r); d != nil {
-				if directRouteHook != nil && g.collect == nil {
-					directRouteHook(g.table, r)
+			if d := g.flowRecRule(r); d != nil {
+				if leanRouteHook != nil && g.collect == nil {
+					leanRouteHook(g.table, r)
 				}
-				directs[r] = d
+				flats[r] = d
 				if g.slotReached(r) {
-					bodies[r] = g.directLeanBody(r, d)
+					bodies[r] = g.leanRuleBody(r, d)
 				}
 				continue
 			}
@@ -980,7 +980,7 @@ func (g *generator) rules() {
 			g.operatorsRule(r, pr)
 			continue
 		}
-		if d := directs[r]; d != nil && g.table == "trules" {
+		if d := flats[r]; d != nil && g.table == "trules" {
 			g.typedCall(r, "", scopes[r], d)
 			continue
 		}
@@ -1003,8 +1003,8 @@ func (g *generator) rules() {
 			g.typedCall(r, bodies[r], scopes[r], nil)
 		} else if r.plain {
 			start := g.methods.Len()
-			if d := directs[r]; d != nil {
-				g.directMethod(r, d, fmt.Sprintf("%s%d", g.plainPrefix(), r.id), "called as by invokePlain", true)
+			if d := flats[r]; d != nil {
+				g.flatMethod(r, d, fmt.Sprintf("%s%d", g.plainPrefix(), r.id), "called as by invokePlain", true)
 			} else {
 				g.plainCall(r, bodies[r])
 			}
@@ -1116,9 +1116,9 @@ func (g *generator) ownsBody(r *rule) bool {
 // directly and finishes the value as the rule's kind requires (what finish does), so a call goes
 // through no rule table entry or function value.
 //
-// For a direct rule (d, see gen_direct.go), the method that runs the body (s<id>, v<id> or i<id>)
+// For a flat rule (d, see gen_flowrule.go), the method that runs the body (s<id>, v<id> or i<id>)
 // has it inlined, with the action.
-func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
+func (g *generator) typedCall(r *rule, body string, s *scope, d *flatRule) {
 	if _, operatorsRule := r.def.Expr.(*grammar.OperatorsRule); operatorsRule || r.leader {
 		return // the general call
 	}
@@ -1160,7 +1160,7 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 	}
 	plain := func(name string) {
 		if d != nil {
-			g.directMethod(r, d, name, "called as by invokePlain", true)
+			g.flatMethod(r, d, name, "called as by invokePlain", true)
 			return
 		}
 		if g.observability && r.plain && !g.directTypedDocument {
@@ -1194,7 +1194,7 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 		name = g.traceCallWrapper(r, name, false)
 	}
 	fmt.Fprintf(m, "// rule %s\nfunc %s(p *TParser) (any, bool) {\n", r.name, name)
-	// Without Documents the invocation of a direct rule without captures is its plain method: the
+	// Without Documents the invocation of a flat rule without captures is its plain method: the
 	// two bodies differ only in the rollback to the start on failure, which the callers of the
 	// invocation repeat harmlessly, so one body serves both. A Document reads the position the
 	// invocation leaves at its failure to find the frontier it examined, so Documents keep both.
@@ -1221,7 +1221,7 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 		return // v<id>
 	}
 	if d != nil {
-		g.directMethod(r, d, fmt.Sprintf("i%d", r.id), "invoked as by invoke", false)
+		g.flatMethod(r, d, fmt.Sprintf("i%d", r.id), "invoked as by invoke", false)
 		return
 	}
 	fmt.Fprintf(m, "// %s, invoked as by invoke\nfunc i%d(p *TParser) (any, bool) {\n", r.name, r.id)

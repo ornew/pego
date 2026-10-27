@@ -8,17 +8,20 @@ import (
 	"github.com/ornew/pego/grammar"
 )
 
-// The direct rule of the Node and recognizer tables, as the Flow IR printer shapes it (flowRecDirect,
-// flowDirectRule): the declarations and statements of the one method that calls the rule's body, up to
-// the rule's value, with the methods that wrap it (directMethod, directLeanBody), and the predicates
-// that select the rules whose bodies take that shape (directLeanOK, directFrameExprOK).
+// Flat and framed rules of the Node and recognizer tables, as the Flow IR printer shapes them.
 //
-// The runtime runs a rule like this: a method per expression, captures in a frame with a trail
-// that backtracking undoes, and an action evaluated in a context that reads the frame. A rule
-// whose body uses only the constructs of a direct rule is instead printed into the one method that
-// calls it:
+// A flat rule is printed from Flow IR as one function (flowRecRule, flowTypedRule): the declarations
+// and statements of the one method that calls the rule's body, up to the rule's value, wrapped by
+// flatMethod or leanRuleBody. A framed rule keeps a runtime frame: its body (flowNodeFrameBody) is
+// printed from Flow IR into the matcher of the rule, but the runtime drives the frame, the growth of
+// a left-recursion seed or the finalization of a cut or a recovery. The predicates flowBodyOK
+// and leanRuleOK select which rules take which shape.
 //
-//   - The body is inlined: an expression jumps to a label when it fails. Every variable is
+// The runtime runs a rule with a method per expression, captures in a frame with a trail that
+// backtracking undoes, and an action evaluated in a context that reads the frame. A flat rule
+// uses only the constructs that need none of that and is printed into the one method that calls it:
+//
+//   - The body is printed in place: an expression jumps to a label when it fails. Every variable is
 //     declared at the top of the method, so each goto is legal.
 //   - Captures are variables of the method; those of a repetition element with captures of its
 //     own are cleared at the start of each iteration.
@@ -27,38 +30,22 @@ import (
 //     and the captures the expression may set, and restores them when it fails.
 //   - The action is a Go expression over the capture variables, evaluated in place.
 //
-// A direct rule never reads or sets p.cut (its flags are local and callees restore it), p.frame
+// A flat rule never reads or sets p.cut (its flags are local and callees restore it), p.frame
 // (callees set their own) or p.trail (callees truncate it to its length at the call), so it
 // leaves them alone.
 //
-// Left-recursion leaders and rules that cut or recover keep runtime growth and finalization, and only
-// their expression bodies are inlined (flowNodeFrameBody).
+// Left-recursion leaders and rules that cut or recover are framed: they keep runtime growth and
+// finalization, and only their expression bodies are printed in place.
 
-// directOK reports whether the rule r can be compiled as a direct rule.
-func directOK(r *rule) bool {
-	return directEligible(r)
+// flatRuleOK reports whether the rule r can be printed as a flat rule: it is not a left-recursion
+// leader and its body has no cut, recovery or Operators Rule.
+func flatRuleOK(r *rule) bool {
+	return !r.leader && flowBodyOK(r.bodyExpr(), false, false)
 }
 
-// directEligible reports whether r is a direct rule candidate. Left-recursion leaders and bodies
-// that directExprOK rejects, such as those with a cut, stay on the runtime path.
-func directEligible(r *rule) bool {
-	if r.leader {
-		return false
-	}
-	return directExprEligible(r)
-}
-
-// Unfinished left-recursion bodies can use the structural expression emitter
-// while retaining the runtime's seed, frame and finalization ownership.
-func directExprEligible(r *rule) bool {
-	return directExprOK(r.bodyExpr())
-}
-
-func directExprOK(expr grammar.Expr) bool {
-	return directFrameExprOK(expr, false, false)
-}
-
-func directFrameExprOK(expr grammar.Expr, cuts, recovery bool) bool {
+// flowBodyOK reports whether Flow IR can print the expression e in place. A cut is allowed if cuts is
+// set and a recovery attribute if recovery is set; an Operators Rule never is.
+func flowBodyOK(expr grammar.Expr, cuts, recovery bool) bool {
 	ok := true
 	walkExpr(expr, func(e grammar.Expr) {
 		switch e := e.(type) {
@@ -79,11 +66,11 @@ func directFrameExprOK(expr grammar.Expr, cuts, recovery bool) bool {
 	return ok
 }
 
-// directLeanOK selects value-free plain rules of the Node runtime. Captures
+// leanRuleOK selects value-free plain rules of the Node runtime. Captures
 // unused by recognition are omitted; predicates keep the general code because
 // they can require values, capture frames and variable bindings.
-func directLeanOK(r *rule) bool {
-	if !r.plain || !r.lean || !r.novalue || !directOK(r) {
+func leanRuleOK(r *rule) bool {
+	if !r.plain || !r.lean || !r.novalue || !flatRuleOK(r) {
 		return false
 	}
 	ok := true
@@ -99,7 +86,7 @@ type dvar struct{ name, typ string }
 
 // markVar records, of the variable name of d.vars, that it is not declared (dead) or that it stays
 // declared with nothing to read it (quiet).
-func (d *direct) markVar(name string, dead bool) {
+func (d *flatRule) markVar(name string, dead bool) {
 	m := &d.quiet
 	if dead {
 		m = &d.dead
@@ -221,9 +208,9 @@ func walkChildren(t grammar.Term, f func(grammar.Term)) {
 	}
 }
 
-// direct is a direct rule's compiled body: the declarations and statements of the method that
+// flatRule is a flat rule's printed body: the declarations and statements of the method that
 // calls it, up to the rule's value in v (success falls through; failure jumps to fail).
-type direct struct {
+type flatRule struct {
 	vars       []dvar
 	dead       map[string]bool // the variables of vars that are not declared (varLinesExcept)
 	quiet      map[string]bool // the variables of vars that are declared, unread and silenced after their declaration
@@ -234,9 +221,9 @@ type direct struct {
 	start, ctx bool // the value uses start, the context c
 }
 
-// directMethod writes the method name that calls the direct rule r: as invokePlain does if plain
+// flatMethod writes the method name that calls the flat rule r: as invokePlain does if plain
 // (restoring the position and the recovered errors when it fails), otherwise as invoke does.
-func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain bool) {
+func (g *generator) flatMethod(r *rule, d *flatRule, name, comment string, plain bool) {
 	observeBody := g.observability && g.table == "trules" && (!r.plain || g.directTypedDocument)
 	if g.observability && !observeBody {
 		name = g.tracePlainWrapper(r, name)
@@ -298,14 +285,14 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 	m.WriteString("}\n\n")
 }
 
-// directLeanBody provides the rule-table body for external entry and generic
+// leanRuleBody provides the rule-table body for external entry and generic
 // fallback calls. Its caller owns depth and failure rollback, so it adds neither.
-func (g *generator) directLeanBody(r *rule, d *direct) string {
-	return g.method(r.name+" (value-free body inlined)", g.directLeanText(d))
+func (g *generator) leanRuleBody(r *rule, d *flatRule) string {
+	return g.method(r.name+" (value-free body inlined)", g.leanRuleText(d))
 }
 
-// directLeanText returns the text of the method body of the value-free direct rule d.
-func (g *generator) directLeanText(d *direct) string {
+// leanRuleText returns the text of the method body of the value-free flat rule d.
+func (g *generator) leanRuleText(d *flatRule) string {
 	var b strings.Builder
 	var vs []dvar
 	if d.succeed {
@@ -322,7 +309,7 @@ func (g *generator) directLeanText(d *direct) string {
 	return b.String()
 }
 
-func directHasRecovery(e grammar.Expr) bool {
+func exprRecovers(e grammar.Expr) bool {
 	found := false
 	walkExpr(e, func(e grammar.Expr) {
 		if e, ok := e.(*grammar.Attributed); ok {

@@ -38,7 +38,7 @@ func TestFlowRecognizerPrintsCapturesFromFlow(t *testing.T) {
 	for _, controls := range []bool{false, true} {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
-			directRouteHook = func(table string, r *rule) {
+			leanRouteHook = func(table string, r *rule) {
 				if c, _ := hasCaptureOfRepeat(r.bodyExpr()); c {
 					taken[table+" lean with captures"]++
 				}
@@ -52,7 +52,7 @@ func TestFlowRecognizerPrintsCapturesFromFlow(t *testing.T) {
 					taken[table+" framed with a captured repetition"]++
 				}
 			}
-			defer func() { directRouteHook, framedRouteHook = nil, nil }()
+			defer func() { leanRouteHook, framedRouteHook = nil, nil }()
 			for _, c := range cases {
 				g, err := parseTest(c.src)
 				if err != nil {

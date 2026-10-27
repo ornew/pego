@@ -18,10 +18,10 @@ import (
 // run on the whole output afterwards.
 
 // recFlowEligible reports whether the rule r of the Node table or of the recognizer table is printed
-// from Flow IR as a direct rule: a lean value-free rule (directLeanOK). Its captures
-// are Flow statements as in any rule; a semantic predicate keeps a rule out of directLeanOK.
+// from Flow IR as a flat rule: a lean value-free rule (leanRuleOK). Its captures
+// are Flow statements as in any rule; a semantic predicate keeps a rule out of leanRuleOK.
 func recFlowEligible(r *rule) bool {
-	if !directLeanOK(r) {
+	if !leanRuleOK(r) {
 		return false
 	}
 	ok := true
@@ -68,20 +68,20 @@ func (g *generator) startRecFlow(rec *Program) error {
 	return nil
 }
 
-// refuseFlowRecDirect, if set by a test, makes flowRecDirect refuse the rules it selects, so that the
+// refuseFlowRecRule, if set by a test, makes flowRecRule refuse the rules it selects, so that the
 // framed body that takes their place is exercised. No manifest grammar reaches that fallback.
-var refuseFlowRecDirect func(*rule) bool
+var refuseFlowRecRule func(*rule) bool
 
-// flowRecDirect prints the eligible rule r of the recognizer from Flow IR as a direct rule. It returns
+// flowRecRule prints the eligible rule r of the recognizer from Flow IR as a flat rule. It returns
 // nil in three cases, and the caller (generator.rules) then prints the rule's framed body from Flow IR
 // (flowNodeFrameBody) and calls it through the rule table (plainCall); the generation fails if that
 // does not print it either:
 //   - flow.LocalRule rejects the rule, which needs the runtime-owned frame of a framed function;
-//   - the printed function would read its start or its context, which a value-free direct rule has
+//   - the printed function would read its start or its context, which a value-free flat rule has
 //     no parameters for;
 //   - a variable of the function has a type that untypedGoType cannot name.
-func (g *generator) flowRecDirect(r *rule) *direct {
-	if refuseFlowRecDirect != nil && refuseFlowRecDirect(r) {
+func (g *generator) flowRecRule(r *rule) *flatRule {
+	if refuseFlowRecRule != nil && refuseFlowRecRule(r) {
 		return nil
 	}
 	cr := g.flow.m.Rules[r.id]
@@ -100,7 +100,7 @@ func (g *generator) flowRecDirect(r *rule) *direct {
 	if p.reads[f.Start] || p.reads[f.Ctx] {
 		return nil
 	}
-	out := &direct{fail: p.used[f.Fail], succeed: !p.dead}
+	out := &flatRule{fail: p.used[f.Fail], succeed: !p.dead}
 	res := p.vars.resolve(f.Vars, p.b.String())
 	g.flowVarsErr(res)
 	var unread []string

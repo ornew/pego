@@ -465,7 +465,7 @@ type TRule struct {
 	OperatorsRule *TOperatorsRule
 	// Entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>). The
 	// generated parser sets it only for the start rules, which TParse runs through it; every other
-	// rule is called through the generated methods that name it. A direct rule (see gen_direct.go)
+	// rule is called through the generated methods that name it. A flat rule (see gen_flowrule.go)
 	// has no body or action and is called only through it.
 	Entry func(p *TParser) (any, bool)
 	// Nt is the registered index of the named node type the rule's value is converted to

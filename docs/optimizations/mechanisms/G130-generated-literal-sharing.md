@@ -32,7 +32,7 @@ sharing alone.
 Evidence records: [090](../090-share-identical-generated-helpers.md).
 
 Source owners: [`generator literal registry`](../../../internal/engine/gen.go),
-[`speculative registry rollback`](../../../internal/engine/gen_direct.go),
+[`speculative registry rollback`](../../../internal/engine/gen_flowrule.go),
 [`TypeScript literal sharing selection`](../../../internal/engine/gen_ts.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

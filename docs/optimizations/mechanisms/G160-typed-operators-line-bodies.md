@@ -32,8 +32,8 @@ longest-attempt allocation or arbitrary Operators Rule grammars.
 Evidence records: [080](../080-inline-eligible-typed-operators-rule-lines.md).
 
 Source owners: [`typed structural
-emitter`](../../../internal/engine/gen_direct.go), [`framed body
-emission`](../../../internal/engine/gen_direct_node.go).
+emitter`](../../../internal/engine/gen_flowrule.go), [`framed body
+emission`](../../../internal/engine/gen_flowframe.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

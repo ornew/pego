@@ -41,9 +41,9 @@ rule left = left "+" "é" / "é"
 	}
 	// The depth comparison below runs the recognizer table (recRules), so the route is checked there.
 	taken := map[string]bool{}
-	directRouteHook = func(table string, r *rule) { taken[table+"/"+r.name] = true }
+	leanRouteHook = func(table string, r *rule) { taken[table+"/"+r.name] = true }
 	code, err := generateCode(g, GenOptions{Package: "depth", Start: "main", Recognize: true})
-	directRouteHook = nil
+	leanRouteHook = nil
 	if err != nil {
 		t.Fatal(err)
 	}

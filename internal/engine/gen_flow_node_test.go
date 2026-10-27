@@ -26,11 +26,11 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 	}
 	cases := genCorpus(t)
 	taken := map[string]int{}
-	directRouteHook = func(table string, r *rule) { taken[table]++ }
+	leanRouteHook = func(table string, r *rule) { taken[table]++ }
 	framed, operators := map[string]int{}, map[string]int{}
 	framedRouteHook = func(table string, r *rule) { framed[table]++ }
 	operatorsRouteHook = func(table string, r *rule) { operators[table]++ }
-	t.Cleanup(func() { directRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil })
+	t.Cleanup(func() { leanRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil })
 	for _, c := range cases {
 		g, err := parseTest(c.src)
 		if err != nil {
@@ -40,7 +40,7 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 	}
-	directRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil
+	leanRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil
 	for _, table := range []string{"rules", "recRules"} {
 		if operators[table] == 0 {
 			t.Errorf("no Operators Rule line of the %s table is printed from Flow IR: the parity test does not cover them", table)
@@ -87,14 +87,14 @@ func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 				}
 				o := GenOptions{Package: "x", Module: "example.com/x", Runtime: RuntimeImport, Recognize: true, WorkControls: form.controls, Observability: form.observe, Document: form.document}
 				taken, framed, operators := 0, 0, 0
-				directRouteHook = func(table string, r *rule) {
+				leanRouteHook = func(table string, r *rule) {
 					if table == "rules" {
 						taken++
 					}
 				}
 				framedRouteHook = func(table string, r *rule) { framed++ }
 				operatorsRouteHook = func(table string, r *rule) { operators++ }
-				defer func() { directRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil }()
+				defer func() { leanRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil }()
 				files, err := Generate(g, o)
 				if err != nil {
 					t.Fatal(err)

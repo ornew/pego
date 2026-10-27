@@ -27,7 +27,7 @@ func testGeneratedFlowRecognizerParity(t *testing.T) {
 	}
 	cases := genCorpus(t)
 	taken, framed := 0, 0
-	directRouteHook = func(table string, r *rule) {
+	leanRouteHook = func(table string, r *rule) {
 		if table == "recRules" {
 			taken++
 		}
@@ -37,7 +37,7 @@ func testGeneratedFlowRecognizerParity(t *testing.T) {
 			framed++
 		}
 	}
-	t.Cleanup(func() { directRouteHook, framedRouteHook = nil, nil })
+	t.Cleanup(func() { leanRouteHook, framedRouteHook = nil, nil })
 	for _, c := range cases {
 		g, err := parseTest(c.src)
 		if err != nil {
@@ -47,7 +47,7 @@ func testGeneratedFlowRecognizerParity(t *testing.T) {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 	}
-	directRouteHook, framedRouteHook = nil, nil
+	leanRouteHook, framedRouteHook = nil, nil
 	if taken == 0 || framed == 0 {
 		t.Fatalf("%d direct and %d framed rules of the recognizer take the Flow route: the parity test exercises nothing", taken, framed)
 	}
@@ -277,7 +277,7 @@ var (
 	variableName   = regexp.MustCompile(`x\d+`)
 )
 
-// TestFlowRecognizerFallbackMatchesEngine checks the fallback of the Flow route: a rule that flowRecDirect
+// TestFlowRecognizerFallbackMatchesEngine checks the fallback of the Flow route: a rule that flowRecRule
 // refuses is printed from its framed body, called through the rule table, and the recognizer and parser of every
 // input of the grammar must still agree with the engine. The test refuses every eligible rule, so that the
 // framed body is exercised for all of them, and requires that each refused rule took the framed route.
@@ -290,7 +290,7 @@ func TestFlowRecognizerFallbackMatchesEngine(t *testing.T) {
 		"rule main = ws item* !.\nrule ws = ([ ] / comment)*\nrule comment = \"--\" [^\\n]* / block_comment\nrule block_comment = \"/*\" (block_comment / !\"*/\" .)* \"*/\"\nrule item = [a-z]+ / [0-9]+\n",
 		[]string{"", "a", "a 1 b2", "-- c\n a", "/* x */ a", "/* /* y */ */ 1", "/* open", "a -- tail", "@", "a /* x */ /* y */ 2", "--"}}
 	refused, framed := map[string]bool{}, map[string]bool{}
-	refuseFlowRecDirect = func(r *rule) bool {
+	refuseFlowRecRule = func(r *rule) bool {
 		if recFlowEligible(r) {
 			refused[r.name] = true
 			return true
@@ -302,14 +302,14 @@ func TestFlowRecognizerFallbackMatchesEngine(t *testing.T) {
 			framed[r.name] = true
 		}
 	}
-	t.Cleanup(func() { refuseFlowRecDirect, framedRouteHook = nil, nil })
+	t.Cleanup(func() { refuseFlowRecRule, framedRouteHook = nil, nil })
 	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), []genCase{c}, GenOptions{})
 	if len(refused) == 0 {
 		t.Fatal("no rule was refused: the fallback is not exercised")
 	}
 	for name := range refused {
 		if !framed[name] {
-			t.Errorf("rule %s was refused by flowRecDirect but did not take the framed route", name)
+			t.Errorf("rule %s was refused by flowRecRule but did not take the framed route", name)
 		}
 	}
 }

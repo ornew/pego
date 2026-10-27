@@ -28,14 +28,14 @@ func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
 	}{{"ordinary", false}, {"controls", true}} {
 		t.Run(form.name, func(t *testing.T) {
 			taken, framed, operators, generated := 0, 0, 0, 0
-			directRouteHook = func(table string, r *rule) {
+			leanRouteHook = func(table string, r *rule) {
 				if table == "rules" {
 					taken++
 				}
 			}
 			framedRouteHook = func(table string, r *rule) { framed++ }
 			operatorsRouteHook = func(table string, r *rule) { operators++ }
-			defer func() { directRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil }()
+			defer func() { leanRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil }()
 			for _, c := range cases {
 				g, err := parseTest(c.src)
 				if err != nil {
@@ -169,7 +169,7 @@ func TestFlowTypedOnlyEntriesMatchFull(t *testing.T) {
 			dir := t.TempDir()
 			writeGoMod(t, dir)
 			taken := 0
-			directRouteHook = func(table string, r *rule) {
+			leanRouteHook = func(table string, r *rule) {
 				if table == "rules" {
 					taken++
 				}
@@ -208,7 +208,7 @@ func TestFlowTypedOnlyEntriesMatchFull(t *testing.T) {
 				ordinaryOnlyPackage(t, dir, mutated, mut, mo, typedOnlyTranscript, c.inputs)
 				pkgs = append(pkgs, full, flowOnly, mutated)
 			}
-			directRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil
+			leanRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil
 			out := runTranscripts(t, dir, pkgs...)
 			for i, c := range typedOnlyConverted {
 				full, flowOnly, mutated := out[fmt.Sprintf("full%d", i)], out[fmt.Sprintf("flow%d", i)], out[fmt.Sprintf("mut%d", i)]

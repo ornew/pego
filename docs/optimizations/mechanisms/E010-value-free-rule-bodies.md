@@ -49,7 +49,7 @@ Evidence records:
 Source owners: [`leanBody and
 compiler.compileRule`](../../../internal/engine/compile.go), [`body value
 lowering`](../../../internal/engine/gen.go), [`direct body build
-mode`](../../../internal/engine/gen_direct.go), [`TypeScript body build
+mode`](../../../internal/engine/gen_flowrule.go), [`TypeScript body build
 mode`](../../../internal/engine/gen_ts.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

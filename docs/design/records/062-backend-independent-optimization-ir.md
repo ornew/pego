@@ -132,7 +132,7 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
     recognizers run as the engine's on the corpus and the testdata of the ten checked-in grammars; mutants that drop
     the recording of captures, drop every cut, guard a left-recursive alternative by a wrong first set, drop the
     value of the seed read, or drop the recording, the zero-progress check or the reset after a failed skip fail
-    those comparisons. A recognizer rule that `flowRecDirect` refuses is printed from its framed body, which a test
+    those comparisons. A recognizer rule that `flowRecRule` refuses is printed from its framed body, which a test
     forces for every eligible rule and compares with the engine.
   - `ParseStream` and its iterators are compared with the engine's (the elements and the reader calls before each,
     the diagnostics and the final error); the stream body of a rule is its batch body with the stream statements

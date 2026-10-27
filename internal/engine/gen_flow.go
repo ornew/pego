@@ -14,8 +14,8 @@ import (
 // Typed Go rules printed from Flow IR.
 //
 // The typed rules are built as Core IR (typedCore) and printed from Flow IR here. The rules that
-// flow.LocalRule accepts are lowered to local functions (flow.Lower) and printed into the direct
-// rule that typedCall and directMethod wrap. The bodies of left-recursion leaders and of rules
+// flow.LocalRule accepts are lowered to local functions (flow.Lower) and printed into the flat
+// rule that typedCall and flatMethod wrap. The bodies of left-recursion leaders and of rules
 // that recover, and the lines of Operators Rules, are lowered to framed functions
 // (flow.LowerFrame) and printed into the matcher methods that the runtime calls under the frames
 // it owns (finishFrameBody). A construct that neither form accepts is reported as an error
@@ -54,7 +54,7 @@ func (g *generator) failFlow(what string) {
 // flowLineOK reports whether the Operators Rule line e is a framed body that Flow IR can print
 // inside the runtime-owned frame of its rule.
 func flowLineOK(e grammar.Expr) bool {
-	return directFrameExprOK(e, true, true)
+	return flowBodyOK(e, true, true)
 }
 
 // startFlow builds the Core IR of the typed rules for printing them from Flow IR.
@@ -78,9 +78,9 @@ func (g *generator) flowOptions(m *core.Module) flow.Options {
 		GuardedClasses: g.ordinary && !g.disableGuardedClasses, InlineLiterals: maxInlineLiteral, Observe: g.observability, Document: g.document}
 }
 
-// flowDirectRule prints the rule r from Flow IR as a direct rule, or returns nil if r is not
+// flowTypedRule prints the rule r from Flow IR as a flat rule, or returns nil if r is not
 // printed from Flow IR.
-func (g *generator) flowDirectRule(r *rule) *direct {
+func (g *generator) flowTypedRule(r *rule) *flatRule {
 	if g.flow == nil || g.table != "trules" {
 		return nil
 	}
@@ -99,7 +99,7 @@ func (g *generator) flowDirectRule(r *rule) *direct {
 	p.stmts(f.Body)
 	res := p.vars.resolve(f.Vars, p.b.String())
 	g.flowVarsErr(res)
-	out := &direct{fail: p.used[f.Fail], succeed: !p.dead, binds: f.Binds, start: res.read(f.Start), ctx: res.read(f.Ctx)}
+	out := &flatRule{fail: p.used[f.Fail], succeed: !p.dead, binds: f.Binds, start: res.read(f.Start), ctx: res.read(f.Ctx)}
 	var unread []string
 	for _, v := range f.Vars {
 		out.vars = append(out.vars, dvar{v.Name, goType(v.Type)})
@@ -187,7 +187,7 @@ func (g *generator) flowStreamBody(r *rule, scope *scope) string {
 }
 
 // flowFrameExprOK reports whether the body of the rule r is one that Flow IR prints as a framed body of the
-// Node or recognizer table: as directOK, except that a body may cut or recover, and that the rule may be a
+// Node or recognizer table: as flatRuleOK, except that a body may cut or recover, and that the rule may be a
 // left-recursion leader. Flow IR lowers a cut as the typed table does (a flag per backtracking point,
 // published to the runtime's cut flag on return), so the
 // runtime's frame, memo and finish ownership are the same. The runtime owns the growth of a leader's seed
@@ -195,7 +195,7 @@ func (g *generator) flowStreamBody(r *rule, scope *scope) string {
 // first set and are never guarded. The runtime's RecoverAttr sequence is lowered inline, with NewErrorNode
 // building the error node.
 func flowFrameExprOK(r *rule) bool {
-	return directFrameExprOK(r.bodyExpr(), true, true)
+	return flowBodyOK(r.bodyExpr(), true, true)
 }
 
 // flowNodeFrameOK reports whether the rule r of the Node or recognizer table is printed from Flow IR as
@@ -241,7 +241,7 @@ func (g *generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope 
 	if g.flow == nil || l == nil || !flowLineOK(e) || !flow.FramedBody(l.Body) {
 		return ""
 	}
-	if g.table != "trules" && !directFrameExprOK(e, true, true) {
+	if g.table != "trules" && !flowBodyOK(e, true, true) {
 		return ""
 	}
 	lower := flow.LowerFrame
@@ -351,7 +351,7 @@ func (p *flowPrinter) goType(t flow.Type) string {
 	return goType(t)
 }
 
-// flowPrinter prints the body of a Flow IR function as the statements of a direct rule or, if
+// flowPrinter prints the body of a Flow IR function as the statements of a flat rule or, if
 // frame, of a matcher method.
 type flowPrinter struct {
 	g     *generator
