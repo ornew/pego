@@ -76,7 +76,7 @@ for backend scope, cleanup and measured costs.
 ### Code Generation
 
 Generated Go and TypeScript parsers embed their runtime and depend only on their standard libraries. Generated Go
-has direct paths for supported rules and general per-expression fallback; typed Go also emits inferred Go types
+is printed from Flow IR ([design 062](design/records/062-backend-independent-optimization-ir.md)): lean value-free rules as direct rules and the others as framed bodies the runtime calls; typed Go also emits inferred Go types
 and `ParseAST`/`ParseRuleAST` for configured-start and named rules
 ([design 029](design/records/029-typed-named-rule-parsing.md)). Generation defaults (`WithGeneratedMaxDepth`, `gen -max-depth`) and invocation-local depth
 options are implemented ([design 022](design/records/022-generated-parser-depth-limits.md)); Go entry points accept
@@ -183,6 +183,7 @@ The guides show how to test a grammar in an application. The repository uses the
 | Reference-implementation and conformance tests with fuzz targets | Each parser module's tests, for example [`parsers/json/json_test.go`](../parsers/json/json_test.go) |
 | Generated inputs and backend comparisons | [`sample/example_test.go`](../sample/example_test.go) |
 | Compiled grammars, Documents and backend equivalence | `internal/engine/` tests such as `compiled_test.go` and `document_test.go` |
+| Generated Go against the engine and regression freezes of what the engine cannot say (observation, Documents, work, streams, lowering decisions) | `internal/engine/` tests `gen_flow_*_test.go` and `core_*_test.go` with `internal/engine/testdata/*.golden`; a change of what a golden freezes is rewritten with `go test ./internal/engine -run <test> -update` and its diff reviewed |
 
 Root `go test ./...` covers the main module. Run [`parsers/test.sh`](../parsers/test.sh) to vet and test all standalone parser modules; `cd site && go test ./...` covers the site module.
 

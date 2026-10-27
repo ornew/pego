@@ -19,9 +19,9 @@ import (
 // that recover, and the lines of Operators Rules, are lowered to framed functions
 // (flow.LowerFrame) and printed into the matcher methods that the runtime calls under the frames
 // it owns (finishFrameBody). A construct that neither form accepts is reported as an error
-// (failTyped): the typed output has no other route.
+// (failFlow): no table has another route.
 //
-// The printer follows reachability as dgen does: a statement at an unreachable point is left out,
+// The printer follows reachability: a statement at an unreachable point is left out,
 // but its text is still formed, so that the package variables it names (literals, expectations,
 // class tables, shapers, scopes) are declared in the same order. The variables of the function
 // that no printed statement reads are assigned to the blank identifier on the first line.
@@ -35,11 +35,11 @@ type flowState struct {
 	rules []*rule
 }
 
-// failTyped records that Flow IR does not print a typed part, which fails the generation: the
-// typed printer has no fallback to the generator's expression lowering.
-func (g *generator) failTyped(what string) {
-	if g.table == "trules" && g.typedErr == nil {
-		g.typedErr = fmt.Errorf("Flow IR does not print %s", what)
+// failFlow records that Flow IR does not print a part of a table, which fails the generation: every
+// table is printed from Flow IR and has no other route.
+func (g *generator) failFlow(what string) {
+	if g.flowErr == nil {
+		g.flowErr = fmt.Errorf("Flow IR does not print %s", what)
 	}
 }
 
@@ -131,11 +131,9 @@ func (g *generator) flowFrameBody(r *rule, scope *scope) string {
 
 // flowNodeFrameBody prints the body of the rule r of the Node table from Flow IR as the matcher of
 // its frame body, or returns "" if r takes another route. The rule is eligible (flowNodeFrameOK) when
-// dgen prints it as a direct Node body, its Core body is a framed body and its action reads only
-// captures of the frame; the runtime owns depth, memo, frame, action and finish, as for the body dgen
-// prints. With work controls (Options.Work) the body charges the steps Flow IR makes explicit, which
-// differ in count from the matcher generator.expr writes (Flow's guards skip alternatives that
-// generator.expr tries); the limits of a parse hold at Flow's own charges.
+// its Core body is a framed body and its action reads only captures of the frame; the runtime owns depth,
+// memo, frame, action and finish. With work controls (Options.Work) the body charges the steps Flow IR
+// makes explicit; the limits of a parse hold at Flow's own charges.
 func (g *generator) flowNodeFrameBody(r *rule, scope *scope) string {
 	cr, ok := g.flowNodeFrameOK(r)
 	if !ok {
@@ -159,7 +157,7 @@ func (g *generator) flowNodeFrameBody(r *rule, scope *scope) string {
 // capture layout of the printed body must be the batch body's, which the action addresses by slot.
 func (g *generator) flowStreamBody(r *rule, scope *scope) string {
 	cr, ok := g.flowNodeFrameOK(r)
-	if !ok || !g.flow.opts.Node || g.directStream {
+	if !ok || !g.flow.opts.Node {
 		return ""
 	}
 	opts := g.flow.opts
@@ -176,7 +174,7 @@ func (g *generator) flowStreamBody(r *rule, scope *scope) string {
 // flowFrameExprOK reports whether the body of the rule r is one that Flow IR prints as a framed body of the
 // Node or recognizer table: as directOK, except that a body may cut or recover, and that the rule may be a
 // left-recursion leader. Flow IR lowers a cut as the typed table does (a flag per backtracking point,
-// published to the runtime's cut flag on return, as generator.expr's rule wrapper leaves it), so the
+// published to the runtime's cut flag on return), so the
 // runtime's frame, memo and finish ownership are the same. The runtime owns the growth of a leader's seed
 // around its body, so the body is the matcher of any other rule; its left-recursive alternatives have no
 // first set and are never guarded. The runtime's RecoverAttr sequence is lowered inline, with NewErrorNode
@@ -554,14 +552,14 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 		p.read(s.X)
 		p.write(fmt.Sprintf("p.Recovered = append(p.Recovered, %s)\n", p.expr(s.X)))
 	case *flow.DeclareNames:
-		// Declared whatever the reachability, as dgen does.
+		// Declared whatever the reachability.
 		p.scopeNames(s.N)
 		p.declare(s.N)
 	case *flow.Comment:
 		p.write("// " + s.Text + "\n")
 	case *flow.ObserveSkip:
 		// The alternative's expression begins with the call it skips, if any; a blank line follows
-		// the report, as in the code of dgen.
+		// the report.
 		if trace := p.g.traceSkip(p.g.flow.origin[s.Alt]); trace != "" {
 			p.write(strings.TrimPrefix(trace, "\n") + "\n")
 		}

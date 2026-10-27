@@ -12,8 +12,8 @@ import (
 
 // The grammars of testdata/routes exercise the routes of typed rules that the Flow IR prints:
 // left recursion with inline and recovering bodies, lookaheads that read leader captures, calls
-// and recovery inside Operators Rules, and scopes of captures. Each is compared with dgen, built
-// and run against the engine, and checked to be printed from Flow IR in every flowModes mode.
+// and recovery inside Operators Rules, and scopes of captures. Each is built and run against
+// the engine, and checked to be printed from Flow IR in every flowModes mode.
 
 // routeInputs are the inputs of each route grammar, by file name without the extension.
 var routeInputs = map[string][]string{

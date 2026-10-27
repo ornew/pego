@@ -246,8 +246,8 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 			return typedOutput{}, err
 		}
 		g.rules()
-		if g.typedErr != nil {
-			return typedOutput{}, g.typedErr
+		if g.flowErr != nil {
+			return typedOutput{}, g.flowErr
 		}
 		g.flow = nil
 		g.table = "rules"

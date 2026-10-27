@@ -259,7 +259,7 @@ func generateCode(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 		return nil, err
 	}
 	code := mergeGenerated(files)
-	if !opts.directRecognizer && flowRecognizerMutant != nil {
+	if flowRecognizerMutant != nil {
 		code = flowRecognizerMutant(code)
 	}
 	return code, nil

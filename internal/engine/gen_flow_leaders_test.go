@@ -2,7 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"sort"
 	"testing"
 )
 
@@ -12,15 +11,14 @@ import (
 // entry that a left-recursive call reads as the seed, the dependency counts of the seed reads, and the merging of
 // the expected sets of the iterations); the generated code supplies the body that the runtime evaluates for each
 // iteration. A left-recursive alternative has no first set (ruleFirst gives none for a leader), so it is never
-// guarded and always reads the seed; the other alternatives are guarded as in any rule. The direct printer
-// prints no rule of either table any more. The generated parsers of the corpus (the leader cases
+// guarded and always reads the seed; the other alternatives are guarded as in any rule. The generated parsers of the corpus (the leader cases
 // of genCorpus: memoized callers, lookaheads, nesting, cuts and captures, with inputs that fail after a seed)
 // run as the engine's, with observation, Documents (statistics included) and work controls, and ParseStream
 // delivers the same elements and errors; the tests here assert the route.
 
 // TestFlowLeadersPrintFromFlow checks that every leader takes the Flow route in the Node and
-// recognizer tables, over the corpus and the ten grammars in both forms, and that no rule
-// falls back to the direct printer.
+// recognizer tables, over the corpus and the ten grammars in both forms (a rule Flow IR does not
+// print fails the generation).
 func TestFlowLeadersPrintFromFlow(t *testing.T) {
 	if testing.Short() {
 		t.Skip("generates the corpus")
@@ -29,16 +27,12 @@ func TestFlowLeadersPrintFromFlow(t *testing.T) {
 	for _, controls := range []bool{false, true} {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
-			var bad []string
 			framedRouteHook = func(table string, r *rule) {
 				if r.leader {
 					taken[table]++
 				}
 			}
-			directFallbackHook = func(table, route string, r *rule) {
-				bad = append(bad, fmt.Sprintf("%s %s (%s, leader %v) falls back", table, r.name, route, r.leader))
-			}
-			defer func() { framedRouteHook, directFallbackHook = nil, nil }()
+			defer func() { framedRouteHook = nil }()
 			for _, c := range cases {
 				g, err := parseTest(c.src)
 				if err != nil {
@@ -46,10 +40,6 @@ func TestFlowLeadersPrintFromFlow(t *testing.T) {
 				}
 				if _, err := Generate(g, GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
 					t.Fatalf("%s: %v", c.name, err)
-				}
-				if len(bad) > 0 {
-					sort.Strings(bad)
-					t.Fatalf("%s: %v", c.name, bad)
 				}
 			}
 			for _, table := range []string{"rules", "recRules"} {

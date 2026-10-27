@@ -809,8 +809,8 @@ func (g *generator) typedCore(origin map[core.Node]grammar.Expr) (*core.Module, 
 		return nil, err
 	}
 	hook := func(string, *core.Module) {}
-	if g.decisions != nil && g.decisions.coreHook != nil {
-		hook = g.decisions.coreHook
+	if g.coreHook != nil {
+		hook = g.coreHook
 	}
 	hook("build", m)
 	leanTyped := g.lean && g.goWorkControls

@@ -44,10 +44,11 @@ func TestCoreBuildCorpus(t *testing.T) {
 			t.Errorf("%s: %v", c.name, err)
 			continue
 		}
-		g := &generator{prog: prog, table: "rules", goWorkControls: true}
-		g.desc(fixedDescs[0])
-		g.rules()
-		for _, r := range append(append([]*rule(nil), prog.rules...), prog.twins...) {
+		g, ok := coreGenerate(c.src, GenOptions{})
+		if !ok {
+			continue
+		}
+		for _, r := range typedRules(g) {
 			if _, ok := m.Rules[r.id].Body.(*core.OperatorsRule); ok {
 				continue
 			}

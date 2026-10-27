@@ -29,8 +29,7 @@ figures do not quantify Node or Bytes benefits.
 
 Evidence records: [061](../061-reading-code-points-directly-in-direct-rules.md).
 
-Source owners: [`peek emission and
-dgen.single`](../../../internal/engine/gen_direct.go), [`input
+Source owners: [`Flow peek lowering`](../../../internal/engine/flow/lower.go), [`input
 preparation`](../../../runtime/runtime.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

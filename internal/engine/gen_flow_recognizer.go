@@ -13,12 +13,12 @@ import (
 //
 // The rules of a recognizer (recRules) and the lean rules of the Node table (rules) that
 // recFlowEligible accepts are built as Core IR, lowered by flow.Lower and printed by flowPrinter for
-// the untyped Node runtime, in place of the direct rules of dgen. The other rules keep their printer,
-// in the same output. Both tables share the helpers whose printed text is equal. The ordinary passes
+// the untyped Node runtime. The other rules print their framed body from Flow IR as well
+// (flowNodeFrameBody), in the same output. Both tables share the helpers whose printed text is equal. The ordinary passes
 // run on the whole output afterwards, so a printed rule gets its ordinary branch as a generated one does.
 
 // recFlowEligible reports whether the rule r of the Node table or of the recognizer table is printed
-// from Flow IR: a rule that the direct printer prints as a lean value-free rule (directLeanOK). Its captures
+// from Flow IR as a direct rule: a lean value-free rule (directLeanOK). Its captures
 // are Flow statements as in any rule; a semantic predicate keeps a rule out of directLeanOK.
 func recFlowEligible(r *rule) bool {
 	if !directLeanOK(r) {
@@ -39,7 +39,7 @@ func recFlowEligible(r *rule) bool {
 // eligible rules from Flow IR. It runs the passes of typedCore that the Node runtime's rules use:
 // rewrites, Analyze, Guards, scans and the repeats, which followRepeats keeps in step with the scans.
 // It omits Terminals and ClassRuns, which typedCore runs only for lean typed rules (leanTyped): the Node recognizer writes
-// its terminals and classes as the direct printer does, as inline tests.
+// its terminals and classes as inline tests.
 func (g *generator) startRecFlow(rec *Program) error {
 	origin := map[core.Node]grammar.Expr{}
 	m, err := buildCoreProjecting(rec, origin, g.table != "recRules")
@@ -68,13 +68,18 @@ func (g *generator) startRecFlow(rec *Program) error {
 	return nil
 }
 
-// flowRecDirect prints the eligible rule r of the recognizer from Flow IR as a direct rule, or
-// returns nil if the printed function would read its start or context, which a value-free body
-// does not need.
 // refuseFlowRecDirect, if set by a test, makes flowRecDirect refuse the rules it selects, so that the
-// fallback of the Flow route to the direct printer is exercised. No manifest grammar reaches the fallback.
+// framed body that takes their place is exercised. No manifest grammar reaches that fallback.
 var refuseFlowRecDirect func(*rule) bool
 
+// flowRecDirect prints the eligible rule r of the recognizer from Flow IR as a direct rule. It returns
+// nil in three cases, and the caller (generator.rules) then prints the rule's framed body from Flow IR
+// (flowNodeFrameBody) and calls it through the rule table (plainCall); the generation fails if that
+// does not print it either:
+//   - flow.LocalRule rejects the rule, which needs the runtime-owned frame of a framed function;
+//   - the printed function would read its start or its context, which a value-free direct rule has
+//     no parameters for;
+//   - a variable of the function has a type that untypedGoType cannot name.
 func (g *generator) flowRecDirect(r *rule) *direct {
 	if refuseFlowRecDirect != nil && refuseFlowRecDirect(r) {
 		return nil

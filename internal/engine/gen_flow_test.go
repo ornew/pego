@@ -129,8 +129,10 @@ func flowGenerate(src string, opts GenOptions) (string, int, int, bool) {
 	if err != nil {
 		return "", 0, 0, false
 	}
-	dec := &genDecisions{}
-	opts.Module, opts.keepComments, opts.decisions = "example.com/p", true, dec
+	var gen *generator
+	generatorHook = func(x *generator) { gen = x }
+	defer func() { generatorHook = nil }()
+	opts.Module, opts.keepComments = "example.com/p", true
 	files, err := generate(g, opts)
 	if err != nil {
 		return "", 0, 0, false
@@ -141,8 +143,8 @@ func flowGenerate(src string, opts GenOptions) (string, int, int, bool) {
 		b.Write(f.Content)
 	}
 	n, frames := 0, 0
-	if dec.gen != nil {
-		n, frames = dec.gen.flowRules, dec.gen.flowFrames
+	if gen != nil {
+		n, frames = gen.flowRules, gen.flowFrames
 	}
 	return b.String(), n, frames, true
 }
@@ -200,15 +202,13 @@ func firstDiff(a, b string) string {
 		if x != y {
 			mark = "!"
 		}
-		fmt.Fprintf(&out, "%s %4d dgen: %s\n%s      flow: %s\n", mark, k+1, x, mark, y)
+		fmt.Fprintf(&out, "%s %4d a: %s\n%s      b: %s\n", mark, k+1, x, mark, y)
 	}
 	return out.String()
 }
 
 // TestFlowTypedCorpus builds the parsers of the typed corpus with and without work controls, with
-// the default printing rules from Flow IR, and checks that they parse every input as those of
-// dgen do: the comparison of their text leaves out the lines of unread variables, which the
-// compiler checks here.
+// the default printing rules from Flow IR, and checks that they parse every input as the engine does.
 func TestFlowTypedCorpus(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
@@ -224,7 +224,7 @@ func TestFlowTypedCorpus(t *testing.T) {
 
 // TestFlowTypedObservable builds observable typed parsers printed from Flow IR, with nodes and
 // typed-only, for the typed test grammars (a bounded part of the corpus), and checks them against
-// the parsers dgen prints without observability and against the engine's errors.
+// the parsers without observability and against the engine's errors.
 func TestFlowTypedObservable(t *testing.T) { eachMode(t, testFlowTypedObservable) }
 
 func testFlowTypedObservable(t *testing.T) {

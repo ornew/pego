@@ -16,7 +16,7 @@ import (
 
 // TestFlowTypedOnlyNodeRulesPrintFromFlow generates the Node rules of a typed-only parser, in the ordinary
 // and the work-controlled forms, over the corpus, and checks that every rule and Operators Rule line takes
-// the Flow route and none falls back to the direct printer.
+// the Flow route (a rule Flow IR does not print fails the generation).
 func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
 	if testing.Short() {
 		t.Skip("generates the corpus")
@@ -27,7 +27,7 @@ func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
 		controls bool
 	}{{"ordinary", false}, {"controls", true}} {
 		t.Run(form.name, func(t *testing.T) {
-			taken, framed, operators, generated, fell := 0, 0, 0, 0, 0
+			taken, framed, operators, generated := 0, 0, 0, 0
 			directRouteHook = func(table string, r *rule) {
 				if table == "rules" {
 					taken++
@@ -35,11 +35,7 @@ func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
 			}
 			framedRouteHook = func(table string, r *rule) { framed++ }
 			operatorsRouteHook = func(table string, r *rule) { operators++ }
-			directFallbackHook = func(table, route string, r *rule) { fell++ }
-			operatorsFallbackHook = func(table string, r *rule) { fell++ }
-			defer func() {
-				directRouteHook, framedRouteHook, operatorsRouteHook, directFallbackHook, operatorsFallbackHook = nil, nil, nil, nil, nil
-			}()
+			defer func() { directRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil }()
 			for _, c := range cases {
 				g, err := parseTest(c.src)
 				if err != nil {
@@ -54,9 +50,6 @@ func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
 			}
 			if generated < 10 || taken == 0 || framed == 0 || operators == 0 {
 				t.Errorf("generated %d grammars; %d direct, %d framed and %d Operators Rule lines took the Flow route", generated, taken, framed, operators)
-			}
-			if fell != 0 {
-				t.Errorf("%d rules or lines are printed by the direct printer", fell)
 			}
 		})
 	}

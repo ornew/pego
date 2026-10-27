@@ -5,17 +5,17 @@ supported bodies while retaining runtime-owned rule invocation and results.
 
 ## Mechanism and Invariants
 
-Value-free plain bodies use the structural emitter; supported value-building and
-memoized bodies extend it with frame-aware capture and action expressions. Rule
-wrappers still own depth, memoization, naming, rollback and recovery state.
-Unsupported cuts/recovery, Operators Rule declarations, LR leaders and
-unresolved captures remain general. Direct bodies may call fallback rules.
-External rule-table entry bodies leave invocation ownership to their caller.
+Value-free plain bodies print from Flow IR as direct rules; the other bodies
+(value-building and memoized bodies, cuts, recovery, LR leaders and Operators
+Rule lines) print as framed bodies that the runtime calls under the frame it
+owns. Rule wrappers still own depth, memoization, naming, rollback and recovery
+state. Direct bodies may call framed rules through the rule table. External
+rule-table entry bodies leave invocation ownership to their caller.
 
 ## Scope and State
 
-Default eligible generated Go Node parsing and recognition. Typed Go has
-separate direct routes; TypeScript is unchanged.
+Default eligible generated Go Node parsing and recognition. Typed Go prints its
+rules from Flow IR through its own dispatch; TypeScript is unchanged.
 
 ## Reference Control
 
@@ -36,7 +36,7 @@ Evidence records: [076](../076-inline-value-free-plain-generated-go-rules.md),
 
 Source owners: [`directLeanOK and
 directLeanBody`](../../../internal/engine/gen_direct.go),
-[`generator.directNodeBody`](../../../internal/engine/gen_direct_node.go),
+[`generator.flowNodeFrameBody`](../../../internal/engine/gen_flow.go),
 [`Node route selection`](../../../internal/engine/gen.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

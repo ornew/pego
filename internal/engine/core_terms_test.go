@@ -91,11 +91,11 @@ func unfieldOperand(o core.Operand) core.Term {
 	return t
 }
 
-// TestCoreTermRewritesMatchGenerator compares the structure and forms of every action, predicate,
-// binding and Operators line action after the term rewrites with what the generator writes, over
+// TestCoreTermRewritesFrozen compares the structure and forms of every action, predicate,
+// binding and Operators line action after the term rewrites with the frozen ones, over
 // the corpus in every mode and over a grammar with text comparisons of two captures, which the
 // corpus lacks. It checks that a term pass that leaves out a rewrite is caught.
-func TestCoreTermRewritesMatchGenerator(t *testing.T) {
+func TestCoreTermRewritesFrozen(t *testing.T) {
 	checkCoreAspect(t, "term", []coreBreak{
 		{"text dispatch left out", "terms", []string{"term"}, func(c *coreGenCase, m *core.Module) bool {
 			return replaceTerm(m, func(t core.Term) core.Term {

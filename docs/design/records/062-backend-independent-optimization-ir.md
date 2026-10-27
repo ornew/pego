@@ -40,8 +40,8 @@ The evidence below was measured at commit `4e2f3763` with Go 1.27.1 on an Apple 
 |:--|:--|--:|
 | Closure | `compiler.expr`/`exprMatcher` and helpers in `compile.go`, attributes in `attrs.go` | 720 |
 | Bytecode, shared by the recursive and iterative VMs | `bcompiler.match`/`elems`/`leaf`/`void` and helpers in `bcompile.go` | 490 |
-| Generated Go Node and recognizer | `generator.expr` and helpers in `gen.go`, one Go function per expression | 455 |
-| Generated typed Go | Flow IR prints every typed rule and Operators Rule line, and the lean and framed rules and the Operators Rule lines of ordinary Node and recognizer tables that it accepts; generation fails on a typed rule Flow IR does not print. `dgen` in `gen_direct.go` and `gen_direct_node.go` prints the remaining Node and recognizer rules, falling back to `generator.expr` | 1,770 |
+| Generated Go Node and recognizer | A printer in `gen.go` that wrote one Go function per expression | 455 |
+| Generated typed Go | A printer that wrote Go text directly from the expression tree, with the typed paths of the Node printer and of the Go term lowering as its fallback | 1,770 |
 | Terminal programs | `terminalProgram` in `gen_terminal.go` | 260 |
 | Generated TypeScript | `tsGen.expr` and helpers in `gen_ts.go` | 400 |
 
@@ -68,118 +68,95 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   `compile.go` with a cancellable copy in `class_context.go`, `generator.first` in `gen.go`,
   `terminalProgram.first` in `gen_terminal.go`), which a change to guard eligibility must keep in step.
   Guards are emitted in six places.
-- Generated typed Go is printed from Flow IR. Its rules and Operators Rule lines have no `dgen` route and no
-  private switch; `dgen` prints only the Node and recognizer tables.
-- The rules of an ordinary Node parser that `flowNodeFrameOK` accepts are printed from Flow IR in both tables: the
-  lean rules, and the framed rules whose bodies `flow.FramedBody` accepts (no
-  Nest, Operators Rule or Terminal node), together with the recognizer rules that `recFlowEligible` accepts
-  (`startRecFlow`, `gen_flow_recognizer.go`). `dgen` prints the other rules of both tables. A typed-only
-  build has Node rules only when a typed entry point converts the Node result of a rule (`keepNodes`); they print
-  from Flow IR like those of any Node build, and the tests below cover that case. The private
-  `directRecognizer` and `directNodeRules` options make `dgen` print all recognizer rules and all Node rules;
-  the parity tests use them as the oracle of the Flow route and nothing else sets them. Both tables print through
-  the same Flow printer, so a rule with the same text in the two tables is one shared helper by exact-text
-  sharing. A Node function is lowered with `Options.Node`, which makes it build `NewTerminalNode` and
-  `NewBranchNode` values and keeps frames out of the frame trail; Verify rejects the typed value ops in it and
-  the Node ops in a typed function. The Flow form has no `_ = x` line for a variable it reads nowhere, which
-  `dgen` writes; apart from those lines the output of all ten checked-in grammars is equal to `dgen`'s. The
-  recognizer's table writes its actions for the values of an unprojected repetition (`generator.projections` is
-  empty there), so the Core IR of the recognizer is built without projections (`buildCoreProjecting`): a captured
-  repetition of a recognizer rule builds its elements with their captures, as `dgen` does, and the rules with
-  captures print like any other rule. A body with a cut prints from Flow IR as a framed body, with the lowering of
-  the typed table: a flag per backtracking point (a choice alternative, an optional, a repetition element), which
-  the function reads from the runtime's cut flag on entry and publishes to it on return, so the runtime keeps the
-  frame, memo, depth and finish of the rule and a cut changes no runtime semantics. Its text differs from `dgen`'s
-  (Flow's guards skip alternatives that `dgen` tries, and work controls charge Flow's steps), so the tests compare
-  behavior instead: the generated parsers run as the engine on inputs that fail near and after cuts (error
-  position, expected set and message), with observation events and profile counts, Documents and the work-control
-  invariants, and a mutant that drops every cut fails that comparison. The body of a left-recursion leader prints
-  from Flow IR the same way, in both tables and as the stream body of a start rule: the runtime owns the growth of
-  the seed (`call`, `growBegin`, `growStep` and `growEnd` around the body, the memo entry that a left-recursive call
-  reads as the seed, the dependency counts of those reads and the merging of the expected sets of the iterations),
-  and the generated code supplies the body that it evaluates for each iteration. A left-recursive alternative has no
-  first set, so Flow never guards it and it always reads the seed. The tests run leader grammars with memoized
-  callers, lookaheads, nesting, cuts and captures against the engine on inputs that fail after a seed, with
-  observation, Documents (evaluated and reused counts included), work controls and `ParseStream`; mutants that
-  guard the left-recursive alternative by a wrong first set and that drop the value of the seed read fail that
-  comparison. The bodies with a recovery are printed from Flow IR too: Node functions build the error node with
+- Generated Go is printed from Flow IR: the typed rules and Operators Rule lines, and the rules and lines of the
+  Node and recognizer tables. Generation fails if Flow IR prints none of the forms below for a rule, a line or the
+  start rule of a stream parse, so no table has another route.
+- The lean value-free rules that `recFlowEligible` accepts print as direct rules, in the Node table and the
+  recognizer (`startRecFlow`, `gen_flow_recognizer.go`). A direct rule whose printed function would read its start
+  or context, or whose variables have a type the printer cannot name, prints its framed body instead, as every
+  other rule does: the rules that `flowNodeFrameOK` accepts print as the matcher of their framed body, which the
+  runtime calls under the frame, memo, depth, action and finish it owns (`flow.FramedBody` accepts no Nest,
+  Operators Rule or Terminal node). A typed-only build has Node rules only when a typed entry point converts the
+  Node result of a rule (`keepNodes`); they print like those of any Node build. Both tables print through the same
+  Flow printer, so a rule with the same text in the two tables is one shared helper by exact-text sharing. A Node
+  function is lowered with `Options.Node`, which makes it build `NewTerminalNode` and `NewBranchNode` values and
+  keeps frames out of the frame trail; `Verify` rejects the typed value ops in it and the Node ops in a typed
+  function. The Flow form has no `_ = x` line for a variable it reads nowhere. The recognizer's table writes its
+  actions for the values of an unprojected repetition (`generator.projections` is empty there), so the Core IR of
+  the recognizer is built without projections (`buildCoreProjecting`): a captured repetition of a recognizer rule
+  builds its elements with their captures, and the rules with captures print like any other rule.
+- A body with a cut prints as a framed body, with the lowering of the typed table: a flag per backtracking point (a
+  choice alternative, an optional, a repetition element), which the function reads from the runtime's cut flag on
+  entry and publishes to it on return, so the runtime keeps the frame, memo, depth and finish of the rule and a cut
+  changes no runtime semantics. The body of a left-recursion leader prints the same way, in both tables and as the
+  stream body of a start rule: the runtime owns the growth of the seed (`call`, `growBegin`, `growStep` and
+  `growEnd` around the body, the memo entry that a left-recursive call reads as the seed, the dependency counts of
+  those reads and the merging of the expected sets of the iterations), and the generated code supplies the body
+  that it evaluates for each iteration. A left-recursive alternative has no first set, so Flow never guards it and
+  it always reads the seed. The bodies with a recovery print too: Node functions build the error node with
   `NewErrorNode` (the typed form keeps `ErrorValue` and its printed text), which calls the runtime's
-  `Parser.NewErrorNode`, the construction `RecoverAttr` uses. The tests assert that no rule falls back, and that
-  capture rules, captured repetitions, cut rules, leaders and recovery rules (also with a cut or a leader) take the
-  Flow route; mutants that drop the recording, the zero-progress check or the reset after a failed skip fail the
-  comparison. The text of the rules without a cut or leader equals `dgen`'s for the ten
-  grammars, the recognizers run as the engine's on the generated-grammar corpus and the testdata of the ten
-  grammars in both forms, and a mutant that drops the recording of captures fails that comparison.
-  The lines of an Operators Rule in both tables are printed from Flow IR as framed bodies, including a line with
-  `#recover`. Operators Rules have no
-  projected repetitions, so Core IR and the tables agree on the shape of every capture. The tests compare the
-  generated text outside the lines (everything the line matchers do not reach) with the output of the other printer,
-  and compare the behavior of the parsers inside the lines with the engine.
-  The body of the start rule that `ParseStream` runs is printed from Flow IR as a framed Node function lowered with
-  `Options.Stream`, for the rules that print as framed bodies above. `core.Stream` is lowered as the repetition
-  of a stream parse: `StreamStart` before the loop, and, in place of gathering the element, `EmitStream` of the
-  committed element (nil for a value-free repetition) followed by the zero-width check, each guarded by `StreamOn`
-  (a stream parse with a callback, at the top call of the start rule), so that a parse without a callback or at depth
-  above one gathers as the batch body does. The operations exist only in framed Node functions (`Verify`), and
-  the stream repetition is never projected. Labels, groups and captures around the `#stream` repetition are the
-  Core nodes that lower as in batch bodies (`streamTops`, `topNodes`). The tests check the stream body in two
-  ways. Structurally, the body equals the rule's batch body with the stream statements removed, and each variant
-  of the body (two in a work-controlled build) has exactly one `StreamStart` before the loop and one delivery
-  inside it; mutants that move the start into or after the loop or duplicate a delivery fail that check. The
-  placement of the start is not checked behaviorally. Behaviorally, `ParseStream` and its iterators are compared
-  with the engine's (the elements and the reader calls before each, the diagnostics and the final error), and the
-  trace events, profile and elements of the Flow stream body with `dgen`'s, for the stream corpus (diagnostic and
-  error labels on the repetition, captures and actions per element, recursive start rules, environment and
-  lookahead, recovery in the element and in the start rule), the generated-grammar corpus and the CSV grammar, in
-  the ordinary, work-controlled and observability forms; `dgen`'s stream body has another form
-  (`generator.expr` rather than the direct Node body), so a text comparison with it is not possible. Mutants that
-  drop the stream start, drop or misplace a delivery, or deliver after the zero-width check change the compared
-  reports.
-  A Documents build (`-document`) prints the same rules from Flow IR, lowered with `Options.Document`. A Document
-  parse reuses a rule's result after an edit only if the edit lies outside the range the rule examined, which the
-  runtime reads (`Peek`, `MatchLiteral`, `Call`, each calling `documentTouch`) record. Generated code also reads
-  literals and characters in place for ordinary parses, which records nothing, so the printers guard every in-place
-  read with `p.Document == nil` and the Document branch of a method (`specializeOrdinaryMethods`) falls through to
-  the recording primitives. At the IR level, `Verify` states what keeps those reads recorded: in a function lowered
-  with `Options.Document` a `HasLit` condition must stand alone and have a `MatchLit` in its alternative, and the
-  printer, which prints the guard for exactly those functions, is not given another way to print it. The
-  generated text of the Node and recognizer tables of the ten grammars equals `dgen`'s under the rules above,
-  also with `-document`. Behaviorally, the Documents of the generated-grammar corpus, shape grammars that look
-  past the end of a result (multi-character, negative, sequence, any-character and class lookaheads) and the ten
-  grammars are compared with those of the `dgen` build after the same pseudo-random sequences of edits (up to
-  300 per input, including edits that fail): after every edit and a second parse, the result, the error and
-  the evaluation and reuse counts must be equal, and the result must equal a parse from scratch. Mutants that
-  read the multi-character literals, the single-character literals, the peeks or all of them in place in a
-  Document parse change the reports and fail that comparison.
-  The tests of the typed-only case force `keepNodes` on the ten grammars and compare the Node rules with
-  `dgen`'s in the ordinary and work-controlled forms (equal beyond blank assignments of unread variables; the
-  grammars with an Operators Rule only by route, since the numbering of shared literals differs between the
-  printers). Behaviorally, six grammars whose entry points convert Nodes (a sequence, recovery, a fold, a
-  left-recursive leader, a cut with an environment, an Operators Rule) are compared with the `dgen` build and with a
-  parser that has every entry point on values, errors with positions and depth errors; a mutated grammar changes
-  the transcript. The corpus is not a text oracle here: `dgen` prints alternatives that are dead in Core IR and
-  Flow IR drops them.
-  An observability build prints the same rules from Flow IR with the same observation hooks: the enter and exit
-  events of rule calls come from the runtime and the rule wrappers, and the one report the matchers write, the
-  skipped report of an alternative that a choice guard skips (`ObserveSkip`), is a Flow statement printed by the same
-  `traceSkip` as the direct printer's. The trace event streams and `Profile` counts of the Flow and direct builds are
-  equal on the generated-grammar corpus, four shape grammars and the testdata, operator-heavy and damaged inputs of the
-  ten grammars, in the ordinary and work-controlled forms; mutants that drop, move or reorder a skipped report change
-  the compared reports. The generated text equals `dgen`'s under the rules above, and the count of skipped reports
-  differs only where Flow repeats a line matcher that `dgen` shares.
-  A work-control build prints the same rules from Flow IR, with the charges Flow IR makes explicit: a `Step` for
-  each step of `Attrs.Steps` on entering a node, and the input work of each `Peek`. These need not equal the
-  counts of the matchers `generator.expr` writes, because the spec lets the work of a parse depend on the
-  backend and the generated artifact: Flow's choice guards skip alternatives that the matchers try and charge,
-  it charges dead branches differently, and the runtime charges the entry of an operand or operator line of an Operators Rule (not of
-  its skip), so the function lowered for the line (`flow.LowerLine`) leaves that step out (`Func.Entered`) and `Verify` counts the
-  entry as its first charge. The charge model that every build keeps is checked instead of the counts:
+  `Parser.NewErrorNode`, the construction `RecoverAttr` uses. The lines of an Operators Rule in both tables print
+  as framed bodies, including a line with `#recover`; Operators Rules have no projected repetitions, so Core IR and
+  the tables agree on the shape of every capture.
+- The body of the start rule that `ParseStream` runs prints as a framed Node function lowered with
+  `Options.Stream`. `core.Stream` is lowered as the repetition of a stream parse: `StreamStart` before the loop,
+  and, in place of gathering the element, `EmitStream` of the committed element (nil for a value-free repetition)
+  followed by the zero-width check, each guarded by `StreamOn` (a stream parse with a callback, at the top call of
+  the start rule), so that a parse without a callback or at depth above one gathers as the batch body does. The
+  operations exist only in framed Node functions (`Verify`), and the stream repetition is never projected. Labels,
+  groups and captures around the `#stream` repetition are the Core nodes that lower as in batch bodies
+  (`streamTops`, `topNodes`).
+- A Documents build (`-document`) prints the same rules, lowered with `Options.Document`. A Document parse reuses a
+  rule's result after an edit only if the edit lies outside the range the rule examined, which the runtime reads
+  (`Peek`, `MatchLiteral`, `Call`, each calling `documentTouch`) record. Generated code also reads literals and
+  characters in place for ordinary parses, which records nothing, so the printers guard every in-place read with
+  `p.Document == nil` and the Document branch of a method (`specializeOrdinaryMethods`) falls through to the
+  recording primitives. At the IR level, `Verify` states what keeps those reads recorded: in a function lowered with
+  `Options.Document` a `HasLit` condition must stand alone and have a `MatchLit` in its alternative, and the
+  printer, which prints the guard for exactly those functions, is not given another way to print it.
+- An observability build prints the same rules with the same observation hooks: the enter and exit events of rule
+  calls come from the runtime and the rule wrappers, and the one report the matchers write, the skipped report of an
+  alternative that a choice guard skips (`ObserveSkip`), is a Flow statement printed by `traceSkip`.
+- A work-control build prints the same rules with the charges Flow IR makes explicit: a `Step` for each step of
+  `Attrs.Steps` on entering a node, and the input work of each `Peek`. These need not equal the counts of the
+  engine's backends, because the spec lets the work of a parse depend on the backend and the generated artifact:
+  Flow's choice guards skip alternatives that the other backends try and charge, it charges dead branches
+  differently, and the runtime charges the entry of an operand or operator line of an Operators Rule (not of its
+  skip), so the function lowered for the line (`flow.LowerLine`) leaves that step out (`Func.Entered`) and `Verify`
+  counts the entry as its first charge. The charge model that every build keeps is checked instead of the counts:
   `Verify` rejects a function lowered with work controls that consumes input, or ends an iteration of a loop
-  without a counter, on a path that has charged neither a step, a rule call nor the input work of a `Peek`;
-  the tests then build each parser with both routes and check, over the generated corpus and the testdata of the
-  checked-in grammars, that limit errors are well formed, that the input work and the results equal the direct
-  build's, that the context is polled at the runtime's cadence, and that the steps stay within a bounded factor
-  of the direct build's (the largest observed is 1.19 on the corpus and 1.005 on the grammars' testdata).
+  without a counter, on a path that has charged neither a step, a rule call nor the input work of a `Peek`.
+- What the generated parsers do is checked against the engine where the engine can say it, and against goldens
+  where it cannot; the goldens are regression freezes, rewritten with `-update` after a reviewed change.
+  - Results, errors with positions and expected sets, and the cut, leader, recovery, capture and Operators Rule
+    grammars of the generated-grammar corpus run as the engine's, in both forms, including damaged inputs; the
+    recognizers run as the engine's on the corpus and the testdata of the ten checked-in grammars; mutants that drop
+    the recording of captures, drop every cut, guard a left-recursive alternative by a wrong first set, drop the
+    value of the seed read, or drop the recording, the zero-progress check or the reset after a failed skip fail
+    those comparisons. A recognizer rule that `flowRecDirect` refuses is printed from its framed body, which a test
+    forces for every eligible rule and compares with the engine.
+  - `ParseStream` and its iterators are compared with the engine's (the elements and the reader calls before each,
+    the diagnostics and the final error); the stream body of a rule is its batch body with the stream statements
+    removed and has one `StreamStart` before the loop and one delivery inside it (mutants that move the start or
+    duplicate a delivery fail that check); a golden keeps the digest of the reports of each stream case and form.
+  - The trace events and `Profile` counts of an observability build equal the engine's closure trace, except for
+    the skipped reports, which only generated code writes; the counters equal what the events add up to; a golden
+    freezes the reports, skipped events and damaged inputs of the checked-in grammars included.
+  - A Document parse after each pseudo-random sequence of edits (up to 300 per input, including edits that fail)
+    equals a parse from scratch and reuses results; a golden freezes the reuse and evaluation counts. Mutants that
+    read the multi-character literals, the single-character literals, the peeks or all of them in place in a
+    Document parse fail.
+  - Work controls: limit errors are well formed and fail at the limited counter, the least successful limit
+    succeeds, the context is polled at the runtime's cadence, steps are charged whenever input work is, and a parsed
+    input charges at least one unit of input work per character; a golden freezes the step and input work totals
+    (the engine's input work is not an oracle, because the closure and bytecode backends charge it differently),
+    and a mutant that drops one `Step` fails.
+  - The generated text of the checked-in parsers is frozen by `parsers/testdata/output_manifest.txt`.
+  - Guards: the decisions of the Core passes over the corpus (`Terminal`s, guards, class runs, scans, scopes, and
+    the forms of terms) are frozen in `testdata/typed_decisions.golden` and `testdata/recognizer_decisions.golden`,
+    and negative controls break each pass and require the comparison to notice. Soundness is a property, checked
+    with the engine as the oracle: over the positions of the corpus inputs, the engine never matches an alternative
+    at a character that its guard rejects (`TestCoreGuardsAreSound`), and a mutant that narrows the guards fails.
   The recognizer's Core pipeline runs `Analyze` before `Guards`, as the table's pipeline does: `Guards` reads the
   first terminals that `Analyze` computes, so the reverse order leaves the alternatives of choices unguarded.
 - Work-control specialization exists three times: the closure backend compiles a second, metered closure
@@ -196,7 +173,7 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
 
 ### Generated Go Repaired After Printing
 
-`dgen` writes Go text directly. Because Go rejects a `goto` that jumps over a variable declaration, it
+The typed Go output measured at that commit was written directly as text. Because Go rejects a `goto` that jumps over a variable declaration, it
 declares every variable of a rule at the top of the function in a `var` block, typed `any` for values. It
 tracks reads to avoid unused-variable errors, tracks reachability to satisfy `go vet`, and writes `_ = x`
 where a declared variable ends up unread. Actions become immediately invoked function literals
@@ -511,7 +488,7 @@ Flow IR passes:
 
 - **Save/restore elision**: a backtracking point saves only what its body may change according to the Core
   effect summary (no environment without bind, no recovered count without recover, only the capture slots
-  in capture). This generalizes what `dgen.mark` and
+  in capture). This generalizes what
   [record 110](../../optimizations/110-no-recovered-rollback-without-recovery.md) do case by case.
 - **Slot allocation**: liveness over the block tree; slots whose live ranges do not overlap share a
   variable when their types are equal; slots never read are not declared.
@@ -637,27 +614,22 @@ stage of its first consumer, so its differential tests and negative controls run
    `parsers/test.sh`, the typed conformance tests and the engine differential tests; identical generated
    trace and profile event streams, apart from differences the specification allows; the comparisons in
    [Performance and Results](#performance-and-results). Flow IR prints the typed rules it covers by default;
-   the typed output has no `_ = x` lines of the kind `dgen` wrote for variables Flow reads nowhere, since
-   Flow's read accounting omits them and the Go compiler still reports unused variables. In the checked-in
-   parsers and benchmark generators, no typed rule reaches a fallback of the typed dispatch to `dgen` or
-   `generator.expr` (measured at 92050aae at the four exits: the direct rule, the framed body, the rule body
-   and the Operators Rule lines). Left-recursion leaders, `#recover`, nested calls and Operators Rules are
-   rejected by `flow.LocalRule`, but they are printed through the framed-body and Operators Rule lowering.
-   Documents still print through `dgen` and `generator.expr`, which stage 2 removes.
-   The typed dispatch does not fall back: a typed rule or Operators Rule line that Flow IR does not print
-   makes generation fail. Typed output has no `dgen` branches and no switches for them; `dgen` prints the Node and
-   recognizer tables. Then remove `dgen`, the typed parts of
-   `generator.expr` and of the Go term lowering, `gen_prune.go` and the typed uses of the ordinary-method
-   passes.
-2. **Go Node, recognizer, Document and stream output**, with the recognition specialization. The terms of
-   the recognizer's rules are compared with the generator's from this stage, once the generator's
-   projections for those rules match Core IR. Gate as stage 1 plus the Document and stream differential tests and the Node, recognition, Document and stream
-   benchmarks. Then remove `generator.expr`, the rest of the Go term lowering and the remaining `go/ast`
-   passes. Terminal programs (`gen_terminal.go`) are owned by no stage: `terminalTable` has a caller in the
-   Flow IR emitter (`gen_flow.go`) and one in `dgen` (`gen_direct.go`), which stage 2 removes. Stage 2 keeps
-   the Node target calling `terminalTable` in the same way, so Node output keeps the program and does not
-   fall back to straight-line code, and the emitter stays where it is. Moving the emitter is not part of
-   any stage here, because it is a Go emission helper shared by Flow IR, not a lowering of the AST.
+   the typed output has no `_ = x` lines for variables Flow reads nowhere, since Flow's read accounting omits
+   them and the Go compiler still reports unused variables. In the checked-in parsers and benchmark generators, no
+   typed rule reaches a fallback of the typed dispatch (measured at 92050aae at the four exits: the direct rule,
+   the framed body, the rule body and the Operators Rule lines). Left-recursion leaders, `#recover`, nested calls
+   and Operators Rules are rejected by `flow.LocalRule`, but they are printed through the framed-body and
+   Operators Rule lowering. The typed dispatch does not fall back: a typed rule or Operators Rule line that Flow
+   IR does not print makes generation fail. Then remove the typed parts of the Go term
+   lowering, `gen_prune.go` and the typed uses of the ordinary-method passes.
+2. **Go Node, recognizer, Document and stream output**, with the recognition specialization. The recognizer's
+   table writes its actions without projections, so the decision goldens freeze no terms for its rules. Gate as
+   stage 1 plus the Document and stream tests and the Node, recognition, Document and stream benchmarks. The
+   direct Go printers are removed; the rest of the Go term lowering and the remaining `go/ast`
+   passes follow. Terminal programs (`gen_terminal.go`) are owned by no stage: `terminalTable` is called by the
+   Flow IR emitter (`gen_flow.go`), so Node output keeps the program and does not fall back to straight-line
+   code, and the emitter stays where it is. Moving the emitter is not part of any stage here, because it is a Go
+   emission helper shared by Flow IR, not a lowering of the AST.
 3. **TypeScript.** Gate: the TypeScript parity tests in `bench` and `internal/engine`, TypeScript event
    streams, and the TypeScript benchmarks (`bench/ts-*.mjs`). Then remove `tsGen.expr`, the TypeScript term
    lowering and the condition rewriting.
@@ -688,7 +660,7 @@ one implementation per lowering, the string-level coupling between Go and TypeSc
 `go/ast` repairs and their generation cost remain.
 
 **One IR level.** Emitting Go and TypeScript directly from Core IR keeps one representation but puts slot
-allocation, save/restore elision and charge placement back into each emitter, which is how `dgen` grew.
+allocation, save/restore elision and charge placement back into each emitter, which is how the direct printer grew.
 
 **Three levels, as in GHC (Core, STG, Cmm).** STG exists to make lazy evaluation and closure allocation
 explicit; a PEG parser has neither. The work between Core IR and host code is state and control, which

@@ -62,11 +62,10 @@ func TestFlowStreamBodyIsBatchBody(t *testing.T) { eachMode(t, testFlowStreamBod
 
 func testFlowStreamBodyIsBatchBody(t *testing.T) {
 	flowN := 0
-	var fallbacks, flowed []string
+	var flowed []string
 	var cur string
 	streamRouteHook = func(table string, r *rule) { flowN++; flowed = append(flowed, cur) }
-	streamFallbackHook = func(table string, r *rule) { fallbacks = append(fallbacks, cur) }
-	t.Cleanup(func() { streamRouteHook, streamFallbackHook = nil, nil })
+	t.Cleanup(func() { streamRouteHook = nil })
 	for _, form := range streamForms {
 		for _, c := range streamCases(t) {
 			t.Run(c.name+"/"+form.name, func(t *testing.T) {
@@ -101,16 +100,13 @@ func testFlowStreamBodyIsBatchBody(t *testing.T) {
 			})
 		}
 	}
-	streamRouteHook, streamFallbackHook = nil, nil
+	streamRouteHook = nil
 	if flowN == 0 {
 		t.Fatal("no stream body is printed from Flow IR: the test exercises nothing")
 	}
-	t.Logf("%d stream bodies from Flow IR; %d kept by another printer: %v", flowN, len(fallbacks), fallbacks)
-	// Every start rule prints from Flow IR: a left-recursion leader and a body with a recovery use the framed body
-	// of any other rule, and the stream repetition delivers the elements.
-	if len(fallbacks) > 0 {
-		t.Errorf("start rules not printed from Flow IR: %v", fallbacks)
-	}
+	t.Logf("%d stream bodies from Flow IR", flowN)
+	// Every start rule prints from Flow IR (otherwise the generation fails): a left-recursion leader and a body
+	// with a recovery use the framed body of any other rule, and the stream repetition delivers the elements.
 	for _, want := range []string{"left recursive start", "left recursive start choice", "indirect leader start", "mutual leader start", "recovery in the start rule", "stream element recovery"} {
 		if !slices.ContainsFunc(flowed, func(f string) bool { return strings.HasPrefix(f, want+"/") }) {
 			t.Errorf("the start rule of %q is expected to print from Flow IR, but did not", want)

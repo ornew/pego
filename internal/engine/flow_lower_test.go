@@ -18,7 +18,7 @@ func TestFlowVerifiesCorpus(t *testing.T) {
 		t.Run(mode.name, func(t *testing.T) {
 			lowered, framed, observed, skips := 0, 0, 0, 0
 			for _, gen := range coreGenerations(t, mode) {
-				g := gen.dec.gen
+				g := gen.gen
 				m, err := g.typedCore(map[core.Node]grammar.Expr{})
 				if err != nil {
 					t.Fatalf("%s: %v", gen.name, err)

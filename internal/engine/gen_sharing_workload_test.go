@@ -176,24 +176,12 @@ if(process.argv.includes("--check")) {
 }
 `
 
-func TestGeneratedSharingFailedLowering(t *testing.T) {
-	eachMode(t, testGeneratedSharingFailedLowering)
+func TestGeneratedSharingLocalLayout(t *testing.T) {
+	eachMode(t, testGeneratedSharingLocalLayout)
 }
 
-func testGeneratedSharingFailedLowering(t *testing.T) {
+func testGeneratedSharingLocalLayout(t *testing.T) {
 	c := typedLocalLayoutCases[0]
-	p := compile(t, c.src)
-	g := &generator{prog: p, table: "rules"}
-	g.desc(fixedDescs[0])
-	if !directOK(p.byName["body"]) {
-		t.Fatal("fixture must enter speculative direct lowering")
-	}
-	if body := g.directNodeBody(p.byName["body"], newScope()); body != "" {
-		t.Fatal("fixture must reject direct lowering after emitting its literal")
-	}
-	if g.vars.Len() != 0 || len(g.literalNames) != 0 {
-		t.Fatal("failed lowering must discard newly emitted literal cache entries")
-	}
 	if testing.Short() {
 		return
 	}

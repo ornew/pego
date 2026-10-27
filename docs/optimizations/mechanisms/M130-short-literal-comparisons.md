@@ -30,8 +30,8 @@ all-literal effects.
 Evidence records:
 [062](../062-comparing-short-literals-in-place-in-direct-rules.md).
 
-Source owners: [`dgen literal comparison
-emission`](../../../internal/engine/gen_direct.go),
+Source owners: [`Flow literal comparison
+lowering`](../../../internal/engine/flow/lower.go),
 [`parser.matchLiteral`](../../../runtime/runtime.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

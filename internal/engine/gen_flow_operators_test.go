@@ -26,7 +26,7 @@ rule e = #operators {
 }
 
 // TestOperatorsLinesWithRecoveryPrintFromFlow checks that a line with recovery is printed from Flow IR in the
-// Node and recognizer tables, and that no line of the rule falls back to generator.expr.
+// Node and recognizer tables (a line Flow IR does not print fails the generation).
 func TestOperatorsLinesWithRecoveryPrintFromFlow(t *testing.T) {
 	t.Setenv("PEGO_TEST_ORDINARY", "1")
 	for _, c := range operatorsLineRecoveryCases {
@@ -35,15 +35,11 @@ func TestOperatorsLinesWithRecoveryPrintFromFlow(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			flowed, fell := map[string]int{}, map[string]int{}
+			flowed := map[string]int{}
 			operatorsRouteHook = func(table string, r *rule) { flowed[table+"/"+r.name]++ }
-			operatorsFallbackHook = func(table string, r *rule) { fell[table+"/"+r.name]++ }
-			defer func() { operatorsRouteHook, operatorsFallbackHook = nil, nil }()
+			defer func() { operatorsRouteHook = nil }()
 			if _, err := generateCode(g, GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
 				t.Fatal(err)
-			}
-			if len(fell) > 0 {
-				t.Errorf("lines of %s fall back to generator.expr: %v", c.rule, fell)
 			}
 			for _, table := range []string{"rules", "recRules"} {
 				if flowed[table+"/"+c.rule] == 0 {

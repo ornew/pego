@@ -2,7 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"sort"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
@@ -30,7 +29,7 @@ func hasCut(e grammar.Expr) (found bool) {
 
 // TestFlowCutsPrintFromFlow checks the route of the rules with cuts: over the corpus and the ten grammars, in
 // the ordinary and the work-controlled forms, a rule with a cut takes
-// the Flow route in the Node and recognizer tables, and the direct printer prints no other rule with a cut.
+// the Flow route in the Node and recognizer tables (a rule Flow IR does not print fails the generation).
 func TestFlowCutsPrintFromFlow(t *testing.T) {
 	if testing.Short() {
 		t.Skip("generates the corpus")
@@ -39,18 +38,12 @@ func TestFlowCutsPrintFromFlow(t *testing.T) {
 	for _, controls := range []bool{false, true} {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
-			var bad []string
 			framedRouteHook = func(table string, r *rule) {
 				if hasCut(r.bodyExpr()) {
 					taken[table]++
 				}
 			}
-			directFallbackHook = func(table, route string, r *rule) {
-				if hasCut(r.bodyExpr()) {
-					bad = append(bad, fmt.Sprintf("%s %s (%s) cuts and falls back", table, r.name, route))
-				}
-			}
-			defer func() { framedRouteHook, directFallbackHook = nil, nil }()
+			defer func() { framedRouteHook = nil }()
 			for _, c := range cases {
 				g, err := parseTest(c.src)
 				if err != nil {
@@ -58,10 +51,6 @@ func TestFlowCutsPrintFromFlow(t *testing.T) {
 				}
 				if _, err := Generate(g, GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
 					t.Fatalf("%s: %v", c.name, err)
-				}
-				if len(bad) > 0 {
-					sort.Strings(bad)
-					t.Fatalf("%s: %v", c.name, bad)
 				}
 			}
 			for _, table := range []string{"rules", "recRules"} {

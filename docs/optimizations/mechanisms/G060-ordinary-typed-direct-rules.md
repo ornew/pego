@@ -33,8 +33,7 @@ unsupported rules.
 
 Evidence records: [060](../060-direct-rules-in-the-typed-runtime.md).
 
-Source owners: [`generator.directRule and
-dgen`](../../../internal/engine/gen_direct.go), [`typed framed body
+Source owners: [`generator.flowDirectRule`](../../../internal/engine/gen_flow.go), [`typed framed body
 lowering`](../../../internal/engine/gen_direct_node.go), [`GenOptions private
 typed controls`](../../../internal/engine/gen.go), [`runtime invocation
 ownership`](../../../runtime/typed.go).

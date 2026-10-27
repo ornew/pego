@@ -236,7 +236,7 @@ rule item = [a-z] #atomic`, []string{"ab.", "a", ".", "ab"}},
 	// Shapes around the stream repetition and its elements: a diagnostic or an error label on the repetition
 	// itself, captures with an action in each element, a recursive start rule that keeps captures, the
 	// environment changed by an element and read by a predicate and a lookahead after it, recovery in the
-	// element rule, and recovery in the start rule (which keeps the direct printer).
+	// element rule, and recovery in the start rule.
 	{"diagnostic on the repetition", `rule main = (item* #stream @diagnostic(name="items")) "." $$
 rule item = [a-z] #atomic`, []string{"ab.", "a", ".", "ab1"}},
 	{"error label on the repetition", `rule main = (item* #stream @error(message="expected items")) "." $$

@@ -14,7 +14,7 @@ import (
 //     SkipTerminal or a SkipClasses;
 //   - every iteration of a loop without a Counter bound charges: on each path from the start of the
 //     body to a Continue or to the end of the body. A repetition of a character class is lowered to a
-//     loop of Peek and Advance without a Step (the direct printer charges its iterations no step either),
+//     loop of Peek and Advance without a Step (an iteration of such a loop charges no step),
 //     so its iteration charges only the input work of the character it reads, which MaxInputWork bounds
 //     and the context poll counts every 4096 units; a parse limited by MaxSteps alone is not bounded by
 //     such a loop.

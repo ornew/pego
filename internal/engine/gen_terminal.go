@@ -17,7 +17,7 @@ import (
 // straight-line code, a large one, such as a keyword list spelled as a trie of case-insensitive
 // character classes, takes tens of kilobytes. The generator lowers such an expression to a static
 // runtime.TerminalProgram that the runtime's SkipTerminal interprets. SkipTerminal makes the same
-// calls as the code it replaces (see dgen.expr and dgen.choice): it consumes the same input and
+// calls as straight-line code would: it consumes the same input and
 // records the same expectations at the same positions. Where it departs from the order of that
 // code it does so only where the departure is unobservable: a guard that admits the next
 // character also matches the class that begins its alternative, and where ExpectOrdinary records
@@ -211,7 +211,7 @@ func (t *terminalProgram) emit(e grammar.Expr) {
 			t.word(terminalNoTable)
 		}
 		for _, alt := range e.Alts {
-			// Each alternative gets the guard that dgen.choice gives it (generator.first).
+			// Each alternative gets the guard that generator.first gives it.
 			if first, id, ok := t.first(alt); ok {
 				if class, rest, ok := leadingClass(alt); ok && class == first {
 					// The guard tests the class that the alternative begins with.

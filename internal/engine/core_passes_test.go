@@ -6,8 +6,8 @@ import (
 	"github.com/ornew/pego/internal/engine/core"
 )
 
-// coreBreak is a negative control: a pass broken on purpose, which the comparison with the
-// generator must catch in every module where it changes something.
+// coreBreak is a negative control: a pass broken on purpose, which the comparison with the frozen
+// decisions must catch in every module where it changes something.
 type coreBreak struct {
 	name string
 	// pass is the pass after which the module is broken.
@@ -18,8 +18,8 @@ type coreBreak struct {
 	apply func(c *coreGenCase, m *core.Module) bool
 }
 
-// checkCoreAspect compares the aspect of the Core IR with the generator over the corpus in every
-// mode, and runs the negative controls in the lean mode.
+// checkCoreAspect compares the aspect of the Core IR with the frozen decisions over the corpus in
+// every mode, and runs the negative controls in the lean mode.
 func checkCoreAspect(t *testing.T, aspect string, breaks []coreBreak) {
 	t.Helper()
 	for _, mode := range coreGenModes {
@@ -34,11 +34,11 @@ func checkCoreAspect(t *testing.T, aspect string, breaks []coreBreak) {
 		broken, caught := 0, 0
 		cases := coreGenCases(t, coreGenModes[0], func(c *coreGenCase, pass string, m *core.Module) {
 			if pass == b.pass && b.apply(c, m) {
-				c.name += " (broken)"
+				c.broken = true
 			}
 		})
 		for _, c := range cases {
-			if len(c.name) < 9 || c.name[len(c.name)-9:] != " (broken)" {
+			if !c.broken {
 				continue
 			}
 			broken++
@@ -132,18 +132,16 @@ func placeSetter(r *core.Rule, at func() core.Node) func(core.Node) {
 	}
 }
 
-// firstAlt returns the first alternative of a choice of the module that the generator writes and
-// for which f reports true.
+// firstAlt returns the first alternative of a choice of the module that has an origin and for which f
+// reports true.
 func firstAlt(c *coreGenCase, m *core.Module, f func(*core.Alt) bool) *core.Alt {
-	idx, _ := genIndex(c.dec, "trules")
 	var found *core.Alt
 	for _, r := range m.Rules {
 		core.Walk(r.Body, func(n core.Node) {
 			if ch, ok := n.(*core.Choice); ok && found == nil {
 				for i, a := range ch.Alts {
-					e, _ := c.altOrigin(ch, i)
-					_, written := idx[genKey{c.rules[r.ID], decExpr, e}]
-					if found == nil && written && f(a) {
+					_, ok := c.altOrigin(ch, i)
+					if found == nil && ok && f(a) {
 						found = a
 					}
 				}
@@ -153,9 +151,9 @@ func firstAlt(c *coreGenCase, m *core.Module, f func(*core.Alt) bool) *core.Alt 
 	return found
 }
 
-// TestCoreGuardsMatchGenerator compares the guards and guarded classes of the Core passes with the
-// generator's, and checks that a guard pass that drops a guard or a guarded class is caught.
-func TestCoreGuardsMatchGenerator(t *testing.T) {
+// TestCoreGuardsFrozen compares the guards and guarded classes of the Core passes with the
+// frozen ones, and checks that a guard pass that drops a guard or a guarded class is caught.
+func TestCoreGuardsFrozen(t *testing.T) {
 	checkCoreAspect(t, "guard", []coreBreak{
 		{"guard dropped", "guards", []string{"guard"}, func(c *coreGenCase, m *core.Module) bool {
 			a := firstAlt(c, m, func(a *core.Alt) bool { return a.Guard != nil && !a.GuardedClass })
@@ -195,10 +193,10 @@ func TestCoreGuardsMatchGenerator(t *testing.T) {
 	})
 }
 
-// TestCoreTerminalsMatchGenerator compares the Terminals of the Core passes with the expressions
-// the generator runs as terminal programs, and checks that a terminal pass that leaves one out is
+// TestCoreTerminalsFrozen compares the Terminals of the Core passes with the frozen ones,
+// and checks that a terminal pass that leaves one out is
 // caught.
-func TestCoreTerminalsMatchGenerator(t *testing.T) {
+func TestCoreTerminalsFrozen(t *testing.T) {
 	checkCoreAspect(t, "terminal", []coreBreak{
 		{"terminal left out", "terminals", []string{"terminal"}, func(c *coreGenCase, m *core.Module) bool {
 			n, set := firstNode(m, func(n core.Node) bool { _, ok := n.(*core.Terminal); return ok })
@@ -209,14 +207,13 @@ func TestCoreTerminalsMatchGenerator(t *testing.T) {
 			return true
 		}},
 		{"spurious terminal", "terminals", []string{"terminal"}, func(c *coreGenCase, m *core.Module) bool {
-			idx, _ := genIndex(c.dec, "trules")
 			for _, r := range m.Rules {
 				if !coreLocalRule(r) {
 					continue
 				}
 				if seq := valueFreeSeq(r.Body, func(n core.Node) bool {
-					_, written := idx[genKey{c.rules[r.ID], decExpr, c.origin[n]}]
-					return written
+					_, ok := c.origin[n]
+					return ok
 				}); seq != nil {
 					seq.Items[0] = &core.Terminal{Body: seq.Items[0]}
 					return true
@@ -255,9 +252,9 @@ func valueFreeSeq(n core.Node, written func(core.Node) bool) *core.Seq {
 	return nil
 }
 
-// TestCoreClassRunsMatchGenerator compares the class runs of the Core passes with the generator's,
+// TestCoreClassRunsFrozen compares the class runs of the Core passes with the frozen ones,
 // and checks that a class-run pass that leaves one out is caught.
-func TestCoreClassRunsMatchGenerator(t *testing.T) {
+func TestCoreClassRunsFrozen(t *testing.T) {
 	checkCoreAspect(t, "class runs", []coreBreak{
 		{"class run left out", "class runs", []string{"class runs"}, func(c *coreGenCase, m *core.Module) bool {
 			var seq *core.Seq
@@ -286,9 +283,9 @@ func TestCoreClassRunsMatchGenerator(t *testing.T) {
 	})
 }
 
-// TestCoreScansMatchGenerator compares the scans of the Core passes with the generator's, and
+// TestCoreScansFrozen compares the scans of the Core passes with the frozen ones, and
 // checks that a scan pass that leaves one out is caught.
-func TestCoreScansMatchGenerator(t *testing.T) {
+func TestCoreScansFrozen(t *testing.T) {
 	checkCoreAspect(t, "scan", []coreBreak{
 		{"scan left out", "scans", []string{"scan"}, func(c *coreGenCase, m *core.Module) bool {
 			n, set := firstNode(m, func(n core.Node) bool { _, ok := n.(*core.Scan); return ok })
@@ -308,9 +305,9 @@ func TestCoreScansMatchGenerator(t *testing.T) {
 	})
 }
 
-// TestCoreScopesMatchGenerator compares the scopes of repetition elements and Operators Rule lines
-// with the generator's, and checks that a scope with a slot too many is caught.
-func TestCoreScopesMatchGenerator(t *testing.T) {
+// TestCoreScopesFrozen compares the scopes of repetition elements and Operators Rule lines
+// with the frozen ones, and checks that a scope with a slot too many is caught.
+func TestCoreScopesFrozen(t *testing.T) {
 	checkCoreAspect(t, "scope", []coreBreak{
 		{"element slot added", "build", []string{"scope"}, func(c *coreGenCase, m *core.Module) bool {
 			n, _ := firstNode(m, func(n core.Node) bool { r, ok := n.(*core.Repeat); return ok && r.Scope != nil })

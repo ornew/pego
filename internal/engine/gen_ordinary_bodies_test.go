@@ -10,8 +10,8 @@ import (
 // Every generated rule-body function (a top-level function charging StepWork first) must have the
 // parser parameter p, so that no body silently misses its ordinary specialization.
 //
-// The direct printer's bodies (the oracle mode of eachMode, and Document builds) are specialized and counted
-// as such. In the Flow mode without Documents the fixture's rules (a recovering rule, a leader and an Operators
+// A body whose ordinary branch the generator writes is specialized and counted as such. In the builds without
+// Documents the fixture's rules (a recovering rule, a leader and an Operators
 // Rule) print from Flow IR, which charges no work in an ordinary parse and so has no StepWork to specialize;
 // those are counted as Flow bodies (functions that take p and return two values). Either way some body must
 // exist, and no body may start with StepWork.

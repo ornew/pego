@@ -61,7 +61,7 @@ var operatorGrammars = map[string]bool{"cel": true, "cue": true, "duckdb": true,
 
 // TestFlowNodeRulesPrintFromFlow generates the Node parsers of the checked-in grammars in each form
 // and checks that the rules of the Node table and the lines of their Operators Rules take the Flow route
-// and that no rule falls back, so that the generated text that the output manifest freezes is Flow's. In
+// (a rule or line Flow IR does not print fails the generation), so that the generated text that the output manifest freezes is Flow's. In
 // the forms with observability it also checks that the matchers write the reports of skipped alternatives.
 func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 	if testing.Short() {
@@ -86,7 +86,7 @@ func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 					t.Fatal(err)
 				}
 				o := GenOptions{Package: "x", Module: "example.com/x", Runtime: RuntimeImport, Recognize: true, WorkControls: form.controls, Observability: form.observe, Document: form.document}
-				taken, framed, operators, fell := 0, 0, 0, 0
+				taken, framed, operators := 0, 0, 0
 				directRouteHook = func(table string, r *rule) {
 					if table == "rules" {
 						taken++
@@ -94,11 +94,7 @@ func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 				}
 				framedRouteHook = func(table string, r *rule) { framed++ }
 				operatorsRouteHook = func(table string, r *rule) { operators++ }
-				directFallbackHook = func(table, route string, r *rule) { fell++ }
-				operatorsFallbackHook = func(table string, r *rule) { fell++ }
-				defer func() {
-					directRouteHook, framedRouteHook, operatorsRouteHook, directFallbackHook, operatorsFallbackHook = nil, nil, nil, nil, nil
-				}()
+				defer func() { directRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil }()
 				files, err := Generate(g, o)
 				if err != nil {
 					t.Fatal(err)
@@ -112,9 +108,6 @@ func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 				}
 				if framed == 0 {
 					t.Errorf("no framed rule of the Node table of %s takes the Flow route", name)
-				}
-				if fell != 0 {
-					t.Errorf("%d rules or lines of %s are printed by the direct printer", fell, name)
 				}
 				if form.observe {
 					// The reports of skipped alternatives are the observed events the matchers write.

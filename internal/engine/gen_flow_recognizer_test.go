@@ -278,9 +278,9 @@ var (
 )
 
 // TestFlowRecognizerFallbackMatchesEngine checks the fallback of the Flow route: a rule that flowRecDirect
-// refuses is printed another way, and the recognizer and parser of every input of the grammar must still
-// agree with the engine. The test refuses every eligible rule, so that the fallback is exercised for all
-// of them.
+// refuses is printed from its framed body, called through the rule table, and the recognizer and parser of every
+// input of the grammar must still agree with the engine. The test refuses every eligible rule, so that the
+// framed body is exercised for all of them, and requires that each refused rule took the framed route.
 func TestFlowRecognizerFallbackMatchesEngine(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
@@ -289,17 +289,27 @@ func TestFlowRecognizerFallbackMatchesEngine(t *testing.T) {
 	c := genCase{"fallback of the Flow recognizer",
 		"rule main = ws item* !.\nrule ws = ([ ] / comment)*\nrule comment = \"--\" [^\\n]* / block_comment\nrule block_comment = \"/*\" (block_comment / !\"*/\" .)* \"*/\"\nrule item = [a-z]+ / [0-9]+\n",
 		[]string{"", "a", "a 1 b2", "-- c\n a", "/* x */ a", "/* /* y */ */ 1", "/* open", "a -- tail", "@", "a /* x */ /* y */ 2", "--"}}
-	refused := 0
+	refused, framed := map[string]bool{}, map[string]bool{}
 	refuseFlowRecDirect = func(r *rule) bool {
 		if recFlowEligible(r) {
-			refused++
+			refused[r.name] = true
 			return true
 		}
 		return false
 	}
-	t.Cleanup(func() { refuseFlowRecDirect = nil })
+	framedRouteHook = func(table string, r *rule) {
+		if table == "recRules" {
+			framed[r.name] = true
+		}
+	}
+	t.Cleanup(func() { refuseFlowRecDirect, framedRouteHook = nil, nil })
 	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), []genCase{c}, GenOptions{})
-	if refused == 0 {
+	if len(refused) == 0 {
 		t.Fatal("no rule was refused: the fallback is not exercised")
+	}
+	for name := range refused {
+		if !framed[name] {
+			t.Errorf("rule %s was refused by flowRecDirect but did not take the framed route", name)
+		}
 	}
 }

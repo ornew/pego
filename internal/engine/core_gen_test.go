@@ -2,7 +2,10 @@ package engine
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
+	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -10,11 +13,10 @@ import (
 	"github.com/ornew/pego/internal/engine/core"
 )
 
-// The tests here compare the Core IR of the typed Go rules, after the passes of typedCore, with
-// the typed decisions frozen in testdata/typed_decisions.golden (core_typed_decisions_test.go),
-// which the generator recorded before its typed output was printed from Flow IR.
+// The tests here check the Core IR of the typed Go rules, after the passes of typedCore, against
+// the decisions frozen in testdata/typed_decisions.golden (core_typed_decisions_test.go).
 
-// coreGenMode is a set of generator options under which the Core passes are compared.
+// coreGenMode is a set of generator options under which the Core passes are frozen.
 type coreGenMode struct {
 	name string
 	opts GenOptions
@@ -27,27 +29,33 @@ var coreGenModes = []coreGenMode{
 	{"lean boxed", GenOptions{Types: true, TypedOnly: true, disableLiteralTextDispatch: true, boxedComparisons: true}},
 }
 
-// coreGenCase is a corpus grammar generated with recorded decisions, and the Core IR of its typed
-// rules under the generator's options, with the expression each node is built from.
+// coreGenCase is a corpus grammar generated with the options of a mode, and the Core IR of its
+// rules under them, with the expression each node is built from.
 type coreGenCase struct {
-	name string
-	// table is the generator's rule table the module is compared with.
+	name, mode string
+	// table is the generator's rule table of the module: trules for the typed rules, recRules for the
+	// recognizer.
 	table  string
-	dec    *genDecisions
+	golden *decisionsGolden
+	gen    *generator
 	m      *core.Module
 	origin map[core.Node]grammar.Expr
 	// rules holds the rules of the program by ID, value-free twins included.
 	rules []*rule
 	// passErrs holds the violations Verify found after a pass.
 	passErrs []string
+	// broken is set where a negative control broke a pass of this case.
+	broken bool
+	// lines holds the decisions of the Core IR (coreDecisionLines), once compared.
+	lines []string
 }
 
-func (c *coreGenCase) g() *generator { return c.dec.gen }
+func (c *coreGenCase) g() *generator { return c.gen }
 
-// altOrigin returns the expression of the alternative i of the choice x, which the generator's
-// guards are keyed by: the alternative of the grammar choice x is built from. (The origin of an
-// alternative's body is the innermost expression it is built from: inside a capture that builds
-// nothing, for one.)
+// altOrigin returns the expression of the alternative i of the choice x, which the decisions are
+// keyed by: the alternative of the grammar choice x is built from. (The origin of an alternative's
+// body is the innermost expression it is built from: inside a capture that builds nothing, for
+// one.)
 func (c *coreGenCase) altOrigin(x *core.Choice, i int) (grammar.Expr, bool) {
 	if ce, ok := c.origin[x].(*grammar.Choice); ok && len(ce.Alts) == len(x.Alts) {
 		return ce.Alts[i], true
@@ -60,31 +68,33 @@ func (c *coreGenCase) altOrigin(x *core.Choice, i int) (grammar.Expr, bool) {
 	return e, ok
 }
 
-// coreGenerate generates the parser of the grammar source with the options, recording the
-// decisions of the generator. It reports false for a grammar that the generator rejects.
-func coreGenerate(src string, opts GenOptions) (*genDecisions, bool) {
+// coreGenerate generates the parser of the grammar source with the options and returns the
+// generator that wrote it, for the Core IR of the same options (generator.typedCore). It reports
+// false for a grammar that the generator rejects.
+func coreGenerate(src string, opts GenOptions) (*generator, bool) {
 	g, err := parseTest(src)
 	if err != nil {
 		return nil, false
 	}
-	dec := &genDecisions{}
-	opts.Module, opts.decisions = "example.com/p", dec
-	if _, err := generate(g, opts); err != nil || dec.gen == nil {
+	var gen *generator
+	generatorHook = func(x *generator) { gen = x }
+	defer func() { generatorHook = nil }()
+	opts.Module = "example.com/p"
+	if _, err := generate(g, opts); err != nil || gen == nil {
 		return nil, false
 	}
-	return dec, true
+	return gen, true
 }
 
-// coreTypedCase builds the Core IR of the typed rules of the generated parser dec with the passes
-// of typedCore, verifying the module after each pass and following the repetitions the scan pass
-// replaces, so that every scan has the origin of its repetition. If breaks is not nil, it is
-// called after each pass, before the module is verified: a negative control breaks a pass there.
-func coreTypedCase(name string, dec *genDecisions, breaks func(c *coreGenCase, pass string, m *core.Module)) (*coreGenCase, error) {
-	c := &coreGenCase{name: name, table: "trules", dec: dec, origin: map[core.Node]grammar.Expr{}}
-	prog := dec.gen.prog
-	c.rules = append(append([]*rule(nil), prog.rules...), prog.twins...)
+// coreTypedCase builds the Core IR of the typed rules of the generated parser with the passes of
+// typedCore, verifying the module after each pass and following the repetitions the scan pass
+// replaces, so that every scan has the origin of its repetition. If breaks is not nil, it is called
+// after each pass, before the module is verified: a negative control breaks a pass there.
+func coreTypedCase(name, mode string, gen *generator, breaks func(c *coreGenCase, pass string, m *core.Module)) (*coreGenCase, error) {
+	c := &coreGenCase{name: name, mode: mode, table: "trules", golden: typedGolden, gen: gen, origin: map[core.Node]grammar.Expr{}}
+	c.rules = typedRules(gen)
 	var repeats []func()
-	dec.coreHook = func(pass string, m *core.Module) {
+	gen.coreHook = func(pass string, m *core.Module) {
 		if breaks != nil {
 			breaks(c, pass, m)
 		}
@@ -101,8 +111,8 @@ func coreTypedCase(name string, dec *genDecisions, breaks func(c *coreGenCase, p
 			}
 		}
 	}
-	defer func() { dec.coreHook = nil }()
-	m, err := dec.gen.typedCore(c.origin)
+	defer func() { gen.coreHook = nil }()
+	m, err := gen.typedCore(c.origin)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +125,7 @@ var coreGenerated = map[string][]coreGenerated1{}
 
 type coreGenerated1 struct {
 	name string
-	dec  *genDecisions
+	gen  *generator
 }
 
 // coreExtraGrammars are grammars with term forms that the typed rules of the corpus lack: text
@@ -130,30 +140,23 @@ rule pair P = n:[0-9]+ s:[a-z] => P{N: len($n), S: text($s)}
 `},
 }
 
-// coreGenerations generates every corpus grammar in the mode, once for all tests.
+// coreGenerations generates every corpus grammar in the mode, once for all tests: those that the
+// generator accepts and whose typed rules have a Core IR.
 func coreGenerations(t *testing.T, mode coreGenMode) []coreGenerated1 {
 	t.Helper()
 	if out, ok := coreGenerated[mode.name]; ok {
 		return out
 	}
-	// The grammars are those of the golden file in this mode, so a grammar whose typed decisions
-	// are not recorded cannot drop out of the comparisons silently.
-	want := typedGolden.grammarsOf(t, mode.name)
 	var out []coreGenerated1
 	for _, gc := range append(schemaCorpus(t), coreExtraGrammars...) {
-		if !want[gc.name] {
+		gen, ok := coreGenerate(gc.src, mode.opts)
+		if !ok {
 			continue
 		}
-		dec, ok := coreGenerate(gc.src, mode.opts)
-		if !ok {
-			t.Fatalf("%s %s: the grammar does not generate", mode.name, gc.name)
+		if m, err := gen.typedCore(map[core.Node]grammar.Expr{}); err != nil || len(m.Rules) == 0 {
+			continue
 		}
-		typedGolden.load(t, typedRules(dec), mode.name, gc.name, dec)
-		out = append(out, coreGenerated1{gc.name, dec})
-		delete(want, gc.name)
-	}
-	if len(want) != 0 {
-		t.Fatalf("%s: grammars of %s are not in the corpus: %v", mode.name, typedDecisionsGolden, want)
+		out = append(out, coreGenerated1{gc.name, gen})
 	}
 	if len(out) < 100 {
 		t.Fatalf("%s: %d grammars", mode.name, len(out))
@@ -162,56 +165,19 @@ func coreGenerations(t *testing.T, mode coreGenMode) []coreGenerated1 {
 	return out
 }
 
-// writesTyped reports that the generator recorded typed decisions for the grammar. It is the filter
-// of the writer of the golden file (core_typed_decisions_test.go): the Core comparisons take their
-// grammars from the golden, because Flow IR prints some typed rules without recording them.
-func writesTyped(dec *genDecisions) bool {
-	for _, d := range dec.log {
-		if d.table == "trules" {
-			return true
-		}
-	}
-	return false
-}
-
 // coreGenCases builds the Core IR of every corpus grammar generated in the mode, breaking the
 // passes with breaks if it is not nil (coreTypedCase).
 func coreGenCases(t *testing.T, mode coreGenMode, breaks func(c *coreGenCase, pass string, m *core.Module)) []*coreGenCase {
 	t.Helper()
 	var out []*coreGenCase
 	for _, gen := range coreGenerations(t, mode) {
-		c, err := coreTypedCase(gen.name, gen.dec, breaks)
+		c, err := coreTypedCase(gen.name, mode.name, gen.gen, breaks)
 		if err != nil {
 			t.Fatalf("%s: %s: %v", mode.name, gen.name, err)
 		}
 		out = append(out, c)
 	}
 	return out
-}
-
-// genKey identifies the decisions of one kind for an expression of a rule.
-type genKey struct {
-	rule *rule
-	kind genDecisionKind
-	e    grammar.Expr
-}
-
-// genIndex returns the decisions of the table by rule, kind and expression. Decisions recorded
-// more than once for the same key must agree; it reports those that do not.
-func genIndex(dec *genDecisions, table string) (map[genKey]genDecision, []string) {
-	idx := map[genKey]genDecision{}
-	var errs []string
-	for _, d := range dec.log {
-		if d.table != table {
-			continue
-		}
-		k := genKey{d.rule, d.kind, d.e}
-		if prev, ok := idx[k]; ok && fmt.Sprint(prev.guard, prev.runs, prev.names) != fmt.Sprint(d.guard, d.runs, d.names) {
-			errs = append(errs, fmt.Sprintf("rule %s: %s: decisions %+v and %+v", d.rule.name, grammar.FormatExpr(d.e), prev, d))
-		}
-		idx[k] = d
-	}
-	return idx, errs
 }
 
 // coreNodes calls f for every node of the rule with the alternative and the line it is in.
@@ -236,8 +202,12 @@ func opLines(o *core.OperatorsRule, e *grammar.OperatorsRule) ([]*core.OpLine, [
 	return o.Lines(), exprs, actions
 }
 
-// guardString is the guard of a Core alternative in the generator's terms: the condition on the
-// next character and the expectation.
+// workClassName matches the name of a work class table, whose number is the generator's to assign.
+var workClassName = regexp.MustCompile(`workClass[0-9]+`)
+
+// guardString is the guard of a Core alternative as a Go condition: the condition on the
+// next character and the expectation. The numbers of work class tables are left out: they depend on
+// the order in which the generator met the classes, and the ranges of the condition name the class.
 func guardString(g *generator, m *core.Module, f *core.First) (string, string) {
 	if f.Lit {
 		if f.Fold {
@@ -249,7 +219,8 @@ func guardString(g *generator, m *core.Module, f *core.First) (string, string) {
 	for _, r := range f.Class.Ranges {
 		e.Ranges = append(e.Ranges, grammar.CharRange{Lo: r.Lo, Hi: r.Hi})
 	}
-	return negateCondition(g.controlledClassReject(e)), m.Exps[f.Exp]
+	cond := negateCondition(g.controlledClassReject(e))
+	return workClassName.ReplaceAllString(cond, "workClass"), m.Exps[f.Exp]
 }
 
 // coreDecisionCounts counts the decisions compared.
@@ -259,83 +230,85 @@ type coreDecisionCounts struct {
 	forms map[string]int
 }
 
-// compareCoreDecisions compares the Core IR of c with the decisions of the generator for its table
-// and returns the differences, each prefixed with its aspect (terminal, guard, class runs,
-// scan, scope, term; verify for a pass after which Verify fails, generator for decisions of the
-// generator that disagree):
+// termTree is a term's form and the terms inside it, in order.
+type termTree struct {
+	form string
+	kids []*termTree
+}
+
+// coreDecisionLines encodes the decisions of the Core IR of c as the lines of the decisions
+// golden (core_typed_decisions_test.go), sorted, with the guard conditions as quoted text, and
+// counts them in n. It returns the problems of nodes it cannot encode, each prefixed with its
+// aspect. The decisions are those of every node of the module:
 //
-//   - the Terminals are the expressions the generator runs as terminal programs;
-//   - the guard of every alternative is the generator's, and GuardedClass is set exactly where
-//     the generator's guard consumes the alternative's first class (unless it runs the
-//     alternative as a terminal program, which reads its characters itself);
-//   - the class runs of every value-free sequence are the generator's;
-//   - the scans are the repetitions the generator writes as scans;
-//   - the scopes of repetition elements and Operators Rule lines are the generator's;
-//   - every action, predicate and binding has the structure and forms the generator writes.
-//
-// Nodes built from expressions the generator does not write (alternatives after one that cannot
-// fail) are not compared; every decision of the generator is.
-func compareCoreDecisions(c *coreGenCase, n *coreDecisionCounts) []string {
+//   - the Terminals;
+//   - the guard of every alternative of a choice, and whether its first class is a guarded class;
+//   - the class runs of every value-free sequence;
+//   - the scans;
+//   - the scopes of repetition elements and Operators Rule lines;
+//   - for the typed rules, the structure and forms of every action, predicate and binding.
+func coreDecisionLines(c *coreGenCase, n *coreDecisionCounts) (lines, problems []string) {
 	g := c.g()
-	idx, errs := genIndex(c.dec, c.table)
-	for _, e := range c.passErrs {
-		errs = append(errs, "verify: "+e)
-	}
-	seen := map[genKey]bool{}
-	written := func(r *rule, e grammar.Expr) bool {
-		_, ok := idx[genKey{r, decExpr, e}]
-		return ok
-	}
-	lookup := func(r *rule, kind genDecisionKind, e grammar.Expr) (genDecision, bool) {
-		k := genKey{r, kind, e}
-		d, ok := idx[k]
-		if ok {
-			seen[k] = true
-		}
-		return d, ok
-	}
 	for _, cr := range c.m.Rules {
 		r := c.rules[cr.ID]
-		where := func(aspect, format string, args ...any) {
-			errs = append(errs, fmt.Sprintf("%s: rule %s: ", aspect, r.name)+fmt.Sprintf(format, args...))
+		_, idx := typedDecisionsWalk(r)
+		problem := func(aspect, format string, args ...any) {
+			problems = append(problems, fmt.Sprintf("%s: rule %s: ", aspect, r.name)+fmt.Sprintf(format, args...))
+		}
+		// at returns the index of the expression in the rule's body.
+		at := func(aspect string, e grammar.Expr) (int, bool) {
+			i, ok := idx[e]
+			if !ok {
+				problem(aspect, "expression %s is not in the body", grammar.FormatExpr(e))
+			}
+			return i, ok
+		}
+		add := func(kind string, at int, format string, args ...any) {
+			lines = append(lines, fmt.Sprintf("%s\t%d\t%d", kind, cr.ID, at)+fmt.Sprintf(format, args...))
+		}
+		names := func(s []core.Slot) string { return strings.Join(core.SlotNames(s), ",") }
+		term := func(at int, t core.Term) {
+			tree := coreTermTree(t, g.noWork && c.table == "trules") // only the typed runtime takes fields in order
+			if n.forms == nil {
+				n.forms = map[string]int{}
+			}
+			countForms(tree, n.forms)
+			add("term", at, "\t%s", tree)
+			n.terms++
+		}
+		typed := c.table == "trules"
+		if typed && cr.Finish.Kind == core.FinishAction {
+			term(-1, cr.Finish.Action)
 		}
 		coreNodes(cr, func(x core.Node) {
 			switch x := x.(type) {
 			case *core.Terminal:
-				e := c.origin[x.Body]
-				if _, ok := lookup(r, decTerminal, e); !ok {
-					where("terminal", "terminal %s, generator none", grammar.FormatExpr(e))
+				e, ok := c.origin[x.Body]
+				if !ok {
+					problem("terminal", "terminal without origin")
+					return
 				}
-				n.terminals++
+				if i, ok := at("terminal", e); ok {
+					add("terminal", i, "")
+					n.terminals++
+				}
 			case *core.Choice:
 				for i, a := range x.Alts {
 					e, ok := c.altOrigin(x, i)
 					if !ok {
-						where("guard", "alternative %d without origin", i)
+						problem("guard", "alternative %d without origin", i)
 						continue
 					}
-					d, ok := lookup(r, decGuard, e)
+					ei, ok := at("guard", e)
 					if !ok {
-						if written(r, e) {
-							where("guard", "alternative %s: generator records no guard", grammar.FormatExpr(e))
-						}
 						continue
-					}
-					if (a.Guard != nil) != d.guard.ok {
-						where("guard", "alternative %s: guard %v, generator %v", grammar.FormatExpr(e), a.Guard != nil, d.guard.ok)
-						continue
-					}
-					_, terminal := lookup(r, decTerminal, e)
-					if want := d.guard.class && !terminal; a.GuardedClass != want {
-						where("guard", "alternative %s: guarded class %v, generator %v", grammar.FormatExpr(e), a.GuardedClass, want)
 					}
 					if a.Guard == nil {
+						add("guard", ei, "\t0\t0\t%d\t%q\t%q", typedDecisionsBit(a.GuardedClass), "", "")
 						continue
 					}
 					cond, desc := guardString(g, c.m, a.Guard)
-					if cond != d.guard.cond || desc != g.descs[d.guard.desc] || a.Guard.Depth != d.guard.depth {
-						where("guard", "alternative %s: guard %q %q +%d, generator %q %q +%d", grammar.FormatExpr(e), cond, desc, a.Guard.Depth, d.guard.cond, g.descs[d.guard.desc], d.guard.depth)
-					}
+					add("guard", ei, "\t1\t%d\t%d\t%q\t%q", a.Guard.Depth, typedDecisionsBit(a.GuardedClass), desc, cond)
 					n.guards++
 					if a.GuardedClass {
 						n.guardedClasses++
@@ -346,95 +319,139 @@ func compareCoreDecisions(c *coreGenCase, n *coreDecisionCounts) []string {
 				if !ok || x.Attrs().Want {
 					return
 				}
-				var got [][2]int
-				at := 0
+				var runs []string
+				pos := 0
 				for _, it := range x.Items {
 					if run, ok := it.(*core.ClassRun); ok {
-						got = append(got, [2]int{at, len(run.Classes)})
-						at += len(run.Classes)
+						runs = append(runs, fmt.Sprintf("%d:%d", pos, len(run.Classes)))
+						pos += len(run.Classes)
 						n.classRuns++
 						continue
 					}
-					at++
+					pos++
 				}
-				d, ok := lookup(r, decClassRuns, e)
-				if !ok {
-					if len(got) > 0 && written(r, e) {
-						where("class runs", "class runs %v in %s, generator none", got, grammar.FormatExpr(e))
-					}
+				if pos != len(e.Items) {
+					problem("class runs", "%d items in %s, %d in the Core sequence", len(e.Items), grammar.FormatExpr(e), pos)
+				}
+				if len(runs) == 0 {
 					return
 				}
-				if at != len(e.Items) || !slices.Equal(got, d.runs) {
-					where("class runs", "class runs %v in %s, generator %v", got, grammar.FormatExpr(e), d.runs)
+				if i, ok := at("class runs", e); ok {
+					add("runs", i, "\t%s", strings.Join(runs, " "))
 				}
 			case *core.Scan:
 				e, ok := c.origin[x]
 				if !ok {
-					where("scan", "scan without origin")
+					problem("scan", "scan without origin")
 					return
 				}
-				if _, ok := lookup(r, decScan, e); !ok && written(r, e) {
-					where("scan", "scan %s, generator none", grammar.FormatExpr(e))
+				if i, ok := at("scan", e); ok {
+					add("scan", i, "")
+					n.scans++
 				}
-				n.scans++
 			case *core.Repeat:
 				e, ok := c.origin[x].(*grammar.Repeat)
 				if !ok || x.Scope == nil {
 					return
 				}
-				d, ok := lookup(r, decScope, e.Expr)
-				if !ok {
-					if written(r, e) {
-						where("scope", "element scope of %s: generator none", grammar.FormatExpr(e))
+				if i, ok := at("scope", e.Expr); ok {
+					add("scope", i, "\t%s", names(x.Scope))
+					n.scopes++
+				}
+			case *core.OperatorsRule:
+				lineList, exprs, actions := opLines(x, r.def.Expr.(*grammar.OperatorsRule))
+				for i, l := range lineList {
+					if ei, ok := at("scope", exprs[i]); ok {
+						add("scope", ei, "\t%s", names(l.Scope))
+						n.scopes++
 					}
+					if typed && l.Action != nil && actions[i] != nil {
+						term(-2-i, l.Action)
+					}
+				}
+			case *core.Pred:
+				if !typed {
 					return
 				}
-				if got := core.SlotNames(x.Scope); !slices.Equal(got, d.names) && !(len(got) == 0 && len(d.names) == 0) {
-					where("scope", "element scope of %s: %v, generator %v", grammar.FormatExpr(e), got, d.names)
+				e, ok := c.origin[x].(*grammar.Predicate)
+				if !ok {
+					problem("term", "predicate without origin")
+					return
 				}
-				n.scopes++
-			case *core.OperatorsRule:
-				lines, exprs, _ := opLines(x, r.def.Expr.(*grammar.OperatorsRule))
-				for i, l := range lines {
-					d, ok := lookup(r, decScope, exprs[i])
-					if !ok {
-						where("scope", "line %s: generator records no scope", grammar.FormatExpr(exprs[i]))
-						continue
-					}
-					if got := core.SlotNames(l.Scope); !slices.Equal(got, d.names) && !(len(got) == 0 && len(d.names) == 0) {
-						where("scope", "line %s: scope %v, generator %v", grammar.FormatExpr(exprs[i]), got, d.names)
-					}
-					n.scopes++
+				if i, ok := at("term", e); ok {
+					term(i, x.Term)
+				}
+			case *core.BindNode:
+				if !typed {
+					return
+				}
+				e, ok := c.origin[x].(*grammar.Predicate)
+				if !ok {
+					problem("term", "binding without origin")
+					return
+				}
+				if i, ok := at("term", e); ok {
+					term(i, x.Term)
 				}
 			}
 		})
 	}
-	errs = append(errs, compareCoreTerms(c, n)...)
-	// Every decision of the generator is one of the Core IR's.
-	for k, d := range idx {
-		switch k.kind {
-		case decExpr, decClassRuns, decGuard:
-			if k.kind == decClassRuns && len(d.runs) > 0 && !seen[k] {
-				errs = append(errs, fmt.Sprintf("class runs: rule %s: generator class runs %v in %s, Core none", k.rule.name, d.runs, grammar.FormatExpr(k.e)))
+	sort.Strings(lines)
+	return lines, problems
+}
+
+// decisionAspects maps the kind of a decision line to its aspect.
+var decisionAspects = map[string]string{"terminal": "terminal", "guard": "guard", "runs": "class runs", "scan": "scan", "scope": "scope", "term": "term"}
+
+// compareCoreDecisions compares the decisions of the Core IR of c with the golden's, and returns
+// the differences, each prefixed with its aspect (terminal, guard, class runs, scan, scope, term;
+// verify for a pass after which Verify fails). It sets c.lines. With -update only the problems of the
+// encoding and of Verify are returned: the frozen-decisions tests write the golden from c.lines.
+func compareCoreDecisions(c *coreGenCase, n *coreDecisionCounts) []string {
+	lines, errs := coreDecisionLines(c, n)
+	c.lines = lines
+	for _, e := range c.passErrs {
+		errs = append(errs, "verify: "+e)
+	}
+	if !*updateGoldens {
+		c.golden.read()
+		want, ok := c.golden.lines[decisionsKey{c.mode, c.name}]
+		if !ok {
+			errs = append(errs, fmt.Sprintf("golden: no entry for this grammar in %s (run with -update after review)", c.golden.path))
+		}
+		count := map[string]int{}
+		for _, l := range lines {
+			count[l]++
+		}
+		for _, l := range want {
+			count[l]--
+		}
+		for l, k := range count {
+			if k == 0 {
+				continue
 			}
-			if k.kind == decGuard && !seen[k] && d.guard.ok {
-				errs = append(errs, fmt.Sprintf("guard: rule %s: generator guard of %s, Core none", k.rule.name, grammar.FormatExpr(k.e)))
+			f := strings.Split(l, "\t")
+			id, _ := strconv.Atoi(f[1])
+			name := "?"
+			if id >= 0 && id < len(c.rules) {
+				name = c.rules[id].name
 			}
-		default:
-			if !seen[k] {
-				errs = append(errs, fmt.Sprintf("%s: rule %s: generator decision for %s, Core none", [...]string{decTerminal: "terminal", decScan: "scan", decScope: "scope"}[k.kind], k.rule.name, grammar.FormatExpr(k.e)))
+			who, other := "Core", "golden"
+			if k < 0 {
+				who, other = other, who
 			}
+			errs = append(errs, fmt.Sprintf("%s: rule %s: %s %s, %s none", decisionAspects[f[0]], name, who, strings.Join(f[2:], " "), other))
 		}
 	}
 	slices.Sort(errs)
 	return errs
 }
 
-// coreTermTree returns the structure and forms of a Core term as the generator records them
-// (genTerm): a struct constructor is in declaration order only where the generator writes it so,
+// coreTermTree returns the structure and forms of a Core term as the decisions record them
+// (termTree): a struct constructor is in declaration order only where the generator writes it so,
 // in a parser without step charges.
-func coreTermTree(t core.Term, noWork bool) *genTerm {
-	n := &genTerm{}
+func coreTermTree(t core.Term, noWork bool) *termTree {
+	n := &termTree{}
 	kids := core.TermChildren(t)
 	switch t := t.(type) {
 	case *core.Const:
@@ -476,7 +493,7 @@ func coreTermTree(t core.Term, noWork bool) *genTerm {
 		n.form = "concat-fused"
 		kids = nil
 		for _, p := range t.Parts {
-			part := &genTerm{form: [...]string{core.PartList: "part-list", core.PartMap: "part-map", core.PartItems: "part-items"}[p.Kind]}
+			part := &termTree{form: [...]string{core.PartList: "part-list", core.PartMap: "part-map", core.PartItems: "part-items"}[p.Kind]}
 			for _, x := range p.Args {
 				part.kids = append(part.kids, coreTermTree(x, noWork))
 			}
@@ -497,7 +514,7 @@ func coreTermTree(t core.Term, noWork bool) *genTerm {
 	return n
 }
 
-func (n *genTerm) String() string {
+func (n *termTree) String() string {
 	if len(n.kids) == 0 {
 		return n.form
 	}
@@ -509,7 +526,7 @@ func (n *genTerm) String() string {
 }
 
 // countForms adds the special forms of the tree to forms.
-func countForms(n *genTerm, forms map[string]int) {
+func countForms(n *termTree, forms map[string]int) {
 	switch n.form {
 	case "text-eq", "field-cmp", "text-in", "projected-map", "concat-fused", "new-in-order", "part-items":
 		forms[n.form]++
@@ -517,80 +534,6 @@ func countForms(n *genTerm, forms map[string]int) {
 	for _, k := range n.kids {
 		countForms(k, forms)
 	}
-}
-
-// compareCoreTerms compares every action, predicate and binding of the Core IR of c with the tree
-// the generator records for it, and every term the generator records with one of the Core IR.
-func compareCoreTerms(c *coreGenCase, n *coreDecisionCounts) []string {
-	g := c.g()
-	type termKey struct {
-		rule *rule
-		t    grammar.Term
-	}
-	gen := map[termKey]string{}
-	for _, rec := range c.dec.terms {
-		if rec.table != c.table {
-			continue
-		}
-		k := termKey{rec.rule, rec.t}
-		s := rec.tree.String()
-		if prev, ok := gen[k]; ok && prev != s {
-			return []string{fmt.Sprintf("generator: rule %s: term written as %s and %s", rec.rule.name, prev, s)}
-		}
-		gen[k] = s
-	}
-	idx, _ := genIndex(c.dec, c.table)
-	var errs []string
-	seen := map[termKey]bool{}
-	compare := func(r *rule, e grammar.Expr, gt grammar.Term, ct core.Term) {
-		k := termKey{r, gt}
-		want, ok := gen[k]
-		if !ok {
-			if _, written := idx[genKey{r, decExpr, e}]; written || e == nil {
-				errs = append(errs, fmt.Sprintf("term: rule %s: term %s, generator none", r.name, core.TermString(ct)))
-			}
-			return
-		}
-		seen[k] = true
-		tree := coreTermTree(ct, g.noWork && c.table == "trules") // only the typed runtime takes fields in order
-		if got := tree.String(); got != want {
-			errs = append(errs, fmt.Sprintf("term: rule %s: term %s, generator %s", r.name, got, want))
-		}
-		if n.forms == nil {
-			n.forms = map[string]int{}
-		}
-		countForms(tree, n.forms)
-		n.terms++
-	}
-	for _, cr := range c.m.Rules {
-		r := c.rules[cr.ID]
-		if cr.Finish.Kind == core.FinishAction {
-			compare(r, nil, r.action, cr.Finish.Action)
-		}
-		coreNodes(cr, func(x core.Node) {
-			switch x := x.(type) {
-			case *core.Pred:
-				e := c.origin[x].(*grammar.Predicate)
-				compare(r, e, e.Term, x.Term)
-			case *core.BindNode:
-				e := c.origin[x].(*grammar.Predicate)
-				compare(r, e, e.Term.(*grammar.Bind).Value, x.Term)
-			case *core.OperatorsRule:
-				lines, _, actions := opLines(x, r.def.Expr.(*grammar.OperatorsRule))
-				for i, l := range lines {
-					if l.Action != nil {
-						compare(r, nil, actions[i], l.Action)
-					}
-				}
-			}
-		})
-	}
-	for k := range gen {
-		if !seen[k] {
-			errs = append(errs, fmt.Sprintf("term: rule %s: generator term %s, Core none", k.rule.name, gen[k]))
-		}
-	}
-	return errs
 }
 
 // coreAspectErrors returns the differences of the aspect among errs (compareCoreDecisions).
@@ -604,27 +547,22 @@ func coreAspectErrors(errs []string, aspect string) []string {
 	return out
 }
 
-// TestCoreMatchesGenerator compares the Core IR passes with the generator over the corpus in each
-// mode, in every aspect, and checks that every kind of decision is met.
-func TestCoreMatchesGenerator(t *testing.T) {
-	for _, mode := range coreGenModes {
-		t.Run(mode.name, func(t *testing.T) {
-			var n coreDecisionCounts
-			for _, c := range coreGenCases(t, mode, nil) {
-				for _, err := range compareCoreDecisions(c, &n) {
-					t.Errorf("%s: %s", c.name, err)
-				}
-			}
-			lean := !mode.opts.WorkControls
-			terminals := lean && !mode.opts.Observability
-			if n.guards == 0 || n.scans == 0 || n.scopes == 0 || n.terms == 0 ||
-				(n.terminals > 0) != terminals || (n.classRuns > 0) != lean || (n.guardedClasses > 0) != lean {
-				t.Errorf("counts %+v", n)
-			}
-			if mode.opts.boxedComparisons != (n.forms["field-cmp"] == 0) || mode.opts.disableLiteralTextDispatch != (n.forms["text-in"] == 0) ||
-				n.forms["concat-fused"] == 0 || n.forms["projected-map"]+n.forms["part-items"] == 0 {
-				t.Errorf("forms %v", n.forms)
-			}
-		})
-	}
+// TestCoreTypedDecisionsFrozen compares the decisions of the Core IR passes over the corpus in
+// each mode with the typed decisions frozen in testdata/typed_decisions.golden, and checks that
+// every kind of decision is met. -update rewrites the golden (core_typed_decisions_test.go).
+func TestCoreTypedDecisionsFrozen(t *testing.T) {
+	typedGolden.freeze(t, coreGenModes, func(t *testing.T, mode coreGenMode) []*coreGenCase {
+		return coreGenCases(t, mode, nil)
+	}, func(t *testing.T, mode coreGenMode, n *coreDecisionCounts) {
+		lean := !mode.opts.WorkControls
+		terminals := lean && !mode.opts.Observability
+		if n.guards == 0 || n.scans == 0 || n.scopes == 0 || n.terms == 0 ||
+			(n.terminals > 0) != terminals || (n.classRuns > 0) != lean || (n.guardedClasses > 0) != lean {
+			t.Errorf("counts %+v", n)
+		}
+		if mode.opts.boxedComparisons != (n.forms["field-cmp"] == 0) || mode.opts.disableLiteralTextDispatch != (n.forms["text-in"] == 0) ||
+			n.forms["concat-fused"] == 0 || n.forms["projected-map"]+n.forms["part-items"] == 0 {
+			t.Errorf("forms %v", n.forms)
+		}
+	})
 }
