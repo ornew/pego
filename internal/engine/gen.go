@@ -226,7 +226,7 @@ func generateOnce(g *grammar.Grammar, opts GenOptions, live, collect *liveRules)
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
-	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, live: live, collect: collect, keepTableRules: opts.TypedOnly && !opts.keepNodes}
+	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, ordinary: !opts.WorkControls && !opts.Document && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, live: live, collect: collect, keepTableRules: opts.TypedOnly && !opts.keepNodes}
 	if live != nil {
 		gen.seedDescs()
 		for _, d := range live.descs[len(gen.descs):] {
@@ -287,6 +287,7 @@ func generateOnce(g *grammar.Grammar, opts GenOptions, live, collect *liveRules)
 		if err != nil {
 			return nil, err
 		}
+		gen.convertsNodes = typed.needNodes
 		if opts.TypedOnly && typed.needNodes && !opts.keepNodes && !opts.disableKeepNodes {
 			opts.keepNodes = true
 			return generateOnce(g, opts, live, collect)
@@ -384,6 +385,7 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		if err != nil {
 			return nil, err
 		}
+		gen.convertsNodes = typed.needNodes
 		if opts.TypedOnly && typed.needNodes && !opts.keepNodes && !opts.disableKeepNodes {
 			// A typed entry point converts the Node result of its rule, so the Node rule functions
 			// are needed; generate again with them.
@@ -414,11 +416,11 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	if err != nil {
 		return nil, fmt.Errorf("generated code does not compile: %w\n%s", err, out.String())
 	}
-	if !opts.disableOrdinaryWorkSpecialization {
+	if !opts.disableOrdinaryWorkSpecialization && !gen.ordinary {
+		// A parser without work controls and Documents prints its bodies in the ordinary form only
+		// (generator.ordinary); the others get a branch for it.
 		guard := "p.Control == nil"
 		switch {
-		case !opts.WorkControls && !opts.Document:
-			guard = ""
 		case !opts.WorkControls:
 			guard = "p.Document == nil"
 		case opts.Document:
@@ -548,7 +550,9 @@ type generator struct {
 	goWorkControls bool
 	// noWork leaves the step charges out of Go output generated without work controls, where
 	// no control exists to charge: the statements, and the closures that only held one.
-	noWork              bool
+	noWork bool
+	// ordinary prints the bodies in their ordinary form only (no work controls and no Documents).
+	ordinary            bool
 	directTypedDocument bool
 	document            bool
 	workClassNames      map[string]string
@@ -624,6 +628,9 @@ type generator struct {
 	// keepTableRules marks a typed-only parser without Node rules: its Node and recognizer tables
 	// have no rule bodies to check; the typed table leaves its unreached rules out as usual.
 	keepTableRules bool
+	// convertsNodes reports that a typed entry point converts the Node result of its rule, which
+	// needs the Node rule bodies.
+	convertsNodes bool
 	// typedRoots are the typed rules whose Entry a typed entry point runs, and typedEntry their IDs.
 	typedRoots []ruleKey
 	typedEntry map[int]bool
@@ -1957,11 +1964,18 @@ func (g *generator) controlledClassReject(e *grammar.CharClass) string {
 		name = g.name("workClass")
 		g.workClassNames[key] = name
 		g.workClassKeys = append(g.workClassKeys, key)
-		fmt.Fprintf(&g.vars, "var %s = []WorkRange{", name)
-		for _, r := range e.Ranges {
-			fmt.Fprintf(&g.vars, "{Lo: %d, Hi: %d},", r.Lo, r.Hi)
+		if !g.ordinary {
+			fmt.Fprintf(&g.vars, "var %s = []WorkRange{", name)
+			for _, r := range e.Ranges {
+				fmt.Fprintf(&g.vars, "{Lo: %d, Hi: %d},", r.Lo, r.Hi)
+			}
+			g.vars.WriteString("}\n")
 		}
-		g.vars.WriteString("}\n")
+	}
+	if g.ordinary {
+		// The class is tested without a control; the name is allocated all the same, so that the
+		// other generated names keep their numbers.
+		return "(" + ordinary + ")"
 	}
 	return fmt.Sprintf("((WorkControlsEnabled && p.Control != nil && p.RejectWorkClass(ch, %s, %v)) || ((!WorkControlsEnabled || p.Control == nil) && (%s)))", name, e.Negated, ordinary)
 }
@@ -1970,16 +1984,26 @@ func (g *generator) controlledClassReject(e *grammar.CharClass) string {
 // ParseStream uses the forms that need not consider a stream, which inline.
 func (g *generator) atEnd() string {
 	if g.streamStart == nil {
-		return "AtEndBatch"
+		return g.helper("AtEndBatch")
 	}
-	return "AtEnd"
+	return g.helper("AtEnd")
 }
 
 func (g *generator) atLineStart() string {
 	if g.streamStart == nil {
-		return "AtLineStartBatch"
+		return g.helper("AtLineStartBatch")
 	}
-	return "AtLineStart"
+	return g.helper("AtLineStart")
+}
+
+// helper names the runtime method that a generated execution function calls on its parser. A
+// parser generated without work controls and without Documents has no controlled form of its
+// bodies, so they call the Ordinary form of the method.
+func (g *generator) helper(name string) string {
+	if g.ordinary && ordinaryHelperName(name) {
+		return name + "Ordinary"
+	}
+	return name
 }
 
 // leanTyped reports whether typed rule bodies are emitted in their ordinary form only.

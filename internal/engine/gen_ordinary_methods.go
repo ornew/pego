@@ -70,9 +70,6 @@ func ordinaryMethodIdentity(fn *goast.FuncDecl) (ordinaryMethodKey, bool) {
 // specializeOrdinaryMethods gives generated execution functions a branch for
 // ordinary parses, which runs under guard (p.control == nil, and outside a
 // Document if the parser has Documents). The general body remains unchanged.
-//
-// An empty guard replaces each body by its ordinary form instead: a parser generated without
-// work controls has no controlled form to keep.
 func specializeOrdinaryMethods(src []byte, executionSource, guard string, noControls bool) ([]byte, error) {
 	methods, err := ordinaryExecutionMethods(executionSource)
 	if err != nil {
@@ -126,11 +123,11 @@ func specializeOrdinaryMethods(src []byte, executionSource, guard string, noCont
 				case *goast.CommClause:
 					x.Body = stripOrdinaryWork(x.Body)
 				case *goast.LabeledStmt:
-					if ordinary && guard != "" {
+					if ordinary {
 						x.Label.Name += "_ordinary"
 					}
 				case *goast.BranchStmt:
-					if x.Label != nil && ordinary && guard != "" {
+					if x.Label != nil && ordinary {
 						x.Label.Name += "_ordinary"
 					}
 				}
@@ -209,10 +206,6 @@ func specializeOrdinaryMethods(src []byte, executionSource, guard string, noCont
 			return nil, err
 		}
 		brace := fset.Position(fn.Body.Lbrace).Offset
-		if guard == "" {
-			insertions = append(insertions, insertion{brace, fset.Position(fn.Body.Rbrace).Offset + 1, text})
-			continue
-		}
 		if noControls {
 			// The controls are absent in this parser, so the form that remains for a Document is the
 			// ordinary one with only the Document's own behavior: no charges and no control reads.

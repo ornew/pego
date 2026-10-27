@@ -155,6 +155,10 @@ rule item Item = n:[a-z]+ => Item{Names: list(text($n)), N: 0}`
 var ordinaryOnlyConvertedInputs = []string{"abc!", "!", "abc", "", "é!", "ab\xff!", "abc!x", "a!b!", "ab !"}
 
 func TestGeneratedTypedOnlyConvertedEntries(t *testing.T) {
+	eachMode(t, testGeneratedTypedOnlyConvertedEntries)
+}
+
+func testGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -195,10 +199,14 @@ func TestGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 		t.Error("the transcripts of a mutated grammar are the same: the comparison cannot fail")
 	}
 
-	// Negative control: without the Node rule functions the same entries cannot be generated.
+	// Negative control: without the Node rule functions the converting entries have no Node rule
+	// bodies to run, which fails generation in every form.
 	_, err = Generate(g, GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: RuntimeImport, Types: true, TypedOnly: true, disableKeepNodes: true})
-	if err == nil || !strings.Contains(err.Error(), "missing generated execution functions") {
-		t.Errorf("a typed-only parser without the Node rule functions: error %v, want missing generated execution functions", err)
+	if err == nil || !strings.Contains(err.Error(), "internal error: a typed entry point converts Nodes") {
+		t.Errorf("a typed-only parser without the Node rule functions: error %v, want an internal error", err)
+	}
+	if countBodies([]byte(src)) == 0 {
+		t.Error("the typed-only parser with the Node rule functions has no Node rule bodies")
 	}
 }
 

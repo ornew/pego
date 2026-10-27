@@ -295,6 +295,7 @@ func (g *generator) flowFramed(f *flow.Func, slots []core.Slot, scope *scope, co
 	}
 	if p.used[f.Fail] {
 		p.b.WriteString("fail:\n")
+		p.labelEnd = p.b.Len()
 		p.dead = false
 		publish()
 		p.write("return nil, false\n")
@@ -360,6 +361,8 @@ type flowPrinter struct {
 	// are guarded by p.Document == nil, so that a Document parse reads through the recording primitives.
 	document bool
 	b        strings.Builder
+	// labelEnd is the length of b after the last label written.
+	labelEnd int
 	// dead reports that the current point is unreachable. used holds the labels exited to from
 	// reachable points, reads the variables read there, and loops the labels of loops.
 	dead  bool
@@ -375,7 +378,7 @@ type flowPrinter struct {
 
 func newFlowPrinter(g *generator, frame bool) *flowPrinter {
 	return &flowPrinter{g: g, frame: frame, used: map[*flow.Label]bool{}, reads: map[*flow.Var]bool{},
-		loops: map[*flow.Label]bool{}, names: map[*flow.Names]string{}, vars: newFlowVars()}
+		labelEnd: -1, loops: map[*flow.Label]bool{}, names: map[*flow.Names]string{}, vars: newFlowVars()}
 }
 
 // scopeNames returns the package variable of the capture names n, naming it on first use.
@@ -405,6 +408,15 @@ func (p *flowPrinter) matcher() string {
 		return "p"
 	}
 	return "p.Parser"
+}
+
+// helper names the runtime method that the printed code calls on the parser the body runs on: the
+// typed parser's embedded parser is not renamed.
+func (p *flowPrinter) helper(name string) string {
+	if !p.untyped() {
+		return name
+	}
+	return p.g.helper(name)
 }
 
 // write writes s unless the current point is unreachable.
@@ -443,6 +455,7 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 		p.stmts(s.Body)
 		if p.used[s.Label] {
 			fmt.Fprintf(&p.b, "%s:\n", s.Label.Name)
+			p.labelEnd = p.b.Len()
 			p.dead = false
 		}
 	case *flow.Loop:
@@ -502,9 +515,9 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 	case *flow.Expect:
 		p.read(s.At)
 		if s.Message {
-			p.write(fmt.Sprintf("p.Expect(%s, MsgBit|%d)\n", p.expr(s.At), p.desc(s.Exp)))
+			p.write(fmt.Sprintf("p.%s(%s, MsgBit|%d)\n", p.g.helper("Expect"), p.expr(s.At), p.desc(s.Exp)))
 		} else {
-			p.write(fmt.Sprintf("p.Expect(%s, %s)\n", p.expr(s.At), p.exp(s.Exp)))
+			p.write(fmt.Sprintf("p.%s(%s, %s)\n", p.g.helper("Expect"), p.expr(s.At), p.exp(s.Exp)))
 		}
 	case *flow.Restore:
 		p.read(s.Pos, s.Rec)
@@ -552,7 +565,7 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 		p.write(fmt.Sprintf("p.Reset(%s)\n", p.expr(s.M)))
 	case *flow.SetCapture:
 		p.read(s.X)
-		p.write(fmt.Sprintf("p.SetCapture(%d, %s)\n", s.Slot, p.expr(s.X)))
+		p.write(fmt.Sprintf("p.%s(%d, %s)\n", p.g.helper("SetCapture"), s.Slot, p.expr(s.X)))
 	case *flow.ClearVals:
 		p.read(&flow.Use{V: s.F})
 		p.write(fmt.Sprintf("clear(%s.Vals)\n", s.F.Name))
@@ -573,9 +586,13 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 		p.write("// " + s.Text + "\n")
 	case *flow.ObserveSkip:
 		// The alternative's expression begins with the call it skips, if any; a blank line follows
-		// the report.
+		// the report, except in the ordinary form, which has none.
 		if trace := p.g.traceSkip(p.g.flow.origin[s.Alt]); trace != "" {
-			p.write(strings.TrimPrefix(trace, "\n") + "\n")
+			trace = strings.TrimPrefix(trace, "\n")
+			if !p.g.ordinary {
+				trace += "\n"
+			}
+			p.write(trace)
 		}
 	default:
 		panic(fmt.Sprintf("flow printer: statement %T", s))
@@ -698,6 +715,8 @@ func (p *flowPrinter) peekStmt(s *flow.Peek) {
 	if p.dead {
 		return
 	}
+	// The statement that a label stands before is not compacted.
+	compact := p.g.ordinary && p.b.Len() != p.labelEnd
 	st := &varStmt{targets: []*flow.Var{s.Ch, s.Size, s.OK}}
 	st.text = func(dead func(*flow.Var) bool) string {
 		name := func(v *flow.Var) string {
@@ -707,7 +726,11 @@ func (p *flowPrinter) peekStmt(s *flow.Peek) {
 			return v.Name
 		}
 		ch, size, ok := name(s.Ch), name(s.Size), name(s.OK)
-		return fmt.Sprintf("if %s {\n%s%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[3]s, %[4]s, %[5]s = p.Peek()\n}\n", guard, work, ch, size, ok)
+		if compact {
+			// The inlined read and its fallback are one call of the runtime, which the compiler inlines.
+			return fmt.Sprintf("%s, %s, %s = p.NextOrdinary()\n", ch, size, ok)
+		}
+		return fmt.Sprintf("if %s {\n%s%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[3]s, %[4]s, %[5]s = p.%[6]s()\n}\n", guard, work, ch, size, ok, p.g.helper("Peek"))
 	}
 	p.b.WriteString(p.vars.add(st))
 }
@@ -817,10 +840,13 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 			// The Node runtime's generated code of a parser without work controls has no such check.
 			return cond
 		}
+		if g.ordinary {
+			return cond
+		}
 		return "(!WorkControlsEnabled || p.Control == nil) && (" + cond + ")"
 	case *flow.MatchLit:
 		if x.Lit.Fold {
-			return fmt.Sprintf("%s.MatchLiteralFold(%s, %d, false)", p.matcher(), g.literal(string(foldedRunes([]rune(x.Lit.Text)))), p.desc(x.Lit.Exp))
+			return fmt.Sprintf("%s.%s(%s, %d, false)", p.matcher(), p.helper("MatchLiteralFold"), g.literal(string(foldedRunes([]rune(x.Lit.Text)))), p.desc(x.Lit.Exp))
 		}
 		lit := g.literal(x.Lit.Text)
 		var desc expID
@@ -829,7 +855,7 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 		} else {
 			desc = p.desc(x.Lit.Exp)
 		}
-		return fmt.Sprintf("%s.MatchLiteral(%s, %q, %d, false)", p.matcher(), lit, x.Lit.Text, desc)
+		return fmt.Sprintf("%s.%s(%s, %q, %d, false)", p.matcher(), p.helper("MatchLiteral"), lit, x.Lit.Text, desc)
 	case *flow.GuardFails:
 		var cond string
 		if x.Guard.Lit {
@@ -854,21 +880,21 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 	case *flow.Str:
 		return strconv.Quote(x.S)
 	case *flow.NewMatch:
-		return fmt.Sprintf("p.NewMatch(%s, p.Pos, %s, true)", p.expr(x.Start), p.expr(x.Text))
+		return fmt.Sprintf("p.%s(%s, p.Pos, %s, true)", p.g.helper("NewMatch"), p.expr(x.Start), p.expr(x.Text))
 	case *flow.NewTerminalNode:
-		return fmt.Sprintf("p.NewTerminal(%s, %s)", p.expr(x.Start), p.expr(x.Text))
+		return fmt.Sprintf("p.%s(%s, %s)", p.g.helper("NewTerminal"), p.expr(x.Start), p.expr(x.Text))
 	case *flow.NewBranchNode:
 		kind := "RawKindSeq"
 		if x.List {
 			kind = "RawKindList"
 		}
-		return fmt.Sprintf("p.NewBranch(%s, %s, %s)", kind, p.expr(x.Start), p.expr(x.Kids))
+		return fmt.Sprintf("p.%s(%s, %s, %s)", p.g.helper("NewBranch"), kind, p.expr(x.Start), p.expr(x.Kids))
 	case *flow.NewNode:
 		typ := "tuple"
 		if x.List {
 			typ = TypeList
 		}
-		return fmt.Sprintf("p.NewNode(%q, %s, p.Pos, %s)", typ, p.expr(x.Start), p.expr(x.Kids))
+		return fmt.Sprintf("p.%s(%q, %s, p.Pos, %s)", p.g.helper("NewNode"), typ, p.expr(x.Start), p.expr(x.Kids))
 	case *flow.NewVals:
 		if p.untyped() {
 			return fmt.Sprintf("p.Nodes(%d)[:0]", x.N)
@@ -949,7 +975,7 @@ func (p *flowPrinter) not(x flow.Expr) string {
 		case core.BeginLine:
 			return "!p." + g.atLineStart() + "()"
 		default:
-			return "!p.AtLineEnd()"
+			return "!p." + g.helper("AtLineEnd") + "()"
 		}
 	case *flow.MatchClass:
 		table := g.classTable(grammarClass(x.Class))

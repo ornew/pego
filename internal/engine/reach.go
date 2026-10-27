@@ -162,6 +162,9 @@ func (g *generator) finishReach(prog, rec *Program) error {
 		g.collect.buildEdges()
 		g.collect.reachFrom(roots)
 	}
+	if g.keepTableRules && g.convertsNodes {
+		return fmt.Errorf("internal error: a typed entry point converts Nodes, but the parser prints no Node rule bodies")
+	}
 	if g.live == nil {
 		return nil
 	}

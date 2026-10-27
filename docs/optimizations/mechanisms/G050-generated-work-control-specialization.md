@@ -16,10 +16,12 @@ rejected. Work accounting is a resource contract, not an optimization in itself.
 
 ## Scope and State
 
-Applied by default in generated Go Node/recognition and typed Go output. A parser
-generated without work controls (no `-work-controls`) keeps only the ordinary form:
-each function body is replaced by its specialization instead of gaining a branch,
-and a parse that passes a control option fails.
+Applied by default in generated Go Node/recognition and typed Go output, and only to
+parsers with work controls (`-work-controls`) or Documents (`-document`): their
+function bodies gain a branch for ordinary parses. A parser generated with neither has
+only the ordinary form, which the Flow printer prints directly (helper names with the
+`Ordinary` suffix, no control reads, no step charges), and a parse that passes a
+control option fails.
 Closure, VMs and TypeScript work-control implementations do not use this Go
 specializer.
 
