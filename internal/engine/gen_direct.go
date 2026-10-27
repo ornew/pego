@@ -97,20 +97,52 @@ func directLeanOK(r *rule) bool {
 
 type dvar struct{ name, typ string }
 
-// varLines declares the variables vs, those of one type together (var x1, x2 int) in the order of
-// the first of each type. Separate statements need no alignment, unlike the lines of a var block.
-func varLines(vs []dvar) string {
+// markVar records, of the variable name of d.vars, that it is not declared (dead) or that it stays
+// declared with nothing to read it (quiet).
+func (d *direct) markVar(name string, dead bool) {
+	m := &d.quiet
+	if dead {
+		m = &d.dead
+	}
+	if *m == nil {
+		*m = map[string]bool{}
+	}
+	(*m)[name] = true
+}
+
+// varLinesExcept declares the variables vs, those of one type together (var x1, x2 int) in the order
+// of the first of each type, without the variables in dead, which still give the declarations their
+// order: the first variable of each type, dead or not, places the type. Separate statements need no
+// alignment, unlike the lines of a var block. A declaration that declares
+// a variable of quiet is followed by the statement that assigns the quiet variables of it to the blank
+// identifier.
+func varLinesExcept(vs []dvar, dead, quiet map[string]bool) string {
 	var types []string
 	names := map[string][]string{}
+	seen := map[string]bool{}
 	for _, v := range vs {
-		if _, ok := names[v.typ]; !ok {
+		if !seen[v.typ] {
+			seen[v.typ] = true
 			types = append(types, v.typ)
 		}
-		names[v.typ] = append(names[v.typ], v.name)
+		if !dead[v.name] {
+			names[v.typ] = append(names[v.typ], v.name)
+		}
 	}
 	var b strings.Builder
 	for _, typ := range types {
-		fmt.Fprintf(&b, "var %s %s\n", strings.Join(names[typ], ", "), typ)
+		if len(names[typ]) > 0 {
+			fmt.Fprintf(&b, "var %s %s\n", strings.Join(names[typ], ", "), typ)
+			var q []string
+			for _, n := range names[typ] {
+				if quiet[n] {
+					q = append(q, n)
+				}
+			}
+			if len(q) > 0 {
+				fmt.Fprintf(&b, "%s_ = %s\n", strings.Repeat("_, ", len(q)-1), strings.Join(q, ", "))
+			}
+		}
 	}
 	return b.String()
 }
@@ -193,6 +225,8 @@ func walkChildren(t grammar.Term, f func(grammar.Term)) {
 // calls it, up to the rule's value in v (success falls through; failure jumps to fail).
 type direct struct {
 	vars       []dvar
+	dead       map[string]bool // the variables of vars that are not declared (varLinesExcept)
+	quiet      map[string]bool // the variables of vars that are declared, unread and silenced after their declaration
 	body       string
 	fail       bool // the body can fail (fail is jumped to)
 	succeed    bool // the body can succeed
@@ -230,7 +264,7 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 	if d.binds {
 		vs = append(vs, dvar{"prevEnv", "*Env"})
 	}
-	m.WriteString(varLines(append(vs, d.vars...)))
+	m.WriteString(varLinesExcept(append(vs, d.vars...), d.dead, d.quiet))
 	switch {
 	case rec:
 		m.WriteString("\tstart, rec = p.Pos, len(p.Recovered)\n")
@@ -277,7 +311,7 @@ func (g *generator) directLeanText(d *direct) string {
 	if d.succeed {
 		vs = append(vs, dvar{"v", "*Node"})
 	}
-	b.WriteString(varLines(append(vs, d.vars...)))
+	b.WriteString(varLinesExcept(append(vs, d.vars...), d.dead, d.quiet))
 	b.WriteString(d.body)
 	if d.succeed {
 		b.WriteString("return v, true\n")

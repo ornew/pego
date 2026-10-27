@@ -29,21 +29,19 @@ right, which is the order written. When the fields are written out of order the
 temporaries stay, assigned in the order written, because an error in one field has to win
 over the next.
 
-The unread variables are removed by `dropUnread`, a pass over the generated source
-(`go/ast`). A variable is unread when each of its occurrences is the declaration, the
-target of a plain `=` or the operand of `++`/`--` in a statement list, or an operand of a
-`_ = x` silencer. Such a variable is dropped with its declaration, its assignments,
-counters and silencer operands. An assignment whose value can have an effect, a call or
-an operation that can panic (an interface comparison, a shift, a division, a conversion),
-stays with the blank identifier as the target. Variables read anywhere else are kept: in
-a closure, by address, in the initial value of a `var`, in a condition. A variable that
-a statement outside a statement list assigns (the init or post statement of a `for`,
-`if` or `switch`) cannot be cut, so it stays and a silencer follows its declaration.
-A name that a parameter, result, receiver or package-level declaration also has is never
-removed and is silenced when nothing reads it, since the pass does not tell the two apart.
-A variable written opposite an untyped `nil` in an assignment of several values (`x, y = nil, g()`) cannot take the blank
-identifier, so it stays and is silenced. Removing an assignment can leave the operands it
-read unread, so the pass repeats until nothing changes.
+The unread variables are decided when a function is printed from Flow IR. A variable is unread when
+no statement that stays reads it: the printer records each assignment and increment of a variable
+(`Set`, `Inc`, `Peek`) apart from the reads, and settles them once the function is complete. An
+assignment whose targets are all unread variables and whose values have no effect and cannot panic
+(a selector of a receiver, a constant, an arithmetic or comparison of such) is left out; the
+variable is not declared. An assignment whose value can have an effect, a call or an operation
+that can panic (an interface comparison, a shift, a division, a conversion), stays with the blank
+identifier as the target of each unread variable. Leaving an assignment out leaves the variables it read unread, so
+the decision repeats until nothing changes. A read at a point the printer finds unreachable does
+not count, since that code is not printed. A variable that an `if` initialization statement assigns
+cannot be left out, and one written opposite an untyped `nil` in an assignment of several values
+cannot take the blank identifier, so each stays declared and is assigned to the blank identifier
+on the first line when nothing reads it.
 
 ## Results
 
@@ -80,16 +78,15 @@ generated parser with the engine for constructors with the fields in and out of
 declaration order, where the two fields fail with different errors, so a swapped
 evaluation order fails the test.
 
-`dropUnread` is tested on sources that compile before and after: `TestDropUnread` and
-`TestDropUnreadKeepsReadVariables`, and `TestDropUnreadSoundness` for a read in a `var`
-initial value, a variable assigned and incremented only by a `for` statement, a silencer
-of a variable that stays, an assignment that can panic, and a variable assigned in an
-`if` statement whose reader is cut, a name shared with a result or a package variable, a
-variable written by an `if` and a plain assignment, and a dead variable opposite `nil`.
-`TestDropUnreadGeneratedCorpus` type-checks the
-output for every test grammar in the forms with and without work controls, with Documents
-and as Nodes, fails on any generation error and reports any type error; `TestLocalErrorsDetectsUnusedVariable` is its negative control. The same test
-checks that the forms without work controls have no blank line inside a function.
+`TestFlowVars*` test the decision on assignments formed by hand: the cascade of an
+assignment whose reader is left out, an effect that stays with the blank identifier, a variable that
+stays silenced, a pair of variables that only read each other (they stay), and a variable read
+only at an unreachable point. `TestGeneratedLocalVariables` type-checks the output for every test
+grammar in the forms with and without work controls, with Documents and as Nodes, fails on any
+generation error and reports any type error, which includes an unused variable and a use of one that
+was not declared; `TestLocalErrorsDetectsUnusedVariable` is its negative control, and
+`TestFlowVarsMutantFailsToCompile` shows that treating every variable as unread fails the check. The
+same test checks that the forms without work controls have no blank line inside a function.
 
 The engine suite passes in both fixture modes (`PEGO_TEST_ORDINARY=1` generates without
 work controls, which the default run does not exercise).
@@ -97,9 +94,7 @@ work controls, which the default run does not exercise).
 ## Decision and Limits
 
 Adopted. Closures remain where they are needed: lazy operands of `&&`/`||` (`c.Or`),
-lambdas of list operations and statement blocks that build a list. `dropUnread` takes a
+lambdas of list operations and statement blocks that build a list. The decision takes a
 selector of a receiver (`p.Pos`) to be free of effects; the generated functions never
-pass a nil receiver. A silencer of a variable that is read elsewhere stays: the generated
-functions repeat the declarations of a variable in nested blocks, and the pass treats
-the variables of one name as one, so it cannot tell whether the silenced copy is the
-read one.
+pass a nil receiver. The variables of a Flow IR function have names that are unique in it, so a
+local that has the name of a package-level declaration is treated like any other.

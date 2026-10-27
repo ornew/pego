@@ -23,8 +23,9 @@ import (
 //
 // The printer follows reachability: a statement at an unreachable point is left out,
 // but its text is still formed, so that the package variables it names (literals, expectations,
-// class tables, shapers, scopes) are declared in the same order. The variables of the function
-// that no printed statement reads are assigned to the blank identifier on the first line.
+// class tables, shapers, scopes) are declared in the same order. A variable that no printed statement
+// reads is not declared and its assignments are left out (flowVars); one that must stay is assigned to the
+// blank identifier on the first line.
 
 // flowState holds the Core IR of the typed rules while they are printed from Flow IR.
 type flowState struct {
@@ -33,6 +34,13 @@ type flowState struct {
 	opts   flow.Options
 	// rules holds the rules of the program by ID, value-free twins included.
 	rules []*rule
+}
+
+// flowVarsErr records the internal error that resolving the variables of a printed function found.
+func (g *generator) flowVarsErr(res flowVarsResult) {
+	if res.err != nil && g.flowErr == nil {
+		g.flowErr = res.err
+	}
 }
 
 // failFlow records that Flow IR does not print a part of a table, which fails the generation: every
@@ -89,15 +97,22 @@ func (g *generator) flowDirectRule(r *rule) *direct {
 	p := newFlowPrinter(g, false)
 	p.document = f.Document
 	p.stmts(f.Body)
-	out := &direct{fail: p.used[f.Fail], succeed: !p.dead, binds: f.Binds, start: p.reads[f.Start], ctx: p.reads[f.Ctx]}
+	res := p.vars.resolve(f.Vars, p.b.String())
+	g.flowVarsErr(res)
+	out := &direct{fail: p.used[f.Fail], succeed: !p.dead, binds: f.Binds, start: res.read(f.Start), ctx: res.read(f.Ctx)}
 	var unread []string
 	for _, v := range f.Vars {
 		out.vars = append(out.vars, dvar{v.Name, goType(v.Type)})
-		if !p.reads[v] {
+		switch {
+		case res.dead(v):
+			out.markVar(v.Name, true)
+		case !p.reads[v]:
 			unread = append(unread, v.Name)
+		case !res.read(v):
+			out.markVar(v.Name, false)
 		}
 	}
-	out.body = p.b.String()
+	out.body = res.body
 	if len(unread) > 0 {
 		out.body = "\t" + strings.Repeat("_, ", len(unread)-1) + "_ = " + strings.Join(unread, ", ") + "\n" + out.body
 	}
@@ -269,7 +284,7 @@ func (g *generator) flowFramed(f *flow.Func, slots []core.Slot, scope *scope, co
 	// The function publishes the cut flag of its outermost scope on return.
 	publish := func() {
 		if f.Cut != nil {
-			p.reads[f.Cut] = true
+			p.markRead(f.Cut)
 			p.write(fmt.Sprintf("p.Cut = %s\n", f.Cut.Name))
 		}
 	}
@@ -285,19 +300,27 @@ func (g *generator) flowFramed(f *flow.Func, slots []core.Slot, scope *scope, co
 		p.write("return nil, false\n")
 	}
 	var b strings.Builder
+	res := p.vars.resolve(f.Vars, p.b.String())
+	g.flowVarsErr(res)
 	var vars []dvar
+	dead, quiet := map[string]bool{}, map[string]bool{}
 	var unread []string
 	for _, v := range f.Vars {
 		vars = append(vars, dvar{v.Name, p.goType(v.Type)})
-		if !p.reads[v] {
+		switch {
+		case res.dead(v):
+			dead[v.Name] = true
+		case !p.reads[v]:
 			unread = append(unread, v.Name)
+		case !res.read(v):
+			quiet[v.Name] = true
 		}
 	}
-	b.WriteString(varLines(vars))
+	b.WriteString(varLinesExcept(vars, dead, quiet))
 	if len(unread) > 0 {
 		fmt.Fprintf(&b, "%s_ = %s\n", strings.Repeat("_, ", len(unread)-1), strings.Join(unread, ", "))
 	}
-	b.WriteString(p.b.String())
+	b.WriteString(res.body)
 	*scope = *newScope()
 	for _, sl := range slots {
 		scope.slot(sl.Name)
@@ -343,6 +366,8 @@ type flowPrinter struct {
 	used  map[*flow.Label]bool
 	reads map[*flow.Var]bool
 	loops map[*flow.Label]bool
+	// vars holds the assignments of the function that are left out when their variables are unread.
+	vars flowVars
 	// names holds the package variables of the capture names of scopes, declared on first use
 	// unless a DeclareNames statement declares them.
 	names map[*flow.Names]string
@@ -350,7 +375,7 @@ type flowPrinter struct {
 
 func newFlowPrinter(g *generator, frame bool) *flowPrinter {
 	return &flowPrinter{g: g, frame: frame, used: map[*flow.Label]bool{}, reads: map[*flow.Var]bool{},
-		loops: map[*flow.Label]bool{}, names: map[*flow.Names]string{}}
+		loops: map[*flow.Label]bool{}, names: map[*flow.Names]string{}, vars: newFlowVars()}
 }
 
 // scopeNames returns the package variable of the capture names n, naming it on first use.
@@ -395,8 +420,15 @@ func (p *flowPrinter) read(xs ...flow.Expr) {
 		return
 	}
 	for _, x := range xs {
-		flow.Uses(x, func(v *flow.Var) { p.reads[v] = true })
+		flow.Uses(x, p.markRead)
 	}
+}
+
+// markRead records that the variable v is read at a reachable point: by the assignment being formed if
+// there is one that is removed when its targets are unread, otherwise for sure.
+func (p *flowPrinter) markRead(v *flow.Var) {
+	p.reads[v] = true
+	p.vars.read(v)
 }
 
 func (p *flowPrinter) stmts(ss []flow.Stmt) {
@@ -419,12 +451,10 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 		switch {
 		case s.Counter != nil:
 			n := s.Counter.Name
-			if !p.dead {
-				p.reads[s.Counter] = true
-			}
+			p.markRead(s.Counter) // the header is printed at a dead point as well
 			fmt.Fprintf(&p.b, "for %s = 0; %s < %d; %s++ {\n", n, n, s.Max, n)
 		case s.While != nil:
-			p.read(s.While)
+			flow.Uses(s.While, p.markRead) // the header is printed at a dead point as well
 			fmt.Fprintf(&p.b, "for %s {\n", p.expr(s.While))
 		default:
 			p.b.WriteString("for {\n")
@@ -449,9 +479,9 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 		p.write("continue\n")
 		p.dead = true
 	case *flow.Set:
-		p.write(p.set(s) + "\n")
+		p.setStmt(s)
 	case *flow.Inc:
-		p.write(s.V.Name + "++\n")
+		p.incStmt(s.V)
 	case *flow.Step:
 		p.write("p.StepWork()\n")
 	case *flow.Silent:
@@ -461,23 +491,7 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 			p.write("p.Silent--\n")
 		}
 	case *flow.Peek:
-		ch, size := "_", "_"
-		if s.Ch != nil {
-			ch = s.Ch.Name
-		}
-		if s.Size != nil {
-			size = s.Size.Name
-		}
-		guard := "p.Pos < len(p.In)"
-		if p.document {
-			guard = "p.Document == nil && " + guard
-		}
-		// The inlined read charges its input work and leaves a Document's examined range to Peek.
-		work := "p.InputWork(1)\n"
-		if !p.g.flow.opts.Work {
-			work = ""
-		}
-		p.write(fmt.Sprintf("if %s {\n%s%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[3]s, %[4]s, %[5]s = p.Peek()\n}\n", guard, work, ch, size, s.OK.Name))
+		p.peekStmt(s)
 	case *flow.Advance:
 		p.read(s.N)
 		if n, ok := s.N.(*flow.Int); ok {
@@ -574,6 +588,13 @@ func (p *flowPrinter) ifStmt(s *flow.If, kw string) {
 	var head string
 	if s.Init != nil {
 		head = p.set(s.Init) + "; "
+		if !p.dead {
+			for _, d := range s.Init.Dst {
+				if v, ok := d.(*flow.Var); ok {
+					p.vars.stuck[v] = true
+				}
+			}
+		}
 	}
 	p.read(s.Cond)
 	head += p.expr(s.Cond)
@@ -595,9 +616,15 @@ func (p *flowPrinter) ifStmt(s *flow.If, kw string) {
 	p.write("}\n")
 }
 
-// set returns the assignment s.
+// set returns the assignment s, whose reads are certain.
 func (p *flowPrinter) set(s *flow.Set) string {
-	dst := make([]string, len(s.Dst))
+	dst, xs := p.setParts(s)
+	return strings.Join(dst, ", ") + " = " + strings.Join(xs, ", ")
+}
+
+// setParts returns the places and the values of the assignment s, recording the reads of the values.
+func (p *flowPrinter) setParts(s *flow.Set) (dst, xs []string) {
+	dst = make([]string, len(s.Dst))
 	for i, d := range s.Dst {
 		switch d := d.(type) {
 		case *flow.Var:
@@ -608,12 +635,81 @@ func (p *flowPrinter) set(s *flow.Set) string {
 			dst[i] = "_"
 		}
 	}
-	xs := make([]string, len(s.X))
+	xs = make([]string, len(s.X))
 	for i, x := range s.X {
 		p.read(x)
 		xs[i] = p.expr(x)
 	}
-	return strings.Join(dst, ", ") + " = " + strings.Join(xs, ", ")
+	return dst, xs
+}
+
+// setStmt writes the assignment s as a statement of a list, which is left out or has the blank
+// identifier for its places if they are variables nothing reads (see flowVars).
+func (p *flowPrinter) setStmt(s *flow.Set) {
+	if p.dead {
+		p.setParts(s)
+		return
+	}
+	uses := p.vars.begin()
+	dst, xs := p.setParts(s)
+	p.vars.end()
+	st := &varStmt{uses: uses, pure: len(dst) == len(xs) && pureValues(xs)}
+	for i, d := range s.Dst {
+		v, _ := d.(*flow.Var)
+		st.targets = append(st.targets, v)
+		if _, isNil := s.X[min(i, len(s.X)-1)].(*flow.Nil); isNil && len(s.Dst) > 1 && len(s.Dst) == len(s.X) && v != nil {
+			p.vars.pinned[v] = true
+		}
+	}
+	st.text = func(dead func(*flow.Var) bool) string {
+		out := slices.Clone(dst)
+		for i, v := range st.targets {
+			if dead(v) {
+				out[i] = "_"
+			}
+		}
+		return strings.Join(out, ", ") + " = " + strings.Join(xs, ", ") + "\n"
+	}
+	p.b.WriteString(p.vars.add(st))
+}
+
+// incStmt writes the increment of the variable v, which is left out if nothing reads v.
+func (p *flowPrinter) incStmt(v *flow.Var) {
+	if p.dead {
+		return
+	}
+	p.b.WriteString(p.vars.add(&varStmt{targets: []*flow.Var{v}, pure: true, text: func(func(*flow.Var) bool) string {
+		return v.Name + "++\n"
+	}}))
+}
+
+// peekStmt writes the read of the next character into the variables of s, with the blank identifier
+// for those nothing reads.
+func (p *flowPrinter) peekStmt(s *flow.Peek) {
+	guard := "p.Pos < len(p.In)"
+	if p.document {
+		guard = "p.Document == nil && " + guard
+	}
+	// The inlined read charges its input work and leaves a Document's examined range to Peek.
+	work := "p.InputWork(1)\n"
+	if !p.g.flow.opts.Work {
+		work = ""
+	}
+	if p.dead {
+		return
+	}
+	st := &varStmt{targets: []*flow.Var{s.Ch, s.Size, s.OK}}
+	st.text = func(dead func(*flow.Var) bool) string {
+		name := func(v *flow.Var) string {
+			if v == nil || dead(v) {
+				return "_"
+			}
+			return v.Name
+		}
+		ch, size, ok := name(s.Ch), name(s.Size), name(s.OK)
+		return fmt.Sprintf("if %s {\n%s%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[3]s, %[4]s, %[5]s = p.Peek()\n}\n", guard, work, ch, size, ok)
+	}
+	p.b.WriteString(p.vars.add(st))
 }
 
 // fixedExpNames names the expectations of the runtime that every parser has, by ID.

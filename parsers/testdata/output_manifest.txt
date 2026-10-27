@@ -352,20 +352,20 @@ yaml node-doc-wc api.go c78529a56fe78e7da6091fc9167f1e39c5c175b0cda5c4499acae450
 yaml node-doc-wc parser.go c30e8c297965cb8f691efa9c65c31d5e5a684f5df62ac9a0e56559eb1c842d24 403871 17837 147
 yaml node-stream error stream generation needs a #stream repetition at the top level of the start rule main
 yaml typed api.go 0220f9009dd643bb3e0f843a59349878400920222e09787a328fdb30c906a736 4613 125 3
-yaml typed parser.go b40d978cc98923688bb61b84872b71fdf6dbcd0b784d4f0eed19a19dfc3e33c8 347188 18130 449
+yaml typed parser.go 7daacc02c39bb09ca1e593876e57bf33e6bff718329000bf04693e47b9b91aac 347109 18126 449
 yaml typed types/types.go 77c8fa9eb7e9b6f4fad32f4f63cc732c688ec1cd9e5d8f3585afe31c7c2fd570 11787 479 74
 yaml typed-only api.go 0220f9009dd643bb3e0f843a59349878400920222e09787a328fdb30c906a736 4613 125 3
-yaml typed-only parser.go e549260793db16b9849f2a740cab74368a591fbc0d92e1c26d99ced32d7fded2 194481 10251 279
+yaml typed-only parser.go 64a7d55fb8469dbcb83094726947e5eb9b44cc0d698be2175646759764409b60 194421 10248 279
 yaml typed-only types/types.go 77c8fa9eb7e9b6f4fad32f4f63cc732c688ec1cd9e5d8f3585afe31c7c2fd570 11787 479 74
 yaml typed-rec-wc api.go 5dadcf437156d8545f70d7c1a7656b6fb2a0d06cab271a792b6b7f88dd236893 5833 153 5
-yaml typed-rec-wc parser.go 12541f24dea6b2a3a8070a4740fecb0ed4262ab0fa92ba0387e72f9bfb18e088 1171644 58628 604
+yaml typed-rec-wc parser.go 97ec0c51e84d461d4ba2ad96e21a8f477cf16af690a1769624659448635d69c9 1171482 58620 604
 yaml typed-rec-wc types/types.go d646a9a16332bcccccdbc287f1a0ac5780c8abbd73e782d2eb236677d7aa5383 11872 484 74
 yaml typed-doc api.go 032fdf7cc4c5173808187ad80646254817fb5264dc0facce36449784f15ad94e 4727 128 3
-yaml typed-doc parser.go 3723fc44e914efa52eb088f9f525914f00e5f06234755a8e204ef22f4b56f58c 839462 41399 529
+yaml typed-doc parser.go ffe9623d240f9570e32cdcf028dfc92e8549808fa56dd2e928aede5aff77b70d 839300 41391 529
 yaml typed-doc types/types.go 77c8fa9eb7e9b6f4fad32f4f63cc732c688ec1cd9e5d8f3585afe31c7c2fd570 11787 479 74
 yaml typed-stream error stream generation needs a #stream repetition at the top level of the start rule main
 yaml typed-only-wc api.go 5dadcf437156d8545f70d7c1a7656b6fb2a0d06cab271a792b6b7f88dd236893 5833 153 5
-yaml typed-only-wc parser.go 3b48d9ce1a9fc420f525716619003bbb0a077e4e4c2a3e0d475a27ad855aa64c 464440 23173 279
+yaml typed-only-wc parser.go 98645b406e0b2244050e74988389f28fe002e791f81f4fa00f8989f056574cd4 464317 23167 279
 yaml typed-only-wc types/types.go d646a9a16332bcccccdbc287f1a0ac5780c8abbd73e782d2eb236677d7aa5383 11872 484 74
 yaml default-value api.go 4164d9a5421211d1a427469e16ddb14f3b21568a0f718c5fb8ae970f88dfea05 4397 120 3
 yaml default-value parser.go 2c1b11099ca08c481629e0d42c6ace6e968047ba527efbdc2345b39271df58a2 195046 9178 177

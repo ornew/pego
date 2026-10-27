@@ -101,6 +101,8 @@ func (g *generator) flowRecDirect(r *rule) *direct {
 		return nil
 	}
 	out := &direct{fail: p.used[f.Fail], succeed: !p.dead}
+	res := p.vars.resolve(f.Vars, p.b.String())
+	g.flowVarsErr(res)
 	var unread []string
 	for _, v := range f.Vars {
 		t, ok := untypedGoType(v.Type)
@@ -108,11 +110,16 @@ func (g *generator) flowRecDirect(r *rule) *direct {
 			return nil
 		}
 		out.vars = append(out.vars, dvar{v.Name, t})
-		if !p.reads[v] {
+		switch {
+		case res.dead(v):
+			out.markVar(v.Name, true)
+		case !p.reads[v]:
 			unread = append(unread, v.Name)
+		case !res.read(v):
+			out.markVar(v.Name, false)
 		}
 	}
-	out.body = p.b.String()
+	out.body = res.body
 	if len(unread) > 0 {
 		out.body = "\t" + strings.Repeat("_, ", len(unread)-1) + "_ = " + strings.Join(unread, ", ") + "\n" + out.body
 	}

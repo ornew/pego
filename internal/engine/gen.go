@@ -452,9 +452,6 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	if err != nil {
 		return nil, fmt.Errorf("generated code does not compile: %w", err)
 	}
-	if src, err = dropUnread(src); err != nil {
-		return nil, fmt.Errorf("removing unread variables: %w", err)
-	}
 	if !opts.keepComments {
 		if src, err = trimComments(src); err != nil {
 			return nil, fmt.Errorf("generated code does not compile: %w", err)
@@ -564,7 +561,7 @@ type generator struct {
 	tableErr            error             // the rule table does not fit the form of runtime.RuleSpec
 	// coreHook, if set, is called by typedCore with the module after it is built and after each pass.
 	coreHook func(pass string, m *core.Module)
-	flowErr  error // the first rule, line or stream body that Flow IR does not print
+	flowErr  error // the first rule, line or stream body that Flow IR does not print, or the first internal error of the unread-variable check
 	// lean is set when the output has no work controls and no Documents, so each typed rule body
 	// is its ordinary form and may call the runtime's ordinary-parse helpers directly.
 	lean                  bool

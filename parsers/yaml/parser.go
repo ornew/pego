@@ -6893,8 +6893,7 @@ func e94(p *rt.Parser) (*rt.Node, bool) {
 		var ok, x14, x35 bool
 		var x7, x8, x17, x22, size, x29, x38, x40, x46, x48, x54, x56, x62, x64, x70, x72, x78, x80, x86, x88, x94, x96, x102, x104, x109, x111, x114, x124, x134, x136, x145, x158, x160, x171, x192 int
 		var x2, x10, x25, x31, x118, x121, x126, x130, x142, x147, x151, x153, x166, x168, x173, x176, x180, x188, x198 rt.Mark
-		var v3, v6, v11, v18, v23, v26, v30, v32, v41, v42, v43, v49, v50, v51, v57, v58, v59, v65, v66, v67, v73, v74, v75, v81, v82, v83, v89, v90, v91, v97, v98, v99, v105, v106, v107, v116, v128, v149, v155, v156, v175, v183, v185, v186, v189, v193, v194, v195, v196, v197 *rt.Node
-		_ = v156
+		var v3, v6, v11, v18, v23, v26, v30, v32, v41, v42, v43, v49, v50, v51, v57, v58, v59, v65, v66, v67, v73, v74, v75, v81, v82, v83, v89, v90, v91, v97, v98, v99, v105, v106, v107, v116, v128, v149, v155, v175, v183, v185, v186, v189, v193, v194, v195, v196, v197 *rt.Node
 		var x9, x39, x47, x55, x63, x71, x79, x87, x95, x103, x110, x115, x135, x159 []*rt.Node
 		var x13, ch, x34 rune
 		var x139, x140, x163, x164 *rt.CaptureFrame
@@ -7390,7 +7389,7 @@ func e94(p *rt.Parser) (*rt.Node, bool) {
 		goto L133_ordinary
 	L138_ordinary:
 		v155 = p.NewBranchOrdinary(rt.RawKindSeq, x134, x135)
-		v156, _ = p.ShapeSingle(sh91, v155, x130.Pos)
+		_, _ = p.ShapeSingle(sh91, v155, x130.Pos)
 		goto L132_ordinary
 	L133_ordinary:
 		p.Reset(x130)
@@ -7572,8 +7571,7 @@ func e94(p *rt.Parser) (*rt.Node, bool) {
 	var ok, x14, x35 bool
 	var x7, x8, x17, x22, size, x29, x38, x40, x46, x48, x54, x56, x62, x64, x70, x72, x78, x80, x86, x88, x94, x96, x102, x104, x109, x111, x114, x124, x134, x136, x145, x158, x160, x171, x192 int
 	var x2, x10, x25, x31, x118, x121, x126, x130, x142, x147, x151, x153, x166, x168, x173, x176, x180, x188, x198 rt.Mark
-	var v3, v6, v11, v18, v23, v26, v30, v32, v41, v42, v43, v49, v50, v51, v57, v58, v59, v65, v66, v67, v73, v74, v75, v81, v82, v83, v89, v90, v91, v97, v98, v99, v105, v106, v107, v116, v128, v149, v155, v156, v175, v183, v185, v186, v189, v193, v194, v195, v196, v197 *rt.Node
-	_ = v156
+	var v3, v6, v11, v18, v23, v26, v30, v32, v41, v42, v43, v49, v50, v51, v57, v58, v59, v65, v66, v67, v73, v74, v75, v81, v82, v83, v89, v90, v91, v97, v98, v99, v105, v106, v107, v116, v128, v149, v155, v175, v183, v185, v186, v189, v193, v194, v195, v196, v197 *rt.Node
 	var x9, x39, x47, x55, x63, x71, x79, x87, x95, x103, x110, x115, x135, x159 []*rt.Node
 	var x13, ch, x34 rune
 	var x139, x140, x163, x164 *rt.CaptureFrame
@@ -8170,7 +8168,7 @@ L137:
 	goto L133
 L138:
 	v155 = p.NewBranch(rt.RawKindSeq, x134, x135)
-	v156, _ = p.ShapeSingle(sh91, v155, x130.Pos)
+	_, _ = p.ShapeSingle(sh91, v155, x130.Pos)
 	goto L132
 L133:
 	p.Reset(x130)
@@ -44239,7 +44237,7 @@ func u62(p *rt.TParser) (any, bool) {
 func i62(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var start, x3, x9, x10, x12, x21, x26, x30, size, x34, x36, x46, x48, x54, x56, x62, x64, x70, x72, x78, x80, x86, x88, x94, x96, x102, x104, x110, x112, x117, x119, x122, x126, x129, x132, x134, x138, x143, x145, x149, x153, x155, x159, x161, x166, x168, x172, x176, x179, x181, x184, x188, x198, x202, x208 int
-		var v, k1, v4, v7, k8, k13, x14, v15, v22, v27, k28, v31, v35, k38, x39, v40, v49, v50, v51, v57, v58, v59, v65, v66, v67, v73, v74, v75, v81, v82, v83, v89, v90, v91, v97, v98, v99, v105, v106, v107, v113, v114, v115, v124, v136, v140, k150, v157, v163, v164, k174, v183, v192, v193, v194, v195, k196, v199, v203, v204, v205, v206, v207 any
+		var v, k1, v4, v7, k8, k13, x14, v15, v22, v27, k28, v31, v35, k38, x39, v40, v49, v50, v51, v57, v58, v59, v65, v66, v67, v73, v74, v75, v81, v82, v83, v89, v90, v91, v97, v98, v99, v105, v106, v107, v113, v114, v115, v124, v136, k150, v157, v163, k174, v183, v192, v194, v195, k196, v199, v203, v204, v205, v206, v207 any
 		var c *rt.TActCtx
 		var prevEnv, x37, x139, x173, x189 *rt.Env
 		var ok, x18, x43 bool
@@ -44248,7 +44246,6 @@ func i62(p *rt.TParser) (any, bool) {
 		start = p.Pos
 		prevEnv = p.Env
 		p.Enter()
-		_ = v140
 		if _, ok = s155(p); !ok {
 			goto fail_ordinary
 		}
@@ -44761,8 +44758,7 @@ func i62(p *rt.TParser) (any, bool) {
 		goto L142_ordinary
 	L147_ordinary:
 		v163 = p.NewNodeOrdinary("tuple", x143, p.Pos, x144)
-		v164, _ = p.ShapeSingle(sh91, v163, x138)
-		v140 = v164
+		_, _ = p.ShapeSingle(sh91, v163, x138)
 		goto L141_ordinary
 	L142_ordinary:
 		p.Pos = x138
@@ -44876,8 +44872,7 @@ func i62(p *rt.TParser) (any, bool) {
 		goto L165_ordinary
 	L170_ordinary:
 		v192 = p.NewNodeOrdinary("tuple", x166, p.Pos, x167)
-		v193, _ = p.ShapeSingle(sh91, v192, x138)
-		v140 = v193
+		_, _ = p.ShapeSingle(sh91, v192, x138)
 		goto L141_ordinary
 	L165_ordinary:
 		p.Pos = x138
@@ -44964,7 +44959,7 @@ func i62(p *rt.TParser) (any, bool) {
 
 	p.StepWork()
 	var start, x3, x9, x10, x12, x21, x26, x30, size, x34, x36, x46, x48, x54, x56, x62, x64, x70, x72, x78, x80, x86, x88, x94, x96, x102, x104, x110, x112, x117, x119, x122, x126, x129, x132, x134, x138, x143, x145, x149, x153, x155, x159, x161, x166, x168, x172, x176, x179, x181, x184, x188, x198, x202, x208 int
-	var v, k1, v4, v7, k8, k13, x14, v15, v22, v27, k28, v31, v35, k38, x39, v40, v49, v50, v51, v57, v58, v59, v65, v66, v67, v73, v74, v75, v81, v82, v83, v89, v90, v91, v97, v98, v99, v105, v106, v107, v113, v114, v115, v124, v136, v140, k150, v157, v163, v164, k174, v183, v192, v193, v194, v195, k196, v199, v203, v204, v205, v206, v207 any
+	var v, k1, v4, v7, k8, k13, x14, v15, v22, v27, k28, v31, v35, k38, x39, v40, v49, v50, v51, v57, v58, v59, v65, v66, v67, v73, v74, v75, v81, v82, v83, v89, v90, v91, v97, v98, v99, v105, v106, v107, v113, v114, v115, v124, v136, k150, v157, v163, k174, v183, v192, v194, v195, k196, v199, v203, v204, v205, v206, v207 any
 	var c *rt.TActCtx
 	var prevEnv, x37, x139, x173, x189 *rt.Env
 	var ok, x18, x43 bool
@@ -44973,7 +44968,6 @@ func i62(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = v140
 	p.StepWork()
 	p.StepWork()
 	if _, ok = s155(p); !ok {
@@ -45601,8 +45595,7 @@ L146:
 	goto L142
 L147:
 	v163 = p.NewNode("tuple", x143, p.Pos, x144)
-	v164, _ = p.ShapeSingle(sh91, v163, x138)
-	v140 = v164
+	_, _ = p.ShapeSingle(sh91, v163, x138)
 	goto L141
 L142:
 	p.Pos = x138
@@ -45740,8 +45733,7 @@ L169:
 	goto L165
 L170:
 	v192 = p.NewNode("tuple", x166, p.Pos, x167)
-	v193, _ = p.ShapeSingle(sh91, v192, x138)
-	v140 = v193
+	_, _ = p.ShapeSingle(sh91, v192, x138)
 	goto L141
 L165:
 	p.Pos = x138

@@ -75,10 +75,9 @@ func blankLinesInFunctions(src string) []string {
 	return out
 }
 
-// The output of dropUnread keeps every local variable that is declared and used, and has no
-// reference to a variable it removed, for the generated parsers of every test grammar in the forms
-// with and without work controls.
-func TestDropUnreadGeneratedCorpus(t *testing.T) {
+// The generated parsers of every test grammar, in the forms with and without work controls, declare
+// every local variable they use and use every local variable they declare.
+func TestGeneratedLocalVariables(t *testing.T) {
 	forms := []struct {
 		name  string
 		opts  GenOptions
