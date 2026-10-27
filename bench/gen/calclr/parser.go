@@ -321,25 +321,6 @@ func init() {
 }
 
 func e1(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var ok bool
-		var v2 *rt.Node
-		if v2, ok = p.Call(rules[1], 0); !ok {
-			goto fail_ordinary
-		}
-		p.SetCaptureOrdinary(0, v2)
-		if _, ok = r13(p); !ok {
-			goto fail_ordinary
-		}
-		if !p.AtEndBatchOrdinary() {
-			p.ExpectOrdinary(p.Pos, rt.IdEndInput)
-			goto fail_ordinary
-		}
-		return nil, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var ok bool
 	var v2 *rt.Node
@@ -365,32 +346,6 @@ fail:
 }
 
 func e2(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x1 rt.Mark
-		var v2, v5, v7 *rt.Node
-		var ok bool
-		x1 = p.Mark()
-		if v5, ok = p.Call(rules[2], 0); !ok {
-			goto L4_ordinary
-		}
-		v2 = v5
-		goto L3_ordinary
-	L4_ordinary:
-		p.Reset(x1)
-		if v7, ok = p.Call(rules[3], 0); !ok {
-			goto L6_ordinary
-		}
-		v2 = v7
-		goto L3_ordinary
-	L6_ordinary:
-		p.Reset(x1)
-		goto fail_ordinary
-	L3_ordinary:
-		return v2, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var x1 rt.Mark
 	var v2, v5, v7 *rt.Node
@@ -421,61 +376,6 @@ fail:
 }
 
 func e5(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x4 int
-		var ok, x8 bool
-		var v2, v13, v15 *rt.Node
-		var x5 rt.Mark
-		var x7 rune
-		if v2, ok = p.Call(rules[1], 0); !ok {
-			goto fail_ordinary
-		}
-		p.SetCaptureOrdinary(0, v2)
-		if _, ok = r13(p); !ok {
-			goto fail_ordinary
-		}
-		x4 = p.Pos
-		x5 = p.Mark()
-		x7, _, x8 = p.NextOrdinary()
-		if !(x8 && (x7 == 43)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 5)
-			goto L9_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 43 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit3, "+", 5, false); !ok {
-			goto L10_ordinary
-		}
-		goto L6_ordinary
-	L10_ordinary:
-		p.Reset(x5)
-	L9_ordinary:
-		if !(x8 && (x7 == 45)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 6)
-			goto L11_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit4, "-", 6, false); !ok {
-			goto L12_ordinary
-		}
-		goto L6_ordinary
-	L12_ordinary:
-		p.Reset(x5)
-	L11_ordinary:
-		goto fail_ordinary
-	L6_ordinary:
-		v13 = p.NewTerminalOrdinary(x4, p.Text(x4, p.Pos))
-		p.SetCaptureOrdinary(1, v13)
-		if v15, ok = p.Call(rules[3], 0); !ok {
-			goto fail_ordinary
-		}
-		p.SetCaptureOrdinary(2, v15)
-		return nil, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var x4 int
 	var ok, x8 bool
@@ -548,32 +448,6 @@ fail:
 }
 
 func e6(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x1 rt.Mark
-		var v2, v5, v7 *rt.Node
-		var ok bool
-		x1 = p.Mark()
-		if v5, ok = p.Call(rules[4], 0); !ok {
-			goto L4_ordinary
-		}
-		v2 = v5
-		goto L3_ordinary
-	L4_ordinary:
-		p.Reset(x1)
-		if v7, ok = p.Call(rules[5], 0); !ok {
-			goto L6_ordinary
-		}
-		v2 = v7
-		goto L3_ordinary
-	L6_ordinary:
-		p.Reset(x1)
-		goto fail_ordinary
-	L3_ordinary:
-		return v2, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var x1 rt.Mark
 	var v2, v5, v7 *rt.Node
@@ -604,74 +478,6 @@ fail:
 }
 
 func e10(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x4 int
-		var ok, x8 bool
-		var v2, v15, v17 *rt.Node
-		var x5 rt.Mark
-		var x7 rune
-		if v2, ok = p.Call(rules[3], 0); !ok {
-			goto fail_ordinary
-		}
-		p.SetCaptureOrdinary(0, v2)
-		if _, ok = r13(p); !ok {
-			goto fail_ordinary
-		}
-		x4 = p.Pos
-		x5 = p.Mark()
-		x7, _, x8 = p.NextOrdinary()
-		if !(x8 && (x7 == 42)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 7)
-			goto L9_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit7, "*", 7, false); !ok {
-			goto L10_ordinary
-		}
-		goto L6_ordinary
-	L10_ordinary:
-		p.Reset(x5)
-	L9_ordinary:
-		if !(x8 && (x7 == 47)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 8)
-			goto L11_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 47 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit8, "/", 8, false); !ok {
-			goto L12_ordinary
-		}
-		goto L6_ordinary
-	L12_ordinary:
-		p.Reset(x5)
-	L11_ordinary:
-		if !(x8 && (x7 == 37)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 9)
-			goto L13_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 37 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit9, "%", 9, false); !ok {
-			goto L14_ordinary
-		}
-		goto L6_ordinary
-	L14_ordinary:
-		p.Reset(x5)
-	L13_ordinary:
-		goto fail_ordinary
-	L6_ordinary:
-		v15 = p.NewTerminalOrdinary(x4, p.Text(x4, p.Pos))
-		p.SetCaptureOrdinary(1, v15)
-		if v17, ok = p.Call(rules[5], 0); !ok {
-			goto fail_ordinary
-		}
-		p.SetCaptureOrdinary(2, v17)
-		return nil, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var x4 int
 	var ok, x8 bool
@@ -758,32 +564,6 @@ fail:
 }
 
 func e11(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x1 rt.Mark
-		var v2, v5, v7 *rt.Node
-		var ok bool
-		x1 = p.Mark()
-		if v5, ok = p.Call(rules[6], 0); !ok {
-			goto L4_ordinary
-		}
-		v2 = v5
-		goto L3_ordinary
-	L4_ordinary:
-		p.Reset(x1)
-		if v7, ok = r7(p); !ok {
-			goto L6_ordinary
-		}
-		v2 = v7
-		goto L3_ordinary
-	L6_ordinary:
-		p.Reset(x1)
-		goto fail_ordinary
-	L3_ordinary:
-		return v2, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var x1 rt.Mark
 	var v2, v5, v7 *rt.Node
@@ -814,57 +594,6 @@ fail:
 }
 
 func e12(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var ok, x6 bool
-		var x2 int
-		var x3 rt.Mark
-		var x5 rune
-		var v11, v13 *rt.Node
-		if _, ok = r13(p); !ok {
-			goto fail_ordinary
-		}
-		x2 = p.Pos
-		x3 = p.Mark()
-		x5, _, x6 = p.NextOrdinary()
-		if !(x6 && (x5 == 45)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 6)
-			goto L7_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit4, "-", 6, false); !ok {
-			goto L8_ordinary
-		}
-		goto L4_ordinary
-	L8_ordinary:
-		p.Reset(x3)
-	L7_ordinary:
-		if !(x6 && (x5 == 43)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 5)
-			goto L9_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 43 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit3, "+", 5, false); !ok {
-			goto L10_ordinary
-		}
-		goto L4_ordinary
-	L10_ordinary:
-		p.Reset(x3)
-	L9_ordinary:
-		goto fail_ordinary
-	L4_ordinary:
-		v11 = p.NewTerminalOrdinary(x2, p.Text(x2, p.Pos))
-		p.SetCaptureOrdinary(0, v11)
-		if v13, ok = p.Call(rules[5], 0); !ok {
-			goto fail_ordinary
-		}
-		p.SetCaptureOrdinary(1, v13)
-		return nil, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var ok, x6 bool
 	var x2 int
@@ -931,32 +660,6 @@ fail:
 }
 
 func e13(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x1 rt.Mark
-		var v2, v5, v7 *rt.Node
-		var ok bool
-		x1 = p.Mark()
-		if v5, ok = p.Call(rules[8], 0); !ok {
-			goto L4_ordinary
-		}
-		v2 = v5
-		goto L3_ordinary
-	L4_ordinary:
-		p.Reset(x1)
-		if v7, ok = p.Call(rules[9], 0); !ok {
-			goto L6_ordinary
-		}
-		v2 = v7
-		goto L3_ordinary
-	L6_ordinary:
-		p.Reset(x1)
-		goto fail_ordinary
-	L3_ordinary:
-		return v2, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var x1 rt.Mark
 	var v2, v5, v7 *rt.Node
@@ -987,34 +690,6 @@ fail:
 }
 
 func e15(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x4 int
-		var ok bool
-		var v2, v5, v7 *rt.Node
-		if v2, ok = p.Call(rules[9], 0); !ok {
-			goto fail_ordinary
-		}
-		p.SetCaptureOrdinary(0, v2)
-		if _, ok = r13(p); !ok {
-			goto fail_ordinary
-		}
-		x4 = p.Pos
-		if p.Pos < len(p.In) && p.In[p.Pos] == 94 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit14, "^", 10, false); !ok {
-			goto fail_ordinary
-		}
-		v5 = p.NewTerminalOrdinary(x4, "^")
-		p.SetCaptureOrdinary(1, v5)
-		if v7, ok = p.Call(rules[5], 0); !ok {
-			goto fail_ordinary
-		}
-		p.SetCaptureOrdinary(2, v7)
-		return nil, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var x4 int
 	var ok bool
@@ -1052,43 +727,6 @@ fail:
 }
 
 func e16(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var ok, x8 bool
-		var x2 rt.Mark
-		var v3, v6, v11 *rt.Node
-		var x7 rune
-		if _, ok = r13(p); !ok {
-			goto fail_ordinary
-		}
-		x2 = p.Mark()
-		if v6, ok = r11(p); !ok {
-			goto L5_ordinary
-		}
-		v3 = v6
-		goto L4_ordinary
-	L5_ordinary:
-		p.Reset(x2)
-		x7, _, x8 = p.NextOrdinary()
-		if !(x8 && (x7 == 40)) && p.Depth+1 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 11)
-			goto L9_ordinary
-		}
-		if v11, ok = p.Call(rules[10], 0); !ok {
-			goto L10_ordinary
-		}
-		v3 = v11
-		goto L4_ordinary
-	L10_ordinary:
-		p.Reset(x2)
-	L9_ordinary:
-		goto fail_ordinary
-	L4_ordinary:
-		p.SetCaptureOrdinary(0, v3)
-		return nil, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var ok, x8 bool
 	var x2 rt.Mark
@@ -1138,31 +776,6 @@ fail:
 }
 
 func e19(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var ok bool
-		var v2 *rt.Node
-		if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit17, "(", 11, false); !ok {
-			goto fail_ordinary
-		}
-		if v2, ok = p.Call(rules[1], 0); !ok {
-			goto fail_ordinary
-		}
-		p.SetCaptureOrdinary(0, v2)
-		if _, ok = r13(p); !ok {
-			goto fail_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit18, ")", 12, false); !ok {
-			goto fail_ordinary
-		}
-		return nil, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var ok bool
 	var v2 *rt.Node
@@ -1195,55 +808,6 @@ fail:
 }
 
 func e21(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x1, size, x2, x6 int
-		var ch rune
-		var ok bool
-		var x3 rt.Mark
-		var v7 *rt.Node
-		x1 = p.Pos
-		x2 = 0
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || !(ch >= 48 && ch <= 57) {
-				p.ExpectOrdinary(p.Pos, 13)
-				break
-			}
-			p.Pos += size
-			x2++
-		}
-		if x2 < 1 {
-			goto fail_ordinary
-		}
-		x3 = p.Mark()
-		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit20, ".", 14, false); !ok {
-			goto L4_ordinary
-		}
-		x6 = 0
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || !(ch >= 48 && ch <= 57) {
-				p.ExpectOrdinary(p.Pos, 13)
-				break
-			}
-			p.Pos += size
-			x6++
-		}
-		if x6 < 1 {
-			goto L4_ordinary
-		}
-		goto L5_ordinary
-	L4_ordinary:
-		p.Reset(x3)
-	L5_ordinary:
-		v7 = p.NewTerminalOrdinary(x1, p.Text(x1, p.Pos))
-		return v7, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var x1, size, x2, x6 int
 	var ch rune
@@ -1311,24 +875,6 @@ fail:
 }
 
 func r7(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		start, trail := p.Pos, len(p.Trail)
-		prevEnv, prevCut := p.Env, p.Cut
-		p.Cut = false
-		p.Enter()
-		v, ok := e13(p)
-		p.Depth--
-		p.Cut = prevCut
-		p.Trail = p.Trail[:trail]
-		if ok {
-			v = p.Finish(rules[7], rt.EmptyFrame, v, start)
-		} else {
-			p.Pos = start
-		}
-		p.Env = prevEnv
-		return v, ok
-	}
-
 	p.StepWork()
 	start, trail := p.Pos, len(p.Trail)
 	prevEnv, prevCut := p.Env, p.Cut
@@ -1348,24 +894,6 @@ func r7(p *rt.Parser) (*rt.Node, bool) {
 }
 
 func r11(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		start, trail := p.Pos, len(p.Trail)
-		prevEnv, prevCut := p.Env, p.Cut
-		p.Cut = false
-		p.Enter()
-		v, ok := e21(p)
-		p.Depth--
-		p.Cut = prevCut
-		p.Trail = p.Trail[:trail]
-		if ok {
-			v = p.Finish(rules[11], rt.EmptyFrame, v, start)
-		} else {
-			p.Pos = start
-		}
-		p.Env = prevEnv
-		return v, ok
-	}
-
 	p.StepWork()
 	start, trail := p.Pos, len(p.Trail)
 	prevEnv, prevCut := p.Env, p.Cut
@@ -1385,25 +913,6 @@ func r11(p *rt.Parser) (*rt.Node, bool) {
 }
 
 func r13(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ch rune
-		var size int
-		var ok bool
-		p.Enter()
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
-				p.ExpectOrdinary(p.Pos, 15)
-				break
-			}
-			p.Pos += size
-		}
-		v = nil
-		p.Depth--
-		return v, true
-	}
-
 	p.StepWork()
 	var v *rt.Node
 	var ch rune
@@ -1430,25 +939,6 @@ func r13(p *rt.Parser) (*rt.Node, bool) {
 }
 
 func e26(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ok bool
-		if _, ok = p.Call(recRules[1], 0); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q12(p); !ok {
-			goto fail_ordinary
-		}
-		if !p.AtEndBatchOrdinary() {
-			p.ExpectOrdinary(p.Pos, rt.IdEndInput)
-			goto fail_ordinary
-		}
-		v = nil
-		return v, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var v *rt.Node
 	var ok bool
@@ -1474,29 +964,6 @@ fail:
 }
 
 func e27(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x1 rt.Mark
-		var ok bool
-		x1 = p.Mark()
-		if _, ok = q2(p); !ok {
-			goto L3_ordinary
-		}
-		goto L2_ordinary
-	L3_ordinary:
-		p.Reset(x1)
-		if _, ok = p.Call(recRules[3], 0); !ok {
-			goto L4_ordinary
-		}
-		goto L2_ordinary
-	L4_ordinary:
-		p.Reset(x1)
-		goto fail_ordinary
-	L2_ordinary:
-		return nil, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var x1 rt.Mark
 	var ok bool
@@ -1524,29 +991,6 @@ fail:
 }
 
 func e28(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x1 rt.Mark
-		var ok bool
-		x1 = p.Mark()
-		if _, ok = q4(p); !ok {
-			goto L3_ordinary
-		}
-		goto L2_ordinary
-	L3_ordinary:
-		p.Reset(x1)
-		if _, ok = p.Call(recRules[5], 0); !ok {
-			goto L4_ordinary
-		}
-		goto L2_ordinary
-	L4_ordinary:
-		p.Reset(x1)
-		goto fail_ordinary
-	L2_ordinary:
-		return nil, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var x1 rt.Mark
 	var ok bool
@@ -1574,29 +1018,6 @@ fail:
 }
 
 func e29(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var x1 rt.Mark
-		var ok bool
-		x1 = p.Mark()
-		if _, ok = q6(p); !ok {
-			goto L3_ordinary
-		}
-		goto L2_ordinary
-	L3_ordinary:
-		p.Reset(x1)
-		if _, ok = q7(p); !ok {
-			goto L4_ordinary
-		}
-		goto L2_ordinary
-	L4_ordinary:
-		p.Reset(x1)
-		goto fail_ordinary
-	L2_ordinary:
-		return nil, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var x1 rt.Mark
 	var ok bool
@@ -1624,39 +1045,6 @@ fail:
 }
 
 func e30(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var ok, x5 bool
-		var x1 rt.Mark
-		var x4 rune
-		if _, ok = q12(p); !ok {
-			goto fail_ordinary
-		}
-		x1 = p.Mark()
-		if _, ok = q11(p); !ok {
-			goto L3_ordinary
-		}
-		goto L2_ordinary
-	L3_ordinary:
-		p.Reset(x1)
-		x4, _, x5 = p.NextOrdinary()
-		if !(x5 && (x4 == 40)) && p.Depth+1 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 11)
-			goto L6_ordinary
-		}
-		if _, ok = q10(p); !ok {
-			goto L7_ordinary
-		}
-		goto L2_ordinary
-	L7_ordinary:
-		p.Reset(x1)
-	L6_ordinary:
-		goto fail_ordinary
-	L2_ordinary:
-		return nil, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var ok, x5 bool
 	var x1 rt.Mark
@@ -1702,62 +1090,6 @@ fail:
 }
 
 func q2(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var start, x1 int
-		var v *rt.Node
-		var ok, x4 bool
-		var x3 rune
-		start = p.Pos
-		p.Enter()
-		if _, ok = p.Call(recRules[1], 0); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q12(p); !ok {
-			goto fail_ordinary
-		}
-		x1 = p.Pos
-		x3, _, x4 = p.NextOrdinary()
-		if !(x4 && (x3 == 43)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 5)
-			goto L5_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 43 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit3, "+", 5, false); !ok {
-			goto L6_ordinary
-		}
-		goto L2_ordinary
-	L6_ordinary:
-		p.Pos = x1
-	L5_ordinary:
-		if !(x4 && (x3 == 45)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 6)
-			goto L7_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit4, "-", 6, false); !ok {
-			goto L8_ordinary
-		}
-		goto L2_ordinary
-	L8_ordinary:
-		p.Pos = x1
-	L7_ordinary:
-		goto fail_ordinary
-	L2_ordinary:
-		p.StepWork()
-		if _, ok = p.Call(recRules[3], 0); !ok {
-			goto fail_ordinary
-		}
-		v = nil
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		p.Pos = start
-		return nil, false
-	}
-
 	p.StepWork()
 	var start, x1 int
 	var v *rt.Node
@@ -1830,75 +1162,6 @@ fail:
 }
 
 func q4(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var start, x1 int
-		var v *rt.Node
-		var ok, x4 bool
-		var x3 rune
-		start = p.Pos
-		p.Enter()
-		if _, ok = p.Call(recRules[3], 0); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q12(p); !ok {
-			goto fail_ordinary
-		}
-		x1 = p.Pos
-		x3, _, x4 = p.NextOrdinary()
-		if !(x4 && (x3 == 42)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 7)
-			goto L5_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit7, "*", 7, false); !ok {
-			goto L6_ordinary
-		}
-		goto L2_ordinary
-	L6_ordinary:
-		p.Pos = x1
-	L5_ordinary:
-		if !(x4 && (x3 == 47)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 8)
-			goto L7_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 47 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit8, "/", 8, false); !ok {
-			goto L8_ordinary
-		}
-		goto L2_ordinary
-	L8_ordinary:
-		p.Pos = x1
-	L7_ordinary:
-		if !(x4 && (x3 == 37)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 9)
-			goto L9_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 37 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit9, "%", 9, false); !ok {
-			goto L10_ordinary
-		}
-		goto L2_ordinary
-	L10_ordinary:
-		p.Pos = x1
-	L9_ordinary:
-		goto fail_ordinary
-	L2_ordinary:
-		p.StepWork()
-		if _, ok = p.Call(recRules[5], 0); !ok {
-			goto fail_ordinary
-		}
-		v = nil
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		p.Pos = start
-		return nil, false
-	}
-
 	p.StepWork()
 	var start, x1 int
 	var v *rt.Node
@@ -1985,59 +1248,6 @@ fail:
 }
 
 func q6(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var start, x1 int
-		var v *rt.Node
-		var ok, x4 bool
-		var x3 rune
-		start = p.Pos
-		p.Enter()
-		if _, ok = q12(p); !ok {
-			goto fail_ordinary
-		}
-		x1 = p.Pos
-		x3, _, x4 = p.NextOrdinary()
-		if !(x4 && (x3 == 45)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 6)
-			goto L5_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit4, "-", 6, false); !ok {
-			goto L6_ordinary
-		}
-		goto L2_ordinary
-	L6_ordinary:
-		p.Pos = x1
-	L5_ordinary:
-		if !(x4 && (x3 == 43)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 5)
-			goto L7_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 43 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit3, "+", 5, false); !ok {
-			goto L8_ordinary
-		}
-		goto L2_ordinary
-	L8_ordinary:
-		p.Pos = x1
-	L7_ordinary:
-		goto fail_ordinary
-	L2_ordinary:
-		p.StepWork()
-		if _, ok = p.Call(recRules[5], 0); !ok {
-			goto fail_ordinary
-		}
-		v = nil
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		p.Pos = start
-		return nil, false
-	}
-
 	p.StepWork()
 	var start, x1 int
 	var v *rt.Node
@@ -2105,36 +1315,6 @@ fail:
 }
 
 func q7(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var start, x1 int
-		var v *rt.Node
-		var ok bool
-		start = p.Pos
-		p.Enter()
-		x1 = p.Pos
-		if _, ok = q8(p); !ok {
-			goto L3_ordinary
-		}
-		goto L2_ordinary
-	L3_ordinary:
-		p.Pos = x1
-		if _, ok = p.Call(recRules[9], 0); !ok {
-			goto L4_ordinary
-		}
-		goto L2_ordinary
-	L4_ordinary:
-		p.Pos = x1
-		goto fail_ordinary
-	L2_ordinary:
-		v = nil
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		p.Pos = start
-		return nil, false
-	}
-
 	p.StepWork()
 	var start, x1 int
 	var v *rt.Node
@@ -2169,35 +1349,6 @@ fail:
 }
 
 func q8(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var start int
-		var v *rt.Node
-		var ok bool
-		start = p.Pos
-		p.Enter()
-		if _, ok = p.Call(recRules[9], 0); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q12(p); !ok {
-			goto fail_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 94 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit14, "^", 10, false); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = p.Call(recRules[5], 0); !ok {
-			goto fail_ordinary
-		}
-		v = nil
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		p.Pos = start
-		return nil, false
-	}
-
 	p.StepWork()
 	var start int
 	var v *rt.Node
@@ -2236,37 +1387,6 @@ fail:
 }
 
 func q10(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var start int
-		var v *rt.Node
-		var ok bool
-		start = p.Pos
-		p.Enter()
-		if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit17, "(", 11, false); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = p.Call(recRules[1], 0); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q12(p); !ok {
-			goto fail_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit18, ")", 12, false); !ok {
-			goto fail_ordinary
-		}
-		v = nil
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		p.Pos = start
-		return nil, false
-	}
-
 	p.StepWork()
 	var start int
 	var v *rt.Node
@@ -2305,58 +1425,6 @@ fail:
 }
 
 func q11(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var start, size, x1, x2, x5 int
-		var v *rt.Node
-		var ch rune
-		var ok bool
-		start = p.Pos
-		p.Enter()
-		x1 = 0
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || !(ch >= 48 && ch <= 57) {
-				p.ExpectOrdinary(p.Pos, 13)
-				break
-			}
-			p.Pos += size
-			x1++
-		}
-		if x1 < 1 {
-			goto fail_ordinary
-		}
-		x2 = p.Pos
-		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
-			p.Pos++
-		} else if _, ok = p.MatchLiteralOrdinary(lit20, ".", 14, false); !ok {
-			goto L3_ordinary
-		}
-		x5 = 0
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || !(ch >= 48 && ch <= 57) {
-				p.ExpectOrdinary(p.Pos, 13)
-				break
-			}
-			p.Pos += size
-			x5++
-		}
-		if x5 < 1 {
-			goto L3_ordinary
-		}
-		goto L4_ordinary
-	L3_ordinary:
-		p.Pos = x2
-	L4_ordinary:
-		v = nil
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		p.Pos = start
-		return nil, false
-	}
-
 	p.StepWork()
 	var start, size, x1, x2, x5 int
 	var v *rt.Node
@@ -2427,25 +1495,6 @@ fail:
 }
 
 func q12(p *rt.Parser) (*rt.Node, bool) {
-	if p.Control == nil {
-		var v *rt.Node
-		var ch rune
-		var size int
-		var ok bool
-		p.Enter()
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
-				p.ExpectOrdinary(p.Pos, 15)
-				break
-			}
-			p.Pos += size
-		}
-		v = nil
-		p.Depth--
-		return v, true
-	}
-
 	p.StepWork()
 	var v *rt.Node
 	var ch rune
@@ -2472,32 +1521,6 @@ func q12(p *rt.Parser) (*rt.Node, bool) {
 }
 
 func e31(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		var x1 rt.Mark
-		var v2, v5, v7 any
-		var ok bool
-		x1 = p.Mark()
-		if v5, ok = u2(p); !ok {
-			goto L4_ordinary
-		}
-		v2 = v5
-		goto L3_ordinary
-	L4_ordinary:
-		p.Reset(x1)
-		if v7, ok = p.Call(trules[3], 0); !ok {
-			goto L6_ordinary
-		}
-		v2 = v7
-		goto L3_ordinary
-	L6_ordinary:
-		p.Reset(x1)
-		goto fail_ordinary
-	L3_ordinary:
-		return v2, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var x1 rt.Mark
 	var v2, v5, v7 any
@@ -2528,32 +1551,6 @@ fail:
 }
 
 func e35(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		var x1 rt.Mark
-		var v2, v5, v7 any
-		var ok bool
-		x1 = p.Mark()
-		if v5, ok = u4(p); !ok {
-			goto L4_ordinary
-		}
-		v2 = v5
-		goto L3_ordinary
-	L4_ordinary:
-		p.Reset(x1)
-		if v7, ok = u5(p); !ok {
-			goto L6_ordinary
-		}
-		v2 = v7
-		goto L3_ordinary
-	L6_ordinary:
-		p.Reset(x1)
-		goto fail_ordinary
-	L3_ordinary:
-		return v2, true
-	fail_ordinary:
-		return nil, false
-	}
-
 	p.StepWork()
 	var x1 rt.Mark
 	var v2, v5, v7 any
@@ -2587,15 +1584,6 @@ var trules []*rt.TRule
 
 // rule main
 func u0(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		start := p.Pos
-		v, ok := i0(p)
-		if !ok {
-			p.Pos = start
-		}
-		return v, ok
-	}
-
 	start := p.Pos
 	v, ok := i0(p)
 	if !ok {
@@ -2605,35 +1593,6 @@ func u0(p *rt.TParser) (any, bool) {
 }
 
 func i0(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		var start int
-		var v, k1, v3 any
-		var c *rt.TActCtx
-		var ok bool
-		start = p.Pos
-		p.Enter()
-		if v3, ok = p.Call(trules[1], 0); !ok {
-			goto fail_ordinary
-		}
-		k1 = v3
-		if _, ok = s13(p); !ok {
-			goto fail_ordinary
-		}
-		if !p.AtEndBatchOrdinary() {
-			p.ExpectOrdinary(p.Pos, rt.IdEndInput)
-			goto fail_ordinary
-		}
-		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		p.Where = "main"
-		v = func() any { return k1 }()
-		v = c.Finish(v)
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		return nil, false
-	}
-
 	p.StepWork()
 	var start int
 	var v, k1, v3 any
@@ -2670,15 +1629,6 @@ fail:
 
 // rule add
 func u2(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		start := p.Pos
-		v, ok := i2(p)
-		if !ok {
-			p.Pos = start
-		}
-		return v, ok
-	}
-
 	start := p.Pos
 	v, ok := i2(p)
 	if !ok {
@@ -2688,75 +1638,6 @@ func u2(p *rt.TParser) (any, bool) {
 }
 
 func i2(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		var start, x6, x7 int
-		var v, k1, v3, k4, v15, k16, v18 any
-		var c *rt.TActCtx
-		var ok, x10 bool
-		var x9 rune
-		start = p.Pos
-		p.Enter()
-		if v3, ok = p.Call(trules[1], 0); !ok {
-			goto fail_ordinary
-		}
-		k1 = v3
-		if _, ok = s13(p); !ok {
-			goto fail_ordinary
-		}
-		x6 = p.Pos
-		x7 = p.Pos
-		x9, _, x10 = p.NextOrdinary()
-		if !(x10 && (x9 == 43)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 5)
-			goto L11_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 43 {
-			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit3, "+", 5, false); !ok {
-			goto L12_ordinary
-		}
-		goto L8_ordinary
-	L12_ordinary:
-		p.Pos = x7
-	L11_ordinary:
-		if !(x10 && (x9 == 45)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 6)
-			goto L13_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
-			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit4, "-", 6, false); !ok {
-			goto L14_ordinary
-		}
-		goto L8_ordinary
-	L14_ordinary:
-		p.Pos = x7
-	L13_ordinary:
-		goto fail_ordinary
-	L8_ordinary:
-		v15 = p.NewMatchOrdinary(x6, p.Pos, p.Text(x6, p.Pos), true)
-		k4 = v15
-		if v18, ok = p.Call(trules[3], 0); !ok {
-			goto fail_ordinary
-		}
-		k16 = v18
-		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		p.Where = "add"
-		v = func() any {
-			return func() any {
-				f_32 := func() any { return k1 }()
-				f_33 := func() any { return k4 }()
-				f_34 := func() any { return k16 }()
-				return tmk_Binary(c, true, f_32, f_33, f_34)
-			}()
-		}()
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		return nil, false
-	}
-
 	p.StepWork()
 	var start, x6, x7 int
 	var v, k1, v3, k4, v15, k16, v18 any
@@ -2845,15 +1726,6 @@ fail:
 
 // rule mul
 func u4(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		start := p.Pos
-		v, ok := i4(p)
-		if !ok {
-			p.Pos = start
-		}
-		return v, ok
-	}
-
 	start := p.Pos
 	v, ok := i4(p)
 	if !ok {
@@ -2863,88 +1735,6 @@ func u4(p *rt.TParser) (any, bool) {
 }
 
 func i4(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		var start, x6, x7 int
-		var v, k1, v3, k4, v17, k18, v20 any
-		var c *rt.TActCtx
-		var ok, x10 bool
-		var x9 rune
-		start = p.Pos
-		p.Enter()
-		if v3, ok = p.Call(trules[3], 0); !ok {
-			goto fail_ordinary
-		}
-		k1 = v3
-		if _, ok = s13(p); !ok {
-			goto fail_ordinary
-		}
-		x6 = p.Pos
-		x7 = p.Pos
-		x9, _, x10 = p.NextOrdinary()
-		if !(x10 && (x9 == 42)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 7)
-			goto L11_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
-			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit7, "*", 7, false); !ok {
-			goto L12_ordinary
-		}
-		goto L8_ordinary
-	L12_ordinary:
-		p.Pos = x7
-	L11_ordinary:
-		if !(x10 && (x9 == 47)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 8)
-			goto L13_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 47 {
-			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "/", 8, false); !ok {
-			goto L14_ordinary
-		}
-		goto L8_ordinary
-	L14_ordinary:
-		p.Pos = x7
-	L13_ordinary:
-		if !(x10 && (x9 == 37)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 9)
-			goto L15_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 37 {
-			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit9, "%", 9, false); !ok {
-			goto L16_ordinary
-		}
-		goto L8_ordinary
-	L16_ordinary:
-		p.Pos = x7
-	L15_ordinary:
-		goto fail_ordinary
-	L8_ordinary:
-		v17 = p.NewMatchOrdinary(x6, p.Pos, p.Text(x6, p.Pos), true)
-		k4 = v17
-		if v20, ok = u5(p); !ok {
-			goto fail_ordinary
-		}
-		k18 = v20
-		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		p.Where = "mul"
-		v = func() any {
-			return func() any {
-				f_36 := func() any { return k1 }()
-				f_37 := func() any { return k4 }()
-				f_38 := func() any { return k18 }()
-				return tmk_Binary(c, true, f_36, f_37, f_38)
-			}()
-		}()
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		return nil, false
-	}
-
 	p.StepWork()
 	var start, x6, x7 int
 	var v, k1, v3, k4, v17, k18, v20 any
@@ -3047,13 +1837,6 @@ fail:
 
 // rule unary
 func u5(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		if !p.FirstCall(rules[5]) {
-			return p.CallMemo(trules[5], v5)
-		}
-		return v5(p)
-	}
-
 	if !p.FirstCall(rules[5]) {
 		return p.CallMemo(trules[5], v5)
 	}
@@ -3061,41 +1844,6 @@ func u5(p *rt.TParser) (any, bool) {
 }
 
 func v5(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		var start, x1 int
-		var v, v2, v5, v7 any
-		var ok bool
-		start = p.Pos
-		p.Enter()
-		x1 = p.Pos
-		if v5, ok = u6(p); !ok {
-			goto L4_ordinary
-		}
-		v2 = v5
-		goto L3_ordinary
-	L4_ordinary:
-		p.Pos = x1
-		if v7, ok = s7(p); !ok {
-			goto L6_ordinary
-		}
-		v2 = v7
-		goto L3_ordinary
-	L6_ordinary:
-		p.Pos = x1
-		goto fail_ordinary
-	L3_ordinary:
-		v = p.ScopeValue(sh23, v2, start)
-		if n := rt.AsTval(v); n != nil {
-			n.TSetFresh(false)
-		}
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		p.Pos = start
-		return nil, false
-	}
-
 	p.StepWork()
 	var start, x1 int
 	var v, v2, v5, v7 any
@@ -3136,15 +1884,6 @@ fail:
 
 // rule neg
 func u6(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		start := p.Pos
-		v, ok := i6(p)
-		if !ok {
-			p.Pos = start
-		}
-		return v, ok
-	}
-
 	start := p.Pos
 	v, ok := i6(p)
 	if !ok {
@@ -3154,70 +1893,6 @@ func u6(p *rt.TParser) (any, bool) {
 }
 
 func i6(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		var start, x3, x4 int
-		var v, k1, v12, k13, v15 any
-		var c *rt.TActCtx
-		var ok, x7 bool
-		var x6 rune
-		start = p.Pos
-		p.Enter()
-		if _, ok = s13(p); !ok {
-			goto fail_ordinary
-		}
-		x3 = p.Pos
-		x4 = p.Pos
-		x6, _, x7 = p.NextOrdinary()
-		if !(x7 && (x6 == 45)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 6)
-			goto L8_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
-			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit4, "-", 6, false); !ok {
-			goto L9_ordinary
-		}
-		goto L5_ordinary
-	L9_ordinary:
-		p.Pos = x4
-	L8_ordinary:
-		if !(x7 && (x6 == 43)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 5)
-			goto L10_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 43 {
-			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit3, "+", 5, false); !ok {
-			goto L11_ordinary
-		}
-		goto L5_ordinary
-	L11_ordinary:
-		p.Pos = x4
-	L10_ordinary:
-		goto fail_ordinary
-	L5_ordinary:
-		v12 = p.NewMatchOrdinary(x3, p.Pos, p.Text(x3, p.Pos), true)
-		k1 = v12
-		if v15, ok = u5(p); !ok {
-			goto fail_ordinary
-		}
-		k13 = v15
-		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		p.Where = "neg"
-		v = func() any {
-			return func() any {
-				f_39 := func() any { return k1 }()
-				f_40 := func() any { return k13 }()
-				return tmk_Unary(c, true, f_39, f_40)
-			}()
-		}()
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		return nil, false
-	}
-
 	p.StepWork()
 	var start, x3, x4 int
 	var v, k1, v12, k13, v15 any
@@ -3298,41 +1973,6 @@ fail:
 }
 
 func s7(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		var start, x1 int
-		var v, v2, v5, v7 any
-		var ok bool
-		start = p.Pos
-		p.Enter()
-		x1 = p.Pos
-		if v5, ok = u8(p); !ok {
-			goto L4_ordinary
-		}
-		v2 = v5
-		goto L3_ordinary
-	L4_ordinary:
-		p.Pos = x1
-		if v7, ok = u9(p); !ok {
-			goto L6_ordinary
-		}
-		v2 = v7
-		goto L3_ordinary
-	L6_ordinary:
-		p.Pos = x1
-		goto fail_ordinary
-	L3_ordinary:
-		v = p.ScopeValue(sh23, v2, start)
-		if n := rt.AsTval(v); n != nil {
-			n.TSetFresh(false)
-		}
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		p.Pos = start
-		return nil, false
-	}
-
 	p.StepWork()
 	var start, x1 int
 	var v, v2, v5, v7 any
@@ -3373,15 +2013,6 @@ fail:
 
 // rule pow
 func u8(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		start := p.Pos
-		v, ok := i8(p)
-		if !ok {
-			p.Pos = start
-		}
-		return v, ok
-	}
-
 	start := p.Pos
 	v, ok := i8(p)
 	if !ok {
@@ -3391,49 +2022,6 @@ func u8(p *rt.TParser) (any, bool) {
 }
 
 func i8(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		var start, x6 int
-		var v, k1, v3, k4, v7, k8, v10 any
-		var c *rt.TActCtx
-		var ok bool
-		start = p.Pos
-		p.Enter()
-		if v3, ok = u9(p); !ok {
-			goto fail_ordinary
-		}
-		k1 = v3
-		if _, ok = s13(p); !ok {
-			goto fail_ordinary
-		}
-		x6 = p.Pos
-		if p.Pos < len(p.In) && p.In[p.Pos] == 94 {
-			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit14, "^", 10, false); !ok {
-			goto fail_ordinary
-		}
-		v7 = p.NewMatchOrdinary(x6, p.Pos, "^", true)
-		k4 = v7
-		if v10, ok = u5(p); !ok {
-			goto fail_ordinary
-		}
-		k8 = v10
-		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		p.Where = "pow"
-		v = func() any {
-			return func() any {
-				f_41 := func() any { return k1 }()
-				f_42 := func() any { return k4 }()
-				f_43 := func() any { return k8 }()
-				return tmk_Binary(c, true, f_41, f_42, f_43)
-			}()
-		}()
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		return nil, false
-	}
-
 	p.StepWork()
 	var start, x6 int
 	var v, k1, v3, k4, v7, k8, v10 any
@@ -3488,18 +2076,6 @@ fail:
 
 // rule primary
 func u9(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		if !p.FirstCall(rules[9]) {
-			return p.CallMemo(trules[9], i9)
-		}
-		start := p.Pos
-		v, ok := i9(p)
-		if !ok {
-			p.Pos = start
-		}
-		return v, ok
-	}
-
 	if !p.FirstCall(rules[9]) {
 		return p.CallMemo(trules[9], i9)
 	}
@@ -3512,52 +2088,6 @@ func u9(p *rt.TParser) (any, bool) {
 }
 
 func i9(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		var start, x3 int
-		var v, k1, v4, v7, v12 any
-		var c *rt.TActCtx
-		var ok, x9 bool
-		var x8 rune
-		start = p.Pos
-		p.Enter()
-		if _, ok = s13(p); !ok {
-			goto fail_ordinary
-		}
-		x3 = p.Pos
-		if v7, ok = s11(p); !ok {
-			goto L6_ordinary
-		}
-		v4 = v7
-		goto L5_ordinary
-	L6_ordinary:
-		p.Pos = x3
-		x8, _, x9 = p.NextOrdinary()
-		if !(x9 && (x8 == 40)) && p.Depth+1 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 11)
-			goto L10_ordinary
-		}
-		if v12, ok = u10(p); !ok {
-			goto L11_ordinary
-		}
-		v4 = v12
-		goto L5_ordinary
-	L11_ordinary:
-		p.Pos = x3
-	L10_ordinary:
-		goto fail_ordinary
-	L5_ordinary:
-		k1 = v4
-		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		p.Where = "primary"
-		v = func() any { return k1 }()
-		v = c.Finish(v)
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		return nil, false
-	}
-
 	p.StepWork()
 	var start, x3 int
 	var v, k1, v4, v7, v12 any
@@ -3617,15 +2147,6 @@ fail:
 
 // rule group
 func u10(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		start := p.Pos
-		v, ok := i10(p)
-		if !ok {
-			p.Pos = start
-		}
-		return v, ok
-	}
-
 	start := p.Pos
 	v, ok := i10(p)
 	if !ok {
@@ -3635,41 +2156,6 @@ func u10(p *rt.TParser) (any, bool) {
 }
 
 func i10(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		var start int
-		var v, k1, v3 any
-		var c *rt.TActCtx
-		var ok bool
-		start = p.Pos
-		p.Enter()
-		if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
-			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit17, "(", 11, false); !ok {
-			goto fail_ordinary
-		}
-		if v3, ok = p.Call(trules[1], 0); !ok {
-			goto fail_ordinary
-		}
-		k1 = v3
-		if _, ok = s13(p); !ok {
-			goto fail_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
-			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit18, ")", 12, false); !ok {
-			goto fail_ordinary
-		}
-		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		p.Where = "group"
-		v = func() any { return k1 }()
-		v = c.Finish(v)
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		return nil, false
-	}
-
 	p.StepWork()
 	var start int
 	var v, k1, v3 any
@@ -3712,65 +2198,6 @@ fail:
 }
 
 func s11(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		var start, x1, size, x2, x3, x6 int
-		var v, v7, bv any
-		var ch rune
-		var ok bool
-		start = p.Pos
-		p.Enter()
-		x1 = p.Pos
-		x2 = 0
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || !(ch >= 48 && ch <= 57) {
-				p.ExpectOrdinary(p.Pos, 13)
-				break
-			}
-			p.Pos += size
-			x2++
-		}
-		if x2 < 1 {
-			goto fail_ordinary
-		}
-		x3 = p.Pos
-		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
-			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit20, ".", 14, false); !ok {
-			goto L4_ordinary
-		}
-		x6 = 0
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || !(ch >= 48 && ch <= 57) {
-				p.ExpectOrdinary(p.Pos, 13)
-				break
-			}
-			p.Pos += size
-			x6++
-		}
-		if x6 < 1 {
-			goto L4_ordinary
-		}
-		goto L5_ordinary
-	L4_ordinary:
-		p.Pos = x3
-	L5_ordinary:
-		v7 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-		bv = rt.TFreshNode(v7)
-		v = p.ScopeValue(sh23, v7, start)
-		if n := rt.AsTval(v); n != nil {
-			n.TSetFresh(false)
-		}
-		v = p.TConvertResultOwned(trules[11], v, bv)
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		p.Pos = start
-		return nil, false
-	}
-
 	p.StepWork()
 	var start, x1, size, x2, x3, x6 int
 	var v, v7, bv any
@@ -3848,25 +2275,6 @@ fail:
 }
 
 func s13(p *rt.TParser) (any, bool) {
-	if p.Control == nil {
-		var v any
-		var ch rune
-		var size int
-		var ok bool
-		p.Enter()
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
-				p.ExpectOrdinary(p.Pos, 15)
-				break
-			}
-			p.Pos += size
-		}
-		v = nil
-		p.Depth--
-		return v, true
-	}
-
 	p.StepWork()
 	var v any
 	var ch rune

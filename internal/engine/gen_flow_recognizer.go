@@ -51,7 +51,7 @@ func (g *generator) startRecFlow(rec *Program) error {
 	// alternatives of a choice get no first-character guard, and the Flow form calls the rules of
 	// the later alternatives at every position (duckdb: block_comment, 84k calls against none).
 	core.Analyze(m)
-	core.Guards(m, g.lean && !g.disableGuardedClasses)
+	core.Guards(m, g.ordinary && !g.disableGuardedClasses)
 	repeats := followRepeats(m, origin)
 	core.Scans(m)
 	for _, f := range repeats {
@@ -62,7 +62,7 @@ func (g *generator) startRecFlow(rec *Program) error {
 		return fmt.Errorf("internal error: %w", err)
 	}
 	// Classes are inline tests, as the Node runtime's generated code writes them.
-	opts := flow.Options{Work: !g.noWork, Recovers: flow.Recovers(m), GuardedClasses: g.lean && !g.disableGuardedClasses,
+	opts := flow.Options{Work: !g.noWork, Recovers: flow.Recovers(m), GuardedClasses: g.ordinary && !g.disableGuardedClasses,
 		InlineLiterals: maxInlineLiteral, Observe: g.observability, Node: true, Document: g.document}
 	g.flow = &flowState{m: m, origin: origin, opts: opts, rules: append(append([]*rule(nil), rec.rules...), rec.twins...)}
 	return nil

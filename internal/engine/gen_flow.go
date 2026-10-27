@@ -75,7 +75,7 @@ func (g *generator) flowOptions(m *core.Module) flow.Options {
 	// Node is false: the options of the Node and recognizer tables (startRecFlow) are built apart, and
 	// a function lowered with one set of options is never printed for the other runtime.
 	return flow.Options{Work: !g.noWork, Recovers: flow.Recovers(m), ClassTables: g.leanTyped(),
-		GuardedClasses: g.lean && !g.disableGuardedClasses, InlineLiterals: maxInlineLiteral, Observe: g.observability, Document: g.document}
+		GuardedClasses: g.ordinary && !g.disableGuardedClasses, InlineLiterals: maxInlineLiteral, Observe: g.observability, Document: g.document}
 }
 
 // flowDirectRule prints the rule r from Flow IR as a direct rule, or returns nil if r is not
@@ -294,8 +294,7 @@ func (g *generator) flowFramed(f *flow.Func, slots []core.Slot, scope *scope, co
 		p.write(fmt.Sprintf("return %s, true\n", p.expr(f.Value)))
 	}
 	if p.used[f.Fail] {
-		p.b.WriteString(p.g.label("fail") + ":\n")
-		p.labelEnd = p.b.Len()
+		p.b.WriteString("fail" + ":\n")
 		p.dead = false
 		publish()
 		p.write("return nil, false\n")
@@ -361,8 +360,6 @@ type flowPrinter struct {
 	// are guarded by p.Document == nil, so that a Document parse reads through the recording primitives.
 	document bool
 	b        strings.Builder
-	// labelEnd is the length of b after the last label written.
-	labelEnd int
 	// dead reports that the current point is unreachable. used holds the labels exited to from
 	// reachable points, reads the variables read there, and loops the labels of loops.
 	dead  bool
@@ -378,7 +375,7 @@ type flowPrinter struct {
 
 func newFlowPrinter(g *generator, frame bool) *flowPrinter {
 	return &flowPrinter{g: g, frame: frame, used: map[*flow.Label]bool{}, reads: map[*flow.Var]bool{},
-		labelEnd: -1, loops: map[*flow.Label]bool{}, names: map[*flow.Names]string{}, vars: newFlowVars()}
+		loops: map[*flow.Label]bool{}, names: map[*flow.Names]string{}, vars: newFlowVars()}
 }
 
 // scopeNames returns the package variable of the capture names n, naming it on first use.
@@ -454,8 +451,7 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 	case *flow.Block:
 		p.stmts(s.Body)
 		if p.used[s.Label] {
-			fmt.Fprintf(&p.b, "%s:\n", p.g.label(s.Label.Name))
-			p.labelEnd = p.b.Len()
+			fmt.Fprintf(&p.b, "%s:\n", s.Label.Name)
 			p.dead = false
 		}
 	case *flow.Loop:
@@ -485,7 +481,7 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 		if p.loops[s.To] {
 			p.b.WriteString("break\n")
 		} else {
-			fmt.Fprintf(&p.b, "goto %s\n", p.g.label(s.To.Name))
+			fmt.Fprintf(&p.b, "goto %s\n", s.To.Name)
 		}
 		p.dead = true
 	case *flow.Continue:
@@ -496,12 +492,7 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 	case *flow.Inc:
 		p.incStmt(s.V)
 	case *flow.Step:
-		// A charge directly after a label stays in the ordinary form, like a peek there is not compacted.
-		ordinary := ""
-		if p.b.Len() == p.labelEnd {
-			ordinary = "p.StepWork()\n"
-		}
-		p.write(p.g.formRest("p.StepWork()\n", ordinary, ordinary))
+		p.write("p.StepWork()\n")
 	case *flow.Silent:
 		if s.Delta > 0 {
 			p.write("p.Silent++\n")
@@ -594,7 +585,10 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 		// the report, except in the ordinary form, which has none.
 		if trace := p.g.traceSkip(p.g.flow.origin[s.Alt]); trace != "" {
 			trace = strings.TrimPrefix(trace, "\n")
-			p.write(p.g.form(trace+"\n", trace))
+			if !p.g.ordinary {
+				trace += "\n"
+			}
+			p.write(trace)
 		}
 	default:
 		panic(fmt.Sprintf("flow printer: statement %T", s))
@@ -728,7 +722,10 @@ func (p *flowPrinter) peekStmt(s *flow.Peek) {
 		ch, size, ok := name(s.Ch), name(s.Size), name(s.OK)
 		controlled := fmt.Sprintf("if %s {\n%s%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[3]s, %[4]s, %[5]s = p.Peek()\n}\n", guard, work, ch, size, ok)
 		// The inlined read and its fallback are one call of the runtime, which the compiler inlines.
-		return p.g.form(controlled, fmt.Sprintf("%s, %s, %s = p.NextOrdinary()\n", ch, size, ok))
+		if p.g.ordinary {
+			return fmt.Sprintf("%s, %s, %s = p.NextOrdinary()\n", ch, size, ok)
+		}
+		return controlled
 	}
 	p.b.WriteString(p.vars.add(st))
 }
@@ -832,13 +829,19 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 			}
 		}
 		if p.document {
-			return g.formRest("p.Document == nil && (!WorkControlsEnabled || p.Control == nil) && ("+cond+")", "p.Document == nil && ("+cond+")", "p.Document == nil && ("+cond+")")
+			if g.noWork {
+				return "p.Document == nil && (" + cond + ")"
+			}
+			return "p.Document == nil && (!WorkControlsEnabled || p.Control == nil) && (" + cond + ")"
 		}
 		if p.untyped() && !g.flow.opts.Work {
 			// The Node runtime's generated code of a parser without work controls has no such check.
 			return cond
 		}
-		return g.formRest("(!WorkControlsEnabled || p.Control == nil) && ("+cond+")", cond, cond)
+		if g.ordinary {
+			return cond
+		}
+		return "(!WorkControlsEnabled || p.Control == nil) && (" + cond + ")"
 	case *flow.MatchLit:
 		if x.Lit.Fold {
 			return fmt.Sprintf("%s.%s(%s, %d, false)", p.matcher(), p.helper("MatchLiteralFold"), g.literal(string(foldedRunes([]rune(x.Lit.Text)))), p.desc(x.Lit.Exp))

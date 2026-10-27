@@ -31,7 +31,7 @@ func coreRecognizeCase(name, mode string, g *generator) (*coreGenCase, error) {
 	check("build")
 	core.RewriteTerms(m, core.TermOptions{TextDispatch: !g.disableLiteralTextDispatch, FieldCompare: !g.boxedComparisons})
 	check("terms")
-	core.Guards(m, g.lean && !g.disableGuardedClasses)
+	core.Guards(m, g.ordinary && !g.disableGuardedClasses)
 	check("guards")
 	repeats := followRepeats(m, c.origin)
 	core.Scans(m)

@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// A parser generated without work controls holds only the ordinary form of its functions, does not
+// A parser generated without work controls holds no code that charges work or reads a control, does not
 // export the control options, and fails a parse that passes them instead of ignoring them.
 func TestGeneratedWithoutWorkControls(t *testing.T) {
 	if testing.Short() {
@@ -31,7 +31,7 @@ rule num = [0-9]+ ("." [0-9]+)?
 		return string(mergeGenerated(files))
 	}
 	with, without := gen(true), gen(false)
-	for _, want := range []string{"p.StepWork()", "if p.Control == nil", "func WithWorkLimits", "func WithContext"} {
+	for _, want := range []string{"p.StepWork()", "p.Control == nil", "func WithWorkLimits", "func WithContext"} {
 		if !strings.Contains(with, want) {
 			t.Errorf("with work controls: missing %q", want)
 		}
@@ -39,16 +39,22 @@ rule num = [0-9]+ ("." [0-9]+)?
 			t.Errorf("without work controls: found %q", want)
 		}
 	}
-	for _, bad := range []string{"p.Control", "_ordinary", "WorkClass", "WorkLimit"} {
+	for _, bad := range []string{"p.Control", "WorkClass", "WorkLimit"} {
 		if strings.Contains(without, bad) {
 			t.Errorf("without work controls: found %q", bad)
 		}
 	}
-	if len(without)*3 >= len(with)*2 {
-		t.Errorf("parser without work controls is %d bytes, with %d: want under two thirds", len(without), len(with))
+	// The helpers with an Ordinary form belong to the form without work controls and Documents only.
+	for name, text := range map[string]string{"with work controls": with, "Document with work controls": gen(true, true)} {
+		if strings.Contains(text, "Ordinary(") {
+			t.Errorf("%s: a call of an Ordinary helper", name)
+		}
 	}
-	// With a Document the parser keeps a second form of its functions for the Document, which has
-	// neither work charges nor control reads, since the parser has no controls.
+	if len(without) >= len(with) {
+		t.Errorf("parser without work controls is %d bytes, with %d: want smaller", len(without), len(with))
+	}
+	// With a Document the parser has the form that serves a Document, which has neither work charges
+	// nor control reads when the parser has no controls.
 	documentWith, documentWithout := gen(true, true), gen(false, true)
 	for _, bad := range []string{"p.Control", "StepWork", "InputWork", "WorkClass", "WorkLimit"} {
 		if strings.Contains(documentWithout, bad) {
@@ -59,7 +65,7 @@ rule num = [0-9]+ ("." [0-9]+)?
 		}
 	}
 	if !strings.Contains(documentWithout, "p.Document == nil") {
-		t.Error("a Document parser without work controls has no ordinary form apart from the Document's")
+		t.Error("a Document parser without work controls has no in-place read guard")
 	}
 	t.Logf("sizes: with controls %d, without %d; with Document: with controls %d, without %d", len(with), len(without), len(documentWith), len(documentWithout))
 	if len(documentWithout) >= len(documentWith) {

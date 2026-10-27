@@ -96,3 +96,33 @@ func TestVerifyWorkCharges(t *testing.T) {
 		t.Errorf("an Advance after a bounded loop that may run no iteration: got %v", err)
 	}
 }
+
+// TestLowerRejectsWorkWithLeanClasses checks that the class options that charge no input work
+// cannot be combined with Options.Work.
+func TestLowerRejectsWorkWithLeanClasses(t *testing.T) {
+	for _, opts := range []Options{{Work: true, ClassTables: true}, {Work: true, GuardedClasses: true}} {
+		m, r := valueFree(&core.Lit{Text: "a"})
+		if _, err := Lower(m, r, "r", opts); err == nil {
+			t.Errorf("Lower accepted %+v", opts)
+		}
+	}
+	m, r := valueFree(&core.Lit{Text: "a"})
+	if _, err := Lower(m, r, "r", Options{ClassTables: true, GuardedClasses: true}); err != nil {
+		t.Error(err)
+	}
+}
+
+// TestLowerFrameRejectsWorkWithLeanClasses is the same check for the framed lowering.
+func TestLowerFrameRejectsWorkWithLeanClasses(t *testing.T) {
+	for _, opts := range []Options{{Work: true, ClassTables: true}, {Work: true, GuardedClasses: true}} {
+		m, r := valueFree(&core.Lit{Text: "a"})
+		for name, lower := range map[string]func() (*Func, error){
+			"LowerFrame": func() (*Func, error) { return LowerFrame(m, r, r.Body, nil, false, "r", opts) },
+			"LowerLine":  func() (*Func, error) { return LowerLine(m, r, r.Body, nil, false, "r", opts) },
+		} {
+			if _, err := lower(); err == nil || !strings.Contains(err.Error(), "Options.Work") {
+				t.Errorf("%s accepted %+v: %v", name, opts, err)
+			}
+		}
+	}
+}

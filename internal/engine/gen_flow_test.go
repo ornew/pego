@@ -25,7 +25,6 @@ var flowModes = []struct {
 	{"lean typed-only", GenOptions{Types: true, TypedOnly: true}, true},
 	{"lean with nodes", GenOptions{Types: true}, true},
 	{"lean recognizer", GenOptions{Types: true, Recognize: true}, true},
-	{"lean charged", GenOptions{Types: true, TypedOnly: true, disableOrdinaryWorkSpecialization: true}, true},
 	{"lean unguarded", GenOptions{Types: true, TypedOnly: true, disableGuardedClasses: true}, true},
 	{"lean straight terminals", GenOptions{Types: true, TypedOnly: true, disableTerminalPrograms: true}, true},
 	{"lean boxed", GenOptions{Types: true, TypedOnly: true, disableLiteralTextDispatch: true, boxedComparisons: true}, true},

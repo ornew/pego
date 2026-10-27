@@ -813,7 +813,7 @@ func (g *generator) typedCore(origin map[core.Node]grammar.Expr) (*core.Module, 
 		hook = g.coreHook
 	}
 	hook("build", m)
-	leanTyped := g.lean && g.goWorkControls
+	leanTyped := g.ordinary && g.goWorkControls
 	if leanTyped && !g.observability && !g.disableTerminalPrograms {
 		core.Terminals(m, coreLocalRule)
 		hook("terminals", m)
@@ -821,7 +821,7 @@ func (g *generator) typedCore(origin map[core.Node]grammar.Expr) (*core.Module, 
 	core.RewriteTerms(m, core.TermOptions{TextDispatch: !g.disableLiteralTextDispatch, FieldCompare: !g.boxedComparisons})
 	hook("terms", m)
 	core.Analyze(m)
-	core.Guards(m, g.lean && !g.disableGuardedClasses)
+	core.Guards(m, g.ordinary && !g.disableGuardedClasses)
 	hook("guards", m)
 	core.Scans(m)
 	hook("scans", m)

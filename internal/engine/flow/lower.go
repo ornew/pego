@@ -40,10 +40,12 @@ type Options struct {
 	// Recovers reports that the module can append recovered errors (Recovers), so backtracking
 	// points save their number.
 	Recovers bool
-	// ClassTables matches a class of more than four ranges through its membership table.
+	// ClassTables matches a class of more than four ranges through its membership table. It needs
+	// Work off: a table match charges no input work.
 	ClassTables bool
 	// GuardedClasses keeps the size of the character a choice's guards read, for the classes
-	// that begin alternatives marked GuardedClass, which only consume it.
+	// that begin alternatives marked GuardedClass, which only consume it. It needs Work off: the
+	// consuming advance charges no input work.
 	GuardedClasses bool
 	// InlineLiterals compares literals of at most this many code points in place first.
 	InlineLiterals int
@@ -129,7 +131,18 @@ func LowerLine(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, bui
 	return lowerFrame(m, r, n, slots, build, name, opts, true)
 }
 
+// checkOptions rejects the options that lower without work only.
+func checkOptions(opts Options) error {
+	if opts.Work && (opts.ClassTables || opts.GuardedClasses) {
+		return fmt.Errorf("ClassTables and GuardedClasses lower functions without work controls, but Options.Work is set")
+	}
+	return nil
+}
+
 func lowerFrame(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, build bool, name string, opts Options, entered bool) (*Func, error) {
+	if err := checkOptions(opts); err != nil {
+		return nil, err
+	}
 	if !FramedBody(n) {
 		return nil, fmt.Errorf("a body of rule %s is not lowered to a framed function", r.Name)
 	}
@@ -159,6 +172,9 @@ func lowerFrame(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, bu
 // Lower lowers the rule r of the module m, a LocalRule, to the function name. Analyze must have
 // run on m.
 func Lower(m *core.Module, r *core.Rule, name string, opts Options) (*Func, error) {
+	if err := checkOptions(opts); err != nil {
+		return nil, err
+	}
 	if !LocalRule(r) {
 		return nil, fmt.Errorf("rule %s is not lowered to a local function", r.Name)
 	}
