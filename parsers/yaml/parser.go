@@ -141,181 +141,131 @@ func tinit() {
 }
 
 func tmk_Directive(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tDirective)
-	c.P.StepWork()
 	v.Name = tv4(a, f0)
-	c.P.StepWork()
 	v.Params = tl0(a, f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-	c.P.StepWork()
 	rt.FieldSpanOf(f0, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_Document(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
-	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tDocument)
-	c.P.StepWork()
 	v.Directives = tl1(a, f0)
-	c.P.StepWork()
 	v.Start_ = tv2(a, f1)
-	c.P.StepWork()
 	v.Root = rt.TAs[types.Value](rt.TPubIn(types.PegoHooks, a, f2))
-	c.P.StepWork()
 	v.End_ = tv2(a, f3)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-	c.P.StepWork()
 	rt.FieldSpanOf(f0, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f1, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f2, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_Mapping(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tMapping)
-	c.P.StepWork()
 	v.Props = rt.TAs[*types.Properties](f0)
-	c.P.StepWork()
 	v.Flow = astBool(f1)
-	c.P.StepWork()
 	v.Pairs = tl2(a, f2)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-	c.P.StepWork()
 	rt.FieldSpanOf(f0, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f1, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_Pair(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tPair)
-	c.P.StepWork()
 	v.Key = rt.TAs[types.Value](rt.TPubIn(types.PegoHooks, a, f0))
-	c.P.StepWork()
 	v.Value = rt.TAs[types.Value](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-	c.P.StepWork()
 	rt.FieldSpanOf(f0, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_Properties(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tProperties)
-	c.P.StepWork()
 	v.Tag = tv3(a, f0)
-	c.P.StepWork()
 	v.Anchor = tv1(a, f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-	c.P.StepWork()
 	rt.FieldSpanOf(f0, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_Scalar(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
-	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tScalar)
-	c.P.StepWork()
 	v.Props = rt.TAs[*types.Properties](f0)
-	c.P.StepWork()
 	v.Style = astInt(f1)
-	c.P.StepWork()
 	v.Indent = astInt(f2)
-	c.P.StepWork()
 	v.Text = astString(f3)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-	c.P.StepWork()
 	rt.FieldSpanOf(f0, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f1, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f2, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_Sequence(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tSequence)
-	c.P.StepWork()
 	v.Props = rt.TAs[*types.Properties](f0)
-	c.P.StepWork()
 	v.Flow = astBool(f1)
-	c.P.StepWork()
 	v.Items = tl3(a, f2)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-	c.P.StepWork()
 	rt.FieldSpanOf(f0, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f1, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_Stream(c *rt.TActCtx, final bool, f0 any) any {
-	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tStream)
-	c.P.StepWork()
 	v.Documents = tl4(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-	c.P.StepWork()
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
@@ -996,384 +946,190 @@ func init() {
 	rules[0].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e1(p) }
 	rules[1].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e6(p) }
 	rules[1].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Stream", "Documents", func() any {
-				c.P.StepWork()
-				return c.Concat(func() any { c.P.StepWork(); return c.Cap(0) }(), func() any {
-					c.P.StepWork()
-					return c.MapList(func() any { c.P.StepWork(); return c.Cap(1) }(), func(l_203 any) any {
-						return func() any {
-							c.P.StepWork()
-							return c.Member(func() any { c.P.StepWork(); return rt.UnboxValue(l_203) }(), "$d")
-						}()
-					})
-				}())
-			}())
-		}()
+		return c.NewStruct("Stream", "Documents", c.Concat(c.Cap(0), c.MapList(c.Cap(1), func(l_203 any) any { return c.Member(rt.UnboxValue(l_203), "$d") })))
 	}
 	rules[7].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e11(p) }
 	rules[8].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e12(p) }
 	rules[8].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Document", "Directives", func() any { c.P.StepWork(); return c.Member(func() any { c.P.StepWork(); return c.Cap(0) }(), "Value") }(), "Start", func() any { c.P.StepWork(); return c.Cap(1) }(), "Root", func() any { c.P.StepWork(); return c.Cap(2) }(), "End", func() any { c.P.StepWork(); return c.Cap(3) }())
-		}()
+		return c.NewStruct("Document", "Directives", c.Member(c.Cap(0), "Value"), "Start", c.Cap(1), "Root", c.Cap(2), "End", c.Cap(3))
 	}
 	rules[9].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e13(p) }
 	rules[9].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Document", "Directives", func() any { c.P.StepWork(); return c.List() }(), "Start", func() any { c.P.StepWork(); return c.Cap(0) }(), "Root", func() any { c.P.StepWork(); return c.Cap(1) }(), "End", func() any { c.P.StepWork(); return c.Cap(2) }())
-		}()
+		return c.NewStruct("Document", "Directives", c.List(), "Start", c.Cap(0), "Root", c.Cap(1), "End", c.Cap(2))
 	}
 	rules[10].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e14(p) }
 	rules[11].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e15(p) }
 	rules[11].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Document", "Directives", func() any { c.P.StepWork(); return c.List() }(), "Root", func() any { c.P.StepWork(); return c.Cap(0) }(), "End", func() any { c.P.StepWork(); return c.Cap(1) }())
-		}()
+		return c.NewStruct("Document", "Directives", c.List(), "Root", c.Cap(0), "End", c.Cap(1))
 	}
 	rules[12].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e16(p) }
-	rules[12].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[12].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[13].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e17(p) }
-	rules[13].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[13].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[14].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e19(p) }
-	rules[14].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[14].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[15].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e20(p) }
-	rules[15].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Directive", "Name", func() any { c.P.StepWork(); return c.Cap(0) }(), "Params", func() any { c.P.StepWork(); return c.List(func() any { c.P.StepWork(); return c.Cap(1) }()) }())
-		}()
-	}
+	rules[15].Action = func(c *rt.ActCtx) any { return c.NewStruct("Directive", "Name", c.Cap(0), "Params", c.List(c.Cap(1))) }
 	rules[18].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e25(p) }
 	rules[18].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Directive", "Name", func() any { c.P.StepWork(); return c.Cap(0) }(), "Params", func() any {
-				c.P.StepWork()
-				return c.List(func() any { c.P.StepWork(); return c.Cap(1) }(), func() any { c.P.StepWork(); return c.Cap(2) }())
-			}())
-		}()
+		return c.NewStruct("Directive", "Name", c.Cap(0), "Params", c.List(c.Cap(1), c.Cap(2)))
 	}
 	rules[22].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e33(p) }
 	rules[22].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Directive", "Name", func() any { c.P.StepWork(); return c.Cap(0) }(), "Params", func() any {
-				c.P.StepWork()
-				return c.NewList(c.ListItems("map", func() any { c.P.StepWork(); return c.Cap(1) }()))
-			}())
-		}()
+		return c.NewStruct("Directive", "Name", c.Cap(0), "Params", c.NewList(c.ListItems("map", c.Cap(1))))
 	}
 	rules[25].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e35(p) }
-	rules[25].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Properties", "Tag", func() any { c.P.StepWork(); return c.Cap(0) }(), "Anchor", func() any { c.P.StepWork(); return c.Cap(1) }())
-		}()
-	}
+	rules[25].Action = func(c *rt.ActCtx) any { return c.NewStruct("Properties", "Tag", c.Cap(0), "Anchor", c.Cap(1)) }
 	rules[26].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e38(p) }
 	rules[28].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e40(p) }
 	rules[34].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e43(p) }
-	rules[34].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[34].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[35].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e44(p) }
-	rules[35].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[35].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[36].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e45(p) }
-	rules[36].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[36].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[37].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e46(p) }
-	rules[37].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Scalar", "Props", func() any { c.P.StepWork(); return any(nil) }(), "Text", func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return c.Cap(0) }()) }())
-		}()
-	}
+	rules[37].Action = func(c *rt.ActCtx) any { return c.NewStruct("Scalar", "Props", any(nil), "Text", c.Text(c.Cap(0))) }
 	rules[38].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e47(p) }
 	rules[39].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e48(p) }
-	rules[39].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Sequence", "Props", func() any { c.P.StepWork(); return c.Cap(0) }(), "Items", func() any { c.P.StepWork(); return c.Cap(1) }())
-		}()
-	}
+	rules[39].Action = func(c *rt.ActCtx) any { return c.NewStruct("Sequence", "Props", c.Cap(0), "Items", c.Cap(1)) }
 	rules[40].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e49(p) }
-	rules[40].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Mapping", "Props", func() any { c.P.StepWork(); return c.Cap(0) }(), "Pairs", func() any { c.P.StepWork(); return c.Cap(1) }())
-		}()
-	}
+	rules[40].Action = func(c *rt.ActCtx) any { return c.NewStruct("Mapping", "Props", c.Cap(0), "Pairs", c.Cap(1)) }
 	rules[41].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e50(p) }
-	rules[41].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[41].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[42].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e50(p) }
-	rules[42].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[42].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[43].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e51(p) }
-	rules[43].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[43].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[44].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e52(p) }
-	rules[44].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Properties", "Tag", func() any { c.P.StepWork(); return c.Cap(0) }(), "Anchor", func() any { c.P.StepWork(); return c.Cap(1) }())
-		}()
-	}
+	rules[44].Action = func(c *rt.ActCtx) any { return c.NewStruct("Properties", "Tag", c.Cap(0), "Anchor", c.Cap(1)) }
 	rules[45].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e55(p) }
-	rules[45].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[45].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[46].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e57(p) }
 	rules[46].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.MapList(func() any { c.P.StepWork(); return c.Cap(1) }(), func(l_204 any) any {
-				return func() any {
-					c.P.StepWork()
-					return c.Member(func() any { c.P.StepWork(); return rt.UnboxValue(l_204) }(), "$e")
-				}()
-			})
-		}()
+		return c.MapList(c.Cap(1), func(l_204 any) any { return c.Member(rt.UnboxValue(l_204), "$e") })
 	}
 	rules[47].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e58(p) }
-	rules[47].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[47].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[48].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e59(p) }
 	rules[49].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e60(p) }
-	rules[49].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(1) }() }
+	rules[49].Action = func(c *rt.ActCtx) any { return c.Cap(1) }
 	rules[50].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e62(p) }
 	rules[50].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Sequence", "Items", func() any {
-				c.P.StepWork()
-				return func() any {
-					b := len(c.P.KidStack)
-					c.PushList(func() any { c.P.StepWork(); return c.Cap(0) }())
-					c.PushMap(func() any { c.P.StepWork(); return c.Cap(1) }(), func(l_205 any) any {
-						return func() any {
-							c.P.StepWork()
-							return c.Member(func() any { c.P.StepWork(); return rt.UnboxValue(l_205) }(), "$e")
-						}()
-					})
-					return c.EndList(b)
-				}()
-			}())
-		}()
+		return c.NewStruct("Sequence", "Items", func() any {
+			b := len(c.P.KidStack)
+			c.PushList(c.Cap(0))
+			c.PushMap(c.Cap(1), func(l_205 any) any { return c.Member(rt.UnboxValue(l_205), "$e") })
+			return c.EndList(b)
+		}())
 	}
 	rules[51].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e64(p) }
-	rules[51].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewList(c.ListItems("map", func() any { c.P.StepWork(); return c.Cap(1) }()))
-		}()
-	}
+	rules[51].Action = func(c *rt.ActCtx) any { return c.NewList(c.ListItems("map", c.Cap(1))) }
 	rules[52].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e66(p) }
 	rules[52].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Mapping", "Pairs", func() any {
-				c.P.StepWork()
-				return func() any {
-					b := len(c.P.KidStack)
-					c.PushList(func() any { c.P.StepWork(); return c.Cap(0) }())
-					c.PushItems(func() any { c.P.StepWork(); return c.Cap(1) }())
-					return c.EndList(b)
-				}()
-			}())
-		}()
+		return c.NewStruct("Mapping", "Pairs", func() any { b := len(c.P.KidStack); c.PushList(c.Cap(0)); c.PushItems(c.Cap(1)); return c.EndList(b) }())
 	}
 	rules[53].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e67(p) }
 	rules[54].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e68(p) }
-	rules[54].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Pair", "Key", func() any { c.P.StepWork(); return c.Cap(0) }(), "Value", func() any { c.P.StepWork(); return c.Cap(1) }())
-		}()
-	}
+	rules[54].Action = func(c *rt.ActCtx) any { return c.NewStruct("Pair", "Key", c.Cap(0), "Value", c.Cap(1)) }
 	rules[55].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e70(p) }
-	rules[55].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[55].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[56].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e72(p) }
-	rules[56].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[56].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[57].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e73(p) }
-	rules[57].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Pair", "Key", func() any { c.P.StepWork(); return c.Cap(0) }(), "Value", func() any { c.P.StepWork(); return c.Cap(1) }())
-		}()
-	}
+	rules[57].Action = func(c *rt.ActCtx) any { return c.NewStruct("Pair", "Key", c.Cap(0), "Value", c.Cap(1)) }
 	rules[58].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e75(p) }
-	rules[58].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[58].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[59].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e76(p) }
-	rules[59].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Scalar", "Props", func() any { c.P.StepWork(); return any(nil) }(), "Text", func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return c.Cap(0) }()) }())
-		}()
-	}
+	rules[59].Action = func(c *rt.ActCtx) any { return c.NewStruct("Scalar", "Props", any(nil), "Text", c.Text(c.Cap(0))) }
 	rules[60].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e77(p) }
-	rules[60].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[60].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[61].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e79(p) }
-	rules[61].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[61].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[62].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e94(p) }
 	rules[62].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Scalar", "Props", func() any { c.P.StepWork(); return c.Cap(0) }(), "Style", func() any {
-				c.P.StepWork()
-				return c.Binary("+", func() any { c.P.StepWork(); return any(3) }(), func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(2) }()) }())
-			}(), "Indent", func() any { c.P.StepWork(); return c.Lookup("n") }(), "Text", func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return c.Cap(1) }()) }())
-		}()
+		return c.NewStruct("Scalar", "Props", c.Cap(0), "Style", c.Binary("+", any(3), c.Length(c.Cap(2))), "Indent", c.Lookup("n"), "Text", c.Text(c.Cap(1)))
 	}
 	rules[64].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e95(p) }
-	rules[64].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[64].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[66].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e100(p) }
 	rules[67].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e101(p) }
 	rules[69].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e102(p) }
-	rules[69].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[69].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[70].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e103(p) }
 	rules[71].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e104(p) }
 	rules[72].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e105(p) }
-	rules[72].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Scalar", "Props", func() any { c.P.StepWork(); return c.Cap(0) }())
-		}()
-	}
+	rules[72].Action = func(c *rt.ActCtx) any { return c.NewStruct("Scalar", "Props", c.Cap(0)) }
 	rules[73].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e106(p) }
-	rules[73].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
-	rules[74].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.NewStruct("Scalar") }() }
+	rules[73].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
+	rules[74].Action = func(c *rt.ActCtx) any { return c.NewStruct("Scalar") }
 	rules[75].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e108(p) }
-	rules[75].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[75].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[76].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e111(p) }
 	rules[76].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Sequence", "Props", func() any { c.P.StepWork(); return c.Cap(0) }(), "Flow", func() any { c.P.StepWork(); return any(true) }(), "Items", func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return c.Cap(1) }()) }())
-		}()
+		return c.NewStruct("Sequence", "Props", c.Cap(0), "Flow", any(true), "Items", c.Concat(c.Cap(1)))
 	}
 	rules[77].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e114(p) }
 	rules[77].Action = func(c *rt.ActCtx) any {
 		return func() any {
-			c.P.StepWork()
-			return func() any {
-				b := len(c.P.KidStack)
-				c.PushList(func() any { c.P.StepWork(); return c.Cap(0) }())
-				c.PushMap(func() any { c.P.StepWork(); return c.Cap(1) }(), func(l_206 any) any {
-					return func() any {
-						c.P.StepWork()
-						return c.Member(func() any { c.P.StepWork(); return rt.UnboxValue(l_206) }(), "$e")
-					}()
-				})
-				return c.EndList(b)
-			}()
+			b := len(c.P.KidStack)
+			c.PushList(c.Cap(0))
+			c.PushMap(c.Cap(1), func(l_206 any) any { return c.Member(rt.UnboxValue(l_206), "$e") })
+			return c.EndList(b)
 		}()
 	}
 	rules[78].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e115(p) }
 	rules[79].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e118(p) }
 	rules[79].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Mapping", "Props", func() any { c.P.StepWork(); return c.Cap(0) }(), "Flow", func() any { c.P.StepWork(); return any(true) }(), "Pairs", func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return c.Cap(1) }()) }())
-		}()
+		return c.NewStruct("Mapping", "Props", c.Cap(0), "Flow", any(true), "Pairs", c.Concat(c.Cap(1)))
 	}
 	rules[80].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e120(p) }
 	rules[80].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return func() any {
-				b := len(c.P.KidStack)
-				c.PushList(func() any { c.P.StepWork(); return c.Cap(0) }())
-				c.PushItems(func() any { c.P.StepWork(); return c.Cap(1) }())
-				return c.EndList(b)
-			}()
-		}()
+		return func() any { b := len(c.P.KidStack); c.PushList(c.Cap(0)); c.PushItems(c.Cap(1)); return c.EndList(b) }()
 	}
 	rules[81].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e121(p) }
 	rules[82].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e122(p) }
-	rules[82].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[82].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[84].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e124(p) }
-	rules[84].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Pair", "Key", func() any { c.P.StepWork(); return c.Cap(0) }(), "Value", func() any { c.P.StepWork(); return c.Cap(1) }())
-		}()
-	}
+	rules[84].Action = func(c *rt.ActCtx) any { return c.NewStruct("Pair", "Key", c.Cap(0), "Value", c.Cap(1)) }
 	rules[85].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e125(p) }
 	rules[86].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e126(p) }
-	rules[86].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Pair", "Key", func() any { c.P.StepWork(); return c.Cap(0) }(), "Value", func() any { c.P.StepWork(); return c.Cap(1) }())
-		}()
-	}
+	rules[86].Action = func(c *rt.ActCtx) any { return c.NewStruct("Pair", "Key", c.Cap(0), "Value", c.Cap(1)) }
 	rules[87].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e127(p) }
-	rules[87].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[87].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[88].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e128(p) }
-	rules[88].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Pair", "Key", func() any { c.P.StepWork(); return c.Cap(0) }(), "Value", func() any { c.P.StepWork(); return c.Cap(1) }())
-		}()
-	}
+	rules[88].Action = func(c *rt.ActCtx) any { return c.NewStruct("Pair", "Key", c.Cap(0), "Value", c.Cap(1)) }
 	rules[89].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e129(p) }
-	rules[89].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[89].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[90].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e130(p) }
-	rules[90].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[90].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[91].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e131(p) }
-	rules[91].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Pair", "Key", func() any { c.P.StepWork(); return c.Cap(0) }(), "Value", func() any { c.P.StepWork(); return c.Cap(1) }())
-		}()
-	}
+	rules[91].Action = func(c *rt.ActCtx) any { return c.NewStruct("Pair", "Key", c.Cap(0), "Value", c.Cap(1)) }
 	rules[92].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e132(p) }
-	rules[92].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[92].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[93].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e133(p) }
-	rules[93].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[93].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[94].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e134(p) }
-	rules[94].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[94].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[95].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e135(p) }
-	rules[95].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Mapping", "Flow", func() any { c.P.StepWork(); return any(true) }(), "Pairs", func() any { c.P.StepWork(); return c.List(func() any { c.P.StepWork(); return c.Cap(0) }()) }())
-		}()
-	}
+	rules[95].Action = func(c *rt.ActCtx) any { return c.NewStruct("Mapping", "Flow", any(true), "Pairs", c.List(c.Cap(0))) }
 	rules[97].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e137(p) }
-	rules[97].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Pair", "Key", func() any { c.P.StepWork(); return c.Cap(0) }(), "Value", func() any { c.P.StepWork(); return c.Cap(1) }())
-		}()
-	}
+	rules[97].Action = func(c *rt.ActCtx) any { return c.NewStruct("Pair", "Key", c.Cap(0), "Value", c.Cap(1)) }
 	rules[98].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e138(p) }
-	rules[98].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[98].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[99].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e139(p) }
-	rules[99].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Pair", "Key", func() any { c.P.StepWork(); return c.Cap(0) }(), "Value", func() any { c.P.StepWork(); return c.Cap(1) }())
-		}()
-	}
+	rules[99].Action = func(c *rt.ActCtx) any { return c.NewStruct("Pair", "Key", c.Cap(0), "Value", c.Cap(1)) }
 	rules[100].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e140(p) }
-	rules[100].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[100].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[101].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e141(p) }
-	rules[101].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Scalar", "Props", func() any { c.P.StepWork(); return c.Cap(0) }(), "Text", func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return c.Cap(1) }()) }())
-		}()
-	}
+	rules[101].Action = func(c *rt.ActCtx) any { return c.NewStruct("Scalar", "Props", c.Cap(0), "Text", c.Text(c.Cap(1))) }
 	rules[111].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e142(p) }
 	rules[111].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Scalar", "Props", func() any { c.P.StepWork(); return c.Cap(0) }(), "Style", func() any { c.P.StepWork(); return any(2) }(), "Text", func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return c.Cap(1) }()) }())
-		}()
+		return c.NewStruct("Scalar", "Props", c.Cap(0), "Style", any(2), "Text", c.Text(c.Cap(1)))
 	}
 	rules[119].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e143(p) }
 	rules[119].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Scalar", "Props", func() any { c.P.StepWork(); return c.Cap(0) }(), "Style", func() any { c.P.StepWork(); return any(1) }(), "Text", func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return c.Cap(1) }()) }())
-		}()
+		return c.NewStruct("Scalar", "Props", c.Cap(0), "Style", any(1), "Text", c.Text(c.Cap(1)))
 	}
 	rules[132].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e145(p) }
 	rules[140].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e155(p) }
@@ -1986,13 +1742,11 @@ func e16(p *rt.Parser) (*rt.Node, bool) {
 	var v2 *rt.Node
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any { c.P.StepWork(); return c.Unary("-", func() any { c.P.StepWork(); return any(1) }()) }()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Unary("-", any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-in") }) {
 		goto fail
 	}
 	p.StepWork()
@@ -3023,12 +2777,7 @@ func e44(p *rt.Parser) (*rt.Node, bool) {
 	var v12, v15, v17 *rt.Node
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -3204,7 +2953,7 @@ func e45(p *rt.Parser) (*rt.Node, bool) {
 	var v2 *rt.Node
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-out") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-out") }) {
 		goto fail
 	}
 	p.StepWork()
@@ -3414,12 +3163,7 @@ func e51(p *rt.Parser) (*rt.Node, bool) {
 	var v2 *rt.Node
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -3445,12 +3189,7 @@ func e52(p *rt.Parser) (*rt.Node, bool) {
 	var x6 rune
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -3555,33 +3294,18 @@ L3:
 	x9 = p.Mark()
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-out") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-out")) }) {
 		goto L11
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("-", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("-", c.Lookup("n"), any(1)) }) {
 		goto L11
 	}
 	goto L10
 L11:
 	p.Reset(x9)
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-in") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-in")) }) {
 		goto L12
 	}
 	goto L10
@@ -3637,18 +3361,11 @@ func e57(p *rt.Parser) (*rt.Node, bool) {
 	p.Silent--
 	p.Pos = x1
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -3727,7 +3444,7 @@ L2:
 	p.Silent--
 	p.Reset(x1)
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-in") }) {
 		goto fail
 	}
 	p.StepWork()
@@ -3810,15 +3527,7 @@ func e60(p *rt.Parser) (*rt.Node, bool) {
 	v6 = p.NewTerminal(x2, p.Text(x2, p.Pos))
 	p.SetCapture(0, v6)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any {
-				c.P.StepWork()
-				return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-			}(), func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Binary("+", c.Lookup("n"), any(1)), c.Length(c.Cap(0))) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -3954,18 +3663,11 @@ func e64(p *rt.Parser) (*rt.Node, bool) {
 	p.Silent--
 	p.Pos = x1
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -4171,7 +3873,7 @@ L2:
 	p.Silent--
 	p.Reset(x1)
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-out") }) {
 		goto fail
 	}
 	p.StepWork()
@@ -4215,7 +3917,7 @@ L2:
 	p.Silent--
 	p.Reset(x1)
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-out") }) {
 		goto fail
 	}
 	p.StepWork()
@@ -4289,7 +3991,7 @@ L3:
 	p.Reset(x1)
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("block-key") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-key") }) {
 		goto L6
 	}
 	p.StepWork()
@@ -4480,7 +4182,7 @@ L3:
 	p.Reset(x1)
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-out") }) {
 		goto L10
 	}
 	p.StepWork()
@@ -4629,12 +4331,7 @@ L28:
 	v41 = p.NewTerminal(x40, "1")
 	x39 = append(x39, v41)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto L37
 	}
 	v42 = p.NewBranch(rt.RawKindSeq, x38, x39)
@@ -4661,12 +4358,7 @@ L36:
 	v49 = p.NewTerminal(x48, "2")
 	x47 = append(x47, v49)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(2) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(2)) }) {
 		goto L45
 	}
 	v50 = p.NewBranch(rt.RawKindSeq, x46, x47)
@@ -4693,12 +4385,7 @@ L44:
 	v57 = p.NewTerminal(x56, "3")
 	x55 = append(x55, v57)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(3) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(3)) }) {
 		goto L53
 	}
 	v58 = p.NewBranch(rt.RawKindSeq, x54, x55)
@@ -4725,12 +4412,7 @@ L52:
 	v65 = p.NewTerminal(x64, "4")
 	x63 = append(x63, v65)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(4) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(4)) }) {
 		goto L61
 	}
 	v66 = p.NewBranch(rt.RawKindSeq, x62, x63)
@@ -4757,12 +4439,7 @@ L60:
 	v73 = p.NewTerminal(x72, "5")
 	x71 = append(x71, v73)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(5) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(5)) }) {
 		goto L69
 	}
 	v74 = p.NewBranch(rt.RawKindSeq, x70, x71)
@@ -4789,12 +4466,7 @@ L68:
 	v81 = p.NewTerminal(x80, "6")
 	x79 = append(x79, v81)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(6) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(6)) }) {
 		goto L77
 	}
 	v82 = p.NewBranch(rt.RawKindSeq, x78, x79)
@@ -4821,12 +4493,7 @@ L76:
 	v89 = p.NewTerminal(x88, "7")
 	x87 = append(x87, v89)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(7) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(7)) }) {
 		goto L85
 	}
 	v90 = p.NewBranch(rt.RawKindSeq, x86, x87)
@@ -4853,12 +4520,7 @@ L84:
 	v97 = p.NewTerminal(x96, "8")
 	x95 = append(x95, v97)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(8) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(8)) }) {
 		goto L93
 	}
 	v98 = p.NewBranch(rt.RawKindSeq, x94, x95)
@@ -4885,12 +4547,7 @@ L92:
 	v105 = p.NewTerminal(x104, "9")
 	x103 = append(x103, v105)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(9) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(9)) }) {
 		goto L101
 	}
 	v106 = p.NewBranch(rt.RawKindSeq, x102, x103)
@@ -4987,18 +4644,11 @@ L113:
 	x134 = p.Pos
 	x135 = p.Nodes(0)[:0]
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(4) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(4)), c.Lookup("n")) }) {
 		goto L133
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(4) }()) }()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Length(c.Cap(4)) }) {
 		goto L133
 	}
 	p.StepWork()
@@ -5039,12 +4689,7 @@ L113:
 		v149 = p.NewTerminal(x145, p.Text(x145, p.Pos))
 		p.SetCapture(0, v149)
 		p.StepWork()
-		if !p.Predicate(func(c *rt.ActCtx) any {
-			return func() any {
-				c.P.StepWork()
-				return c.Binary("<=", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-			}()
-		}) {
+		if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 			goto L143
 		}
 		p.StepWork()
@@ -5109,21 +4754,11 @@ L133:
 	x158 = p.Pos
 	x159 = p.Nodes(0)[:0]
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("<=", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(4) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(4)), c.Lookup("n")) }) {
 		goto L157
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto L157
 	}
 	p.StepWork()
@@ -5200,18 +4835,11 @@ L133:
 		x180 = p.Mark()
 		p.StepWork()
 		p.StepWork()
-		if !p.Predicate(func(c *rt.ActCtx) any {
-			return func() any {
-				c.P.StepWork()
-				return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-			}()
-		}) {
+		if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 			goto L181
 		}
 		p.StepWork()
-		if !p.Bind("n", func(c *rt.ActCtx) any {
-			return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
-		}) {
+		if !p.Bind("n", func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
 			goto L181
 		}
 		goto L182
@@ -5279,13 +4907,7 @@ L191:
 	x9 = append(x9, v189)
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("<=", func() any {
-				c.P.StepWork()
-				return c.Binary("+", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(3) }()) }(), func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(5) }()) }())
-			}(), func() any { c.P.StepWork(); return any(1) }())
-		}()
+		return c.Binary("<=", c.Binary("+", c.Length(c.Cap(3)), c.Length(c.Cap(5))), any(1))
 	}) {
 		goto fail
 	}
@@ -5323,12 +4945,7 @@ func e95(p *rt.Parser) (*rt.Node, bool) {
 	var v2 *rt.Node
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -5521,12 +5138,7 @@ L12:
 	p.StepWork()
 	x19 = p.Mark()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto L22
 	}
 	v23, _ = p.ShapeSingle(sh97, nil, x19.Pos)
@@ -5538,12 +5150,7 @@ L22:
 	x25 = p.Pos
 	x26 = p.Nodes(1)[:0]
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto L24
 	}
 	p.StepWork()
@@ -5634,12 +5241,7 @@ L4:
 	p.SetCapture(0, v10)
 	x2 = append(x2, v10)
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("<=", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -5976,18 +5578,7 @@ L11:
 	x12 = p.Mark()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L14
 	}
@@ -5996,23 +5587,18 @@ L14:
 	p.Reset(x12)
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
 		goto L15
 	}
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-in") }) {
 		goto L15
 	}
 	goto L13
 L15:
 	p.Reset(x12)
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-key") }) {
 		goto L16
 	}
 	goto L13
@@ -6257,18 +5843,7 @@ L11:
 	x12 = p.Mark()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L14
 	}
@@ -6277,23 +5852,18 @@ L14:
 	p.Reset(x12)
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
 		goto L15
 	}
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-in") }) {
 		goto L15
 	}
 	goto L13
 L15:
 	p.Reset(x12)
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-key") }) {
 		goto L16
 	}
 	goto L13
@@ -7025,19 +6595,14 @@ func e138(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	x1 = p.Mark()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
 		goto L3
 	}
 	goto L2
 L3:
 	p.Reset(x1)
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-key") }) {
 		goto L4
 	}
 	goto L2
@@ -7122,19 +6687,14 @@ L3:
 	p.StepWork()
 	x4 = p.Mark()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
 		goto L6
 	}
 	goto L5
 L6:
 	p.Reset(x4)
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-key") }) {
 		goto L7
 	}
 	goto L5
@@ -8033,18 +7593,7 @@ func e164(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L3
 	}
@@ -8058,18 +7607,7 @@ L3:
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.And(func() any {
-				c.P.StepWork()
-				return c.Binary("!=", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("!=", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.And(c.Binary("!=", c.Lookup("c"), any("block-key")), func() any { return c.Binary("!=", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -8318,12 +7856,7 @@ func e169(p *rt.Parser) (*rt.Node, bool) {
 	v6 = p.NewTerminal(x2, p.Text(x2, p.Pos))
 	p.SetCapture(0, v6)
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto fail
 	}
 	return nil, true
@@ -8431,12 +7964,7 @@ func e172(p *rt.Parser) (*rt.Node, bool) {
 	var ok bool
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -8513,12 +8041,7 @@ func e174(p *rt.Parser) (*rt.Node, bool) {
 	v6 = p.NewTerminal(x2, p.Text(x2, p.Pos))
 	p.SetCapture(0, v6)
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("<", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -8558,18 +8081,7 @@ func e175(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("block-key")) })
 	}) {
 		goto L3
 	}
@@ -8583,18 +8095,7 @@ L3:
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -8620,12 +8121,7 @@ func e176(p *rt.Parser) (*rt.Node, bool) {
 	x1 = p.Mark()
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
 		goto L3
 	}
 	p.StepWork()
@@ -8637,12 +8133,7 @@ L3:
 	p.Reset(x1)
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-key")) }) {
 		goto L4
 	}
 	p.StepWork()
@@ -8654,12 +8145,7 @@ L4:
 	p.Reset(x1)
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-in")) }) {
 		goto L5
 	}
 	p.StepWork()
@@ -8671,12 +8157,7 @@ L5:
 	p.Reset(x1)
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
 		goto L6
 	}
 	p.StepWork()
@@ -8709,18 +8190,7 @@ func e178(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-in")) })
 	}) {
 		goto L3
 	}
@@ -8734,18 +8204,7 @@ L3:
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -8838,18 +8297,7 @@ func e181(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-in")) })
 	}) {
 		goto L3
 	}
@@ -8863,18 +8311,7 @@ L3:
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -8971,12 +8408,7 @@ func e184(p *rt.Parser) (*rt.Node, bool) {
 	v6 = p.NewTerminal(x2, p.Text(x2, p.Pos))
 	p.SetCapture(0, v6)
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">=", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">=", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -9494,12 +8926,7 @@ func e196(p *rt.Parser) (*rt.Node, bool) {
 	x7 = p.Mark()
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">=", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">=", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto L9
 	}
 	p.StepWork()
@@ -9520,12 +8947,7 @@ func e196(p *rt.Parser) (*rt.Node, bool) {
 L9:
 	p.Reset(x7)
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("<", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto L10
 	}
 	goto L8
@@ -11740,13 +11162,11 @@ func e213(p *rt.Parser) (*rt.Node, bool) {
 	var ok bool
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any { c.P.StepWork(); return c.Unary("-", func() any { c.P.StepWork(); return any(1) }()) }()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Unary("-", any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-in") }) {
 		goto fail
 	}
 	p.StepWork()
@@ -12340,12 +11760,7 @@ func e221(p *rt.Parser) (*rt.Node, bool) {
 	var ok bool
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -12517,7 +11932,7 @@ func e222(p *rt.Parser) (*rt.Node, bool) {
 	var ok bool
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-out") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-out") }) {
 		goto fail
 	}
 	p.StepWork()
@@ -12562,12 +11977,7 @@ func e224(p *rt.Parser) (*rt.Node, bool) {
 	var ok bool
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -12591,12 +12001,7 @@ func e225(p *rt.Parser) (*rt.Node, bool) {
 	var x4 rune
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -12698,33 +12103,18 @@ L3:
 	x9 = p.Mark()
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-out") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-out")) }) {
 		goto L11
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("-", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("-", c.Lookup("n"), any(1)) }) {
 		goto L11
 	}
 	goto L10
 L11:
 	p.Reset(x9)
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-in") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-in")) }) {
 		goto L12
 	}
 	goto L10
@@ -12778,18 +12168,11 @@ func e228(p *rt.Parser) (*rt.Node, bool) {
 	p.Silent--
 	p.Pos = x1
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -12855,7 +12238,7 @@ L2:
 	p.Silent--
 	p.Reset(x1)
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-in") }) {
 		goto fail
 	}
 	p.StepWork()
@@ -12933,15 +12316,7 @@ func e231(p *rt.Parser) (*rt.Node, bool) {
 	v6 = p.NewTerminal(x2, p.Text(x2, p.Pos))
 	p.SetCapture(0, v6)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any {
-				c.P.StepWork()
-				return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-			}(), func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Binary("+", c.Lookup("n"), any(1)), c.Length(c.Cap(0))) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -13015,18 +12390,11 @@ func e233(p *rt.Parser) (*rt.Node, bool) {
 	p.Silent--
 	p.Pos = x1
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -13131,7 +12499,7 @@ L2:
 	p.Silent--
 	p.Reset(x1)
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-out") }) {
 		goto fail
 	}
 	p.StepWork()
@@ -13173,7 +12541,7 @@ L2:
 	p.Silent--
 	p.Reset(x1)
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-out") }) {
 		goto fail
 	}
 	p.StepWork()
@@ -13205,7 +12573,7 @@ L3:
 	p.Reset(x1)
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("block-key") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-key") }) {
 		goto L4
 	}
 	p.StepWork()
@@ -13334,7 +12702,7 @@ L3:
 	p.Reset(x1)
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-out") }) {
 		goto L8
 	}
 	p.StepWork()
@@ -13461,12 +12829,7 @@ L16:
 		goto L24
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto L24
 	}
 	goto L20
@@ -13485,12 +12848,7 @@ L23:
 		goto L26
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(2) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(2)) }) {
 		goto L26
 	}
 	goto L20
@@ -13509,12 +12867,7 @@ L25:
 		goto L28
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(3) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(3)) }) {
 		goto L28
 	}
 	goto L20
@@ -13533,12 +12886,7 @@ L27:
 		goto L30
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(4) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(4)) }) {
 		goto L30
 	}
 	goto L20
@@ -13557,12 +12905,7 @@ L29:
 		goto L32
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(5) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(5)) }) {
 		goto L32
 	}
 	goto L20
@@ -13581,12 +12924,7 @@ L31:
 		goto L34
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(6) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(6)) }) {
 		goto L34
 	}
 	goto L20
@@ -13605,12 +12943,7 @@ L33:
 		goto L36
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(7) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(7)) }) {
 		goto L36
 	}
 	goto L20
@@ -13629,12 +12962,7 @@ L35:
 		goto L38
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(8) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(8)) }) {
 		goto L38
 	}
 	goto L20
@@ -13653,12 +12981,7 @@ L37:
 		goto L40
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(9) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(9)) }) {
 		goto L40
 	}
 	goto L20
@@ -13743,18 +13066,11 @@ L44:
 	x57 = p.Mark()
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(1) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(1)), c.Lookup("n")) }) {
 		goto L59
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(1) }()) }()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Length(c.Cap(1)) }) {
 		goto L59
 	}
 	p.StepWork()
@@ -13795,12 +13111,7 @@ L44:
 		v73 = p.NewTerminal(x69, p.Text(x69, p.Pos))
 		p.SetCapture(0, v73)
 		p.StepWork()
-		if !p.Predicate(func(c *rt.ActCtx) any {
-			return func() any {
-				c.P.StepWork()
-				return c.Binary("<=", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-			}()
-		}) {
+		if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 			goto L67
 		}
 		p.StepWork()
@@ -13861,21 +13172,11 @@ L59:
 	p.Reset(x57)
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("<=", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(1) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(1)), c.Lookup("n")) }) {
 		goto L79
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto L79
 	}
 	p.StepWork()
@@ -13952,18 +13253,11 @@ L59:
 		x100 = p.Mark()
 		p.StepWork()
 		p.StepWork()
-		if !p.Predicate(func(c *rt.ActCtx) any {
-			return func() any {
-				c.P.StepWork()
-				return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-			}()
-		}) {
+		if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 			goto L101
 		}
 		p.StepWork()
-		if !p.Bind("n", func(c *rt.ActCtx) any {
-			return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
-		}) {
+		if !p.Bind("n", func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
 			goto L101
 		}
 		goto L102
@@ -14024,13 +13318,7 @@ L107:
 	p.SetCapture(2, v105)
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("<=", func() any {
-				c.P.StepWork()
-				return c.Binary("+", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(2) }()) }())
-			}(), func() any { c.P.StepWork(); return any(1) }())
-		}()
+		return c.Binary("<=", c.Binary("+", c.Length(c.Cap(0)), c.Length(c.Cap(2))), any(1))
 	}) {
 		goto fail
 	}
@@ -14062,12 +13350,7 @@ func e242(p *rt.Parser) (*rt.Node, bool) {
 	var ok bool
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -14084,12 +13367,7 @@ func e243(p *rt.Parser) (*rt.Node, bool) {
 	var ok bool
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -14166,12 +13444,7 @@ L5:
 	p.StepWork()
 	x12 = p.Mark()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto L14
 	}
 	goto L13
@@ -14179,12 +13452,7 @@ L14:
 	p.Reset(x12)
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto L15
 	}
 	p.StepWork()
@@ -14260,12 +13528,7 @@ L2:
 	v8 = p.NewTerminal(x4, p.Text(x4, p.Pos))
 	p.SetCapture(0, v8)
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("<=", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -14322,12 +13585,7 @@ func e246(p *rt.Parser) (*rt.Node, bool) {
 	v6 = p.NewTerminal(x2, p.Text(x2, p.Pos))
 	p.SetCapture(0, v6)
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("<", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -14598,18 +13856,7 @@ L9:
 	x10 = p.Mark()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L12
 	}
@@ -14618,23 +13865,18 @@ L12:
 	p.Reset(x10)
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
 		goto L13
 	}
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-in") }) {
 		goto L13
 	}
 	goto L11
 L13:
 	p.Reset(x10)
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-key") }) {
 		goto L14
 	}
 	goto L11
@@ -14753,18 +13995,7 @@ L9:
 	x10 = p.Mark()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L12
 	}
@@ -14773,23 +14004,18 @@ L12:
 	p.Reset(x10)
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
 		goto L13
 	}
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-in") }) {
 		goto L13
 	}
 	goto L11
 L13:
 	p.Reset(x10)
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-key") }) {
 		goto L14
 	}
 	goto L11
@@ -15026,19 +14252,14 @@ func e261(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	x1 = p.Mark()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
 		goto L3
 	}
 	goto L2
 L3:
 	p.Reset(x1)
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-key") }) {
 		goto L4
 	}
 	goto L2
@@ -15099,19 +14320,14 @@ L3:
 	p.StepWork()
 	x4 = p.Mark()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
 		goto L6
 	}
 	goto L5
 L6:
 	p.Reset(x4)
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-key") }) {
 		goto L7
 	}
 	goto L5
@@ -15147,12 +14363,7 @@ func e263(p *rt.Parser) (*rt.Node, bool) {
 	x1 = p.Mark()
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
 		goto L3
 	}
 	p.StepWork()
@@ -15164,12 +14375,7 @@ L3:
 	p.Reset(x1)
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-key")) }) {
 		goto L4
 	}
 	p.StepWork()
@@ -15181,12 +14387,7 @@ L4:
 	p.Reset(x1)
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-in")) }) {
 		goto L5
 	}
 	p.StepWork()
@@ -15198,12 +14399,7 @@ L5:
 	p.Reset(x1)
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
 		goto L6
 	}
 	p.StepWork()
@@ -15229,18 +14425,7 @@ func e264(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("block-key")) })
 	}) {
 		goto L3
 	}
@@ -15254,18 +14439,7 @@ L3:
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -15928,18 +15102,7 @@ func e270(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-in")) })
 	}) {
 		goto L3
 	}
@@ -15953,18 +15116,7 @@ L3:
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -16312,18 +15464,7 @@ func e274(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-in")) })
 	}) {
 		goto L3
 	}
@@ -16337,18 +15478,7 @@ L3:
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -16559,12 +15689,7 @@ func e277(p *rt.Parser) (*rt.Node, bool) {
 	x7 = p.Mark()
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">=", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">=", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto L9
 	}
 	p.StepWork()
@@ -16585,12 +15710,7 @@ func e277(p *rt.Parser) (*rt.Node, bool) {
 L9:
 	p.Reset(x7)
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("<", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<", c.Length(c.Cap(0)), c.Lookup("n")) }) {
 		goto L10
 	}
 	goto L8
@@ -16616,18 +15736,7 @@ func e278(p *rt.Parser) (*rt.Node, bool) {
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L3
 	}
@@ -16641,18 +15750,7 @@ L3:
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.And(func() any {
-				c.P.StepWork()
-				return c.Binary("!=", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("!=", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.And(c.Binary("!=", c.Lookup("c"), any("block-key")), func() any { return c.Binary("!=", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -21086,19 +20184,8 @@ func i1(p *rt.TParser) (any, bool) {
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "l_yaml_stream"
 	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_284 := func() any {
-				c.P.StepWork()
-				return c.Concat(func() any { c.P.StepWork(); return k4 }(), func() any {
-					c.P.StepWork()
-					return c.MapList(func() any { c.P.StepWork(); return k15 }(), func(l_285 any) any {
-						return func() any { c.P.StepWork(); return c.Member(func() any { c.P.StepWork(); return (l_285) }(), "$d") }()
-					})
-				}())
-			}()
-			return tmk_Stream(c, true, f_284)
-		}()
+		f_284 := c.Concat(k4, c.MapList(k15, func(l_285 any) any { return c.Member((l_285), "$d") }))
+		return tmk_Stream(c, true, f_284)
 	}()
 	p.Depth--
 	return v, true
@@ -21309,14 +20396,11 @@ L22:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "l_directive_document"
 	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_286 := func() any { c.P.StepWork(); return c.Member(func() any { c.P.StepWork(); return k1 }(), "Value") }()
-			f_287 := func() any { c.P.StepWork(); return k11 }()
-			f_288 := func() any { c.P.StepWork(); return k14 }()
-			f_289 := func() any { c.P.StepWork(); return k17 }()
-			return tmk_Document(c, true, f_286, f_287, f_288, f_289)
-		}()
+		f_286 := c.Member(k1, "Value")
+		f_287 := k11
+		f_288 := k14
+		f_289 := k17
+		return tmk_Document(c, true, f_286, f_287, f_288, f_289)
 	}()
 	p.Depth--
 	return v, true
@@ -21376,14 +20460,11 @@ L12:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "l_explicit_document"
 	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_290 := func() any { c.P.StepWork(); return c.List() }()
-			f_291 := func() any { c.P.StepWork(); return k1 }()
-			f_292 := func() any { c.P.StepWork(); return k4 }()
-			f_293 := func() any { c.P.StepWork(); return k7 }()
-			return tmk_Document(c, true, f_290, f_291, f_292, f_293)
-		}()
+		f_290 := c.List()
+		f_291 := k1
+		f_292 := k4
+		f_293 := k7
+		return tmk_Document(c, true, f_290, f_291, f_292, f_293)
 	}()
 	p.Depth--
 	return v, true
@@ -21481,13 +20562,10 @@ L9:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "l_bare_document"
 	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_294 := func() any { c.P.StepWork(); return c.List() }()
-			f_295 := func() any { c.P.StepWork(); return k1 }()
-			f_296 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Document(c, true, f_294, nil, f_295, f_296)
-		}()
+		f_294 := c.List()
+		f_295 := k1
+		f_296 := k4
+		return tmk_Document(c, true, f_294, nil, f_295, f_296)
 	}()
 	p.Depth--
 	return v, true
@@ -21521,13 +20599,11 @@ func i12(p *rt.TParser) (any, bool) {
 	p.Enter()
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any { c.P.StepWork(); return c.Unary("-", func() any { c.P.StepWork(); return any(1) }()) }()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Unary("-", any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
+	if !p.Bind("c", func(c *rt.TActCtx) any { return any("block-in") }) {
 		goto fail
 	}
 	p.StepWork()
@@ -21538,7 +20614,7 @@ func i12(p *rt.TParser) (any, bool) {
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "bare_root"
-	v = func() any { c.P.StepWork(); return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -21589,7 +20665,7 @@ L2:
 L3:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "document_end"
-	v = func() any { c.P.StepWork(); return k4 }()
+	v = k4
 	v = c.Finish(v)
 	v = p.TConvertResult(trules[13], v)
 	p.Depth--
@@ -21677,7 +20753,7 @@ L5:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "l_directive"
-	v = func() any { c.P.StepWork(); return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -21723,14 +20799,7 @@ func i15(p *rt.TParser) (any, bool) {
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ns_yaml_directive"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_297 := func() any { c.P.StepWork(); return k1 }()
-			f_298 := func() any { c.P.StepWork(); return c.List(func() any { c.P.StepWork(); return k4 }()) }()
-			return tmk_Directive(c, true, f_297, f_298)
-		}()
-	}()
+	v = func() any { f_297 := k1; f_298 := c.List(k4); return tmk_Directive(c, true, f_297, f_298) }()
 	p.Depth--
 	return v, true
 fail:
@@ -21885,17 +20954,7 @@ func i18(p *rt.TParser) (any, bool) {
 	k7 = v9
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ns_tag_directive"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_299 := func() any { c.P.StepWork(); return k1 }()
-			f_300 := func() any {
-				c.P.StepWork()
-				return c.List(func() any { c.P.StepWork(); return k4 }(), func() any { c.P.StepWork(); return k7 }())
-			}()
-			return tmk_Directive(c, true, f_299, f_300)
-		}()
-	}()
+	v = func() any { f_299 := k1; f_300 := c.List(k4, k7); return tmk_Directive(c, true, f_299, f_300) }()
 	p.Depth--
 	return v, true
 fail:
@@ -22197,15 +21256,9 @@ L2:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ns_reserved_directive"
 	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_301 := func() any { c.P.StepWork(); return k15 }()
-			f_302 := func() any {
-				c.P.StepWork()
-				return c.NewList(c.ListItems("map", func() any { c.P.StepWork(); return k18 }()))
-			}()
-			return tmk_Directive(c, true, f_301, f_302)
-		}()
+		f_301 := k15
+		f_302 := c.NewList(c.ListItems("map", k18))
+		return tmk_Directive(c, true, f_301, f_302)
 	}()
 	p.Depth--
 	return v, true
@@ -22417,14 +21470,7 @@ L18:
 L6:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "c_ns_properties"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_303 := func() any { c.P.StepWork(); return k2 }()
-			f_304 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Properties(c, true, f_303, f_304)
-		}()
-	}()
+	v = func() any { f_303 := k2; f_304 := k4; return tmk_Properties(c, true, f_303, f_304) }()
 	p.Depth--
 	return v, true
 fail:
@@ -22898,7 +21944,7 @@ L44:
 L4:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "s_l_block_node"
-	v = func() any { c.P.StepWork(); return k2 }()
+	v = k2
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -22933,12 +21979,7 @@ func i35(p *rt.TParser) (any, bool) {
 	p.Enter()
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -23105,7 +22146,7 @@ L25:
 L20:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "s_l_flow_in_block"
-	v = func() any { c.P.StepWork(); return k10 }()
+	v = k10
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -23138,7 +22179,7 @@ func i36(p *rt.TParser) (any, bool) {
 	p.Enter()
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-out") }() }) {
+	if !p.Bind("c", func(c *rt.TActCtx) any { return any("flow-out") }) {
 		goto fail
 	}
 	p.StepWork()
@@ -23149,7 +22190,7 @@ func i36(p *rt.TParser) (any, bool) {
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "flow_out_node"
-	v = func() any { c.P.StepWork(); return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -23189,14 +22230,7 @@ func i37(p *rt.TParser) (any, bool) {
 	k1 = v4
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "plain_out_node"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_305 := func() any { c.P.StepWork(); return any(nil) }()
-			f_306 := func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return k1 }()) }()
-			return tmk_Scalar(c, true, f_305, nil, nil, f_306)
-		}()
-	}()
+	v = func() any { f_305 := any(nil); f_306 := c.Text(k1); return tmk_Scalar(c, true, f_305, nil, nil, f_306) }()
 	p.Depth--
 	return v, true
 fail:
@@ -23284,14 +22318,7 @@ func i39(p *rt.TParser) (any, bool) {
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "block_sequence_node"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_307 := func() any { c.P.StepWork(); return k1 }()
-			f_308 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Sequence(c, true, f_307, nil, f_308)
-		}()
-	}()
+	v = func() any { f_307 := k1; f_308 := k4; return tmk_Sequence(c, true, f_307, nil, f_308) }()
 	p.Depth--
 	return v, true
 fail:
@@ -23332,14 +22359,7 @@ func i40(p *rt.TParser) (any, bool) {
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "block_mapping_node"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_309 := func() any { c.P.StepWork(); return k1 }()
-			f_310 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Mapping(c, true, f_309, nil, f_310)
-		}()
-	}()
+	v = func() any { f_309 := k1; f_310 := k4; return tmk_Mapping(c, true, f_309, nil, f_310) }()
 	p.Depth--
 	return v, true
 fail:
@@ -23463,7 +22483,7 @@ L15:
 L4:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "block_collection_start"
-	v = func() any { c.P.StepWork(); return k2 }()
+	v = k2
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -23588,7 +22608,7 @@ L15:
 L4:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "block_sequence_start"
-	v = func() any { c.P.StepWork(); return k2 }()
+	v = k2
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -23622,12 +22642,7 @@ func i43(p *rt.TParser) (any, bool) {
 	p.Enter()
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -23642,7 +22657,7 @@ func i43(p *rt.TParser) (any, bool) {
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "block_collection_properties"
-	v = func() any { c.P.StepWork(); return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -23679,12 +22694,7 @@ func i44(p *rt.TParser) (any, bool) {
 	p.Enter()
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -23738,14 +22748,7 @@ L12:
 L6:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "block_collection_property"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_311 := func() any { c.P.StepWork(); return k2 }()
-			f_312 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Properties(c, true, f_311, f_312)
-		}()
-	}()
+	v = func() any { f_311 := k2; f_312 := k4; return tmk_Properties(c, true, f_311, f_312) }()
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -23830,21 +22833,11 @@ L3:
 	x10 = p.Env
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-out") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-out")) }) {
 		goto L12
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("-", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("-", c.Lookup("n"), any(1)) }) {
 		goto L12
 	}
 	goto L11
@@ -23852,12 +22845,7 @@ L12:
 	p.Pos = x9
 	p.Env = x10
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-in") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-in")) }) {
 		goto L13
 	}
 	goto L11
@@ -23874,7 +22862,7 @@ L11:
 	k14 = v16
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "seq_space"
-	v = func() any { c.P.StepWork(); return k14 }()
+	v = k14
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -23935,18 +22923,11 @@ func i46(p *rt.TParser) (any, bool) {
 	p.Silent--
 	p.Pos = x1
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k4 }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k4), c.Lookup("n")) }) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k4 }()) }()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Length(k4) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -23993,12 +22974,7 @@ func i46(p *rt.TParser) (any, bool) {
 	k11 = v26
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "l_block_sequence"
-	v = func() any {
-		c.P.StepWork()
-		return c.MapList(func() any { c.P.StepWork(); return k11 }(), func(l_314 any) any {
-			return func() any { c.P.StepWork(); return c.Member(func() any { c.P.StepWork(); return (l_314) }(), "$e") }()
-		})
-	}()
+	v = c.MapList(k11, func(l_314 any) any { return c.Member((l_314), "$e") })
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -24053,7 +23029,7 @@ L2:
 	p.Silent--
 	p.Pos = x1
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
+	if !p.Bind("c", func(c *rt.TActCtx) any { return any("block-in") }) {
 		goto fail
 	}
 	p.StepWork()
@@ -24064,7 +23040,7 @@ L2:
 	k3 = v5
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "c_l_block_seq_entry"
-	v = func() any { c.P.StepWork(); return k3 }()
+	v = k3
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -24175,15 +23151,7 @@ func i49(p *rt.TParser) (any, bool) {
 	v7 = p.NewMatch(x3, p.Pos, p.Text(x3, p.Pos), true)
 	k1 = v7
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any {
-				c.P.StepWork()
-				return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-			}(), func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k1 }()) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Binary("+", c.Lookup("n"), any(1)), c.Length(k1)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -24221,7 +23189,7 @@ L12:
 	k8 = v11
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "compact_collection"
-	v = func() any { c.P.StepWork(); return k8 }()
+	v = k8
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -24297,21 +23265,13 @@ func i50(p *rt.TParser) (any, bool) {
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ns_l_compact_sequence"
 	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_316 := func() any {
-				c.P.StepWork()
-				return func() any {
-					b := len(c.P.KidStack)
-					c.PushList(func() any { c.P.StepWork(); return k1 }())
-					c.PushMap(func() any { c.P.StepWork(); return k4 }(), func(l_317 any) any {
-						return func() any { c.P.StepWork(); return c.Member(func() any { c.P.StepWork(); return (l_317) }(), "$e") }()
-					})
-					return c.EndList(b)
-				}()
-			}()
-			return tmk_Sequence(c, true, nil, nil, f_316)
+		f_316 := func() any {
+			b := len(c.P.KidStack)
+			c.PushList(k1)
+			c.PushMap(k4, func(l_317 any) any { return c.Member((l_317), "$e") })
+			return c.EndList(b)
 		}()
+		return tmk_Sequence(c, true, nil, nil, f_316)
 	}()
 	p.Depth--
 	return v, true
@@ -24369,18 +23329,11 @@ func i51(p *rt.TParser) (any, bool) {
 	p.Silent--
 	p.Pos = x1
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k4 }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k4), c.Lookup("n")) }) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k4 }()) }()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Length(k4) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -24419,10 +23372,7 @@ func i51(p *rt.TParser) (any, bool) {
 	k11 = v20
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "l_block_mapping"
-	v = func() any {
-		c.P.StepWork()
-		return c.NewList(c.ListItems("map", func() any { c.P.StepWork(); return k11 }()))
-	}()
+	v = c.NewList(c.ListItems("map", k11))
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -24490,19 +23440,8 @@ func i52(p *rt.TParser) (any, bool) {
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ns_l_compact_mapping"
 	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_318 := func() any {
-				c.P.StepWork()
-				return func() any {
-					b := len(c.P.KidStack)
-					c.PushList(func() any { c.P.StepWork(); return k1 }())
-					c.PushItems(func() any { c.P.StepWork(); return k4 }())
-					return c.EndList(b)
-				}()
-			}()
-			return tmk_Mapping(c, true, nil, nil, f_318)
-		}()
+		f_318 := func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k4); return c.EndList(b) }()
+		return tmk_Mapping(c, true, nil, nil, f_318)
 	}()
 	p.Depth--
 	return v, true
@@ -24619,14 +23558,7 @@ L8:
 	k4 = v7
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "c_l_block_map_explicit_entry"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_319 := func() any { c.P.StepWork(); return k1 }()
-			f_320 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Pair(c, true, f_319, f_320)
-		}()
-	}()
+	v = func() any { f_319 := k1; f_320 := k4; return tmk_Pair(c, true, f_319, f_320) }()
 	p.Depth--
 	return v, true
 fail:
@@ -24675,7 +23607,7 @@ L2:
 	p.Silent--
 	p.Pos = x1
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Bind("c", func(c *rt.TActCtx) any { return any("block-out") }) {
 		goto fail
 	}
 	p.StepWork()
@@ -24686,7 +23618,7 @@ L2:
 	k3 = v5
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "c_l_block_map_explicit_key"
-	v = func() any { c.P.StepWork(); return k3 }()
+	v = k3
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -24742,7 +23674,7 @@ L2:
 	p.Silent--
 	p.Pos = x1
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Bind("c", func(c *rt.TActCtx) any { return any("block-out") }) {
 		goto fail
 	}
 	p.StepWork()
@@ -24753,7 +23685,7 @@ L2:
 	k3 = v5
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "l_block_map_explicit_value"
-	v = func() any { c.P.StepWork(); return k3 }()
+	v = k3
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -24813,14 +23745,7 @@ L5:
 	k10 = v12
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ns_l_block_map_implicit_entry"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_321 := func() any { c.P.StepWork(); return k1 }()
-			f_322 := func() any { c.P.StepWork(); return k10 }()
-			return tmk_Pair(c, true, f_321, f_322)
-		}()
-	}()
+	v = func() any { f_321 := k1; f_322 := k10; return tmk_Pair(c, true, f_321, f_322) }()
 	p.Depth--
 	return v, true
 fail:
@@ -24869,7 +23794,7 @@ L6:
 	k3 = x4
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return any("block-key") }() }) {
+	if !p.Bind("c", func(c *rt.TActCtx) any { return any("block-key") }) {
 		goto L9
 	}
 	p.StepWork()
@@ -24944,7 +23869,7 @@ L23:
 L24:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ns_s_block_map_implicit_key"
-	v = func() any { c.P.StepWork(); return k3 }()
+	v = k3
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -24984,14 +23909,7 @@ func i59(p *rt.TParser) (any, bool) {
 	k1 = v4
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "plain_key_node"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_323 := func() any { c.P.StepWork(); return any(nil) }()
-			f_324 := func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return k1 }()) }()
-			return tmk_Scalar(c, true, f_323, nil, nil, f_324)
-		}()
-	}()
+	v = func() any { f_323 := any(nil); f_324 := c.Text(k1); return tmk_Scalar(c, true, f_323, nil, nil, f_324) }()
 	p.Depth--
 	return v, true
 fail:
@@ -25048,7 +23966,7 @@ L5:
 	k1 = v4
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "c_l_block_map_implicit_value"
-	v = func() any { c.P.StepWork(); return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -25141,7 +24059,7 @@ L6:
 	k3 = x4
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Bind("c", func(c *rt.TActCtx) any { return any("block-out") }) {
 		goto L13
 	}
 	p.StepWork()
@@ -25160,7 +24078,7 @@ L13:
 L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "block_out_node"
-	v = func() any { c.P.StepWork(); return k3 }()
+	v = k3
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -25326,12 +24244,7 @@ L33:
 	v49 = p.NewMatch(x48, p.Pos, "1", true)
 	x47 = append(x47, v49)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto L45
 	}
 	v50 = p.NewNode("tuple", x46, p.Pos, x47)
@@ -25361,12 +24274,7 @@ L44:
 	v57 = p.NewMatch(x56, p.Pos, "2", true)
 	x55 = append(x55, v57)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(2) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(2)) }) {
 		goto L53
 	}
 	v58 = p.NewNode("tuple", x54, p.Pos, x55)
@@ -25396,12 +24304,7 @@ L52:
 	v65 = p.NewMatch(x64, p.Pos, "3", true)
 	x63 = append(x63, v65)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(3) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(3)) }) {
 		goto L61
 	}
 	v66 = p.NewNode("tuple", x62, p.Pos, x63)
@@ -25431,12 +24334,7 @@ L60:
 	v73 = p.NewMatch(x72, p.Pos, "4", true)
 	x71 = append(x71, v73)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(4) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(4)) }) {
 		goto L69
 	}
 	v74 = p.NewNode("tuple", x70, p.Pos, x71)
@@ -25466,12 +24364,7 @@ L68:
 	v81 = p.NewMatch(x80, p.Pos, "5", true)
 	x79 = append(x79, v81)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(5) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(5)) }) {
 		goto L77
 	}
 	v82 = p.NewNode("tuple", x78, p.Pos, x79)
@@ -25501,12 +24394,7 @@ L76:
 	v89 = p.NewMatch(x88, p.Pos, "6", true)
 	x87 = append(x87, v89)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(6) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(6)) }) {
 		goto L85
 	}
 	v90 = p.NewNode("tuple", x86, p.Pos, x87)
@@ -25536,12 +24424,7 @@ L84:
 	v97 = p.NewMatch(x96, p.Pos, "7", true)
 	x95 = append(x95, v97)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(7) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(7)) }) {
 		goto L93
 	}
 	v98 = p.NewNode("tuple", x94, p.Pos, x95)
@@ -25571,12 +24454,7 @@ L92:
 	v105 = p.NewMatch(x104, p.Pos, "8", true)
 	x103 = append(x103, v105)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(8) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(8)) }) {
 		goto L101
 	}
 	v106 = p.NewNode("tuple", x102, p.Pos, x103)
@@ -25606,12 +24484,7 @@ L100:
 	v113 = p.NewMatch(x112, p.Pos, "9", true)
 	x111 = append(x111, v113)
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(9) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(9)) }) {
 		goto L109
 	}
 	v114 = p.NewNode("tuple", x110, p.Pos, x111)
@@ -25712,18 +24585,11 @@ L121:
 	x143 = p.Pos
 	x144 = p.NewVals(0)[:0]
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k38 }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k38), c.Lookup("n")) }) {
 		goto L142
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k38 }()) }()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Length(k38) }) {
 		goto L142
 	}
 	p.StepWork()
@@ -25763,12 +24629,7 @@ L121:
 		v157 = p.NewMatch(x153, p.Pos, p.Text(x153, p.Pos), true)
 		k150 = v157
 		p.StepWork()
-		if !p.Predicate(func(c *rt.TActCtx) any {
-			return func() any {
-				c.P.StepWork()
-				return c.Binary("<=", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k150 }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-			}()
-		}) {
+		if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<=", c.Length(k150), c.Lookup("n")) }) {
 			goto L151
 		}
 		p.StepWork()
@@ -25832,21 +24693,11 @@ L142:
 	x166 = p.Pos
 	x167 = p.NewVals(0)[:0]
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("<=", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k38 }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<=", c.Length(k38), c.Lookup("n")) }) {
 		goto L165
 	}
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto L165
 	}
 	p.StepWork()
@@ -25924,18 +24775,11 @@ L142:
 		x189 = p.Env
 		p.StepWork()
 		p.StepWork()
-		if !p.Predicate(func(c *rt.TActCtx) any {
-			return func() any {
-				c.P.StepWork()
-				return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k174 }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-			}()
-		}) {
+		if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k174), c.Lookup("n")) }) {
 			goto L190
 		}
 		p.StepWork()
-		if !p.Bind("n", func(c *rt.TActCtx) any {
-			return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k174 }()) }()
-		}) {
+		if !p.Bind("n", func(c *rt.TActCtx) any { return c.Length(k174) }) {
 			goto L190
 		}
 		goto L191
@@ -26006,15 +24850,7 @@ L201:
 	k196 = v199
 	x11 = append(x11, v199)
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("<=", func() any {
-				c.P.StepWork()
-				return c.Binary("+", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k28 }()) }(), func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k196 }()) }())
-			}(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<=", c.Binary("+", c.Length(k28), c.Length(k196)), any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -26043,17 +24879,11 @@ L210:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "s_l_block_scalar"
 	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_325 := func() any { c.P.StepWork(); return k1 }()
-			f_326 := func() any {
-				c.P.StepWork()
-				return c.Binary("+", func() any { c.P.StepWork(); return any(3) }(), func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k13 }()) }())
-			}()
-			f_327 := func() any { c.P.StepWork(); return c.Lookup("n") }()
-			f_328 := func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return k8 }()) }()
-			return tmk_Scalar(c, true, f_325, f_326, f_327, f_328)
-		}()
+		f_325 := k1
+		f_326 := c.Binary("+", any(3), c.Length(k13))
+		f_327 := c.Lookup("n")
+		f_328 := c.Text(k8)
+		return tmk_Scalar(c, true, f_325, f_326, f_327, f_328)
 	}()
 	p.Depth--
 	p.Env = prevEnv
@@ -26086,12 +24916,7 @@ func i64(p *rt.TParser) (any, bool) {
 	p.Enter()
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -26106,7 +24931,7 @@ func i64(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "block_scalar_properties"
-	v = func() any { c.P.StepWork(); return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -26312,12 +25137,7 @@ L12:
 	p.StepWork()
 	x20 = p.Pos
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k13 }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k13), c.Lookup("n")) }) {
 		goto L23
 	}
 	v24, _ = p.ShapeSingle(sh97, nil, x20)
@@ -26329,12 +25149,7 @@ L23:
 	x26 = p.Pos
 	x27 = p.NewVals(1)[:0]
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k13 }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Length(k13), c.Lookup("n")) }) {
 		goto L25
 	}
 	p.StepWork()
@@ -26446,12 +25261,7 @@ L4:
 	k5 = v11
 	x2 = append(x2, v11)
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("<=", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k5 }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<=", c.Length(k5), c.Lookup("n")) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -26566,7 +25376,7 @@ L11:
 L4:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ns_flow_node"
-	v = func() any { c.P.StepWork(); return k2 }()
+	v = k2
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -26756,13 +25566,7 @@ L3:
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "properties_node"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_331 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Scalar(c, true, f_331, nil, nil, nil)
-		}()
-	}()
+	v = func() any { f_331 := k4; return tmk_Scalar(c, true, f_331, nil, nil, nil) }()
 	p.Depth--
 	return v, true
 fail:
@@ -26804,7 +25608,7 @@ func i73(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "properties_separate"
-	v = func() any { c.P.StepWork(); return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -26823,7 +25627,7 @@ func s74(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "e_node"
-	v = func() any { c.P.StepWork(); return func() any { return tmk_Scalar(c, true, nil, nil, nil, nil) }() }()
+	v = func() any { return tmk_Scalar(c, true, nil, nil, nil, nil) }()
 	p.Depth--
 	return v, true
 }
@@ -26862,7 +25666,7 @@ func i75(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "e_node_comments"
-	v = func() any { c.P.StepWork(); return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -26954,18 +25758,7 @@ L13:
 	x15 = p.Env
 	p.StepWork()
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L17
 	}
@@ -26975,16 +25768,11 @@ L17:
 	p.Env = x15
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
 		goto L18
 	}
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
+	if !p.Bind("c", func(c *rt.TActCtx) any { return any("flow-in") }) {
 		goto L18
 	}
 	goto L16
@@ -26992,7 +25780,7 @@ L18:
 	p.Pos = x14
 	p.Env = x15
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Bind("c", func(c *rt.TActCtx) any { return any("flow-key") }) {
 		goto L19
 	}
 	goto L16
@@ -27024,13 +25812,10 @@ L25:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "c_flow_sequence"
 	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_332 := func() any { c.P.StepWork(); return k2 }()
-			f_333 := func() any { c.P.StepWork(); return any(true) }()
-			f_334 := func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return k20 }()) }()
-			return tmk_Sequence(c, true, f_332, f_333, f_334)
-		}()
+		f_332 := k2
+		f_333 := any(true)
+		f_334 := c.Concat(k20)
+		return tmk_Sequence(c, true, f_332, f_333, f_334)
 	}()
 	p.Depth--
 	p.Env = prevEnv
@@ -27165,15 +25950,10 @@ L31:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ns_s_flow_seq_entries"
 	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { c.P.StepWork(); return k1 }())
-			c.PushMap(func() any { c.P.StepWork(); return k7 }(), func(l_336 any) any {
-				return func() any { c.P.StepWork(); return c.Member(func() any { c.P.StepWork(); return (l_336) }(), "$e") }()
-			})
-			return c.EndList(b)
-		}()
+		b := len(c.P.KidStack)
+		c.PushList(k1)
+		c.PushMap(k7, func(l_336 any) any { return c.Member((l_336), "$e") })
+		return c.EndList(b)
 	}()
 	v = c.Finish(v)
 	p.Depth--
@@ -27313,18 +26093,7 @@ L13:
 	x15 = p.Env
 	p.StepWork()
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L17
 	}
@@ -27334,16 +26103,11 @@ L17:
 	p.Env = x15
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
 		goto L18
 	}
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
+	if !p.Bind("c", func(c *rt.TActCtx) any { return any("flow-in") }) {
 		goto L18
 	}
 	goto L16
@@ -27351,7 +26115,7 @@ L18:
 	p.Pos = x14
 	p.Env = x15
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Bind("c", func(c *rt.TActCtx) any { return any("flow-key") }) {
 		goto L19
 	}
 	goto L16
@@ -27383,13 +26147,10 @@ L25:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "c_flow_mapping"
 	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_337 := func() any { c.P.StepWork(); return k2 }()
-			f_338 := func() any { c.P.StepWork(); return any(true) }()
-			f_339 := func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return k20 }()) }()
-			return tmk_Mapping(c, true, f_337, f_338, f_339)
-		}()
+		f_337 := k2
+		f_338 := any(true)
+		f_339 := c.Concat(k20)
+		return tmk_Mapping(c, true, f_337, f_338, f_339)
 	}()
 	p.Depth--
 	p.Env = prevEnv
@@ -27515,15 +26276,7 @@ L24:
 L25:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ns_s_flow_map_entries"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { c.P.StepWork(); return k1 }())
-			c.PushItems(func() any { c.P.StepWork(); return k7 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k7); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -27631,7 +26384,7 @@ func i82(p *rt.TParser) (any, bool) {
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "flow_map_explicit"
-	v = func() any { c.P.StepWork(); return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -27712,14 +26465,7 @@ func i84(p *rt.TParser) (any, bool) {
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "empty_pair"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_340 := func() any { c.P.StepWork(); return k1 }()
-			f_341 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Pair(c, true, f_340, f_341)
-		}()
-	}()
+	v = func() any { f_340 := k1; f_341 := k4; return tmk_Pair(c, true, f_340, f_341) }()
 	p.Depth--
 	return v, true
 fail:
@@ -27831,14 +26577,7 @@ L8:
 	k4 = v7
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ns_flow_map_yaml_key_entry"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_342 := func() any { c.P.StepWork(); return k1 }()
-			f_343 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Pair(c, true, f_342, f_343)
-		}()
-	}()
+	v = func() any { f_342 := k1; f_343 := k4; return tmk_Pair(c, true, f_342, f_343) }()
 	p.Depth--
 	return v, true
 fail:
@@ -27883,7 +26622,7 @@ L3:
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "separate_value"
-	v = func() any { c.P.StepWork(); return k4 }()
+	v = k4
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -27928,14 +26667,7 @@ func i88(p *rt.TParser) (any, bool) {
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "c_ns_flow_map_empty_key_entry"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_344 := func() any { c.P.StepWork(); return k1 }()
-			f_345 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Pair(c, true, f_344, f_345)
-		}()
-	}()
+	v = func() any { f_344 := k1; f_345 := k4; return tmk_Pair(c, true, f_344, f_345) }()
 	p.Depth--
 	return v, true
 fail:
@@ -28008,7 +26740,7 @@ L7:
 	k3 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "c_ns_flow_map_separate_value"
-	v = func() any { c.P.StepWork(); return k3 }()
+	v = k3
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -28048,7 +26780,7 @@ func i90(p *rt.TParser) (any, bool) {
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "separated_flow_node"
-	v = func() any { c.P.StepWork(); return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -28130,14 +26862,7 @@ L11:
 	k7 = v10
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "c_ns_flow_map_json_key_entry"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_346 := func() any { c.P.StepWork(); return k4 }()
-			f_347 := func() any { c.P.StepWork(); return k7 }()
-			return tmk_Pair(c, true, f_346, f_347)
-		}()
-	}()
+	v = func() any { f_346 := k4; f_347 := k7; return tmk_Pair(c, true, f_346, f_347) }()
 	p.Depth--
 	return v, true
 fail:
@@ -28182,7 +26907,7 @@ L3:
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "adjacent_value"
-	v = func() any { c.P.StepWork(); return k4 }()
+	v = k4
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -28243,7 +26968,7 @@ L5:
 	k1 = v4
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "c_ns_flow_map_adjacent_value"
-	v = func() any { c.P.StepWork(); return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -28289,7 +27014,7 @@ L3:
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "optionally_separated_flow_node"
-	v = func() any { c.P.StepWork(); return k4 }()
+	v = k4
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -28352,14 +27077,7 @@ L5:
 	k1 = v4
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ns_flow_pair"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_348 := func() any { c.P.StepWork(); return any(true) }()
-			f_349 := func() any { c.P.StepWork(); return c.List(func() any { c.P.StepWork(); return k1 }()) }()
-			return tmk_Mapping(c, true, nil, f_348, f_349)
-		}()
-	}()
+	v = func() any { f_348 := any(true); f_349 := c.List(k1); return tmk_Mapping(c, true, nil, f_348, f_349) }()
 	p.Depth--
 	return v, true
 fail:
@@ -28447,14 +27165,7 @@ func i97(p *rt.TParser) (any, bool) {
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ns_flow_pair_yaml_key_entry"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_350 := func() any { c.P.StepWork(); return k1 }()
-			f_351 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Pair(c, true, f_350, f_351)
-		}()
-	}()
+	v = func() any { f_350 := k1; f_351 := k4; return tmk_Pair(c, true, f_350, f_351) }()
 	p.Depth--
 	return v, true
 fail:
@@ -28487,12 +27198,7 @@ func i98(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	x2 = p.Env
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
 		goto L4
 	}
 	goto L3
@@ -28500,7 +27206,7 @@ L4:
 	p.Pos = x1
 	p.Env = x2
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Bind("c", func(c *rt.TActCtx) any { return any("flow-key") }) {
 		goto L5
 	}
 	goto L3
@@ -28527,7 +27233,7 @@ L10:
 L11:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "flow_pair_yaml_key"
-	v = func() any { c.P.StepWork(); return k6 }()
+	v = k6
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -28571,14 +27277,7 @@ func i99(p *rt.TParser) (any, bool) {
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "c_ns_flow_pair_json_key_entry"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_352 := func() any { c.P.StepWork(); return k1 }()
-			f_353 := func() any { c.P.StepWork(); return k4 }()
-			return tmk_Pair(c, true, f_352, f_353)
-		}()
-	}()
+	v = func() any { f_352 := k1; f_353 := k4; return tmk_Pair(c, true, f_352, f_353) }()
 	p.Depth--
 	return v, true
 fail:
@@ -28635,12 +27334,7 @@ L3:
 	x4 = p.Pos
 	x5 = p.Env
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
 		goto L7
 	}
 	goto L6
@@ -28648,7 +27342,7 @@ L7:
 	p.Pos = x4
 	p.Env = x5
 	p.StepWork()
-	if !p.Bind("c", func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Bind("c", func(c *rt.TActCtx) any { return any("flow-key") }) {
 		goto L8
 	}
 	goto L6
@@ -28675,7 +27369,7 @@ L13:
 L14:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "flow_pair_json_key"
-	v = func() any { c.P.StepWork(); return k9 }()
+	v = k9
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -28757,14 +27451,7 @@ L5:
 	k11 = v14
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "plain_node"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_354 := func() any { c.P.StepWork(); return k2 }()
-			f_355 := func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return k11 }()) }()
-			return tmk_Scalar(c, true, f_354, nil, nil, f_355)
-		}()
-	}()
+	v = func() any { f_354 := k2; f_355 := c.Text(k11); return tmk_Scalar(c, true, f_354, nil, nil, f_355) }()
 	p.Depth--
 	return v, true
 fail:
@@ -28844,13 +27531,10 @@ L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "c_double_quoted"
 	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_356 := func() any { c.P.StepWork(); return k2 }()
-			f_357 := func() any { c.P.StepWork(); return any(2) }()
-			f_358 := func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return k11 }()) }()
-			return tmk_Scalar(c, true, f_356, f_357, nil, f_358)
-		}()
+		f_356 := k2
+		f_357 := any(2)
+		f_358 := c.Text(k11)
+		return tmk_Scalar(c, true, f_356, f_357, nil, f_358)
 	}()
 	p.Depth--
 	return v, true
@@ -28931,13 +27615,10 @@ L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "c_single_quoted"
 	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_359 := func() any { c.P.StepWork(); return k2 }()
-			f_360 := func() any { c.P.StepWork(); return any(1) }()
-			f_361 := func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return k11 }()) }()
-			return tmk_Scalar(c, true, f_359, f_360, nil, f_361)
-		}()
+		f_359 := k2
+		f_360 := any(1)
+		f_361 := c.Text(k11)
+		return tmk_Scalar(c, true, f_359, f_360, nil, f_361)
 	}()
 	p.Depth--
 	return v, true
@@ -29957,18 +28638,7 @@ func v148(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L3
 	}
@@ -29982,18 +28652,7 @@ L3:
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.And(func() any {
-				c.P.StepWork()
-				return c.Binary("!=", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("!=", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.And(c.Binary("!=", c.Lookup("c"), any("block-key")), func() any { return c.Binary("!=", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -30382,12 +29041,7 @@ func i153(p *rt.TParser) (any, bool) {
 	v7 = p.NewMatch(x3, p.Pos, p.Text(x3, p.Pos), true)
 	k1 = v7
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k1 }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Length(k1), c.Lookup("n")) }) {
 		goto fail
 	}
 	v = nil
@@ -30518,12 +29172,7 @@ func s155(p *rt.TParser) (any, bool) {
 	p.Enter()
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("n", func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
-		}()
-	}) {
+	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -30631,12 +29280,7 @@ func i157(p *rt.TParser) (any, bool) {
 	v7 = p.NewMatch(x3, p.Pos, p.Text(x3, p.Pos), true)
 	k1 = v7
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("<", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k1 }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<", c.Length(k1), c.Lookup("n")) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -30781,18 +29425,7 @@ func s159(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("block-key")) })
 	}) {
 		goto L3
 	}
@@ -30806,18 +29439,7 @@ L3:
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -30850,12 +29472,7 @@ func s160(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
 		goto L3
 	}
 	p.StepWork()
@@ -30867,12 +29484,7 @@ L3:
 	p.Pos = x1
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-key")) }) {
 		goto L4
 	}
 	p.StepWork()
@@ -30884,12 +29496,7 @@ L4:
 	p.Pos = x1
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-in")) }) {
 		goto L5
 	}
 	p.StepWork()
@@ -30901,12 +29508,7 @@ L5:
 	p.Pos = x1
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
 		goto L6
 	}
 	p.StepWork()
@@ -30975,18 +29577,7 @@ func s162(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-in")) })
 	}) {
 		goto L3
 	}
@@ -31000,18 +29591,7 @@ L3:
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -31125,18 +29705,7 @@ func s164(p *rt.TParser) (any, bool) {
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-out") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-in") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-in")) })
 	}) {
 		goto L3
 	}
@@ -31150,18 +29719,7 @@ L3:
 	p.StepWork()
 	p.StepWork()
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Or(func() any {
-				c.P.StepWork()
-				return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("block-key") }())
-			}(), func() any {
-				return func() any {
-					c.P.StepWork()
-					return c.Binary("==", func() any { c.P.StepWork(); return c.Lookup("c") }(), func() any { c.P.StepWork(); return any("flow-key") }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -31400,12 +29958,7 @@ func i169(p *rt.TParser) (any, bool) {
 	v7 = p.NewMatch(x3, p.Pos, p.Text(x3, p.Pos), true)
 	k1 = v7
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">=", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k1 }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Length(k1), c.Lookup("n")) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -32560,12 +31113,7 @@ func i181(p *rt.TParser) (any, bool) {
 	x8 = p.Pos
 	p.StepWork()
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">=", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k1 }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Length(k1), c.Lookup("n")) }) {
 		goto L10
 	}
 	p.StepWork()
@@ -32586,12 +31134,7 @@ func i181(p *rt.TParser) (any, bool) {
 L10:
 	p.Pos = x8
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("<", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k1 }()) }(), func() any { c.P.StepWork(); return c.Lookup("n") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<", c.Length(k1), c.Lookup("n")) }) {
 		goto L11
 	}
 	goto L9

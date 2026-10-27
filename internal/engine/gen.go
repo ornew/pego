@@ -1299,12 +1299,7 @@ func fieldRead(t grammar.Term) bool {
 func (g *generator) operand(t grammar.Term, s *scope, locals map[string]string) string {
 	if fieldRead(t) {
 		m := t.(*grammar.Member)
-		raw := fmt.Sprintf("c.FieldOperand(%s, %q)", g.term(m.X, s, locals), m.Name)
-		if !g.goWorkControls || g.noWork {
-			return raw
-		}
-		// The step that term charges for the member read.
-		return "func() TOperand { c.P.StepWork(); return " + raw + " }()"
+		return fmt.Sprintf("c.FieldOperand(%s, %q)", g.term(m.X, s, locals), m.Name)
 	}
 	return "TOperand{V: " + g.term(t, s, locals) + "}"
 }
@@ -1625,14 +1620,6 @@ func (g *generator) ruleCall(r *rule, min int) string {
 // term converts a value expression into a Go expression of type any. locals maps names, such as lambda
 // parameters, to Go expressions.
 func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) string {
-	raw := g.termRaw(t, s, locals)
-	if !g.goWorkControls || g.noWork {
-		return raw
-	}
-	return "func() any { c.P.StepWork(); return " + raw + " }()"
-}
-
-func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) string {
 	switch t := t.(type) {
 	case *grammar.IntLit:
 		return fmt.Sprintf("any(%d)", t.Value)
@@ -1927,6 +1914,7 @@ func (g *generator) lambda(t grammar.Term, s *scope, locals map[string]string) s
 		params[i] = g.name("l_")
 		inner[p] = params[i]
 	}
+	// The body charges nothing: the runtime built-in that calls the lambda charges one step per element.
 	return fmt.Sprintf("func(%s any) any { return %s }", strings.Join(params, ", "), g.term(l.Body, s, inner))
 }
 

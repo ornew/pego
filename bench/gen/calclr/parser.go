@@ -97,45 +97,33 @@ func tinit() {
 }
 
 func tmk_Binary(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tBinary)
-	c.P.StepWork()
 	v.Left = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
-	c.P.StepWork()
 	v.Op = (*types.TNode[string])(rt.TPubMatch(f1))
-	c.P.StepWork()
 	v.Right = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-	c.P.StepWork()
 	rt.FieldSpanOf(f0, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f1, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_Unary(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tUnary)
-	c.P.StepWork()
 	v.Op = (*types.TNode[string])(rt.TPubMatch(f0))
-	c.P.StepWork()
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-	c.P.StepWork()
 	rt.FieldSpanOf(f0, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
@@ -261,42 +249,28 @@ func init() {
 	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
 	pegoGrammar.SetRules(rules, 2)
 	rules[0].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e1(p) }
-	rules[0].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[0].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[1].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e2(p) }
 	rules[2].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e5(p) }
 	rules[2].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Binary", "Left", func() any { c.P.StepWork(); return c.Cap(0) }(), "Op", func() any { c.P.StepWork(); return c.Cap(1) }(), "Right", func() any { c.P.StepWork(); return c.Cap(2) }())
-		}()
+		return c.NewStruct("Binary", "Left", c.Cap(0), "Op", c.Cap(1), "Right", c.Cap(2))
 	}
 	rules[3].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e6(p) }
 	rules[4].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e10(p) }
 	rules[4].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Binary", "Left", func() any { c.P.StepWork(); return c.Cap(0) }(), "Op", func() any { c.P.StepWork(); return c.Cap(1) }(), "Right", func() any { c.P.StepWork(); return c.Cap(2) }())
-		}()
+		return c.NewStruct("Binary", "Left", c.Cap(0), "Op", c.Cap(1), "Right", c.Cap(2))
 	}
 	rules[5].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e11(p) }
 	rules[6].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e12(p) }
-	rules[6].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Unary", "Op", func() any { c.P.StepWork(); return c.Cap(0) }(), "X", func() any { c.P.StepWork(); return c.Cap(1) }())
-		}()
-	}
+	rules[6].Action = func(c *rt.ActCtx) any { return c.NewStruct("Unary", "Op", c.Cap(0), "X", c.Cap(1)) }
 	rules[8].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e15(p) }
 	rules[8].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Binary", "Left", func() any { c.P.StepWork(); return c.Cap(0) }(), "Op", func() any { c.P.StepWork(); return c.Cap(1) }(), "Right", func() any { c.P.StepWork(); return c.Cap(2) }())
-		}()
+		return c.NewStruct("Binary", "Left", c.Cap(0), "Op", c.Cap(1), "Right", c.Cap(2))
 	}
 	rules[9].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e16(p) }
-	rules[9].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[9].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[10].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e19(p) }
-	rules[10].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[10].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	pegoGrammar.StructFields["Binary"] = map[string]bool{"Left": true, "Op": true, "Right": true}
 	pegoGrammar.TypeKinds["Binary"] = rt.KindOf("Binary", "")
 	pegoGrammar.StructFields["Unary"] = map[string]bool{"Op": true, "X": true}
@@ -1618,7 +1592,7 @@ func i0(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "main"
-	v = func() any { c.P.StepWork(); return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -1708,15 +1682,7 @@ L8:
 	k16 = v18
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "add"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_32 := func() any { c.P.StepWork(); return k1 }()
-			f_33 := func() any { c.P.StepWork(); return k4 }()
-			f_34 := func() any { c.P.StepWork(); return k16 }()
-			return tmk_Binary(c, true, f_32, f_33, f_34)
-		}()
-	}()
+	v = func() any { f_32 := k1; f_33 := k4; f_34 := k16; return tmk_Binary(c, true, f_32, f_33, f_34) }()
 	p.Depth--
 	return v, true
 fail:
@@ -1819,15 +1785,7 @@ L8:
 	k18 = v20
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "mul"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_36 := func() any { c.P.StepWork(); return k1 }()
-			f_37 := func() any { c.P.StepWork(); return k4 }()
-			f_38 := func() any { c.P.StepWork(); return k18 }()
-			return tmk_Binary(c, true, f_36, f_37, f_38)
-		}()
-	}()
+	v = func() any { f_36 := k1; f_37 := k4; f_38 := k18; return tmk_Binary(c, true, f_36, f_37, f_38) }()
 	p.Depth--
 	return v, true
 fail:
@@ -1957,14 +1915,7 @@ L5:
 	k13 = v15
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "neg"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_39 := func() any { c.P.StepWork(); return k1 }()
-			f_40 := func() any { c.P.StepWork(); return k13 }()
-			return tmk_Unary(c, true, f_39, f_40)
-		}()
-	}()
+	v = func() any { f_39 := k1; f_40 := k13; return tmk_Unary(c, true, f_39, f_40) }()
 	p.Depth--
 	return v, true
 fail:
@@ -2058,15 +2009,7 @@ func i8(p *rt.TParser) (any, bool) {
 	k8 = v10
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "pow"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_41 := func() any { c.P.StepWork(); return k1 }()
-			f_42 := func() any { c.P.StepWork(); return k4 }()
-			f_43 := func() any { c.P.StepWork(); return k8 }()
-			return tmk_Binary(c, true, f_41, f_42, f_43)
-		}()
-	}()
+	v = func() any { f_41 := k1; f_42 := k4; f_43 := k8; return tmk_Binary(c, true, f_41, f_42, f_43) }()
 	p.Depth--
 	return v, true
 fail:
@@ -2136,7 +2079,7 @@ L5:
 	k1 = v4
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "primary"
-	v = func() any { c.P.StepWork(); return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -2188,7 +2131,7 @@ func i10(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "group"
-	v = func() any { c.P.StepWork(); return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	return v, true

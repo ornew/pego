@@ -116,33 +116,27 @@ func tinit() {
 }
 
 func tmk_File(c *rt.TActCtx, final bool, f0 any) any {
-	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tFile)
-	c.P.StepWork()
 	v.Records = tl0(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-	c.P.StepWork()
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_Record(c *rt.TActCtx, final bool, f0 any) any {
-	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tRecord)
-	c.P.StepWork()
 	v.Fields = tl1(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-	c.P.StepWork()
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
@@ -282,26 +276,10 @@ func init() {
 	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
 	pegoGrammar.SetRules(rules, 0)
 	rules[0].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e3(p) }
-	rules[0].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("File", "Records", func() any { c.P.StepWork(); return c.Member(func() any { c.P.StepWork(); return c.Cap(0) }(), "Value") }())
-		}()
-	}
+	rules[0].Action = func(c *rt.ActCtx) any { return c.NewStruct("File", "Records", c.Member(c.Cap(0), "Value")) }
 	rules[1].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e6(p) }
 	rules[1].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Record", "Fields", func() any {
-				c.P.StepWork()
-				return func() any {
-					b := len(c.P.KidStack)
-					c.PushList(func() any { c.P.StepWork(); return c.Cap(0) }())
-					c.PushItems(func() any { c.P.StepWork(); return c.Cap(1) }())
-					return c.EndList(b)
-				}()
-			}())
-		}()
+		return c.NewStruct("Record", "Fields", func() any { b := len(c.P.KidStack); c.PushList(c.Cap(0)); c.PushItems(c.Cap(1)); return c.EndList(b) }())
 	}
 	pegoGrammar.StructFields["File"] = map[string]bool{"Records": true}
 	pegoGrammar.TypeKinds["File"] = rt.KindOf("File", "")
@@ -1120,13 +1098,7 @@ L5:
 	_ = p.NewNode("tuple", x1, p.Pos, x2)
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "main"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_16 := func() any { c.P.StepWork(); return c.Member(func() any { c.P.StepWork(); return k6 }(), "Value") }()
-			return tmk_File(c, true, f_16)
-		}()
-	}()
+	v = func() any { f_16 := c.Member(k6, "Value"); return tmk_File(c, true, f_16) }()
 	p.Depth--
 	return v, true
 fail:
@@ -1211,19 +1183,8 @@ L2:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "record"
 	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_17 := func() any {
-				c.P.StepWork()
-				return func() any {
-					b := len(c.P.KidStack)
-					c.PushList(func() any { c.P.StepWork(); return k3 }())
-					c.PushItems(func() any { c.P.StepWork(); return k6 }())
-					return c.EndList(b)
-				}()
-			}()
-			return tmk_Record(c, true, f_17)
-		}()
+		f_17 := func() any { b := len(c.P.KidStack); c.PushList(k3); c.PushItems(k6); return c.EndList(b) }()
+		return tmk_Record(c, true, f_17)
 	}()
 	p.Depth--
 	return v, true

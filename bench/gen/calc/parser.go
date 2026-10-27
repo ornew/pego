@@ -97,45 +97,33 @@ func tinit() {
 }
 
 func tmk_Binary(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tBinary)
-	c.P.StepWork()
 	v.Left = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
-	c.P.StepWork()
 	v.Op = (*types.TNode[string])(rt.TPubMatch(f1))
-	c.P.StepWork()
 	v.Right = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-	c.P.StepWork()
 	rt.FieldSpanOf(f0, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f1, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_Unary(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tUnary)
-	c.P.StepWork()
 	v.Op = (*types.TNode[string])(rt.TPubMatch(f0))
-	c.P.StepWork()
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-	c.P.StepWork()
 	rt.FieldSpanOf(f0, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
@@ -240,36 +228,24 @@ func init() {
 	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
 	pegoGrammar.SetRules(rules, 1)
 	rules[0].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e1(p) }
-	rules[0].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[0].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[1].OperatorsRule = &rt.OperatorsRule{
 		Skip: e6,
 		Operands: []*rt.OperatorsRuleLine{
 			&rt.OperatorsRuleLine{Scope: []string{}, M: e7, Action: nil, Value: sh5},
-			&rt.OperatorsRuleLine{Scope: []string{"e"}, M: e10, Action: func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }, Value: sh11},
+			&rt.OperatorsRuleLine{Scope: []string{"e"}, M: e10, Action: func(c *rt.ActCtx) any { return c.Cap(0) }, Value: sh11},
 		},
 		Prefix: []*rt.OperatorsRuleOp{{Id: 2, Kind: "prefix", Assoc: "", Level: 3, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e19, Action: func(c *rt.ActCtx) any {
-			return func() any {
-				c.P.StepWork()
-				return c.NewStruct("Unary", "Op", func() any { c.P.StepWork(); return rt.UnboxValue(c.Op) }(), "X", func() any { c.P.StepWork(); return rt.UnboxValue(c.Rhs) }())
-			}()
+			return c.NewStruct("Unary", "Op", rt.UnboxValue(c.Op), "X", rt.UnboxValue(c.Rhs))
 		}, Value: sh5}}},
 		Led: []*rt.OperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "left", Level: 1, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e14, Action: func(c *rt.ActCtx) any {
-			return func() any {
-				c.P.StepWork()
-				return c.NewStruct("Binary", "Left", func() any { c.P.StepWork(); return rt.UnboxValue(c.Lhs) }(), "Op", func() any { c.P.StepWork(); return rt.UnboxValue(c.Op) }(), "Right", func() any { c.P.StepWork(); return rt.UnboxValue(c.Rhs) }())
-			}()
+			return c.NewStruct("Binary", "Left", rt.UnboxValue(c.Lhs), "Op", rt.UnboxValue(c.Op), "Right", rt.UnboxValue(c.Rhs))
 		}, Value: sh5}},
 			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e18, Action: func(c *rt.ActCtx) any {
-				return func() any {
-					c.P.StepWork()
-					return c.NewStruct("Binary", "Left", func() any { c.P.StepWork(); return rt.UnboxValue(c.Lhs) }(), "Op", func() any { c.P.StepWork(); return rt.UnboxValue(c.Op) }(), "Right", func() any { c.P.StepWork(); return rt.UnboxValue(c.Rhs) }())
-				}()
+				return c.NewStruct("Binary", "Left", rt.UnboxValue(c.Lhs), "Op", rt.UnboxValue(c.Op), "Right", rt.UnboxValue(c.Rhs))
 			}, Value: sh5}},
 			{Id: 3, Kind: "infix", Assoc: "right", Level: 4, Line: &rt.OperatorsRuleLine{Scope: []string{}, M: e21, Action: func(c *rt.ActCtx) any {
-				return func() any {
-					c.P.StepWork()
-					return c.NewStruct("Binary", "Left", func() any { c.P.StepWork(); return rt.UnboxValue(c.Lhs) }(), "Op", func() any { c.P.StepWork(); return rt.UnboxValue(c.Op) }(), "Right", func() any { c.P.StepWork(); return rt.UnboxValue(c.Rhs) }())
-				}()
+				return c.NewStruct("Binary", "Left", rt.UnboxValue(c.Lhs), "Op", rt.UnboxValue(c.Op), "Right", rt.UnboxValue(c.Rhs))
 			}, Value: sh5}}},
 	}
 	rules[1].Body = func(p *rt.Parser, min int) (*rt.Node, bool) { return p.OperatorsRuleParse(rules[1], min) }
@@ -304,49 +280,33 @@ func init() {
 		Skip: e30,
 		Operands: []*rt.TOperatorsRuleLine{
 			&rt.TOperatorsRuleLine{Scope: []string{}, M: e31, Action: nil, Value: sh5},
-			&rt.TOperatorsRuleLine{Scope: []string{"e"}, M: e32, Action: func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }, Value: sh11},
+			&rt.TOperatorsRuleLine{Scope: []string{"e"}, M: e32, Action: func(c *rt.TActCtx) any { return c.Cap(0) }, Value: sh11},
 		},
 		Prefix: []*rt.TOperatorsRuleOp{{Id: 2, Kind: "prefix", Assoc: "", Level: 3, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e41, Action: func(c *rt.TActCtx) any {
-			return func() any {
-				c.P.StepWork()
-				return func() any {
-					f_42 := func() any { c.P.StepWork(); return (c.Op) }()
-					f_43 := func() any { c.P.StepWork(); return (c.Rhs) }()
-					return tmk_Unary(c, true, f_42, f_43)
-				}()
-			}()
+			return func() any { f_42 := (c.Op); f_43 := (c.Rhs); return tmk_Unary(c, true, f_42, f_43) }()
 		}, Value: sh5}}},
 		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "left", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e33, Action: func(c *rt.TActCtx) any {
 			return func() any {
-				c.P.StepWork()
-				return func() any {
-					f_34 := func() any { c.P.StepWork(); return (c.Lhs) }()
-					f_35 := func() any { c.P.StepWork(); return (c.Op) }()
-					f_36 := func() any { c.P.StepWork(); return (c.Rhs) }()
-					return tmk_Binary(c, true, f_34, f_35, f_36)
-				}()
+				f_34 := (c.Lhs)
+				f_35 := (c.Op)
+				f_36 := (c.Rhs)
+				return tmk_Binary(c, true, f_34, f_35, f_36)
 			}()
 		}, Value: sh5}},
 			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e37, Action: func(c *rt.TActCtx) any {
 				return func() any {
-					c.P.StepWork()
-					return func() any {
-						f_38 := func() any { c.P.StepWork(); return (c.Lhs) }()
-						f_39 := func() any { c.P.StepWork(); return (c.Op) }()
-						f_40 := func() any { c.P.StepWork(); return (c.Rhs) }()
-						return tmk_Binary(c, true, f_38, f_39, f_40)
-					}()
+					f_38 := (c.Lhs)
+					f_39 := (c.Op)
+					f_40 := (c.Rhs)
+					return tmk_Binary(c, true, f_38, f_39, f_40)
 				}()
 			}, Value: sh5}},
 			{Id: 3, Kind: "infix", Assoc: "right", Level: 4, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e44, Action: func(c *rt.TActCtx) any {
 				return func() any {
-					c.P.StepWork()
-					return func() any {
-						f_45 := func() any { c.P.StepWork(); return (c.Lhs) }()
-						f_46 := func() any { c.P.StepWork(); return (c.Op) }()
-						f_47 := func() any { c.P.StepWork(); return (c.Rhs) }()
-						return tmk_Binary(c, true, f_45, f_46, f_47)
-					}()
+					f_45 := (c.Lhs)
+					f_46 := (c.Op)
+					f_47 := (c.Rhs)
+					return tmk_Binary(c, true, f_45, f_46, f_47)
 				}()
 			}, Value: sh5}}},
 	}
@@ -1123,7 +1083,7 @@ func i0(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "main"
-	v = func() any { c.P.StepWork(); return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	return v, true

@@ -99,21 +99,16 @@ func tinit() {
 }
 
 func tmk_Item(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tItem)
-	c.P.StepWork()
 	v.Text = (*types.TNode[string])(rt.TPubMatch(f0))
-	c.P.StepWork()
 	v.Children = tl0(a, f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-	c.P.StepWork()
 	rt.FieldSpanOf(f0, &first, &start, &end)
-	c.P.StepWork()
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
@@ -245,23 +240,13 @@ func init() {
 	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
 	pegoGrammar.SetRules(rules, 1)
 	rules[0].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e1(p) }
-	rules[0].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[0].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[1].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e3(p) }
-	rules[1].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewList(c.ListItems("map", func() any { c.P.StepWork(); return c.Cap(0) }()))
-		}()
-	}
+	rules[1].Action = func(c *rt.ActCtx) any { return c.NewList(c.ListItems("map", c.Cap(0))) }
 	rules[2].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e4(p) }
-	rules[2].Action = func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.NewStruct("Item", "Text", func() any { c.P.StepWork(); return c.Cap(1) }(), "Children", func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return c.Cap(2) }()) }())
-		}()
-	}
+	rules[2].Action = func(c *rt.ActCtx) any { return c.NewStruct("Item", "Text", c.Cap(1), "Children", c.Concat(c.Cap(2))) }
 	rules[3].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e5(p) }
-	rules[3].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(1) }() }
+	rules[3].Action = func(c *rt.ActCtx) any { return c.Cap(1) }
 	pegoGrammar.StructFields["Item"] = map[string]bool{"Text": true, "Children": true}
 	pegoGrammar.TypeKinds["Item"] = rt.KindOf("Item", "")
 	recRules = rt.NewRules(recRulesSpec[:], recRulesStrs[:], recRulesExtras[:])
@@ -287,7 +272,7 @@ func e1(p *rt.Parser) (*rt.Node, bool) {
 	var x4 rt.Mark
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("indent", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
+	if !p.Bind("indent", func(c *rt.ActCtx) any { return any(0) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -395,12 +380,7 @@ func e4(p *rt.Parser) (*rt.Node, bool) {
 	}
 	p.SetCapture(0, v2)
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("indent") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Length(c.Cap(0)), c.Lookup("indent")) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -473,18 +453,11 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("indent") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("indent")) }) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Bind("indent", func(c *rt.ActCtx) any {
-		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
-	}) {
+	if !p.Bind("indent", func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -691,7 +664,7 @@ func e15(p *rt.Parser) (*rt.Node, bool) {
 	var x2 rt.Mark
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("indent", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
+	if !p.Bind("indent", func(c *rt.ActCtx) any { return any(0) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -791,12 +764,7 @@ func e18(p *rt.Parser) (*rt.Node, bool) {
 	}
 	p.SetCapture(0, v2)
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("indent") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Length(c.Cap(0)), c.Lookup("indent")) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -865,18 +833,11 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Predicate(func(c *rt.ActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("indent") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("indent")) }) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Bind("indent", func(c *rt.ActCtx) any {
-		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
-	}) {
+	if !p.Bind("indent", func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -1056,7 +1017,7 @@ func i0(p *rt.TParser) (any, bool) {
 	p.Enter()
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("indent", func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
+	if !p.Bind("indent", func(c *rt.TActCtx) any { return any(0) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -1087,7 +1048,7 @@ func i0(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "main"
-	v = func() any { c.P.StepWork(); return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -1165,10 +1126,7 @@ func i1(p *rt.TParser) (any, bool) {
 	k1 = v13
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "block"
-	v = func() any {
-		c.P.StepWork()
-		return c.NewList(c.ListItems("map", func() any { c.P.StepWork(); return k1 }()))
-	}()
+	v = c.NewList(c.ListItems("map", k1))
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -1203,12 +1161,7 @@ func i2(p *rt.TParser) (any, bool) {
 	}
 	k1 = v3
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary("==", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k1 }()) }(), func() any { c.P.StepWork(); return c.Lookup("indent") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Length(k1), c.Lookup("indent")) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -1237,14 +1190,7 @@ L12:
 	k7 = v10
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "item"
-	v = func() any {
-		c.P.StepWork()
-		return func() any {
-			f_20 := func() any { c.P.StepWork(); return k4 }()
-			f_21 := func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return k7 }()) }()
-			return tmk_Item(c, true, f_20, f_21)
-		}()
-	}()
+	v = func() any { f_20 := k4; f_21 := c.Concat(k7); return tmk_Item(c, true, f_20, f_21) }()
 	p.Depth--
 	return v, true
 fail:
@@ -1307,18 +1253,11 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			c.P.StepWork()
-			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k7 }()) }(), func() any { c.P.StepWork(); return c.Lookup("indent") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k7), c.Lookup("indent")) }) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Bind("indent", func(c *rt.TActCtx) any {
-		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k7 }()) }()
-	}) {
+	if !p.Bind("indent", func(c *rt.TActCtx) any { return c.Length(k7) }) {
 		goto fail
 	}
 	p.StepWork()
@@ -1329,7 +1268,7 @@ L3:
 	k10 = v12
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "children"
-	v = func() any { c.P.StepWork(); return k10 }()
+	v = k10
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv

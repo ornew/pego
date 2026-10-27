@@ -1290,13 +1290,13 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 		for i := range fields {
 			params = append(params, fmt.Sprintf("f%d any", i))
 		}
-		fmt.Fprintf(&cons, "// tmk_%s makes a %s in an action (newStruct in the typed runtime).\nfunc tmk_%s(%s) any {\n%s\ta := c.P.Ext.(*tslabs)\n\tv := astNew(&a.t%s)\n", name, name, name, strings.Join(params, ", "), t.g.step("\tc.P"), name)
+		fmt.Fprintf(&cons, "// tmk_%s makes a %s in an action (newStruct in the typed runtime).\nfunc tmk_%s(%s) any {\n\ta := c.P.Ext.(*tslabs)\n\tv := astNew(&a.t%s)\n", name, name, name, strings.Join(params, ", "), name)
 		for i, f := range fields {
-			fmt.Fprintf(&cons, "%s\tv.%s = %s\n", t.g.step("\tc.P"), t.fieldGo(f.name), t.dconv(f.t, fmt.Sprintf("f%d", i), "a"))
+			fmt.Fprintf(&cons, "\tv.%s = %s\n", t.fieldGo(f.name), t.dconv(f.t, fmt.Sprintf("f%d", i), "a"))
 		}
 		fmt.Fprintf(&cons, "\tif final {\n\t\tv.%[1]s = %[1]s{Start: c.Start, End: c.End}\n\t\treturn v\n\t}\n\tfirst, start, end := true, 0, 0\n", span)
 		for i := range fields {
-			fmt.Fprintf(&cons, "%s\tFieldSpanOf(f%d, &first, &start, &end)\n", t.g.step("\tc.P"), i)
+			fmt.Fprintf(&cons, "\tFieldSpanOf(f%d, &first, &start, &end)\n", i)
 		}
 		cons.WriteString("\treturn c.Made(v, first, start, end)\n}\n\n")
 	}
