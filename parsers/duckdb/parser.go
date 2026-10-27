@@ -4167,1492 +4167,1492 @@ func ParseRuleAST(name, input string, opts ...rt.ParseOption) (any, error) {
 	}
 }
 
-var sh2 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}
-var sh3 = rt.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}
-var lit5 = []rune("--")
-var lit7 = []rune("/*")
-var lit8 = []rune("*/")
-var sh9 = rt.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}
-var lit16 = []rune("'")
-var lit17 = []rune("&'")
-var lit19 = []rune("\"")
-var lit20 = []rune("\"\"")
-var lit22 = []rune("&")
-var sh23 = rt.Shaper{Elems: true, K: 12, Mode: 2, Tuple: true, Shared: false}
-var sh33 = rt.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}
-var lit35 = []rune("''")
-var lit37 = []rune("\\")
-var lit42 = []rune("$")
-var sh46 = rt.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}
-var lit51 = []rune("_")
-var lit53 = []rune(".")
-var lit63 = []rune("+")
-var lit65 = []rune("-")
-var lit67 = []rune("*")
-var lit69 = []rune("/")
-var lit71 = []rune("<")
-var lit73 = []rune(">")
-var lit75 = []rune("=")
-var lit77 = []rune("<=")
-var lit79 = []rune(">=")
-var lit81 = []rune("<>")
-var lit82 = []rune("!=")
-var lit84 = []rune("=>")
-var lit86 = []rune("%")
-var lit88 = []rune("^")
-var lit90 = []rune("**")
-var lit92 = []rune("//")
-var lit94 = []rune("->")
-var lit96 = []rune("->>")
-var lit117 = []rune(",")
-var lit125 = []rune("(")
-var lit128 = []rune(":")
-var lit134 = []rune(")")
-var sh136 = rt.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}
-var lit147 = []rune("[")
-var lit150 = []rune("?")
-var lit154 = []rune("#")
-var lit156 = []rune("{")
-var lit168 = []rune("]")
-var lit174 = []rune("}")
-var sh229 = rt.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}
-var lit257 = []rune(":=")
-var lit782 = []rune(";")
-var sh1142 = rt.Shaper{Elems: true, K: 8, Mode: 2, Tuple: true, Shared: false}
-var sh1143 = rt.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}
-var sh1144 = rt.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}
-var sh1146 = rt.Shaper{Elems: true, K: 9, Mode: 2, Tuple: true, Shared: false}
-var sh1147 = rt.Shaper{Elems: true, K: 10, Mode: 2, Tuple: true, Shared: false}
-var sh1152 = rt.Shaper{Elems: true, K: 11, Mode: 2, Tuple: true, Shared: false}
-var sh1207 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}
-var sh1208 = rt.Shaper{Elems: true, K: 17, Mode: 2, Tuple: true, Shared: false}
-var sh1209 = rt.Shaper{Elems: true, K: 13, Mode: 2, Tuple: true, Shared: false}
-var sh1210 = rt.Shaper{Elems: true, K: 16, Mode: 2, Tuple: true, Shared: false}
-var sh1211 = rt.Shaper{Elems: true, K: 15, Mode: 2, Tuple: true, Shared: false}
-var sh1212 = rt.Shaper{Elems: true, K: 14, Mode: 2, Tuple: true, Shared: false}
-var sh1213 = rt.Shaper{Elems: true, K: 19, Mode: 2, Tuple: true, Shared: false}
+var sh1 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}
+var sh2 = rt.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}
+var lit4 = []rune("--")
+var lit6 = []rune("/*")
+var lit7 = []rune("*/")
+var sh8 = rt.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}
+var lit12 = []rune("'")
+var lit13 = []rune("&'")
+var lit15 = []rune("\"")
+var lit16 = []rune("\"\"")
+var lit18 = []rune("&")
+var sh19 = rt.Shaper{Elems: true, K: 12, Mode: 2, Tuple: true, Shared: false}
+var sh28 = rt.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}
+var lit30 = []rune("''")
+var lit32 = []rune("\\")
+var lit37 = []rune("$")
+var sh40 = rt.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}
+var lit45 = []rune("_")
+var lit47 = []rune(".")
+var lit56 = []rune("+")
+var lit58 = []rune("-")
+var lit60 = []rune("*")
+var lit62 = []rune("/")
+var lit64 = []rune("<")
+var lit66 = []rune(">")
+var lit68 = []rune("=")
+var lit70 = []rune("<=")
+var lit72 = []rune(">=")
+var lit74 = []rune("<>")
+var lit75 = []rune("!=")
+var lit77 = []rune("=>")
+var lit79 = []rune("%")
+var lit81 = []rune("^")
+var lit83 = []rune("**")
+var lit85 = []rune("//")
+var lit87 = []rune("->")
+var lit89 = []rune("->>")
+var lit107 = []rune(",")
+var lit115 = []rune("(")
+var lit118 = []rune(":")
+var lit124 = []rune(")")
+var sh126 = rt.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}
+var lit137 = []rune("[")
+var lit140 = []rune("?")
+var lit143 = []rune("#")
+var lit145 = []rune("{")
+var lit157 = []rune("]")
+var lit163 = []rune("}")
+var sh218 = rt.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}
+var lit246 = []rune(":=")
+var lit771 = []rune(";")
+var sh1131 = rt.Shaper{Elems: true, K: 8, Mode: 2, Tuple: true, Shared: false}
+var sh1132 = rt.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}
+var sh1133 = rt.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}
+var sh1135 = rt.Shaper{Elems: true, K: 9, Mode: 2, Tuple: true, Shared: false}
+var sh1136 = rt.Shaper{Elems: true, K: 10, Mode: 2, Tuple: true, Shared: false}
+var sh1141 = rt.Shaper{Elems: true, K: 11, Mode: 2, Tuple: true, Shared: false}
+var sh1196 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}
+var sh1197 = rt.Shaper{Elems: true, K: 17, Mode: 2, Tuple: true, Shared: false}
+var sh1198 = rt.Shaper{Elems: true, K: 13, Mode: 2, Tuple: true, Shared: false}
+var sh1199 = rt.Shaper{Elems: true, K: 16, Mode: 2, Tuple: true, Shared: false}
+var sh1200 = rt.Shaper{Elems: true, K: 15, Mode: 2, Tuple: true, Shared: false}
+var sh1201 = rt.Shaper{Elems: true, K: 14, Mode: 2, Tuple: true, Shared: false}
+var sh1202 = rt.Shaper{Elems: true, K: 19, Mode: 2, Tuple: true, Shared: false}
 
 var rulesSpec = [...]rt.RuleSpec{
-	{Name: "ws", Value: &sh3, Flags: rt.RuleMemo},
-	{Name: "comment", Value: &sh2, Seen: -1},
-	{Name: "block_comment", Value: &sh33, Flags: rt.RuleMemo, Seen: 1},
-	{Name: "wc", Value: &sh2, Seen: -1},
-	{Name: "ident_start", Value: &sh2, Seen: -1},
-	{Name: "word", Value: &sh3, Flags: rt.RuleMemo, Seen: 2},
-	{Name: "quoted_ident", Value: &sh33, Seen: -1},
-	{Name: "uquoted_ident", Value: &sh136, Flags: rt.RuleMemo, Seen: 3},
-	{Name: "col_id", Value: &sh2, Flags: rt.RuleMemo, Seen: 4},
-	{Name: "type_function_name", Value: &sh2, Seen: -1},
-	{Name: "function_name_token", Value: &sh2, Flags: rt.RuleMemo, Seen: 5},
-	{Name: "type_name_token", Value: &sh2, Seen: -1},
-	{Name: "ident_only", Value: &sh2, Flags: rt.RuleMemo, Seen: 6},
-	{Name: "col_label", Value: &sh2, Flags: rt.RuleMemo, Seen: 7},
-	{Name: "non_reserved_word", Value: &sh2, Flags: rt.RuleMemo, Seen: 8},
-	{Name: "sq_cont", Value: &sh136, Seen: -1},
-	{Name: "sq_string", Value: &sh136, Seen: -1},
-	{Name: "e_body", Value: &sh2, Flags: rt.RuleMemo, Seen: 9},
-	{Name: "e_string", Value: &sh229, Seen: -1},
-	{Name: "u_string", Value: &sh136, Seen: -1},
-	{Name: "hex4", Value: &sh2, Seen: -1},
-	{Name: "dollar_string", Value: &sh229, Seen: -1, Scope: 1, Vars: 2},
-	{Name: "dq_close", Value: &sh33, Flags: rt.RuleMemo, Seen: 10, Scope: 3, Vars: 2},
-	{Name: "dq_tag", Value: &sh2, Seen: -1},
-	{Name: "bit_string", Value: &sh229, Seen: -1},
-	{Name: "sconst", Value: &sh2, Flags: rt.RuleMemo, Seen: 11, Vars: 2},
-	{Name: "bit_lit", Value: &sh2, Seen: -1},
-	{Name: "digits", Value: &sh3, Seen: -1},
-	{Name: "number", Value: &sh1207, Flags: rt.RuleMemo, Seen: 12, Scope: 1},
-	{Name: "exp", Value: &sh33, Seen: -1},
-	{Name: "iconst", Value: &sh1207, Flags: rt.RuleMemo, Seen: 13, Scope: 4},
-	{Name: "int_lit", Value: &sh2, Seen: -1},
-	{Name: "opc", Value: &sh2, Seen: -1},
-	{Name: "cut", Value: &sh2, Seen: -1},
-	{Name: "rc", Value: &sh9, Flags: rt.RuleMemo, Seen: 14},
-	{Name: "pm_end", Value: &sh9, Flags: rt.RuleMemo, Seen: 15},
-	{Name: "op_plus", Value: &sh2, Flags: rt.RuleMemo, Seen: 16},
-	{Name: "op_minus", Value: &sh2, Flags: rt.RuleMemo, Seen: 17},
-	{Name: "op_star", Value: &sh2, Flags: rt.RuleMemo, Seen: 18},
-	{Name: "op_slash", Value: &sh2, Flags: rt.RuleMemo, Seen: 19},
-	{Name: "op_lt", Value: &sh2, Flags: rt.RuleMemo, Seen: 20},
-	{Name: "op_gt", Value: &sh2, Flags: rt.RuleMemo, Seen: 21},
-	{Name: "op_eq", Value: &sh2, Flags: rt.RuleMemo, Seen: 22},
-	{Name: "op_le", Value: &sh2, Flags: rt.RuleMemo, Seen: 23},
-	{Name: "op_ge", Value: &sh2, Flags: rt.RuleMemo, Seen: 24},
-	{Name: "op_ne", Value: &sh2, Flags: rt.RuleMemo, Seen: 25},
-	{Name: "op_eq_gt", Value: &sh2, Flags: rt.RuleMemo, Seen: 26},
-	{Name: "op_percent", Value: &sh2, Flags: rt.RuleMemo, Seen: 27},
-	{Name: "op_caret", Value: &sh2, Flags: rt.RuleMemo, Seen: 28},
-	{Name: "op_pow", Value: &sh2, Flags: rt.RuleMemo, Seen: 29},
-	{Name: "op_idiv", Value: &sh2, Flags: rt.RuleMemo, Seen: 30},
-	{Name: "op_arrow", Value: &sh2, Seen: -1},
-	{Name: "op_darrow", Value: &sh2, Seen: -1},
-	{Name: "op_generic", Value: &sh9, Flags: rt.RuleMemo, Seen: 31, Scope: 5},
-	{Name: "op_special", Value: &sh33, Seen: -1},
-	{Name: "op_plain", Value: &sh9, Seen: -1},
-	{Name: "core", Value: &sh2, Flags: rt.RuleMemo, Seen: 32},
-	{Name: "core_long", Value: &sh9, Seen: -1},
-	{Name: "col_id_or_string", Value: &sh2, Flags: rt.RuleMemo, Seen: 33, Vars: 2},
-	{Name: "name", Value: &sh2, Flags: rt.RuleMemo, Seen: 34, Vars: 2},
-	{Name: "attr_name", Value: &sh2, Flags: rt.RuleMemo, Seen: 35},
-	{Name: "param_name", Value: &sh2, Flags: rt.RuleMemo, Seen: 36},
-	{Name: "qualified_name", Value: &sh2, Flags: rt.RuleMemo, Seen: 37, Vars: 2},
-	{Name: "qn_dotted", Value: &sh3, Seen: -1, Scope: 6},
-	{Name: "qn_string", Value: &sh1207, Seen: -1, Scope: 7, Vars: 2},
-	{Name: "any_name", Value: &sh3, Flags: rt.RuleMemo, Seen: 38, Scope: 6},
-	{Name: "name_list", Value: &sh3, Flags: rt.RuleMemo, Seen: 39, Scope: 8, Vars: 2},
-	{Name: "name_list_opt_comma", Value: &sh3, Flags: rt.RuleMemo, Seen: 40, Scope: 9, Vars: 2},
-	{Name: "col_id_list", Value: &sh3, Flags: rt.RuleMemo, Seen: 41, Scope: 8},
-	{Name: "func_name", Value: &sh2, Flags: rt.RuleMemo, Seen: 42},
-	{Name: "fn_dotted", Value: &sh3, Flags: rt.RuleMemo, Seen: 43, Scope: 6},
-	{Name: "fn_single", Value: &sh9, Seen: -1, Scope: 10},
+	{Name: "ws", Value: &sh2, Flags: rt.RuleMemo},
+	{Name: "comment", Value: &sh1, Seen: -1},
+	{Name: "block_comment", Value: &sh28, Flags: rt.RuleMemo, Seen: 1},
+	{Name: "wc", Value: &sh1, Seen: -1},
+	{Name: "ident_start", Value: &sh1, Seen: -1},
+	{Name: "word", Value: &sh2, Flags: rt.RuleMemo, Seen: 2},
+	{Name: "quoted_ident", Value: &sh28, Seen: -1},
+	{Name: "uquoted_ident", Value: &sh126, Flags: rt.RuleMemo, Seen: 3},
+	{Name: "col_id", Value: &sh1, Flags: rt.RuleMemo, Seen: 4},
+	{Name: "type_function_name", Value: &sh1, Seen: -1},
+	{Name: "function_name_token", Value: &sh1, Flags: rt.RuleMemo, Seen: 5},
+	{Name: "type_name_token", Value: &sh1, Seen: -1},
+	{Name: "ident_only", Value: &sh1, Flags: rt.RuleMemo, Seen: 6},
+	{Name: "col_label", Value: &sh1, Flags: rt.RuleMemo, Seen: 7},
+	{Name: "non_reserved_word", Value: &sh1, Flags: rt.RuleMemo, Seen: 8},
+	{Name: "sq_cont", Value: &sh126, Seen: -1},
+	{Name: "sq_string", Value: &sh126, Seen: -1},
+	{Name: "e_body", Value: &sh1, Flags: rt.RuleMemo, Seen: 9},
+	{Name: "e_string", Value: &sh218, Seen: -1},
+	{Name: "u_string", Value: &sh126, Seen: -1},
+	{Name: "hex4", Value: &sh1, Seen: -1},
+	{Name: "dollar_string", Value: &sh218, Seen: -1, Scope: 1, Vars: 2},
+	{Name: "dq_close", Value: &sh28, Flags: rt.RuleMemo, Seen: 10, Scope: 3, Vars: 2},
+	{Name: "dq_tag", Value: &sh1, Seen: -1},
+	{Name: "bit_string", Value: &sh218, Seen: -1},
+	{Name: "sconst", Value: &sh1, Flags: rt.RuleMemo, Seen: 11, Vars: 2},
+	{Name: "bit_lit", Value: &sh1, Seen: -1},
+	{Name: "digits", Value: &sh2, Seen: -1},
+	{Name: "number", Value: &sh1196, Flags: rt.RuleMemo, Seen: 12, Scope: 1},
+	{Name: "exp", Value: &sh28, Seen: -1},
+	{Name: "iconst", Value: &sh1196, Flags: rt.RuleMemo, Seen: 13, Scope: 4},
+	{Name: "int_lit", Value: &sh1, Seen: -1},
+	{Name: "opc", Value: &sh1, Seen: -1},
+	{Name: "cut", Value: &sh1, Seen: -1},
+	{Name: "rc", Value: &sh8, Flags: rt.RuleMemo, Seen: 14},
+	{Name: "pm_end", Value: &sh8, Flags: rt.RuleMemo, Seen: 15},
+	{Name: "op_plus", Value: &sh1, Flags: rt.RuleMemo, Seen: 16},
+	{Name: "op_minus", Value: &sh1, Flags: rt.RuleMemo, Seen: 17},
+	{Name: "op_star", Value: &sh1, Flags: rt.RuleMemo, Seen: 18},
+	{Name: "op_slash", Value: &sh1, Flags: rt.RuleMemo, Seen: 19},
+	{Name: "op_lt", Value: &sh1, Flags: rt.RuleMemo, Seen: 20},
+	{Name: "op_gt", Value: &sh1, Flags: rt.RuleMemo, Seen: 21},
+	{Name: "op_eq", Value: &sh1, Flags: rt.RuleMemo, Seen: 22},
+	{Name: "op_le", Value: &sh1, Flags: rt.RuleMemo, Seen: 23},
+	{Name: "op_ge", Value: &sh1, Flags: rt.RuleMemo, Seen: 24},
+	{Name: "op_ne", Value: &sh1, Flags: rt.RuleMemo, Seen: 25},
+	{Name: "op_eq_gt", Value: &sh1, Flags: rt.RuleMemo, Seen: 26},
+	{Name: "op_percent", Value: &sh1, Flags: rt.RuleMemo, Seen: 27},
+	{Name: "op_caret", Value: &sh1, Flags: rt.RuleMemo, Seen: 28},
+	{Name: "op_pow", Value: &sh1, Flags: rt.RuleMemo, Seen: 29},
+	{Name: "op_idiv", Value: &sh1, Flags: rt.RuleMemo, Seen: 30},
+	{Name: "op_arrow", Value: &sh1, Seen: -1},
+	{Name: "op_darrow", Value: &sh1, Seen: -1},
+	{Name: "op_generic", Value: &sh8, Flags: rt.RuleMemo, Seen: 31, Scope: 5},
+	{Name: "op_special", Value: &sh28, Seen: -1},
+	{Name: "op_plain", Value: &sh8, Seen: -1},
+	{Name: "core", Value: &sh1, Flags: rt.RuleMemo, Seen: 32},
+	{Name: "core_long", Value: &sh8, Seen: -1},
+	{Name: "col_id_or_string", Value: &sh1, Flags: rt.RuleMemo, Seen: 33, Vars: 2},
+	{Name: "name", Value: &sh1, Flags: rt.RuleMemo, Seen: 34, Vars: 2},
+	{Name: "attr_name", Value: &sh1, Flags: rt.RuleMemo, Seen: 35},
+	{Name: "param_name", Value: &sh1, Flags: rt.RuleMemo, Seen: 36},
+	{Name: "qualified_name", Value: &sh1, Flags: rt.RuleMemo, Seen: 37, Vars: 2},
+	{Name: "qn_dotted", Value: &sh2, Seen: -1, Scope: 6},
+	{Name: "qn_string", Value: &sh1196, Seen: -1, Scope: 7, Vars: 2},
+	{Name: "any_name", Value: &sh2, Flags: rt.RuleMemo, Seen: 38, Scope: 6},
+	{Name: "name_list", Value: &sh2, Flags: rt.RuleMemo, Seen: 39, Scope: 8, Vars: 2},
+	{Name: "name_list_opt_comma", Value: &sh2, Flags: rt.RuleMemo, Seen: 40, Scope: 9, Vars: 2},
+	{Name: "col_id_list", Value: &sh2, Flags: rt.RuleMemo, Seen: 41, Scope: 8},
+	{Name: "func_name", Value: &sh1, Flags: rt.RuleMemo, Seen: 42},
+	{Name: "fn_dotted", Value: &sh2, Flags: rt.RuleMemo, Seen: 43, Scope: 6},
+	{Name: "fn_single", Value: &sh8, Seen: -1, Scope: 10},
 	{Name: "expr", Flags: rt.RuleMemo, Seen: 44, Vars: 2},
-	{Name: "op_rhs_prefix", Value: &sh33, Flags: rt.RuleMemo, Seen: 45, Scope: 11, Vars: 2},
+	{Name: "op_rhs_prefix", Value: &sh28, Flags: rt.RuleMemo, Seen: 45, Scope: 11, Vars: 2},
 	{Name: "b_expr", Flags: rt.RuleMemo, Seen: 46, Vars: 2},
-	{Name: "colon", Value: &sh9, Seen: -1},
-	{Name: "cmp_op", Value: &sh2, Flags: rt.RuleMemo, Seen: 47},
-	{Name: "like_start", Value: &sh3, Flags: rt.RuleMemo, Seen: 48},
-	{Name: "is_start", Value: &sh2, Flags: rt.RuleMemo, Seen: 49},
-	{Name: "qual_op", Value: &sh2, Flags: rt.RuleMemo, Seen: 50},
-	{Name: "operator_call", Value: &sh2, Flags: rt.RuleMemo, Seen: 51},
-	{Name: "any_operator", Value: &sh3, Seen: -1},
-	{Name: "all_op", Value: &sh2, Flags: rt.RuleMemo, Seen: 52},
-	{Name: "subquery_op", Value: &sh2, Seen: -1},
-	{Name: "any_source", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "any_source_query", Value: &sh1207, Seen: -1, Scope: 12, Vars: 2},
-	{Name: "in_source", Value: &sh2, Seen: -1, Vars: 2},
+	{Name: "colon", Value: &sh8, Seen: -1},
+	{Name: "cmp_op", Value: &sh1, Flags: rt.RuleMemo, Seen: 47},
+	{Name: "like_start", Value: &sh2, Flags: rt.RuleMemo, Seen: 48},
+	{Name: "is_start", Value: &sh1, Flags: rt.RuleMemo, Seen: 49},
+	{Name: "qual_op", Value: &sh1, Flags: rt.RuleMemo, Seen: 50},
+	{Name: "operator_call", Value: &sh1, Flags: rt.RuleMemo, Seen: 51},
+	{Name: "any_operator", Value: &sh2, Seen: -1},
+	{Name: "all_op", Value: &sh1, Flags: rt.RuleMemo, Seen: 52},
+	{Name: "subquery_op", Value: &sh1, Seen: -1},
+	{Name: "any_source", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "any_source_query", Value: &sh1196, Seen: -1, Scope: 12, Vars: 2},
+	{Name: "in_source", Value: &sh1, Seen: -1, Vars: 2},
 	{Name: "in_column", Seen: -1, Vars: 2},
-	{Name: "c_expr", Value: &sh2, Flags: rt.RuleMemo, Seen: 53, Vars: 2},
-	{Name: "chained", Value: &sh2, Flags: rt.RuleMemo, Seen: 54, Vars: 2},
+	{Name: "c_expr", Value: &sh1, Flags: rt.RuleMemo, Seen: 53, Vars: 2},
+	{Name: "chained", Value: &sh1, Flags: rt.RuleMemo, Seen: 54, Vars: 2},
 	{Name: "col_chained", Seen: -1, Vars: 2},
 	{Name: "call_chained", Seen: -1, Vars: 2},
-	{Name: "primary_other", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "literal_primary", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "plain_literal", Value: &sh9, Seen: -1, Scope: 9},
-	{Name: "string_literal", Value: &sh9, Seen: -1, Scope: 9, Vars: 2},
-	{Name: "param", Value: &sh2, Flags: rt.RuleMemo, Seen: 55},
-	{Name: "dollar_name", Value: &sh2, Seen: -1},
-	{Name: "positional_ref", Value: &sh33, Seen: -1, Scope: 13},
-	{Name: "plain_column", Value: &sh9, Seen: -1, Scope: 14},
-	{Name: "column_ref", Value: &sh1207, Flags: rt.RuleMemo, Seen: 56, Scope: 14},
-	{Name: "dotted_idents", Value: &sh3, Flags: rt.RuleMemo, Seen: 57, Scope: 8},
-	{Name: "paren_primary", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "subquery_expr", Value: &sh1207, Seen: -1, Scope: 12, Vars: 2},
-	{Name: "row_expr", Value: &sh1144, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "paren_expr", Value: &sh229, Flags: rt.RuleMemo, Seen: 58, Scope: 15, Vars: 2},
-	{Name: "indirection_expr", Value: &sh2, Flags: rt.RuleMemo, Seen: 59, Vars: 2},
-	{Name: "func_expr", Value: &sh9, Seen: -1, Scope: 15, Vars: 2},
-	{Name: "func_call_plain", Value: &sh9, Seen: -1, Scope: 16, Vars: 2},
-	{Name: "list_lit", Value: &sh229, Seen: -1, Scope: 17, Vars: 2},
-	{Name: "array_expr", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "array_subquery", Value: &sh33, Seen: -1, Scope: 12, Vars: 2},
-	{Name: "array_lit", Value: &sh1143, Seen: -1, Scope: 17, Vars: 2},
-	{Name: "struct_lit", Value: &sh1143, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "struct_field", Value: &sh229, Flags: rt.RuleMemo, Seen: 60, Scope: 18, Vars: 2},
-	{Name: "map_lit", Value: &sh1143, Seen: -1, Scope: 19, Vars: 2},
-	{Name: "map_entries", Value: &sh33, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "map_entry", Value: &sh229, Flags: rt.RuleMemo, Seen: 61, Scope: 20, Vars: 2},
-	{Name: "list_comprehension", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "list_comp_if", Value: &sh1208, Seen: -1, Scope: 21, Vars: 2},
-	{Name: "list_comp", Value: &sh1209, Seen: -1, Scope: 22, Vars: 2},
-	{Name: "case_expr", Value: &sh1143, Seen: -1, Scope: 23, Vars: 2},
-	{Name: "when_clause_list", Value: &sh3, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "when_clause", Value: &sh1143, Flags: rt.RuleMemo, Seen: 62, Scope: 24, Vars: 2},
-	{Name: "qualified_row", Value: &sh1143, Seen: -1, Scope: 17, Vars: 2},
-	{Name: "expr_list", Value: &sh3, Flags: rt.RuleMemo, Seen: 63, Scope: 8, Vars: 2},
-	{Name: "expr_list_opt_comma", Value: &sh3, Flags: rt.RuleMemo, Seen: 64, Scope: 9, Vars: 2},
-	{Name: "star_primary", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "default_expr", Value: &sh2, Seen: -1},
-	{Name: "columns_expr", Value: &sh1143, Seen: -1, Scope: 25, Vars: 2},
-	{Name: "star_columns", Value: &sh1146, Seen: -1, Scope: 25, Vars: 2},
-	{Name: "unpack_expr", Value: &sh1143, Seen: -1, Scope: 25, Vars: 2},
-	{Name: "star_expr", Value: &sh136, Seen: -1, Scope: 26, Vars: 2},
-	{Name: "qualified_star", Value: &sh1142, Seen: -1, Scope: 27, Vars: 2},
-	{Name: "lambda_expr", Value: &sh1143, Seen: -1, Scope: 28, Vars: 2},
-	{Name: "except_name", Value: &sh3, Flags: rt.RuleMemo, Seen: 65, Scope: 8, Vars: 2},
-	{Name: "except_name_list", Value: &sh33, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "exclude_list", Value: &sh2, Flags: rt.RuleMemo, Seen: 66, Vars: 2},
-	{Name: "exclude_paren", Value: &sh1143, Seen: -1, Scope: 9, Vars: 2},
-	{Name: "exclude_single", Value: &sh33, Seen: -1, Scope: 10, Vars: 2},
-	{Name: "replace_item", Value: &sh229, Flags: rt.RuleMemo, Seen: 67, Scope: 29, Vars: 2},
-	{Name: "replace_list", Value: &sh2, Flags: rt.RuleMemo, Seen: 68, Vars: 2},
-	{Name: "replace_paren", Value: &sh1146, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "replace_single", Value: &sh33, Seen: -1, Scope: 13, Vars: 2},
-	{Name: "rename_item", Value: &sh229, Flags: rt.RuleMemo, Seen: 69, Scope: 30, Vars: 2},
-	{Name: "rename_list", Value: &sh2, Flags: rt.RuleMemo, Seen: 70, Vars: 2},
-	{Name: "rename_paren", Value: &sh1146, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "rename_single", Value: &sh33, Seen: -1, Scope: 13, Vars: 2},
-	{Name: "keyword_primary", Value: &sh9, Seen: -1, Scope: 31, Vars: 2},
-	{Name: "bool_lit", Value: &sh2, Seen: -1},
-	{Name: "null_lit", Value: &sh2, Seen: -1},
-	{Name: "exists_expr", Value: &sh33, Seen: -1, Scope: 12, Vars: 2},
-	{Name: "grouping_expr", Value: &sh1143, Seen: -1, Scope: 32, Vars: 2},
-	{Name: "cast_expr", Value: &sh2, Flags: rt.RuleMemo, Seen: 71, Vars: 2},
-	{Name: "cast_plain", Value: &sh1152, Seen: -1, Scope: 33, Vars: 2},
-	{Name: "cast_try", Value: &sh1152, Seen: -1, Scope: 33, Vars: 2},
-	{Name: "interval_lit", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "interval_paren", Value: &sh1142, Seen: -1, Scope: 34, Vars: 2},
-	{Name: "interval_const", Value: &sh136, Seen: -1, Scope: 34, Vars: 2},
-	{Name: "interval_unit", Value: &sh2, Flags: rt.RuleMemo, Seen: 72},
-	{Name: "interval_to", Value: &sh2, Seen: -1},
-	{Name: "interval_field", Value: &sh2, Seen: -1},
-	{Name: "special_call", Value: &sh2, Flags: rt.RuleMemo, Seen: 73, Vars: 2},
-	{Name: "sc_coalesce", Value: &sh1143, Seen: -1, Scope: 35, Vars: 2},
-	{Name: "sc_nullif", Value: &sh1152, Seen: -1, Scope: 36, Vars: 2},
-	{Name: "sc_extract", Value: &sh1152, Seen: -1, Scope: 37, Vars: 2},
-	{Name: "sc_extract_empty", Value: &sh229, Seen: -1, Scope: 10},
-	{Name: "sc_overlay", Value: &sh1210, Seen: -1, Scope: 38, Vars: 2},
-	{Name: "sc_position", Value: &sh1152, Seen: -1, Scope: 36, Vars: 2},
-	{Name: "sc_position_empty", Value: &sh229, Seen: -1, Scope: 10},
-	{Name: "sc_substring_from", Value: &sh23, Seen: -1, Scope: 39, Vars: 2},
-	{Name: "sc_substring_for_from", Value: &sh1211, Seen: -1, Scope: 40, Vars: 2},
-	{Name: "sc_substring_for", Value: &sh1152, Seen: -1, Scope: 41, Vars: 2},
-	{Name: "sc_substring_list", Value: &sh1143, Seen: -1, Scope: 42, Vars: 2},
-	{Name: "sc_substring_empty", Value: &sh229, Seen: -1, Scope: 10},
-	{Name: "sc_treat", Value: &sh1152, Seen: -1, Scope: 43, Vars: 2},
-	{Name: "sc_trim_chars", Value: &sh23, Seen: -1, Scope: 44, Vars: 2},
-	{Name: "sc_trim", Value: &sh1142, Seen: -1, Scope: 45, Vars: 2},
-	{Name: "sc_collation", Value: &sh1143, Seen: -1, Scope: 46, Vars: 2},
-	{Name: "extract_arg", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "year_kw", Value: &sh2, Seen: -1},
-	{Name: "trim_from", Value: &sh33, Seen: -1, Scope: 9, Vars: 2},
-	{Name: "func_call", Value: &sh1209, Flags: rt.RuleMemo, Seen: 74, Scope: 47, Vars: 2},
-	{Name: "typed_literal_args", Value: &sh1146, Seen: -1, Scope: 48, Vars: 2},
-	{Name: "func_name_type", Value: &sh2, Flags: rt.RuleMemo, Seen: 75},
-	{Name: "func_arg_list", Value: &sh3, Flags: rt.RuleMemo, Seen: 76, Scope: 8, Vars: 2},
-	{Name: "func_arg_expr", Value: &sh2, Flags: rt.RuleMemo, Seen: 77, Vars: 2},
-	{Name: "named_arg", Value: &sh229, Flags: rt.RuleMemo, Seen: 78, Scope: 18, Vars: 2},
-	{Name: "opt_ignore_nulls", Value: &sh2, Flags: rt.RuleMemo, Seen: 79},
-	{Name: "filter_clause", Value: &sh1142, Seen: -1, Scope: 15, Vars: 2},
-	{Name: "over_clause", Value: &sh33, Seen: -1, Scope: 49, Vars: 2},
-	{Name: "window_specification", Value: &sh1142, Flags: rt.RuleMemo, Seen: 80, Scope: 50, Vars: 2},
-	{Name: "frame_clause", Value: &sh9, Seen: -1, Scope: 51, Vars: 2},
-	{Name: "frame_conflict", Value: &sh229, Seen: -1},
-	{Name: "frame_shift", Value: &sh2, Seen: -1},
-	{Name: "frame_single", Value: &sh136, Seen: -1, Scope: 52, Vars: 2},
-	{Name: "frame_between", Value: &sh1147, Seen: -1, Scope: 53, Vars: 2},
-	{Name: "frame_bound", Value: &sh2, Flags: rt.RuleMemo, Seen: 81, Vars: 2},
-	{Name: "frame_bound_kw", Value: &sh1207, Seen: -1, Scope: 31},
-	{Name: "frame_bound_expr", Value: &sh33, Seen: -1, Scope: 54, Vars: 2},
-	{Name: "window_exclusion", Value: &sh2, Flags: rt.RuleMemo, Seen: 82},
-	{Name: "type_list", Value: &sh3, Flags: rt.RuleMemo, Seen: 83, Scope: 8, Vars: 2},
-	{Name: "typename", Value: &sh1207, Flags: rt.RuleMemo, Seen: 84, Scope: 1, Vars: 2},
-	{Name: "type_base", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "type_setof", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "type_simple", Value: &sh2, Flags: rt.RuleMemo, Seen: 85, Vars: 2},
-	{Name: "type_setof_qualified", Value: &sh3, Seen: -1, Scope: 55},
-	{Name: "array_dims", Value: &sh2, Flags: rt.RuleMemo, Seen: 86},
-	{Name: "array_dim", Value: &sh229, Seen: -1, Scope: 7},
-	{Name: "array_dims_only", Value: &sh1207, Flags: rt.RuleMemo, Seen: 87, Scope: 56},
-	{Name: "array_keyword_sized", Value: &sh1142, Seen: -1, Scope: 7},
-	{Name: "array_keyword", Value: &sh3, Seen: -1},
-	{Name: "type_mods", Value: &sh229, Flags: rt.RuleMemo, Seen: 88, Scope: 17, Vars: 2},
-	{Name: "type_struct", Value: &sh1142, Seen: -1, Scope: 57, Vars: 2},
-	{Name: "colid_type_list", Value: &sh3, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "colid_type", Value: &sh33, Flags: rt.RuleMemo, Seen: 89, Scope: 58, Vars: 2},
-	{Name: "type_map", Value: &sh1142, Seen: -1, Scope: 59, Vars: 2},
-	{Name: "type_interval", Value: &sh3, Seen: -1, Scope: 55},
-	{Name: "type_datetime", Value: &sh136, Seen: -1, Scope: 60},
-	{Name: "time_zone_spec", Value: &sh2, Flags: rt.RuleMemo, Seen: 90},
-	{Name: "type_char", Value: &sh33, Seen: -1, Scope: 61},
-	{Name: "char_name", Value: &sh2, Flags: rt.RuleMemo, Seen: 91},
-	{Name: "type_bit", Value: &sh33, Seen: -1, Scope: 62, Vars: 2},
-	{Name: "type_numeric", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "type_double", Value: &sh3, Seen: -1, Scope: 55},
-	{Name: "type_numeric_mods", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "type_float", Value: &sh33, Seen: -1, Scope: 61},
-	{Name: "type_decimal", Value: &sh33, Seen: -1, Scope: 63, Vars: 2},
-	{Name: "type_numeric_plain", Value: &sh3, Seen: -1, Scope: 55},
-	{Name: "type_qualified", Value: &sh3, Seen: -1, Scope: 55},
-	{Name: "type_generic", Value: &sh33, Seen: -1, Scope: 63, Vars: 2},
-	{Name: "typed_literal", Value: &sh9, Seen: -1, Scope: 64, Vars: 2},
-	{Name: "typed_literal_nchar", Value: &sh3, Seen: -1, Scope: 65, Vars: 2},
-	{Name: "typed_literal_const", Value: &sh33, Seen: -1, Scope: 66, Vars: 2},
-	{Name: "typed_literal_name", Value: &sh33, Seen: -1, Scope: 66, Vars: 2},
-	{Name: "const_type", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "type_numeric_const", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "type_double_const", Value: &sh1207, Seen: -1, Scope: 10},
-	{Name: "type_numeric_mods_const", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "type_float_const", Value: &sh3, Seen: -1, Scope: 67},
-	{Name: "type_decimal_const", Value: &sh3, Seen: -1, Scope: 68, Vars: 2},
-	{Name: "type_numeric_plain_const", Value: &sh1207, Seen: -1, Scope: 10},
-	{Name: "type_char_const", Value: &sh3, Seen: -1, Scope: 67},
-	{Name: "type_bit_const", Value: &sh3, Seen: -1, Scope: 32, Vars: 2},
-	{Name: "type_datetime_const", Value: &sh33, Seen: -1, Scope: 69},
-	{Name: "select_stmt", Value: &sh2, Flags: rt.RuleMemo, Seen: 92, Vars: 2},
-	{Name: "select_paren_stmt", Value: &sh1207, Seen: -1, Scope: 70, Vars: 2},
-	{Name: "select_with_parens", Value: &sh229, Flags: rt.RuleMemo, Seen: 93, Scope: 12, Vars: 2},
-	{Name: "paren_content", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "select_no_parens", Value: &sh1144, Flags: rt.RuleMemo, Seen: 94, Scope: 71, Vars: 2},
-	{Name: "with_clause", Value: &sh2, Flags: rt.RuleMemo, Seen: 95, Vars: 2},
-	{Name: "with_recursive", Value: &sh1144, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "with_plain", Value: &sh136, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "cte", Value: &sh23, Flags: rt.RuleMemo, Seen: 96, Scope: 72, Vars: 2},
-	{Name: "materialized", Value: &sh2, Seen: -1},
+	{Name: "primary_other", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "literal_primary", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "plain_literal", Value: &sh8, Seen: -1, Scope: 9},
+	{Name: "string_literal", Value: &sh8, Seen: -1, Scope: 9, Vars: 2},
+	{Name: "param", Value: &sh1, Flags: rt.RuleMemo, Seen: 55},
+	{Name: "dollar_name", Value: &sh1, Seen: -1},
+	{Name: "positional_ref", Value: &sh28, Seen: -1, Scope: 13},
+	{Name: "plain_column", Value: &sh8, Seen: -1, Scope: 14},
+	{Name: "column_ref", Value: &sh1196, Flags: rt.RuleMemo, Seen: 56, Scope: 14},
+	{Name: "dotted_idents", Value: &sh2, Flags: rt.RuleMemo, Seen: 57, Scope: 8},
+	{Name: "paren_primary", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "subquery_expr", Value: &sh1196, Seen: -1, Scope: 12, Vars: 2},
+	{Name: "row_expr", Value: &sh1133, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "paren_expr", Value: &sh218, Flags: rt.RuleMemo, Seen: 58, Scope: 15, Vars: 2},
+	{Name: "indirection_expr", Value: &sh1, Flags: rt.RuleMemo, Seen: 59, Vars: 2},
+	{Name: "func_expr", Value: &sh8, Seen: -1, Scope: 15, Vars: 2},
+	{Name: "func_call_plain", Value: &sh8, Seen: -1, Scope: 16, Vars: 2},
+	{Name: "list_lit", Value: &sh218, Seen: -1, Scope: 17, Vars: 2},
+	{Name: "array_expr", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "array_subquery", Value: &sh28, Seen: -1, Scope: 12, Vars: 2},
+	{Name: "array_lit", Value: &sh1132, Seen: -1, Scope: 17, Vars: 2},
+	{Name: "struct_lit", Value: &sh1132, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "struct_field", Value: &sh218, Flags: rt.RuleMemo, Seen: 60, Scope: 18, Vars: 2},
+	{Name: "map_lit", Value: &sh1132, Seen: -1, Scope: 19, Vars: 2},
+	{Name: "map_entries", Value: &sh28, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "map_entry", Value: &sh218, Flags: rt.RuleMemo, Seen: 61, Scope: 20, Vars: 2},
+	{Name: "list_comprehension", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "list_comp_if", Value: &sh1197, Seen: -1, Scope: 21, Vars: 2},
+	{Name: "list_comp", Value: &sh1198, Seen: -1, Scope: 22, Vars: 2},
+	{Name: "case_expr", Value: &sh1132, Seen: -1, Scope: 23, Vars: 2},
+	{Name: "when_clause_list", Value: &sh2, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "when_clause", Value: &sh1132, Flags: rt.RuleMemo, Seen: 62, Scope: 24, Vars: 2},
+	{Name: "qualified_row", Value: &sh1132, Seen: -1, Scope: 17, Vars: 2},
+	{Name: "expr_list", Value: &sh2, Flags: rt.RuleMemo, Seen: 63, Scope: 8, Vars: 2},
+	{Name: "expr_list_opt_comma", Value: &sh2, Flags: rt.RuleMemo, Seen: 64, Scope: 9, Vars: 2},
+	{Name: "star_primary", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "default_expr", Value: &sh1, Seen: -1},
+	{Name: "columns_expr", Value: &sh1132, Seen: -1, Scope: 25, Vars: 2},
+	{Name: "star_columns", Value: &sh1135, Seen: -1, Scope: 25, Vars: 2},
+	{Name: "unpack_expr", Value: &sh1132, Seen: -1, Scope: 25, Vars: 2},
+	{Name: "star_expr", Value: &sh126, Seen: -1, Scope: 26, Vars: 2},
+	{Name: "qualified_star", Value: &sh1131, Seen: -1, Scope: 27, Vars: 2},
+	{Name: "lambda_expr", Value: &sh1132, Seen: -1, Scope: 28, Vars: 2},
+	{Name: "except_name", Value: &sh2, Flags: rt.RuleMemo, Seen: 65, Scope: 8, Vars: 2},
+	{Name: "except_name_list", Value: &sh28, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "exclude_list", Value: &sh1, Flags: rt.RuleMemo, Seen: 66, Vars: 2},
+	{Name: "exclude_paren", Value: &sh1132, Seen: -1, Scope: 9, Vars: 2},
+	{Name: "exclude_single", Value: &sh28, Seen: -1, Scope: 10, Vars: 2},
+	{Name: "replace_item", Value: &sh218, Flags: rt.RuleMemo, Seen: 67, Scope: 29, Vars: 2},
+	{Name: "replace_list", Value: &sh1, Flags: rt.RuleMemo, Seen: 68, Vars: 2},
+	{Name: "replace_paren", Value: &sh1135, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "replace_single", Value: &sh28, Seen: -1, Scope: 13, Vars: 2},
+	{Name: "rename_item", Value: &sh218, Flags: rt.RuleMemo, Seen: 69, Scope: 30, Vars: 2},
+	{Name: "rename_list", Value: &sh1, Flags: rt.RuleMemo, Seen: 70, Vars: 2},
+	{Name: "rename_paren", Value: &sh1135, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "rename_single", Value: &sh28, Seen: -1, Scope: 13, Vars: 2},
+	{Name: "keyword_primary", Value: &sh8, Seen: -1, Scope: 31, Vars: 2},
+	{Name: "bool_lit", Value: &sh1, Seen: -1},
+	{Name: "null_lit", Value: &sh1, Seen: -1},
+	{Name: "exists_expr", Value: &sh28, Seen: -1, Scope: 12, Vars: 2},
+	{Name: "grouping_expr", Value: &sh1132, Seen: -1, Scope: 32, Vars: 2},
+	{Name: "cast_expr", Value: &sh1, Flags: rt.RuleMemo, Seen: 71, Vars: 2},
+	{Name: "cast_plain", Value: &sh1141, Seen: -1, Scope: 33, Vars: 2},
+	{Name: "cast_try", Value: &sh1141, Seen: -1, Scope: 33, Vars: 2},
+	{Name: "interval_lit", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "interval_paren", Value: &sh1131, Seen: -1, Scope: 34, Vars: 2},
+	{Name: "interval_const", Value: &sh126, Seen: -1, Scope: 34, Vars: 2},
+	{Name: "interval_unit", Value: &sh1, Flags: rt.RuleMemo, Seen: 72},
+	{Name: "interval_to", Value: &sh1, Seen: -1},
+	{Name: "interval_field", Value: &sh1, Seen: -1},
+	{Name: "special_call", Value: &sh1, Flags: rt.RuleMemo, Seen: 73, Vars: 2},
+	{Name: "sc_coalesce", Value: &sh1132, Seen: -1, Scope: 35, Vars: 2},
+	{Name: "sc_nullif", Value: &sh1141, Seen: -1, Scope: 36, Vars: 2},
+	{Name: "sc_extract", Value: &sh1141, Seen: -1, Scope: 37, Vars: 2},
+	{Name: "sc_extract_empty", Value: &sh218, Seen: -1, Scope: 10},
+	{Name: "sc_overlay", Value: &sh1199, Seen: -1, Scope: 38, Vars: 2},
+	{Name: "sc_position", Value: &sh1141, Seen: -1, Scope: 36, Vars: 2},
+	{Name: "sc_position_empty", Value: &sh218, Seen: -1, Scope: 10},
+	{Name: "sc_substring_from", Value: &sh19, Seen: -1, Scope: 39, Vars: 2},
+	{Name: "sc_substring_for_from", Value: &sh1200, Seen: -1, Scope: 40, Vars: 2},
+	{Name: "sc_substring_for", Value: &sh1141, Seen: -1, Scope: 41, Vars: 2},
+	{Name: "sc_substring_list", Value: &sh1132, Seen: -1, Scope: 42, Vars: 2},
+	{Name: "sc_substring_empty", Value: &sh218, Seen: -1, Scope: 10},
+	{Name: "sc_treat", Value: &sh1141, Seen: -1, Scope: 43, Vars: 2},
+	{Name: "sc_trim_chars", Value: &sh19, Seen: -1, Scope: 44, Vars: 2},
+	{Name: "sc_trim", Value: &sh1131, Seen: -1, Scope: 45, Vars: 2},
+	{Name: "sc_collation", Value: &sh1132, Seen: -1, Scope: 46, Vars: 2},
+	{Name: "extract_arg", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "year_kw", Value: &sh1, Seen: -1},
+	{Name: "trim_from", Value: &sh28, Seen: -1, Scope: 9, Vars: 2},
+	{Name: "func_call", Value: &sh1198, Flags: rt.RuleMemo, Seen: 74, Scope: 47, Vars: 2},
+	{Name: "typed_literal_args", Value: &sh1135, Seen: -1, Scope: 48, Vars: 2},
+	{Name: "func_name_type", Value: &sh1, Flags: rt.RuleMemo, Seen: 75},
+	{Name: "func_arg_list", Value: &sh2, Flags: rt.RuleMemo, Seen: 76, Scope: 8, Vars: 2},
+	{Name: "func_arg_expr", Value: &sh1, Flags: rt.RuleMemo, Seen: 77, Vars: 2},
+	{Name: "named_arg", Value: &sh218, Flags: rt.RuleMemo, Seen: 78, Scope: 18, Vars: 2},
+	{Name: "opt_ignore_nulls", Value: &sh1, Flags: rt.RuleMemo, Seen: 79},
+	{Name: "filter_clause", Value: &sh1131, Seen: -1, Scope: 15, Vars: 2},
+	{Name: "over_clause", Value: &sh28, Seen: -1, Scope: 49, Vars: 2},
+	{Name: "window_specification", Value: &sh1131, Flags: rt.RuleMemo, Seen: 80, Scope: 50, Vars: 2},
+	{Name: "frame_clause", Value: &sh8, Seen: -1, Scope: 51, Vars: 2},
+	{Name: "frame_conflict", Value: &sh218, Seen: -1},
+	{Name: "frame_shift", Value: &sh1, Seen: -1},
+	{Name: "frame_single", Value: &sh126, Seen: -1, Scope: 52, Vars: 2},
+	{Name: "frame_between", Value: &sh1136, Seen: -1, Scope: 53, Vars: 2},
+	{Name: "frame_bound", Value: &sh1, Flags: rt.RuleMemo, Seen: 81, Vars: 2},
+	{Name: "frame_bound_kw", Value: &sh1196, Seen: -1, Scope: 31},
+	{Name: "frame_bound_expr", Value: &sh28, Seen: -1, Scope: 54, Vars: 2},
+	{Name: "window_exclusion", Value: &sh1, Flags: rt.RuleMemo, Seen: 82},
+	{Name: "type_list", Value: &sh2, Flags: rt.RuleMemo, Seen: 83, Scope: 8, Vars: 2},
+	{Name: "typename", Value: &sh1196, Flags: rt.RuleMemo, Seen: 84, Scope: 1, Vars: 2},
+	{Name: "type_base", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "type_setof", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "type_simple", Value: &sh1, Flags: rt.RuleMemo, Seen: 85, Vars: 2},
+	{Name: "type_setof_qualified", Value: &sh2, Seen: -1, Scope: 55},
+	{Name: "array_dims", Value: &sh1, Flags: rt.RuleMemo, Seen: 86},
+	{Name: "array_dim", Value: &sh218, Seen: -1, Scope: 7},
+	{Name: "array_dims_only", Value: &sh1196, Flags: rt.RuleMemo, Seen: 87, Scope: 56},
+	{Name: "array_keyword_sized", Value: &sh1131, Seen: -1, Scope: 7},
+	{Name: "array_keyword", Value: &sh2, Seen: -1},
+	{Name: "type_mods", Value: &sh218, Flags: rt.RuleMemo, Seen: 88, Scope: 17, Vars: 2},
+	{Name: "type_struct", Value: &sh1131, Seen: -1, Scope: 57, Vars: 2},
+	{Name: "colid_type_list", Value: &sh2, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "colid_type", Value: &sh28, Flags: rt.RuleMemo, Seen: 89, Scope: 58, Vars: 2},
+	{Name: "type_map", Value: &sh1131, Seen: -1, Scope: 59, Vars: 2},
+	{Name: "type_interval", Value: &sh2, Seen: -1, Scope: 55},
+	{Name: "type_datetime", Value: &sh126, Seen: -1, Scope: 60},
+	{Name: "time_zone_spec", Value: &sh1, Flags: rt.RuleMemo, Seen: 90},
+	{Name: "type_char", Value: &sh28, Seen: -1, Scope: 61},
+	{Name: "char_name", Value: &sh1, Flags: rt.RuleMemo, Seen: 91},
+	{Name: "type_bit", Value: &sh28, Seen: -1, Scope: 62, Vars: 2},
+	{Name: "type_numeric", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "type_double", Value: &sh2, Seen: -1, Scope: 55},
+	{Name: "type_numeric_mods", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "type_float", Value: &sh28, Seen: -1, Scope: 61},
+	{Name: "type_decimal", Value: &sh28, Seen: -1, Scope: 63, Vars: 2},
+	{Name: "type_numeric_plain", Value: &sh2, Seen: -1, Scope: 55},
+	{Name: "type_qualified", Value: &sh2, Seen: -1, Scope: 55},
+	{Name: "type_generic", Value: &sh28, Seen: -1, Scope: 63, Vars: 2},
+	{Name: "typed_literal", Value: &sh8, Seen: -1, Scope: 64, Vars: 2},
+	{Name: "typed_literal_nchar", Value: &sh2, Seen: -1, Scope: 65, Vars: 2},
+	{Name: "typed_literal_const", Value: &sh28, Seen: -1, Scope: 66, Vars: 2},
+	{Name: "typed_literal_name", Value: &sh28, Seen: -1, Scope: 66, Vars: 2},
+	{Name: "const_type", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "type_numeric_const", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "type_double_const", Value: &sh1196, Seen: -1, Scope: 10},
+	{Name: "type_numeric_mods_const", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "type_float_const", Value: &sh2, Seen: -1, Scope: 67},
+	{Name: "type_decimal_const", Value: &sh2, Seen: -1, Scope: 68, Vars: 2},
+	{Name: "type_numeric_plain_const", Value: &sh1196, Seen: -1, Scope: 10},
+	{Name: "type_char_const", Value: &sh2, Seen: -1, Scope: 67},
+	{Name: "type_bit_const", Value: &sh2, Seen: -1, Scope: 32, Vars: 2},
+	{Name: "type_datetime_const", Value: &sh28, Seen: -1, Scope: 69},
+	{Name: "select_stmt", Value: &sh1, Flags: rt.RuleMemo, Seen: 92, Vars: 2},
+	{Name: "select_paren_stmt", Value: &sh1196, Seen: -1, Scope: 70, Vars: 2},
+	{Name: "select_with_parens", Value: &sh218, Flags: rt.RuleMemo, Seen: 93, Scope: 12, Vars: 2},
+	{Name: "paren_content", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "select_no_parens", Value: &sh1133, Flags: rt.RuleMemo, Seen: 94, Scope: 71, Vars: 2},
+	{Name: "with_clause", Value: &sh1, Flags: rt.RuleMemo, Seen: 95, Vars: 2},
+	{Name: "with_recursive", Value: &sh1133, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "with_plain", Value: &sh126, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "cte", Value: &sh19, Flags: rt.RuleMemo, Seen: 96, Scope: 72, Vars: 2},
+	{Name: "materialized", Value: &sh1, Seen: -1},
 	{Name: "select_body", Seen: -1, Vars: 2},
-	{Name: "select_core", Value: &sh1147, Seen: -1, Scope: 73, Vars: 2},
-	{Name: "from_first", Value: &sh1152, Seen: -1, Scope: 74, Vars: 2},
-	{Name: "distinct_clause", Value: &sh3, Flags: rt.RuleMemo, Seen: 97, Scope: 17, Vars: 2},
-	{Name: "target_list_opt_comma", Value: &sh33, Flags: rt.RuleMemo, Seen: 98, Scope: 8, Vars: 2},
-	{Name: "select_item", Value: &sh2, Flags: rt.RuleMemo, Seen: 99, Vars: 2},
-	{Name: "item_prefixed", Value: &sh229, Seen: -1, Scope: 75, Vars: 2},
-	{Name: "item_plain", Value: &sh3, Seen: -1, Scope: 76, Vars: 2},
-	{Name: "col_label_or_string", Value: &sh2, Flags: rt.RuleMemo, Seen: 100, Vars: 2},
-	{Name: "into_clause", Value: &sh33, Flags: rt.RuleMemo, Seen: 101, Scope: 1, Vars: 2},
-	{Name: "opt_temp_table_name", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "into_temp", Value: &sh136, Seen: -1, Scope: 77, Vars: 2},
-	{Name: "into_table", Value: &sh33, Seen: -1, Scope: 10, Vars: 2},
-	{Name: "into_plain", Value: &sh1207, Seen: -1, Scope: 10, Vars: 2},
-	{Name: "group_clause", Value: &sh2, Flags: rt.RuleMemo, Seen: 102, Vars: 2},
-	{Name: "group_all", Value: &sh229, Seen: -1},
-	{Name: "group_list", Value: &sh1143, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "group_by_item", Value: &sh2, Flags: rt.RuleMemo, Seen: 103, Vars: 2},
-	{Name: "group_expr", Value: &sh9, Seen: -1, Scope: 15, Vars: 2},
-	{Name: "grouping_set", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "gs_rollup", Value: &sh1143, Seen: -1, Scope: 78, Vars: 2},
-	{Name: "gs_sets", Value: &sh1143, Seen: -1, Scope: 78, Vars: 2},
-	{Name: "gs_empty", Value: &sh33, Seen: -1},
-	{Name: "group_by_list_opt_comma", Value: &sh33, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "window_clause", Value: &sh136, Flags: rt.RuleMemo, Seen: 104, Scope: 8, Vars: 2},
-	{Name: "window_definition", Value: &sh229, Flags: rt.RuleMemo, Seen: 105, Scope: 65, Vars: 2},
-	{Name: "values_clause", Value: &sh229, Flags: rt.RuleMemo, Seen: 106, Scope: 8, Vars: 2},
-	{Name: "values_row", Value: &sh229, Flags: rt.RuleMemo, Seen: 107, Scope: 17, Vars: 2},
-	{Name: "table_query", Value: &sh33, Seen: -1, Scope: 10, Vars: 2},
-	{Name: "pivot_query", Value: &sh1144, Seen: -1, Scope: 79, Vars: 2},
-	{Name: "pivot_keyword", Value: &sh2, Seen: -1},
-	{Name: "unpivot_keyword", Value: &sh2, Seen: -1},
-	{Name: "unpivot_query", Value: &sh1142, Seen: -1, Scope: 80, Vars: 2},
-	{Name: "name_list_opt_comma_opt_bracket", Value: &sh2, Flags: rt.RuleMemo, Seen: 108, Vars: 2},
-	{Name: "bracketed_names", Value: &sh229, Flags: rt.RuleMemo, Seen: 109, Scope: 9, Vars: 2},
-	{Name: "pivot_column_list", Value: &sh33, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "pivot_column_entry", Value: &sh3, Flags: rt.RuleMemo, Seen: 110, Scope: 81, Vars: 2},
-	{Name: "sort_clause", Value: &sh2, Flags: rt.RuleMemo, Seen: 111, Vars: 2},
-	{Name: "sort_all", Value: &sh1143, Seen: -1, Scope: 82},
-	{Name: "sort_list", Value: &sh1144, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "sortby", Value: &sh2, Flags: rt.RuleMemo, Seen: 112, Vars: 2},
-	{Name: "sortby_using", Value: &sh1144, Seen: -1, Scope: 83, Vars: 2},
-	{Name: "sortby_plain", Value: &sh33, Seen: -1, Scope: 84, Vars: 2},
-	{Name: "asc_desc", Value: &sh2, Flags: rt.RuleMemo, Seen: 113},
-	{Name: "nulls_order", Value: &sh2, Flags: rt.RuleMemo, Seen: 114},
-	{Name: "qual_all_op", Value: &sh2, Flags: rt.RuleMemo, Seen: 115},
-	{Name: "limit_clause", Value: &sh2, Flags: rt.RuleMemo, Seen: 116, Vars: 2},
-	{Name: "limit_comma", Value: &sh1143, Seen: -1, Scope: 85, Vars: 2},
-	{Name: "limit_all", Value: &sh33, Seen: -1, Scope: 31},
-	{Name: "limit_percent", Value: &sh229, Seen: -1, Scope: 86},
-	{Name: "limit_percent_sign", Value: &sh229, Seen: -1, Scope: 87, Vars: 2},
-	{Name: "limit_plain", Value: &sh33, Seen: -1, Scope: 20, Vars: 2},
-	{Name: "fetch_value_clause", Value: &sh1146, Seen: -1, Scope: 20, Vars: 2},
-	{Name: "fetch_clause", Value: &sh1143, Seen: -1, Scope: 31},
-	{Name: "fetch_value", Value: &sh2, Flags: rt.RuleMemo, Seen: 117, Vars: 2},
-	{Name: "fetch_signed", Value: &sh33, Seen: -1, Scope: 10},
-	{Name: "offset_clause", Value: &sh2, Flags: rt.RuleMemo, Seen: 118, Vars: 2},
-	{Name: "offset_plain", Value: &sh33, Seen: -1, Scope: 88, Vars: 2},
-	{Name: "offset_rows", Value: &sh229, Seen: -1, Scope: 89, Vars: 2},
-	{Name: "locking_clauses", Value: &sh3, Flags: rt.RuleMemo, Seen: 119, Scope: 8, Vars: 2},
-	{Name: "locking_clause", Value: &sh2, Flags: rt.RuleMemo, Seen: 120, Vars: 2},
-	{Name: "lock_read_only", Value: &sh1207, Seen: -1, Scope: 7},
-	{Name: "lock_for", Value: &sh33, Seen: -1, Scope: 90, Vars: 2},
-	{Name: "qualified_name_list", Value: &sh3, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "sample_clause", Value: &sh229, Flags: rt.RuleMemo, Seen: 121, Scope: 7},
-	{Name: "tablesample_clause", Value: &sh33, Flags: rt.RuleMemo, Seen: 122, Scope: 7},
-	{Name: "sample_value", Value: &sh2, Flags: rt.RuleMemo, Seen: 123},
-	{Name: "tablesample_entry", Value: &sh2, Flags: rt.RuleMemo, Seen: 124},
-	{Name: "sample_func", Value: &sh1142, Seen: -1, Scope: 91},
-	{Name: "sample_seeded", Value: &sh1146, Seen: -1, Scope: 92},
-	{Name: "sample_count", Value: &sh3, Seen: -1, Scope: 34},
-	{Name: "sample_unit", Value: &sh2, Flags: rt.RuleMemo, Seen: 125},
-	{Name: "from_list", Value: &sh3, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "from_list_opt_comma", Value: &sh33, Flags: rt.RuleMemo, Seen: 126, Scope: 8, Vars: 2},
+	{Name: "select_core", Value: &sh1136, Seen: -1, Scope: 73, Vars: 2},
+	{Name: "from_first", Value: &sh1141, Seen: -1, Scope: 74, Vars: 2},
+	{Name: "distinct_clause", Value: &sh2, Flags: rt.RuleMemo, Seen: 97, Scope: 17, Vars: 2},
+	{Name: "target_list_opt_comma", Value: &sh28, Flags: rt.RuleMemo, Seen: 98, Scope: 8, Vars: 2},
+	{Name: "select_item", Value: &sh1, Flags: rt.RuleMemo, Seen: 99, Vars: 2},
+	{Name: "item_prefixed", Value: &sh218, Seen: -1, Scope: 75, Vars: 2},
+	{Name: "item_plain", Value: &sh2, Seen: -1, Scope: 76, Vars: 2},
+	{Name: "col_label_or_string", Value: &sh1, Flags: rt.RuleMemo, Seen: 100, Vars: 2},
+	{Name: "into_clause", Value: &sh28, Flags: rt.RuleMemo, Seen: 101, Scope: 1, Vars: 2},
+	{Name: "opt_temp_table_name", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "into_temp", Value: &sh126, Seen: -1, Scope: 77, Vars: 2},
+	{Name: "into_table", Value: &sh28, Seen: -1, Scope: 10, Vars: 2},
+	{Name: "into_plain", Value: &sh1196, Seen: -1, Scope: 10, Vars: 2},
+	{Name: "group_clause", Value: &sh1, Flags: rt.RuleMemo, Seen: 102, Vars: 2},
+	{Name: "group_all", Value: &sh218, Seen: -1},
+	{Name: "group_list", Value: &sh1132, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "group_by_item", Value: &sh1, Flags: rt.RuleMemo, Seen: 103, Vars: 2},
+	{Name: "group_expr", Value: &sh8, Seen: -1, Scope: 15, Vars: 2},
+	{Name: "grouping_set", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "gs_rollup", Value: &sh1132, Seen: -1, Scope: 78, Vars: 2},
+	{Name: "gs_sets", Value: &sh1132, Seen: -1, Scope: 78, Vars: 2},
+	{Name: "gs_empty", Value: &sh28, Seen: -1},
+	{Name: "group_by_list_opt_comma", Value: &sh28, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "window_clause", Value: &sh126, Flags: rt.RuleMemo, Seen: 104, Scope: 8, Vars: 2},
+	{Name: "window_definition", Value: &sh218, Flags: rt.RuleMemo, Seen: 105, Scope: 65, Vars: 2},
+	{Name: "values_clause", Value: &sh218, Flags: rt.RuleMemo, Seen: 106, Scope: 8, Vars: 2},
+	{Name: "values_row", Value: &sh218, Flags: rt.RuleMemo, Seen: 107, Scope: 17, Vars: 2},
+	{Name: "table_query", Value: &sh28, Seen: -1, Scope: 10, Vars: 2},
+	{Name: "pivot_query", Value: &sh1133, Seen: -1, Scope: 79, Vars: 2},
+	{Name: "pivot_keyword", Value: &sh1, Seen: -1},
+	{Name: "unpivot_keyword", Value: &sh1, Seen: -1},
+	{Name: "unpivot_query", Value: &sh1131, Seen: -1, Scope: 80, Vars: 2},
+	{Name: "name_list_opt_comma_opt_bracket", Value: &sh1, Flags: rt.RuleMemo, Seen: 108, Vars: 2},
+	{Name: "bracketed_names", Value: &sh218, Flags: rt.RuleMemo, Seen: 109, Scope: 9, Vars: 2},
+	{Name: "pivot_column_list", Value: &sh28, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "pivot_column_entry", Value: &sh2, Flags: rt.RuleMemo, Seen: 110, Scope: 81, Vars: 2},
+	{Name: "sort_clause", Value: &sh1, Flags: rt.RuleMemo, Seen: 111, Vars: 2},
+	{Name: "sort_all", Value: &sh1132, Seen: -1, Scope: 82},
+	{Name: "sort_list", Value: &sh1133, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "sortby", Value: &sh1, Flags: rt.RuleMemo, Seen: 112, Vars: 2},
+	{Name: "sortby_using", Value: &sh1133, Seen: -1, Scope: 83, Vars: 2},
+	{Name: "sortby_plain", Value: &sh28, Seen: -1, Scope: 84, Vars: 2},
+	{Name: "asc_desc", Value: &sh1, Flags: rt.RuleMemo, Seen: 113},
+	{Name: "nulls_order", Value: &sh1, Flags: rt.RuleMemo, Seen: 114},
+	{Name: "qual_all_op", Value: &sh1, Flags: rt.RuleMemo, Seen: 115},
+	{Name: "limit_clause", Value: &sh1, Flags: rt.RuleMemo, Seen: 116, Vars: 2},
+	{Name: "limit_comma", Value: &sh1132, Seen: -1, Scope: 85, Vars: 2},
+	{Name: "limit_all", Value: &sh28, Seen: -1, Scope: 31},
+	{Name: "limit_percent", Value: &sh218, Seen: -1, Scope: 86},
+	{Name: "limit_percent_sign", Value: &sh218, Seen: -1, Scope: 87, Vars: 2},
+	{Name: "limit_plain", Value: &sh28, Seen: -1, Scope: 20, Vars: 2},
+	{Name: "fetch_value_clause", Value: &sh1135, Seen: -1, Scope: 20, Vars: 2},
+	{Name: "fetch_clause", Value: &sh1132, Seen: -1, Scope: 31},
+	{Name: "fetch_value", Value: &sh1, Flags: rt.RuleMemo, Seen: 117, Vars: 2},
+	{Name: "fetch_signed", Value: &sh28, Seen: -1, Scope: 10},
+	{Name: "offset_clause", Value: &sh1, Flags: rt.RuleMemo, Seen: 118, Vars: 2},
+	{Name: "offset_plain", Value: &sh28, Seen: -1, Scope: 88, Vars: 2},
+	{Name: "offset_rows", Value: &sh218, Seen: -1, Scope: 89, Vars: 2},
+	{Name: "locking_clauses", Value: &sh2, Flags: rt.RuleMemo, Seen: 119, Scope: 8, Vars: 2},
+	{Name: "locking_clause", Value: &sh1, Flags: rt.RuleMemo, Seen: 120, Vars: 2},
+	{Name: "lock_read_only", Value: &sh1196, Seen: -1, Scope: 7},
+	{Name: "lock_for", Value: &sh28, Seen: -1, Scope: 90, Vars: 2},
+	{Name: "qualified_name_list", Value: &sh2, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "sample_clause", Value: &sh218, Flags: rt.RuleMemo, Seen: 121, Scope: 7},
+	{Name: "tablesample_clause", Value: &sh28, Flags: rt.RuleMemo, Seen: 122, Scope: 7},
+	{Name: "sample_value", Value: &sh1, Flags: rt.RuleMemo, Seen: 123},
+	{Name: "tablesample_entry", Value: &sh1, Flags: rt.RuleMemo, Seen: 124},
+	{Name: "sample_func", Value: &sh1131, Seen: -1, Scope: 91},
+	{Name: "sample_seeded", Value: &sh1135, Seen: -1, Scope: 92},
+	{Name: "sample_count", Value: &sh2, Seen: -1, Scope: 34},
+	{Name: "sample_unit", Value: &sh1, Flags: rt.RuleMemo, Seen: 125},
+	{Name: "from_list", Value: &sh2, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "from_list_opt_comma", Value: &sh28, Flags: rt.RuleMemo, Seen: 126, Scope: 8, Vars: 2},
 	{Name: "table_ref", Flags: rt.RuleMemo, Seen: 127, Vars: 2},
-	{Name: "join_type", Value: &sh2, Flags: rt.RuleMemo, Seen: 128},
-	{Name: "join_qual_on", Value: &sh33, Flags: rt.RuleMemo, Seen: 129, Scope: 15, Vars: 2},
-	{Name: "join_qual_using", Value: &sh1143, Flags: rt.RuleMemo, Seen: 130, Scope: 9, Vars: 2},
-	{Name: "include_nulls", Value: &sh2, Seen: -1},
-	{Name: "unpivot_header", Value: &sh2, Flags: rt.RuleMemo, Seen: 131, Vars: 2},
-	{Name: "unpivot_single", Value: &sh1207, Seen: -1, Scope: 10, Vars: 2},
-	{Name: "unpivot_value_list", Value: &sh3, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "unpivot_value", Value: &sh1146, Flags: rt.RuleMemo, Seen: 132, Scope: 93, Vars: 2},
-	{Name: "pivot_value_list", Value: &sh3, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "pivot_value", Value: &sh229, Flags: rt.RuleMemo, Seen: 133, Scope: 94, Vars: 2},
-	{Name: "pivot_header", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "pivot_header_list", Value: &sh229, Seen: -1, Scope: 9, Vars: 2},
-	{Name: "pivot_header_single", Value: &sh1207, Seen: -1, Scope: 15, Vars: 2},
-	{Name: "c_expr_list_opt_comma", Value: &sh33, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "table_primary", Value: &sh2, Flags: rt.RuleMemo, Seen: 134, Vars: 2},
-	{Name: "alias_prefix", Value: &sh33, Flags: rt.RuleMemo, Seen: 135, Scope: 10, Vars: 2},
-	{Name: "base_ref", Value: &sh229, Seen: -1, Scope: 95, Vars: 2},
-	{Name: "at_clause", Value: &sh1152, Seen: -1, Scope: 96, Vars: 2},
-	{Name: "subquery_ref", Value: &sh229, Seen: -1, Scope: 97, Vars: 2},
-	{Name: "paren_table", Value: &sh1143, Seen: -1, Scope: 98, Vars: 2},
-	{Name: "join_start", Value: &sh2, Seen: -1},
-	{Name: "values_ref", Value: &sh229, Seen: -1, Scope: 99, Vars: 2},
-	{Name: "func_ref", Value: &sh1144, Seen: -1, Scope: 100, Vars: 2},
-	{Name: "rows_from_ref", Value: &sh1212, Seen: -1, Scope: 101, Vars: 2},
-	{Name: "rowsfrom_item", Value: &sh3, Flags: rt.RuleMemo, Seen: 136, Scope: 102, Vars: 2},
-	{Name: "func_expr_windowless", Value: &sh2, Flags: rt.RuleMemo, Seen: 137, Vars: 2},
-	{Name: "func_call_bare", Value: &sh1146, Seen: -1, Scope: 103, Vars: 2},
-	{Name: "alias_clause", Value: &sh2, Flags: rt.RuleMemo, Seen: 138, Vars: 2},
-	{Name: "alias_as_cols", Value: &sh1146, Flags: rt.RuleMemo, Seen: 139, Scope: 104, Vars: 2},
-	{Name: "alias_as", Value: &sh33, Flags: rt.RuleMemo, Seen: 140, Scope: 10, Vars: 2},
-	{Name: "alias_cols", Value: &sh1143, Flags: rt.RuleMemo, Seen: 141, Scope: 104, Vars: 2},
-	{Name: "alias_bare", Value: &sh1207, Flags: rt.RuleMemo, Seen: 142, Scope: 10},
-	{Name: "func_alias_clause", Value: &sh2, Flags: rt.RuleMemo, Seen: 143, Vars: 2},
-	{Name: "falias_as_defs", Value: &sh1146, Seen: -1, Scope: 105, Vars: 2},
-	{Name: "falias_defs_only", Value: &sh1143, Seen: -1, Scope: 106, Vars: 2},
-	{Name: "falias_defs", Value: &sh1143, Seen: -1, Scope: 105, Vars: 2},
-	{Name: "table_func_element_list", Value: &sh3, Flags: rt.RuleMemo, Seen: 144, Scope: 8, Vars: 2},
-	{Name: "table_func_element", Value: &sh136, Flags: rt.RuleMemo, Seen: 145, Scope: 107, Vars: 2},
-	{Name: "target_list", Value: &sh3, Flags: rt.RuleMemo, Seen: 146, Scope: 8, Vars: 2},
-	{Name: "insert_stmt", Value: &sh1209, Flags: rt.RuleMemo, Seen: 147, Scope: 108, Vars: 2},
-	{Name: "insert_columns", Value: &sh229, Seen: -1, Scope: 9},
-	{Name: "insert_column_list", Value: &sh3, Seen: -1, Scope: 8},
-	{Name: "set_target", Value: &sh2, Flags: rt.RuleMemo, Seen: 148},
-	{Name: "overriding", Value: &sh2, Seen: -1},
-	{Name: "on_conflict", Value: &sh1142, Seen: -1, Scope: 109, Vars: 2},
-	{Name: "index_params", Value: &sh3, Flags: rt.RuleMemo, Seen: 149, Scope: 8, Vars: 2},
-	{Name: "index_elem", Value: &sh2, Flags: rt.RuleMemo, Seen: 150, Vars: 2},
-	{Name: "index_elem_col", Value: &sh229, Seen: -1, Scope: 110},
-	{Name: "index_elem_func", Value: &sh229, Seen: -1, Scope: 111, Vars: 2},
-	{Name: "index_elem_expr", Value: &sh1146, Seen: -1, Scope: 112, Vars: 2},
-	{Name: "opt_class", Value: &sh9, Flags: rt.RuleMemo, Seen: 151, Scope: 10},
-	{Name: "set_clause_list_opt_comma", Value: &sh33, Flags: rt.RuleMemo, Seen: 152, Scope: 8, Vars: 2},
-	{Name: "set_clause", Value: &sh2, Flags: rt.RuleMemo, Seen: 153, Vars: 2},
-	{Name: "set_clause_one", Value: &sh229, Seen: -1, Scope: 113, Vars: 2},
-	{Name: "set_clause_paren", Value: &sh1147, Seen: -1, Scope: 114, Vars: 2},
-	{Name: "target_table", Value: &sh3, Flags: rt.RuleMemo, Seen: 154, Scope: 115, Vars: 2},
-	{Name: "update_stmt", Value: &sh1152, Flags: rt.RuleMemo, Seen: 155, Scope: 116, Vars: 2},
-	{Name: "delete_stmt", Value: &sh1146, Flags: rt.RuleMemo, Seen: 156, Scope: 117, Vars: 2},
-	{Name: "truncate_stmt", Value: &sh136, Flags: rt.RuleMemo, Seen: 157, Scope: 1, Vars: 2},
-	{Name: "merge_stmt", Value: &sh1210, Flags: rt.RuleMemo, Seen: 158, Scope: 118, Vars: 2},
-	{Name: "merge_when", Value: &sh2, Flags: rt.RuleMemo, Seen: 159, Vars: 2},
-	{Name: "merge_when_matched", Value: &sh1142, Seen: -1, Scope: 119, Vars: 2},
-	{Name: "merge_when_not", Value: &sh1152, Seen: -1, Scope: 120, Vars: 2},
-	{Name: "merge_action", Value: &sh2, Flags: rt.RuleMemo, Seen: 160, Vars: 2},
-	{Name: "ma_update_set", Value: &sh229, Seen: -1, Scope: 121, Vars: 2},
-	{Name: "ma_update_star", Value: &sh229, Seen: -1, Scope: 31},
-	{Name: "ma_update", Value: &sh3, Seen: -1, Scope: 122},
-	{Name: "ma_delete", Value: &sh1207, Seen: -1, Scope: 31},
-	{Name: "ma_insert_values", Value: &sh1147, Seen: -1, Scope: 123, Vars: 2},
-	{Name: "insert_column_ident_list", Value: &sh3, Seen: -1, Scope: 8},
-	{Name: "ma_insert_default", Value: &sh229, Seen: -1, Scope: 31},
-	{Name: "ma_insert", Value: &sh33, Seen: -1, Scope: 124},
-	{Name: "ma_nothing", Value: &sh1207, Seen: -1, Scope: 31},
-	{Name: "ma_error", Value: &sh3, Seen: -1, Scope: 125, Vars: 2},
-	{Name: "opt_temp", Value: &sh2, Flags: rt.RuleMemo, Seen: 161},
-	{Name: "if_not_exists", Value: &sh2, Flags: rt.RuleMemo, Seen: 162},
-	{Name: "if_exists", Value: &sh2, Flags: rt.RuleMemo, Seen: 163},
-	{Name: "or_replace", Value: &sh2, Flags: rt.RuleMemo, Seen: 164},
-	{Name: "create_table_stmt", Value: &sh1208, Flags: rt.RuleMemo, Seen: 165, Scope: 126, Vars: 2},
-	{Name: "table_element_list", Value: &sh33, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "table_element", Value: &sh2, Flags: rt.RuleMemo, Seen: 166, Vars: 2},
-	{Name: "partition_sorted_option", Value: &sh1146, Flags: rt.RuleMemo, Seen: 167, Scope: 78, Vars: 2},
-	{Name: "opt_with_options", Value: &sh2, Flags: rt.RuleMemo, Seen: 168, Vars: 2},
-	{Name: "with_reloptions", Value: &sh1143, Seen: -1, Scope: 9, Vars: 2},
-	{Name: "with_oids", Value: &sh2, Seen: -1},
-	{Name: "on_commit_option", Value: &sh2, Flags: rt.RuleMemo, Seen: 169},
-	{Name: "reloption_list", Value: &sh3, Flags: rt.RuleMemo, Seen: 170, Scope: 8, Vars: 2},
-	{Name: "reloption_elem", Value: &sh2, Flags: rt.RuleMemo, Seen: 171, Vars: 2},
-	{Name: "reloption_def", Value: &sh1144, Seen: -1, Scope: 127, Vars: 2},
-	{Name: "reloption_expr", Value: &sh3, Seen: -1, Scope: 18, Vars: 2},
-	{Name: "reloption_name", Value: &sh1207, Seen: -1, Scope: 16, Vars: 2},
-	{Name: "def_arg", Value: &sh2, Flags: rt.RuleMemo, Seen: 172, Vars: 2},
-	{Name: "numeric_only", Value: &sh2, Flags: rt.RuleMemo, Seen: 173},
-	{Name: "def_list", Value: &sh3, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "def_elem", Value: &sh3, Flags: rt.RuleMemo, Seen: 174, Scope: 18, Vars: 2},
-	{Name: "definition", Value: &sh229, Seen: -1, Scope: 9, Vars: 2},
-	{Name: "opt_definition", Value: &sh33, Flags: rt.RuleMemo, Seen: 175, Scope: 128, Vars: 2},
-	{Name: "column_def", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "column_def_regular", Value: &sh136, Seen: -1, Scope: 129, Vars: 2},
-	{Name: "column_def_generated", Value: &sh229, Seen: -1, Scope: 130, Vars: 2},
-	{Name: "generated_constraint", Value: &sh2, Flags: rt.RuleMemo, Seen: 176, Vars: 2},
-	{Name: "gen_identity", Value: &sh1142, Seen: -1, Scope: 131, Vars: 2},
-	{Name: "gen_expr", Value: &sh23, Seen: -1, Scope: 132, Vars: 2},
-	{Name: "gen_as", Value: &sh1142, Seen: -1, Scope: 133, Vars: 2},
-	{Name: "generated_when", Value: &sh2, Flags: rt.RuleMemo, Seen: 177},
-	{Name: "generated_storage", Value: &sh2, Flags: rt.RuleMemo, Seen: 178},
-	{Name: "constraint_name", Value: &sh33, Flags: rt.RuleMemo, Seen: 179, Scope: 10, Vars: 2},
-	{Name: "col_constraint", Value: &sh2, Flags: rt.RuleMemo, Seen: 180, Vars: 2},
-	{Name: "cc_not_null", Value: &sh3, Seen: -1, Scope: 134, Vars: 2},
-	{Name: "cc_null", Value: &sh3, Seen: -1, Scope: 134, Vars: 2},
-	{Name: "cc_unique", Value: &sh33, Seen: -1, Scope: 135, Vars: 2},
-	{Name: "cc_primary", Value: &sh33, Seen: -1, Scope: 135, Vars: 2},
-	{Name: "cc_check", Value: &sh1146, Seen: -1, Scope: 136, Vars: 2},
-	{Name: "cc_compression", Value: &sh136, Seen: -1, Scope: 137, Vars: 2},
-	{Name: "cc_default", Value: &sh136, Seen: -1, Scope: 136, Vars: 2},
-	{Name: "cc_references", Value: &sh136, Seen: -1, Scope: 138, Vars: 2},
-	{Name: "cc_attr", Value: &sh1207, Seen: -1, Scope: 31},
-	{Name: "cc_collate", Value: &sh33, Seen: -1, Scope: 139},
-	{Name: "constraint_attr", Value: &sh2, Seen: -1},
-	{Name: "reference", Value: &sh136, Flags: rt.RuleMemo, Seen: 181, Scope: 140, Vars: 2},
-	{Name: "column_list", Value: &sh2, Flags: rt.RuleMemo, Seen: 182},
-	{Name: "column_list_opt_comma", Value: &sh3, Flags: rt.RuleMemo, Seen: 183, Scope: 9},
-	{Name: "key_match", Value: &sh2, Seen: -1},
-	{Name: "key_update", Value: &sh2, Flags: rt.RuleMemo, Seen: 184},
-	{Name: "key_delete", Value: &sh2, Flags: rt.RuleMemo, Seen: 185},
-	{Name: "key_action", Value: &sh2, Flags: rt.RuleMemo, Seen: 186},
-	{Name: "table_constraint", Value: &sh2, Flags: rt.RuleMemo, Seen: 187, Vars: 2},
-	{Name: "constraint_attrs", Value: &sh1207, Flags: rt.RuleMemo, Seen: 188, Scope: 141},
-	{Name: "constraint_attribute", Value: &sh2, Seen: -1},
-	{Name: "tc_check", Value: &sh1146, Seen: -1, Scope: 142, Vars: 2},
-	{Name: "tc_unique", Value: &sh1147, Seen: -1, Scope: 143, Vars: 2},
-	{Name: "tc_unique_index", Value: &sh1146, Seen: -1, Scope: 144, Vars: 2},
-	{Name: "tc_primary", Value: &sh1147, Seen: -1, Scope: 143, Vars: 2},
-	{Name: "tc_primary_index", Value: &sh1146, Seen: -1, Scope: 144, Vars: 2},
-	{Name: "tc_foreign", Value: &sh1209, Seen: -1, Scope: 145, Vars: 2},
-	{Name: "table_like", Value: &sh136, Seen: -1, Scope: 146, Vars: 2},
-	{Name: "table_like_option", Value: &sh2, Seen: -1},
-	{Name: "create_table_as_stmt", Value: &sh1208, Flags: rt.RuleMemo, Seen: 189, Scope: 147, Vars: 2},
-	{Name: "with_data", Value: &sh2, Seen: -1},
-	{Name: "create_view_stmt", Value: &sh1210, Flags: rt.RuleMemo, Seen: 190, Scope: 148, Vars: 2},
-	{Name: "check_option", Value: &sh2, Seen: -1},
-	{Name: "create_index_stmt", Value: &sh1213, Flags: rt.RuleMemo, Seen: 191, Scope: 149, Vars: 2},
-	{Name: "create_schema_stmt", Value: &sh1142, Flags: rt.RuleMemo, Seen: 192, Scope: 150, Vars: 2},
-	{Name: "schema_stmt", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "create_sequence_stmt", Value: &sh1146, Flags: rt.RuleMemo, Seen: 193, Scope: 151, Vars: 2},
-	{Name: "seq_opt_list", Value: &sh3, Flags: rt.RuleMemo, Seen: 194, Scope: 8, Vars: 2},
-	{Name: "seq_opt_elem", Value: &sh2, Flags: rt.RuleMemo, Seen: 195, Vars: 2},
-	{Name: "so_as", Value: &sh33, Seen: -1, Scope: 152, Vars: 2},
-	{Name: "so_num", Value: &sh33, Seen: -1, Scope: 20},
-	{Name: "so_flag", Value: &sh1207, Seen: -1, Scope: 31},
-	{Name: "so_owned", Value: &sh33, Seen: -1, Scope: 153},
-	{Name: "so_seqname", Value: &sh33, Seen: -1, Scope: 153},
-	{Name: "so_restart", Value: &sh3, Flags: rt.RuleMemo, Seen: 196, Scope: 20},
-	{Name: "create_type_stmt", Value: &sh23, Flags: rt.RuleMemo, Seen: 197, Scope: 154, Vars: 2},
-	{Name: "enum_val_list", Value: &sh3, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "create_macro_stmt", Value: &sh1147, Flags: rt.RuleMemo, Seen: 198, Scope: 155, Vars: 2},
-	{Name: "macro_definitions", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "macro_expr_list", Value: &sh3, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "macro_expr_def", Value: &sh229, Flags: rt.RuleMemo, Seen: 199, Scope: 156, Vars: 2},
-	{Name: "macro_table_list", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "macro_table_one_end", Value: &sh9, Seen: -1, Scope: 9, Vars: 2},
-	{Name: "macro_table_one", Value: &sh1143, Seen: -1, Scope: 157, Vars: 2},
-	{Name: "macro_table_many", Value: &sh3, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "macro_table_paren", Value: &sh1143, Flags: rt.RuleMemo, Seen: 200, Scope: 157, Vars: 2},
-	{Name: "param_list", Value: &sh229, Flags: rt.RuleMemo, Seen: 201, Scope: 14, Vars: 2},
-	{Name: "macro_params", Value: &sh33, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "macro_param", Value: &sh33, Flags: rt.RuleMemo, Seen: 202, Scope: 158, Vars: 2},
-	{Name: "create_secret_stmt", Value: &sh1212, Seen: -1, Scope: 159, Vars: 2},
-	{Name: "secret_options", Value: &sh3, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "secret_option", Value: &sh33, Flags: rt.RuleMemo, Seen: 203, Scope: 18, Vars: 2},
-	{Name: "alter_table_stmt", Value: &sh2, Flags: rt.RuleMemo, Seen: 204, Vars: 2},
-	{Name: "alter_relation_stmt", Value: &sh1142, Seen: -1, Scope: 160, Vars: 2},
-	{Name: "alter_name_stmt", Value: &sh1142, Seen: -1, Scope: 161, Vars: 2},
-	{Name: "alter_table_cmds", Value: &sh3, Flags: rt.RuleMemo, Seen: 205, Scope: 8, Vars: 2},
-	{Name: "qualified_column", Value: &sh1207, Flags: rt.RuleMemo, Seen: 206, Scope: 10},
-	{Name: "alter_table_cmd", Value: &sh2, Flags: rt.RuleMemo, Seen: 207, Vars: 2},
-	{Name: "ac_add_constraint", Value: &sh33, Seen: -1, Scope: 139, Vars: 2},
-	{Name: "ac_add_column", Value: &sh1143, Seen: -1, Scope: 162, Vars: 2},
-	{Name: "ac_add_generated", Value: &sh1142, Seen: -1, Scope: 163, Vars: 2},
-	{Name: "ac_set_partitioned", Value: &sh1143, Seen: -1, Scope: 78, Vars: 2},
-	{Name: "ac_reset_partitioned", Value: &sh1207, Seen: -1, Scope: 31},
-	{Name: "ac_set_sorted", Value: &sh1143, Seen: -1, Scope: 164, Vars: 2},
-	{Name: "ac_reset_sorted", Value: &sh1207, Seen: -1, Scope: 31},
-	{Name: "sortby_list", Value: &sh3, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "ac_alter_column", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "alter_column_head", Value: &sh2, Flags: rt.RuleMemo, Seen: 208},
-	{Name: "ac_col_default", Value: &sh1146, Seen: -1, Scope: 165, Vars: 2},
-	{Name: "ac_col_drop_default", Value: &sh1143, Seen: -1, Scope: 139},
-	{Name: "ac_col_not_null", Value: &sh1146, Seen: -1, Scope: 139},
-	{Name: "ac_col_statistics", Value: &sh1146, Seen: -1, Scope: 166},
-	{Name: "ac_col_set_options", Value: &sh1152, Seen: -1, Scope: 167, Vars: 2},
-	{Name: "ac_col_reset_options", Value: &sh1152, Seen: -1, Scope: 167, Vars: 2},
-	{Name: "ac_col_storage", Value: &sh1146, Seen: -1, Scope: 166},
-	{Name: "ac_col_add_identity", Value: &sh1212, Seen: -1, Scope: 168, Vars: 2},
-	{Name: "ac_col_drop_identity", Value: &sh1142, Seen: -1, Scope: 169},
-	{Name: "ac_col_identity", Value: &sh229, Seen: -1, Scope: 170, Vars: 2},
-	{Name: "identity_options", Value: &sh3, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "identity_option", Value: &sh2, Flags: rt.RuleMemo, Seen: 209, Vars: 2},
-	{Name: "io_set", Value: &sh33, Seen: -1, Scope: 5, Vars: 2},
-	{Name: "io_generated", Value: &sh33, Seen: -1, Scope: 171},
-	{Name: "ac_col_type", Value: &sh1146, Seen: -1, Scope: 172, Vars: 2},
-	{Name: "ac_col_generic", Value: &sh229, Seen: -1, Scope: 173, Vars: 2},
-	{Name: "signed_iconst", Value: &sh2, Seen: -1},
-	{Name: "ac_drop_column", Value: &sh229, Seen: -1, Scope: 174},
-	{Name: "ac_alter_constraint", Value: &sh136, Seen: -1, Scope: 175, Vars: 2},
-	{Name: "ac_validate", Value: &sh33, Seen: -1, Scope: 175, Vars: 2},
-	{Name: "ac_drop_constraint", Value: &sh229, Seen: -1, Scope: 176, Vars: 2},
-	{Name: "ac_set_logged", Value: &sh1207, Seen: -1, Scope: 31},
-	{Name: "ac_set_options", Value: &sh1143, Seen: -1, Scope: 153, Vars: 2},
-	{Name: "ac_reset_options", Value: &sh1143, Seen: -1, Scope: 153, Vars: 2},
-	{Name: "ac_generic", Value: &sh33, Seen: -1, Scope: 177, Vars: 2},
-	{Name: "alter_generic_options", Value: &sh33, Seen: -1, Scope: 178, Vars: 2},
-	{Name: "alter_generic_list", Value: &sh1144, Flags: rt.RuleMemo, Seen: 210, Scope: 8, Vars: 2},
-	{Name: "alter_generic_option", Value: &sh2, Flags: rt.RuleMemo, Seen: 211, Vars: 2},
-	{Name: "ago_value", Value: &sh136, Seen: -1, Scope: 179, Vars: 2},
-	{Name: "ago_drop", Value: &sh33, Seen: -1, Scope: 180},
-	{Name: "drop_behavior", Value: &sh2, Flags: rt.RuleMemo, Seen: 212},
-	{Name: "alter_sequence_stmt", Value: &sh1142, Flags: rt.RuleMemo, Seen: 213, Scope: 181, Vars: 2},
-	{Name: "alter_database_stmt", Value: &sh1212, Seen: -1, Scope: 182},
-	{Name: "alter_object_schema_stmt", Value: &sh2, Flags: rt.RuleMemo, Seen: 214, Vars: 2},
-	{Name: "alter_schema_relation", Value: &sh23, Seen: -1, Scope: 183, Vars: 2},
-	{Name: "alter_schema_name", Value: &sh23, Seen: -1, Scope: 183, Vars: 2},
-	{Name: "rename_stmt", Value: &sh2, Flags: rt.RuleMemo, Seen: 215, Vars: 2},
-	{Name: "rename_schema", Value: &sh1146, Seen: -1, Scope: 184, Vars: 2},
-	{Name: "rename_object", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "rename_relation", Value: &sh23, Seen: -1, Scope: 185, Vars: 2},
-	{Name: "rename_name", Value: &sh23, Seen: -1, Scope: 185, Vars: 2},
-	{Name: "rename_column", Value: &sh1211, Seen: -1, Scope: 186, Vars: 2},
-	{Name: "rename_constraint", Value: &sh1210, Seen: -1, Scope: 186, Vars: 2},
-	{Name: "drop_stmt", Value: &sh2, Flags: rt.RuleMemo, Seen: 216, Vars: 2},
-	{Name: "drop_any_name", Value: &sh1143, Seen: -1, Scope: 187},
-	{Name: "drop_name", Value: &sh1143, Seen: -1, Scope: 187, Vars: 2},
-	{Name: "drop_on", Value: &sh1152, Seen: -1, Scope: 188, Vars: 2},
-	{Name: "drop_type_any_name", Value: &sh2, Seen: -1},
-	{Name: "drop_type_name", Value: &sh2, Seen: -1},
-	{Name: "any_name_list", Value: &sh3, Seen: -1, Scope: 8},
-	{Name: "name_as_name_list", Value: &sh3, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "drop_secret_stmt", Value: &sh1142, Seen: -1, Scope: 189},
-	{Name: "copy_stmt", Value: &sh2, Flags: rt.RuleMemo, Seen: 217, Vars: 2},
-	{Name: "copy_table", Value: &sh1212, Seen: -1, Scope: 190, Vars: 2},
-	{Name: "copy_query", Value: &sh1212, Seen: -1, Scope: 191, Vars: 2},
-	{Name: "copy_database", Value: &sh23, Seen: -1, Scope: 192},
-	{Name: "copy_database_flag", Value: &sh2, Seen: -1},
-	{Name: "copy_file", Value: &sh2, Flags: rt.RuleMemo, Seen: 218, Vars: 2},
-	{Name: "copy_ident_file", Value: &sh3, Seen: -1, Scope: 193},
-	{Name: "generic_opt_list", Value: &sh1144, Flags: rt.RuleMemo, Seen: 219, Scope: 8, Vars: 2},
-	{Name: "generic_opt_elem", Value: &sh3, Flags: rt.RuleMemo, Seen: 220, Scope: 18, Vars: 2},
-	{Name: "copy_opt_item", Value: &sh2, Flags: rt.RuleMemo, Seen: 221, Vars: 2},
-	{Name: "co_flag", Value: &sh1207, Seen: -1, Scope: 31},
-	{Name: "co_string", Value: &sh136, Seen: -1, Scope: 20, Vars: 2},
-	{Name: "co_force_cols", Value: &sh33, Seen: -1, Scope: 194},
-	{Name: "co_force_star", Value: &sh33, Seen: -1, Scope: 20},
-	{Name: "co_partition_cols", Value: &sh33, Seen: -1, Scope: 194},
-	{Name: "co_partition_star", Value: &sh33, Seen: -1, Scope: 20},
-	{Name: "export_stmt", Value: &sh1143, Seen: -1, Scope: 195, Vars: 2},
-	{Name: "import_stmt", Value: &sh229, Seen: -1, Scope: 196, Vars: 2},
-	{Name: "attach_stmt", Value: &sh1143, Seen: -1, Scope: 197, Vars: 2},
-	{Name: "detach_stmt", Value: &sh2, Seen: -1},
-	{Name: "detach_database", Value: &sh1144, Seen: -1, Scope: 198},
-	{Name: "detach_plain", Value: &sh33, Seen: -1, Scope: 10},
-	{Name: "use_stmt", Value: &sh33, Seen: -1, Scope: 10, Vars: 2},
-	{Name: "load_stmt", Value: &sh2, Flags: rt.RuleMemo, Seen: 222, Vars: 2},
-	{Name: "load_load", Value: &sh33, Seen: -1, Scope: 10, Vars: 2},
-	{Name: "load_install", Value: &sh1144, Seen: -1, Scope: 199, Vars: 2},
-	{Name: "pragma_stmt", Value: &sh2, Flags: rt.RuleMemo, Seen: 223, Vars: 2},
-	{Name: "pragma_call", Value: &sh1146, Seen: -1, Scope: 35, Vars: 2},
-	{Name: "pragma_set", Value: &sh1143, Seen: -1, Scope: 18, Vars: 2},
-	{Name: "pragma_plain", Value: &sh33, Seen: -1, Scope: 10},
-	{Name: "var_name", Value: &sh3, Flags: rt.RuleMemo, Seen: 224, Scope: 8},
-	{Name: "set_scope", Value: &sh2, Flags: rt.RuleMemo, Seen: 225},
-	{Name: "set_stmt", Value: &sh2, Flags: rt.RuleMemo, Seen: 226, Vars: 2},
-	{Name: "set_scoped", Value: &sh229, Seen: -1, Scope: 200, Vars: 2},
-	{Name: "set_unscoped", Value: &sh33, Seen: -1, Scope: 201, Vars: 2},
-	{Name: "zone_value", Value: &sh2, Flags: rt.RuleMemo, Seen: 227, Vars: 2},
-	{Name: "reset_stmt", Value: &sh2, Flags: rt.RuleMemo, Seen: 228},
-	{Name: "reset_scoped", Value: &sh229, Seen: -1, Scope: 202},
-	{Name: "reset_unscoped", Value: &sh33, Seen: -1, Scope: 203},
-	{Name: "show_stmt", Value: &sh2, Flags: rt.RuleMemo, Seen: 229, Vars: 2},
-	{Name: "show_word", Value: &sh2, Flags: rt.RuleMemo, Seen: 230},
-	{Name: "show_query", Value: &sh33, Seen: -1, Scope: 204, Vars: 2},
-	{Name: "summarize_query", Value: &sh33, Seen: -1, Scope: 204, Vars: 2},
-	{Name: "summarize_table", Value: &sh33, Seen: -1, Scope: 175, Vars: 2},
-	{Name: "show_tables", Value: &sh1143, Seen: -1, Scope: 175, Vars: 2},
-	{Name: "show_time_zone", Value: &sh33, Seen: -1, Scope: 121},
-	{Name: "show_isolation", Value: &sh33, Seen: -1, Scope: 121},
-	{Name: "show_all", Value: &sh136, Seen: -1, Scope: 152},
-	{Name: "show_name", Value: &sh33, Seen: -1, Scope: 175, Vars: 2},
-	{Name: "show_bare", Value: &sh1207, Seen: -1, Scope: 31},
-	{Name: "explain_stmt", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "explain_options", Value: &sh1146, Seen: -1, Scope: 205, Vars: 2},
-	{Name: "explain_analyze", Value: &sh1144, Seen: -1, Scope: 206, Vars: 2},
-	{Name: "explain_verbose", Value: &sh229, Seen: -1, Scope: 7, Vars: 2},
-	{Name: "explain_plain", Value: &sh33, Seen: -1, Scope: 7, Vars: 2},
-	{Name: "explain_option_list", Value: &sh3, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "explain_option", Value: &sh3, Flags: rt.RuleMemo, Seen: 231, Scope: 18, Vars: 2},
-	{Name: "explainable", Value: &sh2, Flags: rt.RuleMemo, Seen: 232, Vars: 2},
-	{Name: "prepare_stmt", Value: &sh1142, Flags: rt.RuleMemo, Seen: 233, Scope: 207, Vars: 2},
-	{Name: "preparable", Value: &sh2, Flags: rt.RuleMemo, Seen: 234, Vars: 2},
-	{Name: "execute_stmt", Value: &sh136, Flags: rt.RuleMemo, Seen: 235, Scope: 67, Vars: 2},
-	{Name: "execute_params", Value: &sh3, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "execute_param", Value: &sh2, Flags: rt.RuleMemo, Seen: 236, Vars: 2},
-	{Name: "deallocate_stmt", Value: &sh2, Flags: rt.RuleMemo, Seen: 237, Vars: 2},
-	{Name: "deallocate_prepare", Value: &sh229, Seen: -1, Scope: 180, Vars: 2},
-	{Name: "deallocate_plain", Value: &sh33, Seen: -1, Scope: 180, Vars: 2},
-	{Name: "transaction_stmt", Value: &sh2, Flags: rt.RuleMemo, Seen: 238},
-	{Name: "tx_start", Value: &sh33, Seen: -1, Scope: 208},
-	{Name: "tx_end", Value: &sh3, Seen: -1, Scope: 171},
-	{Name: "vacuum_stmt", Value: &sh2, Flags: rt.RuleMemo, Seen: 239, Vars: 2},
-	{Name: "vacuum_options", Value: &sh1142, Seen: -1, Scope: 209, Vars: 2},
-	{Name: "vacuum_option_list", Value: &sh3, Seen: -1, Scope: 8},
-	{Name: "vacuum_option", Value: &sh2, Flags: rt.RuleMemo, Seen: 240},
-	{Name: "vacuum_plain", Value: &sh229, Seen: -1, Scope: 210, Vars: 2},
-	{Name: "analyze_stmt", Value: &sh33, Flags: rt.RuleMemo, Seen: 241, Scope: 211, Vars: 2},
-	{Name: "checkpoint_stmt", Value: &sh33, Flags: rt.RuleMemo, Seen: 242, Scope: 212},
-	{Name: "call_stmt", Value: &sh33, Flags: rt.RuleMemo, Seen: 243, Scope: 51, Vars: 2},
-	{Name: "comment_stmt", Value: &sh2, Seen: -1, Vars: 2},
-	{Name: "comment_column", Value: &sh1143, Seen: -1, Scope: 166, Vars: 2},
-	{Name: "comment_object", Value: &sh1152, Seen: -1, Scope: 213, Vars: 2},
-	{Name: "comment_value", Value: &sh2, Flags: rt.RuleMemo, Seen: 244, Vars: 2},
-	{Name: "null_text", Value: &sh2, Seen: -1},
-	{Name: "update_extensions_stmt", Value: &sh229, Flags: rt.RuleMemo, Seen: 245, Scope: 214, Vars: 2},
-	{Name: "stmt_end", Value: &sh3, Seen: -1},
-	{Name: "main", Value: &sh1144, Seen: -1, Scope: 8, Vars: 2},
-	{Name: "statement", Value: &sh2, Flags: rt.RuleMemo, Seen: 246, Vars: 2},
-	{Name: "ABORT", Value: &sh229, Seen: -1},
-	{Name: "ACCESS", Value: &sh1144, Seen: -1},
-	{Name: "ACTION", Value: &sh1144, Seen: -1},
-	{Name: "ADD", Value: &sh33, Seen: -1},
-	{Name: "ALL", Value: &sh33, Seen: -1},
-	{Name: "ALTER", Value: &sh229, Seen: -1},
-	{Name: "ALWAYS", Value: &sh1144, Seen: -1},
-	{Name: "ANALYSE", Value: &sh1143, Seen: -1},
-	{Name: "ANALYZE", Value: &sh1143, Seen: -1},
-	{Name: "AND", Value: &sh33, Seen: -1},
-	{Name: "ANTI", Value: &sh136, Seen: -1},
-	{Name: "ANY", Value: &sh33, Seen: -1},
-	{Name: "ARRAY", Value: &sh229, Seen: -1},
-	{Name: "AS", Value: &sh3, Seen: -1},
-	{Name: "ASC", Value: &sh33, Seen: -1},
-	{Name: "ASOF", Value: &sh136, Seen: -1},
-	{Name: "ASYMMETRIC", Value: &sh1147, Seen: -1},
-	{Name: "AT", Value: &sh3, Seen: -1},
-	{Name: "ATTACH", Value: &sh1144, Seen: -1},
-	{Name: "BEGIN", Value: &sh229, Seen: -1},
-	{Name: "BETWEEN", Value: &sh1143, Seen: -1},
-	{Name: "BIGINT", Value: &sh1144, Seen: -1},
-	{Name: "BINARY", Value: &sh1144, Seen: -1},
-	{Name: "BIT", Value: &sh33, Seen: -1},
-	{Name: "BOOLEAN", Value: &sh1143, Seen: -1},
-	{Name: "BOTH", Value: &sh136, Seen: -1},
-	{Name: "BY", Value: &sh3, Seen: -1},
-	{Name: "CACHE", Value: &sh229, Seen: -1},
-	{Name: "CALL", Value: &sh136, Seen: -1},
-	{Name: "CASCADE", Value: &sh1143, Seen: -1},
-	{Name: "CASCADED", Value: &sh1142, Seen: -1},
-	{Name: "CASE", Value: &sh136, Seen: -1},
-	{Name: "CAST", Value: &sh136, Seen: -1},
-	{Name: "CENTURIES", Value: &sh1146, Seen: -1},
-	{Name: "CENTURY", Value: &sh1143, Seen: -1},
-	{Name: "CHAR", Value: &sh136, Seen: -1},
-	{Name: "CHARACTER", Value: &sh1146, Seen: -1},
-	{Name: "CHECK", Value: &sh229, Seen: -1},
-	{Name: "CHECKPOINT", Value: &sh1147, Seen: -1},
-	{Name: "COALESCE", Value: &sh1142, Seen: -1},
-	{Name: "COLLATE", Value: &sh1143, Seen: -1},
-	{Name: "COLLATION", Value: &sh1146, Seen: -1},
-	{Name: "COLUMN", Value: &sh1144, Seen: -1},
-	{Name: "COLUMNS", Value: &sh1143, Seen: -1},
-	{Name: "COMMENT", Value: &sh1143, Seen: -1},
-	{Name: "COMMENTS", Value: &sh1142, Seen: -1},
-	{Name: "COMMIT", Value: &sh1144, Seen: -1},
-	{Name: "COMPRESSION", Value: &sh1152, Seen: -1},
-	{Name: "CONCURRENTLY", Value: &sh23, Seen: -1},
-	{Name: "CONFIGURATION", Value: &sh1209, Seen: -1},
-	{Name: "CONFLICT", Value: &sh1142, Seen: -1},
-	{Name: "CONSTRAINT", Value: &sh1147, Seen: -1},
-	{Name: "CONSTRAINTS", Value: &sh1152, Seen: -1},
-	{Name: "CONVERSION", Value: &sh1147, Seen: -1},
-	{Name: "COPY", Value: &sh136, Seen: -1},
-	{Name: "CREATE", Value: &sh1144, Seen: -1},
-	{Name: "CROSS", Value: &sh229, Seen: -1},
-	{Name: "CSV", Value: &sh33, Seen: -1},
-	{Name: "CUBE", Value: &sh136, Seen: -1},
-	{Name: "CURRENT", Value: &sh1143, Seen: -1},
-	{Name: "CYCLE", Value: &sh229, Seen: -1},
-	{Name: "DATA", Value: &sh136, Seen: -1},
-	{Name: "DATABASE", Value: &sh1142, Seen: -1},
-	{Name: "DAY", Value: &sh33, Seen: -1},
-	{Name: "DAYS", Value: &sh136, Seen: -1},
-	{Name: "DEALLOCATE", Value: &sh1147, Seen: -1},
-	{Name: "DEC", Value: &sh33, Seen: -1},
-	{Name: "DECADE", Value: &sh1144, Seen: -1},
-	{Name: "DECADES", Value: &sh1143, Seen: -1},
-	{Name: "DECIMAL", Value: &sh1143, Seen: -1},
-	{Name: "DEFAULT", Value: &sh1143, Seen: -1},
-	{Name: "DEFAULTS", Value: &sh1142, Seen: -1},
-	{Name: "DEFERRABLE", Value: &sh1147, Seen: -1},
-	{Name: "DEFERRED", Value: &sh1142, Seen: -1},
-	{Name: "DELETE", Value: &sh1144, Seen: -1},
-	{Name: "DELIMITER", Value: &sh1146, Seen: -1},
-	{Name: "DELIMITERS", Value: &sh1147, Seen: -1},
-	{Name: "DESC", Value: &sh136, Seen: -1},
-	{Name: "DESCRIBE", Value: &sh1142, Seen: -1},
-	{Name: "DETACH", Value: &sh1144, Seen: -1},
-	{Name: "DICTIONARY", Value: &sh1147, Seen: -1},
-	{Name: "DISTINCT", Value: &sh1142, Seen: -1},
-	{Name: "DO", Value: &sh3, Seen: -1},
-	{Name: "DOUBLE", Value: &sh1144, Seen: -1},
-	{Name: "DROP", Value: &sh136, Seen: -1},
-	{Name: "ELSE", Value: &sh136, Seen: -1},
-	{Name: "ENCODING", Value: &sh1142, Seen: -1},
-	{Name: "END", Value: &sh33, Seen: -1},
-	{Name: "ENUM", Value: &sh136, Seen: -1},
-	{Name: "ERROR", Value: &sh229, Seen: -1},
-	{Name: "ESCAPE", Value: &sh1144, Seen: -1},
-	{Name: "EVENT", Value: &sh229, Seen: -1},
-	{Name: "EXCEPT", Value: &sh1144, Seen: -1},
-	{Name: "EXCLUDE", Value: &sh1143, Seen: -1},
-	{Name: "EXCLUDING", Value: &sh1146, Seen: -1},
-	{Name: "EXECUTE", Value: &sh1143, Seen: -1},
-	{Name: "EXISTS", Value: &sh1144, Seen: -1},
-	{Name: "EXPLAIN", Value: &sh1143, Seen: -1},
-	{Name: "EXPORT", Value: &sh1144, Seen: -1},
-	{Name: "EXPORT_STATE", Value: &sh23, Seen: -1},
-	{Name: "EXTENSION", Value: &sh1146, Seen: -1},
-	{Name: "EXTENSIONS", Value: &sh1147, Seen: -1},
-	{Name: "EXTRACT", Value: &sh1143, Seen: -1},
-	{Name: "FALSE", Value: &sh229, Seen: -1},
-	{Name: "FETCH", Value: &sh229, Seen: -1},
-	{Name: "FILTER", Value: &sh1144, Seen: -1},
-	{Name: "FIRST", Value: &sh229, Seen: -1},
-	{Name: "FLOAT", Value: &sh229, Seen: -1},
-	{Name: "FOLLOWING", Value: &sh1146, Seen: -1},
-	{Name: "FOR", Value: &sh33, Seen: -1},
-	{Name: "FORCE", Value: &sh229, Seen: -1},
-	{Name: "FOREIGN", Value: &sh1143, Seen: -1},
-	{Name: "FREEZE", Value: &sh1144, Seen: -1},
-	{Name: "FROM", Value: &sh136, Seen: -1},
-	{Name: "FULL", Value: &sh136, Seen: -1},
-	{Name: "FUNCTION", Value: &sh1142, Seen: -1},
-	{Name: "GENERATED", Value: &sh1146, Seen: -1},
-	{Name: "GLOB", Value: &sh136, Seen: -1},
-	{Name: "GLOBAL", Value: &sh1144, Seen: -1},
-	{Name: "GROUP", Value: &sh229, Seen: -1},
-	{Name: "GROUPING", Value: &sh1142, Seen: -1},
-	{Name: "GROUPING_ID", Value: &sh1152, Seen: -1},
-	{Name: "GROUPS", Value: &sh1144, Seen: -1},
-	{Name: "HAVING", Value: &sh1144, Seen: -1},
-	{Name: "HEADER", Value: &sh1144, Seen: -1},
-	{Name: "HOUR", Value: &sh136, Seen: -1},
-	{Name: "HOURS", Value: &sh229, Seen: -1},
-	{Name: "IDENTITY", Value: &sh1142, Seen: -1},
-	{Name: "IF", Value: &sh3, Seen: -1},
-	{Name: "IGNORE", Value: &sh1144, Seen: -1},
-	{Name: "ILIKE", Value: &sh229, Seen: -1},
-	{Name: "IMMEDIATE", Value: &sh1146, Seen: -1},
-	{Name: "IMPORT", Value: &sh1144, Seen: -1},
-	{Name: "IN", Value: &sh3, Seen: -1},
-	{Name: "INCLUDE", Value: &sh1143, Seen: -1},
-	{Name: "INCLUDING", Value: &sh1146, Seen: -1},
-	{Name: "INCREMENT", Value: &sh1146, Seen: -1},
-	{Name: "INDEX", Value: &sh229, Seen: -1},
-	{Name: "INDEXES", Value: &sh1143, Seen: -1},
-	{Name: "INHERIT", Value: &sh1143, Seen: -1},
-	{Name: "INITIALLY", Value: &sh1146, Seen: -1},
-	{Name: "INNER", Value: &sh229, Seen: -1},
-	{Name: "INSERT", Value: &sh1144, Seen: -1},
-	{Name: "INSTALL", Value: &sh1143, Seen: -1},
-	{Name: "INT", Value: &sh33, Seen: -1},
-	{Name: "INTEGER", Value: &sh1143, Seen: -1},
-	{Name: "INTERSECT", Value: &sh1146, Seen: -1},
-	{Name: "INTERVAL", Value: &sh1142, Seen: -1},
-	{Name: "INTO", Value: &sh136, Seen: -1},
-	{Name: "IS", Value: &sh3, Seen: -1},
-	{Name: "ISNULL", Value: &sh1144, Seen: -1},
-	{Name: "ISOLATION", Value: &sh1146, Seen: -1},
-	{Name: "JOIN", Value: &sh136, Seen: -1},
-	{Name: "KEY", Value: &sh33, Seen: -1},
-	{Name: "LAMBDA", Value: &sh1144, Seen: -1},
-	{Name: "LAST", Value: &sh136, Seen: -1},
-	{Name: "LATERAL", Value: &sh1143, Seen: -1},
-	{Name: "LEADING", Value: &sh1143, Seen: -1},
-	{Name: "LEFT", Value: &sh136, Seen: -1},
-	{Name: "LEVEL", Value: &sh229, Seen: -1},
-	{Name: "LIKE", Value: &sh136, Seen: -1},
-	{Name: "LIMIT", Value: &sh229, Seen: -1},
-	{Name: "LOAD", Value: &sh136, Seen: -1},
-	{Name: "LOCAL", Value: &sh229, Seen: -1},
-	{Name: "LOCKED", Value: &sh1144, Seen: -1},
-	{Name: "LOGGED", Value: &sh1144, Seen: -1},
-	{Name: "MACRO", Value: &sh229, Seen: -1},
-	{Name: "MAP", Value: &sh33, Seen: -1},
-	{Name: "MATCH", Value: &sh229, Seen: -1},
-	{Name: "MATCHED", Value: &sh1143, Seen: -1},
-	{Name: "MATERIALIZED", Value: &sh23, Seen: -1},
-	{Name: "MAXVALUE", Value: &sh1142, Seen: -1},
-	{Name: "MERGE", Value: &sh229, Seen: -1},
-	{Name: "METHOD", Value: &sh1144, Seen: -1},
-	{Name: "MICROSECOND", Value: &sh1152, Seen: -1},
-	{Name: "MICROSECONDS", Value: &sh23, Seen: -1},
-	{Name: "MILLENNIA", Value: &sh1146, Seen: -1},
-	{Name: "MILLENNIUM", Value: &sh1147, Seen: -1},
-	{Name: "MILLISECOND", Value: &sh1152, Seen: -1},
-	{Name: "MILLISECONDS", Value: &sh23, Seen: -1},
-	{Name: "MINUTE", Value: &sh1144, Seen: -1},
-	{Name: "MINUTES", Value: &sh1143, Seen: -1},
-	{Name: "MINVALUE", Value: &sh1142, Seen: -1},
-	{Name: "MONTH", Value: &sh229, Seen: -1},
-	{Name: "MONTHS", Value: &sh1144, Seen: -1},
-	{Name: "NAME", Value: &sh136, Seen: -1},
-	{Name: "NATIONAL", Value: &sh1142, Seen: -1},
-	{Name: "NATURAL", Value: &sh1143, Seen: -1},
-	{Name: "NCHAR", Value: &sh229, Seen: -1},
-	{Name: "NEXT", Value: &sh136, Seen: -1},
-	{Name: "NO", Value: &sh3, Seen: -1},
-	{Name: "NONE", Value: &sh136, Seen: -1},
-	{Name: "NOT", Value: &sh33, Seen: -1},
-	{Name: "NOTHING", Value: &sh1143, Seen: -1},
-	{Name: "NOTNULL", Value: &sh1143, Seen: -1},
-	{Name: "NOWAIT", Value: &sh1144, Seen: -1},
-	{Name: "NULL", Value: &sh136, Seen: -1},
-	{Name: "NULLIF", Value: &sh1144, Seen: -1},
-	{Name: "NULLS", Value: &sh229, Seen: -1},
-	{Name: "NUMERIC", Value: &sh1143, Seen: -1},
-	{Name: "OF", Value: &sh3, Seen: -1},
-	{Name: "OFFSET", Value: &sh1144, Seen: -1},
-	{Name: "OIDS", Value: &sh136, Seen: -1},
-	{Name: "ON", Value: &sh3, Seen: -1},
-	{Name: "ONLY", Value: &sh136, Seen: -1},
-	{Name: "OPERATOR", Value: &sh1142, Seen: -1},
-	{Name: "OPTION", Value: &sh1144, Seen: -1},
-	{Name: "OPTIONS", Value: &sh1143, Seen: -1},
-	{Name: "OR", Value: &sh3, Seen: -1},
-	{Name: "ORDER", Value: &sh229, Seen: -1},
-	{Name: "ORDINALITY", Value: &sh1147, Seen: -1},
-	{Name: "OTHERS", Value: &sh1144, Seen: -1},
-	{Name: "OUTER", Value: &sh229, Seen: -1},
-	{Name: "OVER", Value: &sh136, Seen: -1},
-	{Name: "OVERLAY", Value: &sh1143, Seen: -1},
-	{Name: "OVERRIDING", Value: &sh1147, Seen: -1},
-	{Name: "OWNED", Value: &sh229, Seen: -1},
-	{Name: "PARSER", Value: &sh1144, Seen: -1},
-	{Name: "PARTIAL", Value: &sh1143, Seen: -1},
-	{Name: "PARTITION", Value: &sh1146, Seen: -1},
-	{Name: "PARTITIONED", Value: &sh1152, Seen: -1},
-	{Name: "PERCENT", Value: &sh1143, Seen: -1},
-	{Name: "PERSISTENT", Value: &sh1147, Seen: -1},
-	{Name: "PIVOT", Value: &sh229, Seen: -1},
-	{Name: "PIVOT_LONGER", Value: &sh23, Seen: -1},
-	{Name: "PIVOT_WIDER", Value: &sh1152, Seen: -1},
-	{Name: "PLACING", Value: &sh1143, Seen: -1},
-	{Name: "POLICY", Value: &sh1144, Seen: -1},
-	{Name: "POSITION", Value: &sh1142, Seen: -1},
-	{Name: "POSITIONAL", Value: &sh1147, Seen: -1},
-	{Name: "PRAGMA", Value: &sh1144, Seen: -1},
-	{Name: "PRECEDING", Value: &sh1146, Seen: -1},
-	{Name: "PRECISION", Value: &sh1146, Seen: -1},
-	{Name: "PREPARE", Value: &sh1143, Seen: -1},
-	{Name: "PRESERVE", Value: &sh1142, Seen: -1},
-	{Name: "PRIMARY", Value: &sh1143, Seen: -1},
-	{Name: "PROGRAM", Value: &sh1143, Seen: -1},
-	{Name: "PUBLICATION", Value: &sh1152, Seen: -1},
-	{Name: "QUALIFY", Value: &sh1143, Seen: -1},
-	{Name: "QUARTER", Value: &sh1143, Seen: -1},
-	{Name: "QUARTERS", Value: &sh1142, Seen: -1},
-	{Name: "QUOTE", Value: &sh229, Seen: -1},
-	{Name: "RANGE", Value: &sh229, Seen: -1},
-	{Name: "READ", Value: &sh136, Seen: -1},
-	{Name: "REAL", Value: &sh136, Seen: -1},
-	{Name: "RECURSIVE", Value: &sh1146, Seen: -1},
-	{Name: "REFERENCES", Value: &sh1147, Seen: -1},
-	{Name: "RENAME", Value: &sh1144, Seen: -1},
-	{Name: "REPEATABLE", Value: &sh1147, Seen: -1},
-	{Name: "REPLACE", Value: &sh1143, Seen: -1},
-	{Name: "RESET", Value: &sh229, Seen: -1},
-	{Name: "RESPECT", Value: &sh1143, Seen: -1},
-	{Name: "RESTART", Value: &sh1143, Seen: -1},
-	{Name: "RESTRICT", Value: &sh1142, Seen: -1},
-	{Name: "RETURNING", Value: &sh1146, Seen: -1},
-	{Name: "RIGHT", Value: &sh229, Seen: -1},
-	{Name: "ROLLBACK", Value: &sh1142, Seen: -1},
-	{Name: "ROLLUP", Value: &sh1144, Seen: -1},
-	{Name: "ROW", Value: &sh33, Seen: -1},
-	{Name: "ROWS", Value: &sh136, Seen: -1},
-	{Name: "RULE", Value: &sh136, Seen: -1},
-	{Name: "SAMPLE", Value: &sh1144, Seen: -1},
-	{Name: "SCHEMA", Value: &sh1144, Seen: -1},
-	{Name: "SEARCH", Value: &sh1144, Seen: -1},
-	{Name: "SECOND", Value: &sh1144, Seen: -1},
-	{Name: "SECONDS", Value: &sh1143, Seen: -1},
-	{Name: "SECRET", Value: &sh1144, Seen: -1},
-	{Name: "SELECT", Value: &sh1144, Seen: -1},
-	{Name: "SEMI", Value: &sh136, Seen: -1},
-	{Name: "SEQUENCE", Value: &sh1142, Seen: -1},
-	{Name: "SERVER", Value: &sh1144, Seen: -1},
-	{Name: "SESSION", Value: &sh1143, Seen: -1},
-	{Name: "SET", Value: &sh33, Seen: -1},
-	{Name: "SETOF", Value: &sh229, Seen: -1},
-	{Name: "SETS", Value: &sh136, Seen: -1},
-	{Name: "SHARE", Value: &sh229, Seen: -1},
-	{Name: "SHOW", Value: &sh136, Seen: -1},
-	{Name: "SIMILAR", Value: &sh1143, Seen: -1},
-	{Name: "SIMPLE", Value: &sh1144, Seen: -1},
-	{Name: "SKIP", Value: &sh136, Seen: -1},
-	{Name: "SMALLINT", Value: &sh1142, Seen: -1},
-	{Name: "SOME", Value: &sh136, Seen: -1},
-	{Name: "SORTED", Value: &sh1144, Seen: -1},
-	{Name: "SOURCE", Value: &sh1144, Seen: -1},
-	{Name: "START", Value: &sh229, Seen: -1},
-	{Name: "STATISTICS", Value: &sh1147, Seen: -1},
-	{Name: "STDIN", Value: &sh229, Seen: -1},
-	{Name: "STDOUT", Value: &sh1144, Seen: -1},
-	{Name: "STORAGE", Value: &sh1143, Seen: -1},
-	{Name: "STORED", Value: &sh1144, Seen: -1},
-	{Name: "STRUCT", Value: &sh1144, Seen: -1},
-	{Name: "SUBSTRING", Value: &sh1146, Seen: -1},
-	{Name: "SUMMARIZE", Value: &sh1146, Seen: -1},
-	{Name: "SYMMETRIC", Value: &sh1146, Seen: -1},
-	{Name: "SYSTEM", Value: &sh1144, Seen: -1},
-	{Name: "TABLE", Value: &sh229, Seen: -1},
-	{Name: "TABLES", Value: &sh1144, Seen: -1},
-	{Name: "TABLESAMPLE", Value: &sh1152, Seen: -1},
-	{Name: "TARGET", Value: &sh1144, Seen: -1},
-	{Name: "TEMP", Value: &sh136, Seen: -1},
-	{Name: "TEMPLATE", Value: &sh1142, Seen: -1},
-	{Name: "TEMPORARY", Value: &sh1146, Seen: -1},
-	{Name: "TEXT", Value: &sh136, Seen: -1},
-	{Name: "THEN", Value: &sh136, Seen: -1},
-	{Name: "TIES", Value: &sh136, Seen: -1},
-	{Name: "TIME", Value: &sh136, Seen: -1},
-	{Name: "TIMESTAMP", Value: &sh1146, Seen: -1},
-	{Name: "TO", Value: &sh3, Seen: -1},
-	{Name: "TRAILING", Value: &sh1142, Seen: -1},
-	{Name: "TRANSACTION", Value: &sh1152, Seen: -1},
-	{Name: "TREAT", Value: &sh229, Seen: -1},
-	{Name: "TRIGGER", Value: &sh1143, Seen: -1},
-	{Name: "TRIM", Value: &sh136, Seen: -1},
-	{Name: "TRUE", Value: &sh136, Seen: -1},
-	{Name: "TRUNCATE", Value: &sh1142, Seen: -1},
-	{Name: "TRY_CAST", Value: &sh1142, Seen: -1},
-	{Name: "TYPE", Value: &sh136, Seen: -1},
-	{Name: "UNBOUNDED", Value: &sh1146, Seen: -1},
-	{Name: "UNION", Value: &sh229, Seen: -1},
-	{Name: "UNIQUE", Value: &sh1144, Seen: -1},
-	{Name: "UNKNOWN", Value: &sh1143, Seen: -1},
-	{Name: "UNLOGGED", Value: &sh1142, Seen: -1},
-	{Name: "UNPACK", Value: &sh1144, Seen: -1},
-	{Name: "UNPIVOT", Value: &sh1143, Seen: -1},
-	{Name: "UPDATE", Value: &sh1144, Seen: -1},
-	{Name: "USE", Value: &sh33, Seen: -1},
-	{Name: "USER", Value: &sh136, Seen: -1},
-	{Name: "USING", Value: &sh229, Seen: -1},
-	{Name: "VACUUM", Value: &sh1144, Seen: -1},
-	{Name: "VALID", Value: &sh229, Seen: -1},
-	{Name: "VALIDATE", Value: &sh1142, Seen: -1},
-	{Name: "VALUE", Value: &sh229, Seen: -1},
-	{Name: "VALUES", Value: &sh1144, Seen: -1},
-	{Name: "VARCHAR", Value: &sh1143, Seen: -1},
-	{Name: "VARIABLE", Value: &sh1142, Seen: -1},
-	{Name: "VARIADIC", Value: &sh1142, Seen: -1},
-	{Name: "VARYING", Value: &sh1143, Seen: -1},
-	{Name: "VERBOSE", Value: &sh1143, Seen: -1},
-	{Name: "VERSION", Value: &sh1143, Seen: -1},
-	{Name: "VIEW", Value: &sh136, Seen: -1},
-	{Name: "VIRTUAL", Value: &sh1143, Seen: -1},
-	{Name: "WEEK", Value: &sh136, Seen: -1},
-	{Name: "WEEKS", Value: &sh229, Seen: -1},
-	{Name: "WHEN", Value: &sh136, Seen: -1},
-	{Name: "WHERE", Value: &sh229, Seen: -1},
-	{Name: "WINDOW", Value: &sh1144, Seen: -1},
-	{Name: "WITH", Value: &sh136, Seen: -1},
-	{Name: "WITHIN", Value: &sh1144, Seen: -1},
-	{Name: "WITHOUT", Value: &sh1143, Seen: -1},
-	{Name: "WORK", Value: &sh136, Seen: -1},
-	{Name: "WRAPPER", Value: &sh1143, Seen: -1},
-	{Name: "WRITE", Value: &sh229, Seen: -1},
-	{Name: "YEAR", Value: &sh136, Seen: -1},
-	{Name: "YEARS", Value: &sh229, Seen: -1},
-	{Name: "ZONE", Value: &sh136, Seen: -1},
-	{Name: "kw_r", Value: &sh9, Seen: -1},
-	{Name: "kw_c", Value: &sh9, Seen: -1},
-	{Name: "kw_cf", Value: &sh9, Seen: -1},
-	{Name: "kw_ct", Value: &sh9, Seen: -1},
-	{Name: "kw_t", Value: &sh9, Seen: -1},
-	{Name: "kw_tf", Value: &sh9, Seen: -1},
-	{Name: "kw_u", Value: &sh9, Seen: -1},
-	{Name: "kw_not_col_id", Value: &sh2, Seen: -1},
-	{Name: "kw_not_func_name", Value: &sh2, Seen: -1},
-	{Name: "kw_not_type_name", Value: &sh2, Seen: -1},
-	{Name: "kw_not_type_func", Value: &sh2, Seen: -1},
-	{Name: "kw_reserved", Value: &sh2, Flags: rt.RuleMemo, Seen: 247},
-	{Name: "kw_any", Value: &sh2, Seen: -1},
-	{Name: "NULLS", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ws", Value: &sh3, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 248},
-	{Name: "FIRST", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "LAST", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "quoted_ident", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "uquoted_ident", Value: &sh136, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 249},
-	{Name: "kw_not_col_id", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "word", Value: &sh3, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 250},
-	{Name: "kw_not_type_func", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_not_func_name", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_not_type_name", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_any", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "NOT", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "BETWEEN", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "IN", Value: &sh3, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "LIKE", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ILIKE", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SIMILAR", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_reserved", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 251},
-	{Name: "hex4", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "dq_close", Value: &sh33, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 252, Scope: 3, Vars: 2},
-	{Name: "e_string", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "sq_string", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "dollar_string", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1, Scope: 1, Vars: 2},
-	{Name: "u_string", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "bit_string", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "digits", Value: &sh3, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "exp", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "cut", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "rc", Value: &sh9, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 253},
-	{Name: "pm_end", Value: &sh9, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 254},
-	{Name: "opc", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "op_special", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "op_plain", Value: &sh9, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "core_long", Value: &sh9, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "col_id", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 255},
-	{Name: "sconst", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 256, Vars: 2},
-	{Name: "col_id_or_string", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 257, Vars: 2},
-	{Name: "col_label", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 258},
-	{Name: "type_function_name", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "OR", Value: &sh3, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "AND", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "is_start", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 259},
-	{Name: "cmp_op", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 260},
-	{Name: "TO", Value: &sh3, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "like_start", Value: &sh3, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 261},
-	{Name: "ESCAPE", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "AT", Value: &sh3, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "qual_op", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 262},
-	{Name: "op_lt", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 263},
-	{Name: "op_gt", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 264},
-	{Name: "op_eq", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 265},
-	{Name: "op_le", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 266},
-	{Name: "op_ge", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 267},
-	{Name: "op_ne", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 268},
-	{Name: "OPERATOR", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "any_operator", Value: &sh3, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "attr_name", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 269},
-	{Name: "dollar_name", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DOUBLE", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "PRECISION", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CHARACTER", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CHAR", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "NCHAR", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "NATIONAL", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "BIT", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "VARYING", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "INTERVAL", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ARRAY", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "colon", Value: &sh9, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MAP", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "FOR", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "IF", Value: &sh3, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CASE", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "WHEN", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ELSE", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "END", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "THEN", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ROW", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DEFAULT", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "COLUMNS", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "op_star", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 270},
-	{Name: "UNPACK", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "LAMBDA", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "EXCLUDE", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "AS", Value: &sh3, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "REPLACE", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "RENAME", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "TRUE", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "FALSE", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "NULL", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "EXISTS", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "GROUPING_ID", Value: &sh1152, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "GROUPING", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CAST", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "TRY_CAST", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "interval_to", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "interval_field", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "FROM", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "PLACING", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "COLLATION", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ident_only", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 271},
-	{Name: "year_kw", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "VARIADIC", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "WITHIN", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "GROUP", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "function_name_token", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 272},
-	{Name: "op_eq_gt", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 273},
-	{Name: "IGNORE", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "RESPECT", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "FILTER", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "WHERE", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "OVER", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "PARTITION", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "RANGE", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ROWS", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "GROUPS", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "BY", Value: &sh3, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "frame_conflict", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "frame_shift", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "UNBOUNDED", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "PRECEDING", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "FOLLOWING", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CURRENT", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "TIES", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "NO", Value: &sh3, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "OTHERS", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SETOF", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "STRUCT", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "UNION", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "interval_unit", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 274},
-	{Name: "TIMESTAMP", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "TIME", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "WITH", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "WITHOUT", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ZONE", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "VARCHAR", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "FLOAT", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DECIMAL", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DEC", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "NUMERIC", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "INTEGER", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "INT", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SMALLINT", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "BIGINT", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "REAL", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "BOOLEAN", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "type_name_token", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "RECURSIVE", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "USING", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "KEY", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MATERIALIZED", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SELECT", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ALL", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "HAVING", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "QUALIFY", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DISTINCT", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ON", Value: &sh3, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "INTO", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "TEMPORARY", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "TEMP", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "LOCAL", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "GLOBAL", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "UNLOGGED", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "TABLE", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CUBE", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ROLLUP", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SETS", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "WINDOW", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "VALUES", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "pivot_keyword", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "unpivot_keyword", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "NAME", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "VALUE", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ORDER", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "op_percent", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 275},
-	{Name: "NEXT", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ONLY", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "op_plus", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 276},
-	{Name: "op_minus", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 277},
-	{Name: "OFFSET", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "READ", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "UPDATE", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SHARE", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "OF", Value: &sh3, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SKIP", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "LOCKED", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SAMPLE", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "TABLESAMPLE", Value: &sh1152, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "REPEATABLE", Value: &sh1147, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CROSS", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "NATURAL", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "join_type", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 278},
-	{Name: "POSITIONAL", Value: &sh1147, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ASOF", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "FULL", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "OUTER", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "LEFT", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "RIGHT", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SEMI", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ANTI", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "INNER", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "INCLUDE", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "VERSION", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "table_primary", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 279, Vars: 2},
-	{Name: "join_start", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "COLLATE", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "INSERT", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "POSITION", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "RETURNING", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "OVERRIDING", Value: &sh1147, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "USER", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SYSTEM", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CONFLICT", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CONSTRAINT", Value: &sh1147, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DO", Value: &sh3, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SET", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DELETE", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "TRUNCATE", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MERGE", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MATCHED", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SOURCE", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "TARGET", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "NOTHING", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CREATE", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "PARTITIONED", Value: &sh1152, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SORTED", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "OIDS", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "COMMIT", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DROP", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "PRESERVE", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "qual_all_op", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 280},
-	{Name: "numeric_only", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 281},
-	{Name: "NONE", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "GENERATED", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "IDENTITY", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ALWAYS", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "PRIMARY", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "INHERIT", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "COMPRESSION", Value: &sh1152, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DEFERRABLE", Value: &sh1147, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "INITIALLY", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DEFERRED", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "IMMEDIATE", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MATCH", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "PARTIAL", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SIMPLE", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "key_action", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 282},
-	{Name: "VALID", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "INDEX", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "FOREIGN", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "REFERENCES", Value: &sh1147, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "INCLUDING", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "EXCLUDING", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "COMMENTS", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CONSTRAINTS", Value: &sh1152, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DEFAULTS", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "INDEXES", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "STATISTICS", Value: &sh1147, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "STORAGE", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DATA", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "VIEW", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CASCADED", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CHECK", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "OPTION", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SCHEMA", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SEQUENCE", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CACHE", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "INCREMENT", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MAXVALUE", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MINVALUE", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "START", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CYCLE", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "OWNED", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "TYPE", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ENUM", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MACRO", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "stmt_end", Value: &sh3, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "PERSISTENT", Value: &sh1147, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SECRET", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ALTER", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ADD", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "COLUMN", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "RESET", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "VALIDATE", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "LOGGED", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "OPTIONS", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DATABASE", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "POLICY", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "RULE", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "TRIGGER", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "FUNCTION", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CONVERSION", Value: &sh1147, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "TEXT", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SEARCH", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "PARSER", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DICTIONARY", Value: &sh1147, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "TEMPLATE", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CONFIGURATION", Value: &sh1209, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ACCESS", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "METHOD", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "EVENT", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "EXTENSION", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "WRAPPER", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "PUBLICATION", Value: &sh1152, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SERVER", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "COPY", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "STDIN", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "STDOUT", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DELIMITERS", Value: &sh1147, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "FORCE", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "QUOTE", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "EXPORT", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "IMPORT", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ATTACH", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DETACH", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "USE", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "LOAD", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "INSTALL", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "PRAGMA", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "TRANSACTION", Value: &sh1152, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ISOLATION", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "LEVEL", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "TABLES", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "EXPLAIN", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "VERBOSE", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "non_reserved_word", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 283},
-	{Name: "ANALYZE", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ANALYSE", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "PREPARE", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "EXECUTE", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DEALLOCATE", Value: &sh1147, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "WRITE", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "VACUUM", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "FREEZE", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CHECKPOINT", Value: &sh1147, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CALL", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "COMMENT", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "IS", Value: &sh3, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "null_text", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "EXTENSIONS", Value: &sh1147, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "comment", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_r", Value: &sh9, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_t", Value: &sh9, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_tf", Value: &sh9, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ident_start", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "wc", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_c", Value: &sh9, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_ct", Value: &sh9, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_cf", Value: &sh9, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "kw_u", Value: &sh9, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "e_body", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 284},
-	{Name: "sq_cont", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "core", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 285},
-	{Name: "ISNULL", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "NOTNULL", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "GLOB", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "operator_call", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 286},
-	{Name: "all_op", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 287},
-	{Name: "YEARS", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "YEAR", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MONTHS", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MONTH", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DAYS", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DAY", Value: &sh33, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "HOURS", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "HOUR", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MINUTES", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MINUTE", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SECONDS", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "SECOND", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MILLISECONDS", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MILLISECOND", Value: &sh1152, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MICROSECONDS", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MICROSECOND", Value: &sh1152, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "WEEKS", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "WEEK", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "QUARTERS", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "QUARTER", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DECADES", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "DECADE", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CENTURIES", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CENTURY", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MILLENNIA", Value: &sh1146, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "MILLENNIUM", Value: &sh1147, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "PIVOT_WIDER", Value: &sh1152, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "PIVOT", Value: &sh229, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "PIVOT_LONGER", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "UNPIVOT", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "JOIN", Value: &sh136, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ACTION", Value: &sh1144, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "RESTRICT", Value: &sh1142, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "CASCADE", Value: &sh1143, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "block_comment", Value: &sh33, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 288},
-	{Name: "op_slash", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 289},
-	{Name: "op_idiv", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 290},
-	{Name: "op_caret", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 291},
-	{Name: "op_pow", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 292},
+	{Name: "join_type", Value: &sh1, Flags: rt.RuleMemo, Seen: 128},
+	{Name: "join_qual_on", Value: &sh28, Flags: rt.RuleMemo, Seen: 129, Scope: 15, Vars: 2},
+	{Name: "join_qual_using", Value: &sh1132, Flags: rt.RuleMemo, Seen: 130, Scope: 9, Vars: 2},
+	{Name: "include_nulls", Value: &sh1, Seen: -1},
+	{Name: "unpivot_header", Value: &sh1, Flags: rt.RuleMemo, Seen: 131, Vars: 2},
+	{Name: "unpivot_single", Value: &sh1196, Seen: -1, Scope: 10, Vars: 2},
+	{Name: "unpivot_value_list", Value: &sh2, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "unpivot_value", Value: &sh1135, Flags: rt.RuleMemo, Seen: 132, Scope: 93, Vars: 2},
+	{Name: "pivot_value_list", Value: &sh2, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "pivot_value", Value: &sh218, Flags: rt.RuleMemo, Seen: 133, Scope: 94, Vars: 2},
+	{Name: "pivot_header", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "pivot_header_list", Value: &sh218, Seen: -1, Scope: 9, Vars: 2},
+	{Name: "pivot_header_single", Value: &sh1196, Seen: -1, Scope: 15, Vars: 2},
+	{Name: "c_expr_list_opt_comma", Value: &sh28, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "table_primary", Value: &sh1, Flags: rt.RuleMemo, Seen: 134, Vars: 2},
+	{Name: "alias_prefix", Value: &sh28, Flags: rt.RuleMemo, Seen: 135, Scope: 10, Vars: 2},
+	{Name: "base_ref", Value: &sh218, Seen: -1, Scope: 95, Vars: 2},
+	{Name: "at_clause", Value: &sh1141, Seen: -1, Scope: 96, Vars: 2},
+	{Name: "subquery_ref", Value: &sh218, Seen: -1, Scope: 97, Vars: 2},
+	{Name: "paren_table", Value: &sh1132, Seen: -1, Scope: 98, Vars: 2},
+	{Name: "join_start", Value: &sh1, Seen: -1},
+	{Name: "values_ref", Value: &sh218, Seen: -1, Scope: 99, Vars: 2},
+	{Name: "func_ref", Value: &sh1133, Seen: -1, Scope: 100, Vars: 2},
+	{Name: "rows_from_ref", Value: &sh1201, Seen: -1, Scope: 101, Vars: 2},
+	{Name: "rowsfrom_item", Value: &sh2, Flags: rt.RuleMemo, Seen: 136, Scope: 102, Vars: 2},
+	{Name: "func_expr_windowless", Value: &sh1, Flags: rt.RuleMemo, Seen: 137, Vars: 2},
+	{Name: "func_call_bare", Value: &sh1135, Seen: -1, Scope: 103, Vars: 2},
+	{Name: "alias_clause", Value: &sh1, Flags: rt.RuleMemo, Seen: 138, Vars: 2},
+	{Name: "alias_as_cols", Value: &sh1135, Flags: rt.RuleMemo, Seen: 139, Scope: 104, Vars: 2},
+	{Name: "alias_as", Value: &sh28, Flags: rt.RuleMemo, Seen: 140, Scope: 10, Vars: 2},
+	{Name: "alias_cols", Value: &sh1132, Flags: rt.RuleMemo, Seen: 141, Scope: 104, Vars: 2},
+	{Name: "alias_bare", Value: &sh1196, Flags: rt.RuleMemo, Seen: 142, Scope: 10},
+	{Name: "func_alias_clause", Value: &sh1, Flags: rt.RuleMemo, Seen: 143, Vars: 2},
+	{Name: "falias_as_defs", Value: &sh1135, Seen: -1, Scope: 105, Vars: 2},
+	{Name: "falias_defs_only", Value: &sh1132, Seen: -1, Scope: 106, Vars: 2},
+	{Name: "falias_defs", Value: &sh1132, Seen: -1, Scope: 105, Vars: 2},
+	{Name: "table_func_element_list", Value: &sh2, Flags: rt.RuleMemo, Seen: 144, Scope: 8, Vars: 2},
+	{Name: "table_func_element", Value: &sh126, Flags: rt.RuleMemo, Seen: 145, Scope: 107, Vars: 2},
+	{Name: "target_list", Value: &sh2, Flags: rt.RuleMemo, Seen: 146, Scope: 8, Vars: 2},
+	{Name: "insert_stmt", Value: &sh1198, Flags: rt.RuleMemo, Seen: 147, Scope: 108, Vars: 2},
+	{Name: "insert_columns", Value: &sh218, Seen: -1, Scope: 9},
+	{Name: "insert_column_list", Value: &sh2, Seen: -1, Scope: 8},
+	{Name: "set_target", Value: &sh1, Flags: rt.RuleMemo, Seen: 148},
+	{Name: "overriding", Value: &sh1, Seen: -1},
+	{Name: "on_conflict", Value: &sh1131, Seen: -1, Scope: 109, Vars: 2},
+	{Name: "index_params", Value: &sh2, Flags: rt.RuleMemo, Seen: 149, Scope: 8, Vars: 2},
+	{Name: "index_elem", Value: &sh1, Flags: rt.RuleMemo, Seen: 150, Vars: 2},
+	{Name: "index_elem_col", Value: &sh218, Seen: -1, Scope: 110},
+	{Name: "index_elem_func", Value: &sh218, Seen: -1, Scope: 111, Vars: 2},
+	{Name: "index_elem_expr", Value: &sh1135, Seen: -1, Scope: 112, Vars: 2},
+	{Name: "opt_class", Value: &sh8, Flags: rt.RuleMemo, Seen: 151, Scope: 10},
+	{Name: "set_clause_list_opt_comma", Value: &sh28, Flags: rt.RuleMemo, Seen: 152, Scope: 8, Vars: 2},
+	{Name: "set_clause", Value: &sh1, Flags: rt.RuleMemo, Seen: 153, Vars: 2},
+	{Name: "set_clause_one", Value: &sh218, Seen: -1, Scope: 113, Vars: 2},
+	{Name: "set_clause_paren", Value: &sh1136, Seen: -1, Scope: 114, Vars: 2},
+	{Name: "target_table", Value: &sh2, Flags: rt.RuleMemo, Seen: 154, Scope: 115, Vars: 2},
+	{Name: "update_stmt", Value: &sh1141, Flags: rt.RuleMemo, Seen: 155, Scope: 116, Vars: 2},
+	{Name: "delete_stmt", Value: &sh1135, Flags: rt.RuleMemo, Seen: 156, Scope: 117, Vars: 2},
+	{Name: "truncate_stmt", Value: &sh126, Flags: rt.RuleMemo, Seen: 157, Scope: 1, Vars: 2},
+	{Name: "merge_stmt", Value: &sh1199, Flags: rt.RuleMemo, Seen: 158, Scope: 118, Vars: 2},
+	{Name: "merge_when", Value: &sh1, Flags: rt.RuleMemo, Seen: 159, Vars: 2},
+	{Name: "merge_when_matched", Value: &sh1131, Seen: -1, Scope: 119, Vars: 2},
+	{Name: "merge_when_not", Value: &sh1141, Seen: -1, Scope: 120, Vars: 2},
+	{Name: "merge_action", Value: &sh1, Flags: rt.RuleMemo, Seen: 160, Vars: 2},
+	{Name: "ma_update_set", Value: &sh218, Seen: -1, Scope: 121, Vars: 2},
+	{Name: "ma_update_star", Value: &sh218, Seen: -1, Scope: 31},
+	{Name: "ma_update", Value: &sh2, Seen: -1, Scope: 122},
+	{Name: "ma_delete", Value: &sh1196, Seen: -1, Scope: 31},
+	{Name: "ma_insert_values", Value: &sh1136, Seen: -1, Scope: 123, Vars: 2},
+	{Name: "insert_column_ident_list", Value: &sh2, Seen: -1, Scope: 8},
+	{Name: "ma_insert_default", Value: &sh218, Seen: -1, Scope: 31},
+	{Name: "ma_insert", Value: &sh28, Seen: -1, Scope: 124},
+	{Name: "ma_nothing", Value: &sh1196, Seen: -1, Scope: 31},
+	{Name: "ma_error", Value: &sh2, Seen: -1, Scope: 125, Vars: 2},
+	{Name: "opt_temp", Value: &sh1, Flags: rt.RuleMemo, Seen: 161},
+	{Name: "if_not_exists", Value: &sh1, Flags: rt.RuleMemo, Seen: 162},
+	{Name: "if_exists", Value: &sh1, Flags: rt.RuleMemo, Seen: 163},
+	{Name: "or_replace", Value: &sh1, Flags: rt.RuleMemo, Seen: 164},
+	{Name: "create_table_stmt", Value: &sh1197, Flags: rt.RuleMemo, Seen: 165, Scope: 126, Vars: 2},
+	{Name: "table_element_list", Value: &sh28, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "table_element", Value: &sh1, Flags: rt.RuleMemo, Seen: 166, Vars: 2},
+	{Name: "partition_sorted_option", Value: &sh1135, Flags: rt.RuleMemo, Seen: 167, Scope: 78, Vars: 2},
+	{Name: "opt_with_options", Value: &sh1, Flags: rt.RuleMemo, Seen: 168, Vars: 2},
+	{Name: "with_reloptions", Value: &sh1132, Seen: -1, Scope: 9, Vars: 2},
+	{Name: "with_oids", Value: &sh1, Seen: -1},
+	{Name: "on_commit_option", Value: &sh1, Flags: rt.RuleMemo, Seen: 169},
+	{Name: "reloption_list", Value: &sh2, Flags: rt.RuleMemo, Seen: 170, Scope: 8, Vars: 2},
+	{Name: "reloption_elem", Value: &sh1, Flags: rt.RuleMemo, Seen: 171, Vars: 2},
+	{Name: "reloption_def", Value: &sh1133, Seen: -1, Scope: 127, Vars: 2},
+	{Name: "reloption_expr", Value: &sh2, Seen: -1, Scope: 18, Vars: 2},
+	{Name: "reloption_name", Value: &sh1196, Seen: -1, Scope: 16, Vars: 2},
+	{Name: "def_arg", Value: &sh1, Flags: rt.RuleMemo, Seen: 172, Vars: 2},
+	{Name: "numeric_only", Value: &sh1, Flags: rt.RuleMemo, Seen: 173},
+	{Name: "def_list", Value: &sh2, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "def_elem", Value: &sh2, Flags: rt.RuleMemo, Seen: 174, Scope: 18, Vars: 2},
+	{Name: "definition", Value: &sh218, Seen: -1, Scope: 9, Vars: 2},
+	{Name: "opt_definition", Value: &sh28, Flags: rt.RuleMemo, Seen: 175, Scope: 128, Vars: 2},
+	{Name: "column_def", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "column_def_regular", Value: &sh126, Seen: -1, Scope: 129, Vars: 2},
+	{Name: "column_def_generated", Value: &sh218, Seen: -1, Scope: 130, Vars: 2},
+	{Name: "generated_constraint", Value: &sh1, Flags: rt.RuleMemo, Seen: 176, Vars: 2},
+	{Name: "gen_identity", Value: &sh1131, Seen: -1, Scope: 131, Vars: 2},
+	{Name: "gen_expr", Value: &sh19, Seen: -1, Scope: 132, Vars: 2},
+	{Name: "gen_as", Value: &sh1131, Seen: -1, Scope: 133, Vars: 2},
+	{Name: "generated_when", Value: &sh1, Flags: rt.RuleMemo, Seen: 177},
+	{Name: "generated_storage", Value: &sh1, Flags: rt.RuleMemo, Seen: 178},
+	{Name: "constraint_name", Value: &sh28, Flags: rt.RuleMemo, Seen: 179, Scope: 10, Vars: 2},
+	{Name: "col_constraint", Value: &sh1, Flags: rt.RuleMemo, Seen: 180, Vars: 2},
+	{Name: "cc_not_null", Value: &sh2, Seen: -1, Scope: 134, Vars: 2},
+	{Name: "cc_null", Value: &sh2, Seen: -1, Scope: 134, Vars: 2},
+	{Name: "cc_unique", Value: &sh28, Seen: -1, Scope: 135, Vars: 2},
+	{Name: "cc_primary", Value: &sh28, Seen: -1, Scope: 135, Vars: 2},
+	{Name: "cc_check", Value: &sh1135, Seen: -1, Scope: 136, Vars: 2},
+	{Name: "cc_compression", Value: &sh126, Seen: -1, Scope: 137, Vars: 2},
+	{Name: "cc_default", Value: &sh126, Seen: -1, Scope: 136, Vars: 2},
+	{Name: "cc_references", Value: &sh126, Seen: -1, Scope: 138, Vars: 2},
+	{Name: "cc_attr", Value: &sh1196, Seen: -1, Scope: 31},
+	{Name: "cc_collate", Value: &sh28, Seen: -1, Scope: 139},
+	{Name: "constraint_attr", Value: &sh1, Seen: -1},
+	{Name: "reference", Value: &sh126, Flags: rt.RuleMemo, Seen: 181, Scope: 140, Vars: 2},
+	{Name: "column_list", Value: &sh1, Flags: rt.RuleMemo, Seen: 182},
+	{Name: "column_list_opt_comma", Value: &sh2, Flags: rt.RuleMemo, Seen: 183, Scope: 9},
+	{Name: "key_match", Value: &sh1, Seen: -1},
+	{Name: "key_update", Value: &sh1, Flags: rt.RuleMemo, Seen: 184},
+	{Name: "key_delete", Value: &sh1, Flags: rt.RuleMemo, Seen: 185},
+	{Name: "key_action", Value: &sh1, Flags: rt.RuleMemo, Seen: 186},
+	{Name: "table_constraint", Value: &sh1, Flags: rt.RuleMemo, Seen: 187, Vars: 2},
+	{Name: "constraint_attrs", Value: &sh1196, Flags: rt.RuleMemo, Seen: 188, Scope: 141},
+	{Name: "constraint_attribute", Value: &sh1, Seen: -1},
+	{Name: "tc_check", Value: &sh1135, Seen: -1, Scope: 142, Vars: 2},
+	{Name: "tc_unique", Value: &sh1136, Seen: -1, Scope: 143, Vars: 2},
+	{Name: "tc_unique_index", Value: &sh1135, Seen: -1, Scope: 144, Vars: 2},
+	{Name: "tc_primary", Value: &sh1136, Seen: -1, Scope: 143, Vars: 2},
+	{Name: "tc_primary_index", Value: &sh1135, Seen: -1, Scope: 144, Vars: 2},
+	{Name: "tc_foreign", Value: &sh1198, Seen: -1, Scope: 145, Vars: 2},
+	{Name: "table_like", Value: &sh126, Seen: -1, Scope: 146, Vars: 2},
+	{Name: "table_like_option", Value: &sh1, Seen: -1},
+	{Name: "create_table_as_stmt", Value: &sh1197, Flags: rt.RuleMemo, Seen: 189, Scope: 147, Vars: 2},
+	{Name: "with_data", Value: &sh1, Seen: -1},
+	{Name: "create_view_stmt", Value: &sh1199, Flags: rt.RuleMemo, Seen: 190, Scope: 148, Vars: 2},
+	{Name: "check_option", Value: &sh1, Seen: -1},
+	{Name: "create_index_stmt", Value: &sh1202, Flags: rt.RuleMemo, Seen: 191, Scope: 149, Vars: 2},
+	{Name: "create_schema_stmt", Value: &sh1131, Flags: rt.RuleMemo, Seen: 192, Scope: 150, Vars: 2},
+	{Name: "schema_stmt", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "create_sequence_stmt", Value: &sh1135, Flags: rt.RuleMemo, Seen: 193, Scope: 151, Vars: 2},
+	{Name: "seq_opt_list", Value: &sh2, Flags: rt.RuleMemo, Seen: 194, Scope: 8, Vars: 2},
+	{Name: "seq_opt_elem", Value: &sh1, Flags: rt.RuleMemo, Seen: 195, Vars: 2},
+	{Name: "so_as", Value: &sh28, Seen: -1, Scope: 152, Vars: 2},
+	{Name: "so_num", Value: &sh28, Seen: -1, Scope: 20},
+	{Name: "so_flag", Value: &sh1196, Seen: -1, Scope: 31},
+	{Name: "so_owned", Value: &sh28, Seen: -1, Scope: 153},
+	{Name: "so_seqname", Value: &sh28, Seen: -1, Scope: 153},
+	{Name: "so_restart", Value: &sh2, Flags: rt.RuleMemo, Seen: 196, Scope: 20},
+	{Name: "create_type_stmt", Value: &sh19, Flags: rt.RuleMemo, Seen: 197, Scope: 154, Vars: 2},
+	{Name: "enum_val_list", Value: &sh2, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "create_macro_stmt", Value: &sh1136, Flags: rt.RuleMemo, Seen: 198, Scope: 155, Vars: 2},
+	{Name: "macro_definitions", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "macro_expr_list", Value: &sh2, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "macro_expr_def", Value: &sh218, Flags: rt.RuleMemo, Seen: 199, Scope: 156, Vars: 2},
+	{Name: "macro_table_list", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "macro_table_one_end", Value: &sh8, Seen: -1, Scope: 9, Vars: 2},
+	{Name: "macro_table_one", Value: &sh1132, Seen: -1, Scope: 157, Vars: 2},
+	{Name: "macro_table_many", Value: &sh2, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "macro_table_paren", Value: &sh1132, Flags: rt.RuleMemo, Seen: 200, Scope: 157, Vars: 2},
+	{Name: "param_list", Value: &sh218, Flags: rt.RuleMemo, Seen: 201, Scope: 14, Vars: 2},
+	{Name: "macro_params", Value: &sh28, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "macro_param", Value: &sh28, Flags: rt.RuleMemo, Seen: 202, Scope: 158, Vars: 2},
+	{Name: "create_secret_stmt", Value: &sh1201, Seen: -1, Scope: 159, Vars: 2},
+	{Name: "secret_options", Value: &sh2, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "secret_option", Value: &sh28, Flags: rt.RuleMemo, Seen: 203, Scope: 18, Vars: 2},
+	{Name: "alter_table_stmt", Value: &sh1, Flags: rt.RuleMemo, Seen: 204, Vars: 2},
+	{Name: "alter_relation_stmt", Value: &sh1131, Seen: -1, Scope: 160, Vars: 2},
+	{Name: "alter_name_stmt", Value: &sh1131, Seen: -1, Scope: 161, Vars: 2},
+	{Name: "alter_table_cmds", Value: &sh2, Flags: rt.RuleMemo, Seen: 205, Scope: 8, Vars: 2},
+	{Name: "qualified_column", Value: &sh1196, Flags: rt.RuleMemo, Seen: 206, Scope: 10},
+	{Name: "alter_table_cmd", Value: &sh1, Flags: rt.RuleMemo, Seen: 207, Vars: 2},
+	{Name: "ac_add_constraint", Value: &sh28, Seen: -1, Scope: 139, Vars: 2},
+	{Name: "ac_add_column", Value: &sh1132, Seen: -1, Scope: 162, Vars: 2},
+	{Name: "ac_add_generated", Value: &sh1131, Seen: -1, Scope: 163, Vars: 2},
+	{Name: "ac_set_partitioned", Value: &sh1132, Seen: -1, Scope: 78, Vars: 2},
+	{Name: "ac_reset_partitioned", Value: &sh1196, Seen: -1, Scope: 31},
+	{Name: "ac_set_sorted", Value: &sh1132, Seen: -1, Scope: 164, Vars: 2},
+	{Name: "ac_reset_sorted", Value: &sh1196, Seen: -1, Scope: 31},
+	{Name: "sortby_list", Value: &sh2, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "ac_alter_column", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "alter_column_head", Value: &sh1, Flags: rt.RuleMemo, Seen: 208},
+	{Name: "ac_col_default", Value: &sh1135, Seen: -1, Scope: 165, Vars: 2},
+	{Name: "ac_col_drop_default", Value: &sh1132, Seen: -1, Scope: 139},
+	{Name: "ac_col_not_null", Value: &sh1135, Seen: -1, Scope: 139},
+	{Name: "ac_col_statistics", Value: &sh1135, Seen: -1, Scope: 166},
+	{Name: "ac_col_set_options", Value: &sh1141, Seen: -1, Scope: 167, Vars: 2},
+	{Name: "ac_col_reset_options", Value: &sh1141, Seen: -1, Scope: 167, Vars: 2},
+	{Name: "ac_col_storage", Value: &sh1135, Seen: -1, Scope: 166},
+	{Name: "ac_col_add_identity", Value: &sh1201, Seen: -1, Scope: 168, Vars: 2},
+	{Name: "ac_col_drop_identity", Value: &sh1131, Seen: -1, Scope: 169},
+	{Name: "ac_col_identity", Value: &sh218, Seen: -1, Scope: 170, Vars: 2},
+	{Name: "identity_options", Value: &sh2, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "identity_option", Value: &sh1, Flags: rt.RuleMemo, Seen: 209, Vars: 2},
+	{Name: "io_set", Value: &sh28, Seen: -1, Scope: 5, Vars: 2},
+	{Name: "io_generated", Value: &sh28, Seen: -1, Scope: 171},
+	{Name: "ac_col_type", Value: &sh1135, Seen: -1, Scope: 172, Vars: 2},
+	{Name: "ac_col_generic", Value: &sh218, Seen: -1, Scope: 173, Vars: 2},
+	{Name: "signed_iconst", Value: &sh1, Seen: -1},
+	{Name: "ac_drop_column", Value: &sh218, Seen: -1, Scope: 174},
+	{Name: "ac_alter_constraint", Value: &sh126, Seen: -1, Scope: 175, Vars: 2},
+	{Name: "ac_validate", Value: &sh28, Seen: -1, Scope: 175, Vars: 2},
+	{Name: "ac_drop_constraint", Value: &sh218, Seen: -1, Scope: 176, Vars: 2},
+	{Name: "ac_set_logged", Value: &sh1196, Seen: -1, Scope: 31},
+	{Name: "ac_set_options", Value: &sh1132, Seen: -1, Scope: 153, Vars: 2},
+	{Name: "ac_reset_options", Value: &sh1132, Seen: -1, Scope: 153, Vars: 2},
+	{Name: "ac_generic", Value: &sh28, Seen: -1, Scope: 177, Vars: 2},
+	{Name: "alter_generic_options", Value: &sh28, Seen: -1, Scope: 178, Vars: 2},
+	{Name: "alter_generic_list", Value: &sh1133, Flags: rt.RuleMemo, Seen: 210, Scope: 8, Vars: 2},
+	{Name: "alter_generic_option", Value: &sh1, Flags: rt.RuleMemo, Seen: 211, Vars: 2},
+	{Name: "ago_value", Value: &sh126, Seen: -1, Scope: 179, Vars: 2},
+	{Name: "ago_drop", Value: &sh28, Seen: -1, Scope: 180},
+	{Name: "drop_behavior", Value: &sh1, Flags: rt.RuleMemo, Seen: 212},
+	{Name: "alter_sequence_stmt", Value: &sh1131, Flags: rt.RuleMemo, Seen: 213, Scope: 181, Vars: 2},
+	{Name: "alter_database_stmt", Value: &sh1201, Seen: -1, Scope: 182},
+	{Name: "alter_object_schema_stmt", Value: &sh1, Flags: rt.RuleMemo, Seen: 214, Vars: 2},
+	{Name: "alter_schema_relation", Value: &sh19, Seen: -1, Scope: 183, Vars: 2},
+	{Name: "alter_schema_name", Value: &sh19, Seen: -1, Scope: 183, Vars: 2},
+	{Name: "rename_stmt", Value: &sh1, Flags: rt.RuleMemo, Seen: 215, Vars: 2},
+	{Name: "rename_schema", Value: &sh1135, Seen: -1, Scope: 184, Vars: 2},
+	{Name: "rename_object", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "rename_relation", Value: &sh19, Seen: -1, Scope: 185, Vars: 2},
+	{Name: "rename_name", Value: &sh19, Seen: -1, Scope: 185, Vars: 2},
+	{Name: "rename_column", Value: &sh1200, Seen: -1, Scope: 186, Vars: 2},
+	{Name: "rename_constraint", Value: &sh1199, Seen: -1, Scope: 186, Vars: 2},
+	{Name: "drop_stmt", Value: &sh1, Flags: rt.RuleMemo, Seen: 216, Vars: 2},
+	{Name: "drop_any_name", Value: &sh1132, Seen: -1, Scope: 187},
+	{Name: "drop_name", Value: &sh1132, Seen: -1, Scope: 187, Vars: 2},
+	{Name: "drop_on", Value: &sh1141, Seen: -1, Scope: 188, Vars: 2},
+	{Name: "drop_type_any_name", Value: &sh1, Seen: -1},
+	{Name: "drop_type_name", Value: &sh1, Seen: -1},
+	{Name: "any_name_list", Value: &sh2, Seen: -1, Scope: 8},
+	{Name: "name_as_name_list", Value: &sh2, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "drop_secret_stmt", Value: &sh1131, Seen: -1, Scope: 189},
+	{Name: "copy_stmt", Value: &sh1, Flags: rt.RuleMemo, Seen: 217, Vars: 2},
+	{Name: "copy_table", Value: &sh1201, Seen: -1, Scope: 190, Vars: 2},
+	{Name: "copy_query", Value: &sh1201, Seen: -1, Scope: 191, Vars: 2},
+	{Name: "copy_database", Value: &sh19, Seen: -1, Scope: 192},
+	{Name: "copy_database_flag", Value: &sh1, Seen: -1},
+	{Name: "copy_file", Value: &sh1, Flags: rt.RuleMemo, Seen: 218, Vars: 2},
+	{Name: "copy_ident_file", Value: &sh2, Seen: -1, Scope: 193},
+	{Name: "generic_opt_list", Value: &sh1133, Flags: rt.RuleMemo, Seen: 219, Scope: 8, Vars: 2},
+	{Name: "generic_opt_elem", Value: &sh2, Flags: rt.RuleMemo, Seen: 220, Scope: 18, Vars: 2},
+	{Name: "copy_opt_item", Value: &sh1, Flags: rt.RuleMemo, Seen: 221, Vars: 2},
+	{Name: "co_flag", Value: &sh1196, Seen: -1, Scope: 31},
+	{Name: "co_string", Value: &sh126, Seen: -1, Scope: 20, Vars: 2},
+	{Name: "co_force_cols", Value: &sh28, Seen: -1, Scope: 194},
+	{Name: "co_force_star", Value: &sh28, Seen: -1, Scope: 20},
+	{Name: "co_partition_cols", Value: &sh28, Seen: -1, Scope: 194},
+	{Name: "co_partition_star", Value: &sh28, Seen: -1, Scope: 20},
+	{Name: "export_stmt", Value: &sh1132, Seen: -1, Scope: 195, Vars: 2},
+	{Name: "import_stmt", Value: &sh218, Seen: -1, Scope: 196, Vars: 2},
+	{Name: "attach_stmt", Value: &sh1132, Seen: -1, Scope: 197, Vars: 2},
+	{Name: "detach_stmt", Value: &sh1, Seen: -1},
+	{Name: "detach_database", Value: &sh1133, Seen: -1, Scope: 198},
+	{Name: "detach_plain", Value: &sh28, Seen: -1, Scope: 10},
+	{Name: "use_stmt", Value: &sh28, Seen: -1, Scope: 10, Vars: 2},
+	{Name: "load_stmt", Value: &sh1, Flags: rt.RuleMemo, Seen: 222, Vars: 2},
+	{Name: "load_load", Value: &sh28, Seen: -1, Scope: 10, Vars: 2},
+	{Name: "load_install", Value: &sh1133, Seen: -1, Scope: 199, Vars: 2},
+	{Name: "pragma_stmt", Value: &sh1, Flags: rt.RuleMemo, Seen: 223, Vars: 2},
+	{Name: "pragma_call", Value: &sh1135, Seen: -1, Scope: 35, Vars: 2},
+	{Name: "pragma_set", Value: &sh1132, Seen: -1, Scope: 18, Vars: 2},
+	{Name: "pragma_plain", Value: &sh28, Seen: -1, Scope: 10},
+	{Name: "var_name", Value: &sh2, Flags: rt.RuleMemo, Seen: 224, Scope: 8},
+	{Name: "set_scope", Value: &sh1, Flags: rt.RuleMemo, Seen: 225},
+	{Name: "set_stmt", Value: &sh1, Flags: rt.RuleMemo, Seen: 226, Vars: 2},
+	{Name: "set_scoped", Value: &sh218, Seen: -1, Scope: 200, Vars: 2},
+	{Name: "set_unscoped", Value: &sh28, Seen: -1, Scope: 201, Vars: 2},
+	{Name: "zone_value", Value: &sh1, Flags: rt.RuleMemo, Seen: 227, Vars: 2},
+	{Name: "reset_stmt", Value: &sh1, Flags: rt.RuleMemo, Seen: 228},
+	{Name: "reset_scoped", Value: &sh218, Seen: -1, Scope: 202},
+	{Name: "reset_unscoped", Value: &sh28, Seen: -1, Scope: 203},
+	{Name: "show_stmt", Value: &sh1, Flags: rt.RuleMemo, Seen: 229, Vars: 2},
+	{Name: "show_word", Value: &sh1, Flags: rt.RuleMemo, Seen: 230},
+	{Name: "show_query", Value: &sh28, Seen: -1, Scope: 204, Vars: 2},
+	{Name: "summarize_query", Value: &sh28, Seen: -1, Scope: 204, Vars: 2},
+	{Name: "summarize_table", Value: &sh28, Seen: -1, Scope: 175, Vars: 2},
+	{Name: "show_tables", Value: &sh1132, Seen: -1, Scope: 175, Vars: 2},
+	{Name: "show_time_zone", Value: &sh28, Seen: -1, Scope: 121},
+	{Name: "show_isolation", Value: &sh28, Seen: -1, Scope: 121},
+	{Name: "show_all", Value: &sh126, Seen: -1, Scope: 152},
+	{Name: "show_name", Value: &sh28, Seen: -1, Scope: 175, Vars: 2},
+	{Name: "show_bare", Value: &sh1196, Seen: -1, Scope: 31},
+	{Name: "explain_stmt", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "explain_options", Value: &sh1135, Seen: -1, Scope: 205, Vars: 2},
+	{Name: "explain_analyze", Value: &sh1133, Seen: -1, Scope: 206, Vars: 2},
+	{Name: "explain_verbose", Value: &sh218, Seen: -1, Scope: 7, Vars: 2},
+	{Name: "explain_plain", Value: &sh28, Seen: -1, Scope: 7, Vars: 2},
+	{Name: "explain_option_list", Value: &sh2, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "explain_option", Value: &sh2, Flags: rt.RuleMemo, Seen: 231, Scope: 18, Vars: 2},
+	{Name: "explainable", Value: &sh1, Flags: rt.RuleMemo, Seen: 232, Vars: 2},
+	{Name: "prepare_stmt", Value: &sh1131, Flags: rt.RuleMemo, Seen: 233, Scope: 207, Vars: 2},
+	{Name: "preparable", Value: &sh1, Flags: rt.RuleMemo, Seen: 234, Vars: 2},
+	{Name: "execute_stmt", Value: &sh126, Flags: rt.RuleMemo, Seen: 235, Scope: 67, Vars: 2},
+	{Name: "execute_params", Value: &sh2, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "execute_param", Value: &sh1, Flags: rt.RuleMemo, Seen: 236, Vars: 2},
+	{Name: "deallocate_stmt", Value: &sh1, Flags: rt.RuleMemo, Seen: 237, Vars: 2},
+	{Name: "deallocate_prepare", Value: &sh218, Seen: -1, Scope: 180, Vars: 2},
+	{Name: "deallocate_plain", Value: &sh28, Seen: -1, Scope: 180, Vars: 2},
+	{Name: "transaction_stmt", Value: &sh1, Flags: rt.RuleMemo, Seen: 238},
+	{Name: "tx_start", Value: &sh28, Seen: -1, Scope: 208},
+	{Name: "tx_end", Value: &sh2, Seen: -1, Scope: 171},
+	{Name: "vacuum_stmt", Value: &sh1, Flags: rt.RuleMemo, Seen: 239, Vars: 2},
+	{Name: "vacuum_options", Value: &sh1131, Seen: -1, Scope: 209, Vars: 2},
+	{Name: "vacuum_option_list", Value: &sh2, Seen: -1, Scope: 8},
+	{Name: "vacuum_option", Value: &sh1, Flags: rt.RuleMemo, Seen: 240},
+	{Name: "vacuum_plain", Value: &sh218, Seen: -1, Scope: 210, Vars: 2},
+	{Name: "analyze_stmt", Value: &sh28, Flags: rt.RuleMemo, Seen: 241, Scope: 211, Vars: 2},
+	{Name: "checkpoint_stmt", Value: &sh28, Flags: rt.RuleMemo, Seen: 242, Scope: 212},
+	{Name: "call_stmt", Value: &sh28, Flags: rt.RuleMemo, Seen: 243, Scope: 51, Vars: 2},
+	{Name: "comment_stmt", Value: &sh1, Seen: -1, Vars: 2},
+	{Name: "comment_column", Value: &sh1132, Seen: -1, Scope: 166, Vars: 2},
+	{Name: "comment_object", Value: &sh1141, Seen: -1, Scope: 213, Vars: 2},
+	{Name: "comment_value", Value: &sh1, Flags: rt.RuleMemo, Seen: 244, Vars: 2},
+	{Name: "null_text", Value: &sh1, Seen: -1},
+	{Name: "update_extensions_stmt", Value: &sh218, Flags: rt.RuleMemo, Seen: 245, Scope: 214, Vars: 2},
+	{Name: "stmt_end", Value: &sh2, Seen: -1},
+	{Name: "main", Value: &sh1133, Seen: -1, Scope: 8, Vars: 2},
+	{Name: "statement", Value: &sh1, Flags: rt.RuleMemo, Seen: 246, Vars: 2},
+	{Name: "ABORT", Value: &sh218, Seen: -1},
+	{Name: "ACCESS", Value: &sh1133, Seen: -1},
+	{Name: "ACTION", Value: &sh1133, Seen: -1},
+	{Name: "ADD", Value: &sh28, Seen: -1},
+	{Name: "ALL", Value: &sh28, Seen: -1},
+	{Name: "ALTER", Value: &sh218, Seen: -1},
+	{Name: "ALWAYS", Value: &sh1133, Seen: -1},
+	{Name: "ANALYSE", Value: &sh1132, Seen: -1},
+	{Name: "ANALYZE", Value: &sh1132, Seen: -1},
+	{Name: "AND", Value: &sh28, Seen: -1},
+	{Name: "ANTI", Value: &sh126, Seen: -1},
+	{Name: "ANY", Value: &sh28, Seen: -1},
+	{Name: "ARRAY", Value: &sh218, Seen: -1},
+	{Name: "AS", Value: &sh2, Seen: -1},
+	{Name: "ASC", Value: &sh28, Seen: -1},
+	{Name: "ASOF", Value: &sh126, Seen: -1},
+	{Name: "ASYMMETRIC", Value: &sh1136, Seen: -1},
+	{Name: "AT", Value: &sh2, Seen: -1},
+	{Name: "ATTACH", Value: &sh1133, Seen: -1},
+	{Name: "BEGIN", Value: &sh218, Seen: -1},
+	{Name: "BETWEEN", Value: &sh1132, Seen: -1},
+	{Name: "BIGINT", Value: &sh1133, Seen: -1},
+	{Name: "BINARY", Value: &sh1133, Seen: -1},
+	{Name: "BIT", Value: &sh28, Seen: -1},
+	{Name: "BOOLEAN", Value: &sh1132, Seen: -1},
+	{Name: "BOTH", Value: &sh126, Seen: -1},
+	{Name: "BY", Value: &sh2, Seen: -1},
+	{Name: "CACHE", Value: &sh218, Seen: -1},
+	{Name: "CALL", Value: &sh126, Seen: -1},
+	{Name: "CASCADE", Value: &sh1132, Seen: -1},
+	{Name: "CASCADED", Value: &sh1131, Seen: -1},
+	{Name: "CASE", Value: &sh126, Seen: -1},
+	{Name: "CAST", Value: &sh126, Seen: -1},
+	{Name: "CENTURIES", Value: &sh1135, Seen: -1},
+	{Name: "CENTURY", Value: &sh1132, Seen: -1},
+	{Name: "CHAR", Value: &sh126, Seen: -1},
+	{Name: "CHARACTER", Value: &sh1135, Seen: -1},
+	{Name: "CHECK", Value: &sh218, Seen: -1},
+	{Name: "CHECKPOINT", Value: &sh1136, Seen: -1},
+	{Name: "COALESCE", Value: &sh1131, Seen: -1},
+	{Name: "COLLATE", Value: &sh1132, Seen: -1},
+	{Name: "COLLATION", Value: &sh1135, Seen: -1},
+	{Name: "COLUMN", Value: &sh1133, Seen: -1},
+	{Name: "COLUMNS", Value: &sh1132, Seen: -1},
+	{Name: "COMMENT", Value: &sh1132, Seen: -1},
+	{Name: "COMMENTS", Value: &sh1131, Seen: -1},
+	{Name: "COMMIT", Value: &sh1133, Seen: -1},
+	{Name: "COMPRESSION", Value: &sh1141, Seen: -1},
+	{Name: "CONCURRENTLY", Value: &sh19, Seen: -1},
+	{Name: "CONFIGURATION", Value: &sh1198, Seen: -1},
+	{Name: "CONFLICT", Value: &sh1131, Seen: -1},
+	{Name: "CONSTRAINT", Value: &sh1136, Seen: -1},
+	{Name: "CONSTRAINTS", Value: &sh1141, Seen: -1},
+	{Name: "CONVERSION", Value: &sh1136, Seen: -1},
+	{Name: "COPY", Value: &sh126, Seen: -1},
+	{Name: "CREATE", Value: &sh1133, Seen: -1},
+	{Name: "CROSS", Value: &sh218, Seen: -1},
+	{Name: "CSV", Value: &sh28, Seen: -1},
+	{Name: "CUBE", Value: &sh126, Seen: -1},
+	{Name: "CURRENT", Value: &sh1132, Seen: -1},
+	{Name: "CYCLE", Value: &sh218, Seen: -1},
+	{Name: "DATA", Value: &sh126, Seen: -1},
+	{Name: "DATABASE", Value: &sh1131, Seen: -1},
+	{Name: "DAY", Value: &sh28, Seen: -1},
+	{Name: "DAYS", Value: &sh126, Seen: -1},
+	{Name: "DEALLOCATE", Value: &sh1136, Seen: -1},
+	{Name: "DEC", Value: &sh28, Seen: -1},
+	{Name: "DECADE", Value: &sh1133, Seen: -1},
+	{Name: "DECADES", Value: &sh1132, Seen: -1},
+	{Name: "DECIMAL", Value: &sh1132, Seen: -1},
+	{Name: "DEFAULT", Value: &sh1132, Seen: -1},
+	{Name: "DEFAULTS", Value: &sh1131, Seen: -1},
+	{Name: "DEFERRABLE", Value: &sh1136, Seen: -1},
+	{Name: "DEFERRED", Value: &sh1131, Seen: -1},
+	{Name: "DELETE", Value: &sh1133, Seen: -1},
+	{Name: "DELIMITER", Value: &sh1135, Seen: -1},
+	{Name: "DELIMITERS", Value: &sh1136, Seen: -1},
+	{Name: "DESC", Value: &sh126, Seen: -1},
+	{Name: "DESCRIBE", Value: &sh1131, Seen: -1},
+	{Name: "DETACH", Value: &sh1133, Seen: -1},
+	{Name: "DICTIONARY", Value: &sh1136, Seen: -1},
+	{Name: "DISTINCT", Value: &sh1131, Seen: -1},
+	{Name: "DO", Value: &sh2, Seen: -1},
+	{Name: "DOUBLE", Value: &sh1133, Seen: -1},
+	{Name: "DROP", Value: &sh126, Seen: -1},
+	{Name: "ELSE", Value: &sh126, Seen: -1},
+	{Name: "ENCODING", Value: &sh1131, Seen: -1},
+	{Name: "END", Value: &sh28, Seen: -1},
+	{Name: "ENUM", Value: &sh126, Seen: -1},
+	{Name: "ERROR", Value: &sh218, Seen: -1},
+	{Name: "ESCAPE", Value: &sh1133, Seen: -1},
+	{Name: "EVENT", Value: &sh218, Seen: -1},
+	{Name: "EXCEPT", Value: &sh1133, Seen: -1},
+	{Name: "EXCLUDE", Value: &sh1132, Seen: -1},
+	{Name: "EXCLUDING", Value: &sh1135, Seen: -1},
+	{Name: "EXECUTE", Value: &sh1132, Seen: -1},
+	{Name: "EXISTS", Value: &sh1133, Seen: -1},
+	{Name: "EXPLAIN", Value: &sh1132, Seen: -1},
+	{Name: "EXPORT", Value: &sh1133, Seen: -1},
+	{Name: "EXPORT_STATE", Value: &sh19, Seen: -1},
+	{Name: "EXTENSION", Value: &sh1135, Seen: -1},
+	{Name: "EXTENSIONS", Value: &sh1136, Seen: -1},
+	{Name: "EXTRACT", Value: &sh1132, Seen: -1},
+	{Name: "FALSE", Value: &sh218, Seen: -1},
+	{Name: "FETCH", Value: &sh218, Seen: -1},
+	{Name: "FILTER", Value: &sh1133, Seen: -1},
+	{Name: "FIRST", Value: &sh218, Seen: -1},
+	{Name: "FLOAT", Value: &sh218, Seen: -1},
+	{Name: "FOLLOWING", Value: &sh1135, Seen: -1},
+	{Name: "FOR", Value: &sh28, Seen: -1},
+	{Name: "FORCE", Value: &sh218, Seen: -1},
+	{Name: "FOREIGN", Value: &sh1132, Seen: -1},
+	{Name: "FREEZE", Value: &sh1133, Seen: -1},
+	{Name: "FROM", Value: &sh126, Seen: -1},
+	{Name: "FULL", Value: &sh126, Seen: -1},
+	{Name: "FUNCTION", Value: &sh1131, Seen: -1},
+	{Name: "GENERATED", Value: &sh1135, Seen: -1},
+	{Name: "GLOB", Value: &sh126, Seen: -1},
+	{Name: "GLOBAL", Value: &sh1133, Seen: -1},
+	{Name: "GROUP", Value: &sh218, Seen: -1},
+	{Name: "GROUPING", Value: &sh1131, Seen: -1},
+	{Name: "GROUPING_ID", Value: &sh1141, Seen: -1},
+	{Name: "GROUPS", Value: &sh1133, Seen: -1},
+	{Name: "HAVING", Value: &sh1133, Seen: -1},
+	{Name: "HEADER", Value: &sh1133, Seen: -1},
+	{Name: "HOUR", Value: &sh126, Seen: -1},
+	{Name: "HOURS", Value: &sh218, Seen: -1},
+	{Name: "IDENTITY", Value: &sh1131, Seen: -1},
+	{Name: "IF", Value: &sh2, Seen: -1},
+	{Name: "IGNORE", Value: &sh1133, Seen: -1},
+	{Name: "ILIKE", Value: &sh218, Seen: -1},
+	{Name: "IMMEDIATE", Value: &sh1135, Seen: -1},
+	{Name: "IMPORT", Value: &sh1133, Seen: -1},
+	{Name: "IN", Value: &sh2, Seen: -1},
+	{Name: "INCLUDE", Value: &sh1132, Seen: -1},
+	{Name: "INCLUDING", Value: &sh1135, Seen: -1},
+	{Name: "INCREMENT", Value: &sh1135, Seen: -1},
+	{Name: "INDEX", Value: &sh218, Seen: -1},
+	{Name: "INDEXES", Value: &sh1132, Seen: -1},
+	{Name: "INHERIT", Value: &sh1132, Seen: -1},
+	{Name: "INITIALLY", Value: &sh1135, Seen: -1},
+	{Name: "INNER", Value: &sh218, Seen: -1},
+	{Name: "INSERT", Value: &sh1133, Seen: -1},
+	{Name: "INSTALL", Value: &sh1132, Seen: -1},
+	{Name: "INT", Value: &sh28, Seen: -1},
+	{Name: "INTEGER", Value: &sh1132, Seen: -1},
+	{Name: "INTERSECT", Value: &sh1135, Seen: -1},
+	{Name: "INTERVAL", Value: &sh1131, Seen: -1},
+	{Name: "INTO", Value: &sh126, Seen: -1},
+	{Name: "IS", Value: &sh2, Seen: -1},
+	{Name: "ISNULL", Value: &sh1133, Seen: -1},
+	{Name: "ISOLATION", Value: &sh1135, Seen: -1},
+	{Name: "JOIN", Value: &sh126, Seen: -1},
+	{Name: "KEY", Value: &sh28, Seen: -1},
+	{Name: "LAMBDA", Value: &sh1133, Seen: -1},
+	{Name: "LAST", Value: &sh126, Seen: -1},
+	{Name: "LATERAL", Value: &sh1132, Seen: -1},
+	{Name: "LEADING", Value: &sh1132, Seen: -1},
+	{Name: "LEFT", Value: &sh126, Seen: -1},
+	{Name: "LEVEL", Value: &sh218, Seen: -1},
+	{Name: "LIKE", Value: &sh126, Seen: -1},
+	{Name: "LIMIT", Value: &sh218, Seen: -1},
+	{Name: "LOAD", Value: &sh126, Seen: -1},
+	{Name: "LOCAL", Value: &sh218, Seen: -1},
+	{Name: "LOCKED", Value: &sh1133, Seen: -1},
+	{Name: "LOGGED", Value: &sh1133, Seen: -1},
+	{Name: "MACRO", Value: &sh218, Seen: -1},
+	{Name: "MAP", Value: &sh28, Seen: -1},
+	{Name: "MATCH", Value: &sh218, Seen: -1},
+	{Name: "MATCHED", Value: &sh1132, Seen: -1},
+	{Name: "MATERIALIZED", Value: &sh19, Seen: -1},
+	{Name: "MAXVALUE", Value: &sh1131, Seen: -1},
+	{Name: "MERGE", Value: &sh218, Seen: -1},
+	{Name: "METHOD", Value: &sh1133, Seen: -1},
+	{Name: "MICROSECOND", Value: &sh1141, Seen: -1},
+	{Name: "MICROSECONDS", Value: &sh19, Seen: -1},
+	{Name: "MILLENNIA", Value: &sh1135, Seen: -1},
+	{Name: "MILLENNIUM", Value: &sh1136, Seen: -1},
+	{Name: "MILLISECOND", Value: &sh1141, Seen: -1},
+	{Name: "MILLISECONDS", Value: &sh19, Seen: -1},
+	{Name: "MINUTE", Value: &sh1133, Seen: -1},
+	{Name: "MINUTES", Value: &sh1132, Seen: -1},
+	{Name: "MINVALUE", Value: &sh1131, Seen: -1},
+	{Name: "MONTH", Value: &sh218, Seen: -1},
+	{Name: "MONTHS", Value: &sh1133, Seen: -1},
+	{Name: "NAME", Value: &sh126, Seen: -1},
+	{Name: "NATIONAL", Value: &sh1131, Seen: -1},
+	{Name: "NATURAL", Value: &sh1132, Seen: -1},
+	{Name: "NCHAR", Value: &sh218, Seen: -1},
+	{Name: "NEXT", Value: &sh126, Seen: -1},
+	{Name: "NO", Value: &sh2, Seen: -1},
+	{Name: "NONE", Value: &sh126, Seen: -1},
+	{Name: "NOT", Value: &sh28, Seen: -1},
+	{Name: "NOTHING", Value: &sh1132, Seen: -1},
+	{Name: "NOTNULL", Value: &sh1132, Seen: -1},
+	{Name: "NOWAIT", Value: &sh1133, Seen: -1},
+	{Name: "NULL", Value: &sh126, Seen: -1},
+	{Name: "NULLIF", Value: &sh1133, Seen: -1},
+	{Name: "NULLS", Value: &sh218, Seen: -1},
+	{Name: "NUMERIC", Value: &sh1132, Seen: -1},
+	{Name: "OF", Value: &sh2, Seen: -1},
+	{Name: "OFFSET", Value: &sh1133, Seen: -1},
+	{Name: "OIDS", Value: &sh126, Seen: -1},
+	{Name: "ON", Value: &sh2, Seen: -1},
+	{Name: "ONLY", Value: &sh126, Seen: -1},
+	{Name: "OPERATOR", Value: &sh1131, Seen: -1},
+	{Name: "OPTION", Value: &sh1133, Seen: -1},
+	{Name: "OPTIONS", Value: &sh1132, Seen: -1},
+	{Name: "OR", Value: &sh2, Seen: -1},
+	{Name: "ORDER", Value: &sh218, Seen: -1},
+	{Name: "ORDINALITY", Value: &sh1136, Seen: -1},
+	{Name: "OTHERS", Value: &sh1133, Seen: -1},
+	{Name: "OUTER", Value: &sh218, Seen: -1},
+	{Name: "OVER", Value: &sh126, Seen: -1},
+	{Name: "OVERLAY", Value: &sh1132, Seen: -1},
+	{Name: "OVERRIDING", Value: &sh1136, Seen: -1},
+	{Name: "OWNED", Value: &sh218, Seen: -1},
+	{Name: "PARSER", Value: &sh1133, Seen: -1},
+	{Name: "PARTIAL", Value: &sh1132, Seen: -1},
+	{Name: "PARTITION", Value: &sh1135, Seen: -1},
+	{Name: "PARTITIONED", Value: &sh1141, Seen: -1},
+	{Name: "PERCENT", Value: &sh1132, Seen: -1},
+	{Name: "PERSISTENT", Value: &sh1136, Seen: -1},
+	{Name: "PIVOT", Value: &sh218, Seen: -1},
+	{Name: "PIVOT_LONGER", Value: &sh19, Seen: -1},
+	{Name: "PIVOT_WIDER", Value: &sh1141, Seen: -1},
+	{Name: "PLACING", Value: &sh1132, Seen: -1},
+	{Name: "POLICY", Value: &sh1133, Seen: -1},
+	{Name: "POSITION", Value: &sh1131, Seen: -1},
+	{Name: "POSITIONAL", Value: &sh1136, Seen: -1},
+	{Name: "PRAGMA", Value: &sh1133, Seen: -1},
+	{Name: "PRECEDING", Value: &sh1135, Seen: -1},
+	{Name: "PRECISION", Value: &sh1135, Seen: -1},
+	{Name: "PREPARE", Value: &sh1132, Seen: -1},
+	{Name: "PRESERVE", Value: &sh1131, Seen: -1},
+	{Name: "PRIMARY", Value: &sh1132, Seen: -1},
+	{Name: "PROGRAM", Value: &sh1132, Seen: -1},
+	{Name: "PUBLICATION", Value: &sh1141, Seen: -1},
+	{Name: "QUALIFY", Value: &sh1132, Seen: -1},
+	{Name: "QUARTER", Value: &sh1132, Seen: -1},
+	{Name: "QUARTERS", Value: &sh1131, Seen: -1},
+	{Name: "QUOTE", Value: &sh218, Seen: -1},
+	{Name: "RANGE", Value: &sh218, Seen: -1},
+	{Name: "READ", Value: &sh126, Seen: -1},
+	{Name: "REAL", Value: &sh126, Seen: -1},
+	{Name: "RECURSIVE", Value: &sh1135, Seen: -1},
+	{Name: "REFERENCES", Value: &sh1136, Seen: -1},
+	{Name: "RENAME", Value: &sh1133, Seen: -1},
+	{Name: "REPEATABLE", Value: &sh1136, Seen: -1},
+	{Name: "REPLACE", Value: &sh1132, Seen: -1},
+	{Name: "RESET", Value: &sh218, Seen: -1},
+	{Name: "RESPECT", Value: &sh1132, Seen: -1},
+	{Name: "RESTART", Value: &sh1132, Seen: -1},
+	{Name: "RESTRICT", Value: &sh1131, Seen: -1},
+	{Name: "RETURNING", Value: &sh1135, Seen: -1},
+	{Name: "RIGHT", Value: &sh218, Seen: -1},
+	{Name: "ROLLBACK", Value: &sh1131, Seen: -1},
+	{Name: "ROLLUP", Value: &sh1133, Seen: -1},
+	{Name: "ROW", Value: &sh28, Seen: -1},
+	{Name: "ROWS", Value: &sh126, Seen: -1},
+	{Name: "RULE", Value: &sh126, Seen: -1},
+	{Name: "SAMPLE", Value: &sh1133, Seen: -1},
+	{Name: "SCHEMA", Value: &sh1133, Seen: -1},
+	{Name: "SEARCH", Value: &sh1133, Seen: -1},
+	{Name: "SECOND", Value: &sh1133, Seen: -1},
+	{Name: "SECONDS", Value: &sh1132, Seen: -1},
+	{Name: "SECRET", Value: &sh1133, Seen: -1},
+	{Name: "SELECT", Value: &sh1133, Seen: -1},
+	{Name: "SEMI", Value: &sh126, Seen: -1},
+	{Name: "SEQUENCE", Value: &sh1131, Seen: -1},
+	{Name: "SERVER", Value: &sh1133, Seen: -1},
+	{Name: "SESSION", Value: &sh1132, Seen: -1},
+	{Name: "SET", Value: &sh28, Seen: -1},
+	{Name: "SETOF", Value: &sh218, Seen: -1},
+	{Name: "SETS", Value: &sh126, Seen: -1},
+	{Name: "SHARE", Value: &sh218, Seen: -1},
+	{Name: "SHOW", Value: &sh126, Seen: -1},
+	{Name: "SIMILAR", Value: &sh1132, Seen: -1},
+	{Name: "SIMPLE", Value: &sh1133, Seen: -1},
+	{Name: "SKIP", Value: &sh126, Seen: -1},
+	{Name: "SMALLINT", Value: &sh1131, Seen: -1},
+	{Name: "SOME", Value: &sh126, Seen: -1},
+	{Name: "SORTED", Value: &sh1133, Seen: -1},
+	{Name: "SOURCE", Value: &sh1133, Seen: -1},
+	{Name: "START", Value: &sh218, Seen: -1},
+	{Name: "STATISTICS", Value: &sh1136, Seen: -1},
+	{Name: "STDIN", Value: &sh218, Seen: -1},
+	{Name: "STDOUT", Value: &sh1133, Seen: -1},
+	{Name: "STORAGE", Value: &sh1132, Seen: -1},
+	{Name: "STORED", Value: &sh1133, Seen: -1},
+	{Name: "STRUCT", Value: &sh1133, Seen: -1},
+	{Name: "SUBSTRING", Value: &sh1135, Seen: -1},
+	{Name: "SUMMARIZE", Value: &sh1135, Seen: -1},
+	{Name: "SYMMETRIC", Value: &sh1135, Seen: -1},
+	{Name: "SYSTEM", Value: &sh1133, Seen: -1},
+	{Name: "TABLE", Value: &sh218, Seen: -1},
+	{Name: "TABLES", Value: &sh1133, Seen: -1},
+	{Name: "TABLESAMPLE", Value: &sh1141, Seen: -1},
+	{Name: "TARGET", Value: &sh1133, Seen: -1},
+	{Name: "TEMP", Value: &sh126, Seen: -1},
+	{Name: "TEMPLATE", Value: &sh1131, Seen: -1},
+	{Name: "TEMPORARY", Value: &sh1135, Seen: -1},
+	{Name: "TEXT", Value: &sh126, Seen: -1},
+	{Name: "THEN", Value: &sh126, Seen: -1},
+	{Name: "TIES", Value: &sh126, Seen: -1},
+	{Name: "TIME", Value: &sh126, Seen: -1},
+	{Name: "TIMESTAMP", Value: &sh1135, Seen: -1},
+	{Name: "TO", Value: &sh2, Seen: -1},
+	{Name: "TRAILING", Value: &sh1131, Seen: -1},
+	{Name: "TRANSACTION", Value: &sh1141, Seen: -1},
+	{Name: "TREAT", Value: &sh218, Seen: -1},
+	{Name: "TRIGGER", Value: &sh1132, Seen: -1},
+	{Name: "TRIM", Value: &sh126, Seen: -1},
+	{Name: "TRUE", Value: &sh126, Seen: -1},
+	{Name: "TRUNCATE", Value: &sh1131, Seen: -1},
+	{Name: "TRY_CAST", Value: &sh1131, Seen: -1},
+	{Name: "TYPE", Value: &sh126, Seen: -1},
+	{Name: "UNBOUNDED", Value: &sh1135, Seen: -1},
+	{Name: "UNION", Value: &sh218, Seen: -1},
+	{Name: "UNIQUE", Value: &sh1133, Seen: -1},
+	{Name: "UNKNOWN", Value: &sh1132, Seen: -1},
+	{Name: "UNLOGGED", Value: &sh1131, Seen: -1},
+	{Name: "UNPACK", Value: &sh1133, Seen: -1},
+	{Name: "UNPIVOT", Value: &sh1132, Seen: -1},
+	{Name: "UPDATE", Value: &sh1133, Seen: -1},
+	{Name: "USE", Value: &sh28, Seen: -1},
+	{Name: "USER", Value: &sh126, Seen: -1},
+	{Name: "USING", Value: &sh218, Seen: -1},
+	{Name: "VACUUM", Value: &sh1133, Seen: -1},
+	{Name: "VALID", Value: &sh218, Seen: -1},
+	{Name: "VALIDATE", Value: &sh1131, Seen: -1},
+	{Name: "VALUE", Value: &sh218, Seen: -1},
+	{Name: "VALUES", Value: &sh1133, Seen: -1},
+	{Name: "VARCHAR", Value: &sh1132, Seen: -1},
+	{Name: "VARIABLE", Value: &sh1131, Seen: -1},
+	{Name: "VARIADIC", Value: &sh1131, Seen: -1},
+	{Name: "VARYING", Value: &sh1132, Seen: -1},
+	{Name: "VERBOSE", Value: &sh1132, Seen: -1},
+	{Name: "VERSION", Value: &sh1132, Seen: -1},
+	{Name: "VIEW", Value: &sh126, Seen: -1},
+	{Name: "VIRTUAL", Value: &sh1132, Seen: -1},
+	{Name: "WEEK", Value: &sh126, Seen: -1},
+	{Name: "WEEKS", Value: &sh218, Seen: -1},
+	{Name: "WHEN", Value: &sh126, Seen: -1},
+	{Name: "WHERE", Value: &sh218, Seen: -1},
+	{Name: "WINDOW", Value: &sh1133, Seen: -1},
+	{Name: "WITH", Value: &sh126, Seen: -1},
+	{Name: "WITHIN", Value: &sh1133, Seen: -1},
+	{Name: "WITHOUT", Value: &sh1132, Seen: -1},
+	{Name: "WORK", Value: &sh126, Seen: -1},
+	{Name: "WRAPPER", Value: &sh1132, Seen: -1},
+	{Name: "WRITE", Value: &sh218, Seen: -1},
+	{Name: "YEAR", Value: &sh126, Seen: -1},
+	{Name: "YEARS", Value: &sh218, Seen: -1},
+	{Name: "ZONE", Value: &sh126, Seen: -1},
+	{Name: "kw_r", Value: &sh8, Seen: -1},
+	{Name: "kw_c", Value: &sh8, Seen: -1},
+	{Name: "kw_cf", Value: &sh8, Seen: -1},
+	{Name: "kw_ct", Value: &sh8, Seen: -1},
+	{Name: "kw_t", Value: &sh8, Seen: -1},
+	{Name: "kw_tf", Value: &sh8, Seen: -1},
+	{Name: "kw_u", Value: &sh8, Seen: -1},
+	{Name: "kw_not_col_id", Value: &sh1, Seen: -1},
+	{Name: "kw_not_func_name", Value: &sh1, Seen: -1},
+	{Name: "kw_not_type_name", Value: &sh1, Seen: -1},
+	{Name: "kw_not_type_func", Value: &sh1, Seen: -1},
+	{Name: "kw_reserved", Value: &sh1, Flags: rt.RuleMemo, Seen: 247},
+	{Name: "kw_any", Value: &sh1, Seen: -1},
+	{Name: "NULLS", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ws", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 248},
+	{Name: "FIRST", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "LAST", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "quoted_ident", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "uquoted_ident", Value: &sh126, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 249},
+	{Name: "kw_not_col_id", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "word", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 250},
+	{Name: "kw_not_type_func", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_not_func_name", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_not_type_name", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_any", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "NOT", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "BETWEEN", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "IN", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "LIKE", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ILIKE", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SIMILAR", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_reserved", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 251},
+	{Name: "hex4", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "dq_close", Value: &sh28, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 252, Scope: 3, Vars: 2},
+	{Name: "e_string", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "sq_string", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "dollar_string", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1, Scope: 1, Vars: 2},
+	{Name: "u_string", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "bit_string", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "digits", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "exp", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "cut", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "rc", Value: &sh8, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 253},
+	{Name: "pm_end", Value: &sh8, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 254},
+	{Name: "opc", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "op_special", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "op_plain", Value: &sh8, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "core_long", Value: &sh8, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "col_id", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 255},
+	{Name: "sconst", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 256, Vars: 2},
+	{Name: "col_id_or_string", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 257, Vars: 2},
+	{Name: "col_label", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 258},
+	{Name: "type_function_name", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "OR", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "AND", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "is_start", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 259},
+	{Name: "cmp_op", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 260},
+	{Name: "TO", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "like_start", Value: &sh2, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 261},
+	{Name: "ESCAPE", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "AT", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "qual_op", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 262},
+	{Name: "op_lt", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 263},
+	{Name: "op_gt", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 264},
+	{Name: "op_eq", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 265},
+	{Name: "op_le", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 266},
+	{Name: "op_ge", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 267},
+	{Name: "op_ne", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 268},
+	{Name: "OPERATOR", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "any_operator", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "attr_name", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 269},
+	{Name: "dollar_name", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DOUBLE", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "PRECISION", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CHARACTER", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CHAR", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "NCHAR", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "NATIONAL", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "BIT", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "VARYING", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "INTERVAL", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ARRAY", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "colon", Value: &sh8, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MAP", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "FOR", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "IF", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CASE", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "WHEN", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ELSE", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "END", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "THEN", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ROW", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DEFAULT", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "COLUMNS", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "op_star", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 270},
+	{Name: "UNPACK", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "LAMBDA", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "EXCLUDE", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "AS", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "REPLACE", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "RENAME", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "TRUE", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "FALSE", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "NULL", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "EXISTS", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "GROUPING_ID", Value: &sh1141, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "GROUPING", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CAST", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "TRY_CAST", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "interval_to", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "interval_field", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "FROM", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "PLACING", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "COLLATION", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ident_only", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 271},
+	{Name: "year_kw", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "VARIADIC", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "WITHIN", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "GROUP", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "function_name_token", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 272},
+	{Name: "op_eq_gt", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 273},
+	{Name: "IGNORE", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "RESPECT", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "FILTER", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "WHERE", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "OVER", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "PARTITION", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "RANGE", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ROWS", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "GROUPS", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "BY", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "frame_conflict", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "frame_shift", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "UNBOUNDED", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "PRECEDING", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "FOLLOWING", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CURRENT", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "TIES", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "NO", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "OTHERS", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SETOF", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "STRUCT", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "UNION", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "interval_unit", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 274},
+	{Name: "TIMESTAMP", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "TIME", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "WITH", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "WITHOUT", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ZONE", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "VARCHAR", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "FLOAT", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DECIMAL", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DEC", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "NUMERIC", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "INTEGER", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "INT", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SMALLINT", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "BIGINT", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "REAL", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "BOOLEAN", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "type_name_token", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "RECURSIVE", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "USING", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "KEY", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MATERIALIZED", Value: &sh19, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SELECT", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ALL", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "HAVING", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "QUALIFY", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DISTINCT", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ON", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "INTO", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "TEMPORARY", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "TEMP", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "LOCAL", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "GLOBAL", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "UNLOGGED", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "TABLE", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CUBE", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ROLLUP", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SETS", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "WINDOW", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "VALUES", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "pivot_keyword", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "unpivot_keyword", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "NAME", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "VALUE", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ORDER", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "op_percent", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 275},
+	{Name: "NEXT", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ONLY", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "op_plus", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 276},
+	{Name: "op_minus", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 277},
+	{Name: "OFFSET", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "READ", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "UPDATE", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SHARE", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "OF", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SKIP", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "LOCKED", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SAMPLE", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "TABLESAMPLE", Value: &sh1141, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "REPEATABLE", Value: &sh1136, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CROSS", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "NATURAL", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "join_type", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 278},
+	{Name: "POSITIONAL", Value: &sh1136, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ASOF", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "FULL", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "OUTER", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "LEFT", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "RIGHT", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SEMI", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ANTI", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "INNER", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "INCLUDE", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "VERSION", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "table_primary", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 279, Vars: 2},
+	{Name: "join_start", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "COLLATE", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "INSERT", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "POSITION", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "RETURNING", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "OVERRIDING", Value: &sh1136, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "USER", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SYSTEM", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CONFLICT", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CONSTRAINT", Value: &sh1136, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DO", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SET", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DELETE", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "TRUNCATE", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MERGE", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MATCHED", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SOURCE", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "TARGET", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "NOTHING", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CREATE", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "PARTITIONED", Value: &sh1141, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SORTED", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "OIDS", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "COMMIT", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DROP", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "PRESERVE", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "qual_all_op", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 280},
+	{Name: "numeric_only", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 281},
+	{Name: "NONE", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "GENERATED", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "IDENTITY", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ALWAYS", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "PRIMARY", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "INHERIT", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "COMPRESSION", Value: &sh1141, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DEFERRABLE", Value: &sh1136, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "INITIALLY", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DEFERRED", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "IMMEDIATE", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MATCH", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "PARTIAL", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SIMPLE", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "key_action", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 282},
+	{Name: "VALID", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "INDEX", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "FOREIGN", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "REFERENCES", Value: &sh1136, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "INCLUDING", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "EXCLUDING", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "COMMENTS", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CONSTRAINTS", Value: &sh1141, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DEFAULTS", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "INDEXES", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "STATISTICS", Value: &sh1136, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "STORAGE", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DATA", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "VIEW", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CASCADED", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CHECK", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "OPTION", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SCHEMA", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SEQUENCE", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CACHE", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "INCREMENT", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MAXVALUE", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MINVALUE", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "START", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CYCLE", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "OWNED", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "TYPE", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ENUM", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MACRO", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "stmt_end", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "PERSISTENT", Value: &sh1136, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SECRET", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ALTER", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ADD", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "COLUMN", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "RESET", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "VALIDATE", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "LOGGED", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "OPTIONS", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DATABASE", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "POLICY", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "RULE", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "TRIGGER", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "FUNCTION", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CONVERSION", Value: &sh1136, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "TEXT", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SEARCH", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "PARSER", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DICTIONARY", Value: &sh1136, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "TEMPLATE", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CONFIGURATION", Value: &sh1198, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ACCESS", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "METHOD", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "EVENT", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "EXTENSION", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "WRAPPER", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "PUBLICATION", Value: &sh1141, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SERVER", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "COPY", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "STDIN", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "STDOUT", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DELIMITERS", Value: &sh1136, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "FORCE", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "QUOTE", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "EXPORT", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "IMPORT", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ATTACH", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DETACH", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "USE", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "LOAD", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "INSTALL", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "PRAGMA", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "TRANSACTION", Value: &sh1141, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ISOLATION", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "LEVEL", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "TABLES", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "EXPLAIN", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "VERBOSE", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "non_reserved_word", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 283},
+	{Name: "ANALYZE", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ANALYSE", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "PREPARE", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "EXECUTE", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DEALLOCATE", Value: &sh1136, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "WRITE", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "VACUUM", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "FREEZE", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CHECKPOINT", Value: &sh1136, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CALL", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "COMMENT", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "IS", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "null_text", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "EXTENSIONS", Value: &sh1136, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "comment", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_r", Value: &sh8, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_t", Value: &sh8, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_tf", Value: &sh8, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ident_start", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "wc", Value: &sh1, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_c", Value: &sh8, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_ct", Value: &sh8, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_cf", Value: &sh8, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "kw_u", Value: &sh8, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "e_body", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 284},
+	{Name: "sq_cont", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "core", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 285},
+	{Name: "ISNULL", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "NOTNULL", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "GLOB", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "operator_call", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 286},
+	{Name: "all_op", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 287},
+	{Name: "YEARS", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "YEAR", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MONTHS", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MONTH", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DAYS", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DAY", Value: &sh28, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "HOURS", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "HOUR", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MINUTES", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MINUTE", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SECONDS", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "SECOND", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MILLISECONDS", Value: &sh19, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MILLISECOND", Value: &sh1141, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MICROSECONDS", Value: &sh19, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MICROSECOND", Value: &sh1141, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "WEEKS", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "WEEK", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "QUARTERS", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "QUARTER", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DECADES", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "DECADE", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CENTURIES", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CENTURY", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MILLENNIA", Value: &sh1135, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "MILLENNIUM", Value: &sh1136, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "PIVOT_WIDER", Value: &sh1141, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "PIVOT", Value: &sh218, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "PIVOT_LONGER", Value: &sh19, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "UNPIVOT", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "JOIN", Value: &sh126, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ACTION", Value: &sh1133, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "RESTRICT", Value: &sh1131, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "CASCADE", Value: &sh1132, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "block_comment", Value: &sh28, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 288},
+	{Name: "op_slash", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 289},
+	{Name: "op_idiv", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 290},
+	{Name: "op_caret", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 291},
+	{Name: "op_pow", Value: &sh1, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 292},
 }
 
 var rulesStrs = [...][]string{
@@ -5899,374 +5899,374 @@ var rulesExtras = [...]rt.RuleExtra{
 	{Id: 649, Where: "", NodeType: "StringLit", OpNodeType: ""},
 }
 
-var cls1214 = rt.Class{ASCII: [2]uint64{0x100003600, 0x0}, Wide: []rune{160, 160, 8192, 8203, 8239, 8239, 8287, 8287, 8288, 8288, 12288, 12288, 65279, 65279}}
-var cls1215 = rt.Class{ASCII: [2]uint64{0x3ff000000000000, 0x7fffffe87fffffe}, Wide: []rune{128, 1114111}}
-var scope1221 = []string{"t"}
+var cls1203 = rt.Class{ASCII: [2]uint64{0x100003600, 0x0}, Wide: []rune{160, 160, 8192, 8203, 8239, 8239, 8287, 8287, 8288, 8288, 12288, 12288, 65279, 65279}}
+var cls1204 = rt.Class{ASCII: [2]uint64{0x3ff000000000000, 0x7fffffe87fffffe}, Wide: []rune{128, 1114111}}
+var scope1210 = []string{"t"}
+var scope1212 = []string{"n"}
+var scope1218 = []string{"n"}
+var cls1220 = rt.Class{ASCII: [2]uint64{0x0, 0x100402401004024}}
+var scope1221 = []string{"n"}
 var scope1223 = []string{"n"}
-var scope1229 = []string{"n"}
-var cls1231 = rt.Class{ASCII: [2]uint64{0x0, 0x100402401004024}}
-var scope1232 = []string{"n"}
-var scope1234 = []string{"n"}
-var scope1252 = []string{"n"}
-var cls1257 = rt.Class{ASCII: [2]uint64{0x3ff001000000000, 0x7fffffe87fffffe}, Wide: []rune{128, 159, 161, 8191, 8204, 8238, 8240, 8286, 8289, 12287, 12289, 65278, 65280, 1114111}}
-var cls1258 = rt.Class{ASCII: [2]uint64{0x0, 0x400000004000}}
-var cls1259 = rt.Class{ASCII: [2]uint64{0x0, 0x20000000200000}}
-var cls1260 = rt.Class{ASCII: [2]uint64{0x0, 0x100000001000}}
-var cls1261 = rt.Class{ASCII: [2]uint64{0x0, 0x8000000080000}}
-var steps1262 = []rt.ClassStep{{C: &cls1258, ID: 16}, {C: &cls1259, ID: 14}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}, {C: &cls1261, ID: 24}}
-var cls1263 = rt.Class{ASCII: [2]uint64{0x0, 0x4000000040}}
-var cls1264 = rt.Class{ASCII: [2]uint64{0x0, 0x20000000200}}
-var cls1265 = rt.Class{ASCII: [2]uint64{0x0, 0x4000000040000}}
-var cls1266 = rt.Class{ASCII: [2]uint64{0x0, 0x10000000100000}}
-var steps1267 = []rt.ClassStep{{C: &cls1263, ID: 17}, {C: &cls1264, ID: 30}, {C: &cls1265, ID: 83}, {C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}}
-var cls1268 = rt.Class{ASCII: [2]uint64{0x0, 0x200000002}}
-var steps1269 = []rt.ClassStep{{C: &cls1260, ID: 18}, {C: &cls1268, ID: 26}, {C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}}
-var cls1270 = rt.Class{ASCII: [2]uint64{0x0, 0x2000000020}}
-var cls1271 = rt.Class{ASCII: [2]uint64{0x0, 0x800000008}}
-var cls1272 = rt.Class{ASCII: [2]uint64{0x0, 0x1000000010000}}
-var steps1273 = []rt.ClassStep{{C: &cls1259, ID: 14}, {C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}, {C: &cls1271, ID: 25}, {C: &cls1268, ID: 26}, {C: &cls1272, ID: 27}, {C: &cls1270, ID: 23}}
-var cls1274 = rt.Class{ASCII: [2]uint64{0x0, 0x800000008000}}
-var steps1275 = []rt.ClassStep{{C: &cls1258, ID: 16}, {C: &cls1274, ID: 73}, {C: &cls1266, ID: 86}}
-var cls1276 = rt.Class{ASCII: [2]uint64{0x0, 0x400000004}}
-var cls1277 = rt.Class{ASCII: [2]uint64{0x0, 0x80000000800000}}
-var steps1278 = []rt.ClassStep{{C: &cls1276, ID: 29}, {C: &cls1270, ID: 23}, {C: &cls1266, ID: 86}, {C: &cls1277, ID: 89}, {C: &cls1270, ID: 23}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}}
-var steps1279 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}}
-var cls1280 = rt.Class{ASCII: [2]uint64{0x0, 0x80000000800}}
-var steps1281 = []rt.ClassStep{{C: &cls1260, ID: 18}, {C: &cls1264, ID: 30}, {C: &cls1280, ID: 92}, {C: &cls1270, ID: 23}}
-var steps1282 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1260, ID: 18}, {C: &cls1264, ID: 30}, {C: &cls1280, ID: 92}, {C: &cls1270, ID: 23}}
-var cls1283 = rt.Class{ASCII: [2]uint64{0x0, 0x200000002000}}
-var steps1284 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1264, ID: 30}, {C: &cls1283, ID: 82}, {C: &cls1264, ID: 30}, {C: &cls1260, ID: 18}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}}
-var cls1285 = rt.Class{ASCII: [2]uint64{0x7000ac6200000000, 0x5000000140000001}}
-var cls1286 = rt.Class{ASCII: [2]uint64{0x7000ac0000000000, 0x0}}
-var cls1287 = rt.Class{ASCII: [2]uint64{0x6200000000, 0x5000000140000001}}
-var cls1288 = rt.Class{ASCII: [2]uint64{0x7000840000000000, 0x0}}
-var steps1289 = []rt.ClassStep{{C: &cls1274, ID: 73}, {C: &cls1265, ID: 83}}
-var cls1290 = rt.Class{ASCII: [2]uint64{0x0, 0x1000000010}}
-var steps1291 = []rt.ClassStep{{C: &cls1268, ID: 26}, {C: &cls1258, ID: 16}, {C: &cls1290, ID: 79}}
-var steps1292 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1274, ID: 73}}
-var steps1293 = []rt.ClassStep{{C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}, {C: &cls1271, ID: 25}, {C: &cls1268, ID: 26}, {C: &cls1272, ID: 27}, {C: &cls1270, ID: 23}}
-var steps1294 = []rt.ClassStep{{C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}}
-var steps1295 = []rt.ClassStep{{C: &cls1274, ID: 73}, {C: &cls1272, ID: 27}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1274, ID: 73}, {C: &cls1265, ID: 83}}
-var steps1296 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1274, ID: 73}, {C: &cls1259, ID: 14}, {C: &cls1276, ID: 29}, {C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}}
-var steps1297 = []rt.ClassStep{{C: &cls1272, ID: 27}, {C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1264, ID: 30}, {C: &cls1261, ID: 24}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}}
-var cls1298 = rt.Class{ASCII: [2]uint64{0x0, 0x10000000100}}
-var steps1299 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1298, ID: 88}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1268, ID: 26}, {C: &cls1271, ID: 25}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}}
-var steps1300 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1298, ID: 88}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}}
-var steps1301 = []rt.ClassStep{{C: &cls1258, ID: 16}, {C: &cls1271, ID: 25}, {C: &cls1298, ID: 88}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}}
-var steps1302 = []rt.ClassStep{{C: &cls1258, ID: 16}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}}
-var steps1303 = []rt.ClassStep{{C: &cls1276, ID: 29}, {C: &cls1264, ID: 30}, {C: &cls1266, ID: 86}}
-var cls1304 = rt.Class{ASCII: [2]uint64{0x0, 0x40000000400000}}
-var cls1305 = rt.Class{ASCII: [2]uint64{0x0, 0x200000002000000}}
-var cls1306 = rt.Class{ASCII: [2]uint64{0x0, 0x8000000080}}
-var steps1307 = []rt.ClassStep{{C: &cls1304, ID: 80}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1305, ID: 87}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1306, ID: 72}}
-var steps1308 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1304, ID: 80}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}}
-var steps1309 = []rt.ClassStep{{C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1265, ID: 83}, {C: &cls1268, ID: 26}, {C: &cls1305, ID: 87}}
-var steps1310 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1268, ID: 26}, {C: &cls1272, ID: 27}}
-var steps1311 = []rt.ClassStep{{C: &cls1263, ID: 17}, {C: &cls1274, ID: 73}, {C: &cls1265, ID: 83}}
-var steps1312 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1263, ID: 17}}
-var steps1313 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1268, ID: 26}, {C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}}
-var steps1314 = []rt.ClassStep{{C: &cls1277, ID: 89}, {C: &cls1298, ID: 88}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}}
-var steps1315 = []rt.ClassStep{{C: &cls1270, ID: 23}, {C: &cls1260, ID: 18}, {C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}}
-var steps1316 = []rt.ClassStep{{C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1290, ID: 79}}
-var steps1317 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1298, ID: 88}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}}
-var steps1318 = []rt.ClassStep{{C: &cls1265, ID: 83}, {C: &cls1274, ID: 73}, {C: &cls1277, ID: 89}}
-var steps1319 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1263, ID: 17}, {C: &cls1268, ID: 26}, {C: &cls1259, ID: 14}, {C: &cls1260, ID: 18}, {C: &cls1266, ID: 86}}
-var steps1320 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1260, ID: 18}, {C: &cls1259, ID: 14}, {C: &cls1283, ID: 82}, {C: &cls1258, ID: 16}, {C: &cls1261, ID: 24}}
-var steps1321 = []rt.ClassStep{{C: &cls1259, ID: 14}, {C: &cls1258, ID: 16}, {C: &cls1272, ID: 27}, {C: &cls1268, ID: 26}, {C: &cls1271, ID: 25}, {C: &cls1280, ID: 92}}
-var steps1322 = []rt.ClassStep{{C: &cls1260, ID: 18}, {C: &cls1268, ID: 26}, {C: &cls1283, ID: 82}, {C: &cls1276, ID: 29}, {C: &cls1290, ID: 79}, {C: &cls1268, ID: 26}}
-var cls1323 = rt.Class{ASCII: [2]uint64{0x0, 0x100000001000000}}
-var steps1324 = []rt.ClassStep{{C: &cls1270, ID: 23}, {C: &cls1323, ID: 96}, {C: &cls1271, ID: 25}, {C: &cls1260, ID: 18}, {C: &cls1259, ID: 14}, {C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}}
-var steps1325 = []rt.ClassStep{{C: &cls1268, ID: 26}, {C: &cls1261, ID: 24}}
-var steps1326 = []rt.ClassStep{{C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1272, ID: 27}, {C: &cls1260, ID: 18}, {C: &cls1268, ID: 26}, {C: &cls1271, ID: 25}, {C: &cls1270, ID: 23}}
-var steps1327 = []rt.ClassStep{{C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1268, ID: 26}, {C: &cls1283, ID: 82}, {C: &cls1270, ID: 23}}
-var steps1328 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1265, ID: 83}, {C: &cls1259, ID: 14}, {C: &cls1270, ID: 23}}
-var steps1329 = []rt.ClassStep{{C: &cls1263, ID: 17}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}}
-var steps1330 = []rt.ClassStep{{C: &cls1258, ID: 16}, {C: &cls1259, ID: 14}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}}
-var steps1331 = []rt.ClassStep{{C: &cls1270, ID: 23}, {C: &cls1323, ID: 96}, {C: &cls1264, ID: 30}, {C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}, {C: &cls1261, ID: 24}}
-var steps1332 = []rt.ClassStep{{C: &cls1306, ID: 72}, {C: &cls1265, ID: 83}, {C: &cls1274, ID: 73}, {C: &cls1259, ID: 14}, {C: &cls1272, ID: 27}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1306, ID: 72}}
-var steps1333 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1290, ID: 79}}
-var steps1334 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1268, ID: 26}, {C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}}
-var steps1335 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1265, ID: 83}, {C: &cls1305, ID: 87}}
-var steps1336 = []rt.ClassStep{{C: &cls1263, ID: 17}, {C: &cls1265, ID: 83}, {C: &cls1274, ID: 73}, {C: &cls1283, ID: 82}}
-var steps1337 = []rt.ClassStep{{C: &cls1272, ID: 27}, {C: &cls1260, ID: 18}, {C: &cls1268, ID: 26}, {C: &cls1271, ID: 25}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1306, ID: 72}}
-var steps1338 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}}
-var steps1339 = []rt.ClassStep{{C: &cls1304, ID: 80}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1264, ID: 30}, {C: &cls1268, ID: 26}, {C: &cls1290, ID: 79}, {C: &cls1264, ID: 30}, {C: &cls1271, ID: 25}}
-var steps1340 = []rt.ClassStep{{C: &cls1277, ID: 89}, {C: &cls1264, ID: 30}, {C: &cls1266, ID: 86}, {C: &cls1298, ID: 88}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}}
-var steps1341 = []rt.ClassStep{{C: &cls1306, ID: 72}, {C: &cls1265, ID: 83}, {C: &cls1274, ID: 73}, {C: &cls1259, ID: 14}, {C: &cls1272, ID: 27}}
-var steps1342 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1306, ID: 72}, {C: &cls1258, ID: 16}, {C: &cls1274, ID: 73}, {C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}}
-var steps1343 = []rt.ClassStep{{C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}, {C: &cls1272, ID: 27}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1266, ID: 86}}
-var steps1344 = []rt.ClassStep{{C: &cls1263, ID: 17}, {C: &cls1264, ID: 30}, {C: &cls1260, ID: 18}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}}
-var steps1345 = []rt.ClassStep{{C: &cls1277, ID: 89}, {C: &cls1298, ID: 88}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}}
-var steps1346 = []rt.ClassStep{{C: &cls1274, ID: 73}, {C: &cls1304, ID: 80}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}}
-var steps1347 = []rt.ClassStep{{C: &cls1272, ID: 27}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}}
-var steps1348 = []rt.ClassStep{{C: &cls1265, ID: 83}, {C: &cls1268, ID: 26}, {C: &cls1258, ID: 16}, {C: &cls1306, ID: 72}, {C: &cls1270, ID: 23}}
-var steps1349 = []rt.ClassStep{{C: &cls1265, ID: 83}, {C: &cls1274, ID: 73}, {C: &cls1277, ID: 89}, {C: &cls1261, ID: 24}}
-var steps1350 = []rt.ClassStep{{C: &cls1306, ID: 72}, {C: &cls1265, ID: 83}, {C: &cls1274, ID: 73}, {C: &cls1259, ID: 14}, {C: &cls1272, ID: 27}, {C: &cls1261, ID: 24}}
-var steps1351 = []rt.ClassStep{{C: &cls1276, ID: 29}, {C: &cls1305, ID: 87}}
-var steps1352 = []rt.ClassStep{{C: &cls1259, ID: 14}, {C: &cls1258, ID: 16}, {C: &cls1276, ID: 29}, {C: &cls1274, ID: 73}, {C: &cls1259, ID: 14}, {C: &cls1258, ID: 16}, {C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1290, ID: 79}}
-var steps1353 = []rt.ClassStep{{C: &cls1272, ID: 27}, {C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1270, ID: 23}, {C: &cls1290, ID: 79}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1306, ID: 72}}
-var steps1354 = []rt.ClassStep{{C: &cls1263, ID: 17}, {C: &cls1274, ID: 73}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}, {C: &cls1274, ID: 73}, {C: &cls1277, ID: 89}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1306, ID: 72}}
-var steps1355 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1259, ID: 14}, {C: &cls1265, ID: 83}, {C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}}
-var steps1356 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}}
-var steps1357 = []rt.ClassStep{{C: &cls1258, ID: 16}, {C: &cls1274, ID: 73}}
-var steps1358 = []rt.ClassStep{{C: &cls1274, ID: 73}, {C: &cls1266, ID: 86}, {C: &cls1298, ID: 88}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1261, ID: 24}}
-var steps1359 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1266, ID: 86}, {C: &cls1274, ID: 73}, {C: &cls1263, ID: 17}}
-var steps1360 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}, {C: &cls1265, ID: 83}, {C: &cls1259, ID: 14}, {C: &cls1271, ID: 25}, {C: &cls1266, ID: 86}}
-var steps1361 = []rt.ClassStep{{C: &cls1259, ID: 14}, {C: &cls1258, ID: 16}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}}
-var steps1362 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1283, ID: 82}, {C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}, {C: &cls1268, ID: 26}, {C: &cls1283, ID: 82}, {C: &cls1272, ID: 27}}
-var steps1363 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1283, ID: 82}, {C: &cls1270, ID: 23}}
-var steps1364 = []rt.ClassStep{{C: &cls1277, ID: 89}, {C: &cls1264, ID: 30}, {C: &cls1266, ID: 86}, {C: &cls1298, ID: 88}}
-var steps1365 = []rt.ClassStep{{C: &cls1277, ID: 89}, {C: &cls1264, ID: 30}, {C: &cls1266, ID: 86}, {C: &cls1298, ID: 88}, {C: &cls1274, ID: 73}, {C: &cls1259, ID: 14}, {C: &cls1266, ID: 86}}
-var cls1366 = rt.Class{ASCII: [2]uint64{0x0, 0x400000004000000}}
-var steps1367 = []rt.ClassStep{{C: &cls1366, ID: 95}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1270, ID: 23}}
-var steps1368 = []rt.ClassStep{{C: &cls1304, ID: 80}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1271, ID: 25}, {C: &cls1298, ID: 88}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}}
-var steps1369 = []rt.ClassStep{{C: &cls1263, ID: 17}, {C: &cls1260, ID: 18}, {C: &cls1274, ID: 73}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}}
-var steps1370 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1264, ID: 30}, {C: &cls1283, ID: 82}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}}
-var steps1371 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}}
-var steps1372 = []rt.ClassStep{{C: &cls1258, ID: 16}, {C: &cls1259, ID: 14}, {C: &cls1283, ID: 82}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1264, ID: 30}, {C: &cls1271, ID: 25}}
-var steps1373 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1306, ID: 72}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}}
-var steps1374 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}}
-var steps1375 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1283, ID: 82}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}}
-var steps1376 = []rt.ClassStep{{C: &cls1276, ID: 29}, {C: &cls1264, ID: 30}, {C: &cls1306, ID: 72}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}}
-var steps1377 = []rt.ClassStep{{C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}}
-var steps1378 = []rt.ClassStep{{C: &cls1276, ID: 29}, {C: &cls1274, ID: 73}, {C: &cls1274, ID: 73}, {C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}, {C: &cls1268, ID: 26}, {C: &cls1258, ID: 16}}
-var steps1379 = []rt.ClassStep{{C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1259, ID: 14}, {C: &cls1265, ID: 83}, {C: &cls1261, ID: 24}, {C: &cls1264, ID: 30}, {C: &cls1304, ID: 80}, {C: &cls1270, ID: 23}}
-var steps1380 = []rt.ClassStep{{C: &cls1259, ID: 14}, {C: &cls1261, ID: 24}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1306, ID: 72}}
-var steps1381 = []rt.ClassStep{{C: &cls1280, ID: 92}, {C: &cls1270, ID: 23}, {C: &cls1305, ID: 87}}
-var steps1382 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1264, ID: 30}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1264, ID: 30}, {C: &cls1366, ID: 95}, {C: &cls1270, ID: 23}, {C: &cls1290, ID: 79}}
-var steps1383 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1266, ID: 86}}
-var steps1384 = []rt.ClassStep{{C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}}
-var steps1385 = []rt.ClassStep{{C: &cls1298, ID: 88}, {C: &cls1268, ID: 26}, {C: &cls1304, ID: 80}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1306, ID: 72}}
-var cls1386 = rt.Class{ASCII: [2]uint64{0x0, 0x2000000020000}}
-var steps1387 = []rt.ClassStep{{C: &cls1386, ID: 90}, {C: &cls1259, ID: 14}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1264, ID: 30}, {C: &cls1263, ID: 17}, {C: &cls1305, ID: 87}}
-var steps1388 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1264, ID: 30}, {C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1271, ID: 25}, {C: &cls1266, ID: 86}}
-var steps1389 = []rt.ClassStep{{C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}}
-var steps1390 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}, {C: &cls1274, ID: 73}}
-var steps1391 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1283, ID: 82}, {C: &cls1272, ID: 27}, {C: &cls1274, ID: 73}, {C: &cls1265, ID: 83}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1305, ID: 87}}
-var steps1392 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1283, ID: 82}, {C: &cls1272, ID: 27}}
-var steps1393 = []rt.ClassStep{{C: &cls1260, ID: 18}, {C: &cls1274, ID: 73}, {C: &cls1271, ID: 25}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}}
-var steps1394 = []rt.ClassStep{{C: &cls1306, ID: 72}, {C: &cls1260, ID: 18}, {C: &cls1274, ID: 73}, {C: &cls1276, ID: 29}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}}
-var steps1395 = []rt.ClassStep{{C: &cls1259, ID: 14}, {C: &cls1258, ID: 16}, {C: &cls1260, ID: 18}, {C: &cls1274, ID: 73}, {C: &cls1306, ID: 72}, {C: &cls1306, ID: 72}, {C: &cls1270, ID: 23}, {C: &cls1290, ID: 79}}
-var steps1396 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1268, ID: 26}, {C: &cls1276, ID: 29}, {C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}}
-var steps1397 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1259, ID: 14}, {C: &cls1276, ID: 29}, {C: &cls1270, ID: 23}}
-var steps1398 = []rt.ClassStep{{C: &cls1265, ID: 83}, {C: &cls1274, ID: 73}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}, {C: &cls1259, ID: 14}, {C: &cls1272, ID: 27}}
-var steps1399 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1266, ID: 86}, {C: &cls1261, ID: 24}}
-var steps1400 = []rt.ClassStep{{C: &cls1277, ID: 89}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1290, ID: 79}, {C: &cls1274, ID: 73}, {C: &cls1277, ID: 89}}
-var steps1401 = []rt.ClassStep{{C: &cls1304, ID: 80}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1259, ID: 14}, {C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}}
-var steps1402 = []rt.ClassStep{{C: &cls1258, ID: 16}, {C: &cls1268, ID: 26}, {C: &cls1283, ID: 82}, {C: &cls1270, ID: 23}}
-var steps1403 = []rt.ClassStep{{C: &cls1304, ID: 80}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1259, ID: 14}, {C: &cls1270, ID: 23}}
-var steps1404 = []rt.ClassStep{{C: &cls1274, ID: 73}, {C: &cls1265, ID: 83}, {C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}}
-var steps1405 = []rt.ClassStep{{C: &cls1258, ID: 16}, {C: &cls1270, ID: 23}, {C: &cls1323, ID: 96}, {C: &cls1266, ID: 86}}
-var steps1406 = []rt.ClassStep{{C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1260, ID: 18}, {C: &cls1305, ID: 87}}
-var steps1407 = []rt.ClassStep{{C: &cls1274, ID: 73}, {C: &cls1263, ID: 17}, {C: &cls1263, ID: 17}, {C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1266, ID: 86}}
-var steps1408 = []rt.ClassStep{{C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1268, ID: 26}, {C: &cls1290, ID: 79}}
-var steps1409 = []rt.ClassStep{{C: &cls1259, ID: 14}, {C: &cls1272, ID: 27}, {C: &cls1290, ID: 79}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}}
-var steps1410 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1298, ID: 88}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}}
-var steps1411 = []rt.ClassStep{{C: &cls1274, ID: 73}, {C: &cls1263, ID: 17}}
-var steps1412 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1280, ID: 92}, {C: &cls1264, ID: 30}, {C: &cls1272, ID: 27}}
-var steps1413 = []rt.ClassStep{{C: &cls1260, ID: 18}, {C: &cls1274, ID: 73}, {C: &cls1271, ID: 25}, {C: &cls1280, ID: 92}, {C: &cls1270, ID: 23}, {C: &cls1290, ID: 79}}
-var steps1414 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1268, ID: 26}, {C: &cls1283, ID: 82}, {C: &cls1272, ID: 27}, {C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}}
-var steps1415 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1268, ID: 26}, {C: &cls1276, ID: 29}, {C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}, {C: &cls1268, ID: 26}, {C: &cls1283, ID: 82}, {C: &cls1272, ID: 27}, {C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}}
-var steps1416 = []rt.ClassStep{{C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1272, ID: 27}, {C: &cls1270, ID: 23}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1268, ID: 26}, {C: &cls1276, ID: 29}, {C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}}
-var steps1417 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1265, ID: 83}, {C: &cls1274, ID: 73}, {C: &cls1261, ID: 24}, {C: &cls1261, ID: 24}}
-var steps1418 = []rt.ClassStep{{C: &cls1258, ID: 16}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1259, ID: 14}, {C: &cls1265, ID: 83}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}}
-var steps1419 = []rt.ClassStep{{C: &cls1272, ID: 27}, {C: &cls1274, ID: 73}, {C: &cls1261, ID: 24}, {C: &cls1264, ID: 30}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}}
-var steps1420 = []rt.ClassStep{{C: &cls1268, ID: 26}, {C: &cls1261, ID: 24}, {C: &cls1274, ID: 73}, {C: &cls1263, ID: 17}}
-var steps1421 = []rt.ClassStep{{C: &cls1263, ID: 17}, {C: &cls1259, ID: 14}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}}
-var steps1422 = []rt.ClassStep{{C: &cls1274, ID: 73}, {C: &cls1259, ID: 14}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}}
-var steps1423 = []rt.ClassStep{{C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}, {C: &cls1263, ID: 17}, {C: &cls1266, ID: 86}}
-var steps1424 = []rt.ClassStep{{C: &cls1265, ID: 83}, {C: &cls1264, ID: 30}, {C: &cls1306, ID: 72}, {C: &cls1298, ID: 88}, {C: &cls1266, ID: 86}}
-var steps1425 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1283, ID: 82}, {C: &cls1264, ID: 30}}
-var steps1426 = []rt.ClassStep{{C: &cls1268, ID: 26}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}}
-var steps1427 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1258, ID: 16}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}}
-var steps1428 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1271, ID: 25}, {C: &cls1260, ID: 18}, {C: &cls1259, ID: 14}, {C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}}
-var steps1429 = []rt.ClassStep{{C: &cls1304, ID: 80}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1261, ID: 24}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}}
-var steps1430 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}}
-var steps1431 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1266, ID: 86}}
-var steps1432 = []rt.ClassStep{{C: &cls1272, ID: 27}, {C: &cls1274, ID: 73}, {C: &cls1261, ID: 24}, {C: &cls1264, ID: 30}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}}
-var steps1433 = []rt.ClassStep{{C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1266, ID: 86}, {C: &cls1259, ID: 14}, {C: &cls1265, ID: 83}, {C: &cls1258, ID: 16}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1306, ID: 72}}
-var steps1434 = []rt.ClassStep{{C: &cls1274, ID: 73}, {C: &cls1304, ID: 80}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1265, ID: 83}, {C: &cls1264, ID: 30}, {C: &cls1290, ID: 79}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1306, ID: 72}}
-var steps1435 = []rt.ClassStep{{C: &cls1259, ID: 14}, {C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}}
-var steps1436 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1305, ID: 87}, {C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1283, ID: 82}}
-var steps1437 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1263, ID: 17}, {C: &cls1260, ID: 18}, {C: &cls1264, ID: 30}, {C: &cls1271, ID: 25}, {C: &cls1266, ID: 86}}
-var steps1438 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}, {C: &cls1265, ID: 83}, {C: &cls1268, ID: 26}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}}
-var steps1439 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1274, ID: 73}}
-var steps1440 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1266, ID: 86}}
-var steps1441 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}}
-var steps1442 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1265, ID: 83}, {C: &cls1259, ID: 14}, {C: &cls1258, ID: 16}, {C: &cls1271, ID: 25}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}}
-var steps1443 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1306, ID: 72}, {C: &cls1270, ID: 23}}
-var steps1444 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1271, ID: 25}, {C: &cls1298, ID: 88}, {C: &cls1270, ID: 23}, {C: &cls1290, ID: 79}}
-var steps1445 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1274, ID: 73}, {C: &cls1259, ID: 14}, {C: &cls1265, ID: 83}, {C: &cls1271, ID: 25}, {C: &cls1270, ID: 23}}
-var steps1446 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1306, ID: 72}, {C: &cls1270, ID: 23}, {C: &cls1266, ID: 86}}
-var steps1447 = []rt.ClassStep{{C: &cls1258, ID: 16}, {C: &cls1274, ID: 73}, {C: &cls1266, ID: 86}, {C: &cls1298, ID: 88}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1306, ID: 72}}
-var steps1448 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}}
-var steps1449 = []rt.ClassStep{{C: &cls1272, ID: 27}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1270, ID: 23}, {C: &cls1290, ID: 79}}
-var steps1450 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1274, ID: 73}, {C: &cls1265, ID: 83}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1290, ID: 79}}
-var steps1451 = []rt.ClassStep{{C: &cls1274, ID: 73}, {C: &cls1264, ID: 30}, {C: &cls1290, ID: 79}, {C: &cls1261, ID: 24}}
-var steps1452 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1283, ID: 82}, {C: &cls1283, ID: 82}, {C: &cls1264, ID: 30}, {C: &cls1266, ID: 86}}
-var steps1453 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1265, ID: 83}, {C: &cls1274, ID: 73}, {C: &cls1272, ID: 27}}
-var steps1454 = []rt.ClassStep{{C: &cls1272, ID: 27}, {C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1304, ID: 80}, {C: &cls1270, ID: 23}}
-var steps1455 = []rt.ClassStep{{C: &cls1258, ID: 16}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1270, ID: 23}}
-var steps1456 = []rt.ClassStep{{C: &cls1306, ID: 72}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1290, ID: 79}}
-var steps1457 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1266, ID: 86}, {C: &cls1305, ID: 87}}
-var steps1458 = []rt.ClassStep{{C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1277, ID: 89}, {C: &cls1268, ID: 26}, {C: &cls1305, ID: 87}, {C: &cls1261, ID: 24}}
-var steps1459 = []rt.ClassStep{{C: &cls1272, ID: 27}, {C: &cls1265, ID: 83}, {C: &cls1264, ID: 30}, {C: &cls1283, ID: 82}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1305, ID: 87}}
-var steps1460 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1298, ID: 88}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1264, ID: 30}, {C: &cls1266, ID: 86}}
-var steps1461 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1283, ID: 82}, {C: &cls1272, ID: 27}, {C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}, {C: &cls1261, ID: 24}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}}
-var steps1462 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1263, ID: 17}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1265, ID: 83}, {C: &cls1268, ID: 26}, {C: &cls1276, ID: 29}, {C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}}
-var steps1463 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1264, ID: 30}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}, {C: &cls1305, ID: 87}}
-var steps1464 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1263, ID: 17}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1290, ID: 79}}
-var steps1465 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1283, ID: 82}, {C: &cls1283, ID: 82}, {C: &cls1270, ID: 23}, {C: &cls1290, ID: 79}, {C: &cls1264, ID: 30}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}}
-var steps1466 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1271, ID: 25}, {C: &cls1298, ID: 88}}
-var steps1467 = []rt.ClassStep{{C: &cls1272, ID: 27}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}}
-var steps1468 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1264, ID: 30}, {C: &cls1283, ID: 82}, {C: &cls1272, ID: 27}, {C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}}
-var steps1469 = []rt.ClassStep{{C: &cls1304, ID: 80}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1264, ID: 30}, {C: &cls1290, ID: 79}}
-var steps1470 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1323, ID: 96}}
-var steps1471 = []rt.ClassStep{{C: &cls1263, ID: 17}, {C: &cls1274, ID: 73}, {C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1264, ID: 30}, {C: &cls1306, ID: 72}, {C: &cls1258, ID: 16}}
-var steps1472 = []rt.ClassStep{{C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1263, ID: 17}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1271, ID: 25}, {C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}}
-var steps1473 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1271, ID: 25}, {C: &cls1260, ID: 18}, {C: &cls1259, ID: 14}, {C: &cls1290, ID: 79}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1306, ID: 72}}
-var steps1474 = []rt.ClassStep{{C: &cls1270, ID: 23}, {C: &cls1323, ID: 96}, {C: &cls1271, ID: 25}, {C: &cls1260, ID: 18}, {C: &cls1259, ID: 14}, {C: &cls1290, ID: 79}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1306, ID: 72}}
-var steps1475 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1283, ID: 82}, {C: &cls1283, ID: 82}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}, {C: &cls1261, ID: 24}}
-var steps1476 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}, {C: &cls1265, ID: 83}, {C: &cls1268, ID: 26}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}, {C: &cls1261, ID: 24}}
-var steps1477 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1263, ID: 17}, {C: &cls1268, ID: 26}, {C: &cls1259, ID: 14}, {C: &cls1260, ID: 18}, {C: &cls1266, ID: 86}, {C: &cls1261, ID: 24}}
-var steps1478 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1323, ID: 96}, {C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}}
-var steps1479 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1271, ID: 25}, {C: &cls1261, ID: 24}}
-var steps1480 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}, {C: &cls1274, ID: 73}, {C: &cls1265, ID: 83}, {C: &cls1268, ID: 26}, {C: &cls1306, ID: 72}, {C: &cls1270, ID: 23}}
-var steps1481 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1268, ID: 26}}
-var steps1482 = []rt.ClassStep{{C: &cls1304, ID: 80}, {C: &cls1264, ID: 30}, {C: &cls1270, ID: 23}, {C: &cls1277, ID: 89}}
-var steps1483 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1268, ID: 26}, {C: &cls1261, ID: 24}, {C: &cls1271, ID: 25}, {C: &cls1268, ID: 26}, {C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1290, ID: 79}}
-var steps1484 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1298, ID: 88}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1280, ID: 92}}
-var steps1485 = []rt.ClassStep{{C: &cls1274, ID: 73}, {C: &cls1272, ID: 27}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}}
-var steps1486 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1271, ID: 25}, {C: &cls1298, ID: 88}, {C: &cls1270, ID: 23}, {C: &cls1283, ID: 82}, {C: &cls1268, ID: 26}}
-var steps1487 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1386, ID: 90}, {C: &cls1259, ID: 14}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1271, ID: 25}, {C: &cls1270, ID: 23}}
-var steps1488 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1268, ID: 26}, {C: &cls1271, ID: 25}, {C: &cls1298, ID: 88}, {C: &cls1270, ID: 23}}
-var steps1489 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1271, ID: 25}, {C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1283, ID: 82}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}}
-var steps1490 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1268, ID: 26}, {C: &cls1323, ID: 96}, {C: &cls1304, ID: 80}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1259, ID: 14}, {C: &cls1270, ID: 23}}
-var steps1491 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1304, ID: 80}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1259, ID: 14}, {C: &cls1270, ID: 23}}
-var steps1492 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1266, ID: 86}}
-var steps1493 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1305, ID: 87}, {C: &cls1271, ID: 25}, {C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}}
-var steps1494 = []rt.ClassStep{{C: &cls1274, ID: 73}, {C: &cls1277, ID: 89}, {C: &cls1258, ID: 16}, {C: &cls1270, ID: 23}, {C: &cls1290, ID: 79}}
-var steps1495 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1305, ID: 87}, {C: &cls1272, ID: 27}, {C: &cls1270, ID: 23}}
-var steps1496 = []rt.ClassStep{{C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1259, ID: 14}, {C: &cls1283, ID: 82}}
-var steps1497 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1268, ID: 26}, {C: &cls1271, ID: 25}, {C: &cls1265, ID: 83}, {C: &cls1274, ID: 73}}
-var steps1498 = []rt.ClassStep{{C: &cls1272, ID: 27}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1261, ID: 24}, {C: &cls1264, ID: 30}, {C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}}
-var steps1499 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1266, ID: 86}}
-var steps1500 = []rt.ClassStep{{C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}}
-var steps1501 = []rt.ClassStep{{C: &cls1268, ID: 26}, {C: &cls1290, ID: 79}, {C: &cls1290, ID: 79}}
-var steps1502 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1260, ID: 18}, {C: &cls1259, ID: 14}, {C: &cls1283, ID: 82}, {C: &cls1258, ID: 16}}
-var steps1503 = []rt.ClassStep{{C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1266, ID: 86}}
-var steps1504 = []rt.ClassStep{{C: &cls1304, ID: 80}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1264, ID: 30}, {C: &cls1290, ID: 79}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}}
-var steps1505 = []rt.ClassStep{{C: &cls1260, ID: 18}, {C: &cls1274, ID: 73}, {C: &cls1306, ID: 72}, {C: &cls1306, ID: 72}, {C: &cls1270, ID: 23}, {C: &cls1290, ID: 79}}
-var steps1506 = []rt.ClassStep{{C: &cls1274, ID: 73}, {C: &cls1272, ID: 27}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1261, ID: 24}}
-var steps1507 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1268, ID: 26}, {C: &cls1276, ID: 29}, {C: &cls1268, ID: 26}, {C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}}
-var steps1508 = []rt.ClassStep{{C: &cls1272, ID: 27}, {C: &cls1274, ID: 73}, {C: &cls1260, ID: 18}, {C: &cls1264, ID: 30}, {C: &cls1271, ID: 25}, {C: &cls1305, ID: 87}}
-var steps1509 = []rt.ClassStep{{C: &cls1265, ID: 83}, {C: &cls1259, ID: 14}, {C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}}
-var steps1510 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1265, ID: 83}, {C: &cls1264, ID: 30}, {C: &cls1306, ID: 72}, {C: &cls1306, ID: 72}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}}
-var steps1511 = []rt.ClassStep{{C: &cls1263, ID: 17}, {C: &cls1259, ID: 14}, {C: &cls1258, ID: 16}, {C: &cls1271, ID: 25}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}}
-var steps1512 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1304, ID: 80}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1261, ID: 24}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}}
-var steps1513 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1323, ID: 96}, {C: &cls1266, ID: 86}}
-var steps1514 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1271, ID: 25}, {C: &cls1298, ID: 88}}
-var steps1515 = []rt.ClassStep{{C: &cls1272, ID: 27}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}}
-var steps1516 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1264, ID: 30}, {C: &cls1271, ID: 25}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1305, ID: 87}}
-var steps1517 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1283, ID: 82}, {C: &cls1272, ID: 27}, {C: &cls1260, ID: 18}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}}
-var steps1518 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1263, ID: 17}, {C: &cls1264, ID: 30}, {C: &cls1306, ID: 72}, {C: &cls1259, ID: 14}, {C: &cls1265, ID: 83}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}}
-var steps1519 = []rt.ClassStep{{C: &cls1268, ID: 26}, {C: &cls1271, ID: 25}, {C: &cls1271, ID: 25}, {C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}, {C: &cls1261, ID: 24}}
-var steps1520 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1270, ID: 23}, {C: &cls1266, ID: 86}, {C: &cls1298, ID: 88}, {C: &cls1274, ID: 73}, {C: &cls1290, ID: 79}}
-var steps1521 = []rt.ClassStep{{C: &cls1270, ID: 23}, {C: &cls1304, ID: 80}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}}
-var steps1522 = []rt.ClassStep{{C: &cls1270, ID: 23}, {C: &cls1323, ID: 96}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1261, ID: 24}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}}
-var steps1523 = []rt.ClassStep{{C: &cls1277, ID: 89}, {C: &cls1265, ID: 83}, {C: &cls1268, ID: 26}, {C: &cls1272, ID: 27}, {C: &cls1272, ID: 27}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}}
-var steps1524 = []rt.ClassStep{{C: &cls1272, ID: 27}, {C: &cls1259, ID: 14}, {C: &cls1276, ID: 29}, {C: &cls1260, ID: 18}, {C: &cls1264, ID: 30}, {C: &cls1271, ID: 25}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}}
-var steps1525 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1304, ID: 80}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}}
-var steps1526 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1272, ID: 27}, {C: &cls1305, ID: 87}}
-var steps1527 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}, {C: &cls1290, ID: 79}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}}
-var steps1528 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}, {C: &cls1290, ID: 79}, {C: &cls1274, ID: 73}, {C: &cls1259, ID: 14}, {C: &cls1266, ID: 86}}
-var steps1529 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1260, ID: 18}, {C: &cls1264, ID: 30}, {C: &cls1283, ID: 82}, {C: &cls1264, ID: 30}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1261, ID: 24}}
-var steps1530 = []rt.ClassStep{{C: &cls1263, ID: 17}, {C: &cls1274, ID: 73}, {C: &cls1265, ID: 83}, {C: &cls1271, ID: 25}, {C: &cls1270, ID: 23}}
-var steps1531 = []rt.ClassStep{{C: &cls1386, ID: 90}, {C: &cls1259, ID: 14}, {C: &cls1274, ID: 73}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}}
-var steps1532 = []rt.ClassStep{{C: &cls1270, ID: 23}, {C: &cls1323, ID: 96}, {C: &cls1272, ID: 27}, {C: &cls1274, ID: 73}, {C: &cls1265, ID: 83}, {C: &cls1266, ID: 86}}
-var steps1533 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1283, ID: 82}, {C: &cls1272, ID: 27}, {C: &cls1274, ID: 73}, {C: &cls1265, ID: 83}, {C: &cls1266, ID: 86}}
-var steps1534 = []rt.ClassStep{{C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1266, ID: 86}, {C: &cls1268, ID: 26}, {C: &cls1271, ID: 25}, {C: &cls1298, ID: 88}}
-var steps1535 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1266, ID: 86}, {C: &cls1268, ID: 26}, {C: &cls1271, ID: 25}, {C: &cls1298, ID: 88}}
-var steps1536 = []rt.ClassStep{{C: &cls1259, ID: 14}, {C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}}
-var steps1537 = []rt.ClassStep{{C: &cls1260, ID: 18}, {C: &cls1274, ID: 73}, {C: &cls1268, ID: 26}, {C: &cls1290, ID: 79}}
-var steps1538 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}}
-var steps1539 = []rt.ClassStep{{C: &cls1272, ID: 27}, {C: &cls1265, ID: 83}, {C: &cls1268, ID: 26}, {C: &cls1306, ID: 72}, {C: &cls1283, ID: 82}, {C: &cls1268, ID: 26}}
-var steps1540 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1265, ID: 83}, {C: &cls1268, ID: 26}, {C: &cls1258, ID: 16}, {C: &cls1261, ID: 24}, {C: &cls1268, ID: 26}, {C: &cls1271, ID: 25}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}}
-var steps1541 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1261, ID: 24}, {C: &cls1274, ID: 73}, {C: &cls1260, ID: 18}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}}
-var steps1542 = []rt.ClassStep{{C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}, {C: &cls1304, ID: 80}, {C: &cls1270, ID: 23}, {C: &cls1260, ID: 18}}
-var steps1543 = []rt.ClassStep{{C: &cls1266, ID: 86}, {C: &cls1268, ID: 26}, {C: &cls1276, ID: 29}, {C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}}
-var steps1544 = []rt.ClassStep{{C: &cls1270, ID: 23}, {C: &cls1323, ID: 96}, {C: &cls1272, ID: 27}, {C: &cls1260, ID: 18}, {C: &cls1268, ID: 26}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}}
-var steps1545 = []rt.ClassStep{{C: &cls1304, ID: 80}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1276, ID: 29}, {C: &cls1274, ID: 73}, {C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}}
-var steps1546 = []rt.ClassStep{{C: &cls1268, ID: 26}, {C: &cls1258, ID: 16}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1305, ID: 87}, {C: &cls1366, ID: 95}, {C: &cls1270, ID: 23}}
-var steps1547 = []rt.ClassStep{{C: &cls1268, ID: 26}, {C: &cls1258, ID: 16}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1305, ID: 87}, {C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}}
-var steps1548 = []rt.ClassStep{{C: &cls1272, ID: 27}, {C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1272, ID: 27}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}}
-var steps1549 = []rt.ClassStep{{C: &cls1270, ID: 23}, {C: &cls1323, ID: 96}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1259, ID: 14}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}}
-var steps1550 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}, {C: &cls1274, ID: 73}, {C: &cls1271, ID: 25}, {C: &cls1268, ID: 26}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}}
-var steps1551 = []rt.ClassStep{{C: &cls1277, ID: 89}, {C: &cls1265, ID: 83}, {C: &cls1264, ID: 30}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}}
-var steps1552 = []rt.ClassStep{{C: &cls1304, ID: 80}, {C: &cls1268, ID: 26}, {C: &cls1271, ID: 25}, {C: &cls1259, ID: 14}, {C: &cls1259, ID: 14}, {C: &cls1283, ID: 82}}
-var steps1553 = []rt.ClassStep{{C: &cls1263, ID: 17}, {C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1270, ID: 23}, {C: &cls1366, ID: 95}, {C: &cls1270, ID: 23}}
-var steps1554 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1298, ID: 88}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1280, ID: 92}, {C: &cls1272, ID: 27}, {C: &cls1274, ID: 73}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}}
-var steps1555 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1268, ID: 26}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}}
-var steps1556 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1283, ID: 82}, {C: &cls1283, ID: 82}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}}
-var steps1557 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1261, ID: 24}}
-var steps1558 = []rt.ClassStep{{C: &cls1270, ID: 23}, {C: &cls1323, ID: 96}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1261, ID: 24}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1261, ID: 24}}
-var term1559Data = rt.TerminalProgram{Code: []uint16{2, 1424, 3, 1416, 0, 7, 122, 0, 26, 3, 118, 1, 7, 8, 1, 18, 0, 4, 1, 18, 7, 46, 2, 16, 3, 42, 65535, 7, 31, 0, 26, 0, 4, 1, 18, 0, 4, 3, 87, 3, 19, 65535, 7, 8, 4, 24, 0, 4, 5, 23, 7, 8, 6, 95, 0, 4, 5, 23, 7, 4, 7, 79, 7, 4, 3, 87, 7, 16, 8, 83, 0, 4, 8, 83, 0, 4, 0, 26, 0, 4, 3, 87, 7, 45, 4, 24, 4, 41, 3, 39, 65535, 7, 4, 9, 25, 7, 32, 3, 87, 0, 4, 10, 82, 0, 4, 10, 82, 0, 4, 5, 23, 0, 4, 11, 86, 0, 4, 8, 83, 0, 4, 12, 30, 0, 4, 9, 25, 7, 16, 13, 29, 0, 4, 14, 73, 0, 4, 11, 86, 0, 4, 15, 88, 7, 136, 9, 25, 3, 132, 2, 7, 19, 0, 26, 0, 4, 4, 24, 3, 11, 65535, 7, 4, 5, 23, 7, 4, 11, 86, 7, 16, 15, 88, 0, 4, 5, 23, 0, 4, 9, 25, 0, 4, 16, 92, 7, 74, 14, 73, 3, 70, 65535, 7, 35, 1, 18, 3, 31, 65535, 7, 16, 1, 18, 0, 4, 0, 26, 0, 4, 11, 86, 0, 4, 5, 23, 7, 12, 17, 14, 0, 4, 10, 82, 0, 4, 2, 16, 7, 32, 2, 16, 0, 4, 4, 24, 0, 4, 11, 86, 0, 4, 8, 83, 0, 4, 0, 26, 0, 4, 12, 30, 0, 4, 2, 16, 0, 4, 11, 86, 7, 20, 8, 83, 0, 4, 5, 23, 0, 4, 0, 26, 0, 4, 11, 86, 0, 4, 5, 23, 7, 125, 7, 79, 3, 121, 65535, 7, 86, 5, 23, 3, 82, 65535, 7, 51, 18, 17, 3, 47, 65535, 7, 16, 0, 26, 0, 4, 17, 14, 0, 4, 1, 18, 0, 4, 11, 86, 7, 28, 5, 23, 0, 4, 8, 83, 0, 4, 8, 83, 0, 4, 0, 26, 0, 4, 13, 29, 0, 4, 1, 18, 0, 4, 5, 23, 7, 28, 4, 24, 0, 4, 9, 25, 4, 20, 2, 18, 0, 4, 8, 83, 0, 4, 12, 30, 0, 4, 13, 29, 0, 4, 5, 23, 7, 28, 12, 30, 0, 4, 4, 24, 0, 4, 11, 86, 0, 4, 12, 30, 0, 4, 2, 16, 0, 4, 9, 25, 0, 4, 11, 86, 7, 4, 14, 73, 7, 47, 5, 23, 3, 43, 65535, 7, 12, 1, 18, 0, 4, 4, 24, 0, 4, 5, 23, 7, 8, 2, 16, 0, 4, 7, 79, 7, 20, 19, 96, 0, 4, 9, 25, 0, 4, 5, 23, 0, 4, 20, 27, 0, 4, 11, 86, 7, 79, 18, 17, 3, 75, 3, 7, 16, 0, 26, 0, 4, 1, 18, 0, 4, 4, 24, 0, 4, 5, 23, 7, 16, 5, 23, 0, 4, 11, 86, 0, 4, 9, 25, 0, 4, 15, 88, 7, 28, 14, 73, 0, 4, 8, 83, 4, 20, 2, 18, 0, 4, 5, 23, 0, 4, 12, 30, 0, 4, 21, 72, 0, 4, 2, 16, 7, 12, 8, 83, 0, 4, 14, 73, 0, 4, 10, 82, 7, 20, 21, 72, 0, 4, 8, 83, 0, 4, 14, 73, 0, 4, 17, 14, 0, 4, 20, 27, 7, 24, 15, 88, 0, 4, 0, 26, 0, 4, 22, 80, 0, 4, 12, 30, 0, 4, 2, 16, 0, 4, 21, 72, 7, 76, 12, 30, 0, 4, 2, 16, 4, 68, 3, 66, 65535, 7, 28, 12, 30, 0, 4, 11, 86, 0, 4, 12, 30, 0, 4, 0, 26, 0, 4, 1, 18, 0, 4, 1, 18, 0, 4, 3, 87, 7, 35, 11, 86, 3, 31, 65535, 7, 24, 5, 23, 0, 4, 8, 83, 0, 4, 4, 24, 0, 4, 5, 23, 0, 4, 9, 25, 0, 4, 11, 86, 7, 4, 14, 73, 7, 90, 1, 18, 3, 86, 65535, 7, 43, 0, 26, 3, 39, 65535, 7, 16, 10, 82, 0, 4, 13, 29, 0, 4, 7, 79, 0, 4, 0, 26, 7, 20, 11, 86, 0, 4, 5, 23, 0, 4, 8, 83, 0, 4, 0, 26, 0, 4, 1, 18, 7, 24, 5, 23, 0, 4, 0, 26, 0, 4, 7, 79, 0, 4, 12, 30, 0, 4, 2, 16, 0, 4, 21, 72, 7, 16, 12, 30, 0, 4, 10, 82, 0, 4, 12, 30, 0, 4, 11, 86, 7, 27, 2, 16, 3, 23, 65535, 7, 8, 14, 73, 0, 4, 11, 86, 7, 12, 17, 14, 0, 4, 1, 18, 0, 4, 1, 18, 7, 63, 14, 73, 3, 59, 65535, 7, 20, 18, 17, 0, 4, 18, 17, 0, 4, 4, 24, 0, 4, 5, 23, 0, 4, 11, 86, 7, 16, 2, 16, 4, 12, 2, 10, 0, 4, 1, 18, 0, 4, 3, 87, 7, 20, 8, 83, 4, 16, 2, 14, 0, 4, 7, 79, 0, 4, 5, 23, 0, 4, 8, 83, 7, 126, 20, 27, 3, 122, 65535, 7, 71, 12, 30, 0, 4, 22, 80, 0, 4, 14, 73, 0, 4, 11, 86, 4, 55, 2, 53, 1, 4, 0, 44, 3, 47, 65535, 7, 24, 1, 18, 0, 4, 14, 73, 0, 4, 2, 16, 0, 4, 21, 72, 0, 4, 5, 23, 0, 4, 8, 83, 7, 20, 23, 89, 0, 4, 12, 30, 0, 4, 7, 79, 0, 4, 5, 23, 0, 4, 8, 83, 7, 24, 1, 18, 0, 4, 0, 26, 0, 4, 9, 25, 0, 4, 12, 30, 0, 4, 2, 16, 0, 4, 21, 72, 7, 24, 8, 83, 0, 4, 12, 30, 0, 4, 10, 82, 0, 4, 0, 26, 0, 4, 8, 83, 0, 4, 3, 87, 7, 28, 24, 90, 0, 4, 17, 14, 0, 4, 0, 26, 0, 4, 1, 18, 0, 4, 12, 30, 0, 4, 18, 17, 0, 4, 3, 87, 7, 71, 8, 83, 0, 4, 5, 23, 3, 63, 65535, 7, 32, 18, 17, 0, 4, 5, 23, 0, 4, 8, 83, 0, 4, 5, 23, 0, 4, 2, 16, 0, 4, 9, 25, 0, 4, 5, 23, 0, 4, 4, 24, 7, 28, 11, 86, 0, 4, 17, 14, 0, 4, 8, 83, 0, 4, 2, 16, 0, 4, 12, 30, 0, 4, 2, 16, 0, 4, 21, 72, 7, 115, 4, 24, 3, 111, 4, 7, 20, 5, 23, 0, 4, 1, 18, 0, 4, 5, 23, 0, 4, 9, 25, 0, 4, 11, 86, 7, 12, 15, 88, 0, 4, 14, 73, 0, 4, 23, 89, 7, 12, 14, 73, 0, 4, 10, 82, 0, 4, 5, 23, 7, 32, 17, 14, 0, 4, 10, 82, 0, 4, 10, 82, 0, 4, 0, 26, 0, 4, 8, 83, 0, 4, 12, 30, 0, 4, 6, 95, 0, 4, 5, 23, 7, 32, 3, 87, 0, 4, 10, 82, 0, 4, 10, 82, 0, 4, 5, 23, 0, 4, 11, 86, 0, 4, 8, 83, 0, 4, 12, 30, 0, 4, 9, 25, 7, 78, 11, 86, 3, 74, 5, 7, 16, 0, 26, 0, 4, 13, 29, 0, 4, 1, 18, 0, 4, 5, 23, 7, 12, 15, 88, 0, 4, 5, 23, 0, 4, 2, 16, 7, 4, 14, 73, 7, 39, 8, 83, 3, 35, 65535, 7, 24, 0, 26, 0, 4, 12, 30, 0, 4, 1, 18, 0, 4, 12, 30, 0, 4, 2, 16, 0, 4, 21, 72, 7, 8, 17, 14, 0, 4, 5, 23, 7, 77, 17, 14, 3, 73, 65535, 7, 54, 2, 16, 3, 50, 65535, 7, 27, 12, 30, 3, 23, 65535, 7, 8, 14, 73, 0, 4, 2, 16, 7, 12, 24, 90, 0, 4, 17, 14, 0, 4, 5, 23, 7, 20, 20, 27, 0, 4, 12, 30, 0, 4, 22, 80, 0, 4, 14, 73, 0, 4, 11, 86, 7, 16, 4, 24, 0, 4, 12, 30, 0, 4, 2, 16, 0, 4, 21, 72, 7, 32, 22, 80, 0, 4, 0, 26, 0, 4, 8, 83, 0, 4, 12, 30, 0, 4, 0, 26, 0, 4, 7, 79, 0, 4, 12, 30, 0, 4, 9, 25, 7, 61, 23, 89, 3, 57, 65535, 7, 23, 15, 88, 0, 4, 5, 23, 3, 15, 65535, 7, 4, 2, 16, 7, 8, 8, 83, 0, 4, 5, 23, 7, 31, 12, 30, 3, 27, 65535, 7, 16, 2, 16, 0, 4, 7, 79, 0, 4, 14, 73, 0, 4, 23, 89, 7, 8, 11, 86, 0, 4, 15, 88, 5, 6, 0, 4, 25, 10}, Classes: []*rt.Class{&cls1268, &cls1260, &cls1258, &cls1305, &cls1261, &cls1270, &cls1366, &cls1290, &cls1265, &cls1271, &cls1283, &cls1266, &cls1264, &cls1276, &cls1274, &cls1298, &cls1280, &cls1259, &cls1263, &cls1323, &cls1272, &cls1306, &cls1304, &cls1277, &cls1386, &cls1257}, Literals: []rt.TerminalText{{Runes: lit51, Text: "_"}}}
-var term1559 = term1559Data.Prepare()
-var term1560Data = rt.TerminalProgram{Code: []uint16{2, 75, 3, 67, 0, 7, 16, 0, 26, 0, 4, 1, 16, 0, 4, 2, 86, 0, 4, 3, 30, 7, 8, 4, 29, 0, 4, 5, 87, 7, 16, 6, 24, 0, 4, 7, 23, 0, 4, 8, 82, 0, 4, 3, 30, 7, 24, 9, 14, 0, 4, 1, 16, 0, 4, 10, 27, 0, 4, 0, 26, 0, 4, 11, 25, 0, 4, 12, 92, 5, 6, 0, 4, 13, 10}, Classes: []*rt.Class{&cls1268, &cls1258, &cls1266, &cls1264, &cls1276, &cls1305, &cls1261, &cls1270, &cls1283, &cls1259, &cls1272, &cls1271, &cls1280, &cls1257}}
-var term1560 = term1560Data.Prepare()
-var cls1561 = rt.Class{ASCII: [2]uint64{0x0, 0x40000000400}}
-var term1562Data = rt.TerminalProgram{Code: []uint16{2, 635, 3, 627, 0, 7, 71, 0, 26, 3, 67, 65535, 7, 12, 1, 24, 0, 4, 2, 73, 0, 4, 3, 17, 7, 4, 4, 86, 7, 48, 5, 14, 0, 4, 4, 86, 0, 4, 6, 88, 0, 4, 2, 73, 0, 4, 7, 83, 0, 4, 8, 30, 0, 4, 9, 95, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 30, 0, 4, 2, 73, 0, 4, 10, 16, 7, 24, 11, 29, 0, 4, 8, 30, 0, 4, 10, 16, 0, 4, 0, 26, 0, 4, 7, 83, 0, 4, 12, 87, 7, 98, 13, 25, 3, 94, 65535, 7, 75, 2, 73, 3, 71, 65535, 7, 28, 14, 18, 0, 4, 14, 18, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 30, 0, 4, 2, 73, 0, 4, 10, 16, 7, 40, 10, 16, 0, 4, 13, 25, 0, 4, 5, 14, 0, 4, 7, 83, 0, 4, 7, 83, 0, 4, 15, 23, 0, 4, 10, 16, 0, 4, 4, 86, 0, 4, 14, 18, 0, 4, 12, 87, 7, 16, 7, 83, 0, 4, 2, 73, 0, 4, 1, 24, 0, 4, 1, 24, 7, 39, 3, 17, 3, 35, 65535, 7, 20, 7, 83, 0, 4, 15, 23, 0, 4, 15, 23, 0, 4, 9, 95, 0, 4, 15, 23, 7, 12, 5, 14, 0, 4, 14, 18, 0, 4, 14, 18, 7, 16, 16, 72, 0, 4, 14, 18, 0, 4, 2, 73, 0, 4, 11, 29, 7, 63, 8, 30, 3, 59, 65535, 7, 16, 14, 18, 0, 4, 8, 30, 0, 4, 17, 92, 0, 4, 15, 23, 7, 16, 10, 16, 0, 4, 10, 16, 0, 4, 15, 23, 0, 4, 7, 83, 7, 24, 1, 24, 4, 20, 2, 18, 0, 4, 10, 16, 0, 4, 5, 14, 0, 4, 14, 18, 0, 4, 14, 18, 7, 16, 18, 93, 0, 4, 2, 73, 0, 4, 8, 30, 0, 4, 10, 16, 7, 31, 14, 18, 3, 27, 65535, 7, 12, 15, 23, 0, 4, 3, 17, 0, 4, 4, 86, 7, 12, 8, 30, 0, 4, 17, 92, 0, 4, 15, 23, 7, 55, 10, 16, 3, 51, 65535, 7, 24, 0, 26, 0, 4, 4, 86, 0, 4, 5, 14, 0, 4, 7, 83, 0, 4, 0, 26, 0, 4, 14, 18, 7, 24, 2, 73, 0, 4, 4, 86, 0, 4, 10, 16, 0, 4, 5, 14, 0, 4, 14, 18, 0, 4, 14, 18, 7, 51, 2, 73, 3, 47, 65535, 7, 16, 5, 14, 0, 4, 4, 86, 0, 4, 15, 23, 0, 4, 7, 83, 7, 28, 19, 80, 0, 4, 15, 23, 0, 4, 7, 83, 0, 4, 14, 18, 0, 4, 0, 26, 0, 4, 20, 27, 0, 4, 1, 24, 7, 40, 20, 27, 0, 4, 2, 73, 0, 4, 1, 24, 0, 4, 8, 30, 0, 4, 4, 86, 0, 4, 8, 30, 0, 4, 2, 73, 0, 4, 10, 16, 0, 4, 0, 26, 0, 4, 14, 18, 7, 20, 7, 83, 0, 4, 8, 30, 0, 4, 16, 72, 0, 4, 6, 88, 0, 4, 4, 86, 7, 28, 1, 24, 0, 4, 8, 30, 0, 4, 21, 82, 0, 4, 8, 30, 0, 4, 14, 18, 0, 4, 0, 26, 0, 4, 7, 83, 7, 44, 4, 86, 0, 4, 0, 26, 0, 4, 11, 29, 0, 4, 14, 18, 0, 4, 15, 23, 0, 4, 1, 24, 0, 4, 0, 26, 0, 4, 21, 82, 0, 4, 20, 27, 0, 4, 14, 18, 0, 4, 15, 23, 7, 28, 19, 80, 0, 4, 15, 23, 0, 4, 7, 83, 0, 4, 11, 29, 0, 4, 2, 73, 0, 4, 1, 24, 0, 4, 15, 23, 5, 6, 0, 4, 22, 10}, Classes: []*rt.Class{&cls1268, &cls1261, &cls1274, &cls1263, &cls1266, &cls1259, &cls1298, &cls1265, &cls1264, &cls1366, &cls1258, &cls1276, &cls1305, &cls1271, &cls1260, &cls1270, &cls1306, &cls1280, &cls1561, &cls1304, &cls1272, &cls1283, &cls1257}}
-var term1562 = term1562Data.Prepare()
-var cls1563 = rt.Class{ASCII: [2]uint64{0x0, 0x7fffffe87fffffe}, Wide: []rune{128, 159, 161, 8191, 8204, 8238, 8240, 8286, 8289, 12287, 12289, 65278, 65280, 1114111}}
-var term1564Data = rt.TerminalProgram{Code: []uint16{2, 1109, 3, 1101, 0, 7, 82, 0, 29, 3, 78, 65535, 7, 24, 1, 23, 0, 4, 2, 86, 0, 4, 3, 89, 0, 4, 1, 23, 0, 4, 1, 23, 0, 4, 4, 16, 7, 27, 5, 30, 3, 23, 65535, 7, 16, 6, 72, 0, 4, 5, 30, 0, 4, 4, 16, 0, 4, 2, 86, 7, 4, 2, 86, 7, 24, 7, 73, 0, 4, 7, 73, 0, 4, 8, 18, 0, 4, 1, 23, 0, 4, 9, 26, 0, 4, 4, 16, 7, 71, 10, 25, 3, 67, 65535, 7, 36, 11, 88, 0, 4, 9, 26, 0, 4, 12, 83, 4, 24, 2, 22, 0, 4, 9, 26, 0, 4, 10, 25, 0, 4, 2, 86, 0, 4, 1, 23, 0, 4, 12, 83, 7, 28, 7, 73, 0, 4, 9, 26, 0, 4, 8, 18, 0, 4, 1, 23, 0, 4, 13, 24, 0, 4, 10, 25, 0, 4, 1, 23, 7, 32, 14, 79, 0, 4, 1, 23, 0, 4, 10, 25, 4, 20, 2, 18, 0, 4, 5, 30, 0, 4, 15, 82, 0, 4, 9, 26, 0, 4, 8, 18, 7, 47, 1, 23, 0, 4, 16, 96, 3, 39, 65535, 7, 16, 5, 30, 0, 4, 13, 24, 0, 4, 2, 86, 0, 4, 13, 24, 7, 20, 2, 86, 0, 4, 12, 83, 0, 4, 9, 26, 0, 4, 10, 25, 0, 4, 2, 86, 7, 20, 17, 17, 0, 4, 8, 18, 0, 4, 7, 73, 0, 4, 9, 26, 0, 4, 2, 86, 7, 48, 6, 72, 0, 4, 12, 83, 0, 4, 7, 73, 0, 4, 18, 14, 0, 4, 19, 27, 0, 4, 5, 30, 0, 4, 4, 16, 0, 4, 6, 72, 4, 16, 2, 14, 1, 4, 0, 44, 0, 4, 5, 30, 0, 4, 14, 79, 7, 66, 5, 30, 0, 4, 4, 16, 3, 58, 65535, 7, 12, 7, 73, 0, 4, 18, 14, 0, 4, 2, 86, 7, 43, 2, 86, 4, 39, 2, 37, 0, 4, 1, 23, 3, 31, 65535, 7, 12, 6, 72, 0, 4, 1, 23, 0, 4, 12, 83, 7, 16, 12, 83, 0, 4, 20, 80, 0, 4, 9, 26, 0, 4, 8, 18, 7, 106, 4, 16, 3, 102, 1, 7, 28, 9, 26, 0, 4, 2, 86, 0, 4, 5, 30, 0, 4, 7, 73, 0, 4, 4, 16, 0, 4, 9, 26, 0, 4, 8, 18, 7, 16, 10, 25, 0, 4, 11, 88, 0, 4, 9, 26, 0, 4, 12, 83, 7, 12, 7, 73, 0, 4, 4, 16, 0, 4, 1, 23, 7, 43, 18, 14, 3, 39, 65535, 7, 16, 8, 18, 0, 4, 8, 18, 0, 4, 5, 30, 0, 4, 17, 17, 7, 20, 15, 82, 0, 4, 1, 23, 0, 4, 12, 83, 0, 4, 5, 30, 0, 4, 10, 25, 7, 39, 7, 73, 3, 35, 65535, 7, 8, 18, 14, 0, 4, 2, 86, 7, 24, 20, 80, 0, 4, 1, 23, 0, 4, 12, 83, 0, 4, 8, 18, 0, 4, 9, 26, 0, 4, 21, 87, 7, 67, 19, 27, 3, 63, 65535, 7, 28, 7, 73, 0, 4, 13, 24, 0, 4, 5, 30, 0, 4, 2, 86, 0, 4, 5, 30, 0, 4, 7, 73, 0, 4, 4, 16, 7, 32, 12, 83, 0, 4, 1, 23, 0, 4, 10, 25, 0, 4, 5, 30, 0, 4, 13, 24, 0, 4, 5, 30, 0, 4, 7, 73, 0, 4, 4, 16, 7, 27, 12, 83, 3, 23, 65535, 7, 12, 1, 23, 0, 4, 9, 26, 0, 4, 8, 18, 7, 8, 7, 73, 0, 4, 3, 89, 7, 83, 13, 24, 3, 79, 65535, 7, 16, 1, 23, 0, 4, 2, 86, 0, 4, 7, 73, 0, 4, 17, 17, 7, 28, 15, 82, 0, 4, 9, 26, 0, 4, 8, 18, 0, 4, 8, 18, 0, 4, 5, 30, 0, 4, 4, 16, 0, 4, 2, 86, 7, 32, 18, 14, 0, 4, 0, 29, 0, 4, 13, 24, 0, 4, 2, 86, 0, 4, 12, 83, 0, 4, 5, 30, 0, 4, 4, 16, 0, 4, 6, 72, 7, 70, 2, 86, 3, 66, 65535, 7, 36, 5, 30, 0, 4, 15, 82, 0, 4, 1, 23, 4, 24, 2, 22, 0, 4, 13, 24, 0, 4, 2, 86, 0, 4, 9, 26, 0, 4, 15, 82, 0, 4, 19, 27, 7, 27, 12, 83, 3, 23, 65535, 7, 12, 1, 23, 0, 4, 9, 26, 0, 4, 2, 86, 7, 8, 5, 30, 0, 4, 15, 82, 7, 47, 20, 80, 0, 4, 9, 26, 3, 39, 65535, 7, 16, 8, 18, 0, 4, 18, 14, 0, 4, 1, 23, 0, 4, 13, 24, 7, 20, 12, 83, 0, 4, 10, 25, 0, 4, 11, 88, 0, 4, 9, 26, 0, 4, 12, 83, 7, 293, 16, 96, 0, 4, 15, 82, 0, 4, 8, 18, 3, 281, 2, 7, 40, 9, 26, 0, 4, 2, 86, 0, 4, 2, 86, 0, 4, 12, 83, 0, 4, 5, 30, 0, 4, 0, 29, 0, 4, 18, 14, 0, 4, 2, 86, 0, 4, 1, 23, 0, 4, 13, 24, 7, 24, 10, 25, 0, 4, 7, 73, 0, 4, 4, 16, 0, 4, 10, 25, 0, 4, 9, 26, 0, 4, 2, 86, 7, 51, 1, 23, 3, 47, 65535, 7, 24, 8, 18, 0, 4, 1, 23, 0, 4, 15, 82, 0, 4, 1, 23, 0, 4, 4, 16, 0, 4, 2, 86, 7, 20, 16, 96, 0, 4, 5, 30, 0, 4, 13, 24, 0, 4, 2, 86, 0, 4, 13, 24, 7, 24, 17, 17, 0, 4, 7, 73, 0, 4, 12, 83, 0, 4, 1, 23, 0, 4, 13, 24, 0, 4, 2, 86, 7, 40, 4, 16, 0, 4, 9, 26, 0, 4, 15, 82, 0, 4, 1, 23, 0, 4, 13, 24, 0, 4, 19, 27, 0, 4, 9, 26, 0, 4, 10, 25, 0, 4, 1, 23, 0, 4, 13, 24, 7, 27, 19, 27, 3, 23, 65535, 7, 16, 9, 26, 0, 4, 12, 83, 0, 4, 13, 24, 0, 4, 1, 23, 7, 4, 5, 30, 7, 16, 12, 83, 0, 4, 7, 73, 0, 4, 7, 73, 0, 4, 2, 86, 7, 36, 13, 24, 0, 4, 1, 23, 0, 4, 12, 83, 0, 4, 5, 30, 0, 4, 9, 26, 0, 4, 8, 18, 0, 4, 5, 30, 0, 4, 22, 95, 0, 4, 1, 23, 7, 20, 2, 86, 0, 4, 9, 26, 0, 4, 0, 29, 0, 4, 8, 18, 0, 4, 1, 23, 5, 6, 0, 4, 23, 10}, Classes: []*rt.Class{&cls1276, &cls1270, &cls1266, &cls1277, &cls1258, &cls1264, &cls1306, &cls1274, &cls1260, &cls1268, &cls1271, &cls1298, &cls1265, &cls1261, &cls1290, &cls1283, &cls1323, &cls1263, &cls1259, &cls1272, &cls1304, &cls1305, &cls1366, &cls1257}, Literals: []rt.TerminalText{{Runes: lit51, Text: "_"}}}
-var term1564 = term1564Data.Prepare()
-var term1565Data = rt.TerminalProgram{Code: []uint16{2, 71, 3, 63, 65535, 7, 28, 0, 25, 0, 4, 1, 73, 0, 4, 2, 18, 0, 4, 3, 14, 0, 4, 4, 82, 0, 4, 5, 16, 0, 4, 6, 24, 7, 32, 7, 86, 0, 4, 8, 83, 0, 4, 9, 87, 1, 4, 0, 44, 0, 4, 0, 25, 0, 4, 10, 26, 0, 4, 6, 24, 0, 4, 7, 86, 5, 6, 0, 4, 11, 10}, Classes: []*rt.Class{&cls1271, &cls1274, &cls1260, &cls1259, &cls1283, &cls1258, &cls1261, &cls1266, &cls1265, &cls1305, &cls1268, &cls1257}, Literals: []rt.TerminalText{{Runes: lit51, Text: "_"}}}
-var term1565 = term1565Data.Prepare()
-var term1566Data = rt.TerminalProgram{Code: []uint16{2, 83, 3, 75, 65535, 7, 36, 0, 72, 0, 4, 1, 23, 0, 4, 2, 16, 0, 4, 1, 23, 0, 4, 3, 83, 0, 4, 4, 26, 0, 4, 5, 86, 0, 4, 1, 23, 0, 4, 6, 79, 7, 12, 7, 82, 0, 4, 4, 26, 0, 4, 8, 27, 7, 24, 9, 24, 0, 4, 5, 86, 0, 4, 3, 83, 0, 4, 10, 14, 0, 4, 11, 25, 0, 4, 5, 86, 5, 6, 0, 4, 12, 10}, Classes: []*rt.Class{&cls1306, &cls1270, &cls1258, &cls1265, &cls1268, &cls1266, &cls1290, &cls1283, &cls1272, &cls1261, &cls1259, &cls1271, &cls1257}}
-var term1566 = term1566Data.Prepare()
-var term1567Data = rt.TerminalProgram{Code: []uint16{2, 6196, 3, 6188, 0, 7, 313, 0, 26, 3, 309, 1, 7, 43, 1, 29, 3, 39, 65535, 7, 12, 2, 73, 0, 4, 3, 83, 0, 4, 4, 86, 7, 24, 5, 24, 0, 4, 2, 73, 0, 4, 6, 18, 0, 4, 7, 14, 0, 4, 4, 86, 0, 4, 8, 23, 7, 39, 9, 25, 3, 35, 65535, 7, 16, 9, 25, 0, 4, 8, 23, 0, 4, 5, 24, 0, 4, 5, 24, 7, 16, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 23, 12, 79, 3, 19, 65535, 7, 4, 12, 79, 7, 12, 13, 82, 0, 4, 10, 30, 0, 4, 11, 16, 7, 16, 14, 17, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 3, 83, 7, 32, 15, 72, 0, 4, 15, 72, 0, 4, 3, 83, 0, 4, 8, 23, 0, 4, 15, 72, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 23, 7, 43, 6, 18, 3, 39, 65535, 7, 8, 5, 24, 0, 4, 2, 73, 7, 12, 4, 86, 0, 4, 8, 23, 0, 4, 3, 83, 7, 16, 16, 89, 0, 4, 0, 26, 0, 4, 17, 87, 0, 4, 5, 24, 7, 63, 5, 24, 0, 4, 5, 24, 3, 55, 65535, 7, 24, 8, 23, 0, 4, 3, 83, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 28, 10, 30, 0, 4, 15, 72, 0, 4, 11, 16, 0, 4, 13, 82, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 47, 4, 86, 0, 4, 4, 86, 3, 39, 65535, 7, 12, 0, 26, 0, 4, 9, 25, 0, 4, 18, 88, 7, 24, 3, 83, 0, 4, 10, 30, 0, 4, 1, 29, 0, 4, 7, 14, 0, 4, 4, 86, 0, 4, 8, 23, 7, 70, 1, 29, 3, 66, 65535, 7, 28, 0, 26, 0, 4, 9, 25, 0, 4, 19, 92, 0, 4, 16, 89, 0, 4, 0, 26, 0, 4, 3, 83, 0, 4, 12, 79, 7, 35, 8, 23, 3, 31, 65535, 7, 16, 14, 17, 0, 4, 2, 73, 0, 4, 3, 83, 0, 4, 8, 23, 7, 12, 15, 72, 0, 4, 10, 30, 0, 4, 11, 16, 7, 658, 9, 25, 3, 654, 2, 7, 85, 0, 26, 3, 81, 3, 7, 12, 9, 25, 0, 4, 18, 88, 0, 4, 8, 23, 7, 20, 6, 18, 0, 4, 6, 18, 4, 12, 2, 10, 0, 4, 8, 23, 0, 4, 12, 79, 7, 26, 5, 24, 0, 4, 9, 25, 0, 4, 0, 26, 0, 4, 12, 79, 0, 4, 8, 23, 4, 6, 0, 4, 12, 79, 7, 20, 4, 86, 0, 4, 0, 26, 0, 4, 6, 18, 0, 4, 2, 73, 0, 4, 15, 72, 7, 39, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 0, 4, 7, 14, 0, 4, 3, 83, 3, 19, 65535, 7, 12, 10, 30, 0, 4, 8, 23, 0, 4, 5, 24, 7, 4, 17, 87, 7, 102, 18, 88, 3, 98, 65535, 7, 63, 0, 26, 3, 59, 65535, 7, 8, 10, 30, 0, 4, 11, 16, 7, 48, 3, 83, 0, 4, 0, 26, 0, 4, 9, 25, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 3, 83, 0, 4, 10, 30, 0, 4, 5, 24, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 9, 25, 0, 4, 5, 24, 7, 32, 8, 23, 0, 4, 9, 25, 0, 4, 19, 92, 0, 4, 20, 27, 0, 4, 2, 73, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 4, 86, 7, 51, 6, 18, 3, 47, 65535, 7, 12, 0, 26, 0, 4, 5, 24, 0, 4, 5, 24, 7, 12, 2, 73, 0, 4, 5, 24, 0, 4, 8, 23, 7, 20, 7, 14, 0, 4, 5, 24, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 3, 83, 7, 300, 2, 73, 3, 296, 4, 7, 88, 13, 82, 3, 84, 65535, 7, 49, 13, 82, 3, 45, 65535, 7, 18, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 4, 6, 0, 4, 5, 24, 7, 24, 10, 30, 0, 4, 4, 86, 4, 16, 2, 14, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 12, 79, 7, 32, 20, 27, 0, 4, 3, 83, 0, 4, 8, 23, 0, 4, 5, 24, 0, 4, 5, 24, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 189, 11, 16, 3, 185, 5, 7, 59, 14, 17, 3, 55, 65535, 7, 36, 10, 30, 0, 4, 15, 72, 0, 4, 7, 14, 0, 4, 3, 83, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 16, 6, 18, 0, 4, 10, 30, 0, 4, 9, 25, 0, 4, 4, 86, 7, 28, 11, 16, 0, 4, 8, 23, 0, 4, 9, 25, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 32, 5, 24, 0, 4, 4, 86, 0, 4, 3, 83, 0, 4, 0, 26, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 4, 86, 0, 4, 5, 24, 7, 35, 4, 86, 3, 31, 65535, 7, 12, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 16, 10, 30, 0, 4, 11, 16, 0, 4, 7, 14, 0, 4, 8, 23, 7, 28, 21, 80, 0, 4, 8, 23, 0, 4, 3, 83, 0, 4, 5, 24, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 8, 20, 27, 0, 4, 17, 87, 7, 8, 5, 24, 0, 4, 4, 86, 7, 8, 5, 24, 0, 4, 21, 80, 7, 50, 7, 14, 3, 46, 65535, 7, 8, 1, 29, 0, 4, 8, 23, 7, 35, 3, 83, 3, 31, 65535, 7, 16, 3, 83, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 12, 5, 24, 0, 4, 2, 73, 0, 4, 3, 83, 7, 16, 17, 87, 0, 4, 9, 25, 0, 4, 6, 18, 0, 4, 8, 23, 7, 433, 12, 79, 3, 429, 6, 7, 45, 0, 26, 3, 41, 65535, 7, 28, 4, 86, 0, 4, 0, 26, 4, 20, 2, 18, 0, 4, 1, 29, 0, 4, 0, 26, 0, 4, 5, 24, 0, 4, 8, 23, 7, 10, 17, 87, 4, 6, 0, 4, 5, 24, 7, 228, 8, 23, 3, 224, 7, 7, 32, 0, 26, 0, 4, 6, 18, 0, 4, 6, 18, 0, 4, 2, 73, 0, 4, 9, 25, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 23, 7, 41, 9, 25, 3, 37, 65535, 7, 18, 0, 26, 0, 4, 12, 79, 0, 4, 8, 23, 4, 6, 0, 4, 5, 24, 7, 16, 6, 18, 0, 4, 0, 26, 0, 4, 3, 83, 0, 4, 8, 23, 7, 63, 14, 17, 3, 59, 65535, 7, 20, 0, 26, 0, 4, 7, 14, 0, 4, 6, 18, 0, 4, 4, 86, 0, 4, 5, 24, 7, 20, 8, 23, 0, 4, 3, 83, 0, 4, 3, 83, 0, 4, 8, 23, 0, 4, 12, 79, 7, 16, 10, 30, 0, 4, 11, 16, 0, 4, 8, 23, 0, 4, 3, 83, 7, 49, 6, 18, 3, 45, 65535, 7, 12, 8, 23, 0, 4, 4, 86, 0, 4, 8, 23, 7, 30, 10, 30, 0, 4, 13, 82, 0, 4, 10, 30, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 3, 83, 4, 6, 0, 4, 5, 24, 7, 20, 20, 27, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 12, 79, 0, 4, 5, 24, 7, 16, 4, 86, 0, 4, 0, 26, 0, 4, 9, 25, 0, 4, 18, 88, 7, 78, 10, 30, 3, 74, 65535, 7, 32, 9, 25, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 0, 4, 0, 26, 0, 4, 3, 83, 0, 4, 17, 87, 7, 39, 5, 24, 3, 35, 65535, 7, 16, 0, 26, 0, 4, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 7, 16, 9, 25, 0, 4, 0, 26, 0, 4, 3, 83, 0, 4, 12, 79, 7, 63, 2, 73, 3, 59, 65535, 7, 24, 9, 25, 0, 4, 7, 14, 0, 4, 13, 82, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 16, 13, 82, 0, 4, 0, 26, 0, 4, 10, 30, 0, 4, 11, 16, 7, 16, 7, 14, 0, 4, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 7, 12, 3, 83, 0, 4, 2, 73, 0, 4, 20, 27, 7, 350, 8, 23, 3, 346, 8, 7, 12, 0, 26, 0, 4, 9, 25, 0, 4, 18, 88, 7, 82, 11, 16, 3, 78, 65535, 7, 16, 0, 26, 0, 4, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 7, 51, 9, 25, 3, 47, 65535, 7, 20, 2, 73, 0, 4, 12, 79, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 24, 3, 83, 0, 4, 17, 87, 0, 4, 20, 27, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 12, 79, 7, 8, 7, 14, 0, 4, 13, 82, 7, 16, 3, 83, 0, 4, 3, 83, 0, 4, 2, 73, 0, 4, 3, 83, 7, 20, 5, 24, 0, 4, 9, 25, 0, 4, 0, 26, 0, 4, 20, 27, 0, 4, 8, 23, 7, 16, 21, 80, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 197, 22, 96, 3, 193, 9, 7, 54, 9, 25, 0, 4, 6, 18, 0, 4, 7, 14, 3, 42, 65535, 7, 23, 12, 79, 3, 19, 65535, 7, 4, 8, 23, 7, 12, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 16, 5, 24, 0, 4, 10, 30, 0, 4, 21, 80, 0, 4, 8, 23, 7, 20, 8, 23, 0, 4, 9, 25, 0, 4, 7, 14, 0, 4, 4, 86, 0, 4, 8, 23, 7, 63, 20, 27, 3, 59, 65535, 7, 16, 6, 18, 0, 4, 0, 26, 0, 4, 10, 30, 0, 4, 11, 16, 7, 40, 2, 73, 0, 4, 3, 83, 0, 4, 4, 86, 4, 28, 2, 26, 1, 4, 0, 44, 0, 4, 5, 24, 0, 4, 4, 86, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 23, 7, 53, 4, 86, 0, 4, 8, 23, 3, 45, 65535, 7, 26, 11, 16, 0, 4, 5, 24, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 4, 6, 0, 4, 5, 24, 7, 16, 3, 83, 0, 4, 11, 16, 0, 4, 0, 26, 0, 4, 6, 18, 7, 162, 14, 17, 3, 158, 10, 7, 20, 0, 26, 0, 4, 13, 82, 0, 4, 10, 30, 0, 4, 6, 18, 0, 4, 17, 87, 7, 35, 10, 30, 3, 31, 65535, 7, 16, 6, 18, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 3, 83, 7, 12, 3, 83, 0, 4, 5, 24, 0, 4, 4, 86, 7, 66, 2, 73, 3, 62, 65535, 7, 28, 6, 18, 0, 4, 6, 18, 0, 4, 2, 73, 0, 4, 16, 89, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 31, 3, 83, 3, 27, 65535, 7, 8, 9, 25, 0, 4, 8, 23, 7, 16, 16, 89, 0, 4, 0, 26, 0, 4, 3, 83, 0, 4, 12, 79, 7, 34, 7, 14, 0, 4, 11, 16, 0, 4, 9, 25, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 4, 6, 0, 4, 5, 24, 7, 74, 15, 72, 3, 70, 65535, 7, 20, 6, 18, 0, 4, 2, 73, 0, 4, 1, 29, 0, 4, 0, 26, 0, 4, 6, 18, 7, 47, 3, 83, 3, 43, 65535, 7, 24, 0, 26, 0, 4, 11, 16, 0, 4, 4, 86, 4, 12, 2, 10, 0, 4, 8, 23, 0, 4, 12, 79, 7, 16, 2, 73, 0, 4, 7, 14, 0, 4, 20, 27, 0, 4, 5, 24, 7, 80, 18, 88, 3, 76, 65535, 7, 24, 0, 26, 0, 4, 11, 16, 0, 4, 12, 79, 0, 4, 6, 18, 0, 4, 8, 23, 0, 4, 3, 83, 7, 20, 8, 23, 0, 4, 0, 26, 0, 4, 12, 79, 0, 4, 8, 23, 0, 4, 3, 83, 7, 29, 2, 73, 3, 25, 65535, 7, 8, 6, 18, 0, 4, 12, 79, 7, 14, 7, 14, 0, 4, 3, 83, 4, 6, 0, 4, 5, 24, 7, 440, 10, 30, 3, 436, 11, 7, 28, 12, 79, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 4, 86, 0, 4, 17, 87, 7, 4, 14, 17, 7, 20, 15, 72, 0, 4, 11, 16, 0, 4, 2, 73, 0, 4, 3, 83, 0, 4, 8, 23, 7, 101, 13, 82, 3, 97, 65535, 7, 55, 13, 82, 3, 51, 65535, 7, 24, 8, 23, 0, 4, 12, 79, 0, 4, 10, 30, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 23, 7, 24, 7, 14, 0, 4, 4, 86, 0, 4, 0, 26, 0, 4, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 7, 39, 20, 27, 3, 35, 65535, 7, 20, 6, 18, 0, 4, 10, 30, 0, 4, 9, 25, 0, 4, 10, 30, 0, 4, 4, 86, 7, 12, 2, 73, 0, 4, 3, 83, 0, 4, 4, 86, 7, 248, 11, 16, 3, 244, 12, 7, 62, 9, 25, 3, 58, 65535, 7, 31, 6, 18, 0, 4, 7, 14, 0, 4, 12, 79, 3, 19, 65535, 7, 4, 8, 23, 7, 12, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 24, 3, 83, 0, 4, 8, 23, 0, 4, 13, 82, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 24, 12, 79, 0, 4, 8, 23, 0, 4, 22, 96, 4, 12, 2, 10, 0, 4, 8, 23, 0, 4, 5, 24, 7, 26, 18, 88, 0, 4, 8, 23, 0, 4, 3, 83, 0, 4, 10, 30, 0, 4, 4, 86, 4, 6, 0, 4, 5, 24, 7, 16, 6, 18, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 8, 23, 7, 12, 20, 27, 0, 4, 7, 14, 0, 4, 4, 86, 7, 81, 5, 24, 3, 77, 65535, 7, 43, 8, 23, 3, 39, 65535, 7, 28, 11, 16, 0, 4, 5, 24, 0, 4, 10, 30, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 21, 80, 0, 4, 8, 23, 7, 8, 3, 83, 0, 4, 4, 86, 7, 31, 4, 86, 3, 27, 65535, 7, 12, 0, 26, 0, 4, 6, 18, 0, 4, 6, 18, 7, 12, 8, 23, 0, 4, 0, 26, 0, 4, 12, 79, 7, 20, 21, 80, 0, 4, 2, 73, 0, 4, 19, 92, 0, 4, 8, 23, 0, 4, 3, 83, 7, 32, 5, 24, 0, 4, 2, 73, 0, 4, 6, 18, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 16, 23, 93, 0, 4, 5, 24, 0, 4, 2, 73, 0, 4, 11, 16, 7, 12, 19, 92, 0, 4, 8, 23, 0, 4, 17, 87, 7, 218, 6, 18, 3, 214, 13, 7, 63, 0, 26, 3, 59, 14, 7, 12, 1, 29, 0, 4, 8, 23, 0, 4, 6, 18, 7, 24, 11, 16, 0, 4, 15, 72, 0, 4, 7, 14, 0, 4, 0, 26, 0, 4, 15, 72, 0, 4, 8, 23, 7, 12, 3, 83, 0, 4, 15, 72, 0, 4, 8, 23, 7, 8, 5, 24, 0, 4, 4, 86, 7, 47, 8, 23, 3, 43, 65535, 7, 28, 0, 26, 0, 4, 19, 92, 0, 4, 20, 27, 0, 4, 3, 83, 0, 4, 2, 73, 0, 4, 2, 73, 0, 4, 14, 17, 7, 12, 21, 80, 0, 4, 8, 23, 0, 4, 6, 18, 7, 20, 10, 30, 0, 4, 5, 24, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 11, 16, 7, 81, 2, 73, 3, 77, 65535, 7, 8, 0, 26, 0, 4, 12, 79, 7, 50, 9, 25, 3, 46, 65535, 7, 27, 0, 26, 3, 23, 65535, 7, 4, 6, 18, 7, 16, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 16, 19, 92, 4, 12, 2, 10, 0, 4, 8, 23, 0, 4, 12, 79, 7, 16, 15, 72, 0, 4, 15, 72, 0, 4, 8, 23, 0, 4, 12, 79, 7, 379, 13, 82, 3, 375, 15, 7, 126, 0, 26, 3, 122, 16, 7, 12, 9, 25, 0, 4, 3, 83, 0, 4, 2, 73, 7, 20, 20, 27, 0, 4, 20, 27, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 63, 4, 86, 3, 59, 65535, 7, 20, 9, 25, 0, 4, 18, 88, 4, 12, 2, 10, 0, 4, 8, 23, 0, 4, 12, 79, 7, 36, 8, 23, 0, 4, 3, 83, 0, 4, 10, 30, 0, 4, 0, 26, 0, 4, 6, 18, 0, 4, 10, 30, 0, 4, 24, 95, 0, 4, 8, 23, 0, 4, 12, 79, 7, 24, 22, 96, 0, 4, 21, 80, 0, 4, 0, 26, 0, 4, 6, 18, 0, 4, 7, 14, 0, 4, 8, 23, 7, 35, 8, 23, 3, 31, 65535, 7, 12, 3, 83, 0, 4, 15, 72, 0, 4, 8, 23, 7, 16, 4, 86, 0, 4, 18, 88, 0, 4, 2, 73, 0, 4, 12, 79, 7, 170, 10, 30, 3, 166, 65535, 7, 42, 9, 25, 0, 4, 3, 83, 0, 4, 2, 73, 0, 4, 5, 24, 0, 4, 8, 23, 0, 4, 9, 25, 0, 4, 2, 73, 0, 4, 11, 16, 0, 4, 12, 79, 4, 6, 0, 4, 5, 24, 7, 76, 6, 18, 0, 4, 6, 18, 3, 68, 65535, 7, 31, 8, 23, 0, 4, 11, 16, 0, 4, 11, 16, 0, 4, 10, 30, 3, 15, 65535, 7, 4, 0, 26, 7, 8, 7, 14, 0, 4, 13, 82, 7, 34, 10, 30, 0, 4, 5, 24, 0, 4, 8, 23, 0, 4, 9, 25, 0, 4, 2, 73, 0, 4, 11, 16, 0, 4, 12, 79, 4, 6, 0, 4, 5, 24, 7, 45, 11, 16, 3, 41, 65535, 7, 18, 7, 14, 0, 4, 4, 86, 0, 4, 8, 23, 4, 6, 0, 4, 5, 24, 7, 20, 21, 80, 0, 4, 0, 26, 0, 4, 6, 18, 0, 4, 7, 14, 0, 4, 8, 23, 7, 41, 2, 73, 3, 37, 65535, 7, 8, 12, 79, 0, 4, 8, 23, 7, 18, 11, 16, 0, 4, 4, 86, 0, 4, 18, 88, 4, 6, 0, 4, 5, 24, 7, 8, 21, 80, 0, 4, 8, 23, 7, 120, 11, 16, 3, 116, 17, 7, 18, 0, 26, 0, 4, 13, 82, 0, 4, 8, 23, 4, 6, 0, 4, 5, 24, 7, 19, 8, 23, 3, 15, 65535, 7, 4, 16, 89, 7, 8, 22, 96, 0, 4, 4, 86, 7, 60, 2, 73, 4, 56, 3, 54, 65535, 7, 35, 4, 86, 3, 31, 65535, 7, 16, 18, 88, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 12, 10, 30, 0, 4, 14, 17, 0, 4, 17, 87, 7, 16, 16, 89, 0, 4, 0, 26, 0, 4, 10, 30, 0, 4, 4, 86, 7, 16, 7, 14, 0, 4, 6, 18, 0, 4, 6, 18, 0, 4, 5, 24, 7, 229, 2, 73, 3, 225, 18, 7, 20, 1, 29, 0, 4, 23, 93, 0, 4, 8, 23, 0, 4, 9, 25, 0, 4, 4, 86, 7, 10, 14, 17, 4, 6, 0, 4, 14, 17, 7, 12, 10, 30, 0, 4, 12, 79, 0, 4, 5, 24, 7, 8, 6, 18, 0, 4, 12, 79, 7, 53, 20, 27, 3, 49, 65535, 7, 24, 8, 23, 0, 4, 3, 83, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 2, 73, 0, 4, 3, 83, 7, 22, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 4, 6, 0, 4, 5, 24, 7, 36, 3, 83, 0, 4, 12, 79, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 0, 26, 0, 4, 6, 18, 0, 4, 10, 30, 0, 4, 4, 86, 0, 4, 17, 87, 7, 20, 4, 86, 0, 4, 18, 88, 0, 4, 8, 23, 0, 4, 3, 83, 0, 4, 5, 24, 7, 40, 21, 80, 0, 4, 8, 23, 0, 4, 3, 83, 4, 28, 2, 26, 0, 4, 3, 83, 0, 4, 10, 30, 0, 4, 12, 79, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 23, 16, 89, 0, 4, 11, 16, 0, 4, 8, 23, 3, 11, 65535, 7, 4, 12, 79, 7, 4, 3, 83, 7, 467, 20, 27, 3, 463, 19, 7, 132, 0, 26, 3, 128, 65535, 7, 86, 3, 83, 3, 82, 65535, 7, 20, 0, 26, 0, 4, 6, 18, 0, 4, 6, 18, 0, 4, 8, 23, 0, 4, 6, 18, 7, 12, 5, 24, 0, 4, 8, 23, 0, 4, 3, 83, 7, 47, 4, 86, 0, 4, 10, 30, 3, 39, 65535, 7, 8, 0, 26, 0, 4, 6, 18, 7, 28, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 4, 12, 2, 10, 0, 4, 8, 23, 0, 4, 12, 79, 7, 39, 5, 24, 0, 4, 5, 24, 3, 31, 65535, 7, 12, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 16, 16, 89, 0, 4, 2, 73, 0, 4, 3, 83, 0, 4, 12, 79, 7, 55, 8, 23, 0, 4, 3, 83, 3, 47, 65535, 7, 16, 9, 25, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 28, 5, 24, 0, 4, 10, 30, 0, 4, 5, 24, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 16, 6, 18, 0, 4, 0, 26, 0, 4, 11, 16, 0, 4, 5, 24, 7, 20, 2, 73, 0, 4, 6, 18, 0, 4, 10, 30, 0, 4, 9, 25, 0, 4, 17, 87, 7, 197, 3, 83, 3, 193, 20, 7, 16, 0, 26, 0, 4, 15, 72, 0, 4, 13, 82, 0, 4, 0, 26, 7, 73, 8, 23, 3, 69, 65535, 7, 24, 9, 25, 0, 4, 8, 23, 0, 4, 12, 79, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 22, 20, 27, 0, 4, 0, 26, 0, 4, 3, 83, 0, 4, 8, 23, 4, 6, 0, 4, 12, 79, 7, 20, 5, 24, 0, 4, 8, 23, 0, 4, 3, 83, 0, 4, 21, 80, 0, 4, 8, 23, 7, 43, 10, 30, 3, 39, 65535, 7, 8, 2, 73, 0, 4, 3, 83, 7, 28, 21, 80, 0, 4, 10, 30, 0, 4, 6, 18, 0, 4, 8, 23, 0, 4, 15, 72, 0, 4, 8, 23, 0, 4, 5, 24, 7, 58, 2, 73, 3, 54, 65535, 7, 35, 9, 25, 0, 4, 8, 23, 0, 4, 12, 79, 0, 4, 7, 14, 0, 4, 3, 83, 3, 15, 65535, 7, 8, 0, 26, 0, 4, 6, 18, 7, 4, 8, 23, 7, 16, 15, 72, 0, 4, 3, 83, 0, 4, 0, 26, 0, 4, 13, 82, 7, 40, 7, 14, 0, 4, 1, 29, 0, 4, 6, 18, 0, 4, 10, 30, 0, 4, 9, 25, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 49, 25, 90, 0, 4, 7, 14, 3, 41, 65535, 7, 26, 0, 26, 0, 4, 3, 83, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 3, 83, 4, 6, 0, 4, 5, 24, 7, 12, 2, 73, 0, 4, 4, 86, 0, 4, 8, 23, 7, 481, 3, 83, 3, 477, 21, 7, 16, 0, 26, 0, 4, 11, 16, 0, 4, 15, 72, 0, 4, 8, 23, 7, 389, 8, 23, 3, 385, 22, 7, 31, 0, 26, 3, 27, 65535, 7, 4, 12, 79, 7, 20, 5, 24, 0, 4, 5, 24, 0, 4, 10, 30, 0, 4, 15, 72, 0, 4, 11, 16, 7, 47, 9, 25, 3, 43, 65535, 7, 16, 18, 88, 0, 4, 8, 23, 0, 4, 9, 25, 0, 4, 19, 92, 7, 24, 7, 14, 0, 4, 3, 83, 0, 4, 5, 24, 0, 4, 10, 30, 0, 4, 21, 80, 0, 4, 8, 23, 7, 57, 14, 17, 4, 53, 3, 51, 65535, 7, 32, 8, 23, 0, 4, 3, 83, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 9, 25, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 16, 3, 83, 0, 4, 8, 23, 0, 4, 5, 24, 0, 4, 18, 88, 7, 20, 10, 30, 0, 4, 11, 16, 0, 4, 12, 79, 0, 4, 8, 23, 0, 4, 22, 96, 7, 43, 6, 18, 3, 39, 65535, 7, 20, 0, 26, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 21, 80, 0, 4, 8, 23, 7, 16, 8, 23, 0, 4, 0, 26, 0, 4, 5, 24, 0, 4, 8, 23, 7, 16, 11, 16, 0, 4, 0, 26, 0, 4, 13, 82, 0, 4, 8, 23, 7, 66, 20, 27, 3, 62, 65535, 7, 28, 8, 23, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 0, 26, 0, 4, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 7, 31, 6, 18, 3, 27, 65535, 7, 12, 0, 26, 0, 4, 9, 25, 0, 4, 8, 23, 7, 12, 10, 30, 0, 4, 9, 25, 0, 4, 0, 26, 7, 66, 5, 24, 3, 62, 65535, 7, 8, 8, 23, 0, 4, 4, 86, 7, 16, 20, 27, 0, 4, 8, 23, 0, 4, 9, 25, 0, 4, 4, 86, 7, 35, 4, 86, 3, 31, 65535, 7, 12, 0, 26, 0, 4, 3, 83, 0, 4, 4, 86, 7, 16, 3, 83, 0, 4, 10, 30, 0, 4, 9, 25, 0, 4, 4, 86, 7, 20, 4, 86, 0, 4, 7, 14, 0, 4, 3, 83, 0, 4, 11, 16, 0, 4, 5, 24, 7, 16, 21, 80, 0, 4, 2, 73, 0, 4, 19, 92, 0, 4, 8, 23, 7, 57, 2, 73, 3, 53, 65535, 7, 42, 6, 18, 3, 38, 65535, 7, 4, 8, 23, 7, 31, 6, 18, 3, 27, 65535, 7, 16, 1, 29, 0, 4, 0, 26, 0, 4, 9, 25, 0, 4, 19, 92, 7, 8, 7, 14, 0, 4, 20, 27, 7, 8, 16, 89, 0, 4, 5, 24, 7, 12, 7, 14, 0, 4, 6, 18, 0, 4, 8, 23, 7, 702, 5, 24, 3, 698, 23, 7, 51, 0, 26, 3, 47, 65535, 7, 16, 13, 82, 0, 4, 20, 27, 0, 4, 6, 18, 0, 4, 8, 23, 7, 28, 21, 80, 0, 4, 8, 23, 0, 4, 20, 27, 0, 4, 2, 73, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 4, 86, 7, 57, 9, 25, 3, 53, 65535, 7, 22, 18, 88, 0, 4, 8, 23, 0, 4, 13, 82, 0, 4, 0, 26, 4, 6, 0, 4, 5, 24, 7, 12, 2, 73, 0, 4, 20, 27, 0, 4, 8, 23, 7, 16, 3, 83, 0, 4, 2, 73, 0, 4, 6, 18, 0, 4, 6, 18, 7, 195, 8, 23, 3, 191, 24, 7, 16, 0, 26, 0, 4, 3, 83, 0, 4, 9, 25, 0, 4, 18, 88, 7, 57, 9, 25, 3, 53, 65535, 7, 18, 2, 73, 0, 4, 11, 16, 0, 4, 12, 79, 4, 6, 0, 4, 5, 24, 7, 12, 3, 83, 0, 4, 8, 23, 0, 4, 4, 86, 7, 20, 7, 14, 0, 4, 3, 83, 0, 4, 10, 30, 0, 4, 4, 86, 0, 4, 17, 87, 7, 30, 25, 90, 0, 4, 7, 14, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 9, 25, 0, 4, 8, 23, 4, 6, 0, 4, 5, 24, 7, 55, 3, 83, 3, 51, 65535, 7, 36, 10, 30, 0, 4, 0, 26, 0, 4, 6, 18, 0, 4, 10, 30, 0, 4, 24, 95, 0, 4, 0, 26, 0, 4, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 7, 12, 21, 80, 0, 4, 8, 23, 0, 4, 3, 83, 7, 20, 5, 24, 0, 4, 5, 24, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 10, 4, 86, 4, 6, 0, 4, 5, 24, 7, 16, 18, 88, 0, 4, 0, 26, 0, 4, 3, 83, 0, 4, 8, 23, 7, 20, 10, 30, 0, 4, 13, 82, 0, 4, 20, 27, 0, 4, 6, 18, 0, 4, 8, 23, 7, 12, 19, 92, 0, 4, 10, 30, 0, 4, 20, 27, 7, 28, 11, 16, 0, 4, 0, 26, 0, 4, 20, 27, 0, 4, 5, 24, 0, 4, 18, 88, 0, 4, 2, 73, 0, 4, 4, 86, 7, 39, 2, 73, 3, 35, 65535, 7, 16, 3, 83, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 12, 79, 7, 16, 7, 14, 0, 4, 3, 83, 0, 4, 9, 25, 0, 4, 8, 23, 7, 8, 25, 90, 0, 4, 6, 18, 7, 194, 4, 86, 3, 190, 25, 7, 106, 0, 26, 3, 102, 26, 7, 12, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 7, 28, 11, 16, 0, 4, 12, 79, 0, 4, 0, 26, 0, 4, 6, 18, 0, 4, 2, 73, 0, 4, 11, 16, 0, 4, 8, 23, 7, 8, 3, 83, 0, 4, 4, 86, 7, 51, 4, 86, 3, 47, 65535, 7, 20, 8, 23, 0, 4, 13, 82, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 24, 10, 30, 0, 4, 5, 24, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 9, 25, 0, 4, 5, 24, 7, 27, 12, 79, 3, 23, 65535, 7, 8, 10, 30, 0, 4, 11, 16, 7, 12, 2, 73, 0, 4, 7, 14, 0, 4, 4, 86, 7, 31, 2, 73, 0, 4, 3, 83, 3, 23, 65535, 7, 12, 0, 26, 0, 4, 15, 72, 0, 4, 8, 23, 7, 8, 8, 23, 0, 4, 12, 79, 7, 23, 3, 83, 0, 4, 10, 30, 3, 15, 65535, 7, 8, 9, 25, 0, 4, 4, 86, 7, 4, 20, 27, 7, 44, 7, 14, 0, 4, 1, 29, 0, 4, 5, 24, 0, 4, 9, 25, 0, 4, 3, 83, 0, 4, 10, 30, 0, 4, 20, 27, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 31, 17, 87, 0, 4, 5, 24, 3, 23, 65535, 7, 8, 10, 30, 0, 4, 12, 79, 7, 12, 4, 86, 0, 4, 8, 23, 0, 4, 13, 82, 7, 285, 4, 86, 3, 281, 27, 7, 59, 0, 26, 3, 55, 65535, 7, 36, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 0, 4, 5, 24, 4, 20, 2, 18, 0, 4, 20, 27, 0, 4, 0, 26, 0, 4, 9, 25, 0, 4, 8, 23, 7, 16, 3, 83, 0, 4, 15, 72, 0, 4, 8, 23, 0, 4, 4, 86, 7, 64, 8, 23, 3, 60, 65535, 7, 49, 13, 82, 0, 4, 20, 27, 4, 41, 3, 39, 65535, 7, 16, 6, 18, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 23, 7, 20, 2, 73, 0, 4, 3, 83, 0, 4, 0, 26, 0, 4, 3, 83, 0, 4, 17, 87, 7, 8, 22, 96, 0, 4, 4, 86, 7, 12, 10, 30, 0, 4, 8, 23, 0, 4, 5, 24, 7, 125, 3, 83, 3, 121, 65535, 7, 55, 0, 26, 0, 4, 11, 16, 0, 4, 5, 24, 3, 43, 65535, 7, 24, 0, 26, 0, 4, 9, 25, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 16, 14, 17, 0, 4, 2, 73, 0, 4, 3, 83, 0, 4, 13, 82, 7, 20, 10, 30, 0, 4, 15, 72, 0, 4, 15, 72, 0, 4, 8, 23, 0, 4, 3, 83, 7, 43, 7, 14, 3, 39, 65535, 7, 20, 11, 16, 0, 4, 9, 25, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 23, 7, 16, 5, 24, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 12, 79, 7, 18, 17, 87, 0, 4, 20, 27, 0, 4, 8, 23, 4, 6, 0, 4, 5, 24, 7, 227, 7, 14, 3, 223, 65535, 7, 186, 11, 16, 3, 182, 28, 7, 28, 1, 29, 0, 4, 2, 73, 0, 4, 7, 14, 0, 4, 11, 16, 0, 4, 12, 79, 0, 4, 8, 23, 0, 4, 12, 79, 7, 36, 9, 25, 0, 4, 2, 73, 0, 4, 13, 82, 0, 4, 13, 82, 0, 4, 10, 30, 0, 4, 4, 86, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 12, 79, 7, 36, 8, 23, 0, 4, 11, 16, 0, 4, 9, 25, 0, 4, 3, 83, 0, 4, 17, 87, 0, 4, 20, 27, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 12, 79, 7, 20, 19, 92, 0, 4, 11, 16, 0, 4, 2, 73, 0, 4, 16, 89, 0, 4, 11, 16, 7, 47, 6, 18, 3, 43, 65535, 7, 20, 10, 30, 0, 4, 5, 24, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 11, 16, 7, 20, 2, 73, 0, 4, 15, 72, 0, 4, 15, 72, 0, 4, 8, 23, 0, 4, 12, 79, 7, 12, 4, 86, 0, 4, 10, 30, 0, 4, 6, 18, 7, 20, 20, 27, 0, 4, 12, 79, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 23, 7, 14, 5, 24, 0, 4, 8, 23, 4, 6, 0, 4, 3, 83, 7, 216, 21, 80, 3, 212, 29, 7, 116, 0, 26, 3, 112, 65535, 7, 16, 9, 25, 0, 4, 7, 14, 0, 4, 7, 14, 0, 4, 13, 82, 7, 50, 6, 18, 3, 46, 65535, 7, 35, 10, 30, 0, 4, 12, 79, 4, 27, 2, 25, 0, 4, 0, 26, 0, 4, 4, 86, 3, 15, 65535, 7, 4, 8, 23, 7, 8, 2, 73, 0, 4, 3, 83, 7, 8, 7, 14, 0, 4, 8, 23, 7, 43, 3, 83, 3, 39, 65535, 7, 20, 10, 30, 0, 4, 0, 26, 0, 4, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 7, 16, 17, 87, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 24, 8, 23, 0, 4, 3, 83, 0, 4, 5, 24, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 41, 10, 30, 3, 37, 65535, 7, 14, 8, 23, 0, 4, 16, 89, 4, 6, 0, 4, 5, 24, 7, 20, 3, 83, 0, 4, 4, 86, 0, 4, 7, 14, 0, 4, 0, 26, 0, 4, 6, 18, 7, 28, 2, 73, 0, 4, 6, 18, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 6, 18, 0, 4, 8, 23, 7, 147, 16, 89, 3, 143, 30, 7, 18, 8, 23, 0, 4, 8, 23, 0, 4, 19, 92, 4, 6, 0, 4, 5, 24, 7, 36, 18, 88, 0, 4, 10, 30, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 5, 24, 0, 4, 20, 27, 0, 4, 0, 26, 0, 4, 9, 25, 0, 4, 8, 23, 7, 35, 10, 30, 0, 4, 4, 86, 0, 4, 18, 88, 3, 23, 65535, 7, 8, 10, 30, 0, 4, 11, 16, 7, 12, 2, 73, 0, 4, 7, 14, 0, 4, 4, 86, 7, 12, 2, 73, 0, 4, 3, 83, 0, 4, 19, 92, 7, 39, 3, 83, 3, 35, 65535, 7, 20, 0, 26, 0, 4, 20, 27, 0, 4, 20, 27, 0, 4, 8, 23, 0, 4, 3, 83, 7, 12, 10, 30, 0, 4, 4, 86, 0, 4, 8, 23, 7, 12, 22, 96, 0, 4, 13, 82, 0, 4, 6, 18, 7, 29, 17, 87, 0, 4, 8, 23, 3, 21, 65535, 7, 14, 0, 26, 0, 4, 3, 83, 4, 6, 0, 4, 5, 24, 7, 4, 5, 24, 7, 16, 24, 95, 0, 4, 2, 73, 0, 4, 11, 16, 0, 4, 8, 23, 5, 6, 0, 4, 26, 10}, Classes: []*rt.Class{&cls1268, &cls1276, &cls1274, &cls1265, &cls1266, &cls1261, &cls1260, &cls1259, &cls1270, &cls1271, &cls1264, &cls1258, &cls1290, &cls1283, &cls1263, &cls1306, &cls1277, &cls1305, &cls1298, &cls1280, &cls1272, &cls1304, &cls1323, &cls1561, &cls1366, &cls1386, &cls1257}, Literals: []rt.TerminalText{{Runes: lit51, Text: "_"}}}
-var term1567 = term1567Data.Prepare()
-var steps1568 = []rt.ClassStep{{C: &cls1264, ID: 30}, {C: &cls1261, ID: 24}, {C: &cls1258, ID: 16}, {C: &cls1259, ID: 14}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}}
-var steps1569 = []rt.ClassStep{{C: &cls1258, ID: 16}, {C: &cls1274, ID: 73}, {C: &cls1266, ID: 86}, {C: &cls1258, ID: 16}, {C: &cls1259, ID: 14}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}}
-var steps1570 = []rt.ClassStep{{C: &cls1306, ID: 72}, {C: &cls1260, ID: 18}, {C: &cls1274, ID: 73}, {C: &cls1276, ID: 29}}
-var steps1571 = []rt.ClassStep{{C: &cls1305, ID: 87}, {C: &cls1270, ID: 23}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1261, ID: 24}}
-var steps1572 = []rt.ClassStep{{C: &cls1305, ID: 87}, {C: &cls1270, ID: 23}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}}
-var steps1573 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}, {C: &cls1298, ID: 88}, {C: &cls1261, ID: 24}}
-var steps1574 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}, {C: &cls1298, ID: 88}}
-var steps1575 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1268, ID: 26}, {C: &cls1305, ID: 87}, {C: &cls1261, ID: 24}}
-var steps1576 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1268, ID: 26}, {C: &cls1305, ID: 87}}
-var steps1577 = []rt.ClassStep{{C: &cls1298, ID: 88}, {C: &cls1274, ID: 73}, {C: &cls1259, ID: 14}, {C: &cls1265, ID: 83}, {C: &cls1261, ID: 24}}
-var steps1578 = []rt.ClassStep{{C: &cls1298, ID: 88}, {C: &cls1274, ID: 73}, {C: &cls1259, ID: 14}, {C: &cls1265, ID: 83}}
-var steps1579 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1259, ID: 14}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}}
-var steps1580 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}, {C: &cls1259, ID: 14}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}}
-var steps1581 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1290, ID: 79}, {C: &cls1261, ID: 24}}
-var steps1582 = []rt.ClassStep{{C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1290, ID: 79}}
-var steps1583 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1264, ID: 30}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}, {C: &cls1264, ID: 30}, {C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1290, ID: 79}, {C: &cls1261, ID: 24}}
-var steps1584 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1264, ID: 30}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}, {C: &cls1264, ID: 30}, {C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1290, ID: 79}}
-var steps1585 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1264, ID: 30}, {C: &cls1271, ID: 25}, {C: &cls1265, ID: 83}, {C: &cls1274, ID: 73}, {C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1290, ID: 79}, {C: &cls1261, ID: 24}}
-var steps1586 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1264, ID: 30}, {C: &cls1271, ID: 25}, {C: &cls1265, ID: 83}, {C: &cls1274, ID: 73}, {C: &cls1261, ID: 24}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1290, ID: 79}}
-var steps1587 = []rt.ClassStep{{C: &cls1277, ID: 89}, {C: &cls1270, ID: 23}, {C: &cls1270, ID: 23}, {C: &cls1280, ID: 92}, {C: &cls1261, ID: 24}}
-var steps1588 = []rt.ClassStep{{C: &cls1277, ID: 89}, {C: &cls1270, ID: 23}, {C: &cls1270, ID: 23}, {C: &cls1280, ID: 92}}
-var steps1589 = []rt.ClassStep{{C: &cls1386, ID: 90}, {C: &cls1259, ID: 14}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}, {C: &cls1261, ID: 24}}
-var steps1590 = []rt.ClassStep{{C: &cls1386, ID: 90}, {C: &cls1259, ID: 14}, {C: &cls1268, ID: 26}, {C: &cls1265, ID: 83}, {C: &cls1266, ID: 86}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}}
-var steps1591 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1268, ID: 26}, {C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}}
-var steps1592 = []rt.ClassStep{{C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1271, ID: 25}, {C: &cls1268, ID: 26}, {C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}}
-var steps1593 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}, {C: &cls1259, ID: 14}, {C: &cls1265, ID: 83}, {C: &cls1264, ID: 30}, {C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}}
-var steps1594 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1266, ID: 86}, {C: &cls1259, ID: 14}, {C: &cls1265, ID: 83}, {C: &cls1305, ID: 87}}
-var steps1595 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1264, ID: 30}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1258, ID: 16}, {C: &cls1264, ID: 30}, {C: &cls1268, ID: 26}}
-var steps1596 = []rt.ClassStep{{C: &cls1283, ID: 82}, {C: &cls1264, ID: 30}, {C: &cls1260, ID: 18}, {C: &cls1260, ID: 18}, {C: &cls1270, ID: 23}, {C: &cls1258, ID: 16}, {C: &cls1258, ID: 16}, {C: &cls1264, ID: 30}, {C: &cls1259, ID: 14}, {C: &cls1283, ID: 82}}
-var steps1597 = []rt.ClassStep{{C: &cls1272, ID: 27}, {C: &cls1264, ID: 30}, {C: &cls1304, ID: 80}, {C: &cls1274, ID: 73}, {C: &cls1266, ID: 86}}
-var steps1598 = []rt.ClassStep{{C: &cls1277, ID: 89}, {C: &cls1264, ID: 30}, {C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}}
-var steps1599 = []rt.ClassStep{{C: &cls1260, ID: 18}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}, {C: &cls1306, ID: 72}, {C: &cls1270, ID: 23}, {C: &cls1265, ID: 83}}
-var steps1600 = []rt.ClassStep{{C: &cls1259, ID: 14}, {C: &cls1258, ID: 16}, {C: &cls1272, ID: 27}, {C: &cls1264, ID: 30}, {C: &cls1304, ID: 80}, {C: &cls1274, ID: 73}, {C: &cls1266, ID: 86}}
-var steps1601 = []rt.ClassStep{{C: &cls1561, ID: 93}, {C: &cls1274, ID: 73}, {C: &cls1264, ID: 30}, {C: &cls1258, ID: 16}}
-var steps1602 = []rt.ClassStep{{C: &cls1268, ID: 26}, {C: &cls1271, ID: 25}, {C: &cls1266, ID: 86}, {C: &cls1264, ID: 30}, {C: &cls1274, ID: 73}, {C: &cls1258, ID: 16}}
-var steps1603 = []rt.ClassStep{{C: &cls1265, ID: 83}, {C: &cls1270, ID: 23}, {C: &cls1261, ID: 24}, {C: &cls1266, ID: 86}, {C: &cls1265, ID: 83}, {C: &cls1264, ID: 30}, {C: &cls1271, ID: 25}, {C: &cls1266, ID: 86}}
-var steps1604 = []rt.ClassStep{{C: &cls1271, ID: 25}, {C: &cls1268, ID: 26}, {C: &cls1261, ID: 24}, {C: &cls1271, ID: 25}, {C: &cls1268, ID: 26}, {C: &cls1290, ID: 79}, {C: &cls1270, ID: 23}}
-var cls1618 = rt.Class{ASCII: [2]uint64{0x7000ac6200000000, 0x5000d2814000d281}}
-var cls1620 = rt.Class{ASCII: [2]uint64{0x0, 0x8520000085200}}
-var cls1626 = rt.Class{ASCII: [2]uint64{0x7000ac6200000000, 0x5000800140008001}}
-var lit1635 = []rune("::")
+var scope1241 = []string{"n"}
+var cls1246 = rt.Class{ASCII: [2]uint64{0x3ff001000000000, 0x7fffffe87fffffe}, Wide: []rune{128, 159, 161, 8191, 8204, 8238, 8240, 8286, 8289, 12287, 12289, 65278, 65280, 1114111}}
+var cls1247 = rt.Class{ASCII: [2]uint64{0x0, 0x400000004000}}
+var cls1248 = rt.Class{ASCII: [2]uint64{0x0, 0x20000000200000}}
+var cls1249 = rt.Class{ASCII: [2]uint64{0x0, 0x100000001000}}
+var cls1250 = rt.Class{ASCII: [2]uint64{0x0, 0x8000000080000}}
+var steps1251 = []rt.ClassStep{{C: &cls1247, ID: 16}, {C: &cls1248, ID: 14}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}, {C: &cls1250, ID: 24}}
+var cls1252 = rt.Class{ASCII: [2]uint64{0x0, 0x4000000040}}
+var cls1253 = rt.Class{ASCII: [2]uint64{0x0, 0x20000000200}}
+var cls1254 = rt.Class{ASCII: [2]uint64{0x0, 0x4000000040000}}
+var cls1255 = rt.Class{ASCII: [2]uint64{0x0, 0x10000000100000}}
+var steps1256 = []rt.ClassStep{{C: &cls1252, ID: 17}, {C: &cls1253, ID: 30}, {C: &cls1254, ID: 83}, {C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}}
+var cls1257 = rt.Class{ASCII: [2]uint64{0x0, 0x200000002}}
+var steps1258 = []rt.ClassStep{{C: &cls1249, ID: 18}, {C: &cls1257, ID: 26}, {C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}}
+var cls1259 = rt.Class{ASCII: [2]uint64{0x0, 0x2000000020}}
+var cls1260 = rt.Class{ASCII: [2]uint64{0x0, 0x800000008}}
+var cls1261 = rt.Class{ASCII: [2]uint64{0x0, 0x1000000010000}}
+var steps1262 = []rt.ClassStep{{C: &cls1248, ID: 14}, {C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}, {C: &cls1260, ID: 25}, {C: &cls1257, ID: 26}, {C: &cls1261, ID: 27}, {C: &cls1259, ID: 23}}
+var cls1263 = rt.Class{ASCII: [2]uint64{0x0, 0x800000008000}}
+var steps1264 = []rt.ClassStep{{C: &cls1247, ID: 16}, {C: &cls1263, ID: 73}, {C: &cls1255, ID: 86}}
+var cls1265 = rt.Class{ASCII: [2]uint64{0x0, 0x400000004}}
+var cls1266 = rt.Class{ASCII: [2]uint64{0x0, 0x80000000800000}}
+var steps1267 = []rt.ClassStep{{C: &cls1265, ID: 29}, {C: &cls1259, ID: 23}, {C: &cls1255, ID: 86}, {C: &cls1266, ID: 89}, {C: &cls1259, ID: 23}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}}
+var steps1268 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}}
+var cls1269 = rt.Class{ASCII: [2]uint64{0x0, 0x80000000800}}
+var steps1270 = []rt.ClassStep{{C: &cls1249, ID: 18}, {C: &cls1253, ID: 30}, {C: &cls1269, ID: 92}, {C: &cls1259, ID: 23}}
+var steps1271 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1249, ID: 18}, {C: &cls1253, ID: 30}, {C: &cls1269, ID: 92}, {C: &cls1259, ID: 23}}
+var cls1272 = rt.Class{ASCII: [2]uint64{0x0, 0x200000002000}}
+var steps1273 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1253, ID: 30}, {C: &cls1272, ID: 82}, {C: &cls1253, ID: 30}, {C: &cls1249, ID: 18}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}}
+var cls1274 = rt.Class{ASCII: [2]uint64{0x7000ac6200000000, 0x5000000140000001}}
+var cls1275 = rt.Class{ASCII: [2]uint64{0x7000ac0000000000, 0x0}}
+var cls1276 = rt.Class{ASCII: [2]uint64{0x6200000000, 0x5000000140000001}}
+var cls1277 = rt.Class{ASCII: [2]uint64{0x7000840000000000, 0x0}}
+var steps1278 = []rt.ClassStep{{C: &cls1263, ID: 73}, {C: &cls1254, ID: 83}}
+var cls1279 = rt.Class{ASCII: [2]uint64{0x0, 0x1000000010}}
+var steps1280 = []rt.ClassStep{{C: &cls1257, ID: 26}, {C: &cls1247, ID: 16}, {C: &cls1279, ID: 79}}
+var steps1281 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1263, ID: 73}}
+var steps1282 = []rt.ClassStep{{C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}, {C: &cls1260, ID: 25}, {C: &cls1257, ID: 26}, {C: &cls1261, ID: 27}, {C: &cls1259, ID: 23}}
+var steps1283 = []rt.ClassStep{{C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}}
+var steps1284 = []rt.ClassStep{{C: &cls1263, ID: 73}, {C: &cls1261, ID: 27}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1263, ID: 73}, {C: &cls1254, ID: 83}}
+var steps1285 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1263, ID: 73}, {C: &cls1248, ID: 14}, {C: &cls1265, ID: 29}, {C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}}
+var steps1286 = []rt.ClassStep{{C: &cls1261, ID: 27}, {C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1253, ID: 30}, {C: &cls1250, ID: 24}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}}
+var cls1287 = rt.Class{ASCII: [2]uint64{0x0, 0x10000000100}}
+var steps1288 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1287, ID: 88}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1257, ID: 26}, {C: &cls1260, ID: 25}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}}
+var steps1289 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1287, ID: 88}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}}
+var steps1290 = []rt.ClassStep{{C: &cls1247, ID: 16}, {C: &cls1260, ID: 25}, {C: &cls1287, ID: 88}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}}
+var steps1291 = []rt.ClassStep{{C: &cls1247, ID: 16}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}}
+var steps1292 = []rt.ClassStep{{C: &cls1265, ID: 29}, {C: &cls1253, ID: 30}, {C: &cls1255, ID: 86}}
+var cls1293 = rt.Class{ASCII: [2]uint64{0x0, 0x40000000400000}}
+var cls1294 = rt.Class{ASCII: [2]uint64{0x0, 0x200000002000000}}
+var cls1295 = rt.Class{ASCII: [2]uint64{0x0, 0x8000000080}}
+var steps1296 = []rt.ClassStep{{C: &cls1293, ID: 80}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1294, ID: 87}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1295, ID: 72}}
+var steps1297 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1293, ID: 80}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}}
+var steps1298 = []rt.ClassStep{{C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1254, ID: 83}, {C: &cls1257, ID: 26}, {C: &cls1294, ID: 87}}
+var steps1299 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1257, ID: 26}, {C: &cls1261, ID: 27}}
+var steps1300 = []rt.ClassStep{{C: &cls1252, ID: 17}, {C: &cls1263, ID: 73}, {C: &cls1254, ID: 83}}
+var steps1301 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1252, ID: 17}}
+var steps1302 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1257, ID: 26}, {C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}}
+var steps1303 = []rt.ClassStep{{C: &cls1266, ID: 89}, {C: &cls1287, ID: 88}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}}
+var steps1304 = []rt.ClassStep{{C: &cls1259, ID: 23}, {C: &cls1249, ID: 18}, {C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}}
+var steps1305 = []rt.ClassStep{{C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1279, ID: 79}}
+var steps1306 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1287, ID: 88}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}}
+var steps1307 = []rt.ClassStep{{C: &cls1254, ID: 83}, {C: &cls1263, ID: 73}, {C: &cls1266, ID: 89}}
+var steps1308 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1252, ID: 17}, {C: &cls1257, ID: 26}, {C: &cls1248, ID: 14}, {C: &cls1249, ID: 18}, {C: &cls1255, ID: 86}}
+var steps1309 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1249, ID: 18}, {C: &cls1248, ID: 14}, {C: &cls1272, ID: 82}, {C: &cls1247, ID: 16}, {C: &cls1250, ID: 24}}
+var steps1310 = []rt.ClassStep{{C: &cls1248, ID: 14}, {C: &cls1247, ID: 16}, {C: &cls1261, ID: 27}, {C: &cls1257, ID: 26}, {C: &cls1260, ID: 25}, {C: &cls1269, ID: 92}}
+var steps1311 = []rt.ClassStep{{C: &cls1249, ID: 18}, {C: &cls1257, ID: 26}, {C: &cls1272, ID: 82}, {C: &cls1265, ID: 29}, {C: &cls1279, ID: 79}, {C: &cls1257, ID: 26}}
+var cls1312 = rt.Class{ASCII: [2]uint64{0x0, 0x100000001000000}}
+var steps1313 = []rt.ClassStep{{C: &cls1259, ID: 23}, {C: &cls1312, ID: 96}, {C: &cls1260, ID: 25}, {C: &cls1249, ID: 18}, {C: &cls1248, ID: 14}, {C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}}
+var steps1314 = []rt.ClassStep{{C: &cls1257, ID: 26}, {C: &cls1250, ID: 24}}
+var steps1315 = []rt.ClassStep{{C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1261, ID: 27}, {C: &cls1249, ID: 18}, {C: &cls1257, ID: 26}, {C: &cls1260, ID: 25}, {C: &cls1259, ID: 23}}
+var steps1316 = []rt.ClassStep{{C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1257, ID: 26}, {C: &cls1272, ID: 82}, {C: &cls1259, ID: 23}}
+var steps1317 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1254, ID: 83}, {C: &cls1248, ID: 14}, {C: &cls1259, ID: 23}}
+var steps1318 = []rt.ClassStep{{C: &cls1252, ID: 17}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}}
+var steps1319 = []rt.ClassStep{{C: &cls1247, ID: 16}, {C: &cls1248, ID: 14}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}}
+var steps1320 = []rt.ClassStep{{C: &cls1259, ID: 23}, {C: &cls1312, ID: 96}, {C: &cls1253, ID: 30}, {C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}, {C: &cls1250, ID: 24}}
+var steps1321 = []rt.ClassStep{{C: &cls1295, ID: 72}, {C: &cls1254, ID: 83}, {C: &cls1263, ID: 73}, {C: &cls1248, ID: 14}, {C: &cls1261, ID: 27}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1295, ID: 72}}
+var steps1322 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1279, ID: 79}}
+var steps1323 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1257, ID: 26}, {C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}}
+var steps1324 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1254, ID: 83}, {C: &cls1294, ID: 87}}
+var steps1325 = []rt.ClassStep{{C: &cls1252, ID: 17}, {C: &cls1254, ID: 83}, {C: &cls1263, ID: 73}, {C: &cls1272, ID: 82}}
+var steps1326 = []rt.ClassStep{{C: &cls1261, ID: 27}, {C: &cls1249, ID: 18}, {C: &cls1257, ID: 26}, {C: &cls1260, ID: 25}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1295, ID: 72}}
+var steps1327 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}}
+var steps1328 = []rt.ClassStep{{C: &cls1293, ID: 80}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1253, ID: 30}, {C: &cls1257, ID: 26}, {C: &cls1279, ID: 79}, {C: &cls1253, ID: 30}, {C: &cls1260, ID: 25}}
+var steps1329 = []rt.ClassStep{{C: &cls1266, ID: 89}, {C: &cls1253, ID: 30}, {C: &cls1255, ID: 86}, {C: &cls1287, ID: 88}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}}
+var steps1330 = []rt.ClassStep{{C: &cls1295, ID: 72}, {C: &cls1254, ID: 83}, {C: &cls1263, ID: 73}, {C: &cls1248, ID: 14}, {C: &cls1261, ID: 27}}
+var steps1331 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1295, ID: 72}, {C: &cls1247, ID: 16}, {C: &cls1263, ID: 73}, {C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}}
+var steps1332 = []rt.ClassStep{{C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}, {C: &cls1261, ID: 27}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1255, ID: 86}}
+var steps1333 = []rt.ClassStep{{C: &cls1252, ID: 17}, {C: &cls1253, ID: 30}, {C: &cls1249, ID: 18}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}}
+var steps1334 = []rt.ClassStep{{C: &cls1266, ID: 89}, {C: &cls1287, ID: 88}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}}
+var steps1335 = []rt.ClassStep{{C: &cls1263, ID: 73}, {C: &cls1293, ID: 80}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}}
+var steps1336 = []rt.ClassStep{{C: &cls1261, ID: 27}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}}
+var steps1337 = []rt.ClassStep{{C: &cls1254, ID: 83}, {C: &cls1257, ID: 26}, {C: &cls1247, ID: 16}, {C: &cls1295, ID: 72}, {C: &cls1259, ID: 23}}
+var steps1338 = []rt.ClassStep{{C: &cls1254, ID: 83}, {C: &cls1263, ID: 73}, {C: &cls1266, ID: 89}, {C: &cls1250, ID: 24}}
+var steps1339 = []rt.ClassStep{{C: &cls1295, ID: 72}, {C: &cls1254, ID: 83}, {C: &cls1263, ID: 73}, {C: &cls1248, ID: 14}, {C: &cls1261, ID: 27}, {C: &cls1250, ID: 24}}
+var steps1340 = []rt.ClassStep{{C: &cls1265, ID: 29}, {C: &cls1294, ID: 87}}
+var steps1341 = []rt.ClassStep{{C: &cls1248, ID: 14}, {C: &cls1247, ID: 16}, {C: &cls1265, ID: 29}, {C: &cls1263, ID: 73}, {C: &cls1248, ID: 14}, {C: &cls1247, ID: 16}, {C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1279, ID: 79}}
+var steps1342 = []rt.ClassStep{{C: &cls1261, ID: 27}, {C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1259, ID: 23}, {C: &cls1279, ID: 79}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1295, ID: 72}}
+var steps1343 = []rt.ClassStep{{C: &cls1252, ID: 17}, {C: &cls1263, ID: 73}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}, {C: &cls1263, ID: 73}, {C: &cls1266, ID: 89}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1295, ID: 72}}
+var steps1344 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1248, ID: 14}, {C: &cls1254, ID: 83}, {C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}}
+var steps1345 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}}
+var steps1346 = []rt.ClassStep{{C: &cls1247, ID: 16}, {C: &cls1263, ID: 73}}
+var steps1347 = []rt.ClassStep{{C: &cls1263, ID: 73}, {C: &cls1255, ID: 86}, {C: &cls1287, ID: 88}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1250, ID: 24}}
+var steps1348 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1255, ID: 86}, {C: &cls1263, ID: 73}, {C: &cls1252, ID: 17}}
+var steps1349 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}, {C: &cls1254, ID: 83}, {C: &cls1248, ID: 14}, {C: &cls1260, ID: 25}, {C: &cls1255, ID: 86}}
+var steps1350 = []rt.ClassStep{{C: &cls1248, ID: 14}, {C: &cls1247, ID: 16}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}}
+var steps1351 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1272, ID: 82}, {C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}, {C: &cls1257, ID: 26}, {C: &cls1272, ID: 82}, {C: &cls1261, ID: 27}}
+var steps1352 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1272, ID: 82}, {C: &cls1259, ID: 23}}
+var steps1353 = []rt.ClassStep{{C: &cls1266, ID: 89}, {C: &cls1253, ID: 30}, {C: &cls1255, ID: 86}, {C: &cls1287, ID: 88}}
+var steps1354 = []rt.ClassStep{{C: &cls1266, ID: 89}, {C: &cls1253, ID: 30}, {C: &cls1255, ID: 86}, {C: &cls1287, ID: 88}, {C: &cls1263, ID: 73}, {C: &cls1248, ID: 14}, {C: &cls1255, ID: 86}}
+var cls1355 = rt.Class{ASCII: [2]uint64{0x0, 0x400000004000000}}
+var steps1356 = []rt.ClassStep{{C: &cls1355, ID: 95}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1259, ID: 23}}
+var steps1357 = []rt.ClassStep{{C: &cls1293, ID: 80}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1260, ID: 25}, {C: &cls1287, ID: 88}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}}
+var steps1358 = []rt.ClassStep{{C: &cls1252, ID: 17}, {C: &cls1249, ID: 18}, {C: &cls1263, ID: 73}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}}
+var steps1359 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1253, ID: 30}, {C: &cls1272, ID: 82}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}}
+var steps1360 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}}
+var steps1361 = []rt.ClassStep{{C: &cls1247, ID: 16}, {C: &cls1248, ID: 14}, {C: &cls1272, ID: 82}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1253, ID: 30}, {C: &cls1260, ID: 25}}
+var steps1362 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1295, ID: 72}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}}
+var steps1363 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}}
+var steps1364 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1272, ID: 82}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}}
+var steps1365 = []rt.ClassStep{{C: &cls1265, ID: 29}, {C: &cls1253, ID: 30}, {C: &cls1295, ID: 72}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}}
+var steps1366 = []rt.ClassStep{{C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}}
+var steps1367 = []rt.ClassStep{{C: &cls1265, ID: 29}, {C: &cls1263, ID: 73}, {C: &cls1263, ID: 73}, {C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}, {C: &cls1257, ID: 26}, {C: &cls1247, ID: 16}}
+var steps1368 = []rt.ClassStep{{C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1248, ID: 14}, {C: &cls1254, ID: 83}, {C: &cls1250, ID: 24}, {C: &cls1253, ID: 30}, {C: &cls1293, ID: 80}, {C: &cls1259, ID: 23}}
+var steps1369 = []rt.ClassStep{{C: &cls1248, ID: 14}, {C: &cls1250, ID: 24}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1295, ID: 72}}
+var steps1370 = []rt.ClassStep{{C: &cls1269, ID: 92}, {C: &cls1259, ID: 23}, {C: &cls1294, ID: 87}}
+var steps1371 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1253, ID: 30}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1253, ID: 30}, {C: &cls1355, ID: 95}, {C: &cls1259, ID: 23}, {C: &cls1279, ID: 79}}
+var steps1372 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1255, ID: 86}}
+var steps1373 = []rt.ClassStep{{C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}}
+var steps1374 = []rt.ClassStep{{C: &cls1287, ID: 88}, {C: &cls1257, ID: 26}, {C: &cls1293, ID: 80}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1295, ID: 72}}
+var cls1375 = rt.Class{ASCII: [2]uint64{0x0, 0x2000000020000}}
+var steps1376 = []rt.ClassStep{{C: &cls1375, ID: 90}, {C: &cls1248, ID: 14}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1253, ID: 30}, {C: &cls1252, ID: 17}, {C: &cls1294, ID: 87}}
+var steps1377 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1253, ID: 30}, {C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1260, ID: 25}, {C: &cls1255, ID: 86}}
+var steps1378 = []rt.ClassStep{{C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}}
+var steps1379 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}, {C: &cls1263, ID: 73}}
+var steps1380 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1272, ID: 82}, {C: &cls1261, ID: 27}, {C: &cls1263, ID: 73}, {C: &cls1254, ID: 83}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1294, ID: 87}}
+var steps1381 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1272, ID: 82}, {C: &cls1261, ID: 27}}
+var steps1382 = []rt.ClassStep{{C: &cls1249, ID: 18}, {C: &cls1263, ID: 73}, {C: &cls1260, ID: 25}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}}
+var steps1383 = []rt.ClassStep{{C: &cls1295, ID: 72}, {C: &cls1249, ID: 18}, {C: &cls1263, ID: 73}, {C: &cls1265, ID: 29}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}}
+var steps1384 = []rt.ClassStep{{C: &cls1248, ID: 14}, {C: &cls1247, ID: 16}, {C: &cls1249, ID: 18}, {C: &cls1263, ID: 73}, {C: &cls1295, ID: 72}, {C: &cls1295, ID: 72}, {C: &cls1259, ID: 23}, {C: &cls1279, ID: 79}}
+var steps1385 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1257, ID: 26}, {C: &cls1265, ID: 29}, {C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}}
+var steps1386 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1248, ID: 14}, {C: &cls1265, ID: 29}, {C: &cls1259, ID: 23}}
+var steps1387 = []rt.ClassStep{{C: &cls1254, ID: 83}, {C: &cls1263, ID: 73}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}, {C: &cls1248, ID: 14}, {C: &cls1261, ID: 27}}
+var steps1388 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1255, ID: 86}, {C: &cls1250, ID: 24}}
+var steps1389 = []rt.ClassStep{{C: &cls1266, ID: 89}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1279, ID: 79}, {C: &cls1263, ID: 73}, {C: &cls1266, ID: 89}}
+var steps1390 = []rt.ClassStep{{C: &cls1293, ID: 80}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1248, ID: 14}, {C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}}
+var steps1391 = []rt.ClassStep{{C: &cls1247, ID: 16}, {C: &cls1257, ID: 26}, {C: &cls1272, ID: 82}, {C: &cls1259, ID: 23}}
+var steps1392 = []rt.ClassStep{{C: &cls1293, ID: 80}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1248, ID: 14}, {C: &cls1259, ID: 23}}
+var steps1393 = []rt.ClassStep{{C: &cls1263, ID: 73}, {C: &cls1254, ID: 83}, {C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}}
+var steps1394 = []rt.ClassStep{{C: &cls1247, ID: 16}, {C: &cls1259, ID: 23}, {C: &cls1312, ID: 96}, {C: &cls1255, ID: 86}}
+var steps1395 = []rt.ClassStep{{C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1249, ID: 18}, {C: &cls1294, ID: 87}}
+var steps1396 = []rt.ClassStep{{C: &cls1263, ID: 73}, {C: &cls1252, ID: 17}, {C: &cls1252, ID: 17}, {C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1255, ID: 86}}
+var steps1397 = []rt.ClassStep{{C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1257, ID: 26}, {C: &cls1279, ID: 79}}
+var steps1398 = []rt.ClassStep{{C: &cls1248, ID: 14}, {C: &cls1261, ID: 27}, {C: &cls1279, ID: 79}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}}
+var steps1399 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1287, ID: 88}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}}
+var steps1400 = []rt.ClassStep{{C: &cls1263, ID: 73}, {C: &cls1252, ID: 17}}
+var steps1401 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1269, ID: 92}, {C: &cls1253, ID: 30}, {C: &cls1261, ID: 27}}
+var steps1402 = []rt.ClassStep{{C: &cls1249, ID: 18}, {C: &cls1263, ID: 73}, {C: &cls1260, ID: 25}, {C: &cls1269, ID: 92}, {C: &cls1259, ID: 23}, {C: &cls1279, ID: 79}}
+var steps1403 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1257, ID: 26}, {C: &cls1272, ID: 82}, {C: &cls1261, ID: 27}, {C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}}
+var steps1404 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1257, ID: 26}, {C: &cls1265, ID: 29}, {C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}, {C: &cls1257, ID: 26}, {C: &cls1272, ID: 82}, {C: &cls1261, ID: 27}, {C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}}
+var steps1405 = []rt.ClassStep{{C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1261, ID: 27}, {C: &cls1259, ID: 23}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1257, ID: 26}, {C: &cls1265, ID: 29}, {C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}}
+var steps1406 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1254, ID: 83}, {C: &cls1263, ID: 73}, {C: &cls1250, ID: 24}, {C: &cls1250, ID: 24}}
+var steps1407 = []rt.ClassStep{{C: &cls1247, ID: 16}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1248, ID: 14}, {C: &cls1254, ID: 83}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}}
+var steps1408 = []rt.ClassStep{{C: &cls1261, ID: 27}, {C: &cls1263, ID: 73}, {C: &cls1250, ID: 24}, {C: &cls1253, ID: 30}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}}
+var steps1409 = []rt.ClassStep{{C: &cls1257, ID: 26}, {C: &cls1250, ID: 24}, {C: &cls1263, ID: 73}, {C: &cls1252, ID: 17}}
+var steps1410 = []rt.ClassStep{{C: &cls1252, ID: 17}, {C: &cls1248, ID: 14}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}}
+var steps1411 = []rt.ClassStep{{C: &cls1263, ID: 73}, {C: &cls1248, ID: 14}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}}
+var steps1412 = []rt.ClassStep{{C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}, {C: &cls1252, ID: 17}, {C: &cls1255, ID: 86}}
+var steps1413 = []rt.ClassStep{{C: &cls1254, ID: 83}, {C: &cls1253, ID: 30}, {C: &cls1295, ID: 72}, {C: &cls1287, ID: 88}, {C: &cls1255, ID: 86}}
+var steps1414 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1272, ID: 82}, {C: &cls1253, ID: 30}}
+var steps1415 = []rt.ClassStep{{C: &cls1257, ID: 26}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}}
+var steps1416 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1247, ID: 16}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}}
+var steps1417 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1260, ID: 25}, {C: &cls1249, ID: 18}, {C: &cls1248, ID: 14}, {C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}}
+var steps1418 = []rt.ClassStep{{C: &cls1293, ID: 80}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1250, ID: 24}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}}
+var steps1419 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}}
+var steps1420 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1255, ID: 86}}
+var steps1421 = []rt.ClassStep{{C: &cls1261, ID: 27}, {C: &cls1263, ID: 73}, {C: &cls1250, ID: 24}, {C: &cls1253, ID: 30}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}}
+var steps1422 = []rt.ClassStep{{C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1255, ID: 86}, {C: &cls1248, ID: 14}, {C: &cls1254, ID: 83}, {C: &cls1247, ID: 16}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1295, ID: 72}}
+var steps1423 = []rt.ClassStep{{C: &cls1263, ID: 73}, {C: &cls1293, ID: 80}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1254, ID: 83}, {C: &cls1253, ID: 30}, {C: &cls1279, ID: 79}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1295, ID: 72}}
+var steps1424 = []rt.ClassStep{{C: &cls1248, ID: 14}, {C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}}
+var steps1425 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1294, ID: 87}, {C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1272, ID: 82}}
+var steps1426 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1252, ID: 17}, {C: &cls1249, ID: 18}, {C: &cls1253, ID: 30}, {C: &cls1260, ID: 25}, {C: &cls1255, ID: 86}}
+var steps1427 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}, {C: &cls1254, ID: 83}, {C: &cls1257, ID: 26}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}}
+var steps1428 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1263, ID: 73}}
+var steps1429 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1255, ID: 86}}
+var steps1430 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}}
+var steps1431 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1254, ID: 83}, {C: &cls1248, ID: 14}, {C: &cls1247, ID: 16}, {C: &cls1260, ID: 25}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}}
+var steps1432 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1295, ID: 72}, {C: &cls1259, ID: 23}}
+var steps1433 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1260, ID: 25}, {C: &cls1287, ID: 88}, {C: &cls1259, ID: 23}, {C: &cls1279, ID: 79}}
+var steps1434 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1263, ID: 73}, {C: &cls1248, ID: 14}, {C: &cls1254, ID: 83}, {C: &cls1260, ID: 25}, {C: &cls1259, ID: 23}}
+var steps1435 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1295, ID: 72}, {C: &cls1259, ID: 23}, {C: &cls1255, ID: 86}}
+var steps1436 = []rt.ClassStep{{C: &cls1247, ID: 16}, {C: &cls1263, ID: 73}, {C: &cls1255, ID: 86}, {C: &cls1287, ID: 88}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1295, ID: 72}}
+var steps1437 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}}
+var steps1438 = []rt.ClassStep{{C: &cls1261, ID: 27}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1259, ID: 23}, {C: &cls1279, ID: 79}}
+var steps1439 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1263, ID: 73}, {C: &cls1254, ID: 83}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1279, ID: 79}}
+var steps1440 = []rt.ClassStep{{C: &cls1263, ID: 73}, {C: &cls1253, ID: 30}, {C: &cls1279, ID: 79}, {C: &cls1250, ID: 24}}
+var steps1441 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1272, ID: 82}, {C: &cls1272, ID: 82}, {C: &cls1253, ID: 30}, {C: &cls1255, ID: 86}}
+var steps1442 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1254, ID: 83}, {C: &cls1263, ID: 73}, {C: &cls1261, ID: 27}}
+var steps1443 = []rt.ClassStep{{C: &cls1261, ID: 27}, {C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1293, ID: 80}, {C: &cls1259, ID: 23}}
+var steps1444 = []rt.ClassStep{{C: &cls1247, ID: 16}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1259, ID: 23}}
+var steps1445 = []rt.ClassStep{{C: &cls1295, ID: 72}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1279, ID: 79}}
+var steps1446 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1255, ID: 86}, {C: &cls1294, ID: 87}}
+var steps1447 = []rt.ClassStep{{C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1266, ID: 89}, {C: &cls1257, ID: 26}, {C: &cls1294, ID: 87}, {C: &cls1250, ID: 24}}
+var steps1448 = []rt.ClassStep{{C: &cls1261, ID: 27}, {C: &cls1254, ID: 83}, {C: &cls1253, ID: 30}, {C: &cls1272, ID: 82}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1294, ID: 87}}
+var steps1449 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1287, ID: 88}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1253, ID: 30}, {C: &cls1255, ID: 86}}
+var steps1450 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1272, ID: 82}, {C: &cls1261, ID: 27}, {C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}, {C: &cls1250, ID: 24}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}}
+var steps1451 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1252, ID: 17}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1254, ID: 83}, {C: &cls1257, ID: 26}, {C: &cls1265, ID: 29}, {C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}}
+var steps1452 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1253, ID: 30}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}, {C: &cls1294, ID: 87}}
+var steps1453 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1252, ID: 17}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1279, ID: 79}}
+var steps1454 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1272, ID: 82}, {C: &cls1272, ID: 82}, {C: &cls1259, ID: 23}, {C: &cls1279, ID: 79}, {C: &cls1253, ID: 30}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}}
+var steps1455 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1260, ID: 25}, {C: &cls1287, ID: 88}}
+var steps1456 = []rt.ClassStep{{C: &cls1261, ID: 27}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}}
+var steps1457 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1253, ID: 30}, {C: &cls1272, ID: 82}, {C: &cls1261, ID: 27}, {C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}}
+var steps1458 = []rt.ClassStep{{C: &cls1293, ID: 80}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1253, ID: 30}, {C: &cls1279, ID: 79}}
+var steps1459 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1312, ID: 96}}
+var steps1460 = []rt.ClassStep{{C: &cls1252, ID: 17}, {C: &cls1263, ID: 73}, {C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1253, ID: 30}, {C: &cls1295, ID: 72}, {C: &cls1247, ID: 16}}
+var steps1461 = []rt.ClassStep{{C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1252, ID: 17}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1260, ID: 25}, {C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}}
+var steps1462 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1260, ID: 25}, {C: &cls1249, ID: 18}, {C: &cls1248, ID: 14}, {C: &cls1279, ID: 79}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1295, ID: 72}}
+var steps1463 = []rt.ClassStep{{C: &cls1259, ID: 23}, {C: &cls1312, ID: 96}, {C: &cls1260, ID: 25}, {C: &cls1249, ID: 18}, {C: &cls1248, ID: 14}, {C: &cls1279, ID: 79}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1295, ID: 72}}
+var steps1464 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1272, ID: 82}, {C: &cls1272, ID: 82}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}, {C: &cls1250, ID: 24}}
+var steps1465 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}, {C: &cls1254, ID: 83}, {C: &cls1257, ID: 26}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}, {C: &cls1250, ID: 24}}
+var steps1466 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1252, ID: 17}, {C: &cls1257, ID: 26}, {C: &cls1248, ID: 14}, {C: &cls1249, ID: 18}, {C: &cls1255, ID: 86}, {C: &cls1250, ID: 24}}
+var steps1467 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1312, ID: 96}, {C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}}
+var steps1468 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1260, ID: 25}, {C: &cls1250, ID: 24}}
+var steps1469 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}, {C: &cls1263, ID: 73}, {C: &cls1254, ID: 83}, {C: &cls1257, ID: 26}, {C: &cls1295, ID: 72}, {C: &cls1259, ID: 23}}
+var steps1470 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1257, ID: 26}}
+var steps1471 = []rt.ClassStep{{C: &cls1293, ID: 80}, {C: &cls1253, ID: 30}, {C: &cls1259, ID: 23}, {C: &cls1266, ID: 89}}
+var steps1472 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1257, ID: 26}, {C: &cls1250, ID: 24}, {C: &cls1260, ID: 25}, {C: &cls1257, ID: 26}, {C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1279, ID: 79}}
+var steps1473 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1287, ID: 88}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1269, ID: 92}}
+var steps1474 = []rt.ClassStep{{C: &cls1263, ID: 73}, {C: &cls1261, ID: 27}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}}
+var steps1475 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1260, ID: 25}, {C: &cls1287, ID: 88}, {C: &cls1259, ID: 23}, {C: &cls1272, ID: 82}, {C: &cls1257, ID: 26}}
+var steps1476 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1375, ID: 90}, {C: &cls1248, ID: 14}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1260, ID: 25}, {C: &cls1259, ID: 23}}
+var steps1477 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1257, ID: 26}, {C: &cls1260, ID: 25}, {C: &cls1287, ID: 88}, {C: &cls1259, ID: 23}}
+var steps1478 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1260, ID: 25}, {C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1272, ID: 82}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}}
+var steps1479 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1257, ID: 26}, {C: &cls1312, ID: 96}, {C: &cls1293, ID: 80}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1248, ID: 14}, {C: &cls1259, ID: 23}}
+var steps1480 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1293, ID: 80}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1248, ID: 14}, {C: &cls1259, ID: 23}}
+var steps1481 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1255, ID: 86}}
+var steps1482 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1294, ID: 87}, {C: &cls1260, ID: 25}, {C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}}
+var steps1483 = []rt.ClassStep{{C: &cls1263, ID: 73}, {C: &cls1266, ID: 89}, {C: &cls1247, ID: 16}, {C: &cls1259, ID: 23}, {C: &cls1279, ID: 79}}
+var steps1484 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1294, ID: 87}, {C: &cls1261, ID: 27}, {C: &cls1259, ID: 23}}
+var steps1485 = []rt.ClassStep{{C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1248, ID: 14}, {C: &cls1272, ID: 82}}
+var steps1486 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1257, ID: 26}, {C: &cls1260, ID: 25}, {C: &cls1254, ID: 83}, {C: &cls1263, ID: 73}}
+var steps1487 = []rt.ClassStep{{C: &cls1261, ID: 27}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1250, ID: 24}, {C: &cls1253, ID: 30}, {C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}}
+var steps1488 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1255, ID: 86}}
+var steps1489 = []rt.ClassStep{{C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}}
+var steps1490 = []rt.ClassStep{{C: &cls1257, ID: 26}, {C: &cls1279, ID: 79}, {C: &cls1279, ID: 79}}
+var steps1491 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1249, ID: 18}, {C: &cls1248, ID: 14}, {C: &cls1272, ID: 82}, {C: &cls1247, ID: 16}}
+var steps1492 = []rt.ClassStep{{C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1255, ID: 86}}
+var steps1493 = []rt.ClassStep{{C: &cls1293, ID: 80}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1253, ID: 30}, {C: &cls1279, ID: 79}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}}
+var steps1494 = []rt.ClassStep{{C: &cls1249, ID: 18}, {C: &cls1263, ID: 73}, {C: &cls1295, ID: 72}, {C: &cls1295, ID: 72}, {C: &cls1259, ID: 23}, {C: &cls1279, ID: 79}}
+var steps1495 = []rt.ClassStep{{C: &cls1263, ID: 73}, {C: &cls1261, ID: 27}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1250, ID: 24}}
+var steps1496 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1257, ID: 26}, {C: &cls1265, ID: 29}, {C: &cls1257, ID: 26}, {C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}}
+var steps1497 = []rt.ClassStep{{C: &cls1261, ID: 27}, {C: &cls1263, ID: 73}, {C: &cls1249, ID: 18}, {C: &cls1253, ID: 30}, {C: &cls1260, ID: 25}, {C: &cls1294, ID: 87}}
+var steps1498 = []rt.ClassStep{{C: &cls1254, ID: 83}, {C: &cls1248, ID: 14}, {C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}}
+var steps1499 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1254, ID: 83}, {C: &cls1253, ID: 30}, {C: &cls1295, ID: 72}, {C: &cls1295, ID: 72}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}}
+var steps1500 = []rt.ClassStep{{C: &cls1252, ID: 17}, {C: &cls1248, ID: 14}, {C: &cls1247, ID: 16}, {C: &cls1260, ID: 25}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}}
+var steps1501 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1293, ID: 80}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1250, ID: 24}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}}
+var steps1502 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1312, ID: 96}, {C: &cls1255, ID: 86}}
+var steps1503 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1260, ID: 25}, {C: &cls1287, ID: 88}}
+var steps1504 = []rt.ClassStep{{C: &cls1261, ID: 27}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}}
+var steps1505 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1253, ID: 30}, {C: &cls1260, ID: 25}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1294, ID: 87}}
+var steps1506 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1272, ID: 82}, {C: &cls1261, ID: 27}, {C: &cls1249, ID: 18}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}}
+var steps1507 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1252, ID: 17}, {C: &cls1253, ID: 30}, {C: &cls1295, ID: 72}, {C: &cls1248, ID: 14}, {C: &cls1254, ID: 83}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}}
+var steps1508 = []rt.ClassStep{{C: &cls1257, ID: 26}, {C: &cls1260, ID: 25}, {C: &cls1260, ID: 25}, {C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}, {C: &cls1250, ID: 24}}
+var steps1509 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1259, ID: 23}, {C: &cls1255, ID: 86}, {C: &cls1287, ID: 88}, {C: &cls1263, ID: 73}, {C: &cls1279, ID: 79}}
+var steps1510 = []rt.ClassStep{{C: &cls1259, ID: 23}, {C: &cls1293, ID: 80}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}}
+var steps1511 = []rt.ClassStep{{C: &cls1259, ID: 23}, {C: &cls1312, ID: 96}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1250, ID: 24}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}}
+var steps1512 = []rt.ClassStep{{C: &cls1266, ID: 89}, {C: &cls1254, ID: 83}, {C: &cls1257, ID: 26}, {C: &cls1261, ID: 27}, {C: &cls1261, ID: 27}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}}
+var steps1513 = []rt.ClassStep{{C: &cls1261, ID: 27}, {C: &cls1248, ID: 14}, {C: &cls1265, ID: 29}, {C: &cls1249, ID: 18}, {C: &cls1253, ID: 30}, {C: &cls1260, ID: 25}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}}
+var steps1514 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1293, ID: 80}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}}
+var steps1515 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1261, ID: 27}, {C: &cls1294, ID: 87}}
+var steps1516 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}, {C: &cls1279, ID: 79}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}}
+var steps1517 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}, {C: &cls1279, ID: 79}, {C: &cls1263, ID: 73}, {C: &cls1248, ID: 14}, {C: &cls1255, ID: 86}}
+var steps1518 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1249, ID: 18}, {C: &cls1253, ID: 30}, {C: &cls1272, ID: 82}, {C: &cls1253, ID: 30}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1250, ID: 24}}
+var steps1519 = []rt.ClassStep{{C: &cls1252, ID: 17}, {C: &cls1263, ID: 73}, {C: &cls1254, ID: 83}, {C: &cls1260, ID: 25}, {C: &cls1259, ID: 23}}
+var steps1520 = []rt.ClassStep{{C: &cls1375, ID: 90}, {C: &cls1248, ID: 14}, {C: &cls1263, ID: 73}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}}
+var steps1521 = []rt.ClassStep{{C: &cls1259, ID: 23}, {C: &cls1312, ID: 96}, {C: &cls1261, ID: 27}, {C: &cls1263, ID: 73}, {C: &cls1254, ID: 83}, {C: &cls1255, ID: 86}}
+var steps1522 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1272, ID: 82}, {C: &cls1261, ID: 27}, {C: &cls1263, ID: 73}, {C: &cls1254, ID: 83}, {C: &cls1255, ID: 86}}
+var steps1523 = []rt.ClassStep{{C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1255, ID: 86}, {C: &cls1257, ID: 26}, {C: &cls1260, ID: 25}, {C: &cls1287, ID: 88}}
+var steps1524 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1255, ID: 86}, {C: &cls1257, ID: 26}, {C: &cls1260, ID: 25}, {C: &cls1287, ID: 88}}
+var steps1525 = []rt.ClassStep{{C: &cls1248, ID: 14}, {C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}}
+var steps1526 = []rt.ClassStep{{C: &cls1249, ID: 18}, {C: &cls1263, ID: 73}, {C: &cls1257, ID: 26}, {C: &cls1279, ID: 79}}
+var steps1527 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}}
+var steps1528 = []rt.ClassStep{{C: &cls1261, ID: 27}, {C: &cls1254, ID: 83}, {C: &cls1257, ID: 26}, {C: &cls1295, ID: 72}, {C: &cls1272, ID: 82}, {C: &cls1257, ID: 26}}
+var steps1529 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1254, ID: 83}, {C: &cls1257, ID: 26}, {C: &cls1247, ID: 16}, {C: &cls1250, ID: 24}, {C: &cls1257, ID: 26}, {C: &cls1260, ID: 25}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}}
+var steps1530 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1250, ID: 24}, {C: &cls1263, ID: 73}, {C: &cls1249, ID: 18}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}}
+var steps1531 = []rt.ClassStep{{C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}, {C: &cls1293, ID: 80}, {C: &cls1259, ID: 23}, {C: &cls1249, ID: 18}}
+var steps1532 = []rt.ClassStep{{C: &cls1255, ID: 86}, {C: &cls1257, ID: 26}, {C: &cls1265, ID: 29}, {C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}}
+var steps1533 = []rt.ClassStep{{C: &cls1259, ID: 23}, {C: &cls1312, ID: 96}, {C: &cls1261, ID: 27}, {C: &cls1249, ID: 18}, {C: &cls1257, ID: 26}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}}
+var steps1534 = []rt.ClassStep{{C: &cls1293, ID: 80}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1265, ID: 29}, {C: &cls1263, ID: 73}, {C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}}
+var steps1535 = []rt.ClassStep{{C: &cls1257, ID: 26}, {C: &cls1247, ID: 16}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1294, ID: 87}, {C: &cls1355, ID: 95}, {C: &cls1259, ID: 23}}
+var steps1536 = []rt.ClassStep{{C: &cls1257, ID: 26}, {C: &cls1247, ID: 16}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1294, ID: 87}, {C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}}
+var steps1537 = []rt.ClassStep{{C: &cls1261, ID: 27}, {C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1261, ID: 27}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}}
+var steps1538 = []rt.ClassStep{{C: &cls1259, ID: 23}, {C: &cls1312, ID: 96}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1248, ID: 14}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}}
+var steps1539 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}, {C: &cls1263, ID: 73}, {C: &cls1260, ID: 25}, {C: &cls1257, ID: 26}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}}
+var steps1540 = []rt.ClassStep{{C: &cls1266, ID: 89}, {C: &cls1254, ID: 83}, {C: &cls1253, ID: 30}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}}
+var steps1541 = []rt.ClassStep{{C: &cls1293, ID: 80}, {C: &cls1257, ID: 26}, {C: &cls1260, ID: 25}, {C: &cls1248, ID: 14}, {C: &cls1248, ID: 14}, {C: &cls1272, ID: 82}}
+var steps1542 = []rt.ClassStep{{C: &cls1252, ID: 17}, {C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1259, ID: 23}, {C: &cls1355, ID: 95}, {C: &cls1259, ID: 23}}
+var steps1543 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1287, ID: 88}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1269, ID: 92}, {C: &cls1261, ID: 27}, {C: &cls1263, ID: 73}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}}
+var steps1544 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1257, ID: 26}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}}
+var steps1545 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1272, ID: 82}, {C: &cls1272, ID: 82}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}}
+var steps1546 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1250, ID: 24}}
+var steps1547 = []rt.ClassStep{{C: &cls1259, ID: 23}, {C: &cls1312, ID: 96}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1250, ID: 24}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1250, ID: 24}}
+var term1548Data = rt.TerminalProgram{Code: []uint16{2, 1424, 3, 1416, 0, 7, 122, 0, 26, 3, 118, 1, 7, 8, 1, 18, 0, 4, 1, 18, 7, 46, 2, 16, 3, 42, 65535, 7, 31, 0, 26, 0, 4, 1, 18, 0, 4, 3, 87, 3, 19, 65535, 7, 8, 4, 24, 0, 4, 5, 23, 7, 8, 6, 95, 0, 4, 5, 23, 7, 4, 7, 79, 7, 4, 3, 87, 7, 16, 8, 83, 0, 4, 8, 83, 0, 4, 0, 26, 0, 4, 3, 87, 7, 45, 4, 24, 4, 41, 3, 39, 65535, 7, 4, 9, 25, 7, 32, 3, 87, 0, 4, 10, 82, 0, 4, 10, 82, 0, 4, 5, 23, 0, 4, 11, 86, 0, 4, 8, 83, 0, 4, 12, 30, 0, 4, 9, 25, 7, 16, 13, 29, 0, 4, 14, 73, 0, 4, 11, 86, 0, 4, 15, 88, 7, 136, 9, 25, 3, 132, 2, 7, 19, 0, 26, 0, 4, 4, 24, 3, 11, 65535, 7, 4, 5, 23, 7, 4, 11, 86, 7, 16, 15, 88, 0, 4, 5, 23, 0, 4, 9, 25, 0, 4, 16, 92, 7, 74, 14, 73, 3, 70, 65535, 7, 35, 1, 18, 3, 31, 65535, 7, 16, 1, 18, 0, 4, 0, 26, 0, 4, 11, 86, 0, 4, 5, 23, 7, 12, 17, 14, 0, 4, 10, 82, 0, 4, 2, 16, 7, 32, 2, 16, 0, 4, 4, 24, 0, 4, 11, 86, 0, 4, 8, 83, 0, 4, 0, 26, 0, 4, 12, 30, 0, 4, 2, 16, 0, 4, 11, 86, 7, 20, 8, 83, 0, 4, 5, 23, 0, 4, 0, 26, 0, 4, 11, 86, 0, 4, 5, 23, 7, 125, 7, 79, 3, 121, 65535, 7, 86, 5, 23, 3, 82, 65535, 7, 51, 18, 17, 3, 47, 65535, 7, 16, 0, 26, 0, 4, 17, 14, 0, 4, 1, 18, 0, 4, 11, 86, 7, 28, 5, 23, 0, 4, 8, 83, 0, 4, 8, 83, 0, 4, 0, 26, 0, 4, 13, 29, 0, 4, 1, 18, 0, 4, 5, 23, 7, 28, 4, 24, 0, 4, 9, 25, 4, 20, 2, 18, 0, 4, 8, 83, 0, 4, 12, 30, 0, 4, 13, 29, 0, 4, 5, 23, 7, 28, 12, 30, 0, 4, 4, 24, 0, 4, 11, 86, 0, 4, 12, 30, 0, 4, 2, 16, 0, 4, 9, 25, 0, 4, 11, 86, 7, 4, 14, 73, 7, 47, 5, 23, 3, 43, 65535, 7, 12, 1, 18, 0, 4, 4, 24, 0, 4, 5, 23, 7, 8, 2, 16, 0, 4, 7, 79, 7, 20, 19, 96, 0, 4, 9, 25, 0, 4, 5, 23, 0, 4, 20, 27, 0, 4, 11, 86, 7, 79, 18, 17, 3, 75, 3, 7, 16, 0, 26, 0, 4, 1, 18, 0, 4, 4, 24, 0, 4, 5, 23, 7, 16, 5, 23, 0, 4, 11, 86, 0, 4, 9, 25, 0, 4, 15, 88, 7, 28, 14, 73, 0, 4, 8, 83, 4, 20, 2, 18, 0, 4, 5, 23, 0, 4, 12, 30, 0, 4, 21, 72, 0, 4, 2, 16, 7, 12, 8, 83, 0, 4, 14, 73, 0, 4, 10, 82, 7, 20, 21, 72, 0, 4, 8, 83, 0, 4, 14, 73, 0, 4, 17, 14, 0, 4, 20, 27, 7, 24, 15, 88, 0, 4, 0, 26, 0, 4, 22, 80, 0, 4, 12, 30, 0, 4, 2, 16, 0, 4, 21, 72, 7, 76, 12, 30, 0, 4, 2, 16, 4, 68, 3, 66, 65535, 7, 28, 12, 30, 0, 4, 11, 86, 0, 4, 12, 30, 0, 4, 0, 26, 0, 4, 1, 18, 0, 4, 1, 18, 0, 4, 3, 87, 7, 35, 11, 86, 3, 31, 65535, 7, 24, 5, 23, 0, 4, 8, 83, 0, 4, 4, 24, 0, 4, 5, 23, 0, 4, 9, 25, 0, 4, 11, 86, 7, 4, 14, 73, 7, 90, 1, 18, 3, 86, 65535, 7, 43, 0, 26, 3, 39, 65535, 7, 16, 10, 82, 0, 4, 13, 29, 0, 4, 7, 79, 0, 4, 0, 26, 7, 20, 11, 86, 0, 4, 5, 23, 0, 4, 8, 83, 0, 4, 0, 26, 0, 4, 1, 18, 7, 24, 5, 23, 0, 4, 0, 26, 0, 4, 7, 79, 0, 4, 12, 30, 0, 4, 2, 16, 0, 4, 21, 72, 7, 16, 12, 30, 0, 4, 10, 82, 0, 4, 12, 30, 0, 4, 11, 86, 7, 27, 2, 16, 3, 23, 65535, 7, 8, 14, 73, 0, 4, 11, 86, 7, 12, 17, 14, 0, 4, 1, 18, 0, 4, 1, 18, 7, 63, 14, 73, 3, 59, 65535, 7, 20, 18, 17, 0, 4, 18, 17, 0, 4, 4, 24, 0, 4, 5, 23, 0, 4, 11, 86, 7, 16, 2, 16, 4, 12, 2, 10, 0, 4, 1, 18, 0, 4, 3, 87, 7, 20, 8, 83, 4, 16, 2, 14, 0, 4, 7, 79, 0, 4, 5, 23, 0, 4, 8, 83, 7, 126, 20, 27, 3, 122, 65535, 7, 71, 12, 30, 0, 4, 22, 80, 0, 4, 14, 73, 0, 4, 11, 86, 4, 55, 2, 53, 1, 4, 0, 44, 3, 47, 65535, 7, 24, 1, 18, 0, 4, 14, 73, 0, 4, 2, 16, 0, 4, 21, 72, 0, 4, 5, 23, 0, 4, 8, 83, 7, 20, 23, 89, 0, 4, 12, 30, 0, 4, 7, 79, 0, 4, 5, 23, 0, 4, 8, 83, 7, 24, 1, 18, 0, 4, 0, 26, 0, 4, 9, 25, 0, 4, 12, 30, 0, 4, 2, 16, 0, 4, 21, 72, 7, 24, 8, 83, 0, 4, 12, 30, 0, 4, 10, 82, 0, 4, 0, 26, 0, 4, 8, 83, 0, 4, 3, 87, 7, 28, 24, 90, 0, 4, 17, 14, 0, 4, 0, 26, 0, 4, 1, 18, 0, 4, 12, 30, 0, 4, 18, 17, 0, 4, 3, 87, 7, 71, 8, 83, 0, 4, 5, 23, 3, 63, 65535, 7, 32, 18, 17, 0, 4, 5, 23, 0, 4, 8, 83, 0, 4, 5, 23, 0, 4, 2, 16, 0, 4, 9, 25, 0, 4, 5, 23, 0, 4, 4, 24, 7, 28, 11, 86, 0, 4, 17, 14, 0, 4, 8, 83, 0, 4, 2, 16, 0, 4, 12, 30, 0, 4, 2, 16, 0, 4, 21, 72, 7, 115, 4, 24, 3, 111, 4, 7, 20, 5, 23, 0, 4, 1, 18, 0, 4, 5, 23, 0, 4, 9, 25, 0, 4, 11, 86, 7, 12, 15, 88, 0, 4, 14, 73, 0, 4, 23, 89, 7, 12, 14, 73, 0, 4, 10, 82, 0, 4, 5, 23, 7, 32, 17, 14, 0, 4, 10, 82, 0, 4, 10, 82, 0, 4, 0, 26, 0, 4, 8, 83, 0, 4, 12, 30, 0, 4, 6, 95, 0, 4, 5, 23, 7, 32, 3, 87, 0, 4, 10, 82, 0, 4, 10, 82, 0, 4, 5, 23, 0, 4, 11, 86, 0, 4, 8, 83, 0, 4, 12, 30, 0, 4, 9, 25, 7, 78, 11, 86, 3, 74, 5, 7, 16, 0, 26, 0, 4, 13, 29, 0, 4, 1, 18, 0, 4, 5, 23, 7, 12, 15, 88, 0, 4, 5, 23, 0, 4, 2, 16, 7, 4, 14, 73, 7, 39, 8, 83, 3, 35, 65535, 7, 24, 0, 26, 0, 4, 12, 30, 0, 4, 1, 18, 0, 4, 12, 30, 0, 4, 2, 16, 0, 4, 21, 72, 7, 8, 17, 14, 0, 4, 5, 23, 7, 77, 17, 14, 3, 73, 65535, 7, 54, 2, 16, 3, 50, 65535, 7, 27, 12, 30, 3, 23, 65535, 7, 8, 14, 73, 0, 4, 2, 16, 7, 12, 24, 90, 0, 4, 17, 14, 0, 4, 5, 23, 7, 20, 20, 27, 0, 4, 12, 30, 0, 4, 22, 80, 0, 4, 14, 73, 0, 4, 11, 86, 7, 16, 4, 24, 0, 4, 12, 30, 0, 4, 2, 16, 0, 4, 21, 72, 7, 32, 22, 80, 0, 4, 0, 26, 0, 4, 8, 83, 0, 4, 12, 30, 0, 4, 0, 26, 0, 4, 7, 79, 0, 4, 12, 30, 0, 4, 9, 25, 7, 61, 23, 89, 3, 57, 65535, 7, 23, 15, 88, 0, 4, 5, 23, 3, 15, 65535, 7, 4, 2, 16, 7, 8, 8, 83, 0, 4, 5, 23, 7, 31, 12, 30, 3, 27, 65535, 7, 16, 2, 16, 0, 4, 7, 79, 0, 4, 14, 73, 0, 4, 23, 89, 7, 8, 11, 86, 0, 4, 15, 88, 5, 6, 0, 4, 25, 10}, Classes: []*rt.Class{&cls1257, &cls1249, &cls1247, &cls1294, &cls1250, &cls1259, &cls1355, &cls1279, &cls1254, &cls1260, &cls1272, &cls1255, &cls1253, &cls1265, &cls1263, &cls1287, &cls1269, &cls1248, &cls1252, &cls1312, &cls1261, &cls1295, &cls1293, &cls1266, &cls1375, &cls1246}, Literals: []rt.TerminalText{{Runes: lit45, Text: "_"}}}
+var term1548 = term1548Data.Prepare()
+var term1549Data = rt.TerminalProgram{Code: []uint16{2, 75, 3, 67, 0, 7, 16, 0, 26, 0, 4, 1, 16, 0, 4, 2, 86, 0, 4, 3, 30, 7, 8, 4, 29, 0, 4, 5, 87, 7, 16, 6, 24, 0, 4, 7, 23, 0, 4, 8, 82, 0, 4, 3, 30, 7, 24, 9, 14, 0, 4, 1, 16, 0, 4, 10, 27, 0, 4, 0, 26, 0, 4, 11, 25, 0, 4, 12, 92, 5, 6, 0, 4, 13, 10}, Classes: []*rt.Class{&cls1257, &cls1247, &cls1255, &cls1253, &cls1265, &cls1294, &cls1250, &cls1259, &cls1272, &cls1248, &cls1261, &cls1260, &cls1269, &cls1246}}
+var term1549 = term1549Data.Prepare()
+var cls1550 = rt.Class{ASCII: [2]uint64{0x0, 0x40000000400}}
+var term1551Data = rt.TerminalProgram{Code: []uint16{2, 635, 3, 627, 0, 7, 71, 0, 26, 3, 67, 65535, 7, 12, 1, 24, 0, 4, 2, 73, 0, 4, 3, 17, 7, 4, 4, 86, 7, 48, 5, 14, 0, 4, 4, 86, 0, 4, 6, 88, 0, 4, 2, 73, 0, 4, 7, 83, 0, 4, 8, 30, 0, 4, 9, 95, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 30, 0, 4, 2, 73, 0, 4, 10, 16, 7, 24, 11, 29, 0, 4, 8, 30, 0, 4, 10, 16, 0, 4, 0, 26, 0, 4, 7, 83, 0, 4, 12, 87, 7, 98, 13, 25, 3, 94, 65535, 7, 75, 2, 73, 3, 71, 65535, 7, 28, 14, 18, 0, 4, 14, 18, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 30, 0, 4, 2, 73, 0, 4, 10, 16, 7, 40, 10, 16, 0, 4, 13, 25, 0, 4, 5, 14, 0, 4, 7, 83, 0, 4, 7, 83, 0, 4, 15, 23, 0, 4, 10, 16, 0, 4, 4, 86, 0, 4, 14, 18, 0, 4, 12, 87, 7, 16, 7, 83, 0, 4, 2, 73, 0, 4, 1, 24, 0, 4, 1, 24, 7, 39, 3, 17, 3, 35, 65535, 7, 20, 7, 83, 0, 4, 15, 23, 0, 4, 15, 23, 0, 4, 9, 95, 0, 4, 15, 23, 7, 12, 5, 14, 0, 4, 14, 18, 0, 4, 14, 18, 7, 16, 16, 72, 0, 4, 14, 18, 0, 4, 2, 73, 0, 4, 11, 29, 7, 63, 8, 30, 3, 59, 65535, 7, 16, 14, 18, 0, 4, 8, 30, 0, 4, 17, 92, 0, 4, 15, 23, 7, 16, 10, 16, 0, 4, 10, 16, 0, 4, 15, 23, 0, 4, 7, 83, 7, 24, 1, 24, 4, 20, 2, 18, 0, 4, 10, 16, 0, 4, 5, 14, 0, 4, 14, 18, 0, 4, 14, 18, 7, 16, 18, 93, 0, 4, 2, 73, 0, 4, 8, 30, 0, 4, 10, 16, 7, 31, 14, 18, 3, 27, 65535, 7, 12, 15, 23, 0, 4, 3, 17, 0, 4, 4, 86, 7, 12, 8, 30, 0, 4, 17, 92, 0, 4, 15, 23, 7, 55, 10, 16, 3, 51, 65535, 7, 24, 0, 26, 0, 4, 4, 86, 0, 4, 5, 14, 0, 4, 7, 83, 0, 4, 0, 26, 0, 4, 14, 18, 7, 24, 2, 73, 0, 4, 4, 86, 0, 4, 10, 16, 0, 4, 5, 14, 0, 4, 14, 18, 0, 4, 14, 18, 7, 51, 2, 73, 3, 47, 65535, 7, 16, 5, 14, 0, 4, 4, 86, 0, 4, 15, 23, 0, 4, 7, 83, 7, 28, 19, 80, 0, 4, 15, 23, 0, 4, 7, 83, 0, 4, 14, 18, 0, 4, 0, 26, 0, 4, 20, 27, 0, 4, 1, 24, 7, 40, 20, 27, 0, 4, 2, 73, 0, 4, 1, 24, 0, 4, 8, 30, 0, 4, 4, 86, 0, 4, 8, 30, 0, 4, 2, 73, 0, 4, 10, 16, 0, 4, 0, 26, 0, 4, 14, 18, 7, 20, 7, 83, 0, 4, 8, 30, 0, 4, 16, 72, 0, 4, 6, 88, 0, 4, 4, 86, 7, 28, 1, 24, 0, 4, 8, 30, 0, 4, 21, 82, 0, 4, 8, 30, 0, 4, 14, 18, 0, 4, 0, 26, 0, 4, 7, 83, 7, 44, 4, 86, 0, 4, 0, 26, 0, 4, 11, 29, 0, 4, 14, 18, 0, 4, 15, 23, 0, 4, 1, 24, 0, 4, 0, 26, 0, 4, 21, 82, 0, 4, 20, 27, 0, 4, 14, 18, 0, 4, 15, 23, 7, 28, 19, 80, 0, 4, 15, 23, 0, 4, 7, 83, 0, 4, 11, 29, 0, 4, 2, 73, 0, 4, 1, 24, 0, 4, 15, 23, 5, 6, 0, 4, 22, 10}, Classes: []*rt.Class{&cls1257, &cls1250, &cls1263, &cls1252, &cls1255, &cls1248, &cls1287, &cls1254, &cls1253, &cls1355, &cls1247, &cls1265, &cls1294, &cls1260, &cls1249, &cls1259, &cls1295, &cls1269, &cls1550, &cls1293, &cls1261, &cls1272, &cls1246}}
+var term1551 = term1551Data.Prepare()
+var cls1552 = rt.Class{ASCII: [2]uint64{0x0, 0x7fffffe87fffffe}, Wide: []rune{128, 159, 161, 8191, 8204, 8238, 8240, 8286, 8289, 12287, 12289, 65278, 65280, 1114111}}
+var term1553Data = rt.TerminalProgram{Code: []uint16{2, 1109, 3, 1101, 0, 7, 82, 0, 29, 3, 78, 65535, 7, 24, 1, 23, 0, 4, 2, 86, 0, 4, 3, 89, 0, 4, 1, 23, 0, 4, 1, 23, 0, 4, 4, 16, 7, 27, 5, 30, 3, 23, 65535, 7, 16, 6, 72, 0, 4, 5, 30, 0, 4, 4, 16, 0, 4, 2, 86, 7, 4, 2, 86, 7, 24, 7, 73, 0, 4, 7, 73, 0, 4, 8, 18, 0, 4, 1, 23, 0, 4, 9, 26, 0, 4, 4, 16, 7, 71, 10, 25, 3, 67, 65535, 7, 36, 11, 88, 0, 4, 9, 26, 0, 4, 12, 83, 4, 24, 2, 22, 0, 4, 9, 26, 0, 4, 10, 25, 0, 4, 2, 86, 0, 4, 1, 23, 0, 4, 12, 83, 7, 28, 7, 73, 0, 4, 9, 26, 0, 4, 8, 18, 0, 4, 1, 23, 0, 4, 13, 24, 0, 4, 10, 25, 0, 4, 1, 23, 7, 32, 14, 79, 0, 4, 1, 23, 0, 4, 10, 25, 4, 20, 2, 18, 0, 4, 5, 30, 0, 4, 15, 82, 0, 4, 9, 26, 0, 4, 8, 18, 7, 47, 1, 23, 0, 4, 16, 96, 3, 39, 65535, 7, 16, 5, 30, 0, 4, 13, 24, 0, 4, 2, 86, 0, 4, 13, 24, 7, 20, 2, 86, 0, 4, 12, 83, 0, 4, 9, 26, 0, 4, 10, 25, 0, 4, 2, 86, 7, 20, 17, 17, 0, 4, 8, 18, 0, 4, 7, 73, 0, 4, 9, 26, 0, 4, 2, 86, 7, 48, 6, 72, 0, 4, 12, 83, 0, 4, 7, 73, 0, 4, 18, 14, 0, 4, 19, 27, 0, 4, 5, 30, 0, 4, 4, 16, 0, 4, 6, 72, 4, 16, 2, 14, 1, 4, 0, 44, 0, 4, 5, 30, 0, 4, 14, 79, 7, 66, 5, 30, 0, 4, 4, 16, 3, 58, 65535, 7, 12, 7, 73, 0, 4, 18, 14, 0, 4, 2, 86, 7, 43, 2, 86, 4, 39, 2, 37, 0, 4, 1, 23, 3, 31, 65535, 7, 12, 6, 72, 0, 4, 1, 23, 0, 4, 12, 83, 7, 16, 12, 83, 0, 4, 20, 80, 0, 4, 9, 26, 0, 4, 8, 18, 7, 106, 4, 16, 3, 102, 1, 7, 28, 9, 26, 0, 4, 2, 86, 0, 4, 5, 30, 0, 4, 7, 73, 0, 4, 4, 16, 0, 4, 9, 26, 0, 4, 8, 18, 7, 16, 10, 25, 0, 4, 11, 88, 0, 4, 9, 26, 0, 4, 12, 83, 7, 12, 7, 73, 0, 4, 4, 16, 0, 4, 1, 23, 7, 43, 18, 14, 3, 39, 65535, 7, 16, 8, 18, 0, 4, 8, 18, 0, 4, 5, 30, 0, 4, 17, 17, 7, 20, 15, 82, 0, 4, 1, 23, 0, 4, 12, 83, 0, 4, 5, 30, 0, 4, 10, 25, 7, 39, 7, 73, 3, 35, 65535, 7, 8, 18, 14, 0, 4, 2, 86, 7, 24, 20, 80, 0, 4, 1, 23, 0, 4, 12, 83, 0, 4, 8, 18, 0, 4, 9, 26, 0, 4, 21, 87, 7, 67, 19, 27, 3, 63, 65535, 7, 28, 7, 73, 0, 4, 13, 24, 0, 4, 5, 30, 0, 4, 2, 86, 0, 4, 5, 30, 0, 4, 7, 73, 0, 4, 4, 16, 7, 32, 12, 83, 0, 4, 1, 23, 0, 4, 10, 25, 0, 4, 5, 30, 0, 4, 13, 24, 0, 4, 5, 30, 0, 4, 7, 73, 0, 4, 4, 16, 7, 27, 12, 83, 3, 23, 65535, 7, 12, 1, 23, 0, 4, 9, 26, 0, 4, 8, 18, 7, 8, 7, 73, 0, 4, 3, 89, 7, 83, 13, 24, 3, 79, 65535, 7, 16, 1, 23, 0, 4, 2, 86, 0, 4, 7, 73, 0, 4, 17, 17, 7, 28, 15, 82, 0, 4, 9, 26, 0, 4, 8, 18, 0, 4, 8, 18, 0, 4, 5, 30, 0, 4, 4, 16, 0, 4, 2, 86, 7, 32, 18, 14, 0, 4, 0, 29, 0, 4, 13, 24, 0, 4, 2, 86, 0, 4, 12, 83, 0, 4, 5, 30, 0, 4, 4, 16, 0, 4, 6, 72, 7, 70, 2, 86, 3, 66, 65535, 7, 36, 5, 30, 0, 4, 15, 82, 0, 4, 1, 23, 4, 24, 2, 22, 0, 4, 13, 24, 0, 4, 2, 86, 0, 4, 9, 26, 0, 4, 15, 82, 0, 4, 19, 27, 7, 27, 12, 83, 3, 23, 65535, 7, 12, 1, 23, 0, 4, 9, 26, 0, 4, 2, 86, 7, 8, 5, 30, 0, 4, 15, 82, 7, 47, 20, 80, 0, 4, 9, 26, 3, 39, 65535, 7, 16, 8, 18, 0, 4, 18, 14, 0, 4, 1, 23, 0, 4, 13, 24, 7, 20, 12, 83, 0, 4, 10, 25, 0, 4, 11, 88, 0, 4, 9, 26, 0, 4, 12, 83, 7, 293, 16, 96, 0, 4, 15, 82, 0, 4, 8, 18, 3, 281, 2, 7, 40, 9, 26, 0, 4, 2, 86, 0, 4, 2, 86, 0, 4, 12, 83, 0, 4, 5, 30, 0, 4, 0, 29, 0, 4, 18, 14, 0, 4, 2, 86, 0, 4, 1, 23, 0, 4, 13, 24, 7, 24, 10, 25, 0, 4, 7, 73, 0, 4, 4, 16, 0, 4, 10, 25, 0, 4, 9, 26, 0, 4, 2, 86, 7, 51, 1, 23, 3, 47, 65535, 7, 24, 8, 18, 0, 4, 1, 23, 0, 4, 15, 82, 0, 4, 1, 23, 0, 4, 4, 16, 0, 4, 2, 86, 7, 20, 16, 96, 0, 4, 5, 30, 0, 4, 13, 24, 0, 4, 2, 86, 0, 4, 13, 24, 7, 24, 17, 17, 0, 4, 7, 73, 0, 4, 12, 83, 0, 4, 1, 23, 0, 4, 13, 24, 0, 4, 2, 86, 7, 40, 4, 16, 0, 4, 9, 26, 0, 4, 15, 82, 0, 4, 1, 23, 0, 4, 13, 24, 0, 4, 19, 27, 0, 4, 9, 26, 0, 4, 10, 25, 0, 4, 1, 23, 0, 4, 13, 24, 7, 27, 19, 27, 3, 23, 65535, 7, 16, 9, 26, 0, 4, 12, 83, 0, 4, 13, 24, 0, 4, 1, 23, 7, 4, 5, 30, 7, 16, 12, 83, 0, 4, 7, 73, 0, 4, 7, 73, 0, 4, 2, 86, 7, 36, 13, 24, 0, 4, 1, 23, 0, 4, 12, 83, 0, 4, 5, 30, 0, 4, 9, 26, 0, 4, 8, 18, 0, 4, 5, 30, 0, 4, 22, 95, 0, 4, 1, 23, 7, 20, 2, 86, 0, 4, 9, 26, 0, 4, 0, 29, 0, 4, 8, 18, 0, 4, 1, 23, 5, 6, 0, 4, 23, 10}, Classes: []*rt.Class{&cls1265, &cls1259, &cls1255, &cls1266, &cls1247, &cls1253, &cls1295, &cls1263, &cls1249, &cls1257, &cls1260, &cls1287, &cls1254, &cls1250, &cls1279, &cls1272, &cls1312, &cls1252, &cls1248, &cls1261, &cls1293, &cls1294, &cls1355, &cls1246}, Literals: []rt.TerminalText{{Runes: lit45, Text: "_"}}}
+var term1553 = term1553Data.Prepare()
+var term1554Data = rt.TerminalProgram{Code: []uint16{2, 71, 3, 63, 65535, 7, 28, 0, 25, 0, 4, 1, 73, 0, 4, 2, 18, 0, 4, 3, 14, 0, 4, 4, 82, 0, 4, 5, 16, 0, 4, 6, 24, 7, 32, 7, 86, 0, 4, 8, 83, 0, 4, 9, 87, 1, 4, 0, 44, 0, 4, 0, 25, 0, 4, 10, 26, 0, 4, 6, 24, 0, 4, 7, 86, 5, 6, 0, 4, 11, 10}, Classes: []*rt.Class{&cls1260, &cls1263, &cls1249, &cls1248, &cls1272, &cls1247, &cls1250, &cls1255, &cls1254, &cls1294, &cls1257, &cls1246}, Literals: []rt.TerminalText{{Runes: lit45, Text: "_"}}}
+var term1554 = term1554Data.Prepare()
+var term1555Data = rt.TerminalProgram{Code: []uint16{2, 83, 3, 75, 65535, 7, 36, 0, 72, 0, 4, 1, 23, 0, 4, 2, 16, 0, 4, 1, 23, 0, 4, 3, 83, 0, 4, 4, 26, 0, 4, 5, 86, 0, 4, 1, 23, 0, 4, 6, 79, 7, 12, 7, 82, 0, 4, 4, 26, 0, 4, 8, 27, 7, 24, 9, 24, 0, 4, 5, 86, 0, 4, 3, 83, 0, 4, 10, 14, 0, 4, 11, 25, 0, 4, 5, 86, 5, 6, 0, 4, 12, 10}, Classes: []*rt.Class{&cls1295, &cls1259, &cls1247, &cls1254, &cls1257, &cls1255, &cls1279, &cls1272, &cls1261, &cls1250, &cls1248, &cls1260, &cls1246}}
+var term1555 = term1555Data.Prepare()
+var term1556Data = rt.TerminalProgram{Code: []uint16{2, 6196, 3, 6188, 0, 7, 313, 0, 26, 3, 309, 1, 7, 43, 1, 29, 3, 39, 65535, 7, 12, 2, 73, 0, 4, 3, 83, 0, 4, 4, 86, 7, 24, 5, 24, 0, 4, 2, 73, 0, 4, 6, 18, 0, 4, 7, 14, 0, 4, 4, 86, 0, 4, 8, 23, 7, 39, 9, 25, 3, 35, 65535, 7, 16, 9, 25, 0, 4, 8, 23, 0, 4, 5, 24, 0, 4, 5, 24, 7, 16, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 23, 12, 79, 3, 19, 65535, 7, 4, 12, 79, 7, 12, 13, 82, 0, 4, 10, 30, 0, 4, 11, 16, 7, 16, 14, 17, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 3, 83, 7, 32, 15, 72, 0, 4, 15, 72, 0, 4, 3, 83, 0, 4, 8, 23, 0, 4, 15, 72, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 23, 7, 43, 6, 18, 3, 39, 65535, 7, 8, 5, 24, 0, 4, 2, 73, 7, 12, 4, 86, 0, 4, 8, 23, 0, 4, 3, 83, 7, 16, 16, 89, 0, 4, 0, 26, 0, 4, 17, 87, 0, 4, 5, 24, 7, 63, 5, 24, 0, 4, 5, 24, 3, 55, 65535, 7, 24, 8, 23, 0, 4, 3, 83, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 28, 10, 30, 0, 4, 15, 72, 0, 4, 11, 16, 0, 4, 13, 82, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 47, 4, 86, 0, 4, 4, 86, 3, 39, 65535, 7, 12, 0, 26, 0, 4, 9, 25, 0, 4, 18, 88, 7, 24, 3, 83, 0, 4, 10, 30, 0, 4, 1, 29, 0, 4, 7, 14, 0, 4, 4, 86, 0, 4, 8, 23, 7, 70, 1, 29, 3, 66, 65535, 7, 28, 0, 26, 0, 4, 9, 25, 0, 4, 19, 92, 0, 4, 16, 89, 0, 4, 0, 26, 0, 4, 3, 83, 0, 4, 12, 79, 7, 35, 8, 23, 3, 31, 65535, 7, 16, 14, 17, 0, 4, 2, 73, 0, 4, 3, 83, 0, 4, 8, 23, 7, 12, 15, 72, 0, 4, 10, 30, 0, 4, 11, 16, 7, 658, 9, 25, 3, 654, 2, 7, 85, 0, 26, 3, 81, 3, 7, 12, 9, 25, 0, 4, 18, 88, 0, 4, 8, 23, 7, 20, 6, 18, 0, 4, 6, 18, 4, 12, 2, 10, 0, 4, 8, 23, 0, 4, 12, 79, 7, 26, 5, 24, 0, 4, 9, 25, 0, 4, 0, 26, 0, 4, 12, 79, 0, 4, 8, 23, 4, 6, 0, 4, 12, 79, 7, 20, 4, 86, 0, 4, 0, 26, 0, 4, 6, 18, 0, 4, 2, 73, 0, 4, 15, 72, 7, 39, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 0, 4, 7, 14, 0, 4, 3, 83, 3, 19, 65535, 7, 12, 10, 30, 0, 4, 8, 23, 0, 4, 5, 24, 7, 4, 17, 87, 7, 102, 18, 88, 3, 98, 65535, 7, 63, 0, 26, 3, 59, 65535, 7, 8, 10, 30, 0, 4, 11, 16, 7, 48, 3, 83, 0, 4, 0, 26, 0, 4, 9, 25, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 3, 83, 0, 4, 10, 30, 0, 4, 5, 24, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 9, 25, 0, 4, 5, 24, 7, 32, 8, 23, 0, 4, 9, 25, 0, 4, 19, 92, 0, 4, 20, 27, 0, 4, 2, 73, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 4, 86, 7, 51, 6, 18, 3, 47, 65535, 7, 12, 0, 26, 0, 4, 5, 24, 0, 4, 5, 24, 7, 12, 2, 73, 0, 4, 5, 24, 0, 4, 8, 23, 7, 20, 7, 14, 0, 4, 5, 24, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 3, 83, 7, 300, 2, 73, 3, 296, 4, 7, 88, 13, 82, 3, 84, 65535, 7, 49, 13, 82, 3, 45, 65535, 7, 18, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 4, 6, 0, 4, 5, 24, 7, 24, 10, 30, 0, 4, 4, 86, 4, 16, 2, 14, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 12, 79, 7, 32, 20, 27, 0, 4, 3, 83, 0, 4, 8, 23, 0, 4, 5, 24, 0, 4, 5, 24, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 189, 11, 16, 3, 185, 5, 7, 59, 14, 17, 3, 55, 65535, 7, 36, 10, 30, 0, 4, 15, 72, 0, 4, 7, 14, 0, 4, 3, 83, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 16, 6, 18, 0, 4, 10, 30, 0, 4, 9, 25, 0, 4, 4, 86, 7, 28, 11, 16, 0, 4, 8, 23, 0, 4, 9, 25, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 32, 5, 24, 0, 4, 4, 86, 0, 4, 3, 83, 0, 4, 0, 26, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 4, 86, 0, 4, 5, 24, 7, 35, 4, 86, 3, 31, 65535, 7, 12, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 16, 10, 30, 0, 4, 11, 16, 0, 4, 7, 14, 0, 4, 8, 23, 7, 28, 21, 80, 0, 4, 8, 23, 0, 4, 3, 83, 0, 4, 5, 24, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 8, 20, 27, 0, 4, 17, 87, 7, 8, 5, 24, 0, 4, 4, 86, 7, 8, 5, 24, 0, 4, 21, 80, 7, 50, 7, 14, 3, 46, 65535, 7, 8, 1, 29, 0, 4, 8, 23, 7, 35, 3, 83, 3, 31, 65535, 7, 16, 3, 83, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 12, 5, 24, 0, 4, 2, 73, 0, 4, 3, 83, 7, 16, 17, 87, 0, 4, 9, 25, 0, 4, 6, 18, 0, 4, 8, 23, 7, 433, 12, 79, 3, 429, 6, 7, 45, 0, 26, 3, 41, 65535, 7, 28, 4, 86, 0, 4, 0, 26, 4, 20, 2, 18, 0, 4, 1, 29, 0, 4, 0, 26, 0, 4, 5, 24, 0, 4, 8, 23, 7, 10, 17, 87, 4, 6, 0, 4, 5, 24, 7, 228, 8, 23, 3, 224, 7, 7, 32, 0, 26, 0, 4, 6, 18, 0, 4, 6, 18, 0, 4, 2, 73, 0, 4, 9, 25, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 23, 7, 41, 9, 25, 3, 37, 65535, 7, 18, 0, 26, 0, 4, 12, 79, 0, 4, 8, 23, 4, 6, 0, 4, 5, 24, 7, 16, 6, 18, 0, 4, 0, 26, 0, 4, 3, 83, 0, 4, 8, 23, 7, 63, 14, 17, 3, 59, 65535, 7, 20, 0, 26, 0, 4, 7, 14, 0, 4, 6, 18, 0, 4, 4, 86, 0, 4, 5, 24, 7, 20, 8, 23, 0, 4, 3, 83, 0, 4, 3, 83, 0, 4, 8, 23, 0, 4, 12, 79, 7, 16, 10, 30, 0, 4, 11, 16, 0, 4, 8, 23, 0, 4, 3, 83, 7, 49, 6, 18, 3, 45, 65535, 7, 12, 8, 23, 0, 4, 4, 86, 0, 4, 8, 23, 7, 30, 10, 30, 0, 4, 13, 82, 0, 4, 10, 30, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 3, 83, 4, 6, 0, 4, 5, 24, 7, 20, 20, 27, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 12, 79, 0, 4, 5, 24, 7, 16, 4, 86, 0, 4, 0, 26, 0, 4, 9, 25, 0, 4, 18, 88, 7, 78, 10, 30, 3, 74, 65535, 7, 32, 9, 25, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 0, 4, 0, 26, 0, 4, 3, 83, 0, 4, 17, 87, 7, 39, 5, 24, 3, 35, 65535, 7, 16, 0, 26, 0, 4, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 7, 16, 9, 25, 0, 4, 0, 26, 0, 4, 3, 83, 0, 4, 12, 79, 7, 63, 2, 73, 3, 59, 65535, 7, 24, 9, 25, 0, 4, 7, 14, 0, 4, 13, 82, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 16, 13, 82, 0, 4, 0, 26, 0, 4, 10, 30, 0, 4, 11, 16, 7, 16, 7, 14, 0, 4, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 7, 12, 3, 83, 0, 4, 2, 73, 0, 4, 20, 27, 7, 350, 8, 23, 3, 346, 8, 7, 12, 0, 26, 0, 4, 9, 25, 0, 4, 18, 88, 7, 82, 11, 16, 3, 78, 65535, 7, 16, 0, 26, 0, 4, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 7, 51, 9, 25, 3, 47, 65535, 7, 20, 2, 73, 0, 4, 12, 79, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 24, 3, 83, 0, 4, 17, 87, 0, 4, 20, 27, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 12, 79, 7, 8, 7, 14, 0, 4, 13, 82, 7, 16, 3, 83, 0, 4, 3, 83, 0, 4, 2, 73, 0, 4, 3, 83, 7, 20, 5, 24, 0, 4, 9, 25, 0, 4, 0, 26, 0, 4, 20, 27, 0, 4, 8, 23, 7, 16, 21, 80, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 197, 22, 96, 3, 193, 9, 7, 54, 9, 25, 0, 4, 6, 18, 0, 4, 7, 14, 3, 42, 65535, 7, 23, 12, 79, 3, 19, 65535, 7, 4, 8, 23, 7, 12, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 16, 5, 24, 0, 4, 10, 30, 0, 4, 21, 80, 0, 4, 8, 23, 7, 20, 8, 23, 0, 4, 9, 25, 0, 4, 7, 14, 0, 4, 4, 86, 0, 4, 8, 23, 7, 63, 20, 27, 3, 59, 65535, 7, 16, 6, 18, 0, 4, 0, 26, 0, 4, 10, 30, 0, 4, 11, 16, 7, 40, 2, 73, 0, 4, 3, 83, 0, 4, 4, 86, 4, 28, 2, 26, 1, 4, 0, 44, 0, 4, 5, 24, 0, 4, 4, 86, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 23, 7, 53, 4, 86, 0, 4, 8, 23, 3, 45, 65535, 7, 26, 11, 16, 0, 4, 5, 24, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 4, 6, 0, 4, 5, 24, 7, 16, 3, 83, 0, 4, 11, 16, 0, 4, 0, 26, 0, 4, 6, 18, 7, 162, 14, 17, 3, 158, 10, 7, 20, 0, 26, 0, 4, 13, 82, 0, 4, 10, 30, 0, 4, 6, 18, 0, 4, 17, 87, 7, 35, 10, 30, 3, 31, 65535, 7, 16, 6, 18, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 3, 83, 7, 12, 3, 83, 0, 4, 5, 24, 0, 4, 4, 86, 7, 66, 2, 73, 3, 62, 65535, 7, 28, 6, 18, 0, 4, 6, 18, 0, 4, 2, 73, 0, 4, 16, 89, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 31, 3, 83, 3, 27, 65535, 7, 8, 9, 25, 0, 4, 8, 23, 7, 16, 16, 89, 0, 4, 0, 26, 0, 4, 3, 83, 0, 4, 12, 79, 7, 34, 7, 14, 0, 4, 11, 16, 0, 4, 9, 25, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 4, 6, 0, 4, 5, 24, 7, 74, 15, 72, 3, 70, 65535, 7, 20, 6, 18, 0, 4, 2, 73, 0, 4, 1, 29, 0, 4, 0, 26, 0, 4, 6, 18, 7, 47, 3, 83, 3, 43, 65535, 7, 24, 0, 26, 0, 4, 11, 16, 0, 4, 4, 86, 4, 12, 2, 10, 0, 4, 8, 23, 0, 4, 12, 79, 7, 16, 2, 73, 0, 4, 7, 14, 0, 4, 20, 27, 0, 4, 5, 24, 7, 80, 18, 88, 3, 76, 65535, 7, 24, 0, 26, 0, 4, 11, 16, 0, 4, 12, 79, 0, 4, 6, 18, 0, 4, 8, 23, 0, 4, 3, 83, 7, 20, 8, 23, 0, 4, 0, 26, 0, 4, 12, 79, 0, 4, 8, 23, 0, 4, 3, 83, 7, 29, 2, 73, 3, 25, 65535, 7, 8, 6, 18, 0, 4, 12, 79, 7, 14, 7, 14, 0, 4, 3, 83, 4, 6, 0, 4, 5, 24, 7, 440, 10, 30, 3, 436, 11, 7, 28, 12, 79, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 4, 86, 0, 4, 17, 87, 7, 4, 14, 17, 7, 20, 15, 72, 0, 4, 11, 16, 0, 4, 2, 73, 0, 4, 3, 83, 0, 4, 8, 23, 7, 101, 13, 82, 3, 97, 65535, 7, 55, 13, 82, 3, 51, 65535, 7, 24, 8, 23, 0, 4, 12, 79, 0, 4, 10, 30, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 23, 7, 24, 7, 14, 0, 4, 4, 86, 0, 4, 0, 26, 0, 4, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 7, 39, 20, 27, 3, 35, 65535, 7, 20, 6, 18, 0, 4, 10, 30, 0, 4, 9, 25, 0, 4, 10, 30, 0, 4, 4, 86, 7, 12, 2, 73, 0, 4, 3, 83, 0, 4, 4, 86, 7, 248, 11, 16, 3, 244, 12, 7, 62, 9, 25, 3, 58, 65535, 7, 31, 6, 18, 0, 4, 7, 14, 0, 4, 12, 79, 3, 19, 65535, 7, 4, 8, 23, 7, 12, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 24, 3, 83, 0, 4, 8, 23, 0, 4, 13, 82, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 24, 12, 79, 0, 4, 8, 23, 0, 4, 22, 96, 4, 12, 2, 10, 0, 4, 8, 23, 0, 4, 5, 24, 7, 26, 18, 88, 0, 4, 8, 23, 0, 4, 3, 83, 0, 4, 10, 30, 0, 4, 4, 86, 4, 6, 0, 4, 5, 24, 7, 16, 6, 18, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 8, 23, 7, 12, 20, 27, 0, 4, 7, 14, 0, 4, 4, 86, 7, 81, 5, 24, 3, 77, 65535, 7, 43, 8, 23, 3, 39, 65535, 7, 28, 11, 16, 0, 4, 5, 24, 0, 4, 10, 30, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 21, 80, 0, 4, 8, 23, 7, 8, 3, 83, 0, 4, 4, 86, 7, 31, 4, 86, 3, 27, 65535, 7, 12, 0, 26, 0, 4, 6, 18, 0, 4, 6, 18, 7, 12, 8, 23, 0, 4, 0, 26, 0, 4, 12, 79, 7, 20, 21, 80, 0, 4, 2, 73, 0, 4, 19, 92, 0, 4, 8, 23, 0, 4, 3, 83, 7, 32, 5, 24, 0, 4, 2, 73, 0, 4, 6, 18, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 16, 23, 93, 0, 4, 5, 24, 0, 4, 2, 73, 0, 4, 11, 16, 7, 12, 19, 92, 0, 4, 8, 23, 0, 4, 17, 87, 7, 218, 6, 18, 3, 214, 13, 7, 63, 0, 26, 3, 59, 14, 7, 12, 1, 29, 0, 4, 8, 23, 0, 4, 6, 18, 7, 24, 11, 16, 0, 4, 15, 72, 0, 4, 7, 14, 0, 4, 0, 26, 0, 4, 15, 72, 0, 4, 8, 23, 7, 12, 3, 83, 0, 4, 15, 72, 0, 4, 8, 23, 7, 8, 5, 24, 0, 4, 4, 86, 7, 47, 8, 23, 3, 43, 65535, 7, 28, 0, 26, 0, 4, 19, 92, 0, 4, 20, 27, 0, 4, 3, 83, 0, 4, 2, 73, 0, 4, 2, 73, 0, 4, 14, 17, 7, 12, 21, 80, 0, 4, 8, 23, 0, 4, 6, 18, 7, 20, 10, 30, 0, 4, 5, 24, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 11, 16, 7, 81, 2, 73, 3, 77, 65535, 7, 8, 0, 26, 0, 4, 12, 79, 7, 50, 9, 25, 3, 46, 65535, 7, 27, 0, 26, 3, 23, 65535, 7, 4, 6, 18, 7, 16, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 16, 19, 92, 4, 12, 2, 10, 0, 4, 8, 23, 0, 4, 12, 79, 7, 16, 15, 72, 0, 4, 15, 72, 0, 4, 8, 23, 0, 4, 12, 79, 7, 379, 13, 82, 3, 375, 15, 7, 126, 0, 26, 3, 122, 16, 7, 12, 9, 25, 0, 4, 3, 83, 0, 4, 2, 73, 7, 20, 20, 27, 0, 4, 20, 27, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 63, 4, 86, 3, 59, 65535, 7, 20, 9, 25, 0, 4, 18, 88, 4, 12, 2, 10, 0, 4, 8, 23, 0, 4, 12, 79, 7, 36, 8, 23, 0, 4, 3, 83, 0, 4, 10, 30, 0, 4, 0, 26, 0, 4, 6, 18, 0, 4, 10, 30, 0, 4, 24, 95, 0, 4, 8, 23, 0, 4, 12, 79, 7, 24, 22, 96, 0, 4, 21, 80, 0, 4, 0, 26, 0, 4, 6, 18, 0, 4, 7, 14, 0, 4, 8, 23, 7, 35, 8, 23, 3, 31, 65535, 7, 12, 3, 83, 0, 4, 15, 72, 0, 4, 8, 23, 7, 16, 4, 86, 0, 4, 18, 88, 0, 4, 2, 73, 0, 4, 12, 79, 7, 170, 10, 30, 3, 166, 65535, 7, 42, 9, 25, 0, 4, 3, 83, 0, 4, 2, 73, 0, 4, 5, 24, 0, 4, 8, 23, 0, 4, 9, 25, 0, 4, 2, 73, 0, 4, 11, 16, 0, 4, 12, 79, 4, 6, 0, 4, 5, 24, 7, 76, 6, 18, 0, 4, 6, 18, 3, 68, 65535, 7, 31, 8, 23, 0, 4, 11, 16, 0, 4, 11, 16, 0, 4, 10, 30, 3, 15, 65535, 7, 4, 0, 26, 7, 8, 7, 14, 0, 4, 13, 82, 7, 34, 10, 30, 0, 4, 5, 24, 0, 4, 8, 23, 0, 4, 9, 25, 0, 4, 2, 73, 0, 4, 11, 16, 0, 4, 12, 79, 4, 6, 0, 4, 5, 24, 7, 45, 11, 16, 3, 41, 65535, 7, 18, 7, 14, 0, 4, 4, 86, 0, 4, 8, 23, 4, 6, 0, 4, 5, 24, 7, 20, 21, 80, 0, 4, 0, 26, 0, 4, 6, 18, 0, 4, 7, 14, 0, 4, 8, 23, 7, 41, 2, 73, 3, 37, 65535, 7, 8, 12, 79, 0, 4, 8, 23, 7, 18, 11, 16, 0, 4, 4, 86, 0, 4, 18, 88, 4, 6, 0, 4, 5, 24, 7, 8, 21, 80, 0, 4, 8, 23, 7, 120, 11, 16, 3, 116, 17, 7, 18, 0, 26, 0, 4, 13, 82, 0, 4, 8, 23, 4, 6, 0, 4, 5, 24, 7, 19, 8, 23, 3, 15, 65535, 7, 4, 16, 89, 7, 8, 22, 96, 0, 4, 4, 86, 7, 60, 2, 73, 4, 56, 3, 54, 65535, 7, 35, 4, 86, 3, 31, 65535, 7, 16, 18, 88, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 12, 10, 30, 0, 4, 14, 17, 0, 4, 17, 87, 7, 16, 16, 89, 0, 4, 0, 26, 0, 4, 10, 30, 0, 4, 4, 86, 7, 16, 7, 14, 0, 4, 6, 18, 0, 4, 6, 18, 0, 4, 5, 24, 7, 229, 2, 73, 3, 225, 18, 7, 20, 1, 29, 0, 4, 23, 93, 0, 4, 8, 23, 0, 4, 9, 25, 0, 4, 4, 86, 7, 10, 14, 17, 4, 6, 0, 4, 14, 17, 7, 12, 10, 30, 0, 4, 12, 79, 0, 4, 5, 24, 7, 8, 6, 18, 0, 4, 12, 79, 7, 53, 20, 27, 3, 49, 65535, 7, 24, 8, 23, 0, 4, 3, 83, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 2, 73, 0, 4, 3, 83, 7, 22, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 4, 6, 0, 4, 5, 24, 7, 36, 3, 83, 0, 4, 12, 79, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 0, 26, 0, 4, 6, 18, 0, 4, 10, 30, 0, 4, 4, 86, 0, 4, 17, 87, 7, 20, 4, 86, 0, 4, 18, 88, 0, 4, 8, 23, 0, 4, 3, 83, 0, 4, 5, 24, 7, 40, 21, 80, 0, 4, 8, 23, 0, 4, 3, 83, 4, 28, 2, 26, 0, 4, 3, 83, 0, 4, 10, 30, 0, 4, 12, 79, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 23, 16, 89, 0, 4, 11, 16, 0, 4, 8, 23, 3, 11, 65535, 7, 4, 12, 79, 7, 4, 3, 83, 7, 467, 20, 27, 3, 463, 19, 7, 132, 0, 26, 3, 128, 65535, 7, 86, 3, 83, 3, 82, 65535, 7, 20, 0, 26, 0, 4, 6, 18, 0, 4, 6, 18, 0, 4, 8, 23, 0, 4, 6, 18, 7, 12, 5, 24, 0, 4, 8, 23, 0, 4, 3, 83, 7, 47, 4, 86, 0, 4, 10, 30, 3, 39, 65535, 7, 8, 0, 26, 0, 4, 6, 18, 7, 28, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 4, 12, 2, 10, 0, 4, 8, 23, 0, 4, 12, 79, 7, 39, 5, 24, 0, 4, 5, 24, 3, 31, 65535, 7, 12, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 16, 16, 89, 0, 4, 2, 73, 0, 4, 3, 83, 0, 4, 12, 79, 7, 55, 8, 23, 0, 4, 3, 83, 3, 47, 65535, 7, 16, 9, 25, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 28, 5, 24, 0, 4, 10, 30, 0, 4, 5, 24, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 16, 6, 18, 0, 4, 0, 26, 0, 4, 11, 16, 0, 4, 5, 24, 7, 20, 2, 73, 0, 4, 6, 18, 0, 4, 10, 30, 0, 4, 9, 25, 0, 4, 17, 87, 7, 197, 3, 83, 3, 193, 20, 7, 16, 0, 26, 0, 4, 15, 72, 0, 4, 13, 82, 0, 4, 0, 26, 7, 73, 8, 23, 3, 69, 65535, 7, 24, 9, 25, 0, 4, 8, 23, 0, 4, 12, 79, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 22, 20, 27, 0, 4, 0, 26, 0, 4, 3, 83, 0, 4, 8, 23, 4, 6, 0, 4, 12, 79, 7, 20, 5, 24, 0, 4, 8, 23, 0, 4, 3, 83, 0, 4, 21, 80, 0, 4, 8, 23, 7, 43, 10, 30, 3, 39, 65535, 7, 8, 2, 73, 0, 4, 3, 83, 7, 28, 21, 80, 0, 4, 10, 30, 0, 4, 6, 18, 0, 4, 8, 23, 0, 4, 15, 72, 0, 4, 8, 23, 0, 4, 5, 24, 7, 58, 2, 73, 3, 54, 65535, 7, 35, 9, 25, 0, 4, 8, 23, 0, 4, 12, 79, 0, 4, 7, 14, 0, 4, 3, 83, 3, 15, 65535, 7, 8, 0, 26, 0, 4, 6, 18, 7, 4, 8, 23, 7, 16, 15, 72, 0, 4, 3, 83, 0, 4, 0, 26, 0, 4, 13, 82, 7, 40, 7, 14, 0, 4, 1, 29, 0, 4, 6, 18, 0, 4, 10, 30, 0, 4, 9, 25, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 49, 25, 90, 0, 4, 7, 14, 3, 41, 65535, 7, 26, 0, 26, 0, 4, 3, 83, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 3, 83, 4, 6, 0, 4, 5, 24, 7, 12, 2, 73, 0, 4, 4, 86, 0, 4, 8, 23, 7, 481, 3, 83, 3, 477, 21, 7, 16, 0, 26, 0, 4, 11, 16, 0, 4, 15, 72, 0, 4, 8, 23, 7, 389, 8, 23, 3, 385, 22, 7, 31, 0, 26, 3, 27, 65535, 7, 4, 12, 79, 7, 20, 5, 24, 0, 4, 5, 24, 0, 4, 10, 30, 0, 4, 15, 72, 0, 4, 11, 16, 7, 47, 9, 25, 3, 43, 65535, 7, 16, 18, 88, 0, 4, 8, 23, 0, 4, 9, 25, 0, 4, 19, 92, 7, 24, 7, 14, 0, 4, 3, 83, 0, 4, 5, 24, 0, 4, 10, 30, 0, 4, 21, 80, 0, 4, 8, 23, 7, 57, 14, 17, 4, 53, 3, 51, 65535, 7, 32, 8, 23, 0, 4, 3, 83, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 9, 25, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 16, 3, 83, 0, 4, 8, 23, 0, 4, 5, 24, 0, 4, 18, 88, 7, 20, 10, 30, 0, 4, 11, 16, 0, 4, 12, 79, 0, 4, 8, 23, 0, 4, 22, 96, 7, 43, 6, 18, 3, 39, 65535, 7, 20, 0, 26, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 21, 80, 0, 4, 8, 23, 7, 16, 8, 23, 0, 4, 0, 26, 0, 4, 5, 24, 0, 4, 8, 23, 7, 16, 11, 16, 0, 4, 0, 26, 0, 4, 13, 82, 0, 4, 8, 23, 7, 66, 20, 27, 3, 62, 65535, 7, 28, 8, 23, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 0, 26, 0, 4, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 7, 31, 6, 18, 3, 27, 65535, 7, 12, 0, 26, 0, 4, 9, 25, 0, 4, 8, 23, 7, 12, 10, 30, 0, 4, 9, 25, 0, 4, 0, 26, 7, 66, 5, 24, 3, 62, 65535, 7, 8, 8, 23, 0, 4, 4, 86, 7, 16, 20, 27, 0, 4, 8, 23, 0, 4, 9, 25, 0, 4, 4, 86, 7, 35, 4, 86, 3, 31, 65535, 7, 12, 0, 26, 0, 4, 3, 83, 0, 4, 4, 86, 7, 16, 3, 83, 0, 4, 10, 30, 0, 4, 9, 25, 0, 4, 4, 86, 7, 20, 4, 86, 0, 4, 7, 14, 0, 4, 3, 83, 0, 4, 11, 16, 0, 4, 5, 24, 7, 16, 21, 80, 0, 4, 2, 73, 0, 4, 19, 92, 0, 4, 8, 23, 7, 57, 2, 73, 3, 53, 65535, 7, 42, 6, 18, 3, 38, 65535, 7, 4, 8, 23, 7, 31, 6, 18, 3, 27, 65535, 7, 16, 1, 29, 0, 4, 0, 26, 0, 4, 9, 25, 0, 4, 19, 92, 7, 8, 7, 14, 0, 4, 20, 27, 7, 8, 16, 89, 0, 4, 5, 24, 7, 12, 7, 14, 0, 4, 6, 18, 0, 4, 8, 23, 7, 702, 5, 24, 3, 698, 23, 7, 51, 0, 26, 3, 47, 65535, 7, 16, 13, 82, 0, 4, 20, 27, 0, 4, 6, 18, 0, 4, 8, 23, 7, 28, 21, 80, 0, 4, 8, 23, 0, 4, 20, 27, 0, 4, 2, 73, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 4, 86, 7, 57, 9, 25, 3, 53, 65535, 7, 22, 18, 88, 0, 4, 8, 23, 0, 4, 13, 82, 0, 4, 0, 26, 4, 6, 0, 4, 5, 24, 7, 12, 2, 73, 0, 4, 20, 27, 0, 4, 8, 23, 7, 16, 3, 83, 0, 4, 2, 73, 0, 4, 6, 18, 0, 4, 6, 18, 7, 195, 8, 23, 3, 191, 24, 7, 16, 0, 26, 0, 4, 3, 83, 0, 4, 9, 25, 0, 4, 18, 88, 7, 57, 9, 25, 3, 53, 65535, 7, 18, 2, 73, 0, 4, 11, 16, 0, 4, 12, 79, 4, 6, 0, 4, 5, 24, 7, 12, 3, 83, 0, 4, 8, 23, 0, 4, 4, 86, 7, 20, 7, 14, 0, 4, 3, 83, 0, 4, 10, 30, 0, 4, 4, 86, 0, 4, 17, 87, 7, 30, 25, 90, 0, 4, 7, 14, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 9, 25, 0, 4, 8, 23, 4, 6, 0, 4, 5, 24, 7, 55, 3, 83, 3, 51, 65535, 7, 36, 10, 30, 0, 4, 0, 26, 0, 4, 6, 18, 0, 4, 10, 30, 0, 4, 24, 95, 0, 4, 0, 26, 0, 4, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 7, 12, 21, 80, 0, 4, 8, 23, 0, 4, 3, 83, 7, 20, 5, 24, 0, 4, 5, 24, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 10, 4, 86, 4, 6, 0, 4, 5, 24, 7, 16, 18, 88, 0, 4, 0, 26, 0, 4, 3, 83, 0, 4, 8, 23, 7, 20, 10, 30, 0, 4, 13, 82, 0, 4, 20, 27, 0, 4, 6, 18, 0, 4, 8, 23, 7, 12, 19, 92, 0, 4, 10, 30, 0, 4, 20, 27, 7, 28, 11, 16, 0, 4, 0, 26, 0, 4, 20, 27, 0, 4, 5, 24, 0, 4, 18, 88, 0, 4, 2, 73, 0, 4, 4, 86, 7, 39, 2, 73, 3, 35, 65535, 7, 16, 3, 83, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 12, 79, 7, 16, 7, 14, 0, 4, 3, 83, 0, 4, 9, 25, 0, 4, 8, 23, 7, 8, 25, 90, 0, 4, 6, 18, 7, 194, 4, 86, 3, 190, 25, 7, 106, 0, 26, 3, 102, 26, 7, 12, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 7, 28, 11, 16, 0, 4, 12, 79, 0, 4, 0, 26, 0, 4, 6, 18, 0, 4, 2, 73, 0, 4, 11, 16, 0, 4, 8, 23, 7, 8, 3, 83, 0, 4, 4, 86, 7, 51, 4, 86, 3, 47, 65535, 7, 20, 8, 23, 0, 4, 13, 82, 0, 4, 8, 23, 0, 4, 11, 16, 0, 4, 4, 86, 7, 24, 10, 30, 0, 4, 5, 24, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 9, 25, 0, 4, 5, 24, 7, 27, 12, 79, 3, 23, 65535, 7, 8, 10, 30, 0, 4, 11, 16, 7, 12, 2, 73, 0, 4, 7, 14, 0, 4, 4, 86, 7, 31, 2, 73, 0, 4, 3, 83, 3, 23, 65535, 7, 12, 0, 26, 0, 4, 15, 72, 0, 4, 8, 23, 7, 8, 8, 23, 0, 4, 12, 79, 7, 23, 3, 83, 0, 4, 10, 30, 3, 15, 65535, 7, 8, 9, 25, 0, 4, 4, 86, 7, 4, 20, 27, 7, 44, 7, 14, 0, 4, 1, 29, 0, 4, 5, 24, 0, 4, 9, 25, 0, 4, 3, 83, 0, 4, 10, 30, 0, 4, 20, 27, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 31, 17, 87, 0, 4, 5, 24, 3, 23, 65535, 7, 8, 10, 30, 0, 4, 12, 79, 7, 12, 4, 86, 0, 4, 8, 23, 0, 4, 13, 82, 7, 285, 4, 86, 3, 281, 27, 7, 59, 0, 26, 3, 55, 65535, 7, 36, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 0, 4, 5, 24, 4, 20, 2, 18, 0, 4, 20, 27, 0, 4, 0, 26, 0, 4, 9, 25, 0, 4, 8, 23, 7, 16, 3, 83, 0, 4, 15, 72, 0, 4, 8, 23, 0, 4, 4, 86, 7, 64, 8, 23, 3, 60, 65535, 7, 49, 13, 82, 0, 4, 20, 27, 4, 41, 3, 39, 65535, 7, 16, 6, 18, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 23, 7, 20, 2, 73, 0, 4, 3, 83, 0, 4, 0, 26, 0, 4, 3, 83, 0, 4, 17, 87, 7, 8, 22, 96, 0, 4, 4, 86, 7, 12, 10, 30, 0, 4, 8, 23, 0, 4, 5, 24, 7, 125, 3, 83, 3, 121, 65535, 7, 55, 0, 26, 0, 4, 11, 16, 0, 4, 5, 24, 3, 43, 65535, 7, 24, 0, 26, 0, 4, 9, 25, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 16, 14, 17, 0, 4, 2, 73, 0, 4, 3, 83, 0, 4, 13, 82, 7, 20, 10, 30, 0, 4, 15, 72, 0, 4, 15, 72, 0, 4, 8, 23, 0, 4, 3, 83, 7, 43, 7, 14, 3, 39, 65535, 7, 20, 11, 16, 0, 4, 9, 25, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 23, 7, 16, 5, 24, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 12, 79, 7, 18, 17, 87, 0, 4, 20, 27, 0, 4, 8, 23, 4, 6, 0, 4, 5, 24, 7, 227, 7, 14, 3, 223, 65535, 7, 186, 11, 16, 3, 182, 28, 7, 28, 1, 29, 0, 4, 2, 73, 0, 4, 7, 14, 0, 4, 11, 16, 0, 4, 12, 79, 0, 4, 8, 23, 0, 4, 12, 79, 7, 36, 9, 25, 0, 4, 2, 73, 0, 4, 13, 82, 0, 4, 13, 82, 0, 4, 10, 30, 0, 4, 4, 86, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 12, 79, 7, 36, 8, 23, 0, 4, 11, 16, 0, 4, 9, 25, 0, 4, 3, 83, 0, 4, 17, 87, 0, 4, 20, 27, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 12, 79, 7, 20, 19, 92, 0, 4, 11, 16, 0, 4, 2, 73, 0, 4, 16, 89, 0, 4, 11, 16, 7, 47, 6, 18, 3, 43, 65535, 7, 20, 10, 30, 0, 4, 5, 24, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 11, 16, 7, 20, 2, 73, 0, 4, 15, 72, 0, 4, 15, 72, 0, 4, 8, 23, 0, 4, 12, 79, 7, 12, 4, 86, 0, 4, 10, 30, 0, 4, 6, 18, 7, 20, 20, 27, 0, 4, 12, 79, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 8, 23, 7, 14, 5, 24, 0, 4, 8, 23, 4, 6, 0, 4, 3, 83, 7, 216, 21, 80, 3, 212, 29, 7, 116, 0, 26, 3, 112, 65535, 7, 16, 9, 25, 0, 4, 7, 14, 0, 4, 7, 14, 0, 4, 13, 82, 7, 50, 6, 18, 3, 46, 65535, 7, 35, 10, 30, 0, 4, 12, 79, 4, 27, 2, 25, 0, 4, 0, 26, 0, 4, 4, 86, 3, 15, 65535, 7, 4, 8, 23, 7, 8, 2, 73, 0, 4, 3, 83, 7, 8, 7, 14, 0, 4, 8, 23, 7, 43, 3, 83, 3, 39, 65535, 7, 20, 10, 30, 0, 4, 0, 26, 0, 4, 1, 29, 0, 4, 6, 18, 0, 4, 8, 23, 7, 16, 17, 87, 0, 4, 10, 30, 0, 4, 11, 16, 0, 4, 15, 72, 7, 24, 8, 23, 0, 4, 3, 83, 0, 4, 5, 24, 0, 4, 10, 30, 0, 4, 2, 73, 0, 4, 11, 16, 7, 41, 10, 30, 3, 37, 65535, 7, 14, 8, 23, 0, 4, 16, 89, 4, 6, 0, 4, 5, 24, 7, 20, 3, 83, 0, 4, 4, 86, 0, 4, 7, 14, 0, 4, 0, 26, 0, 4, 6, 18, 7, 28, 2, 73, 0, 4, 6, 18, 0, 4, 0, 26, 0, 4, 4, 86, 0, 4, 10, 30, 0, 4, 6, 18, 0, 4, 8, 23, 7, 147, 16, 89, 3, 143, 30, 7, 18, 8, 23, 0, 4, 8, 23, 0, 4, 19, 92, 4, 6, 0, 4, 5, 24, 7, 36, 18, 88, 0, 4, 10, 30, 0, 4, 4, 86, 0, 4, 8, 23, 0, 4, 5, 24, 0, 4, 20, 27, 0, 4, 0, 26, 0, 4, 9, 25, 0, 4, 8, 23, 7, 35, 10, 30, 0, 4, 4, 86, 0, 4, 18, 88, 3, 23, 65535, 7, 8, 10, 30, 0, 4, 11, 16, 7, 12, 2, 73, 0, 4, 7, 14, 0, 4, 4, 86, 7, 12, 2, 73, 0, 4, 3, 83, 0, 4, 19, 92, 7, 39, 3, 83, 3, 35, 65535, 7, 20, 0, 26, 0, 4, 20, 27, 0, 4, 20, 27, 0, 4, 8, 23, 0, 4, 3, 83, 7, 12, 10, 30, 0, 4, 4, 86, 0, 4, 8, 23, 7, 12, 22, 96, 0, 4, 13, 82, 0, 4, 6, 18, 7, 29, 17, 87, 0, 4, 8, 23, 3, 21, 65535, 7, 14, 0, 26, 0, 4, 3, 83, 4, 6, 0, 4, 5, 24, 7, 4, 5, 24, 7, 16, 24, 95, 0, 4, 2, 73, 0, 4, 11, 16, 0, 4, 8, 23, 5, 6, 0, 4, 26, 10}, Classes: []*rt.Class{&cls1257, &cls1265, &cls1263, &cls1254, &cls1255, &cls1250, &cls1249, &cls1248, &cls1259, &cls1260, &cls1253, &cls1247, &cls1279, &cls1272, &cls1252, &cls1295, &cls1266, &cls1294, &cls1287, &cls1269, &cls1261, &cls1293, &cls1312, &cls1550, &cls1355, &cls1375, &cls1246}, Literals: []rt.TerminalText{{Runes: lit45, Text: "_"}}}
+var term1556 = term1556Data.Prepare()
+var steps1557 = []rt.ClassStep{{C: &cls1253, ID: 30}, {C: &cls1250, ID: 24}, {C: &cls1247, ID: 16}, {C: &cls1248, ID: 14}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}}
+var steps1558 = []rt.ClassStep{{C: &cls1247, ID: 16}, {C: &cls1263, ID: 73}, {C: &cls1255, ID: 86}, {C: &cls1247, ID: 16}, {C: &cls1248, ID: 14}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}}
+var steps1559 = []rt.ClassStep{{C: &cls1295, ID: 72}, {C: &cls1249, ID: 18}, {C: &cls1263, ID: 73}, {C: &cls1265, ID: 29}}
+var steps1560 = []rt.ClassStep{{C: &cls1294, ID: 87}, {C: &cls1259, ID: 23}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1250, ID: 24}}
+var steps1561 = []rt.ClassStep{{C: &cls1294, ID: 87}, {C: &cls1259, ID: 23}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}}
+var steps1562 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}, {C: &cls1287, ID: 88}, {C: &cls1250, ID: 24}}
+var steps1563 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}, {C: &cls1287, ID: 88}}
+var steps1564 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1257, ID: 26}, {C: &cls1294, ID: 87}, {C: &cls1250, ID: 24}}
+var steps1565 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1257, ID: 26}, {C: &cls1294, ID: 87}}
+var steps1566 = []rt.ClassStep{{C: &cls1287, ID: 88}, {C: &cls1263, ID: 73}, {C: &cls1248, ID: 14}, {C: &cls1254, ID: 83}, {C: &cls1250, ID: 24}}
+var steps1567 = []rt.ClassStep{{C: &cls1287, ID: 88}, {C: &cls1263, ID: 73}, {C: &cls1248, ID: 14}, {C: &cls1254, ID: 83}}
+var steps1568 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1248, ID: 14}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}}
+var steps1569 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}, {C: &cls1248, ID: 14}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}}
+var steps1570 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1279, ID: 79}, {C: &cls1250, ID: 24}}
+var steps1571 = []rt.ClassStep{{C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1279, ID: 79}}
+var steps1572 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1253, ID: 30}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}, {C: &cls1253, ID: 30}, {C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1279, ID: 79}, {C: &cls1250, ID: 24}}
+var steps1573 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1253, ID: 30}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}, {C: &cls1253, ID: 30}, {C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1279, ID: 79}}
+var steps1574 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1253, ID: 30}, {C: &cls1260, ID: 25}, {C: &cls1254, ID: 83}, {C: &cls1263, ID: 73}, {C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1279, ID: 79}, {C: &cls1250, ID: 24}}
+var steps1575 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1253, ID: 30}, {C: &cls1260, ID: 25}, {C: &cls1254, ID: 83}, {C: &cls1263, ID: 73}, {C: &cls1250, ID: 24}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1279, ID: 79}}
+var steps1576 = []rt.ClassStep{{C: &cls1266, ID: 89}, {C: &cls1259, ID: 23}, {C: &cls1259, ID: 23}, {C: &cls1269, ID: 92}, {C: &cls1250, ID: 24}}
+var steps1577 = []rt.ClassStep{{C: &cls1266, ID: 89}, {C: &cls1259, ID: 23}, {C: &cls1259, ID: 23}, {C: &cls1269, ID: 92}}
+var steps1578 = []rt.ClassStep{{C: &cls1375, ID: 90}, {C: &cls1248, ID: 14}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}, {C: &cls1250, ID: 24}}
+var steps1579 = []rt.ClassStep{{C: &cls1375, ID: 90}, {C: &cls1248, ID: 14}, {C: &cls1257, ID: 26}, {C: &cls1254, ID: 83}, {C: &cls1255, ID: 86}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}}
+var steps1580 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1257, ID: 26}, {C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}}
+var steps1581 = []rt.ClassStep{{C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1260, ID: 25}, {C: &cls1257, ID: 26}, {C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}}
+var steps1582 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}, {C: &cls1248, ID: 14}, {C: &cls1254, ID: 83}, {C: &cls1253, ID: 30}, {C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}}
+var steps1583 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1255, ID: 86}, {C: &cls1248, ID: 14}, {C: &cls1254, ID: 83}, {C: &cls1294, ID: 87}}
+var steps1584 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1253, ID: 30}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1247, ID: 16}, {C: &cls1253, ID: 30}, {C: &cls1257, ID: 26}}
+var steps1585 = []rt.ClassStep{{C: &cls1272, ID: 82}, {C: &cls1253, ID: 30}, {C: &cls1249, ID: 18}, {C: &cls1249, ID: 18}, {C: &cls1259, ID: 23}, {C: &cls1247, ID: 16}, {C: &cls1247, ID: 16}, {C: &cls1253, ID: 30}, {C: &cls1248, ID: 14}, {C: &cls1272, ID: 82}}
+var steps1586 = []rt.ClassStep{{C: &cls1261, ID: 27}, {C: &cls1253, ID: 30}, {C: &cls1293, ID: 80}, {C: &cls1263, ID: 73}, {C: &cls1255, ID: 86}}
+var steps1587 = []rt.ClassStep{{C: &cls1266, ID: 89}, {C: &cls1253, ID: 30}, {C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}}
+var steps1588 = []rt.ClassStep{{C: &cls1249, ID: 18}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}, {C: &cls1295, ID: 72}, {C: &cls1259, ID: 23}, {C: &cls1254, ID: 83}}
+var steps1589 = []rt.ClassStep{{C: &cls1248, ID: 14}, {C: &cls1247, ID: 16}, {C: &cls1261, ID: 27}, {C: &cls1253, ID: 30}, {C: &cls1293, ID: 80}, {C: &cls1263, ID: 73}, {C: &cls1255, ID: 86}}
+var steps1590 = []rt.ClassStep{{C: &cls1550, ID: 93}, {C: &cls1263, ID: 73}, {C: &cls1253, ID: 30}, {C: &cls1247, ID: 16}}
+var steps1591 = []rt.ClassStep{{C: &cls1257, ID: 26}, {C: &cls1260, ID: 25}, {C: &cls1255, ID: 86}, {C: &cls1253, ID: 30}, {C: &cls1263, ID: 73}, {C: &cls1247, ID: 16}}
+var steps1592 = []rt.ClassStep{{C: &cls1254, ID: 83}, {C: &cls1259, ID: 23}, {C: &cls1250, ID: 24}, {C: &cls1255, ID: 86}, {C: &cls1254, ID: 83}, {C: &cls1253, ID: 30}, {C: &cls1260, ID: 25}, {C: &cls1255, ID: 86}}
+var steps1593 = []rt.ClassStep{{C: &cls1260, ID: 25}, {C: &cls1257, ID: 26}, {C: &cls1250, ID: 24}, {C: &cls1260, ID: 25}, {C: &cls1257, ID: 26}, {C: &cls1279, ID: 79}, {C: &cls1259, ID: 23}}
+var cls1607 = rt.Class{ASCII: [2]uint64{0x7000ac6200000000, 0x5000d2814000d281}}
+var cls1609 = rt.Class{ASCII: [2]uint64{0x0, 0x8520000085200}}
+var cls1615 = rt.Class{ASCII: [2]uint64{0x7000ac6200000000, 0x5000800140008001}}
+var lit1624 = []rune("::")
 
 func init() {
 	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
@@ -6608,163 +6608,163 @@ func init() {
 	trules = rt.NewTRules(rules)
 	defer tinit()
 	trules[72].OperatorsRule = &rt.TOperatorsRule{
-		Skip: e1605,
+		Skip: e1594,
 		Operands: []*rt.TOperatorsRuleLine{
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1606, Action: nil, Value: sh2},
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1607, Action: nil, Value: sh2},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1595, Action: nil, Value: sh1},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1596, Action: nil, Value: sh1},
 		},
-		Prefix: []*rt.TOperatorsRuleOp{{Id: 4, Kind: "prefix", Assoc: "", Level: 4, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1612, Action: func(c *rt.TActCtx) any { return tmk_Not(c, true, (c.Rhs)) }, Value: sh2}},
-			{Id: 15, Kind: "prefix", Assoc: "", Level: 8, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1625, Action: func(c *rt.TActCtx) any { return tmk_Unary(c, true, c.Cap(0), (c.Rhs)) }, Value: sh1207}},
-			{Id: 23, Kind: "prefix", Assoc: "", Level: 14, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1634, Action: func(c *rt.TActCtx) any { return tmk_Unary(c, true, (c.Op), (c.Rhs)) }, Value: sh2}}},
-		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "left", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1608, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh9}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "r"}, M: e1609, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), c.Cap(1)) }, Value: sh33}},
-			{Id: 2, Kind: "infix", Assoc: "left", Level: 2, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1610, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh9}},
-			{Id: 3, Kind: "infix", Assoc: "left", Level: 3, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1611, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh9}},
-			{Id: 5, Kind: "postfix", Assoc: "", Level: 5, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "t", "nn"}, M: e1613, Action: func(c *rt.TActCtx) any {
+		Prefix: []*rt.TOperatorsRuleOp{{Id: 4, Kind: "prefix", Assoc: "", Level: 4, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1601, Action: func(c *rt.TActCtx) any { return tmk_Not(c, true, (c.Rhs)) }, Value: sh1}},
+			{Id: 15, Kind: "prefix", Assoc: "", Level: 8, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1614, Action: func(c *rt.TActCtx) any { return tmk_Unary(c, true, c.Cap(0), (c.Rhs)) }, Value: sh1196}},
+			{Id: 23, Kind: "prefix", Assoc: "", Level: 14, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1623, Action: func(c *rt.TActCtx) any { return tmk_Unary(c, true, (c.Op), (c.Rhs)) }, Value: sh1}}},
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "left", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1597, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh8}},
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "r"}, M: e1598, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), c.Cap(1)) }, Value: sh28}},
+			{Id: 2, Kind: "infix", Assoc: "left", Level: 2, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1599, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh8}},
+			{Id: 3, Kind: "infix", Assoc: "left", Level: 3, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1600, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh8}},
+			{Id: 5, Kind: "postfix", Assoc: "", Level: 5, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "t", "nn"}, M: e1602, Action: func(c *rt.TActCtx) any {
 				return tmk_IsExpr(c, true, (c.Lhs), c.Or(c.Binary(">", c.Length(c.Cap(0)), any(0)), func() any { return c.Binary(">", c.Length(c.Cap(2)), any(0)) }), c.Text(c.Cap(1)))
-			}, Value: sh9}},
-			{Id: 6, Kind: "postfix", Assoc: "", Level: 5, Line: &rt.TOperatorsRuleLine{Scope: []string{"t"}, M: e1614, Action: func(c *rt.TActCtx) any { return tmk_IsExpr(c, true, (c.Lhs), any(true), c.Text(c.Cap(0))) }, Value: sh9}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 5, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "r"}, M: e1615, Action: func(c *rt.TActCtx) any {
+			}, Value: sh8}},
+			{Id: 6, Kind: "postfix", Assoc: "", Level: 5, Line: &rt.TOperatorsRuleLine{Scope: []string{"t"}, M: e1603, Action: func(c *rt.TActCtx) any { return tmk_IsExpr(c, true, (c.Lhs), any(true), c.Text(c.Cap(0))) }, Value: sh8}},
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 5, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "r"}, M: e1604, Action: func(c *rt.TActCtx) any {
 				return tmk_DistinctFrom(c, true, (c.Lhs), c.Cap(1), c.Binary(">", c.Length(c.Cap(0)), any(0)))
-			}, Value: sh1146}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 5, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "ts"}, M: e1616, Action: func(c *rt.TActCtx) any {
+			}, Value: sh1135}},
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 5, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "ts"}, M: e1605, Action: func(c *rt.TActCtx) any {
 				return tmk_IsOf(c, true, (c.Lhs), c.Cap(1), c.Binary(">", c.Length(c.Cap(0)), any(0)))
-			}, Value: sh1152}},
-			{Id: 9, Kind: "postfix", Assoc: "", Level: 6, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "r"}, M: e1617, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), c.Cap(1)) }, Value: sh33}},
-			{Id: 10, Kind: "postfix", Assoc: "", Level: 6, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "q", "s"}, M: e1619, Action: func(c *rt.TActCtx) any {
+			}, Value: sh1141}},
+			{Id: 9, Kind: "postfix", Assoc: "", Level: 6, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "r"}, M: e1606, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), c.Cap(1)) }, Value: sh28}},
+			{Id: 10, Kind: "postfix", Assoc: "", Level: 6, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "q", "s"}, M: e1608, Action: func(c *rt.TActCtx) any {
 				return tmk_AnyAll(c, true, (c.Lhs), c.Text(c.Cap(0)), c.Text(c.Cap(1)), c.Cap(2))
-			}, Value: sh229}},
-			{Id: 11, Kind: "postfix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "o", "p", "e"}, M: e1621, Action: func(c *rt.TActCtx) any {
+			}, Value: sh218}},
+			{Id: 11, Kind: "postfix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "o", "p", "e"}, M: e1610, Action: func(c *rt.TActCtx) any {
 				return tmk_Like(c, true, (c.Lhs), c.Binary(">", c.Length(c.Cap(0)), any(0)), c.Text(c.Cap(1)), c.Cap(2), c.Cap(3))
-			}, Value: sh229}},
-			{Id: 12, Kind: "postfix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "p"}, M: e1622, Action: func(c *rt.TActCtx) any {
+			}, Value: sh218}},
+			{Id: 12, Kind: "postfix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "p"}, M: e1611, Action: func(c *rt.TActCtx) any {
 				return tmk_Like(c, true, (c.Lhs), any(false), c.Text(c.Cap(0)), c.Cap(1), nil)
-			}, Value: sh33}},
-			{Id: 13, Kind: "postfix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "q", "is", "s"}, M: e1623, Action: func(c *rt.TActCtx) any {
+			}, Value: sh28}},
+			{Id: 13, Kind: "postfix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "q", "is", "s"}, M: e1612, Action: func(c *rt.TActCtx) any {
 				return tmk_In(c, true, (c.Lhs), c.Binary(">", c.Length(c.Cap(0)), any(0)), c.Cap(1), c.Concat(c.Cap(2)), c.Cap(3))
-			}, Value: sh136}},
-			{Id: 14, Kind: "postfix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "sy", "lo", "hi"}, M: e1624, Action: func(c *rt.TActCtx) any {
+			}, Value: sh126}},
+			{Id: 14, Kind: "postfix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "sy", "lo", "hi"}, M: e1613, Action: func(c *rt.TActCtx) any {
 				return tmk_Between(c, true, (c.Lhs), c.Cap(2), c.Cap(3), c.Binary(">", c.Length(c.Cap(0)), any(0)), c.Binary(">", c.Length(c.Cap(1)), any(0)))
-			}, Value: sh23}},
-			{Id: 16, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "r"}, M: e1627, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), c.Cap(1)) }, Value: sh33}},
-			{Id: 17, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1628, Action: func(c *rt.TActCtx) any { return tmk_PostfixOp(c, true, (c.Lhs), c.Cap(0)) }, Value: sh9}},
-			{Id: 18, Kind: "infix", Assoc: "left", Level: 9, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1629, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh9}},
-			{Id: 19, Kind: "infix", Assoc: "left", Level: 10, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1630, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh9}},
-			{Id: 20, Kind: "infix", Assoc: "left", Level: 11, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1631, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh9}},
-			{Id: 21, Kind: "postfix", Assoc: "", Level: 12, Line: &rt.TOperatorsRuleLine{Scope: []string{"z"}, M: e1632, Action: func(c *rt.TActCtx) any { return tmk_AtTimeZone(c, true, (c.Lhs), c.Cap(0)) }, Value: sh1143}},
-			{Id: 22, Kind: "postfix", Assoc: "", Level: 13, Line: &rt.TOperatorsRuleLine{Scope: []string{"n"}, M: e1633, Action: func(c *rt.TActCtx) any { return tmk_Collate(c, true, (c.Lhs), c.Cap(0)) }, Value: sh33}},
-			{Id: 24, Kind: "postfix", Assoc: "", Level: 15, Line: &rt.TOperatorsRuleLine{Scope: []string{"t"}, M: e1636, Action: func(c *rt.TActCtx) any { return tmk_Cast(c, true, (c.Lhs), c.Cap(0), any(false), any(true)) }, Value: sh33}}},
+			}, Value: sh19}},
+			{Id: 16, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "r"}, M: e1616, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), c.Cap(1)) }, Value: sh28}},
+			{Id: 17, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1617, Action: func(c *rt.TActCtx) any { return tmk_PostfixOp(c, true, (c.Lhs), c.Cap(0)) }, Value: sh8}},
+			{Id: 18, Kind: "infix", Assoc: "left", Level: 9, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1618, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh8}},
+			{Id: 19, Kind: "infix", Assoc: "left", Level: 10, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1619, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh8}},
+			{Id: 20, Kind: "infix", Assoc: "left", Level: 11, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1620, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh8}},
+			{Id: 21, Kind: "postfix", Assoc: "", Level: 12, Line: &rt.TOperatorsRuleLine{Scope: []string{"z"}, M: e1621, Action: func(c *rt.TActCtx) any { return tmk_AtTimeZone(c, true, (c.Lhs), c.Cap(0)) }, Value: sh1132}},
+			{Id: 22, Kind: "postfix", Assoc: "", Level: 13, Line: &rt.TOperatorsRuleLine{Scope: []string{"n"}, M: e1622, Action: func(c *rt.TActCtx) any { return tmk_Collate(c, true, (c.Lhs), c.Cap(0)) }, Value: sh28}},
+			{Id: 24, Kind: "postfix", Assoc: "", Level: 15, Line: &rt.TOperatorsRuleLine{Scope: []string{"t"}, M: e1625, Action: func(c *rt.TActCtx) any { return tmk_Cast(c, true, (c.Lhs), c.Cap(0), any(false), any(true)) }, Value: sh28}}},
 	}
 	trules[72].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[72], min) }
 	trules[74].OperatorsRule = &rt.TOperatorsRule{
-		Skip: e1605,
+		Skip: e1594,
 		Operands: []*rt.TOperatorsRuleLine{
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1607, Action: nil, Value: sh2},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1596, Action: nil, Value: sh1},
 		},
-		Prefix: []*rt.TOperatorsRuleOp{{Id: 3, Kind: "prefix", Assoc: "", Level: 3, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1625, Action: func(c *rt.TActCtx) any { return tmk_Unary(c, true, c.Cap(0), (c.Rhs)) }, Value: sh1207}},
-			{Id: 9, Kind: "prefix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1634, Action: func(c *rt.TActCtx) any { return tmk_Unary(c, true, (c.Op), (c.Rhs)) }, Value: sh2}}},
-		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "r"}, M: e1637, Action: func(c *rt.TActCtx) any {
+		Prefix: []*rt.TOperatorsRuleOp{{Id: 3, Kind: "prefix", Assoc: "", Level: 3, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1614, Action: func(c *rt.TActCtx) any { return tmk_Unary(c, true, c.Cap(0), (c.Rhs)) }, Value: sh1196}},
+			{Id: 9, Kind: "prefix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1623, Action: func(c *rt.TActCtx) any { return tmk_Unary(c, true, (c.Op), (c.Rhs)) }, Value: sh1}}},
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "r"}, M: e1626, Action: func(c *rt.TActCtx) any {
 			return tmk_DistinctFrom(c, true, (c.Lhs), c.Cap(1), c.Binary(">", c.Length(c.Cap(0)), any(0)))
-		}, Value: sh1146}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "ts"}, M: e1638, Action: func(c *rt.TActCtx) any {
+		}, Value: sh1135}},
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "ts"}, M: e1627, Action: func(c *rt.TActCtx) any {
 				return tmk_IsOf(c, true, (c.Lhs), c.Cap(1), c.Binary(">", c.Length(c.Cap(0)), any(0)))
-			}, Value: sh1152}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 2, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "r"}, M: e1639, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), c.Cap(1)) }, Value: sh33}},
-			{Id: 4, Kind: "postfix", Assoc: "", Level: 3, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "r"}, M: e1640, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), c.Cap(1)) }, Value: sh33}},
-			{Id: 5, Kind: "postfix", Assoc: "", Level: 3, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1641, Action: func(c *rt.TActCtx) any { return tmk_PostfixOp(c, true, (c.Lhs), c.Cap(0)) }, Value: sh9}},
-			{Id: 6, Kind: "infix", Assoc: "left", Level: 4, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1634, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), (c.Op), (c.Rhs)) }, Value: sh2}},
-			{Id: 7, Kind: "infix", Assoc: "left", Level: 5, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1642, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), (c.Op), (c.Rhs)) }, Value: sh2}},
-			{Id: 8, Kind: "infix", Assoc: "left", Level: 6, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1643, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), (c.Op), (c.Rhs)) }, Value: sh2}},
-			{Id: 10, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.TOperatorsRuleLine{Scope: []string{"t"}, M: e1644, Action: func(c *rt.TActCtx) any { return tmk_Cast(c, true, (c.Lhs), c.Cap(0), any(false), any(true)) }, Value: sh33}}},
+			}, Value: sh1141}},
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 2, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "r"}, M: e1628, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), c.Cap(1)) }, Value: sh28}},
+			{Id: 4, Kind: "postfix", Assoc: "", Level: 3, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "r"}, M: e1629, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), c.Cap(0), c.Cap(1)) }, Value: sh28}},
+			{Id: 5, Kind: "postfix", Assoc: "", Level: 3, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1630, Action: func(c *rt.TActCtx) any { return tmk_PostfixOp(c, true, (c.Lhs), c.Cap(0)) }, Value: sh8}},
+			{Id: 6, Kind: "infix", Assoc: "left", Level: 4, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1623, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), (c.Op), (c.Rhs)) }, Value: sh1}},
+			{Id: 7, Kind: "infix", Assoc: "left", Level: 5, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1631, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), (c.Op), (c.Rhs)) }, Value: sh1}},
+			{Id: 8, Kind: "infix", Assoc: "left", Level: 6, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1632, Action: func(c *rt.TActCtx) any { return tmk_Binary(c, true, (c.Lhs), (c.Op), (c.Rhs)) }, Value: sh1}},
+			{Id: 10, Kind: "postfix", Assoc: "", Level: 8, Line: &rt.TOperatorsRuleLine{Scope: []string{"t"}, M: e1633, Action: func(c *rt.TActCtx) any { return tmk_Cast(c, true, (c.Lhs), c.Cap(0), any(false), any(true)) }, Value: sh28}}},
 	}
 	trules[74].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[74], min) }
 	trules[87].OperatorsRule = &rt.TOperatorsRule{
-		Skip: e1605,
+		Skip: e1594,
 		Operands: []*rt.TOperatorsRuleLine{
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1645, Action: nil, Value: sh2},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1634, Action: nil, Value: sh1},
 		},
 		Prefix: []*rt.TOperatorsRuleOp{},
-		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n"}, M: e1646, Action: func(c *rt.TActCtx) any {
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n"}, M: e1635, Action: func(c *rt.TActCtx) any {
 			return tmk_Indirection(c, true, (c.Lhs), tmk_FieldStep(c, false, c.Cap(0), nil, nil))
-		}, Value: sh33}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"i"}, M: e1647, Action: func(c *rt.TActCtx) any { return tmk_Indirection(c, true, (c.Lhs), tmk_IndexStep(c, false, c.Cap(0))) }, Value: sh229}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"lo", "hi"}, M: e1648, Action: func(c *rt.TActCtx) any {
+		}, Value: sh28}},
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"i"}, M: e1636, Action: func(c *rt.TActCtx) any { return tmk_Indirection(c, true, (c.Lhs), tmk_IndexStep(c, false, c.Cap(0))) }, Value: sh218}},
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"lo", "hi"}, M: e1637, Action: func(c *rt.TActCtx) any {
 				return tmk_Indirection(c, true, (c.Lhs), tmk_SliceStep(c, false, c.Cap(0), c.Cap(1), nil, nil))
-			}, Value: sh1146}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"lo", "hi", "st"}, M: e1649, Action: func(c *rt.TActCtx) any {
+			}, Value: sh1135}},
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"lo", "hi", "st"}, M: e1638, Action: func(c *rt.TActCtx) any {
 				return tmk_Indirection(c, true, (c.Lhs), tmk_SliceStep(c, false, c.Cap(0), c.Cap(1), c.Cap(2), nil))
-			}, Value: sh1209}}},
+			}, Value: sh1198}}},
 	}
 	trules[87].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[87], min) }
 	trules[90].OperatorsRule = &rt.TOperatorsRule{
-		Skip: e1605,
+		Skip: e1594,
 		Operands: []*rt.TOperatorsRuleLine{
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1650, Action: nil, Value: sh2},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1639, Action: nil, Value: sh1},
 		},
 		Prefix: []*rt.TOperatorsRuleOp{},
-		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n"}, M: e1646, Action: func(c *rt.TActCtx) any {
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n"}, M: e1635, Action: func(c *rt.TActCtx) any {
 			return tmk_Indirection(c, true, (c.Lhs), tmk_FieldStep(c, false, c.Cap(0), nil, nil))
-		}, Value: sh33}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"i"}, M: e1647, Action: func(c *rt.TActCtx) any { return tmk_Indirection(c, true, (c.Lhs), tmk_IndexStep(c, false, c.Cap(0))) }, Value: sh229}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"lo", "d", "st", "hi"}, M: e1651, Action: func(c *rt.TActCtx) any {
+		}, Value: sh28}},
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"i"}, M: e1636, Action: func(c *rt.TActCtx) any { return tmk_Indirection(c, true, (c.Lhs), tmk_IndexStep(c, false, c.Cap(0))) }, Value: sh218}},
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"lo", "d", "st", "hi"}, M: e1640, Action: func(c *rt.TActCtx) any {
 				return tmk_Indirection(c, true, (c.Lhs), tmk_SliceStep(c, false, c.Cap(0), c.Cap(3), c.Cap(2), c.Binary(">", c.Length(c.Cap(1)), any(0))))
-			}, Value: sh1146}}},
+			}, Value: sh1135}}},
 	}
 	trules[90].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[90], min) }
 	trules[91].OperatorsRule = &rt.TOperatorsRule{
-		Skip: e1605,
+		Skip: e1594,
 		Operands: []*rt.TOperatorsRuleLine{
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1652, Action: nil, Value: sh2},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1641, Action: nil, Value: sh1},
 		},
 		Prefix: []*rt.TOperatorsRuleOp{},
-		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "c", "a"}, M: e1653, Action: func(c *rt.TActCtx) any {
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "c", "a"}, M: e1642, Action: func(c *rt.TActCtx) any {
 			return tmk_Indirection(c, true, (c.Lhs), tmk_FieldStep(c, false, c.Cap(0), c.Binary(">", c.Length(c.Cap(1)), any(0)), c.Concat(c.Cap(2))))
-		}, Value: sh136}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"i"}, M: e1647, Action: func(c *rt.TActCtx) any { return tmk_Indirection(c, true, (c.Lhs), tmk_IndexStep(c, false, c.Cap(0))) }, Value: sh229}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"lo", "d", "st", "hi"}, M: e1651, Action: func(c *rt.TActCtx) any {
+		}, Value: sh126}},
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"i"}, M: e1636, Action: func(c *rt.TActCtx) any { return tmk_Indirection(c, true, (c.Lhs), tmk_IndexStep(c, false, c.Cap(0))) }, Value: sh218}},
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"lo", "d", "st", "hi"}, M: e1640, Action: func(c *rt.TActCtx) any {
 				return tmk_Indirection(c, true, (c.Lhs), tmk_SliceStep(c, false, c.Cap(0), c.Cap(3), c.Cap(2), c.Binary(">", c.Length(c.Cap(1)), any(0))))
-			}, Value: sh1146}}},
+			}, Value: sh1135}}},
 	}
 	trules[91].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[91], min) }
 	trules[255].OperatorsRule = &rt.TOperatorsRule{
-		Skip: e1605,
+		Skip: e1594,
 		Operands: []*rt.TOperatorsRuleLine{
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1654, Action: nil, Value: sh2},
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1655, Action: nil, Value: sh2},
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1656, Action: nil, Value: sh2},
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1657, Action: nil, Value: sh2},
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1658, Action: nil, Value: sh2},
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1659, Action: nil, Value: sh2},
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1660, Action: nil, Value: sh2},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1643, Action: nil, Value: sh1},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1644, Action: nil, Value: sh1},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1645, Action: nil, Value: sh1},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1646, Action: nil, Value: sh1},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1647, Action: nil, Value: sh1},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1648, Action: nil, Value: sh1},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1649, Action: nil, Value: sh1},
 		},
 		Prefix: []*rt.TOperatorsRuleOp{},
-		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "left", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "q", "bn"}, M: e1661, Action: func(c *rt.TActCtx) any {
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "left", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "q", "bn"}, M: e1650, Action: func(c *rt.TActCtx) any {
 			return tmk_SetOp(c, true, (c.Lhs), c.Text(c.Cap(0)), c.Text(c.Cap(1)), c.Binary(">", c.Length(c.Cap(2)), any(0)), (c.Rhs))
-		}, Value: sh33}},
-			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "q", "bn"}, M: e1662, Action: func(c *rt.TActCtx) any {
+		}, Value: sh28}},
+			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &rt.TOperatorsRuleLine{Scope: []string{"o", "q", "bn"}, M: e1651, Action: func(c *rt.TActCtx) any {
 				return tmk_SetOp(c, true, (c.Lhs), c.Text(c.Cap(0)), c.Text(c.Cap(1)), c.Binary(">", c.Length(c.Cap(2)), any(0)), (c.Rhs))
-			}, Value: sh33}}},
+			}, Value: sh28}}},
 	}
 	trules[255].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[255], min) }
 	trules[329].OperatorsRule = &rt.TOperatorsRule{
-		Skip: e1605,
+		Skip: e1594,
 		Operands: []*rt.TOperatorsRuleLine{
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1663, Action: nil, Value: sh2},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1652, Action: nil, Value: sh1},
 		},
 		Prefix: []*rt.TOperatorsRuleOp{},
-		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"k", "r"}, M: e1664, Action: func(c *rt.TActCtx) any { return tmk_Join(c, true, (c.Lhs), c.Text(c.Cap(0)), c.Cap(1), nil, nil) }, Value: sh229}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"k", "r"}, M: e1665, Action: func(c *rt.TActCtx) any { return tmk_Join(c, true, (c.Lhs), c.Text(c.Cap(0)), c.Cap(1), nil, nil) }, Value: sh136}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"k", "r"}, M: e1666, Action: func(c *rt.TActCtx) any { return tmk_Join(c, true, (c.Lhs), c.Text(c.Cap(0)), c.Cap(1), nil, nil) }, Value: sh229}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"k", "r", "q"}, M: e1667, Action: func(c *rt.TActCtx) any { return tmk_Join(c, true, (c.Lhs), c.Text(c.Cap(0)), c.Cap(1), c.Cap(2), nil) }, Value: sh1144}},
-			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"k", "r", "q"}, M: e1668, Action: func(c *rt.TActCtx) any { return tmk_Join(c, true, (c.Lhs), c.Text(c.Cap(0)), c.Cap(1), nil, c.Cap(2)) }, Value: sh1144}},
-			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"k", "r", "q"}, M: e1669, Action: func(c *rt.TActCtx) any { return tmk_Join(c, true, (c.Lhs), c.Text(c.Cap(0)), c.Cap(1), c.Cap(2), nil) }, Value: sh1144}},
-			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"k", "r", "q"}, M: e1670, Action: func(c *rt.TActCtx) any { return tmk_Join(c, true, (c.Lhs), c.Text(c.Cap(0)), c.Cap(1), nil, c.Cap(2)) }, Value: sh1144}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"as", "vs", "g", "a"}, M: e1671, Action: func(c *rt.TActCtx) any {
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"k", "r"}, M: e1653, Action: func(c *rt.TActCtx) any { return tmk_Join(c, true, (c.Lhs), c.Text(c.Cap(0)), c.Cap(1), nil, nil) }, Value: sh218}},
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"k", "r"}, M: e1654, Action: func(c *rt.TActCtx) any { return tmk_Join(c, true, (c.Lhs), c.Text(c.Cap(0)), c.Cap(1), nil, nil) }, Value: sh126}},
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"k", "r"}, M: e1655, Action: func(c *rt.TActCtx) any { return tmk_Join(c, true, (c.Lhs), c.Text(c.Cap(0)), c.Cap(1), nil, nil) }, Value: sh218}},
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"k", "r", "q"}, M: e1656, Action: func(c *rt.TActCtx) any { return tmk_Join(c, true, (c.Lhs), c.Text(c.Cap(0)), c.Cap(1), c.Cap(2), nil) }, Value: sh1133}},
+			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"k", "r", "q"}, M: e1657, Action: func(c *rt.TActCtx) any { return tmk_Join(c, true, (c.Lhs), c.Text(c.Cap(0)), c.Cap(1), nil, c.Cap(2)) }, Value: sh1133}},
+			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"k", "r", "q"}, M: e1658, Action: func(c *rt.TActCtx) any { return tmk_Join(c, true, (c.Lhs), c.Text(c.Cap(0)), c.Cap(1), c.Cap(2), nil) }, Value: sh1133}},
+			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"k", "r", "q"}, M: e1659, Action: func(c *rt.TActCtx) any { return tmk_Join(c, true, (c.Lhs), c.Text(c.Cap(0)), c.Cap(1), nil, c.Cap(2)) }, Value: sh1133}},
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"as", "vs", "g", "a"}, M: e1660, Action: func(c *rt.TActCtx) any {
 				return tmk_PivotRef(c, true, (c.Lhs), c.Cap(0), c.Cap(1), c.Concat(c.Cap(2)), c.Cap(3))
-			}, Value: sh1209}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "h", "vs", "a"}, M: e1672, Action: func(c *rt.TActCtx) any {
+			}, Value: sh1198}},
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n", "h", "vs", "a"}, M: e1661, Action: func(c *rt.TActCtx) any {
 				return tmk_UnpivotRef(c, true, (c.Lhs), c.Cap(0), c.Cap(1), c.Cap(2), c.Cap(3))
-			}, Value: sh1209}}},
+			}, Value: sh1198}}},
 	}
 	trules[329].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[329], min) }
 	trules[652].Entry = u652
@@ -6794,11 +6794,11 @@ func v0(p *rt.TParser) (any, bool) {
 	for {
 		x6 = p.Pos
 		x8 = p.Pos
-		if !p.ClassFast(&cls1214) && !p.ClassSkip(&cls1214, 5) {
+		if !p.ClassFast(&cls1203) && !p.ClassSkip(&cls1203, 5) {
 			goto L7
 		}
 		v9 = p.NewMatchOrdinary(x8, p.Pos, p.Text(x8, p.Pos), true)
-		v10 = p.ScopeValue(sh2, v9, x6)
+		v10 = p.ScopeValue(sh1, v9, x6)
 		p.PushKid(v10)
 		if p.Pos == x6 {
 			break
@@ -6823,11 +6823,11 @@ func v0(p *rt.TParser) (any, bool) {
 		for {
 			x23 = p.Pos
 			x25 = p.Pos
-			if !p.ClassFast(&cls1214) && !p.ClassSkip(&cls1214, 5) {
+			if !p.ClassFast(&cls1203) && !p.ClassSkip(&cls1203, 5) {
 				goto L24
 			}
 			v26 = p.NewMatchOrdinary(x25, p.Pos, p.Text(x25, p.Pos), true)
-			v27 = p.ScopeValue(sh2, v26, x23)
+			v27 = p.ScopeValue(sh1, v26, x23)
 			p.PushKid(v27)
 			if p.Pos == x23 {
 				break
@@ -6840,7 +6840,7 @@ func v0(p *rt.TParser) (any, bool) {
 		v28 = p.NewNodeOrdinary("list", x20, p.Pos, p.Kids(x21))
 		x18 = append(x18, v28)
 		v29 = p.NewNodeOrdinary("tuple", x17, p.Pos, x18)
-		v30 = p.ScopeValue(sh3, v29, x15)
+		v30 = p.ScopeValue(sh2, v29, x15)
 		p.PushKid(v30)
 		if p.Pos == x15 {
 			break
@@ -6853,7 +6853,7 @@ func v0(p *rt.TParser) (any, bool) {
 	v31 = p.NewNodeOrdinary("list", x12, p.Pos, p.Kids(x13))
 	x2 = append(x2, v31)
 	v32 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh3, v32, start)
+	v = p.ScopeValue(sh2, v32, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -6880,7 +6880,7 @@ func s1(p *rt.TParser) (any, bool) {
 	x10 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 45 && p.In[p.Pos+1] == 45 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit5, "--", 6, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit4, "--", 6, false); !ok {
 		goto L7
 	}
 	v11 = p.NewMatchOrdinary(x10, p.Pos, "--", true)
@@ -6896,7 +6896,7 @@ func s1(p *rt.TParser) (any, bool) {
 		x17 = p.Pos
 		p.Pos += size
 		v18 = p.NewMatchOrdinary(x17, p.Pos, p.Text(x17, p.Pos), true)
-		v19 = p.ScopeValue(sh2, v18, x15)
+		v19 = p.ScopeValue(sh1, v18, x15)
 		p.PushKid(v19)
 		if p.Pos == x15 {
 			break
@@ -6909,7 +6909,7 @@ func s1(p *rt.TParser) (any, bool) {
 	v20 = p.NewNodeOrdinary("list", x12, p.Pos, p.Kids(x13))
 	x9 = append(x9, v20)
 	v21 = p.NewNodeOrdinary("tuple", x8, p.Pos, x9)
-	v22, _ = p.ShapeSingle(sh3, v21, x1)
+	v22, _ = p.ShapeSingle(sh2, v21, x1)
 	v2 = v22
 	goto L3
 L7:
@@ -6929,7 +6929,7 @@ L24:
 L23:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -6962,7 +6962,7 @@ func v2(p *rt.TParser) (any, bool) {
 	x3 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 42 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit7, "/*", 8, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit6, "/*", 8, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, "/*", true)
@@ -6990,7 +6990,7 @@ func v2(p *rt.TParser) (any, bool) {
 		p.Silent++
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 47 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "*/", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit7, "*/", 9, false); !ok {
 			goto L22
 		}
 		p.Silent--
@@ -7009,14 +7009,14 @@ func v2(p *rt.TParser) (any, bool) {
 		v24 = p.NewMatchOrdinary(x23, p.Pos, p.Text(x23, p.Pos), true)
 		x20 = append(x20, v24)
 		v25 = p.NewNodeOrdinary("tuple", x19, p.Pos, x20)
-		v26, _ = p.ShapeSingle(sh9, v25, x10)
+		v26, _ = p.ShapeSingle(sh8, v25, x10)
 		v11 = v26
 		goto L12
 	L18:
 		p.Pos = x10
 		goto L9
 	L12:
-		v27 = p.ScopeValue(sh2, v11, x8)
+		v27 = p.ScopeValue(sh1, v11, x8)
 		p.PushKid(v27)
 		if p.Pos == x8 {
 			break
@@ -7031,13 +7031,13 @@ func v2(p *rt.TParser) (any, bool) {
 	x29 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 47 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit8, "*/", 9, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit7, "*/", 9, false); !ok {
 		goto fail
 	}
 	v30 = p.NewMatchOrdinary(x29, p.Pos, "*/", true)
 	x2 = append(x2, v30)
 	v31 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh33, v31, start)
+	v = p.ScopeValue(sh28, v31, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7110,7 +7110,7 @@ L10:
 L3:
 	v13 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v13)
-	v = p.ScopeValue(sh2, v13, start)
+	v = p.ScopeValue(sh1, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7184,7 +7184,7 @@ L10:
 L3:
 	v13 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v13)
-	v = p.ScopeValue(sh2, v13, start)
+	v = p.ScopeValue(sh1, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7258,7 +7258,7 @@ L10:
 L3:
 	v13 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v13)
-	v = p.ScopeValue(sh2, v13, start)
+	v = p.ScopeValue(sh1, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7394,7 +7394,7 @@ L10:
 L3:
 	v27 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v27)
-	v = p.ScopeValue(sh2, v27, start)
+	v = p.ScopeValue(sh1, v27, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7431,11 +7431,11 @@ func s23(p *rt.TParser) (any, bool) {
 	for {
 		x16 = p.Pos
 		x18 = p.Pos
-		if !p.ClassFast(&cls1215) && !p.ClassSkip(&cls1215, 41) {
+		if !p.ClassFast(&cls1204) && !p.ClassSkip(&cls1204, 41) {
 			goto L17
 		}
 		v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
-		v20 = p.ScopeValue(sh2, v19, x16)
+		v20 = p.ScopeValue(sh1, v19, x16)
 		p.PushKid(v20)
 		if p.Pos == x16 {
 			break
@@ -7448,15 +7448,15 @@ func s23(p *rt.TParser) (any, bool) {
 	v21 = p.NewNodeOrdinary("list", x13, p.Pos, p.Kids(x14))
 	x10 = append(x10, v21)
 	v22 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
-	v23, _ = p.ShapeSingle(sh3, v22, x1)
+	v23, _ = p.ShapeSingle(sh2, v22, x1)
 	v2 = v23
 	goto L3
 L7:
-	v25, _ = p.ShapeSingle(sh46, nil, x1)
+	v25, _ = p.ShapeSingle(sh40, nil, x1)
 	v2 = v25
 	goto L3
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7530,7 +7530,7 @@ L12:
 L3:
 	v14 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v14)
-	v = p.ScopeValue(sh2, v14, start)
+	v = p.ScopeValue(sh1, v14, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7555,7 +7555,7 @@ func s26(p *rt.TParser) (any, bool) {
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v2)
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7602,14 +7602,14 @@ func i28(p *rt.TParser) (any, bool) {
 	x10 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 		goto L11
 	}
 	x13 = p.Pos
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 		goto L14
 	}
 	p.Silent--
@@ -7640,7 +7640,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 		goto L19
 	}
 	if _, ok = s1048(p); !ok {
@@ -7709,7 +7709,7 @@ func i30(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	v8 = p.NewNodeOrdinary("tuple", x3, p.Pos, x4)
-	v9 = p.ShapeCapture(sh9, v8, x2)
+	v9 = p.ShapeCapture(sh8, v8, x2)
 	k1 = v9
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "iconst"
@@ -7736,14 +7736,14 @@ func s31(p *rt.TParser) (any, bool) {
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 		goto L3
 	}
 	x4 = p.Pos
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 		goto L5
 	}
 	p.Silent--
@@ -7773,7 +7773,7 @@ L7:
 	p.Silent--
 	p.Pos = x6
 	v8 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v8, start)
+	v = p.ScopeValue(sh1, v8, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7802,7 +7802,7 @@ func v36(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 43 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit63, "+", 48, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit56, "+", 48, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -7819,7 +7819,7 @@ L3:
 	goto fail
 L4:
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v5, start)
+	v = p.ScopeValue(sh1, v5, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7848,7 +7848,7 @@ func v37(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit65, "-", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit58, "-", 49, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -7865,7 +7865,7 @@ L3:
 	goto fail
 L4:
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v5, start)
+	v = p.ScopeValue(sh1, v5, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7894,7 +7894,7 @@ func v38(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit67, "*", 50, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit60, "*", 50, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -7911,7 +7911,7 @@ L3:
 	goto fail
 L4:
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v5, start)
+	v = p.ScopeValue(sh1, v5, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7940,7 +7940,7 @@ func v39(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 47 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit69, "/", 51, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit62, "/", 51, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -7957,7 +7957,7 @@ L3:
 	goto fail
 L4:
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v5, start)
+	v = p.ScopeValue(sh1, v5, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7986,7 +7986,7 @@ func v40(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit71, "<", 52, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit64, "<", 52, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -8003,7 +8003,7 @@ L3:
 	goto fail
 L4:
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v5, start)
+	v = p.ScopeValue(sh1, v5, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8032,7 +8032,7 @@ func v41(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 62 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit73, ">", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit66, ">", 53, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -8049,7 +8049,7 @@ L3:
 	goto fail
 L4:
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v5, start)
+	v = p.ScopeValue(sh1, v5, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8078,7 +8078,7 @@ func v42(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit75, "=", 54, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit68, "=", 54, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -8095,7 +8095,7 @@ L3:
 	goto fail
 L4:
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v5, start)
+	v = p.ScopeValue(sh1, v5, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8124,7 +8124,7 @@ func v43(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit77, "<=", 55, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit70, "<=", 55, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -8141,7 +8141,7 @@ L3:
 	goto fail
 L4:
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v5, start)
+	v = p.ScopeValue(sh1, v5, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8170,7 +8170,7 @@ func v44(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 62 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ">=", 56, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit72, ">=", 56, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -8187,7 +8187,7 @@ L3:
 	goto fail
 L4:
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v5, start)
+	v = p.ScopeValue(sh1, v5, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8223,7 +8223,7 @@ func v45(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 62 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit81, "<>", 57, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit74, "<>", 57, false); !ok {
 		goto L7
 	}
 	x8 = p.Pos
@@ -8249,7 +8249,7 @@ L6:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 33 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit82, "!=", 58, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit75, "!=", 58, false); !ok {
 		goto L12
 	}
 	x13 = p.Pos
@@ -8270,7 +8270,7 @@ L11:
 	goto fail
 L3:
 	v15 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v15, start)
+	v = p.ScopeValue(sh1, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8299,7 +8299,7 @@ func v46(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 61 && p.In[p.Pos+1] == 62 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit84, "=>", 59, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit77, "=>", 59, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -8316,7 +8316,7 @@ L3:
 	goto fail
 L4:
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v5, start)
+	v = p.ScopeValue(sh1, v5, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8345,7 +8345,7 @@ func v47(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 37 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit86, "%", 60, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit79, "%", 60, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -8360,7 +8360,7 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v4, start)
+	v = p.ScopeValue(sh1, v4, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8389,7 +8389,7 @@ func v48(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 94 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit88, "^", 61, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit81, "^", 61, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -8404,7 +8404,7 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v4, start)
+	v = p.ScopeValue(sh1, v4, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8433,7 +8433,7 @@ func v49(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 42 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit90, "**", 62, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit83, "**", 62, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -8448,7 +8448,7 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v4, start)
+	v = p.ScopeValue(sh1, v4, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8477,7 +8477,7 @@ func v50(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit92, "//", 63, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, "//", 63, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -8492,7 +8492,7 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v4, start)
+	v = p.ScopeValue(sh1, v4, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8513,7 +8513,7 @@ func s51(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 45 && p.In[p.Pos+1] == 62 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit94, "->", 64, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit87, "->", 64, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -8528,7 +8528,7 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v4, start)
+	v = p.ScopeValue(sh1, v4, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8549,7 +8549,7 @@ func s52(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 45 && p.In[p.Pos+1] == 62 && p.In[p.Pos+2] == 62 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit96, "->>", 65, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit89, "->>", 65, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -8564,7 +8564,7 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v4, start)
+	v = p.ScopeValue(sh1, v4, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8670,7 +8670,7 @@ L5:
 L3:
 	v6 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v6)
-	v = p.ScopeValue(sh2, v6, start)
+	v = p.ScopeValue(sh1, v6, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8703,7 +8703,7 @@ func v59(p *rt.TParser) (any, bool) {
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v2)
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8736,7 +8736,7 @@ func v60(p *rt.TParser) (any, bool) {
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v2)
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8769,7 +8769,7 @@ func v61(p *rt.TParser) (any, bool) {
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v2)
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8813,7 +8813,7 @@ L6:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8855,7 +8855,7 @@ func i63(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -8955,7 +8955,7 @@ func i65(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -9019,7 +9019,7 @@ func i66(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -9081,7 +9081,7 @@ func i67(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L5
 	}
 	goto L6
@@ -9132,7 +9132,7 @@ func i68(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -9195,7 +9195,7 @@ L6:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -9240,7 +9240,7 @@ func i70(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -9304,7 +9304,7 @@ func i71(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L5
 	}
 	p.Silent--
@@ -9325,7 +9325,7 @@ fail:
 	return nil, false
 }
 
-func e1605(p *rt.TParser) (any, bool) {
+func e1594(p *rt.TParser) (any, bool) {
 	var ok bool
 	if _, ok = u1023(p); !ok {
 		goto fail
@@ -9335,7 +9335,7 @@ fail:
 	return nil, false
 }
 
-func e1606(p *rt.TParser) (any, bool) {
+func e1595(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = s127(p); !ok {
@@ -9346,7 +9346,7 @@ fail:
 	return nil, false
 }
 
-func e1607(p *rt.TParser) (any, bool) {
+func e1596(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u89(p); !ok {
@@ -9357,7 +9357,7 @@ fail:
 	return nil, false
 }
 
-func e1608(p *rt.TParser) (any, bool) {
+func e1597(p *rt.TParser) (any, bool) {
 	var x1, x3 int
 	var x2 []any
 	var ok bool
@@ -9368,7 +9368,7 @@ func e1608(p *rt.TParser) (any, bool) {
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit65, "-", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit58, "-", 49, false); !ok {
 		goto L4
 	}
 	p.Silent--
@@ -9390,7 +9390,7 @@ fail:
 	return nil, false
 }
 
-func e1609(p *rt.TParser) (any, bool) {
+func e1598(p *rt.TParser) (any, bool) {
 	var x1, x3 int
 	var x2 []any
 	var ok bool
@@ -9401,7 +9401,7 @@ func e1609(p *rt.TParser) (any, bool) {
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit65, "-", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit58, "-", 49, false); !ok {
 		goto L4
 	}
 	p.Silent--
@@ -9432,7 +9432,7 @@ fail:
 	return nil, false
 }
 
-func e1610(p *rt.TParser) (any, bool) {
+func e1599(p *rt.TParser) (any, bool) {
 	var x1, x3, size, x7 int
 	var x2 []any
 	var ch rune
@@ -9469,7 +9469,7 @@ fail:
 	return nil, false
 }
 
-func e1611(p *rt.TParser) (any, bool) {
+func e1600(p *rt.TParser) (any, bool) {
 	var x1, x3, size, x7 int
 	var x2 []any
 	var ch rune
@@ -9506,7 +9506,7 @@ fail:
 	return nil, false
 }
 
-func e1612(p *rt.TParser) (any, bool) {
+func e1601(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = s846(p); !ok {
@@ -9517,7 +9517,7 @@ fail:
 	return nil, false
 }
 
-func e1613(p *rt.TParser) (any, bool) {
+func e1602(p *rt.TParser) (any, bool) {
 	var x1, x3, size, x13, x50 int
 	var x2, x14, x51 []any
 	var ch, x9, x28 rune
@@ -9629,7 +9629,7 @@ L27:
 	p.SetCaptureOrdinary(1, v26)
 	x14 = append(x14, v26)
 	v42 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-	v43, _ = p.ShapeSingle(sh229, v42, x6.Pos)
+	v43, _ = p.ShapeSingle(sh218, v42, x6.Pos)
 	v7 = v43
 	goto L8
 L12:
@@ -9669,7 +9669,7 @@ L44:
 	p.SetCaptureOrdinary(1, v56)
 	x51 = append(x51, v56)
 	v57 = p.NewNodeOrdinary("tuple", x50, p.Pos, x51)
-	v58, _ = p.ShapeSingle(sh33, v57, x6.Pos)
+	v58, _ = p.ShapeSingle(sh28, v57, x6.Pos)
 	v7 = v58
 	goto L8
 L49:
@@ -9684,7 +9684,7 @@ fail:
 	return nil, false
 }
 
-func e1614(p *rt.TParser) (any, bool) {
+func e1603(p *rt.TParser) (any, bool) {
 	var x1, x3, size int
 	var x2 []any
 	var ch rune
@@ -9719,7 +9719,7 @@ fail:
 	return nil, false
 }
 
-func e1615(p *rt.TParser) (any, bool) {
+func e1604(p *rt.TParser) (any, bool) {
 	var x1, x3, size int
 	var x2 []any
 	var ch rune
@@ -9809,7 +9809,7 @@ fail:
 	return nil, false
 }
 
-func e1616(p *rt.TParser) (any, bool) {
+func e1605(p *rt.TParser) (any, bool) {
 	var x1, x3, size, x17, x23 int
 	var x2 []any
 	var ch rune
@@ -9869,7 +9869,7 @@ L12:
 	x17 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	v18 = p.NewMatchOrdinary(x17, p.Pos, "(", true)
@@ -9890,7 +9890,7 @@ L12:
 	x23 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	v24 = p.NewMatchOrdinary(x23, p.Pos, ")", true)
@@ -9915,7 +9915,7 @@ fail:
 	return nil, false
 }
 
-func e1617(p *rt.TParser) (any, bool) {
+func e1606(p *rt.TParser) (any, bool) {
 	var x1, x3, size int
 	var x2 []any
 	var ch rune
@@ -9974,7 +9974,7 @@ fail:
 	return nil, false
 }
 
-func e1619(p *rt.TParser) (any, bool) {
+func e1608(p *rt.TParser) (any, bool) {
 	var x1, x3 int
 	var x2 []any
 	var ok, x14 bool
@@ -9985,7 +9985,7 @@ func e1619(p *rt.TParser) (any, bool) {
 	x2 = p.NewVals(5)[:0]
 	x3 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1618) && !p.ClassSkip(&cls1618, 99) {
+	if !p.ClassFast(&cls1607) && !p.ClassSkip(&cls1607, 99) {
 		goto L4
 	}
 	p.Silent--
@@ -10062,7 +10062,7 @@ fail:
 	return nil, false
 }
 
-func e1621(p *rt.TParser) (any, bool) {
+func e1610(p *rt.TParser) (any, bool) {
 	var x1, x3, x11, x31, x40 int
 	var x2, x12, x41 []any
 	var x7, x18, x36, x49 rt.Mark
@@ -10073,7 +10073,7 @@ func e1621(p *rt.TParser) (any, bool) {
 	x2 = p.NewVals(5)[:0]
 	x3 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1620) && !p.ClassSkip(&cls1620, 100) {
+	if !p.ClassFast(&cls1609) && !p.ClassSkip(&cls1609, 100) {
 		goto L4
 	}
 	p.Silent--
@@ -10096,7 +10096,7 @@ L5:
 	}
 	x12 = append(x12, v14)
 	v15 = p.NewNodeOrdinary("tuple", x11, p.Pos, x12)
-	v16, _ = p.ShapeSingle(sh3, v15, x7.Pos)
+	v16, _ = p.ShapeSingle(sh2, v15, x7.Pos)
 	v8 = v16
 	goto L10
 L9:
@@ -10185,7 +10185,7 @@ L20:
 	p.SetCaptureOrdinary(3, v46)
 	x41 = append(x41, v46)
 	v47 = p.NewNodeOrdinary("tuple", x40, p.Pos, x41)
-	v48, _ = p.ShapeSingle(sh136, v47, x36.Pos)
+	v48, _ = p.ShapeSingle(sh126, v47, x36.Pos)
 	v37 = v48
 	goto L39
 L38:
@@ -10213,7 +10213,7 @@ fail:
 	return nil, false
 }
 
-func e1622(p *rt.TParser) (any, bool) {
+func e1611(p *rt.TParser) (any, bool) {
 	var x1, x3, size int
 	var x2 []any
 	var ch rune
@@ -10272,7 +10272,7 @@ fail:
 	return nil, false
 }
 
-func e1623(p *rt.TParser) (any, bool) {
+func e1612(p *rt.TParser) (any, bool) {
 	var x1, x3, size, x11, x30, x32, x38 int
 	var x2, x12, x31 []any
 	var ch, x22 rune
@@ -10309,7 +10309,7 @@ L5:
 	}
 	x12 = append(x12, v14)
 	v15 = p.NewNodeOrdinary("tuple", x11, p.Pos, x12)
-	v16, _ = p.ShapeSingle(sh3, v15, x7.Pos)
+	v16, _ = p.ShapeSingle(sh2, v15, x7.Pos)
 	v8 = v16
 	goto L10
 L9:
@@ -10350,7 +10350,7 @@ L24:
 	x32 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L29
 	}
 	v33 = p.NewMatchOrdinary(x32, p.Pos, "(", true)
@@ -10371,13 +10371,13 @@ L24:
 	x38 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L29
 	}
 	v39 = p.NewMatchOrdinary(x38, p.Pos, ")", true)
 	x31 = append(x31, v39)
 	v40 = p.NewNodeOrdinary("tuple", x30, p.Pos, x31)
-	v41, _ = p.ShapeSingle(sh229, v40, x19.Pos)
+	v41, _ = p.ShapeSingle(sh218, v40, x19.Pos)
 	v20 = v41
 	goto L21
 L29:
@@ -10400,7 +10400,7 @@ fail:
 	return nil, false
 }
 
-func e1624(p *rt.TParser) (any, bool) {
+func e1613(p *rt.TParser) (any, bool) {
 	var x1, x3, size, x11 int
 	var x2, x12 []any
 	var ch rune
@@ -10437,7 +10437,7 @@ L5:
 	}
 	x12 = append(x12, v14)
 	v15 = p.NewNodeOrdinary("tuple", x11, p.Pos, x12)
-	v16, _ = p.ShapeSingle(sh3, v15, x7.Pos)
+	v16, _ = p.ShapeSingle(sh2, v15, x7.Pos)
 	v8 = v16
 	goto L10
 L9:
@@ -10527,7 +10527,7 @@ fail:
 	return nil, false
 }
 
-func e1625(p *rt.TParser) (any, bool) {
+func e1614(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v2 any
 	if v2, ok = u79(p); !ok {
@@ -10539,7 +10539,7 @@ fail:
 	return nil, false
 }
 
-func e1627(p *rt.TParser) (any, bool) {
+func e1616(p *rt.TParser) (any, bool) {
 	var x1, x3 int
 	var x2 []any
 	var ok, x14 bool
@@ -10550,7 +10550,7 @@ func e1627(p *rt.TParser) (any, bool) {
 	x2 = p.NewVals(3)[:0]
 	x3 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1626) && !p.ClassSkip(&cls1626, 103) {
+	if !p.ClassFast(&cls1615) && !p.ClassSkip(&cls1615, 103) {
 		goto L4
 	}
 	p.Silent--
@@ -10673,7 +10673,7 @@ fail:
 	return nil, false
 }
 
-func e1628(p *rt.TParser) (any, bool) {
+func e1617(p *rt.TParser) (any, bool) {
 	var x1, x3 int
 	var x2 []any
 	var ok bool
@@ -10683,7 +10683,7 @@ func e1628(p *rt.TParser) (any, bool) {
 	x2 = p.NewVals(1)[:0]
 	x3 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1626) && !p.ClassSkip(&cls1626, 103) {
+	if !p.ClassFast(&cls1615) && !p.ClassSkip(&cls1615, 103) {
 		goto L4
 	}
 	p.Silent--
@@ -10733,7 +10733,7 @@ fail:
 	return nil, false
 }
 
-func e1629(p *rt.TParser) (any, bool) {
+func e1618(p *rt.TParser) (any, bool) {
 	var x1, x3, size int
 	var x2 []any
 	var ch, x10 rune
@@ -10794,7 +10794,7 @@ fail:
 	return nil, false
 }
 
-func e1630(p *rt.TParser) (any, bool) {
+func e1619(p *rt.TParser) (any, bool) {
 	var x1, x3, size int
 	var x2 []any
 	var ch, x10 rune
@@ -10879,7 +10879,7 @@ fail:
 	return nil, false
 }
 
-func e1631(p *rt.TParser) (any, bool) {
+func e1620(p *rt.TParser) (any, bool) {
 	var x1, x3, size int
 	var x2 []any
 	var ch, x10 rune
@@ -10940,7 +10940,7 @@ fail:
 	return nil, false
 }
 
-func e1632(p *rt.TParser) (any, bool) {
+func e1621(p *rt.TParser) (any, bool) {
 	var x1, x3, size int
 	var x2 []any
 	var ch rune
@@ -10999,7 +10999,7 @@ fail:
 	return nil, false
 }
 
-func e1633(p *rt.TParser) (any, bool) {
+func e1622(p *rt.TParser) (any, bool) {
 	var x1, x3, size int
 	var x2 []any
 	var ch rune
@@ -11042,7 +11042,7 @@ fail:
 	return nil, false
 }
 
-func e1634(p *rt.TParser) (any, bool) {
+func e1623(p *rt.TParser) (any, bool) {
 	var x1 rt.Mark
 	var v2, v8, v11 any
 	var x4 rune
@@ -11080,7 +11080,7 @@ fail:
 	return nil, false
 }
 
-func e1636(p *rt.TParser) (any, bool) {
+func e1625(p *rt.TParser) (any, bool) {
 	var x1, x3, x6 int
 	var x2 []any
 	var ok bool
@@ -11091,7 +11091,7 @@ func e1636(p *rt.TParser) (any, bool) {
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit128, ":", 71, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit118, ":", 71, false); !ok {
 		goto L4
 	}
 	p.Silent--
@@ -11105,7 +11105,7 @@ L5:
 	x6 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 58 && p.In[p.Pos+1] == 58 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit1635, "::", 106, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit1624, "::", 106, false); !ok {
 		goto fail
 	}
 	v7 = p.NewMatchOrdinary(x6, p.Pos, "::", true)
@@ -11180,7 +11180,7 @@ fail:
 	return nil, false
 }
 
-func e1637(p *rt.TParser) (any, bool) {
+func e1626(p *rt.TParser) (any, bool) {
 	var x1 int
 	var x2 []any
 	var ok bool
@@ -11253,7 +11253,7 @@ fail:
 	return nil, false
 }
 
-func e1638(p *rt.TParser) (any, bool) {
+func e1627(p *rt.TParser) (any, bool) {
 	var x1, x14, x20 int
 	var x2 []any
 	var ok bool
@@ -11296,7 +11296,7 @@ L9:
 	x14 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	v15 = p.NewMatchOrdinary(x14, p.Pos, "(", true)
@@ -11317,7 +11317,7 @@ L9:
 	x20 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	v21 = p.NewMatchOrdinary(x20, p.Pos, ")", true)
@@ -11342,7 +11342,7 @@ fail:
 	return nil, false
 }
 
-func e1639(p *rt.TParser) (any, bool) {
+func e1628(p *rt.TParser) (any, bool) {
 	var x1 int
 	var x2 []any
 	var ok bool
@@ -11384,7 +11384,7 @@ fail:
 	return nil, false
 }
 
-func e1640(p *rt.TParser) (any, bool) {
+func e1629(p *rt.TParser) (any, bool) {
 	var x1 int
 	var x2 []any
 	var ok bool
@@ -11423,7 +11423,7 @@ fail:
 	return nil, false
 }
 
-func e1641(p *rt.TParser) (any, bool) {
+func e1630(p *rt.TParser) (any, bool) {
 	var x1 int
 	var x2 []any
 	var ok bool
@@ -11456,7 +11456,7 @@ fail:
 	return nil, false
 }
 
-func e1642(p *rt.TParser) (any, bool) {
+func e1631(p *rt.TParser) (any, bool) {
 	var x1 rt.Mark
 	var v2, v8, v11, v14, v17 any
 	var x4 rune
@@ -11518,7 +11518,7 @@ fail:
 	return nil, false
 }
 
-func e1643(p *rt.TParser) (any, bool) {
+func e1632(p *rt.TParser) (any, bool) {
 	var x1 rt.Mark
 	var v2, v8, v11 any
 	var x4 rune
@@ -11556,7 +11556,7 @@ fail:
 	return nil, false
 }
 
-func e1644(p *rt.TParser) (any, bool) {
+func e1633(p *rt.TParser) (any, bool) {
 	var x1, x3 int
 	var x2 []any
 	var ok bool
@@ -11566,7 +11566,7 @@ func e1644(p *rt.TParser) (any, bool) {
 	x3 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 58 && p.In[p.Pos+1] == 58 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit1635, "::", 106, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit1624, "::", 106, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, "::", true)
@@ -11599,7 +11599,7 @@ func s75(p *rt.TParser) (any, bool) {
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit128, ":", 71, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit118, ":", 71, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, ":", true)
@@ -11614,7 +11614,7 @@ func s75(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit128, ":", 71, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit118, ":", 71, false); !ok {
 		goto L12
 	}
 	goto L8
@@ -11627,7 +11627,7 @@ L11:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit75, "=", 54, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit68, "=", 54, false); !ok {
 		goto L14
 	}
 	goto L8
@@ -11643,7 +11643,7 @@ L6:
 	p.Silent--
 	p.Pos = x5
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh9, v15, start)
+	v = p.ScopeValue(sh8, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -11737,7 +11737,7 @@ L16:
 	goto fail
 L3:
 	v17 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v17, start)
+	v = p.ScopeValue(sh1, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -11787,7 +11787,7 @@ L9:
 L8:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -11822,7 +11822,7 @@ func v80(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -11836,11 +11836,11 @@ func v80(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -12041,7 +12041,7 @@ L47:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -12162,7 +12162,7 @@ L30:
 L29:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -12209,7 +12209,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -12275,7 +12275,7 @@ L6:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -12287,7 +12287,7 @@ fail:
 	return nil, false
 }
 
-func e1645(p *rt.TParser) (any, bool) {
+func e1634(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u100(p); !ok {
@@ -12298,7 +12298,7 @@ fail:
 	return nil, false
 }
 
-func e1646(p *rt.TParser) (any, bool) {
+func e1635(p *rt.TParser) (any, bool) {
 	var x1, x3 int
 	var x2 []any
 	var ok bool
@@ -12308,7 +12308,7 @@ func e1646(p *rt.TParser) (any, bool) {
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, ".", true)
@@ -12328,7 +12328,7 @@ fail:
 	return nil, false
 }
 
-func e1647(p *rt.TParser) (any, bool) {
+func e1636(p *rt.TParser) (any, bool) {
 	var x1, x3, x9 int
 	var x2 []any
 	var ok bool
@@ -12338,7 +12338,7 @@ func e1647(p *rt.TParser) (any, bool) {
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 75, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit137, "[", 75, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, "[", true)
@@ -12359,7 +12359,7 @@ func e1647(p *rt.TParser) (any, bool) {
 	x9 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit168, "]", 84, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit157, "]", 84, false); !ok {
 		goto fail
 	}
 	v10 = p.NewMatchOrdinary(x9, p.Pos, "]", true)
@@ -12370,7 +12370,7 @@ fail:
 	return nil, false
 }
 
-func e1648(p *rt.TParser) (any, bool) {
+func e1637(p *rt.TParser) (any, bool) {
 	var x1, x3, x22 int
 	var x2 []any
 	var ok bool
@@ -12381,7 +12381,7 @@ func e1648(p *rt.TParser) (any, bool) {
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 75, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit137, "[", 75, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, "[", true)
@@ -12433,7 +12433,7 @@ L19:
 	x22 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit168, "]", 84, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit157, "]", 84, false); !ok {
 		goto fail
 	}
 	v23 = p.NewMatchOrdinary(x22, p.Pos, "]", true)
@@ -12444,7 +12444,7 @@ fail:
 	return nil, false
 }
 
-func e1649(p *rt.TParser) (any, bool) {
+func e1638(p *rt.TParser) (any, bool) {
 	var x1, x3, x31 int
 	var x2 []any
 	var ok bool
@@ -12455,7 +12455,7 @@ func e1649(p *rt.TParser) (any, bool) {
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 75, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit137, "[", 75, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, "[", true)
@@ -12531,7 +12531,7 @@ L28:
 	x31 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit168, "]", 84, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit157, "]", 84, false); !ok {
 		goto fail
 	}
 	v32 = p.NewMatchOrdinary(x31, p.Pos, "]", true)
@@ -12559,7 +12559,7 @@ func v88(p *rt.TParser) (any, bool) {
 	if v1, ok = u89(p); !ok {
 		goto fail
 	}
-	v = p.ScopeValue(sh2, v1, start)
+	v = p.ScopeValue(sh1, v1, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -12602,7 +12602,7 @@ L6:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -12614,7 +12614,7 @@ fail:
 	return nil, false
 }
 
-func e1650(p *rt.TParser) (any, bool) {
+func e1639(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u99(p); !ok {
@@ -12625,7 +12625,7 @@ fail:
 	return nil, false
 }
 
-func e1651(p *rt.TParser) (any, bool) {
+func e1640(p *rt.TParser) (any, bool) {
 	var x1, x3, x22, x25, x39, x51, x67 int
 	var x2, x23, x40, x52 []any
 	var ok, x19 bool
@@ -12637,7 +12637,7 @@ func e1651(p *rt.TParser) (any, bool) {
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 75, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit137, "[", 75, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, "[", true)
@@ -12681,7 +12681,7 @@ L10:
 	x25 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit65, "-", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit58, "-", 49, false); !ok {
 		goto L21
 	}
 	v26 = p.NewMatchOrdinary(x25, p.Pos, "-", true)
@@ -12712,7 +12712,7 @@ L34:
 	p.SetCaptureOrdinary(2, v32)
 	x23 = append(x23, v32)
 	v36 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-	v37, _ = p.ShapeSingle(sh229, v36, x15.Pos)
+	v37, _ = p.ShapeSingle(sh218, v36, x15.Pos)
 	v16 = v37
 	goto L17
 L21:
@@ -12760,7 +12760,7 @@ L60:
 	p.SetCaptureOrdinary(2, v58)
 	x52 = append(x52, v58)
 	v62 = p.NewNodeOrdinary("tuple", x51, p.Pos, x52)
-	v63, _ = p.ShapeSingle(sh136, v62, x47.Pos)
+	v63, _ = p.ShapeSingle(sh126, v62, x47.Pos)
 	v48 = v63
 	goto L50
 L49:
@@ -12769,7 +12769,7 @@ L49:
 L50:
 	x40 = append(x40, v48)
 	v64 = p.NewNodeOrdinary("tuple", x39, p.Pos, x40)
-	v65, _ = p.ShapeSingle(sh3, v64, x15.Pos)
+	v65, _ = p.ShapeSingle(sh2, v64, x15.Pos)
 	v16 = v65
 	goto L17
 L17:
@@ -12781,7 +12781,7 @@ L17:
 	x67 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit168, "]", 84, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit157, "]", 84, false); !ok {
 		goto fail
 	}
 	v68 = p.NewMatchOrdinary(x67, p.Pos, "]", true)
@@ -12792,7 +12792,7 @@ fail:
 	return nil, false
 }
 
-func e1652(p *rt.TParser) (any, bool) {
+func e1641(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = s92(p); !ok {
@@ -12803,7 +12803,7 @@ fail:
 	return nil, false
 }
 
-func e1653(p *rt.TParser) (any, bool) {
+func e1642(p *rt.TParser) (any, bool) {
 	var x1, x3, x12, x16, x26 int
 	var x2, x13 []any
 	var ok bool
@@ -12814,7 +12814,7 @@ func e1653(p *rt.TParser) (any, bool) {
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, ".", true)
@@ -12838,7 +12838,7 @@ func e1653(p *rt.TParser) (any, bool) {
 	x16 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L10
 	}
 	v17 = p.NewMatchOrdinary(x16, p.Pos, "(", true)
@@ -12867,13 +12867,13 @@ L23:
 	x26 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L10
 	}
 	v27 = p.NewMatchOrdinary(x26, p.Pos, ")", true)
 	x13 = append(x13, v27)
 	v28 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
-	v29, _ = p.ShapeSingle(sh1144, v28, x8.Pos)
+	v29, _ = p.ShapeSingle(sh1133, v28, x8.Pos)
 	v9 = v29
 	goto L11
 L10:
@@ -12938,7 +12938,7 @@ L14:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -12973,7 +12973,7 @@ L6:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -13040,7 +13040,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 		goto L20
 	}
 	goto L16
@@ -13053,7 +13053,7 @@ L19:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 75, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit137, "[", 75, false); !ok {
 		goto L22
 	}
 	goto L16
@@ -13107,7 +13107,7 @@ func i95(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 		goto L5
 	}
 	if _, ok = u1023(p); !ok {
@@ -13121,7 +13121,7 @@ func i95(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L5
 	}
 	p.Silent--
@@ -13165,7 +13165,7 @@ func v96(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 63 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit150, "?", 76, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit140, "?", 76, false); !ok {
 		goto L7
 	}
 	for {
@@ -13186,7 +13186,7 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 36 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit42, "$", 38, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit37, "$", 38, false); !ok {
 		goto L9
 	}
 	if _, ok = s1048(p); !ok {
@@ -13202,7 +13202,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 36 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit42, "$", 38, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit37, "$", 38, false); !ok {
 		goto L11
 	}
 	if _, ok = u1023(p); !ok {
@@ -13219,7 +13219,7 @@ L10:
 L3:
 	v12 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v12)
-	v = p.ScopeValue(sh2, v12, start)
+	v = p.ScopeValue(sh1, v12, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -13251,7 +13251,7 @@ func i98(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 35 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit154, "#", 78, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit143, "#", 78, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -13441,7 +13441,7 @@ L40:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L43
 	}
 	goto L37
@@ -13479,7 +13479,7 @@ L2:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L55
 	}
 	goto L50
@@ -13492,7 +13492,7 @@ L54:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit156, "{", 81, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit145, "{", 81, false); !ok {
 		goto L57
 	}
 	goto L50
@@ -13505,7 +13505,7 @@ L56:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 		goto L59
 	}
 	goto L50
@@ -13518,7 +13518,7 @@ L58:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 36 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit42, "$", 38, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit37, "$", 38, false); !ok {
 		goto L61
 	}
 	goto L50
@@ -13532,7 +13532,7 @@ L60:
 	p.Pos += x51
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 		goto L63
 	}
 	goto L50
@@ -13546,7 +13546,7 @@ L62:
 	p.Pos += x51
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 38 && p.In[p.Pos+1] == 39 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit17, "&'", 15, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit13, "&'", 15, false); !ok {
 		goto L65
 	}
 	goto L50
@@ -13638,7 +13638,7 @@ func i101(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -13717,7 +13717,7 @@ L13:
 L12:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -13779,7 +13779,7 @@ func i104(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -13798,7 +13798,7 @@ func i104(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -13829,7 +13829,7 @@ func i104(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -13864,7 +13864,7 @@ func i105(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -13879,7 +13879,7 @@ func i105(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -14011,7 +14011,7 @@ L30:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -14050,7 +14050,7 @@ func i107(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L2
 	}
 	p.Silent--
@@ -14167,7 +14167,7 @@ func i109(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 75, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit137, "[", 75, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -14189,7 +14189,7 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit168, "]", 84, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit157, "]", 84, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -14237,7 +14237,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -14311,7 +14311,7 @@ func i112(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 75, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit137, "[", 75, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -14333,7 +14333,7 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit168, "]", 84, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit157, "]", 84, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -14365,7 +14365,7 @@ func i113(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit156, "{", 81, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit145, "{", 81, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -14384,7 +14384,7 @@ func i113(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -14411,7 +14411,7 @@ func i113(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L15
 	}
 	goto L16
@@ -14423,7 +14423,7 @@ L16:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit174, "}", 85, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit163, "}", 85, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -14508,7 +14508,7 @@ func i115(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit156, "{", 81, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit145, "{", 81, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -14530,7 +14530,7 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit174, "}", 85, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit163, "}", 85, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -14573,7 +14573,7 @@ func i116(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -14600,7 +14600,7 @@ func i116(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L15
 	}
 	goto L16
@@ -14700,7 +14700,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -14731,7 +14731,7 @@ func i119(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 75, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit137, "[", 75, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -14785,7 +14785,7 @@ func i119(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit168, "]", 84, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit157, "]", 84, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -14817,7 +14817,7 @@ func i120(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 75, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit137, "[", 75, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -14858,7 +14858,7 @@ func i120(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit168, "]", 84, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit157, "]", 84, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -15091,7 +15091,7 @@ func i124(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -15113,7 +15113,7 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -15159,7 +15159,7 @@ func i125(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -15221,7 +15221,7 @@ func i126(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L5
 	}
 	goto L6
@@ -15329,7 +15329,7 @@ L24:
 L23:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -15353,7 +15353,7 @@ func s128(p *rt.TParser) (any, bool) {
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v2)
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -15391,7 +15391,7 @@ func i129(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -15406,7 +15406,7 @@ func i129(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -15450,7 +15450,7 @@ func i130(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -15465,7 +15465,7 @@ func i130(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -15503,7 +15503,7 @@ func i131(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -15518,7 +15518,7 @@ func i131(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -15629,7 +15629,7 @@ func i133(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -15773,7 +15773,7 @@ func i135(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -15834,7 +15834,7 @@ func i136(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -15861,7 +15861,7 @@ func i136(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L15
 	}
 	goto L16
@@ -15922,7 +15922,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -15959,7 +15959,7 @@ func i138(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -15974,7 +15974,7 @@ func i138(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -16116,7 +16116,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16153,7 +16153,7 @@ func i142(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -16172,7 +16172,7 @@ func i142(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -16199,7 +16199,7 @@ func i142(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L15
 	}
 	goto L16
@@ -16211,7 +16211,7 @@ L16:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -16353,7 +16353,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16390,7 +16390,7 @@ func i146(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -16409,7 +16409,7 @@ func i146(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -16436,7 +16436,7 @@ func i146(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L15
 	}
 	goto L16
@@ -16448,7 +16448,7 @@ L16:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -16581,7 +16581,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 		goto L27
 	}
 	goto L23
@@ -16594,7 +16594,7 @@ L26:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 75, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit137, "[", 75, false); !ok {
 		goto L29
 	}
 	goto L23
@@ -16656,7 +16656,7 @@ L8:
 L3:
 	v10 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v10)
-	v = p.ScopeValue(sh2, v10, start)
+	v = p.ScopeValue(sh1, v10, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16681,7 +16681,7 @@ func s150(p *rt.TParser) (any, bool) {
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v2)
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16783,7 +16783,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -16798,7 +16798,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -16854,7 +16854,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16891,7 +16891,7 @@ func i154(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -16919,7 +16919,7 @@ func i154(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -16957,7 +16957,7 @@ func i155(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -16985,7 +16985,7 @@ func i155(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -17033,7 +17033,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -17070,7 +17070,7 @@ func i157(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -17085,7 +17085,7 @@ func i157(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	x4 = p.Pos
@@ -17216,7 +17216,7 @@ L5:
 L3:
 	v6 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v6)
-	v = p.ScopeValue(sh2, v6, start)
+	v = p.ScopeValue(sh1, v6, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -17440,7 +17440,7 @@ L52:
 L51:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -17478,7 +17478,7 @@ func i163(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -17493,7 +17493,7 @@ func i163(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -17532,7 +17532,7 @@ func i164(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -17547,7 +17547,7 @@ func i164(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -17562,7 +17562,7 @@ func i164(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -17601,7 +17601,7 @@ func i165(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -17629,7 +17629,7 @@ func i165(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -17668,7 +17668,7 @@ func i166(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -17676,7 +17676,7 @@ func i166(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -17715,7 +17715,7 @@ func i167(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -17776,18 +17776,18 @@ L17:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "sc_overlay"
 	v = func() any {
-		f_1216 := c.Text(k1)
-		f_1217 := c.List(k4)
-		f_1218 := k7
-		f_1219 := c.List(k10)
-		f_1220 := k14
-		return tmk_SpecialCall(c, true, f_1216, nil, f_1217, f_1219, f_1220, f_1218, nil, nil)
+		f_1205 := c.Text(k1)
+		f_1206 := c.List(k4)
+		f_1207 := k7
+		f_1208 := c.List(k10)
+		f_1209 := k14
+		return tmk_SpecialCall(c, true, f_1205, nil, f_1206, f_1208, f_1209, f_1207, nil, nil)
 	}()
 	p.Depth--
 	return v, true
@@ -17822,7 +17822,7 @@ func i168(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -17850,7 +17850,7 @@ func i168(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -17889,7 +17889,7 @@ func i169(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -17897,7 +17897,7 @@ func i169(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -17936,7 +17936,7 @@ func i170(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -17984,7 +17984,7 @@ L14:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -18023,7 +18023,7 @@ func i171(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -18064,7 +18064,7 @@ func i171(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -18103,7 +18103,7 @@ func i172(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -18131,7 +18131,7 @@ func i172(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -18170,7 +18170,7 @@ func i173(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -18185,7 +18185,7 @@ func i173(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -18224,7 +18224,7 @@ func i174(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -18232,7 +18232,7 @@ func i174(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -18271,7 +18271,7 @@ func i175(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -18299,7 +18299,7 @@ func i175(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -18339,7 +18339,7 @@ func i176(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -18418,7 +18418,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -18458,7 +18458,7 @@ func i177(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -18544,7 +18544,7 @@ L28:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -18591,7 +18591,7 @@ func i178(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -18606,7 +18606,7 @@ func i178(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -18648,7 +18648,7 @@ L6:
 	goto fail
 L3:
 	v7 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v7, start)
+	v = p.ScopeValue(sh1, v7, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -18728,7 +18728,7 @@ func i182(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -18785,7 +18785,7 @@ L22:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L35
 	}
 	if _, ok = u1023(p); !ok {
@@ -18823,7 +18823,7 @@ L18:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L44
 	}
 	if _, ok = u1023(p); !ok {
@@ -18914,7 +18914,7 @@ L65:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	x68 = p.Pos
@@ -18936,7 +18936,7 @@ L65:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L71
 	}
 	if _, ok = u1023(p); !ok {
@@ -18951,7 +18951,7 @@ L65:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L71
 	}
 	goto L72
@@ -19037,7 +19037,7 @@ func i183(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -19052,7 +19052,7 @@ func i183(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -19104,7 +19104,7 @@ L5:
 	goto fail
 L3:
 	v6 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v6, start)
+	v = p.ScopeValue(sh1, v6, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -19149,7 +19149,7 @@ func i185(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -19212,7 +19212,7 @@ L6:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -19260,7 +19260,7 @@ func i187(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 58 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit257, ":=", 91, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit246, ":=", 91, false); !ok {
 		goto L9
 	}
 	goto L5
@@ -19346,7 +19346,7 @@ L3:
 		goto fail
 	}
 	v10 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v10, start)
+	v = p.ScopeValue(sh1, v10, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -19383,7 +19383,7 @@ func i189(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -19409,7 +19409,7 @@ L3:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -19509,7 +19509,7 @@ func i191(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -19641,7 +19641,7 @@ L40:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -19969,7 +19969,7 @@ L6:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20220,7 +20220,7 @@ L12:
 	goto fail
 L3:
 	v14 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v14, start)
+	v = p.ScopeValue(sh1, v14, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20268,7 +20268,7 @@ func i201(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L11
 		}
 		if _, ok = u1023(p); !ok {
@@ -20280,8 +20280,8 @@ func i201(p *rt.TParser) (any, bool) {
 		k10 = v15
 		x13 = append(x13, v15)
 		v16 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
-		v17 = p.ScopeValue(sh9, v16, x9)
-		v18 = p.AttachCaptures(v17, scope1221, []any{k10}, x9, p.Pos)
+		v17 = p.ScopeValue(sh8, v16, x9)
+		v18 = p.AttachCaptures(v17, scope1210, []any{k10}, x9, p.Pos)
 		p.PushKid(v18)
 		if p.Pos == x9 {
 			break
@@ -20298,7 +20298,7 @@ func i201(p *rt.TParser) (any, bool) {
 	v = func() any {
 		b := len(c.P.KidStack)
 		c.PushList(k1)
-		c.PushMap(k4, func(l_1222 any) any { return c.Member((l_1222), "$t") })
+		c.PushMap(k4, func(l_1211 any) any { return c.Member((l_1211), "$t") })
 		return c.EndList(b)
 	}()
 	v = c.Finish(v)
@@ -20417,7 +20417,7 @@ L13:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20452,7 +20452,7 @@ L6:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20535,7 +20535,7 @@ L18:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20576,7 +20576,7 @@ func i206(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 			goto L6
 		}
 		if _, ok = u1023(p); !ok {
@@ -20667,7 +20667,7 @@ L8:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20698,7 +20698,7 @@ func i208(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 75, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit137, "[", 75, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -20720,7 +20720,7 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit168, "]", 84, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit157, "]", 84, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -20819,7 +20819,7 @@ func i210(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 75, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit137, "[", 75, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -20834,7 +20834,7 @@ func i210(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit168, "]", 84, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit157, "]", 84, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -20895,7 +20895,7 @@ func i212(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -20917,7 +20917,7 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -20994,7 +20994,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -21009,7 +21009,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	x20 = p.Pos
@@ -21063,7 +21063,7 @@ func i214(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -21164,7 +21164,7 @@ func i216(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -21179,7 +21179,7 @@ func i216(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	x10 = p.Pos
@@ -21231,7 +21231,7 @@ func i217(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L9
 	}
 	if _, ok = u1023(p); !ok {
@@ -21245,7 +21245,7 @@ func i217(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L9
 	}
 	goto L8
@@ -21348,7 +21348,7 @@ L5:
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 			goto L21
 		}
 		if _, ok = u1023(p); !ok {
@@ -21364,12 +21364,12 @@ L5:
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 			goto L21
 		}
 		v26 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-		v27 = p.ScopeValue(sh9, v26, x19)
-		v28 = p.AttachCaptures(v27, scope1223, []any{k20}, x19, p.Pos)
+		v27 = p.ScopeValue(sh8, v26, x19)
+		v28 = p.AttachCaptures(v27, scope1212, []any{k20}, x19, p.Pos)
 		p.PushKid(v28)
 		if p.Pos == x19 {
 			break
@@ -21409,11 +21409,11 @@ L42:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "type_datetime"
 	v = func() any {
-		f_1224 := c.Text(k1)
-		f_1225 := c.MapList(k13, func(l_1226 any) any { return c.Member((l_1226), "$n") })
-		f_1227 := c.Text(k31)
-		f_1228 := c.Concat(k37)
-		return tmk_Type(c, true, f_1224, f_1225, nil, nil, f_1228, f_1227)
+		f_1213 := c.Text(k1)
+		f_1214 := c.MapList(k13, func(l_1215 any) any { return c.Member((l_1215), "$n") })
+		f_1216 := c.Text(k31)
+		f_1217 := c.Concat(k37)
+		return tmk_Type(c, true, f_1213, f_1214, nil, nil, f_1217, f_1216)
 	}()
 	p.Depth--
 	return v, true
@@ -21477,7 +21477,7 @@ L3:
 		goto fail
 	}
 	v10 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v10, start)
+	v = p.ScopeValue(sh1, v10, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -21522,7 +21522,7 @@ func i220(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 			goto L12
 		}
 		if _, ok = u1023(p); !ok {
@@ -21538,12 +21538,12 @@ func i220(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 			goto L12
 		}
 		v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-		v18 = p.ScopeValue(sh9, v17, x10)
-		v19 = p.AttachCaptures(v18, scope1229, []any{k11}, x10, p.Pos)
+		v18 = p.ScopeValue(sh8, v17, x10)
+		v19 = p.AttachCaptures(v18, scope1218, []any{k11}, x10, p.Pos)
 		p.PushKid(v19)
 		if p.Pos == x10 {
 			break
@@ -21568,7 +21568,7 @@ L26:
 	k21 = v24
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "type_char"
-	v = tmk_Type(c, true, c.Text(k1), c.MapList(k4, func(l_1230 any) any { return c.Member((l_1230), "$n") }), nil, nil, c.Concat(k21), nil)
+	v = tmk_Type(c, true, c.Text(k1), c.MapList(k4, func(l_1219 any) any { return c.Member((l_1219), "$n") }), nil, nil, c.Concat(k21), nil)
 	p.Depth--
 	return v, true
 fail:
@@ -21725,7 +21725,7 @@ L34:
 	goto fail
 L3:
 	v36 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v36, start)
+	v = p.ScopeValue(sh1, v36, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -21778,7 +21778,7 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L11
 	}
 	if _, ok = u1023(p); !ok {
@@ -21793,7 +21793,7 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L11
 	}
 	goto L12
@@ -21859,7 +21859,7 @@ L11:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -21951,7 +21951,7 @@ L9:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -21995,7 +21995,7 @@ func i226(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 			goto L12
 		}
 		if _, ok = u1023(p); !ok {
@@ -22010,7 +22010,7 @@ func i226(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 			goto L12
 		}
 		p.PushKid(k11)
@@ -22279,7 +22279,7 @@ func i229(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 			goto L6
 		}
 		if _, ok = u1023(p); !ok {
@@ -22443,7 +22443,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 		goto L22
 	}
 	goto L18
@@ -22456,7 +22456,7 @@ L21:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 75, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit137, "[", 75, false); !ok {
 		goto L24
 	}
 	goto L18
@@ -22513,7 +22513,7 @@ func i232(p *rt.TParser) (any, bool) {
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 		goto L6
 	}
 	p.Silent--
@@ -22596,12 +22596,12 @@ func i234(p *rt.TParser) (any, bool) {
 	p.Enter()
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1231) && !p.ClassSkip(&cls1231, 12) {
+	if !p.ClassFast(&cls1220) && !p.ClassSkip(&cls1220, 12) {
 		goto L2
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 		goto L2
 	}
 	p.Silent--
@@ -22676,7 +22676,7 @@ L13:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22725,7 +22725,7 @@ L11:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22806,7 +22806,7 @@ L9:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22850,7 +22850,7 @@ func i239(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 			goto L12
 		}
 		if _, ok = u1023(p); !ok {
@@ -22865,7 +22865,7 @@ func i239(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 			goto L12
 		}
 		p.PushKid(k11)
@@ -23105,7 +23105,7 @@ func i242(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 			goto L12
 		}
 		if _, ok = u1023(p); !ok {
@@ -23121,12 +23121,12 @@ func i242(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 			goto L12
 		}
 		v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-		v18 = p.ScopeValue(sh9, v17, x10)
-		v19 = p.AttachCaptures(v18, scope1232, []any{k11}, x10, p.Pos)
+		v18 = p.ScopeValue(sh8, v17, x10)
+		v19 = p.AttachCaptures(v18, scope1221, []any{k11}, x10, p.Pos)
 		p.PushKid(v19)
 		if p.Pos == x10 {
 			break
@@ -23140,7 +23140,7 @@ func i242(p *rt.TParser) (any, bool) {
 	k4 = v20
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "type_char_const"
-	v = tmk_Type(c, true, c.Text(k1), c.MapList(k4, func(l_1233 any) any { return c.Member((l_1233), "$n") }), nil, nil, nil, nil)
+	v = tmk_Type(c, true, c.Text(k1), c.MapList(k4, func(l_1222 any) any { return c.Member((l_1222), "$n") }), nil, nil, nil, nil)
 	p.Depth--
 	return v, true
 fail:
@@ -23189,7 +23189,7 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L11
 	}
 	if _, ok = u1023(p); !ok {
@@ -23204,7 +23204,7 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L11
 	}
 	goto L12
@@ -23281,7 +23281,7 @@ L5:
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 			goto L21
 		}
 		if _, ok = u1023(p); !ok {
@@ -23297,12 +23297,12 @@ L5:
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 			goto L21
 		}
 		v26 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-		v27 = p.ScopeValue(sh9, v26, x19)
-		v28 = p.AttachCaptures(v27, scope1234, []any{k20}, x19, p.Pos)
+		v27 = p.ScopeValue(sh8, v26, x19)
+		v28 = p.AttachCaptures(v27, scope1223, []any{k20}, x19, p.Pos)
 		p.PushKid(v28)
 		if p.Pos == x19 {
 			break
@@ -23330,7 +23330,7 @@ L33:
 L34:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "type_datetime_const"
-	v = tmk_Type(c, true, c.Text(k1), c.MapList(k13, func(l_1235 any) any { return c.Member((l_1235), "$n") }), nil, nil, nil, c.Text(k31))
+	v = tmk_Type(c, true, c.Text(k1), c.MapList(k13, func(l_1224 any) any { return c.Member((l_1224), "$n") }), nil, nil, nil, c.Text(k31))
 	p.Depth--
 	return v, true
 fail:
@@ -23376,7 +23376,7 @@ L9:
 L8:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -23441,7 +23441,7 @@ func i247(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -23456,7 +23456,7 @@ func i247(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -23506,7 +23506,7 @@ L11:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -23714,7 +23714,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -23768,7 +23768,7 @@ func i251(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -23835,7 +23835,7 @@ func i252(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -23897,7 +23897,7 @@ func i253(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L7
 	}
 	if _, ok = u1023(p); !ok {
@@ -23912,7 +23912,7 @@ func i253(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L7
 	}
 	goto L8
@@ -23939,7 +23939,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L14
 	}
 	if _, ok = u1023(p); !ok {
@@ -23955,7 +23955,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L19
 	}
 	goto L20
@@ -23967,7 +23967,7 @@ L20:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L14
 	}
 	goto L15
@@ -24000,7 +24000,7 @@ L25:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -24015,7 +24015,7 @@ L25:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -24069,7 +24069,7 @@ L8:
 	goto fail
 L3:
 	v10 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v10, start)
+	v = p.ScopeValue(sh1, v10, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24081,7 +24081,7 @@ fail:
 	return nil, false
 }
 
-func e1654(p *rt.TParser) (any, bool) {
+func e1643(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u256(p); !ok {
@@ -24092,7 +24092,7 @@ fail:
 	return nil, false
 }
 
-func e1655(p *rt.TParser) (any, bool) {
+func e1644(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u257(p); !ok {
@@ -24103,7 +24103,7 @@ fail:
 	return nil, false
 }
 
-func e1656(p *rt.TParser) (any, bool) {
+func e1645(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u281(p); !ok {
@@ -24114,7 +24114,7 @@ fail:
 	return nil, false
 }
 
-func e1657(p *rt.TParser) (any, bool) {
+func e1646(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u283(p); !ok {
@@ -24125,7 +24125,7 @@ fail:
 	return nil, false
 }
 
-func e1658(p *rt.TParser) (any, bool) {
+func e1647(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u284(p); !ok {
@@ -24136,7 +24136,7 @@ fail:
 	return nil, false
 }
 
-func e1659(p *rt.TParser) (any, bool) {
+func e1648(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u287(p); !ok {
@@ -24147,7 +24147,7 @@ fail:
 	return nil, false
 }
 
-func e1660(p *rt.TParser) (any, bool) {
+func e1649(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u247(p); !ok {
@@ -24158,7 +24158,7 @@ fail:
 	return nil, false
 }
 
-func e1661(p *rt.TParser) (any, bool) {
+func e1650(p *rt.TParser) (any, bool) {
 	var x1, x19, x41 int
 	var x2, x20, x42 []any
 	var x4, x15, x23, x37 rt.Mark
@@ -24235,7 +24235,7 @@ L25:
 	p.SetCaptureOrdinary(1, v24)
 	x20 = append(x20, v24)
 	v34 = p.NewNodeOrdinary("tuple", x19, p.Pos, x20)
-	v35, _ = p.ShapeSingle(sh3, v34, x15.Pos)
+	v35, _ = p.ShapeSingle(sh2, v34, x15.Pos)
 	v16 = v35
 	goto L18
 L17:
@@ -24263,7 +24263,7 @@ L18:
 	}
 	x42 = append(x42, v46)
 	v47 = p.NewNodeOrdinary("tuple", x41, p.Pos, x42)
-	v48, _ = p.ShapeSingle(sh136, v47, x37.Pos)
+	v48, _ = p.ShapeSingle(sh126, v47, x37.Pos)
 	v38 = v48
 	goto L40
 L39:
@@ -24278,7 +24278,7 @@ fail:
 	return nil, false
 }
 
-func e1662(p *rt.TParser) (any, bool) {
+func e1651(p *rt.TParser) (any, bool) {
 	var x1, x9, x31 int
 	var x2, x10, x32 []any
 	var ok, x17 bool
@@ -24330,7 +24330,7 @@ L15:
 	p.SetCaptureOrdinary(1, v14)
 	x10 = append(x10, v14)
 	v24 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
-	v25, _ = p.ShapeSingle(sh3, v24, x5.Pos)
+	v25, _ = p.ShapeSingle(sh2, v24, x5.Pos)
 	v6 = v25
 	goto L8
 L7:
@@ -24358,7 +24358,7 @@ L8:
 	}
 	x32 = append(x32, v36)
 	v37 = p.NewNodeOrdinary("tuple", x31, p.Pos, x32)
-	v38, _ = p.ShapeSingle(sh136, v37, x27.Pos)
+	v38, _ = p.ShapeSingle(sh126, v37, x27.Pos)
 	v28 = v38
 	goto L30
 L29:
@@ -24841,7 +24841,7 @@ func i258(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L4
 	}
 	if _, ok = u1023(p); !ok {
@@ -24856,7 +24856,7 @@ func i258(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L4
 	}
 	goto L5
@@ -24907,7 +24907,7 @@ func i259(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -24934,7 +24934,7 @@ func i259(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L15
 	}
 	goto L16
@@ -24983,7 +24983,7 @@ L6:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -25147,7 +25147,7 @@ L5:
 L3:
 	v6 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v6)
-	v = p.ScopeValue(sh2, v6, start)
+	v = p.ScopeValue(sh1, v6, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -25238,7 +25238,7 @@ L11:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -25534,7 +25534,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -25621,7 +25621,7 @@ func i271(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -25648,7 +25648,7 @@ func i271(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L15
 	}
 	goto L16
@@ -25696,7 +25696,7 @@ L6:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -25759,7 +25759,7 @@ L4:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L2
 	}
 	p.Silent--
@@ -25825,7 +25825,7 @@ L12:
 L11:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -25889,7 +25889,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -25904,7 +25904,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -25951,7 +25951,7 @@ func i276(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -25966,7 +25966,7 @@ func i276(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -25988,7 +25988,7 @@ func s277(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -25996,7 +25996,7 @@ func s277(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -26040,7 +26040,7 @@ func i278(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -26067,7 +26067,7 @@ func i278(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L15
 	}
 	goto L16
@@ -26124,7 +26124,7 @@ func i279(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -26242,7 +26242,7 @@ func i281(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -26269,7 +26269,7 @@ func i281(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L15
 	}
 	goto L16
@@ -26308,7 +26308,7 @@ func i282(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -26323,7 +26323,7 @@ func i282(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -26680,7 +26680,7 @@ L9:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -26714,7 +26714,7 @@ func i289(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -26729,7 +26729,7 @@ func i289(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -26773,7 +26773,7 @@ func i290(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -26800,7 +26800,7 @@ func i290(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L15
 	}
 	goto L16
@@ -26867,7 +26867,7 @@ func i291(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L21
 	}
 	if _, ok = u1023(p); !ok {
@@ -26882,7 +26882,7 @@ func i291(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L21
 	}
 	goto L17
@@ -26898,7 +26898,7 @@ L20:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L25
 	}
 	if _, ok = u1023(p); !ok {
@@ -26913,7 +26913,7 @@ L20:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L25
 	}
 	goto L17
@@ -26945,11 +26945,11 @@ L12:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "pivot_column_entry"
 	v = func() any {
-		f_1236 := k1
-		f_1237 := k5
-		f_1238 := c.Concat(k7)
-		f_1239 := k9
-		return tmk_PivotColumn(c, true, f_1236, f_1238, f_1237, f_1239)
+		f_1225 := k1
+		f_1226 := k5
+		f_1227 := c.Concat(k7)
+		f_1228 := k9
+		return tmk_PivotColumn(c, true, f_1225, f_1227, f_1226, f_1228)
 	}()
 	p.Depth--
 	return v, true
@@ -27001,7 +27001,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -27125,7 +27125,7 @@ func i294(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -27187,7 +27187,7 @@ L6:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -27359,7 +27359,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -27420,7 +27420,7 @@ L8:
 	goto fail
 L3:
 	v10 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v10, start)
+	v = p.ScopeValue(sh1, v10, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -27470,7 +27470,7 @@ L9:
 L8:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -27585,7 +27585,7 @@ L25:
 L24:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -27630,7 +27630,7 @@ func i302(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -28089,7 +28089,7 @@ L6:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -28206,7 +28206,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -28425,7 +28425,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -28682,7 +28682,7 @@ func i318(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -28833,7 +28833,7 @@ L6:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -28883,7 +28883,7 @@ L8:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -28928,7 +28928,7 @@ L4:
 L5:
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -28957,7 +28957,7 @@ L15:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	x18 = p.Pos
@@ -28973,7 +28973,7 @@ L15:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L21
 	}
 	if _, ok = u1023(p); !ok {
@@ -28988,7 +28988,7 @@ L15:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L21
 	}
 	goto L22
@@ -29046,7 +29046,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -29063,7 +29063,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L17
 	}
 	if _, ok = u1023(p); !ok {
@@ -29083,7 +29083,7 @@ L18:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -29196,7 +29196,7 @@ L13:
 L12:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -29238,7 +29238,7 @@ func i327(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -29303,7 +29303,7 @@ func i328(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -29330,7 +29330,7 @@ func i328(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L15
 	}
 	goto L16
@@ -29348,7 +29348,7 @@ fail:
 	return nil, false
 }
 
-func e1663(p *rt.TParser) (any, bool) {
+func e1652(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u344(p); !ok {
@@ -29359,7 +29359,7 @@ fail:
 	return nil, false
 }
 
-func e1664(p *rt.TParser) (any, bool) {
+func e1653(p *rt.TParser) (any, bool) {
 	var x1, x4 int
 	var x2 []any
 	var ok bool
@@ -29396,7 +29396,7 @@ fail:
 	return nil, false
 }
 
-func e1665(p *rt.TParser) (any, bool) {
+func e1654(p *rt.TParser) (any, bool) {
 	var x1, x4 int
 	var x2 []any
 	var ok bool
@@ -29444,7 +29444,7 @@ fail:
 	return nil, false
 }
 
-func e1666(p *rt.TParser) (any, bool) {
+func e1655(p *rt.TParser) (any, bool) {
 	var x1, x4 int
 	var x2 []any
 	var ok bool
@@ -29481,7 +29481,7 @@ fail:
 	return nil, false
 }
 
-func e1667(p *rt.TParser) (any, bool) {
+func e1656(p *rt.TParser) (any, bool) {
 	var x1, x4 int
 	var x2 []any
 	var ok bool
@@ -29538,7 +29538,7 @@ fail:
 	return nil, false
 }
 
-func e1668(p *rt.TParser) (any, bool) {
+func e1657(p *rt.TParser) (any, bool) {
 	var x1, x4 int
 	var x2 []any
 	var ok bool
@@ -29595,7 +29595,7 @@ fail:
 	return nil, false
 }
 
-func e1669(p *rt.TParser) (any, bool) {
+func e1658(p *rt.TParser) (any, bool) {
 	var x1, x4 int
 	var x2 []any
 	var x5 rt.Mark
@@ -29646,7 +29646,7 @@ fail:
 	return nil, false
 }
 
-func e1670(p *rt.TParser) (any, bool) {
+func e1659(p *rt.TParser) (any, bool) {
 	var x1, x4 int
 	var x2 []any
 	var x5 rt.Mark
@@ -29697,7 +29697,7 @@ fail:
 	return nil, false
 }
 
-func e1671(p *rt.TParser) (any, bool) {
+func e1660(p *rt.TParser) (any, bool) {
 	var x1, x5, x19, x31, x37 int
 	var x2, x20, x38 []any
 	var ok bool
@@ -29716,7 +29716,7 @@ func e1671(p *rt.TParser) (any, bool) {
 	x5 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	v6 = p.NewMatchOrdinary(x5, p.Pos, "(", true)
@@ -29776,7 +29776,7 @@ func e1671(p *rt.TParser) (any, bool) {
 	p.SetCaptureOrdinary(2, v27)
 	x20 = append(x20, v27)
 	v28 = p.NewNodeOrdinary("tuple", x19, p.Pos, x20)
-	v29, _ = p.ShapeSingle(sh1144, v28, x15.Pos)
+	v29, _ = p.ShapeSingle(sh1133, v28, x15.Pos)
 	v16 = v29
 	goto L18
 L17:
@@ -29791,7 +29791,7 @@ L18:
 	x31 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	v32 = p.NewMatchOrdinary(x31, p.Pos, ")", true)
@@ -29809,7 +29809,7 @@ L18:
 	p.SetCaptureOrdinary(3, v41)
 	x38 = append(x38, v41)
 	v42 = p.NewNodeOrdinary("tuple", x37, p.Pos, x38)
-	v43, _ = p.ShapeSingle(sh3, v42, x33.Pos)
+	v43, _ = p.ShapeSingle(sh2, v42, x33.Pos)
 	v34 = v43
 	goto L36
 L35:
@@ -29823,7 +29823,7 @@ fail:
 	return nil, false
 }
 
-func e1672(p *rt.TParser) (any, bool) {
+func e1661(p *rt.TParser) (any, bool) {
 	var x1, x8, x16, x27, x33 int
 	var x2, x9, x34 []any
 	var ok bool
@@ -29848,7 +29848,7 @@ func e1672(p *rt.TParser) (any, bool) {
 	p.SetCaptureOrdinary(0, v12)
 	x9 = append(x9, v12)
 	v13 = p.NewNodeOrdinary("tuple", x8, p.Pos, x9)
-	v14, _ = p.ShapeSingle(sh3, v13, x4.Pos)
+	v14, _ = p.ShapeSingle(sh2, v13, x4.Pos)
 	v5 = v14
 	goto L7
 L6:
@@ -29863,7 +29863,7 @@ L7:
 	x16 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	v17 = p.NewMatchOrdinary(x16, p.Pos, "(", true)
@@ -29901,7 +29901,7 @@ L7:
 	x27 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	v28 = p.NewMatchOrdinary(x27, p.Pos, ")", true)
@@ -29919,7 +29919,7 @@ L7:
 	p.SetCaptureOrdinary(3, v37)
 	x34 = append(x34, v37)
 	v38 = p.NewNodeOrdinary("tuple", x33, p.Pos, x34)
-	v39, _ = p.ShapeSingle(sh3, v38, x29.Pos)
+	v39, _ = p.ShapeSingle(sh2, v38, x29.Pos)
 	v30 = v39
 	goto L32
 L31:
@@ -30002,7 +30002,7 @@ func i332(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -30017,7 +30017,7 @@ func i332(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -30072,7 +30072,7 @@ L3:
 		goto fail
 	}
 	v10 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v10, start)
+	v = p.ScopeValue(sh1, v10, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -30122,7 +30122,7 @@ L9:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -30255,7 +30255,7 @@ func i337(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -30270,7 +30270,7 @@ func i337(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -30381,7 +30381,7 @@ func i339(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L13
 	}
 	if _, ok = u1023(p); !ok {
@@ -30396,7 +30396,7 @@ func i339(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L13
 	}
 	goto L9
@@ -30456,7 +30456,7 @@ L9:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -30487,7 +30487,7 @@ func i341(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -30502,7 +30502,7 @@ func i341(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -30578,7 +30578,7 @@ func i343(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -30605,7 +30605,7 @@ func i343(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L15
 	}
 	goto L16
@@ -30682,7 +30682,7 @@ L14:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -30789,7 +30789,7 @@ L5:
 	}
 	x25 = append(x25, v27)
 	v28 = p.NewNodeOrdinary("tuple", x24, p.Pos, x25)
-	v29, _ = p.ShapeSingle(sh3, v28, x20)
+	v29, _ = p.ShapeSingle(sh2, v28, x20)
 	v21 = v29
 	goto L23
 L22:
@@ -30817,7 +30817,7 @@ L16:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L33
 	}
 	if _, ok = u1023(p); !ok {
@@ -30832,7 +30832,7 @@ L16:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L33
 	}
 	goto L15
@@ -30947,7 +30947,7 @@ func i347(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -31000,7 +31000,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -31136,7 +31136,7 @@ L4:
 L5:
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -31170,7 +31170,7 @@ L10:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	x14 = p.Pos
@@ -31421,7 +31421,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -31440,7 +31440,7 @@ L5:
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L17
 		}
 		if _, ok = u1023(p); !ok {
@@ -31466,7 +31466,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	x21 = p.Pos
@@ -31567,7 +31567,7 @@ func i354(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L7
 	}
 	if _, ok = u1023(p); !ok {
@@ -31582,7 +31582,7 @@ func i354(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L7
 	}
 	goto L8
@@ -31638,7 +31638,7 @@ L8:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -31677,7 +31677,7 @@ func i356(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -31734,7 +31734,7 @@ L22:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L35
 	}
 	if _, ok = u1023(p); !ok {
@@ -31772,7 +31772,7 @@ L18:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L44
 	}
 	if _, ok = u1023(p); !ok {
@@ -31863,7 +31863,7 @@ L65:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -31933,7 +31933,7 @@ L14:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -31980,7 +31980,7 @@ func i358(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -31995,7 +31995,7 @@ func i358(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -32077,7 +32077,7 @@ func i360(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -32092,7 +32092,7 @@ func i360(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -32227,7 +32227,7 @@ L22:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -32271,7 +32271,7 @@ func i363(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -32286,7 +32286,7 @@ func i363(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -32324,7 +32324,7 @@ func i364(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -32339,7 +32339,7 @@ func i364(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -32378,7 +32378,7 @@ func i365(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -32393,7 +32393,7 @@ func i365(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -32439,7 +32439,7 @@ func i366(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -32565,7 +32565,7 @@ func i368(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -32895,7 +32895,7 @@ func i370(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -32910,7 +32910,7 @@ func i370(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -32954,7 +32954,7 @@ func i371(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -33003,7 +33003,7 @@ func v372(p *rt.TParser) (any, bool) {
 	if v1, ok = u65(p); !ok {
 		goto fail
 	}
-	v = p.ScopeValue(sh2, v1, start)
+	v = p.ScopeValue(sh1, v1, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -33062,7 +33062,7 @@ L3:
 		goto fail
 	}
 	v10 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v10, start)
+	v = p.ScopeValue(sh1, v10, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -33114,7 +33114,7 @@ func i374(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L15
 	}
 	if _, ok = u1023(p); !ok {
@@ -33129,7 +33129,7 @@ func i374(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L15
 	}
 	x18 = p.Pos
@@ -33313,7 +33313,7 @@ func i375(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -33390,7 +33390,7 @@ L11:
 L10:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -33608,7 +33608,7 @@ func i379(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -33623,7 +33623,7 @@ func i379(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	x4 = p.Pos
@@ -33807,7 +33807,7 @@ func i381(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -33834,7 +33834,7 @@ func i381(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L15
 	}
 	goto L16
@@ -33890,7 +33890,7 @@ L9:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -33965,7 +33965,7 @@ func i384(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -33984,7 +33984,7 @@ func i384(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -34010,7 +34010,7 @@ func i384(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -34078,7 +34078,7 @@ func i385(p *rt.TParser) (any, bool) {
 	}
 	x18 = append(x18, v20)
 	v21 = p.NewNodeOrdinary("tuple", x17, p.Pos, x18)
-	v22, _ = p.ShapeSingle(sh3, v21, x13)
+	v22, _ = p.ShapeSingle(sh2, v21, x13)
 	v14 = v22
 	goto L16
 L15:
@@ -34106,7 +34106,7 @@ L9:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L26
 	}
 	if _, ok = u1023(p); !ok {
@@ -34121,7 +34121,7 @@ L9:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L26
 	}
 	goto L8
@@ -34622,7 +34622,7 @@ L22:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L27
 	}
 	if _, ok = u1023(p); !ok {
@@ -34637,7 +34637,7 @@ L22:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L27
 	}
 	goto L19
@@ -34750,7 +34750,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -35079,7 +35079,7 @@ L31:
 L30:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -35314,7 +35314,7 @@ func i398(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L7
 	}
 	if _, ok = u1023(p); !ok {
@@ -35329,7 +35329,7 @@ func i398(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L7
 	}
 	goto L8
@@ -35348,7 +35348,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -35363,7 +35363,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -35406,7 +35406,7 @@ func i399(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -35790,7 +35790,7 @@ L30:
 	goto fail
 L3:
 	v32 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v32, start)
+	v = p.ScopeValue(sh1, v32, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -35833,7 +35833,7 @@ func v405(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -35870,7 +35870,7 @@ func v406(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -35907,7 +35907,7 @@ func v407(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36005,7 +36005,7 @@ L19:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -36020,7 +36020,7 @@ L19:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	x29, x30, _ = p.Pos, len(p.KidStack), 0
@@ -36113,7 +36113,7 @@ func i409(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -36140,7 +36140,7 @@ func i409(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L15
 	}
 	goto L16
@@ -36203,7 +36203,7 @@ L11:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36276,7 +36276,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -36291,7 +36291,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -36342,7 +36342,7 @@ L9:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36379,7 +36379,7 @@ func i413(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -36394,7 +36394,7 @@ func i413(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -36544,7 +36544,7 @@ L10:
 	goto fail
 L3:
 	v12 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v12, start)
+	v = p.ScopeValue(sh1, v12, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36589,7 +36589,7 @@ func i416(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -36652,7 +36652,7 @@ L6:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36690,7 +36690,7 @@ func i418(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -36888,7 +36888,7 @@ L14:
 	goto fail
 L3:
 	v16 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v16, start)
+	v = p.ScopeValue(sh1, v16, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36954,7 +36954,7 @@ L4:
 		goto fail
 	}
 	v13 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v13, start)
+	v = p.ScopeValue(sh1, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36996,7 +36996,7 @@ func i423(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -37101,7 +37101,7 @@ func i425(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -37116,7 +37116,7 @@ func i425(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -37194,7 +37194,7 @@ L6:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -37395,7 +37395,7 @@ L13:
 L12:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -37453,7 +37453,7 @@ func i431(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L7
 	}
 	if _, ok = u1023(p); !ok {
@@ -37468,7 +37468,7 @@ func i431(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L7
 	}
 	goto L8
@@ -37524,7 +37524,7 @@ func i432(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -37539,7 +37539,7 @@ func i432(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	x7 = p.Pos
@@ -37591,7 +37591,7 @@ func i433(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -37606,7 +37606,7 @@ func i433(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	x4 = p.Pos
@@ -37682,7 +37682,7 @@ L8:
 	goto fail
 L3:
 	v10 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v10, start)
+	v = p.ScopeValue(sh1, v10, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -37737,7 +37737,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -37885,7 +37885,7 @@ L25:
 L24:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -38161,7 +38161,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -38176,7 +38176,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	x14 = p.Pos
@@ -38520,7 +38520,7 @@ L10:
 	goto fail
 L3:
 	v20 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v20, start)
+	v = p.ScopeValue(sh1, v20, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -38564,7 +38564,7 @@ func i449(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L7
 	}
 	if _, ok = u1023(p); !ok {
@@ -38579,7 +38579,7 @@ func i449(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L7
 	}
 	goto L8
@@ -38702,7 +38702,7 @@ func v450(p *rt.TParser) (any, bool) {
 	if v1, ok = u68(p); !ok {
 		goto fail
 	}
-	v = p.ScopeValue(sh2, v1, start)
+	v = p.ScopeValue(sh1, v1, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -38744,7 +38744,7 @@ func i451(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L5
 	}
 	goto L6
@@ -38814,7 +38814,7 @@ L10:
 	goto fail
 L3:
 	v12 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v12, start)
+	v = p.ScopeValue(sh1, v12, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -38857,7 +38857,7 @@ func v453(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -38900,7 +38900,7 @@ func v454(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -38971,7 +38971,7 @@ L14:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -39142,7 +39142,7 @@ L16:
 	goto fail
 L3:
 	v18 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v18, start)
+	v = p.ScopeValue(sh1, v18, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -39194,7 +39194,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -39209,7 +39209,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	if v16, ok = u457(p); !ok {
@@ -39266,7 +39266,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -39281,7 +39281,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	x14 = p.Pos
@@ -39428,7 +39428,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -39443,7 +39443,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	x15 = p.Pos
@@ -39598,7 +39598,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -39613,7 +39613,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -39832,7 +39832,7 @@ L28:
 	goto fail
 L11:
 	v30 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v30, start)
+	v = p.ScopeValue(sh1, v30, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -39933,7 +39933,7 @@ L19:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L28
 	}
 	if _, ok = u1023(p); !ok {
@@ -39948,7 +39948,7 @@ L19:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L28
 	}
 	goto L29
@@ -40091,7 +40091,7 @@ L4:
 		goto fail
 	}
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v5, start)
+	v = p.ScopeValue(sh1, v5, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -40205,7 +40205,7 @@ L26:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L35
 	}
 	if _, ok = u1023(p); !ok {
@@ -40220,7 +40220,7 @@ L26:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L35
 	}
 	goto L36
@@ -40241,7 +40241,7 @@ L36:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L42
 	}
 	if _, ok = u1023(p); !ok {
@@ -40256,7 +40256,7 @@ L36:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L42
 	}
 	goto L43
@@ -40362,7 +40362,7 @@ L4:
 		goto fail
 	}
 	v13 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v13, start)
+	v = p.ScopeValue(sh1, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -40514,7 +40514,7 @@ L41:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -40529,7 +40529,7 @@ L41:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	x47 = p.Pos
@@ -40545,7 +40545,7 @@ L41:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L50
 	}
 	if _, ok = u1023(p); !ok {
@@ -40560,7 +40560,7 @@ L41:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L50
 	}
 	goto L51
@@ -40756,7 +40756,7 @@ L16:
 L15:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -41011,7 +41011,7 @@ L20:
 L19:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -41560,7 +41560,7 @@ L47:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L52
 	}
 	if _, ok = u1023(p); !ok {
@@ -41582,7 +41582,7 @@ L57:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L52
 	}
 	goto L44
@@ -41611,7 +41611,7 @@ L37:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L61
 	}
 	p.Silent--
@@ -41673,7 +41673,7 @@ func i484(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -41861,7 +41861,7 @@ L9:
 L8:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -41903,7 +41903,7 @@ func i487(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -42017,7 +42017,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -42155,7 +42155,7 @@ func i492(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -42262,7 +42262,7 @@ func i494(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -42284,7 +42284,7 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -42328,7 +42328,7 @@ func i495(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -42355,7 +42355,7 @@ func i495(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 		goto L15
 	}
 	goto L16
@@ -42427,7 +42427,7 @@ L8:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 58 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit257, ":=", 91, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit246, ":=", 91, false); !ok {
 		goto L24
 	}
 	goto L20
@@ -42609,7 +42609,7 @@ L42:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -42624,7 +42624,7 @@ L42:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -42667,7 +42667,7 @@ func i498(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -42783,7 +42783,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -42861,7 +42861,7 @@ L8:
 	}
 	x28 = append(x28, v30)
 	v31 = p.NewNodeOrdinary("tuple", x27, p.Pos, x28)
-	v32, _ = p.ShapeSingle(sh3, v31, x23)
+	v32, _ = p.ShapeSingle(sh2, v31, x23)
 	v24 = v32
 	goto L26
 L25:
@@ -42889,7 +42889,7 @@ L19:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L36
 	}
 	if _, ok = u1023(p); !ok {
@@ -42904,7 +42904,7 @@ L19:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L36
 	}
 	goto L18
@@ -43091,7 +43091,7 @@ func i503(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -43364,7 +43364,7 @@ L51:
 L50:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -43656,7 +43656,7 @@ func i509(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -43671,7 +43671,7 @@ func i509(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -43769,7 +43769,7 @@ func i511(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -43784,7 +43784,7 @@ func i511(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -43872,7 +43872,7 @@ func i513(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -44059,7 +44059,7 @@ L40:
 L39:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -44101,7 +44101,7 @@ L3:
 	p.Pos = x2
 L4:
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v5, start)
+	v = p.ScopeValue(sh1, v5, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -44396,7 +44396,7 @@ func i520(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -44411,7 +44411,7 @@ func i520(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -44463,7 +44463,7 @@ func i521(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -44478,7 +44478,7 @@ func i521(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -44616,7 +44616,7 @@ func i523(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L13
 	}
 	if _, ok = u1023(p); !ok {
@@ -44631,7 +44631,7 @@ func i523(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L13
 	}
 	goto L14
@@ -44642,11 +44642,11 @@ L14:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ac_col_add_identity"
 	v = func() any {
-		f_1240 := c.Text(k1)
-		f_1241 := k4
-		f_1242 := c.Text(k7)
-		f_1243 := c.Concat(k11)
-		return tmk_AlterCmd(c, true, f_1240, nil, nil, nil, nil, nil, nil, nil, f_1241, nil, nil, nil, nil, nil, nil, nil, f_1243, f_1242, nil, nil)
+		f_1229 := c.Text(k1)
+		f_1230 := k4
+		f_1231 := c.Text(k7)
+		f_1232 := c.Concat(k11)
+		return tmk_AlterCmd(c, true, f_1229, nil, nil, nil, nil, nil, nil, nil, f_1230, nil, nil, nil, nil, nil, nil, nil, f_1232, f_1231, nil, nil)
 	}()
 	p.Depth--
 	return v, true
@@ -44712,10 +44712,10 @@ L11:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ac_col_drop_identity"
 	v = func() any {
-		f_1244 := c.Text(k1)
-		f_1245 := k4
-		f_1246 := c.Binary(">", c.Length(k8), any(0))
-		return tmk_AlterCmd(c, true, f_1244, f_1246, nil, nil, nil, nil, nil, nil, f_1245, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		f_1233 := c.Text(k1)
+		f_1234 := k4
+		f_1235 := c.Binary(">", c.Length(k8), any(0))
+		return tmk_AlterCmd(c, true, f_1233, f_1235, nil, nil, nil, nil, nil, nil, f_1234, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	}()
 	p.Depth--
 	return v, true
@@ -44878,7 +44878,7 @@ L13:
 L12:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -45109,12 +45109,12 @@ L36:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ac_col_type"
 	v = func() any {
-		f_1247 := c.Text(k1)
-		f_1248 := k4
-		f_1249 := k19
-		f_1250 := k26
-		f_1251 := k33
-		return tmk_AlterCmd(c, true, f_1247, nil, nil, nil, f_1249, nil, nil, nil, f_1248, nil, nil, nil, f_1250, f_1251, nil, nil, nil, nil, nil, nil)
+		f_1236 := c.Text(k1)
+		f_1237 := k4
+		f_1238 := k19
+		f_1239 := k26
+		f_1240 := k33
+		return tmk_AlterCmd(c, true, f_1236, nil, nil, nil, f_1238, nil, nil, nil, f_1237, nil, nil, nil, f_1239, f_1240, nil, nil, nil, nil, nil, nil)
 	}()
 	p.Depth--
 	return v, true
@@ -45214,7 +45214,7 @@ L4:
 		goto fail
 	}
 	v13 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v13, start)
+	v = p.ScopeValue(sh1, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -45563,7 +45563,7 @@ func i538(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -45578,7 +45578,7 @@ func i538(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -45617,7 +45617,7 @@ func i539(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -45632,7 +45632,7 @@ func i539(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -45743,7 +45743,7 @@ func i542(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -45762,7 +45762,7 @@ func i542(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -45788,7 +45788,7 @@ func i542(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -45840,7 +45840,7 @@ L9:
 L8:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -46011,7 +46011,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -46216,7 +46216,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -46288,7 +46288,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L18
 	}
 	if _, ok = u1023(p); !ok {
@@ -46303,7 +46303,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L18
 	}
 	goto L14
@@ -46545,7 +46545,7 @@ L15:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -46658,7 +46658,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -46730,7 +46730,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L18
 	}
 	if _, ok = u1023(p); !ok {
@@ -46745,7 +46745,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L18
 	}
 	goto L14
@@ -46997,7 +46997,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L18
 	}
 	if _, ok = u1023(p); !ok {
@@ -47012,7 +47012,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L18
 	}
 	goto L14
@@ -47167,7 +47167,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L18
 	}
 	if _, ok = u1023(p); !ok {
@@ -47182,7 +47182,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L18
 	}
 	goto L14
@@ -47327,7 +47327,7 @@ L13:
 L12:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -47853,7 +47853,7 @@ L47:
 	goto fail
 L3:
 	v49 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v49, start)
+	v = p.ScopeValue(sh1, v49, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -47968,7 +47968,7 @@ L16:
 	goto fail
 L3:
 	v18 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v18, start)
+	v = p.ScopeValue(sh1, v18, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -48010,7 +48010,7 @@ func i565(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -48075,7 +48075,7 @@ func i566(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L11
 		}
 		if _, ok = u1023(p); !ok {
@@ -48087,8 +48087,8 @@ func i566(p *rt.TParser) (any, bool) {
 		k10 = v15
 		x13 = append(x13, v15)
 		v16 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
-		v17 = p.ScopeValue(sh9, v16, x9)
-		v18 = p.AttachCaptures(v17, scope1252, []any{k10}, x9, p.Pos)
+		v17 = p.ScopeValue(sh8, v16, x9)
+		v18 = p.AttachCaptures(v17, scope1241, []any{k10}, x9, p.Pos)
 		p.PushKid(v18)
 		if p.Pos == x9 {
 			break
@@ -48105,7 +48105,7 @@ func i566(p *rt.TParser) (any, bool) {
 	v = func() any {
 		b := len(c.P.KidStack)
 		c.PushList(tmk_Name(c, false, c.List(k1)))
-		c.PushMap(k4, func(l_1253 any) any { return tmk_Name(c, false, c.List(c.Member((l_1253), "$n"))) })
+		c.PushMap(k4, func(l_1242 any) any { return tmk_Name(c, false, c.List(c.Member((l_1242), "$n"))) })
 		return c.EndList(b)
 	}()
 	v = c.Finish(v)
@@ -48288,7 +48288,7 @@ L13:
 L12:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -48349,7 +48349,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L14
 	}
 	if _, ok = u1023(p); !ok {
@@ -48364,7 +48364,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L14
 	}
 	goto L15
@@ -48603,7 +48603,7 @@ func i570(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -48618,7 +48618,7 @@ func i570(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -48839,7 +48839,7 @@ func s572(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -48876,11 +48876,11 @@ L3:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	v10 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v10, start)
+	v = p.ScopeValue(sh1, v10, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -48944,7 +48944,7 @@ L13:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -48986,7 +48986,7 @@ func i574(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 			goto L11
 		}
 		if _, ok = u1023(p); !ok {
@@ -49039,7 +49039,7 @@ func i575(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -49058,7 +49058,7 @@ func i575(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -49084,7 +49084,7 @@ func i575(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -49227,7 +49227,7 @@ L20:
 L19:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -49973,7 +49973,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -50154,7 +50154,7 @@ L9:
 L8:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -50349,7 +50349,7 @@ L13:
 L12:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -50393,7 +50393,7 @@ func i595(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -50408,7 +50408,7 @@ func i595(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -50541,7 +50541,7 @@ func i598(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -50639,7 +50639,7 @@ L16:
 L15:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -50694,7 +50694,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -51123,7 +51123,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L14
 	}
 	if _, ok = u1023(p); !ok {
@@ -51137,7 +51137,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L14
 	}
 	if _, ok = u1023(p); !ok {
@@ -51181,7 +51181,7 @@ L18:
 	goto fail
 L3:
 	v20 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v20, start)
+	v = p.ScopeValue(sh1, v20, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -51236,7 +51236,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -51585,7 +51585,7 @@ L24:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -51652,7 +51652,7 @@ L13:
 L12:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -51970,10 +51970,10 @@ L8:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "show_all"
 	v = func() any {
-		f_1254 := c.Text(k1)
-		f_1255 := any(true)
-		f_1256 := c.Binary(">", c.Length(k5), any(0))
-		return tmk_ShowStmt(c, true, f_1254, nil, nil, f_1256, nil, nil, f_1255)
+		f_1243 := c.Text(k1)
+		f_1244 := any(true)
+		f_1245 := c.Binary(">", c.Length(k5), any(0))
+		return tmk_ShowStmt(c, true, f_1243, nil, nil, f_1245, nil, nil, f_1244)
 	}()
 	p.Depth--
 	return v, true
@@ -52110,7 +52110,7 @@ L16:
 L15:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -52147,7 +52147,7 @@ func i619(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -52162,7 +52162,7 @@ func i619(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -52376,7 +52376,7 @@ func i623(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -52857,7 +52857,7 @@ L83:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -52906,7 +52906,7 @@ func i626(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L7
 	}
 	if _, ok = u1023(p); !ok {
@@ -52921,7 +52921,7 @@ func i626(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L7
 	}
 	goto L8
@@ -53025,7 +53025,7 @@ L19:
 L18:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -53074,7 +53074,7 @@ func i628(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L7
 	}
 	if _, ok = u1023(p); !ok {
@@ -53089,7 +53089,7 @@ func i628(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L7
 	}
 	goto L8
@@ -53137,7 +53137,7 @@ func i629(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -53200,7 +53200,7 @@ L6:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -53255,7 +53255,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -53430,7 +53430,7 @@ L6:
 	p.Pos = x1
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -53746,7 +53746,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -53783,7 +53783,7 @@ func i638(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -53798,7 +53798,7 @@ func i638(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	x4 = p.Pos
@@ -53818,7 +53818,7 @@ func i638(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L15
 	}
 	if _, ok = u1023(p); !ok {
@@ -53833,7 +53833,7 @@ func i638(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L15
 	}
 	goto L16
@@ -53887,7 +53887,7 @@ func i639(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit117, ",", 69, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit107, ",", 69, false); !ok {
 			goto L10
 		}
 		if _, ok = u1023(p); !ok {
@@ -54001,7 +54001,7 @@ L16:
 	goto fail
 L3:
 	v17 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh2, v17, start)
+	v = p.ScopeValue(sh1, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -54107,7 +54107,7 @@ L36:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L44
 	}
 	if _, ok = u1023(p); !ok {
@@ -54122,7 +54122,7 @@ L36:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L44
 	}
 	goto L45
@@ -54233,7 +54233,7 @@ L13:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L27
 	}
 	if _, ok = u1023(p); !ok {
@@ -54248,7 +54248,7 @@ L13:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L27
 	}
 	goto L28
@@ -54408,7 +54408,7 @@ L10:
 L9:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -54701,7 +54701,7 @@ L7:
 L3:
 	v9 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = rt.TFreshNode(v9)
-	v = p.ScopeValue(sh2, v9, start)
+	v = p.ScopeValue(sh1, v9, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -54764,7 +54764,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L11
 	}
 	if _, ok = u1023(p); !ok {
@@ -54779,7 +54779,7 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto L11
 	}
 	goto L12
@@ -54821,7 +54821,7 @@ func i652(p *rt.TParser) (any, bool) {
 		x2 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 59 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit782, ";", 94, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit771, ";", 94, false); !ok {
 			goto L3
 		}
 		if _, ok = u1023(p); !ok {
@@ -54841,7 +54841,7 @@ func i652(p *rt.TParser) (any, bool) {
 		if v12, ok = u653(p); !ok {
 			goto L11
 		}
-		v13 = p.ScopeValue(sh2, v12, x10)
+		v13 = p.ScopeValue(sh1, v12, x10)
 		p.PushKid(v13)
 		if p.Pos == x10 {
 			break
@@ -54862,7 +54862,7 @@ func i652(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 59 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit782, ";", 94, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit771, ";", 94, false); !ok {
 			goto L21
 		}
 		if _, ok = u1023(p); !ok {
@@ -54872,7 +54872,7 @@ func i652(p *rt.TParser) (any, bool) {
 			x23 = p.Pos
 			if p.Pos < len(p.In) && p.In[p.Pos] == 59 {
 				p.Pos++
-			} else if _, ok = p.Parser.MatchLiteral(lit782, ";", 94, false); !ok {
+			} else if _, ok = p.Parser.MatchLiteral(lit771, ";", 94, false); !ok {
 				goto L24
 			}
 			if _, ok = u1023(p); !ok {
@@ -54908,7 +54908,7 @@ func i652(p *rt.TParser) (any, bool) {
 		x29 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 59 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit782, ";", 94, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit771, ";", 94, false); !ok {
 			goto L30
 		}
 		if _, ok = u1023(p); !ok {
@@ -55363,7 +55363,7 @@ L112:
 L111:
 	goto fail
 L3:
-	v = p.ScopeValue(sh2, v2, start)
+	v = p.ScopeValue(sh1, v2, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -55432,7 +55432,7 @@ func s654(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -55442,7 +55442,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -55493,7 +55493,7 @@ func s657(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v8)
 	x9 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L10
 	}
 	p.Silent--
@@ -55503,7 +55503,7 @@ L10:
 	p.Silent--
 	p.Pos = x9
 	v11 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh33, v11, start)
+	v = p.ScopeValue(sh28, v11, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -55554,7 +55554,7 @@ func s658(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v8)
 	x9 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L10
 	}
 	p.Silent--
@@ -55564,7 +55564,7 @@ L10:
 	p.Silent--
 	p.Pos = x9
 	v11 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh33, v11, start)
+	v = p.ScopeValue(sh28, v11, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -55651,7 +55651,7 @@ func s661(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -55661,7 +55661,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -55748,7 +55748,7 @@ func s662(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -55758,7 +55758,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -55809,7 +55809,7 @@ func s663(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v8)
 	x9 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L10
 	}
 	p.Silent--
@@ -55819,7 +55819,7 @@ L10:
 	p.Silent--
 	p.Pos = x9
 	v11 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh33, v11, start)
+	v = p.ScopeValue(sh28, v11, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -55870,7 +55870,7 @@ func s665(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v8)
 	x9 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L10
 	}
 	p.Silent--
@@ -55880,7 +55880,7 @@ L10:
 	p.Silent--
 	p.Pos = x9
 	v11 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh33, v11, start)
+	v = p.ScopeValue(sh28, v11, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -55922,7 +55922,7 @@ func s667(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v6)
 	x7 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L8
 	}
 	p.Silent--
@@ -55932,7 +55932,7 @@ L8:
 	p.Silent--
 	p.Pos = x7
 	v9 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh3, v9, start)
+	v = p.ScopeValue(sh2, v9, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -55983,7 +55983,7 @@ func s668(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v8)
 	x9 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L10
 	}
 	p.Silent--
@@ -55993,7 +55993,7 @@ L10:
 	p.Silent--
 	p.Pos = x9
 	v11 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh33, v11, start)
+	v = p.ScopeValue(sh28, v11, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -56107,7 +56107,7 @@ func s670(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v22)
 	x23 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L24
 	}
 	p.Silent--
@@ -56117,7 +56117,7 @@ L24:
 	p.Silent--
 	p.Pos = x23
 	v25 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1147, v25, start)
+	v = p.ScopeValue(sh1136, v25, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -56159,7 +56159,7 @@ func s671(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v6)
 	x7 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L8
 	}
 	p.Silent--
@@ -56169,7 +56169,7 @@ L8:
 	p.Silent--
 	p.Pos = x7
 	v9 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh3, v9, start)
+	v = p.ScopeValue(sh2, v9, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -56238,7 +56238,7 @@ func s673(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -56248,7 +56248,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -56335,7 +56335,7 @@ func s674(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -56345,7 +56345,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -56423,7 +56423,7 @@ func s676(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v14)
 	x15 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L16
 	}
 	p.Silent--
@@ -56433,7 +56433,7 @@ L16:
 	p.Silent--
 	p.Pos = x15
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1144, v17, start)
+	v = p.ScopeValue(sh1133, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -56493,7 +56493,7 @@ func s679(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -56503,7 +56503,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -56545,7 +56545,7 @@ func s680(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v6)
 	x7 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L8
 	}
 	p.Silent--
@@ -56555,7 +56555,7 @@ L8:
 	p.Silent--
 	p.Pos = x7
 	v9 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh3, v9, start)
+	v = p.ScopeValue(sh2, v9, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -56642,7 +56642,7 @@ func s683(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -56652,7 +56652,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -56721,7 +56721,7 @@ func s691(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -56731,7 +56731,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -56827,7 +56827,7 @@ func s693(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v18)
 	x19 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L20
 	}
 	p.Silent--
@@ -56837,7 +56837,7 @@ L20:
 	p.Silent--
 	p.Pos = x19
 	v21 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1142, v21, start)
+	v = p.ScopeValue(sh1131, v21, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -56924,7 +56924,7 @@ func s694(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -56934,7 +56934,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -57012,7 +57012,7 @@ func s700(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v14)
 	x15 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L16
 	}
 	p.Silent--
@@ -57022,7 +57022,7 @@ L16:
 	p.Silent--
 	p.Pos = x15
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1144, v17, start)
+	v = p.ScopeValue(sh1133, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -57154,7 +57154,7 @@ func s702(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v26)
 	x27 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L28
 	}
 	p.Silent--
@@ -57164,7 +57164,7 @@ L28:
 	p.Silent--
 	p.Pos = x27
 	v29 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh23, v29, start)
+	v = p.ScopeValue(sh19, v29, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -57215,7 +57215,7 @@ func s711(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v8)
 	x9 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L10
 	}
 	p.Silent--
@@ -57225,7 +57225,7 @@ L10:
 	p.Silent--
 	p.Pos = x9
 	v11 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh33, v11, start)
+	v = p.ScopeValue(sh28, v11, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -57321,7 +57321,7 @@ func s716(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v18)
 	x19 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L20
 	}
 	p.Silent--
@@ -57331,7 +57331,7 @@ L20:
 	p.Silent--
 	p.Pos = x19
 	v21 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1142, v21, start)
+	v = p.ScopeValue(sh1131, v21, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -57418,7 +57418,7 @@ func s724(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -57428,7 +57428,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -57506,7 +57506,7 @@ func s728(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v14)
 	x15 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L16
 	}
 	p.Silent--
@@ -57516,7 +57516,7 @@ L16:
 	p.Silent--
 	p.Pos = x15
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1144, v17, start)
+	v = p.ScopeValue(sh1133, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -57621,7 +57621,7 @@ func s729(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v20)
 	x21 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L22
 	}
 	p.Silent--
@@ -57631,7 +57631,7 @@ L22:
 	p.Silent--
 	p.Pos = x21
 	v23 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1146, v23, start)
+	v = p.ScopeValue(sh1135, v23, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -57691,7 +57691,7 @@ func s731(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -57701,7 +57701,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -57797,7 +57797,7 @@ func s732(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v18)
 	x19 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L20
 	}
 	p.Silent--
@@ -57807,7 +57807,7 @@ L20:
 	p.Silent--
 	p.Pos = x19
 	v21 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1142, v21, start)
+	v = p.ScopeValue(sh1131, v21, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -57903,7 +57903,7 @@ func s735(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v18)
 	x19 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L20
 	}
 	p.Silent--
@@ -57913,7 +57913,7 @@ L20:
 	p.Silent--
 	p.Pos = x19
 	v21 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1142, v21, start)
+	v = p.ScopeValue(sh1131, v21, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -57973,7 +57973,7 @@ func s738(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -57983,7 +57983,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -58079,7 +58079,7 @@ func s740(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v18)
 	x19 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L20
 	}
 	p.Silent--
@@ -58089,7 +58089,7 @@ L20:
 	p.Silent--
 	p.Pos = x19
 	v21 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1142, v21, start)
+	v = p.ScopeValue(sh1131, v21, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -58140,7 +58140,7 @@ func s741(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v8)
 	x9 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L10
 	}
 	p.Silent--
@@ -58150,7 +58150,7 @@ L10:
 	p.Silent--
 	p.Pos = x9
 	v11 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh33, v11, start)
+	v = p.ScopeValue(sh28, v11, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -58210,7 +58210,7 @@ func s742(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -58220,7 +58220,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -58289,7 +58289,7 @@ func s743(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -58299,7 +58299,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -58377,7 +58377,7 @@ func s744(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v14)
 	x15 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L16
 	}
 	p.Silent--
@@ -58387,7 +58387,7 @@ L16:
 	p.Silent--
 	p.Pos = x15
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1144, v17, start)
+	v = p.ScopeValue(sh1133, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -58465,7 +58465,7 @@ func s746(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v14)
 	x15 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L16
 	}
 	p.Silent--
@@ -58475,7 +58475,7 @@ L16:
 	p.Silent--
 	p.Pos = x15
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1144, v17, start)
+	v = p.ScopeValue(sh1133, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -58554,7 +58554,7 @@ func s753(p *rt.TParser) (any, bool) {
 	x15 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 95 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit51, "_", 44, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit45, "_", 44, false); !ok {
 		goto fail
 	}
 	v16 = p.NewMatchOrdinary(x15, p.Pos, "_", true)
@@ -58606,7 +58606,7 @@ func s753(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v26)
 	x27 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L28
 	}
 	p.Silent--
@@ -58616,7 +58616,7 @@ L28:
 	p.Silent--
 	p.Pos = x27
 	v29 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh23, v29, start)
+	v = p.ScopeValue(sh19, v29, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -58703,7 +58703,7 @@ func s756(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -58713,7 +58713,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -58782,7 +58782,7 @@ func s757(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -58792,7 +58792,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -58861,7 +58861,7 @@ func s758(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -58871,7 +58871,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -58976,7 +58976,7 @@ func s762(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v20)
 	x21 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L22
 	}
 	p.Silent--
@@ -58986,7 +58986,7 @@ L22:
 	p.Silent--
 	p.Pos = x21
 	v23 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1146, v23, start)
+	v = p.ScopeValue(sh1135, v23, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -59037,7 +59037,7 @@ func s763(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v8)
 	x9 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L10
 	}
 	p.Silent--
@@ -59047,7 +59047,7 @@ L10:
 	p.Silent--
 	p.Pos = x9
 	v11 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh33, v11, start)
+	v = p.ScopeValue(sh28, v11, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -59116,7 +59116,7 @@ func s764(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -59126,7 +59126,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -59204,7 +59204,7 @@ func s766(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v14)
 	x15 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L16
 	}
 	p.Silent--
@@ -59214,7 +59214,7 @@ L16:
 	p.Silent--
 	p.Pos = x15
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1144, v17, start)
+	v = p.ScopeValue(sh1133, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -59274,7 +59274,7 @@ func s767(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -59284,7 +59284,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -59344,7 +59344,7 @@ func s768(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -59354,7 +59354,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -59450,7 +59450,7 @@ func s769(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v18)
 	x19 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L20
 	}
 	p.Silent--
@@ -59460,7 +59460,7 @@ L20:
 	p.Silent--
 	p.Pos = x19
 	v21 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1142, v21, start)
+	v = p.ScopeValue(sh1131, v21, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -59520,7 +59520,7 @@ func s771(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -59530,7 +59530,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -59608,7 +59608,7 @@ func s772(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v14)
 	x15 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L16
 	}
 	p.Silent--
@@ -59618,7 +59618,7 @@ L16:
 	p.Silent--
 	p.Pos = x15
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1144, v17, start)
+	v = p.ScopeValue(sh1133, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -59687,7 +59687,7 @@ func s773(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -59697,7 +59697,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -59775,7 +59775,7 @@ func s776(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v14)
 	x15 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L16
 	}
 	p.Silent--
@@ -59785,7 +59785,7 @@ L16:
 	p.Silent--
 	p.Pos = x15
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1144, v17, start)
+	v = p.ScopeValue(sh1133, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -59863,7 +59863,7 @@ func s778(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v14)
 	x15 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L16
 	}
 	p.Silent--
@@ -59873,7 +59873,7 @@ L16:
 	p.Silent--
 	p.Pos = x15
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1144, v17, start)
+	v = p.ScopeValue(sh1133, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -59942,7 +59942,7 @@ func s784(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -59952,7 +59952,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -59994,7 +59994,7 @@ func s787(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v6)
 	x7 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L8
 	}
 	p.Silent--
@@ -60004,7 +60004,7 @@ L8:
 	p.Silent--
 	p.Pos = x7
 	v9 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh3, v9, start)
+	v = p.ScopeValue(sh2, v9, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -60073,7 +60073,7 @@ func s791(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -60083,7 +60083,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -60161,7 +60161,7 @@ func s796(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v14)
 	x15 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L16
 	}
 	p.Silent--
@@ -60171,7 +60171,7 @@ L16:
 	p.Silent--
 	p.Pos = x15
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1144, v17, start)
+	v = p.ScopeValue(sh1133, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -60276,7 +60276,7 @@ func s800(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v20)
 	x21 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L22
 	}
 	p.Silent--
@@ -60286,7 +60286,7 @@ L22:
 	p.Silent--
 	p.Pos = x21
 	v23 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1146, v23, start)
+	v = p.ScopeValue(sh1135, v23, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -60328,7 +60328,7 @@ func s803(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v6)
 	x7 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L8
 	}
 	p.Silent--
@@ -60338,7 +60338,7 @@ L8:
 	p.Silent--
 	p.Pos = x7
 	v9 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh3, v9, start)
+	v = p.ScopeValue(sh2, v9, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -60416,7 +60416,7 @@ func s804(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v14)
 	x15 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L16
 	}
 	p.Silent--
@@ -60426,7 +60426,7 @@ L16:
 	p.Silent--
 	p.Pos = x15
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1144, v17, start)
+	v = p.ScopeValue(sh1133, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -60486,7 +60486,7 @@ func s806(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -60496,7 +60496,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -60583,7 +60583,7 @@ func s810(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -60593,7 +60593,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -60680,7 +60680,7 @@ func s811(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -60690,7 +60690,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -60750,7 +60750,7 @@ func s814(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -60760,7 +60760,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -60829,7 +60829,7 @@ func s815(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -60839,7 +60839,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -60908,7 +60908,7 @@ func s817(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -60918,7 +60918,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -60978,7 +60978,7 @@ func s839(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -60988,7 +60988,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -61039,7 +61039,7 @@ func s846(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v8)
 	x9 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L10
 	}
 	p.Silent--
@@ -61049,7 +61049,7 @@ L10:
 	p.Silent--
 	p.Pos = x9
 	v11 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh33, v11, start)
+	v = p.ScopeValue(sh28, v11, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -61136,7 +61136,7 @@ func s847(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -61146,7 +61146,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -61233,7 +61233,7 @@ func s848(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -61243,7 +61243,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -61321,7 +61321,7 @@ func s849(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v14)
 	x15 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L16
 	}
 	p.Silent--
@@ -61331,7 +61331,7 @@ L16:
 	p.Silent--
 	p.Pos = x15
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1144, v17, start)
+	v = p.ScopeValue(sh1133, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -61391,7 +61391,7 @@ func s850(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -61401,7 +61401,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -61479,7 +61479,7 @@ func s851(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v14)
 	x15 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L16
 	}
 	p.Silent--
@@ -61489,7 +61489,7 @@ L16:
 	p.Silent--
 	p.Pos = x15
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1144, v17, start)
+	v = p.ScopeValue(sh1133, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -61531,7 +61531,7 @@ func s854(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v6)
 	x7 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L8
 	}
 	p.Silent--
@@ -61541,7 +61541,7 @@ L8:
 	p.Silent--
 	p.Pos = x7
 	v9 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh3, v9, start)
+	v = p.ScopeValue(sh2, v9, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -61601,7 +61601,7 @@ func s856(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -61611,7 +61611,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -61671,7 +61671,7 @@ func s858(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -61681,7 +61681,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -61768,7 +61768,7 @@ func s861(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -61778,7 +61778,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -61892,7 +61892,7 @@ func s864(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v22)
 	x23 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L24
 	}
 	p.Silent--
@@ -61902,7 +61902,7 @@ L24:
 	p.Silent--
 	p.Pos = x23
 	v25 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1147, v25, start)
+	v = p.ScopeValue(sh1136, v25, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -61989,7 +61989,7 @@ func s868(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -61999,7 +61999,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -62086,7 +62086,7 @@ func s875(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -62096,7 +62096,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -62165,7 +62165,7 @@ func s877(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -62175,7 +62175,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -62271,7 +62271,7 @@ func s882(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v18)
 	x19 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L20
 	}
 	p.Silent--
@@ -62281,7 +62281,7 @@ L20:
 	p.Silent--
 	p.Pos = x19
 	v21 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1142, v21, start)
+	v = p.ScopeValue(sh1131, v21, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -62386,7 +62386,7 @@ func s885(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v20)
 	x21 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L22
 	}
 	p.Silent--
@@ -62396,7 +62396,7 @@ L22:
 	p.Silent--
 	p.Pos = x21
 	v23 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1146, v23, start)
+	v = p.ScopeValue(sh1135, v23, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -62483,7 +62483,7 @@ func s890(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -62493,7 +62493,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -62562,7 +62562,7 @@ func s895(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -62572,7 +62572,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -62641,7 +62641,7 @@ func s896(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -62651,7 +62651,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -62756,7 +62756,7 @@ func s899(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v20)
 	x21 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L22
 	}
 	p.Silent--
@@ -62766,7 +62766,7 @@ L22:
 	p.Silent--
 	p.Pos = x21
 	v23 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1146, v23, start)
+	v = p.ScopeValue(sh1135, v23, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -62880,7 +62880,7 @@ func s900(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v22)
 	x23 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L24
 	}
 	p.Silent--
@@ -62890,7 +62890,7 @@ L24:
 	p.Silent--
 	p.Pos = x23
 	v25 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1147, v25, start)
+	v = p.ScopeValue(sh1136, v25, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -62959,7 +62959,7 @@ func s904(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -62969,7 +62969,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -63056,7 +63056,7 @@ func s906(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -63066,7 +63066,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -63162,7 +63162,7 @@ func s907(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v18)
 	x19 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L20
 	}
 	p.Silent--
@@ -63172,7 +63172,7 @@ L20:
 	p.Silent--
 	p.Pos = x19
 	v21 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1142, v21, start)
+	v = p.ScopeValue(sh1131, v21, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -63268,7 +63268,7 @@ func s910(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v18)
 	x19 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L20
 	}
 	p.Silent--
@@ -63278,7 +63278,7 @@ L20:
 	p.Silent--
 	p.Pos = x19
 	v21 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1142, v21, start)
+	v = p.ScopeValue(sh1131, v21, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -63329,7 +63329,7 @@ func s912(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v8)
 	x9 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L10
 	}
 	p.Silent--
@@ -63339,7 +63339,7 @@ L10:
 	p.Silent--
 	p.Pos = x9
 	v11 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh33, v11, start)
+	v = p.ScopeValue(sh28, v11, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -63399,7 +63399,7 @@ func s913(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -63409,7 +63409,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -63505,7 +63505,7 @@ func s923(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v18)
 	x19 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L20
 	}
 	p.Silent--
@@ -63515,7 +63515,7 @@ L20:
 	p.Silent--
 	p.Pos = x19
 	v21 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1142, v21, start)
+	v = p.ScopeValue(sh1131, v21, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -63602,7 +63602,7 @@ func s925(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -63612,7 +63612,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -63663,7 +63663,7 @@ func s926(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v8)
 	x9 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L10
 	}
 	p.Silent--
@@ -63673,7 +63673,7 @@ L10:
 	p.Silent--
 	p.Pos = x9
 	v11 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh33, v11, start)
+	v = p.ScopeValue(sh28, v11, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -63733,7 +63733,7 @@ func s930(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -63743,7 +63743,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -63803,7 +63803,7 @@ func s935(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -63813,7 +63813,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -63882,7 +63882,7 @@ func s938(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -63892,7 +63892,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -63970,7 +63970,7 @@ func s943(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v14)
 	x15 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L16
 	}
 	p.Silent--
@@ -63980,7 +63980,7 @@ L16:
 	p.Silent--
 	p.Pos = x15
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1144, v17, start)
+	v = p.ScopeValue(sh1133, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -64085,7 +64085,7 @@ func s945(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v20)
 	x21 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L22
 	}
 	p.Silent--
@@ -64095,7 +64095,7 @@ L22:
 	p.Silent--
 	p.Pos = x21
 	v23 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1146, v23, start)
+	v = p.ScopeValue(sh1135, v23, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -64200,7 +64200,7 @@ func s946(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v20)
 	x21 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L22
 	}
 	p.Silent--
@@ -64210,7 +64210,7 @@ L22:
 	p.Silent--
 	p.Pos = x21
 	v23 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1146, v23, start)
+	v = p.ScopeValue(sh1135, v23, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -64315,7 +64315,7 @@ func s947(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v20)
 	x21 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L22
 	}
 	p.Silent--
@@ -64325,7 +64325,7 @@ L22:
 	p.Silent--
 	p.Pos = x21
 	v23 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1146, v23, start)
+	v = p.ScopeValue(sh1135, v23, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -64394,7 +64394,7 @@ func s949(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -64404,7 +64404,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -64482,7 +64482,7 @@ func s950(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v14)
 	x15 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L16
 	}
 	p.Silent--
@@ -64492,7 +64492,7 @@ L16:
 	p.Silent--
 	p.Pos = x15
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1144, v17, start)
+	v = p.ScopeValue(sh1133, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -64552,7 +64552,7 @@ func s959(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -64562,7 +64562,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -64604,7 +64604,7 @@ func s961(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v6)
 	x7 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L8
 	}
 	p.Silent--
@@ -64614,7 +64614,7 @@ L8:
 	p.Silent--
 	p.Pos = x7
 	v9 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh3, v9, start)
+	v = p.ScopeValue(sh2, v9, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -64710,7 +64710,7 @@ func s962(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v18)
 	x19 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L20
 	}
 	p.Silent--
@@ -64720,7 +64720,7 @@ L20:
 	p.Silent--
 	p.Pos = x19
 	v21 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1142, v21, start)
+	v = p.ScopeValue(sh1131, v21, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -64843,7 +64843,7 @@ func s963(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v24)
 	x25 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L26
 	}
 	p.Silent--
@@ -64853,7 +64853,7 @@ L26:
 	p.Silent--
 	p.Pos = x25
 	v27 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1152, v27, start)
+	v = p.ScopeValue(sh1141, v27, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -64922,7 +64922,7 @@ func s964(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -64932,7 +64932,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -64992,7 +64992,7 @@ func s966(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -65002,7 +65002,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -65062,7 +65062,7 @@ func s967(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -65072,7 +65072,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -65141,7 +65141,7 @@ func s972(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v12)
 	x13 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L14
 	}
 	p.Silent--
@@ -65151,7 +65151,7 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh229, v15, start)
+	v = p.ScopeValue(sh218, v15, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -65229,7 +65229,7 @@ func s973(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v14)
 	x15 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L16
 	}
 	p.Silent--
@@ -65239,7 +65239,7 @@ L16:
 	p.Silent--
 	p.Pos = x15
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1144, v17, start)
+	v = p.ScopeValue(sh1133, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -65326,7 +65326,7 @@ func s974(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -65336,7 +65336,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -65423,7 +65423,7 @@ func s977(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -65433,7 +65433,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -65511,7 +65511,7 @@ func s978(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v14)
 	x15 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L16
 	}
 	p.Silent--
@@ -65521,7 +65521,7 @@ L16:
 	p.Silent--
 	p.Pos = x15
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1144, v17, start)
+	v = p.ScopeValue(sh1133, v17, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -65617,7 +65617,7 @@ func s988(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v18)
 	x19 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L20
 	}
 	p.Silent--
@@ -65627,7 +65627,7 @@ L20:
 	p.Silent--
 	p.Pos = x19
 	v21 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1142, v21, start)
+	v = p.ScopeValue(sh1131, v21, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -65714,7 +65714,7 @@ func s991(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -65724,7 +65724,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -65784,7 +65784,7 @@ func s993(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -65794,7 +65794,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -65881,7 +65881,7 @@ func s994(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v16)
 	x17 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L18
 	}
 	p.Silent--
@@ -65891,7 +65891,7 @@ L18:
 	p.Silent--
 	p.Pos = x17
 	v19 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh1143, v19, start)
+	v = p.ScopeValue(sh1132, v19, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -65951,7 +65951,7 @@ func s1003(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -65961,7 +65961,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -66021,7 +66021,7 @@ func s1008(p *rt.TParser) (any, bool) {
 	x2 = append(x2, v10)
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L12
 	}
 	p.Silent--
@@ -66031,7 +66031,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	v13 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh136, v13, start)
+	v = p.ScopeValue(sh126, v13, start)
 	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -66048,12 +66048,12 @@ func s1022(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1262) {
+	if !p.ClassesSkip(steps1251) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -66124,12 +66124,12 @@ func s1024(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1267) {
+	if !p.ClassesSkip(steps1256) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -66152,12 +66152,12 @@ func s1025(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1269) {
+	if !p.ClassesSkip(steps1258) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -66184,7 +66184,7 @@ func s1026(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit19, "\"", 19, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit15, "\"", 19, false); !ok {
 		goto fail
 	}
 	x1 = 0
@@ -66214,7 +66214,7 @@ func s1026(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit20, "\"\"", 21, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit16, "\"\"", 21, false); !ok {
 			goto L11
 		}
 		goto L5
@@ -66237,7 +66237,7 @@ func s1026(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit19, "\"", 19, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit15, "\"", 19, false); !ok {
 		goto fail
 	}
 	v = nil
@@ -66272,7 +66272,7 @@ func v1027(p *rt.TParser) (any, bool) {
 	p.Pos += size
 	if p.Pos < len(p.In) && p.In[p.Pos] == 38 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit22, "&", 22, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit18, "&", 22, false); !ok {
 		goto fail
 	}
 	if _, ok = s1026(p); !ok {
@@ -66282,7 +66282,7 @@ func v1027(p *rt.TParser) (any, bool) {
 	if _, ok = u1023(p); !ok {
 		goto L2
 	}
-	if !p.ClassesSkip(steps1273) {
+	if !p.ClassesSkip(steps1262) {
 		goto L2
 	}
 	if _, ok = u1023(p); !ok {
@@ -66290,7 +66290,7 @@ func v1027(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 		goto L2
 	}
 	ch, size, ok = p.NextOrdinary()
@@ -66301,7 +66301,7 @@ func v1027(p *rt.TParser) (any, bool) {
 	p.Pos += size
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 		goto L2
 	}
 	goto L3
@@ -66379,7 +66379,7 @@ func v1029(p *rt.TParser) (any, bool) {
 	p.Pos += x5
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 		goto L9
 	}
 	goto L4
@@ -66393,7 +66393,7 @@ L8:
 	p.Pos += x5
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 38 && p.In[p.Pos+1] == 39 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit17, "&'", 15, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit13, "&'", 15, false); !ok {
 		goto L11
 	}
 	goto L4
@@ -66662,12 +66662,12 @@ func s1034(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1275) {
+	if !p.ClassesSkip(steps1264) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -66690,12 +66690,12 @@ func s1035(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1278) {
+	if !p.ClassesSkip(steps1267) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -66718,12 +66718,12 @@ func s1036(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1279) {
+	if !p.ClassesSkip(steps1268) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -66746,12 +66746,12 @@ func s1037(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1281) {
+	if !p.ClassesSkip(steps1270) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -66774,12 +66774,12 @@ func s1038(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1282) {
+	if !p.ClassesSkip(steps1271) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -66802,12 +66802,12 @@ func s1039(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1284) {
+	if !p.ClassesSkip(steps1273) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -66899,7 +66899,7 @@ func i1042(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 36 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit42, "$", 38, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit37, "$", 38, false); !ok {
 		goto fail
 	}
 	if v3, ok = s23(p); !ok {
@@ -66908,7 +66908,7 @@ func i1042(p *rt.TParser) (any, bool) {
 	k1 = v3
 	if p.Pos < len(p.In) && p.In[p.Pos] == 36 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit42, "$", 38, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit37, "$", 38, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Text(k1), c.Lookup("tag")) }) {
@@ -66937,7 +66937,7 @@ func s1043(p *rt.TParser) (any, bool) {
 	p.Pos += size
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 		goto fail
 	}
 	if _, ok = u1373(p); !ok {
@@ -66945,7 +66945,7 @@ func s1043(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 		goto fail
 	}
 	for {
@@ -66958,7 +66958,7 @@ func s1043(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 			goto L3
 		}
 		if p.Pos == x2 {
@@ -66987,7 +66987,7 @@ func s1044(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 		goto fail
 	}
 	for {
@@ -67016,7 +67016,7 @@ func s1044(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit35, "''", 34, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit30, "''", 34, false); !ok {
 			goto L11
 		}
 		goto L5
@@ -67035,7 +67035,7 @@ func s1044(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 		goto fail
 	}
 	for {
@@ -67069,7 +67069,7 @@ func s1044(p *rt.TParser) (any, bool) {
 			}
 			if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 {
 				p.Pos += 2
-			} else if _, ok = p.Parser.MatchLiteral(lit35, "''", 34, false); !ok {
+			} else if _, ok = p.Parser.MatchLiteral(lit30, "''", 34, false); !ok {
 				goto L25
 			}
 			goto L19
@@ -67088,7 +67088,7 @@ func s1044(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 			goto L14
 		}
 		if p.Pos == x13 {
@@ -67128,7 +67128,7 @@ func i1045(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 36 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit42, "$", 38, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit37, "$", 38, false); !ok {
 		goto fail
 	}
 	if v3, ok = s23(p); !ok {
@@ -67137,7 +67137,7 @@ func i1045(p *rt.TParser) (any, bool) {
 	k1 = v3
 	if p.Pos < len(p.In) && p.In[p.Pos] == 36 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit42, "$", 38, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit37, "$", 38, false); !ok {
 		goto fail
 	}
 	if !p.Bind("tag", func(c *rt.TActCtx) any { return c.Text(k1) }) {
@@ -67175,7 +67175,7 @@ func i1045(p *rt.TParser) (any, bool) {
 		p.Pos = x12
 		if p.Pos < len(p.In) && p.In[p.Pos] == 36 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit42, "$", 38, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit37, "$", 38, false); !ok {
 			goto L11
 		}
 		goto L8
@@ -67219,7 +67219,7 @@ func s1046(p *rt.TParser) (any, bool) {
 	p.Pos += size
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 38 && p.In[p.Pos+1] == 39 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit17, "&'", 15, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit13, "&'", 15, false); !ok {
 		goto fail
 	}
 	for {
@@ -67248,7 +67248,7 @@ func s1046(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit35, "''", 34, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit30, "''", 34, false); !ok {
 			goto L11
 		}
 		goto L5
@@ -67267,7 +67267,7 @@ func s1046(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 		goto fail
 	}
 	v = nil
@@ -67294,7 +67294,7 @@ func s1047(p *rt.TParser) (any, bool) {
 	p.Pos += size
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 		goto fail
 	}
 	for {
@@ -67307,7 +67307,7 @@ func s1047(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 		goto fail
 	}
 	for {
@@ -67325,7 +67325,7 @@ func s1047(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 			goto L3
 		}
 		if p.Pos == x2 {
@@ -67375,7 +67375,7 @@ func s1048(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 95 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit51, "_", 44, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit45, "_", 44, false); !ok {
 			goto L12
 		}
 		ch, size, ok = p.NextOrdinary()
@@ -67458,7 +67458,7 @@ func s1050(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 45 && p.In[p.Pos+1] == 45 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit5, "--", 6, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit4, "--", 6, false); !ok {
 		goto L6
 	}
 	goto L2
@@ -67471,7 +67471,7 @@ L5:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 42 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit7, "/*", 8, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit6, "/*", 8, false); !ok {
 		goto L8
 	}
 	goto L2
@@ -67593,7 +67593,7 @@ func s1053(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassFast(&cls1285) && !p.ClassSkip(&cls1285, 47) {
+	if !p.ClassFast(&cls1274) && !p.ClassSkip(&cls1274, 47) {
 		goto fail
 	}
 	v = nil
@@ -67622,7 +67622,7 @@ func s1054(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 94 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit88, "^", 61, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit81, "^", 61, false); !ok {
 		goto L8
 	}
 	goto L4
@@ -67635,7 +67635,7 @@ L7:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 37 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit86, "%", 60, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit79, "%", 60, false); !ok {
 		goto L10
 	}
 	goto L4
@@ -67648,7 +67648,7 @@ L9:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 33 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit82, "!=", 58, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit75, "!=", 58, false); !ok {
 		goto L12
 	}
 	goto L4
@@ -67687,7 +67687,7 @@ L2:
 	L19:
 		p.Silent--
 		p.Pos = x18
-		if !p.ClassFast(&cls1286) && !p.ClassSkip(&cls1286, 66) {
+		if !p.ClassFast(&cls1275) && !p.ClassSkip(&cls1275, 66) {
 			goto L17
 		}
 		if p.Pos == x16 {
@@ -67698,7 +67698,7 @@ L2:
 		p.Pos = x16
 		break
 	}
-	if !p.ClassFast(&cls1287) && !p.ClassSkip(&cls1287, 67) {
+	if !p.ClassFast(&cls1276) && !p.ClassSkip(&cls1276, 67) {
 		goto fail
 	}
 	for {
@@ -67764,7 +67764,7 @@ L3:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit77, "<=", 55, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit70, "<=", 55, false); !ok {
 		goto L11
 	}
 	goto L7
@@ -67777,7 +67777,7 @@ L10:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 62 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ">=", 56, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit72, ">=", 56, false); !ok {
 		goto L13
 	}
 	goto L7
@@ -67790,7 +67790,7 @@ L12:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 61 && p.In[p.Pos+1] == 62 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit84, "=>", 59, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit77, "=>", 59, false); !ok {
 		goto L15
 	}
 	goto L7
@@ -67803,7 +67803,7 @@ L14:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 62 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit81, "<>", 57, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit74, "<>", 57, false); !ok {
 		goto L17
 	}
 	goto L7
@@ -67841,7 +67841,7 @@ L5:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 42 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit90, "**", 62, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit83, "**", 62, false); !ok {
 		goto L28
 	}
 	goto L24
@@ -67854,7 +67854,7 @@ L27:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit92, "//", 63, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, "//", 63, false); !ok {
 		goto L30
 	}
 	goto L24
@@ -67867,7 +67867,7 @@ L29:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 45 && p.In[p.Pos+1] == 62 && p.In[p.Pos+2] == 62 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit96, "->>", 65, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit89, "->>", 65, false); !ok {
 		goto L32
 	}
 	goto L24
@@ -67880,7 +67880,7 @@ L31:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 45 && p.In[p.Pos+1] == 62 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit94, "->", 64, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit87, "->", 64, false); !ok {
 		goto L34
 	}
 	goto L24
@@ -67926,7 +67926,7 @@ func s1056(p *rt.TParser) (any, bool) {
 	p.Enter()
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1288) && !p.ClassSkip(&cls1288, 68) {
+	if !p.ClassFast(&cls1277) && !p.ClassSkip(&cls1277, 68) {
 		goto L2
 	}
 	x3 = p.Pos
@@ -68330,12 +68330,12 @@ func s1062(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1289) {
+	if !p.ClassesSkip(steps1278) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -68358,12 +68358,12 @@ func s1063(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1291) {
+	if !p.ClassesSkip(steps1280) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -68536,12 +68536,12 @@ func s1066(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1292) {
+	if !p.ClassesSkip(steps1281) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -68669,12 +68669,12 @@ func s1068(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1293) {
+	if !p.ClassesSkip(steps1282) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -68697,12 +68697,12 @@ func s1069(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1294) {
+	if !p.ClassesSkip(steps1283) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -68781,7 +68781,7 @@ func v1071(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit71, "<", 52, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit64, "<", 52, false); !ok {
 		goto fail
 	}
 	x1 = p.Pos
@@ -68822,7 +68822,7 @@ func v1072(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 62 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit73, ">", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit66, ">", 53, false); !ok {
 		goto fail
 	}
 	x1 = p.Pos
@@ -68863,7 +68863,7 @@ func v1073(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit75, "=", 54, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit68, "=", 54, false); !ok {
 		goto fail
 	}
 	x1 = p.Pos
@@ -68904,7 +68904,7 @@ func v1074(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit77, "<=", 55, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit70, "<=", 55, false); !ok {
 		goto fail
 	}
 	x1 = p.Pos
@@ -68945,7 +68945,7 @@ func v1075(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 62 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ">=", 56, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit72, ">=", 56, false); !ok {
 		goto fail
 	}
 	x1 = p.Pos
@@ -68993,7 +68993,7 @@ func v1076(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 62 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit81, "<>", 57, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit74, "<>", 57, false); !ok {
 		goto L6
 	}
 	x7 = p.Pos
@@ -69019,7 +69019,7 @@ L5:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 33 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit82, "!=", 58, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit75, "!=", 58, false); !ok {
 		goto L11
 	}
 	x12 = p.Pos
@@ -69053,12 +69053,12 @@ func s1077(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1295) {
+	if !p.ClassesSkip(steps1284) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69092,7 +69092,7 @@ func s1078(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit53, ".", 45, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, ".", 45, false); !ok {
 			goto L3
 		}
 		if _, ok = u1023(p); !ok {
@@ -69210,12 +69210,12 @@ func s1081(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1296) {
+	if !p.ClassesSkip(steps1285) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69238,12 +69238,12 @@ func s1082(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1297) {
+	if !p.ClassesSkip(steps1286) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69266,12 +69266,12 @@ func s1083(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1299) {
+	if !p.ClassesSkip(steps1288) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69294,12 +69294,12 @@ func s1084(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1300) {
+	if !p.ClassesSkip(steps1289) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69322,12 +69322,12 @@ func s1085(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1301) {
+	if !p.ClassesSkip(steps1290) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69350,12 +69350,12 @@ func s1086(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1302) {
+	if !p.ClassesSkip(steps1291) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69378,12 +69378,12 @@ func s1087(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1303) {
+	if !p.ClassesSkip(steps1292) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69406,12 +69406,12 @@ func s1088(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1307) {
+	if !p.ClassesSkip(steps1296) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69434,12 +69434,12 @@ func s1089(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1308) {
+	if !p.ClassesSkip(steps1297) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69462,12 +69462,12 @@ func s1090(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1309) {
+	if !p.ClassesSkip(steps1298) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69494,7 +69494,7 @@ func s1091(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit128, ":", 71, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit118, ":", 71, false); !ok {
 		goto fail
 	}
 	x1 = p.Pos
@@ -69507,7 +69507,7 @@ func s1091(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit128, ":", 71, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit118, ":", 71, false); !ok {
 		goto L8
 	}
 	goto L4
@@ -69520,7 +69520,7 @@ L7:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit75, "=", 54, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit68, "=", 54, false); !ok {
 		goto L10
 	}
 	goto L4
@@ -69549,12 +69549,12 @@ func s1092(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1310) {
+	if !p.ClassesSkip(steps1299) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69577,12 +69577,12 @@ func s1093(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1311) {
+	if !p.ClassesSkip(steps1300) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69605,12 +69605,12 @@ func s1094(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1312) {
+	if !p.ClassesSkip(steps1301) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69633,12 +69633,12 @@ func s1095(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1313) {
+	if !p.ClassesSkip(steps1302) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69661,12 +69661,12 @@ func s1096(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1314) {
+	if !p.ClassesSkip(steps1303) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69689,12 +69689,12 @@ func s1097(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1315) {
+	if !p.ClassesSkip(steps1304) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69717,12 +69717,12 @@ func s1098(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1316) {
+	if !p.ClassesSkip(steps1305) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69745,12 +69745,12 @@ func s1099(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1317) {
+	if !p.ClassesSkip(steps1306) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69773,12 +69773,12 @@ func s1100(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1318) {
+	if !p.ClassesSkip(steps1307) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69801,12 +69801,12 @@ func s1101(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1319) {
+	if !p.ClassesSkip(steps1308) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69829,12 +69829,12 @@ func s1102(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1320) {
+	if !p.ClassesSkip(steps1309) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69868,7 +69868,7 @@ func v1103(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit67, "*", 50, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit60, "*", 50, false); !ok {
 		goto fail
 	}
 	x1 = p.Pos
@@ -69898,12 +69898,12 @@ func s1104(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1321) {
+	if !p.ClassesSkip(steps1310) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69926,12 +69926,12 @@ func s1105(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1322) {
+	if !p.ClassesSkip(steps1311) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69954,12 +69954,12 @@ func s1106(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1324) {
+	if !p.ClassesSkip(steps1313) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -69982,12 +69982,12 @@ func s1107(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1325) {
+	if !p.ClassesSkip(steps1314) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -70010,12 +70010,12 @@ func s1108(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1326) {
+	if !p.ClassesSkip(steps1315) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -70038,12 +70038,12 @@ func s1109(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1327) {
+	if !p.ClassesSkip(steps1316) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -70066,12 +70066,12 @@ func s1110(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1328) {
+	if !p.ClassesSkip(steps1317) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -70094,12 +70094,12 @@ func s1111(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1329) {
+	if !p.ClassesSkip(steps1318) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -70122,12 +70122,12 @@ func s1112(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1330) {
+	if !p.ClassesSkip(steps1319) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -70150,12 +70150,12 @@ func s1113(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1331) {
+	if !p.ClassesSkip(steps1320) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -70179,20 +70179,20 @@ func s1114(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1332) {
+	if !p.ClassesSkip(steps1321) {
 		goto fail
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 95 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit51, "_", 44, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit45, "_", 44, false); !ok {
 		goto fail
 	}
-	if !p.ClassesSkip(steps1333) {
+	if !p.ClassesSkip(steps1322) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -70215,12 +70215,12 @@ func s1115(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1332) {
+	if !p.ClassesSkip(steps1321) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -70243,12 +70243,12 @@ func s1116(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1334) {
+	if !p.ClassesSkip(steps1323) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -70272,20 +70272,20 @@ func s1117(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1335) {
+	if !p.ClassesSkip(steps1324) {
 		goto fail
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 95 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit51, "_", 44, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit45, "_", 44, false); !ok {
 		goto fail
 	}
-	if !p.ClassesSkip(steps1334) {
+	if !p.ClassesSkip(steps1323) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -70955,12 +70955,12 @@ func s1120(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1336) {
+	if !p.ClassesSkip(steps1325) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -70983,12 +70983,12 @@ func s1121(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1337) {
+	if !p.ClassesSkip(steps1326) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -71011,12 +71011,12 @@ func s1122(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1338) {
+	if !p.ClassesSkip(steps1327) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -71412,12 +71412,12 @@ func s1125(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1339) {
+	if !p.ClassesSkip(steps1328) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -71440,12 +71440,12 @@ func s1126(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1340) {
+	if !p.ClassesSkip(steps1329) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -71468,12 +71468,12 @@ func s1127(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1341) {
+	if !p.ClassesSkip(steps1330) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -71574,7 +71574,7 @@ func v1129(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 61 && p.In[p.Pos+1] == 62 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit84, "=>", 59, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit77, "=>", 59, false); !ok {
 		goto fail
 	}
 	x1 = p.Pos
@@ -71604,12 +71604,12 @@ func s1130(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1342) {
+	if !p.ClassesSkip(steps1331) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -71632,12 +71632,12 @@ func s1131(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1343) {
+	if !p.ClassesSkip(steps1332) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -71660,12 +71660,12 @@ func s1132(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1344) {
+	if !p.ClassesSkip(steps1333) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -71688,12 +71688,12 @@ func s1133(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1345) {
+	if !p.ClassesSkip(steps1334) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -71716,12 +71716,12 @@ func s1134(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1346) {
+	if !p.ClassesSkip(steps1335) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -71744,12 +71744,12 @@ func s1135(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1347) {
+	if !p.ClassesSkip(steps1336) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -71772,12 +71772,12 @@ func s1136(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1348) {
+	if !p.ClassesSkip(steps1337) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -71800,12 +71800,12 @@ func s1137(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1349) {
+	if !p.ClassesSkip(steps1338) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -71828,12 +71828,12 @@ func s1138(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1350) {
+	if !p.ClassesSkip(steps1339) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -71856,12 +71856,12 @@ func s1139(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1351) {
+	if !p.ClassesSkip(steps1340) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72171,7 +72171,7 @@ L18:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 75, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit137, "[", 75, false); !ok {
 		goto L21
 	}
 	goto L2
@@ -72184,7 +72184,7 @@ L20:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto L23
 	}
 	goto L2
@@ -72197,7 +72197,7 @@ L22:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 63 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit150, "?", 76, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit140, "?", 76, false); !ok {
 		goto L25
 	}
 	goto L2
@@ -72210,7 +72210,7 @@ L24:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit156, "{", 81, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit145, "{", 81, false); !ok {
 		goto L27
 	}
 	goto L2
@@ -72223,7 +72223,7 @@ L26:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 35 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit154, "#", 78, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit143, "#", 78, false); !ok {
 		goto L29
 	}
 	goto L2
@@ -72236,7 +72236,7 @@ L28:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 36 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit42, "$", 38, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit37, "$", 38, false); !ok {
 		goto L31
 	}
 	goto L2
@@ -72259,12 +72259,12 @@ func s1142(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1352) {
+	if !p.ClassesSkip(steps1341) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72287,12 +72287,12 @@ func s1143(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1353) {
+	if !p.ClassesSkip(steps1342) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72315,12 +72315,12 @@ func s1144(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1354) {
+	if !p.ClassesSkip(steps1343) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72343,12 +72343,12 @@ func s1145(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1355) {
+	if !p.ClassesSkip(steps1344) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72371,12 +72371,12 @@ func s1146(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1356) {
+	if !p.ClassesSkip(steps1345) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72399,12 +72399,12 @@ func s1147(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1357) {
+	if !p.ClassesSkip(steps1346) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72427,12 +72427,12 @@ func s1148(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1358) {
+	if !p.ClassesSkip(steps1347) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72455,12 +72455,12 @@ func s1149(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1359) {
+	if !p.ClassesSkip(steps1348) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72483,12 +72483,12 @@ func s1150(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1360) {
+	if !p.ClassesSkip(steps1349) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72511,12 +72511,12 @@ func s1151(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1361) {
+	if !p.ClassesSkip(steps1350) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72577,12 +72577,12 @@ func s1153(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1362) {
+	if !p.ClassesSkip(steps1351) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72605,12 +72605,12 @@ func s1154(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1363) {
+	if !p.ClassesSkip(steps1352) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72633,12 +72633,12 @@ func s1155(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1364) {
+	if !p.ClassesSkip(steps1353) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72661,12 +72661,12 @@ func s1156(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1365) {
+	if !p.ClassesSkip(steps1354) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72689,12 +72689,12 @@ func s1157(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1367) {
+	if !p.ClassesSkip(steps1356) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72717,12 +72717,12 @@ func s1158(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1368) {
+	if !p.ClassesSkip(steps1357) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72745,12 +72745,12 @@ func s1159(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1369) {
+	if !p.ClassesSkip(steps1358) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72773,12 +72773,12 @@ func s1160(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1370) {
+	if !p.ClassesSkip(steps1359) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72801,12 +72801,12 @@ func s1161(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1371) {
+	if !p.ClassesSkip(steps1360) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72829,12 +72829,12 @@ func s1162(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1372) {
+	if !p.ClassesSkip(steps1361) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72857,12 +72857,12 @@ func s1163(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1373) {
+	if !p.ClassesSkip(steps1362) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72885,12 +72885,12 @@ func s1164(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1374) {
+	if !p.ClassesSkip(steps1363) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72913,12 +72913,12 @@ func s1165(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1375) {
+	if !p.ClassesSkip(steps1364) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72941,12 +72941,12 @@ func s1166(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1376) {
+	if !p.ClassesSkip(steps1365) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72969,12 +72969,12 @@ func s1167(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1377) {
+	if !p.ClassesSkip(steps1366) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -72997,12 +72997,12 @@ func s1168(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1378) {
+	if !p.ClassesSkip(steps1367) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73084,12 +73084,12 @@ func s1170(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1379) {
+	if !p.ClassesSkip(steps1368) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73112,12 +73112,12 @@ func s1171(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1380) {
+	if !p.ClassesSkip(steps1369) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73140,12 +73140,12 @@ func s1172(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1381) {
+	if !p.ClassesSkip(steps1370) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73168,12 +73168,12 @@ func s1173(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1382) {
+	if !p.ClassesSkip(steps1371) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73196,12 +73196,12 @@ func s1174(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1383) {
+	if !p.ClassesSkip(steps1372) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73224,12 +73224,12 @@ func s1175(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1384) {
+	if !p.ClassesSkip(steps1373) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73252,12 +73252,12 @@ func s1176(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1385) {
+	if !p.ClassesSkip(steps1374) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73280,12 +73280,12 @@ func s1177(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1387) {
+	if !p.ClassesSkip(steps1376) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73308,12 +73308,12 @@ func s1178(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1388) {
+	if !p.ClassesSkip(steps1377) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73336,12 +73336,12 @@ func s1179(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1389) {
+	if !p.ClassesSkip(steps1378) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73364,12 +73364,12 @@ func s1180(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1390) {
+	if !p.ClassesSkip(steps1379) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73392,12 +73392,12 @@ func s1181(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1391) {
+	if !p.ClassesSkip(steps1380) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73420,12 +73420,12 @@ func s1182(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1392) {
+	if !p.ClassesSkip(steps1381) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73448,12 +73448,12 @@ func s1183(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1393) {
+	if !p.ClassesSkip(steps1382) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73476,12 +73476,12 @@ func s1184(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1394) {
+	if !p.ClassesSkip(steps1383) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73504,12 +73504,12 @@ func s1185(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1395) {
+	if !p.ClassesSkip(steps1384) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73532,12 +73532,12 @@ func s1186(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1396) {
+	if !p.ClassesSkip(steps1385) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73560,12 +73560,12 @@ func s1187(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1397) {
+	if !p.ClassesSkip(steps1386) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73588,12 +73588,12 @@ func s1188(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1398) {
+	if !p.ClassesSkip(steps1387) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73616,12 +73616,12 @@ func s1189(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1399) {
+	if !p.ClassesSkip(steps1388) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73644,12 +73644,12 @@ func s1190(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1400) {
+	if !p.ClassesSkip(steps1389) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73672,12 +73672,12 @@ func s1191(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1401) {
+	if !p.ClassesSkip(steps1390) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73784,12 +73784,12 @@ func s1194(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1402) {
+	if !p.ClassesSkip(steps1391) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73812,12 +73812,12 @@ func s1195(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1403) {
+	if !p.ClassesSkip(steps1392) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73840,12 +73840,12 @@ func s1196(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1404) {
+	if !p.ClassesSkip(steps1393) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73879,7 +73879,7 @@ func v1197(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 37 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit86, "%", 60, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit79, "%", 60, false); !ok {
 		goto fail
 	}
 	x1 = p.Pos
@@ -73907,12 +73907,12 @@ func s1198(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1405) {
+	if !p.ClassesSkip(steps1394) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73935,12 +73935,12 @@ func s1199(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1406) {
+	if !p.ClassesSkip(steps1395) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -73974,7 +73974,7 @@ func v1200(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 43 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit63, "+", 48, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit56, "+", 48, false); !ok {
 		goto fail
 	}
 	x1 = p.Pos
@@ -74015,7 +74015,7 @@ func v1201(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit65, "-", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit58, "-", 49, false); !ok {
 		goto fail
 	}
 	x1 = p.Pos
@@ -74045,12 +74045,12 @@ func s1202(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1407) {
+	if !p.ClassesSkip(steps1396) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74073,12 +74073,12 @@ func s1203(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1408) {
+	if !p.ClassesSkip(steps1397) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74101,12 +74101,12 @@ func s1204(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1409) {
+	if !p.ClassesSkip(steps1398) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74129,12 +74129,12 @@ func s1205(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1410) {
+	if !p.ClassesSkip(steps1399) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74157,12 +74157,12 @@ func s1206(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1411) {
+	if !p.ClassesSkip(steps1400) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74185,12 +74185,12 @@ func s1207(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1412) {
+	if !p.ClassesSkip(steps1401) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74213,12 +74213,12 @@ func s1208(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1413) {
+	if !p.ClassesSkip(steps1402) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74241,12 +74241,12 @@ func s1209(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1414) {
+	if !p.ClassesSkip(steps1403) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74269,12 +74269,12 @@ func s1210(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1415) {
+	if !p.ClassesSkip(steps1404) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74297,12 +74297,12 @@ func s1211(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1416) {
+	if !p.ClassesSkip(steps1405) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74325,12 +74325,12 @@ func s1212(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1417) {
+	if !p.ClassesSkip(steps1406) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74353,12 +74353,12 @@ func s1213(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1418) {
+	if !p.ClassesSkip(steps1407) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74508,12 +74508,12 @@ func s1215(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1419) {
+	if !p.ClassesSkip(steps1408) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74536,12 +74536,12 @@ func s1216(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1420) {
+	if !p.ClassesSkip(steps1409) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74564,12 +74564,12 @@ func s1217(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1421) {
+	if !p.ClassesSkip(steps1410) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74592,12 +74592,12 @@ func s1218(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1422) {
+	if !p.ClassesSkip(steps1411) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74620,12 +74620,12 @@ func s1219(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1423) {
+	if !p.ClassesSkip(steps1412) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74648,12 +74648,12 @@ func s1220(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1424) {
+	if !p.ClassesSkip(steps1413) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74676,12 +74676,12 @@ func s1221(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1425) {
+	if !p.ClassesSkip(steps1414) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74704,12 +74704,12 @@ func s1222(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1426) {
+	if !p.ClassesSkip(steps1415) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74732,12 +74732,12 @@ func s1223(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1427) {
+	if !p.ClassesSkip(steps1416) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74760,12 +74760,12 @@ func s1224(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1428) {
+	if !p.ClassesSkip(steps1417) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -74788,12 +74788,12 @@ func s1225(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1429) {
+	if !p.ClassesSkip(steps1418) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75019,12 +75019,12 @@ func s1228(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1430) {
+	if !p.ClassesSkip(steps1419) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75047,12 +75047,12 @@ func s1229(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1431) {
+	if !p.ClassesSkip(steps1420) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75075,12 +75075,12 @@ func s1230(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1432) {
+	if !p.ClassesSkip(steps1421) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75103,12 +75103,12 @@ func s1231(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1433) {
+	if !p.ClassesSkip(steps1422) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75131,12 +75131,12 @@ func s1232(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1434) {
+	if !p.ClassesSkip(steps1423) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75159,12 +75159,12 @@ func s1233(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1435) {
+	if !p.ClassesSkip(steps1424) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75187,12 +75187,12 @@ func s1234(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1436) {
+	if !p.ClassesSkip(steps1425) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75215,12 +75215,12 @@ func s1235(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1437) {
+	if !p.ClassesSkip(steps1426) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75243,12 +75243,12 @@ func s1236(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1438) {
+	if !p.ClassesSkip(steps1427) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75271,12 +75271,12 @@ func s1237(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1439) {
+	if !p.ClassesSkip(steps1428) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75299,12 +75299,12 @@ func s1238(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1440) {
+	if !p.ClassesSkip(steps1429) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75327,12 +75327,12 @@ func s1239(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1441) {
+	if !p.ClassesSkip(steps1430) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75355,12 +75355,12 @@ func s1240(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1442) {
+	if !p.ClassesSkip(steps1431) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75383,12 +75383,12 @@ func s1241(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1443) {
+	if !p.ClassesSkip(steps1432) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75411,12 +75411,12 @@ func s1242(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1444) {
+	if !p.ClassesSkip(steps1433) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75439,12 +75439,12 @@ func s1243(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1445) {
+	if !p.ClassesSkip(steps1434) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75467,12 +75467,12 @@ func s1244(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1446) {
+	if !p.ClassesSkip(steps1435) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75495,12 +75495,12 @@ func s1245(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1447) {
+	if !p.ClassesSkip(steps1436) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75523,12 +75523,12 @@ func s1246(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1448) {
+	if !p.ClassesSkip(steps1437) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75551,12 +75551,12 @@ func s1247(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1449) {
+	if !p.ClassesSkip(steps1438) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75579,12 +75579,12 @@ func s1248(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1450) {
+	if !p.ClassesSkip(steps1439) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75607,12 +75607,12 @@ func s1249(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1451) {
+	if !p.ClassesSkip(steps1440) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75635,12 +75635,12 @@ func s1250(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1452) {
+	if !p.ClassesSkip(steps1441) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75663,12 +75663,12 @@ func s1251(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1453) {
+	if !p.ClassesSkip(steps1442) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75691,12 +75691,12 @@ func s1252(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1454) {
+	if !p.ClassesSkip(steps1443) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75825,12 +75825,12 @@ func s1255(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1455) {
+	if !p.ClassesSkip(steps1444) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75853,12 +75853,12 @@ func s1256(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1456) {
+	if !p.ClassesSkip(steps1445) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75881,12 +75881,12 @@ func s1257(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1457) {
+	if !p.ClassesSkip(steps1446) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75909,12 +75909,12 @@ func s1258(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1458) {
+	if !p.ClassesSkip(steps1447) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75937,12 +75937,12 @@ func s1259(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1459) {
+	if !p.ClassesSkip(steps1448) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75965,12 +75965,12 @@ func s1260(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1460) {
+	if !p.ClassesSkip(steps1449) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -75993,12 +75993,12 @@ func s1261(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1461) {
+	if !p.ClassesSkip(steps1450) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76021,12 +76021,12 @@ func s1262(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1462) {
+	if !p.ClassesSkip(steps1451) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76049,12 +76049,12 @@ func s1263(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1463) {
+	if !p.ClassesSkip(steps1452) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76077,12 +76077,12 @@ func s1264(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1464) {
+	if !p.ClassesSkip(steps1453) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76105,12 +76105,12 @@ func s1265(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1465) {
+	if !p.ClassesSkip(steps1454) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76133,12 +76133,12 @@ func s1266(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1466) {
+	if !p.ClassesSkip(steps1455) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76161,12 +76161,12 @@ func s1267(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1467) {
+	if !p.ClassesSkip(steps1456) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76189,12 +76189,12 @@ func s1268(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1468) {
+	if !p.ClassesSkip(steps1457) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76318,12 +76318,12 @@ func s1270(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1469) {
+	if !p.ClassesSkip(steps1458) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76346,12 +76346,12 @@ func s1271(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1470) {
+	if !p.ClassesSkip(steps1459) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76374,12 +76374,12 @@ func s1272(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1471) {
+	if !p.ClassesSkip(steps1460) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76402,12 +76402,12 @@ func s1273(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1472) {
+	if !p.ClassesSkip(steps1461) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76430,12 +76430,12 @@ func s1274(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1473) {
+	if !p.ClassesSkip(steps1462) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76458,12 +76458,12 @@ func s1275(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1474) {
+	if !p.ClassesSkip(steps1463) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76486,12 +76486,12 @@ func s1276(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1475) {
+	if !p.ClassesSkip(steps1464) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76514,12 +76514,12 @@ func s1277(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1476) {
+	if !p.ClassesSkip(steps1465) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76542,12 +76542,12 @@ func s1278(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1477) {
+	if !p.ClassesSkip(steps1466) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76570,12 +76570,12 @@ func s1279(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1478) {
+	if !p.ClassesSkip(steps1467) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76598,12 +76598,12 @@ func s1280(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1479) {
+	if !p.ClassesSkip(steps1468) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76626,12 +76626,12 @@ func s1281(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1480) {
+	if !p.ClassesSkip(steps1469) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76654,12 +76654,12 @@ func s1282(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1481) {
+	if !p.ClassesSkip(steps1470) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76682,12 +76682,12 @@ func s1283(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1482) {
+	if !p.ClassesSkip(steps1471) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76710,12 +76710,12 @@ func s1284(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1483) {
+	if !p.ClassesSkip(steps1472) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76738,12 +76738,12 @@ func s1285(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1484) {
+	if !p.ClassesSkip(steps1473) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76766,12 +76766,12 @@ func s1286(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1485) {
+	if !p.ClassesSkip(steps1474) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76794,12 +76794,12 @@ func s1287(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1486) {
+	if !p.ClassesSkip(steps1475) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76822,12 +76822,12 @@ func s1288(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1487) {
+	if !p.ClassesSkip(steps1476) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76850,12 +76850,12 @@ func s1289(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1488) {
+	if !p.ClassesSkip(steps1477) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76878,12 +76878,12 @@ func s1290(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1489) {
+	if !p.ClassesSkip(steps1478) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76906,12 +76906,12 @@ func s1291(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1490) {
+	if !p.ClassesSkip(steps1479) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76934,12 +76934,12 @@ func s1292(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1491) {
+	if !p.ClassesSkip(steps1480) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76962,12 +76962,12 @@ func s1293(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1492) {
+	if !p.ClassesSkip(steps1481) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -76990,12 +76990,12 @@ func s1294(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1493) {
+	if !p.ClassesSkip(steps1482) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77018,12 +77018,12 @@ func s1295(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1494) {
+	if !p.ClassesSkip(steps1483) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77046,12 +77046,12 @@ func s1296(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1495) {
+	if !p.ClassesSkip(steps1484) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77074,12 +77074,12 @@ func s1297(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1496) {
+	if !p.ClassesSkip(steps1485) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77102,12 +77102,12 @@ func s1298(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1497) {
+	if !p.ClassesSkip(steps1486) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77143,7 +77143,7 @@ func s1299(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 59 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit782, ";", 94, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit771, ";", 94, false); !ok {
 		goto L6
 	}
 	goto L2
@@ -77173,12 +77173,12 @@ func s1300(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1498) {
+	if !p.ClassesSkip(steps1487) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77201,12 +77201,12 @@ func s1301(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1499) {
+	if !p.ClassesSkip(steps1488) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77229,12 +77229,12 @@ func s1302(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1500) {
+	if !p.ClassesSkip(steps1489) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77257,12 +77257,12 @@ func s1303(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1501) {
+	if !p.ClassesSkip(steps1490) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77285,12 +77285,12 @@ func s1304(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1502) {
+	if !p.ClassesSkip(steps1491) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77313,12 +77313,12 @@ func s1305(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1503) {
+	if !p.ClassesSkip(steps1492) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77341,12 +77341,12 @@ func s1306(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1504) {
+	if !p.ClassesSkip(steps1493) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77369,12 +77369,12 @@ func s1307(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1505) {
+	if !p.ClassesSkip(steps1494) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77397,12 +77397,12 @@ func s1308(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1506) {
+	if !p.ClassesSkip(steps1495) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77425,12 +77425,12 @@ func s1309(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1507) {
+	if !p.ClassesSkip(steps1496) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77453,12 +77453,12 @@ func s1310(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1508) {
+	if !p.ClassesSkip(steps1497) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77481,12 +77481,12 @@ func s1311(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1509) {
+	if !p.ClassesSkip(steps1498) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77509,12 +77509,12 @@ func s1312(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1510) {
+	if !p.ClassesSkip(steps1499) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77537,12 +77537,12 @@ func s1313(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1511) {
+	if !p.ClassesSkip(steps1500) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77565,12 +77565,12 @@ func s1314(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1512) {
+	if !p.ClassesSkip(steps1501) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77593,12 +77593,12 @@ func s1315(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1513) {
+	if !p.ClassesSkip(steps1502) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77621,12 +77621,12 @@ func s1316(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1514) {
+	if !p.ClassesSkip(steps1503) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77649,12 +77649,12 @@ func s1317(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1515) {
+	if !p.ClassesSkip(steps1504) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77677,12 +77677,12 @@ func s1318(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1516) {
+	if !p.ClassesSkip(steps1505) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77705,12 +77705,12 @@ func s1319(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1517) {
+	if !p.ClassesSkip(steps1506) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77733,12 +77733,12 @@ func s1320(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1518) {
+	if !p.ClassesSkip(steps1507) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77761,12 +77761,12 @@ func s1321(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1519) {
+	if !p.ClassesSkip(steps1508) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77789,12 +77789,12 @@ func s1322(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1520) {
+	if !p.ClassesSkip(steps1509) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77817,12 +77817,12 @@ func s1323(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1521) {
+	if !p.ClassesSkip(steps1510) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77845,12 +77845,12 @@ func s1324(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1522) {
+	if !p.ClassesSkip(steps1511) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77873,12 +77873,12 @@ func s1325(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1523) {
+	if !p.ClassesSkip(steps1512) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77901,12 +77901,12 @@ func s1326(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1524) {
+	if !p.ClassesSkip(steps1513) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77929,12 +77929,12 @@ func s1327(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1525) {
+	if !p.ClassesSkip(steps1514) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77957,12 +77957,12 @@ func s1328(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1526) {
+	if !p.ClassesSkip(steps1515) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -77985,12 +77985,12 @@ func s1329(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1527) {
+	if !p.ClassesSkip(steps1516) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78013,12 +78013,12 @@ func s1330(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1528) {
+	if !p.ClassesSkip(steps1517) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78041,12 +78041,12 @@ func s1331(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1529) {
+	if !p.ClassesSkip(steps1518) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78069,12 +78069,12 @@ func s1332(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1530) {
+	if !p.ClassesSkip(steps1519) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78097,12 +78097,12 @@ func s1333(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1531) {
+	if !p.ClassesSkip(steps1520) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78125,12 +78125,12 @@ func s1334(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1532) {
+	if !p.ClassesSkip(steps1521) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78153,12 +78153,12 @@ func s1335(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1533) {
+	if !p.ClassesSkip(steps1522) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78181,12 +78181,12 @@ func s1336(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1534) {
+	if !p.ClassesSkip(steps1523) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78209,12 +78209,12 @@ func s1337(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1535) {
+	if !p.ClassesSkip(steps1524) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78237,12 +78237,12 @@ func s1338(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1536) {
+	if !p.ClassesSkip(steps1525) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78265,12 +78265,12 @@ func s1339(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1537) {
+	if !p.ClassesSkip(steps1526) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78293,12 +78293,12 @@ func s1340(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1538) {
+	if !p.ClassesSkip(steps1527) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78321,12 +78321,12 @@ func s1341(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1539) {
+	if !p.ClassesSkip(steps1528) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78349,12 +78349,12 @@ func s1342(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1540) {
+	if !p.ClassesSkip(steps1529) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78377,12 +78377,12 @@ func s1343(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1541) {
+	if !p.ClassesSkip(steps1530) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78405,12 +78405,12 @@ func s1344(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1542) {
+	if !p.ClassesSkip(steps1531) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78433,12 +78433,12 @@ func s1345(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1543) {
+	if !p.ClassesSkip(steps1532) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78461,12 +78461,12 @@ func s1346(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1544) {
+	if !p.ClassesSkip(steps1533) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78489,12 +78489,12 @@ func s1347(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1545) {
+	if !p.ClassesSkip(steps1534) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78584,12 +78584,12 @@ func s1349(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1546) {
+	if !p.ClassesSkip(steps1535) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78612,12 +78612,12 @@ func s1350(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1547) {
+	if !p.ClassesSkip(steps1536) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78640,12 +78640,12 @@ func s1351(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1548) {
+	if !p.ClassesSkip(steps1537) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78668,12 +78668,12 @@ func s1352(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1549) {
+	if !p.ClassesSkip(steps1538) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78696,12 +78696,12 @@ func s1353(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1550) {
+	if !p.ClassesSkip(steps1539) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78724,12 +78724,12 @@ func s1354(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1551) {
+	if !p.ClassesSkip(steps1540) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78752,12 +78752,12 @@ func s1355(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1552) {
+	if !p.ClassesSkip(steps1541) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78780,12 +78780,12 @@ func s1356(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1553) {
+	if !p.ClassesSkip(steps1542) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78808,12 +78808,12 @@ func s1357(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1554) {
+	if !p.ClassesSkip(steps1543) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78836,12 +78836,12 @@ func s1358(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1555) {
+	if !p.ClassesSkip(steps1544) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78864,12 +78864,12 @@ func s1359(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1556) {
+	if !p.ClassesSkip(steps1545) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78892,12 +78892,12 @@ func s1360(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1557) {
+	if !p.ClassesSkip(steps1546) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78938,12 +78938,12 @@ func s1362(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1558) {
+	if !p.ClassesSkip(steps1547) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -78976,7 +78976,7 @@ func s1363(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 45 && p.In[p.Pos+1] == 45 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit5, "--", 6, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit4, "--", 6, false); !ok {
 		goto L6
 	}
 	for {
@@ -79018,7 +79018,7 @@ func s1364(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.SkipTerminal(term1559) {
+	if !p.SkipTerminal(term1548) {
 		goto fail
 	}
 	v = nil
@@ -79035,7 +79035,7 @@ func s1365(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.SkipTerminal(term1560) {
+	if !p.SkipTerminal(term1549) {
 		goto fail
 	}
 	v = nil
@@ -79052,7 +79052,7 @@ func s1366(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.SkipTerminal(term1562) {
+	if !p.SkipTerminal(term1551) {
 		goto fail
 	}
 	v = nil
@@ -79069,7 +79069,7 @@ func s1367(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassFast(&cls1563) && !p.ClassSkip(&cls1563, 11) {
+	if !p.ClassFast(&cls1552) && !p.ClassSkip(&cls1552, 11) {
 		goto fail
 	}
 	v = nil
@@ -79086,7 +79086,7 @@ func s1368(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto fail
 	}
 	v = nil
@@ -79103,7 +79103,7 @@ func s1369(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.SkipTerminal(term1564) {
+	if !p.SkipTerminal(term1553) {
 		goto fail
 	}
 	v = nil
@@ -79120,7 +79120,7 @@ func s1370(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.SkipTerminal(term1565) {
+	if !p.SkipTerminal(term1554) {
 		goto fail
 	}
 	v = nil
@@ -79137,7 +79137,7 @@ func s1371(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.SkipTerminal(term1566) {
+	if !p.SkipTerminal(term1555) {
 		goto fail
 	}
 	v = nil
@@ -79154,7 +79154,7 @@ func s1372(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.SkipTerminal(term1567) {
+	if !p.SkipTerminal(term1556) {
 		goto fail
 	}
 	v = nil
@@ -79206,7 +79206,7 @@ func v1373(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit35, "''", 34, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit30, "''", 34, false); !ok {
 			goto L11
 		}
 		goto L5
@@ -79219,7 +79219,7 @@ func v1373(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit37, "\\", 36, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit32, "\\", 36, false); !ok {
 			goto L13
 		}
 		x14 = p.Pos
@@ -79314,7 +79314,7 @@ func s1374(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 45 && p.In[p.Pos+1] == 45 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit5, "--", 6, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit4, "--", 6, false); !ok {
 			goto L12
 		}
 		for {
@@ -79371,7 +79371,7 @@ func s1374(p *rt.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 45 && p.In[p.Pos+1] == 45 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit5, "--", 6, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit4, "--", 6, false); !ok {
 			goto L23
 		}
 		for {
@@ -79404,7 +79404,7 @@ func s1374(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit12, "'", 13, false); !ok {
 		goto fail
 	}
 	v = nil
@@ -79472,7 +79472,7 @@ func v1375(p *rt.TParser) (any, bool) {
 	L10:
 		p.Silent--
 		p.Pos = x9
-		if !p.ClassFast(&cls1288) && !p.ClassSkip(&cls1288, 68) {
+		if !p.ClassFast(&cls1277) && !p.ClassSkip(&cls1277, 68) {
 			goto L3
 		}
 		x1++
@@ -79501,12 +79501,12 @@ func s1376(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1568) {
+	if !p.ClassesSkip(steps1557) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -79529,12 +79529,12 @@ func s1377(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1569) {
+	if !p.ClassesSkip(steps1558) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -79557,12 +79557,12 @@ func s1378(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1570) {
+	if !p.ClassesSkip(steps1559) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -79602,7 +79602,7 @@ func v1379(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit115, "(", 70, false); !ok {
 		goto fail
 	}
 	if _, ok = u1023(p); !ok {
@@ -79616,7 +79616,7 @@ func v1379(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit134, ")", 74, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit124, ")", 74, false); !ok {
 		goto fail
 	}
 	v = nil
@@ -79816,12 +79816,12 @@ func s1381(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1571) {
+	if !p.ClassesSkip(steps1560) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -79844,12 +79844,12 @@ func s1382(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1572) {
+	if !p.ClassesSkip(steps1561) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -79872,12 +79872,12 @@ func s1383(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1573) {
+	if !p.ClassesSkip(steps1562) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -79900,12 +79900,12 @@ func s1384(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1574) {
+	if !p.ClassesSkip(steps1563) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -79928,12 +79928,12 @@ func s1385(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1575) {
+	if !p.ClassesSkip(steps1564) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -79956,12 +79956,12 @@ func s1386(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1576) {
+	if !p.ClassesSkip(steps1565) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -79984,12 +79984,12 @@ func s1387(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1577) {
+	if !p.ClassesSkip(steps1566) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80012,12 +80012,12 @@ func s1388(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1578) {
+	if !p.ClassesSkip(steps1567) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80040,12 +80040,12 @@ func s1389(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1579) {
+	if !p.ClassesSkip(steps1568) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80068,12 +80068,12 @@ func s1390(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1580) {
+	if !p.ClassesSkip(steps1569) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80096,12 +80096,12 @@ func s1391(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1581) {
+	if !p.ClassesSkip(steps1570) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80124,12 +80124,12 @@ func s1392(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1582) {
+	if !p.ClassesSkip(steps1571) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80152,12 +80152,12 @@ func s1393(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1583) {
+	if !p.ClassesSkip(steps1572) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80180,12 +80180,12 @@ func s1394(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1584) {
+	if !p.ClassesSkip(steps1573) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80208,12 +80208,12 @@ func s1395(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1585) {
+	if !p.ClassesSkip(steps1574) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80236,12 +80236,12 @@ func s1396(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1586) {
+	if !p.ClassesSkip(steps1575) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80264,12 +80264,12 @@ func s1397(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1587) {
+	if !p.ClassesSkip(steps1576) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80292,12 +80292,12 @@ func s1398(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1588) {
+	if !p.ClassesSkip(steps1577) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80320,12 +80320,12 @@ func s1399(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1589) {
+	if !p.ClassesSkip(steps1578) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80348,12 +80348,12 @@ func s1400(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1590) {
+	if !p.ClassesSkip(steps1579) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80376,12 +80376,12 @@ func s1401(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1591) {
+	if !p.ClassesSkip(steps1580) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80404,12 +80404,12 @@ func s1402(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1592) {
+	if !p.ClassesSkip(steps1581) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80432,12 +80432,12 @@ func s1403(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1593) {
+	if !p.ClassesSkip(steps1582) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80460,12 +80460,12 @@ func s1404(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1594) {
+	if !p.ClassesSkip(steps1583) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80488,12 +80488,12 @@ func s1405(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1595) {
+	if !p.ClassesSkip(steps1584) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80516,12 +80516,12 @@ func s1406(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1596) {
+	if !p.ClassesSkip(steps1585) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80545,20 +80545,20 @@ func s1407(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1597) {
+	if !p.ClassesSkip(steps1586) {
 		goto fail
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 95 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit51, "_", 44, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit45, "_", 44, false); !ok {
 		goto fail
 	}
-	if !p.ClassesSkip(steps1598) {
+	if !p.ClassesSkip(steps1587) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80581,12 +80581,12 @@ func s1408(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1597) {
+	if !p.ClassesSkip(steps1586) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80610,20 +80610,20 @@ func s1409(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1597) {
+	if !p.ClassesSkip(steps1586) {
 		goto fail
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 95 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit51, "_", 44, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit45, "_", 44, false); !ok {
 		goto fail
 	}
-	if !p.ClassesSkip(steps1599) {
+	if !p.ClassesSkip(steps1588) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80646,12 +80646,12 @@ func s1410(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1600) {
+	if !p.ClassesSkip(steps1589) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80674,12 +80674,12 @@ func s1411(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1601) {
+	if !p.ClassesSkip(steps1590) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80702,12 +80702,12 @@ func s1412(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1602) {
+	if !p.ClassesSkip(steps1591) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80730,12 +80730,12 @@ func s1413(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1603) {
+	if !p.ClassesSkip(steps1592) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80758,12 +80758,12 @@ func s1414(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1604) {
+	if !p.ClassesSkip(steps1593) {
 		goto fail
 	}
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1257) && !p.ClassSkip(&cls1257, 10) {
+	if !p.ClassFast(&cls1246) && !p.ClassSkip(&cls1246, 10) {
 		goto L2
 	}
 	p.Silent--
@@ -80798,7 +80798,7 @@ func v1415(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 42 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit7, "/*", 8, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit6, "/*", 8, false); !ok {
 		goto fail
 	}
 	for {
@@ -80820,7 +80820,7 @@ func v1415(p *rt.TParser) (any, bool) {
 		p.Silent++
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 47 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "*/", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit7, "*/", 9, false); !ok {
 			goto L12
 		}
 		p.Silent--
@@ -80850,7 +80850,7 @@ func v1415(p *rt.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 47 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit8, "*/", 9, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit7, "*/", 9, false); !ok {
 		goto fail
 	}
 	v = nil
@@ -80878,7 +80878,7 @@ func v1416(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 47 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit69, "/", 51, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit62, "/", 51, false); !ok {
 		goto fail
 	}
 	x1 = p.Pos
@@ -80919,7 +80919,7 @@ func v1417(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit92, "//", 63, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, "//", 63, false); !ok {
 		goto fail
 	}
 	x1 = p.Pos
@@ -80958,7 +80958,7 @@ func v1418(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 94 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit88, "^", 61, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit81, "^", 61, false); !ok {
 		goto fail
 	}
 	x1 = p.Pos
@@ -80997,7 +80997,7 @@ func v1419(p *rt.TParser) (any, bool) {
 	p.Enter()
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 42 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit90, "**", 62, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit83, "**", 62, false); !ok {
 		goto fail
 	}
 	x1 = p.Pos

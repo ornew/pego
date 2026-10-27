@@ -1958,7 +1958,8 @@ func (g *generator) lambda(t grammar.Term, s *scope, locals map[string]string) s
 // membership uses immutable generated range tables. TS keeps its own runtime.
 func (g *generator) controlledClassReject(e *grammar.CharClass) string {
 	ordinary := classReject(e)
-	if !g.goWorkControls || len(e.Ranges) <= 4 {
+	if !g.goWorkControls || g.ordinary || len(e.Ranges) <= 4 {
+		// The ordinary-only form tests the class without a control, so it has no range table.
 		return ordinary
 	}
 	key := fmt.Sprintf("%#v", e.Ranges)
@@ -1970,16 +1971,12 @@ func (g *generator) controlledClassReject(e *grammar.CharClass) string {
 		name = g.name("workClass")
 		g.workClassNames[key] = name
 		g.workClassKeys = append(g.workClassKeys, key)
-		if !g.ordinary {
-			fmt.Fprintf(&g.vars, "var %s = []WorkRange{", name)
-			for _, r := range e.Ranges {
-				fmt.Fprintf(&g.vars, "{Lo: %d, Hi: %d},", r.Lo, r.Hi)
-			}
-			g.vars.WriteString("}\n")
+		fmt.Fprintf(&g.vars, "var %s = []WorkRange{", name)
+		for _, r := range e.Ranges {
+			fmt.Fprintf(&g.vars, "{Lo: %d, Hi: %d},", r.Lo, r.Hi)
 		}
+		g.vars.WriteString("}\n")
 	}
-	// The ordinary form tests the class without a control; the name is allocated all the same, so
-	// that the other generated names keep their numbers.
 	return g.formRest(fmt.Sprintf("((WorkControlsEnabled && p.Control != nil && p.RejectWorkClass(ch, %s, %v)) || ((!WorkControlsEnabled || p.Control == nil) && (%s)))", name, e.Negated, ordinary), ordinary, ordinary)
 }
 
