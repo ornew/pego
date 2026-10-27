@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -12,17 +13,16 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 // The Node and recognizer tables of a parser with work controls are printed from Flow IR, which makes
-// the charges explicit (Func.Work, verified by flow.Verify). Its charges are not those of the direct
-// printers for every rule (an Operators Rule line, a rule with dead branches, a choice whose guards skip an
-// alternative), because the backends charge as the spec allows: the work of a parse depends on the
-// backend, the position unit and the generated artifact. These tests build each parser twice, with the
-// rules printed from Flow IR and with dgen (directNodeRules, directRecognizer), run both under limits and
-// a polling context, and check the invariants that every build must keep: limits fail with a well-formed
-// error at the counter they limit, the input work is the same, the context is polled at the runtime's
-// cadence, and the number of steps stays within a factor of the direct build's.
+// the charges explicit (Func.Work, verified by flow.Verify). The work of a parse depends on the backend,
+// the position unit and the generated artifact, so the step totals are not compared with another
+// implementation: these tests build each parser, run it under limits and a polling context, check the
+// invariants that every build must keep (limits fail with a well-formed error at the counter they limit,
+// the least successful limit succeeds, the context is polled at the runtime's cadence) and freeze the
+// totals in testdata/work.golden, so that a change of the charges shows up as a reviewed diff.
 
 // workProbe is the consumer of one generated parser. For each input it prints, per entry (Parse and
 // Recognize) and per counter (steps, input work), the least limit that does not fail, a digest of the
@@ -210,8 +210,9 @@ func workProbeSources(pkg string, n int) string {
 	return strings.NewReplacer("IMPORTS", imports.String(), "PROBES", probes.String()).Replace(workProbeMain)
 }
 
-// runWorkProbes builds the cases twice, as the packages f0..fN with the rules printed from Flow IR and d0..dN with dgen, and returns the reports of the consumer for each build.
-func runWorkProbes(t *testing.T, cases []genCase, start string) (flowOut, directOut []string) {
+// runWorkProbes builds the cases as the packages f0..fN with the rules printed from Flow IR and returns the
+// reports of the consumer; mutate, if not nil, changes the code of each parser.
+func runWorkProbes(t *testing.T, cases []genCase, start string, mutate func([]byte) []byte) []string {
 	t.Helper()
 	dir := t.TempDir()
 	write := func(name, content string) {
@@ -228,49 +229,43 @@ func runWorkProbes(t *testing.T, cases []genCase, start string) (flowOut, direct
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		for _, form := range []struct {
-			prefix string
-			opts   GenOptions
-		}{{"f", GenOptions{}}, {"d", GenOptions{directNodeRules: true, directRecognizer: true}}} {
-			o := form.opts
-			o.Package, o.Start, o.Recognize = fmt.Sprintf("%s%d", form.prefix, i), start, true
-			code, err := generateCode(g, o)
-			if err != nil {
-				t.Fatalf("%s: %v", c.name, err)
-			}
-			write(fmt.Sprintf("%s%d/parser.go", form.prefix, i), string(code))
+		o := GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true}
+		code, err := generateCode(g, o)
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
 		}
+		if mutate != nil {
+			code = mutate(code)
+		}
+		write(fmt.Sprintf("f%d/parser.go", i), string(code))
 		inputs = append(inputs, c.inputs)
 	}
-	run := func(prefix string) []string {
-		write("main.go", strings.Replace(workProbeSources(prefix, len(cases)), "IMPORTS", "", 1))
-		data, _ := json.Marshal(inputs)
-		write("inputs.json", string(data))
-		cmd := exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), "run", ".", "inputs.json")
-		cmd.Dir = dir
-		cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod -trimpath", "GOTOOLCHAIN=local")
-		var stderr strings.Builder
-		cmd.Stderr = &stderr
-		out, err := cmd.Output()
-		if err != nil {
-			t.Fatalf("go run (%s): %v\n%s\n%s", prefix, err, out, stderr.String())
-		}
-		// The consumer prints reports (workLine) and diagnostics ("# ", logged); diagnostics may differ between
-		// the builds, so only the reports are returned and anything else is a malformed probe line.
-		var reports []string
-		for _, l := range strings.Split(strings.TrimSuffix(string(out), "\n"), "\n") {
-			switch {
-			case strings.HasPrefix(l, "# "):
-				t.Logf("%s: %s", prefix, l)
-			case workLine.MatchString(l):
-				reports = append(reports, l)
-			default:
-				t.Fatalf("go run (%s): malformed probe line %q", prefix, l)
-			}
-		}
-		return reports
+	write("main.go", strings.Replace(workProbeSources("f", len(cases)), "IMPORTS", "", 1))
+	data, _ := json.Marshal(inputs)
+	write("inputs.json", string(data))
+	cmd := exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), "run", ".", "inputs.json")
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod -trimpath", "GOTOOLCHAIN=local")
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("go run: %v\n%s\n%s", err, out, stderr.String())
 	}
-	return run("f"), run("d")
+	// The consumer prints reports (workLine) and diagnostics ("# ", logged); anything else is a malformed
+	// probe line.
+	var reports []string
+	for _, l := range strings.Split(strings.TrimSuffix(string(out), "\n"), "\n") {
+		switch {
+		case strings.HasPrefix(l, "# "):
+			t.Logf("%s", l)
+		case workLine.MatchString(l):
+			reports = append(reports, l)
+		default:
+			t.Fatalf("go run: malformed probe line %q", l)
+		}
+	}
+	return reports
 }
 
 // workReport is the report of one input and entry of the consumer.
@@ -297,26 +292,38 @@ func parseWorkReports(t *testing.T, lines []string) []workReport {
 	return out
 }
 
-// Steps of the Flow build beyond flagStepRatio times the direct build's on an input are logged; beyond
-// maxStepRatio they fail the test.
+// workGolden holds the totals of every report: "group/case | input entry" to "steps input polls result".
 const (
-	flagStepRatio = 1.25
-	maxStepRatio  = 1.5
+	workGolden       = "testdata/work.golden"
+	workGoldenHeader = "# Work totals of the generated parsers with work controls: steps, input work, context polls and result\n" +
+		"# of each input and entry, by group, case and input. Not a limit: stage 3 optimizations move the totals.\n" + goldenRules
 )
+
+var workGoldenFile = goldenFile{
+	path: workGolden, header: workGoldenHeader, caseOf: goldenCaseBefore, totalNames: [2]string{"steps", "input work"},
+	totals: func(v string) (a, b uint64) {
+		f := strings.Fields(v)
+		a, _ = strconv.ParseUint(f[0], 10, 64)
+		b, _ = strconv.ParseUint(f[1], 10, 64)
+		return
+	},
+}
 
 // TestFlowNodeWorkInvariants checks, for the parsers of the generated corpus with work controls built with
 // the rules printed from Flow IR, the invariants every build keeps whichever way it charges steps:
 //
 //   - a limit below the total fails with a work-limit error of the limited counter whose reservation went
-//     past the limit (the bad counts of the reports);
-//   - the input work of a parse is the same as the direct build's: both charge one unit for each character
-//     that a matcher or a source scan reads, so a difference would be a character read twice or never;
+//     past the limit, and the least limit that does not fail succeeds (the bad counts of the reports);
 //   - the context is polled every 256 steps and every 4096 units of input work, as the runtime does, so the
-//     polls of a run number at least the larger of steps/256 and input/4096 (less a slack of two), in both
-//     builds;
-//   - the result of a run under a context is the direct build's;
-//   - the steps of the Flow build stay within a factor of the direct build's (the distribution is logged
-//     and a case beyond flagStepRatio is flagged and one beyond maxStepRatio fails the test).
+//     polls of a run number at least the larger of steps/256 and input/4096 (less a slack of two);
+//   - a run that charges input work charges steps, and a run that parses the whole input without error
+//     charged at least one unit of input work for each character;
+//   - the totals equal those of testdata/work.golden.
+//
+// The engine's input work is not an oracle for the input work of a generated parser: for the same grammar
+// and input the closure engine, the bytecode VM and the generated parser charge different amounts (they agree
+// on about a third of the corpus reports and the generated charge is between 0.33 and 1.37 times the
+// engine's), and the charges depend on the backend and artifact by contract (spec/runtime/parsing.md).
 //
 // The bounded work of the rule bodies is proved on the IR itself: flow.Verify rejects a function lowered
 // with work controls that consumes input or iterates a loop without charging (see TestVerifyWorkCharges),
@@ -326,66 +333,121 @@ func TestFlowNodeWorkInvariants(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	checkWorkInvariants(t, genCorpus(t), "main")
+	checkWorkInvariants(t, "corpus", genCorpus(t), "main")
 }
 
-// checkWorkInvariants builds the cases with the start rule start, runs the consumer on both builds and checks
-// the invariants of TestFlowNodeWorkInvariants.
-func checkWorkInvariants(t *testing.T, cases []genCase, start string) {
+// checkWorkInvariants builds the cases with the start rule start, runs the consumer and checks the
+// invariants of TestFlowNodeWorkInvariants and the golden.
+func checkWorkInvariants(t *testing.T, group string, cases []genCase, start string) {
 	t.Helper()
-	fl, di := runWorkProbes(t, cases, start)
-	if len(fl) != len(di) || len(fl) == 0 {
-		t.Fatalf("%d reports from the Flow build and %d from the direct build", len(fl), len(di))
+	got, problems := workTotals(t, group, cases, start, nil)
+	for _, p := range problems {
+		t.Error(p)
 	}
-	f, d := parseWorkReports(t, fl), parseWorkReports(t, di)
-	var ratios []float64
-	var differ, equal int
-	for i := range f {
-		if f[i].id != d[i].id {
-			t.Fatalf("report %d is for %s and %s", i, f[i].id, d[i].id)
+	workGoldenFile.check(t, group+"/", got)
+}
+
+// workTotals builds the cases (the code of each parser changed by mutate if not nil), runs the consumer and
+// returns the entries of the golden and the violations of the invariants of the reports.
+func workTotals(t *testing.T, group string, cases []genCase, start string, mutate func([]byte) []byte) (got map[string]string, problems []string) {
+	t.Helper()
+	lines := runWorkProbes(t, cases, start, mutate)
+	if len(lines) == 0 {
+		t.Fatal("no reports")
+	}
+	got = map[string]string{}
+	for _, r := range parseWorkReports(t, lines) {
+		if r.bad != 0 {
+			problems = append(problems, fmt.Sprintf("%s: limit errors are malformed (%d; see the log)", r.id, r.bad))
 		}
-		if f[i].bad != 0 || d[i].bad != 0 {
-			t.Errorf("%s: limit errors are malformed (%d in the Flow build, %d in the direct build; see the log)", f[i].id, f[i].bad, d[i].bad)
+		// A poll happens when either counter reaches its interval since the last poll, so the polls number
+		// at least the larger of the two quotients, less the polls the runtime's batched reservations may
+		// shift past the end of the run.
+		min := max(r.steps/workCheckSteps, r.input/workCheckInput)
+		if r.polls+workPollSlack < min {
+			problems = append(problems, fmt.Sprintf("%s: %d polls for %d steps and %d input work, at least %d expected", r.id, r.polls, r.steps, r.input, min-workPollSlack))
 		}
-		if f[i].input != d[i].input {
-			t.Errorf("%s: input work %d in the Flow build, %d in the direct build", f[i].id, f[i].input, d[i].input)
+		if r.steps == 0 && r.input != 0 {
+			problems = append(problems, fmt.Sprintf("%s: no step is charged for %d input work", r.id, r.input))
 		}
-		if f[i].result != d[i].result {
-			t.Errorf("%s: result %s in the Flow build, %s in the direct build", f[i].id, f[i].result, d[i].result)
+		// The probe ids number the cases and inputs; the golden names the case, which does not move when
+		// cases are added.
+		idx, rest, _ := strings.Cut(r.id, "/")
+		n, _ := strconv.Atoi(idx)
+		j, _, _ := strings.Cut(rest, " ")
+		jn, _ := strconv.Atoi(j)
+		entry := strings.Fields(rest)[1]
+		if r.result == "<nil>" && r.input < uint64(utf8.RuneCountInString(cases[n].inputs[jn])) {
+			problems = append(problems, fmt.Sprintf("%s: %d input work for a parsed input of %d characters", r.id, r.input, utf8.RuneCountInString(cases[n].inputs[jn])))
 		}
-		for _, r := range []workReport{f[i], d[i]} {
-			// A poll happens when either counter reaches its interval since the last poll, so the polls number
-			// at least the larger of the two quotients, less the polls the runtime's batched reservations may
-			// shift past the end of the run.
-			min := max(r.steps/workCheckSteps, r.input/workCheckInput)
-			if r.polls+workPollSlack < min {
-				t.Errorf("%s: %d polls for %d steps and %d input work, at least %d expected", r.id, r.polls, r.steps, r.input, min-workPollSlack)
+		key := fmt.Sprintf("%s/%s | %s %s", group, cases[n].name, j, entry)
+		if _, dup := got[key]; dup {
+			t.Fatalf("two reports under the key %q: case names repeat", key)
+		}
+		got[key] = fmt.Sprintf("%d %d %d %s", r.steps, r.input, r.polls, r.result)
+	}
+	return got, problems
+}
+
+// stepStatement is a charge of one step in generated code.
+const stepStatement = "p.StepWork()\n"
+
+// dropFirstStep removes the first step charge of the code, as a printer would if it lost the charge of a
+// Step of the IR; dropLastStep removes the last.
+func dropFirstStep(code []byte) []byte {
+	i := bytes.Index(code, []byte(stepStatement))
+	if i < 0 {
+		return code
+	}
+	return append(append([]byte(nil), code[:i]...), code[i+len(stepStatement):]...)
+}
+
+func dropLastStep(code []byte) []byte {
+	i := bytes.LastIndex(code, []byte(stepStatement))
+	if i < 0 {
+		return code
+	}
+	return append(append([]byte(nil), code[:i]...), code[i+len(stepStatement):]...)
+}
+
+// TestFlowNodeWorkMutants checks that the invariants and the golden of TestFlowNodeWorkInvariants notice a
+// printer that loses the charge of one Step: with the first, and with the last, step charge of each parser
+// removed, some report violates an invariant or differs from the golden.
+func TestFlowNodeWorkMutants(t *testing.T) {
+	needsWorkControls(t)
+	if testing.Short() {
+		t.Skip("builds generated consumers")
+	}
+	cases := genCorpus(t)
+	golden := readGolden(t, workGolden)
+	for _, m := range []struct {
+		name   string
+		mutate func([]byte) []byte
+	}{{"drop the first step charge", dropFirstStep}, {"drop the last step charge", dropLastStep}} {
+		t.Run(m.name, func(t *testing.T) {
+			mutated := 0
+			got, problems := workTotals(t, "corpus", cases, "main", func(code []byte) []byte {
+				out := m.mutate(code)
+				if !bytes.Equal(out, code) {
+					mutated++
+				}
+				return out
+			})
+			if mutated == 0 {
+				t.Fatal("the mutant changes no generated parser")
 			}
-		}
-		if f[i].steps == 0 && d[i].steps != 0 {
-			t.Errorf("%s: the Flow build charges no step where the direct build charges %d", f[i].id, d[i].steps)
-		}
-		if d[i].steps == 0 {
-			continue
-		}
-		r := float64(f[i].steps) / float64(d[i].steps)
-		ratios = append(ratios, r)
-		if f[i].steps == d[i].steps {
-			equal++
-		} else {
-			differ++
-		}
-		if r > flagStepRatio {
-			t.Logf("flagged: %s charges %d steps in the Flow build, %.2fx the direct build's %d", f[i].id, f[i].steps, r, d[i].steps)
-		}
-		if r > maxStepRatio {
-			t.Errorf("%s: the Flow build charges %d steps, %.2fx the direct build's %d", f[i].id, f[i].steps, r, d[i].steps)
-		}
+			differ := 0
+			for k, v := range got {
+				if w, ok := golden[k]; !ok || w != v {
+					differ++
+				}
+			}
+			if len(problems)+differ == 0 {
+				t.Errorf("the mutant %q changes no report and breaks no invariant", m.name)
+			}
+			t.Logf("%d parsers mutated: %d reports differ from the golden, %d invariants violated", mutated, differ, len(problems))
+		})
 	}
-	sort.Float64s(ratios)
-	q := func(p float64) float64 { return ratios[int(p*float64(len(ratios)-1))] }
-	t.Logf("step ratio Flow/direct over %d reports (%d equal, %d differ): min %.3f p50 %.3f p90 %.3f p99 %.3f max %.3f",
-		len(ratios), equal, differ, ratios[0], q(0.5), q(0.9), q(0.99), ratios[len(ratios)-1])
 }
 
 // The cadence of the runtime's context polls (runtime/work.go: workCheckStepInterval and
@@ -396,16 +458,16 @@ const (
 	workPollSlack  = 2
 )
 
-// TestFlowNodeWorkInvariantsOnGrammars checks the invariants of TestFlowNodeWorkInvariants for the checked-in
-// grammars on the inputs of their testdata directories (the .txt files of up to 3 KB, at most six each), with
-// the default start rule.
+// TestFlowNodeWorkInvariantsOnGrammars checks the invariants and the golden of TestFlowNodeWorkInvariants for
+// the checked-in grammars on the inputs of their testdata directories (the .txt files of up to 3 KB, at most
+// six each), with the default start rule.
 func TestFlowNodeWorkInvariantsOnGrammars(t *testing.T) {
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds the large parsers twice")
 	}
 	cases := grammarCases(t)
-	checkWorkInvariants(t, cases, "")
+	checkWorkInvariants(t, "grammars", cases, "")
 }
 
 // grammarCases returns the ten checked-in grammars with the inputs of their testdata directories (the .txt

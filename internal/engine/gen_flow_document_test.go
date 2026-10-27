@@ -1,8 +1,11 @@
 package engine
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"hash"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,10 +20,14 @@ import (
 // The Node tables of a Documents build are printed from Flow IR (Options.Document). A Document parse records how
 // far it examined the input in the primitives that read it, and reuses a result after an edit only if the edit
 // lies outside that range; a read in place that bypasses the primitive makes a Document return a stale result.
-// The tests build each parser twice, with the rules printed from Flow IR and with dgen (directNodeRules,
-// directRecognizer), and run the same random edit sequence on a Document of each, comparing after every edit the
-// result, the error, the evaluation and reuse counts of the parse (which depend on the ranges recorded) and
-// the result of a parse from scratch of the same text.
+// The tests run the same random edit sequences on a Document of each generated parser and check, after every
+// edit, that
+//   - the result and the error are those of a parse from scratch of the same text;
+//   - over the corpus, parses after an edit reuse results (an edit leaves regions untouched);
+//
+// and compare a digest of everything observed (the results, the errors, and the evaluation and reuse counts
+// of every parse, which depend on the ranges recorded) with testdata/document.golden, which freezes what
+// the first two checks cannot say. Rewrite it with -update after reviewing a change.
 
 // documentProbeMain is the consumer of the generated packages with the prefix PREFIX. For each input it creates a
 // Document, applies the edits of a generator seeded by the input, parses after each edit twice (the second parse
@@ -73,7 +80,7 @@ func main() {
 
 func run(id string, e entry, in input) string {
 	h := sha256.New()
-	steps, bad, firstBad := 0, 0, -1
+	steps, bad, firstBad, reused := 0, 0, -1, 0
 	alpha := []rune(in.Alpha)
 	state := uint64(len(in.Text))*2654435761 + 12345
 	next := func(n int) int {
@@ -82,12 +89,15 @@ func run(id string, e entry, in input) string {
 	}
 	d, err := e.newDoc(in.Text)
 	if err != nil {
-		return fmt.Sprintf("%s steps=0 digest=%q bad=0 first=-1", id, err.Error())
+		return fmt.Sprintf("%s steps=0 digest=%q bad=0 first=-1 reused=0", id, err.Error())
 	}
 	observe := func() {
 		for k := 0; k < 2; k++ {
 			n, err := d.parse()
 			st := d.stats()
+			if k == 0 && steps > 0 && st.Reused > 0 {
+				reused++
+			}
 			fresh, ferr := e.parse(d.text())
 			a, _ := json.Marshal(n)
 			b, _ := json.Marshal(fresh)
@@ -139,7 +149,7 @@ func run(id string, e entry, in input) string {
 		}
 		observe()
 	}
-	return fmt.Sprintf("%s steps=%d digest=%x bad=%d first=%d", id, steps, h.Sum(nil)[:8], bad, firstBad)
+	return fmt.Sprintf("%s steps=%d digest=%x bad=%d first=%d reused=%d", id, steps, h.Sum(nil)[:8], bad, firstBad, reused)
 }
 
 func minInt(a, b int) int {
@@ -150,7 +160,7 @@ func minInt(a, b int) int {
 }
 `
 
-var documentLine = regexp.MustCompile(`^(\S+) steps=(\d+) digest=(\S+) bad=(\d+) first=(-?\d+)$`)
+var documentLine = regexp.MustCompile(`^(\S+) steps=(\d+) digest=(\S+) bad=(\d+) first=(-?\d+) reused=(\d+)$`)
 
 type documentInput struct {
 	Text  string
@@ -190,10 +200,10 @@ func documentInputs(c documentCase) []documentInput {
 	return out
 }
 
-// runDocumentProbes builds the cases as the packages f0..fN (Flow IR, mutated by mutate if not nil) and d0..dN
-// (dgen) with Documents and returns the report line of the consumer for each input of each build; the lines
-// of a build are nil if its consumer fails and mutate is set.
-func runDocumentProbes(t *testing.T, cases []documentCase, start string, mutate func([]byte) []byte) (flowOut, directOut []string) {
+// runDocumentProbes builds the cases as the packages f0..fN with Documents (mutated by mutate if not nil) and
+// returns the report line of the consumer for each input of each; the lines are nil if the consumer fails and
+// mutate is set.
+func runDocumentProbes(t *testing.T, cases []documentCase, start string, mutate func([]byte) []byte) []string {
 	t.Helper()
 	dir := t.TempDir()
 	write := func(name, content string) {
@@ -205,95 +215,110 @@ func runDocumentProbes(t *testing.T, cases []documentCase, start string, mutate 
 	}
 	write("go.mod", testGoMod("docprobe"))
 	var inputs [][]documentInput
+	var imports, entries strings.Builder
 	for i, c := range cases {
 		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		for _, form := range []struct {
-			prefix string
-			opts   GenOptions
-		}{{"f", GenOptions{}}, {"d", GenOptions{directNodeRules: true, directRecognizer: true}}} {
-			o := form.opts
-			o.Package, o.Start, o.Recognize, o.Document = fmt.Sprintf("%s%d", form.prefix, i), start, true, true
-			code, err := generateCode(g, o)
-			if err != nil {
-				t.Fatalf("%s: %v", c.name, err)
-			}
-			if form.prefix == "f" && mutate != nil {
-				code = mutate(code)
-			}
-			write(fmt.Sprintf("%s%d/parser.go", form.prefix, i), string(code))
+		code, err := generateCode(g, GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true, Document: true})
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
 		}
+		if mutate != nil {
+			code = mutate(code)
+		}
+		write(fmt.Sprintf("f%d/parser.go", i), string(code))
 		inputs = append(inputs, documentInputs(c))
-	}
-	run := func(prefix string) []string {
-		var imports, entries strings.Builder
-		for i := range cases {
-			fmt.Fprintf(&imports, "\t%s%d \"docprobe/%s%d\"\n", prefix, i, prefix, i)
-			fmt.Fprintf(&entries, `	{newDoc: func(s string) (*doc, error) {
-		d, err := %[1]s%[2]d.NewDocument(s)
+		fmt.Fprintf(&imports, "\tf%d \"docprobe/f%d\"\n", i, i)
+		fmt.Fprintf(&entries, `	{newDoc: func(s string) (*doc, error) {
+		d, err := f%[1]d.NewDocument(s)
 		if err != nil {
 			return nil, err
 		}
 		return &doc{func() (*pegort.Node, error) { return d.Parse() }, d.Edit, d.Text, d.Stats}, nil
-	}, parse: func(s string) (*pegort.Node, error) { return %[1]s%[2]d.Parse(s) }},
-`, prefix, i)
-		}
-		write("main.go", strings.NewReplacer("IMPORTS", imports.String(), "ENTRIES", entries.String()).Replace(documentProbeMain))
-		data, _ := json.Marshal(inputs)
-		write("inputs.json", string(data))
-		cmd := exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), "run", ".", "inputs.json")
-		cmd.Dir = dir
-		cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod -trimpath", "GOTOOLCHAIN=local")
-		var stderr strings.Builder
-		cmd.Stderr = &stderr
-		out, err := cmd.Output()
-		if err != nil {
-			if mutate != nil && prefix == "f" {
-				return nil
-			}
-			t.Fatalf("go run (%s): %v\n%s", prefix, err, stderr.String())
-		}
-		var lines []string
-		for _, l := range strings.Split(strings.TrimSuffix(string(out), "\n"), "\n") {
-			if !documentLine.MatchString(l) {
-				t.Fatalf("go run (%s): malformed probe line %q", prefix, l)
-			}
-			lines = append(lines, l)
-		}
-		return lines
+	}, parse: func(s string) (*pegort.Node, error) { return f%[1]d.Parse(s) }},
+`, i)
 	}
-	return run("f"), run("d")
+	write("main.go", strings.NewReplacer("IMPORTS", imports.String(), "ENTRIES", entries.String()).Replace(documentProbeMain))
+	data, _ := json.Marshal(inputs)
+	write("inputs.json", string(data))
+	cmd := exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), "run", ".", "inputs.json")
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod -trimpath", "GOTOOLCHAIN=local")
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		if mutate != nil {
+			return nil
+		}
+		t.Fatalf("go run: %v\n%s", err, stderr.String())
+	}
+	var lines []string
+	for _, l := range strings.Split(strings.TrimSuffix(string(out), "\n"), "\n") {
+		if !documentLine.MatchString(l) {
+			t.Fatalf("go run: malformed probe line %q", l)
+		}
+		lines = append(lines, l)
+	}
+	return lines
 }
 
-// documentDiffs returns the ids of the reports that differ, and the number of results of the direct build that
-// differ from a parse from scratch, which must be none.
-func documentDiffs(t *testing.T, f, d []string) (differing []string) {
+const documentGolden = "testdata/document.golden"
+
+const documentGoldenHeader = "# Digests of the Document parses of the generated Node parsers (results, errors, evaluation and reuse counts after\n" +
+	"# every edit of a seeded sequence), by group, mode and case (see gen_flow_document_test.go).\n" +
+	"# Rewrite with: go test ./internal/engine -run Document -update\n" + goldenRules
+
+var documentGoldenFile = goldenFile{path: documentGolden, header: documentGoldenHeader}
+
+// documentDigests returns, for each case, the hash of its report lines, keyed by group/mode/name.
+func documentDigests(group string, cases []documentCase, lines []string) map[string]string {
+	hashes := make([]hash.Hash, len(cases))
+	for i := range hashes {
+		hashes[i] = sha256.New()
+	}
+	for _, l := range lines {
+		var i int
+		fmt.Sscanf(l, "%d/", &i)
+		_, rest, _ := strings.Cut(l, "/") // the case number is not part of the digest
+		io.WriteString(hashes[i], rest+"\n")
+	}
+	out := map[string]string{}
+	for i, c := range cases {
+		out[fmt.Sprintf("%s/%s/%s", group, os.Getenv(modeEnv), c.name)] = fmt.Sprintf("%x", hashes[i].Sum(nil)[:12])
+	}
+	return out
+}
+
+// checkDocumentReports checks the invariants of the reports (every Document result is a parse from scratch's,
+// parses after edits reuse results and the edits run) and returns their
+// digests.
+func checkDocumentReports(t *testing.T, group string, cases []documentCase, lines []string) {
 	t.Helper()
-	if len(f) != len(d) || len(f) == 0 {
-		t.Fatalf("%d reports from the Flow build and %d from the direct build", len(f), len(d))
+	if len(lines) == 0 {
+		t.Fatal("no reports")
 	}
-	steps := 0
-	for i := range f {
-		if f[i] != d[i] {
-			differing = append(differing, f[i][:strings.Index(f[i], " ")])
-			if len(differing) <= 3 {
-				t.Logf("report %d differs:\n flow   %s\n direct %s", i, f[i], d[i])
-			}
-		}
-		m := documentLine.FindStringSubmatch(d[i])
-		var n int
+	steps, reused := 0, 0
+	for _, l := range lines {
+		m := documentLine.FindStringSubmatch(l)
+		var n, r int
 		fmt.Sscanf(m[2], "%d", &n)
+		fmt.Sscanf(m[6], "%d", &r)
 		steps += n
+		reused += r
 		if m[4] != "0" {
-			t.Errorf("the direct build's Document differs from a parse from scratch: %s", d[i])
+			t.Errorf("a Document differs from a parse from scratch: %s", l)
 		}
 	}
-	if steps < len(f)*2 {
-		t.Fatalf("only %d steps in %d reports: the edits do not run", steps, len(f))
+	if steps < len(lines)*2 {
+		t.Fatalf("only %d steps in %d reports: the edits do not run", steps, len(lines))
 	}
-	return differing
+	if reused == 0 {
+		t.Fatal("no parse after an edit reuses a result")
+	}
+	documentGoldenFile.check(t, group+"/"+os.Getenv(modeEnv)+"/", documentDigests(group, cases, lines))
 }
 
 // documentShapes examine the input beyond the end of the result of their rule, which a Document must record to
@@ -321,44 +346,39 @@ func documentCorpus(t *testing.T) []documentCase {
 	return cases
 }
 
-// TestFlowNodeDocumentsMatchDirect compares the Documents of the generated corpus.
-func TestFlowNodeDocumentsMatchDirect(t *testing.T) {
+// TestFlowNodeDocumentsReuseAndMatchScratch checks the Documents of the generated corpus.
+func TestFlowNodeDocumentsReuseAndMatchScratch(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
 	eachMode(t, func(t *testing.T) {
-		f, d := runDocumentProbes(t, documentCorpus(t), "main", nil)
-		if diff := documentDiffs(t, f, d); len(diff) > 0 {
-			t.Errorf("%d reports differ between the Flow and the direct build: %v", len(diff), diff)
-		}
+		cases := documentCorpus(t)
+		checkDocumentReports(t, "corpus", cases, runDocumentProbes(t, cases, "main", nil))
 	})
 }
 
-// TestFlowNodeDocumentsOnGrammars compares the Documents of the checked-in grammars on their testdata and
+// TestFlowNodeDocumentsOnGrammars checks the Documents of the checked-in grammars on their testdata and
 // operator inputs, with the default start rule.
 func TestFlowNodeDocumentsOnGrammars(t *testing.T) {
 	if testing.Short() {
-		t.Skip("builds the large parsers twice")
+		t.Skip("builds the large parsers")
 	}
 	eachMode(t, func(t *testing.T) {
 		var cases []documentCase
 		for _, c := range grammarCases(t) {
 			cases = append(cases, documentCase{c, 60})
 		}
-		f, d := runDocumentProbes(t, cases, "", nil)
-		if diff := documentDiffs(t, f, d); len(diff) > 0 {
-			t.Errorf("%d reports differ between the Flow and the direct build: %v", len(diff), diff)
-		}
+		checkDocumentReports(t, "grammars", cases, runDocumentProbes(t, cases, "", nil))
 	})
 }
 
 var guardedRead = regexp.MustCompile(`p\.Document == nil && `)
 
-// TestFlowNodeDocumentMutants checks that the comparison notices a Flow build that reads input in place in a
+// TestFlowNodeDocumentMutants checks that the checks notice a Flow build that reads input in place in a
 // Document parse: the mutants remove the guard of one in-place read (a literal, then a peek), or of all of them,
 // so that the read does not record how far the parse examined; a Document then reuses results that an edit
-// has invalidated, which differs from a parse from scratch and from the direct build. Verify rejects the same
-// read in the IR (TestVerifyRejects in package flow).
+// has invalidated, which differs from a parse from scratch or changes the counts the golden holds. Verify
+// rejects the same read in the IR (TestVerifyRejects in package flow).
 func TestFlowNodeDocumentMutants(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
@@ -368,9 +388,18 @@ func TestFlowNodeDocumentMutants(t *testing.T) {
 	for _, c := range documentShapes {
 		cases = append(cases, documentCase{c, 300})
 	}
-	f, d := runDocumentProbes(t, cases, "main", nil)
-	if diff := documentDiffs(t, f, d); len(diff) > 0 {
-		t.Fatalf("the unmutated builds differ: %v", diff)
+	golden := readGolden(t, documentGolden)
+	digestsDiffer := func(lines []string) bool {
+		for k, v := range documentDigests("corpus", cases, lines) {
+			if w, ok := golden[k]; !ok || w != v {
+				return true
+			}
+		}
+		return false
+	}
+	base := runDocumentProbes(t, cases, "main", nil)
+	if digestsDiffer(base) {
+		t.Fatalf("the digests of the unmutated build differ from %s", documentGolden)
 	}
 	for _, m := range []struct {
 		name   string
@@ -387,7 +416,7 @@ func TestFlowNodeDocumentMutants(t *testing.T) {
 	} {
 		t.Run(m.name, func(t *testing.T) {
 			changed := 0
-			mf, _ := runDocumentProbes(t, cases, "main", func(code []byte) []byte {
+			mf := runDocumentProbes(t, cases, "main", func(code []byte) []byte {
 				out := m.mutate(string(code))
 				if out != string(code) {
 					changed++
@@ -400,8 +429,14 @@ func TestFlowNodeDocumentMutants(t *testing.T) {
 			if mf == nil {
 				return // the consumer of the mutant failed
 			}
-			if diff := documentDiffs(t, mf, d); len(diff) == 0 {
-				t.Errorf("the mutant %q changes no report: the reads are not compared", m.name)
+			stale := false
+			for _, l := range mf {
+				if mm := documentLine.FindStringSubmatch(l); mm[4] != "0" {
+					stale = true
+				}
+			}
+			if !stale && !digestsDiffer(mf) {
+				t.Errorf("the mutant %q changes no report: the reads are not checked", m.name)
 			}
 		})
 	}

@@ -8,6 +8,12 @@ cel node-rec-wc api.go 278612a53fdf0f9544d88d9cb2c03c51c93395d5b9e6b6e0b6d703973
 cel node-rec-wc parser.go 967f403e57d137d8ef93bfb84a7dc10572f850b37492ce1b0ad8324f75b41749 430912 20637 134
 cel node-doc api.go 585b5f673c7bd4ff2279494775dc3fa5f1c131df3e5759dfaa8b4d8ed11c51f7 4806 129 3
 cel node-doc parser.go 7d48f289567c52edfabbac7f821b5fe2f648b5356509845ce73ee24706a2cc84 221217 9705 65
+cel node-obs api.go a22ad94994432a6a009daf8f6181176f39d8dca1a00de12ac9e0d0026c5a5da6 7993 186 7
+cel node-obs parser.go 0861a5a6d3f78cb8f415c6abb72ea678d742fe57ca58a0342786a96f63fea1d6 114830 5253 92
+cel node-rec-obs api.go a22ad94994432a6a009daf8f6181176f39d8dca1a00de12ac9e0d0026c5a5da6 7993 186 7
+cel node-rec-obs parser.go 46b03b7183aabb0661cb59af9c31b5ca684d9e14556dbc2a7595fdc8c9cb1f8b 204888 9826 184
+cel node-doc-wc api.go d2fefc3f01873799399be839816ce4f15082179c69c13fcb5bcaf73060c65fd6 6026 157 5
+cel node-doc-wc parser.go 27bca7f311698a600ff3d4860773cca6630cea071482db601e3378967ca40a6f 247894 10714 65
 cel node-stream error stream generation needs a #stream repetition at the top level of the start rule main
 cel typed api.go 5e0b4a4254b4a30d0996559a254c67f8636739fdfcbfc6f0f17d420a4f2e6192 4612 125 3
 cel typed parser.go 3cf1009cbdf132d1efbb73f9c189bc657cab583e50ee4d8a4927a37bb17b9ad7 214730 10352 200
@@ -39,6 +45,12 @@ csv node-rec-wc api.go 4748a66b03be9a51789616ddb4ab55bac2f299b3d1b26ea889a19aaa4
 csv node-rec-wc parser.go 1b9abc034223696c29b5888a184ad0590f557d2fa9f9665cb2e04da532916698 29071 1426 13
 csv node-doc api.go b301f543e134c1cd1121b9a2df977717261be7d60969a65dbce19f1f0ab0469c 4806 129 3
 csv node-doc parser.go f30e47c2461f08efffef6af2b036f07f0f8c91cf8cd9f4568235b2398d12321c 15437 666 8
+csv node-obs api.go ae030cffcae94f346507dfc86650523460bcd264bc83604b20e238b0f0597071 7993 186 7
+csv node-obs parser.go 6b19d151f3db96cba22cf44edf208c2255e33e2e6fec8da39e2d3bdc1ef91011 9317 406 10
+csv node-rec-obs api.go ae030cffcae94f346507dfc86650523460bcd264bc83604b20e238b0f0597071 7993 186 7
+csv node-rec-obs parser.go 7932e5af75f16a67a4a496969b2d24ef62e8f3166d76786e0dbae5c33f21d114 15764 735 18
+csv node-doc-wc api.go 951cbd8c31f7baa5a91cd1c585735eeedaff8fe1ce3cc788b8aa103fca3d7619 6026 157 5
+csv node-doc-wc parser.go 83defc5567de3ef719880e744d64eb1d09034ccf60ef499c869610e27b1c310b 17167 743 8
 csv node-stream api.go dcf55959ff7372453c5942948c03248024ce4bf608f22bc38d90153734a32be1 6193 149 5
 csv node-stream parser.go 24b9e8d7e8d5cefa4428145dd6ccdd3acfaf52f818eb8c4e49124b31410826e7 11129 463 11
 csv typed api.go b13fcd38f749a8fdbac4caf7197bdb34c09d0c73ea5365c588a672a4edbe4139 4612 125 3
@@ -73,6 +85,12 @@ cue node-rec-wc api.go 6e130efe8d4a76468566b2dbf794703fbd427d72364e6c9111626b789
 cue node-rec-wc parser.go 5e8b157d3d26ca7a9d084845458190ec6e8cd789f12d73a80e2209f6fdfb82dd 1601853 67248 543
 cue node-doc api.go 1b148572aefc9a75ecbd35757e259a4731550a876e6e6bd2f2100451d4429639 4806 129 3
 cue node-doc parser.go 02c91e9fe591463ec435f0300ccf4e7b19636f61570c5f55c30893f48547fb04 797994 30594 262
+cue node-obs api.go 5185ea4288b2f5bd3cc0fea72896035c50964a9bf9bd037c960fa69ea5079aea 7993 186 7
+cue node-obs parser.go a52917d7ce046061c13377e56ccaa69385886cb5a0a0abdbfe530ed7be83e611 436288 17151 373
+cue node-rec-obs api.go 5185ea4288b2f5bd3cc0fea72896035c50964a9bf9bd037c960fa69ea5079aea 7993 186 7
+cue node-rec-obs parser.go a03b0cfc4c33ce67a3936c3d9accf359b1c1ff6213265fbe1c6d0f4bb9551137 778803 32137 744
+cue node-doc-wc api.go a2d9264e5d4b5ee0d6b1075701519801db0c3cf158b3c195de0a4727a25b8ec6 6026 157 5
+cue node-doc-wc parser.go 4e41f991eab8472a22ac655bdd276ef6bfe9c283fc49dffd978a259b6d149639 909630 34742 262
 cue node-stream error stream generation needs a #stream repetition at the top level of the start rule main
 cue typed api.go 075ab89bdbb5b81cffe0665b21b5a92f5e5681918bb92b5e4e7ff883fbbebca2 4612 125 3
 cue typed parser.go bd3390ca4ee370054cbb9d6fa114169a7a4e2295506a1a0aeb5405a1385012b7 763154 34631 769
@@ -104,6 +122,12 @@ duckdb node-rec-wc api.go aae732b6da5d4cbf950b1ffdb3b050a029500ffe6d6e840d5f12f5
 duckdb node-rec-wc parser.go e99f2e32380f6b893175d0bc96db4ff5878fa23763a380b42edf3c17b885dc98 9652913 458936 2452
 duckdb node-doc api.go 88a1715d3a7ea13615f7768345c3e50d87481dfac0eb7fd01c911b5c8b132d60 4809 129 3
 duckdb node-doc parser.go 78d1af989ba876f280a9041a3923e816d64f4e146f3a29e3429563ce68adc881 4858637 210428 1187
+duckdb node-obs api.go 845993c1191c28c664bb79a518fb421ffde602d72e439e037c9b1f7e97ff93fb 7996 186 7
+duckdb node-obs parser.go e6994e941771ab170419205f5ea4a67c21783258f55fb6f5be9a187bf2df94a0 2373021 105091 1903
+duckdb node-rec-obs api.go 845993c1191c28c664bb79a518fb421ffde602d72e439e037c9b1f7e97ff93fb 7996 186 7
+duckdb node-rec-obs parser.go 3f8d79091e68aaa9149a1f175e5ad155abc530024831b6785dca406dc3fa8811 4312547 197299 3745
+duckdb node-doc-wc api.go e4b5773dde4be2863e23420f6acc3d3327bad930ccf7afc42d73b123d6587afe 6029 157 5
+duckdb node-doc-wc parser.go 45edc1101f87432129e4dbdc75664d775c607c9a6a7ab9c48a272a86f8922da9 5436405 236613 1188
 duckdb node-stream error stream generation needs a #stream repetition at the top level of the start rule main
 duckdb typed api.go a73e04479b5ac106e75f09f31868a7968b0af3a599eb621beb91f2f819b17761 4615 125 3
 duckdb typed parser.go 736866d006cfd1ae46acd1365d6b2ac0ba77d104209575fdae73a7ed38e50dbf 3674889 176214 3373
@@ -135,6 +159,12 @@ golang node-rec-wc api.go 7af30c815c8040189218050d323e6017e7f9f257c0453ff7299fb4
 golang node-rec-wc parser.go a33974a59c953a971ad00fe3a887122b80d8031a563b52087f56d0f91fd7d723 2280330 100034 716
 golang node-doc api.go aacbb91199740716b8e32b0517dffe9bf6af51df4166d43aa8195b1a47b94e14 4809 129 3
 golang node-doc parser.go 68263b61ce2309801052c85246fa9a8b5c793f6988697f52052f65dcf6090784 1046693 42916 330
+golang node-obs api.go 487738b3d9041b5c848146e1be621a6af7172105f9ed3e53bb7b6f2f1e5ac49f 7996 186 7
+golang node-obs parser.go 6ba595ac828e012413eb4d5e66b88b6ff49cf1aec48723546764042c36149aa3 565004 23601 448
+golang node-rec-obs api.go 487738b3d9041b5c848146e1be621a6af7172105f9ed3e53bb7b6f2f1e5ac49f 7996 186 7
+golang node-rec-obs parser.go fd5e805a117a96bcdcc8aadf901f1438e8a9217283c189802a04b56233bb1c1e 1073392 45953 885
+golang node-doc-wc api.go 1e15cb30a020531cb6d786449b08c2529ba0bac72333885a38adfa9fcaaca1a0 6029 157 5
+golang node-doc-wc parser.go 66ef305b179c7aa7bccce8a9d64cf2b30d5b420248a1b8c1aeafc1c4302c4a1d 1222153 49692 330
 golang node-stream error stream generation needs a #stream repetition at the top level of the start rule main
 golang typed api.go 7958cf5376e560e3783f82631f4b610d11a9f81d3e9fe13f0bad735f0f1cdc44 4615 125 3
 golang typed parser.go ec19fb35a7dade930d44f0a297d055992fcf9bb8b99350b7d45a360307a2d38a 1008431 48375 997
@@ -166,6 +196,12 @@ json node-rec-wc api.go 666d495c987c180fdd0fe58d5f95e8c52b56231182cc18e2c3ef68b7
 json node-rec-wc parser.go f8d289a295e9573a1da4b2e8027796ecb91fbf83f9d7ddb8cc25dac4d55d13a3 71825 3595 44
 json node-doc api.go 1e678609a4d579145069e98a35f6a9cf7b89cf1037b2d43b69f777cc07695a0e 4807 129 3
 json node-doc parser.go a6e0f96399b0dad5b80c75af55892a8cd01885afca3d7dde67a350ebf449a156 36265 1575 22
+json node-obs api.go 176f28e55e9871ca64f9ca749f6af52dbd85fb7bd296f28f155e3e565b1e6a90 7994 186 7
+json node-obs parser.go aa537cd12981cd946af1742cccbbdf01805e61120b2ae71e98b92e69411da9b0 23272 1039 35
+json node-rec-obs api.go 176f28e55e9871ca64f9ca749f6af52dbd85fb7bd296f28f155e3e565b1e6a90 7994 186 7
+json node-rec-obs parser.go 4c946cfcc242c7e1601a72ff197fd80e34d47740371902e6ee7fbb596055a4c3 41495 1954 68
+json node-doc-wc api.go 2c18ce1e59b16deedabbbfc66f353bceef488c335e3fe98a010825adb11721b9 6027 157 5
+json node-doc-wc parser.go 66ef194f42153c115040e9baaebe29b7d8e07b7bbda99d1e3a80b7ddb0253859 40599 1755 22
 json node-stream error stream generation needs a #stream repetition at the top level of the start rule main
 json typed api.go d454da094d5de667c5a875f8c3a281832cefe19512d153748d06e25b34f95409 4613 125 3
 json typed parser.go bac5de98047f5b7482af61b8374baf8bb3f5ee0fb5eae8a6b7453c45c47dfb90 40940 2028 68
@@ -197,6 +233,12 @@ python node-rec-wc api.go a6cca7b33e68206818eeb38c0a1e7fec4b9f82946d2aaa26957458
 python node-rec-wc parser.go 9549294155a6d06a60d8fe7c0d0a89b7f994c88d62b6cc536fcaca79339fdd69 2673610 108660 807
 python node-doc api.go bae18dac21dcc05b86f9483c5d9c5e30009a9c49b0b43c20875fb48f136ce937 4809 129 3
 python node-doc parser.go 7178e06489cfba2871dadc55a875a174417b595b46bef7e9a7fde9b425fa3333 1181119 44499 356
+python node-obs api.go 0209e42e5b930973cc109893df42a5d97f1fcc985e433cd3ed348a7548552c48 7996 186 7
+python node-obs parser.go 45073e88d9f68f5579146bd225fdbca51d4af9a3cd4f8c10fd1f70be1ae74bd2 662286 25071 511
+python node-rec-obs api.go 0209e42e5b930973cc109893df42a5d97f1fcc985e433cd3ed348a7548552c48 7996 186 7
+python node-rec-obs parser.go a3581209108d87d8530dcea488fdd8da6b254ba1c91e8e968aa39074e9f5e813 1242343 48811 1005
+python node-doc-wc api.go 6ceb52c1e6d00fa4ac0ab82563d7431a89641bcd445b2f14bda604ab452aab2e 6029 157 5
+python node-doc-wc parser.go d33a03a316c72a47fe5739fbe3e84626d136e4fb02050add9978094c40c60e73 1417994 53336 356
 python node-stream error stream generation needs a #stream repetition at the top level of the start rule main
 python typed api.go 39d1df6a7a865d82924095460ea345fe13f0701c4707555fd1fbe0d952d7fc23 4615 125 3
 python typed parser.go a80baac191a34b787ed1669e6d1fa575c431b924a5f531ecfc06dca76018ccaf 1154376 51509 1124
@@ -228,6 +270,12 @@ typescript node-rec-wc api.go a364d332e92d4634b0660031215efb45e5e486398ddd17015b
 typescript node-rec-wc parser.go acdb66e3720bffcf21590e4de7bdb703a375ea697ead205310e1652546ce8494 4011039 178805 1162
 typescript node-doc api.go 79cd2c810076a734311f1c73399471fad8c5b7fd37bbfddf5fbdf42b65ecda54 4813 129 3
 typescript node-doc parser.go ce1b2d9bcb0d1df799bfc87c0ebd815fdb345b630efc5713a1360dafb40a8298 1847433 76956 525
+typescript node-obs api.go 54a9c02ba2be8033a50a32db3ee768b9aa19e3fa0e8017231664ae68f78b5f5b 8000 186 7
+typescript node-obs parser.go d6ffd961d76cc0a46f3c1453fea3d343fcabac9f05331275e5393b512e231aaa 990716 41564 709
+typescript node-rec-obs api.go 54a9c02ba2be8033a50a32db3ee768b9aa19e3fa0e8017231664ae68f78b5f5b 8000 186 7
+typescript node-rec-obs parser.go a97b4d9c6edd086598f009f768d08326904328327dece4fec8c0fbcd0b81849f 1878481 81511 1389
+typescript node-doc-wc api.go 7d4820a97875dcaaf52a2f25bad9e543eed788d672083f3cb4ab346cf5c50ed5 6033 157 5
+typescript node-doc-wc parser.go 8f12e31b1adb526e275f72b37e769dfa65203016b4c6a01b799e0bcf85820d7c 2114944 87997 525
 typescript node-stream error stream generation needs a #stream repetition at the top level of the start rule main
 typescript typed api.go 4fb7df5a4916b316250a55e2301c598f9d3088abbbc4d462b59c4713c3493dab 4619 125 3
 typescript typed parser.go 71def32585e5f6e80fec8035a4dddc6b03ce2bbab807416895dcfb9d1e9e5e2a 1790617 85453 1703
@@ -259,6 +307,12 @@ xml node-rec-wc api.go c0e6d8718a61662a8d273cfaec0d66d0a89e7a9df3b3bb158d6e86b1f
 xml node-rec-wc parser.go aa8f8590c2095c995c1b6d49d5d8716a98407d810ef4d2dcb15d2fda1a542f96 392519 18051 190
 xml node-doc api.go 2985e762357d946543862221f2c0fe659fe8dc5889be14ae5b2e40b5229e55b2 4806 129 3
 xml node-doc parser.go 1934c14834e4bb3c21802215f157a3a10fc7d8be4af1e538e2bb0a5a26769b06 192124 7754 82
+xml node-obs api.go 93e8ed6bbf2bdbaa56436f8619d8c7d7a4061bd23ea4af8bb2e82788e0342a65 7993 186 7
+xml node-obs parser.go a78f591a4552611cb8a6cd22afb805033c102f3b3986e42ef3984b7d9bccfb39 122752 5115 153
+xml node-rec-obs api.go 93e8ed6bbf2bdbaa56436f8619d8c7d7a4061bd23ea4af8bb2e82788e0342a65 7993 186 7
+xml node-rec-obs parser.go b32d1555fdaf8a627cf7e307b0d14c0c708b665c6a3cf4ad34e6121a94963d55 212245 9431 286
+xml node-doc-wc api.go 1dbbdfd6a56fe3f1ff29bf8e004f6e848c106431a2a9c4bd1230e20cccf21488 6026 157 5
+xml node-doc-wc parser.go 72c099c00d9e50ce740f422968349549d2a5bb339ca7d860120a9ea79c359651 220415 8780 82
 xml node-stream error stream generation needs a #stream repetition at the top level of the start rule main
 xml typed api.go a65d8c7195588fe87d22a3ded1d3e2ec5df2d75ce0c6c69edd42e7370cf91655 4612 125 3
 xml typed parser.go 97c1bb7d4a56561cd05eed4a79819fb9b5f7f6cff6a9adf48bad1e39dac21b7c 212623 9979 284
@@ -290,6 +344,12 @@ yaml node-rec-wc api.go 0c1ca35ad0dfcb4a5831011d1556458f9a967d2e5414988c41ac717e
 yaml node-rec-wc parser.go 5150d921cba7385b3d79ca2549bb7ea0bef50e2716789355ae6bb29fb47c3688 731304 35806 326
 yaml node-doc api.go a10392dedc609011dc6aa9690f76ad50b45621e97882fa51963a874f44a3d365 4807 129 3
 yaml node-doc parser.go e1dfd8e3103ea876bb4043ebdf7dc3b53c49f3ef48fe8ddc635e95d2306bd871 344773 15502 147
+yaml node-obs api.go 17922a8e83b6d52d98d832fc10f164f6f8d39a071bf2923895569dafabb446ec 7994 186 7
+yaml node-obs parser.go a2861ab1ff6b34a561d52695571d04ec90c351348bb8797b752c44dcc9efb4f0 191564 8792 213
+yaml node-rec-obs api.go 17922a8e83b6d52d98d832fc10f164f6f8d39a071bf2923895569dafabb446ec 7994 186 7
+yaml node-rec-obs parser.go eac071c0a4309bfab90640a8ee10cfbfff00b29d65c059dc753cbdfafe5ac4fa 351729 17062 450
+yaml node-doc-wc api.go c78529a56fe78e7da6091fc9167f1e39c5c175b0cda5c4499acae4507e38870b 6027 157 5
+yaml node-doc-wc parser.go c30e8c297965cb8f691efa9c65c31d5e5a684f5df62ac9a0e56559eb1c842d24 403871 17837 147
 yaml node-stream error stream generation needs a #stream repetition at the top level of the start rule main
 yaml typed api.go 0220f9009dd643bb3e0f843a59349878400920222e09787a328fdb30c906a736 4613 125 3
 yaml typed parser.go b40d978cc98923688bb61b84872b71fdf6dbcd0b784d4f0eed19a19dfc3e33c8 347188 18130 449
@@ -321,6 +381,12 @@ calc node-rec-wc api.go 3476041542f2a3efd3a8ece85048dfc6fa6e956bcd4b43c2e2976432
 calc node-rec-wc parser.go 6c828d12e7b7f8fbd6a24d4de89e86554d999b0d7a49cea2c7d86cc65ee2a29c 32597 1480 25
 calc node-doc api.go 4bb9217ee2687478489b34f08b5117c98dd618d509b97dc8579ab7a53368fda7 4807 129 3
 calc node-doc parser.go f79ea748e8bc24fd6486c24dd2a99fc47e9ca8795492cd70b1c1e7ac41d51e29 17464 737 14
+calc node-obs api.go edc9fca1b646bf903c7a683f9d1b98fdb6db2f5441b23f72a373317e9bd6b264 7994 186 7
+calc node-obs parser.go aed1a98f853d5a92be2fbcf3741c3e68e1691e4ac5c79a49cc9a184494ed1f41 10888 449 16
+calc node-rec-obs api.go edc9fca1b646bf903c7a683f9d1b98fdb6db2f5441b23f72a373317e9bd6b264 7994 186 7
+calc node-rec-obs parser.go 6b0a31bda4708d926da9b6a02c1d358aec1e560a21d2162c6a5e0ab46d96c18f 18402 790 29
+calc node-doc-wc api.go 4d1599df5adef39d1c91e010ec9a9c6b1749ad9ea780565b328f4db86bae52ed 6027 157 5
+calc node-doc-wc parser.go b0e20f387c5fc43b51a0299b683d4e518b4bb0acd97cb688d6a39df876afb6bb 19503 790 14
 calc node-stream error stream generation needs a #stream repetition at the top level of the start rule main
 calc typed api.go 94528b2c96f1a1a42ea710337c7e274277280d1730e4fa3b3b538f222e0dcdea 4613 125 3
 calc typed parser.go 11cb594c227694f7883f0697a8c4f344fc6895bf66de101f4079944677eca27a 21539 915 35
@@ -352,6 +418,12 @@ calclr node-rec-wc api.go c26ad9ec1bc033e091eb882634a51b4ffa49708cf9410224e981e1
 calclr node-rec-wc parser.go b203e783c0dd655390f0da4f7c65cb7ad371a113b335588e582e5d64a79a2589 45912 2316 32
 calclr node-doc api.go 79125365c882e14c776f5a614ee03ad20fd4c34326c13e3fa409b1a930ea4b12 4809 129 3
 calclr node-doc parser.go 29f03ed197450588ae7e5cc8b6f97be8111ee59e0ca9d074638b95672f7f9489 23353 1053 17
+calclr node-obs api.go 6e8d3e6f84b65de47148441ac4b83662f09aed56be4065c6ac45aedd52ae449f 7996 186 7
+calclr node-obs parser.go 8b9934690bff4021009574b15de0590aa461738738ecaf4f6ca97c0ccd88d0d1 14260 643 21
+calclr node-rec-obs api.go 6e8d3e6f84b65de47148441ac4b83662f09aed56be4065c6ac45aedd52ae449f 7996 186 7
+calclr node-rec-obs parser.go fdd3c12f0991067ceb6dc1450dd496c5832aa13ed68587d9269f529fc3709c5d 26140 1246 43
+calclr node-doc-wc api.go b3c64579db5d4db7f606528a023ba63a4992d082c996f105ad0f6649f58b1531 6029 157 5
+calclr node-doc-wc parser.go c926a21619be8a0ba3def7fa96879b068e6b37284ad79051a11d262a0e9ce3b1 26250 1163 17
 calclr node-stream error stream generation needs a #stream repetition at the top level of the start rule main
 calclr typed api.go 3847e723794e03cb4fff3f0fe403f4934df8716e8ce05f15756c802d56337d22 4615 125 3
 calclr typed parser.go ac1636975c01db212a42a2ca6e3f5484924b3909ba453c7bf383b8c9caab062d 27715 1372 49
@@ -383,6 +455,12 @@ minilang node-rec-wc api.go 0bf2f62f76cc147f982be8077a3b418aab705a2d6d30d4a8518c
 minilang node-rec-wc parser.go 17fa7dbb5056412776001fe255fae55350939f85c79240687eb225f21a33437b 190613 8778 104
 minilang node-doc api.go b117d5e81400b5e4332eecd2391471dae64a57133e963862e430dbf490238304 4811 129 3
 minilang node-doc parser.go 554e34f2884bbf57e4e50862d51fca2f1eae8707ffe5fbd807a0904ff9bc3aea 99278 4171 52
+minilang node-obs api.go adabd996720caac1d7cac46fc78612fd8dc76de24123022a467cfc3f27e84097 7998 186 7
+minilang node-obs parser.go c4bb98371c56a16903bb282524fdc0a8f5fd8b80ae6a54f57978efb3de9ef203 58108 2441 68
+minilang node-rec-obs api.go adabd996720caac1d7cac46fc78612fd8dc76de24123022a467cfc3f27e84097 7998 186 7
+minilang node-rec-obs parser.go aaa051c8ab7a005a3bb74753e8a132b71c1791607d376fc42c1ba58139b13312 102656 4536 139
+minilang node-doc-wc api.go 58b8a5728d95e4296759995b533dab0646d37d20566f2df81fbe498a660e3efa 6031 157 5
+minilang node-doc-wc parser.go fd8dfad950091d322a6b6407583ca01bd2aaaf2589e9fb7ec9df5fe2289310a1 111288 4610 52
 minilang node-stream error stream generation needs a #stream repetition at the top level of the start rule main
 minilang typed api.go 6928335d09739a32a90bb4710c0015d42490a05cd81206fb62bbecae4f71533b 4617 125 3
 minilang typed parser.go c5b6feb23b9e0e36f08a22ea5bdab91d4b369f54eaa448ade2fa8dfd18c7054b 113312 5065 154
@@ -414,6 +492,12 @@ outline node-rec-wc api.go 3bd541b0ebccbae3b44ec1437994ca685a9f6457bdc39995f2501
 outline node-rec-wc parser.go 17517e30a448265686b50ab3ece56f8d2835a391b8fc78406e07be7155e278a3 29262 1500 22
 outline node-doc api.go 001d550408ea50f1c6cc13c65d4992721a50adfb074f05ee7db555f8af8f660a 4810 129 3
 outline node-doc parser.go 08c69339c36b0c60f50adfd4b75e0815f709645f4b03a9dc297706b600cc4d3f 14295 659 12
+outline node-obs api.go 4d9206da8ef915b3422c36922eba049563765a7455df2b563f8da2fbcd90a69c 7997 186 7
+outline node-obs parser.go 6b25aba4d19063e0251972d65a28fb1d5fdfdb58662b39cc5479d30ad5065bb7 10087 460 17
+outline node-rec-obs api.go 4d9206da8ef915b3422c36922eba049563765a7455df2b563f8da2fbcd90a69c 7997 186 7
+outline node-rec-obs parser.go eb50d0a8d3e64926c898f4a236f5e1aacaace0bb82f7a58de31d84dd97370379 17249 820 30
+outline node-doc-wc api.go 8e694adb3a4d2a27cd563dd5dd9947eb06d25010f01a4757e0d1d8b9adc78940 6030 157 5
+outline node-doc-wc parser.go 6fd743720f0d0021a5f25c427284a4c6b012060c2e7f5bc556b6339200decefe 16497 748 12
 outline node-stream error stream generation needs a #stream repetition at the top level of the start rule main
 outline typed api.go e5ec82d24e57370e7c5329435407d40c3524a85da0cdcd3a658ee7c637810be4 4616 125 3
 outline typed parser.go 705d9423b55be9b3b8810533601c0f34cd1c226c9d648d56c8cd5a177ba4b0ae 18249 933 37

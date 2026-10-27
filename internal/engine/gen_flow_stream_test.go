@@ -1,8 +1,11 @@
 package engine
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"hash"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -54,9 +57,7 @@ var streamForms = []struct {
 // Flow IR and checks the form of the body, in every form: with the statements of the stream removed (the
 // start of the stream before the repetition, and the delivery of each element in place of gathering it) and
 // the methods it calls expanded, it is the text of the rule's batch body. The batch bodies are the ones
-// the Node-table parity tests compare with dgen's, and the stream body of a build with the direct printer
-// (directStream) is not comparable by text: generator.expr writes another form, and the tests that run the
-// parsers compare the behavior.
+// the Node-table tests check, and the tests that run the parsers compare the behavior with the engine.
 func TestFlowStreamBodyIsBatchBody(t *testing.T) { eachMode(t, testFlowStreamBodyIsBatchBody) }
 
 func testFlowStreamBodyIsBatchBody(t *testing.T) {
@@ -83,7 +84,7 @@ func testFlowStreamBodyIsBatchBody(t *testing.T) {
 					t.Fatal(err)
 				}
 				if flowN == before {
-					return // a start rule that keeps the direct printer
+					return // a start rule that is not printed from Flow IR
 				}
 				src := string(code)
 				stream, batch := bodyClosure(t, src, streamBodyRef), bodyClosure(t, src, batchBodyRef)
@@ -104,11 +105,11 @@ func testFlowStreamBodyIsBatchBody(t *testing.T) {
 	if flowN == 0 {
 		t.Fatal("no stream body is printed from Flow IR: the test exercises nothing")
 	}
-	t.Logf("%d stream bodies from Flow IR; %d kept by the direct printer: %v", flowN, len(fallbacks), fallbacks)
+	t.Logf("%d stream bodies from Flow IR; %d kept by another printer: %v", flowN, len(fallbacks), fallbacks)
 	// Every start rule prints from Flow IR: a left-recursion leader and a body with a recovery use the framed body
 	// of any other rule, and the stream repetition delivers the elements.
 	if len(fallbacks) > 0 {
-		t.Errorf("start rules kept by the direct printer: %v", fallbacks)
+		t.Errorf("start rules not printed from Flow IR: %v", fallbacks)
 	}
 	for _, want := range []string{"left recursive start", "left recursive start choice", "indirect leader start", "mutual leader start", "recovery in the start rule", "stream element recovery"} {
 		if !slices.ContainsFunc(flowed, func(f string) bool { return strings.HasPrefix(f, want+"/") }) {
@@ -122,7 +123,7 @@ func firstLineDifference(a, b string) string {
 	al, bl := strings.Split(a, "\n"), strings.Split(b, "\n")
 	for i := 0; i < len(al) && i < len(bl); i++ {
 		if al[i] != bl[i] {
-			return fmt.Sprintf("line %d:\n flow   %s\n direct %s", i+1, al[i], bl[i])
+			return fmt.Sprintf("line %d:\n stream %s\n batch  %s", i+1, al[i], bl[i])
 		}
 	}
 	return fmt.Sprintf("lengths %d and %d lines", len(al), len(bl))
@@ -166,7 +167,7 @@ func bodyClosure(t *testing.T, src string, ref *regexp.Regexp) string {
 }
 
 // TestGeneratedFlowStreamMatchesEngine runs the generated ParseStream, with the stream body printed from Flow
-// IR and with the direct printer, against the engine's ParseStream, in every form: the emitted elements, the
+// IR, against the engine's ParseStream, in every form: the emitted elements, the
 // reader calls made before each, the diagnostics and the final error, for reader chunkings, reader errors,
 // callback errors, iterators and both position units (testGeneratedStreams). The route must be taken, so
 // that the test cannot pass without exercising it.
@@ -187,19 +188,13 @@ func testGeneratedFlowStreamMatchesEngine(t *testing.T) {
 	streamRouteHook = func(table string, r *rule) { taken++ }
 	t.Cleanup(func() { streamRouteHook = nil })
 	for _, form := range streamForms {
-		for _, direct := range []bool{false, true} {
-			name := form.name + "/flow"
-			if direct {
-				name = form.name + "/direct"
+		t.Run(form.name, func(t *testing.T) {
+			before := taken
+			testGeneratedStreams(t, goBin, cases, GenOptions{WorkControls: form.controls, Observability: form.observe})
+			if taken == before {
+				t.Errorf("no stream body is printed from Flow IR")
 			}
-			t.Run(name, func(t *testing.T) {
-				before := taken
-				testGeneratedStreams(t, goBin, cases, GenOptions{WorkControls: form.controls, Observability: form.observe, directStream: direct})
-				if direct == (taken > before) {
-					t.Errorf("stream bodies printed from Flow IR: %d, with directStream %v", taken-before, direct)
-				}
-			})
-		}
+		})
 	}
 }
 
@@ -281,13 +276,13 @@ func main() {
 
 var streamProbeLine = regexp.MustCompile(`^(\S+) stream events=(\d+) trace=(\w+) profile=(\w+) elems=(\d+),(\w+) emitted=(\d+) err=(.*) perr=(.*)$`)
 
-// runStreamProbes builds the cases with a stream and observability as the packages f0..fN (the stream body printed
-// from Flow IR, mutated by mutate if not nil) and d0..dN (directStream), and returns the report lines of each; the
-// lines of a mutant are nil if its consumer fails.
+// runStreamProbes builds the cases with a stream as the packages f0..fN (the stream body printed from Flow IR,
+// mutated by mutate if not nil), and returns the report lines and the cases built (those with a #stream at the
+// top of the start rule); the lines of a mutant are nil if its consumer fails.
 func runStreamProbes(t *testing.T, cases []genCase, form struct {
 	name              string
 	controls, observe bool
-}, mutate func([]byte) []byte) (flowOut, directOut []string) {
+}, mutate func([]byte) []byte) (lines []string, kept []genCase) {
 	t.Helper()
 	dir := t.TempDir()
 	write := func(name, content string) {
@@ -299,21 +294,14 @@ func runStreamProbes(t *testing.T, cases []genCase, form struct {
 	}
 	write("go.mod", testGoMod("streamprobe"))
 	var inputs [][]string
-	var kept []genCase
 	for _, c := range cases {
 		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 		i := len(kept)
-		var codes [2][]byte
-		for k, direct := range []bool{false, true} {
-			o := GenOptions{directStream: direct, Package: fmt.Sprintf("%s%d", "fd"[k:k+1], i), Start: "main", Stream: true, SourceInfo: true, WorkControls: form.controls, Observability: form.observe}
-			codes[k], err = generateCode(g, o)
-			if err != nil {
-				break
-			}
-		}
+		o := GenOptions{Package: fmt.Sprintf("f%d", i), Start: "main", Stream: true, SourceInfo: true, WorkControls: form.controls, Observability: form.observe}
+		code, err := generateCode(g, o)
 		if err != nil {
 			if strings.Contains(err.Error(), "needs a #stream repetition") {
 				continue
@@ -321,61 +309,57 @@ func runStreamProbes(t *testing.T, cases []genCase, form struct {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 		if mutate != nil {
-			codes[0] = mutate(codes[0])
+			code = mutate(code)
 		}
-		write(fmt.Sprintf("f%d/parser.go", i), string(codes[0]))
-		write(fmt.Sprintf("d%d/parser.go", i), string(codes[1]))
+		write(fmt.Sprintf("f%d/parser.go", i), string(code))
 		kept = append(kept, c)
 		inputs = append(inputs, c.inputs)
 	}
-	run := func(prefix string) []string {
-		var imports, entries strings.Builder
-		for i := range kept {
-			fmt.Fprintf(&imports, "\t%s%d \"streamprobe/%s%d\"\n", prefix, i, prefix, i)
-			fmt.Fprintf(&entries, "\t%s%d.ParseStream,\n", prefix, i)
-		}
-		write("main.go", strings.NewReplacer("IMPORTS", imports.String(), "ENTRIES", entries.String()).Replace(streamProbeMain))
-		data, _ := json.Marshal(inputs)
-		write("inputs.json", string(data))
-		cmd := exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), "run", ".", "inputs.json")
-		cmd.Dir = dir
-		cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod -trimpath", "GOTOOLCHAIN=local")
-		var stderr strings.Builder
-		cmd.Stderr = &stderr
-		out, err := cmd.Output()
-		if err != nil {
-			if mutate != nil && prefix == "f" {
-				return nil // the mutant breaks the parse: a failure the comparison sees
-			}
-			t.Fatalf("go run (%s): %v\n%s", prefix, err, stderr.String())
-		}
-		var lines []string
-		for _, l := range strings.Split(strings.TrimSuffix(string(out), "\n"), "\n") {
-			if !streamProbeLine.MatchString(l) {
-				t.Fatalf("go run (%s): malformed probe line %q", prefix, l)
-			}
-			lines = append(lines, l)
-		}
-		return lines
+	var imports, entries strings.Builder
+	for i := range kept {
+		fmt.Fprintf(&imports, "\tf%d \"streamprobe/f%d\"\n", i, i)
+		fmt.Fprintf(&entries, "\tf%d.ParseStream,\n", i)
 	}
-	return run("f"), run("d")
+	write("main.go", strings.NewReplacer("IMPORTS", imports.String(), "ENTRIES", entries.String()).Replace(streamProbeMain))
+	data, _ := json.Marshal(inputs)
+	write("inputs.json", string(data))
+	cmd := exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), "run", ".", "inputs.json")
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod -trimpath", "GOTOOLCHAIN=local")
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		if mutate != nil {
+			return nil, kept // the mutant breaks the parse: a failure the comparison sees
+		}
+		t.Fatalf("go run: %v\n%s", err, stderr.String())
+	}
+	for _, l := range strings.Split(strings.TrimSuffix(string(out), "\n"), "\n") {
+		if !streamProbeLine.MatchString(l) {
+			t.Fatalf("go run: malformed probe line %q", l)
+		}
+		lines = append(lines, l)
+	}
+	return lines, kept
 }
 
-// streamReportDiffs returns the ids of the reports that differ.
-func streamReportDiffs(t *testing.T, f, d []string) (differing []string) {
+// streamReportDiffs returns the ids of the reports of got that differ from those of want, the reports of the
+// unmutated build.
+func streamReportDiffs(t *testing.T, got, want []string) (differing []string) {
 	t.Helper()
-	if len(f) != len(d) || len(f) == 0 {
-		t.Fatalf("%d reports from the Flow build and %d from the direct build", len(f), len(d))
+	if len(got) != len(want) || len(got) == 0 {
+		t.Fatalf("%d reports and %d expected", len(got), len(want))
 	}
 	events, elems := 0, 0
-	for i := range f {
-		if f[i] != d[i] {
-			differing = append(differing, f[i][:strings.Index(f[i], " ")])
+	for i := range got {
+		if got[i] != want[i] {
+			differing = append(differing, got[i][:strings.Index(got[i], " ")])
 			if len(differing) <= 3 {
-				t.Logf("report %d differs:\n flow   %s\n direct %s", i, f[i], d[i])
+				t.Logf("report %d differs:\n got  %s\n want %s", i, got[i], want[i])
 			}
 		}
-		m := streamProbeLine.FindStringSubmatch(d[i]) // the unmutated build
+		m := streamProbeLine.FindStringSubmatch(want[i])
 		var n, e int
 		fmt.Sscanf(m[2], "%d", &n)
 		fmt.Sscanf(m[5], "%d", &e)
@@ -387,14 +371,75 @@ func streamReportDiffs(t *testing.T, f, d []string) (differing []string) {
 	return differing
 }
 
-// TestFlowStreamObservationsMatchDirect checks what a stream parse observes and emits: the trace events, the
-// profile, the elements with the reader calls made before each, and the error of the Flow stream body equal
-// those of the direct printer's, for each stream grammar, each reader chunking and each form with observability.
-func TestFlowStreamObservationsMatchDirect(t *testing.T) {
-	eachMode(t, testFlowStreamObservationsMatchDirect)
+// streamGolden holds, for each form and case, one digest of the reports of all its inputs and reader
+// chunkings ("form/case"), with the number of events and elements, and, for each input and chunking whose
+// parse or profiled parse ended with an error, the report itself ("form/case | input/chunk"). The elements
+// and errors are also compared with the engine's ParseStream (TestGeneratedFlowStreamMatchesEngine); the
+// trace events and the profile are frozen here.
+const (
+	streamGolden       = "testdata/stream.golden"
+	streamGoldenHeader = "# Reports of the stream parses with observability, per form and case: the number of inputs, trace events and\n" +
+		"# elements and a digest of the reports of all inputs and reader chunkings (trace and profile hashes, elements with the\n" +
+		"# reader calls before each, errors); the report of an input that ended with an error is listed under its case.\n" + goldenRules
+)
+
+var streamGoldenFile = goldenFile{path: streamGolden, header: streamGoldenHeader, caseOf: goldenCaseBefore}
+
+// streamEntries returns the entries of the golden for the reports of the cases built.
+func streamEntries(t *testing.T, form string, lines []string, kept []genCase) map[string]string {
+	t.Helper()
+	hashes := make([]hash.Hash, len(kept))
+	reports, events, elems := make([]int, len(kept)), make([]int, len(kept)), make([]int, len(kept))
+	for i := range hashes {
+		hashes[i] = sha256.New()
+	}
+	// Two cases may have the same name (a case of the generated corpus and one of the stream corpus): the
+	// later ones are told apart by their order among those of the name, which adding other cases does not move.
+	labels := make([]string, len(kept))
+	seen := map[string]int{}
+	for i, c := range kept {
+		seen[c.name]++
+		labels[i] = c.name
+		if seen[c.name] > 1 {
+			labels[i] = fmt.Sprintf("%s#%d", c.name, seen[c.name])
+		}
+	}
+	got := map[string]string{}
+	for _, l := range lines {
+		id, rest, _ := strings.Cut(l, " ")
+		n, tail, _ := strings.Cut(id, "/") // the case number is not part of the digest or the key
+		var idx int
+		fmt.Sscanf(n, "%d", &idx)
+		io.WriteString(hashes[idx], tail+" "+rest+"\n")
+		m := streamProbeLine.FindStringSubmatch(l)
+		var ev, el int
+		fmt.Sscanf(m[2], "%d", &ev)
+		fmt.Sscanf(m[5], "%d", &el)
+		reports[idx]++
+		events[idx], elems[idx] = events[idx]+ev, elems[idx]+el
+		if m[8] != `"<nil>"` || m[9] != `"<nil>"` {
+			got[fmt.Sprintf("%s/%s | %s", form, labels[idx], tail)] = rest
+		}
+	}
+	for i := range kept {
+		key := form + "/" + labels[i]
+		if _, dup := got[key]; dup {
+			t.Fatalf("two cases under the key %q: case names repeat", key)
+		}
+		got[key] = fmt.Sprintf("reports=%d events=%d elems=%d %x", reports[i], events[i], elems[i], hashes[i].Sum(nil)[:12])
+	}
+	return got
 }
 
-func testFlowStreamObservationsMatchDirect(t *testing.T) {
+// TestFlowStreamObservationsMatchGolden checks what a stream parse observes and emits: the trace events, the
+// profile, the elements with the reader calls made before each, and the error of the Flow stream body equal
+// those of testdata/stream.golden, for each stream grammar, each reader chunking and each form with
+// observability. Every report also has events and elements (streamReportDiffs).
+func TestFlowStreamObservationsMatchGolden(t *testing.T) {
+	eachMode(t, testFlowStreamObservationsMatchGolden)
+}
+
+func testFlowStreamObservationsMatchGolden(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
@@ -404,15 +449,14 @@ func testFlowStreamObservationsMatchDirect(t *testing.T) {
 			continue
 		}
 		t.Run(form.name, func(t *testing.T) {
-			f, d := runStreamProbes(t, cases, form, nil)
-			if diff := streamReportDiffs(t, f, d); len(diff) > 0 {
-				t.Errorf("%d reports differ between the Flow and the direct stream body: %v", len(diff), diff)
-			}
+			lines, kept := runStreamProbes(t, cases, form, nil)
+			streamReportDiffs(t, lines, lines) // events and elements exist
+			streamGoldenFile.check(t, form.name+"/", streamEntries(t, form.name, lines, kept))
 		})
 	}
 }
 
-// TestFlowStreamObservationMutants checks that the comparison of stream parses notices a stream body that
+// TestFlowStreamObservationMutants checks that the reports of stream parses notice a stream body that
 // forgets to start the stream, drops the delivery of an element, delivers at the wrong position or delivers
 // after the zero-width check instead of before.
 func TestFlowStreamObservationMutants(t *testing.T) {
@@ -422,9 +466,9 @@ func TestFlowStreamObservationMutants(t *testing.T) {
 	t.Setenv(modeEnv, "1")
 	cases := streamCases(t)
 	form := streamForms[2]
-	f, d := runStreamProbes(t, cases, form, nil)
-	if diff := streamReportDiffs(t, f, d); len(diff) > 0 {
-		t.Fatalf("the unmutated builds differ: %v", diff)
+	d, _ := runStreamProbes(t, cases, form, nil)
+	if len(d) == 0 {
+		t.Fatal("no reports")
 	}
 	startStmt := regexp.MustCompile(`(?m)^\t+p\.StreamStart\(\)\n`)
 	emitStmt := regexp.MustCompile(`(?m)^\t+p\.EmitStream\(.*\)\n`)

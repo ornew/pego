@@ -4,15 +4,15 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"sort"
 	"testing"
 )
 
-// The lean value-free rules of the Node table are printed from Flow IR in ordinary builds (the same
-// route as the recognizer's, startRecFlow). The private directNodeRules option prints them with dgen
-// instead; the tests below use it as the oracle of the Flow route.
+// The rules of the Node table are printed from Flow IR (the lean value-free rules by the same route as
+// the recognizer's, startRecFlow, and the others as framed bodies). The tests below check the routes the
+// rules take and run the parsers against the engine; the generated text of the ten checked-in grammars is
+// frozen in parsers/testdata/output_manifest.txt.
 
 // TestGeneratedFlowNodeParity runs the generated Node parsers and recognizers of the generated-corpus
 // harness with the lean rules of the Node table printed from Flow IR, against the engine, and with the
@@ -53,28 +53,19 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 		t.Fatal("no rule of the Node table takes a direct route: the parity test exercises nothing")
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	t.Run("direct node rules", func(t *testing.T) {
-		testGeneratedParsersCorpus(t, goBin, cases, GenOptions{directNodeRules: true, directRecognizer: true})
-	})
 	t.Run("flow node rules", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{}) })
 }
-
-// unreadBlank matches the line that dgen writes for the variables of a rule that its body never reads.
-// Flow IR declares a variable only for what its function reads, so the Flow form has no such line.
-var unreadBlank = regexp.MustCompile(`(?m)^\t+_(, _)* = x\d+(, x\d+)*\n`)
 
 // operatorGrammars are the checked-in grammars with an Operators Rule.
 var operatorGrammars = map[string]bool{"cel": true, "cue": true, "duckdb": true, "golang": true, "python": true, "typescript": true}
 
-// TestFlowNodeRulesMatchDirect generates the Node parsers of the checked-in grammars with the rules of
-// both tables printed from Flow IR and with dgen (directNodeRules and directRecognizer), and checks that
-// the output is equal except for the blank assignments of unread variables, which only dgen writes. The
-// bodies agree with dgen's projections of the Node table's actions, and so do the actions themselves.
-// It runs for parsers without and with work controls; the text of a work-control build equals dgen's as
-// well outside the Operators Rule lines (lineResidue), because the rules print alike from the same Attrs.Steps.
-func TestFlowNodeRulesMatchDirect(t *testing.T) {
+// TestFlowNodeRulesPrintFromFlow generates the Node parsers of the checked-in grammars in each form
+// and checks that the rules of the Node table and the lines of their Operators Rules take the Flow route
+// and that no rule falls back, so that the generated text that the output manifest freezes is Flow's. In
+// the forms with observability it also checks that the matchers write the reports of skipped alternatives.
+func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 	if testing.Short() {
-		t.Skip("generates the large parsers twice")
+		t.Skip("generates the large parsers")
 	}
 	names := []string{"json", "cel", "cue", "duckdb", "golang", "python", "xml", "yaml", "csv", "typescript"}
 	sort.Strings(names)
@@ -94,15 +85,8 @@ func TestFlowNodeRulesMatchDirect(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				gen := func(o GenOptions) []byte {
-					o.Package, o.Module, o.Runtime, o.Recognize, o.WorkControls, o.Observability, o.Document = "x", "example.com/x", RuntimeImport, true, form.controls, form.observe, form.document
-					files, err := Generate(g, o)
-					if err != nil {
-						t.Fatal(err)
-					}
-					return mergeGenerated(files)
-				}
-				taken, framed, operators := 0, 0, 0
+				o := GenOptions{Package: "x", Module: "example.com/x", Runtime: RuntimeImport, Recognize: true, WorkControls: form.controls, Observability: form.observe, Document: form.document}
+				taken, framed, operators, fell := 0, 0, 0, 0
 				directRouteHook = func(table string, r *rule) {
 					if table == "rules" {
 						taken++
@@ -110,8 +94,16 @@ func TestFlowNodeRulesMatchDirect(t *testing.T) {
 				}
 				framedRouteHook = func(table string, r *rule) { framed++ }
 				operatorsRouteHook = func(table string, r *rule) { operators++ }
-				flow := gen(GenOptions{})
-				directRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil
+				directFallbackHook = func(table, route string, r *rule) { fell++ }
+				operatorsFallbackHook = func(table string, r *rule) { fell++ }
+				defer func() {
+					directRouteHook, framedRouteHook, operatorsRouteHook, directFallbackHook, operatorsFallbackHook = nil, nil, nil, nil, nil
+				}()
+				files, err := Generate(g, o)
+				if err != nil {
+					t.Fatal(err)
+				}
+				flow := mergeGenerated(files)
 				if taken == 0 {
 					t.Errorf("no rule of the Node table of %s takes the Flow route", name)
 				}
@@ -121,27 +113,14 @@ func TestFlowNodeRulesMatchDirect(t *testing.T) {
 				if framed == 0 {
 					t.Errorf("no framed rule of the Node table of %s takes the Flow route", name)
 				}
-				direct := gen(GenOptions{directNodeRules: true, directRecognizer: true})
+				if fell != 0 {
+					t.Errorf("%d rules or lines of %s are printed by the direct printer", fell, name)
+				}
 				if form.observe {
-					// The reports of skipped alternatives are the observed events the matchers write. Both printers
-					// write them at the same sites, except that Flow IR repeats the matcher of a line that dgen
-					// shares among lines (the observation tests compare the events themselves), so the counts are
-					// equal for the grammars without an Operators Rule.
-					fs, ds := bytes.Count(flow, []byte("p.Observation.Skipped(")), bytes.Count(direct, []byte("p.Observation.Skipped("))
-					if fs == 0 && name != "csv" && name != "json" || ds == 0 && fs != 0 || !operatorGrammars[name] && fs != ds {
-						t.Errorf("%s: %d skipped-alternative reports from Flow IR, %d from dgen", name, fs, ds)
+					// The reports of skipped alternatives are the observed events the matchers write.
+					if fs := bytes.Count(flow, []byte("p.Observation.Skipped(")); fs == 0 && name != "csv" && name != "json" {
+						t.Errorf("%s: no skipped-alternative reports from Flow IR", name)
 					}
-				}
-				if operatorGrammars[name] {
-					// The old printers do not print the lines as Flow IR does: compare outside them (lineResidue).
-					do, fo := lineResidue(unreadBlank.ReplaceAll(flow, nil), unreadBlank.ReplaceAll(direct, nil))
-					if len(do) > 0 || len(fo) > 0 {
-						t.Errorf("outside the Operators Rule lines, the Flow output of %s has %d chunks that dgen's lacks (first: %s) and dgen's has %d that Flow's lacks (first: %s)", name, len(fo), summary(fo), len(do), summary(do))
-					}
-					return
-				}
-				if string(unreadBlank.ReplaceAll(flow, nil)) != string(unreadBlank.ReplaceAll(direct, nil)) {
-					t.Errorf("the Flow Node rules of %s differ from dgen beyond blank assignments of unread variables (%d and %d bytes)", name, len(flow), len(direct))
 				}
 			})
 		}
@@ -165,11 +144,9 @@ rule item = [a-z] #atomic`,
 			t.Fatalf("%s: %v", name, err)
 		}
 		for _, stream := range []bool{false, true} {
-			for _, direct := range []bool{false, true} {
-				opts := GenOptions{Start: "main", Package: "gen", Stream: stream, directNodeRules: direct}
-				if _, err := generateCode(g, opts); err != nil {
-					t.Errorf("%s (stream %v, direct node rules %v): %v", name, stream, direct, err)
-				}
+			opts := GenOptions{Start: "main", Package: "gen", Stream: stream}
+			if _, err := generateCode(g, opts); err != nil {
+				t.Errorf("%s (stream %v): %v", name, stream, err)
 			}
 		}
 	}

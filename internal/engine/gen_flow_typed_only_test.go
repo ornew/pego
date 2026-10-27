@@ -10,17 +10,16 @@ import (
 
 // A typed-only parser has no Node family unless a typed entry point converts the Node result of a rule; then
 // it keeps the Node rule functions (keepNodes). Those rules print from Flow IR as in any other Node build.
-// The text test forces keepNodes, so that the ten checked-in grammars print their Node table in a typed-only
-// parser, and compares it with dgen's (the grammars with an Operators Rule only by route; the corpus has
-// dead alternatives that dgen prints and Flow IR drops, so it is not a text oracle); the behavior tests compare the typed entry points of grammars whose
-// entries really convert Nodes.
+// The route test forces keepNodes, so that the grammars of the corpus print their Node table in a typed-only
+// parser, and checks that the rules and Operators Rule lines take the Flow route; the behavior tests compare
+// the typed entry points of grammars whose entries really convert Nodes with those of the full parser.
 
-// TestFlowTypedOnlyNodeRulesMatchDirect compares the Node rules of a typed-only parser, in the ordinary and the
-// work-controlled forms, with the output of dgen (directNodeRules): equal beyond blank assignments of unread
-// variables.
-func TestFlowTypedOnlyNodeRulesMatchDirect(t *testing.T) {
+// TestFlowTypedOnlyNodeRulesPrintFromFlow generates the Node rules of a typed-only parser, in the ordinary
+// and the work-controlled forms, over the corpus, and checks that every rule and Operators Rule line takes
+// the Flow route and none falls back to the direct printer.
+func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
 	if testing.Short() {
-		t.Skip("generates the corpus twice")
+		t.Skip("generates the corpus")
 	}
 	cases := grammarCases(t)
 	for _, form := range []struct {
@@ -28,45 +27,36 @@ func TestFlowTypedOnlyNodeRulesMatchDirect(t *testing.T) {
 		controls bool
 	}{{"ordinary", false}, {"controls", true}} {
 		t.Run(form.name, func(t *testing.T) {
-			taken, framed, operators, compared := 0, 0, 0, 0
+			taken, framed, operators, generated, fell := 0, 0, 0, 0, 0
+			directRouteHook = func(table string, r *rule) {
+				if table == "rules" {
+					taken++
+				}
+			}
+			framedRouteHook = func(table string, r *rule) { framed++ }
+			operatorsRouteHook = func(table string, r *rule) { operators++ }
+			directFallbackHook = func(table, route string, r *rule) { fell++ }
+			operatorsFallbackHook = func(table string, r *rule) { fell++ }
+			defer func() {
+				directRouteHook, framedRouteHook, operatorsRouteHook, directFallbackHook, operatorsFallbackHook = nil, nil, nil, nil, nil
+			}()
 			for _, c := range cases {
 				g, err := parseTest(c.src)
 				if err != nil {
 					continue
 				}
-				gen := func(direct bool) []byte {
-					files, err := Generate(g, GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: RuntimeImport,
-						Types: true, TypedOnly: true, keepNodes: true, WorkControls: form.controls, directNodeRules: direct})
-					if err != nil {
-						t.Fatalf("%s: %v", c.name, err)
-					}
-					return mergeGenerated(files)
+				_, err = Generate(g, GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: RuntimeImport,
+					Types: true, TypedOnly: true, keepNodes: true, WorkControls: form.controls})
+				if err != nil {
+					t.Fatalf("%s: %v", c.name, err)
 				}
-				tk, fr, op := 0, 0, 0
-				directRouteHook = func(table string, r *rule) {
-					if table == "rules" {
-						tk++
-					}
-				}
-				framedRouteHook = func(table string, r *rule) { fr++ }
-				operatorsRouteHook = func(table string, r *rule) { op++ }
-				flow := gen(false)
-				directRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil
-				taken, framed, operators = taken+tk, framed+fr, operators+op
-				direct := gen(true)
-				compared++
-				fb, db := unreadBlank.ReplaceAll(flow, nil), unreadBlank.ReplaceAll(direct, nil)
-				if operatorGrammars[c.name] {
-					// The numbering of the shared literals and shapers of the typed and Node lines differs between the
-					// printers, so the text outside the lines is not equal; the behavior tests cover them.
-					continue
-				}
-				if string(fb) != string(db) {
-					t.Errorf("%s: the Flow Node rules of a typed-only parser differ from dgen beyond blank assignments (%d and %d bytes)", c.name, len(flow), len(direct))
-				}
+				generated++
 			}
-			if compared < 10 || taken == 0 || framed == 0 || operators == 0 {
-				t.Errorf("compared %d grammars; %d direct, %d framed and %d Operators Rule lines took the Flow route", compared, taken, framed, operators)
+			if generated < 10 || taken == 0 || framed == 0 || operators == 0 {
+				t.Errorf("generated %d grammars; %d direct, %d framed and %d Operators Rule lines took the Flow route", generated, taken, framed, operators)
+			}
+			if fell != 0 {
+				t.Errorf("%d rules or lines are printed by the direct printer", fell)
 			}
 		})
 	}
@@ -170,11 +160,11 @@ func TestTranscript(t *testing.T) {
 }
 `
 
-// TestFlowTypedOnlyEntriesMatchDirect runs the typed entry points of typed-only parsers whose Node rules are
+// TestFlowTypedOnlyEntriesMatchFull runs the typed entry points of typed-only parsers whose Node rules are
 // printed from Flow IR, and compares their transcripts (values, errors with positions, depth errors) with those of
-// the same parsers printed by dgen and of a parser with every entry point. A mutated grammar must change the
+// a parser with every entry point. A mutated grammar must change the
 // transcript, and the entries must convert Nodes, which the Flow route takes.
-func TestFlowTypedOnlyEntriesMatchDirect(t *testing.T) {
+func TestFlowTypedOnlyEntriesMatchFull(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -196,7 +186,7 @@ func TestFlowTypedOnlyEntriesMatchDirect(t *testing.T) {
 			var pkgs []string
 			for i, c := range typedOnlyConverted {
 				base := GenOptions{Types: true, WorkControls: form.controls}
-				full, flowOnly, directOnly, mutated := fmt.Sprintf("full%d", i), fmt.Sprintf("flow%d", i), fmt.Sprintf("direct%d", i), fmt.Sprintf("mut%d", i)
+				full, flowOnly, mutated := fmt.Sprintf("full%d", i), fmt.Sprintf("flow%d", i), fmt.Sprintf("mut%d", i)
 				before := taken
 				only := base
 				only.TypedOnly = true
@@ -207,8 +197,6 @@ func TestFlowTypedOnlyEntriesMatchDirect(t *testing.T) {
 				if src, err := os.ReadFile(filepath.Join(dir, flowOnly, "parser.go")); err != nil || !strings.Contains(string(src), "RunParseConverted(") {
 					t.Errorf("%s: the entries of the typed-only parser do not convert Nodes (%v)", c.name, err)
 				}
-				only.directNodeRules = true
-				ordinaryOnlyPackage(t, dir, directOnly, c.src, only, typedOnlyTranscript, c.inputs)
 				full1 := base
 				full1.Recognize = true
 				ordinaryOnlyPackage(t, dir, full, c.src, full1, typedOnlyTranscript, c.inputs)
@@ -225,15 +213,12 @@ func TestFlowTypedOnlyEntriesMatchDirect(t *testing.T) {
 				mo := base
 				mo.TypedOnly = true
 				ordinaryOnlyPackage(t, dir, mutated, mut, mo, typedOnlyTranscript, c.inputs)
-				pkgs = append(pkgs, full, flowOnly, directOnly, mutated)
+				pkgs = append(pkgs, full, flowOnly, mutated)
 			}
 			directRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil
 			out := runTranscripts(t, dir, pkgs...)
 			for i, c := range typedOnlyConverted {
-				full, flowOnly, directOnly, mutated := out[fmt.Sprintf("full%d", i)], out[fmt.Sprintf("flow%d", i)], out[fmt.Sprintf("direct%d", i)], out[fmt.Sprintf("mut%d", i)]
-				if flowOnly != directOnly {
-					t.Errorf("%s: the Flow typed-only parser differs from the dgen one:\n%s", c.name, firstTranscriptDifference(directOnly, flowOnly))
-				}
+				full, flowOnly, mutated := out[fmt.Sprintf("full%d", i)], out[fmt.Sprintf("flow%d", i)], out[fmt.Sprintf("mut%d", i)]
 				if flowOnly != full {
 					t.Errorf("%s: the typed-only parser differs from the full one:\n%s", c.name, firstTranscriptDifference(full, flowOnly))
 				}

@@ -138,7 +138,7 @@ func coreGenerations(t *testing.T, mode coreGenMode) []coreGenerated1 {
 	}
 	// The grammars are those of the golden file in this mode, so a grammar whose typed decisions
 	// are not recorded cannot drop out of the comparisons silently.
-	want := typedDecisionsGrammarsOf(t, mode.name)
+	want := typedGolden.grammarsOf(t, mode.name)
 	var out []coreGenerated1
 	for _, gc := range append(schemaCorpus(t), coreExtraGrammars...) {
 		if !want[gc.name] {
@@ -148,7 +148,7 @@ func coreGenerations(t *testing.T, mode coreGenMode) []coreGenerated1 {
 		if !ok {
 			t.Fatalf("%s %s: the grammar does not generate", mode.name, gc.name)
 		}
-		loadTypedDecisions(t, mode.name, gc.name, dec)
+		typedGolden.load(t, typedRules(dec), mode.name, gc.name, dec)
 		out = append(out, coreGenerated1{gc.name, dec})
 		delete(want, gc.name)
 	}

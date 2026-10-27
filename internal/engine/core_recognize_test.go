@@ -71,26 +71,33 @@ func recognizeDifferences(c *coreGenCase, n *coreDecisionCounts) ([]string, int)
 	return out, diverged
 }
 
-// TestCoreMatchesRecognizer compares the Core IR of the recognizers of the corpus with the
-// generated recognizers (recognizeAspects). The one known difference is in the guards: a capture
+// TestCoreMatchesRecognizer compares the Core IR of the recognizers of the corpus with the decisions
+// that the generator recorded for its recognizers, frozen in testdata/recognizer_decisions.golden
+// (recognizeAspects). The one known difference is in the guards: a capture
 // that no predicate reads builds nothing in Core IR, so the class it captures can be a guarded
 // class, where the generator's guard sees a capture and the class tests the character again. The other
 // is in the rules that recover: the generator does not guard an alternative that begins with a class there,
-// where Core IR does (and Flow IR prints that guard). Only that case is excused, and the test below it
-// requires the guarded class in Core IR.
+// where Core IR does (and Flow IR prints that guard). Only that case is excused, and the test requires
+// the guarded class in Core IR for the grammars of recognizerKnownDifferences.
 func TestCoreMatchesRecognizer(t *testing.T) {
-	for _, mode := range []coreGenMode{
-		{"lean", GenOptions{Recognize: true}},
-		{"controlled", GenOptions{Recognize: true, WorkControls: true}},
-	} {
+	for _, mode := range recognizerGenModes {
 		t.Run(mode.name, func(t *testing.T) {
+			// The grammars are those of the golden file in this mode, so a grammar whose decisions
+			// are not recorded cannot drop out of the comparison silently.
+			want := recognizerGolden.grammarsOf(t, mode.name)
 			var n coreDecisionCounts
 			cases := 0
-			for _, gc := range append(schemaCorpus(t), coreExtraGrammars...) {
-				dec, ok := coreGenerate(gc.src, mode.opts)
-				if !ok {
+			divergedBy := map[string]int{}
+			for _, gc := range recognizerCorpus(t) {
+				if !want[gc.name] {
 					continue
 				}
+				delete(want, gc.name)
+				dec, ok := coreGenerate(gc.src, mode.opts)
+				if !ok {
+					t.Fatalf("%s: the grammar does not generate", gc.name)
+				}
+				recognizerGolden.load(t, recognizerRules(dec), mode.name, gc.name, dec)
 				c, err := coreRecognizeCase(gc.name, dec)
 				if err != nil {
 					t.Errorf("%s: %v", gc.name, err)
@@ -101,44 +108,29 @@ func TestCoreMatchesRecognizer(t *testing.T) {
 				for _, err := range errs {
 					t.Errorf("%s: %s", c.name, err)
 				}
+				divergedBy[gc.name] = diverged
 				if diverged > 0 {
 					t.Logf("%s: %d guarded classes of uncaptured classes", c.name, diverged)
 				}
+			}
+			if len(want) != 0 {
+				t.Fatalf("grammars of %s are not in the corpus: %v", recognizerDecisionsGolden, want)
 			}
 			lean := !mode.opts.WorkControls
 			if cases < 100 || n.guards == 0 || n.scans == 0 || n.scopes == 0 || (n.guardedClasses > 0) != lean {
 				t.Errorf("%d recognizers, counts %+v", cases, n)
 			}
-			// The known difference, on a grammar that has it.
-			dec, ok := coreGenerate("rule main = (x:[a-z] \"1\" / \"b\") $$\n", mode.opts)
-			if !ok {
-				t.Fatal("uncaptured class: does not generate")
-			}
-			c, err := coreRecognizeCase("uncaptured class", dec)
-			if err != nil {
-				t.Fatal(err)
-			}
-			errs, diverged := recognizeDifferences(c, &coreDecisionCounts{})
-			want := 0 // classes are guarded only in lean parsers
+			// The known differences, on grammars that have them: classes are guarded only in lean
+			// parsers.
+			wantDiverged := 0
 			if lean {
-				want = 1
+				wantDiverged = 1
 			}
-			if len(errs) != 0 || diverged != want {
-				t.Errorf("uncaptured class: %v, %d guarded classes of uncaptured classes, want %d", errs, diverged, want)
-			}
-			// The recovering rule: the choice after the recovering alternative is guarded by its class in Core IR
-			// (lean parsers), which the generator does not do. It must be excused as exactly that, not missed.
-			dec, ok = coreGenerate("rule main = x* $$\nrule x = (\"a\" \"b\") #recover(skip=[^;]*) / [0-9]\n", mode.opts)
-			if !ok {
-				t.Fatal("recovering rule: does not generate")
-			}
-			c, err = coreRecognizeCase("recovering rule", dec)
-			if err != nil {
-				t.Fatal(err)
-			}
-			errs, diverged = recognizeDifferences(c, &coreDecisionCounts{})
-			if len(errs) != 0 || diverged != want {
-				t.Errorf("recovering rule: %v, %d guarded classes of the generator's unguarded alternatives, want %d", errs, diverged, want)
+			for _, name := range []string{"uncaptured class", "recovering rule"} {
+				got, ok := divergedBy[name]
+				if !ok || got != wantDiverged {
+					t.Errorf("%s: %d guarded classes of the generator's unguarded alternatives, want %d", name, got, wantDiverged)
+				}
 			}
 		})
 	}
