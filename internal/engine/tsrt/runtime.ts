@@ -2296,15 +2296,19 @@ export class Parser {
   // call.
   invokePlain(r: Rule, min: number): R {
     const o = this.observation;
-    if (o === null) return this.invokePlainBody(r, min);
+    if (o === null) {
+      this.stepWork();
+      return this.invokePlainBody(r, min);
+    }
     o.enter(r.name, this.pos, min);
+    this.stepWork();
     const v = this.invokePlainBody(r, min);
     o.exit(v !== undefined, this.pos);
     return v;
   }
 
+  // invokePlainBody is invokePlain without the step of the entry, which the caller charges.
   invokePlainBody(r: Rule, min: number): R {
-    this.stepWork();
     const start = this.pos;
     const rec = this.recovered.length;
     const trail = this.trail.length;
