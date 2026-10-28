@@ -25,12 +25,12 @@ func TestClassRangeContextCancellation(t *testing.T) {
 		{"membership", 1, func(c *lintControl) { classAcceptsControlled(cl, 'a', c) }},
 		{"normalization-copy", 1, func(c *lintControl) { normalizeControlled(rs, c) }},
 		{"normalization-sort", 17, func(c *lintControl) { normalizeControlled(rs, c) }},
-		{"normalization-merge", 1, func(c *lintControl) { mergeRangesControlled(rs, c) }},
+		{"normalization-merge", 1, func(c *lintControl) { mergeRanges(rs, c) }},
 		{"comparison", 1, func(c *lintControl) { sameRangesControlled(rs, rs, c) }},
-		{"structure-comparison", 1, func(c *lintControl) { sameControlled(cl, cl, false, c) }},
+		{"structure-comparison", 1, func(c *lintControl) { same(cl, cl, false, c) }},
 		{"prefix", 1, func(c *lintControl) { (&analysis{control: c}).matchPrefix(cl, "a") }},
 		{"failure", 1, func(c *lintControl) { (&analysis{control: c}).fails(cl, "a") }},
-		{"any-character", 1, func(c *lintControl) { consumesAnyControlled(&grammar.CharClass{Negated: true, Ranges: rs}, c) }},
+		{"any-character", 1, func(c *lintControl) { consumesAny(&grammar.CharClass{Negated: true, Ranges: rs}, c) }},
 		{"class-lint", 1, func(c *lintControl) { (&linter{control: c}).charClass(cl) }},
 	} {
 		t.Run(p.name, func(t *testing.T) {

@@ -6,11 +6,11 @@ import "github.com/ornew/pego/grammar"
 // so that every rule makes the default value of its expression (Options.DefaultValue). Predicates
 // stay as written, because they decide the match, and so do the type declarations, which
 // predicates can still use. A predicate can read the value of a capture, which an action may have
-// made, so the rules that make the values predicates read (valueNeededRulesControlled, as in
+// made, so the rules that make the values predicates read (valueNeededRules, as in
 // recognition) keep their actions and types. Unchanged declarations are shared with g; g itself
 // does not change.
 func defaultValueGrammar(g *grammar.Grammar, control *compileControl) *grammar.Grammar {
-	needed := valueNeededRulesControlled(control.rules(g), control, false)
+	needed := valueNeededRules(control.rules(g), control, false)
 	decls, changed := normalizeItems(g.File.Decls, false, func(d grammar.Decl) grammar.Decl {
 		control.poll()
 		rd, ok := d.(*grammar.RuleDef)

@@ -34,8 +34,8 @@ func TestClassConstructionContextCancellation(t *testing.T) {
 		run  func(*compileControl)
 	}{
 		{"descriptor", func(c *compileControl) { charClassStringControlled(cl, c) }},
-		{"copy", func(c *compileControl) { copyClassRangesControlled(cl.Ranges, c) }},
-		{"bitmap", func(c *compileControl) { classASCIIControlled(cl.Ranges, false, c) }},
+		{"copy", func(c *compileControl) { copyClassRanges(cl.Ranges, c) }},
+		{"bitmap", func(c *compileControl) { classASCII(cl.Ranges, false, c) }},
 		{"accept-construction", func(c *compileControl) { classAcceptControlled(cl, c) }},
 		{"matcher", func(c *compileControl) { (&compiler{control: c}).exprMatcher(cl, newScope(), true) }},
 		{"choice-guard", func(c *compileControl) { (&compiler{control: c}).first(cl) }},
@@ -260,7 +260,7 @@ func TestClassBitmapPollingBoundaries(t *testing.T) {
 				}
 				ctx := compileTestContext(t, 1<<20)
 				c := &compileControl{ctx: ctx, steps: start}
-				got := classASCIIControlled(rs, neg, c)
+				got := classASCII(rs, neg, c)
 				checks := (uint64(start%compilePollStride) + visits) / compilePollStride
 				if got != want || c.steps != start+uint32(visits) || (1<<20)-ctx.left != int(checks) {
 					t.Fatalf("start=%d neg=%t steps=%d checks=%d wantchecks=%d", start, neg, c.steps, (1<<20)-ctx.left, checks)

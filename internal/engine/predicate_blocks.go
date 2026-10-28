@@ -5,7 +5,7 @@ import (
 	"github.com/ornew/pego/internal/grammaranalysis"
 )
 
-func predicateBlockControlled(e *grammar.Predicate, block *grammar.Block, control *compileControl) grammar.Expr {
+func predicateBlock(e *grammar.Predicate, block *grammar.Block, control *compileControl) grammar.Expr {
 	var poll func()
 	if control != nil {
 		poll = control.poll
@@ -30,7 +30,7 @@ func predicateBlockControlled(e *grammar.Predicate, block *grammar.Block, contro
 	}
 }
 
-func expandPredicateBlocksControlled(source, normalized []grammar.Expr, control *compileControl) ([]grammar.Expr, bool) {
+func expandPredicateBlocks(source, normalized []grammar.Expr, control *compileControl) ([]grammar.Expr, bool) {
 	expanded := 0
 	for _, item := range source {
 		control.poll()

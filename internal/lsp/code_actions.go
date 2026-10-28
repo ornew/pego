@@ -255,7 +255,7 @@ func (s *Server) codeActionsControlled(params json.RawMessage, control *renderCo
 			}
 			continue
 		}
-		edit, ok := d.suppressionEditControlled(ctx, diagnostic, control)
+		edit, ok := d.suppressionEdit(ctx, diagnostic, control)
 		control.check()
 		if ok {
 			control.poll()
@@ -279,7 +279,7 @@ func (s *Server) codeActionsControlled(params json.RawMessage, control *renderCo
 
 // suppressionPlausible reports, without analyzing an edited copy, whether a suppression of the
 // finding can be offered: its line holds no directive yet and starts no declaration, where a
-// directive would suppress the whole rule. suppressionEditControlled still verifies the edit.
+// directive would suppress the whole rule. suppressionEdit still verifies the edit.
 func (d *document) suppressionPlausible(diagnostic Diagnostic, control *renderControl) bool {
 	a := d.analysis()
 	line := diagnostic.Range.Start.Line
@@ -348,7 +348,7 @@ func (s *Server) codeActionResolveControlled(params json.RawMessage, control *re
 	switch data.Action {
 	case actionSuppress:
 		if title := suppressTitle(findings[i].Check); title == item.Title {
-			if edit, ok := d.suppressionEditControlled(ctx, diagnostic, control); ok {
+			if edit, ok := d.suppressionEdit(ctx, diagnostic, control); ok {
 				item.Edit = versionedEdit(d.uri, d.version, edit)
 			}
 		}
@@ -372,7 +372,7 @@ func rangesOverlap(a, b Range) bool {
 
 // suppressionEdit is deliberately conservative: validate the edited grammar and
 // verify that the targeted finding disappears. Human-readable Fix is never an edit.
-func (d *document) suppressionEditControlled(ctx context.Context, diagnostic Diagnostic, control *renderControl) (TextEdit, bool) {
+func (d *document) suppressionEdit(ctx context.Context, diagnostic Diagnostic, control *renderControl) (TextEdit, bool) {
 	control.poll()
 	if ctx.Err() != nil {
 		return TextEdit{}, false

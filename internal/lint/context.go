@@ -30,7 +30,7 @@ func RunContext(ctx context.Context, g *grammar.Grammar, start string, opts Opti
 			}
 		}
 	}()
-	return runControlled(g, start, opts, &lintControl{ctx: ctx}), nil
+	return run(g, start, opts, &lintControl{ctx: ctx}), nil
 }
 
 // Recursive proof routines unwind only to RunContext. A control belongs to one

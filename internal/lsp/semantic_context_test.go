@@ -127,14 +127,14 @@ func TestSemanticInteriorWalksCancel(t *testing.T) {
 	t.Run("backward-body", func(t *testing.T) {
 		a := analyze(strings.Repeat("x ", 1024) + "infix left")
 		i := semanticLastIdent(t, a, "left")
-		assertOccurrencePhaseCancels(t, 2, func(c *renderControl) (any, *rpcError) { return a.inOperatorsBodyControlled(i, c), nil })
+		assertOccurrencePhaseCancels(t, 2, func(c *renderControl) (any, *rpcError) { return a.inOperatorsBody(i, c), nil })
 	})
 	t.Run("previous-comment", func(t *testing.T) {
 		a := analyze("foo " + strings.Repeat("/*c*/ ", 1024) + "left")
 		i := semanticLastIdent(t, a, "left")
 		assertOccurrencePhaseCancels(t, 2, func(c *renderControl) (any, *rpcError) {
 			occ := 0
-			value, _ := a.classifyControlled(i, &occ, c)
+			value, _ := a.classify(i, &occ, c)
 			return value, nil
 		})
 	})
@@ -142,13 +142,13 @@ func TestSemanticInteriorWalksCancel(t *testing.T) {
 		a := analyze("rule expr " + strings.Repeat("T ", 1024) + "= #operators { infix left")
 		i := semanticLastIdent(t, a, "left")
 		at := semanticBodyPrefixChecks(t, a, i, false) + 2
-		assertOccurrencePhaseCancels(t, at, func(c *renderControl) (any, *rpcError) { return a.inOperatorsBodyControlled(i, c), nil })
+		assertOccurrencePhaseCancels(t, at, func(c *renderControl) (any, *rpcError) { return a.inOperatorsBody(i, c), nil })
 	})
 	t.Run("forward-body", func(t *testing.T) {
 		a := analyze(semanticOperatorsSource(1024))
 		i := semanticLastIdent(t, a, "left")
 		at := semanticBodyPrefixChecks(t, a, i, true) + 2
-		assertOccurrencePhaseCancels(t, at, func(c *renderControl) (any, *rpcError) { return a.inOperatorsBodyControlled(i, c), nil })
+		assertOccurrencePhaseCancels(t, at, func(c *renderControl) (any, *rpcError) { return a.inOperatorsBody(i, c), nil })
 	})
 }
 

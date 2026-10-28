@@ -24,13 +24,13 @@ func TestLintFormattingCancelsWithinDiagnostics(t *testing.T) {
 			}()
 			switch name {
 			case "show":
-				showControlled(expr, c)
+				show(expr, c)
 			case "predicate-comparison":
-				sameControlled(&grammar.Predicate{Term: term}, &grammar.Predicate{Term: term}, false, c)
+				same(&grammar.Predicate{Term: term}, &grammar.Predicate{Term: term}, false, c)
 			case "attribute-comparison":
 				attr := &grammar.Attribute{Name: "recover", Pragma: true, KwArgs: map[string]any{"skip": expr}}
 				e := &grammar.Attributed{Expr: expr, Attrs: []*grammar.Attribute{attr}}
-				sameControlled(e, e, false, c)
+				same(e, e, false, c)
 			}
 			t.Fatal("formatting completed without cancellation")
 		})
@@ -46,7 +46,7 @@ func TestLintShortMessageParity(t *testing.T) {
 		}
 		want = "`" + want + "`"
 		for _, c := range []*lintControl{nil, {ctx: lintTestContext(t, 0)}} {
-			if got := showControlled(expr, c); got != want {
+			if got := show(expr, c); got != want {
 				t.Fatalf("message=%q want=%q", got, want)
 			}
 		}

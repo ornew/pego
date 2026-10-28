@@ -20,10 +20,10 @@ import (
 //   - the action uses no $n, which could reach the same list (it is an element of the body);
 //   - no predicate reads $x, and the names x and f are captured only once in the rule;
 //   - f is captured in every element (an item of the element's sequence), with a value that is
-//     never nil (nonNilControlled): otherwise an element can have no record, and $e.$f would be an error.
+//     never nil (nonNil): otherwise an element can have no record, and $e.$f would be an error.
 func ruleProjectionsControlled(prog *Program, r *rule, control *compileControl) map[string]string {
 	control.poll()
-	if prog.noProjections || r.action == nil || usesItemsControlled(r.action, control) {
+	if prog.noProjections || r.action == nil || usesItems(r.action, control) {
 		return nil
 	}
 	if _, operatorsRule := r.def.Expr.(*grammar.OperatorsRule); operatorsRule {
@@ -154,7 +154,7 @@ func ruleProjectionsControlled(prog *Program, r *rule, control *compileControl) 
 		if f == "" || bad[name] || count[name] > 1 || count[f] > 1 {
 			continue
 		}
-		if c := directCaptureControlled(rp.Expr, f, control); c != nil && nonNilControlled(prog, c.Expr, map[string]bool{}, control) {
+		if c := directCapture(rp.Expr, f, control); c != nil && nonNil(prog, c.Expr, map[string]bool{}, control) {
 			proj[name] = f
 		}
 	}
@@ -177,8 +177,8 @@ func projectedMap(t *grammar.Call, proj map[string]string, local func(string) bo
 	return x, true
 }
 
-// markProjectedMapsControlled adds to set the map calls in the action t that read a projected capture.
-func markProjectedMapsControlled(t grammar.Term, proj map[string]string, set map[*grammar.Call]bool, control *compileControl) {
+// markProjectedMaps adds to set the map calls in the action t that read a projected capture.
+func markProjectedMaps(t grammar.Term, proj map[string]string, set map[*grammar.Call]bool, control *compileControl) {
 	control.poll()
 	var walk func(t grammar.Term, shadow map[string]bool)
 	walk = func(t grammar.Term, shadow map[string]bool) {
@@ -255,9 +255,9 @@ func projField(t grammar.Term) (string, bool) {
 	return strings.TrimPrefix(m.Name, "$"), true
 }
 
-// directCaptureControlled returns the capture of name that e makes unconditionally: e itself, or an item of
+// directCapture returns the capture of name that e makes unconditionally: e itself, or an item of
 // the sequence e (also behind @error, which changes no value).
-func directCaptureControlled(e grammar.Expr, name string, control *compileControl) *grammar.Capture {
+func directCapture(e grammar.Expr, name string, control *compileControl) *grammar.Capture {
 	control.poll()
 	if a, ok := e.(*grammar.Attributed); ok {
 		for _, at := range a.Attrs {
@@ -266,7 +266,7 @@ func directCaptureControlled(e grammar.Expr, name string, control *compileContro
 				return nil
 			}
 		}
-		return directCaptureControlled(a.Expr, name, control)
+		return directCapture(a.Expr, name, control)
 	}
 	switch e := e.(type) {
 	case *grammar.Capture:
@@ -284,27 +284,27 @@ func directCaptureControlled(e grammar.Expr, name string, control *compileContro
 	return nil
 }
 
-// nonNilControlled reports whether the value of e, built as a capture builds it, is never nil. A rule's
+// nonNil reports whether the value of e, built as a capture builds it, is never nil. A rule's
 // value is never nil when its action makes a struct or returns a
 // capture whose value is never nil, or when it has no action and its body's value is never nil
 // (without the type checker's results, which the engine computes after compiling).
-func nonNilControlled(prog *Program, e grammar.Expr, seen map[string]bool, control *compileControl) bool {
+func nonNil(prog *Program, e grammar.Expr, seen map[string]bool, control *compileControl) bool {
 	control.poll()
 	switch e := e.(type) {
 	case *grammar.Literal, *grammar.CharClass, *grammar.Any, *grammar.Atomic, *grammar.Top, *grammar.Seq, *grammar.Repeat:
 		return true
 	case *grammar.Capture:
-		return nonNilControlled(prog, e.Expr, seen, control)
+		return nonNil(prog, e.Expr, seen, control)
 	case *grammar.Choice:
 		for _, a := range e.Alts {
 			control.poll()
-			if !nonNilControlled(prog, a, seen, control) {
+			if !nonNil(prog, a, seen, control) {
 				return false
 			}
 		}
 		return true
 	case *grammar.Attributed:
-		return nonNilControlled(prog, e.Expr, seen, control) // #recover makes an Error node
+		return nonNil(prog, e.Expr, seen, control) // #recover makes an Error node
 	case *grammar.Ref:
 		r := prog.byName[e.Name]
 		if r == nil || r.def == nil {
@@ -321,7 +321,7 @@ func nonNilControlled(prog *Program, e grammar.Expr, seen map[string]bool, contr
 			// Every line's value is never nil ($lhs and $rhs are values of the rule itself).
 			for _, o := range pr.Operands {
 				control.poll()
-				if !lineNonNilControlled(prog, o.Expr, o.Action, false, seen, control) {
+				if !lineNonNil(prog, o.Expr, o.Action, false, seen, control) {
 					return false
 				}
 			}
@@ -329,38 +329,38 @@ func nonNilControlled(prog *Program, e grammar.Expr, seen map[string]bool, contr
 				control.poll()
 				for _, op := range l.Operators {
 					control.poll()
-					if op.Action != nil && !lineNonNilControlled(prog, op.Expr, op.Action, true, seen, control) {
+					if op.Action != nil && !lineNonNil(prog, op.Expr, op.Action, true, seen, control) {
 						return false // (an operator without an action makes a tuple node)
 					}
 				}
 			}
 			return true
 		}
-		return lineNonNilControlled(prog, r.def.Expr, r.action, false, seen, control)
+		return lineNonNil(prog, r.def.Expr, r.action, false, seen, control)
 	}
 	return false
 }
 
-// lineNonNilControlled reports whether a rule body or Operators Rule line e with the action t never has a nil value.
-func lineNonNilControlled(prog *Program, e grammar.Expr, t grammar.Term, operator bool, seen map[string]bool, control *compileControl) bool {
+// lineNonNil reports whether a rule body or Operators Rule line e with the action t never has a nil value.
+func lineNonNil(prog *Program, e grammar.Expr, t grammar.Term, operator bool, seen map[string]bool, control *compileControl) bool {
 	control.poll()
 	switch t := t.(type) {
 	case nil:
-		return nonNilControlled(prog, e, seen, control)
+		return nonNil(prog, e, seen, control)
 	case *grammar.New, *grammar.ListConstructor, *grammar.TupleLit:
 		return true
 	case *grammar.CaptureRef:
 		if operator && (t.Name == "lhs" || t.Name == "rhs" || t.Name == "op") {
 			return true
 		}
-		c := directCaptureControlled(e, t.Name, control)
-		return c != nil && nonNilControlled(prog, c.Expr, seen, control)
+		c := directCapture(e, t.Name, control)
+		return c != nil && nonNil(prog, c.Expr, seen, control)
 	}
 	return false
 }
 
-// usesItemsControlled reports whether the action refers to the body's elements ($n).
-func usesItemsControlled(t grammar.Term, control *compileControl) bool {
+// usesItems reports whether the action refers to the body's elements ($n).
+func usesItems(t grammar.Term, control *compileControl) bool {
 	control.poll()
 	found := false
 	walkTerm(t, func(x grammar.Term) {

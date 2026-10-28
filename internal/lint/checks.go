@@ -110,7 +110,7 @@ func (l *linter) shadowed() {
 		control.poll()
 		walkExprControlled(r.Expr, func(e grammar.Expr) {
 			control.poll()
-			switch e := analysisExprControlled(e, control).(type) {
+			switch e := analysisExpr(e, control).(type) {
 			case *grammar.Choice:
 				l.shadowedAlts(e.Alts, "alternative")
 			case *grammar.OperatorsRule:
@@ -139,14 +139,14 @@ func (l *linter) shadowedAlts(alts []grammar.Expr, kind string) {
 	for i, alt := range alts[:len(alts)-1] {
 		control.poll()
 		if a.succeeds(alt) {
-			later := fmt.Sprintf("%s %d (%s)", kind, i+2, showControlled(alts[i+1], control))
+			later := fmt.Sprintf("%s %d (%s)", kind, i+2, show(alts[i+1], control))
 			if i+2 < len(alts) {
 				later = fmt.Sprintf("%ss %d to %d", kind, i+2, len(alts))
 			}
 			l.report(CheckShadowedAlt, Error, posOfControlled(alts[i+1], control),
 				fmt.Sprintf("remove what follows %s %d, or make it fail where it matches nothing", kind, i+1)+
 					a.shadowedSuffixCaveat(alt, alts[i+1:]...),
-				"%s never tried: %s %d (%s%s) always succeeds", plural(later), kind, i+1, showControlled(alt, control), at(posOfControlled(alt, control)))
+				"%s never tried: %s %d (%s%s) always succeeds", plural(later), kind, i+1, show(alt, control), at(posOfControlled(alt, control)))
 			alts = alts[:i+1]
 			break
 		}
@@ -158,11 +158,11 @@ func (l *linter) shadowedAlts(alts []grammar.Expr, kind string) {
 			switch a.covers(alts[i], alts[j]) {
 			case "duplicate":
 				l.report(CheckShadowedAlt, Error, posOfControlled(alts[j], control), "remove it"+a.leftRecursionCaveat(alts[j]),
-					"%s %d (%s) can never match: it is the same as %s %d%s", kind, j+1, showControlled(alts[j], control), kind, i+1, at(posOfControlled(alts[i], control)))
+					"%s %d (%s) can never match: it is the same as %s %d%s", kind, j+1, show(alts[j], control), kind, i+1, at(posOfControlled(alts[i], control)))
 			case "prefix":
 				l.report(CheckShadowedAlt, Error, posOfControlled(alts[j], control), fmt.Sprintf("move it before %s %d", kind, i+1)+a.leftRecursionCaveat(alts[j]),
 					"%s %d (%s) can never match: %s %d (%s%s) matches first wherever it could",
-					kind, j+1, showControlled(alts[j], control), kind, i+1, showControlled(alts[i], control), at(posOfControlled(alts[i], control)))
+					kind, j+1, show(alts[j], control), kind, i+1, show(alts[i], control), at(posOfControlled(alts[i], control)))
 			default:
 				continue
 			}
@@ -224,10 +224,10 @@ func (a *analysis) covers(x, y grammar.Expr) string {
 	control.poll()
 
 	// Capture names only matter to predicates.
-	caps := !hasPredicateControlled(x, control) && !hasPredicateControlled(y, control)
-	xs, ys := itemsControlled(x, caps, control), itemsControlled(y, caps, control)
+	caps := !hasPredicate(x, control) && !hasPredicate(y, control)
+	xs, ys := items(x, caps, control), items(y, caps, control)
 	k := 0
-	for k < len(xs) && k < len(ys) && sameControlled(xs[k], ys[k], caps, control) {
+	for k < len(xs) && k < len(ys) && same(xs[k], ys[k], caps, control) {
 		control.poll()
 		k++
 	}
@@ -271,12 +271,12 @@ func (l *linter) shadowedOperators(pr *grammar.OperatorsRule, acrossLevels bool)
 		control.poll()
 		for _, oi := range ops[:j] {
 			control.poll()
-			if prefix(oi) != prefix(oj) || (!acrossLevels && oi.level != oj.level) || !sameControlled(oi.Expr, oj.Expr, true, control) {
+			if prefix(oi) != prefix(oj) || (!acrossLevels && oi.level != oj.level) || !same(oi.Expr, oj.Expr, true, control) {
 				continue
 			}
 			l.report(CheckShadowedAlt, Error, oj.Diagnostic(), "remove it, or merge the two operators",
 				"%s operator %s is never selected: the %s operator%s matches the same text and is declared first",
-				oj.Kind, showControlled(oj.Expr, control), oi.Kind, at(oi.Diagnostic()))
+				oj.Kind, show(oj.Expr, control), oi.Kind, at(oi.Diagnostic()))
 			break
 		}
 	}
@@ -306,17 +306,17 @@ func (l *linter) neverMatches() {
 			switch an.(type) {
 			case *grammar.EndInput:
 				l.report(CheckNeverMatches, Error, posOfControlled(an, control), "move $$ to the end of the sequence",
-					"`$$` is followed by %s, which cannot match at the end of the input, so the sequence can never match", showControlled(after, control))
+					"`$$` is followed by %s, which cannot match at the end of the input, so the sequence can never match", show(after, control))
 			case *grammar.BeginInput:
 				l.report(CheckNeverMatches, Error, posOfControlled(an, control), "move ^^ to the beginning of the sequence",
-					"`^^` follows %s, which must consume input, so the sequence can never match", showControlled(before, control))
+					"`^^` follows %s, which must consume input, so the sequence can never match", show(before, control))
 			case *grammar.EndLine:
 				l.report(CheckNeverMatches, Error, posOfControlled(an, control), "match the line break after $, or remove $",
 					"`$` (end of line) is followed by %s, which begins with %q rather than a line break, so the sequence can never match",
-					showControlled(after, control), firstChar(a.prefix(after).s))
+					show(after, control), firstChar(a.prefix(after).s))
 			case *grammar.BeginLine:
 				l.report(CheckNeverMatches, Error, posOfControlled(an, control), "remove ^, or match a line break before it",
-					"`^` (beginning of line) follows %s, which never ends with a line feed, so the sequence can never match", showControlled(before, control))
+					"`^` (beginning of line) follows %s, which never ends with a line feed, so the sequence can never match", show(before, control))
 			}
 		}, control)
 	})
@@ -505,44 +505,44 @@ func (l *linter) lookaheads() {
 		control.poll()
 		walkExprControlled(r.Expr, func(e grammar.Expr) {
 			control.poll()
-			switch e := analysisExprControlled(e, control).(type) {
+			switch e := analysisExpr(e, control).(type) {
 			case *grammar.And:
 				// Captures in a positive lookahead stay in effect, so it may be there for them.
-				if !hasCapturesControlled(e.Expr, control) && a.succeeds(e.Expr) {
+				if !hasCaptures(e.Expr, control) && a.succeeds(e.Expr) {
 					l.report(CheckUselessLookahead, Warning, e.Diagnostic(), "remove the lookahead",
-						"%s always succeeds, because %s always does: the lookahead has no effect", showControlled(e, control), showControlled(e.Expr, control))
+						"%s always succeeds, because %s always does: the lookahead has no effect", show(e, control), show(e.Expr, control))
 				}
 			case *grammar.Not:
 				switch {
 				case a.succeeds(e.Expr):
 					l.report(CheckUselessLookahead, Error, e.Diagnostic(), "negate an expression that must consume input",
-						"%s can never succeed, because %s always does (it can match without consuming input)", showControlled(e, control), showControlled(e.Expr, control))
+						"%s can never succeed, because %s always does (it can match without consuming input)", show(e, control), show(e.Expr, control))
 				case !a.mayMatch(e.Expr):
 					l.report(CheckUselessLookahead, Warning, e.Diagnostic(), "remove the lookahead",
-						"%s always succeeds, because %s can never match", showControlled(e, control), showControlled(e.Expr, control))
+						"%s always succeeds, because %s can never match", show(e, control), show(e.Expr, control))
 				}
 			}
 		}, control)
 	})
 }
 
-// visibleControlled reports whether the expression has a value (as the engine decides it).
-func visibleControlled(e grammar.Expr, control *lintControl) bool {
+// visible reports whether the expression has a value (as the engine decides it).
+func visible(e grammar.Expr, control *lintControl) bool {
 	control.poll()
-	switch e := analysisExprControlled(e, control).(type) {
+	switch e := analysisExpr(e, control).(type) {
 	case *grammar.And, *grammar.Not, *grammar.Discard, *grammar.Cut, *grammar.Bottom,
 		*grammar.BeginInput, *grammar.EndInput, *grammar.BeginLine, *grammar.EndLine,
 		*grammar.Predicate:
 		return false
 	case *grammar.Capture:
-		return visibleControlled(e.Expr, control)
+		return visible(e.Expr, control)
 	case *grammar.Attributed:
-		return visibleControlled(e.Expr, control)
+		return visible(e.Expr, control)
 	}
 	return true
 }
 
-func hasCapturesControlled(e grammar.Expr, control *lintControl) bool {
+func hasCaptures(e grammar.Expr, control *lintControl) bool {
 	found := false
 	walkExprControlled(e, func(x grammar.Expr) {
 		control.poll()
@@ -569,17 +569,17 @@ func (l *linter) nullableRepetitions() {
 				return
 			}
 			fix := "make the element consume input"
-			switch inner := neutralControlled(rp.Expr, false, control).(type) {
+			switch inner := neutral(rp.Expr, false, control).(type) {
 			case *grammar.Optional:
-				fix = fmt.Sprintf("repeat %s instead of %s", showControlled(inner.Expr, control), showControlled(inner, control))
+				fix = fmt.Sprintf("repeat %s instead of %s", show(inner.Expr, control), show(inner, control))
 			case *grammar.Repeat:
 				if inner.Min <= 1 && inner.Max < 0 {
-					fix = fmt.Sprintf("repeat %s once, without the inner repetition", showControlled(inner.Expr, control))
+					fix = fmt.Sprintf("repeat %s once, without the inner repetition", show(inner.Expr, control))
 				}
 			}
 			l.report(CheckNullableRepetition, Warning, rp.Diagnostic(), fix,
 				"the element of %s can match without consuming input: the repetition then stops, with an empty element in its list",
-				showControlled(rp, control))
+				show(rp, control))
 		}, control)
 	})
 }
@@ -594,9 +594,9 @@ func (l *linter) redundantOptionals() {
 		walkExprControlled(r.Expr, func(e grammar.Expr) {
 			control.poll()
 			// x? has a value (nil) even where x has none, so only an x with a value is the same.
-			if o, ok := e.(*grammar.Optional); ok && visibleControlled(o.Expr, control) && a.succeeds(o.Expr) {
+			if o, ok := e.(*grammar.Optional); ok && visible(o.Expr, control) && a.succeeds(o.Expr) {
 				l.report(CheckRedundantOptional, Warning, o.Diagnostic(), "remove the ?",
-					"%s is the same as %s, which always succeeds", showControlled(o, control), showControlled(o.Expr, control))
+					"%s is the same as %s, which always succeeds", show(o, control), show(o.Expr, control))
 			}
 		}, control)
 	})
@@ -614,7 +614,7 @@ func (l *linter) unusedCaptures() {
 			for _, o := range pr.Operands {
 				control.poll()
 				if o.Action != nil {
-					l.scopeCaptures(o.Expr, o.Action, usesIndexControlled(o.Action, control), "the operand's action does not refer to it")
+					l.scopeCaptures(o.Expr, o.Action, usesIndex(o.Action, control), "the operand's action does not refer to it")
 				}
 			}
 			for _, lv := range pr.Levels {
@@ -629,7 +629,7 @@ func (l *linter) unusedCaptures() {
 			return
 		}
 		if r.Action != nil {
-			l.scopeCaptures(r.Expr, r.Action, usesIndexControlled(r.Action, control), "the action does not refer to it")
+			l.scopeCaptures(r.Expr, r.Action, usesIndex(r.Action, control), "the action does not refer to it")
 		}
 	})
 }
@@ -648,7 +648,7 @@ func (l *linter) scopeCaptures(body grammar.Expr, action grammar.Term, kept bool
 	var visit func(e grammar.Expr, inCapture bool)
 	visit = func(e grammar.Expr, inCapture bool) {
 		control.poll()
-		switch e := analysisExprControlled(e, control).(type) {
+		switch e := analysisExpr(e, control).(type) {
 		case *grammar.Capture:
 			if !refs[e.Name] {
 				l.report(CheckUnusedCapture, Warning, e.Diagnostic(), fmt.Sprintf("remove %s:, or use $%s", e.Name, e.Name),
@@ -658,7 +658,7 @@ func (l *linter) scopeCaptures(body grammar.Expr, action grammar.Term, kept bool
 		case *grammar.Repeat:
 			l.elementCaptures(e.Expr, kept || inCapture)
 		default:
-			forChildrenControlled(e, func(c grammar.Expr) { control.poll(); visit(c, inCapture) }, control)
+			forChildren(e, func(c grammar.Expr) { control.poll(); visit(c, inCapture) }, control)
 		}
 	}
 	visit(body, false)
@@ -675,7 +675,7 @@ func (l *linter) elementCaptures(elem grammar.Expr, kept bool) {
 	var visit func(e grammar.Expr, inCapture bool)
 	visit = func(e grammar.Expr, inCapture bool) {
 		control.poll()
-		switch e := analysisExprControlled(e, control).(type) {
+		switch e := analysisExpr(e, control).(type) {
 		case *grammar.Capture:
 			if !kept && !refs[e.Name] {
 				l.report(CheckUnusedCapture, Warning, e.Diagnostic(), fmt.Sprintf("remove %s:, or capture the repetition and use it", e.Name),
@@ -685,16 +685,16 @@ func (l *linter) elementCaptures(elem grammar.Expr, kept bool) {
 		case *grammar.Repeat:
 			l.elementCaptures(e.Expr, kept || inCapture)
 		default:
-			forChildrenControlled(e, func(c grammar.Expr) { control.poll(); visit(c, inCapture) }, control)
+			forChildren(e, func(c grammar.Expr) { control.poll(); visit(c, inCapture) }, control)
 		}
 	}
 	visit(elem, false)
 }
 
-// forChildrenControlled calls f for the parsing expressions directly inside e (not attribute arguments,
+// forChildren calls f for the parsing expressions directly inside e (not attribute arguments,
 // which cannot hold captures).
-func forChildrenControlled(e grammar.Expr, f func(grammar.Expr), control *lintControl) {
-	switch e := analysisExprControlled(e, control).(type) {
+func forChildren(e grammar.Expr, f func(grammar.Expr), control *lintControl) {
+	switch e := analysisExpr(e, control).(type) {
 	case *grammar.Seq:
 		for _, it := range e.Items {
 			control.poll()
@@ -733,12 +733,12 @@ func scopePredicateRefs(e grammar.Expr, refs map[string]bool) {
 func scopePredicateRefsControlled(e grammar.Expr, refs map[string]bool, control *lintControl) {
 	control.poll()
 
-	switch e := analysisExprControlled(e, control).(type) {
+	switch e := analysisExpr(e, control).(type) {
 	case *grammar.Predicate:
 		captureRefsControlled(e.Term, nil, refs, control)
 	case *grammar.Repeat:
 	default:
-		forChildrenControlled(e, func(c grammar.Expr) { control.poll(); scopePredicateRefsControlled(c, refs, control) }, control)
+		forChildren(e, func(c grammar.Expr) { control.poll(); scopePredicateRefsControlled(c, refs, control) }, control)
 	}
 }
 
@@ -798,7 +798,7 @@ func captureRefsControlled(t grammar.Term, params []string, refs map[string]bool
 	}
 }
 
-func usesIndexControlled(t grammar.Term, control *lintControl) bool {
+func usesIndex(t grammar.Term, control *lintControl) bool {
 	found := false
 	walkTerm(t, func(x grammar.Term) {
 		control.poll()
@@ -859,7 +859,7 @@ func (l *linter) scopeDuplicates(scope grammar.Expr) {
 	}
 	captured = func(e grammar.Expr) []*grammar.Capture {
 		control.poll()
-		switch e := analysisExprControlled(e, control).(type) {
+		switch e := analysisExpr(e, control).(type) {
 		case *grammar.Capture:
 			// A capture stores its span after its expression matches, so nested captures
 			// are evaluated first and the outer capture overwrites them.
@@ -884,7 +884,7 @@ func (l *linter) scopeDuplicates(scope grammar.Expr) {
 			return nil
 		}
 		var acc []*grammar.Capture
-		forChildrenControlled(e, func(c grammar.Expr) { control.poll(); acc = merge(acc, captured(c), true) }, control)
+		forChildren(e, func(c grammar.Expr) { control.poll(); acc = merge(acc, captured(c), true) }, control)
 		return acc
 	}
 	captured(scope)
@@ -1007,7 +1007,7 @@ func (l *linter) rightRecursion() {
 		var tails func(e grammar.Expr, before []grammar.Expr)
 		tails = func(e grammar.Expr, before []grammar.Expr) {
 			control.poll()
-			switch e := neutralControlled(e, true, control).(type) {
+			switch e := neutral(e, true, control).(type) {
 			case *grammar.Ref:
 				if found == nil && e.Name == r.Name && e.Level == "" && !a.isNullable(&grammar.Seq{Items: before}) &&
 					slices.ContainsFunc(before, func(x grammar.Expr) bool {
@@ -1081,7 +1081,7 @@ func (l *linter) positions(start string) {
 	}
 	l.eachRule(func(r *grammar.RuleDef) {
 		control.poll()
-		p, ok := positionReadControlled(r, control)
+		p, ok := positionRead(r, control)
 		if !ok || !repeated[r.Name] || start != "" && r.Name != start && !reachesControlled(start, r.Name, edges, control) {
 			return
 		}
@@ -1135,16 +1135,16 @@ func reachesControlled(from, to string, edges map[string][]string, control *lint
 	return false
 }
 
-// positionReadControlled returns the position of the first .Start or .End that the rule's actions or
+// positionRead returns the position of the first .Start or .End that the rule's actions or
 // predicates read (the zero Pos if it is unknown), and whether there is one.
-func positionReadControlled(r *grammar.RuleDef, control *lintControl) (grammar.Pos, bool) {
+func positionRead(r *grammar.RuleDef, control *lintControl) (grammar.Pos, bool) {
 	var terms []grammar.Term
 	if r.Action != nil {
 		terms = append(terms, r.Action)
 	}
 	walkExprControlled(r.Expr, func(e grammar.Expr) {
 		control.poll()
-		switch e := analysisExprControlled(e, control).(type) {
+		switch e := analysisExpr(e, control).(type) {
 		case *grammar.Predicate:
 			terms = append(terms, e.Term)
 		case *grammar.OperatorsRule:
@@ -1193,7 +1193,7 @@ func (l *linter) longLookaheads() {
 			control.poll()
 			var inner grammar.Expr
 			var pos grammar.Pos
-			switch e := analysisExprControlled(e, control).(type) {
+			switch e := analysisExpr(e, control).(type) {
 			case *grammar.And:
 				inner, pos = e.Expr, e.Diagnostic()
 			case *grammar.Not:
@@ -1201,33 +1201,33 @@ func (l *linter) longLookaheads() {
 			default:
 				return
 			}
-			if rp := anyRepeatControlled(inner, control); rp != nil {
+			if rp := anyRepeat(inner, control); rp != nil {
 				l.report(CheckLongLookahead, Hint, pos, "limit the lookahead to the current line or token",
 					"%s can examine any amount of input (%s repeats over any character, line breaks included): in a Document, "+
-						"an edit anywhere in what it examined makes this rule be evaluated again", showControlled(e, control), showControlled(rp, control))
+						"an edit anywhere in what it examined makes this rule be evaluated again", show(e, control), show(rp, control))
 			}
 		}, control)
 	})
 }
 
-// anyRepeatControlled returns an unbounded repetition written in e whose element consumes any character,
+// anyRepeat returns an unbounded repetition written in e whose element consumes any character,
 // line breaks included: . or a negated character class that does not exclude the line feed.
 // Repetitions in the rules that e calls are not considered: those are usually tokens and
 // whitespace, which end soon.
-func anyRepeatControlled(e grammar.Expr, control *lintControl) grammar.Expr {
+func anyRepeat(e grammar.Expr, control *lintControl) grammar.Expr {
 	var found grammar.Expr
 	walkExprControlled(e, func(x grammar.Expr) {
 		control.poll()
-		if rp, ok := x.(*grammar.Repeat); ok && found == nil && rp.Max < 0 && consumesAnyControlled(rp.Expr, control) {
+		if rp, ok := x.(*grammar.Repeat); ok && found == nil && rp.Max < 0 && consumesAny(rp.Expr, control) {
 			found = rp
 		}
 	}, control)
 	return found
 }
 
-func consumesAnyControlled(e grammar.Expr, control *lintControl) bool {
+func consumesAny(e grammar.Expr, control *lintControl) bool {
 	control.poll()
-	switch e := analysisExprControlled(e, control).(type) {
+	switch e := analysisExpr(e, control).(type) {
 	case *grammar.Any:
 		return true
 	case *grammar.CharClass:
@@ -1236,11 +1236,11 @@ func consumesAnyControlled(e grammar.Expr, control *lintControl) bool {
 		return false
 	}
 	found := false
-	forChildrenControlled(e, func(c grammar.Expr) { found = found || consumesAnyControlled(c, control) }, control)
+	forChildren(e, func(c grammar.Expr) { found = found || consumesAny(c, control) }, control)
 	return found
 }
 
-func ungroupTypeControlled(t grammar.TypeExpr, control *lintControl) grammar.TypeExpr {
+func ungroupType(t grammar.TypeExpr, control *lintControl) grammar.TypeExpr {
 	for {
 		control.poll()
 		g, ok := t.(*grammar.TypeGroup)
@@ -1263,7 +1263,7 @@ func (l *linter) caseInsensitiveLiterals() {
 		control.poll()
 		walkExprControlled(r.Expr, func(e grammar.Expr) {
 			control.poll()
-			seq, ok := analysisExprControlled(e, control).(*grammar.Seq)
+			seq, ok := analysisExpr(e, control).(*grammar.Seq)
 			if !ok {
 				return
 			}
@@ -1279,7 +1279,7 @@ func (l *linter) caseInsensitiveLiterals() {
 			}
 			for _, item := range seq.Items {
 				control.poll()
-				if c, ok := casePairLetter(analysisExprControlled(item, control)); ok {
+				if c, ok := casePairLetter(analysisExpr(item, control)); ok {
 					if first == nil {
 						first = item
 					}

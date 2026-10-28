@@ -93,7 +93,7 @@ func (x *lintFixer) fix(diagnostic Diagnostic, control *renderControl) (lintFix,
 	if !ok || i >= len(x.findings) || !x.rewrites[i].IsValid() || x.findings[i].Check != diagnostic.Code {
 		return lintFix{}, false
 	}
-	return x.d.verifiedFixControlled(x.ctx, x.findings, i, x.rewrites[i], control)
+	return x.d.verifiedFix(x.ctx, x.findings, i, x.rewrites[i], control)
 }
 
 // findingIndex parses the "index:check" key of a lint diagnostic.
@@ -124,7 +124,7 @@ func findingKeys(findings []lint.Finding, skip int, gone string) map[string]int 
 	return keys
 }
 
-func (d *document) verifiedFixControlled(ctx context.Context, findings []lint.Finding, i int, rw lint.Rewrite, control *renderControl) (lintFix, bool) {
+func (d *document) verifiedFix(ctx context.Context, findings []lint.Finding, i int, rw lint.Rewrite, control *renderControl) (lintFix, bool) {
 	a := d.analysis()
 	f := findings[i]
 	start, end := a.idx.pegoOffset(rw.Start), a.idx.pegoOffset(rw.End)

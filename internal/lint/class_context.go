@@ -32,10 +32,10 @@ func normalizeControlled(rs []grammar.CharRange, control *lintControl) []grammar
 		out[i] = r
 	}
 	slices.SortFunc(out, func(a, b grammar.CharRange) int { control.poll(); return int(a.Lo - b.Lo) })
-	return mergeRangesControlled(out, control)
+	return mergeRanges(out, control)
 }
 
-func mergeRangesControlled(out []grammar.CharRange, control *lintControl) []grammar.CharRange {
+func mergeRanges(out []grammar.CharRange, control *lintControl) []grammar.CharRange {
 	var merged []grammar.CharRange
 	for _, r := range out {
 		control.poll()

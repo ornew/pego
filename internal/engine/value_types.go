@@ -296,7 +296,7 @@ func valueTypesChecked(p *Program, control *compileControl, nodeMembers map[*gra
 	for _, rd := range rules {
 		v.rules[rd.Name] = rd
 	}
-	v.cycle = ruleCyclesControlled(rules, v.rules, control)
+	v.cycle = ruleCycles(rules, v.rules, control)
 	for _, rd := range rules {
 		control.poll()
 		v.ruleValue(rd.Name)
@@ -415,10 +415,10 @@ func mapTy(t ty, f func(ty) (ty, bool)) ty {
 	return t
 }
 
-// ruleCyclesControlled returns the strongly connected components of the references between rules that
+// ruleCycles returns the strongly connected components of the references between rules that
 // have a cycle, for each of their rules. The value of a rule can only depend on the rules it
 // refers to, directly or through other rules, since a rule type comes from a reference.
-func ruleCyclesControlled(rules []*grammar.RuleDef, byName map[string]*grammar.RuleDef, control *compileControl) map[string][]string {
+func ruleCycles(rules []*grammar.RuleDef, byName map[string]*grammar.RuleDef, control *compileControl) map[string][]string {
 	refs := map[string][]string{}
 	for _, rd := range rules {
 		control.poll()

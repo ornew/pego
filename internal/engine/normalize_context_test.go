@@ -176,7 +176,7 @@ func TestNormalizationCopiesObserveCancellation(t *testing.T) {
 			case "predicate-flatten":
 				source := []grammar.Expr{&grammar.Predicate{Term: &grammar.Block{Statements: terms}}}
 				normalized := []grammar.Expr{&grammar.Seq{Items: expressions}}
-				expandPredicateBlocksControlled(source, normalized, control)
+				expandPredicateBlocks(source, normalized, control)
 			}
 			t.Fatal("copy finished without cancellation")
 		})

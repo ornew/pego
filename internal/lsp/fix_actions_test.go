@@ -162,7 +162,7 @@ func forgedFix(t *testing.T, ctx context.Context, src, check string, edit func(*
 			continue
 		}
 		edit(&rewrites[i], a)
-		_, ok := d.verifiedFixControlled(ctx, findings, i, rewrites[i], &renderControl{ctx: ctx})
+		_, ok := d.verifiedFix(ctx, findings, i, rewrites[i], &renderControl{ctx: ctx})
 		return ok
 	}
 	t.Fatalf("no %s finding with a rewrite in %q", check, src)

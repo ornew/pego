@@ -78,7 +78,7 @@ func classAcceptControlled(e *grammar.CharClass, control *compileControl) func(*
 	if control == nil || len(e.Ranges) <= 2 {
 		return classAccept(e)
 	}
-	ranges := copyClassRangesControlled(e.Ranges, control)
+	ranges := copyClassRanges(e.Ranges, control)
 	neg := e.Negated
 	slow := func(r rune) bool {
 		for _, rg := range ranges {
@@ -88,7 +88,7 @@ func classAcceptControlled(e *grammar.CharClass, control *compileControl) func(*
 		}
 		return neg
 	}
-	ascii := classASCIIControlled(ranges, neg, control)
+	ascii := classASCII(ranges, neg, control)
 	return func(p *parser, r rune) bool {
 		if uint32(r) < 128 {
 			return ascii[r>>6]&(1<<(r&63)) != 0
@@ -108,7 +108,7 @@ func classAcceptControlled(e *grammar.CharClass, control *compileControl) func(*
 
 // Copies and bitmap construction share the compiler invocation's polling
 // counter. Only immutable range data and bitmap values reach runtime closures.
-func copyClassRangesControlled(ranges []grammar.CharRange, control *compileControl) []grammar.CharRange {
+func copyClassRanges(ranges []grammar.CharRange, control *compileControl) []grammar.CharRange {
 	var result []grammar.CharRange
 	if len(ranges) != 0 {
 		result = make([]grammar.CharRange, len(ranges))
@@ -120,7 +120,7 @@ func copyClassRangesControlled(ranges []grammar.CharRange, control *compileContr
 	return result
 }
 
-func classASCIIControlled(ranges []grammar.CharRange, neg bool, control *compileControl) (ascii [2]uint64) {
+func classASCII(ranges []grammar.CharRange, neg bool, control *compileControl) (ascii [2]uint64) {
 	for r := rune(0); r < 128; r++ {
 		matched := false
 		for at := 0; at < len(ranges); {

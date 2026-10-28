@@ -165,7 +165,7 @@ func (l *linter) lookaheadRewrite(f Finding) Rewrite {
 	var body grammar.Expr
 	switch x := e.(type) {
 	case *grammar.And:
-		if !hasCapturesControlled(x.Expr, control) && a.succeeds(x.Expr) {
+		if !hasCaptures(x.Expr, control) && a.succeeds(x.Expr) {
 			body = x.Expr
 		}
 	case *grammar.Not:

@@ -68,7 +68,7 @@ func TestRuleCyclesPollsContext(t *testing.T) {
 		byName[rd.Name] = rd
 	}
 	ctx := compileTestContext(t, 1<<20)
-	cycles := ruleCyclesControlled(defs, byName, &compileControl{ctx: ctx})
+	cycles := ruleCycles(defs, byName, &compileControl{ctx: ctx})
 	if len(cycles) != rules || len(cycles["r0"]) != rules {
 		t.Fatalf("cycles for %d rules, the first of %d", len(cycles), len(cycles["r0"]))
 	}

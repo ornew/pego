@@ -63,11 +63,11 @@ func analyzeControlled(rules []*grammar.RuleDef, control *compileControl) *analy
 	}
 	for _, r := range rules {
 		control.poll()
-		if ruleUsesPositionsControlled(r, control) {
+		if ruleUsesPositions(r, control) {
 			a.positional[r.Name] = true
 		}
 	}
-	propagateControlled(rules, calls, a.positional, control)
+	propagate(rules, calls, a.positional, control)
 
 	// Find left-recursion cycles from the strongly connected components of the left-call graph.
 	order := map[string]int{}
@@ -88,7 +88,7 @@ func analyzeControlled(rules []*grammar.RuleDef, control *compileControl) *analy
 	var components [][]string
 	for {
 		control.poll()
-		components = tarjanControlled(rules, left, control)
+		components = tarjan(rules, left, control)
 		clear(a.cyclic)
 		for _, scc := range components {
 			control.poll()
@@ -135,7 +135,7 @@ func analyzeControlled(rules []*grammar.RuleDef, control *compileControl) *analy
 		// Until every cycle passes through some leader, make the first rule of a found cycle a leader.
 		for {
 			control.poll()
-			cycle := findCycleControlled(scc, left, in, a.leaders, control)
+			cycle := findCycle(scc, left, in, a.leaders, control)
 			if cycle == nil {
 				break
 			}
@@ -334,7 +334,7 @@ func ruleVariablesControlled(rules []*grammar.RuleDef, control *compileControl) 
 	// component reaches all its peers, so compute their union only once.
 	// A worklist repeatedly copying evolving sets is costly when many peers
 	// introduce different variables, including in long acyclic chains.
-	for _, component := range tarjanControlled(rules, calls, control) {
+	for _, component := range tarjan(rules, calls, control) {
 		control.poll()
 		all := map[string]bool{}
 		for _, name := range component {
@@ -485,7 +485,7 @@ func walkTerm(t grammar.Term, f func(grammar.Term)) {
 	}
 }
 
-func tarjanControlled(rules []*grammar.RuleDef, edges map[string][]string, control *compileControl) [][]string {
+func tarjan(rules []*grammar.RuleDef, edges map[string][]string, control *compileControl) [][]string {
 	index := map[string]int{}
 	low := map[string]int{}
 	onStack := map[string]bool{}
@@ -533,7 +533,7 @@ func tarjanControlled(rules []*grammar.RuleDef, edges map[string][]string, contr
 	return sccs
 }
 
-func findCycleControlled(scc []string, edges map[string][]string, in, leaders map[string]bool, control *compileControl) []string {
+func findCycle(scc []string, edges map[string][]string, in, leaders map[string]bool, control *compileControl) []string {
 	state := map[string]int{} // 0: unvisited, 1: in progress, 2: done
 	var path []string
 	var found []string
@@ -573,7 +573,7 @@ func findCycleControlled(scc []string, edges map[string][]string, in, leaders ma
 	return nil
 }
 
-func propagateControlled(rules []*grammar.RuleDef, calls map[string][]string, set map[string]bool, control *compileControl) {
+func propagate(rules []*grammar.RuleDef, calls map[string][]string, set map[string]bool, control *compileControl) {
 	for changed := true; changed; {
 		control.poll()
 		changed = false
@@ -619,7 +619,7 @@ func walkRuleTermsControlled(r *grammar.RuleDef, f func(grammar.Term), control *
 	}, control)
 }
 
-func ruleUsesPositionsControlled(r *grammar.RuleDef, control *compileControl) bool {
+func ruleUsesPositions(r *grammar.RuleDef, control *compileControl) bool {
 	found := false
 	walkRuleTermsControlled(r, func(x grammar.Term) {
 		control.poll()

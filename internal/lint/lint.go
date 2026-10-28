@@ -140,10 +140,10 @@ type Options struct {
 // Findings can be suppressed with comments in the source (see the directive syntax in
 // docs/guide/linting.md).
 func Run(g *grammar.Grammar, start string, opts Options) []Finding {
-	return runControlled(g, start, opts, nil)
+	return run(g, start, opts, nil)
 }
 
-func runControlled(g *grammar.Grammar, start string, opts Options, control *lintControl) []Finding {
+func run(g *grammar.Grammar, start string, opts Options, control *lintControl) []Finding {
 	control.check()
 	// Each inline action is a rule of its own with its captures and cuts: lint the grammar with
 	// them lowered to hidden rules, and report their findings as the inline actions written.

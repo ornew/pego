@@ -100,16 +100,16 @@ func TestMetadataInteriorCancellation(t *testing.T) {
 		a := metadataPrepared(t, "@start\nrule main = "+strings.Repeat("\"a\" ", n))
 		a.indexDeclarationStarts()
 		r := a.g.File.Decls[0].(*grammar.RuleDef)
-		assertMetadataPhaseCancels(t, func(c *renderControl) { a.defineControlled(kindRule, r.Name, r.Pos, r.Diagnostic(), c) })
+		assertMetadataPhaseCancels(t, func(c *renderControl) { a.define(kindRule, r.Name, r.Pos, r.Diagnostic(), c) })
 	})
 	t.Run("documentation", func(t *testing.T) {
 		a := metadataPrepared(t, strings.Repeat("// documentation\n", n)+"@start\nrule main = \"a\"")
 		a.indexDeclarationStarts()
 		r := a.g.File.Decls[0].(*grammar.RuleDef)
-		assertMetadataPhaseCancels(t, func(c *renderControl) { a.defineControlled(kindRule, r.Name, r.Pos, r.Diagnostic(), c) })
+		assertMetadataPhaseCancels(t, func(c *renderControl) { a.define(kindRule, r.Name, r.Pos, r.Diagnostic(), c) })
 	})
 	t.Run("comment-trim", func(t *testing.T) {
-		assertMetadataPhaseCancels(t, func(c *renderControl) { commentTextControlled("/*"+strings.Repeat(" \t\u2000", n)+"*/", c) })
+		assertMetadataPhaseCancels(t, func(c *renderControl) { commentText("/*"+strings.Repeat(" \t\u2000", n)+"*/", c) })
 	})
 	t.Run("type", func(t *testing.T) {
 		u := &grammar.JoinType{}
@@ -117,7 +117,7 @@ func TestMetadataInteriorCancellation(t *testing.T) {
 			u.Types = append(u.Types, &grammar.TypeRef{Name: "T"})
 		}
 		a := newAnalysis("")
-		assertMetadataPhaseCancels(t, func(c *renderControl) { a.walkTypeControlled(u, c) })
+		assertMetadataPhaseCancels(t, func(c *renderControl) { a.walkType(u, c) })
 	})
 	t.Run("expression", func(t *testing.T) {
 		s := &grammar.Seq{}
@@ -125,7 +125,7 @@ func TestMetadataInteriorCancellation(t *testing.T) {
 			s.Items = append(s.Items, &grammar.Literal{Value: "a"})
 		}
 		a := newAnalysis("")
-		assertMetadataPhaseCancels(t, func(c *renderControl) { a.walkExprControlled(s, c) })
+		assertMetadataPhaseCancels(t, func(c *renderControl) { a.walkExpr(s, c) })
 	})
 	t.Run("action", func(t *testing.T) {
 		call := &grammar.Call{Func: "list"}
@@ -133,7 +133,7 @@ func TestMetadataInteriorCancellation(t *testing.T) {
 			call.Args = append(call.Args, &grammar.IntLit{Value: 1})
 		}
 		a := newAnalysis("")
-		assertMetadataPhaseCancels(t, func(c *renderControl) { a.walkTermControlled(call, c) })
+		assertMetadataPhaseCancels(t, func(c *renderControl) { a.walkTerm(call, c) })
 	})
 	for _, keyword := range []bool{false, true} {
 		name := "attribute-args"
@@ -151,7 +151,7 @@ func TestMetadataInteriorCancellation(t *testing.T) {
 			}
 			a := newAnalysis("")
 			assertMetadataPhaseCancels(t, func(c *renderControl) {
-				a.walkExprControlled(&grammar.Attributed{Expr: &grammar.Literal{Value: "a"}, Attrs: []*grammar.Attribute{at}}, c)
+				a.walkExpr(&grammar.Attributed{Expr: &grammar.Literal{Value: "a"}, Attrs: []*grammar.Attribute{at}}, c)
 			})
 		})
 	}
@@ -160,7 +160,7 @@ func TestMetadataInteriorCancellation(t *testing.T) {
 		for range n {
 			a.syntaxErrs = append(a.syntaxErrs, &syntax.Error{Msg: "invalid"})
 		}
-		assertMetadataPhaseCancels(t, a.mapSyntaxDiagnosticsControlled)
+		assertMetadataPhaseCancels(t, a.mapSyntaxDiagnostics)
 	})
 	t.Run("compile-diagnostics", func(t *testing.T) {
 		a := newAnalysis("x")
@@ -168,7 +168,7 @@ func TestMetadataInteriorCancellation(t *testing.T) {
 			a.defs = append(a.defs, &definition{kwStart: i + 1})
 		}
 		list := engine.ErrorList{&engine.Error{Msg: "undefined"}}
-		assertMetadataPhaseCancels(t, func(c *renderControl) { a.mapCompileDiagnosticsControlled(list, c) })
+		assertMetadataPhaseCancels(t, func(c *renderControl) { a.mapCompileDiagnostics(list, c) })
 	})
 	t.Run("definition-range", func(t *testing.T) {
 		a := newAnalysis("x")
@@ -182,14 +182,14 @@ func TestMetadataInteriorCancellation(t *testing.T) {
 		for i := range n {
 			a.occs = append(a.occs, occurrence{start: n - i})
 		}
-		assertMetadataPhaseCancels(t, a.sortOccurrencesControlled)
+		assertMetadataPhaseCancels(t, a.sortOccurrences)
 	})
 	t.Run("diagnostic-sort", func(t *testing.T) {
 		a := newAnalysis("")
 		for i := range n {
 			a.diags = append(a.diags, Diagnostic{Range: Range{Start: Position{Line: n - i}}})
 		}
-		assertMetadataPhaseCancels(t, a.sortDiagnosticsControlled)
+		assertMetadataPhaseCancels(t, a.sortDiagnostics)
 	})
 }
 func TestMetadataStableOrdering(t *testing.T) {
@@ -197,8 +197,8 @@ func TestMetadataStableOrdering(t *testing.T) {
 	a.occs = []occurrence{{name: "second", start: 2}, {name: "first", start: 1}, {name: "tie", start: 1}}
 	a.diags = []Diagnostic{{Message: "second", Range: Range{Start: Position{Line: 2}}}, {Message: "first", Range: Range{Start: Position{Line: 1}}}, {Message: "tie", Range: Range{Start: Position{Line: 1}}}}
 	if err := runMetadataContext(formatContext(t, 0), func(c *renderControl) error {
-		a.sortOccurrencesControlled(c)
-		a.sortDiagnosticsControlled(c)
+		a.sortOccurrences(c)
+		a.sortDiagnostics(c)
 		return nil
 	}); err != nil {
 		t.Fatal(err)

@@ -162,7 +162,7 @@ func (a *analysis) completeControlled(off int, control *renderControl) []Complet
 	case "@":
 		return directiveItems(attributes)
 	case "#":
-		if a.atRuleBodyStartControlled(prev, control) {
+		if a.atRuleBodyStart(prev, control) {
 			return directiveItems(pragmas)
 		}
 		// #operators is the whole body of a rule, so it is offered only where one starts.
@@ -190,7 +190,7 @@ func (a *analysis) completeControlled(off int, control *renderControl) []Complet
 			return a.ruleItemsControlled(control)
 		}
 		if adjacent == "." {
-			return append(a.memberItemsControlled(control), a.captureMemberItemsControlled(prev, control)...)
+			return append(a.memberItemsControlled(control), a.captureMemberItems(prev, control)...)
 		}
 		return a.valueItemsControlled(control)
 	}
@@ -235,13 +235,13 @@ func (a *analysis) completeControlled(off int, control *renderControl) []Complet
 	if value {
 		switch pt.Text {
 		case ".":
-			return append(a.memberItemsControlled(control), a.captureMemberItemsControlled(prev, control)...)
+			return append(a.memberItemsControlled(control), a.captureMemberItems(prev, control)...)
 		}
 		items = append(items, builtinFuncItems()...)
 		items = append(items, a.typeItemsControlled(true, control)...)
 		items = append(items, keywordItems(termKeywords)...)
 		// A parameter hides a variable of the same name.
-		params := a.paramItemsControlled(prev, control)
+		params := a.paramItems(prev, control)
 		hidden := map[string]bool{}
 		for _, p := range params {
 			hidden[p.Label] = true
@@ -320,9 +320,9 @@ func (a *analysis) valueItemsControlled(control *renderControl) []CompletionItem
 	return items
 }
 
-// atRuleBodyStartControlled reports whether the token hash, a "#", is the first token of the body
+// atRuleBodyStart reports whether the token hash, a "#", is the first token of the body
 // of a rule: the token before it is the "=" that follows the rule's header.
-func (a *analysis) atRuleBodyStartControlled(hash int, control *renderControl) bool {
+func (a *analysis) atRuleBodyStart(hash int, control *renderControl) bool {
 	control.poll()
 	eq := a.previousSignificantTokenControlled(hash-1, control)
 	if eq < 0 || !a.isPunct(eq, "=") {
@@ -451,11 +451,11 @@ func (a *analysis) captureItemsControlled(i int, control *renderControl) []Compl
 			items = append(items, CompletionItem{Label: name, Kind: completionKindVariable, Detail: detail})
 		}
 	}
-	scope := a.inlineScopesControlled(first, control)
+	scope := a.inlineScopes(first, control)
 	for j := first + 2; j < len(a.toks) && !a.isDefKeyword(j); j++ {
 		control.poll()
 		// A label is visible where it was made: in the rule, or in the same inline action.
-		if a.isLabelControlled(j, control) && scope[j] == scope[min(i, len(scope)-1)] {
+		if a.isLabel(j, control) && scope[j] == scope[min(i, len(scope)-1)] {
 			add(a.toks[j].Text, "capture")
 		}
 	}
@@ -468,7 +468,7 @@ func (a *analysis) captureItemsControlled(i int, control *renderControl) []Compl
 // captures made inside its parentheses to itself, and the rule's action does not see them.
 // A parenthesis in a parsing-expression context is an inline action when a "=>" follows at its own
 // level, even past the cursor; the parentheses of lambdas and of arguments are in value contexts.
-func (a *analysis) inlineScopesControlled(first int, control *renderControl) []int {
+func (a *analysis) inlineScopes(first int, control *renderControl) []int {
 	control.poll()
 	end := first + 1
 	for end < len(a.toks) && !a.isDefKeyword(end) {
@@ -542,7 +542,7 @@ func (a *analysis) inlineScopesControlled(first int, control *renderControl) []i
 // labels; another receiver, such as a lambda parameter over a repetition, those inside the
 // labelled groups of the definition and those of the rules repeated directly after a label. Typing a name after
 // the "." still finds them.
-func (a *analysis) captureMemberItemsControlled(dot int, control *renderControl) []CompletionItem {
+func (a *analysis) captureMemberItems(dot int, control *renderControl) []CompletionItem {
 	control.poll()
 	items := []CompletionItem{}
 	first := dot
@@ -584,7 +584,7 @@ func (a *analysis) captureMemberItemsControlled(dot int, control *renderControl)
 	capture := recv >= 0 && a.toks[recv].Kind == syntax.TokenCapture
 	for j := first + 2; j < len(a.toks) && !a.isDefKeyword(j); j++ {
 		control.poll()
-		if !a.isLabelControlled(j, control) {
+		if !a.isLabel(j, control) {
 			continue
 		}
 		target := a.significantTokenControlled(j+2, control)
@@ -593,7 +593,7 @@ func (a *analysis) captureMemberItemsControlled(dot int, control *renderControl)
 		}
 		switch {
 		case a.toks[target].Kind == syntax.TokenIdent:
-			if capture && strings.TrimPrefix(a.toks[recv].Text, "$") == a.toks[j].Text || !capture && a.repeatedControlled(target, control) {
+			if capture && strings.TrimPrefix(a.toks[recv].Text, "$") == a.toks[j].Text || !capture && a.repeated(target, control) {
 				ruleCaptures(target)
 			}
 		case !capture && a.isPunct(target, "("):
@@ -604,7 +604,7 @@ func (a *analysis) captureMemberItemsControlled(dot int, control *renderControl)
 					depth++
 				case a.isPunct(k, ")"):
 					depth--
-				case a.isLabelControlled(k, control):
+				case a.isLabel(k, control):
 					add([]CompletionItem{{Label: a.toks[k].Text, Kind: completionKindVariable, Detail: "capture"}})
 				}
 			}
@@ -615,14 +615,14 @@ func (a *analysis) captureMemberItemsControlled(dot int, control *renderControl)
 
 // repeated reports whether the rule called at token i is repeated, as the elements a lambda
 // over the capture of the repetition reads.
-func (a *analysis) repeatedControlled(i int, control *renderControl) bool {
+func (a *analysis) repeated(i int, control *renderControl) bool {
 	next := a.significantTokenControlled(i+1, control)
 	return a.isPunct(next, "*") || a.isPunct(next, "+") || a.isPunct(next, "#") && a.isIdent(next+1, "repeat")
 }
 
 // isLabel reports whether token i is the label of a capture, label:expr, and not a field of a
 // constructor T{...} or a later one after ",".
-func (a *analysis) isLabelControlled(i int, control *renderControl) bool {
+func (a *analysis) isLabel(i int, control *renderControl) bool {
 	t := a.toks[i]
 	return t.Kind == syntax.TokenIdent && a.isPunct(i+1, ":") && a.toks[i+1].start == t.end &&
 		!(a.isPunct(i-1, "{") && a.inValueControlled(i-1, control)) && !a.isPunct(i-1, ",")
@@ -630,7 +630,7 @@ func (a *analysis) isLabelControlled(i int, control *renderControl) bool {
 
 // paramItems returns the parameters of the lambdas, (a, b) =>, whose bodies token i is in: a body
 // runs from its => to the "," or closing bracket of the brackets the lambda is in.
-func (a *analysis) paramItemsControlled(i int, control *renderControl) []CompletionItem {
+func (a *analysis) paramItems(i int, control *renderControl) []CompletionItem {
 	control.poll()
 	items := []CompletionItem{}
 	first := i

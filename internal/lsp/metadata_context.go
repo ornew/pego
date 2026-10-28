@@ -36,13 +36,13 @@ func runMetadataContext(ctx context.Context, action func(*renderControl) error) 
 }
 
 func (a *analysis) finishMetadataContext(ctx context.Context) error {
-	return runMetadataContext(ctx, func(control *renderControl) error { return a.finishMetadataControlled(ctx, control) })
+	return runMetadataContext(ctx, func(control *renderControl) error { return a.finishMetadata(ctx, control) })
 }
-func (a *analysis) finishMetadataControlled(ctx context.Context, control *renderControl) error {
+func (a *analysis) finishMetadata(ctx context.Context, control *renderControl) error {
 	control.poll()
 	a.indexDeclarationStartsControlled(control)
 	a.collectControlled(control)
-	a.mapSyntaxDiagnosticsControlled(control)
+	a.mapSyntaxDiagnostics(control)
 	if len(a.syntaxErrs) == 0 {
 		if err := a.compileContextControlled(ctx, control); err != nil {
 			return err
@@ -51,10 +51,10 @@ func (a *analysis) finishMetadataControlled(ctx context.Context, control *render
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	a.sortDiagnosticsControlled(control)
+	a.sortDiagnostics(control)
 	return nil
 }
-func (a *analysis) mapSyntaxDiagnosticsControlled(control *renderControl) {
+func (a *analysis) mapSyntaxDiagnostics(control *renderControl) {
 	control.poll()
 	for _, e := range a.syntaxErrs {
 		control.poll()
@@ -65,7 +65,7 @@ func (a *analysis) mapSyntaxDiagnosticsControlled(control *renderControl) {
 		a.diag(r, e.Msg)
 	}
 }
-func (a *analysis) mapCompileDiagnosticsControlled(list engine.ErrorList, control *renderControl) {
+func (a *analysis) mapCompileDiagnostics(list engine.ErrorList, control *renderControl) {
 	control.poll()
 	for i, e := range list {
 		control.poll()
@@ -76,11 +76,11 @@ func (a *analysis) mapCompileDiagnosticsControlled(list engine.ErrorList, contro
 		a.diag(a.errorRangeControlled(e.Pos, true, control), e.Msg)
 	}
 }
-func (a *analysis) sortOccurrencesControlled(control *renderControl) {
+func (a *analysis) sortOccurrences(control *renderControl) {
 	control.poll()
 	sort.SliceStable(a.occs, func(i, j int) bool { control.poll(); return a.occs[i].start < a.occs[j].start })
 }
-func (a *analysis) sortDiagnosticsControlled(control *renderControl) {
+func (a *analysis) sortDiagnostics(control *renderControl) {
 	control.poll()
 	sort.SliceStable(a.diags, func(i, j int) bool {
 		control.poll()

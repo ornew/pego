@@ -122,7 +122,7 @@ func TestCodeActionInteriorWalksCancel(t *testing.T) {
 		doc := codeActionServer(long, nil, true, true, true).docs[codeActionURI]
 		target := Diagnostic{Code: "unused-capture", Range: Range{Start: Position{Line: 2}}}
 		assertOccurrencePhaseCancels(t, 3, func(c *renderControl) (any, *rpcError) {
-			edit, ok := doc.suppressionEditControlled(c.ctx, target, c)
+			edit, ok := doc.suppressionEdit(c.ctx, target, c)
 			return struct {
 				Edit TextEdit
 				OK   bool

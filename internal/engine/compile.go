@@ -159,7 +159,7 @@ type rule struct {
 	// initVals are the initial values of vars, in the same order (nil when vars is empty).
 	initVals []any
 	// transient reports that the rule is not memoized in ordinary parses (it is memoized only by
-	// the incremental Document) (transientRulesControlled).
+	// the incremental Document) (transientRules).
 	transient bool
 	// seen is the rule's index among the rules whose memoization is deferred to the second call at a
 	// position (parser.firstCall), or -1.
@@ -477,7 +477,7 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 	} else if len(flags) != len(prog.rules) {
 		return nil, fmt.Errorf("compiled grammar has %d rule flags for %d rules", len(flags), len(prog.rules))
 	}
-	transient := transientRulesControlled(rules, control)
+	transient := transientRules(rules, control)
 	vars := ruleVariablesControlled(rules, control)
 	for i, r := range prog.rules {
 		control.poll()
@@ -494,7 +494,7 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 		r.initVals = c.prog.vars.valuesOf(r.vars)
 		if flags == nil {
 			_, isOperatorsRule := r.def.Expr.(*grammar.OperatorsRule)
-			twin = r.action == nil && !isOperatorsRule && !c.an.cyclic[r.name] && !hasStreamControlled(r.def.Expr, control)
+			twin = r.action == nil && !isOperatorsRule && !c.an.cyclic[r.name] && !hasStream(r.def.Expr, control)
 		}
 		r.twinOK = twin
 	}
@@ -502,12 +502,12 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 		// Only rules whose values are referenced by predicates, and the rules needed to build those
 		// values, are evaluated as usual; so are the rules with a #stream repetition, whose elements
 		// a stream hands to its caller, unless the program is the recognizer, which only recognizes.
-		needed := valueNeededRulesControlled(rules, control, !opts.recognizer)
+		needed := valueNeededRules(rules, control, !opts.recognizer)
 		for _, r := range prog.rules {
 			control.poll()
 			if !needed[r.name] {
 				r.novalue, r.action, r.twinOK = true, nil, false
-				r.predCaps = predicateCapturesControlled(r.def.Expr, control)
+				r.predCaps = predicateCaptures(r.def.Expr, control)
 			}
 		}
 	}
@@ -619,7 +619,7 @@ func (c *compiler) compileRule(r *rule) {
 		if c.prog.projected == nil {
 			c.prog.projected = map[*grammar.Call]bool{}
 		}
-		markProjectedMapsControlled(r.action, c.proj, c.prog.projected, control)
+		markProjectedMaps(r.action, c.proj, c.prog.projected, control)
 	}
 	c.proj = nil
 	r.body = func(p *parser, _ int) (*Node, bool) { return m(p) }
@@ -655,7 +655,7 @@ func (c *compiler) twinOf(r *rule) *rule {
 	return r.twin
 }
 
-func transientRulesControlled(rules []*grammar.RuleDef, control *compileControl) map[string]bool {
+func transientRules(rules []*grammar.RuleDef, control *compileControl) map[string]bool {
 	refs := map[string]int{}
 	for _, rd := range rules {
 		control.poll()
@@ -671,8 +671,8 @@ func transientRulesControlled(rules []*grammar.RuleDef, control *compileControl)
 	return out
 }
 
-// predicateCapturesControlled returns the names of the captures referenced by predicates in the expression.
-func predicateCapturesControlled(e grammar.Expr, control *compileControl) map[string]bool {
+// predicateCaptures returns the names of the captures referenced by predicates in the expression.
+func predicateCaptures(e grammar.Expr, control *compileControl) map[string]bool {
 	control.poll()
 	names := map[string]bool{}
 	walkExprControlled(e, func(x grammar.Expr) {
@@ -688,10 +688,10 @@ func predicateCapturesControlled(e grammar.Expr, control *compileControl) map[st
 	return names
 }
 
-// valueNeededRulesControlled returns the rules that must build values even in a program that builds no
+// valueNeededRules returns the rules that must build values even in a program that builds no
 // tree: the rules called within captures referenced by predicates, and every rule they call. With
 // streams, also the rules with a #stream repetition (see Program.ParseStream) and every rule they call.
-func valueNeededRulesControlled(rules []*grammar.RuleDef, control *compileControl, streams bool) map[string]bool {
+func valueNeededRules(rules []*grammar.RuleDef, control *compileControl, streams bool) map[string]bool {
 	control.poll()
 	byName := map[string]*grammar.RuleDef{}
 	for _, rd := range rules {
@@ -712,10 +712,10 @@ func valueNeededRulesControlled(rules []*grammar.RuleDef, control *compileContro
 	}
 	for _, rd := range rules {
 		control.poll()
-		if streams && hasStreamControlled(rd.Expr, control) {
+		if streams && hasStream(rd.Expr, control) {
 			mark(rd.Name)
 		}
-		pc := predicateCapturesControlled(rd.Expr, control)
+		pc := predicateCaptures(rd.Expr, control)
 		walkExprControlled(rd.Expr, func(x grammar.Expr) {
 			if cp, ok := x.(*grammar.Capture); ok && pc[cp.Name] {
 				for _, callee := range allCallsControlled(cp.Expr, nil, control) {
@@ -735,8 +735,8 @@ func startsUpper(name string) bool {
 	return unicode.IsUpper(r)
 }
 
-// hasStreamControlled reports whether the expression contains #stream.
-func hasStreamControlled(e grammar.Expr, control *compileControl) bool {
+// hasStream reports whether the expression contains #stream.
+func hasStream(e grammar.Expr, control *compileControl) bool {
 	control.poll()
 	found := false
 	walkExprControlled(e, func(x grammar.Expr) {
@@ -781,11 +781,11 @@ func visible(e grammar.Expr) bool {
 // and generator must decide the same way, since the scope decides where captures are written.
 func elementScopedControlled(e grammar.Expr, control *compileControl) bool {
 	control.poll()
-	return hasCapturesControlled(e, control) || predicatesReadCapturesControlled(e, control)
+	return hasCapturesControlled(e, control) || predicatesReadCaptures(e, control)
 }
 
-// predicatesReadCapturesControlled reports whether a predicate in e refers to a capture.
-func predicatesReadCapturesControlled(e grammar.Expr, control *compileControl) bool {
+// predicatesReadCaptures reports whether a predicate in e refers to a capture.
+func predicatesReadCaptures(e grammar.Expr, control *compileControl) bool {
 	control.poll()
 	found := false
 	walkExprControlled(e, func(x grammar.Expr) {

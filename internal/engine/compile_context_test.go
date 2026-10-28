@@ -130,7 +130,7 @@ func TestCompileContextPhaseCancellation(t *testing.T) {
 				for _, rd := range g.Rules() {
 					edges[rd.Name] = allCalls(rd.Expr, nil)
 				}
-				tarjanControlled(g.Rules(), edges, control)
+				tarjan(g.Rules(), edges, control)
 			case "type-checking":
 				var diagnostics ErrorList
 				checkTypesControlled(p, &diagnostics, control)

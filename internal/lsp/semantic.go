@@ -66,7 +66,7 @@ func (a *analysis) semanticTokensControlled(control *renderControl) []int {
 	prevLine, prevChar := 0, 0
 	for i, t := range a.toks {
 		control.poll()
-		c, ok := a.classifyControlled(i, &occ, control)
+		c, ok := a.classify(i, &occ, control)
 		if !ok {
 			continue
 		}
@@ -110,7 +110,7 @@ func (a *analysis) semanticTokensControlled(control *renderControl) []int {
 
 // classify returns the class of token i. occ is the index of the first occurrence that does not
 // end before the token; classify advances it.
-func (a *analysis) classifyControlled(i int, occ *int, control *renderControl) (semClass, bool) {
+func (a *analysis) classify(i int, occ *int, control *renderControl) (semClass, bool) {
 	control.poll()
 	t := a.toks[i]
 	switch t.Kind {
@@ -157,7 +157,7 @@ func (a *analysis) classifyControlled(i int, occ *int, control *renderControl) (
 		return semClass{semKeyword, 0}, true
 	case "left", "right", "none":
 		previous := a.previousSignificantTokenControlled(i-1, control)
-		if a.isIdent(previous, "infix") && a.inOperatorsBodyControlled(i, control) {
+		if a.isIdent(previous, "infix") && a.inOperatorsBody(i, control) {
 			return semClass{semKeyword, 0}, true
 		}
 		return semClass{}, false
@@ -169,7 +169,7 @@ func (a *analysis) classifyControlled(i int, occ *int, control *renderControl) (
 }
 
 // inOperatorsBody limits incomplete-source associativity coloring to operators rules.
-func (a *analysis) inOperatorsBodyControlled(i int, control *renderControl) bool {
+func (a *analysis) inOperatorsBody(i int, control *renderControl) bool {
 	control.poll()
 	st := i
 	for st >= 0 && !a.isDefKeyword(st) {

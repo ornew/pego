@@ -58,7 +58,7 @@ type runElem struct {
 // its own) cannot be: reusing it would not write them.
 func (c *compiler) resumable(e grammar.Expr) bool {
 	control := c.control
-	ok := elementScopedControlled(e, control) || !anyCaptureControlled(e, control)
+	ok := elementScopedControlled(e, control) || !anyCapture(e, control)
 	walkExprControlled(e, func(x grammar.Expr) {
 		switch x := x.(type) {
 		case *grammar.Predicate:
@@ -72,8 +72,8 @@ func (c *compiler) resumable(e grammar.Expr) bool {
 	return ok
 }
 
-// anyCaptureControlled reports whether e contains a capture anywhere, lookaheads included.
-func anyCaptureControlled(e grammar.Expr, control *compileControl) bool {
+// anyCapture reports whether e contains a capture anywhere, lookaheads included.
+func anyCapture(e grammar.Expr, control *compileControl) bool {
 	control.poll()
 	found := false
 	walkExprControlled(e, func(x grammar.Expr) {

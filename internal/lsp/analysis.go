@@ -213,7 +213,7 @@ func (a *analysis) compileContextControlled(ctx context.Context, control *render
 		a.diag(a.idx.rangeOf(0, 0), err.Error())
 		return nil
 	}
-	a.mapCompileDiagnosticsControlled(list, control)
+	a.mapCompileDiagnostics(list, control)
 	return nil
 }
 
@@ -310,7 +310,7 @@ func (a *analysis) collectControlled(control *renderControl) {
 				a.markAttributeName(at)
 			}
 			a.mark(s.Diagnostic(), semKeyword, 0)
-			d := a.defineControlled(kindRule, s.Name, s.Pos, s.Diagnostic(), control)
+			d := a.define(kindRule, s.Name, s.Pos, s.Diagnostic(), control)
 			if d == nil {
 				continue
 			}
@@ -319,11 +319,11 @@ func (a *analysis) collectControlled(control *renderControl) {
 				a.rules[s.Name] = d
 			}
 			if s.Type != nil {
-				a.walkTypeControlled(s.Type, control)
+				a.walkType(s.Type, control)
 			}
-			a.walkExprControlled(s.Expr, control)
+			a.walkExpr(s.Expr, control)
 			if s.Action != nil {
-				a.walkTermControlled(s.Action, control)
+				a.walkTerm(s.Action, control)
 			}
 		case *grammar.VarDef:
 			a.mark(s.Diagnostic(), semKeyword, 0)
@@ -332,14 +332,14 @@ func (a *analysis) collectControlled(control *renderControl) {
 				a.markToken(a.significantTokenControlled(i+1, control), semVariable, modDeclaration)
 			}
 			if s.Type != nil {
-				a.walkTypeControlled(s.Type, control)
+				a.walkType(s.Type, control)
 			}
 			if s.Value != nil {
-				a.walkTermControlled(s.Value, control)
+				a.walkTerm(s.Value, control)
 			}
 		case grammar.TypeDecl:
 			a.mark(s.Diagnostic(), semKeyword, 0)
-			d := a.defineControlled(kindType, s.DeclName(), s.Diagnostic(), s.Diagnostic(), control)
+			d := a.define(kindType, s.DeclName(), s.Diagnostic(), s.Diagnostic(), control)
 			if d == nil {
 				continue
 			}
@@ -357,19 +357,19 @@ func (a *analysis) collectControlled(control *renderControl) {
 			switch spec := s.(type) {
 			case *grammar.TypeDef:
 				if spec.Struct() == nil && spec.Type != nil {
-					a.walkTypeControlled(spec.Type, control)
+					a.walkType(spec.Type, control)
 				}
 				for _, f := range spec.Fields() {
 					control.poll()
 					a.mark(f.Diagnostic(), semProperty, modDeclaration)
-					a.walkTypeControlled(f.Type, control)
+					a.walkType(f.Type, control)
 				}
 			case *grammar.TypeAlias:
-				a.walkTypeControlled(spec.Type, control)
+				a.walkType(spec.Type, control)
 			}
 		}
 	}
-	a.sortOccurrencesControlled(control)
+	a.sortOccurrences(control)
 }
 
 // mark records the semantic token class of the token at pos.
@@ -387,7 +387,7 @@ func (a *analysis) markToken(i int, typ semTokenType, mods int) {
 
 // define records the definition that starts at start, with its first declaration attribute if it
 // has any, and whose keyword is at pos.
-func (a *analysis) defineControlled(kind symKind, name string, start, pos grammar.Pos, control *renderControl) *definition {
+func (a *analysis) define(kind symKind, name string, start, pos grammar.Pos, control *renderControl) *definition {
 	control.poll()
 	i, ok := a.tokenIndex(pos)
 	if !ok {
@@ -427,7 +427,7 @@ func (a *analysis) defineControlled(kind symKind, name string, start, pos gramma
 	}
 
 	d.end = a.toks[last].end
-	d.doc = a.docCommentControlled(first, last, control)
+	d.doc = a.docComment(first, last, control)
 	a.defs = append(a.defs, d)
 	a.occs = append(a.occs, occurrence{kind: kind, name: name, start: n.start, end: n.end, def: d})
 	return d
@@ -436,7 +436,7 @@ func (a *analysis) defineControlled(kind symKind, name string, start, pos gramma
 // docComment returns the documentation of the definition from token first to token last: the
 // comments on the lines directly above it (each the first token of its line), or else a comment
 // at the end of its line if it takes one line.
-func (a *analysis) docCommentControlled(first, last int, control *renderControl) string {
+func (a *analysis) docComment(first, last int, control *renderControl) string {
 	control.poll()
 	var lines []string
 	line := a.toks[first].Pos.Line
@@ -446,12 +446,12 @@ func (a *analysis) docCommentControlled(first, last int, control *renderControl)
 		if t.Kind != syntax.TokenComment || t.End.Line != line-1 || k > 0 && a.toks[k-1].End.Line == t.Pos.Line {
 			break
 		}
-		lines = append(lines, commentTextControlled(t.Text, control))
+		lines = append(lines, commentText(t.Text, control))
 		line = t.Pos.Line
 	}
 	if len(lines) == 0 && a.toks[last].Pos.Line == a.toks[first].Pos.Line && last+1 < len(a.toks) {
 		if t := a.toks[last+1]; t.Kind == syntax.TokenComment && t.Pos.Line == a.toks[last].End.Line {
-			return commentTextControlled(t.Text, control)
+			return commentText(t.Text, control)
 		}
 	}
 	for i, j := 0, len(lines)-1; i < j; i, j = i+1, j-1 {
@@ -461,7 +461,7 @@ func (a *analysis) docCommentControlled(first, last int, control *renderControl)
 	return control.join(lines, "\n")
 }
 
-func commentTextControlled(text string, control *renderControl) string {
+func commentText(text string, control *renderControl) string {
 	control.poll()
 	if strings.HasPrefix(text, "/*") {
 		return control.trimSpace(strings.TrimSuffix(strings.TrimPrefix(text, "/*"), "*/"))
@@ -488,55 +488,55 @@ func (a *analysis) refToken(kind symKind, name string, i int) {
 	a.occs = append(a.occs, occurrence{kind: kind, name: name, start: t.start, end: t.end})
 }
 
-func (a *analysis) walkTypeControlled(t grammar.TypeExpr, control *renderControl) {
+func (a *analysis) walkType(t grammar.TypeExpr, control *renderControl) {
 	control.poll()
 	switch t := t.(type) {
 	case *grammar.TypeGroup:
-		a.walkTypeControlled(t.Type, control)
+		a.walkType(t.Type, control)
 	case *grammar.TypeRef:
 		a.ref(kindType, t.Name, t.Diagnostic())
 	case *grammar.ListType:
-		a.walkTypeControlled(t.Elem, control)
+		a.walkType(t.Elem, control)
 	case *grammar.OptionalType:
-		a.walkTypeControlled(t.Elem, control)
+		a.walkType(t.Elem, control)
 	case *grammar.JoinType:
 		for _, u := range t.Types {
 			control.poll()
-			a.walkTypeControlled(u, control)
+			a.walkType(u, control)
 		}
 	case *grammar.MeetType:
 		for _, u := range t.Types {
 			control.poll()
-			a.walkTypeControlled(u, control)
+			a.walkType(u, control)
 		}
 	case *grammar.TupleType:
 		for _, u := range t.Types {
 			control.poll()
-			a.walkTypeControlled(u, control)
+			a.walkType(u, control)
 		}
 	case *grammar.TypeApp:
 		a.ref(kindType, t.Name, t.Diagnostic())
 		for _, u := range t.Args {
 			control.poll()
-			a.walkTypeControlled(u, control)
+			a.walkType(u, control)
 		}
 	case *grammar.StructType:
 		for _, f := range t.Fields {
 			control.poll()
 			a.mark(f.Diagnostic(), semProperty, modDeclaration)
-			a.walkTypeControlled(f.Type, control)
+			a.walkType(f.Type, control)
 		}
 	}
 }
 
-func (a *analysis) walkExprControlled(e grammar.Expr, control *renderControl) {
+func (a *analysis) walkExpr(e grammar.Expr, control *renderControl) {
 	control.poll()
 	switch e := e.(type) {
 	case *grammar.Group:
-		a.walkExprControlled(e.Expr, control)
+		a.walkExpr(e.Expr, control)
 	case *grammar.InlineAction:
-		a.walkExprControlled(e.Expr, control)
-		a.walkTermControlled(e.Action, control)
+		a.walkExpr(e.Expr, control)
+		a.walkTerm(e.Action, control)
 	case *grammar.Ref:
 		if e.Level != "" {
 			if i, ok := a.tokenIndex(e.Diagnostic()); ok {
@@ -551,43 +551,43 @@ func (a *analysis) walkExprControlled(e grammar.Expr, control *renderControl) {
 	case *grammar.Seq:
 		for _, x := range e.Items {
 			control.poll()
-			a.walkExprControlled(x, control)
+			a.walkExpr(x, control)
 		}
 	case *grammar.Choice:
 		for _, x := range e.Alts {
 			control.poll()
-			a.walkExprControlled(x, control)
+			a.walkExpr(x, control)
 		}
 	case *grammar.Repeat:
-		a.walkExprControlled(e.Expr, control)
+		a.walkExpr(e.Expr, control)
 	case *grammar.Optional:
-		a.walkExprControlled(e.Expr, control)
+		a.walkExpr(e.Expr, control)
 	case *grammar.And:
-		a.walkExprControlled(e.Expr, control)
+		a.walkExpr(e.Expr, control)
 	case *grammar.Not:
-		a.walkExprControlled(e.Expr, control)
+		a.walkExpr(e.Expr, control)
 	case *grammar.Atomic:
-		a.walkExprControlled(e.Expr, control)
+		a.walkExpr(e.Expr, control)
 	case *grammar.Stream:
-		a.walkExprControlled(e.Expr, control)
+		a.walkExpr(e.Expr, control)
 	case *grammar.Recovery:
-		a.walkExprControlled(e.Expr, control)
-		a.walkExprControlled(e.Skip, control)
+		a.walkExpr(e.Expr, control)
+		a.walkExpr(e.Skip, control)
 	case *grammar.Discard:
-		a.walkExprControlled(e.Expr, control)
+		a.walkExpr(e.Expr, control)
 	case *grammar.Capture:
 		a.mark(e.Diagnostic(), semVariable, modDeclaration)
-		a.walkExprControlled(e.Expr, control)
+		a.walkExpr(e.Expr, control)
 	case *grammar.Predicate:
-		a.walkTermControlled(e.Term, control)
+		a.walkTerm(e.Term, control)
 	case *grammar.Attributed:
-		a.walkExprControlled(e.Expr, control)
+		a.walkExpr(e.Expr, control)
 		for _, at := range e.Attrs {
 			control.poll()
 			a.markAttributeName(at)
 			for _, arg := range control.expressionArgs(at) {
 				control.poll()
-				a.walkExprControlled(arg, control)
+				a.walkExpr(arg, control)
 			}
 		}
 	case *grammar.OperatorsRule:
@@ -596,14 +596,14 @@ func (a *analysis) walkExprControlled(e grammar.Expr, control *renderControl) {
 		}
 		a.mark(e.SkipSource.Diagnostic(), semKeyword, 0)
 		if e.Skip != nil {
-			a.walkExprControlled(e.Skip, control)
+			a.walkExpr(e.Skip, control)
 		}
 		for _, o := range e.Operands {
 			control.poll()
 			a.mark(o.Diagnostic(), semKeyword, 0)
-			a.walkExprControlled(o.Expr, control)
+			a.walkExpr(o.Expr, control)
 			if o.Action != nil {
-				a.walkTermControlled(o.Action, control)
+				a.walkTerm(o.Action, control)
 			}
 		}
 		for _, l := range e.Levels {
@@ -617,27 +617,27 @@ func (a *analysis) walkExprControlled(e grammar.Expr, control *renderControl) {
 						a.markToken(a.significantTokenControlled(i+1, control), semKeyword, 0)
 					}
 				}
-				a.walkExprControlled(op.Expr, control)
+				a.walkExpr(op.Expr, control)
 				if op.Action != nil {
-					a.walkTermControlled(op.Action, control)
+					a.walkTerm(op.Action, control)
 				}
 			}
 		}
 	}
 }
 
-func (a *analysis) walkTermControlled(t grammar.Term, control *renderControl) {
+func (a *analysis) walkTerm(t grammar.Term, control *renderControl) {
 	control.poll()
 	switch t := t.(type) {
 	case *grammar.TermGroup:
-		a.walkTermControlled(t.Term, control)
+		a.walkTerm(t.Term, control)
 	case *grammar.Block:
 		for _, stmt := range t.Statements {
 			control.poll()
-			a.walkTermControlled(stmt, control)
+			a.walkTerm(stmt, control)
 		}
 	case *grammar.Member:
-		a.walkTermControlled(t.X, control)
+		a.walkTerm(t.X, control)
 		mods := 0
 		if findBuiltin(builtinMembers, t.Name) != nil {
 			mods = modDefaultLibrary
@@ -651,39 +651,39 @@ func (a *analysis) walkTermControlled(t grammar.Term, control *renderControl) {
 		for _, f := range t.Fields {
 			control.poll()
 			a.mark(f.Diagnostic(), semProperty, 0)
-			a.walkTermControlled(f.Value, control)
+			a.walkTerm(f.Value, control)
 		}
 		for _, x := range t.Args {
 			control.poll()
-			a.walkTermControlled(x, control)
+			a.walkTerm(x, control)
 		}
 	case *grammar.Call:
 		a.mark(t.Diagnostic(), semFunction, modDefaultLibrary)
 		for _, x := range t.Args {
 			control.poll()
-			a.walkTermControlled(x, control)
+			a.walkTerm(x, control)
 		}
 	case *grammar.ListConstructor:
-		a.walkTypeControlled(t.Elem, control)
+		a.walkType(t.Elem, control)
 		for _, item := range t.Items {
 			control.poll()
-			a.walkTermControlled(item, control)
+			a.walkTerm(item, control)
 		}
 	case *grammar.TupleLit:
 		for _, x := range t.Elems {
 			control.poll()
-			a.walkTermControlled(x, control)
+			a.walkTerm(x, control)
 		}
 	case *grammar.Lambda:
-		a.walkTermControlled(t.Body, control)
+		a.walkTerm(t.Body, control)
 	case *grammar.Binary:
-		a.walkTermControlled(t.L, control)
-		a.walkTermControlled(t.R, control)
+		a.walkTerm(t.L, control)
+		a.walkTerm(t.R, control)
 	case *grammar.Unary:
-		a.walkTermControlled(t.X, control)
+		a.walkTerm(t.X, control)
 	case *grammar.Cast:
-		a.walkTermControlled(t.X, control)
-		a.walkTypeControlled(t.Type, control)
+		a.walkTerm(t.X, control)
+		a.walkType(t.Type, control)
 	case *grammar.VarRef:
 		a.mark(t.Diagnostic(), semVariable, 0)
 	case *grammar.CaptureRef:
@@ -693,7 +693,7 @@ func (a *analysis) walkTermControlled(t grammar.Term, control *renderControl) {
 	case *grammar.Bind:
 		a.vars[t.Name] = true
 		a.mark(t.Diagnostic(), semVariable, modDeclaration)
-		a.walkTermControlled(t.Value, control)
+		a.walkTerm(t.Value, control)
 	}
 }
 
