@@ -481,8 +481,11 @@ type AttachCaptures struct {
 	Start Expr
 }
 
-// MarkState is a mark of the whole parser state, which Reset returns to.
-type MarkState struct{}
+// MarkState is a mark of the whole parser state, which Reset returns to. The position is always part of
+// it; Env, Trail and Rec report whether the code between the mark and its Reset may change the variable
+// environment, add to the capture trail, or append recovered errors, so that a target may restore
+// only those.
+type MarkState struct{ Env, Trail, Rec bool }
 
 // MarkPos is the position of the mark M.
 type MarkPos struct{ M *Var }

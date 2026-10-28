@@ -185,6 +185,8 @@ type tsFlowPrinter struct {
 	// decls holds the constants the printed text names, which the caller declares if it keeps the text.
 	decls []tsDecl
 	names map[*flow.Names]string
+	// marks holds the marks of the whole parser state by variable, with the parts they save.
+	marks map[*flow.Var]*flow.MarkState
 	// outlined holds the calls of the functions printed for the outlined nodes.
 	outlined map[*flow.CallOutline]string
 	// parts holds, for each mark variable, the variables that stand for its position, environment, trail
@@ -260,7 +262,12 @@ func (g *tsGen) printTSFlow(f *flow.Func) (string, []string, []tsDecl) {
 			continue
 		}
 		if p.next[v] {
-			vars = append(vars, fmt.Sprintf("  let %s: %s = %s;\n", v.Name, tsFlowType(v.Type), tsFlowZero(v.Type)))
+			if typ := tsFlowType(v.Type); typ == "number" || typ == "boolean" {
+				// The initial value gives the type.
+				vars = append(vars, fmt.Sprintf("  let %s = %s;\n", v.Name, tsFlowZero(v.Type)))
+			} else {
+				vars = append(vars, fmt.Sprintf("  let %s: %s = %s;\n", v.Name, typ, tsFlowZero(v.Type)))
+			}
 		}
 	}
 	return p.b.String(), vars, p.decls
@@ -336,6 +343,19 @@ func (p *tsFlowPrinter) read(xs ...flow.Expr) {
 
 func (p *tsFlowPrinter) stmts(ss []flow.Stmt) {
 	for i := 0; i < len(ss); i++ {
+		if _, step := ss[i].(*flow.Step); step {
+			// Consecutive charges are one.
+			n := 1
+			for i+n < len(ss) {
+				if _, next := ss[i+n].(*flow.Step); !next {
+					break
+				}
+				n++
+			}
+			p.write(tsStepWork(n))
+			i += n - 1
+			continue
+		}
 		if i+1 < len(ss) && !p.dead && p.unisolateMerge(ss[i], ss[i+1]) {
 			i++
 			continue
@@ -371,6 +391,14 @@ func (p *tsFlowPrinter) unisolateMerge(a, b flow.Stmt) bool {
 	p.read(u.Mark)
 	p.write(fmt.Sprintf("p.unisolateMerge(%s);\n", p.expr(u.Mark)))
 	return true
+}
+
+// tsStepWork returns the statement that charges n steps.
+func tsStepWork(n int) string {
+	if n == 1 {
+		return "p.stepWork();\n"
+	}
+	return fmt.Sprintf("p.stepWork(%d);\n", n)
 }
 
 // isRead reports whether v is read, by the previous pass.
@@ -479,7 +507,7 @@ func (p *tsFlowPrinter) stmt(s flow.Stmt) {
 			p.write(s.V.Name + "++;\n")
 		}
 	case *flow.Step:
-		p.write("p.stepWork();\n")
+		p.write(tsStepWork(1))
 	case *flow.Silent:
 		if s.Delta > 0 {
 			p.write("p.silent++;\n")
@@ -535,12 +563,12 @@ func (p *tsFlowPrinter) stmt(s flow.Stmt) {
 		// The names are declared where they are first used.
 	case *flow.Reset:
 		m := p.markVar(s.M)
-		for i := range tsMarkParts {
-			p.readVar(p.part(m, i))
-		}
-		p.write(fmt.Sprintf("p.reset(%[1]sPos, %[1]sEnv, %[1]sTrail, %[1]sRec);\n", m.Name))
+		p.write(p.reset(m))
 	case *flow.DropTrail:
 		m := p.markVar(s.M)
+		if !p.marks[m].Trail {
+			panic(tsFlowUnsupported("a mark without a trail dropped"))
+		}
 		p.readVar(p.part(m, 2))
 		p.write(fmt.Sprintf("p.trail.length = %sTrail;\n", m.Name))
 	case *flow.Comment:
@@ -558,12 +586,22 @@ func (p *tsFlowPrinter) stmt(s flow.Stmt) {
 
 func (p *tsFlowPrinter) ifStmt(s *flow.If) {
 	dead := p.dead
-	var init string
-	if s.Init != nil {
-		init = p.setText(s.Init, true)
+	var init, cond string
+	if call, v, ok := tsTestedCall(s); ok {
+		// The call and its test in one condition: nothing else reads the flag it sets.
+		p.read(call)
+		cond = p.expr(call) + " === undefined"
+		if v != nil && p.isRead(v) {
+			p.note(v)
+			cond = fmt.Sprintf("(%s = %s as Node | null) === undefined", v.Name, p.expr(call))
+		}
+	} else {
+		if s.Init != nil {
+			init = p.setText(s.Init, true)
+		}
+		p.read(s.Cond)
+		cond = p.expr(s.Cond)
 	}
-	p.read(s.Cond)
-	cond := p.expr(s.Cond)
 	then := p.scoped(func() { p.stmts(s.Then) })
 	p.dead = dead
 	var els string
@@ -575,6 +613,10 @@ func (p *tsFlowPrinter) ifStmt(s *flow.If) {
 		return
 	}
 	p.b.WriteString(init)
+	if els == "" && strings.Count(then, "\n") == 1 {
+		p.b.WriteString("if (" + cond + ") " + then) // one statement
+		return
+	}
 	p.b.WriteString("if (" + cond + ") {\n" + indent(then) + "}")
 	if els != "" {
 		p.b.WriteString(" else {\n" + indent(els) + "}")
@@ -617,8 +659,12 @@ func (p *tsFlowPrinter) setText(s *flow.Set, stmt bool) string {
 		}
 	}
 	if len(s.X) == 1 && len(s.Dst) == 1 {
-		if _, isMark := s.X[0].(*flow.MarkState); isMark {
+		if st, isMark := s.X[0].(*flow.MarkState); isMark {
 			m, _ := s.Dst[0].(*flow.Var)
+			if p.marks == nil {
+				p.marks = map[*flow.Var]*flow.MarkState{}
+			}
+			p.marks[m] = st
 			srcs := [4]string{"p.pos", "p.env", "p.trail.length", "p.recovered.length"}
 			var parts []string
 			for i, src := range srcs {
@@ -1141,4 +1187,47 @@ func (p *tsFlowPrinter) outline(x *flow.CallOutline) string {
 	}
 	p.outlined[x] = call
 	return call
+}
+
+// tsTestedCall returns, for an If that tests the success flag of a call with two results (the value and
+// whether it matched) that its initialization makes, the call and the variable of its value (nil if the
+// value is dropped).
+func tsTestedCall(s *flow.If) (call flow.Expr, v *flow.Var, ok bool) {
+	if s.Init == nil || len(s.Init.X) != 1 || len(s.Init.Dst) != 2 || flow.Results(s.Init.X[0]) != 2 {
+		return nil, nil, false
+	}
+	switch s.Init.X[0].(type) {
+	case *flow.MatchLit, *flow.CallRule, *flow.CallOutline:
+	default:
+		return nil, nil, false
+	}
+	flag, isVar := s.Init.Dst[1].(*flow.Var)
+	if not, isNot := s.Cond.(*flow.Not); !isVar || !isNot {
+		return nil, nil, false
+	} else if u, isUse := not.X.(*flow.Use); !isUse || u.V != flag {
+		return nil, nil, false
+	}
+	v, _ = s.Init.Dst[0].(*flow.Var)
+	return s.Init.X[0], v, true
+}
+
+// reset returns the statement that goes back to the mark m: the position, and the parts of the parser
+// state that the code since the mark may change.
+func (p *tsFlowPrinter) reset(m *flow.Var) string {
+	st := p.marks[m]
+	if st == nil {
+		panic(tsFlowUnsupported("a reset of a mark that is not set"))
+	}
+	p.readVar(p.part(m, 0))
+	if !st.Env && !st.Trail && !st.Rec {
+		return "p.pos = " + m.Name + "Pos;\n"
+	}
+	args := []string{m.Name + "Pos", "p.env", "p.trail.length", "p.recovered.length"}
+	for i, needed := range [4]bool{true, st.Env, st.Trail, st.Rec} {
+		if needed {
+			p.readVar(p.part(m, i))
+			args[i] = m.Name + tsMarkParts[i]
+		}
+	}
+	return "p.reset(" + strings.Join(args, ", ") + ");\n"
 }

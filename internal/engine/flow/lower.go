@@ -393,7 +393,14 @@ func (m mark) at() Expr {
 func (l *lowerer) mark(s *scope, n core.Node, saves bool) mark {
 	if l.frame {
 		m := mark{state: l.decl("x", TypeMark)}
-		l.set(m.state, &MarkState{})
+		eff := n.Attrs().Eff
+		st := &MarkState{Env: eff.Set&core.EffBind != 0, Rec: eff.Set&core.EffRecover != 0}
+		core.Walk(n, func(n core.Node) {
+			if _, ok := n.(*core.Capture); ok {
+				st.Trail = true
+			}
+		})
+		l.set(m.state, st)
 		return m
 	}
 	m := mark{pos: l.decl("x", TypeInt)}
