@@ -46,7 +46,8 @@ Evidence records:
 [051](../051-first-character-dispatch-in-the-vms-instruction-set-3.md).
 
 Source owners: [`firstTerminal`](../../../internal/engine/compile.go),
-[`compiler choice lowering`](../../../internal/engine/compile.go), [`GUARD
+[`walker.exprForm and compiler.first`](../../../internal/engine/compile_walk.go),
+[`closureBuilder.Choice and guard`](../../../internal/engine/closures.go), [`GUARD
 emission`](../../../internal/engine/bcompile.go), [`generated choice
 guards`](../../../internal/engine/gen.go), [`TypeScript choice
 guards`](../../../internal/engine/gen_ts.go).

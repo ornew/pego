@@ -38,85 +38,11 @@ type operatorsRuleOp struct {
 	line  *operatorsRuleLine
 }
 
-func (c *compiler) compileOperatorsRule(r *rule, e *grammar.OperatorsRule) {
-	pr := &operatorsRule{}
-	r.operatorsRule = pr
-	if e.Skip != nil {
-		c.noCaptures(e.Skip)
-		pr.skip = c.expr(e.Skip, r.scope, false)
-	}
-	if len(e.Operands) == 0 {
-		c.errorf(e.Diagnostic(), "operatorsRule needs at least one operand")
-	}
-	for _, o := range e.Operands {
-		// A loaded compiled grammar (c.an is nil) has already been checked.
-		if c.an != nil && contains(c.an.leftCalls(o.Expr, nil), r.name) {
-			c.errorf(e.Diagnostic(), "operand of %s calls %s at its start (left recursion); use infix or postfix instead", r.name, r.name)
-		}
-		pr.operands = append(pr.operands, c.operatorsRuleLine(o.Expr, o.Action, nil, o))
-	}
-	id := 0
-	for i, l := range e.Levels {
-		for _, op := range l.Operators {
-			var locals []string
-			switch op.Kind {
-			case grammar.Prefix:
-				locals = []string{"rhs", "op"}
-			case grammar.Postfix:
-				locals = []string{"lhs", "op"}
-			case grammar.Infix:
-				locals = []string{"lhs", "rhs", "op"}
-				if op.Assoc != grammar.AssocLeft && op.Assoc != grammar.AssocRight && op.Assoc != grammar.AssocNone {
-					c.errorf(op.Diagnostic(), "invalid associativity %q", op.Assoc)
-				}
-			default:
-				c.errorf(op.Diagnostic(), "invalid operator kind %q", op.Kind)
-				continue
-			}
-			line := c.operatorsRuleLine(op.Expr, op.Action, locals, op)
-			for _, name := range line.scope.names {
-				if name == "lhs" || name == "rhs" || name == "op" {
-					c.errorf(op.Diagnostic(), "capture name %s is reserved in operatorsRule operators", name)
-				}
-			}
-			o := &operatorsRuleOp{id: id, kind: op.Kind, assoc: op.Assoc, level: i + 1, line: line}
-			id++
-			if op.Kind == grammar.Prefix {
-				pr.prefix = append(pr.prefix, o)
-			} else {
-				pr.led = append(pr.led, o)
-			}
-		}
-	}
-	seen := map[string]bool{}
-	for _, l := range e.Levels {
-		if l.Name != "" {
-			if seen[l.Name] {
-				c.errorf(e.Diagnostic(), "duplicate level name %s", l.Name)
-			}
-			seen[l.Name] = true
-		}
-	}
-	r.body = func(p *parser, min int) (*value.Node, bool) { return p.operatorsRuleParse(r, min) }
-}
-
 // leanLine reports whether the value of an Operators Rule line is unused: the line is an operand
 // line with an action, which reads captures only. An operator line's value is $op or its element.
 // The bytecode compiler uses the same test.
 func leanLine(action grammar.Term, locals []string) bool {
 	return action != nil && locals == nil
-}
-
-func (c *compiler) operatorsRuleLine(e grammar.Expr, action grammar.Term, locals []string, key any) *operatorsRuleLine {
-	s := newScope()
-	novalue := c.rule.novalue || leanLine(action, locals)
-	l := &operatorsRuleLine{scope: s, m: c.expr(e, s, !novalue), key: key}
-	l.value, l.single, l.shape = scopeValueOf(c.prog, e), singleModeOf(c.prog, e), shaperOf(c.prog, e)
-	if action != nil && !c.rule.novalue {
-		l.act = termEvaluator(action)
-		c.checkTerm(action, s, locals)
-	}
-	return l
 }
 
 // operatorsRuleAttempt is the result of trying an operator part.

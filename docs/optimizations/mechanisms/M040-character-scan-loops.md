@@ -35,11 +35,12 @@ targets.
 Evidence records:
 [008](../008-fast-path-for-unmemoized-calls-scan-nesting-limit-d2db87d.md).
 
-Source owners: [`compiler.scanRepeat`](../../../internal/engine/compile.go),
+Source owners: [`walker.scanRepeat`](../../../internal/engine/compile_walk.go),
+[`closureBuilder.ScanRepeat`](../../../internal/engine/closures.go),
 [`SCAN lowering`](../../../internal/engine/bcompile.go),
 [`Scans pass`](../../../internal/ir/core/passes.go),
-[`Flow scan lowering`](../../../internal/ir/flow/lower.go),
-[`tsGen.scanRepeat`](../../../internal/engine/gen_ts.go).
+[`Flow scan lowering`](../../../internal/ir/flow/lower.go), which lowers the
+scans of generated Go and TypeScript.
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

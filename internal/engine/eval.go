@@ -852,42 +852,6 @@ func (c *evalCtx) keep() *evalCtx {
 	return &k
 }
 
-// predicate compiles a Predicate Action { ... }.
-func (c *compiler) predicate(e *grammar.Predicate, s *scope) matcher {
-	if a, ok := e.Term.(*grammar.Bind); ok {
-		if c.prog.vars.lookup(a.Name) == nil {
-			c.errorf(a.Diagnostic(), "undefined variable %s; declare it with var %s at the top level", a.Name, a.Name)
-		}
-		c.checkTerm(a.Value, s, nil)
-		return func(p *parser) (*value.Node, bool) {
-			ctx := p.useCtx(evalCtx{p: p, scope: s, frame: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
-			v, err := ctx.eval(a.Value)
-			p.dropCreated(ctx.cbase)
-			if err != nil {
-				return nil, false
-			}
-			if _, isFn := v.(*closure); isFn {
-				return nil, false
-			}
-			p.bind(a.Name, v)
-			return nil, true
-		}
-	}
-	c.checkTerm(e.Term, s, nil)
-	return func(p *parser) (*value.Node, bool) {
-		ctx := p.useCtx(evalCtx{p: p, scope: s, frame: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
-		v, err := ctx.eval(e.Term)
-		p.dropCreated(ctx.cbase)
-		if err != nil {
-			return nil, false
-		}
-		if b, ok := v.(bool); ok && !b {
-			return nil, false
-		}
-		return nil, true
-	}
-}
-
 // checkTerm resolves the names in a value expression and reports statically detectable errors.
 func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 	c.control.poll()

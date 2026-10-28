@@ -149,7 +149,7 @@ func TestWorkStateProjectedFrameClear(t *testing.T) {
 	for i := range count {
 		items = append(items, &grammar.Capture{Name: fmt.Sprintf("f%d", i), Expr: &grammar.Atomic{Expr: &grammar.Top{}}})
 	}
-	c := &compiler{}
+	c := newClosureWalker(&compiler{}, false)
 	m := c.projectRepeat(&grammar.Repeat{Expr: &grammar.Seq{Items: items}, Min: 0, Max: 1}, "f0")
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 64})
 	if err := catchFatal(t, func() { m(p) }); !errors.Is(err, limits.ErrWorkLimit) || len(p.trail) != 0 {

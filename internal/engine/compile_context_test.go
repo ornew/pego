@@ -150,7 +150,7 @@ func TestCompileContextPhaseCancellation(t *testing.T) {
 				for i := range items {
 					items[i] = &grammar.Literal{Value: "a"}
 				}
-				c := &compiler{prog: p, control: control, plainDispatch: true}
+				c := newClosureWalker(&compiler{prog: p, control: control}, true)
 				c.expr(&grammar.Seq{Items: items}, newScope(), true)
 			}
 			t.Fatal("phase completed without cancellation")

@@ -487,7 +487,7 @@ func (c *bcompiler) capture(e *grammar.Capture, s *scope, keep bool) {
 }
 
 func (c *bcompiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) {
-	if !build && !stream { // value-free repetition of a single character (same as compiler.scanRepeat)
+	if !build && !stream { // value-free repetition of a single character (same as walker.scanRepeat)
 		switch x := e.Expr.(type) {
 		case *grammar.CharClass:
 			c.repetition(bytecode.OpScan, e.Min, e.Max, c.class(x))

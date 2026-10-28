@@ -39,9 +39,11 @@ Evidence records: [052](../052-projected-repetitions-in-generated-parse.md),
 [053](../053-projected-repetitions-in-the-engine-and-the-vms.md).
 
 Source owners: [`ruleProjections`](../../../internal/engine/project.go),
-[`compiler.projectRepeat`](../../../internal/engine/compile.go), [`projected
+[`walker.projectRepeat`](../../../internal/engine/compile_walk.go),
+[`closureBuilder.ProjectRepeat`](../../../internal/engine/closures.go), [`projected
 repetition lowering`](../../../internal/engine/bcompile.go),
-[`tsGen.projectRepeat`](../../../internal/engine/gen_ts.go).
+[`Flow projectRepeat`](../../../internal/ir/flow/lower.go), which lowers the
+projected repetitions of generated Go and TypeScript.
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

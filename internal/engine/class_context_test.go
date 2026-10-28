@@ -38,9 +38,11 @@ func TestClassConstructionContextCancellation(t *testing.T) {
 		{"copy", func(c *compileControl) { copyClassRanges(cl.Ranges, c) }},
 		{"bitmap", func(c *compileControl) { classASCII(cl.Ranges, false, c) }},
 		{"accept-construction", func(c *compileControl) { classAcceptControlled(cl, c) }},
-		{"matcher", func(c *compileControl) { (&compiler{control: c}).exprMatcher(cl, newScope(), true) }},
-		{"choice-guard", func(c *compileControl) { (&compiler{control: c}).first(cl) }},
-		{"scan-repeat", func(c *compileControl) { (&compiler{control: c}).scanRepeat(&grammar.Repeat{Expr: cl, Max: -1}, false) }},
+		{"matcher", func(c *compileControl) { newClosureWalker(&compiler{control: c}, false).exprForm(cl, newScope(), true) }},
+		{"choice-guard", func(c *compileControl) { (&closureBuilder{control: c}).guard(first{term: cl}) }},
+		{"scan-repeat", func(c *compileControl) {
+			(&closureBuilder{control: c}).ScanRepeat(&grammar.Repeat{Expr: cl, Max: -1}, 0)
+		}},
 		{"guard-extraction", func(c *compileControl) { firstTerminalControlled(&Program{}, deep, 0, map[string]bool{}, c) }},
 	} {
 		t.Run(phase.name, func(t *testing.T) {

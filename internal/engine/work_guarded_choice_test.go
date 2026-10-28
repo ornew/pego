@@ -69,8 +69,8 @@ func workGuardedChoiceSnapshot(n *value.Node) *value.Node {
 
 func TestWorkGuardedChoiceSilentSkipLoopBudgetAndCancellation(t *testing.T) {
 	prog, choice := workGuardedChoiceProgram(t)
-	c := &compiler{prog: prog}
-	m := c.exprMatcher(choice, newScope(), true)
+	c := newClosureWalker(&compiler{prog: prog}, false)
+	m := c.exprForm(choice, newScope(), true)
 
 	for _, unit := range []PositionUnit{Bytes, CodePoints} {
 		t.Run(unit.String()+"/budget", func(t *testing.T) {
@@ -101,8 +101,8 @@ func TestWorkGuardedChoiceSilentSkipLoopBudgetAndCancellation(t *testing.T) {
 
 func TestWorkGuardedChoiceExactSkipBudget(t *testing.T) {
 	prog, choice := workGuardedChoiceProgram(t)
-	c := &compiler{prog: prog}
-	m := c.exprMatcher(choice, newScope(), false)
+	c := newClosureWalker(&compiler{prog: prog}, false)
+	m := c.exprForm(choice, newScope(), false)
 	for _, unit := range []PositionUnit{Bytes, CodePoints} {
 		for _, text := range []string{"z", ""} {
 			for _, silent := range []bool{true, false} {
@@ -145,8 +145,8 @@ func TestWorkGuardedChoicePassingMatcherCharge(t *testing.T) {
 					alts = append([]grammar.Expr{&grammar.Literal{Value: "x"}}, alts...)
 					steps++
 				}
-				c := &compiler{prog: prog}
-				m := c.exprMatcher(&grammar.Choice{Alts: alts}, newScope(), false)
+				c := newClosureWalker(&compiler{prog: prog}, false)
+				m := c.exprForm(&grammar.Choice{Alts: alts}, newScope(), false)
 				p := newParser(prog, "z", unit, false)
 				p.control = newWorkControl(nil, limits.WorkLimits{MaxInputWork: 2, MaxSteps: steps})
 				p.silent = 1

@@ -34,7 +34,7 @@ four ways:
   evaluation of a body can scan any amount of input, and the memo does not share that scan with evaluations that start
   at later positions.
 - Rules on a left-recursion cycle that are not its leader are not memoized
-  (`internal/engine/compile.go:490`: `memo = !DisableMemo && !cyclic`).
+  (`buildNamed` in `internal/engine/compile.go`: `memo = !DisableMemo && !cyclic`).
 - A left-recursion leader grows a seed at each position, and Operators Rules fold operators at each position. The
   result at p shares nothing with the result at p+1.
 - Rules that read variables are memoized per combination of values
