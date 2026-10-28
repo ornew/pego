@@ -288,7 +288,7 @@ func (g *generator) flatMethod(r *rule, d *flatRule, name, comment string, plain
 // leanRuleBody provides the rule-table body for external entry and generic
 // fallback calls. Its caller owns depth and failure rollback, so it adds neither.
 func (g *generator) leanRuleBody(r *rule, d *flatRule) string {
-	return g.method(r.name+" (value-free body inlined)", g.leanRuleText(d))
+	return g.bodyMethod(r.name+" (value-free body inlined)", g.leanRuleText(d))
 }
 
 // leanRuleText returns the text of the method body of the value-free flat rule d.

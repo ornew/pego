@@ -124,9 +124,9 @@ func dropZeroProgressCheck(code []byte) []byte {
 func skipWithoutRewind(code []byte) []byte { return skipRewind.ReplaceAll(code, []byte("$1")) }
 
 var (
-	ruleBodyRef = regexp.MustCompile(`(?m)^\t(rules|recRules)\[(\d+)\]\.Body = func\(p \*rt\.Parser, _ int\) \(\*rt\.Node, bool\) \{ return (e\d+)\(p\) \}$`)
+	ruleBodyRef = regexp.MustCompile(`(?m)^\t(rules|recRules)\[(\d+)\]\.Body = (e\d+)$`)
 	funcBody    = func(name string) *regexp.Regexp {
-		return regexp.MustCompile(`(?ms)^func ` + name + `\(p \*rt\.Parser\) \(\*rt\.Node, bool\) \{\n.*?^\}\n`)
+		return regexp.MustCompile(`(?ms)^func ` + name + `\(p \*rt\.Parser(?:, _ int)?\) \(\*rt\.Node, bool\) \{\n.*?^\}\n`)
 	}
 )
 

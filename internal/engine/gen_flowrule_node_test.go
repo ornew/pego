@@ -131,11 +131,11 @@ func testGeneratedNodeDirectRoutes(t *testing.T) {
 			if strings.Contains(c.name, "memo_action") {
 				name = "pair"
 			}
-			body := regexp.MustCompile(`// ` + name + ` \(Node body inlined\)\s+func (\w+)\(p \*rt\.Parser\)`).FindSubmatch(code)
+			body := regexp.MustCompile(`// ` + name + ` \(Node body inlined\)\s+func (\w+)\(p \*rt\.Parser, _ int\)`).FindSubmatch(code)
 			if len(body) != 2 {
 				t.Fatalf("no direct Node body for %s", name)
 			}
-			if !strings.Contains(string(code), "return "+string(body[1])+"(p) }") {
+			if !strings.Contains(string(code), "].Body = "+string(body[1])+"\n") {
 				t.Fatalf("%s is not used by the rule-table body", body[1])
 			}
 			if name == "pair" {

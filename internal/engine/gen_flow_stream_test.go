@@ -126,9 +126,9 @@ func firstLineDifference(a, b string) string {
 }
 
 var (
-	streamBodyRef  = regexp.MustCompile(`(?m)^\tstreamRule\.Body = func\(p \*rt\.Parser, _ int\) \(\*rt\.Node, bool\) \{ return (e\d+)\(p\) \}$`)
-	batchBodyRef   = regexp.MustCompile(`(?m)^\trules\[\d+\]\.Body = func\(p \*rt\.Parser, _ int\) \(\*rt\.Node, bool\) \{ return (e\d+)\(p\) \}$`)
-	streamMethodRe = regexp.MustCompile(`(?ms)^func (e\d+)\(p \*rt\.Parser\) \(\*rt\.Node, bool\) \{\n.*?^\}\n`)
+	streamBodyRef  = regexp.MustCompile(`(?m)^\tstreamRule\.Body = (e\d+)$`)
+	batchBodyRef   = regexp.MustCompile(`(?m)^\trules\[\d+\]\.Body = (e\d+)$`)
+	streamMethodRe = regexp.MustCompile(`(?ms)^func (e\d+)\(p \*rt\.Parser(?:, _ int)?\) \(\*rt\.Node, bool\) \{\n.*?^\}\n`)
 	methodRefRe    = regexp.MustCompile(`\be\d+\b`)
 	scopeVarRe     = regexp.MustCompile(`\bscope\d+\b`)
 	// streamStatements are the statements that the stream repetition adds to the batch body.

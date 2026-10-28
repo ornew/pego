@@ -993,7 +993,7 @@ func (g *generator) rules() {
 			continue
 		}
 		if g.slotReached(r) {
-			fmt.Fprintf(init, "\t%s[%d].Body = func(p *%s, _ int) (%s, bool) { return %s(p) }\n", g.table, r.id, g.recv(), g.valType(), bodies[r])
+			fmt.Fprintf(init, "\t%s[%d].Body = %s\n", g.table, r.id, bodies[r])
 			g.printedBody(r)
 		}
 		if r.action != nil && g.table == "trules" {
@@ -1037,7 +1037,7 @@ func (g *generator) rules() {
 			// The copied action addresses captures by the batch body's slots.
 			g.streamErr = fmt.Errorf("internal error: the stream body of %s has a different capture layout", r.name)
 		}
-		fmt.Fprintf(init, "\tstreamRule = new(Rule)\n\t*streamRule = *rules[%d]\n\tstreamRule.Scope = %s\n\tstreamRule.Body = func(p *Parser, _ int) (*Node, bool) { return %s(p) }\n", r.id, goStrings(s.names), body)
+		fmt.Fprintf(init, "\tstreamRule = new(Rule)\n\t*streamRule = *rules[%d]\n\tstreamRule.Scope = %s\n\tstreamRule.Body = %s\n", r.id, goStrings(s.names), body)
 		g.methods.WriteString("// streamRule is the start rule of ParseStream.\nvar streamRule *Rule\n\n")
 	}
 	g.dropUnusedWrappers()
@@ -1179,7 +1179,7 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *flatRule) {
 		if g.observability && (!r.plain || g.directTypedDocument) {
 			m.WriteString("p.Observation.Evaluated()\n")
 		}
-		fmt.Fprintf(m, "\tv, ok := %s(p)\n\tp.Depth--\n\tp.Cut = prevCut\n\tp.DropTrail(trail)\n\tif ok {\n", body)
+		fmt.Fprintf(m, "\tv, ok := %s(p, 0)\n\tp.Depth--\n\tp.Cut = prevCut\n\tp.DropTrail(trail)\n\tif ok {\n", body)
 		finish("EmptyTFrame")
 		m.WriteString("\t} else {\n\t\t" + g.restoreRec("start", "rec") + "\n\t}\n\tp.Env = prevEnv\n\treturn v, ok\n}\n\n")
 	}
@@ -1237,7 +1237,7 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *flatRule) {
 	if g.observability {
 		m.WriteString("p.Observation.Evaluated()\n")
 	}
-	fmt.Fprintf(m, "\tv, ok := %s(p)\n\tp.Depth--\n\tp.Frame, p.Cut = prevFrame, prevCut\n\tp.DropTrail(trail)\n\tif ok {\n", body)
+	fmt.Fprintf(m, "\tv, ok := %s(p, 0)\n\tp.Depth--\n\tp.Frame, p.Cut = prevFrame, prevCut\n\tp.DropTrail(trail)\n\tif ok {\n", body)
 	finish("f")
 	m.WriteString("\t}\n\tp.Env = prevEnv\n\tp.FreeFrame(f)\n\treturn v, ok\n}\n\n")
 }
@@ -1349,6 +1349,21 @@ func (g *generator) method(comment, body string) string {
 	return name
 }
 
+// bodyMethod emits the function of a rule body and returns its name. It has the signature of the
+// Body field of the rule table, so the table names it without a closure; the Operators Rule level
+// it ignores is 0 where the generated code calls it.
+func (g *generator) bodyMethod(comment, body string) string {
+	name, shared := g.methodName(g.recv()+"/"+g.valType()+"/body", body)
+	if shared {
+		return name
+	}
+	if comment != "" {
+		fmt.Fprintf(&g.methods, "// %s\n", comment)
+	}
+	fmt.Fprintf(&g.methods, "func %s(p *%s, _ int) (%s, bool) {\n%s%s}\n\n", name, g.recv(), g.valType(), g.step("p"), body)
+	return name
+}
+
 // shaper returns the name of the package variable that holds the runtime shaper of the expression
 // e, its static shape (value_shape.go). Few distinct shapes occur, so the variables are shared.
 func (g *generator) shaper(e grammar.Expr) string {
@@ -1397,7 +1412,7 @@ func (g *generator) plainCall(r *rule, body string) {
 	p.Cut = false
 	p.Enter()
 `)
-	fmt.Fprintf(&g.methods, "\tv, ok := %s(p)\n", body)
+	fmt.Fprintf(&g.methods, "\tv, ok := %s(p, 0)\n", body)
 	g.methods.WriteString("\tp.Depth--\n\tp.Cut = prevCut\n" + g.pick("\tp.Trail = p.Trail[:trail]\n", "\tp.DropTrail(trail)\n") + "\tif ok {\n")
 	if r.novalue {
 		g.methods.WriteString("\t\tv = nil\n")

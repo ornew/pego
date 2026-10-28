@@ -141,7 +141,7 @@ func (g *generator) flowFrameBody(r *rule, scope *scope) string {
 	}
 	g.cur, g.proj = r, g.projections(r)
 	defer func() { g.proj = nil }()
-	return g.flowFramed(f, cr.Scope, scope, r.name+" ("+comment+")")
+	return g.flowFramed(f, cr.Scope, scope, r.name+" ("+comment+")", true)
 }
 
 // flowNodeFrameBody prints the body of the rule r of the Node table from Flow IR as the matcher of
@@ -164,7 +164,7 @@ func (g *generator) flowNodeFrameBody(r *rule, scope *scope) string {
 	}
 	g.cur, g.proj = r, g.projections(r)
 	defer func() { g.proj = nil }()
-	return g.flowFramed(f, cr.Scope, scope, r.name+" (Node body inlined)")
+	return g.flowFramed(f, cr.Scope, scope, r.name+" (Node body inlined)", true)
 }
 
 // flowStreamBody prints the body of the start rule r of ParseStream from Flow IR as the matcher of its
@@ -184,7 +184,7 @@ func (g *generator) flowStreamBody(r *rule, scope *scope) string {
 	}
 	g.cur, g.proj = r, g.projections(r)
 	defer func() { g.proj = nil }()
-	return g.flowFramed(f, cr.Scope, scope, r.name+" (stream body)")
+	return g.flowFramed(f, cr.Scope, scope, r.name+" (stream body)", true)
 }
 
 // flowFrameExprOK reports whether the body of the rule r is one that Flow IR prints as a framed body of the
@@ -254,9 +254,9 @@ func (g *generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope 
 		if operatorsRouteHook != nil && g.collect == nil {
 			operatorsRouteHook(g.table, g.cur)
 		}
-		return g.flowFramed(f, l.Scope, scope, g.cur.name+" (OperatorsRule body inlined)")
+		return g.flowFramed(f, l.Scope, scope, g.cur.name+" (OperatorsRule body inlined)", false)
 	}
-	return g.flowFramed(f, l.Scope, scope, g.cur.name+" (typed OperatorsRule body inlined)")
+	return g.flowFramed(f, l.Scope, scope, g.cur.name+" (typed OperatorsRule body inlined)", false)
 }
 
 // flowOperatorsRule returns the Core IR of the Operators Rule r, or nil if its lines are not
@@ -271,8 +271,9 @@ func (g *generator) flowOperatorsRule(r *rule) *core.OperatorsRule {
 }
 
 // flowFramed prints the framed function f, whose capture scope has the slots, as a matcher method
-// with the comment, as finishFrameBody does, and sets scope to its capture scope.
-func (g *generator) flowFramed(f *flow.Func, slots []core.Slot, scope *scope, comment string) string {
+// with the comment, as finishFrameBody does, and sets scope to its capture scope. A rule body (ruleBody)
+// has the signature of the Body field of the rule table (see bodyMethod).
+func (g *generator) flowFramed(f *flow.Func, slots []core.Slot, scope *scope, comment string, ruleBody bool) string {
 	p := newFlowPrinter(g, true)
 	p.document = f.Document
 	p.stmts(f.Body)
@@ -321,6 +322,9 @@ func (g *generator) flowFramed(f *flow.Func, slots []core.Slot, scope *scope, co
 		scope.slot(sl.Name)
 	}
 	g.flowFrames++
+	if ruleBody {
+		return g.bodyMethod(comment, b.String())
+	}
 	return g.method(comment, b.String())
 }
 

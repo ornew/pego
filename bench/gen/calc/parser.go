@@ -224,7 +224,7 @@ var recRulesExtras = [...]rt.RuleExtra{}
 func init() {
 	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
 	pegoGrammar.SetRules(rules, 1)
-	rules[0].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e1(p) }
+	rules[0].Body = e1
 	rules[0].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[1].OperatorsRule = &rt.OperatorsRule{
 		Skip: e6,
@@ -253,7 +253,7 @@ func init() {
 	pegoGrammar.NodeTypes["Number"] = rt.NewNodeTypeKinds("Number")
 	recRules = rt.NewRules(recRulesSpec[:], recRulesStrs[:], recRulesExtras[:])
 	pegoRecGrammar.SetRules(recRules, 1)
-	recRules[0].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e22(p) }
+	recRules[0].Body = e22
 	recRules[1].OperatorsRule = &rt.OperatorsRule{
 		Skip: e23,
 		Operands: []*rt.OperatorsRuleLine{
@@ -287,7 +287,7 @@ func init() {
 	trules[1].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[1], min) }
 }
 
-func e1(p *rt.Parser) (*rt.Node, bool) {
+func e1(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.StepWork()
 	var ok bool
 	var v2 *rt.Node
@@ -307,7 +307,7 @@ fail:
 	return nil, false
 }
 
-func e3(p *rt.Parser) (*rt.Node, bool) {
+func e3(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.StepWork()
 	var x1, size, x2, x6 int
 	var ch rune
@@ -614,7 +614,7 @@ func r2(p *rt.Parser) (*rt.Node, bool) {
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
 	p.Enter()
-	v, ok := e3(p)
+	v, ok := e3(p, 0)
 	p.Depth--
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]
@@ -652,7 +652,7 @@ func r4(p *rt.Parser) (*rt.Node, bool) {
 	return v, true
 }
 
-func e22(p *rt.Parser) (*rt.Node, bool) {
+func e22(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.StepWork()
 	var v *rt.Node
 	var ok bool

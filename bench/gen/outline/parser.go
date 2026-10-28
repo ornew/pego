@@ -239,22 +239,22 @@ var recRulesExtras = [...]rt.RuleExtra{}
 func init() {
 	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
 	pegoGrammar.SetRules(rules, 1)
-	rules[0].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e1(p) }
+	rules[0].Body = e1
 	rules[0].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
-	rules[1].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e3(p) }
+	rules[1].Body = e3
 	rules[1].Action = func(c *rt.ActCtx) any { return c.NewList(c.ListItems("map", c.Cap(0))) }
-	rules[2].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e4(p) }
+	rules[2].Body = e4
 	rules[2].Action = func(c *rt.ActCtx) any { return c.NewStruct("Item", "Text", c.Cap(1), "Children", c.Concat(c.Cap(2))) }
-	rules[3].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e5(p) }
+	rules[3].Body = e5
 	rules[3].Action = func(c *rt.ActCtx) any { return c.Cap(1) }
 	pegoGrammar.StructFields["Item"] = map[string]bool{"Text": true, "Children": true}
 	pegoGrammar.TypeKinds["Item"] = rt.KindOf("Item", "")
 	recRules = rt.NewRules(recRulesSpec[:], recRulesStrs[:], recRulesExtras[:])
 	pegoRecGrammar.SetRules(recRules, 1)
-	recRules[0].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e15(p) }
-	recRules[1].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e17(p) }
-	recRules[2].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e18(p) }
-	recRules[3].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e19(p) }
+	recRules[0].Body = e15
+	recRules[1].Body = e17
+	recRules[2].Body = e18
+	recRules[3].Body = e19
 	pegoGrammar.Starts = []string{"main"}
 	pegoGrammar.DefaultStart = "main"
 	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\" \"", "[^\\n]", "\"\\n\"", "[ \\t]"}
@@ -265,7 +265,7 @@ func init() {
 	trules[0].Entry = u0
 }
 
-func e1(p *rt.Parser) (*rt.Node, bool) {
+func e1(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.StepWork()
 	var ok bool
 	var v2 *rt.Node
@@ -300,7 +300,7 @@ fail:
 	return nil, false
 }
 
-func e3(p *rt.Parser) (*rt.Node, bool) {
+func e3(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.StepWork()
 	var x1, x2, x5 int
 	var x3, x4 *rt.CaptureFrame
@@ -357,7 +357,7 @@ fail:
 	return nil, false
 }
 
-func e4(p *rt.Parser) (*rt.Node, bool) {
+func e4(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.StepWork()
 	var ok bool
 	var v2, v4, v7, v10 *rt.Node
@@ -392,7 +392,7 @@ fail:
 	return nil, false
 }
 
-func e5(p *rt.Parser) (*rt.Node, bool) {
+func e5(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.StepWork()
 	var x1 int
 	var x5 rt.Mark
@@ -441,7 +441,7 @@ fail:
 	return nil, false
 }
 
-func e7(p *rt.Parser) (*rt.Node, bool) {
+func e7(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.StepWork()
 	var x1 int
 	var x3 rt.Mark
@@ -468,7 +468,7 @@ func e7(p *rt.Parser) (*rt.Node, bool) {
 	return v5, true
 }
 
-func e8(p *rt.Parser) (*rt.Node, bool) {
+func e8(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.StepWork()
 	var x1, size, x2 int
 	var ch rune
@@ -505,7 +505,7 @@ func r4(p *rt.Parser) (*rt.Node, bool) {
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
 	p.Enter()
-	v, ok := e7(p)
+	v, ok := e7(p, 0)
 	p.Depth--
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]
@@ -524,7 +524,7 @@ func r5(p *rt.Parser) (*rt.Node, bool) {
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
 	p.Enter()
-	v, ok := e8(p)
+	v, ok := e8(p, 0)
 	p.Depth--
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]
@@ -618,7 +618,7 @@ fail:
 	return nil, false
 }
 
-func e15(p *rt.Parser) (*rt.Node, bool) {
+func e15(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.StepWork()
 	var ok bool
 	var x2 rt.Mark
@@ -651,7 +651,7 @@ fail:
 	return nil, false
 }
 
-func e17(p *rt.Parser) (*rt.Node, bool) {
+func e17(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.StepWork()
 	var x1, x2 *rt.CaptureFrame
 	var x3 int
@@ -700,7 +700,7 @@ fail:
 	return nil, false
 }
 
-func e18(p *rt.Parser) (*rt.Node, bool) {
+func e18(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.StepWork()
 	var ok bool
 	var v2 *rt.Node
@@ -731,7 +731,7 @@ fail:
 	return nil, false
 }
 
-func e19(p *rt.Parser) (*rt.Node, bool) {
+func e19(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.StepWork()
 	var x1 int
 	var x5 rt.Mark
@@ -785,7 +785,7 @@ func q4(p *rt.Parser) (*rt.Node, bool) {
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
 	p.Enter()
-	v, ok := e7(p)
+	v, ok := e7(p, 0)
 	p.Depth--
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]

@@ -83,7 +83,7 @@ func undefinedGenerated(t *testing.T, src []byte) []string {
 	return undefined
 }
 
-func countBodies(src []byte) int { return strings.Count(string(src), "].Body = func(") }
+func countBodies(src []byte) int { return strings.Count(string(src), "].Body = ") }
 
 func generateReach(t *testing.T, src string, opts GenOptions) []byte {
 	t.Helper()
