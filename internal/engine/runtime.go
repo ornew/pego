@@ -139,23 +139,6 @@ type parser struct {
 	attempt  operatorsRuleAttempt // result of the longestFrame that just finished (iterative VM)
 }
 
-// expID is an expectation (an index into descs). If msgBit is set, it is an @error message.
-type expID int32
-
-const msgBit expID = 1 << 30
-
-// Expectations placed at the start of descs regardless of backend
-const (
-	idAny expID = iota
-	idBeginInput
-	idEndInput
-	idBeginLine
-	idEndLine
-	numFixedDescs
-)
-
-var fixedDescs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line"}
-
 type memoKey struct {
 	rule, pos, min int
 	missingSilent  bool // insertion-disabled lookahead has its own LR seeds
