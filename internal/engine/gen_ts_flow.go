@@ -30,6 +30,9 @@ func (g *tsGen) startTSFlow() bool {
 		return false
 	}
 	if err := g.startRecFlow(g.prog); err != nil {
+		if g.flowErr == nil {
+			g.flowErr = err
+		}
 		return false
 	}
 	// The generated TypeScript reads input through the runtime's peek and matches literals through
@@ -52,16 +55,16 @@ func (g *tsGen) flowRule(r *rule, scope *scope) (call string, ok bool) {
 	var f *flow.Func
 	var slots []core.Slot
 	cr := g.flow.m.Rules[r.id]
-	switch {
-	case recFlowEligible(r) && flow.LocalRule(cr):
+	if recFlowEligible(r) && flow.LocalRule(cr) {
 		var err error
 		if f, err = flow.Lower(g.flow.m, cr, r.name, g.flow.opts); err != nil {
 			panic(fmt.Errorf("rule %s of table %s: %w", r.name, g.table, err)) // LocalRule holds
 		}
 		if f.Binds {
-			return "", false
+			f = nil // the runtime owns the frame the binds write
 		}
-	default:
+	}
+	if f == nil {
 		if _, eligible := g.flowNodeFrameOK(r); !eligible {
 			return "", false
 		}
@@ -1083,4 +1086,12 @@ func (g *tsGen) flowLine(l *core.OpLine, e grammar.Expr, scope *scope, build boo
 	g.proj = nil // the actions of the lines use no projections of the rule
 	defer func() { g.proj = prev }()
 	return g.flowFunc(f, l.Scope, scope, g.cur.name+" (OperatorsRule line)")
+}
+
+// failFlowLine records that Flow IR does not print an Operators Rule line, unless the generator
+// does not use Flow IR.
+func (g *tsGen) failFlowLine(what string) {
+	if g.flow != nil {
+		g.failFlow(what)
+	}
 }

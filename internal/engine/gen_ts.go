@@ -81,6 +81,9 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	gen := &tsGen{generator: &generator{prog: prog, table: "rules", observability: opts.Observability, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing || !opts.enableTSLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch}, plainUsed: map[*rule]bool{}, tsFlow: !opts.disableTSFlow}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
+	if gen.flowErr != nil {
+		return nil, gen.flowErr
+	}
 	var rec *Program
 	if opts.Recognize {
 		if rec, err = prog.recognizer(); err != nil {
@@ -89,6 +92,9 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 		gen.prog, gen.table = rec, "recRules"
 		gen.rules()
 		gen.prog, gen.table = prog, "rules"
+		if gen.flowErr != nil {
+			return nil, gen.flowErr
+		}
 	}
 
 	var out strings.Builder
@@ -510,6 +516,9 @@ func (g *tsGen) rules() {
 			if call, ok := g.flowRule(r, s); ok {
 				bodies[r] = call
 			} else {
+				if g.flow != nil {
+					g.failFlow("rule " + r.name + " of table " + g.table)
+				}
 				bodies[r] = g.expr(r.bodyExpr(), s, !r.lean)
 			}
 			g.proj = nil
@@ -968,6 +977,7 @@ func (g *tsGen) operatorsRule(r *rule, e *grammar.OperatorsRule) {
 		}
 		m, ok := g.flowLine(skip, e.Skip, newScope(), false)
 		if !ok {
+			g.failFlowLine("the skip of an Operators Rule of rule " + r.name)
 			m = g.expr(e.Skip, newScope(), false)
 		}
 		fmt.Fprintf(&b, "  skip: %s,\n", g.fn(m))
@@ -1020,6 +1030,7 @@ func (g *tsGen) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator 
 	build := !g.cur.novalue && !leanLine(action, locals)
 	m, ok := g.flowLine(l, e, s, build)
 	if !ok {
+		g.failFlowLine("a line of an Operators Rule of rule " + g.cur.name)
 		m = g.expr(e, s, build)
 	}
 	m = g.fn(m)
