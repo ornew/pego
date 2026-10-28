@@ -1,6 +1,10 @@
 package engine
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/ornew/pego/internal/bytecode"
+)
 
 // admitParse validates fixed metadata before caller Context methods. Callers
 // resolve an empty start to the default start rule first. Lazy setup
@@ -113,12 +117,12 @@ func (prog *Program) prepareControlledRule(b Backend, name string, c *workContro
 }
 
 // moduleStreams inspects rule bytecode metadata without building an executable VM.
-func moduleStreams(m *Module, entry int) bool {
+func moduleStreams(m *bytecode.Module, entry int) bool {
 	for _, in := range m.Code[entry:] {
 		switch {
-		case in.Op == OpReturn:
+		case in.Op == bytecode.OpReturn:
 			return false
-		case in.Op == OpNext && in.B == 2:
+		case in.Op == bytecode.OpNext && in.B == 2:
 			return true
 		}
 	}

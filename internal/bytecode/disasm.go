@@ -1,4 +1,4 @@
-package engine
+package bytecode
 
 import (
 	"fmt"
@@ -131,7 +131,7 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 		return fmt.Sprintf("%s depth=%d -> %d", m.Strings[m.Classes[a].Desc], bb, c) // the expectation as written
 	case OpScan, OpScanWide:
 		if in.Op == OpScanWide {
-			bb, c = int(m.Exprs[bb].integer()), int(m.Exprs[c].integer())
+			bb, c = int(m.Exprs[bb].Integer()), int(m.Exprs[c].Integer())
 		}
 		cl := "any"
 		if a >= 0 {
@@ -140,7 +140,7 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 		return fmt.Sprintf("%s min=%d max=%d", cl, bb, c)
 	case OpRepeat, OpRepeatWide:
 		if in.Op == OpRepeatWide {
-			a, bb = int(m.Exprs[a].integer()), int(m.Exprs[bb].integer())
+			a, bb = int(m.Exprs[a].Integer()), int(m.Exprs[bb].Integer())
 		}
 		sc := "-"
 		if c >= 0 {
@@ -200,7 +200,7 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 	case EFunc:
 		return fmt.Sprintf("entry=%d params=%d", a, bb)
 	case ECall:
-		return fmt.Sprintf("%s argc=%d", builtinNames[a], bb)
+		return fmt.Sprintf("%s argc=%d", BuiltinNames[a], bb)
 	}
 	return ""
 }

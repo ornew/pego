@@ -12,6 +12,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/bytecode"
 )
 
 // schemaJSON exports the schema of p for start, or every rule with allRules, as canonical JSON.
@@ -137,20 +139,20 @@ func TestCompiledSchemaBackendAgreement(t *testing.T) {
 // the format has nothing more, for the tests of data after the module.
 func marshalWithTrailing(prog *Program, start string, section []byte) []byte {
 	m := prog.Module()
-	w := &encoder{strs: map[string]int{}}
+	w := &bytecode.Encoder{Strs: map[string]int{}}
 	for i, s := range m.Strings {
-		w.strs[s] = i
-		w.list = append(w.list, s)
+		w.Strs[s] = i
+		w.List = append(w.List, s)
 	}
-	w.str(start)
-	w.module(m)
-	w.body.Write(section)
+	w.Str(start)
+	w.WriteModule(m)
+	w.Body.Write(section)
 	var out bytes.Buffer
 	out.WriteString(compiledMagic)
 	out.WriteByte(compiledVersion)
 	out.WriteByte(byte(CompiledParse))
-	out.Write(binary.AppendUvarint(nil, uint64(m.instructionSetVersion())))
-	w.finish(&out)
+	out.Write(binary.AppendUvarint(nil, uint64(m.InstructionSetVersion())))
+	w.Finish(&out)
 	return out.Bytes()
 }
 

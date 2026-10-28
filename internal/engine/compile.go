@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -57,7 +58,7 @@ type Program struct {
 	workRecognizer bool
 
 	moduleOnce sync.Once
-	module     *Module
+	module     *bytecode.Module
 	recOnce    sync.Once
 	rec        *Program // program that builds no tree (recognizer)
 	recErr     error

@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -198,7 +199,7 @@ rule item = [a-z]`
 	program := compile(t, src)
 	for _, mode := range valueModes {
 		data, err := program.Marshal("main", mode)
-		if err != nil || data[isaOffset] != isaVersion {
+		if err != nil || data[isaOffset] != bytecode.ISAVersion {
 			t.Fatalf("index ISA: %v", err)
 		}
 		loaded, _, err := LoadProgram(data)
@@ -211,7 +212,7 @@ rule item = [a-z]`
 				t.Fatalf("loaded index: %s / %s", got, want)
 			}
 		}
-		data[isaOffset] = isaVersion - 1
+		data[isaOffset] = bytecode.ISAVersion - 1
 		binary.LittleEndian.PutUint32(data[len(data)-4:], crc32.ChecksumIEEE(data[:len(data)-4]))
 		if _, _, err := LoadProgram(data); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 			t.Fatalf("under-declared index ISA accepted: %v", err)

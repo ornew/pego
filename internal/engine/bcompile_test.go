@@ -3,6 +3,8 @@ package engine
 import (
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/bytecode"
 )
 
 func TestModuleDisassembly(t *testing.T) {
@@ -68,11 +70,11 @@ func TestModuleCompilesCorpus(t *testing.T) {
 		m := compile(t, c.src).Module()
 		for i, in := range m.Code {
 			switch in.Op {
-			case OpJump, OpChoice, OpCommit, OpIter, OpNext, OpLook, OpRecover, OpEndRecover:
+			case bytecode.OpJump, bytecode.OpChoice, bytecode.OpCommit, bytecode.OpIter, bytecode.OpNext, bytecode.OpLook, bytecode.OpRecover, bytecode.OpEndRecover:
 				if in.A < 0 || int(in.A) > len(m.Code) {
 					t.Errorf("%s: code %d: jump to %d", c.name, i, in.A)
 				}
-			case OpGuard:
+			case bytecode.OpGuard:
 				if in.C <= int32(i) || int(in.C) > len(m.Code) {
 					t.Errorf("%s: code %d: guard jumps to %d", c.name, i, in.C)
 				}

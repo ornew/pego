@@ -6,6 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"hash/crc32"
+
+	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 )
 
 // The compiled grammar format (.pegoc), specified in the File format section of
@@ -24,10 +27,6 @@ import (
 const (
 	compiledMagic   = "PEGOC\x00"
 	compiledVersion = 6
-	// isaVersion is the instruction set of the value model, the only one supported. Earlier
-	// versions built the previous syntax trees, so their files are not loaded and need to be
-	// compiled again.
-	isaVersion = 26
 )
 
 // CompiledMode is the mode of a compiled grammar file: the one kind of parse its module serves.
@@ -70,7 +69,7 @@ func ParseCompiledMode(s string) (CompiledMode, error) {
 
 // unsupportedISA is the error for a module of instruction set isa.
 func unsupportedISA(isa int) error {
-	if isa < isaVersion {
+	if isa < bytecode.ISAVersion {
 		return fmt.Errorf("unsupported instruction set version %d: the file was compiled by an older pego; compile the grammar again", isa)
 	}
 	return fmt.Errorf("unsupported instruction set version %d", isa)
@@ -127,36 +126,6 @@ func modeError(have, need CompiledMode, what string) error {
 	return fmt.Errorf("the compiled grammar is in %s mode; %s %s mode: compile it with -mode %s (%s), or compile the grammar from source", have, what, need, need, compiledModeAPI[need])
 }
 
-type encoder struct {
-	body bytes.Buffer
-	strs map[string]int
-	list []string
-}
-
-func (w *encoder) byte(b byte) { w.body.WriteByte(b) }
-func (w *encoder) uint(n int) {
-	w.body.Write(binary.AppendUvarint(nil, uint64(n)))
-}
-func (w *encoder) int(n int) {
-	w.body.Write(binary.AppendVarint(nil, int64(n)))
-}
-func (w *encoder) bool(b bool) {
-	if b {
-		w.byte(1)
-	} else {
-		w.byte(0)
-	}
-}
-func (w *encoder) str(s string) {
-	i, ok := w.strs[s]
-	if !ok {
-		i = len(w.list)
-		w.strs[s] = i
-		w.list = append(w.list, s)
-	}
-	w.uint(i)
-}
-
 // MarshalBinary encodes the program in parse mode; see Marshal.
 func (prog *Program) MarshalBinary(start string) ([]byte, error) {
 	return prog.Marshal(start, CompiledParse)
@@ -180,7 +149,7 @@ func (prog *Program) Marshal(start string, mode CompiledMode) ([]byte, error) {
 	if prog.loaded && mode != prog.mode {
 		return nil, fmt.Errorf("the compiled grammar is in %s mode and is saved only in that mode; compile the grammar from source to save it in %s mode", prog.mode, mode)
 	}
-	var m *Module
+	var m *bytecode.Module
 	switch {
 	case prog.loaded || mode != CompiledRecognize:
 		m = prog.Module()
@@ -191,132 +160,20 @@ func (prog *Program) Marshal(start string, mode CompiledMode) ([]byte, error) {
 		}
 		m = rec.Module()
 	}
-	w := &encoder{strs: map[string]int{}}
+	w := &bytecode.Encoder{Strs: map[string]int{}}
 	for i, s := range m.Strings { // put the module's string table first
-		w.strs[s] = i
-		w.list = append(w.list, s)
+		w.Strs[s] = i
+		w.List = append(w.List, s)
 	}
-	w.str(start)
-	w.module(m)
+	w.Str(start)
+	w.WriteModule(m)
 	var out bytes.Buffer
 	out.WriteString(compiledMagic)
 	out.WriteByte(compiledVersion)
 	out.WriteByte(byte(mode))
-	out.Write(binary.AppendUvarint(nil, uint64(m.instructionSetVersion())))
-	w.finish(&out)
+	out.Write(binary.AppendUvarint(nil, uint64(m.InstructionSetVersion())))
+	w.Finish(&out)
 	return out.Bytes(), nil
-}
-
-// finish writes the string table and the body to out and appends the checksum.
-func (w *encoder) finish(out *bytes.Buffer) {
-	out.Write(binary.AppendUvarint(nil, uint64(len(w.list))))
-	for _, s := range w.list {
-		out.Write(binary.AppendUvarint(nil, uint64(len(s))))
-		out.WriteString(s)
-	}
-	out.Write(w.body.Bytes())
-	out.Write(binary.LittleEndian.AppendUint32(nil, crc32.ChecksumIEEE(out.Bytes())))
-}
-
-// decoder reads a compiled grammar. On invalid data it does not panic but records the first
-// error.
-type decoder struct {
-	data []byte
-	pos  int
-	strs []string
-	err  error
-}
-
-func (r *decoder) fail(format string, args ...any) {
-	if r.err == nil {
-		r.err = fmt.Errorf("invalid compiled grammar at byte %d: %s", r.pos, fmt.Sprintf(format, args...))
-	}
-}
-
-func (r *decoder) byte() byte {
-	if r.err != nil {
-		return 0
-	}
-	if r.pos >= len(r.data) {
-		r.fail("unexpected end of data")
-		return 0
-	}
-	b := r.data[r.pos]
-	r.pos++
-	return b
-}
-
-func (r *decoder) uint() int {
-	if r.err != nil {
-		return 0
-	}
-	n, k := binary.Uvarint(r.data[r.pos:])
-	if k <= 0 || n > 1<<31 {
-		r.fail("invalid integer")
-		return 0
-	}
-	r.pos += k
-	return int(n)
-}
-
-// count reads an element count. A count larger than the remaining data is invalid (this prevents
-// huge allocations).
-func (r *decoder) count() int {
-	n := r.uint()
-	if n > len(r.data)-r.pos {
-		r.fail("count %d exceeds data", n)
-		return 0
-	}
-	return n
-}
-
-func (r *decoder) int() int {
-	if r.err != nil {
-		return 0
-	}
-	n, k := binary.Varint(r.data[r.pos:])
-	if k <= 0 {
-		r.fail("invalid integer")
-		return 0
-	}
-	r.pos += k
-	return int(n)
-}
-
-func (r *decoder) bool() bool {
-	switch b := r.byte(); b {
-	case 0:
-		return false
-	case 1:
-		return true
-	default:
-		r.fail("invalid boolean %d", b)
-		return false
-	}
-}
-
-func (r *decoder) str() string {
-	i := r.uint()
-	if r.err != nil {
-		return ""
-	}
-	if i >= len(r.strs) {
-		r.fail("string index %d out of range", i)
-		return ""
-	}
-	return r.strs[i]
-}
-
-func (r *decoder) strings() {
-	n := r.count()
-	for i := 0; i < n && r.err == nil; i++ {
-		l := r.count()
-		if r.err != nil {
-			return
-		}
-		r.strs = append(r.strs, string(r.data[r.pos:r.pos+l]))
-		r.pos += l
-	}
 }
 
 // LoadProgram loads a compiled grammar. It also returns the saved start rule (empty for the
@@ -341,19 +198,19 @@ func LoadProgram(data []byte) (*Program, string, error) {
 	if int(mode) >= len(compiledModeNames) {
 		return nil, "", fmt.Errorf("invalid compiled grammar: unknown mode %d", mode)
 	}
-	r := &decoder{data: body, pos: len(compiledMagic) + 2}
-	isa := r.uint()
-	if r.err == nil && isa != isaVersion {
+	r := &bytecode.Decoder{Data: body, Pos: len(compiledMagic) + 2}
+	isa := r.Uint()
+	if r.Err == nil && isa != bytecode.ISAVersion {
 		return nil, "", unsupportedISA(isa)
 	}
-	r.strings()
-	start := r.str()
-	m := r.module()
-	if r.err == nil && r.pos != len(r.data) {
-		r.fail("%d trailing bytes", len(r.data)-r.pos)
+	r.Strings()
+	start := r.Str()
+	m := r.ReadModule()
+	if r.Err == nil && r.Pos != len(r.Data) {
+		r.Fail("%d trailing bytes", len(r.Data)-r.Pos)
 	}
-	if r.err != nil {
-		return nil, "", r.err
+	if r.Err != nil {
+		return nil, "", r.Err
 	}
 	if err := validateModule(m); err != nil {
 		return nil, "", fmt.Errorf("invalid compiled grammar: %w", err)
@@ -369,7 +226,7 @@ func LoadProgram(data []byte) (*Program, string, error) {
 }
 
 // moduleStarts returns the names of the start rules of a validated module.
-func moduleStarts(m *Module) []string {
+func moduleStarts(m *bytecode.Module) []string {
 	names := make([]string, len(m.Starts))
 	for i, x := range m.Starts {
 		names[i] = m.Strings[m.Rules[x].Name]
@@ -378,4 +235,47 @@ func moduleStarts(m *Module) []string {
 }
 
 // moduleDefaultStart returns the name of the default start rule of a validated module.
-func moduleDefaultStart(m *Module) string { return m.Strings[m.Rules[m.DefaultStart].Name] }
+func moduleDefaultStart(m *bytecode.Module) string { return m.Strings[m.Rules[m.DefaultStart].Name] }
+
+// moduleProgram builds a program from a module alone, without the grammar; only the bytecode
+// backends run it.
+func moduleProgram(m *bytecode.Module) *Program {
+	prog := &Program{byName: map[string]*rule{}, types: map[string]grammar.TypeDecl{}, sourceInfo: m.SourceInfo, defaultValue: m.DefaultValue}
+	for _, t := range m.Types {
+		if t.Node >= 0 {
+			// The run time needs only that the type is a node type.
+			prog.types[m.Strings[t.Name]] = &grammar.TypeDef{Name: m.Strings[t.Name], Type: &grammar.TypeApp{Name: "node", Args: []grammar.TypeExpr{&grammar.TypeRef{Name: "_"}}}}
+			continue
+		}
+		st := &grammar.StructType{}
+		for _, f := range t.Fields {
+			st.Fields = append(st.Fields, &grammar.Field{Name: m.Strings[f]})
+		}
+		prog.types[m.Strings[t.Name]] = &grammar.TypeDef{Name: m.Strings[t.Name], Type: st}
+	}
+	prog.vars = moduleVarTable(m)
+	prog.starts, prog.defaultStart = moduleStarts(m), moduleDefaultStart(m)
+	prog.moduleOnce.Do(func() { prog.module = m })
+	return prog
+}
+
+// moduleVarTable returns the variable table of the module m, or nil when it declares no variable.
+func moduleVarTable(m *bytecode.Module) *varTable {
+	var t *varTable
+	for _, v := range m.Vars {
+		d := &varDecl{name: m.Strings[v.Name]}
+		switch v.Type {
+		case bytecode.VarInt:
+			d.typ, d.init = tyInt, v.Int
+		case bytecode.VarString:
+			d.typ, d.init = tyString, m.Strings[v.Str]
+		default:
+			d.typ, d.init = tyBool, v.Int == 1
+		}
+		if t == nil {
+			t = newVarTable()
+		}
+		t.add(d)
+	}
+	return t
+}

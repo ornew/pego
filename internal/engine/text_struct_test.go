@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/bytecode"
 )
 
 // textStructGrammar has rules whose actions make structs with a field Text from the text they
@@ -74,7 +76,7 @@ rule name Name = ([a-z]+) #atomic`, Options{})
 	if err := validateModule(&m); err != nil {
 		t.Fatal(err)
 	}
-	m.Rules = append([]RuleInfo(nil), m.Rules...)
+	m.Rules = append([]bytecode.RuleInfo(nil), m.Rules...)
 	found := false
 	for i := range m.Rules {
 		if m.Rules[i].NodeType >= 0 {

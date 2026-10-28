@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -202,7 +203,7 @@ func TestVMStreamRepeatShape(t *testing.T) {
 	code := prog.Module().Code
 	ip := -1
 	for i, in := range code {
-		if in.Op == OpRepeat {
+		if in.Op == bytecode.OpRepeat {
 			ip = i
 			break
 		}
@@ -210,32 +211,32 @@ func TestVMStreamRepeatShape(t *testing.T) {
 	if ip < 0 {
 		t.Fatal("missing repetition")
 	}
-	vm := &vmProgram{m: &Module{Code: code}}
+	vm := &vmProgram{m: &bytecode.Module{Code: code}}
 	if !vm.isStreamRepeat(ip) {
 		t.Fatal("stream repetition not recognized")
 	}
 	for _, target := range []int32{-1, 0, int32(ip + 2), int32(len(code)), int32(len(code) + 1)} {
-		copied := append([]Instr(nil), code...)
+		copied := append([]bytecode.Instr(nil), code...)
 		copied[ip+1].A = target
-		vm.m = &Module{Code: copied}
+		vm.m = &bytecode.Module{Code: copied}
 		if vm.isStreamRepeat(ip) {
 			t.Fatalf("invalid target %d recognized as stream", target)
 		}
 	}
 	for _, defect := range []string{"iterator", "end", "next", "flag"} {
-		copied := append([]Instr(nil), code...)
+		copied := append([]bytecode.Instr(nil), code...)
 		end := int(copied[ip+1].A)
 		switch defect {
 		case "iterator":
-			copied[ip+1].Op = OpNext
+			copied[ip+1].Op = bytecode.OpNext
 		case "end":
-			copied[end].Op = OpNext
+			copied[end].Op = bytecode.OpNext
 		case "next":
-			copied[end-1].Op = OpIter
+			copied[end-1].Op = bytecode.OpIter
 		case "flag":
 			copied[end-1].B = 1
 		}
-		vm.m = &Module{Code: copied}
+		vm.m = &bytecode.Module{Code: copied}
 		if vm.isStreamRepeat(ip) {
 			t.Fatalf("invalid %s recognized as stream", defect)
 		}

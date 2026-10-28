@@ -1,4 +1,4 @@
-package engine
+package bytecode
 
 import (
 	"fmt"
@@ -27,14 +27,24 @@ type Module struct {
 	DefaultValue bool
 }
 
-// instructionSetVersion is the instruction set of every module: the value model's.
-func (m *Module) instructionSetVersion() int { return isaVersion }
+// InstructionSetVersion is the instruction set of every module: the value model's.
+func (m *Module) InstructionSetVersion() int { return ISAVersion }
 
 // Class is a character class. Ranges is a list of lower and upper bound pairs.
 type Class struct {
 	Ranges  []rune
 	Negated bool
 	Desc    int // expectation string (string table index)
+}
+
+// Has reports whether the character ch is in the class.
+func (cl *Class) Has(ch rune) bool {
+	for k := 0; k < len(cl.Ranges); k += 2 {
+		if cl.Ranges[k] <= ch && ch <= cl.Ranges[k+1] {
+			return !cl.Negated
+		}
+	}
+	return cl.Negated
 }
 
 // TypeInfo describes a type: a struct type, or a named node type.
@@ -48,9 +58,9 @@ type TypeInfo struct {
 
 // Variable types
 const (
-	varInt = iota
-	varString
-	varBool
+	VarInt = iota
+	VarString
+	VarBool
 )
 
 // VarInfo describes a variable. Every parse starts with the variable bound to its initial value.
@@ -123,15 +133,15 @@ type OpInfo struct {
 
 // Operators Rule operator kinds and associativity
 const (
-	opPrefix = iota
-	opPostfix
-	opInfix
+	OperatorPrefix = iota
+	OperatorPostfix
+	OperatorInfix
 )
 
 const (
-	assocLeft = iota
-	assocRight
-	assocNone
+	AssocLeft = iota
+	AssocRight
+	AssocNone
 )
 
 // Instr is an instruction. The meaning of its operands depends on the instruction. Jump targets
@@ -141,8 +151,8 @@ type Instr struct {
 	A, B, C int32
 }
 
-// integer decodes the signed integer held by an EINT instruction.
-func (in Instr) integer() int64 {
+// Integer decodes the signed integer held by an EINT instruction.
+func (in Instr) Integer() int64 {
 	return int64(in.A) + int64(in.B)<<32
 }
 
@@ -321,17 +331,17 @@ const (
 
 // Built-in function indices
 const (
-	bLen = iota
-	bText
-	bFoldl
-	bFoldr
-	bMap
-	bList
-	bConcat
-	bFilter
+	BuiltinLen = iota
+	BuiltinText
+	BuiltinFoldl
+	BuiltinFoldr
+	BuiltinMap
+	BuiltinList
+	BuiltinConcat
+	BuiltinFilter
 )
 
-var builtinNames = []string{"len", "text", "foldl", "foldr", "map", "list", "concat", "filter"}
+var BuiltinNames = []string{"len", "text", "foldl", "foldr", "map", "list", "concat", "filter"}
 
 var opNames = map[Op]string{
 	OpStr: "STR", OpClass: "CLASS", OpAny: "ANY", OpTop: "TOP", OpFail: "FAIL", OpAssert: "ASSERT",
@@ -356,3 +366,8 @@ func (o Op) String() string {
 	}
 	return fmt.Sprintf("OP%d", o)
 }
+
+// ISAVersion is the instruction set of the value model, the only one supported. Earlier
+// versions built the previous syntax trees, so their files are not loaded and need to be
+// compiled again.
+const ISAVersion = 26

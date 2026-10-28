@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/limits"
 )
 
@@ -21,7 +22,7 @@ func TestWorkContextAttributionPreservesVMFaults(t *testing.T) {
 			vm := prog.vmFor(backend)
 			ip := -1
 			for i, in := range vm.m.Code {
-				if in.Op == OpStr {
+				if in.Op == bytecode.OpStr {
 					ip = i
 					break
 				}

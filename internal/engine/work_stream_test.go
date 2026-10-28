@@ -12,6 +12,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -580,7 +581,7 @@ func TestWorkStreamVMFaultAttribution(t *testing.T) {
 			vm := prog.vmFor(b)
 			ip := -1
 			for i, ins := range vm.m.Code {
-				if ins.Op == OpStr {
+				if ins.Op == bytecode.OpStr {
 					ip = i
 					break
 				}

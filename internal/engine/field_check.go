@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -279,8 +280,21 @@ func (r *fieldTypeReader) term() (*fieldType, error) {
 	return t, nil
 }
 
+// validateModule checks the module m (bytecode.ValidateModule), with the field types parsed against
+// the types that m declares.
+func validateModule(m *bytecode.Module) error {
+	var typeNames map[string]bool
+	return bytecode.ValidateModule(m, func(text string) error {
+		if typeNames == nil {
+			typeNames = moduleTypeNames(m)
+		}
+		_, err := parseFieldType(text, typeNames)
+		return err
+	})
+}
+
 // moduleTypeNames returns the set of the names of a module's declared types.
-func moduleTypeNames(m *Module) map[string]bool {
+func moduleTypeNames(m *bytecode.Module) map[string]bool {
 	names := make(map[string]bool, len(m.Types))
 	for _, t := range m.Types {
 		if t.Name >= 0 && t.Name < len(m.Strings) {

@@ -1,107 +1,105 @@
-package engine
+package bytecode
 
 import (
 	"encoding/binary"
 	"fmt"
 	"slices"
 	"strings"
-
-	"github.com/ornew/pego/grammar"
 )
 
 // Reading and writing modules and validating loaded modules.
 
-func (w *encoder) ints(xs []int) {
-	w.uint(len(xs))
+func (w *Encoder) ints(xs []int) {
+	w.Uint(len(xs))
 	for _, x := range xs {
-		w.int(x)
+		w.Int(x)
 	}
 }
 
-func (w *encoder) code(code []Instr) {
-	w.uint(len(code))
+func (w *Encoder) code(code []Instr) {
+	w.Uint(len(code))
 	for _, in := range code {
-		w.byte(byte(in.Op))
-		w.int(int(in.A))
-		w.int(int(in.B))
-		w.int(int(in.C))
+		w.Byte(byte(in.Op))
+		w.Int(int(in.A))
+		w.Int(int(in.B))
+		w.Int(int(in.C))
 	}
 }
 
-func (w *encoder) line(l *LineInfo) {
-	w.int(l.Entry)
+func (w *Encoder) line(l *LineInfo) {
+	w.Int(l.Entry)
 	w.ints(l.Scope)
-	w.int(l.Action)
-	w.bool(l.IsSeq)
+	w.Int(l.Action)
+	w.Bool(l.IsSeq)
 }
 
-// module writes m.
-func (w *encoder) module(m *Module) {
-	w.uint(len(m.Strings))
-	w.bool(m.SourceInfo)
-	w.bool(m.DefaultValue)
-	w.uint(len(m.Classes))
+// WriteModule writes m.
+func (w *Encoder) WriteModule(m *Module) {
+	w.Uint(len(m.Strings))
+	w.Bool(m.SourceInfo)
+	w.Bool(m.DefaultValue)
+	w.Uint(len(m.Classes))
 	for _, c := range m.Classes {
-		w.bool(c.Negated)
-		w.int(c.Desc)
-		w.uint(len(c.Ranges) / 2)
+		w.Bool(c.Negated)
+		w.Int(c.Desc)
+		w.Uint(len(c.Ranges) / 2)
 		for _, r := range c.Ranges {
-			w.int(int(r))
+			w.Int(int(r))
 		}
 	}
-	w.uint(len(m.Types))
+	w.Uint(len(m.Types))
 	for _, t := range m.Types {
-		w.int(t.Name)
+		w.Int(t.Name)
 		w.ints(t.Fields)
-		w.int(t.Node)
+		w.Int(t.Node)
 	}
 	for _, lists := range [][][]int{m.FieldLists, m.Scopes} {
-		w.uint(len(lists))
+		w.Uint(len(lists))
 		for _, l := range lists {
 			w.ints(l)
 		}
 	}
-	w.uint(len(m.Vars))
+	w.Uint(len(m.Vars))
 	for _, v := range m.Vars {
-		w.int(v.Name)
-		w.int(v.Type)
-		w.int(v.Int)
-		w.int(v.Str)
+		w.Int(v.Name)
+		w.Int(v.Type)
+		w.Int(v.Int)
+		w.Int(v.Str)
 	}
-	w.uint(len(m.Rules))
+	w.Uint(len(m.Rules))
 	for _, r := range m.Rules {
-		w.int(r.Name)
-		w.int(r.Entry)
+		w.Int(r.Name)
+		w.Int(r.Entry)
 		w.ints(r.Scope)
-		w.int(r.Action)
-		w.int(r.NodeType)
-		w.bool(r.Memo)
-		w.bool(r.Leader)
-		w.bool(r.Positional)
-		w.int(r.OperatorsRule)
-		w.bool(r.NoValue)
-		w.bool(r.Transient)
-		w.int(r.Where)
-		w.bool(r.Splice)
+		w.Int(r.Action)
+		w.Int(r.NodeType)
+		w.Bool(r.Memo)
+		w.Bool(r.Leader)
+		w.Bool(r.Positional)
+		w.Int(r.OperatorsRule)
+		w.Bool(r.NoValue)
+		w.Bool(r.Transient)
+		w.Int(r.Where)
+		w.Bool(r.Splice)
 		w.ints(r.Vars)
 	}
 	w.ints(m.Starts)
-	w.int(m.DefaultStart)
-	w.uint(len(m.OperatorsRules))
+	w.Int(m.DefaultStart)
+	w.Uint(len(m.OperatorsRules))
 	for _, p := range m.OperatorsRules {
-		w.int(p.Skip)
-		w.uint(len(p.Operands))
+		w.Int(p.Skip)
+		w.Uint(len(p.Operands))
 		for i := range p.Operands {
 			w.line(&p.Operands[i])
 		}
 		for _, ops := range [][]OpInfo{p.Prefix, p.Led} {
-			w.uint(len(ops))
+			w.Uint(len(ops))
 			for i := range ops {
 				o := &ops[i]
-				w.int(o.ID)
-				w.int(o.Kind)
-				w.int(o.Assoc)
-				w.int(o.Level)
+				w.Int(o.ID)
+				w.Int(o.Kind)
+				w.Int(o.Assoc)
+				w.Int(o.Level)
 				w.line(&o.Line)
 			}
 		}
@@ -111,102 +109,102 @@ func (w *encoder) module(m *Module) {
 }
 
 // int32 reads an instruction operand.
-func (r *decoder) int32() int32 {
-	if r.err != nil {
+func (r *Decoder) int32() int32 {
+	if r.Err != nil {
 		return 0
 	}
-	n, k := binary.Varint(r.data[r.pos:])
+	n, k := binary.Varint(r.Data[r.Pos:])
 	if k <= 0 {
-		r.fail("invalid integer")
+		r.Fail("invalid integer")
 		return 0
 	}
-	r.pos += k
+	r.Pos += k
 	if n < -1<<31 || n >= 1<<31 {
-		r.fail("integer %d out of range", n)
+		r.Fail("integer %d out of range", n)
 		return 0
 	}
 	return int32(n)
 }
 
-func (r *decoder) ints() []int {
-	n := r.count()
+func (r *Decoder) ints() []int {
+	n := r.Count()
 	xs := make([]int, 0, n)
-	for i := 0; i < n && r.err == nil; i++ {
+	for i := 0; i < n && r.Err == nil; i++ {
 		xs = append(xs, int(r.int32()))
 	}
 	return xs
 }
 
-func (r *decoder) code() []Instr {
-	n := r.count()
+func (r *Decoder) code() []Instr {
+	n := r.Count()
 	code := make([]Instr, 0, n)
-	for i := 0; i < n && r.err == nil; i++ {
-		code = append(code, Instr{Op: Op(r.byte()), A: r.int32(), B: r.int32(), C: r.int32()})
+	for i := 0; i < n && r.Err == nil; i++ {
+		code = append(code, Instr{Op: Op(r.Byte()), A: r.int32(), B: r.int32(), C: r.int32()})
 	}
 	return code
 }
 
-func (r *decoder) line() LineInfo {
-	return LineInfo{Entry: int(r.int32()), Scope: r.ints(), Action: int(r.int32()), IsSeq: r.bool()}
+func (r *Decoder) line() LineInfo {
+	return LineInfo{Entry: int(r.int32()), Scope: r.ints(), Action: int(r.int32()), IsSeq: r.Bool()}
 }
 
-// module reads a module.
-func (r *decoder) module() *Module {
+// ReadModule reads a module.
+func (r *Decoder) ReadModule() *Module {
 	m := &Module{}
-	n := r.uint()
-	if r.err == nil && n > len(r.strs) {
-		r.fail("module has %d strings, file has %d", n, len(r.strs))
+	n := r.Uint()
+	if r.Err == nil && n > len(r.Strs) {
+		r.Fail("module has %d strings, file has %d", n, len(r.Strs))
 	}
-	if r.err != nil {
+	if r.Err != nil {
 		return m
 	}
-	m.Strings = r.strs[:n]
-	m.SourceInfo = r.bool()
-	m.DefaultValue = r.bool()
-	n = r.count()
-	for i := 0; i < n && r.err == nil; i++ {
-		c := Class{Negated: r.bool(), Desc: int(r.int32())}
-		k := r.count()
-		for j := 0; j < 2*k && r.err == nil; j++ {
+	m.Strings = r.Strs[:n]
+	m.SourceInfo = r.Bool()
+	m.DefaultValue = r.Bool()
+	n = r.Count()
+	for i := 0; i < n && r.Err == nil; i++ {
+		c := Class{Negated: r.Bool(), Desc: int(r.int32())}
+		k := r.Count()
+		for j := 0; j < 2*k && r.Err == nil; j++ {
 			c.Ranges = append(c.Ranges, rune(r.int32()))
 		}
 		m.Classes = append(m.Classes, c)
 	}
-	n = r.count()
-	for i := 0; i < n && r.err == nil; i++ {
+	n = r.Count()
+	for i := 0; i < n && r.Err == nil; i++ {
 		m.Types = append(m.Types, TypeInfo{Name: int(r.int32()), Fields: r.ints(), Node: int(r.int32())})
 	}
 	for _, lists := range []*[][]int{&m.FieldLists, &m.Scopes} {
-		n = r.count()
-		for i := 0; i < n && r.err == nil; i++ {
+		n = r.Count()
+		for i := 0; i < n && r.Err == nil; i++ {
 			*lists = append(*lists, r.ints())
 		}
 	}
-	n = r.count()
-	for i := 0; i < n && r.err == nil; i++ {
-		m.Vars = append(m.Vars, VarInfo{Name: int(r.int32()), Type: int(r.int32()), Int: r.int(), Str: int(r.int32())})
+	n = r.Count()
+	for i := 0; i < n && r.Err == nil; i++ {
+		m.Vars = append(m.Vars, VarInfo{Name: int(r.int32()), Type: int(r.int32()), Int: r.Int(), Str: int(r.int32())})
 	}
-	n = r.count()
-	for i := 0; i < n && r.err == nil; i++ {
+	n = r.Count()
+	for i := 0; i < n && r.Err == nil; i++ {
 		ri := RuleInfo{
 			Name: int(r.int32()), Entry: int(r.int32()), Scope: r.ints(), Action: int(r.int32()),
 			NodeType: int(r.int32()),
-			Memo:     r.bool(), Leader: r.bool(), Positional: r.bool(), OperatorsRule: int(r.int32()), NoValue: r.bool(), Transient: r.bool(), Where: int(r.int32()), Splice: r.bool(), Vars: r.ints(),
+			Memo:     r.Bool(), Leader: r.Bool(), Positional: r.Bool(), OperatorsRule: int(r.int32()), NoValue: r.Bool(), Transient: r.Bool(), Where: int(r.int32()), Splice: r.Bool(), Vars: r.ints(),
 		}
 		m.Rules = append(m.Rules, ri)
 	}
 	m.Starts = r.ints()
 	m.DefaultStart = int(r.int32())
-	n = r.count()
-	for i := 0; i < n && r.err == nil; i++ {
+	n = r.Count()
+	for i := 0; i < n && r.Err == nil; i++ {
 		p := OperatorsRuleInfo{Skip: int(r.int32())}
-		k := r.count()
-		for j := 0; j < k && r.err == nil; j++ {
+		k := r.Count()
+		for j := 0; j < k && r.Err == nil; j++ {
 			p.Operands = append(p.Operands, r.line())
 		}
 		for _, ops := range []*[]OpInfo{&p.Prefix, &p.Led} {
-			k = r.count()
-			for j := 0; j < k && r.err == nil; j++ {
+			k = r.Count()
+			for j := 0; j < k && r.Err == nil; j++ {
 				o := OpInfo{ID: int(r.int32()), Kind: int(r.int32()), Assoc: int(r.int32()), Level: int(r.int32())}
 				o.Line = r.line()
 				*ops = append(*ops, o)
@@ -219,11 +217,12 @@ func (r *decoder) module() *Module {
 	return m
 }
 
-// validateModule checks that every table and instruction reference in the module is in range
+// ValidateModule checks that every table and instruction reference in the module is in range
 // and that jumps go forward (only the NEXT of a repetition jumps backward).
 // Recovery regions must not enclose a stream commitment. Other value-stack
-// and entry-stack invariants are not checked.
-func validateModule(m *Module) error {
+// and entry-stack invariants are not checked. fieldType checks the text of a field type, which
+// the type system above the module defines.
+func ValidateModule(m *Module, fieldType func(text string) error) error {
 	var err error
 	fail := func(format string, args ...any) {
 		if err == nil {
@@ -271,13 +270,9 @@ func validateModule(m *Module) error {
 	for _, l := range m.Scopes {
 		strs(l)
 	}
-	var typeNames map[string]bool
 	checkType := func(i int, where string) {
 		if err == nil {
-			if typeNames == nil {
-				typeNames = moduleTypeNames(m)
-			}
-			if _, perr := parseFieldType(m.Strings[i], typeNames); perr != nil {
+			if perr := fieldType(m.Strings[i]); perr != nil {
 				fail("%v %s", perr, where)
 			}
 		}
@@ -314,11 +309,11 @@ func validateModule(m *Module) error {
 			switch {
 			case seenVars[name]:
 				fail("variable %q is defined twice", name)
-			case (v.Type == varString) != (v.Str >= 0):
+			case (v.Type == VarString) != (v.Str >= 0):
 				fail("invalid initial value of variable %q", name)
-			case v.Type == varBool && v.Int != 0 && v.Int != 1:
+			case v.Type == VarBool && v.Int != 0 && v.Int != 1:
 				fail("invalid initial value of variable %q", name)
-			case v.Type == varString && v.Int != 0:
+			case v.Type == VarString && v.Int != 0:
 				fail("invalid initial value of variable %q", name)
 			}
 			seenVars[name] = true
@@ -396,7 +391,7 @@ func validateModule(m *Module) error {
 			fail("bound expression %d is not EINT", index)
 			return 0
 		}
-		n := x.integer()
+		n := x.Integer()
 		if int64(int(n)) != n {
 			fail("repetition bound %d exceeds the implementation int range", n)
 		}
@@ -524,9 +519,9 @@ func validateModule(m *Module) error {
 			forward(ip, x.A, len(m.Exprs))
 			nonneg(x.B)
 		case ECall:
-			in("builtin", int(x.A), len(builtinNames))
+			in("builtin", int(x.A), len(BuiltinNames))
 			nonneg(x.B)
-			if x.A == bFilter && x.B != 2 {
+			if x.A == BuiltinFilter && x.B != 2 {
 				fail("filter requires two arguments, got %d", x.B)
 			}
 		default:
@@ -536,14 +531,14 @@ func validateModule(m *Module) error {
 	if err != nil {
 		return err
 	}
-	return validateStreamRecovery(m.Code)
+	return ValidateStreamRecovery(m.Code)
 }
 
-// validateStreamRecovery checks recovery boundaries in lexical bytecode order.
+// ValidateStreamRecovery checks recovery boundaries in lexical bytecode order.
 // Both the protected body and its skip region must finish before a stream NEXT:
 // recovery restores the saved input position, but streaming discards that input.
 // Element-local recovery ends before the enclosing repetition's NEXT and is safe.
-func validateStreamRecovery(code []Instr) error {
+func ValidateStreamRecovery(code []Instr) error {
 	type region struct{ skip, end int }
 	var regions []region
 	for ip, in := range code {
@@ -575,47 +570,4 @@ func validateStreamRecovery(code []Instr) error {
 		}
 	}
 	return nil
-}
-
-// moduleProgram builds a program from a module alone, without the grammar; only the bytecode
-// backends run it.
-func moduleProgram(m *Module) *Program {
-	prog := &Program{byName: map[string]*rule{}, types: map[string]grammar.TypeDecl{}, sourceInfo: m.SourceInfo, defaultValue: m.DefaultValue}
-	for _, t := range m.Types {
-		if t.Node >= 0 {
-			// The run time needs only that the type is a node type.
-			prog.types[m.Strings[t.Name]] = &grammar.TypeDef{Name: m.Strings[t.Name], Type: &grammar.TypeApp{Name: "node", Args: []grammar.TypeExpr{&grammar.TypeRef{Name: "_"}}}}
-			continue
-		}
-		st := &grammar.StructType{}
-		for _, f := range t.Fields {
-			st.Fields = append(st.Fields, &grammar.Field{Name: m.Strings[f]})
-		}
-		prog.types[m.Strings[t.Name]] = &grammar.TypeDef{Name: m.Strings[t.Name], Type: st}
-	}
-	prog.vars = moduleVarTable(m)
-	prog.starts, prog.defaultStart = moduleStarts(m), moduleDefaultStart(m)
-	prog.moduleOnce.Do(func() { prog.module = m })
-	return prog
-}
-
-// moduleVarTable returns the variable table of the module m, or nil when it declares no variable.
-func moduleVarTable(m *Module) *varTable {
-	var t *varTable
-	for _, v := range m.Vars {
-		d := &varDecl{name: m.Strings[v.Name]}
-		switch v.Type {
-		case varInt:
-			d.typ, d.init = tyInt, v.Int
-		case varString:
-			d.typ, d.init = tyString, m.Strings[v.Str]
-		default:
-			d.typ, d.init = tyBool, v.Int == 1
-		}
-		if t == nil {
-			t = newVarTable()
-		}
-		t.add(d)
-	}
-	return t
 }

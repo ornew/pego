@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -241,7 +242,7 @@ rule ds = "s" => "str"
 
 	// The generated bindings carry no check either: ASSIGN has no operand to ask for one.
 	for _, in := range cast.Module().Code {
-		if in.Op == OpBind && in.C != 0 {
+		if in.Op == bytecode.OpBind && in.C != 0 {
 			t.Errorf("ASSIGN with operand C = %d", in.C)
 		}
 	}
@@ -264,9 +265,9 @@ rule ds = "s" => "str"
 func TestLoadedBindingNeedsNoCheck(t *testing.T) {
 	prog := compile(t, "var x int\nrule main = {x := 1} \"a\" => x\n")
 	m := prog.Module()
-	m.Code = append([]Instr(nil), m.Code...)
+	m.Code = append([]bytecode.Instr(nil), m.Code...)
 	for i := range m.Code {
-		if m.Code[i].Op == OpBind {
+		if m.Code[i].Op == bytecode.OpBind {
 			m.Code[i].C = 1
 		}
 	}

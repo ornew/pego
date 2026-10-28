@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -208,7 +209,7 @@ func TestIgnoreCaseBackendsAgree(t *testing.T) {
 		prog := compile(t, c.src)
 		folded := 0
 		for _, in := range prog.Module().Code {
-			if in.Op == OpStrFold {
+			if in.Op == bytecode.OpStrFold {
 				folded++
 			}
 		}

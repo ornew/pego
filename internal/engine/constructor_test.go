@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -241,7 +242,7 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 	for _, mode := range valueModes {
 		p := compileLegacy(t, legacyConstructorGrammar)
 		data, err := p.Marshal("main", mode)
-		if err != nil || data[isaOffset] != isaVersion {
+		if err != nil || data[isaOffset] != bytecode.ISAVersion {
 			t.Fatalf("constructor ISA: %v", err)
 		}
 		loaded, _, err := LoadProgram(data)
@@ -256,14 +257,14 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 				}
 			}
 		}
-		data[isaOffset] = isaVersion - 1
+		data[isaOffset] = bytecode.ISAVersion - 1
 		binary.LittleEndian.PutUint32(data[len(data)-4:], crc32.ChecksumIEEE(data[:len(data)-4]))
 		if _, _, err := LoadProgram(data); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 			t.Fatalf("wrong ISA accepted: %v", err)
 		}
 		module := p.Module()
 		for i := range module.Exprs {
-			if module.Exprs[i].Op == ENew {
+			if module.Exprs[i].Op == bytecode.ENew {
 				module.Exprs[i].B = -1
 				break
 			}
@@ -275,7 +276,7 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 	for _, source := range []string{`rule main = "x"`, `rule main = v1:"x" => []node[string]{$v1}`} {
 		p := compile(t, source)
 		data, err := p.MarshalBinary("main")
-		if err != nil || data[isaOffset] != isaVersion {
+		if err != nil || data[isaOffset] != bytecode.ISAVersion {
 			t.Fatalf("unchanged/list-only ISA: %v", err)
 		}
 	}

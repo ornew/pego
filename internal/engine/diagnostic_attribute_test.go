@@ -8,6 +8,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/bytecode"
 )
 
 func TestDiagnosticAttribute(t *testing.T) {
@@ -73,7 +75,7 @@ func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
 	if ordinary[len(compiledMagic)] != compiledVersion {
 		t.Fatalf("ordinary module version: %d", ordinary[len(compiledMagic)])
 	}
-	if ordinary[isaOffset] != isaVersion {
+	if ordinary[isaOffset] != bytecode.ISAVersion {
 		t.Fatalf("ordinary module ISA: %d", ordinary[isaOffset])
 	}
 	prog := compile(t, `rule main = "a" @diagnostic(name="letter")`)
@@ -85,7 +87,7 @@ func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
 		if data[len(compiledMagic)] != compiledVersion {
 			t.Fatalf("diagnostic module version: %d, want %d", data[len(compiledMagic)], compiledVersion)
 		}
-		if data[isaOffset] != isaVersion {
+		if data[isaOffset] != bytecode.ISAVersion {
 			t.Fatalf("diagnostic module ISA: %d", data[isaOffset])
 		}
 		loaded, _, err := LoadProgram(data)
@@ -103,9 +105,9 @@ func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
 		}
 	}
 	reserved := append([]byte(nil), ordinary...)
-	reserved[isaOffset] = isaVersion + 1
+	reserved[isaOffset] = bytecode.ISAVersion + 1
 	binary.LittleEndian.PutUint32(reserved[len(reserved)-4:], crc32.ChecksumIEEE(reserved[:len(reserved)-4]))
-	if _, _, err := LoadProgram(reserved); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("unsupported instruction set version %d", isaVersion+1)) {
+	if _, _, err := LoadProgram(reserved); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("unsupported instruction set version %d", bytecode.ISAVersion+1)) {
 		t.Errorf("reserved ISA accepted: %v", err)
 	}
 	combined := compile(t, `rule main = v1:"a" @diagnostic(name="letter") $$ => filter(list($v1), (item) => true)`)
@@ -113,8 +115,8 @@ func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if data[isaOffset] != isaVersion {
-		t.Fatalf("filter and diagnostic ISA: %d, want %d", data[isaOffset], isaVersion)
+	if data[isaOffset] != bytecode.ISAVersion {
+		t.Fatalf("filter and diagnostic ISA: %d, want %d", data[isaOffset], bytecode.ISAVersion)
 	}
 	loaded, _, err := LoadProgram(data)
 	if err != nil {

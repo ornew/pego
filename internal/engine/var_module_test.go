@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/bytecode"
 )
 
 // varModuleSource declares variables of each type, reads them in predicates and rebinds them.
@@ -17,44 +19,44 @@ rule item = {n > 0} "b"?
 // TestModuleVariableValidation checks that a module whose code names a variable that its table
 // does not declare is rejected, wherever the name appears.
 func TestModuleVariableValidation(t *testing.T) {
-	fresh := func() *Module {
+	fresh := func() *bytecode.Module {
 		m := *compile(t, varModuleSource).Module()
 		m.Strings = append([]string(nil), m.Strings...)
-		m.Exprs = append([]Instr(nil), m.Exprs...)
-		m.Code = append([]Instr(nil), m.Code...)
-		m.Rules = append([]RuleInfo(nil), m.Rules...)
+		m.Exprs = append([]bytecode.Instr(nil), m.Exprs...)
+		m.Code = append([]bytecode.Instr(nil), m.Code...)
+		m.Rules = append([]bytecode.RuleInfo(nil), m.Rules...)
 		return &m
 	}
 	if err := validateModule(fresh()); err != nil {
 		t.Fatal(err)
 	}
-	undeclared := func(m *Module) int {
+	undeclared := func(m *bytecode.Module) int {
 		m.Strings = append(m.Strings, "ghost")
 		return len(m.Strings) - 1
 	}
 	for _, tc := range []struct {
 		name   string
-		mutate func(m *Module) bool
+		mutate func(m *bytecode.Module) bool
 	}{
-		{"read", func(m *Module) bool {
+		{"read", func(m *bytecode.Module) bool {
 			for i := range m.Exprs {
-				if m.Exprs[i].Op == EVar {
+				if m.Exprs[i].Op == bytecode.EVar {
 					m.Exprs[i].A = int32(undeclared(m))
 					return true
 				}
 			}
 			return false
 		}},
-		{"binding", func(m *Module) bool {
+		{"binding", func(m *bytecode.Module) bool {
 			for i := range m.Code {
-				if m.Code[i].Op == OpBind {
+				if m.Code[i].Op == bytecode.OpBind {
 					m.Code[i].A = int32(undeclared(m))
 					return true
 				}
 			}
 			return false
 		}},
-		{"rule variables", func(m *Module) bool {
+		{"rule variables", func(m *bytecode.Module) bool {
 			for i := range m.Rules {
 				if len(m.Rules[i].Vars) != 0 {
 					m.Rules[i].Vars = []int{undeclared(m)}
@@ -89,18 +91,18 @@ func TestLoadedVariablesMatch(t *testing.T) {
 	}
 	for _, tc := range []struct {
 		name   string
-		mutate func(m *Module)
+		mutate func(m *bytecode.Module)
 	}{
-		{"initial int", func(m *Module) { m.Vars[0].Int = 4 }},
-		{"initial string", func(m *Module) { m.Vars[1].Str = m.Vars[1].Name }},
-		{"initial bool", func(m *Module) { m.Vars[2].Int = 1 }},
+		{"initial int", func(m *bytecode.Module) { m.Vars[0].Int = 4 }},
+		{"initial string", func(m *bytecode.Module) { m.Vars[1].Str = m.Vars[1].Name }},
+		{"initial bool", func(m *bytecode.Module) { m.Vars[2].Int = 1 }},
 		// The mutations below leave a module that every other check accepts, so only the
 		// comparison of the variable tables rejects them.
-		{"type", func(m *Module) { m.Vars[0].Type, m.Vars[0].Int, m.Vars[0].Str = varBool, 1, -1 }},
-		{"name", func(m *Module) { m.Vars[0].Name, m.Vars[1].Name = m.Vars[1].Name, m.Vars[0].Name }},
-		{"count", func(m *Module) {
+		{"type", func(m *bytecode.Module) { m.Vars[0].Type, m.Vars[0].Int, m.Vars[0].Str = bytecode.VarBool, 1, -1 }},
+		{"name", func(m *bytecode.Module) { m.Vars[0].Name, m.Vars[1].Name = m.Vars[1].Name, m.Vars[0].Name }},
+		{"count", func(m *bytecode.Module) {
 			m.Strings = append(append([]string(nil), m.Strings...), "extra")
-			m.Vars = append(m.Vars, VarInfo{Name: len(m.Strings) - 1, Type: varInt, Str: -1})
+			m.Vars = append(m.Vars, bytecode.VarInfo{Name: len(m.Strings) - 1, Type: bytecode.VarInt, Str: -1})
 		}},
 	} {
 		for _, mode := range allModes {
@@ -115,7 +117,7 @@ func TestLoadedVariablesMatch(t *testing.T) {
 					saved = rec
 				}
 				m := saved.Module()
-				m.Vars = append([]VarInfo(nil), m.Vars...)
+				m.Vars = append([]bytecode.VarInfo(nil), m.Vars...)
 				tc.mutate(m)
 				data, err := p.Marshal("main", mode)
 				if err != nil {
@@ -145,18 +147,18 @@ func TestLoadedVariablesMatch(t *testing.T) {
 func TestModuleInitialValueMatchesType(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
-		mutate func(m *Module)
+		mutate func(m *bytecode.Module)
 	}{
-		{"string for an int", func(m *Module) { m.Vars[0].Str = m.Vars[1].Str }},
-		{"int for a string", func(m *Module) { m.Vars[1].Int = 5 }},
-		{"no string for a string", func(m *Module) { m.Vars[1].Str = -1 }},
-		{"2 for a bool", func(m *Module) { m.Vars[2].Int = 2 }},
-		{"a string for a bool", func(m *Module) { m.Vars[2].Str = m.Vars[1].Str }},
-		{"unknown type", func(m *Module) { m.Vars[0].Type = 3 }},
+		{"string for an int", func(m *bytecode.Module) { m.Vars[0].Str = m.Vars[1].Str }},
+		{"int for a string", func(m *bytecode.Module) { m.Vars[1].Int = 5 }},
+		{"no string for a string", func(m *bytecode.Module) { m.Vars[1].Str = -1 }},
+		{"2 for a bool", func(m *bytecode.Module) { m.Vars[2].Int = 2 }},
+		{"a string for a bool", func(m *bytecode.Module) { m.Vars[2].Str = m.Vars[1].Str }},
+		{"unknown type", func(m *bytecode.Module) { m.Vars[0].Type = 3 }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			m := *compile(t, varModuleSource).Module()
-			m.Vars = append([]VarInfo(nil), m.Vars...)
+			m.Vars = append([]bytecode.VarInfo(nil), m.Vars...)
 			tc.mutate(&m)
 			if err := validateModule(&m); err == nil {
 				t.Fatal("a module with a mistyped initial value was accepted")

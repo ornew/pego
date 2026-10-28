@@ -5,16 +5,17 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 )
 
 // Module compiles the program to bytecode. The result is stored in the program and reused on
 // subsequent calls.
-func (prog *Program) Module() *Module {
+func (prog *Program) Module() *bytecode.Module {
 	if prog.hasMissing {
 		panic(missingUnsupported("bytecode module construction"))
 	}
 	prog.moduleOnce.Do(func() {
-		c := &bcompiler{prog: prog, m: &Module{SourceInfo: prog.sourceInfo, DefaultValue: prog.defaultValue}, strs: map[string]int{}}
+		c := &bcompiler{prog: prog, m: &bytecode.Module{SourceInfo: prog.sourceInfo, DefaultValue: prog.defaultValue}, strs: map[string]int{}}
 		c.compile()
 		prog.module = c.m
 	})
@@ -25,7 +26,7 @@ type bcompiler struct {
 	prog *Program
 	cur  *rule             // rule being compiled
 	proj map[string]string // projected captures of its body (ruleProjections)
-	m    *Module
+	m    *bytecode.Module
 	strs map[string]int
 	// lambdas are the lambdas whose body compilation has been deferred.
 	lambdas []pendingLambda
@@ -55,36 +56,36 @@ func (c *bcompiler) strs2(names []string) []int {
 	return out
 }
 
-func (c *bcompiler) emit(op Op, a, b, cc int32) int {
-	c.m.Code = append(c.m.Code, Instr{Op: op, A: a, B: b, C: cc})
+func (c *bcompiler) emit(op bytecode.Op, a, b, cc int32) int {
+	c.m.Code = append(c.m.Code, bytecode.Instr{Op: op, A: a, B: b, C: cc})
 	return len(c.m.Code) - 1
 }
 
 func (c *bcompiler) here() int32 { return int32(len(c.m.Code)) }
 
-func (c *bcompiler) eemit(op Op, a, b int32) int {
+func (c *bcompiler) eemit(op bytecode.Op, a, b int32) int {
 	return c.eemit3(op, a, b, 0)
 }
 
-func (c *bcompiler) eemit3(op Op, a, b, cc int32) int {
-	c.m.Exprs = append(c.m.Exprs, Instr{Op: op, A: a, B: b, C: cc})
+func (c *bcompiler) eemit3(op bytecode.Op, a, b, cc int32) int {
+	c.m.Exprs = append(c.m.Exprs, bytecode.Instr{Op: op, A: a, B: b, C: cc})
 	return len(c.m.Exprs) - 1
 }
 
 // integer stores a full implementation-int value using the EINT representation.
 func (c *bcompiler) integer(value int) int32 {
 	lo := int32(value)
-	return int32(c.eemit(EInt, lo, int32((uint64(value)-uint64(int64(lo)))>>32)))
+	return int32(c.eemit(bytecode.EInt, lo, int32((uint64(value)-uint64(int64(lo)))>>32)))
 }
 
-func (c *bcompiler) repetition(op Op, min, max int, other int32) {
+func (c *bcompiler) repetition(op bytecode.Op, min, max int, other int32) {
 	// Public ASTs allow any negative maximum. Canonicalize before narrowing
 	// so large negative values cannot wrap into finite bytecode bounds.
 	if max < 0 {
 		max = -1
 	}
 	if int64(min) <= 1<<31-1 && int64(max) <= 1<<31-1 {
-		if op == OpScan {
+		if op == bytecode.OpScan {
 			c.emit(op, other, int32(min), int32(max))
 		} else {
 			c.emit(op, int32(min), int32(max), other)
@@ -92,10 +93,10 @@ func (c *bcompiler) repetition(op Op, min, max int, other int32) {
 		return
 	}
 	lo, hi := c.integer(min), c.integer(max)
-	if op == OpScan {
-		c.emit(OpScanWide, other, lo, hi)
+	if op == bytecode.OpScan {
+		c.emit(bytecode.OpScanWide, other, lo, hi)
 	} else {
-		c.emit(OpRepeatWide, lo, hi, other)
+		c.emit(bytecode.OpRepeatWide, lo, hi, other)
 	}
 }
 
@@ -111,7 +112,7 @@ func (c *bcompiler) compile() {
 	for _, td := range c.prog.Grammar.Types() {
 		switch spec := td.(type) {
 		case *grammar.TypeDef:
-			ti := TypeInfo{Name: int(c.str(td.DeclName())), Node: -1}
+			ti := bytecode.TypeInfo{Name: int(c.str(td.DeclName())), Node: -1}
 			if n, ok := c.prog.nodeTypeOf(td.DeclName()); ok {
 				ti.Node = int(c.str(newFieldType(n.underlying()).text))
 			}
@@ -123,14 +124,14 @@ func (c *bcompiler) compile() {
 	}
 	if t := c.prog.vars; t != nil {
 		for _, d := range t.list {
-			vi := VarInfo{Name: int(c.str(d.name)), Str: -1}
+			vi := bytecode.VarInfo{Name: int(c.str(d.name)), Str: -1}
 			switch v := d.init.(type) {
 			case int:
-				vi.Type, vi.Int = varInt, v
+				vi.Type, vi.Int = bytecode.VarInt, v
 			case string:
-				vi.Type, vi.Str = varString, int(c.str(v))
+				vi.Type, vi.Str = bytecode.VarString, int(c.str(v))
 			case bool:
-				vi.Type, vi.Int = varBool, int(b2i(v))
+				vi.Type, vi.Int = bytecode.VarBool, int(b2i(v))
 			}
 			c.m.Vars = append(c.m.Vars, vi)
 		}
@@ -138,7 +139,7 @@ func (c *bcompiler) compile() {
 	// Rule table (body positions are filled in later)
 	all := append(append([]*rule(nil), c.prog.rules...), c.prog.twins...)
 	for _, r := range all {
-		ri := RuleInfo{Name: int(c.str(r.name)), Entry: -1, Action: -1, NodeType: -1, OperatorsRule: -1,
+		ri := bytecode.RuleInfo{Name: int(c.str(r.name)), Entry: -1, Action: -1, NodeType: -1, OperatorsRule: -1,
 			Memo: r.memo, Leader: r.leader, Positional: r.positional, NoValue: r.novalue, Transient: r.transient, Where: -1, Splice: r.splice, Vars: c.strs2(r.vars)}
 		if r.where != "" && r.where != r.name {
 			ri.Where = int(c.str(r.where))
@@ -165,8 +166,8 @@ func (c *bcompiler) compile() {
 		if pr, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 			ri.OperatorsRule = c.operatorsRule(pr)
 			ri.Entry = int(c.here())
-			c.emit(OpOperatorsRule, int32(ri.OperatorsRule), 0, 0)
-			c.emit(OpReturn, 0, 0, 0)
+			c.emit(bytecode.OpOperatorsRule, int32(ri.OperatorsRule), 0, 0)
+			c.emit(bytecode.OpReturn, 0, 0, 0)
 		} else {
 			ri.Entry = int(c.here())
 			c.proj = ruleProjections(c.prog, r)
@@ -178,7 +179,7 @@ func (c *bcompiler) compile() {
 				c.scope(r.bodyExpr(), s)
 			}
 			c.proj = nil
-			c.emit(OpReturn, 0, 0, 0)
+			c.emit(bytecode.OpReturn, 0, 0, 0)
 		}
 		ri.Scope = c.strs2(s.names)
 		if r.action != nil {
@@ -191,9 +192,9 @@ func (c *bcompiler) compile() {
 
 // tuple emits code that pushes the tuple node of the elements of e.
 func (c *bcompiler) tuple(e grammar.Expr, s *scope) {
-	c.emit(OpPushPos, 0, 0, 0)
+	c.emit(bytecode.OpPushPos, 0, 0, 0)
 	c.elems(e, s)
-	c.emit(OpSeq, int32(valuedCount(c.prog, e)), 0, 0)
+	c.emit(bytecode.OpSeq, int32(valuedCount(c.prog, e)), 0, 0)
 }
 
 // single emits code that pushes the value of e where it takes one element: nil without a value.
@@ -201,7 +202,7 @@ func (c *bcompiler) single(e grammar.Expr, s *scope) {
 	switch singleModeOf(c.prog, e) {
 	case singleNone:
 		c.elems(e, s)
-		c.emit(OpPushNil, 0, 0, 0)
+		c.emit(bytecode.OpPushNil, 0, 0, 0)
 	case singlePass:
 		c.elems(e, s)
 	default:
@@ -238,7 +239,7 @@ func (c *bcompiler) spliceScope(e grammar.Expr, s *scope) {
 		c.elems(e, s)
 	default:
 		c.elems(e, s)
-		c.emit(OpPushNil, 0, 0, 0)
+		c.emit(bytecode.OpPushNil, 0, 0, 0)
 	}
 }
 
@@ -263,16 +264,16 @@ func (c *bcompiler) guard(alt grammar.Expr) int {
 				ranges = []rune{upper, upper, f, f}
 			}
 		}
-		c.m.Classes = append(c.m.Classes, Class{Ranges: ranges, Desc: int(c.str(literalDesc(t)))})
+		c.m.Classes = append(c.m.Classes, bytecode.Class{Ranges: ranges, Desc: int(c.str(literalDesc(t)))})
 		cl = int32(len(c.m.Classes) - 1)
 	default:
 		return -1
 	}
-	return c.emit(OpGuard, cl, int32(depth), 0)
+	return c.emit(bytecode.OpGuard, cl, int32(depth), 0)
 }
 
 func (c *bcompiler) class(e *grammar.CharClass) int32 {
-	cl := Class{Negated: e.Negated, Desc: int(c.str(charClassString(e)))}
+	cl := bytecode.Class{Negated: e.Negated, Desc: int(c.str(charClassString(e)))}
 	for _, r := range e.Ranges {
 		cl.Ranges = append(cl.Ranges, r.Lo, r.Hi)
 	}
@@ -315,9 +316,9 @@ func (c *bcompiler) elems(e grammar.Expr, s *scope) {
 				break
 			}
 			guard := c.guard(alt)
-			ch := c.emit(OpChoice, 0, 0, 0)
+			ch := c.emit(bytecode.OpChoice, 0, 0, 0)
 			emit()
-			ends = append(ends, c.emit(OpCommit, 0, 0, 0))
+			ends = append(ends, c.emit(bytecode.OpCommit, 0, 0, 0))
 			c.m.Code[ch].A = c.here()
 			if guard >= 0 {
 				c.m.Code[guard].C = c.here()
@@ -330,16 +331,16 @@ func (c *bcompiler) elems(e grammar.Expr, s *scope) {
 		c.repeat(e, s, true, false)
 	case *grammar.Optional:
 		valued := valuedCount(c.prog, e) == 1
-		ch := c.emit(OpChoice, 0, 0, 0)
+		ch := c.emit(bytecode.OpChoice, 0, 0, 0)
 		if valued {
 			c.single(e.Expr, s)
 		} else {
 			c.elems(e.Expr, s)
 		}
-		end := c.emit(OpCommit, 0, 0, 0)
+		end := c.emit(bytecode.OpCommit, 0, 0, 0)
 		c.m.Code[ch].A = c.here()
 		if valued {
-			c.emit(OpPushNil, 0, 0, 0)
+			c.emit(bytecode.OpPushNil, 0, 0, 0)
 		}
 		c.m.Code[end].A = c.here()
 	case *grammar.Capture:
@@ -357,14 +358,14 @@ func (c *bcompiler) leaf(e grammar.Expr, s *scope, build bool) {
 	switch e := e.(type) {
 	case *grammar.Literal:
 		if e.IgnoreCase {
-			c.emit(OpStrFold, c.str(string(foldedRunes([]rune(e.Value)))), c.str(literalDesc(e)), b2i(build))
+			c.emit(bytecode.OpStrFold, c.str(string(foldedRunes([]rune(e.Value)))), c.str(literalDesc(e)), b2i(build))
 		} else {
-			c.emit(OpStr, c.str(e.Value), c.str(quote(e.Value)), b2i(build))
+			c.emit(bytecode.OpStr, c.str(e.Value), c.str(quote(e.Value)), b2i(build))
 		}
 	case *grammar.CharClass:
-		c.emit(OpClass, c.class(e), c.str(charClassString(e)), b2i(build))
+		c.emit(bytecode.OpClass, c.class(e), c.str(charClassString(e)), b2i(build))
 	case *grammar.Any:
-		c.emit(OpAny, b2i(build), 0, 0)
+		c.emit(bytecode.OpAny, b2i(build), 0, 0)
 	case *grammar.Ref:
 		r := c.prog.byName[e.Name]
 		min := 0
@@ -379,18 +380,18 @@ func (c *bcompiler) leaf(e grammar.Expr, s *scope, build bool) {
 		if !build && r.twin != nil {
 			r = r.twin
 		}
-		c.emit(OpCall, int32(r.id), int32(min), b2i(build))
+		c.emit(bytecode.OpCall, int32(r.id), int32(min), b2i(build))
 		if build && splice {
 			// The elements of the rule are elements of the sequence that calls it.
-			c.emit(OpSpread, int32(valuedCount(c.prog, e)), b2i(isElems(c.prog, e)), 0)
+			c.emit(bytecode.OpSpread, int32(valuedCount(c.prog, e)), b2i(isElems(c.prog, e)), 0)
 		}
 	case *grammar.Atomic:
 		if build {
-			c.emit(OpPushPos, 0, 0, 0)
+			c.emit(bytecode.OpPushPos, 0, 0, 0)
 		}
 		c.void(e.Expr, s)
 		if build {
-			c.emit(OpAtomic, 1, 0, 0)
+			c.emit(bytecode.OpAtomic, 1, 0, 0)
 		}
 	}
 }
@@ -412,9 +413,9 @@ func (c *bcompiler) void(e grammar.Expr, s *scope) {
 				break
 			}
 			guard := c.guard(alt)
-			ch := c.emit(OpChoice, 0, 0, 0)
+			ch := c.emit(bytecode.OpChoice, 0, 0, 0)
 			c.void(alt, s)
-			ends = append(ends, c.emit(OpCommit, 0, 0, 0))
+			ends = append(ends, c.emit(bytecode.OpCommit, 0, 0, 0))
 			c.m.Code[ch].A = c.here()
 			if guard >= 0 {
 				c.m.Code[guard].C = c.here()
@@ -426,44 +427,44 @@ func (c *bcompiler) void(e grammar.Expr, s *scope) {
 	case *grammar.Repeat:
 		c.repeat(e, s, false, false)
 	case *grammar.Optional:
-		ch := c.emit(OpChoice, 0, 0, 0)
+		ch := c.emit(bytecode.OpChoice, 0, 0, 0)
 		c.void(e.Expr, s)
-		end := c.emit(OpCommit, 0, 0, 0)
+		end := c.emit(bytecode.OpCommit, 0, 0, 0)
 		c.m.Code[ch].A = c.here()
 		c.m.Code[end].A = c.here()
 	case *grammar.And:
 		// The values inside are dropped by ENDLOOK; the captures are kept.
-		c.emit(OpLook, 0, 0, 0)
+		c.emit(bytecode.OpLook, 0, 0, 0)
 		c.void(e.Expr, s)
-		c.emit(OpEndLook, 0, 0, 0)
+		c.emit(bytecode.OpEndLook, 0, 0, 0)
 	case *grammar.Not:
-		look := c.emit(OpLook, 0, 1, 0)
+		look := c.emit(bytecode.OpLook, 0, 1, 0)
 		c.void(e.Expr, s)
-		c.emit(OpEndLook, 1, 0, 0)
+		c.emit(bytecode.OpEndLook, 1, 0, 0)
 		c.m.Code[look].A = c.here()
 	case *grammar.Discard:
 		c.void(e.Expr, s)
 	case *grammar.Capture:
 		c.capture(e, s, false)
 	case *grammar.Cut:
-		c.emit(OpCut, 0, 0, 0)
+		c.emit(bytecode.OpCut, 0, 0, 0)
 	case *grammar.Top:
-		c.emit(OpTop, 0, 0, 0)
+		c.emit(bytecode.OpTop, 0, 0, 0)
 	case *grammar.Bottom:
-		c.emit(OpFail, 0, 0, 0)
+		c.emit(bytecode.OpFail, 0, 0, 0)
 	case *grammar.BeginInput:
-		c.emit(OpAssert, 0, 0, 0)
+		c.emit(bytecode.OpAssert, 0, 0, 0)
 	case *grammar.EndInput:
-		c.emit(OpAssert, 1, 0, 0)
+		c.emit(bytecode.OpAssert, 1, 0, 0)
 	case *grammar.BeginLine:
-		c.emit(OpAssert, 2, 0, 0)
+		c.emit(bytecode.OpAssert, 2, 0, 0)
 	case *grammar.EndLine:
-		c.emit(OpAssert, 3, 0, 0)
+		c.emit(bytecode.OpAssert, 3, 0, 0)
 	case *grammar.Predicate:
 		if a, ok := e.Term.(*grammar.Bind); ok {
-			c.emit(OpBind, c.str(a.Name), int32(c.expr(a.Value, s, nil, false)), 0)
+			c.emit(bytecode.OpBind, c.str(a.Name), int32(c.expr(a.Value, s, nil, false)), 0)
 		} else {
-			c.emit(OpPred, int32(c.expr(e.Term, s, nil, false)), 0, 0)
+			c.emit(bytecode.OpPred, int32(c.expr(e.Term, s, nil, false)), 0, 0)
 		}
 	case *grammar.Attributed:
 		c.attributed(e, len(e.Attrs)-1, s)
@@ -482,17 +483,17 @@ func (c *bcompiler) capture(e *grammar.Capture, s *scope, keep bool) {
 	} else {
 		c.captured(e.Expr, s)
 	}
-	c.emit(OpCapture, int32(slot), b2i(!keep), 0)
+	c.emit(bytecode.OpCapture, int32(slot), b2i(!keep), 0)
 }
 
 func (c *bcompiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) {
 	if !build && !stream { // value-free repetition of a single character (same as compiler.scanRepeat)
 		switch x := e.Expr.(type) {
 		case *grammar.CharClass:
-			c.repetition(OpScan, e.Min, e.Max, c.class(x))
+			c.repetition(bytecode.OpScan, e.Min, e.Max, c.class(x))
 			return
 		case *grammar.Any:
-			c.repetition(OpScan, e.Min, e.Max, -1)
+			c.repetition(bytecode.OpScan, e.Min, e.Max, -1)
 			return
 		}
 	}
@@ -504,11 +505,11 @@ func (c *bcompiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) {
 		sc = int32(len(c.m.Scopes) - 1)
 	}
 	if build {
-		c.emit(OpPushPos, 0, 0, 0)
+		c.emit(bytecode.OpPushPos, 0, 0, 0)
 	}
-	c.repetition(OpRepeat, e.Min, e.Max, sc)
+	c.repetition(bytecode.OpRepeat, e.Min, e.Max, sc)
 	loop := c.here()
-	iter := c.emit(OpIter, 0, 0, 0)
+	iter := c.emit(bytecode.OpIter, 0, 0, 0)
 	if build {
 		c.scope(e.Expr, elemScope)
 	} else {
@@ -518,9 +519,9 @@ func (c *bcompiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) {
 	if stream && build {
 		flag = 2
 	}
-	c.emit(OpNext, loop, flag, 0)
+	c.emit(bytecode.OpNext, loop, flag, 0)
 	c.m.Code[iter].A = c.here()
-	c.emit(OpEndRepeat, b2i(build), 0, 0)
+	c.emit(bytecode.OpEndRepeat, b2i(build), 0, 0)
 	if sc >= 0 {
 		c.m.Scopes[sc] = c.strs2(elemScope.names)
 	}
@@ -542,17 +543,17 @@ func (c *bcompiler) attrElems(e *grammar.Attributed, i int, s *scope) {
 	case "error", "diagnostic":
 		c.label(a)
 		c.attrElems(e, i-1, s)
-		c.emit(OpEndLabel, 0, 0, 0)
+		c.emit(bytecode.OpEndLabel, 0, 0, 0)
 	case "recover":
 		skip, _ := a.Arg("skip")
-		rec := c.emit(OpRecover, 0, 0, 0)
+		rec := c.emit(bytecode.OpRecover, 0, 0, 0)
 		// The value of the inner expression where it is captured (captured), as in captureMatcher.
 		mode := singleModeOf(c.prog, e.Expr)
 		if hasRecover(e.Attrs[:i]) {
 			mode = singlePass // an inner recovery is one element already
 		}
 		if mode != singlePass {
-			c.emit(OpPushPos, 0, 0, 0)
+			c.emit(bytecode.OpPushPos, 0, 0, 0)
 		}
 		c.attrElems(e, i-1, s)
 		if mode != singlePass {
@@ -560,12 +561,12 @@ func (c *bcompiler) attrElems(e *grammar.Attributed, i int, s *scope) {
 			if mode == singleTuple {
 				n = valuedCount(c.prog, e.Expr)
 			}
-			c.emit(OpSeq, int32(n), 0, 0)
+			c.emit(bytecode.OpSeq, int32(n), 0, 0)
 		}
-		end := c.emit(OpEndRecover, 0, 0, 0)
+		end := c.emit(bytecode.OpEndRecover, 0, 0, 0)
 		c.m.Code[rec].A = c.here()
 		c.void(skip, s)
-		c.emit(OpEndSkip, 1, 0, 0)
+		c.emit(bytecode.OpEndSkip, 1, 0, 0)
 		c.m.Code[end].A = c.here()
 	default: // #stream is handled by the repetition
 		c.attrElems(e, i-1, s)
@@ -585,9 +586,9 @@ func hasRecover(attrs []*grammar.Attribute) bool {
 // label emits the LABEL of @error or @diagnostic.
 func (c *bcompiler) label(a *grammar.Attribute) {
 	if a.Name == "error" {
-		c.emit(OpLabel, c.str(attributeMessage(a)), 0, 0)
+		c.emit(bytecode.OpLabel, c.str(attributeMessage(a)), 0, 0)
 	} else {
-		c.emit(OpLabel, c.str(attributeDiagnosticName(a)), 1, 0)
+		c.emit(bytecode.OpLabel, c.str(attributeDiagnosticName(a)), 1, 0)
 	}
 }
 
@@ -607,15 +608,15 @@ func (c *bcompiler) attributed(e *grammar.Attributed, i int, s *scope) {
 	case "error", "diagnostic":
 		c.label(a)
 		c.attributed(e, i-1, s)
-		c.emit(OpEndLabel, 0, 0, 0)
+		c.emit(bytecode.OpEndLabel, 0, 0, 0)
 	case "recover":
 		skip, _ := a.Arg("skip")
-		rec := c.emit(OpRecover, 0, 0, 0)
+		rec := c.emit(bytecode.OpRecover, 0, 0, 0)
 		c.attributed(e, i-1, s)
-		end := c.emit(OpEndRecover, 0, 0, 0)
+		end := c.emit(bytecode.OpEndRecover, 0, 0, 0)
 		c.m.Code[rec].A = c.here()
 		c.void(skip, s)
-		c.emit(OpEndSkip, 0, 0, 0)
+		c.emit(bytecode.OpEndSkip, 0, 0, 0)
 		c.m.Code[end].A = c.here()
 	default: // #stream is handled by the repetition
 		c.attributed(e, i-1, s)
@@ -623,11 +624,11 @@ func (c *bcompiler) attributed(e *grammar.Attributed, i int, s *scope) {
 }
 
 func (c *bcompiler) operatorsRule(e *grammar.OperatorsRule) int {
-	pi := OperatorsRuleInfo{Skip: -1}
+	pi := bytecode.OperatorsRuleInfo{Skip: -1}
 	if e.Skip != nil {
 		pi.Skip = int(c.here())
 		c.match(e.Skip, newScope(), false)
-		c.emit(OpEnd, 0, 0, 0)
+		c.emit(bytecode.OpEnd, 0, 0, 0)
 	}
 	for _, o := range e.Operands {
 		pi.Operands = append(pi.Operands, c.line(o.Expr, o.Action, nil, o))
@@ -635,27 +636,27 @@ func (c *bcompiler) operatorsRule(e *grammar.OperatorsRule) int {
 	id := 0
 	for i, l := range e.Levels {
 		for _, op := range l.Operators {
-			oi := OpInfo{ID: id, Level: i + 1}
+			oi := bytecode.OpInfo{ID: id, Level: i + 1}
 			id++
 			var locals []string
 			switch op.Kind {
 			case grammar.Prefix:
-				oi.Kind = opPrefix
+				oi.Kind = bytecode.OperatorPrefix
 			case grammar.Postfix:
-				oi.Kind = opPostfix
+				oi.Kind = bytecode.OperatorPostfix
 			default:
-				oi.Kind = opInfix
+				oi.Kind = bytecode.OperatorInfix
 			}
 			switch op.Assoc {
 			case grammar.AssocRight:
-				oi.Assoc = assocRight
+				oi.Assoc = bytecode.AssocRight
 			case grammar.AssocNone:
-				oi.Assoc = assocNone
+				oi.Assoc = bytecode.AssocNone
 			}
 			// Locals of an operator action: 0 $lhs, 1 $rhs, 2 $op
 			locals = []string{"lhs", "rhs", "op"}
 			oi.Line = c.line(op.Expr, op.Action, locals, op)
-			if oi.Kind == opPrefix {
+			if oi.Kind == bytecode.OperatorPrefix {
 				pi.Prefix = append(pi.Prefix, oi)
 			} else {
 				pi.Led = append(pi.Led, oi)
@@ -666,9 +667,9 @@ func (c *bcompiler) operatorsRule(e *grammar.OperatorsRule) int {
 	return len(c.m.OperatorsRules) - 1
 }
 
-func (c *bcompiler) line(e grammar.Expr, action grammar.Term, locals []string, key any) LineInfo {
+func (c *bcompiler) line(e grammar.Expr, action grammar.Term, locals []string, key any) bytecode.LineInfo {
 	s := newScope()
-	li := LineInfo{Entry: int(c.here()), Action: -1}
+	li := bytecode.LineInfo{Entry: int(c.here()), Action: -1}
 	switch build := !c.cur.novalue && !leanLine(action, locals); {
 	case !build:
 		c.void(e, s)
@@ -678,7 +679,7 @@ func (c *bcompiler) line(e grammar.Expr, action grammar.Term, locals []string, k
 		li.IsSeq = singleModeOf(c.prog, e) == singleTuple
 		c.captured(e, s)
 	}
-	c.emit(OpEnd, 0, 0, 0)
+	c.emit(bytecode.OpEnd, 0, 0, 0)
 	li.Scope = c.strs2(s.names)
 	if action != nil && !c.cur.novalue {
 		li.Action = c.expr(action, s, locals, locals == nil)
@@ -690,14 +691,14 @@ func (c *bcompiler) line(e grammar.Expr, action grammar.Term, locals []string, k
 func (c *bcompiler) expr(t grammar.Term, s *scope, locals []string, allowIndex bool) int {
 	start := len(c.m.Exprs)
 	c.term(t, s, locals)
-	c.eemit(ERet, 0, 0)
+	c.eemit(bytecode.ERet, 0, 0)
 	// Lambda bodies are placed after the expression that contains them.
 	for len(c.lambdas) > 0 {
 		l := c.lambdas[0]
 		c.lambdas = c.lambdas[1:]
 		c.m.Exprs[l.at].A = int32(len(c.m.Exprs))
 		c.term(l.body, l.scope, l.locals)
-		c.eemit(ERet, 0, 0)
+		c.eemit(bytecode.ERet, 0, 0)
 	}
 	return start
 }
@@ -708,14 +709,14 @@ func (c *bcompiler) projectRepeat(e *grammar.Repeat, field string) {
 	elemScope := newScope()
 	c.m.Scopes = append(c.m.Scopes, nil)
 	sc := int32(len(c.m.Scopes) - 1)
-	c.emit(OpPushPos, 0, 0, 0)
-	c.repetition(OpRepeat, e.Min, e.Max, sc)
+	c.emit(bytecode.OpPushPos, 0, 0, 0)
+	c.repetition(bytecode.OpRepeat, e.Min, e.Max, sc)
 	loop := c.here()
-	iter := c.emit(OpIter, 0, 0, 0)
+	iter := c.emit(bytecode.OpIter, 0, 0, 0)
 	c.match(e.Expr, elemScope, false)
-	c.emit(OpNext, loop, 3, int32(elemScope.slots[field]))
+	c.emit(bytecode.OpNext, loop, 3, int32(elemScope.slots[field]))
 	c.m.Code[iter].A = c.here()
-	c.emit(OpEndRepeat, 1, 0, 0)
+	c.emit(bytecode.OpEndRepeat, 1, 0, 0)
 	c.m.Scopes[sc] = c.strs2(elemScope.names)
 }
 
@@ -732,7 +733,7 @@ func (c *bcompiler) concatParts(t *grammar.Call, s *scope, locals []string) {
 			for _, x := range call.Args {
 				c.term(x, s, locals)
 			}
-			c.eemit(EListPush, int32(len(call.Args)), 0)
+			c.eemit(bytecode.EListPush, int32(len(call.Args)), 0)
 		case "map":
 			c.term(call.Args[0], s, locals)
 			if c.prog.projected[call] {
@@ -740,7 +741,7 @@ func (c *bcompiler) concatParts(t *grammar.Call, s *scope, locals []string) {
 			} else {
 				c.lambda(call.Args[1], s, locals)
 			}
-			c.eemit(EMapPush, 0, 0)
+			c.eemit(bytecode.EMapPush, 0, 0)
 		case "concat":
 			c.concatParts(call, s, locals)
 		}
@@ -754,7 +755,7 @@ func (c *bcompiler) lambda(t grammar.Term, s *scope, locals []string) {
 		c.term(t, s, locals)
 		return
 	}
-	at := c.eemit(EFunc, 0, int32(len(l.Params)))
+	at := c.eemit(bytecode.EFunc, 0, int32(len(l.Params)))
 	c.lambdas = append(c.lambdas, pendingLambda{at: at, body: l.Body, scope: s,
 		locals: append(append([]string(nil), locals...), l.Params...)})
 }
@@ -764,33 +765,33 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 	case *grammar.IntLit:
 		// A holds the low 32 bits and B the rest (see EInt), so B is 0 for the values of int32.
 		lo := int32(t.Value)
-		c.eemit(EInt, lo, int32((uint64(t.Value)-uint64(int64(lo)))>>32))
+		c.eemit(bytecode.EInt, lo, int32((uint64(t.Value)-uint64(int64(lo)))>>32))
 	case *grammar.StringLit:
-		c.eemit(EStr, c.str(t.Value), 0)
+		c.eemit(bytecode.EStr, c.str(t.Value), 0)
 	case *grammar.BoolLit:
-		c.eemit(EBool, b2i(t.Value), 0)
+		c.eemit(bytecode.EBool, b2i(t.Value), 0)
 	case *grammar.NilLit:
-		c.eemit(ENil, 0, 0)
+		c.eemit(bytecode.ENil, 0, 0)
 	case *grammar.CaptureRef:
 		for i := len(locals) - 1; i >= 0; i-- {
 			if locals[i] == t.Name {
-				c.eemit(ELocal, int32(i), 0)
+				c.eemit(bytecode.ELocal, int32(i), 0)
 				return
 			}
 		}
-		c.eemit(ECap, int32(s.slots[t.Name]), 0)
+		c.eemit(bytecode.ECap, int32(s.slots[t.Name]), 0)
 	case *grammar.IndexRef:
-		c.eemit(EItem, int32(t.Index), 0)
+		c.eemit(bytecode.EItem, int32(t.Index), 0)
 	case *grammar.VarRef:
-		c.eemit(EVar, c.str(t.Name), 0)
+		c.eemit(bytecode.EVar, c.str(t.Name), 0)
 	case *grammar.Member:
 		c.term(t.X, s, locals)
-		c.eemit(EMember, c.str(t.Name), 0)
+		c.eemit(bytecode.EMember, c.str(t.Name), 0)
 	case *grammar.New:
 		if len(t.Args) != 0 {
 			n, _ := c.prog.nodeTypeOf(t.Type)
 			c.term(t.Args[0], s, locals)
-			c.eemit(ENode, c.str(n.name), 0)
+			c.eemit(bytecode.ENode, c.str(n.name), 0)
 			return
 		}
 		name, _ := c.prog.structType(t.Type)
@@ -800,27 +801,27 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 			names[i] = f.Name
 		}
 		c.m.FieldLists = append(c.m.FieldLists, c.strs2(names))
-		c.eemit(ENew, c.str(name), int32(len(c.m.FieldLists)-1))
+		c.eemit(bytecode.ENew, c.str(name), int32(len(c.m.FieldLists)-1))
 	case *grammar.ListConstructor:
 		for _, item := range t.Items {
 			c.term(item, s, locals)
 		}
-		c.eemit(ECall, bList, int32(len(t.Items)))
+		c.eemit(bytecode.ECall, bytecode.BuiltinList, int32(len(t.Items)))
 	case *grammar.TupleLit:
 		for _, x := range t.Elems {
 			c.term(x, s, locals)
 		}
-		c.eemit(ETuple, int32(len(t.Elems)), 0)
+		c.eemit(bytecode.ETuple, int32(len(t.Elems)), 0)
 	case *grammar.Call:
 		if t.Func == "concat" && fusable(t) {
 			// Gather the elements of list, map and concat arguments directly (see fusable).
-			c.eemit(EListBegin, 0, 0)
+			c.eemit(bytecode.EListBegin, 0, 0)
 			c.concatParts(t, s, locals)
-			c.eemit(EListEnd, 0, 0)
+			c.eemit(bytecode.EListEnd, 0, 0)
 			return
 		}
 		fn := 0
-		for i, n := range builtinNames {
+		for i, n := range bytecode.BuiltinNames {
 			if n == t.Func {
 				fn = i
 			}
@@ -830,25 +831,25 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 				if c.prog.projected[t] {
 					l = identity
 				}
-				at := c.eemit(EFunc, 0, int32(len(l.Params)))
+				at := c.eemit(bytecode.EFunc, 0, int32(len(l.Params)))
 				c.lambdas = append(c.lambdas, pendingLambda{at: at, body: l.Body, scope: s,
 					locals: append(append([]string(nil), locals...), l.Params...)})
 				continue
 			}
 			c.term(a, s, locals)
 		}
-		c.eemit(ECall, int32(fn), int32(len(t.Args)))
+		c.eemit(bytecode.ECall, int32(fn), int32(len(t.Args)))
 	case *grammar.Binary:
 		switch t.Op {
 		case "&&", "||":
 			c.term(t.L, s, locals)
-			op := EAnd
+			op := bytecode.EAnd
 			if t.Op == "||" {
-				op = EOr
+				op = bytecode.EOr
 			}
 			j := c.eemit(op, 0, 0)
 			c.term(t.R, s, locals)
-			c.eemit(EBoolChk, c.str(t.Op), 0)
+			c.eemit(bytecode.EBoolChk, c.str(t.Op), 0)
 			c.m.Exprs[j].A = int32(len(c.m.Exprs))
 		default:
 			if lx, ok := textArg(t.L); ok && (t.Op == "==" || t.Op == "!=") {
@@ -856,25 +857,25 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 					// Compare the texts without making strings values (see evalCtx.binary). Each
 					// argument is checked right after it is evaluated, as text(...) would be.
 					c.term(lx, s, locals)
-					c.eemit(ETextChk, 0, 0)
+					c.eemit(bytecode.ETextChk, 0, 0)
 					c.term(rx, s, locals)
-					c.eemit(ETextChk, 0, 0)
-					c.eemit(ETextEq, b2i(t.Op == "!="), 0)
+					c.eemit(bytecode.ETextChk, 0, 0)
+					c.eemit(bytecode.ETextEq, b2i(t.Op == "!="), 0)
 					return
 				}
 			}
 			c.term(t.L, s, locals)
 			c.term(t.R, s, locals)
-			c.eemit(EBin, c.str(t.Op), 0)
+			c.eemit(bytecode.EBin, c.str(t.Op), 0)
 		}
 	case *grammar.Unary:
 		c.term(t.X, s, locals)
-		c.eemit(EUnary, c.str(t.Op), 0)
+		c.eemit(bytecode.EUnary, c.str(t.Op), 0)
 	case *grammar.Cast:
 		c.term(t.X, s, locals)
 		if ft := c.prog.castType(t); ft != nil {
 			line, col := c.prog.castPos(t)
-			c.eemit3(ECast, c.str(ft.text), int32(line), int32(col))
+			c.eemit3(bytecode.ECast, c.str(ft.text), int32(line), int32(col))
 		}
 	}
 }

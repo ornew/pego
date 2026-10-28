@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/value"
 )
@@ -63,7 +64,7 @@ func legacyStreamRecovery(t *testing.T, streamFirst bool) *Program {
 	m := p.Module()
 	next := 0
 	for i := range m.Code {
-		if m.Code[i].Op == OpNext {
+		if m.Code[i].Op == bytecode.OpNext {
 			m.Code[i].B = 2
 			next++
 		}
@@ -138,39 +139,39 @@ rule item = "ab" @error(message="record") #recover(skip=[^a]+)`)
 }
 
 func TestStreamRecoveryRegions(t *testing.T) {
-	safe := []Instr{{Op: OpRecover, A: 3}, {Op: OpTop}, {Op: OpEndRecover, A: 5}, {Op: OpTop}, {Op: OpEndSkip}, {Op: OpNext, B: 2}, {Op: OpEnd}}
+	safe := []bytecode.Instr{{Op: bytecode.OpRecover, A: 3}, {Op: bytecode.OpTop}, {Op: bytecode.OpEndRecover, A: 5}, {Op: bytecode.OpTop}, {Op: bytecode.OpEndSkip}, {Op: bytecode.OpNext, B: 2}, {Op: bytecode.OpEnd}}
 	for _, tc := range []struct {
 		name string
-		edit func([]Instr)
+		edit func([]bytecode.Instr)
 		want string
 	}{
-		{"element local", func([]Instr) {}, ""},
-		{"body", func(c []Instr) { c[1] = Instr{Op: OpNext, B: 2} }, "encloses a stream commitment"},
-		{"skip", func(c []Instr) { c[3] = Instr{Op: OpNext, B: 2} }, "encloses a stream commitment"},
-		{"missing body boundary", func(c []Instr) { c[0].A = 1 }, "invalid recovery body"},
-		{"missing skip boundary", func(c []Instr) { c[2].A = 4 }, "invalid recovery skip"},
+		{"element local", func([]bytecode.Instr) {}, ""},
+		{"body", func(c []bytecode.Instr) { c[1] = bytecode.Instr{Op: bytecode.OpNext, B: 2} }, "encloses a stream commitment"},
+		{"skip", func(c []bytecode.Instr) { c[3] = bytecode.Instr{Op: bytecode.OpNext, B: 2} }, "encloses a stream commitment"},
+		{"missing body boundary", func(c []bytecode.Instr) { c[0].A = 1 }, "invalid recovery body"},
+		{"missing skip boundary", func(c []bytecode.Instr) { c[2].A = 4 }, "invalid recovery skip"},
 	} {
-		c := append([]Instr(nil), safe...)
+		c := append([]bytecode.Instr(nil), safe...)
 		tc.edit(c)
-		err := validateStreamRecovery(c)
+		err := bytecode.ValidateStreamRecovery(c)
 		if tc.want == "" && err != nil || tc.want != "" && (err == nil || !strings.Contains(err.Error(), tc.want)) {
 			t.Errorf("%s: %v, want %q", tc.name, err, tc.want)
 		}
 	}
-	nested := []Instr{{Op: OpRecover, A: 8}, {Op: OpRecover, A: 4}, {Op: OpTop}, {Op: OpEndRecover, A: 6}, {Op: OpTop}, {Op: OpEndSkip}, {Op: OpTop}, {Op: OpEndRecover, A: 10}, {Op: OpTop}, {Op: OpEndSkip}, {Op: OpNext, B: 2}, {Op: OpEnd}}
-	if err := validateStreamRecovery(nested); err != nil {
+	nested := []bytecode.Instr{{Op: bytecode.OpRecover, A: 8}, {Op: bytecode.OpRecover, A: 4}, {Op: bytecode.OpTop}, {Op: bytecode.OpEndRecover, A: 6}, {Op: bytecode.OpTop}, {Op: bytecode.OpEndSkip}, {Op: bytecode.OpTop}, {Op: bytecode.OpEndRecover, A: 10}, {Op: bytecode.OpTop}, {Op: bytecode.OpEndSkip}, {Op: bytecode.OpNext, B: 2}, {Op: bytecode.OpEnd}}
+	if err := bytecode.ValidateStreamRecovery(nested); err != nil {
 		t.Errorf("nested element-local recovery: %v", err)
 	}
 	nested[3].A = 10
-	if err := validateStreamRecovery(nested); err == nil || !strings.Contains(err.Error(), "crossing recovery regions") {
+	if err := bytecode.ValidateStreamRecovery(nested); err == nil || !strings.Contains(err.Error(), "crossing recovery regions") {
 		t.Errorf("crossing regions: %v", err)
 	}
-	bodyToSkip := []Instr{{Op: OpRecover, A: 4}, {Op: OpRecover, A: 6}, {Op: OpTop}, {Op: OpEndRecover, A: 9}, {Op: OpTop}, {Op: OpEndRecover, A: 8}, {Op: OpTop}, {Op: OpEndSkip}, {Op: OpEndSkip}, {Op: OpNext, B: 2}, {Op: OpEnd}}
-	if err := validateStreamRecovery(bodyToSkip); err == nil || !strings.Contains(err.Error(), "crossing recovery regions") {
+	bodyToSkip := []bytecode.Instr{{Op: bytecode.OpRecover, A: 4}, {Op: bytecode.OpRecover, A: 6}, {Op: bytecode.OpTop}, {Op: bytecode.OpEndRecover, A: 9}, {Op: bytecode.OpTop}, {Op: bytecode.OpEndRecover, A: 8}, {Op: bytecode.OpTop}, {Op: bytecode.OpEndSkip}, {Op: bytecode.OpEndSkip}, {Op: bytecode.OpNext, B: 2}, {Op: bytecode.OpEnd}}
+	if err := bytecode.ValidateStreamRecovery(bodyToSkip); err == nil || !strings.Contains(err.Error(), "crossing recovery regions") {
 		t.Errorf("body-to-skip crossing leaves recovery active at NEXT: %v", err)
 	}
-	nestedSkip := []Instr{{Op: OpRecover, A: 3}, {Op: OpTop}, {Op: OpEndRecover, A: 9}, {Op: OpRecover, A: 6}, {Op: OpTop}, {Op: OpEndRecover, A: 8}, {Op: OpTop}, {Op: OpEndSkip}, {Op: OpEndSkip}, {Op: OpNext, B: 2}, {Op: OpEnd}}
-	if err := validateStreamRecovery(nestedSkip); err != nil {
+	nestedSkip := []bytecode.Instr{{Op: bytecode.OpRecover, A: 3}, {Op: bytecode.OpTop}, {Op: bytecode.OpEndRecover, A: 9}, {Op: bytecode.OpRecover, A: 6}, {Op: bytecode.OpTop}, {Op: bytecode.OpEndRecover, A: 8}, {Op: bytecode.OpTop}, {Op: bytecode.OpEndSkip}, {Op: bytecode.OpEndSkip}, {Op: bytecode.OpNext, B: 2}, {Op: bytecode.OpEnd}}
+	if err := bytecode.ValidateStreamRecovery(nestedSkip); err != nil {
 		t.Errorf("nested recovery inside skip: %v", err)
 	}
 }

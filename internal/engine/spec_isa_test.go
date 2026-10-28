@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strconv"
 	"testing"
+
+	"github.com/ornew/pego/internal/bytecode"
 )
 
 // TestSpecInstructionSetVersion checks that spec/bytecode/README.md states the instruction-set version the
@@ -18,7 +20,7 @@ func TestSpecInstructionSetVersion(t *testing.T) {
 	if m == nil {
 		t.Fatal("spec/bytecode/README.md does not state the instruction-set version of a module")
 	}
-	if got, _ := strconv.Atoi(string(m[1])); got != isaVersion {
-		t.Fatalf("spec/bytecode/README.md states instruction-set version %d; the runtime uses %d", got, isaVersion)
+	if got, _ := strconv.Atoi(string(m[1])); got != bytecode.ISAVersion {
+		t.Fatalf("spec/bytecode/README.md states instruction-set version %d; the runtime uses %d", got, bytecode.ISAVersion)
 	}
 }

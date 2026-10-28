@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 )
 
 // resolveStarts reads the declaration attributes of rules and returns the
@@ -133,5 +134,5 @@ func (prog *Program) definesRule(name string) bool {
 		return prog.byName[name] != nil
 	}
 	m := prog.Module()
-	return slices.ContainsFunc(m.Rules, func(r RuleInfo) bool { return m.Strings[r.Name] == name })
+	return slices.ContainsFunc(m.Rules, func(r bytecode.RuleInfo) bool { return m.Strings[r.Name] == name })
 }

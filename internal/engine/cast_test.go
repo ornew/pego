@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 )
 
 const castRules = "type Num = { Text string }\ntype P = { N Num }\nrule n Num = t:([0-9]+) #atomic => Num{Text: text($t)}\nrule w = [a-z]+\nrule pair = n:n \"=\" => P{N: $n}\n"
@@ -136,18 +137,18 @@ func TestCastSyntax(t *testing.T) {
 		}
 	}
 	data, err = program.MarshalBinary("main")
-	if err != nil || data[isaOffset] != isaVersion {
+	if err != nil || data[isaOffset] != bytecode.ISAVersion {
 		t.Fatalf("cast ISA: %v", err)
 	}
 	// A runtime that knows only an earlier instruction set must not load it.
-	data[isaOffset] = isaVersion - 1
+	data[isaOffset] = bytecode.ISAVersion - 1
 	binary.LittleEndian.PutUint32(data[len(data)-4:], crc32.ChecksumIEEE(data[:len(data)-4]))
 	if _, _, err := LoadProgram(data); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 		t.Fatalf("under-declared cast ISA accepted: %v", err)
 	}
 	// A cast to any checks nothing; it uses the same instruction set.
 	data, err = compile(t, "rule main = x:(n / w) $$ => $x.(_)\n"+castRules).MarshalBinary("main")
-	if err != nil || data[isaOffset] != isaVersion {
+	if err != nil || data[isaOffset] != bytecode.ISAVersion {
 		t.Fatalf("cast to any ISA: %v %d", err, data[isaOffset])
 	}
 }

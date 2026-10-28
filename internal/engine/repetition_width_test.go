@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -48,7 +49,7 @@ func TestWideRepetitionModuleValidation(t *testing.T) {
 				found := false
 				for i := range m.Code {
 					x := &m.Code[i]
-					if x.Op != OpRepeatWide && x.Op != OpScanWide {
+					if x.Op != bytecode.OpRepeatWide && x.Op != bytecode.OpScanWide {
 						continue
 					}
 					found = true
@@ -62,11 +63,11 @@ func TestWideRepetitionModuleValidation(t *testing.T) {
 					case "missing maximum":
 						*max = int32(len(m.Exprs))
 					case "noninteger":
-						m.Exprs[*min].Op = ENil
+						m.Exprs[*min].Op = bytecode.ENil
 					case "negative minimum":
-						m.Exprs[*min] = Instr{Op: EInt, A: -1}
+						m.Exprs[*min] = bytecode.Instr{Op: bytecode.EInt, A: -1}
 					case "negative maximum":
-						m.Exprs[*max] = Instr{Op: EInt, A: -2}
+						m.Exprs[*max] = bytecode.Instr{Op: bytecode.EInt, A: -2}
 					case "reversed bounds":
 						*min, *max = *max, *min
 					}
@@ -93,7 +94,7 @@ func TestWideRepetitionInstructionSet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if data[isaOffset] != isaVersion {
+	if data[isaOffset] != bytecode.ISAVersion {
 		t.Fatalf("ordinary module instruction set %d", data[isaOffset])
 	}
 	if strconv.IntSize < 64 {
@@ -104,14 +105,14 @@ func TestWideRepetitionInstructionSet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if data[isaOffset] != isaVersion {
+	if data[isaOffset] != bytecode.ISAVersion {
 		t.Fatalf("wide module instruction set %d", data[isaOffset])
 	}
 	if !strings.Contains(wide.Module().Disassemble(), "max=4294967296") {
 		t.Fatal("disassembly must display the complete bound")
 	}
 	// A valid checksum does not make a false instruction-set declaration valid.
-	data[isaOffset] = isaVersion - 1
+	data[isaOffset] = bytecode.ISAVersion - 1
 	data = binary.LittleEndian.AppendUint32(data[:len(data)-4], crc32.ChecksumIEEE(data[:len(data)-4]))
 	if _, _, err := LoadProgram(data); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 		t.Fatalf("wide instruction in old ISA: %v", err)

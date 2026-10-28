@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -43,12 +44,12 @@ func grammarWithNegativeMaximum(t testing.TB, src string, maximum int) *grammar.
 func TestNegativeRepetitionMaxima(t *testing.T) {
 	for _, c := range []struct {
 		name, src string
-		op        Op
+		op        bytecode.Op
 	}{
-		{"ordinary", `rule main = "é"* $$`, OpRepeat},
-		{"class scan", `rule main = [é]* #atomic $$`, OpScan},
-		{"any scan", `rule main = .* #atomic $$`, OpScan},
-		{"projection", `rule main = xs:(v:"é")* $$ => map($xs, (x) => x.$v)`, OpRepeat},
+		{"ordinary", `rule main = "é"* $$`, bytecode.OpRepeat},
+		{"class scan", `rule main = [é]* #atomic $$`, bytecode.OpScan},
+		{"any scan", `rule main = .* #atomic $$`, bytecode.OpScan},
+		{"projection", `rule main = xs:(v:"é")* $$ => map($xs, (x) => x.$v)`, bytecode.OpRepeat},
 	} {
 		for _, maximum := range negativeMaxima() {
 			t.Run(fmt.Sprintf("%s/%d", c.name, maximum), func(t *testing.T) {
@@ -70,7 +71,7 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 						if in.Op == c.op {
 							found = true
 							max := in.B
-							if c.op == OpScan {
+							if c.op == bytecode.OpScan {
 								max = in.C
 							}
 							if max != -1 {
@@ -82,7 +83,7 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 						t.Fatalf("expected %s lowering", c.op)
 					}
 					for _, in := range p.Module().Code {
-						if in.Op == OpRepeatWide || in.Op == OpScanWide {
+						if in.Op == bytecode.OpRepeatWide || in.Op == bytecode.OpScanWide {
 							t.Errorf("negative maxima alone must not lower to %s", in.Op)
 						}
 					}
@@ -97,7 +98,7 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 						if err != nil {
 							t.Fatal(err)
 						}
-						if want := byte(isaVersion); data[isaOffset] != want {
+						if want := byte(bytecode.ISAVersion); data[isaOffset] != want {
 							t.Fatalf("negative maxima alone must not require wide instructions: instruction set %d, want %d", data[isaOffset], want)
 						}
 						loaded, _, err := LoadProgram(data)
@@ -223,13 +224,13 @@ func TestNegativeMaximumWithWideMinimum(t *testing.T) {
 			found := false
 			for _, in := range p.Module().Code {
 				index := in.B
-				if in.Op == OpScanWide {
+				if in.Op == bytecode.OpScanWide {
 					index = in.C
-				} else if in.Op != OpRepeatWide {
+				} else if in.Op != bytecode.OpRepeatWide {
 					continue
 				}
 				found = true
-				if p.Module().Exprs[index].integer() != -1 {
+				if p.Module().Exprs[index].Integer() != -1 {
 					t.Fatal("wide maximum is not canonical")
 				}
 			}
@@ -434,7 +435,7 @@ func BenchmarkBytecodeLowering(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for b.Loop() {
-				compiler := &bcompiler{prog: p, m: &Module{}, strs: map[string]int{}}
+				compiler := &bcompiler{prog: p, m: &bytecode.Module{}, strs: map[string]int{}}
 				compiler.compile()
 			}
 		})

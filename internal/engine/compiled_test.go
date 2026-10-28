@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -130,7 +131,7 @@ func TestCompiledErrors(t *testing.T) {
 	version := append([]byte(nil), data...)
 	version[len(compiledMagic)] = 99
 	isa := append([]byte(nil), data...)
-	isa[isaOffset] = isaVersion + 1
+	isa[isaOffset] = bytecode.ISAVersion + 1
 	isa = resum(isa)
 	flipped := append([]byte(nil), data...)
 	flipped[20] ^= 0xff
@@ -142,7 +143,7 @@ func TestCompiledErrors(t *testing.T) {
 		{"not compiled", []byte("rule main = x"), "not a compiled PEGO grammar"},
 		{"too short", []byte(compiledMagic), "too short"},
 		{"version", version, "unsupported compiled grammar version 99"},
-		{"isa version", isa, fmt.Sprintf("unsupported instruction set version %d", isaVersion+1)},
+		{"isa version", isa, fmt.Sprintf("unsupported instruction set version %d", bytecode.ISAVersion+1)},
 		{"checksum", flipped, "checksum mismatch"},
 		{"truncated", resum(data[:len(data)-10]), "invalid compiled grammar"},
 		{"trailing", resum(append(append([]byte(nil), data[:len(data)-4]...), 0, 0, 0, 0, 0)), "trailing bytes"},
@@ -171,17 +172,17 @@ func TestCompiledEarlierInstructionSet(t *testing.T) {
 		b = append([]byte(nil), b[:len(b)-4]...)
 		return binary.LittleEndian.AppendUint32(b, crc32.ChecksumIEEE(b))
 	}
-	for _, isa := range []byte{1, 8, 12, isaVersion, isaVersion + 1} {
+	for _, isa := range []byte{1, 8, 12, bytecode.ISAVersion, bytecode.ISAVersion + 1} {
 		d := append([]byte(nil), data...)
 		d[isaOffset] = isa
 		prog, _, err := LoadProgram(resum(d))
 		switch {
-		case isa < isaVersion:
+		case isa < bytecode.ISAVersion:
 			if err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 				t.Errorf("isa %d: got %v", isa, err)
 			}
 			continue
-		case isa > isaVersion:
+		case isa > bytecode.ISAVersion:
 			if err == nil || !strings.Contains(err.Error(), "unsupported instruction set version") {
 				t.Errorf("isa %d: got %v", isa, err)
 			}

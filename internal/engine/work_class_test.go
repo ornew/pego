@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -217,12 +218,12 @@ func TestWorkClassOptimizedRoutes(t *testing.T) {
 		name  string
 		expr  grammar.Expr
 		input string
-		op    Op
+		op    bytecode.Op
 	}{
-		{"guard-hit", &grammar.Choice{Alts: []grammar.Expr{class, &grammar.Literal{Value: gap}}}, late, OpGuard},
-		{"guard-miss-fallback", &grammar.Choice{Alts: []grammar.Expr{class, &grammar.Literal{Value: gap}}}, gap, OpGuard},
-		{"scan", &grammar.Atomic{Expr: &grammar.Repeat{Expr: class, Min: 1, Max: -1}}, late, OpScan},
-		{"negated-scan", &grammar.Atomic{Expr: &grammar.Repeat{Expr: &grammar.CharClass{Ranges: ranges, Negated: true}, Min: 1, Max: -1}}, gap, OpScan},
+		{"guard-hit", &grammar.Choice{Alts: []grammar.Expr{class, &grammar.Literal{Value: gap}}}, late, bytecode.OpGuard},
+		{"guard-miss-fallback", &grammar.Choice{Alts: []grammar.Expr{class, &grammar.Literal{Value: gap}}}, gap, bytecode.OpGuard},
+		{"scan", &grammar.Atomic{Expr: &grammar.Repeat{Expr: class, Min: 1, Max: -1}}, late, bytecode.OpScan},
+		{"negated-scan", &grammar.Atomic{Expr: &grammar.Repeat{Expr: &grammar.CharClass{Ranges: ranges, Negated: true}, Min: 1, Max: -1}}, gap, bytecode.OpScan},
 	}
 	if strconv.IntSize == 64 {
 		// Construct a source-sized bound without a constant-to-int overflow on 32bit.
@@ -231,9 +232,9 @@ func TestWorkClassOptimizedRoutes(t *testing.T) {
 			name  string
 			expr  grammar.Expr
 			input string
-			op    Op
+			op    bytecode.Op
 		}{
-			"wide-scan", &grammar.Atomic{Expr: &grammar.Repeat{Expr: class, Min: 1, Max: int(wide)}}, late, OpScanWide,
+			"wide-scan", &grammar.Atomic{Expr: &grammar.Repeat{Expr: class, Min: 1, Max: int(wide)}}, late, bytecode.OpScanWide,
 		})
 	}
 	for _, tc := range cases {

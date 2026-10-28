@@ -12,12 +12,13 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
 
 func TestWorkStateVMChildAssembly(t *testing.T) {
-	for _, op := range []Op{OpSeq, OpEndRepeat} {
+	for _, op := range []bytecode.Op{bytecode.OpSeq, bytecode.OpEndRepeat} {
 		for _, lim := range []limits.WorkLimits{{MaxSteps: 64}, {MaxSteps: 10000}} {
 			p := stateWorkParser(lim)
 			start := 3
@@ -30,12 +31,12 @@ func TestWorkStateVMChildAssembly(t *testing.T) {
 				}
 				p.vals = append(p.vals, nodeOrNil(want[i]))
 			}
-			instruction := Instr{Op: op, A: 320}
-			if op == OpEndRepeat {
+			instruction := bytecode.Instr{Op: op, A: 320}
+			if op == bytecode.OpEndRepeat {
 				instruction.A = 1
 				p.reps = []repState{{base: 1, count: 320}}
 			}
-			vm := &vmProgram{m: &Module{Code: []Instr{instruction, {Op: OpEnd}}}}
+			vm := &vmProgram{m: &bytecode.Module{Code: []bytecode.Instr{instruction, {Op: bytecode.OpEnd}}}}
 			body := vmBody{}
 			var result *value.Node
 			err := catchFatal(t, func() { _, result, _ = p.step(vm, &body, false, false, nil) })
@@ -59,7 +60,7 @@ func TestWorkStateVMCutAndFailureUnwind(t *testing.T) {
 		for range 320 {
 			p.ents = append(p.ents, vmEntry{kind: eChoice, cut: true})
 		}
-		vm := &vmProgram{m: &Module{Code: []Instr{{Op: OpCut}, {Op: OpEnd}}}}
+		vm := &vmProgram{m: &bytecode.Module{Code: []bytecode.Instr{{Op: bytecode.OpCut}, {Op: bytecode.OpEnd}}}}
 		if cut {
 			for i := range p.ents {
 				p.ents[i].kind = eLabel

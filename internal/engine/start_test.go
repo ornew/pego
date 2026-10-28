@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/syntax"
 	"github.com/ornew/pego/internal/value"
 )
@@ -314,7 +315,7 @@ func TestStartRoundTrip(t *testing.T) {
 }
 
 func TestStartModuleValidation(t *testing.T) {
-	fresh := func() *Module {
+	fresh := func() *bytecode.Module {
 		prog, err := compileStarts(t, startRestrictionSource)
 		if err != nil {
 			t.Fatal(err)
@@ -332,15 +333,15 @@ func TestStartModuleValidation(t *testing.T) {
 	}
 	for _, tc := range []struct {
 		name   string
-		mutate func(*Module)
+		mutate func(*bytecode.Module)
 		want   string
 	}{
-		{"no start rule", func(m *Module) { m.Starts = nil }, "no start rule"},
-		{"out of range", func(m *Module) { m.Starts[1] = len(m.Rules) }, "start rule"},
-		{"negative", func(m *Module) { m.Starts[0] = -1 }, "start rule"},
-		{"repeated", func(m *Module) { m.Starts[1] = m.Starts[0] }, "invalid start rule"},
-		{"out of order", func(m *Module) { m.Starts[0], m.Starts[1] = m.Starts[1], m.Starts[0] }, "invalid start rule"},
-		{"default not a start rule", func(m *Module) {
+		{"no start rule", func(m *bytecode.Module) { m.Starts = nil }, "no start rule"},
+		{"out of range", func(m *bytecode.Module) { m.Starts[1] = len(m.Rules) }, "start rule"},
+		{"negative", func(m *bytecode.Module) { m.Starts[0] = -1 }, "start rule"},
+		{"repeated", func(m *bytecode.Module) { m.Starts[1] = m.Starts[0] }, "invalid start rule"},
+		{"out of order", func(m *bytecode.Module) { m.Starts[0], m.Starts[1] = m.Starts[1], m.Starts[0] }, "invalid start rule"},
+		{"default not a start rule", func(m *bytecode.Module) {
 			for i := range m.Rules {
 				if !slices.Contains(m.Starts, i) {
 					m.DefaultStart = i

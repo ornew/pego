@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -145,11 +146,11 @@ func TestCaptureAccessSyntax(t *testing.T) {
 	}
 	program := compile(t, `rule main = xs:(y:"a" "b")* $$ => $xs[0].$y`)
 	data, err := program.MarshalBinary("main")
-	if err != nil || data[isaOffset] != isaVersion {
+	if err != nil || data[isaOffset] != bytecode.ISAVersion {
 		t.Fatalf("capture access ISA: %v", err)
 	}
 	// A runtime that knows only an earlier instruction set must not load it.
-	data[isaOffset] = isaVersion - 1
+	data[isaOffset] = bytecode.ISAVersion - 1
 	binary.LittleEndian.PutUint32(data[len(data)-4:], crc32.ChecksumIEEE(data[:len(data)-4]))
 	if _, _, err := LoadProgram(data); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 		t.Fatalf("under-declared capture access ISA accepted: %v", err)

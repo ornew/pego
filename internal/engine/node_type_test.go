@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -310,7 +311,7 @@ func TestNamedNodeTypeModuleValidation(t *testing.T) {
 	if err := validateModule(base); err != nil {
 		t.Fatal(err)
 	}
-	str := func(m *Module, s string) int {
+	str := func(m *bytecode.Module, s string) int {
 		for i, x := range m.Strings {
 			if x == s {
 				return i
@@ -319,41 +320,41 @@ func TestNamedNodeTypeModuleValidation(t *testing.T) {
 		t.Fatalf("no string %q", s)
 		return -1
 	}
-	clone := func() *Module {
+	clone := func() *bytecode.Module {
 		m := *base
-		m.Types = append([]TypeInfo(nil), base.Types...)
-		m.Rules = append([]RuleInfo(nil), base.Rules...)
-		m.Exprs = append([]Instr(nil), base.Exprs...)
+		m.Types = append([]bytecode.TypeInfo(nil), base.Types...)
+		m.Rules = append([]bytecode.RuleInfo(nil), base.Rules...)
+		m.Exprs = append([]bytecode.Instr(nil), base.Exprs...)
 		return &m
 	}
 	for name, tc := range map[string]struct {
-		edit func(m *Module)
+		edit func(m *bytecode.Module)
 		want string
 	}{
-		"fields": {func(m *Module) {
+		"fields": {func(m *bytecode.Module) {
 			for i := range m.Types {
 				if m.Types[i].Node >= 0 {
 					m.Types[i].Fields = []int{str(m, "Text")}
 				}
 			}
 		}, "has fields"},
-		"underlying": {func(m *Module) {
+		"underlying": {func(m *bytecode.Module) {
 			for i := range m.Types {
 				if m.Types[i].Node >= 0 {
 					m.Types[i].Node = str(m, "Out")
 				}
 			}
 		}, "is not over a node type"},
-		"rule": {func(m *Module) {
+		"rule": {func(m *bytecode.Module) {
 			for i := range m.Rules {
 				if m.Rules[i].NodeType >= 0 {
 					m.Rules[i].NodeType = str(m, "main")
 				}
 			}
 		}, "is not a named node type"},
-		"enode": {func(m *Module) {
+		"enode": {func(m *bytecode.Module) {
 			for i := range m.Exprs {
-				if m.Exprs[i].Op == ENode {
+				if m.Exprs[i].Op == bytecode.ENode {
 					m.Exprs[i].A = int32(str(m, "Out"))
 				}
 			}

@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 )
 
 // fieldCheckValues are the dynamically typed values that fieldCheckGrammar passes to a struct
@@ -246,7 +247,7 @@ rule val _ = "v" => list()
 	src := decls + fmt.Sprintf(body, "$d.(Int)")
 	prog := compile(t, src)
 	m := prog.Module()
-	if v := m.instructionSetVersion(); v != isaVersion {
+	if v := m.InstructionSetVersion(); v != bytecode.ISAVersion {
 		t.Fatalf("instruction set %d", v)
 	}
 	if d := m.Disassemble(); strings.Count(d, "ECAST") != 1 || !strings.Contains(d, `ECAST      "Int"`) {
@@ -257,7 +258,7 @@ type S = { Static Int }
 rule main = a:item => S{Static: $a}
 rule item Int = "i" => Int{Text: "i"}
 `)
-	if v := plain.Module().instructionSetVersion(); v != isaVersion {
+	if v := plain.Module().InstructionSetVersion(); v != bytecode.ISAVersion {
 		t.Fatalf("module instruction set %d", v)
 	}
 	if d := plain.Module().Disassemble(); strings.Contains(d, "ECAST") {
@@ -301,11 +302,11 @@ func TestCompiledFieldChecksValidation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if data[isaOffset] != isaVersion {
+	if data[isaOffset] != bytecode.ISAVersion {
 		t.Fatalf("instruction set %d", data[isaOffset])
 	}
 	d := append([]byte(nil), data[:len(data)-4]...)
-	d[isaOffset] = isaVersion - 1
+	d[isaOffset] = bytecode.ISAVersion - 1
 	d = binary.LittleEndian.AppendUint32(d, crc32.ChecksumIEEE(d))
 	// A file of an earlier instruction set is rejected before its records are read.
 	if _, _, err := LoadProgram(d); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
@@ -317,9 +318,9 @@ func TestCompiledFieldChecksValidation(t *testing.T) {
 	}
 	for _, text := range []string{"Other", "[]", "*(Int)", "Int |", "(Int | Match", "Int  | Match", "[]Int)", "", "terminal", "Missing"} {
 		m.Strings = append(append([]string(nil), prog.Module().Strings...), text)
-		m.Exprs = append([]Instr(nil), prog.Module().Exprs...)
+		m.Exprs = append([]bytecode.Instr(nil), prog.Module().Exprs...)
 		for i := range m.Exprs {
-			if m.Exprs[i].Op == ECast {
+			if m.Exprs[i].Op == bytecode.ECast {
 				m.Exprs[i].A = int32(len(m.Strings) - 1)
 			}
 		}

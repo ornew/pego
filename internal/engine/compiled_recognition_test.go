@@ -11,12 +11,13 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/limits"
 )
 
 // moduleRuleNames returns the names of the rules of m in order, each once: value-free twins follow
 // the rules they belong to and have their names.
-func moduleRuleNames(m *Module) []string {
+func moduleRuleNames(m *bytecode.Module) []string {
 	var names []string
 	seen := map[string]bool{}
 	for _, r := range m.Rules {
@@ -47,9 +48,9 @@ func TestCompiledRecognitionASTFileRejectsBundle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	w := &encoder{strs: map[string]int{}}
-	w.module(rec.Module())
-	stored := marshalWithTrailing(p, "main", w.body.Bytes())
+	w := &bytecode.Encoder{Strs: map[string]int{}}
+	w.WriteModule(rec.Module())
+	stored := marshalWithTrailing(p, "main", w.Body.Bytes())
 	if _, _, err := LoadProgram(stored); err == nil || !strings.Contains(err.Error(), "trailing bytes") {
 		t.Fatalf("file with a second module: %v", err)
 	}
