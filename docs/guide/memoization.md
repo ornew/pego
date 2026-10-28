@@ -1,12 +1,11 @@
 # Memoization
 
-PEGO memoizes rule results so that a grammar with backtracking still parses in roughly linear time. This guide explains
+PEGO memoizes rule results so that backtracking does not evaluate the same rule again and again at the same position. This guide explains
 what is memoized and when, and what that means for memory, streaming and incremental parsing. The same holds on every
 [backend](backends.md).
 
 PEGO parses with **packrat memoization**: the result of a rule at an input position is remembered, so the rule is
-evaluated at most twice at that position, however much backtracking the grammar does. This is what keeps parsing time
-roughly linear in the input. It is on by default, **automatic, and has no public switch**. The engine decides per rule:
+evaluated at most twice at that position, however much backtracking the grammar does. It is on by default, **automatic, and has no public switch**. The engine decides per rule:
 
 - Rules that call no other rule, and rules referenced only once in the grammar, are not memoized in a normal parse,
   because their entries could never be reused.
@@ -19,6 +18,9 @@ roughly linear in the input. It is on by default, **automatic, and has no public
 
 What this means for you:
 
+- **Parse time is not guaranteed to be linear.** Memoization bounds the re-evaluation of rule calls. It does not bound
+  a repetition that is run again after backtracking, the growth of a left-recursive rule, or a rule whose result
+  depends on variables with many distinct values; these can take more than linear time on some inputs.
 - **Memory grows with input size.** The memo table, like the tree, is proportional to the input. For very large or
   unbounded input use a `#stream` repetition and `ParseStream`, which discards memo entries and input already
   handed to you (see [streaming.md](streaming.md)).

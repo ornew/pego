@@ -7,7 +7,7 @@
 - In whole-input parses (`ParseWith`, including recognition), a memoized rule is now not memoized on its first call
   at a position: a bit set (`memoTable.seen`, one bit per position and per rule that can be deferred) records the
   call, and the rule is memoized when it is called there again. A rule is therefore evaluated at most twice per
-  position and parse time stays linear.
+  position.
 - Deferring costs an extra evaluation where a rule is called again. Per rule and per parse, the calls and repeated
   calls are counted, and once more than one call in sixteen is a repeat, the rule is memoized from the first call
   for the rest of the parse (the threshold was one in eight with repeats counted twice until change 24). Without this, the left-recursive calculator was 20–33% slower; with it, it is within

@@ -114,7 +114,7 @@ pego: 1:4: syntax error: expected "(", "+", "-", [0-9]
 A PEG rule may call itself in leftmost position, directly or through other rules. PEGO detects such cycles and parses
 them by growing a seed: it first matches the non-recursive alternatives, then repeatedly tries again with the result so
 far as the recursive call, as long as the match gets longer. The result is exactly what the grammar says in the textbook
-notation, in linear time and without any rewriting:
+notation, without any rewriting:
 
 ```pego
 // calc_lr.pego

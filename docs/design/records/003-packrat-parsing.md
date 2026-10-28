@@ -11,11 +11,11 @@
 
 This document describes the design used to add efficient packrat parsing (memoization) to the PEGO parser, together with an algorithm that correctly handles direct and indirect left recursion.
 
-In the VM-based implementation, the compiler analyzes the dependencies between grammar rules as a graph and detects its strongly connected components (SCCs); the VM then applies a memoization strategy chosen from that analysis. To resolve left recursion, the "grow-the-seed" algorithm was introduced. This makes it possible to support left-recursive grammars, which could not be handled before, while achieving linear-time parsing.
+In the VM-based implementation, the compiler analyzes the dependencies between grammar rules as a graph and detects its strongly connected components (SCCs); the VM then applies a memoization strategy chosen from that analysis. To resolve left recursion, the "grow-the-seed" algorithm was introduced. This makes it possible to support left-recursive grammars, which could not be handled before, while bounding the re-evaluation of rule calls.
 
 ## 2. Background and Problems
 
-- **Performance**: Packrat parsing memoizes the result of each rule keyed by input position, which guarantees that a rule is never parsed twice at the same position. Parsing time therefore approaches linear time (O(n)) in the length of the input. The previous implementation had no such general memoization mechanism.
+- **Performance**: Packrat parsing memoizes the result of each rule keyed by input position, which bounds the re-evaluation of a rule at the same position. This removes the exponential cost of backtracking over rules, but it does not make parsing time linear: repetition after backtracking, left-recursion growth and rules that read variables can still be super-linear. The previous implementation had no such general memoization mechanism.
 - **Left recursion**: A grammar with left recursion, such as `E -> E '+' T | T`, sends a naive top-down recursive-descent parser into an infinite loop. The same holds for PEG, and indirect left recursion (for example `A -> B`, `B -> A`) causes the same problem. Solving it requires detecting the recursion and handling it specially.
 
 ## 3. Goals
