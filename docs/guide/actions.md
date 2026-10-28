@@ -41,7 +41,8 @@ form `(expression => { ... })` is not supported.
 The rule behind an inline action is hidden: a rule whose name begins with `_`. You can write such a rule yourself to
 share a part of a grammar without giving it a node. A hidden rule without an action makes no node, and a call of it
 contributes what its expression would if it were written in its place as a group. A hidden rule is not an entry point:
-it cannot be the start rule or be parsed by name.
+it cannot be the start rule or be parsed by name. [Shaping Trees](shaping-trees.md#hidden-rules) shows the effect on
+the tree.
 
 ```pego
 rule pair = "(" _items ")"

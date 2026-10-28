@@ -1,9 +1,9 @@
 # Shaping Trees
 
 A PEGO grammar does two jobs: it decides which input is valid, and it decides what **tree** you get back. This guide is
-about the tree that every grammar produces without any extra work and how to shape it with captures, atomic (`#atomic`)
-and discard (`-`). [Declaring Types](types.md) describes the typed nodes of a grammar, and [Actions](actions.md) shows how
-to replace the tree with a typed AST built by [actions](../../spec/language/actions.md).
+about the tree that every grammar produces without any extra work and how to shape it with captures, atomic (`#atomic`), discard (`-`) and
+hidden rules (`_name`). [Declaring Types](types.md) describes the typed nodes of a grammar, and
+[Actions](actions.md) shows how to replace the tree with a typed AST built by [actions](../../spec/language/actions.md).
 
 The guide complements the normative chapters [Rule Expressions](../../spec/language/parser-expressions.md),
 [Type System](../../spec/language/types.md) and [Actions](../../spec/language/actions.md); read them for the exact rules. Here the focus
@@ -259,6 +259,39 @@ Two details matter in practice:
   whitespace node inside it stays in the value, because you may inspect it with `x[i]` or `text` later. Discard the
   parts you do not need *inside* the capture, punctuation included: `rest:(-ws -"," -ws x:ident)*`.
 
+### Hidden Rules
+
+A rule whose name begins with `_` is hidden: it lets you share part of a grammar without adding a level to the tree. A
+visible rule makes a node, so a call of it nests its elements one level deeper. A hidden rule without an action makes
+no node of its own: its elements are spliced into the sequence that calls it, as if its expression were written there as
+a group.
+
+```pego
+// hidden.pego
+@start(default)
+rule shown = "(" items ")"
+rule items = [a-z] ("," [a-z])*
+@start
+rule hidden = "(" _items ")"
+rule _items = [a-z] ("," [a-z])*
+```
+
+```bash
+pego parse -g hidden.pego -s shown -f sexpr -source-info -i '(a,b,c)'
+pego parse -g hidden.pego -s hidden -f sexpr -source-info -i '(a,b,c)'
+```
+
+```text
+("(" ("a" [("," "b") ("," "c")])@items ")")@shown
+("(" "a" [("," "b") ("," "c")] ")")@hidden
+```
+
+`shown` has a node `@items` inside its tuple; in `hidden` the first letter and the list of the rest are elements of
+the tuple of `hidden` itself. A hidden rule is still a rule at run time (memoized, recursive, with its own cut and
+recovery scope), but it is not an entry point, adds no type to the AST and does not expose its captures to the caller.
+The exact rules are in [Hidden Rules](../../spec/language/actions.md#hidden-rules); [Actions](actions.md)
+describes the hidden rules that inline actions create.
+
 ### Unwrapping the Root
 
 A start rule such as `main = ^^ expr $$` wraps the real result in a tuple. When you build an AST, return the value you
@@ -314,6 +347,6 @@ values and runs no actions.
 ## Related Topics
 
 - [Declaring Types](types.md): struct and join types.
-- [Actions](actions.md): building the tree yourself.
+- [Actions](actions.md): building the tree yourself, and the hidden rules behind inline actions.
 - [Rule Expressions](rule-expressions.md): the expressions that the tree is made of.
 - [Reading Trees](reading-trees.md): reading the result in Go.
