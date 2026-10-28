@@ -20,7 +20,7 @@ rule item = {n > 0} "b"?
 // does not declare is rejected, wherever the name appears.
 func TestModuleVariableValidation(t *testing.T) {
 	fresh := func() *bytecode.Module {
-		m := *compile(t, varModuleSource).Module()
+		m := *mustCompile(t, varModuleSource).Module()
 		m.Strings = append([]string(nil), m.Strings...)
 		m.Exprs = append([]bytecode.Instr(nil), m.Exprs...)
 		m.Code = append([]bytecode.Instr(nil), m.Code...)
@@ -82,7 +82,7 @@ func TestModuleVariableValidation(t *testing.T) {
 // tree, loads exactly the variables of its module in each mode: a changed variable table is the
 // one the loaded program runs with, or the file is rejected when the module validation rejects it.
 func TestLoadedVariablesMatch(t *testing.T) {
-	good, err := compile(t, varModuleSource).MarshalBinary("main")
+	good, err := mustCompile(t, varModuleSource).MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +107,7 @@ func TestLoadedVariablesMatch(t *testing.T) {
 	} {
 		for _, mode := range allModes {
 			t.Run(mode.String()+" "+tc.name, func(t *testing.T) {
-				p := compile(t, varModuleSource)
+				p := mustCompile(t, varModuleSource)
 				saved := p
 				if mode == CompiledRecognize {
 					rec, err := p.recognizer()
@@ -157,7 +157,7 @@ func TestModuleInitialValueMatchesType(t *testing.T) {
 		{"unknown type", func(m *bytecode.Module) { m.Vars[0].Type = 3 }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			m := *compile(t, varModuleSource).Module()
+			m := *mustCompile(t, varModuleSource).Module()
 			m.Vars = append([]bytecode.VarInfo(nil), m.Vars...)
 			tc.mutate(&m)
 			if err := validateModule(&m); err == nil {

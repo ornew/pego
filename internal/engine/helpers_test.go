@@ -27,9 +27,9 @@ func parseTest(src string) (*grammar.Grammar, error) {
 	return starttest.MarkAll(g), err
 }
 
-// compile compiles PEGO source with source information, so that results show rule names and
+// mustCompile compiles PEGO source with source information, so that results show rule names and
 // capture labels.
-func compile(t *testing.T, src string, opts ...Options) *Program {
+func mustCompile(t *testing.T, src string, opts ...Options) *Program {
 	t.Helper()
 	var o Options
 	if len(opts) > 0 {
@@ -114,8 +114,8 @@ type parseCase struct {
 // without tracing.
 func check(t *testing.T, src string, cases ...parseCase) {
 	t.Helper()
-	prog := compile(t, src)
-	noMemo := compile(t, src, Options{DisableMemo: true})
+	prog := mustCompile(t, src)
+	noMemo := mustCompile(t, src, Options{DisableMemo: true})
 	for _, c := range cases {
 		got := result(prog, c.input)
 		if got != c.want && !(strings.HasPrefix(c.want, "error: ") && strings.Contains(got, c.want[len("error: "):]) && strings.HasPrefix(got, "error: ")) {

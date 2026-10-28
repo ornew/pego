@@ -48,7 +48,7 @@ func (r *streamCallbackReader) Close() error { r.closed = true; return nil }
 func catchStreamPanic(f func()) (val any)    { defer func() { val = recover() }(); f(); return }
 
 func TestStreamCallerPanicIdentity(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			for _, traced := range []bool{false, true} {
@@ -124,7 +124,7 @@ func TestStreamCallerPanicIdentity(t *testing.T) {
 }
 
 func TestStreamCallerReturnedErrorIdentity(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			for _, traced := range []bool{false, true} {
@@ -161,7 +161,7 @@ func TestStreamCallerReturnedErrorIdentity(t *testing.T) {
 }
 
 func TestStreamReaderPanicInsideTraceKeepsOriginalValue(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(b.String()+"/"+u.String(), func(t *testing.T) {
@@ -188,7 +188,7 @@ func TestStreamNormalCallerReturnKeepsVMFaultAttribution(t *testing.T) {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			for _, phase := range []string{"reader", "emit"} {
 				t.Run(fmt.Sprintf("%s/%s/%s", b, u, phase), func(t *testing.T) {
-					prog := compile(t, "rule main = item* #stream $$\nrule item = \"a\"")
+					prog := mustCompile(t, "rule main = item* #stream $$\nrule item = \"a\"")
 					if _, err := prog.rule(b, "main"); err != nil {
 						t.Fatal(err)
 					}
@@ -224,7 +224,7 @@ func TestStreamNormalCallerReturnKeepsVMFaultAttribution(t *testing.T) {
 }
 
 func TestStreamKeepsCallerBufferedReader(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	for _, u := range []PositionUnit{CodePoints, Bytes} {
 		reader := bufio.NewReader(strings.NewReader("#records\na=1\n"))
 		if p := newStreamParser(prog, reader, u); p.reader != reader {

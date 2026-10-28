@@ -137,7 +137,7 @@ rule stmt S = x:"x" #atomic ";" => S{X: $x}`,
 rule main = w:word => P{S: $w.Start + $w.End, K: $w.Value}
 rule word = k:"a" v:"b"`,
 	} {
-		compile(t, src)
+		mustCompile(t, src)
 	}
 }
 
@@ -172,7 +172,7 @@ rule r3 = ((c1:r3 {v := len($c1)}) c2:r1 ";" #recover(skip=[^;]* ";")) @error(me
 func TestRuleType(t *testing.T) {
 	// A reference to a rule with a declared type shows that type; one to a rule without a declared
 	// type shows the rule's name.
-	prog := compile(t, `type N = { Text string }
+	prog := mustCompile(t, `type N = { Text string }
 type P = { X N }
 rule n N = t:("1" #atomic) => N{Text: text($t)}
 rule nn = n
@@ -195,7 +195,7 @@ rule main = ps any $$`)
 	if _, ok := prog.RuleType("nope"); ok {
 		t.Error("RuleType reported an undefined rule")
 	}
-	data, err := compile(t, `rule main = "a"`).MarshalBinary("main")
+	data, err := mustCompile(t, `rule main = "a"`).MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
 	}

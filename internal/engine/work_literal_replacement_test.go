@@ -37,7 +37,7 @@ func TestWorkLiteralReplacementMismatchBudget(t *testing.T) {
 
 func TestWorkLiteralReplacementPublicLookahead(t *testing.T) {
 	literal := strings.Repeat("a", 4096) + string(utf8.RuneError)
-	prog := compile(t, "rule main = !"+strconv.Quote(literal)+" \"b\" $$")
+	prog := mustCompile(t, "rule main = !"+strconv.Quote(literal)+" \"b\" $$")
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, recognize := range []bool{false, true} {
 			opts := ParseOptions{Backend: backend, Unit: Bytes, Recognize: recognize}

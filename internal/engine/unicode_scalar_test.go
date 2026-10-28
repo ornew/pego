@@ -40,7 +40,7 @@ func testInvalidCharacterClassEntryPoints(t *testing.T) {
 			}
 			// A compiled file holds the module alone: a malformed AST beside a valid module
 			// does not reach the file, which loads as the module's own.
-			p := compile(t, `rule main = [a-z]`)
+			p := mustCompile(t, `rule main = [a-z]`)
 			want, err := p.MarshalBinary("main")
 			if err != nil {
 				t.Fatal(err)
@@ -59,7 +59,7 @@ func testInvalidCharacterClassEntryPoints(t *testing.T) {
 
 func TestUnicodeScalarRangeBackends(t *testing.T) {
 	for _, source := range []string{`rule main = [\u{0}-\u{10ffff}] $$`, `rule main = [\u{d7ff}-\u{e000}] $$`, `rule main = [^\u{d7ff}-\u{e000}] $$`} {
-		p := compile(t, source)
+		p := mustCompile(t, source)
 		g := mustParse(source)
 		cc := g.Rules()[0].Expr.(*grammar.Seq).Items[0].(*grammar.CharClass)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {

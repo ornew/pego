@@ -161,7 +161,7 @@ func TestWorkInputTextSourceSubstringRemainsConstantWork(t *testing.T) {
 }
 
 func TestWorkTraceTextInterruptionRetriesPooledParser(t *testing.T) {
-	prog := compile(t, `rule main = .* $$`)
+	prog := mustCompile(t, `rule main = .* $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			raw := strings.Repeat("z", 9000)

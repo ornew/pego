@@ -32,9 +32,9 @@ func TestStreamCaptureRecognition(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			source := "rule main = (" + tc.body + ")" + tc.bound + " #stream $$\nrule r = \"é\" => nil"
-			plain := compile(t, strings.ReplaceAll(source, " #stream", ""))
+			plain := mustCompile(t, strings.ReplaceAll(source, " #stream", ""))
 			for _, disableMemo := range []bool{false, true} {
-				p := compile(t, source, Options{DisableMemo: disableMemo})
+				p := mustCompile(t, source, Options{DisableMemo: disableMemo})
 				programs := []*Program{p}
 				for _, mode := range allModes {
 					programs = append(programs, saveLoad(t, p, "main", mode))

@@ -93,7 +93,7 @@ var z int
 rule main R = "a" => R{N: n, S: s, B: b, M: m, Z: z}
 rule other R = {n := n + 1} "b" => R{N: n, S: s, B: b, M: m, Z: z}
 `
-	prog := compile(t, src)
+	prog := mustCompile(t, src)
 	const want = `R{B: false, M: -3, N: 7, S: "init", Z: 0}`
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -123,7 +123,7 @@ rule other R = {n := n + 1} "b" => R{N: n, S: s, B: b, M: m, Z: z}
 		t.Errorf("document: got %v, %v", n, err)
 	}
 	// A stream starts from them too, and the bindings of one element do not reach the next.
-	streamed := compile(t, `type E = { N int }
+	streamed := mustCompile(t, `type E = { N int }
 var n int = 7
 rule main = (item)* #stream $$
 rule item E = {n := n + 1} "a" => E{N: n}
@@ -169,7 +169,7 @@ rule item E = {n := n + 1} "a" => E{N: n}
 // TestVarTypedReads checks that reads and bindings have the declared type: a read can be used
 // where its type is accepted, and the checks do not apply without the type checker.
 func TestVarTypedReads(t *testing.T) {
-	prog := compile(t, `type V = { N int; S string; B bool }
+	prog := mustCompile(t, `type V = { N int; S string; B bool }
 var d int
 var tag string = "t"
 var on bool = true
@@ -189,7 +189,7 @@ rule main V = {d := d + 2} {tag := tag + "!"} "a" => V{N: d * 3, S: tag, B: on &
 // TestGrammarWithoutVariables checks that a grammar without variable declarations has no
 // variable table and no variables in its module.
 func TestGrammarWithoutVariables(t *testing.T) {
-	prog := compile(t, `rule main = "a" ("b" / "c")* $$`)
+	prog := mustCompile(t, `rule main = "a" ("b" / "c")* $$`)
 	if prog.vars != nil || len(prog.Module().Vars) != 0 {
 		t.Fatalf("variables: %v, %v", prog.vars, prog.Module().Vars)
 	}
@@ -228,7 +228,7 @@ rule ds = "s" => "str"
 
 	// A cast is an explicit conversion: it is accepted, and its own failure is an evaluation error,
 	// which makes the binding fail like any other evaluation error in a predicate.
-	cast := compile(t, prelude+"rule main = (d:dyn {x := $d.(int)} \"z\" / \"s\" \"y\") => x\n")
+	cast := mustCompile(t, prelude+"rule main = (d:dyn {x := $d.(int)} \"z\" / \"s\" \"y\") => x\n")
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		if n, err := cast.ParseWith("main", "iz", ParseOptions{Backend: backend}); err != nil || n.String() != "1" {
 			t.Errorf("%v: got %v, %v; want 1", backend, n, err)
@@ -263,7 +263,7 @@ rule ds = "s" => "str"
 // earlier instruction set let it, is rejected, and that a binding of a value of another type than
 // the variable's is memory-safe: variables hold any value and reads check the types they use.
 func TestLoadedBindingNeedsNoCheck(t *testing.T) {
-	prog := compile(t, "var x int\nrule main = {x := 1} \"a\" => x\n")
+	prog := mustCompile(t, "var x int\nrule main = {x := 1} \"a\" => x\n")
 	m := prog.Module()
 	m.Code = append([]bytecode.Instr(nil), m.Code...)
 	for i := range m.Code {

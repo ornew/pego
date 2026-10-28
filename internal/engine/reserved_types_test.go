@@ -257,7 +257,7 @@ rule val = x:("a" / "b" "c" / "d"*) => $x
 rule cast TYPE = x:val => $x.(TYPE)
 rule opt *TYPE = x:val? => $x`
 	run := func(typ, in string) string {
-		prog := compile(t, strings.ReplaceAll(src, "TYPE", typ))
+		prog := mustCompile(t, strings.ReplaceAll(src, "TYPE", typ))
 		var out []string
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, start := range []string{"main", "cast", "opt"} {
@@ -315,7 +315,7 @@ rule cast = x:"a" => S{F: 1}`
 		}
 	}
 	for _, typ := range []string{"node[_]"} {
-		if got, _ := compile(t, "rule main = x:\"a\" => $x.("+typ+")").RuleType("main"); got != "node[_]" {
+		if got, _ := mustCompile(t, "rule main = x:\"a\" => $x.("+typ+")").RuleType("main"); got != "node[_]" {
 			t.Errorf("cast to %s: rule type %s", typ, got)
 		}
 	}

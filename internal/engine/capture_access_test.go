@@ -32,7 +32,7 @@ func captureAccessCases() []genCase {
 func TestCaptureAccessAcrossBackends(t *testing.T) {
 	for _, fixture := range captureAccessCases() {
 		t.Run(fixture.name, func(t *testing.T) {
-			program := compile(t, fixture.src)
+			program := mustCompile(t, fixture.src)
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
 					for _, input := range fixture.inputs {
@@ -60,7 +60,7 @@ rule num Num = [0-9]+ #atomic`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	program := compile(t, fixed)
+	program := mustCompile(t, fixed)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		n, err := program.ParseWith("main", "-12", ParseOptions{Backend: backend})
 		if err != nil || n.String() != `Out{E: 3, S: 1, V: "12"}` {
@@ -71,7 +71,7 @@ rule num Num = [0-9]+ #atomic`)
 
 // A text struct value reads its text through its declared field.
 func TestTextStructFieldRead(t *testing.T) {
-	program := compile(t, `type Num = { Text string }
+	program := mustCompile(t, `type Num = { Text string }
 type Out = { V string; N int }
 rule main = "-" n:num $$ => Out{V: $n.Text, N: len($n.Text)}
 rule num Num = t:([0-9]+ #atomic) => Num{Text: text($t)}`)
@@ -86,7 +86,7 @@ rule num Num = t:([0-9]+ #atomic) => Num{Text: text($t)}`)
 // x.$y reads capture y of node x and projects a repetition. The earlier x.y, which still reaches
 // the engine from JSON grammars, reads a field: on a node it is rejected with a pointer to .$y.
 func TestCaptureAccessMatchesField(t *testing.T) {
-	access := compile(t, `rule main = xs:(-"," y:[a-z])* $$ => map($xs, (i) => i.$y)`)
+	access := mustCompile(t, `rule main = xs:(-"," y:[a-z])* $$ => map($xs, (i) => i.$y)`)
 	if a := ruleProjections(access.staticProgram, access.rules[0]); a["xs"] != "y" {
 		t.Fatalf("projection: %v", a)
 	}
@@ -145,7 +145,7 @@ func TestCaptureAccessSyntax(t *testing.T) {
 	if inner, ok := body.X.(*grammar.Member); !ok || inner.Name != "$y" || body.Name != "Start" {
 		t.Fatalf("access %#v", body)
 	}
-	program := compile(t, `rule main = xs:(y:"a" "b")* $$ => $xs[0].$y`)
+	program := mustCompile(t, `rule main = xs:(y:"a" "b")* $$ => $xs[0].$y`)
 	data, err := program.MarshalBinary("main")
 	if err != nil || data[isaOffset] != bytecode.ISAVersion {
 		t.Fatalf("capture access ISA: %v", err)

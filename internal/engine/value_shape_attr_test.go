@@ -44,7 +44,7 @@ func TestAttributeKeepsValueShape(t *testing.T) {
 			continue
 		}
 		t.Run(c.name, func(t *testing.T) {
-			attr, plain := compile(t, c.src), compile(t, plainSrc)
+			attr, plain := mustCompile(t, c.src), mustCompile(t, plainSrc)
 			for _, backend := range []Backend{Default, Bytecode, BytecodeIterative} {
 				for _, input := range c.inputs {
 					opts := ParseOptions{Backend: backend}
@@ -95,7 +95,7 @@ func TestStreamSeesThroughGroupsAndAttributes(t *testing.T) {
 	}
 	inputs := []string{"aaab", "b", "aab"}
 	for _, c := range same {
-		attr, plain := compile(t, c[0]), compile(t, c[1])
+		attr, plain := mustCompile(t, c[0]), mustCompile(t, c[1])
 		for _, backend := range []Backend{Default, Bytecode, BytecodeIterative} {
 			for _, in := range inputs {
 				run := func(p *Program) (string, error) {

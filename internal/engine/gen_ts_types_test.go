@@ -328,7 +328,7 @@ rule main = leaf #recover(skip=.+)`, "*error", true},
 rule main = leaf #recover(skip=.+)`, "error", true},
 	} {
 		t.Run(name, func(t *testing.T) {
-			prog := compile(t, c.src)
+			prog := mustCompile(t, c.src)
 			if got, ok := inferredType(prog, "main"); !ok || got != c.inferred {
 				t.Fatalf("inferred start = %s, want %s", got, c.inferred)
 			}

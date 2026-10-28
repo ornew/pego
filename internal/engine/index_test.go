@@ -44,7 +44,7 @@ rule item = [a-z]`, []string{"ab", "a", ""}},
 func TestIndexAcrossBackends(t *testing.T) {
 	for _, fixture := range indexCases() {
 		t.Run(fixture.name, func(t *testing.T) {
-			program := compile(t, fixture.src)
+			program := mustCompile(t, fixture.src)
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
 					for _, input := range fixture.inputs {
@@ -63,7 +63,7 @@ func TestIndexAcrossBackends(t *testing.T) {
 }
 
 func TestIndexValuesAndErrors(t *testing.T) {
-	program := compile(t, `rule main = xs:item+ $$ => $xs[1]
+	program := mustCompile(t, `rule main = xs:item+ $$ => $xs[1]
 rule item = [a-z]`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		node, err := program.ParseWith("main", "abc", ParseOptions{Backend: backend})
@@ -137,7 +137,7 @@ func TestIndexValueElements(t *testing.T) {
 		{"rule main = xs:n+ $$ => foldl(0, $xs, (a, x) => a + x)\nrule n = [0-9] => 2", map[string]int{"123": 6}},
 		{"rule main = x:p $$ => $x.$v + 1\nrule p = v:n \"!\"\nrule n = [0-9] => 1", map[string]int{"1!": 2}},
 	} {
-		program := compile(t, tc.src)
+		program := mustCompile(t, tc.src)
 		for input, want := range tc.inputs {
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				node, err := program.ParseWith("main", input, ParseOptions{Backend: backend})
@@ -197,7 +197,7 @@ rule item = "a"`); err == nil || !strings.Contains(err.Error(), "write a space b
 func TestIndexCompiledInstructionSet(t *testing.T) {
 	src := `rule main = xs:item+ $$ => $xs[0]
 rule item = [a-z]`
-	program := compile(t, src)
+	program := mustCompile(t, src)
 	for _, mode := range valueModes {
 		data, err := program.Marshal("main", mode)
 		if err != nil || data[isaOffset] != bytecode.ISAVersion {

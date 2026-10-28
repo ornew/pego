@@ -153,7 +153,7 @@ func workMemoVariableGrammar() string {
 }
 
 func TestWorkMemoParseBudgetPoolRetryAndRetainedResult(t *testing.T) {
-	prog := compile(t, workMemoVariableGrammar())
+	prog := mustCompile(t, workMemoVariableGrammar())
 	input := "a"
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{Bytes, CodePoints} {
@@ -310,7 +310,7 @@ func requireMemoCleared(t *testing.T, chunks [][]memoEntry) {
 }
 
 func TestWorkMemoGrowthFailureCleanup(t *testing.T) {
-	prog := compile(t, `rule main = expr $$
+	prog := mustCompile(t, `rule main = expr $$
 
 rule expr = expr "a" / "a"`)
 	p := acquirePooledParser(prog)
@@ -348,7 +348,7 @@ rule expr = expr "a" / "a"`)
 }
 
 func TestWorkMemoBatchGrowthInterruption(t *testing.T) {
-	prog := compile(t, `rule main = expr #recover(skip=.*) $$
+	prog := mustCompile(t, `rule main = expr #recover(skip=.*) $$
 
 rule expr = expr atom / atom
 

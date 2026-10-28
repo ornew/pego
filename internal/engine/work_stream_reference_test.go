@@ -12,7 +12,7 @@ import (
 )
 
 func TestWorkStreamReferenceAdmission(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	for _, o := range []ParseOptions{{Context: ctx}, {WorkLimits: limits.WorkLimits{MaxSteps: 1}}, {WorkLimits: limits.WorkLimits{MaxInputWork: 1}}} {

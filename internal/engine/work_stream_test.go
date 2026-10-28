@@ -62,7 +62,7 @@ func (r *workStreamReader) Read(dst []byte) (int, error) {
 func (r *workStreamReader) Close() error { r.closed = true; return nil }
 
 func TestWorkStreamAdmission(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, o ParseOptions) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
@@ -98,7 +98,7 @@ func TestWorkStreamAdmission(t *testing.T) {
 }
 
 func TestWorkStreamUnlimitedParity(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, base ParseOptions) {
 		for _, text := range []string{"#records\na=1\nbc=22\n", "#records\na=1\nbad=x\n"} {
 			for _, withError := range []bool{false, true} {
@@ -133,7 +133,7 @@ func TestWorkStreamUnlimitedParity(t *testing.T) {
 }
 
 func TestWorkStreamReaderErrorPrecedence(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, base ParseOptions) {
 		for _, dataError := range []bool{false, true} {
 			t.Run(fmt.Sprintf("data=%t", dataError), func(t *testing.T) {
@@ -165,7 +165,7 @@ func TestWorkStreamReaderErrorPrecedence(t *testing.T) {
 }
 
 func TestWorkStreamEmitPrecedenceAndOwnership(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, base ParseOptions) {
 		for _, fail := range []bool{false, true} {
 			ctx, cancel := context.WithCancel(context.Background())
@@ -219,7 +219,7 @@ func (r *workStreamGatedReader) Read(dst []byte) (int, error) {
 func (r *workStreamGatedReader) Close() error { r.closed = true; return nil }
 
 func TestWorkStreamBlockedReaderCooperation(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, o ParseOptions) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -244,7 +244,7 @@ func TestWorkStreamBlockedReaderCooperation(t *testing.T) {
 }
 
 func TestWorkStreamLimitsAndCallerPanics(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, base ParseOptions) {
 		for _, kind := range []limits.WorkLimitKind{limits.InputWorkLimit, limits.StepWorkLimit} {
 			o := base
@@ -405,7 +405,7 @@ func TestWorkStreamCommitReservations(t *testing.T) {
 }
 
 func TestWorkStreamCommitAfterDelivery(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, o ParseOptions) {
 		o.WorkLimits.MaxSteps = 1 << 20
 		var saved TraceEvent
@@ -549,7 +549,7 @@ func TestWorkStreamEmitBoundary(t *testing.T) {
 }
 
 func TestWorkStreamReaderPanicInsideTrace(t *testing.T) {
-	prog := compile(t, `rule main = "z"* #stream $$`)
+	prog := mustCompile(t, `rule main = "z"* #stream $$`)
 	workStreamVariants(t, func(t *testing.T, o ParseOptions) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -574,7 +574,7 @@ func TestWorkStreamReaderPanicInsideTrace(t *testing.T) {
 func TestWorkStreamVMFaultAttribution(t *testing.T) {
 	for _, b := range []Backend{Bytecode, BytecodeIterative} {
 		t.Run(b.String(), func(t *testing.T) {
-			prog := compile(t, `rule main = "z"* #stream $$`)
+			prog := mustCompile(t, `rule main = "z"* #stream $$`)
 			if _, err := prog.rule(b, "main"); err != nil {
 				t.Fatal(err)
 			}
@@ -611,7 +611,7 @@ func TestWorkStreamVMFaultAttribution(t *testing.T) {
 }
 
 func TestWorkStreamConcurrentCounters(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, base ParseOptions) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()

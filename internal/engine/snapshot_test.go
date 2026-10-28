@@ -127,7 +127,7 @@ func TestSnapshotGraphDeepAndUnsupported(t *testing.T) {
 }
 
 func TestSnapshotDocumentVersionsAndConcurrentReads(t *testing.T) {
-	prog := compile(t, `rule main = item* $$
+	prog := mustCompile(t, `rule main = item* $$
 rule item = [a-zé]`)
 	snapshotVariants(t, func(t *testing.T, o ParseOptions) {
 		d, err := prog.NewDocumentWith("main", "aé", o)
@@ -195,7 +195,7 @@ func TestSnapshotDiagnosticCopyAndNilResult(t *testing.T) {
 	if copy[0].Messages[0] != "problem" || copy[0].Expected == nil || copy[1] != nil {
 		t.Fatal("diagnostic copy")
 	}
-	prog := compile(t, `rule main = "x" => nil`)
+	prog := mustCompile(t, `rule main = "x" => nil`)
 	d, _ := prog.NewDocument("main", "x")
 	s, err := d.SnapshotWith(ParseOptions{})
 	if s == nil || err != nil || s.Root().Valid() || s.Materialize() != nil {
@@ -207,7 +207,7 @@ func TestSnapshotControlledFreezeBudgetAndRetry(t *testing.T) {
 	if !workControlsEnabled {
 		t.Skip("work controls reference")
 	}
-	prog := compile(t, `rule main = .* $$`)
+	prog := mustCompile(t, `rule main = .* $$`)
 	snapshotVariants(t, func(t *testing.T, o ParseOptions) {
 		d, _ := prog.NewDocumentWith("main", strings.Repeat("x", 8192), o)
 		if _, err := d.ParseWith(o); err != nil {
@@ -258,7 +258,7 @@ func TestSnapshotControlledFreezeBudgetAndRetry(t *testing.T) {
 }
 
 func TestSnapshotTracePanicCleanup(t *testing.T) {
-	prog := compile(t, `rule main = x $$
+	prog := mustCompile(t, `rule main = x $$
 rule x = x "a" / "a"`)
 	snapshotVariants(t, func(t *testing.T, o ParseOptions) {
 		d, err := prog.NewDocumentWith("main", "aa", o)
@@ -329,7 +329,7 @@ func TestSnapshotFreezeCancellationAndContextPanic(t *testing.T) {
 	if !workControlsEnabled {
 		t.Skip("work controls reference")
 	}
-	prog := compile(t, `rule main = .* $$`)
+	prog := mustCompile(t, `rule main = .* $$`)
 	snapshotVariants(t, func(t *testing.T, o ParseOptions) {
 		d, _ := prog.NewDocumentWith("main", strings.Repeat("x", 4096), o)
 		if _, err := d.ParseWith(o); err != nil {
@@ -369,7 +369,7 @@ func TestSnapshotFreezeCancellationAndContextPanic(t *testing.T) {
 }
 
 func TestSnapshotUnsupportedLegacyFieldPreservesParseError(t *testing.T) {
-	prog := compile(t, `rule main = "x"`)
+	prog := mustCompile(t, `rule main = "x"`)
 	d, _ := prog.NewDocument("main", "x")
 	legacy, err := d.Parse()
 	if err != nil {
@@ -401,7 +401,7 @@ rule x = "b" #recover(skip="a")`, "a", 0, true},
 		{`rule main = x
 rule x = "a"`, "a", 1, false},
 	} {
-		prog := compile(t, fixture.grammar)
+		prog := mustCompile(t, fixture.grammar)
 		snapshotVariants(t, func(t *testing.T, o ParseOptions) {
 			d, err := prog.NewDocumentWith("main", fixture.text, o)
 			if err != nil {

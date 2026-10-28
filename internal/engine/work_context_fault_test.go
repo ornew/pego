@@ -15,7 +15,7 @@ import (
 func TestWorkContextAttributionPreservesVMFaults(t *testing.T) {
 	for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 		t.Run(backend.String(), func(t *testing.T) {
-			prog := compile(t, `rule main = "z" $$`)
+			prog := mustCompile(t, `rule main = "z" $$`)
 			if _, err := prog.rule(backend, "main"); err != nil {
 				t.Fatal(err)
 			}
@@ -69,7 +69,7 @@ func (c *workContextAccessorContext) Err() error {
 
 func TestWorkContextAccessorInterruptionRemainsFatal(t *testing.T) {
 	text := strings.Repeat("a", 1024)
-	prog := compile(t, `rule main = "`+text+`" $$`)
+	prog := mustCompile(t, `rule main = "`+text+`" $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
@@ -112,7 +112,7 @@ func TestWorkContextAccessorInterruptionRemainsFatal(t *testing.T) {
 
 func TestWorkContextNestedAccessorPanicIdentity(t *testing.T) {
 	text := strings.Repeat("a", 1024)
-	prog := compile(t, `rule main = "`+text+`" $$`)
+	prog := mustCompile(t, `rule main = "`+text+`" $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {

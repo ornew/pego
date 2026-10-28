@@ -151,7 +151,7 @@ func streamControlRetentionOptions(o ParseOptions, ctx context.Context, trace fu
 }
 
 func TestWorkStreamTraceRetentionWithActiveControls(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, options ParseOptions) {
 		for _, outcome := range []string{
 			"success", "syntax", "input-limit", "canceled", "reader-error", "emit-error",

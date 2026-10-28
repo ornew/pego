@@ -47,7 +47,7 @@ func (r *setupCountingReader) Read(p []byte) (int, error) {
 // alone, without the grammar, which runs only on the bytecode backends.
 func setupProgram(t *testing.T, src string, moduleOnly bool) *Program {
 	t.Helper()
-	p := compile(t, src)
+	p := mustCompile(t, src)
 	if moduleOnly {
 		return moduleProgram(p.Module())
 	}
@@ -414,7 +414,7 @@ func TestWorkSetupPostBackendPanicIdentity(t *testing.T) {
 }
 
 func TestWorkSetupConcurrentColdCalls(t *testing.T) {
-	prog := compile(t, `rule main = "abc" #atomic $$`)
+	prog := mustCompile(t, `rule main = "abc" #atomic $$`)
 	results := make(chan error, 24)
 	start := make(chan struct{})
 	for i := 0; i < cap(results); i++ {

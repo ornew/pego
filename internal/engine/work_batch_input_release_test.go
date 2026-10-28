@@ -41,7 +41,7 @@ func batchInputReleaseFixture(t *testing.T, prog *Program, backend Backend, unit
 }
 
 func TestWorkBatchTraceEventReleasesOriginalInputAfterGC(t *testing.T) {
-	prog := compile(t, `rule main = "a"* $$`)
+	prog := mustCompile(t, `rule main = "a"* $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, active := range []bool{false, true} {

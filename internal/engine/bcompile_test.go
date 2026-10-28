@@ -8,7 +8,7 @@ import (
 )
 
 func TestModuleDisassembly(t *testing.T) {
-	prog := compile(t, `type P = { K node[string]; N int }
+	prog := mustCompile(t, `type P = { K node[string]; N int }
 rule main = k:key "=" v:[0-9]+ #atomic (";" / _) => P{K: $k, N: len($v) + 1}
 rule key = [a-z]+ @error(message="expected a key") #atomic`)
 	got := prog.Module().Disassemble()
@@ -53,7 +53,7 @@ main.action:
 }
 
 func TestDiagnosticLabelDisassembly(t *testing.T) {
-	module := compile(t, `rule main = "a" @error(message="explicit") / "b" @diagnostic(name="letter")`).Module()
+	module := mustCompile(t, `rule main = "a" @error(message="explicit") / "b" @diagnostic(name="letter")`).Module()
 	text := module.Disassemble()
 	if !strings.Contains(text, `LABEL      "explicit"`+"\n") {
 		t.Errorf("explicit error label changed:\n%s", text)
@@ -67,7 +67,7 @@ func TestDiagnosticLabelDisassembly(t *testing.T) {
 // branch targets are within the instruction range.
 func TestModuleCompilesCorpus(t *testing.T) {
 	for _, c := range genCorpus(t) {
-		m := compile(t, c.src).Module()
+		m := mustCompile(t, c.src).Module()
 		for i, in := range m.Code {
 			switch in.Op {
 			case bytecode.OpJump, bytecode.OpChoice, bytecode.OpCommit, bytecode.OpIter, bytecode.OpNext, bytecode.OpLook, bytecode.OpRecover, bytecode.OpEndRecover:

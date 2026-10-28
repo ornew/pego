@@ -24,7 +24,7 @@ rule name = [a-z]+ #atomic [0-9]*`,
 }
 
 func TestRecoverAttribute(t *testing.T) {
-	prog := compile(t, `rule main = stmt* $$
+	prog := mustCompile(t, `rule main = stmt* $$
 rule stmt = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")`)
 	n, err := prog.Parse("main", "ab;1x;cd;9;")
 	if n == nil {
@@ -55,7 +55,7 @@ func TestRecoverBacktracking(t *testing.T) {
 	src := `rule main = item "!" / item "?"
 rule item = ("a" #atomic ";") #recover(skip=[^;]+ ";")`
 	for _, opts := range []Options{{}, {DisableMemo: true}} {
-		prog := compile(t, src, opts)
+		prog := mustCompile(t, src, opts)
 		n, err := prog.Parse("main", "x;?")
 		if n == nil {
 			t.Fatalf("no tree: %v", err)
@@ -91,7 +91,7 @@ func TestRecoverWithoutValue(t *testing.T) {
 		"rule main = r0 \"b\"\nrule r0 = c0:_ (&\"a\") #recover(skip=[^;]* \";\")",
 		"rule main = r0 \"b\"\nrule r0 = (&\"a\") #recover(skip=[^;]* \";\")",
 	} {
-		prog := compile(t, src)
+		prog := mustCompile(t, src)
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			n, err := prog.ParseWith("main", "x;b", ParseOptions{Backend: b})
 			var errs SyntaxErrors
@@ -110,7 +110,7 @@ func TestRecoverWithoutValue(t *testing.T) {
 func TestRecoverTyping(t *testing.T) {
 	// The value of a recovered expression may be an error, which a declared result type must
 	// admit.
-	compile(t, `type Stmt = { Name node[string] }
+	mustCompile(t, `type Stmt = { Name node[string] }
 rule main = ss:stmt* $$ => $ss
 rule stmt Stmt | error = s:good #recover(skip=[^;]+ ";") => $s
 rule good Stmt = n:[a-z]+ #atomic ";" => Stmt{Name: $n}
@@ -150,7 +150,7 @@ func TestRecoveryPragmaSyntaxErrors(t *testing.T) {
 // TestRecoverInOperatorsRuleOperator checks that errors recovered inside an Operators Rule operator part are also
 // reported.
 func TestRecoverInOperatorsRuleOperator(t *testing.T) {
-	prog := compile(t, `rule main = e $$
+	prog := mustCompile(t, `rule main = e $$
 rule e = #operators {
     operand [0-9]+ #atomic
     level { postfix "(" [0-9]+ #recover(skip=[^)\n]+) #atomic ")" }

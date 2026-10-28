@@ -11,14 +11,14 @@ import (
 // compileDefault compiles src with default values and source information.
 func compileDefault(t *testing.T, src string) *Program {
 	t.Helper()
-	return compile(t, src, Options{DefaultValue: true})
+	return mustCompile(t, src, Options{DefaultValue: true})
 }
 
 // checkDefaultValue checks that src compiled with default values gives the same results on every
 // backend as stripped, the same grammar written without actions and declared types.
 func checkDefaultValue(t *testing.T, src, stripped string, inputs ...string) {
 	t.Helper()
-	got, want := compileDefault(t, src), compile(t, stripped)
+	got, want := compileDefault(t, src), mustCompile(t, stripped)
 	for _, in := range inputs {
 		if a, b := result(got, in), result(want, in); a != b {
 			t.Errorf("input %q\n default value %s\n stripped      %s", in, a, b)
@@ -51,7 +51,7 @@ func TestDefaultValueDropsActions(t *testing.T) {
 	if !prog.DefaultValue() {
 		t.Error("DefaultValue() is false")
 	}
-	if compile(t, "rule main = \"a\"").DefaultValue() {
+	if mustCompile(t, "rule main = \"a\"").DefaultValue() {
 		t.Error("DefaultValue() is true without the option")
 	}
 }

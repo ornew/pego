@@ -10,7 +10,7 @@ import (
 func TestProfile(t *testing.T) {
 	// x calls no other rule, so it is not memoized (transient) and each alternative of main
 	// evaluates it again at 0; y fails after examining the whole input.
-	prog := compile(t, `rule main = y / x "a" / x "b" / x "c"
+	prog := mustCompile(t, `rule main = y / x "a" / x "b" / x "c"
 rule y = "x"+ "!"
 rule x = "x"+`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -59,7 +59,7 @@ rule x = "x"+`)
 // TestProfileMemoAndRecursion checks memo hits, left-recursive growth and the time of recursive
 // calls.
 func TestProfileMemoAndRecursion(t *testing.T) {
-	prog := compile(t, `rule main = a "!" / a "?"
+	prog := mustCompile(t, `rule main = a "!" / a "?"
 rule a = a "x" / "y"`)
 	var pr Profile
 	if _, err := prog.ParseWith("main", "yxx?", ParseOptions{Trace: pr.Trace}); err != nil {
@@ -85,7 +85,7 @@ rule a = a "x" / "y"`)
 // for a position whose input has been discarded (they give 0, 0), and that the profile's
 // locations are right or unknown.
 func TestStreamLocations(t *testing.T) {
-	prog := compile(t, `rule main = line* #stream $$
+	prog := mustCompile(t, `rule main = line* #stream $$
 rule line = [a-z]* #atomic "\n"`)
 	var b strings.Builder
 	for range 3000 {
@@ -148,7 +148,7 @@ func TestHintsWithoutTime(t *testing.T) {
 // TestProfileStreamMemory checks that profiling a stream keeps its memory bounded: the positions
 // evaluated are forgotten once the stream has discarded them.
 func TestProfileStreamMemory(t *testing.T) {
-	prog := compile(t, `rule main = line* #stream $$
+	prog := mustCompile(t, `rule main = line* #stream $$
 rule line = [a-z]* #atomic "\n"`)
 	const lines = 50000
 	for _, back := range []Backend{Closure, Bytecode, BytecodeIterative} {

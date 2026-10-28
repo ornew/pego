@@ -18,7 +18,7 @@ func TestNullableRepetitionMinimum(t *testing.T) {
 			t.Run(body+bound.text, func(t *testing.T) {
 				src := "rule main = (" + body + ")" + bound.text + " #stream $$\nrule r = _ => nil"
 				for _, disabled := range []bool{false, true} {
-					prog := compile(t, src, Options{DisableMemo: disabled})
+					prog := mustCompile(t, src, Options{DisableMemo: disabled})
 					programs := []*Program{prog}
 					for _, mode := range allModes {
 						programs = append(programs, saveLoad(t, prog, "main", mode))
@@ -80,7 +80,7 @@ func TestNullableRepetitionAfterConsumption(t *testing.T) {
 	}{{"", 2, false}, {"é", 2, true}, {"é", 3, false}, {"éé", 3, true}} {
 		for _, body := range []string{`("é" / _)`, `("é" / _) #atomic`, `-("é" / _)`, `r`} {
 			for _, bound := range []string{fmt.Sprintf("#repeat(%d)", tc.min), fmt.Sprintf("#repeat(%d, )", tc.min)} {
-				p := compile(t, "rule main = ("+body+")"+bound+" #stream $$\nrule r = \"é\" / _")
+				p := mustCompile(t, "rule main = ("+body+")"+bound+" #stream $$\nrule r = \"é\" / _")
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 					for _, unit := range []PositionUnit{CodePoints, Bytes} {
 						opts := ParseOptions{Backend: backend, Unit: unit}
@@ -102,7 +102,7 @@ func TestNullableRepetitionAfterConsumption(t *testing.T) {
 
 func TestNullableRepetitionResumedMinimum(t *testing.T) {
 	const prefix = 1000
-	p := compile(t, fmt.Sprintf("rule main = item #repeat(%d, ) $$\nrule item = \"é\" / _", prefix+1))
+	p := mustCompile(t, fmt.Sprintf("rule main = item #repeat(%d, ) $$\nrule item = \"é\" / _", prefix+1))
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			d, err := p.NewDocumentWith("main", strings.Repeat("é", prefix), ParseOptions{Backend: backend, Unit: unit})
@@ -139,7 +139,7 @@ func TestNullableRepetitionResumedMinimum(t *testing.T) {
 
 func TestNullableRepetitionProjection(t *testing.T) {
 	for _, minimum := range []int{1, 2} {
-		p := compile(t, fmt.Sprintf(`rule main = xs:(f:_) #repeat(%d, ) $$ => map($xs, (x) => x.$f)`, minimum))
+		p := mustCompile(t, fmt.Sprintf(`rule main = xs:(f:_) #repeat(%d, ) $$ => map($xs, (x) => x.$f)`, minimum))
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				if n, err := p.ParseWith("main", "", ParseOptions{Backend: backend, Unit: unit}); (err == nil) != (minimum == 1) || err == nil && len(value.D(n).Children) != 1 {

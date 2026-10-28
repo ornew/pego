@@ -139,7 +139,7 @@ func TestOperatorsRuleNamedNodeTypeAcrossBackends(t *testing.T) {
 // A Document reparses an Operators Rule with a named node type to the trees of a fresh parse,
 // whose operator nodes are all converted, across edits.
 func TestOperatorsRuleNamedNodeTypeDocument(t *testing.T) {
-	prog := compile(t, operatorsNamedNodeCases()[0].src)
+	prog := mustCompile(t, operatorsNamedNodeCases()[0].src)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		opts := ParseOptions{Backend: backend}
 		doc, err := prog.NewDocumentWith("main", "1+2*3+(4-5)!", opts)

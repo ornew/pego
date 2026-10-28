@@ -14,7 +14,7 @@ import (
 //go:noinline
 func documentVersionForCollection(t *testing.T, finalized chan<- struct{}) DocumentVersion {
 	t.Helper()
-	p := compile(t, `rule main = .*`)
+	p := mustCompile(t, `rule main = .*`)
 	d, err := p.NewDocument("main", strings.Repeat("x", 1<<20))
 	if err != nil {
 		t.Fatal(err)
@@ -43,7 +43,7 @@ func TestDocumentVersionDoesNotRetainDocument(t *testing.T) {
 }
 
 func TestDocumentVersionTransitions(t *testing.T) {
-	p := compile(t, `rule main = .*`)
+	p := mustCompile(t, `rule main = .*`)
 	d, _ := p.NewDocument("main", "abc")
 	other, _ := p.NewDocument("main", "abc")
 	first := d.Version()
@@ -98,7 +98,7 @@ func TestDocumentVersionTransitions(t *testing.T) {
 }
 
 func TestDocumentBatchValidationPreservesState(t *testing.T) {
-	p := compile(t, `rule main = ("é" / .)* $$`)
+	p := mustCompile(t, `rule main = ("é" / .)* $$`)
 	for _, large := range []bool{false, true} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, back := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -176,7 +176,7 @@ func TestDocumentBatchFreshParity(t *testing.T) {
 	replacements := []string{"", "a", "\n", "é", "😀", "\xc3", "\xa9", "\xff", "@name\n", "x = 1+2\n"}
 	for gi, grammar := range []string{`rule main = item* $$
 rule item = .`, incrementalGrammar, `rule main = ("a" @error("need a") #recover(skip=.))* $$`} {
-		original := compile(t, grammar)
+		original := mustCompile(t, grammar)
 		programs := []*Program{original}
 		loaded := saveLoad(t, original, "main", CompiledDocument)
 		programs = append(programs, loaded)
@@ -245,7 +245,7 @@ rule item = .`, incrementalGrammar, `rule main = ("a" @error("need a") #recover(
 }
 
 func TestDocumentBatchOriginalUTF8Boundaries(t *testing.T) {
-	p := compile(t, `rule main = .*`)
+	p := mustCompile(t, `rule main = .*`)
 	for _, prefix := range []string{"", strings.Repeat("a", documentPieceMinSize)} {
 		text := prefix + "\xc3x\xa9"
 		d, _ := p.NewDocumentWith("main", text, ParseOptions{Unit: Bytes})
@@ -278,7 +278,7 @@ func TestDocumentBatchPreservesPiecePromotion(t *testing.T) {
 	if !documentPieceInput {
 		t.Skip("piece input disabled by reference build")
 	}
-	p := compile(t, `rule main = .* $$`)
+	p := mustCompile(t, `rule main = .* $$`)
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, promoted := range []bool{false, true} {
 			text := strings.Repeat("x", documentPieceMinSize)

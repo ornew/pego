@@ -21,7 +21,7 @@ import (
 func TestCompiledRoundTrip(t *testing.T) {
 	for _, c := range genCorpus(t) {
 		t.Run(c.name, func(t *testing.T) {
-			checkCompiledRoundTrip(t, compile(t, c.src), c.inputs)
+			checkCompiledRoundTrip(t, mustCompile(t, c.src), c.inputs)
 		})
 	}
 }
@@ -82,7 +82,7 @@ func checkCompiledRoundTrip(t *testing.T, prog *Program, inputs []string) {
 // TestCompiledStreamAndDocument checks that stream parsing works with a program loaded in parse
 // mode and incremental parsing with one loaded in document mode.
 func TestCompiledStreamAndDocument(t *testing.T) {
-	data, _ := compile(t, records).MarshalBinary("")
+	data, _ := mustCompile(t, records).MarshalBinary("")
 	prog, start, err := LoadProgram(data)
 	if err != nil || start != "" {
 		t.Fatalf("%v %q", err, start)
@@ -96,16 +96,16 @@ func TestCompiledStreamAndDocument(t *testing.T) {
 		t.Errorf("got %v, %v", got, err)
 	}
 
-	data, _ = compile(t, incrementalGrammar).MarshalBinary("main")
+	data, _ = mustCompile(t, incrementalGrammar).MarshalBinary("main")
 	prog, _, _ = LoadProgram(data)
 	if doc, err := prog.NewDocument("main", "x = 1+2\n"); doc != nil {
 		t.Errorf("document on a parse-mode program: %v", err)
 	} else {
 		wantModeRefused(t, err, CompiledParse, CompiledDocument)
 	}
-	data, _ = compile(t, incrementalGrammar).Marshal("main", CompiledDocument)
+	data, _ = mustCompile(t, incrementalGrammar).Marshal("main", CompiledDocument)
 	prog, _, _ = LoadProgram(data)
-	fresh := compile(t, incrementalGrammar)
+	fresh := mustCompile(t, incrementalGrammar)
 	doc, err := prog.NewDocument("main", "x = 1+2\nab,cd\n")
 	if err != nil {
 		t.Fatal(err)
@@ -120,7 +120,7 @@ func TestCompiledStreamAndDocument(t *testing.T) {
 }
 
 func TestCompiledErrors(t *testing.T) {
-	data, err := compile(t, arith).MarshalBinary("main")
+	data, err := mustCompile(t, arith).MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +154,7 @@ func TestCompiledErrors(t *testing.T) {
 			}
 		})
 	}
-	if _, err := compile(t, arith).MarshalBinary("nope"); err == nil {
+	if _, err := mustCompile(t, arith).MarshalBinary("nope"); err == nil {
 		t.Error("expected an error for an undefined start rule")
 	}
 }
@@ -164,7 +164,7 @@ func TestCompiledErrors(t *testing.T) {
 // file of a later version does not load either, and that one of the current version does.
 func TestCompiledEarlierInstructionSet(t *testing.T) {
 	src := `rule main = n:[0-9]+ #atomic => $n`
-	data, err := compile(t, src).MarshalBinary("main")
+	data, err := mustCompile(t, src).MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +202,7 @@ func TestCompiledEarlierInstructionSet(t *testing.T) {
 func TestCompiledCorruptionDoesNotPanic(t *testing.T) {
 	var seeds [][]byte
 	for _, c := range genCorpus(t) {
-		prog := compile(t, c.src)
+		prog := mustCompile(t, c.src)
 		for _, mode := range allModes {
 			data, err := prog.Marshal("main", mode)
 			if err != nil {
@@ -294,7 +294,7 @@ func TestCompiledTypeExpressions(t *testing.T) {
 type Q ~ P | node[string] & node[_]
 rule main P = a:[a-z] => P{A: $a, B: 1}
 rule pair node[(string)] = [a-z]`
-	prog := compile(t, src)
+	prog := mustCompile(t, src)
 	data, err := prog.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
@@ -352,7 +352,7 @@ func grammarTypes(prog *Program) string {
 // TestCompiledFormatVersion checks that only the current container version is read: earlier and
 // later versions are refused with the version in the message.
 func TestCompiledFormatVersion(t *testing.T) {
-	data, err := compile(t, `rule main = "a"`).MarshalBinary("main")
+	data, err := mustCompile(t, `rule main = "a"`).MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
 	}

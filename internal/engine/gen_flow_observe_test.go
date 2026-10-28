@@ -399,7 +399,7 @@ func checkObservations(t *testing.T, group string, cases []genCase, start string
 	reports := detailReports(t, lines)
 	events, checked := 0, 0
 	for i, c := range cases {
-		prog := compile(t, c.src)
+		prog := mustCompile(t, c.src)
 		for j := 0; j < detail[i] && j < len(c.inputs); j++ {
 			for _, entry := range []string{"parse", "recognize"} {
 				r := reports[fmt.Sprintf("%d/%d %s", i, j, entry)]

@@ -21,7 +21,7 @@ func TestStreamIteratorParityDemandAndTermination(t *testing.T) {
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(b.String()+"/"+u.String(), func(t *testing.T) {
-				p := compile(t, `rule main = item* #stream $$
+				p := mustCompile(t, `rule main = item* #stream $$
 rule item = "あ" / "b"`)
 				o := ParseOptions{Backend: b, Unit: u}
 				var want []string
@@ -58,7 +58,7 @@ rule item = "あ" / "b"`)
 
 func TestStreamIteratorNilEmptyCloseAndError(t *testing.T) {
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		p := compile(t, `rule main = (-"a")* #stream $$`)
+		p := mustCompile(t, `rule main = (-"a")* #stream $$`)
 		it, err := p.Iterate("main", strings.NewReader("aa"), ParseOptions{Backend: b})
 		if err != nil {
 			t.Fatal(err)
@@ -86,7 +86,7 @@ func TestStreamIteratorNilEmptyCloseAndError(t *testing.T) {
 		if ok || again != terminal {
 			t.Fatal("unstable terminal error")
 		}
-		p = compile(t, `rule main = ""* #stream $$`)
+		p = mustCompile(t, `rule main = ""* #stream $$`)
 		it, err = p.Iterate("main", strings.NewReader(""), ParseOptions{Backend: b})
 		if err != nil {
 			t.Fatal(err)
@@ -101,7 +101,7 @@ func TestStreamIteratorNilEmptyCloseAndError(t *testing.T) {
 }
 
 func TestStreamIteratorCloseBeforeFirstNext(t *testing.T) {
-	p := compile(t, `rule main = "a"* #stream $$`)
+	p := mustCompile(t, `rule main = "a"* #stream $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
@@ -127,7 +127,7 @@ func TestStreamIteratorCloseBeforeFirstNext(t *testing.T) {
 }
 
 func TestStreamIteratorRecoveredErrorsMatchCallback(t *testing.T) {
-	p := compile(t, `rule main = item+ #stream $$
+	p := mustCompile(t, `rule main = item+ #stream $$
 rule item = "ab" @error(message="record") #recover(skip=[^a]+)`)
 	const input = "abX!abY?ab"
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -190,7 +190,7 @@ rule item = "ab" @error(message="record") #recover(skip=[^a]+)`)
 // Reader cancellation is owned by the caller. Iterator.Close is deliberately
 // not invoked while Next is blocked, because concurrent ownership is invalid.
 func TestStreamIteratorCallerCancelsBlockedReader(t *testing.T) {
-	p := compile(t, `rule main = "a"* #stream $$`)
+	p := mustCompile(t, `rule main = "a"* #stream $$`)
 	r, w := io.Pipe()
 	defer w.Close()
 	it, err := p.Iterate("main", r, ParseOptions{})

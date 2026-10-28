@@ -102,7 +102,7 @@ func testGeneratedTypedLRBodies(t *testing.T) {
 		} else if !inlined {
 			t.Fatalf("%s: no unfinished typed LR body", c.name)
 		}
-		for _, r := range compile(t, c.src).rules {
+		for _, r := range mustCompile(t, c.src).rules {
 			if r.leader && strings.Contains(string(code), "// "+r.name+", invoked as by invoke (body inlined)") {
 				t.Fatalf("%s: leader %s must keep the growth wrapper", c.name, r.name)
 			}

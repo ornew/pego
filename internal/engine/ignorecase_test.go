@@ -67,7 +67,7 @@ func TestIgnoreCaseLiterals(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			program := compile(t, c.src)
+			program := mustCompile(t, c.src)
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				if got := ignoreCaseOutcome(t, program, c.input, unit); got != c.want {
 					t.Fatalf("%s input %q: got %s, want %s", unit, c.input, got, c.want)
@@ -80,8 +80,8 @@ func TestIgnoreCaseLiterals(t *testing.T) {
 // TestIgnoreCaseMatchesClassForm checks the suffix against the character-class spelling of the
 // same keyword on the same inputs, including inputs that differ from the keyword in one letter.
 func TestIgnoreCaseMatchesClassForm(t *testing.T) {
-	folded := compile(t, `rule main = "select"i`)
-	classes := compile(t, `rule main = [sS][eE][lL][eE][cC][tT]`)
+	folded := mustCompile(t, `rule main = "select"i`)
+	classes := mustCompile(t, `rule main = [sS][eE][lL][eE][cC][tT]`)
 	inputs := []string{"select", "SELECT", "SeLeCt", "selec", "selects", "SELECX", "sElEcT", "xelect", "", "s", "seleé", "SELEK"}
 	for _, input := range inputs {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -108,7 +108,7 @@ func TestIgnoreCaseExpectations(t *testing.T) {
 		{"plain literal", `rule main = "select"`, "x", []string{`"select"`}, []string{`"select"i`}},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			program := compile(t, c.src)
+			program := mustCompile(t, c.src)
 			_, err := program.ParseWith("main", c.input, ParseOptions{Backend: Closure})
 			if err == nil {
 				t.Fatal("the parse succeeded")
@@ -136,7 +136,7 @@ rule expr = #operators {
     level { infix left "plus"i }
 }
 `
-	program := compile(t, src)
+	program := mustCompile(t, src)
 	for _, c := range []struct{ input, want string }{
 		{"1PLUS2", "ok 1PLUS2"},
 		{"1plus2", "ok 1plus2"},
@@ -160,7 +160,7 @@ rule expr = #operators {
     level { infix left "plus" }
 } #ignorecase
 `
-	program := compile(t, src)
+	program := mustCompile(t, src)
 	for _, c := range []struct{ input, want string }{
 		{"ONE PLUS 1", "ok ONE PLUS 1"},
 		{"one plus one", "ok one plus one"},
@@ -175,7 +175,7 @@ rule expr = #operators {
 		checkBackends(t, program, "main", c.input)
 	}
 	// Without the pragma the same rule is exact.
-	exact := compile(t, strings.Replace(src, "} #ignorecase", "}", 1))
+	exact := mustCompile(t, strings.Replace(src, "} #ignorecase", "}", 1))
 	if got := ignoreCaseOutcome(t, exact, "1PLUS2", CodePoints); got != "error" {
 		t.Fatalf("without the pragma: got %s, want error", got)
 	}
@@ -206,7 +206,7 @@ func TestIgnoreCaseBackendsAgree(t *testing.T) {
 		{`rule main = "k"i`, []string{"K", "k", "\u212a"}},
 		{`rule main = "plain" "Mixed"i`, []string{"plainmixed", "plainMIXED", "PLAINMIXED"}},
 	} {
-		prog := compile(t, c.src)
+		prog := mustCompile(t, c.src)
 		folded := 0
 		for _, in := range prog.Module().Code {
 			if in.Op == bytecode.OpStrFold {
@@ -229,9 +229,9 @@ func TestIgnoreCaseRandomAgreement(t *testing.T) {
 	alphabet := []rune("aAbBkK\u00e9\u00c9\u212ac")
 	rng := rand.New(rand.NewSource(79))
 	programs := []*Program{
-		compile(t, `rule main = ("ab"i "k" / "AK"i "c")+ "é"i`),
-		compile(t, "rule main = (\"Ab\" \"Kk\"i) #ignorecase"),
-		compile(t, `rule main = ("kk"i !"c"i .) / "AB"`),
+		mustCompile(t, `rule main = ("ab"i "k" / "AK"i "c")+ "é"i`),
+		mustCompile(t, "rule main = (\"Ab\" \"Kk\"i) #ignorecase"),
+		mustCompile(t, `rule main = ("kk"i !"c"i .) / "AB"`),
 	}
 	for _, prog := range programs {
 		for i := 0; i < 300; i++ {
@@ -248,7 +248,7 @@ func TestIgnoreCaseRandomAgreement(t *testing.T) {
 // TestIgnoreCaseMissingSpelling checks that #missing inserts the literal as written, without the
 // suffix and without a change of case.
 func TestIgnoreCaseMissingSpelling(t *testing.T) {
-	prog := compile(t, `rule main = "Sel"i #missing $$`)
+	prog := mustCompile(t, `rule main = "Sel"i #missing $$`)
 	n, errs := requireInsertions(t, prog, "", ParseOptions{MissingTokens: 2}, 1)
 	insertions := missingNodes(t, n)
 	if len(insertions) != 1 {
@@ -269,7 +269,7 @@ func TestIgnoreCaseMissingSpellingBackends(t *testing.T) {
 		`rule main = ("Sel" #missing $$) #ignorecase`,
 		`rule main = "Sel" #missing #ignorecase $$`,
 	} {
-		prog := compile(t, src)
+		prog := mustCompile(t, src)
 		for _, backend := range []Backend{Closure, Default} {
 			n, errs := requireInsertions(t, prog, "", ParseOptions{MissingTokens: 2, Backend: backend}, 1)
 			insertions := missingNodes(t, n)
@@ -289,7 +289,7 @@ func TestIgnoreCaseMissingSpellingBackends(t *testing.T) {
 // TestIgnoreCasePragmaReachesArguments checks that the pragma folds the literals of a recovery
 // skip expression written in the annotated expression, and that the skip is not a called rule.
 func TestIgnoreCasePragmaReachesArguments(t *testing.T) {
-	prog := compile(t, `rule main = ("ab" #recover(skip="x")) #ignorecase`)
+	prog := mustCompile(t, `rule main = ("ab" #recover(skip="x")) #ignorecase`)
 	found := map[string]bool{}
 	walkExpr(prog.byName["main"].def.Expr, func(e grammar.Expr) {
 		if l, ok := e.(*grammar.Literal); ok {
@@ -304,7 +304,7 @@ func TestIgnoreCasePragmaReachesArguments(t *testing.T) {
 // TestIgnoreCaseDocumentAndStream checks the incremental Document and the stream parse with
 // case-insensitive literals.
 func TestIgnoreCaseDocumentAndStream(t *testing.T) {
-	prog := compile(t, `rule main = "select"i " " "x" $$`)
+	prog := mustCompile(t, `rule main = "select"i " " "x" $$`)
 	doc, err := prog.NewDocument("main", "SELECT x")
 	if err != nil {
 		t.Fatal(err)
@@ -325,7 +325,7 @@ func TestIgnoreCaseDocumentAndStream(t *testing.T) {
 		t.Fatal("edited document with a wrong letter parsed")
 	}
 
-	stream := compile(t, `rule main = ("ab"i #atomic)* #stream`)
+	stream := mustCompile(t, `rule main = ("ab"i #atomic)* #stream`)
 	count := 0
 	if err := stream.ParseStream("main", strings.NewReader("ABab"), func(*value.Node) error { count++; return nil }); err != nil {
 		t.Fatal("stream: ", err)
@@ -346,7 +346,7 @@ func TestIgnoreCaseAttributeFormRejected(t *testing.T) {
 // TestIgnoreCaseMissingInPragmaScope checks that #missing inside the annotated expression inserts
 // the literal as written, while the expectation of the same literal keeps the suffix.
 func TestIgnoreCaseMissingInPragmaScope(t *testing.T) {
-	prog := compile(t, `rule main = ("Sel" #missing $$) #ignorecase`)
+	prog := mustCompile(t, `rule main = ("Sel" #missing $$) #ignorecase`)
 	n, errs := requireInsertions(t, prog, "", ParseOptions{MissingTokens: 2}, 1)
 	insertions := missingNodes(t, n)
 	if len(insertions) != 1 {
@@ -364,7 +364,7 @@ func TestIgnoreCaseMissingInPragmaScope(t *testing.T) {
 // every backend that supports them, with case-insensitive literals.
 func TestIgnoreCaseDocumentAndStreamBackends(t *testing.T) {
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		prog := compile(t, `rule main = "select"i " " "x" $$`)
+		prog := mustCompile(t, `rule main = "select"i " " "x" $$`)
 		doc, err := prog.NewDocumentWith("main", "SELECT x", ParseOptions{Backend: b})
 		if err != nil {
 			t.Fatal(b, err)
@@ -385,7 +385,7 @@ func TestIgnoreCaseDocumentAndStreamBackends(t *testing.T) {
 			t.Fatal(b, "edited document with a wrong letter parsed")
 		}
 
-		stream := compile(t, `rule main = ("ab"i #atomic)* #stream`)
+		stream := mustCompile(t, `rule main = ("ab"i #atomic)* #stream`)
 		count := 0
 		if err := stream.ParseStreamWith("main", strings.NewReader("ABab"), func(*value.Node) error { count++; return nil }, ParseOptions{Backend: b}); err != nil {
 			t.Fatal(b, "stream: ", err)
@@ -407,7 +407,7 @@ func TestIgnoreCaseExpectationBackends(t *testing.T) {
 			{`rule main = ("select") #ignorecase`, `"select"i`},
 			{`rule main = "select"`, `"select"`},
 		} {
-			prog := compile(t, c.src)
+			prog := mustCompile(t, c.src)
 			_, err := prog.ParseWith("main", "x", ParseOptions{Backend: b})
 			if err == nil || !strings.Contains(err.Error(), c.want) {
 				t.Fatalf("%v %q: error %v, want the expectation %s", b, c.src, err, c.want)

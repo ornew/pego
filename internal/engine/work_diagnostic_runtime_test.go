@@ -176,8 +176,8 @@ func diagnosticAlternatives() string {
 
 func TestWorkDiagnosticBatchFailureAndTraceAccessor(t *testing.T) {
 	source := diagnosticAlternatives()
-	prog := compile(t, source)
-	accessorProg := compile(t, strings.Replace(source, "rule main = bad $$\n", `rule main = (bad #recover(skip=.* #atomic) "!" / fallback) $$`+"\n", 1)+"\nrule fallback = .* #atomic\n")
+	prog := mustCompile(t, source)
+	accessorProg := mustCompile(t, strings.Replace(source, "rule main = bad $$\n", `rule main = (bad #recover(skip=.* #atomic) "!" / fallback) $$`+"\n", 1)+"\nrule fallback = .* #atomic\n")
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{Bytes, CodePoints} {
 			for _, recognize := range []bool{false, true} {
@@ -255,7 +255,7 @@ func TestWorkDiagnosticRecoveryFatalAndRetainedOutputs(t *testing.T) {
 	src := `rule main = (bad #recover(skip=(!"!" .)+) "!" / fallback) $$
 rule fallback = .* #atomic
 rule bad = "a" @error(message=` + strconv.Quote(message) + `)`
-	prog := compile(t, src)
+	prog := mustCompile(t, src)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{Bytes, CodePoints} {
 			retained, retainedErr := prog.ParseWith("main", "x!", ParseOptions{Backend: b, Unit: u})

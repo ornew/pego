@@ -35,7 +35,7 @@ func castCases() []genCase {
 func TestCastAcrossBackends(t *testing.T) {
 	for _, fixture := range castCases() {
 		t.Run(fixture.name, func(t *testing.T) {
-			program := compile(t, fixture.src)
+			program := mustCompile(t, fixture.src)
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
 					for _, input := range fixture.inputs {
@@ -63,7 +63,7 @@ func TestCastValues(t *testing.T) {
 		{"rule main = \"\\n\" r\nrule r = x:(n / w) $$ => $x.(Num)\n" + castRules, "\nab", "cannot cast node[[]_] to Num at input position 1 (line 2, column 1); cast at grammar position 2:29"},
 		{"rule main = x:(n / w) ({$x.(Num) == $x} \"!\" / \"?\") $$\n" + castRules, "a?", `"value":"?"`},
 	} {
-		program := compile(t, tc.src)
+		program := mustCompile(t, tc.src)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			if got := resultJSON(program.ParseWith("main", tc.input, ParseOptions{Backend: backend})); !strings.Contains(got, tc.want) {
 				t.Errorf("%s %q: %s, want %s", backend, tc.input, got, tc.want)
@@ -122,7 +122,7 @@ func TestCastSyntax(t *testing.T) {
 		t.Fatalf("JSON AST: %v %s", err, data)
 	}
 
-	program := compile(t, "rule main = x:(n / w) $$ => $x.(Num)\n"+castRules)
+	program := mustCompile(t, "rule main = x:(n / w) $$ => $x.(Num)\n"+castRules)
 	// A cast survives a compiled file.
 	data, err := program.MarshalBinary("main")
 	if err != nil {
@@ -148,7 +148,7 @@ func TestCastSyntax(t *testing.T) {
 		t.Fatalf("under-declared cast ISA accepted: %v", err)
 	}
 	// A cast to any checks nothing; it uses the same instruction set.
-	data, err = compile(t, "rule main = x:(n / w) $$ => $x.(_)\n"+castRules).MarshalBinary("main")
+	data, err = mustCompile(t, "rule main = x:(n / w) $$ => $x.(_)\n"+castRules).MarshalBinary("main")
 	if err != nil || data[isaOffset] != bytecode.ISAVersion {
 		t.Fatalf("cast to any ISA: %v %d", err, data[isaOffset])
 	}

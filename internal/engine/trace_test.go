@@ -184,7 +184,7 @@ func checkEvents(t *testing.T, prog *Program, start, input string, o ParseOption
 // units and in recognition mode.
 func TestTraceKeepsResults(t *testing.T) {
 	for _, c := range genCorpus(t) {
-		prog := compile(t, c.src)
+		prog := mustCompile(t, c.src)
 		for _, in := range c.inputs {
 			for _, u := range []PositionUnit{CodePoints, Bytes} {
 				checkTrace(t, prog, "main", in, ParseOptions{Unit: u})
@@ -364,7 +364,7 @@ rule word = [a-z]+ #atomic`,
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prog := compile(t, tt.src)
+			prog := mustCompile(t, tt.src)
 			for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				lines, res := traceLines(prog, "main", tt.input, ParseOptions{Backend: b})
 				if got, want := strings.Join(lines, "\n"), strings.Join(tt.want, "\n"); got != want {
@@ -381,7 +381,7 @@ rule word = [a-z]+ #atomic`,
 
 // TestTraceStreamAndDocument checks tracing in stream parses and incremental documents.
 func TestTraceStreamAndDocument(t *testing.T) {
-	prog := compile(t, `rule main = line* #stream $$
+	prog := mustCompile(t, `rule main = line* #stream $$
 rule line = [a-z]* #atomic "\n"`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		var lines, traced []string
@@ -434,7 +434,7 @@ rule line = [a-z]* #atomic "\n"`)
 // own value on every backend, rather than being reported as a fault of the parse (a runtime error
 // on the bytecode backends would be "invalid bytecode").
 func TestTracePanic(t *testing.T) {
-	prog := compile(t, `rule main = [a-z]+ #atomic $$`)
+	prog := mustCompile(t, `rule main = [a-z]+ #atomic $$`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		var got any
 		var err error
@@ -454,7 +454,7 @@ func TestTracePanic(t *testing.T) {
 // TestTraceRecovered checks that exit events give the errors recovered during the call, which
 // are not part of Failure.
 func TestTraceRecovered(t *testing.T) {
-	prog := compile(t, `rule main = stmt* $$
+	prog := mustCompile(t, `rule main = stmt* $$
 rule stmt = (word ";") #recover(skip=[^;]+ ";")
 rule word = [a-z]+ #atomic`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -520,7 +520,7 @@ func dispatchFreeTrace(prog *Program, input string, o ParseOptions) ([]string, s
 // character.
 func TestTracesAgreeAcrossBackends(t *testing.T) {
 	for _, c := range genCorpus(t) {
-		prog := compile(t, c.src)
+		prog := mustCompile(t, c.src)
 		for _, in := range c.inputs {
 			for _, o := range []ParseOptions{{Unit: CodePoints}, {Unit: Bytes}, {Unit: CodePoints, Recognize: true}} {
 				o.Backend = Closure

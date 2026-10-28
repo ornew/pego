@@ -15,7 +15,7 @@ rule expr = step / seed
 rule step = expr "é"
 rule seed = ""`,
 	} {
-		prog := compile(t, src)
+		prog := mustCompile(t, src)
 		for _, input := range []string{"", "é", "éé", "é?"} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -50,7 +50,7 @@ rule expr = step / seed
 rule step = expr
 rule seed = ^ "é"`, "\né", true},
 	} {
-		prog := compile(t, c.src)
+		prog := mustCompile(t, c.src)
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				for _, recognize := range []bool{false, true} {

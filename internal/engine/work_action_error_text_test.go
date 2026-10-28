@@ -102,7 +102,7 @@ func TestWorkActionErrorOpaqueFormattingPreservesNative(t *testing.T) {
 
 func TestWorkActionErrorProducersAreEager(t *testing.T) {
 	long := strings.Repeat("T", 1024)
-	prog := compile(t, "type A = {\n    N int\n}\n\nrule main = \"a\"\n")
+	prog := mustCompile(t, "type A = {\n    N int\n}\n\nrule main = \"a\"\n")
 	node := value.Ptr(value.Data{Kind: &value.NodeKind{Type: long}})
 	producers := []struct {
 		name string

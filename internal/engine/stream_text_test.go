@@ -126,7 +126,7 @@ func (r *snapshotOneByteReader) Read(p []byte) (int, error) {
 }
 
 func TestStreamTextSnapshotRetainedMalformedResults(t *testing.T) {
-	prog := compile(t, `rule main = rows:row* #stream $$
+	prog := mustCompile(t, `rule main = rows:row* #stream $$
 rule row = x:(!"\n" .)+ #atomic "\n"`)
 	text := strings.Repeat("é😀a\xff\xc0z\n", 700)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -156,7 +156,7 @@ rule row = x:(!"\n" .)+ #atomic "\n"`)
 }
 
 func TestStreamTextSnapshotSplitUTF8(t *testing.T) {
-	prog := compile(t, `rule main = rows:row* #stream $$
+	prog := mustCompile(t, `rule main = rows:row* #stream $$
 rule row = x:(!"\n" .)+ #atomic "\n"`)
 	text := strings.Repeat(strings.Repeat("é😀\xff\xc0a", 40)+"\n", 30)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {

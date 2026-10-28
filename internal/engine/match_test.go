@@ -262,7 +262,7 @@ rule r = {n == 1} "a" / {n == 2} "b"`
 		ok("b", `(("b")@r [])@main`),
 		fails("ay", "expected"), // reusing the n == 1 result for n == 2 would accept "ay"
 	)
-	prog := compile(t, src)
+	prog := mustCompile(t, src)
 	if r := prog.byName["r"]; !r.memo || len(r.vars) != 1 || r.vars[0] != "n" {
 		t.Errorf("r: memo %v, vars %v", r.memo, r.vars)
 	}

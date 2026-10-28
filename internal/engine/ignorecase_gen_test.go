@@ -28,7 +28,7 @@ var ignoreCaseGenInputs = []string{
 // the consumed input, or "error".
 func ignoreCaseLines(t *testing.T, src string, inputs []string) string {
 	t.Helper()
-	prog := compile(t, src)
+	prog := mustCompile(t, src)
 	var b strings.Builder
 	for _, in := range inputs {
 		n, err := prog.ParseWith("main", in, ParseOptions{Backend: Closure})
@@ -138,7 +138,7 @@ func TestIgnoreCaseGeneratedTS(t *testing.T) {
 func TestIgnoreCaseGeneratedTypedGo(t *testing.T) { eachMode(t, testIgnoreCaseGeneratedTypedGo) }
 
 func testIgnoreCaseGeneratedTypedGo(t *testing.T) {
-	prog := compile(t, ignoreCaseGenGrammar)
+	prog := mustCompile(t, ignoreCaseGenGrammar)
 	var want strings.Builder
 	for _, in := range ignoreCaseGenInputs {
 		if _, err := prog.ParseWith("main", in, ParseOptions{Backend: Closure}); err != nil {
@@ -164,7 +164,7 @@ func TestIgnoreCaseGeneratedExpectation(t *testing.T) {
 }
 
 func testIgnoreCaseGeneratedExpectation(t *testing.T) {
-	_, err := compile(t, ignoreCaseGenGrammar).ParseWith("main", "x", ParseOptions{Backend: Closure})
+	_, err := mustCompile(t, ignoreCaseGenGrammar).ParseWith("main", "x", ParseOptions{Backend: Closure})
 	if err == nil {
 		t.Fatal("the closure backend parsed x")
 	}
@@ -190,7 +190,7 @@ var ignoreCaseDocEdits = []ignoreCaseDocEdit{
 // initial parse and after each edit.
 func ignoreCaseDocWant(t *testing.T) string {
 	t.Helper()
-	prog := compile(t, ignoreCaseGenGrammar)
+	prog := mustCompile(t, ignoreCaseGenGrammar)
 	var b strings.Builder
 	show := func(text []rune) {
 		n, err := prog.ParseWith("main", string(text), ParseOptions{Backend: Closure})
@@ -250,7 +250,7 @@ func TestIgnoreCaseGeneratedTypedTerminal(t *testing.T) {
 	// Terminal programs are for parsers without work controls.
 	t.Setenv("PEGO_TEST_ORDINARY", "1")
 	inputs := []string{"", "alpha", "ALPHA", "Beta", "BETA", "beta", "upsilon", "UPSILON", "xi", "Xi", "XI", "alpha BETA", "alphax", "ALPHAX", "tau Tau sigma", "SIGMA"}
-	prog := compile(t, ignoreCaseTerminalGrammar)
+	prog := mustCompile(t, ignoreCaseTerminalGrammar)
 	var want, list strings.Builder
 	for _, in := range inputs {
 		if _, err := prog.ParseWith("main", in, ParseOptions{Backend: Closure}); err != nil {

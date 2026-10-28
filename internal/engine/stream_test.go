@@ -16,7 +16,7 @@ rule header = "#records\n"
 rule record = ^ k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n"`
 
 func TestParseStream(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	var got []string
 	err := prog.ParseStream("main", strings.NewReader("#records\na=1\nbc=22\n"), func(n *value.Node) error {
 		got = append(got, fmt.Sprintf("%s [%d,%d)", n, value.D(n).Start, value.D(n).End))
@@ -45,7 +45,7 @@ func TestParseStream(t *testing.T) {
 // TestParseStreamIsIncremental checks that elements are passed for the input received so far,
 // before all the input has arrived.
 func TestParseStreamIsIncremental(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	pr, pw := io.Pipe()
 	next := make(chan struct{})
 	go func() {
@@ -77,7 +77,7 @@ func TestParseStreamIsIncremental(t *testing.T) {
 // TestParseStreamErrorPosition checks that error lines and columns are correct even after input
 // has been discarded.
 func TestParseStreamErrorPosition(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	var b strings.Builder
 	b.WriteString("#records\n")
 	for i := 0; i < 5000; i++ {
@@ -99,7 +99,7 @@ func TestParseStreamErrorPosition(t *testing.T) {
 }
 
 func TestParseStreamEmitError(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	stop := errors.New("stop")
 	count := 0
 	err := prog.ParseStream("main", strings.NewReader("#records\na=1\nb=2\n"), func(*value.Node) error {
@@ -114,7 +114,7 @@ func TestParseStreamEmitError(t *testing.T) {
 // TestParseStreamDiscardsInput checks that committed input is discarded and the buffer does not
 // grow, even for large input.
 func TestParseStreamDiscardsInput(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	r := &lineReader{header: "#records\n", line: "key=42\n", n: 100000}
 	maxBuf := 0
 	p := newStreamParser(prog, r, CodePoints)
@@ -155,7 +155,7 @@ rule word = [a-z]+ #atomic
 rule val = [0-9]+ #atomic`,
 	}
 	for name, src := range grammars {
-		prog := compile(t, src)
+		prog := mustCompile(t, src)
 		if r := prog.byName["key"]; r != nil && (!r.memo || r.transient || len(r.vars) == 0) {
 			t.Fatalf("%s: key must be memoized, non-transient and read variables", name)
 		}
@@ -191,7 +191,7 @@ rule val = [0-9]+ #atomic`,
 // TestParseStreamTextOfDiscardedInput checks that text(...) of a node whose input has been
 // discarded by the stream returns what is still held instead of failing.
 func TestParseStreamTextOfDiscardedInput(t *testing.T) {
-	prog := compile(t, `type T = { H string; N int }
+	prog := mustCompile(t, `type T = { H string; N int }
 rule main = h:("a" "b") rs:r* #stream "!" => T{H: text($h), N: len($rs)}
 rule r = "x" "y"`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -238,7 +238,7 @@ func TestStreamCompileErrors(t *testing.T) {
 			}
 		})
 	}
-	prog := compile(t, `rule main = "a"*`)
+	prog := mustCompile(t, `rule main = "a"*`)
 	if err := prog.ParseStream("main", strings.NewReader("a"), func(*value.Node) error { return nil }); err == nil || err.Error() != "rule main has no #stream repetition" {
 		t.Errorf("got %v", err)
 	}

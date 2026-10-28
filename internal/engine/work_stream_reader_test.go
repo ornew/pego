@@ -31,7 +31,7 @@ func (r *workCancelledRefillReader) Read(dst []byte) (int, error) {
 }
 
 func TestWorkStreamRawReaderCancellation(t *testing.T) {
-	prog := compile(t, `rule main = row* #stream $$
+	prog := mustCompile(t, `rule main = row* #stream $$
 
 rule row = .+ #atomic`)
 	workStreamVariants(t, func(t *testing.T, o ParseOptions) {
@@ -80,7 +80,7 @@ func (c *workRawReaderPanicContext) Err() error {
 }
 
 func TestWorkStreamRawReaderContextPanicIdentity(t *testing.T) {
-	prog := compile(t, `rule main = row* #stream $$
+	prog := mustCompile(t, `rule main = row* #stream $$
 
 rule row = .+ #atomic`)
 	workStreamVariants(t, func(t *testing.T, o ParseOptions) {

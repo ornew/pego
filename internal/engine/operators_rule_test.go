@@ -41,7 +41,7 @@ func TestOperatorsRuleCST(t *testing.T) {
 }
 
 func TestOperatorsRulePositions(t *testing.T) {
-	prog := compile(t, arith)
+	prog := mustCompile(t, arith)
 	n, err := prog.Parse("e", " 1 + 2 * 3")
 	if err != nil {
 		t.Fatal(err)
@@ -106,7 +106,7 @@ func TestOperatorsRuleActions(t *testing.T) {
 }
 
 func TestOperatorsRulePositionsWithActions(t *testing.T) {
-	prog := compile(t, ast)
+	prog := mustCompile(t, ast)
 	n, err := prog.Parse("e", "a + b + c")
 	if err != nil {
 		t.Fatal(err)

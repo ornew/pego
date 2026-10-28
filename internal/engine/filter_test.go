@@ -35,7 +35,7 @@ rule one _ = _ => 1`, []string{"a?", "a!", "a", ""}},
 }
 
 func TestFilterNodeIdentityAndEmptyInput(t *testing.T) {
-	program := compile(t, filterIdentitySource)
+	program := mustCompile(t, filterIdentitySource)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			node, err := program.ParseWith("main", "ab", ParseOptions{Backend: backend, Unit: unit})
@@ -58,7 +58,7 @@ func TestFilterNodeIdentityAndEmptyInput(t *testing.T) {
 func TestFilterAcrossBackends(t *testing.T) {
 	for _, fixture := range filterCases() {
 		t.Run(fixture.name, func(t *testing.T) {
-			program := compile(t, fixture.src)
+			program := mustCompile(t, fixture.src)
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
 					for _, input := range fixture.inputs {
@@ -105,7 +105,7 @@ rule main = v1:"a" => Out{Items: filter(list($v1, nil), (x) => x != nil)}`,
 }
 
 func TestFilterCompiledInstructionSet(t *testing.T) {
-	program := compile(t, filterIdentitySource)
+	program := mustCompile(t, filterIdentitySource)
 	for _, mode := range valueModes {
 		data, err := program.Marshal("main", mode)
 		if err != nil || data[isaOffset] != bytecode.ISAVersion {
@@ -129,11 +129,11 @@ func TestFilterCompiledInstructionSet(t *testing.T) {
 			t.Fatalf("under-declared filter ISA accepted: %v", err)
 		}
 	}
-	ordinary := compile(t, `rule main = "a"`)
+	ordinary := mustCompile(t, `rule main = "a"`)
 	if ordinary.Module().InstructionSetVersion() != bytecode.ISAVersion {
 		t.Fatal("filter support changed the ordinary instruction set")
 	}
-	module := compile(t, filterIdentitySource).Module()
+	module := mustCompile(t, filterIdentitySource).Module()
 	for i := range module.Exprs {
 		if module.Exprs[i].Op == bytecode.ECall && module.Exprs[i].A == bytecode.BuiltinFilter {
 			module.Exprs[i].B = 0

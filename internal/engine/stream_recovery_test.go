@@ -61,7 +61,7 @@ func testStreamRecoveryRejected(t *testing.T) {
 // AST and its NEXT flag in the module. Both file formats retain the old shape.
 func legacyStreamRecovery(t *testing.T, streamFirst bool) *Program {
 	t.Helper()
-	p := compile(t, `rule main = "ab" #repeat(2) #recover(skip=.*) $$`)
+	p := mustCompile(t, `rule main = "ab" #repeat(2) #recover(skip=.*) $$`)
 	m := p.Module()
 	next := 0
 	for i := range m.Code {
@@ -105,7 +105,7 @@ func TestCompiledStreamRecoveryRejected(t *testing.T) {
 
 func TestStreamElementRecovery(t *testing.T) {
 	for _, body := range []string{`("ab" #recover(skip=[^a]+))`, `(("ab" #recover(skip=[^a]+)) #recover(skip="!"))`, `item`} {
-		p := compile(t, `rule main = `+body+`+ #stream $$
+		p := mustCompile(t, `rule main = `+body+`+ #stream $$
 rule item = "ab" @error(message="record") #recover(skip=[^a]+)`)
 		for _, mode := range valueModes {
 			data, err := p.Marshal("main", mode)

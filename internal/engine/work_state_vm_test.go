@@ -171,7 +171,7 @@ func TestWorkStateBatchRollbackAndPoolRetry(t *testing.T) {
 	src := `rule main = (` + body.String() + ` {` + predicate.String() + `} arm "!" / fallback) #recover(skip=.*) $$
 rule fallback = .* #atomic
 rule arm = _`
-	prog := compile(t, src)
+	prog := mustCompile(t, src)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{Bytes, CodePoints} {
 			for _, recognize := range []bool{false, true} {

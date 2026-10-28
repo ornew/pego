@@ -38,7 +38,7 @@ func TestFiniteStreamRepetitions(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			src := fmt.Sprintf("rule main = %s #stream %s $$\n%s", tc.repeat, tc.suffix, tc.definitions)
-			prog := compile(t, src)
+			prog := mustCompile(t, src)
 			programs := []*Program{prog}
 			for _, mode := range allModes {
 				programs = append(programs, saveLoad(t, prog, "main", mode))
@@ -93,7 +93,7 @@ func TestZeroRepetitionDoesNotRunElement(t *testing.T) {
 		// The zero bound must leave the entire input for the suffix,
 		// including when the compiler projects or discards element values.
 		t.Run(src, func(t *testing.T) {
-			prog := compile(t, src)
+			prog := mustCompile(t, src)
 			checkBackends(t, prog, "main", "ab")
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				want, err := prog.ParseWith("main", "ab", ParseOptions{Unit: unit})
@@ -118,7 +118,7 @@ func TestZeroRepetitionDoesNotRunElement(t *testing.T) {
 }
 
 func TestFiniteStreamConsumerError(t *testing.T) {
-	prog := compile(t, `rule main = "a" #repeat(1, 2) #stream $$`)
+	prog := mustCompile(t, `rule main = "a" #repeat(1, 2) #stream $$`)
 	stop := errors.New("consumer stopped")
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {

@@ -143,7 +143,7 @@ rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}`,
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			prog := compile(t, tc.grammar)
+			prog := mustCompile(t, tc.grammar)
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				for _, unit := range []PositionUnit{Bytes, CodePoints} {
 					for _, recognize := range []bool{false, true} {

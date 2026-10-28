@@ -80,7 +80,7 @@ func testGeneratedTypedDirectCuts(t *testing.T) {
 		if c.name == "typed/direct_cut_callee" && !strings.Contains(string(code), "// part, called as by invokePlain (body inlined)") {
 			t.Fatal("callee containing cuts must use the direct typed route")
 		}
-		for _, r := range compile(t, c.src).rules {
+		for _, r := range mustCompile(t, c.src).rules {
 			if !directCuts(r.def.Expr) {
 				continue
 			}

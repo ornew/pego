@@ -15,7 +15,7 @@ import (
 func TestWorkLazyClosureAdmission(t *testing.T) {
 	for _, api := range []string{"batch", "document", "stream"} {
 		t.Run(api, func(t *testing.T) {
-			prog := compile(t, `rule main = "a"* #stream $$`)
+			prog := mustCompile(t, `rule main = "a"* #stream $$`)
 			call := func(o ParseOptions) error {
 				switch api {
 				case "document":
@@ -75,7 +75,7 @@ rule expr = #operators {
 	}
 	for _, fixture := range cases {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
-			prog := compile(t, fixture.source)
+			prog := mustCompile(t, fixture.source)
 			d, err := prog.NewDocumentWith("main", fixture.text, ParseOptions{Unit: unit})
 			if err != nil {
 				t.Fatal(err)
@@ -144,7 +144,7 @@ func (c *lazyReentrantContext) Err() error {
 
 func TestWorkLazyClosureContextReentry(t *testing.T) {
 	for _, recognize := range []bool{false, true} {
-		prog := compile(t, `rule main = "a" $$`)
+		prog := mustCompile(t, `rule main = "a" $$`)
 		ctx := &lazyReentrantContext{Context: context.Background()}
 		// Done must be non-nil for custom context checks to be active.
 		parent, cancel := context.WithCancel(context.Background())
@@ -166,7 +166,7 @@ func TestWorkLazyClosureContextReentry(t *testing.T) {
 // Once has completed even if an internal initializer panicked. A later call
 // must report failed setup rather than publish or dereference a nil Program.
 func TestWorkLazyClosureIncompleteInitialization(t *testing.T) {
-	prog := compile(t, `rule main = "a"`)
+	prog := mustCompile(t, `rule main = "a"`)
 	token := &workContextPanicToken{phase: "initializer"}
 	got := workContextRecover(func() { prog.workOnce.Do(func() { panic(token) }) })
 	if got != token {

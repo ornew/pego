@@ -67,7 +67,7 @@ rule ` + longRule + ` = a:"a" => A{N: 1 / (len($a) - 1)}`,
 
 	for _, probe := range probes {
 		t.Run(probe.name, func(t *testing.T) {
-			prog := compile(t, probe.grammar)
+			prog := mustCompile(t, probe.grammar)
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				for _, unit := range []PositionUnit{Bytes, CodePoints} {
 					recognizeModes := []bool{false}

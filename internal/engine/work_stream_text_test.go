@@ -198,7 +198,7 @@ func (c *workStreamTextPhaseContext) Err() error {
 }
 
 func TestWorkStreamTextPublicTraceInterruption(t *testing.T) {
-	prog := compile(t, `rule main = row* #stream $$
+	prog := mustCompile(t, `rule main = row* #stream $$
 
 rule row = (!"\n" .)+ #atomic "\n"`)
 	workStreamVariants(t, func(t *testing.T, base ParseOptions) {

@@ -36,7 +36,7 @@ func TestInvalidUTF8LiteralMatching(t *testing.T) {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				t.Run(fmt.Sprintf("%q/%x/%s/%s", tc.literal, tc.input, backend, unit), func(t *testing.T) {
-					p := compile(t, "rule main = "+fmt.Sprintf("%q", tc.literal)+" $$")
+					p := mustCompile(t, "rule main = "+fmt.Sprintf("%q", tc.literal)+" $$")
 					opts := ParseOptions{Backend: backend, Unit: unit}
 					n, err := p.ParseWith("main", tc.input, opts)
 					if (err == nil) != tc.ok {
@@ -70,7 +70,7 @@ func TestInvalidUTF8LiteralMatching(t *testing.T) {
 }
 
 func TestReplacementLiteralTextPredicate(t *testing.T) {
-	prog := compile(t, `rule main = c:"�" {text($c) == "�"} $$`)
+	prog := mustCompile(t, `rule main = c:"�" {text($c) == "�"} $$`)
 	for _, input := range []string{"\xff", "\x80", "\xc3", "�"} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{Bytes, CodePoints} {
@@ -91,7 +91,7 @@ func TestInvalidUTF8LiteralStream(t *testing.T) {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, expr := range []string{`"�"`, `[�]`, `"x" / "�"`, `"a�"`} {
 				t.Run(fmt.Sprintf("%s/%s/%s", backend, unit, expr), func(t *testing.T) {
-					p := compile(t, "rule main = item* #stream $$\nrule item = "+expr+` "\n"`)
+					p := mustCompile(t, "rule main = item* #stream $$\nrule item = "+expr+` "\n"`)
 					item := "\xff\n"
 					if expr == `"a�"` {
 						item = "a" + item
@@ -275,7 +275,7 @@ func TestOpenPipeInvalidUTF8Literal(t *testing.T) {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, input := range []string{"\xff\n", "\x80\n", "\xc3\n", "�\n"} {
 				t.Run(fmt.Sprintf("%s/%s/%x", backend, unit, input), func(t *testing.T) {
-					prog := compile(t, `rule main = item* #stream $$
+					prog := mustCompile(t, `rule main = item* #stream $$
 rule item = "�" "\n"`)
 					pr, pw := io.Pipe()
 					done := make(chan error, 1)

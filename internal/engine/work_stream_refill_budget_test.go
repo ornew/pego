@@ -99,7 +99,7 @@ func TestStreamReaderObserverBoundsBufioRetries(t *testing.T) {
 }
 
 func TestWorkStreamEmptyRefillBudget(t *testing.T) {
-	prog := compile(t, `rule main = row* #stream $$
+	prog := mustCompile(t, `rule main = row* #stream $$
 
 rule row = .+ #atomic`)
 	workStreamVariants(t, func(t *testing.T, o ParseOptions) {

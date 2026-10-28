@@ -275,7 +275,7 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 		}
 	}
 	for _, source := range []string{`rule main = "x"`, `rule main = v1:"x" => []node[string]{$v1}`} {
-		p := compile(t, source)
+		p := mustCompile(t, source)
 		data, err := p.MarshalBinary("main")
 		if err != nil || data[isaOffset] != bytecode.ISAVersion {
 			t.Fatalf("unchanged/list-only ISA: %v", err)

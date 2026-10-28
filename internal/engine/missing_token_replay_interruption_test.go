@@ -40,7 +40,7 @@ func TestMissingTokensCancellationDuringLRSeedReplay(t *testing.T) {
 	literalCount := int(2 * workCheckStepInterval)
 	source := `rule main = e $$
 rule e = e "x" / (` + strings.Repeat(`";" #missing `, literalCount) + `)`
-	prog := compile(t, source)
+	prog := mustCompile(t, source)
 	for _, recognize := range []bool{false, true} {
 		base, cancel := context.WithCancel(context.Background())
 		ctx := &missingReplayCancelContext{Context: base, cancel: cancel, literalCount: literalCount}

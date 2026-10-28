@@ -29,7 +29,7 @@ func valueResultCases() []genCase {
 func TestValueResultsAcrossBackends(t *testing.T) {
 	for _, fixture := range valueResultCases() {
 		t.Run(fixture.name, func(t *testing.T) {
-			program := compile(t, fixture.src)
+			program := mustCompile(t, fixture.src)
 			for _, input := range fixture.inputs {
 				baseline := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure}))
 				if strings.Contains(baseline, "error") {
@@ -52,7 +52,7 @@ func TestValueResults(t *testing.T) {
 		{"rule main = \"a\" $$ => list(1, \"s\", true, nil)", "a", `[1 "s" true nil]`},
 		{"rule main = \"a\" $$ => filter(list(1, 2, 3), (x) => x > 1)[1]", "a", "3"},
 	} {
-		n, err := compile(t, tc.src).Parse("main", tc.input)
+		n, err := mustCompile(t, tc.src).Parse("main", tc.input)
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}

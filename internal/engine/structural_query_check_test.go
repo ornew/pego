@@ -24,7 +24,7 @@ rule name Name = t:([a-z]) #atomic => Name{Text: text($t)}
 
 func queryShapeSchema(t *testing.T) *OutputSchema {
 	t.Helper()
-	s, err := compile(t, queryShapeGrammar).OutputSchemaPrototype("main", false)
+	s, err := mustCompile(t, queryShapeGrammar).OutputSchemaPrototype("main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,7 +224,7 @@ func TestStructuralQueryErrorSize(t *testing.T) {
 		src += "type " + n + " = { X E }\n"
 	}
 	src += "rule main E = e\nrule e E = n:[0-9] => Num{Text: text($n)}\n"
-	s, err := compile(t, src).OutputSchemaPrototype("main", true)
+	s, err := mustCompile(t, src).OutputSchemaPrototype("main", true)
 	if err != nil {
 		t.Fatal(err)
 	}

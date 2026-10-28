@@ -26,7 +26,7 @@ rule e = #operators {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				t.Run(fmt.Sprintf("%s/%s/%s", c.name, backend, unit), func(t *testing.T) {
-					prog := compile(t, c.src)
+					prog := mustCompile(t, c.src)
 					opts := ParseOptions{Backend: backend, Unit: unit, MaxDepth: c.depth}
 					doc, err := prog.NewDocumentWith("main", c.text, opts)
 					if err != nil {
@@ -57,7 +57,7 @@ rule e = #operators {
 }
 
 func TestDocumentTracePanicRetry(t *testing.T) {
-	prog := compile(t, `rule main = x $$
+	prog := mustCompile(t, `rule main = x $$
 rule x = x "a" / "a"`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -104,7 +104,7 @@ rule x = "a"`,
 rule x = "b" #recover(skip="a")`,
 	} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			doc, err := compile(t, src).NewDocumentWith("main", "a", ParseOptions{Backend: backend})
+			doc, err := mustCompile(t, src).NewDocumentWith("main", "a", ParseOptions{Backend: backend})
 			if err != nil {
 				t.Fatal(err)
 			}

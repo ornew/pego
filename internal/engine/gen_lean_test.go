@@ -63,7 +63,7 @@ rule left = left "+" "é" / "é"
 		t.Fatal("generated depth default not found")
 	}
 	code = []byte(strings.Replace(string(code), "var pegoGrammar = rt.NewGrammar(100000)", "var pegoGrammar = rt.NewGrammar(5)", 1))
-	prog := compile(t, src)
+	prog := mustCompile(t, src)
 	var rows strings.Builder
 	// Go literals preserve invalid UTF-8 bytes; the JSON-transport corpus would
 	// replace them before generated parsers receive the input.

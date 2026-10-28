@@ -89,7 +89,7 @@ rule _e = _e "+" "a" / "a"`, ok("a+a+a", `((("a" "+" "a") "+" "a"))@main`))
 
 // A hidden rule is called as a rule: it is memoized, and it may recur.
 func TestHiddenRulesAreCalledAsRules(t *testing.T) {
-	p := compile(t, `rule main = _m "!" / _m "?"
+	p := mustCompile(t, `rule main = _m "!" / _m "?"
 rule _m = "a" "b"`)
 	if got := result(p, "ab?"); got != `("a" "b" "?")@main` {
 		t.Fatal(got)

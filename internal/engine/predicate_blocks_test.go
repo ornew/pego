@@ -67,7 +67,7 @@ rule main = ("a" {x := 1} {false} ";") #recover(skip="?") $$`, []string{"?", "a?
 }
 
 func TestPredicateBlockBindingComparison(t *testing.T) {
-	program := compile(t, `var x int
+	program := mustCompile(t, `var x int
 rule a = {x:=1; x<10}`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -81,8 +81,8 @@ rule a = {x:=1; x<10}`)
 func TestPredicateBlocksAdjacentParity(t *testing.T) {
 	for _, fixture := range predicateBlockCases() {
 		t.Run(fixture.name, func(t *testing.T) {
-			block := compile(t, fixture.block)
-			adjacent := compile(t, fixture.adjacent)
+			block := mustCompile(t, fixture.block)
+			adjacent := mustCompile(t, fixture.adjacent)
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, recognize := range []bool{false, true} {

@@ -61,7 +61,7 @@ func TestWorkDocumentPieceTextPublication(t *testing.T) {
 }
 
 func TestWorkDocumentPieceLineTableRetry(t *testing.T) {
-	prog := compile(t, "var line int\nrule main = {line == 2000} .* $$")
+	prog := mustCompile(t, "var line int\nrule main = {line == 2000} .* $$")
 	workDocumentVariants(t, func(t *testing.T, o ParseOptions) {
 		d, err := prog.NewDocumentWith("main", strings.Repeat("x\n", 4096), o)
 		if err != nil {
@@ -80,7 +80,7 @@ func TestWorkDocumentPieceLineTableRetry(t *testing.T) {
 
 func TestWorkDocumentPieceLiteralRetry(t *testing.T) {
 	text := strings.Repeat("a", 8192)
-	prog := compile(t, "rule main = "+`"`+text+`" $$`)
+	prog := mustCompile(t, "rule main = "+`"`+text+`" $$`)
 	workDocumentVariants(t, func(t *testing.T, o ParseOptions) {
 		d, err := prog.NewDocumentWith("main", text, o)
 		if err != nil {

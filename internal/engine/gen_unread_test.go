@@ -106,8 +106,8 @@ rule main Result = x:"a"? y:"b"? => Result{A: list(1, 2)[len($x) + 3], C: list(1
 	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{ConvertTypes: true}, 1)
 	// Negative control: the two orders fail differently, so a parser that swapped them would
 	// differ from the engine.
-	first := compile(t, rule(a, b))
-	second := compile(t, rule(b, a))
+	first := mustCompile(t, rule(a, b))
+	second := mustCompile(t, rule(b, a))
 	_, err1 := first.Parse("main", "")
 	_, err2 := second.Parse("main", "")
 	if err1 == nil || err2 == nil || err1.Error() == err2.Error() {
@@ -140,8 +140,8 @@ func testGeneratedTermStatementsEvaluationOrder(t *testing.T) {
 	}
 	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{ConvertTypes: true}, 1)
 	// Negative control: the two orders fail differently.
-	first := compile(t, rule(a, b))
-	second := compile(t, rule(b, a))
+	first := mustCompile(t, rule(a, b))
+	second := mustCompile(t, rule(b, a))
 	_, err1 := first.Parse("main", "")
 	_, err2 := second.Parse("main", "")
 	if err1 == nil || err2 == nil || err1.Error() == err2.Error() {

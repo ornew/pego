@@ -43,7 +43,7 @@ func wantModeRefused(t *testing.T, err error, have, need CompiledMode) {
 // TestCompiledRecognitionASTFileRejectsBundle checks that a file holds one module: a second module
 // after the first, such as the recognizer's, is data the format does not have.
 func TestCompiledRecognitionASTFileRejectsBundle(t *testing.T) {
-	p := compile(t, `rule main = "a" $$`)
+	p := mustCompile(t, `rule main = "a" $$`)
 	rec, err := p.recognizer()
 	if err != nil {
 		t.Fatal(err)
@@ -59,7 +59,7 @@ func TestCompiledRecognitionASTFileRejectsBundle(t *testing.T) {
 func TestCompiledRecognitionRoundTrip(t *testing.T) {
 	for _, c := range genCorpus(t) {
 		t.Run(c.name, func(t *testing.T) {
-			p := compile(t, c.src)
+			p := mustCompile(t, c.src)
 			for _, mode := range allModes {
 				data, err := p.Marshal("main", mode)
 				if err != nil {
@@ -101,7 +101,7 @@ func TestCompiledRecognitionRoundTrip(t *testing.T) {
 // TestCompiledRecognitionWithoutBundle checks that a file in parse mode refuses recognition with the
 // mode it needs, and is saved again unchanged.
 func TestCompiledRecognitionWithoutBundle(t *testing.T) {
-	p := moduleProgram(compile(t, `rule main = "a"`).Module())
+	p := moduleProgram(mustCompile(t, `rule main = "a"`).Module())
 	data, err := p.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
@@ -126,7 +126,7 @@ func TestCompiledRecognitionWithoutBundle(t *testing.T) {
 // TestCompiledRecognitionBundleBaseline checks the two modes side by side: the recognize-mode file
 // recognizes and refuses value parses, and the parse-mode file parses and refuses recognition.
 func TestCompiledRecognitionBundleBaseline(t *testing.T) {
-	p := compile(t, `rule main = first / second $$
+	p := mustCompile(t, `rule main = first / second $$
 rule first = "a"
 rule second = "é"`)
 	parseData, err := p.MarshalBinary("main")
@@ -182,7 +182,7 @@ rule second = "é"`)
 }
 
 func TestCompiledRecognitionASTSaveAfterClassMutation(t *testing.T) {
-	p := compile(t, `rule main = [a-z]`)
+	p := mustCompile(t, `rule main = [a-z]`)
 	p.Module() // Keep the compiled bytecode as it was before the AST change.
 	class := p.Grammar.Rules()[0].Expr.(*grammar.CharClass)
 	class.Ranges[0] = grammar.CharRange{Lo: 'z', Hi: 'a'}
@@ -196,7 +196,7 @@ func TestCompiledRecognitionASTSaveAfterClassMutation(t *testing.T) {
 }
 
 func TestCompiledRecognitionControlsAndConcurrency(t *testing.T) {
-	src := compile(t, `rule main = [a-z]* $$
+	src := mustCompile(t, `rule main = [a-z]* $$
 rule other = "é" $$`)
 	p := saveLoad(t, src, "main", CompiledRecognize)
 	parsing := saveLoad(t, src, "main", CompiledParse)
@@ -243,11 +243,11 @@ rule other = "é" $$`)
 func TestCompiledRecognitionRepeatedConcurrentSave(t *testing.T) {
 	const source = `rule main = "a" $$
 rule other = "b" $$`
-	want, err := compile(t, source).Marshal("main", CompiledRecognize)
+	want, err := mustCompile(t, source).Marshal("main", CompiledRecognize)
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := compile(t, source)
+	p := mustCompile(t, source)
 	var wg sync.WaitGroup
 	for i := 0; i < 8; i++ {
 		wg.Add(1)
@@ -274,7 +274,7 @@ rule other = "b" $$`
 }
 
 func TestCompiledRecognitionLoadedModuleMutation(t *testing.T) {
-	data, err := compile(t, `rule main = "a" $$`).Marshal("main", CompiledRecognize)
+	data, err := mustCompile(t, `rule main = "a" $$`).Marshal("main", CompiledRecognize)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -293,7 +293,7 @@ func TestCompiledRecognitionLoadedModuleMutation(t *testing.T) {
 }
 
 func TestCompiledRecognitionCorruptMainAndBundle(t *testing.T) {
-	p := compile(t, `rule main = "a" $$`)
+	p := mustCompile(t, `rule main = "a" $$`)
 	data, err := p.Marshal("main", CompiledRecognize)
 	if err != nil {
 		t.Fatal(err)
@@ -339,7 +339,7 @@ func TestCompiledRecognitionCorruptMainAndBundle(t *testing.T) {
 // the first rule of that name, the rule itself rather than its value-free twin, and that truncated
 // or extended files are rejected.
 func TestCompiledRecognitionBundleValidation(t *testing.T) {
-	p := compile(t, `rule main = "a"
+	p := mustCompile(t, `rule main = "a"
 rule other = "b"`)
 	valid, err := p.Marshal("main", CompiledRecognize)
 	if err != nil {

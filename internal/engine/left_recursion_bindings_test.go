@@ -52,7 +52,7 @@ func TestLeftRecursionBindingErrors(t *testing.T) {
 		{"call outside the cycle", "var k int\nrule main = R $$\nrule R = R \"x\" / {k := 1} c\nrule c = {k == 1} \"x\""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			compile(t, tc.src)
+			mustCompile(t, tc.src)
 		})
 	}
 }
@@ -73,8 +73,8 @@ func TestLeftRecursionGuardIgnoresVariables(t *testing.T) {
 	inputs := []string{"x", "xxx", "xxxxxxxxxx", "", "y"}
 	for _, options := range []Options{{}, {DisableMemo: true}} {
 		options.leftRecursionBindings = true
-		prog := compile(t, lrBindingSource, options)
-		plain := compile(t, plainLRSource, options)
+		prog := mustCompile(t, lrBindingSource, options)
+		plain := mustCompile(t, plainLRSource, options)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {

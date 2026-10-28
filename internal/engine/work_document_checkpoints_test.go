@@ -158,7 +158,7 @@ type workDocumentReuseContext struct {
 func (c *workDocumentReuseContext) Err() error { c.observe(); return c.Context.Err() }
 
 func TestWorkDocumentReuseCancellationAndFreshRetry(t *testing.T) {
-	prog := compile(t, `rule main = line* $$
+	prog := mustCompile(t, `rule main = line* $$
 
 rule line = [a-z] #repeat(2) #atomic "\n"`)
 	workDocumentVariants(t, func(t *testing.T, base ParseOptions) {

@@ -12,7 +12,7 @@ import (
 )
 
 func TestWorkDocumentDiagnosticPublication(t *testing.T) {
-	prog := compile(t, `rule main = "a;" @error(message="original") #recover(skip="?;")`)
+	prog := mustCompile(t, `rule main = "a;" @error(message="original") #recover(skip="?;")`)
 	workDocumentVariants(t, func(t *testing.T, base ParseOptions) {
 		for _, mode := range []string{"budget", "cancel", "syntax-error", "syntax-errors", "panic"} {
 			t.Run(mode, func(t *testing.T) {
@@ -119,7 +119,7 @@ func TestWorkDocumentDiagnosticPublication(t *testing.T) {
 }
 
 func TestWorkDocumentFatalSyntaxErrorsRemainUnchanged(t *testing.T) {
-	prog := compile(t, `rule main = "a"`)
+	prog := mustCompile(t, `rule main = "a"`)
 	workDocumentVariants(t, func(t *testing.T, base ParseOptions) {
 		d, err := prog.NewDocumentWith("main", "a", base)
 		if err != nil {

@@ -46,7 +46,7 @@ func assertTraceParserDetached(t *testing.T, p *parser, aborted bool) {
 func traceLifecycleRecover(f func()) (got any) { defer func() { got = recover() }(); f(); return }
 
 func TestTraceLifecycleDocumentDetachment(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			for _, outcome := range []string{"success", "syntax", "trace-panic"} {
@@ -141,7 +141,7 @@ type traceLifecycleClosingReader struct {
 func (r *traceLifecycleClosingReader) Close() error { r.closed = true; return nil }
 
 func TestTraceLifecycleStreamDetachment(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			for _, outcome := range []string{"success", "syntax", "reader-error", "emit-error", "trace-panic", "emit-panic"} {

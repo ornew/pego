@@ -21,7 +21,7 @@ rule letter = [a-z]`
 
 func TestMemoizedStreamMemoryIsBounded(t *testing.T) {
 	for _, src := range []string{memoizedStream, leftRecursiveStream} {
-		prog := compile(t, src)
+		prog := mustCompile(t, src)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				var at [2]uint64
@@ -49,7 +49,7 @@ func TestMemoizedStreamMemoryIsBounded(t *testing.T) {
 }
 
 func TestDocumentReplacedMemoMemoryIsBounded(t *testing.T) {
-	prog := compile(t, `rule main = .* #atomic $$`)
+	prog := mustCompile(t, `rule main = .* #atomic $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			doc, err := prog.NewDocumentWith("main", strings.Repeat("a", 10000), ParseOptions{Backend: backend, Unit: unit})

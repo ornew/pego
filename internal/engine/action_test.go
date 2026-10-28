@@ -68,7 +68,7 @@ rule r = c:"q" e => $c
 rule e = _`
 	want := `[("q" "y") ("q" "x") ("q" "y")]@main`
 	check(t, src, ok("qyqxqy", want), ok("qy", `[("q" "y")]@main`))
-	doc, err := compile(t, src).NewDocument("main", "qyqxqy")
+	doc, err := mustCompile(t, src).NewDocument("main", "qyqxqy")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +148,7 @@ rule word = [a-z] [a-z]`,
 }
 
 func TestNodePositions(t *testing.T) {
-	prog := compile(t, `type Op = { Left Node; Right Node }
+	prog := mustCompile(t, `type Op = { Left Node; Right Node }
 type Node ~ Op | node[string]
 rule main Node = l:num rest:(-" "* -"+" r:num)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Right: i.$r})
 rule num = -" "* n:[0-9]+ #atomic => $n`)
@@ -251,7 +251,7 @@ rule x = "a"`, `rule x has no Operators Rule levels`},
 }
 
 func TestRuntimeErrors(t *testing.T) {
-	prog := compile(t, `type A = { N int }
+	prog := mustCompile(t, `type A = { N int }
 rule main = v1:"a" => A{N: 1 / (len($v1) - 1)}`)
 	_, err := prog.Parse("main", "a")
 	if err == nil || !strings.Contains(err.Error(), "action in main: division by zero") {
@@ -272,7 +272,7 @@ rule main = x:"a"? "b" => T{S: text($x) + "!"}`, ok("b", `T{S: "!"}`))
 
 // TestLargeIntegers checks that integer literals beyond 32 bits keep their value on every backend.
 func TestLargeIntegers(t *testing.T) {
-	prog := compile(t, `type T = { A int; B int; C int; D int; E int }
+	prog := mustCompile(t, `type T = { A int; B int; C int; D int; E int }
 rule main = "a" => T{A: 3000000000, B: 0 - 3000000000, C: 9223372036854775807, D: 0 - 9223372036854775807 - 1, E: 4294967296}`)
 	want := `T{A: 3000000000, B: -3000000000, C: 9223372036854775807, D: -9223372036854775808, E: 4294967296}`
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -299,7 +299,7 @@ rule main = x:"a"* #atomic => I{
 // with Go's results on every backend, including the most negative integer
 // divided by -1, and that dividing by zero is a runtime error.
 func TestIntegerWrapAround(t *testing.T) {
-	prog := compile(t, integerBoundaryGrammar)
+	prog := mustCompile(t, integerBoundaryGrammar)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, n := range []int64{1, 2} {
 			maxInt, minInt := int64(math.MaxInt64), int64(math.MinInt64)
@@ -337,7 +337,7 @@ rule word = [a-z]+ #atomic`
 // every backend; the shared generated corpus compares the other parsers with
 // these results.
 func TestActionEnvironments(t *testing.T) {
-	prog := compile(t, actionEnvironmentGrammar)
+	prog := mustCompile(t, actionEnvironmentGrammar)
 	// peek calls plain at the start twice with another depth, so batch parsers
 	// memoize it there before main calls it.
 	if r := prog.byName["plain"]; !r.memo || r.transient || len(r.vars) != 2 {
@@ -382,7 +382,7 @@ func TestActionEnvironments(t *testing.T) {
 // TestLenOfStrings checks that len counts the characters of strings in the position unit on
 // every backend, for strings that do not come from the input too.
 func TestLenOfStrings(t *testing.T) {
-	prog := compile(t, `type T = { N int; M int }
+	prog := mustCompile(t, `type T = { N int; M int }
 rule main = x:"a" => T{N: len("日本"), M: len(text($x) + "é")}`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, tc := range []struct {

@@ -10,7 +10,7 @@ import (
 )
 
 func TestBytePositions(t *testing.T) {
-	prog := compile(t, `rule main = w:[^ ]+ #atomic " " x:.`)
+	prog := mustCompile(t, `rule main = w:[^ ]+ #atomic " " x:.`)
 	n, err := prog.ParseWith("main", "日本 語", ParseOptions{Unit: Bytes})
 	if err != nil {
 		t.Fatal(err)
@@ -33,7 +33,7 @@ func TestBytePositions(t *testing.T) {
 
 // TestInvalidUTF8 checks that invalid UTF-8 is read as a 1-byte U+FFFD.
 func TestInvalidUTF8(t *testing.T) {
-	prog := compile(t, `rule main = "a" x:. "b"`)
+	prog := mustCompile(t, `rule main = "a" x:. "b"`)
 	n, err := prog.ParseWith("main", "a\xffb", ParseOptions{Unit: Bytes})
 	if err != nil {
 		t.Fatal(err)
@@ -47,7 +47,7 @@ func TestInvalidUTF8(t *testing.T) {
 }
 
 func TestLenInUnits(t *testing.T) {
-	prog := compile(t, `type N = { N int }
+	prog := mustCompile(t, `type N = { N int }
 rule main = s:.* #atomic => N{N: len($s) + len(text($s))}`)
 	for unit, want := range map[PositionUnit]int{CodePoints: 4, Bytes: 12} {
 		n, err := prog.ParseWith("main", "日本", ParseOptions{Unit: unit})
@@ -58,7 +58,7 @@ rule main = s:.* #atomic => N{N: len($s) + len(text($s))}`)
 }
 
 func TestDocumentInBytes(t *testing.T) {
-	prog := compile(t, incrementalGrammar)
+	prog := mustCompile(t, incrementalGrammar)
 	rng := rand.New(rand.NewSource(2))
 	pieces := []string{"a", "x = ", "1", "+", "é", "日", "\n", "@", "(", ")"}
 	doc, err := prog.NewDocumentWith("main", "x = 1+2\nab,cd\n@pos\n", ParseOptions{Unit: Bytes})
@@ -100,7 +100,7 @@ func TestDocumentInBytes(t *testing.T) {
 func utf8RuneStart(b byte) bool { return b&0xC0 != 0x80 }
 
 func TestStreamInBytes(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	var got []string
 	err := prog.ParseStreamWith("main", strings.NewReader("#records\nä=1\nb=2\n"), func(n *value.Node) error {
 		got = append(got, n.String())

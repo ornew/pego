@@ -32,7 +32,7 @@ rule number Alias = v1:[0-9]+ => Number{Text: text($v1)}
 	if err != nil {
 		t.Fatal(err)
 	}
-	ref := compile(t, plain)
+	ref := mustCompile(t, plain)
 	for _, fromJSON := range []bool{false, true} {
 		input := g
 		if fromJSON {

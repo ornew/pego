@@ -40,7 +40,7 @@ func TestInferenceDependencyChains(t *testing.T) {
 				if err == nil || !strings.Contains(err.Error(), "produces P, which is not assignable to node[string]") {
 					t.Errorf("long-chain type mismatch: %v", err)
 				}
-				p := compile(t, inferredChain(depth, reverse, ""))
+				p := mustCompile(t, inferredChain(depth, reverse, ""))
 				for i := range depth {
 					if got, ok := inferredType(p, fmt.Sprint("r", i)); !ok || got != "P" {
 						t.Fatalf("r%d type = %q, %v; want P", i, got, ok)
@@ -57,7 +57,7 @@ func TestInferenceDependencyChains(t *testing.T) {
 func TestInferenceKeepsIndependentTypes(t *testing.T) {
 	src := inferredChain(128, false, "") + `rule growing = xs:growing? => list($xs)
 rule constant = "(" growing ")" => P{}`
-	p := compile(t, src)
+	p := mustCompile(t, src)
 	for _, name := range []string{"main", "r0", "r127", "constant"} {
 		if got, _ := inferredType(p, name); got != "P" {
 			t.Errorf("%s type = %s; want P", name, got)
@@ -76,7 +76,7 @@ func TestInferenceKeepsLargeFiniteRecursiveTypes(t *testing.T) {
 		fmt.Fprintf(&src, "field%d:\"a\" ", i)
 	}
 	src.WriteString("")
-	p := compile(t, src.String())
+	p := mustCompile(t, src.String())
 	want, _ := inferredType(p, "huge")
 	if len(want) <= 2048 {
 		t.Fatalf("test type is only %d bytes", len(want))
@@ -89,7 +89,7 @@ func TestInferenceKeepsLargeFiniteRecursiveTypes(t *testing.T) {
 }
 
 func TestInferenceOperatorsRuleImplicitDependencies(t *testing.T) {
-	p := compile(t, `type P = {}
+	p := mustCompile(t, `type P = {}
 rule main = expression
 rule expression = #operators {
     operand "a"
@@ -110,7 +110,7 @@ func TestInferenceKeepsConstantRecursivePeer(t *testing.T) {
 		if reverse {
 			rules[0], rules[1] = rules[1], rules[0]
 		}
-		p := compile(t, "type P = {}\nrule main = constant\n"+strings.Join(rules, "\n"))
+		p := mustCompile(t, "type P = {}\nrule main = constant\n"+strings.Join(rules, "\n"))
 		for _, name := range []string{"main", "constant"} {
 			if got, _ := inferredType(p, name); got != "P" {
 				t.Errorf("%s type = %s; want P", name, got)
@@ -129,7 +129,7 @@ func TestInferenceFiniteRecursiveChains(t *testing.T) {
 			fmt.Fprintf(&src, "rule r%d = r%d\n", i, i+1)
 		}
 	}
-	p := compile(t, src.String())
+	p := mustCompile(t, src.String())
 	for i := range 128 {
 		if got, _ := inferredType(p, fmt.Sprint("r", i)); got != "node[string]" {
 			t.Errorf("r%d type = %s; want node[string]", i, got)
@@ -166,7 +166,7 @@ func TestInferenceFiniteJoinCycle(t *testing.T) {
 	for i := range count {
 		fmt.Fprintf(&src, "type T%d = { Text string }\nrule n%d T%d = t:\"a\" #atomic => T%d{Text: text($t)}\nrule r%d = r%d / r%d / n%d\n", i, i, i, i, i, (i+1)%count, (i+count-1)%count, i)
 	}
-	p := compile(t, src.String())
+	p := mustCompile(t, src.String())
 	for i := range count {
 		// RuleType shows the rules in a cycle by name.
 		got, _ := inferredType(p, fmt.Sprint("r", i))
@@ -188,7 +188,7 @@ func TestInferenceFiniteJoinCycle(t *testing.T) {
 }
 
 func TestInferenceChainSavedValues(t *testing.T) {
-	p := compile(t, inferredChain(64, false, ""))
+	p := mustCompile(t, inferredChain(64, false, ""))
 	for _, mode := range valueModes {
 		q := saveLoad(t, p, "main", mode)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {

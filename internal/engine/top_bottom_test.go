@@ -33,7 +33,7 @@ func topBottomCases() []genCase {
 func TestTopBottomAcrossBackends(t *testing.T) {
 	for _, fixture := range topBottomCases() {
 		t.Run(fixture.name, func(t *testing.T) {
-			program := compile(t, fixture.src)
+			program := mustCompile(t, fixture.src)
 			for _, input := range fixture.inputs {
 				baseline := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure}))
 				for _, backend := range []Backend{Bytecode, BytecodeIterative} {
@@ -109,7 +109,7 @@ func TestTopBottomListCheck(t *testing.T) {
 	} {
 		src := "type T = { A " + tc.field + " }\ntype U = { F _ }\nrule main = x:\"a\" => T{A: U{F: \"s\"}.F.(" + tc.field + ")}\nrule ok = x:\"a\"* => T{A: U{F: $x.Value}.F.(" + tc.field + ")}\nrule rule []_ = x:\"a\"* => U{F: $x.Value}.F.([]_)\nrule bad []_ = x:\"a\" => U{F: $x}.F.([]_)"
 		for _, opts := range []Options{{}} {
-			program := compile(t, src, opts)
+			program := mustCompile(t, src, opts)
 			data, err := program.MarshalBinary("main")
 			if err != nil {
 				t.Fatal(err)
@@ -235,7 +235,7 @@ func TestTopBottomSyntax(t *testing.T) {
 	if string(again) != string(data) || !strings.Contains(string(data), "MeetType") {
 		t.Fatalf("JSON round trip:\n%s\nwant\n%s", again, data)
 	}
-	program := compile(t, src)
+	program := mustCompile(t, src)
 	bin, err := program.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
@@ -256,7 +256,7 @@ func TestTopBottomSyntax(t *testing.T) {
 }
 
 func TestTopBottomSchema(t *testing.T) {
-	program := compile(t, "type T = { A _; B (node[string] | int) & node[_]; C U }\ntype U ~ _\nrule main = x:\"a\" => T{A: $x, B: $x, C: 1}")
+	program := mustCompile(t, "type T = { A _; B (node[string] | int) & node[_]; C U }\ntype U ~ _\nrule main = x:\"a\" => T{A: $x, B: $x, C: 1}")
 	schema, err := program.OutputSchemaPrototype("main", false)
 	if err != nil {
 		t.Fatal(err)
@@ -275,7 +275,7 @@ func TestTopBottomSchema(t *testing.T) {
 	}
 	// Aliases are not exported, and a field cannot have a type without values.
 	for _, src := range []string{"type B ~ _|_\nrule main = \"a\"", "type B ~ int & string\nrule main = \"a\"", "type B ~ *(int & string)\nrule main = \"a\""} {
-		if _, err := compile(t, src).OutputSchemaPrototype("main", false); err != nil {
+		if _, err := mustCompile(t, src).OutputSchemaPrototype("main", false); err != nil {
 			t.Fatalf("%q schema: %v", src, err)
 		}
 		if message := compileError(t, strings.Replace(src, "rule main", "type T = { F B }\nrule main", 1)); !strings.Contains(message, "no values") {
@@ -283,7 +283,7 @@ func TestTopBottomSchema(t *testing.T) {
 		}
 	}
 	// _|_ adds nothing to a union.
-	program = compile(t, "type B ~ _|_ | node[string]\ntype T = { A _|_ | node[string]; C B }\nrule main = x:\"a\" => T{A: $x, C: $x}")
+	program = mustCompile(t, "type B ~ _|_ | node[string]\ntype T = { A _|_ | node[string]; C B }\nrule main = x:\"a\" => T{A: $x, C: $x}")
 	schema, err = program.OutputSchemaPrototype("main", false)
 	if err != nil {
 		t.Fatal(err)

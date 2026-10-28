@@ -13,7 +13,7 @@ func TestDocumentIndirectLeftRecursionEdits(t *testing.T) {
 rule r1 = (r2 / "b") #repeat(0, 2)
 rule r2 = r1 / r2 "a" "b"`
 	for _, options := range []Options{{}, {DisableMemo: true}} {
-		prog := compile(t, src, options)
+		prog := mustCompile(t, src, options)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				opts := ParseOptions{Backend: backend, Unit: unit}

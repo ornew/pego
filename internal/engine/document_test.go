@@ -54,7 +54,7 @@ func TestDocumentMatchesFreshParse(t *testing.T) {
 }
 
 func testDocumentMatchesFreshParse(t *testing.T, b Backend) {
-	prog := compile(t, incrementalGrammar)
+	prog := mustCompile(t, incrementalGrammar)
 	o := ParseOptions{Backend: b}
 	rng := rand.New(rand.NewSource(1))
 	pieces := []string{"a", "b", "x = ", "1", "+", "2*3", "(", ")", "-", ",", "\n", "@", "q", " "}
@@ -85,7 +85,7 @@ func testDocumentMatchesFreshParse(t *testing.T, b Backend) {
 }
 
 func TestDocumentReusesResults(t *testing.T) {
-	prog := compile(t, incrementalGrammar)
+	prog := mustCompile(t, incrementalGrammar)
 	var b strings.Builder
 	for i := 0; i < 200; i++ {
 		b.WriteString("x = 1+2*(3-4)\nab,cd,ef\n")
@@ -118,7 +118,7 @@ func TestDocumentReusesResults(t *testing.T) {
 // TestDocumentPositionalActions checks that results of position-dependent actions are
 // recomputed rather than shifted past an edit.
 func TestDocumentPositionalActions(t *testing.T) {
-	prog := compile(t, incrementalGrammar)
+	prog := mustCompile(t, incrementalGrammar)
 	doc, _ := prog.NewDocument("main", "@abc\n")
 	doc.Parse()
 	doc.Edit(0, 0, "\n\n")
@@ -133,7 +133,7 @@ func TestDocumentPositionalActions(t *testing.T) {
 }
 
 func TestDocumentEditErrors(t *testing.T) {
-	prog := compile(t, `rule main = "a"*`)
+	prog := mustCompile(t, `rule main = "a"*`)
 	doc, _ := prog.NewDocument("main", "aaa")
 	for _, r := range [][2]int{{-1, 0}, {2, 1}, {0, 4}} {
 		if err := doc.Edit(r[0], r[1], ""); err == nil {
@@ -155,7 +155,7 @@ func TestDocumentEditKeepsMemo(t *testing.T) {
 	}
 	pieces := []string{"a", "b", "x = ", "1", "+", "(", ")", ",", "\n", "@", " ", "zz "}
 	for _, c := range cases {
-		doc, err := compile(t, c.grammar).NewDocument("main", c.text)
+		doc, err := mustCompile(t, c.grammar).NewDocument("main", c.text)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -222,7 +222,7 @@ func TestDocumentEditKeepsMemo(t *testing.T) {
 // TestDocumentEditText compares edited text and random decoded spans with a
 // fresh flat input, including multi-byte characters and invalid UTF-8.
 func TestDocumentEditText(t *testing.T) {
-	prog := compile(t, `rule main = .*`)
+	prog := mustCompile(t, `rule main = .*`)
 	pieces := []string{"a", "é", "日本", "\n", "\xff", "z\xe3\x81", ""}
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		doc, err := prog.NewDocumentWith("main", "héllo, 世界\n", ParseOptions{Unit: unit})
@@ -285,7 +285,7 @@ func TestDocumentEditText(t *testing.T) {
 // TestDocumentKeepsInputTables checks that piece-local code-point offsets and
 // the line-start table stay with the Document across parsing and editing.
 func TestDocumentKeepsInputTables(t *testing.T) {
-	doc, err := compile(t, `rule main = ([a-z]+ #atomic "\n")* $$`).NewDocument("main", "ab\ncd\n!")
+	doc, err := mustCompile(t, `rule main = ([a-z]+ #atomic "\n")* $$`).NewDocument("main", "ab\ncd\n!")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -320,7 +320,7 @@ func TestDocumentKeepsInputTables(t *testing.T) {
 func TestDocumentInputStartAnchors(t *testing.T) {
 	for _, anchor := range []string{"^^", "^"} {
 		src := "rule main = (z / a)*\nrule a = " + anchor + ` "b" / "b" "!"` + "\nrule z = \"q\""
-		prog := compile(t, src)
+		prog := mustCompile(t, src)
 		doc, err := prog.NewDocument("main", "b")
 		if err != nil {
 			t.Fatal(err)
@@ -373,7 +373,7 @@ rule junk = [^;]* #atomic ";"`, "ab;cd;", []string{"a", "b", ";", "x;", "", "1"}
 	minRecorded = 1 // resume short repetitions too
 	// Edits leave the last character alone: each text ends with a terminator that lets it parse.
 	for ci, c := range cases {
-		prog := compile(t, c.grammar)
+		prog := mustCompile(t, c.grammar)
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			doc, err := prog.NewDocumentWith("main", c.text, ParseOptions{Backend: b})
 			if err != nil {
@@ -453,7 +453,7 @@ rule val = [0-9]+ #atomic / "[" items:([0-9]+ #atomic ",")* "]"`, false},
 	pieces := []string{"a", "b", "1", "22", "q = 5;\n", "\n", "\n\n", "{\nk = 1;\n}\n", "[", "2,", "]", " = ", ""}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			prog := compile(t, c.grammar)
+			prog := mustCompile(t, c.grammar)
 			var b strings.Builder
 			for i := 0; i < 60; i++ {
 				fmt.Fprintf(&b, "x = %d;\nyz = [1,22,3,];\n\n", i)
@@ -556,7 +556,7 @@ rule item = [a-z]+ #atomic " "*`, strings.Repeat("ab cd ", 8) + "!", []string{"a
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			prog := compile(t, c.grammar)
+			prog := mustCompile(t, c.grammar)
 			doc, err := prog.NewDocumentWith("main", c.text, ParseOptions{Backend: backend})
 			if err != nil {
 				t.Fatal(err)
@@ -582,7 +582,7 @@ rule item = [a-z]+ #atomic " "*`, strings.Repeat("ab cd ", 8) + "!", []string{"a
 	// The input range reused elements examined: the last element looks four characters ahead,
 	// past where the repetition ends, so the run's result depends on the "!!!!".
 	t.Run("examined", func(t *testing.T) {
-		prog := compile(t, `rule main = run rest $$
+		prog := mustCompile(t, `rule main = run rest $$
 rule run = item*
 rule item = [a-z] #atomic &([a-z!] [a-z!] [a-z!] [a-z!])
 rule rest = [^\n]* #atomic`)
@@ -604,7 +604,7 @@ rule rest = [^\n]* #atomic`)
 	// at the old position and the other where the edit moved it (the elements look behind, so the
 	// old result of list is not moved there). Only one of them takes the old run over.
 	t.Run("two runs", func(t *testing.T) {
-		prog := compile(t, `rule main = list "!" / "bb" list "?"
+		prog := mustCompile(t, `rule main = list "!" / "bb" list "?"
 rule list = item*
 rule item = ^ [ab] #atomic / [ab] #atomic`)
 		doc, err := prog.NewDocumentWith("main", "aaaa?", ParseOptions{Backend: backend})
@@ -622,7 +622,7 @@ rule item = ^ [ab] #atomic / [ab] #atomic`)
 	// The same before the repetition: the first element looks at the character before it, so the
 	// run's result depends on the "\n".
 	t.Run("examined before", func(t *testing.T) {
-		prog := compile(t, `rule main = pre run $$
+		prog := mustCompile(t, `rule main = pre run $$
 rule pre = [xy\n]* #atomic
 rule run = item*
 rule item = b:bol / mid
@@ -669,7 +669,7 @@ rule item = {k == 1} [a-z!] #atomic / [a-z] #atomic "!"`, "x" + strings.Repeat("
 	for _, c := range cases {
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			t.Run(c.name+"/"+b.String(), func(t *testing.T) {
-				prog := compile(t, c.grammar)
+				prog := mustCompile(t, c.grammar)
 				doc, err := prog.NewDocumentWith("main", c.text, ParseOptions{Backend: b})
 				if err != nil {
 					t.Fatal(err)
@@ -692,7 +692,7 @@ rule item = {k == 1} [a-z!] #atomic / [a-z] #atomic "!"`, "x" + strings.Repeat("
 // reused after an edit are moved in place (so the earlier tree shares them), and a clone keeps
 // the tree as it was, sharing included.
 func TestDocumentEarlierTrees(t *testing.T) {
-	prog := compile(t, `rule main = line* $$
+	prog := mustCompile(t, `rule main = line* $$
 rule line = x:[a-z]+ #atomic "\n"`)
 	doc, err := prog.NewDocument("main", strings.Repeat("ab\n", 10))
 	if err != nil {
@@ -722,7 +722,7 @@ rule line = x:[a-z]+ #atomic "\n"`)
 func TestDocumentEditLogLimit(t *testing.T) {
 	defer func(n int) { maxEdits = n }(maxEdits)
 	maxEdits = 5
-	prog := compile(t, `rule main = line* $$
+	prog := mustCompile(t, `rule main = line* $$
 rule line = x:[a-z]+ #atomic "\n"`)
 	doc, err := prog.NewDocument("main", "ab\ncd\nef\n")
 	if err != nil {
@@ -799,7 +799,7 @@ rule item = "(" item* ")" / "x"`, "xxxx(x)", 0, ParseOptions{MaxDepth: 30},
 					defer func(n int) { minRecorded = n }(minRecorded)
 					minRecorded = c.minRecorded
 				}
-				prog := compile(t, c.grammar)
+				prog := mustCompile(t, c.grammar)
 				o := c.o
 				o.Backend = b
 				doc, err := prog.NewDocumentWith("main", c.text, o)

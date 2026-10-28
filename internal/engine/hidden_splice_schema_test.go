@@ -15,7 +15,7 @@ func TestHiddenRulesAddNoSchemaType(t *testing.T) {
 		{"rule main = \"a\" _m \"d\"\nrule _m = \"b\" \"c\"", []string{"main"}},
 		{"rule main = _l\nrule _l = \"x\" _l / \"x\"", []string{"_l", "main"}},
 	} {
-		p := compile(t, c.src)
+		p := mustCompile(t, c.src)
 		s, err := p.OutputSchemaPrototype("main", false)
 		if err != nil {
 			t.Fatal(err)

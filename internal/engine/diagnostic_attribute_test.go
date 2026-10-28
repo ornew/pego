@@ -44,20 +44,20 @@ func TestDiagnosticAttribute(t *testing.T) {
 func TestDiagnosticAttributeStructuredErrors(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		t.Run(backend.String(), func(t *testing.T) {
-			mixed := compile(t, `rule main = ("a" @error(message="explicit") @diagnostic(name="ordinary") / "b" @diagnostic(name="bee"))`)
+			mixed := mustCompile(t, `rule main = ("a" @error(message="explicit") @diagnostic(name="ordinary") / "b" @diagnostic(name="bee"))`)
 			_, err := mixed.ParseWith("main", "c", ParseOptions{Backend: backend})
 			var syntax *SyntaxError
 			if !errors.As(err, &syntax) || !slices.Equal(syntax.Expected, []string{"bee"}) || !slices.Equal(syntax.Messages, []string{"explicit"}) {
 				t.Fatalf("mixed diagnostic = %#v, err %v", syntax, err)
 			}
 
-			farther := compile(t, `rule main = "a" "b" / "c" @diagnostic(name="cee")`)
+			farther := mustCompile(t, `rule main = "a" "b" / "c" @diagnostic(name="cee")`)
 			_, err = farther.ParseWith("main", "ax", ParseOptions{Backend: backend})
 			if !errors.As(err, &syntax) || !slices.Equal(syntax.Expected, []string{`"b"`}) || len(syntax.Messages) != 0 || syntax.Col != 2 {
 				t.Fatalf("farther diagnostic = %#v, err %v", syntax, err)
 			}
 
-			recovered := compile(t, `rule main = ("a" @diagnostic(name="letter") #recover(skip=[^!]* "!") "b")`)
+			recovered := mustCompile(t, `rule main = ("a" @diagnostic(name="letter") #recover(skip=[^!]* "!") "b")`)
 			_, err = recovered.ParseWith("main", "x!b", ParseOptions{Backend: backend})
 			var recoveries SyntaxErrors
 			if !errors.As(err, &recoveries) || len(recoveries) != 1 || !slices.Equal(recoveries[0].Expected, []string{"letter"}) || len(recoveries[0].Messages) != 0 {
@@ -68,7 +68,7 @@ func TestDiagnosticAttributeStructuredErrors(t *testing.T) {
 }
 
 func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
-	ordinary, err := compile(t, `rule main = "a"`).MarshalBinary("main")
+	ordinary, err := mustCompile(t, `rule main = "a"`).MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
 	if ordinary[isaOffset] != bytecode.ISAVersion {
 		t.Fatalf("ordinary module ISA: %d", ordinary[isaOffset])
 	}
-	prog := compile(t, `rule main = "a" @diagnostic(name="letter")`)
+	prog := mustCompile(t, `rule main = "a" @diagnostic(name="letter")`)
 	for _, mode := range allModes {
 		data, err := prog.Marshal("main", mode)
 		if err != nil {
@@ -110,7 +110,7 @@ func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
 	if _, _, err := LoadProgram(reserved); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("unsupported instruction set version %d", bytecode.ISAVersion+1)) {
 		t.Errorf("reserved ISA accepted: %v", err)
 	}
-	combined := compile(t, `rule main = v1:"a" @diagnostic(name="letter") $$ => filter(list($v1), (item) => true)`)
+	combined := mustCompile(t, `rule main = v1:"a" @diagnostic(name="letter") $$ => filter(list($v1), (item) => true)`)
 	data, err := combined.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)

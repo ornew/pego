@@ -323,7 +323,7 @@ rule ops Int | O = #operators {
     level { infix left "+" => Int{Text: "+"} }
 }
 `
-	prog := compile(t, src)
+	prog := mustCompile(t, src)
 	d := prog.Module().Disassemble()
 	if n := strings.Count(d, "check="); n != 0 {
 		t.Fatalf("a result is checked when it runs:\n%s", d)
@@ -492,7 +492,7 @@ rule e Num = #operators {
 		}
 	}
 	// The text struct counterpart builds the struct in its actions.
-	prog := compile(t, textStructOperatorsRuleGrammar)
+	prog := mustCompile(t, textStructOperatorsRuleGrammar)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		o := ParseOptions{Backend: b}
 		for _, in := range terminalOperatorsRuleInputs {

@@ -119,7 +119,7 @@ rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: te
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		prog := compile(t, c.src)
+		prog := mustCompile(t, c.src)
 		for _, conv := range []bool{false, true} {
 			pkg := fmt.Sprintf("g%d_%v", i, conv)
 			code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, MaxDepth: 4, ConvertTypes: conv})

@@ -27,7 +27,7 @@ rule expr = #operators {
     }
 }`,
 	} {
-		prog := compile(t, source)
+		prog := mustCompile(t, source)
 		text := strings.Repeat("a", 80)
 		if strings.Contains(source, "#operators {") {
 			text = strings.TrimSuffix(strings.Repeat("a+", 40), "+")
@@ -67,7 +67,7 @@ rule expr = #operators {
 // discards CST construction so input and value work cannot mask a missing
 // dispatch charge on the controlled graph.
 func TestWorkClosureDispatchMetersZeroWidthExpressions(t *testing.T) {
-	prog := compile(t, "rule main = "+strings.Repeat("^ ", 64)+"$$")
+	prog := mustCompile(t, "rule main = "+strings.Repeat("^ ", 64)+"$$")
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		opts := ParseOptions{Unit: unit, Recognize: true, WorkLimits: limits.WorkLimits{MaxSteps: 16}}
 		n, err := prog.ParseWith("main", "", opts)

@@ -14,7 +14,7 @@ rule _lhs = [a-z]+ #atomic " "?
 rule _rhs = [0-9]+ #atomic (_op [0-9]+ #atomic)*
 rule _op = "+" / "-"`
 	run := func(t *testing.T, b Backend) {
-		prog := compile(t, grammarSrc)
+		prog := mustCompile(t, grammarSrc)
 		o := ParseOptions{Backend: b}
 		rng := rand.New(rand.NewSource(7))
 		pieces := []string{"a", "b", "=", "1", "+", "23", "-", "\n", " ", "x=1\n"}

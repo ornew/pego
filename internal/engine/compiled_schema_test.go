@@ -112,7 +112,7 @@ func TestCompiledSchemaMatchesSource(t *testing.T) {
 func TestCompiledSchemaBackendAgreement(t *testing.T) {
 	for _, c := range genCorpus(t) {
 		t.Run(c.name, func(t *testing.T) {
-			src := compile(t, c.src)
+			src := mustCompile(t, c.src)
 			def := src.DefaultStart()
 			want := schemaJSON(t, src, def, true)
 			loaded := saveLoad(t, src, def, CompiledParse)
@@ -160,7 +160,7 @@ func marshalWithTrailing(prog *Program, start string, section []byte) []byte {
 // document after the module, valid or not, is data the format does not have, and the file is
 // rejected.
 func TestCompiledSchemaSectionErrors(t *testing.T) {
-	p := compile(t, `@start(default)
+	p := mustCompile(t, `@start(default)
 rule main = "a"
 @start
 rule other = "b"`)
@@ -206,7 +206,7 @@ var dropLastStart = regexp.MustCompile(`,\{"name":"other".*\]\}$`)
 // TestCompiledSchemaUnavailable checks that a loaded file in each mode reports that its schema
 // needs the grammar source, while the source exports it.
 func TestCompiledSchemaUnavailable(t *testing.T) {
-	p := compile(t, `rule main = "a"`)
+	p := mustCompile(t, `rule main = "a"`)
 	if _, err := p.OutputSchemaPrototype("main", false); err != nil {
 		t.Fatalf("source schema: %v", err)
 	}
@@ -226,7 +226,7 @@ func TestCompiledSchemaUnavailable(t *testing.T) {
 // TestCompiledSchemaWithAST checks that a file of another container version, such as the earlier
 // one that held the grammar and a schema, is rejected and needs to be compiled again.
 func TestCompiledSchemaWithAST(t *testing.T) {
-	p := compile(t, `rule main = "a"`)
+	p := mustCompile(t, `rule main = "a"`)
 	for _, version := range []byte{compiledVersion - 1, compiledVersion + 1} {
 		data, err := p.MarshalBinary("main")
 		if err != nil {
@@ -245,7 +245,7 @@ func TestCompiledSchemaWithAST(t *testing.T) {
 // schema and only start rules otherwise, and that a loaded file refuses every name the same way,
 // because it holds no schema.
 func TestCompiledSchemaStartNames(t *testing.T) {
-	p := compile(t, `@start
+	p := mustCompile(t, `@start
 rule main = a:"x"
 rule helper = "y"`)
 	loaded := saveLoad(t, p, "main", CompiledParse)

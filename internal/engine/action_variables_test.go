@@ -57,7 +57,7 @@ func TestMemoActionVariables(t *testing.T) {
 	for _, c := range actionVariableCases {
 		t.Run(c.name, func(t *testing.T) {
 			for _, disable := range []bool{false, true} {
-				prog := compile(t, c.src, Options{DisableMemo: disable})
+				prog := mustCompile(t, c.src, Options{DisableMemo: disable})
 				if vars := prog.byName["r"].vars; len(vars) != 1 || vars[0] != "x" {
 					t.Errorf("r variable dependencies: %v", vars)
 				}
@@ -87,7 +87,7 @@ func TestMemoActionVariables(t *testing.T) {
 }
 
 func TestDocumentActionVariableEdit(t *testing.T) {
-	prog := compile(t, `type V = { N int }
+	prog := mustCompile(t, `type V = { N int }
 var n int
 rule main = text:[a-z]+ #atomic {n := len($text)} r
 rule r = "!" => V{N: n}`)

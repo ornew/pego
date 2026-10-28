@@ -6,7 +6,7 @@ import "github.com/ornew/pego/internal/limits"
 import "testing"
 
 func TestWorkLazyClosureSavedFlagsAndOptions(t *testing.T) {
-	original := compile(t, `rule main = first:item rest:(-"," value:item)* $$ => concat(list($first), map($rest, (e) => e.$value))
+	original := mustCompile(t, `rule main = first:item rest:(-"," value:item)* $$ => concat(list($first), map($rest, (e) => e.$value))
 rule item = [a-z]+`)
 	flags := make([]ruleFlags, len(original.rules))
 	for i, r := range original.rules {

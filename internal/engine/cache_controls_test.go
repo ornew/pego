@@ -13,7 +13,7 @@ func TestCacheControlsResetPreservesDocument(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
-				prog := compile(t, `rule main = item* $$
+				prog := mustCompile(t, `rule main = item* $$
 rule item = [a-z]+ "\n"`)
 				options := ParseOptions{Backend: backend, Unit: unit, MaxDepth: 12345}
 				text := strings.Repeat("word\n", 40)
@@ -93,7 +93,7 @@ func TestCacheControlsRetiredAndRunAccounting(t *testing.T) {
 
 func TestCacheControlsResetAfterFailureAndAbort(t *testing.T) {
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		p := compile(t, `rule main = "a"* $$`)
+		p := mustCompile(t, `rule main = "a"* $$`)
 		for _, limits := range []limits.WorkLimits{{}, {MaxSteps: 1}} {
 			d, err := p.NewDocumentWith("main", "aaa!", ParseOptions{Backend: b})
 			if err != nil {
@@ -127,7 +127,7 @@ func TestCacheControlsResetAfterFailureAndAbort(t *testing.T) {
 func TestCacheControlsReuseCounters(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
-			prog := compile(t, `rule main = line* $$
+			prog := mustCompile(t, `rule main = line* $$
 rule line = [a-z]+ #atomic "\n"`)
 			d, err := prog.NewDocumentWith("main", strings.Repeat("ab\n", 20), ParseOptions{Backend: backend, Unit: unit})
 			if err != nil {
@@ -156,7 +156,7 @@ rule line = [a-z]+ #atomic "\n"`)
 }
 
 func TestCacheControlsResetAfterLargeEditAndResumption(t *testing.T) {
-	prog := compile(t, `rule main = line* $$
+	prog := mustCompile(t, `rule main = line* $$
 rule line = [a-z]+ #atomic "\n"`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -208,7 +208,7 @@ rule item = "ab" #recover(skip=[^a]+)`, "abXab", true},
 		{"ordinary", `rule main = "ab"+ $$`, "abX", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			prog := compile(t, tc.grammar)
+			prog := mustCompile(t, tc.grammar)
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					options := ParseOptions{Backend: backend, Unit: unit}

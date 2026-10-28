@@ -42,7 +42,7 @@ func TestFragmentCursorOriginalBytes(t *testing.T) {
 }
 
 func TestFragmentCursorMalformedPrefixParity(t *testing.T) {
-	prog := compile(t, `rule main = . .`)
+	prog := mustCompile(t, `rule main = . .`)
 	source := "😀\xffunconsumed"
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {

@@ -365,7 +365,7 @@ func testGeneratedStreams(t *testing.T, goBin string, cases []genCase, opts gen.
 		return g%[1]d.ParseStream(r, e, opts...)
 	},
 `, i)
-		prog := compile(t, c.src, Options{noProjections: true})
+		prog := mustCompile(t, c.src, Options{noProjections: true})
 		for _, in := range c.inputs {
 			for _, bytes := range []bool{false, true} {
 				variants := append([]streamRun{{Chunk: 0}, {Chunk: 1}, {Chunk: 2, EOFWithData: true}, {Chunk: 3, Fail: true}, {Chunk: 1, StopAt: 2}, {NilEmit: true}}, streamDiagVariants...)

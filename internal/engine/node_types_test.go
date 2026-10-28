@@ -32,7 +32,7 @@ func nodeTypeCases() []genCase {
 func TestNodeTypesAcrossBackends(t *testing.T) {
 	for _, fixture := range nodeTypeCases() {
 		t.Run(fixture.name, func(t *testing.T) {
-			program := compile(t, fixture.src)
+			program := mustCompile(t, fixture.src)
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
 					for _, input := range fixture.inputs {
@@ -57,7 +57,7 @@ func TestNodeTypeCasts(t *testing.T) {
 		{"node[[]node[string]]", "ab"},
 		{"node[(node[string], node[int])]", "ab"},
 	} {
-		program := compile(t, "rule main = x:(\"a\" \"b\" / \"c\"*) $$ => $x.(node[_]).("+tc.typ+")")
+		program := mustCompile(t, "rule main = x:(\"a\" \"b\" / \"c\"*) $$ => $x.(node[_]).("+tc.typ+")")
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			if _, err := program.ParseWith("main", tc.input, ParseOptions{Backend: backend}); err == nil || !strings.Contains(err.Error(), tc.typ) {
 				t.Errorf("%s %s %q: got %v", tc.typ, backend, tc.input, err)

@@ -104,7 +104,7 @@ func inlineActionGenCases() []genCase {
 func TestInlineActionsMatchRules(t *testing.T) {
 	for _, tc := range inlineCases(t) {
 		t.Run(tc.name, func(t *testing.T) {
-			inline, explicit := compile(t, tc.inline), compile(t, tc.explicit)
+			inline, explicit := mustCompile(t, tc.inline), mustCompile(t, tc.explicit)
 			matched := false
 			for _, input := range tc.inputs {
 				if _, err := inline.Parse("main", input); err == nil {
@@ -204,7 +204,7 @@ rule main = (x:"a" => A{X: text($x)}) "b"`)
 func TestInlineActionsCompiledRoundTrip(t *testing.T) {
 	for _, tc := range inlineActionCases() {
 		t.Run(tc.name, func(t *testing.T) {
-			prog := compile(t, tc.inline)
+			prog := mustCompile(t, tc.inline)
 			written, err := syntax.Parse(tc.inline)
 			if err != nil {
 				t.Fatal(err)

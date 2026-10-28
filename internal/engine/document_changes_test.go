@@ -21,7 +21,7 @@ func newChangeTestDocument(t *testing.T, prog *Program, text string, o ParseOpti
 }
 
 func TestDocumentChangesEditCoordinatesAndQueue(t *testing.T) {
-	prog := compile(t, `rule main = .* $$`)
+	prog := mustCompile(t, `rule main = .* $$`)
 	snapshotVariants(t, func(t *testing.T, o ParseOptions) {
 		d := newChangeTestDocument(t, prog, "aéz", o, 8)
 		base := d.Version()
@@ -69,7 +69,7 @@ func TestDocumentChangesEditCoordinatesAndQueue(t *testing.T) {
 }
 
 func TestDocumentChangesOverflowRequiresFullRefresh(t *testing.T) {
-	prog := compile(t, `rule main = .* $$`)
+	prog := mustCompile(t, `rule main = .* $$`)
 	d := newChangeTestDocument(t, prog, "a", ParseOptions{}, 1)
 	base := d.Version()
 	for _, text := range []string{"b", "c", "d"} {
@@ -96,7 +96,7 @@ func TestDocumentChangesOverflowRequiresFullRefresh(t *testing.T) {
 }
 
 func TestDocumentChangesOutputAndInterruptedRetry(t *testing.T) {
-	prog := compile(t, `type Entry = { Name string; At int }
+	prog := mustCompile(t, `type Entry = { Name string; At int }
 rule main Entry = x:([a-z]+ #atomic) $$ => Entry{Name: text($x), At: $x.Start}`)
 	snapshotVariants(t, func(t *testing.T, o ParseOptions) {
 		d := newChangeTestDocument(t, prog, "aa", o, 16)
@@ -177,7 +177,7 @@ func changeConsumerViews(s *Snapshot) (map[string]int, []string) {
 }
 
 func TestDocumentChangesDownstreamMatchesFullRecomputation(t *testing.T) {
-	prog := compile(t, `rule main = word* $$
+	prog := mustCompile(t, `rule main = word* $$
 rule word = [a-zé]+ #atomic`)
 	snapshotVariants(t, func(t *testing.T, o ParseOptions) {
 		d := newChangeTestDocument(t, prog, "abcé", o, 2)
@@ -211,7 +211,7 @@ rule word = [a-zé]+ #atomic`)
 }
 
 func TestDocumentChangesTerminalTextAndDiagnostics(t *testing.T) {
-	prog := compile(t, `rule main = [a-z]+ #atomic $$`)
+	prog := mustCompile(t, `rule main = [a-z]+ #atomic $$`)
 	snapshotVariants(t, func(t *testing.T, o ParseOptions) {
 		d := newChangeTestDocument(t, prog, "aa", o, 8)
 		if _, err := d.Snapshot(); err != nil {
@@ -246,7 +246,7 @@ func TestDocumentChangesTerminalTextAndDiagnostics(t *testing.T) {
 }
 
 func TestDocumentChangesByteBoundaryRejectionAndNormalizedText(t *testing.T) {
-	prog := compile(t, `rule main = .* $$`)
+	prog := mustCompile(t, `rule main = .* $$`)
 	d := newChangeTestDocument(t, prog, "é", ParseOptions{Unit: Bytes}, 8)
 	v := d.Version()
 	if err := d.Edit(1, 2, "x"); err == nil {
@@ -342,7 +342,7 @@ func TestDocumentChangesComparisonUsesCumulativeBudget(t *testing.T) {
 }
 
 func TestDocumentChangesComparisonInterruptionPublication(t *testing.T) {
-	prog := compile(t, `rule main = .* #atomic $$`)
+	prog := mustCompile(t, `rule main = .* #atomic $$`)
 	snapshotVariants(t, func(t *testing.T, o ParseOptions) {
 		d, err := prog.NewDocumentWith("main", strings.Repeat("x", 8192), o)
 		if err != nil {

@@ -17,7 +17,7 @@ func TestSnapshotSharedRecordsAndInterruption(t *testing.T) {
 	if !workControlsEnabled {
 		t.Skip("work controls reference")
 	}
-	prog := compile(t, `rule main = item* $$
+	prog := mustCompile(t, `rule main = item* $$
 rule item = [a-z]`)
 	snapshotVariants(t, func(t *testing.T, o ParseOptions) {
 		d, err := prog.NewDocumentWith("main", strings.Repeat("a", 4096), o)
@@ -89,7 +89,7 @@ func TestSnapshotSharedStringComparisonRespectsWorkLimit(t *testing.T) {
 }
 
 func TestSnapshotSharingAcrossEditsPreservesOldVersions(t *testing.T) {
-	prog := compile(t, `rule main = item* $$
+	prog := mustCompile(t, `rule main = item* $$
 rule item = [a-z]`)
 	snapshotVariants(t, func(t *testing.T, o ParseOptions) {
 		d, err := prog.NewDocumentWith("main", strings.Repeat("a", 4096), o)
@@ -135,7 +135,7 @@ func TestSnapshotSharedChildRunsAfterMiddleEdit(t *testing.T) {
 	if !snapshotChildChunksEnabled {
 		t.Skip("child run reference")
 	}
-	prog := compile(t, `rule main = item* $$
+	prog := mustCompile(t, `rule main = item* $$
 rule item = [a-z]`)
 	d, err := prog.NewDocument("main", strings.Repeat("a", 4096))
 	if err != nil {
@@ -279,7 +279,7 @@ func TestSnapshotChunkedHandleIdentity(t *testing.T) {
 }
 
 func TestSnapshotSharingCyclesAndTypedNil(t *testing.T) {
-	prog := compile(t, `rule main = "a"`)
+	prog := mustCompile(t, `rule main = "a"`)
 	d, err := prog.NewDocument("main", "a")
 	if err != nil {
 		t.Fatal(err)

@@ -148,7 +148,7 @@ func TestWorkActionBatchRoutesAndPoolRetry(t *testing.T) {
 	}
 	for _, route := range routes {
 		t.Run(route.name, func(t *testing.T) {
-			prog := compile(t, `rule main = parts:items => `+route.action+`
+			prog := mustCompile(t, `rule main = parts:items => `+route.action+`
 rule items = [a-z] #atomic*`)
 			input := strings.Repeat("a", 1024)
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -176,7 +176,7 @@ rule items = [a-z] #atomic*`)
 }
 
 func TestWorkActionBatchCancellationStopsPublication(t *testing.T) {
-	prog := compile(t, `rule main = parts:items => map($parts, (x) => x)
+	prog := mustCompile(t, `rule main = parts:items => map($parts, (x) => x)
 
 rule items = [a-z] #atomic*`)
 	input := strings.Repeat("a", 1024)
@@ -205,10 +205,10 @@ rule items = [a-z] #atomic*`)
 }
 
 func TestWorkActionShortCircuitAndRecoveryPropagation(t *testing.T) {
-	shortCircuit := compile(t, `rule main = words:items {true || text($words) == text($words)} $$
+	shortCircuit := mustCompile(t, `rule main = words:items {true || text($words) == text($words)} $$
 
 rule items = [a-z]* #atomic`)
-	recovery := compile(t, `rule main = (words:items {text($words) == text($words)} "!") #recover(skip=[^;]* ";") $$
+	recovery := mustCompile(t, `rule main = (words:items {text($words) == text($words)} "!") #recover(skip=[^;]* ";") $$
 
 rule items = [a-z]* #atomic`)
 	input := strings.Repeat("a", 1024) + "!"

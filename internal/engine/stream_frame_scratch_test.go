@@ -65,7 +65,7 @@ rule item = x:"x" #atomic / e:"" #atomic`, strings.Repeat("x", 300), 301, false,
 		{"no capture scopes", `rule main = "x"* #stream $$`, strings.Repeat("x", 300), 300, false, false},
 		{"empty input", `rule main = "x"* #stream $$`, "", 0, false, false},
 	} {
-		prog := compile(t, tc.src)
+		prog := mustCompile(t, tc.src)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				t.Run(fmt.Sprintf("%s/%s/%s", tc.name, backend, unit), func(t *testing.T) {
@@ -115,7 +115,7 @@ rule value Value = v:[0-9]+ #atomic "," => Value{N: $v}`)
 
 func checkStreamFrameScratchRetainedResults(t *testing.T, src string) {
 	t.Helper()
-	prog := compile(t, src)
+	prog := mustCompile(t, src)
 	var input strings.Builder
 	input.WriteString("#head\n")
 	for i := range 320 {
@@ -175,7 +175,7 @@ func TestStreamFrameScratchClearsDeadFrames(t *testing.T) {
 	if !streamFrameScratch {
 		t.Skip("reference build does not reuse capture frames")
 	}
-	p := newParser(compile(t, `rule main = "a"`), "a", CodePoints, false)
+	p := newParser(mustCompile(t, `rule main = "a"`), "a", CodePoints, false)
 	root := p.newFrame(1)
 	root.vals[0] = value.Ptr(value.Data{Text: "live root"})
 	p.frame = root

@@ -23,7 +23,7 @@ func (r *diagnosticBoundaryReader) Read(dst []byte) (int, error) {
 }
 
 func TestStreamDiagnosticCallbackSkipsSpeculativeRecovery(t *testing.T) {
-	p := compile(t, `rule main = item+ #stream $$
+	p := mustCompile(t, `rule main = item+ #stream $$
 rule item = (("ab" #recover(skip="X!") "z") / "X!a")`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -45,7 +45,7 @@ rule item = (("ab" #recover(skip="X!") "z") / "X!a")`)
 }
 
 func TestStreamDiagnosticCallbackReportsAllElementRecoveriesBeforeEmit(t *testing.T) {
-	p := compile(t, `rule main = item+ #stream $$
+	p := mustCompile(t, `rule main = item+ #stream $$
 rule item = ("a" #recover(skip="x")) ("b" #recover(skip="y"))`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		t.Run(backend.String(), func(t *testing.T) {
@@ -82,7 +82,7 @@ func TestStreamDiagnosticCallbackCopiesErrorSlices(t *testing.T) {
 }
 
 func TestStreamDiagnosticCallbackAfterFinalElement(t *testing.T) {
-	p := compile(t, `rule main = "a"* #stream ("b" #recover(skip="x")) $$`)
+	p := mustCompile(t, `rule main = "a"* #stream ("b" #recover(skip="x")) $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		t.Run(backend.String(), func(t *testing.T) {
 			var events []string
@@ -102,7 +102,7 @@ func TestStreamDiagnosticCallbackAfterFinalElement(t *testing.T) {
 }
 
 func TestStreamDiagnosticCallbackWithoutElementReceiverStopsBeforeLaterRead(t *testing.T) {
-	p := compile(t, `rule main = item+ #stream $$
+	p := mustCompile(t, `rule main = item+ #stream $$
 rule item = "ab" #recover(skip=[^a]+)`)
 	stop := errors.New("diagnostic stop")
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -117,7 +117,7 @@ rule item = "ab" #recover(skip=[^a]+)`)
 }
 
 func TestStreamDiagnosticCallbackPanicPropagates(t *testing.T) {
-	p := compile(t, `rule main = item+ #stream $$
+	p := mustCompile(t, `rule main = item+ #stream $$
 rule item = "ab" #recover(skip=[^a]+)`)
 	sentinel := errors.New("caller panic")
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -136,7 +136,7 @@ rule item = "ab" #recover(skip=[^a]+)`)
 }
 
 func TestStreamDiagnosticTailSkipsSpeculativeRecovery(t *testing.T) {
-	p := compile(t, `rule main = item+ #stream $$
+	p := mustCompile(t, `rule main = item+ #stream $$
 rule item = (("ab" #recover(skip="X!") "z") / "X!a")`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		calls := 0
@@ -153,7 +153,7 @@ rule item = (("ab" #recover(skip="X!") "z") / "X!a")`)
 }
 
 func TestStreamDiagnosticTailLongInput(t *testing.T) {
-	p := compile(t, `rule main = item+ #stream $$
+	p := mustCompile(t, `rule main = item+ #stream $$
 rule item = "ab" #recover(skip=[^a]+)`)
 	const count = 1000
 	input := strings.Repeat("abX!", count)
@@ -226,7 +226,7 @@ func TestStreamDiagnosticTailPreviewSuffix(t *testing.T) {
 }
 
 func TestStreamDiagnosticTailPrefixRecovery(t *testing.T) {
-	p := compile(t, `rule main = ("h" #recover(skip="!")) item+ #stream $$
+	p := mustCompile(t, `rule main = ("h" #recover(skip="!")) item+ #stream $$
 rule item = "a" #recover(skip="!")`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		calls, elements := 0, 0
@@ -246,7 +246,7 @@ rule item = "a" #recover(skip="!")`)
 }
 
 func TestStreamDiagnosticTailCommitScratchOwnership(t *testing.T) {
-	prog := compile(t, `rule main = "a"`)
+	prog := mustCompile(t, `rule main = "a"`)
 	for _, traced := range []bool{false, true} {
 		p := newParser(prog, "a", CodePoints, false)
 		p.diagnosticTail.limit = 1

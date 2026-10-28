@@ -31,7 +31,7 @@ rule x = x "+" t / t
 rule t = t "*" "a" / "a"`, "a*a+a+a*a*a"},
 	}
 	for _, g := range grammars {
-		prog := compile(t, g.src)
+		prog := mustCompile(t, g.src)
 		for _, cause := range []string{"cancel", "steps", "panic"} {
 			t.Run(g.name+"/"+cause, func(t *testing.T) {
 				workDocumentVariants(t, func(t *testing.T, base ParseOptions) {

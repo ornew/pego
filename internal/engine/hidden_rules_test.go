@@ -17,7 +17,7 @@ func TestGeneratedNamesDoNotSatisfyReferences(t *testing.T) {
 	}
 	// A declared rule that has the generated name keeps its name, and the inline action's rule takes
 	// another one.
-	p := compile(t, `rule main = (x:"a" => $x) _main_1
+	p := mustCompile(t, `rule main = (x:"a" => $x) _main_1
 rule _main_1 = "b"`)
 	if got := result(p, "ab"); strings.Contains(got, "error") {
 		t.Fatal(got)
@@ -39,7 +39,7 @@ rule _main_1 = "b"`)
 
 // A hidden rule is not an entry point: not the start rule, not a rule parsed by name.
 func TestHiddenRulesAreNotEntryPoints(t *testing.T) {
-	p := compile(t, `rule main = _a "c"
+	p := mustCompile(t, `rule main = _a "c"
 rule _a = "a" "b"`)
 	for _, name := range p.Rules() {
 		if strings.HasPrefix(name, "_") {
@@ -63,7 +63,7 @@ rule _a = "a" "b"`)
 		t.Fatal(err)
 	}
 	// The same holds for the rule of an inline action, whose name nobody declared.
-	q := compile(t, `rule main = (x:"a" => $x) "b"`)
+	q := mustCompile(t, `rule main = (x:"a" => $x) "b"`)
 	if _, err := q.Parse("_main_1", "a"); err == nil || !strings.Contains(err.Error(), "hidden") {
 		t.Fatalf("parse by a generated name: %v", err)
 	}
@@ -248,7 +248,7 @@ func TestInlineActionTypesInMessages(t *testing.T) {
 // The rules a type refers to are found in the structure of the type, including the types of the
 // captures of a node, which have no place in its text.
 func TestPruneSpliceTypesFollowsTheStructureOfTypes(t *testing.T) {
-	p := compile(t, "rule main = \"a\" _m\nrule _m = \"b\" _m?")
+	p := mustCompile(t, "rule main = \"a\" _m\nrule _m = \"b\" _m?")
 	rules := p.Grammar.Rules()
 	for _, c := range []struct {
 		name string

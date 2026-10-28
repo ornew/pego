@@ -440,7 +440,7 @@ func TestCanonicalValues(t *testing.T) {
 // to a zero value: nil, "", 0, false and an empty list. canonicalDifferences treats an absent key of
 // a struct as an unset field, which is sound only while this holds.
 func TestEngineStructKeepsExplicitZeroFields(t *testing.T) {
-	prog := compile(t, `type Z = { P *node[string]; S string; I int; B bool; L []node[string] }
+	prog := mustCompile(t, `type Z = { P *node[string]; S string; I int; B bool; L []node[string] }
 rule main Z = x:"a" => Z{P: nil, S: "", I: 0, B: false, L: []node[string]{}}`)
 	n, err := prog.Parse("main", "a")
 	if err != nil {

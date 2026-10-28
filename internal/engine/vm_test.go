@@ -16,13 +16,13 @@ func TestBackendsMatchOnCorpus(t *testing.T) {
 	for _, c := range genCorpus(t) {
 		t.Run(c.name, func(t *testing.T) {
 			for _, o := range []Options{{}, {DisableMemo: true}} {
-				prog := compile(t, c.src, o)
+				prog := mustCompile(t, c.src, o)
 				for _, in := range c.inputs {
 					checkBackends(t, prog, "main", in)
 				}
 			}
 			// Projected repetitions (project.go) give what the repetitions as written give.
-			prog, plain := compile(t, c.src), compile(t, c.src, Options{noProjections: true})
+			prog, plain := mustCompile(t, c.src), mustCompile(t, c.src, Options{noProjections: true})
 			for _, in := range c.inputs {
 				for _, u := range []PositionUnit{CodePoints, Bytes} {
 					n1, err1 := prog.ParseWith("main", in, ParseOptions{Unit: u})
@@ -38,7 +38,7 @@ func TestBackendsMatchOnCorpus(t *testing.T) {
 
 // TestBackendsMatchOnStream checks that stream parsing also yields the same elements and errors.
 func TestBackendsMatchOnStream(t *testing.T) {
-	prog := compile(t, records)
+	prog := mustCompile(t, records)
 	inputs := []string{"#records\na=1\nbc=22\n", "#records\na=1\nb\n", "#rec"}
 	for _, in := range inputs {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
@@ -61,7 +61,7 @@ func TestBackendsMatchOnStream(t *testing.T) {
 // TestIterativeDeepNesting checks that the iterative model uses hardly any host stack even on
 // deeply nested input.
 func TestIterativeDeepNesting(t *testing.T) {
-	prog := compile(t, `rule main = e $$
+	prog := mustCompile(t, `rule main = e $$
 rule e = "(" e ")" / x
 rule x = #operators {
     operand "x"
@@ -91,7 +91,7 @@ rule x = #operators {
 // Operators Rule expression parses by recursion, count against an explicit nesting limit on every
 // backend: they fail with an error instead of consuming unbounded stack or frame storage.
 func TestOperatorsRuleNestingLimit(t *testing.T) {
-	prog := compile(t, `rule main = x $$
+	prog := mustCompile(t, `rule main = x $$
 rule x = #operators {
     operand "x"
     level { infix right "^" }
@@ -124,7 +124,7 @@ rule e = #operators {
     level { postfix "!" }
 }`
 	for _, disableMemo := range []bool{false, true} {
-		prog := compile(t, src, Options{DisableMemo: disableMemo})
+		prog := mustCompile(t, src, Options{DisableMemo: disableMemo})
 		for _, tc := range []struct {
 			input string
 			depth int
@@ -157,7 +157,7 @@ rule e = #operators {
 }
 
 func TestOperatorsRuleStreamDepthLimit(t *testing.T) {
-	prog := compile(t, `rule main = (e ";")* #stream $$
+	prog := mustCompile(t, `rule main = (e ";")* #stream $$
 rule e = #operators {
     operand "x"
     level { infix right "^" }
@@ -194,7 +194,7 @@ rule e = #operators {
 // one Program (whose backends are prepared lazily), and checks that each gets the result of a
 // parse on its own. Run with -race to check that per-parse state is not shared.
 func TestConcurrentParses(t *testing.T) {
-	prog := compile(t, `type Pair = { Key node[string]; Value Node }
+	prog := mustCompile(t, `type Pair = { Key node[string]; Value Node }
 type Op = { L Node; R Node }
 type Node ~ Op | node[string]
 rule main = ps:pair* => concat(map($ps, (p) => p), list())

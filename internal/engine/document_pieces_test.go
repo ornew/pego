@@ -80,7 +80,7 @@ func TestDocumentPiecesCrossBoundaryParsing(t *testing.T) {
 	prefix := strings.Repeat("x", documentPieceMinSize)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		t.Run(backend.String(), func(t *testing.T) {
-			program := compile(t, `rule main = "x"* "aé" "b" $$`)
+			program := mustCompile(t, `rule main = "x"* "aé" "b" $$`)
 			doc, err := program.NewDocumentWith("main", prefix+"a\xc3b", ParseOptions{Backend: backend, Unit: Bytes})
 			if err != nil {
 				t.Fatal(err)
@@ -107,7 +107,7 @@ func TestDocumentPiecesCrossBoundaryParsing(t *testing.T) {
 }
 
 func TestDocumentPiecesCodePointNormalizationAndNodeText(t *testing.T) {
-	program := compile(t, `rule main Word = ([a-z]+ $$) #atomic
+	program := mustCompile(t, `rule main Word = ([a-z]+ $$) #atomic
 type Word = node[string]`)
 	prefix := strings.Repeat("x", documentPieceMinSize)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -135,7 +135,7 @@ type Word = node[string]`)
 		})
 	}
 
-	invalid := compile(t, `rule main = "x"* "��" $$`)
+	invalid := mustCompile(t, `rule main = "x"* "��" $$`)
 	doc, err := invalid.NewDocument("main", prefix+"\xc3")
 	if err != nil {
 		t.Fatal(err)
@@ -172,7 +172,7 @@ func TestDocumentPieceLargeByteOffsets(t *testing.T) {
 }
 
 func TestDocumentPiecesSmallDocumentPromotion(t *testing.T) {
-	program := compile(t, `rule main = [a-z]+ $$`)
+	program := mustCompile(t, `rule main = [a-z]+ $$`)
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			t.Run(unit.String()+"/"+backend.String(), func(t *testing.T) {
@@ -203,7 +203,7 @@ func TestDocumentPiecesSmallDocumentPromotion(t *testing.T) {
 		}
 	}
 
-	invalid := compile(t, `rule main = "a"* "b"? "�" $$`)
+	invalid := mustCompile(t, `rule main = "a"* "b"? "�" $$`)
 	initial := strings.Repeat("a", documentPieceMinSize-2) + "\xff"
 	doc, err := invalid.NewDocument("main", initial)
 	if err != nil {
@@ -236,7 +236,7 @@ func TestDocumentPiecesCompactionPreservesEarlierNodeText(t *testing.T) {
 	if !documentPieceInput {
 		t.Skip("piece storage is disabled")
 	}
-	program := compile(t, `rule main Word = ([a-z]+ $$) #atomic
+	program := mustCompile(t, `rule main Word = ([a-z]+ $$) #atomic
 type Word = node[string]`)
 	initial := strings.Repeat("a", documentPieceMinSize)
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {

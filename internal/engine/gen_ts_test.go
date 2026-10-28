@@ -478,7 +478,7 @@ func TestGeneratedTSFieldNames(t *testing.T) {
 	out := runTSGrammarScriptWith(t, g, `import { parse } from "./parser.ts";
 console.log(JSON.stringify(parse("abcd").node));
 `, gen.GenOptions{Start: "main", SourceInfo: true})
-	n, err := compile(t, src).Parse("main", "abcd")
+	n, err := mustCompile(t, src).Parse("main", "abcd")
 	if err != nil {
 		t.Fatal(err)
 	}

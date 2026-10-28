@@ -17,10 +17,10 @@ func TestFoldAccumulatorMustConverge(t *testing.T) {
 		}
 	}
 	// With a cast the callback result has the accumulator's type, and every backend agrees.
-	program := compile(t, prelude+`rule main T = d:"a"* $$ => T{F: foldl(list().([][][][]int), $d, (acc, e) => acc)}`)
+	program := mustCompile(t, prelude+`rule main T = d:"a"* $$ => T{F: foldl(list().([][][][]int), $d, (acc, e) => acc)}`)
 	checkBackends(t, program, "main", "aaa")
 	// A fold that converges within the widening is accepted.
-	checkBackends(t, compile(t, `rule main = d:"a"* $$ => foldl(0, $d, (acc, e) => acc + 1)`), "main", "aaa")
+	checkBackends(t, mustCompile(t, `rule main = d:"a"* $$ => foldl(0, $d, (acc, e) => acc + 1)`), "main", "aaa")
 }
 
 // Compiled bytes depend on the grammar, not on its layout, unless source information is recorded.
@@ -84,7 +84,7 @@ func TestNodeTopIsCastToSupplyElements(t *testing.T) {
 			t.Errorf("%s was accepted", fn)
 		}
 	}
-	program := compile(t, "rule main = n:xs $$ => len(map($n.([]_), (x) => x))\n"+rules)
+	program := mustCompile(t, "rule main = n:xs $$ => len(map($n.([]_), (x) => x))\n"+rules)
 	checkBackends(t, program, "main", "aaa")
 	if got := resultJSON(program.ParseWith("main", "aaa", ParseOptions{})); !strings.Contains(got, "3") {
 		t.Errorf("got %s, want 3", got)

@@ -103,7 +103,7 @@ func workContextVariantName(opts ParseOptions) string {
 
 func TestWorkContextErrPanicIdentityBeforeExecution(t *testing.T) {
 	text := strings.Repeat("a", 8192)
-	prog := compile(t, `rule main = "`+text+`" $$`)
+	prog := mustCompile(t, `rule main = "`+text+`" $$`)
 	for _, base := range workContextVariants() {
 		for _, phase := range []string{"admission", "later-check", "Done"} {
 			t.Run(workContextVariantName(base)+"/"+phase, func(t *testing.T) {
@@ -146,10 +146,10 @@ func TestWorkContextErrPanicIdentityBeforeExecution(t *testing.T) {
 }
 
 func TestWorkContextErrPanicIdentityAtTraceBoundaries(t *testing.T) {
-	childProg := compile(t, `rule main = child $$
+	childProg := mustCompile(t, `rule main = child $$
 
 rule child = "a"`)
-	plainProg := compile(t, `rule main = "a" $$`)
+	plainProg := mustCompile(t, `rule main = "a" $$`)
 	for _, base := range workContextVariants() {
 		backend := base.Backend
 		t.Run(workContextVariantName(base)+"/child precheck", func(t *testing.T) {
@@ -199,7 +199,7 @@ rule child = "a"`)
 }
 
 func TestWorkContextErrPanicIdentityAtPublicationAndFailedReservation(t *testing.T) {
-	prog := compile(t, `rule main = "a" $$`)
+	prog := mustCompile(t, `rule main = "a" $$`)
 	for _, base := range workContextVariants() {
 		backend := base.Backend
 		t.Run(workContextVariantName(base)+"/publication", func(t *testing.T) {
@@ -248,7 +248,7 @@ func TestWorkContextErrPanicIdentityAtPublicationAndFailedReservation(t *testing
 
 func TestWorkContextErrPanicIdentityAtCountedWorkAndRetry(t *testing.T) {
 	literal := strings.Repeat("a", 1024)
-	prog := compile(t, `rule main = "`+literal+`" $$`)
+	prog := mustCompile(t, `rule main = "`+literal+`" $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			for _, recognize := range []bool{false, true} {
@@ -304,7 +304,7 @@ func TestWorkContextErrPanicIdentityAtCountedWorkAndRetry(t *testing.T) {
 
 func TestWorkContextErrPanicIdentityLoadedASTOmittedProgram(t *testing.T) {
 	literal := strings.Repeat("a", 1024)
-	source := compile(t, `rule main = "`+literal+`" $$`)
+	source := mustCompile(t, `rule main = "`+literal+`" $$`)
 	// The parse below is traced, which a compiled grammar serves in document mode.
 	prog := saveLoad(t, source, "main", CompiledDocument)
 	if prog.Grammar != nil {

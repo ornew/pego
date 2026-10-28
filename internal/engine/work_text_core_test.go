@@ -49,7 +49,7 @@ rule piece = .*`
 
 rule piece = .*`
 		}
-		prog := compile(t, grammar)
+		prog := mustCompile(t, grammar)
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, u := range []PositionUnit{Bytes, CodePoints} {
 				retained, err := prog.ParseWith("main", strings.Repeat("oldλ\xff", 90), ParseOptions{Backend: b, Unit: u, WorkLimits: limits.WorkLimits{MaxInputWork: 1 << 50}})
@@ -145,7 +145,7 @@ func TestWorkTextNodeRoutesParity(t *testing.T) {
 rule main Token = t:(.* $$) #atomic => Token{Text: text($t)}`, `rule main = item $$
 
 rule item = "!" #recover(skip=.*)`} {
-		prog := compile(t, src)
+		prog := mustCompile(t, src)
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, u := range []PositionUnit{Bytes, CodePoints} {
 				for _, recognize := range []bool{false, true} {

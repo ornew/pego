@@ -88,7 +88,7 @@ func testOperatorsRuleExplicitDefaultAction(t *testing.T) {
     operand "α"
     level { infix left "+" }
 }`
-	plain := compile(t, source)
+	plain := mustCompile(t, source)
 	for _, opts := range []Options{{SourceInfo: true}} {
 		g, err := parseTest(source + " => ...")
 		if err != nil {

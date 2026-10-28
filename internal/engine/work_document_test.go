@@ -49,7 +49,7 @@ func workDocumentAssertRetry(t *testing.T, d *Document) {
 }
 
 func TestWorkDocumentConstruction(t *testing.T) {
-	prog := compile(t, `rule main = .* $$`)
+	prog := mustCompile(t, `rule main = .* $$`)
 	workDocumentVariants(t, func(t *testing.T, base ParseOptions) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
@@ -108,7 +108,7 @@ func TestWorkDocumentConstruction(t *testing.T) {
 }
 
 func TestWorkDocumentAdmittedAbortAndRetry(t *testing.T) {
-	prog := compile(t, `rule main = item+ $$
+	prog := mustCompile(t, `rule main = item+ $$
 
 rule item = "a"`)
 	workDocumentVariants(t, func(t *testing.T, base ParseOptions) {
@@ -176,7 +176,7 @@ rule item = "a"`)
 }
 
 func TestWorkDocumentCallerPanicAtBoundaries(t *testing.T) {
-	prog := compile(t, `rule main = "a" $$`)
+	prog := mustCompile(t, `rule main = "a" $$`)
 	workDocumentVariants(t, func(t *testing.T, base ParseOptions) {
 		last := 3
 		if prog.backend(base.Backend) == Closure {
@@ -220,7 +220,7 @@ func TestWorkDocumentCallerPanicAtBoundaries(t *testing.T) {
 }
 
 func TestWorkDocumentModeRejectionPreservesState(t *testing.T) {
-	prog := compile(t, `rule main = "a" $$`)
+	prog := mustCompile(t, `rule main = "a" $$`)
 	workDocumentVariants(t, func(t *testing.T, base ParseOptions) {
 		d, err := prog.NewDocumentWith("main", "a", base)
 		if err != nil {
@@ -267,7 +267,7 @@ func TestWorkDocumentModeRejectionPreservesState(t *testing.T) {
 }
 
 func TestWorkDocumentConstructorCallerPanicIdentity(t *testing.T) {
-	prog := compile(t, `rule main = .* $$`)
+	prog := mustCompile(t, `rule main = .* $$`)
 	workDocumentVariants(t, func(t *testing.T, base ParseOptions) {
 		for _, at := range []int{0, 1, 2} {
 			token := &workContextPanicToken{phase: fmt.Sprint(at)}
@@ -296,7 +296,7 @@ type workDocumentInactiveContext struct{ context.Context }
 func (workDocumentInactiveContext) Err() error { panic("inactive context must not be polled") }
 
 func TestWorkDocumentInactiveContext(t *testing.T) {
-	prog := compile(t, `rule main = "a" $$`)
+	prog := mustCompile(t, `rule main = "a" $$`)
 	workDocumentVariants(t, func(t *testing.T, o ParseOptions) {
 		o.Context = workDocumentInactiveContext{Context: context.Background()}
 		d, err := prog.NewDocumentWith("main", "a", o)
@@ -314,7 +314,7 @@ func TestWorkDocumentInactiveContext(t *testing.T) {
 func TestWorkDocumentPreservesVMFaultAttribution(t *testing.T) {
 	for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{Bytes, CodePoints} {
-			prog := compile(t, `rule main = "a" $$`)
+			prog := mustCompile(t, `rule main = "a" $$`)
 			d, err := prog.NewDocumentWith("main", "a", ParseOptions{Backend: backend, Unit: unit})
 			if err != nil {
 				t.Fatal(err)
@@ -333,7 +333,7 @@ func TestWorkDocumentPreservesVMFaultAttribution(t *testing.T) {
 func TestWorkDocumentPreRunPreservesOversizedValues(t *testing.T) {
 	for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{Bytes, CodePoints} {
-			prog := compile(t, `rule main = "a" $$`)
+			prog := mustCompile(t, `rule main = "a" $$`)
 			d, err := prog.NewDocumentWith("main", "a", ParseOptions{Backend: backend, Unit: unit})
 			if err != nil {
 				t.Fatal(err)

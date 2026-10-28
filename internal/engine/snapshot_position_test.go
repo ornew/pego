@@ -20,7 +20,7 @@ rule item = [a-z]`,
 rule main = -[ ]* item* $$
 rule item = x:[a-z] => Item{At: $x.Start, Text: text($x)}`,
 	} {
-		prog := compile(t, src)
+		prog := mustCompile(t, src)
 		snapshotVariants(t, func(t *testing.T, o ParseOptions) {
 			d, err := prog.NewDocumentWith("main", strings.Repeat("a", 1025), o)
 			if err != nil {
@@ -117,7 +117,7 @@ func TestSnapshotPositionOverlayZeroAndOverflow(t *testing.T) {
 }
 
 func TestSnapshotPositionOverlaysUnicodeAndInvalidUTF8(t *testing.T) {
-	prog := compile(t, `rule main = -[ ]* item* $$
+	prog := mustCompile(t, `rule main = -[ ]* item* $$
 rule item = .`)
 	for _, text := range []string{strings.Repeat("é🙂", 513), strings.Repeat("a\xff", 513)} {
 		snapshotVariants(t, func(t *testing.T, o ParseOptions) {
@@ -226,7 +226,7 @@ func TestSnapshotPositionOverlayCancellationDuringMetadataCopy(t *testing.T) {
 	if !workControlsEnabled {
 		t.Skip("work control reference")
 	}
-	prog := compile(t, `rule main = -[ ]* item* $$
+	prog := mustCompile(t, `rule main = -[ ]* item* $$
 rule item = [a-z]`)
 	snapshotVariants(t, func(t *testing.T, o ParseOptions) {
 		d, err := prog.NewDocumentWith("main", strings.Repeat("a", 4096), o)

@@ -71,7 +71,7 @@ func TestActionResultReleasesTracking(t *testing.T) {
 }
 
 func TestNilActionStreamMemoryIsBounded(t *testing.T) {
-	prog := compile(t, nilActionStream)
+	prog := mustCompile(t, nilActionStream)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {

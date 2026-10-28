@@ -246,7 +246,7 @@ rule val _ = "v" => list()
 		t.Fatalf("unknown value: %q", got)
 	}
 	src := decls + fmt.Sprintf(body, "$d.(Int)")
-	prog := compile(t, src)
+	prog := mustCompile(t, src)
 	m := prog.Module()
 	if v := m.InstructionSetVersion(); v != bytecode.ISAVersion {
 		t.Fatalf("instruction set %d", v)
@@ -254,7 +254,7 @@ rule val _ = "v" => list()
 	if d := m.Disassemble(); strings.Count(d, "ECAST") != 1 || !strings.Contains(d, `ECAST      "Int"`) {
 		t.Fatalf("disassembly:\n%s", d)
 	}
-	plain := compile(t, `type Int = { Text string }
+	plain := mustCompile(t, `type Int = { Text string }
 type S = { Static Int }
 rule main = a:item => S{Static: $a}
 rule item Int = "i" => Int{Text: "i"}
@@ -269,7 +269,7 @@ rule item Int = "i" => Int{Text: "i"}
 		t.Fatalf("dynamic list: %s", got)
 	}
 	// The recognizer keeps the same casts as its program.
-	pred := compile(t, `type Int = { Text string }
+	pred := mustCompile(t, `type Int = { Text string }
 type S = { Static Int; Dynamic Int }
 rule main = a:item d:val {S{Static: $a, Dynamic: $d.(Int)} != nil}
 rule item Int = "i" => Int{Text: "i"}
@@ -298,7 +298,7 @@ rule val _ = "v"
 // TestCompiledFieldChecksValidation checks that loading rejects files of an earlier
 // instruction set and cast type texts that do not name a known type.
 func TestCompiledFieldChecksValidation(t *testing.T) {
-	prog := compile(t, fieldCheckGrammar("[]*(Int | node[string])"))
+	prog := mustCompile(t, fieldCheckGrammar("[]*(Int | node[string])"))
 	data, err := prog.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)

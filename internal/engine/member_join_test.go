@@ -95,7 +95,7 @@ func TestMemberAccessOnJoinTypeErrors(t *testing.T) {
 func TestMemberAccessOnJoinAcrossBackends(t *testing.T) {
 	for _, fixture := range joinMemberCases() {
 		t.Run(fixture.name, func(t *testing.T) {
-			program := compile(t, fixture.src)
+			program := mustCompile(t, fixture.src)
 			for _, input := range fixture.inputs {
 				baseline := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure}))
 				for _, backend := range []Backend{Bytecode, BytecodeIterative} {
@@ -119,7 +119,7 @@ func TestMemberAccessOnJoinValues(t *testing.T) {
 		{joinMemberRules + "rule main = x:u $$ => $x.(A).X\n", "a", `1`},
 		{joinMemberRules + "rule main = x:u $$ => $x.(A).X\n", "b", `cannot cast`},
 	} {
-		program := compile(t, tc.src)
+		program := mustCompile(t, tc.src)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			if got := resultJSON(program.ParseWith("main", tc.input, ParseOptions{Backend: backend})); !strings.Contains(got, tc.want) {
 				t.Errorf("%s %q: %s, want %s", backend, tc.input, got, tc.want)

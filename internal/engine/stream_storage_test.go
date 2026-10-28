@@ -18,7 +18,7 @@ rule value = v:[a-z]+ #atomic ","`
 // Completed calls can leave references beyond slice length. Stream commits
 // must release them at the next prune without disturbing active root values.
 func TestStreamStorageCommitReferences(t *testing.T) {
-	p := newParser(compile(t, `rule main = "a"`), strings.Repeat("a", 4096), CodePoints, false)
+	p := newParser(mustCompile(t, `rule main = "a"`), strings.Repeat("a", 4096), CodePoints, false)
 	live := value.Ptr(value.Data{Text: "live"})
 	dead := value.Ptr(value.Data{Text: "dead"})
 	root := p.newFrame(1)
@@ -58,7 +58,7 @@ func TestStreamPrefixStorageIsolation(t *testing.T) {
 	if !streamPrefixIsolation {
 		t.Skip("reference build shares prefix storage")
 	}
-	p := newStreamParser(compile(t, `rule main = "a"`), strings.NewReader("a"), CodePoints)
+	p := newStreamParser(mustCompile(t, `rule main = "a"`), strings.NewReader("a"), CodePoints)
 	root := p.newFrame(1)
 	p.frame = root
 	prefix := p.newNode(value.Data{Text: "prefix"})
@@ -82,7 +82,7 @@ func TestStreamPrefixAllocationBudget(t *testing.T) {
 	if !streamPrefixIsolation {
 		t.Skip("reference build uses slabs")
 	}
-	p := newStreamParser(compile(t, `rule main = "a"`), strings.NewReader("a"), CodePoints)
+	p := newStreamParser(mustCompile(t, `rule main = "a"`), strings.NewReader("a"), CodePoints)
 	for range nodeChunk/8 + 4 {
 		p.newNode(value.Data{Text: "prefix"})
 	}
@@ -112,7 +112,7 @@ func TestStreamPrefixLoadedRepetitions(t *testing.T) {
 			text, count = "#head\n", 0
 		}
 		source := `rule main = h:"#head\n" #atomic (x:"x" #atomic)` + bound + ` #stream $$ {text($h) == "#head\n"}`
-		prog := compile(t, source)
+		prog := mustCompile(t, source)
 		for _, mode := range valueModes {
 			saved := saveLoad(t, prog, "main", mode)
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -141,7 +141,7 @@ func TestStreamPrefixLoadedRepetitions(t *testing.T) {
 }
 
 func TestStreamPrefixMemoReuse(t *testing.T) {
-	prog := compile(t, `rule main = &header h:header (x:"x" #atomic)* #stream $$ {text($h) == "#head\n"}
+	prog := mustCompile(t, `rule main = &header h:header (x:"x" #atomic)* #stream $$ {text($h) == "#head\n"}
 rule header = "#head\n" #atomic`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -168,7 +168,7 @@ rule header = "#head\n" #atomic`)
 }
 
 func TestStreamPrefixLeftRecursiveRoot(t *testing.T) {
-	prog := compile(t, `rule main = h:(main "a" / "a" #atomic) "x"* #stream {text($h) != ""}`)
+	prog := mustCompile(t, `rule main = h:(main "a" / "a" #atomic) "x"* #stream {text($h) != ""}`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
@@ -183,7 +183,7 @@ func TestStreamPrefixLeftRecursiveRoot(t *testing.T) {
 }
 
 func TestStreamPrefixLeftRecursiveCaptureSurvivesCommit(t *testing.T) {
-	prog := compile(t, `rule main = h:head #atomic "x"* #stream {text($h) == "aa"} $$
+	prog := mustCompile(t, `rule main = h:head #atomic "x"* #stream {text($h) == "aa"} $$
 rule head = head "a" / "a" #atomic`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -199,7 +199,7 @@ rule head = head "a" / "a" #atomic`)
 }
 
 func TestVMStreamRepeatShape(t *testing.T) {
-	prog := compile(t, `rule main = (x:"x" #atomic)* #stream $$`)
+	prog := mustCompile(t, `rule main = (x:"x" #atomic)* #stream $$`)
 	code := prog.Module().Code
 	ip := -1
 	for i, in := range code {

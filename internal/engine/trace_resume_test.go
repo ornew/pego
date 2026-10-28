@@ -21,7 +21,7 @@ func TestTraceDocumentReusedElements(t *testing.T) {
 					if failedRoot {
 						src = strings.Replace(src, "lines $$", `lines "!" $$`, 1)
 					}
-					prog := compile(t, src)
+					prog := mustCompile(t, src)
 					opts := ParseOptions{Backend: backend, Unit: unit}
 					text := strings.Repeat("ab\n", 32)
 					plain, err := prog.NewDocumentWith("main", text, opts)
@@ -132,7 +132,7 @@ func TestTraceDocumentReusedElementsPanicRetry(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
-				prog := compile(t, traceResumeGrammar)
+				prog := mustCompile(t, traceResumeGrammar)
 				opts := ParseOptions{Backend: backend, Unit: unit}
 				doc, err := prog.NewDocumentWith("main", strings.Repeat("ab\n", 32), opts)
 				if err != nil {

@@ -52,7 +52,7 @@ rule n = ("(" n ")" / "é") #recover(skip="?")`, []string{"é", "(é)", "((é))"
 		if err != nil {
 			t.Fatal(err)
 		}
-		prog := compile(t, c.src)
+		prog := mustCompile(t, c.src)
 		if i == 0 {
 			code = append(code, []byte(fmt.Sprintf("\nexport function installTestAction(fn: () => void): void { R%d.action = () => {fn(); return null;}; }\n", prog.byName["trigger"].id))...)
 		}

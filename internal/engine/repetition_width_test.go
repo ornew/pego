@@ -44,7 +44,7 @@ func TestWideRepetitionModuleValidation(t *testing.T) {
 				if scan {
 					body = `[a] #repeat(0,4294967296) #atomic`
 				}
-				prog := compile(t, "rule main = "+body+" $$")
+				prog := mustCompile(t, "rule main = "+body+" $$")
 				m := prog.Module()
 				found := false
 				for i := range m.Code {
@@ -89,7 +89,7 @@ func TestWideRepetitionModuleValidation(t *testing.T) {
 }
 
 func TestWideRepetitionInstructionSet(t *testing.T) {
-	ordinary := compile(t, `rule main = "a"* $$`)
+	ordinary := mustCompile(t, `rule main = "a"* $$`)
 	data, err := ordinary.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
@@ -100,7 +100,7 @@ func TestWideRepetitionInstructionSet(t *testing.T) {
 	if strconv.IntSize < 64 {
 		return
 	}
-	wide := compile(t, `rule main = "a" #repeat(0, 4294967296) $$`)
+	wide := mustCompile(t, `rule main = "a" #repeat(0, 4294967296) $$`)
 	data, err = wide.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
@@ -126,7 +126,7 @@ func TestWideRepetitionBounds(t *testing.T) {
 	for _, c := range wideRepetitionCases() {
 		t.Run(c.name, func(t *testing.T) {
 			for _, options := range []Options{{}, {DisableMemo: true}} {
-				prog := compile(t, c.src, options)
+				prog := mustCompile(t, c.src, options)
 				for _, input := range c.inputs {
 					checkBackends(t, prog, "main", input)
 				}
@@ -167,7 +167,7 @@ func TestWideRepetitionDocumentsAndStreams(t *testing.T) {
 		t.Skip("bounds exceed a 32-bit implementation's source integer range")
 	}
 	for _, bound := range []string{"2147483648", "4294967296", "9223372036854775807"} {
-		prog := compile(t, fmt.Sprintf(`rule main = "é" #repeat(0,%s) #stream $$`, bound))
+		prog := mustCompile(t, fmt.Sprintf(`rule main = "é" #repeat(0,%s) #stream $$`, bound))
 		modes := map[*Program]CompiledMode{prog: CompiledParse}
 		programs := []*Program{prog}
 		for _, mode := range valueModes {

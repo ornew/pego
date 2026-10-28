@@ -38,7 +38,7 @@ func TestLeftRecursionRetainsReachableSuffixes(t *testing.T) {
 		`{false}`, `$$`, `r1`, `operatorsRule_value`, `level(operatorsRule_value, lv)`,
 	} {
 		t.Run(prior, func(t *testing.T) {
-			p := compile(t, fmt.Sprintf("rule r1 = r2?\nrule r2 = ((\"a\" / r1 / \"\\n\") / %s / (r2 / $$)) #repeat(0, 1)\nrule operatorsRule_value = #operators {\n    operand _\n    level lv { postfix \"!\" }\n}", prior))
+			p := mustCompile(t, fmt.Sprintf("rule r1 = r2?\nrule r2 = ((\"a\" / r1 / \"\\n\") / %s / (r2 / $$)) #repeat(0, 1)\nrule operatorsRule_value = #operators {\n    operand _\n    level lv { postfix \"!\" }\n}", prior))
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				n, err := p.ParseWith("r2", "", ParseOptions{Backend: backend})
 				if err != nil || n.String() != `[nil]@r2` {
@@ -63,7 +63,7 @@ func TestLeftRecursionIgnoresUnreachableRecoveryChain(t *testing.T) {
 			fmt.Fprintf(&original, "rule chain%d = \"\"", depth)
 			fmt.Fprintf(&removed, "rule chain%d = \"\"", depth)
 			for _, options := range []Options{{}, {DisableMemo: true}} {
-				p, q := compile(t, original.String(), options), compile(t, removed.String(), options)
+				p, q := mustCompile(t, original.String(), options), mustCompile(t, removed.String(), options)
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 					for _, unit := range []PositionUnit{CodePoints, Bytes} {
 						o := ParseOptions{Backend: backend, Unit: unit}
@@ -83,7 +83,7 @@ func TestLeftRecursionReachabilitySavedAndDocuments(t *testing.T) {
 	for _, c := range reachabilityGeneratedCases {
 		t.Run(c.name, func(t *testing.T) {
 			for _, options := range []Options{{}, {DisableMemo: true}} {
-				p := compile(t, c.src, options)
+				p := mustCompile(t, c.src, options)
 				for _, mode := range valueModes {
 					q := saveLoad(t, p, "main", mode)
 					for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -132,7 +132,7 @@ func TestLeftRecursionReachabilitySavedAndDocuments(t *testing.T) {
 
 func TestLeftRecursionRecoverySkipStreams(t *testing.T) {
 	for _, options := range []Options{{}, {DisableMemo: true}} {
-		p := compile(t, `rule main = (a "\n")* #stream $$
+		p := mustCompile(t, `rule main = (a "\n")* #stream $$
 rule a = "x" #recover(skip=a) / "y"`, options)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -150,7 +150,7 @@ rule a = "x" #recover(skip=a) / "y"`, options)
 }
 
 func TestLeftRecursionInRecoverySkip(t *testing.T) {
-	p := compile(t, `rule main = a
+	p := mustCompile(t, `rule main = a
 rule a = "x" #recover(skip=a) / "y"`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -167,7 +167,7 @@ func TestLeftRecursionIgnoresUnreachableAlternatives(t *testing.T) {
 	const removed = `rule r1 = r2?
 rule r2 = (("a" / r1 / "\n") / ("" / "\n")) #repeat(0, 1)`
 	for _, options := range []Options{{}, {DisableMemo: true}} {
-		p, q := compile(t, original, options), compile(t, removed, options)
+		p, q := mustCompile(t, original, options), mustCompile(t, removed, options)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				o := ParseOptions{Backend: backend, Unit: unit}
@@ -197,7 +197,7 @@ func TestLeftRecursionUnconditionalSuffixForms(t *testing.T) {
 			original := prefix + " / (r2 / $$)) #repeat(0, 1)\nrule empty = \"\"\nrule alias = empty"
 			removed := prefix + ") #repeat(0, 1)\nrule empty = \"\"\nrule alias = empty"
 			for _, options := range []Options{{}, {DisableMemo: true}} {
-				p, q := compile(t, original, options), compile(t, removed, options)
+				p, q := mustCompile(t, original, options), mustCompile(t, removed, options)
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 					for _, unit := range []PositionUnit{CodePoints, Bytes} {
 						for _, input := range []string{"", "a", "x", "xy", "\n", "aa", "b"} {

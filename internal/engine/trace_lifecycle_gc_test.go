@@ -98,8 +98,8 @@ func traceLifecycleStream(t *testing.T, p *Program, b Backend, u PositionUnit) (
 	return e, rr, sr, held
 }
 func TestTraceLifecycleReleasesOwnersAfterGC(t *testing.T) {
-	doc := compile(t, `rule main = "a"* $$`)
-	stream := compile(t, records)
+	doc := mustCompile(t, `rule main = "a"* $$`)
+	stream := mustCompile(t, records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("document/%s/%s", b, u), func(t *testing.T) {

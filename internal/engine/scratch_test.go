@@ -18,7 +18,7 @@ rule line = ^ (k:key " = " v:val / k:key " : " v:val) "\n"
 rule key = [a-z_]+ #atomic
 rule val = [^\n]+ #atomic
 rule blank = "\n"`
-	pooled := compile(t, src)
+	pooled := mustCompile(t, src)
 	rng := rand.New(rand.NewSource(9))
 	inputs := []string{""}
 	for _, n := range []int{1, 200, 3, 1000, 0, 50, 5000, 2} {
@@ -39,7 +39,7 @@ rule blank = "\n"`
 		}
 	}
 	check := func(t *testing.T, in string, o ParseOptions) {
-		fresh := compile(t, src) // a program whose pool is empty
+		fresh := mustCompile(t, src) // a program whose pool is empty
 		n, err := pooled.ParseWith("main", in, o)
 		fn, ferr := fresh.ParseWith("main", in, o)
 		if g, w := dump(t, n, err), dump(t, fn, ferr); g != w {

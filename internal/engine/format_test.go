@@ -22,8 +22,8 @@ func TestFormatPreservesMinusSemantics(t *testing.T) {
 	} {
 		t.Run(src, func(t *testing.T) {
 			for _, options := range []Options{{}, {DisableMemo: true}} {
-				before := compile(t, src, options)
-				after := compile(t, grammar.Format(before.Grammar), options)
+				before := mustCompile(t, src, options)
+				after := mustCompile(t, grammar.Format(before.Grammar), options)
 				for _, input := range []string{"", "a", "b", "aa", "ab", "ac"} {
 					checkBackends(t, before, "main", input)
 					checkBackends(t, after, "main", input)
@@ -90,7 +90,7 @@ func TestFormatPreservesCorpus(t *testing.T) {
 			if len(s.inputs) == 0 {
 				return
 			}
-			p1, p2 := compile(t, s.src, Options{noProjections: true}), compile(t, formatted, Options{noProjections: true})
+			p1, p2 := mustCompile(t, s.src, Options{noProjections: true}), mustCompile(t, formatted, Options{noProjections: true})
 			for _, input := range s.inputs {
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					opts := ParseOptions{Unit: unit}

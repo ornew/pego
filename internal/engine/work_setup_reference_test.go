@@ -14,7 +14,7 @@ func TestWorkSetupReferenceAdmission(t *testing.T) {
 	for _, omitted := range []bool{false, true} {
 		for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 			for _, api := range []string{"batch", "document", "stream"} {
-				prog := compile(t, records)
+				prog := mustCompile(t, records)
 				if omitted {
 					prog = moduleProgram(prog.Module())
 				}
