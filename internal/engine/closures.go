@@ -22,9 +22,9 @@ type closureBuilder struct {
 
 var _ exprBuilder[matcher] = (*closureBuilder)(nil)
 
-// newClosureWalker returns the walker that builds the closure backend's form for the compiler c.
-func newClosureWalker(c *compiler, plainDispatch bool) *walker[matcher] {
-	return &walker[matcher]{compiler: c, b: &closureBuilder{prog: c.prog, control: c.control, plainDispatch: plainDispatch}}
+// newClosureBuilder returns the builder of the closure backend's form for the compiler c.
+func newClosureBuilder(c *compiler, plainDispatch bool) *closureBuilder {
+	return &closureBuilder{prog: c.prog, control: c.control, plainDispatch: plainDispatch}
 }
 
 // rule returns the rule the parser runs for the static rule r.
@@ -609,4 +609,159 @@ func (b *closureBuilder) Recover(e grammar.Expr, m, skip matcher, build bool) ma
 		m = captureMatcher(b.prog, e, m)
 	}
 	return recoverAttr(m, skip, build)
+}
+
+// matcher tries to match at the current position and returns the value and whether it
+// succeeded. On failure the position is unspecified; the caller restores it.
+type matcher func(p *parser) (*value.Node, bool)
+
+// tracked runs m with a separate record of expectations. It returns the farthest position and
+// the expectations of that separate record (the expectations are valid only until the next
+// recording; see unisolate).
+func tracked(p *parser, m matcher) (v *value.Node, ok bool, far int, expected []expID) {
+	mark := p.isolate(p.pos)
+	v, ok = m(p)
+	far, expected = p.unisolate(mark)
+	return v, ok, far, expected
+}
+
+// errorAttr replaces the expectations of a failed expression with the message msg (an ID with
+// msgBit set). The message is reported at the farthest position reached within the expression.
+func errorAttr(m matcher, msg expID) matcher {
+	return func(p *parser) (*value.Node, bool) {
+		v, ok, far, expected := tracked(p, m)
+		if ok {
+			p.mergeExpected(far, expected)
+			return v, true
+		}
+		p.expect(far, msg)
+		return nil, false
+	}
+}
+
+// diagnosticAttr names ordinary expectations of a failure at the expression boundary.
+// Explicit messages and the tracked failure position remain unchanged.
+func diagnosticAttr(m matcher, name expID) matcher {
+	return func(p *parser) (*value.Node, bool) {
+		v, ok, far, expected := tracked(p, m)
+		if ok {
+			p.mergeExpected(far, expected)
+			return v, true
+		}
+		p.mergeExpected(far, renamedExpected(p, expected, name))
+		return nil, false
+	}
+}
+
+func renamedExpected(p *parser, expected []expID, name expID) []expID {
+	// unisolate leaves this record beyond the active expectation stack. Rename it
+	// before mergeExpected reuses the stack; this avoids an unbounded copy.
+	for i, id := range expected {
+		p.stepWork()
+		if id&msgBit == 0 {
+			expected[i] = name
+		}
+	}
+	return expected
+}
+
+// recoverAttr records an error when the expression fails, skips the input matched by skip, and
+// returns an Error node. If skip fails or skips no characters, it fails without recovering.
+func recoverAttr(m, skip matcher, build bool) matcher {
+	return func(p *parser) (*value.Node, bool) {
+		m0 := p.mark()
+		v, ok, far, expected := tracked(p, m)
+		if ok {
+			p.mergeExpected(far, expected)
+			return v, true
+		}
+		expected = p.keep(expected) // keep them while skip runs
+		p.reset(m0)
+		if _, ok := skip(p); !ok || p.pos == m0.pos {
+			p.reset(m0)
+			p.mergeExpected(far, expected)
+			return nil, false
+		}
+		e := p.makeError(far, expected)
+		p.recovered = append(p.recovered, e)
+		if !build {
+			return nil, true
+		}
+		return p.newNode(value.Data{Kind: value.ErrorKind, Start: int32(m0.pos), End: int32(p.pos), Text: p.text(m0.pos, p.pos), Fields: value.Fields{{Name: "message", Value: p.recoveryErrorText(e)}}, Fresh: true, Terminal: true}), true
+	}
+}
+
+// shapeTuple returns the tuple node, shaped by s, of the result v of a match of [start, p.pos).
+func shapeTuple(p *parser, s shaper, v *value.Node, start int) *value.Node {
+	if s.elems {
+		if s.shared && v != nil {
+			return p.newNode(value.Data{Kind: value.SeqKind, Start: value.D(v).Start, End: value.D(v).End, Children: value.D(v).Children, Fresh: true})
+		}
+		return v
+	}
+	var kids []*value.Node
+	if s.k == 1 {
+		kids = p.nodes(1)
+		kids[0] = v
+	}
+	return p.newNode(value.Data{Kind: value.SeqKind, Start: int32(start), End: int32(p.pos), Children: kids, Fresh: true})
+}
+
+// shapeSingle returns the value, shaped by s, of the result v where the expression takes one
+// element; ok is false when it has no value.
+func shapeSingle(p *parser, s shaper, mode singleMode, v *value.Node, start int) (*value.Node, bool) {
+	switch mode {
+	case singlePass:
+		return s.one(v), true
+	case singleTuple:
+		return shapeTuple(p, s, v, start), true
+	}
+	return nil, false
+}
+
+// singleMatcher returns a matcher of the value of e where it takes one element (an alternative or
+// the operand of ?), from the building matcher m of e. Without a value the result is nil.
+func singleMatcher(prog *staticProgram, e grammar.Expr, m matcher) matcher {
+	mode, sh := singleModeOf(prog, e), shaperOf(prog, e)
+	if mode == singlePass && !sh.elems {
+		return m
+	}
+	return func(p *parser) (*value.Node, bool) {
+		start := p.pos
+		v, ok := m(p)
+		if !ok {
+			return nil, false
+		}
+		v, _ = shapeSingle(p, sh, mode, v, start)
+		return v, true
+	}
+}
+
+// captureMatcher is singleMatcher for a capture or a recovered expression, whose value is the
+// unit node of the range matched when e has no value.
+func captureMatcher(prog *staticProgram, e grammar.Expr, m matcher) matcher {
+	mode, sh := singleModeOf(prog, e), shaperOf(prog, e)
+	if mode == singlePass && !sh.elems {
+		return m
+	}
+	return func(p *parser) (*value.Node, bool) {
+		start := p.pos
+		v, ok := m(p)
+		if !ok {
+			return nil, false
+		}
+		if v, ok = shapeSingle(p, sh, mode, v, start); !ok {
+			v = p.newNode(value.Data{Kind: value.SeqKind, Start: int32(start), End: int32(p.pos), Fresh: true})
+		}
+		return v, true
+	}
+}
+
+// scopeValue returns the value of a scope whose body e matched [start, p.pos) with the result v.
+func scopeValueOf(prog *staticProgram, e grammar.Expr) func(p *parser, v *value.Node, start int) *value.Node {
+	sh := shaperOf(prog, e)
+	if scopeTuple(prog, e) {
+		return func(p *parser, v *value.Node, start int) *value.Node { return shapeTuple(p, sh, v, start) }
+	}
+	return func(_ *parser, v *value.Node, _ int) *value.Node { return sh.one(v) }
 }

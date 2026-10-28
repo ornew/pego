@@ -38,13 +38,6 @@ type operatorsRuleOp struct {
 	line  *operatorsRuleLine
 }
 
-// leanLine reports whether the value of an Operators Rule line is unused: the line is an operand
-// line with an action, which reads captures only. An operator line's value is $op or its element.
-// The bytecode compiler uses the same test.
-func leanLine(action grammar.Term, locals []string) bool {
-	return action != nil && locals == nil
-}
-
 // operatorsRuleAttempt is the result of trying an operator part.
 type operatorsRuleAttempt struct {
 	op         *operatorsRuleOp
@@ -285,7 +278,7 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 	l := a.op.line
 	// The operator's value is its one element, or the node of its tuple, which has the line's
 	// captures.
-	opv, ok := l.shape.single(p, l.single, a.v, a.start)
+	opv, ok := shapeSingle(p, l.shape, l.single, a.v, a.start)
 	if !ok {
 		opv = p.newNode(value.Data{Kind: value.SeqKind, Start: int32(a.start), End: int32(a.end)})
 	}

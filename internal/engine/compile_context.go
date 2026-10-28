@@ -7,32 +7,6 @@ import (
 	"github.com/ornew/pego/internal/grammaranalysis"
 )
 
-// CompileContext is the internal editor compilation entry point. Cancellation
-// discards the entire program and accumulated diagnostics. Existing Compile and
-// saved-program loading keep their ordinary path with no active control.
-// Polls cover grammar AST validation, source normalization, rule/dependency
-// loops, shared success proofs, expression construction and type checking.
-// Shared metadata and individual operations still have uncancellable stretches.
-// This is not a wall-clock latency guarantee.
-func CompileContext(ctx context.Context, g *grammar.Grammar, opts Options) (prog *Program, err error) {
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-	if ctx.Done() == nil {
-		return Compile(g, opts)
-	}
-	defer func() {
-		if failure := recover(); failure != nil {
-			if cancelled, ok := failure.(compileCancellation); ok {
-				prog, err = nil, cancelled.err
-			} else {
-				panic(failure)
-			}
-		}
-	}()
-	return buildControlled(g, opts, nil, &compileControl{ctx: ctx})
-}
-
 // The private unwind avoids threading errors through recursive matcher/type
 // construction. Only CompileContext catches it; unrelated panics retain their
 // existing behavior. The control is local to this compilation.

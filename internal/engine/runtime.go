@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/ornew/pego/internal/value"
@@ -217,6 +218,9 @@ func (p *parser) reportedStats() Stats {
 type frame struct {
 	vals []*value.Node
 }
+
+// emptyFrame is the frame for scopes without captures (shared because it is never written to).
+var emptyFrame = &frame{}
 
 type undo struct {
 	f    *frame
@@ -1086,4 +1090,13 @@ func (p *parser) nodeValue(n *value.Node) any {
 		return p.newNode(value.Data{Kind: value.ListValueKind, Start: value.D(n).Start, End: value.D(n).End, Children: value.D(n).Children})
 	}
 	return p.newNode(value.Data{Kind: value.TupleValueKind, Start: value.D(n).Start, End: value.D(n).End, Children: value.D(n).Children})
+}
+
+// seedVars gives the parser the initial environment of the program's variables. Every parse
+// calls it once, before it enters the start rule.
+func (p *parser) seedVars() {
+	if t := p.prog.vars; t != nil {
+		p.env, p.initEnv = p.prog.initEnv, p.prog.initEnv
+		p.bound = maps.Clone(t.bound)
+	}
 }

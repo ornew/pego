@@ -74,38 +74,6 @@ func charClassStringControlled(e *grammar.CharClass, control *compileControl) st
 	return b.String()
 }
 
-func classAcceptControlled(e *grammar.CharClass, control *compileControl) func(*parser, rune) bool {
-	if control == nil || len(e.Ranges) <= 2 {
-		return classAccept(e)
-	}
-	ranges := copyClassRanges(e.Ranges, control)
-	neg := e.Negated
-	slow := func(r rune) bool {
-		for _, rg := range ranges {
-			if rg.Lo <= r && r <= rg.Hi {
-				return !neg
-			}
-		}
-		return neg
-	}
-	ascii := classASCII(ranges, neg, control)
-	return func(p *parser, r rune) bool {
-		if uint32(r) < 128 {
-			return ascii[r>>6]&(1<<(r&63)) != 0
-		}
-		if !workControlsEnabled || p.control == nil {
-			return slow(r)
-		}
-		for _, rg := range ranges {
-			p.stepWork()
-			if rg.Lo <= r && r <= rg.Hi {
-				return !neg
-			}
-		}
-		return neg
-	}
-}
-
 // Copies and bitmap construction share the compiler invocation's polling
 // counter. Only immutable range data and bitmap values reach runtime closures.
 func copyClassRanges(ranges []grammar.CharRange, control *compileControl) []grammar.CharRange {

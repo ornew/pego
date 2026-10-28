@@ -167,22 +167,6 @@ func sharesTuple(p *staticProgram, e grammar.Expr) bool {
 	}
 }
 
-// tuple returns the tuple node of the result v of a match of [start, p.pos).
-func (s shaper) tuple(p *parser, v *value.Node, start int) *value.Node {
-	if s.elems {
-		if s.shared && v != nil {
-			return p.newNode(value.Data{Kind: value.SeqKind, Start: value.D(v).Start, End: value.D(v).End, Children: value.D(v).Children, Fresh: true})
-		}
-		return v
-	}
-	var kids []*value.Node
-	if s.k == 1 {
-		kids = p.nodes(1)
-		kids[0] = v
-	}
-	return p.newNode(value.Data{Kind: value.SeqKind, Start: int32(start), End: int32(p.pos), Children: kids, Fresh: true})
-}
-
 // one returns the one element of the result v.
 func (s shaper) one(v *value.Node) *value.Node {
 	if s.elems {
@@ -192,63 +176,4 @@ func (s shaper) one(v *value.Node) *value.Node {
 		return value.D(v).Children[0]
 	}
 	return v
-}
-
-// single returns the value of the result v where the expression takes one element; ok is false
-// when it has no value.
-func (s shaper) single(p *parser, mode singleMode, v *value.Node, start int) (*value.Node, bool) {
-	switch mode {
-	case singlePass:
-		return s.one(v), true
-	case singleTuple:
-		return s.tuple(p, v, start), true
-	}
-	return nil, false
-}
-
-// singleMatcher returns a matcher of the value of e where it takes one element (an alternative or
-// the operand of ?), from the building matcher m of e. Without a value the result is nil.
-func singleMatcher(prog *staticProgram, e grammar.Expr, m matcher) matcher {
-	mode, sh := singleModeOf(prog, e), shaperOf(prog, e)
-	if mode == singlePass && !sh.elems {
-		return m
-	}
-	return func(p *parser) (*value.Node, bool) {
-		start := p.pos
-		v, ok := m(p)
-		if !ok {
-			return nil, false
-		}
-		v, _ = sh.single(p, mode, v, start)
-		return v, true
-	}
-}
-
-// captureMatcher is singleMatcher for a capture or a recovered expression, whose value is the
-// unit node of the range matched when e has no value.
-func captureMatcher(prog *staticProgram, e grammar.Expr, m matcher) matcher {
-	mode, sh := singleModeOf(prog, e), shaperOf(prog, e)
-	if mode == singlePass && !sh.elems {
-		return m
-	}
-	return func(p *parser) (*value.Node, bool) {
-		start := p.pos
-		v, ok := m(p)
-		if !ok {
-			return nil, false
-		}
-		if v, ok = sh.single(p, mode, v, start); !ok {
-			v = p.newNode(value.Data{Kind: value.SeqKind, Start: int32(start), End: int32(p.pos), Fresh: true})
-		}
-		return v, true
-	}
-}
-
-// scopeValue returns the value of a scope whose body e matched [start, p.pos) with the result v.
-func scopeValueOf(prog *staticProgram, e grammar.Expr) func(p *parser, v *value.Node, start int) *value.Node {
-	sh := shaperOf(prog, e)
-	if scopeTuple(prog, e) {
-		return sh.tuple
-	}
-	return func(_ *parser, v *value.Node, _ int) *value.Node { return sh.one(v) }
 }

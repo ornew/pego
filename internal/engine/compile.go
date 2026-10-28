@@ -98,10 +98,6 @@ type Options struct {
 	leftRecursionBindings bool
 }
 
-// matcher tries to match at the current position and returns the value and whether it
-// succeeded. On failure the position is unspecified; the caller restores it.
-type matcher func(p *parser) (*value.Node, bool)
-
 // staticRule is a rule of a compiled program: what the compiler found out about it. Every backend and
 // generator reads it; the parser runs a rule (runtime.go) made from it.
 type staticRule struct {
@@ -177,16 +173,6 @@ func (s *scope) slot(name string) int {
 	return s.slots[name]
 }
 
-// emptyFrame is the frame for scopes without captures (shared because it is never written to).
-var emptyFrame = &frame{}
-
-func (s *scope) newFrame() *frame {
-	if len(s.names) == 0 {
-		return emptyFrame
-	}
-	return &frame{vals: make([]*value.Node, len(s.names))}
-}
-
 // Error is a compile error.
 type Error struct {
 	Pos grammar.Pos
@@ -228,7 +214,7 @@ type compiler struct {
 	descIDs        map[string]expID
 	missingSites   int
 	missingSiteIDs map[*grammar.Attribute]int
-	// runSites numbers the repetitions that a Document can resume (resume.go).
+	// runSites numbers the repetitions that a Document can resume (resumable.go).
 	runSites int
 }
 
@@ -256,11 +242,6 @@ func (c *compiler) errorf(pos grammar.Pos, format string, args ...any) {
 	c.errs = append(c.errs, &Error{Pos: pos, Msg: fmt.Sprintf(format, args...)})
 }
 
-// Compile compiles the grammar.
-func Compile(g *grammar.Grammar, opts Options) (*Program, error) {
-	return build(g, opts, nil)
-}
-
 // ruleFlags are rule properties determined by static analysis. They are saved in compiled
 // grammars so loading can skip the analysis.
 type ruleFlags struct {
@@ -269,24 +250,11 @@ type ruleFlags struct {
 	twin bool
 }
 
-// build builds a program from the grammar. If flags is not nil, it skips static analysis and
-// type checking and uses flags instead.
-func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error) {
-	return buildControlled(g, opts, flags, nil)
-}
-
-func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, control *compileControl) (*Program, error) {
-	names := inlineNames{}
-	prog, err := buildNamed(g, opts, flags, names, control)
-	if err != nil {
-		return nil, names.rewrite(err)
-	}
-	return prog, nil
-}
-
-// buildNamed is buildControlled; names receives the hidden rules that the lowering of inline actions
-// generates.
-func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlineNames, control *compileControl) (*Program, error) {
+// compileProgram compiles the grammar to its static program. The walk of the rule bodies calls
+// the builder that builder returns for the compiler, which builds the bodies in a backend's form.
+// names receives the hidden rules that the lowering of inline actions generates. If flags is not
+// nil, it skips static analysis and type checking and uses flags instead.
+func compileProgram[M any](g *grammar.Grammar, opts Options, flags []ruleFlags, names inlineNames, control *compileControl, builder func(*compiler) exprBuilder[M]) (*staticProgram, error) {
 	control.check()
 	if !opts.DefaultValue {
 		if err := validateGrammar(g, control); err != nil {
@@ -490,7 +458,7 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 			}
 		}
 	}
-	w := newClosureWalker(c, !opts.controlledDispatch)
+	w := &walker[M]{compiler: c, b: builder(c)}
 	for _, r := range prog.rules {
 		control.poll()
 		w.compileRule(r)
@@ -555,7 +523,7 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 	}
 
 	control.check()
-	return &Program{staticProgram: prog, closureRules: w.b.(*closureBuilder).finish()}, nil
+	return prog, nil
 }
 
 // validateGrammar returns the validation error of g as a compile error.
@@ -885,50 +853,6 @@ func charClassString(e *grammar.CharClass) string {
 	}
 	b.WriteString("]")
 	return b.String()
-}
-
-// classAccept returns the membership test of a character class. Classes of one or two ranges,
-// which are most of them, compare against constants; others test ASCII characters with a bitmap.
-func classAccept(e *grammar.CharClass) func(*parser, rune) bool {
-	neg := e.Negated
-	switch len(e.Ranges) {
-	case 1:
-		lo, hi := e.Ranges[0].Lo, e.Ranges[0].Hi
-		return func(_ *parser, r rune) bool { return (lo <= r && r <= hi) != neg }
-	case 2:
-		lo1, hi1, lo2, hi2 := e.Ranges[0].Lo, e.Ranges[0].Hi, e.Ranges[1].Lo, e.Ranges[1].Hi
-		return func(_ *parser, r rune) bool { return (lo1 <= r && r <= hi1 || lo2 <= r && r <= hi2) != neg }
-	}
-	ranges := append([]grammar.CharRange(nil), e.Ranges...)
-	slow := func(r rune) bool {
-		for _, rg := range ranges {
-			if rg.Lo <= r && r <= rg.Hi {
-				return !neg
-			}
-		}
-		return neg
-	}
-	var ascii [2]uint64
-	for r := rune(0); r < 128; r++ {
-		if slow(r) {
-			ascii[r>>6] |= 1 << (r & 63)
-		}
-	}
-	return func(p *parser, r rune) bool {
-		if uint32(r) < 128 {
-			return ascii[r>>6]&(1<<(r&63)) != 0
-		}
-		if !workControlsEnabled || p.control == nil {
-			return slow(r)
-		}
-		for _, rg := range ranges {
-			p.stepWork()
-			if rg.Lo <= r && r <= rg.Hi {
-				return !neg
-			}
-		}
-		return neg
-	}
 }
 
 // levelMin returns the minimum binding level of a call with a binding level.

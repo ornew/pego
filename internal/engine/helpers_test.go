@@ -306,3 +306,8 @@ func toCodePoints(input string, n *value.Node, err error) (*value.Node, error) {
 	}
 	return conv(n), err
 }
+
+// newClosureWalker returns the walker that builds the closure backend's form for the compiler c.
+func newClosureWalker(c *compiler, plainDispatch bool) *walker[matcher] {
+	return &walker[matcher]{compiler: c, b: newClosureBuilder(c, plainDispatch)}
+}

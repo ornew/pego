@@ -33,8 +33,8 @@ are a combined historical result, not an isolated line-only estimate.
 Evidence records:
 [009](../009-value-free-operators-rule-lines-discarding-trivia-in-example-grammars-936857c.md).
 
-Source owners: [`leanLine`](../../../internal/engine/operators_rule.go),
-[`Operators Rule walk`](../../../internal/engine/compile_walk.go),
+Source owners: [`leanLine` and the Operators Rule
+walk](../../../internal/engine/compile_walk.go),
 [`bcompiler.line`](../../../internal/engine/bcompile.go), [`Operators Rule line
 emission`](../../../internal/engine/gen.go), [`TypeScript line
 emission`](../../../internal/engine/gen_ts.go).

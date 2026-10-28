@@ -1,8 +1,6 @@
 package engine
 
 import (
-	"maps"
-
 	"github.com/ornew/pego/grammar"
 )
 
@@ -17,13 +15,11 @@ type varDecl struct {
 	init any     // the initial value: an int, a string or a bool
 }
 
-// varTable holds the variables of a program in declaration order, with the environment every
-// parse starts from. A table is nil for a grammar without variables.
+// varTable holds the variables of a program in declaration order. A table is nil for a grammar
+// without variables.
 type varTable struct {
 	list   []*varDecl
 	byName map[string]*varDecl
-	// env is the initial environment. Environments are persistent, so every parse shares it.
-	env *env
 	// bound is the initial set of names that have been bound (parser.bound).
 	bound map[string]bool
 }
@@ -44,11 +40,10 @@ func (t *varTable) lookup(name string) *varDecl {
 	return t.byName[name]
 }
 
-// add appends a variable and extends the initial environment.
+// add appends a variable.
 func (t *varTable) add(d *varDecl) {
 	t.list = append(t.list, d)
 	t.byName[d.name] = d
-	t.env = &env{name: d.name, val: d.init, next: t.env}
 	t.bound[d.name] = true
 }
 
@@ -185,13 +180,4 @@ func (c *compiler) varDecl(vd *grammar.VarDef) *varDecl {
 		return nil
 	}
 	return &varDecl{name: vd.Name, typ: valueType(v), init: v}
-}
-
-// seedVars gives the parser the initial environment of the program's variables. Every parse
-// calls it once, before it enters the start rule.
-func (p *parser) seedVars() {
-	if t := p.prog.vars; t != nil {
-		p.env, p.initEnv = t.env, t.env
-		p.bound = maps.Clone(t.bound)
-	}
 }

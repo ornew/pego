@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"slices"
 	"sync"
 
@@ -31,6 +32,19 @@ type Program struct {
 	mode   CompiledMode
 	// scratch holds the buffers of finished parses for later ones (*scratch).
 	scratch sync.Pool
+	// initEnv is the environment of the declared variables that every parse starts from
+	// (parser.seedVars). Environments are persistent, so every parse shares it.
+	initEnv *env
+}
+
+// newProgram returns the program that runs the static program sp with the rules of the closure
+// backend.
+func newProgram(sp *staticProgram, closureRules []*rule) *Program {
+	prog := &Program{staticProgram: sp, closureRules: closureRules}
+	for _, d := range sp.vars.all() {
+		prog.initEnv = &env{name: d.name, val: d.init, next: prog.initEnv}
+	}
+	return prog
 }
 
 // SourceInfo reports whether the program records source information in its results
@@ -97,3 +111,63 @@ func (prog *Program) ShapeSignature(name string, poll func()) (string, bool) {
 // example "node[(*node[string],)]"). It reports false if the program has no such rule or its
 // types were not checked.
 func (prog *Program) ValueType(name string) (string, bool) { return prog.valueType(name) }
+
+// Compile compiles the grammar.
+func Compile(g *grammar.Grammar, opts Options) (*Program, error) {
+	return build(g, opts, nil)
+}
+
+// build builds a program from the grammar. If flags is not nil, it skips static analysis and
+// type checking and uses flags instead.
+func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error) {
+	return buildControlled(g, opts, flags, nil)
+}
+
+func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, control *compileControl) (*Program, error) {
+	names := inlineNames{}
+	prog, err := buildNamed(g, opts, flags, names, control)
+	if err != nil {
+		return nil, names.rewrite(err)
+	}
+	return prog, nil
+}
+
+// CompileContext is the internal editor compilation entry point. Cancellation
+// discards the entire program and accumulated diagnostics. Existing Compile and
+// saved-program loading keep their ordinary path with no active control.
+// Polls cover grammar AST validation, source normalization, rule/dependency
+// loops, shared success proofs, expression construction and type checking.
+// Shared metadata and individual operations still have uncancellable stretches.
+// This is not a wall-clock latency guarantee.
+func CompileContext(ctx context.Context, g *grammar.Grammar, opts Options) (prog *Program, err error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if ctx.Done() == nil {
+		return Compile(g, opts)
+	}
+	defer func() {
+		if failure := recover(); failure != nil {
+			if cancelled, ok := failure.(compileCancellation); ok {
+				prog, err = nil, cancelled.err
+			} else {
+				panic(failure)
+			}
+		}
+	}()
+	return buildControlled(g, opts, nil, &compileControl{ctx: ctx})
+}
+
+// buildNamed is buildControlled; names receives the hidden rules that the lowering of inline actions
+// generates.
+func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlineNames, control *compileControl) (*Program, error) {
+	var b *closureBuilder
+	prog, err := compileProgram(g, opts, flags, names, control, func(c *compiler) exprBuilder[matcher] {
+		b = newClosureBuilder(c, !opts.controlledDispatch)
+		return b
+	})
+	if err != nil {
+		return nil, err
+	}
+	return newProgram(prog, b.finish()), nil
+}

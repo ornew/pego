@@ -31,8 +31,8 @@ Evidence records:
 [001](../001-value-free-rule-bodies-value-free-twins-transient-rules-0b2c903.md),
 [019](../019-a-plain-call-path-for-unmemoized-rules-without-captures.md).
 
-Source owners: [`emptyFrame`](../../../internal/engine/compile.go), [`newFrame
-and invokePlain`](../../../internal/engine/runtime.go), [`generated empty
+Source owners: [`emptyFrame` and
+`invokePlain`](../../../internal/engine/runtime.go), [`newFrame`](../../../internal/engine/alloc.go), [`generated empty
 frame`](../../../runtime/runtime.go),
 [`Parser.newFrame`](../../../internal/engine/tsrt/runtime.ts).
 
