@@ -2,6 +2,7 @@ package engine
 
 import (
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -28,8 +29,12 @@ const tsTypesSpecifier = "./types.ts"
 // generated from a grammar.
 var tsPublicRuntime = strings.Fields(`
 	Value Unit CodePoints Bytes NodeField NodeJSON Node marshal SyntaxError SyntaxErrors ParseResult
-	ParseOptions CancellationSignal ParseInterruptionKind ParseInterruptionError
+	ParseOptions
 	TraceKind TraceEvent Profile ProfileLocation SkipReasonCount RuleProfile ProfileSnapshot`)
+
+// tsPublicControls lists the runtime declarations of the work controls that parser.ts re-exports
+// only with -work-controls.
+var tsPublicControls = strings.Fields(`CancellationSignal ParseInterruptionKind ParseInterruptionError`)
 
 // tsRuntimeText returns the source of runtime.ts: the runtime, the invocation work controls and the
 // observation code, as one module that exports every declaration the generated code uses.
@@ -98,11 +103,21 @@ func tsFiles(opts GenOptions, body, types string) []GeneratedFile {
 	}
 	parser.WriteString("\n// The names of the runtime that users of the parser need.\n")
 	var values, typs []string
-	for _, name := range tsPublicRuntime {
+	public := slices.Clone(tsPublicRuntime)
+	if opts.WorkControls {
+		public = append(public, tsPublicControls...)
+	}
+	for _, name := range public {
+		export := name
+		if name == "ParseOptions" && !opts.WorkControls {
+			// Without work controls the options have no cancellation or limits.
+			export = "PlainParseOptions as ParseOptions"
+			name = "PlainParseOptions"
+		}
 		if exports[name] {
-			typs = append(typs, name)
+			typs = append(typs, export)
 		} else {
-			values = append(values, name)
+			values = append(values, export)
 		}
 	}
 	if len(values) > 0 {

@@ -111,12 +111,13 @@ Commands:
       -observability emits opt-in rule tracing and profiling for Go batch
       parsing and Documents, and TypeScript batch parsing, including typed
       entry points.
-      -work-controls generates the work-controlled form of the Go parser, which
-      supports WithContext and WithWorkLimits; without it those options are not
-      exported, the parser has no code that charges work, and a parse that
-      passes them fails. The parser has this one form only: a parse that sets
-      no limit runs the same code. Generate a second parser without the
-      option to have the plain form too. It cannot be combined with -lang ts.
+      -work-controls generates the work-controlled form of the parser, which
+      supports WithContext and WithWorkLimits (signal, maxInputWork and
+      maxSteps in TypeScript); without it those options are not exported, the
+      generated code does not charge work, and a parse that passes them
+      fails. The parser has this one form only: a parse that sets no limit
+      runs the same code. Generate a second parser without the option to
+      have the plain form too.
       -typed-only generates only the typed entry points (ParseAST and its
       siblings), without Parse, ParseRule and Recognize. It needs -types and
       cannot be combined with -recognize, -document, -stream or -lang ts.
@@ -811,7 +812,7 @@ func gen(args []string, stdout io.Writer) error {
 	document := fs.Bool("document", false, "also generate a Go incremental Document (typed ParseAST with -types; incompatible with -lang ts)")
 	stream := fs.Bool("stream", false, "also generate Go ParseStream and Iterate for the start rule's #stream repetition (and their typed forms with -types; incompatible with -lang ts)")
 	observability := fs.Bool("observability", false, "emit opt-in rule tracing and profiling for Go batch/Documents and TypeScript batch parsing, including typed entry points")
-	workControls := fs.Bool("work-controls", false, "generate the work-controlled form of the Go parser, which supports WithContext and WithWorkLimits (incompatible with -lang ts)")
+	workControls := fs.Bool("work-controls", false, "generate the work-controlled form of the parser, which supports WithContext and WithWorkLimits (signal, maxInputWork and maxSteps in TypeScript)")
 	typedOnly := fs.Bool("typed-only", false, "generate only the typed entry points (ParseAST and siblings), without Parse, ParseRule and Recognize (needs -types)")
 	recognize := fs.Bool("recognize", false, "also generate Recognize, which checks input without building a tree")
 	maxDepth := fs.Int("max-depth", 0, "generated default nested rule-call limit (0 selects 100000)")
@@ -856,15 +857,15 @@ func gen(args []string, stdout io.Writer) error {
 			}
 		}
 	case "ts":
-		if *pkg != "" || *module != "" || *nodoc || *document || *stream || *workControls || *typedOnly {
-			return fmt.Errorf("-pkg, -module, -nodoc, -document, -stream, -work-controls and -typed-only are not supported with -lang ts")
+		if *pkg != "" || *module != "" || *nodoc || *document || *stream || *typedOnly {
+			return fmt.Errorf("-pkg, -module, -nodoc, -document, -stream and -typed-only are not supported with -lang ts")
 		}
 		if *output == "" {
 			return fmt.Errorf("-o (an output directory) is required")
 		}
 		switch mode {
 		case pego.RuntimeOnly:
-			for _, name := range []string{"g", "s", "types", "observability", "recognize", "max-depth", "source-info", "default-value", "runtime-module"} {
+			for _, name := range []string{"g", "s", "types", "observability", "work-controls", "recognize", "max-depth", "source-info", "default-value", "runtime-module"} {
 				if isFlagSet(fs, name) {
 					return fmt.Errorf("-%s cannot be combined with -runtime only, which writes just the runtime", name)
 				}

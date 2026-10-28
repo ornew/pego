@@ -26,7 +26,7 @@ rule main Text = t:([a]* #atomic) => Text{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	opts := GenOptions{Start: "main", Types: true, Recognize: true}
+	opts := GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}
 	code, err := generateTSBundle(g, opts)
 	if err != nil {
 		t.Fatal(err)

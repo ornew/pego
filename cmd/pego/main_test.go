@@ -414,6 +414,28 @@ func readTS(t *testing.T, dir string, names ...string) string {
 	return all.String()
 }
 
+func TestGenTypeScriptWorkControls(t *testing.T) {
+	g := writeFile(t, "kv.pego", kv)
+	plainDir, err := runGenTS(t, "-g", g)
+	if err != nil {
+		t.Fatal(err)
+	}
+	controlledDir, err := runGenTS(t, "-g", g, "-work-controls")
+	if err != nil {
+		t.Fatalf("-lang ts -work-controls: %v", err)
+	}
+	plain, controlled := readTS(t, plainDir, "parser.ts"), readTS(t, controlledDir, "parser.ts")
+	if strings.Contains(plain, "stepWork") || strings.Contains(plain, "CancellationSignal") || !strings.Contains(plain, "PlainParseOptions") {
+		t.Error("a parser generated without -work-controls has work controls")
+	}
+	if !strings.Contains(controlled, "CancellationSignal") || strings.Contains(controlled, "PlainParseOptions") {
+		t.Error("a parser generated with -work-controls has no work controls")
+	}
+	if _, err := runGenTS(t, "-runtime", "only", "-work-controls"); err == nil || !strings.Contains(err.Error(), "-work-controls cannot be combined with -runtime only") {
+		t.Errorf("-runtime only -work-controls: %v", err)
+	}
+}
+
 func TestGenTypeScript(t *testing.T) {
 	g := writeFile(t, "kv.pego", kv)
 	dir, err := runGenTS(t, "-g", g)
@@ -691,7 +713,7 @@ rule main = "a"`)
 	if err != nil {
 		t.Fatalf("TypeScript trace generation: %v", err)
 	}
-	if out := readTS(t, dir, "runtime.ts", "parser.ts"); !strings.Contains(out, "export interface TraceEvent") || !strings.Contains(out, "export function parseASTWithOptions(") || !strings.Contains(out, "mkGrammar(100000, false, true)") {
+	if out := readTS(t, dir, "runtime.ts", "parser.ts"); !strings.Contains(out, "export interface TraceEvent") || !strings.Contains(out, "export function parseASTWithOptions(") || !strings.Contains(out, "mkGrammar(100000, false, true, false)") {
 		t.Fatalf("TypeScript trace generation: missing trace declarations\n%s", out)
 	}
 	for _, flags := range [][]string{{"-document"}, {"-types", "-document"}} {

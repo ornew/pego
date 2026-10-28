@@ -92,8 +92,12 @@ func (g *tsGen) typedTS(start *rule) (types, parser string, err error) {
 	repr := t.recipe(st)
 	stType := qualifyTypes(t.tsType(st))
 	b.WriteString("\n// --- Typed values (pego gen -types) ---\n\n")
-	fmt.Fprintf(&b, tsTypedAPI, stType, start.id, repr)
-	b.WriteString(tsTypedRuntime)
+	fmt.Fprintf(&b, tsTypedAPI, stType, start.id, repr, g.optionsType)
+	runtime := tsTypedRuntime
+	if g.noWork {
+		runtime = tsTypedCharge.ReplaceAllString(runtime, "")
+	}
+	b.WriteString(runtime)
 	// recipe() reserves an ID before visiting child types, so recursive fields
 	// reference the same representation. Write the table after all registration.
 	t.recipe(tyMatch)
@@ -436,7 +440,7 @@ export function parseAST(input: string | Uint8Array, unit?: Unit): Types.TypedPa
 }
 
 /** Typed configured-start parsing with options read and validated once. */
-export function parseASTWithOptions(input: string | Uint8Array, options?: ParseOptions): Types.TypedParseResult<%[1]s> {
+export function parseASTWithOptions(input: string | Uint8Array, options?: %[4]s): Types.TypedParseResult<%[1]s> {
   const o = resolveOptions(G, options);
   if (o instanceof Error) return { value: null, error: o };
   return withObservedOptions<Types.TypedParseResult<%[1]s>>(o,
@@ -450,6 +454,9 @@ const tsTypedValueDeclaration = "export type TypedValue = "
 
 const tsTypedRecipeTable = "\nconst astRecipes: readonly ASTRecipe[] = [\n"
 const tsTypedNodeRecipeTable = "];\nconst astNodeRecipes: ReadonlyMap<string, number> = new Map([\n"
+
+// tsTypedCharge matches the statements of tsTypedRuntime that charge the work control.
+var tsTypedCharge = regexp.MustCompile(`(?m)^[ \t]*control\?\.charge\([^\n]*\);\n`)
 
 const tsTypedRuntime = `interface ASTRecipe {
   readonly kind: string;

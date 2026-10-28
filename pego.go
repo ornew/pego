@@ -471,7 +471,8 @@ func WithGeneratedObservability() GenOption {
 }
 
 // WithWorkControls generates the work-controlled form of the parser, which supports cancellation
-// (WithContext) and the input and step limits (WithWorkLimits) and re-exports those options. Without it
+// (WithContext) and the input and step limits (WithWorkLimits) and re-exports those options; in
+// generated TypeScript they are the signal, maxInputWork and maxSteps options. Without it
 // the generated parser is smaller and faster to build, and a parse that passes a control option
 // returns an error. The controlled form is the only form of the parser: a parse that sets no limit
 // runs it too, and is slower than with a parser generated without work controls.

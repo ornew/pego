@@ -37,7 +37,7 @@ func TestGeneratedTSFullWorkloadParity(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			generated, err := engine.GenerateTS(grammar, engine.GenOptions{Start: "main", Types: true, Recognize: true})
+			generated, err := engine.GenerateTS(grammar, engine.GenOptions{Start: "main", Types: true, Recognize: true, WorkControls: true})
 			if err != nil {
 				t.Fatal(err)
 			}

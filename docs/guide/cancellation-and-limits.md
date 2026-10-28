@@ -10,7 +10,8 @@ The examples use a parser `p` compiled as in [Running Parsers](running-parsers.m
 
 `Parse` accepts per-invocation `WithContext` and `WithWorkLimits` options. A zero
 limit is unlimited; each counter resets for the next call. Generated Go parsers offer them only when generated with
-`-work-controls`; see [the generated Go API](generated-go-api.md#cancellation-and-work-limits).
+`-work-controls`; see [the generated Go API](generated-go-api.md#cancellation-and-work-limits). Generated TypeScript parsers offer
+the `signal`, `maxInputWork` and `maxSteps` options only with `-work-controls` too; see [TypeScript](typescript.md#cancellation-and-work-limits).
 
 ```go
 ctx, cancel := context.WithTimeout(context.Background(), time.Second)

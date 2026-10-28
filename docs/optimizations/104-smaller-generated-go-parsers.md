@@ -121,5 +121,6 @@ generate with the flag unless `PEGO_TEST_ORDINARY=1` is set.
 
 ## Decision and Limits
 
-Adopted. TypeScript output has its own copies of the work-control charge and is
-not changed; asking the TypeScript generator for work controls is an error.
+Adopted. TypeScript output has its own copies of the work-control charge, and
+`-work-controls` selects its form independently: the Go output of this entry is
+not affected.

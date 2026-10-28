@@ -277,11 +277,12 @@ export function parseRuleWithOptions(name: string, input: string | Uint8Array, o
 export interface ParseOptions {
   unit?: Unit;
   maxDepth?: number;
-  signal?: CancellationSignal | null;
-  maxInputWork?: number;
-  maxSteps?: number;
+  signal?: CancellationSignal | null;      // with -work-controls only
+  maxInputWork?: number;                   // with -work-controls only
+  maxSteps?: number;                       // with -work-controls only
 }
 export interface ParseResult { node: Node | null; error: Error | null }
+// With -work-controls:
 export interface CancellationSignal { readonly aborted: boolean; readonly reason?: unknown }
 export type ParseInterruptionKind = "canceled" | "input-work-limit" | "step-work-limit";
 export class ParseInterruptionError extends Error {
@@ -315,6 +316,14 @@ export function marshal(n: Node | null): string;
 - `maxDepth` MUST be a positive safe integer or zero; negative values, fractions, NaN,
   infinity and unsafe integers return a configuration error in the result before
   matching. Omitted or zero selects the generated default.
+- A parser generated without `-work-controls` emits no code that charges work and sets no control, so a parse charges nothing, and its
+  `ParseOptions` has no `signal`, `maxInputWork` or `maxSteps`; it does not export
+  `CancellationSignal`, `ParseInterruptionKind` or `ParseInterruptionError`. A call
+  that passes a signal or a nonzero limit anyway returns an error in the result, before
+  matching, that says the parser was generated without work controls; no option is
+  ignored. An absent or null signal and zero limits set no control and are accepted. A parser
+  generated with `-work-controls` has the controlled form only, and a call that sets no
+  limit runs it unchanged. The rest of this list describes the controlled form.
 - `signal` is a structural cancellation signal: any object with `aborted` and an optional
   `reason`, such as an `AbortSignal`. `maxInputWork` and `maxSteps` MUST be finite
   nonnegative safe integers, and zero means unlimited; other values return a
@@ -398,7 +407,7 @@ program, so a TypeScript parser can reject nesting that the engine accepts.
 | Typed values | `ParseAST`, `ParseRuleAST` with `-types` | `parseAST`, `parseASTWithOptions` with `-types` |
 | Streaming | `ParseStream`, `Iterate` with `-stream` | None; `#stream` is an ordinary repetition |
 | Incremental documents | A subset with `-document` | None |
-| Cancellation and work limits | `WithContext`, `WithWorkLimits` | `signal`, `maxInputWork`, `maxSteps`; `ParseInterruptionError` |
+| Cancellation and work limits | `WithContext`, `WithWorkLimits` | `signal`, `maxInputWork`, `maxSteps`; `ParseInterruptionError`; with `-work-controls` |
 | Nested rule-call limit | `WithMaxDepth`, `-max-depth` | `maxDepth`, `-max-depth`; the host stack also bounds nesting |
 | Choice of backend, saved grammar, `Parser.Grammar()` | Not applicable | Not applicable |
 | Tracing and profiling | With `-observability` | With `-observability` (batch parsers) |

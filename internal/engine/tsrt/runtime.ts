@@ -963,6 +963,8 @@ export interface Grammar {
   readonly sparse: boolean;
   // observable reports that the generated rules report their calls, so trace and profile options apply.
   readonly observable: boolean;
+  // controlled reports that the generated rules charge work, so the cancellation and limit options apply.
+  readonly controlled: boolean;
   // sourceInfo reports that values record source information: the rule that produced each node and
   // where its captures are.
   sourceInfo: boolean;
@@ -975,8 +977,8 @@ export interface Grammar {
   readonly structFields: Map<string, Set<string>>;
 }
 
-export function mkGrammar(maxDepth: number, sparse: boolean, observable: boolean): Grammar {
-  return { maxDepth, sparse, observable, sourceInfo: false, initialVars: [], descs: [], structFields: new Map() };
+export function mkGrammar(maxDepth: number, sparse: boolean, observable: boolean, controlled = true): Grammar {
+  return { maxDepth, sparse, observable, controlled, sourceInfo: false, initialVars: [], descs: [], structFields: new Map() };
 }
 
 function ruleIn(table: Rule[], name: string): Rule | null {
@@ -1018,7 +1020,16 @@ export interface ParseOptions {
   maxSteps?: number;
 }
 
+/**
+ * The options of a parser generated without work controls: those of ParseOptions except the
+ * cancellation signal and the work limits.
+ */
+export type PlainParseOptions = Omit<ParseOptions, "signal" | "maxInputWork" | "maxSteps">;
+
 export function resolveOptions(g: Grammar, options?: ParseOptions): ResolvedParseOptions | Error {
+  if (!g.controlled && (options?.signal != null || (options?.maxInputWork ?? 0) !== 0 || (options?.maxSteps ?? 0) !== 0)) {
+    return new Error("this parser was generated without work controls (generate with -work-controls to use signal, maxInputWork and maxSteps)");
+  }
   if (!g.observable && (options?.profile != null || options?.trace != null || options?.traceRules !== undefined || options?.traceMaxDepth !== undefined)) {
     return new Error("trace and profile options are only supported by a parser generated with observability");
   }

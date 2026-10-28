@@ -162,9 +162,9 @@ export function recognize(input: string | Uint8Array, unit?: Unit): Error | null
 export interface ParseOptions {
   unit?: Unit;
   maxDepth?: number;
-  signal?: CancellationSignal | null;
-  maxInputWork?: number;
-  maxSteps?: number;
+  signal?: CancellationSignal | null;  // with -work-controls only
+  maxInputWork?: number;                // with -work-controls only
+  maxSteps?: number;                    // with -work-controls only
 }
 export function parseWithOptions(input: string | Uint8Array, options?: ParseOptions): ParseResult;
 export function parseRuleWithOptions(name: string, input: string | Uint8Array, options?: ParseOptions): ParseResult;
@@ -465,8 +465,10 @@ null
 
 ## Cancellation and Work Limits
 
-The options-aware entry points accept `signal`, `maxInputWork` and `maxSteps` to stop a parse of input you do not
-control. `signal` is any object with `aborted` and an optional `reason`, so an `AbortSignal` fits; the limits are
+A parser generated with `-work-controls` accepts `signal`, `maxInputWork` and `maxSteps` in the options-aware entry points to
+stop a parse of input you do not control. Without the option the parser emits no code that charges work and sets no control, its options type has none
+of the three, and a call that passes one returns an error. A parser has one form: with the option it is the controlled one, and a
+parse that sets no limit runs the same code, so generate two parsers if you need the plain form as well. `signal` is any object with `aborted` and an optional `reason`, so an `AbortSignal` fits; the limits are
 nonnegative safe integers, and zero means unlimited. An interrupted parse returns no tree and a
 `ParseInterruptionError` whose `kind` says what happened:
 
@@ -537,7 +539,7 @@ The parity tests parse in a worker with a 1 GB stack, so that they also check th
 
 Generated TypeScript supports every feature of the grammar language: Rule Expressions, Operators Rules, left recursion, Predicates and variables, actions, built-in functions, `@error` and
 `#recover`. It adds `parseRule` for another start rule, a `unit` argument for the position unit, `recognize` (with
-`-recognize`) for matching without a tree, and `signal`, `maxInputWork`, `maxSteps` and `maxDepth` in the options-aware
+`-recognize`) for matching without a tree, and `maxDepth`, and with `-work-controls` `signal`, `maxInputWork` and `maxSteps`, in the options-aware
 entry points. It has no `#stream` and `ParseStream`, and no `Document`: `#stream` is an ordinary repetition, as in Go.
 Typed values (`-types`) give interfaces and aliases and `parseAST`/`parseASTWithOptions` for the configured start rule,
 while `parse` still returns Nodes. The [specification](../../spec/runtime/generated-parsers.md#compatibility-and-support) has

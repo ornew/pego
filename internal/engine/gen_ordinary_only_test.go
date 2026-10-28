@@ -303,14 +303,3 @@ func firstTranscriptDifference(a, b string) string {
 	}
 	return "lengths differ"
 }
-
-func TestGenerateTypeScriptRejectsWorkControls(t *testing.T) {
-	g, err := parseTest(ordinaryOnlyUntyped)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = GenerateTS(g, GenOptions{Start: "main", WorkControls: true})
-	if err == nil || err.Error() != "work controls are only supported for Go" {
-		t.Errorf("error %v", err)
-	}
-}

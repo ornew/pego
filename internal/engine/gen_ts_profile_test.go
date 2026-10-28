@@ -51,7 +51,7 @@ func TestGeneratedTSProfile(t *testing.T) {
 			if typed {
 				name += "_typed"
 			}
-			options := GenOptions{Start: "main", Types: typed, Recognize: true}
+			options := GenOptions{Start: "main", WorkControls: true, Types: typed, Recognize: true}
 			reference, err := generateTSBundle(g, options)
 			if err != nil {
 				t.Fatal(name, err)

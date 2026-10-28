@@ -87,7 +87,7 @@ rule part W = t:("input, o.unit, o.maxDepth, control)") #atomic => W{Text: text(
 			if typed {
 				name += "_typed"
 			}
-			opts := GenOptions{Start: "main", Types: typed, Recognize: true}
+			opts := GenOptions{Start: "main", WorkControls: true, Types: typed, Recognize: true}
 			reference, err := generateTSBundle(g, opts)
 			if err != nil {
 				t.Fatal(name, err)

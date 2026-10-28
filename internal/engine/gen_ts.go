@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -54,9 +55,6 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	if opts.Stream {
 		return nil, fmt.Errorf("stream generation is only supported for Go")
 	}
-	if opts.WorkControls {
-		return nil, fmt.Errorf("work controls are only supported for Go")
-	}
 	if opts.TypedOnly {
 		return nil, fmt.Errorf("typed-only generation is only supported for Go")
 	}
@@ -78,6 +76,11 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 		return nil, err
 	}
 	gen := &tsGen{generator: &generator{prog: prog, table: "rules", observability: opts.Observability, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing || !opts.enableTSLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch}, plainUsed: map[*rule]bool{}}
+	gen.noWork = !opts.WorkControls
+	gen.optionsType = "ParseOptions"
+	if !opts.WorkControls {
+		gen.optionsType = "PlainParseOptions"
+	}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	if gen.flowErr != nil {
@@ -97,7 +100,7 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	}
 
 	var out strings.Builder
-	fmt.Fprintf(&out, "const G = mkGrammar(%d, %v, %v);\n\n", opts.generatedMaxDepth(), opts.useSparseMemo(prog, rec), opts.Observability)
+	fmt.Fprintf(&out, "const G = mkGrammar(%d, %v, %v, %v);\n\n", opts.generatedMaxDepth(), opts.useSparseMemo(prog, rec), opts.Observability, opts.WorkControls)
 	fmt.Fprintf(&out, "/**\n * Parses the whole input with the rule %s. unit selects the position unit (CodePoints by default).\n", start.name)
 	out.WriteString(" * A string is parsed as its UTF-8 encoding would be (lone surrogates as U+FFFD), and bytes are\n")
 	out.WriteString(" * decoded as UTF-8 (invalid sequences as U+FFFD, one per byte). If the parse recovered from errors\n")
@@ -118,14 +121,14 @@ export function parseRule(name: string, input: string | Uint8Array, unit?: Unit)
 		fmt.Fprintf(&out, "export function recognize(input: string | Uint8Array, unit?: Unit): Error | null {\n  return run(G, Q%d, recNseen, input, unit).error;\n}\n\n", rec.byName[start.name].id)
 	}
 	fmt.Fprintf(&out, `/** Parses with invocation-local position and depth options. */
-export function parseWithOptions(input: string | Uint8Array, options?: ParseOptions): ParseResult {
+export function parseWithOptions(input: string | Uint8Array, options?: %[1]s): ParseResult {
   const o = resolveOptions(G, options);
   if (o instanceof Error) return { node: null, error: o };
-  return withObservedOptions(o, control => run(G, R%d, nseen, input, o.unit, o.maxDepth, control, o), error => ({ node: null, error }));
+  return withObservedOptions(o, control => run(G, R%[2]d, nseen, input, o.unit, o.maxDepth, control, o), error => ({ node: null, error }));
 }
 
 /** Parses a named start rule ("" for the default) with invocation-local options, validated before rule lookup. */
-export function parseRuleWithOptions(name: string, input: string | Uint8Array, options?: ParseOptions): ParseResult {
+export function parseRuleWithOptions(name: string, input: string | Uint8Array, options?: %[1]s): ParseResult {
   const o = resolveOptions(G, options);
   if (o instanceof Error) return { node: null, error: o };
   const r = startIn(rules, starts, defaultStart, name);
@@ -133,16 +136,16 @@ export function parseRuleWithOptions(name: string, input: string | Uint8Array, o
   return withObservedOptions(o, control => run(G, r, nseen, input, o.unit, o.maxDepth, control, o), error => ({ node: null, error }));
 }
 
-`, start.id)
+`, gen.optionsType, start.id)
 	if rec != nil {
 		fmt.Fprintf(&out, `/** Recognizes with invocation-local options; predicate-dependent actions may run. */
-export function recognizeWithOptions(input: string | Uint8Array, options?: ParseOptions): Error | null {
+export function recognizeWithOptions(input: string | Uint8Array, options?: %[1]s): Error | null {
   const o = resolveOptions(G, options);
   if (o instanceof Error) return o;
-  return withObservedOptions<Error | null>(o, control => run(G, Q%d, recNseen, input, o.unit, o.maxDepth, control, o).error, error => error);
+  return withObservedOptions<Error | null>(o, control => run(G, Q%[2]d, recNseen, input, o.unit, o.maxDepth, control, o).error, error => error);
 }
 
-`, rec.byName[start.name].id)
+`, gen.optionsType, rec.byName[start.name].id)
 	}
 	var types string
 	if opts.Types {
@@ -201,6 +204,9 @@ var tsPrintRuns = sync.OnceValue(func() string {
 // declares them: tsFieldCheckSource with castValue if called.
 func (g *tsGen) fieldCheckSource() string {
 	src := tsFieldCheckSource
+	if g.noWork {
+		src = strings.ReplaceAll(src, "    p.stepWork();\n", "")
+	}
 	for _, f := range []string{"castValue"} {
 		if strings.Contains(g.init.String(), f+"(") || strings.Contains(g.vars.String(), f+"(") || strings.Contains(g.methods.String(), f+"(") {
 			src += tsCheckSources[f]
@@ -351,6 +357,9 @@ type tsGen struct {
 	*generator
 	// plainUsed holds the plain rules whose function (plainCall) is called.
 	plainUsed map[*rule]bool
+	// optionsType is the name of the runtime's options type that the entry points take: ParseOptions
+	// with work controls, PlainParseOptions without.
+	optionsType string
 }
 
 // tsString returns s as a TypeScript string literal (JSON is valid TypeScript).
@@ -409,7 +418,9 @@ func (g *tsGen) plainPrefix() string {
 //
 // fn turns a call expression into a function.
 func (g *tsGen) method(comment, body string) string {
-	body = "  p.stepWork();\n" + body
+	if !g.noWork {
+		body = "  p.stepWork();\n" + body
+	}
 	name, shared := g.methodName("Parser/R", body)
 	if shared {
 		return name
@@ -433,11 +444,24 @@ func (g *tsGen) fn(x string) string {
 	return g.method("", "  return "+x+";\n")
 }
 
+// tsActxUse matches a use of the evaluation context c in the text of a term.
+var tsActxUse = regexp.MustCompile(`\bc\b`)
+
+// tsActxParam returns the name of the evaluation context parameter of a function that returns the term
+// body: c, or _c if the term reads no context (a leading _ keeps it from being reported as unused).
+func tsActxParam(body string) string {
+	if tsActxUse.MatchString(body) {
+		return "c"
+	}
+	return "_c"
+}
+
 // action emits a function that evaluates the term t (an action or a predicate) and returns its name.
 func (g *tsGen) action(t grammar.Term, s *scope, locals map[string]string) string {
 	name := g.name("a")
-	param := "c" // every emitted term uses the invocation work context
-	fmt.Fprintf(&g.methods, "function %s(%s: Actx): Value {\n  return %s;\n}\n\n", name, param, g.term(t, s, locals))
+	body := g.term(t, s, locals)
+	param := tsActxParam(body)
+	fmt.Fprintf(&g.methods, "function %s(%s: Actx): Value {\n  return %s;\n}\n\n", name, param, body)
 	return name
 }
 
@@ -536,8 +560,10 @@ func (g *tsGen) plainCall(r *rule, body string) {
 	m := &g.methods
 	name := g.tracePlainCall(r, fmt.Sprintf("%s%d", g.plainPrefix(), r.id))
 	fmt.Fprintf(m, "// %s, called as by invokePlain\nfunction %s(p: Parser): R {\n", r.name, name)
-	m.WriteString(`  p.stepWork();
-  const start = p.pos;
+	if !g.noWork {
+		m.WriteString("  p.stepWork();\n")
+	}
+	m.WriteString(`  const start = p.pos;
   const rec = p.recovered.length;
   const trail = p.trail.length;
   const prevEnv = p.env;
@@ -678,9 +704,12 @@ func tsInt(v int) string {
 	return "BigInt(\"" + strconv.Itoa(v) + "\")"
 }
 
-// term converts a value expression into a TypeScript expression of type Value. locals maps names,
-// such as lambda parameters, to TypeScript expressions.
+// term converts a value expression into a TypeScript expression of type Value, charging a step for
+// it with work controls. locals maps names, such as lambda parameters, to TypeScript expressions.
 func (g *tsGen) term(t grammar.Term, s *scope, locals map[string]string) string {
+	if g.noWork {
+		return g.termBody(t, s, locals)
+	}
 	return "(c.work(), " + g.termBody(t, s, locals) + ")"
 }
 
