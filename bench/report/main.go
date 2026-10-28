@@ -70,13 +70,14 @@ func run(in, dir, docPath, capture string, count int, node string) error {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return err
 		}
+		commit := describeCommit(root)
 		work, err := os.MkdirTemp("", "pego-report-")
 		if err != nil {
 			return err
 		}
 		defer os.RemoveAll(work)
 		if parts["go"] {
-			data, err := runBenchmarks(root, count)
+			data, err := runBenchmarks(root, commit, count)
 			if err != nil {
 				return err
 			}
@@ -85,7 +86,7 @@ func run(in, dir, docPath, capture string, count int, node string) error {
 			}
 		}
 		if parts["ts"] {
-			data, err := captureTS(root, work, node, count)
+			data, err := captureTS(root, commit, work, node, count)
 			if err != nil {
 				return err
 			}
@@ -94,7 +95,7 @@ func run(in, dir, docPath, capture string, count int, node string) error {
 			}
 		}
 		if parts["size"] {
-			data, err := captureSizes(root, work)
+			data, err := captureSizes(root, commit, work)
 			if err != nil {
 				return err
 			}
@@ -154,9 +155,9 @@ func repoRoot() (string, error) {
 }
 
 // runBenchmarks runs the benchmarks and returns their output after a header describing the run.
-func runBenchmarks(root string, count int) ([]byte, error) {
+func runBenchmarks(root, commit string, count int) ([]byte, error) {
 	var b bytes.Buffer
-	writeHeader(&b, root)
+	writeHeader(&b, commit)
 	cmd := exec.Command("go", "test", "./bench", "-run", "^$", "-bench", ".", "-benchmem",
 		"-count", fmt.Sprint(count), "-timeout", "0")
 	cmd.Dir = root
@@ -169,12 +170,20 @@ func runBenchmarks(root string, count int) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-// writeHeader writes the description of a run: date, commit, Go version, cores and load.
-func writeHeader(b *bytes.Buffer, root string) {
+// describeCommit names the commit of the repository for the headers of the results, with a note
+// if tracked files have uncommitted changes. It is determined once, before a capture writes any
+// result file, so that all the files of one capture name the same state.
+func describeCommit(root string) string {
 	commit := gitOutput(root, "rev-parse", "--short", "HEAD")
 	if gitOutput(root, "status", "--porcelain", "--untracked-files=no") != "" {
 		commit += " (with uncommitted changes)"
 	}
+	return commit
+}
+
+// writeHeader writes the description of a run: date, the commit (see describeCommit), Go version,
+// cores and load.
+func writeHeader(b *bytes.Buffer, commit string) {
 	goVersion, _ := exec.Command("go", "env", "GOVERSION").Output()
 	fmt.Fprintf(b, "# date: %s\n", time.Now().Format("2006-01-02"))
 	fmt.Fprintf(b, "# commit: %s\n", commit)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -228,5 +229,24 @@ func TestLoadResultsTreatsSiblingFilesAsOptional(t *testing.T) {
 	}
 	if _, _, _, err := loadResults(filepath.Join(dir, "missing.txt")); err == nil {
 		t.Error("missing Go results: no error")
+	}
+}
+
+// TestHeadersShareTheCommitDescription checks that a header names the commit it is given, so that
+// the files of one capture agree even though the capture itself changes tracked files.
+func TestHeadersShareTheCommitDescription(t *testing.T) {
+	var a, b bytes.Buffer
+	writeHeader(&a, "abc123")
+	writeHeader(&b, "abc123")
+	for _, h := range []string{a.String(), b.String()} {
+		if !strings.Contains(h, "# commit: abc123\n") {
+			t.Errorf("header lacks the given commit:\n%s", h)
+		}
+	}
+}
+
+func TestDescribeCommitMarksUncommittedChanges(t *testing.T) {
+	if got := describeCommit(root); got == "" || got == "unknown" {
+		t.Fatalf("describeCommit = %q", got)
 	}
 }

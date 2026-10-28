@@ -42,7 +42,7 @@ var tsModes = []struct{ name, entry string }{
 
 // captureTS generates a TypeScript parser for every workload, measures each entry point in count
 // rounds of fresh Node processes (bench/ts-parse.mjs) and returns the results with a header.
-func captureTS(root, work, node string, count int) ([]byte, error) {
+func captureTS(root, commit, work, node string, count int) ([]byte, error) {
 	pego, err := buildPego(root, work)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func captureTS(root, work, node string, count int) ([]byte, error) {
 		return nil, err
 	}
 	var b bytes.Buffer
-	writeHeader(&b, root)
+	writeHeader(&b, commit)
 	fmt.Fprintf(&b, "# node: %s\n# v8: %s\n# count: %d\n", strings.TrimSpace(version), strings.TrimSpace(v8), count)
 	inputs := filepath.Join(work, "ts-inputs")
 	if err := os.MkdirAll(inputs, 0o755); err != nil {
@@ -136,13 +136,13 @@ func parserGenArgs(root, name string) ([]string, error) {
 // of a binary that calls its ParseAST (built with -trimpath and stripped of symbols and DWARF), of
 // the generated TypeScript parser.ts and of that file compressed with gzip -9. The embedded
 // TypeScript runtime is common to all parsers and is recorded once as parser "runtime".
-func captureSizes(root, work string) ([]byte, error) {
+func captureSizes(root, commit, work string) ([]byte, error) {
 	pego, err := buildPego(root, work)
 	if err != nil {
 		return nil, err
 	}
 	var b bytes.Buffer
-	writeHeader(&b, root)
+	writeHeader(&b, commit)
 	fmt.Fprintln(&b, "# go binary: a main that calls ParseAST; go build -trimpath -ldflags=\"-s -w\"")
 	for _, name := range sizeParsers {
 		st, err := os.Stat(filepath.Join(root, "parsers", name, "parser.go"))
