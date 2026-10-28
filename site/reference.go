@@ -108,16 +108,26 @@ version of PEGO. The reference of released versions is also on
 		if err != nil {
 			return fmt.Errorf("reference %s: %w", rp.importPath, err)
 		}
-		r := &refRenderer{s: s, page: p, fset: fset, files: files, pkg: pkg, dir: rp.dir}
-		ifset, ifiles, ipkg, err := loadPackage(s.cfg.Repo, "internal/engine", modulePath+"/internal/engine")
-		if err != nil {
-			return fmt.Errorf("reference %s: %w", rp.importPath, err)
-		}
-		r.internal = &refRenderer{s: s, page: p, fset: ifset, files: ifiles, pkg: ipkg, dir: "internal/engine", ids: map[string]bool{}}
+		r := &refRenderer{s: s, page: p, fset: fset, files: files, pkg: pkg, dir: rp.dir, internal: map[string]*refRenderer{}}
 		for _, t := range pkg.Types {
-			if target := aliasTarget(t); target != "" {
-				r.internal.ids[target] = true
+			qual, target := aliasTarget(t)
+			if target == "" {
+				continue
 			}
+			in := r.internal[qual]
+			if in == nil {
+				dir, ok := internalImport(files, qual)
+				if !ok {
+					continue
+				}
+				ifset, ifiles, ipkg, err := loadPackage(s.cfg.Repo, dir, modulePath+"/"+dir)
+				if err != nil {
+					return fmt.Errorf("reference %s: %w", rp.importPath, err)
+				}
+				in = &refRenderer{s: s, page: p, fset: ifset, files: ifiles, pkg: ipkg, dir: dir, ids: map[string]bool{}}
+				r.internal[qual] = in
+			}
+			in.ids[target] = true
 		}
 		p.Body = template.HTML(r.render(rp))
 		p.TOC = r.toc
@@ -151,8 +161,9 @@ type refRenderer struct {
 	// ids, if set, lists the symbols on the page; links to other symbols of the package are not
 	// linked (used for the internal package, whose types appear only through aliases).
 	ids map[string]bool
-	// internal documents the targets of aliases to types of the internal engine package.
-	internal *refRenderer
+	// internal documents the targets of aliases to types of internal packages, by the name that
+	// qualifies them in the source (as engine in type Program = engine.Program).
+	internal map[string]*refRenderer
 }
 
 func (r *refRenderer) heading(level int, id, text string) {
@@ -337,32 +348,54 @@ func (r *refRenderer) render(rp refPackage) string {
 	return r.b.String()
 }
 
-// aliasTarget returns the name of the type of the internal engine package that t is an alias of, if
-// any (as in type Node = engine.Node).
-func aliasTarget(t *doc.Type) string {
+// aliasTarget returns the package qualifier and the name of the type that t is an alias of, if t
+// aliases a type of another package (as in type Node = value.Node).
+func aliasTarget(t *doc.Type) (qual, name string) {
 	for _, spec := range t.Decl.Specs {
 		ts, ok := spec.(*ast.TypeSpec)
 		if !ok || ts.Name.Name != t.Name || !ts.Assign.IsValid() {
 			continue
 		}
 		if sel, ok := ts.Type.(*ast.SelectorExpr); ok {
-			if x, ok := sel.X.(*ast.Ident); ok && x.Name == "engine" {
-				return sel.Sel.Name
+			if x, ok := sel.X.(*ast.Ident); ok {
+				return x.Name, sel.Sel.Name
 			}
 		}
 	}
-	return ""
+	return "", ""
+}
+
+// internalImport returns the repository directory of the internal package that the files import
+// under the name qual.
+func internalImport(files []*ast.File, qual string) (string, bool) {
+	for _, f := range files {
+		for _, im := range f.Imports {
+			path := strings.Trim(im.Path.Value, `"`)
+			dir, ok := strings.CutPrefix(path, modulePath+"/")
+			if !ok || !strings.HasPrefix(dir, "internal/") {
+				continue
+			}
+			name := filepath.Base(dir)
+			if im.Name != nil {
+				name = im.Name.Name
+			}
+			if name == qual {
+				return dir, true
+			}
+		}
+	}
+	return "", false
 }
 
 // aliasTarget documents the definition, fields and methods of the internal type that t is an alias
 // of. The internal package is not importable, so without this the reference (like pkg.go.dev) would
 // not show them.
 func (r *refRenderer) aliasTarget(t *doc.Type) {
-	name := aliasTarget(t)
-	if name == "" || r.internal == nil {
+	qual, name := aliasTarget(t)
+	in := r.internal[qual]
+	if name == "" || in == nil {
 		return
 	}
-	in := r.internal
 	for _, it := range in.pkg.Types {
 		if it.Name != name {
 			continue
