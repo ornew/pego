@@ -7,7 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/ir/core"
 )
 
 // Value-free terminal expressions in lean typed Go parsers.

@@ -37,8 +37,8 @@ Evidence records:
 
 Source owners: [`compiler.scanRepeat`](../../../internal/engine/compile.go),
 [`SCAN lowering`](../../../internal/engine/bcompile.go),
-[`Scans pass`](../../../internal/engine/core/passes.go),
-[`Flow scan lowering`](../../../internal/engine/flow/lower.go),
+[`Scans pass`](../../../internal/ir/core/passes.go),
+[`Flow scan lowering`](../../../internal/ir/flow/lower.go),
 [`tsGen.scanRepeat`](../../../internal/engine/gen_ts.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

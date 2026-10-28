@@ -1,8 +1,8 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/engine/flow"
+	"github.com/ornew/pego/internal/ir/core"
+	"github.com/ornew/pego/internal/ir/flow"
 )
 
 // Outlining of the generated TypeScript.

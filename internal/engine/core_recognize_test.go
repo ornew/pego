@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/ir/core"
 )
 
 // coreRecognizeCase builds the Core IR of the recognizer of the parser generated with Recognize,

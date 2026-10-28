@@ -62,7 +62,7 @@ below sets it against the new default form, without work controls, and the like-
 
 Evidence records: [122](../122-typescript-from-flow-ir.md).
 
-Source owners: [`Flow IR printer`](../../../internal/engine/gen_ts_flow.go), [`outlining`](../../../internal/engine/gen_ts_outline.go), [`Flow IR lowering`](../../../internal/engine/flow/lower.go).
+Source owners: [`Flow IR printer`](../../../internal/engine/gen_ts_flow.go), [`outlining`](../../../internal/engine/gen_ts_outline.go), [`Flow IR lowering`](../../../internal/ir/flow/lower.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

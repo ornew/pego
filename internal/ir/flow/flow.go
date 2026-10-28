@@ -19,7 +19,7 @@
 // unreachable.
 package flow
 
-import "github.com/ornew/pego/internal/engine/core"
+import "github.com/ornew/pego/internal/ir/core"
 
 // Func is a function of Flow IR: the body of a rule variant.
 type Func struct {

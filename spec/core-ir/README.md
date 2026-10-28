@@ -13,7 +13,7 @@ nothing here changes how a grammar behaves, which the [Grammar Language Specific
 [Parser and Runtime Specification](../runtime/README.md) define.
 
 This specification is authoritative for the meaning of nodes, the attributes and effects, and the invariants that the
-verifier enforces. A disagreement with the code of `internal/engine/core` is a bug, fixed on whichever side is wrong.
+verifier enforces. A disagreement with the code of `internal/ir/core` is a bug, fixed on whichever side is wrong.
 Details that this specification does not state are defined by the code.
 
 ## Contents

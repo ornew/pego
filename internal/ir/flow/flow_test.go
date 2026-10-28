@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/ir/core"
 	"go/ast"
 	"go/parser"
 	"go/token"

@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ornew/pego/internal/engine/flow"
+	"github.com/ornew/pego/internal/ir/flow"
 )
 
 // Variables a printed function never reads.

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/ir/core"
 )
 
 // coreCorpusProgram compiles a corpus grammar for the Core IR tests, or reports false for a

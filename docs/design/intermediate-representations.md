@@ -3,7 +3,7 @@
 Core IR and Flow IR are the two internal representations between a checked grammar and the code a backend emits. This
 page explains why there are two, what each one is for, and how optimization works on them. It deliberately omits field
 tables, node inventories and call sites: those change often and the code, starting with the package comments of
-`internal/engine/core` and `internal/engine/flow`, is their source of truth. The reasons behind the design are in
+`internal/ir/core` and `internal/ir/flow`, is their source of truth. The reasons behind the design are in
 [record 062](records/062-backend-independent-optimization-ir.md); the whole system is in
 [Architecture](architecture.md). The exact definitions are in the [Core IR Specification](../../spec/core-ir/README.md), including the [text form](../../spec/core-ir/text-form.md), which prints the module of this page's example in full. Nothing here is a public API.
 

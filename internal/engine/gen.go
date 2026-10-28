@@ -14,7 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/ir/core"
 )
 
 // GenOptions configures code generation.

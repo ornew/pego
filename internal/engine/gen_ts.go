@@ -12,7 +12,7 @@ import (
 	"unicode"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/ir/core"
 )
 
 //go:embed tsrt/runtime.ts

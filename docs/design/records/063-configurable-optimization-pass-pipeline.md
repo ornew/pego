@@ -113,7 +113,7 @@ Applied to the typed table with every optimization enabled, the manager performs
 `class-runs` and is recomputed once before the final verification. The recognizer pipeline is the same list without
 `terminals` and `class-runs`, and `Scan` origins are followed as `followRepeats` does.
 
-The manager lives in `internal/engine/core` next to the passes and depends on nothing of the engine. The mode
+The manager lives in `internal/ir/core` next to the passes and depends on nothing of the engine. The mode
 predicate is a value the generator passes in (`Mode`), so `core` keeps no knowledge of work controls or Documents.
 
 ### Flags

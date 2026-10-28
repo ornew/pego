@@ -231,10 +231,10 @@ hint with a witness, not a proof that a slow input exists.
   `ruleVariables` with the expressions each binding reads. L2 reads `cyclic` and `leaders`.
 - Core IR carries the facts that L3 needs, per node:
   - first terminals and nullability ([Attributes and Effects](../../../spec/core-ir/attributes.md#first-terminals));
-  - effect summaries that say which nodes can fail and consume (`internal/engine/core/attrs.go`, `Analyze`);
-  - the call graph with SCCs (`internal/engine/core/graph.go`);
+  - effect summaries that say which nodes can fail and consume (`internal/ir/core/attrs.go`, `Analyze`);
+  - the call graph with SCCs (`internal/ir/core/graph.go`);
   - the memo policy per rule (`Memo`, `Transient`, `Leader`, `Vars`: [Policy](../../../spec/core-ir/modules.md#policy),
-    `internal/engine/core/core.go:104-109`).
+    `internal/ir/core/core.go:104-109`).
 
   Core IR is built for generated parsers (`internal/engine/core_build.go`). The classifier runs as a Core analysis that
   invalidates nothing. Its verdicts are attributes of rules, which the verifier ignores. Running on Core rather than

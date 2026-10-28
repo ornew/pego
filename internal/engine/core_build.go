@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/ir/core"
 )
 
-// Building Core IR (internal/engine/core) from a compiled program.
+// Building Core IR (internal/ir/core) from a compiled program.
 //
 // buildCore makes the module of the program variant whose rule bodies build values where the
 // compiled rules do: a rule body builds its value unless the rule is lean (its action reads only

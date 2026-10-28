@@ -118,7 +118,7 @@ contract is [Observability](../../spec/runtime/observability.md).
 |:--|:--|
 | Grammar syntax, text and JSON forms | `internal/syntax/`, `grammar/` |
 | Compilation, analysis, checking, closures, VMs, Documents | `internal/engine/` |
-| Core and Flow IR and their passes | `internal/engine/core/`, `internal/engine/flow/` |
+| Core and Flow IR and their passes | `internal/ir/core/`, `internal/ir/flow/` |
 | Generated Go and TypeScript | The generators in `internal/engine/` (`gen*.go`) and the runtimes in `runtime/` and `internal/engine/tsrt/` |
 | The public API | `pego.go`, `grammar/` |
 | Commands, linter, language server | `cmd/pego/`, `internal/lint/`, `internal/lsp/` |

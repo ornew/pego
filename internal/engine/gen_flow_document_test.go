@@ -14,7 +14,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine/flow"
+	"github.com/ornew/pego/internal/ir/flow"
 )
 
 // The Node tables of a Documents build are printed from Flow IR (Options.Document). A Document parse records how

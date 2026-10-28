@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine/flow"
+	"github.com/ornew/pego/internal/ir/flow"
 )
 
 // stmt returns a removable assignment of the targets, with the values reading uses.

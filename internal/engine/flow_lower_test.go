@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine/core"
-	"github.com/ornew/pego/internal/engine/flow"
+	"github.com/ornew/pego/internal/ir/core"
+	"github.com/ornew/pego/internal/ir/flow"
 )
 
 // TestFlowVerifiesCorpus lowers every typed rule of the corpus that Flow IR covers, from the Core

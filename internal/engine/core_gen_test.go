@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/ir/core"
 )
 
 // The tests here check the Core IR of the typed Go rules, after the passes of typedCore, against
