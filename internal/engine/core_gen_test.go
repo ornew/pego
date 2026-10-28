@@ -87,6 +87,16 @@ func coreGenerate(src string, opts gen.GenOptions) (*generator, bool) {
 	return gen, true
 }
 
+// recognizerOf returns the recognizer of the program that the generator g prints, compiled as
+// Program.recognizer compiles it.
+func recognizerOf(g *generator) (*staticProgram, error) {
+	rec, err := (&Program{staticProgram: g.prog}).recognizer()
+	if err != nil {
+		return nil, err
+	}
+	return rec.staticProgram, nil
+}
+
 // coreTypedCase builds the Core IR of the typed rules of the generated parser with the passes of
 // typedCore, verifying the module after each pass and following the repetitions the scan pass
 // replaces, so that every scan has the origin of its repetition. If breaks is not nil, it is called

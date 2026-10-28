@@ -34,7 +34,7 @@ Evidence records:
 
 Source owners: [`record, isolate and
 keep`](../../../internal/engine/runtime.go),
-[`Program.descTable`](../../../internal/engine/compile.go), [`generated
+[`staticProgram.descTable`](../../../internal/engine/compile.go), [`generated
 expectation IDs`](../../../runtime/runtime.go), [`TypeScript
 description IDs`](../../../internal/engine/tsrt/runtime.ts).
 

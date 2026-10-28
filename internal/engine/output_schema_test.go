@@ -112,7 +112,7 @@ rule unused = "z"`)
 		}
 	}
 	// A program without the grammar has no metadata to export from.
-	if _, err := (&Program{}).OutputSchemaPrototype("main", false); !errors.Is(err, ErrSchemaUnavailable) {
+	if _, err := (&Program{staticProgram: &staticProgram{}}).OutputSchemaPrototype("main", false); !errors.Is(err, ErrSchemaUnavailable) {
 		t.Fatal(err)
 	}
 }
@@ -171,7 +171,7 @@ func TestOutputSchemaInferredCaptureAndDynamic(t *testing.T) {
 }
 
 func TestOutputSchemaRejectsUnresolvedShapes(t *testing.T) {
-	p := &Program{types: map[string]grammar.TypeDecl{"Known": &grammar.TypeDef{Name: "Known", Type: &grammar.StructType{}}}}
+	p := &Program{staticProgram: &staticProgram{types: map[string]grammar.TypeDecl{"Known": &grammar.TypeDef{Name: "Known", Type: &grammar.StructType{}}}}}
 	// The checker reports undefined names, which resolve to _ so that checking can go on; a
 	// checked program has none. *_ is _, since _ includes nil.
 	for _, expr := range []grammar.TypeExpr{

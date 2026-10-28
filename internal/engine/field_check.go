@@ -427,7 +427,7 @@ func (p *parser) tupleConforms(ts []*fieldType, elems []*value.Node) bool {
 
 // resolveCheck resolves a type for a cast, as a value type. It returns nil for _, which every
 // value fits.
-func (prog *Program) resolveCheck(t grammar.TypeExpr) ty {
+func (prog *staticProgram) resolveCheck(t grammar.TypeExpr) ty {
 	if t == nil {
 		return nil
 	}
@@ -438,7 +438,7 @@ func (prog *Program) resolveCheck(t grammar.TypeExpr) ty {
 }
 
 // castType returns the type cast t checks its value against, or nil if every value fits it.
-func (prog *Program) castType(t *grammar.Cast) *fieldType {
+func (prog *staticProgram) castType(t *grammar.Cast) *fieldType {
 	if v, ok := prog.fieldTypes.Load(t); ok {
 		return v.(*fieldType)
 	}
@@ -464,7 +464,7 @@ func (p *parser) castError(v any, t *fieldType, pos, gline, gcol int) error {
 
 // castPos returns the grammar position of the cast t as line and column, or 0, 0 when the program
 // records no source information or the position is unknown.
-func (prog *Program) castPos(t *grammar.Cast) (int, int) {
+func (prog *staticProgram) castPos(t *grammar.Cast) (int, int) {
 	if !prog.sourceInfo {
 		return 0, 0
 	}

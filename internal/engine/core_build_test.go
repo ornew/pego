@@ -35,7 +35,7 @@ func TestCoreBuildCorpus(t *testing.T) {
 		if !ok {
 			continue
 		}
-		m, err := buildCore(prog)
+		m, err := buildCore(prog.staticProgram)
 		if err != nil {
 			t.Errorf("%s: %v", c.name, err)
 			continue
@@ -73,7 +73,7 @@ rule d = "d"
 	if !ok {
 		t.Fatal("does not compile")
 	}
-	m, err := buildCore(prog)
+	m, err := buildCore(prog.staticProgram)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +139,7 @@ var k int = 2
 rule main P = p:pair xs:(-"," q:pair)* => P{N: $p.N + len($xs) * k, S: $p.S}
 rule pair P = n:[0-9]+ s:[a-z] => P{N: len($n), S: text($s)}
 `)
-	m, err := buildCore(prog)
+	m, err := buildCore(prog.staticProgram)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -205,7 +205,7 @@ rule main = x:item* #stream $$
 rule item = "a" ";" #missing / inner
 rule inner = "b"* #stream
 `)
-	m, err := buildCore(prog)
+	m, err := buildCore(prog.staticProgram)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,7 +240,7 @@ rule e = #operators {
     level product { infix left "*" }
 }
 `)
-	m, err := buildCore(prog)
+	m, err := buildCore(prog.staticProgram)
 	if err != nil {
 		t.Fatal(err)
 	}

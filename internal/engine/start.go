@@ -85,17 +85,8 @@ func isDefaultArg(arg any) bool {
 	return ok && ref.Name == "default" && ref.Level == ""
 }
 
-// Starts returns the start rules of the grammar, the rules marked @start where
-// parsing may begin, in declaration order.
-func (prog *Program) Starts() []string { return slices.Clone(prog.starts) }
-
-// DefaultStart returns the default start rule: the one marked
-// @start(default), or the only start rule.
-func (prog *Program) DefaultStart() string { return prog.defaultStart }
-
-// CheckStart reports an error unless name selects a start rule: it is the name
-// of a start rule, or empty for the default start rule.
-func (prog *Program) CheckStart(name string) error {
+// checkStart is CheckStart.
+func (prog *staticProgram) checkStart(name string) error {
 	if slices.Contains(prog.starts, prog.resolveStart(name)) {
 		return nil
 	}
@@ -113,7 +104,7 @@ func (prog *Program) CheckStart(name string) error {
 
 // resolveStart returns the rule name selects: name, or the default start rule
 // when name is empty.
-func (prog *Program) resolveStart(name string) string {
+func (prog *staticProgram) resolveStart(name string) string {
 	if name == "" {
 		return prog.defaultStart
 	}
@@ -121,18 +112,18 @@ func (prog *Program) resolveStart(name string) string {
 }
 
 // startRule returns the start rule name selects.
-func (prog *Program) startRule(name string) (*staticRule, error) {
-	if err := prog.CheckStart(name); err != nil {
+func (prog *staticProgram) startRule(name string) (*staticRule, error) {
+	if err := prog.checkStart(name); err != nil {
 		return nil, err
 	}
 	return prog.byName[prog.resolveStart(name)], nil
 }
 
 // definesRule reports whether the grammar defines the rule name, without preparing a backend.
-func (prog *Program) definesRule(name string) bool {
+func (prog *staticProgram) definesRule(name string) bool {
 	if prog.Grammar != nil {
 		return prog.byName[name] != nil
 	}
-	m := prog.Module()
+	m := prog.bytecodeModule()
 	return slices.ContainsFunc(m.Rules, func(r bytecode.RuleInfo) bool { return m.Strings[r.Name] == name })
 }

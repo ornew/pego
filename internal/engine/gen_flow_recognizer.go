@@ -40,7 +40,7 @@ func recFlowEligible(r *staticRule) bool {
 // rewrites, Analyze, Guards, scans and the repeats, which followRepeats keeps in step with the scans.
 // It omits Terminals and ClassRuns, which typedCore runs only for lean typed rules (leanTyped): the Node recognizer writes
 // its terminals and classes as inline tests.
-func (g *generator) startRecFlow(rec *Program) error {
+func (g *generator) startRecFlow(rec *staticProgram) error {
 	origin := map[core.Node]grammar.Expr{}
 	m, err := buildCoreProjecting(rec, origin, g.table != "recRules")
 	if err != nil {

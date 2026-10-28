@@ -10,7 +10,7 @@ import (
 // Ordinary compilation and code generation keep their existing construction
 // path. Controlled construction polls without capturing the compile context
 // in the returned parser-time matchers.
-func firstTerminalControlled(prog *Program, e grammar.Expr, depth int, seen map[string]bool, control *compileControl) (grammar.Expr, int) {
+func firstTerminalControlled(prog *staticProgram, e grammar.Expr, depth int, seen map[string]bool, control *compileControl) (grammar.Expr, int) {
 	if control == nil {
 		return firstTerminal(prog, e, depth, seen)
 	}

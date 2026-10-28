@@ -317,7 +317,7 @@ func typedRules(g *generator) []*staticRule {
 // recognizerRules returns the rules of the recognizer program of the generator by ID, value-free
 // twins included.
 func recognizerRules(g *generator) []*staticRule {
-	rec, err := g.prog.recognizer()
+	rec, err := recognizerOf(g)
 	if err != nil {
 		panic(err)
 	}

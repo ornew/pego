@@ -54,7 +54,7 @@ func (h *vhelpers) get(prefix, key string, x ty) string {
 
 // valueResolver resolves the value types of the rules whose typed values come from them.
 type valueResolver struct {
-	prog *Program
+	prog *staticProgram
 	info *typeInfo
 	// values holds the value types of the rules and ruleDefs their definitions; vres holds the
 	// resolved value types of the rules whose typed values come from them, and resolving the rules
@@ -67,7 +67,7 @@ type valueResolver struct {
 	ownType func(ty) bool
 }
 
-func newValueResolver(p *Program, ownType func(ty) bool) valueResolver {
+func newValueResolver(p *staticProgram, ownType func(ty) bool) valueResolver {
 	r := valueResolver{prog: p, info: p.typed, values: p.valueTypes(), ruleDefs: map[string]*grammar.RuleDef{}, vres: map[string]ty{}, resolving: map[string]bool{}, ownType: ownType}
 	for _, rl := range p.rules {
 		r.ruleDefs[rl.name] = rl.def
@@ -319,7 +319,7 @@ func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
 }
 
 // streamValue returns the value type of the elements of the #stream repetition of the rule rd.
-func streamValue(p *Program, rd *grammar.RuleDef) (ty, bool) {
+func streamValue(p *staticProgram, rd *grammar.RuleDef) (ty, bool) {
 	var rep *grammar.Repeat
 	walkExpr(rd.Expr, func(e grammar.Expr) {
 		if a, ok := e.(*grammar.Attributed); ok {

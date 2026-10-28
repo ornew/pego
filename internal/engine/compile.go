@@ -13,8 +13,10 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-// Program is a compiled grammar. It can be used by multiple parses concurrently.
-type Program struct {
+// staticProgram is what the compiler found out about a grammar: its rules with their static facts,
+// its types and expectations, and its bytecode module. Every backend and generator reads it; a
+// Program adds what the parser runs.
+type staticProgram struct {
 	hasMissing bool // immutable syntax metadata; bytecode/generation are unsupported
 	// shapeControl is the compilation's cancellation control while the program is being built, so that
 	// the shape analysis of rule bodies (shapeElems) polls it; nil otherwise.
@@ -40,8 +42,6 @@ type Program struct {
 	// (Options.DefaultValue).
 	defaultValue bool
 	byName       map[string]*staticRule
-	// closureRules holds the rules the closure backend runs, by ID (rule.id).
-	closureRules []*rule
 	// starts holds the start rules in declaration order and defaultStart the default one
 	// (resolveStarts).
 	starts       []string
@@ -49,29 +49,13 @@ type Program struct {
 	types        map[string]grammar.TypeDecl
 	// vars holds the declared variables (nil if there are none).
 	vars *varTable
-	// fieldTypes caches the closure backend's field checks by constructor (constructorChecks)
-	// and the types of casts (castType).
+	// fieldTypes caches the types of casts (castType).
 	fieldTypes sync.Map
-
-	workOnce       sync.Once
-	workProgram    *Program
-	workErr        error
-	workRecognize  bool
-	workRecognizer bool
+	// workRecognize and workRecognizer are Options.recognize and Options.recognizer.
+	workRecognize, workRecognizer bool
 
 	moduleOnce sync.Once
 	module     *bytecode.Module
-	recOnce    sync.Once
-	rec        *Program // program that builds no tree (recognizer)
-	recErr     error
-	vmOnce     sync.Once
-	vm         *vmProgram
-	ivmOnce    sync.Once
-	ivm        *vmProgram
-	// loaded reports that the program was loaded from a compiled grammar, whose module serves the
-	// parses of mode only (checkMode).
-	loaded bool
-	mode   CompiledMode
 	// typeKinds holds the node kinds of the grammar's types (typeKind), made with the program.
 	typeKinds map[string]*value.NodeKind
 	// nodeKinds holds the kinds of the grammar's named node types, also under the names of the
@@ -79,8 +63,6 @@ type Program struct {
 	nodeKinds map[string]*value.NodeTypeKinds
 	// nodeTypeCache holds the results of nodeTypeOf by type name: a nodeTy, or false.
 	nodeTypeCache sync.Map
-	// scratch holds the buffers of finished parses for later ones (*scratch).
-	scratch sync.Pool
 }
 
 // Options configures compilation.
@@ -134,10 +116,10 @@ type staticRule struct {
 	scope  *scope
 	action grammar.Term
 	// nodeType, if not "", is the named node type the rule's value is converted to
-	// (Program.ruleNodeType).
+	// (staticProgram.ruleNodeType).
 	nodeType string
 	// opNodeType, if not "", is the named node type every operator node of an Operators Rule is
-	// converted to (Program.operatorsNodeType).
+	// converted to (staticProgram.operatorsNodeType).
 	opNodeType string
 	memo       bool
 	missing    bool // this rule or a callee contains #missing
@@ -237,7 +219,7 @@ var builtinTypes = map[string]bool{
 
 type compiler struct {
 	control        *compileControl
-	prog           *Program
+	prog           *staticProgram
 	proj           map[string]string // projected captures of the rule being compiled (ruleProjections)
 	an             *analysis
 	opts           Options
@@ -250,7 +232,7 @@ type compiler struct {
 	runSites int
 }
 
-// desc returns the index of an expectation string (adding it to Program.descs).
+// desc returns the index of an expectation string (adding it to staticProgram.descTable).
 func (c *compiler) desc(s string) expID {
 	if id, ok := c.descIDs[s]; ok {
 		return id
@@ -414,7 +396,7 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 			return nil, normalizationError
 		}
 	}
-	prog := &Program{Grammar: g, source: source, byName: map[string]*staticRule{}, types: map[string]grammar.TypeDecl{},
+	prog := &staticProgram{Grammar: g, source: source, byName: map[string]*staticRule{}, types: map[string]grammar.TypeDecl{},
 		descTable: append([]string(nil), fixedDescs...)}
 	c := &compiler{control: control, prog: prog, opts: opts}
 	if control != nil {
@@ -573,8 +555,7 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 	}
 
 	control.check()
-	prog.closureRules = w.b.(*closureBuilder).finish()
-	return prog, nil
+	return &Program{staticProgram: prog, closureRules: w.b.(*closureBuilder).finish()}, nil
 }
 
 // validateGrammar returns the validation error of g as a compile error.
@@ -850,7 +831,7 @@ func foldedRunes(rs []rune) []rune {
 // memoization only affects speed), so a choice can skip e: first-character dispatch, done by the
 // closure backend, the VMs (GUARD) and generated parsers, unless the calls on the way would exceed
 // the nesting limit.
-func firstTerminal(prog *Program, e grammar.Expr, depth int, seen map[string]bool) (grammar.Expr, int) {
+func firstTerminal(prog *staticProgram, e grammar.Expr, depth int, seen map[string]bool) (grammar.Expr, int) {
 	switch e := e.(type) {
 	case *grammar.Literal:
 		if e.Value != "" {
@@ -1068,22 +1049,6 @@ func elementScoped(e grammar.Expr) bool { return elementScopedControlled(e, nil)
 
 func hasCaptures(e grammar.Expr) bool { return hasCapturesControlled(e, nil) }
 
-// SourceInfo reports whether the program records source information in its results
-// (Options.SourceInfo).
-func (p *Program) SourceInfo() bool { return p.sourceInfo }
-
-// DefaultValue reports whether the program was compiled to make default values (Options.DefaultValue).
-func (p *Program) DefaultValue() bool { return p.defaultValue }
-
-// SourceGrammar returns the grammar the program was compiled from: the grammar as written, without
-// the hidden rules that inline actions are lowered to.
-func (p *Program) SourceGrammar() *grammar.Grammar {
-	if p.source != nil {
-		return p.source
-	}
-	return p.Grammar
-}
-
 // whereName returns the text that names the rule in the message of a failed action.
 func (r *staticRule) whereName() string {
 	if r.where != "" {
@@ -1160,7 +1125,7 @@ func (c *compiler) flatRefs(e grammar.Expr, out []string) []string {
 }
 
 // typeKind returns the kind of nodes of the grammar's type typ without a rule.
-func (prog *Program) typeKind(typ string) *value.NodeKind {
+func (prog *staticProgram) typeKind(typ string) *value.NodeKind {
 	if k := prog.typeKinds[typ]; k != nil {
 		return k
 	}

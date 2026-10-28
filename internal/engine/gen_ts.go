@@ -65,10 +65,11 @@ func GenerateTS(g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, e
 	if err := opts.ValidateDefaultValue(); err != nil {
 		return nil, err
 	}
-	prog, err := Compile(g, Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue, leftRecursionBindings: opts.LeftRecursionBindings})
+	compiled, err := Compile(g, Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue, leftRecursionBindings: opts.LeftRecursionBindings})
 	if err != nil {
 		return nil, err
 	}
+	prog := compiled.staticProgram
 	if prog.hasMissing {
 		return nil, missingUnsupported("generated parsers")
 	}
@@ -87,11 +88,13 @@ func GenerateTS(g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, e
 	if tsg.flowErr != nil {
 		return nil, tsg.flowErr
 	}
-	var rec *Program
+	var rec *staticProgram
 	if opts.Recognize {
-		if rec, err = prog.recognizer(); err != nil {
+		recognizer, err := compiled.recognizer()
+		if err != nil {
 			return nil, err
 		}
+		rec = recognizer.staticProgram
 		tsg.prog, tsg.table = rec, "recRules"
 		tsg.rules()
 		tsg.prog, tsg.table = prog, "rules"
@@ -598,7 +601,7 @@ func (g *tsGen) plainCall(r *staticRule, body string) {
 
 // tsShaper returns the runtime shaper of the expression e, its static shape (value_shape.go), packed
 // as the runtime's Shaper.
-func tsShaper(prog *Program, e grammar.Expr) int {
+func tsShaper(prog *staticProgram, e grammar.Expr) int {
 	s := int(singleModeOf(prog, e))<<2 | valuedCount(prog, e)<<5
 	if isElems(prog, e) {
 		s |= 1

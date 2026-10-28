@@ -148,7 +148,7 @@ func (g *generator) printedBody(r *staticRule) {
 // finishReach ends a pass: the first pass computes the reachable rules from the start rules and
 // the calls outside rule bodies; the second checks that no printed call reaches a rule left out and
 // that every reachable rule has its Body.
-func (g *generator) finishReach(prog, rec *Program) error {
+func (g *generator) finishReach(prog, rec *staticProgram) error {
 	if g.collect != nil {
 		var roots []ruleKey
 		for _, name := range prog.starts {

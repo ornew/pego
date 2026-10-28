@@ -8,9 +8,8 @@ import (
 	"github.com/ornew/pego/internal/bytecode"
 )
 
-// Module compiles the program to bytecode. The result is stored in the program and reused on
-// subsequent calls.
-func (prog *Program) Module() *bytecode.Module {
+// bytecodeModule is Module.
+func (prog *staticProgram) bytecodeModule() *bytecode.Module {
 	if prog.hasMissing {
 		panic(missingUnsupported("bytecode module construction"))
 	}
@@ -23,7 +22,7 @@ func (prog *Program) Module() *bytecode.Module {
 }
 
 type bcompiler struct {
-	prog *Program
+	prog *staticProgram
 	cur  *staticRule       // rule being compiled
 	proj map[string]string // projected captures of its body (ruleProjections)
 	m    *bytecode.Module

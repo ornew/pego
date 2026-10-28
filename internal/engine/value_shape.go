@@ -11,7 +11,7 @@ import (
 
 // shapeElems returns the elements e contributes to the tuple of its scope, without types of rule
 // calls (they do not change the shape).
-func shapeElems(p *Program, e grammar.Expr) []valueElem {
+func shapeElems(p *staticProgram, e grammar.Expr) []valueElem {
 	var control *compileControl
 	if p != nil {
 		control = p.shapeControl
@@ -21,7 +21,7 @@ func shapeElems(p *Program, e grammar.Expr) []valueElem {
 
 // spliceBody returns the body of the rule name if it is a splice rule: a rule that makes no node of
 // its own, so that a call of it contributes what its body does, as a group (staticRule.splice).
-func (p *Program) spliceBody(name string) (grammar.Expr, bool) {
+func (p *staticProgram) spliceBody(name string) (grammar.Expr, bool) {
 	if p == nil {
 		return nil, false
 	}
@@ -32,7 +32,7 @@ func (p *Program) spliceBody(name string) (grammar.Expr, bool) {
 }
 
 // isSeq reports whether e is a sequence, as grouped, with attributes other than recovery, or as the body of a splice rule it calls.
-func isSeq(p *Program, e grammar.Expr) bool {
+func isSeq(p *staticProgram, e grammar.Expr) bool {
 	var seen map[string]bool
 	for {
 		switch x := ungroupExpr(e).(type) {
@@ -62,7 +62,7 @@ func isSeq(p *Program, e grammar.Expr) bool {
 
 // valuedCount returns the number of tuple elements e contributes: its elements with a value.
 // Elements without one only hold captures kept beside the tuple.
-func valuedCount(p *Program, e grammar.Expr) int {
+func valuedCount(p *staticProgram, e grammar.Expr) int {
 	n := 0
 	for _, el := range shapeElems(p, e) {
 		if el.t != nil {
@@ -74,11 +74,11 @@ func valuedCount(p *Program, e grammar.Expr) int {
 
 // isElems reports whether e builds the sequence of its elements, a tuple node that a sequence
 // containing e flattens: a sequence, possibly grouped or with attributes other than recovery.
-func isElems(p *Program, e grammar.Expr) bool {
+func isElems(p *staticProgram, e grammar.Expr) bool {
 	return isElemsSeen(p, e, nil)
 }
 
-func isElemsSeen(p *Program, e grammar.Expr, seen map[string]bool) bool {
+func isElemsSeen(p *staticProgram, e grammar.Expr, seen map[string]bool) bool {
 	switch e := ungroupExpr(e).(type) {
 	case *grammar.Seq:
 		return true
@@ -116,7 +116,7 @@ const (
 	singleTuple                   // the node of the tuple of the elements
 )
 
-func singleModeOf(p *Program, e grammar.Expr) singleMode {
+func singleModeOf(p *staticProgram, e grammar.Expr) singleMode {
 	k := valuedCount(p, e)
 	seq := isSeq(p, e)
 	switch {
@@ -130,7 +130,7 @@ func singleModeOf(p *Program, e grammar.Expr) singleMode {
 
 // scopeTuple reports whether the value of a scope with the body e (a rule body, a repetition
 // element or an Operators Rule line) is the node of its tuple, rather than its one element.
-func scopeTuple(p *Program, e grammar.Expr) bool {
+func scopeTuple(p *staticProgram, e grammar.Expr) bool {
 	elems := shapeElems(p, e)
 	seq := isSeq(p, e)
 	return seq || len(elems) != 1 || elems[0].t == nil || len(elems[0].caps) != 0
@@ -144,13 +144,13 @@ type shaper struct {
 	k      int  // the number of valued elements
 }
 
-func shaperOf(p *Program, e grammar.Expr) shaper {
+func shaperOf(p *staticProgram, e grammar.Expr) shaper {
 	return shaper{elems: isElems(p, e), shared: sharesTuple(p, e), k: valuedCount(p, e)}
 }
 
 // sharesTuple reports whether the tuple node e builds (isElems) is the result of a splice rule,
 // shared through its memo entry: a node that takes it as its own takes a copy.
-func sharesTuple(p *Program, e grammar.Expr) bool {
+func sharesTuple(p *staticProgram, e grammar.Expr) bool {
 	for {
 		switch x := ungroupExpr(e).(type) {
 		case *grammar.Attributed:
@@ -208,7 +208,7 @@ func (s shaper) single(p *parser, mode singleMode, v *value.Node, start int) (*v
 
 // singleMatcher returns a matcher of the value of e where it takes one element (an alternative or
 // the operand of ?), from the building matcher m of e. Without a value the result is nil.
-func singleMatcher(prog *Program, e grammar.Expr, m matcher) matcher {
+func singleMatcher(prog *staticProgram, e grammar.Expr, m matcher) matcher {
 	mode, sh := singleModeOf(prog, e), shaperOf(prog, e)
 	if mode == singlePass && !sh.elems {
 		return m
@@ -226,7 +226,7 @@ func singleMatcher(prog *Program, e grammar.Expr, m matcher) matcher {
 
 // captureMatcher is singleMatcher for a capture or a recovered expression, whose value is the
 // unit node of the range matched when e has no value.
-func captureMatcher(prog *Program, e grammar.Expr, m matcher) matcher {
+func captureMatcher(prog *staticProgram, e grammar.Expr, m matcher) matcher {
 	mode, sh := singleModeOf(prog, e), shaperOf(prog, e)
 	if mode == singlePass && !sh.elems {
 		return m
@@ -245,7 +245,7 @@ func captureMatcher(prog *Program, e grammar.Expr, m matcher) matcher {
 }
 
 // scopeValue returns the value of a scope whose body e matched [start, p.pos) with the result v.
-func scopeValueOf(prog *Program, e grammar.Expr) func(p *parser, v *value.Node, start int) *value.Node {
+func scopeValueOf(prog *staticProgram, e grammar.Expr) func(p *parser, v *value.Node, start int) *value.Node {
 	sh := shaperOf(prog, e)
 	if scopeTuple(prog, e) {
 		return sh.tuple

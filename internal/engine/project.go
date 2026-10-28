@@ -21,7 +21,7 @@ import (
 //   - no predicate reads $x, and the names x and f are captured only once in the rule;
 //   - f is captured in every element (an item of the element's sequence), with a value that is
 //     never nil (nonNil): otherwise an element can have no record, and $e.$f would be an error.
-func ruleProjectionsControlled(prog *Program, r *staticRule, control *compileControl) map[string]string {
+func ruleProjectionsControlled(prog *staticProgram, r *staticRule, control *compileControl) map[string]string {
 	control.poll()
 	if prog.noProjections || r.action == nil || usesItems(r.action, control) {
 		return nil
@@ -288,7 +288,7 @@ func directCapture(e grammar.Expr, name string, control *compileControl) *gramma
 // value is never nil when its action makes a struct or returns a
 // capture whose value is never nil, or when it has no action and its body's value is never nil
 // (without the type checker's results, which the engine computes after compiling).
-func nonNil(prog *Program, e grammar.Expr, seen map[string]bool, control *compileControl) bool {
+func nonNil(prog *staticProgram, e grammar.Expr, seen map[string]bool, control *compileControl) bool {
 	control.poll()
 	switch e := e.(type) {
 	case *grammar.Literal, *grammar.CharClass, *grammar.Any, *grammar.Atomic, *grammar.Top, *grammar.Seq, *grammar.Repeat:
@@ -342,7 +342,7 @@ func nonNil(prog *Program, e grammar.Expr, seen map[string]bool, control *compil
 }
 
 // lineNonNil reports whether a rule body or Operators Rule line e with the action t never has a nil value.
-func lineNonNil(prog *Program, e grammar.Expr, t grammar.Term, operator bool, seen map[string]bool, control *compileControl) bool {
+func lineNonNil(prog *staticProgram, e grammar.Expr, t grammar.Term, operator bool, seen map[string]bool, control *compileControl) bool {
 	control.poll()
 	switch t := t.(type) {
 	case nil:
@@ -372,6 +372,6 @@ func usesItems(t grammar.Term, control *compileControl) bool {
 	return found
 }
 
-func ruleProjections(prog *Program, r *staticRule) map[string]string {
+func ruleProjections(prog *staticProgram, r *staticRule) map[string]string {
 	return ruleProjectionsControlled(prog, r, nil)
 }

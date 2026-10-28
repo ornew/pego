@@ -147,7 +147,7 @@ func valueTypesOf(t *testing.T, src string) (map[string]ty, ErrorList) {
 	if err != nil {
 		t.Fatalf("%q: %v", src, err)
 	}
-	return valueTypes(p, nil)
+	return valueTypes(p.staticProgram, nil)
 }
 
 // Actions are typed in the value model: captures have the types of their values, and nodes expose

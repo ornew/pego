@@ -436,7 +436,7 @@ func BenchmarkBytecodeLowering(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for b.Loop() {
-				compiler := &bcompiler{prog: p, m: &bytecode.Module{}, strs: map[string]int{}}
+				compiler := &bcompiler{prog: p.staticProgram, m: &bytecode.Module{}, strs: map[string]int{}}
 				compiler.compile()
 			}
 		})

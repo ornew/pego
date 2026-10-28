@@ -11,7 +11,7 @@ import (
 // aliases that refer to themselves and type syntax that is not supported yet.
 type typeResolver struct {
 	control *compileControl
-	prog    *Program
+	prog    *staticProgram
 	errs    *ErrorList
 	report  bool
 	// sawUnsupported records that a resolved type used syntax that is not supported yet, whether
@@ -244,7 +244,7 @@ func (k *typeResolver) resolveNamed(name string, pos grammar.Pos) ty {
 		}
 		// Within the value of a named node type, a named node type stands for itself by its
 		// name, like a struct type: its value is read from its definition where it is needed
-		// (Program.nodeValueOf). Types that refer to each other thus resolve in linear time,
+		// (staticProgram.nodeValueOf). Types that refer to each other thus resolve in linear time,
 		// and a type alias may refer to itself through a named node type.
 		if k.inNode {
 			return nodeTy{value: tyTop, name: name}

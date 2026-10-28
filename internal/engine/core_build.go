@@ -32,20 +32,20 @@ import (
 // buildCore builds the Core IR of the program: its rules and then its value-free twins, each at
 // the position of its ID. Shapes are those of the value model (value_shape.go); Analyze has not
 // run.
-func buildCore(prog *Program) (*core.Module, error) {
+func buildCore(prog *staticProgram) (*core.Module, error) {
 	return buildCoreFrom(prog, nil)
 }
 
 // buildCoreFrom is buildCore that also records, in origin if it is not nil, the expression each
 // node is built from (the innermost one, for nodes built from a chain of expressions).
-func buildCoreFrom(prog *Program, origin map[core.Node]grammar.Expr) (*core.Module, error) {
+func buildCoreFrom(prog *staticProgram, origin map[core.Node]grammar.Expr) (*core.Module, error) {
 	return buildCoreProjecting(prog, origin, true)
 }
 
 // buildCoreProjecting is buildCoreFrom; if project is false, no repetition gathers the values of a capture
 // (ruleProjections is ignored), the shape of the values the recognizer's table writes its actions for
 // (generator.projections).
-func buildCoreProjecting(prog *Program, origin map[core.Node]grammar.Expr, project bool) (*core.Module, error) {
+func buildCoreProjecting(prog *staticProgram, origin map[core.Node]grammar.Expr, project bool) (*core.Module, error) {
 	all := append(append([]*staticRule(nil), prog.rules...), prog.twins...)
 	b := &coreBuilder{prog: prog, m: &core.Module{Rules: make([]*core.Rule, len(all))}, origin: origin,
 		exps: map[string]core.ExpID{}, classes: map[string]*core.Class{}, starts: map[*staticRule]bool{}}
@@ -92,7 +92,7 @@ func buildCoreProjecting(prog *Program, origin map[core.Node]grammar.Expr, proje
 }
 
 type coreBuilder struct {
-	prog *Program
+	prog *staticProgram
 	m    *core.Module
 	cur  *staticRule
 	// noProject builds no projected repetition: proj stays empty.
@@ -326,7 +326,7 @@ func (b *coreBuilder) opLine(e grammar.Expr, action grammar.Term, operator, skip
 }
 
 // coreShape returns the static shape of the value of e.
-func coreShape(prog *Program, e grammar.Expr) core.Shape {
+func coreShape(prog *staticProgram, e grammar.Expr) core.Shape {
 	elems := isElems(prog, e)
 	return core.Shape{Elems: elems, K: valuedCount(prog, e), Mode: core.SingleMode(singleModeOf(prog, e)), Tuple: scopeTuple(prog, e),
 		Shared: elems && sharesTuple(prog, e)}
@@ -335,7 +335,7 @@ func coreShape(prog *Program, e grammar.Expr) core.Shape {
 // coreLayout returns the frame layout of a scope with the body e: the captures written in it in
 // the order they are first met, unreachable ones included, following the build policy of the
 // rule r with the projections proj.
-func coreLayout(prog *Program, r *staticRule, proj map[string]string, e grammar.Expr, build bool) *coreScope {
+func coreLayout(prog *staticProgram, r *staticRule, proj map[string]string, e grammar.Expr, build bool) *coreScope {
 	s := &coreScope{}
 	var visit func(grammar.Expr, bool)
 	visit = func(e grammar.Expr, build bool) {

@@ -189,7 +189,7 @@ func missingLiteral(literal matcher, site int, expected string, build bool) matc
 
 // markMissingRules records transitive insertion dependencies before matchers or
 // value-free twins are compiled. Unrelated rules retain completed memo reuse.
-func (prog *Program) markMissingRules(control *compileControl) {
+func (prog *staticProgram) markMissingRules(control *compileControl) {
 	var usesMissingType func(grammar.TypeExpr) bool
 	usesMissingType = func(t grammar.TypeExpr) bool {
 		control.poll()

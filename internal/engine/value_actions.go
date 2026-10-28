@@ -417,7 +417,7 @@ func (v *valueInference) nodeValue(n nodeTy) ty {
 
 // nodeValueOf returns the type of the value of a node of type n, reading the value of a named
 // node type from its definition.
-func (prog *Program) nodeValueOf(n nodeTy) ty {
+func (prog *staticProgram) nodeValueOf(n nodeTy) ty {
 	if n.name != "" {
 		if d, ok := prog.nodeTypeOf(n.name); ok {
 			return d.value
@@ -428,7 +428,7 @@ func (prog *Program) nodeValueOf(n nodeTy) ty {
 
 // nodeTypeOf returns the named node type that the type name names, through aliases. Its value is
 // resolved once and cached.
-func (prog *Program) nodeTypeOf(name string) (nodeTy, bool) {
+func (prog *staticProgram) nodeTypeOf(name string) (nodeTy, bool) {
 	switch prog.types[name].(type) {
 	case *grammar.TypeDef, *grammar.TypeAlias:
 	default:
@@ -451,7 +451,7 @@ func (prog *Program) nodeTypeOf(name string) (nodeTy, bool) {
 // ruleNodeType returns the named node type that the value of rule rd is converted to: its declared
 // type, through aliases, when that is exactly a named node type. An Operators Rule converts the
 // nodes of its operators instead (operatorsNodeType), never its value as a whole.
-func (prog *Program) ruleNodeType(rd *grammar.RuleDef) (nodeTy, bool) {
+func (prog *staticProgram) ruleNodeType(rd *grammar.RuleDef) (nodeTy, bool) {
 	if _, ok := rd.Expr.(*grammar.OperatorsRule); ok {
 		return nodeTy{}, false
 	}
@@ -461,7 +461,7 @@ func (prog *Program) ruleNodeType(rd *grammar.RuleDef) (nodeTy, bool) {
 // operatorsNodeType returns the named node type that every operator node of the Operators Rule
 // rd is converted to: the rule's declared type, through aliases, when that is exactly a named node
 // type. The values of its operand lines are not converted.
-func (prog *Program) operatorsNodeType(rd *grammar.RuleDef) (nodeTy, bool) {
+func (prog *staticProgram) operatorsNodeType(rd *grammar.RuleDef) (nodeTy, bool) {
 	if _, ok := rd.Expr.(*grammar.OperatorsRule); !ok {
 		return nodeTy{}, false
 	}
@@ -470,7 +470,7 @@ func (prog *Program) operatorsNodeType(rd *grammar.RuleDef) (nodeTy, bool) {
 
 // declaredNodeType returns the named node type that is the declared type of rule rd, through
 // aliases.
-func (prog *Program) declaredNodeType(rd *grammar.RuleDef) (nodeTy, bool) {
+func (prog *staticProgram) declaredNodeType(rd *grammar.RuleDef) (nodeTy, bool) {
 	if rd.Type == nil {
 		return nodeTy{}, false
 	}
@@ -482,7 +482,7 @@ func (prog *Program) declaredNodeType(rd *grammar.RuleDef) (nodeTy, bool) {
 // convertsResult reports whether the value that key produces (see checkInfo.results) is converted
 // to a named node type, which its run-time check then sees converted: a rule's value, or the value
 // of an operator of an Operators Rule.
-func (prog *Program) convertsResult(key any, rd *grammar.RuleDef) (nodeTy, bool) {
+func (prog *staticProgram) convertsResult(key any, rd *grammar.RuleDef) (nodeTy, bool) {
 	switch key.(type) {
 	case *grammar.RuleDef:
 		if key == any(rd) {

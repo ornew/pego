@@ -263,7 +263,7 @@ func TestPruneSpliceTypesFollowsTheStructureOfTypes(t *testing.T) {
 		{"no reference", tupleTy{[]ty{tyStringNode}}, false},
 		{"a name that holds the rule's", ruleTy{"x_m"}, false},
 	} {
-		out := pruneSpliceTypes(p, rules, map[string]ty{"main": c.main, "_m": tyStringNode})
+		out := pruneSpliceTypes(p.staticProgram, rules, map[string]ty{"main": c.main, "_m": tyStringNode})
 		if _, got := out["_m"]; got != c.kept {
 			t.Errorf("%s: kept %v, want %v", c.name, got, c.kept)
 		}

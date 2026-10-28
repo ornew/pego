@@ -27,11 +27,11 @@ func dropRepeatedErrors(errs *ErrorList, from int) {
 }
 
 // checkTypes checks the types of the whole grammar.
-func checkTypes(prog *Program, errs *ErrorList) {
+func checkTypes(prog *staticProgram, errs *ErrorList) {
 	checkTypesControlled(prog, errs, nil)
 }
 
-func checkTypesControlled(prog *Program, errs *ErrorList, control *compileControl) {
+func checkTypesControlled(prog *staticProgram, errs *ErrorList, control *compileControl) {
 	defer dropRepeatedErrors(errs, len(*errs))
 	k := &typeResolver{control: control, prog: prog, errs: errs, report: true}
 	k.checkTypeDefinitions()
@@ -70,7 +70,7 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 
 // typeInfo holds the types found by the type checker, for code generation.
 type typeInfo struct {
-	// values holds the type of each rule's value in the value model (Program.valueTypes).
+	// values holds the type of each rule's value in the value model (staticProgram.valueTypes).
 	values     map[string]ty
 	valueErrs  ErrorList     // the errors of actions in the value model
 	shown      map[string]ty // the type of each rule as RuleType shows it (shownRuleTypes)
@@ -81,7 +81,7 @@ type typeInfo struct {
 	// members (.Start, .End, .Value) and never a struct field.
 	nodeMembers map[*grammar.Member]bool
 	// rec holds the types of the terms, scopes and rules of the checked program, made on first
-	// use by Program.valueRecord.
+	// use by staticProgram.valueRecord.
 	rec     *valueRecord
 	recOnce sync.Once
 }
@@ -89,7 +89,7 @@ type typeInfo struct {
 // valueRecord returns the types the value inference gives the parts of the type-checked program
 // (valueRecord), or nil if its types were not checked. Only code generation reads them, so they
 // are recorded by a second run of the inference on first use rather than on every Compile.
-func (p *Program) valueRecord() *valueRecord {
+func (p *staticProgram) valueRecord() *valueRecord {
 	if p.typed == nil {
 		return nil
 	}
@@ -101,12 +101,8 @@ func (p *Program) valueRecord() *valueRecord {
 	return p.typed.rec
 }
 
-// RuleType returns the type of the value of the rule name: its declared type, or the inferred
-// type of its value (for example "[]Expr | node[[]node[string]]"). In an inferred type, a
-// reference to another rule is that rule's declared type, or the rule's name if it has none. It
-// reports false if the program has no such rule or its types were not checked
-// (a program loaded from a compiled grammar).
-func (p *Program) RuleType(name string) (string, bool) {
+// ruleType is RuleType.
+func (p *staticProgram) ruleType(name string) (string, bool) {
 	if p.typed == nil {
 		return "", false
 	}
@@ -149,7 +145,7 @@ type typedField struct {
 
 // concreteType resolves aliases and normalized singleton joins to their node type.
 // It does not report errors; validation still uses the type expression as written.
-func (prog *Program) concreteType(t grammar.TypeExpr) (string, grammar.TypeDecl) {
+func (prog *staticProgram) concreteType(t grammar.TypeExpr) (string, grammar.TypeDecl) {
 	if ref, ok := t.(*grammar.TypeRef); ok {
 		switch spec := prog.types[ref.Name].(type) {
 		case *grammar.TypeDef:
@@ -163,7 +159,7 @@ func (prog *Program) concreteType(t grammar.TypeExpr) (string, grammar.TypeDecl)
 	return "", nil
 }
 
-func (prog *Program) structType(name string) (string, *grammar.TypeDef) {
+func (prog *staticProgram) structType(name string) (string, *grammar.TypeDef) {
 	switch spec := prog.types[name].(type) {
 	case *grammar.TypeDef:
 		return name, spec

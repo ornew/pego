@@ -13,7 +13,7 @@ import (
 // with the passes that apply to its rule table recRules (no terminal programs and no class runs
 // there), verifying the module after each pass.
 func coreRecognizeCase(name, mode string, g *generator) (*coreGenCase, error) {
-	rec, err := g.prog.recognizer()
+	rec, err := recognizerOf(g)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func TestCoreRecognizerDecisionsFrozen(t *testing.T) {
 			if !ok {
 				continue
 			}
-			if _, err := gen.prog.recognizer(); err != nil {
+			if _, err := recognizerOf(gen); err != nil {
 				continue
 			}
 			c, err := coreRecognizeCase(gc.name, mode.name, gen)

@@ -43,7 +43,7 @@ func TestClassConstructionContextCancellation(t *testing.T) {
 		{"scan-repeat", func(c *compileControl) {
 			(&closureBuilder{control: c}).ScanRepeat(&grammar.Repeat{Expr: cl, Max: -1}, 0)
 		}},
-		{"guard-extraction", func(c *compileControl) { firstTerminalControlled(&Program{}, deep, 0, map[string]bool{}, c) }},
+		{"guard-extraction", func(c *compileControl) { firstTerminalControlled(&staticProgram{}, deep, 0, map[string]bool{}, c) }},
 	} {
 		t.Run(phase.name, func(t *testing.T) {
 			c := &compileControl{ctx: compileTestContext(t, 1)}
@@ -220,7 +220,7 @@ func TestFirstTerminalContextFacts(t *testing.T) {
 	leaf := &grammar.Literal{Value: "a"}
 	a := &staticRule{def: &grammar.RuleDef{Name: "a", Expr: &grammar.Ref{Name: "b"}}}
 	b := &staticRule{def: &grammar.RuleDef{Name: "b", Expr: &grammar.Capture{Name: "x", Expr: &grammar.Atomic{Expr: &grammar.Discard{Expr: &grammar.Seq{Items: []grammar.Expr{leaf}}}}}}}
-	p := &Program{byName: map[string]*staticRule{"a": a, "b": b}}
+	p := &staticProgram{byName: map[string]*staticRule{"a": a, "b": b}}
 	for _, control := range []*compileControl{nil, {ctx: context.Background()}} {
 		got, depth := firstTerminalControlled(p, &grammar.Ref{Name: "a"}, 0, map[string]bool{}, control)
 		if got != leaf || depth != 2 {

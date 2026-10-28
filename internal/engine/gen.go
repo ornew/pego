@@ -111,10 +111,11 @@ func generateOnce(g *grammar.Grammar, opts gen.GenOptions, live, collect *liveRu
 	if err != nil {
 		return nil, err
 	}
-	prog, err := Compile(g, Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue, leftRecursionBindings: opts.LeftRecursionBindings})
+	compiled, err := Compile(g, Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue, leftRecursionBindings: opts.LeftRecursionBindings})
 	if err != nil {
 		return nil, err
 	}
+	prog := compiled.staticProgram
 	if prog.hasMissing {
 		return nil, missingUnsupported("generated parsers")
 	}
@@ -156,13 +157,15 @@ func generateOnce(g *grammar.Grammar, opts gen.GenOptions, live, collect *liveRu
 	if goGen.flowErr != nil {
 		return nil, goGen.flowErr
 	}
-	var rec *Program
+	var rec *staticProgram
 	if opts.Recognize {
 		// The recognizer: the program in which no rule builds a value (Program.recognizer), in a
 		// rule table of its own.
-		if rec, err = prog.recognizer(); err != nil {
+		recognizer, err := compiled.recognizer()
+		if err != nil {
 			return nil, err
 		}
+		rec = recognizer.staticProgram
 		goGen.prog, goGen.table = rec, "recRules"
 		if err := goGen.startRecFlow(rec); err != nil {
 			return nil, err
@@ -405,7 +408,7 @@ func goFieldType(t *fieldType) string {
 
 // useSparseMemo removes the representation selector entirely when neither
 // emitted rule table can cross the sparse-storage threshold.
-func useSparseMemo(opts gen.GenOptions, prog, rec *Program) bool {
+func useSparseMemo(opts gen.GenOptions, prog, rec *staticProgram) bool {
 	return !opts.DisableSparseMemo && (prog.nseen > 64 || rec != nil && rec.nseen > 64)
 }
 
@@ -437,8 +440,8 @@ type generator struct {
 	workClassKeys       []string
 	shaperNames         map[string]string
 	shaperKeys          []string
-	recoveryProg        map[*Program]bool // whether a program can recover from errors
-	tableErr            error             // the rule table does not fit the form of runtime.RuleSpec
+	recoveryProg        map[*staticProgram]bool // whether a program can recover from errors
+	tableErr            error                   // the rule table does not fit the form of runtime.RuleSpec
 	// coreHook, if set, is called by typedCore with the module after it is built and after each pass.
 	coreHook              func(pass string, m *core.Module)
 	flowErr               error // the first rule, line or stream body that Flow IR does not print, or the first internal error of the unread-variable check
@@ -471,7 +474,7 @@ type generator struct {
 	// typedOnly leaves out the untyped Node family: the rule table keeps only the metadata the
 	// typed table shares.
 	typedOnly bool
-	prog      *Program
+	prog      *staticProgram
 	table     string      // the rule table being generated: rules, or recRules for Recognize
 	cur       *staticRule // the rule being generated
 	// proj holds the projected repetition captures of the rule being generated (projections).
@@ -674,7 +677,7 @@ func (g *generator) recovers() bool {
 		}
 	}
 	if g.recoveryProg == nil {
-		g.recoveryProg = map[*Program]bool{}
+		g.recoveryProg = map[*staticProgram]bool{}
 	}
 	g.recoveryProg[g.prog] = found
 	return found
@@ -1271,7 +1274,7 @@ func (g *generator) shaperOf(lit string) string {
 }
 
 // shaperLit returns the literal of the runtime shaper of the expression e.
-func shaperLit(prog *Program, e grammar.Expr) string {
+func shaperLit(prog *staticProgram, e grammar.Expr) string {
 	return fmt.Sprintf("Shaper{Elems: %v, K: %d, Mode: %d, Tuple: %v, Shared: %v}", isElems(prog, e), valuedCount(prog, e), singleModeOf(prog, e), scopeTuple(prog, e), isElems(prog, e) && sharesTuple(prog, e))
 }
 

@@ -133,9 +133,9 @@ func TestCompileContextPhaseCancellation(t *testing.T) {
 				tarjan(g.Rules(), edges, control)
 			case "type-checking":
 				var diagnostics ErrorList
-				checkTypesControlled(p, &diagnostics, control)
+				checkTypesControlled(p.staticProgram, &diagnostics, control)
 			case "type-inference":
-				valueTypes(p, control)
+				valueTypes(p.staticProgram, control)
 			case "list-constructor-type":
 				// The entry poll alone cannot cancel: cancellation must be
 				// observed inside the temporary checker resolving Elem.
@@ -143,14 +143,14 @@ func TestCompileContextPhaseCancellation(t *testing.T) {
 				for range 1024 {
 					elem = &grammar.ListType{Elem: elem}
 				}
-				c := &compiler{prog: p, control: control}
+				c := &compiler{prog: p.staticProgram, control: control}
 				c.checkTerm(&grammar.ListConstructor{Elem: elem}, newScope(), nil)
 			case "matcher-construction":
 				items := make([]grammar.Expr, 1024)
 				for i := range items {
 					items[i] = &grammar.Literal{Value: "a"}
 				}
-				c := newClosureWalker(&compiler{prog: p, control: control}, true)
+				c := newClosureWalker(&compiler{prog: p.staticProgram, control: control}, true)
 				c.expr(&grammar.Seq{Items: items}, newScope(), true)
 			}
 			t.Fatal("phase completed without cancellation")

@@ -5,13 +5,10 @@ import (
 	"strings"
 )
 
-// RuleTypeWithPoll is RuleType with invocation-owned polling for editor display.
-// It does not retain poll. Callback panics propagate unchanged to the caller.
-// Individual allocations and string comparisons/concatenations may finish
-// before the next callback. A nil callback uses the ordinary type renderer.
-func (p *Program) RuleTypeWithPoll(name string, poll func()) (string, bool) {
+// ruleTypeWithPoll is RuleTypeWithPoll.
+func (p *staticProgram) ruleTypeWithPoll(name string, poll func()) (string, bool) {
 	if poll == nil {
-		return p.RuleType(name)
+		return p.ruleType(name)
 	}
 	poll()
 	if p.typed == nil {

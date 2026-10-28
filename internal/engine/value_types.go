@@ -193,7 +193,7 @@ type valueElem struct {
 // referred to from an action is known when the action is checked. The rules of a cycle of
 // references are computed together as the least fixed point of their values.
 type valueInference struct {
-	prog    *Program
+	prog    *staticProgram
 	control *compileControl
 	rules   map[string]*grammar.RuleDef
 	out     map[string]ty
@@ -254,7 +254,7 @@ func (v *valueInference) scope(e grammar.Expr, caps []capIndex) {
 
 // valueTypes returns the value type of each rule of a type-checked program. It is computed on
 // demand: nothing uses it for compilation yet.
-func (p *Program) valueTypes() map[string]ty {
+func (p *staticProgram) valueTypes() map[string]ty {
 	if p.typed == nil {
 		return nil
 	}
@@ -264,10 +264,8 @@ func (p *Program) valueTypes() map[string]ty {
 	return p.typed.values
 }
 
-// ValueType returns the type of the value that the rule name builds in the value model (for
-// example "node[(*node[string],)]"). It reports false if the program has no such rule or its
-// types were not checked.
-func (p *Program) ValueType(name string) (string, bool) {
+// valueType is ValueType.
+func (p *staticProgram) valueType(name string) (string, bool) {
 	t, ok := p.valueTypes()[name]
 	if !ok {
 		return "", false
@@ -276,7 +274,7 @@ func (p *Program) ValueType(name string) (string, bool) {
 }
 
 // valueErrors returns the errors of actions in the value model of a type-checked program.
-func (p *Program) valueErrors() ErrorList {
+func (p *staticProgram) valueErrors() ErrorList {
 	if p.valueTypes() == nil {
 		return nil
 	}
@@ -284,13 +282,13 @@ func (p *Program) valueErrors() ErrorList {
 }
 
 // valueTypes returns the value type of each rule, and the errors of the actions.
-func valueTypes(p *Program, control *compileControl) (map[string]ty, ErrorList) {
+func valueTypes(p *staticProgram, control *compileControl) (map[string]ty, ErrorList) {
 	return valueTypesChecked(p, control, nil, nil)
 }
 
 // valueTypesChecked is valueTypes recording the node member accesses in nodeMembers and the
 // types of the program's parts in rec, each if not nil.
-func valueTypesChecked(p *Program, control *compileControl, nodeMembers map[*grammar.Member]bool, rec *valueRecord) (map[string]ty, ErrorList) {
+func valueTypesChecked(p *staticProgram, control *compileControl, nodeMembers map[*grammar.Member]bool, rec *valueRecord) (map[string]ty, ErrorList) {
 	v := &valueInference{prog: p, control: control, rules: map[string]*grammar.RuleDef{}, out: map[string]ty{}, approx: map[string]ty{}, computing: map[string]bool{}, nodeMembers: nodeMembers, rec: rec}
 	rules := p.Grammar.Rules()
 	for _, rd := range rules {
@@ -310,7 +308,7 @@ func valueTypesChecked(p *Program, control *compileControl, nodeMembers map[*gra
 // pruneSpliceTypes returns the value types of the rules that have a type of their own: a splice
 // rule makes no node, so it has a type only where a recursive call of it is an element of its own,
 // and then only because another type refers to it.
-func pruneSpliceTypes(p *Program, rules []*grammar.RuleDef, out map[string]ty) map[string]ty {
+func pruneSpliceTypes(p *staticProgram, rules []*grammar.RuleDef, out map[string]ty) map[string]ty {
 	var queue []string
 	kept := map[string]bool{}
 	for _, rd := range rules {

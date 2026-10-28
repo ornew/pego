@@ -10,7 +10,7 @@ import (
 // closureBuilder builds the closure backend's form of a program: a matcher per expression, and the
 // bodies, values and actions of the rules.
 type closureBuilder struct {
-	prog    *Program
+	prog    *staticProgram
 	control *compileControl
 	// plainDispatch leaves out the per-expression work charge (Options.controlledDispatch builds
 	// the metered closure graph).
