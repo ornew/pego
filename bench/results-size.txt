@@ -1,0 +1,48 @@
+# date: 2026-10-29
+# commit: 13b3d186
+# go: go1.27.1
+# cores: 16
+# load: 2.51 3.09 3.65
+# go binary: a main that calls ParseAST; go build -trimpath -ldflags="-s -w"
+size json go-source 58324
+size json go-binary 2184562
+size json ts-raw 70888
+size json ts-gzip 9883
+size runtime ts-raw 146023
+size runtime ts-gzip 36949
+size csv go-source 25334
+size csv go-binary 2150642
+size csv ts-raw 32036
+size csv ts-gzip 6574
+size xml go-source 300548
+size xml go-binary 2908690
+size xml ts-raw 271722
+size xml ts-gzip 28797
+size yaml go-source 522308
+size yaml go-binary 3073234
+size yaml ts-raw 570576
+size yaml ts-gzip 56460
+size cel go-source 112886
+size cel go-binary 2387186
+size cel ts-raw 215544
+size cel ts-gzip 25673
+size cue go-source 396588
+size cue go-binary 3091858
+size cue ts-raw 618817
+size cue ts-gzip 81054
+size golang go-source 524211
+size golang go-binary 3330994
+size golang ts-raw 835810
+size golang ts-gzip 88598
+size python go-source 603097
+size python go-binary 3704898
+size python ts-raw 940968
+size python ts-gzip 109537
+size typescript go-source 943432
+size typescript go-binary 4634754
+size typescript ts-raw 1509960
+size typescript ts-gzip 166060
+size duckdb go-source 1588337
+size duckdb go-binary 6448578
+size duckdb ts-raw 3319463
+size duckdb ts-gzip 256988
