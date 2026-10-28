@@ -1,10 +1,14 @@
 package engine
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	goast "go/ast"
 	"go/format"
 	goparser "go/parser"
+	"go/printer"
 	"go/token"
 	"path"
 	"strings"
@@ -60,6 +64,11 @@ func (opts GenOptions) typesFile(body string) ([]byte, *typesPackage, error) {
 		return nil, nil, fmt.Errorf("generated types do not compile: %w\n%s", err, body)
 	}
 	src := strings.TrimPrefix(string(formatted), "package "+typesPackageName+"\n")
+	schema, err := schemaName(formatted)
+	if err != nil {
+		return nil, nil, err
+	}
+	src += fmt.Sprintf("\n// %[1]s ties the parser package to this package: the parser refers to it once, so a\n// parser and a types package generated from different schemas do not compile together.\n// It is for generated parsers; not a stable API.\nconst %[1]s = 0\n", schema)
 	declared, err := declaredNames("package p\n" + src)
 	if err != nil {
 		return nil, nil, err
@@ -68,7 +77,7 @@ func (opts GenOptions) typesFile(body string) ([]byte, *typesPackage, error) {
 	// the parser package refers to as types.Name).
 	own := map[string]bool{}
 	for _, name := range declared {
-		if name == "Error" || name == "TNode" || name == "Unit" || name == hooksName || name == nodeTypesName || tupleName(name) {
+		if name == "Error" || name == "TNode" || name == "Unit" || name == hooksName || name == nodeTypesName || name == schema || tupleName(name) {
 			own[name] = true
 		}
 	}
@@ -100,5 +109,28 @@ func (opts GenOptions) typesFile(body string) ([]byte, *typesPackage, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("generated types do not compile: %w", err)
 	}
-	return out, &typesPackage{importPath: opts.typesImport(), declared: func(name string) bool { return own[name] }, types: decls}, nil
+	return out, &typesPackage{importPath: opts.typesImport(), declared: func(name string) bool { return own[name] }, types: decls, schema: schema}, nil
+}
+
+// schemaPrefix starts the name of the constant that ties a parser package to its types package.
+const schemaPrefix = "PegoSchema_"
+
+// schemaName returns the name of the schema constant of the types package whose source (with its package
+// clause) is src: schemaPrefix and the hex digest of the declarations and code of the package without
+// comments, as go/printer prints them. The parser relies on everything the package declares (the names,
+// kinds and fields of the types, their methods, the hooks and the registered node types), and the printer
+// makes the digest independent of the layout and comments of the source, which carry no meaning for the
+// parser; the grammar's documentation comments are among them.
+func schemaName(src []byte) (string, error) {
+	fset := token.NewFileSet()
+	f, err := goparser.ParseFile(fset, "types.go", src, goparser.SkipObjectResolution)
+	if err != nil {
+		return "", err
+	}
+	var canon bytes.Buffer
+	if err := printer.Fprint(&canon, fset, f); err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(canon.Bytes())
+	return schemaPrefix + hex.EncodeToString(sum[:8]), nil
 }

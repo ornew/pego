@@ -3,8 +3,6 @@
 package typescript
 
 import (
-	"unsafe"
-
 	types "github.com/ornew/pego/parsers/typescript/types"
 	rt "github.com/ornew/pego/runtime"
 )
@@ -2814,7 +2812,6 @@ func tl22(a *tslabs, v any) []*types.VariableDeclaration {
 
 func tv0(a *tslabs, v any) *types.BigIntLiteral {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.BigIntLiteral{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -2824,7 +2821,6 @@ func tv0(a *tslabs, v any) *types.BigIntLiteral {
 
 func tv1(a *tslabs, v any) *types.BooleanLiteral {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.BooleanLiteral{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
@@ -2834,7 +2830,6 @@ func tv1(a *tslabs, v any) *types.BooleanLiteral {
 
 func tv2(a *tslabs, v any) *types.DebuggerStatement {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.DebuggerStatement{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
@@ -2844,7 +2839,6 @@ func tv2(a *tslabs, v any) *types.DebuggerStatement {
 
 func tv3(a *tslabs, v any) *types.EmptyStatement {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.EmptyStatement{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
@@ -2854,7 +2848,6 @@ func tv3(a *tslabs, v any) *types.EmptyStatement {
 
 func tv4(a *tslabs, v any) *types.EndOfFileToken {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.EndOfFileToken{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[5] {
 		return nil
@@ -2864,7 +2857,6 @@ func tv4(a *tslabs, v any) *types.EndOfFileToken {
 
 func tv5(a *tslabs, v any) *types.Identifier {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Identifier{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[6] {
 		return nil
@@ -2874,7 +2866,6 @@ func tv5(a *tslabs, v any) *types.Identifier {
 
 func tv6(a *tslabs, v any) *types.ImportExpression {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.ImportExpression{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[7] {
 		return nil
@@ -2884,7 +2875,6 @@ func tv6(a *tslabs, v any) *types.ImportExpression {
 
 func tv7(a *tslabs, v any) *types.JSDocAllType {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.JSDocAllType{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[8] {
 		return nil
@@ -2894,7 +2884,6 @@ func tv7(a *tslabs, v any) *types.JSDocAllType {
 
 func tv8(a *tslabs, v any) *types.JSDocUnknownType {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.JSDocUnknownType{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[9] {
 		return nil
@@ -2904,7 +2893,6 @@ func tv8(a *tslabs, v any) *types.JSDocUnknownType {
 
 func tv9(a *tslabs, v any) *types.JsxClosingFragment {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.JsxClosingFragment{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[10] {
 		return nil
@@ -2914,7 +2902,6 @@ func tv9(a *tslabs, v any) *types.JsxClosingFragment {
 
 func tv10(a *tslabs, v any) *types.JsxOpeningFragment {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.JsxOpeningFragment{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[11] {
 		return nil
@@ -2924,7 +2911,6 @@ func tv10(a *tslabs, v any) *types.JsxOpeningFragment {
 
 func tv11(a *tslabs, v any) *types.JsxText {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.JsxText{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[12] {
 		return nil
@@ -2934,7 +2920,6 @@ func tv11(a *tslabs, v any) *types.JsxText {
 
 func tv12(a *tslabs, v any) *types.KeywordTypeNode {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.KeywordTypeNode{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[13] {
 		return nil
@@ -2944,7 +2929,6 @@ func tv12(a *tslabs, v any) *types.KeywordTypeNode {
 
 func tv13(a *tslabs, v any) *types.Modifier {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Modifier{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[14] {
 		return nil
@@ -2954,7 +2938,6 @@ func tv13(a *tslabs, v any) *types.Modifier {
 
 func tv14(a *tslabs, v any) *types.NoSubstitutionTemplateLiteral {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.NoSubstitutionTemplateLiteral{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[15] {
 		return nil
@@ -2964,7 +2947,6 @@ func tv14(a *tslabs, v any) *types.NoSubstitutionTemplateLiteral {
 
 func tv15(a *tslabs, v any) *types.NullLiteral {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.NullLiteral{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[16] {
 		return nil
@@ -2974,7 +2956,6 @@ func tv15(a *tslabs, v any) *types.NullLiteral {
 
 func tv16(a *tslabs, v any) *types.NumericLiteral {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.NumericLiteral{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[17] {
 		return nil
@@ -2984,7 +2965,6 @@ func tv16(a *tslabs, v any) *types.NumericLiteral {
 
 func tv17(a *tslabs, v any) *types.OmittedExpression {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.OmittedExpression{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[18] {
 		return nil
@@ -2994,7 +2974,6 @@ func tv17(a *tslabs, v any) *types.OmittedExpression {
 
 func tv18(a *tslabs, v any) *types.PrivateIdentifier {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.PrivateIdentifier{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[19] {
 		return nil
@@ -3004,7 +2983,6 @@ func tv18(a *tslabs, v any) *types.PrivateIdentifier {
 
 func tv19(a *tslabs, v any) *types.RegularExpressionLiteral {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.RegularExpressionLiteral{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[20] {
 		return nil
@@ -3014,7 +2992,6 @@ func tv19(a *tslabs, v any) *types.RegularExpressionLiteral {
 
 func tv20(a *tslabs, v any) *types.SemicolonClassElement {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.SemicolonClassElement{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[21] {
 		return nil
@@ -3024,7 +3001,6 @@ func tv20(a *tslabs, v any) *types.SemicolonClassElement {
 
 func tv21(a *tslabs, v any) *types.StringLiteral {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.StringLiteral{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[22] {
 		return nil
@@ -3034,7 +3010,6 @@ func tv21(a *tslabs, v any) *types.StringLiteral {
 
 func tv22(a *tslabs, v any) *types.SuperExpression {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.SuperExpression{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[23] {
 		return nil
@@ -3044,7 +3019,6 @@ func tv22(a *tslabs, v any) *types.SuperExpression {
 
 func tv23(a *tslabs, v any) *types.TemplateHead {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.TemplateHead{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[24] {
 		return nil
@@ -3054,7 +3028,6 @@ func tv23(a *tslabs, v any) *types.TemplateHead {
 
 func tv24(a *tslabs, v any) *types.TemplateMiddle {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.TemplateMiddle{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[25] {
 		return nil
@@ -3064,7 +3037,6 @@ func tv24(a *tslabs, v any) *types.TemplateMiddle {
 
 func tv25(a *tslabs, v any) *types.TemplateTail {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.TemplateTail{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[26] {
 		return nil
@@ -3074,7 +3046,6 @@ func tv25(a *tslabs, v any) *types.TemplateTail {
 
 func tv26(a *tslabs, v any) *types.ThisExpression {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.ThisExpression{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[27] {
 		return nil
@@ -3084,7 +3055,6 @@ func tv26(a *tslabs, v any) *types.ThisExpression {
 
 func tv27(a *tslabs, v any) *types.ThisTypeNode {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.ThisTypeNode{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[28] {
 		return nil
@@ -3094,7 +3064,6 @@ func tv27(a *tslabs, v any) *types.ThisTypeNode {
 
 func tv28(a *tslabs, v any) *types.Token {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Token{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[29] {
 		return nil
@@ -46850,3 +46819,5 @@ fail:
 	p.Pos = start
 	return nil, false
 }
+
+const _ = types.PegoSchema_4c598b783f28f92b

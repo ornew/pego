@@ -220,6 +220,8 @@ type typesPackage struct {
 	// types holds the type declarations of the types package, which resolve the literals of
 	// types.Name.
 	types map[string]goast.Expr
+	// schema is the name of the constant of the types package that ties it to the parser package.
+	schema string
 }
 
 // qualifyRuntime finishes the generated source body of a package. Every identifier that the body

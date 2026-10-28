@@ -3,8 +3,6 @@
 package json
 
 import (
-	"unsafe"
-
 	types "github.com/ornew/pego/parsers/json/types"
 	rt "github.com/ornew/pego/runtime"
 )
@@ -200,7 +198,6 @@ func tl1(a *tslabs, v any) []*types.Member {
 
 func tv0(a *tslabs, v any) *types.Bool {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Bool{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -210,7 +207,6 @@ func tv0(a *tslabs, v any) *types.Bool {
 
 func tv1(a *tslabs, v any) *types.Null {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Null{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
@@ -220,7 +216,6 @@ func tv1(a *tslabs, v any) *types.Null {
 
 func tv2(a *tslabs, v any) *types.Number {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Number{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
@@ -230,7 +225,6 @@ func tv2(a *tslabs, v any) *types.Number {
 
 func tv3(a *tslabs, v any) *types.String {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.String{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
@@ -3101,3 +3095,5 @@ fail:
 	p.Pos = start
 	return nil, false
 }
+
+const _ = types.PegoSchema_4ba87758299e228e

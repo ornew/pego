@@ -287,9 +287,9 @@ func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
 			b.WriteString("\treturn out\n")
 		case nodeTy:
 			if x.name != "" && x.value == tyString {
-				// A string node of a named node type is its own public value (tmatchAs).
+				// A string node of a named node type is its own public value (tmatchAs): the type is declared as
+				// struct{ TNode[string] } in the types package, which the schema constant ties to this parser.
 				g := t.ref(x.name)
-				fmt.Fprintf(b, "\tconst _ = -(unsafe.Sizeof(%s{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)\n", g)
 				fmt.Fprintf(b, "\tx, _ := v.(*TMatch)\n\tif x == nil || x.Nt != %s {\n\t\treturn nil\n\t}\n\treturn TMatchAs[%s](x)\n", t.g.nodeTypeID(x.name), g)
 				break
 			}

@@ -3,8 +3,6 @@
 package duckdb
 
 import (
-	"unsafe"
-
 	types "github.com/ornew/pego/parsers/duckdb/types"
 	rt "github.com/ornew/pego/runtime"
 )
@@ -3845,7 +3843,6 @@ func tl42(a *tslabs, v any) []*types.CTE {
 
 func tv0(a *tslabs, v any) *types.BitLit {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.BitLit{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -3855,7 +3852,6 @@ func tv0(a *tslabs, v any) *types.BitLit {
 
 func tv1(a *tslabs, v any) *types.BoolLit {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.BoolLit{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
@@ -3865,7 +3861,6 @@ func tv1(a *tslabs, v any) *types.BoolLit {
 
 func tv2(a *tslabs, v any) *types.DefaultExpr {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.DefaultExpr{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
@@ -3875,7 +3870,6 @@ func tv2(a *tslabs, v any) *types.DefaultExpr {
 
 func tv3(a *tslabs, v any) *types.Ident {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Ident{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
@@ -3885,7 +3879,6 @@ func tv3(a *tslabs, v any) *types.Ident {
 
 func tv4(a *tslabs, v any) *types.IntervalUnit {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.IntervalUnit{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[5] {
 		return nil
@@ -3895,7 +3888,6 @@ func tv4(a *tslabs, v any) *types.IntervalUnit {
 
 func tv5(a *tslabs, v any) *types.NullLit {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.NullLit{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[6] {
 		return nil
@@ -3905,7 +3897,6 @@ func tv5(a *tslabs, v any) *types.NullLit {
 
 func tv6(a *tslabs, v any) *types.Param {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Param{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[7] {
 		return nil
@@ -3915,7 +3906,6 @@ func tv6(a *tslabs, v any) *types.Param {
 
 func tv7(a *tslabs, v any) *types.StringLit {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.StringLit{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[8] {
 		return nil
@@ -81330,3 +81320,5 @@ fail:
 	p.Pos = start
 	return nil, false
 }
+
+const _ = types.PegoSchema_5f3a6bf9190d06ba

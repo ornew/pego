@@ -109,7 +109,7 @@ stars text 42
 
 - **Names.** Go types have the names of the grammar types. They live in the package `types`, apart from the names
   `parser.go` and `api.go` declare, so a grammar type may be called `Node`, `Parse` or `Walk`. The package also declares
-  `TNode`, `Error`, `PegoHooks` and, where the grammar uses them, `Unit`, `TupleN` and `PegoNodeTypes`: a grammar type
+  `TNode`, `Error`, `PegoHooks` and, where the grammar uses them, `Unit`, `TupleN` and `PegoNodeTypes`, and the constant `PegoSchema_<digest>` that ties the parser to this package: a grammar type
   with one of these names is an error. A field named like a field or method of `Span` or like a method of the typed
   values (`Start`, `End`, `Range`, `TName`, ...) gets a trailing underscore, so `Start` and `End` always read the
   span.

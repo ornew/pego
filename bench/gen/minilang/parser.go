@@ -4,8 +4,6 @@
 package minilang
 
 import (
-	"unsafe"
-
 	types "github.com/ornew/pego/bench/gen/minilang/types"
 	rt "github.com/ornew/pego/runtime"
 )
@@ -416,7 +414,6 @@ func tl2(a *tslabs, v any) []*types.Ident {
 
 func tv0(a *tslabs, v any) *types.Bool {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Bool{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -426,7 +423,6 @@ func tv0(a *tslabs, v any) *types.Bool {
 
 func tv1(a *tslabs, v any) *types.Ident {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Ident{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
@@ -436,7 +432,6 @@ func tv1(a *tslabs, v any) *types.Ident {
 
 func tv2(a *tslabs, v any) *types.Number {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Number{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
@@ -446,7 +441,6 @@ func tv2(a *tslabs, v any) *types.Number {
 
 func tv3(a *tslabs, v any) *types.String {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.String{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
@@ -7417,3 +7411,5 @@ fail:
 	p.Restore(start, rec)
 	return nil, false
 }
+
+const _ = types.PegoSchema_78f68bfeef5022fb

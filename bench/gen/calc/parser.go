@@ -4,8 +4,6 @@
 package calc
 
 import (
-	"unsafe"
-
 	types "github.com/ornew/pego/bench/gen/calc/types"
 	rt "github.com/ornew/pego/runtime"
 )
@@ -130,7 +128,6 @@ func tmk_Unary(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tv0(a *tslabs, v any) *types.Number {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Number{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -1347,3 +1344,5 @@ func s4(p *rt.TParser) (any, bool) {
 	p.Depth--
 	return v, true
 }
+
+const _ = types.PegoSchema_b5289af4f541af11

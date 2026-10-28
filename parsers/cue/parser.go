@@ -3,8 +3,6 @@
 package cue
 
 import (
-	"unsafe"
-
 	types "github.com/ornew/pego/parsers/cue/types"
 	rt "github.com/ornew/pego/runtime"
 )
@@ -609,7 +607,6 @@ func tl4(a *tslabs, v any) []*types.ImportSpec {
 
 func tv0(a *tslabs, v any) *types.Attribute {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Attribute{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -619,7 +616,6 @@ func tv0(a *tslabs, v any) *types.Attribute {
 
 func tv1(a *tslabs, v any) *types.Bool {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Bool{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
@@ -629,7 +625,6 @@ func tv1(a *tslabs, v any) *types.Bool {
 
 func tv2(a *tslabs, v any) *types.Bottom {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Bottom{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
@@ -639,7 +634,6 @@ func tv2(a *tslabs, v any) *types.Bottom {
 
 func tv3(a *tslabs, v any) *types.Float {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Float{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
@@ -649,7 +643,6 @@ func tv3(a *tslabs, v any) *types.Float {
 
 func tv4(a *tslabs, v any) *types.Ident {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Ident{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[5] {
 		return nil
@@ -659,7 +652,6 @@ func tv4(a *tslabs, v any) *types.Ident {
 
 func tv5(a *tslabs, v any) *types.Int {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Int{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[6] {
 		return nil
@@ -669,7 +661,6 @@ func tv5(a *tslabs, v any) *types.Int {
 
 func tv6(a *tslabs, v any) *types.Null {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Null{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[7] {
 		return nil
@@ -19003,3 +18994,5 @@ fail:
 	p.Pos = start
 	return nil, false
 }
+
+const _ = types.PegoSchema_76a244927122db37

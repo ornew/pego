@@ -3,8 +3,6 @@
 package cel
 
 import (
-	"unsafe"
-
 	types "github.com/ornew/pego/parsers/cel/types"
 	rt "github.com/ornew/pego/runtime"
 )
@@ -368,7 +366,6 @@ func tl2(a *tslabs, v any) []*types.Field {
 
 func tv0(a *tslabs, v any) *types.BoolLit {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.BoolLit{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -378,7 +375,6 @@ func tv0(a *tslabs, v any) *types.BoolLit {
 
 func tv1(a *tslabs, v any) *types.BytesLit {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.BytesLit{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
@@ -388,7 +384,6 @@ func tv1(a *tslabs, v any) *types.BytesLit {
 
 func tv2(a *tslabs, v any) *types.DoubleLit {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.DoubleLit{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
@@ -398,7 +393,6 @@ func tv2(a *tslabs, v any) *types.DoubleLit {
 
 func tv3(a *tslabs, v any) *types.Ident {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Ident{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
@@ -408,7 +402,6 @@ func tv3(a *tslabs, v any) *types.Ident {
 
 func tv4(a *tslabs, v any) *types.IntLit {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.IntLit{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[5] {
 		return nil
@@ -418,7 +411,6 @@ func tv4(a *tslabs, v any) *types.IntLit {
 
 func tv5(a *tslabs, v any) *types.Name {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Name{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[6] {
 		return nil
@@ -428,7 +420,6 @@ func tv5(a *tslabs, v any) *types.Name {
 
 func tv6(a *tslabs, v any) *types.NullLit {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.NullLit{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[7] {
 		return nil
@@ -438,7 +429,6 @@ func tv6(a *tslabs, v any) *types.NullLit {
 
 func tv7(a *tslabs, v any) *types.StringLit {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.StringLit{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[8] {
 		return nil
@@ -448,7 +438,6 @@ func tv7(a *tslabs, v any) *types.StringLit {
 
 func tv8(a *tslabs, v any) *types.UintLit {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.UintLit{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[9] {
 		return nil
@@ -5564,3 +5553,5 @@ fail:
 	p.Pos = start
 	return nil, false
 }
+
+const _ = types.PegoSchema_cd86f1bf2128f16a

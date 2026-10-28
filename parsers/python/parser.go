@@ -3,8 +3,6 @@
 package python
 
 import (
-	"unsafe"
-
 	types "github.com/ornew/pego/parsers/python/types"
 	rt "github.com/ornew/pego/runtime"
 )
@@ -1565,7 +1563,6 @@ func tl13(a *tslabs, v any) []*types.ExceptHandler {
 
 func tv0(a *tslabs, v any) *types.Constant {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Constant{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -1575,7 +1572,6 @@ func tv0(a *tslabs, v any) *types.Constant {
 
 func tv1(a *tslabs, v any) *types.FStringMiddle {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.FStringMiddle{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
@@ -1585,7 +1581,6 @@ func tv1(a *tslabs, v any) *types.FStringMiddle {
 
 func tv2(a *tslabs, v any) *types.FStringRawMiddle {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.FStringRawMiddle{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
@@ -1595,7 +1590,6 @@ func tv2(a *tslabs, v any) *types.FStringRawMiddle {
 
 func tv3(a *tslabs, v any) *types.Identifier {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Identifier{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
@@ -1605,7 +1599,6 @@ func tv3(a *tslabs, v any) *types.Identifier {
 
 func tv4(a *tslabs, v any) *types.Op {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Op{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[5] {
 		return nil
@@ -28708,3 +28701,5 @@ fail:
 	p.Pos = start
 	return nil, false
 }
+
+const _ = types.PegoSchema_0f2f8cabc18b7430

@@ -1322,3 +1322,5 @@ fail:
 	p.Pos = start
 	return nil, false
 }
+
+const _ = types.PegoSchema_d57df39084dc5045

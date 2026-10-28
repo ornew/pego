@@ -618,3 +618,8 @@ func tb1(v *Name) any {
 // PegoNodeTypes holds the registered indexes of the named node types by their generated index; index 0
 // is no named node type. It is for generated parsers.
 var PegoNodeTypes [10]uint16
+
+// PegoSchema_cd86f1bf2128f16a ties the parser package to this package: the parser refers to it once, so a
+// parser and a types package generated from different schemas do not compile together.
+// It is for generated parsers; not a stable API.
+const PegoSchema_cd86f1bf2128f16a = 0

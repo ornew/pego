@@ -120,3 +120,8 @@ func (v *Unary) TFieldWork(p *rt.TParser, name string) (any, bool) {
 // PegoNodeTypes holds the registered indexes of the named node types by their generated index; index 0
 // is no named node type. It is for generated parsers.
 var PegoNodeTypes [2]uint16
+
+// PegoSchema_b5289af4f541af11 ties the parser package to this package: the parser refers to it once, so a
+// parser and a types package generated from different schemas do not compile together.
+// It is for generated parsers; not a stable API.
+const PegoSchema_b5289af4f541af11 = 0

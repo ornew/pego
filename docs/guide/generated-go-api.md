@@ -191,7 +191,7 @@ preparation and before publishing a result.
 With `-types`, the types of the grammar are declared in the package `<module>/types`, not in the parser package, so they
 share no namespace with `parser.go` and `api.go`: a grammar type may be called `Node`, `ParseOption`, `Walk` or like any
 other name of the parser package, and is then used as `types.Node`. The types package declares `TNode`, `Error`,
-`PegoHooks` and, where used, `Unit`, `TupleN` and `PegoNodeTypes` itself, and generation fails if a grammar type has one
+`PegoHooks` and, where used, `Unit`, `TupleN`, `PegoNodeTypes` itself and the constant `PegoSchema_<digest>` (which ties the parser to this package), and generation fails if a grammar type has one
 of those names. Declarations that you add by hand to the generated packages must not reuse the names they declare. The
 [generated parser contract](../../spec/runtime/generated-parsers.md) lists the rule.
 

@@ -193,8 +193,10 @@ func TPubNodeIn(h *TPubHooks, a any, v any) *TNode[any] {
 }
 
 // TMatchAs returns the public form of x, a string node of a named node type whose Go type N is
-// struct{ TNode[string] }: N has the layout of TNode[string] (the generated code asserts their
-// sizes are equal), so the public value is x's own TNode seen as an N. A node so publishes as one
+// struct{ TNode[string] }: N has the layout of TNode[string] (the types package declares it so, and the
+// parser package refers to the schema constant of the types package it was generated with, so a parser
+// and a types package of different schemas do not compile together), so the public value is x's own
+// TNode seen as an N. A node so publishes as one
 // value wherever it appears, as a plain string node does, without allocating or remembering it.
 //
 // TMatchAs is for generated parsers; not a stable API.

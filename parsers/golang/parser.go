@@ -3,8 +3,6 @@
 package golang
 
 import (
-	"unsafe"
-
 	types "github.com/ornew/pego/parsers/golang/types"
 	rt "github.com/ornew/pego/runtime"
 )
@@ -942,7 +940,6 @@ func tl5(a *tslabs, v any) []types.Spec {
 
 func tv0(a *tslabs, v any) *types.CharLit {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.CharLit{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -952,7 +949,6 @@ func tv0(a *tslabs, v any) *types.CharLit {
 
 func tv1(a *tslabs, v any) *types.FloatLit {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.FloatLit{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
@@ -962,7 +958,6 @@ func tv1(a *tslabs, v any) *types.FloatLit {
 
 func tv2(a *tslabs, v any) *types.Ident {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Ident{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
@@ -972,7 +967,6 @@ func tv2(a *tslabs, v any) *types.Ident {
 
 func tv3(a *tslabs, v any) *types.ImagLit {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.ImagLit{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
@@ -982,7 +976,6 @@ func tv3(a *tslabs, v any) *types.ImagLit {
 
 func tv4(a *tslabs, v any) *types.IntLit {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.IntLit{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[5] {
 		return nil
@@ -992,7 +985,6 @@ func tv4(a *tslabs, v any) *types.IntLit {
 
 func tv5(a *tslabs, v any) *types.StringLit {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.StringLit{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[6] {
 		return nil
@@ -26626,3 +26618,5 @@ fail:
 	p.Depth--
 	return nil, false
 }
+
+const _ = types.PegoSchema_1a9ea340e05d483e

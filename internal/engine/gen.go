@@ -422,6 +422,8 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		if typesFile, tp, err = opts.typesFile(typesBody); err != nil {
 			return nil, err
 		}
+		// The one reference to the schema of the types package (see schemaName).
+		body += "\nconst _ = " + tp.schema + "\n"
 	}
 	body, err = qualifyRuntime(opts.runtimeImport(), body, info, tp)
 	if err != nil {

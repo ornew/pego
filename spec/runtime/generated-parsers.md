@@ -66,7 +66,9 @@ pego gen -g <grammar> [-lang go|ts] [-module <import path>] [-pkg <package>]
   parser need, as aliases of the runtime's types and wrappers of its functions.
 - With `-types` the Go types of the typed values are declared in the package
   `<module>/types` (the file `types/types.go`), which the parser package imports; a
-  module path is required. The types package imports only the runtime. The
+  module path is required. The types package imports only the runtime, and
+  declares a constant `PegoSchema_<digest>` that the parser package refers to once
+  (see below). The
   parser package refers to the types as `types.Name`, and the users of the
   parser import `<module>/types` for them. The grammar's types therefore share no
   namespace with `parser.go` and `api.go`: a grammar type may be named `Node`,
@@ -165,8 +167,12 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
   and `Unit` is `struct{}`. A missing element of a tuple is `nil`. A list node's `Value` is a slice.
 - A grammar type keeps its name. The types package declares, besides the grammar's
   types, `TNode`, `Error`, `PegoHooks` and, when used, `Unit`, `TupleN` and
-  `PegoNodeTypes`; generation fails, naming the type, if a grammar type has one of
-  these names. A grammar type named `Unit` is an error only when the generated
+  `PegoNodeTypes`, and a constant `PegoSchema_<digest>`; generation fails, naming the
+  type, if a grammar type has one of these names. The digest covers the package's
+  declarations, not its comments or formatting. The parser package refers to the
+  constant once, so a `parser.go` and a `types/types.go` generated from different
+  schemas do not compile together; the runtime relies on this when it reads a string
+  node as its named node type. A grammar type named `Unit` is an error only when the generated
   code uses the empty tuple, and one named `TupleN` only when it uses a tuple of
   that arity. A struct field named like a field or method of the embedded `Span`
   (`Start`, `End`, `Range`) or like a method of the typed values (`TName`, ...)

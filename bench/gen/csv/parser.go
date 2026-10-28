@@ -4,8 +4,6 @@
 package csv
 
 import (
-	"unsafe"
-
 	types "github.com/ornew/pego/bench/gen/csv/types"
 	rt "github.com/ornew/pego/runtime"
 )
@@ -177,7 +175,6 @@ func tl1(a *tslabs, v any) []*types.Field {
 
 func tv0(a *tslabs, v any) *types.Field {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Field{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -1313,3 +1310,5 @@ fail:
 	p.Pos = start
 	return nil, false
 }
+
+const _ = types.PegoSchema_6140c6df6ef07e30

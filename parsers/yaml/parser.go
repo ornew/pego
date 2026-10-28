@@ -3,8 +3,6 @@
 package yaml
 
 import (
-	"unsafe"
-
 	types "github.com/ornew/pego/parsers/yaml/types"
 	rt "github.com/ornew/pego/runtime"
 )
@@ -357,7 +355,6 @@ func tl4(a *tslabs, v any) []*types.Document {
 
 func tv0(a *tslabs, v any) *types.Alias {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Alias{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -367,7 +364,6 @@ func tv0(a *tslabs, v any) *types.Alias {
 
 func tv1(a *tslabs, v any) *types.Anchor {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Anchor{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
@@ -377,7 +373,6 @@ func tv1(a *tslabs, v any) *types.Anchor {
 
 func tv2(a *tslabs, v any) *types.Marker {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Marker{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
@@ -387,7 +382,6 @@ func tv2(a *tslabs, v any) *types.Marker {
 
 func tv3(a *tslabs, v any) *types.Tag {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Tag{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
@@ -397,7 +391,6 @@ func tv3(a *tslabs, v any) *types.Tag {
 
 func tv4(a *tslabs, v any) *types.Word {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Word{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[5] {
 		return nil
@@ -28024,3 +28017,5 @@ func v185(p *rt.TParser) (any, bool) {
 	p.Depth--
 	return v, true
 }
+
+const _ = types.PegoSchema_020c95a1ea1f2613
