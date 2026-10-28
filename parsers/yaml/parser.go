@@ -47,59 +47,6 @@ func astString(v any) string { s, _ := rt.UnboxValue(v).(string); return s }
 
 func astBool(v any) bool { x, _ := rt.UnboxValue(v).(bool); return x }
 
-type astChunk[T any] struct {
-	free      []T
-	next      int
-	bootstrap uint8
-}
-
-func (s *astChunk[T]) grow(n, initial, limit int) {
-	size := s.next
-	if size == 0 {
-		size = initial
-	}
-	for size < n {
-		size *= 2
-	}
-	s.free = make([]T, size)
-	s.next = size * 2
-	if s.next > limit {
-		s.next = limit
-	}
-}
-
-func astNew[T any](s *astChunk[T]) *T {
-	if len(s.free) == 0 {
-		if s.bootstrap < 3 {
-			s.bootstrap++
-			return new(T)
-		}
-		s.grow(1, 8, 256)
-	}
-	v := &s.free[0]
-	s.free = s.free[1:]
-	return v
-}
-
-func astSlice[T any](s *astChunk[T], n int) []T {
-	if n == 0 {
-		return []T{}
-	}
-	if n > 256 {
-		return make([]T, n)
-	}
-	if len(s.free) < n {
-		if s.bootstrap == 0 {
-			s.bootstrap = 1
-			return make([]T, n)
-		}
-		s.grow(n, 64, 1024)
-	}
-	v := s.free[:n:n]
-	s.free = s.free[n:]
-	return v
-}
-
 func tinit() {
 	tnamedPub := func(a any, x rt.TVal) any {
 		s, _ := a.(*tslabs)
@@ -140,7 +87,7 @@ func tinit() {
 
 func tmk_Directive(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDirective)
+	v := rt.Alloc(&a.tDirective)
 	v.Name = tv4(a, f0)
 	v.Params = tl0(a, f1)
 	if final {
@@ -152,7 +99,7 @@ func tmk_Directive(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Document(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDocument)
+	v := rt.Alloc(&a.tDocument)
 	v.Directives = tl1(a, f0)
 	v.Start_ = tv2(a, f1)
 	v.Root = rt.TAs[types.Value](rt.TPubIn(types.PegoHooks, a, f2))
@@ -166,7 +113,7 @@ func tmk_Document(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any
 
 func tmk_Mapping(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMapping)
+	v := rt.Alloc(&a.tMapping)
 	v.Props = rt.TAs[*types.Properties](f0)
 	v.Flow = astBool(f1)
 	v.Pairs = tl2(a, f2)
@@ -179,7 +126,7 @@ func tmk_Mapping(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Pair(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPair)
+	v := rt.Alloc(&a.tPair)
 	v.Key = rt.TAs[types.Value](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Value = rt.TAs[types.Value](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -191,7 +138,7 @@ func tmk_Pair(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Properties(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tProperties)
+	v := rt.Alloc(&a.tProperties)
 	v.Tag = tv3(a, f0)
 	v.Anchor = tv1(a, f1)
 	if final {
@@ -203,7 +150,7 @@ func tmk_Properties(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Scalar(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tScalar)
+	v := rt.Alloc(&a.tScalar)
 	v.Props = rt.TAs[*types.Properties](f0)
 	v.Style = astInt(f1)
 	v.Indent = astInt(f2)
@@ -217,7 +164,7 @@ func tmk_Scalar(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 func tmk_Sequence(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSequence)
+	v := rt.Alloc(&a.tSequence)
 	v.Props = rt.TAs[*types.Properties](f0)
 	v.Flow = astBool(f1)
 	v.Items = tl3(a, f2)
@@ -230,7 +177,7 @@ func tmk_Sequence(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Stream(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tStream)
+	v := rt.Alloc(&a.tStream)
 	v.Documents = tl4(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -248,7 +195,7 @@ func tl0(a *tslabs, v any) []*types.Word {
 	if n == nil {
 		return []*types.Word{}
 	}
-	out := astSlice(&a.tl0Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = tv4(a, c)
@@ -265,7 +212,7 @@ func tl1(a *tslabs, v any) []*types.Directive {
 	if n == nil {
 		return []*types.Directive{}
 	}
-	out := astSlice(&a.tl1Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.Directive](c)
@@ -282,7 +229,7 @@ func tl2(a *tslabs, v any) []*types.Pair {
 	if n == nil {
 		return []*types.Pair{}
 	}
-	out := astSlice(&a.tl2Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.Pair](c)
@@ -299,7 +246,7 @@ func tl3(a *tslabs, v any) []types.Value {
 	if n == nil {
 		return []types.Value{}
 	}
-	out := astSlice(&a.tl3Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl3Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.Value](rt.TPubIn(types.PegoHooks, a, c))
@@ -316,7 +263,7 @@ func tl4(a *tslabs, v any) []*types.Document {
 	if n == nil {
 		return []*types.Document{}
 	}
-	out := astSlice(&a.tl4Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl4Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.Document](c)
@@ -371,19 +318,19 @@ func tv4(a *tslabs, v any) *types.Word {
 
 type tslabs struct {
 	control     *rt.WorkControl
-	tDirective  astChunk[types.Directive]
-	tDocument   astChunk[types.Document]
-	tMapping    astChunk[types.Mapping]
-	tPair       astChunk[types.Pair]
-	tProperties astChunk[types.Properties]
-	tScalar     astChunk[types.Scalar]
-	tSequence   astChunk[types.Sequence]
-	tStream     astChunk[types.Stream]
-	tl0Chunk    astChunk[*types.Word]
-	tl1Chunk    astChunk[*types.Directive]
-	tl2Chunk    astChunk[*types.Pair]
-	tl3Chunk    astChunk[types.Value]
-	tl4Chunk    astChunk[*types.Document]
+	tDirective  rt.Chunk[types.Directive]
+	tDocument   rt.Chunk[types.Document]
+	tMapping    rt.Chunk[types.Mapping]
+	tPair       rt.Chunk[types.Pair]
+	tProperties rt.Chunk[types.Properties]
+	tScalar     rt.Chunk[types.Scalar]
+	tSequence   rt.Chunk[types.Sequence]
+	tStream     rt.Chunk[types.Stream]
+	tl0Chunk    rt.Chunk[*types.Word]
+	tl1Chunk    rt.Chunk[*types.Directive]
+	tl2Chunk    rt.Chunk[*types.Pair]
+	tl3Chunk    rt.Chunk[types.Value]
+	tl4Chunk    rt.Chunk[*types.Document]
 }
 
 func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }

@@ -44,59 +44,6 @@ func ParseRule(name, input string, opts ...rt.ParseOption) (*rt.Node, error) {
 
 func astBool(v any) bool { x, _ := rt.UnboxValue(v).(bool); return x }
 
-type astChunk[T any] struct {
-	free      []T
-	next      int
-	bootstrap uint8
-}
-
-func (s *astChunk[T]) grow(n, initial, limit int) {
-	size := s.next
-	if size == 0 {
-		size = initial
-	}
-	for size < n {
-		size *= 2
-	}
-	s.free = make([]T, size)
-	s.next = size * 2
-	if s.next > limit {
-		s.next = limit
-	}
-}
-
-func astNew[T any](s *astChunk[T]) *T {
-	if len(s.free) == 0 {
-		if s.bootstrap < 3 {
-			s.bootstrap++
-			return new(T)
-		}
-		s.grow(1, 8, 256)
-	}
-	v := &s.free[0]
-	s.free = s.free[1:]
-	return v
-}
-
-func astSlice[T any](s *astChunk[T], n int) []T {
-	if n == 0 {
-		return []T{}
-	}
-	if n > 256 {
-		return make([]T, n)
-	}
-	if len(s.free) < n {
-		if s.bootstrap == 0 {
-			s.bootstrap = 1
-			return make([]T, n)
-		}
-		s.grow(n, 64, 1024)
-	}
-	v := s.free[:n:n]
-	s.free = s.free[n:]
-	return v
-}
-
 func tinit() {
 	tnamedPub := func(a any, x rt.TVal) any {
 		s, _ := a.(*tslabs)
@@ -176,7 +123,7 @@ func tinit() {
 
 func tmk_AttDef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAttDef)
+	v := rt.Alloc(&a.tAttDef)
 	v.Name = tv9(a, f0)
 	v.Type = rt.TAs[types.AttType](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Default = tv8(a, f2)
@@ -190,7 +137,7 @@ func tmk_AttDef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 func tmk_AttlistDecl(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAttlistDecl)
+	v := rt.Alloc(&a.tAttlistDecl)
 	v.Name = tv9(a, f0)
 	v.Defs = tl0(a, f1)
 	if final {
@@ -202,7 +149,7 @@ func tmk_AttlistDecl(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Attribute(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAttribute)
+	v := rt.Alloc(&a.tAttribute)
 	v.Name = tv9(a, f0)
 	v.Value = tv0(a, f1)
 	if final {
@@ -214,7 +161,7 @@ func tmk_Attribute(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Choice(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tChoice)
+	v := rt.Alloc(&a.tChoice)
 	v.Items = tl1(a, f0)
 	v.Occur = tv11(a, f1)
 	if final {
@@ -226,7 +173,7 @@ func tmk_Choice(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Doctype(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDoctype)
+	v := rt.Alloc(&a.tDoctype)
 	v.Name = tv9(a, f0)
 	v.ExternalID = rt.TAs[*types.ExternalID](f1)
 	v.Subset = tl2(a, f2)
@@ -239,7 +186,7 @@ func tmk_Doctype(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Document(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDocument)
+	v := rt.Alloc(&a.tDocument)
 	v.Decl = rt.TAs[*types.XMLDecl](f0)
 	v.Prolog = tl3(a, f1)
 	v.Doctype = rt.TAs[*types.Doctype](f2)
@@ -254,7 +201,7 @@ func tmk_Document(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 
 
 func tmk_Element(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tElement)
+	v := rt.Alloc(&a.tElement)
 	v.Name = tv9(a, f0)
 	v.Attrs = tl4(a, f1)
 	v.Content = tl5(a, f2)
@@ -267,7 +214,7 @@ func tmk_Element(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_ElementDecl(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tElementDecl)
+	v := rt.Alloc(&a.tElementDecl)
 	v.Name = tv9(a, f0)
 	v.Content = rt.TAs[types.ContentSpec](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -279,7 +226,7 @@ func tmk_ElementDecl(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_EntityDecl(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tEntityDecl)
+	v := rt.Alloc(&a.tEntityDecl)
 	v.Parameter = astBool(f0)
 	v.Name = tv9(a, f1)
 	v.Value = tv7(a, f2)
@@ -294,7 +241,7 @@ func tmk_EntityDecl(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f
 
 func tmk_Enumeration(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tEnumeration)
+	v := rt.Alloc(&a.tEnumeration)
 	v.Values = tl6(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -305,7 +252,7 @@ func tmk_Enumeration(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ExternalID(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tExternalID)
+	v := rt.Alloc(&a.tExternalID)
 	v.Public = tv14(a, f0)
 	v.System = tv15(a, f1)
 	if final {
@@ -317,7 +264,7 @@ func tmk_ExternalID(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Mixed(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMixed)
+	v := rt.Alloc(&a.tMixed)
 	v.Names = tl7(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -328,7 +275,7 @@ func tmk_Mixed(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_NameParticle(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tNameParticle)
+	v := rt.Alloc(&a.tNameParticle)
 	v.Name = tv9(a, f0)
 	v.Occur = tv11(a, f1)
 	if final {
@@ -340,7 +287,7 @@ func tmk_NameParticle(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_NotationDecl(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tNotationDecl)
+	v := rt.Alloc(&a.tNotationDecl)
 	v.Name = tv9(a, f0)
 	v.ExternalID = rt.TAs[*types.ExternalID](f1)
 	if final {
@@ -352,7 +299,7 @@ func tmk_NotationDecl(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_NotationType(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tNotationType)
+	v := rt.Alloc(&a.tNotationType)
 	v.Names = tl7(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -363,7 +310,7 @@ func tmk_NotationType(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_PI(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPI)
+	v := rt.Alloc(&a.tPI)
 	v.Target = tv9(a, f0)
 	v.Data = tv13(a, f1)
 	if final {
@@ -375,7 +322,7 @@ func tmk_PI(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Sequence(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSequence)
+	v := rt.Alloc(&a.tSequence)
 	v.Items = tl1(a, f0)
 	v.Occur = tv11(a, f1)
 	if final {
@@ -387,7 +334,7 @@ func tmk_Sequence(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_XMLDecl(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tXMLDecl)
+	v := rt.Alloc(&a.tXMLDecl)
 	v.Version = tv16(a, f0)
 	v.Encoding = tv5(a, f1)
 	v.Standalone = tv17(a, f2)
@@ -407,7 +354,7 @@ func tl0(a *tslabs, v any) []*types.AttDef {
 	if n == nil {
 		return []*types.AttDef{}
 	}
-	out := astSlice(&a.tl0Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.AttDef](c)
@@ -424,7 +371,7 @@ func tl1(a *tslabs, v any) []types.Particle {
 	if n == nil {
 		return []types.Particle{}
 	}
-	out := astSlice(&a.tl1Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.Particle](rt.TPubIn(types.PegoHooks, a, c))
@@ -441,7 +388,7 @@ func tl2(a *tslabs, v any) []types.Decl {
 	if n == nil {
 		return []types.Decl{}
 	}
-	out := astSlice(&a.tl2Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.Decl](rt.TPubIn(types.PegoHooks, a, c))
@@ -458,7 +405,7 @@ func tl3(a *tslabs, v any) []types.Misc {
 	if n == nil {
 		return []types.Misc{}
 	}
-	out := astSlice(&a.tl3Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl3Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.Misc](rt.TPubIn(types.PegoHooks, a, c))
@@ -475,7 +422,7 @@ func tl4(a *tslabs, v any) []*types.Attribute {
 	if n == nil {
 		return []*types.Attribute{}
 	}
-	out := astSlice(&a.tl4Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl4Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.Attribute](c)
@@ -492,7 +439,7 @@ func tl5(a *tslabs, v any) []types.Content {
 	if n == nil {
 		return []types.Content{}
 	}
-	out := astSlice(&a.tl5Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl5Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.Content](rt.TPubIn(types.PegoHooks, a, c))
@@ -509,7 +456,7 @@ func tl6(a *tslabs, v any) []*types.Nmtoken {
 	if n == nil {
 		return []*types.Nmtoken{}
 	}
-	out := astSlice(&a.tl6Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl6Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = tv10(a, c)
@@ -526,7 +473,7 @@ func tl7(a *tslabs, v any) []*types.Name {
 	if n == nil {
 		return []*types.Name{}
 	}
-	out := astSlice(&a.tl7Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl7Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = tv9(a, c)
@@ -698,32 +645,32 @@ func tv17(a *tslabs, v any) *types.YesNo {
 
 type tslabs struct {
 	control       *rt.WorkControl
-	tAttDef       astChunk[types.AttDef]
-	tAttlistDecl  astChunk[types.AttlistDecl]
-	tAttribute    astChunk[types.Attribute]
-	tChoice       astChunk[types.Choice]
-	tDoctype      astChunk[types.Doctype]
-	tDocument     astChunk[types.Document]
-	tElement      astChunk[types.Element]
-	tElementDecl  astChunk[types.ElementDecl]
-	tEntityDecl   astChunk[types.EntityDecl]
-	tEnumeration  astChunk[types.Enumeration]
-	tExternalID   astChunk[types.ExternalID]
-	tMixed        astChunk[types.Mixed]
-	tNameParticle astChunk[types.NameParticle]
-	tNotationDecl astChunk[types.NotationDecl]
-	tNotationType astChunk[types.NotationType]
-	tPI           astChunk[types.PI]
-	tSequence     astChunk[types.Sequence]
-	tXMLDecl      astChunk[types.XMLDecl]
-	tl0Chunk      astChunk[*types.AttDef]
-	tl1Chunk      astChunk[types.Particle]
-	tl2Chunk      astChunk[types.Decl]
-	tl3Chunk      astChunk[types.Misc]
-	tl4Chunk      astChunk[*types.Attribute]
-	tl5Chunk      astChunk[types.Content]
-	tl6Chunk      astChunk[*types.Nmtoken]
-	tl7Chunk      astChunk[*types.Name]
+	tAttDef       rt.Chunk[types.AttDef]
+	tAttlistDecl  rt.Chunk[types.AttlistDecl]
+	tAttribute    rt.Chunk[types.Attribute]
+	tChoice       rt.Chunk[types.Choice]
+	tDoctype      rt.Chunk[types.Doctype]
+	tDocument     rt.Chunk[types.Document]
+	tElement      rt.Chunk[types.Element]
+	tElementDecl  rt.Chunk[types.ElementDecl]
+	tEntityDecl   rt.Chunk[types.EntityDecl]
+	tEnumeration  rt.Chunk[types.Enumeration]
+	tExternalID   rt.Chunk[types.ExternalID]
+	tMixed        rt.Chunk[types.Mixed]
+	tNameParticle rt.Chunk[types.NameParticle]
+	tNotationDecl rt.Chunk[types.NotationDecl]
+	tNotationType rt.Chunk[types.NotationType]
+	tPI           rt.Chunk[types.PI]
+	tSequence     rt.Chunk[types.Sequence]
+	tXMLDecl      rt.Chunk[types.XMLDecl]
+	tl0Chunk      rt.Chunk[*types.AttDef]
+	tl1Chunk      rt.Chunk[types.Particle]
+	tl2Chunk      rt.Chunk[types.Decl]
+	tl3Chunk      rt.Chunk[types.Misc]
+	tl4Chunk      rt.Chunk[*types.Attribute]
+	tl5Chunk      rt.Chunk[types.Content]
+	tl6Chunk      rt.Chunk[*types.Nmtoken]
+	tl7Chunk      rt.Chunk[*types.Name]
 }
 
 func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }

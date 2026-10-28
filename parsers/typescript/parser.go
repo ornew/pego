@@ -14,59 +14,6 @@ func astString(v any) string { s, _ := rt.UnboxValue(v).(string); return s }
 
 func astBool(v any) bool { x, _ := rt.UnboxValue(v).(bool); return x }
 
-type astChunk[T any] struct {
-	free      []T
-	next      int
-	bootstrap uint8
-}
-
-func (s *astChunk[T]) grow(n, initial, limit int) {
-	size := s.next
-	if size == 0 {
-		size = initial
-	}
-	for size < n {
-		size *= 2
-	}
-	s.free = make([]T, size)
-	s.next = size * 2
-	if s.next > limit {
-		s.next = limit
-	}
-}
-
-func astNew[T any](s *astChunk[T]) *T {
-	if len(s.free) == 0 {
-		if s.bootstrap < 3 {
-			s.bootstrap++
-			return new(T)
-		}
-		s.grow(1, 8, 256)
-	}
-	v := &s.free[0]
-	s.free = s.free[1:]
-	return v
-}
-
-func astSlice[T any](s *astChunk[T], n int) []T {
-	if n == 0 {
-		return []T{}
-	}
-	if n > 256 {
-		return make([]T, n)
-	}
-	if len(s.free) < n {
-		if s.bootstrap == 0 {
-			s.bootstrap = 1
-			return make([]T, n)
-		}
-		s.grow(n, 64, 1024)
-	}
-	v := s.free[:n:n]
-	s.free = s.free[n:]
-	return v
-}
-
 func tinit() {
 	tnamedPub := func(a any, x rt.TVal) any {
 		s, _ := a.(*tslabs)
@@ -228,7 +175,7 @@ func tinit() {
 
 func tmk_ArrayBindingPattern(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tArrayBindingPattern)
+	v := rt.Alloc(&a.tArrayBindingPattern)
 	v.Elements = tl0(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -239,7 +186,7 @@ func tmk_ArrayBindingPattern(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ArrayLiteralExpression(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tArrayLiteralExpression)
+	v := rt.Alloc(&a.tArrayLiteralExpression)
 	v.Elements = tl1(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -250,7 +197,7 @@ func tmk_ArrayLiteralExpression(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ArrayType(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tArrayType)
+	v := rt.Alloc(&a.tArrayType)
 	v.ElementType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -261,7 +208,7 @@ func tmk_ArrayType(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ArrowFunction(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tArrowFunction)
+	v := rt.Alloc(&a.tArrowFunction)
 	v.Modifiers = tl2(a, f0)
 	v.TypeParameters = tl3(a, f1)
 	v.Parameters = tl4(a, f2)
@@ -277,7 +224,7 @@ func tmk_ArrowFunction(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any
 
 func tmk_AsExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAsExpression)
+	v := rt.Alloc(&a.tAsExpression)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -289,7 +236,7 @@ func tmk_AsExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_AwaitExpression(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAwaitExpression)
+	v := rt.Alloc(&a.tAwaitExpression)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -300,7 +247,7 @@ func tmk_AwaitExpression(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_BinaryExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tBinaryExpression)
+	v := rt.Alloc(&a.tBinaryExpression)
 	v.Left = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	v.OperatorToken = tv28(a, f1)
 	v.Right = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
@@ -313,7 +260,7 @@ func tmk_BinaryExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any
 
 func tmk_BindingElement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tBindingElement)
+	v := rt.Alloc(&a.tBindingElement)
 	v.DotDotDotToken = tv28(a, f0)
 	v.PropertyName = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Name = rt.TAs[types.BindingName](rt.TPubIn(types.PegoHooks, a, f2))
@@ -327,7 +274,7 @@ func tmk_BindingElement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 an
 
 func tmk_Block(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tBlock)
+	v := rt.Alloc(&a.tBlock)
 	v.Statements = tl5(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -338,7 +285,7 @@ func tmk_Block(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_BreakStatement(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tBreakStatement)
+	v := rt.Alloc(&a.tBreakStatement)
 	v.Label = tv5(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -349,7 +296,7 @@ func tmk_BreakStatement(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_CallExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCallExpression)
+	v := rt.Alloc(&a.tCallExpression)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	v.QuestionDotToken = tv28(a, f1)
 	v.TypeArguments = tl6(a, f2)
@@ -363,7 +310,7 @@ func tmk_CallExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 an
 
 func tmk_CallSignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCallSignature)
+	v := rt.Alloc(&a.tCallSignature)
 	v.TypeParameters = tl3(a, f0)
 	v.Parameters = tl4(a, f1)
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
@@ -376,7 +323,7 @@ func tmk_CallSignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_CaseBlock(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCaseBlock)
+	v := rt.Alloc(&a.tCaseBlock)
 	v.Clauses = tl7(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -387,7 +334,7 @@ func tmk_CaseBlock(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_CaseClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCaseClause)
+	v := rt.Alloc(&a.tCaseClause)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Statements = tl5(a, f1)
 	if final {
@@ -399,7 +346,7 @@ func tmk_CaseClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_CatchClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCatchClause)
+	v := rt.Alloc(&a.tCatchClause)
 	v.VariableDeclaration = rt.TAs[*types.VariableDeclaration](f0)
 	v.Block = rt.TAs[*types.Block](f1)
 	if final {
@@ -411,7 +358,7 @@ func tmk_CatchClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_ClassDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tClassDeclaration)
+	v := rt.Alloc(&a.tClassDeclaration)
 	v.Modifiers = tl2(a, f0)
 	v.Name = tv5(a, f1)
 	v.TypeParameters = tl3(a, f2)
@@ -426,7 +373,7 @@ func tmk_ClassDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 
 
 func tmk_ClassExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tClassExpression)
+	v := rt.Alloc(&a.tClassExpression)
 	v.Modifiers = tl2(a, f0)
 	v.Name = tv5(a, f1)
 	v.TypeParameters = tl3(a, f2)
@@ -441,7 +388,7 @@ func tmk_ClassExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 a
 
 func tmk_ClassStaticBlockDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tClassStaticBlockDeclaration)
+	v := rt.Alloc(&a.tClassStaticBlockDeclaration)
 	v.Modifiers = tl2(a, f0)
 	v.Body = rt.TAs[*types.Block](f1)
 	if final {
@@ -453,7 +400,7 @@ func tmk_ClassStaticBlockDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any) 
 
 func tmk_ComputedPropertyName(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tComputedPropertyName)
+	v := rt.Alloc(&a.tComputedPropertyName)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -464,7 +411,7 @@ func tmk_ComputedPropertyName(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ConditionalExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tConditionalExpression)
+	v := rt.Alloc(&a.tConditionalExpression)
 	v.Condition = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	v.QuestionToken = tv28(a, f1)
 	v.WhenTrue = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
@@ -479,7 +426,7 @@ func tmk_ConditionalExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any
 
 func tmk_ConditionalType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tConditionalType)
+	v := rt.Alloc(&a.tConditionalType)
 	v.CheckType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	v.ExtendsType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
 	v.TrueType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
@@ -493,7 +440,7 @@ func tmk_ConditionalType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 a
 
 func tmk_ConstructSignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tConstructSignature)
+	v := rt.Alloc(&a.tConstructSignature)
 	v.TypeParameters = tl3(a, f0)
 	v.Parameters = tl4(a, f1)
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
@@ -506,7 +453,7 @@ func tmk_ConstructSignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) a
 
 func tmk_Constructor(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tConstructor)
+	v := rt.Alloc(&a.tConstructor)
 	v.Modifiers = tl2(a, f0)
 	v.TypeParameters = tl3(a, f1)
 	v.Parameters = tl4(a, f2)
@@ -521,7 +468,7 @@ func tmk_Constructor(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, 
 
 func tmk_ConstructorType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tConstructorType)
+	v := rt.Alloc(&a.tConstructorType)
 	v.Modifiers = tl2(a, f0)
 	v.TypeParameters = tl3(a, f1)
 	v.Parameters = tl4(a, f2)
@@ -535,7 +482,7 @@ func tmk_ConstructorType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 a
 
 func tmk_ContinueStatement(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tContinueStatement)
+	v := rt.Alloc(&a.tContinueStatement)
 	v.Label = tv5(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -546,7 +493,7 @@ func tmk_ContinueStatement(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Decorator(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDecorator)
+	v := rt.Alloc(&a.tDecorator)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -557,7 +504,7 @@ func tmk_Decorator(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_DefaultClause(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDefaultClause)
+	v := rt.Alloc(&a.tDefaultClause)
 	v.Statements = tl5(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -568,7 +515,7 @@ func tmk_DefaultClause(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_DeleteExpression(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDeleteExpression)
+	v := rt.Alloc(&a.tDeleteExpression)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -579,7 +526,7 @@ func tmk_DeleteExpression(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_DoStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDoStatement)
+	v := rt.Alloc(&a.tDoStatement)
 	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -591,7 +538,7 @@ func tmk_DoStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_ElementAccessExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tElementAccessExpression)
+	v := rt.Alloc(&a.tElementAccessExpression)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	v.QuestionDotToken = tv28(a, f1)
 	v.ArgumentExpression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
@@ -604,7 +551,7 @@ func tmk_ElementAccessExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 a
 
 func tmk_EnumDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tEnumDeclaration)
+	v := rt.Alloc(&a.tEnumDeclaration)
 	v.Modifiers = tl2(a, f0)
 	v.Name = tv5(a, f1)
 	v.Members = tl10(a, f2)
@@ -617,7 +564,7 @@ func tmk_EnumDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any 
 
 func tmk_EnumMember(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tEnumMember)
+	v := rt.Alloc(&a.tEnumMember)
 	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Initializer = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -629,7 +576,7 @@ func tmk_EnumMember(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_ExportAssignment(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tExportAssignment)
+	v := rt.Alloc(&a.tExportAssignment)
 	v.Modifiers = tl2(a, f0)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	v.IsExportEquals = astBool(f2)
@@ -642,7 +589,7 @@ func tmk_ExportAssignment(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any
 
 func tmk_ExportDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tExportDeclaration)
+	v := rt.Alloc(&a.tExportDeclaration)
 	v.Modifiers = tl2(a, f0)
 	v.ExportClause = rt.TAs[types.NamedExportBindings](rt.TPubIn(types.PegoHooks, a, f1))
 	v.ModuleSpecifier = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
@@ -657,7 +604,7 @@ func tmk_ExportDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3
 
 func tmk_ExportSpecifier(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tExportSpecifier)
+	v := rt.Alloc(&a.tExportSpecifier)
 	v.PropertyName = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Name = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f1))
 	v.IsTypeOnly = astBool(f2)
@@ -670,7 +617,7 @@ func tmk_ExportSpecifier(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any 
 
 func tmk_ExpressionStatement(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tExpressionStatement)
+	v := rt.Alloc(&a.tExpressionStatement)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -681,7 +628,7 @@ func tmk_ExpressionStatement(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ExpressionWithTypeArguments(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tExpressionWithTypeArguments)
+	v := rt.Alloc(&a.tExpressionWithTypeArguments)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	v.TypeArguments = tl6(a, f1)
 	if final {
@@ -693,7 +640,7 @@ func tmk_ExpressionWithTypeArguments(c *rt.TActCtx, final bool, f0 any, f1 any) 
 
 func tmk_ExternalModuleReference(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tExternalModuleReference)
+	v := rt.Alloc(&a.tExternalModuleReference)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -704,7 +651,7 @@ func tmk_ExternalModuleReference(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ForInStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tForInStatement)
+	v := rt.Alloc(&a.tForInStatement)
 	v.Initializer = rt.TAs[types.ForInitializer](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f2))
@@ -717,7 +664,7 @@ func tmk_ForInStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_ForOfStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tForOfStatement)
+	v := rt.Alloc(&a.tForOfStatement)
 	v.AwaitModifier = tv28(a, f0)
 	v.Initializer = rt.TAs[types.ForInitializer](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
@@ -731,7 +678,7 @@ func tmk_ForOfStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 an
 
 func tmk_ForStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tForStatement)
+	v := rt.Alloc(&a.tForStatement)
 	v.Initializer = rt.TAs[types.ForInitializer](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Condition = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Incrementor = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
@@ -745,7 +692,7 @@ func tmk_ForStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any)
 
 func tmk_FunctionDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tFunctionDeclaration)
+	v := rt.Alloc(&a.tFunctionDeclaration)
 	v.Modifiers = tl2(a, f0)
 	v.AsteriskToken = tv28(a, f1)
 	v.Name = tv5(a, f2)
@@ -762,7 +709,7 @@ func tmk_FunctionDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, 
 
 func tmk_FunctionExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tFunctionExpression)
+	v := rt.Alloc(&a.tFunctionExpression)
 	v.Modifiers = tl2(a, f0)
 	v.AsteriskToken = tv28(a, f1)
 	v.Name = tv5(a, f2)
@@ -779,7 +726,7 @@ func tmk_FunctionExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f
 
 func tmk_FunctionType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tFunctionType)
+	v := rt.Alloc(&a.tFunctionType)
 	v.TypeParameters = tl3(a, f0)
 	v.Parameters = tl4(a, f1)
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
@@ -792,7 +739,7 @@ func tmk_FunctionType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_GetAccessor(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tGetAccessor)
+	v := rt.Alloc(&a.tGetAccessor)
 	v.Modifiers = tl2(a, f0)
 	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
 	v.TypeParameters = tl3(a, f2)
@@ -808,7 +755,7 @@ func tmk_GetAccessor(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, 
 
 func tmk_HeritageClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tHeritageClause)
+	v := rt.Alloc(&a.tHeritageClause)
 	v.Token = astString(f0)
 	v.Types = tl11(a, f1)
 	if final {
@@ -820,7 +767,7 @@ func tmk_HeritageClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_IfStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIfStatement)
+	v := rt.Alloc(&a.tIfStatement)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	v.ThenStatement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f1))
 	v.ElseStatement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f2))
@@ -833,7 +780,7 @@ func tmk_IfStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_ImportAttribute(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tImportAttribute)
+	v := rt.Alloc(&a.tImportAttribute)
 	v.Name = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Value = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -845,7 +792,7 @@ func tmk_ImportAttribute(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_ImportAttributes(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tImportAttributes)
+	v := rt.Alloc(&a.tImportAttributes)
 	v.Elements = tl12(a, f0)
 	v.Token = astString(f1)
 	if final {
@@ -857,7 +804,7 @@ func tmk_ImportAttributes(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_ImportClause(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tImportClause)
+	v := rt.Alloc(&a.tImportClause)
 	v.Name = tv5(a, f0)
 	v.NamedBindings = rt.TAs[types.NamedImportBindings](rt.TPubIn(types.PegoHooks, a, f1))
 	v.PhaseModifier = astString(f2)
@@ -870,7 +817,7 @@ func tmk_ImportClause(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_ImportDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tImportDeclaration)
+	v := rt.Alloc(&a.tImportDeclaration)
 	v.Modifiers = tl2(a, f0)
 	v.ImportClause = rt.TAs[*types.ImportClause](f1)
 	v.ModuleSpecifier = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
@@ -884,7 +831,7 @@ func tmk_ImportDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3
 
 func tmk_ImportEqualsDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tImportEqualsDeclaration)
+	v := rt.Alloc(&a.tImportEqualsDeclaration)
 	v.Modifiers = tl2(a, f0)
 	v.Name = tv5(a, f1)
 	v.ModuleReference = rt.TAs[types.ModuleReference](rt.TPubIn(types.PegoHooks, a, f2))
@@ -898,7 +845,7 @@ func tmk_ImportEqualsDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 a
 
 func tmk_ImportSpecifier(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tImportSpecifier)
+	v := rt.Alloc(&a.tImportSpecifier)
 	v.PropertyName = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Name = tv5(a, f1)
 	v.IsTypeOnly = astBool(f2)
@@ -911,7 +858,7 @@ func tmk_ImportSpecifier(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any 
 
 func tmk_ImportType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tImportType)
+	v := rt.Alloc(&a.tImportType)
 	v.Argument = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Attributes = rt.TAs[*types.ImportAttributes](f1)
 	v.Qualifier = rt.TAs[types.EntityName](rt.TPubIn(types.PegoHooks, a, f2))
@@ -926,7 +873,7 @@ func tmk_ImportType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f
 
 func tmk_IndexSignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIndexSignature)
+	v := rt.Alloc(&a.tIndexSignature)
 	v.Modifiers = tl2(a, f0)
 	v.Parameters = tl4(a, f1)
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
@@ -939,7 +886,7 @@ func tmk_IndexSignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_IndexedAccessType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIndexedAccessType)
+	v := rt.Alloc(&a.tIndexedAccessType)
 	v.ObjectType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	v.IndexType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -951,7 +898,7 @@ func tmk_IndexedAccessType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_InferType(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tInferType)
+	v := rt.Alloc(&a.tInferType)
 	v.TypeParameter = rt.TAs[*types.TypeParameter](f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -962,7 +909,7 @@ func tmk_InferType(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_InterfaceDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tInterfaceDeclaration)
+	v := rt.Alloc(&a.tInterfaceDeclaration)
 	v.Modifiers = tl2(a, f0)
 	v.Name = tv5(a, f1)
 	v.TypeParameters = tl3(a, f2)
@@ -977,7 +924,7 @@ func tmk_InterfaceDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any,
 
 func tmk_IntersectionType(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIntersectionType)
+	v := rt.Alloc(&a.tIntersectionType)
 	v.Types = tl6(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -988,7 +935,7 @@ func tmk_IntersectionType(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_JSDocFunctionType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tJSDocFunctionType)
+	v := rt.Alloc(&a.tJSDocFunctionType)
 	v.Parameters = tl4(a, f0)
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1000,7 +947,7 @@ func tmk_JSDocFunctionType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_JSDocNonNullableType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tJSDocNonNullableType)
+	v := rt.Alloc(&a.tJSDocNonNullableType)
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Postfix = astBool(f1)
 	if final {
@@ -1012,7 +959,7 @@ func tmk_JSDocNonNullableType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_JSDocNullableType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tJSDocNullableType)
+	v := rt.Alloc(&a.tJSDocNullableType)
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Postfix = astBool(f1)
 	if final {
@@ -1024,7 +971,7 @@ func tmk_JSDocNullableType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_JsxAttribute(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tJsxAttribute)
+	v := rt.Alloc(&a.tJsxAttribute)
 	v.Name = rt.TAs[types.JsxAttributeName](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Initializer = rt.TAs[types.JsxAttributeValue](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1036,7 +983,7 @@ func tmk_JsxAttribute(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_JsxAttributes(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tJsxAttributes)
+	v := rt.Alloc(&a.tJsxAttributes)
 	v.Properties = tl14(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1047,7 +994,7 @@ func tmk_JsxAttributes(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_JsxClosingElement(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tJsxClosingElement)
+	v := rt.Alloc(&a.tJsxClosingElement)
 	v.TagName = rt.TAs[types.JsxTagName](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1058,7 +1005,7 @@ func tmk_JsxClosingElement(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_JsxElement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tJsxElement)
+	v := rt.Alloc(&a.tJsxElement)
 	v.OpeningElement = rt.TAs[*types.JsxOpeningElement](f0)
 	v.Children = tl15(a, f1)
 	v.ClosingElement = rt.TAs[*types.JsxClosingElement](f2)
@@ -1071,7 +1018,7 @@ func tmk_JsxElement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_JsxExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tJsxExpression)
+	v := rt.Alloc(&a.tJsxExpression)
 	v.DotDotDotToken = tv28(a, f0)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1083,7 +1030,7 @@ func tmk_JsxExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_JsxFragment(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tJsxFragment)
+	v := rt.Alloc(&a.tJsxFragment)
 	v.OpeningFragment = tv10(a, f0)
 	v.Children = tl15(a, f1)
 	v.ClosingFragment = tv9(a, f2)
@@ -1096,7 +1043,7 @@ func tmk_JsxFragment(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_JsxNamespacedName(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tJsxNamespacedName)
+	v := rt.Alloc(&a.tJsxNamespacedName)
 	v.Namespace = tv5(a, f0)
 	v.Name = tv5(a, f1)
 	if final {
@@ -1108,7 +1055,7 @@ func tmk_JsxNamespacedName(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_JsxOpeningElement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tJsxOpeningElement)
+	v := rt.Alloc(&a.tJsxOpeningElement)
 	v.TagName = rt.TAs[types.JsxTagName](rt.TPubIn(types.PegoHooks, a, f0))
 	v.TypeArguments = tl6(a, f1)
 	v.Attributes = rt.TAs[*types.JsxAttributes](f2)
@@ -1121,7 +1068,7 @@ func tmk_JsxOpeningElement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) an
 
 func tmk_JsxSelfClosingElement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tJsxSelfClosingElement)
+	v := rt.Alloc(&a.tJsxSelfClosingElement)
 	v.TagName = rt.TAs[types.JsxTagName](rt.TPubIn(types.PegoHooks, a, f0))
 	v.TypeArguments = tl6(a, f1)
 	v.Attributes = rt.TAs[*types.JsxAttributes](f2)
@@ -1134,7 +1081,7 @@ func tmk_JsxSelfClosingElement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any
 
 func tmk_JsxSpreadAttribute(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tJsxSpreadAttribute)
+	v := rt.Alloc(&a.tJsxSpreadAttribute)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1145,7 +1092,7 @@ func tmk_JsxSpreadAttribute(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_LabeledStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tLabeledStatement)
+	v := rt.Alloc(&a.tLabeledStatement)
 	v.Label = tv5(a, f0)
 	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1157,7 +1104,7 @@ func tmk_LabeledStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_LiteralType(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tLiteralType)
+	v := rt.Alloc(&a.tLiteralType)
 	v.Literal = rt.TAs[types.LiteralTypeLiteral](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1168,7 +1115,7 @@ func tmk_LiteralType(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_MappedType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMappedType)
+	v := rt.Alloc(&a.tMappedType)
 	v.ReadonlyToken = tv28(a, f0)
 	v.TypeParameter = rt.TAs[*types.TypeParameter](f1)
 	v.NameType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
@@ -1184,7 +1131,7 @@ func tmk_MappedType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f
 
 func tmk_MetaProperty(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMetaProperty)
+	v := rt.Alloc(&a.tMetaProperty)
 	v.KeywordToken = astString(f0)
 	v.Name = tv5(a, f1)
 	if final {
@@ -1196,7 +1143,7 @@ func tmk_MetaProperty(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_MethodDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any, f8 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMethodDeclaration)
+	v := rt.Alloc(&a.tMethodDeclaration)
 	v.Modifiers = tl2(a, f0)
 	v.AsteriskToken = tv28(a, f1)
 	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f2))
@@ -1215,7 +1162,7 @@ func tmk_MethodDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3
 
 func tmk_MethodSignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMethodSignature)
+	v := rt.Alloc(&a.tMethodSignature)
 	v.Modifiers = tl2(a, f0)
 	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
 	v.QuestionToken = tv28(a, f2)
@@ -1231,7 +1178,7 @@ func tmk_MethodSignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 a
 
 func tmk_ModuleBlock(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tModuleBlock)
+	v := rt.Alloc(&a.tModuleBlock)
 	v.Statements = tl5(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1242,7 +1189,7 @@ func tmk_ModuleBlock(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ModuleDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tModuleDeclaration)
+	v := rt.Alloc(&a.tModuleDeclaration)
 	v.Modifiers = tl2(a, f0)
 	v.Name = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Body = rt.TAs[types.ModuleBody](rt.TPubIn(types.PegoHooks, a, f2))
@@ -1255,7 +1202,7 @@ func tmk_ModuleDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) an
 
 func tmk_NamedExports(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tNamedExports)
+	v := rt.Alloc(&a.tNamedExports)
 	v.Elements = tl16(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1266,7 +1213,7 @@ func tmk_NamedExports(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_NamedImports(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tNamedImports)
+	v := rt.Alloc(&a.tNamedImports)
 	v.Elements = tl17(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1277,7 +1224,7 @@ func tmk_NamedImports(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_NamedTupleMember(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tNamedTupleMember)
+	v := rt.Alloc(&a.tNamedTupleMember)
 	v.DotDotDotToken = tv28(a, f0)
 	v.Name = tv5(a, f1)
 	v.QuestionToken = tv28(a, f2)
@@ -1291,7 +1238,7 @@ func tmk_NamedTupleMember(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 
 
 func tmk_NamespaceExport(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tNamespaceExport)
+	v := rt.Alloc(&a.tNamespaceExport)
 	v.Name = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1302,7 +1249,7 @@ func tmk_NamespaceExport(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_NamespaceExportDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tNamespaceExportDeclaration)
+	v := rt.Alloc(&a.tNamespaceExportDeclaration)
 	v.Modifiers = tl2(a, f0)
 	v.Name = tv5(a, f1)
 	if final {
@@ -1314,7 +1261,7 @@ func tmk_NamespaceExportDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any) a
 
 func tmk_NamespaceImport(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tNamespaceImport)
+	v := rt.Alloc(&a.tNamespaceImport)
 	v.Name = tv5(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1325,7 +1272,7 @@ func tmk_NamespaceImport(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_NewExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tNewExpression)
+	v := rt.Alloc(&a.tNewExpression)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	v.TypeArguments = tl6(a, f1)
 	v.Arguments = tl1(a, f2)
@@ -1338,7 +1285,7 @@ func tmk_NewExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_NonNullExpression(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tNonNullExpression)
+	v := rt.Alloc(&a.tNonNullExpression)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1349,7 +1296,7 @@ func tmk_NonNullExpression(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ObjectBindingPattern(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tObjectBindingPattern)
+	v := rt.Alloc(&a.tObjectBindingPattern)
 	v.Elements = tl18(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1360,7 +1307,7 @@ func tmk_ObjectBindingPattern(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ObjectLiteralExpression(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tObjectLiteralExpression)
+	v := rt.Alloc(&a.tObjectLiteralExpression)
 	v.Properties = tl19(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1371,7 +1318,7 @@ func tmk_ObjectLiteralExpression(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_OptionalType(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tOptionalType)
+	v := rt.Alloc(&a.tOptionalType)
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1382,7 +1329,7 @@ func tmk_OptionalType(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Parameter(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tParameter)
+	v := rt.Alloc(&a.tParameter)
 	v.Modifiers = tl2(a, f0)
 	v.DotDotDotToken = tv28(a, f1)
 	v.Name = rt.TAs[types.BindingName](rt.TPubIn(types.PegoHooks, a, f2))
@@ -1398,7 +1345,7 @@ func tmk_Parameter(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4
 
 func tmk_ParenthesizedExpression(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tParenthesizedExpression)
+	v := rt.Alloc(&a.tParenthesizedExpression)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1409,7 +1356,7 @@ func tmk_ParenthesizedExpression(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ParenthesizedType(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tParenthesizedType)
+	v := rt.Alloc(&a.tParenthesizedType)
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1420,7 +1367,7 @@ func tmk_ParenthesizedType(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_PostfixUnaryExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPostfixUnaryExpression)
+	v := rt.Alloc(&a.tPostfixUnaryExpression)
 	v.Operand = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Operator = astString(f1)
 	if final {
@@ -1432,7 +1379,7 @@ func tmk_PostfixUnaryExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_PrefixUnaryExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPrefixUnaryExpression)
+	v := rt.Alloc(&a.tPrefixUnaryExpression)
 	v.Operator = astString(f0)
 	v.Operand = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1444,7 +1391,7 @@ func tmk_PrefixUnaryExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_PropertyAccessExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPropertyAccessExpression)
+	v := rt.Alloc(&a.tPropertyAccessExpression)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	v.QuestionDotToken = tv28(a, f1)
 	v.Name = rt.TAs[types.MemberName](rt.TPubIn(types.PegoHooks, a, f2))
@@ -1457,7 +1404,7 @@ func tmk_PropertyAccessExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 
 
 func tmk_PropertyAssignment(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPropertyAssignment)
+	v := rt.Alloc(&a.tPropertyAssignment)
 	v.Modifiers = tl2(a, f0)
 	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
 	v.QuestionToken = tv28(a, f2)
@@ -1472,7 +1419,7 @@ func tmk_PropertyAssignment(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f
 
 func tmk_PropertyDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPropertyDeclaration)
+	v := rt.Alloc(&a.tPropertyDeclaration)
 	v.Modifiers = tl2(a, f0)
 	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
 	v.QuestionToken = tv28(a, f2)
@@ -1488,7 +1435,7 @@ func tmk_PropertyDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, 
 
 func tmk_PropertySignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPropertySignature)
+	v := rt.Alloc(&a.tPropertySignature)
 	v.Modifiers = tl2(a, f0)
 	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
 	v.QuestionToken = tv28(a, f2)
@@ -1503,7 +1450,7 @@ func tmk_PropertySignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3
 
 func tmk_QualifiedName(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tQualifiedName)
+	v := rt.Alloc(&a.tQualifiedName)
 	v.Left = rt.TAs[types.EntityName](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Right = tv5(a, f1)
 	if final {
@@ -1515,7 +1462,7 @@ func tmk_QualifiedName(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_RestType(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tRestType)
+	v := rt.Alloc(&a.tRestType)
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1526,7 +1473,7 @@ func tmk_RestType(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ReturnStatement(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tReturnStatement)
+	v := rt.Alloc(&a.tReturnStatement)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1537,7 +1484,7 @@ func tmk_ReturnStatement(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_SatisfiesExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSatisfiesExpression)
+	v := rt.Alloc(&a.tSatisfiesExpression)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1549,7 +1496,7 @@ func tmk_SatisfiesExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_SetAccessor(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSetAccessor)
+	v := rt.Alloc(&a.tSetAccessor)
 	v.Modifiers = tl2(a, f0)
 	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
 	v.TypeParameters = tl3(a, f2)
@@ -1565,7 +1512,7 @@ func tmk_SetAccessor(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, 
 
 func tmk_ShorthandPropertyAssignment(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tShorthandPropertyAssignment)
+	v := rt.Alloc(&a.tShorthandPropertyAssignment)
 	v.Modifiers = tl2(a, f0)
 	v.Name = tv5(a, f1)
 	v.QuestionToken = tv28(a, f2)
@@ -1581,7 +1528,7 @@ func tmk_ShorthandPropertyAssignment(c *rt.TActCtx, final bool, f0 any, f1 any, 
 
 func tmk_SourceFile(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSourceFile)
+	v := rt.Alloc(&a.tSourceFile)
 	v.Statements = tl5(a, f0)
 	v.EndOfFileToken = tv4(a, f1)
 	if final {
@@ -1593,7 +1540,7 @@ func tmk_SourceFile(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_SpreadAssignment(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSpreadAssignment)
+	v := rt.Alloc(&a.tSpreadAssignment)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1604,7 +1551,7 @@ func tmk_SpreadAssignment(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_SpreadElement(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSpreadElement)
+	v := rt.Alloc(&a.tSpreadElement)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1615,7 +1562,7 @@ func tmk_SpreadElement(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_SwitchStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSwitchStatement)
+	v := rt.Alloc(&a.tSwitchStatement)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	v.CaseBlock = rt.TAs[*types.CaseBlock](f1)
 	if final {
@@ -1627,7 +1574,7 @@ func tmk_SwitchStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_TaggedTemplateExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTaggedTemplateExpression)
+	v := rt.Alloc(&a.tTaggedTemplateExpression)
 	v.Tag = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	v.QuestionDotToken = tv28(a, f1)
 	v.TypeArguments = tl6(a, f2)
@@ -1641,7 +1588,7 @@ func tmk_TaggedTemplateExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 
 
 func tmk_TemplateExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTemplateExpression)
+	v := rt.Alloc(&a.tTemplateExpression)
 	v.Head = tv23(a, f0)
 	v.TemplateSpans = tl20(a, f1)
 	if final {
@@ -1653,7 +1600,7 @@ func tmk_TemplateExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_TemplateLiteralType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTemplateLiteralType)
+	v := rt.Alloc(&a.tTemplateLiteralType)
 	v.Head = tv23(a, f0)
 	v.TemplateSpans = tl21(a, f1)
 	if final {
@@ -1665,7 +1612,7 @@ func tmk_TemplateLiteralType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_TemplateLiteralTypeSpan(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTemplateLiteralTypeSpan)
+	v := rt.Alloc(&a.tTemplateLiteralTypeSpan)
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Literal = rt.TAs[types.TemplateMiddleOrTail](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1677,7 +1624,7 @@ func tmk_TemplateLiteralTypeSpan(c *rt.TActCtx, final bool, f0 any, f1 any) any 
 
 func tmk_TemplateSpan(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTemplateSpan)
+	v := rt.Alloc(&a.tTemplateSpan)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Literal = rt.TAs[types.TemplateMiddleOrTail](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1689,7 +1636,7 @@ func tmk_TemplateSpan(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_ThrowStatement(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tThrowStatement)
+	v := rt.Alloc(&a.tThrowStatement)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1700,7 +1647,7 @@ func tmk_ThrowStatement(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_TryStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTryStatement)
+	v := rt.Alloc(&a.tTryStatement)
 	v.TryBlock = rt.TAs[*types.Block](f0)
 	v.CatchClause = rt.TAs[*types.CatchClause](f1)
 	v.FinallyBlock = rt.TAs[*types.Block](f2)
@@ -1713,7 +1660,7 @@ func tmk_TryStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_TupleType(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTupleType)
+	v := rt.Alloc(&a.tTupleType)
 	v.Elements = tl6(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1724,7 +1671,7 @@ func tmk_TupleType(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_TypeAliasDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTypeAliasDeclaration)
+	v := rt.Alloc(&a.tTypeAliasDeclaration)
 	v.Modifiers = tl2(a, f0)
 	v.Name = tv5(a, f1)
 	v.TypeParameters = tl3(a, f2)
@@ -1738,7 +1685,7 @@ func tmk_TypeAliasDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any,
 
 func tmk_TypeAssertionExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTypeAssertionExpression)
+	v := rt.Alloc(&a.tTypeAssertionExpression)
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1750,7 +1697,7 @@ func tmk_TypeAssertionExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any 
 
 func tmk_TypeLiteral(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTypeLiteral)
+	v := rt.Alloc(&a.tTypeLiteral)
 	v.Members = tl13(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1761,7 +1708,7 @@ func tmk_TypeLiteral(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_TypeOfExpression(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTypeOfExpression)
+	v := rt.Alloc(&a.tTypeOfExpression)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1772,7 +1719,7 @@ func tmk_TypeOfExpression(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_TypeOperator(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTypeOperator)
+	v := rt.Alloc(&a.tTypeOperator)
 	v.Operator = astString(f0)
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1784,7 +1731,7 @@ func tmk_TypeOperator(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_TypeParameter(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTypeParameter)
+	v := rt.Alloc(&a.tTypeParameter)
 	v.Modifiers = tl2(a, f0)
 	v.Name = tv5(a, f1)
 	v.Constraint = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
@@ -1799,7 +1746,7 @@ func tmk_TypeParameter(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any
 
 func tmk_TypePredicate(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTypePredicate)
+	v := rt.Alloc(&a.tTypePredicate)
 	v.AssertsModifier = tv28(a, f0)
 	v.ParameterName = rt.TAs[types.TypePredicateParameterName](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
@@ -1812,7 +1759,7 @@ func tmk_TypePredicate(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_TypeQuery(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTypeQuery)
+	v := rt.Alloc(&a.tTypeQuery)
 	v.ExprName = rt.TAs[types.EntityName](rt.TPubIn(types.PegoHooks, a, f0))
 	v.TypeArguments = tl6(a, f1)
 	if final {
@@ -1824,7 +1771,7 @@ func tmk_TypeQuery(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_TypeReference(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTypeReference)
+	v := rt.Alloc(&a.tTypeReference)
 	v.TypeName = rt.TAs[types.EntityName](rt.TPubIn(types.PegoHooks, a, f0))
 	v.TypeArguments = tl6(a, f1)
 	if final {
@@ -1836,7 +1783,7 @@ func tmk_TypeReference(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_UnionType(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tUnionType)
+	v := rt.Alloc(&a.tUnionType)
 	v.Types = tl6(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1847,7 +1794,7 @@ func tmk_UnionType(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_VariableDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tVariableDeclaration)
+	v := rt.Alloc(&a.tVariableDeclaration)
 	v.Name = rt.TAs[types.BindingName](rt.TPubIn(types.PegoHooks, a, f0))
 	v.ExclamationToken = tv28(a, f1)
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
@@ -1861,7 +1808,7 @@ func tmk_VariableDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, 
 
 func tmk_VariableDeclarationList(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tVariableDeclarationList)
+	v := rt.Alloc(&a.tVariableDeclarationList)
 	v.Keyword = astString(f0)
 	v.Declarations = tl22(a, f1)
 	if final {
@@ -1873,7 +1820,7 @@ func tmk_VariableDeclarationList(c *rt.TActCtx, final bool, f0 any, f1 any) any 
 
 func tmk_VariableStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tVariableStatement)
+	v := rt.Alloc(&a.tVariableStatement)
 	v.Modifiers = tl2(a, f0)
 	v.DeclarationList = rt.TAs[*types.VariableDeclarationList](f1)
 	if final {
@@ -1885,7 +1832,7 @@ func tmk_VariableStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_VoidExpression(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tVoidExpression)
+	v := rt.Alloc(&a.tVoidExpression)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1896,7 +1843,7 @@ func tmk_VoidExpression(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_WhileStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tWhileStatement)
+	v := rt.Alloc(&a.tWhileStatement)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1908,7 +1855,7 @@ func tmk_WhileStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_WithStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tWithStatement)
+	v := rt.Alloc(&a.tWithStatement)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1920,7 +1867,7 @@ func tmk_WithStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_YieldExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tYieldExpression)
+	v := rt.Alloc(&a.tYieldExpression)
 	v.AsteriskToken = tv28(a, f0)
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1939,7 +1886,7 @@ func tl0(a *tslabs, v any) []types.ArrayBindingElement {
 	if n == nil {
 		return []types.ArrayBindingElement{}
 	}
-	out := astSlice(&a.tl0Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.ArrayBindingElement](rt.TPubIn(types.PegoHooks, a, c))
@@ -1956,7 +1903,7 @@ func tl1(a *tslabs, v any) []types.Expression {
 	if n == nil {
 		return []types.Expression{}
 	}
-	out := astSlice(&a.tl1Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, c))
@@ -1973,7 +1920,7 @@ func tl2(a *tslabs, v any) []types.ModifierLike {
 	if n == nil {
 		return []types.ModifierLike{}
 	}
-	out := astSlice(&a.tl2Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.ModifierLike](rt.TPubIn(types.PegoHooks, a, c))
@@ -1990,7 +1937,7 @@ func tl3(a *tslabs, v any) []*types.TypeParameter {
 	if n == nil {
 		return []*types.TypeParameter{}
 	}
-	out := astSlice(&a.tl3Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl3Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.TypeParameter](c)
@@ -2007,7 +1954,7 @@ func tl4(a *tslabs, v any) []*types.Parameter {
 	if n == nil {
 		return []*types.Parameter{}
 	}
-	out := astSlice(&a.tl4Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl4Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.Parameter](c)
@@ -2024,7 +1971,7 @@ func tl5(a *tslabs, v any) []types.Statement {
 	if n == nil {
 		return []types.Statement{}
 	}
-	out := astSlice(&a.tl5Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl5Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, c))
@@ -2041,7 +1988,7 @@ func tl6(a *tslabs, v any) []types.TypeNode {
 	if n == nil {
 		return []types.TypeNode{}
 	}
-	out := astSlice(&a.tl6Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl6Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, c))
@@ -2058,7 +2005,7 @@ func tl7(a *tslabs, v any) []types.CaseOrDefaultClause {
 	if n == nil {
 		return []types.CaseOrDefaultClause{}
 	}
-	out := astSlice(&a.tl7Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl7Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.CaseOrDefaultClause](rt.TPubIn(types.PegoHooks, a, c))
@@ -2075,7 +2022,7 @@ func tl8(a *tslabs, v any) []*types.HeritageClause {
 	if n == nil {
 		return []*types.HeritageClause{}
 	}
-	out := astSlice(&a.tl8Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl8Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.HeritageClause](c)
@@ -2092,7 +2039,7 @@ func tl9(a *tslabs, v any) []types.ClassElement {
 	if n == nil {
 		return []types.ClassElement{}
 	}
-	out := astSlice(&a.tl9Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl9Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.ClassElement](rt.TPubIn(types.PegoHooks, a, c))
@@ -2109,7 +2056,7 @@ func tl10(a *tslabs, v any) []*types.EnumMember {
 	if n == nil {
 		return []*types.EnumMember{}
 	}
-	out := astSlice(&a.tl10Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl10Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.EnumMember](c)
@@ -2126,7 +2073,7 @@ func tl11(a *tslabs, v any) []*types.ExpressionWithTypeArguments {
 	if n == nil {
 		return []*types.ExpressionWithTypeArguments{}
 	}
-	out := astSlice(&a.tl11Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl11Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.ExpressionWithTypeArguments](c)
@@ -2143,7 +2090,7 @@ func tl12(a *tslabs, v any) []*types.ImportAttribute {
 	if n == nil {
 		return []*types.ImportAttribute{}
 	}
-	out := astSlice(&a.tl12Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl12Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.ImportAttribute](c)
@@ -2160,7 +2107,7 @@ func tl13(a *tslabs, v any) []types.TypeElement {
 	if n == nil {
 		return []types.TypeElement{}
 	}
-	out := astSlice(&a.tl13Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl13Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.TypeElement](rt.TPubIn(types.PegoHooks, a, c))
@@ -2177,7 +2124,7 @@ func tl14(a *tslabs, v any) []types.JsxAttributeLike {
 	if n == nil {
 		return []types.JsxAttributeLike{}
 	}
-	out := astSlice(&a.tl14Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl14Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.JsxAttributeLike](rt.TPubIn(types.PegoHooks, a, c))
@@ -2194,7 +2141,7 @@ func tl15(a *tslabs, v any) []types.JsxChild {
 	if n == nil {
 		return []types.JsxChild{}
 	}
-	out := astSlice(&a.tl15Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl15Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.JsxChild](rt.TPubIn(types.PegoHooks, a, c))
@@ -2211,7 +2158,7 @@ func tl16(a *tslabs, v any) []*types.ExportSpecifier {
 	if n == nil {
 		return []*types.ExportSpecifier{}
 	}
-	out := astSlice(&a.tl16Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl16Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.ExportSpecifier](c)
@@ -2228,7 +2175,7 @@ func tl17(a *tslabs, v any) []*types.ImportSpecifier {
 	if n == nil {
 		return []*types.ImportSpecifier{}
 	}
-	out := astSlice(&a.tl17Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl17Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.ImportSpecifier](c)
@@ -2245,7 +2192,7 @@ func tl18(a *tslabs, v any) []*types.BindingElement {
 	if n == nil {
 		return []*types.BindingElement{}
 	}
-	out := astSlice(&a.tl18Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl18Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.BindingElement](c)
@@ -2262,7 +2209,7 @@ func tl19(a *tslabs, v any) []types.ObjectLiteralElement {
 	if n == nil {
 		return []types.ObjectLiteralElement{}
 	}
-	out := astSlice(&a.tl19Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl19Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.ObjectLiteralElement](rt.TPubIn(types.PegoHooks, a, c))
@@ -2279,7 +2226,7 @@ func tl20(a *tslabs, v any) []*types.TemplateSpan {
 	if n == nil {
 		return []*types.TemplateSpan{}
 	}
-	out := astSlice(&a.tl20Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl20Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.TemplateSpan](c)
@@ -2296,7 +2243,7 @@ func tl21(a *tslabs, v any) []*types.TemplateLiteralTypeSpan {
 	if n == nil {
 		return []*types.TemplateLiteralTypeSpan{}
 	}
-	out := astSlice(&a.tl21Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl21Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.TemplateLiteralTypeSpan](c)
@@ -2313,7 +2260,7 @@ func tl22(a *tslabs, v any) []*types.VariableDeclaration {
 	if n == nil {
 		return []*types.VariableDeclaration{}
 	}
-	out := astSlice(&a.tl22Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl22Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.VariableDeclaration](c)
@@ -2584,164 +2531,164 @@ func tv28(a *tslabs, v any) *types.Token {
 
 type tslabs struct {
 	control                      *rt.WorkControl
-	tArrayBindingPattern         astChunk[types.ArrayBindingPattern]
-	tArrayLiteralExpression      astChunk[types.ArrayLiteralExpression]
-	tArrayType                   astChunk[types.ArrayType]
-	tArrowFunction               astChunk[types.ArrowFunction]
-	tAsExpression                astChunk[types.AsExpression]
-	tAwaitExpression             astChunk[types.AwaitExpression]
-	tBinaryExpression            astChunk[types.BinaryExpression]
-	tBindingElement              astChunk[types.BindingElement]
-	tBlock                       astChunk[types.Block]
-	tBreakStatement              astChunk[types.BreakStatement]
-	tCallExpression              astChunk[types.CallExpression]
-	tCallSignature               astChunk[types.CallSignature]
-	tCaseBlock                   astChunk[types.CaseBlock]
-	tCaseClause                  astChunk[types.CaseClause]
-	tCatchClause                 astChunk[types.CatchClause]
-	tClassDeclaration            astChunk[types.ClassDeclaration]
-	tClassExpression             astChunk[types.ClassExpression]
-	tClassStaticBlockDeclaration astChunk[types.ClassStaticBlockDeclaration]
-	tComputedPropertyName        astChunk[types.ComputedPropertyName]
-	tConditionalExpression       astChunk[types.ConditionalExpression]
-	tConditionalType             astChunk[types.ConditionalType]
-	tConstructSignature          astChunk[types.ConstructSignature]
-	tConstructor                 astChunk[types.Constructor]
-	tConstructorType             astChunk[types.ConstructorType]
-	tContinueStatement           astChunk[types.ContinueStatement]
-	tDecorator                   astChunk[types.Decorator]
-	tDefaultClause               astChunk[types.DefaultClause]
-	tDeleteExpression            astChunk[types.DeleteExpression]
-	tDoStatement                 astChunk[types.DoStatement]
-	tElementAccessExpression     astChunk[types.ElementAccessExpression]
-	tEnumDeclaration             astChunk[types.EnumDeclaration]
-	tEnumMember                  astChunk[types.EnumMember]
-	tExportAssignment            astChunk[types.ExportAssignment]
-	tExportDeclaration           astChunk[types.ExportDeclaration]
-	tExportSpecifier             astChunk[types.ExportSpecifier]
-	tExpressionStatement         astChunk[types.ExpressionStatement]
-	tExpressionWithTypeArguments astChunk[types.ExpressionWithTypeArguments]
-	tExternalModuleReference     astChunk[types.ExternalModuleReference]
-	tForInStatement              astChunk[types.ForInStatement]
-	tForOfStatement              astChunk[types.ForOfStatement]
-	tForStatement                astChunk[types.ForStatement]
-	tFunctionDeclaration         astChunk[types.FunctionDeclaration]
-	tFunctionExpression          astChunk[types.FunctionExpression]
-	tFunctionType                astChunk[types.FunctionType]
-	tGetAccessor                 astChunk[types.GetAccessor]
-	tHeritageClause              astChunk[types.HeritageClause]
-	tIfStatement                 astChunk[types.IfStatement]
-	tImportAttribute             astChunk[types.ImportAttribute]
-	tImportAttributes            astChunk[types.ImportAttributes]
-	tImportClause                astChunk[types.ImportClause]
-	tImportDeclaration           astChunk[types.ImportDeclaration]
-	tImportEqualsDeclaration     astChunk[types.ImportEqualsDeclaration]
-	tImportSpecifier             astChunk[types.ImportSpecifier]
-	tImportType                  astChunk[types.ImportType]
-	tIndexSignature              astChunk[types.IndexSignature]
-	tIndexedAccessType           astChunk[types.IndexedAccessType]
-	tInferType                   astChunk[types.InferType]
-	tInterfaceDeclaration        astChunk[types.InterfaceDeclaration]
-	tIntersectionType            astChunk[types.IntersectionType]
-	tJSDocFunctionType           astChunk[types.JSDocFunctionType]
-	tJSDocNonNullableType        astChunk[types.JSDocNonNullableType]
-	tJSDocNullableType           astChunk[types.JSDocNullableType]
-	tJsxAttribute                astChunk[types.JsxAttribute]
-	tJsxAttributes               astChunk[types.JsxAttributes]
-	tJsxClosingElement           astChunk[types.JsxClosingElement]
-	tJsxElement                  astChunk[types.JsxElement]
-	tJsxExpression               astChunk[types.JsxExpression]
-	tJsxFragment                 astChunk[types.JsxFragment]
-	tJsxNamespacedName           astChunk[types.JsxNamespacedName]
-	tJsxOpeningElement           astChunk[types.JsxOpeningElement]
-	tJsxSelfClosingElement       astChunk[types.JsxSelfClosingElement]
-	tJsxSpreadAttribute          astChunk[types.JsxSpreadAttribute]
-	tLabeledStatement            astChunk[types.LabeledStatement]
-	tLiteralType                 astChunk[types.LiteralType]
-	tMappedType                  astChunk[types.MappedType]
-	tMetaProperty                astChunk[types.MetaProperty]
-	tMethodDeclaration           astChunk[types.MethodDeclaration]
-	tMethodSignature             astChunk[types.MethodSignature]
-	tModuleBlock                 astChunk[types.ModuleBlock]
-	tModuleDeclaration           astChunk[types.ModuleDeclaration]
-	tNamedExports                astChunk[types.NamedExports]
-	tNamedImports                astChunk[types.NamedImports]
-	tNamedTupleMember            astChunk[types.NamedTupleMember]
-	tNamespaceExport             astChunk[types.NamespaceExport]
-	tNamespaceExportDeclaration  astChunk[types.NamespaceExportDeclaration]
-	tNamespaceImport             astChunk[types.NamespaceImport]
-	tNewExpression               astChunk[types.NewExpression]
-	tNonNullExpression           astChunk[types.NonNullExpression]
-	tObjectBindingPattern        astChunk[types.ObjectBindingPattern]
-	tObjectLiteralExpression     astChunk[types.ObjectLiteralExpression]
-	tOptionalType                astChunk[types.OptionalType]
-	tParameter                   astChunk[types.Parameter]
-	tParenthesizedExpression     astChunk[types.ParenthesizedExpression]
-	tParenthesizedType           astChunk[types.ParenthesizedType]
-	tPostfixUnaryExpression      astChunk[types.PostfixUnaryExpression]
-	tPrefixUnaryExpression       astChunk[types.PrefixUnaryExpression]
-	tPropertyAccessExpression    astChunk[types.PropertyAccessExpression]
-	tPropertyAssignment          astChunk[types.PropertyAssignment]
-	tPropertyDeclaration         astChunk[types.PropertyDeclaration]
-	tPropertySignature           astChunk[types.PropertySignature]
-	tQualifiedName               astChunk[types.QualifiedName]
-	tRestType                    astChunk[types.RestType]
-	tReturnStatement             astChunk[types.ReturnStatement]
-	tSatisfiesExpression         astChunk[types.SatisfiesExpression]
-	tSetAccessor                 astChunk[types.SetAccessor]
-	tShorthandPropertyAssignment astChunk[types.ShorthandPropertyAssignment]
-	tSourceFile                  astChunk[types.SourceFile]
-	tSpreadAssignment            astChunk[types.SpreadAssignment]
-	tSpreadElement               astChunk[types.SpreadElement]
-	tSwitchStatement             astChunk[types.SwitchStatement]
-	tTaggedTemplateExpression    astChunk[types.TaggedTemplateExpression]
-	tTemplateExpression          astChunk[types.TemplateExpression]
-	tTemplateLiteralType         astChunk[types.TemplateLiteralType]
-	tTemplateLiteralTypeSpan     astChunk[types.TemplateLiteralTypeSpan]
-	tTemplateSpan                astChunk[types.TemplateSpan]
-	tThrowStatement              astChunk[types.ThrowStatement]
-	tTryStatement                astChunk[types.TryStatement]
-	tTupleType                   astChunk[types.TupleType]
-	tTypeAliasDeclaration        astChunk[types.TypeAliasDeclaration]
-	tTypeAssertionExpression     astChunk[types.TypeAssertionExpression]
-	tTypeLiteral                 astChunk[types.TypeLiteral]
-	tTypeOfExpression            astChunk[types.TypeOfExpression]
-	tTypeOperator                astChunk[types.TypeOperator]
-	tTypeParameter               astChunk[types.TypeParameter]
-	tTypePredicate               astChunk[types.TypePredicate]
-	tTypeQuery                   astChunk[types.TypeQuery]
-	tTypeReference               astChunk[types.TypeReference]
-	tUnionType                   astChunk[types.UnionType]
-	tVariableDeclaration         astChunk[types.VariableDeclaration]
-	tVariableDeclarationList     astChunk[types.VariableDeclarationList]
-	tVariableStatement           astChunk[types.VariableStatement]
-	tVoidExpression              astChunk[types.VoidExpression]
-	tWhileStatement              astChunk[types.WhileStatement]
-	tWithStatement               astChunk[types.WithStatement]
-	tYieldExpression             astChunk[types.YieldExpression]
-	tl0Chunk                     astChunk[types.ArrayBindingElement]
-	tl1Chunk                     astChunk[types.Expression]
-	tl2Chunk                     astChunk[types.ModifierLike]
-	tl3Chunk                     astChunk[*types.TypeParameter]
-	tl4Chunk                     astChunk[*types.Parameter]
-	tl5Chunk                     astChunk[types.Statement]
-	tl6Chunk                     astChunk[types.TypeNode]
-	tl7Chunk                     astChunk[types.CaseOrDefaultClause]
-	tl8Chunk                     astChunk[*types.HeritageClause]
-	tl9Chunk                     astChunk[types.ClassElement]
-	tl10Chunk                    astChunk[*types.EnumMember]
-	tl11Chunk                    astChunk[*types.ExpressionWithTypeArguments]
-	tl12Chunk                    astChunk[*types.ImportAttribute]
-	tl13Chunk                    astChunk[types.TypeElement]
-	tl14Chunk                    astChunk[types.JsxAttributeLike]
-	tl15Chunk                    astChunk[types.JsxChild]
-	tl16Chunk                    astChunk[*types.ExportSpecifier]
-	tl17Chunk                    astChunk[*types.ImportSpecifier]
-	tl18Chunk                    astChunk[*types.BindingElement]
-	tl19Chunk                    astChunk[types.ObjectLiteralElement]
-	tl20Chunk                    astChunk[*types.TemplateSpan]
-	tl21Chunk                    astChunk[*types.TemplateLiteralTypeSpan]
-	tl22Chunk                    astChunk[*types.VariableDeclaration]
+	tArrayBindingPattern         rt.Chunk[types.ArrayBindingPattern]
+	tArrayLiteralExpression      rt.Chunk[types.ArrayLiteralExpression]
+	tArrayType                   rt.Chunk[types.ArrayType]
+	tArrowFunction               rt.Chunk[types.ArrowFunction]
+	tAsExpression                rt.Chunk[types.AsExpression]
+	tAwaitExpression             rt.Chunk[types.AwaitExpression]
+	tBinaryExpression            rt.Chunk[types.BinaryExpression]
+	tBindingElement              rt.Chunk[types.BindingElement]
+	tBlock                       rt.Chunk[types.Block]
+	tBreakStatement              rt.Chunk[types.BreakStatement]
+	tCallExpression              rt.Chunk[types.CallExpression]
+	tCallSignature               rt.Chunk[types.CallSignature]
+	tCaseBlock                   rt.Chunk[types.CaseBlock]
+	tCaseClause                  rt.Chunk[types.CaseClause]
+	tCatchClause                 rt.Chunk[types.CatchClause]
+	tClassDeclaration            rt.Chunk[types.ClassDeclaration]
+	tClassExpression             rt.Chunk[types.ClassExpression]
+	tClassStaticBlockDeclaration rt.Chunk[types.ClassStaticBlockDeclaration]
+	tComputedPropertyName        rt.Chunk[types.ComputedPropertyName]
+	tConditionalExpression       rt.Chunk[types.ConditionalExpression]
+	tConditionalType             rt.Chunk[types.ConditionalType]
+	tConstructSignature          rt.Chunk[types.ConstructSignature]
+	tConstructor                 rt.Chunk[types.Constructor]
+	tConstructorType             rt.Chunk[types.ConstructorType]
+	tContinueStatement           rt.Chunk[types.ContinueStatement]
+	tDecorator                   rt.Chunk[types.Decorator]
+	tDefaultClause               rt.Chunk[types.DefaultClause]
+	tDeleteExpression            rt.Chunk[types.DeleteExpression]
+	tDoStatement                 rt.Chunk[types.DoStatement]
+	tElementAccessExpression     rt.Chunk[types.ElementAccessExpression]
+	tEnumDeclaration             rt.Chunk[types.EnumDeclaration]
+	tEnumMember                  rt.Chunk[types.EnumMember]
+	tExportAssignment            rt.Chunk[types.ExportAssignment]
+	tExportDeclaration           rt.Chunk[types.ExportDeclaration]
+	tExportSpecifier             rt.Chunk[types.ExportSpecifier]
+	tExpressionStatement         rt.Chunk[types.ExpressionStatement]
+	tExpressionWithTypeArguments rt.Chunk[types.ExpressionWithTypeArguments]
+	tExternalModuleReference     rt.Chunk[types.ExternalModuleReference]
+	tForInStatement              rt.Chunk[types.ForInStatement]
+	tForOfStatement              rt.Chunk[types.ForOfStatement]
+	tForStatement                rt.Chunk[types.ForStatement]
+	tFunctionDeclaration         rt.Chunk[types.FunctionDeclaration]
+	tFunctionExpression          rt.Chunk[types.FunctionExpression]
+	tFunctionType                rt.Chunk[types.FunctionType]
+	tGetAccessor                 rt.Chunk[types.GetAccessor]
+	tHeritageClause              rt.Chunk[types.HeritageClause]
+	tIfStatement                 rt.Chunk[types.IfStatement]
+	tImportAttribute             rt.Chunk[types.ImportAttribute]
+	tImportAttributes            rt.Chunk[types.ImportAttributes]
+	tImportClause                rt.Chunk[types.ImportClause]
+	tImportDeclaration           rt.Chunk[types.ImportDeclaration]
+	tImportEqualsDeclaration     rt.Chunk[types.ImportEqualsDeclaration]
+	tImportSpecifier             rt.Chunk[types.ImportSpecifier]
+	tImportType                  rt.Chunk[types.ImportType]
+	tIndexSignature              rt.Chunk[types.IndexSignature]
+	tIndexedAccessType           rt.Chunk[types.IndexedAccessType]
+	tInferType                   rt.Chunk[types.InferType]
+	tInterfaceDeclaration        rt.Chunk[types.InterfaceDeclaration]
+	tIntersectionType            rt.Chunk[types.IntersectionType]
+	tJSDocFunctionType           rt.Chunk[types.JSDocFunctionType]
+	tJSDocNonNullableType        rt.Chunk[types.JSDocNonNullableType]
+	tJSDocNullableType           rt.Chunk[types.JSDocNullableType]
+	tJsxAttribute                rt.Chunk[types.JsxAttribute]
+	tJsxAttributes               rt.Chunk[types.JsxAttributes]
+	tJsxClosingElement           rt.Chunk[types.JsxClosingElement]
+	tJsxElement                  rt.Chunk[types.JsxElement]
+	tJsxExpression               rt.Chunk[types.JsxExpression]
+	tJsxFragment                 rt.Chunk[types.JsxFragment]
+	tJsxNamespacedName           rt.Chunk[types.JsxNamespacedName]
+	tJsxOpeningElement           rt.Chunk[types.JsxOpeningElement]
+	tJsxSelfClosingElement       rt.Chunk[types.JsxSelfClosingElement]
+	tJsxSpreadAttribute          rt.Chunk[types.JsxSpreadAttribute]
+	tLabeledStatement            rt.Chunk[types.LabeledStatement]
+	tLiteralType                 rt.Chunk[types.LiteralType]
+	tMappedType                  rt.Chunk[types.MappedType]
+	tMetaProperty                rt.Chunk[types.MetaProperty]
+	tMethodDeclaration           rt.Chunk[types.MethodDeclaration]
+	tMethodSignature             rt.Chunk[types.MethodSignature]
+	tModuleBlock                 rt.Chunk[types.ModuleBlock]
+	tModuleDeclaration           rt.Chunk[types.ModuleDeclaration]
+	tNamedExports                rt.Chunk[types.NamedExports]
+	tNamedImports                rt.Chunk[types.NamedImports]
+	tNamedTupleMember            rt.Chunk[types.NamedTupleMember]
+	tNamespaceExport             rt.Chunk[types.NamespaceExport]
+	tNamespaceExportDeclaration  rt.Chunk[types.NamespaceExportDeclaration]
+	tNamespaceImport             rt.Chunk[types.NamespaceImport]
+	tNewExpression               rt.Chunk[types.NewExpression]
+	tNonNullExpression           rt.Chunk[types.NonNullExpression]
+	tObjectBindingPattern        rt.Chunk[types.ObjectBindingPattern]
+	tObjectLiteralExpression     rt.Chunk[types.ObjectLiteralExpression]
+	tOptionalType                rt.Chunk[types.OptionalType]
+	tParameter                   rt.Chunk[types.Parameter]
+	tParenthesizedExpression     rt.Chunk[types.ParenthesizedExpression]
+	tParenthesizedType           rt.Chunk[types.ParenthesizedType]
+	tPostfixUnaryExpression      rt.Chunk[types.PostfixUnaryExpression]
+	tPrefixUnaryExpression       rt.Chunk[types.PrefixUnaryExpression]
+	tPropertyAccessExpression    rt.Chunk[types.PropertyAccessExpression]
+	tPropertyAssignment          rt.Chunk[types.PropertyAssignment]
+	tPropertyDeclaration         rt.Chunk[types.PropertyDeclaration]
+	tPropertySignature           rt.Chunk[types.PropertySignature]
+	tQualifiedName               rt.Chunk[types.QualifiedName]
+	tRestType                    rt.Chunk[types.RestType]
+	tReturnStatement             rt.Chunk[types.ReturnStatement]
+	tSatisfiesExpression         rt.Chunk[types.SatisfiesExpression]
+	tSetAccessor                 rt.Chunk[types.SetAccessor]
+	tShorthandPropertyAssignment rt.Chunk[types.ShorthandPropertyAssignment]
+	tSourceFile                  rt.Chunk[types.SourceFile]
+	tSpreadAssignment            rt.Chunk[types.SpreadAssignment]
+	tSpreadElement               rt.Chunk[types.SpreadElement]
+	tSwitchStatement             rt.Chunk[types.SwitchStatement]
+	tTaggedTemplateExpression    rt.Chunk[types.TaggedTemplateExpression]
+	tTemplateExpression          rt.Chunk[types.TemplateExpression]
+	tTemplateLiteralType         rt.Chunk[types.TemplateLiteralType]
+	tTemplateLiteralTypeSpan     rt.Chunk[types.TemplateLiteralTypeSpan]
+	tTemplateSpan                rt.Chunk[types.TemplateSpan]
+	tThrowStatement              rt.Chunk[types.ThrowStatement]
+	tTryStatement                rt.Chunk[types.TryStatement]
+	tTupleType                   rt.Chunk[types.TupleType]
+	tTypeAliasDeclaration        rt.Chunk[types.TypeAliasDeclaration]
+	tTypeAssertionExpression     rt.Chunk[types.TypeAssertionExpression]
+	tTypeLiteral                 rt.Chunk[types.TypeLiteral]
+	tTypeOfExpression            rt.Chunk[types.TypeOfExpression]
+	tTypeOperator                rt.Chunk[types.TypeOperator]
+	tTypeParameter               rt.Chunk[types.TypeParameter]
+	tTypePredicate               rt.Chunk[types.TypePredicate]
+	tTypeQuery                   rt.Chunk[types.TypeQuery]
+	tTypeReference               rt.Chunk[types.TypeReference]
+	tUnionType                   rt.Chunk[types.UnionType]
+	tVariableDeclaration         rt.Chunk[types.VariableDeclaration]
+	tVariableDeclarationList     rt.Chunk[types.VariableDeclarationList]
+	tVariableStatement           rt.Chunk[types.VariableStatement]
+	tVoidExpression              rt.Chunk[types.VoidExpression]
+	tWhileStatement              rt.Chunk[types.WhileStatement]
+	tWithStatement               rt.Chunk[types.WithStatement]
+	tYieldExpression             rt.Chunk[types.YieldExpression]
+	tl0Chunk                     rt.Chunk[types.ArrayBindingElement]
+	tl1Chunk                     rt.Chunk[types.Expression]
+	tl2Chunk                     rt.Chunk[types.ModifierLike]
+	tl3Chunk                     rt.Chunk[*types.TypeParameter]
+	tl4Chunk                     rt.Chunk[*types.Parameter]
+	tl5Chunk                     rt.Chunk[types.Statement]
+	tl6Chunk                     rt.Chunk[types.TypeNode]
+	tl7Chunk                     rt.Chunk[types.CaseOrDefaultClause]
+	tl8Chunk                     rt.Chunk[*types.HeritageClause]
+	tl9Chunk                     rt.Chunk[types.ClassElement]
+	tl10Chunk                    rt.Chunk[*types.EnumMember]
+	tl11Chunk                    rt.Chunk[*types.ExpressionWithTypeArguments]
+	tl12Chunk                    rt.Chunk[*types.ImportAttribute]
+	tl13Chunk                    rt.Chunk[types.TypeElement]
+	tl14Chunk                    rt.Chunk[types.JsxAttributeLike]
+	tl15Chunk                    rt.Chunk[types.JsxChild]
+	tl16Chunk                    rt.Chunk[*types.ExportSpecifier]
+	tl17Chunk                    rt.Chunk[*types.ImportSpecifier]
+	tl18Chunk                    rt.Chunk[*types.BindingElement]
+	tl19Chunk                    rt.Chunk[types.ObjectLiteralElement]
+	tl20Chunk                    rt.Chunk[*types.TemplateSpan]
+	tl21Chunk                    rt.Chunk[*types.TemplateLiteralTypeSpan]
+	tl22Chunk                    rt.Chunk[*types.VariableDeclaration]
 }
 
 func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }

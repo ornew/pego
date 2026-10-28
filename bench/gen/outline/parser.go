@@ -42,65 +42,12 @@ func ParseRule(name, input string, opts ...rt.ParseOption) (*rt.Node, error) {
 	return rt.RunParseResolved(r, input, o)
 }
 
-type astChunk[T any] struct {
-	free      []T
-	next      int
-	bootstrap uint8
-}
-
-func (s *astChunk[T]) grow(n, initial, limit int) {
-	size := s.next
-	if size == 0 {
-		size = initial
-	}
-	for size < n {
-		size *= 2
-	}
-	s.free = make([]T, size)
-	s.next = size * 2
-	if s.next > limit {
-		s.next = limit
-	}
-}
-
-func astNew[T any](s *astChunk[T]) *T {
-	if len(s.free) == 0 {
-		if s.bootstrap < 3 {
-			s.bootstrap++
-			return new(T)
-		}
-		s.grow(1, 8, 256)
-	}
-	v := &s.free[0]
-	s.free = s.free[1:]
-	return v
-}
-
-func astSlice[T any](s *astChunk[T], n int) []T {
-	if n == 0 {
-		return []T{}
-	}
-	if n > 256 {
-		return make([]T, n)
-	}
-	if len(s.free) < n {
-		if s.bootstrap == 0 {
-			s.bootstrap = 1
-			return make([]T, n)
-		}
-		s.grow(n, 64, 1024)
-	}
-	v := s.free[:n:n]
-	s.free = s.free[n:]
-	return v
-}
-
 func tinit() {
 }
 
 func tmk_Item(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tItem)
+	v := rt.Alloc(&a.tItem)
 	v.Text = (*types.TNode[string])(rt.TPubMatch(f0))
 	v.Children = tl0(a, f1)
 	if final {
@@ -119,7 +66,7 @@ func tl0(a *tslabs, v any) []*types.Item {
 	if n == nil {
 		return []*types.Item{}
 	}
-	out := astSlice(&a.tl0Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.Item](c)
@@ -139,8 +86,8 @@ func tv1(a *tslabs, v any) []*types.Item {
 
 type tslabs struct {
 	control  *rt.WorkControl
-	tItem    astChunk[types.Item]
-	tl0Chunk astChunk[*types.Item]
+	tItem    rt.Chunk[types.Item]
+	tl0Chunk rt.Chunk[*types.Item]
 }
 
 func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -231,21 +232,33 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 	named.WriteString("\tdefault:\n\t\treturn nil, pegoGrammar.StartError(name)\n\t}\n}\n")
 	units := append([]shakeUnit(nil), astHelperUnits...)
 	bootstrap := !g.disableTypedOutputBootstrap
-	switch {
-	case g.disableTypedObjectSlabs:
-		units = append(units, shakeUnit{"astNew", astIndividualObjectHelper})
-	case bootstrap:
-		units = append(units, shakeUnit{"astNew", astBootstrapObjectHelper})
-	default:
-		units = append(units, shakeUnit{"astNew", astObjectSlabHelper})
-	}
-	switch {
-	case g.disableTypedListSlabs:
-		units = append(units, shakeUnit{"astSlice", astIndividualListHelper})
-	case bootstrap:
-		units = append(units, shakeUnit{"astSlice", astBootstrapListHelper})
-	default:
-		units = append(units, shakeUnit{"astSlice", astListSlabHelper})
+	// The default form of the chunk helpers is the runtime's (Chunk, Alloc, AllocSlice); only the
+	// measurement references (separate allocation, no bootstrap, plain slabs) print local helpers.
+	if bootstrap && !g.disableTypedObjectSlabs && !g.disableTypedListSlabs {
+		g.chunksInRuntime = true
+		units = units[:0:0]
+		for _, u := range astHelperUnits {
+			if u.name != "astChunk" {
+				units = append(units, u)
+			}
+		}
+	} else {
+		switch {
+		case g.disableTypedObjectSlabs:
+			units = append(units, shakeUnit{"astNew", astIndividualObjectHelper})
+		case bootstrap:
+			units = append(units, shakeUnit{"astNew", astBootstrapObjectHelper})
+		default:
+			units = append(units, shakeUnit{"astNew", astObjectSlabHelper})
+		}
+		switch {
+		case g.disableTypedListSlabs:
+			units = append(units, shakeUnit{"astSlice", astIndividualListHelper})
+		case bootstrap:
+			units = append(units, shakeUnit{"astSlice", astBootstrapListHelper})
+		default:
+			units = append(units, shakeUnit{"astSlice", astListSlabHelper})
+		}
 	}
 	if g.directTypedDocument {
 		enter(start)
@@ -1339,6 +1352,25 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 		fmt.Fprintf(b, "\t%sChunk astChunk[%s]\n", l.name, t.goType(l.elem))
 	}
 	b.WriteString("}\n\nfunc (a *tslabs) SetWorkControl(c *WorkControl) { a.control = c }\nfunc (a *tslabs) stepWork() { if a.control != nil { a.control.Charge(0, 1) } }\n\n")
+}
+
+// chunkNames rewrites the names of the local chunk helpers (astChunk, astNew, astSlice) to those of the
+// runtime (Chunk, Alloc, AllocSlice).
+var chunkNames = chunkRename{regexp.MustCompile(`\bast(Chunk|New|Slice)\b`)}
+
+type chunkRename struct{ re *regexp.Regexp }
+
+// Replace returns src with the names of the local chunk helpers written as the runtime's.
+func (c chunkRename) Replace(src string) string {
+	return c.re.ReplaceAllStringFunc(src, func(m string) string {
+		switch m {
+		case "astChunk":
+			return "Chunk"
+		case "astNew":
+			return "Alloc"
+		}
+		return "AllocSlice"
+	})
 }
 
 // astHelperUnits are the conversion helpers of typed values; typedGo keeps those that the typed

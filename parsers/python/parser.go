@@ -16,59 +16,6 @@ func astString(v any) string { s, _ := rt.UnboxValue(v).(string); return s }
 
 func astBool(v any) bool { x, _ := rt.UnboxValue(v).(bool); return x }
 
-type astChunk[T any] struct {
-	free      []T
-	next      int
-	bootstrap uint8
-}
-
-func (s *astChunk[T]) grow(n, initial, limit int) {
-	size := s.next
-	if size == 0 {
-		size = initial
-	}
-	for size < n {
-		size *= 2
-	}
-	s.free = make([]T, size)
-	s.next = size * 2
-	if s.next > limit {
-		s.next = limit
-	}
-}
-
-func astNew[T any](s *astChunk[T]) *T {
-	if len(s.free) == 0 {
-		if s.bootstrap < 3 {
-			s.bootstrap++
-			return new(T)
-		}
-		s.grow(1, 8, 256)
-	}
-	v := &s.free[0]
-	s.free = s.free[1:]
-	return v
-}
-
-func astSlice[T any](s *astChunk[T], n int) []T {
-	if n == 0 {
-		return []T{}
-	}
-	if n > 256 {
-		return make([]T, n)
-	}
-	if len(s.free) < n {
-		if s.bootstrap == 0 {
-			s.bootstrap = 1
-			return make([]T, n)
-		}
-		s.grow(n, 64, 1024)
-	}
-	v := s.free[:n:n]
-	s.free = s.free[n:]
-	return v
-}
-
 func tinit() {
 	tnamedPub := func(a any, x rt.TVal) any {
 		s, _ := a.(*tslabs)
@@ -125,7 +72,7 @@ func tinit() {
 
 func tmk_Alias(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAlias)
+	v := rt.Alloc(&a.tAlias)
 	v.Name = astString(f0)
 	v.AsName = astString(f1)
 	if final {
@@ -137,7 +84,7 @@ func tmk_Alias(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_AnnAssign(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAnnAssign)
+	v := rt.Alloc(&a.tAnnAssign)
 	v.Target = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Annotation = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -151,7 +98,7 @@ func tmk_AnnAssign(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) an
 
 func tmk_Arg(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tArg)
+	v := rt.Alloc(&a.tArg)
 	v.Arg = astString(f0)
 	v.Annotation = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -163,7 +110,7 @@ func tmk_Arg(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Arguments(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tArguments)
+	v := rt.Alloc(&a.tArguments)
 	v.PosOnlyArgs = tl0(a, f0)
 	v.Args = tl0(a, f1)
 	v.VarArg = rt.TAs[*types.Arg](f2)
@@ -180,7 +127,7 @@ func tmk_Arguments(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4
 
 func tmk_Assert(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAssert)
+	v := rt.Alloc(&a.tAssert)
 	v.Test = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Msg = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -192,7 +139,7 @@ func tmk_Assert(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Assign(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAssign)
+	v := rt.Alloc(&a.tAssign)
 	v.Targets = tl1(a, f0)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -204,7 +151,7 @@ func tmk_Assign(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_AsyncFor(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAsyncFor)
+	v := rt.Alloc(&a.tAsyncFor)
 	v.Target = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Iter = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Body = tl2(a, f2)
@@ -218,7 +165,7 @@ func tmk_AsyncFor(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any
 
 func tmk_AsyncFunctionDef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAsyncFunctionDef)
+	v := rt.Alloc(&a.tAsyncFunctionDef)
 	v.Name = astString(f0)
 	v.Args = rt.TAs[*types.Arguments](f1)
 	v.Body = tl2(a, f2)
@@ -234,7 +181,7 @@ func tmk_AsyncFunctionDef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 
 
 func tmk_AsyncWith(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAsyncWith)
+	v := rt.Alloc(&a.tAsyncWith)
 	v.Items = tl4(a, f0)
 	v.Body = tl2(a, f1)
 	if final {
@@ -246,7 +193,7 @@ func tmk_AsyncWith(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Attribute(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAttribute)
+	v := rt.Alloc(&a.tAttribute)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Attr = astString(f1)
 	v.Ctx = astString(f2)
@@ -259,7 +206,7 @@ func tmk_Attribute(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_AugAssign(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAugAssign)
+	v := rt.Alloc(&a.tAugAssign)
 	v.Target = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Op = tv4(a, f1)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -272,7 +219,7 @@ func tmk_AugAssign(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Await(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAwait)
+	v := rt.Alloc(&a.tAwait)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -283,7 +230,7 @@ func tmk_Await(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_BinOp(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tBinOp)
+	v := rt.Alloc(&a.tBinOp)
 	v.Left = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Op = tv4(a, f1)
 	v.Right = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -296,7 +243,7 @@ func tmk_BinOp(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_BoolOp(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tBoolOp)
+	v := rt.Alloc(&a.tBoolOp)
 	v.Op = tv4(a, f0)
 	v.Values = tl1(a, f1)
 	if final {
@@ -308,7 +255,7 @@ func tmk_BoolOp(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Break(c *rt.TActCtx, final bool) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tBreak)
+	v := rt.Alloc(&a.tBreak)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
@@ -318,7 +265,7 @@ func tmk_Break(c *rt.TActCtx, final bool) any {
 
 func tmk_Call(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCall)
+	v := rt.Alloc(&a.tCall)
 	v.Func = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Args = tl1(a, f1)
 	v.Keywords = tl5(a, f2)
@@ -331,7 +278,7 @@ func tmk_Call(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_ClassDef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tClassDef)
+	v := rt.Alloc(&a.tClassDef)
 	v.Name = astString(f0)
 	v.Bases = tl1(a, f1)
 	v.Keywords = tl5(a, f2)
@@ -347,7 +294,7 @@ func tmk_ClassDef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 
 
 func tmk_Compare(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCompare)
+	v := rt.Alloc(&a.tCompare)
 	v.Left = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Ops = tl6(a, f1)
 	v.Comparators = tl1(a, f2)
@@ -360,7 +307,7 @@ func tmk_Compare(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Comprehension(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tComprehension)
+	v := rt.Alloc(&a.tComprehension)
 	v.Target = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Iter = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Ifs = tl1(a, f2)
@@ -374,7 +321,7 @@ func tmk_Comprehension(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any
 
 func tmk_Continue(c *rt.TActCtx, final bool) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tContinue)
+	v := rt.Alloc(&a.tContinue)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
@@ -384,7 +331,7 @@ func tmk_Continue(c *rt.TActCtx, final bool) any {
 
 func tmk_Delete(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDelete)
+	v := rt.Alloc(&a.tDelete)
 	v.Targets = tl1(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -395,7 +342,7 @@ func tmk_Delete(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Dict(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDict)
+	v := rt.Alloc(&a.tDict)
 	v.Keys = tl1(a, f0)
 	v.Values = tl1(a, f1)
 	if final {
@@ -407,7 +354,7 @@ func tmk_Dict(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_DictComp(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDictComp)
+	v := rt.Alloc(&a.tDictComp)
 	v.Key = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Generators = tl7(a, f2)
@@ -420,7 +367,7 @@ func tmk_DictComp(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_ExceptHandler(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tExceptHandler)
+	v := rt.Alloc(&a.tExceptHandler)
 	v.Type = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Name = astString(f1)
 	v.Body = tl2(a, f2)
@@ -433,7 +380,7 @@ func tmk_ExceptHandler(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_ExprStmt(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tExprStmt)
+	v := rt.Alloc(&a.tExprStmt)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -444,7 +391,7 @@ func tmk_ExprStmt(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_For(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tFor)
+	v := rt.Alloc(&a.tFor)
 	v.Target = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Iter = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Body = tl2(a, f2)
@@ -458,7 +405,7 @@ func tmk_For(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 func tmk_FormattedValue(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tFormattedValue)
+	v := rt.Alloc(&a.tFormattedValue)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Str = astString(f1)
 	v.Debug = astString(f2)
@@ -473,7 +420,7 @@ func tmk_FormattedValue(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 an
 
 func tmk_FunctionDef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tFunctionDef)
+	v := rt.Alloc(&a.tFunctionDef)
 	v.Name = astString(f0)
 	v.Args = rt.TAs[*types.Arguments](f1)
 	v.Body = tl2(a, f2)
@@ -489,7 +436,7 @@ func tmk_FunctionDef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, 
 
 func tmk_GeneratorExp(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tGeneratorExp)
+	v := rt.Alloc(&a.tGeneratorExp)
 	v.Elt = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Generators = tl7(a, f1)
 	if final {
@@ -501,7 +448,7 @@ func tmk_GeneratorExp(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Global(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tGlobal)
+	v := rt.Alloc(&a.tGlobal)
 	v.Names = tl8(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -512,7 +459,7 @@ func tmk_Global(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_If(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIf)
+	v := rt.Alloc(&a.tIf)
 	v.Test = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Body = tl2(a, f1)
 	v.OrElse = tl2(a, f2)
@@ -525,7 +472,7 @@ func tmk_If(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_IfExp(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIfExp)
+	v := rt.Alloc(&a.tIfExp)
 	v.Test = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Body = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.OrElse = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -538,7 +485,7 @@ func tmk_IfExp(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Import(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tImport)
+	v := rt.Alloc(&a.tImport)
 	v.Names = tl9(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -549,7 +496,7 @@ func tmk_Import(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ImportFrom(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tImportFrom)
+	v := rt.Alloc(&a.tImportFrom)
 	v.Module = astString(f0)
 	v.Names = tl9(a, f1)
 	v.Level = astInt(f2)
@@ -562,7 +509,7 @@ func tmk_ImportFrom(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Interpolation(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tInterpolation)
+	v := rt.Alloc(&a.tInterpolation)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Str = astString(f1)
 	v.Debug = astString(f2)
@@ -577,7 +524,7 @@ func tmk_Interpolation(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any
 
 func tmk_JoinedStr(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tJoinedStr)
+	v := rt.Alloc(&a.tJoinedStr)
 	v.Values = tl10(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -588,7 +535,7 @@ func tmk_JoinedStr(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Keyword(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tKeyword)
+	v := rt.Alloc(&a.tKeyword)
 	v.Arg = astString(f0)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -600,7 +547,7 @@ func tmk_Keyword(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Lambda(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tLambda)
+	v := rt.Alloc(&a.tLambda)
 	v.Args = rt.TAs[*types.Arguments](f0)
 	v.Body = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -612,7 +559,7 @@ func tmk_Lambda(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_ListComp(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tListComp)
+	v := rt.Alloc(&a.tListComp)
 	v.Elt = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Generators = tl7(a, f1)
 	if final {
@@ -624,7 +571,7 @@ func tmk_ListComp(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_ListExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tListExpr)
+	v := rt.Alloc(&a.tListExpr)
 	v.Elts = tl1(a, f0)
 	v.Ctx = astString(f1)
 	if final {
@@ -636,7 +583,7 @@ func tmk_ListExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_MatchAs(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMatchAs)
+	v := rt.Alloc(&a.tMatchAs)
 	v.Pattern = rt.TAs[types.Pattern](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Name = astString(f1)
 	if final {
@@ -648,7 +595,7 @@ func tmk_MatchAs(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_MatchCase(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMatchCase)
+	v := rt.Alloc(&a.tMatchCase)
 	v.Pattern = rt.TAs[types.Pattern](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Guard = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Body = tl2(a, f2)
@@ -661,7 +608,7 @@ func tmk_MatchCase(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_MatchClass(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMatchClass)
+	v := rt.Alloc(&a.tMatchClass)
 	v.Cls = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Patterns = tl11(a, f1)
 	v.KwdAttrs = tl8(a, f2)
@@ -675,7 +622,7 @@ func tmk_MatchClass(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) a
 
 func tmk_MatchMapping(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMatchMapping)
+	v := rt.Alloc(&a.tMatchMapping)
 	v.Keys = tl1(a, f0)
 	v.Patterns = tl11(a, f1)
 	v.Rest = astString(f2)
@@ -688,7 +635,7 @@ func tmk_MatchMapping(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_MatchOr(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMatchOr)
+	v := rt.Alloc(&a.tMatchOr)
 	v.Patterns = tl11(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -699,7 +646,7 @@ func tmk_MatchOr(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_MatchSequence(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMatchSequence)
+	v := rt.Alloc(&a.tMatchSequence)
 	v.Patterns = tl11(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -710,7 +657,7 @@ func tmk_MatchSequence(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_MatchSingleton(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMatchSingleton)
+	v := rt.Alloc(&a.tMatchSingleton)
 	v.Value = tv0(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -721,7 +668,7 @@ func tmk_MatchSingleton(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_MatchStar(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMatchStar)
+	v := rt.Alloc(&a.tMatchStar)
 	v.Name = astString(f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -732,7 +679,7 @@ func tmk_MatchStar(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_MatchStmt(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMatchStmt)
+	v := rt.Alloc(&a.tMatchStmt)
 	v.Subject = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Cases = tl12(a, f1)
 	if final {
@@ -744,7 +691,7 @@ func tmk_MatchStmt(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_MatchValue(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMatchValue)
+	v := rt.Alloc(&a.tMatchValue)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -755,7 +702,7 @@ func tmk_MatchValue(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Module(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tModule)
+	v := rt.Alloc(&a.tModule)
 	v.Body = tl2(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -766,7 +713,7 @@ func tmk_Module(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Name(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tName)
+	v := rt.Alloc(&a.tName)
 	v.Id = astString(f0)
 	v.Ctx = astString(f1)
 	if final {
@@ -778,7 +725,7 @@ func tmk_Name(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_NamedExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tNamedExpr)
+	v := rt.Alloc(&a.tNamedExpr)
 	v.Target = rt.TAs[*types.Name](f0)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -790,7 +737,7 @@ func tmk_NamedExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Nonlocal(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tNonlocal)
+	v := rt.Alloc(&a.tNonlocal)
 	v.Names = tl8(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -801,7 +748,7 @@ func tmk_Nonlocal(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ParamSpec(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tParamSpec)
+	v := rt.Alloc(&a.tParamSpec)
 	v.Name = astString(f0)
 	v.DefaultValue = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -813,7 +760,7 @@ func tmk_ParamSpec(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Pass(c *rt.TActCtx, final bool) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPass)
+	v := rt.Alloc(&a.tPass)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
@@ -823,7 +770,7 @@ func tmk_Pass(c *rt.TActCtx, final bool) any {
 
 func tmk_Raise(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tRaise)
+	v := rt.Alloc(&a.tRaise)
 	v.Exc = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Cause = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -835,7 +782,7 @@ func tmk_Raise(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Return(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tReturn)
+	v := rt.Alloc(&a.tReturn)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -846,7 +793,7 @@ func tmk_Return(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Set(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSet)
+	v := rt.Alloc(&a.tSet)
 	v.Elts = tl1(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -857,7 +804,7 @@ func tmk_Set(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_SetComp(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSetComp)
+	v := rt.Alloc(&a.tSetComp)
 	v.Elt = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Generators = tl7(a, f1)
 	if final {
@@ -869,7 +816,7 @@ func tmk_SetComp(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Slice(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSlice)
+	v := rt.Alloc(&a.tSlice)
 	v.Lower = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Upper = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Step = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -882,7 +829,7 @@ func tmk_Slice(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Starred(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tStarred)
+	v := rt.Alloc(&a.tStarred)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Ctx = astString(f1)
 	if final {
@@ -894,7 +841,7 @@ func tmk_Starred(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Subscript(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSubscript)
+	v := rt.Alloc(&a.tSubscript)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Slice = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Ctx = astString(f2)
@@ -907,7 +854,7 @@ func tmk_Subscript(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_TemplateStr(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTemplateStr)
+	v := rt.Alloc(&a.tTemplateStr)
 	v.Values = tl10(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -918,7 +865,7 @@ func tmk_TemplateStr(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Try(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTry)
+	v := rt.Alloc(&a.tTry)
 	v.Body = tl2(a, f0)
 	v.Handlers = tl13(a, f1)
 	v.OrElse = tl2(a, f2)
@@ -932,7 +879,7 @@ func tmk_Try(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 func tmk_TryStar(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTryStar)
+	v := rt.Alloc(&a.tTryStar)
 	v.Body = tl2(a, f0)
 	v.Handlers = tl13(a, f1)
 	v.OrElse = tl2(a, f2)
@@ -946,7 +893,7 @@ func tmk_TryStar(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any 
 
 func tmk_Tuple(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTuple)
+	v := rt.Alloc(&a.tTuple)
 	v.Elts = tl1(a, f0)
 	v.Ctx = astString(f1)
 	if final {
@@ -958,7 +905,7 @@ func tmk_Tuple(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_TypeAlias(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTypeAlias)
+	v := rt.Alloc(&a.tTypeAlias)
 	v.Name = rt.TAs[*types.Name](f0)
 	v.TypeParams = tl3(a, f1)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -971,7 +918,7 @@ func tmk_TypeAlias(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_TypeVar(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTypeVar)
+	v := rt.Alloc(&a.tTypeVar)
 	v.Name = astString(f0)
 	v.Bound = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.DefaultValue = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -984,7 +931,7 @@ func tmk_TypeVar(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_TypeVarTuple(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTypeVarTuple)
+	v := rt.Alloc(&a.tTypeVarTuple)
 	v.Name = astString(f0)
 	v.DefaultValue = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -996,7 +943,7 @@ func tmk_TypeVarTuple(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_UnaryOp(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tUnaryOp)
+	v := rt.Alloc(&a.tUnaryOp)
 	v.Op = tv4(a, f0)
 	v.Operand = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1008,7 +955,7 @@ func tmk_UnaryOp(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_While(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tWhile)
+	v := rt.Alloc(&a.tWhile)
 	v.Test = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Body = tl2(a, f1)
 	v.OrElse = tl2(a, f2)
@@ -1021,7 +968,7 @@ func tmk_While(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_With(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tWith)
+	v := rt.Alloc(&a.tWith)
 	v.Items = tl4(a, f0)
 	v.Body = tl2(a, f1)
 	if final {
@@ -1033,7 +980,7 @@ func tmk_With(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_WithItem(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tWithItem)
+	v := rt.Alloc(&a.tWithItem)
 	v.ContextExpr = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.OptionalVars = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1045,7 +992,7 @@ func tmk_WithItem(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Yield(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tYield)
+	v := rt.Alloc(&a.tYield)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1056,7 +1003,7 @@ func tmk_Yield(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_YieldFrom(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tYieldFrom)
+	v := rt.Alloc(&a.tYieldFrom)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1074,7 +1021,7 @@ func tl0(a *tslabs, v any) []*types.Arg {
 	if n == nil {
 		return []*types.Arg{}
 	}
-	out := astSlice(&a.tl0Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.Arg](c)
@@ -1091,7 +1038,7 @@ func tl1(a *tslabs, v any) []types.Expr {
 	if n == nil {
 		return []types.Expr{}
 	}
-	out := astSlice(&a.tl1Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, c))
@@ -1108,7 +1055,7 @@ func tl2(a *tslabs, v any) []types.Stmt {
 	if n == nil {
 		return []types.Stmt{}
 	}
-	out := astSlice(&a.tl2Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.Stmt](rt.TPubIn(types.PegoHooks, a, c))
@@ -1125,7 +1072,7 @@ func tl3(a *tslabs, v any) []types.TypeParam {
 	if n == nil {
 		return []types.TypeParam{}
 	}
-	out := astSlice(&a.tl3Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl3Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.TypeParam](rt.TPubIn(types.PegoHooks, a, c))
@@ -1142,7 +1089,7 @@ func tl4(a *tslabs, v any) []*types.WithItem {
 	if n == nil {
 		return []*types.WithItem{}
 	}
-	out := astSlice(&a.tl4Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl4Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.WithItem](c)
@@ -1159,7 +1106,7 @@ func tl5(a *tslabs, v any) []*types.Keyword {
 	if n == nil {
 		return []*types.Keyword{}
 	}
-	out := astSlice(&a.tl5Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl5Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.Keyword](c)
@@ -1176,7 +1123,7 @@ func tl6(a *tslabs, v any) []*types.Op {
 	if n == nil {
 		return []*types.Op{}
 	}
-	out := astSlice(&a.tl6Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl6Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = tv4(a, c)
@@ -1193,7 +1140,7 @@ func tl7(a *tslabs, v any) []*types.Comprehension {
 	if n == nil {
 		return []*types.Comprehension{}
 	}
-	out := astSlice(&a.tl7Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl7Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.Comprehension](c)
@@ -1210,7 +1157,7 @@ func tl8(a *tslabs, v any) []*types.Identifier {
 	if n == nil {
 		return []*types.Identifier{}
 	}
-	out := astSlice(&a.tl8Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl8Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = tv3(a, c)
@@ -1227,7 +1174,7 @@ func tl9(a *tslabs, v any) []*types.Alias {
 	if n == nil {
 		return []*types.Alias{}
 	}
-	out := astSlice(&a.tl9Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl9Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.Alias](c)
@@ -1244,7 +1191,7 @@ func tl10(a *tslabs, v any) []types.StrPart {
 	if n == nil {
 		return []types.StrPart{}
 	}
-	out := astSlice(&a.tl10Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl10Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.StrPart](rt.TPubIn(types.PegoHooks, a, c))
@@ -1261,7 +1208,7 @@ func tl11(a *tslabs, v any) []types.Pattern {
 	if n == nil {
 		return []types.Pattern{}
 	}
-	out := astSlice(&a.tl11Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl11Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.Pattern](rt.TPubIn(types.PegoHooks, a, c))
@@ -1278,7 +1225,7 @@ func tl12(a *tslabs, v any) []*types.MatchCase {
 	if n == nil {
 		return []*types.MatchCase{}
 	}
-	out := astSlice(&a.tl12Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl12Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.MatchCase](c)
@@ -1295,7 +1242,7 @@ func tl13(a *tslabs, v any) []*types.ExceptHandler {
 	if n == nil {
 		return []*types.ExceptHandler{}
 	}
-	out := astSlice(&a.tl13Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl13Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.ExceptHandler](c)
@@ -1350,96 +1297,96 @@ func tv4(a *tslabs, v any) *types.Op {
 
 type tslabs struct {
 	control           *rt.WorkControl
-	tAlias            astChunk[types.Alias]
-	tAnnAssign        astChunk[types.AnnAssign]
-	tArg              astChunk[types.Arg]
-	tArguments        astChunk[types.Arguments]
-	tAssert           astChunk[types.Assert]
-	tAssign           astChunk[types.Assign]
-	tAsyncFor         astChunk[types.AsyncFor]
-	tAsyncFunctionDef astChunk[types.AsyncFunctionDef]
-	tAsyncWith        astChunk[types.AsyncWith]
-	tAttribute        astChunk[types.Attribute]
-	tAugAssign        astChunk[types.AugAssign]
-	tAwait            astChunk[types.Await]
-	tBinOp            astChunk[types.BinOp]
-	tBoolOp           astChunk[types.BoolOp]
-	tBreak            astChunk[types.Break]
-	tCall             astChunk[types.Call]
-	tClassDef         astChunk[types.ClassDef]
-	tCompare          astChunk[types.Compare]
-	tComprehension    astChunk[types.Comprehension]
-	tContinue         astChunk[types.Continue]
-	tDelete           astChunk[types.Delete]
-	tDict             astChunk[types.Dict]
-	tDictComp         astChunk[types.DictComp]
-	tExceptHandler    astChunk[types.ExceptHandler]
-	tExprStmt         astChunk[types.ExprStmt]
-	tFor              astChunk[types.For]
-	tFormattedValue   astChunk[types.FormattedValue]
-	tFunctionDef      astChunk[types.FunctionDef]
-	tGeneratorExp     astChunk[types.GeneratorExp]
-	tGlobal           astChunk[types.Global]
-	tIf               astChunk[types.If]
-	tIfExp            astChunk[types.IfExp]
-	tImport           astChunk[types.Import]
-	tImportFrom       astChunk[types.ImportFrom]
-	tInterpolation    astChunk[types.Interpolation]
-	tJoinedStr        astChunk[types.JoinedStr]
-	tKeyword          astChunk[types.Keyword]
-	tLambda           astChunk[types.Lambda]
-	tListComp         astChunk[types.ListComp]
-	tListExpr         astChunk[types.ListExpr]
-	tMatchAs          astChunk[types.MatchAs]
-	tMatchCase        astChunk[types.MatchCase]
-	tMatchClass       astChunk[types.MatchClass]
-	tMatchMapping     astChunk[types.MatchMapping]
-	tMatchOr          astChunk[types.MatchOr]
-	tMatchSequence    astChunk[types.MatchSequence]
-	tMatchSingleton   astChunk[types.MatchSingleton]
-	tMatchStar        astChunk[types.MatchStar]
-	tMatchStmt        astChunk[types.MatchStmt]
-	tMatchValue       astChunk[types.MatchValue]
-	tModule           astChunk[types.Module]
-	tName             astChunk[types.Name]
-	tNamedExpr        astChunk[types.NamedExpr]
-	tNonlocal         astChunk[types.Nonlocal]
-	tParamSpec        astChunk[types.ParamSpec]
-	tPass             astChunk[types.Pass]
-	tRaise            astChunk[types.Raise]
-	tReturn           astChunk[types.Return]
-	tSet              astChunk[types.Set]
-	tSetComp          astChunk[types.SetComp]
-	tSlice            astChunk[types.Slice]
-	tStarred          astChunk[types.Starred]
-	tSubscript        astChunk[types.Subscript]
-	tTemplateStr      astChunk[types.TemplateStr]
-	tTry              astChunk[types.Try]
-	tTryStar          astChunk[types.TryStar]
-	tTuple            astChunk[types.Tuple]
-	tTypeAlias        astChunk[types.TypeAlias]
-	tTypeVar          astChunk[types.TypeVar]
-	tTypeVarTuple     astChunk[types.TypeVarTuple]
-	tUnaryOp          astChunk[types.UnaryOp]
-	tWhile            astChunk[types.While]
-	tWith             astChunk[types.With]
-	tWithItem         astChunk[types.WithItem]
-	tYield            astChunk[types.Yield]
-	tYieldFrom        astChunk[types.YieldFrom]
-	tl0Chunk          astChunk[*types.Arg]
-	tl1Chunk          astChunk[types.Expr]
-	tl2Chunk          astChunk[types.Stmt]
-	tl3Chunk          astChunk[types.TypeParam]
-	tl4Chunk          astChunk[*types.WithItem]
-	tl5Chunk          astChunk[*types.Keyword]
-	tl6Chunk          astChunk[*types.Op]
-	tl7Chunk          astChunk[*types.Comprehension]
-	tl8Chunk          astChunk[*types.Identifier]
-	tl9Chunk          astChunk[*types.Alias]
-	tl10Chunk         astChunk[types.StrPart]
-	tl11Chunk         astChunk[types.Pattern]
-	tl12Chunk         astChunk[*types.MatchCase]
-	tl13Chunk         astChunk[*types.ExceptHandler]
+	tAlias            rt.Chunk[types.Alias]
+	tAnnAssign        rt.Chunk[types.AnnAssign]
+	tArg              rt.Chunk[types.Arg]
+	tArguments        rt.Chunk[types.Arguments]
+	tAssert           rt.Chunk[types.Assert]
+	tAssign           rt.Chunk[types.Assign]
+	tAsyncFor         rt.Chunk[types.AsyncFor]
+	tAsyncFunctionDef rt.Chunk[types.AsyncFunctionDef]
+	tAsyncWith        rt.Chunk[types.AsyncWith]
+	tAttribute        rt.Chunk[types.Attribute]
+	tAugAssign        rt.Chunk[types.AugAssign]
+	tAwait            rt.Chunk[types.Await]
+	tBinOp            rt.Chunk[types.BinOp]
+	tBoolOp           rt.Chunk[types.BoolOp]
+	tBreak            rt.Chunk[types.Break]
+	tCall             rt.Chunk[types.Call]
+	tClassDef         rt.Chunk[types.ClassDef]
+	tCompare          rt.Chunk[types.Compare]
+	tComprehension    rt.Chunk[types.Comprehension]
+	tContinue         rt.Chunk[types.Continue]
+	tDelete           rt.Chunk[types.Delete]
+	tDict             rt.Chunk[types.Dict]
+	tDictComp         rt.Chunk[types.DictComp]
+	tExceptHandler    rt.Chunk[types.ExceptHandler]
+	tExprStmt         rt.Chunk[types.ExprStmt]
+	tFor              rt.Chunk[types.For]
+	tFormattedValue   rt.Chunk[types.FormattedValue]
+	tFunctionDef      rt.Chunk[types.FunctionDef]
+	tGeneratorExp     rt.Chunk[types.GeneratorExp]
+	tGlobal           rt.Chunk[types.Global]
+	tIf               rt.Chunk[types.If]
+	tIfExp            rt.Chunk[types.IfExp]
+	tImport           rt.Chunk[types.Import]
+	tImportFrom       rt.Chunk[types.ImportFrom]
+	tInterpolation    rt.Chunk[types.Interpolation]
+	tJoinedStr        rt.Chunk[types.JoinedStr]
+	tKeyword          rt.Chunk[types.Keyword]
+	tLambda           rt.Chunk[types.Lambda]
+	tListComp         rt.Chunk[types.ListComp]
+	tListExpr         rt.Chunk[types.ListExpr]
+	tMatchAs          rt.Chunk[types.MatchAs]
+	tMatchCase        rt.Chunk[types.MatchCase]
+	tMatchClass       rt.Chunk[types.MatchClass]
+	tMatchMapping     rt.Chunk[types.MatchMapping]
+	tMatchOr          rt.Chunk[types.MatchOr]
+	tMatchSequence    rt.Chunk[types.MatchSequence]
+	tMatchSingleton   rt.Chunk[types.MatchSingleton]
+	tMatchStar        rt.Chunk[types.MatchStar]
+	tMatchStmt        rt.Chunk[types.MatchStmt]
+	tMatchValue       rt.Chunk[types.MatchValue]
+	tModule           rt.Chunk[types.Module]
+	tName             rt.Chunk[types.Name]
+	tNamedExpr        rt.Chunk[types.NamedExpr]
+	tNonlocal         rt.Chunk[types.Nonlocal]
+	tParamSpec        rt.Chunk[types.ParamSpec]
+	tPass             rt.Chunk[types.Pass]
+	tRaise            rt.Chunk[types.Raise]
+	tReturn           rt.Chunk[types.Return]
+	tSet              rt.Chunk[types.Set]
+	tSetComp          rt.Chunk[types.SetComp]
+	tSlice            rt.Chunk[types.Slice]
+	tStarred          rt.Chunk[types.Starred]
+	tSubscript        rt.Chunk[types.Subscript]
+	tTemplateStr      rt.Chunk[types.TemplateStr]
+	tTry              rt.Chunk[types.Try]
+	tTryStar          rt.Chunk[types.TryStar]
+	tTuple            rt.Chunk[types.Tuple]
+	tTypeAlias        rt.Chunk[types.TypeAlias]
+	tTypeVar          rt.Chunk[types.TypeVar]
+	tTypeVarTuple     rt.Chunk[types.TypeVarTuple]
+	tUnaryOp          rt.Chunk[types.UnaryOp]
+	tWhile            rt.Chunk[types.While]
+	tWith             rt.Chunk[types.With]
+	tWithItem         rt.Chunk[types.WithItem]
+	tYield            rt.Chunk[types.Yield]
+	tYieldFrom        rt.Chunk[types.YieldFrom]
+	tl0Chunk          rt.Chunk[*types.Arg]
+	tl1Chunk          rt.Chunk[types.Expr]
+	tl2Chunk          rt.Chunk[types.Stmt]
+	tl3Chunk          rt.Chunk[types.TypeParam]
+	tl4Chunk          rt.Chunk[*types.WithItem]
+	tl5Chunk          rt.Chunk[*types.Keyword]
+	tl6Chunk          rt.Chunk[*types.Op]
+	tl7Chunk          rt.Chunk[*types.Comprehension]
+	tl8Chunk          rt.Chunk[*types.Identifier]
+	tl9Chunk          rt.Chunk[*types.Alias]
+	tl10Chunk         rt.Chunk[types.StrPart]
+	tl11Chunk         rt.Chunk[types.Pattern]
+	tl12Chunk         rt.Chunk[*types.MatchCase]
+	tl13Chunk         rt.Chunk[*types.ExceptHandler]
 }
 
 func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }

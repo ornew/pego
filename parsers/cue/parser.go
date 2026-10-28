@@ -12,59 +12,6 @@ var pegoGrammar = rt.NewGrammar(100000)
 
 func astString(v any) string { s, _ := rt.UnboxValue(v).(string); return s }
 
-type astChunk[T any] struct {
-	free      []T
-	next      int
-	bootstrap uint8
-}
-
-func (s *astChunk[T]) grow(n, initial, limit int) {
-	size := s.next
-	if size == 0 {
-		size = initial
-	}
-	for size < n {
-		size *= 2
-	}
-	s.free = make([]T, size)
-	s.next = size * 2
-	if s.next > limit {
-		s.next = limit
-	}
-}
-
-func astNew[T any](s *astChunk[T]) *T {
-	if len(s.free) == 0 {
-		if s.bootstrap < 3 {
-			s.bootstrap++
-			return new(T)
-		}
-		s.grow(1, 8, 256)
-	}
-	v := &s.free[0]
-	s.free = s.free[1:]
-	return v
-}
-
-func astSlice[T any](s *astChunk[T], n int) []T {
-	if n == 0 {
-		return []T{}
-	}
-	if n > 256 {
-		return make([]T, n)
-	}
-	if len(s.free) < n {
-		if s.bootstrap == 0 {
-			s.bootstrap = 1
-			return make([]T, n)
-		}
-		s.grow(n, 64, 1024)
-	}
-	v := s.free[:n:n]
-	s.free = s.free[n:]
-	return v
-}
-
 func tinit() {
 	tnamedPub := func(a any, x rt.TVal) any {
 		s, _ := a.(*tslabs)
@@ -121,7 +68,7 @@ func tinit() {
 
 func tmk_Alias(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAlias)
+	v := rt.Alloc(&a.tAlias)
 	v.Ident = tv4(a, f0)
 	v.Expr = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -133,7 +80,7 @@ func tmk_Alias(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_BinaryExpr(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tBinaryExpr)
+	v := rt.Alloc(&a.tBinaryExpr)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Op = (*types.TNode[string])(rt.TPubMatch(f1))
 	v.Y = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -146,7 +93,7 @@ func tmk_BinaryExpr(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_CallExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCallExpr)
+	v := rt.Alloc(&a.tCallExpr)
 	v.Fun = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Args = tl0(a, f1)
 	if final {
@@ -158,7 +105,7 @@ func tmk_CallExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Comprehension(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tComprehension)
+	v := rt.Alloc(&a.tComprehension)
 	v.Clauses = tl1(a, f0)
 	v.Value = rt.TAs[*types.StructLit](f1)
 	v.Fallback = rt.TAs[*types.FallbackClause](f2)
@@ -171,7 +118,7 @@ func tmk_Comprehension(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Ellipsis(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tEllipsis)
+	v := rt.Alloc(&a.tEllipsis)
 	v.Type = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -182,7 +129,7 @@ func tmk_Ellipsis(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_EmbedDecl(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tEmbedDecl)
+	v := rt.Alloc(&a.tEmbedDecl)
 	v.Expr = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Alias = rt.TAs[*types.PostfixAlias](f1)
 	if final {
@@ -194,7 +141,7 @@ func tmk_EmbedDecl(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_FallbackClause(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tFallbackClause)
+	v := rt.Alloc(&a.tFallbackClause)
 	v.Body = rt.TAs[*types.StructLit](f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -205,7 +152,7 @@ func tmk_FallbackClause(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Field(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tField)
+	v := rt.Alloc(&a.tField)
 	v.Label = rt.TAs[types.Label](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Alias = rt.TAs[*types.PostfixAlias](f1)
 	v.Constraint = (*types.TNode[string])(rt.TPubMatch(f2))
@@ -220,7 +167,7 @@ func tmk_Field(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any
 
 func tmk_File(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tFile)
+	v := rt.Alloc(&a.tFile)
 	v.Decls = tl3(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -231,7 +178,7 @@ func tmk_File(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ForClause(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tForClause)
+	v := rt.Alloc(&a.tForClause)
 	v.Key = tv4(a, f0)
 	v.Value = tv4(a, f1)
 	v.Source = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -244,7 +191,7 @@ func tmk_ForClause(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_IfClause(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIfClause)
+	v := rt.Alloc(&a.tIfClause)
 	v.Condition = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -255,7 +202,7 @@ func tmk_IfClause(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ImportDecl(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tImportDecl)
+	v := rt.Alloc(&a.tImportDecl)
 	v.Lparen = (*types.TNode[string])(rt.TPubMatch(f0))
 	v.Specs = tl4(a, f1)
 	if final {
@@ -267,7 +214,7 @@ func tmk_ImportDecl(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_ImportSpec(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tImportSpec)
+	v := rt.Alloc(&a.tImportSpec)
 	v.Name = tv4(a, f0)
 	v.Path = rt.TAs[*types.String](f1)
 	if final {
@@ -279,7 +226,7 @@ func tmk_ImportSpec(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_IndexExpr(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIndexExpr)
+	v := rt.Alloc(&a.tIndexExpr)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Index = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Rbrack = (*types.TNode[string])(rt.TPubMatch(f2))
@@ -292,7 +239,7 @@ func tmk_IndexExpr(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Interpolation(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tInterpolation)
+	v := rt.Alloc(&a.tInterpolation)
 	v.Elts = tl0(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -303,7 +250,7 @@ func tmk_Interpolation(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_LetClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tLetClause)
+	v := rt.Alloc(&a.tLetClause)
 	v.Ident = tv4(a, f0)
 	v.Expr = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -315,7 +262,7 @@ func tmk_LetClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_ListLit(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tListLit)
+	v := rt.Alloc(&a.tListLit)
 	v.Elts = tl0(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -326,7 +273,7 @@ func tmk_ListLit(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Package(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPackage)
+	v := rt.Alloc(&a.tPackage)
 	v.Name = tv4(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -337,7 +284,7 @@ func tmk_Package(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ParenExpr(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tParenExpr)
+	v := rt.Alloc(&a.tParenExpr)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -348,7 +295,7 @@ func tmk_ParenExpr(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_PostfixAlias(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPostfixAlias)
+	v := rt.Alloc(&a.tPostfixAlias)
 	v.Label = tv4(a, f0)
 	v.Field = tv4(a, f1)
 	if final {
@@ -360,7 +307,7 @@ func tmk_PostfixAlias(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_PostfixExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPostfixExpr)
+	v := rt.Alloc(&a.tPostfixExpr)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Op = (*types.TNode[string])(rt.TPubMatch(f1))
 	if final {
@@ -372,7 +319,7 @@ func tmk_PostfixExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_SelectorExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSelectorExpr)
+	v := rt.Alloc(&a.tSelectorExpr)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Sel = rt.TAs[types.Selector](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -384,7 +331,7 @@ func tmk_SelectorExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_SliceExpr(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSliceExpr)
+	v := rt.Alloc(&a.tSliceExpr)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Low = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.High = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -397,7 +344,7 @@ func tmk_SliceExpr(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_String(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tString)
+	v := rt.Alloc(&a.tString)
 	v.Text = astString(f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -408,7 +355,7 @@ func tmk_String(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_StructLit(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tStructLit)
+	v := rt.Alloc(&a.tStructLit)
 	v.Elts = tl3(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -419,7 +366,7 @@ func tmk_StructLit(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_TryClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTryClause)
+	v := rt.Alloc(&a.tTryClause)
 	v.Ident = tv4(a, f0)
 	v.Expr = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -431,7 +378,7 @@ func tmk_TryClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_UnaryExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tUnaryExpr)
+	v := rt.Alloc(&a.tUnaryExpr)
 	v.Op = (*types.TNode[string])(rt.TPubMatch(f0))
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -450,7 +397,7 @@ func tl0(a *tslabs, v any) []types.Expr {
 	if n == nil {
 		return []types.Expr{}
 	}
-	out := astSlice(&a.tl0Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, c))
@@ -467,7 +414,7 @@ func tl1(a *tslabs, v any) []types.Clause {
 	if n == nil {
 		return []types.Clause{}
 	}
-	out := astSlice(&a.tl1Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.Clause](rt.TPubIn(types.PegoHooks, a, c))
@@ -484,7 +431,7 @@ func tl2(a *tslabs, v any) []*types.Attribute {
 	if n == nil {
 		return []*types.Attribute{}
 	}
-	out := astSlice(&a.tl2Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = tv0(a, c)
@@ -501,7 +448,7 @@ func tl3(a *tslabs, v any) []types.Decl {
 	if n == nil {
 		return []types.Decl{}
 	}
-	out := astSlice(&a.tl3Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl3Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.Decl](rt.TPubIn(types.PegoHooks, a, c))
@@ -518,7 +465,7 @@ func tl4(a *tslabs, v any) []*types.ImportSpec {
 	if n == nil {
 		return []*types.ImportSpec{}
 	}
-	out := astSlice(&a.tl4Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl4Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.ImportSpec](c)
@@ -591,38 +538,38 @@ func tv6(a *tslabs, v any) *types.Null {
 
 type tslabs struct {
 	control         *rt.WorkControl
-	tAlias          astChunk[types.Alias]
-	tBinaryExpr     astChunk[types.BinaryExpr]
-	tCallExpr       astChunk[types.CallExpr]
-	tComprehension  astChunk[types.Comprehension]
-	tEllipsis       astChunk[types.Ellipsis]
-	tEmbedDecl      astChunk[types.EmbedDecl]
-	tFallbackClause astChunk[types.FallbackClause]
-	tField          astChunk[types.Field]
-	tFile           astChunk[types.File]
-	tForClause      astChunk[types.ForClause]
-	tIfClause       astChunk[types.IfClause]
-	tImportDecl     astChunk[types.ImportDecl]
-	tImportSpec     astChunk[types.ImportSpec]
-	tIndexExpr      astChunk[types.IndexExpr]
-	tInterpolation  astChunk[types.Interpolation]
-	tLetClause      astChunk[types.LetClause]
-	tListLit        astChunk[types.ListLit]
-	tPackage        astChunk[types.Package]
-	tParenExpr      astChunk[types.ParenExpr]
-	tPostfixAlias   astChunk[types.PostfixAlias]
-	tPostfixExpr    astChunk[types.PostfixExpr]
-	tSelectorExpr   astChunk[types.SelectorExpr]
-	tSliceExpr      astChunk[types.SliceExpr]
-	tString         astChunk[types.String]
-	tStructLit      astChunk[types.StructLit]
-	tTryClause      astChunk[types.TryClause]
-	tUnaryExpr      astChunk[types.UnaryExpr]
-	tl0Chunk        astChunk[types.Expr]
-	tl1Chunk        astChunk[types.Clause]
-	tl2Chunk        astChunk[*types.Attribute]
-	tl3Chunk        astChunk[types.Decl]
-	tl4Chunk        astChunk[*types.ImportSpec]
+	tAlias          rt.Chunk[types.Alias]
+	tBinaryExpr     rt.Chunk[types.BinaryExpr]
+	tCallExpr       rt.Chunk[types.CallExpr]
+	tComprehension  rt.Chunk[types.Comprehension]
+	tEllipsis       rt.Chunk[types.Ellipsis]
+	tEmbedDecl      rt.Chunk[types.EmbedDecl]
+	tFallbackClause rt.Chunk[types.FallbackClause]
+	tField          rt.Chunk[types.Field]
+	tFile           rt.Chunk[types.File]
+	tForClause      rt.Chunk[types.ForClause]
+	tIfClause       rt.Chunk[types.IfClause]
+	tImportDecl     rt.Chunk[types.ImportDecl]
+	tImportSpec     rt.Chunk[types.ImportSpec]
+	tIndexExpr      rt.Chunk[types.IndexExpr]
+	tInterpolation  rt.Chunk[types.Interpolation]
+	tLetClause      rt.Chunk[types.LetClause]
+	tListLit        rt.Chunk[types.ListLit]
+	tPackage        rt.Chunk[types.Package]
+	tParenExpr      rt.Chunk[types.ParenExpr]
+	tPostfixAlias   rt.Chunk[types.PostfixAlias]
+	tPostfixExpr    rt.Chunk[types.PostfixExpr]
+	tSelectorExpr   rt.Chunk[types.SelectorExpr]
+	tSliceExpr      rt.Chunk[types.SliceExpr]
+	tString         rt.Chunk[types.String]
+	tStructLit      rt.Chunk[types.StructLit]
+	tTryClause      rt.Chunk[types.TryClause]
+	tUnaryExpr      rt.Chunk[types.UnaryExpr]
+	tl0Chunk        rt.Chunk[types.Expr]
+	tl1Chunk        rt.Chunk[types.Clause]
+	tl2Chunk        rt.Chunk[*types.Attribute]
+	tl3Chunk        rt.Chunk[types.Decl]
+	tl4Chunk        rt.Chunk[*types.ImportSpec]
 }
 
 func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }

@@ -42,59 +42,6 @@ func ParseRule(name, input string, opts ...rt.ParseOption) (*rt.Node, error) {
 	return rt.RunParseResolved(r, input, o)
 }
 
-type astChunk[T any] struct {
-	free      []T
-	next      int
-	bootstrap uint8
-}
-
-func (s *astChunk[T]) grow(n, initial, limit int) {
-	size := s.next
-	if size == 0 {
-		size = initial
-	}
-	for size < n {
-		size *= 2
-	}
-	s.free = make([]T, size)
-	s.next = size * 2
-	if s.next > limit {
-		s.next = limit
-	}
-}
-
-func astNew[T any](s *astChunk[T]) *T {
-	if len(s.free) == 0 {
-		if s.bootstrap < 3 {
-			s.bootstrap++
-			return new(T)
-		}
-		s.grow(1, 8, 256)
-	}
-	v := &s.free[0]
-	s.free = s.free[1:]
-	return v
-}
-
-func astSlice[T any](s *astChunk[T], n int) []T {
-	if n == 0 {
-		return []T{}
-	}
-	if n > 256 {
-		return make([]T, n)
-	}
-	if len(s.free) < n {
-		if s.bootstrap == 0 {
-			s.bootstrap = 1
-			return make([]T, n)
-		}
-		s.grow(n, 64, 1024)
-	}
-	v := s.free[:n:n]
-	s.free = s.free[n:]
-	return v
-}
-
 func tinit() {
 	tnamedPub := func(a any, x rt.TVal) any {
 		s, _ := a.(*tslabs)
@@ -125,7 +72,7 @@ func tinit() {
 
 func tmk_ArrayLit(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tArrayLit)
+	v := rt.Alloc(&a.tArrayLit)
 	v.Elems = tl0(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -136,7 +83,7 @@ func tmk_ArrayLit(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Assign(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAssign)
+	v := rt.Alloc(&a.tAssign)
 	v.Target = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -148,7 +95,7 @@ func tmk_Assign(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Binary(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tBinary)
+	v := rt.Alloc(&a.tBinary)
 	v.Left = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Op = (*types.TNode[string])(rt.TPubMatch(f1))
 	v.Right = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -161,7 +108,7 @@ func tmk_Binary(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Block(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tBlock)
+	v := rt.Alloc(&a.tBlock)
 	v.Body = tl1(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -172,7 +119,7 @@ func tmk_Block(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Call(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCall)
+	v := rt.Alloc(&a.tCall)
 	v.Fn = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Args = tl0(a, f1)
 	if final {
@@ -184,7 +131,7 @@ func tmk_Call(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Cond(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCond)
+	v := rt.Alloc(&a.tCond)
 	v.Cond = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Then = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Else = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -197,7 +144,7 @@ func tmk_Cond(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_ExprStmt(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tExprStmt)
+	v := rt.Alloc(&a.tExprStmt)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -208,7 +155,7 @@ func tmk_ExprStmt(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Func(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tFunc)
+	v := rt.Alloc(&a.tFunc)
 	v.Name = tv1(a, f0)
 	v.Params = tl2(a, f1)
 	v.Body = rt.TAs[*types.Block](f2)
@@ -221,7 +168,7 @@ func tmk_Func(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_If(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIf)
+	v := rt.Alloc(&a.tIf)
 	v.Cond = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Then = rt.TAs[*types.Block](f1)
 	v.Else = rt.TAs[types.IfOrBlock](rt.TPubIn(types.PegoHooks, a, f2))
@@ -234,7 +181,7 @@ func tmk_If(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Index(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIndex)
+	v := rt.Alloc(&a.tIndex)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Index = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -246,7 +193,7 @@ func tmk_Index(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Let(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tLet)
+	v := rt.Alloc(&a.tLet)
 	v.Name = tv1(a, f0)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -258,7 +205,7 @@ func tmk_Let(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Member(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMember)
+	v := rt.Alloc(&a.tMember)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Name = tv1(a, f1)
 	if final {
@@ -270,7 +217,7 @@ func tmk_Member(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Program(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tProgram)
+	v := rt.Alloc(&a.tProgram)
 	v.Body = tl1(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -281,7 +228,7 @@ func tmk_Program(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Return(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tReturn)
+	v := rt.Alloc(&a.tReturn)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -292,7 +239,7 @@ func tmk_Return(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Unary(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tUnary)
+	v := rt.Alloc(&a.tUnary)
 	v.Op = (*types.TNode[string])(rt.TPubMatch(f0))
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -304,7 +251,7 @@ func tmk_Unary(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_While(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tWhile)
+	v := rt.Alloc(&a.tWhile)
 	v.Cond = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Body = rt.TAs[*types.Block](f1)
 	if final {
@@ -323,7 +270,7 @@ func tl0(a *tslabs, v any) []types.Expr {
 	if n == nil {
 		return []types.Expr{}
 	}
-	out := astSlice(&a.tl0Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, c))
@@ -340,7 +287,7 @@ func tl1(a *tslabs, v any) []types.Stmt {
 	if n == nil {
 		return []types.Stmt{}
 	}
-	out := astSlice(&a.tl1Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.Stmt](rt.TPubIn(types.PegoHooks, a, c))
@@ -357,7 +304,7 @@ func tl2(a *tslabs, v any) []*types.Ident {
 	if n == nil {
 		return []*types.Ident{}
 	}
-	out := astSlice(&a.tl2Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = tv1(a, c)
@@ -403,25 +350,25 @@ func tv3(a *tslabs, v any) *types.String {
 
 type tslabs struct {
 	control   *rt.WorkControl
-	tArrayLit astChunk[types.ArrayLit]
-	tAssign   astChunk[types.Assign]
-	tBinary   astChunk[types.Binary]
-	tBlock    astChunk[types.Block]
-	tCall     astChunk[types.Call]
-	tCond     astChunk[types.Cond]
-	tExprStmt astChunk[types.ExprStmt]
-	tFunc     astChunk[types.Func]
-	tIf       astChunk[types.If]
-	tIndex    astChunk[types.Index]
-	tLet      astChunk[types.Let]
-	tMember   astChunk[types.Member]
-	tProgram  astChunk[types.Program]
-	tReturn   astChunk[types.Return]
-	tUnary    astChunk[types.Unary]
-	tWhile    astChunk[types.While]
-	tl0Chunk  astChunk[types.Expr]
-	tl1Chunk  astChunk[types.Stmt]
-	tl2Chunk  astChunk[*types.Ident]
+	tArrayLit rt.Chunk[types.ArrayLit]
+	tAssign   rt.Chunk[types.Assign]
+	tBinary   rt.Chunk[types.Binary]
+	tBlock    rt.Chunk[types.Block]
+	tCall     rt.Chunk[types.Call]
+	tCond     rt.Chunk[types.Cond]
+	tExprStmt rt.Chunk[types.ExprStmt]
+	tFunc     rt.Chunk[types.Func]
+	tIf       rt.Chunk[types.If]
+	tIndex    rt.Chunk[types.Index]
+	tLet      rt.Chunk[types.Let]
+	tMember   rt.Chunk[types.Member]
+	tProgram  rt.Chunk[types.Program]
+	tReturn   rt.Chunk[types.Return]
+	tUnary    rt.Chunk[types.Unary]
+	tWhile    rt.Chunk[types.While]
+	tl0Chunk  rt.Chunk[types.Expr]
+	tl1Chunk  rt.Chunk[types.Stmt]
+	tl2Chunk  rt.Chunk[*types.Ident]
 }
 
 func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }

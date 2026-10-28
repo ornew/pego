@@ -14,59 +14,6 @@ func astString(v any) string { s, _ := rt.UnboxValue(v).(string); return s }
 
 func astBool(v any) bool { x, _ := rt.UnboxValue(v).(bool); return x }
 
-type astChunk[T any] struct {
-	free      []T
-	next      int
-	bootstrap uint8
-}
-
-func (s *astChunk[T]) grow(n, initial, limit int) {
-	size := s.next
-	if size == 0 {
-		size = initial
-	}
-	for size < n {
-		size *= 2
-	}
-	s.free = make([]T, size)
-	s.next = size * 2
-	if s.next > limit {
-		s.next = limit
-	}
-}
-
-func astNew[T any](s *astChunk[T]) *T {
-	if len(s.free) == 0 {
-		if s.bootstrap < 3 {
-			s.bootstrap++
-			return new(T)
-		}
-		s.grow(1, 8, 256)
-	}
-	v := &s.free[0]
-	s.free = s.free[1:]
-	return v
-}
-
-func astSlice[T any](s *astChunk[T], n int) []T {
-	if n == 0 {
-		return []T{}
-	}
-	if n > 256 {
-		return make([]T, n)
-	}
-	if len(s.free) < n {
-		if s.bootstrap == 0 {
-			s.bootstrap = 1
-			return make([]T, n)
-		}
-		s.grow(n, 64, 1024)
-	}
-	v := s.free[:n:n]
-	s.free = s.free[n:]
-	return v
-}
-
 func tinit() {
 	tnamedPub := func(a any, x rt.TVal) any {
 		s, _ := a.(*tslabs)
@@ -123,7 +70,7 @@ func tinit() {
 
 func tmk_AlterCmd(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any, f8 any, f9 any, f10 any, f11 any, f12 any, f13 any, f14 any, f15 any, f16 any, f17 any, f18 any, f19 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAlterCmd)
+	v := rt.Alloc(&a.tAlterCmd)
 	v.Kind = astString(f0)
 	v.IfExists = astBool(f1)
 	v.IfNotExists = astBool(f2)
@@ -153,7 +100,7 @@ func tmk_AlterCmd(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 
 
 func tmk_AlterDatabaseStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAlterDatabaseStmt)
+	v := rt.Alloc(&a.tAlterDatabaseStmt)
 	v.IfExists = astBool(f0)
 	v.Name = tv3(a, f1)
 	v.Setting = tv3(a, f2)
@@ -167,7 +114,7 @@ func tmk_AlterDatabaseStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3
 
 func tmk_AlterObjectSchemaStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAlterObjectSchemaStmt)
+	v := rt.Alloc(&a.tAlterObjectSchemaStmt)
 	v.Object = astString(f0)
 	v.IfExists = astBool(f1)
 	v.Name = rt.TAs[*types.Name](f2)
@@ -181,7 +128,7 @@ func tmk_AlterObjectSchemaStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any
 
 func tmk_AlterSequenceStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAlterSequenceStmt)
+	v := rt.Alloc(&a.tAlterSequenceStmt)
 	v.IfExists = astBool(f0)
 	v.Name = rt.TAs[*types.Name](f1)
 	v.Options = tl4(a, f2)
@@ -194,7 +141,7 @@ func tmk_AlterSequenceStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) an
 
 func tmk_AlterTableStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAlterTableStmt)
+	v := rt.Alloc(&a.tAlterTableStmt)
 	v.Object = astString(f0)
 	v.IfExists = astBool(f1)
 	v.Name = rt.TAs[*types.Name](f2)
@@ -210,7 +157,7 @@ func tmk_AlterTableStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 an
 
 func tmk_AnalyzeStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAnalyzeStmt)
+	v := rt.Alloc(&a.tAnalyzeStmt)
 	v.Verbose = astBool(f0)
 	v.Table = rt.TAs[*types.Name](f1)
 	v.Columns = tl7(a, f2)
@@ -223,7 +170,7 @@ func tmk_AnalyzeStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_AnyAll(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAnyAll)
+	v := rt.Alloc(&a.tAnyAll)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Op = astString(f1)
 	v.Quantifier = astString(f2)
@@ -237,7 +184,7 @@ func tmk_AnyAll(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 func tmk_ArrayDim(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tArrayDim)
+	v := rt.Alloc(&a.tArrayDim)
 	v.Size = rt.TAs[*types.Number](f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -248,7 +195,7 @@ func tmk_ArrayDim(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ArrayLit(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tArrayLit)
+	v := rt.Alloc(&a.tArrayLit)
 	v.Items = tl1(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -259,7 +206,7 @@ func tmk_ArrayLit(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ArraySubquery(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tArraySubquery)
+	v := rt.Alloc(&a.tArraySubquery)
 	v.Query = rt.TAs[*types.ParenQuery](f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -270,7 +217,7 @@ func tmk_ArraySubquery(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_AtClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAtClause)
+	v := rt.Alloc(&a.tAtClause)
 	v.Unit = astString(f0)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -282,7 +229,7 @@ func tmk_AtClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_AtTimeZone(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAtTimeZone)
+	v := rt.Alloc(&a.tAtTimeZone)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Zone = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -294,7 +241,7 @@ func tmk_AtTimeZone(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_AttachStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tAttachStmt)
+	v := rt.Alloc(&a.tAttachStmt)
 	v.OrReplace = astBool(f0)
 	v.IfNotExists = astBool(f1)
 	v.Database = astBool(f2)
@@ -310,7 +257,7 @@ func tmk_AttachStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f
 
 func tmk_BaseTable(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tBaseTable)
+	v := rt.Alloc(&a.tBaseTable)
 	v.Prefix = tv3(a, f0)
 	v.Name = rt.TAs[*types.Name](f1)
 	v.Only = astBool(f2)
@@ -327,7 +274,7 @@ func tmk_BaseTable(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4
 
 func tmk_Between(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tBetween)
+	v := rt.Alloc(&a.tBetween)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Lo = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Hi = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -342,7 +289,7 @@ func tmk_Between(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 a
 
 func tmk_Binary(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tBinary)
+	v := rt.Alloc(&a.tBinary)
 	v.Left = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Op = (*types.TNode[string])(rt.TPubMatch(f1))
 	v.Right = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -355,7 +302,7 @@ func tmk_Binary(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_CTE(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCTE)
+	v := rt.Alloc(&a.tCTE)
 	v.Name = tv3(a, f0)
 	v.Columns = tl7(a, f1)
 	v.UsingKey = tl7(a, f2)
@@ -370,7 +317,7 @@ func tmk_CTE(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) 
 
 func tmk_CallStmt(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCallStmt)
+	v := rt.Alloc(&a.tCallStmt)
 	v.Func = rt.TAs[*types.FuncCall](f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -381,7 +328,7 @@ func tmk_CallStmt(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Case(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCase)
+	v := rt.Alloc(&a.tCase)
 	v.Arg = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Whens = tl9(a, f1)
 	v.Else = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -394,7 +341,7 @@ func tmk_Case(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Cast(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCast)
+	v := rt.Alloc(&a.tCast)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Type = rt.TAs[*types.Type](f1)
 	v.Try = astBool(f2)
@@ -408,7 +355,7 @@ func tmk_Cast(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 func tmk_CheckpointStmt(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCheckpointStmt)
+	v := rt.Alloc(&a.tCheckpointStmt)
 	v.Force = astBool(f0)
 	v.Database = tv3(a, f1)
 	if final {
@@ -420,7 +367,7 @@ func tmk_CheckpointStmt(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_ColDef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tColDef)
+	v := rt.Alloc(&a.tColDef)
 	v.Name = tv3(a, f0)
 	v.Type = rt.TAs[*types.Type](f1)
 	v.Collate = rt.TAs[*types.Name](f2)
@@ -433,7 +380,7 @@ func tmk_ColDef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Collate(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCollate)
+	v := rt.Alloc(&a.tCollate)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Collation = rt.TAs[*types.Name](f1)
 	if final {
@@ -445,7 +392,7 @@ func tmk_Collate(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_ColumnConstraint(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tColumnConstraint)
+	v := rt.Alloc(&a.tColumnConstraint)
 	v.Name = tv3(a, f0)
 	v.Kind = astString(f1)
 	v.Expr = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -462,7 +409,7 @@ func tmk_ColumnConstraint(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 
 
 func tmk_ColumnDef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tColumnDef)
+	v := rt.Alloc(&a.tColumnDef)
 	v.Name = tv3(a, f0)
 	v.Type = rt.TAs[*types.Type](f1)
 	v.Generated = rt.TAs[*types.GeneratedColumn](f2)
@@ -476,7 +423,7 @@ func tmk_ColumnDef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) an
 
 func tmk_ColumnRef(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tColumnRef)
+	v := rt.Alloc(&a.tColumnRef)
 	v.Parts = tl7(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -487,7 +434,7 @@ func tmk_ColumnRef(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ColumnsExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tColumnsExpr)
+	v := rt.Alloc(&a.tColumnsExpr)
 	v.Arg = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Star = astBool(f1)
 	if final {
@@ -499,7 +446,7 @@ func tmk_ColumnsExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_CommentStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCommentStmt)
+	v := rt.Alloc(&a.tCommentStmt)
 	v.Object = astString(f0)
 	v.Name = rt.TAs[*types.Name](f1)
 	v.Column = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -513,7 +460,7 @@ func tmk_CommentStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) 
 
 func tmk_CopyDatabaseStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCopyDatabaseStmt)
+	v := rt.Alloc(&a.tCopyDatabaseStmt)
 	v.From = tv3(a, f0)
 	v.To = tv3(a, f1)
 	v.Flag = astString(f2)
@@ -526,7 +473,7 @@ func tmk_CopyDatabaseStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any
 
 func tmk_CopyOption(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCopyOption)
+	v := rt.Alloc(&a.tCopyOption)
 	v.Name = astString(f0)
 	v.Value = astString(f1)
 	v.Columns = tl7(a, f2)
@@ -539,7 +486,7 @@ func tmk_CopyOption(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_CopyStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any, f8 any, f9 any, f10 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCopyStmt)
+	v := rt.Alloc(&a.tCopyStmt)
 	v.Binary = astBool(f0)
 	v.Table = rt.TAs[*types.Name](f1)
 	v.Columns = tl7(a, f2)
@@ -560,7 +507,7 @@ func tmk_CopyStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 
 
 func tmk_CreateIndexStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any, f8 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCreateIndexStmt)
+	v := rt.Alloc(&a.tCreateIndexStmt)
 	v.Unique = astBool(f0)
 	v.Concurrently = astBool(f1)
 	v.IfNotExists = astBool(f2)
@@ -579,7 +526,7 @@ func tmk_CreateIndexStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 a
 
 func tmk_CreateMacroStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCreateMacroStmt)
+	v := rt.Alloc(&a.tCreateMacroStmt)
 	v.OrReplace = astBool(f0)
 	v.Temp = astString(f1)
 	v.Function = astBool(f2)
@@ -595,7 +542,7 @@ func tmk_CreateMacroStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 a
 
 func tmk_CreateSchemaStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCreateSchemaStmt)
+	v := rt.Alloc(&a.tCreateSchemaStmt)
 	v.OrReplace = astBool(f0)
 	v.IfNotExists = astBool(f1)
 	v.Name = rt.TAs[*types.Name](f2)
@@ -609,7 +556,7 @@ func tmk_CreateSchemaStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 
 
 func tmk_CreateSecretStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCreateSecretStmt)
+	v := rt.Alloc(&a.tCreateSecretStmt)
 	v.OrReplace = astBool(f0)
 	v.Persist = astString(f1)
 	v.IfNotExists = astBool(f2)
@@ -625,7 +572,7 @@ func tmk_CreateSecretStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 
 
 func tmk_CreateSequenceStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCreateSequenceStmt)
+	v := rt.Alloc(&a.tCreateSequenceStmt)
 	v.OrReplace = astBool(f0)
 	v.Temp = astString(f1)
 	v.IfNotExists = astBool(f2)
@@ -640,7 +587,7 @@ func tmk_CreateSequenceStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f
 
 func tmk_CreateTableAsStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any, f8 any, f9 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCreateTableAsStmt)
+	v := rt.Alloc(&a.tCreateTableAsStmt)
 	v.OrReplace = astBool(f0)
 	v.Temp = astString(f1)
 	v.IfNotExists = astBool(f2)
@@ -660,7 +607,7 @@ func tmk_CreateTableAsStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3
 
 func tmk_CreateTableStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCreateTableStmt)
+	v := rt.Alloc(&a.tCreateTableStmt)
 	v.OrReplace = astBool(f0)
 	v.Temp = astString(f1)
 	v.IfNotExists = astBool(f2)
@@ -678,7 +625,7 @@ func tmk_CreateTableStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 a
 
 func tmk_CreateTypeStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCreateTypeStmt)
+	v := rt.Alloc(&a.tCreateTypeStmt)
 	v.OrReplace = astBool(f0)
 	v.Temp = astString(f1)
 	v.IfNotExists = astBool(f2)
@@ -696,7 +643,7 @@ func tmk_CreateTypeStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 an
 
 func tmk_CreateViewStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any, f8 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tCreateViewStmt)
+	v := rt.Alloc(&a.tCreateViewStmt)
 	v.OrReplace = astBool(f0)
 	v.Temp = astString(f1)
 	v.Recursive = astBool(f2)
@@ -715,7 +662,7 @@ func tmk_CreateViewStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 an
 
 func tmk_DeallocateStmt(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDeallocateStmt)
+	v := rt.Alloc(&a.tDeallocateStmt)
 	v.Name = tv3(a, f0)
 	v.All = astBool(f1)
 	if final {
@@ -727,7 +674,7 @@ func tmk_DeallocateStmt(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_DefElem(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDefElem)
+	v := rt.Alloc(&a.tDefElem)
 	v.Name = tv3(a, f0)
 	v.Value = astString(f1)
 	if final {
@@ -739,7 +686,7 @@ func tmk_DefElem(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_DeleteStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDeleteStmt)
+	v := rt.Alloc(&a.tDeleteStmt)
 	v.With = rt.TAs[*types.With](f0)
 	v.Table = rt.TAs[*types.TargetTable](f1)
 	v.Using = tl19(a, f2)
@@ -755,7 +702,7 @@ func tmk_DeleteStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f
 
 func tmk_DetachStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDetachStmt)
+	v := rt.Alloc(&a.tDetachStmt)
 	v.Database = astBool(f0)
 	v.IfExists = astBool(f1)
 	v.Name = tv3(a, f2)
@@ -768,7 +715,7 @@ func tmk_DetachStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_DistinctClause(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDistinctClause)
+	v := rt.Alloc(&a.tDistinctClause)
 	v.On = tl1(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -779,7 +726,7 @@ func tmk_DistinctClause(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_DistinctFrom(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDistinctFrom)
+	v := rt.Alloc(&a.tDistinctFrom)
 	v.Left = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Right = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Negated = astBool(f2)
@@ -792,7 +739,7 @@ func tmk_DistinctFrom(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_DropSecretStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDropSecretStmt)
+	v := rt.Alloc(&a.tDropSecretStmt)
 	v.Persist = astString(f0)
 	v.IfExists = astBool(f1)
 	v.Name = tv3(a, f2)
@@ -806,7 +753,7 @@ func tmk_DropSecretStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 an
 
 func tmk_DropStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tDropStmt)
+	v := rt.Alloc(&a.tDropStmt)
 	v.Type = astString(f0)
 	v.IfExists = astBool(f1)
 	v.Names = tl21(a, f2)
@@ -821,7 +768,7 @@ func tmk_DropStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 
 
 func tmk_ExecuteStmt(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tExecuteStmt)
+	v := rt.Alloc(&a.tExecuteStmt)
 	v.Name = tv3(a, f0)
 	v.Params = tl1(a, f1)
 	if final {
@@ -833,7 +780,7 @@ func tmk_ExecuteStmt(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Exists(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tExists)
+	v := rt.Alloc(&a.tExists)
 	v.Query = rt.TAs[*types.ParenQuery](f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -844,7 +791,7 @@ func tmk_Exists(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ExplainOption(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tExplainOption)
+	v := rt.Alloc(&a.tExplainOption)
 	v.Name = astString(f0)
 	v.Value = astString(f1)
 	if final {
@@ -856,7 +803,7 @@ func tmk_ExplainOption(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_ExplainStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tExplainStmt)
+	v := rt.Alloc(&a.tExplainStmt)
 	v.Analyze = astString(f0)
 	v.Verbose = astBool(f1)
 	v.Options = tl22(a, f2)
@@ -870,7 +817,7 @@ func tmk_ExplainStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) 
 
 func tmk_ExportStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tExportStmt)
+	v := rt.Alloc(&a.tExportStmt)
 	v.Database = tv3(a, f0)
 	v.Path = tv7(a, f1)
 	v.Legacy = tl11(a, f2)
@@ -884,7 +831,7 @@ func tmk_ExportStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) a
 
 func tmk_FieldStep(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tFieldStep)
+	v := rt.Alloc(&a.tFieldStep)
 	v.Name = tv3(a, f0)
 	v.Call = astBool(f1)
 	v.Args = tl1(a, f2)
@@ -897,7 +844,7 @@ func tmk_FieldStep(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Frame(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tFrame)
+	v := rt.Alloc(&a.tFrame)
 	v.Unit = astString(f0)
 	v.Start_ = rt.TAs[*types.FrameBound](f1)
 	v.End_ = rt.TAs[*types.FrameBound](f2)
@@ -911,7 +858,7 @@ func tmk_Frame(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 func tmk_FrameBound(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tFrameBound)
+	v := rt.Alloc(&a.tFrameBound)
 	v.Kind = astString(f0)
 	v.Expr = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -923,7 +870,7 @@ func tmk_FrameBound(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_FuncCall(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any, f8 any, f9 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tFuncCall)
+	v := rt.Alloc(&a.tFuncCall)
 	v.Name = rt.TAs[*types.Name](f0)
 	v.Quantifier = astString(f1)
 	v.Args = tl1(a, f2)
@@ -943,7 +890,7 @@ func tmk_FuncCall(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 
 
 func tmk_FuncTable(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tFuncTable)
+	v := rt.Alloc(&a.tFuncTable)
 	v.Prefix = tv3(a, f0)
 	v.Func = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.RowsFrom = tl23(a, f2)
@@ -960,7 +907,7 @@ func tmk_FuncTable(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4
 
 func tmk_GeneratedColumn(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tGeneratedColumn)
+	v := rt.Alloc(&a.tGeneratedColumn)
 	v.When = astString(f0)
 	v.Identity = astBool(f1)
 	v.SeqOptions = tl4(a, f2)
@@ -975,7 +922,7 @@ func tmk_GeneratedColumn(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 a
 
 func tmk_GenericAlterOption(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tGenericAlterOption)
+	v := rt.Alloc(&a.tGenericAlterOption)
 	v.Action = astString(f0)
 	v.Name = tv3(a, f1)
 	v.Value = tv7(a, f2)
@@ -988,7 +935,7 @@ func tmk_GenericAlterOption(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) a
 
 func tmk_GenericOption(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tGenericOption)
+	v := rt.Alloc(&a.tGenericOption)
 	v.Name = tv3(a, f0)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1000,7 +947,7 @@ func tmk_GenericOption(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_GroupBy(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tGroupBy)
+	v := rt.Alloc(&a.tGroupBy)
 	v.All = astBool(f0)
 	v.Items = tl1(a, f1)
 	if final {
@@ -1012,7 +959,7 @@ func tmk_GroupBy(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Grouping(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tGrouping)
+	v := rt.Alloc(&a.tGrouping)
 	v.Name = astString(f0)
 	v.Args = tl1(a, f1)
 	if final {
@@ -1024,7 +971,7 @@ func tmk_Grouping(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_GroupingSet(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tGroupingSet)
+	v := rt.Alloc(&a.tGroupingSet)
 	v.Kind = astString(f0)
 	v.Items = tl1(a, f1)
 	if final {
@@ -1036,7 +983,7 @@ func tmk_GroupingSet(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_ImportStmt(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tImportStmt)
+	v := rt.Alloc(&a.tImportStmt)
 	v.Path = tv7(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1047,7 +994,7 @@ func tmk_ImportStmt(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_In(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIn)
+	v := rt.Alloc(&a.tIn)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Negated = astBool(f1)
 	v.Query = rt.TAs[*types.ParenQuery](f2)
@@ -1062,7 +1009,7 @@ func tmk_In(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) a
 
 func tmk_IndexElem(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIndexElem)
+	v := rt.Alloc(&a.tIndexElem)
 	v.Expr = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Collate = rt.TAs[*types.Name](f1)
 	v.Class = rt.TAs[*types.Name](f2)
@@ -1077,7 +1024,7 @@ func tmk_IndexElem(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4
 
 func tmk_IndexStep(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIndexStep)
+	v := rt.Alloc(&a.tIndexStep)
 	v.Index = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1088,7 +1035,7 @@ func tmk_IndexStep(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Indirection(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIndirection)
+	v := rt.Alloc(&a.tIndirection)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Step = rt.TAs[types.Step](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1100,7 +1047,7 @@ func tmk_Indirection(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_InsertStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any, f8 any, f9 any, f10 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tInsertStmt)
+	v := rt.Alloc(&a.tInsertStmt)
 	v.With = rt.TAs[*types.With](f0)
 	v.OrAction = astString(f1)
 	v.Table = rt.TAs[*types.Name](f2)
@@ -1121,7 +1068,7 @@ func tmk_InsertStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f
 
 func tmk_IntervalLit(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIntervalLit)
+	v := rt.Alloc(&a.tIntervalLit)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Unit = tv4(a, f1)
 	if final {
@@ -1133,7 +1080,7 @@ func tmk_IntervalLit(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_IntoClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIntoClause)
+	v := rt.Alloc(&a.tIntoClause)
 	v.Temp = astString(f0)
 	v.Table = rt.TAs[*types.Name](f1)
 	if final {
@@ -1145,7 +1092,7 @@ func tmk_IntoClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_IsExpr(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIsExpr)
+	v := rt.Alloc(&a.tIsExpr)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Negated = astBool(f1)
 	v.Test = astString(f2)
@@ -1158,7 +1105,7 @@ func tmk_IsExpr(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_IsOf(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tIsOf)
+	v := rt.Alloc(&a.tIsOf)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Types = tl24(a, f1)
 	v.Negated = astBool(f2)
@@ -1171,7 +1118,7 @@ func tmk_IsOf(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Join(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tJoin)
+	v := rt.Alloc(&a.tJoin)
 	v.Left = rt.TAs[types.TableRef](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Kind = astString(f1)
 	v.Right = rt.TAs[types.TableRef](rt.TPubIn(types.PegoHooks, a, f2))
@@ -1186,7 +1133,7 @@ func tmk_Join(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any)
 
 func tmk_Lambda(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tLambda)
+	v := rt.Alloc(&a.tLambda)
 	v.Params = tl7(a, f0)
 	v.Body = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Keyword = astBool(f2)
@@ -1199,7 +1146,7 @@ func tmk_Lambda(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Like(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tLike)
+	v := rt.Alloc(&a.tLike)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Negated = astBool(f1)
 	v.Op = astString(f2)
@@ -1214,7 +1161,7 @@ func tmk_Like(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any)
 
 func tmk_LimitClause(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tLimitClause)
+	v := rt.Alloc(&a.tLimitClause)
 	v.Keyword = astString(f0)
 	v.All = astBool(f1)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -1229,7 +1176,7 @@ func tmk_LimitClause(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, 
 
 func tmk_ListComp(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tListComp)
+	v := rt.Alloc(&a.tListComp)
 	v.Expr = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Vars = tl7(a, f1)
 	v.Source = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -1243,7 +1190,7 @@ func tmk_ListComp(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any
 
 func tmk_ListLit(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tListLit)
+	v := rt.Alloc(&a.tListLit)
 	v.Items = tl1(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1254,7 +1201,7 @@ func tmk_ListLit(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_LoadStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tLoadStmt)
+	v := rt.Alloc(&a.tLoadStmt)
 	v.Install = astBool(f0)
 	v.Force = astBool(f1)
 	v.Name = tv3(a, f2)
@@ -1269,7 +1216,7 @@ func tmk_LoadStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 
 
 func tmk_LockClause(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tLockClause)
+	v := rt.Alloc(&a.tLockClause)
 	v.Strength = astString(f0)
 	v.Of = tl21(a, f1)
 	v.Wait = astString(f2)
@@ -1282,7 +1229,7 @@ func tmk_LockClause(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_MacroDef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMacroDef)
+	v := rt.Alloc(&a.tMacroDef)
 	v.Params = tl25(a, f0)
 	v.Expr = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Query = rt.TAs[types.ParenContent](rt.TPubIn(types.PegoHooks, a, f2))
@@ -1295,7 +1242,7 @@ func tmk_MacroDef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_MacroParam(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMacroParam)
+	v := rt.Alloc(&a.tMacroParam)
 	v.Name = tv3(a, f0)
 	v.Type = rt.TAs[*types.Type](f1)
 	v.Default = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -1309,7 +1256,7 @@ func tmk_MacroParam(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) a
 
 func tmk_MapEntry(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMapEntry)
+	v := rt.Alloc(&a.tMapEntry)
 	v.Key = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1321,7 +1268,7 @@ func tmk_MapEntry(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_MapLit(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMapLit)
+	v := rt.Alloc(&a.tMapLit)
 	v.Entries = tl26(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1332,7 +1279,7 @@ func tmk_MapLit(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_MergeAction(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMergeAction)
+	v := rt.Alloc(&a.tMergeAction)
 	v.Kind = astString(f0)
 	v.Set = tl27(a, f1)
 	v.ByName = astString(f2)
@@ -1350,7 +1297,7 @@ func tmk_MergeAction(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, 
 
 func tmk_MergeStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMergeStmt)
+	v := rt.Alloc(&a.tMergeStmt)
 	v.With = rt.TAs[*types.With](f0)
 	v.Target = rt.TAs[*types.TargetTable](f1)
 	v.Source = rt.TAs[types.TableRef](rt.TPubIn(types.PegoHooks, a, f2))
@@ -1367,7 +1314,7 @@ func tmk_MergeStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4
 
 func tmk_MergeWhen(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tMergeWhen)
+	v := rt.Alloc(&a.tMergeWhen)
 	v.Not = astBool(f0)
 	v.By = astString(f1)
 	v.Cond = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -1381,7 +1328,7 @@ func tmk_MergeWhen(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) an
 
 func tmk_Name(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tName)
+	v := rt.Alloc(&a.tName)
 	v.Parts = tl7(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1392,7 +1339,7 @@ func tmk_Name(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_NamedArg(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tNamedArg)
+	v := rt.Alloc(&a.tNamedArg)
 	v.Name = tv3(a, f0)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Arrow = astBool(f2)
@@ -1405,7 +1352,7 @@ func tmk_NamedArg(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Not(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tNot)
+	v := rt.Alloc(&a.tNot)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1416,7 +1363,7 @@ func tmk_Not(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Number(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tNumber)
+	v := rt.Alloc(&a.tNumber)
 	v.Text = astString(f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1427,7 +1374,7 @@ func tmk_Number(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_OffsetClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tOffsetClause)
+	v := rt.Alloc(&a.tOffsetClause)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Rows = astString(f1)
 	if final {
@@ -1439,7 +1386,7 @@ func tmk_OffsetClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_OnConflict(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tOnConflict)
+	v := rt.Alloc(&a.tOnConflict)
 	v.Target = tl12(a, f0)
 	v.TargetWhere = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Constraint = tv3(a, f2)
@@ -1455,7 +1402,7 @@ func tmk_OnConflict(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f
 
 func tmk_OrderBy(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tOrderBy)
+	v := rt.Alloc(&a.tOrderBy)
 	v.Items = tl2(a, f0)
 	v.All = astBool(f1)
 	v.Direction = astString(f2)
@@ -1469,7 +1416,7 @@ func tmk_OrderBy(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any 
 
 func tmk_Paren(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tParen)
+	v := rt.Alloc(&a.tParen)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1480,7 +1427,7 @@ func tmk_Paren(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ParenQuery(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tParenQuery)
+	v := rt.Alloc(&a.tParenQuery)
 	v.Query = rt.TAs[types.ParenContent](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1491,7 +1438,7 @@ func tmk_ParenQuery(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ParenTable(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tParenTable)
+	v := rt.Alloc(&a.tParenTable)
 	v.Prefix = tv3(a, f0)
 	v.Table = rt.TAs[types.TableRef](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Alias = rt.TAs[*types.TableAlias](f2)
@@ -1504,7 +1451,7 @@ func tmk_ParenTable(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_PartitionSorted(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPartitionSorted)
+	v := rt.Alloc(&a.tPartitionSorted)
 	v.Kind = (*types.TNode[string])(rt.TPubMatch(f0))
 	v.Exprs = tl1(a, f1)
 	if final {
@@ -1516,7 +1463,7 @@ func tmk_PartitionSorted(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_PivotColumn(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPivotColumn)
+	v := rt.Alloc(&a.tPivotColumn)
 	v.Expr = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.In = tl20(a, f1)
 	v.Query = rt.TAs[*types.Select](f2)
@@ -1530,7 +1477,7 @@ func tmk_PivotColumn(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) 
 
 func tmk_PivotQuery(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPivotQuery)
+	v := rt.Alloc(&a.tPivotQuery)
 	v.Source = rt.TAs[types.TableRef](rt.TPubIn(types.PegoHooks, a, f0))
 	v.On = tl29(a, f1)
 	v.Using = tl20(a, f2)
@@ -1544,7 +1491,7 @@ func tmk_PivotQuery(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) a
 
 func tmk_PivotRef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPivotRef)
+	v := rt.Alloc(&a.tPivotRef)
 	v.Source = rt.TAs[types.TableRef](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Aggregates = tl20(a, f1)
 	v.Values = tl30(a, f2)
@@ -1559,7 +1506,7 @@ func tmk_PivotRef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 
 
 func tmk_PivotValue(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPivotValue)
+	v := rt.Alloc(&a.tPivotValue)
 	v.Header = tl1(a, f0)
 	v.Items = tl20(a, f1)
 	v.Enum = tv3(a, f2)
@@ -1572,7 +1519,7 @@ func tmk_PivotValue(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_PositionalRef(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPositionalRef)
+	v := rt.Alloc(&a.tPositionalRef)
 	v.Index = rt.TAs[*types.Number](f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1583,7 +1530,7 @@ func tmk_PositionalRef(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_PostfixOp(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPostfixOp)
+	v := rt.Alloc(&a.tPostfixOp)
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Op = (*types.TNode[string])(rt.TPubMatch(f1))
 	if final {
@@ -1595,7 +1542,7 @@ func tmk_PostfixOp(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_PragmaStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPragmaStmt)
+	v := rt.Alloc(&a.tPragmaStmt)
 	v.Name = tv3(a, f0)
 	v.Values = tl1(a, f1)
 	v.Args = tl1(a, f2)
@@ -1609,7 +1556,7 @@ func tmk_PragmaStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) a
 
 func tmk_PrepareStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tPrepareStmt)
+	v := rt.Alloc(&a.tPrepareStmt)
 	v.Name = tv3(a, f0)
 	v.Types = tl24(a, f1)
 	v.Stmt = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f2))
@@ -1622,7 +1569,7 @@ func tmk_PrepareStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Reference(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tReference)
+	v := rt.Alloc(&a.tReference)
 	v.Table = rt.TAs[*types.Name](f0)
 	v.Columns = tl7(a, f1)
 	v.Match = (*types.TNode[string])(rt.TPubMatch(f2))
@@ -1637,7 +1584,7 @@ func tmk_Reference(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4
 
 func tmk_Reloption(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tReloption)
+	v := rt.Alloc(&a.tReloption)
 	v.Name = rt.TAs[*types.Name](f0)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Arg = (*types.TNode[string])(rt.TPubMatch(f2))
@@ -1650,7 +1597,7 @@ func tmk_Reloption(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_RenameItem(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tRenameItem)
+	v := rt.Alloc(&a.tRenameItem)
 	v.From = rt.TAs[*types.Name](f0)
 	v.To = tv3(a, f1)
 	if final {
@@ -1662,7 +1609,7 @@ func tmk_RenameItem(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_RenameStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tRenameStmt)
+	v := rt.Alloc(&a.tRenameStmt)
 	v.Object = astString(f0)
 	v.IfExists = astBool(f1)
 	v.Name = rt.TAs[*types.Name](f2)
@@ -1678,7 +1625,7 @@ func tmk_RenameStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f
 
 func tmk_ReplaceItem(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tReplaceItem)
+	v := rt.Alloc(&a.tReplaceItem)
 	v.Expr = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Name = tv3(a, f1)
 	if final {
@@ -1690,7 +1637,7 @@ func tmk_ReplaceItem(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_ResetStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tResetStmt)
+	v := rt.Alloc(&a.tResetStmt)
 	v.Scope = astString(f0)
 	v.Name = rt.TAs[*types.Name](f1)
 	v.All = astBool(f2)
@@ -1704,7 +1651,7 @@ func tmk_ResetStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) an
 
 func tmk_Row(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tRow)
+	v := rt.Alloc(&a.tRow)
 	v.Items = tl1(a, f0)
 	v.Keyword = astBool(f1)
 	if final {
@@ -1716,7 +1663,7 @@ func tmk_Row(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_RowsFromItem(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tRowsFromItem)
+	v := rt.Alloc(&a.tRowsFromItem)
 	v.Func = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.ColDefs = tl31(a, f1)
 	if final {
@@ -1728,7 +1675,7 @@ func tmk_RowsFromItem(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_SampleClause(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSampleClause)
+	v := rt.Alloc(&a.tSampleClause)
 	v.Method = tv3(a, f0)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Unit = astString(f2)
@@ -1743,7 +1690,7 @@ func tmk_SampleClause(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any,
 
 func tmk_Script(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tScript)
+	v := rt.Alloc(&a.tScript)
 	v.Statements = tl14(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1754,7 +1701,7 @@ func tmk_Script(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_SecretOption(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSecretOption)
+	v := rt.Alloc(&a.tSecretOption)
 	v.Name = tv3(a, f0)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1766,7 +1713,7 @@ func tmk_SecretOption(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Select(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSelect)
+	v := rt.Alloc(&a.tSelect)
 	v.With = rt.TAs[*types.With](f0)
 	v.Body = rt.TAs[types.QueryBody](rt.TPubIn(types.PegoHooks, a, f1))
 	v.OrderBy = rt.TAs[*types.OrderBy](f2)
@@ -1782,7 +1729,7 @@ func tmk_Select(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 an
 
 func tmk_SelectCore(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any, f8 any, f9 any, f10 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSelectCore)
+	v := rt.Alloc(&a.tSelectCore)
 	v.FromFirst = astBool(f0)
 	v.Distinct = rt.TAs[*types.DistinctClause](f1)
 	v.Items = tl20(a, f2)
@@ -1803,7 +1750,7 @@ func tmk_SelectCore(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f
 
 func tmk_SelectItem(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSelectItem)
+	v := rt.Alloc(&a.tSelectItem)
 	v.Expr = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Alias = tv3(a, f1)
 	v.As = astBool(f2)
@@ -1817,7 +1764,7 @@ func tmk_SelectItem(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) a
 
 func tmk_SeqOption(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSeqOption)
+	v := rt.Alloc(&a.tSeqOption)
 	v.Kind = astString(f0)
 	v.Type = rt.TAs[*types.Type](f1)
 	v.Value = astString(f2)
@@ -1831,7 +1778,7 @@ func tmk_SeqOption(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) an
 
 func tmk_SetClause(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSetClause)
+	v := rt.Alloc(&a.tSetClause)
 	v.Targets = tl21(a, f0)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Paren = astBool(f2)
@@ -1844,7 +1791,7 @@ func tmk_SetClause(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_SetOp(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSetOp)
+	v := rt.Alloc(&a.tSetOp)
 	v.Left = rt.TAs[types.QueryBody](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Op = astString(f1)
 	v.Quantifier = astString(f2)
@@ -1859,7 +1806,7 @@ func tmk_SetOp(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any
 
 func tmk_SetStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSetStmt)
+	v := rt.Alloc(&a.tSetStmt)
 	v.Scope = astString(f0)
 	v.Name = rt.TAs[*types.Name](f1)
 	v.Values = tl1(a, f2)
@@ -1875,7 +1822,7 @@ func tmk_SetStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 a
 
 func tmk_ShowStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tShowStmt)
+	v := rt.Alloc(&a.tShowStmt)
 	v.Kind = astString(f0)
 	v.Query = rt.TAs[*types.Select](f1)
 	v.Name = rt.TAs[*types.Name](f2)
@@ -1892,7 +1839,7 @@ func tmk_ShowStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 
 
 func tmk_SliceStep(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSliceStep)
+	v := rt.Alloc(&a.tSliceStep)
 	v.Lo = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Hi = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	v.Stride = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -1906,7 +1853,7 @@ func tmk_SliceStep(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) an
 
 func tmk_SortItem(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSortItem)
+	v := rt.Alloc(&a.tSortItem)
 	v.Expr = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Using = astString(f1)
 	v.Direction = astString(f2)
@@ -1920,7 +1867,7 @@ func tmk_SortItem(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any
 
 func tmk_SpecialCall(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSpecialCall)
+	v := rt.Alloc(&a.tSpecialCall)
 	v.Name = astString(f0)
 	v.Spec = astString(f1)
 	v.Args = tl1(a, f2)
@@ -1938,7 +1885,7 @@ func tmk_SpecialCall(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, 
 
 func tmk_Star(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tStar)
+	v := rt.Alloc(&a.tStar)
 	v.Qualifier = tv3(a, f0)
 	v.Exclude = tl21(a, f1)
 	v.Replace = tl34(a, f2)
@@ -1952,7 +1899,7 @@ func tmk_Star(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 func tmk_StructField(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tStructField)
+	v := rt.Alloc(&a.tStructField)
 	v.Name = tv3(a, f0)
 	v.Value = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -1964,7 +1911,7 @@ func tmk_StructField(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_StructLit(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tStructLit)
+	v := rt.Alloc(&a.tStructLit)
 	v.Fields = tl36(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1975,7 +1922,7 @@ func tmk_StructLit(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_Subquery(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSubquery)
+	v := rt.Alloc(&a.tSubquery)
 	v.Query = rt.TAs[*types.ParenQuery](f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -1986,7 +1933,7 @@ func tmk_Subquery(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_SubqueryRef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tSubqueryRef)
+	v := rt.Alloc(&a.tSubqueryRef)
 	v.Prefix = tv3(a, f0)
 	v.Query = rt.TAs[*types.ParenQuery](f1)
 	v.Lateral = astBool(f2)
@@ -2001,7 +1948,7 @@ func tmk_SubqueryRef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, 
 
 func tmk_TableAlias(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTableAlias)
+	v := rt.Alloc(&a.tTableAlias)
 	v.Name = tv3(a, f0)
 	v.Columns = tl7(a, f1)
 	v.ColDefs = tl31(a, f2)
@@ -2015,7 +1962,7 @@ func tmk_TableAlias(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) a
 
 func tmk_TableConstraint(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTableConstraint)
+	v := rt.Alloc(&a.tTableConstraint)
 	v.Name = tv3(a, f0)
 	v.Kind = astString(f1)
 	v.Columns = tl7(a, f2)
@@ -2033,7 +1980,7 @@ func tmk_TableConstraint(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 a
 
 func tmk_TableLike(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTableLike)
+	v := rt.Alloc(&a.tTableLike)
 	v.Table = rt.TAs[*types.Name](f0)
 	v.Options = tl37(a, f1)
 	if final {
@@ -2045,7 +1992,7 @@ func tmk_TableLike(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_TableQuery(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTableQuery)
+	v := rt.Alloc(&a.tTableQuery)
 	v.Table = rt.TAs[*types.Name](f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -2056,7 +2003,7 @@ func tmk_TableQuery(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_TargetTable(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTargetTable)
+	v := rt.Alloc(&a.tTargetTable)
 	v.Name = rt.TAs[*types.Name](f0)
 	v.Only = astBool(f1)
 	v.Star = astBool(f2)
@@ -2071,7 +2018,7 @@ func tmk_TargetTable(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, 
 
 func tmk_TransactionStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTransactionStmt)
+	v := rt.Alloc(&a.tTransactionStmt)
 	v.Kind = astString(f0)
 	v.Work = astString(f1)
 	v.Mode = astString(f2)
@@ -2084,7 +2031,7 @@ func tmk_TransactionStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any 
 
 func tmk_Type(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tType)
+	v := rt.Alloc(&a.tType)
 	v.Name = astString(f0)
 	v.Mods = tl1(a, f1)
 	v.Fields = tl38(a, f2)
@@ -2100,7 +2047,7 @@ func tmk_Type(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any,
 
 func tmk_TypeField(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTypeField)
+	v := rt.Alloc(&a.tTypeField)
 	v.Name = tv3(a, f0)
 	v.Type = rt.TAs[*types.Type](f1)
 	if final {
@@ -2112,7 +2059,7 @@ func tmk_TypeField(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_TypedLit(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tTypedLit)
+	v := rt.Alloc(&a.tTypedLit)
 	v.Type = rt.TAs[*types.Type](f0)
 	v.Value = tv7(a, f1)
 	if final {
@@ -2124,7 +2071,7 @@ func tmk_TypedLit(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_Unary(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tUnary)
+	v := rt.Alloc(&a.tUnary)
 	v.Op = (*types.TNode[string])(rt.TPubMatch(f0))
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -2136,7 +2083,7 @@ func tmk_Unary(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_UnpackExpr(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tUnpackExpr)
+	v := rt.Alloc(&a.tUnpackExpr)
 	v.Arg = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -2147,7 +2094,7 @@ func tmk_UnpackExpr(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_UnpivotQuery(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tUnpivotQuery)
+	v := rt.Alloc(&a.tUnpivotQuery)
 	v.Source = rt.TAs[types.TableRef](rt.TPubIn(types.PegoHooks, a, f0))
 	v.On = tl20(a, f1)
 	v.Name = tv3(a, f2)
@@ -2161,7 +2108,7 @@ func tmk_UnpivotQuery(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any)
 
 func tmk_UnpivotRef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tUnpivotRef)
+	v := rt.Alloc(&a.tUnpivotRef)
 	v.Source = rt.TAs[types.TableRef](rt.TPubIn(types.PegoHooks, a, f0))
 	v.IncludeNulls = (*types.TNode[string])(rt.TPubMatch(f1))
 	v.Header = tl7(a, f2)
@@ -2176,7 +2123,7 @@ func tmk_UnpivotRef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f
 
 func tmk_UnpivotValue(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tUnpivotValue)
+	v := rt.Alloc(&a.tUnpivotValue)
 	v.Header = tl7(a, f0)
 	v.Items = tl20(a, f1)
 	if final {
@@ -2188,7 +2135,7 @@ func tmk_UnpivotValue(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_UpdateExtensionsStmt(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tUpdateExtensionsStmt)
+	v := rt.Alloc(&a.tUpdateExtensionsStmt)
 	v.With = rt.TAs[*types.With](f0)
 	v.Names = tl7(a, f1)
 	if final {
@@ -2200,7 +2147,7 @@ func tmk_UpdateExtensionsStmt(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_UpdateStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tUpdateStmt)
+	v := rt.Alloc(&a.tUpdateStmt)
 	v.With = rt.TAs[*types.With](f0)
 	v.Table = rt.TAs[*types.TargetTable](f1)
 	v.Set = tl27(a, f2)
@@ -2216,7 +2163,7 @@ func tmk_UpdateStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f
 
 func tmk_UseStmt(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tUseStmt)
+	v := rt.Alloc(&a.tUseStmt)
 	v.Name = rt.TAs[*types.Name](f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -2227,7 +2174,7 @@ func tmk_UseStmt(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_VacuumStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tVacuumStmt)
+	v := rt.Alloc(&a.tVacuumStmt)
 	v.Full = astBool(f0)
 	v.Freeze = astBool(f1)
 	v.Verbose = astBool(f2)
@@ -2244,7 +2191,7 @@ func tmk_VacuumStmt(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f
 
 func tmk_ValuesClause(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tValuesClause)
+	v := rt.Alloc(&a.tValuesClause)
 	v.Rows = tl41(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -2255,7 +2202,7 @@ func tmk_ValuesClause(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_ValuesRef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tValuesRef)
+	v := rt.Alloc(&a.tValuesRef)
 	v.Prefix = tv3(a, f0)
 	v.Values = rt.TAs[*types.ValuesClause](f1)
 	v.Alias = rt.TAs[*types.TableAlias](f2)
@@ -2269,7 +2216,7 @@ func tmk_ValuesRef(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) an
 
 func tmk_ValuesRow(c *rt.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tValuesRow)
+	v := rt.Alloc(&a.tValuesRow)
 	v.Items = tl1(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
@@ -2280,7 +2227,7 @@ func tmk_ValuesRow(c *rt.TActCtx, final bool, f0 any) any {
 
 func tmk_When(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tWhen)
+	v := rt.Alloc(&a.tWhen)
 	v.Cond = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Then = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -2292,7 +2239,7 @@ func tmk_When(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_WindowDef(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tWindowDef)
+	v := rt.Alloc(&a.tWindowDef)
 	v.Name = tv3(a, f0)
 	v.Spec = rt.TAs[*types.WindowSpec](f1)
 	if final {
@@ -2304,7 +2251,7 @@ func tmk_WindowDef(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_WindowOver(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tWindowOver)
+	v := rt.Alloc(&a.tWindowOver)
 	v.Name = tv3(a, f0)
 	v.Spec = rt.TAs[*types.WindowSpec](f1)
 	if final {
@@ -2316,7 +2263,7 @@ func tmk_WindowOver(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 func tmk_WindowSpec(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tWindowSpec)
+	v := rt.Alloc(&a.tWindowSpec)
 	v.Base = tv3(a, f0)
 	v.PartitionBy = tl1(a, f1)
 	v.OrderBy = rt.TAs[*types.OrderBy](f2)
@@ -2330,7 +2277,7 @@ func tmk_WindowSpec(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) a
 
 func tmk_With(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tWith)
+	v := rt.Alloc(&a.tWith)
 	v.Recursive = astBool(f0)
 	v.CTEs = tl42(a, f1)
 	if final {
@@ -2349,7 +2296,7 @@ func tl0(a *tslabs, v any) []*types.ColumnConstraint {
 	if n == nil {
 		return []*types.ColumnConstraint{}
 	}
-	out := astSlice(&a.tl0Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.ColumnConstraint](c)
@@ -2366,7 +2313,7 @@ func tl1(a *tslabs, v any) []types.Expr {
 	if n == nil {
 		return []types.Expr{}
 	}
-	out := astSlice(&a.tl1Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, c))
@@ -2383,7 +2330,7 @@ func tl2(a *tslabs, v any) []*types.SortItem {
 	if n == nil {
 		return []*types.SortItem{}
 	}
-	out := astSlice(&a.tl2Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.SortItem](c)
@@ -2400,7 +2347,7 @@ func tl3(a *tslabs, v any) []*types.Reloption {
 	if n == nil {
 		return []*types.Reloption{}
 	}
-	out := astSlice(&a.tl3Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl3Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.Reloption](c)
@@ -2417,7 +2364,7 @@ func tl4(a *tslabs, v any) []*types.SeqOption {
 	if n == nil {
 		return []*types.SeqOption{}
 	}
-	out := astSlice(&a.tl4Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl4Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.SeqOption](c)
@@ -2434,7 +2381,7 @@ func tl5(a *tslabs, v any) []*types.GenericAlterOption {
 	if n == nil {
 		return []*types.GenericAlterOption{}
 	}
-	out := astSlice(&a.tl5Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl5Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.GenericAlterOption](c)
@@ -2451,7 +2398,7 @@ func tl6(a *tslabs, v any) []*types.AlterCmd {
 	if n == nil {
 		return []*types.AlterCmd{}
 	}
-	out := astSlice(&a.tl6Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl6Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.AlterCmd](c)
@@ -2468,7 +2415,7 @@ func tl7(a *tslabs, v any) []*types.Ident {
 	if n == nil {
 		return []*types.Ident{}
 	}
-	out := astSlice(&a.tl7Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl7Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = tv3(a, c)
@@ -2485,7 +2432,7 @@ func tl8(a *tslabs, v any) []*types.GenericOption {
 	if n == nil {
 		return []*types.GenericOption{}
 	}
-	out := astSlice(&a.tl8Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl8Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.GenericOption](c)
@@ -2502,7 +2449,7 @@ func tl9(a *tslabs, v any) []*types.When {
 	if n == nil {
 		return []*types.When{}
 	}
-	out := astSlice(&a.tl9Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl9Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.When](c)
@@ -2519,7 +2466,7 @@ func tl10(a *tslabs, v any) []*types.DefElem {
 	if n == nil {
 		return []*types.DefElem{}
 	}
-	out := astSlice(&a.tl10Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl10Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.DefElem](c)
@@ -2536,7 +2483,7 @@ func tl11(a *tslabs, v any) []*types.CopyOption {
 	if n == nil {
 		return []*types.CopyOption{}
 	}
-	out := astSlice(&a.tl11Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl11Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.CopyOption](c)
@@ -2553,7 +2500,7 @@ func tl12(a *tslabs, v any) []*types.IndexElem {
 	if n == nil {
 		return []*types.IndexElem{}
 	}
-	out := astSlice(&a.tl12Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl12Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.IndexElem](c)
@@ -2570,7 +2517,7 @@ func tl13(a *tslabs, v any) []*types.MacroDef {
 	if n == nil {
 		return []*types.MacroDef{}
 	}
-	out := astSlice(&a.tl13Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl13Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.MacroDef](c)
@@ -2587,7 +2534,7 @@ func tl14(a *tslabs, v any) []types.Statement {
 	if n == nil {
 		return []types.Statement{}
 	}
-	out := astSlice(&a.tl14Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl14Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, c))
@@ -2604,7 +2551,7 @@ func tl15(a *tslabs, v any) []*types.SecretOption {
 	if n == nil {
 		return []*types.SecretOption{}
 	}
-	out := astSlice(&a.tl15Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl15Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.SecretOption](c)
@@ -2621,7 +2568,7 @@ func tl16(a *tslabs, v any) []*types.PartitionSorted {
 	if n == nil {
 		return []*types.PartitionSorted{}
 	}
-	out := astSlice(&a.tl16Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl16Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.PartitionSorted](c)
@@ -2638,7 +2585,7 @@ func tl17(a *tslabs, v any) []types.TableElement {
 	if n == nil {
 		return []types.TableElement{}
 	}
-	out := astSlice(&a.tl17Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl17Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.TableElement](rt.TPubIn(types.PegoHooks, a, c))
@@ -2655,7 +2602,7 @@ func tl18(a *tslabs, v any) []*types.StringLit {
 	if n == nil {
 		return []*types.StringLit{}
 	}
-	out := astSlice(&a.tl18Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl18Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = tv7(a, c)
@@ -2672,7 +2619,7 @@ func tl19(a *tslabs, v any) []types.TableRef {
 	if n == nil {
 		return []types.TableRef{}
 	}
-	out := astSlice(&a.tl19Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl19Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[types.TableRef](rt.TPubIn(types.PegoHooks, a, c))
@@ -2689,7 +2636,7 @@ func tl20(a *tslabs, v any) []*types.SelectItem {
 	if n == nil {
 		return []*types.SelectItem{}
 	}
-	out := astSlice(&a.tl20Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl20Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.SelectItem](c)
@@ -2706,7 +2653,7 @@ func tl21(a *tslabs, v any) []*types.Name {
 	if n == nil {
 		return []*types.Name{}
 	}
-	out := astSlice(&a.tl21Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl21Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.Name](c)
@@ -2723,7 +2670,7 @@ func tl22(a *tslabs, v any) []*types.ExplainOption {
 	if n == nil {
 		return []*types.ExplainOption{}
 	}
-	out := astSlice(&a.tl22Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl22Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.ExplainOption](c)
@@ -2740,7 +2687,7 @@ func tl23(a *tslabs, v any) []*types.RowsFromItem {
 	if n == nil {
 		return []*types.RowsFromItem{}
 	}
-	out := astSlice(&a.tl23Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl23Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.RowsFromItem](c)
@@ -2757,7 +2704,7 @@ func tl24(a *tslabs, v any) []*types.Type {
 	if n == nil {
 		return []*types.Type{}
 	}
-	out := astSlice(&a.tl24Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl24Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.Type](c)
@@ -2774,7 +2721,7 @@ func tl25(a *tslabs, v any) []*types.MacroParam {
 	if n == nil {
 		return []*types.MacroParam{}
 	}
-	out := astSlice(&a.tl25Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl25Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.MacroParam](c)
@@ -2791,7 +2738,7 @@ func tl26(a *tslabs, v any) []*types.MapEntry {
 	if n == nil {
 		return []*types.MapEntry{}
 	}
-	out := astSlice(&a.tl26Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl26Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.MapEntry](c)
@@ -2808,7 +2755,7 @@ func tl27(a *tslabs, v any) []*types.SetClause {
 	if n == nil {
 		return []*types.SetClause{}
 	}
-	out := astSlice(&a.tl27Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl27Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.SetClause](c)
@@ -2825,7 +2772,7 @@ func tl28(a *tslabs, v any) []*types.MergeWhen {
 	if n == nil {
 		return []*types.MergeWhen{}
 	}
-	out := astSlice(&a.tl28Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl28Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.MergeWhen](c)
@@ -2842,7 +2789,7 @@ func tl29(a *tslabs, v any) []*types.PivotColumn {
 	if n == nil {
 		return []*types.PivotColumn{}
 	}
-	out := astSlice(&a.tl29Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl29Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.PivotColumn](c)
@@ -2859,7 +2806,7 @@ func tl30(a *tslabs, v any) []*types.PivotValue {
 	if n == nil {
 		return []*types.PivotValue{}
 	}
-	out := astSlice(&a.tl30Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl30Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.PivotValue](c)
@@ -2876,7 +2823,7 @@ func tl31(a *tslabs, v any) []*types.ColDef {
 	if n == nil {
 		return []*types.ColDef{}
 	}
-	out := astSlice(&a.tl31Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl31Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.ColDef](c)
@@ -2893,7 +2840,7 @@ func tl32(a *tslabs, v any) []*types.LockClause {
 	if n == nil {
 		return []*types.LockClause{}
 	}
-	out := astSlice(&a.tl32Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl32Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.LockClause](c)
@@ -2910,7 +2857,7 @@ func tl33(a *tslabs, v any) []*types.WindowDef {
 	if n == nil {
 		return []*types.WindowDef{}
 	}
-	out := astSlice(&a.tl33Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl33Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.WindowDef](c)
@@ -2927,7 +2874,7 @@ func tl34(a *tslabs, v any) []*types.ReplaceItem {
 	if n == nil {
 		return []*types.ReplaceItem{}
 	}
-	out := astSlice(&a.tl34Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl34Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.ReplaceItem](c)
@@ -2944,7 +2891,7 @@ func tl35(a *tslabs, v any) []*types.RenameItem {
 	if n == nil {
 		return []*types.RenameItem{}
 	}
-	out := astSlice(&a.tl35Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl35Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.RenameItem](c)
@@ -2961,7 +2908,7 @@ func tl36(a *tslabs, v any) []*types.StructField {
 	if n == nil {
 		return []*types.StructField{}
 	}
-	out := astSlice(&a.tl36Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl36Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.StructField](c)
@@ -2978,7 +2925,7 @@ func tl37(a *tslabs, v any) []*types.TNode[string] {
 	if n == nil {
 		return []*types.TNode[string]{}
 	}
-	out := astSlice(&a.tl37Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl37Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = (*types.TNode[string])(rt.TPubMatch(c))
@@ -2995,7 +2942,7 @@ func tl38(a *tslabs, v any) []*types.TypeField {
 	if n == nil {
 		return []*types.TypeField{}
 	}
-	out := astSlice(&a.tl38Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl38Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.TypeField](c)
@@ -3012,7 +2959,7 @@ func tl39(a *tslabs, v any) []*types.ArrayDim {
 	if n == nil {
 		return []*types.ArrayDim{}
 	}
-	out := astSlice(&a.tl39Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl39Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.ArrayDim](c)
@@ -3029,7 +2976,7 @@ func tl40(a *tslabs, v any) []*types.UnpivotValue {
 	if n == nil {
 		return []*types.UnpivotValue{}
 	}
-	out := astSlice(&a.tl40Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl40Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.UnpivotValue](c)
@@ -3046,7 +2993,7 @@ func tl41(a *tslabs, v any) []*types.ValuesRow {
 	if n == nil {
 		return []*types.ValuesRow{}
 	}
-	out := astSlice(&a.tl41Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl41Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.ValuesRow](c)
@@ -3063,7 +3010,7 @@ func tl42(a *tslabs, v any) []*types.CTE {
 	if n == nil {
 		return []*types.CTE{}
 	}
-	out := astSlice(&a.tl42Chunk, len(n.Kids))
+	out := rt.AllocSlice(&a.tl42Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
 		out[i] = rt.TAs[*types.CTE](c)
@@ -3145,210 +3092,210 @@ func tv7(a *tslabs, v any) *types.StringLit {
 
 type tslabs struct {
 	control                *rt.WorkControl
-	tAlterCmd              astChunk[types.AlterCmd]
-	tAlterDatabaseStmt     astChunk[types.AlterDatabaseStmt]
-	tAlterObjectSchemaStmt astChunk[types.AlterObjectSchemaStmt]
-	tAlterSequenceStmt     astChunk[types.AlterSequenceStmt]
-	tAlterTableStmt        astChunk[types.AlterTableStmt]
-	tAnalyzeStmt           astChunk[types.AnalyzeStmt]
-	tAnyAll                astChunk[types.AnyAll]
-	tArrayDim              astChunk[types.ArrayDim]
-	tArrayLit              astChunk[types.ArrayLit]
-	tArraySubquery         astChunk[types.ArraySubquery]
-	tAtClause              astChunk[types.AtClause]
-	tAtTimeZone            astChunk[types.AtTimeZone]
-	tAttachStmt            astChunk[types.AttachStmt]
-	tBaseTable             astChunk[types.BaseTable]
-	tBetween               astChunk[types.Between]
-	tBinary                astChunk[types.Binary]
-	tCTE                   astChunk[types.CTE]
-	tCallStmt              astChunk[types.CallStmt]
-	tCase                  astChunk[types.Case]
-	tCast                  astChunk[types.Cast]
-	tCheckpointStmt        astChunk[types.CheckpointStmt]
-	tColDef                astChunk[types.ColDef]
-	tCollate               astChunk[types.Collate]
-	tColumnConstraint      astChunk[types.ColumnConstraint]
-	tColumnDef             astChunk[types.ColumnDef]
-	tColumnRef             astChunk[types.ColumnRef]
-	tColumnsExpr           astChunk[types.ColumnsExpr]
-	tCommentStmt           astChunk[types.CommentStmt]
-	tCopyDatabaseStmt      astChunk[types.CopyDatabaseStmt]
-	tCopyOption            astChunk[types.CopyOption]
-	tCopyStmt              astChunk[types.CopyStmt]
-	tCreateIndexStmt       astChunk[types.CreateIndexStmt]
-	tCreateMacroStmt       astChunk[types.CreateMacroStmt]
-	tCreateSchemaStmt      astChunk[types.CreateSchemaStmt]
-	tCreateSecretStmt      astChunk[types.CreateSecretStmt]
-	tCreateSequenceStmt    astChunk[types.CreateSequenceStmt]
-	tCreateTableAsStmt     astChunk[types.CreateTableAsStmt]
-	tCreateTableStmt       astChunk[types.CreateTableStmt]
-	tCreateTypeStmt        astChunk[types.CreateTypeStmt]
-	tCreateViewStmt        astChunk[types.CreateViewStmt]
-	tDeallocateStmt        astChunk[types.DeallocateStmt]
-	tDefElem               astChunk[types.DefElem]
-	tDeleteStmt            astChunk[types.DeleteStmt]
-	tDetachStmt            astChunk[types.DetachStmt]
-	tDistinctClause        astChunk[types.DistinctClause]
-	tDistinctFrom          astChunk[types.DistinctFrom]
-	tDropSecretStmt        astChunk[types.DropSecretStmt]
-	tDropStmt              astChunk[types.DropStmt]
-	tExecuteStmt           astChunk[types.ExecuteStmt]
-	tExists                astChunk[types.Exists]
-	tExplainOption         astChunk[types.ExplainOption]
-	tExplainStmt           astChunk[types.ExplainStmt]
-	tExportStmt            astChunk[types.ExportStmt]
-	tFieldStep             astChunk[types.FieldStep]
-	tFrame                 astChunk[types.Frame]
-	tFrameBound            astChunk[types.FrameBound]
-	tFuncCall              astChunk[types.FuncCall]
-	tFuncTable             astChunk[types.FuncTable]
-	tGeneratedColumn       astChunk[types.GeneratedColumn]
-	tGenericAlterOption    astChunk[types.GenericAlterOption]
-	tGenericOption         astChunk[types.GenericOption]
-	tGroupBy               astChunk[types.GroupBy]
-	tGrouping              astChunk[types.Grouping]
-	tGroupingSet           astChunk[types.GroupingSet]
-	tImportStmt            astChunk[types.ImportStmt]
-	tIn                    astChunk[types.In]
-	tIndexElem             astChunk[types.IndexElem]
-	tIndexStep             astChunk[types.IndexStep]
-	tIndirection           astChunk[types.Indirection]
-	tInsertStmt            astChunk[types.InsertStmt]
-	tIntervalLit           astChunk[types.IntervalLit]
-	tIntoClause            astChunk[types.IntoClause]
-	tIsExpr                astChunk[types.IsExpr]
-	tIsOf                  astChunk[types.IsOf]
-	tJoin                  astChunk[types.Join]
-	tLambda                astChunk[types.Lambda]
-	tLike                  astChunk[types.Like]
-	tLimitClause           astChunk[types.LimitClause]
-	tListComp              astChunk[types.ListComp]
-	tListLit               astChunk[types.ListLit]
-	tLoadStmt              astChunk[types.LoadStmt]
-	tLockClause            astChunk[types.LockClause]
-	tMacroDef              astChunk[types.MacroDef]
-	tMacroParam            astChunk[types.MacroParam]
-	tMapEntry              astChunk[types.MapEntry]
-	tMapLit                astChunk[types.MapLit]
-	tMergeAction           astChunk[types.MergeAction]
-	tMergeStmt             astChunk[types.MergeStmt]
-	tMergeWhen             astChunk[types.MergeWhen]
-	tName                  astChunk[types.Name]
-	tNamedArg              astChunk[types.NamedArg]
-	tNot                   astChunk[types.Not]
-	tNumber                astChunk[types.Number]
-	tOffsetClause          astChunk[types.OffsetClause]
-	tOnConflict            astChunk[types.OnConflict]
-	tOrderBy               astChunk[types.OrderBy]
-	tParen                 astChunk[types.Paren]
-	tParenQuery            astChunk[types.ParenQuery]
-	tParenTable            astChunk[types.ParenTable]
-	tPartitionSorted       astChunk[types.PartitionSorted]
-	tPivotColumn           astChunk[types.PivotColumn]
-	tPivotQuery            astChunk[types.PivotQuery]
-	tPivotRef              astChunk[types.PivotRef]
-	tPivotValue            astChunk[types.PivotValue]
-	tPositionalRef         astChunk[types.PositionalRef]
-	tPostfixOp             astChunk[types.PostfixOp]
-	tPragmaStmt            astChunk[types.PragmaStmt]
-	tPrepareStmt           astChunk[types.PrepareStmt]
-	tReference             astChunk[types.Reference]
-	tReloption             astChunk[types.Reloption]
-	tRenameItem            astChunk[types.RenameItem]
-	tRenameStmt            astChunk[types.RenameStmt]
-	tReplaceItem           astChunk[types.ReplaceItem]
-	tResetStmt             astChunk[types.ResetStmt]
-	tRow                   astChunk[types.Row]
-	tRowsFromItem          astChunk[types.RowsFromItem]
-	tSampleClause          astChunk[types.SampleClause]
-	tScript                astChunk[types.Script]
-	tSecretOption          astChunk[types.SecretOption]
-	tSelect                astChunk[types.Select]
-	tSelectCore            astChunk[types.SelectCore]
-	tSelectItem            astChunk[types.SelectItem]
-	tSeqOption             astChunk[types.SeqOption]
-	tSetClause             astChunk[types.SetClause]
-	tSetOp                 astChunk[types.SetOp]
-	tSetStmt               astChunk[types.SetStmt]
-	tShowStmt              astChunk[types.ShowStmt]
-	tSliceStep             astChunk[types.SliceStep]
-	tSortItem              astChunk[types.SortItem]
-	tSpecialCall           astChunk[types.SpecialCall]
-	tStar                  astChunk[types.Star]
-	tStructField           astChunk[types.StructField]
-	tStructLit             astChunk[types.StructLit]
-	tSubquery              astChunk[types.Subquery]
-	tSubqueryRef           astChunk[types.SubqueryRef]
-	tTableAlias            astChunk[types.TableAlias]
-	tTableConstraint       astChunk[types.TableConstraint]
-	tTableLike             astChunk[types.TableLike]
-	tTableQuery            astChunk[types.TableQuery]
-	tTargetTable           astChunk[types.TargetTable]
-	tTransactionStmt       astChunk[types.TransactionStmt]
-	tType                  astChunk[types.Type]
-	tTypeField             astChunk[types.TypeField]
-	tTypedLit              astChunk[types.TypedLit]
-	tUnary                 astChunk[types.Unary]
-	tUnpackExpr            astChunk[types.UnpackExpr]
-	tUnpivotQuery          astChunk[types.UnpivotQuery]
-	tUnpivotRef            astChunk[types.UnpivotRef]
-	tUnpivotValue          astChunk[types.UnpivotValue]
-	tUpdateExtensionsStmt  astChunk[types.UpdateExtensionsStmt]
-	tUpdateStmt            astChunk[types.UpdateStmt]
-	tUseStmt               astChunk[types.UseStmt]
-	tVacuumStmt            astChunk[types.VacuumStmt]
-	tValuesClause          astChunk[types.ValuesClause]
-	tValuesRef             astChunk[types.ValuesRef]
-	tValuesRow             astChunk[types.ValuesRow]
-	tWhen                  astChunk[types.When]
-	tWindowDef             astChunk[types.WindowDef]
-	tWindowOver            astChunk[types.WindowOver]
-	tWindowSpec            astChunk[types.WindowSpec]
-	tWith                  astChunk[types.With]
-	tl0Chunk               astChunk[*types.ColumnConstraint]
-	tl1Chunk               astChunk[types.Expr]
-	tl2Chunk               astChunk[*types.SortItem]
-	tl3Chunk               astChunk[*types.Reloption]
-	tl4Chunk               astChunk[*types.SeqOption]
-	tl5Chunk               astChunk[*types.GenericAlterOption]
-	tl6Chunk               astChunk[*types.AlterCmd]
-	tl7Chunk               astChunk[*types.Ident]
-	tl8Chunk               astChunk[*types.GenericOption]
-	tl9Chunk               astChunk[*types.When]
-	tl10Chunk              astChunk[*types.DefElem]
-	tl11Chunk              astChunk[*types.CopyOption]
-	tl12Chunk              astChunk[*types.IndexElem]
-	tl13Chunk              astChunk[*types.MacroDef]
-	tl14Chunk              astChunk[types.Statement]
-	tl15Chunk              astChunk[*types.SecretOption]
-	tl16Chunk              astChunk[*types.PartitionSorted]
-	tl17Chunk              astChunk[types.TableElement]
-	tl18Chunk              astChunk[*types.StringLit]
-	tl19Chunk              astChunk[types.TableRef]
-	tl20Chunk              astChunk[*types.SelectItem]
-	tl21Chunk              astChunk[*types.Name]
-	tl22Chunk              astChunk[*types.ExplainOption]
-	tl23Chunk              astChunk[*types.RowsFromItem]
-	tl24Chunk              astChunk[*types.Type]
-	tl25Chunk              astChunk[*types.MacroParam]
-	tl26Chunk              astChunk[*types.MapEntry]
-	tl27Chunk              astChunk[*types.SetClause]
-	tl28Chunk              astChunk[*types.MergeWhen]
-	tl29Chunk              astChunk[*types.PivotColumn]
-	tl30Chunk              astChunk[*types.PivotValue]
-	tl31Chunk              astChunk[*types.ColDef]
-	tl32Chunk              astChunk[*types.LockClause]
-	tl33Chunk              astChunk[*types.WindowDef]
-	tl34Chunk              astChunk[*types.ReplaceItem]
-	tl35Chunk              astChunk[*types.RenameItem]
-	tl36Chunk              astChunk[*types.StructField]
-	tl37Chunk              astChunk[*types.TNode[string]]
-	tl38Chunk              astChunk[*types.TypeField]
-	tl39Chunk              astChunk[*types.ArrayDim]
-	tl40Chunk              astChunk[*types.UnpivotValue]
-	tl41Chunk              astChunk[*types.ValuesRow]
-	tl42Chunk              astChunk[*types.CTE]
+	tAlterCmd              rt.Chunk[types.AlterCmd]
+	tAlterDatabaseStmt     rt.Chunk[types.AlterDatabaseStmt]
+	tAlterObjectSchemaStmt rt.Chunk[types.AlterObjectSchemaStmt]
+	tAlterSequenceStmt     rt.Chunk[types.AlterSequenceStmt]
+	tAlterTableStmt        rt.Chunk[types.AlterTableStmt]
+	tAnalyzeStmt           rt.Chunk[types.AnalyzeStmt]
+	tAnyAll                rt.Chunk[types.AnyAll]
+	tArrayDim              rt.Chunk[types.ArrayDim]
+	tArrayLit              rt.Chunk[types.ArrayLit]
+	tArraySubquery         rt.Chunk[types.ArraySubquery]
+	tAtClause              rt.Chunk[types.AtClause]
+	tAtTimeZone            rt.Chunk[types.AtTimeZone]
+	tAttachStmt            rt.Chunk[types.AttachStmt]
+	tBaseTable             rt.Chunk[types.BaseTable]
+	tBetween               rt.Chunk[types.Between]
+	tBinary                rt.Chunk[types.Binary]
+	tCTE                   rt.Chunk[types.CTE]
+	tCallStmt              rt.Chunk[types.CallStmt]
+	tCase                  rt.Chunk[types.Case]
+	tCast                  rt.Chunk[types.Cast]
+	tCheckpointStmt        rt.Chunk[types.CheckpointStmt]
+	tColDef                rt.Chunk[types.ColDef]
+	tCollate               rt.Chunk[types.Collate]
+	tColumnConstraint      rt.Chunk[types.ColumnConstraint]
+	tColumnDef             rt.Chunk[types.ColumnDef]
+	tColumnRef             rt.Chunk[types.ColumnRef]
+	tColumnsExpr           rt.Chunk[types.ColumnsExpr]
+	tCommentStmt           rt.Chunk[types.CommentStmt]
+	tCopyDatabaseStmt      rt.Chunk[types.CopyDatabaseStmt]
+	tCopyOption            rt.Chunk[types.CopyOption]
+	tCopyStmt              rt.Chunk[types.CopyStmt]
+	tCreateIndexStmt       rt.Chunk[types.CreateIndexStmt]
+	tCreateMacroStmt       rt.Chunk[types.CreateMacroStmt]
+	tCreateSchemaStmt      rt.Chunk[types.CreateSchemaStmt]
+	tCreateSecretStmt      rt.Chunk[types.CreateSecretStmt]
+	tCreateSequenceStmt    rt.Chunk[types.CreateSequenceStmt]
+	tCreateTableAsStmt     rt.Chunk[types.CreateTableAsStmt]
+	tCreateTableStmt       rt.Chunk[types.CreateTableStmt]
+	tCreateTypeStmt        rt.Chunk[types.CreateTypeStmt]
+	tCreateViewStmt        rt.Chunk[types.CreateViewStmt]
+	tDeallocateStmt        rt.Chunk[types.DeallocateStmt]
+	tDefElem               rt.Chunk[types.DefElem]
+	tDeleteStmt            rt.Chunk[types.DeleteStmt]
+	tDetachStmt            rt.Chunk[types.DetachStmt]
+	tDistinctClause        rt.Chunk[types.DistinctClause]
+	tDistinctFrom          rt.Chunk[types.DistinctFrom]
+	tDropSecretStmt        rt.Chunk[types.DropSecretStmt]
+	tDropStmt              rt.Chunk[types.DropStmt]
+	tExecuteStmt           rt.Chunk[types.ExecuteStmt]
+	tExists                rt.Chunk[types.Exists]
+	tExplainOption         rt.Chunk[types.ExplainOption]
+	tExplainStmt           rt.Chunk[types.ExplainStmt]
+	tExportStmt            rt.Chunk[types.ExportStmt]
+	tFieldStep             rt.Chunk[types.FieldStep]
+	tFrame                 rt.Chunk[types.Frame]
+	tFrameBound            rt.Chunk[types.FrameBound]
+	tFuncCall              rt.Chunk[types.FuncCall]
+	tFuncTable             rt.Chunk[types.FuncTable]
+	tGeneratedColumn       rt.Chunk[types.GeneratedColumn]
+	tGenericAlterOption    rt.Chunk[types.GenericAlterOption]
+	tGenericOption         rt.Chunk[types.GenericOption]
+	tGroupBy               rt.Chunk[types.GroupBy]
+	tGrouping              rt.Chunk[types.Grouping]
+	tGroupingSet           rt.Chunk[types.GroupingSet]
+	tImportStmt            rt.Chunk[types.ImportStmt]
+	tIn                    rt.Chunk[types.In]
+	tIndexElem             rt.Chunk[types.IndexElem]
+	tIndexStep             rt.Chunk[types.IndexStep]
+	tIndirection           rt.Chunk[types.Indirection]
+	tInsertStmt            rt.Chunk[types.InsertStmt]
+	tIntervalLit           rt.Chunk[types.IntervalLit]
+	tIntoClause            rt.Chunk[types.IntoClause]
+	tIsExpr                rt.Chunk[types.IsExpr]
+	tIsOf                  rt.Chunk[types.IsOf]
+	tJoin                  rt.Chunk[types.Join]
+	tLambda                rt.Chunk[types.Lambda]
+	tLike                  rt.Chunk[types.Like]
+	tLimitClause           rt.Chunk[types.LimitClause]
+	tListComp              rt.Chunk[types.ListComp]
+	tListLit               rt.Chunk[types.ListLit]
+	tLoadStmt              rt.Chunk[types.LoadStmt]
+	tLockClause            rt.Chunk[types.LockClause]
+	tMacroDef              rt.Chunk[types.MacroDef]
+	tMacroParam            rt.Chunk[types.MacroParam]
+	tMapEntry              rt.Chunk[types.MapEntry]
+	tMapLit                rt.Chunk[types.MapLit]
+	tMergeAction           rt.Chunk[types.MergeAction]
+	tMergeStmt             rt.Chunk[types.MergeStmt]
+	tMergeWhen             rt.Chunk[types.MergeWhen]
+	tName                  rt.Chunk[types.Name]
+	tNamedArg              rt.Chunk[types.NamedArg]
+	tNot                   rt.Chunk[types.Not]
+	tNumber                rt.Chunk[types.Number]
+	tOffsetClause          rt.Chunk[types.OffsetClause]
+	tOnConflict            rt.Chunk[types.OnConflict]
+	tOrderBy               rt.Chunk[types.OrderBy]
+	tParen                 rt.Chunk[types.Paren]
+	tParenQuery            rt.Chunk[types.ParenQuery]
+	tParenTable            rt.Chunk[types.ParenTable]
+	tPartitionSorted       rt.Chunk[types.PartitionSorted]
+	tPivotColumn           rt.Chunk[types.PivotColumn]
+	tPivotQuery            rt.Chunk[types.PivotQuery]
+	tPivotRef              rt.Chunk[types.PivotRef]
+	tPivotValue            rt.Chunk[types.PivotValue]
+	tPositionalRef         rt.Chunk[types.PositionalRef]
+	tPostfixOp             rt.Chunk[types.PostfixOp]
+	tPragmaStmt            rt.Chunk[types.PragmaStmt]
+	tPrepareStmt           rt.Chunk[types.PrepareStmt]
+	tReference             rt.Chunk[types.Reference]
+	tReloption             rt.Chunk[types.Reloption]
+	tRenameItem            rt.Chunk[types.RenameItem]
+	tRenameStmt            rt.Chunk[types.RenameStmt]
+	tReplaceItem           rt.Chunk[types.ReplaceItem]
+	tResetStmt             rt.Chunk[types.ResetStmt]
+	tRow                   rt.Chunk[types.Row]
+	tRowsFromItem          rt.Chunk[types.RowsFromItem]
+	tSampleClause          rt.Chunk[types.SampleClause]
+	tScript                rt.Chunk[types.Script]
+	tSecretOption          rt.Chunk[types.SecretOption]
+	tSelect                rt.Chunk[types.Select]
+	tSelectCore            rt.Chunk[types.SelectCore]
+	tSelectItem            rt.Chunk[types.SelectItem]
+	tSeqOption             rt.Chunk[types.SeqOption]
+	tSetClause             rt.Chunk[types.SetClause]
+	tSetOp                 rt.Chunk[types.SetOp]
+	tSetStmt               rt.Chunk[types.SetStmt]
+	tShowStmt              rt.Chunk[types.ShowStmt]
+	tSliceStep             rt.Chunk[types.SliceStep]
+	tSortItem              rt.Chunk[types.SortItem]
+	tSpecialCall           rt.Chunk[types.SpecialCall]
+	tStar                  rt.Chunk[types.Star]
+	tStructField           rt.Chunk[types.StructField]
+	tStructLit             rt.Chunk[types.StructLit]
+	tSubquery              rt.Chunk[types.Subquery]
+	tSubqueryRef           rt.Chunk[types.SubqueryRef]
+	tTableAlias            rt.Chunk[types.TableAlias]
+	tTableConstraint       rt.Chunk[types.TableConstraint]
+	tTableLike             rt.Chunk[types.TableLike]
+	tTableQuery            rt.Chunk[types.TableQuery]
+	tTargetTable           rt.Chunk[types.TargetTable]
+	tTransactionStmt       rt.Chunk[types.TransactionStmt]
+	tType                  rt.Chunk[types.Type]
+	tTypeField             rt.Chunk[types.TypeField]
+	tTypedLit              rt.Chunk[types.TypedLit]
+	tUnary                 rt.Chunk[types.Unary]
+	tUnpackExpr            rt.Chunk[types.UnpackExpr]
+	tUnpivotQuery          rt.Chunk[types.UnpivotQuery]
+	tUnpivotRef            rt.Chunk[types.UnpivotRef]
+	tUnpivotValue          rt.Chunk[types.UnpivotValue]
+	tUpdateExtensionsStmt  rt.Chunk[types.UpdateExtensionsStmt]
+	tUpdateStmt            rt.Chunk[types.UpdateStmt]
+	tUseStmt               rt.Chunk[types.UseStmt]
+	tVacuumStmt            rt.Chunk[types.VacuumStmt]
+	tValuesClause          rt.Chunk[types.ValuesClause]
+	tValuesRef             rt.Chunk[types.ValuesRef]
+	tValuesRow             rt.Chunk[types.ValuesRow]
+	tWhen                  rt.Chunk[types.When]
+	tWindowDef             rt.Chunk[types.WindowDef]
+	tWindowOver            rt.Chunk[types.WindowOver]
+	tWindowSpec            rt.Chunk[types.WindowSpec]
+	tWith                  rt.Chunk[types.With]
+	tl0Chunk               rt.Chunk[*types.ColumnConstraint]
+	tl1Chunk               rt.Chunk[types.Expr]
+	tl2Chunk               rt.Chunk[*types.SortItem]
+	tl3Chunk               rt.Chunk[*types.Reloption]
+	tl4Chunk               rt.Chunk[*types.SeqOption]
+	tl5Chunk               rt.Chunk[*types.GenericAlterOption]
+	tl6Chunk               rt.Chunk[*types.AlterCmd]
+	tl7Chunk               rt.Chunk[*types.Ident]
+	tl8Chunk               rt.Chunk[*types.GenericOption]
+	tl9Chunk               rt.Chunk[*types.When]
+	tl10Chunk              rt.Chunk[*types.DefElem]
+	tl11Chunk              rt.Chunk[*types.CopyOption]
+	tl12Chunk              rt.Chunk[*types.IndexElem]
+	tl13Chunk              rt.Chunk[*types.MacroDef]
+	tl14Chunk              rt.Chunk[types.Statement]
+	tl15Chunk              rt.Chunk[*types.SecretOption]
+	tl16Chunk              rt.Chunk[*types.PartitionSorted]
+	tl17Chunk              rt.Chunk[types.TableElement]
+	tl18Chunk              rt.Chunk[*types.StringLit]
+	tl19Chunk              rt.Chunk[types.TableRef]
+	tl20Chunk              rt.Chunk[*types.SelectItem]
+	tl21Chunk              rt.Chunk[*types.Name]
+	tl22Chunk              rt.Chunk[*types.ExplainOption]
+	tl23Chunk              rt.Chunk[*types.RowsFromItem]
+	tl24Chunk              rt.Chunk[*types.Type]
+	tl25Chunk              rt.Chunk[*types.MacroParam]
+	tl26Chunk              rt.Chunk[*types.MapEntry]
+	tl27Chunk              rt.Chunk[*types.SetClause]
+	tl28Chunk              rt.Chunk[*types.MergeWhen]
+	tl29Chunk              rt.Chunk[*types.PivotColumn]
+	tl30Chunk              rt.Chunk[*types.PivotValue]
+	tl31Chunk              rt.Chunk[*types.ColDef]
+	tl32Chunk              rt.Chunk[*types.LockClause]
+	tl33Chunk              rt.Chunk[*types.WindowDef]
+	tl34Chunk              rt.Chunk[*types.ReplaceItem]
+	tl35Chunk              rt.Chunk[*types.RenameItem]
+	tl36Chunk              rt.Chunk[*types.StructField]
+	tl37Chunk              rt.Chunk[*types.TNode[string]]
+	tl38Chunk              rt.Chunk[*types.TypeField]
+	tl39Chunk              rt.Chunk[*types.ArrayDim]
+	tl40Chunk              rt.Chunk[*types.UnpivotValue]
+	tl41Chunk              rt.Chunk[*types.ValuesRow]
+	tl42Chunk              rt.Chunk[*types.CTE]
 }
 
 func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }

@@ -42,40 +42,6 @@ func ParseRule(name, input string, opts ...rt.ParseOption) (*rt.Node, error) {
 	return rt.RunParseResolved(r, input, o)
 }
 
-type astChunk[T any] struct {
-	free      []T
-	next      int
-	bootstrap uint8
-}
-
-func (s *astChunk[T]) grow(n, initial, limit int) {
-	size := s.next
-	if size == 0 {
-		size = initial
-	}
-	for size < n {
-		size *= 2
-	}
-	s.free = make([]T, size)
-	s.next = size * 2
-	if s.next > limit {
-		s.next = limit
-	}
-}
-
-func astNew[T any](s *astChunk[T]) *T {
-	if len(s.free) == 0 {
-		if s.bootstrap < 3 {
-			s.bootstrap++
-			return new(T)
-		}
-		s.grow(1, 8, 256)
-	}
-	v := &s.free[0]
-	s.free = s.free[1:]
-	return v
-}
-
 func tinit() {
 	tnamedPub := func(a any, x rt.TVal) any {
 		s, _ := a.(*tslabs)
@@ -96,7 +62,7 @@ func tinit() {
 
 func tmk_Binary(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tBinary)
+	v := rt.Alloc(&a.tBinary)
 	v.Left = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f0))
 	v.Op = (*types.TNode[string])(rt.TPubMatch(f1))
 	v.Right = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f2))
@@ -109,7 +75,7 @@ func tmk_Binary(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 func tmk_Unary(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
-	v := astNew(&a.tUnary)
+	v := rt.Alloc(&a.tUnary)
 	v.Op = (*types.TNode[string])(rt.TPubMatch(f0))
 	v.X = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
@@ -130,8 +96,8 @@ func tv0(a *tslabs, v any) *types.Number {
 
 type tslabs struct {
 	control *rt.WorkControl
-	tBinary astChunk[types.Binary]
-	tUnary  astChunk[types.Unary]
+	tBinary rt.Chunk[types.Binary]
+	tUnary  rt.Chunk[types.Unary]
 }
 
 func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }

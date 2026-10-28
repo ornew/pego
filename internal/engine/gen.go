@@ -425,6 +425,9 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		// The one reference to the schema of the types package (see schemaName).
 		body += "\nconst _ = " + tp.schema + "\n"
 	}
+	if gen.chunksInRuntime {
+		body = chunkNames.Replace(body)
+	}
 	body, err = qualifyRuntime(opts.runtimeImport(), body, info, tp)
 	if err != nil {
 		return nil, err
@@ -560,9 +563,11 @@ type generator struct {
 	disableLiteralSharing bool
 	// Only exact emitted bodies with the same signature share a helper. Rule
 	// wrappers, memo IDs, frame layouts and expectation IDs remain in the code.
-	methodNames                 map[generatedMethod]string
-	literalNames                map[string]string
-	methodKeys                  []generatedMethod
+	methodNames  map[generatedMethod]string
+	literalNames map[string]string
+	methodKeys   []generatedMethod
+	// chunksInRuntime is set when the typed values take their storage from the runtime (Chunk).
+	chunksInRuntime             bool
 	ruleTypesDone               bool // the types of the rule table entries are written
 	literalKeys                 []string
 	disableLiteralTextDispatch  bool
