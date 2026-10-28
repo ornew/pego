@@ -926,8 +926,8 @@ func (g *generator) rules() {
 			if len(flags) > 0 {
 				fields = append(fields, "Flags: "+strings.Join(flags, " | "))
 			}
-			if r.seen != 0 {
-				fields = append(fields, fmt.Sprintf("Seen: %d", r.seen))
+			if r.seen >= 0 {
+				fields = append(fields, fmt.Sprintf("Seen: %d", r.seen+1))
 			}
 			if k := strsOf(scopes[r].names); k != 0 {
 				fields = append(fields, fmt.Sprintf("Scope: %d", k))
@@ -941,7 +941,13 @@ func (g *generator) rules() {
 				w = ""
 			}
 			if w != "" || r.nodeType != "" || r.opNodeType != "" {
-				extras = append(extras, fmt.Sprintf("\t{Id: %d, Where: %q, NodeType: %q, OpNodeType: %q},\n", r.id, w, r.nodeType, r.opNodeType))
+				extra := []string{fmt.Sprintf("Id: %d", r.id)}
+				for _, f := range [...]struct{ name, value string }{{"Where", w}, {"NodeType", r.nodeType}, {"OpNodeType", r.opNodeType}} {
+					if f.value != "" {
+						extra = append(extra, fmt.Sprintf("%s: %q", f.name, f.value))
+					}
+				}
+				extras = append(extras, "\t{"+strings.Join(extra, ", ")+"},\n")
 			}
 		}
 		if err := ruleTableLimits(len(strs), g.prog.nseen); err != nil {

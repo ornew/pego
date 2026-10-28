@@ -192,20 +192,20 @@ var sh24 = rt.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}
 var sh25 = rt.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}
 
 var rulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh22, Seen: -1, Scope: 1},
-	{Name: "expr", Value: &sh23, Flags: rt.RuleLeader, Seen: -1},
-	{Name: "add", Value: &sh24, Seen: -1, Scope: 2},
-	{Name: "term", Value: &sh23, Flags: rt.RuleLeader, Seen: -1},
-	{Name: "mul", Value: &sh24, Seen: -1, Scope: 2},
-	{Name: "unary", Value: &sh23, Flags: rt.RuleMemo},
-	{Name: "neg", Value: &sh25, Seen: -1, Scope: 3},
-	{Name: "power", Value: &sh23, Seen: -1},
-	{Name: "pow", Value: &sh24, Seen: -1, Scope: 2},
-	{Name: "primary", Value: &sh22, Flags: rt.RuleMemo, Seen: 1, Scope: 4},
-	{Name: "group", Value: &sh24, Seen: -1, Scope: 1},
-	{Name: "number", Value: &sh23, Seen: -1},
-	{Name: "ws", Value: &sh23, Seen: -1},
-	{Name: "ws", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "main", Value: &sh22, Scope: 1},
+	{Name: "expr", Value: &sh23, Flags: rt.RuleLeader},
+	{Name: "add", Value: &sh24, Scope: 2},
+	{Name: "term", Value: &sh23, Flags: rt.RuleLeader},
+	{Name: "mul", Value: &sh24, Scope: 2},
+	{Name: "unary", Value: &sh23, Flags: rt.RuleMemo, Seen: 1},
+	{Name: "neg", Value: &sh25, Scope: 3},
+	{Name: "power", Value: &sh23},
+	{Name: "pow", Value: &sh24, Scope: 2},
+	{Name: "primary", Value: &sh22, Flags: rt.RuleMemo, Seen: 2, Scope: 4},
+	{Name: "group", Value: &sh24, Scope: 1},
+	{Name: "number", Value: &sh23},
+	{Name: "ws", Value: &sh23},
+	{Name: "ws", Value: &sh23, Flags: rt.RuleNovalue},
 }
 
 var rulesStrs = [...][]string{
@@ -217,23 +217,23 @@ var rulesStrs = [...][]string{
 }
 
 var rulesExtras = [...]rt.RuleExtra{
-	{Id: 11, Where: "", NodeType: "Number", OpNodeType: ""},
+	{Id: 11, NodeType: "Number"},
 }
 
 var recRulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh22, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "expr", Value: &sh23, Flags: rt.RuleLeader | rt.RuleNovalue, Seen: -1},
-	{Name: "add", Value: &sh24, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "term", Value: &sh23, Flags: rt.RuleLeader | rt.RuleNovalue, Seen: -1},
-	{Name: "mul", Value: &sh24, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "unary", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue},
-	{Name: "neg", Value: &sh25, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "power", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "pow", Value: &sh24, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "primary", Value: &sh22, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 1},
-	{Name: "group", Value: &sh24, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "number", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ws", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "main", Value: &sh22, Flags: rt.RuleNovalue},
+	{Name: "expr", Value: &sh23, Flags: rt.RuleLeader | rt.RuleNovalue},
+	{Name: "add", Value: &sh24, Flags: rt.RuleNovalue},
+	{Name: "term", Value: &sh23, Flags: rt.RuleLeader | rt.RuleNovalue},
+	{Name: "mul", Value: &sh24, Flags: rt.RuleNovalue},
+	{Name: "unary", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 1},
+	{Name: "neg", Value: &sh25, Flags: rt.RuleNovalue},
+	{Name: "power", Value: &sh23, Flags: rt.RuleNovalue},
+	{Name: "pow", Value: &sh24, Flags: rt.RuleNovalue},
+	{Name: "primary", Value: &sh22, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 2},
+	{Name: "group", Value: &sh24, Flags: rt.RuleNovalue},
+	{Name: "number", Value: &sh23, Flags: rt.RuleNovalue},
+	{Name: "ws", Value: &sh23, Flags: rt.RuleNovalue},
 }
 
 var recRulesStrs = [...][]string{

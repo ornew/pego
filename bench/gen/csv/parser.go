@@ -239,11 +239,11 @@ var sh13 = rt.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}
 var sh14 = rt.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}
 
 var rulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh13, Seen: -1, Scope: 1},
-	{Name: "record", Value: &sh14, Seen: -1, Scope: 2},
-	{Name: "field", Value: &sh2, Seen: -1},
-	{Name: "eol", Value: &sh2, Seen: -1},
-	{Name: "eol", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "main", Value: &sh13, Scope: 1},
+	{Name: "record", Value: &sh14, Scope: 2},
+	{Name: "field", Value: &sh2},
+	{Name: "eol", Value: &sh2},
+	{Name: "eol", Value: &sh2, Flags: rt.RuleNovalue},
 }
 
 var rulesStrs = [...][]string{
@@ -253,14 +253,14 @@ var rulesStrs = [...][]string{
 }
 
 var rulesExtras = [...]rt.RuleExtra{
-	{Id: 2, Where: "", NodeType: "Field", OpNodeType: ""},
+	{Id: 2, NodeType: "Field"},
 }
 
 var recRulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh13, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "record", Value: &sh14, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "field", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "eol", Value: &sh2, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "main", Value: &sh13, Flags: rt.RuleNovalue},
+	{Name: "record", Value: &sh14, Flags: rt.RuleNovalue},
+	{Name: "field", Value: &sh2, Flags: rt.RuleNovalue},
+	{Name: "eol", Value: &sh2, Flags: rt.RuleNovalue},
 }
 
 var recRulesStrs = [...][]string{

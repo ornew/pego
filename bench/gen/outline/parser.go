@@ -192,16 +192,16 @@ var sh13 = rt.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}
 var sh14 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}
 
 var rulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh10, Seen: -1, Scope: 1, Vars: 2},
-	{Name: "block", Value: &sh11, Flags: rt.RuleMemo, Scope: 3, Vars: 2},
-	{Name: "item", Value: &sh12, Seen: -1, Scope: 4, Vars: 2},
-	{Name: "children", Value: &sh13, Seen: -1, Scope: 5, Vars: 2},
-	{Name: "spaces", Value: &sh14, Seen: -1},
-	{Name: "line", Value: &sh14, Seen: -1},
-	{Name: "eol", Value: &sh14, Seen: -1},
-	{Name: "blank", Value: &sh10, Seen: -1},
-	{Name: "blank", Value: &sh10, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "eol", Value: &sh14, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "main", Value: &sh10, Scope: 1, Vars: 2},
+	{Name: "block", Value: &sh11, Flags: rt.RuleMemo, Seen: 1, Scope: 3, Vars: 2},
+	{Name: "item", Value: &sh12, Scope: 4, Vars: 2},
+	{Name: "children", Value: &sh13, Scope: 5, Vars: 2},
+	{Name: "spaces", Value: &sh14},
+	{Name: "line", Value: &sh14},
+	{Name: "eol", Value: &sh14},
+	{Name: "blank", Value: &sh10},
+	{Name: "blank", Value: &sh10, Flags: rt.RuleNovalue},
+	{Name: "eol", Value: &sh14, Flags: rt.RuleNovalue},
 }
 
 var rulesStrs = [...][]string{
@@ -218,14 +218,14 @@ var rulesExtras = [...]rt.RuleExtra{}
 var scope16 = []string{}
 
 var recRulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh10, Flags: rt.RuleNovalue, Seen: -1, Vars: 1},
-	{Name: "block", Value: &sh11, Flags: rt.RuleMemo | rt.RuleNovalue, Vars: 1},
-	{Name: "item", Value: &sh12, Flags: rt.RuleNovalue, Seen: -1, Scope: 2, Vars: 1},
-	{Name: "children", Value: &sh13, Flags: rt.RuleNovalue, Seen: -1, Scope: 2, Vars: 1},
-	{Name: "spaces", Value: &sh14, Seen: -1},
-	{Name: "line", Value: &sh14, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "eol", Value: &sh14, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "blank", Value: &sh10, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "main", Value: &sh10, Flags: rt.RuleNovalue, Vars: 1},
+	{Name: "block", Value: &sh11, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 1, Vars: 1},
+	{Name: "item", Value: &sh12, Flags: rt.RuleNovalue, Scope: 2, Vars: 1},
+	{Name: "children", Value: &sh13, Flags: rt.RuleNovalue, Scope: 2, Vars: 1},
+	{Name: "spaces", Value: &sh14},
+	{Name: "line", Value: &sh14, Flags: rt.RuleNovalue},
+	{Name: "eol", Value: &sh14, Flags: rt.RuleNovalue},
+	{Name: "blank", Value: &sh10, Flags: rt.RuleNovalue},
 }
 
 var recRulesStrs = [...][]string{

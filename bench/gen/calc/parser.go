@@ -182,11 +182,11 @@ var sh4 = rt.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}
 var sh5 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}
 
 var rulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh4, Seen: -1, Scope: 1},
-	{Name: "expr", Flags: rt.RuleMemo},
-	{Name: "number", Value: &sh5, Seen: -1},
-	{Name: "ws", Value: &sh5, Seen: -1},
-	{Name: "ws", Value: &sh5, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "main", Value: &sh4, Scope: 1},
+	{Name: "expr", Flags: rt.RuleMemo, Seen: 1},
+	{Name: "number", Value: &sh5},
+	{Name: "ws", Value: &sh5},
+	{Name: "ws", Value: &sh5, Flags: rt.RuleNovalue},
 }
 
 var rulesStrs = [...][]string{
@@ -195,7 +195,7 @@ var rulesStrs = [...][]string{
 }
 
 var rulesExtras = [...]rt.RuleExtra{
-	{Id: 2, Where: "", NodeType: "Number", OpNodeType: ""},
+	{Id: 2, NodeType: "Number"},
 }
 
 var lit8 = []rune("(")
@@ -209,10 +209,10 @@ var lit17 = []rune("%")
 var lit20 = []rune("^")
 
 var recRulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh4, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "expr", Flags: rt.RuleMemo | rt.RuleNovalue},
-	{Name: "number", Value: &sh5, Flags: rt.RuleNovalue, Seen: -1},
-	{Name: "ws", Value: &sh5, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "main", Value: &sh4, Flags: rt.RuleNovalue},
+	{Name: "expr", Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 1},
+	{Name: "number", Value: &sh5, Flags: rt.RuleNovalue},
+	{Name: "ws", Value: &sh5, Flags: rt.RuleNovalue},
 }
 
 var recRulesStrs = [...][]string{

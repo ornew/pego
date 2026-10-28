@@ -10,12 +10,13 @@ func TestNewRules(t *testing.T) {
 	strs := [][]string{nil, {"a", "b"}, {"x"}}
 	specs := []RuleSpec{
 		{Name: "r0"},
-		{Name: "r1", Value: &sh, Flags: RuleMemo | RuleLeader | RuleDocMemo, Seen: -1, Scope: 1, Vars: 2},
-		{Name: "r2", Flags: RuleNovalue | RuleSplice, Seen: 3},
+		{Name: "r1", Value: &sh, Flags: RuleMemo | RuleLeader | RuleDocMemo, Scope: 1, Vars: 2},
+		{Name: "r2", Flags: RuleNovalue | RuleSplice, Seen: 4},
+		{Name: "r3", Flags: RuleMemo, Seen: 1},
 	}
 	extras := []RuleExtra{{Id: 2, Where: "w", NodeType: "N", OpNodeType: "O"}}
 	rules := NewRules(specs, strs, extras)
-	if len(rules) != 3 {
+	if len(rules) != 4 {
 		t.Fatalf("got %d rules", len(rules))
 	}
 	for i, r := range rules {
@@ -32,7 +33,10 @@ func TestNewRules(t *testing.T) {
 	if r.Value != (Shaper{}) || r.Memo || !r.Novalue || !r.Splice || r.Seen != 3 || r.Where != "w" || r.NodeType != "N" || r.OpNodeType != "O" {
 		t.Errorf("rule 2 = %+v", r)
 	}
-	if rules[0].Where != "" || rules[0].NodeType != "" {
+	if rules[3].Seen != 0 {
+		t.Errorf("a spec with Seen 1 is the first deferred rule: Seen %d", rules[3].Seen)
+	}
+	if rules[0].Seen != -1 || rules[0].Where != "" || rules[0].NodeType != "" {
 		t.Errorf("rule 0 = %+v", rules[0])
 	}
 	tr := NewTRules(rules)

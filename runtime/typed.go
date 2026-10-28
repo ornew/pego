@@ -388,7 +388,8 @@ func (p *TParser) nodeValue(n TVal) any {
 
 // RuleSpec is the compact form of the analysis results of a rule, which generated parsers keep as
 // static data. Its Id is its position in the table. Scope and Vars index the string lists given to
-// NewRules, 0 for none; a nil Value is the zero Shaper.
+// NewRules, 0 for none; a nil Value is the zero Shaper. Seen is the Seen field of the Rule plus one, so
+// that the zero value is the -1 of a rule whose memoization is not deferred.
 //
 // For generated parsers; not a stable API.
 type RuleSpec struct {
@@ -429,7 +430,7 @@ func NewRules(specs []RuleSpec, strs [][]string, extras []RuleExtra) []*Rule {
 	for i, s := range specs {
 		r := &table[i]
 		rules[i] = r
-		r.Id, r.Name, r.Seen = i, s.Name, int(s.Seen)
+		r.Id, r.Name, r.Seen = i, s.Name, int(s.Seen)-1
 		if s.Value != nil {
 			r.Value = *s.Value
 		}
