@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/engine/core"
 )
 
 //go:embed tsrt/runtime.ts
@@ -955,21 +956,42 @@ func (g *tsGen) attributed(e *grammar.Attributed, s *scope, build bool) string {
 func (g *tsGen) operatorsRule(r *rule, e *grammar.OperatorsRule) {
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s.operatorsRule = {\n", g.ruleVar(r))
+	// The lines of the rule's Core IR, in the order of e, if the printer prints them from Flow IR.
+	var co *core.OperatorsRule
+	if g.flow != nil {
+		co, _ = g.flow.m.Rules[r.id].Body.(*core.OperatorsRule)
+	}
 	if e.Skip != nil {
-		fmt.Fprintf(&b, "  skip: %s,\n", g.fn(g.expr(e.Skip, newScope(), false)))
+		var skip *core.OpLine
+		if co != nil {
+			skip = co.Skip
+		}
+		m, ok := g.flowLine(skip, e.Skip, newScope(), false)
+		if !ok {
+			m = g.expr(e.Skip, newScope(), false)
+		}
+		fmt.Fprintf(&b, "  skip: %s,\n", g.fn(m))
 	} else {
 		b.WriteString("  skip: null,\n")
 	}
 	b.WriteString("  operands: [\n")
-	for _, o := range e.Operands {
-		fmt.Fprintf(&b, "    %s,\n", g.operatorsRuleLine(o.Expr, o.Action, false, o))
+	for i, o := range e.Operands {
+		var l *core.OpLine
+		if co != nil {
+			l = co.Operands[i]
+		}
+		fmt.Fprintf(&b, "    %s,\n", g.operatorsRuleLine(o.Expr, o.Action, false, l))
 	}
 	b.WriteString("  ],\n")
 	var prefix, led []string
 	id := 0
 	for i, l := range e.Levels {
 		for _, op := range l.Operators {
-			s := fmt.Sprintf("    { id: %d, kind: %s, assoc: %s, level: %d, line: %s },\n", id, tsString(op.Kind), tsString(op.Assoc), i+1, g.operatorsRuleLine(op.Expr, op.Action, true, op))
+			var line *core.OpLine
+			if co != nil {
+				line = co.Ops[id].Line
+			}
+			s := fmt.Sprintf("    { id: %d, kind: %s, assoc: %s, level: %d, line: %s },\n", id, tsString(op.Kind), tsString(op.Assoc), i+1, g.operatorsRuleLine(op.Expr, op.Action, true, line))
 			id++
 			if op.Kind == grammar.Prefix {
 				prefix = append(prefix, s)
@@ -985,7 +1007,9 @@ func (g *tsGen) operatorsRule(r *rule, e *grammar.OperatorsRule) {
 	g.init.WriteString(b.String())
 }
 
-func (g *tsGen) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator bool, key any) string {
+// operatorsRuleLine returns the line of an Operators Rule with the expression e and the action; l is
+// its Core IR if the printer prints it from Flow IR, or nil.
+func (g *tsGen) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator bool, l *core.OpLine) string {
 	s := newScope()
 	var locals []string
 	if operator {
@@ -993,7 +1017,12 @@ func (g *tsGen) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator 
 	}
 	// Lines whose value is unused are matched without values, as in the engine; so are all lines
 	// of a rule without a value (in the recognizer).
-	m := g.fn(g.expr(e, s, !g.cur.novalue && !leanLine(action, locals)))
+	build := !g.cur.novalue && !leanLine(action, locals)
+	m, ok := g.flowLine(l, e, s, build)
+	if !ok {
+		m = g.expr(e, s, build)
+	}
+	m = g.fn(m)
 	act := "null"
 	if action != nil && !g.cur.novalue {
 		var locals map[string]string

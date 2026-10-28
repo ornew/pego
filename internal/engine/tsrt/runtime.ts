@@ -1424,6 +1424,8 @@ export class Parser {
   expBase = 0;
   expTop = 0;
   lastKept: number[] = noExp;
+  isoStack: number[] = [];
+  isoIds: number[] = noExp;
 
   recovered: SyntaxError[] = [];
 
@@ -1941,6 +1943,57 @@ export class Parser {
       this.stepWork();
       this.expect(far, this.exp[i]!);
     }
+  }
+
+  // isolate begins a separate record of the expectations from the position and returns its mark,
+  // for unisolate.
+  isolate(): number {
+    const mk = this.isoStack.length;
+    this.isoStack.push(this.farthest, this.expBase);
+    this.expBase = this.expTop;
+    this.farthest = this.pos;
+    return mk;
+  }
+
+  // unisolate ends the record that isolate began, returns the farthest position it reached and
+  // leaves a copy of its expectations in isoIds.
+  unisolate(mk: number): number {
+    const far = this.farthest;
+    const from = this.expBase;
+    const to = this.expTop;
+    if (from === to) {
+      this.isoIds = noExp;
+    } else {
+      this.isoIds = this.control === null ? this.exp.slice(from, to) : copyIDsWork(this.exp, from, to, this.control);
+    }
+    this.expTop = from;
+    this.expBase = this.isoStack[mk + 1]!;
+    this.farthest = this.isoStack[mk]!;
+    this.isoStack.length = mk;
+    return far;
+  }
+
+  // unisolateMerge ends the record that isolate began and merges its expectations into the enclosing
+  // record in place, which unisolate and mergeKept do with a copy.
+  unisolateMerge(mk: number): void {
+    const far = this.farthest;
+    const from = this.expBase;
+    const to = this.expTop;
+    this.expTop = from;
+    this.expBase = this.isoStack[mk + 1]!;
+    this.farthest = this.isoStack[mk]!;
+    this.isoStack.length = mk;
+    this.mergeExpected(far, from, to);
+  }
+
+  // renameExpected returns ids with the expectations that are not messages renamed to name.
+  renameExpected(ids: number[], name: number): number[] {
+    const out: number[] = [];
+    for (const id of ids) {
+      this.stepWork();
+      out.push((id & msgBit) !== 0 ? id : name);
+    }
+    return out;
   }
 
   mergeKept(far: number, ids: number[]): void {

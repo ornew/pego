@@ -71,6 +71,13 @@ func (g *tsGen) flowRule(r *rule, scope *scope) (call string, ok bool) {
 		}
 		slots = cr.Scope
 	}
+	return g.flowFunc(f, slots, scope, describe(r.bodyExpr()))
+}
+
+// flowFunc prints the function f, whose capture scope has the slots, as a function of its own and
+// returns the call expression that runs it, or false if the printer does not print f. On success it
+// sets scope to the capture scope of a framed f. The comment describes the function.
+func (g *tsGen) flowFunc(f *flow.Func, slots []core.Slot, scope *scope, comment string) (call string, ok bool) {
 	defer func() {
 		if e := recover(); e != nil {
 			if _, unsupported := e.(tsFlowUnsupported); !unsupported {
@@ -102,7 +109,7 @@ func (g *tsGen) flowRule(r *rule, scope *scope) (call string, ok bool) {
 		if !strings.Contains(b.String(), "p.") && !strings.Contains(b.String(), "(p)") {
 			param = "_p"
 		}
-		fmt.Fprintf(&g.methods, "// %s\nfunction %s(%s: Parser): R {\n%s}\n\n", describe(r.bodyExpr()), name, param, b.String())
+		fmt.Fprintf(&g.methods, "// %s\nfunction %s(%s: Parser): R {\n%s}\n\n", comment, name, param, b.String())
 	}
 	return name + "(p)", true
 }
@@ -124,6 +131,12 @@ func tsFlowType(t flow.Type) string {
 		return "(Node | null)[]"
 	case flow.TypeFrame:
 		return "Frame"
+	case flow.TypeExpMark:
+		return "number"
+	case flow.TypeExpIDs:
+		return "number[]"
+	case flow.TypeError:
+		return "SyntaxError | null"
 	}
 	panic(tsFlowUnsupported("variable of type " + t.String()))
 }
@@ -138,6 +151,10 @@ func tsFlowZero(t flow.Type) string {
 		return "[]"
 	case flow.TypeFrame:
 		return "emptyFrame"
+	case flow.TypeExpIDs:
+		return "noExp"
+	case flow.TypeError:
+		return "null"
 	}
 	return "0"
 }
@@ -295,9 +312,42 @@ func (p *tsFlowPrinter) read(xs ...flow.Expr) {
 }
 
 func (p *tsFlowPrinter) stmts(ss []flow.Stmt) {
-	for _, s := range ss {
-		p.stmt(s)
+	for i := 0; i < len(ss); i++ {
+		if i+1 < len(ss) && !p.dead && p.unisolateMerge(ss[i], ss[i+1]) {
+			i++
+			continue
+		}
+		p.stmt(ss[i])
 	}
+}
+
+// unisolateMerge prints the end of an expectation record whose body succeeded, an Unisolate followed
+// by the merge of its expectations into the enclosing record, as one call that merges them in place.
+// The two variables of the Unisolate are written again where the failed body ends the record, before
+// they are read, so skipping their assignment here is not observable. It reports whether it printed.
+func (p *tsFlowPrinter) unisolateMerge(a, b flow.Stmt) bool {
+	set, ok := a.(*flow.Set)
+	if !ok {
+		return false
+	}
+	u, ok := tsUnisolate(set)
+	if !ok {
+		return false
+	}
+	m, ok := b.(*flow.MergeExpected)
+	if !ok {
+		return false
+	}
+	far, _ := set.Dst[0].(*flow.Var)
+	ids, _ := set.Dst[1].(*flow.Var)
+	f, fok := m.Far.(*flow.Use)
+	e, eok := m.Exps.(*flow.Use)
+	if !fok || !eok || far == nil || ids == nil || f.V != far || e.V != ids {
+		return false
+	}
+	p.read(u.Mark)
+	p.write(fmt.Sprintf("p.unisolateMerge(%s);\n", p.expr(u.Mark)))
+	return true
 }
 
 // isRead reports whether v is read, by the previous pass.
@@ -428,6 +478,15 @@ func (p *tsFlowPrinter) stmt(s flow.Stmt) {
 	case *flow.Restore:
 		p.read(s.Pos, s.Rec)
 		p.write(fmt.Sprintf("p.pos = %s;\np.recovered.length = %s;\n", p.expr(s.Pos), p.expr(s.Rec)))
+	case *flow.MergeExpected:
+		p.read(s.Far, s.Exps)
+		p.write(fmt.Sprintf("p.mergeKept(%s, %s);\n", p.expr(s.Far), p.expr(s.Exps)))
+	case *flow.MergeRenamed:
+		p.read(s.Far, s.Exps)
+		p.write(fmt.Sprintf("p.mergeKept(%s, p.renameExpected(%s, %d));\n", p.expr(s.Far), p.expr(s.Exps), p.desc(s.Exp)))
+	case *flow.AppendError:
+		p.read(s.X)
+		p.write(fmt.Sprintf("p.recovered.push(%s!);\n", p.expr(s.X)))
 	case *flow.PushKid:
 		p.read(s.X)
 		p.write(fmt.Sprintf("p.kidStack.push(%s);\n", p.expr(s.X)))
@@ -505,6 +564,14 @@ func (p *tsFlowPrinter) set(s *flow.Set) {
 	if p.dead {
 		return
 	}
+	if len(s.Dst) == 1 && len(s.X) == 1 {
+		// The expectations are a copy already, so keeping them leaves the variable as it is.
+		if k, ok := s.X[0].(*flow.Keep); ok {
+			if u, ok := k.Exps.(*flow.Use); ok && u.V == s.Dst[0] {
+				return
+			}
+		}
+	}
 	if text := p.setText(s, true); text != "" {
 		p.write(text)
 	}
@@ -547,6 +614,27 @@ func (p *tsFlowPrinter) setText(s *flow.Set, stmt bool) string {
 			// The second result, whether the value is a single element, is not used.
 			return p.setText(&flow.Set{Dst: s.Dst[:1], X: s.X}, stmt)
 		}
+	}
+	if u, ok := tsUnisolate(s); ok {
+		// The farthest failure of the record, and a copy of its expectations in p.isoIds.
+		p.read(u.Mark)
+		far, _ := s.Dst[0].(*flow.Var)
+		ids, _ := s.Dst[1].(*flow.Var)
+		farRead, idsRead := p.isRead(far), p.isRead(ids)
+		p.note(far)
+		p.note(ids)
+		call := fmt.Sprintf("p.unisolate(%s)", p.expr(u.Mark))
+		switch {
+		case farRead && idsRead:
+			return fmt.Sprintf("%s = %s%s%s = p.isoIds%s", far.Name, call, stmtSep(stmt), ids.Name, end)
+		case farRead:
+			return fmt.Sprintf("%s = %s%s", far.Name, call, end)
+		}
+		// Only the expectations are read, or none: the record still ends.
+		if idsRead {
+			return fmt.Sprintf("%s%s%s = p.isoIds%s", call, stmtSep(stmt), ids.Name, end)
+		}
+		return call + end
 	}
 	if len(s.X) == 1 && len(s.Dst) == 2 && flow.Results(s.X[0]) == 2 {
 		// A call with two results: the value and whether it matched.
@@ -799,6 +887,16 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 		}
 	case *flow.CallRule:
 		return p.call(g.flow.rules[x.Rule], x.Level)
+	case *flow.Isolate:
+		return "p.isolate()"
+	case *flow.Keep:
+		// The expectations are a copy of the record already.
+		return p.expr(x.Exps)
+	case *flow.MakeError:
+		return fmt.Sprintf("p.makeError(%s, %s)", p.expr(x.Far), p.expr(x.Exps))
+	case *flow.NewErrorNode:
+		start := p.expr(x.Start)
+		return fmt.Sprintf("new Node(\"error\", \"\", %s, p.pos, p.text(%s, p.pos), noNodes, [{ name: \"message\", value: %s!.message }], true, true)", start, start, p.expr(x.X))
 	case *flow.Text:
 		p.read(x.Start)
 		return fmt.Sprintf("p.text(%s, p.pos)", p.expr(x.Start))
@@ -958,4 +1056,31 @@ func (p *tsFlowPrinter) grammarTerm(n core.Node) grammar.Term {
 		panic(tsFlowUnsupported(fmt.Sprintf("no grammar predicate for %T", n)))
 	}
 	return e.Term
+}
+
+// tsUnisolate returns the Unisolate that the assignment s makes to two variables.
+func tsUnisolate(s *flow.Set) (*flow.Unisolate, bool) {
+	if len(s.X) != 1 || len(s.Dst) != 2 {
+		return nil, false
+	}
+	u, ok := s.X[0].(*flow.Unisolate)
+	return u, ok
+}
+
+// flowLine prints the line l of the Operators Rule g.cur, whose expression is e, from Flow IR as a
+// function and returns the call expression that runs it, or false if the printer does not print
+// the line. It sets scope to the capture scope of the line. With work controls the method that holds
+// the function charges its entry and the function charges each iteration of a repetition.
+func (g *tsGen) flowLine(l *core.OpLine, e grammar.Expr, scope *scope, build bool) (string, bool) {
+	if g.flow == nil || l == nil || !flowLineOK(e) || !flow.FramedBody(l.Body) {
+		return "", false
+	}
+	f, err := flow.LowerFrame(g.flow.m, g.flow.m.Rules[g.cur.id], l.Body, l.Scope, build, g.cur.name, g.flow.opts)
+	if err != nil {
+		panic(fmt.Errorf("line of Operators Rule %s in table %s: %w", g.cur.name, g.table, err)) // FramedBody holds
+	}
+	prev := g.proj
+	g.proj = nil // the actions of the lines use no projections of the rule
+	defer func() { g.proj = prev }()
+	return g.flowFunc(f, l.Scope, scope, g.cur.name+" (OperatorsRule line)")
 }
