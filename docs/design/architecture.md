@@ -122,7 +122,7 @@ contract is [Observability](../../spec/runtime/observability.md).
 | Generated Go and TypeScript | The generators in `internal/engine/` (`gen*.go`) and the runtimes in `runtime/` and `internal/engine/tsrt/` |
 | The public API | `pego.go`, `grammar/` |
 | Commands, linter, language server | `cmd/pego/`, `internal/lint/`, `internal/lsp/` |
-| Playground and site | `playground/`, `site/` |
+| Playground and site | `cmd/playground/`, `site/` |
 
 ## Related Topics
 

@@ -132,7 +132,7 @@ jobs:
       - name: Record test provenance
         run: PEGO_TYPESCRIPT="$(npm root -g)/typescript" .github/scripts/write-provenance.sh "$RUNNER_TEMP/pego-ci-provenance.log"
       - name: Run WebAssembly smoke test in Node.js
-        run: go test -v -timeout=20m ./playground -run '^TestWasmSmoke$' -count=1 2>&1 | tee "$RUNNER_TEMP/pego-wasm-test.log"
+        run: go test -v -timeout=20m ./cmd/playground -run '^TestWasmSmoke$' -count=1 2>&1 | tee "$RUNNER_TEMP/pego-wasm-test.log"
       - name: Run generated TypeScript parser tests and strict type checks
         run: go test -v -timeout=20m ./internal/engine -run '^TestGeneratedTS' -count=1 2>&1 | tee "$RUNNER_TEMP/pego-generated-ts-test.log"
       - uses: actions/upload-artifact@v4

@@ -353,7 +353,7 @@ type searchEntry struct {
 	Text     string      `json:"x"`
 }
 
-// example is an example of the playground, read from playground/examples.txt.
+// example is an example of the playground, read from cmd/playground/examples.txt.
 type example struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
@@ -364,7 +364,7 @@ type example struct {
 }
 
 func readExamples(repo string) ([]example, error) {
-	data, err := os.ReadFile(filepath.Join(repo, "playground", "examples.txt"))
+	data, err := os.ReadFile(filepath.Join(repo, "cmd", "playground", "examples.txt"))
 	if err != nil {
 		return nil, err
 	}
@@ -376,7 +376,7 @@ func readExamples(repo string) ([]example, error) {
 		}
 		f := strings.Fields(l)
 		if len(f) < 3 {
-			return nil, fmt.Errorf("playground/examples.txt: bad line %q", l)
+			return nil, fmt.Errorf("cmd/playground/examples.txt: bad line %q", l)
 		}
 		ex := example{Name: f[0], GrammarPath: f[1], InputPath: f[2], Description: strings.Join(f[3:], " ")}
 		g, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(ex.GrammarPath)))
@@ -406,9 +406,9 @@ func selectWasmBuild(toolchain, output string) (wasmBuildSpec, error) {
 	}
 	switch toolchain {
 	case "go":
-		return wasmBuildSpec{"go", []string{"build", "-trimpath", "-ldflags=-s -w", "-o", output, "./playground"}, "GOROOT", "lib/wasm/wasm_exec.js"}, nil
+		return wasmBuildSpec{"go", []string{"build", "-trimpath", "-ldflags=-s -w", "-o", output, "./cmd/playground"}, "GOROOT", "lib/wasm/wasm_exec.js"}, nil
 	case "tinygo":
-		return wasmBuildSpec{"tinygo", []string{"build", "-target=wasm", "-no-debug", "-o", output, "./playground"}, "TINYGOROOT", "targets/wasm_exec.js"}, nil
+		return wasmBuildSpec{"tinygo", []string{"build", "-target=wasm", "-no-debug", "-o", output, "./cmd/playground"}, "TINYGOROOT", "targets/wasm_exec.js"}, nil
 	default:
 		return wasmBuildSpec{}, fmt.Errorf("unsupported WASM toolchain %q (want go or tinygo)", toolchain)
 	}

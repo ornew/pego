@@ -104,7 +104,7 @@ Code blocks of grammars in this documentation have a **Playground** button that 
 
 ## The WebAssembly API
 
-`pego.wasm` (built from `playground/` with `GOOS=js GOARCH=wasm`) installs a global object `pego` when it starts. Each
+`pego.wasm` (built from `cmd/playground/` with `GOOS=js GOARCH=wasm`) installs a global object `pego` when it starts. Each
 method takes a request encoded as JSON and returns the response encoded as JSON, so it can be called from a worker, a
 page or Node:
 

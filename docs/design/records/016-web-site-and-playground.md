@@ -31,9 +31,9 @@ deployment are covered by [website maintenance](../../site.md).
 
 ## Design
 
-### The WebAssembly API (`playground/`)
+### The WebAssembly API (`cmd/playground/`)
 
-`playground/` is a `main` package of the root module. Built with `GOOS=js GOARCH=wasm`, it installs a global object
+`cmd/playground/` is a `main` package of the root module. Built with `GOOS=js GOARCH=wasm`, it installs a global object
 `pego` with five methods (`compile`, `parse`, `format`, `generate`, `version`). Each takes and returns JSON:
 
 - JSON keeps the boundary small and identical for the browser, a Web Worker and Node, and it lets the API be tested
@@ -195,9 +195,9 @@ example is about to become visible.
 
 ## Testing
 
-- `playground/api_test.go` tests the API natively.
-- `TestWasmSmoke` builds `pego.wasm` and the `pego` command and runs `playground/testdata/smoke.mjs` in Node. For every
-  example of `playground/examples.txt` it compares the JSON, the S-expression, the errors, recognition, every backend,
+- `cmd/playground/api_test.go` tests the API natively.
+- `TestWasmSmoke` builds `pego.wasm` and the `pego` command and runs `cmd/playground/testdata/smoke.mjs` in Node. For every
+  example of `cmd/playground/examples.txt` it compares the JSON, the S-expression, the errors, recognition, every backend,
   byte positions, `fmt` and `gen -types` with the command. It is skipped without Node and in `-short` mode.
 - `site/site_test.go` builds the whole site and checks that every document became a page, that the landing page,
   the reference and the search index are complete, that no page needs inline code, and that no link is broken.

@@ -9,7 +9,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/ornew/pego/fixture"
+	"github.com/ornew/pego/internal/fixture"
 )
 
 func testCmd(args []string, stdout io.Writer) error {

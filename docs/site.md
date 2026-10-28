@@ -126,7 +126,7 @@ vendored file and its name, and update the version in `assets/mermaid.js`.
 
 | Test | What it checks |
 |:--|:--|
-| `go test ./playground` | The API natively (it has no build tags), and `TestWasmSmoke`: it builds `pego.wasm` and the `pego` command, and runs [`playground/testdata/smoke.mjs`](../playground/testdata/smoke.mjs) in Node, which compares every example of [`playground/examples.txt`](../playground/examples.txt) with the command: JSON, S-expression, errors, `-check`, every backend, byte positions, `pego fmt` and `pego gen -types`. It is skipped when `node` is not installed and in `-short` mode |
+| `go test ./cmd/playground` | The API natively (it has no build tags), and `TestWasmSmoke`: it builds `pego.wasm` and the `pego` command, and runs [`cmd/playground/testdata/smoke.mjs`](../cmd/playground/testdata/smoke.mjs) in Node, which compares every example of [`cmd/playground/examples.txt`](../cmd/playground/examples.txt) with the command: JSON, S-expression, errors, `-check`, every backend, byte positions, `pego fmt` and `pego gen -types`. It is skipped when `node` is not installed and in `-short` mode |
 | `cd site && go test ./...` | Builds the whole site and checks that every Markdown file of `docs/` and `spec/` became a page, that the generated pages and the search index are complete, that no page needs inline scripts or styles, and that every internal link and anchor resolves. It also enforces the documentation rules of the
 [style sheet](documentation-style.md): the directions in which pages may link (`TestDocumentLinkDirections`) and the
 capitalization of headings (`TestHeadingTitleCase`), and the tags and prompts of code blocks (`TestCodeFenceLanguages`,
@@ -165,7 +165,7 @@ decoding excludes compression/encoding, browser DOM, worker and WebAssembly cost
   Record footers link to adjacent records. Keep record Status metadata concise, and keep the Design Records index's
   Status and Date cells on one line; its table scrolls horizontally on narrow screens. Numbered optimization records
   remain available through the Optimizations index and search, not the sidebar.
-- **An example** for the playground is a line in [`playground/examples.txt`](../playground/examples.txt): a name, a
+- **An example** for the playground is a line in [`cmd/playground/examples.txt`](../cmd/playground/examples.txt): a name, a
   grammar, an input and a description. The smoke test then checks it too.
 - **Templates, styles and scripts** are in `site/templates/` and `site/static/`. They are plain HTML, CSS and JavaScript
   modules; there is no build step and no npm dependency.

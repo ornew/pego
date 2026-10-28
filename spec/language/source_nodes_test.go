@@ -8,7 +8,7 @@ import (
 
 	"github.com/ornew/pego"
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/sourceast"
+	"github.com/ornew/pego/spec/language/internal/sourceast"
 )
 
 // The canonical grammar keeps every comment of the source with the gaps between

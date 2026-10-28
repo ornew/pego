@@ -2,10 +2,10 @@
 //
 //   node smoke.mjs --wasm pego.wasm --wasm-exec wasm_exec.js --cli path/to/pego --repo path/to/repository
 //
-// It loads pego.wasm, and for each example of playground/examples.txt compiles the grammar, parses the
+// It loads pego.wasm, and for each example of cmd/playground/examples.txt compiles the grammar, parses the
 // sample input and checks that the results match what the pego command prints: the JSON tree, the
 // S-expression, the errors, recognition (-check), other backends and units, fmt and gen -types.
-// It exits with status 1 if any check fails. playground/wasm_test.go runs it as part of go test.
+// It exits with status 1 if any check fails. cmd/playground/wasm_test.go runs it as part of go test.
 
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -72,7 +72,7 @@ function cli(...argv) {
 // errorText renders syntax errors as the pego command prints them.
 const errorText = (res) => (res.errors ?? []).map((e) => `${e.line}:${e.col}: ${e.message}`).join("\n");
 
-const manifest = readFileSync(path.join(args.repo, "playground", "examples.txt"), "utf8")
+const manifest = readFileSync(path.join(args.repo, "cmd", "playground", "examples.txt"), "utf8")
   .split("\n")
   .filter((l) => l.trim() && !l.startsWith("#"))
   .map((l) => {

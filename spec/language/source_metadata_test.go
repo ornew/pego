@@ -6,7 +6,7 @@ import (
 
 	"github.com/ornew/pego"
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/sourceast"
+	"github.com/ornew/pego/spec/language/internal/sourceast"
 )
 
 // Package ownership is compared at the public metadata boundary. The adapter

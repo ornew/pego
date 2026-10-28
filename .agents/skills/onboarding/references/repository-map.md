@@ -12,7 +12,7 @@ before choosing an edit location:
 | Compiler, execution and bytecode | `internal/engine/` |
 | Generated Go parser source | Generator `internal/engine/gen.go` and runtime package `runtime/` (imported or copied into generated parsers); generated parsers under `parsers/` and `bench/gen/` are outputs |
 | CLI, editor service and sample generation | `cmd/pego/`, `internal/lsp/`, `sample/` |
-| Ready-made parsers, playground and site | `parsers/`, `playground/`, `site/` |
+| Ready-made parsers, playground and site | `parsers/`, `cmd/playground/`, `site/` |
 
 Use [specification index](../../../../spec/README.md) for supported language and
 parsing contracts. Use [design records](../../../../docs/design/records/000-template.md) for

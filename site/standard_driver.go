@@ -45,7 +45,7 @@ func Build(cfg Config) (Stats, error) {
 		}
 		return mapped[p]
 	}
-	ext := sitegen.Extensions{Marker: marker, AllowedOutput: []string{"site/dist"}, Protected: []string{"README.md", "docs", "spec", "site", ".git", "examples", "playground", "grammar", "internal", "cmd", "parsers", "bench"}}
+	ext := sitegen.Extensions{Marker: marker, AllowedOutput: []string{"site/dist"}, Protected: []string{"README.md", "docs", "spec", "site", ".git", "examples", "grammar", "internal", "cmd", "parsers", "bench"}}
 	ext.Prepare = func(ctx *sitegen.Context) error {
 		for _, q := range ctx.Pages {
 			section := q.Section

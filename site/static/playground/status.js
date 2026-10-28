@@ -9,7 +9,7 @@ export function fmtTime(micros) {
 const plural = (n, word) => (n === 1 ? `1 ${word}` : `${n} ${word}s`);
 
 // depthHint explains the playground's nesting limit, which is lower than the engine's because the
-// browser's stack is small (see playground/main_js.go).
+// browser's stack is small (see cmd/playground/main_js.go).
 function depthHint(res, req) {
   if (!/^nesting too deep/.test(res.error || "") || req.backend === "bytecode-iterative" || req.maxDepth) return "";
   return " (the playground's limit, which fits the browser's stack; the bytecode-iterative backend has none)";

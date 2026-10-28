@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/fixture"
+	"github.com/ornew/pego/internal/fixture"
 )
 
 func TestTestCommandTextAndBackendSelection(t *testing.T) {

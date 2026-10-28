@@ -17,9 +17,9 @@ func TestSelectWasmBuild(t *testing.T) {
 		name string
 		want wasmBuildSpec
 	}{
-		{"", wasmBuildSpec{"go", []string{"build", "-trimpath", "-ldflags=-s -w", "-o", output, "./playground"}, "GOROOT", "lib/wasm/wasm_exec.js"}},
-		{"go", wasmBuildSpec{"go", []string{"build", "-trimpath", "-ldflags=-s -w", "-o", output, "./playground"}, "GOROOT", "lib/wasm/wasm_exec.js"}},
-		{"tinygo", wasmBuildSpec{"tinygo", []string{"build", "-target=wasm", "-no-debug", "-o", output, "./playground"}, "TINYGOROOT", "targets/wasm_exec.js"}},
+		{"", wasmBuildSpec{"go", []string{"build", "-trimpath", "-ldflags=-s -w", "-o", output, "./cmd/playground"}, "GOROOT", "lib/wasm/wasm_exec.js"}},
+		{"go", wasmBuildSpec{"go", []string{"build", "-trimpath", "-ldflags=-s -w", "-o", output, "./cmd/playground"}, "GOROOT", "lib/wasm/wasm_exec.js"}},
+		{"tinygo", wasmBuildSpec{"tinygo", []string{"build", "-target=wasm", "-no-debug", "-o", output, "./cmd/playground"}, "TINYGOROOT", "targets/wasm_exec.js"}},
 	} {
 		got, err := selectWasmBuild(tc.name, output)
 		if err != nil || !reflect.DeepEqual(got, tc.want) {

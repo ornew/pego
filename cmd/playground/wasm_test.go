@@ -29,14 +29,14 @@ func TestWasmSmoke(t *testing.T) {
 	if out, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("building pego.wasm: %v\n%s", err, out)
 	}
-	if out, err := exec.Command(goTool, "build", "-o", cli, "../cmd/pego").CombinedOutput(); err != nil {
+	if out, err := exec.Command(goTool, "build", "-o", cli, "../pego").CombinedOutput(); err != nil {
 		t.Fatalf("building pego: %v\n%s", err, out)
 	}
 	wasmExec := filepath.Join(goEnv(t, "GOROOT"), "lib", "wasm", "wasm_exec.js")
 	if _, err := os.Stat(wasmExec); err != nil {
 		t.Fatalf("wasm_exec.js: %v", err)
 	}
-	repo, err := filepath.Abs("..")
+	repo, err := filepath.Abs("../..")
 	if err != nil {
 		t.Fatal(err)
 	}

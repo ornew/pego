@@ -244,7 +244,7 @@ delimiter belong to that head, since the delimiter is not a node and could not
 own a trailing group: they lead the first element as if they stood on lines of
 their own, and only a closing delimiter right after them keeps them with the
 delimiter. The source adapter
-(`internal/sourceast`, `Positions.Items`) joins these records into
+(`spec/language/internal/sourceast`, `Positions.Items`) joins these records into
 `grammar.SourceInfo` without moving a group between boundaries. Parity with the
 hand-written frontend is tested over crafted comment cases and every grammar in
 the repository.
@@ -258,7 +258,7 @@ instead keeps every comment-bearing gap between two tokens (`File.Gaps`): the
 trailing, leading and detached groups of the gap, whether the trailing group
 exists and whether a token follows. A gap node spans exactly the trivia, so the
 gap a node starts at and the gap it ends at follow from the node's span. The
-source adapter (`internal/sourceast`, `Positions.Claim`) replays the claims the
+source adapter (`spec/language/internal/sourceast`, `Positions.Claim`) replays the claims the
 hand-written parser makes as it completes nodes, inner before outer: the node
 completed last at a token takes its groups and the inner node loses them, a gap
 with no next token leads nobody, a node completed again by a later suffix keeps

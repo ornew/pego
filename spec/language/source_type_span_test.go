@@ -6,7 +6,7 @@ import (
 
 	"github.com/ornew/pego"
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/sourceast"
+	"github.com/ornew/pego/spec/language/internal/sourceast"
 )
 
 func TestCanonicalTypeDeclarationSpans(t *testing.T) {
