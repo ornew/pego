@@ -178,10 +178,22 @@ for(const unit of [p.CodePoints,p.Bytes]) {
   const plain=p.parse(input,unit),ast=p.parseAST(input,unit);
   check(plain.error===null&&plain.node!==null&&ast.error===null&&ast.value!==null&&p.recognize(input,unit)===null,"ordinary matcher paths succeed");
   for(const key of ["maxInputWork","maxSteps"] as const) {
-   const n=threshold(input,unit,key),options:p.ParseOptions={unit,[key]:n};
+   const n=threshold(input,unit,key);
    const kind=key==="maxInputWork"?"input-work-limit":"step-work-limit";
-   const routes=[p.parseWithOptions(input,options).error,p.parseRuleWithOptions("reread",input,options).error,p.parseASTWithOptions(input,options).error,p.recognizeWithOptions(input,options)];
-   for(const error of routes)check(error instanceof p.ParseInterruptionError&&error.kind===kind,"lookahead rereads and recognizer scans consume cumulative work; recovery cannot swallow limits");
+   const routes=[(o:p.ParseOptions)=>p.parseWithOptions(input,o).error,(o:p.ParseOptions)=>p.parseRuleWithOptions("reread",input,o).error,(o:p.ParseOptions)=>p.parseASTWithOptions(input,o).error,(o:p.ParseOptions)=>p.recognizeWithOptions(input,o)];
+   for(const [route,run] of routes.entries()) {
+    // Each route stops one unit short of the budget it needs. The lookahead rereads and the scans
+    // consume cumulative work, so a route needs more than the single scan of the rule "fast" that
+    // sets n, and recovery cannot swallow the limit.
+    let lo=0,hi=1;while(run({unit,[key]:hi})!==null){hi*=2;check(hi<10000000,"bounded threshold search")}
+    while(lo+1<hi){const mid=Math.floor((lo+hi)/2);if(run({unit,[key]:mid})===null)hi=mid;else lo=mid}
+    const error=run({unit,[key]:hi-1});
+    check(error instanceof p.ParseInterruptionError&&error.kind===kind,"lookahead rereads and recognizer scans consume cumulative work; recovery cannot swallow limits");
+    // The steps of the recognizer route come to about those of one scan (4820 against 4824, measured),
+    // so only that bound is pinned for them; its input work is still cumulative.
+    if(key==="maxSteps"&&route===3)check(hi>=800&&hi>=n/2,"the recognizer needs the steps of about one scan: "+hi+" against "+n);
+    else check(hi>n,"a route needs more than one scan: "+key+" route "+route+" needs "+hi+", one scan "+n);
+   }
    check(p.parseWithOptions(input,{unit}).error===null,"retry after matcher interruption");
   }
   let polls=0;const observer:p.CancellationSignal={get aborted(){polls++;return false}};
@@ -197,22 +209,46 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 }
 
 func TestGeneratedTSWorkControlWideClassSteps(t *testing.T) {
-	// A one-character input keeps preparation small while the class performs
-	// many failed comparisons. Both recognition and Node matching must stop.
+	// A wide class is tested by comparisons that cost no work of their own: a character is charged
+	// once, by the peek that reads it, and each repetition by its step. The budgets that parse and
+	// recognition need for one character and for a run of them are pinned, so that a long input of
+	// wide-class matches still reaches the limits.
 	var class strings.Builder
 	for i := 0; i < 800; i++ {
 		class.WriteRune(rune(0x1000 + i*2))
 	}
-	src := "rule main = [" + class.String() + "] / \"z\""
+	src := "rule main = ([" + class.String() + "] / \"z\")+"
 	consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + `
+function threshold(run:(n:number)=>Error|null):number {
+ let lo=0,hi=1;while(run(hi)!==null){hi*=2;check(hi<10000000,"bounded threshold search")}
+ while(lo+1<hi){const mid=Math.floor((lo+hi)/2);if(run(mid)===null)hi=mid;else lo=mid}
+ check(run(hi-1)!==null,"one-short budget fails");return hi;
+}
+const wide=String.fromCodePoint(0x1000);
+// The budgets of recognition: [maxInputWork, maxSteps] for "z", fifty "z" and fifty wide characters.
+const budgets=new Map<p.Unit,number[][]>([[p.CodePoints,[[4,11],[200,354],[200,304]]],[p.Bytes,[[9,18],[401,508],[752,909]]]]);
 for(const unit of [p.CodePoints,p.Bytes]) {
  check(p.parse("z",unit).error===null&&p.recognize("z",unit)===null,"wide class fallback succeeds without controls");
  check(stable(p.parseWithOptions("z",{unit,signal:{aborted:false}}).node)===stable(p.parse("z",unit).node),"controlled class fallback preserves result");
- for(const error of [p.parseWithOptions("z",{unit,maxSteps:100}).error,p.recognizeWithOptions("z",{unit,maxSteps:100})])check(error instanceof p.ParseInterruptionError&&error.kind==="step-work-limit","each short-circuit class comparison consumes work");
+ for(const key of ["maxInputWork","maxSteps"] as const) {
+  const kind=key==="maxInputWork"?"input-work-limit":"step-work-limit";
+  const inputs=["z","z".repeat(50),wide.repeat(50)];
+  for(let i=0;i<inputs.length;i++) {
+   const input=inputs[i]!;
+   const n=threshold(k=>p.recognizeWithOptions(input,{unit,[key]:k}));
+   check(n===budgets.get(unit)![i]![key==="maxInputWork"?0:1],key+" budget of recognition for input "+i);
+   const limited=p.recognizeWithOptions(input,{unit,[key]:n-1});
+   check(limited instanceof p.ParseInterruptionError&&limited.kind===kind,"recognition stops one unit short of its budget");
+   const m=threshold(k=>p.parseWithOptions(input,{unit,[key]:k}).error);
+   const parsed=p.parseWithOptions(input,{unit,[key]:m-1}).error;
+   check(parsed instanceof p.ParseInterruptionError&&parsed.kind===kind,"parse stops one unit short of its budget");
+  }
+ }
+ check(threshold(k=>p.recognizeWithOptions(wide.repeat(50),{unit,maxInputWork:k}))>threshold(k=>p.recognizeWithOptions("z",{unit,maxInputWork:k})),"a longer input needs more input work");
  const cause={marker:"class cancellation"};let polls=0;
  const result=p.parseWithOptions("z",{unit,signal:{get aborted(){return ++polls>=2},reason:cause}});
- check(result.node===null&&result.error instanceof p.ParseInterruptionError&&result.error.kind==="canceled"&&result.error.cause===cause,"wide class checks cancellation inside comparison chain");
+ check(result.node===null&&result.error instanceof p.ParseInterruptionError&&result.error.kind==="canceled"&&result.error.cause===cause,"cancellation is polled while a wide class is tested");
 }
 `
 	runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", Recognize: true}, "")

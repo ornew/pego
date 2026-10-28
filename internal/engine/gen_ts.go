@@ -77,7 +77,7 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	gen := &tsGen{generator: &generator{prog: prog, table: "rules", observability: opts.Observability, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing || !opts.enableTSLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch}, plainUsed: map[*rule]bool{}}
+	gen := &tsGen{generator: &generator{prog: prog, table: "rules", observability: opts.Observability, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing || !opts.enableTSLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch}, plainUsed: map[*rule]bool{}, tsFlow: !opts.disableTSFlow}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -345,6 +345,8 @@ type tsGen struct {
 	*generator
 	// plainUsed holds the plain rules whose function (plainCall) is called.
 	plainUsed map[*rule]bool
+	// tsFlow prints the rules that Flow IR covers from it (see startTSFlow).
+	tsFlow bool
 }
 
 // tsString returns s as a TypeScript string literal (JSON is valid TypeScript).
@@ -494,6 +496,7 @@ func (g *tsGen) action(t grammar.Term, s *scope, locals map[string]string) strin
 }
 
 func (g *tsGen) rules() {
+	g.startTSFlow()
 	init := &g.init
 	bodies := map[*rule]string{}
 	scopes := map[*rule]*scope{}
@@ -503,7 +506,11 @@ func (g *tsGen) rules() {
 		scopes[r] = s
 		if _, ok := r.def.Expr.(*grammar.OperatorsRule); !ok {
 			g.cur, g.proj = r, g.projections(r)
-			bodies[r] = g.expr(r.bodyExpr(), s, !r.lean)
+			if call, ok := g.flowRule(r); ok {
+				bodies[r] = call
+			} else {
+				bodies[r] = g.expr(r.bodyExpr(), s, !r.lean)
+			}
 			g.proj = nil
 		}
 	}

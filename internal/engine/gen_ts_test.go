@@ -130,6 +130,7 @@ rule big = {big > 9007199254740992} "!"+ #atomic`, []string{"", "a", "ab,c😀",
 	}
 	t.Run("values", func(t *testing.T) { testGeneratedTSParsersCorpus(t, node, cases, GenOptions{}) })
 	t.Run("source info", func(t *testing.T) { testGeneratedTSParsersCorpus(t, node, cases, GenOptions{SourceInfo: true}) })
+	t.Run("grammar tree only", func(t *testing.T) { testGeneratedTSParsersCorpus(t, node, cases, GenOptions{disableTSFlow: true}) })
 }
 
 func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, opts GenOptions) {

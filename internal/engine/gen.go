@@ -89,6 +89,9 @@ type GenOptions struct {
 	// Neither adds a selector to the generated parser.
 	disableMethodSharing  bool
 	disableLiteralSharing bool
+	// disableTSFlow prints the TypeScript rules from the grammar tree alone, for differential tests
+	// and size comparisons.
+	disableTSFlow bool
 	// enableTSLiteralSharing retains a generation-only experiment. Sharing
 	// literal tables can hurt TypeScript warm-up; production shares helpers
 	// only. An explicit disableLiteralSharing takes precedence.
