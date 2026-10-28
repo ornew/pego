@@ -233,12 +233,28 @@ var lit12 = []rune("\n")
 var sh13 = rt.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}
 var sh14 = rt.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}
 
-var rulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh13, Scope: 1},
-	{Name: "record", Value: &sh14, Scope: 2},
-	{Name: "field", Value: &sh2},
-	{Name: "eol", Value: &sh2},
-	{Name: "eol", Value: &sh2, Flags: rt.RuleNovalue},
+type ruleSpec struct {
+	Name  string
+	Value *rt.Shaper
+	Flags uint8
+	Seen  int32
+	Scope uint16
+	Vars  uint16
+}
+
+type ruleExtra struct {
+	Id         int
+	Where      string
+	NodeType   string
+	OpNodeType string
+}
+
+var rulesSpec = [...]ruleSpec{
+	{"main", &sh13, 0, 0, 1, 0},
+	{"record", &sh14, 0, 0, 2, 0},
+	{"field", &sh2, 0, 0, 0, 0},
+	{"eol", &sh2, 0, 0, 0, 0},
+	{"eol", &sh2, rt.RuleNovalue, 0, 0, 0},
 }
 
 var rulesStrs = [...][]string{
@@ -247,22 +263,22 @@ var rulesStrs = [...][]string{
 	{"first", "rest"},
 }
 
-var rulesExtras = [...]rt.RuleExtra{
-	{Id: 2, NodeType: "Field"},
+var rulesExtras = [...]ruleExtra{
+	{2, "", "Field", ""},
 }
 
-var recRulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh13, Flags: rt.RuleNovalue},
-	{Name: "record", Value: &sh14, Flags: rt.RuleNovalue},
-	{Name: "field", Value: &sh2, Flags: rt.RuleNovalue},
-	{Name: "eol", Value: &sh2, Flags: rt.RuleNovalue},
+var recRulesSpec = [...]ruleSpec{
+	{"main", &sh13, rt.RuleNovalue, 0, 0, 0},
+	{"record", &sh14, rt.RuleNovalue, 0, 0, 0},
+	{"field", &sh2, rt.RuleNovalue, 0, 0, 0},
+	{"eol", &sh2, rt.RuleNovalue, 0, 0, 0},
 }
 
 var recRulesStrs = [...][]string{
 	nil,
 }
 
-var recRulesExtras = [...]rt.RuleExtra{}
+var recRulesExtras = [...]ruleExtra{}
 
 func init() {
 	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])

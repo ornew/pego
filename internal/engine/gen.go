@@ -563,6 +563,7 @@ type generator struct {
 	methodNames                 map[generatedMethod]string
 	literalNames                map[string]string
 	methodKeys                  []generatedMethod
+	ruleTypesDone               bool // the types of the rule table entries are written
 	literalKeys                 []string
 	disableLiteralTextDispatch  bool
 	disableTerminalPrograms     bool
@@ -902,10 +903,9 @@ func (g *generator) rules() {
 			if r.id != i {
 				panic("rule ids are not positions in the rule table")
 			}
-			var fields []string
-			fields = append(fields, fmt.Sprintf("Name: %q", r.name))
+			value := "nil"
 			if _, ok := r.def.Expr.(*grammar.OperatorsRule); !ok { // the lines build the value of an Operators Rule
-				fields = append(fields, "Value: &"+g.shaper(r.bodyExpr()))
+				value = "&" + g.shaper(r.bodyExpr())
 			}
 			var flags []string
 			if r.memo && !r.transient {
@@ -923,38 +923,34 @@ func (g *generator) rules() {
 			if r.splice {
 				flags = append(flags, "RuleSplice")
 			}
+			flagsLit := "0"
 			if len(flags) > 0 {
-				fields = append(fields, "Flags: "+strings.Join(flags, " | "))
+				flagsLit = strings.Join(flags, " | ")
 			}
+			seen := 0
 			if r.seen >= 0 {
-				fields = append(fields, fmt.Sprintf("Seen: %d", r.seen+1))
+				seen = r.seen + 1
 			}
-			if k := strsOf(scopes[r].names); k != 0 {
-				fields = append(fields, fmt.Sprintf("Scope: %d", k))
-			}
-			if k := strsOf(r.vars); k != 0 {
-				fields = append(fields, fmt.Sprintf("Vars: %d", k))
-			}
-			fmt.Fprintf(&tab, "\t{%s},\n", strings.Join(fields, ", "))
+			fmt.Fprintf(&tab, "\t{%q, %s, %s, %d, %d, %d},\n", r.name, value, flagsLit, seen, strsOf(scopes[r].names), strsOf(r.vars))
 			w := r.whereName()
 			if w == r.name {
 				w = ""
 			}
 			if w != "" || r.nodeType != "" || r.opNodeType != "" {
-				extra := []string{fmt.Sprintf("Id: %d", r.id)}
-				for _, f := range [...]struct{ name, value string }{{"Where", w}, {"NodeType", r.nodeType}, {"OpNodeType", r.opNodeType}} {
-					if f.value != "" {
-						extra = append(extra, fmt.Sprintf("%s: %q", f.name, f.value))
-					}
-				}
-				extras = append(extras, "\t{"+strings.Join(extra, ", ")+"},\n")
+				extras = append(extras, fmt.Sprintf("\t{%d, %q, %q, %q},\n", r.id, w, r.nodeType, r.opNodeType))
 			}
 		}
 		if err := ruleTableLimits(len(strs), g.prog.nseen); err != nil {
 			g.tableErr = err
 		}
 		spec, strTable, extraTable := g.table+"Spec", g.table+"Strs", g.table+"Extras"
-		fmt.Fprintf(&g.vars, "// %s is the compact form of the rule table, built by NewRules.\nvar %s = [...]RuleSpec{\n%s}\n\n", spec, spec, tab.String())
+		// The entries are positional, which vet accepts only for a type of the package; NewRules takes
+		// any type of the layout of RuleSpec and RuleExtra.
+		if !g.ruleTypesDone {
+			g.ruleTypesDone = true
+			g.vars.WriteString("// ruleSpec and ruleExtra have the layout of RuleSpec and RuleExtra, with the fields in this order:\n// name, value, flags, seen, scope, vars; and id, where, node type, operators rule node type.\ntype ruleSpec struct {\n\tName  string\n\tValue *Shaper\n\tFlags uint8\n\tSeen  int32\n\tScope uint16\n\tVars  uint16\n}\n\ntype ruleExtra struct {\n\tId         int\n\tWhere      string\n\tNodeType   string\n\tOpNodeType string\n}\n\n")
+		}
+		fmt.Fprintf(&g.vars, "// %s is the compact form of the rule table, built by NewRules.\nvar %s = [...]ruleSpec{\n%s}\n\n", spec, spec, tab.String())
 		fmt.Fprintf(&g.vars, "var %s = [...][]string{\n", strTable)
 		for _, x := range strs {
 			if x == "nil" {
@@ -964,7 +960,7 @@ func (g *generator) rules() {
 			}
 		}
 		g.vars.WriteString("}\n\n")
-		fmt.Fprintf(&g.vars, "var %s = [...]RuleExtra{\n%s}\n\n", extraTable, strings.Join(extras, ""))
+		fmt.Fprintf(&g.vars, "var %s = [...]ruleExtra{\n%s}\n\n", extraTable, strings.Join(extras, ""))
 		fmt.Fprintf(init, "\t%s = NewRules(%s[:], %s[:], %s[:])\n", g.table, spec, strTable, extraTable)
 		fmt.Fprintf(init, "\t%s.SetRules(%s, %d)\n", g.grammarVar(), g.table, g.prog.nseen)
 	}

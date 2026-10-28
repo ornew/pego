@@ -493,47 +493,63 @@ var sh52 = rt.Shaper{Elems: true, K: 10, Mode: 2, Tuple: true, Shared: false}
 var sh53 = rt.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}
 var sh54 = rt.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}
 
-var rulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh39, Scope: 1},
-	{Name: "stmts", Value: &sh47, Flags: rt.RuleMemo, Seen: 1, Scope: 2},
-	{Name: "block", Value: &sh48, Flags: rt.RuleMemo, Seen: 2, Scope: 1},
-	{Name: "stmt", Value: &sh47, Scope: 3},
-	{Name: "let", Value: &sh49, Scope: 4},
-	{Name: "assign", Value: &sh50, Scope: 5},
-	{Name: "if", Value: &sh51, Flags: rt.RuleMemo, Seen: 3, Scope: 6},
-	{Name: "else", Value: &sh48, Scope: 7},
-	{Name: "while", Value: &sh48, Scope: 8},
-	{Name: "return", Value: &sh48, Scope: 9},
-	{Name: "func", Value: &sh52, Scope: 10},
-	{Name: "params", Value: &sh39, Scope: 11},
-	{Name: "exprStmt", Value: &sh53, Scope: 7},
-	{Name: "expr", Value: &sh47, Flags: rt.RuleMemo, Seen: 4, Scope: 12},
-	{Name: "operation", Flags: rt.RuleMemo, Seen: 5},
-	{Name: "args", Value: &sh39, Flags: rt.RuleMemo, Seen: 6, Scope: 11},
-	{Name: "ident", Value: &sh38, Flags: rt.RuleMemo, Seen: 7},
-	{Name: "name", Value: &sh47, Flags: rt.RuleMemo, Seen: 8, Scope: 13},
-	{Name: "keyword", Value: &sh54},
-	{Name: "idchar", Value: &sh38},
-	{Name: "number", Value: &sh38},
-	{Name: "string", Value: &sh53, Scope: 3},
-	{Name: "strchars", Value: &sh38},
-	{Name: "bool", Value: &sh38},
-	{Name: "kw_let", Value: &sh54},
-	{Name: "kw_fn", Value: &sh54},
-	{Name: "kw_if", Value: &sh54},
-	{Name: "kw_else", Value: &sh54},
-	{Name: "kw_while", Value: &sh54},
-	{Name: "kw_return", Value: &sh54},
-	{Name: "ws", Value: &sh38},
-	{Name: "ws", Value: &sh38, Flags: rt.RuleNovalue},
-	{Name: "kw_let", Value: &sh54, Flags: rt.RuleNovalue},
-	{Name: "kw_if", Value: &sh54, Flags: rt.RuleNovalue},
-	{Name: "kw_else", Value: &sh54, Flags: rt.RuleNovalue},
-	{Name: "kw_while", Value: &sh54, Flags: rt.RuleNovalue},
-	{Name: "kw_return", Value: &sh54, Flags: rt.RuleNovalue},
-	{Name: "kw_fn", Value: &sh54, Flags: rt.RuleNovalue},
-	{Name: "keyword", Value: &sh54, Flags: rt.RuleNovalue},
-	{Name: "idchar", Value: &sh38, Flags: rt.RuleNovalue},
+type ruleSpec struct {
+	Name  string
+	Value *rt.Shaper
+	Flags uint8
+	Seen  int32
+	Scope uint16
+	Vars  uint16
+}
+
+type ruleExtra struct {
+	Id         int
+	Where      string
+	NodeType   string
+	OpNodeType string
+}
+
+var rulesSpec = [...]ruleSpec{
+	{"main", &sh39, 0, 0, 1, 0},
+	{"stmts", &sh47, rt.RuleMemo, 1, 2, 0},
+	{"block", &sh48, rt.RuleMemo, 2, 1, 0},
+	{"stmt", &sh47, 0, 0, 3, 0},
+	{"let", &sh49, 0, 0, 4, 0},
+	{"assign", &sh50, 0, 0, 5, 0},
+	{"if", &sh51, rt.RuleMemo, 3, 6, 0},
+	{"else", &sh48, 0, 0, 7, 0},
+	{"while", &sh48, 0, 0, 8, 0},
+	{"return", &sh48, 0, 0, 9, 0},
+	{"func", &sh52, 0, 0, 10, 0},
+	{"params", &sh39, 0, 0, 11, 0},
+	{"exprStmt", &sh53, 0, 0, 7, 0},
+	{"expr", &sh47, rt.RuleMemo, 4, 12, 0},
+	{"operation", nil, rt.RuleMemo, 5, 0, 0},
+	{"args", &sh39, rt.RuleMemo, 6, 11, 0},
+	{"ident", &sh38, rt.RuleMemo, 7, 0, 0},
+	{"name", &sh47, rt.RuleMemo, 8, 13, 0},
+	{"keyword", &sh54, 0, 0, 0, 0},
+	{"idchar", &sh38, 0, 0, 0, 0},
+	{"number", &sh38, 0, 0, 0, 0},
+	{"string", &sh53, 0, 0, 3, 0},
+	{"strchars", &sh38, 0, 0, 0, 0},
+	{"bool", &sh38, 0, 0, 0, 0},
+	{"kw_let", &sh54, 0, 0, 0, 0},
+	{"kw_fn", &sh54, 0, 0, 0, 0},
+	{"kw_if", &sh54, 0, 0, 0, 0},
+	{"kw_else", &sh54, 0, 0, 0, 0},
+	{"kw_while", &sh54, 0, 0, 0, 0},
+	{"kw_return", &sh54, 0, 0, 0, 0},
+	{"ws", &sh38, 0, 0, 0, 0},
+	{"ws", &sh38, rt.RuleNovalue, 0, 0, 0},
+	{"kw_let", &sh54, rt.RuleNovalue, 0, 0, 0},
+	{"kw_if", &sh54, rt.RuleNovalue, 0, 0, 0},
+	{"kw_else", &sh54, rt.RuleNovalue, 0, 0, 0},
+	{"kw_while", &sh54, rt.RuleNovalue, 0, 0, 0},
+	{"kw_return", &sh54, rt.RuleNovalue, 0, 0, 0},
+	{"kw_fn", &sh54, rt.RuleNovalue, 0, 0, 0},
+	{"keyword", &sh54, rt.RuleNovalue, 0, 0, 0},
+	{"idchar", &sh38, rt.RuleNovalue, 0, 0, 0},
 }
 
 var rulesStrs = [...][]string{
@@ -553,12 +569,12 @@ var rulesStrs = [...][]string{
 	{"i"},
 }
 
-var rulesExtras = [...]rt.RuleExtra{
-	{Id: 16, NodeType: "Ident"},
-	{Id: 17, NodeType: "Ident"},
-	{Id: 20, NodeType: "Number"},
-	{Id: 22, NodeType: "String"},
-	{Id: 23, NodeType: "Bool"},
+var rulesExtras = [...]ruleExtra{
+	{16, "", "Ident", ""},
+	{17, "", "Ident", ""},
+	{20, "", "Number", ""},
+	{22, "", "String", ""},
+	{23, "", "Bool", ""},
 }
 
 var lit62 = []rune("[")
@@ -582,45 +598,45 @@ var lit86 = []rune("!")
 var scope93 = []string{}
 var scope99 = []string{}
 
-var recRulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh39, Flags: rt.RuleNovalue},
-	{Name: "stmts", Value: &sh47, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 1},
-	{Name: "block", Value: &sh48, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 2},
-	{Name: "stmt", Value: &sh47, Flags: rt.RuleNovalue},
-	{Name: "let", Value: &sh49, Flags: rt.RuleNovalue},
-	{Name: "assign", Value: &sh50, Flags: rt.RuleNovalue},
-	{Name: "if", Value: &sh51, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 3},
-	{Name: "else", Value: &sh48, Flags: rt.RuleNovalue},
-	{Name: "while", Value: &sh48, Flags: rt.RuleNovalue},
-	{Name: "return", Value: &sh48, Flags: rt.RuleNovalue},
-	{Name: "func", Value: &sh52, Flags: rt.RuleNovalue},
-	{Name: "params", Value: &sh39, Flags: rt.RuleNovalue},
-	{Name: "exprStmt", Value: &sh53, Flags: rt.RuleNovalue},
-	{Name: "expr", Value: &sh47, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 4},
-	{Name: "operation", Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 5},
-	{Name: "args", Value: &sh39, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 6},
-	{Name: "ident", Value: &sh38, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 7},
-	{Name: "name", Value: &sh47, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 8},
-	{Name: "keyword", Value: &sh54, Flags: rt.RuleNovalue},
-	{Name: "idchar", Value: &sh38, Flags: rt.RuleNovalue},
-	{Name: "number", Value: &sh38, Flags: rt.RuleNovalue},
-	{Name: "string", Value: &sh53, Flags: rt.RuleNovalue},
-	{Name: "strchars", Value: &sh38, Flags: rt.RuleNovalue},
-	{Name: "bool", Value: &sh38, Flags: rt.RuleNovalue},
-	{Name: "kw_let", Value: &sh54, Flags: rt.RuleNovalue},
-	{Name: "kw_fn", Value: &sh54, Flags: rt.RuleNovalue},
-	{Name: "kw_if", Value: &sh54, Flags: rt.RuleNovalue},
-	{Name: "kw_else", Value: &sh54, Flags: rt.RuleNovalue},
-	{Name: "kw_while", Value: &sh54, Flags: rt.RuleNovalue},
-	{Name: "kw_return", Value: &sh54, Flags: rt.RuleNovalue},
-	{Name: "ws", Value: &sh38, Flags: rt.RuleNovalue},
+var recRulesSpec = [...]ruleSpec{
+	{"main", &sh39, rt.RuleNovalue, 0, 0, 0},
+	{"stmts", &sh47, rt.RuleMemo | rt.RuleNovalue, 1, 0, 0},
+	{"block", &sh48, rt.RuleMemo | rt.RuleNovalue, 2, 0, 0},
+	{"stmt", &sh47, rt.RuleNovalue, 0, 0, 0},
+	{"let", &sh49, rt.RuleNovalue, 0, 0, 0},
+	{"assign", &sh50, rt.RuleNovalue, 0, 0, 0},
+	{"if", &sh51, rt.RuleMemo | rt.RuleNovalue, 3, 0, 0},
+	{"else", &sh48, rt.RuleNovalue, 0, 0, 0},
+	{"while", &sh48, rt.RuleNovalue, 0, 0, 0},
+	{"return", &sh48, rt.RuleNovalue, 0, 0, 0},
+	{"func", &sh52, rt.RuleNovalue, 0, 0, 0},
+	{"params", &sh39, rt.RuleNovalue, 0, 0, 0},
+	{"exprStmt", &sh53, rt.RuleNovalue, 0, 0, 0},
+	{"expr", &sh47, rt.RuleMemo | rt.RuleNovalue, 4, 0, 0},
+	{"operation", nil, rt.RuleMemo | rt.RuleNovalue, 5, 0, 0},
+	{"args", &sh39, rt.RuleMemo | rt.RuleNovalue, 6, 0, 0},
+	{"ident", &sh38, rt.RuleMemo | rt.RuleNovalue, 7, 0, 0},
+	{"name", &sh47, rt.RuleMemo | rt.RuleNovalue, 8, 0, 0},
+	{"keyword", &sh54, rt.RuleNovalue, 0, 0, 0},
+	{"idchar", &sh38, rt.RuleNovalue, 0, 0, 0},
+	{"number", &sh38, rt.RuleNovalue, 0, 0, 0},
+	{"string", &sh53, rt.RuleNovalue, 0, 0, 0},
+	{"strchars", &sh38, rt.RuleNovalue, 0, 0, 0},
+	{"bool", &sh38, rt.RuleNovalue, 0, 0, 0},
+	{"kw_let", &sh54, rt.RuleNovalue, 0, 0, 0},
+	{"kw_fn", &sh54, rt.RuleNovalue, 0, 0, 0},
+	{"kw_if", &sh54, rt.RuleNovalue, 0, 0, 0},
+	{"kw_else", &sh54, rt.RuleNovalue, 0, 0, 0},
+	{"kw_while", &sh54, rt.RuleNovalue, 0, 0, 0},
+	{"kw_return", &sh54, rt.RuleNovalue, 0, 0, 0},
+	{"ws", &sh38, rt.RuleNovalue, 0, 0, 0},
 }
 
 var recRulesStrs = [...][]string{
 	nil,
 }
 
-var recRulesExtras = [...]rt.RuleExtra{}
+var recRulesExtras = [...]ruleExtra{}
 
 func init() {
 	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])

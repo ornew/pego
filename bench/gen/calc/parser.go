@@ -174,12 +174,28 @@ var lit2 = []rune(".")
 var sh4 = rt.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}
 var sh5 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}
 
-var rulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh4, Scope: 1},
-	{Name: "expr", Flags: rt.RuleMemo, Seen: 1},
-	{Name: "number", Value: &sh5},
-	{Name: "ws", Value: &sh5},
-	{Name: "ws", Value: &sh5, Flags: rt.RuleNovalue},
+type ruleSpec struct {
+	Name  string
+	Value *rt.Shaper
+	Flags uint8
+	Seen  int32
+	Scope uint16
+	Vars  uint16
+}
+
+type ruleExtra struct {
+	Id         int
+	Where      string
+	NodeType   string
+	OpNodeType string
+}
+
+var rulesSpec = [...]ruleSpec{
+	{"main", &sh4, 0, 0, 1, 0},
+	{"expr", nil, rt.RuleMemo, 1, 0, 0},
+	{"number", &sh5, 0, 0, 0, 0},
+	{"ws", &sh5, 0, 0, 0, 0},
+	{"ws", &sh5, rt.RuleNovalue, 0, 0, 0},
 }
 
 var rulesStrs = [...][]string{
@@ -187,8 +203,8 @@ var rulesStrs = [...][]string{
 	{"e"},
 }
 
-var rulesExtras = [...]rt.RuleExtra{
-	{Id: 2, NodeType: "Number"},
+var rulesExtras = [...]ruleExtra{
+	{2, "", "Number", ""},
 }
 
 var lit8 = []rune("(")
@@ -201,18 +217,18 @@ var lit16 = []rune("/")
 var lit17 = []rune("%")
 var lit20 = []rune("^")
 
-var recRulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh4, Flags: rt.RuleNovalue},
-	{Name: "expr", Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 1},
-	{Name: "number", Value: &sh5, Flags: rt.RuleNovalue},
-	{Name: "ws", Value: &sh5, Flags: rt.RuleNovalue},
+var recRulesSpec = [...]ruleSpec{
+	{"main", &sh4, rt.RuleNovalue, 0, 0, 0},
+	{"expr", nil, rt.RuleMemo | rt.RuleNovalue, 1, 0, 0},
+	{"number", &sh5, rt.RuleNovalue, 0, 0, 0},
+	{"ws", &sh5, rt.RuleNovalue, 0, 0, 0},
 }
 
 var recRulesStrs = [...][]string{
 	nil,
 }
 
-var recRulesExtras = [...]rt.RuleExtra{}
+var recRulesExtras = [...]ruleExtra{}
 
 func init() {
 	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])

@@ -421,13 +421,28 @@ type RuleExtra struct {
 }
 
 // NewRules builds the rule table of the specs, with the string lists their Scope and Vars index and
-// the rare fields in extras.
+// the rare fields in extras. The entries have the fields of RuleSpec and RuleExtra in their order,
+// in types of the caller, so that generated code can write them without field names (go vet
+// accepts unkeyed fields only for a type of the same package).
 //
 // For generated parsers; not a stable API.
-func NewRules(specs []RuleSpec, strs [][]string, extras []RuleExtra) []*Rule {
+func NewRules[S ~struct {
+	Name  string
+	Value *Shaper
+	Flags uint8
+	Seen  int32
+	Scope uint16
+	Vars  uint16
+}, E ~struct {
+	Id         int
+	Where      string
+	NodeType   string
+	OpNodeType string
+}](specs []S, strs [][]string, extras []E) []*Rule {
 	table := make([]Rule, len(specs))
 	rules := make([]*Rule, len(specs))
-	for i, s := range specs {
+	for i, spec := range specs {
+		s := RuleSpec(spec)
 		r := &table[i]
 		rules[i] = r
 		r.Id, r.Name, r.Seen = i, s.Name, int(s.Seen)-1
@@ -438,7 +453,8 @@ func NewRules(specs []RuleSpec, strs [][]string, extras []RuleExtra) []*Rule {
 		r.DocMemo, r.Splice = s.Flags&RuleDocMemo != 0, s.Flags&RuleSplice != 0
 		r.Scope, r.Vars = strs[s.Scope], strs[s.Vars]
 	}
-	for _, e := range extras {
+	for _, extra := range extras {
+		e := RuleExtra(extra)
 		r := rules[e.Id]
 		r.Where, r.NodeType, r.OpNodeType = e.Where, e.NodeType, e.OpNodeType
 	}

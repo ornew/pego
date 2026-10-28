@@ -140,13 +140,13 @@ func testGeneratedNodeDirectRoutes(t *testing.T) {
 			}
 			if name == "pair" {
 				// The rule table is the list of specs; the id of a rule is its position.
-				specs := regexp.MustCompile(`(?s)var rulesSpec = \[\.\.\.\]rt\.RuleSpec\{\n(.*?)\n\}\n`).FindSubmatch(code)
+				specs := regexp.MustCompile(`(?s)var rulesSpec = \[\.\.\.\]ruleSpec\{\n(.*?)\n\}\n`).FindSubmatch(code)
 				if len(specs) != 2 {
 					t.Fatal("no rule table")
 				}
 				id, memo := -1, false
 				for i, line := range strings.Split(string(specs[1]), "\n") {
-					if strings.Contains(line, `Name: "pair",`) {
+					if strings.HasPrefix(line, `	{"pair",`) {
 						id, memo = i, strings.Contains(line, "RuleMemo")
 					}
 				}

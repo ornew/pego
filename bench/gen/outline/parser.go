@@ -188,17 +188,33 @@ var sh12 = rt.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}
 var sh13 = rt.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}
 var sh14 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}
 
-var rulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh10, Scope: 1, Vars: 2},
-	{Name: "block", Value: &sh11, Flags: rt.RuleMemo, Seen: 1, Scope: 3, Vars: 2},
-	{Name: "item", Value: &sh12, Scope: 4, Vars: 2},
-	{Name: "children", Value: &sh13, Scope: 5, Vars: 2},
-	{Name: "spaces", Value: &sh14},
-	{Name: "line", Value: &sh14},
-	{Name: "eol", Value: &sh14},
-	{Name: "blank", Value: &sh10},
-	{Name: "blank", Value: &sh10, Flags: rt.RuleNovalue},
-	{Name: "eol", Value: &sh14, Flags: rt.RuleNovalue},
+type ruleSpec struct {
+	Name  string
+	Value *rt.Shaper
+	Flags uint8
+	Seen  int32
+	Scope uint16
+	Vars  uint16
+}
+
+type ruleExtra struct {
+	Id         int
+	Where      string
+	NodeType   string
+	OpNodeType string
+}
+
+var rulesSpec = [...]ruleSpec{
+	{"main", &sh10, 0, 0, 1, 2},
+	{"block", &sh11, rt.RuleMemo, 1, 3, 2},
+	{"item", &sh12, 0, 0, 4, 2},
+	{"children", &sh13, 0, 0, 5, 2},
+	{"spaces", &sh14, 0, 0, 0, 0},
+	{"line", &sh14, 0, 0, 0, 0},
+	{"eol", &sh14, 0, 0, 0, 0},
+	{"blank", &sh10, 0, 0, 0, 0},
+	{"blank", &sh10, rt.RuleNovalue, 0, 0, 0},
+	{"eol", &sh14, rt.RuleNovalue, 0, 0, 0},
 }
 
 var rulesStrs = [...][]string{
@@ -210,19 +226,19 @@ var rulesStrs = [...][]string{
 	{"s", "b"},
 }
 
-var rulesExtras = [...]rt.RuleExtra{}
+var rulesExtras = [...]ruleExtra{}
 
 var scope16 = []string{}
 
-var recRulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh10, Flags: rt.RuleNovalue, Vars: 1},
-	{Name: "block", Value: &sh11, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 1, Vars: 1},
-	{Name: "item", Value: &sh12, Flags: rt.RuleNovalue, Scope: 2, Vars: 1},
-	{Name: "children", Value: &sh13, Flags: rt.RuleNovalue, Scope: 2, Vars: 1},
-	{Name: "spaces", Value: &sh14},
-	{Name: "line", Value: &sh14, Flags: rt.RuleNovalue},
-	{Name: "eol", Value: &sh14, Flags: rt.RuleNovalue},
-	{Name: "blank", Value: &sh10, Flags: rt.RuleNovalue},
+var recRulesSpec = [...]ruleSpec{
+	{"main", &sh10, rt.RuleNovalue, 0, 0, 1},
+	{"block", &sh11, rt.RuleMemo | rt.RuleNovalue, 1, 0, 1},
+	{"item", &sh12, rt.RuleNovalue, 0, 2, 1},
+	{"children", &sh13, rt.RuleNovalue, 0, 2, 1},
+	{"spaces", &sh14, 0, 0, 0, 0},
+	{"line", &sh14, rt.RuleNovalue, 0, 0, 0},
+	{"eol", &sh14, rt.RuleNovalue, 0, 0, 0},
+	{"blank", &sh10, rt.RuleNovalue, 0, 0, 0},
 }
 
 var recRulesStrs = [...][]string{
@@ -231,7 +247,7 @@ var recRulesStrs = [...][]string{
 	{"s"},
 }
 
-var recRulesExtras = [...]rt.RuleExtra{}
+var recRulesExtras = [...]ruleExtra{}
 
 func init() {
 	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])

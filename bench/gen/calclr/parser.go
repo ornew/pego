@@ -184,21 +184,37 @@ var sh23 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}
 var sh24 = rt.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}
 var sh25 = rt.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}
 
-var rulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh22, Scope: 1},
-	{Name: "expr", Value: &sh23, Flags: rt.RuleLeader},
-	{Name: "add", Value: &sh24, Scope: 2},
-	{Name: "term", Value: &sh23, Flags: rt.RuleLeader},
-	{Name: "mul", Value: &sh24, Scope: 2},
-	{Name: "unary", Value: &sh23, Flags: rt.RuleMemo, Seen: 1},
-	{Name: "neg", Value: &sh25, Scope: 3},
-	{Name: "power", Value: &sh23},
-	{Name: "pow", Value: &sh24, Scope: 2},
-	{Name: "primary", Value: &sh22, Flags: rt.RuleMemo, Seen: 2, Scope: 4},
-	{Name: "group", Value: &sh24, Scope: 1},
-	{Name: "number", Value: &sh23},
-	{Name: "ws", Value: &sh23},
-	{Name: "ws", Value: &sh23, Flags: rt.RuleNovalue},
+type ruleSpec struct {
+	Name  string
+	Value *rt.Shaper
+	Flags uint8
+	Seen  int32
+	Scope uint16
+	Vars  uint16
+}
+
+type ruleExtra struct {
+	Id         int
+	Where      string
+	NodeType   string
+	OpNodeType string
+}
+
+var rulesSpec = [...]ruleSpec{
+	{"main", &sh22, 0, 0, 1, 0},
+	{"expr", &sh23, rt.RuleLeader, 0, 0, 0},
+	{"add", &sh24, 0, 0, 2, 0},
+	{"term", &sh23, rt.RuleLeader, 0, 0, 0},
+	{"mul", &sh24, 0, 0, 2, 0},
+	{"unary", &sh23, rt.RuleMemo, 1, 0, 0},
+	{"neg", &sh25, 0, 0, 3, 0},
+	{"power", &sh23, 0, 0, 0, 0},
+	{"pow", &sh24, 0, 0, 2, 0},
+	{"primary", &sh22, rt.RuleMemo, 2, 4, 0},
+	{"group", &sh24, 0, 0, 1, 0},
+	{"number", &sh23, 0, 0, 0, 0},
+	{"ws", &sh23, 0, 0, 0, 0},
+	{"ws", &sh23, rt.RuleNovalue, 0, 0, 0},
 }
 
 var rulesStrs = [...][]string{
@@ -209,31 +225,31 @@ var rulesStrs = [...][]string{
 	{"p"},
 }
 
-var rulesExtras = [...]rt.RuleExtra{
-	{Id: 11, NodeType: "Number"},
+var rulesExtras = [...]ruleExtra{
+	{11, "", "Number", ""},
 }
 
-var recRulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh22, Flags: rt.RuleNovalue},
-	{Name: "expr", Value: &sh23, Flags: rt.RuleLeader | rt.RuleNovalue},
-	{Name: "add", Value: &sh24, Flags: rt.RuleNovalue},
-	{Name: "term", Value: &sh23, Flags: rt.RuleLeader | rt.RuleNovalue},
-	{Name: "mul", Value: &sh24, Flags: rt.RuleNovalue},
-	{Name: "unary", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 1},
-	{Name: "neg", Value: &sh25, Flags: rt.RuleNovalue},
-	{Name: "power", Value: &sh23, Flags: rt.RuleNovalue},
-	{Name: "pow", Value: &sh24, Flags: rt.RuleNovalue},
-	{Name: "primary", Value: &sh22, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 2},
-	{Name: "group", Value: &sh24, Flags: rt.RuleNovalue},
-	{Name: "number", Value: &sh23, Flags: rt.RuleNovalue},
-	{Name: "ws", Value: &sh23, Flags: rt.RuleNovalue},
+var recRulesSpec = [...]ruleSpec{
+	{"main", &sh22, rt.RuleNovalue, 0, 0, 0},
+	{"expr", &sh23, rt.RuleLeader | rt.RuleNovalue, 0, 0, 0},
+	{"add", &sh24, rt.RuleNovalue, 0, 0, 0},
+	{"term", &sh23, rt.RuleLeader | rt.RuleNovalue, 0, 0, 0},
+	{"mul", &sh24, rt.RuleNovalue, 0, 0, 0},
+	{"unary", &sh23, rt.RuleMemo | rt.RuleNovalue, 1, 0, 0},
+	{"neg", &sh25, rt.RuleNovalue, 0, 0, 0},
+	{"power", &sh23, rt.RuleNovalue, 0, 0, 0},
+	{"pow", &sh24, rt.RuleNovalue, 0, 0, 0},
+	{"primary", &sh22, rt.RuleMemo | rt.RuleNovalue, 2, 0, 0},
+	{"group", &sh24, rt.RuleNovalue, 0, 0, 0},
+	{"number", &sh23, rt.RuleNovalue, 0, 0, 0},
+	{"ws", &sh23, rt.RuleNovalue, 0, 0, 0},
 }
 
 var recRulesStrs = [...][]string{
 	nil,
 }
 
-var recRulesExtras = [...]rt.RuleExtra{}
+var recRulesExtras = [...]ruleExtra{}
 
 func init() {
 	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])

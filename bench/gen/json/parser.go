@@ -294,31 +294,47 @@ var sh32 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}
 var sh33 = rt.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}
 var sh34 = rt.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}
 
-var rulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh31, Scope: 1},
-	{Name: "value", Value: &sh32, Flags: rt.RuleMemo, Seen: 1},
-	{Name: "object", Value: &sh33, Scope: 2},
-	{Name: "members", Value: &sh34, Scope: 3},
-	{Name: "member", Value: &sh33, Flags: rt.RuleMemo, Seen: 2, Scope: 4},
-	{Name: "array", Value: &sh33, Scope: 5},
-	{Name: "elements", Value: &sh34, Scope: 3},
-	{Name: "string", Value: &sh31, Flags: rt.RuleMemo, Seen: 3, Scope: 6},
-	{Name: "chars", Value: &sh32},
-	{Name: "escape", Value: &sh34},
-	{Name: "hex", Value: &sh32},
-	{Name: "number", Value: &sh32},
-	{Name: "int", Value: &sh32},
-	{Name: "frac", Value: &sh34},
-	{Name: "exp", Value: &sh31},
-	{Name: "bool", Value: &sh32},
-	{Name: "null", Value: &sh32},
-	{Name: "ws", Value: &sh32},
-	{Name: "ws", Value: &sh32, Flags: rt.RuleNovalue},
-	{Name: "escape", Value: &sh34, Flags: rt.RuleNovalue},
-	{Name: "int", Value: &sh32, Flags: rt.RuleNovalue},
-	{Name: "frac", Value: &sh34, Flags: rt.RuleNovalue},
-	{Name: "exp", Value: &sh31, Flags: rt.RuleNovalue},
-	{Name: "hex", Value: &sh32, Flags: rt.RuleNovalue},
+type ruleSpec struct {
+	Name  string
+	Value *rt.Shaper
+	Flags uint8
+	Seen  int32
+	Scope uint16
+	Vars  uint16
+}
+
+type ruleExtra struct {
+	Id         int
+	Where      string
+	NodeType   string
+	OpNodeType string
+}
+
+var rulesSpec = [...]ruleSpec{
+	{"main", &sh31, 0, 0, 1, 0},
+	{"value", &sh32, rt.RuleMemo, 1, 0, 0},
+	{"object", &sh33, 0, 0, 2, 0},
+	{"members", &sh34, 0, 0, 3, 0},
+	{"member", &sh33, rt.RuleMemo, 2, 4, 0},
+	{"array", &sh33, 0, 0, 5, 0},
+	{"elements", &sh34, 0, 0, 3, 0},
+	{"string", &sh31, rt.RuleMemo, 3, 6, 0},
+	{"chars", &sh32, 0, 0, 0, 0},
+	{"escape", &sh34, 0, 0, 0, 0},
+	{"hex", &sh32, 0, 0, 0, 0},
+	{"number", &sh32, 0, 0, 0, 0},
+	{"int", &sh32, 0, 0, 0, 0},
+	{"frac", &sh34, 0, 0, 0, 0},
+	{"exp", &sh31, 0, 0, 0, 0},
+	{"bool", &sh32, 0, 0, 0, 0},
+	{"null", &sh32, 0, 0, 0, 0},
+	{"ws", &sh32, 0, 0, 0, 0},
+	{"ws", &sh32, rt.RuleNovalue, 0, 0, 0},
+	{"escape", &sh34, rt.RuleNovalue, 0, 0, 0},
+	{"int", &sh32, rt.RuleNovalue, 0, 0, 0},
+	{"frac", &sh34, rt.RuleNovalue, 0, 0, 0},
+	{"exp", &sh31, rt.RuleNovalue, 0, 0, 0},
+	{"hex", &sh32, rt.RuleNovalue, 0, 0, 0},
 }
 
 var rulesStrs = [...][]string{
@@ -331,39 +347,39 @@ var rulesStrs = [...][]string{
 	{"s"},
 }
 
-var rulesExtras = [...]rt.RuleExtra{
-	{Id: 8, NodeType: "String"},
-	{Id: 11, NodeType: "Number"},
-	{Id: 15, NodeType: "Bool"},
-	{Id: 16, NodeType: "Null"},
+var rulesExtras = [...]ruleExtra{
+	{8, "", "String", ""},
+	{11, "", "Number", ""},
+	{15, "", "Bool", ""},
+	{16, "", "Null", ""},
 }
 
-var recRulesSpec = [...]rt.RuleSpec{
-	{Name: "main", Value: &sh31, Flags: rt.RuleNovalue},
-	{Name: "value", Value: &sh32, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 1},
-	{Name: "object", Value: &sh33, Flags: rt.RuleNovalue},
-	{Name: "members", Value: &sh34, Flags: rt.RuleNovalue},
-	{Name: "member", Value: &sh33, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 2},
-	{Name: "array", Value: &sh33, Flags: rt.RuleNovalue},
-	{Name: "elements", Value: &sh34, Flags: rt.RuleNovalue},
-	{Name: "string", Value: &sh31, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 3},
-	{Name: "chars", Value: &sh32, Flags: rt.RuleNovalue},
-	{Name: "escape", Value: &sh34, Flags: rt.RuleNovalue},
-	{Name: "hex", Value: &sh32, Flags: rt.RuleNovalue},
-	{Name: "number", Value: &sh32, Flags: rt.RuleNovalue},
-	{Name: "int", Value: &sh32, Flags: rt.RuleNovalue},
-	{Name: "frac", Value: &sh34, Flags: rt.RuleNovalue},
-	{Name: "exp", Value: &sh31, Flags: rt.RuleNovalue},
-	{Name: "bool", Value: &sh32, Flags: rt.RuleNovalue},
-	{Name: "null", Value: &sh32, Flags: rt.RuleNovalue},
-	{Name: "ws", Value: &sh32, Flags: rt.RuleNovalue},
+var recRulesSpec = [...]ruleSpec{
+	{"main", &sh31, rt.RuleNovalue, 0, 0, 0},
+	{"value", &sh32, rt.RuleMemo | rt.RuleNovalue, 1, 0, 0},
+	{"object", &sh33, rt.RuleNovalue, 0, 0, 0},
+	{"members", &sh34, rt.RuleNovalue, 0, 0, 0},
+	{"member", &sh33, rt.RuleMemo | rt.RuleNovalue, 2, 0, 0},
+	{"array", &sh33, rt.RuleNovalue, 0, 0, 0},
+	{"elements", &sh34, rt.RuleNovalue, 0, 0, 0},
+	{"string", &sh31, rt.RuleMemo | rt.RuleNovalue, 3, 0, 0},
+	{"chars", &sh32, rt.RuleNovalue, 0, 0, 0},
+	{"escape", &sh34, rt.RuleNovalue, 0, 0, 0},
+	{"hex", &sh32, rt.RuleNovalue, 0, 0, 0},
+	{"number", &sh32, rt.RuleNovalue, 0, 0, 0},
+	{"int", &sh32, rt.RuleNovalue, 0, 0, 0},
+	{"frac", &sh34, rt.RuleNovalue, 0, 0, 0},
+	{"exp", &sh31, rt.RuleNovalue, 0, 0, 0},
+	{"bool", &sh32, rt.RuleNovalue, 0, 0, 0},
+	{"null", &sh32, rt.RuleNovalue, 0, 0, 0},
+	{"ws", &sh32, rt.RuleNovalue, 0, 0, 0},
 }
 
 var recRulesStrs = [...][]string{
 	nil,
 }
 
-var recRulesExtras = [...]rt.RuleExtra{}
+var recRulesExtras = [...]ruleExtra{}
 
 func init() {
 	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
