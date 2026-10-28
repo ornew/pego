@@ -13,7 +13,8 @@ Keep a summary with the baseline commit, candidate change, workload, environment
 results, tradeoffs and reproduction command. Focused raw output is local working data and is not
 committed by default; source commits and benchmark code allow reruns. Keep raw output in Git only
 when it has exceptional long-term value that a summary and rerun cannot preserve. The existing
-full-suite `bench/results.txt` remains the input to the generated results document.
+full-suite `bench/results.txt`, with `bench/results-ts.txt` and `bench/results-size.txt`, is the input to the generated
+results document.
 
 The measured results of every benchmark are in [benchmarks.md](benchmarks.md), which is generated from a run; this
 document describes the benchmarks, analyzes the results, and records how they came about.
@@ -80,12 +81,15 @@ preserves the earlier result, the paired ranges, and the measurement limits.
 
 ## How to Measure
 
-The benchmarks are in `bench/`. `go run ./bench/report` runs all of them (about 15 minutes) and regenerates
-[benchmarks.md](benchmarks.md); see [the benchmark workloads](#benchmark-workloads) for what they measure.
+The benchmarks are in `bench/`. `go run ./bench/report` runs all of them, measures the generated TypeScript parsers under Node and the sizes of the
+generated parsers (about 20 minutes), and regenerates [benchmarks.md](benchmarks.md); see [the benchmark workloads](#benchmark-workloads) for what they measure.
 
 ```bash
 # Full benchmark suite (all backends, both position units, stdlib counterparts), and the results document
 go run ./bench/report
+
+# Only the TypeScript timings and the sizes, keeping the saved Go results
+go run ./bench/report -capture ts,size
 
 # A single workload, with CPU and allocation profiles
 go test ./bench -run '^$' -bench 'BenchmarkParse/JSON/closure/codepoints' -benchtime 20x \
@@ -97,7 +101,9 @@ go tool pprof -sample_index=alloc_space -top -nodecount 30 bench.test mem.out
 Saved benchmark rows used by the report must contain a positive iteration count and exactly one finite, positive
 `ns/op` value plus finite, nonnegative `B/op` and `allocs/op` values. Zero allocation values are valid; a missing metric
 is not treated as zero. Repeated rows for one benchmark must use the same metric set, and all benchmarks used by one
-report must have the same number of samples. The sample count may be one for a complete single-run report.
+report must have the same number of samples. The sample count may be one for a complete single-run report. The
+TypeScript results (`bench/results-ts.txt`) carry only the time and throughput of each run; their samples are counted
+separately from the Go results.
 
 Notes:
 
@@ -207,7 +213,8 @@ allocations.
 ### Generated TypeScript
 
 Generated TypeScript parsers are measured with Node (24 or later) by running a generated `parser.ts` under
-`node --experimental-strip-types`: `bench/ts-parse.mjs` for parsing a file, `bench/ts-typed.mjs` for the typed
+`node --experimental-strip-types`: `bench/ts-parse.mjs` for parsing a file with `parse`, `parseAST` or `recognize` (the
+entry points that [benchmarks.md](benchmarks.md) reports, captured by `go run ./bench/report`), `bench/ts-typed.mjs` for the typed
 workloads that `TestGeneratedTSTypedWorkloads` and `TestGeneratedTSTypedSharedDAG` write when
 `PEGO_TS_TYPED_DIR` is set, and `bench/ts-literal.mjs` for literal matching. Compare two generators by
 alternating them in each round, run at least six rounds, and compare medians and ranges. The form without

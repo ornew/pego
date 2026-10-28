@@ -24,7 +24,7 @@ This document describes the repository layout and architecture, how to run tests
 | `playground/` | WebAssembly API used by the web playground (package `main`; `GOOS=js GOARCH=wasm`) |
 | `site/` | Web site generator (a separate Go module): landing page, docs, reference and playground; see [website maintenance](site.md) |
 | `netlify.toml` | Netlify build, headers and canonical-domain redirects; see [website maintenance](site.md) |
-| `bench/` | Benchmarks comparing the backends with each other and with standard-library parsers (`gen/` holds generated parsers). Results are in [benchmarks.md](benchmarks.md), generated with `go run ./bench/report` (`report/`) from the raw results in `results.txt`. `node bench/ts-literal.mjs [runtime.ts]` measures the embedded TS literal matcher, excluding input/rule setup, trees and error construction; its optional path compares checkouts. |
+| `bench/` | Benchmarks comparing the backends with each other and with standard-library parsers (`gen/` holds generated parsers). Results are in [benchmarks.md](benchmarks.md), generated with `go run ./bench/report` (`report/`) from the raw results in `results.txt`, `results-ts.txt` (generated TypeScript under Node) and `results-size.txt` (generated parser sizes). `node bench/ts-literal.mjs [runtime.ts]` measures the embedded TS literal matcher, excluding input/rule setup, trees and error construction; its optional path compares checkouts. |
 | `spec/` | The specifications: grammar language, parser and runtime, Core IR, and bytecode and VM ([bytecode](../spec/bytecode/README.md)) |
 | `docs/tutorial/` | The ordered tutorial series ([index](tutorial/README.md)) |
 | `docs/guide/` | Task-oriented guides to each feature ([index](guide/README.md)) |
