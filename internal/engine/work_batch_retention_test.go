@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"weak"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 func batchRetentionParser(t *testing.T, e TraceEvent) *parser {
@@ -72,7 +74,7 @@ rule entry = key:[a-z]+ #atomic ":" value:[0-9]+ #atomic => Entry{Key: text($key
 								}
 							}}
 							if active {
-								opts.WorkLimits = WorkLimits{MaxSteps: 1 << 30}
+								opts.WorkLimits = limits.WorkLimits{MaxSteps: 1 << 30}
 							}
 							n, err := prog.ParseWith("main", input, opts)
 							return n, err, retained
@@ -181,7 +183,7 @@ func TestWorkBatchTraceInterruptionDetachesParser(t *testing.T) {
 							opts.Context, cancel = context.WithCancel(context.Background())
 							defer cancel()
 						case "steps":
-							opts.WorkLimits = WorkLimits{MaxSteps: 1 << 30}
+							opts.WorkLimits = limits.WorkLimits{MaxSteps: 1 << 30}
 						default:
 							at := 1
 							if cause == "publication-panic" {
@@ -220,8 +222,8 @@ func TestWorkBatchTraceInterruptionDetachesParser(t *testing.T) {
 								t.Fatalf("panic=%v err=%v", got, returnedErr)
 							}
 						case "steps":
-							var limit *WorkLimitError
-							if got != nil || !errors.As(returnedErr, &limit) || limit.Kind != StepWorkLimit {
+							var limit *limits.WorkLimitError
+							if got != nil || !errors.As(returnedErr, &limit) || limit.Kind != limits.StepWorkLimit {
 								t.Fatalf("panic=%v err=%v", got, returnedErr)
 							}
 						default:

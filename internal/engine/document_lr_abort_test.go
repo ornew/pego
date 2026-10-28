@@ -7,6 +7,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 // TestDocumentLeftRecursionAbortedGrowth interrupts a Document parse while a
@@ -83,7 +85,7 @@ rule t = t "*" "a" / "a"`, "a*a+a+a*a*a"},
 							t.Fatalf("node=%v err=%v", n, err)
 						}
 					case "steps":
-						if n != nil || !errors.Is(err, ErrWorkLimit) {
+						if n != nil || !errors.Is(err, limits.ErrWorkLimit) {
 							t.Fatalf("node=%v err=%v", n, err)
 						}
 					}

@@ -12,12 +12,13 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/limits"
 )
 
 func TestWorkStateVMChildAssembly(t *testing.T) {
 	for _, op := range []Op{OpSeq, OpEndRepeat} {
-		for _, limits := range []WorkLimits{{MaxSteps: 64}, {MaxSteps: 10000}} {
-			p := stateWorkParser(limits)
+		for _, lim := range []limits.WorkLimits{{MaxSteps: 64}, {MaxSteps: 10000}} {
+			p := stateWorkParser(lim)
 			start := 3
 			retained := &Node{text: "retained", fields: Fields{{Name: "keep", Value: "unchanged"}}}
 			p.vals = append(p.vals, &start)
@@ -37,8 +38,8 @@ func TestWorkStateVMChildAssembly(t *testing.T) {
 			body := vmBody{}
 			var result *Node
 			err := catchFatal(t, func() { _, result, _ = p.step(vm, &body, false, false, nil) })
-			if limits.MaxSteps == 64 {
-				if !errors.Is(err, ErrWorkLimit) || result != nil || len(p.vals) != 321 {
+			if lim.MaxSteps == 64 {
+				if !errors.Is(err, limits.ErrWorkLimit) || result != nil || len(p.vals) != 321 {
 					t.Fatalf("%v assembly interruption err=%v result=%v stack=%d", op, err, result, len(p.vals))
 				}
 			} else if err != nil || result == nil || !reflect.DeepEqual(result.children, want) || result.start != 3 {
@@ -53,7 +54,7 @@ func TestWorkStateVMChildAssembly(t *testing.T) {
 
 func TestWorkStateVMCutAndFailureUnwind(t *testing.T) {
 	for _, cut := range []bool{false, true} {
-		p := stateWorkParser(WorkLimits{MaxSteps: 64})
+		p := stateWorkParser(limits.WorkLimits{MaxSteps: 64})
 		for range 320 {
 			p.ents = append(p.ents, vmEntry{kind: eChoice, cut: true})
 		}
@@ -73,7 +74,7 @@ func TestWorkStateVMCutAndFailureUnwind(t *testing.T) {
 				p.unwind(vm.m, 0)
 			}
 		})
-		if !errors.Is(err, ErrWorkLimit) {
+		if !errors.Is(err, limits.ErrWorkLimit) {
 			t.Fatalf("cut=%t err=%v", cut, err)
 		}
 		if cut && p.ents[0].cut {
@@ -82,7 +83,7 @@ func TestWorkStateVMCutAndFailureUnwind(t *testing.T) {
 		if !cut && len(p.ents) != 256 {
 			t.Fatalf("unwind retained %d entries, want256", len(p.ents))
 		}
-		p.control = newWorkControl(newPollingContext(1), WorkLimits{})
+		p.control = newWorkControl(newPollingContext(1), limits.WorkLimits{})
 		if err := catchFatal(t, func() {
 			if cut {
 				body := vmBody{}
@@ -99,7 +100,7 @@ func TestWorkStateVMCutAndFailureUnwind(t *testing.T) {
 func TestWorkStateOperatorsRuleFrameSnapshotAndRestoration(t *testing.T) {
 	for _, iterative := range []bool{false, true} {
 		for _, limit := range []uint64{128, 449, 10000} {
-			p := stateWorkParser(WorkLimits{MaxSteps: limit})
+			p := stateWorkParser(limits.WorkLimits{MaxSteps: limit})
 			retained := &Node{text: "retained", fields: Fields{{Name: "keep", Value: "unchanged"}}}
 			before, _ := json.Marshal(retained)
 			op := &operatorsRuleOp{kind: grammar.Prefix, line: &operatorsRuleLine{scope: &scope{names: make([]string, 320)}}}
@@ -123,7 +124,7 @@ func TestWorkStateOperatorsRuleFrameSnapshotAndRestoration(t *testing.T) {
 				}
 			})
 			if limit < 10000 {
-				if !errors.Is(err, ErrWorkLimit) || best.op != nil {
+				if !errors.Is(err, limits.ErrWorkLimit) || best.op != nil {
 					t.Fatalf("iterative=%t limit=%d err=%v partial=%v", iterative, limit, err, best.op)
 				}
 				if p.control.stepsUsed != limit {
@@ -148,8 +149,8 @@ func TestWorkStateProjectedFrameClear(t *testing.T) {
 	}
 	c := &compiler{}
 	m := c.projectRepeat(&grammar.Repeat{Expr: &grammar.Seq{Items: items}, Min: 0, Max: 1}, "f0")
-	p := stateWorkParser(WorkLimits{MaxSteps: 64})
-	if err := catchFatal(t, func() { m(p) }); !errors.Is(err, ErrWorkLimit) || len(p.trail) != 0 {
+	p := stateWorkParser(limits.WorkLimits{MaxSteps: 64})
+	if err := catchFatal(t, func() { m(p) }); !errors.Is(err, limits.ErrWorkLimit) || len(p.trail) != 0 {
 		t.Fatalf("projected clear err=%v capture writes=%d", err, len(p.trail))
 	}
 }
@@ -175,7 +176,7 @@ rule arm = _`
 				armed := false
 				fallback := 0
 				var observed *parser
-				n, err := prog.ParseWith("main", "a", ParseOptions{Backend: b, Unit: u, Recognize: recognize, WorkLimits: WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
+				n, err := prog.ParseWith("main", "a", ParseOptions{Backend: b, Unit: u, Recognize: recognize, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
 					observed = e.p
 					if e.Kind == TraceEnter && e.Rule == "fallback" {
 						fallback++
@@ -188,7 +189,7 @@ rule arm = _`
 						e.p.control.limits.MaxSteps = e.p.control.stepsUsed + 20
 					}
 				}})
-				if !armed || n != nil || !errors.Is(err, ErrWorkLimit) || fallback != 0 || observed == nil || observed.scratch != nil || observed.control != nil {
+				if !armed || n != nil || !errors.Is(err, limits.ErrWorkLimit) || fallback != 0 || observed == nil || observed.scratch != nil || observed.control != nil {
 					t.Fatalf("%v/%v recognize=%t: armed=%t returned=%t err=%v fallback=%d", b, u, recognize, armed, n != nil, err, fallback)
 				}
 				n, err = prog.ParseWith("main", "a", ParseOptions{Backend: b, Unit: u, Recognize: recognize})

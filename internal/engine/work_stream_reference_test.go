@@ -6,13 +6,15 @@ import (
 	"context"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 func TestWorkStreamReferenceAdmission(t *testing.T) {
 	prog := compile(t, records)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	for _, o := range []ParseOptions{{Context: ctx}, {WorkLimits: WorkLimits{MaxSteps: 1}}, {WorkLimits: WorkLimits{MaxInputWork: 1}}} {
+	for _, o := range []ParseOptions{{Context: ctx}, {WorkLimits: limits.WorkLimits{MaxSteps: 1}}, {WorkLimits: limits.WorkLimits{MaxInputWork: 1}}} {
 		r := &streamCallbackReader{text: "#records\na=1\n"}
 		callbacks := 0
 		r.onRead = func() { callbacks++ }

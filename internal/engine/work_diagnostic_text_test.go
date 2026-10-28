@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 func TestWorkDiagnosticRecoveryTextMatchesNative(t *testing.T) {
@@ -31,12 +33,12 @@ func TestWorkDiagnosticRecoveryTextMatchesNative(t *testing.T) {
 				parts = e.Expected
 			}
 			steps := uint64(len(want) + 2*len(parts))
-			p := diagnosticParser(WorkLimits{MaxSteps: steps})
+			p := diagnosticParser(limits.WorkLimits{MaxSteps: steps})
 			if got := p.recoveryErrorText(e); got != want || p.control.stepsUsed != steps {
 				t.Fatalf("controlled text=%q, steps=%d; native=%q, steps=%d", got, p.control.stepsUsed, want, steps)
 			}
-			p = diagnosticParser(WorkLimits{MaxSteps: steps - 1})
-			if err := catchFatal(t, func() { _ = p.recoveryErrorText(e) }); !errors.Is(err, ErrWorkLimit) {
+			p = diagnosticParser(limits.WorkLimits{MaxSteps: steps - 1})
+			if err := catchFatal(t, func() { _ = p.recoveryErrorText(e) }); !errors.Is(err, limits.ErrWorkLimit) {
 				t.Fatalf("one-short recovery formatting: %v", err)
 			}
 		})
@@ -47,14 +49,14 @@ func TestWorkDiagnosticRecoveryTextCancellationAndOwnership(t *testing.T) {
 	for _, messages := range [][]string{make([]string, 320), {strings.Repeat("invalid\xff", 120)}} {
 		e := &SyntaxError{Line: 7, Col: 11, Messages: messages, Expected: []string{"ignored"}}
 		before := append([]string(nil), e.Messages...)
-		p := diagnosticParser(WorkLimits{MaxSteps: 1 << 50})
+		p := diagnosticParser(limits.WorkLimits{MaxSteps: 1 << 50})
 		retained := p.recoveryErrorText(e)
-		p.control = newWorkControl(newPollingContext(1), WorkLimits{})
+		p.control = newWorkControl(newPollingContext(1), limits.WorkLimits{})
 		var got string
 		if err := catchFatal(t, func() { got = p.recoveryErrorText(e) }); !errors.Is(err, context.Canceled) || got != "" {
 			t.Fatalf("format cancellation: err=%v partial=%q", err, got)
 		}
-		p.control = newWorkControl(nil, WorkLimits{MaxSteps: 1 << 50})
+		p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 1 << 50})
 		if retry := p.recoveryErrorText(&SyntaxError{Line: 1, Col: 2, Messages: []string{"other"}}); retry != "1:2: other" {
 			t.Fatal("formatter retry differs")
 		}
@@ -87,7 +89,7 @@ func TestWorkDiagnosticSortParityAndMoves(t *testing.T) {
 		}
 		want := append([]string(nil), values...)
 		sort.Strings(want)
-		p := diagnosticParser(WorkLimits{MaxSteps: 1 << 50})
+		p := diagnosticParser(limits.WorkLimits{MaxSteps: 1 << 50})
 		p.sortExpected(values)
 		if !slices.Equal(values, want) {
 			t.Fatalf("sort length%d differs from native", n)
@@ -95,11 +97,11 @@ func TestWorkDiagnosticSortParityAndMoves(t *testing.T) {
 	}
 	// Empty-string comparisons consume no byte work, so these budgets/cancellation
 	// isolate movement rather than failing in the comparator.
-	p := diagnosticParser(WorkLimits{MaxSteps: 128})
-	if err := catchFatal(t, func() { p.sortExpected(make([]string, 320)) }); !errors.Is(err, ErrWorkLimit) || p.control.stepsUsed != 128 {
+	p := diagnosticParser(limits.WorkLimits{MaxSteps: 128})
+	if err := catchFatal(t, func() { p.sortExpected(make([]string, 320)) }); !errors.Is(err, limits.ErrWorkLimit) || p.control.stepsUsed != 128 {
 		t.Fatalf("sort moves: err=%v steps=%d", err, p.control.stepsUsed)
 	}
-	p.control = newWorkControl(newPollingContext(1), WorkLimits{})
+	p.control = newWorkControl(newPollingContext(1), limits.WorkLimits{})
 	if err := catchFatal(t, func() { p.sortExpected(make([]string, 320)) }); !errors.Is(err, context.Canceled) {
 		t.Fatalf("sort move cancellation: %v", err)
 	}

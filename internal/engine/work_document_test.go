@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 func workDocumentVariants(t *testing.T, run func(*testing.T, ParseOptions)) {
@@ -39,7 +41,7 @@ func workDocumentAssertPreserved(t *testing.T, d *Document, before Document) {
 func workDocumentAssertRetry(t *testing.T, d *Document) {
 	t.Helper()
 	o := d.ParseDefaults()
-	o.Context, o.WorkLimits, o.Trace = nil, WorkLimits{}, nil
+	o.Context, o.WorkLimits, o.Trace = nil, limits.WorkLimits{}, nil
 	if got, want := resultJSON(d.ParseWith(o)), resultJSON(d.prog.ParseWith(d.start, d.Text(), o)); got != want {
 		t.Fatalf("retry %s; fresh %s", got, want)
 	}
@@ -74,12 +76,12 @@ func TestWorkDocumentConstruction(t *testing.T) {
 			if phase == "canceled" && !errors.Is(err, context.Canceled) {
 				t.Fatal(err)
 			}
-			if phase != "canceled" && !errors.Is(err, ErrWorkLimit) {
+			if phase != "canceled" && !errors.Is(err, limits.ErrWorkLimit) {
 				t.Fatal(err)
 			}
 		}
 		o := base
-		o.WorkLimits = WorkLimits{MaxInputWork: 100000, MaxSteps: 100000}
+		o.WorkLimits = limits.WorkLimits{MaxInputWork: 100000, MaxSteps: 100000}
 		d, err := prog.NewDocumentWith("main", "é💡abc", o)
 		if err != nil || d == nil {
 			t.Fatalf("fresh construction: %v", err)
@@ -144,7 +146,7 @@ rule item = "a"`)
 				n, err := d.ParseWith(o)
 				want := error(context.Canceled)
 				if phase == "steps" {
-					want = ErrWorkLimit
+					want = limits.ErrWorkLimit
 				}
 				if n != nil || !errors.Is(err, want) {
 					t.Fatalf("node=%v error=%v", n, err)

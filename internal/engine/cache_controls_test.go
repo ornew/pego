@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 func TestCacheControlsResetPreservesDocument(t *testing.T) {
@@ -92,7 +94,7 @@ func TestCacheControlsRetiredAndRunAccounting(t *testing.T) {
 func TestCacheControlsResetAfterFailureAndAbort(t *testing.T) {
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		p := compile(t, `rule main = "a"* $$`)
-		for _, limits := range []WorkLimits{{}, {MaxSteps: 1}} {
+		for _, limits := range []limits.WorkLimits{{}, {MaxSteps: 1}} {
 			d, err := p.NewDocumentWith("main", "aaa!", ParseOptions{Backend: b})
 			if err != nil {
 				t.Fatal(err)

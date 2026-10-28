@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/limits"
 )
 
 const workClassRangeCount = 2048
@@ -37,7 +38,7 @@ func workClassBudgetOptions(backend Backend, unit PositionUnit, allowance uint64
 	return ParseOptions{
 		Backend:    backend,
 		Unit:       unit,
-		WorkLimits: WorkLimits{MaxSteps: 1 << 30},
+		WorkLimits: limits.WorkLimits{MaxSteps: 1 << 30},
 		Trace: func(e TraceEvent) {
 			if e.Kind == TraceEnter && e.Rule == "main" {
 				if observed != nil {
@@ -53,11 +54,11 @@ func requireClassWorkLimit(t *testing.T, p *Program, input string, backend Backe
 	t.Helper()
 	var observed *parser
 	n, err := p.ParseWith("main", input, workClassBudgetOptions(backend, unit, 32, &observed))
-	if n != nil || !errors.Is(err, ErrWorkLimit) {
+	if n != nil || !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("%v/%v input %q: node=%v err type=%T, want fatal work-limit error", backend, unit, input, n, err)
 	}
-	var limit *WorkLimitError
-	if !errors.As(err, &limit) || limit.Kind != StepWorkLimit {
+	var limit *limits.WorkLimitError
+	if !errors.As(err, &limit) || limit.Kind != limits.StepWorkLimit {
 		t.Fatalf("%v/%v input %q: error=%T %v, want step WorkLimitError", backend, unit, input, err, err)
 	}
 	if limit.Requested != 1 || limit.Used != limit.Limit {
@@ -82,7 +83,7 @@ func TestWorkClassLargeNonASCIIRangesAreCharged(t *testing.T) {
 				if n := workClassNode(t, negative, gap, ParseOptions{Backend: backend, Unit: unit}); n.text != gap {
 					t.Fatalf("negated class text=%q, want %q", n.text, gap)
 				}
-				if n, err := positive.ParseWith("main", gap, ParseOptions{Backend: backend, Unit: unit}); n != nil || err == nil || errors.Is(err, ErrWorkLimit) {
+				if n, err := positive.ParseWith("main", gap, ParseOptions{Backend: backend, Unit: unit}); n != nil || err == nil || errors.Is(err, limits.ErrWorkLimit) {
 					t.Fatalf("unlimited positive miss: node=%v err=%v", n, err)
 				}
 
@@ -111,7 +112,7 @@ func TestWorkClassRangeCancellationAndPoolRetry(t *testing.T) {
 				opts := ParseOptions{
 					Backend:    backend,
 					Unit:       unit,
-					WorkLimits: WorkLimits{MaxSteps: 1 << 30},
+					WorkLimits: limits.WorkLimits{MaxSteps: 1 << 30},
 					Trace: func(e TraceEvent) {
 						if e.Kind == TraceEnter && e.Rule == "main" {
 							observed, control = e.p, e.p.control
@@ -164,7 +165,7 @@ func TestWorkClassInterruptionBypassesChoiceAndRecovery(t *testing.T) {
 	// Without an active control, the class miss is recovered and the grammar
 	// completes. The controlled attempt must terminate before recovery/choice.
 	n, err := p.ParseWith("main", gap, ParseOptions{})
-	if n == nil || errors.Is(err, ErrWorkLimit) {
+	if n == nil || errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("uncontrolled recovery baseline: node=%v err=%v", n, err)
 	}
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -193,7 +194,7 @@ func TestWorkClassFastPathParity(t *testing.T) {
 					base, baseErr := p.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit})
 					controlled, controlledErr := p.ParseWith("main", tc.input, ParseOptions{
 						Backend: backend, Unit: unit,
-						WorkLimits: WorkLimits{MaxInputWork: 10000, MaxSteps: 10000},
+						WorkLimits: limits.WorkLimits{MaxInputWork: 10000, MaxSteps: 10000},
 					})
 					if !reflect.DeepEqual(controlled, base) || !reflect.DeepEqual(controlledErr, baseErr) {
 						t.Fatalf("controlled result differs: got %#v/%#v, want %#v/%#v", controlled, controlledErr, base, baseErr)
@@ -260,7 +261,7 @@ func TestWorkClassOptimizedRoutes(t *testing.T) {
 						var c *workControl
 						var start uint64
 						n, err := program.ParseWith("main", tc.input, ParseOptions{
-							Backend: backend, Unit: unit, WorkLimits: WorkLimits{MaxSteps: 1 << 30},
+							Backend: backend, Unit: unit, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 30},
 							Trace: func(e TraceEvent) {
 								if e.Kind == TraceEnter && e.Rule == "main" {
 									c = e.p.control

@@ -7,6 +7,8 @@ import (
 	"errors"
 	"io"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 type workCancelledRefillReader struct {
@@ -56,7 +58,7 @@ func TestWorkStreamRawReaderAdmission(t *testing.T) {
 	cancel()
 	caller := &workCancelledRefillReader{cancel: func() {}}
 	var returned error
-	observer := &streamReaderObserver{reader: caller, result: &returned, control: newWorkControl(ctx, WorkLimits{})}
+	observer := &streamReaderObserver{reader: caller, result: &returned, control: newWorkControl(ctx, limits.WorkLimits{})}
 	err := catchFatal(t, func() { _, _ = observer.Read(make([]byte, 4)) })
 	if !errors.Is(err, context.Canceled) || caller.calls != 0 || returned != nil {
 		t.Fatalf("error=%v calls=%d returned=%v", err, caller.calls, returned)

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"weak"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 type streamControlRetentionSentinel struct{ data [128]byte }
@@ -142,7 +144,7 @@ func runStreamControlRetentionCase(t *testing.T, prog *Program, outcome string, 
 
 func streamControlRetentionOptions(o ParseOptions, ctx context.Context, trace func(TraceEvent)) ParseOptions {
 	o.Context = ctx
-	o.WorkLimits = WorkLimits{MaxInputWork: 1 << 30}
+	o.WorkLimits = limits.WorkLimits{MaxInputWork: 1 << 30}
 	o.Trace = trace
 	return o
 }
@@ -171,7 +173,7 @@ func TestWorkStreamTraceRetentionWithActiveControls(t *testing.T) {
 						t.Fatalf("panic=%v err=%v emitted=%d", run.panic, run.err, len(run.nodes))
 					}
 				case "input-limit":
-					if run.panic != nil || !errors.Is(run.err, ErrWorkLimit) || len(run.nodes) != 1 {
+					if run.panic != nil || !errors.Is(run.err, limits.ErrWorkLimit) || len(run.nodes) != 1 {
 						t.Fatalf("panic=%v err=%v emitted=%d", run.panic, run.err, len(run.nodes))
 					}
 				case "reader-error", "emit-error":

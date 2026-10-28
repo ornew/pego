@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -182,7 +183,7 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 			if err != nil {
 				t.Fatal(err)
 			}
-			limits := WorkLimits{MaxSteps: 1 << 30}
+			limits := limits.WorkLimits{MaxSteps: 1 << 30}
 			declared := checked.typed.fields["S"][0].t.String() // as the value checker resolves it
 			for _, in := range resultCheckInputs() {
 				value := fieldCheckValues[in[:1]]
@@ -429,7 +430,7 @@ func TestOperatorResultChecks(t *testing.T) {
 		if got := strings.Contains(want, "cannot cast "); got != rejected {
 			t.Errorf("%q: %s", in, want)
 		}
-		limits := WorkLimits{MaxSteps: 1 << 30}
+		limits := limits.WorkLimits{MaxSteps: 1 << 30}
 		for _, run := range []struct {
 			name string
 			prog *Program

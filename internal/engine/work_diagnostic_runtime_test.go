@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/limits"
 )
 
 func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
@@ -28,7 +29,7 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 				}
 				before, _ := json.Marshal(records)
 				retained := &Node{text: "retained", fields: Fields{{Name: "keep", Value: "stable"}}}
-				p := diagnosticParser(WorkLimits{})
+				p := diagnosticParser(limits.WorkLimits{})
 				p.memo, p.recovered = newMemoTable(), []*SyntaxError{prefix}
 				p.memo.slots = make([]*memoEntry, 1)
 				r := &rule{id: 7}
@@ -128,12 +129,12 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 					completed = assertReplay
 				}
 				if mode == "complete" {
-					p.control = newWorkControl(nil, WorkLimits{MaxSteps: steps})
+					p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: steps})
 				} else if mode == "budget" {
 					// Less than the copy itself, so failure cannot be at a later put.
-					p.control = newWorkControl(nil, WorkLimits{MaxSteps: 319})
+					p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 319})
 				} else {
-					p.control = newWorkControl(newPollingContext(1), WorkLimits{})
+					p.control = newWorkControl(newPollingContext(1), limits.WorkLimits{})
 				}
 				err := catchFatal(t, run)
 				if mode == "complete" {
@@ -142,7 +143,7 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 					}
 					completed()
 				} else {
-					want := ErrWorkLimit
+					want := limits.ErrWorkLimit
 					if mode == "cancel" {
 						want = context.Canceled
 					}
@@ -193,7 +194,7 @@ func TestWorkDiagnosticBatchFailureAndTraceAccessor(t *testing.T) {
 						var observed *parser
 						var c *workControl
 						var at uint64
-						n, err := active.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Recognize: recognize, WorkLimits: WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
+						n, err := active.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Recognize: recognize, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
 							observed = e.p
 							if e.Kind == TraceEnter && e.Rule == "fallback" {
 								fallback++
@@ -219,7 +220,7 @@ func TestWorkDiagnosticBatchFailureAndTraceAccessor(t *testing.T) {
 								}
 							}
 						}})
-						var want error = ErrWorkLimit
+						var want error = limits.ErrWorkLimit
 						if cancel {
 							want = context.Canceled
 						}
@@ -265,7 +266,7 @@ rule bad = "a" @error(message=` + strconv.Quote(message) + `)`
 			for _, recognize := range []bool{false, true} {
 				armed, fallback := false, 0
 				var observed *parser
-				n, err := prog.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Recognize: recognize, WorkLimits: WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
+				n, err := prog.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Recognize: recognize, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
 					observed = e.p
 					if e.Kind == TraceEnter && e.Rule == "fallback" {
 						fallback++
@@ -283,12 +284,12 @@ rule bad = "a" @error(message=` + strconv.Quote(message) + `)`
 					if err != nil || fallback != 1 {
 						t.Fatalf("recognition unnecessarily formats message: %v fallback=%d", err, fallback)
 					}
-				} else if !errors.Is(err, ErrWorkLimit) || fallback != 0 {
+				} else if !errors.Is(err, limits.ErrWorkLimit) || fallback != 0 {
 					t.Fatalf("message interruption entered alternative: %v fallback=%d", err, fallback)
 				}
 				if !recognize {
 					armed, fallback = false, 0
-					n, err = prog.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, WorkLimits: WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
+					n, err = prog.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
 						observed = e.p
 						if e.Kind == TraceEnter && e.Rule == "fallback" {
 							fallback++

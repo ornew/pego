@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 func newChangeTestDocument(t *testing.T, prog *Program, text string, o ParseOptions, limit int) *ChangeDocument {
@@ -321,15 +323,17 @@ func TestDocumentChangesConservativeGraphEquality(t *testing.T) {
 func TestDocumentChangesComparisonUsesCumulativeBudget(t *testing.T) {
 	leaf := &Node{kind: kindOf("Leaf", "leaf"), terminal: true, text: strings.Repeat("x", 8192)}
 	a, b := changeGraphSnapshot(t, leaf), changeGraphSnapshot(t, leaf.Clone())
-	control := newWorkControl(nil, WorkLimits{MaxInputWork: 8192})
+	control := newWorkControl(nil, limits.WorkLimits{MaxInputWork: 8192})
 	control.charge(4096, 1) // Work already spent by parsing/capture in this invocation.
 	p := &parser{control: control}
-	if err := catchFatal(t, func() { equalChangeSnapshotsControlled(p, a, b) }); !errors.Is(err, ErrWorkLimit) {
+	if err := catchFatal(t, func() { equalChangeSnapshotsControlled(p, a, b) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatal("comparison escaped cumulative budget", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if err := catchFatal(t, func() { equalChangeSnapshotsControlled(&parser{control: newWorkControl(ctx, WorkLimits{})}, a, b) }); !errors.Is(err, context.Canceled) {
+	if err := catchFatal(t, func() {
+		equalChangeSnapshotsControlled(&parser{control: newWorkControl(ctx, limits.WorkLimits{})}, a, b)
+	}); !errors.Is(err, context.Canceled) {
 		t.Fatal("comparison ignored cancellation", err)
 	}
 }
@@ -350,8 +354,8 @@ func TestDocumentChangesComparisonInterruptionPublication(t *testing.T) {
 		d.DrainChanges()
 		// Force interruption during the shared parse/capture/comparison invocation.
 		limited := o
-		limited.WorkLimits = WorkLimits{MaxInputWork: 1}
-		if s, err := d.SnapshotWith(limited); s != nil || !errors.Is(err, ErrWorkLimit) {
+		limited.WorkLimits = limits.WorkLimits{MaxInputWork: 1}
+		if s, err := d.SnapshotWith(limited); s != nil || !errors.Is(err, limits.ErrWorkLimit) {
 			t.Fatal(s, err)
 		}
 		events := d.DrainChanges()

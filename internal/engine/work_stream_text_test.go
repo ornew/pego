@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 func workStreamTextInput(u PositionUnit, text string) input {
@@ -36,15 +38,15 @@ func TestWorkStreamTextByteSnapshotBoundaries(t *testing.T) {
 			if size >= 64 {
 				used = min(size, streamTextChunk)
 			}
-			in.control = newWorkControl(nil, WorkLimits{MaxInputWork: uint64(used - 1)})
+			in.control = newWorkControl(nil, limits.WorkLimits{MaxInputWork: uint64(used - 1)})
 			before := in.streamText
 			var value string
 			err := catchFatal(t, func() { value = in.text(0, end) })
-			var limit *WorkLimitError
-			if !errors.As(err, &limit) || limit.Kind != InputWorkLimit || value != "" || !reflect.DeepEqual(in.streamText, before) {
+			var limit *limits.WorkLimitError
+			if !errors.As(err, &limit) || limit.Kind != limits.InputWorkLimit || value != "" || !reflect.DeepEqual(in.streamText, before) {
 				t.Fatalf("materialization error=%v value=%q", err, value)
 			}
-			in.control = newWorkControl(nil, WorkLimits{MaxInputWork: uint64(used)})
+			in.control = newWorkControl(nil, limits.WorkLimits{MaxInputWork: uint64(used)})
 			if got := in.text(0, end); got != text[:end] || in.control.inputUsed != uint64(used) || in.control.stepsUsed != 1 {
 				t.Fatalf("exact materialization got=%q counters=%d/%d", got, in.control.inputUsed, in.control.stepsUsed)
 			}
@@ -69,7 +71,7 @@ func TestWorkStreamTextFallbackAndNoReadAhead(t *testing.T) {
 				in := input{unit: u, reader: bufio.NewReader(r)}
 				in.fill(size)
 				reads := r.calls
-				in.control = newWorkControl(nil, WorkLimits{MaxInputWork: 1 << 20})
+				in.control = newWorkControl(nil, limits.WorkLimits{MaxInputWork: 1 << 20})
 				if in.text(0, size) != strings.Repeat("x", size) || r.calls != reads {
 					t.Fatal("controlled text read ahead or changed text")
 				}
@@ -106,10 +108,10 @@ func TestWorkStreamTextCodePointPublication(t *testing.T) {
 			case "last-offset":
 				limit = 3*size - 1
 			}
-			in.control = newWorkControl(nil, WorkLimits{MaxSteps: limit})
+			in.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: limit})
 			before := append([]int32(nil), old.offsets...)
 			err := catchFatal(t, func() { _ = in.text(0, 8) })
-			if !errors.Is(err, ErrWorkLimit) || !reflect.DeepEqual(in.streamText, old) || !reflect.DeepEqual(old.offsets, before) {
+			if !errors.Is(err, limits.ErrWorkLimit) || !reflect.DeepEqual(in.streamText, old) || !reflect.DeepEqual(old.offsets, before) {
 				t.Fatalf("%s error=%v mutated old cache", phase, err)
 			}
 		})
@@ -117,7 +119,7 @@ func TestWorkStreamTextCodePointPublication(t *testing.T) {
 	in := workStreamTextInput(CodePoints, text)
 	// Detached sizing/encoding each visit 1024 runes. The offset decoder
 	// reserves four bytes except for its final three ASCII positions.
-	in.control = newWorkControl(nil, WorkLimits{MaxSteps: 3 * size, MaxInputWork: 6*size - 6})
+	in.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 3 * size, MaxInputWork: 6*size - 6})
 	if got := in.text(0, 5); got != "aaaaa" || in.control.stepsUsed != 3*size || in.control.inputUsed != 6*size-6 || in.streamText.end != size {
 		t.Fatalf("exact counters=%d/%d text=%q", in.control.stepsUsed, in.control.inputUsed, got)
 	}
@@ -126,8 +128,8 @@ func TestWorkStreamTextCodePointPublication(t *testing.T) {
 		t.Fatal("cached code-point offsets were rebuilt")
 	}
 	oneShort := workStreamTextInput(CodePoints, text)
-	oneShort.control = newWorkControl(nil, WorkLimits{MaxInputWork: 6*size - 7})
-	if err := catchFatal(t, func() { _ = oneShort.text(0, 5) }); !errors.Is(err, ErrWorkLimit) || oneShort.streamText.source != "" {
+	oneShort.control = newWorkControl(nil, limits.WorkLimits{MaxInputWork: 6*size - 7})
+	if err := catchFatal(t, func() { _ = oneShort.text(0, 5) }); !errors.Is(err, limits.ErrWorkLimit) || oneShort.streamText.source != "" {
 		t.Fatalf("one-short error=%v", err)
 	}
 }
@@ -139,7 +141,7 @@ func TestWorkStreamTextMalformedAndRetainedCache(t *testing.T) {
 	for _, u := range []PositionUnit{Bytes, CodePoints} {
 		in := workStreamTextInput(u, strings.Repeat("aé😀\xff\xc0z", 500))
 		in.base = int(^uint(0)>>1) - in.loaded() - 10
-		in.control = newWorkControl(nil, WorkLimits{MaxInputWork: 1 << 30})
+		in.control = newWorkControl(nil, limits.WorkLimits{MaxInputWork: 1 << 30})
 		first := in.text(in.base+1, in.base+10)
 		var want string
 		if u == Bytes {
@@ -174,7 +176,7 @@ func TestWorkStreamTextOffsetCancellation(t *testing.T) {
 	defer cancel()
 	c := &workStreamTextPhaseContext{Context: ctx, observe: func() bool { return in.control.stepsUsed >= 2048 }}
 	c.cancel = cancel
-	in.control = newWorkControl(c, WorkLimits{})
+	in.control = newWorkControl(c, limits.WorkLimits{})
 	err := catchFatal(t, func() { _ = in.text(0, 10) })
 	if err != context.Canceled || in.control.stepsUsed < 2048 || in.control.stepsUsed >= 3072 || !reflect.DeepEqual(in.streamText, old) {
 		t.Fatalf("offset cancel error=%v steps=%d", err, in.control.stepsUsed)
@@ -231,7 +233,7 @@ rule row = (!"\n" .)+ #atomic "\n"`)
 					}
 				}
 				err := prog.ParseStreamWith("main", strings.NewReader(text), func(*Node) error { emissions++; return nil }, o)
-				want := ErrWorkLimit
+				want := limits.ErrWorkLimit
 				if phase == "cancel" {
 					want = context.Canceled
 				}

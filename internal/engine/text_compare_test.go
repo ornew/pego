@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 // textCompareGrammar compares string fields of structs with each other, with literals and in
@@ -29,7 +31,7 @@ var textCompareInputs = []string{"", "a,b", "b,a", "ab,ab", "%ab:<ab>", "%z:<a>"
 // and without work controls.
 func TestTextFieldComparisons(t *testing.T) {
 	prog := compileBare(t, textCompareGrammar, Options{})
-	limits := WorkLimits{MaxInputWork: 1 << 40, MaxSteps: 1 << 40}
+	limits := limits.WorkLimits{MaxInputWork: 1 << 40, MaxSteps: 1 << 40}
 	for _, controlled := range []bool{false, true} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, input := range textCompareInputs {
@@ -134,7 +136,7 @@ func TestComparisons(t *testing.T){
 // the result.
 func parseSteps(t *testing.T, prog *Program, backend Backend, unit PositionUnit, input string) (uint64, string) {
 	t.Helper()
-	o := ParseOptions{Backend: backend, Unit: unit, WorkLimits: WorkLimits{MaxSteps: 1 << 40}}
+	o := ParseOptions{Backend: backend, Unit: unit, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 40}}
 	active, _, control, err := prog.admitParse("main", o, false)
 	if err != nil {
 		t.Fatal(err)

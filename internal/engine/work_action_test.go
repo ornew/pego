@@ -9,9 +9,11 @@ import (
 	"strings"
 	"testing"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
-func actionWorkParser(ctx context.Context, limits WorkLimits, unit PositionUnit) *parser {
+func actionWorkParser(ctx context.Context, limits limits.WorkLimits, unit PositionUnit) *parser {
 	return &parser{input: input{unit: unit, control: newWorkControl(ctx, limits)}}
 }
 
@@ -29,7 +31,7 @@ func TestWorkActionStringHelperParity(t *testing.T) {
 	right := strings.Repeat("prefix-", 2048) + "b" + string([]byte{0x00})
 
 	for _, unit := range []PositionUnit{Bytes, CodePoints} {
-		p := actionWorkParser(nil, WorkLimits{MaxInputWork: 1}, unit)
+		p := actionWorkParser(nil, limits.WorkLimits{MaxInputWork: 1}, unit)
 		wantLen := len(malformed)
 		if unit == CodePoints {
 			wantLen = utf8.RuneCountInString(malformed)
@@ -64,20 +66,20 @@ func TestWorkActionStringHelperParity(t *testing.T) {
 
 func TestWorkActionStringHelpersChargeLongWork(t *testing.T) {
 	long := strings.Repeat("a", 8192)
-	p := actionWorkParser(nil, WorkLimits{MaxSteps: 256}, CodePoints)
-	if err := catchFatal(t, func() { p.compareText(long+"x", long+"y") }); !errors.Is(err, ErrWorkLimit) {
+	p := actionWorkParser(nil, limits.WorkLimits{MaxSteps: 256}, CodePoints)
+	if err := catchFatal(t, func() { p.compareText(long+"x", long+"y") }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("long equal-prefix comparison error = %v, want ErrWorkLimit", err)
 	}
 
-	p = actionWorkParser(nil, WorkLimits{MaxSteps: 128}, Bytes)
+	p = actionWorkParser(nil, limits.WorkLimits{MaxSteps: 128}, Bytes)
 	if err := catchFatal(t, func() {
 		_, _ = p.valueBinary("+", long, long)
-	}); !errors.Is(err, ErrWorkLimit) {
+	}); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("long string concatenation error = %v, want ErrWorkLimit", err)
 	}
 
-	p = actionWorkParser(nil, WorkLimits{MaxSteps: 128}, CodePoints)
-	if err := catchFatal(t, func() { p.valueTextLen(long) }); !errors.Is(err, ErrWorkLimit) {
+	p = actionWorkParser(nil, limits.WorkLimits{MaxSteps: 128}, CodePoints)
+	if err := catchFatal(t, func() { p.valueTextLen(long) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("long rune length error = %v, want ErrWorkLimit", err)
 	}
 }
@@ -113,7 +115,7 @@ func TestWorkActionCollectionLoopsChargeElements(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := newPollingContext(1)
-			p := actionWorkParser(ctx, WorkLimits{}, CodePoints)
+			p := actionWorkParser(ctx, limits.WorkLimits{}, CodePoints)
 			var locals *local
 			if tc.name == "local copy" {
 				for i := 0; i < size; i++ {
@@ -155,10 +157,10 @@ rule items = [a-z] #atomic*`)
 						n, err := prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Trace: func(e TraceEvent) {
 							if !armed && e.Kind == TraceExit && e.Rule == "items" {
 								armed = true
-								e.p.control = newWorkControl(nil, WorkLimits{MaxSteps: 128})
+								e.p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
 							}
 						}})
-						if !armed || n != nil || !errors.Is(err, ErrWorkLimit) {
+						if !armed || n != nil || !errors.Is(err, limits.ErrWorkLimit) {
 							t.Fatalf("controlled parse: armed=%t node=%v err=%v", armed, n, err)
 						}
 						n, err = prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit})
@@ -185,7 +187,7 @@ rule items = [a-z] #atomic*`)
 				n, err := prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Trace: func(e TraceEvent) {
 					if !armed && e.Kind == TraceExit && e.Rule == "items" {
 						armed = true
-						attempt = newWorkControl(newPollingContext(2), WorkLimits{})
+						attempt = newWorkControl(newPollingContext(2), limits.WorkLimits{})
 						e.p.control = attempt
 					}
 				}})
@@ -216,7 +218,7 @@ rule items = [a-z]* #atomic`)
 				armContext := func(e TraceEvent, armed *bool) {
 					if !*armed && e.Kind == TraceExit && e.Rule == "items" {
 						*armed = true
-						e.p.control = newWorkControl(nil, WorkLimits{MaxSteps: 128})
+						e.p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
 					}
 				}
 				armed := false
@@ -229,10 +231,10 @@ rule items = [a-z]* #atomic`)
 				n, err = recovery.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Trace: func(e TraceEvent) {
 					if !armed && e.Kind == TraceExit && e.Rule == "items" {
 						armed = true
-						e.p.control = newWorkControl(nil, WorkLimits{MaxSteps: 256})
+						e.p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 256})
 					}
 				}})
-				if !armed || n != nil || !errors.Is(err, ErrWorkLimit) {
+				if !armed || n != nil || !errors.Is(err, limits.ErrWorkLimit) {
 					t.Fatalf("recovery swallowed action interruption: armed=%t node=%v err=%v", armed, n, err)
 				}
 				n, err = recovery.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit})

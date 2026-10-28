@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 func TestStructuralQuerySharedEdgesAndCaptures(t *testing.T) {
@@ -193,12 +195,12 @@ func TestStructuralQueryAllOrError(t *testing.T) {
 		t.Fatalf("cancel: %v %v", got, err)
 	}
 	// A leaf costs one visit, one pattern, one capture and one match.
-	got, err = q.Matches(root, QueryOptions{WorkLimits: WorkLimits{MaxSteps: 4}})
+	got, err = q.Matches(root, QueryOptions{WorkLimits: limits.WorkLimits{MaxSteps: 4}})
 	if err != nil || len(got) != 1 {
 		t.Fatalf("exact limit: %v %v", got, err)
 	}
-	got, err = q.Matches(root, QueryOptions{WorkLimits: WorkLimits{MaxSteps: 3}})
-	if got != nil || !errors.Is(err, ErrWorkLimit) {
+	got, err = q.Matches(root, QueryOptions{WorkLimits: limits.WorkLimits{MaxSteps: 3}})
+	if got != nil || !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("limit: %v %v", got, err)
 	}
 }
@@ -212,7 +214,7 @@ func TestStructuralQueryCycleThroughValues(t *testing.T) {
 	list := &Node{kind: kindListValue, children: []*Node{root}}
 	root.children = []*Node{list}
 	// The repeated node is rejected before its contents are reserved.
-	budget := &queryBudget{limits: WorkLimits{MaxSteps: 100}}
+	budget := &queryBudget{limits: limits.WorkLimits{MaxSteps: 100}}
 	visits := 0
 	err = visitQueryGraph(root, budget, func(queryVisit) error {
 		visits++
@@ -221,7 +223,7 @@ func TestStructuralQueryCycleThroughValues(t *testing.T) {
 	if !errors.Is(err, ErrQueryCycle) || visits != 2 {
 		t.Fatalf("first back edge: visits=%d steps=%d err=%v", visits, budget.steps, err)
 	}
-	results, err := q.Matches(root, QueryOptions{WorkLimits: WorkLimits{MaxSteps: 100}})
+	results, err := q.Matches(root, QueryOptions{WorkLimits: limits.WorkLimits{MaxSteps: 100}})
 	if results != nil || !errors.Is(err, ErrQueryCycle) {
 		t.Fatalf("value cycle: %+v, %v", results, err)
 	}

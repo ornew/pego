@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 func TestWorkDocumentPieceConstruction(t *testing.T) {
@@ -15,7 +17,7 @@ func TestWorkDocumentPieceConstruction(t *testing.T) {
 	}
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, text := range []string{strings.Repeat("é😀x", 2048), strings.Repeat("x\xff", 4096)} {
-			c := newWorkControl(nil, WorkLimits{MaxSteps: 1 << 30})
+			c := newWorkControl(nil, limits.WorkLimits{MaxSteps: 1 << 30})
 			in := newControlledDocumentInput(text, unit, c)
 			want := newDocumentPieces(text, unit)
 			if in.pieces == nil || !reflect.DeepEqual(in.pieces, want) {
@@ -30,8 +32,8 @@ func TestWorkDocumentPieceConstruction(t *testing.T) {
 			}
 		}
 	}
-	c := newWorkControl(nil, WorkLimits{MaxInputWork: 1})
-	if err := catchFatal(t, func() { newControlledDocumentInput(strings.Repeat("a", 8192), CodePoints, c) }); !errors.Is(err, ErrWorkLimit) {
+	c := newWorkControl(nil, limits.WorkLimits{MaxInputWork: 1})
+	if err := catchFatal(t, func() { newControlledDocumentInput(strings.Repeat("a", 8192), CodePoints, c) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("piece preparation interruption: %v", err)
 	}
 }
@@ -43,14 +45,14 @@ func TestWorkDocumentPieceTextPublication(t *testing.T) {
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		pieces := newDocumentPieces(strings.Repeat("x", 8192), unit)
 		pieces.replace(4096, 4097, "é")
-		in := input{unit: unit, eof: true, pieces: pieces, control: newWorkControl(nil, WorkLimits{MaxInputWork: 4096})}
-		if err := catchFatal(t, func() { in.text(0, pieces.n) }); !errors.Is(err, ErrWorkLimit) {
+		in := input{unit: unit, eof: true, pieces: pieces, control: newWorkControl(nil, limits.WorkLimits{MaxInputWork: 4096})}
+		if err := catchFatal(t, func() { in.text(0, pieces.n) }); !errors.Is(err, limits.ErrWorkLimit) {
 			t.Fatalf("%s: piece materialization bypassed the limit: %v", unit, err)
 		}
 		if pieces.fullOK || pieces.full != "" {
 			t.Fatal("interrupted materialization published a cache")
 		}
-		in.control = newWorkControl(nil, WorkLimits{MaxInputWork: 1 << 30})
+		in.control = newWorkControl(nil, limits.WorkLimits{MaxInputWork: 1 << 30})
 		got := in.text(0, pieces.n)
 		if want := strings.Repeat("x", 4096) + "é" + strings.Repeat("x", 4095); got != want || !pieces.fullOK {
 			t.Fatalf("%s: retry materialization differs", unit)
@@ -66,7 +68,7 @@ func TestWorkDocumentPieceLineTableRetry(t *testing.T) {
 			t.Fatal(err)
 		}
 		o.WorkLimits.MaxInputWork = 100
-		if _, err = d.ParseWith(o); !errors.Is(err, ErrWorkLimit) {
+		if _, err = d.ParseWith(o); !errors.Is(err, limits.ErrWorkLimit) {
 			t.Fatalf("line table interruption: %v", err)
 		}
 		if d.in.lines != nil {
@@ -85,7 +87,7 @@ func TestWorkDocumentPieceLiteralRetry(t *testing.T) {
 			t.Fatal(err)
 		}
 		o.WorkLimits.MaxInputWork = 100
-		if _, err = d.ParseWith(o); !errors.Is(err, ErrWorkLimit) {
+		if _, err = d.ParseWith(o); !errors.Is(err, limits.ErrWorkLimit) {
 			t.Fatalf("piece literal bypassed the limit: %v", err)
 		}
 		workDocumentAssertRetry(t, d)

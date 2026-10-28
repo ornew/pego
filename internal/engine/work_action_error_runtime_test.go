@@ -7,6 +7,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 // These public-API probes exercise large action error strings at the final
@@ -82,7 +84,7 @@ rule ` + longRule + ` = a:"a" => A{N: 1 / (len($a) - 1)}`,
 						}
 						wantNode, wantErr := prog.ParseWith(probe.start, probe.input, base)
 						limited := base
-						limited.WorkLimits = WorkLimits{MaxSteps: 1 << 50}
+						limited.WorkLimits = limits.WorkLimits{MaxSteps: 1 << 50}
 						gotNode, gotErr := prog.ParseWith(probe.start, probe.input, limited)
 						if (gotNode == nil) != (wantNode == nil) || actionErrorNodeText(gotNode) != actionErrorNodeText(wantNode) || actionErrorMessage(gotErr) != actionErrorMessage(wantErr) {
 							t.Fatalf("%v/%v generous limits changed result: node=%v err=%v; want node=%v err=%v", backend, unit, gotNode, gotErr, wantNode, wantErr)
@@ -96,7 +98,7 @@ rule ` + longRule + ` = a:"a" => A{N: 1 / (len($a) - 1)}`,
 
 						for _, mode := range []string{"budget", "cancel"} {
 							enteredFallback := 0
-							opts := ParseOptions{Backend: backend, Unit: unit, Recognize: recognize, WorkLimits: WorkLimits{MaxSteps: 1 << 50}}
+							opts := ParseOptions{Backend: backend, Unit: unit, Recognize: recognize, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 50}}
 							if mode == "cancel" {
 								opts.Context = context.Background()
 							}
@@ -124,8 +126,8 @@ rule ` + longRule + ` = a:"a" => A{N: 1 / (len($a) - 1)}`,
 								t.Fatalf("%v/%v/%s: arm=%t node=%v err=%v", backend, unit, mode, armed, n, err)
 							}
 							if mode == "budget" {
-								var limit *WorkLimitError
-								if !errors.As(err, &limit) || limit.Kind != StepWorkLimit {
+								var limit *limits.WorkLimitError
+								if !errors.As(err, &limit) || limit.Kind != limits.StepWorkLimit {
 									t.Fatalf("%v/%v budget interruption=%v, want StepWorkLimit", backend, unit, err)
 								}
 							}

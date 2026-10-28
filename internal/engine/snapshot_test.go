@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 func snapshotVariants(t *testing.T, run func(*testing.T, ParseOptions)) {
@@ -212,15 +214,15 @@ func TestSnapshotControlledFreezeBudgetAndRetry(t *testing.T) {
 		}
 		// A memo-hit parse succeeds with this allowance. Capturing its
 		// existing graph and text must still consume the same invocation.
-		o.WorkLimits = WorkLimits{MaxSteps: 100}
+		o.WorkLimits = limits.WorkLimits{MaxSteps: 100}
 		if _, err := d.ParseWith(o); err != nil {
 			t.Fatal("memo-hit fixture", err)
 		}
 		s, err := d.SnapshotWith(o)
-		if s != nil || !errors.Is(err, ErrWorkLimit) || d.memo.len() != 0 || d.runs != nil || d.kids != nil || d.vals != nil {
+		if s != nil || !errors.Is(err, limits.ErrWorkLimit) || d.memo.len() != 0 || d.runs != nil || d.kids != nil || d.vals != nil {
 			t.Fatal("freeze interruption", s, err)
 		}
-		o.WorkLimits = WorkLimits{}
+		o.WorkLimits = limits.WorkLimits{}
 		s, err = d.SnapshotWith(o)
 		if s == nil || err != nil || s.Text() != d.Text() {
 			t.Fatal("retry", err)
@@ -229,16 +231,16 @@ func TestSnapshotControlledFreezeBudgetAndRetry(t *testing.T) {
 			t.Fatal("fresh mismatch")
 		}
 		// A cached parse fits, but copying all 8192 input bytes does not.
-		o.WorkLimits = WorkLimits{MaxInputWork: 4096}
+		o.WorkLimits = limits.WorkLimits{MaxInputWork: 4096}
 		if _, err := d.ParseWith(o); err != nil {
 			t.Fatal("input-work memo-hit fixture", err)
 		}
 		s, err = d.SnapshotWith(o)
-		var limit *WorkLimitError
-		if s != nil || !errors.As(err, &limit) || limit.Kind != InputWorkLimit {
+		var limit *limits.WorkLimitError
+		if s != nil || !errors.As(err, &limit) || limit.Kind != limits.InputWorkLimit {
 			t.Fatal("text-freeze input-work limit", s, err)
 		}
-		o.WorkLimits = WorkLimits{}
+		o.WorkLimits = limits.WorkLimits{}
 		if s, err = d.SnapshotWith(o); s == nil || err != nil {
 			t.Fatal("input-work retry", err)
 		}

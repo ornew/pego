@@ -7,6 +7,8 @@ import (
 	"slices"
 	"sort"
 	"strings"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 // QueryPattern is the experimental programmatic structural pattern model. Empty Type, Rule and
@@ -49,7 +51,7 @@ type QueryCapture struct {
 type QueryMatch struct{ Captures []QueryCapture }
 type QueryOptions struct {
 	Context    context.Context
-	WorkLimits WorkLimits
+	WorkLimits limits.WorkLimits
 }
 
 var ErrQueryCycle = errors.New("structural query graph cycle")
@@ -201,7 +203,7 @@ func (p *QueryPattern) usesRule() bool {
 
 type queryBudget struct {
 	ctx    context.Context
-	limits WorkLimits
+	limits limits.WorkLimits
 	steps  uint64
 }
 
@@ -211,10 +213,10 @@ func (b *queryBudget) charge(n uint64) error {
 			return err
 		}
 	}
-	if exceedsLimit(b.steps, n, b.limits.MaxSteps) {
-		return &WorkLimitError{Kind: StepWorkLimit, Limit: b.limits.MaxSteps, Used: b.steps, Requested: n}
+	if limits.ExceedsLimit(b.steps, n, b.limits.MaxSteps) {
+		return &limits.WorkLimitError{Kind: limits.StepWorkLimit, Limit: b.limits.MaxSteps, Used: b.steps, Requested: n}
 	}
-	b.steps = saturatingAdd(b.steps, n)
+	b.steps = limits.SaturatingAdd(b.steps, n)
 	return nil
 }
 

@@ -7,6 +7,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 func TestWorkContextAttributionPreservesVMFaults(t *testing.T) {
@@ -33,7 +35,7 @@ func TestWorkContextAttributionPreservesVMFaults(t *testing.T) {
 			vm.m.Code[ip].A = int32(len(vm.runes))
 			var observed *parser
 			n, err := prog.ParseWith("main", "z", ParseOptions{
-				Backend: backend, WorkLimits: WorkLimits{MaxSteps: 1 << 20},
+				Backend: backend, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 20},
 				Trace: func(e TraceEvent) { observed = e.p },
 			})
 			if n != nil || err == nil || !strings.HasPrefix(err.Error(), "invalid bytecode: ") {
@@ -92,8 +94,8 @@ func TestWorkContextAccessorInterruptionRemainsFatal(t *testing.T) {
 						e.p.control.check()
 					},
 				})
-				var limit *WorkLimitError
-				if n != nil || !accessorEntered || !errors.As(err, &limit) || limit.Kind != StepWorkLimit {
+				var limit *limits.WorkLimitError
+				if n != nil || !accessorEntered || !errors.As(err, &limit) || limit.Kind != limits.StepWorkLimit {
 					t.Fatalf("context accessor node=%v entered=%v error=%v", n, accessorEntered, err)
 				}
 				if observed == nil || observed.scratch != nil || observed.control != nil {

@@ -8,9 +8,11 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
-func memoStorageParser(t *memoTable, limits WorkLimits) *parser {
+func memoStorageParser(t *memoTable, limits limits.WorkLimits) *parser {
 	return &parser{input: input{control: newWorkControl(nil, limits)}, memo: t}
 }
 
@@ -38,11 +40,11 @@ func TestWorkMemoPutSlotGrowthIsAtomic(t *testing.T) {
 	oldHeader := table.slots
 	oldPointers := slotPointers(oldHeader)
 	newEntry := &memoEntry{node: &Node{text: "published after retry"}}
-	p := memoStorageParser(table, WorkLimits{MaxSteps: 130})
+	p := memoStorageParser(table, limits.WorkLimits{MaxSteps: 130})
 	key := memoKey{rule: 7, pos: 511}
 
 	err := catchFatal(t, func() { p.memoPut(key, newEntry) })
-	if !errors.Is(err, ErrWorkLimit) {
+	if !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("slot growth error = %v, want ErrWorkLimit", err)
 	}
 	if len(table.slots) != 511 || cap(table.slots) != cap(oldHeader) {
@@ -53,7 +55,7 @@ func TestWorkMemoPutSlotGrowthIsAtomic(t *testing.T) {
 		t.Fatalf("failed growth mutated candidate entry: %#v", newEntry)
 	}
 
-	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 10_000})
+	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 10_000})
 	p.memoPut(key, newEntry)
 	if len(table.slots) != 512 {
 		t.Fatalf("retry slot length = %d, want 512", len(table.slots))
@@ -76,9 +78,9 @@ func TestWorkMemoSeenGrowthCopyAndRetry(t *testing.T) {
 	table := seedSeenTable(512, 512)
 	old := append([]uint64(nil), table.seen...)
 	oldSlice := table.seen
-	p := memoStorageParser(table, WorkLimits{MaxSteps: 130})
+	p := memoStorageParser(table, limits.WorkLimits{MaxSteps: 130})
 	err := catchFatal(t, func() { p.memoFirstCall(512*64, 0) })
-	if !errors.Is(err, ErrWorkLimit) {
+	if !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("seen allocation growth error = %v, want ErrWorkLimit", err)
 	}
 	if len(table.seen) != 512 || cap(table.seen) != 512 {
@@ -91,7 +93,7 @@ func TestWorkMemoSeenGrowthCopyAndRetry(t *testing.T) {
 		t.Fatalf("failed seen growth initialized adaptive counters: %#v", table.calls)
 	}
 
-	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 10_000})
+	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 10_000})
 	if deferred := p.memoFirstCall(512*64, 0); !deferred {
 		t.Fatal("first call after seen growth was not deferred")
 	}
@@ -108,9 +110,9 @@ func TestWorkMemoSeenSpareCapacityClearInterruption(t *testing.T) {
 	}
 	old := append([]uint64(nil), table.seen...)
 	oldHeader := table.seen
-	p := memoStorageParser(table, WorkLimits{MaxSteps: 130})
+	p := memoStorageParser(table, limits.WorkLimits{MaxSteps: 130})
 	err := catchFatal(t, func() { p.memoFirstCall(512*64, 0) })
-	if !errors.Is(err, ErrWorkLimit) {
+	if !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("seen spare-capacity clear error = %v, want ErrWorkLimit", err)
 	}
 	if len(table.seen) != 512 || cap(table.seen) != 1024 || &table.seen[0] != &oldHeader[0] {
@@ -133,7 +135,7 @@ func TestWorkMemoSeenSpareCapacityClearInterruption(t *testing.T) {
 		t.Fatalf("failed clear initialized adaptive counters: %#v", table.calls)
 	}
 
-	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 10_000})
+	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 10_000})
 	if deferred := p.memoFirstCall(512*64, 0); !deferred {
 		t.Fatal("first call after spare-capacity retry was not deferred")
 	}
@@ -146,8 +148,8 @@ func TestWorkMemoSeenGrowthCancellationIsAtomic(t *testing.T) {
 	table := seedSeenTable(512, 512)
 	old := append([]uint64(nil), table.seen...)
 	ctx := newPollingContext(1)
-	p := memoStorageParser(table, WorkLimits{})
-	p.control = newWorkControl(ctx, WorkLimits{})
+	p := memoStorageParser(table, limits.WorkLimits{})
+	p.control = newWorkControl(ctx, limits.WorkLimits{})
 	err := catchFatal(t, func() {
 		p.control.stepsSinceCheck = 0
 		p.memoFirstCall(512*64, 0)
@@ -172,7 +174,7 @@ func compareFirstCallParity(t *testing.T, seed *memoTable, calls [][2]int) {
 	t.Helper()
 	want := cloneSeenTable(seed)
 	got := cloneSeenTable(seed)
-	p := memoStorageParser(got, WorkLimits{MaxSteps: 100_000})
+	p := memoStorageParser(got, limits.WorkLimits{MaxSteps: 100_000})
 	for i, call := range calls {
 		expected := want.firstCall(call[0], call[1])
 		actual := p.memoFirstCall(call[0], call[1])

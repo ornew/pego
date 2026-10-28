@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 func workStreamVariants(t *testing.T, run func(*testing.T, ParseOptions)) {
@@ -242,9 +244,9 @@ func TestWorkStreamBlockedReaderCooperation(t *testing.T) {
 func TestWorkStreamLimitsAndCallerPanics(t *testing.T) {
 	prog := compile(t, records)
 	workStreamVariants(t, func(t *testing.T, base ParseOptions) {
-		for _, kind := range []WorkLimitKind{InputWorkLimit, StepWorkLimit} {
+		for _, kind := range []limits.WorkLimitKind{limits.InputWorkLimit, limits.StepWorkLimit} {
 			o := base
-			if kind == InputWorkLimit {
+			if kind == limits.InputWorkLimit {
 				o.WorkLimits.MaxInputWork = 16
 			} else {
 				o.WorkLimits.MaxSteps = 1
@@ -257,7 +259,7 @@ func TestWorkStreamLimitsAndCallerPanics(t *testing.T) {
 				}
 			}
 			err := prog.ParseStreamWith("main", strings.NewReader("#records\n"+strings.Repeat("a", 20000)+"=1\n"), func(*Node) error { count++; return nil }, o)
-			var we *WorkLimitError
+			var we *limits.WorkLimitError
 			if !errors.As(err, &we) || we.Kind != kind || count != 0 {
 				t.Fatalf("error=%v emits=%d", err, count)
 			}
@@ -323,7 +325,7 @@ func TestWorkStreamCompactionChunks(t *testing.T) {
 		}
 		want := append([]int(nil), source...)
 		n := copy(want, want[shift:])
-		c := newWorkControl(nil, WorkLimits{MaxSteps: uint64(n)})
+		c := newWorkControl(nil, limits.WorkLimits{MaxSteps: uint64(n)})
 		if got := copyStreamPrefix(c, source, source[shift:]); got != n || !reflect.DeepEqual(source, want) || c.stepsUsed != uint64(n) {
 			t.Fatalf("shift=%d result differs", shift)
 		}
@@ -332,10 +334,10 @@ func TestWorkStreamCompactionChunks(t *testing.T) {
 	for i := range v {
 		v[i] = i
 	}
-	c := newWorkControl(nil, WorkLimits{MaxSteps: 128})
+	c := newWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
 	got := catchStreamPanic(func() { copyStreamPrefix(c, v, v[1:]) })
 	f, ok := got.(fatal)
-	if !ok || !errors.Is(f.err, ErrWorkLimit) || c.stepsUsed != 128 || v[128] != 128 {
+	if !ok || !errors.Is(f.err, limits.ErrWorkLimit) || c.stepsUsed != 128 || v[128] != 128 {
 		t.Fatalf("copy interruption=%v steps=%d", got, c.stepsUsed)
 	}
 }
@@ -344,14 +346,14 @@ func TestWorkStreamCommitReservations(t *testing.T) {
 	// The frame scan and suffix clear are separately counted; neither touches
 	// a Node already delivered to the caller.
 	node := &Node{text: "delivered"}
-	p := &parser{input: input{control: newWorkControl(nil, WorkLimits{MaxSteps: 1})}, frameSlab: make([]frame, 258)}
+	p := &parser{input: input{control: newWorkControl(nil, limits.WorkLimits{MaxSteps: 1})}, frameSlab: make([]frame, 258)}
 	p.frame = &p.frameSlab[0]
 	p.frameSlab[1].vals = []*Node{node}
 	got := catchStreamPanic(func() { p.resetStreamFrames() })
 	if _, ok := got.(fatal); !ok || len(p.frameSlab) != 258 || p.frameSlab[1].vals[0] != node || node.text != "delivered" {
 		t.Fatalf("frame interruption=%v", got)
 	}
-	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 258})
+	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 258})
 	p.resetStreamFrames()
 	if len(p.frameSlab) != 1 || p.control.stepsUsed != 258 || node.text != "delivered" {
 		t.Fatal("frame retry changed ownership or count")
@@ -367,7 +369,7 @@ func TestWorkStreamCommitReservations(t *testing.T) {
 			a.next = b
 			memo.slots[0] = a
 			memo.slots[1] = growing
-			p := &parser{input: input{control: newWorkControl(nil, WorkLimits{MaxSteps: 2})}, memo: memo}
+			p := &parser{input: input{control: newWorkControl(nil, limits.WorkLimits{MaxSteps: 2})}, memo: memo}
 			pos := 129
 			if all {
 				pos = 260
@@ -388,7 +390,7 @@ func TestWorkStreamCommitReservations(t *testing.T) {
 			keep.node = node
 			fresh.slots[200] = keep
 			p.memo = fresh
-			p.control = newWorkControl(nil, WorkLimits{MaxSteps: 2000})
+			p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 2000})
 			p.pruneStreamMemo(pos)
 			if fresh.base != pos || seed.node != node || node.text != "delivered" || len(fresh.slots) != max(260-pos, 0) {
 				t.Fatal("prune ownership/base differs")
@@ -449,15 +451,15 @@ func TestWorkStreamCommitAfterDelivery(t *testing.T) {
 			controller.limits.MaxSteps = controller.stepsUsed + uint64(lineSteps+copyCount+frames+128)
 			return nil
 		}, o)
-		var we *WorkLimitError
-		if !errors.As(err, &we) || we.Kind != StepWorkLimit || we.Requested != 1 || we.Used != controller.limits.MaxSteps || count != 1 {
+		var we *limits.WorkLimitError
+		if !errors.As(err, &we) || we.Kind != limits.StepWorkLimit || we.Requested != 1 || we.Used != controller.limits.MaxSteps || count != 1 {
 			t.Fatalf("normal commit interruption error=%v emits=%d", err, count)
 		}
 		assertTraceParserDetached(t, saved.p, false)
 		if node == nil || resultJSON(node, nil) != before {
 			t.Fatal("commit changed emitted Node")
 		}
-		o.WorkLimits = WorkLimits{}
+		o.WorkLimits = limits.WorkLimits{}
 		o.Trace = nil
 		replay := 0
 		if err := prog.ParseStreamWith("main", strings.NewReader("#records\na=1\nbc=22\n"), func(*Node) error { replay++; return nil }, o); err != nil || replay != 2 || resultJSON(node, nil) != before {
@@ -469,7 +471,7 @@ func TestWorkStreamCommitAfterDelivery(t *testing.T) {
 func TestWorkStreamDiscardAndStackClear(t *testing.T) {
 	for _, u := range []PositionUnit{Bytes, CodePoints} {
 		t.Run(u.String(), func(t *testing.T) {
-			in := input{unit: u, eof: true, baseLine: 1, baseCol: 1, lines: []int{0}, control: newWorkControl(nil, WorkLimits{MaxSteps: 128})}
+			in := input{unit: u, eof: true, baseLine: 1, baseCol: 1, lines: []int{0}, control: newWorkControl(nil, limits.WorkLimits{MaxSteps: 128})}
 			if u == Bytes {
 				in.bs = []byte(strings.Repeat("a", 258))
 			} else {
@@ -484,7 +486,7 @@ func TestWorkStreamDiscardAndStackClear(t *testing.T) {
 	for _, phase := range []string{"trail", "values"} {
 		t.Run(phase, func(t *testing.T) {
 			node := &Node{text: "owned"}
-			p := &parser{input: input{unit: Bytes, eof: true, bs: []byte(strings.Repeat("a", 3000)), baseLine: 1, baseCol: 1, lines: []int{0}, control: newWorkControl(nil, WorkLimits{MaxSteps: 953 + 128})}, memo: newMemoTable()}
+			p := &parser{input: input{unit: Bytes, eof: true, bs: []byte(strings.Repeat("a", 3000)), baseLine: 1, baseCol: 1, lines: []int{0}, control: newWorkControl(nil, limits.WorkLimits{MaxSteps: 953 + 128})}, memo: newMemoTable()}
 			if phase == "trail" {
 				p.trail = make([]undo, 0, 129)
 			} else {
@@ -510,7 +512,7 @@ func TestWorkStreamEmitBoundary(t *testing.T) {
 		t.Run(phase, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			p := &parser{input: input{control: newWorkControl(ctx, WorkLimits{})}}
+			p := &parser{input: input{control: newWorkControl(ctx, limits.WorkLimits{})}}
 			stop := errors.New("emit")
 			calls := 0
 			p.emit = func(*Node) error {
@@ -589,7 +591,7 @@ func TestWorkStreamVMFaultAttribution(t *testing.T) {
 			vm.m.Code[ip].A = int32(len(vm.runes))
 			defer func() { vm.m.Code[ip] = old }()
 			var saved TraceEvent
-			err := prog.ParseStreamWith("main", strings.NewReader("z"), func(*Node) error { t.Fatal("emitted from corrupt VM"); return nil }, ParseOptions{Backend: b, WorkLimits: WorkLimits{MaxSteps: 1 << 20}, Trace: func(e TraceEvent) {
+			err := prog.ParseStreamWith("main", strings.NewReader("z"), func(*Node) error { t.Fatal("emitted from corrupt VM"); return nil }, ParseOptions{Backend: b, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 20}, Trace: func(e TraceEvent) {
 				if saved.p == nil {
 					saved = e
 				}
@@ -622,7 +624,7 @@ func TestWorkStreamConcurrentCounters(t *testing.T) {
 			go func() {
 				<-start
 				o := base
-				o.WorkLimits = WorkLimits{MaxInputWork: 100000, MaxSteps: 100000}
+				o.WorkLimits = limits.WorkLimits{MaxInputWork: 100000, MaxSteps: 100000}
 				if i == 0 {
 					o.Context = ctx
 				}

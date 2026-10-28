@@ -10,6 +10,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -129,21 +130,21 @@ type ParseOption func(*engine.ParseOptions)
 
 // WorkLimits configures cumulative engine work for a parse invocation.
 // Zero limits are unlimited. Counts depend on backend, input unit and version.
-type WorkLimits = engine.WorkLimits
+type WorkLimits = limits.WorkLimits
 
 // WorkLimitError describes a reservation that would exceed a work limit.
-type WorkLimitError = engine.WorkLimitError
+type WorkLimitError = limits.WorkLimitError
 
 // WorkLimitKind identifies the exhausted counter.
-type WorkLimitKind = engine.WorkLimitKind
+type WorkLimitKind = limits.WorkLimitKind
 
 const (
-	InputWorkLimit = engine.InputWorkLimit
-	StepWorkLimit  = engine.StepWorkLimit
+	InputWorkLimit = limits.InputWorkLimit
+	StepWorkLimit  = limits.StepWorkLimit
 )
 
 // ErrWorkLimit identifies engine work-limit failures through errors.Is.
-var ErrWorkLimit = engine.ErrWorkLimit
+var ErrWorkLimit = limits.ErrWorkLimit
 
 // WithContext selects invocation-local cooperative cancellation. Nil disables it.
 func WithContext(ctx context.Context) ParseOption {

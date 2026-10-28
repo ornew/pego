@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 func TestWorkLazyClosureAdmission(t *testing.T) {
@@ -26,7 +28,7 @@ func TestWorkLazyClosureAdmission(t *testing.T) {
 					return err
 				}
 			}
-			for _, o := range []ParseOptions{{}, {Context: context.Background()}, {Backend: Bytecode, WorkLimits: WorkLimits{MaxSteps: 10000}}} {
+			for _, o := range []ParseOptions{{}, {Context: context.Background()}, {Backend: Bytecode, WorkLimits: limits.WorkLimits{MaxSteps: 10000}}} {
 				if err := call(o); err != nil {
 					t.Fatal(err)
 				}
@@ -49,7 +51,7 @@ func TestWorkLazyClosureAdmission(t *testing.T) {
 			if prog.workProgram == nil {
 				t.Fatal("setup not retained after cancellation")
 			}
-			if err := call(ParseOptions{WorkLimits: WorkLimits{MaxSteps: 10000}}); err != nil {
+			if err := call(ParseOptions{WorkLimits: limits.WorkLimits{MaxSteps: 10000}}); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -103,7 +105,7 @@ rule expr = #operators {
 			if err := d.Edit(len(fixture.text)/2, len(fixture.text)/2+1, "!"); err != nil {
 				t.Fatal(err)
 			}
-			for _, limits := range []WorkLimits{{MaxSteps: 1000000, MaxInputWork: 1000000}, {}} {
+			for _, limits := range []limits.WorkLimits{{MaxSteps: 1000000, MaxInputWork: 1000000}, {}} {
 				o := ParseOptions{Unit: unit, WorkLimits: limits}
 				got, gotErr := d.ParseWith(o)
 				fresh, freshErr := prog.ParseWith("main", d.Text(), o)
@@ -149,7 +151,7 @@ func TestWorkLazyClosureContextReentry(t *testing.T) {
 		defer cancel()
 		ctx.Context = parent
 		ctx.run = func() {
-			n, err := prog.ParseWith("main", "a", ParseOptions{Recognize: recognize, WorkLimits: WorkLimits{MaxSteps: 10000}})
+			n, err := prog.ParseWith("main", "a", ParseOptions{Recognize: recognize, WorkLimits: limits.WorkLimits{MaxSteps: 10000}})
 			if err != nil || !recognize && n == nil {
 				t.Fatalf("reentrant parse: %v", err)
 			}
@@ -170,7 +172,7 @@ func TestWorkLazyClosureIncompleteInitialization(t *testing.T) {
 	if got != token {
 		t.Fatal("panic identity changed")
 	}
-	n, err := prog.ParseWith("main", "a", ParseOptions{WorkLimits: WorkLimits{MaxSteps: 100}})
+	n, err := prog.ParseWith("main", "a", ParseOptions{WorkLimits: limits.WorkLimits{MaxSteps: 100}})
 	if n != nil || err == nil || !strings.Contains(err.Error(), "initialization did not complete") {
 		t.Fatalf("n=%v error=%v", n, err)
 	}

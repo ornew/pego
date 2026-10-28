@@ -2,6 +2,7 @@
 
 package engine
 
+import "github.com/ornew/pego/internal/limits"
 import "testing"
 
 func TestWorkLazyClosureSavedFlagsAndOptions(t *testing.T) {
@@ -20,7 +21,7 @@ rule item = [a-z]+`)
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				o := ParseOptions{Unit: unit}
 				plain, plainErr := p.ParseWith("main", "abc,def", o)
-				o.WorkLimits = WorkLimits{MaxSteps: 1000000, MaxInputWork: 1000000}
+				o.WorkLimits = limits.WorkLimits{MaxSteps: 1000000, MaxInputWork: 1000000}
 				active, activeErr := p.ParseWith("main", "abc,def", o)
 				if resultJSON(plain, plainErr) != resultJSON(active, activeErr) || activeErr != nil {
 					t.Fatalf("options changed output: %v", activeErr)

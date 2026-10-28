@@ -3,6 +3,8 @@ package engine
 import (
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 // TestLeftRecursionBindingErrors checks which bindings in a left-recursion cycle are compile-time
@@ -77,7 +79,7 @@ func TestLeftRecursionGuardIgnoresVariables(t *testing.T) {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
 					// A step limit makes the parse take the controlled memo lookups.
-					for _, limits := range []WorkLimits{{}, {MaxSteps: 1 << 40}} {
+					for _, limits := range []limits.WorkLimits{{}, {MaxSteps: 1 << 40}} {
 						opts := ParseOptions{Backend: backend, Unit: unit, Recognize: recognize, MaxDepth: 400, WorkLimits: limits}
 						for _, input := range inputs {
 							got := resultJSON(prog.ParseWith("main", input, opts))

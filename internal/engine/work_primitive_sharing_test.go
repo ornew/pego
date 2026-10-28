@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/limits"
 )
 
 // A shared AST leaf is first compiled value-free for a text struct rule, then
@@ -66,7 +67,7 @@ func TestWorkPrimitiveASTAliases(t *testing.T) {
 				for _, recognize := range []bool{false, true} {
 					for _, text := range []string{input, "", tc.text, "x"} {
 						for limit := uint64(0); limit <= 80; limit++ {
-							for _, limits := range []WorkLimits{{MaxSteps: limit}, {MaxInputWork: limit}} {
+							for _, limits := range []limits.WorkLimits{{MaxSteps: limit}, {MaxInputWork: limit}} {
 								opts := ParseOptions{Unit: unit, Recognize: recognize, WorkLimits: limits}
 								a, ae := shared.ParseWith("main", text, opts)
 								b, be := reference.ParseWith("main", text, opts)

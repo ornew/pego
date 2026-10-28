@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/limits"
 )
 
 func missingNodes(t *testing.T, root *Node) []*Node {
@@ -477,7 +478,7 @@ func TestMissingTokensMemoSeedContextAndRecycledPointers(t *testing.T) {
 	for _, controlled := range []bool{false, true} {
 		p := &parser{memo: newMemoTable()}
 		if controlled && workControlsEnabled {
-			p.control = newWorkControl(context.Background(), WorkLimits{})
+			p.control = newWorkControl(context.Background(), limits.WorkLimits{})
 		}
 		ordinary := memoKey{rule: 1}
 		lookahead := memoKey{rule: 1, missingSilent: true}

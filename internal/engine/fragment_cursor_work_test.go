@@ -7,18 +7,20 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 func TestFragmentCursorFallbackInterruption(t *testing.T) {
 	source := strings.Repeat("😀\xff", 1000) + "tail"
 	in := newTextInput(source, CodePoints, false)
 	// Endpoint conversion itself must cooperate even after matching succeeded.
-	in.control = newWorkControl(nil, WorkLimits{MaxInputWork: 8})
-	if err := catchFatal(t, func() { in.prefixByteOffset(source, 2000) }); !errors.Is(err, ErrWorkLimit) {
+	in.control = newWorkControl(nil, limits.WorkLimits{MaxInputWork: 8})
+	if err := catchFatal(t, func() { in.prefixByteOffset(source, 2000) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("fallback work limit: %v", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	in.control = newWorkControl(ctx, WorkLimits{})
+	in.control = newWorkControl(ctx, limits.WorkLimits{})
 	cancel()
 	if err := catchFatal(t, func() { in.prefixByteOffset(source, 2000) }); !errors.Is(err, context.Canceled) {
 		t.Fatalf("fallback cancellation: %v", err)

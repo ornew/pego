@@ -8,6 +8,8 @@ import (
 	"errors"
 	"io"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 type streamRefillResult struct {
@@ -41,7 +43,7 @@ func streamRefillObserver(reader io.Reader, control *workControl) (*streamReader
 
 func TestStreamReaderObserverChargesEachUnderlyingRead(t *testing.T) {
 	reader := &streamRefillScript{results: []streamRefillResult{{data: []byte("a")}, {data: []byte("b")}}}
-	control := newWorkControl(nil, WorkLimits{MaxSteps: 2})
+	control := newWorkControl(nil, limits.WorkLimits{MaxSteps: 2})
 	observer, _ := streamRefillObserver(reader, control)
 	for i, want := range []byte("ab") {
 		var dst [1]byte
@@ -61,19 +63,19 @@ func TestStreamReaderObserverChargesEachUnderlyingRead(t *testing.T) {
 func TestStreamReaderObserverBoundsBufioRetries(t *testing.T) {
 	t.Run("empty retries", func(t *testing.T) {
 		reader := &streamRefillScript{results: []streamRefillResult{{}, {}, {}, {}}}
-		control := newWorkControl(nil, WorkLimits{MaxSteps: 3})
+		control := newWorkControl(nil, limits.WorkLimits{MaxSteps: 3})
 		observer, _ := streamRefillObserver(reader, control)
 		buffered := bufio.NewReader(observer)
 		limitErr := catchFatal(t, func() { _, _ = buffered.ReadByte() })
-		var limit *WorkLimitError
-		if !errors.As(limitErr, &limit) || limit.Kind != StepWorkLimit || limit.Used != 3 || limit.Requested != 1 || reader.reads != 3 || control.inputUsed != 0 {
+		var limit *limits.WorkLimitError
+		if !errors.As(limitErr, &limit) || limit.Kind != limits.StepWorkLimit || limit.Used != 3 || limit.Requested != 1 || reader.reads != 3 || control.inputUsed != 0 {
 			t.Fatalf("error=%v reads=%d input=%d", limitErr, reader.reads, control.inputUsed)
 		}
 	})
 	for _, max := range []uint64{1, 2} {
 		t.Run(map[uint64]string{1: "one-short split rune", 2: "exact split rune"}[max], func(t *testing.T) {
 			reader := &streamRefillScript{results: []streamRefillResult{{data: []byte{0xc3}}, {data: []byte{0xa9}}}}
-			control := newWorkControl(nil, WorkLimits{MaxSteps: max})
+			control := newWorkControl(nil, limits.WorkLimits{MaxSteps: max})
 			observer, _ := streamRefillObserver(reader, control)
 			buffered := bufio.NewReader(observer)
 			var r rune
@@ -81,8 +83,8 @@ func TestStreamReaderObserverBoundsBufioRetries(t *testing.T) {
 			var readErr error
 			limitErr := catchFatal(t, func() { r, size, readErr = buffered.ReadRune() })
 			if max == 1 {
-				var limit *WorkLimitError
-				if !errors.As(limitErr, &limit) || limit.Kind != StepWorkLimit || limit.Used != 1 || limit.Requested != 1 || reader.reads != 1 || size != 0 {
+				var limit *limits.WorkLimitError
+				if !errors.As(limitErr, &limit) || limit.Kind != limits.StepWorkLimit || limit.Used != 1 || limit.Requested != 1 || reader.reads != 1 || size != 0 {
 					t.Fatalf("error=%v reads=%d rune=%q size=%d", limitErr, reader.reads, r, size)
 				}
 			} else if limitErr != nil || readErr != nil || r != 'é' || size != 2 || reader.reads != 2 {
@@ -101,11 +103,11 @@ func TestWorkStreamEmptyRefillBudget(t *testing.T) {
 rule row = .+ #atomic`)
 	workStreamVariants(t, func(t *testing.T, o ParseOptions) {
 		reader := &workCancelledRefillReader{cancel: func() {}}
-		o.WorkLimits = WorkLimits{MaxSteps: 64}
+		o.WorkLimits = limits.WorkLimits{MaxSteps: 64}
 		emits := 0
 		err := prog.ParseStreamWith("main", reader, func(*Node) error { emits++; return nil }, o)
-		var limit *WorkLimitError
-		if !errors.As(err, &limit) || limit.Kind != StepWorkLimit || limit.Used != 64 || limit.Requested != 1 || reader.calls == 0 || reader.calls > 64 || emits != 0 {
+		var limit *limits.WorkLimitError
+		if !errors.As(err, &limit) || limit.Kind != limits.StepWorkLimit || limit.Used != 64 || limit.Requested != 1 || reader.calls == 0 || reader.calls > 64 || emits != 0 {
 			t.Fatalf("error=%v calls=%d emits=%d", err, reader.calls, emits)
 		}
 	})
@@ -113,7 +115,7 @@ rule row = .+ #atomic`)
 
 func TestStreamReaderObserverOneShortFailsBeforeCallerRead(t *testing.T) {
 	reader := &streamRefillScript{results: []streamRefillResult{{data: []byte("a")}, {data: []byte("b")}}}
-	control := newWorkControl(nil, WorkLimits{MaxSteps: 1})
+	control := newWorkControl(nil, limits.WorkLimits{MaxSteps: 1})
 	observer, _ := streamRefillObserver(reader, control)
 	var first [1]byte
 	if n, err := observer.Read(first[:]); n != 1 || err != nil || first[0] != 'a' {
@@ -121,7 +123,7 @@ func TestStreamReaderObserverOneShortFailsBeforeCallerRead(t *testing.T) {
 	}
 	var second [1]byte
 	limitErr := catchFatal(t, func() { _, _ = observer.Read(second[:]) })
-	if !errors.Is(limitErr, ErrWorkLimit) {
+	if !errors.Is(limitErr, limits.ErrWorkLimit) {
 		t.Fatalf("second read error=%v, want ErrWorkLimit", limitErr)
 	}
 	if reader.reads != 1 || control.stepsUsed != 1 || control.inputUsed != 0 {
@@ -132,7 +134,7 @@ func TestStreamReaderObserverOneShortFailsBeforeCallerRead(t *testing.T) {
 func TestStreamReaderObserverCancellationAndReadErrorPrecedence(t *testing.T) {
 	t.Run("cancellation before exhausted reservation", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
-		control := newWorkControl(ctx, WorkLimits{MaxSteps: 1})
+		control := newWorkControl(ctx, limits.WorkLimits{MaxSteps: 1})
 		control.charge(0, 1)
 		cancel()
 		reader := &streamRefillScript{results: []streamRefillResult{{data: []byte("x")}}}
@@ -152,7 +154,7 @@ func TestStreamReaderObserverCancellationAndReadErrorPrecedence(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			reader := &streamRefillScript{results: []streamRefillResult{{err: returned}}, onRead: func(int) { cancel() }}
-			control := newWorkControl(ctx, WorkLimits{MaxSteps: 1})
+			control := newWorkControl(ctx, limits.WorkLimits{MaxSteps: 1})
 			observer, result := streamRefillObserver(reader, control)
 			fatalErr := catchFatal(t, func() { _, _ = observer.Read(make([]byte, 1)) })
 			if returned == io.EOF {

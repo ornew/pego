@@ -6,6 +6,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 // Alternate inactive and active invocations after a resumable run has been
@@ -38,7 +40,7 @@ rule expr = #operators {
 			for i := 0; i < 6; i++ {
 				opts := ParseOptions{Unit: unit}
 				if i%2 == 1 {
-					opts.WorkLimits = WorkLimits{MaxSteps: 1000000, MaxInputWork: 1000000}
+					opts.WorkLimits = limits.WorkLimits{MaxSteps: 1000000, MaxInputWork: 1000000}
 				}
 				got, err := d.ParseWith(opts)
 				if err != nil {
@@ -49,8 +51,8 @@ rule expr = #operators {
 					t.Fatalf("iteration %d: cached/fresh mismatch: %v", i, err)
 				}
 				// A cached tree must not bypass admission on the other dispatch graph.
-				blocked, err := d.ParseWith(ParseOptions{Unit: unit, WorkLimits: WorkLimits{MaxSteps: 1}})
-				if blocked != nil || !errors.Is(err, ErrWorkLimit) {
+				blocked, err := d.ParseWith(ParseOptions{Unit: unit, WorkLimits: limits.WorkLimits{MaxSteps: 1}})
+				if blocked != nil || !errors.Is(err, limits.ErrWorkLimit) {
 					t.Fatalf("iteration %d: cached result bypassed budget: %v", i, err)
 				}
 				if err := d.Edit(0, 1, "a"); err != nil {
@@ -67,12 +69,12 @@ rule expr = #operators {
 func TestWorkClosureDispatchMetersZeroWidthExpressions(t *testing.T) {
 	prog := compile(t, "rule main = "+strings.Repeat("^ ", 64)+"$$")
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
-		opts := ParseOptions{Unit: unit, Recognize: true, WorkLimits: WorkLimits{MaxSteps: 16}}
+		opts := ParseOptions{Unit: unit, Recognize: true, WorkLimits: limits.WorkLimits{MaxSteps: 16}}
 		n, err := prog.ParseWith("main", "", opts)
-		if n != nil || !errors.Is(err, ErrWorkLimit) {
+		if n != nil || !errors.Is(err, limits.ErrWorkLimit) {
 			t.Fatalf("zero-width dispatch bypassed budget: node=%v error=%v", n, err)
 		}
-		opts.WorkLimits = WorkLimits{}
+		opts.WorkLimits = limits.WorkLimits{}
 		if _, err := prog.ParseWith("main", "", opts); err != nil {
 			t.Fatal(err)
 		}

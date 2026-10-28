@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/limits"
 )
 
 func TestWorkValueCopyInterruptionPreservesChildren(t *testing.T) {
@@ -16,8 +17,8 @@ func TestWorkValueCopyInterruptionPreservesChildren(t *testing.T) {
 	for i := range p.kidStack {
 		p.kidStack[i] = retained
 	}
-	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 128})
-	if err := catchFatal(t, func() { p.kids(0) }); !errors.Is(err, ErrWorkLimit) {
+	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
+	if err := catchFatal(t, func() { p.kids(0) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("copy interruption = %v", err)
 	}
 	// A failed copy does not publish a partial child list or clear its source.
@@ -65,8 +66,8 @@ func TestWorkValueFieldAndEnvironmentWalks(t *testing.T) {
 	} {
 		t.Run(run.name, func(t *testing.T) {
 			p := &parser{env: bindings}
-			p.control = newWorkControl(nil, WorkLimits{MaxSteps: 128})
-			if err := catchFatal(t, func() { run.fn(p) }); !errors.Is(err, ErrWorkLimit) {
+			p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
+			if err := catchFatal(t, func() { run.fn(p) }); !errors.Is(err, limits.ErrWorkLimit) {
 				t.Fatalf("walk interruption = %v", err)
 			}
 			if len(fields) != 300 || fields[299].Value != 299 {
@@ -82,8 +83,8 @@ func TestWorkValueTrackingCleanupAfterInterruption(t *testing.T) {
 	for i := range p.created {
 		p.created[i] = retained
 	}
-	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 128})
-	if err := catchFatal(t, func() { p.dropCreated(1) }); !errors.Is(err, ErrWorkLimit) {
+	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
+	if err := catchFatal(t, func() { p.dropCreated(1) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("tracking cleanup interruption = %v", err)
 	}
 	// The interruption boundary must disable controls before mandatory cleanup.
@@ -105,8 +106,8 @@ func TestWorkActionArenaResetInterruption(t *testing.T) {
 	for range 300 {
 		*p.closures.alloc() = closure{ctx: &evalCtx{items: []*Node{retained}}}
 	}
-	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 64})
-	if err := catchFatal(t, func() { p.useCtx(evalCtx{p: p}) }); !errors.Is(err, ErrWorkLimit) {
+	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 64})
+	if err := catchFatal(t, func() { p.useCtx(evalCtx{p: p}) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("arena reset interruption = %v", err)
 	}
 	p.releaseScratch()

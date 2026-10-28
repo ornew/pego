@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 func TestDiagnosticRenameAccountsForLargeExpectationSets(t *testing.T) {
@@ -13,8 +15,8 @@ func TestDiagnosticRenameAccountsForLargeExpectationSets(t *testing.T) {
 	for i := range ids {
 		ids[i] = expID(i + 1)
 	}
-	p := &parser{input: input{control: newWorkControl(nil, WorkLimits{MaxSteps: 64})}}
-	if err := catchFatal(t, func() { renamedExpected(p, ids, 999) }); !errors.Is(err, ErrWorkLimit) {
+	p := &parser{input: input{control: newWorkControl(nil, limits.WorkLimits{MaxSteps: 64})}}
+	if err := catchFatal(t, func() { renamedExpected(p, ids, 999) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("rename work limit = %v, want ErrWorkLimit", err)
 	}
 	if got := p.control.stepsUsed; got != 64 {
@@ -22,7 +24,7 @@ func TestDiagnosticRenameAccountsForLargeExpectationSets(t *testing.T) {
 	}
 
 	c := newPollingContext(1)
-	p.control = newWorkControl(c, WorkLimits{})
+	p.control = newWorkControl(c, limits.WorkLimits{})
 	if err := catchFatal(t, func() { renamedExpected(p, ids, 999) }); !errors.Is(err, context.Canceled) {
 		t.Fatalf("rename cancellation = %v, want context.Canceled", err)
 	}

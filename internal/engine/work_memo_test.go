@@ -10,6 +10,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 func memoTestEnv(n int, prefix string) (*env, map[string]bool) {
@@ -27,7 +29,7 @@ func TestWorkMemoEnvValuesDeepLookup(t *testing.T) {
 	const count = 320
 	const prefix = "shared_environment_name_with_long_prefix_"
 	root, _ := memoTestEnv(count, prefix)
-	p := &parser{env: root, input: input{control: newWorkControl(nil, WorkLimits{MaxSteps: 1_000_000})}}
+	p := &parser{env: root, input: input{control: newWorkControl(nil, limits.WorkLimits{MaxSteps: 1_000_000})}}
 	last := fmt.Sprintf("%s%d", prefix, 0) // The first inserted binding is deepest.
 	vals := p.envValues([]string{last, "missing"})
 	if len(vals) != 2 || vals[0] != 0 || vals[1] != nil {
@@ -37,13 +39,13 @@ func TestWorkMemoEnvValuesDeepLookup(t *testing.T) {
 		t.Fatalf("deep lookup used %d steps, want key and lookup work beyond %d", p.control.stepsUsed, count)
 	}
 
-	limited := &parser{env: root, input: input{control: newWorkControl(nil, WorkLimits{MaxSteps: 80})}}
-	if err := catchFatal(t, func() { limited.envValues([]string{last}) }); !errors.Is(err, ErrWorkLimit) {
+	limited := &parser{env: root, input: input{control: newWorkControl(nil, limits.WorkLimits{MaxSteps: 80})}}
+	if err := catchFatal(t, func() { limited.envValues([]string{last}) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("deep envValues error = %v, want ErrWorkLimit", err)
 	}
 
 	// The nil-environment key remains a shared all-nil slice and resolves missing variables.
-	nilParser := &parser{input: input{control: newWorkControl(nil, WorkLimits{MaxSteps: 8})}}
+	nilParser := &parser{input: input{control: newWorkControl(nil, limits.WorkLimits{MaxSteps: 8})}}
 	got := nilParser.envValues([]string{"undefined", "also_undefined"})
 	if len(got) != 2 || got[0] != nil || got[1] != nil {
 		t.Fatalf("nil envValues = %#v, want two nil values", got)
@@ -53,14 +55,14 @@ func TestWorkMemoEnvValuesDeepLookup(t *testing.T) {
 func TestWorkMemoBindPreservesSnapshotsOnInterruption(t *testing.T) {
 	root, bound := memoTestEnv(48, "binding_")
 	// Build a saved snapshot with a target at the tail and force the replacement path.
-	p := &parser{env: root, bound: bound, input: input{control: newWorkControl(nil, WorkLimits{MaxSteps: 56})}}
+	p := &parser{env: root, bound: bound, input: input{control: newWorkControl(nil, limits.WorkLimits{MaxSteps: 56})}}
 	before := p.env
 	oldValues := make([]any, 0, 48)
 	for e := before; e != nil; e = e.next {
 		oldValues = append(oldValues, e.val)
 	}
 	target := "binding_0"
-	if err := catchFatal(t, func() { p.bind(target, "replacement") }); !errors.Is(err, ErrWorkLimit) {
+	if err := catchFatal(t, func() { p.bind(target, "replacement") }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("tail replacement error = %v, want ErrWorkLimit", err)
 	}
 	if p.env != before {
@@ -73,7 +75,7 @@ func TestWorkMemoBindPreservesSnapshotsOnInterruption(t *testing.T) {
 	}
 
 	// Equal head and non-head bindings keep the persistent snapshot identity.
-	stable := &parser{env: before, bound: bound, input: input{control: newWorkControl(nil, WorkLimits{MaxSteps: 1_000_000})}}
+	stable := &parser{env: before, bound: bound, input: input{control: newWorkControl(nil, limits.WorkLimits{MaxSteps: 1_000_000})}}
 	head := before
 	stable.bind(head.name, head.val)
 	if stable.env != head {
@@ -100,7 +102,7 @@ func TestWorkMemoBindPreservesSnapshotsOnInterruption(t *testing.T) {
 func TestWorkMemoKeyEqualityAndLongChains(t *testing.T) {
 	table := &memoTable{slots: make([]*memoEntry, 1)}
 	p := &parser{memo: table}
-	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 1 << 30})
+	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 1 << 30})
 	long := strings.Repeat("common-prefix-", 96)
 	var head *memoEntry
 	for i := 0; i < 320; i++ {
@@ -167,7 +169,7 @@ func TestWorkMemoParseBudgetPoolRetryAndRetainedResult(t *testing.T) {
 			armed := false
 			markerCalls := 0
 			limited := opts
-			limited.WorkLimits = WorkLimits{MaxSteps: 1 << 50}
+			limited.WorkLimits = limits.WorkLimits{MaxSteps: 1 << 50}
 			limited.Trace = func(e TraceEvent) {
 				if e.Kind == TraceEnter && e.Rule == "marker" {
 					markerCalls++
@@ -178,7 +180,7 @@ func TestWorkMemoParseBudgetPoolRetryAndRetainedResult(t *testing.T) {
 					e.p.control.limits.MaxSteps = e.p.control.stepsUsed + 10_000
 				}
 			}
-			if node, parseErr := prog.ParseWith("main", input, limited); node != nil || !errors.Is(parseErr, ErrWorkLimit) {
+			if node, parseErr := prog.ParseWith("main", input, limited); node != nil || !errors.Is(parseErr, limits.ErrWorkLimit) {
 				t.Fatalf("%v/%v limited parse: node=%v err=%v", backend, unit, node, parseErr)
 			}
 			if markerCalls != 0 {
@@ -202,12 +204,12 @@ func TestWorkMemoBindCopyAndCancellation(t *testing.T) {
 	root, bound := memoTestEnv(320, "v")
 	// An equal tail binding performs the same search but does not copy a prefix.
 	probe := &parser{env: root, bound: bound}
-	probe.control = newWorkControl(nil, WorkLimits{MaxSteps: 1 << 30})
+	probe.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 1 << 30})
 	probe.bind("v0", 0)
 	searchSteps := probe.control.stepsUsed
 	p := &parser{env: root, bound: bound}
-	p.control = newWorkControl(nil, WorkLimits{MaxSteps: searchSteps + 5})
-	if err := catchFatal(t, func() { p.bind("v0", 999) }); !errors.Is(err, ErrWorkLimit) {
+	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: searchSteps + 5})
+	if err := catchFatal(t, func() { p.bind("v0", 999) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("prefix-copy error=%v", err)
 	}
 	if p.env != root || p.control.stepsUsed != searchSteps+5 {
@@ -223,7 +225,7 @@ func TestWorkMemoBindCopyAndCancellation(t *testing.T) {
 	}
 	for _, run := range []func(*parser){func(p *parser) { p.envValues([]string{"absent"}) }, func(p *parser) { p.bind("v0", 999) }} {
 		p := &parser{env: root, bound: bound}
-		p.control = newWorkControl(newPollingContext(1), WorkLimits{})
+		p.control = newWorkControl(newPollingContext(1), limits.WorkLimits{})
 		if err := catchFatal(t, func() { run(p) }); !errors.Is(err, context.Canceled) {
 			t.Fatalf("environment walk cancellation=%v", err)
 		}
@@ -241,22 +243,22 @@ func TestWorkMemoChainAndStringLimits(t *testing.T) {
 	oldHead := table.slots[0]
 	replacement := &memoEntry{node: &Node{text: "replacement"}}
 	p := &parser{memo: table}
-	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 80})
-	if err := catchFatal(t, func() { p.memoGet(memoKey{rule: 0}) }); !errors.Is(err, ErrWorkLimit) {
+	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 80})
+	if err := catchFatal(t, func() { p.memoGet(memoKey{rule: 0}) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("chain get=%v", err)
 	}
-	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 80})
-	if err := catchFatal(t, func() { p.memoPut(memoKey{rule: 0}, replacement) }); !errors.Is(err, ErrWorkLimit) {
+	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 80})
+	if err := catchFatal(t, func() { p.memoPut(memoKey{rule: 0}, replacement) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("chain put=%v", err)
 	}
 	if table.slots[0] != oldHead || replacement.rule != 0 || replacement.env != nil || replacement.next != nil {
 		t.Fatal("interrupted put published an entry")
 	}
-	p.control = newWorkControl(newPollingContext(1), WorkLimits{})
+	p.control = newWorkControl(newPollingContext(1), limits.WorkLimits{})
 	if err := catchFatal(t, func() { p.memoGet(memoKey{rule: 0}) }); !errors.Is(err, context.Canceled) {
 		t.Fatalf("chain cancellation=%v", err)
 	}
-	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 1 << 30})
+	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 1 << 30})
 	p.memoPut(memoKey{rule: 0}, replacement)
 	if got, ok := p.memoGet(memoKey{rule: 0}); !ok || got != replacement {
 		t.Fatal("replacement failed")
@@ -266,22 +268,22 @@ func TestWorkMemoChainAndStringLimits(t *testing.T) {
 	table.slots[0] = &memoEntry{rule: 1, node: retained, env: []any{strings.Repeat("x", 1024)}}
 	before, _ := json.Marshal(retained)
 	key := memoKey{rule: 1, env: []any{strings.Repeat("x", 1024)}}
-	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 80})
-	if err := catchFatal(t, func() { p.memoGet(key) }); !errors.Is(err, ErrWorkLimit) {
+	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 80})
+	if err := catchFatal(t, func() { p.memoGet(key) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("string key comparison=%v", err)
 	}
-	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 1 << 30})
+	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 1 << 30})
 	p.memoPut(key, &memoEntry{})
 	after, _ := json.Marshal(retained)
 	if string(before) != string(after) {
 		t.Fatal("entry retirement changed public graph")
 	}
 	// Unequal string lengths and key lengths remain constant-time rejections.
-	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 2})
+	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 2})
 	if got, ok := p.memoGet(memoKey{rule: 1, env: nil}); ok || got != nil {
 		t.Fatal("key length mismatch matched")
 	}
-	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 3})
+	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 3})
 	if got, ok := p.memoGet(memoKey{rule: 1, env: []any{"short"}}); ok || got != nil {
 		t.Fatal("string length mismatch matched")
 	}
@@ -319,8 +321,8 @@ rule expr = expr "a" / "a"`)
 	workMemoPrefix(p.memo, retained)
 	oldHead := p.memo.slots[0]
 	p.pos, p.hw = 1, 1
-	p.control = newWorkControl(nil, WorkLimits{MaxSteps: 64})
-	if err := catchFatal(t, func() { p.growStep(&g, retained, true) }); !errors.Is(err, ErrWorkLimit) {
+	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 64})
+	if err := catchFatal(t, func() { p.growStep(&g, retained, true) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("LR replacement interruption=%v", err)
 	}
 	if p.memo.slots[0] != oldHead {
@@ -360,7 +362,7 @@ rule atom = "a"`)
 					var chunks [][]memoEntry
 					armed := false
 					exprExits := 0
-					opts := ParseOptions{Backend: backend, Unit: unit, Recognize: recognize, WorkLimits: WorkLimits{MaxSteps: 1 << 40}, Trace: func(e TraceEvent) {
+					opts := ParseOptions{Backend: backend, Unit: unit, Recognize: recognize, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 40}, Trace: func(e TraceEvent) {
 						if e.Kind == TraceExit && e.Rule == "expr" {
 							exprExits++
 						}
@@ -377,7 +379,7 @@ rule atom = "a"`)
 						}
 					}}
 					n, err := prog.ParseWith("main", "a", opts)
-					want := ErrWorkLimit
+					want := limits.ErrWorkLimit
 					if cancel {
 						want = context.Canceled
 					}

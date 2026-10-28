@@ -10,6 +10,8 @@ import (
 	"strings"
 	"unsafe"
 	"weak"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 // Snapshot owns an immutable parse outcome for one document revision. Readers
@@ -311,7 +313,7 @@ func (d *Document) snapshotWith(o ParseOptions, legacy **Node) (*Snapshot, error
 	var result *Snapshot
 	output := OutputUnavailable
 	_, err := d.parseWithCapture(o, func(p *parser, root *Node, parseErr error) error {
-		if observed != nil && observed.interrupted || errors.Is(parseErr, ErrWorkLimit) {
+		if observed != nil && observed.interrupted || errors.Is(parseErr, limits.ErrWorkLimit) {
 			return parseErr
 		}
 		p.control.check()
@@ -407,9 +409,9 @@ func copySnapshotError(p *parser, err error) error {
 			out[i] = syntax(x)
 		}
 		return out
-	case *WorkLimitError:
+	case *limits.WorkLimitError:
 		if e == nil {
-			return (*WorkLimitError)(nil)
+			return (*limits.WorkLimitError)(nil)
 		}
 		out := *e
 		return &out

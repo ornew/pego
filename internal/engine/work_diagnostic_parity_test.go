@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 // Compare the public parse result and exported diagnostic records with and
@@ -167,7 +169,7 @@ rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}`,
 								}
 								want := marshal(t, wantNode, wantErr)
 								limited := base
-								limited.WorkLimits = WorkLimits{MaxInputWork: 1 << 50, MaxSteps: 1 << 50}
+								limited.WorkLimits = limits.WorkLimits{MaxInputWork: 1 << 50, MaxSteps: 1 << 50}
 								gotNode, gotErr := prog.ParseWith("main", input, limited)
 								got := marshal(t, gotNode, gotErr)
 								if !bytes.Equal(got, want) {

@@ -11,6 +11,7 @@ import (
 	"weak"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/starttest"
 )
 
@@ -81,8 +82,8 @@ func TestClassConstructionContextFacts(t *testing.T) {
 					for _, active := range []bool{false, true} {
 						p, q := &parser{}, &parser{}
 						if active {
-							p.control = newWorkControl(nil, WorkLimits{MaxSteps: 1 << 30})
-							q.control = newWorkControl(nil, WorkLimits{MaxSteps: 1 << 30})
+							p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 1 << 30})
+							q.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 1 << 30})
 						}
 						expected := false
 						for _, rg := range rs {
@@ -145,7 +146,7 @@ func TestClassConstructionCompileContextParity(t *testing.T) {
 							// including its directly compiled recognition-only graph.
 							opts := ParseOptions{Unit: unit, Recognize: recognize}
 							if active {
-								opts.WorkLimits = WorkLimits{MaxSteps: 1 << 30, MaxInputWork: 1 << 30}
+								opts.WorkLimits = limits.WorkLimits{MaxSteps: 1 << 30, MaxInputWork: 1 << 30}
 							}
 							x, xe := a.ParseWith("main", s, opts)
 							y, ye := b.ParseWith("main", s, opts)

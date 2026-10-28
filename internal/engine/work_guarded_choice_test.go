@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/starttest"
 )
 
@@ -73,12 +74,12 @@ func TestWorkGuardedChoiceSilentSkipLoopBudgetAndCancellation(t *testing.T) {
 	for _, unit := range []PositionUnit{Bytes, CodePoints} {
 		t.Run(unit.String()+"/budget", func(t *testing.T) {
 			p := newParser(prog, "z", unit, false)
-			p.control = newWorkControl(nil, WorkLimits{MaxSteps: workGuardedChoiceAlternatives})
+			p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: workGuardedChoiceAlternatives})
 			p.silent = 1
 			p.maxDepth = workGuardedChoiceAlternatives + 1
 			err := catchFatal(t, func() { _, _ = m(p) })
-			var limit *WorkLimitError
-			if !errors.As(err, &limit) || limit.Kind != StepWorkLimit || limit.Used != workGuardedChoiceAlternatives || limit.Requested != 1 {
+			var limit *limits.WorkLimitError
+			if !errors.As(err, &limit) || limit.Kind != limits.StepWorkLimit || limit.Used != workGuardedChoiceAlternatives || limit.Requested != 1 {
 				t.Fatalf("direct silent choice error=%#v, want rejected step after one charged peek and %d guard iterations", err, workGuardedChoiceAlternatives-1)
 			}
 		})
@@ -86,7 +87,7 @@ func TestWorkGuardedChoiceSilentSkipLoopBudgetAndCancellation(t *testing.T) {
 		t.Run(unit.String()+"/cancel", func(t *testing.T) {
 			p := newParser(prog, "z", unit, false)
 			ctx := newPollingContext(1)
-			p.control = newWorkControl(ctx, WorkLimits{})
+			p.control = newWorkControl(ctx, limits.WorkLimits{})
 			p.silent = 1
 			p.maxDepth = workGuardedChoiceAlternatives + 1
 			err := catchFatal(t, func() { _, _ = m(p) })
@@ -106,7 +107,7 @@ func TestWorkGuardedChoiceExactSkipBudget(t *testing.T) {
 			for _, silent := range []bool{true, false} {
 				t.Run(unit.String()+"/input="+strconv.Quote(text)+"/silent="+strconv.FormatBool(silent), func(t *testing.T) {
 					p := newParser(prog, text, unit, false)
-					p.control = newWorkControl(nil, WorkLimits{MaxInputWork: 1, MaxSteps: workGuardedChoiceAlternatives + 1})
+					p.control = newWorkControl(nil, limits.WorkLimits{MaxInputWork: 1, MaxSteps: workGuardedChoiceAlternatives + 1})
 					p.maxDepth = workGuardedChoiceAlternatives + 1
 					if silent {
 						p.silent = 1
@@ -120,10 +121,10 @@ func TestWorkGuardedChoiceExactSkipBudget(t *testing.T) {
 					if p.control.stepsUsed != workGuardedChoiceAlternatives+1 || p.control.inputUsed != 1 || len(p.exp) != 0 || p.pos != 0 {
 						t.Fatalf("choice state steps=%d input=%d expectations=%v pos=%d", p.control.stepsUsed, p.control.inputUsed, p.exp, p.pos)
 					}
-					p.control = newWorkControl(nil, WorkLimits{MaxInputWork: 1, MaxSteps: workGuardedChoiceAlternatives})
+					p.control = newWorkControl(nil, limits.WorkLimits{MaxInputWork: 1, MaxSteps: workGuardedChoiceAlternatives})
 					err := catchFatal(t, func() { _, _ = m(p) })
-					var limit *WorkLimitError
-					if !errors.As(err, &limit) || limit.Kind != StepWorkLimit || limit.Used != workGuardedChoiceAlternatives || limit.Requested != 1 || p.control.inputUsed != 1 || len(p.exp) != 0 {
+					var limit *limits.WorkLimitError
+					if !errors.As(err, &limit) || limit.Kind != limits.StepWorkLimit || limit.Used != workGuardedChoiceAlternatives || limit.Requested != 1 || p.control.inputUsed != 1 || len(p.exp) != 0 {
 						t.Fatalf("one-short choice error=%#v input=%d expectations=%v", err, p.control.inputUsed, p.exp)
 					}
 				})
@@ -146,7 +147,7 @@ func TestWorkGuardedChoicePassingMatcherCharge(t *testing.T) {
 				c := &compiler{prog: prog}
 				m := c.exprMatcher(&grammar.Choice{Alts: alts}, newScope(), false)
 				p := newParser(prog, "z", unit, false)
-				p.control = newWorkControl(nil, WorkLimits{MaxInputWork: 2, MaxSteps: steps})
+				p.control = newWorkControl(nil, limits.WorkLimits{MaxInputWork: 2, MaxSteps: steps})
 				p.silent = 1
 				if n, ok := m(p); n != nil || !ok || p.pos != 1 || p.control.stepsUsed != steps || p.control.inputUsed != 2 {
 					t.Fatalf("matching choice node=%v ok=%v pos=%d steps=%d input=%d", n, ok, p.pos, p.control.stepsUsed, p.control.inputUsed)
@@ -166,7 +167,7 @@ func TestWorkGuardedChoicePublicParityAndFatalRetry(t *testing.T) {
 					for _, text := range []string{"z", "q", ""} {
 						want, wantErr := prog.ParseWith("main", text, base)
 						controlled := base
-						controlled.WorkLimits = WorkLimits{MaxInputWork: 1 << 20, MaxSteps: 1 << 20}
+						controlled.WorkLimits = limits.WorkLimits{MaxInputWork: 1 << 20, MaxSteps: 1 << 20}
 						got, gotErr := prog.ParseWith("main", text, controlled)
 						if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(gotErr, wantErr) {
 							t.Fatalf("generous controls changed result: got=%#v/%#v want=%#v/%#v", got, gotErr, want, wantErr)
@@ -207,7 +208,7 @@ func workGuardedChoiceFatalAndRetry(t *testing.T, prog *Program, backend Backend
 			Backend:    backend,
 			Unit:       unit,
 			Recognize:  recognize,
-			WorkLimits: WorkLimits{MaxSteps: 1 << 30},
+			WorkLimits: limits.WorkLimits{MaxSteps: 1 << 30},
 			Trace: func(e TraceEvent) {
 				if e.Kind == TraceEnter && e.Rule == "main" {
 					observed = e.p
@@ -234,8 +235,8 @@ func workGuardedChoiceFatalAndRetry(t *testing.T, prog *Program, backend Backend
 				t.Fatalf("cancelled parse error=%v, want context cancellation", gotErr)
 			}
 		} else {
-			var limit *WorkLimitError
-			if !errors.As(gotErr, &limit) || limit.Kind != StepWorkLimit {
+			var limit *limits.WorkLimitError
+			if !errors.As(gotErr, &limit) || limit.Kind != limits.StepWorkLimit {
 				t.Fatalf("budgeted parse error=%v, want step WorkLimitError", gotErr)
 			}
 		}

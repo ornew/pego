@@ -9,9 +9,11 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
-func stateWorkParser(limits WorkLimits) *parser {
+func stateWorkParser(limits limits.WorkLimits) *parser {
 	return &parser{prog: &Program{}, input: input{control: newWorkControl(nil, limits)}}
 }
 
@@ -37,7 +39,7 @@ func assertUndoRestored(t *testing.T, f *frame, nodes []*Node) {
 }
 
 func TestWorkResetRestoresRepeatedCaptureWritesInReverse(t *testing.T) {
-	p := stateWorkParser(WorkLimits{MaxSteps: 4})
+	p := stateWorkParser(limits.WorkLimits{MaxSteps: 4})
 	f, nodes := undoFixture(p)
 	p.pos = 71
 	p.frame = f
@@ -55,7 +57,7 @@ func TestWorkResetRestoresRepeatedCaptureWritesInReverse(t *testing.T) {
 func TestWorkResetAndVMRestoreInterruptionIsFatal(t *testing.T) {
 	for _, name := range []string{"reset", "restore"} {
 		t.Run(name, func(t *testing.T) {
-			p := stateWorkParser(WorkLimits{MaxSteps: 2})
+			p := stateWorkParser(limits.WorkLimits{MaxSteps: 2})
 			f, nodes := undoFixture(p)
 			p.frame = f
 			p.pos = 99
@@ -63,7 +65,7 @@ func TestWorkResetAndVMRestoreInterruptionIsFatal(t *testing.T) {
 			p.recovered = []*SyntaxError{{Messages: []string{"temporary"}}}
 			if name == "reset" {
 				m := mark{pos: 4, trail: 0}
-				if err := catchFatal(t, func() { p.reset(m) }); !errors.Is(err, ErrWorkLimit) {
+				if err := catchFatal(t, func() { p.reset(m) }); !errors.Is(err, limits.ErrWorkLimit) {
 					t.Fatalf("reset interruption = %v, want ErrWorkLimit", err)
 				}
 				if p.pos != 4 || len(p.trail) != 4 {
@@ -73,7 +75,7 @@ func TestWorkResetAndVMRestoreInterruptionIsFatal(t *testing.T) {
 				p.vals = []any{"keep", "discard-one", "discard-two"}
 				p.reps = []repState{{count: 1}, {count: 2}}
 				save := vmSave{pos: 4, vals: 1, reps: 1, trail: 0, recovered: 0, env: nil, frame: f}
-				if err := catchFatal(t, func() { p.restore(&save) }); !errors.Is(err, ErrWorkLimit) {
+				if err := catchFatal(t, func() { p.restore(&save) }); !errors.Is(err, limits.ErrWorkLimit) {
 					t.Fatalf("VM restore interruption = %v, want ErrWorkLimit", err)
 				}
 				if p.pos != 4 || len(p.vals) != 1 || len(p.reps) != 1 || len(p.trail) != 4 {
@@ -92,14 +94,14 @@ func TestWorkResetAndVMRestoreInterruptionIsFatal(t *testing.T) {
 }
 
 func TestWorkResetPollingCancellationDuringUndo(t *testing.T) {
-	p := stateWorkParser(WorkLimits{})
+	p := stateWorkParser(limits.WorkLimits{})
 	f := &frame{vals: make([]*Node, 257)}
 	for i := range f.vals {
 		old := &Node{text: "old"}
 		f.vals[i] = &Node{text: "new"}
 		p.trail = append(p.trail, undo{f: f, slot: i, old: old})
 	}
-	p.control = newWorkControl(newPollingContext(1), WorkLimits{})
+	p.control = newWorkControl(newPollingContext(1), limits.WorkLimits{})
 	err := catchFatal(t, func() { p.reset(mark{trail: 0}) })
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("undo cancellation = %v, want context.Canceled", err)
@@ -117,7 +119,7 @@ func TestWorkResetPollingCancellationDuringUndo(t *testing.T) {
 func TestWorkAttachCapturesNilFrameAndFieldOrder(t *testing.T) {
 	retained := &Node{text: "base", fields: Fields{{Name: "existing", Value: "kept"}}}
 	allNil := &frame{vals: make([]*Node, 320)}
-	p := stateWorkParser(WorkLimits{MaxSteps: 100_000})
+	p := stateWorkParser(limits.WorkLimits{MaxSteps: 100_000})
 	got := p.attachCaptures(retained, &scope{names: make([]string, len(allNil.vals))}, allNil, 2, 9)
 	if got != retained || len(retained.fields) != 1 || retained.fields[0].Value != "kept" {
 		t.Fatal("all-nil capture frame changed the base node")
@@ -150,7 +152,7 @@ func TestWorkAttachCapturesWrapsNonfreshAndSelfCapture(t *testing.T) {
 	child := &Node{text: "retained-child"}
 	prior := Fields{{Name: "prior", Value: "unchanged"}}
 	shared := &Node{text: "shared", fields: append(Fields(nil), prior...)}
-	p := stateWorkParser(WorkLimits{MaxSteps: 100_000})
+	p := stateWorkParser(limits.WorkLimits{MaxSteps: 100_000})
 	wrapped := p.attachCaptures(shared, &scope{names: []string{"child"}}, &frame{vals: []*Node{child}}, 4, 7)
 	if wrapped == shared || len(wrapped.children) != 1 || wrapped.children[0] != shared {
 		t.Fatal("nonfresh node was not wrapped before capture attachment")
@@ -175,8 +177,8 @@ func TestWorkAttachCapturesWrapsNonfreshAndSelfCapture(t *testing.T) {
 func TestWorkAttachCapturesInterruptsDiscoveryAndFieldWalk(t *testing.T) {
 	base := &Node{text: "retained", fields: Fields{{Name: "prior", Value: "kept"}}}
 	wide := &frame{vals: make([]*Node, 320)}
-	p := stateWorkParser(WorkLimits{MaxSteps: 128})
-	if err := catchFatal(t, func() { _ = p.attachCaptures(base, &scope{names: make([]string, 320)}, wide, 0, 1) }); !errors.Is(err, ErrWorkLimit) {
+	p := stateWorkParser(limits.WorkLimits{MaxSteps: 128})
+	if err := catchFatal(t, func() { _ = p.attachCaptures(base, &scope{names: make([]string, 320)}, wide, 0, 1) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("all-nil discovery interruption = %v, want ErrWorkLimit", err)
 	}
 	if len(base.fields) != 1 || base.fields[0].Value != "kept" {
@@ -191,8 +193,8 @@ func TestWorkAttachCapturesInterruptsDiscoveryAndFieldWalk(t *testing.T) {
 		vals[i] = &Node{text: fmt.Sprintf("value-%d", i)}
 	}
 	retained := &Node{text: "shared-retained", fields: Fields{{Name: "existing", Value: "stable"}}}
-	p = stateWorkParser(WorkLimits{MaxSteps: 256})
-	if err := catchFatal(t, func() { _ = p.attachCaptures(retained, &scope{names: names}, &frame{vals: vals}, 3, 9) }); !errors.Is(err, ErrWorkLimit) {
+	p = stateWorkParser(limits.WorkLimits{MaxSteps: 256})
+	if err := catchFatal(t, func() { _ = p.attachCaptures(retained, &scope{names: names}, &frame{vals: vals}, 3, 9) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("capture field walk interruption = %v, want ErrWorkLimit", err)
 	}
 	if len(retained.fields) != 1 || retained.fields[0].Name != "existing" || retained.fields[0].Value != "stable" || retained.text != "shared-retained" {

@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 func TestWorkDocumentDiagnosticPublication(t *testing.T) {
@@ -81,7 +83,7 @@ func TestWorkDocumentDiagnosticPublication(t *testing.T) {
 				}
 				switch mode {
 				case "budget":
-					if caught != nil || !errors.Is(err, ErrWorkLimit) {
+					if caught != nil || !errors.Is(err, limits.ErrWorkLimit) {
 						t.Fatalf("budget: error=%v panic=%v", err, caught)
 					}
 				case "syntax-error":

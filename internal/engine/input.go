@@ -7,6 +7,8 @@ import (
 	"io"
 	"slices"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/internal/limits"
 )
 
 // PositionUnit is the unit of positions in the input.
@@ -34,7 +36,7 @@ type ParseOptions struct {
 	// Context cooperatively interrupts this invocation. Nil means no cancellation.
 	Context context.Context
 	// WorkLimits optionally bound cumulative input inspections and execution work.
-	WorkLimits WorkLimits
+	WorkLimits limits.WorkLimits
 	// Unit is the position unit. Matching is done per code point regardless of the unit.
 	Unit PositionUnit
 	// Backend is the backend that runs the parse.
