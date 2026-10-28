@@ -260,6 +260,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [120. Unreachable rule bodies in generated parsers](120-unreachable-rule-bodies.md)
 - [121. Inactive work-control checks in the generated Go runtime](121-inactive-work-control-checks.md)
 - [122. Generated TypeScript printed from Flow IR](122-typescript-from-flow-ir.md)
+- [123. Smaller boilerplate in generated Go](123-smaller-generated-go-boilerplate.md)
 
 ## Experiments That Did Not Pay Off
 
