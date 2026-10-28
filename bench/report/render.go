@@ -36,7 +36,11 @@ type results struct {
 var procsSuffix = regexp.MustCompile(`-\d+$`)
 
 // parseResults reads the output of runBenchmarks.
-func parseResults(data []byte) (*results, error) {
+func parseResults(data []byte) (*results, error) { return parseBenchLines(data, true) }
+
+// parseBenchLines reads benchmark lines in the format of go test -bench. With benchmem the lines
+// must carry B/op and allocs/op; the TypeScript lines (captured from Node) carry only the time.
+func parseBenchLines(data []byte, benchmem bool) (*results, error) {
 	r := &results{meta: map[string]string{}, bench: map[string]*result{}}
 	runs := map[string][]map[string]float64{}
 	var order []string
@@ -78,6 +82,9 @@ func parseResults(data []byte) (*results, error) {
 			}
 			for _, unit := range []string{"ns/op", "B/op", "allocs/op"} {
 				v, ok := vals[unit]
+				if !ok && !benchmem && unit != "ns/op" {
+					continue
+				}
 				if !ok {
 					return nil, fmt.Errorf("benchmark line %q: missing required %s metric", line, unit)
 				}
@@ -158,11 +165,40 @@ func median(xs []float64) float64 {
 	return (s[n/2-1] + s[n/2]) / 2
 }
 
-// render renders the document from the results.
-func render(root string, data []byte) ([]byte, error) {
+// render renders the document from the results of the Go benchmarks alone.
+func render(root string, data []byte) ([]byte, error) { return renderAll(root, data, nil, nil) }
+
+// renderAll renders the document from the Go benchmark results and, when they are not nil, the
+// TypeScript results (see tsLines) and the generated sizes (see sizeLines).
+func renderAll(root string, data, tsData, sizeData []byte) ([]byte, error) {
 	r, err := parseResults(data)
 	if err != nil {
 		return nil, err
+	}
+	if tsData != nil {
+		ts, err := parseBenchLines(tsData, false)
+		if err != nil {
+			return nil, fmt.Errorf("TypeScript results: %w", err)
+		}
+		for k, v := range ts.meta {
+			r.meta["ts."+k] = v
+		}
+		for _, name := range ts.order {
+			if !strings.HasPrefix(name, "TS/") {
+				return nil, fmt.Errorf("TypeScript results: benchmark %q does not start with TS/", name)
+			}
+			if _, dup := r.bench[name]; dup {
+				return nil, fmt.Errorf("TypeScript results: duplicate benchmark %q", name)
+			}
+			r.bench[name] = ts.bench[name]
+			r.order = append(r.order, name)
+		}
+	}
+	var sizes map[string]map[string]float64
+	if sizeData != nil {
+		if sizes, err = parseSizes(sizeData, r.meta); err != nil {
+			return nil, fmt.Errorf("size results: %w", err)
+		}
 	}
 	var missing []string
 	used := map[string]bool{}
@@ -191,6 +227,26 @@ func render(root string, data []byte) ([]byte, error) {
 			return ""
 		},
 		"hasMeta": func(k string) bool { _, ok := r.meta[k]; return ok },
+		// hasTS and hasSizes report whether the TypeScript results and the sizes were given.
+		"hasTS":    func() bool { return tsData != nil },
+		"hasSizes": func() bool { return sizeData != nil },
+		// tsCell is the time of a TypeScript benchmark with its throughput: "21.4 ms (12 MB/s)".
+		"tsCell": func(name string) string {
+			b := get(name)
+			return fmt.Sprintf("%s (%s MB/s)", fmtTime(b.ns), fmtSig(b.mbs, 2))
+		},
+		// tsRel is the factor of the time of a TypeScript benchmark relative to a Go benchmark.
+		"tsRel": func(name, base string) string { return fmtFactor(ratio(name, base)) },
+		// sizeParsers are the parsers of the size table.
+		"sizeParsers": func() []string { return sizeParsers },
+		// sizeOf is a size of a generated parser: metric is go-source, go-binary, ts-raw or ts-gzip.
+		"sizeOf": func(parser, metric string) string {
+			v, ok := sizes[parser][metric]
+			if !ok {
+				missing = append(missing, "size "+parser+" "+metric)
+			}
+			return fmtBytes(v)
+		},
 		// t is the median time per operation.
 		"t": func(name string) string { return fmtTime(get(name).ns) },
 		// rel is a time with its factor relative to base: "18.0 ms (1.26×)".
@@ -266,7 +322,15 @@ func render(root string, data []byte) ([]byte, error) {
 		// allocs is the number of allocations per operation.
 		"allocs": func(name string) string { return fmtCount(get(name).allocs) },
 		// all lists every benchmark of the run, in its order, for the table of all results.
-		"all": func() []string { return r.order },
+		"all": func() []string {
+			var names []string
+			for _, n := range r.order {
+				if !strings.HasPrefix(n, "TS/") {
+					names = append(names, n)
+				}
+			}
+			return names
+		},
 		// row is the row of a benchmark in the table of all results.
 		"row": func(name string) string {
 			b := get(name)
@@ -298,15 +362,17 @@ func render(root string, data []byte) ([]byte, error) {
 		slices.Sort(missing)
 		return nil, fmt.Errorf("the results lack %s", strings.Join(slices.Compact(missing), ", "))
 	}
-	wantRuns := 0
+	// The Go results and the TypeScript results are separate runs; each must be complete.
+	wantRuns := map[bool]int{}
 	for name := range used {
-		if b := r.bench[name]; b != nil && b.runs > wantRuns {
-			wantRuns = b.runs
+		if b := r.bench[name]; b != nil {
+			ts := strings.HasPrefix(name, "TS/")
+			wantRuns[ts] = max(wantRuns[ts], b.runs)
 		}
 	}
 	for name := range used {
-		if b := r.bench[name]; b != nil && b.runs != wantRuns {
-			return nil, fmt.Errorf("benchmark %s has %d runs, want %d to match the complete saved run", name, b.runs, wantRuns)
+		if b := r.bench[name]; b != nil && b.runs != wantRuns[strings.HasPrefix(name, "TS/")] {
+			return nil, fmt.Errorf("benchmark %s has %d runs, want %d to match the complete saved run", name, b.runs, wantRuns[strings.HasPrefix(name, "TS/")])
 		}
 	}
 	return out.Bytes(), nil
@@ -380,4 +446,38 @@ func fmtCount(n float64) string {
 		return fmtSig(n/1e3, 2) + " k"
 	}
 	return strconv.Itoa(int(math.Round(n)))
+}
+
+// parseSizes reads the lines "size PARSER METRIC BYTES" of the size results; header lines
+// "# key: value" go to meta under the prefix "size.". Metric "runtime" holds the shared TypeScript runtime.
+func parseSizes(data []byte, meta map[string]string) (map[string]map[string]float64, error) {
+	sizes := map[string]map[string]float64{}
+	for _, line := range strings.Split(string(data), "\n") {
+		switch {
+		case strings.HasPrefix(line, "# "):
+			if k, v, ok := strings.Cut(line[2:], ": "); ok {
+				meta["size."+k] = v
+			}
+		case strings.HasPrefix(line, "size "):
+			f := strings.Fields(line)
+			if len(f) != 4 {
+				return nil, fmt.Errorf("line %q: want size PARSER METRIC BYTES", line)
+			}
+			n, err := strconv.ParseUint(f[3], 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("line %q: invalid byte count", line)
+			}
+			if sizes[f[1]] == nil {
+				sizes[f[1]] = map[string]float64{}
+			}
+			if _, dup := sizes[f[1]][f[2]]; dup {
+				return nil, fmt.Errorf("line %q: duplicate metric", line)
+			}
+			sizes[f[1]][f[2]] = float64(n)
+		}
+	}
+	if len(sizes) == 0 {
+		return nil, fmt.Errorf("no sizes")
+	}
+	return sizes, nil
 }

@@ -1,6 +1,6 @@
 // Measure the plain-parse throughput of a generated TypeScript parser in one fresh process.
 //
-//   node --experimental-strip-types bench/ts-parse.mjs --module DIR/parser.ts --input FILE [--name json] [--entry parse]
+//   node --experimental-strip-types bench/ts-parse.mjs --module DIR/parser.ts --input FILE [--name json] [--entry parse|parseAST|recognize]
 //
 // The inputs come from the bench package: PEGO_TS_INPUT_DIR=DIR go test ./bench -run TestExportTSInputs.
 // The script prints one line in the format of go test -bench, so that benchstat can compare runs:
@@ -29,8 +29,9 @@ if (typeof fn !== "function") throw new Error(`The module has no function ${entr
 
 function once() {
   const r = fn(input);
-  const error = r.error;
-  if (error) throw error;
+  if (r === null) return r; // recognize returns null when the input is valid
+  if (r instanceof Error) throw r;
+  if (r.error) throw r.error;
   return r;
 }
 

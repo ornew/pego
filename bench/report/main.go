@@ -1,14 +1,22 @@
 // Command report runs the benchmarks of package bench and writes docs/benchmarks.md from the
 // results, so that the document is never edited by hand:
 //
-//	go run ./bench/report            # run the benchmarks (about 15 minutes) and rewrite the document
+//	go run ./bench/report            # capture everything (about 20 minutes) and rewrite the document
 //	go run ./bench/report -in FILE   # rewrite the document from saved results
 //
-// It saves the raw `go test` output, with the date, commit, Go version and load average of the run
-// in a header, to bench/results.txt, and renders the document from that file and the template
-// benchmarks.md.tmpl. The document holds results only (their analysis is in docs/performance.md),
-// and every figure in it is computed from the results; TestDocumentIsUpToDate checks that it
-// matches them.
+// A capture saves three files in bench/ (or the directory of -dir), each with a header giving the date,
+// commit and toolchain of its run:
+//
+//	results.txt      raw `go test -bench` output of the Go benchmarks
+//	results-ts.txt   parse, typed and recognition times of the generated TypeScript parsers under Node
+//	                 (bench/ts-parse.mjs, one fresh process per measurement)
+//	results-size.txt sizes of the generated Go and TypeScript parsers: parser.go, a built binary,
+//	                 parser.ts and its gzip -9 compression
+//
+// -capture selects the parts to capture (go, ts, size; default all) and keeps the files of the others.
+// The document is rendered from the files and the template benchmarks.md.tmpl; it holds results only
+// (their analysis is in docs/performance.md), and every figure in it is computed from the results.
+// TestDocumentIsUpToDate checks that it matches them.
 package main
 
 import (
@@ -25,45 +33,115 @@ import (
 )
 
 func main() {
-	in := flag.String("in", "", "render from this results file instead of running the benchmarks")
+	in := flag.String("in", "", "render from this results file (and results-ts.txt, results-size.txt next to it) instead of capturing")
+	dir := flag.String("dir", "", "directory of the results files (default: bench/ of the repository)")
+	doc := flag.String("doc", "", "document to write (default: docs/benchmarks.md of the repository)")
+	capture := flag.String("capture", "go,ts,size", "parts to capture: go, ts and size, comma-separated")
 	count := flag.Int("count", 3, "runs of each benchmark (the median is reported)")
+	node := flag.String("node", "node", "the Node.js executable for the TypeScript measurements (24 or later)")
 	flag.Parse()
-	if err := run(*in, *count); err != nil {
+	if err := run(*in, *dir, *doc, *capture, *count, *node); err != nil {
 		fmt.Fprintln(os.Stderr, "report:", err)
 		os.Exit(1)
 	}
 }
 
-func run(in string, count int) error {
+func run(in, dir, docPath, capture string, count int, node string) error {
 	root, err := repoRoot()
 	if err != nil {
 		return err
 	}
-	resultsPath := filepath.Join(root, "bench", "results.txt")
-	if in == "" {
-		data, err := runBenchmarks(root, count)
+	if in != "" {
+		dir = filepath.Dir(in)
+	} else if dir == "" {
+		dir = filepath.Join(root, "bench")
+	}
+	resultsPath := filepath.Join(dir, "results.txt")
+	if in != "" {
+		resultsPath = in
+	} else {
+		parts := map[string]bool{}
+		for _, p := range strings.Split(capture, ",") {
+			if p = strings.TrimSpace(p); p != "go" && p != "ts" && p != "size" {
+				return fmt.Errorf("-capture: unknown part %q (want go, ts or size)", p)
+			}
+			parts[p] = true
+		}
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return err
+		}
+		work, err := os.MkdirTemp("", "pego-report-")
 		if err != nil {
 			return err
 		}
-		if err := os.WriteFile(resultsPath, data, 0o644); err != nil {
-			return err
+		defer os.RemoveAll(work)
+		if parts["go"] {
+			data, err := runBenchmarks(root, count)
+			if err != nil {
+				return err
+			}
+			if err := os.WriteFile(resultsPath, data, 0o644); err != nil {
+				return err
+			}
 		}
-		in = resultsPath
+		if parts["ts"] {
+			data, err := captureTS(root, work, node, count)
+			if err != nil {
+				return err
+			}
+			if err := os.WriteFile(filepath.Join(dir, "results-ts.txt"), data, 0o644); err != nil {
+				return err
+			}
+		}
+		if parts["size"] {
+			data, err := captureSizes(root, work)
+			if err != nil {
+				return err
+			}
+			if err := os.WriteFile(filepath.Join(dir, "results-size.txt"), data, 0o644); err != nil {
+				return err
+			}
+		}
 	}
-	data, err := os.ReadFile(in)
+	data, tsData, sizeData, err := loadResults(resultsPath)
 	if err != nil {
 		return err
 	}
-	doc, err := render(root, data)
+	doc, err := renderAll(root, data, tsData, sizeData)
 	if err != nil {
 		return err
 	}
-	out := filepath.Join(root, "docs", "benchmarks.md")
+	out := docPath
+	if out == "" {
+		out = filepath.Join(root, "docs", "benchmarks.md")
+	}
 	if err := os.WriteFile(out, doc, 0o644); err != nil {
 		return err
 	}
 	fmt.Println("wrote", out)
 	return nil
+}
+
+// loadResults reads the Go results file and, next to it, the TypeScript and size results if they
+// exist (nil otherwise: the document then leaves out their sections).
+func loadResults(goPath string) (data, tsData, sizeData []byte, err error) {
+	if data, err = os.ReadFile(goPath); err != nil {
+		return nil, nil, nil, err
+	}
+	optional := func(name string) ([]byte, error) {
+		b, err := os.ReadFile(filepath.Join(filepath.Dir(goPath), name))
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return b, err
+	}
+	if tsData, err = optional("results-ts.txt"); err != nil {
+		return nil, nil, nil, err
+	}
+	if sizeData, err = optional("results-size.txt"); err != nil {
+		return nil, nil, nil, err
+	}
+	return data, tsData, sizeData, nil
 }
 
 // repoRoot returns the root of the repository (the directory of the module's go.mod).
@@ -78,18 +156,7 @@ func repoRoot() (string, error) {
 // runBenchmarks runs the benchmarks and returns their output after a header describing the run.
 func runBenchmarks(root string, count int) ([]byte, error) {
 	var b bytes.Buffer
-	commit := gitOutput(root, "rev-parse", "--short", "HEAD")
-	if gitOutput(root, "status", "--porcelain", "--untracked-files=no") != "" {
-		commit += " (with uncommitted changes)"
-	}
-	goVersion, _ := exec.Command("go", "env", "GOVERSION").Output()
-	fmt.Fprintf(&b, "# date: %s\n", time.Now().Format("2006-01-02"))
-	fmt.Fprintf(&b, "# commit: %s\n", commit)
-	fmt.Fprintf(&b, "# go: %s\n", strings.TrimSpace(string(goVersion)))
-	fmt.Fprintf(&b, "# cores: %d\n", runtime.NumCPU())
-	if load := loadAverage(); load != "" {
-		fmt.Fprintf(&b, "# load: %s\n", load)
-	}
+	writeHeader(&b, root)
 	cmd := exec.Command("go", "test", "./bench", "-run", "^$", "-bench", ".", "-benchmem",
 		"-count", fmt.Sprint(count), "-timeout", "0")
 	cmd.Dir = root
@@ -100,6 +167,22 @@ func runBenchmarks(root string, count int) ([]byte, error) {
 		return nil, fmt.Errorf("running the benchmarks: %w", err)
 	}
 	return b.Bytes(), nil
+}
+
+// writeHeader writes the description of a run: date, commit, Go version, cores and load.
+func writeHeader(b *bytes.Buffer, root string) {
+	commit := gitOutput(root, "rev-parse", "--short", "HEAD")
+	if gitOutput(root, "status", "--porcelain", "--untracked-files=no") != "" {
+		commit += " (with uncommitted changes)"
+	}
+	goVersion, _ := exec.Command("go", "env", "GOVERSION").Output()
+	fmt.Fprintf(b, "# date: %s\n", time.Now().Format("2006-01-02"))
+	fmt.Fprintf(b, "# commit: %s\n", commit)
+	fmt.Fprintf(b, "# go: %s\n", strings.TrimSpace(string(goVersion)))
+	fmt.Fprintf(b, "# cores: %d\n", runtime.NumCPU())
+	if load := loadAverage(); load != "" {
+		fmt.Fprintf(b, "# load: %s\n", load)
+	}
 }
 
 func gitOutput(dir string, args ...string) string {

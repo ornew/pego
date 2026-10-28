@@ -12,11 +12,11 @@ const root = "../.."
 // TestDocumentIsUpToDate checks that docs/benchmarks.md is what the template renders from
 // bench/results.txt: the document is generated, not edited by hand.
 func TestDocumentIsUpToDate(t *testing.T) {
-	data, err := os.ReadFile(filepath.Join(root, "bench", "results.txt"))
+	data, tsData, sizeData, err := loadResults(filepath.Join(root, "bench", "results.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	want, err := render(root, data)
+	want, err := renderAll(root, data, tsData, sizeData)
 	if err != nil {
 		t.Fatal(err)
 	}
