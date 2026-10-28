@@ -1609,17 +1609,21 @@ type memoEntry struct {
 	// silent means the result was computed inside a lookahead without recording expectations;
 	// outside lookaheads it is computed again.
 	silent bool
-	// growing marks a provisional result of a growing left-recursive call.
+	// growing marks a provisional result of a growing left-recursive call. Lookups match it
+	// whatever the variable values of the call: every call of the rule at the position and
+	// level reads it while the rule grows there.
 	growing     bool
 	provisional bool // a completed result observed a provisional LR seed
 }
 
+// get returns the entry for the rule, position, level and variable values, or the growing entry
+// of the rule at the position and level whatever its variable values.
 func (t *memoTable) get(rule, pos, min int, env []any) *memoEntry {
 	if pos >= len(t.slots) {
 		return nil
 	}
 	for e := t.slots[pos]; e != nil; e = e.next {
-		if e.rule == int32(rule) && e.min == int32(min) && sameValues(e.env, env) {
+		if e.rule == int32(rule) && e.min == int32(min) && (e.growing || sameValues(e.env, env)) {
 			return e
 		}
 	}

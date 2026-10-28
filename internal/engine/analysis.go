@@ -18,6 +18,9 @@ type analysis struct {
 	leaders map[string]bool
 	// cyclic are the rules that belong to a left-recursion cycle (including leaders).
 	cyclic map[string]bool
+	// cycle numbers the left-recursion cycles: rules with the same number are in the same
+	// strongly connected component of the left-call graph. Only cyclic rules have an entry.
+	cycle map[string]int
 	// positional are the rules whose actions or predicates read positions (.Start, .End),
 	// directly or through callees. Their results may contain position values, so incremental
 	// parsing cannot shift them past an edit.
@@ -34,6 +37,7 @@ func analyzeControlled(rules []*grammar.RuleDef, control *compileControl) *analy
 		nullable:   map[string]bool{},
 		leaders:    map[string]bool{},
 		cyclic:     map[string]bool{},
+		cycle:      map[string]int{},
 		positional: map[string]bool{},
 	}
 	byName := map[string]*grammar.RuleDef{}
@@ -121,7 +125,7 @@ func analyzeControlled(rules []*grammar.RuleDef, control *compileControl) *analy
 		}
 		left = next
 	}
-	for _, scc := range components {
+	for i, scc := range components {
 		control.poll()
 		if len(scc) == 1 && !contains(left[scc[0]], scc[0]) {
 			continue
@@ -131,6 +135,7 @@ func analyzeControlled(rules []*grammar.RuleDef, control *compileControl) *analy
 			control.poll()
 			in[n] = true
 			a.cyclic[n] = true
+			a.cycle[n] = i
 		}
 		// Until every cycle passes through some leader, make the first rule of a found cycle a leader.
 		for {

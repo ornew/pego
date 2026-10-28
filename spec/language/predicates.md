@@ -109,3 +109,9 @@ including an Operators Rule operand or operator with an action that reads
 variables, is memoized per combination of the variable values that it reads.
 Bindings made inside it are undone when it returns. Memoization does not
 change the result of parsing, only its cost.
+
+A [left-recursive](parser-expressions.md#left-recursion) rule that is growing
+at a position is the exception: while it grows, every call of the rule at that
+position reads its growing result, whatever the variable values. A binding that
+could give such a call other variable values than the growing call is a
+compile-time error.

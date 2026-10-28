@@ -248,6 +248,8 @@ observable consequences, and no others.
   even in a branch that is abandoned.
 - **Left recursion** is evaluated by growing a seed, which relies on the memo
   (see [Left recursion](../language/parser-expressions.md#left-recursion)).
+  While a rule grows at a position, every call of it there reads the growing
+  result, whatever the values of the variables it reads.
 - **The nesting limit can depend on it.** A call that is answered from the memo
   does not nest, so whether a parse that comes close to the [nesting
   limit](#limits) succeeds can depend on memoization.

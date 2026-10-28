@@ -106,6 +106,10 @@ type Options struct {
 	// eagerAttributeCopies disables copy-on-change normalization for measurements.
 	// It affects compilation only; parser execution has no corresponding branch.
 	eagerAttributeCopies bool
+	// leftRecursionBindings accepts a binding that may run before a left call into a cycle that
+	// reads its variable (checkLeftRecursionBindings), for tests of the runtime's left-recursion
+	// guard, which such a binding reaches with another variable environment.
+	leftRecursionBindings bool
 }
 
 // matcher tries to match at the current position and returns the value and whether it
@@ -497,6 +501,9 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 			twin = r.action == nil && !isOperatorsRule && !c.an.cyclic[r.name] && !hasStream(r.def.Expr, control)
 		}
 		r.twinOK = twin
+	}
+	if flags == nil && !opts.leftRecursionBindings {
+		c.checkLeftRecursionBindings(rules, vars)
 	}
 	if opts.recognize {
 		// Only rules whose values are referenced by predicates, and the rules needed to build those

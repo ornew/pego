@@ -446,6 +446,11 @@ seed:
    the new value becomes the current result and step 2 is repeated. Otherwise
    the current result is the value of the call.
 
+A call of `R` at `p` in these steps is any such call, whatever the values of
+the variables that `R` reads: unlike memoized results (see [Interaction With
+Memoization](predicates.md#interaction-with-memoization)), the current result
+is not kept per combination of variable values.
+
 In an indirect left recursion, one rule of the cycle (the one where the
 recursion is entered, decided by static analysis) is grown in this way, and the
 others are evaluated again in each iteration. A rule that is not left-recursive
@@ -460,6 +465,36 @@ can read a failing seed and do not prove success. Removing unreachable calls and
 refining the proofs continues until the call graph stabilizes. Unknown paths
 remain in the graph, so removing an alternative whose unreachability is not
 proven by this analysis can still change how an indirect cycle is entered.
+
+A left-recursion cycle is a set of rules that call one another before
+consuming input, as static analysis finds them. A binding of a variable that
+the rules of a cycle read, directly or through the rules they call, is a
+compile-time error if it may run before a call into the cycle that may run
+before consuming input, in the body of a rule of the cycle. Such a binding
+would give the call a variable environment other than that of the call being
+grown. Which bindings may run before such a call is decided like which calls may
+run before consuming input: a binding counts if it is in the part of the body
+that precedes the call and may match without consuming input, in any
+alternative, repetition, optional or `#recover(skip=...)`, even when the input
+consumed after it or backtracking keeps it from reaching the call. A positive
+lookahead `&e` before the call returns to its start and keeps its bindings, so
+every binding in `e` counts; a negative lookahead `!e` undoes its bindings, so
+only those before a call inside `e` count. A binding in a called rule ends with
+that call, so it never counts.
+
+```pego
+var k int
+rule main = r $$
+rule r = {k := k + 1} r "x" / {k < 10} "x"
+```
+
+is rejected with `3:11: rule r binds variable k before its left-recursive call
+of r; the left recursion reads k`. These are accepted: a binding after the
+left call (`r {k := k + 1} "x"`), in an alternative without a left call
+(`r "x" / {k := 1} "x"`), after consumed input (`"y" {k := 1} r`), in a
+negative lookahead (`!({k := 1} "y") r "x"`), before the
+cycle is entered (`main = {k := 5} r $$`), in a called rule (`b r "x"` with
+`rule b = {k := 1}`), and of a variable that the cycle does not read.
 
 Because growing tries the alternatives in order, **the recursive alternative
 MUST come before the base case**: if the base case comes first, it matches again

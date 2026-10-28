@@ -946,7 +946,7 @@ type tmemoEntry struct {
 	min      int32
 	ok       bool
 	silent   bool
-	growing  bool
+	growing  bool // matched whatever the variable values, as in memoEntry
 }
 
 func (p *TParser) memoGet(rule, pos, min int, env []any) *tmemoEntry {
@@ -957,7 +957,7 @@ func (p *TParser) memoGet(rule, pos, min int, env []any) *tmemoEntry {
 		return nil
 	}
 	for e := p.memoSlots[pos]; e != nil; e = e.next {
-		if e.rule == int32(rule) && e.min == int32(min) && sameValues(e.env, env) {
+		if e.rule == int32(rule) && e.min == int32(min) && (e.growing || sameValues(e.env, env)) {
 			return e
 		}
 	}
@@ -971,7 +971,7 @@ func (p *TParser) memoGetControlled(rule, pos, min int, key []any) *tmemoEntry {
 	}
 	for e := p.memoSlots[pos]; e != nil; e = e.next {
 		p.StepWork()
-		if e.rule == int32(rule) && e.min == int32(min) && p.memoKeyEqual(e.env, key) {
+		if e.rule == int32(rule) && e.min == int32(min) && (e.growing || p.memoKeyEqual(e.env, key)) {
 			return e
 		}
 	}

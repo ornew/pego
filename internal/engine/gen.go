@@ -73,6 +73,8 @@ type GenOptions struct {
 	// convertTypes makes typed entry points convert Node results even when the
 	// typed runtime could build them (for tests).
 	convertTypes bool
+	// leftRecursionBindings compiles with Options.leftRecursionBindings (for tests).
+	leftRecursionBindings bool
 	// keepNodes keeps the untyped Node rule functions of a typed-only parser. generate sets it
 	// itself, when a typed entry point converts the Node result.
 	keepNodes bool
@@ -209,7 +211,7 @@ func generateOnce(g *grammar.Grammar, opts GenOptions, live, collect *liveRules)
 	if err != nil {
 		return nil, err
 	}
-	prog, err := Compile(g, Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue})
+	prog, err := Compile(g, Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue, leftRecursionBindings: opts.leftRecursionBindings})
 	if err != nil {
 		return nil, err
 	}

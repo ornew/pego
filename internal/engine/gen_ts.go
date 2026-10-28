@@ -64,7 +64,7 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	if err := opts.validateDefaultValue(); err != nil {
 		return nil, err
 	}
-	prog, err := Compile(g, Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue})
+	prog, err := Compile(g, Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue, leftRecursionBindings: opts.leftRecursionBindings})
 	if err != nil {
 		return nil, err
 	}

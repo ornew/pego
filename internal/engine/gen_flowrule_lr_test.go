@@ -49,7 +49,7 @@ rule expr Doc = p:expr ";" items:(x:[a-z] #atomic {len($x) == 1} -",") #repeat(1
 	{"typed/LR_rollback_environment", `type Doc = { Text node[string]; N int }
 var n int
 rule main Doc = e:expr $$ => $e
-rule expr Doc = {n := 0} (p:expr "+" {n := 1} x:[a-z] #atomic "!" / x:"é" #atomic {n := 2}) => Doc{Text: $x, N: n}
+rule expr Doc = (p:expr "+" {n := 1} x:[a-z] #atomic "!" / x:"é" #atomic {n := 2}) => Doc{Text: $x, N: n}
 `, []string{"é", "é+a!", "é+a!+b!", "é+a", "é+a!+", "", "a"}},
 	{"typed/LR_lookahead_memo", `type Doc = { Text node[string] }
 rule main Doc = &(expr "!") e:expr "!" $$ => $e

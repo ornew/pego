@@ -97,6 +97,28 @@ func (p *parser) memoGet(k memoKey) (*memoEntry, bool) {
 	return nil, false
 }
 
+func (p *parser) memoGrowing(k memoKey) (*memoEntry, bool) {
+	if !workControlsEnabled || p.control == nil {
+		return p.memo.growing(k)
+	}
+	p.stepWork()
+	t := p.memo
+	i := k.pos - t.base
+	if i >= t.gap {
+		i += t.gapLen
+	}
+	if i < 0 || i >= len(t.slots) {
+		return nil, false
+	}
+	for e := t.slots[i]; e != nil; e = e.next {
+		p.stepWork()
+		if e.growing && e.rule == int32(k.rule) && e.min == int32(k.min) && e.missingSilent == k.missingSilent {
+			return e, true
+		}
+	}
+	return nil, false
+}
+
 func (p *parser) memoPut(k memoKey, e *memoEntry) {
 	if !workControlsEnabled || p.control == nil {
 		p.memo.put(k, e)

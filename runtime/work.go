@@ -962,7 +962,7 @@ func (p *Parser) memoGetControlled(rule, pos, min int, key []any) *memoEntry {
 	}
 	for e := p.memo.slots[pos]; e != nil; e = e.next {
 		p.StepWork()
-		if e.rule == int32(rule) && e.min == int32(min) && p.memoKeyEqual(e.env, key) {
+		if e.rule == int32(rule) && e.min == int32(min) && (e.growing || p.memoKeyEqual(e.env, key)) {
 			return e
 		}
 	}

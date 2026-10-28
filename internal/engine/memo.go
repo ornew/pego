@@ -179,6 +179,25 @@ func (t *memoTable) get(k memoKey) (*memoEntry, bool) {
 	return nil, false
 }
 
+// growing returns the growing result of a left-recursion leader with the rule, position, level
+// and lookahead kind of k, whatever variable environment it was stored with: while a leader
+// grows at a position, every call of it there reads that result (see callBegin).
+func (t *memoTable) growing(k memoKey) (*memoEntry, bool) {
+	i := k.pos - t.base
+	if i >= t.gap {
+		i += t.gapLen
+	}
+	if i < 0 || i >= len(t.slots) {
+		return nil, false
+	}
+	for e := t.slots[i]; e != nil; e = e.next {
+		if e.growing && e.rule == int32(k.rule) && e.min == int32(k.min) && e.missingSilent == k.missingSilent {
+			return e, true
+		}
+	}
+	return nil, false
+}
+
 // put sets the entry for key k to e (replacing any existing entry for the same key).
 func (t *memoTable) put(k memoKey, e *memoEntry) {
 	i := k.pos - t.base

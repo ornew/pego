@@ -556,9 +556,18 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 	// A result computed inside a lookahead recorded no expectations, so it is not reused outside
 	// one; and errors recovered inside a lookahead carry no expectations either, so a result with
 	// recovered errors is reused only in the same kind of context it was computed in.
-	e, found := p.memoGet(key)
-	if found && e.vgen != p.gen && !p.advanceEntry(e, p.edits[:p.gen]) {
-		found = false // an edit since invalidated it
+	var e *memoEntry
+	found := false
+	if r.leader && key.env != nil {
+		// The left-recursion guard is keyed by rule and position only: while the rule grows
+		// here, a call reads the growing result whatever its variable values.
+		e, found = p.memoGrowing(key)
+	}
+	if !found {
+		e, found = p.memoGet(key)
+		if found && e.vgen != p.gen && !p.advanceEntry(e, p.edits[:p.gen]) {
+			found = false // an edit since invalidated it
+		}
 	}
 	if found && (p.missing == nil || !r.missing || e.growing) && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
 		p.touch(e.examined)

@@ -1352,7 +1352,8 @@ export interface MemoEntry {
   // silent means the result was computed inside a lookahead without recording expectations;
   // outside lookaheads it is computed again.
   silent: boolean;
-  // growing marks a provisional result of a growing left-recursive call.
+  // growing marks a provisional result of a growing left-recursive call. memoGet matches it
+  // whatever the variable values of the call.
   growing: boolean;
 }
 
@@ -1754,10 +1755,12 @@ export class Parser {
     return false;
   }
 
+  // memoGet returns the entry for the rule, position, level and variable values, or the growing
+  // entry of the rule at the position and level whatever its variable values.
   memoGet(rule: number, pos: number, min: number, env: Value[] | null): MemoEntry | null {
     for (let e = this.slots[pos]; e; e = e.next) {
       this.stepWork();
-      if (e.rule === rule && e.min === min && sameValues(e.env, env, this.control)) {
+      if (e.rule === rule && e.min === min && (e.growing || sameValues(e.env, env, this.control))) {
         return e;
       }
     }

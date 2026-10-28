@@ -466,7 +466,7 @@ the line and column of the construct it concerns in the grammar source (see
 | Class | Examples | Defined In |
 |:--|:--|:--|
 | Lexical and syntax errors | An unterminated string, an unknown escape, a character that starts no token, a missing `)`, a malformed declaration, a repetition whose maximum is less than its minimum | [Lexical Structure](lexical.md), [Grammar Syntax](syntax.md) |
-| Definition and reference errors | A name defined twice, a variable that is read or bound but not declared, a variable declared with an unsupported type or an initial value of another type, a reserved or non-uppercase-ASCII type name, an undefined rule, a call with an unknown level, a capture of an expression without a value, an unknown attribute or pragma, a header comment, a `#stream` outside its permitted position | The chapter of the construct |
+| Definition and reference errors | A name defined twice, a variable that is read or bound but not declared, a variable declared with an unsupported type or an initial value of another type, a reserved or non-uppercase-ASCII type name, an undefined rule, a call with an unknown level, a capture of an expression without a value, an unknown attribute or pragma, a header comment, a `#stream` outside its permitted position, a binding before a left-recursive call of a variable the [left recursion](parser-expressions.md#left-recursion) reads | The chapter of the construct |
 | Start rule errors | No start rule, several start rules without a default, two defaults, `@start` on a hidden rule | [Start Rules](#start-rules) |
 | Type errors | A field that the struct does not declare, a value that is not assignable to the declared type | [Type Checking](type-checking.md#checked-errors) |
 
