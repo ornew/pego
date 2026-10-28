@@ -2016,7 +2016,7 @@ func (g *generator) controlledClassReject(e *grammar.CharClass) string {
 		}
 		g.vars.WriteString("}\n")
 	}
-	return fmt.Sprintf("((WorkControlsEnabled && p.Control != nil && p.RejectWorkClass(ch, %s, %v)) || ((!WorkControlsEnabled || p.Control == nil) && (%s)))", name, e.Negated, ordinary)
+	return fmt.Sprintf("((p.Control != nil && p.RejectWorkClass(ch, %s, %v)) || (p.Control == nil && (%s)))", name, e.Negated, ordinary)
 }
 
 // atEnd and atLineStart name the runtime methods that test the anchors; a parser without

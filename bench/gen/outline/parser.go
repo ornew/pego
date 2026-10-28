@@ -148,7 +148,7 @@ type tslabs struct {
 
 func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }
 func (a *tslabs) stepWork() {
-	if rt.WorkControlsEnabled && a.control != nil {
+	if a.control != nil {
 		a.control.Charge(0, 1)
 	}
 }
@@ -483,7 +483,7 @@ func e7(p *rt.Parser) (*rt.Node, bool) {
 	for {
 		x3 = p.Mark()
 		p.StepWork()
-		if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 32) {
+		if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 32) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteral(lit6, " ", 5, false); !ok {
 			goto L4
@@ -595,7 +595,7 @@ func r8(p *rt.Parser) (*rt.Node, bool) {
 		p.Pos += size
 	}
 	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
+	if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit9, "\n", 7, false); !ok {
 		goto fail
@@ -630,7 +630,7 @@ func r9(p *rt.Parser) (*rt.Node, bool) {
 		goto L5
 	}
 	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
+	if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit9, "\n", 7, false); !ok {
 		goto L6
@@ -927,7 +927,7 @@ func q6(p *rt.Parser) (*rt.Node, bool) {
 		goto L5
 	}
 	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
+	if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit9, "\n", 7, false); !ok {
 		goto L6
@@ -979,7 +979,7 @@ func q7(p *rt.Parser) (*rt.Node, bool) {
 		p.Pos += size
 	}
 	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
+	if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit9, "\n", 7, false); !ok {
 		goto fail
@@ -1292,7 +1292,7 @@ func s4(p *rt.TParser) (any, bool) {
 	for {
 		x3 = p.Pos
 		p.StepWork()
-		if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 32) {
+		if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 32) {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit6, " ", 5, false); !ok {
 			goto L4
@@ -1380,7 +1380,7 @@ func s8(p *rt.TParser) (any, bool) {
 		p.Pos += size
 	}
 	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
+	if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit9, "\n", 7, false); !ok {
 		goto fail
@@ -1415,7 +1415,7 @@ func s9(p *rt.TParser) (any, bool) {
 		goto L5
 	}
 	p.StepWork()
-	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
+	if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit9, "\n", 7, false); !ok {
 		goto L6

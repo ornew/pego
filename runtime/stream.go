@@ -133,7 +133,7 @@ func RunParseStreamWork(r *Rule, reader io.Reader, emit func(*Node, *WorkControl
 	var n *Node
 	defer recoverParse(&n, &err)
 	o = prepareOptions(o)
-	if WorkControlsEnabled && o.control != nil {
+	if o.control != nil {
 		reader = &streamReader{reader: reader, control: o.control}
 	}
 	p := &Parser{unit: o.unit, MaxDepth: o.maxDepth}
@@ -654,7 +654,7 @@ func (p *Parser) streamText(start, end int) string {
 		*c = snap
 		return snap.source[:end-start]
 	}
-	if WorkControlsEnabled && p.Control != nil {
+	if p.Control != nil {
 		// An interruption while filling must not leave partial offsets in
 		// the snapshot in use, so a controlled parse fills separate storage.
 		snap.offsets = make([]int32, snap.end-snap.base+1)
@@ -681,12 +681,12 @@ func (p *Parser) streamCopy(start, end int) string {
 	s := p.Stream
 	start, end = start-s.base, end-s.base
 	if p.unit == Bytes {
-		if WorkControlsEnabled && p.Control != nil {
+		if p.Control != nil {
 			p.Control.Charge(uint64(end-start), 1)
 		}
 		return string(s.bs[start:end])
 	}
-	if WorkControlsEnabled && p.Control != nil {
+	if p.Control != nil {
 		p.Control.Charge(uint64(end-start), uint64(end-start))
 	}
 	return string(s.in[start:end])

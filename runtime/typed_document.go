@@ -26,7 +26,7 @@ type TypedDocumentCloneTask struct{ Source, Target any }
 func (c *TypedDocumentCloneBase) Begin(control *WorkControl) { c.Control = control }
 
 func (c *TypedDocumentCloneBase) Step(n uint64) {
-	if WorkControlsEnabled && c.Control != nil {
+	if c.Control != nil {
 		c.Control.Charge(0, n)
 	}
 }

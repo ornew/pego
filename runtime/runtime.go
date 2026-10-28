@@ -1104,9 +1104,6 @@ func ResolveOptions(g *grammar, opts []ParseOption) (parseOptions, error) {
 	if o.maxDepth == 0 {
 		o.maxDepth = g.maxDepth
 	}
-	if !WorkControlsEnabled && (o.context != nil || o.limits != (WorkLimits{})) {
-		return o, fmt.Errorf("work controls are disabled in this generated reference parser")
-	}
 	if g.NoWorkControls && (o.context != nil || o.limits != (WorkLimits{})) {
 		return o, fmt.Errorf("this parser was generated without work controls (generate with -work-controls to use WithContext and WithWorkLimits)")
 	}
@@ -1145,7 +1142,7 @@ func (o *parseOptions) validateDiagnostics() error {
 func prepareOptions(o parseOptions) parseOptions {
 	if !o.prepared {
 		o.prepared = true
-		if WorkControlsEnabled && (o.context != nil || o.limits != (WorkLimits{})) {
+		if o.context != nil || o.limits != (WorkLimits{}) {
 			o.control = newWorkControl(o.context, o.limits)
 		}
 	}
@@ -1422,7 +1419,7 @@ func (p *Parser) FirstCall(r *Rule) bool {
 	if p.Stream != nil {
 		return false // streams memoize on the first call, as the engine does
 	}
-	if WorkControlsEnabled && p.Control != nil {
+	if p.Control != nil {
 		p.controlledFirstCallPrepare(r)
 	}
 	if r.Seen < 0 {
@@ -1673,7 +1670,7 @@ var noVals [16]any
 
 // envValues returns the current values of the variables names (nil for an undefined variable).
 func (p *Parser) envValues(names []string) []any {
-	if WorkControlsEnabled && p.Control != nil {
+	if p.Control != nil {
 		return p.controlledEnvValues(names)
 	}
 
@@ -1699,7 +1696,7 @@ func (p *Parser) envValues(names []string) []any {
 // nothing has been bound since the parse began they are the initial values, computed once: the
 // key only compares them, so the slice is shared instead of allocated for each call.
 func (p *Parser) memoEnv(r *Rule) []any {
-	if p.Env != nil && p.Env == p.g.initEnv && r.initVals != nil && !(WorkControlsEnabled && p.Control != nil) {
+	if p.Env != nil && p.Env == p.g.initEnv && r.initVals != nil && p.Control == nil {
 		return r.initVals
 	}
 	return p.envValues(r.Vars)
@@ -1950,7 +1947,7 @@ type Env struct {
 // bound tracks names ever bound, so first bindings need no linear search.
 // Names from abandoned branches may be absent now; that only causes a search.
 func (p *Parser) bind(name string, val any) {
-	if WorkControlsEnabled && p.Control != nil {
+	if p.Control != nil {
 		p.bindControlled(name, val)
 		return
 	}
@@ -2030,7 +2027,7 @@ func (p *Parser) SetCaptureOrdinary(slot int, v *Node) {
 // setSource decodes the input s into code points and, if s is valid UTF-8, records the offset
 // table for token text, all in one pass (a U+FFFD that decodes from three bytes is valid).
 func (p *Parser) setSource(s string) {
-	if WorkControlsEnabled && p.Control != nil {
+	if p.Control != nil {
 		p.setControlledSource(s)
 		return
 	}
@@ -2121,7 +2118,7 @@ func (p *Parser) PeekOrdinary() (rune, int, bool) {
 }
 
 func (p *Parser) unitLen(s string) int {
-	if WorkControlsEnabled && p.Control != nil && p.unit != Bytes {
+	if p.Control != nil && p.unit != Bytes {
 		count := 0
 		for off := 0; off < len(s); {
 			p.valueWork(min(utf8.UTFMax, len(s)-off))
@@ -2261,7 +2258,7 @@ func (p *Parser) Text(start, end int) string {
 	if p.offs != nil {
 		return p.src[p.offs[start]:p.offs[end]]
 	}
-	if WorkControlsEnabled && p.Control != nil {
+	if p.Control != nil {
 		return p.detachedText(start, end)
 	}
 	return string(p.In[start:end])
@@ -2270,7 +2267,7 @@ func (p *Parser) Text(start, end int) string {
 type fatal struct{ err error }
 
 func (p *Parser) MakeError(pos int, expected []ExpID) *SyntaxError {
-	if WorkControlsEnabled && p.Control != nil {
+	if p.Control != nil {
 		return p.makeControlledError(pos, expected)
 	}
 	e := &SyntaxError{Pos: pos}
@@ -3305,7 +3302,7 @@ func (p *Parser) Bind(name string, t func(*ActCtx) any) (ok bool) {
 func (c *ActCtx) Cap(slot int) any { return UnboxNode(c.f.Vals[slot]) }
 
 func (c *ActCtx) Lookup(name string) any {
-	if WorkControlsEnabled && c.P.Control != nil {
+	if c.P.Control != nil {
 		if v, ok := c.P.lookupEnvControlled(name); ok {
 			return v
 		}

@@ -875,10 +875,10 @@ func (a *astConv) toError(n *Node) *Error {
  a.values[n] = v
 }
 func (a *astConv) stepWork() {
- if WorkControlsEnabled && a.control != nil { a.control.Charge(0, 1) }
+ if a.control != nil { a.control.Charge(0, 1) }
 }
 func (a *astConv) field(n *Node, name string) any {
- if !WorkControlsEnabled || a.control == nil { return n.RawField(name) }
+ if a.control == nil { return n.RawField(name) }
  if n == nil { return nil }
  for _, f := range n.RawFields {
   a.stepWork()
@@ -1338,7 +1338,7 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 	for _, l := range t.tlistOrder {
 		fmt.Fprintf(b, "\t%sChunk astChunk[%s]\n", l.name, t.goType(l.elem))
 	}
-	b.WriteString("}\n\nfunc (a *tslabs) SetWorkControl(c *WorkControl) { a.control = c }\nfunc (a *tslabs) stepWork() { if WorkControlsEnabled && a.control != nil { a.control.Charge(0, 1) } }\n\n")
+	b.WriteString("}\n\nfunc (a *tslabs) SetWorkControl(c *WorkControl) { a.control = c }\nfunc (a *tslabs) stepWork() { if a.control != nil { a.control.Charge(0, 1) } }\n\n")
 }
 
 // astHelperUnits are the conversion helpers of typed values; typedGo keeps those that the typed

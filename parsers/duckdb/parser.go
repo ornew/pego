@@ -4133,7 +4133,7 @@ type tslabs struct {
 
 func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }
 func (a *tslabs) stepWork() {
-	if rt.WorkControlsEnabled && a.control != nil {
+	if a.control != nil {
 		a.control.Charge(0, 1)
 	}
 }

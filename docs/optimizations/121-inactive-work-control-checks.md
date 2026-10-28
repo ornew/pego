@@ -19,21 +19,19 @@ controlled charges and growth, so a controlled parse executes the same steps. Th
 `apply` of both runtimes replays recovery errors only when there are some (an empty append
 changes nothing), through an out-of-line function, so `apply` inlines.
 
-The inlining applies to the embedded runtime when `WorkControlsEnabled` is false, where the test
-folds away and the helper is its ordinary body. In the default runtime build only `appendWork`,
-`copyWork`, `clearWork` and the two `apply` functions inline; the other helpers lose a call
-layer or a large frame but stay calls (the typed `memoPut` costs 152 and `Parser.memoPut` 81
-against a budget of 80 even with the check folded). Charges, cancellation points, limits and
-results of controlled parses are as in the unsplit helpers.
+In the runtime build only `appendWork`, `copyWork`, `clearWork` and the two `apply` functions
+inline; the other helpers lose a call layer or a large frame but stay calls (the typed `memoPut`
+costs 152 and `Parser.memoPut` 81 against a budget of 80 even without the check). Charges,
+cancellation points, limits and results of controlled parses are as in the unsplit helpers.
 
 ## Results
 
-Reference control: the same source with the constant `WorkControlsEnabled` set to false, so
-every check is gone at compile time (the ceiling, not a supported build). Generated parsers of
-`parsers/json`, `duckdb`, `cel` and `golang` (Node, recognizer and typed, generated without work
-controls, embedded runtime), inputs of the benchmark suite. Ten interleaved rounds over the build
-before, the build after, the control and a copy of the build before, `-benchtime=500ms`; medians
-as the change against the build before (the copy of the build before stayed within ±1.2%):
+Reference control: the same source with every work-control check deleted at build time (the ceiling,
+not a supported build). Generated parsers of `parsers/json`, `duckdb`, `cel` and `golang` (Node,
+recognizer and typed, generated without work controls, embedded runtime), inputs of the benchmark
+suite. Ten interleaved rounds over the build before, the build after, the control and a copy of the
+build before, `-benchtime=500ms`; medians as the change against the build before (the copy of the
+build before stayed within ±1.2%):
 
 | Benchmark | Before | After | Control |
 |:--|--:|--:|--:|

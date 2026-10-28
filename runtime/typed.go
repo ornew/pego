@@ -931,7 +931,7 @@ type tmemoEntry struct {
 }
 
 func (p *TParser) memoGet(rule, pos, min int, env []any) *tmemoEntry {
-	if WorkControlsEnabled && p.Control != nil {
+	if p.Control != nil {
 		return p.memoGetControlled(rule, pos, min, env)
 	}
 	if pos >= len(p.memoSlots) {
@@ -960,7 +960,7 @@ func (p *TParser) memoGetControlled(rule, pos, min int, key []any) *tmemoEntry {
 }
 
 func (p *TParser) memoPut(rule, pos, min int, env []any, e *tmemoEntry) {
-	if WorkControlsEnabled && p.Control != nil {
+	if p.Control != nil {
 		p.memoPutControlled(rule, pos, min, env, e)
 		return
 	}
@@ -1836,7 +1836,7 @@ func tvalOrNil(v any) any { return v }
 func (c *TActCtx) Cap(slot int) any { return tvalOrNil(c.F.Vals[slot]) }
 
 func (c *TActCtx) Lookup(name string) any {
-	if WorkControlsEnabled && c.P.Control != nil {
+	if c.P.Control != nil {
 		if v, ok := c.P.lookupEnvControlled(name); ok {
 			return v
 		}
@@ -2560,7 +2560,7 @@ func (c *TActCtx) Binary(op string, l, r any) any {
 	if v, ok := c.P.stringBinary(op, l, r); ok {
 		return v
 	}
-	if WorkControlsEnabled && c.P.Control != nil {
+	if c.P.Control != nil {
 		return trtBinaryWork(c.P.Parser, op, l, r)
 	}
 	return trtBinary(op, l, r)
@@ -2568,7 +2568,7 @@ func (c *TActCtx) Binary(op string, l, r any) any {
 
 func (p *TParser) PushKid(v any) { p.StepWork(); p.KidStack = append(p.KidStack, v) }
 func (p *TParser) setValueField(n *TSeq, name string, v any) {
-	if WorkControlsEnabled && p.Control != nil {
+	if p.Control != nil {
 		p.setValueFieldControlled(n, name, v)
 		return
 	}
@@ -2595,7 +2595,7 @@ func (p *TParser) undoCaptures(from int) {
 }
 
 func (p *TParser) valueField(n TVal, name string) (any, bool) {
-	if WorkControlsEnabled && p.Control != nil {
+	if p.Control != nil {
 		return p.valueFieldControlled(n, name)
 	}
 	return n.TField(name)
@@ -2618,7 +2618,7 @@ func (p *TParser) valueFieldControlled(n TVal, name string) (any, bool) {
 	return nil, true
 }
 func (c *TActCtx) Fold(fn string, right bool, acc, list any, f func(acc, item any) any) any {
-	if WorkControlsEnabled && c.P.Control != nil {
+	if c.P.Control != nil {
 		return c.foldControlled(fn, right, acc, list, f)
 	}
 	return trtFold(fn, right, acc, list, f)
@@ -2765,7 +2765,7 @@ func tasNodeWork(p *Parser, fn string, v any) any {
 }
 
 func (c *TActCtx) Unary(op string, v any) any {
-	if WorkControlsEnabled && c.P.Control != nil {
+	if c.P.Control != nil {
 		return c.unaryControlled(op, v)
 	}
 	return trtUnary(op, v)
@@ -2775,7 +2775,7 @@ func (c *TActCtx) unaryControlled(op string, v any) any {
 	return trtUnaryWork(c.P.Parser, op, v)
 }
 func (c *TActCtx) And(l any, r func() any) any {
-	if WorkControlsEnabled && c.P.Control != nil {
+	if c.P.Control != nil {
 		return c.andControlled(l, r)
 	}
 	return trtAnd(l, r)
@@ -2788,7 +2788,7 @@ func (c *TActCtx) andControlled(l any, r func() any) any {
 	return trtBoolWork(c.P.Parser, "&&", r())
 }
 func (c *TActCtx) Or(l any, r func() any) any {
-	if WorkControlsEnabled && c.P.Control != nil {
+	if c.P.Control != nil {
 		return c.orControlled(l, r)
 	}
 	return trtOr(l, r)
@@ -2801,7 +2801,7 @@ func (c *TActCtx) orControlled(l any, r func() any) any {
 	return trtBoolWork(c.P.Parser, "||", r())
 }
 func (c *TActCtx) ListItems(fn string, v any) []any {
-	if WorkControlsEnabled && c.P.Control != nil {
+	if c.P.Control != nil {
 		return c.listItemsControlled(fn, v)
 	}
 	return tlistItems(fn, v)
@@ -2811,7 +2811,7 @@ func (c *TActCtx) listItemsControlled(fn string, v any) []any {
 	return tlistItemsWork(c.P.Parser, fn, v)
 }
 func (c *TActCtx) asNode(fn string, v any) any {
-	if WorkControlsEnabled && c.P.Control != nil {
+	if c.P.Control != nil {
 		return c.asNodeControlled(fn, v)
 	}
 	return tasNode(fn, v)

@@ -851,7 +851,7 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 			if g.noWork {
 				return "p.Document == nil && (" + cond + ")"
 			}
-			return "p.Document == nil && (!WorkControlsEnabled || p.Control == nil) && (" + cond + ")"
+			return "p.Document == nil && p.Control == nil && (" + cond + ")"
 		}
 		if p.untyped() && !g.flow.opts.Work {
 			// The Node runtime's generated code of a parser without work controls has no such check.
@@ -860,7 +860,7 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 		if g.ordinary {
 			return cond
 		}
-		return "(!WorkControlsEnabled || p.Control == nil) && (" + cond + ")"
+		return "p.Control == nil && (" + cond + ")"
 	case *flow.MatchLit:
 		if x.Lit.Fold {
 			return fmt.Sprintf("%s.%s(%s, %d, false)", p.matcher(), p.helper("MatchLiteralFold"), g.literal(string(foldedRunes([]rune(x.Lit.Text)))), p.desc(x.Lit.Exp))
