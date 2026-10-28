@@ -18,9 +18,10 @@ unretained allocations rather than growing reusable scratch without bound.
 Arena growth during a parse remains proportional to captures; this is not a
 total per-parse heap bound.
 
-The private generation control `GenOptions.disableNodeFrameScratch` selects
-the prior generated allocator through a static emitted constant. It adds no
-public parse option or runtime selector. The mechanism changes the generated
+The constant `nodeFrameScratch` in the shared generated runtime
+(`runtime/runtime.go`) selects the scratch allocator; the per-parse frame slab
+remains in the runtime only as the disabled alternative. No parse option,
+generation option or runtime selector chooses between them. The mechanism changes the generated
 Go Node frame allocator; typed AST capture storage, the core engine, VM paths
 and TypeScript are outside its scope. Recognition can use the shared Node
 frame path for capture-dependent predicates. The parser gains nine native
