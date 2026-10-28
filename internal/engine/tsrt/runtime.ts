@@ -809,6 +809,24 @@ export function reason(expected: string[], messages: string[]): string {
   return "syntax error";
 }
 
+/**
+ * Makes a SyntaxError without capturing a stack trace. Only the construction runs with the limit at
+ * zero, so no charge, signal getter or interruption is made while it is lowered.
+ */
+function bareSyntaxError(pos: number, line: number, col: number, expected: string[], messages: string[]): SyntaxError {
+  const v8 = Error as { stackTraceLimit?: number };
+  const limit = v8.stackTraceLimit;
+  if (typeof limit !== "number") {
+    return new SyntaxError(pos, line, col, expected, messages);
+  }
+  v8.stackTraceLimit = 0;
+  try {
+    return new SyntaxError(pos, line, col, expected, messages);
+  } finally {
+    v8.stackTraceLimit = limit;
+  }
+}
+
 /** SyntaxErrors lists the syntax errors recovered from with #recover. */
 export class SyntaxErrors extends Error {
   errors: SyntaxError[];
@@ -2019,7 +2037,13 @@ export class Parser {
     return this.src.slice(this.offs[start], this.offs[end]);
   }
 
-  makeError(pos: number, expected: number[]): SyntaxError {
+  // recoveredError is makeError for an error that #recover records and never throws: it leaves out the
+  // stack trace, which costs more than the rest of the recovery and keeps the caller's frames alive.
+  recoveredError(pos: number, expected: number[]): SyntaxError {
+    return this.makeError(pos, expected, true);
+  }
+
+  makeError(pos: number, expected: number[], bare = false): SyntaxError {
     const exp: string[] = [];
     const msgs: string[] = [];
     for (const x of expected) {
@@ -2060,7 +2084,7 @@ export class Parser {
     }
     const col = pos - this.lines[lo - 1]! + 1;
     if (this.control !== null) reserveSyntaxMessageWork(lo, col, exp, msgs, this.control);
-    const error = new SyntaxError(pos, lo, col, exp, msgs);
+    const error = bare ? bareSyntaxError(pos, lo, col, exp, msgs) : new SyntaxError(pos, lo, col, exp, msgs);
     this.control?.check();
     return error;
   }
@@ -2657,7 +2681,7 @@ export class Parser {
       this.mergeKept(far, expected);
       return undefined;
     }
-    const e = this.makeError(far, expected);
+    const e = this.recoveredError(far, expected);
     this.recovered.push(e);
     if (!build) {
       return null;
