@@ -257,6 +257,8 @@ func (p *printer) expr(x Expr) string {
 		return fmt.Sprintf("skipclasses(%d)", len(x.Run.Classes))
 	case *CallRule:
 		return fmt.Sprintf("call(%d, %d)", x.Rule, x.Level)
+	case *CallOutline:
+		return fmt.Sprintf("outline(%T)", x.Node)
 	case *Isolate:
 		return "isolate"
 	case *Unisolate:

@@ -65,6 +65,10 @@ type Options struct {
 	// the recording primitive (MatchLit) as its alternative, which the target takes when the parse is a
 	// Document's. Verify rejects an in-place read without one in a function lowered with it (Func.Document).
 	Document bool
+	// Outline, if not nil, selects the nodes of a framed function that run as functions of their own: the
+	// function calls them (CallOutline) under its frame and lowers them with LowerOutline. A node it selects
+	// must be Outlinable; the lowering keeps every node in a function lowered with Observe.
+	Outline func(core.Node) bool
 }
 
 // Recovers reports whether the module has a Recover, which appends recovered errors.
@@ -120,6 +124,33 @@ func FramedBody(n core.Node) bool {
 // recovers, or a line of an Operators Rule of r. Analyze must have run on m. With Options.Work the
 // function does not charge its entry: the method that calls it does (Func.Entered).
 func LowerFrame(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, build bool, name string, opts Options) (*Func, error) {
+	return lowerFrameBody(m, r, n, slots, build, name, opts)
+}
+
+// Outlinable reports whether a node can run as a function of its own (LowerOutline): it is a framed
+// body without a cut, whose flag the function would have to share with the enclosing backtracking points.
+func Outlinable(n core.Node) bool {
+	if !FramedBody(n) {
+		return false
+	}
+	ok := true
+	core.Walk(n, func(n core.Node) {
+		switch n.(type) {
+		case *core.Cut, *core.Stream:
+			ok = false
+		}
+	})
+	return ok
+}
+
+// LowerOutline lowers the node n, which a CallOutline of a framed function runs, to the framed function
+// name. The function belongs to the rule of its caller, which charged the entry of the rule: it
+// charges only the repetitions below n. Analyze must have run on m.
+func LowerOutline(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, build bool, name string, opts Options) (*Func, error) {
+	return lowerFrameBody(m, r, n, slots, build, name, opts)
+}
+
+func lowerFrameBody(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, build bool, name string, opts Options) (*Func, error) {
 	if err := checkOptions(opts); err != nil {
 		return nil, err
 	}
@@ -128,6 +159,7 @@ func LowerFrame(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, bu
 	}
 	f := &Func{Name: name, Rule: r, Fail: &Label{Name: "fail"}, Frame: true, Node: opts.Node, Work: opts.Work, Document: opts.Document, Entered: opts.Work, Binds: n.Attrs().Eff.Set&core.EffBind != 0}
 	l := &lowerer{m: m, opts: opts, f: f, used: map[*Label]bool{}, frame: true}
+	l.top = n
 	l.stack = []*[]Stmt{&f.Body}
 	core.Walk(n, func(n core.Node) {
 		if _, ok := n.(*core.Cut); ok {
@@ -197,6 +229,8 @@ func verified(f *Func) (*Func, error) {
 }
 
 type lowerer struct {
+	// top is the root of a framed function, which stays in it.
+	top  core.Node
 	m    *core.Module
 	opts Options
 	f    *Func
@@ -435,6 +469,9 @@ func (l *lowerer) node(n core.Node, s *scope, build bool, fail *Label) Expr {
 	if l.guarded != nil && n != l.guarded && n != l.guardedAlt {
 		// Only the first node the alternative matches may consume the guard's character.
 		l.guarded = nil
+	}
+	if l.outlines(n) {
+		return l.outlined(n, s, build, fail)
 	}
 	switch n := n.(type) {
 	case *core.Terminal:
@@ -1320,4 +1357,36 @@ func (l *lowerer) branch(list bool, start, kids Expr) Expr {
 		return &NewBranchNode{List: list, Start: start, Kids: kids}
 	}
 	return &NewNode{List: list, Start: start, Kids: kids}
+}
+
+// outlines reports whether the node n runs as a function of its own.
+func (l *lowerer) outlines(n core.Node) bool {
+	return l.opts.Outline != nil && n != l.top && !l.opts.Observe && l.streaming == nil &&
+		l.opts.Outline(n) && (l.frame || noCaptures(n))
+}
+
+// noCaptures reports whether the node n neither sets nor reads captures, so that a function of its own
+// can run it for a function whose captures are variables.
+func noCaptures(n core.Node) bool {
+	ok := true
+	core.Walk(n, func(n core.Node) {
+		switch n.(type) {
+		case *core.Capture, *core.Pred, *core.BindNode, *core.Recover:
+			ok = false
+		}
+	})
+	return ok
+}
+
+// outlined lowers the node n to a call of its function.
+func (l *lowerer) outlined(n core.Node, s *scope, build bool, fail *Label) Expr {
+	ok := l.ok()
+	call := &CallOutline{Node: n, Slots: s.slots, Build: build}
+	if !build {
+		l.failIf(&Set{Dst: []LValue{&Discard{}, ok}, X: []Expr{call}}, &Not{X: use(ok)}, fail)
+		return &Nil{}
+	}
+	v := l.decl("v", TypeValue)
+	l.failIf(&Set{Dst: []LValue{v, ok}, X: []Expr{call}}, &Not{X: use(ok)}, fail)
+	return use(v)
 }

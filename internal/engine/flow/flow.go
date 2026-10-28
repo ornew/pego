@@ -386,6 +386,15 @@ type SkipClasses struct{ Run *core.ClassRun }
 // whether it matched.
 type CallRule struct{ Rule, Level int }
 
+// CallOutline runs the node Node, which a function of its own lowers (LowerOutline), under the current
+// frame, whose capture scope has the slots Slots. Its results are the value of the node, built if Build,
+// and whether it matched.
+type CallOutline struct {
+	Node  core.Node
+	Slots []core.Slot
+	Build bool
+}
+
 // Isolate begins an expectation scope at the position and is its mark.
 type Isolate struct{}
 
@@ -575,6 +584,7 @@ func (*AtAnchor) expr()        {}
 func (*SkipTerminal) expr()    {}
 func (*SkipClasses) expr()     {}
 func (*CallRule) expr()        {}
+func (*CallOutline) expr()     {}
 func (*Isolate) expr()         {}
 func (*Unisolate) expr()       {}
 func (*Text) expr()            {}
@@ -609,7 +619,7 @@ func (*NewErrorNode) expr()    {}
 // Results returns the number of results of x: 2 for the operations that have two, 1 otherwise.
 func Results(x Expr) int {
 	switch x.(type) {
-	case *MatchLit, *CallRule, *Unisolate, *ShapeSingle:
+	case *MatchLit, *CallRule, *CallOutline, *Unisolate, *ShapeSingle:
 		return 2
 	}
 	return 1

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -40,6 +41,9 @@ func (g *tsGen) startTSFlow() bool {
 	g.flow.opts.GuardedClasses = false
 	g.flow.opts.InlineLiterals = 0
 	g.flow.opts.ClassTables = false
+	if chosen := outlineNodes(g.flow.m, g.table == "rules"); len(chosen) > 0 {
+		g.flow.opts.Outline = func(n core.Node) bool { return chosen[n] }
+	}
 	return true
 }
 
@@ -95,19 +99,19 @@ func (g *tsGen) flowFunc(f *flow.Func, slots []core.Slot, scope *scope, comment 
 		b.WriteString(v)
 	}
 	b.WriteString(indent(body))
-	for _, d := range decls {
-		if tsNamesIdentifier(b.String(), d.name) {
-			g.vars.WriteString(d.text)
-		}
-	}
 	if f.Frame {
 		*scope = *newScope()
 		for _, sl := range slots {
 			scope.slot(sl.Name)
 		}
 	}
-	name, shared := g.methodName("Parser/R", b.String())
+	name, shared := g.methodName("Parser/R", tsSharedKey(b.String(), decls))
 	if !shared {
+		for _, d := range decls {
+			if tsNamesIdentifier(b.String(), d.name) {
+				g.vars.WriteString(d.text)
+			}
+		}
 		param := "p"
 		if !strings.Contains(b.String(), "p.") && !strings.Contains(b.String(), "(p)") {
 			param = "_p"
@@ -181,6 +185,8 @@ type tsFlowPrinter struct {
 	// decls holds the constants the printed text names, which the caller declares if it keeps the text.
 	decls []tsDecl
 	names map[*flow.Names]string
+	// outlined holds the calls of the functions printed for the outlined nodes.
+	outlined map[*flow.CallOutline]string
 	// parts holds, for each mark variable, the variables that stand for its position, environment, trail
 	// length and number of recovered errors, so that a mark is declared as far as it is read.
 	parts map[*flow.Var]*[4]*flow.Var
@@ -197,6 +203,20 @@ func (p *tsFlowPrinter) part(m *flow.Var, i int) *flow.Var {
 		p.parts[m] = ps
 	}
 	return ps[i]
+}
+
+// tsSharedKey returns the text by which printed functions share a body: the text with each constant
+// it names replaced by the declaration of the constant, so that equal functions share whatever the
+// names of their constants (the literal tables of the TypeScript generation are not shared) are.
+func tsSharedKey(code string, decls []tsDecl) string {
+	for _, d := range decls {
+		if !tsNamesIdentifier(code, d.name) {
+			continue
+		}
+		id := regexp.MustCompile(`\b` + regexp.QuoteMeta(d.name) + `\b`)
+		code = id.ReplaceAllLiteralString(code, "{"+id.ReplaceAllLiteralString(d.text, "$")+"}")
+	}
+	return code
 }
 
 // tsDecl is a package-level constant of a printed function.
@@ -956,6 +976,8 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 		name := p.g.name("a")
 		p.decl(name, fmt.Sprintf("function %s(c: Actx): Value {\n  return %s;\n}\n\n", name, p.g.term(b.Value, frameScope(x.Caps), nil)))
 		return fmt.Sprintf("p.bind(%s, %s)", tsString(b.Name), name)
+	case *flow.CallOutline:
+		return p.outline(x)
 	case *flow.MarkPos:
 		p.readVar(p.part(x.M, 0))
 		return x.M.Name + "Pos"
@@ -1094,4 +1116,29 @@ func (g *tsGen) failFlowLine(what string) {
 	if g.flow != nil {
 		g.failFlow(what)
 	}
+}
+
+// outline prints the function of the outlined node x and returns the call of it. The passes that only
+// collect reads print no function.
+func (p *tsFlowPrinter) outline(x *flow.CallOutline) string {
+	if p.dry {
+		return "e(p)"
+	}
+	if call, ok := p.outlined[x]; ok {
+		return call
+	}
+	g := p.g
+	f, err := flow.LowerOutline(g.flow.m, g.flow.m.Rules[g.cur.id], x.Node, x.Slots, x.Build, g.cur.name, g.flow.opts)
+	if err != nil {
+		panic(fmt.Errorf("outlined node of rule %s in table %s: %w", g.cur.name, g.table, err)) // Outlinable holds
+	}
+	call, ok := g.flowFunc(f, x.Slots, newScope(), g.cur.name+" (outlined)")
+	if !ok {
+		panic(tsFlowUnsupported("an outlined node"))
+	}
+	if p.outlined == nil {
+		p.outlined = map[*flow.CallOutline]string{}
+	}
+	p.outlined[x] = call
+	return call
 }

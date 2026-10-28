@@ -23,7 +23,9 @@ type genCase struct {
 
 // genCorpus returns the grammars and inputs used to compare backends and generated parsers with the engine.
 func genCorpus(t *testing.T) []genCase {
+	keywords, keywordInputs := outlineKeywords()
 	cases := []genCase{
+		{"outlined keywords", keywords, keywordInputs},
 		{"declared variable initial values", `type R = { N int; S string; B bool; M int }
 var n int = 7
 var s = "init"

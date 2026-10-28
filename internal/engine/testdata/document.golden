@@ -161,6 +161,7 @@ corpus/0/operatorsRule prefix action variables	b13fcf0be782829f22bbeb52
 corpus/0/operatorsRule scalar operand actions and typed results	f1ee2a38b9251625a0a59fca
 corpus/0/operatorsRule scalar results of operators	a25128a1484ae8d1c461faea
 corpus/0/optional with a cut followed by input	d84f0d666cee44000d4e5bce
+corpus/0/outlined keywords	1264c8934f8fd831d283ea9f
 corpus/0/positive lookahead	96ec681cb91cfed8bc4a109b
 corpus/0/projected and indexed repetition	1e8416bcff40d170c772ca60
 corpus/0/projected repetition clears its frame	6ac6f0622b34fff24c632491
@@ -497,6 +498,7 @@ corpus/1/operatorsRule prefix action variables	b13fcf0be782829f22bbeb52
 corpus/1/operatorsRule scalar operand actions and typed results	f1ee2a38b9251625a0a59fca
 corpus/1/operatorsRule scalar results of operators	a25128a1484ae8d1c461faea
 corpus/1/optional with a cut followed by input	d84f0d666cee44000d4e5bce
+corpus/1/outlined keywords	1264c8934f8fd831d283ea9f
 corpus/1/positive lookahead	96ec681cb91cfed8bc4a109b
 corpus/1/projected and indexed repetition	1e8416bcff40d170c772ca60
 corpus/1/projected repetition clears its frame	6ac6f0622b34fff24c632491
