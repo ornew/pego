@@ -1,4 +1,8 @@
-package engine
+// Package value defines Node, the value that parsing produces, with its kinds, fields, JSON form
+// and traversal. The parsers, the Document, the compiler and the structural query build and read
+// nodes through D, which gives the representation of a node; the public API exposes Node through
+// an alias and only its methods.
+package value
 
 import (
 	"bytes"
@@ -22,45 +26,60 @@ const (
 
 	// Kinds of the value model that are not nodes. Their names cannot be type names.
 	typeBox        = "(box)"   // a value other than a node, carried where a node pointer is expected
-	typeTupleValue = "(tuple)" // a tuple value: the Value of a tuple node
-	typeListValue  = "(list)"  // a list value: the Value of a list node, or a list made by an action
+	TypeTupleValue = "(tuple)" // a tuple value: the Value of a tuple node
+	TypeListValue  = "(list)"  // a list value: the Value of a list node, or a list made by an action
 )
 
 // Node is a value produced by parsing. It is a CST node, a terminal, a list, or a struct built by
 // an action. In JSON it is an object with the members type, rule (if any), start, end, text (if
 // any), children (if any) and fields (if any).
 type Node struct {
-	// kind holds the type and rule names (Type, Rule). Nodes share it: names are interned.
-	kind *nodeKind
-	// start and end are the range in the input, in the parse's position unit (end is exclusive).
-	start, end int32
-	// text is the string value of a string node.
-	text string
-	// children are the elements of a tuple or list value. An optional that did not match is nil.
-	children []*Node
-	// fields are the struct fields and captures. Each value is a *Node, int, string, bool, or nil.
-	fields Fields
-
-	// fresh reports that the node was created in the rule body currently being evaluated and has not
-	// yet been returned to any rule. That rule may freely modify a fresh node.
-	fresh bool
-	// terminal reports that the node is a terminal.
-	terminal bool
-	// labeled reports that the captures in fields are output (source information was requested).
-	labeled bool
-	// gen is the number of Document edits that the positions account for (see moveTree).
-	gen uint32
-	// box is the value of an action that is not a node (a KindValue node).
-	box any
+	d Data
 }
+
+// Data is the representation of a Node. The packages of the engine read and change it through
+// D; it is not part of the public Node API, which is the methods of Node.
+type Data struct {
+	// Kind holds the type and rule names (Type, Rule). Nodes share it: names are interned.
+	Kind *NodeKind
+	// Start and End are the range in the input, in the parse's position unit (End is exclusive).
+	Start, End int32
+	// Text is the string value of a string node.
+	Text string
+	// Children are the elements of a tuple or list value. An optional that did not match is nil.
+	Children []*Node
+	// Fields are the struct fields and captures. Each value is a *Node, int, string, bool, or nil.
+	Fields Fields
+
+	// Fresh reports that the node was created in the rule body currently being evaluated and has not
+	// yet been returned to any rule. That rule may freely modify a fresh node.
+	Fresh bool
+	// Terminal reports that the node is a terminal.
+	Terminal bool
+	// Labeled reports that the captures in Fields are output (source information was requested).
+	Labeled bool
+	// Gen is the number of Document edits that the positions account for.
+	Gen uint32
+	// Box is the value of an action that is not a node (a KindValue node).
+	Box any
+}
+
+// D returns the representation of n.
+func D(n *Node) *Data { return &n.d }
+
+// Of returns the node with the representation d.
+func Of(d Data) Node { return Node{d: d} }
+
+// Ptr returns a new node with the representation d.
+func Ptr(d Data) *Node { return &Node{d: d} }
 
 // Type returns the node's type name: the kind of a node of the value model (string, tuple, list,
 // error, or Missing for an inserted literal), or otherwise the name of a type defined in the grammar.
-func (n *Node) Type() string { return n.kind.typeName() }
+func (n *Node) Type() string { return n.d.Kind.TypeName() }
 
 // Rule returns the name of the rule that produced the node, if it was produced by a rule without
 // an action, or "".
-func (n *Node) Rule() string { return n.kind.ruleName() }
+func (n *Node) Rule() string { return n.d.Kind.RuleName() }
 
 // MarshalJSON encodes the node as an object (see Node).
 func (n *Node) MarshalJSON() ([]byte, error) {
@@ -71,206 +90,188 @@ func (n *Node) MarshalJSON() ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-// nodeKind is the pair of type and rule names of nodes. Kinds are interned (kindOf), so that a node
+// NodeKind is the pair of type and rule names of nodes. Kinds are interned (KindOf), so that a node
 // holds one pointer for both names.
-type nodeKind struct {
-	typ, rule string
-	reserved  int // the index of a reserved type in reservedTypes with no rule, or -1
-	// base is the index in reservedTypes of what the nodes are: the reserved type itself, with or
+type NodeKind struct {
+	Type, Rule string
+	Reserved   int // the index of a reserved type in reservedTypes with no rule, or -1
+	// Base is the index in reservedTypes of what the nodes are: the reserved type itself, with or
 	// without a rule, or for a named node type the string, tuple or list node it converts. It is
 	// -1 for a struct.
-	base int
+	Base int
 }
 
-func (k *nodeKind) typeName() string {
+// TypeName returns the type name of k, or "" for a nil kind.
+func (k *NodeKind) TypeName() string {
 	if k == nil {
 		return ""
 	}
-	return k.typ
+	return k.Type
 }
 
-// nodeType reports whether k is the kind of a named node type.
-func (k *nodeKind) nodeType() bool {
-	return k != nil && k.base >= 0 && k.typ != reservedTypes[k.base]
+// IsNodeType reports whether k is the kind of a named node type.
+func (k *NodeKind) IsNodeType() bool {
+	return k != nil && k.Base >= 0 && k.Type != reservedTypes[k.Base]
 }
 
-func (k *nodeKind) ruleName() string {
+// RuleName returns the rule name of k, or "" for a nil kind.
+func (k *NodeKind) RuleName() string {
 	if k == nil {
 		return ""
 	}
-	return k.rule
+	return k.Rule
 }
 
-var reservedTypes = [...]string{TypeString, TypeTuple, TypeList, TypeError, TypeMissing, typeBox, typeTupleValue, typeListValue}
+var reservedTypes = [...]string{TypeString, TypeTuple, TypeList, TypeError, TypeMissing, typeBox, TypeTupleValue, TypeListValue}
 
 // Kinds of the reserved types without a rule.
 var (
-	kindMatch   = kindOf(TypeString, "")
-	kindSeq     = kindOf(TypeTuple, "")
-	kindList    = kindOf(TypeList, "")
-	kindError   = kindOf(TypeError, "")
-	kindMissing = kindOf(TypeMissing, "")
+	MatchKind   = KindOf(TypeString, "")
+	SeqKind     = KindOf(TypeTuple, "")
+	ListKind    = KindOf(TypeList, "")
+	ErrorKind   = KindOf(TypeError, "")
+	MissingKind = KindOf(TypeMissing, "")
 
-	kindBox        = kindOf(typeBox, "")
-	kindTupleValue = kindOf(typeTupleValue, "")
-	kindListValue  = kindOf(typeListValue, "")
+	BoxKind        = KindOf(typeBox, "")
+	TupleValueKind = KindOf(TypeTupleValue, "")
+	ListValueKind  = KindOf(TypeListValue, "")
 )
 
-// isNode reports whether n is a node of the value model (a string node, a tuple or list node, a
+// IsNode reports whether n is a node of the value model (a string node, a tuple or list node, a
 // node of a named node type, or an error value) rather than a struct, a box or a list or tuple
 // value.
-func (n *Node) isNode() bool {
-	if k := n.kind; k != nil && k.base >= 0 && k.base <= baseMissing {
+func IsNode(n *Node) bool {
+	if k := n.d.Kind; k != nil && k.Base >= 0 && k.Base <= baseMissing {
 		return true
 	}
-	return n.terminal
+	return n.d.Terminal
 }
 
-// unboxNode returns the value that the carrier n stands for: the box's value for a box, nil for
+// UnboxNode returns the value that the carrier n stands for: the box's value for a box, nil for
 // nil, and n otherwise.
-func unboxNode(n *Node) any {
+func UnboxNode(n *Node) any {
 	if n == nil {
 		return nil
 	}
-	if n.kind == kindBox {
-		return n.box
+	if n.d.Kind == BoxKind {
+		return n.d.Box
 	}
 	return n
 }
 
-// unboxValue is unboxNode for a value that may be a carrier.
-func unboxValue(v any) any {
+// UnboxValue is UnboxNode for a value that may be a carrier.
+func UnboxValue(v any) any {
 	if n, ok := v.(*Node); ok {
-		return unboxNode(n)
+		return UnboxNode(n)
 	}
 	return v
 }
 
-// nodeValue returns the Value of the node n: its text for a string node, and a tuple or list
-// value sharing its elements otherwise.
-func (p *parser) nodeValue(n *Node) any {
-	switch {
-	case n.terminal:
-		return n.text
-	case n.kind != nil && n.kind.base == baseList:
-		return p.newNode(Node{kind: kindListValue, start: n.start, end: n.end, children: n.children})
-	}
-	return p.newNode(Node{kind: kindTupleValue, start: n.start, end: n.end, children: n.children})
-}
+var kinds sync.Map // [2]string → *NodeKind
 
-var kinds sync.Map // [2]string → *nodeKind
-
-// kindOf returns the interned kind of the type and rule names. It is meant for compilation and
+// KindOf returns the interned kind of the type and rule names. It is meant for compilation and
 // loading; parsing uses kinds prepared then.
-func kindOf(typ, rule string) *nodeKind {
+func KindOf(typ, rule string) *NodeKind {
 	key := [2]string{typ, rule}
 	if k, ok := kinds.Load(key); ok {
-		return k.(*nodeKind)
+		return k.(*NodeKind)
 	}
-	k := &nodeKind{typ: typ, rule: rule, reserved: -1, base: -1}
+	k := &NodeKind{Type: typ, Rule: rule, Reserved: -1, Base: -1}
 	for i, t := range reservedTypes {
 		if t == typ {
-			k.base = i
+			k.Base = i
 			if rule == "" {
-				k.reserved = i
+				k.Reserved = i
 			}
 		}
 	}
 	actual, _ := kinds.LoadOrStore(key, k)
-	return actual.(*nodeKind)
+	return actual.(*NodeKind)
 }
 
 // The indexes in reservedTypes of the bases of node kinds.
 const (
 	baseString = iota
-	baseTuple
-	baseList
+	BaseTuple
+	BaseList
 	baseError
 	baseMissing
 )
 
-// nodeTypeKinds are the kinds of the nodes of a named node type, by the base (baseString,
+// NodeTypeKinds are the kinds of the nodes of a named node type, by the base (baseString,
 // baseTuple, baseList) of the node converted to it. They have no rule.
-type nodeTypeKinds [baseList + 1]*nodeKind
+type NodeTypeKinds [BaseList + 1]*NodeKind
 
-// newNodeTypeKinds returns the interned kinds of the named node type typ.
-func newNodeTypeKinds(typ string) *nodeTypeKinds {
-	var ks nodeTypeKinds
+// NewNodeTypeKinds returns the interned kinds of the named node type typ.
+func NewNodeTypeKinds(typ string) *NodeTypeKinds {
+	var ks NodeTypeKinds
 	for base := range ks {
 		// The key cannot be that of a rule, whose name has no NUL.
 		key := [2]string{typ, "\x00" + reservedTypes[base]}
 		k, ok := kinds.Load(key)
 		if !ok {
-			k, _ = kinds.LoadOrStore(key, &nodeKind{typ: typ, reserved: -1, base: base})
+			k, _ = kinds.LoadOrStore(key, &NodeKind{Type: typ, Reserved: -1, Base: base})
 		}
-		ks[base] = k.(*nodeKind)
+		ks[base] = k.(*NodeKind)
 	}
 	return &ks
 }
 
-// convert returns the node of the named node type of ks that the value v converts to: a copy of
+// Convert returns the node of the named node type of ks that the value v converts to: a copy of
 // v with the same range and content, or v itself if it already has the type. It reports false if
 // v is not a string, tuple or list node.
-func (ks *nodeTypeKinds) convert(v any) (*Node, bool) {
+func (ks *NodeTypeKinds) Convert(v any) (*Node, bool) {
 	n, ok := v.(*Node)
-	if !ok || n == nil || n.kind == nil || n.kind.base < 0 || n.kind.base > baseList {
+	if !ok || n == nil || n.d.Kind == nil || n.d.Kind.Base < 0 || n.d.Kind.Base > BaseList {
 		return nil, false
 	}
-	k := ks[n.kind.base]
-	if n.kind == k {
+	k := ks[n.d.Kind.Base]
+	if n.d.Kind == k {
 		return n, true
 	}
 	c := *n
-	c.kind, c.fresh = k, false
-	if n.fresh {
+	c.d.Kind, c.d.Fresh = k, false
+	if n.d.Fresh {
 		// The rule that made n may still change it; the copy keeps what it holds now.
-		c.children = slices.Clone(n.children)
+		c.d.Children = slices.Clone(n.d.Children)
 	}
-	c.fields = slices.Clone(n.fields)
+	c.d.Fields = slices.Clone(n.d.Fields)
 	return &c, true
 }
 
-// convertOwned gives n, a node that nothing else holds, the named node type of ks in place. It
+// ConvertOwned gives n, a node that nothing else holds, the named node type of ks in place. It
 // reports false if n is not a string, tuple or list node.
-func (ks *nodeTypeKinds) convertOwned(n *Node) bool {
-	if n == nil || n.kind == nil || n.kind.base < 0 || n.kind.base > baseList {
+func (ks *NodeTypeKinds) ConvertOwned(n *Node) bool {
+	if n == nil || n.d.Kind == nil || n.d.Kind.Base < 0 || n.d.Kind.Base > BaseList {
 		return false
 	}
-	n.kind = ks[n.kind.base]
+	n.d.Kind = ks[n.d.Kind.Base]
 	return true
 }
 
-// typeKind returns the kind of nodes of the grammar's type typ without a rule.
-func (prog *Program) typeKind(typ string) *nodeKind {
-	if k := prog.typeKinds[typ]; k != nil {
-		return k
-	}
-	return kindOf(typ, "")
-}
-
-// ruleKinds are the kinds of a rule's nodes: those of the reserved types, which the rule gives its
+// RuleKinds are the kinds of a rule's nodes: those of the reserved types, which the rule gives its
 // name to (finish).
-type ruleKinds struct {
-	reserved [len(reservedTypes)]*nodeKind
+type RuleKinds struct {
+	reserved [len(reservedTypes)]*NodeKind
 }
 
-func newRuleKinds(rule string) ruleKinds {
-	var rk ruleKinds
+func NewRuleKinds(rule string) RuleKinds {
+	var rk RuleKinds
 	for i, t := range reservedTypes {
-		rk.reserved[i] = kindOf(t, rule)
+		rk.reserved[i] = KindOf(t, rule)
 	}
 	return rk
 }
 
-// named returns the kind k with the rule's name. A node of a named node type keeps no rule.
-func (rk *ruleKinds) named(k *nodeKind, rule string) *nodeKind {
-	if k.reserved >= 0 {
-		return rk.reserved[k.reserved]
+// Named returns the kind k with the rule's name. A node of a named node type keeps no rule.
+func (rk *RuleKinds) Named(k *NodeKind, rule string) *NodeKind {
+	if k.Reserved >= 0 {
+		return rk.reserved[k.Reserved]
 	}
-	if k.base >= 0 {
+	if k.Base >= 0 {
 		return k
 	}
-	return kindOf(k.typ, rule)
+	return KindOf(k.Type, rule)
 }
 
 // NodeField is a field of a node (a struct field or a capture).
@@ -293,8 +294,8 @@ func (fs Fields) Get(name string) (any, bool) {
 	return nil, false
 }
 
-// set sets the field name to v (adding it if absent).
-func (fs *Fields) set(name string, v any) {
+// SetField sets the field name of fs to v (adding it if absent).
+func SetField(fs *Fields, name string, v any) {
 	for i := range *fs {
 		if (*fs)[i].Name == name {
 			(*fs)[i].Value = v
@@ -347,26 +348,26 @@ func cloneNode(n *Node, seen map[*Node]*Node) *Node {
 	c := new(Node)
 	*c = *n
 	seen[n] = c
-	if n.children != nil {
-		c.children = make([]*Node, len(n.children))
-		for i, ch := range n.children {
-			c.children[i] = cloneNode(ch, seen)
+	if n.d.Children != nil {
+		c.d.Children = make([]*Node, len(n.d.Children))
+		for i, ch := range n.d.Children {
+			c.d.Children[i] = cloneNode(ch, seen)
 		}
 	}
-	if n.fields != nil {
-		c.fields = make(Fields, len(n.fields))
-		for i, f := range n.fields {
+	if n.d.Fields != nil {
+		c.d.Fields = make(Fields, len(n.d.Fields))
+		for i, f := range n.d.Fields {
 			if vn, ok := f.Value.(*Node); ok {
 				f.Value = cloneNode(vn, seen)
 			}
-			c.fields[i] = f
+			c.d.Fields[i] = f
 		}
 	}
 	return c
 }
 
 // IsTerminal reports whether the node holds text: a string node or an error value.
-func (n *Node) IsTerminal() bool { return n != nil && n.terminal }
+func (n *Node) IsTerminal() bool { return n != nil && n.d.Terminal }
 
 // Kind is what a Node stands for in the value model.
 type Kind uint8
@@ -401,20 +402,20 @@ func (k Kind) String() string {
 
 // Kind returns what the node stands for.
 func (n *Node) Kind() Kind {
-	switch n.shape() {
-	case shapeString:
+	switch ShapeOf(n) {
+	case ShapeString:
 		return KindString
-	case shapeTuple:
+	case ShapeTuple:
 		return KindTuple
-	case shapeList:
+	case ShapeList:
 		return KindList
-	case shapeError:
+	case ShapeError:
 		return KindError
-	case shapeBox:
+	case ShapeBox:
 		return KindValue
-	case shapeTupleValue:
+	case ShapeTupleValue:
 		return KindTupleValue
-	case shapeListValue:
+	case ShapeListValue:
 		return KindListValue
 	}
 	return KindStruct
@@ -422,11 +423,11 @@ func (n *Node) Kind() Kind {
 
 // Start returns the start of the range of the input that the node spans, in the position unit of
 // the parse.
-func (n *Node) Start() int { return int(n.start) }
+func (n *Node) Start() int { return int(n.d.Start) }
 
 // End returns the end of the range of the input that the node spans (exclusive), in the position
 // unit of the parse.
-func (n *Node) End() int { return int(n.end) }
+func (n *Node) End() int { return int(n.d.End) }
 
 // Text returns the string value of a KindString node, and the message of a KindError value; it
 // returns "" for other nodes and nil.
@@ -434,11 +435,11 @@ func (n *Node) Text() string {
 	if n == nil {
 		return ""
 	}
-	switch n.shape() {
-	case shapeString:
-		return n.text
-	case shapeError:
-		msg, _ := n.fields.Get("message")
+	switch ShapeOf(n) {
+	case ShapeString:
+		return n.d.Text
+	case ShapeError:
+		msg, _ := n.d.Fields.Get("message")
 		s, _ := msg.(string)
 		return s
 	}
@@ -451,9 +452,9 @@ func (n *Node) Len() int {
 	if n == nil {
 		return 0
 	}
-	switch n.shape() {
-	case shapeTuple, shapeList, shapeTupleValue, shapeListValue:
-		return len(n.children)
+	switch ShapeOf(n) {
+	case ShapeTuple, ShapeList, ShapeTupleValue, ShapeListValue:
+		return len(n.d.Children)
 	}
 	return 0
 }
@@ -464,14 +465,14 @@ func (n *Node) Elem(i int) *Node {
 	if i < 0 || i >= n.Len() {
 		panic(fmt.Sprintf("pego: element %d of a node with %d elements", i, n.Len()))
 	}
-	return n.children[i]
+	return n.d.Children[i]
 }
 
 // Elems returns the elements of a tuple or a list in order, as Elem does.
 func (n *Node) Elems() iter.Seq2[int, *Node] {
 	return func(yield func(int, *Node) bool) {
 		for i := range n.Len() {
-			if !yield(i, n.children[i]) {
+			if !yield(i, n.d.Children[i]) {
 				return
 			}
 		}
@@ -484,11 +485,11 @@ func (n *Node) Value() any {
 	if n == nil {
 		return nil
 	}
-	switch n.shape() {
-	case shapeBox:
-		return n.box
-	case shapeString:
-		return n.text
+	switch ShapeOf(n) {
+	case ShapeBox:
+		return n.d.Box
+	case ShapeString:
+		return n.d.Text
 	}
 	return nil
 }
@@ -499,19 +500,19 @@ func (n *Node) Field(name string) any {
 	if !n.fieldsVisible() {
 		return nil
 	}
-	v, _ := n.field(name)
+	v, _ := FieldOf(n, name)
 	return v
 }
 
-// field returns the value of the field name of n.
-func (n *Node) field(name string) (any, bool) {
-	return n.fields.Get(name)
+// FieldOf returns the value of the field name of n.
+func FieldOf(n *Node, name string) (any, bool) {
+	return n.d.Fields.Get(name)
 }
 
 // fieldsVisible reports whether the fields of n are public: those of a struct, and the captures
 // of a node with source information.
 func (n *Node) fieldsVisible() bool {
-	return n != nil && (n.labeled || n.shape() == shapeStruct)
+	return n != nil && (n.d.Labeled || ShapeOf(n) == ShapeStruct)
 }
 
 // Fields returns the fields of a struct, and, with source information, the captures of a node,
@@ -521,7 +522,7 @@ func (n *Node) Fields() iter.Seq2[string, any] {
 		if !n.fieldsVisible() {
 			return
 		}
-		for _, f := range n.fields {
+		for _, f := range n.d.Fields {
 			if !yield(f.Name, f.Value) {
 				return
 			}
@@ -529,50 +530,51 @@ func (n *Node) Fields() iter.Seq2[string, any] {
 	}
 }
 
-// nodeShape is what a Node stands for in the value model.
-type nodeShape uint8
+// Shape is what a Node stands for in the value model.
+type Shape uint8
 
 const (
-	shapeString     nodeShape = iota // a node whose value is a string (Text)
-	shapeTuple                       // a node whose value is a tuple (Children)
-	shapeList                        // a node whose value is a list (Children)
-	shapeError                       // an error value of recovery (Error or Missing)
-	shapeBox                         // a box carrying a value other than a node
-	shapeTupleValue                  // a tuple value (Children)
-	shapeListValue                   // a list value (Children)
-	shapeStruct                      // a struct value (Fields)
+	ShapeString     Shape = iota // a node whose value is a string (Text)
+	ShapeTuple                   // a node whose value is a tuple (Children)
+	ShapeList                    // a node whose value is a list (Children)
+	ShapeError                   // an error value of recovery (Error or Missing)
+	ShapeBox                     // a box carrying a value other than a node
+	ShapeTupleValue              // a tuple value (Children)
+	ShapeListValue               // a list value (Children)
+	ShapeStruct                  // a struct value (Fields)
 )
 
-// baseShapes are the shapes of the nodes of the kinds of each base (nodeKind.base).
-var baseShapes = [len(reservedTypes)]nodeShape{shapeString, shapeTuple, shapeList, shapeError, shapeError, shapeBox, shapeTupleValue, shapeListValue}
+// baseShapes are the shapes of the nodes of the kinds of each base (NodeKind.Base).
+var baseShapes = [len(reservedTypes)]Shape{ShapeString, ShapeTuple, ShapeList, ShapeError, ShapeError, ShapeBox, ShapeTupleValue, ShapeListValue}
 
-func (n *Node) shape() nodeShape {
-	if k := n.kind; k != nil && k.base >= 0 {
-		return baseShapes[k.base]
+// ShapeOf returns what n stands for in the value model.
+func ShapeOf(n *Node) Shape {
+	if k := n.d.Kind; k != nil && k.Base >= 0 {
+		return baseShapes[k.Base]
 	}
-	if n.terminal {
-		return shapeString
+	if n.d.Terminal {
+		return ShapeString
 	}
-	return shapeStruct
+	return ShapeStruct
 }
 
-// valueTypeName names the type of a value of the given shape in messages, in the terms of the
+// ValueTypeName names the type of a value of the given shape in messages, in the terms of the
 // value model: node[string] for a string node, node[(_, _)] and node[[]_] for tuple and list
 // nodes (a tuple has elems elements), error for an error value, (_, _) and []_ for tuple and list
 // values, and name for a struct.
-func valueTypeName(shape nodeShape, name string, elems int) string {
+func ValueTypeName(shape Shape, name string, elems int) string {
 	switch shape {
-	case shapeString:
+	case ShapeString:
 		return "node[string]"
-	case shapeTuple:
+	case ShapeTuple:
 		return "node[" + tupleTerm(elems) + "]"
-	case shapeList:
+	case ShapeList:
 		return "node[[]_]"
-	case shapeError:
+	case ShapeError:
 		return "error"
-	case shapeTupleValue:
+	case ShapeTupleValue:
 		return tupleTerm(elems)
-	case shapeListValue:
+	case ShapeListValue:
 		return "[]_"
 	}
 	return name
@@ -586,32 +588,32 @@ func tupleTerm(n int) string {
 	return "(" + strings.TrimSuffix(strings.Repeat("_, ", n), ", ") + ")"
 }
 
-// captureLocation is where a capture of a node is: a path of tuple indexes into the node's
+// CaptureLocation is where a capture of a node is: a path of tuple indexes into the node's
 // value, or, for a capture whose value is not an element (one in a positive lookahead), its value.
-type captureLocation struct {
-	name  string
-	path  []int
-	side  bool
-	value any
+type CaptureLocation struct {
+	Name  string
+	Path  []int
+	Side  bool
+	Value any
 }
 
-// captureLocations returns the locations of the captures of the tuple node n, in name order. A
+// CaptureLocations returns the locations of the captures of the tuple node n, in name order. A
 // capture is located by the identity of its value among the elements of n's tuple and of the
 // tuples nested in it, nearest first; a capture that did not match is left out.
-func captureLocations(n *Node) []captureLocation {
-	var out []captureLocation
-	for _, f := range n.fields.sorted() {
+func CaptureLocations(n *Node) []CaptureLocation {
+	var out []CaptureLocation
+	for _, f := range n.d.Fields.sorted() {
 		v, ok := f.Value.(*Node)
 		if !ok || v == nil {
 			if f.Value != nil {
-				out = append(out, captureLocation{name: f.Name, side: true, value: f.Value})
+				out = append(out, CaptureLocation{Name: f.Name, Side: true, Value: f.Value})
 			}
 			continue
 		}
 		if path, found := findElement(n, v); found {
-			out = append(out, captureLocation{name: f.Name, path: path})
+			out = append(out, CaptureLocation{Name: f.Name, Path: path})
 		} else {
-			out = append(out, captureLocation{name: f.Name, side: true, value: v})
+			out = append(out, CaptureLocation{Name: f.Name, Side: true, Value: v})
 		}
 	}
 	return out
@@ -628,7 +630,7 @@ func findElement(n, x *Node) ([]int, bool) {
 	for len(queue) > 0 {
 		it := queue[0]
 		queue = queue[1:]
-		for i, c := range it.n.children {
+		for i, c := range it.n.d.Children {
 			if c == nil {
 				continue
 			}
@@ -636,7 +638,7 @@ func findElement(n, x *Node) ([]int, bool) {
 			if c == x {
 				return path, true
 			}
-			if c.shape() == shapeTuple && c.Rule() == "" {
+			if ShapeOf(c) == ShapeTuple && c.Rule() == "" {
 				queue = append(queue, item{c, path})
 			}
 		}
@@ -663,7 +665,7 @@ type sexprFrame struct {
 	enter bool
 	// labels maps the elements of the tuples being written to the names that capture them.
 	labels map[*Node][]string
-	side   []captureLocation
+	side   []CaptureLocation
 	close  string
 }
 
@@ -677,51 +679,51 @@ func writeValue(b *strings.Builder, v any) {
 			stack = stack[:len(stack)-1]
 			continue
 		}
-		sh := n.shape()
+		sh := ShapeOf(n)
 		if f.enter {
 			f.enter = false
 			switch sh {
-			case shapeBox:
-				f.v, f.enter = n.box, true
+			case ShapeBox:
+				f.v, f.enter = n.d.Box, true
 				continue
-			case shapeString:
-				if n.kind.nodeType() {
-					b.WriteString(n.Type() + "(" + strconv.Quote(n.text))
+			case ShapeString:
+				if n.d.Kind.IsNodeType() {
+					b.WriteString(n.Type() + "(" + strconv.Quote(n.d.Text))
 					f.close = ")" + ruleSuffix(n)
 				} else {
-					b.WriteString(strconv.Quote(n.text))
+					b.WriteString(strconv.Quote(n.d.Text))
 					f.close = ruleSuffix(n)
 				}
 				f.i = -1
-			case shapeError:
-				msg, _ := n.fields.Get("message")
+			case ShapeError:
+				msg, _ := n.d.Fields.Get("message")
 				b.WriteString("error(" + strconv.Quote(fmt.Sprint(msg)))
-				if expected, ok := n.fields.Get("expected"); ok {
+				if expected, ok := n.d.Fields.Get("expected"); ok {
 					b.WriteString(" expected " + strconv.Quote(fmt.Sprint(expected)))
 				}
 				b.WriteString(")")
 				f.i = -1
-			case shapeTuple, shapeTupleValue:
+			case ShapeTuple, ShapeTupleValue:
 				b.WriteString(nodeTypePrefix(n) + "(")
 				f.close = ")" + ruleSuffix(n)
-				if sh == shapeTuple && n.labeled {
+				if sh == ShapeTuple && n.d.Labeled {
 					f.labels = map[*Node][]string{}
-					for _, c := range captureLocations(n) {
-						if c.side {
+					for _, c := range CaptureLocations(n) {
+						if c.Side {
 							f.side = append(f.side, c)
 							continue
 						}
 						x := n
-						for _, i := range c.path {
-							x = x.children[i]
+						for _, i := range c.Path {
+							x = x.d.Children[i]
 						}
-						f.labels[x] = append(f.labels[x], c.name)
+						f.labels[x] = append(f.labels[x], c.Name)
 					}
 				}
-			case shapeList, shapeListValue:
+			case ShapeList, ShapeListValue:
 				b.WriteString(nodeTypePrefix(n) + "[")
 				f.close = "]" + ruleSuffix(n)
-			case shapeStruct:
+			case ShapeStruct:
 				b.WriteString(n.Type() + "{")
 				f.close = "}"
 			}
@@ -731,8 +733,8 @@ func writeValue(b *strings.Builder, v any) {
 			stack = stack[:len(stack)-1]
 			continue
 		}
-		if sh == shapeStruct {
-			fields := n.fields.sorted()
+		if sh == ShapeStruct {
+			fields := n.d.Fields.sorted()
 			if f.i == len(fields) {
 				b.WriteString(f.close)
 				stack = stack[:len(stack)-1]
@@ -746,14 +748,14 @@ func writeValue(b *strings.Builder, v any) {
 			stack = append(stack, sexprFrame{v: fields[f.i-1].Value, enter: true})
 			continue
 		}
-		if f.i == len(n.children) {
+		if f.i == len(n.d.Children) {
 			for j, c := range f.side {
 				if f.i > 0 || j > 0 {
 					b.WriteString(" ")
 				}
-				b.WriteString("&" + c.name + ":")
+				b.WriteString("&" + c.Name + ":")
 				var side strings.Builder
-				writeValue(&side, c.value)
+				writeValue(&side, c.Value)
 				b.WriteString(side.String())
 			}
 			b.WriteString(f.close)
@@ -763,14 +765,14 @@ func writeValue(b *strings.Builder, v any) {
 		if f.i > 0 {
 			b.WriteString(" ")
 		}
-		c := n.children[f.i]
+		c := n.d.Children[f.i]
 		f.i++
 		labels := f.labels
 		for _, name := range labels[c] {
 			b.WriteString(name + ":")
 		}
 		next := sexprFrame{v: c, enter: true}
-		if c != nil && c.shape() == shapeTuple && c.Rule() == "" {
+		if c != nil && ShapeOf(c) == ShapeTuple && c.Rule() == "" {
 			// A tuple nested in the node's own tuple holds the node's captures too.
 			next.labels = labels
 		}
@@ -781,7 +783,7 @@ func writeValue(b *strings.Builder, v any) {
 // nodeTypePrefix returns the name that a node of a named node type puts before its opening
 // bracket, or "".
 func nodeTypePrefix(n *Node) string {
-	if n.kind.nodeType() {
+	if n.d.Kind.IsNodeType() {
 		return n.Type()
 	}
 	return ""
@@ -814,9 +816,9 @@ func writeScalar(b *strings.Builder, v any) {
 // clone returns a shallow copy of the node.
 func (n *Node) clone() *Node {
 	c := *n
-	c.fresh = true
-	if n.fields != nil {
-		c.fields = append(Fields(nil), n.fields...)
+	c.d.Fresh = true
+	if n.d.Fields != nil {
+		c.d.Fields = append(Fields(nil), n.d.Fields...)
 	}
 	return &c
 }

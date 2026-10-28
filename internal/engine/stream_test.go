@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 const records = `rule main = ^^ header items:record* #stream $$
@@ -16,8 +18,8 @@ rule record = ^ k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n"`
 func TestParseStream(t *testing.T) {
 	prog := compile(t, records)
 	var got []string
-	err := prog.ParseStream("main", strings.NewReader("#records\na=1\nbc=22\n"), func(n *Node) error {
-		got = append(got, fmt.Sprintf("%s [%d,%d)", n, n.start, n.end))
+	err := prog.ParseStream("main", strings.NewReader("#records\na=1\nbc=22\n"), func(n *value.Node) error {
+		got = append(got, fmt.Sprintf("%s [%d,%d)", n, value.D(n).Start, value.D(n).End))
 		return nil
 	})
 	if err != nil {
@@ -55,8 +57,8 @@ func TestParseStreamIsIncremental(t *testing.T) {
 	emitted := make(chan string, 2)
 	done := make(chan error)
 	go func() {
-		done <- prog.ParseStream("main", pr, func(n *Node) error {
-			emitted <- n.Field("k").(*Node).text
+		done <- prog.ParseStream("main", pr, func(n *value.Node) error {
+			emitted <- value.D(n.Field("k").(*value.Node)).Text
 			return nil
 		})
 	}()
@@ -83,7 +85,7 @@ func TestParseStreamErrorPosition(t *testing.T) {
 	}
 	b.WriteString("abc=x\n")
 	count := 0
-	err := prog.ParseStream("main", strings.NewReader(b.String()), func(*Node) error {
+	err := prog.ParseStream("main", strings.NewReader(b.String()), func(*value.Node) error {
 		count++
 		return nil
 	})
@@ -100,7 +102,7 @@ func TestParseStreamEmitError(t *testing.T) {
 	prog := compile(t, records)
 	stop := errors.New("stop")
 	count := 0
-	err := prog.ParseStream("main", strings.NewReader("#records\na=1\nb=2\n"), func(*Node) error {
+	err := prog.ParseStream("main", strings.NewReader("#records\na=1\nb=2\n"), func(*value.Node) error {
 		count++
 		return stop
 	})
@@ -116,7 +118,7 @@ func TestParseStreamDiscardsInput(t *testing.T) {
 	r := &lineReader{header: "#records\n", line: "key=42\n", n: 100000}
 	maxBuf := 0
 	p := newStreamParser(prog, r, CodePoints)
-	p.emit = func(*Node) error {
+	p.emit = func(*value.Node) error {
 		maxBuf = max(maxBuf, len(p.in))
 		return nil
 	}
@@ -165,7 +167,7 @@ rule val = [0-9]+ #atomic`,
 			const n = 60000
 			var at [2]uint64
 			count := 0
-			err := prog.ParseStreamWith("main", &lineReader{header: header, line: "key=42\n", n: n}, func(*Node) error {
+			err := prog.ParseStreamWith("main", &lineReader{header: header, line: "key=42\n", n: n}, func(*value.Node) error {
 				count++
 				if count == n/3 || count == n {
 					var ms runtime.MemStats
@@ -194,7 +196,7 @@ rule main = h:("a" "b") rs:r* #stream "!" => T{H: text($h), N: len($rs)}
 rule r = "x" "y"`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		input := "ab" + strings.Repeat("xy", 5000) + "!"
-		err := prog.ParseStreamWith("main", strings.NewReader(input), func(*Node) error { return nil }, ParseOptions{Backend: b})
+		err := prog.ParseStreamWith("main", strings.NewReader(input), func(*value.Node) error { return nil }, ParseOptions{Backend: b})
 		if err != nil {
 			t.Errorf("%v: %v", b, err)
 		}
@@ -237,7 +239,7 @@ func TestStreamCompileErrors(t *testing.T) {
 		})
 	}
 	prog := compile(t, `rule main = "a"*`)
-	if err := prog.ParseStream("main", strings.NewReader("a"), func(*Node) error { return nil }); err == nil || err.Error() != "rule main has no #stream repetition" {
+	if err := prog.ParseStream("main", strings.NewReader("a"), func(*value.Node) error { return nil }); err == nil || err.Error() != "rule main has no #stream repetition" {
 		t.Errorf("got %v", err)
 	}
 }

@@ -3,6 +3,8 @@ package engine
 import (
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // arith is a grammar with an Operators Rule expression that builds a CST (no actions).
@@ -44,15 +46,15 @@ func TestOperatorsRulePositions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n.start != 1 || n.end != 10 {
-		t.Errorf("root [%d,%d)", n.start, n.end)
+	if value.D(n).Start != 1 || value.D(n).End != 10 {
+		t.Errorf("root [%d,%d)", value.D(n).Start, value.D(n).End)
 	}
-	mul := n.children[2]
-	if mul.start != 5 || mul.end != 10 {
-		t.Errorf("mul [%d,%d)", mul.start, mul.end)
+	mul := value.D(n).Children[2]
+	if value.D(mul).Start != 5 || value.D(mul).End != 10 {
+		t.Errorf("mul [%d,%d)", value.D(mul).Start, value.D(mul).End)
 	}
-	if op := n.children[1]; op.start != 3 || op.end != 4 {
-		t.Errorf("op [%d,%d)", op.start, op.end)
+	if op := value.D(n).Children[1]; value.D(op).Start != 3 || value.D(op).End != 4 {
+		t.Errorf("op [%d,%d)", value.D(op).Start, value.D(op).End)
 	}
 }
 
@@ -109,11 +111,11 @@ func TestOperatorsRulePositionsWithActions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n.start != 0 || n.end != 9 {
-		t.Errorf("root [%d,%d)", n.start, n.end)
+	if value.D(n).Start != 0 || value.D(n).End != 9 {
+		t.Errorf("root [%d,%d)", value.D(n).Start, value.D(n).End)
 	}
-	if l := n.Field("L").(*Node); l.start != 0 || l.end != 5 {
-		t.Errorf("left [%d,%d)", l.start, l.end)
+	if l := n.Field("L").(*value.Node); value.D(l).Start != 0 || value.D(l).End != 5 {
+		t.Errorf("left [%d,%d)", value.D(l).Start, value.D(l).End)
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 // QueryPattern is the experimental programmatic structural pattern model. Empty Type, Rule and
@@ -45,7 +46,7 @@ type QueryEdge struct {
 type QueryCapture struct {
 	Name, Category string
 	Value          any
-	Parent         *Node
+	Parent         *value.Node
 	Path           []QueryEdge
 }
 type QueryMatch struct{ Captures []QueryCapture }
@@ -224,7 +225,7 @@ func (b *queryBudget) charge(n uint64) error {
 // no source text and therefore consumes no input-work units. Every node, struct, tuple, list and
 // error value is a candidate. A query with a rule constraint reports ErrQueryNoSourceInfo when
 // the graph has nodes but none records a rule.
-func (q *StructuralQuery) Matches(root *Node, opts QueryOptions) ([]QueryMatch, error) {
+func (q *StructuralQuery) Matches(root *value.Node, opts QueryOptions) ([]QueryMatch, error) {
 	if q == nil {
 		return nil, fmt.Errorf("nil structural query")
 	}
@@ -235,7 +236,7 @@ func (q *StructuralQuery) Matches(root *Node, opts QueryOptions) ([]QueryMatch, 
 	results := []QueryMatch{}
 	sawNode, sawRule := false, false
 	err := visitQueryGraph(root, b, func(v queryVisit) error {
-		n, ok := v.value.(*Node)
+		n, ok := v.value.(*value.Node)
 		if !ok || n == nil {
 			return nil
 		}
@@ -283,7 +284,7 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 		task := tasks[len(tasks)-1]
 		tasks = tasks[:len(tasks)-1]
 		p, v := task.pattern, task.visit
-		v.value = unboxValue(v.value)
+		v.value = value.UnboxValue(v.value)
 		category, err := queryCategory(v.value)
 		if err != nil {
 			return nil, false, err
@@ -291,7 +292,7 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 		if p.Category != "" && category != p.Category {
 			return nil, false, nil
 		}
-		n, _ := v.value.(*Node)
+		n, _ := v.value.(*value.Node)
 		if p.Type != "" {
 			if p.Type == "error" {
 				if category != "error" {
@@ -308,19 +309,19 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 			if category != "struct" && category != "error" {
 				return nil, false, nil
 			}
-			if err := b.charge(uint64(len(p.Fields) + len(n.fields))); err != nil {
+			if err := b.charge(uint64(len(p.Fields) + len(value.D(n).Fields))); err != nil {
 				return nil, false, err
 			}
 			for i := len(p.Fields) - 1; i >= 0; i-- {
 				f := &p.Fields[i]
-				value, ok := n.fields.Get(f.Name)
+				val, ok := value.D(n).Fields.Get(f.Name)
 				if !ok {
 					return nil, false, nil
 				}
 				if err := b.charge(uint64(len(v.path) + 1)); err != nil {
 					return nil, false, err
 				}
-				tasks = append(tasks, queryMatchTask{&f.Pattern, queryVisit{value, n, appendQueryPath(v.path, QueryEdge{Kind: "field", Name: f.Name})}})
+				tasks = append(tasks, queryMatchTask{&f.Pattern, queryVisit{val, n, appendQueryPath(v.path, QueryEdge{Kind: "field", Name: f.Name})}})
 			}
 		}
 		if p.Value != nil {
@@ -333,7 +334,7 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 			tasks = append(tasks, queryMatchTask{p.Value, queryVisit{queryNodeValue(n), n, appendQueryPath(v.path, QueryEdge{Kind: "value"})}})
 		}
 		if len(p.Elements) > 0 {
-			if !queryHasElements(n) || len(n.children) < len(p.Elements) {
+			if !queryHasElements(n) || len(value.D(n).Children) < len(p.Elements) {
 				return nil, false, nil
 			}
 			if err := b.charge(uint64(len(p.Elements))); err != nil {
@@ -343,7 +344,7 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 				if err := b.charge(uint64(len(v.path) + 1)); err != nil {
 					return nil, false, err
 				}
-				tasks = append(tasks, queryMatchTask{&p.Elements[i], queryVisit{n.children[i], n, appendQueryPath(v.path, QueryEdge{Kind: "element", Index: i})}})
+				tasks = append(tasks, queryMatchTask{&p.Elements[i], queryVisit{value.D(n).Children[i], n, appendQueryPath(v.path, QueryEdge{Kind: "element", Index: i})}})
 			}
 		}
 		if p.Capture != "" {
@@ -357,12 +358,12 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 }
 
 // queryHasElements reports whether n is a tuple or list, or a node whose value is one.
-func queryHasElements(n *Node) bool {
+func queryHasElements(n *value.Node) bool {
 	if n == nil {
 		return false
 	}
-	switch n.shape() {
-	case shapeTuple, shapeList, shapeTupleValue, shapeListValue:
+	switch value.ShapeOf(n) {
+	case value.ShapeTuple, value.ShapeList, value.ShapeTupleValue, value.ShapeListValue:
 		return true
 	}
 	return false
@@ -370,14 +371,14 @@ func queryHasElements(n *Node) bool {
 
 // queryNodeValue returns the value of the node n: its text, or a tuple or list value sharing its
 // elements.
-func queryNodeValue(n *Node) any {
-	switch n.shape() {
-	case shapeTuple:
-		return &Node{kind: kindTupleValue, start: n.start, end: n.end, children: n.children}
-	case shapeList:
-		return &Node{kind: kindListValue, start: n.start, end: n.end, children: n.children}
+func queryNodeValue(n *value.Node) any {
+	switch value.ShapeOf(n) {
+	case value.ShapeTuple:
+		return value.Ptr(value.Data{Kind: value.TupleValueKind, Start: value.D(n).Start, End: value.D(n).End, Children: value.D(n).Children})
+	case value.ShapeList:
+		return value.Ptr(value.Data{Kind: value.ListValueKind, Start: value.D(n).Start, End: value.D(n).End, Children: value.D(n).Children})
 	}
-	return n.text
+	return value.D(n).Text
 }
 
 func appendQueryPath(path []QueryEdge, e QueryEdge) []QueryEdge {
@@ -392,20 +393,20 @@ func queryCategory(v any) (string, error) {
 	switch v := v.(type) {
 	case nil:
 		return "nil", nil
-	case *Node:
+	case *value.Node:
 		if v == nil {
 			return "nil", nil
 		}
-		switch v.shape() {
-		case shapeString, shapeTuple, shapeList:
+		switch value.ShapeOf(v) {
+		case value.ShapeString, value.ShapeTuple, value.ShapeList:
 			return "node", nil
-		case shapeError:
+		case value.ShapeError:
 			return "error", nil
-		case shapeTupleValue:
+		case value.ShapeTupleValue:
 			return "tuple", nil
-		case shapeListValue:
+		case value.ShapeListValue:
 			return "list", nil
-		case shapeStruct:
+		case value.ShapeStruct:
 			return "struct", nil
 		}
 	case int:

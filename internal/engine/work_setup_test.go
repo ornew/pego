@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 type setupPhaseContext struct {
@@ -222,7 +223,7 @@ func TestWorkSetupPreCancelledLeavesColdProgramsUnprepared(t *testing.T) {
 					cancel()
 					reader := &setupCountingReader{r: strings.NewReader(text)}
 					emits, traces := 0, 0
-					err = streamProg.ParseStreamWith("main", reader, func(*Node) error { emits++; return nil }, ParseOptions{Backend: backend, Context: ctx, WorkLimits: limits.WorkLimits{MaxInputWork: 1}, Trace: func(TraceEvent) { traces++ }})
+					err = streamProg.ParseStreamWith("main", reader, func(*value.Node) error { emits++; return nil }, ParseOptions{Backend: backend, Context: ctx, WorkLimits: limits.WorkLimits{MaxInputWork: 1}, Trace: func(TraceEvent) { traces++ }})
 					if !errors.Is(err, context.Canceled) || reader.reads != 0 || emits != 0 || traces != 0 {
 						t.Fatalf("ParseStreamWith err=%v reads=%d emits=%d traces=%d", err, reader.reads, emits, traces)
 					}
@@ -267,14 +268,14 @@ func TestWorkSetupPostBackendChecksStopBeforePublication(t *testing.T) {
 				streamGate := newSetupPhaseContext(func() bool { return setupBackendReady(streamProg, backend) })
 				reader := &setupCountingReader{r: strings.NewReader("#records\na=1\n")}
 				emits, traces := 0, 0
-				err = streamProg.ParseStreamWith("main", reader, func(*Node) error { emits++; return nil }, ParseOptions{Backend: backend, Context: streamGate, WorkLimits: limits.WorkLimits{MaxInputWork: 1}, Trace: func(TraceEvent) { traces++ }})
+				err = streamProg.ParseStreamWith("main", reader, func(*value.Node) error { emits++; return nil }, ParseOptions{Backend: backend, Context: streamGate, WorkLimits: limits.WorkLimits{MaxInputWork: 1}, Trace: func(TraceEvent) { traces++ }})
 				if !errors.Is(err, context.Canceled) || !streamGate.triggered || reader.reads != 0 || emits != 0 || traces != 0 {
 					t.Fatalf("ParseStreamWith err=%v gate=%t reads=%d emits=%d traces=%d", err, streamGate.triggered, reader.reads, emits, traces)
 				}
 				assertSetupBackendState(t, streamProg, backend, true)
 				reader = &setupCountingReader{r: strings.NewReader("#records\nxy=3\n")}
 				emits = 0
-				if err := streamProg.ParseStreamWith("main", reader, func(*Node) error { emits++; return nil }, ParseOptions{Backend: backend}); err != nil || emits != 1 {
+				if err := streamProg.ParseStreamWith("main", reader, func(*value.Node) error { emits++; return nil }, ParseOptions{Backend: backend}); err != nil || emits != 1 {
 					t.Fatalf("ParseStreamWith retry err=%v emits=%d", err, emits)
 				}
 			})
@@ -386,7 +387,7 @@ func TestWorkSetupPostBackendPanicIdentity(t *testing.T) {
 					callbacks := 0
 					reader := &setupCountingReader{r: strings.NewReader("#records\na=1\n")}
 					o := ParseOptions{Backend: backend, Context: gate, Trace: func(TraceEvent) { callbacks++ }}
-					var n *Node
+					var n *value.Node
 					var d *Document
 					var err error
 					got := workContextRecover(func() {
@@ -396,7 +397,7 @@ func TestWorkSetupPostBackendPanicIdentity(t *testing.T) {
 						case "document":
 							d, err = prog.NewDocumentWith("main", "#records\na=1\n", o)
 						case "stream":
-							err = prog.ParseStreamWith("main", reader, func(*Node) error { callbacks++; return nil }, o)
+							err = prog.ParseStreamWith("main", reader, func(*value.Node) error { callbacks++; return nil }, o)
 						}
 					})
 					if got != token || n != nil || d != nil || err != nil || callbacks != 0 || reader.reads != 0 {

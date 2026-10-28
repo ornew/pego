@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 // PositionUnit is the unit of positions in the input.
@@ -243,7 +244,7 @@ type scratch struct {
 	offs  []int32
 	bytes []byte
 	memo  memoTable
-	kids  []*Node
+	kids  []*value.Node
 }
 
 // maxScratch is the size, in elements, beyond which a buffer is not kept for later parses.

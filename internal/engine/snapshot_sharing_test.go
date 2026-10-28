@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestSnapshotSharedRecordsAndInterruption(t *testing.T) {
@@ -73,8 +74,8 @@ func TestSnapshotSharedStringComparisonRespectsWorkLimit(t *testing.T) {
 	}{
 		{"terminal text", snapshotRecord{text: long}, snapshotRecord{text: strings.Clone(long)}},
 		{"late text mismatch", snapshotRecord{text: long + "x"}, snapshotRecord{text: long + "y"}},
-		{"field name", snapshotRecord{fields: Fields{{Name: long, Value: 1}}}, snapshotRecord{fields: Fields{{Name: strings.Clone(long), Value: 1}}}},
-		{"field value", snapshotRecord{fields: Fields{{Name: "x", Value: long}}}, snapshotRecord{fields: Fields{{Name: "x", Value: strings.Clone(long)}}}},
+		{"field name", snapshotRecord{fields: value.Fields{{Name: long, Value: 1}}}, snapshotRecord{fields: value.Fields{{Name: strings.Clone(long), Value: 1}}}},
+		{"field value", snapshotRecord{fields: value.Fields{{Name: "x", Value: long}}}, snapshotRecord{fields: value.Fields{{Name: "x", Value: strings.Clone(long)}}}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p := &parser{control: newWorkControl(nil, limits.WorkLimits{MaxSteps: 1024})}
@@ -257,7 +258,7 @@ func TestSnapshotChunkedHandleIdentity(t *testing.T) {
 		t.Fatal("wide child sequence did not share")
 	}
 	g := snapshotGraph{nodes: []snapshotRecord{
-		{children: []int{2}, fields: Fields{{Name: "wide", Value: snapshotRef(2)}}},
+		{children: []int{2}, fields: value.Fields{{Name: "wide", Value: snapshotRef(2)}}},
 		wide,
 	}, root: 1}
 	g.childChunks = map[*snapshotRecord]*snapshotChildChunks{&g.nodes[1]: chunks}
@@ -272,7 +273,7 @@ func TestSnapshotChunkedHandleIdentity(t *testing.T) {
 		t.Fatal("different snapshot graphs must have distinct handles")
 	}
 	materialized := (&Snapshot{graph: g}).Materialize()
-	if materialized.children[0] != materialized.Field("wide") || materialized.children[0].children[0] != materialized || materialized.children[0].children[1] != nil {
+	if value.D(materialized).Children[0] != materialized.Field("wide") || value.D(value.D(materialized).Children[0]).Children[0] != materialized || value.D(value.D(materialized).Children[0]).Children[1] != nil {
 		t.Fatal("materialization lost sharing, cycle or nil identity")
 	}
 }
@@ -287,8 +288,8 @@ func TestSnapshotSharingCyclesAndTypedNil(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	legacy.children = []*Node{legacy, nil}
-	legacy.fields = Fields{{"self", legacy}, {"typedNil", (*Node)(nil)}, {"int", 7}, {"text", "a"}}
+	value.D(legacy).Children = []*value.Node{legacy, nil}
+	value.D(legacy).Fields = value.Fields{{Name: "self", Value: legacy}, {Name: "typedNil", Value: (*value.Node)(nil)}, {Name: "int", Value: 7}, {Name: "text", Value: "a"}}
 	first, err := d.SnapshotWith(ParseOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -304,10 +305,10 @@ func TestSnapshotSharingCyclesAndTypedNil(t *testing.T) {
 		t.Fatal("typed nil")
 	}
 	materialized := second.Materialize()
-	if materialized.children[0] != materialized || materialized.fields[0].Value != materialized {
+	if value.D(materialized).Children[0] != materialized || value.D(materialized).Fields[0].Value != materialized {
 		t.Fatal("materialized cycle")
 	}
-	legacy.fields[3].Value = "changed"
+	value.D(legacy).Fields[3].Value = "changed"
 	if first.Root().Fields()[3].Value != "a" || second.Root().Fields()[3].Value != "a" {
 		t.Fatal("legacy mutation reached snapshots")
 	}

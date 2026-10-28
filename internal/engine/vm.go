@@ -2,6 +2,8 @@ package engine
 
 import (
 	"fmt"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // Backend is the backend used to run a parse.
@@ -55,7 +57,7 @@ type vmProgram struct {
 	typeNames  map[string]bool
 	// nodeKinds holds the kinds of the module's named node types by the string index of their
 	// names (nil when the module has none).
-	nodeKinds []*nodeTypeKinds
+	nodeKinds []*value.NodeTypeKinds
 	// vars is the module's variable table (nil when it declares none).
 	vars *varTable
 }
@@ -111,16 +113,16 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 	vm.literals = m.Strings
 	normalized := false
 	for i, s := range m.Strings {
-		value := literalValue(s)
-		if value != s {
+		val := value.LiteralValue(s)
+		if val != s {
 			if !normalized {
 				vm.literals = append([]string(nil), m.Strings...)
 				normalized = true
 			}
-			vm.literals[i] = value
+			vm.literals[i] = val
 		}
-		vm.runes = append(vm.runes, []rune(value))
-		vm.bytes = append(vm.bytes, []byte(value))
+		vm.runes = append(vm.runes, []rune(val))
+		vm.bytes = append(vm.bytes, []byte(val))
 	}
 	for _, sc := range m.Scopes {
 		vm.scopes = append(vm.scopes, vm.names(sc))
@@ -140,9 +142,9 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 	for _, t := range m.Types {
 		if t.Node >= 0 {
 			if vm.nodeKinds == nil {
-				vm.nodeKinds = make([]*nodeTypeKinds, len(m.Strings))
+				vm.nodeKinds = make([]*value.NodeTypeKinds, len(m.Strings))
 			}
-			vm.nodeKinds[t.Name] = newNodeTypeKinds(m.Strings[t.Name])
+			vm.nodeKinds[t.Name] = value.NewNodeTypeKinds(m.Strings[t.Name])
 		}
 	}
 	vtable := moduleVarTable(m)
@@ -164,8 +166,8 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 				r.nodeType, r.nodeKinds = m.Strings[ri.NodeType], vm.nodeKinds[ri.NodeType]
 			}
 		}
-		r.kinds = newRuleKinds(r.name)
-		r.value = func(_ *parser, v *Node, _ int) *Node { return v } // the code pushes the value of the body's scope
+		r.kinds = value.NewRuleKinds(r.name)
+		r.value = func(_ *parser, v *value.Node, _ int) *value.Node { return v } // the code pushes the value of the body's scope
 		if ri.Action >= 0 {
 			r.act = vm.evaluator(ri.Action, false)
 		}
@@ -193,12 +195,12 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 		r.entry = entry
 		r.stream = vm.streams(entry)
 		if iterative {
-			r.body = func(p *parser, min int) (*Node, bool) {
+			r.body = func(p *parser, min int) (*value.Node, bool) {
 				res := p.iterate(vm, p.bodyFrame(entry, r, min, false))
 				return res.v, res.ok
 			}
 		} else {
-			r.body = func(p *parser, min int) (*Node, bool) {
+			r.body = func(p *parser, min int) (*value.Node, bool) {
 				v, ok, _ := p.exec(vm, entry, r, min)
 				return v, ok
 			}
@@ -231,7 +233,7 @@ func (vm *vmProgram) scope(ids []int) *scope {
 // block returns a matcher that runs the code of an Operators Rule section. It sets p.cut if a cut is passed
 // within the section.
 func (vm *vmProgram) block(entry int) matcher {
-	return func(p *parser) (*Node, bool) {
+	return func(p *parser) (*value.Node, bool) {
 		v, ok, cut := p.exec(vm, entry, nil, 0)
 		if cut {
 			p.cut = true
@@ -244,7 +246,7 @@ func (vm *vmProgram) line(l *LineInfo, operator bool) *operatorsRuleLine {
 	// The code pushes the line's value already: the value of an operand line's scope, or the
 	// operator's value, which is the node of its tuple if IsSeq (its captures are attached to it).
 	pl := &operatorsRuleLine{scope: vm.scope(l.Scope), m: vm.block(l.Entry), entry: l.Entry, single: singlePass,
-		value: func(_ *parser, v *Node, _ int) *Node { return v }}
+		value: func(_ *parser, v *value.Node, _ int) *value.Node { return v }}
 	if operator && l.IsSeq {
 		pl.single, pl.shape = singleTuple, shaper{elems: true}
 	}
@@ -291,14 +293,14 @@ func (vm *vmProgram) cast(p *parser, v any, pos, ip int) (any, error) {
 func (vm *vmProgram) convert(p *parser, v any, ip int) (any, error) {
 	in := &vm.m.Exprs[ip]
 	name := vm.m.Strings[in.A]
-	var ks *nodeTypeKinds
+	var ks *value.NodeTypeKinds
 	if vm.nodeKinds != nil {
 		ks = vm.nodeKinds[in.A]
 	}
 	if ks == nil {
 		return nil, p.convertError(v, name)
 	}
-	n, ok := ks.convert(v)
+	n, ok := ks.Convert(v)
 	if !ok {
 		return nil, p.convertError(v, name)
 	}
@@ -417,18 +419,18 @@ func (p *parser) pop() any {
 	return v
 }
 
-func asNodeValue(v any) *Node {
+func asNodeValue(v any) *value.Node {
 	if v == nil {
 		return nil
 	}
-	return v.(*Node)
+	return v.(*value.Node)
 }
 
 // exec runs matching code from ip until RETURN or END (the recursive model). On success it
 // returns the pushed value. cut reports whether a cut belonging to no choice was passed (used
 // in Operators Rule sections). Rule calls and Operators Rule expressions call the shared runtime (call,
 // operatorsRuleParse) through host recursion.
-func (p *parser) exec(vm *vmProgram, ip int, r *rule, min int) (result *Node, ok bool, cut bool) {
+func (p *parser) exec(vm *vmProgram, ip int, r *rule, min int) (result *value.Node, ok bool, cut bool) {
 	bv := p.newBody(ip, r, min)
 	b := &bv
 	ev, v, ok := p.step(vm, b, false, false, nil)
@@ -472,7 +474,7 @@ const (
 
 // step runs code until it finishes or reaches a rule call or an Operators Rule expression.
 // If resume is set, it resumes with the result (ok, v) of the suspended instruction.
-func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev int, result *Node, ok bool) {
+func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node) (ev int, result *value.Node, ok bool) {
 	m := vm.m
 	code := m.Code
 	ip, ebase := b.ip, b.ebase
@@ -499,7 +501,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				goto fail
 			}
 			if in.C == 1 {
-				p.push(p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.literalText(start, vm.literals[in.A]), terminal: true, fresh: true}))
+				p.push(p.newNode(value.Data{Kind: value.MatchKind, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, vm.literals[in.A]), Terminal: true, Fresh: true}))
 			}
 		case OpStrFold:
 			start := p.pos
@@ -508,7 +510,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				goto fail
 			}
 			if in.C == 1 {
-				p.push(p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true, fresh: true}))
+				p.push(p.newNode(value.Data{Kind: value.MatchKind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), Terminal: true, Fresh: true}))
 			}
 		case OpClass:
 			ch, size, ok := p.peek()
@@ -555,7 +557,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			p.single(size, in.A == 1)
 		case OpTop:
 			if in.A == 1 {
-				p.push(p.newNode(Node{kind: kindMatch, start: int32(p.pos), end: int32(p.pos), terminal: true, fresh: true}))
+				p.push(p.newNode(value.Data{Kind: value.MatchKind, Start: int32(p.pos), End: int32(p.pos), Terminal: true, Fresh: true}))
 			}
 		case OpFail:
 			goto fail
@@ -618,13 +620,13 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			}
 			start := *p.vals[top-n-1].(*int)
 			p.vals = p.vals[:top-n-1]
-			p.push(p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}))
+			p.push(p.newNode(value.Data{Kind: value.SeqKind, Start: int32(start), End: int32(p.pos), Children: kids, Fresh: true}))
 		case OpSpread:
 			v := p.pop()
 			switch {
 			case in.B == 1:
 				if n := asNodeValue(v); n != nil {
-					for _, k := range n.children {
+					for _, k := range value.D(n).Children {
 						p.stepWork()
 						p.push(k)
 					}
@@ -635,7 +637,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 		case OpAtomic:
 			start := *p.pop().(*int)
 			if in.A == 1 {
-				p.push(p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true, fresh: true}))
+				p.push(p.newNode(value.Data{Kind: value.MatchKind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), Terminal: true, Fresh: true}))
 			}
 		case OpCapture:
 			p.setCapture(int(in.A), asNodeValue(p.vals[len(p.vals)-1]))
@@ -704,7 +706,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			rep := &p.reps[len(p.reps)-1]
 			if rep.scope >= 0 {
 				if in.B == 3 { // a projected repetition: the value is the field's capture
-					var v *Node
+					var v *value.Node
 					if int(in.C) < len(p.frame.vals) { // (a corrupted file may name another slot)
 						v = p.frame.vals[in.C]
 					}
@@ -717,7 +719,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			}
 			rep.count++
 			if rep.run != nil {
-				var v *Node
+				var v *value.Node
 				if in.B != 0 {
 					v = asNodeValue(p.vals[len(p.vals)-1])
 				}
@@ -727,7 +729,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				// Elements of the start rule's #stream are passed on without being retained, and committed.
 				v := asNodeValue(p.pop())
 				if v != nil {
-					v.fresh = false
+					value.D(v).Fresh = false
 				}
 				if err := p.emitStream(v); err != nil {
 					panic(fatal{err})
@@ -764,7 +766,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				}
 				start := *p.vals[rep.base-1].(*int)
 				p.vals = p.vals[:rep.base-1]
-				p.push(p.newNode(Node{kind: kindList, start: int32(start), end: int32(p.pos), children: kids, fresh: true}))
+				p.push(p.newNode(value.Data{Kind: value.ListKind, Start: int32(start), End: int32(p.pos), Children: kids, Fresh: true}))
 			}
 		case OpLook:
 			kind := uint8(eLook)
@@ -829,10 +831,10 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			se := p.makeError(l.far, l.exp)
 			p.recovered = append(p.recovered, se)
 			if in.A == 1 {
-				p.push(p.newNode(Node{kind: kindError, start: int32(e.save.pos), end: int32(p.pos), text: p.text(e.save.pos, p.pos), fields: Fields{{"message", p.recoveryErrorText(se)}}, fresh: true, terminal: true}))
+				p.push(p.newNode(value.Data{Kind: value.ErrorKind, Start: int32(e.save.pos), End: int32(p.pos), Text: p.text(e.save.pos, p.pos), Fields: value.Fields{{Name: "message", Value: p.recoveryErrorText(se)}}, Fresh: true, Terminal: true}))
 			}
 		case OpReturn, OpEnd:
-			var v *Node
+			var v *value.Node
 			if len(p.vals) > b.vbase { // skip code builds no values
 				v = asNodeValue(p.vals[len(p.vals)-1])
 			}
@@ -956,12 +958,12 @@ func (p *parser) single(size int, b bool) {
 	start := p.pos
 	p.pos += size
 	if b {
-		p.push(p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true, fresh: true}))
+		p.push(p.newNode(value.Data{Kind: value.MatchKind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), Terminal: true, Fresh: true}))
 	}
 }
 
 // attachCapturesNames attaches captures by a list of names (same as attachCaptures).
-func (p *parser) attachCapturesNames(v *Node, names []string, f *frame, start, end int) *Node {
+func (p *parser) attachCapturesNames(v *value.Node, names []string, f *frame, start, end int) *value.Node {
 	return p.attachCaptures(v, &scope{names: names}, f, start, end)
 }
 
@@ -1081,7 +1083,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 		case ENil:
 			stack = append(stack, nil)
 		case ECap:
-			stack = append(stack, unboxNode(ctx.frame.vals[in.A]))
+			stack = append(stack, value.UnboxNode(ctx.frame.vals[in.A]))
 		case EItem:
 			n := int(in.A)
 			if n == 0 {

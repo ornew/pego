@@ -1,6 +1,10 @@
 package engine
 
-import "github.com/ornew/pego/grammar"
+import (
+	"github.com/ornew/pego/grammar"
+
+	"github.com/ornew/pego/internal/value"
+)
 
 // The iterative-model VM. It runs rule calls, left-recursion growth, Operators Rule expression loops, and
 // longest matching as state machines pushed on the VM stack (a slice of iframe) instead of using
@@ -11,7 +15,7 @@ import "github.com/ornew/pego/grammar"
 
 // iresult is the result of running a child.
 type iresult struct {
-	v         *Node
+	v         *value.Node
 	ok        bool
 	cutFailed bool // result of longestFrame, whose attempt is in parser.attempt
 }
@@ -57,7 +61,7 @@ type bodyFrame struct {
 
 func (f *bodyFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult, bool) {
 	var ev int
-	var v *Node
+	var v *value.Node
 	var ok bool
 	if !f.started {
 		f.started = true
@@ -455,7 +459,7 @@ type operatorsRuleFrame struct {
 	r        *rule
 	min      int
 	state    int
-	lhs      *Node
+	lhs      *value.Node
 	lastNone int
 	m0       mark
 	a        operatorsRuleAttempt

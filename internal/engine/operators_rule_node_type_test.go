@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // operatorsNamedNodeCases declare an Operators Rule with a named node type: every prefix, infix and
@@ -62,7 +64,7 @@ rule ws = [ ]*`, []string{"", "1", "1+2", "-1+2!", "(1+2)!", "1+"}},
 
 // operatorsNodeTypeNames returns the type names of the nodes of n, pre-order, with their children
 // in parentheses.
-func operatorsNodeTypeNames(n *Node) string {
+func operatorsNodeTypeNames(n *value.Node) string {
 	if n == nil {
 		return "nil"
 	}

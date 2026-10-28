@@ -5,6 +5,8 @@ import (
 	"math"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestCaptures(t *testing.T) {
@@ -156,15 +158,15 @@ rule num = -" "* n:[0-9]+ #atomic => $n`)
 	}
 	// The final result has the range of the whole rule; intermediate nodes have the ranges of their
 	// fields.
-	if n.start != 0 || n.end != 9 {
-		t.Errorf("root [%d,%d)", n.start, n.end)
+	if value.D(n).Start != 0 || value.D(n).End != 9 {
+		t.Errorf("root [%d,%d)", value.D(n).Start, value.D(n).End)
 	}
-	left := n.Field("Left").(*Node)
-	if left.start != 1 || left.end != 7 {
-		t.Errorf("left [%d,%d)", left.start, left.end)
+	left := n.Field("Left").(*value.Node)
+	if value.D(left).Start != 1 || value.D(left).End != 7 {
+		t.Errorf("left [%d,%d)", value.D(left).Start, value.D(left).End)
 	}
-	if r := left.Field("Right").(*Node); r.start != 5 || r.end != 7 || r.text != "22" {
-		t.Errorf("22 at [%d,%d) %q", r.start, r.end, r.text)
+	if r := left.Field("Right").(*value.Node); value.D(r).Start != 5 || value.D(r).End != 7 || value.D(r).Text != "22" {
+		t.Errorf("22 at [%d,%d) %q", value.D(r).Start, value.D(r).End, value.D(r).Text)
 	}
 }
 

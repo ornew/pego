@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"unsafe"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestDocumentVMValueStorage(t *testing.T) {
@@ -18,7 +20,7 @@ rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 				if err != nil {
 					t.Fatal(err)
 				}
-				check := func() *Node {
+				check := func() *value.Node {
 					t.Helper()
 					n, err := doc.Parse()
 					if got, want := resultJSON(n, err), resultJSON(prog.ParseWith("main", doc.Text(), opts)); got != want {
@@ -35,10 +37,10 @@ rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 					return n
 				}
 				n := check()
-				if len(n.children) != 1 || n.children[0].Type() != TypeList || len(n.children[0].children) != 5000 {
+				if len(value.D(n).Children) != 1 || value.D(n).Children[0].Type() != value.TypeList || len(value.D(value.D(n).Children[0]).Children) != 5000 {
 					t.Fatal("expected one list containing all input lines")
 				}
-				retained := append([]*Node(nil), n.children[0].children[:3]...)
+				retained := append([]*value.Node(nil), value.D(value.D(n).Children[0]).Children[:3]...)
 				before := make([]string, len(retained))
 				for i, child := range retained {
 					before[i] = resultJSON(child, nil)
@@ -158,7 +160,7 @@ func TestDocumentVMValueStorageForEmptyInput(t *testing.T) {
 				}
 				for i := 0; i < 2; i++ {
 					n, err := doc.Parse()
-					if err != nil || n == nil || len(n.children) != 2048 {
+					if err != nil || n == nil || len(value.D(n).Children) != 2048 {
 						t.Fatalf("empty sequence: %v, %v", n, err)
 					}
 					if doc.vals != nil {

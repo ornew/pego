@@ -7,7 +7,7 @@ tree's observable names or JSON representation.
 ## Mechanism and Invariants
 
 `Fields` is an ordered slice of name/value pairs rather than a per-node map.
-`nodeKind` interns the type/rule pair, and rules precompute their kinds so
+`NodeKind` interns the type/rule pair, and rules precompute their kinds so
 matching does not perform an interning lookup. Node positions are `int32`;
 callers retrieve names through `Type()` and `Rule()`. Field lookup and sorted
 JSON output preserve their contracts. Slabs and snapshot records are separate
@@ -36,7 +36,7 @@ Evidence records: [003](../003-node-fields-as-a-slice-54a5774.md),
 [063](../063-a-smaller-node.md),
 [064](../064-a-smaller-node-in-generated-parsers.md).
 
-Source owners: [`Node and nodeKind`](../../../internal/engine/node.go),
+Source owners: [`Node and NodeKind`](../../../internal/value/node.go),
 [`generated Node and Fields`](../../../runtime/runtime.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

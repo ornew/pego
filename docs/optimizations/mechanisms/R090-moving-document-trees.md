@@ -38,7 +38,7 @@ Evidence records:
 
 Source owners: [`moveResult and moved Node
 handling`](../../../internal/engine/runtime.go), [`Node generation and
-Clone`](../../../internal/engine/node.go), [`edit log and result
+Clone`](../../../internal/value/node.go), [`edit log and result
 shift`](../../../internal/engine/document.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

@@ -12,6 +12,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestWorkActionErrorTextReservationsAndOwnership(t *testing.T) {
@@ -102,7 +103,7 @@ func TestWorkActionErrorOpaqueFormattingPreservesNative(t *testing.T) {
 func TestWorkActionErrorProducersAreEager(t *testing.T) {
 	long := strings.Repeat("T", 1024)
 	prog := compile(t, "type A = {\n    N int\n}\n\nrule main = \"a\"\n")
-	node := &Node{kind: &nodeKind{typ: long}}
+	node := value.Ptr(value.Data{Kind: &value.NodeKind{Type: long}})
 	producers := []struct {
 		name string
 		make func(*parser) error
@@ -114,7 +115,7 @@ func TestWorkActionErrorProducersAreEager(t *testing.T) {
 		}},
 		{"invalid member", func(p *parser) error { _, err := (&evalCtx{p: p}).member(1, long); return err }},
 		{"missing field", func(p *parser) error {
-			_, err := (&evalCtx{p: p}).member(&Node{kind: prog.typeKind("A")}, long)
+			_, err := (&evalCtx{p: p}).member(value.Ptr(value.Data{Kind: prog.typeKind("A")}), long)
 			return err
 		}},
 		{"function field", func(p *parser) error {

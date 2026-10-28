@@ -10,6 +10,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/pego/internal/value"
 )
 
 // parseLegacyTest parses PEGO source with syntax.ParseLegacy and marks its start rules as
@@ -212,7 +213,7 @@ func checkRecognize(t *testing.T, prog *Program, start, input string, u Position
 }
 
 // toCodePoints converts the positions in a result parsed in bytes to code points.
-func toCodePoints(input string, n *Node, err error) (*Node, error) {
+func toCodePoints(input string, n *value.Node, err error) (*value.Node, error) {
 	// Map byte offsets to code point positions (a byte in the middle of a character maps to that
 	// character's position).
 	cp := make([]int, len(input)+1)
@@ -253,9 +254,9 @@ func toCodePoints(input string, n *Node, err error) (*Node, error) {
 		_, c := lineCol(cp[off+col-1])
 		return fmt.Sprintf("%d:%d%s", line, c, rest)
 	}
-	seen := map[*Node]*Node{}
-	var conv func(*Node) *Node
-	conv = func(n *Node) *Node {
+	seen := map[*value.Node]*value.Node{}
+	var conv func(*value.Node) *value.Node
+	conv = func(n *value.Node) *value.Node {
 		if n == nil {
 			return nil
 		}
@@ -264,25 +265,25 @@ func toCodePoints(input string, n *Node, err error) (*Node, error) {
 		}
 		c := *n
 		seen[n] = &c
-		c.start, c.end = int32(cp[n.start]), int32(cp[n.end])
-		if n.children != nil {
-			c.children = make([]*Node, len(n.children))
-			for i, ch := range n.children {
-				c.children[i] = conv(ch)
+		value.D(&c).Start, value.D(&c).End = int32(cp[value.D(n).Start]), int32(cp[value.D(n).End])
+		if value.D(n).Children != nil {
+			value.D(&c).Children = make([]*value.Node, len(value.D(n).Children))
+			for i, ch := range value.D(n).Children {
+				value.D(&c).Children[i] = conv(ch)
 			}
 		}
-		if n.fields != nil {
-			c.fields = make(Fields, len(n.fields))
-			for i, f := range n.fields {
+		if value.D(n).Fields != nil {
+			value.D(&c).Fields = make(value.Fields, len(value.D(n).Fields))
+			for i, f := range value.D(n).Fields {
 				switch v := f.Value.(type) {
-				case *Node:
+				case *value.Node:
 					f.Value = conv(v)
 				case string:
-					if n.Type() == TypeError && f.Name == "message" {
+					if n.Type() == value.TypeError && f.Name == "message" {
 						f.Value = fixMessage(v)
 					}
 				}
-				c.fields[i] = f
+				value.D(&c).Fields[i] = f
 			}
 		}
 		return &c

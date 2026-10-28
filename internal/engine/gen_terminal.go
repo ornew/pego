@@ -8,6 +8,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/ir/core"
+	"github.com/ornew/pego/internal/value"
 )
 
 // Value-free terminal expressions in lean typed Go parsers.
@@ -175,12 +176,12 @@ func (t *terminalProgram) emit(e grammar.Expr) {
 	g := t.g
 	switch e := e.(type) {
 	case *grammar.Literal:
-		value := literalValue(e.Value)
-		i, ok := t.literals[value]
+		val := value.LiteralValue(e.Value)
+		i, ok := t.literals[val]
 		if !ok {
 			i = len(t.literalItems)
-			t.literals[value] = i
-			t.literalItems = append(t.literalItems, fmt.Sprintf("{Runes: %s, Text: %q}", g.literal(value), value))
+			t.literals[val] = i
+			t.literalItems = append(t.literalItems, fmt.Sprintf("{Runes: %s, Text: %q}", g.literal(val), val))
 		}
 		t.code = append(t.code, terminalLiteral, 4)
 		t.word(i)

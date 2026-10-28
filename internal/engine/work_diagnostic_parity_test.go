@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 // Compare the public parse result and exported diagnostic records with and
@@ -124,11 +125,11 @@ rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}`,
 	}
 
 	type result struct {
-		Node                 *Node
+		Node                 *value.Node
 		Err                  error
 		ErrorText, ErrorType string
 	}
-	marshal := func(t *testing.T, node *Node, err error) []byte {
+	marshal := func(t *testing.T, node *value.Node, err error) []byte {
 		t.Helper()
 		got := result{Node: node, Err: err}
 		if err != nil {

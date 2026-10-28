@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 const filterIdentitySource = `type Out = { First node[string]; Kept []node[string]; Empty []node[string] }
@@ -38,13 +40,13 @@ func TestFilterNodeIdentityAndEmptyInput(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%s/%s: %v", backend, unit, err)
 			}
-			first := node.Field("First").(*Node)
-			kept := node.Field("Kept").(*Node)
-			empty := node.Field("Empty").(*Node)
-			if len(kept.children) != 2 || kept.children[0] != first || kept.children[1] != first {
+			first := node.Field("First").(*value.Node)
+			kept := node.Field("Kept").(*value.Node)
+			empty := node.Field("Empty").(*value.Node)
+			if len(value.D(kept).Children) != 2 || value.D(kept).Children[0] != first || value.D(kept).Children[1] != first {
 				t.Fatalf("%s/%s: filter changed order or identity", backend, unit)
 			}
-			if empty == nil || len(empty.children) != 0 {
+			if empty == nil || len(value.D(empty).Children) != 0 {
 				t.Fatalf("%s/%s: nil input did not produce an empty list", backend, unit)
 			}
 		}

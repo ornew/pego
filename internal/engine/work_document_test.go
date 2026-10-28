@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 func workDocumentVariants(t *testing.T, run func(*testing.T, ParseOptions)) {
@@ -199,7 +200,7 @@ func TestWorkDocumentCallerPanicAtBoundaries(t *testing.T) {
 				if at == 0 {
 					o.Context = &workContextDonePanic{Context: context.Background(), token: token}
 				}
-				var n *Node
+				var n *value.Node
 				got := workContextRecover(func() { n, err = d.ParseWith(o) })
 				if got != token || n != nil {
 					t.Fatalf("panic=%v node=%v", got, n)

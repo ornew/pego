@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 type diagnosticBoundaryReader struct {
@@ -27,7 +29,7 @@ rule item = (("ab" #recover(skip="X!") "z") / "X!a")`)
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
 				calls, elements := 0, 0
-				err := p.ParseStreamWith("main", strings.NewReader("X!a"), func(*Node) error {
+				err := p.ParseStreamWith("main", strings.NewReader("X!a"), func(*value.Node) error {
 					elements++
 					return nil
 				}, ParseOptions{Backend: backend, Unit: unit, DiagnosticCallback: func(*SyntaxError) error {
@@ -48,7 +50,7 @@ rule item = ("a" #recover(skip="x")) ("b" #recover(skip="y"))`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		t.Run(backend.String(), func(t *testing.T) {
 			var events []string
-			err := p.ParseStreamWith("main", strings.NewReader("xy"), func(*Node) error {
+			err := p.ParseStreamWith("main", strings.NewReader("xy"), func(*value.Node) error {
 				events = append(events, "element")
 				return nil
 			}, ParseOptions{Backend: backend, DiagnosticCallback: func(*SyntaxError) error {
@@ -84,7 +86,7 @@ func TestStreamDiagnosticCallbackAfterFinalElement(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		t.Run(backend.String(), func(t *testing.T) {
 			var events []string
-			err := p.ParseStreamWith("main", strings.NewReader("ax"), func(*Node) error {
+			err := p.ParseStreamWith("main", strings.NewReader("ax"), func(*value.Node) error {
 				events = append(events, "element")
 				return nil
 			}, ParseOptions{Backend: backend, DiagnosticCallback: func(*SyntaxError) error {
@@ -125,7 +127,7 @@ rule item = "ab" #recover(skip=[^a]+)`)
 					t.Fatalf("callback panic changed: %v", got)
 				}
 			}()
-			_ = p.ParseStreamWith("main", strings.NewReader("abX!ab"), func(*Node) error { return nil }, ParseOptions{
+			_ = p.ParseStreamWith("main", strings.NewReader("abX!ab"), func(*value.Node) error { return nil }, ParseOptions{
 				Backend:            backend,
 				DiagnosticCallback: func(*SyntaxError) error { panic(sentinel) },
 			})
@@ -174,7 +176,7 @@ rule item = "ab" #recover(skip=[^a]+)`)
 					rootRecovered = e.Recovered()
 				}
 			}
-			err := p.ParseStreamWith("main", strings.NewReader(input), func(*Node) error { elements++; return nil }, o)
+			err := p.ParseStreamWith("main", strings.NewReader(input), func(*value.Node) error { elements++; return nil }, o)
 			var truncated *TruncatedSyntaxErrors
 			if !errors.As(err, &truncated) || truncated.Total != count || truncated.Dropped != count-3 ||
 				len(truncated.Errors) != 3 || callbacks != count || elements != 2*count || maxWorking > 1 {
@@ -228,7 +230,7 @@ func TestStreamDiagnosticTailPrefixRecovery(t *testing.T) {
 rule item = "a" #recover(skip="!")`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		calls, elements := 0, 0
-		err := p.ParseStreamWith("main", strings.NewReader("!!"), func(*Node) error {
+		err := p.ParseStreamWith("main", strings.NewReader("!!"), func(*value.Node) error {
 			elements++
 			return nil
 		}, ParseOptions{Backend: backend, DiagnosticLimit: 1, DiagnosticCallback: func(*SyntaxError) error {

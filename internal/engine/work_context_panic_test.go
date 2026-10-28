@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 type workContextPanicToken struct{ phase string }
@@ -75,7 +76,7 @@ func workContextAssertCleanup(t *testing.T, p *parser) {
 	}
 }
 
-func workContextNodeJSON(t *testing.T, n *Node) []byte {
+func workContextNodeJSON(t *testing.T, n *value.Node) []byte {
 	t.Helper()
 	b, err := json.Marshal(n)
 	if err != nil {
@@ -123,7 +124,7 @@ func TestWorkContextErrPanicIdentityBeforeExecution(t *testing.T) {
 						entries++
 					}
 				}
-				var node *Node
+				var node *value.Node
 				var returnedErr error
 				got := workContextRecover(func() { node, returnedErr = prog.ParseWith("main", text, opts) })
 				if got != token || node != nil || returnedErr != nil || entries != 0 {
@@ -156,7 +157,7 @@ rule child = "a"`)
 			ctx := newWorkContextErrPanic(token, 2)
 			var observed *parser
 			childCallbacks := 0
-			var node *Node
+			var node *value.Node
 			var returnedErr error
 			got := workContextRecover(func() {
 				node, returnedErr = childProg.ParseWith("main", "a", ParseOptions{Backend: backend, Unit: base.Unit, Recognize: base.Recognize, Context: ctx, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 20}, Trace: func(e TraceEvent) {
@@ -179,7 +180,7 @@ rule child = "a"`)
 			token := &workContextPanicToken{phase: "trace postcheck"}
 			ctx := newWorkContextErrPanic(token, 1)
 			var observed *parser
-			var node *Node
+			var node *value.Node
 			var returnedErr error
 			got := workContextRecover(func() {
 				node, returnedErr = plainProg.ParseWith("main", "a", ParseOptions{Backend: backend, Unit: base.Unit, Recognize: base.Recognize, Context: ctx, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 20}, Trace: func(e TraceEvent) {
@@ -205,7 +206,7 @@ func TestWorkContextErrPanicIdentityAtPublicationAndFailedReservation(t *testing
 			token := &workContextPanicToken{phase: "publication"}
 			ctx := newWorkContextErrPanic(token, 2)
 			var observed *parser
-			var node *Node
+			var node *value.Node
 			var returnedErr error
 			got := workContextRecover(func() {
 				node, returnedErr = prog.ParseWith("main", "a", ParseOptions{Backend: backend, Unit: base.Unit, Recognize: base.Recognize, Context: ctx, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 20}, Trace: func(e TraceEvent) {
@@ -225,7 +226,7 @@ func TestWorkContextErrPanicIdentityAtPublicationAndFailedReservation(t *testing
 			token := &workContextPanicToken{phase: "failed reservation"}
 			ctx := newWorkContextErrPanic(token, 2)
 			var observed *parser
-			var node *Node
+			var node *value.Node
 			var returnedErr error
 			got := workContextRecover(func() {
 				node, returnedErr = prog.ParseWith("main", "a", ParseOptions{Backend: backend, Unit: base.Unit, Recognize: base.Recognize, Context: ctx, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 20}, Trace: func(e TraceEvent) {
@@ -252,7 +253,7 @@ func TestWorkContextErrPanicIdentityAtCountedWorkAndRetry(t *testing.T) {
 		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			for _, recognize := range []bool{false, true} {
 				t.Run(backend.String()+"/"+unit.String()+"/recognize="+strconv.FormatBool(recognize), func(t *testing.T) {
-					var retained *Node
+					var retained *value.Node
 					var retainedJSON []byte
 					if !recognize {
 						var err error
@@ -266,7 +267,7 @@ func TestWorkContextErrPanicIdentityAtCountedWorkAndRetry(t *testing.T) {
 					token := &workContextPanicToken{phase: "counted work"}
 					ctx := newWorkContextErrPanic(token, 2)
 					var observed *parser
-					var node *Node
+					var node *value.Node
 					var returnedErr error
 					got := workContextRecover(func() {
 						node, returnedErr = prog.ParseWith("main", literal, ParseOptions{Backend: backend, Unit: unit, Recognize: recognize, Context: ctx, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 30}, Trace: func(e TraceEvent) {
@@ -322,7 +323,7 @@ func TestWorkContextErrPanicIdentityLoadedASTOmittedProgram(t *testing.T) {
 				token := &workContextPanicToken{phase: "loaded counted work"}
 				ctx := newWorkContextErrPanic(token, 2)
 				var observed *parser
-				var node *Node
+				var node *value.Node
 				var returnedErr error
 				got := workContextRecover(func() {
 					node, returnedErr = prog.ParseWith("main", literal, ParseOptions{Backend: backend, Unit: unit, Context: ctx, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 30}, Trace: func(e TraceEvent) {

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestNullableRepetitionMinimum(t *testing.T) {
@@ -44,7 +46,7 @@ func TestNullableRepetitionMinimum(t *testing.T) {
 								opts.Recognize = false
 								if p.checkMode(opts, false) == nil {
 									count := 0
-									err := p.ParseStreamWith("main", strings.NewReader(""), func(*Node) error { count++; return nil }, opts)
+									err := p.ParseStreamWith("main", strings.NewReader(""), func(*value.Node) error { count++; return nil }, opts)
 									if count != bound.count || (err == nil) != bound.ok {
 										t.Errorf("stream %s/%s: %d values, %v; want %d, success=%v", backend, unit, count, err, bound.count, bound.ok)
 									}
@@ -86,7 +88,7 @@ func TestNullableRepetitionAfterConsumption(t *testing.T) {
 							t.Errorf("%s%s/%q %s/%s: %v", body, bound, tc.input, backend, unit, err)
 						}
 						count := 0
-						err := p.ParseStreamWith("main", strings.NewReader(tc.input), func(*Node) error { count++; return nil }, opts)
+						err := p.ParseStreamWith("main", strings.NewReader(tc.input), func(*value.Node) error { count++; return nil }, opts)
 						wantCount := min(len([]rune(tc.input))+1, tc.min)
 						if (err == nil) != tc.ok || count != wantCount {
 							t.Errorf("stream %s%s/%q %s/%s: %d, %v; want %d success=%v", body, bound, tc.input, backend, unit, count, err, wantCount, tc.ok)
@@ -140,7 +142,7 @@ func TestNullableRepetitionProjection(t *testing.T) {
 		p := compile(t, fmt.Sprintf(`rule main = xs:(f:_) #repeat(%d, ) $$ => map($xs, (x) => x.$f)`, minimum))
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
-				if n, err := p.ParseWith("main", "", ParseOptions{Backend: backend, Unit: unit}); (err == nil) != (minimum == 1) || err == nil && len(n.children) != 1 {
+				if n, err := p.ParseWith("main", "", ParseOptions{Backend: backend, Unit: unit}); (err == nil) != (minimum == 1) || err == nil && len(value.D(n).Children) != 1 {
 					t.Errorf("projected min=%d %s/%s: %v, %v", minimum, backend, unit, n, err)
 				}
 			}

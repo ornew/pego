@@ -1,4 +1,4 @@
-package engine
+package value
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 type nodeJSONFrame struct {
 	value  any
 	fields Fields
-	caps   []captureLocation
+	caps   []CaptureLocation
 	index  int
 	phase  uint8
 	slice  nodeJSONSliceID
@@ -31,17 +31,17 @@ const (
 )
 
 // writeJSONRange writes prefix and the members start and end of n.
-func writeJSONRange(out *jsonOutput, n *Node, prefix string) error {
-	if err := out.raw(prefix); err != nil {
+func writeJSONRange(out *JSONOutput, n *Node, prefix string) error {
+	if err := out.Raw(prefix); err != nil {
 		return err
 	}
-	if err := out.number(n.start); err != nil {
+	if err := out.Number(n.d.Start); err != nil {
 		return err
 	}
-	if err := out.raw(`,"end":`); err != nil {
+	if err := out.Raw(`,"end":`); err != nil {
 		return err
 	}
-	return out.number(n.end)
+	return out.Number(n.d.End)
 }
 
 type nodeJSONSliceID struct {
@@ -49,58 +49,58 @@ type nodeJSONSliceID struct {
 	len int
 }
 
-// jsonOutput coalesces the small fragments of a node while preserving writer errors
+// JSONOutput coalesces the small fragments of a node while preserving writer errors
 // and the already-written prefix when an unsupported value is encountered.
-type jsonOutput struct {
-	w   io.Writer
-	buf []byte
+type JSONOutput struct {
+	W   io.Writer
+	Buf []byte
 }
 
-func (out *jsonOutput) flush() error {
-	if len(out.buf) == 0 {
+func (out *JSONOutput) Flush() error {
+	if len(out.Buf) == 0 {
 		return nil
 	}
-	if err := writeJSONBytes(out.w, out.buf); err != nil {
+	if err := writeJSONBytes(out.W, out.Buf); err != nil {
 		return err
 	}
-	out.buf = out.buf[:0]
+	out.Buf = out.Buf[:0]
 	return nil
 }
 
-func (out *jsonOutput) bytes(data []byte) error {
-	if len(out.buf)+len(data) > cap(out.buf) {
-		if err := out.flush(); err != nil {
+func (out *JSONOutput) bytes(data []byte) error {
+	if len(out.Buf)+len(data) > cap(out.Buf) {
+		if err := out.Flush(); err != nil {
 			return err
 		}
 	}
-	if len(data) > cap(out.buf) {
-		return writeJSONBytes(out.w, data)
+	if len(data) > cap(out.Buf) {
+		return writeJSONBytes(out.W, data)
 	}
-	out.buf = append(out.buf, data...)
+	out.Buf = append(out.Buf, data...)
 	return nil
 }
 
-func (out *jsonOutput) raw(s string) error {
-	if len(out.buf)+len(s) > cap(out.buf) {
-		if err := out.flush(); err != nil {
+func (out *JSONOutput) Raw(s string) error {
+	if len(out.Buf)+len(s) > cap(out.Buf) {
+		if err := out.Flush(); err != nil {
 			return err
 		}
 	}
-	out.buf = append(out.buf, s...)
+	out.Buf = append(out.Buf, s...)
 	return nil
 }
 
-func (out *jsonOutput) number(n int32) error {
-	if len(out.buf)+11 > cap(out.buf) {
-		if err := out.flush(); err != nil {
+func (out *JSONOutput) Number(n int32) error {
+	if len(out.Buf)+11 > cap(out.Buf) {
+		if err := out.Flush(); err != nil {
 			return err
 		}
 	}
-	out.buf = strconv.AppendInt(out.buf, int64(n), 10)
+	out.Buf = strconv.AppendInt(out.Buf, int64(n), 10)
 	return nil
 }
 
-func (out *jsonOutput) encoded(value any) error {
+func (out *JSONOutput) Encoded(value any) error {
 	data, err := json.Marshal(value)
 	if err != nil {
 		return err
@@ -112,7 +112,7 @@ func (out *jsonOutput) encoded(value any) error {
 // edges. Other values are delegated to encoding/json, preserving its scalar and custom-marshaler
 // behavior. []byte intentionally stays in that fallback so it keeps encoding as base64.
 func writeJSONValue(w io.Writer, value any) error {
-	out := jsonOutput{w: w, buf: make([]byte, 0, 512)}
+	out := JSONOutput{W: w, Buf: make([]byte, 0, 512)}
 	stack := []nodeJSONFrame{{value: value}}
 	activeNodes := make(map[*Node]struct{})
 	activeSlices := make(map[nodeJSONSliceID]struct{})
@@ -122,7 +122,7 @@ func writeJSONValue(w io.Writer, value any) error {
 		switch value := frame.value.(type) {
 		case *Node:
 			if value == nil {
-				err = out.raw("null")
+				err = out.Raw("null")
 				stack = stack[:len(stack)-1]
 				break
 			}
@@ -133,17 +133,17 @@ func writeJSONValue(w io.Writer, value any) error {
 					break
 				}
 				activeNodes[value] = struct{}{}
-				switch shape := value.shape(); shape {
-				case shapeBox:
+				switch shape := ShapeOf(value); shape {
+				case ShapeBox:
 					// The box stands for its value.
 					delete(activeNodes, value)
-					stack[len(stack)-1] = nodeJSONFrame{value: value.box}
-				case shapeString, shapeTuple, shapeList:
+					stack[len(stack)-1] = nodeJSONFrame{value: value.d.Box}
+				case ShapeString, ShapeTuple, ShapeList:
 					prefix := `{"start":`
-					if value.kind.nodeType() {
+					if value.d.Kind.IsNodeType() {
 						// A node of a named node type names its type.
-						if err = out.raw(`{"type":`); err == nil {
-							err = out.encoded(value.Type())
+						if err = out.Raw(`{"type":`); err == nil {
+							err = out.Encoded(value.Type())
 						}
 						prefix = `,"start":`
 					}
@@ -153,60 +153,60 @@ func writeJSONValue(w io.Writer, value any) error {
 					if err = writeJSONRange(&out, value, prefix); err != nil {
 						break
 					}
-					if err = out.raw(`,"value":`); err != nil {
+					if err = out.Raw(`,"value":`); err != nil {
 						break
 					}
-					if shape == shapeString {
-						err = out.encoded(value.text)
+					if shape == ShapeString {
+						err = out.Encoded(value.d.Text)
 						frame.phase = nodeJSONFieldsStart
 						break
 					}
-					err = out.raw("[")
+					err = out.Raw("[")
 					frame.phase = nodeJSONChildren
-				case shapeError:
+				case ShapeError:
 					if err = writeJSONRange(&out, value, `{"start":`); err != nil {
 						break
 					}
-					msg, _ := value.fields.Get("message")
-					if err = out.raw(`,"error":`); err == nil {
-						err = out.encoded(msg)
+					msg, _ := value.d.Fields.Get("message")
+					if err = out.Raw(`,"error":`); err == nil {
+						err = out.Encoded(msg)
 					}
-					if expected, ok := value.fields.Get("expected"); ok && err == nil {
-						if err = out.raw(`,"expected":`); err == nil {
-							err = out.encoded(expected)
+					if expected, ok := value.d.Fields.Get("expected"); ok && err == nil {
+						if err = out.Raw(`,"expected":`); err == nil {
+							err = out.Encoded(expected)
 						}
 					}
 					frame.phase = nodeJSONExit
-				case shapeTupleValue, shapeListValue:
-					err = out.raw("[")
+				case ShapeTupleValue, ShapeListValue:
+					err = out.Raw("[")
 					frame.phase = nodeJSONSliceItems
 				default: // a struct
-					if err = out.raw(`{"type":`); err == nil {
-						err = out.encoded(value.Type())
+					if err = out.Raw(`{"type":`); err == nil {
+						err = out.Encoded(value.Type())
 					}
 					if err == nil {
 						err = writeJSONRange(&out, value, `,"start":`)
 					}
 					if err == nil {
-						err = out.raw(`,"fields":{`)
+						err = out.Raw(`,"fields":{`)
 					}
-					frame.fields = value.fields.sorted()
+					frame.fields = value.d.Fields.sorted()
 					frame.index = 0
 					frame.phase = nodeJSONFields
 				}
 			case nodeJSONChildren, nodeJSONSliceItems:
-				if frame.index < len(value.children) {
+				if frame.index < len(value.d.Children) {
 					if frame.index != 0 {
-						if err = out.raw(","); err != nil {
+						if err = out.Raw(","); err != nil {
 							break
 						}
 					}
-					child := value.children[frame.index]
+					child := value.d.Children[frame.index]
 					frame.index++
 					stack = append(stack, nodeJSONFrame{value: child})
 					break
 				}
-				if err = out.raw("]"); err != nil {
+				if err = out.Raw("]"); err != nil {
 					break
 				}
 				if frame.phase == nodeJSONSliceItems {
@@ -218,87 +218,87 @@ func writeJSONValue(w io.Writer, value any) error {
 			case nodeJSONFieldsStart:
 				// Source information: the rule, and where the captures are.
 				if r := value.Rule(); r != "" {
-					if err = out.raw(`,"rule":`); err != nil {
+					if err = out.Raw(`,"rule":`); err != nil {
 						break
 					}
-					if err = out.encoded(r); err != nil {
+					if err = out.Encoded(r); err != nil {
 						break
 					}
 				}
 				frame.phase = nodeJSONExit
-				if !value.labeled || len(value.fields) == 0 {
+				if !value.d.Labeled || len(value.d.Fields) == 0 {
 					break
 				}
-				frame.caps = captureLocations(value)
+				frame.caps = CaptureLocations(value)
 				frame.index = 0
 				frame.phase = nodeJSONCaptures
-				err = out.raw(`,"captures":{`)
+				err = out.Raw(`,"captures":{`)
 			case nodeJSONCaptures:
 				if frame.closeSide {
 					frame.closeSide = false
-					if err = out.raw("}"); err != nil {
+					if err = out.Raw("}"); err != nil {
 						break
 					}
 				}
 				if frame.index == len(frame.caps) {
-					err = out.raw("}")
+					err = out.Raw("}")
 					frame.phase = nodeJSONExit
 					break
 				}
 				c := frame.caps[frame.index]
 				if frame.index != 0 {
-					if err = out.raw(","); err != nil {
+					if err = out.Raw(","); err != nil {
 						break
 					}
 				}
 				frame.index++
-				if err = out.encoded(c.name); err != nil {
+				if err = out.Encoded(c.Name); err != nil {
 					break
 				}
-				if c.side {
-					if err = out.raw(`:{"value":`); err != nil {
+				if c.Side {
+					if err = out.Raw(`:{"value":`); err != nil {
 						break
 					}
 					frame.closeSide = true
-					stack = append(stack, nodeJSONFrame{value: c.value})
+					stack = append(stack, nodeJSONFrame{value: c.Value})
 					break
 				}
-				if err = out.raw(`:{"path":`); err == nil {
-					err = out.encoded(c.path)
+				if err = out.Raw(`:{"path":`); err == nil {
+					err = out.Encoded(c.Path)
 				}
 				if err == nil {
-					err = out.raw("}")
+					err = out.Raw("}")
 				}
 			case nodeJSONFields:
 				if frame.index < len(frame.fields) {
 					if frame.index != 0 {
-						if err = out.raw(","); err != nil {
+						if err = out.Raw(","); err != nil {
 							break
 						}
 					}
 					field := frame.fields[frame.index]
-					if err = out.encoded(field.Name); err != nil {
+					if err = out.Encoded(field.Name); err != nil {
 						break
 					}
-					if err = out.raw(":"); err != nil {
+					if err = out.Raw(":"); err != nil {
 						break
 					}
 					frame.index++
 					stack = append(stack, nodeJSONFrame{value: field.Value})
 				} else {
-					if err = out.raw("}"); err != nil {
+					if err = out.Raw("}"); err != nil {
 						break
 					}
 					frame.phase = nodeJSONExit
 				}
 			case nodeJSONExit:
 				delete(activeNodes, value)
-				err = out.raw("}")
+				err = out.Raw("}")
 				stack = stack[:len(stack)-1]
 			}
 		case []any:
 			if value == nil {
-				err = out.raw("null")
+				err = out.Raw("null")
 				stack = stack[:len(stack)-1]
 				break
 			}
@@ -311,10 +311,10 @@ func writeJSONValue(w io.Writer, value any) error {
 				activeSlices[id] = struct{}{}
 				frame.slice = id
 				frame.phase = nodeJSONSliceItems
-				err = out.raw("[")
+				err = out.Raw("[")
 			} else if frame.index < len(value) {
 				if frame.index != 0 {
-					if err = out.raw(","); err != nil {
+					if err = out.Raw(","); err != nil {
 						break
 					}
 				}
@@ -323,21 +323,21 @@ func writeJSONValue(w io.Writer, value any) error {
 				stack = append(stack, nodeJSONFrame{value: item})
 			} else {
 				delete(activeSlices, frame.slice)
-				err = out.raw("]")
+				err = out.Raw("]")
 				stack = stack[:len(stack)-1]
 			}
 		default:
-			err = out.encoded(value)
+			err = out.Encoded(value)
 			stack = stack[:len(stack)-1]
 		}
 		if err != nil {
-			if flushErr := out.flush(); flushErr != nil {
+			if flushErr := out.Flush(); flushErr != nil {
 				return flushErr
 			}
 			return err
 		}
 	}
-	return out.flush()
+	return out.Flush()
 }
 
 func jsonCycleError(value any) error {

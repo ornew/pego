@@ -4,18 +4,20 @@ import (
 	"fmt"
 	"io"
 	"runtime"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // Parse parses the whole input with the rule start.
 // It also returns a *SyntaxError if only part of the input matched.
 // If errors were recovered with #recover, it returns SyntaxErrors along with the resulting node.
 // If the whole input still did not match after recovery, it returns only the last error.
-func (prog *Program) Parse(start, input string) (*Node, error) {
+func (prog *Program) Parse(start, input string) (*value.Node, error) {
 	return prog.ParseWith(start, input, ParseOptions{})
 }
 
 // ParseWith parses with options such as the position unit.
-func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *Node, err error) {
+func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *value.Node, err error) {
 	if err := o.validateStreamDiagnostics(false); err != nil {
 		return nil, err
 	}
@@ -175,7 +177,7 @@ func recoverParse(x any, b Backend, err *error) {
 }
 
 // run parses the whole input of p with the start rule start.
-func (prog *Program) run(p *parser, b Backend, start string) (n *Node, err error) {
+func (prog *Program) run(p *parser, b Backend, start string) (n *value.Node, err error) {
 	p.aborted = false
 	r, err := prog.rule(b, start)
 	if err != nil {
@@ -237,12 +239,12 @@ func (prog *Program) Rules() []string {
 // soon as it matches. Passed elements are not retained and the input before them is discarded,
 // so the whole input never has to be held in memory.
 // If emit returns an error, the parse is aborted and that error is returned.
-func (prog *Program) ParseStream(start string, r io.Reader, emit func(*Node) error) error {
+func (prog *Program) ParseStream(start string, r io.Reader, emit func(*value.Node) error) error {
 	return prog.ParseStreamWith(start, r, emit, ParseOptions{})
 }
 
 // ParseStreamWith parses a stream with options such as the position unit.
-func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node) error, o ParseOptions) (err error) {
+func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*value.Node) error, o ParseOptions) (err error) {
 	// Admission invokes caller-owned Context methods before execution recovery.
 	// Preserve their panic values rather than classifying them as VM faults.
 	defer func() {
@@ -280,7 +282,7 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 	p.diagnosticTail.limit = o.DiagnosticLimit
 	if (p.diagnostic != nil || o.DiagnosticLimit > 0) && p.emit == nil {
 		// A diagnostic-only stream still needs element commit boundaries.
-		p.emit = func(*Node) error { return nil }
+		p.emit = func(*value.Node) error { return nil }
 	}
 	if streamPrefixIsolation && p.emit == nil {
 		p.nodeChunks = 0 // No callback: collect the ordinary repetition instead.
@@ -327,7 +329,7 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 
 // emitStream marks only caller execution. Reset before handling a returned
 // error or committing the prefix, so later VM faults retain their attribution.
-func (p *parser) emitStream(n *Node) error {
+func (p *parser) emitStream(n *value.Node) error {
 	if workControlsEnabled {
 		p.control.check()
 	}

@@ -3,6 +3,8 @@ package engine
 import (
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // TestWalkHiddenCaptures checks that Walk visits only the public fields of a node: without
@@ -20,12 +22,12 @@ rule x = #operators {
 		t.Fatal(err)
 	}
 	visits := 0
-	if err := Walk(n, func(v WalkVisit) (WalkAction, error) {
+	if err := value.Walk(n, func(v value.WalkVisit) (value.WalkAction, error) {
 		visits++
-		if v.Edge.Kind == WalkField {
+		if v.Edge.Kind == value.WalkField {
 			t.Fatalf("visited the hidden capture %s", v.Edge.FieldName)
 		}
-		return WalkContinue, nil
+		return value.WalkContinue, nil
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -48,12 +50,12 @@ rule x = #operators {
 		t.Fatal(err)
 	}
 	visits := 0
-	if err := Walk(n, func(v WalkVisit) (WalkAction, error) {
+	if err := value.Walk(n, func(v value.WalkVisit) (value.WalkAction, error) {
 		visits++
-		if v.Edge.Kind == WalkField {
+		if v.Edge.Kind == value.WalkField {
 			t.Fatalf("visited the element capture %s", v.Edge.FieldName)
 		}
-		return WalkContinue, nil
+		return value.WalkContinue, nil
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -68,11 +70,11 @@ rule word = [a-z]+`, Options{SourceInfo: true})
 		t.Fatal(err)
 	}
 	var fields []string
-	if err := Walk(n, func(v WalkVisit) (WalkAction, error) {
-		if v.Edge.Kind == WalkField {
+	if err := value.Walk(n, func(v value.WalkVisit) (value.WalkAction, error) {
+		if v.Edge.Kind == value.WalkField {
 			fields = append(fields, v.Edge.FieldName)
 		}
-		return WalkContinue, nil
+		return value.WalkContinue, nil
 	}); err != nil {
 		t.Fatal(err)
 	}

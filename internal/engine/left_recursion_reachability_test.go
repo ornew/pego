@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 const leftRecursionDeadTail = `rule r1 = r2?
@@ -135,7 +137,7 @@ rule a = "x" #recover(skip=a) / "y"`, options)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				count := 0
-				err := p.ParseStreamWith("main", strings.NewReader("y\ny\n"), func(*Node) error {
+				err := p.ParseStreamWith("main", strings.NewReader("y\ny\n"), func(*value.Node) error {
 					count++
 					return nil
 				}, ParseOptions{Backend: backend, Unit: unit, MaxDepth: 20})

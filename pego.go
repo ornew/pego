@@ -12,26 +12,27 @@ import (
 	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/pego/internal/value"
 )
 
 // Node is a value of a parse result: a node of the input with a range and a string, tuple or list
 // value, an error value of recovery, or a value built by an action. It is opaque; its methods
 // read it (Kind tells which of them apply). Nodes can be encoded to JSON with encoding/json.
-type Node = engine.Node
+type Node = value.Node
 
 // NodeKind is what a Node stands for (Node.Kind).
-type NodeKind = engine.Kind
+type NodeKind = value.Kind
 
 // The kinds of nodes.
 const (
-	KindString     = engine.KindString     // a node whose value is a string: Text
-	KindTuple      = engine.KindTuple      // a node whose value is a tuple: Len and Elem
-	KindList       = engine.KindList       // a node whose value is a list: Len and Elem
-	KindError      = engine.KindError      // an error value of recovery: Text is its message
-	KindStruct     = engine.KindStruct     // a struct built by an action: Type and Field
-	KindTupleValue = engine.KindTupleValue // a tuple built by an action, without a range
-	KindListValue  = engine.KindListValue  // a list built by an action, without a range
-	KindValue      = engine.KindValue      // another value built by an action: Value
+	KindString     = value.KindString     // a node whose value is a string: Text
+	KindTuple      = value.KindTuple      // a node whose value is a tuple: Len and Elem
+	KindList       = value.KindList       // a node whose value is a list: Len and Elem
+	KindError      = value.KindError      // an error value of recovery: Text is its message
+	KindStruct     = value.KindStruct     // a struct built by an action: Type and Field
+	KindTupleValue = value.KindTupleValue // a tuple built by an action, without a range
+	KindListValue  = value.KindListValue  // a list built by an action, without a range
+	KindValue      = value.KindValue      // another value built by an action: Value
 )
 
 // SyntaxError reports that the input does not match the grammar.

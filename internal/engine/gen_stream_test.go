@@ -15,6 +15,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // streamRun is one stream parse of a differential test. The reader returns
@@ -491,9 +493,9 @@ func main() {
 func engineStream(prog *Program, v streamRun) string {
 	r := &chunkReader{s: string(v.Input), chunk: v.Chunk, eofWithData: v.EOFWithData, fail: v.Fail}
 	var res streamResult
-	var emit func(*Node) error
+	var emit func(*value.Node) error
 	if !v.NilEmit {
-		emit = func(n *Node) error {
+		emit = func(n *value.Node) error {
 			b, err := json.Marshal(n)
 			if err != nil {
 				panic(err)

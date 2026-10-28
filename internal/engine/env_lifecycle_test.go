@@ -5,6 +5,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 const boundStream = `var limit int
@@ -57,7 +59,7 @@ func TestBoundStreamMemoryIsBounded(t *testing.T) {
 				p := newStreamParser(prog, &lineReader{line: "a", n: 60000}, unit)
 				count := 0
 				var at [2]uint64
-				p.emit = func(*Node) error {
+				p.emit = func(*value.Node) error {
 					count++
 					if count == 20000 || count == 60000 {
 						names := make(map[string]bool)
@@ -241,17 +243,17 @@ func TestBindingRestoresReferenceValues(t *testing.T) {
 			values = clone(s.values)
 		}
 		name := fmt.Sprintf("v%d", (i*7)%16)
-		var value any
+		var val any
 		switch i % 3 {
 		case 0:
-			value = i % 11
+			val = i % 11
 		case 1:
-			value = name
+			val = name
 		case 2:
-			value = i%2 == 0
+			val = i%2 == 0
 		}
-		p.bind(name, value)
-		values[name] = value
+		p.bind(name, val)
+		values[name] = val
 		verify(p.env, values)
 		if i%7 == 0 {
 			saved = append(saved, snapshot{p.env, clone(values)})

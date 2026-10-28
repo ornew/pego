@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestInvalidUTF8LiteralMatching(t *testing.T) {
@@ -53,11 +55,11 @@ func TestInvalidUTF8LiteralMatching(t *testing.T) {
 						if unit == CodePoints {
 							wantText = string([]rune(tc.input))
 						}
-						if n.children[0].text != wantText {
-							t.Fatalf("literal text=%q want %q", n.children[0].text, wantText)
+						if value.D(value.D(n).Children[0]).Text != wantText {
+							t.Fatalf("literal text=%q want %q", value.D(value.D(n).Children[0]).Text, wantText)
 						}
-						if n.end != int32(wantEnd) {
-							t.Fatalf("end=%d want %d", n.end, wantEnd)
+						if value.D(n).End != int32(wantEnd) {
+							t.Fatalf("end=%d want %d", value.D(n).End, wantEnd)
 						}
 					}
 				})
@@ -95,14 +97,14 @@ func TestInvalidUTF8LiteralStream(t *testing.T) {
 					}
 					input := strings.Repeat(item, 1100)
 					count := 0
-					err := p.ParseStreamWith("main", strings.NewReader(input), func(n *Node) error {
+					err := p.ParseStreamWith("main", strings.NewReader(input), func(n *value.Node) error {
 						count++
 						width := utf8.RuneCountInString(item)
 						if unit == Bytes {
 							width = len(item)
 						}
-						if n.start != int32((count-1)*width) || n.end != int32(count*width) {
-							t.Errorf("element %d range [%d,%d)", count, n.start, n.end)
+						if value.D(n).Start != int32((count-1)*width) || value.D(n).End != int32(count*width) {
+							t.Errorf("element %d range [%d,%d)", count, value.D(n).Start, value.D(n).End)
 						}
 						return nil
 					}, ParseOptions{Backend: backend, Unit: unit})
@@ -276,10 +278,10 @@ func TestOpenPipeInvalidUTF8Literal(t *testing.T) {
 rule item = "�" "\n"`)
 					pr, pw := io.Pipe()
 					done := make(chan error, 1)
-					emitted := make(chan *Node, 1)
+					emitted := make(chan *value.Node, 1)
 					go func() {
 						defer pr.Close()
-						done <- prog.ParseStreamWith("main", pr, func(n *Node) error { emitted <- n; return nil }, ParseOptions{Backend: backend, Unit: unit})
+						done <- prog.ParseStreamWith("main", pr, func(n *value.Node) error { emitted <- n; return nil }, ParseOptions{Backend: backend, Unit: unit})
 					}()
 					t.Cleanup(func() {
 						pw.Close()
@@ -306,8 +308,8 @@ rule item = "�" "\n"`)
 						if unit == CodePoints {
 							width = utf8.RuneCountInString(input)
 						}
-						if n.end != int32(width) {
-							t.Fatalf("end=%d want %d", n.end, width)
+						if value.D(n).End != int32(width) {
+							t.Fatalf("end=%d want %d", value.D(n).End, width)
 						}
 					case <-time.After(time.Second):
 						t.Fatal("literal waited for future input or EOF")

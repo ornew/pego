@@ -12,6 +12,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/starttest"
+	"github.com/ornew/pego/internal/value"
 )
 
 const workGuardedChoiceAlternatives = 512
@@ -46,21 +47,21 @@ func workGuardedChoiceProgram(t *testing.T) (*Program, *grammar.Choice) {
 	return prog, choice
 }
 
-func workGuardedChoiceSnapshot(n *Node) *Node {
+func workGuardedChoiceSnapshot(n *value.Node) *value.Node {
 	if n == nil {
 		return nil
 	}
 	copy := *n
-	if n.children != nil {
-		copy.children = make([]*Node, len(n.children))
-		for i, child := range n.children {
-			copy.children[i] = workGuardedChoiceSnapshot(child)
+	if value.D(n).Children != nil {
+		value.D(&copy).Children = make([]*value.Node, len(value.D(n).Children))
+		for i, child := range value.D(n).Children {
+			value.D(&copy).Children[i] = workGuardedChoiceSnapshot(child)
 		}
 	}
-	copy.fields = append(Fields(nil), n.fields...)
-	for i := range copy.fields {
-		if child, ok := copy.fields[i].Value.(*Node); ok {
-			copy.fields[i].Value = workGuardedChoiceSnapshot(child)
+	value.D(&copy).Fields = append(value.Fields(nil), value.D(n).Fields...)
+	for i := range value.D(&copy).Fields {
+		if child, ok := value.D(&copy).Fields[i].Value.(*value.Node); ok {
+			value.D(&copy).Fields[i].Value = workGuardedChoiceSnapshot(child)
 		}
 	}
 	return &copy

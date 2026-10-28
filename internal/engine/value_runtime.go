@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // GNode is a node of the value model: the range of input a rule or a valued subexpression
@@ -167,7 +169,7 @@ func (s *Struct) Type() string { return s.typ }
 func (s *Struct) NumField() int { return len(s.fields) }
 
 // FieldAt returns the name and value of the field i, in the order of the type definition.
-func (s *Struct) FieldAt(i int) (name string, value any) {
+func (s *Struct) FieldAt(i int) (name string, val any) {
 	return s.fields[i].name, s.fields[i].value
 }
 
@@ -234,7 +236,7 @@ const (
 // list are arrays; nil is null; a struct is an object with the members type and fields; an error
 // is an object with the members start, end, error and, for a missing token, expected.
 func writeValueJSON(w io.Writer, v any) error {
-	out := jsonOutput{w: w, buf: make([]byte, 0, 512)}
+	out := value.JSONOutput{W: w, Buf: make([]byte, 0, 512)}
 	stack := []valueFrame{{v: v}}
 	for len(stack) > 0 {
 		f := &stack[len(stack)-1]
@@ -243,111 +245,111 @@ func writeValueJSON(w io.Writer, v any) error {
 		switch v := f.v.(type) {
 		case *GNode:
 			if v == nil {
-				err = out.raw("null")
+				err = out.Raw("null")
 				f.phase = frameExit
 				break
 			}
 			switch f.phase {
 			case frameEnter:
-				if err = out.raw(`{"start":`); err == nil {
-					err = out.number(v.start)
+				if err = out.Raw(`{"start":`); err == nil {
+					err = out.Number(v.start)
 				}
 				if err == nil {
-					err = out.raw(`,"end":`)
+					err = out.Raw(`,"end":`)
 				}
 				if err == nil {
-					err = out.number(v.end)
+					err = out.Number(v.end)
 				}
 				if err == nil {
-					err = out.raw(`,"value":`)
+					err = out.Raw(`,"value":`)
 				}
 				f.phase = frameElems
 				push = &valueFrame{v: v.value}
 			case frameElems:
 				if v.src != nil && v.src.rule != "" {
-					if err = out.raw(`,"rule":`); err == nil {
-						err = out.encoded(v.src.rule)
+					if err = out.Raw(`,"rule":`); err == nil {
+						err = out.Encoded(v.src.rule)
 					}
 				}
 				f.phase = frameCaptures
 				if err == nil && v.src != nil && len(v.src.caps) > 0 {
-					err = out.raw(`,"captures":{`)
+					err = out.Raw(`,"captures":{`)
 				} else {
 					f.phase = frameExit
 					if err == nil {
-						err = out.raw("}")
+						err = out.Raw("}")
 					}
 				}
 			case frameCaptures:
 				if f.closeSide {
 					f.closeSide = false
-					if err = out.raw("}"); err != nil {
+					if err = out.Raw("}"); err != nil {
 						break
 					}
 				}
 				if f.i == len(v.src.caps) {
-					err = out.raw("}}")
+					err = out.Raw("}}")
 					f.phase = frameExit
 					break
 				}
 				c := v.src.caps[f.i]
 				if f.i > 0 {
-					err = out.raw(",")
+					err = out.Raw(",")
 				}
 				f.i++
 				if err == nil {
-					err = out.encoded(c.name)
+					err = out.Encoded(c.name)
 				}
 				if err != nil {
 					break
 				}
 				if c.side {
-					if err = out.raw(`:{"value":`); err == nil {
+					if err = out.Raw(`:{"value":`); err == nil {
 						f.closeSide = true
 						push = &valueFrame{v: c.value}
 					}
 					break
 				}
-				err = out.raw(`:{"path":`)
+				err = out.Raw(`:{"path":`)
 				if err == nil {
-					err = out.encoded(pathOrEmpty(c.path))
+					err = out.Encoded(pathOrEmpty(c.path))
 				}
 				if err == nil {
-					err = out.raw("}")
+					err = out.Raw("}")
 				}
 			}
 		case Tuple, List:
 			elems := valueElems(v)
 			if f.phase == frameEnter {
-				err = out.raw("[")
+				err = out.Raw("[")
 				f.phase = frameElems
 			}
 			if err != nil {
 				break
 			}
 			if f.i == len(elems) {
-				err = out.raw("]")
+				err = out.Raw("]")
 				f.phase = frameExit
 				break
 			}
 			if f.i > 0 {
-				err = out.raw(",")
+				err = out.Raw(",")
 			}
 			push = &valueFrame{v: elems[f.i]}
 			f.i++
 		case *Struct:
 			if v == nil {
-				err = out.raw("null")
+				err = out.Raw("null")
 				f.phase = frameExit
 				break
 			}
 			fields := v.sortedFields()
 			if f.phase == frameEnter {
-				if err = out.raw(`{"type":`); err == nil {
-					err = out.encoded(v.typ)
+				if err = out.Raw(`{"type":`); err == nil {
+					err = out.Encoded(v.typ)
 				}
 				if err == nil {
-					err = out.raw(`,"fields":{`)
+					err = out.Raw(`,"fields":{`)
 				}
 				f.phase = frameElems
 			}
@@ -355,30 +357,30 @@ func writeValueJSON(w io.Writer, v any) error {
 				break
 			}
 			if f.i == len(fields) {
-				err = out.raw("}}")
+				err = out.Raw("}}")
 				f.phase = frameExit
 				break
 			}
 			if f.i > 0 {
-				err = out.raw(",")
+				err = out.Raw(",")
 			}
 			if err == nil {
-				err = out.encoded(fields[f.i].name)
+				err = out.Encoded(fields[f.i].name)
 			}
 			if err == nil {
-				err = out.raw(":")
+				err = out.Raw(":")
 			}
 			push = &valueFrame{v: fields[f.i].value}
 			f.i++
 		case *ErrorValue:
 			if v == nil {
-				err = out.raw("null")
+				err = out.Raw("null")
 			} else {
 				err = writeErrorJSON(&out, v)
 			}
 			f.phase = frameExit
 		default:
-			err = out.encoded(v)
+			err = out.Encoded(v)
 			f.phase = frameExit
 		}
 		if err != nil {
@@ -391,7 +393,7 @@ func writeValueJSON(w io.Writer, v any) error {
 			stack = append(stack, *push)
 		}
 	}
-	return out.flush()
+	return out.Flush()
 }
 
 func pathOrEmpty(p []int) []int {
@@ -401,34 +403,34 @@ func pathOrEmpty(p []int) []int {
 	return p
 }
 
-func writeErrorJSON(out *jsonOutput, e *ErrorValue) error {
-	if err := out.raw(`{"start":`); err != nil {
+func writeErrorJSON(out *value.JSONOutput, e *ErrorValue) error {
+	if err := out.Raw(`{"start":`); err != nil {
 		return err
 	}
-	if err := out.number(e.start); err != nil {
+	if err := out.Number(e.start); err != nil {
 		return err
 	}
-	if err := out.raw(`,"end":`); err != nil {
+	if err := out.Raw(`,"end":`); err != nil {
 		return err
 	}
-	if err := out.number(e.end); err != nil {
+	if err := out.Number(e.end); err != nil {
 		return err
 	}
-	if err := out.raw(`,"error":`); err != nil {
+	if err := out.Raw(`,"error":`); err != nil {
 		return err
 	}
-	if err := out.encoded(e.msg); err != nil {
+	if err := out.Encoded(e.msg); err != nil {
 		return err
 	}
 	if e.expected != "" {
-		if err := out.raw(`,"expected":`); err != nil {
+		if err := out.Raw(`,"expected":`); err != nil {
 			return err
 		}
-		if err := out.encoded(e.expected); err != nil {
+		if err := out.Encoded(e.expected); err != nil {
 			return err
 		}
 	}
-	return out.raw("}")
+	return out.Raw("}")
 }
 
 func valueElems(v any) []any {

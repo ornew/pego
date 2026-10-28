@@ -87,7 +87,7 @@ func equalChangeSnapshotsControlled(p *parser, a, b *Snapshot) bool {
 		p.stepWork()
 		x, y := ag.at(i), bg.at(i)
 		xp, yp := ag.position(i, x), bg.position(i, y)
-		if !equalChangeText(p, x.kind.typeName(), y.kind.typeName()) || !equalChangeText(p, x.kind.ruleName(), y.kind.ruleName()) || xp.start != yp.start || xp.end != yp.end || !equalChangeText(p, x.text, y.text) || x.terminal != y.terminal || ag.hasChildren(x) != bg.hasChildren(y) || ag.childCount(x) != bg.childCount(y) {
+		if !equalChangeText(p, x.kind.TypeName(), y.kind.TypeName()) || !equalChangeText(p, x.kind.RuleName(), y.kind.RuleName()) || xp.start != yp.start || xp.end != yp.end || !equalChangeText(p, x.text, y.text) || x.terminal != y.terminal || ag.hasChildren(x) != bg.hasChildren(y) || ag.childCount(x) != bg.childCount(y) {
 			return false
 		}
 		if (x.fields == nil) != (y.fields == nil) || len(x.fields) != len(y.fields) {

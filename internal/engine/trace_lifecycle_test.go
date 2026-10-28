@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 func assertTraceParserDetached(t *testing.T, p *parser, aborted bool) {
@@ -71,7 +73,7 @@ func TestTraceLifecycleDocumentDetachment(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
-					var n *Node
+					var n *value.Node
 					got := traceLifecycleRecover(func() { n, err = d.Parse() })
 					switch outcome {
 					case "success":
@@ -98,7 +100,7 @@ func TestTraceLifecycleDocumentDetachment(t *testing.T) {
 					if e.Kind != TraceEnter || e.Rule != "main" || e.Depth != 1 || e.Pos != 0 {
 						t.Fatal("saved event metadata changed")
 					}
-					var clone *Node
+					var clone *value.Node
 					var before string
 					if n != nil {
 						clone = n.Clone()
@@ -156,11 +158,11 @@ func TestTraceLifecycleStreamDetachment(t *testing.T) {
 					}
 					r := &traceLifecycleClosingReader{Reader: reader}
 					var e TraceEvent
-					var nodes []*Node
+					var nodes []*value.Node
 					var snapshots []string
 					err := error(nil)
 					got := traceLifecycleRecover(func() {
-						err = prog.ParseStreamWith("main", r, func(n *Node) error {
+						err = prog.ParseStreamWith("main", r, func(n *value.Node) error {
 							nodes = append(nodes, n)
 							snapshots = append(snapshots, resultJSON(n, nil))
 							if outcome == "emit-error" {
@@ -208,10 +210,10 @@ func TestTraceLifecycleStreamDetachment(t *testing.T) {
 					if r.closed {
 						t.Fatal("parser closed caller's reader")
 					}
-					if nodes[0].Field("k").(*Node).text != "a" || nodes[0].Field("v").(*Node).text != "1" {
+					if value.D(nodes[0].Field("k").(*value.Node)).Text != "a" || value.D(nodes[0].Field("v").(*value.Node)).Text != "1" {
 						t.Fatal("emitted fields changed")
 					}
-					if err := prog.ParseStreamWith("main", strings.NewReader("#records\nxy=3\n"), func(*Node) error { return nil }, ParseOptions{Backend: b, Unit: u}); err != nil {
+					if err := prog.ParseStreamWith("main", strings.NewReader("#records\nxy=3\n"), func(*value.Node) error { return nil }, ParseOptions{Backend: b, Unit: u}); err != nil {
 						t.Fatal(err)
 					}
 					for i, n := range nodes {

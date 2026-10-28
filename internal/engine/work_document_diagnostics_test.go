@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestWorkDocumentDiagnosticPublication(t *testing.T) {
@@ -72,7 +73,7 @@ func TestWorkDocumentDiagnosticPublication(t *testing.T) {
 						}
 					}
 				}
-				var result *Node
+				var result *value.Node
 				var caught any
 				func() {
 					defer func() { caught = recover() }()

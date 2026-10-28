@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // nodeTypeGrammar uses named node types: rule conversions, constructors, unions of named
@@ -58,7 +60,7 @@ func TestNamedNodeTypesAcrossBackends(t *testing.T) {
 			t.Errorf("missing %s in %s", want, got)
 		}
 	}
-	items, _ := n.Field("Items").(*Node)
+	items, _ := n.Field("Items").(*value.Node)
 	if items == nil || items.Elem(0).Type() != "Ident" || items.Elem(1).Type() != "Num" {
 		t.Fatalf("item types: %s", got)
 	}

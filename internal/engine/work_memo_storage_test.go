@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 func memoStorageParser(t *memoTable, limits limits.WorkLimits) *parser {
@@ -39,7 +40,7 @@ func TestWorkMemoPutSlotGrowthIsAtomic(t *testing.T) {
 	}
 	oldHeader := table.slots
 	oldPointers := slotPointers(oldHeader)
-	newEntry := &memoEntry{node: &Node{text: "published after retry"}}
+	newEntry := &memoEntry{node: value.Ptr(value.Data{Text: "published after retry"})}
 	p := memoStorageParser(table, limits.WorkLimits{MaxSteps: 130})
 	key := memoKey{rule: 7, pos: 511}
 

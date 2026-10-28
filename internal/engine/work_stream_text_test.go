@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 func workStreamTextInput(u PositionUnit, text string) input {
@@ -40,11 +41,11 @@ func TestWorkStreamTextByteSnapshotBoundaries(t *testing.T) {
 			}
 			in.control = newWorkControl(nil, limits.WorkLimits{MaxInputWork: uint64(used - 1)})
 			before := in.streamText
-			var value string
-			err := catchFatal(t, func() { value = in.text(0, end) })
+			var val string
+			err := catchFatal(t, func() { val = in.text(0, end) })
 			var limit *limits.WorkLimitError
-			if !errors.As(err, &limit) || limit.Kind != limits.InputWorkLimit || value != "" || !reflect.DeepEqual(in.streamText, before) {
-				t.Fatalf("materialization error=%v value=%q", err, value)
+			if !errors.As(err, &limit) || limit.Kind != limits.InputWorkLimit || val != "" || !reflect.DeepEqual(in.streamText, before) {
+				t.Fatalf("materialization error=%v value=%q", err, val)
 			}
 			in.control = newWorkControl(nil, limits.WorkLimits{MaxInputWork: uint64(used)})
 			if got := in.text(0, end); got != text[:end] || in.control.inputUsed != uint64(used) || in.control.stepsUsed != 1 {
@@ -232,7 +233,7 @@ rule row = (!"\n" .)+ #atomic "\n"`)
 						_ = p.text(p.pos, p.pos+64)
 					}
 				}
-				err := prog.ParseStreamWith("main", strings.NewReader(text), func(*Node) error { emissions++; return nil }, o)
+				err := prog.ParseStreamWith("main", strings.NewReader(text), func(*value.Node) error { emissions++; return nil }, o)
 				want := limits.ErrWorkLimit
 				if phase == "cancel" {
 					want = context.Canceled
@@ -241,7 +242,7 @@ rule row = (!"\n" .)+ #atomic "\n"`)
 					t.Fatalf("phase=%s armed=%t error=%v emits=%d old=%+v", phase, armed, err, emissions, previous)
 				}
 				assertTraceParserDetached(t, saved.p, false)
-				if err := prog.ParseStreamWith("main", strings.NewReader(text), func(*Node) error { return nil }, base); err != nil {
+				if err := prog.ParseStreamWith("main", strings.NewReader(text), func(*value.Node) error { return nil }, base); err != nil {
 					t.Fatalf("fresh replay: %v", err)
 				}
 			})

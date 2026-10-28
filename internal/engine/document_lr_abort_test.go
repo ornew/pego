@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 // TestDocumentLeftRecursionAbortedGrowth interrupts a Document parse while a
@@ -67,7 +68,7 @@ rule t = t "*" "a" / "a"`, "a*a+a+a*a*a"},
 							panic("interrupt growth")
 						}
 					}
-					var n *Node
+					var n *value.Node
 					func() {
 						defer func() {
 							if x := recover(); x != nil && (cause != "panic" || x != "interrupt growth") {

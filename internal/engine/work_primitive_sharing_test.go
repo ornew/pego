@@ -9,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 // A shared AST leaf is first compiled value-free for a text struct rule, then
@@ -45,23 +46,23 @@ func TestWorkPrimitiveASTAliases(t *testing.T) {
 					width = int32(len(tc.text))
 				}
 				for i, name := range []string{"a", "b", "c"} {
-					value, ok := n.Field(name).(*Node)
+					val, ok := n.Field(name).(*value.Node)
 					text := ""
-					if value != nil && name == "b" {
-						text, _ = value.Field("Text").(string)
-					} else if value != nil && value.IsTerminal() {
-						text = value.text
+					if val != nil && name == "b" {
+						text, _ = val.Field("Text").(string)
+					} else if val != nil && val.IsTerminal() {
+						text = value.D(val).Text
 					}
-					if !ok || value == nil || text != tc.text || value.start != int32(i)*width || value.end != int32(i+1)*width {
-						t.Fatalf("unit=%v capture=%s lost value or span: %v", unit, name, value)
+					if !ok || val == nil || text != tc.text || value.D(val).Start != int32(i)*width || value.D(val).End != int32(i+1)*width {
+						t.Fatalf("unit=%v capture=%s lost value or span: %v", unit, name, val)
 					}
 					// A text struct value carries no rule name.
-					wantType, wantRule := TypeString, "value"
+					wantType, wantRule := value.TypeString, "value"
 					if name == "b" {
 						wantType, wantRule = "Token", ""
 					}
-					if value.Type() != wantType || value.Rule() != wantRule {
-						t.Fatalf("unit=%v capture=%s type/rule=%s/%s", unit, name, value.Type(), value.Rule())
+					if val.Type() != wantType || val.Rule() != wantRule {
+						t.Fatalf("unit=%v capture=%s type/rule=%s/%s", unit, name, val.Type(), val.Rule())
 					}
 				}
 				for _, recognize := range []bool{false, true} {

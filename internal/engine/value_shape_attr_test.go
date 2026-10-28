@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // attributeShapeCases are grammars whose rule body is a sequence, a lookahead sequence or a
@@ -97,7 +99,7 @@ func TestStreamSeesThroughGroupsAndAttributes(t *testing.T) {
 			for _, in := range inputs {
 				run := func(p *Program) (string, error) {
 					var got []string
-					err := p.ParseStreamWith("main", strings.NewReader(in), func(n *Node) error {
+					err := p.ParseStreamWith("main", strings.NewReader(in), func(n *value.Node) error {
 						got = append(got, fmt.Sprint(n))
 						return nil
 					}, ParseOptions{Backend: backend})

@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 func workStreamVariants(t *testing.T, run func(*testing.T, ParseOptions)) {
@@ -68,7 +69,7 @@ func TestWorkStreamAdmission(t *testing.T) {
 		r := &workStreamReader{chunks: []string{"#records\na=1\n"}}
 		callbacks := 0
 		o.Trace = func(TraceEvent) { callbacks++ }
-		err := prog.ParseStreamWith("main", r, func(*Node) error { callbacks++; return nil }, o)
+		err := prog.ParseStreamWith("main", r, func(*value.Node) error { callbacks++; return nil }, o)
 		if err != context.Canceled || r.reads != 0 || callbacks != 0 || r.closed {
 			t.Fatalf("error=%v reads=%d callbacks=%d closed=%t", err, r.reads, callbacks, r.closed)
 		}
@@ -114,7 +115,7 @@ func TestWorkStreamUnlimitedParity(t *testing.T) {
 					if withError {
 						r.err = stop
 					}
-					errs[i] = prog.ParseStreamWith("main", r, func(n *Node) error { results[i] = append(results[i], resultJSON(n, nil)); return nil }, o)
+					errs[i] = prog.ParseStreamWith("main", r, func(n *value.Node) error { results[i] = append(results[i], resultJSON(n, nil)); return nil }, o)
 				}
 				if !reflect.DeepEqual(results[0], results[1]) || fmt.Sprint(errs[0]) != fmt.Sprint(errs[1]) {
 					t.Fatalf("controlled results/errors differ: %v %v; %v %v", results[0], errs[0], results[1], errs[1])
@@ -146,7 +147,7 @@ func TestWorkStreamReaderErrorPrecedence(t *testing.T) {
 					r.dataError = true
 				}
 				count := 0
-				err := prog.ParseStreamWith("main", r, func(*Node) error { count++; return nil }, o)
+				err := prog.ParseStreamWith("main", r, func(*value.Node) error { count++; return nil }, o)
 				if err != stop || count != 1 || r.reads != 2 || r.closed {
 					t.Fatalf("error=%v emits=%d reads=%d closed=%t", err, count, r.reads, r.closed)
 				}
@@ -156,7 +157,7 @@ func TestWorkStreamReaderErrorPrecedence(t *testing.T) {
 		defer cancel()
 		base.Context = ctx
 		r := &workStreamReader{chunks: []string{"#records\na=1\n"}, cancel: cancel, cancelAt: 2}
-		if err := prog.ParseStreamWith("main", r, func(*Node) error { return nil }, base); err != context.Canceled {
+		if err := prog.ParseStreamWith("main", r, func(*value.Node) error { return nil }, base); err != context.Canceled {
 			t.Fatalf("EOF error=%v", err)
 		}
 	})
@@ -170,10 +171,10 @@ func TestWorkStreamEmitPrecedenceAndOwnership(t *testing.T) {
 			o := base
 			o.Context = ctx
 			stop := errors.New("emit error wins")
-			var node *Node
+			var node *value.Node
 			var snapshot string
 			count := 0
-			err := prog.ParseStreamWith("main", strings.NewReader("#records\na=1\nbc=22\n"), func(n *Node) error {
+			err := prog.ParseStreamWith("main", strings.NewReader("#records\na=1\nbc=22\n"), func(n *value.Node) error {
 				count++
 				node = n
 				snapshot = resultJSON(n, nil)
@@ -191,7 +192,7 @@ func TestWorkStreamEmitPrecedenceAndOwnership(t *testing.T) {
 			if err != want || count != 1 || node == nil || resultJSON(node, nil) != snapshot {
 				t.Fatalf("error=%v emits=%d snapshot changed=%t", err, count, resultJSON(node, nil) != snapshot)
 			}
-			if err := prog.ParseStreamWith("main", strings.NewReader("#records\nxy=3\n"), func(*Node) error { return nil }, base); err != nil || resultJSON(node, nil) != snapshot {
+			if err := prog.ParseStreamWith("main", strings.NewReader("#records\nxy=3\n"), func(*value.Node) error { return nil }, base); err != nil || resultJSON(node, nil) != snapshot {
 				t.Fatalf("fresh replay error=%v", err)
 			}
 		}
@@ -227,7 +228,7 @@ func TestWorkStreamBlockedReaderCooperation(t *testing.T) {
 		defer release.Do(func() { close(r.release) })
 		result := make(chan error, 1)
 		emits := 0
-		go func() { result <- prog.ParseStreamWith("main", r, func(*Node) error { emits++; return nil }, o) }()
+		go func() { result <- prog.ParseStreamWith("main", r, func(*value.Node) error { emits++; return nil }, o) }()
 		select {
 		case <-r.entered:
 		case err := <-result:
@@ -258,7 +259,7 @@ func TestWorkStreamLimitsAndCallerPanics(t *testing.T) {
 					saved = e
 				}
 			}
-			err := prog.ParseStreamWith("main", strings.NewReader("#records\n"+strings.Repeat("a", 20000)+"=1\n"), func(*Node) error { count++; return nil }, o)
+			err := prog.ParseStreamWith("main", strings.NewReader("#records\n"+strings.Repeat("a", 20000)+"=1\n"), func(*value.Node) error { count++; return nil }, o)
 			var we *limits.WorkLimitError
 			if !errors.As(err, &we) || we.Kind != kind || count != 0 {
 				t.Fatalf("error=%v emits=%d", err, count)
@@ -294,7 +295,7 @@ func TestWorkStreamLimitsAndCallerPanics(t *testing.T) {
 					}
 				}
 				got := catchStreamPanic(func() {
-					_ = prog.ParseStreamWith("main", r, func(*Node) error {
+					_ = prog.ParseStreamWith("main", r, func(*value.Node) error {
 						if phase == "emit" {
 							panic(token)
 						}
@@ -345,17 +346,17 @@ func TestWorkStreamCompactionChunks(t *testing.T) {
 func TestWorkStreamCommitReservations(t *testing.T) {
 	// The frame scan and suffix clear are separately counted; neither touches
 	// a Node already delivered to the caller.
-	node := &Node{text: "delivered"}
+	node := value.Ptr(value.Data{Text: "delivered"})
 	p := &parser{input: input{control: newWorkControl(nil, limits.WorkLimits{MaxSteps: 1})}, frameSlab: make([]frame, 258)}
 	p.frame = &p.frameSlab[0]
-	p.frameSlab[1].vals = []*Node{node}
+	p.frameSlab[1].vals = []*value.Node{node}
 	got := catchStreamPanic(func() { p.resetStreamFrames() })
-	if _, ok := got.(fatal); !ok || len(p.frameSlab) != 258 || p.frameSlab[1].vals[0] != node || node.text != "delivered" {
+	if _, ok := got.(fatal); !ok || len(p.frameSlab) != 258 || p.frameSlab[1].vals[0] != node || value.D(node).Text != "delivered" {
 		t.Fatalf("frame interruption=%v", got)
 	}
 	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 258})
 	p.resetStreamFrames()
-	if len(p.frameSlab) != 1 || p.control.stepsUsed != 258 || node.text != "delivered" {
+	if len(p.frameSlab) != 1 || p.control.stepsUsed != 258 || value.D(node).Text != "delivered" {
 		t.Fatal("frame retry changed ownership or count")
 	}
 
@@ -392,7 +393,7 @@ func TestWorkStreamCommitReservations(t *testing.T) {
 			p.memo = fresh
 			p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 2000})
 			p.pruneStreamMemo(pos)
-			if fresh.base != pos || seed.node != node || node.text != "delivered" || len(fresh.slots) != max(260-pos, 0) {
+			if fresh.base != pos || seed.node != node || value.D(node).Text != "delivered" || len(fresh.slots) != max(260-pos, 0) {
 				t.Fatal("prune ownership/base differs")
 			}
 			if !all && fresh.slots[200-pos] != keep {
@@ -412,11 +413,11 @@ func TestWorkStreamCommitAfterDelivery(t *testing.T) {
 				saved = e
 			}
 		}
-		var node *Node
+		var node *value.Node
 		var before string
 		count := 0
 		var controller *workControl
-		err := prog.ParseStreamWith("main", strings.NewReader("#records\na=1\nbc=22\n"), func(n *Node) error {
+		err := prog.ParseStreamWith("main", strings.NewReader("#records\na=1\nbc=22\n"), func(n *value.Node) error {
 			count++
 			node = n
 			before = resultJSON(n, nil)
@@ -462,7 +463,7 @@ func TestWorkStreamCommitAfterDelivery(t *testing.T) {
 		o.WorkLimits = limits.WorkLimits{}
 		o.Trace = nil
 		replay := 0
-		if err := prog.ParseStreamWith("main", strings.NewReader("#records\na=1\nbc=22\n"), func(*Node) error { replay++; return nil }, o); err != nil || replay != 2 || resultJSON(node, nil) != before {
+		if err := prog.ParseStreamWith("main", strings.NewReader("#records\na=1\nbc=22\n"), func(*value.Node) error { replay++; return nil }, o); err != nil || replay != 2 || resultJSON(node, nil) != before {
 			t.Fatalf("fresh replay error=%v emits=%d", err, replay)
 		}
 	})
@@ -485,7 +486,7 @@ func TestWorkStreamDiscardAndStackClear(t *testing.T) {
 	}
 	for _, phase := range []string{"trail", "values"} {
 		t.Run(phase, func(t *testing.T) {
-			node := &Node{text: "owned"}
+			node := value.Ptr(value.Data{Text: "owned"})
 			p := &parser{input: input{unit: Bytes, eof: true, bs: []byte(strings.Repeat("a", 3000)), baseLine: 1, baseCol: 1, lines: []int{0}, control: newWorkControl(nil, limits.WorkLimits{MaxSteps: 953 + 128})}, memo: newMemoTable()}
 			if phase == "trail" {
 				p.trail = make([]undo, 0, 129)
@@ -497,7 +498,7 @@ func TestWorkStreamDiscardAndStackClear(t *testing.T) {
 				}
 			}
 			got := catchStreamPanic(func() { p.commit(2048) })
-			if _, ok := got.(fatal); !ok || p.base != 2047 || p.pruned != 0 || node.text != "owned" {
+			if _, ok := got.(fatal); !ok || p.base != 2047 || p.pruned != 0 || value.D(node).Text != "owned" {
 				t.Fatalf("commit %s interruption=%v base=%d pruned=%d", phase, got, p.base, p.pruned)
 			}
 			if phase == "values" && (p.vals[0] != node || p.vals[:cap(p.vals)][129] != node) {
@@ -515,7 +516,7 @@ func TestWorkStreamEmitBoundary(t *testing.T) {
 			p := &parser{input: input{control: newWorkControl(ctx, limits.WorkLimits{})}}
 			stop := errors.New("emit")
 			calls := 0
-			p.emit = func(*Node) error {
+			p.emit = func(*value.Node) error {
 				calls++
 				cancel()
 				if phase == "error" {
@@ -591,7 +592,7 @@ func TestWorkStreamVMFaultAttribution(t *testing.T) {
 			vm.m.Code[ip].A = int32(len(vm.runes))
 			defer func() { vm.m.Code[ip] = old }()
 			var saved TraceEvent
-			err := prog.ParseStreamWith("main", strings.NewReader("z"), func(*Node) error { t.Fatal("emitted from corrupt VM"); return nil }, ParseOptions{Backend: b, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 20}, Trace: func(e TraceEvent) {
+			err := prog.ParseStreamWith("main", strings.NewReader("z"), func(*value.Node) error { t.Fatal("emitted from corrupt VM"); return nil }, ParseOptions{Backend: b, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 20}, Trace: func(e TraceEvent) {
 				if saved.p == nil {
 					saved = e
 				}
@@ -637,7 +638,7 @@ func TestWorkStreamConcurrentCounters(t *testing.T) {
 						}
 					}
 				}
-				run.err = prog.ParseStreamWith("main", strings.NewReader("#records\na=1\nbc=22\n"), func(*Node) error {
+				run.err = prog.ParseStreamWith("main", strings.NewReader("#records\na=1\nbc=22\n"), func(*value.Node) error {
 					run.count++
 					if i == 0 {
 						cancel()

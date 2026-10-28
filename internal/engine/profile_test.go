@@ -3,6 +3,8 @@ package engine
 import (
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestProfile(t *testing.T) {
@@ -107,7 +109,7 @@ rule line = [a-z]* #atomic "\n"`)
 				}
 			}
 		}
-		err := prog.ParseStreamWith("main", strings.NewReader(input), func(*Node) error { return nil }, ParseOptions{Backend: back, Trace: trace})
+		err := prog.ParseStreamWith("main", strings.NewReader(input), func(*value.Node) error { return nil }, ParseOptions{Backend: back, Trace: trace})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -152,7 +154,7 @@ rule line = [a-z]* #atomic "\n"`)
 	for _, back := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		var pr Profile
 		r := strings.NewReader(strings.Repeat("abcdefgh\n", lines))
-		if err := prog.ParseStreamWith("main", r, func(*Node) error { return nil }, ParseOptions{Backend: back, Trace: pr.Trace}); err != nil {
+		if err := prog.ParseStreamWith("main", r, func(*value.Node) error { return nil }, ParseOptions{Backend: back, Trace: pr.Trace}); err != nil {
 			t.Fatal(err)
 		}
 		var line *RuleProfile

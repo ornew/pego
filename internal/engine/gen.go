@@ -1070,7 +1070,7 @@ func (g *generator) rules() {
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		fmt.Fprintf(init, "\tpegoGrammar.NodeTypes[%q] = NewNodeTypeKinds(%q)\n", name, g.prog.nodeKinds[name][0].typ)
+		fmt.Fprintf(init, "\tpegoGrammar.NodeTypes[%q] = NewNodeTypeKinds(%q)\n", name, g.prog.nodeKinds[name][0].Type)
 	}
 }
 

@@ -3,6 +3,8 @@ package engine
 import (
 	"fmt"
 	"strings"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // parser is the execution state of a single parse.
@@ -57,7 +59,7 @@ type parser struct {
 	diagnosed int
 
 	// emit receives the elements of the #stream repetition when parsing a stream.
-	emit func(*Node) error
+	emit func(*value.Node) error
 	// depth is the rule call depth (1 for the start rule). The parse is aborted when it exceeds
 	// maxDepth.
 	depth    int
@@ -65,7 +67,7 @@ type parser struct {
 	// pruned is the position at which the memo was last pruned.
 	pruned int
 	// created holds the struct nodes built by the action being evaluated (from evalCtx.cbase).
-	created []*Node
+	created []*value.Node
 	// memoAll requests memoizing transient rules (rule.transient) too (used by Document).
 	memoAll bool
 	// noPlain keeps call sites from calling invokePlain directly for plain rules (rule.plain), so
@@ -91,17 +93,17 @@ type parser struct {
 	pool   framePool // frames of the iterative-model VM
 
 	// Chunks of nodes and child slices (alloc.go), and the stack that collects repetition children
-	nodeSlab  []Node
-	ptrSlab   []*Node
-	kidStack  []*Node
+	nodeSlab  []value.Node
+	ptrSlab   []*value.Node
+	kidStack  []*value.Node
 	frameSlab []frame
-	fieldSlab []NodeField
+	fieldSlab []value.NodeField
 	posSlab   []int
 	// Document edits: gen is the number of edits made before this parse, and edits records them
 	// (see moveResult). moved holds the copies made by moveEmpty.
 	gen    uint32
 	edits  []docEdit
-	moved  map[*Node]*Node
+	moved  map[*value.Node]*value.Node
 	shifts map[uint32]int // shiftOf of each generation in the current moveResult
 	// moveBase and baseShift are the generation and the shift of the memo entry being moved.
 	moveBase  uint32
@@ -133,9 +135,9 @@ type parser struct {
 	closures arena[closure]
 	lctxs    arena[evalCtx]
 	locals   arena[local]
-	item     [1]*Node             // the element list of an action whose body is not a sequence (one)
+	item     [1]*value.Node       // the element list of an action whose body is not a sequence (one)
 	oplocals [3]local             // $lhs, $rhs and $op of a OperatorsRule operator action
-	saved    []*Node              // captures saved across a reset in longest
+	saved    []*value.Node        // captures saved across a reset in longest
 	attempt  operatorsRuleAttempt // result of the longestFrame that just finished (iterative VM)
 }
 
@@ -148,7 +150,7 @@ type memoKey struct {
 }
 
 type memoEntry struct {
-	node     *Node
+	node     *value.Node
 	end      int
 	examined int
 	// from is the start of the examined input (detecting a line start may examine the preceding
@@ -213,13 +215,13 @@ func (p *parser) reportedStats() Stats {
 
 // frame holds the capture values for each rule body or repetition element.
 type frame struct {
-	vals []*Node
+	vals []*value.Node
 }
 
 type undo struct {
 	f    *frame
 	slot int
-	old  *Node
+	old  *value.Node
 }
 
 // env is a persistent list with one current binding per predicate variable.
@@ -315,7 +317,7 @@ func (p *parser) reset(m mark) {
 	p.trail = p.trail[:m.trail]
 }
 
-func (p *parser) setCapture(slot int, v *Node) {
+func (p *parser) setCapture(slot int, v *value.Node) {
 	p.trail = append(p.trail, undo{f: p.frame, slot: slot, old: p.frame.vals[slot]})
 	p.frame.vals[slot] = v
 }
@@ -403,7 +405,7 @@ func (p *parser) mergeExpected(far int, ids []expID) {
 // call calls rule r at binding level min.
 // The work is split into callBegin, growBegin/growStep/growEnd, invoke, and callEnd, and the
 // iterative-model VM (ivm.go) calls the same functions from its own stack.
-func (p *parser) call(r *rule, min int) (*Node, bool) {
+func (p *parser) call(r *rule, min int) (*value.Node, bool) {
 	p.stepWork()
 	if p.tr != nil {
 		// A traced parse: report the call (tracedCall calls back here with direct set).
@@ -531,7 +533,7 @@ type callState struct {
 // callBegin starts a memoized call (the caller has decided to memoize it: memoizes and not
 // firstCall). It looks up the memo; if a usable result exists, it sets hit and returns that
 // result. Otherwise it prepares for the call.
-func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit bool) {
+func (p *parser) callBegin(r *rule, min int) (st callState, v *value.Node, ok, hit bool) {
 	key := memoKey{rule: r.id, pos: p.pos, min: min, missingSilent: p.missing != nil && r.missing && p.silent > 0}
 	if len(r.vars) > 0 {
 		key.env = p.memoEnv(r)
@@ -590,7 +592,7 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 
 // callEnd stores the result of the body (or of growing, for a leader) in the memo and restores
 // the state from before the call.
-func (p *parser) callEnd(r *rule, st *callState, v *Node, ok bool) (*Node, bool) {
+func (p *parser) callEnd(r *rule, st *callState, v *value.Node, ok bool) (*value.Node, bool) {
 	var e *memoEntry
 	if r.leader {
 		e, _ = p.memoGet(st.key)
@@ -653,7 +655,7 @@ func (p *parser) growBegin(key memoKey) growState {
 
 // growStep receives the body's result; if the match grew, it stores the result in the memo,
 // prepares the next evaluation, and returns true.
-func (p *parser) growStep(g *growState, v *Node, ok bool) bool {
+func (p *parser) growStep(g *growState, v *value.Node, ok bool) bool {
 	p.stepWork()
 	if !ok || (g.best.ok && p.pos <= g.best.end) {
 		return false
@@ -674,7 +676,7 @@ func (p *parser) growStep(g *growState, v *Node, ok bool) bool {
 }
 
 // growEnd finalizes and returns the last result.
-func (p *parser) growEnd(r *rule, g *growState) (*Node, bool) {
+func (p *parser) growEnd(r *rule, g *growState) (*value.Node, bool) {
 	// This head has finished examining its whole growth, so its own seed
 	// reads are resolved. Reads of another growing head or completed
 	// dependent calls remain in memoProvisionalUses and cannot be discharged.
@@ -700,7 +702,7 @@ func (p *parser) growEnd(r *rule, g *growState) (*Node, bool) {
 }
 
 // invoke evaluates the rule body and builds the value with the action or the CST rules.
-func (p *parser) invoke(r *rule, min int) (*Node, bool) {
+func (p *parser) invoke(r *rule, min int) (*value.Node, bool) {
 	st := p.invokeBegin(r)
 	v, ok := r.body(p, min)
 	return p.invokeEnd(r, &st, v, ok)
@@ -709,7 +711,7 @@ func (p *parser) invoke(r *rule, min int) (*Node, bool) {
 // invokePlain is an unmemoized call of a rule without captures: invoke with the steps of
 // invokeBegin and invokeEnd inlined, minus the capture frame (the body never writes one, so the
 // caller's stays current), and with the failure handling of call.
-func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
+func (p *parser) invokePlain(r *rule, min int) (*value.Node, bool) {
 	p.stepWork()
 	start, rec, trail, missing := p.pos, len(p.recovered), len(p.trail), p.missingMark()
 	prevEnv, prevCut := p.env, p.cut
@@ -758,7 +760,7 @@ func (p *parser) invokeBegin(r *rule) invokeState {
 	return st
 }
 
-func (p *parser) invokeEnd(r *rule, st *invokeState, v *Node, ok bool) (*Node, bool) {
+func (p *parser) invokeEnd(r *rule, st *invokeState, v *value.Node, ok bool) (*value.Node, bool) {
 	p.depth--
 	p.frame, p.cut = st.prevFrame, st.prevCut
 	p.trail = p.trail[:min2(st.trail, len(p.trail))]
@@ -771,7 +773,7 @@ func (p *parser) invokeEnd(r *rule, st *invokeState, v *Node, ok bool) (*Node, b
 
 // finish builds the rule's value from the value of the rule body, and converts it to the rule's named node type, if any. A value-free
 // rule is never checked.
-func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
+func (p *parser) finish(r *rule, f *frame, v *value.Node, start int) *value.Node {
 	if r.novalue {
 		return nil
 	}
@@ -786,22 +788,22 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 	if r.splice {
 		// No node of its own, and its captures end here: the caller takes the elements.
 		if v != nil {
-			v.fresh = false
+			value.D(v).Fresh = false
 		}
 		return v
 	}
 	if len(r.scope.names) > 0 {
 		v = p.attachCaptures(v, r.scope, f, start, p.pos)
 	}
-	owned := v != nil && v.fresh
+	owned := v != nil && value.D(v).Fresh
 	if owned {
-		if p.prog.sourceInfo && v.kind.rule == "" {
-			v.kind = r.kinds.named(v.kind, r.name)
+		if p.prog.sourceInfo && value.D(v).Kind.Rule == "" {
+			value.D(v).Kind = r.kinds.Named(value.D(v).Kind, r.name)
 		}
-		v.fresh = false
+		value.D(v).Fresh = false
 	}
 	if r.nodeKinds != nil {
-		if owned && r.nodeKinds.convertOwned(v) {
+		if owned && r.nodeKinds.ConvertOwned(v) {
 			return v
 		}
 		v = p.convertResult(r, v)
@@ -810,19 +812,19 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 }
 
 // convertResult converts v, the value of rule r, to the rule's named node type.
-func (p *parser) convertResult(r *rule, v *Node) *Node {
-	n, ok := r.nodeKinds.convert(unboxNode(v))
+func (p *parser) convertResult(r *rule, v *value.Node) *value.Node {
+	n, ok := r.nodeKinds.Convert(value.UnboxNode(v))
 	if !ok {
-		p.fail("cannot convert %s to %s in result of rule %s", typeName(unboxNode(v)), r.nodeType, r.whereName())
+		p.fail("cannot convert %s to %s in result of rule %s", typeName(value.UnboxNode(v)), r.nodeType, r.whereName())
 	}
 	return n
 }
 
 // attachCaptures attaches captures to the node as fields. Captures that did not match (nil) are
 // not attached. If the node belongs to another rule, it is wrapped in a tuple node first.
-func (p *parser) attachCaptures(v *Node, s *scope, f *frame, start, end int) *Node {
+func (p *parser) attachCaptures(v *value.Node, s *scope, f *frame, start, end int) *value.Node {
 	found := false
-	wrap := v == nil || !v.fresh
+	wrap := v == nil || !value.D(v).Fresh
 	for _, c := range f.vals {
 		p.stepWork()
 		if c != nil {
@@ -837,23 +839,23 @@ func (p *parser) attachCaptures(v *Node, s *scope, f *frame, start, end int) *No
 		return v
 	}
 	if wrap {
-		v = p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(end), children: append(p.nodes(1)[:0], v), fresh: true})
+		v = p.newNode(value.Data{Kind: value.SeqKind, Start: int32(start), End: int32(end), Children: append(p.nodes(1)[:0], v), Fresh: true})
 	}
-	if v.fields == nil {
-		v.fields = p.fields(len(s.names))
+	if value.D(v).Fields == nil {
+		value.D(v).Fields = p.fields(len(s.names))
 	}
-	v.labeled = p.prog.sourceInfo
+	value.D(v).Labeled = p.prog.sourceInfo
 	for i, name := range s.names {
 		p.stepWork()
 		if f.vals[i] != nil {
-			p.setValueField(&v.fields, name, f.vals[i])
+			p.setValueField(&value.D(v).Fields, name, f.vals[i])
 		}
 	}
 	return v
 }
 
 // nodeOrNil converts a nil *Node to an interface nil.
-func nodeOrNil(n *Node) any {
+func nodeOrNil(n *value.Node) any {
 	if n == nil {
 		return nil
 	}
@@ -951,29 +953,29 @@ func (p *parser) moveResult(e *memoEntry) {
 		return
 	}
 	if p.moved == nil {
-		p.moved = map[*Node]*Node{}
+		p.moved = map[*value.Node]*value.Node{}
 	}
-	if n.start == n.end {
+	if value.D(n).Start == value.D(n).End {
 		e.node = p.moveEmpty(n, p.baseShift)
-	} else if n.gen < p.gen {
+	} else if value.D(n).Gen < p.gen {
 		p.moveTree(n, p.shiftOf(n))
 	}
 	p.clearMovementWork()
 }
 
 // shiftOf returns how far the non-empty node n of the result being moved moves with the edits
-// since n.gen. The nodes of a result move together. Those that were current when the entry's
+// since the generation of n (Data.Gen). The nodes of a result move together. Those that were current when the entry's
 // result was last current (gen at most moveBase) move by the entry's shift; others were moved through
 // another result since, and the edits after that are replayed once per generation (shifts).
-func (p *parser) shiftOf(n *Node) int {
-	if n.gen <= p.moveBase {
+func (p *parser) shiftOf(n *value.Node) int {
+	if value.D(n).Gen <= p.moveBase {
 		return p.baseShift
 	}
-	if d, ok := p.shifts[n.gen]; ok {
+	if d, ok := p.shifts[value.D(n).Gen]; ok {
 		return d
 	}
-	s := int(n.start)
-	for _, ed := range p.edits[n.gen:p.gen] {
+	s := int(value.D(n).Start)
+	for _, ed := range p.edits[value.D(n).Gen:p.gen] {
 		p.stepWork()
 		if s >= ed.end {
 			s += ed.delta
@@ -982,36 +984,36 @@ func (p *parser) shiftOf(n *Node) int {
 	if p.shifts == nil {
 		p.shifts = map[uint32]int{}
 	}
-	p.shifts[n.gen] = s - int(n.start)
-	return s - int(n.start)
+	p.shifts[value.D(n).Gen] = s - int(value.D(n).Start)
+	return s - int(value.D(n).Start)
 }
 
 // moveTree moves the non-empty node n by shift (shiftOf(n)), and its descendants, in place.
-func (p *parser) moveTree(n *Node, shift int) {
+func (p *parser) moveTree(n *value.Node, shift int) {
 	p.stepWork()
-	gen := n.gen
-	n.start += int32(shift)
-	n.end += int32(shift)
-	n.gen = p.gen
-	for i, c := range n.children {
+	gen := value.D(n).Gen
+	value.D(n).Start += int32(shift)
+	value.D(n).End += int32(shift)
+	value.D(n).Gen = p.gen
+	for i, c := range value.D(n).Children {
 		p.stepWork()
-		if c != nil && c.gen < p.gen {
-			n.children[i] = p.moveChild(c, gen, shift)
+		if c != nil && value.D(c).Gen < p.gen {
+			value.D(n).Children[i] = p.moveChild(c, gen, shift)
 		}
 	}
-	for i := range n.fields {
+	for i := range value.D(n).Fields {
 		p.stepWork()
-		if c, ok := n.fields[i].Value.(*Node); ok && c != nil && c.gen < p.gen {
-			n.fields[i].Value = p.moveChild(c, gen, shift)
+		if c, ok := value.D(n).Fields[i].Value.(*value.Node); ok && c != nil && value.D(c).Gen < p.gen {
+			value.D(n).Fields[i].Value = p.moveChild(c, gen, shift)
 		}
 	}
 }
 
 // moveChild moves the descendant c of a node of generation gen that moved by shift, and returns
 // it or its copy.
-func (p *parser) moveChild(c *Node, gen uint32, shift int) *Node {
-	if c.start != c.end {
-		if c.gen != gen {
+func (p *parser) moveChild(c *value.Node, gen uint32, shift int) *value.Node {
+	if value.D(c).Start != value.D(c).End {
+		if value.D(c).Gen != gen {
 			shift = p.shiftOf(c)
 		}
 		p.moveTree(c, shift)
@@ -1028,44 +1030,56 @@ func (p *parser) moveChild(c *Node, gen uint32, shift int) *Node {
 // moveEmpty returns a copy of the empty node n moved by shift. Its descendants move with it: empty
 // ones are copied the same way, and non-empty ones (captured in a lookahead) are moved in place.
 // Copies made in the same moveResult are shared.
-func (p *parser) moveEmpty(n *Node, shift int) *Node {
+func (p *parser) moveEmpty(n *value.Node, shift int) *value.Node {
 	p.stepWork()
 	if c, ok := p.moved[n]; ok {
 		return c
 	}
-	c := p.newNode(*n)
-	c.start += int32(shift)
-	c.end += int32(shift)
+	c := p.newNode(*value.D(n))
+	value.D(c).Start += int32(shift)
+	value.D(c).End += int32(shift)
 	p.moved[n] = c
-	if n.children != nil {
-		c.children = p.nodes(len(n.children))
-		for i, ch := range n.children {
+	if value.D(n).Children != nil {
+		value.D(c).Children = p.nodes(len(value.D(n).Children))
+		for i, ch := range value.D(n).Children {
 			p.stepWork()
-			c.children[i] = p.moveDescendant(ch, n.gen, shift)
+			value.D(c).Children[i] = p.moveDescendant(ch, value.D(n).Gen, shift)
 		}
 	}
-	if n.fields != nil {
-		c.fields = p.fields(len(n.fields))[:len(n.fields)]
-		for i, f := range n.fields {
+	if value.D(n).Fields != nil {
+		value.D(c).Fields = p.fields(len(value.D(n).Fields))[:len(value.D(n).Fields)]
+		for i, f := range value.D(n).Fields {
 			p.stepWork()
-			if vn, ok := f.Value.(*Node); ok {
-				f.Value = p.moveDescendant(vn, n.gen, shift)
+			if vn, ok := f.Value.(*value.Node); ok {
+				f.Value = p.moveDescendant(vn, value.D(n).Gen, shift)
 			}
-			c.fields[i] = f
+			value.D(c).Fields[i] = f
 		}
 	}
 	return c
 }
 
 // moveDescendant moves the descendant c of an empty node of generation gen that moved by shift.
-func (p *parser) moveDescendant(c *Node, gen uint32, shift int) *Node {
+func (p *parser) moveDescendant(c *value.Node, gen uint32, shift int) *value.Node {
 	switch {
 	case c == nil:
 		return nil
-	case c.start == c.end:
+	case value.D(c).Start == value.D(c).End:
 		return p.moveEmpty(c, shift)
-	case c.gen < p.gen:
+	case value.D(c).Gen < p.gen:
 		return p.moveChild(c, gen, shift)
 	}
 	return c
+}
+
+// nodeValue returns the Value of the node n: its text for a string node, and a tuple or list
+// value sharing its elements otherwise.
+func (p *parser) nodeValue(n *value.Node) any {
+	switch {
+	case value.D(n).Terminal:
+		return value.D(n).Text
+	case value.D(n).Kind != nil && value.D(n).Kind.Base == value.BaseList:
+		return p.newNode(value.Data{Kind: value.ListValueKind, Start: value.D(n).Start, End: value.D(n).End, Children: value.D(n).Children})
+	}
+	return p.newNode(value.Data{Kind: value.TupleValueKind, Start: value.D(n).Start, End: value.D(n).End, Children: value.D(n).Children})
 }

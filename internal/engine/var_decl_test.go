@@ -3,6 +3,8 @@ package engine
 import (
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // compileMessage compiles src and returns the error message, or "" if it compiles.
@@ -127,7 +129,7 @@ rule item E = {n := n + 1} "a" => E{N: n}
 `)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		var got []string
-		err := streamed.ParseStreamWith("main", strings.NewReader("aaa"), func(n *Node) error {
+		err := streamed.ParseStreamWith("main", strings.NewReader("aaa"), func(n *value.Node) error {
 			got = append(got, n.String())
 			return nil
 		}, ParseOptions{Backend: backend})

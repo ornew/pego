@@ -3,6 +3,8 @@ package engine
 import (
 	"sort"
 	"strings"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // ty is a type used in type checking.
@@ -44,11 +46,11 @@ func (t namedTy) String() string {
 }
 
 var (
-	tyMatch   = namedTy{TypeString, 'c'}
-	tySeq     = namedTy{TypeTuple, 'c'}
-	tyList    = namedTy{TypeList, 'c'}
-	tyError   = namedTy{TypeError, 'c'}
-	tyMissing = namedTy{TypeMissing, 'c'}
+	tyMatch   = namedTy{value.TypeString, 'c'}
+	tySeq     = namedTy{value.TypeTuple, 'c'}
+	tyList    = namedTy{value.TypeList, 'c'}
+	tyError   = namedTy{value.TypeError, 'c'}
+	tyMissing = namedTy{value.TypeMissing, 'c'}
 )
 
 type listTy struct{ elem ty }

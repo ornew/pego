@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/value"
 )
 
 // Program is a compiled grammar. It can be used by multiple parses concurrently.
@@ -69,10 +70,10 @@ type Program struct {
 	loaded bool
 	mode   CompiledMode
 	// typeKinds holds the node kinds of the grammar's types (typeKind), made with the program.
-	typeKinds map[string]*nodeKind
+	typeKinds map[string]*value.NodeKind
 	// nodeKinds holds the kinds of the grammar's named node types, also under the names of the
 	// aliases of them.
-	nodeKinds map[string]*nodeTypeKinds
+	nodeKinds map[string]*value.NodeTypeKinds
 	// nodeTypeCache holds the results of nodeTypeOf by type name: a nodeTy, or false.
 	nodeTypeCache sync.Map
 	// scratch holds the buffers of finished parses for later ones (*scratch).
@@ -114,7 +115,7 @@ type Options struct {
 
 // matcher tries to match at the current position and returns the value and whether it
 // succeeded. On failure the position is unspecified; the caller restores it.
-type matcher func(p *parser) (*Node, bool)
+type matcher func(p *parser) (*value.Node, bool)
 
 type rule struct {
 	// where names the rule in the message of a failed action, if not name (rule.whereName).
@@ -123,21 +124,21 @@ type rule struct {
 	// elements are those of the sequence that calls it.
 	splice bool
 	// kinds are the node kinds the rule makes (newRuleKinds).
-	kinds  ruleKinds
+	kinds  value.RuleKinds
 	id     int
 	name   string
 	def    *grammar.RuleDef
 	scope  *scope
-	body   func(p *parser, min int) (*Node, bool)
+	body   func(p *parser, min int) (*value.Node, bool)
 	action grammar.Term
 	// nodeType, if not "", is the named node type the rule's value is converted to
 	// (Program.ruleNodeType), whose kinds are nodeKinds.
 	nodeType  string
-	nodeKinds *nodeTypeKinds
+	nodeKinds *value.NodeTypeKinds
 	// opNodeType, if not "", is the named node type every operator node of an Operators Rule is
 	// converted to (Program.operatorsNodeType), whose kinds are opKinds.
 	opNodeType    string
-	opKinds       *nodeTypeKinds
+	opKinds       *value.NodeTypeKinds
 	memo          bool
 	missing       bool // this rule or a callee contains #missing
 	leader        bool
@@ -149,7 +150,7 @@ type rule struct {
 	// act evaluates the action (nil if there is no action).
 	act evaluator
 	// value makes the rule's value from the value of its body, for a rule without an action.
-	value func(p *parser, v *Node, start int) *Node
+	value func(p *parser, v *value.Node, start int) *value.Node
 	// entry is the start of the body in bytecode (only for rules of the bytecode backend).
 	entry int
 	// twin is the value-free twin used for calls from places where the value is discarded (#atomic, -, !,
@@ -210,7 +211,7 @@ func (s *scope) newFrame() *frame {
 	if len(s.names) == 0 {
 		return emptyFrame
 	}
-	return &frame{vals: make([]*Node, len(s.names))}
+	return &frame{vals: make([]*value.Node, len(s.names))}
 }
 
 // Error is a compile error.
@@ -240,7 +241,7 @@ func (l ErrorList) Error() string {
 // Reserved type names.
 var builtinTypes = map[string]bool{
 	"int": true, "string": true, "bool": true, "node": true, "terminal": true,
-	"Match": true, "Seq": true, "List": true, "Operator": true, "Error": true, "Missing": true, TypeMissing: true,
+	"Match": true, "Seq": true, "List": true, "Operator": true, "Error": true, "Missing": true, value.TypeMissing: true,
 }
 
 type compiler struct {
@@ -533,13 +534,13 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 		return nil, c.errs
 	}
 	prog.nseen = numberSeen(prog.rules, prog.twins)
-	prog.typeKinds = map[string]*nodeKind{}
-	prog.nodeKinds = map[string]*nodeTypeKinds{}
+	prog.typeKinds = map[string]*value.NodeKind{}
+	prog.nodeKinds = map[string]*value.NodeTypeKinds{}
 	for name, spec := range prog.types {
 		control.poll()
 		if n, ok := prog.nodeTypeOf(name); ok {
 			if prog.nodeKinds[n.name] == nil {
-				prog.nodeKinds[n.name] = newNodeTypeKinds(n.name)
+				prog.nodeKinds[n.name] = value.NewNodeTypeKinds(n.name)
 			}
 			prog.nodeKinds[name] = prog.nodeKinds[n.name]
 			continue
@@ -551,9 +552,9 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 			}
 		}
 		if canonical != name {
-			prog.typeKinds[name] = kindOf(canonical, "")
+			prog.typeKinds[name] = value.KindOf(canonical, "")
 		} else {
-			prog.typeKinds[name] = kindOf(name, "")
+			prog.typeKinds[name] = value.KindOf(name, "")
 		}
 	}
 	for _, rs := range [][]*rule{prog.rules, prog.twins} {
@@ -562,10 +563,10 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 			control.poll()
 			r.plain = !r.leader && (!r.memo || r.transient) && len(r.scope.names) == 0
 			if n, ok := prog.ruleNodeType(r.def); ok && !r.novalue {
-				r.nodeType, r.nodeKinds = n.name, newNodeTypeKinds(n.name)
+				r.nodeType, r.nodeKinds = n.name, value.NewNodeTypeKinds(n.name)
 			}
 			if n, ok := prog.operatorsNodeType(r.def); ok && !r.novalue {
-				r.opNodeType, r.opKinds = n.name, newNodeTypeKinds(n.name)
+				r.opNodeType, r.opKinds = n.name, value.NewNodeTypeKinds(n.name)
 			}
 		}
 	}
@@ -605,10 +606,10 @@ func (c *compiler) compileRule(r *rule) {
 	control := c.control
 	c.control.poll()
 	c.rule = r
-	r.kinds = newRuleKinds(r.name)
+	r.kinds = value.NewRuleKinds(r.name)
 	if p, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 		// The lines build the rule's value.
-		r.value = func(_ *parser, v *Node, _ int) *Node { return v }
+		r.value = func(_ *parser, v *value.Node, _ int) *value.Node { return v }
 		c.compileOperatorsRule(r, p)
 		return
 	}
@@ -618,7 +619,7 @@ func (c *compiler) compileRule(r *rule) {
 	c.proj = ruleProjectionsControlled(c.prog, r, control)
 	m := c.expr(body, r.scope, !r.lean)
 	if r.splice {
-		r.value = func(_ *parser, v *Node, _ int) *Node { return v }
+		r.value = func(_ *parser, v *value.Node, _ int) *value.Node { return v }
 	} else {
 		r.value = scopeValueOf(c.prog, body)
 	}
@@ -629,7 +630,7 @@ func (c *compiler) compileRule(r *rule) {
 		markProjectedMaps(r.action, c.proj, c.prog.projected, control)
 	}
 	c.proj = nil
-	r.body = func(p *parser, _ int) (*Node, bool) { return m(p) }
+	r.body = func(p *parser, _ int) (*value.Node, bool) { return m(p) }
 	if r.action != nil {
 		c.checkTerm(r.action, r.scope, nil)
 		r.act = termEvaluator(r.action)
@@ -877,18 +878,18 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 	if !workControlsEnabled || c.plainDispatch {
 		return m
 	}
-	return func(p *parser) (*Node, bool) { p.stepWork(); return m(p) }
+	return func(p *parser) (*value.Node, bool) { p.stepWork(); return m(p) }
 }
 
 func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 	control := c.control
 	switch e := e.(type) {
 	case *grammar.Literal:
-		value := literalValue(e.Value)
+		val := value.LiteralValue(e.Value)
 		desc := c.desc(literalDesc(e))
 		if e.IgnoreCase {
-			rs := foldedRunes([]rune(value))
-			return func(p *parser) (*Node, bool) {
+			rs := foldedRunes([]rune(val))
+			return func(p *parser) (*value.Node, bool) {
 				start := p.pos
 				if !p.matchLiteralFold(rs) {
 					p.expect(start, desc)
@@ -898,11 +899,11 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 					return nil, true
 				}
 				// The node holds the input as matched: its letters may differ in case from the literal.
-				return p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true, fresh: true}), true
+				return p.newNode(value.Data{Kind: value.MatchKind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), Terminal: true, Fresh: true}), true
 			}
 		}
-		rs, bs := []rune(value), []byte(value)
-		return func(p *parser) (*Node, bool) {
+		rs, bs := []rune(val), []byte(val)
+		return func(p *parser) (*value.Node, bool) {
 			start := p.pos
 			if !p.matchLiteral(rs, bs) {
 				p.expect(start, desc)
@@ -911,7 +912,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 			if !build {
 				return nil, true
 			}
-			return p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.literalText(start, value), terminal: true, fresh: true}), true
+			return p.newNode(value.Data{Kind: value.MatchKind, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, val), Terminal: true, Fresh: true}), true
 		}
 
 	case *grammar.CharClass:
@@ -934,7 +935,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 		if !build && r.twinOK {
 			r = c.twinOf(r)
 		}
-		return func(p *parser) (*Node, bool) {
+		return func(p *parser) (*value.Node, bool) {
 			if r.plain && !p.noPlain {
 				return p.invokePlain(r, min) // what call does for such a rule, without its checks
 			}
@@ -952,9 +953,9 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 			valued[i] = !flat[i] && valuedCount(c.prog, it) == 1
 		}
 		n := valuedCount(c.prog, e)
-		return func(p *parser) (*Node, bool) {
+		return func(p *parser) (*value.Node, bool) {
 			start := p.pos
-			var kids []*Node
+			var kids []*value.Node
 			if build {
 				kids = p.nodes(n)[:0]
 			}
@@ -968,7 +969,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 				}
 				switch {
 				case flat[i]:
-					kids = append(kids, v.children...)
+					kids = append(kids, value.D(v).Children...)
 				case valued[i]:
 					kids = append(kids, v)
 				}
@@ -976,7 +977,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 			if !build {
 				return nil, true
 			}
-			return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}), true
+			return p.newNode(value.Data{Kind: value.SeqKind, Start: int32(start), End: int32(p.pos), Children: kids, Fresh: true}), true
 		}
 
 	case *grammar.Choice:
@@ -992,7 +993,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 			guarded = guarded || guards[i].accept != nil
 		}
 		if guarded {
-			return func(p *parser) (*Node, bool) {
+			return func(p *parser) (*value.Node, bool) {
 				m0 := p.mark()
 				var ch rune
 				more, peeked := false, false
@@ -1024,7 +1025,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 				return nil, false
 			}
 		}
-		return func(p *parser) (*Node, bool) {
+		return func(p *parser) (*value.Node, bool) {
 			m0 := p.mark()
 			for _, m := range ms {
 				prevCut := p.cut
@@ -1051,7 +1052,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 		if build {
 			m = singleMatcher(c.prog, e.Expr, m)
 		}
-		return func(p *parser) (*Node, bool) {
+		return func(p *parser) (*value.Node, bool) {
 			m0 := p.mark()
 			prevCut := p.cut
 			p.cut = false
@@ -1071,7 +1072,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 	case *grammar.And:
 		// Captures and variable definitions inside a positive lookahead remain valid after it.
 		m := c.expr(e.Expr, s, build && hasCapturesControlled(e.Expr, control))
-		return func(p *parser) (*Node, bool) {
+		return func(p *parser) (*value.Node, bool) {
 			start, prevCut := p.pos, p.cut
 			p.silent++
 			_, ok := m(p)
@@ -1084,7 +1085,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 	case *grammar.Not:
 		c.noCaptures(e.Expr)
 		m := c.expr(e.Expr, s, false)
-		return func(p *parser) (*Node, bool) {
+		return func(p *parser) (*value.Node, bool) {
 			m0 := p.mark()
 			prevCut := p.cut
 			p.silent++
@@ -1098,7 +1099,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 	case *grammar.Atomic:
 		c.noCaptures(e.Expr)
 		m := c.expr(e.Expr, s, false)
-		return func(p *parser) (*Node, bool) {
+		return func(p *parser) (*value.Node, bool) {
 			start := p.pos
 			if _, ok := m(p); !ok {
 				return nil, false
@@ -1106,13 +1107,13 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 			if !build {
 				return nil, true
 			}
-			return p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true, fresh: true}), true
+			return p.newNode(value.Data{Kind: value.MatchKind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), Terminal: true, Fresh: true}), true
 		}
 
 	case *grammar.Discard:
 		c.noCaptures(e.Expr)
 		m := c.expr(e.Expr, s, false)
-		return func(p *parser) (*Node, bool) {
+		return func(p *parser) (*value.Node, bool) {
 			_, ok := m(p)
 			return nil, ok
 		}
@@ -1130,7 +1131,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 		} else {
 			m = captureMatcher(c.prog, e.Expr, c.expr(e.Expr, s, true))
 		}
-		return func(p *parser) (*Node, bool) {
+		return func(p *parser) (*value.Node, bool) {
 			v, ok := m(p)
 			if ok {
 				p.setCapture(slot, v)
@@ -1142,17 +1143,17 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 		}
 
 	case *grammar.Cut:
-		return func(p *parser) (*Node, bool) {
+		return func(p *parser) (*value.Node, bool) {
 			p.cut = true
 			return nil, true
 		}
 
 	case *grammar.Top:
 		// _ matches the empty input and has no value.
-		return func(p *parser) (*Node, bool) { return nil, true }
+		return func(p *parser) (*value.Node, bool) { return nil, true }
 
 	case *grammar.Bottom:
-		return func(p *parser) (*Node, bool) { return nil, false }
+		return func(p *parser) (*value.Node, bool) { return nil, false }
 
 	case *grammar.BeginInput:
 		return anchor(func(p *parser) bool { return p.atInputStart() }, idBeginInput)
@@ -1181,7 +1182,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 }
 
 func anchor(cond func(p *parser) bool, desc expID) matcher {
-	return func(p *parser) (*Node, bool) {
+	return func(p *parser) (*value.Node, bool) {
 		if cond(p) {
 			return nil, true
 		}
@@ -1254,7 +1255,7 @@ func (c *compiler) first(e grammar.Expr) firstGuard {
 }
 
 func (c *compiler) single(build bool, desc expID, accept func(*parser, rune) bool) matcher {
-	return func(p *parser) (*Node, bool) {
+	return func(p *parser) (*value.Node, bool) {
 		ch, size, ok := p.peek()
 		if !ok || !accept(p, ch) {
 			p.expect(p.pos, desc)
@@ -1265,7 +1266,7 @@ func (c *compiler) single(build bool, desc expID, accept func(*parser, rune) boo
 		if !build {
 			return nil, true
 		}
-		return p.newNode(Node{kind: kindMatch, start: int32(start), end: int32(p.pos), text: p.text(start, p.pos), terminal: true, fresh: true}), true
+		return p.newNode(value.Data{Kind: value.MatchKind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), Terminal: true, Fresh: true}), true
 	}
 }
 
@@ -1356,7 +1357,7 @@ func (c *compiler) scanRepeat(e *grammar.Repeat, build bool) matcher {
 		return nil
 	}
 	min, max := e.Min, e.Max
-	return func(p *parser) (*Node, bool) {
+	return func(p *parser) (*value.Node, bool) {
 		count := 0
 		for max < 0 || count < max {
 			ch, size, ok := p.peek()
@@ -1394,7 +1395,7 @@ func (c *compiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) match
 		c.runSites++
 		rs = &runSite{id: c.runSites, m: m, scope: elemScope, ownScope: ownScope, build: build, min: min, max: max, shiftable: !c.positional(e.Expr), value: elemValue}
 	}
-	return func(p *parser) (*Node, bool) {
+	return func(p *parser) (*value.Node, bool) {
 		if rs != nil && p.runs != nil && p.silent == 0 {
 			return p.resumeRepeat(rs)
 		}
@@ -1434,7 +1435,7 @@ func (c *compiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) match
 			if stream && p.emit != nil && p.depth == 1 {
 				// Elements of the start rule's #stream are passed on without being retained, and committed.
 				if v != nil {
-					v.fresh = false
+					value.D(v).Fresh = false
 				}
 				if err := p.emitStream(v); err != nil {
 					panic(fatal{err})
@@ -1460,7 +1461,7 @@ func (c *compiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) match
 		if !build {
 			return nil, true
 		}
-		return p.newNode(Node{kind: kindList, start: int32(start), end: int32(p.pos), children: p.kids(base), fresh: true}), true
+		return p.newNode(value.Data{Kind: value.ListKind, Start: int32(start), End: int32(p.pos), Children: p.kids(base), Fresh: true}), true
 	}
 }
 
@@ -1472,7 +1473,7 @@ func (c *compiler) projectRepeat(e *grammar.Repeat, field string) matcher {
 	m := c.expr(e.Expr, elemScope, false)
 	slot, n := elemScope.slots[field], len(elemScope.names)
 	min, max := e.Min, e.Max
-	return func(p *parser) (*Node, bool) {
+	return func(p *parser) (*value.Node, bool) {
 		start := p.pos
 		base := len(p.kidStack)
 		f := p.newFrame(n)
@@ -1503,7 +1504,7 @@ func (c *compiler) projectRepeat(e *grammar.Repeat, field string) matcher {
 			p.kids(base)
 			return nil, false
 		}
-		return p.newNode(Node{kind: kindList, start: int32(start), end: int32(p.pos), children: p.kids(base), fresh: true}), true
+		return p.newNode(value.Data{Kind: value.ListKind, Start: int32(start), End: int32(p.pos), Children: p.kids(base), Fresh: true}), true
 	}
 }
 
@@ -1714,4 +1715,12 @@ func (c *compiler) flatRefs(e grammar.Expr, out []string) []string {
 		out = append(out, e.Name)
 	}
 	return out
+}
+
+// typeKind returns the kind of nodes of the grammar's type typ without a rule.
+func (prog *Program) typeKind(typ string) *value.NodeKind {
+	if k := prog.typeKinds[typ]; k != nil {
+		return k
+	}
+	return value.KindOf(typ, "")
 }

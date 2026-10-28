@@ -1,4 +1,4 @@
-package engine
+package value
 
 import (
 	"testing"
@@ -31,35 +31,35 @@ func BenchmarkNodeJSON(b *testing.B) {
 func benchmarkShallowJSONNode() *Node {
 	children := make([]*Node, 8)
 	for i := range children {
-		children[i] = &Node{
-			kind:  kindOf("Token", "item"),
-			start: int32(i * 3),
-			end:   int32(i*3 + 2),
-			text:  "item<&>",
-		}
+		children[i] = Ptr(Data{
+			Kind:  KindOf("Token", "item"),
+			Start: int32(i * 3),
+			End:   int32(i*3 + 2),
+			Text:  "item<&>",
+		})
 	}
-	return &Node{
-		kind:     kindOf("Record", "entry"),
-		start:    0,
-		end:      24,
-		children: children,
-		fields: Fields{
+	return Ptr(Data{
+		Kind:     KindOf("Record", "entry"),
+		Start:    0,
+		End:      24,
+		Children: children,
+		Fields: Fields{
 			{Name: "name", Value: "example"},
 			{Name: "count", Value: int64(len(children))},
 			{Name: "items", Value: []any{"one", int32(2), true}},
 		},
-	}
+	})
 }
 
 func benchmarkDeepJSONNode(depth int) *Node {
-	root := &Node{kind: kindOf("Tree", "branch")}
+	root := Ptr(Data{Kind: KindOf("Tree", "branch")})
 	node := root
 	for i := 1; i < depth; i++ {
-		child := &Node{kind: kindOf("Tree", "branch"), start: int32(i), end: int32(i + 1)}
-		node.children = []*Node{child}
+		child := Ptr(Data{Kind: KindOf("Tree", "branch"), Start: int32(i), End: int32(i + 1)})
+		D(node).Children = []*Node{child}
 		node = child
 	}
-	node.kind = kindOf("Token", "leaf")
-	node.text = "end"
+	D(node).Kind = KindOf("Token", "leaf")
+	D(node).Text = "end"
 	return root
 }

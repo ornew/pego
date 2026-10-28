@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 type streamRefillResult struct {
@@ -105,7 +106,7 @@ rule row = .+ #atomic`)
 		reader := &workCancelledRefillReader{cancel: func() {}}
 		o.WorkLimits = limits.WorkLimits{MaxSteps: 64}
 		emits := 0
-		err := prog.ParseStreamWith("main", reader, func(*Node) error { emits++; return nil }, o)
+		err := prog.ParseStreamWith("main", reader, func(*value.Node) error { emits++; return nil }, o)
 		var limit *limits.WorkLimitError
 		if !errors.As(err, &limit) || limit.Kind != limits.StepWorkLimit || limit.Used != 64 || limit.Requested != 1 || reader.calls == 0 || reader.calls > 64 || emits != 0 {
 			t.Fatalf("error=%v calls=%d emits=%d", err, reader.calls, emits)

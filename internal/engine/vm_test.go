@@ -6,6 +6,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // TestBackendsMatchOnCorpus checks that the bytecode VM returns the same results as the closure
@@ -43,8 +45,8 @@ func TestBackendsMatchOnStream(t *testing.T) {
 			var out [3]string
 			for i, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				var got []string
-				err := prog.ParseStreamWith("main", strings.NewReader(in), func(n *Node) error {
-					got = append(got, fmt.Sprintf("%s [%d,%d)", n, n.start, n.end))
+				err := prog.ParseStreamWith("main", strings.NewReader(in), func(n *value.Node) error {
+					got = append(got, fmt.Sprintf("%s [%d,%d)", n, value.D(n).Start, value.D(n).End))
 					return nil
 				}, ParseOptions{Unit: u, Backend: b})
 				out[i] = fmt.Sprint(strings.Join(got, "\n"), " ", err)
@@ -76,7 +78,7 @@ rule x = #operators {
 	defer debug.SetMaxStack(prev)
 	for _, in := range inputs {
 		n, err := prog.ParseWith("main", in, ParseOptions{Backend: BytecodeIterative})
-		if err != nil || int(n.end) != len(in) {
+		if err != nil || int(value.D(n).End) != len(in) {
 			t.Errorf("input %.10q...: %v", in, err)
 		}
 		if _, err := prog.ParseWith("main", in[:len(in)-1], ParseOptions{Backend: BytecodeIterative}); err == nil && in[len(in)-1] == ')' {
@@ -105,7 +107,7 @@ rule x = #operators {
 		// Within the limit, the recursive backends parse such chains.
 		short := in[len(in)-2*(DefaultMaxDepth/4)-1:]
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			if n, err := prog.ParseWith("main", short, ParseOptions{Backend: b}); err != nil || int(n.end) != len(short) {
+			if n, err := prog.ParseWith("main", short, ParseOptions{Backend: b}); err != nil || int(value.D(n).End) != len(short) {
 				t.Errorf("%v, input %.10q...: %v", b, short, err)
 			}
 		}
@@ -173,7 +175,7 @@ rule e = #operators {
 				{"x;x^x;x^x^x;", 2, false},
 			} {
 				count := 0
-				err := prog.ParseStreamWith("main", strings.NewReader(tc.input), func(*Node) error {
+				err := prog.ParseStreamWith("main", strings.NewReader(tc.input), func(*value.Node) error {
 					count++
 					return nil
 				}, ParseOptions{Backend: backend, Unit: unit, MaxDepth: 4})

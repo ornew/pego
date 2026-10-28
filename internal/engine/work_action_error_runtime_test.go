@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 // These public-API probes exercise large action error strings at the final
@@ -157,7 +158,7 @@ func actionErrorMessage(err error) string {
 	return err.Error()
 }
 
-func actionErrorNodeText(node *Node) string {
+func actionErrorNodeText(node *value.Node) string {
 	if node == nil {
 		return ""
 	}

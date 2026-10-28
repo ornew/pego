@@ -4134,7 +4134,7 @@ func asNodeWork(p *Parser, fn string, v any) *Node {
 	return nil
 }
 
-// --- Iterative tree API: node_json (mirrors internal/engine/node_json.go) ---
+// --- Iterative tree API: node_json (mirrors internal/value/node_json.go) ---
 
 type nodeJSONFrame struct {
 	value  any
@@ -4498,7 +4498,7 @@ func SliceIdentity(value []any) nodeJSONSliceID {
 	return nodeJSONSliceID{ptr: reflect.ValueOf(value).Pointer(), len: len(value)}
 }
 
-// --- Iterative tree API: node_walk (mirrors internal/engine/node_walk.go) ---
+// --- Iterative tree API: node_walk (mirrors internal/value/node_walk.go) ---
 
 // WalkAction controls descent after a visit.
 type WalkAction uint8

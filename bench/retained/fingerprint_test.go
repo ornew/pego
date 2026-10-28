@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestFingerprintTerminalFlag(t *testing.T) {
@@ -65,9 +65,9 @@ func TestFingerprintSharingAndNodeCycles(t *testing.T) {
 		t.Fatal("fingerprint loses node sharing")
 	}
 	cycle := tupleNode()
-	engine.SetNodeElems(cycle, []*pego.Node{cycle})
+	value.SetNodeElems(cycle, []*pego.Node{cycle})
 	copyCycle := tupleNode()
-	engine.SetNodeElems(copyCycle, []*pego.Node{copyCycle})
+	value.SetNodeElems(copyCycle, []*pego.Node{copyCycle})
 	if hash(cycle) != hash(copyCycle) {
 		t.Fatal("fingerprint depends on pointer addresses")
 	}
@@ -83,7 +83,7 @@ func TestFingerprintDeepValuesAndCanonicalFields(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	engine.SetNodeText(leaf, "changed")
+	value.SetNodeText(leaf, "changed")
 	after, err := fingerprint(root)
 	if err != nil {
 		t.Fatal(err)
@@ -92,7 +92,7 @@ func TestFingerprintDeepValuesAndCanonicalFields(t *testing.T) {
 		t.Fatal("fingerprint omits deep descendants")
 	}
 	a, b := structNode(), structNode()
-	add := engine.SetNodeField
+	add := value.SetNodeField
 	add(a, "a", []any{1, "x", nil})
 	add(a, "b", map[string]any{"x": 1, "y": true})
 	add(b, "b", map[string]any{"y": true, "x": 1})
@@ -108,7 +108,7 @@ func TestFingerprintDeepValuesAndCanonicalFields(t *testing.T) {
 	if x != y {
 		t.Fatal("field or map order changes fingerprint")
 	}
-	engine.SetNodeField(a, "a", []any{1, "different", nil})
+	value.SetNodeField(a, "a", []any{1, "different", nil})
 	z, err := fingerprint(a)
 	if err != nil {
 		t.Fatal(err)
@@ -119,13 +119,13 @@ func TestFingerprintDeepValuesAndCanonicalFields(t *testing.T) {
 }
 
 func stringNode(text string) *pego.Node {
-	return engine.NewNode(pego.KindString, 0, len(text), text, nil, "", nil, nil)
+	return value.NewNode(pego.KindString, 0, len(text), text, nil, "", nil, nil)
 }
 
 func tupleNode(elems ...*pego.Node) *pego.Node {
-	return engine.NewNode(pego.KindTuple, 0, 0, "", elems, "", nil, nil)
+	return value.NewNode(pego.KindTuple, 0, 0, "", elems, "", nil, nil)
 }
 
 func structNode() *pego.Node {
-	return engine.NewNode(pego.KindStruct, 0, 0, "", nil, "S", nil, nil)
+	return value.NewNode(pego.KindStruct, 0, 0, "", nil, "S", nil, nil)
 }

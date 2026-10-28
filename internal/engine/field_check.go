@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/value"
 )
 
 // fieldType is a declared struct field type that a constructor checks a dynamically typed value
@@ -299,12 +300,12 @@ func (p *parser) convertError(v any, typ string) error {
 // node with a value), and error an error value (an error or a missing token); a list or tuple type
 // takes a list or tuple value, not the node of a repetition or sequence.
 func (p *parser) fieldConforms(t *fieldType, v any) bool {
-	n, isNode := v.(*Node)
+	n, isNode := v.(*value.Node)
 	if isNode && n == nil {
 		v, isNode = nil, false
 	}
-	if isNode && n.shape() == shapeBox {
-		return p.fieldConforms(t, n.box)
+	if isNode && value.ShapeOf(n) == value.ShapeBox {
+		return p.fieldConforms(t, value.D(n).Box)
 	}
 	switch t.kind {
 	case ftTop:
@@ -333,23 +334,23 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 	if !isNode {
 		return false
 	}
-	shape := n.shape()
-	valueNode := shape == shapeString || shape == shapeTuple || shape == shapeList
+	shape := value.ShapeOf(n)
+	valueNode := shape == value.ShapeString || shape == value.ShapeTuple || shape == value.ShapeList
 	switch t.kind {
 	case ftNode:
 		return valueNode
 	case ftStringNode:
-		return shape == shapeString
+		return shape == value.ShapeString
 	case ftError:
-		return shape == shapeError
+		return shape == value.ShapeError
 	case ftMissing:
-		return shape == shapeError && n.Type() == TypeMissing
+		return shape == value.ShapeError && n.Type() == value.TypeMissing
 	case ftNamed:
 		return n.Type() == t.name
 	case ftList:
-		return shape == shapeListValue && p.elemsConform(t.elem, n.children)
+		return shape == value.ShapeListValue && p.elemsConform(t.elem, value.D(n).Children)
 	case ftTuple:
-		return shape == shapeTupleValue && p.tupleConforms(t.alts, n.children)
+		return shape == value.ShapeTupleValue && p.tupleConforms(t.alts, value.D(n).Children)
 	case ftNodeOf:
 		return p.nodeValueConforms(t.elem, n, shape)
 	}
@@ -358,16 +359,16 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 
 // nodeValueConforms reports whether the value of node n, of shape shape, is of type t: a string
 // node's value is a string, and a tuple or list node's value its elements.
-func (p *parser) nodeValueConforms(t *fieldType, n *Node, shape nodeShape) bool {
+func (p *parser) nodeValueConforms(t *fieldType, n *value.Node, shape value.Shape) bool {
 	switch t.kind {
 	case ftTop:
-		return shape == shapeString || shape == shapeTuple || shape == shapeList
+		return shape == value.ShapeString || shape == value.ShapeTuple || shape == value.ShapeList
 	case ftString:
-		return shape == shapeString
+		return shape == value.ShapeString
 	case ftList:
-		return shape == shapeList && p.elemsConform(t.elem, n.children)
+		return shape == value.ShapeList && p.elemsConform(t.elem, value.D(n).Children)
 	case ftTuple:
-		return shape == shapeTuple && p.tupleConforms(t.alts, n.children)
+		return shape == value.ShapeTuple && p.tupleConforms(t.alts, value.D(n).Children)
 	case ftOptional:
 		return p.nodeValueConforms(t.elem, n, shape) // a node always has a value
 	case ftJoin:
@@ -382,7 +383,7 @@ func (p *parser) nodeValueConforms(t *fieldType, n *Node, shape nodeShape) bool 
 }
 
 // elemsConform reports whether every element of a list is of type t, charging a step for each.
-func (p *parser) elemsConform(t *fieldType, elems []*Node) bool {
+func (p *parser) elemsConform(t *fieldType, elems []*value.Node) bool {
 	if t.kind == ftTop {
 		return true
 	}
@@ -397,7 +398,7 @@ func (p *parser) elemsConform(t *fieldType, elems []*Node) bool {
 
 // tupleConforms reports whether the elements of a tuple are of the types ts, charging a step for
 // each.
-func (p *parser) tupleConforms(ts []*fieldType, elems []*Node) bool {
+func (p *parser) tupleConforms(ts []*fieldType, elems []*value.Node) bool {
 	if len(elems) != len(ts) {
 		return false
 	}

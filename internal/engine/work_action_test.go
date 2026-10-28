@@ -11,16 +11,17 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 func actionWorkParser(ctx context.Context, limits limits.WorkLimits, unit PositionUnit) *parser {
 	return &parser{input: input{unit: unit, control: newWorkControl(ctx, limits)}}
 }
 
-func actionWorkNodes(n int) []*Node {
-	items := make([]*Node, n)
+func actionWorkNodes(n int) []*value.Node {
+	items := make([]*value.Node, n)
 	for i := range items {
-		items[i] = &Node{start: int32(i), end: int32(i + 1), terminal: true, text: "x"}
+		items[i] = value.Ptr(value.Data{Start: int32(i), End: int32(i + 1), Terminal: true, Text: "x"})
 	}
 	return items
 }
@@ -87,7 +88,7 @@ func TestWorkActionStringHelpersChargeLongWork(t *testing.T) {
 func TestWorkActionCollectionLoopsChargeElements(t *testing.T) {
 	const size = 2048
 	items := actionWorkNodes(size)
-	list := &Node{children: items}
+	list := value.Ptr(value.Data{Children: items})
 	identity := workActionFunc{params: 1, fn: func(x, _ any) (any, error) { return x, nil }}
 	keepLeft := workActionFunc{params: 2, fn: func(x, _ any) (any, error) { return x, nil }}
 

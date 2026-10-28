@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestStreamCaptureRecognition(t *testing.T) {
@@ -64,7 +65,7 @@ func TestStreamCaptureRecognition(t *testing.T) {
 								continue
 							}
 							count := 0
-							err := program.ParseStreamWith("main", strings.NewReader(tc.input), func(*Node) error { count++; return nil }, opts)
+							err := program.ParseStreamWith("main", strings.NewReader(tc.input), func(*value.Node) error { count++; return nil }, opts)
 							if count != tc.count || (err == nil) != tc.ok {
 								t.Errorf("stream %s/%s: %d, %v; want %d success=%v", backend, unit, count, err, tc.count, tc.ok)
 							}
@@ -143,7 +144,7 @@ func TestStreamRecognitionCompiled(t *testing.T) {
 				continue
 			}
 			var got []string
-			err := p.ParseStreamWith("main", strings.NewReader("aa"), func(n *Node) error {
+			err := p.ParseStreamWith("main", strings.NewReader("aa"), func(n *value.Node) error {
 				got = append(got, n.Text())
 				return nil
 			}, ParseOptions{Backend: b})

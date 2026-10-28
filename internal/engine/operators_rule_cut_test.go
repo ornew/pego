@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // One shared grammar keeps the same scope/selection cases in the engine and generated Go/TS corpus.
@@ -154,7 +156,7 @@ var prefixPartCutInputs = []struct {
 	{"v -x", ""}, {"v a", "Atom"}, {"v -z a", "Prefix"},
 	{"za", ""}, {"oa", "Atom"},
 	{"p~-x", ""}, {"p~a", "Prefix"}, {"d~-x", "Atom"},
-	{"m-x", ""}, {"l-x", "Atom"}, {"r-x", TypeError}, {"r-za", "Prefix"}, {"i-x", "Atom"}, {"iaa", "Prefix"},
+	{"m-x", ""}, {"l-x", "Atom"}, {"r-x", value.TypeError}, {"r-za", "Prefix"}, {"i-x", "Atom"}, {"iaa", "Prefix"},
 }
 
 func prefixPartCutCorpus() genCase {
@@ -179,7 +181,7 @@ func TestOperatorsRulePrefixPartCuts(t *testing.T) {
 							}
 						} else if n == nil || n.Type() != c.kind {
 							t.Fatalf("%v/%v: got %v, %v; want %s", backend, unit, n, err, c.kind)
-						} else if c.kind == TypeError {
+						} else if c.kind == value.TypeError {
 							var recovered SyntaxErrors
 							if !errors.As(err, &recovered) || len(recovered) != 1 {
 								t.Fatalf("%v/%v: expected one recovered error, got %v", backend, unit, err)
@@ -206,7 +208,7 @@ func TestOperatorsRulePrefixPartCuts(t *testing.T) {
 							case "i":
 								wantOp = "a"
 							}
-							op, ok := n.Field("Op").(*Node)
+							op, ok := n.Field("Op").(*value.Node)
 							if !ok || leafText(op) != wantOp {
 								t.Fatalf("%v/%v: wrong operator capture: %v; want %q", backend, unit, op, wantOp)
 							}
@@ -249,15 +251,15 @@ func BenchmarkOperatorsRulePrefixPartCut(b *testing.B) {
 
 // leafText returns the text of the strings in the value of n, in order: the text an operator
 // matched when its line is a sequence.
-func leafText(n *Node) string {
+func leafText(n *value.Node) string {
 	if n == nil {
 		return ""
 	}
-	if n.shape() == shapeString {
-		return n.text
+	if value.ShapeOf(n) == value.ShapeString {
+		return value.D(n).Text
 	}
 	var b strings.Builder
-	for _, c := range n.children {
+	for _, c := range value.D(n).Children {
 		b.WriteString(leafText(c))
 	}
 	return b.String()

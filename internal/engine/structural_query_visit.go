@@ -1,6 +1,10 @@
 package engine
 
-import "sort"
+import (
+	"sort"
+
+	"github.com/ornew/pego/internal/value"
+)
 
 // queryVisit is the adapter boundary for a future common graph walker. Each event contains a
 // value, the carrier that immediately contains it and an owned root-relative path. Visits occur
@@ -9,7 +13,7 @@ import "sort"
 // walker rejects active-path cycles and charges before discovery.
 type queryVisit struct {
 	value  any
-	parent *Node
+	parent *value.Node
 	path   []QueryEdge
 }
 type queryVisitFrame struct {
@@ -17,15 +21,15 @@ type queryVisitFrame struct {
 	leave bool
 }
 
-func visitQueryGraph(root *Node, b *queryBudget, visit func(queryVisit) error) error {
-	frames := []queryVisitFrame{{visit: queryVisit{value: unboxNode(root)}}}
-	nodes := map[*Node]bool{}
+func visitQueryGraph(root *value.Node, b *queryBudget, visit func(queryVisit) error) error {
+	frames := []queryVisitFrame{{visit: queryVisit{value: value.UnboxNode(root)}}}
+	nodes := map[*value.Node]bool{}
 	for len(frames) > 0 {
 		f := frames[len(frames)-1]
 		frames = frames[:len(frames)-1]
 		v := f.visit
 		if f.leave {
-			delete(nodes, v.value.(*Node))
+			delete(nodes, v.value.(*value.Node))
 			continue
 		}
 		if err := b.charge(uint64(1 + len(v.path))); err != nil {
@@ -34,7 +38,7 @@ func visitQueryGraph(root *Node, b *queryBudget, visit func(queryVisit) error) e
 		if _, err := queryCategory(v.value); err != nil {
 			return err
 		}
-		x, ok := v.value.(*Node)
+		x, ok := v.value.(*value.Node)
 		if ok && x != nil {
 			if nodes[x] {
 				return ErrQueryCycle
@@ -48,41 +52,41 @@ func visitQueryGraph(root *Node, b *queryBudget, visit func(queryVisit) error) e
 			continue
 		}
 		frames = append(frames, queryVisitFrame{visit: v, leave: true})
-		push := func(value any, e QueryEdge) error {
+		push := func(val any, e QueryEdge) error {
 			if err := b.charge(uint64(len(v.path) + 1)); err != nil {
 				return err
 			}
-			frames = append(frames, queryVisitFrame{visit: queryVisit{unboxValue(value), x, appendQueryPath(v.path, e)}})
+			frames = append(frames, queryVisitFrame{visit: queryVisit{value.UnboxValue(val), x, appendQueryPath(v.path, e)}})
 			return nil
 		}
-		switch x.shape() {
-		case shapeStruct:
-			if err := b.charge(uint64(len(x.fields))); err != nil {
+		switch value.ShapeOf(x) {
+		case value.ShapeStruct:
+			if err := b.charge(uint64(len(value.D(x).Fields))); err != nil {
 				return err
 			}
-			fields := append(Fields(nil), x.fields...)
+			fields := append(value.Fields(nil), value.D(x).Fields...)
 			sort.SliceStable(fields, func(i, j int) bool { return fields[i].Name < fields[j].Name })
 			for i := len(fields) - 1; i >= 0; i-- {
 				if err := push(fields[i].Value, QueryEdge{Kind: "field", Name: fields[i].Name}); err != nil {
 					return err
 				}
 			}
-		case shapeTuple, shapeList, shapeTupleValue, shapeListValue:
-			if err := b.charge(uint64(len(x.children) + len(x.fields))); err != nil {
+		case value.ShapeTuple, value.ShapeList, value.ShapeTupleValue, value.ShapeListValue:
+			if err := b.charge(uint64(len(value.D(x).Children) + len(value.D(x).Fields))); err != nil {
 				return err
 			}
-			if x.shape() == shapeTuple && len(x.fields) > 0 {
-				locations := captureLocations(x)
+			if value.ShapeOf(x) == value.ShapeTuple && len(value.D(x).Fields) > 0 {
+				locations := value.CaptureLocations(x)
 				for i := len(locations) - 1; i >= 0; i-- {
-					if c := locations[i]; c.side {
-						if err := push(c.value, QueryEdge{Kind: "capture", Name: c.name}); err != nil {
+					if c := locations[i]; c.Side {
+						if err := push(c.Value, QueryEdge{Kind: "capture", Name: c.Name}); err != nil {
 							return err
 						}
 					}
 				}
 			}
-			for i := len(x.children) - 1; i >= 0; i-- {
-				if err := push(x.children[i], QueryEdge{Kind: "element", Index: i}); err != nil {
+			for i := len(value.D(x).Children) - 1; i >= 0; i-- {
+				if err := push(value.D(x).Children[i], QueryEdge{Kind: "element", Index: i}); err != nil {
 					return err
 				}
 			}

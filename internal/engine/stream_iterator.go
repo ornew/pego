@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"iter"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // ErrStreamClosed is returned after an iterator is abandoned before termination.
@@ -16,7 +18,7 @@ var errIteratorStop = errors.New("stream iterator stopped")
 // Close releases parser state but never closes or interrupts its reader.
 // The standard library pull coroutine has no independently scheduled producer.
 type StreamIterator struct {
-	next     func() (*Node, bool)
+	next     func() (*value.Node, bool)
 	stop     func()
 	terminal bool
 	err      error
@@ -50,8 +52,8 @@ func (prog *Program) Iterate(start string, r io.Reader, o ParseOptions) (it *Str
 		return nil, err
 	}
 	it = &StreamIterator{}
-	it.next, it.stop = iter.Pull(func(yield func(*Node) bool) {
-		it.err = prog.ParseStreamWith(start, r, func(n *Node) error {
+	it.next, it.stop = iter.Pull(func(yield func(*value.Node) bool) {
+		it.err = prog.ParseStreamWith(start, r, func(n *value.Node) error {
 			if !yield(n) {
 				return errIteratorStop
 			}
@@ -63,7 +65,7 @@ func (prog *Program) Iterate(start string, r io.Reader, o ParseOptions) (it *Str
 
 // Next returns (node,true,nil), even for a successful discarded nil value.
 // Clean EOF is (nil,false,nil); terminal errors remain stable on later calls.
-func (it *StreamIterator) Next() (n *Node, ok bool, err error) {
+func (it *StreamIterator) Next() (n *value.Node, ok bool, err error) {
 	if it.terminal {
 		return nil, false, it.err
 	}

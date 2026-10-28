@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // typedLRBindingSource is lrBindingSource with typed values, so that ParseAST runs the typed
@@ -135,7 +137,7 @@ func main() {
 }
 
 // typedN returns the field N of an engine value of typedLRBindingSource.
-func typedN(n *Node) string {
+func typedN(n *value.Node) string {
 	if n == nil {
 		return "<nil>"
 	}

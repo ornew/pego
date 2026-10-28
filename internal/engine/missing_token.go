@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/value"
 )
 
 // MissingTokenLimitError reports exhaustion of the invocation's insertion budget.
@@ -144,7 +145,7 @@ func (p *parser) restoreMissing(events []missingTokenEvent, errs []*SyntaxError,
 // missingErrorScope is emitted only for grammars using this feature; ordinary
 // grammars retain the existing errorAttr path, without scope/defer machinery.
 func missingErrorScope(m matcher, msg expID) matcher {
-	return func(p *parser) (*Node, bool) {
+	return func(p *parser) (*value.Node, bool) {
 		if p.missing != nil && p.missing.label == 0 {
 			p.missing.label = msg
 			defer func() { p.missing.label = 0 }()
@@ -156,7 +157,7 @@ func missingErrorScope(m matcher, msg expID) matcher {
 // missingLiteral preserves the entire ordinary literal match before trying an
 // insertion. Its stable compile-time site is independent of invocation state.
 func missingLiteral(literal matcher, site int, expected string, build bool) matcher {
-	return func(p *parser) (*Node, bool) {
+	return func(p *parser) (*value.Node, bool) {
 		if p.missing == nil || p.silent > 0 {
 			return literal(p)
 		}
@@ -181,8 +182,8 @@ func missingLiteral(literal matcher, site int, expected string, build bool) matc
 		if !build {
 			return nil, true
 		}
-		return p.newNode(Node{kind: kindMissing, start: int32(m0.pos), end: int32(m0.pos),
-			fields: Fields{{"expected", expected}, {"message", p.recoveryErrorText(e)}}, terminal: true, fresh: true}), true
+		return p.newNode(value.Data{Kind: value.MissingKind, Start: int32(m0.pos), End: int32(m0.pos),
+			Fields: value.Fields{{Name: "expected", Value: expected}, {Name: "message", Value: p.recoveryErrorText(e)}}, Terminal: true, Fresh: true}), true
 	}
 }
 
@@ -194,7 +195,7 @@ func (prog *Program) markMissingRules(control *compileControl) {
 		control.poll()
 		switch t := t.(type) {
 		case *grammar.TypeRef:
-			return t.Name == TypeMissing
+			return t.Name == value.TypeMissing
 		case *grammar.ListType:
 			return usesMissingType(t.Elem)
 		case *grammar.OptionalType:

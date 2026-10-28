@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/value"
 )
 
 // Replace a source-valid placeholder with a public-AST value. Only matching
@@ -40,10 +41,10 @@ func firstLiteral(e grammar.Expr) *grammar.Literal {
 	return nil
 }
 
-func replaceFirstLiteral(e grammar.Expr, value string) *grammar.Literal {
+func replaceFirstLiteral(e grammar.Expr, val string) *grammar.Literal {
 	lit := firstLiteral(e)
 	if lit != nil {
-		lit.Value = value
+		lit.Value = val
 	}
 	return lit
 }
@@ -127,9 +128,9 @@ func TestRawInvalidASTLiterals(t *testing.T) {
 								}
 								if err == nil {
 									// JSON replaces malformed strings, so compare raw match text too.
-									gotMatch, wantMatch := n.Field("T").(*Node), wn.Field("T").(*Node)
-									if gotMatch.text != wantMatch.text || gotMatch.start != wantMatch.start || gotMatch.end != wantMatch.end {
-										t.Errorf("%s %s/%s input=%x: match %x [%d,%d), want %x [%d,%d)", name, backend, unit, input, gotMatch.text, gotMatch.start, gotMatch.end, wantMatch.text, wantMatch.start, wantMatch.end)
+									gotMatch, wantMatch := n.Field("T").(*value.Node), wn.Field("T").(*value.Node)
+									if value.D(gotMatch).Text != value.D(wantMatch).Text || value.D(gotMatch).Start != value.D(wantMatch).Start || value.D(gotMatch).End != value.D(wantMatch).End {
+										t.Errorf("%s %s/%s input=%x: match %x [%d,%d), want %x [%d,%d)", name, backend, unit, input, value.D(gotMatch).Text, value.D(gotMatch).Start, value.D(gotMatch).End, value.D(wantMatch).Text, value.D(wantMatch).Start, value.D(wantMatch).End)
 									}
 									if got, w := resultJSON(n, nil), resultJSON(wn, nil); got != w {
 										t.Errorf("%s %s/%s input=%x\ngot %s\nwant %s", name, backend, unit, input, got, w)

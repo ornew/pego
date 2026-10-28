@@ -14,6 +14,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/pego/internal/value"
 )
 
 // tsHarness runs the generated TypeScript parsers g<i>.ts on the inputs in inputs.json and writes
@@ -306,7 +307,7 @@ func TestGenerateTSErrors(t *testing.T) {
 // (which fails beyond 10,000 levels, and then resultJSON returns ""): it writes the node with
 // WriteJSON, which keeps its own stack, and checks that it agrees with resultJSON where that
 // succeeds.
-func deepResultJSON(t *testing.T, n *Node, err error) string {
+func deepResultJSON(t *testing.T, n *value.Node, err error) string {
 	var b strings.Builder
 	if err != nil {
 		e, _ := json.Marshal(err.Error())

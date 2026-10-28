@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/value"
 )
 
 func negativeMaxima() []int {
@@ -283,12 +284,12 @@ func TestNegativeMaximumDocumentsAndStreams(t *testing.T) {
 							streamOpts = servedBy(mode, opts)
 						}
 						var got []string
-						err := prog.ParseStreamWith("main", strings.NewReader("ééé"), func(n *Node) error {
+						err := prog.ParseStreamWith("main", strings.NewReader("ééé"), func(n *value.Node) error {
 							got = append(got, resultJSON(n, nil))
 							return nil
 						}, streamOpts)
 						var want []string
-						we := p.ParseStreamWith("main", strings.NewReader("ééé"), func(n *Node) error {
+						we := p.ParseStreamWith("main", strings.NewReader("ééé"), func(n *value.Node) error {
 							want = append(want, resultJSON(n, nil))
 							return nil
 						}, ParseOptions{Unit: unit})

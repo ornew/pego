@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 const streamStorageGrammar = `rule main = h:"#head\n" #atomic row* #stream $$ {text($h) == "#head\n"}
@@ -16,14 +18,14 @@ rule value = v:[a-z]+ #atomic ","`
 // must release them at the next prune without disturbing active root values.
 func TestStreamStorageCommitReferences(t *testing.T) {
 	p := newParser(compile(t, `rule main = "a"`), strings.Repeat("a", 4096), CodePoints, false)
-	live := &Node{text: "live"}
-	dead := &Node{text: "dead"}
+	live := value.Ptr(value.Data{Text: "live"})
+	dead := value.Ptr(value.Data{Text: "dead"})
 	root := p.newFrame(1)
 	root.vals[0] = live
 	p.frame = root
 	p.trail = make([]undo, 3)
 	p.trail[0] = undo{f: root, old: live}
-	p.trail[2] = undo{f: &frame{vals: []*Node{dead}}, old: dead}
+	p.trail[2] = undo{f: &frame{vals: []*value.Node{dead}}, old: dead}
 	p.trail = p.trail[:1]
 	p.vals = []any{live, dead, dead}
 	p.vals = p.vals[:1]
@@ -58,18 +60,18 @@ func TestStreamPrefixStorageIsolation(t *testing.T) {
 	p := newStreamParser(compile(t, `rule main = "a"`), strings.NewReader("a"), CodePoints)
 	root := p.newFrame(1)
 	p.frame = root
-	prefix := p.newNode(Node{text: "prefix"})
+	prefix := p.newNode(value.Data{Text: "prefix"})
 	root.vals[0] = prefix
 	if p.nodeSlab != nil || p.ptrSlab != nil || p.frameSlab != nil {
 		t.Fatal("prefix wasted or shared a bulk allocation")
 	}
 	p.startStreamChunks()
-	next := p.newNode(Node{text: "element"})
+	next := p.newNode(value.Data{Text: "element"})
 	element := p.newFrame(1)
 	if next == prefix || &element.vals[0] == &root.vals[0] || element == root {
 		t.Fatal("element allocation still shares live prefix chunks")
 	}
-	if p.frame != root || root.vals[0] != prefix || prefix.text != "prefix" {
+	if p.frame != root || root.vals[0] != prefix || value.D(prefix).Text != "prefix" {
 		t.Fatal("prefix isolation changed live root capture")
 	}
 }
@@ -81,7 +83,7 @@ func TestStreamPrefixAllocationBudget(t *testing.T) {
 	}
 	p := newStreamParser(compile(t, `rule main = "a"`), strings.NewReader("a"), CodePoints)
 	for range nodeChunk/8 + 4 {
-		p.newNode(Node{text: "prefix"})
+		p.newNode(value.Data{Text: "prefix"})
 	}
 	if len(p.nodeSlab) == 0 || p.nodeChunks != 1 {
 		t.Fatal("large prefix did not switch to bounded slab allocation")
@@ -90,7 +92,7 @@ func TestStreamPrefixAllocationBudget(t *testing.T) {
 	if p.nodeChunks != 0 || len(p.nodeSlab) != 0 {
 		t.Fatal("stream boundary did not seal large prefix storage")
 	}
-	p.newNode(Node{text: "element"})
+	p.newNode(value.Data{Text: "element"})
 	if p.nodeChunks != 1 || len(p.nodeSlab) != nodeChunk-1 {
 		t.Fatal("elements did not resume normal slab allocation")
 	}
@@ -114,19 +116,19 @@ func TestStreamPrefixLoadedRepetitions(t *testing.T) {
 			saved := saveLoad(t, prog, "main", mode)
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				if backend == Closure {
-					err := saved.ParseStreamWith("main", strings.NewReader(text), func(*Node) error { return nil }, servedBy(mode, ParseOptions{Backend: backend}))
+					err := saved.ParseStreamWith("main", strings.NewReader(text), func(*value.Node) error { return nil }, servedBy(mode, ParseOptions{Backend: backend}))
 					wantClosureRefused(t, err)
 					continue
 				}
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					t.Run(fmt.Sprintf("%s/%s/%s/%s", bound, mode, backend, unit), func(t *testing.T) {
-						var retained []*Node
-						err := saved.ParseStreamWith("main", strings.NewReader(text), func(n *Node) error { retained = append(retained, n); return nil }, servedBy(mode, ParseOptions{Backend: backend, Unit: unit}))
+						var retained []*value.Node
+						err := saved.ParseStreamWith("main", strings.NewReader(text), func(n *value.Node) error { retained = append(retained, n); return nil }, servedBy(mode, ParseOptions{Backend: backend, Unit: unit}))
 						if err != nil || len(retained) != count {
 							t.Fatalf("got %d rows: %v", len(retained), err)
 						}
 						for _, n := range retained {
-							if n.Field("x").(*Node).text != "x" {
+							if value.D(n.Field("x").(*value.Node)).Text != "x" {
 								t.Fatal("retained capture changed")
 							}
 						}
@@ -146,8 +148,8 @@ rule header = "#head\n" #atomic`)
 				opts := ParseOptions{Backend: backend, Unit: unit}
 				input := "#head\n" + strings.Repeat("x", 1300)
 				count := 0
-				err := prog.ParseStreamWith("main", strings.NewReader(input), func(n *Node) error {
-					if n.Field("x").(*Node).text != "x" {
+				err := prog.ParseStreamWith("main", strings.NewReader(input), func(n *value.Node) error {
+					if value.D(n.Field("x").(*value.Node)).Text != "x" {
 						t.Fatal("emitted capture changed")
 					}
 					count++
@@ -170,7 +172,7 @@ func TestStreamPrefixLeftRecursiveRoot(t *testing.T) {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
 				count := 0
-				err := prog.ParseStreamWith("main", strings.NewReader("aa"), func(*Node) error { count++; return nil }, ParseOptions{Backend: backend, Unit: unit})
+				err := prog.ParseStreamWith("main", strings.NewReader("aa"), func(*value.Node) error { count++; return nil }, ParseOptions{Backend: backend, Unit: unit})
 				if err != nil || count != 0 {
 					t.Fatalf("LR root capture lost: count=%d, %v", count, err)
 				}
@@ -186,7 +188,7 @@ rule head = head "a" / "a" #atomic`)
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
 				count := 0
-				err := prog.ParseStreamWith("main", strings.NewReader("aaxx"), func(*Node) error { count++; return nil }, ParseOptions{Backend: backend, Unit: unit})
+				err := prog.ParseStreamWith("main", strings.NewReader("aaxx"), func(*value.Node) error { count++; return nil }, ParseOptions{Backend: backend, Unit: unit})
 				if err != nil || count != 2 {
 					t.Fatalf("LR capture lost after stream commits: count=%d, %v", count, err)
 				}
@@ -276,7 +278,7 @@ func BenchmarkStreamStorageRetainedHeap(b *testing.B) {
 						p := newStreamParser(prog, strings.NewReader(text), unit)
 						p.descs = prog.descs(backend)
 						count := 0
-						p.emit = func(n *Node) error {
+						p.emit = func(n *value.Node) error {
 							count++
 							if count == 200 {
 								runtime.GC()
@@ -332,7 +334,7 @@ func BenchmarkStreamRetentionWorkload(b *testing.B) {
 					b.ReportAllocs()
 					for b.Loop() {
 						got := 0
-						err := prog.ParseStreamWith("main", strings.NewReader(text), func(*Node) error { got++; return nil }, ParseOptions{Backend: backend, Unit: unit})
+						err := prog.ParseStreamWith("main", strings.NewReader(text), func(*value.Node) error { got++; return nil }, ParseOptions{Backend: backend, Unit: unit})
 						if err != nil || got != count {
 							b.Fatalf("emitted %d of %d: %v", got, count, err)
 						}
@@ -366,9 +368,9 @@ func BenchmarkStreamPrefixSize(b *testing.B) {
 					b.ReportAllocs()
 					for b.Loop() {
 						count := 0
-						var emit func(*Node) error
+						var emit func(*value.Node) error
 						if !noCallback {
-							emit = func(*Node) error { count++; return nil }
+							emit = func(*value.Node) error { count++; return nil }
 						}
 						// This fixture retains the wide prefix rather than the simple header.
 						// The input suffix predicate is disabled in this benchmark's grammar.

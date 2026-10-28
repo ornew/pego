@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestBytePositions(t *testing.T) {
@@ -13,13 +15,13 @@ func TestBytePositions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	w := n.Field("w").(*Node)
-	x := n.Field("x").(*Node)
-	if w.start != 0 || w.end != 6 || x.start != 7 || x.end != 10 || x.text != "語" {
-		t.Errorf("w [%d,%d) x [%d,%d) %q", w.start, w.end, x.start, x.end, x.text)
+	w := n.Field("w").(*value.Node)
+	x := n.Field("x").(*value.Node)
+	if value.D(w).Start != 0 || value.D(w).End != 6 || value.D(x).Start != 7 || value.D(x).End != 10 || value.D(x).Text != "語" {
+		t.Errorf("w [%d,%d) x [%d,%d) %q", value.D(w).Start, value.D(w).End, value.D(x).Start, value.D(x).End, value.D(x).Text)
 	}
 	n, err = prog.ParseWith("main", "日本 語", ParseOptions{Unit: CodePoints})
-	if err != nil || n.Field("x").(*Node).start != 3 {
+	if err != nil || value.D(n.Field("x").(*value.Node)).Start != 3 {
 		t.Errorf("codepoints: %v %v", n, err)
 	}
 	_, err = prog.ParseWith("main", "日本 ", ParseOptions{Unit: Bytes})
@@ -36,8 +38,8 @@ func TestInvalidUTF8(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if x := n.Field("x").(*Node); x.start != 1 || x.end != 2 {
-		t.Errorf("x [%d,%d)", x.start, x.end)
+	if x := n.Field("x").(*value.Node); value.D(x).Start != 1 || value.D(x).End != 2 {
+		t.Errorf("x [%d,%d)", value.D(x).Start, value.D(x).End)
 	}
 	checkUnits(t, prog, "main", "a\xffb", Closure)
 	checkUnits(t, prog, "main", "a\xffb", Bytecode)
@@ -100,7 +102,7 @@ func utf8RuneStart(b byte) bool { return b&0xC0 != 0x80 }
 func TestStreamInBytes(t *testing.T) {
 	prog := compile(t, records)
 	var got []string
-	err := prog.ParseStreamWith("main", strings.NewReader("#records\nä=1\nb=2\n"), func(n *Node) error {
+	err := prog.ParseStreamWith("main", strings.NewReader("#records\nä=1\nb=2\n"), func(n *value.Node) error {
 		got = append(got, n.String())
 		return nil
 	}, ParseOptions{Unit: Bytes})
@@ -116,7 +118,7 @@ func TestStreamInBytes(t *testing.T) {
 		b.WriteString("ab=12\n")
 	}
 	b.WriteString("ab=日\n")
-	err = prog.ParseStreamWith("main", strings.NewReader(b.String()), func(*Node) error { return nil }, ParseOptions{Unit: Bytes})
+	err = prog.ParseStreamWith("main", strings.NewReader(b.String()), func(*value.Node) error { return nil }, ParseOptions{Unit: Bytes})
 	if !errors.As(err, &se) || se.Line != 3002 || se.Col != 4 || se.Pos != len("#records\n")+3000*6+3 {
 		t.Errorf("got %v (pos %d)", err, se.Pos)
 	}

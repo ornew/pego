@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/value"
 )
 
 func indexCases() []genCase {
@@ -67,8 +68,8 @@ rule item = [a-z]`)
 		if err != nil {
 			t.Fatalf("%s: %v", backend, err)
 		}
-		if node.text != "b" {
-			t.Fatalf("%s: indexed %q", backend, node.text)
+		if value.D(node).Text != "b" {
+			t.Fatalf("%s: indexed %q", backend, value.D(node).Text)
 		}
 		_, err = program.ParseWith("main", "a", ParseOptions{Backend: backend})
 		if err == nil || !strings.Contains(err.Error(), "index 1 out of range for 1 elements") {
@@ -141,7 +142,7 @@ func TestIndexValueElements(t *testing.T) {
 				if err != nil {
 					t.Fatalf("%s %q: %v\n%s", backend, input, err, tc.src)
 				}
-				if got := unboxNode(node); got != want {
+				if got := value.UnboxNode(node); got != want {
 					t.Fatalf("%s %q: got %v, want %d\n%s", backend, input, got, want, tc.src)
 				}
 			}

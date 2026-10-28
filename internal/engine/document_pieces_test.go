@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestDocumentPiecesMatchFlatEdits(t *testing.T) {
@@ -121,13 +123,13 @@ type Word = node[string]`)
 				t.Fatal(err)
 			}
 			old, err := doc.Parse()
-			if err != nil || old.text != prefix+"abcdef" {
+			if err != nil || value.D(old).Text != prefix+"abcdef" {
 				t.Fatalf("cross-piece node text: %v, %v", old, err)
 			}
 			if err := doc.Edit(0, 0, "z"); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := doc.Parse(); err != nil || old.text != prefix+"abcdef" {
+			if _, err := doc.Parse(); err != nil || value.D(old).Text != prefix+"abcdef" {
 				t.Fatalf("retained node text changed: %v, %v", old, err)
 			}
 		})
@@ -244,7 +246,7 @@ type Word = node[string]`)
 				t.Fatal(err)
 			}
 			old, err := doc.Parse()
-			if err != nil || old.text != initial {
+			if err != nil || value.D(old).Text != initial {
 				t.Fatalf("initial parse: %v, %v", old, err)
 			}
 			for range 512 {
@@ -257,11 +259,11 @@ type Word = node[string]`)
 				t.Fatalf("expected compaction after 512 edits, got %d pieces", got)
 			}
 			current, err := doc.Parse()
-			if err != nil || current.text != strings.Repeat("a", documentPieceMinSize+512) {
+			if err != nil || value.D(current).Text != strings.Repeat("a", documentPieceMinSize+512) {
 				t.Fatalf("post-compaction parse: %v, %v", current, err)
 			}
-			if old.text != initial {
-				t.Fatalf("retained node text changed: %q", old.text)
+			if value.D(old).Text != initial {
+				t.Fatalf("retained node text changed: %q", value.D(old).Text)
 			}
 		})
 	}

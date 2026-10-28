@@ -12,16 +12,18 @@ import (
 	"testing"
 
 	pegort "github.com/ornew/pego/runtime"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // Exercise the exported APIs against the same hand-built DAG, including nil,
 // nested lists and a shared value reached through different owning parents.
 func TestTreeRuntimeParity(t *testing.T) {
-	leaf := &Node{kind: kindMatch, terminal: true, text: "é<&>", start: 1, end: 3}
-	gLeaf := pegort.NewNode(pegort.KindString, 1, 3, leaf.text, nil, "", nil, nil)
-	child := &Node{children: []*Node{leaf}, fields: Fields{{"list", []any{leaf, nil, []byte{1, 2}}}}}
+	leaf := value.Ptr(value.Data{Kind: value.MatchKind, Terminal: true, Text: "é<&>", Start: 1, End: 3})
+	gLeaf := pegort.NewNode(pegort.KindString, 1, 3, value.D(leaf).Text, nil, "", nil, nil)
+	child := value.Ptr(value.Data{Children: []*value.Node{leaf}, Fields: value.Fields{{Name: "list", Value: []any{leaf, nil, []byte{1, 2}}}}})
 	gChild := pegort.NewNode(pegort.KindStruct, 0, 0, "", []*pegort.Node{gLeaf}, "", pegort.Fields{{Name: "list", Value: []any{gLeaf, nil, []byte{1, 2}}}}, nil)
-	root := &Node{children: []*Node{child, nil, leaf}, fields: Fields{{"z", true}, {"a", leaf}}}
+	root := value.Ptr(value.Data{Children: []*value.Node{child, nil, leaf}, Fields: value.Fields{{Name: "z", Value: true}, {Name: "a", Value: leaf}}})
 	gRoot := pegort.NewNode(pegort.KindStruct, 0, 0, "", []*pegort.Node{gChild, nil, gLeaf}, "", pegort.Fields{{Name: "z", Value: true}, {Name: "a", Value: gLeaf}}, nil)
 	core, err := root.MarshalJSON()
 	if err != nil {
@@ -35,16 +37,16 @@ func TestTreeRuntimeParity(t *testing.T) {
 	describe := func(depth int, kind uint8, child int, field string, list int, nodeText, parentText string) string {
 		return fmt.Sprintf("%d/%d/%d/%s/%d/%s/%s", depth, kind, child, field, list, nodeText, parentText)
 	}
-	ca := func(v WalkVisit) (WalkAction, error) {
+	ca := func(v value.WalkVisit) (value.WalkAction, error) {
 		n, p := "", ""
 		if v.Node != nil {
-			n = v.Node.text
+			n = value.D(v.Node).Text
 		}
 		if v.Parent != nil {
-			p = v.Parent.text
+			p = value.D(v.Parent).Text
 		}
 		a = append(a, describe(v.Depth, uint8(v.Edge.Kind), v.Edge.ChildIndex, v.Edge.FieldName, v.Edge.ListIndex, n, p))
-		return WalkContinue, nil
+		return value.WalkContinue, nil
 	}
 	cb := func(v pegort.WalkVisit) (pegort.WalkAction, error) {
 		n, p := "", ""
@@ -57,7 +59,7 @@ func TestTreeRuntimeParity(t *testing.T) {
 		b = append(b, describe(v.Depth, uint8(v.Edge.Kind), v.Edge.ChildIndex, v.Edge.FieldName, v.Edge.ListIndex, n, p))
 		return pegort.WalkContinue, nil
 	}
-	if err := Walk(root, ca); err != nil {
+	if err := value.Walk(root, ca); err != nil {
 		t.Fatal(err)
 	}
 	if err := pegort.Walk(gRoot, cb); err != nil {
@@ -80,11 +82,11 @@ func TestTreeRuntimeParity(t *testing.T) {
 			}
 		}
 	}
-	root.children = []*Node{root}
+	value.D(root).Children = []*value.Node{root}
 	pegort.SetNodeElems(gRoot, []*pegort.Node{gRoot})
-	var c *CycleError
+	var c *value.CycleError
 	var gc *pegort.CycleError
-	if !errors.As(Walk(root, ca), &c) || !errors.As(pegort.Walk(gRoot, cb), &gc) {
+	if !errors.As(value.Walk(root, ca), &c) || !errors.As(pegort.Walk(gRoot, cb), &gc) {
 		t.Fatal("missing cycle errors")
 	}
 	if len(c.Path) != len(gc.Path) || uint8(c.Path[1].Kind) != uint8(gc.Path[1].Kind) {

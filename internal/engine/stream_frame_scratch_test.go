@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 const frameScratchGrammar = `rule main = h:"#head\n" #atomic items:record* #stream $$ {text($h) == "#head\n"}
@@ -35,7 +37,7 @@ func BenchmarkStreamFrameScratch(b *testing.B) {
 					b.ReportAllocs()
 					for b.Loop() {
 						count := 0
-						err := prog.ParseStreamWith("main", strings.NewReader(input), func(*Node) error {
+						err := prog.ParseStreamWith("main", strings.NewReader(input), func(*value.Node) error {
 							count++
 							return nil
 						}, ParseOptions{Backend: backend, Unit: unit})
@@ -67,9 +69,9 @@ rule item = x:"x" #atomic / e:"" #atomic`, strings.Repeat("x", 300), 301, false,
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				t.Run(fmt.Sprintf("%s/%s/%s", tc.name, backend, unit), func(t *testing.T) {
-					var retained []*Node
+					var retained []*value.Node
 					var snapshots [][]byte
-					err := prog.ParseStreamWith("main", strings.NewReader(tc.input), func(n *Node) error {
+					err := prog.ParseStreamWith("main", strings.NewReader(tc.input), func(n *value.Node) error {
 						snapshot, err := n.MarshalJSON()
 						if err != nil {
 							return err
@@ -136,10 +138,10 @@ func checkStreamFrameScratchRetainedResults(t *testing.T, src string) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				want := whole.Field("items").(*Node).children
-				var retained []*Node
+				want := value.D(whole.Field("items").(*value.Node)).Children
+				var retained []*value.Node
 				var snapshots [][]byte
-				err = prog.ParseStreamWith("main", strings.NewReader(input.String()), func(n *Node) error {
+				err = prog.ParseStreamWith("main", strings.NewReader(input.String()), func(n *value.Node) error {
 					snapshot, err := n.MarshalJSON()
 					if err != nil {
 						return err
@@ -175,12 +177,12 @@ func TestStreamFrameScratchClearsDeadFrames(t *testing.T) {
 	}
 	p := newParser(compile(t, `rule main = "a"`), "a", CodePoints, false)
 	root := p.newFrame(1)
-	root.vals[0] = &Node{text: "live root"}
+	root.vals[0] = value.Ptr(value.Data{Text: "live root"})
 	p.frame = root
 	dead := p.newFrame(1)
-	dead.vals[0] = &Node{text: "previous element"}
+	dead.vals[0] = value.Ptr(value.Data{Text: "previous element"})
 	p.resetStreamFrames()
-	if root.vals[0].text != "live root" || dead.vals != nil {
+	if value.D(root.vals[0]).Text != "live root" || dead.vals != nil {
 		t.Fatal("commit lost the live root or retained a dead capture frame")
 	}
 	if next := p.newFrame(1); next != dead || next.vals[0] != nil {
@@ -189,10 +191,10 @@ func TestStreamFrameScratchClearsDeadFrames(t *testing.T) {
 	// The root can remain in an older chunk after a large element. The current
 	// chunk is then entirely dead, while the older live root must survive.
 	for range nodeChunk + 7 {
-		p.newFrame(1).vals[0] = &Node{text: "large element"}
+		p.newFrame(1).vals[0] = value.Ptr(value.Data{Text: "large element"})
 	}
 	p.resetStreamFrames()
-	if len(p.frameSlab) != 0 || cap(p.frameSlab) != nodeChunk || root.vals[0].text != "live root" {
+	if len(p.frameSlab) != 0 || cap(p.frameSlab) != nodeChunk || value.D(root.vals[0]).Text != "live root" {
 		t.Fatal("large element prevented scratch reuse or damaged the older root")
 	}
 	for _, f := range p.frameSlab[:cap(p.frameSlab)] {

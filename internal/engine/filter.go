@@ -1,5 +1,7 @@
 package engine
 
+import "github.com/ornew/pego/internal/value"
+
 // pushFiltered keeps original node values in input order. The predicate must
 // return an actual bool; truthiness and static type narrowing are not implied.
 func (c *evalCtx) pushFiltered(args []any) error {
@@ -13,13 +15,13 @@ func (c *evalCtx) pushFiltered(args []any) error {
 	}
 	for _, item := range items {
 		c.p.stepWork()
-		value, err := f.apply(unboxNode(item), nil)
+		val, err := f.apply(value.UnboxNode(item), nil)
 		if err != nil {
 			return err
 		}
-		keep, ok := value.(bool)
+		keep, ok := val.(bool)
 		if !ok {
-			return c.p.actionError("filter: predicate must produce a bool, got ", typeName(value))
+			return c.p.actionError("filter: predicate must produce a bool, got ", typeName(val))
 		}
 		if keep {
 			c.p.kidStack = append(c.p.kidStack, item)

@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 func wideRepetitionCases() []genCase {
@@ -183,8 +185,8 @@ func TestWideRepetitionDocumentsAndStreams(t *testing.T) {
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					opts := ParseOptions{Backend: backend, Unit: unit}
 					count := 0
-					err := p.ParseStreamWith("main", strings.NewReader("éé"), func(n *Node) error {
-						if n.text != "é" {
+					err := p.ParseStreamWith("main", strings.NewReader("éé"), func(n *value.Node) error {
+						if value.D(n).Text != "é" {
 							t.Errorf("unexpected stream element: %s", resultJSON(n, nil))
 						}
 						count++

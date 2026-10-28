@@ -6,6 +6,8 @@ import (
 	"context"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestWorkSetupReferenceAdmission(t *testing.T) {
@@ -21,7 +23,7 @@ func TestWorkSetupReferenceAdmission(t *testing.T) {
 				callbacks := 0
 				o := ParseOptions{Backend: backend, Context: ctx, Trace: func(TraceEvent) { callbacks++ }}
 				reader := &streamCallbackReader{text: "#records\na=1\n", onRead: func() { callbacks++ }}
-				var n *Node
+				var n *value.Node
 				var d *Document
 				var err error
 				switch api {
@@ -30,7 +32,7 @@ func TestWorkSetupReferenceAdmission(t *testing.T) {
 				case "document":
 					d, err = prog.NewDocumentWith("main", "#records\na=1\n", o)
 				case "stream":
-					err = prog.ParseStreamWith("main", reader, func(*Node) error { callbacks++; return nil }, o)
+					err = prog.ParseStreamWith("main", reader, func(*value.Node) error { callbacks++; return nil }, o)
 				}
 				if err == nil || !strings.Contains(err.Error(), "reference build") || n != nil || d != nil || callbacks != 0 || reader.offset != 0 || prog.vm != nil || prog.ivm != nil || prog.rec != nil {
 					t.Fatalf("omitted=%t backend=%s api=%s error=%v callbacks=%d readeroffset=%d vm=%p ivm=%p rec=%p", omitted, backend, api, err, callbacks, reader.offset, prog.vm, prog.ivm, prog.rec)

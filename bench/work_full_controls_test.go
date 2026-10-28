@@ -14,7 +14,7 @@ import (
 	gminilang "github.com/ornew/pego/bench/gen/minilang"
 	goutline "github.com/ornew/pego/bench/gen/outline"
 	gxml "github.com/ornew/pego/bench/gen/xml"
-	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/value"
 	"reflect"
 	"testing"
 )
@@ -258,18 +258,18 @@ func TestFullFingerprintDetectsObservableGraphChanges(t *testing.T) {
 		return s
 	}
 	str := func(start, end int, text string) *pego.Node {
-		return engine.NewNode(engine.KindString, start, end, text, nil, "", nil, nil)
+		return value.NewNode(value.KindString, start, end, text, nil, "", nil, nil)
 	}
 	tuple := func(elems ...*pego.Node) *pego.Node {
-		return engine.NewNode(engine.KindTuple, 0, 0, "", elems, "", nil, nil)
+		return value.NewNode(value.KindTuple, 0, 0, "", elems, "", nil, nil)
 	}
-	object := func(fields ...engine.NodeField) *pego.Node {
-		return engine.NewNode(engine.KindStruct, 0, 0, "", nil, "T", engine.Fields(fields), nil)
+	object := func(fields ...value.NodeField) *pego.Node {
+		return value.NewNode(value.KindStruct, 0, 0, "", nil, "T", value.Fields(fields), nil)
 	}
 	if hash(str(0, 0, "\xff")) == hash(str(0, 0, "\xfe")) {
 		t.Fatal("raw invalid terminal bytes were replaced")
 	}
-	if hash(object(engine.NodeField{Name: "x", Value: "\xff"})) == hash(object(engine.NodeField{Name: "x", Value: "\xfe"})) {
+	if hash(object(value.NodeField{Name: "x", Value: "\xff"})) == hash(object(value.NodeField{Name: "x", Value: "\xfe"})) {
 		t.Fatal("raw invalid scalar bytes were replaced")
 	}
 	leaf := str(0, 0, "x")
@@ -278,29 +278,29 @@ func TestFullFingerprintDetectsObservableGraphChanges(t *testing.T) {
 	if hash(shared) == hash(copied) {
 		t.Fatal("sharing was discarded")
 	}
-	fields := object(engine.NodeField{Name: "a", Value: "one"}, engine.NodeField{Name: "b", Value: "two"})
-	reordered := object(engine.NodeField{Name: "b", Value: "two"}, engine.NodeField{Name: "a", Value: "one"})
+	fields := object(value.NodeField{Name: "a", Value: "one"}, value.NodeField{Name: "b", Value: "two"})
+	reordered := object(value.NodeField{Name: "b", Value: "two"}, value.NodeField{Name: "a", Value: "one"})
 	if hash(fields) == hash(reordered) {
 		t.Fatal("field order was discarded")
 	}
-	if hash(tuple()) == hash(engine.NewNode(engine.KindList, 0, 0, "", nil, "", nil, nil)) {
+	if hash(tuple()) == hash(value.NewNode(value.KindList, 0, 0, "", nil, "", nil, nil)) {
 		t.Fatal("the kind of an empty node was discarded")
 	}
 	shifted := str(1, 2, "x")
 	if hash(leaf) == hash(shifted) {
 		t.Fatal("positions were discarded")
 	}
-	changed := object(engine.NodeField{Name: "a", Value: "changed"}, engine.NodeField{Name: "b", Value: "two"})
+	changed := object(value.NodeField{Name: "a", Value: "changed"}, value.NodeField{Name: "b", Value: "two"})
 	if hash(fields) == hash(changed) {
 		t.Fatal("field values were discarded")
 	}
-	if hash(engine.NewNode(engine.KindValue, 0, 0, "", nil, "", nil, 1)) == hash(engine.NewNode(engine.KindValue, 0, 0, "", nil, "", nil, 2)) {
+	if hash(value.NewNode(value.KindValue, 0, 0, "", nil, "", nil, 1)) == hash(value.NewNode(value.KindValue, 0, 0, "", nil, "", nil, 2)) {
 		t.Fatal("carried values were discarded")
 	}
 	cycle := tuple()
-	engine.SetNodeElems(cycle, []*pego.Node{cycle})
+	value.SetNodeElems(cycle, []*pego.Node{cycle})
 	other := tuple()
-	engine.SetNodeElems(other, []*pego.Node{other})
+	value.SetNodeElems(other, []*pego.Node{other})
 	if hash(cycle) != hash(other) {
 		t.Fatal("equivalent cycles differ")
 	}

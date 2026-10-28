@@ -9,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/starttest"
+	"github.com/ornew/pego/internal/value"
 )
 
 const streamRecoveryError = "#recover cannot wrap a #stream repetition; recover inside each element instead"
@@ -115,13 +116,13 @@ rule item = "ab" @error(message="record") #recover(skip=[^a]+)`)
 			}
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				if backend == Closure {
-					err := loaded.ParseStreamWith("main", strings.NewReader("abX!ab"), func(*Node) error { return nil }, servedBy(mode, ParseOptions{Backend: backend}))
+					err := loaded.ParseStreamWith("main", strings.NewReader("abX!ab"), func(*value.Node) error { return nil }, servedBy(mode, ParseOptions{Backend: backend}))
 					wantClosureRefused(t, err)
 					continue
 				}
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					count := 0
-					err := loaded.ParseStreamWith("main", strings.NewReader("abX!ab"), func(*Node) error { count++; return nil }, servedBy(mode, ParseOptions{Backend: backend, Unit: unit}))
+					err := loaded.ParseStreamWith("main", strings.NewReader("abX!ab"), func(*value.Node) error { count++; return nil }, servedBy(mode, ParseOptions{Backend: backend, Unit: unit}))
 					var recovered SyntaxErrors
 					if !errors.As(err, &recovered) || len(recovered) != 1 || count != 3 {
 						t.Errorf("%s %s mode %s/%s: count=%d error=%v", body, mode, backend, unit, count, err)

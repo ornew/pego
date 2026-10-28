@@ -1,5 +1,7 @@
 package engine
 
+import "github.com/ornew/pego/internal/value"
+
 // Nodes and child slices created during a parse are allocated in bulk from per-parse chunks.
 // This reduces the number of allocations and the number of objects the GC has to track. A chunk
 // stays alive as long as any of its nodes is referenced.
@@ -37,38 +39,37 @@ func (p *parser) privatePrefixAlloc() bool {
 	return false
 }
 
-// newNode allocates a copy of v from a chunk and returns it.
-func (p *parser) newNode(v Node) *Node {
+// newNode allocates a node with the representation d from a chunk and returns it.
+func (p *parser) newNode(d value.Data) *value.Node {
+	d.Gen = p.gen
 	if len(p.nodeSlab) == 0 {
 		if p.privatePrefixAlloc() {
-			n := new(Node)
-			*n = v
-			n.gen = p.gen
+			n := new(value.Node)
+			*value.D(n) = d
 			return n
 		}
-		p.nodeSlab = make([]Node, nodeChunk)
+		p.nodeSlab = make([]value.Node, nodeChunk)
 		p.nodeChunks++
 	}
 	n := &p.nodeSlab[0]
 	p.nodeSlab = p.nodeSlab[1:]
-	*n = v
-	n.gen = p.gen
+	*value.D(n) = d
 	return n
 }
 
 // nodes allocates a child slice of length n (and capacity n) from a chunk and returns it.
-func (p *parser) nodes(n int) []*Node {
+func (p *parser) nodes(n int) []*value.Node {
 	if n == 0 {
-		return []*Node{}
+		return []*value.Node{}
 	}
 	if n > ptrChunk/4 {
-		return make([]*Node, n)
+		return make([]*value.Node, n)
 	}
 	if len(p.ptrSlab) < n {
 		if p.privatePrefixAlloc() {
-			return make([]*Node, n)
+			return make([]*value.Node, n)
 		}
-		p.ptrSlab = make([]*Node, ptrChunk)
+		p.ptrSlab = make([]*value.Node, ptrChunk)
 	}
 	s := p.ptrSlab[:n:n]
 	p.ptrSlab = p.ptrSlab[n:]
@@ -76,7 +77,7 @@ func (p *parser) nodes(n int) []*Node {
 }
 
 // kids returns p.kidStack[base:] as a child slice and resets the stack to base.
-func (p *parser) kids(base int) []*Node {
+func (p *parser) kids(base int) []*value.Node {
 	ks := p.nodes(len(p.kidStack) - base)
 	copyWork(p, ks, p.kidStack[base:])
 	clearWork(p, p.kidStack[base:])
@@ -121,15 +122,15 @@ func (p *parser) dropKids(base int) {
 
 // fields allocates an empty field list with capacity n from a chunk and returns it. Appending
 // beyond n reallocates, so neighbouring lists in the chunk are never overwritten.
-func (p *parser) fields(n int) Fields {
+func (p *parser) fields(n int) value.Fields {
 	if n > nodeChunk/4 {
-		return make(Fields, 0, n)
+		return make(value.Fields, 0, n)
 	}
 	if len(p.fieldSlab) < n {
 		if p.privatePrefixAlloc() {
-			return make(Fields, 0, n)
+			return make(value.Fields, 0, n)
 		}
-		p.fieldSlab = make([]NodeField, nodeChunk)
+		p.fieldSlab = make([]value.NodeField, nodeChunk)
 	}
 	fs := p.fieldSlab[:0:n]
 	p.fieldSlab = p.fieldSlab[n:]
@@ -139,7 +140,7 @@ func (p *parser) fields(n int) Fields {
 // one returns a slice holding only v, for the element list of an action. It is owned by the
 // parser and valid until the next call: the list is read only while the action is evaluated
 // (evaluations never nest), and $0 copies it.
-func (p *parser) one(v *Node) []*Node {
+func (p *parser) one(v *value.Node) []*value.Node {
 	p.item[0] = v
 	return p.item[:]
 }
@@ -155,7 +156,7 @@ func (p *parser) newFrame(n int) *frame {
 		// an extra buffer pointer in every parser.
 		if len(p.frameSlab) == cap(p.frameSlab) {
 			if p.privatePrefixAlloc() {
-				return &frame{vals: make([]*Node, n)}
+				return &frame{vals: make([]*value.Node, n)}
 			}
 			p.frameSlab = make([]frame, 0, nodeChunk)
 		}
@@ -164,7 +165,7 @@ func (p *parser) newFrame(n int) *frame {
 	} else {
 		if len(p.frameSlab) == 0 {
 			if p.privatePrefixAlloc() {
-				return &frame{vals: make([]*Node, n)}
+				return &frame{vals: make([]*value.Node, n)}
 			}
 			p.frameSlab = make([]frame, nodeChunk)
 		}

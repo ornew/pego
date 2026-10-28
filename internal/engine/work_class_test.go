@@ -11,6 +11,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 const workClassRangeCount = 2048
@@ -25,7 +26,7 @@ func workClassRanges(n int) []grammar.CharRange {
 	return ranges
 }
 
-func workClassNode(t *testing.T, p *Program, input string, opts ParseOptions) *Node {
+func workClassNode(t *testing.T, p *Program, input string, opts ParseOptions) *value.Node {
 	t.Helper()
 	n, err := p.ParseWith("main", input, opts)
 	if err != nil || n == nil {
@@ -77,11 +78,11 @@ func TestWorkClassLargeNonASCIIRangesAreCharged(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
-				if n := workClassNode(t, positive, late, ParseOptions{Backend: backend, Unit: unit}); n.text != late {
-					t.Fatalf("late class hit text=%q, want %q", n.text, late)
+				if n := workClassNode(t, positive, late, ParseOptions{Backend: backend, Unit: unit}); value.D(n).Text != late {
+					t.Fatalf("late class hit text=%q, want %q", value.D(n).Text, late)
 				}
-				if n := workClassNode(t, negative, gap, ParseOptions{Backend: backend, Unit: unit}); n.text != gap {
-					t.Fatalf("negated class text=%q, want %q", n.text, gap)
+				if n := workClassNode(t, negative, gap, ParseOptions{Backend: backend, Unit: unit}); value.D(n).Text != gap {
+					t.Fatalf("negated class text=%q, want %q", value.D(n).Text, gap)
 				}
 				if n, err := positive.ParseWith("main", gap, ParseOptions{Backend: backend, Unit: unit}); n != nil || err == nil || errors.Is(err, limits.ErrWorkLimit) {
 					t.Fatalf("unlimited positive miss: node=%v err=%v", n, err)
@@ -138,8 +139,8 @@ func TestWorkClassRangeCancellationAndPoolRetry(t *testing.T) {
 				if observed.scratch != nil || observed.control != nil {
 					t.Fatalf("parser retained work state after interruption: scratch=%v control=%v", observed.scratch, observed.control)
 				}
-				if n := workClassNode(t, p, input, ParseOptions{Backend: backend, Unit: unit}); n.text != input {
-					t.Fatalf("retry text=%q, want %q", n.text, input)
+				if n := workClassNode(t, p, input, ParseOptions{Backend: backend, Unit: unit}); value.D(n).Text != input {
+					t.Fatalf("retry text=%q, want %q", value.D(n).Text, input)
 				}
 			})
 		}

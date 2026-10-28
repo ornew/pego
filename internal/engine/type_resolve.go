@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/value"
 )
 
 // typeResolver turns the type expressions of a grammar into types. It reports undefined names,
@@ -230,15 +231,15 @@ func (k *typeResolver) resolveNamed(name string, pos grammar.Pos) ty {
 		return tyTop
 	case "_|_":
 		return tyBottom
-	case TypeMissing: // an inserted missing token, one kind of error
+	case value.TypeMissing: // an inserted missing token, one kind of error
 		return tyMissing
 	case "error": // the value of recovery: a recovered error or a missing token
 		return tyErr
 	}
 	switch spec := k.prog.types[name].(type) {
 	case *grammar.TypeDef:
-		value := spec.NodeValue()
-		if value == nil {
+		val := spec.NodeValue()
+		if val == nil {
 			return namedTy{name, 's'}
 		}
 		// Within the value of a named node type, a named node type stands for itself by its
@@ -251,7 +252,7 @@ func (k *typeResolver) resolveNamed(name string, pos grammar.Pos) ty {
 		k.control.poll()
 		resolving := k.resolving
 		k.resolving, k.inNode = nil, true
-		v := k.resolve(value)
+		v := k.resolve(val)
 		k.resolving, k.inNode = resolving, false
 		if v == tyBottom {
 			return tyBottom // node[_|_] has no values
@@ -306,8 +307,8 @@ func (k *typeResolver) checkTypeDefinitions() {
 		k.control.poll()
 		switch spec := td.(type) {
 		case *grammar.TypeDef:
-			if value := spec.NodeValue(); value != nil {
-				k.resolveLocation(value, spec.Diagnostic(), "the value of node type "+td.DeclName())
+			if val := spec.NodeValue(); val != nil {
+				k.resolveLocation(val, spec.Diagnostic(), "the value of node type "+td.DeclName())
 				continue
 			}
 			seen := map[string]bool{}

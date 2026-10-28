@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 func newChangeTestDocument(t *testing.T, prog *Program, text string, o ParseOptions, limit int) *ChangeDocument {
@@ -121,8 +122,8 @@ rule main Entry = x:([a-z]+ #atomic) $$ => Entry{Name: text($x), At: $x.Start}`)
 		if got := d.DrainChanges()[1].Output; got != OutputChanged {
 			t.Fatal("scalar replacement", got)
 		}
-		if value, _ := old.Root().Field("Name"); value != "aa" {
-			t.Fatal("old snapshot mutated", value)
+		if val, _ := old.Root().Field("Name"); val != "aa" {
+			t.Fatal("old snapshot mutated", val)
 		}
 		if err := d.Edit(0, 2, "bb"); err != nil {
 			t.Fatal(err)
@@ -265,7 +266,7 @@ func TestDocumentChangesByteBoundaryRejectionAndNormalizedText(t *testing.T) {
 	}
 }
 
-func changeGraphSnapshot(t *testing.T, root *Node) *Snapshot {
+func changeGraphSnapshot(t *testing.T, root *value.Node) *Snapshot {
 	t.Helper()
 	graph, err := freezeSnapshotGraph(&parser{}, root)
 	if err != nil {
@@ -275,39 +276,41 @@ func changeGraphSnapshot(t *testing.T, root *Node) *Snapshot {
 }
 
 func TestDocumentChangesConservativeGraphEquality(t *testing.T) {
-	leaf := func() *Node { return &Node{kind: kindOf("Leaf", "leaf"), start: 1, end: 2, terminal: true, text: "x"} }
+	leaf := func() *value.Node {
+		return value.Ptr(value.Data{Kind: value.KindOf("Leaf", "leaf"), Start: 1, End: 2, Terminal: true, Text: "x"})
+	}
 	shared := leaf()
-	a := &Node{children: []*Node{shared, shared, nil}}
-	a.fields = Fields{{"self", a}, {"nil", (*Node)(nil)}, {"value", 4}, {"flag", true}}
+	a := value.Ptr(value.Data{Children: []*value.Node{shared, shared, nil}})
+	value.D(a).Fields = value.Fields{{Name: "self", Value: a}, {Name: "nil", Value: (*value.Node)(nil)}, {Name: "value", Value: 4}, {Name: "flag", Value: true}}
 	b := a.Clone()
 	if !equalChangeSnapshots(changeGraphSnapshot(t, a), changeGraphSnapshot(t, b)) {
 		t.Fatal("equal cyclic graph")
 	}
-	b.children[1] = leaf()
+	value.D(b).Children[1] = leaf()
 	if equalChangeSnapshots(changeGraphSnapshot(t, a), changeGraphSnapshot(t, b)) {
 		t.Fatal("changed alias topology omitted")
 	}
 	b = a.Clone()
-	b.children[0].start++
+	value.D(value.D(b).Children[0]).Start++
 	if equalChangeSnapshots(changeGraphSnapshot(t, a), changeGraphSnapshot(t, b)) {
 		t.Fatal("position omitted")
 	}
 	b = a.Clone()
-	b.fields[2].Value = 5
+	value.D(b).Fields[2].Value = 5
 	if equalChangeSnapshots(changeGraphSnapshot(t, a), changeGraphSnapshot(t, b)) {
 		t.Fatal("scalar omitted")
 	}
 	b = a.Clone()
-	b.fields[1].Value = nil
+	value.D(b).Fields[1].Value = nil
 	if equalChangeSnapshots(changeGraphSnapshot(t, a), changeGraphSnapshot(t, b)) {
 		t.Fatal("typed nil omitted")
 	}
 	b = a.Clone()
-	b.fields[2], b.fields[3] = b.fields[3], b.fields[2]
+	value.D(b).Fields[2], value.D(b).Fields[3] = value.D(b).Fields[3], value.D(b).Fields[2]
 	if equalChangeSnapshots(changeGraphSnapshot(t, a), changeGraphSnapshot(t, b)) {
 		t.Fatal("field order omitted")
 	}
-	for _, pair := range [][2]*Node{{{}, {children: []*Node{}}}, {{}, {fields: Fields{}}}} {
+	for _, pair := range [][2]*value.Node{{{}, value.Ptr(value.Data{Children: []*value.Node{}})}, {{}, value.Ptr(value.Data{Fields: value.Fields{}})}} {
 		if equalChangeSnapshots(changeGraphSnapshot(t, pair[0]), changeGraphSnapshot(t, pair[1])) {
 			t.Fatal("nil versus empty omitted")
 		}
@@ -321,7 +324,7 @@ func TestDocumentChangesConservativeGraphEquality(t *testing.T) {
 }
 
 func TestDocumentChangesComparisonUsesCumulativeBudget(t *testing.T) {
-	leaf := &Node{kind: kindOf("Leaf", "leaf"), terminal: true, text: strings.Repeat("x", 8192)}
+	leaf := value.Ptr(value.Data{Kind: value.KindOf("Leaf", "leaf"), Terminal: true, Text: strings.Repeat("x", 8192)})
 	a, b := changeGraphSnapshot(t, leaf), changeGraphSnapshot(t, leaf.Clone())
 	control := newWorkControl(nil, limits.WorkLimits{MaxInputWork: 8192})
 	control.charge(4096, 1) // Work already spent by parsing/capture in this invocation.

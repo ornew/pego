@@ -6,11 +6,12 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/value"
 )
 
 var compiledRecognitionLoadSink *Program
 var compiledRecognitionSaveSink []byte
-var compiledRecognitionParseNodeSink *Node
+var compiledRecognitionParseNodeSink *value.Node
 var compiledRecognitionParseErrorSink error
 
 // mustMarshal returns the bytes of a save that cannot fail in a benchmark.

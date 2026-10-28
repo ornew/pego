@@ -1,4 +1,4 @@
-package engine
+package value
 
 import "fmt"
 
@@ -121,8 +121,8 @@ func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
 			for i := len(fields) - 1; i >= 0; i-- {
 				push(fields[i].Value, x, WalkEdge{Kind: WalkField, FieldName: fields[i].Name})
 			}
-			for i := len(x.children) - 1; i >= 0; i-- {
-				push(x.children[i], x, WalkEdge{Kind: WalkChild, ChildIndex: i})
+			for i := len(x.d.Children) - 1; i >= 0; i-- {
+				push(x.d.Children[i], x, WalkEdge{Kind: WalkChild, ChildIndex: i})
 			}
 		case []any:
 			for i := len(x) - 1; i >= 0; i-- {
@@ -142,8 +142,8 @@ func walkFields(n *Node) Fields {
 	if !n.fieldsVisible() {
 		return nil
 	}
-	fields := n.fields.sorted()
-	if !n.labeled {
+	fields := n.d.Fields.sorted()
+	if !n.d.Labeled {
 		return fields
 	}
 	out := fields[:0]

@@ -14,6 +14,7 @@ import (
 	"weak"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 func batchRetentionParser(t *testing.T, e TraceEvent) *parser {
@@ -24,7 +25,7 @@ func batchRetentionParser(t *testing.T, e TraceEvent) *parser {
 	return e.p
 }
 
-func batchRetentionJSON(t *testing.T, n *Node) []byte {
+func batchRetentionJSON(t *testing.T, n *value.Node) []byte {
 	t.Helper()
 	b, err := json.Marshal(n)
 	if err != nil {
@@ -53,7 +54,7 @@ rule entry = key:[a-z]+ #atomic ":" value:[0-9]+ #atomic => Entry{Key: text($key
 						if active && !workControlsEnabled {
 							t.Skip("active work controls are unavailable in the reference build")
 						}
-						parse := func(input string, wantFailure bool) (*Node, error, TraceEvent) {
+						parse := func(input string, wantFailure bool) (*value.Node, error, TraceEvent) {
 							var retained TraceEvent
 							opts := ParseOptions{Backend: backend, Unit: unit, Recognize: recognize, Trace: func(e TraceEvent) {
 								if e.Kind == TraceEnter && e.Rule == "main" {
@@ -87,15 +88,15 @@ rule entry = key:[a-z]+ #atomic ":" value:[0-9]+ #atomic => Entry{Key: text($key
 						}
 						var before []byte
 						if node != nil {
-							if node.Type() != "tuple" || len(node.children) != 3 || node.children[1].Type() != "Entry" {
+							if node.Type() != "tuple" || len(value.D(node).Children) != 3 || value.D(node).Children[1].Type() != "Entry" {
 								t.Fatalf("unexpected result: %s", batchRetentionJSON(t, node))
 							}
-							entry := node.children[1]
-							key, hasKey := entry.fields.Get("Key")
-							value, hasValue := entry.fields.Get("Value")
-							count, hasCount := entry.fields.Get("Count")
-							valueNode, valueIsNode := value.(*Node)
-							if node.children[0].text != "!" || node.children[2].text != "?" || !hasKey || key != "alpha" || !hasValue || !valueIsNode || valueNode == nil || valueNode.text != "123" || !hasCount || count != 3 {
+							entry := value.D(node).Children[1]
+							key, hasKey := value.D(entry).Fields.Get("Key")
+							val, hasValue := value.D(entry).Fields.Get("Value")
+							count, hasCount := value.D(entry).Fields.Get("Count")
+							valueNode, valueIsNode := val.(*value.Node)
+							if value.D(value.D(node).Children[0]).Text != "!" || value.D(value.D(node).Children[2]).Text != "?" || !hasKey || key != "alpha" || !hasValue || !valueIsNode || valueNode == nil || value.D(valueNode).Text != "123" || !hasCount || count != 3 {
 								t.Fatalf("unexpected fields/terminals: %s", batchRetentionJSON(t, node))
 							}
 							before = batchRetentionJSON(t, node)
@@ -107,7 +108,7 @@ rule entry = key:[a-z]+ #atomic ":" value:[0-9]+ #atomic => Entry{Key: text($key
 
 						// A later parse reuses scratch; the caller-owned prior Node stays intact.
 						retry, retryErr, retryEvent := parse("!beta:45?", false)
-						if retryErr != nil || recognize && retry != nil || !recognize && (retry == nil || retry.children[1].Field("Key") != "beta" || retry.children[1].Field("Count") != 2) {
+						if retryErr != nil || recognize && retry != nil || !recognize && (retry == nil || value.D(retry).Children[1].Field("Key") != "beta" || value.D(retry).Children[1].Field("Count") != 2) {
 							t.Fatalf("retry node=%v err=%v", retry, retryErr)
 						}
 						assertTraceParserDetached(t, batchRetentionParser(t, retryEvent), false)
@@ -139,7 +140,7 @@ func TestWorkBatchTraceCallbackPanicDetachesParserAndPreservesRetry(t *testing.T
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
 				token := &struct{ marker string }{"trace panic"}
 				var observed *parser
-				var node *Node
+				var node *value.Node
 				var err error
 				got := workContextRecover(func() {
 					node, err = prog.ParseWith("main", text, ParseOptions{Backend: backend, Unit: unit, Trace: func(e TraceEvent) {
@@ -210,7 +211,7 @@ func TestWorkBatchTraceInterruptionDetachesParser(t *testing.T) {
 								panicCtx.armed = true
 							}
 						}
-						var node *Node
+						var node *value.Node
 						var returnedErr error
 						got := workContextRecover(func() { node, returnedErr = prog.ParseWith("main", strings.Repeat("a", 512), opts) })
 						if node != nil {

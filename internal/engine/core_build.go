@@ -5,6 +5,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/ir/core"
+	"github.com/ornew/pego/internal/value"
 )
 
 // Building Core IR (internal/ir/core) from a compiled program.
@@ -406,7 +407,7 @@ func (b *coreBuilder) expr(e grammar.Expr, s *coreScope, build bool) (core.Node,
 func (b *coreBuilder) node(e grammar.Expr, s *coreScope, build bool) (core.Node, error) {
 	switch e := e.(type) {
 	case *grammar.Literal:
-		n := &core.Lit{Text: literalValue(e.Value), Fold: e.IgnoreCase}
+		n := &core.Lit{Text: value.LiteralValue(e.Value), Fold: e.IgnoreCase}
 		if n.Text != "" {
 			n.Exp = b.exp(literalDesc(e))
 		}

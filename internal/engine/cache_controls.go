@@ -3,6 +3,8 @@ package engine
 import (
 	"unsafe"
 	"weak"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // CacheStats describes retained incremental history. EstimatedBytes includes
@@ -62,7 +64,7 @@ func (d *Document) CacheStats() CacheStats {
 		s.EstimatedBytes += uint64(cap(run.elems)) * uint64(unsafe.Sizeof(runElem{}))
 	}
 	s.EstimatedBytes += uint64(cap(d.edits)) * uint64(unsafe.Sizeof(docEdit{}))
-	s.EstimatedBytes += uint64(cap(d.kids)) * uint64(unsafe.Sizeof((*Node)(nil)))
+	s.EstimatedBytes += uint64(cap(d.kids)) * uint64(unsafe.Sizeof((*value.Node)(nil)))
 	s.EstimatedBytes += uint64(cap(d.vals)) * uint64(unsafe.Sizeof(any(nil)))
 	return s
 }

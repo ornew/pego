@@ -14,6 +14,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
@@ -28,7 +29,7 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 					records[i] = []*SyntaxError{a, b, a}[i%3]
 				}
 				before, _ := json.Marshal(records)
-				retained := &Node{text: "retained", fields: Fields{{Name: "keep", Value: "stable"}}}
+				retained := value.Ptr(value.Data{Text: "retained", Fields: value.Fields{{Name: "keep", Value: "stable"}}})
 				p := diagnosticParser(limits.WorkLimits{})
 				p.memo, p.recovered = newMemoTable(), []*SyntaxError{prefix}
 				p.memo.slots = make([]*memoEntry, 1)
@@ -52,11 +53,11 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 					p.memo.slots[0] = &memoEntry{rule: 7, ok: true, end: 1, node: retained, errs: records}
 					steps += 2 // lookup and entry visit, then the controlled replay
 					var ok, hit bool
-					var value *Node
-					run = func() { _, value, ok, hit = p.callBegin(r, 0) }
+					var val *value.Node
+					run = func() { _, val, ok, hit = p.callBegin(r, 0) }
 					completed = func() {
 						assertReplay()
-						if !ok || !hit || value != retained {
+						if !ok || !hit || val != retained {
 							t.Fatal("memo hit result differs")
 						}
 					}
@@ -101,7 +102,7 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 					op := &operatorsRuleOp{kind: grammar.Prefix, line: &operatorsRuleLine{scope: &scope{}}}
 					var best operatorsRuleAttempt
 					if name == "OperatorsRule snapshot" {
-						op.line.m = func(p *parser) (*Node, bool) {
+						op.line.m = func(p *parser) (*value.Node, bool) {
 							p.pos = 1
 							p.recovered = append(p.recovered, records...)
 							return retained, true
@@ -153,7 +154,7 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 					aborted()
 				}
 				after, _ := json.Marshal(records)
-				if string(before) != string(after) || records[0] != a || retained.text != "retained" || retained.fields[0].Value != "stable" {
+				if string(before) != string(after) || records[0] != a || value.D(retained).Text != "retained" || value.D(retained).Fields[0].Value != "stable" {
 					t.Fatal("copy changed retained errors, alias pointers or Node")
 				}
 			})

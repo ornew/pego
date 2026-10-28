@@ -9,6 +9,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/ir/core"
 	"github.com/ornew/pego/internal/ir/flow"
+	"github.com/ornew/pego/internal/value"
 )
 
 // Typed Go rules printed from Flow IR.
@@ -908,7 +909,7 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 	case *flow.NewNode:
 		typ := "tuple"
 		if x.List {
-			typ = TypeList
+			typ = value.TypeList
 		}
 		return fmt.Sprintf("p.%s(%q, %s, p.Pos, %s)", p.g.helper("NewNode"), typ, p.expr(x.Start), p.expr(x.Kids))
 	case *flow.NewVals:

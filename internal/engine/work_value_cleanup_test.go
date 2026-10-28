@@ -9,11 +9,12 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestWorkValueCopyInterruptionPreservesChildren(t *testing.T) {
-	retained := &Node{text: "retained", start: 7, end: 9, fields: Fields{{Name: "value", Value: "unchanged"}}}
-	p := &parser{kidStack: make([]*Node, 257)}
+	retained := value.Ptr(value.Data{Text: "retained", Start: 7, End: 9, Fields: value.Fields{{Name: "value", Value: "unchanged"}}})
+	p := &parser{kidStack: make([]*value.Node, 257)}
 	for i := range p.kidStack {
 		p.kidStack[i] = retained
 	}
@@ -40,18 +41,18 @@ func TestWorkValueCopyInterruptionPreservesChildren(t *testing.T) {
 			t.Fatalf("retry child %d lost its identity", i)
 		}
 	}
-	if retained.text != "retained" || retained.start != 7 || retained.end != 9 || retained.fields[0].Value != "unchanged" {
+	if value.D(retained).Text != "retained" || value.D(retained).Start != 7 || value.D(retained).End != 9 || value.D(retained).Fields[0].Value != "unchanged" {
 		t.Fatal("clearing tracking references modified the retained node")
 	}
 }
 
 func TestWorkValueFieldAndEnvironmentWalks(t *testing.T) {
-	fields := make(Fields, 300)
+	fields := make(value.Fields, 300)
 	st := &grammar.TypeDef{Type: &grammar.StructType{}}
 	var bindings *env
 	for i := range fields {
 		name := fmt.Sprintf("v%d", i)
-		fields[i] = NodeField{Name: name, Value: i}
+		fields[i] = value.NodeField{Name: name, Value: i}
 		st.Struct().Fields = append(st.Struct().Fields, &grammar.Field{Name: name})
 		bindings = &env{name: name, val: i, next: bindings}
 	}
@@ -78,8 +79,8 @@ func TestWorkValueFieldAndEnvironmentWalks(t *testing.T) {
 }
 
 func TestWorkValueTrackingCleanupAfterInterruption(t *testing.T) {
-	retained := &Node{text: "retained"}
-	p := &parser{created: make([]*Node, 258)}
+	retained := value.Ptr(value.Data{Text: "retained"})
+	p := &parser{created: make([]*value.Node, 258)}
 	for i := range p.created {
 		p.created[i] = retained
 	}
@@ -90,7 +91,7 @@ func TestWorkValueTrackingCleanupAfterInterruption(t *testing.T) {
 	// The interruption boundary must disable controls before mandatory cleanup.
 	p.releaseScratch()
 	p.dropCreated(1)
-	if p.control != nil || len(p.created) != 1 || p.created[0] != retained || retained.text != "retained" {
+	if p.control != nil || len(p.created) != 1 || p.created[0] != retained || value.D(retained).Text != "retained" {
 		t.Fatal("cleanup changed the tracking prefix or retained value")
 	}
 	for _, n := range p.created[1:cap(p.created)] {
@@ -101,10 +102,10 @@ func TestWorkValueTrackingCleanupAfterInterruption(t *testing.T) {
 }
 
 func TestWorkActionArenaResetInterruption(t *testing.T) {
-	retained := &Node{text: "retained"}
+	retained := value.Ptr(value.Data{Text: "retained"})
 	p := &parser{}
 	for range 300 {
-		*p.closures.alloc() = closure{ctx: &evalCtx{items: []*Node{retained}}}
+		*p.closures.alloc() = closure{ctx: &evalCtx{items: []*value.Node{retained}}}
 	}
 	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 64})
 	if err := catchFatal(t, func() { p.useCtx(evalCtx{p: p}) }); !errors.Is(err, limits.ErrWorkLimit) {
@@ -112,7 +113,7 @@ func TestWorkActionArenaResetInterruption(t *testing.T) {
 	}
 	p.releaseScratch()
 	p.useCtx(evalCtx{p: p})
-	if p.closures.n != 0 || retained.text != "retained" {
+	if p.closures.n != 0 || value.D(retained).Text != "retained" {
 		t.Fatal("reset retry failed or changed an externally retained value")
 	}
 	for _, chunk := range p.closures.chunks {

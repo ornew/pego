@@ -2,6 +2,7 @@ package engine
 
 import (
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/value"
 )
 
 // operatorsRule is a compiled Operators Rule expression. Binding levels are numbered from 1 in declaration
@@ -21,7 +22,7 @@ type operatorsRuleLine struct {
 	act   evaluator // action (nil if none)
 	// value makes the value of an operand line without an action, and single that of an operator
 	// line's operator, from the value of the line's expression.
-	value  func(p *parser, v *Node, start int) *Node
+	value  func(p *parser, v *value.Node, start int) *value.Node
 	single singleMode
 	shape  shaper
 	entry  int // start of the bytecode (bytecode backend only)
@@ -96,7 +97,7 @@ func (c *compiler) compileOperatorsRule(r *rule, e *grammar.OperatorsRule) {
 			seen[l.Name] = true
 		}
 	}
-	r.body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(r, min) }
+	r.body = func(p *parser, min int) (*value.Node, bool) { return p.operatorsRuleParse(r, min) }
 }
 
 // leanLine reports whether the value of an Operators Rule line is unused: the line is an operand
@@ -122,7 +123,7 @@ func (c *compiler) operatorsRuleLine(e grammar.Expr, action grammar.Term, locals
 type operatorsRuleAttempt struct {
 	op         *operatorsRuleOp
 	frame      *frame
-	v          *Node
+	v          *value.Node
 	start, end int
 	env        *env
 	cut        bool
@@ -203,7 +204,7 @@ func (p *parser) applyRecovered(a *operatorsRuleAttempt) {
 // min. The operand of a prefix operator and the right operand of an infix operator are parsed by
 // recursion, so each level counts as a rule call against the nesting limit: a chain of prefix or
 // right-associative operators would otherwise nest without bound on the goroutine stack.
-func (p *parser) operatorsRuleParse(r *rule, min int) (*Node, bool) {
+func (p *parser) operatorsRuleParse(r *rule, min int) (*value.Node, bool) {
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.fail("nesting too deep: more than %d rule calls", p.maxDepth)
@@ -214,7 +215,7 @@ func (p *parser) operatorsRuleParse(r *rule, min int) (*Node, bool) {
 }
 
 // operatorsRuleExpr is the body of operatorsRuleParse.
-func (p *parser) operatorsRuleExpr(r *rule, min int) (*Node, bool) {
+func (p *parser) operatorsRuleExpr(r *rule, min int) (*value.Node, bool) {
 	pr := r.operatorsRule
 	lhs, ok := p.operatorsRuleNud(r)
 	if !ok {
@@ -273,7 +274,7 @@ func (p *parser) operatorsRuleExpr(r *rule, min int) (*Node, bool) {
 }
 
 // operatorsRuleNud parses the beginning of an expression (a prefix operator or an operand).
-func (p *parser) operatorsRuleNud(r *rule) (*Node, bool) {
+func (p *parser) operatorsRuleNud(r *rule) (*value.Node, bool) {
 	pr := r.operatorsRule
 	p.skipTrivia(pr)
 	m0 := p.mark()
@@ -311,7 +312,7 @@ func (p *parser) operatorsRuleNud(r *rule) (*Node, bool) {
 
 // lineResult builds the value of an operand line, and checks it against the rule's declared type
 // if needed.
-func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *Node, start int, locals *local) *Node {
+func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *value.Node, start int, locals *local) *value.Node {
 	if r.novalue {
 		return nil
 	}
@@ -323,11 +324,11 @@ func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *Node, st
 		if len(l.scope.names) > 0 {
 			v = p.attachCaptures(v, l.scope, f, start, p.pos)
 		}
-		if v != nil && v.fresh {
-			if p.prog.sourceInfo && v.kind.rule == "" {
-				v.kind = r.kinds.named(v.kind, r.name)
+		if v != nil && value.D(v).Fresh {
+			if p.prog.sourceInfo && value.D(v).Kind.Rule == "" {
+				value.D(v).Kind = r.kinds.Named(value.D(v).Kind, r.name)
 			}
-			v.fresh = false
+			value.D(v).Fresh = false
 		}
 	}
 	return v
@@ -335,22 +336,22 @@ func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *Node, st
 
 // convertOperator converts v, the value of an operator of rule r, to the named node type of the
 // rule's operators.
-func (p *parser) convertOperator(r *rule, v *Node) *Node {
-	n, ok := r.opKinds.convert(unboxNode(v))
+func (p *parser) convertOperator(r *rule, v *value.Node) *value.Node {
+	n, ok := r.opKinds.Convert(value.UnboxNode(v))
 	if !ok {
-		p.fail("cannot convert %s to %s in result of rule %s", typeName(unboxNode(v)), r.opNodeType, r.whereName())
+		p.fail("cannot convert %s to %s in result of rule %s", typeName(value.UnboxNode(v)), r.opNodeType, r.whereName())
 	}
 	return n
 }
 
 // operatorsRuleBuild builds the value of an operator application.
-func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *Node) *Node {
+func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *value.Node) *value.Node {
 	if r.novalue {
 		return nil
 	}
 	start, end := a.start, p.pos
 	if lhs != nil {
-		start = int(lhs.start)
+		start = int(value.D(lhs).Start)
 	}
 	if a.op.kind == grammar.Postfix {
 		end = a.end
@@ -360,13 +361,13 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 	// captures.
 	opv, ok := l.shape.single(p, l.single, a.v, a.start)
 	if !ok {
-		opv = p.newNode(Node{kind: kindSeq, start: int32(a.start), end: int32(a.end)})
+		opv = p.newNode(value.Data{Kind: value.SeqKind, Start: int32(a.start), End: int32(a.end)})
 	}
 	if l.single == singleTuple && len(l.scope.names) > 0 {
 		opv = p.attachCaptures(opv, l.scope, a.frame, a.start, a.end)
 	}
 	if opv != nil {
-		opv.fresh = false
+		value.D(opv).Fresh = false
 	}
 	if l.act != nil {
 		// The locals live in the parser, like the evaluation context (see useCtx).
@@ -390,28 +391,28 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 	}
 	// Without an action, the application is the node of the tuple (lhs, op, rhs) of the line's
 	// kind, with those captures.
-	var kids []*Node
-	var fields Fields
+	var kids []*value.Node
+	var fields value.Fields
 	switch a.op.kind {
 	case grammar.Prefix:
 		kids = p.nodes(2)
 		kids[0], kids[1] = opv, rhs
-		fields = Fields{{"op", nodeOrNil(opv)}, {"rhs", nodeOrNil(rhs)}}
+		fields = value.Fields{{Name: "op", Value: nodeOrNil(opv)}, {Name: "rhs", Value: nodeOrNil(rhs)}}
 	case grammar.Postfix:
 		kids = p.nodes(2)
 		kids[0], kids[1] = lhs, opv
-		fields = Fields{{"lhs", nodeOrNil(lhs)}, {"op", nodeOrNil(opv)}}
+		fields = value.Fields{{Name: "lhs", Value: nodeOrNil(lhs)}, {Name: "op", Value: nodeOrNil(opv)}}
 	default:
 		kids = p.nodes(3)
 		kids[0], kids[1], kids[2] = lhs, opv, rhs
-		fields = Fields{{"lhs", nodeOrNil(lhs)}, {"op", nodeOrNil(opv)}, {"rhs", nodeOrNil(rhs)}}
+		fields = value.Fields{{Name: "lhs", Value: nodeOrNil(lhs)}, {Name: "op", Value: nodeOrNil(opv)}, {Name: "rhs", Value: nodeOrNil(rhs)}}
 	}
-	kind := kindSeq
+	kind := value.SeqKind
 	if r.opKinds != nil {
-		kind = r.opKinds[baseTuple] // made with the named node type of the operators
+		kind = r.opKinds[value.BaseTuple] // made with the named node type of the operators
 	} else if p.prog.sourceInfo {
-		kind = r.kinds.named(kindSeq, r.name)
+		kind = r.kinds.Named(value.SeqKind, r.name)
 	}
-	n := p.newNode(Node{kind: kind, start: int32(start), end: int32(end), children: kids, fields: fields, labeled: p.prog.sourceInfo})
+	n := p.newNode(value.Data{Kind: kind, Start: int32(start), End: int32(end), Children: kids, Fields: fields, Labeled: p.prog.sourceInfo})
 	return n
 }

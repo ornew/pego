@@ -9,6 +9,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/ir/core"
 	"github.com/ornew/pego/internal/ir/flow"
+	"github.com/ornew/pego/internal/value"
 )
 
 // Value-free rules of the TypeScript runtime printed from Flow IR.
@@ -911,10 +912,10 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 		if p.dry {
 			return ""
 		}
-		value := literalValue(x.Lit.Text)
-		v, shared := g.literalName(value)
+		val := value.LiteralValue(x.Lit.Text)
+		v, shared := g.literalName(val)
 		if !shared {
-			p.decl(v, fmt.Sprintf("const %s: Lit = { text: %s, cps: %s, bytes: %s };\n", v, tsString(value), tsInts([]rune(value)), tsInts([]byte(value))))
+			p.decl(v, fmt.Sprintf("const %s: Lit = { text: %s, cps: %s, bytes: %s };\n", v, tsString(val), tsInts([]rune(val)), tsInts([]byte(val))))
 		}
 		var desc expID
 		if x.Lit.Text == "" {
@@ -1018,8 +1019,8 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 		}
 		// The function is declared only if the rule keeps the printed text.
 		name := p.g.name("a")
-		value := p.g.term(b.Value, frameScope(x.Caps), nil)
-		p.decl(name, fmt.Sprintf("function %s(%s: Actx): Value {\n  return %s;\n}\n\n", name, tsActxParam(value), value))
+		val := p.g.term(b.Value, frameScope(x.Caps), nil)
+		p.decl(name, fmt.Sprintf("function %s(%s: Actx): Value {\n  return %s;\n}\n\n", name, tsActxParam(val), val))
 		return fmt.Sprintf("p.bind(%s, %s)", tsString(b.Name), name)
 	case *flow.CallOutline:
 		return p.outline(x)

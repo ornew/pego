@@ -11,6 +11,7 @@ import (
 	"weak"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 type streamControlRetentionSentinel struct{ data [128]byte }
@@ -48,7 +49,7 @@ type streamControlRetentionRun struct {
 	context      weak.Pointer[streamControlRetentionContext]
 	reader       weak.Pointer[streamCallbackReader]
 	emitState    weak.Pointer[streamControlRetentionSentinel]
-	nodes        []*Node
+	nodes        []*value.Node
 	snapshots    []string
 	err          error
 	wantErr      error
@@ -88,11 +89,11 @@ func runStreamControlRetentionCase(t *testing.T, prog *Program, outcome string, 
 	panicToken := ctx.token
 	var controlRef weak.Pointer[workControl]
 	var event TraceEvent
-	var nodes []*Node
+	var nodes []*value.Node
 	var snapshots []string
 	var returnedErr error
 	gotPanic := catchStreamPanic(func() {
-		returnedErr = prog.ParseStreamWith("main", reader, func(n *Node) error {
+		returnedErr = prog.ParseStreamWith("main", reader, func(n *value.Node) error {
 			if streamControlRetentionTouch(callbackState) != 42 {
 				panic("emit sentinel missing")
 			}
@@ -225,7 +226,7 @@ func TestWorkStreamTraceRetentionWithActiveControls(t *testing.T) {
 					}
 				}
 				retryCount := 0
-				if err := run.program.ParseStreamWith("main", strings.NewReader("#records\nxy=3\n"), func(*Node) error {
+				if err := run.program.ParseStreamWith("main", strings.NewReader("#records\nxy=3\n"), func(*value.Node) error {
 					retryCount++
 					return nil
 				}, ParseOptions{}); err != nil || retryCount != 1 {

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/value"
 )
 
 // tsReservedTypes are the names types.ts declares itself, or imports. A grammar type with one of
@@ -112,10 +113,10 @@ func (g *tsGen) typedTS(start *rule) (types, parser string, err error) {
 		fmt.Fprintf(&b, "  [%s, %d],\n", tsString(n.name), t.recipe(n))
 	}
 	// Open values: tuple and list nodes become TNode<unknown>, and tuple and list values arrays.
-	for _, name := range []string{TypeTuple, TypeList} {
+	for _, name := range []string{value.TypeTuple, value.TypeList} {
 		fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), openID)
 	}
-	for _, name := range []string{typeTupleValue, typeListValue} {
+	for _, name := range []string{value.TypeTupleValue, value.TypeListValue} {
 		fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), elemsID)
 	}
 	for _, name := range t.all {
@@ -397,7 +398,7 @@ func (t *tsTypedGen) recipe(x ty) int {
 		r += ", elems: [" + strings.Join(elems, ", ") + "]"
 	case joinTy:
 		if kind == "union" {
-			members := []string{fmt.Sprintf("[%s, %d]", tsString(TypeError), t.recipe(tyError))}
+			members := []string{fmt.Sprintf("[%s, %d]", tsString(value.TypeError), t.recipe(tyError))}
 			for _, m := range a.alts {
 				if m, ok := m.(namedTy); ok && (m == tyMatch || m.kind == 's') {
 					members = append(members, fmt.Sprintf("[%s, %d]", tsString(m.name), t.recipe(m)))

@@ -1,5 +1,7 @@
 package engine
 
+import "github.com/ornew/pego/internal/value"
+
 // Tracing reports every rule call of a parse to a function (ParseOptions.Trace). It is built
 // around the one function all backends call for a rule (parser.call), so that an ordinary parse
 // pays for it with a single nil check per call of a rule that is not plain; plain calls, which
@@ -171,7 +173,7 @@ func (p *parser) setTrace(fn func(TraceEvent)) {
 }
 
 // tracedCall reports a call of r, runs it with call, and reports its result.
-func (p *parser) tracedCall(r *rule, min int) (*Node, bool) {
+func (p *parser) tracedCall(r *rule, min int) (*value.Node, bool) {
 	p.traceEnter(r, min)
 	p.tr.direct = true
 	v, ok := p.call(r, min)

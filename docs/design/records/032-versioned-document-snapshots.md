@@ -35,7 +35,7 @@ facts, rather than current performance estimates:
   repetition records. [`moveResult` and `moveTree`](../../../internal/engine/runtime.go)
   move reused nonempty Nodes in place, so earlier returned trees can change.
   Empty nodes can require copies because their placement is contextual.
-- [`Node.Clone`](../../../internal/engine/node.go) copies children and node-valued
+- [`Node.Clone`](../../../internal/value/node.go) copies children and node-valued
   fields with an identity map. Shared descendants stay shared in the clone;
   captured strings and scalar fields are immutable values. Clone does not capture
   document text, a version, or diagnostics.

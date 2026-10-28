@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestPublicOutputSchema(t *testing.T) {
@@ -140,7 +140,7 @@ func TestPublicStructuralQuerySharedEdgesAndLimits(t *testing.T) {
 	for _, c := range root.Elems() {
 		kids = append(kids, c)
 	}
-	engine.SetNodeElems(root, append(kids, root))
+	value.SetNodeElems(root, append(kids, root))
 	if partial, err := q.Matches(root); partial != nil || !errors.Is(err, pego.ErrQueryCycle) {
 		t.Fatalf("cyclic query: %+v, %v", partial, err)
 	}
@@ -224,10 +224,10 @@ rule main = "a" => Item{Value: nil}`, "main")
 	}
 	check(nilQuery, 1)
 	check(stringQuery, 0)
-	engine.SetNodeField(root, "Value", "ok")
+	value.SetNodeField(root, "Value", "ok")
 	check(stringQuery, 1)
 	check(nilQuery, 0)
-	engine.SetNodeField(root, "Value", false)
+	value.SetNodeField(root, "Value", false)
 	check(stringQuery, 0)
 	check(nilQuery, 0)
 }
@@ -266,7 +266,7 @@ rule main = x:"a" => Item{Value: text($x)}`, "main")
 	if err != nil || len(matches) != 1 || len(matches[0].Captures) != 1 || matches[0].Captures[0].Value != "a" {
 		t.Fatalf("scalar alias match: %+v, %v", matches, err)
 	}
-	engine.SetNodeField(root, "Value", false)
+	value.SetNodeField(root, "Value", false)
 	matches, err = query.Matches(root)
 	if err != nil || len(matches) != 0 {
 		t.Fatalf("mutated scalar alias match: %+v, %v", matches, err)

@@ -5,6 +5,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 var snapshotBenchmarkResult any
@@ -14,7 +16,7 @@ type snapshotLegacyResult struct {
 	version DocumentVersion
 	unit    PositionUnit
 	text    string
-	root    *Node
+	root    *value.Node
 	err     error
 	stats   Stats
 }

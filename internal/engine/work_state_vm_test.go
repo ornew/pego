@@ -13,6 +13,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestWorkStateVMChildAssembly(t *testing.T) {
@@ -20,9 +21,9 @@ func TestWorkStateVMChildAssembly(t *testing.T) {
 		for _, lim := range []limits.WorkLimits{{MaxSteps: 64}, {MaxSteps: 10000}} {
 			p := stateWorkParser(lim)
 			start := 3
-			retained := &Node{text: "retained", fields: Fields{{Name: "keep", Value: "unchanged"}}}
+			retained := value.Ptr(value.Data{Text: "retained", Fields: value.Fields{{Name: "keep", Value: "unchanged"}}})
 			p.vals = append(p.vals, &start)
-			want := make([]*Node, 320)
+			want := make([]*value.Node, 320)
 			for i := range want {
 				if i%3 != 0 {
 					want[i] = retained
@@ -36,16 +37,16 @@ func TestWorkStateVMChildAssembly(t *testing.T) {
 			}
 			vm := &vmProgram{m: &Module{Code: []Instr{instruction, {Op: OpEnd}}}}
 			body := vmBody{}
-			var result *Node
+			var result *value.Node
 			err := catchFatal(t, func() { _, result, _ = p.step(vm, &body, false, false, nil) })
 			if lim.MaxSteps == 64 {
 				if !errors.Is(err, limits.ErrWorkLimit) || result != nil || len(p.vals) != 321 {
 					t.Fatalf("%v assembly interruption err=%v result=%v stack=%d", op, err, result, len(p.vals))
 				}
-			} else if err != nil || result == nil || !reflect.DeepEqual(result.children, want) || result.start != 3 {
+			} else if err != nil || result == nil || !reflect.DeepEqual(value.D(result).Children, want) || value.D(result).Start != 3 {
 				t.Fatalf("%v assembled children/position differs: %v", op, err)
 			}
-			if retained.text != "retained" || retained.fields[0].Value != "unchanged" {
+			if value.D(retained).Text != "retained" || value.D(retained).Fields[0].Value != "unchanged" {
 				t.Fatal("assembly changed retained node")
 			}
 		}
@@ -101,7 +102,7 @@ func TestWorkStateOperatorsRuleFrameSnapshotAndRestoration(t *testing.T) {
 	for _, iterative := range []bool{false, true} {
 		for _, limit := range []uint64{128, 449, 10000} {
 			p := stateWorkParser(limits.WorkLimits{MaxSteps: limit})
-			retained := &Node{text: "retained", fields: Fields{{Name: "keep", Value: "unchanged"}}}
+			retained := value.Ptr(value.Data{Text: "retained", Fields: value.Fields{{Name: "keep", Value: "unchanged"}}})
 			before, _ := json.Marshal(retained)
 			op := &operatorsRuleOp{kind: grammar.Prefix, line: &operatorsRuleLine{scope: &scope{names: make([]string, 320)}}}
 			setup := func(f *frame) {
@@ -119,7 +120,7 @@ func TestWorkStateOperatorsRuleFrameSnapshotAndRestoration(t *testing.T) {
 					f.next(p, nil, iresult{ok: true, v: retained})
 					best = p.attempt
 				} else {
-					op.line.m = func(p *parser) (*Node, bool) { setup(p.frame); return retained, true }
+					op.line.m = func(p *parser) (*value.Node, bool) { setup(p.frame); return retained, true }
 					best, _ = p.longest([]*operatorsRuleOp{op})
 				}
 			})

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/value"
 )
 
 // ignoreCaseCase is one parse of a grammar whose main rule has case-insensitive literals. The
@@ -252,7 +253,7 @@ func TestIgnoreCaseMissingSpelling(t *testing.T) {
 	if len(insertions) != 1 {
 		t.Fatalf("missing nodes: %v", insertions)
 	}
-	if expected, _ := insertions[0].fields.Get("expected"); expected != "Sel" {
+	if expected, _ := value.D(insertions[0]).Fields.Get("expected"); expected != "Sel" {
 		t.Fatalf("inserted spelling %q, want Sel (errors %v)", expected, errs)
 	}
 }
@@ -274,7 +275,7 @@ func TestIgnoreCaseMissingSpellingBackends(t *testing.T) {
 			if len(insertions) != 1 {
 				t.Fatalf("%s: backend %v: missing nodes: %v", src, backend, insertions)
 			}
-			if expected, _ := insertions[0].fields.Get("expected"); expected != "Sel" {
+			if expected, _ := value.D(insertions[0]).Fields.Get("expected"); expected != "Sel" {
 				t.Fatalf("%s: backend %v: inserted spelling %q, want Sel (errors %v)", src, backend, expected, errs)
 			}
 			if !strings.Contains(fmt.Sprint(errs), `"Sel"i`) {
@@ -325,7 +326,7 @@ func TestIgnoreCaseDocumentAndStream(t *testing.T) {
 
 	stream := compile(t, `rule main = ("ab"i #atomic)* #stream`)
 	count := 0
-	if err := stream.ParseStream("main", strings.NewReader("ABab"), func(*Node) error { count++; return nil }); err != nil {
+	if err := stream.ParseStream("main", strings.NewReader("ABab"), func(*value.Node) error { count++; return nil }); err != nil {
 		t.Fatal("stream: ", err)
 	}
 	if count != 2 {
@@ -350,7 +351,7 @@ func TestIgnoreCaseMissingInPragmaScope(t *testing.T) {
 	if len(insertions) != 1 {
 		t.Fatalf("missing nodes: %v", insertions)
 	}
-	if expected, _ := insertions[0].fields.Get("expected"); expected != "Sel" {
+	if expected, _ := value.D(insertions[0]).Fields.Get("expected"); expected != "Sel" {
 		t.Fatalf("inserted spelling %q, want Sel (errors %v)", expected, errs)
 	}
 	if !strings.Contains(fmt.Sprint(errs), `"Sel"i`) {
@@ -385,7 +386,7 @@ func TestIgnoreCaseDocumentAndStreamBackends(t *testing.T) {
 
 		stream := compile(t, `rule main = ("ab"i #atomic)* #stream`)
 		count := 0
-		if err := stream.ParseStreamWith("main", strings.NewReader("ABab"), func(*Node) error { count++; return nil }, ParseOptions{Backend: b}); err != nil {
+		if err := stream.ParseStreamWith("main", strings.NewReader("ABab"), func(*value.Node) error { count++; return nil }, ParseOptions{Backend: b}); err != nil {
 			t.Fatal(b, "stream: ", err)
 		}
 		if count != 2 {

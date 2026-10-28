@@ -1,35 +1,38 @@
 package pego
 
-import "github.com/ornew/pego/internal/engine"
+import (
+	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/value"
+)
 
 // WalkAction controls whether a walk descends, skips descendants, or stops.
-type WalkAction = engine.WalkAction
+type WalkAction = value.WalkAction
 
 const (
-	WalkContinue = engine.WalkContinue
-	WalkSkip     = engine.WalkSkip
-	WalkStop     = engine.WalkStop
+	WalkContinue = value.WalkContinue
+	WalkSkip     = value.WalkSkip
+	WalkStop     = value.WalkStop
 )
 
 // WalkVisit describes a live value, its incoming edge and nearest owning node.
 // Node is non-nil only for node values. Depth counts edges from the root.
-type WalkVisit = engine.WalkVisit
+type WalkVisit = value.WalkVisit
 
 // WalkEdge identifies a root, child, field, or nested []any list edge.
-type WalkEdge = engine.WalkEdge
+type WalkEdge = value.WalkEdge
 
 // WalkEdgeKind identifies the kind of a visit's incoming edge.
-type WalkEdgeKind = engine.WalkEdgeKind
+type WalkEdgeKind = value.WalkEdgeKind
 
 const (
-	WalkRoot        = engine.WalkRoot
-	WalkChild       = engine.WalkChild
-	WalkField       = engine.WalkField
-	WalkListElement = engine.WalkListElement
+	WalkRoot        = value.WalkRoot
+	WalkChild       = value.WalkChild
+	WalkField       = value.WalkField
+	WalkListElement = value.WalkListElement
 )
 
 // CycleError reports the root-to-back-edge path of a cyclic node or []any graph.
-type CycleError = engine.CycleError
+type CycleError = value.CycleError
 
 // Cursor selects node spans in an explicitly supplied input position unit.
 // At selects a point; Range selects a half-open range. It does not infer or
@@ -42,5 +45,5 @@ type Cursor = engine.Cursor
 // active-path cycles return CycleError. The graph must not be mutated concurrently.
 // A callback error returns unchanged; WalkStop succeeds and WalkSkip skips descendants.
 func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
-	return engine.Walk(root, visit)
+	return value.Walk(root, visit)
 }

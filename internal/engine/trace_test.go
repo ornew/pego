@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // traceLines parses input with a trace and returns one line per event:
@@ -383,8 +385,8 @@ func TestTraceStreamAndDocument(t *testing.T) {
 rule line = [a-z]* #atomic "\n"`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		var lines, traced []string
-		emit := func(dst *[]string) func(*Node) error {
-			return func(n *Node) error { *dst = append(*dst, n.String()); return nil }
+		emit := func(dst *[]string) func(*value.Node) error {
+			return func(n *value.Node) error { *dst = append(*dst, n.String()); return nil }
 		}
 		err1 := prog.ParseStreamWith("main", strings.NewReader("ab\ncd\n"), emit(&lines), ParseOptions{Backend: b})
 		calls := 0

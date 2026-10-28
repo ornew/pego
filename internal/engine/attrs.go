@@ -2,6 +2,7 @@ package engine
 
 import (
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/value"
 )
 
 // attributed compiles an attributed expression. Attributes are applied from the inside out, in
@@ -108,7 +109,7 @@ func (c *compiler) stringArg(a *grammar.Attribute, name string) (string, bool) {
 // tracked runs m with a separate record of expectations. It returns the farthest position and
 // the expectations of that separate record (the expectations are valid only until the next
 // recording; see unisolate).
-func tracked(p *parser, m matcher) (v *Node, ok bool, far int, expected []expID) {
+func tracked(p *parser, m matcher) (v *value.Node, ok bool, far int, expected []expID) {
 	mark := p.isolate(p.pos)
 	v, ok = m(p)
 	far, expected = p.unisolate(mark)
@@ -118,7 +119,7 @@ func tracked(p *parser, m matcher) (v *Node, ok bool, far int, expected []expID)
 // errorAttr replaces the expectations of a failed expression with the message msg (an ID with
 // msgBit set). The message is reported at the farthest position reached within the expression.
 func errorAttr(m matcher, msg expID) matcher {
-	return func(p *parser) (*Node, bool) {
+	return func(p *parser) (*value.Node, bool) {
 		v, ok, far, expected := tracked(p, m)
 		if ok {
 			p.mergeExpected(far, expected)
@@ -132,7 +133,7 @@ func errorAttr(m matcher, msg expID) matcher {
 // diagnosticAttr names ordinary expectations of a failure at the expression boundary.
 // Explicit messages and the tracked failure position remain unchanged.
 func diagnosticAttr(m matcher, name expID) matcher {
-	return func(p *parser) (*Node, bool) {
+	return func(p *parser) (*value.Node, bool) {
 		v, ok, far, expected := tracked(p, m)
 		if ok {
 			p.mergeExpected(far, expected)
@@ -158,7 +159,7 @@ func renamedExpected(p *parser, expected []expID, name expID) []expID {
 // recoverAttr records an error when the expression fails, skips the input matched by skip, and
 // returns an Error node. If skip fails or skips no characters, it fails without recovering.
 func recoverAttr(m, skip matcher, build bool) matcher {
-	return func(p *parser) (*Node, bool) {
+	return func(p *parser) (*value.Node, bool) {
 		m0 := p.mark()
 		v, ok, far, expected := tracked(p, m)
 		if ok {
@@ -177,6 +178,6 @@ func recoverAttr(m, skip matcher, build bool) matcher {
 		if !build {
 			return nil, true
 		}
-		return p.newNode(Node{kind: kindError, start: int32(m0.pos), end: int32(p.pos), text: p.text(m0.pos, p.pos), fields: Fields{{"message", p.recoveryErrorText(e)}}, fresh: true, terminal: true}), true
+		return p.newNode(value.Data{Kind: value.ErrorKind, Start: int32(m0.pos), End: int32(p.pos), Text: p.text(m0.pos, p.pos), Fields: value.Fields{{Name: "message", Value: p.recoveryErrorText(e)}}, Fresh: true, Terminal: true}), true
 	}
 }

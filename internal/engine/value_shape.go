@@ -1,6 +1,10 @@
 package engine
 
-import "github.com/ornew/pego/grammar"
+import (
+	"github.com/ornew/pego/grammar"
+
+	"github.com/ornew/pego/internal/value"
+)
 
 // The static shapes of values in the value model. Every backend builds the values of an
 // expression from these, so that they agree with the inferred types (value_types.go).
@@ -164,35 +168,35 @@ func sharesTuple(p *Program, e grammar.Expr) bool {
 }
 
 // tuple returns the tuple node of the result v of a match of [start, p.pos).
-func (s shaper) tuple(p *parser, v *Node, start int) *Node {
+func (s shaper) tuple(p *parser, v *value.Node, start int) *value.Node {
 	if s.elems {
 		if s.shared && v != nil {
-			return p.newNode(Node{kind: kindSeq, start: v.start, end: v.end, children: v.children, fresh: true})
+			return p.newNode(value.Data{Kind: value.SeqKind, Start: value.D(v).Start, End: value.D(v).End, Children: value.D(v).Children, Fresh: true})
 		}
 		return v
 	}
-	var kids []*Node
+	var kids []*value.Node
 	if s.k == 1 {
 		kids = p.nodes(1)
 		kids[0] = v
 	}
-	return p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true})
+	return p.newNode(value.Data{Kind: value.SeqKind, Start: int32(start), End: int32(p.pos), Children: kids, Fresh: true})
 }
 
 // one returns the one element of the result v.
-func (s shaper) one(v *Node) *Node {
+func (s shaper) one(v *value.Node) *value.Node {
 	if s.elems {
-		if v == nil || len(v.children) == 0 {
+		if v == nil || len(value.D(v).Children) == 0 {
 			return nil
 		}
-		return v.children[0]
+		return value.D(v).Children[0]
 	}
 	return v
 }
 
 // single returns the value of the result v where the expression takes one element; ok is false
 // when it has no value.
-func (s shaper) single(p *parser, mode singleMode, v *Node, start int) (*Node, bool) {
+func (s shaper) single(p *parser, mode singleMode, v *value.Node, start int) (*value.Node, bool) {
 	switch mode {
 	case singlePass:
 		return s.one(v), true
@@ -209,7 +213,7 @@ func singleMatcher(prog *Program, e grammar.Expr, m matcher) matcher {
 	if mode == singlePass && !sh.elems {
 		return m
 	}
-	return func(p *parser) (*Node, bool) {
+	return func(p *parser) (*value.Node, bool) {
 		start := p.pos
 		v, ok := m(p)
 		if !ok {
@@ -227,24 +231,24 @@ func captureMatcher(prog *Program, e grammar.Expr, m matcher) matcher {
 	if mode == singlePass && !sh.elems {
 		return m
 	}
-	return func(p *parser) (*Node, bool) {
+	return func(p *parser) (*value.Node, bool) {
 		start := p.pos
 		v, ok := m(p)
 		if !ok {
 			return nil, false
 		}
 		if v, ok = sh.single(p, mode, v, start); !ok {
-			v = p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), fresh: true})
+			v = p.newNode(value.Data{Kind: value.SeqKind, Start: int32(start), End: int32(p.pos), Fresh: true})
 		}
 		return v, true
 	}
 }
 
 // scopeValue returns the value of a scope whose body e matched [start, p.pos) with the result v.
-func scopeValueOf(prog *Program, e grammar.Expr) func(p *parser, v *Node, start int) *Node {
+func scopeValueOf(prog *Program, e grammar.Expr) func(p *parser, v *value.Node, start int) *value.Node {
 	sh := shaperOf(prog, e)
 	if scopeTuple(prog, e) {
 		return sh.tuple
 	}
-	return func(_ *parser, v *Node, _ int) *Node { return sh.one(v) }
+	return func(_ *parser, v *value.Node, _ int) *value.Node { return sh.one(v) }
 }

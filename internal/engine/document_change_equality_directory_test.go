@@ -1,14 +1,18 @@
 package engine
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/ornew/pego/internal/value"
+)
 
 func TestDocumentChangesDirectoryEqualityHasBoundedScratch(t *testing.T) {
-	root := &Node{kind: kindOf("Root", "main"), children: make([]*Node, 4096)}
-	for i := range root.children {
-		root.children[i] = &Node{kind: kindOf("Leaf", "item"), start: int32(i), end: int32(i + 1), text: "a", terminal: true}
+	root := value.Ptr(value.Data{Kind: value.KindOf("Root", "main"), Children: make([]*value.Node, 4096)})
+	for i := range value.D(root).Children {
+		value.D(root).Children[i] = value.Ptr(value.Data{Kind: value.KindOf("Leaf", "item"), Start: int32(i), End: int32(i + 1), Text: "a", Terminal: true})
 	}
 	// Keep aliases and a cycle in the wide graph, not only a flat tree.
-	root.fields = Fields{{"self", root}, {"alias", root.children[0]}}
+	value.D(root).Fields = value.Fields{{Name: "self", Value: root}, {Name: "alias", Value: value.D(root).Children[0]}}
 	a, b := changeGraphSnapshot(t, root), changeGraphSnapshot(t, root.Clone())
 	equal := true
 	allocations := testing.AllocsPerRun(10, func() { equal = equal && equalChangeSnapshots(a, b) })
@@ -23,13 +27,15 @@ func TestDocumentChangesDirectoryEqualityHasBoundedScratch(t *testing.T) {
 }
 
 func TestDocumentChangesDirectoryEqualityChecksIDEdges(t *testing.T) {
-	leaf := func() *Node { return &Node{kind: kindOf("Leaf", "item"), text: "x", terminal: true} }
+	leaf := func() *value.Node {
+		return value.Ptr(value.Data{Kind: value.KindOf("Leaf", "item"), Text: "x", Terminal: true})
+	}
 	first, second := leaf(), leaf()
-	root := &Node{children: []*Node{first, second, first}, fields: Fields{{"link", first}, {"cycle", nil}}}
-	root.fields[1].Value = root
+	root := value.Ptr(value.Data{Children: []*value.Node{first, second, first}, Fields: value.Fields{{Name: "link", Value: first}, {Name: "cycle", Value: nil}}})
+	value.D(root).Fields[1].Value = root
 	a := changeGraphSnapshot(t, root)
 	changed := root.Clone()
-	changed.children[2] = changed.children[1]
+	value.D(changed).Children[2] = value.D(changed).Children[1]
 	b := changeGraphSnapshot(t, changed)
 	if a.graph.count() != b.graph.count() {
 		t.Fatal("fixture must preserve directory size")
@@ -38,7 +44,7 @@ func TestDocumentChangesDirectoryEqualityChecksIDEdges(t *testing.T) {
 		t.Fatal("equal-sized graphs lost child alias topology")
 	}
 	changed = root.Clone()
-	changed.fields[0].Value = changed.children[1]
+	value.D(changed).Fields[0].Value = value.D(changed).Children[1]
 	b = changeGraphSnapshot(t, changed)
 	if a.graph.count() != b.graph.count() {
 		t.Fatal("fixture must preserve directory size")
@@ -49,9 +55,9 @@ func TestDocumentChangesDirectoryEqualityChecksIDEdges(t *testing.T) {
 }
 
 func TestDocumentChangesDirectoryEqualitySupportsChunkedChildStorage(t *testing.T) {
-	root := &Node{children: make([]*Node, snapshotChildChunkSize+1)}
-	for i := range root.children {
-		root.children[i] = &Node{text: "x", terminal: true}
+	root := value.Ptr(value.Data{Children: make([]*value.Node, snapshotChildChunkSize+1)})
+	for i := range value.D(root).Children {
+		value.D(root).Children[i] = value.Ptr(value.Data{Text: "x", Terminal: true})
 	}
 	a := changeGraphSnapshot(t, root)
 	// Build an equivalent immutable pointer directory with chunked root children.

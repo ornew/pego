@@ -8,6 +8,8 @@ import (
 	"testing"
 	"unsafe"
 	"weak"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 type traceLifecycleSentinel struct{ value [128]byte }
@@ -63,7 +65,7 @@ func traceLifecycleDocument(t *testing.T, p *Program, b Backend, u PositionUnit)
 }
 
 //go:noinline
-func traceLifecycleStream(t *testing.T, p *Program, b Backend, u PositionUnit) (TraceEvent, weak.Pointer[traceLifecycleReader], weak.Pointer[traceLifecycleSentinel], *Node) {
+func traceLifecycleStream(t *testing.T, p *Program, b Backend, u PositionUnit) (TraceEvent, weak.Pointer[traceLifecycleReader], weak.Pointer[traceLifecycleSentinel], *value.Node) {
 	s := &traceLifecycleSentinel{}
 	s.value[0] = 42
 	r := &traceLifecycleReader{text: "#records\na=1\nbc=22\n"}
@@ -74,8 +76,8 @@ func traceLifecycleStream(t *testing.T, p *Program, b Backend, u PositionUnit) (
 		t.Fatal("positive control failed")
 	}
 	var e TraceEvent
-	var held *Node
-	err := p.ParseStreamWith("main", r, func(n *Node) error {
+	var held *value.Node
+	err := p.ParseStreamWith("main", r, func(n *value.Node) error {
 		if held == nil {
 			held = n
 		}
@@ -126,7 +128,7 @@ func TestTraceLifecycleReleasesOwnersAfterGC(t *testing.T) {
 				if sr.Value() != nil {
 					t.Error("stream event retains callback sentinel")
 				}
-				if before != n.String() || n.Field("k").(*Node).text != "a" {
+				if before != n.String() || value.D(n.Field("k").(*value.Node)).Text != "a" {
 					t.Fatal("emitted node changed")
 				}
 				runtime.KeepAlive(e)

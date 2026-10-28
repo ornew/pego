@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestWorkDocumentMemoReplayAtomicReservation(t *testing.T) {
@@ -88,16 +89,16 @@ func TestWorkDocumentRunPublicationCopyIsProvisional(t *testing.T) {
 }
 
 func TestWorkDocumentMovementChargesEdges(t *testing.T) {
-	child := &Node{start: 2, end: 3}
-	field := &Node{start: 4, end: 5}
-	root := &Node{start: 1, end: 6, children: []*Node{child}, fields: Fields{{Name: "field", Value: field}}}
+	child := value.Ptr(value.Data{Start: 2, End: 3})
+	field := value.Ptr(value.Data{Start: 4, End: 5})
+	root := value.Ptr(value.Data{Start: 1, End: 6, Children: []*value.Node{child}, Fields: value.Fields{{Name: "field", Value: field}}})
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 3})
 	p.gen = 1
 	if err := catchFatal(t, func() { p.moveTree(root, 10) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("movement interruption = %v", err)
 	}
 	// Legacy movement is non-transactional, but later unvisited fields remain.
-	if root.start != 11 || child.start != 12 || field.start != 4 {
+	if value.D(root).Start != 11 || value.D(child).Start != 12 || value.D(field).Start != 4 {
 		t.Fatal("movement checkpoints do not precede individual edges")
 	}
 	if p.control.inputUsed != 0 {
@@ -130,11 +131,11 @@ func TestWorkDocumentRunAssemblyMatchesOrdinarySplice(t *testing.T) {
 }
 
 func TestWorkDocumentGrowthCopyReservation(t *testing.T) {
-	values := make([]*Node, 129)
+	values := make([]*value.Node, 129)
 	for i := range values {
-		values[i] = &Node{start: int32(i)}
+		values[i] = value.Ptr(value.Data{Start: int32(i)})
 	}
-	before := append([]*Node(nil), values...)
+	before := append([]*value.Node(nil), values...)
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 128})
 	if err := catchFatal(t, func() { growWork(p, values, 1) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("growth interruption = %v", err)
@@ -227,13 +228,13 @@ rule line = [a-z] #repeat(2) #atomic "\n"`)
 
 func TestWorkDocumentMovementMapCleanupIsCounted(t *testing.T) {
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 1})
-	a, b := &Node{text: "a"}, &Node{text: "b"}
-	p.moved = map[*Node]*Node{a: a, b: b}
+	a, b := value.Ptr(value.Data{Text: "a"}), value.Ptr(value.Data{Text: "b"})
+	p.moved = map[*value.Node]*value.Node{a: a, b: b}
 	p.shifts = map[uint32]int{1: 3, 2: 4}
 	if err := catchFatal(t, func() { p.clearMovementWork() }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("cleanup interruption = %v", err)
 	}
-	if len(p.moved) != 1 || len(p.shifts) != 2 || a.text != "a" || b.text != "b" {
+	if len(p.moved) != 1 || len(p.shifts) != 2 || value.D(a).Text != "a" || value.D(b).Text != "b" {
 		t.Fatal("cleanup changed pointees or skipped reservations")
 	}
 	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 3})
@@ -247,30 +248,30 @@ func TestWorkDocumentShiftReplayAndSharedEmptyGraph(t *testing.T) {
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 2})
 	p.gen = 4
 	p.edits = []docEdit{{start: 0, end: 1, delta: 1}, {start: 0, end: 1, delta: 1}, {start: 0, end: 1, delta: 1}, {start: 0, end: 1, delta: 1}}
-	n := &Node{start: 10, end: 11, gen: 1}
+	n := value.Ptr(value.Data{Start: 10, End: 11, Gen: 1})
 	if err := catchFatal(t, func() { p.shiftOf(n) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("shift interruption = %v", err)
 	}
-	if p.shifts != nil || n.start != 10 {
+	if p.shifts != nil || value.D(n).Start != 10 {
 		t.Fatal("interrupted shift replay published state")
 	}
 	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 3})
 	if got := p.shiftOf(n); got != 3 || p.shifts[1] != 3 {
 		t.Fatalf("shift = %d, cache=%v", got, p.shifts)
 	}
-	empty := &Node{start: 0, end: 0}
-	leaf := &Node{start: 3, end: 4}
-	root := &Node{start: 0, end: 0, children: []*Node{empty, leaf}, fields: Fields{{Name: "empty", Value: empty}, {Name: "leaf", Value: leaf}}}
+	empty := value.Ptr(value.Data{Start: 0, End: 0})
+	leaf := value.Ptr(value.Data{Start: 3, End: 4})
+	root := value.Ptr(value.Data{Start: 0, End: 0, Children: []*value.Node{empty, leaf}, Fields: value.Fields{{Name: "empty", Value: empty}, {Name: "leaf", Value: leaf}}})
 	clone := root.Clone()
 	history := resultJSON(clone, nil)
 	p = stateWorkParser(limits.WorkLimits{MaxSteps: 32})
 	p.gen = 1
-	p.moved = map[*Node]*Node{}
+	p.moved = map[*value.Node]*value.Node{}
 	got := p.moveEmpty(root, 2)
-	if got == root || root.start != 0 || empty.start != 0 || got.children[0] != got.fields[0].Value.(*Node) {
+	if got == root || value.D(root).Start != 0 || value.D(empty).Start != 0 || value.D(got).Children[0] != value.D(got).Fields[0].Value.(*value.Node) {
 		t.Fatal("empty shared nodes were mutated or duplicated")
 	}
-	if leaf.start != 5 || got.children[1] != got.fields[1].Value.(*Node) {
+	if value.D(leaf).Start != 5 || value.D(got).Children[1] != value.D(got).Fields[1].Value.(*value.Node) {
 		t.Fatal("shared non-empty descendant was moved more than once")
 	}
 	if resultJSON(clone, nil) != history {
@@ -279,7 +280,7 @@ func TestWorkDocumentShiftReplayAndSharedEmptyGraph(t *testing.T) {
 }
 
 func TestWorkDocumentRunStateClearReservation(t *testing.T) {
-	marker := &Node{text: "retained"}
+	marker := value.Ptr(value.Data{Text: "retained"})
 	r := &runState{old: []runElem{{v: marker}}, mid: make([]runElem, 129), post: []runElem{{v: marker}}}
 	for i := range r.mid {
 		r.mid[i].v = marker
@@ -288,7 +289,7 @@ func TestWorkDocumentRunStateClearReservation(t *testing.T) {
 	if err := catchFatal(t, func() { p.freeRunState(r) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("clear interruption = %v", err)
 	}
-	if len(p.freeRuns) != 0 || r.old != nil || r.mid[128].v != marker || r.post[0].v != marker || marker.text != "retained" {
+	if len(p.freeRuns) != 0 || r.old != nil || r.mid[128].v != marker || r.post[0].v != marker || value.D(marker).Text != "retained" {
 		t.Fatal("incomplete clear was published or changed pointees")
 	}
 	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 130})

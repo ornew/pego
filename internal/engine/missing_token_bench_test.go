@@ -3,9 +3,11 @@ package engine
 import (
 	"errors"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
-var missingBenchmarkNode *Node
+var missingBenchmarkNode *value.Node
 var missingBenchmarkError error
 
 // BenchmarkMissingLiteral separates the cost of declaring an insertion site

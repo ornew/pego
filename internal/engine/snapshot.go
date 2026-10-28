@@ -12,6 +12,7 @@ import (
 	"weak"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 // Snapshot owns an immutable parse outcome for one document revision. Readers
@@ -66,11 +67,11 @@ func (g *snapshotGraph) at(i int) *snapshotRecord {
 }
 
 type snapshotRecord struct {
-	kind                          *nodeKind
+	kind                          *value.NodeKind
 	start, end                    int32
 	text                          string
 	children                      []int
-	fields                        Fields
+	fields                        value.Fields
 	fresh, terminal, childChunked bool
 	gen                           uint32
 }
@@ -179,10 +180,10 @@ func (n SnapshotNode) record() *snapshotRecord {
 func (n SnapshotNode) Valid() bool { return n.graph != nil && n.ref != nil }
 
 // Type returns the node type, or an empty string for nil.
-func (n SnapshotNode) Type() string { return n.record().kind.typeName() }
+func (n SnapshotNode) Type() string { return n.record().kind.TypeName() }
 
 // Rule returns the originating rule, or an empty string for nil.
-func (n SnapshotNode) Rule() string { return n.record().kind.ruleName() }
+func (n SnapshotNode) Rule() string { return n.record().kind.RuleName() }
 
 // Text returns terminal text.
 func (n SnapshotNode) Text() string { return n.record().text }
@@ -236,17 +237,17 @@ func (n SnapshotNode) Fields() []SnapshotField {
 
 // Materialize makes an independent mutable graph, preserving sharing, cycles,
 // nil child slots, and nil versus allocated-empty slices.
-func (s *Snapshot) Materialize() *Node {
+func (s *Snapshot) Materialize() *value.Node {
 	if s.graph.root == 0 {
 		return nil
 	}
-	nodes := make([]*Node, s.graph.count())
+	nodes := make([]*value.Node, s.graph.count())
 	for i := range nodes {
 		r := s.graph.at(i)
 		pos := s.graph.position(i, r)
-		nodes[i] = &Node{kind: r.kind, start: pos.start, end: pos.end, text: r.text, fresh: r.fresh, terminal: r.terminal, gen: pos.gen}
+		nodes[i] = value.Ptr(value.Data{Kind: r.kind, Start: pos.start, End: pos.end, Text: r.text, Fresh: r.fresh, Terminal: r.terminal, Gen: pos.gen})
 	}
-	node := func(id int) *Node {
+	node := func(id int) *value.Node {
 		if id == 0 {
 			return nil
 		}
@@ -257,25 +258,25 @@ func (s *Snapshot) Materialize() *Node {
 		n := nodes[i]
 		if r.childChunked {
 			chunks := s.graph.childChunks[r]
-			n.children = make([]*Node, chunks.length)
+			value.D(n).Children = make([]*value.Node, chunks.length)
 			for part, ids := range chunks.parts {
 				for j, id := range ids {
-					n.children[part*snapshotChildChunkSize+j] = node(id)
+					value.D(n).Children[part*snapshotChildChunkSize+j] = node(id)
 				}
 			}
 		} else if r.children != nil {
-			n.children = make([]*Node, len(r.children))
+			value.D(n).Children = make([]*value.Node, len(r.children))
 			for j, id := range r.children {
-				n.children[j] = node(id)
+				value.D(n).Children[j] = node(id)
 			}
 		}
 		if r.fields != nil {
-			n.fields = make(Fields, len(r.fields))
+			value.D(n).Fields = make(value.Fields, len(r.fields))
 			for j, f := range r.fields {
 				if id, ok := f.Value.(snapshotRef); ok {
 					f.Value = node(int(id))
 				}
-				n.fields[j] = f
+				value.D(n).Fields[j] = f
 			}
 		}
 	}
@@ -301,7 +302,7 @@ func (d *Document) SnapshotWith(o ParseOptions) (*Snapshot, error) {
 	return d.snapshotWith(o, nil)
 }
 
-func (d *Document) snapshotWith(o ParseOptions, legacy **Node) (*Snapshot, error) {
+func (d *Document) snapshotWith(o ParseOptions, legacy **value.Node) (*Snapshot, error) {
 	if d.prog.hasMissing || o.MissingTokens != 0 {
 		return nil, missingUnsupported("Document parsing")
 	}
@@ -312,7 +313,7 @@ func (d *Document) snapshotWith(o ParseOptions, legacy **Node) (*Snapshot, error
 	}
 	var result *Snapshot
 	output := OutputUnavailable
-	_, err := d.parseWithCapture(o, func(p *parser, root *Node, parseErr error) error {
+	_, err := d.parseWithCapture(o, func(p *parser, root *value.Node, parseErr error) error {
 		if observed != nil && observed.interrupted || errors.Is(parseErr, limits.ErrWorkLimit) {
 			return parseErr
 		}
@@ -428,7 +429,7 @@ type snapshotEdge struct {
 	name  string
 }
 type snapshotFrame struct {
-	node     *Node
+	node     *value.Node
 	id, next int
 	edge     snapshotEdge
 }
@@ -436,13 +437,13 @@ type snapshotFrame struct {
 // freezeSnapshotGraph registers identities before following their edges. The
 // explicit DFS stack gives deterministic child-then-field rejection paths and
 // supports arbitrary depth and caller-created cycles without recursion.
-func freezeSnapshotGraph(p *parser, root *Node) (snapshotGraph, *SnapshotCaptureError) {
+func freezeSnapshotGraph(p *parser, root *value.Node) (snapshotGraph, *SnapshotCaptureError) {
 	var g snapshotGraph
 	if root == nil {
 		return g, nil
 	}
-	seen := make(map[*Node]int)
-	register := func(n *Node) (int, bool) {
+	seen := make(map[*value.Node]int)
+	register := func(n *value.Node) (int, bool) {
 		if n == nil {
 			return 0, false
 		}
@@ -450,12 +451,12 @@ func freezeSnapshotGraph(p *parser, root *Node) (snapshotGraph, *SnapshotCapture
 			return id, false
 		}
 		p.stepWork()
-		r := snapshotRecord{kind: n.kind, start: n.start, end: n.end, text: n.text, fresh: n.fresh, terminal: n.terminal, gen: n.gen}
-		if n.children != nil {
-			r.children = make([]int, len(n.children))
+		r := snapshotRecord{kind: value.D(n).Kind, start: value.D(n).Start, end: value.D(n).End, text: value.D(n).Text, fresh: value.D(n).Fresh, terminal: value.D(n).Terminal, gen: value.D(n).Gen}
+		if value.D(n).Children != nil {
+			r.children = make([]int, len(value.D(n).Children))
 		}
-		if n.fields != nil {
-			r.fields = make(Fields, len(n.fields))
+		if value.D(n).Fields != nil {
+			r.fields = make(value.Fields, len(value.D(n).Fields))
 		}
 		g.nodes = growWork(p, g.nodes, 1)
 		g.nodes = append(g.nodes, r)
@@ -468,34 +469,34 @@ func freezeSnapshotGraph(p *parser, root *Node) (snapshotGraph, *SnapshotCapture
 	for len(stack) > 0 {
 		p.stepWork()
 		f := &stack[len(stack)-1]
-		var child *Node
+		var child *value.Node
 		var edge snapshotEdge
-		if f.next < len(f.node.children) {
+		if f.next < len(value.D(f.node).Children) {
 			edge = snapshotEdge{child: true, index: f.next}
-			child = f.node.children[f.next]
+			child = value.D(f.node).Children[f.next]
 		} else {
-			i := f.next - len(f.node.children)
-			if i >= len(f.node.fields) {
+			i := f.next - len(value.D(f.node).Children)
+			if i >= len(value.D(f.node).Fields) {
 				stack = stack[:len(stack)-1]
 				continue
 			}
-			field := f.node.fields[i]
+			field := value.D(f.node).Fields[i]
 			edge = snapshotEdge{index: i, name: field.Name}
-			var value any
+			var val any
 			switch v := field.Value.(type) {
-			case *Node:
+			case *value.Node:
 				child = v
 			case nil, int, string, bool:
-				value = v
+				val = v
 			default:
 				return snapshotGraph{}, &SnapshotCaptureError{Path: snapshotFieldPath(p, stack, edge), ValueType: reflect.TypeOf(v)}
 			}
-			g.nodes[f.id-1].fields[i] = NodeField{Name: field.Name, Value: value}
+			g.nodes[f.id-1].fields[i] = value.NodeField{Name: field.Name, Value: val}
 		}
 		id, fresh := register(child)
 		if edge.child {
 			g.nodes[f.id-1].children[edge.index] = id
-		} else if _, ok := f.node.fields[edge.index].Value.(*Node); ok {
+		} else if _, ok := value.D(f.node).Fields[edge.index].Value.(*value.Node); ok {
 			g.nodes[f.id-1].fields[edge.index].Value = snapshotRef(id)
 		}
 		f.next++

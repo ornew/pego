@@ -6,6 +6,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/value"
 )
 
 // Value work consumes steps, not input-work units: strings and collections can
@@ -178,7 +179,7 @@ func (p *parser) valueTextLen(s string) int {
 	return n
 }
 
-func (p *parser) valueField(fs Fields, name string) (any, bool) {
+func (p *parser) valueField(fs value.Fields, name string) (any, bool) {
 	if !workControlsEnabled || p.control == nil {
 		return fs.Get(name)
 	}
@@ -191,9 +192,9 @@ func (p *parser) valueField(fs Fields, name string) (any, bool) {
 	return nil, false
 }
 
-func (p *parser) setValueField(fs *Fields, name string, v any) {
+func (p *parser) setValueField(fs *value.Fields, name string, v any) {
 	if !workControlsEnabled || p.control == nil {
-		fs.set(name, v)
+		value.SetField(fs, name, v)
 		return
 	}
 	for i := range *fs {
@@ -203,7 +204,7 @@ func (p *parser) setValueField(fs *Fields, name string, v any) {
 			return
 		}
 	}
-	*fs = append(*fs, NodeField{name, v})
+	*fs = append(*fs, value.NodeField{Name: name, Value: v})
 }
 
 func (p *parser) hasValueField(st *grammar.TypeDef, name string) bool {

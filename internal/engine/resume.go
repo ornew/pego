@@ -4,6 +4,7 @@ import (
 	"slices"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/value"
 )
 
 // Resuming repetitions in a Document.
@@ -34,7 +35,7 @@ type runSite struct {
 	min, max        int
 	shiftable       bool // the elements' values contain no position values
 	// value makes an element's value from the value of the element expression.
-	value func(p *parser, v *Node, start int) *Node
+	value func(p *parser, v *value.Node, start int) *value.Node
 }
 
 type runKey struct{ site, start int }
@@ -50,7 +51,7 @@ type runElem struct {
 	from, examined int // the input range [from, examined) the element examined
 	far            int // the position of the expectations exp
 	exp            []expID
-	v              *Node
+	v              *value.Node
 }
 
 // resumable reports whether a repetition with the element e can be resumed. An element whose
@@ -231,7 +232,7 @@ func (p *parser) beginElem(r *runState) {
 
 // endElem ends parsing an element (before the state is reset if it failed), and records it if it
 // matched with the value v.
-func (p *parser) endElem(r *runState, ok bool, v *Node) {
+func (p *parser) endElem(r *runState, ok bool, v *value.Node) {
 	far, inner := p.unisolate(r.mk)
 	var exp []expID
 	if ok {
@@ -291,7 +292,7 @@ func (p *parser) finishRun(r *runState) {
 
 // resumeRepeat runs the repetition rs (see compiler.repeat) in a Document parse, resuming its run
 // from the previous parse when it can.
-func (p *parser) resumeRepeat(rs *runSite) (*Node, bool) {
+func (p *parser) resumeRepeat(rs *runSite) (*value.Node, bool) {
 	start := p.pos
 	var r runState
 	p.startRun(&r, rs.id, rs.min, rs.max, rs.shiftable)
@@ -356,7 +357,7 @@ func (p *parser) resumeRepeat(rs *runSite) (*Node, bool) {
 	if !rs.build {
 		return nil, true
 	}
-	return p.newNode(Node{kind: kindList, start: int32(start), end: int32(p.pos), children: p.kids(base), fresh: true}), true
+	return p.newNode(value.Data{Kind: value.ListKind, Start: int32(start), End: int32(p.pos), Children: p.kids(base), Fresh: true}), true
 }
 
 // after reports whether every element examined only input from end on.
@@ -371,17 +372,17 @@ func after(elems []runElem, end int) bool {
 
 // moveValue moves the nodes of the value v of an element recorded in the generation base by
 // shift, as moveResult moves the result of a memo entry, and returns it or its copy.
-func (p *parser) moveValue(v *Node, shift int, base uint32) *Node {
+func (p *parser) moveValue(v *value.Node, shift int, base uint32) *value.Node {
 	if v == nil {
 		return nil
 	}
 	if p.moved == nil {
-		p.moved = map[*Node]*Node{}
+		p.moved = map[*value.Node]*value.Node{}
 	}
 	p.moveBase, p.baseShift = base, shift
-	if v.start == v.end {
+	if value.D(v).Start == value.D(v).End {
 		v = p.moveEmpty(v, shift)
-	} else if v.gen < p.gen {
+	} else if value.D(v).Gen < p.gen {
 		p.moveTree(v, p.shiftOf(v))
 	}
 	p.clearMovementWork()

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"unicode/utf8"
 	"weak"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // Small Documents retain the flat representation: at 1 KiB, piece lookup and
@@ -53,9 +55,9 @@ type Document struct {
 	stats    Stats
 	edits    []docEdit // all edits so far; nodes record how many their positions account for
 	runs     map[runKey]*runRecord
-	runGen   uint32  // edit generation of runs; unchanged parses keep this map
-	kids     []*Node // the parser's stack of repetition values, kept for the next parse
-	vals     []any   // cleared VM value-stack storage, kept for the next parse
+	runGen   uint32        // edit generation of runs; unchanged parses keep this map
+	kids     []*value.Node // the parser's stack of repetition values, kept for the next parse
+	vals     []any         // cleared VM value-stack storage, kept for the next parse
 	// resumed is the number of repetition elements the last Parse resumed (for tests).
 	resumed int
 	// Candidate-only weak reference: dropped snapshots must remain collectible.
@@ -122,13 +124,13 @@ func (d *Document) Stats() Stats { return d.stats }
 
 // Parse parses the current text. Parser-produced syntax diagnostics belong to
 // this call; returned Nodes can share the Document's mutable graph.
-func (d *Document) Parse() (*Node, error) { return d.ParseWith(d.defaults) }
+func (d *Document) Parse() (*value.Node, error) { return d.ParseWith(d.defaults) }
 
 // ParseWith parses using fully resolved options. Unit, effective backend and
 // recognition mode must match construction; this method does not merge defaults.
-func (d *Document) ParseWith(o ParseOptions) (*Node, error) {
+func (d *Document) ParseWith(o ParseOptions) (*value.Node, error) {
 	if d.changes != nil {
-		var n *Node
+		var n *value.Node
 		_, err := d.snapshotWith(o, &n)
 		return n, err
 	}
@@ -137,7 +139,7 @@ func (d *Document) ParseWith(o ParseOptions) (*Node, error) {
 
 // parseWithCapture keeps parsing and result capture inside one interruption and
 // cleanup boundary. capture uses the same controller as the parser.
-func (d *Document) parseWithCapture(o ParseOptions, capture func(*parser, *Node, error) error) (n *Node, err error) {
+func (d *Document) parseWithCapture(o ParseOptions, capture func(*parser, *value.Node, error) error) (n *value.Node, err error) {
 	if d.prog.hasMissing || o.MissingTokens != 0 {
 		return nil, missingUnsupported("Document parsing")
 	}

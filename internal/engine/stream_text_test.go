@@ -7,6 +7,8 @@ import (
 	"math/rand/v2"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestStreamTextSnapshots(t *testing.T) {
@@ -135,9 +137,9 @@ rule row = x:(!"\n" .)+ #atomic "\n"`)
 				if err != nil {
 					t.Fatal(err)
 				}
-				want := whole.Field("rows").(*Node).children
-				var got []*Node
-				err = prog.ParseStreamWith("main", strings.NewReader(text), func(n *Node) error { got = append(got, n); return nil }, opts)
+				want := value.D(whole.Field("rows").(*value.Node)).Children
+				var got []*value.Node
+				err = prog.ParseStreamWith("main", strings.NewReader(text), func(n *value.Node) error { got = append(got, n); return nil }, opts)
 				if err != nil || len(got) != len(want) {
 					t.Fatalf("rows=%d: %v", len(got), err)
 				}
@@ -165,9 +167,9 @@ rule row = x:(!"\n" .)+ #atomic "\n"`)
 				if err != nil {
 					t.Fatal(err)
 				}
-				want := whole.Field("rows").(*Node).children
-				var got []*Node
-				err = prog.ParseStreamWith("main", &snapshotOneByteReader{source: text}, func(n *Node) error { got = append(got, n); return nil }, opts)
+				want := value.D(whole.Field("rows").(*value.Node)).Children
+				var got []*value.Node
+				err = prog.ParseStreamWith("main", &snapshotOneByteReader{source: text}, func(n *value.Node) error { got = append(got, n); return nil }, opts)
 				if err != nil || len(got) != len(want) {
 					t.Fatalf("rows=%d: %v", len(got), err)
 				}

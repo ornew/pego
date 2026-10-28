@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 const queryShapeGrammar = `type Int = { Text string }
@@ -121,13 +123,13 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 				continue
 			}
 			err = visitQueryGraph(root, &queryBudget{}, func(v queryVisit) error {
-				n, ok := v.value.(*Node)
+				n, ok := v.value.(*value.Node)
 				if !ok || n == nil {
 					return nil
 				}
 				p := describeQueryValue(n, 3)
 				patterns++
-				if n.shape() == shapeError {
+				if value.ShapeOf(n) == value.ShapeError {
 					recovered++
 				}
 				q, err := CompileStructuralQuery(p, s)
@@ -239,10 +241,10 @@ func TestStructuralQueryErrorSize(t *testing.T) {
 
 // describeQueryValue returns a pattern that matches v, describing it to the given depth.
 func describeQueryValue(v any, depth int) QueryPattern {
-	v = unboxValue(v)
+	v = value.UnboxValue(v)
 	category, _ := queryCategory(v)
 	p := QueryPattern{Category: category}
-	n, ok := v.(*Node)
+	n, ok := v.(*value.Node)
 	if !ok || n == nil || depth == 0 {
 		return p
 	}
@@ -253,17 +255,17 @@ func describeQueryValue(v any, depth int) QueryPattern {
 		p.Type = "error"
 	case "node":
 		p.Rule = n.Rule()
-		value := describeQueryValue(queryNodeValue(n), depth-1)
-		value.Elements = nil
-		p.Value = &value
+		val := describeQueryValue(queryNodeValue(n), depth-1)
+		val.Elements = nil
+		p.Value = &val
 	}
 	if category == "struct" || category == "error" {
-		for _, f := range n.fields {
+		for _, f := range value.D(n).Fields {
 			p.Fields = append(p.Fields, QueryFieldPattern{Name: f.Name, Pattern: describeQueryValue(f.Value, depth-1)})
 		}
 	}
 	if queryHasElements(n) {
-		for i, c := range n.children {
+		for i, c := range value.D(n).Children {
 			if i == 2 {
 				break
 			}

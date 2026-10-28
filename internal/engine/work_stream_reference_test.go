@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 func TestWorkStreamReferenceAdmission(t *testing.T) {
@@ -19,7 +20,7 @@ func TestWorkStreamReferenceAdmission(t *testing.T) {
 		callbacks := 0
 		r.onRead = func() { callbacks++ }
 		o.Trace = func(TraceEvent) { callbacks++ }
-		err := prog.ParseStreamWith("main", r, func(*Node) error { callbacks++; return nil }, o)
+		err := prog.ParseStreamWith("main", r, func(*value.Node) error { callbacks++; return nil }, o)
 		if err == nil || !strings.Contains(err.Error(), "reference build") || callbacks != 0 || r.offset != 0 || r.closed {
 			t.Fatalf("error=%v callbacks=%d offset=%d", err, callbacks, r.offset)
 		}

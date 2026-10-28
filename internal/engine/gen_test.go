@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/pego/internal/value"
 )
 
 type genCase struct {
@@ -427,7 +428,7 @@ rule e = #operators {
 	return append(append(append(constructorCases(), tupleLiteralCases...), inlineActionGenCases()...), append(spliceGenCases(), cases...)...)
 }
 
-func resultJSON(n *Node, err error) string {
+func resultJSON(n *value.Node, err error) string {
 	out := map[string]any{"node": n}
 	if err != nil {
 		out["err"] = err.Error()
@@ -476,7 +477,7 @@ rule x = #operators {
 // nodeViews renders a parse result through the Node API other than JSON: the fields, length and
 // text of every node Walk visits, and the String of the result. nodeViewsSource is the same
 // function for a generated package, whose name replaces PKG.
-func nodeViews(n *Node) string {
+func nodeViews(n *value.Node) string {
 	if n == nil {
 		return "nil"
 	}
@@ -491,17 +492,17 @@ func nodeViews(n *Node) string {
 	}
 	// A node shared by several edges, such as an operand that is also a capture of its
 	// operator, is printed once: walking it again on every edge can take exponential time.
-	seen := map[*Node]bool{}
+	seen := map[*value.Node]bool{}
 	var b strings.Builder
-	err := Walk(n, func(v WalkVisit) (WalkAction, error) {
+	err := value.Walk(n, func(v value.WalkVisit) (value.WalkAction, error) {
 		fmt.Fprintf(&b, "%d %d %d %s %d ", v.Depth, v.Edge.Kind, v.Edge.ChildIndex, v.Edge.FieldName, v.Edge.ListIndex)
 		if v.Node == nil {
 			fmt.Fprintf(&b, "%s;", scalar(v.Value))
-			return WalkContinue, nil
+			return value.WalkContinue, nil
 		}
 		if seen[v.Node] {
 			b.WriteString("seen;")
-			return WalkSkip, nil
+			return value.WalkSkip, nil
 		}
 		seen[v.Node] = true
 		for name, x := range v.Node.Fields() {
@@ -517,7 +518,7 @@ func nodeViews(n *Node) string {
 			}
 		}
 		b.WriteString(";")
-		return WalkContinue, nil
+		return value.WalkContinue, nil
 	})
 	if err != nil {
 		b.WriteString(err.Error())
@@ -841,7 +842,7 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 			n, err := prog.Parse("main", in)
 			wantErr = append(wantErr, fmt.Sprint(err))
 			accepted = append(accepted, err == nil)
-			var value any
+			var val any
 			if err == nil {
 				b, merr := json.Marshal(n)
 				if merr != nil {
@@ -851,11 +852,11 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 				if merr := json.Unmarshal(b, &engineJSON); merr != nil {
 					t.Fatalf("%s: input %q: %v", c.name, in, merr)
 				}
-				if value, merr = canonicalEngine(engineJSON); merr != nil {
+				if val, merr = canonicalEngine(engineJSON); merr != nil {
 					t.Fatalf("%s: input %q: engine value: %v", c.name, in, merr)
 				}
 			}
-			wantValue = append(wantValue, value)
+			wantValue = append(wantValue, val)
 		}
 	}
 	write("main.go", `package main

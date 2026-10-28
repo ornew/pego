@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/value"
 )
 
 // Values of actions and predicates are *Node, int, string, bool, nil, or *closure.
@@ -42,14 +43,14 @@ type evalCtx struct {
 	p          *parser
 	scope      *scope
 	frame      *frame
-	items      []*Node // elements referenced by $n
-	start, end int     // range matched by the rule
-	locals     *local  // lambda arguments and OperatorsRule's $lhs, $rhs, $op
-	cbase      int     // start, in p.created, of the nodes created by this evaluation
+	items      []*value.Node // elements referenced by $n
+	start, end int           // range matched by the rule
+	locals     *local        // lambda arguments and OperatorsRule's $lhs, $rhs, $op
+	cbase      int           // start, in p.created, of the nodes created by this evaluation
 }
 
 // runAction evaluates the rule's action.
-func (p *parser) runAction(r *rule, f *frame, items []*Node, start, end int) *Node {
+func (p *parser) runAction(r *rule, f *frame, items []*value.Node, start, end int) *value.Node {
 	ctx := p.useCtx(evalCtx{p: p, scope: r.scope, frame: f, items: items, start: start, end: end, cbase: len(p.created)})
 	return p.actionResult(ctx, r.act, r.whereName())
 }
@@ -59,14 +60,14 @@ func termEvaluator(t grammar.Term) evaluator {
 	return func(ctx *evalCtx) (any, error) { return ctx.eval(t) }
 }
 
-func (p *parser) actionResult(ctx *evalCtx, act evaluator, where string) *Node {
+func (p *parser) actionResult(ctx *evalCtx, act evaluator, where string) *value.Node {
 	v, err := act(ctx)
-	n, ok := v.(*Node)
+	n, ok := v.(*value.Node)
 	if err == nil && n != nil {
 		for _, c := range p.created[ctx.cbase:] {
 			p.stepWork()
 			if c == n {
-				n.start, n.end = int32(ctx.start), int32(ctx.end)
+				value.D(n).Start, value.D(n).End = int32(ctx.start), int32(ctx.end)
 				break
 			}
 		}
@@ -83,12 +84,12 @@ func (p *parser) actionResult(ctx *evalCtx, act evaluator, where string) *Node {
 			p.failAction(where, p.actionError("result must be a value, got a function"))
 		}
 		// A value other than a node travels boxed, with the range of the action's input.
-		return p.newNode(Node{kind: kindBox, box: v, start: int32(ctx.start), end: int32(ctx.end)})
+		return p.newNode(value.Data{Kind: value.BoxKind, Box: v, Start: int32(ctx.start), End: int32(ctx.end)})
 	}
 	if n != nil {
 		// The value of an action is final: a node it returns from the rule body (=> $1) is not
 		// labeled by the rules that receive it, which might share it through the memo.
-		n.fresh = false
+		value.D(n).Fresh = false
 	}
 	return n
 }
@@ -103,17 +104,17 @@ func typeName(v any) string {
 	switch v := v.(type) {
 	case nil:
 		return "nil"
-	case *Node:
+	case *value.Node:
 		if v == nil {
 			return "nil"
 		}
-		if v.kind == kindBox {
-			return typeName(v.box)
+		if value.D(v).Kind == value.BoxKind {
+			return typeName(value.D(v).Box)
 		}
-		if v.kind.nodeType() {
+		if value.D(v).Kind.IsNodeType() {
 			return v.Type()
 		}
-		return valueTypeName(v.shape(), v.Type(), len(v.children))
+		return value.ValueTypeName(value.ShapeOf(v), v.Type(), len(value.D(v).Children))
 	case int:
 		return "int"
 	case string:
@@ -138,8 +139,8 @@ func (c *evalCtx) convert(t *grammar.New) (any, error) {
 	if ks == nil {
 		return nil, p.convertError(x, t.Type)
 	}
-	name := ks[0].typ // the type's own name, also for an alias of it
-	n, ok := ks.convert(x)
+	name := ks[0].Type // the type's own name, also for an alias of it
+	n, ok := ks.Convert(x)
 	if !ok {
 		return nil, p.convertError(x, name)
 	}
@@ -162,11 +163,11 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		for l := c.locals; l != nil; l = l.next {
 			c.p.stepWork()
 			if c.p.valueEqual(l.name, t.Name) {
-				return unboxValue(l.val), nil
+				return value.UnboxValue(l.val), nil
 			}
 		}
 		if i, ok := c.scope.slots[t.Name]; ok && c.frame != nil {
-			return unboxNode(c.frame.vals[i]), nil
+			return value.UnboxNode(c.frame.vals[i]), nil
 		}
 		return nil, c.p.actionError("undefined capture $", t.Name)
 
@@ -295,16 +296,16 @@ func (c *evalCtx) evalList(items []grammar.Term) (any, error) {
 	p := c.p
 	base := len(p.estack)
 	for _, item := range items {
-		value, err := c.eval(item)
+		val, err := c.eval(item)
 		if err != nil {
 			p.estack = p.estack[:base]
 			return nil, err
 		}
-		p.estack = append(p.estack, value)
+		p.estack = append(p.estack, val)
 	}
-	value, err := c.builtin("list", p.estack[base:])
+	val, err := c.builtin("list", p.estack[base:])
 	p.estack = p.estack[:base]
-	return value, err
+	return val, err
 }
 
 // evalTuple evaluates the elements of a tuple literal, left to right, and returns the tuple value.
@@ -312,12 +313,12 @@ func (c *evalCtx) evalTuple(elems []grammar.Term) (any, error) {
 	p := c.p
 	base := len(p.estack)
 	for _, e := range elems {
-		value, err := c.eval(e)
+		val, err := c.eval(e)
 		if err != nil {
 			p.estack = p.estack[:base]
 			return nil, err
 		}
-		p.estack = append(p.estack, value)
+		p.estack = append(p.estack, val)
 	}
 	kb := len(p.kidStack)
 	for _, v := range p.estack[base:] {
@@ -340,16 +341,16 @@ var nodeMembers = map[string]bool{"Start": true, "End": true, "Value": true, "st
 
 // member reads x.name.
 func (c *evalCtx) member(x any, name string) (any, error) {
-	n, ok := x.(*Node)
+	n, ok := x.(*value.Node)
 	if !ok || n == nil {
 		return nil, c.p.actionError("cannot access .", name, " of ", typeName(x))
 	}
-	if n.isNode() {
+	if value.IsNode(n) {
 		switch name {
 		case "Start":
-			return int(n.start), nil
+			return int(value.D(n).Start), nil
 		case "End":
-			return int(n.end), nil
+			return int(value.D(n).End), nil
 		case "Value":
 			return c.p.nodeValue(n), nil
 		}
@@ -359,21 +360,21 @@ func (c *evalCtx) member(x any, name string) (any, error) {
 		if _, ok := c.p.prog.types[n.Type()].(*grammar.TypeDef); ok {
 			return nil, c.p.actionError(n.Type(), " has no capture ", capture)
 		}
-		v, _ := c.p.valueField(n.fields, capture)
-		return unboxValue(v), nil
+		v, _ := c.p.valueField(value.D(n).Fields, capture)
+		return value.UnboxValue(v), nil
 	}
 	if st, ok := c.p.prog.types[n.Type()].(*grammar.TypeDef); ok && !c.p.hasValueField(st, name) {
 		return nil, c.p.actionError(n.Type(), " has no field ", name)
 	}
 	// Unset fields and unmatched captures are nil.
-	v, _ := c.p.valueField(n.fields, name)
+	v, _ := c.p.valueField(value.D(n).Fields, name)
 	return v, nil
 }
 
 // newStruct creates a struct node. Its range covers the ranges of the fields whose values are
 // nodes, or is the rule's range if there are none.
-func (c *evalCtx) newStruct(typ string, names []string, vals []any) (*Node, error) {
-	n := c.p.newNode(Node{kind: c.p.prog.typeKind(typ), fields: c.p.fields(len(names))})
+func (c *evalCtx) newStruct(typ string, names []string, vals []any) (*value.Node, error) {
+	n := c.p.newNode(value.Data{Kind: c.p.prog.typeKind(typ), Fields: c.p.fields(len(names))})
 	first := true
 	for i, name := range names {
 		c.p.stepWork()
@@ -381,19 +382,19 @@ func (c *evalCtx) newStruct(typ string, names []string, vals []any) (*Node, erro
 		if _, isFn := v.(function); isFn {
 			return nil, c.p.actionError("field ", name, ": cannot store a function")
 		}
-		c.p.setValueField(&n.fields, name, v)
-		if child, ok := v.(*Node); ok && child != nil {
-			if first || child.start < n.start {
-				n.start = child.start
+		c.p.setValueField(&value.D(n).Fields, name, v)
+		if child, ok := v.(*value.Node); ok && child != nil {
+			if first || value.D(child).Start < value.D(n).Start {
+				value.D(n).Start = value.D(child).Start
 			}
-			if first || child.end > n.end {
-				n.end = child.end
+			if first || value.D(child).End > value.D(n).End {
+				value.D(n).End = value.D(child).End
 			}
 			first = false
 		}
 	}
 	if first {
-		n.start, n.end = int32(c.start), int32(c.end)
+		value.D(n).Start, value.D(n).End = int32(c.start), int32(c.end)
 	}
 	c.p.created = append(c.p.created, n)
 	return n, nil
@@ -416,7 +417,7 @@ func (p *parser) valueUnary(op string, x any) (any, error) {
 	return nil, fmt.Errorf("invalid operand %s for unary %s", typeName(x), op)
 }
 
-func (c *evalCtx) newList(items []*Node) *Node {
+func (c *evalCtx) newList(items []*value.Node) *value.Node {
 	kids := c.p.nodes(len(items))
 	copyWork(c.p, kids, items)
 	return c.listNode(kids)
@@ -424,24 +425,28 @@ func (c *evalCtx) newList(items []*Node) *Node {
 
 // listNode returns a list value with the child slice kids (which it takes over). Its range,
 // which the value model does not show, covers the elements that are nodes.
-func (c *evalCtx) listNode(kids []*Node) *Node { return c.valueNode(kindListValue, kids) }
+func (c *evalCtx) listNode(kids []*value.Node) *value.Node {
+	return c.valueNode(value.ListValueKind, kids)
+}
 
 // tupleNode is listNode for a tuple value.
-func (c *evalCtx) tupleNode(kids []*Node) *Node { return c.valueNode(kindTupleValue, kids) }
+func (c *evalCtx) tupleNode(kids []*value.Node) *value.Node {
+	return c.valueNode(value.TupleValueKind, kids)
+}
 
-func (c *evalCtx) valueNode(kind *nodeKind, kids []*Node) *Node {
-	n := c.p.newNode(Node{kind: kind, children: kids, start: int32(c.start), end: int32(c.start)})
+func (c *evalCtx) valueNode(kind *value.NodeKind, kids []*value.Node) *value.Node {
+	n := c.p.newNode(value.Data{Kind: kind, Children: kids, Start: int32(c.start), End: int32(c.start)})
 	first := true
 	for _, it := range kids {
 		c.p.stepWork()
 		if it == nil {
 			continue
 		}
-		if first || it.start < n.start {
-			n.start = it.start
+		if first || value.D(it).Start < value.D(n).Start {
+			value.D(n).Start = value.D(it).Start
 		}
-		if first || it.end > n.end {
-			n.end = it.end
+		if first || value.D(it).End > value.D(n).End {
+			value.D(n).End = value.D(it).End
 		}
 		first = false
 	}
@@ -562,14 +567,14 @@ func (p *parser) binaryOperation(op string, l, r any) (any, error) {
 
 func equal(a, b any) bool {
 	switch a := a.(type) {
-	case *Node:
+	case *value.Node:
 		if a == nil {
 			return b == nil
 		}
-		bn, ok := b.(*Node)
+		bn, ok := b.(*value.Node)
 		return ok && a == bn
 	case nil:
-		if bn, ok := b.(*Node); ok {
+		if bn, ok := b.(*value.Node); ok {
 			return bn == nil
 		}
 		return b == nil
@@ -591,14 +596,14 @@ func (c *evalCtx) builtin(fn string, args []any) (any, error) {
 		switch x := args[0].(type) {
 		case string:
 			return c.p.valueTextLen(x), nil
-		case *Node:
+		case *value.Node:
 			if x == nil {
 				return 0, nil
 			}
-			if x.terminal {
-				return c.p.valueTextLen(x.text), nil
+			if value.D(x).Terminal {
+				return c.p.valueTextLen(value.D(x).Text), nil
 			}
-			return len(x.children), nil
+			return len(value.D(x).Children), nil
 		case nil:
 			return 0, nil
 		}
@@ -624,7 +629,7 @@ func (c *evalCtx) builtin(fn string, args []any) (any, error) {
 			if fn == "foldr" {
 				it = items[len(items)-1-i]
 			}
-			if acc, err = f.apply(acc, unboxNode(it)); err != nil {
+			if acc, err = f.apply(acc, value.UnboxNode(it)); err != nil {
 				return nil, err
 			}
 		}
@@ -659,14 +664,14 @@ func (c *evalCtx) textString(v any) (string, error) {
 		return "", nil
 	case string:
 		return v, nil
-	case *Node:
+	case *value.Node:
 		if v == nil {
 			return "", nil
 		}
-		if v.terminal {
-			return v.text, nil
+		if value.D(v).Terminal {
+			return value.D(v).Text, nil
 		}
-		return c.p.text(int(v.start), int(v.end)), nil
+		return c.p.text(int(value.D(v).Start), int(value.D(v).End)), nil
 	}
 	return "", c.p.actionError("text: invalid argument ", typeName(v))
 }
@@ -688,7 +693,7 @@ func (c *evalCtx) pushElems(fn string, args []any) error {
 		}
 		for _, it := range items {
 			c.p.stepWork()
-			v, err := f.apply(unboxNode(it), nil)
+			v, err := f.apply(value.UnboxNode(it), nil)
 			if err != nil {
 				return err
 			}
@@ -775,18 +780,18 @@ func (p *parser) index(l, i any) (any, error) {
 	if n < 0 || n >= len(items) {
 		return nil, p.actionError("index ", strconv.Itoa(n), " out of range for ", strconv.Itoa(len(items)), " elements")
 	}
-	return unboxNode(items[n]), nil
+	return value.UnboxNode(items[n]), nil
 }
 
-func (p *parser) valueListItems(fn string, v any) ([]*Node, error) {
+func (p *parser) valueListItems(fn string, v any) ([]*value.Node, error) {
 	switch x := v.(type) {
 	case nil:
 		return nil, nil
-	case *Node:
+	case *value.Node:
 		if x == nil {
 			return nil, nil
 		}
-		return x.children, nil
+		return value.D(x).Children, nil
 	}
 	if workControlsEnabled && p != nil && p.control != nil {
 		return nil, p.actionError(fn, ": expected a list, got ", typeName(v))
@@ -796,14 +801,14 @@ func (p *parser) valueListItems(fn string, v any) ([]*Node, error) {
 
 // element returns v as an element of a list that the list built-in fn makes. An int, string or
 // bool travels boxed, with the range of the action's input, as the result of an action does.
-func (c *evalCtx) element(fn string, v any) (*Node, error) {
+func (c *evalCtx) element(fn string, v any) (*value.Node, error) {
 	switch x := v.(type) {
 	case nil:
 		return nil, nil
-	case *Node:
+	case *value.Node:
 		return x, nil
 	case int, string, bool:
-		return c.p.newNode(Node{kind: kindBox, box: x, start: int32(c.start), end: int32(c.end)}), nil
+		return c.p.newNode(value.Data{Kind: value.BoxKind, Box: x, Start: int32(c.start), End: int32(c.end)}), nil
 	}
 	return nil, c.p.actionError(fn, ": elements must be values, got ", typeName(v))
 }
@@ -854,7 +859,7 @@ func (c *compiler) predicate(e *grammar.Predicate, s *scope) matcher {
 			c.errorf(a.Diagnostic(), "undefined variable %s; declare it with var %s at the top level", a.Name, a.Name)
 		}
 		c.checkTerm(a.Value, s, nil)
-		return func(p *parser) (*Node, bool) {
+		return func(p *parser) (*value.Node, bool) {
 			ctx := p.useCtx(evalCtx{p: p, scope: s, frame: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
 			v, err := ctx.eval(a.Value)
 			p.dropCreated(ctx.cbase)
@@ -869,7 +874,7 @@ func (c *compiler) predicate(e *grammar.Predicate, s *scope) matcher {
 		}
 	}
 	c.checkTerm(e.Term, s, nil)
-	return func(p *parser) (*Node, bool) {
+	return func(p *parser) (*value.Node, bool) {
 		ctx := p.useCtx(evalCtx{p: p, scope: s, frame: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
 		v, err := ctx.eval(e.Term)
 		p.dropCreated(ctx.cbase)

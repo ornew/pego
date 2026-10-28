@@ -2,6 +2,8 @@ package engine
 
 import (
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 var aliasCases = []genCase{
@@ -66,10 +68,10 @@ func TestAliasNodeIdentity(t *testing.T) {
 						t.Errorf("%s: got type %s, want %s", unit, n.Type(), wantType)
 					}
 					terminal := n
-					if v, ok := n.field("Value"); ok {
-						terminal, _ = v.(*Node)
+					if v, ok := value.FieldOf(n, "Value"); ok {
+						terminal, _ = v.(*value.Node)
 					}
-					if terminal == nil || terminal.Type() != "Num" || terminal.text != "éé" {
+					if terminal == nil || terminal.Type() != "Num" || value.D(terminal).Text != "éé" {
 						t.Errorf("%s: expected a Num terminal, got %s", unit, resultJSON(terminal, nil))
 					}
 				}

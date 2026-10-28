@@ -10,25 +10,26 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
-func missingNodes(t *testing.T, root *Node) []*Node {
+func missingNodes(t *testing.T, root *value.Node) []*value.Node {
 	t.Helper()
-	var found []*Node
-	seen := make(map[*Node]bool)
-	if err := Walk(root, func(v WalkVisit) (WalkAction, error) {
-		if v.Node != nil && v.Node.Type() == TypeMissing && !seen[v.Node] {
+	var found []*value.Node
+	seen := make(map[*value.Node]bool)
+	if err := value.Walk(root, func(v value.WalkVisit) (value.WalkAction, error) {
+		if v.Node != nil && v.Node.Type() == value.TypeMissing && !seen[v.Node] {
 			seen[v.Node] = true
 			found = append(found, v.Node)
 		}
-		return WalkContinue, nil
+		return value.WalkContinue, nil
 	}); err != nil {
 		t.Fatal(err)
 	}
 	return found
 }
 
-func requireInsertions(t *testing.T, prog *Program, input string, o ParseOptions, count int) (*Node, SyntaxErrors) {
+func requireInsertions(t *testing.T, prog *Program, input string, o ParseOptions, count int) (*value.Node, SyntaxErrors) {
 	t.Helper()
 	n, err := prog.ParseWith("main", input, o)
 	var recovered SyntaxErrors
@@ -67,13 +68,13 @@ func TestMissingTokensLiteralAndUnits(t *testing.T) {
 				t.Fatalf("missing nodes: %v", insertions)
 			}
 			m := insertions[0]
-			if m.start != pos || m.end != pos || m.text != "" || errs[0].Pos != int(pos) || errs[0].Col != int(pos)+1 {
+			if value.D(m).Start != pos || value.D(m).End != pos || value.D(m).Text != "" || errs[0].Pos != int(pos) || errs[0].Col != int(pos)+1 {
 				t.Fatal("fabricated source range/text or wrong unit", m, errs)
 			}
-			if expected, _ := m.fields.Get("expected"); expected != ";" {
+			if expected, _ := value.D(m).Fields.Get("expected"); expected != ";" {
 				t.Fatal(expected)
 			}
-			if message, _ := m.fields.Get("message"); message != errs[0].Error() {
+			if message, _ := value.D(m).Fields.Get("message"); message != errs[0].Error() {
 				t.Fatal(message, errs[0])
 			}
 			if _, err := prog.ParseWith("main", "é;", o); err != nil {
@@ -93,13 +94,13 @@ func TestMissingTokensLiteralAndUnits(t *testing.T) {
 	}
 	partial := compile(t, `rule main = "ab" #missing "a" $$`)
 	n, _ := requireInsertions(t, partial, "a", ParseOptions{MissingTokens: 2}, 1)
-	if m := missingNodes(t, n)[0]; m.start != 0 || m.end != 0 {
+	if m := missingNodes(t, n)[0]; value.D(m).Start != 0 || value.D(m).End != 0 {
 		t.Fatal("partial prefix was consumed", m)
 	}
 	invalid := compile(t, `rule main = . ";" #missing $$`)
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		n, errs := requireInsertions(t, invalid, "\xff", ParseOptions{Unit: unit, MissingTokens: 2}, 1)
-		if missingNodes(t, n)[0].start != 1 || errs[0].Pos != 1 {
+		if value.D(missingNodes(t, n)[0]).Start != 1 || errs[0].Pos != 1 {
 			t.Fatal("invalid UTF-8 position")
 		}
 	}
@@ -132,7 +133,7 @@ rule token = ";" #missing`)
 	}
 	captures := compile(t, `rule main = (x:(";" #missing) "a" / ";" #missing "b") $$`)
 	n, _ := requireInsertions(t, captures, "b", ParseOptions{MissingTokens: 2}, 1)
-	if _, ok := n.fields.Get("x"); ok {
+	if _, ok := value.D(n).Fields.Get("x"); ok {
 		t.Fatal("abandoned capture survived")
 	}
 	cut := compile(t, `rule main = (";" #missing #cut "x" / "y") $$`)

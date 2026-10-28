@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 func memoTestEnv(n int, prefix string) (*env, map[string]bool) {
@@ -122,7 +123,7 @@ func TestWorkMemoKeyEqualityAndLongChains(t *testing.T) {
 	}
 
 	// slices.Equal semantics distinguish a typed nil from a nil interface and equate nil/empty slices.
-	var typedNil *Node
+	var typedNil *value.Node
 	table.slots[0] = &memoEntry{rule: 9, pos: 0, env: []any{typedNil}}
 	if got, ok := p.memoGet(memoKey{rule: 9, pos: 0, env: []any{nil}}); ok || got != nil {
 		t.Fatalf("typed-nil key matched nil interface: %v, %t", got, ok)
@@ -241,7 +242,7 @@ func TestWorkMemoChainAndStringLimits(t *testing.T) {
 		table.slots[0] = &memoEntry{rule: int32(i), next: table.slots[0]}
 	}
 	oldHead := table.slots[0]
-	replacement := &memoEntry{node: &Node{text: "replacement"}}
+	replacement := &memoEntry{node: value.Ptr(value.Data{Text: "replacement"})}
 	p := &parser{memo: table}
 	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 80})
 	if err := catchFatal(t, func() { p.memoGet(memoKey{rule: 0}) }); !errors.Is(err, limits.ErrWorkLimit) {
@@ -264,7 +265,7 @@ func TestWorkMemoChainAndStringLimits(t *testing.T) {
 		t.Fatal("replacement failed")
 	}
 	// Retiring bookkeeping must not clear the old public node or its descendants.
-	retained := &Node{text: "retained", children: []*Node{{text: "child"}}, fields: Fields{{Name: "value", Value: "unchanged"}}}
+	retained := value.Ptr(value.Data{Text: "retained", Children: []*value.Node{value.Ptr(value.Data{Text: "child"})}, Fields: value.Fields{{Name: "value", Value: "unchanged"}}})
 	table.slots[0] = &memoEntry{rule: 1, node: retained, env: []any{strings.Repeat("x", 1024)}}
 	before, _ := json.Marshal(retained)
 	key := memoKey{rule: 1, env: []any{strings.Repeat("x", 1024)}}
@@ -289,7 +290,7 @@ func TestWorkMemoChainAndStringLimits(t *testing.T) {
 	}
 }
 
-func workMemoPrefix(table *memoTable, retained *Node) {
+func workMemoPrefix(table *memoTable, retained *value.Node) {
 	for i := 0; i < 320; i++ {
 		e := table.alloc()
 		*e = memoEntry{rule: int32(10000 + i), node: retained, next: table.slots[0]}
@@ -313,7 +314,7 @@ func TestWorkMemoGrowthFailureCleanup(t *testing.T) {
 
 rule expr = expr "a" / "a"`)
 	p := acquirePooledParser(prog)
-	retained := &Node{text: "retained", children: []*Node{{text: "child"}}}
+	retained := value.Ptr(value.Data{Text: "retained", Children: []*value.Node{value.Ptr(value.Data{Text: "child"})}})
 	before, _ := json.Marshal(retained)
 	key := memoKey{rule: prog.byName["expr"].id}
 	g := p.growBegin(key)
@@ -356,7 +357,7 @@ rule atom = "a"`)
 		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			for _, recognize := range []bool{false, true} {
 				for _, cancel := range []bool{false, true} {
-					retained := &Node{text: "retained", children: []*Node{{text: "child"}}}
+					retained := value.Ptr(value.Data{Text: "retained", Children: []*value.Node{value.Ptr(value.Data{Text: "child"})}})
 					before, _ := json.Marshal(retained)
 					var observed *parser
 					var chunks [][]memoEntry

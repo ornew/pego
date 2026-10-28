@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"runtime"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 const nilActionStream = `type V = { N int }
@@ -28,27 +30,27 @@ func TestActionResultReleasesTracking(t *testing.T) {
 		err   error
 	}{
 		{"nil", nil, nil},
-		{"typed nil", (*Node)(nil), nil},
-		{"node", &Node{start: 90, end: 91, fresh: true}, nil},
+		{"typed nil", (*value.Node)(nil), nil},
+		{"node", value.Ptr(value.Data{Start: 90, End: 91, Fresh: true}), nil},
 		{"error", nil, errors.New("action failed")},
 		{"boxed value", 1, nil},
 		{"invalid result", workActionFunc{params: 1}, nil},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			prefix := &Node{text: "keep"}
-			p := &parser{created: []*Node{prefix}}
+			prefix := value.Ptr(value.Data{Text: "keep"})
+			p := &parser{created: []*value.Node{prefix}}
 			ctx := &evalCtx{p: p, cbase: 1, start: 3, end: 4}
 			var panicked any
 			func() {
 				defer func() { panicked = recover() }()
 				n := p.actionResult(ctx, func(*evalCtx) (any, error) {
-					p.created = append(p.created, &Node{text: "temporary"})
-					if n, ok := c.value.(*Node); ok && n != nil {
+					p.created = append(p.created, value.Ptr(value.Data{Text: "temporary"}))
+					if n, ok := c.value.(*value.Node); ok && n != nil {
 						p.created = append(p.created, n)
 					}
 					return c.value, c.err
 				}, "test")
-				if n != nil && (n.start != 3 || n.end != 4 || n.fresh) {
+				if n != nil && (value.D(n).Start != 3 || value.D(n).End != 4 || value.D(n).Fresh) {
 					t.Errorf("returned node has wrong span/freshness: %+v", n)
 				}
 			}()
@@ -76,7 +78,7 @@ func TestNilActionStreamMemoryIsBounded(t *testing.T) {
 				p := newStreamParser(prog, &lineReader{line: "a", n: 60000}, unit)
 				var at [2]uint64
 				count := 0
-				p.emit = func(n *Node) error {
+				p.emit = func(n *value.Node) error {
 					count++
 					if n != nil || len(p.created) != 0 {
 						return fmt.Errorf("element %d: node %v, tracking length %d", count, n, len(p.created))
@@ -125,7 +127,7 @@ func BenchmarkNilActionStream(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				if err := prog.ParseStreamWith("main", &lineReader{line: "a", n: 10000}, func(*Node) error { return nil }, ParseOptions{Backend: backend}); err != nil {
+				if err := prog.ParseStreamWith("main", &lineReader{line: "a", n: 10000}, func(*value.Node) error { return nil }, ParseOptions{Backend: backend}); err != nil {
 					b.Fatal(err)
 				}
 			}

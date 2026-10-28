@@ -7,6 +7,8 @@ import (
 	"io"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 type streamRuntimePanicToken struct{ phase string }
@@ -43,7 +45,7 @@ func (r *streamCallbackReader) Read(b []byte) (int, error) {
 	return 0, io.EOF
 }
 func (r *streamCallbackReader) Close() error { r.closed = true; return nil }
-func catchStreamPanic(f func()) (value any)  { defer func() { value = recover() }(); f(); return }
+func catchStreamPanic(f func()) (val any)    { defer func() { val = recover() }(); f(); return }
 
 func TestStreamCallerPanicIdentity(t *testing.T) {
 	prog := compile(t, records)
@@ -79,10 +81,10 @@ func TestStreamCallerPanicIdentity(t *testing.T) {
 									}
 								}
 								var err error
-								var nodes []*Node
+								var nodes []*value.Node
 								var before []string
 								got := catchStreamPanic(func() {
-									err = prog.ParseStreamWith("main", reader, func(n *Node) error {
+									err = prog.ParseStreamWith("main", reader, func(n *value.Node) error {
 										nodes = append(nodes, n)
 										before = append(before, resultJSON(n, nil))
 										if phase == "emit" && len(nodes) == 2 {
@@ -100,11 +102,11 @@ func TestStreamCallerPanicIdentity(t *testing.T) {
 								if traced && (event.Rule != "main" || event.Depth != 1 || event.Pos != 0) {
 									t.Fatal("saved event metadata changed")
 								}
-								if nodes[0].Field("k").(*Node).text != "a" || nodes[1].Field("v").(*Node).text != "22" {
+								if value.D(nodes[0].Field("k").(*value.Node)).Text != "a" || value.D(nodes[1].Field("v").(*value.Node)).Text != "22" {
 									t.Fatal("delivered fields changed")
 								}
 								retryCount := 0
-								if err := prog.ParseStreamWith("main", strings.NewReader("#records\nxy=3\n"), func(*Node) error { retryCount++; return nil }, ParseOptions{Backend: b, Unit: u}); err != nil || retryCount != 1 {
+								if err := prog.ParseStreamWith("main", strings.NewReader("#records\nxy=3\n"), func(*value.Node) error { retryCount++; return nil }, ParseOptions{Backend: b, Unit: u}); err != nil || retryCount != 1 {
 									t.Fatalf("retry error=%v emitted=%d", err, retryCount)
 								}
 								for i, n := range nodes {
@@ -140,7 +142,7 @@ func TestStreamCallerReturnedErrorIdentity(t *testing.T) {
 						count := 0
 						var err error
 						got := catchStreamPanic(func() {
-							err = prog.ParseStreamWith("main", r, func(*Node) error {
+							err = prog.ParseStreamWith("main", r, func(*value.Node) error {
 								count++
 								if phase == "emit" && count == 2 {
 									return stop
@@ -201,7 +203,7 @@ func TestStreamNormalCallerReturnKeepsVMFaultAttribution(t *testing.T) {
 					count := 0
 					var err error
 					got := catchStreamPanic(func() {
-						err = prog.ParseStreamWith("main", r, func(*Node) error {
+						err = prog.ParseStreamWith("main", r, func(*value.Node) error {
 							count++
 							if phase == "emit" {
 								damage()

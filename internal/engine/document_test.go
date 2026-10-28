@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/ornew/pego/internal/value"
 )
 
 // incrementalGrammar is a grammar with left recursion, an Operators Rule expression, line starts (which
@@ -28,7 +30,7 @@ rule expr = #operators {
     level { prefix "-" }
 }`
 
-func dump(t *testing.T, n *Node, err error) string {
+func dump(t *testing.T, n *value.Node, err error) string {
 	t.Helper()
 	data, jerr := json.Marshal(n)
 	if jerr != nil {
@@ -124,7 +126,7 @@ func TestDocumentPositionalActions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pos := n.children[0].children[2].children[0]
+	pos := value.D(value.D(value.D(n).Children[0]).Children[2]).Children[0]
 	if pos.Type() != "Pos" || pos.Field("At") != 3 {
 		t.Errorf("got %s", pos)
 	}
@@ -702,14 +704,14 @@ rule line = x:[a-z]+ #atomic "\n"`)
 	if dump(t, snap, nil) != before {
 		t.Fatal("clone differs")
 	}
-	if l := snap.children[0].children[3]; l.Field("x") != l.children[0] {
+	if l := value.D(value.D(snap).Children[0]).Children[3]; l.Field("x") != value.D(l).Children[0] {
 		t.Error("clone does not share the captured child")
 	}
 	doc.Edit(0, 0, "zz\n")
 	t2, _ := doc.Parse()
-	old, cur := t1.children[0].children[3], t2.children[0].children[4]
-	if old != cur || cur.start != 12 || cur.Field("x").(*Node).start != 12 {
-		t.Errorf("line 3 of the earlier tree: shared %v, at %d", old == cur, cur.start)
+	old, cur := value.D(value.D(t1).Children[0]).Children[3], value.D(value.D(t2).Children[0]).Children[4]
+	if old != cur || value.D(cur).Start != 12 || value.D(cur.Field("x").(*value.Node)).Start != 12 {
+		t.Errorf("line 3 of the earlier tree: shared %v, at %d", old == cur, value.D(cur).Start)
 	}
 	if dump(t, snap, nil) != before {
 		t.Error("the clone changed")

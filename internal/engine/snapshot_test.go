@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/value"
 )
 
 func snapshotVariants(t *testing.T, run func(*testing.T, ParseOptions)) {
@@ -23,16 +24,16 @@ func snapshotVariants(t *testing.T, run func(*testing.T, ParseOptions)) {
 }
 
 func TestSnapshotGraphIdentityAndOwnership(t *testing.T) {
-	leaf := &Node{kind: kindOf("Leaf", "leaf"), start: 2, end: 3, text: "x", terminal: true, children: []*Node{}, fields: Fields{}}
-	root := &Node{kind: kindSeq, start: 1, end: 4, children: []*Node{leaf, nil, leaf}}
-	root.fields = Fields{{"self", root}, {"leaf", leaf}, {"typedNil", (*Node)(nil)}, {"nil", nil}, {"int", 42}, {"text", "hi"}, {"bool", true}}
+	leaf := value.Ptr(value.Data{Kind: value.KindOf("Leaf", "leaf"), Start: 2, End: 3, Text: "x", Terminal: true, Children: []*value.Node{}, Fields: value.Fields{}})
+	root := value.Ptr(value.Data{Kind: value.SeqKind, Start: 1, End: 4, Children: []*value.Node{leaf, nil, leaf}})
+	value.D(root).Fields = value.Fields{{Name: "self", Value: root}, {Name: "leaf", Value: leaf}, {Name: "typedNil", Value: (*value.Node)(nil)}, {Name: "nil", Value: nil}, {Name: "int", Value: 42}, {Name: "text", Value: "hi"}, {Name: "bool", Value: true}}
 	g, err := freezeSnapshotGraph(&parser{}, root)
 	if err != nil {
 		t.Fatal(err)
 	}
 	s := &Snapshot{graph: g}
 	n := s.Root()
-	if !n.Valid() || n.Type() != TypeTuple || n.Start() != 1 || n.End() != 4 || n.ChildCount() != 3 {
+	if !n.Valid() || n.Type() != value.TypeTuple || n.Start() != 1 || n.End() != 4 || n.ChildCount() != 3 {
 		t.Fatal("metadata")
 	}
 	if n.Child(0) != n.Child(2) || n.Child(1).Valid() || n.Child(0).Rule() != "leaf" || !n.Child(0).IsTerminal() {
@@ -56,25 +57,25 @@ func TestSnapshotGraphIdentityAndOwnership(t *testing.T) {
 	if v, ok := n.Field("self"); !ok || v != n {
 		t.Fatal("field slice alias")
 	}
-	root.start = 99
-	root.children[0] = nil
-	root.fields[0].Value = nil
-	leaf.text = "changed"
+	value.D(root).Start = 99
+	value.D(root).Children[0] = nil
+	value.D(root).Fields[0].Value = nil
+	value.D(leaf).Text = "changed"
 	if n.Start() != 1 || n.Child(0).Text() != "x" {
 		t.Fatal("legacy alias")
 	}
 	a, b := s.Materialize(), s.Materialize()
-	if a == b || a.children[0] == b.children[0] || a.children[0] != a.children[2] || a.children[1] != nil || a.fields[0].Value != a {
+	if a == b || value.D(a).Children[0] == value.D(b).Children[0] || value.D(a).Children[0] != value.D(a).Children[2] || value.D(a).Children[1] != nil || value.D(a).Fields[0].Value != a {
 		t.Fatal("materialized graph")
 	}
-	if a.children[0].children == nil || a.children[0].fields == nil {
+	if value.D(value.D(a).Children[0]).Children == nil || value.D(value.D(a).Children[0]).Fields == nil {
 		t.Fatal("allocated empty lost")
 	}
-	if v, ok := a.fields[2].Value.(*Node); !ok || v != nil {
+	if v, ok := value.D(a).Fields[2].Value.(*value.Node); !ok || v != nil {
 		t.Fatal("materialized typed nil")
 	}
-	a.children[0].text = "mutated"
-	if n.Child(0).Text() != "x" || b.children[0].text != "x" {
+	value.D(value.D(a).Children[0]).Text = "mutated"
+	if n.Child(0).Text() != "x" || value.D(value.D(b).Children[0]).Text != "x" {
 		t.Fatal("materialized alias")
 	}
 	var z SnapshotNode
@@ -94,14 +95,14 @@ func TestSnapshotGraphIdentityAndOwnership(t *testing.T) {
 }
 
 func TestSnapshotGraphDeepAndUnsupported(t *testing.T) {
-	root := &Node{}
+	root := &value.Node{}
 	at := root
 	for i := 0; i < 20000; i++ {
-		next := &Node{}
-		at.children = []*Node{next}
+		next := &value.Node{}
+		value.D(at).Children = []*value.Node{next}
 		at = next
 	}
-	at.fields = Fields{{"back", root}}
+	value.D(at).Fields = value.Fields{{Name: "back", Value: root}}
 	g, err := freezeSnapshotGraph(&parser{}, root)
 	if err != nil || len(g.nodes) != 20001 {
 		t.Fatal("deep capture", err)
@@ -109,17 +110,17 @@ func TestSnapshotGraphDeepAndUnsupported(t *testing.T) {
 	s := &Snapshot{graph: g}
 	at = s.Materialize()
 	for i := 0; i < 20000; i++ {
-		at = at.children[0]
+		at = value.D(at).Children[0]
 	}
-	if at.fields[0].Value.(*Node).children[0] == nil {
+	if value.D(value.D(at).Fields[0].Value.(*value.Node)).Children[0] == nil {
 		t.Fatal("deep cycle")
 	}
 	type namedInt int
-	for _, value := range []any{namedInt(1), []int(nil), map[string]int(nil), (*int)(nil), (chan int)(nil), (func())(nil)} {
-		child := &Node{fields: Fields{{"bad\"name", value}}}
-		root := &Node{children: []*Node{child}, fields: Fields{{"other", value}}}
+	for _, val := range []any{namedInt(1), []int(nil), map[string]int(nil), (*int)(nil), (chan int)(nil), (func())(nil)} {
+		child := value.Ptr(value.Data{Fields: value.Fields{{Name: "bad\"name", Value: val}}})
+		root := value.Ptr(value.Data{Children: []*value.Node{child}, Fields: value.Fields{{Name: "other", Value: val}}})
 		_, err := freezeSnapshotGraph(&parser{}, root)
-		if err == nil || err.ValueType != reflect.TypeOf(value) || err.Path != `root.Children[0].Fields[0]("bad\"name")` {
+		if err == nil || err.ValueType != reflect.TypeOf(val) || err.Path != `root.Children[0].Fields[0]("bad\"name")` {
 			t.Fatalf("rejection %v", err)
 		}
 	}
@@ -374,7 +375,7 @@ func TestSnapshotUnsupportedLegacyFieldPreservesParseError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	legacy.fields = Fields{{"bad", []int{1}}}
+	value.D(legacy).Fields = value.Fields{{Name: "bad", Value: []int{1}}}
 	s, err := d.SnapshotWith(ParseOptions{})
 	var capture *SnapshotCaptureError
 	if s != nil || !errors.As(err, &capture) || capture.ValueType != reflect.TypeOf([]int{}) || !strings.Contains(capture.Path, "bad") || capture.ParseError != nil {
@@ -383,7 +384,7 @@ func TestSnapshotUnsupportedLegacyFieldPreservesParseError(t *testing.T) {
 	if d.Text() != "x" || d.Version().Sequence() != 1 {
 		t.Fatal("capture failure mutated document")
 	}
-	legacy.fields = nil
+	value.D(legacy).Fields = nil
 	if s, err := d.SnapshotWith(ParseOptions{}); s == nil || err != nil {
 		t.Fatal("retry", err)
 	}

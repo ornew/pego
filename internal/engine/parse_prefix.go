@@ -1,8 +1,10 @@
 package engine
 
+import "github.com/ornew/pego/internal/value"
+
 // PrefixResult records the successful cursor independently of the rule's value.
 type PrefixResult struct {
-	Node          *Node
+	Node          *value.Node
 	Consumed      int
 	ConsumedBytes int
 }
