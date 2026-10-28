@@ -226,8 +226,9 @@ function threshold(run:(n:number)=>Error|null):number {
  check(run(hi-1)!==null,"one-short budget fails");return hi;
 }
 const wide=String.fromCodePoint(0x1000);
-// The budgets of recognition: [maxInputWork, maxSteps] for "z", fifty "z" and fifty wide characters.
+// The budgets of recognition and of parsing: [maxInputWork, maxSteps] for "z", fifty "z" and fifty wide characters.
 const budgets=new Map<p.Unit,number[][]>([[p.CodePoints,[[4,11],[200,354],[200,304]]],[p.Bytes,[[9,18],[401,508],[752,909]]]]);
+const parseBudgets=new Map<p.Unit,number[][]>([[p.CodePoints,[[4,12],[200,404],[200,404]]],[p.Bytes,[[9,19],[401,558],[752,1109]]]]);
 for(const unit of [p.CodePoints,p.Bytes]) {
  check(p.parse("z",unit).error===null&&p.recognize("z",unit)===null,"wide class fallback succeeds without controls");
  check(stable(p.parseWithOptions("z",{unit,signal:{aborted:false}}).node)===stable(p.parse("z",unit).node),"controlled class fallback preserves result");
@@ -241,6 +242,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
    const limited=p.recognizeWithOptions(input,{unit,[key]:n-1});
    check(limited instanceof p.ParseInterruptionError&&limited.kind===kind,"recognition stops one unit short of its budget");
    const m=threshold(k=>p.parseWithOptions(input,{unit,[key]:k}).error);
+   check(m===parseBudgets.get(unit)![i]![key==="maxInputWork"?0:1],key+" budget of parsing for input "+i);
    const parsed=p.parseWithOptions(input,{unit,[key]:m-1}).error;
    check(parsed instanceof p.ParseInterruptionError&&parsed.kind===kind,"parse stops one unit short of its budget");
   }

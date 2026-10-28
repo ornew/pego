@@ -506,7 +506,7 @@ func (g *tsGen) rules() {
 		scopes[r] = s
 		if _, ok := r.def.Expr.(*grammar.OperatorsRule); !ok {
 			g.cur, g.proj = r, g.projections(r)
-			if call, ok := g.flowRule(r); ok {
+			if call, ok := g.flowRule(r, s); ok {
 				bodies[r] = call
 			} else {
 				bodies[r] = g.expr(r.bodyExpr(), s, !r.lean)

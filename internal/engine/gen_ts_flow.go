@@ -40,22 +40,36 @@ func (g *tsGen) startTSFlow() bool {
 	return true
 }
 
-// flowRule prints the lean rule r from Flow IR as a function of its own and returns the call
-// expression that runs it, or false if r is not printed from Flow IR.
-func (g *tsGen) flowRule(r *rule) (call string, ok bool) {
-	if g.flow == nil || !recFlowEligible(r) {
+// flowRule prints the rule r from Flow IR as a function of its own and returns the call
+// expression that runs it, or false if r is not printed from Flow IR. A lean value-free rule that
+// flow.LocalRule accepts prints as a flat function; a rule whose body is a framed body prints under the
+// frame the runtime owns, which also runs its action and finish. On success it sets scope to the
+// capture scope of the printed body.
+func (g *tsGen) flowRule(r *rule, scope *scope) (call string, ok bool) {
+	if g.flow == nil {
 		return "", false
 	}
+	var f *flow.Func
+	var slots []core.Slot
 	cr := g.flow.m.Rules[r.id]
-	if !flow.LocalRule(cr) {
-		return "", false
-	}
-	f, err := flow.Lower(g.flow.m, cr, r.name, g.flow.opts)
-	if err != nil {
-		panic(fmt.Errorf("rule %s of table %s: %w", r.name, g.table, err)) // LocalRule holds
-	}
-	if f.Binds {
-		return "", false
+	switch {
+	case recFlowEligible(r) && flow.LocalRule(cr):
+		var err error
+		if f, err = flow.Lower(g.flow.m, cr, r.name, g.flow.opts); err != nil {
+			panic(fmt.Errorf("rule %s of table %s: %w", r.name, g.table, err)) // LocalRule holds
+		}
+		if f.Binds {
+			return "", false
+		}
+	default:
+		if _, eligible := g.flowNodeFrameOK(r); !eligible {
+			return "", false
+		}
+		var err error
+		if f, err = flow.LowerFrame(g.flow.m, cr, cr.Body, cr.Scope, !r.lean, r.name, g.flow.opts); err != nil {
+			panic(fmt.Errorf("rule %s of table %s: %w", r.name, g.table, err)) // FramedBody holds
+		}
+		slots = cr.Scope
 	}
 	defer func() {
 		if e := recover(); e != nil {
@@ -68,12 +82,18 @@ func (g *tsGen) flowRule(r *rule) (call string, ok bool) {
 	body, vars, decls := g.printTSFlow(f)
 	var b strings.Builder
 	for _, v := range vars {
-		fmt.Fprintf(&b, "  let %s: %s = %s;\n", v.Name, tsFlowType(v.Type), tsFlowZero(v.Type))
+		b.WriteString(v)
 	}
 	b.WriteString(indent(body))
 	for _, d := range decls {
 		if tsNamesIdentifier(b.String(), d.name) {
 			g.vars.WriteString(d.text)
+		}
+	}
+	if f.Frame {
+		*scope = *newScope()
+		for _, sl := range slots {
+			scope.slot(sl.Name)
 		}
 	}
 	name, shared := g.methodName("Parser/R", b.String())
@@ -87,19 +107,37 @@ func (g *tsGen) flowRule(r *rule) (call string, ok bool) {
 	return name + "(p)", true
 }
 
+var (
+	tsMarkParts = [4]string{"Pos", "Env", "Trail", "Rec"}
+	tsMarkZero  = [4]string{"0", "null as Env | null", "0", "0"}
+)
+
 func tsFlowType(t flow.Type) string {
 	switch t {
 	case flow.TypeInt, flow.TypeRune:
 		return "number"
 	case flow.TypeBool:
 		return "boolean"
+	case flow.TypeValue:
+		return "Node | null"
+	case flow.TypeVals:
+		return "(Node | null)[]"
+	case flow.TypeFrame:
+		return "Frame"
 	}
 	panic(tsFlowUnsupported("variable of type " + t.String()))
 }
 
 func tsFlowZero(t flow.Type) string {
-	if t == flow.TypeBool {
+	switch t {
+	case flow.TypeBool:
 		return "false"
+	case flow.TypeValue:
+		return "null"
+	case flow.TypeVals:
+		return "[]"
+	case flow.TypeFrame:
+		return "emptyFrame"
 	}
 	return "0"
 }
@@ -122,6 +160,23 @@ type tsFlowPrinter struct {
 	failed bool
 	// decls holds the constants the printed text names, which the caller declares if it keeps the text.
 	decls []tsDecl
+	names map[*flow.Names]string
+	// parts holds, for each mark variable, the variables that stand for its position, environment, trail
+	// length and number of recovered errors, so that a mark is declared as far as it is read.
+	parts map[*flow.Var]*[4]*flow.Var
+}
+
+// part returns the variable that stands for the component i of the mark m.
+func (p *tsFlowPrinter) part(m *flow.Var, i int) *flow.Var {
+	ps := p.parts[m]
+	if ps == nil {
+		ps = &[4]*flow.Var{}
+		for j := range ps {
+			ps[j] = &flow.Var{Name: m.Name + tsMarkParts[j]}
+		}
+		p.parts[m] = ps
+	}
+	return ps[i]
 }
 
 // tsDecl is a package-level constant of a printed function.
@@ -129,10 +184,11 @@ type tsDecl struct{ name, text string }
 
 // printTSFlow returns the statements of the function f, ending with its return, and the variables
 // the statements declare.
-func (g *tsGen) printTSFlow(f *flow.Func) (string, []*flow.Var, []tsDecl) {
+func (g *tsGen) printTSFlow(f *flow.Func) (string, []string, []tsDecl) {
+	parts := map[*flow.Var]*[4]*flow.Var{}
 	var reads map[*flow.Var]bool
 	for i := 0; ; i++ {
-		p := &tsFlowPrinter{g: g, dry: true, reads: reads, next: map[*flow.Var]bool{}, assigned: map[*flow.Var]bool{}, used: map[*flow.Label]bool{}, labels: map[*flow.Label]string{}}
+		p := &tsFlowPrinter{g: g, parts: parts, dry: true, reads: reads, next: map[*flow.Var]bool{}, assigned: map[*flow.Var]bool{}, used: map[*flow.Label]bool{}, labels: map[*flow.Label]string{}}
 		p.function(f)
 		if len(p.next) == len(reads) && reads != nil || i > 8 {
 			break
@@ -142,15 +198,29 @@ func (g *tsGen) printTSFlow(f *flow.Func) (string, []*flow.Var, []tsDecl) {
 	if reads == nil {
 		reads = map[*flow.Var]bool{}
 	}
-	p := &tsFlowPrinter{g: g, reads: reads, next: map[*flow.Var]bool{}, assigned: map[*flow.Var]bool{}, used: map[*flow.Label]bool{}, labels: map[*flow.Label]string{}}
+	p := &tsFlowPrinter{g: g, parts: parts, reads: reads, next: map[*flow.Var]bool{}, assigned: map[*flow.Var]bool{}, used: map[*flow.Label]bool{}, labels: map[*flow.Label]string{}}
 	p.function(f)
 	if p.next[f.Start] || p.next[f.Ctx] {
 		panic(tsFlowUnsupported("the start or the context of a value-free rule"))
 	}
-	var vars []*flow.Var
+	var vars []string
 	for _, v := range f.Vars {
-		if (p.next[v] || p.assigned[v]) && p.next[v] && !v.Entry {
-			vars = append(vars, v)
+		if v.Entry {
+			continue
+		}
+		if v.Type == flow.TypeMark {
+			// A mark of the whole parser state is four variables, declared as far as they are read.
+			if ps := parts[v]; ps != nil {
+				for i, part := range ps {
+					if p.next[part] {
+						vars = append(vars, fmt.Sprintf("  let %s%s = %s;\n", v.Name, tsMarkParts[i], tsMarkZero[i]))
+					}
+				}
+			}
+			continue
+		}
+		if p.next[v] {
+			vars = append(vars, fmt.Sprintf("  let %s: %s = %s;\n", v.Name, tsFlowType(v.Type), tsFlowZero(v.Type)))
 		}
 	}
 	return p.b.String(), vars, p.decls
@@ -158,14 +228,32 @@ func (g *tsGen) printTSFlow(f *flow.Func) (string, []*flow.Var, []tsDecl) {
 
 func (p *tsFlowPrinter) function(f *flow.Func) {
 	p.stmts(f.Body)
+	publish := func(b *strings.Builder) {
+		if f.Cut != nil {
+			p.next[f.Cut] = true
+			b.WriteString("p.cut = " + f.Cut.Name + ";\n")
+		}
+	}
 	var inner strings.Builder
 	if !p.dead {
-		inner.WriteString("return null;\n")
+		switch {
+		case f.Frame:
+			p.read(f.Value)
+			publish(&inner)
+			inner.WriteString("return " + p.expr(f.Value) + ";\n")
+		default:
+			inner.WriteString("return null;\n")
+		}
 	}
 	if p.used[f.Fail] {
 		body := p.b.String()
 		p.b.Reset()
-		fmt.Fprintf(&p.b, "%s: {\n%s%s}\nreturn undefined;\n", p.label(f.Fail), indent(body), indent(inner.String()))
+		var fail strings.Builder
+		if f.Frame {
+			publish(&fail)
+		}
+		fail.WriteString("return undefined;\n")
+		fmt.Fprintf(&p.b, "%s: {\n%s%s}\n%s", p.label(f.Fail), indent(body), indent(inner.String()), fail.String())
 	} else {
 		p.b.WriteString(inner.String())
 	}
@@ -221,7 +309,7 @@ func (p *tsFlowPrinter) isRead(v *flow.Var) bool {
 // left out.
 func tsFlowPure(x flow.Expr) bool {
 	switch x := x.(type) {
-	case *flow.Use, *flow.Read, *flow.Int, *flow.Bool, *flow.Nil, *flow.RecLen, *flow.KidsLen, *flow.InClass, *flow.GuardFails:
+	case *flow.Use, *flow.Read, *flow.Int, *flow.Bool, *flow.Nil, *flow.RecLen, *flow.KidsLen, *flow.NewVals, *flow.Str, *flow.MarkPos, *flow.FrameVal, *flow.InClass, *flow.GuardFails:
 		return true
 	case *flow.Not:
 		return tsFlowPure(x.X)
@@ -340,6 +428,39 @@ func (p *tsFlowPrinter) stmt(s flow.Stmt) {
 	case *flow.Restore:
 		p.read(s.Pos, s.Rec)
 		p.write(fmt.Sprintf("p.pos = %s;\np.recovered.length = %s;\n", p.expr(s.Pos), p.expr(s.Rec)))
+	case *flow.PushKid:
+		p.read(s.X)
+		p.write(fmt.Sprintf("p.kidStack.push(%s);\n", p.expr(s.X)))
+	case *flow.DropKids:
+		p.read(s.Base)
+		p.write(fmt.Sprintf("p.dropKids(%s);\n", p.expr(s.Base)))
+	case *flow.Append:
+		p.read(&flow.Use{V: s.Vals}, s.X)
+		if s.Spread {
+			p.write(fmt.Sprintf("for (const k of (%s as Node).children) {\n  %s.push(k);\n}\n", p.expr(s.X), s.Vals.Name))
+		} else {
+			p.write(fmt.Sprintf("%s.push(%s);\n", s.Vals.Name, p.expr(s.X)))
+		}
+	case *flow.SetCapture:
+		p.read(s.X)
+		p.write(fmt.Sprintf("p.setCapture(%d, %s);\n", s.Slot, p.expr(s.X)))
+	case *flow.ClearVals:
+		p.read(&flow.Use{V: s.F})
+		p.write(s.F.Name + ".fill(null);\n")
+	case *flow.FreeFrame:
+		// Frames are not pooled.
+	case *flow.DeclareNames:
+		// The names are declared where they are first used.
+	case *flow.Reset:
+		m := p.markVar(s.M)
+		for i := range tsMarkParts {
+			p.readVar(p.part(m, i))
+		}
+		p.write(fmt.Sprintf("p.reset(%[1]sPos, %[1]sEnv, %[1]sTrail, %[1]sRec);\n", m.Name))
+	case *flow.DropTrail:
+		m := p.markVar(s.M)
+		p.readVar(p.part(m, 2))
+		p.write(fmt.Sprintf("p.trail.length = %sTrail;\n", m.Name))
 	case *flow.Comment:
 		p.write("// " + s.Text + "\n")
 	case *flow.ObserveSkip:
@@ -405,6 +526,28 @@ func (p *tsFlowPrinter) setText(s *flow.Set, stmt bool) string {
 			used = true
 		}
 	}
+	if len(s.X) == 1 && len(s.Dst) == 1 {
+		if _, isMark := s.X[0].(*flow.MarkState); isMark {
+			m, _ := s.Dst[0].(*flow.Var)
+			srcs := [4]string{"p.pos", "p.env", "p.trail.length", "p.recovered.length"}
+			var parts []string
+			for i, src := range srcs {
+				if p.isRead(p.part(m, i)) {
+					parts = append(parts, m.Name+tsMarkParts[i]+" = "+src)
+				}
+			}
+			if len(parts) == 0 {
+				return ""
+			}
+			return strings.Join(parts, stmtSep(stmt)) + end
+		}
+	}
+	if len(s.X) == 1 && len(s.Dst) == 2 {
+		if _, single := s.X[0].(*flow.ShapeSingle); single {
+			// The second result, whether the value is a single element, is not used.
+			return p.setText(&flow.Set{Dst: s.Dst[:1], X: s.X}, stmt)
+		}
+	}
 	if len(s.X) == 1 && len(s.Dst) == 2 && flow.Results(s.X[0]) == 2 {
 		// A call with two results: the value and whether it matched.
 		p.read(s.X[0])
@@ -416,9 +559,9 @@ func (p *tsFlowPrinter) setText(s *flow.Set, stmt bool) string {
 		p.note(ov)
 		switch {
 		case valRead && okRead:
-			return fmt.Sprintf("%s = %s%s%s = %s !== undefined%s", vv.Name, x, stmtSep(stmt), ov.Name, vv.Name, end)
+			return fmt.Sprintf("%s = %s as Node | null%s%s = %s !== undefined%s", vv.Name, x, stmtSep(stmt), ov.Name, vv.Name, end)
 		case valRead:
-			return fmt.Sprintf("%s = %s%s", vv.Name, x, end)
+			return fmt.Sprintf("%s = %s as Node | null%s", vv.Name, x, end)
 		case okRead:
 			return fmt.Sprintf("%s = %s !== undefined%s", ov.Name, x, end)
 		}
@@ -656,6 +799,45 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 		}
 	case *flow.CallRule:
 		return p.call(g.flow.rules[x.Rule], x.Level)
+	case *flow.Text:
+		p.read(x.Start)
+		return fmt.Sprintf("p.text(%s, p.pos)", p.expr(x.Start))
+	case *flow.LiteralText:
+		// The input matched: the literal holds the replacement character, which stands for invalid input.
+		p.read(x.Start)
+		return fmt.Sprintf("p.text(%s, p.pos)", p.expr(x.Start))
+	case *flow.Str:
+		return tsString(x.S)
+	case *flow.NewTerminalNode:
+		return fmt.Sprintf("new Node(\"string\", \"\", %s, p.pos, %s, noNodes, noFields, true, true)", p.expr(x.Start), p.expr(x.Text))
+	case *flow.NewBranchNode:
+		kind := "tuple"
+		if x.List {
+			kind = "list"
+		}
+		return fmt.Sprintf("new Node(\"%s\", \"\", %s, p.pos, \"\", %s, noFields, true, false)", kind, p.expr(x.Start), p.expr(x.Kids))
+	case *flow.NewVals:
+		return "[]"
+	case *flow.Kids:
+		return fmt.Sprintf("p.kids(%s)", p.expr(x.Base))
+	case *flow.ShapeSingle:
+		return fmt.Sprintf("p.shapeSingle(%d, %s, %s)", tsShape(x.Shape), p.expr(x.X), p.expr(x.Start))
+	case *flow.ShapeCapture:
+		return fmt.Sprintf("p.shapeCapture(%d, %s, %s)", tsShape(x.Shape), p.expr(x.X), p.expr(x.Start))
+	case *flow.ScopeValue:
+		return fmt.Sprintf("p.scopeValue(%d, %s, %s)", tsShape(x.Shape), p.expr(x.X), p.expr(x.Start))
+	case *flow.AttachCaptures:
+		if x.Frame == nil {
+			panic(tsFlowUnsupported("captures attached from variables"))
+		}
+		return fmt.Sprintf("p.attachCaptures(%s, %s, %s, %s, p.pos)", p.expr(x.X), p.scopeNames(x.Names), x.Frame.Name, p.expr(x.Start))
+	case *flow.MarkPos:
+		p.readVar(p.part(x.M, 0))
+		return x.M.Name + "Pos"
+	case *flow.NewFrame:
+		return fmt.Sprintf("p.newFrame(%d)", len(x.N.List))
+	case *flow.FrameVal:
+		return fmt.Sprintf("%s[%d]!", x.F.Name, x.Slot)
 	}
 	panic(tsFlowUnsupported(fmt.Sprintf("expression %T", x)))
 }
@@ -694,4 +876,52 @@ func tsNamesIdentifier(code, name string) bool {
 		}
 		i = j + 1
 	}
+}
+
+// tsShape packs a shape as the runtime's Shaper (tsShaper).
+func tsShape(sh core.Shape) int {
+	s := int(sh.Mode)<<2 | sh.K<<5
+	if sh.Elems {
+		s |= 1
+	}
+	if sh.Tuple {
+		s |= 2
+	}
+	if sh.Shared {
+		s |= 16
+	}
+	return s
+}
+
+// markName returns the name of the mark variable that x reads.
+func (p *tsFlowPrinter) markVar(x flow.Expr) *flow.Var {
+	u, ok := x.(*flow.Use)
+	if !ok {
+		panic(tsFlowUnsupported("a mark that is not a variable"))
+	}
+	return u.V
+}
+
+// readVar records that v is read at a reachable point.
+func (p *tsFlowPrinter) readVar(v *flow.Var) {
+	if !p.dead {
+		p.next[v] = true
+	}
+}
+
+// scopeNames returns the constant that holds the capture names n, declaring it on first use.
+func (p *tsFlowPrinter) scopeNames(n *flow.Names) string {
+	if p.dry {
+		return "scope"
+	}
+	if name, ok := p.names[n]; ok {
+		return name
+	}
+	name := p.g.name("scope")
+	if p.names == nil {
+		p.names = map[*flow.Names]string{}
+	}
+	p.names[n] = name
+	p.decl(name, fmt.Sprintf("const %s: string[] = %s;\n", name, tsStrings(n.List)))
+	return name
 }
