@@ -68,3 +68,4 @@ definition and the place where the term is defined.
 | value | What a Rule Expression, a rule or an action produces: a node, `nil`, an error value, a struct, or an integer, string or boolean inside actions. See [Rule Expressions](language/parser-expressions.md#values-and-the-concrete-syntax-tree). |
 | Value Action | `=> term`: the action that follows a complete Rule Expression and computes the value of the rule from its captures. See [Actions](language/actions.md#whole-rule-value-actions). |
 | variable | A named `int`, `string` or `bool` value declared by a `var` declaration, bound and read by actions. See [Variables](language/predicates.md#variables). |
+| work | The cost of a parse: the rule bodies evaluated, the input examined, the iterations and operators applied and the size of the values built. Time is proportional to it. See [Time and Memory](runtime/parsing.md#time-and-memory). |

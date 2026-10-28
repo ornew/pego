@@ -22,7 +22,7 @@ Running a grammar on input and the results it produces, for whole texts, edited 
 
 | | Chapter | Defines |
 |--:|:--|:--|
-| 1 | [Parsing](parsing.md) | A parse as a whole: the start rule, input and positions, results, syntax errors, memoization, prefix parsing, limits and modes |
+| 1 | [Parsing](parsing.md) | A parse as a whole: the start rule, input and positions, results, syntax errors, memoization, prefix parsing, time and memory, limits and modes |
 | 2 | [Nodes and Values](nodes.md) | The value and node model, source information, the Go `Node` type, traversal, and the text and JSON renderings |
 | 3 | [Incremental Documents](documents.md) | Editing and reparsing text: versions, snapshots, interruption and change notifications |
 | 4 | [Streaming](streaming.md) | Parsing a reader and delivering the elements of a `#stream` repetition as they match |

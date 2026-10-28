@@ -3,7 +3,8 @@
 The preceding chapters define what a grammar means rule by rule. This chapter
 defines a parse as a whole: how it starts, what the input and its positions are,
 what a parse produces, how a syntax error is determined and reported, what
-memoization can and cannot change, and the limits and modes of a parse.
+memoization can and cannot change, what a parse costs in time and memory, and
+the limits and modes of a parse.
 
 ## Start Rule
 
@@ -253,6 +254,163 @@ observable consequences, and no others.
 - **The nesting limit can depend on it.** A call that is answered from the memo
   does not nest, so whether a parse that comes close to the [nesting
   limit](#limits) succeeds can depend on memoization.
+
+## Time and Memory
+
+The cost of a parse depends on the grammar as well as on the length n of the
+input. Memoization bounds how often a rule body is evaluated at a position, but
+some expressions do work that the memo does not share. This section defines how
+that work is measured, what holds for every grammar, and the classes of growth
+that a grammar can have.
+
+### Work
+
+The **work** of a parse is the sum of the following:
+
+- the rule bodies that are evaluated, counting each step of a growing
+  left-recursive rule;
+- the input that terminals, repetitions of character classes and lookaheads
+  examine, counted again each time it is examined;
+- the iterations of repetitions and the operators that an Operators Rule
+  applies;
+- the size of the values that actions and predicates build.
+
+Time is proportional to work. The memory that a parse allocates is at most
+proportional to its work plus the input, because each memo entry, node and
+value is built by work that is counted. Work is a model of cost: the counters
+of [work limits](#cancellation-and-work-limits) measure it in units that differ
+between backends.
+
+### Termination
+
+A parse of a finite input terminates, unless a reader or a callback that the
+caller supplies does not return.
+
+- A call of a left-recursive rule at a position where that rule is growing
+  reads its current result instead of evaluating its body, whatever the values
+  of variables (see [Left Recursion](../language/parser-expressions.md#left-recursion)).
+  A rule therefore cannot call itself at the same position without end.
+- A repetition stops at the first iteration that consumes no input, an infix
+  operator applied without consuming input ends its Operators Rule expression,
+  and a recovery applies only when its skip expression consumes input.
+- Actions have no recursion: a lambda is only an argument of a built-in
+  function, which visits a list once.
+
+No bound that is a polynomial in n holds for every grammar.
+
+### Evaluations of Rules
+
+In the reference implementation and the generated parsers, a rule body is
+evaluated at most twice at a position for each binding level and each
+combination of the values of the variables that the rule reads, with these
+exceptions.
+
+- A rule that calls no other rule, or that is called from one place in the
+  grammar, is not memoized in an ordinary parse. It is evaluated as often as
+  that place is evaluated.
+- A rule of a left-recursion cycle is not memoized, except the rule that the
+  cycle grows. It is evaluated at every call, and again at every step of the
+  growth.
+- A growing rule evaluates its body once for each step of the growth, and the
+  number of steps is at most two more than the length of the input it
+  consumes.
+
+### Expressions That Repeat Work
+
+The memo shares the result of a rule at a position. It does not share work
+inside a rule body, nor between results at different positions. The following
+expressions do work that grows with the input they cover, and repeat it when
+they are evaluated again over the same input.
+
+| Expression | Work of one evaluation | Repeated when |
+|:--|:--|:--|
+| A repetition | Its iterations, up to the input it matches | The body that contains it is evaluated again at an earlier position, so the repetition covers the same input again |
+| A lookahead | The work of its expression | It is evaluated at each of many positions and its expression examines the input after them |
+| `#recover(skip=e)` | The work of the base expression and of `e` | Its result is abandoned and parsing continues inside the skipped input |
+| A growing left-recursive rule | One evaluation of its body per growth step | It is called at many positions of one input, because its result at one position is not built from its result at the next |
+| An Operators Rule | One step per operator it applies | As for left recursion |
+| A rule that reads variables | As for any rule, once for each combination of values | Calls at one position bind its variables to many different values |
+| An action or predicate | Proportional to the sizes of the values it reads and builds | A value grows from its own earlier value, as `s + s` does |
+
+### Classes of Growth
+
+A grammar's work as a function of n falls into one of these classes. A class
+describes the worst input of each length.
+
+| Class | Work | Example grammar | Input |
+|:--|:--|:--|:--|
+| Linear | At most proportional to n | `main = (A / "a")* $$; A = "a" "c"` | `a` repeated n times |
+| Linear given an environment bound | Proportional to n times the number of combinations of variable values that occur at one position | A rule that reads `indent`, bound from the length of a captured run of spaces | Lines of increasing indentation |
+| Polynomial of degree k | At most proportional to n^k | `main = (A / "a")* $$; A = "a"* "c"` (k = 2) | `a` repeated n times |
+| Exponential | Can double when n grows by a constant | `main = C $$; A = C "+" / "n"; C = "(" C ")" "y" / "(" C ")" "z" / A` | `(` n times, `n`, then `)z` n times |
+
+The following grammars have the class shown on the inputs shown.
+
+| Grammar | Input | Class | Cause |
+|:--|:--|:--|:--|
+| `main = (E "q" / "x")* $$; E = "x" E / "x"` | `x` n times | Linear | The result of `E` at a position is built from its memoized result at the next |
+| `main = (E "q" / "x")* $$; E = E "x" / "x"` | `x` n times | Degree 2 | `E` grows to the end of the input at every position, and `"q"` then fails |
+| `main = (E "q" / "x")* $$` with `E` an Operators Rule with the operand `"x"` and the infix operator `""` at one left-associative level | `x` n times | Degree 2 | As above, for the operators that `E` applies |
+| `main = ("a" !Rest)* "a"* $$; Rest = "a"* "c"` | `a` n times | Degree 2 | The lookahead scans to the end of the input at every position |
+| `main = (X / "a")* $$; X = (Y #recover(skip=[a]+)) "c"; Y = "b"` | `a` n times | Degree 2 | The skip consumes the rest of the input, `"c"` then fails, and the recovery is abandoned |
+| `main = (A / "a")* $$; A = (B / "a")* "c"; B = "a"* "d"` | `a` n times | Degree 3 | A repetition that can restart inside another one that can restart |
+| `main = C $$; A = C "+" / "n"; C = "(" C ")" "y" / "(" C ")" "z" / A` | `(` n times, `n`, `)z` n times | Exponential | `A` and `C` form a left-recursion cycle grown at `A`, so `C` is not memoized and each `C` evaluates the next one twice |
+| `var v string`; `R = "(" {v := v + "0"} R ")" "y" / "(" {v := v + "1"} R ")" "z" / "n" {len(v) >= 0}` | As above | Exponential | The two calls of `R` at a position see different values of `v`, so neither reuses the other's result |
+| `main = xs:"x"* => len(foldl("a", $xs, (acc, x) => acc + acc))` | `x` n times | Linear evaluations, exponential value size | The accumulator doubles for each element |
+
+The same grammars with `A = "n"`, or with the bindings `{v := "0"}` and
+`{v := "1"}`, are linear.
+
+### Conditions for Linear Work
+
+A grammar does work at most proportional to n, times a constant that depends
+only on the grammar, when all of the following hold. The conditions are
+sufficient, not necessary.
+
+1. **Variables.** No variable that a memoized rule reads is bound, along a
+   recursion of rule calls, from an expression that reads that variable's own
+   earlier value. When variables are bound from captures instead, the work is
+   linear given an environment bound.
+2. **Left-recursion cycles.** A rule of a left-recursion cycle other than the
+   rule the cycle grows is never evaluated twice at one position outside the
+   growth of its cycle.
+3. **Repeated expressions.** No expression of the table in
+   [Expressions That Repeat Work](#expressions-that-repeat-work) can be
+   abandoned and then evaluated again at a position strictly inside the input
+   that it covered. An expression can be abandoned when it is in an alternative
+   that is not the last of its choice, when a later part of its sequence or
+   repetition element can fail, when it is inside a lookahead, and when it is
+   in the base of a `#recover`, including through the rules that call it.
+4. **Values.** No action or predicate builds a value whose size can double from
+   one evaluation to the next.
+
+When condition 3 fails, the degree of the polynomial is one more than the
+number of such expressions nested in one another, through rule calls. When
+condition 1 or 2 fails, or a value doubles, work can be exponential.
+
+### Memory
+
+- **Memo table.** It holds at most one entry per memoized rule, position,
+  binding level and combination of variable values.
+- **Values.** A parse keeps the value of its start rule. Values built by
+  abandoned alternatives are not kept, but their construction is work.
+- **Call stack.** It holds at most as many calls as the [nesting limit](#limits)
+  allows.
+- **Streams and Documents.** A [stream](streaming.md) parse discards memo entries
+  and input before the elements that it has delivered. A
+  [Document](documents.md) keeps memo entries and repetition records for its
+  whole text between parses.
+
+### Bounding Work
+
+[Work limits](#cancellation-and-work-limits) bound the work of any parse,
+whatever its class. In the engine backends, `MaxInputWork` counts the input
+that terminals, repetitions of character classes and lookaheads examine,
+including input examined again, and `MaxSteps` counts rule calls, repetition
+iterations, growth steps, and the strings and lists that actions and
+predicates build, in proportion to their size. A value that grows without
+reading the input is therefore bounded by `MaxSteps` and not by
+`MaxInputWork`.
 
 ## Limits
 

@@ -20,7 +20,9 @@ What this means for you:
 
 - **Parse time is not guaranteed to be linear.** Memoization bounds the re-evaluation of rule calls. It does not bound
   a repetition that is run again after backtracking, the growth of a left-recursive rule, or a rule whose result
-  depends on variables with many distinct values; these can take more than linear time on some inputs.
+  depends on variables with many distinct values; these can take more than linear time on some inputs. [Time and
+  Memory](../../spec/runtime/parsing.md#time-and-memory) defines the classes of growth, with example grammars, and
+  the conditions under which work is linear.
 - **Memory grows with input size.** The memo table, like the tree, is proportional to the input. For very large or
   unbounded input use a `#stream` repetition and `ParseStream`, which discards memo entries and input already
   handed to you (see [streaming.md](streaming.md)).
