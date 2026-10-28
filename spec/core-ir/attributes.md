@@ -7,7 +7,6 @@ recomputes them after a rewrite.
 |:--|:--|:--|
 | Want | Building | The node's value is used. A node with Want false builds no value |
 | Shape | Building | The static [shape](modules.md#shape) of the node's value |
-| Steps | Building | The number of work steps a work-controlled parse charges on entering the node: one for each grammar expression the node is built from |
 | Nullable | Analysis | The node can succeed without consuming input |
 | First | Analysis | The terminal the node must begin with, if it has one |
 | Effects | Analysis | A summary of what the node can do |

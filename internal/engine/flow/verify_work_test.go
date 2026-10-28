@@ -48,12 +48,42 @@ func TestVerifyWorkCharges(t *testing.T) {
 			if !f.Work {
 				t.Fatal("the function does not record that it is lowered with work controls")
 			}
+			if !f.Entered {
+				t.Fatal("the function of a flat rule does not take its entry as charged by its caller")
+			}
 			f.Body = stripSteps(f.Body)
+			f.Entered = false // without the step the caller charges, nothing charges the entry
 			err = Verify(f)
 			if err == nil || !strings.Contains(err.Error(), "work:") {
 				t.Errorf("Verify of the function without its steps: got %v, want a work error", err)
 			}
 		})
+	}
+	// The caller charges the entry of a framed function, and a repetition charges once per iteration: without
+	// the iteration step, the entry charge does not cover the loop.
+	for _, body := range []core.Node{
+		&core.Repeat{Min: 0, Max: -1, Body: &core.Lit{Text: "ab"}},
+		&core.Repeat{Min: 1, Max: 3, Body: &core.Lit{Text: "ab"}},
+	} {
+		m, r := valueFree(body)
+		f, err := LowerFrame(m, r, body, nil, false, "r", Options{Work: true})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !f.Entered {
+			t.Fatal("the framed function does not take its entry as charged by its caller")
+		}
+		for _, s := range f.Body {
+			if lp, ok := s.(*Loop); ok {
+				if _, ok := lp.Body[0].(*Step); !ok {
+					t.Errorf("a repetition does not charge first in its iteration:\n%s", String(f))
+				}
+				lp.Body = stripSteps(lp.Body)
+			}
+		}
+		if err := Verify(f); err == nil || !strings.Contains(err.Error(), "work:") {
+			t.Errorf("Verify of a repetition without its iteration step: got %v, want a work error", err)
+		}
 	}
 	loop := &Label{Name: "loop"}
 	newFunc := func(body ...Stmt) *Func {
@@ -118,7 +148,6 @@ func TestLowerFrameRejectsWorkWithLeanClasses(t *testing.T) {
 		m, r := valueFree(&core.Lit{Text: "a"})
 		for name, lower := range map[string]func() (*Func, error){
 			"LowerFrame": func() (*Func, error) { return LowerFrame(m, r, r.Body, nil, false, "r", opts) },
-			"LowerLine":  func() (*Func, error) { return LowerLine(m, r, r.Body, nil, false, "r", opts) },
 		} {
 			if _, err := lower(); err == nil || !strings.Contains(err.Error(), "Options.Work") {
 				t.Errorf("%s accepted %+v: %v", name, opts, err)

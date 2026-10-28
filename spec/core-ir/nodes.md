@@ -69,7 +69,7 @@ records the same expectations at the same positions as the expression it replace
 |:--|:--|
 | `Scan` | A repetition, with bounds, of one character of a class (any character if the class is absent) |
 | `ClassRun` | A sequence of single characters of classes, in order |
-| `Terminal` | A region of literals, classes, sequences, choices, options, negative lookaheads, `Text` and `Drop`, which a target may run as one table or program. It charges the steps of its entry only |
+| `Terminal` | A region of literals, classes, sequences, choices, options, negative lookaheads, `Text` and `Drop`, which a target may run as one table or program |
 
 A `Scan` records the expectation of the character where it stops, and fails only if it matched fewer than its minimum.
-A `ClassRun` charges no steps on entry; its classes charge nothing for their own entries.
+No Core node charges a work step on entry: a generated rule charges one step when it is entered and a repetition charges one on each iteration, while a `Scan` and a `ClassRun` charge input work for the characters they read.

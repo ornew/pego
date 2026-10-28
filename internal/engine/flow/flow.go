@@ -55,8 +55,11 @@ type Func struct {
 	// Document reports a function lowered for a build with Documents (Options.Document); Verify then checks
 	// that every in-place read has the recording primitive as its alternative.
 	Document bool
-	// Entered reports a framed function whose caller charged the step of entering it, so that it does
-	// not charge the steps of its root node: verifyWork takes the entry as the function's first charge.
+	// Entered reports a function lowered with work controls, whose entry the generator charges: the method
+	// that holds the function (g.method, flatMethod or plainCall) begins with one StepWork, for the body of
+	// a rule, of a frame and of a line or the skip of an Operators Rule alike. The function charges nothing
+	// for its entry and verifyWork takes the entry as its first charge; TestGeneratedRuleEntryCharge checks
+	// the methods of the checked-in parsers.
 	Entered bool
 }
 

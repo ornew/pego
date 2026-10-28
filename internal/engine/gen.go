@@ -1518,7 +1518,7 @@ func (g *generator) operatorsRule(r *rule, e *grammar.OperatorsRule) {
 		if co != nil {
 			skip = co.Skip
 		}
-		m := g.flowOperatorsRuleBody(skip, e.Skip, s, false, false)
+		m := g.flowOperatorsRuleBody(skip, e.Skip, s, false)
 		if m == "" {
 			g.failFlow("the skip of an Operators Rule of rule " + g.cur.name)
 		}
@@ -1570,7 +1570,7 @@ func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, opera
 	// Lines whose value is unused are matched without values, as in the engine; so are all lines
 	// of a rule without a value (in the recognizer).
 	build := !g.cur.novalue && !leanLine(action, locals)
-	m := g.flowOperatorsRuleBody(l, e, s, build, true)
+	m := g.flowOperatorsRuleBody(l, e, s, build)
 	if m == "" {
 		g.failFlow("a line of an Operators Rule of rule " + g.cur.name)
 	}

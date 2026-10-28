@@ -77,9 +77,7 @@ func terminals(n Node, build bool) Node {
 	}
 	if !build && !n.Attrs().Want {
 		if k, choice, ok := TerminalLeaves(n); ok && choice && k >= MinTerminalLeaves {
-			t := &Terminal{Body: n}
-			t.attrs.Steps = n.Attrs().Steps
-			return t
+			return &Terminal{Body: n}
 		}
 	}
 	// The context of a child: the value of a lookahead's or a discarded expression's body is

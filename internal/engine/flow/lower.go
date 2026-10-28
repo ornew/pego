@@ -117,40 +117,17 @@ func FramedBody(n core.Node) bool {
 
 // LowerFrame lowers the body n with the capture scope slots, building its value if build, to the
 // framed function name of the rule r: the body of a left-recursion leader or of a rule that
-// recovers, or a line of an Operators Rule of r. Analyze must have run on m.
+// recovers, or a line of an Operators Rule of r. Analyze must have run on m. With Options.Work the
+// function does not charge its entry: the method that calls it does (Func.Entered).
 func LowerFrame(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, build bool, name string, opts Options) (*Func, error) {
-	return lowerFrame(m, r, n, slots, build, name, opts, false)
-}
-
-// LowerLine is LowerFrame for an operand or operator line of an Operators Rule that the Node runtime
-// enters: the runtime charges the step of entering the line when it calls it (with work controls), so the
-// function does not charge the steps of its root node again (Func.Entered). The skip of a rule is called
-// without such a charge, and the typed table's lines are not entered by the Node runtime: both use
-// LowerFrame.
-func LowerLine(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, build bool, name string, opts Options) (*Func, error) {
-	return lowerFrame(m, r, n, slots, build, name, opts, true)
-}
-
-// checkOptions rejects the options that lower without work only.
-func checkOptions(opts Options) error {
-	if opts.Work && (opts.ClassTables || opts.GuardedClasses) {
-		return fmt.Errorf("ClassTables and GuardedClasses lower functions without work controls, but Options.Work is set")
-	}
-	return nil
-}
-
-func lowerFrame(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, build bool, name string, opts Options, entered bool) (*Func, error) {
 	if err := checkOptions(opts); err != nil {
 		return nil, err
 	}
 	if !FramedBody(n) {
 		return nil, fmt.Errorf("a body of rule %s is not lowered to a framed function", r.Name)
 	}
-	f := &Func{Name: name, Rule: r, Fail: &Label{Name: "fail"}, Frame: true, Node: opts.Node, Work: opts.Work, Document: opts.Document, Entered: entered && opts.Work, Binds: n.Attrs().Eff.Set&core.EffBind != 0}
+	f := &Func{Name: name, Rule: r, Fail: &Label{Name: "fail"}, Frame: true, Node: opts.Node, Work: opts.Work, Document: opts.Document, Entered: opts.Work, Binds: n.Attrs().Eff.Set&core.EffBind != 0}
 	l := &lowerer{m: m, opts: opts, f: f, used: map[*Label]bool{}, frame: true}
-	if f.Entered {
-		l.entered = n
-	}
 	l.stack = []*[]Stmt{&f.Body}
 	core.Walk(n, func(n core.Node) {
 		if _, ok := n.(*core.Cut); ok {
@@ -169,6 +146,14 @@ func lowerFrame(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, bu
 	return verified(f)
 }
 
+// checkOptions rejects the options that lower without work only.
+func checkOptions(opts Options) error {
+	if opts.Work && (opts.ClassTables || opts.GuardedClasses) {
+		return fmt.Errorf("ClassTables and GuardedClasses lower functions without work controls, but Options.Work is set")
+	}
+	return nil
+}
+
 // Lower lowers the rule r of the module m, a LocalRule, to the function name. Analyze must have
 // run on m.
 func Lower(m *core.Module, r *core.Rule, name string, opts Options) (*Func, error) {
@@ -185,6 +170,7 @@ func Lower(m *core.Module, r *core.Rule, name string, opts Options) (*Func, erro
 		Node:     opts.Node,
 		Work:     opts.Work,
 		Document: opts.Document,
+		Entered:  opts.Work, // the method that calls the function charges the step of entering the rule
 		Binds:    r.Body.Attrs().Eff.Set&core.EffBind != 0}
 	l := &lowerer{m: m, opts: opts, f: f, used: map[*Label]bool{}}
 	l.stack = []*[]Stmt{&f.Body}
@@ -211,12 +197,10 @@ func verified(f *Func) (*Func, error) {
 }
 
 type lowerer struct {
-	// entered is the root of a function whose caller charged its entry (Func.Entered), or nil.
-	entered core.Node
-	m       *core.Module
-	opts    Options
-	f       *Func
-	n       int
+	m    *core.Module
+	opts Options
+	f    *Func
+	n    int
 	// stack holds the statement lists being written, the innermost last.
 	stack []*[]Stmt
 	// dead reports that the current point is unreachable; used holds the labels exited to from
@@ -333,20 +317,13 @@ func (l *lowerer) set(dst LValue, x Expr) {
 	l.emit(&Set{Dst: []LValue{dst}, X: []Expr{x}})
 }
 
+// step charges one work step. A rule charges one on entering, which the method that holds the lowered
+// function does (Func.Entered), and the lowered function charges one on each iteration of a repetition.
+// No other point of straight-line code charges: between two charges only the straight-line code of one
+// rule body runs, whose length is bounded by the size of the grammar, so the steps still bound the work.
 func (l *lowerer) step() {
 	if l.opts.Work {
 		l.emit(&Step{})
-	}
-}
-
-// steps charges the steps of entering the node n (Attrs.Steps).
-func (l *lowerer) steps(n core.Node) {
-	k := n.Attrs().Steps
-	if n == l.entered {
-		k-- // the caller charged one step for entering the function (Func.Entered)
-	}
-	for i := 0; i < k; i++ {
-		l.step()
 	}
 }
 
@@ -401,7 +378,6 @@ func (l *lowerer) mark(s *scope, n core.Node, saves bool) mark {
 		for _, slot := range eff.Slots {
 			k := l.capVar(s, slot)
 			sv := l.decl("x", TypeValue)
-			l.step()
 			l.set(sv, use(k))
 			m.saves = append(m.saves, [2]*Var{k, sv})
 		}
@@ -424,7 +400,6 @@ func (l *lowerer) reset(m mark) {
 		l.set(RegEnv, use(m.env))
 	}
 	for _, kv := range m.saves {
-		l.step()
 		l.set(kv[0], use(kv[1]))
 	}
 }
@@ -461,7 +436,6 @@ func (l *lowerer) node(n core.Node, s *scope, build bool, fail *Label) Expr {
 		// Only the first node the alternative matches may consume the guard's character.
 		l.guarded = nil
 	}
-	l.steps(n)
 	switch n := n.(type) {
 	case *core.Terminal:
 		l.failIf(nil, &Not{X: &SkipTerminal{T: n}}, fail)
@@ -469,7 +443,6 @@ func (l *lowerer) node(n core.Node, s *scope, build bool, fail *Label) Expr {
 	case *core.Lit:
 		return l.lit(n, build, fail)
 	case *core.Missing:
-		l.steps(n.Lit)
 		return l.lit(n.Lit, build, fail)
 	case *core.ClassNode:
 		if n == l.guarded {
@@ -515,7 +488,6 @@ func (l *lowerer) node(n core.Node, s *scope, build bool, fail *Label) Expr {
 	case *core.Choice:
 		return l.choice(n, s, build, fail)
 	case *core.Stream:
-		l.steps(n.Repeat)
 		if l.opts.Stream {
 			if !l.frame || !l.opts.Node || n.Repeat.Project != "" {
 				panic("flow: a stream repetition is lowered in a framed Node function and is not projected")
@@ -924,13 +896,15 @@ func (l *lowerer) repeat(n *core.Repeat, s *scope, build bool, fail *Label) Expr
 	return use(list)
 }
 
-// newLoop begins a loop of at most max iterations (unbounded if max < 0).
+// newLoop begins a loop of at most max iterations (unbounded if max < 0). Each iteration charges one
+// step first, whatever its body is.
 func (l *lowerer) newLoop(max int) *Loop {
 	lp := &Loop{Label: &Label{}, Max: max}
 	if max >= 0 {
 		lp.Counter = l.decl("x", TypeInt)
 	}
 	l.loop(lp)
+	l.step()
 	return lp
 }
 
@@ -943,7 +917,6 @@ func (l *lowerer) exitLoop(lp *Loop) {
 // clearScope sets the capture slots of the element n in its own scope es to nil.
 func (l *lowerer) clearScope(es *scope, n core.Node) {
 	for _, slot := range n.Attrs().Eff.Slots {
-		l.step()
 		l.set(l.capVar(es, slot), &Nil{})
 	}
 }

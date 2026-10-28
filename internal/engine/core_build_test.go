@@ -108,34 +108,6 @@ rule d = "d"
 	}
 }
 
-// TestCoreBuildSteps checks that each node charges the steps of the grammar expressions it is
-// built from: the generated code charges one on entering each expression, so the labels of one
-// attributed expression share one step.
-func TestCoreBuildSteps(t *testing.T) {
-	src := `rule main = ("a" @error("x") @diagnostic(name="y")) [b-c]* => 1
-`
-	prog, ok := coreCorpusProgram(t, genCase{src: src})
-	if !ok {
-		t.Fatal("does not compile")
-	}
-	g := &generator{prog: prog, table: "trules", goWorkControls: true}
-	m, err := g.typedCore(nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	seq := m.Rules[0].Body.(*core.Seq)
-	outer := seq.Items[0].(*core.Label)
-	inner := outer.Body.(*core.Label)
-	scan := seq.Items[1].(*core.Scan)
-	var got []int
-	for _, n := range []core.Node{seq, outer, inner, inner.Body, scan} {
-		got = append(got, n.Attrs().Steps)
-	}
-	if want := []int{1, 1, 0, 1, 1}; !slices.Equal(got, want) {
-		t.Errorf("steps %v, want %v", got, want)
-	}
-}
-
 // coreProgram compiles src, failing the test if it does not compile.
 func coreProgram(t *testing.T, src string) *Program {
 	t.Helper()

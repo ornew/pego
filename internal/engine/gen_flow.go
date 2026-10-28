@@ -147,8 +147,9 @@ func (g *generator) flowFrameBody(r *rule, scope *scope) string {
 // flowNodeFrameBody prints the body of the rule r of the Node table from Flow IR as the matcher of
 // its frame body, or returns "" if r takes another route. The rule is eligible (flowNodeFrameOK) when
 // its Core body is a framed body and its action reads only captures of the frame; the runtime owns depth,
-// memo, frame, action and finish. With work controls (Options.Work) the body charges the steps Flow IR
-// makes explicit; the limits of a parse hold at Flow's own charges.
+// memo, frame, action and finish. With work controls (Options.Work) the method that holds the body charges
+// one step on entry (Func.Entered) and the body charges one on each iteration of a repetition, plus the input
+// work of each Peek; the limits of a parse hold at these charges.
 func (g *generator) flowNodeFrameBody(r *rule, scope *scope) string {
 	cr, ok := g.flowNodeFrameOK(r)
 	if !ok {
@@ -233,22 +234,16 @@ func (g *generator) flowNodeFrameOK(r *rule) (*core.Rule, bool) {
 // recovery builds its error node with NewErrorNode there). Nothing needs a check. The lines of an Operators
 // Rule have no projected repetitions (ruleProjections gives none for one), so Core IR and the tables agree
 // on the shape of every capture, and the checker lets an action name only captures of its line. With work
-// controls (Options.Work) the runtime charges the step of entering an operand or operator line of the Node
-// and recognizer tables (entered), and the function charges the steps of the nodes below the line's root,
-// as Flow IR makes them explicit. The skip of a rule is called without that charge (entered is false), so
-// its function charges all of its steps.
-func (g *generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope *scope, build, entered bool) string {
+// controls (Options.Work) the method that holds the function charges its entry and the function charges
+// each iteration of a repetition, as Flow IR makes them explicit.
+func (g *generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope *scope, build bool) string {
 	if g.flow == nil || l == nil || !flowLineOK(e) || !flow.FramedBody(l.Body) {
 		return ""
 	}
 	if g.table != "trules" && !flowBodyOK(e, true, true) {
 		return ""
 	}
-	lower := flow.LowerFrame
-	if g.table != "trules" && entered {
-		lower = flow.LowerLine // the Node runtime charges the entry of an operand or operator line (see flow.LowerLine)
-	}
-	f, err := lower(g.flow.m, g.flow.m.Rules[g.cur.id], l.Body, l.Scope, build, g.cur.name, g.flow.opts)
+	f, err := flow.LowerFrame(g.flow.m, g.flow.m.Rules[g.cur.id], l.Body, l.Scope, build, g.cur.name, g.flow.opts)
 	if err != nil {
 		panic(fmt.Errorf("line of Operators Rule %s in table %s: %w", g.cur.name, g.table, err)) // FramedBody holds
 	}

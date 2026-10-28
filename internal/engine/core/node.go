@@ -6,7 +6,7 @@ type Node interface {
 	Attrs() *Attrs
 }
 
-// Attrs are the attributes of a node. Want, Shape and Steps are set when the node is built;
+// Attrs are the attributes of a node. Want and Shape are set when the node is built;
 // Analyze computes the others.
 type Attrs struct {
 	// Want reports that the node's value is used. A node with want false builds no value.
@@ -21,9 +21,6 @@ type Attrs struct {
 	First *First
 	// Eff summarizes the node's effects.
 	Eff Effects
-	// Steps is the number of work steps a work-controlled parse charges on entering the node: one
-	// for each grammar expression the node is built from.
-	Steps int
 }
 
 // base holds the attributes of a node.

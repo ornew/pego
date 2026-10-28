@@ -60,15 +60,11 @@ func TestPassesTerminals(t *testing.T) {
 	}
 	small := choice(lit("x"), lit("y"))
 	body := seq(&Drop{Body: seq(lit("k"), choice(alts...))}, small, &Any{}) // any character is no terminal form
-	body.Items[0].Attrs().Steps = 3
 	m := valueFree(module(rule(0, "a", body)))
 	passes(t, m, terminalsPass, guardsPass(false))
 	term, ok := body.Items[0].(*Terminal)
 	if !ok {
 		t.Fatalf("17 leaves: %T, want a terminal", body.Items[0])
-	}
-	if term.Attrs().Steps != 3 {
-		t.Errorf("terminal steps %d, want those of its body, 3", term.Attrs().Steps)
 	}
 	if body.Items[1] != small {
 		t.Errorf("2 leaves: %T, want the choice", body.Items[1])

@@ -11,12 +11,10 @@ import (
 )
 
 // valueFree makes a module of one value-free rule with the body, as the builder does: the
-// expectations of its literals and classes are interned after the five fixed ones, and every node
-// charges one step.
+// expectations of its literals and classes are interned after the five fixed ones.
 func valueFree(body core.Node) (*core.Module, *core.Rule) {
 	m := &core.Module{Exps: []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line"}}
 	core.Walk(body, func(n core.Node) {
-		n.Attrs().Steps = 1
 		switch n := n.(type) {
 		case *core.Lit:
 			n.Exp = core.ExpID(len(m.Exps))
@@ -85,12 +83,11 @@ func r
   var x2 int
   var x3 int
   var ok bool
-  step
   x1 = 0
   loop loop1 {
+    step
     x2, x3 = pos, reclen
     block L4 {
-      step
       if _, ok = matchlit("a"); !ok {
         exit L4
       }
@@ -487,7 +484,6 @@ func TestLowerVerifies(t *testing.T) {
 func TestLowerStream(t *testing.T) {
 	m := &core.Module{Rules: []*core.Rule{nil}}
 	rep := &core.Repeat{Min: 0, Max: -1, Body: &core.Lit{Text: "a"}}
-	rep.Body.Attrs().Steps = 1
 	body := &core.Stream{Repeat: rep}
 	r := &core.Rule{Name: "main", Body: body}
 	m.Rules[0] = r

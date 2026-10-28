@@ -3,7 +3,7 @@ package core
 import "unicode/utf8"
 
 // Analyze computes Nullable, First and Eff of every node of the module from the rules' bodies.
-// Want, Shape and Steps are left as built. The rule references of the module must be valid.
+// Want and Shape are left as built. The rule references of the module must be valid.
 //
 // Nullable and the effects of calls are the least fixed point over the rules. First follows the
 // first item of sequences, the bodies of captures, Text, Drop, Nest and Terminal, the first class

@@ -86,7 +86,7 @@ A pass is a value with the following fields. The names are those of the pipeline
 
 Analyses are the data that passes read and that other passes make stale. The manager knows two:
 `call-graph` (`core.CallGraph`) and `attributes` (`core.Analyze`: `Nullable`, `First`, `Eff`). The attributes that the
-builder sets (`Want`, `Shape`, `Steps`) are inputs, not analyses.
+builder sets (`Want`, `Shape`) are inputs, not analyses.
 
 The five existing passes, declared:
 

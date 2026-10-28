@@ -395,10 +395,6 @@ func (b *coreBuilder) set(n core.Node, e grammar.Expr, want bool) core.Node {
 // expr builds the expression e in the scope s; build reports whether its value is wanted.
 func (b *coreBuilder) expr(e grammar.Expr, s *coreScope, build bool) (core.Node, error) {
 	n, err := b.node(e, s, build)
-	if err == nil {
-		// The generated code charges a step on entering each expression.
-		n.Attrs().Steps++
-	}
 	if err == nil && b.origin != nil {
 		if _, ok := b.origin[n]; !ok {
 			b.origin[n] = e

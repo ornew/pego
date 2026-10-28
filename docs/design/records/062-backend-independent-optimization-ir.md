@@ -116,13 +116,15 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
 - An observability build prints the same rules with the same observation hooks: the enter and exit events of rule
   calls come from the runtime and the rule wrappers, and the one report the matchers write, the skipped report of an
   alternative that a choice guard skips (`ObserveSkip`), is a Flow statement printed by `traceSkip`.
-- A work-control build prints the same rules with the charges Flow IR makes explicit: a `Step` for each step of
-  `Attrs.Steps` on entering a node, and the input work of each `Peek`. These need not equal the counts of the
-  engine's backends, because the spec lets the work of a parse depend on the backend and the generated artifact:
-  Flow's choice guards skip alternatives that the other backends try and charge, it charges dead branches
-  differently, and the runtime charges the entry of an operand or operator line of an Operators Rule (not of its
-  skip), so the function lowered for the line (`flow.LowerLine`) leaves that step out (`Func.Entered`) and `Verify`
-  counts the entry as its first charge. The charge model that every build keeps is checked instead of the counts:
+- A work-control build prints the same rules with the charges Flow IR makes explicit: one `Step` for each iteration
+  of a repetition, and the input work of each `Peek`. The entry of a rule is one step charged by the method that
+  holds the lowered function (`Func.Entered`), and no other point of straight-line code charges: between two
+  charges only the code of one rule body runs, whose length is bounded by the grammar, so the steps still bound
+  the work of a parse. These need not equal the counts of the engine's backends, because the spec lets the work
+  of a parse depend on the backend and the generated artifact: Flow's choice guards skip alternatives that the
+  other backends try and charge, and it charges one step per rule and per iteration where they charge one per
+  expression. `Verify` counts the entry as the first charge of a function. The charge model that every build keeps
+  is checked instead of the counts:
   `Verify` rejects a function lowered with work controls that consumes input, or ends an iteration of a loop
   without a counter, on a path that has charged neither a step, a rule call nor the input work of a `Peek`.
 - What the generated parsers do is checked against the engine where the engine can say it, and against goldens

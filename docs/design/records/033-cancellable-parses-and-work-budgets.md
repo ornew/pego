@@ -207,8 +207,9 @@ allowance, abort before it, with Used unchanged and Requested explaining the
 failed reservation. Use subtraction/checks rather than overflowing counters.
 
 **Steps** are backend execution work events, not source characters or CPU
-instructions. Charge VM expression/action instruction dispatches; closure and
-generated expression/action operations at their emitted execution boundaries;
+instructions. Charge VM expression/action instruction dispatches; closure
+expression/action operations at their execution boundaries; generated rule entries
+and action operations at their emitted execution boundaries;
 rule/memo dispatch and LR/Operators Rule selection/growth iterations; repetition/resume
 iterations; and per-element work in unbounded engine loops. Include graph edges
 visited during position movement, collection construction, and typed conversion,
