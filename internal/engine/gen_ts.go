@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -78,7 +77,7 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	gen := &tsGen{generator: &generator{prog: prog, table: "rules", observability: opts.Observability, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing || !opts.enableTSLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch}, plainUsed: map[*rule]bool{}, tsFlow: !opts.disableTSFlow}
+	gen := &tsGen{generator: &generator{prog: prog, table: "rules", observability: opts.Observability, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing || !opts.enableTSLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch}, plainUsed: map[*rule]bool{}}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	if gen.flowErr != nil {
@@ -352,8 +351,6 @@ type tsGen struct {
 	*generator
 	// plainUsed holds the plain rules whose function (plainCall) is called.
 	plainUsed map[*rule]bool
-	// tsFlow prints the rules that Flow IR covers from it (see startTSFlow).
-	tsFlow bool
 }
 
 // tsString returns s as a TypeScript string literal (JSON is valid TypeScript).
@@ -378,55 +375,6 @@ func tsInts[T ~int32 | ~byte](xs []T) string {
 	return "[" + strings.Join(q, ", ") + "]"
 }
 
-// tsCond converts a condition on ch written by first or classReject to TypeScript.
-func tsCond(cond string) string {
-	return tsBalancedCondition(strings.ReplaceAll(cond, " == ", " === "))
-}
-
-// tsWorkCond preserves short-circuit order while charging each emitted class
-// or first-character comparison. The input probe itself is charged by peek.
-var tsWorkComparison = regexp.MustCompile(`ch (?:===|==|>=|<=|>|<) -?[0-9]+`)
-
-func tsWorkCond(cond string) string {
-	return tsWorkComparison.ReplaceAllStringFunc(tsCond(cond), func(comparison string) string {
-		parts := strings.Fields(comparison)
-		return "p.testCharacter(ch, " + parts[2] + ", " + strconv.Quote(parts[1]) + ")"
-	})
-}
-
-// Long flat class conditions become deep binary trees in TypeScript. Group
-// like operators without reordering operands or changing short-circuit order.
-func tsBalancedCondition(cond string) string {
-	for _, op := range []string{" || ", " && "} {
-		var parts []string
-		depth, from := 0, 0
-		for i := 0; i < len(cond); i++ {
-			switch cond[i] {
-			case '(':
-				depth++
-			case ')':
-				depth--
-			}
-			if depth == 0 && strings.HasPrefix(cond[i:], op) {
-				parts = append(parts, tsBalancedCondition(cond[from:i]))
-				from = i + len(op)
-				i = from - 1
-			}
-		}
-		if len(parts) > 0 {
-			parts = append(parts, tsBalancedCondition(cond[from:]))
-			return tsJoinCondition(parts, op)
-		}
-	}
-	if strings.HasPrefix(cond, "!") {
-		return "!" + tsBalancedCondition(cond[1:])
-	}
-	if strings.HasPrefix(cond, "(") && strings.HasSuffix(cond, ")") {
-		return "(" + tsBalancedCondition(cond[1:len(cond)-1]) + ")"
-	}
-	return cond
-}
-
 func tsJoinCondition(parts []string, op string) string {
 	if len(parts) == 1 {
 		return parts[0]
@@ -434,14 +382,6 @@ func tsJoinCondition(parts []string, op string) string {
 	mid := len(parts) / 2
 	return "(" + tsJoinCondition(parts[:mid], op) + op + tsJoinCondition(parts[mid:], op) + ")"
 }
-
-// tsMark declares the variables of a mark (parser.mark in runtime) with the given indentation, and
-// tsReset returns to it.
-func tsMark(indent string) string {
-	return indent + "const m0pos = p.pos;\n" + indent + "const m0env = p.env;\n" + indent + "const m0trail = p.trail.length;\n" + indent + "const m0rec = p.recovered.length;\n"
-}
-
-const tsReset = "p.reset(m0pos, m0env, m0trail, m0rec);"
 
 func (g *tsGen) seenVar() string {
 	if g.table == "rules" {
@@ -467,8 +407,7 @@ func (g *tsGen) plainPrefix() string {
 
 // method emits a function of an expression with the given body and returns its name.
 //
-// The functions of expressions are called through call expressions (see expr), and fn turns a
-// call expression into a function.
+// fn turns a call expression into a function.
 func (g *tsGen) method(comment, body string) string {
 	body = "  p.stepWork();\n" + body
 	name, shared := g.methodName("Parser/R", body)
@@ -516,10 +455,8 @@ func (g *tsGen) rules() {
 			if call, ok := g.flowRule(r, s); ok {
 				bodies[r] = call
 			} else {
-				if g.flow != nil {
-					g.failFlow("rule " + r.name + " of table " + g.table)
-				}
-				bodies[r] = g.expr(r.bodyExpr(), s, !r.lean)
+				g.failFlow("rule " + r.name + " of table " + g.table)
+				bodies[r] = "null" // the generation fails with the error g.failFlow records
 			}
 			g.proj = nil
 		}
@@ -632,202 +569,6 @@ func (g *tsGen) plainCall(r *rule, body string) {
 `)
 }
 
-// projectRepeat writes a repetition that gathers the values of the capture field of its elements
-// (see projections). The elements build no values of their own, and share one capture frame.
-func (g *tsGen) projectRepeat(b *strings.Builder, e *grammar.Repeat, field string) {
-	elemScope := newScope()
-	m := g.expr(e.Expr, elemScope, false)
-	slot := elemScope.slots[field]
-	fmt.Fprintf(b, "  const start = p.pos;\n  const base = p.kidStack.length;\n  const f = p.newFrame(%d);\n  let count = 0;\n", len(elemScope.names))
-	if e.Max < 0 {
-		b.WriteString("  for (;;) {\n")
-	} else {
-		fmt.Fprintf(b, "  for (let n = 0; n < %d; n++) {\n", e.Max)
-	}
-	b.WriteString("    p.stepWork();\n    f.fill(null);\n" + tsMark("    ") + "    const prevCut = p.cut;\n    const prevFrame = p.frame;\n    p.cut = false;\n    p.frame = f;\n")
-	fmt.Fprintf(b, "    const v = %s;\n", m)
-	b.WriteString("    const cut = p.cut;\n    p.cut = prevCut;\n    p.frame = prevFrame;\n    if (v === undefined) {\n      " + tsReset + "\n      if (cut) {\n        p.dropKids(base);\n        return undefined;\n      }\n      break;\n    }\n")
-	fmt.Fprintf(b, "    count++;\n    p.kidStack.push(f[%d]!);\n", slot)
-	b.WriteString("    if (p.pos === m0pos) {\n      break;\n    }\n  }\n")
-	fmt.Fprintf(b, "  if (count < %d) {\n    p.dropKids(base);\n    return undefined;\n  }\n", e.Min)
-	b.WriteString("  return new Node(\"list\", \"\", start, p.pos, \"\", p.kids(base), noFields, true, false);\n")
-}
-
-// expr returns a TypeScript call expression of type R that matches e. Most expressions become a
-// function of their own, called as e<n>(p); literals, . , anchors and rule calls are called
-// directly, which saves a stack frame per call (JavaScript stacks are small).
-func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
-	var b strings.Builder
-	switch e := e.(type) {
-	case *grammar.Literal:
-		if e.IgnoreCase {
-			folded := string(foldedRunes([]rune(e.Value)))
-			v, shared := g.literalName(folded)
-			if !shared {
-				fmt.Fprintf(&g.vars, "const %s: Lit = { text: %s, cps: %s, bytes: %s };\n", v, tsString(folded), tsInts([]rune(folded)), tsInts([]byte(folded)))
-			}
-			return fmt.Sprintf("p.matchLiteralFold(%s, %d, %v)", v, g.desc(literalDesc(e)), build)
-		}
-		value := literalValue(e.Value)
-		v, shared := g.literalName(value)
-		if !shared {
-			fmt.Fprintf(&g.vars, "const %s: Lit = { text: %s, cps: %s, bytes: %s };\n", v, tsString(value), tsInts([]rune(value)), tsInts([]byte(value)))
-		}
-		return fmt.Sprintf("p.matchLiteral(%s, %d, %v)", v, g.desc(strconv.Quote(e.Value)), build)
-	case *grammar.CharClass:
-		fmt.Fprintf(&b, "  const ch = p.peek();\n  if (ch < 0 || %s) {\n    p.expect(p.pos, %d);\n    return undefined;\n  }\n",
-			tsWorkCond(classReject(e)), g.desc(charClassString(e)))
-		fmt.Fprintf(&b, "  return p.single(p.psize, %v);\n", build)
-	case *grammar.Any:
-		return fmt.Sprintf("p.matchAny(%v)", build)
-	case *grammar.Ref:
-		r := g.prog.byName[e.Name]
-		min := 0
-		if e.Level != "" {
-			for i, l := range r.def.Expr.(*grammar.OperatorsRule).Levels {
-				if l.Name == e.Level {
-					min = i
-				}
-			}
-		}
-		if !build && r.twin != nil {
-			r = r.twin
-		}
-		_, operatorsRule := r.def.Expr.(*grammar.OperatorsRule)
-		switch {
-		case r.plain && !operatorsRule:
-			// Never memoized and without captures: call does nothing but invokePlain, which a
-			// function of its own does with a direct call of the body (see plainCall).
-			g.plainUsed[r] = true
-			return fmt.Sprintf("%s%d(p)", g.plainPrefix(), r.id)
-		case r.plain:
-			return fmt.Sprintf("p.invokePlain(%s, %d)", g.ruleVar(r), min)
-		default:
-			return fmt.Sprintf("p.call(%s, %d)", g.ruleVar(r), min)
-		}
-	case *grammar.Seq:
-		var items []string
-		for _, it := range e.Items {
-			items = append(items, g.expr(it, s, build))
-		}
-		// The value is the tuple node of the elements, flattened through nested sequences.
-		if build {
-			b.WriteString("  const start = p.pos;\n  const kids: (Node | null)[] = [];\n")
-		}
-		for i, it := range e.Items {
-			switch {
-			case build && isElems(g.prog, it):
-				fmt.Fprintf(&b, "  const v%d = %s;\n  if (v%d === undefined) {\n    return undefined;\n  }\n  for (const k of (v%d as Node).children) {\n    kids.push(k);\n  }\n", i, items[i], i, i)
-			case build && valuedCount(g.prog, it) == 1:
-				fmt.Fprintf(&b, "  const v%d = %s;\n  if (v%d === undefined) {\n    return undefined;\n  }\n  kids.push(v%d);\n", i, items[i], i, i)
-			default:
-				fmt.Fprintf(&b, "  if (%s === undefined) {\n    return undefined;\n  }\n", items[i])
-			}
-		}
-		if build {
-			b.WriteString("  return new Node(\"tuple\", \"\", start, p.pos, \"\", kids, noFields, true, false);\n")
-		} else {
-			b.WriteString("  return null;\n")
-		}
-	case *grammar.Choice:
-		b.WriteString(tsMark("  "))
-		peeked := false
-		for _, alt := range e.Alts {
-			m := g.expr(alt, s, build)
-			if build {
-				m = g.singleMethod(alt, m, false)
-			}
-			if cond, desc, depth, ok := g.first(alt, 0, map[string]bool{}); ok {
-				// An alternative whose first terminal does not match the next character is skipped,
-				// with the expectation it would record (see generator.first).
-				if !peeked {
-					b.WriteString("  const ch = p.peek();\n")
-					peeked = true
-				}
-				fmt.Fprintf(&b, "  if (!(ch >= 0 && (%s)) && p.depth + %d <= p.maxDepth) {\n%s    p.expect(p.pos, %d);\n  } else ", tsWorkCond(cond), depth, g.traceSkipped(alt), desc)
-			} else {
-				b.WriteString("  ")
-			}
-			fmt.Fprintf(&b, "{\n    const prevCut = p.cut;\n    p.cut = false;\n    const v = %s;\n    const cut = p.cut;\n    p.cut = prevCut;\n"+
-				"    if (v !== undefined) {\n      return v;\n    }\n    %s\n    if (cut) {\n      return undefined;\n    }\n  }\n", m, tsReset)
-		}
-		b.WriteString("  return undefined;\n")
-	case *grammar.Repeat:
-		g.repeat(&b, e, s, build)
-	case *grammar.Optional:
-		m := g.expr(e.Expr, s, build)
-		if build {
-			m = g.singleMethod(e.Expr, m, false)
-		}
-		fmt.Fprintf(&b, "%s  const prevCut = p.cut;\n  p.cut = false;\n  const v = %s;\n  const cut = p.cut;\n  p.cut = prevCut;\n"+
-			"  if (v !== undefined) {\n    return v;\n  }\n  %s\n  if (cut) {\n    return undefined;\n  }\n  return null;\n", tsMark("  "), m, tsReset)
-	case *grammar.And:
-		m := g.expr(e.Expr, s, build && hasCaptures(e.Expr))
-		fmt.Fprintf(&b, "  const start = p.pos;\n  const prevCut = p.cut;\n  p.silent++;\n  const v = %s;\n  p.silent--;\n  p.cut = prevCut;\n  p.pos = start;\n  return v === undefined ? undefined : null;\n", m)
-	case *grammar.Not:
-		m := g.expr(e.Expr, s, false)
-		fmt.Fprintf(&b, "%s  const prevCut = p.cut;\n  p.silent++;\n  const v = %s;\n  p.silent--;\n  p.cut = prevCut;\n  %s\n  return v === undefined ? null : undefined;\n", tsMark("  "), m, tsReset)
-	case *grammar.Atomic:
-		m := g.expr(e.Expr, s, false)
-		if build {
-			fmt.Fprintf(&b, "  const start = p.pos;\n  if (%s === undefined) {\n    return undefined;\n  }\n", m)
-			b.WriteString("  return new Node(\"string\", \"\", start, p.pos, p.text(start, p.pos), noNodes, noFields, true, true);\n")
-		} else {
-			fmt.Fprintf(&b, "  return %s === undefined ? undefined : null;\n", m)
-		}
-	case *grammar.Discard:
-		m := g.expr(e.Expr, s, false)
-		fmt.Fprintf(&b, "  return %s === undefined ? undefined : null;\n", m)
-	case *grammar.Capture:
-		if !build && g.cur != nil && g.cur.predCaps != nil && !g.cur.predCaps[e.Name] {
-			// In the recognizer, captures not referenced by predicates are not recorded (as in
-			// the engine).
-			return g.expr(e.Expr, s, false)
-		}
-		slot := s.slot(e.Name)
-		var m string
-		if field := g.proj[e.Name]; field != "" {
-			var rb strings.Builder
-			g.projectRepeat(&rb, e.Expr.(*grammar.Repeat), field)
-			m = g.method(describe(e.Expr)+" (projected to "+field+")", rb.String()) + "(p)"
-		} else {
-			m = g.singleMethod(e.Expr, g.expr(e.Expr, s, true), true)
-		}
-		fmt.Fprintf(&b, "  const v = %s;\n  if (v !== undefined) {\n    p.setCapture(%d, v);\n  }\n", m, slot)
-		if build {
-			b.WriteString("  return v;\n")
-		} else {
-			b.WriteString("  return v === undefined ? undefined : null;\n")
-		}
-	case *grammar.Cut:
-		b.WriteString("  p.cut = true;\n  return null;\n")
-	case *grammar.Top:
-		// _ matches the empty input and has no value.
-		b.WriteString("  return null;\n")
-	case *grammar.Bottom:
-		b.WriteString("  return undefined;\n")
-	case *grammar.BeginInput:
-		return "p.anchor(p.pos === 0, idBeginInput)"
-	case *grammar.EndInput:
-		return "p.anchor(p.atEnd(), idEndInput)"
-	case *grammar.BeginLine:
-		return "p.anchor(p.atLineStart(), idBeginLine)"
-	case *grammar.EndLine:
-		return "p.anchor(p.atLineEnd(), idEndLine)"
-	case *grammar.Predicate:
-		if a, ok := e.Term.(*grammar.Bind); ok {
-			fmt.Fprintf(&b, "  return p.bind(%s, %s) ? null : undefined;\n", tsString(a.Name), g.action(a.Value, s, nil))
-		} else {
-			fmt.Fprintf(&b, "  return p.predicate((c) => %s) ? null : undefined;\n", g.predicateTerm(e.Term, s))
-		}
-	case *grammar.Attributed:
-		return g.attributed(e, s, build)
-	default:
-		panic(fmt.Sprintf("unsupported expression %T", e))
-	}
-	return g.method(describe(e), b.String()) + "(p)"
-}
-
 // tsShaper returns the runtime shaper of the expression e, its static shape (value_shape.go), packed
 // as the runtime's Shaper.
 func tsShaper(prog *Program, e grammar.Expr) int {
@@ -842,124 +583,6 @@ func tsShaper(prog *Program, e grammar.Expr) int {
 		s |= 16
 	}
 	return s
-}
-
-// singleMethod returns the call of the value of e where it takes one element (an alternative or
-// the operand of ?), from the building call m of e, as generator.singleMethod does; with capture,
-// that of a capture or a recovered expression.
-func (g *tsGen) singleMethod(e grammar.Expr, m string, capture bool) string {
-	if singleModeOf(g.prog, e) == singlePass && !isElems(g.prog, e) {
-		return m
-	}
-	shape := "shapeSingle"
-	if capture {
-		shape = "shapeCapture"
-	}
-	return g.method(describe(e), fmt.Sprintf("  const start = p.pos;\n  const v = %s;\n  if (v === undefined) {\n    return undefined;\n  }\n  return p.%s(%d, v, start);\n", m, shape, tsShaper(g.prog, e))) + "(p)"
-}
-
-func (g *tsGen) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, build bool) {
-	if !build && g.scanRepeat(b, e) {
-		return
-	}
-	// An element with captures has its own scope per iteration (elementScoped).
-	elemScope := s
-	if elementScoped(e.Expr) {
-		elemScope = newScope()
-	}
-	m := g.expr(e.Expr, elemScope, build)
-	own := elemScope != s
-	if build {
-		// Element values are gathered on p.kidStack and copied out once.
-		b.WriteString("  const start = p.pos;\n  const base = p.kidStack.length;\n")
-	}
-	b.WriteString("  let count = 0;\n")
-	if e.Max < 0 {
-		b.WriteString("  for (;;) {\n")
-	} else {
-		fmt.Fprintf(b, "  for (let n = 0; n < %d; n++) {\n", e.Max)
-	}
-	b.WriteString("    p.stepWork();\n" + tsMark("    ") + "    const prevCut = p.cut;\n    const prevFrame = p.frame;\n    p.cut = false;\n")
-	scopeVar := ""
-	if own {
-		if build {
-			scopeVar = g.name("scope")
-			fmt.Fprintf(&g.vars, "const %s: string[] = %s;\n", scopeVar, tsStrings(elemScope.names))
-		}
-		fmt.Fprintf(b, "    const f = p.newFrame(%d);\n    p.frame = f;\n", len(elemScope.names))
-	}
-	fmt.Fprintf(b, "    let v = %s;\n", m)
-	b.WriteString("    const cut = p.cut;\n    p.cut = prevCut;\n    p.frame = prevFrame;\n    if (v === undefined) {\n      " + tsReset + "\n      if (cut) {\n")
-	if build {
-		b.WriteString("        p.dropKids(base);\n")
-	}
-	b.WriteString("        return undefined;\n      }\n      break;\n    }\n")
-	if build {
-		fmt.Fprintf(b, "    v = p.scopeValue(%d, v, m0pos);\n", tsShaper(g.prog, e.Expr))
-	}
-	if own && build {
-		fmt.Fprintf(b, "    v = p.attachCaptures(v, %s, f, m0pos, p.pos);\n", scopeVar)
-	}
-	b.WriteString("    count++;\n")
-	if build {
-		b.WriteString("    p.kidStack.push(v);\n")
-	}
-	b.WriteString("    if (p.pos === m0pos) {\n      break;\n    }\n  }\n")
-	fmt.Fprintf(b, "  if (count < %d) {\n", e.Min)
-	if build {
-		b.WriteString("    p.dropKids(base);\n")
-	}
-	b.WriteString("    return undefined;\n  }\n")
-	if !build {
-		b.WriteString("  return null;\n")
-		return
-	}
-	b.WriteString("  return new Node(\"list\", \"\", start, p.pos, \"\", p.kids(base), noFields, true, false);\n")
-}
-
-// scanRepeat generates a value-free repetition of a single-character expression (a character
-// class or .) as a scan loop without per-iteration backtracking state, like generator.scanRepeat.
-func (g *tsGen) scanRepeat(b *strings.Builder, e *grammar.Repeat) bool {
-	var cond string
-	switch x := e.Expr.(type) {
-	case *grammar.CharClass:
-		cond = fmt.Sprintf("ch < 0 || %s) {\n      p.expect(p.pos, %d);", tsWorkCond(classReject(x)), g.desc(charClassString(x)))
-	case *grammar.Any:
-		cond = "ch < 0) {\n      p.expect(p.pos, idAny);"
-	default:
-		return false
-	}
-	b.WriteString("  let count = 0;\n")
-	if e.Max < 0 {
-		b.WriteString("  for (;;) {\n")
-	} else {
-		fmt.Fprintf(b, "  while (count < %d) {\n", e.Max)
-	}
-	fmt.Fprintf(b, "    p.stepWork();\n    const ch = p.peek();\n    if (%s\n      break;\n    }\n    p.pos += p.psize;\n    count++;\n  }\n", cond)
-	fmt.Fprintf(b, "  return count >= %d ? null : undefined;\n", e.Min)
-	return true
-}
-
-func (g *tsGen) attributed(e *grammar.Attributed, s *scope, build bool) string {
-	m := g.expr(e.Expr, s, build)
-	for _, a := range e.Attrs {
-		switch a.Name {
-		case "error":
-			msg := attributeMessage(a)
-			m = g.method("@error", fmt.Sprintf("  return p.errorAttr(%s, msgBit | %d);\n", g.fn(m), g.desc(msg))) + "(p)"
-		case "diagnostic":
-			name := attributeDiagnosticName(a)
-			m = g.method("@diagnostic", fmt.Sprintf("  return p.diagnosticAttr(%s, %d);\n", g.fn(m), g.desc(name))) + "(p)"
-		case "recover":
-			skipExpr, _ := a.Arg("skip")
-			skip := g.expr(skipExpr, s, false)
-			if build {
-				m = g.singleMethod(e.Expr, m, true)
-			}
-			m = g.method("#recover", fmt.Sprintf("  return p.recoverAttr(%s, %s, %v);\n", g.fn(m), g.fn(skip), build)) + "(p)"
-		}
-	}
-	return m
 }
 
 func (g *tsGen) operatorsRule(r *rule, e *grammar.OperatorsRule) {
@@ -977,8 +600,8 @@ func (g *tsGen) operatorsRule(r *rule, e *grammar.OperatorsRule) {
 		}
 		m, ok := g.flowLine(skip, e.Skip, newScope(), false)
 		if !ok {
-			g.failFlowLine("the skip of an Operators Rule of rule " + r.name)
-			m = g.expr(e.Skip, newScope(), false)
+			g.failFlow("the skip of an Operators Rule of rule " + r.name)
+			m = "null"
 		}
 		fmt.Fprintf(&b, "  skip: %s,\n", g.fn(m))
 	} else {
@@ -1030,8 +653,8 @@ func (g *tsGen) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator 
 	build := !g.cur.novalue && !leanLine(action, locals)
 	m, ok := g.flowLine(l, e, s, build)
 	if !ok {
-		g.failFlowLine("a line of an Operators Rule of rule " + g.cur.name)
-		m = g.expr(e, s, build)
+		g.failFlow("a line of an Operators Rule of rule " + g.cur.name)
+		m = "null"
 	}
 	m = g.fn(m)
 	act := "null"

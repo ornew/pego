@@ -1456,20 +1456,6 @@ export class Parser {
 
   stepWork(n = 1): void { this.control?.charge(0, n); }
 
-  // Generated comparisons call here before reading the cached character value.
-  // Keeping the charge outside the boolean expression also avoids adding
-  // another nested control-flow node to each class range in TypeScript.
-  testCharacter(ch: number, want: number, op: "===" | "<" | "<=" | ">" | ">="): boolean {
-    this.stepWork();
-    switch (op) {
-      case "===": return ch === want;
-      case "<": return ch < want;
-      case "<=": return ch <= want;
-      case ">": return ch > want;
-      case ">=": return ch >= want;
-    }
-  }
-
   constructor(g: Grammar, input: string | Uint8Array, unit: Unit, stride: number, maxDepth: number, control: WorkControl | null = null) {
     this.g = g;
     this.sourceInfo = g.sourceInfo;
@@ -2554,33 +2540,6 @@ export class Parser {
     return new Node("string", "", start, this.pos, this.text(start, this.pos), noNodes, noFields, true, true);
   }
 
-  matchAny(build: boolean): R {
-    if (this.peek() < 0) {
-      this.expect(this.pos, idAny);
-      return undefined;
-    }
-    return this.single(this.psize, build);
-  }
-
-  // single consumes one character of size units.
-  single(size: number, build: boolean): R {
-    const start = this.pos;
-    this.pos += size;
-    if (!build) {
-      return null;
-    }
-    return new Node("string", "", start, this.pos, this.text(start, this.pos), noNodes, noFields, true, true);
-  }
-
-  anchor(ok: boolean, desc: number): R {
-    this.stepWork();
-    if (ok) {
-      return null;
-    }
-    this.expect(this.pos, desc);
-    return undefined;
-  }
-
   atLineStart(): boolean {
     if (this.pos === 0) {
       return true;
@@ -2597,96 +2556,6 @@ export class Parser {
   atEnd(): boolean {
     this.control?.charge(1, 1);
     return this.pos === this.n;
-  }
-
-  // --- Attributes ---
-
-  // errorAttr replaces the expectations of a failing m with the message msg (an ID with msgBit),
-  // reported at the farthest position m reached.
-  errorAttr(m: Matcher, msg: number): R {
-    const mFar = this.farthest;
-    const mBase = this.expBase;
-    this.expBase = this.expTop;
-    this.farthest = this.pos;
-    const v = m(this);
-    const far = this.farthest;
-    const from = this.expBase;
-    const to = this.expTop;
-    this.expTop = this.expBase;
-    this.expBase = mBase;
-    this.farthest = mFar;
-    if (v !== undefined) {
-      this.mergeExpected(far, from, to);
-      return v;
-    }
-    this.expect(far, msg);
-    return undefined;
-  }
-
-  diagnosticAttr(m: Matcher, name: number): R {
-    const mFar = this.farthest;
-    const mBase = this.expBase;
-    this.expBase = this.expTop;
-    this.farthest = this.pos;
-    const v = m(this);
-    const far = this.farthest;
-    const from = this.expBase;
-    const to = this.expTop;
-    let expected: number[] = noExp;
-    if (v === undefined) {
-      expected = this.control === null ? this.exp.slice(from, to) : copyIDsWork(this.exp, from, to, this.control);
-      for (let i = 0; i < expected.length; i++) {
-        this.stepWork();
-        const id = expected[i]!;
-        expected[i] = (id & msgBit) !== 0 ? id : name;
-      }
-    }
-    this.expTop = this.expBase;
-    this.expBase = mBase;
-    this.farthest = mFar;
-    if (v !== undefined) {
-      this.mergeExpected(far, from, to);
-      return v;
-    }
-    this.mergeKept(far, expected);
-    return undefined;
-  }
-
-  // recoverAttr records the error of a failing m, skips what skip matches and returns an Error
-  // node. It fails without recovering when skip fails or skips nothing.
-  recoverAttr(m: Matcher, skip: Matcher, build: boolean): R {
-    const m0pos = this.pos;
-    const m0env = this.env;
-    const m0trail = this.trail.length;
-    const m0rec = this.recovered.length;
-    const mFar = this.farthest;
-    const mBase = this.expBase;
-    this.expBase = this.expTop;
-    this.farthest = this.pos;
-    const v = m(this);
-    const far = this.farthest;
-    const from = this.expBase;
-    const to = this.expTop;
-    this.expTop = this.expBase;
-    this.expBase = mBase;
-    this.farthest = mFar;
-    if (v !== undefined) {
-      this.mergeExpected(far, from, to);
-      return v;
-    }
-    const expected = this.keep(from, to); // keep them while skipping
-    this.reset(m0pos, m0env, m0trail, m0rec);
-    if (skip(this) === undefined || this.pos === m0pos) {
-      this.reset(m0pos, m0env, m0trail, m0rec);
-      this.mergeKept(far, expected);
-      return undefined;
-    }
-    const e = this.recoveredError(far, expected);
-    this.recovered.push(e);
-    if (!build) {
-      return null;
-    }
-    return new Node("error", "", m0pos, this.pos, this.text(m0pos, this.pos), noNodes, [{ name: "message", value: e.message }], true, true);
   }
 
   // --- Actions and predicates ---

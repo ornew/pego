@@ -13,23 +13,20 @@ import (
 
 // Value-free rules of the TypeScript runtime printed from Flow IR.
 //
-// The lean rules that recFlowEligible accepts are lowered by flow.Lower (with the options of the
-// untyped tables, except for the Go-only forms: in-place literal reads and class tables) and
-// printed by tsFlowPrinter as one function each. A block becomes a labeled block and a loop a labeled
+// The rules are lowered by flow.Lower (with the options of the untyped tables, except for the
+// Go-only forms: in-place literal reads and class tables) and printed by tsFlowPrinter as one
+// function each. A block becomes a labeled block and a loop a labeled
 // for statement, so that an exit leaves the construct it names with break or continue. A rule
-// that Flow IR or the printer does not cover keeps the lowering of tsGen.expr.
+// that Flow IR or the printer does not cover fails the generation.
 
-// tsFlowUnsupported is the panic value of the printer for a construct it does not print; the rule
-// then keeps its other lowering.
+// tsFlowUnsupported is the panic value of the printer for a construct it does not print; the
+// generation then fails.
 type tsFlowUnsupported string
 
-// startTSFlow builds the Core IR of the table being generated for printing its eligible rules from
-// Flow IR. It reports whether Flow IR is in use for the table.
+// startTSFlow builds the Core IR of the table being generated for printing its rules from Flow IR. It
+// reports whether the Core IR was built; if not, the generation fails with the error it records.
 func (g *tsGen) startTSFlow() bool {
 	g.flow = nil
-	if !g.tsFlow {
-		return false
-	}
 	if err := g.startRecFlow(g.prog); err != nil {
 		if g.flowErr == nil {
 			g.flowErr = err
@@ -1040,8 +1037,7 @@ func (p *tsFlowPrinter) decl(name, s string) {
 	p.decls = append(p.decls, tsDecl{name, s})
 }
 
-// call returns the call of the rule r from the Operators Rule level min, as tsGen.expr writes a
-// reference.
+// call returns the call of the rule r from the Operators Rule level min.
 func (p *tsFlowPrinter) call(r *rule, min int) string {
 	g := p.g
 	_, operatorsRule := r.def.Expr.(*grammar.OperatorsRule)
@@ -1140,8 +1136,8 @@ func tsUnisolate(s *flow.Set) (*flow.Unisolate, bool) {
 
 // flowLine prints the line l of the Operators Rule g.cur, whose expression is e, from Flow IR as a
 // function and returns the call expression that runs it, or false if the printer does not print
-// the line. It sets scope to the capture scope of the line. With work controls the method that holds
-// the function charges its entry and the function charges each iteration of a repetition.
+// the line. It sets scope to the capture scope of the line. With work controls the runtime loop that
+// runs the line charges its entry and the function charges each iteration of a repetition.
 func (g *tsGen) flowLine(l *core.OpLine, e grammar.Expr, scope *scope, build bool) (string, bool) {
 	if g.flow == nil || l == nil || !flowLineOK(e) || !flow.FramedBody(l.Body) {
 		return "", false
@@ -1154,14 +1150,6 @@ func (g *tsGen) flowLine(l *core.OpLine, e grammar.Expr, scope *scope, build boo
 	g.proj = nil // the actions of the lines use no projections of the rule
 	defer func() { g.proj = prev }()
 	return g.flowFunc(f, l.Scope, scope, g.cur.name+" (OperatorsRule line)")
-}
-
-// failFlowLine records that Flow IR does not print an Operators Rule line, unless the generator
-// does not use Flow IR.
-func (g *tsGen) failFlowLine(what string) {
-	if g.flow != nil {
-		g.failFlow(what)
-	}
 }
 
 // outline prints the function of the outlined node x and returns the call of it. The passes that only

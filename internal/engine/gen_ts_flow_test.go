@@ -16,20 +16,18 @@ rule word = [a-z]+ ("-" [a-z]+)*`
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, disabled := range []bool{false, true} {
-		files, err := GenerateTS(g, GenOptions{Start: "main", Recognize: true, disableTSFlow: disabled})
-		if err != nil {
-			t.Fatal(err)
+	files, err := GenerateTS(g, GenOptions{Start: "main", Recognize: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var parser string
+	for _, f := range files {
+		if strings.HasSuffix(f.Path, "parser.ts") {
+			parser = string(f.Content)
 		}
-		var parser string
-		for _, f := range files {
-			if strings.HasSuffix(f.Path, "parser.ts") {
-				parser = string(f.Content)
-			}
-		}
-		if got := strings.Contains(parser, "L_fail"); got == disabled {
-			t.Errorf("disableTSFlow=%v: parser prints labels = %v", disabled, got)
-		}
+	}
+	if !strings.Contains(parser, "L_fail") {
+		t.Errorf("the parser prints no labeled block for a lean rule")
 	}
 }
 
