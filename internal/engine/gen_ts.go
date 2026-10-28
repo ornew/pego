@@ -196,7 +196,7 @@ var tsPrintRuns = sync.OnceValue(func() string {
 func (g *tsGen) fieldCheckSource() string {
 	src := tsFieldCheckSource
 	for _, f := range []string{"castValue"} {
-		if strings.Contains(g.init.String(), f+"(") || strings.Contains(g.methods.String(), f+"(") {
+		if strings.Contains(g.init.String(), f+"(") || strings.Contains(g.vars.String(), f+"(") || strings.Contains(g.methods.String(), f+"(") {
 			src += tsCheckSources[f]
 		}
 	}

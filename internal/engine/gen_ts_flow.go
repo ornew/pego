@@ -831,6 +831,30 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 			panic(tsFlowUnsupported("captures attached from variables"))
 		}
 		return fmt.Sprintf("p.attachCaptures(%s, %s, %s, %s, p.pos)", p.expr(x.X), p.scopeNames(x.Names), x.Frame.Name, p.expr(x.Start))
+	case *flow.Pred:
+		if x.Caps.Vars != nil {
+			panic(tsFlowUnsupported("a predicate that reads variables"))
+		}
+		// The term reads the current frame.
+		if p.dry {
+			return "p.predicate(a)"
+		}
+		return fmt.Sprintf("p.predicate((c) => %s)", p.g.predicateTerm(p.grammarTerm(x.Node), frameScope(x.Caps)))
+	case *flow.Bind:
+		if x.Caps.Vars != nil {
+			panic(tsFlowUnsupported("a bind that reads variables"))
+		}
+		b, ok := p.grammarTerm(x.Node).(*grammar.Bind)
+		if !ok {
+			panic(tsFlowUnsupported("a bind without a grammar bind"))
+		}
+		if p.dry {
+			return "p.bind(a)"
+		}
+		// The function is declared only if the rule keeps the printed text.
+		name := p.g.name("a")
+		p.decl(name, fmt.Sprintf("function %s(c: Actx): Value {\n  return %s;\n}\n\n", name, p.g.term(b.Value, frameScope(x.Caps), nil)))
+		return fmt.Sprintf("p.bind(%s, %s)", tsString(b.Name), name)
 	case *flow.MarkPos:
 		p.readVar(p.part(x.M, 0))
 		return x.M.Name + "Pos"
@@ -924,4 +948,14 @@ func (p *tsFlowPrinter) scopeNames(n *flow.Names) string {
 	p.names[n] = name
 	p.decl(name, fmt.Sprintf("const %s: string[] = %s;\n", name, tsStrings(n.List)))
 	return name
+}
+
+// grammarTerm returns the term of the grammar predicate that the node n is built from, which the
+// term printer prints.
+func (p *tsFlowPrinter) grammarTerm(n core.Node) grammar.Term {
+	e, ok := p.g.flow.origin[n].(*grammar.Predicate)
+	if !ok {
+		panic(tsFlowUnsupported(fmt.Sprintf("no grammar predicate for %T", n)))
+	}
+	return e.Term
 }
