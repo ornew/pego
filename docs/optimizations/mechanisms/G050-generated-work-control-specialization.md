@@ -31,8 +31,9 @@ itself. A user who needs both forms generates two parsers.
 
 ## Scope and State
 
-Applied by default in generated Go Node/recognition and typed Go output. Closure, VMs and
-TypeScript work-control implementations do not use this Go mechanism.
+Applied by default in generated Go Node/recognition and typed Go output. Generated TypeScript
+chooses its form with the same option but prints its own charges (see [G210](G210-typescript-from-flow-ir.md)).
+Closure and VM work-control implementations do not use this Go mechanism.
 
 ## Evidence and Implementation
 

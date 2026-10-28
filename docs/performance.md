@@ -204,6 +204,16 @@ were measured on a 4-vCPU Intel Xeon virtual machine and are several times slowe
 The first benchmark run on that virtual machine took about 510 ms for JSON and allocated 206 MB in 2.6 million
 allocations.
 
+### Generated TypeScript
+
+Generated TypeScript parsers are measured with Node (24 or later) by running a generated `parser.ts` under
+`node --experimental-strip-types`: `bench/ts-parse.mjs` for parsing a file, `bench/ts-typed.mjs` for the typed
+workloads that `TestGeneratedTSTypedWorkloads` and `TestGeneratedTSTypedSharedDAG` write when
+`PEGO_TS_TYPED_DIR` is set, and `bench/ts-literal.mjs` for literal matching. Compare two generators by
+alternating them in each round, run at least six rounds, and compare medians and ranges. The form without
+`-work-controls` is the default, so compare it with the controlled form separately. Results are in
+[record 122](optimizations/122-typescript-from-flow-ir.md).
+
 ## Mechanism Catalog
 
 See the [mechanism catalog](optimizations/README.md#mechanism-index) for

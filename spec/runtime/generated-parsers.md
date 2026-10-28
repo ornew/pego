@@ -307,6 +307,9 @@ export function marshal(n: Node | null): string;
   string, a boolean or `null`.
 - `SyntaxError` has `pos`, `line`, `col`, `expected`, `messages` and `reason()`, and
   its `message` is the text of the engine's error; `SyntaxErrors` has `errors`.
+- The `SyntaxError` values of `SyntaxErrors`, the errors that `#recover` recovered from, carry
+  only the header line in `stack`; the `error` of a parse that failed keeps the stack of the
+  point where it was made.
 - `marshal(node)` returns exactly the bytes that `encoding/json` writes for the
   engine's node. `JSON.stringify` yields the same keys in the same order, except
   that integers beyond the safe range are rounded and, in `Bytes` mode, an invalid

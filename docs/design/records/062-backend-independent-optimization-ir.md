@@ -43,7 +43,7 @@ The evidence below was measured at commit `4e2f3763` with Go 1.27.1 on an Apple 
 | Generated Go Node and recognizer | A printer in `gen.go` that wrote one Go function per expression | 455 |
 | Generated typed Go | A printer that wrote Go text directly from the expression tree, with the typed paths of the Node printer and of the Go term lowering as its fallback | 1,770 |
 | Terminal programs | `terminalProgram` in `gen_terminal.go` | 260 |
-| Generated TypeScript | `tsGen.expr` and helpers in `gen_ts.go` | 400 |
+| Generated TypeScript | A printer that wrote TypeScript directly from the expression tree (`tsGen.expr` and helpers in `gen_ts.go`) | 400 |
 
 Line counts are the lengths of the functions named in each row. Actions and predicates are lowered four
 more times: the closure evaluator in `eval.go`, bytecode expression code in `bcompile.go`, Go terms in
@@ -161,9 +161,9 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   The recognizer's Core pipeline runs `Analyze` before `Guards`, as the table's pipeline does: `Guards` reads the
   first terminals that `Analyze` computes, so the reverse order leaves the alternatives of choices unguarded.
 - Work-control specialization exists twice in the compilers that duplicate code: the closure backend compiles a
-  second, metered closure graph (`controlledDispatch`), and TypeScript rewrites printed conditions with regular
-  expressions (`tsWorkCond`). Generated Go prints one form of each function, chosen by the options.
-- Code is shared as strings. TypeScript reuses the Go conditions of `generator.first` and
+  second, metered closure graph (`controlledDispatch`), and TypeScript rewrote printed conditions with regular
+  expressions (`tsWorkCond`). Generated Go and TypeScript print one form of each function, chosen by the options.
+- Code is shared as strings. TypeScript reused the Go conditions of `generator.first` and
   `controlledClassReject` after rewriting `==` to `===` and rebalancing `&&`/`||` by parenthesis counting
   (`tsCond`, `tsBalancedCondition`). Helper sharing
   ([record 090](../../optimizations/090-share-identical-generated-helpers.md)) compares printed function
@@ -730,8 +730,11 @@ the hoisted `any` variables or the missing analyses behind them.
 
 ## Performance and Results
 
-No implementation exists yet. The baseline for each stage is the commit before it, measured on the same
-machine:
+The baseline for each stage is the commit before it, measured on the same machine. Stage 3 is measured in
+[record 122](../../optimizations/122-typescript-from-flow-ir.md): parse and recognition of JSON, CSV and XML are
+17% to 46% faster, the typed workloads are equal or faster except recovery (4% to 6% slower), and
+`parser.ts` is 16% to 23% smaller except DuckDB (14% larger) but 6% to 46% larger after gzip for every grammar. The
+comparison sets the old printer, which always charges work, against the new form without work controls. The measured quantities of every stage are:
 
 - **Generation:** wall time, CPU and allocations of `pego gen` for each repository parser with its
   `parsers/generate.go` options, plus DuckDB and Python with Node and typed output. The `qualifyRuntime`

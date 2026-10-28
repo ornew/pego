@@ -126,6 +126,7 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 | [G180](mechanisms/G180-typed-frame-layouts.md) | Match direct framed capture layouts | TG default eligible | — | — | — | — | Partial | — | Default | None maintained |
 | [G190](mechanisms/G190-typed-recovery-bodies.md) | Inline eligible typed recovery bodies | TG default eligible | — | — | — | — | Partial | — | Default | None maintained |
 | [G200](mechanisms/G200-typed-local-capture-layouts.md) | Complete typed Go-local capture layouts | TG default eligible | — | — | — | — | Partial | — | Default | None maintained |
+| [G210](mechanisms/G210-typescript-from-flow-ir.md) | Print generated TypeScript from Flow IR | TS default; Node and recognizer tables | — | — | — | — | — | ✓ | Default | None maintained |
 
 Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](055-tracing-hook-on-the-call-path.md) remain in the evidence archive but are not optimization mechanisms: the first covers grammar-author output choices and the second measures tracing-instrumentation cost.
 
@@ -258,6 +259,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [119. Case-insensitive literals in generated parsers](119-case-insensitive-literals.md)
 - [120. Unreachable rule bodies in generated parsers](120-unreachable-rule-bodies.md)
 - [121. Inactive work-control checks in the generated Go runtime](121-inactive-work-control-checks.md)
+- [122. Generated TypeScript printed from Flow IR](122-typescript-from-flow-ir.md)
 
 ## Experiments That Did Not Pay Off
 
