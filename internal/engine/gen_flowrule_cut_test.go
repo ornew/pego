@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 )
 
 var typedDirectCutCases = []genCase{
@@ -65,7 +66,7 @@ func testGeneratedTypedDirectCuts(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := generateCode(g, GenOptions{Package: "cuts", Start: "main", Types: true})
+		code, err := generateCode(g, gen.GenOptions{Package: "cuts", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -93,7 +94,7 @@ func testGeneratedTypedDirectCuts(t *testing.T) {
 			}
 		}
 	}
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), typedDirectCutCases, GenOptions{convertTypes: true})
+	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), typedDirectCutCases, gen.GenOptions{ConvertTypes: true})
 }
 
 // directCuts reports whether the expression contains a cut.

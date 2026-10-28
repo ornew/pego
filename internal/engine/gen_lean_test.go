@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // External rule-table entry and nested direct calls must count the same rule
@@ -42,7 +44,7 @@ rule left = left "+" "é" / "é"
 	// The depth comparison below runs the recognizer table (recRules), so the route is checked there.
 	taken := map[string]bool{}
 	leanRouteHook = func(table string, r *rule) { taken[table+"/"+r.name] = true }
-	code, err := generateCode(g, GenOptions{Package: "depth", Start: "main", Recognize: true})
+	code, err := generateCode(g, gen.GenOptions{Package: "depth", Start: "main", Recognize: true})
 	leanRouteHook = nil
 	if err != nil {
 		t.Fatal(err)

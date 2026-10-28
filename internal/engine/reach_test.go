@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -85,7 +86,7 @@ func undefinedGenerated(t *testing.T, src []byte) []string {
 
 func countBodies(src []byte) int { return strings.Count(string(src), "].Body = ") }
 
-func generateReach(t *testing.T, src string, opts GenOptions) []byte {
+func generateReach(t *testing.T, src string, opts gen.GenOptions) []byte {
 	t.Helper()
 	g, err := syntax.Parse(src)
 	if err != nil {
@@ -108,21 +109,21 @@ func testUnreachableBodiesAreLeftOut(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		src  string
-		opts GenOptions
+		opts gen.GenOptions
 	}{
-		{"twin node", reachTwinGrammar, GenOptions{}},
-		{"twin recognizer", reachTwinGrammar, GenOptions{Recognize: true}},
-		{"twin document", reachTwinGrammar, GenOptions{Document: true, Recognize: true}},
-		{"twin work controls", reachTwinGrammar, GenOptions{WorkControls: true, Recognize: true}},
-		{"stream", reachStreamGrammar, GenOptions{Stream: true}},
-		{"mixed", reachMixedGrammar, GenOptions{Recognize: true}},
-		{"mixed document", reachMixedGrammar, GenOptions{Recognize: true, Document: true}},
-		{"mixed observability", reachMixedGrammar, GenOptions{Recognize: true, Observability: true}},
+		{"twin node", reachTwinGrammar, gen.GenOptions{}},
+		{"twin recognizer", reachTwinGrammar, gen.GenOptions{Recognize: true}},
+		{"twin document", reachTwinGrammar, gen.GenOptions{Document: true, Recognize: true}},
+		{"twin work controls", reachTwinGrammar, gen.GenOptions{WorkControls: true, Recognize: true}},
+		{"stream", reachStreamGrammar, gen.GenOptions{Stream: true}},
+		{"mixed", reachMixedGrammar, gen.GenOptions{Recognize: true}},
+		{"mixed document", reachMixedGrammar, gen.GenOptions{Recognize: true, Document: true}},
+		{"mixed observability", reachMixedGrammar, gen.GenOptions{Recognize: true, Observability: true}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			pruned := generateReach(t, tc.src, tc.opts)
 			kept := tc.opts
-			kept.keepUnreachable = true
+			kept.KeepUnreachable = true
 			full := generateReach(t, tc.src, kept)
 			if got := undefinedGenerated(t, pruned); len(got) > 0 {
 				t.Errorf("the pruned output calls undefined functions %v", got)
@@ -179,7 +180,7 @@ STREAM
 
 // runReach builds the pruned (p) and the full (k) parser of src and returns their outputs for the
 // inputs of the grammar.
-func runReach(t *testing.T, src string, opts GenOptions, hook func(*liveRules)) (pruned, full []string) {
+func runReach(t *testing.T, src string, opts gen.GenOptions, hook func(*liveRules)) (pruned, full []string) {
 	t.Helper()
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	g, err := syntax.Parse(src)
@@ -204,7 +205,7 @@ func runReach(t *testing.T, src string, opts GenOptions, hook func(*liveRules)) 
 		t.Fatal(err)
 	}
 	write("p/parser.go", string(code))
-	opts.Package, opts.keepUnreachable = "k", true
+	opts.Package, opts.KeepUnreachable = "k", true
 	if code, err = generateCode(g, opts); err != nil {
 		t.Fatal(err)
 	}
@@ -270,15 +271,15 @@ func testUnreachableBodiesRunLikeTheFullOutput(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		src  string
-		opts GenOptions
+		opts gen.GenOptions
 	}{
-		{"twin", reachTwinGrammar, GenOptions{Recognize: true}},
-		{"twin document", reachTwinGrammar, GenOptions{Recognize: true, Document: true}},
-		{"stream", reachStreamGrammar, GenOptions{Stream: true, Recognize: true}},
-		{"mixed", reachMixedGrammar, GenOptions{Recognize: true}},
-		{"mixed document", reachMixedGrammar, GenOptions{Recognize: true, Document: true}},
-		{"mixed work controls", reachMixedGrammar, GenOptions{Recognize: true, WorkControls: true}},
-		{"mixed observability", reachMixedGrammar, GenOptions{Recognize: true, Observability: true}},
+		{"twin", reachTwinGrammar, gen.GenOptions{Recognize: true}},
+		{"twin document", reachTwinGrammar, gen.GenOptions{Recognize: true, Document: true}},
+		{"stream", reachStreamGrammar, gen.GenOptions{Stream: true, Recognize: true}},
+		{"mixed", reachMixedGrammar, gen.GenOptions{Recognize: true}},
+		{"mixed document", reachMixedGrammar, gen.GenOptions{Recognize: true, Document: true}},
+		{"mixed work controls", reachMixedGrammar, gen.GenOptions{Recognize: true, WorkControls: true}},
+		{"mixed observability", reachMixedGrammar, gen.GenOptions{Recognize: true, Observability: true}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			pruned, full := runReach(t, tc.src, tc.opts, nil)
@@ -315,11 +316,11 @@ func testUnreachableRootControls(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		src  string
-		opts GenOptions
+		opts gen.GenOptions
 		hook func(*liveRules)
 		line string // the output that must panic
 	}{
-		{"start rule of Parse", reachTwinGrammar, GenOptions{Recognize: true}, func(l *liveRules) {
+		{"start rule of Parse", reachTwinGrammar, gen.GenOptions{Recognize: true}, func(l *liveRules) {
 			var keep []ruleKey
 			for _, k := range l.roots {
 				if k.table != "rules" {
@@ -329,7 +330,7 @@ func testUnreachableRootControls(t *testing.T) {
 			l.roots = keep
 			l.reachFrom(keep)
 		}, "parse"},
-		{"start rule of Recognize", reachTwinGrammar, GenOptions{Recognize: true}, func(l *liveRules) {
+		{"start rule of Recognize", reachTwinGrammar, gen.GenOptions{Recognize: true}, func(l *liveRules) {
 			var keep []ruleKey
 			for _, k := range l.roots {
 				if k.table != "recRules" {
@@ -386,7 +387,7 @@ func testUnreachableCalleeFailsGeneration(t *testing.T) {
 		}
 	}
 	defer func() { reachHook = nil }()
-	_, err = generateCode(g, GenOptions{Start: "main", Package: "p"})
+	_, err = generateCode(g, gen.GenOptions{Start: "main", Package: "p"})
 	if err == nil || !strings.Contains(err.Error(), "left out") {
 		t.Errorf("generation with a callee left out: err = %v, want an internal error", err)
 	}
@@ -405,7 +406,7 @@ func testUnreachableCalleeFailsGeneration(t *testing.T) {
 		}
 		l.reachFrom(l.roots)
 	}
-	_, err = generateCode(gs, GenOptions{Start: "main", Package: "p", Stream: true})
+	_, err = generateCode(gs, gen.GenOptions{Start: "main", Package: "p", Stream: true})
 	if err == nil || !strings.Contains(err.Error(), "left out") {
 		t.Errorf("generation with the stream body's callee left out: err = %v, want an internal error", err)
 	}

@@ -80,8 +80,8 @@
 
 ## Same-Revision Allocation Controls
 
-Internal `GenOptions.disableTypedObjectSlabs` and
-`GenOptions.disableTypedListSlabs` independently emit `new(T)` and
+Internal `GenOptions.DisableTypedObjectSlabs` and
+`GenOptions.DisableTypedListSlabs` independently emit `new(T)` and
 `make([]T, n)` references. Selection occurs during generation; the default
 parser source stays identical and has no runtime selector. Both direct typed
 construction and Node conversion use the selected allocator. These controls

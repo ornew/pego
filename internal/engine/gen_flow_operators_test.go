@@ -1,6 +1,10 @@
 package engine
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/ornew/pego/internal/gen"
+)
 
 // The lines of an Operators Rule in the Node and recognizer tables are printed from Flow IR. The tests
 // below check the routes of the lines and run the parsers of the corpus against the engine; the generated
@@ -38,7 +42,7 @@ func TestOperatorsLinesWithRecoveryPrintFromFlow(t *testing.T) {
 			flowed := map[string]int{}
 			operatorsRouteHook = func(table string, r *rule) { flowed[table+"/"+r.name]++ }
 			defer func() { operatorsRouteHook = nil }()
-			if _, err := generateCode(g, GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
+			if _, err := generateCode(g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
 				t.Fatal(err)
 			}
 			for _, table := range []string{"rules", "recRules"} {

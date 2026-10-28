@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 var typedOperatorsRuleBodyCases = []genCase{
@@ -159,7 +161,7 @@ func testGeneratedTypedOperatorsRuleBodies(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		opts := GenOptions{Package: "operatorsRulebody", Start: "main", Types: true, Recognize: true}
+		opts := gen.GenOptions{Package: "operatorsRulebody", Start: "main", Types: true, Recognize: true}
 		code, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
@@ -177,6 +179,6 @@ func testGeneratedTypedOperatorsRuleBodies(t *testing.T) {
 		}
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true})
+	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true})
 }

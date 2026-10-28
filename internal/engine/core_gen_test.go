@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
 )
 
@@ -19,14 +20,14 @@ import (
 // coreGenMode is a set of generator options under which the Core passes are frozen.
 type coreGenMode struct {
 	name string
-	opts GenOptions
+	opts gen.GenOptions
 }
 
 var coreGenModes = []coreGenMode{
-	{"lean", GenOptions{Types: true, TypedOnly: true}},
-	{"lean observable", GenOptions{Types: true, TypedOnly: true, Observability: true}},
-	{"controlled", GenOptions{Types: true, TypedOnly: true, WorkControls: true}},
-	{"lean boxed", GenOptions{Types: true, TypedOnly: true, disableLiteralTextDispatch: true, boxedComparisons: true}},
+	{"lean", gen.GenOptions{Types: true, TypedOnly: true}},
+	{"lean observable", gen.GenOptions{Types: true, TypedOnly: true, Observability: true}},
+	{"controlled", gen.GenOptions{Types: true, TypedOnly: true, WorkControls: true}},
+	{"lean boxed", gen.GenOptions{Types: true, TypedOnly: true, DisableLiteralTextDispatch: true, BoxedComparisons: true}},
 }
 
 // coreGenCase is a corpus grammar generated with the options of a mode, and the Core IR of its
@@ -71,7 +72,7 @@ func (c *coreGenCase) altOrigin(x *core.Choice, i int) (grammar.Expr, bool) {
 // coreGenerate generates the parser of the grammar source with the options and returns the
 // generator that wrote it, for the Core IR of the same options (generator.typedCore). It reports
 // false for a grammar that the generator rejects.
-func coreGenerate(src string, opts GenOptions) (*generator, bool) {
+func coreGenerate(src string, opts gen.GenOptions) (*generator, bool) {
 	g, err := parseTest(src)
 	if err != nil {
 		return nil, false
@@ -560,7 +561,7 @@ func TestCoreTypedDecisionsFrozen(t *testing.T) {
 			(n.terminals > 0) != terminals || (n.classRuns > 0) != lean || (n.guardedClasses > 0) != lean {
 			t.Errorf("counts %+v", n)
 		}
-		if mode.opts.boxedComparisons != (n.forms["field-cmp"] == 0) || mode.opts.disableLiteralTextDispatch != (n.forms["text-in"] == 0) ||
+		if mode.opts.BoxedComparisons != (n.forms["field-cmp"] == 0) || mode.opts.DisableLiteralTextDispatch != (n.forms["text-in"] == 0) ||
 			n.forms["concat-fused"] == 0 || n.forms["projected-map"]+n.forms["part-items"] == 0 {
 			t.Errorf("forms %v", n.forms)
 		}

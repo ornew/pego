@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedTypedTrace(t *testing.T) {
@@ -104,7 +106,7 @@ rule part WithTrace = t:("a") #atomic => WithTrace{Text: text($t)}`, input: "a",
 			if convert {
 				pkg += "_converted"
 			}
-			opts := GenOptions{Package: "reference_" + pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert}
+			opts := gen.GenOptions{Package: "reference_" + pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert}
 			generatePackageIn(t, dir, "typedtracefixture", opts.Package, g, opts)
 			opts.Package, opts.Observability = pkg, true
 			code := generatePackageIn(t, dir, "typedtracefixture", pkg, g, opts)
@@ -194,7 +196,7 @@ func testGeneratedTracePrivateTypeNamesRemainInvalid(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, observed := range []bool{false, true} {
-			if _, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Types: true, Observability: observed}); err == nil || !strings.Contains(err.Error(), "must start with an uppercase letter") {
+			if _, err := generateCode(g, gen.GenOptions{Package: "fixture", Start: "main", Types: true, Observability: observed}); err == nil || !strings.Contains(err.Error(), "must start with an uppercase letter") {
 				t.Fatalf("%s observed=%v: %v", name, observed, err)
 			}
 		}

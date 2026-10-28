@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -149,8 +150,8 @@ func TestFilterGeneratedGoParity(t *testing.T) { eachMode(t, testFilterGenerated
 
 func testFilterGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, filterCases(), GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, filterCases(), GenOptions{})
+	testGeneratedParsersCorpus(t, goBin, filterCases(), gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, filterCases(), gen.GenOptions{})
 }
 
 func TestFilterGeneratedTypeScriptParity(t *testing.T) {
@@ -158,7 +159,7 @@ func TestFilterGeneratedTypeScriptParity(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	testGeneratedTSParsersCorpus(t, node, filterCases(), GenOptions{})
+	testGeneratedTSParsersCorpus(t, node, filterCases(), gen.GenOptions{})
 }
 
 // The checker rejects a predicate of type _, so a predicate that produces another value than a

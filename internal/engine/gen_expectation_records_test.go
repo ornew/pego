@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // Large failure sets traverse memo, lookahead, label and recovery scopes;
@@ -42,7 +44,7 @@ rule main N = ("é") #atomic`)
 	fixture = []byte(strings.Replace(string(fixture), "import (", "import (\n\tpegort \"github.com/ornew/pego/runtime\"", 1))
 	for _, mode := range []string{"plain", "direct", "conversion"} {
 		t.Run(mode, func(t *testing.T) {
-			code, err := generateCode(g, GenOptions{Package: "engine", Start: "main", Types: mode != "plain", convertTypes: mode == "conversion"})
+			code, err := generateCode(g, gen.GenOptions{Package: "engine", Start: "main", Types: mode != "plain", ConvertTypes: mode == "conversion"})
 			if err != nil {
 				t.Fatal(err)
 			}

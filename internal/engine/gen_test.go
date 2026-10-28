@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/syntax"
 	"github.com/ornew/pego/internal/value"
 )
@@ -470,8 +471,8 @@ rule x = #operators {
     level { infix right "^" }
     level { prefix "-" }
 }`, []string{strings.Repeat("-", 3*DefaultMaxDepth) + "x", strings.Repeat("x^", 3*DefaultMaxDepth) + "x", strings.Repeat("-", DefaultMaxDepth/4) + "x"}})
-	t.Run("values", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{}) })
-	t.Run("source info", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{SourceInfo: true}) })
+	t.Run("values", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{}) })
+	t.Run("source info", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{SourceInfo: true}) })
 }
 
 // nodeViews renders a parse result through the Node API other than JSON: the fields, length and
@@ -574,7 +575,7 @@ const nodeViewsSource = `func() string {
 	return b.String() + n.String()
 }()`
 
-func testGeneratedParsersCorpus(t *testing.T, goBin string, cases []genCase, opts GenOptions) {
+func testGeneratedParsersCorpus(t *testing.T, goBin string, cases []genCase, opts gen.GenOptions) {
 	t.Helper()
 	dir := t.TempDir()
 	write := func(name, content string) {
@@ -684,22 +685,22 @@ func TestGenerateErrors(t *testing.T) { eachMode(t, testGenerateErrors) }
 
 func testGenerateErrors(t *testing.T) {
 	g, _ := syntax.Parse("@start\nrule main = \"a\" b\nrule b = \"b\"")
-	if _, err := generateCode(g, GenOptions{Package: "p", Start: "nope"}); err == nil || err.Error() != "rule nope is not defined" {
+	if _, err := generateCode(g, gen.GenOptions{Package: "p", Start: "nope"}); err == nil || err.Error() != "rule nope is not defined" {
 		t.Errorf("got %v", err)
 	}
-	if _, err := generateCode(g, GenOptions{Package: "p", Start: "b"}); err == nil || err.Error() != "rule b is not a start rule; parsing can begin only at a rule marked @start" {
+	if _, err := generateCode(g, gen.GenOptions{Package: "p", Start: "b"}); err == nil || err.Error() != "rule b is not a start rule; parsing can begin only at a rule marked @start" {
 		t.Errorf("not a start rule: got %v", err)
 	}
-	if _, err := generateCode(g, GenOptions{Start: "main"}); err == nil {
+	if _, err := generateCode(g, gen.GenOptions{Start: "main"}); err == nil {
 		t.Error("expected an error for a missing package name")
 	}
 	for _, pkg := range []string{"foo-bar", "type", "1p", "_"} {
-		if _, err := generateCode(g, GenOptions{Package: pkg, Start: "main"}); err == nil || err.Error() != fmt.Sprintf("invalid package name %q", pkg) {
+		if _, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main"}); err == nil || err.Error() != fmt.Sprintf("invalid package name %q", pkg) {
 			t.Errorf("package %q: got %v", pkg, err)
 		}
 	}
 	bad, _ := parseTest(`rule main = x`)
-	if _, err := generateCode(bad, GenOptions{Package: "p", Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
+	if _, err := generateCode(bad, gen.GenOptions{Package: "p", Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
 		t.Errorf("got %v", err)
 	}
 }
@@ -772,7 +773,7 @@ func testGeneratedTypes(t *testing.T) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
-	testGeneratedTypesCorpus(t, goBin, generatedTypesCases(t), GenOptions{convertTypes: true})
+	testGeneratedTypesCorpus(t, goBin, generatedTypesCases(t), gen.GenOptions{ConvertTypes: true})
 }
 
 // generatedTypesCases returns the grammars of TestGeneratedTypes: the corpus, a nesting limit and
@@ -796,7 +797,7 @@ rule n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x"
 	return cases
 }
 
-func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, reference GenOptions, requiredTyped ...int) {
+func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, reference gen.GenOptions, requiredTyped ...int) {
 	t.Helper()
 	dir := t.TempDir()
 	write := func(name, content string) {
@@ -820,7 +821,7 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code := generatePackage(t, dir, fmt.Sprintf("g%d", i), g, GenOptions{Start: "main", Types: true, SourceInfo: true})
+		code := generatePackage(t, dir, fmt.Sprintf("g%d", i), g, gen.GenOptions{Start: "main", Types: true, SourceInfo: true})
 		if strings.Contains(code, "TParse(trules") {
 			typedRuntime++
 		}

@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // node[T] takes any value type T, and tuple types (A, B) are value types: they are checked
@@ -87,9 +89,9 @@ func TestNodeTypesGeneratedGoParity(t *testing.T) { eachMode(t, testNodeTypesGen
 
 func testNodeTypesGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, nodeTypeCases(), GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, nodeTypeCases(), GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, nodeTypeCases(), GenOptions{convertTypes: true})
+	testGeneratedParsersCorpus(t, goBin, nodeTypeCases(), gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, nodeTypeCases(), gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, nodeTypeCases(), gen.GenOptions{ConvertTypes: true})
 }
 
 func TestNodeTypesGeneratedTypeScriptParity(t *testing.T) {
@@ -97,5 +99,5 @@ func TestNodeTypesGeneratedTypeScriptParity(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	testGeneratedTSParsersCorpus(t, node, nodeTypeCases(), GenOptions{})
+	testGeneratedTSParsersCorpus(t, node, nodeTypeCases(), gen.GenOptions{})
 }

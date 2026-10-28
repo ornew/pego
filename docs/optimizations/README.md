@@ -53,7 +53,7 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 |:--|:--|:--|:-:|:-:|:-:|:-:|:-:|:-:|:--|:--|
 | [R010](mechanisms/R010-per-position-memo-chains.md) | Per-position memo chains and key storage | C/RVM/IVM/GN/TG/TS; exact per-backend route | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
 | [R020](mechanisms/R020-deferred-memoization.md) | Defer memo allocation until a second same-position call | C/RVM/IVM/GN/TG/TS; no universal control | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
-| [R030](mechanisms/R030-sparse-seen-position-storage.md) | Sparse deferred-memo seen positions with dense small-input path | C/RVM/IVM/GN/TG/TS; core build-tag and generation controls differ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | pego_reference_sparse_memo; GenOptions.disableSparseMemo (TypeScript) |
+| [R030](mechanisms/R030-sparse-seen-position-storage.md) | Sparse deferred-memo seen positions with dense small-input path | C/RVM/IVM/GN/TG/TS; core build-tag and generation controls differ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | pego_reference_sparse_memo; GenOptions.DisableSparseMemo (TypeScript) |
 | [R040](mechanisms/R040-memo-entry-retirement.md) | Retire obsolete memo entries | C/RVM/IVM only; active seed ownership preserved | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
 | [R050](mechanisms/R050-bounded-variable-bindings.md) | Bound variable binding histories | All six default; persistent prefix replacement | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
 | [R060](mechanisms/R060-chunked-document-input.md) | Chunked Document text storage | C/RVM/IVM Document only | ✓ | ✓ | ✓ | — | — | — | Default | pego_reference_document_pieces |
@@ -78,7 +78,7 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 | [A040](mechanisms/A040-action-operand-scratch.md) | Reusable action operands and plumbing | All six by route; no TS cross-call pool | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
 | [A050](mechanisms/A050-streaming-state-reuse.md) | Bounded stream input and memo storage | C/RVM/IVM streaming only | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
 | [A060](mechanisms/A060-direct-typed-output-construction.md) | Construct typed output directly | TG eligible direct path; conversion remains fallback | — | — | — | — | Partial | — | Default | None maintained |
-| [A070](mechanisms/A070-typed-output-bootstrap.md) | Independent initial typed allocations before slab growth | TG only; default applied, control `disableTypedOutputBootstrap` | — | — | — | — | ✓ | — | Default | GenOptions.disableTypedOutputBootstrap |
+| [A070](mechanisms/A070-typed-output-bootstrap.md) | Independent initial typed allocations before slab growth | TG only; default applied, control `DisableTypedOutputBootstrap` | — | — | — | — | ✓ | — | Default | GenOptions.DisableTypedOutputBootstrap |
 | [A080](mechanisms/A080-generated-node-capture-scratch.md) | Reusable generated Node capture scratch | Generated Go Node capture frames | — | — | — | ✓ | — | — | Default | — |
 | [A090](mechanisms/A090-typed-output-liveness-cleanup.md) | Clear unreachable generated typed output slots | TG measured; not adopted or implemented | — | — | — | — | — | — | — | — |
 | [A100](mechanisms/A100-document-vm-value-stack.md) | Reuse bounded VM value stack for Document parses | RVM/IVM Document paths only | — | ✓ | ✓ | — | — | — | Default | pego_reference_document_vm_values |
@@ -96,21 +96,21 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 | [A220](mechanisms/A220-stream-prefix-isolation.md) | Isolate live stream prefix ownership | C/RVM/IVM; pego_reference_stream_prefix | ✓ | ✓ | ✓ | — | — | — | Default | pego_reference_stream_prefix |
 | [A230](mechanisms/A230-stream-undo-cleanup.md) | Clear inactive stream undo backing | C/RVM/IVM; pego_reference_stream_undo | ✓ | ✓ | ✓ | — | — | — | Default | pego_reference_stream_undo |
 | [A240](mechanisms/A240-stream-vm-stack-cleanup.md) | Clear inactive stream VM value stack | RVM/IVM; pego_reference_stream_stack | — | ✓ | ✓ | — | — | — | Default | pego_reference_stream_stack |
-| [A250](mechanisms/A250-typed-object-slabs.md) | Typed object/terminal slab growth | TG; disableTypedObjectSlabs | — | — | — | — | ✓ | — | Default | GenOptions.disableTypedObjectSlabs |
-| [A260](mechanisms/A260-typed-list-slabs.md) | Typed list slab growth | TG; disableTypedListSlabs | — | — | — | — | ✓ | — | Default | GenOptions.disableTypedListSlabs |
+| [A250](mechanisms/A250-typed-object-slabs.md) | Typed object/terminal slab growth | TG; DisableTypedObjectSlabs | — | — | — | — | ✓ | — | Default | GenOptions.DisableTypedObjectSlabs |
+| [A260](mechanisms/A260-typed-list-slabs.md) | Typed list slab growth | TG; DisableTypedListSlabs | — | — | — | — | ✓ | — | Default | GenOptions.DisableTypedListSlabs |
 | [A270](mechanisms/A270-shared-empty-capture-frame.md) | Share immutable capture-free frame | All six; capture-free scopes only | Partial | Partial | Partial | Partial | Partial | Partial | Default | None maintained |
 
 ### G — Generation and Compilation
 
 | ID | Mechanism | Path scope | C | RVM | IVM | Go Node / Recognize | Typed Go | TS | Default state | Same-source control |
 |:--|:--|:--|:-:|:-:|:-:|:-:|:-:|:-:|:--|:--|
-| [G010](mechanisms/G010-generated-helper-sharing.md) | Share exact generated helper bodies | GN/TG/TS default; literals independent | — | — | — | ✓ | ✓ | ✓ | Default | GenOptions.disableMethodSharing |
+| [G010](mechanisms/G010-generated-helper-sharing.md) | Share exact generated helper bodies | GN/TG/TS default; literals independent | — | — | — | ✓ | ✓ | ✓ | Default | GenOptions.DisableMethodSharing |
 | [G020](mechanisms/G020-lazy-backend-preparation.md) | Lazy one-time setup of optional engine recognizer/VM backends | First-use engine setup; closure recognition only, ordinary closure graph is eager | Partial | Partial | Partial | — | — | — | Default on demand | None maintained |
 | [G030](mechanisms/G030-constructor-dependency-analysis.md) | Sample constructor dependency propagation | Shared sampling analysis, runtime cells N/A | — | — | — | — | — | — | Default setup path | None maintained |
 | [G040](mechanisms/G040-copy-on-change-attribute-normalization.md) | Reuse unchanged AST paths during attribute normalization | Shared compile/generation preprocessing only, not runtime matching | — | — | — | — | — | — | Default setup path | Compile Options.eagerAttributeCopies |
 | [G050](mechanisms/G050-generated-work-control-specialization.md) | Print one form of the generated Go functions per option set | GN/TG only; adopted; effect scope from record 096 | — | — | — | ✓ | ✓ | — | Default | — |
 | [G060](mechanisms/G060-ordinary-typed-direct-rules.md) | Ordinary typed direct bodies | TG eligible default; later extensions separately keyed | — | — | — | — | Partial | — | Default | None maintained |
-| [G070](mechanisms/G070-literal-text-predicates.md) | Pure literal-text disjunction lowering | GN/TG/TS eligible default | — | — | — | Partial | Partial | Partial | Default | GenOptions.disableLiteralTextDispatch |
+| [G070](mechanisms/G070-literal-text-predicates.md) | Pure literal-text disjunction lowering | GN/TG/TS eligible default | — | — | — | Partial | Partial | Partial | Default | GenOptions.DisableLiteralTextDispatch |
 | [G080](mechanisms/G080-equal-capture-type-reuse.md) | Reuse structurally equal capture types | Shared type analysis, runtime cells N/A | — | — | — | — | — | — | Default setup path | None maintained |
 | [G085](mechanisms/G085-action-free-positional-items.md) | Skip positional item typing for action-free rules | Shared type analysis, runtime cells N/A | — | — | — | — | — | — | Default setup path | None maintained |
 | [G090](mechanisms/G090-variable-read-components.md) | Variable reads by dependency component | Shared compiler metadata, runtime cells N/A | — | — | — | — | — | — | Default setup path | None maintained |
@@ -118,7 +118,7 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 | [G110](mechanisms/G110-one-pass-code-point-preparation.md) | Decode/validate/build offsets in one pass | CodePoints input preparation; GN/TG eager, core recognition lazy, TypeScript uses its own decoder | Partial | Partial | Partial | Partial | Partial | Partial | Default by input path | None maintained |
 | [G120](mechanisms/G120-lsp-position-checkpoints.md) | LSP UTF-16/code-point checkpoints | Editor preprocessing only; backend cells N/A | — | — | — | — | — | — | Default editor path | None maintained |
 | [G125](mechanisms/G125-bounded-diagnostic-prefixes.md) | Bound displayed lint expression prefixes | CLI/LSP lint diagnostics only; runtime backend cells N/A | — | — | — | — | — | — | Default lint path | None maintained |
-| [G130](mechanisms/G130-generated-literal-sharing.md) | Share generated literal tables | GN/TG default; TS experimental/private off | — | — | — | ✓ | ✓ | Private off | Go default; TS off | GenOptions.disableLiteralSharing; enableTSLiteralSharing (off) |
+| [G130](mechanisms/G130-generated-literal-sharing.md) | Share generated literal tables | GN/TG default; TS experimental/private off | — | — | — | ✓ | ✓ | Private off | Go default; TS off | GenOptions.DisableLiteralSharing; EnableTSLiteralSharing (off) |
 | [G140](mechanisms/G140-typed-local-cuts.md) | Local cuts in ordinary direct typed rules | TG default eligible | — | — | — | — | Partial | — | Default | None maintained |
 | [G150](mechanisms/G150-typed-left-recursion-bodies.md) | Inline typed LR leader bodies | TG default eligible | — | — | — | — | Partial | — | Default | None maintained |
 | [G160](mechanisms/G160-typed-operators-line-bodies.md) | Inline typed Operators Rule line bodies | TG default eligible | — | — | — | — | Partial | — | Default | None maintained |

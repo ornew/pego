@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
 )
 
@@ -39,14 +40,14 @@ const tsRuntimeMarker = "// --- Runtime ---\n"
 // Each parsing expression becomes a function and actions and predicates become TypeScript
 // expressions, as in Generate; the embedded runtime (tsrt) mirrors runtime. opts.Package is not used.
 // opts.Types adds declarations and Node-to-value conversion entry points.
-func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
-	if opts.Runtime == RuntimeOnly {
+func GenerateTS(g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
+	if opts.Runtime == gen.RuntimeOnly {
 		return tsRuntimeFiles(), nil
 	}
-	if opts.Runtime == RuntimeImport && opts.RuntimeModule == "" {
+	if opts.Runtime == gen.RuntimeImport && opts.RuntimeModule == "" {
 		return nil, fmt.Errorf("the TypeScript runtime module (the specifier the parser imports the runtime from) is required with the import runtime mode")
 	}
-	if opts.Runtime != RuntimeImport && opts.RuntimeModule != "" {
+	if opts.Runtime != gen.RuntimeImport && opts.RuntimeModule != "" {
 		return nil, fmt.Errorf("the TypeScript runtime module can only be set with the import runtime mode")
 	}
 	if opts.Document {
@@ -58,13 +59,13 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	if opts.TypedOnly {
 		return nil, fmt.Errorf("typed-only generation is only supported for Go")
 	}
-	if err := opts.validateMaxDepth(true); err != nil {
+	if err := opts.ValidateMaxDepth(true); err != nil {
 		return nil, err
 	}
-	if err := opts.validateDefaultValue(); err != nil {
+	if err := opts.ValidateDefaultValue(); err != nil {
 		return nil, err
 	}
-	prog, err := Compile(g, Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue, leftRecursionBindings: opts.leftRecursionBindings})
+	prog, err := Compile(g, Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue, leftRecursionBindings: opts.LeftRecursionBindings})
 	if err != nil {
 		return nil, err
 	}
@@ -75,32 +76,32 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	gen := &tsGen{generator: &generator{prog: prog, table: "rules", observability: opts.Observability, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing || !opts.enableTSLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch}, plainUsed: map[*rule]bool{}}
-	gen.noWork = !opts.WorkControls
-	gen.optionsType = "ParseOptions"
+	tsg := &tsGen{generator: &generator{prog: prog, table: "rules", observability: opts.Observability, disableMethodSharing: opts.DisableMethodSharing, disableLiteralSharing: opts.DisableLiteralSharing || !opts.EnableTSLiteralSharing, disableLiteralTextDispatch: opts.DisableLiteralTextDispatch}, plainUsed: map[*rule]bool{}}
+	tsg.noWork = !opts.WorkControls
+	tsg.optionsType = "ParseOptions"
 	if !opts.WorkControls {
-		gen.optionsType = "PlainParseOptions"
+		tsg.optionsType = "PlainParseOptions"
 	}
-	gen.desc(fixedDescs[0]) // the fixed expectations come first
-	gen.rules()
-	if gen.flowErr != nil {
-		return nil, gen.flowErr
+	tsg.desc(fixedDescs[0]) // the fixed expectations come first
+	tsg.rules()
+	if tsg.flowErr != nil {
+		return nil, tsg.flowErr
 	}
 	var rec *Program
 	if opts.Recognize {
 		if rec, err = prog.recognizer(); err != nil {
 			return nil, err
 		}
-		gen.prog, gen.table = rec, "recRules"
-		gen.rules()
-		gen.prog, gen.table = prog, "rules"
-		if gen.flowErr != nil {
-			return nil, gen.flowErr
+		tsg.prog, tsg.table = rec, "recRules"
+		tsg.rules()
+		tsg.prog, tsg.table = prog, "rules"
+		if tsg.flowErr != nil {
+			return nil, tsg.flowErr
 		}
 	}
 
 	var out strings.Builder
-	fmt.Fprintf(&out, "const G = mkGrammar(%d, %v, %v, %v);\n\n", opts.generatedMaxDepth(), opts.useSparseMemo(prog, rec), opts.Observability, opts.WorkControls)
+	fmt.Fprintf(&out, "const G = mkGrammar(%d, %v, %v, %v);\n\n", generatedMaxDepth(opts), useSparseMemo(opts, prog, rec), opts.Observability, opts.WorkControls)
 	fmt.Fprintf(&out, "/**\n * Parses the whole input with the rule %s. unit selects the position unit (CodePoints by default).\n", start.name)
 	out.WriteString(" * A string is parsed as its UTF-8 encoding would be (lone surrogates as U+FFFD), and bytes are\n")
 	out.WriteString(" * decoded as UTF-8 (invalid sequences as U+FFFD, one per byte). If the parse recovered from errors\n")
@@ -136,7 +137,7 @@ export function parseRuleWithOptions(name: string, input: string | Uint8Array, o
   return withObservedOptions(o, control => run(G, r, nseen, input, o.unit, o.maxDepth, control, o), error => ({ node: null, error }));
 }
 
-`, gen.optionsType, start.id)
+`, tsg.optionsType, start.id)
 	if rec != nil {
 		fmt.Fprintf(&out, `/** Recognizes with invocation-local options; predicate-dependent actions may run. */
 export function recognizeWithOptions(input: string | Uint8Array, options?: %[1]s): Error | null {
@@ -145,21 +146,21 @@ export function recognizeWithOptions(input: string | Uint8Array, options?: %[1]s
   return withObservedOptions<Error | null>(o, control => run(G, Q%[2]d, recNseen, input, o.unit, o.maxDepth, control, o).error, error => error);
 }
 
-`, gen.optionsType, rec.byName[start.name].id)
+`, tsg.optionsType, rec.byName[start.name].id)
 	}
 	var types string
 	if opts.Types {
 		var typed string
-		if types, typed, err = gen.typedTS(start); err != nil {
+		if types, typed, err = tsg.typedTS(start); err != nil {
 			return nil, err
 		}
 		out.WriteString(typed)
 	}
-	if len(gen.fieldTypes) > 0 {
-		out.WriteString(gen.fieldCheckSource())
+	if len(tsg.fieldTypes) > 0 {
+		out.WriteString(tsg.fieldCheckSource())
 	}
-	out.WriteString(gen.vars.String())
-	fmt.Fprintf(&out, "\nG.descs = %s;\n", tsStrings(gen.descs))
+	out.WriteString(tsg.vars.String())
+	fmt.Fprintf(&out, "\nG.descs = %s;\n", tsStrings(tsg.descs))
 	if prog.sourceInfo {
 		out.WriteString("G.sourceInfo = true;\n")
 	}
@@ -174,9 +175,9 @@ export function recognizeWithOptions(input: string | Uint8Array, options?: %[1]s
 		}
 	}
 	out.WriteString("\n")
-	out.WriteString(gen.init.String())
+	out.WriteString(tsg.init.String())
 	out.WriteString("\n")
-	out.WriteString(gen.methods.String())
+	out.WriteString(tsg.methods.String())
 	return tsFiles(opts, out.String(), types), nil
 }
 

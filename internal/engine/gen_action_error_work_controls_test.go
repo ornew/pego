@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedGoActionErrorWork(t *testing.T) {
@@ -40,7 +42,7 @@ func TestGeneratedGoActionErrorWork(t *testing.T) {
 		}
 		for _, convert := range []bool{false, true} {
 			pkg := fmt.Sprintf("action_%s_%v", c.name, convert)
-			code, err := generateCode(g, GenOptions{Package: pkg, Start: c.start, Types: true, Recognize: true, convertTypes: convert})
+			code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: c.start, Types: true, Recognize: true, ConvertTypes: convert})
 			if err != nil {
 				t.Fatal(err)
 			}

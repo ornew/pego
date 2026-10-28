@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // TestGeneratedDocumentsMatchBatchOnCorpus checks generated Documents against
@@ -44,7 +46,7 @@ func testGeneratedDocumentsMatchBatchOnCorpus(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		generatePackageIn(t, dir, "doctest", fmt.Sprintf("g%d", i), g, GenOptions{Start: "main", Types: true, Document: true})
+		generatePackageIn(t, dir, "doctest", fmt.Sprintf("g%d", i), g, gen.GenOptions{Start: "main", Types: true, Document: true})
 		fmt.Fprintf(&imports, "\tg%d \"doctest/g%d\"\n", i, i)
 		fmt.Fprintf(&checks, `	func(texts []string, b bool) (out []string) {
 		u := g%[1]d.CodePoints

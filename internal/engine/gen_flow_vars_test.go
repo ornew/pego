@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/flow"
 )
 
@@ -126,7 +127,7 @@ func testFlowVarsMutantFailsToCompile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := Generate(g, GenOptions{Package: "p", Start: "main", Runtime: RuntimeImport, Module: "example.com/p", Types: true})
+	files, err := Generate(g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Module: "example.com/p", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}

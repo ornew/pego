@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // A typed-only parser has no Node family unless a typed entry point converts the Node result of a rule; then
@@ -41,8 +43,8 @@ func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
 				if err != nil {
 					continue
 				}
-				_, err = Generate(g, GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: RuntimeImport,
-					Types: true, TypedOnly: true, keepNodes: true, WorkControls: form.controls})
+				_, err = Generate(g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport,
+					Types: true, TypedOnly: true, KeepNodes: true, WorkControls: form.controls})
 				if err != nil {
 					t.Fatalf("%s: %v", c.name, err)
 				}
@@ -178,7 +180,7 @@ func TestFlowTypedOnlyEntriesMatchFull(t *testing.T) {
 			operatorsRouteHook = func(table string, r *rule) { taken++ }
 			var pkgs []string
 			for i, c := range typedOnlyConverted {
-				base := GenOptions{Types: true, WorkControls: form.controls}
+				base := gen.GenOptions{Types: true, WorkControls: form.controls}
 				full, flowOnly, mutated := fmt.Sprintf("full%d", i), fmt.Sprintf("flow%d", i), fmt.Sprintf("mut%d", i)
 				before := taken
 				only := base

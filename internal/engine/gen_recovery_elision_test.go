@@ -3,6 +3,8 @@ package engine
 import (
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // A grammar without #recover never appends to p.Recovered, so its generated parser neither saves
@@ -30,7 +32,7 @@ rule item = ([a-z]+ #atomic) #recover(skip=[^;]+ ";") / [0-9]+ #atomic
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, opts := range []GenOptions{
+			for _, opts := range []gen.GenOptions{
 				{Package: "p", Start: "main"},
 				{Package: "p", Start: "main", Types: true, TypedOnly: true},
 				{Package: "p", Start: "main", Recognize: true},

@@ -11,6 +11,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -163,8 +164,8 @@ func TestCaptureAccessGeneratedGoParity(t *testing.T) {
 
 func testCaptureAccessGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, captureAccessCases(), GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, captureAccessCases(), GenOptions{})
+	testGeneratedParsersCorpus(t, goBin, captureAccessCases(), gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, captureAccessCases(), gen.GenOptions{})
 }
 
 func TestCaptureAccessGeneratedTypeScriptParity(t *testing.T) {
@@ -172,5 +173,5 @@ func TestCaptureAccessGeneratedTypeScriptParity(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	testGeneratedTSParsersCorpus(t, node, captureAccessCases(), GenOptions{})
+	testGeneratedTSParsersCorpus(t, node, captureAccessCases(), gen.GenOptions{})
 }

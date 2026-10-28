@@ -15,6 +15,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -169,7 +170,7 @@ func testGeneratedInvalidUTF8Literals(t *testing.T) {
 		for _, mode := range []string{"untyped", "direct", "convert"} {
 			pkg := fmt.Sprintf("g%d", i)
 			i++
-			opts := GenOptions{Package: pkg, Start: "main", Recognize: true, Types: mode != "untyped", convertTypes: mode == "convert"}
+			opts := gen.GenOptions{Package: pkg, Start: "main", Recognize: true, Types: mode != "untyped", ConvertTypes: mode == "convert"}
 			code, err := generateCode(g, opts)
 			if err != nil {
 				t.Fatal(err)
@@ -227,7 +228,7 @@ func TestGeneratedTSInvalidUTF8Literals(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			code, err := generateTSBundle(g, GenOptions{Start: "main", Recognize: true})
+			code, err := generateTSBundle(g, gen.GenOptions{Start: "main", Recognize: true})
 			if err != nil {
 				t.Fatal(err)
 			}

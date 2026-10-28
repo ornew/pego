@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 )
 
 // The bodies with recovery (#recover) print from Flow IR in the Node and recognizer tables, in the lines of
@@ -67,7 +68,7 @@ func TestFlowRecoveryPrintsFromFlow(t *testing.T) {
 					continue
 				}
 				for _, stream := range []bool{false, true} {
-					if _, err := Generate(g, GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: RuntimeImport, Recognize: true, Stream: stream, WorkControls: controls}); err != nil && (!stream || strings.Contains(err.Error(), "Flow IR does not print")) {
+					if _, err := Generate(g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, Stream: stream, WorkControls: controls}); err != nil && (!stream || strings.Contains(err.Error(), "Flow IR does not print")) {
 						t.Fatalf("%s: %v", c.name, err)
 					}
 				}

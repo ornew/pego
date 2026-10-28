@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
 	"github.com/ornew/pego/internal/ir/flow"
 	"github.com/ornew/pego/internal/value"
@@ -76,7 +77,7 @@ func (g *tsGen) flowRule(r *rule, scope *scope) (call string, ok bool) {
 		}
 		slots = cr.Scope
 	}
-	return g.flowFunc(f, slots, scope, describe(r.bodyExpr()))
+	return g.flowFunc(f, slots, scope, gen.Describe(r.bodyExpr()))
 }
 
 // flowFunc prints the function f, whose capture scope has the slots, as a function of its own and

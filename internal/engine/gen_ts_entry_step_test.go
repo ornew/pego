@@ -1,6 +1,10 @@
 package engine
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/ornew/pego/internal/gen"
+)
 
 // A rule call costs one step at its entry. A rule that reads no captures and takes callBody's unmemoized
 // or first-call branch (the start rule called through p.call, a left-recursive rule, a memoized rule)
@@ -26,7 +30,7 @@ proto.stepWork = function (this: unknown, n?: number): void {
 const r = p.parseWithOptions("a+a+a", { unit: p.CodePoints, maxSteps: 100000 });
 if (r.error !== null) throw new Error("parse failed");
 console.log((by.get("callBody") ?? 0) > 0 ? by.get("invokePlainBody") ?? 0 : "no call charged");
-`, GenOptions{Start: "main", WorkControls: true})
+`, gen.GenOptions{Start: "main", WorkControls: true})
 	if out != "0\n" {
 		t.Fatalf("the plain evaluation of a rule body charged %q steps under a call that charged its entry", out)
 	}

@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // PEGO_TYPED_LOCAL_LAYOUT_DIR preserves generated controls for benchmarks of
@@ -25,7 +27,7 @@ func testGeneratedTypedLocalLayoutWorkloads(t *testing.T) {
 			testGeneratedTypedBodyWorkload(t, typedLocalLayoutWorkloadTypes+c.src,
 				typedLocalLayoutWorkloadFixture, filepath.Join(dir, c.name),
 				"// body, invoked as by invoke (body inlined)\nfunc i",
-				GenOptions{})
+				gen.GenOptions{})
 		})
 	}
 }
@@ -65,7 +67,7 @@ func BenchmarkTypedLocalLayoutGeneration(b *testing.B) {
 	for _, c := range typedLocalLayoutWorkloads {
 		cases = append(cases, struct{ name, src string }{c.name, typedLocalLayoutWorkloadTypes + c.src})
 	}
-	opts := GenOptions{Package: "localfixture", Start: "main", Types: true, Recognize: true}
+	opts := gen.GenOptions{Package: "localfixture", Start: "main", Types: true, Recognize: true}
 	for _, c := range cases {
 		b.Run(c.name, func(b *testing.B) {
 			g, err := parseTest(c.src)

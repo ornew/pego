@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/gen"
 )
 
 // textStructGrammar has rules whose actions make structs with a field Text from the text they
@@ -60,10 +61,10 @@ func testGeneratedTextStructs(t *testing.T) {
 	}
 	cases := []genCase{{"text structs", textStructGrammar, []string{"", "ab", "ab 12 3.5", "<x> ! #a # @b @", "ab ?", "12.", "! ab <yz> 7", "[ab]ab", "[ab]cd 1"}}}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true}, 1)
+	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, 1)
 	if node, err := exec.LookPath("node"); err == nil {
-		testGeneratedTSParsersCorpus(t, node, cases, GenOptions{})
+		testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{})
 	}
 }
 

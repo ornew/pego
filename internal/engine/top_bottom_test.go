@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 )
 
 const topBottomRules = "type Num = { Text string }\nrule n Num = t:([0-9]+) #atomic => Num{Text: text($t)}\nrule w = [a-z]+\n"
@@ -296,9 +297,9 @@ func TestTopBottomGeneratedGoParity(t *testing.T) { eachMode(t, testTopBottomGen
 
 func testTopBottomGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, topBottomCases(), GenOptions{})
+	testGeneratedParsersCorpus(t, goBin, topBottomCases(), gen.GenOptions{})
 	// A field of type _, like one of type any, keeps the reference runtime.
-	testGeneratedTypesCorpus(t, goBin, topBottomCases(), GenOptions{convertTypes: true}, 2)
+	testGeneratedTypesCorpus(t, goBin, topBottomCases(), gen.GenOptions{ConvertTypes: true}, 2)
 }
 
 func TestTopBottomGeneratedTypeScriptParity(t *testing.T) {
@@ -306,5 +307,5 @@ func TestTopBottomGeneratedTypeScriptParity(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	testGeneratedTSParsersCorpus(t, node, topBottomCases(), GenOptions{})
+	testGeneratedTSParsersCorpus(t, node, topBottomCases(), gen.GenOptions{})
 }

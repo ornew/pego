@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedDocumentObservation(t *testing.T) {
@@ -55,7 +57,7 @@ func TestGeneratedDocumentObservation(t *testing.T) {
 		}
 		for _, route := range []string{"node", "direct", "convert"} {
 			name := f.name + "_" + route
-			options := GenOptions{Package: "reference", Start: "main", Document: true, Types: route != "node", Recognize: true, convertTypes: route == "convert"}
+			options := gen.GenOptions{Package: "reference", Start: "main", Document: true, Types: route != "node", Recognize: true, ConvertTypes: route == "convert"}
 			ref, err := generateCode(g, options)
 			if err != nil {
 				t.Fatal(name, err)

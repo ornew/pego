@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 const anonJoinGrammar = `type Leaf = { Text string }
@@ -23,7 +25,7 @@ func goTypesOf(t *testing.T, src string) (string, error) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := Generate(g, GenOptions{Start: "main", Types: true, Module: "example.com/m", Package: "p"})
+	files, err := Generate(g, gen.GenOptions{Start: "main", Types: true, Module: "example.com/m", Package: "p"})
 	if err != nil {
 		return "", err
 	}
@@ -116,7 +118,7 @@ func TestGeneratedTypedAnonymousJoinTypeScript(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := GenerateTS(g, GenOptions{Types: true, Start: "main"})
+	files, err := GenerateTS(g, gen.GenOptions{Types: true, Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +155,7 @@ func testGeneratedTypedAnonymousJoinValues(t *testing.T) {
 		t.Skip("go command not found")
 	}
 	cases := []genCase{{"anonymous joins", anonJoinGrammar, []string{"", "a;", "(a;b;)", "a;(a;b;)c;", "(a;"}}}
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true}, len(cases))
+	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, len(cases))
 }
 
 // The name of an interface follows the order of the members where the set first appears in the
@@ -223,7 +225,7 @@ rule alt Block = t:[a-z]+ ";" => Block{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := GenerateTS(g, GenOptions{Types: true, Start: "main"})
+	files, err := GenerateTS(g, gen.GenOptions{Types: true, Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -262,5 +264,5 @@ func testGeneratedTypedAnonymousJoinOneNodeAndErrorValues(t *testing.T) {
 		t.Skip("go command not found")
 	}
 	cases := []genCase{{"one node and error", anonErrorJoinGrammar, []string{"", "a;", "a;b;", "1;a;", "a;2;b;"}}}
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true}, len(cases))
+	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, len(cases))
 }

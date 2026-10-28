@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -77,7 +78,7 @@ func TestAttributeAroundStreamRepetition(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", src, err)
 		}
-		if _, err := Generate(g, GenOptions{Start: "main", Module: "x/y", Types: true, Stream: true}); err != nil {
+		if _, err := Generate(g, gen.GenOptions{Start: "main", Module: "x/y", Types: true, Stream: true}); err != nil {
 			t.Errorf("%s: %v", src, err)
 		}
 	}

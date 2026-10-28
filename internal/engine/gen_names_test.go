@@ -13,6 +13,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // goVetAndTest runs go vet and go test in the module in dir.
@@ -42,7 +44,7 @@ var runtimeNameTypes = []string{
 }
 
 // typesFileOf returns the source of types/types.go of the generated files.
-func typesFileOf(t *testing.T, files []GeneratedFile) string {
+func typesFileOf(t *testing.T, files []gen.GeneratedFile) string {
 	t.Helper()
 	for _, f := range files {
 		if f.Path == "types/types.go" {
@@ -69,12 +71,12 @@ func TestGeneratedTypesNamedLikeRuntimeExports(t *testing.T) {
 	}
 	for _, c := range []struct {
 		name string
-		opts GenOptions
+		opts gen.GenOptions
 	}{
-		{"types", GenOptions{Types: true}},
-		{"document observability", GenOptions{Types: true, Document: true, Observability: true, Recognize: true}},
+		{"types", gen.GenOptions{Types: true}},
+		{"document observability", gen.GenOptions{Types: true, Document: true, Observability: true, Recognize: true}},
 	} {
-		for _, mode := range []RuntimeMode{RuntimeEmbed, RuntimeImport} {
+		for _, mode := range []gen.RuntimeMode{gen.RuntimeEmbed, gen.RuntimeImport} {
 			t.Run(c.name+" "+mode.String(), func(t *testing.T) {
 				opts := c.opts
 				opts.Module, opts.Package, opts.Start, opts.Runtime = "example.com/names", "names", "main", mode
@@ -135,7 +137,7 @@ func TestNames(t *testing.T) {
 }
 
 // typeNamesOf returns the names of the struct types that types/types.go declares.
-func typeNamesOf(t *testing.T, files []GeneratedFile) map[string]bool {
+func typeNamesOf(t *testing.T, files []gen.GeneratedFile) map[string]bool {
 	t.Helper()
 	out := map[string]bool{}
 	for _, line := range strings.Split(typesFileOf(t, files), "\n") {
@@ -161,12 +163,12 @@ func TestGeneratedTypeNamesIgnoreTheOutput(t *testing.T) {
 		"stream struct": types + "type Pair = { A int; B int }\nrule main = item* #stream $$\nrule item = \"a\" => Pair{A: 1, B: 2}\n",
 	}
 	for _, c := range []struct {
-		opts     GenOptions
+		opts     gen.GenOptions
 		grammars []string
 	}{
-		{GenOptions{Types: true}, []string{"trivial", "struct", "stream", "unit"}},
-		{GenOptions{Types: true, Document: true, Observability: true}, []string{"trivial", "struct", "stream", "unit"}},
-		{GenOptions{Types: true, Stream: true}, []string{"stream", "stream struct"}},
+		{gen.GenOptions{Types: true}, []string{"trivial", "struct", "stream", "unit"}},
+		{gen.GenOptions{Types: true, Document: true, Observability: true}, []string{"trivial", "struct", "stream", "unit"}},
+		{gen.GenOptions{Types: true, Stream: true}, []string{"stream", "stream struct"}},
 	} {
 		opts := c.opts
 		for _, name := range c.grammars {
@@ -175,7 +177,7 @@ func TestGeneratedTypeNamesIgnoreTheOutput(t *testing.T) {
 				t.Fatalf("%s: %v", name, err)
 			}
 			o := opts
-			o.Module, o.Package, o.Start, o.Runtime = "example.com/same", "same", "main", RuntimeImport
+			o.Module, o.Package, o.Start, o.Runtime = "example.com/same", "same", "main", gen.RuntimeImport
 			files, err := Generate(g, o)
 			if err != nil {
 				t.Fatalf("%s %+v: %v", name, opts, err)
@@ -216,7 +218,7 @@ func TestGeneratedTypeNamedLikeTypesPackageName(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			files, err := Generate(g, GenOptions{Module: "example.com/clash", Package: "clash", Start: "main", Runtime: RuntimeImport, Types: true})
+			files, err := Generate(g, gen.GenOptions{Module: "example.com/clash", Package: "clash", Start: "main", Runtime: gen.RuntimeImport, Types: true})
 			if c.rejected {
 				if err == nil || !strings.Contains(err.Error(), "rename the type") {
 					t.Fatalf("got %v, want an error that asks to rename the type", err)
@@ -254,7 +256,7 @@ func TestGeneratedTypesPackageNamesTheRuntimeExplicitly(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			files, err := Generate(g, GenOptions{Module: "example.com/explicit/" + name, Package: name, Start: "main", Runtime: RuntimeImport, Types: true, Recognize: true, Document: true, Observability: true})
+			files, err := Generate(g, gen.GenOptions{Module: "example.com/explicit/" + name, Package: name, Start: "main", Runtime: gen.RuntimeImport, Types: true, Recognize: true, Document: true, Observability: true})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -307,15 +309,15 @@ func TestGeneratedTypesNamedLikeEveryRuntimeExport(t *testing.T) {
 	}
 	for _, c := range []struct {
 		name string
-		opts GenOptions
+		opts gen.GenOptions
 	}{
-		{"types", GenOptions{Types: true}},
-		{"stream", GenOptions{Types: true, Stream: true}},
-		{"all", GenOptions{Types: true, Document: true, Observability: true, Recognize: true, Stream: true}},
+		{"types", gen.GenOptions{Types: true}},
+		{"stream", gen.GenOptions{Types: true, Stream: true}},
+		{"all", gen.GenOptions{Types: true, Document: true, Observability: true, Recognize: true, Stream: true}},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			opts := c.opts
-			opts.Module, opts.Package, opts.Start, opts.Runtime = "example.com/every", "every", "main", RuntimeImport
+			opts.Module, opts.Package, opts.Start, opts.Runtime = "example.com/every", "every", "main", gen.RuntimeImport
 			files, err := Generate(g, opts)
 			if err != nil {
 				t.Fatal(err)
@@ -344,7 +346,7 @@ func TestParserAndAPIDeclareDistinctNames(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := Generate(g, GenOptions{Module: "example.com/distinct", Start: "main", Runtime: RuntimeImport, Types: true, Document: true, Observability: true, Stream: true, Recognize: true})
+	files, err := Generate(g, gen.GenOptions{Module: "example.com/distinct", Start: "main", Runtime: gen.RuntimeImport, Types: true, Document: true, Observability: true, Stream: true, Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -389,9 +391,9 @@ func TestGeneratedTypedFieldNamedRange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, mode := range []RuntimeMode{RuntimeEmbed, RuntimeImport} {
+	for _, mode := range []gen.RuntimeMode{gen.RuntimeEmbed, gen.RuntimeImport} {
 		t.Run(mode.String(), func(t *testing.T) {
-			files, err := Generate(g, GenOptions{Module: "example.com/rng", Package: "rng", Start: "main", Runtime: mode, Types: true})
+			files, err := Generate(g, gen.GenOptions{Module: "example.com/rng", Package: "rng", Start: "main", Runtime: mode, Types: true})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -447,16 +449,16 @@ func TestDefaultPackageName(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Generate(g, GenOptions{Module: "example.com/my-parser", Start: "main"}); err == nil || !strings.Contains(err.Error(), "-pkg") {
+	if _, err := Generate(g, gen.GenOptions{Module: "example.com/my-parser", Start: "main"}); err == nil || !strings.Contains(err.Error(), "-pkg") {
 		t.Errorf("a module with a hyphen: got %v, want an error that suggests -pkg", err)
 	}
-	if _, err := Generate(g, GenOptions{Module: "example.com/my-parser", Package: "myparser", Start: "main"}); err != nil {
+	if _, err := Generate(g, gen.GenOptions{Module: "example.com/my-parser", Package: "myparser", Start: "main"}); err != nil {
 		t.Errorf("with a package name: %v", err)
 	}
-	if _, err := Generate(g, GenOptions{Package: "myparser", Start: "main", Runtime: RuntimeImport}); err != nil {
+	if _, err := Generate(g, gen.GenOptions{Package: "myparser", Start: "main", Runtime: gen.RuntimeImport}); err != nil {
 		t.Errorf("import mode needs no module: %v", err)
 	}
-	if _, err := Generate(g, GenOptions{Package: "myparser", Start: "main"}); err == nil {
+	if _, err := Generate(g, gen.GenOptions{Package: "myparser", Start: "main"}); err == nil {
 		t.Error("embed mode without a module was accepted")
 	}
 }
@@ -550,7 +552,7 @@ func TestEmbeddedModeCompilesRichGrammars(t *testing.T) {
 				t.Fatal(err)
 			}
 			module := "example.com/rich/" + name
-			files, err := Generate(g, GenOptions{Module: module, Package: name, Start: "main", Runtime: RuntimeEmbed, Types: true, Recognize: true, Document: true, Observability: true})
+			files, err := Generate(g, gen.GenOptions{Module: module, Package: name, Start: "main", Runtime: gen.RuntimeEmbed, Types: true, Recognize: true, Document: true, Observability: true})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -621,7 +623,7 @@ func TestGeneratedRichGrammarsWithTypesNamedLikeRuntimeExports(t *testing.T) {
 				t.Fatal(err)
 			}
 			module := "example.com/richnames/" + name
-			files, err := Generate(g, GenOptions{Module: module, Package: name, Start: "main", Runtime: RuntimeImport, Types: true, Recognize: true, Document: true, Observability: true})
+			files, err := Generate(g, gen.GenOptions{Module: module, Package: name, Start: "main", Runtime: gen.RuntimeImport, Types: true, Recognize: true, Document: true, Observability: true})
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -11,6 +11,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // Compare public typed values with the existing generated Go Node-conversion
@@ -119,7 +121,7 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		generatePackageIn(t, dir, "replay", fmt.Sprintf("g%d", i), g, GenOptions{Start: "main", Types: true, convertTypes: true, Recognize: true})
+		generatePackageIn(t, dir, "replay", fmt.Sprintf("g%d", i), g, gen.GenOptions{Start: "main", Types: true, ConvertTypes: true, Recognize: true})
 		prog, err := Compile(g, Options{})
 		if err != nil {
 			t.Fatal(err)
@@ -134,7 +136,7 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
 			fmt.Fprintf(&valueNames, "%q:%q,\n", fmt.Sprintf("replay/g%d/types.%s", i, name), name)
 		}
 		fmt.Fprintf(&terminalNames, "%q:true,\n", fmt.Sprintf("replay/g%d/types.Error", i))
-		tsFiles, err := GenerateTS(g, GenOptions{Start: "main", Types: true, Recognize: true})
+		tsFiles, err := GenerateTS(g, gen.GenOptions{Start: "main", Types: true, Recognize: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

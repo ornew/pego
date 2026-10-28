@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 const joinMemberRules = `type A = { F string; X int }
@@ -145,9 +147,9 @@ func TestMemberAccessOnJoinGeneratedGoParity(t *testing.T) {
 
 func testMemberAccessOnJoinGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, append(joinMemberCases(), typedJoinMemberCases()...), GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, joinMemberCases(), GenOptions{convertTypes: true}, 0)
-	testGeneratedTypesCorpus(t, goBin, typedJoinMemberCases(), GenOptions{convertTypes: true}, 0)
+	testGeneratedParsersCorpus(t, goBin, append(joinMemberCases(), typedJoinMemberCases()...), gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, joinMemberCases(), gen.GenOptions{ConvertTypes: true}, 0)
+	testGeneratedTypesCorpus(t, goBin, typedJoinMemberCases(), gen.GenOptions{ConvertTypes: true}, 0)
 }
 
 func TestMemberAccessOnJoinGeneratedTypeScriptParity(t *testing.T) {
@@ -155,5 +157,5 @@ func TestMemberAccessOnJoinGeneratedTypeScriptParity(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	testGeneratedTSParsersCorpus(t, node, append(joinMemberCases(), typedJoinMemberCases()...), GenOptions{})
+	testGeneratedTSParsersCorpus(t, node, append(joinMemberCases(), typedJoinMemberCases()...), gen.GenOptions{})
 }

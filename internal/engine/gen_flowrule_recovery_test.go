@@ -5,6 +5,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 var typedRecoveryCases = []genCase{
@@ -92,7 +94,7 @@ func TestGeneratedTypedRecoveryBodies(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		opts := GenOptions{Package: "recoverybody", Start: "main", Types: true, Recognize: true}
+		opts := gen.GenOptions{Package: "recoverybody", Start: "main", Types: true, Recognize: true}
 		candidate, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
@@ -102,6 +104,6 @@ func TestGeneratedTypedRecoveryBodies(t *testing.T) {
 		}
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedTypesCorpus(t, goBin, typedRecoveryCases, GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, typedRecoveryCases, GenOptions{convertTypes: true})
+	testGeneratedTypesCorpus(t, goBin, typedRecoveryCases, gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, typedRecoveryCases, gen.GenOptions{ConvertTypes: true})
 }

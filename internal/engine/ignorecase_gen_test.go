@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // ignoreCaseGenGrammar has case-insensitive literals in a choice, whose alternatives the generated
@@ -44,12 +46,12 @@ func ignoreCaseLines(t *testing.T, src string, inputs []string) string {
 // it, and compares its output with want. It is the untyped form of runGeneratedNamedNodeProgram.
 func runGeneratedUntypedProgram(t *testing.T, src, body, want string) {
 	t.Helper()
-	runGeneratedProgramWith(t, src, GenOptions{Package: "p", Start: "main"}, body, want)
+	runGeneratedProgramWith(t, src, gen.GenOptions{Package: "p", Start: "main"}, body, want)
 }
 
 // runGeneratedProgramWith is runGeneratedUntypedProgram with the generation options opts, which
 // must name package p and start rule main.
-func runGeneratedProgramWith(t *testing.T, src string, opts GenOptions, body, want string) {
+func runGeneratedProgramWith(t *testing.T, src string, opts gen.GenOptions, body, want string) {
 	t.Helper()
 	if testing.Short() {
 		t.Skip("builds generated code")
@@ -229,7 +231,7 @@ func ignoreCaseDocBody() string {
 func TestIgnoreCaseGeneratedDocument(t *testing.T) {
 	needsWorkControls(t)
 	want := ignoreCaseDocWant(t)
-	runGeneratedProgramWith(t, ignoreCaseGenGrammar, GenOptions{Package: "p", Start: "main", Document: true}, ignoreCaseDocBody(), want)
+	runGeneratedProgramWith(t, ignoreCaseGenGrammar, gen.GenOptions{Package: "p", Start: "main", Document: true}, ignoreCaseDocBody(), want)
 }
 
 // ignoreCaseTerminalGrammar holds a value-free choice with more literals than a terminal program

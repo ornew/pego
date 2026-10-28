@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // PEGO_TYPED_CHUNK_DIR retains both generated paths for paired allocation
@@ -30,7 +32,7 @@ rule token Token = t:("é") #atomic => Token{Text: text($t)}`)
 	for _, conv := range []bool{false, true} {
 		for _, variant := range typedAllocatorControls {
 			t.Run(strconv.FormatBool(conv)+"/"+variant.name, func(t *testing.T) {
-				code, err := generateCode(g, GenOptions{Package: "chunks", Start: "main", Types: true, convertTypes: conv, disableTypedObjectSlabs: variant.objects, disableTypedListSlabs: variant.lists, disableTypedOutputBootstrap: variant.legacy})
+				code, err := generateCode(g, gen.GenOptions{Package: "chunks", Start: "main", Types: true, ConvertTypes: conv, DisableTypedObjectSlabs: variant.objects, DisableTypedListSlabs: variant.lists, DisableTypedOutputBootstrap: variant.legacy})
 				if err != nil {
 					t.Fatal(err)
 				}

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -91,12 +92,12 @@ func testTypedUnreachedRulesAreLeftOut(t *testing.T) {
 	}
 	funcs := regexp.MustCompile(`(?m)^func [su][0-9]+\(`)
 	for _, typedOnly := range []bool{false, true} {
-		opts := GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: typedOnly}
+		opts := gen.GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: typedOnly}
 		pruned, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
-		opts.keepUnreachable = true
+		opts.KeepUnreachable = true
 		full, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatal(err)
@@ -139,7 +140,7 @@ func TestTypedUnreachedCalleeFailsGeneration(t *testing.T) {
 			}
 		}
 		defer func() { reachHook = nil }()
-		_, err = generateCode(g, GenOptions{Start: "main", Package: "p", Types: true})
+		_, err = generateCode(g, gen.GenOptions{Start: "main", Package: "p", Types: true})
 		if err == nil || !strings.Contains(err.Error(), "left out") {
 			t.Errorf("generation with a typed callee left out: err = %v, want an internal error", err)
 		}
@@ -191,9 +192,9 @@ func testTypedUnreachedRulesRunLikeTheFullOutput(t *testing.T) {
 					}
 				}
 				write("go.mod", testGoMod("typedreach"))
-				opts := GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: typedOnly}
+				opts := gen.GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: typedOnly}
 				for _, pkg := range []string{"p", "k"} {
-					opts.Package, opts.keepUnreachable = pkg, pkg == "k"
+					opts.Package, opts.KeepUnreachable = pkg, pkg == "k"
 					code, err := generateCode(g, opts)
 					if err != nil {
 						t.Fatal(err)

@@ -44,7 +44,7 @@ Evidence records: [087](../087-sparse-deferred-memo-seen-pages.md).
 Source owners: [`sparse memo
 selection`](../../../internal/engine/sparse_memo.go),
 [`memoTable.markSparseSeen`](../../../internal/engine/memo.go),
-[`GenOptions.useSparseMemo`](../../../internal/engine/gen.go), [`generated
+[`useSparseMemo`](../../../internal/engine/gen.go), [`generated
 sparse pages`](../../../runtime/runtime.go), [`TypeScript sparse
 seen pages`](../../../internal/engine/tsrt/runtime.ts).
 

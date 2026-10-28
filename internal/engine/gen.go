@@ -14,109 +14,9 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
 )
-
-// GenOptions configures code generation.
-type GenOptions struct {
-	// TypedOnly generates only the typed entry points (ParseAST, ParseRuleAST and their
-	// siblings): no Parse, ParseRule or Recognize, and no function that builds an untyped Node.
-	// It needs Types and excludes Recognize, Document and Stream.
-	TypedOnly bool
-	// WorkControls emits the work-controlled form of the generated functions, which charges
-	// cancellation and the input and step limits (WithContext, WithWorkLimits; signal, maxInputWork
-	// and maxSteps in TypeScript), and re-exports those options. Without it the functions have no charges (the ordinary form, or with Document
-	// the form that serves a Document), and a parse with a control option fails with an error.
-	WorkControls bool
-	// Observability emits opt-in tracing and profiling for generated Go batch
-	// and Document parsing, and for TypeScript batch parsing.
-	Observability bool
-	// Document includes the generated Go Document runner. With Types, eligible
-	// outputs use private typed memoization; other outputs use Node conversion.
-	Document bool
-	// Stream generates ParseStream, which reads the input from an io.Reader
-	// and passes the committed elements of the start rule's #stream
-	// repetition to a callback. The start rule must have one.
-	Stream bool
-	// SourceInfo records source information in the values: the rule that produced each node and
-	// where its captures are (Options.SourceInfo).
-	SourceInfo bool
-	// DefaultValue drops value actions and declared rule types, so the parser returns the default
-	// node tree (Options.DefaultValue). It cannot be combined with Types.
-	DefaultValue bool
-	// Module is the import path of the generated package (required for Go output). The embedded
-	// runtime is imported from its internal/runtime directory.
-	Module string
-	// Package is the package name of the generated code. It defaults to the last element of Module,
-	// without a major version suffix (DefaultPackageName).
-	Package string
-	// Runtime selects how the generated Go code reaches the runtime: embedded in the package
-	// (the default), imported from this module, or generated alone.
-	Runtime RuntimeMode
-	// RuntimeModule is the specifier from which TypeScript parsers import the runtime with RuntimeImport,
-	// such as "@scope/pego-runtime" or "../shared/runtime.ts".
-	RuntimeModule string
-	// MaxDepth is the generated default rule-call limit. Zero selects 100,000.
-	MaxDepth int
-	// Start is the start rule of the generated Parse function, a rule marked @start. Empty
-	// selects the default start rule.
-	Start string
-	// Types generates Go types, ParseAST for the start rule, and ParseRuleAST
-	// for a named rule as values of those types (see gen_types.go).
-	Types bool
-	// Recognize also generates Recognize, which checks the input without building a tree (as the
-	// engine's ParseOptions.Recognize does).
-	Recognize bool
-	// OmitPackageDoc leaves out the package comment, for a package that documents itself in another
-	// file.
-	OmitPackageDoc bool
-	// convertTypes makes typed entry points convert Node results even when the
-	// typed runtime could build them (for tests).
-	convertTypes bool
-	// leftRecursionBindings compiles with Options.leftRecursionBindings (for tests).
-	leftRecursionBindings bool
-	// keepNodes keeps the untyped Node rule functions of a typed-only parser. generate sets it
-	// itself, when a typed entry point converts the Node result.
-	keepNodes bool
-	// keepUnreachable emits the bodies of the rules that no entry point or generated call reaches
-	// (reach.go), as before they were left out, for differential tests and size comparisons.
-	keepUnreachable bool
-	// keepComments keeps the comments of unexported generated code, which tests read as route markers.
-	keepComments bool
-	// disableKeepNodes leaves the Node rule functions out of a typed-only parser that needs them
-	// (a negative control for tests).
-	disableKeepNodes bool
-	// disableMethodSharing and disableLiteralSharing retain duplicate generated
-	// helpers and read-only tables for independent generation-time controls.
-	// Neither adds a selector to the generated parser.
-	disableMethodSharing  bool
-	disableLiteralSharing bool
-	// enableTSLiteralSharing retains a generation-only experiment. Sharing
-	// literal tables can hurt TypeScript warm-up; production shares helpers
-	// only. An explicit disableLiteralSharing takes precedence.
-	enableTSLiteralSharing bool
-	// disableLiteralTextDispatch keeps literal text disjunctions on the general
-	// expression path for differential tests and same-generator measurements.
-	disableLiteralTextDispatch bool
-	// disableTerminalPrograms keeps value-free terminal expressions of lean typed parsers as
-	// straight-line code (gen_terminal.go) for differential tests and measurements.
-	disableTerminalPrograms bool
-	// disableGuardedClasses makes the first class of an alternative read and test the character
-	// that the guard of its choice has accepted (core.Alt.GuardedClass), for differential tests.
-	disableGuardedClasses bool
-	// boxedComparisons evaluates comparisons of fields as other binary operations, for tests.
-	boxedComparisons bool
-	// Independent generation-only controls for typed object and list slabs.
-	// Reference parsers allocate each object or list separately.
-	disableTypedObjectSlabs bool
-	disableTypedListSlabs   bool
-	// disableTypedOutputBootstrap retains the original slab first allocation
-	// for same-generator retention and throughput comparisons.
-	disableTypedOutputBootstrap bool
-	// disableSparseMemo keeps the dense first-call bitset in TypeScript output
-	// for same-generator comparisons without a parser-time selector.
-	disableSparseMemo bool
-}
 
 // DefaultPackageName returns the package name of the generated code for a module path: its last
 // element, without a trailing major version element (example.com/m/v2 gives m), as Go tooling
@@ -140,8 +40,8 @@ func DefaultPackageName(module string) string {
 // Eligible rule bodies inline their expressions; other expressions become Go functions. Actions
 // and predicates become Go expressions, and the runtime (package runtime of this module) behaves
 // exactly like the engine in this package. Without opts.Stream, #stream is a plain repetition.
-func Generate(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
-	if opts.Runtime == RuntimeOnly {
+func Generate(g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
+	if opts.Runtime == gen.RuntimeOnly {
 		return runtimeFiles()
 	}
 	return generate(g, opts)
@@ -157,8 +57,8 @@ var generatorHook func(*generator)
 // without Node rules has no Node or recognizer rule to leave out (keepTableRules); one that keeps
 // Node rules for its converting entry points prints those that the entry points reach, like any
 // other output.
-func generate(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
-	if opts.keepUnreachable {
+func generate(g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
+	if opts.KeepUnreachable {
 		return generateOnce(g, opts, nil, nil)
 	}
 	var lv liveRules
@@ -173,11 +73,11 @@ func generate(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 
 // generateOnce is one pass of generate. A pass with collect records the reachable rules into it;
 // a pass with live omits the rules that are not reachable in live.
-func generateOnce(g *grammar.Grammar, opts GenOptions, live, collect *liveRules) (files []GeneratedFile, err error) {
+func generateOnce(g *grammar.Grammar, opts gen.GenOptions, live, collect *liveRules) (files []gen.GeneratedFile, err error) {
 	if collect != nil {
 		*collect = liveRules{}
 	}
-	if opts.Module == "" && (opts.Runtime == RuntimeEmbed || opts.Package == "") {
+	if opts.Module == "" && (opts.Runtime == gen.RuntimeEmbed || opts.Package == "") {
 		return nil, fmt.Errorf("module path is required")
 	}
 	derived := opts.Package == ""
@@ -201,17 +101,17 @@ func generateOnce(g *grammar.Grammar, opts GenOptions, live, collect *liveRules)
 	if opts.Types && opts.Module == "" {
 		return nil, fmt.Errorf("module path is required for typed output: the parser imports the package module/types")
 	}
-	if err := opts.validateMaxDepth(false); err != nil {
+	if err := opts.ValidateMaxDepth(false); err != nil {
 		return nil, err
 	}
-	if err := opts.validateDefaultValue(); err != nil {
+	if err := opts.ValidateDefaultValue(); err != nil {
 		return nil, err
 	}
 	info, err := loadRuntime()
 	if err != nil {
 		return nil, err
 	}
-	prog, err := Compile(g, Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue, leftRecursionBindings: opts.leftRecursionBindings})
+	prog, err := Compile(g, Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue, leftRecursionBindings: opts.LeftRecursionBindings})
 	if err != nil {
 		return nil, err
 	}
@@ -227,34 +127,34 @@ func generateOnce(g *grammar.Grammar, opts GenOptions, live, collect *liveRules)
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
-	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls, ordinary: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, live: live, collect: collect, keepTableRules: opts.TypedOnly && !opts.keepNodes}
+	goGen := &generator{typedOnly: opts.TypedOnly && !opts.KeepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls, ordinary: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableMethodSharing: opts.DisableMethodSharing, disableLiteralSharing: opts.DisableLiteralSharing, disableLiteralTextDispatch: opts.DisableLiteralTextDispatch, disableTerminalPrograms: opts.DisableTerminalPrograms, disableGuardedClasses: opts.DisableGuardedClasses, boxedComparisons: opts.BoxedComparisons, disableTypedObjectSlabs: opts.DisableTypedObjectSlabs, disableTypedListSlabs: opts.DisableTypedListSlabs, disableTypedOutputBootstrap: opts.DisableTypedOutputBootstrap, live: live, collect: collect, keepTableRules: opts.TypedOnly && !opts.KeepNodes}
 	if live != nil {
-		gen.seedDescs()
-		for _, d := range live.descs[len(gen.descs):] {
-			gen.descIDs[d] = expID(len(gen.descs))
-			gen.descs = append(gen.descs, d)
+		goGen.seedDescs()
+		for _, d := range live.descs[len(goGen.descs):] {
+			goGen.descIDs[d] = expID(len(goGen.descs))
+			goGen.descs = append(goGen.descs, d)
 		}
 	}
 	if opts.Stream {
-		gen.streamStart = start
+		goGen.streamStart = start
 	}
-	gen.desc(fixedDescs[0]) // the fixed expectations come first
+	goGen.desc(fixedDescs[0]) // the fixed expectations come first
 	if generatorHook != nil && collect == nil {
-		generatorHook(gen)
+		generatorHook(goGen)
 	}
-	if err := gen.startRecFlow(prog); err != nil {
+	if err := goGen.startRecFlow(prog); err != nil {
 		return nil, err
 	}
-	gen.rules()
-	gen.flow = nil
-	if gen.streamErr != nil {
-		return nil, gen.streamErr
+	goGen.rules()
+	goGen.flow = nil
+	if goGen.streamErr != nil {
+		return nil, goGen.streamErr
 	}
-	if gen.tableErr != nil {
-		return nil, gen.tableErr
+	if goGen.tableErr != nil {
+		return nil, goGen.tableErr
 	}
-	if gen.flowErr != nil {
-		return nil, gen.flowErr
+	if goGen.flowErr != nil {
+		return nil, goGen.flowErr
 	}
 	var rec *Program
 	if opts.Recognize {
@@ -263,51 +163,51 @@ func generateOnce(g *grammar.Grammar, opts GenOptions, live, collect *liveRules)
 		if rec, err = prog.recognizer(); err != nil {
 			return nil, err
 		}
-		gen.prog, gen.table = rec, "recRules"
-		if err := gen.startRecFlow(rec); err != nil {
+		goGen.prog, goGen.table = rec, "recRules"
+		if err := goGen.startRecFlow(rec); err != nil {
 			return nil, err
 		}
-		gen.rules()
-		gen.flow = nil
-		gen.prog, gen.table = prog, "rules"
-		if gen.tableErr != nil {
-			return nil, gen.tableErr
+		goGen.rules()
+		goGen.flow = nil
+		goGen.prog, goGen.table = prog, "rules"
+		if goGen.tableErr != nil {
+			return nil, goGen.tableErr
 		}
-		if gen.flowErr != nil {
-			return nil, gen.flowErr
+		if goGen.flowErr != nil {
+			return nil, goGen.flowErr
 		}
 	}
 	if collect != nil {
 		// The expectations of the Node and recognizer tables are those the second pass keeps; the typed
 		// code adds its own after them, and only for the rules it reaches.
-		collect.descs = append([]string(nil), gen.descs...)
+		collect.descs = append([]string(nil), goGen.descs...)
 		if !opts.Types {
-			return nil, gen.finishReach(prog, rec)
+			return nil, goGen.finishReach(prog, rec)
 		}
-		typed, err := gen.typedGo(start, opts.convertTypes)
+		typed, err := goGen.typedGo(start, opts.ConvertTypes)
 		if err != nil {
 			return nil, err
 		}
-		gen.convertsNodes = typed.needNodes
-		if opts.TypedOnly && typed.needNodes && !opts.keepNodes && !opts.disableKeepNodes {
-			opts.keepNodes = true
+		goGen.convertsNodes = typed.needNodes
+		if opts.TypedOnly && typed.needNodes && !opts.KeepNodes && !opts.DisableKeepNodes {
+			opts.KeepNodes = true
 			return generateOnce(g, opts, live, collect)
 		}
-		return nil, gen.finishReach(prog, rec)
+		return nil, goGen.finishReach(prog, rec)
 	}
-	fmt.Fprintf(&gen.init, "\tpegoGrammar.Starts = %s\n", goStrings(prog.starts))
-	fmt.Fprintf(&gen.init, "\tpegoGrammar.DefaultStart = %q\n", prog.defaultStart)
+	fmt.Fprintf(&goGen.init, "\tpegoGrammar.Starts = %s\n", goStrings(prog.starts))
+	fmt.Fprintf(&goGen.init, "\tpegoGrammar.DefaultStart = %q\n", prog.defaultStart)
 	if !opts.TypedOnly {
-		fmt.Fprintf(&gen.init, "\tpegoGrammar.Descs = %s\n", goStrings(gen.descs))
+		fmt.Fprintf(&goGen.init, "\tpegoGrammar.Descs = %s\n", goStrings(goGen.descs))
 	}
 	if opts.Observability {
-		gen.init.WriteString("\tpegoGrammar.Observable = true\n")
+		goGen.init.WriteString("\tpegoGrammar.Observable = true\n")
 	}
 	if !opts.WorkControls {
-		gen.init.WriteString("\tpegoGrammar.NoWorkControls = true\n")
+		goGen.init.WriteString("\tpegoGrammar.NoWorkControls = true\n")
 	}
 	if prog.sourceInfo {
-		gen.init.WriteString("\tpegoGrammar.SourceInfo = true\n")
+		goGen.init.WriteString("\tpegoGrammar.SourceInfo = true\n")
 	}
 	if t := prog.vars; t != nil {
 		var names, vals []string
@@ -315,10 +215,10 @@ func generateOnce(g *grammar.Grammar, opts GenOptions, live, collect *liveRules)
 			names = append(names, d.name)
 			vals = append(vals, fmt.Sprintf("%#v", d.init))
 		}
-		fmt.Fprintf(&gen.init, "\tpegoGrammar.SetVars(%s, []any{%s})\n", goStrings(names), strings.Join(vals, ", "))
+		fmt.Fprintf(&goGen.init, "\tpegoGrammar.SetVars(%s, []any{%s})\n", goStrings(names), strings.Join(vals, ", "))
 	}
 	if rec != nil {
-		gen.init.WriteString("\tpegoRecGrammar.Share(pegoGrammar)\n")
+		goGen.init.WriteString("\tpegoRecGrammar.Share(pegoGrammar)\n")
 	}
 
 	var out strings.Builder
@@ -360,9 +260,9 @@ func Iterate(r io.Reader, opts ...ParseOption) (*StreamIterator, error) {
 		fmt.Fprintf(&out, "// Recognize checks that the whole input matches the rule %s without building a tree, and returns the\n", start.name)
 		out.WriteString("// syntax errors Parse would return (SyntaxErrors for errors recovered with #recover). Actions needed by\n// predicates are evaluated and can report runtime errors; other actions are skipped.\n")
 		fmt.Fprintf(&out, "func Recognize(input string, opts ...ParseOption) error {\n\t_, err := RunParse(recRules[%d], input, opts)\n\treturn err\n}\n\n", rec.byName[start.name].id)
-		fmt.Fprintf(&out, "// recRules is the rule table of Recognize, and pegoRecGrammar its grammar.\nvar recRules []*Rule\nvar pegoRecGrammar = NewGrammar(%d)\n\n", opts.generatedMaxDepth())
+		fmt.Fprintf(&out, "// recRules is the rule table of Recognize, and pegoRecGrammar its grammar.\nvar recRules []*Rule\nvar pegoRecGrammar = NewGrammar(%d)\n\n", generatedMaxDepth(opts))
 	}
-	fmt.Fprintf(&out, "// rules is the rule table, and pegoGrammar its grammar.\nvar rules []*Rule\nvar pegoGrammar = NewGrammar(%d)\n\n", opts.generatedMaxDepth())
+	fmt.Fprintf(&out, "// rules is the rule table, and pegoGrammar its grammar.\nvar rules []*Rule\nvar pegoGrammar = NewGrammar(%d)\n\n", generatedMaxDepth(opts))
 	if !opts.TypedOnly {
 		out.WriteString(`// ParseRule parses the whole input with the start rule name, a rule marked @start; an empty
 // name selects the grammar's default start rule.
@@ -382,20 +282,20 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	}
 	var typesBody string
 	if opts.Types {
-		typed, err := gen.typedGo(start, opts.convertTypes)
+		typed, err := goGen.typedGo(start, opts.ConvertTypes)
 		if err != nil {
 			return nil, err
 		}
-		gen.convertsNodes = typed.needNodes
-		if opts.TypedOnly && typed.needNodes && !opts.keepNodes && !opts.disableKeepNodes {
+		goGen.convertsNodes = typed.needNodes
+		if opts.TypedOnly && typed.needNodes && !opts.KeepNodes && !opts.DisableKeepNodes {
 			// A typed entry point converts the Node result of its rule, so the Node rule functions
 			// are needed; generate again with them.
-			opts.keepNodes = true
+			opts.KeepNodes = true
 			return generateOnce(g, opts, live, collect)
 		}
 		if opts.TypedOnly {
 			// The expectations of the typed bodies are known only now.
-			fmt.Fprintf(&gen.init, "\tpegoGrammar.Descs = %s\n", goStrings(gen.descs))
+			fmt.Fprintf(&goGen.init, "\tpegoGrammar.Descs = %s\n", goStrings(goGen.descs))
 		}
 		out.WriteString("\n// --- Typed values ---\n\n")
 		if opts.Document {
@@ -405,14 +305,14 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		out.WriteString("\n")
 		typesBody = typesPreamble + typed.types
 	}
-	if err := gen.finishReach(prog, rec); err != nil {
+	if err := goGen.finishReach(prog, rec); err != nil {
 		return nil, err
 	}
-	out.WriteString(gen.vars.String())
+	out.WriteString(goGen.vars.String())
 	out.WriteString("\nfunc init() {\n")
-	out.WriteString(gen.init.String())
+	out.WriteString(goGen.init.String())
 	out.WriteString("}\n\n")
-	out.WriteString(gen.methods.String())
+	out.WriteString(goGen.methods.String())
 	whole, err := format.Source([]byte("package " + opts.Package + "\n" + out.String()))
 	if err != nil {
 		return nil, fmt.Errorf("generated code does not compile: %w\n%s", err, out.String())
@@ -421,16 +321,16 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	var tp *typesPackage
 	var typesFile []byte
 	if opts.Types {
-		if typesFile, tp, err = opts.typesFile(typesBody); err != nil {
+		if typesFile, tp, err = typesPackageFile(opts, typesBody); err != nil {
 			return nil, err
 		}
 		// The one reference to the schema of the types package (see schemaName).
 		body += "\nconst _ = " + tp.schema + "\n"
 	}
-	if gen.chunksInRuntime {
+	if goGen.chunksInRuntime {
 		body = chunkNames.Replace(body)
 	}
-	body, err = qualifyRuntime(opts.runtimeImport(), body, info, tp)
+	body, err = qualifyRuntime(runtimeImport(opts), body, info, tp)
 	if err != nil {
 		return nil, err
 	}
@@ -444,20 +344,20 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	if err != nil {
 		return nil, fmt.Errorf("generated code does not compile: %w", err)
 	}
-	if !opts.keepComments {
+	if !opts.KeepComments {
 		if src, err = trimComments(src); err != nil {
 			return nil, fmt.Errorf("generated code does not compile: %w", err)
 		}
 	}
-	api, err := opts.apiSource(info)
+	api, err := apiSource(opts, info)
 	if err != nil {
 		return nil, err
 	}
-	files = []GeneratedFile{{"parser.go", src}, {"api.go", []byte(api)}}
+	files = []gen.GeneratedFile{{Path: "parser.go", Content: src}, {Path: "api.go", Content: []byte(api)}}
 	if opts.Types {
-		files = append(files, GeneratedFile{"types/types.go", typesFile})
+		files = append(files, gen.GeneratedFile{Path: "types/types.go", Content: typesFile})
 	}
-	if opts.Runtime == RuntimeEmbed {
+	if opts.Runtime == gen.RuntimeEmbed {
 		rt, err := runtimeFiles()
 		if err != nil {
 			return nil, err
@@ -465,15 +365,6 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		files = append(files, rt...)
 	}
 	return files, nil
-}
-
-// validateDefaultValue rejects typed output with default values: the types come from the actions and
-// declarations that default values drop.
-func (opts GenOptions) validateDefaultValue() error {
-	if opts.DefaultValue && opts.Types {
-		return fmt.Errorf("typed output is not available with default Values: the types come from the actions and declared types that default values drop")
-	}
-	return nil
 }
 
 // fieldTypeVar returns the variable holding check type ft of key, declaring it with decl the
@@ -514,25 +405,15 @@ func goFieldType(t *fieldType) string {
 
 // useSparseMemo removes the representation selector entirely when neither
 // emitted rule table can cross the sparse-storage threshold.
-func (opts GenOptions) useSparseMemo(prog, rec *Program) bool {
-	return !opts.disableSparseMemo && (prog.nseen > 64 || rec != nil && rec.nseen > 64)
+func useSparseMemo(opts gen.GenOptions, prog, rec *Program) bool {
+	return !opts.DisableSparseMemo && (prog.nseen > 64 || rec != nil && rec.nseen > 64)
 }
 
-func (o GenOptions) generatedMaxDepth() int {
+func generatedMaxDepth(o gen.GenOptions) int {
 	if o.MaxDepth == 0 {
 		return DefaultMaxDepth
 	}
 	return o.MaxDepth
-}
-
-func (o GenOptions) validateMaxDepth(ts bool) error {
-	if o.MaxDepth < 0 {
-		return fmt.Errorf("generated max depth must be non-negative: %d", o.MaxDepth)
-	}
-	if ts && uint64(o.MaxDepth) > 9007199254740991 {
-		return fmt.Errorf("generated max depth must be a safe JavaScript integer: %d", o.MaxDepth)
-	}
-	return nil
 }
 
 type generator struct {
@@ -1392,14 +1273,6 @@ func (g *generator) shaperOf(lit string) string {
 // shaperLit returns the literal of the runtime shaper of the expression e.
 func shaperLit(prog *Program, e grammar.Expr) string {
 	return fmt.Sprintf("Shaper{Elems: %v, K: %d, Mode: %d, Tuple: %v, Shared: %v}", isElems(prog, e), valuedCount(prog, e), singleModeOf(prog, e), scopeTuple(prog, e), isElems(prog, e) && sharesTuple(prog, e))
-}
-
-func describe(e grammar.Expr) string {
-	s := grammar.FormatExpr(e)
-	if strings.Contains(s, "\n") || len(s) > 100 {
-		return ""
-	}
-	return s
 }
 
 // plainCall writes the method r<id>, which does what invokePlain does for the rule r (a rule never

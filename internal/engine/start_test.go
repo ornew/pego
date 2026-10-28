@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/syntax"
 	"github.com/ornew/pego/internal/value"
 )
@@ -90,10 +91,10 @@ func testStartHiddenRule(t *testing.T) {
 		if perr != nil {
 			t.Fatal(perr)
 		}
-		if _, err := generateCode(g, GenOptions{Package: "p"}); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if _, err := generateCode(g, gen.GenOptions{Package: "p"}); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("Generate %q\n got %v\nwant %s", tc.src, err, tc.want)
 		}
-		if _, err := GenerateTS(g, GenOptions{}); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if _, err := GenerateTS(g, gen.GenOptions{}); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("GenerateTS %q\n got %v\nwant %s", tc.src, err, tc.want)
 		}
 	}

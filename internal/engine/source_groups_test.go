@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestSourceGroupsExecutableParity(t *testing.T) { eachMode(t, testSourceGroupsExecutableParity) }
@@ -57,12 +58,12 @@ rule number Alias = v1:[0-9]+ => Number{Text: text($v1)}
 		// Generation consumes the normalized grammar for both typed and
 		// untyped targets; source grouping must not change generated code.
 		for _, typed := range []bool{false, true} {
-			opts := GenOptions{Package: "sample", Start: "main", Types: typed}
+			opts := gen.GenOptions{Package: "sample", Start: "main", Types: typed}
 			plainAST, err := parseTest(plain)
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, generate := range []func(*grammar.Grammar, GenOptions) ([]byte, error){generateCode, generateTSBundle} {
+			for _, generate := range []func(*grammar.Grammar, gen.GenOptions) ([]byte, error){generateCode, generateTSBundle} {
 				got, err := generate(input, opts)
 				if err != nil {
 					t.Fatal(err)

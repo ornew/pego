@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 )
 
 // tsStrictFlags are the strictest checks there are, so that generated code compiles in any project;
@@ -18,7 +19,7 @@ var tsStrictFlags = []string{"--target", "es2020", "--lib", "es2020", "--strict"
 	"--noPropertyAccessFromIndexSignature", "--erasableSyntaxOnly", "--verbatimModuleSyntax"}
 
 // writeTSFiles writes the generated files into dir, with the package.json that runs them.
-func writeTSFiles(t *testing.T, dir string, files []GeneratedFile) {
+func writeTSFiles(t *testing.T, dir string, files []gen.GeneratedFile) {
 	t.Helper()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
@@ -113,7 +114,7 @@ process.stdout.write("ok\n");
 		}
 	}
 	t.Run("embed", func(t *testing.T) {
-		files, err := GenerateTS(g, GenOptions{Start: "main", Types: true, Recognize: true})
+		files, err := GenerateTS(g, gen.GenOptions{Start: "main", Types: true, Recognize: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -130,13 +131,13 @@ process.stdout.write("ok\n");
 	})
 	t.Run("import", func(t *testing.T) {
 		// The runtime lives in a directory of its own, as a project that shares one runtime keeps it.
-		files, err := GenerateTS(g, GenOptions{Start: "main", Types: true, Runtime: RuntimeImport, RuntimeModule: "./shared/rt.ts"})
+		files, err := GenerateTS(g, gen.GenOptions{Start: "main", Types: true, Runtime: gen.RuntimeImport, RuntimeModule: "./shared/rt.ts"})
 		if err != nil {
 			t.Fatal(err)
 		}
 		dir := t.TempDir()
 		writeTSFiles(t, dir, files)
-		writeTSFiles(t, filepath.Join(dir, "shared"), []GeneratedFile{{Path: "rt.ts", Content: tsRuntimeFiles()[0].Content}})
+		writeTSFiles(t, filepath.Join(dir, "shared"), []gen.GeneratedFile{{Path: "rt.ts", Content: tsRuntimeFiles()[0].Content}})
 		if _, err := os.Stat(filepath.Join(dir, "runtime.ts")); err == nil {
 			t.Fatal("import mode wrote runtime.ts")
 		}
@@ -154,8 +155,8 @@ process.stdout.write("ok\n");
 		}
 		for _, gr := range []struct {
 			g    *grammar.Grammar
-			opts GenOptions
-		}{{g, GenOptions{Start: "main", Types: true}}, {g2, GenOptions{Start: "main", Observability: true}}} {
+			opts gen.GenOptions
+		}{{g, gen.GenOptions{Start: "main", Types: true}}, {g2, gen.GenOptions{Start: "main", Observability: true}}} {
 			files, err := GenerateTS(gr.g, gr.opts)
 			if err != nil {
 				t.Fatal(err)
@@ -183,7 +184,7 @@ func TestGeneratedTSReservedTypes(t *testing.T) {
 			t.Errorf("type %s: %v", name, err)
 			continue
 		}
-		_, err = GenerateTS(g, GenOptions{Start: "main", Types: true})
+		_, err = GenerateTS(g, gen.GenOptions{Start: "main", Types: true})
 		if err == nil || !strings.Contains(err.Error(), name) || !strings.Contains(err.Error(), "reserved") {
 			t.Errorf("type %s: error %v", name, err)
 		}
@@ -201,7 +202,7 @@ func TestTSRuntimePrintRuns(t *testing.T) {
 
 // runTSSplit generates the files of a grammar, compiles them with a consumer under the strictest
 // checks, and runs the consumer with Node.js. The consumer prints "ok" when its checks pass.
-func runTSSplit(t *testing.T, src string, opts GenOptions, consumer string) {
+func runTSSplit(t *testing.T, src string, opts gen.GenOptions, consumer string) {
 	t.Helper()
 	if testing.Short() {
 		t.Skip("runs tsc and node")
@@ -248,7 +249,7 @@ type Observation = { Text string }
 type ObservationCall = { Text string }
 type TraceFailure = { Text string }
 rule main TraceEvent = p:part => TraceEvent{Value:$p}
-rule part Observation = t:("a") #atomic => Observation{Text: text($t)}`, GenOptions{Start: "main", Types: true, Recognize: true, Observability: true}, `import {parseWithOptions, parseASTWithOptions} from "./parser.ts";
+rule part Observation = t:("a") #atomic => Observation{Text: text($t)}`, gen.GenOptions{Start: "main", Types: true, Recognize: true, Observability: true}, `import {parseWithOptions, parseASTWithOptions} from "./parser.ts";
 import type {TraceEvent} from "./parser.ts";
 import type {TraceKind, TraceEvent as GrammarTraceEvent, Observation, ObservationCall, TraceFailure} from "./types.ts";
 declare const process: {stdout: {write(s: string): void}};
@@ -267,7 +268,7 @@ process.stdout.write("ok\n");
 // runtime's profiling declarations.
 func TestGeneratedTSProfileNameCollisions(t *testing.T) {
 	runTSSplit(t, "type Profile = { Text string }\ntype ProfileSnapshot = { Text string }\ntype RuleProfile = { Text string }\ntype ProfileLocation = { Text string }\ntype SkipReasonCount = { Text string }\ntype ProfileObservation = { Text string }\ntype ProfileFrame = { Text string }\ntype ProfileData = { Text string }\ntype WeakMap = { Text string }\nrule main Profile = t:(part) #atomic => Profile{Text: text($t)}\nrule part Profile = t:(\"a\") #atomic => Profile{Text: text($t)}",
-		GenOptions{Start: "main", Types: true, Recognize: true, Observability: true}, `import {Profile, parseWithOptions, parseASTWithOptions} from "./parser.ts";
+		gen.GenOptions{Start: "main", Types: true, Recognize: true, Observability: true}, `import {Profile, parseWithOptions, parseASTWithOptions} from "./parser.ts";
 import type {Profile as GrammarProfile, ProfileSnapshot, RuleProfile, ProfileLocation, SkipReasonCount, ProfileObservation, ProfileFrame, ProfileData, WeakMap} from "./types.ts";
 declare const process: {stdout: {write(s: string): void}};
 const names: [ProfileSnapshot|null, RuleProfile|null, ProfileLocation|null, SkipReasonCount|null, ProfileObservation|null, ProfileFrame|null, ProfileData|null, WeakMap|null] = [null, null, null, null, null, null, null, null];

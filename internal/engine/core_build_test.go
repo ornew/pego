@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
 )
 
@@ -44,7 +45,7 @@ func TestCoreBuildCorpus(t *testing.T) {
 			t.Errorf("%s: %v", c.name, err)
 			continue
 		}
-		g, ok := coreGenerate(c.src, GenOptions{})
+		g, ok := coreGenerate(c.src, gen.GenOptions{})
 		if !ok {
 			continue
 		}

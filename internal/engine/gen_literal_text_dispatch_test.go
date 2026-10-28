@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestLiteralTextPredicateDispatchGeneration(t *testing.T) {
@@ -22,28 +24,28 @@ func testLiteralTextPredicateDispatchGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, GenOptions{Package: "dispatch", Start: "main", Types: true})
+	code, err := generateCode(g, gen.GenOptions{Package: "dispatch", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(code), `switch c.TextStr(`) || !strings.Contains(string(code), `case "a", "b":`) {
 		t.Fatal("typed Go generator did not emit literal text dispatch")
 	}
-	baseline, err := generateCode(g, GenOptions{Package: "dispatch", Start: "main", Types: true, disableLiteralTextDispatch: true})
+	baseline, err := generateCode(g, gen.GenOptions{Package: "dispatch", Start: "main", Types: true, DisableLiteralTextDispatch: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if strings.Contains(string(baseline), `switch c.TextStr(`) || strings.Contains(string(code), "disableLiteralTextDispatch") {
 		t.Fatal("generation-only control did not preserve the general baseline")
 	}
-	ts, err := generateTSBundle(g, GenOptions{Start: "main"})
+	ts, err := generateTSBundle(g, gen.GenOptions{Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(ts), `switch (c.textStr(`) || !strings.Contains(string(ts), `case "a": case "b":`) {
 		t.Fatal("TypeScript generator did not emit literal text dispatch")
 	}
-	tsBaseline, err := generateTSBundle(g, GenOptions{Start: "main", disableLiteralTextDispatch: true})
+	tsBaseline, err := generateTSBundle(g, gen.GenOptions{Start: "main", DisableLiteralTextDispatch: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +73,7 @@ rule main = w:[a-z]+ #atomic {result := text($w) == "a" || text($w) == "b"} $$`,
 		if err != nil {
 			t.Fatalf("case %d: %v", i, err)
 		}
-		code, err := generateCode(g, GenOptions{Package: "dispatch", Start: "main"})
+		code, err := generateCode(g, gen.GenOptions{Package: "dispatch", Start: "main"})
 		if err != nil {
 			t.Fatalf("case %d: %v", i, err)
 		}
@@ -95,7 +97,7 @@ func testLiteralTextPredicateDispatchDisabledParity(t *testing.T) {
 	if len(cases) < 5 {
 		t.Fatalf("only %d literal text predicate cases", len(cases))
 	}
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, GenOptions{disableLiteralTextDispatch: true})
+	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{DisableLiteralTextDispatch: true})
 }
 
 func TestLiteralTextPredicateDispatchTSDisabledParity(t *testing.T) {
@@ -108,11 +110,11 @@ func TestLiteralTextPredicateDispatchTSDisabledParity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	optimized, err := generateTSBundle(g, GenOptions{Start: "main"})
+	optimized, err := generateTSBundle(g, gen.GenOptions{Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	reference, err := generateTSBundle(g, GenOptions{Start: "main", disableLiteralTextDispatch: true})
+	reference, err := generateTSBundle(g, gen.GenOptions{Start: "main", DisableLiteralTextDispatch: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -258,7 +260,7 @@ func TestGeneratedLiteralDispatchWorkload(t *testing.T) {
 				disabled bool
 			}{{"candidate", false}, {"reference", true}} {
 				packageName := "dispatch"
-				code, err := generateCode(g, GenOptions{Package: packageName, Start: "main", Types: mode.types, Recognize: true, disableLiteralTextDispatch: variant.disabled})
+				code, err := generateCode(g, gen.GenOptions{Package: packageName, Start: "main", Types: mode.types, Recognize: true, DisableLiteralTextDispatch: variant.disabled})
 				if err != nil {
 					t.Fatalf("%s/%s/%s: %v", workload.name, mode.name, variant.name, err)
 				}
@@ -388,11 +390,11 @@ func writeLiteralDispatchTypeScript(t *testing.T, dir string, workload literalDi
 	if err != nil {
 		return err
 	}
-	candidate, err := generateTSBundle(g, GenOptions{Start: "main"})
+	candidate, err := generateTSBundle(g, gen.GenOptions{Start: "main"})
 	if err != nil {
 		return err
 	}
-	reference, err := generateTSBundle(g, GenOptions{Start: "main", disableLiteralTextDispatch: true})
+	reference, err := generateTSBundle(g, gen.GenOptions{Start: "main", DisableLiteralTextDispatch: true})
 	if err != nil {
 		return err
 	}

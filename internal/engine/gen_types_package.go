@@ -12,6 +12,8 @@ import (
 	"go/token"
 	"path"
 	"strings"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // typesPackageName is the name of the package, a subpackage of the parser package, that declares
@@ -52,13 +54,13 @@ var PegoHooks = &rt.TPubHooks{
 `
 
 // typesImport returns the import path of the types package of the parser.
-func (opts GenOptions) typesImport() string {
+func typesImport(opts gen.GenOptions) string {
 	return path.Join(opts.Module, typesPackageName)
 }
 
-// typesFile returns types/types.go for the body of the package (its declarations, in which the
+// typesPackageFile returns types/types.go for the body of the package (its declarations, in which the
 // runtime is written as rt), and the description of the package for qualifyRuntime.
-func (opts GenOptions) typesFile(body string) ([]byte, *typesPackage, error) {
+func typesPackageFile(opts gen.GenOptions, body string) ([]byte, *typesPackage, error) {
 	formatted, err := format.Source([]byte("package " + typesPackageName + "\n" + body))
 	if err != nil {
 		return nil, nil, fmt.Errorf("generated types do not compile: %w\n%s", err, body)
@@ -95,7 +97,7 @@ func (opts GenOptions) typesFile(body string) ([]byte, *typesPackage, error) {
 		}
 	}
 	// The source names the runtime explicitly, so none of its names is qualified here.
-	qualified, err := qualifyRuntime(opts.runtimeImport(), src, &runtimeInfo{}, nil)
+	qualified, err := qualifyRuntime(runtimeImport(opts), src, &runtimeInfo{}, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -109,7 +111,7 @@ func (opts GenOptions) typesFile(body string) ([]byte, *typesPackage, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("generated types do not compile: %w", err)
 	}
-	return out, &typesPackage{importPath: opts.typesImport(), declared: func(name string) bool { return own[name] }, types: decls, schema: schema}, nil
+	return out, &typesPackage{importPath: typesImport(opts), declared: func(name string) bool { return own[name] }, types: decls, schema: schema}, nil
 }
 
 // schemaPrefix starts the name of the constant that ties a parser package to its types package.

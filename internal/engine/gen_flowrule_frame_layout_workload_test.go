@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // PEGO_TYPED_FRAME_LAYOUT_DIR preserves same-generator layout controls for
@@ -23,11 +25,11 @@ func testGeneratedTypedFrameLayoutWorkloads(t *testing.T) {
 	}
 	t.Run("lr", func(t *testing.T) {
 		fixture := strings.ReplaceAll(typedLRActionWorkloadFixture, "saved.N != 3", "saved.Missing != nil || saved.N != 3")
-		testGeneratedTypedBodyWorkload(t, typedFrameLayoutLRWorkload, fixture, filepath.Join(dir, "lr"), "(typed LR body inlined)", GenOptions{})
+		testGeneratedTypedBodyWorkload(t, typedFrameLayoutLRWorkload, fixture, filepath.Join(dir, "lr"), "(typed LR body inlined)", gen.GenOptions{})
 	})
 	t.Run("OperatorsRule", func(t *testing.T) {
 		fixture := strings.ReplaceAll(typedOperatorsRuleActionWorkloadFixture, "post.N != 3", "post.Missing != nil || post.N != 3")
-		testGeneratedTypedBodyWorkload(t, typedFrameLayoutOperatorsRuleWorkload, fixture, filepath.Join(dir, "OperatorsRule"), "(typed OperatorsRule body inlined)", GenOptions{}, 2)
+		testGeneratedTypedBodyWorkload(t, typedFrameLayoutOperatorsRuleWorkload, fixture, filepath.Join(dir, "OperatorsRule"), "(typed OperatorsRule body inlined)", gen.GenOptions{}, 2)
 	})
 }
 
@@ -61,7 +63,7 @@ func BenchmarkTypedFrameLayoutGeneration(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	opts := GenOptions{Package: "layoutfixture", Start: "main", Types: true, Recognize: true}
+	opts := gen.GenOptions{Package: "layoutfixture", Start: "main", Types: true, Recognize: true}
 	for _, c := range []struct{ name, src string }{
 		{"lr", typedFrameLayoutLRWorkload}, {"OperatorsRule", typedFrameLayoutOperatorsRuleWorkload},
 		{"calculator", string(calculator)}, {"typescript", string(typescript)},

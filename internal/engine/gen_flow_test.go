@@ -9,6 +9,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // The tests here check the typed rules printed from Flow IR (gen_flow.go), generating every corpus
@@ -19,26 +21,26 @@ import (
 // frames.
 var flowModes = []struct {
 	name   string
-	opts   GenOptions
+	opts   gen.GenOptions
 	frames bool
 }{
-	{"lean typed-only", GenOptions{Types: true, TypedOnly: true}, true},
-	{"lean with nodes", GenOptions{Types: true}, true},
-	{"lean recognizer", GenOptions{Types: true, Recognize: true}, true},
-	{"lean unguarded", GenOptions{Types: true, TypedOnly: true, disableGuardedClasses: true}, true},
-	{"lean straight terminals", GenOptions{Types: true, TypedOnly: true, disableTerminalPrograms: true}, true},
-	{"lean boxed", GenOptions{Types: true, TypedOnly: true, disableLiteralTextDispatch: true, boxedComparisons: true}, true},
-	{"controlled typed-only", GenOptions{Types: true, TypedOnly: true, WorkControls: true}, true},
-	{"controlled with nodes", GenOptions{Types: true, WorkControls: true}, true},
-	{"controlled recognizer", GenOptions{Types: true, Recognize: true, WorkControls: true}, true},
-	{"controlled unguarded", GenOptions{Types: true, TypedOnly: true, WorkControls: true, disableGuardedClasses: true}, true},
-	{"controlled boxed", GenOptions{Types: true, TypedOnly: true, WorkControls: true, disableLiteralTextDispatch: true, boxedComparisons: true}, true},
-	{"Document", GenOptions{Types: true, Document: true}, true},
-	{"Document with work controls", GenOptions{Types: true, Document: true, WorkControls: true}, true},
-	{"observable typed-only", GenOptions{Types: true, TypedOnly: true, Observability: true}, true},
-	{"observable with nodes", GenOptions{Types: true, Observability: true}, true},
-	{"observable controlled", GenOptions{Types: true, TypedOnly: true, Observability: true, WorkControls: true}, true},
-	{"observable Document", GenOptions{Types: true, Observability: true, Document: true}, true},
+	{"lean typed-only", gen.GenOptions{Types: true, TypedOnly: true}, true},
+	{"lean with nodes", gen.GenOptions{Types: true}, true},
+	{"lean recognizer", gen.GenOptions{Types: true, Recognize: true}, true},
+	{"lean unguarded", gen.GenOptions{Types: true, TypedOnly: true, DisableGuardedClasses: true}, true},
+	{"lean straight terminals", gen.GenOptions{Types: true, TypedOnly: true, DisableTerminalPrograms: true}, true},
+	{"lean boxed", gen.GenOptions{Types: true, TypedOnly: true, DisableLiteralTextDispatch: true, BoxedComparisons: true}, true},
+	{"controlled typed-only", gen.GenOptions{Types: true, TypedOnly: true, WorkControls: true}, true},
+	{"controlled with nodes", gen.GenOptions{Types: true, WorkControls: true}, true},
+	{"controlled recognizer", gen.GenOptions{Types: true, Recognize: true, WorkControls: true}, true},
+	{"controlled unguarded", gen.GenOptions{Types: true, TypedOnly: true, WorkControls: true, DisableGuardedClasses: true}, true},
+	{"controlled boxed", gen.GenOptions{Types: true, TypedOnly: true, WorkControls: true, DisableLiteralTextDispatch: true, BoxedComparisons: true}, true},
+	{"Document", gen.GenOptions{Types: true, Document: true}, true},
+	{"Document with work controls", gen.GenOptions{Types: true, Document: true, WorkControls: true}, true},
+	{"observable typed-only", gen.GenOptions{Types: true, TypedOnly: true, Observability: true}, true},
+	{"observable with nodes", gen.GenOptions{Types: true, Observability: true}, true},
+	{"observable controlled", gen.GenOptions{Types: true, TypedOnly: true, Observability: true, WorkControls: true}, true},
+	{"observable Document", gen.GenOptions{Types: true, Observability: true, Document: true}, true},
 }
 
 // flowUnreadLine matches the line that assigns the variables no statement reads to the blank
@@ -61,7 +63,7 @@ func flowDiff(want, got string) string {
 // generation of the same options in a statement, also next to the line of unread
 // variables that it leaves out, while it ignores a change of that line alone.
 func TestFlowDiffDetectsMutations(t *testing.T) {
-	opts := GenOptions{Types: true, TypedOnly: true}
+	opts := gen.GenOptions{Types: true, TypedOnly: true}
 	mutations := []struct {
 		name   string
 		mutate func(string) (string, bool)
@@ -123,7 +125,7 @@ func TestFlowDiffDetectsMutations(t *testing.T) {
 // flowGenerate generates the parser of the grammar source with the options, joined into one
 // text, and returns the numbers of rules and of framed bodies and lines printed from Flow IR, or
 // reports false if the generator rejects the grammar.
-func flowGenerate(src string, opts GenOptions) (string, int, int, bool) {
+func flowGenerate(src string, opts gen.GenOptions) (string, int, int, bool) {
 	g, err := parseTest(src)
 	if err != nil {
 		return "", 0, 0, false
@@ -131,7 +133,7 @@ func flowGenerate(src string, opts GenOptions) (string, int, int, bool) {
 	var gen *generator
 	generatorHook = func(x *generator) { gen = x }
 	defer func() { generatorHook = nil }()
-	opts.Module, opts.keepComments = "example.com/p", true
+	opts.Module, opts.KeepComments = "example.com/p", true
 	files, err := generate(g, opts)
 	if err != nil {
 		return "", 0, 0, false
@@ -217,7 +219,7 @@ func TestFlowTypedCorpus(t *testing.T) {
 		t.Skip("go command not found")
 	}
 	eachMode(t, func(t *testing.T) {
-		testGeneratedTypesCorpus(t, goBin, generatedTypesCases(t), GenOptions{convertTypes: true})
+		testGeneratedTypesCorpus(t, goBin, generatedTypesCases(t), gen.GenOptions{ConvertTypes: true})
 	})
 }
 
@@ -245,10 +247,10 @@ func testFlowTypedObservable(t *testing.T) {
 	}
 	for _, mode := range []struct {
 		name string
-		opts GenOptions
+		opts gen.GenOptions
 	}{
-		{"with nodes", GenOptions{Observability: true}},
-		{"typed-only", GenOptions{Observability: true, TypedOnly: true}},
+		{"with nodes", gen.GenOptions{Observability: true}},
+		{"typed-only", gen.GenOptions{Observability: true, TypedOnly: true}},
 	} {
 		t.Run(mode.name, func(t *testing.T) {
 			printed, framed := 0, 0
@@ -270,5 +272,5 @@ func testFlowTypedObservable(t *testing.T) {
 // TestFlowTypedDocument builds typed Document parsers with the default printing rules from Flow IR
 // and checks them as TestGenerateDirectTypedDocument does.
 func TestFlowTypedDocument(t *testing.T) {
-	testDirectTypedDocument(t, GenOptions{})
+	testDirectTypedDocument(t, gen.GenOptions{})
 }

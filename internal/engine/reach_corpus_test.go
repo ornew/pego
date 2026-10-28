@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -51,16 +52,16 @@ func TestUnreachableCorpusGeneration(t *testing.T) { eachMode(t, testUnreachable
 func testUnreachableCorpusGeneration(t *testing.T) {
 	optionSets := []struct {
 		name string
-		opts GenOptions
+		opts gen.GenOptions
 	}{
-		{"plain", GenOptions{}},
-		{"recognize", GenOptions{Recognize: true}},
-		{"document", GenOptions{Document: true}},
-		{"work controls", GenOptions{WorkControls: true}},
-		{"observability", GenOptions{Observability: true}},
-		{"observability document", GenOptions{Observability: true, Document: true}},
-		{"types", GenOptions{Types: true}},
-		{"types recognize", GenOptions{Types: true, Recognize: true}},
+		{"plain", gen.GenOptions{}},
+		{"recognize", gen.GenOptions{Recognize: true}},
+		{"document", gen.GenOptions{Document: true}},
+		{"work controls", gen.GenOptions{WorkControls: true}},
+		{"observability", gen.GenOptions{Observability: true}},
+		{"observability document", gen.GenOptions{Observability: true, Document: true}},
+		{"types", gen.GenOptions{Types: true}},
+		{"types recognize", gen.GenOptions{Types: true, Recognize: true}},
 	}
 	checked, pruned := 0, 0
 	for _, c := range genCorpus(t) {
@@ -72,7 +73,7 @@ func testUnreachableCorpusGeneration(t *testing.T) {
 			opts := set.opts
 			opts.Package, opts.Start = "p", "main"
 			kept := opts
-			kept.keepUnreachable = true
+			kept.KeepUnreachable = true
 			full, keptErr := generateCode(g, kept)
 			if keptErr != nil {
 				continue // the grammar does not generate in this option set
@@ -119,9 +120,9 @@ func testUnreachableCorpusRuns(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		opts := GenOptions{Recognize: true, Start: "main"}
+		opts := gen.GenOptions{Recognize: true, Start: "main"}
 		kept := opts
-		kept.keepUnreachable = true
+		kept.KeepUnreachable = true
 		kept.Package = fmt.Sprintf("k%d", n)
 		keptCode, err := generateCode(g, kept)
 		if err != nil {

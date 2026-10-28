@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // A typed-only parser has the typed entry points and none of the Node family. These tests check what it
@@ -71,19 +73,19 @@ func TestGeneratedTypedOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gen := func(opts GenOptions) (string, error) {
-		opts.Package, opts.Module, opts.Start, opts.Runtime = "p", "example.com/p", "main", RuntimeImport
+	generate := func(opts gen.GenOptions) (string, error) {
+		opts.Package, opts.Module, opts.Start, opts.Runtime = "p", "example.com/p", "main", gen.RuntimeImport
 		files, err := Generate(g, opts)
 		if err != nil {
 			return "", err
 		}
 		return string(mergeGenerated(files)), nil
 	}
-	only, err := gen(GenOptions{Types: true, TypedOnly: true})
+	only, err := generate(gen.GenOptions{Types: true, TypedOnly: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	full, err := gen(GenOptions{Types: true, Recognize: true})
+	full, err := generate(gen.GenOptions{Types: true, Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,19 +109,19 @@ func TestGeneratedTypedOnly(t *testing.T) {
 	// The refused combinations, with their messages.
 	for _, tc := range []struct {
 		name string
-		opts GenOptions
+		opts gen.GenOptions
 		want string
 	}{
-		{"without types", GenOptions{TypedOnly: true}, "typed-only output needs typed output (-types)"},
-		{"recognize", GenOptions{Types: true, TypedOnly: true, Recognize: true}, "typed-only output cannot have Recognize, a Document or a stream, which use the untyped Node"},
-		{"document", GenOptions{Types: true, TypedOnly: true, Document: true}, "typed-only output cannot have Recognize, a Document or a stream, which use the untyped Node"},
-		{"stream", GenOptions{Types: true, TypedOnly: true, Stream: true}, "typed-only output cannot have Recognize, a Document or a stream, which use the untyped Node"},
+		{"without types", gen.GenOptions{TypedOnly: true}, "typed-only output needs typed output (-types)"},
+		{"recognize", gen.GenOptions{Types: true, TypedOnly: true, Recognize: true}, "typed-only output cannot have Recognize, a Document or a stream, which use the untyped Node"},
+		{"document", gen.GenOptions{Types: true, TypedOnly: true, Document: true}, "typed-only output cannot have Recognize, a Document or a stream, which use the untyped Node"},
+		{"stream", gen.GenOptions{Types: true, TypedOnly: true, Stream: true}, "typed-only output cannot have Recognize, a Document or a stream, which use the untyped Node"},
 	} {
-		if _, err := gen(tc.opts); err == nil || err.Error() != tc.want {
+		if _, err := generate(tc.opts); err == nil || err.Error() != tc.want {
 			t.Errorf("%s: error %v, want %q", tc.name, err, tc.want)
 		}
 	}
-	if _, err := GenerateTS(g, GenOptions{Start: "main", TypedOnly: true}); err == nil || err.Error() != "typed-only generation is only supported for Go" {
+	if _, err := GenerateTS(g, gen.GenOptions{Start: "main", TypedOnly: true}); err == nil || err.Error() != "typed-only generation is only supported for Go" {
 		t.Errorf("TypeScript: error %v", err)
 	}
 
@@ -130,9 +132,9 @@ func TestGeneratedTypedOnly(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("ordtest")), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	ordinaryOnlyPackage(t, dir, "full", ordinaryOnlyTyped, GenOptions{Types: true, Recognize: true, Document: true, WorkControls: true}, ordinaryOnlyTypedEntries, ordinaryOnlyTypedInputs)
-	ordinaryOnlyPackage(t, dir, "only", ordinaryOnlyTyped, GenOptions{Types: true, TypedOnly: true}, ordinaryOnlyTypedEntries, ordinaryOnlyTypedInputs)
-	ordinaryOnlyPackage(t, dir, "mutated", strings.Replace(ordinaryOnlyTyped, `"+"`, `"-"`, 1), GenOptions{Types: true, TypedOnly: true}, ordinaryOnlyTypedEntries, ordinaryOnlyTypedInputs)
+	ordinaryOnlyPackage(t, dir, "full", ordinaryOnlyTyped, gen.GenOptions{Types: true, Recognize: true, Document: true, WorkControls: true}, ordinaryOnlyTypedEntries, ordinaryOnlyTypedInputs)
+	ordinaryOnlyPackage(t, dir, "only", ordinaryOnlyTyped, gen.GenOptions{Types: true, TypedOnly: true}, ordinaryOnlyTypedEntries, ordinaryOnlyTypedInputs)
+	ordinaryOnlyPackage(t, dir, "mutated", strings.Replace(ordinaryOnlyTyped, `"+"`, `"-"`, 1), gen.GenOptions{Types: true, TypedOnly: true}, ordinaryOnlyTypedEntries, ordinaryOnlyTypedInputs)
 	out := runTranscripts(t, dir, "full", "only", "mutated")
 	if out["full"] != out["only"] {
 		t.Errorf("the typed-only parser differs from the full one:\n%s", firstTranscriptDifference(out["full"], out["only"]))
@@ -167,7 +169,7 @@ func testGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := Generate(g, GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: RuntimeImport, Types: true, TypedOnly: true})
+	files, err := Generate(g, gen.GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: gen.RuntimeImport, Types: true, TypedOnly: true})
 	if err != nil {
 		t.Fatalf("a typed-only parser whose entries convert Nodes: %v", err)
 	}
@@ -185,9 +187,9 @@ func testGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("ordtest")), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	ordinaryOnlyPackage(t, dir, "full", ordinaryOnlyConverted, GenOptions{Types: true, Recognize: true}, program, ordinaryOnlyConvertedInputs)
-	ordinaryOnlyPackage(t, dir, "only", ordinaryOnlyConverted, GenOptions{Types: true, TypedOnly: true}, program, ordinaryOnlyConvertedInputs)
-	ordinaryOnlyPackage(t, dir, "mutated", strings.Replace(ordinaryOnlyConverted, `"!"`, `"?"`, 1), GenOptions{Types: true, TypedOnly: true}, program, ordinaryOnlyConvertedInputs)
+	ordinaryOnlyPackage(t, dir, "full", ordinaryOnlyConverted, gen.GenOptions{Types: true, Recognize: true}, program, ordinaryOnlyConvertedInputs)
+	ordinaryOnlyPackage(t, dir, "only", ordinaryOnlyConverted, gen.GenOptions{Types: true, TypedOnly: true}, program, ordinaryOnlyConvertedInputs)
+	ordinaryOnlyPackage(t, dir, "mutated", strings.Replace(ordinaryOnlyConverted, `"!"`, `"?"`, 1), gen.GenOptions{Types: true, TypedOnly: true}, program, ordinaryOnlyConvertedInputs)
 	out := runTranscripts(t, dir, "full", "only", "mutated")
 	if out["full"] != out["only"] {
 		t.Errorf("the typed-only parser differs from the full one:\n%s", firstTranscriptDifference(out["full"], out["only"]))
@@ -201,7 +203,7 @@ func testGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 
 	// Negative control: without the Node rule functions the converting entries have no Node rule
 	// bodies to run, which fails generation in every form.
-	_, err = Generate(g, GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: RuntimeImport, Types: true, TypedOnly: true, disableKeepNodes: true})
+	_, err = Generate(g, gen.GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: gen.RuntimeImport, Types: true, TypedOnly: true, DisableKeepNodes: true})
 	if err == nil || !strings.Contains(err.Error(), "internal error: a typed entry point converts Nodes") {
 		t.Errorf("a typed-only parser without the Node rule functions: error %v, want an internal error", err)
 	}
@@ -229,9 +231,9 @@ func TestGeneratedTypedOnlyHiddenRules(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("ordtest")), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	ordinaryOnlyPackage(t, dir, "full", ordinaryOnlyHidden, GenOptions{Types: true, Recognize: true}, program, ordinaryOnlyHiddenInputs)
-	ordinaryOnlyPackage(t, dir, "only", ordinaryOnlyHidden, GenOptions{Types: true, TypedOnly: true}, program, ordinaryOnlyHiddenInputs)
-	ordinaryOnlyPackage(t, dir, "mutated", strings.Replace(ordinaryOnlyHidden, `"!"`, `"?"`, 1), GenOptions{Types: true, TypedOnly: true}, program, ordinaryOnlyHiddenInputs)
+	ordinaryOnlyPackage(t, dir, "full", ordinaryOnlyHidden, gen.GenOptions{Types: true, Recognize: true}, program, ordinaryOnlyHiddenInputs)
+	ordinaryOnlyPackage(t, dir, "only", ordinaryOnlyHidden, gen.GenOptions{Types: true, TypedOnly: true}, program, ordinaryOnlyHiddenInputs)
+	ordinaryOnlyPackage(t, dir, "mutated", strings.Replace(ordinaryOnlyHidden, `"!"`, `"?"`, 1), gen.GenOptions{Types: true, TypedOnly: true}, program, ordinaryOnlyHiddenInputs)
 	out := runTranscripts(t, dir, "full", "only", "mutated")
 	if out["full"] != out["only"] {
 		t.Errorf("the typed-only parser differs from the full one:\n%s", firstTranscriptDifference(out["full"], out["only"]))

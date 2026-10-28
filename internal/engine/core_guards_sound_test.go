@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
 )
 
@@ -203,12 +204,12 @@ func TestCoreGuardsAreSound(t *testing.T) {
 			continue
 		}
 		var cases []*coreGenCase
-		if gen, ok := coreGenerate(gc.src, GenOptions{Types: true, TypedOnly: true}); ok {
+		if gen, ok := coreGenerate(gc.src, gen.GenOptions{Types: true, TypedOnly: true}); ok {
 			if c, err := coreTypedCase(gc.name, "lean", gen, nil); err == nil {
 				cases = append(cases, c)
 			}
 		}
-		if gen, ok := coreGenerate(gc.src, GenOptions{Recognize: true}); ok {
+		if gen, ok := coreGenerate(gc.src, gen.GenOptions{Recognize: true}); ok {
 			if c, err := coreRecognizeCase(gc.name, "lean", gen); err == nil {
 				cases = append(cases, c)
 			}

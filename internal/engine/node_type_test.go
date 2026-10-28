@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -177,11 +178,11 @@ rule main A = x:"a" => A{$x}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	goCode, err := generateCode(g, GenOptions{Package: "p", Start: "main"})
+	goCode, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	tsCode, err := generateTSBundle(g, GenOptions{Start: "main"})
+	tsCode, err := generateTSBundle(g, gen.GenOptions{Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -270,7 +271,7 @@ func runGeneratedNamedNodeProgram(t *testing.T, src, body, want string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, GenOptions{Package: "p", Start: "main", Types: true})
+	code, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -392,7 +393,7 @@ check(ns !== null && ns.type === "Nums" && ns.value?.length === 1 && ns.value[0]
 const a: Any | null = v.Any;
 check(a !== null && a.type === "Any", "any " + stable(a));
 `
-	runTypedTSFixture(t, nodeTypeGrammar, consumer, GenOptions{}, "")
+	runTypedTSFixture(t, nodeTypeGrammar, consumer, gen.GenOptions{}, "")
 }
 
 // TestGeneratedTSTypedNamedNodesAsPlainNodes is TestGeneratedNamedNodesAsPlainNodes for typed
@@ -415,7 +416,7 @@ const got = [v.C?.value, v.D?.map(d => d?.value).join(","), v.E?.value?.[0]?.val
   v.F?.value?.[0]?.value, v.F?.value?.[1]?.value, v.G?.[1]?.end, v.H?.value?.[0]?.value, v.H?.type].join(" ");
 check(got === "1 1,2 1 true 3 4 3 3 P", "got " + got + " " + stable(v));
 `
-	runTypedTSFixture(t, src, consumer, GenOptions{}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{}, "")
 }
 
 // TestNamedNodeTypeResolution checks types that refer to each other through named node types: an
@@ -661,7 +662,7 @@ func testGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := generateCode(g, GenOptions{Package: "p", Start: "main", Types: true})
+		code, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -671,8 +672,8 @@ func testGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
 		}
 	}
 	typed := len(cases) - len(converted)
-	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true}, typed)
+	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, typed)
 }
 
 // TestGeneratedNamedNodeTypesDocument checks direct typed Documents of grammars with named node
@@ -726,7 +727,7 @@ rule a A = [a-zé] #atomic`, []string{"()abcd", "(()(()))abcd", "((é))éaéa", 
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}
-		code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
+		code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}
@@ -734,7 +735,7 @@ rule a A = [a-zé] #atomic`, []string{"()abcd", "(()(()))abcd", "((é))éaéa", 
 			t.Fatalf("%s uses conversion instead of direct matching", pkg)
 		}
 		write(pkg+"/parser.go", string(code))
-		reference, err := generateCode(g, GenOptions{Package: "reference", Start: "main", Types: true, Document: true, convertTypes: true})
+		reference, err := generateCode(g, gen.GenOptions{Package: "reference", Start: "main", Types: true, Document: true, ConvertTypes: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -782,7 +783,7 @@ func testGeneratedDeclaredNodeAny(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, GenOptions{Package: "p", Start: "main", Types: true})
+	code, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -811,7 +812,7 @@ func testGeneratedDeclaredNodeAny(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := generateCode(g, GenOptions{Package: "p", Start: "main", Types: true})
+		code, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -819,8 +820,8 @@ func testGeneratedDeclaredNodeAny(t *testing.T) {
 			t.Errorf("%s: generated typed Go converts nodes instead of using the typed runtime", c.name)
 		}
 	}
-	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true}, len(cases))
+	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, len(cases))
 }
 
 // TestNamedNodeTypeText checks that the S-expression of a node of a named node type names the type

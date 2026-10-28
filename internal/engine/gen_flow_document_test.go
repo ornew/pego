@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/flow"
 )
 
@@ -221,7 +222,7 @@ func runDocumentProbes(t *testing.T, cases []documentCase, start string, mutate 
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := generateCode(g, GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true, Document: true})
+		code, err := generateCode(g, gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true, Document: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

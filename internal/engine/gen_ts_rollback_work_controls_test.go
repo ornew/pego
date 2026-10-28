@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedTSWorkControlCaptureRollback(t *testing.T) {
@@ -39,7 +41,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  check(p.parseWithOptions(input,{unit,maxSteps:0}).error===null,"fresh retry after interrupted capture restoration");
 }
 `
-	runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 }
 
 func TestGeneratedTSWorkControlOperatorsRuleCapturePreservation(t *testing.T) {
@@ -83,7 +85,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  check(p.parseASTWithOptions(input,{unit,maxSteps:0}).error===null,"fresh Operators Rule retry");
 }
 `
-	runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 }
 
 func TestGeneratedTSWorkControlRecoveredMemoReplay(t *testing.T) {
@@ -124,7 +126,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  check(retry.node!==null&&retry.error instanceof p.SyntaxErrors&&retry.error.errors.length===1536,"fresh recovered memo retry");
 }
 `
-	runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 }
 
 func TestGeneratedTSWorkControlRecoveryParity(t *testing.T) {
@@ -148,7 +150,7 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ` + string(inputs) +
  check(p.recognizeWithOptions(input,{unit,signal:{aborted:false}})?.message===p.recognize(input,unit)?.message,"recognizer recovered parity");
 }
 `
-			runTypedTSFixture(t, tt.src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+			runTypedTSFixture(t, tt.src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 		})
 	}
 }
@@ -194,5 +196,5 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  check(retry.node!==null&&retry.error instanceof p.SyntaxErrors&&retry.error.errors.length===512,"fresh Operators Rule recovered retry");
 }
 `
-	runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 }

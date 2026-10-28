@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // The examined frontier, the evaluations and the reuse that a Document reports for a rule that
@@ -76,7 +78,7 @@ func TestFrontier(t *testing.T) {
 `
 	results := map[string]string{}
 	for _, route := range []string{"node", "typed"} {
-		code, err := generateCode(g, GenOptions{Package: route, Start: "main", Document: true, Types: route == "typed", Recognize: true, Observability: true})
+		code, err := generateCode(g, gen.GenOptions{Package: route, Start: "main", Document: true, Types: route == "typed", Recognize: true, Observability: true})
 		if err != nil {
 			t.Fatal(route, err)
 		}

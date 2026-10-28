@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedTSDepthOptions(t *testing.T) {
@@ -46,7 +48,7 @@ rule n = ("(" n ")" / "é") #recover(skip="?")`, []string{"é", "(é)", "((é))"
 		if err != nil {
 			t.Fatal(err)
 		}
-		code, err := generateTSBundle(g, GenOptions{Start: "main", Recognize: true, MaxDepth: 4})
+		code, err := generateTSBundle(g, gen.GenOptions{Start: "main", Recognize: true, MaxDepth: 4})
 		if err != nil {
 			t.Fatal(err)
 		}

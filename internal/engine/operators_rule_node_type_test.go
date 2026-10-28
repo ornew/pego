@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -176,18 +177,18 @@ func testOperatorsRuleNamedNodeTypeGenerated(t *testing.T) {
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	cases := operatorsNamedNodeCases()
-	t.Run("go", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{}) })
-	t.Run("go source info", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{SourceInfo: true}) })
+	t.Run("go", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{}) })
+	t.Run("go source info", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{SourceInfo: true}) })
 	t.Run("typed go", func(t *testing.T) {
-		testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true}, len(cases))
+		testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, len(cases))
 	})
 	t.Run("typescript", func(t *testing.T) {
 		node, err := exec.LookPath("node")
 		if err != nil {
 			t.Skip("node not found")
 		}
-		testGeneratedTSParsersCorpus(t, node, cases, GenOptions{})
-		testGeneratedTSParsersCorpus(t, node, cases, GenOptions{SourceInfo: true})
+		testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{})
+		testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{SourceInfo: true})
 	})
 }
 
@@ -253,7 +254,7 @@ func TestOperatorsRuleNamedNodeTypeRuntimeError(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Generate(g, GenOptions{Package: "p", Start: "expr"}); err == nil {
+		if _, err := Generate(g, gen.GenOptions{Package: "p", Start: "expr"}); err == nil {
 			t.Errorf("%q: the generator accepted a grammar that cannot be type checked", tc.src)
 		}
 	}

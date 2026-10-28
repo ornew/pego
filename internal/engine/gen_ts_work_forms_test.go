@@ -3,6 +3,8 @@ package engine
 import (
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 const tsWorkFormsGrammar = `type Item = { Name string }
@@ -19,7 +21,7 @@ func TestGeneratedTSWorkControlForms(t *testing.T) {
 		t.Fatal(err)
 	}
 	generate := func(controls bool) string {
-		files, err := GenerateTS(g, GenOptions{Start: "main", Types: true, Recognize: true, WorkControls: controls})
+		files, err := GenerateTS(g, gen.GenOptions{Start: "main", Types: true, Recognize: true, WorkControls: controls})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -97,7 +99,7 @@ for (const unit of [p.CodePoints, p.Bytes]) {
   check(p.parseWithOptions(input, { unit, signal: null, maxSteps: 0, maxInputWork: 0 } as unknown as p.ParseOptions).error === null, "unset controls are accepted");
 }
 `
-	runTypedTSFixture(t, tsWorkFormsGrammar, consumer, GenOptions{Start: "main", Recognize: true}, "")
+	runTypedTSFixture(t, tsWorkFormsGrammar, consumer, gen.GenOptions{Start: "main", Recognize: true}, "")
 }
 
 func TestGeneratedTSWithWorkControlsAcceptsControlOptions(t *testing.T) {
@@ -117,5 +119,5 @@ for (const unit of [p.CodePoints, p.Bytes]) {
   check(p.parse(input, unit).error === null, "a parse after an interruption");
 }
 `
-	runTypedTSFixture(t, tsWorkFormsGrammar, consumer, GenOptions{Start: "main", Recognize: true, WorkControls: true}, "")
+	runTypedTSFixture(t, tsWorkFormsGrammar, consumer, gen.GenOptions{Start: "main", Recognize: true, WorkControls: true}, "")
 }

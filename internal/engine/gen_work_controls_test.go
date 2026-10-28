@@ -8,6 +8,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedGoWorkControls(t *testing.T) {
@@ -31,7 +33,7 @@ rule predicate Word = t:(!("a"* "é") "a"* "b") #atomic => Word{Text: text($t)}`
 	}
 	for _, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("work_%v", convert)
-		code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert})
+		code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -218,7 +220,7 @@ rule leaf Leaf = t:("é") #atomic => Leaf{Text: text($t)}`)
 		t.Fatal(err)
 	}
 	pkg := "conversion"
-	generatePackage(t, dir, pkg, g, GenOptions{Start: "main", Types: true, convertTypes: true})
+	generatePackage(t, dir, pkg, g, gen.GenOptions{Start: "main", Types: true, ConvertTypes: true})
 	fixture := strings.ReplaceAll(generatedGoConversionConsumer, "PACKAGE", pkg)
 	if err := os.WriteFile(filepath.Join(dir, pkg, "conversion_test.go"), []byte(fixture), 0644); err != nil {
 		t.Fatal(err)
@@ -304,17 +306,17 @@ rule main WorkLimits = t:("é") #atomic => WorkLimits{Text: text($t)}`)
 	}
 	for _, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("collision_%v", convert)
-		opts := GenOptions{Package: pkg, Module: "workcollision/" + pkg, Runtime: RuntimeImport, Start: "main", Types: true, convertTypes: convert, WorkControls: true}
+		opts := gen.GenOptions{Package: pkg, Module: "workcollision/" + pkg, Runtime: gen.RuntimeImport, Start: "main", Types: true, ConvertTypes: convert, WorkControls: true}
 		files, err := Generate(g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
 		again, err := Generate(g, opts)
-		if err != nil || !slices.EqualFunc(files, again, func(a, b GeneratedFile) bool { return a.Path == b.Path && string(a.Content) == string(b.Content) }) {
+		if err != nil || !slices.EqualFunc(files, again, func(a, b gen.GeneratedFile) bool { return a.Path == b.Path && string(a.Content) == string(b.Content) }) {
 			t.Fatal("unstable generation")
 		}
 		fixture := strings.ReplaceAll(generatedGoWorkCollisionConsumer, "PACKAGE", pkg)
-		files = append(files, GeneratedFile{"consumer_test.go", []byte(fixture)})
+		files = append(files, gen.GeneratedFile{Path: "consumer_test.go", Content: []byte(fixture)})
 		for _, f := range files {
 			path := filepath.Join(dir, pkg, filepath.FromSlash(f.Path))
 			if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
@@ -370,7 +372,7 @@ rule letter Word = t:("é") #atomic => Word{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, GenOptions{Package: "nilpublication", Start: "main", Types: true})
+	code, err := generateCode(g, gen.GenOptions{Package: "nilpublication", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -455,7 +457,7 @@ rule leaf Word = t:("é") #atomic => Word{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, GenOptions{Package: "legacynil", Start: "main", Types: true})
+	code, err := generateCode(g, gen.GenOptions{Package: "legacynil", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -519,7 +521,7 @@ rule recurse = "a" recurse?`, "aa", "WithMaxDepth(1)"},
 			if err != nil {
 				t.Fatal(err)
 			}
-			code, err := generateCode(g, GenOptions{Package: "ordinarynil", Start: "main", Types: true})
+			code, err := generateCode(g, gen.GenOptions{Package: "ordinarynil", Start: "main", Types: true})
 			if err != nil {
 				t.Fatal(err)
 			}

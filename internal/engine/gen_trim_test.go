@@ -3,6 +3,8 @@ package engine
 import (
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestTrimComments(t *testing.T) {
@@ -71,7 +73,7 @@ func TestGenerateTrimsComments(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	opts := GenOptions{Package: "p", Start: "main", Runtime: RuntimeImport, Types: true, Module: "example.com/p"}
+	opts := gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Types: true, Module: "example.com/p"}
 	files, err := Generate(g, opts)
 	if err != nil {
 		t.Fatal(err)
@@ -80,7 +82,7 @@ func TestGenerateTrimsComments(t *testing.T) {
 	if strings.Contains(src, "called as by") || strings.Contains(src, "body inlined") {
 		t.Errorf("generated source keeps route comments:\n%s", src)
 	}
-	opts.keepComments = true
+	opts.KeepComments = true
 	files, err = Generate(g, opts)
 	if err != nil {
 		t.Fatal(err)

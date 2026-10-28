@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // TestGeneratedTypedFieldsNamedLikeRuntimeMethods checks that a struct field may be named like a
@@ -41,7 +43,7 @@ rule main Pair = a:"a" => Pair{TName: "n", TText: "t", TKids: "k", TStruct: "s",
 		pkg      string
 		document bool
 	}{{"plain", false}, {"document", true}} {
-		code, err := generateCode(g, GenOptions{Package: c.pkg, Start: "main", Types: true, Document: c.document})
+		code, err := generateCode(g, gen.GenOptions{Package: c.pkg, Start: "main", Types: true, Document: c.document})
 		if err != nil {
 			t.Fatalf("%s: %v", c.pkg, err)
 		}

@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // PEGO_TYPED_CUT_DIR preserves both latest-generator variants so their test
@@ -30,7 +32,7 @@ rule row Row = "let" " " #cut key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" / 
 	}
 	var want []byte
 	for _, variant := range []string{"direct"} {
-		code, err := generateCode(g, GenOptions{Package: "cutfixture", Start: "main", Types: true})
+		code, err := generateCode(g, gen.GenOptions{Package: "cutfixture", Start: "main", Types: true})
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // The Node tables of an observability build are printed from Flow IR. What the build observes (the events of
@@ -123,7 +125,7 @@ func runObserveProbes(t *testing.T, cases []genCase, start string, detail []int,
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := generateCode(g, GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true, Observability: true})
+		code, err := generateCode(g, gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true, Observability: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

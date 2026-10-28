@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 )
 
 // Small tables cannot select sparse storage, so their default TypeScript
@@ -21,13 +22,13 @@ func TestGeneratedSparseMemoSmallTable(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, recognize := range []bool{false, true} {
-		for _, generate := range []func(*grammar.Grammar, GenOptions) ([]byte, error){generateTSBundle} {
-			opts := GenOptions{Package: "smallmemo", Start: "main", Recognize: recognize}
+		for _, generate := range []func(*grammar.Grammar, gen.GenOptions) ([]byte, error){generateTSBundle} {
+			opts := gen.GenOptions{Package: "smallmemo", Start: "main", Recognize: recognize}
 			code, err := generate(g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
-			opts.disableSparseMemo = true
+			opts.DisableSparseMemo = true
 			control, err := generate(g, opts)
 			if err != nil {
 				t.Fatal(err)
@@ -61,7 +62,7 @@ func testGeneratedSparseMemo(t *testing.T) {
 	}
 	var fingerprint string
 	for _, name := range []string{"optimized"} {
-		code, err := generateCode(g, GenOptions{Package: "memofixture", Start: "main", Types: true,
+		code, err := generateCode(g, gen.GenOptions{Package: "memofixture", Start: "main", Types: true,
 			Recognize: true})
 		if err != nil {
 			t.Fatal(err)
@@ -121,7 +122,7 @@ func TestGeneratedTSSparseMemoControls(t *testing.T) {
 	}
 	var results [2]string
 	for i, name := range []string{"optimized", "reference"} {
-		code, err := generateTSBundle(g, GenOptions{Start: "main", Recognize: true, disableSparseMemo: i == 1})
+		code, err := generateTSBundle(g, gen.GenOptions{Start: "main", Recognize: true, DisableSparseMemo: i == 1})
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 )
 
 // The generated name of an inline action's rule never satisfies a reference: a reference resolves
@@ -75,10 +76,10 @@ rule _a = "a"`, "_a"},
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Generate(parsed, GenOptions{Module: "m", Start: g.start}); err == nil || !strings.Contains(err.Error(), "hidden") {
+		if _, err := Generate(parsed, gen.GenOptions{Module: "m", Start: g.start}); err == nil || !strings.Contains(err.Error(), "hidden") {
 			t.Errorf("Go generation with the start rule %s: %v", g.start, err)
 		}
-		if _, err := GenerateTS(parsed, GenOptions{Start: g.start}); err == nil || !strings.Contains(err.Error(), "hidden") {
+		if _, err := GenerateTS(parsed, gen.GenOptions{Start: g.start}); err == nil || !strings.Contains(err.Error(), "hidden") {
 			t.Errorf("TypeScript generation with the start rule %s: %v", g.start, err)
 		}
 	}

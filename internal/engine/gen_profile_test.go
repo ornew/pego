@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedGoProfile(t *testing.T) {
@@ -42,7 +44,7 @@ func TestGeneratedGoProfile(t *testing.T) {
 		}
 		for _, route := range []string{"node", "direct", "convert"} {
 			pkg := f.name + "_" + route
-			opts := GenOptions{Package: pkg, Start: "main", Recognize: true, Observability: true, Types: route != "node", convertTypes: route == "convert"}
+			opts := gen.GenOptions{Package: pkg, Start: "main", Recognize: true, Observability: true, Types: route != "node", ConvertTypes: route == "convert"}
 			generatePackageIn(t, dir, "profilefixture", pkg, g, opts)
 			typed := ""
 			if opts.Types {

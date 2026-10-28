@@ -8,6 +8,8 @@ import (
 	"sync"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // tsGeneratedHeader starts every generated TypeScript file. The command line tool removes stale
@@ -56,8 +58,8 @@ var tsRuntimeText = sync.OnceValue(func() string {
 })
 
 // tsRuntimeFiles returns the file of the runtime alone.
-func tsRuntimeFiles() []GeneratedFile {
-	return []GeneratedFile{{Path: tsRuntimeFileName, Content: []byte(tsRuntimeText())}}
+func tsRuntimeFiles() []gen.GeneratedFile {
+	return []gen.GeneratedFile{{Path: tsRuntimeFileName, Content: []byte(tsRuntimeText())}}
 }
 
 var tsExportDecl = regexp.MustCompile(`(?m)^export (?:abstract )?(function|class|const|let|interface|type) ([\p{L}\p{N}_$]+)`)
@@ -78,12 +80,12 @@ var tsRuntimeExports = sync.OnceValue(func() map[string]bool {
 
 // tsFiles assembles the files of a parser from the code generated from the grammar (body) and the
 // declarations of its types (types, empty without opts.Types).
-func tsFiles(opts GenOptions, body, types string) []GeneratedFile {
+func tsFiles(opts gen.GenOptions, body, types string) []gen.GeneratedFile {
 	spec := tsEmbeddedRuntimeSpecifier
-	if opts.Runtime == RuntimeImport {
+	if opts.Runtime == gen.RuntimeImport {
 		spec = opts.RuntimeModule
 	}
-	var files []GeneratedFile
+	var files []gen.GeneratedFile
 	var parser strings.Builder
 	parser.WriteString(tsGeneratedHeader)
 	parser.WriteString("// A parser generated from a PEGO grammar; see parse below. It imports its runtime.\n\n")
@@ -132,10 +134,10 @@ func tsFiles(opts GenOptions, body, types string) []GeneratedFile {
 	}
 	parser.WriteString("\n")
 	parser.WriteString(body)
-	if opts.Runtime != RuntimeImport {
-		files = append(files, GeneratedFile{Path: tsRuntimeFileName, Content: []byte(tsRuntimeText())})
+	if opts.Runtime != gen.RuntimeImport {
+		files = append(files, gen.GeneratedFile{Path: tsRuntimeFileName, Content: []byte(tsRuntimeText())})
 	}
-	files = append(files, GeneratedFile{Path: "parser.ts", Content: []byte(parser.String())})
+	files = append(files, gen.GeneratedFile{Path: "parser.ts", Content: []byte(parser.String())})
 	if types != "" {
 		var t strings.Builder
 		t.WriteString(tsGeneratedHeader)
@@ -143,7 +145,7 @@ func tsFiles(opts GenOptions, body, types string) []GeneratedFile {
 		t.WriteString("/* eslint-disable */\n\n")
 		t.WriteString("import type {Node as RuntimeNode} from " + tsString(spec) + ";\n\n")
 		t.WriteString(types)
-		files = append(files, GeneratedFile{Path: "types.ts", Content: []byte(t.String())})
+		files = append(files, gen.GeneratedFile{Path: "types.ts", Content: []byte(t.String())})
 	}
 	return files
 }

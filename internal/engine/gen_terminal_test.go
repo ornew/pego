@@ -9,6 +9,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // terminalCases are grammars with value-free terminal expressions that lean typed parsers match
@@ -72,7 +74,7 @@ func TestTerminalProgramGeneration(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		code, err := generateCode(g, GenOptions{Package: "terminal", Start: "main", Types: true, TypedOnly: true})
+		code, err := generateCode(g, gen.GenOptions{Package: "terminal", Start: "main", Types: true, TypedOnly: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -80,7 +82,7 @@ func TestTerminalProgramGeneration(t *testing.T) {
 		if got, want := strings.Contains(string(code), "p.SkipTerminal(term"), !strings.Contains(c.name, "left recursion"); got != want {
 			t.Errorf("%s: terminal program %v, want %v", c.name, got, want)
 		}
-		reference, err := generateCode(g, GenOptions{Package: "terminal", Start: "main", Types: true, TypedOnly: true, disableTerminalPrograms: true})
+		reference, err := generateCode(g, gen.GenOptions{Package: "terminal", Start: "main", Types: true, TypedOnly: true, DisableTerminalPrograms: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -89,8 +91,8 @@ func TestTerminalProgramGeneration(t *testing.T) {
 		}
 		// Parsers with work controls or Documents keep the straight-line code, which charges
 		// work for each expression.
-		for _, opts := range []GenOptions{{WorkControls: true}, {Document: true}} {
-			opts.Package, opts.Module, opts.Start, opts.Types, opts.Runtime = "terminal", "example.com/generated", "main", true, RuntimeImport
+		for _, opts := range []gen.GenOptions{{WorkControls: true}, {Document: true}} {
+			opts.Package, opts.Module, opts.Start, opts.Types, opts.Runtime = "terminal", "example.com/generated", "main", true, gen.RuntimeImport
 			files, err := Generate(g, opts)
 			if err != nil {
 				t.Fatal(err)
@@ -107,7 +109,7 @@ func TestTerminalProgramGeneration(t *testing.T) {
 // engine's, in both position units.
 func TestTerminalProgramDisabledParity(t *testing.T) {
 	t.Setenv("PEGO_TEST_ORDINARY", "1")
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), terminalCases(), GenOptions{disableTerminalPrograms: true}, 0)
+	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), terminalCases(), gen.GenOptions{DisableTerminalPrograms: true}, 0)
 }
 
 // TestTerminalProgramEligibility pins where the generator lowers a terminal expression: only
@@ -122,30 +124,30 @@ func TestTerminalProgramEligibility(t *testing.T) {
 	seq16 := `[aA] [bB] [cC] [dD] [eE] [fF] [gG] [hH] [iI] [jJ] [kK] [lL] [mM] [nN] [oO] [pP]`
 	for _, c := range []struct {
 		name, src string
-		opts      GenOptions
+		opts      gen.GenOptions
 		want      bool
 	}{
-		{"discarded", "rule main = -" + choice16 + " $$\n", GenOptions{}, true},
-		{"lookahead", "rule main = !" + choice16 + " [a-z]* $$\n", GenOptions{}, true},
-		{"text is the value", "rule main = " + choice16 + " $$\n", GenOptions{}, false},
-		{"captured", "rule main = x:" + choice16 + " $$ => $x\n", GenOptions{}, false},
-		{"too few leaves", "rule main = -" + choice15 + " $$\n", GenOptions{}, false},
-		{"no choice", "rule main = -(" + seq16 + ") $$\n", GenOptions{}, false},
-		{"observability", "rule main = -" + choice16 + " $$\n", GenOptions{Observability: true}, false},
-		{"work controls", "rule main = -" + choice16 + " $$\n", GenOptions{WorkControls: true}, false},
-		{"document", "rule main = -" + choice16 + " $$\n", GenOptions{Document: true}, false},
-		{"disabled", "rule main = -" + choice16 + " $$\n", GenOptions{disableTerminalPrograms: true}, false},
+		{"discarded", "rule main = -" + choice16 + " $$\n", gen.GenOptions{}, true},
+		{"lookahead", "rule main = !" + choice16 + " [a-z]* $$\n", gen.GenOptions{}, true},
+		{"text is the value", "rule main = " + choice16 + " $$\n", gen.GenOptions{}, false},
+		{"captured", "rule main = x:" + choice16 + " $$ => $x\n", gen.GenOptions{}, false},
+		{"too few leaves", "rule main = -" + choice15 + " $$\n", gen.GenOptions{}, false},
+		{"no choice", "rule main = -(" + seq16 + ") $$\n", gen.GenOptions{}, false},
+		{"observability", "rule main = -" + choice16 + " $$\n", gen.GenOptions{Observability: true}, false},
+		{"work controls", "rule main = -" + choice16 + " $$\n", gen.GenOptions{WorkControls: true}, false},
+		{"document", "rule main = -" + choice16 + " $$\n", gen.GenOptions{Document: true}, false},
+		{"disabled", "rule main = -" + choice16 + " $$\n", gen.GenOptions{DisableTerminalPrograms: true}, false},
 		// The typed body of a left-recursive rule is a frame body, which keeps straight-line code.
-		{"left recursion", "rule main = e $$\nrule e = e -" + choice16 + " [0-9] / [0-9]\n", GenOptions{}, false},
+		{"left recursion", "rule main = e $$\nrule e = e -" + choice16 + " [0-9] / [0-9]\n", gen.GenOptions{}, false},
 		// Streaming parses run the Node bodies; only the typed bodies of ParseAST hold programs.
-		{"stream", "rule main = (-" + choice16 + " w:[0-9]+ \";\")* #stream $$\n", GenOptions{Stream: true}, true},
+		{"stream", "rule main = (-" + choice16 + " w:[0-9]+ \";\")* #stream $$\n", gen.GenOptions{Stream: true}, true},
 	} {
 		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatal(err)
 		}
 		opts := c.opts
-		opts.Package, opts.Module, opts.Start, opts.Types, opts.TypedOnly, opts.Runtime = "terminal", "example.com/generated", "main", true, true, RuntimeImport
+		opts.Package, opts.Module, opts.Start, opts.Types, opts.TypedOnly, opts.Runtime = "terminal", "example.com/generated", "main", true, true, gen.RuntimeImport
 		if opts.Document || opts.Stream {
 			opts.TypedOnly = false
 		}
@@ -198,8 +200,8 @@ func TestDepthChecks(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, opts := range []GenOptions{{TypedOnly: true}, {WorkControls: true}} {
-			opts.Package, opts.Module, opts.Start, opts.Types, opts.Runtime = "terminal", "example.com/generated", "main", true, RuntimeImport
+		for _, opts := range []gen.GenOptions{{TypedOnly: true}, {WorkControls: true}} {
+			opts.Package, opts.Module, opts.Start, opts.Types, opts.Runtime = "terminal", "example.com/generated", "main", true, gen.RuntimeImport
 			files, err := Generate(g, opts)
 			if err != nil {
 				t.Fatal(err)

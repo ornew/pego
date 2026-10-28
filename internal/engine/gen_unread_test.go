@@ -11,6 +11,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // typeCheck fails the test if src does not compile (it reports unused variables).
@@ -38,7 +40,7 @@ rule leaf Leaf = d:[0-9]+ => Leaf{N: len($d)}
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := Generate(g, GenOptions{Package: "p", Start: "main", Runtime: RuntimeImport, Types: true, Module: "example.com/p"})
+	files, err := Generate(g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Types: true, Module: "example.com/p"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +74,7 @@ rule leaf Leaf = d:[0-9]+ => Leaf{N: len($d)}
 		t.Errorf("fields out of order do not keep the order written:\n%s", src)
 	}
 	// Negative control: with work controls the steps are charged.
-	files, err = Generate(g, GenOptions{Package: "p", Start: "main", Runtime: RuntimeImport, Types: true, Module: "example.com/p", WorkControls: true})
+	files, err = Generate(g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Types: true, Module: "example.com/p", WorkControls: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +103,7 @@ func testGeneratedTypedConstructorEvaluationOrder(t *testing.T) {
 rule main Result = x:"a"? y:"b"? => Result{A: list(1, 2)[len($x) + 3], C: list(1)[len($y) + 7]}
 `, []string{"", "a", "b", "ab"}},
 	}
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, GenOptions{convertTypes: true}, 1)
+	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{ConvertTypes: true}, 1)
 	// Negative control: the two orders fail differently, so a parser that swapped them would
 	// differ from the engine.
 	first := compile(t, rule(a, b))
@@ -136,7 +138,7 @@ func testGeneratedTermStatementsEvaluationOrder(t *testing.T) {
 		{"typed/statements_after_binary_operand", sum(a, b), []string{"", "a", "b", "ab"}},
 		{"typed/statements_in_first_binary_operand", sum(b, a), []string{"", "a", "b", "ab"}},
 	}
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, GenOptions{convertTypes: true}, 1)
+	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{ConvertTypes: true}, 1)
 	// Negative control: the two orders fail differently.
 	first := compile(t, rule(a, b))
 	second := compile(t, rule(b, a))

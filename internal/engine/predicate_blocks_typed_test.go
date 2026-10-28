@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // These declared typed-result fixtures force typed runtime execution; ordinary
@@ -25,5 +27,5 @@ var n int
 rule main Row = {n := 0} w:word ({n := 1; false} / {n := 2; n == 2}) $$ => Row{Word: $w, Code: n}
 rule word Word = t:("é") #atomic => Word{Text: text($t)}`, []string{"é", "", "a", "éé"}},
 	}
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, GenOptions{convertTypes: true}, len(cases))
+	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{ConvertTypes: true}, len(cases))
 }

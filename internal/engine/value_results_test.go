@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // valueResultCases have rules and list elements whose values are ints, strings and bools.
@@ -77,8 +79,8 @@ func TestValueResultsGeneratedGoParity(t *testing.T) { eachMode(t, testValueResu
 
 func testValueResultsGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, valueResultCases(), GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, valueResultCases(), GenOptions{convertTypes: true})
+	testGeneratedParsersCorpus(t, goBin, valueResultCases(), gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, valueResultCases(), gen.GenOptions{ConvertTypes: true})
 }
 
 func TestValueResultsGeneratedTypeScriptParity(t *testing.T) {
@@ -86,5 +88,5 @@ func TestValueResultsGeneratedTypeScriptParity(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	testGeneratedTSParsersCorpus(t, node, valueResultCases(), GenOptions{})
+	testGeneratedTSParsersCorpus(t, node, valueResultCases(), gen.GenOptions{})
 }

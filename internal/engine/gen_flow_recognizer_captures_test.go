@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 )
 
 // The rules of the recognizer table (and the lean rules of the Node table) that have captures print from Flow IR,
@@ -58,7 +59,7 @@ func TestFlowRecognizerPrintsCapturesFromFlow(t *testing.T) {
 				if err != nil {
 					continue
 				}
-				if _, err := Generate(g, GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
+				if _, err := Generate(g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
 					t.Fatalf("%s: %v", c.name, err)
 				}
 			}

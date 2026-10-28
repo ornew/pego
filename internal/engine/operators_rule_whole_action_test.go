@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestOperatorsRuleWholeActionRejection(t *testing.T) {
@@ -36,13 +37,16 @@ func testOperatorsRuleWholeActionRejection(t *testing.T) {
 						"compile":            func() error { _, err := Compile(input.g, Options{}); return err },
 						"recognizer compile": func() error { _, err := Compile(input.g, Options{recognize: true}); return err },
 						"saved AST rebuild":  func() error { _, err := build(input.g, Options{}, []ruleFlags{{}}); return err },
-						"Go generator":       func() error { _, err := generateCode(input.g, GenOptions{Start: "main", Package: "p"}); return err },
+						"Go generator":       func() error { _, err := generateCode(input.g, gen.GenOptions{Start: "main", Package: "p"}); return err },
 						"typed Go generator": func() error {
-							_, err := generateCode(input.g, GenOptions{Start: "main", Package: "p", Types: true})
+							_, err := generateCode(input.g, gen.GenOptions{Start: "main", Package: "p", Types: true})
 							return err
 						},
-						"TS generator":       func() error { _, err := generateTSBundle(input.g, GenOptions{Start: "main"}); return err },
-						"typed TS generator": func() error { _, err := generateTSBundle(input.g, GenOptions{Start: "main", Types: true}); return err },
+						"TS generator": func() error { _, err := generateTSBundle(input.g, gen.GenOptions{Start: "main"}); return err },
+						"typed TS generator": func() error {
+							_, err := generateTSBundle(input.g, gen.GenOptions{Start: "main", Types: true})
+							return err
+						},
 					} {
 						t.Run(name, func(t *testing.T) {
 							err := run()
@@ -120,13 +124,13 @@ func testOperatorsRuleExplicitDefaultAction(t *testing.T) {
 			}
 		}
 		for name, run := range map[string]func() error{
-			"Go generator": func() error { _, err := generateCode(g, GenOptions{Start: "main", Package: "p"}); return err },
+			"Go generator": func() error { _, err := generateCode(g, gen.GenOptions{Start: "main", Package: "p"}); return err },
 			"typed Go generator": func() error {
-				_, err := generateCode(g, GenOptions{Start: "main", Package: "p", Types: true})
+				_, err := generateCode(g, gen.GenOptions{Start: "main", Package: "p", Types: true})
 				return err
 			},
-			"TS generator":       func() error { _, err := generateTSBundle(g, GenOptions{Start: "main"}); return err },
-			"typed TS generator": func() error { _, err := generateTSBundle(g, GenOptions{Start: "main", Types: true}); return err },
+			"TS generator":       func() error { _, err := generateTSBundle(g, gen.GenOptions{Start: "main"}); return err },
+			"typed TS generator": func() error { _, err := generateTSBundle(g, gen.GenOptions{Start: "main", Types: true}); return err },
 		} {
 			if err := run(); err != nil {
 				t.Fatalf("%s rejected explicit default: %v", name, err)

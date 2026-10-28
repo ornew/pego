@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 var nodeDirectCases = []genCase{
@@ -43,7 +45,7 @@ rule main = n:[0-9] #atomic {size := len($n)} {size == 1} "é" $$ => $n`,
 		if err != nil {
 			t.Fatal(err)
 		}
-		code, err := generateCode(g, GenOptions{Package: "node", Start: "main"})
+		code, err := generateCode(g, gen.GenOptions{Package: "node", Start: "main"})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -66,7 +68,7 @@ func testGeneratedNodeDirectRetention(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, GenOptions{Package: "node", Start: "main"})
+	code, err := generateCode(g, gen.GenOptions{Package: "node", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +125,7 @@ func testGeneratedNodeDirectRoutes(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			code, err := generateCode(g, GenOptions{Package: "node", Start: "main", Recognize: true})
+			code, err := generateCode(g, gen.GenOptions{Package: "node", Start: "main", Recognize: true})
 			if err != nil {
 				t.Fatal(err)
 			}

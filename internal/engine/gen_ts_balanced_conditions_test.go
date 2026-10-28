@@ -3,6 +3,8 @@ package engine
 import (
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedTSWideCharacterClasses(t *testing.T) {
@@ -35,5 +37,5 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 }
 `
 
-	runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", Recognize: true}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", Recognize: true}, "")
 }

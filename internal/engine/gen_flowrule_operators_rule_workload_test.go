@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // PEGO_TYPED_OPERATORS_RULE_DIR preserves latest-generator controls for paired timing.
@@ -26,7 +28,7 @@ func testGeneratedTypedOperatorsRuleWorkload(t *testing.T) {
 	}
 	fixture := strings.ReplaceAll(typedLRWorkloadFixture, "TestLRWorkload", "TestOperatorsRuleWorkload")
 	fixture = strings.ReplaceAll(fixture, "BenchmarkTypedLR", "BenchmarkTypedOperatorsRule")
-	testGeneratedTypedBodyWorkload(t, string(src), fixture, dir, "(typed OperatorsRule body inlined)", GenOptions{})
+	testGeneratedTypedBodyWorkload(t, string(src), fixture, dir, "(typed OperatorsRule body inlined)", gen.GenOptions{})
 }
 
 func TestGeneratedTypedOperatorsRuleActionWorkload(t *testing.T) {
@@ -55,7 +57,7 @@ rule expr Expr = #operators {
     }
 }
 rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}
-`, typedOperatorsRuleActionWorkloadFixture, dir, "(typed OperatorsRule body inlined)", GenOptions{})
+`, typedOperatorsRuleActionWorkloadFixture, dir, "(typed OperatorsRule body inlined)", gen.GenOptions{})
 }
 
 const typedOperatorsRuleActionWorkloadFixture = `package lrfixture

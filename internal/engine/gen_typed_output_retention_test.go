@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 var typedAllocatorControls = []struct {
@@ -61,8 +63,8 @@ rule small Token = t:("b") #atomic => Token{Text: text($t)}
 				name += "-conversion"
 			}
 			t.Run(name, func(t *testing.T) {
-				code, err := generateCode(g, GenOptions{Package: "typedoutput", Start: "main", Types: true,
-					convertTypes: conversion, disableTypedObjectSlabs: variant.objects, disableTypedListSlabs: variant.lists, disableTypedOutputBootstrap: variant.legacy})
+				code, err := generateCode(g, gen.GenOptions{Package: "typedoutput", Start: "main", Types: true,
+					ConvertTypes: conversion, DisableTypedObjectSlabs: variant.objects, DisableTypedListSlabs: variant.lists, DisableTypedOutputBootstrap: variant.legacy})
 				if err != nil {
 					t.Fatal(err)
 				}

@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"sort"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // The rules of the Node table are printed from Flow IR (the lean value-free rules by the same route as
@@ -36,7 +38,7 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		if _, err := generateCode(g, GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
+		if _, err := generateCode(g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 	}
@@ -53,7 +55,7 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 		t.Fatal("no rule of the Node table takes a direct route: the parity test exercises nothing")
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	t.Run("flow node rules", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{}) })
+	t.Run("flow node rules", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{}) })
 }
 
 // operatorGrammars are the checked-in grammars with an Operators Rule.
@@ -85,7 +87,7 @@ func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				o := GenOptions{Package: "x", Module: "example.com/x", Runtime: RuntimeImport, Recognize: true, WorkControls: form.controls, Observability: form.observe, Document: form.document}
+				o := gen.GenOptions{Package: "x", Module: "example.com/x", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: form.controls, Observability: form.observe, Document: form.document}
 				taken, framed, operators := 0, 0, 0
 				leanRouteHook = func(table string, r *rule) {
 					if table == "rules" {
@@ -137,7 +139,7 @@ rule item = [a-z] #atomic`,
 			t.Fatalf("%s: %v", name, err)
 		}
 		for _, stream := range []bool{false, true} {
-			opts := GenOptions{Start: "main", Package: "gen", Stream: stream}
+			opts := gen.GenOptions{Start: "main", Package: "gen", Stream: stream}
 			if _, err := generateCode(g, opts); err != nil {
 				t.Errorf("%s (stream %v): %v", name, stream, err)
 			}
@@ -178,5 +180,5 @@ func testFlowNodeRecognizersOnGrammars(t *testing.T) {
 		cases = append(cases, gc)
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
+	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
 }

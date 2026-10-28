@@ -3,6 +3,8 @@ package engine
 import (
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedTSWorkControlFoundation(t *testing.T) {
@@ -23,7 +25,7 @@ type ParseInterruptionError = { Text string }
 type WorkControl = { Text string }
 
 type ResolvedParseOptions = { Text string }`
-	runTypedTSFixture(t, src, tsWorkControlFoundationConsumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+	runTypedTSFixture(t, src, tsWorkControlFoundationConsumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 }
 
 const tsWorkControlFoundationConsumer = `import * as p from "./parser.ts";
@@ -115,7 +117,7 @@ rule main Word = t:("a") #atomic => Word{Text: text($t)}`
 			if lib == "es2022,dom" {
 				consumer += tsWorkControlDOMSignalConsumer
 			}
-			runTypedTSFixtureWithLib(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true}, "", lib)
+			runTypedTSFixtureWithLib(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true}, "", lib)
 		})
 	}
 }
@@ -154,7 +156,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  }
 }
 `
-	runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true}, "")
 }
 
 func TestGeneratedTSWorkControlMatcherBudgets(t *testing.T) {
@@ -205,7 +207,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  }
 }
 `
-	runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 }
 
 func TestGeneratedTSWorkControlWideClassSteps(t *testing.T) {
@@ -253,7 +255,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  check(result.node===null&&result.error instanceof p.ParseInterruptionError&&result.error.kind==="canceled"&&result.error.cause===cause,"cancellation is polled while a wide class is tested");
 }
 `
-	runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Recognize: true}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Recognize: true}, "")
 }
 
 func TestGeneratedTSWorkControlMemoKeys(t *testing.T) {
@@ -276,7 +278,7 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ["a","b","aa","bb",n
  check(p.recognizeWithOptions(input,{unit,signal:{aborted:false}})?.message===p.recognize(input,unit)?.message,"recognizer memo rollback parity");
 }
 `
-		runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+		runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 	})
 	t.Run("long-string", func(t *testing.T) {
 		key := strings.Repeat("a", 1600)
@@ -303,6 +305,6 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ["z",new Uint8Array(
  check(p.parse(input,unit).error===null,"fresh retry after memo interruption");
 }
 `
-		runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+		runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 	})
 }

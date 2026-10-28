@@ -13,6 +13,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/gen"
 )
 
 // fieldCheckValues are the dynamically typed values that fieldCheckGrammar passes to a struct
@@ -285,7 +286,7 @@ rule val _ = "v"
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, GenOptions{Package: "p", Start: "main", Types: true, Recognize: true})
+	code, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main", Types: true, Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -353,10 +354,10 @@ func testGeneratedConstructedFieldChecks(t *testing.T) {
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	cases := fieldCheckCases()
-	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true})
+	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true})
 	if node, err := exec.LookPath("node"); err == nil {
-		testGeneratedTSParsersCorpus(t, node, cases, GenOptions{})
+		testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{})
 	} else {
 		t.Error("Node is required for field-check parity")
 	}

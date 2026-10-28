@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // Export isolated typed tracing controls, keeping generation, compilation and
@@ -54,7 +56,7 @@ func TestExportGeneratedTypedTraceBenchmarks(t *testing.T) {
 				if enabled {
 					pkg = "observed"
 				}
-				code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, Observability: enabled, convertTypes: convert})
+				code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, Observability: enabled, ConvertTypes: convert})
 				if err != nil {
 					t.Fatal(err)
 				}

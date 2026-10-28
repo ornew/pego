@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedTypedDocumentPublicationClone(t *testing.T) {
@@ -28,8 +30,8 @@ rule token Token = t:("x") #atomic => Token{Text: text($t)}`)
 	// The types are named like the names of the parser package (Document, ParseStats, Span) and live
 	// in their own package, so that they compile next to them.
 	dir := t.TempDir()
-	generatePackage(t, dir, "doc", g, GenOptions{Start: "main", Types: true, Document: true})
-	ordinary := generatePackage(t, dir, "ordinary", g, GenOptions{Start: "main", Types: true})
+	generatePackage(t, dir, "doc", g, gen.GenOptions{Start: "main", Types: true, Document: true})
+	ordinary := generatePackage(t, dir, "ordinary", g, gen.GenOptions{Start: "main", Types: true})
 	if strings.Contains(ordinary, "type typedDocumentClone") {
 		t.Fatalf("default generation includes Document cloning")
 	}

@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/syntax"
 	"github.com/ornew/pego/internal/value"
 )
@@ -129,12 +130,12 @@ rule big = {big > 9007199254740992} "!"+ #atomic`, []string{"", "a", "ab,c😀",
 			}
 		}
 	}
-	t.Run("values", func(t *testing.T) { testGeneratedTSParsersCorpus(t, node, cases, GenOptions{}) })
-	t.Run("source info", func(t *testing.T) { testGeneratedTSParsersCorpus(t, node, cases, GenOptions{SourceInfo: true}) })
-	t.Run("work controls", func(t *testing.T) { testGeneratedTSParsersCorpus(t, node, cases, GenOptions{WorkControls: true}) })
+	t.Run("values", func(t *testing.T) { testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{}) })
+	t.Run("source info", func(t *testing.T) { testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{SourceInfo: true}) })
+	t.Run("work controls", func(t *testing.T) { testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{WorkControls: true}) })
 }
 
-func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, opts GenOptions) {
+func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, opts gen.GenOptions) {
 	t.Helper()
 	dir := t.TempDir()
 	write := func(name, content string) {
@@ -274,17 +275,17 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, op
 
 func TestGenerateTSErrors(t *testing.T) {
 	g, _ := syntax.Parse("@start\nrule main = \"a\" b\nrule b = \"b\"")
-	if _, err := generateTSBundle(g, GenOptions{Start: "nope"}); err == nil || err.Error() != "rule nope is not defined" {
+	if _, err := generateTSBundle(g, gen.GenOptions{Start: "nope"}); err == nil || err.Error() != "rule nope is not defined" {
 		t.Errorf("got %v", err)
 	}
-	if _, err := generateTSBundle(g, GenOptions{Start: "b"}); err == nil || err.Error() != "rule b is not a start rule; parsing can begin only at a rule marked @start" {
+	if _, err := generateTSBundle(g, gen.GenOptions{Start: "b"}); err == nil || err.Error() != "rule b is not a start rule; parsing can begin only at a rule marked @start" {
 		t.Errorf("not a start rule: got %v", err)
 	}
-	if code, err := generateTSBundle(g, GenOptions{Start: "main", Types: true}); err != nil || !strings.Contains(string(code), "export function parseAST(") {
+	if code, err := generateTSBundle(g, gen.GenOptions{Start: "main", Types: true}); err != nil || !strings.Contains(string(code), "export function parseAST(") {
 		t.Errorf("Types: %v", err)
 	}
 	bad, _ := parseTest(`rule main = x`)
-	if _, err := generateTSBundle(bad, GenOptions{Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
+	if _, err := generateTSBundle(bad, gen.GenOptions{Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
 		t.Errorf("got %v", err)
 	}
 	// Generating is deterministic.
@@ -293,11 +294,11 @@ func TestGenerateTSErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := generateTSBundle(jg, GenOptions{Start: "main", Recognize: true})
+	a, err := generateTSBundle(jg, gen.GenOptions{Start: "main", Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, _ := generateTSBundle(jg, GenOptions{Start: "main", Recognize: true})
+	b, _ := generateTSBundle(jg, gen.GenOptions{Start: "main", Recognize: true})
 	if string(a) != string(b) {
 		t.Error("generating twice gives different code")
 	}
@@ -359,10 +360,10 @@ func runTSScript(t *testing.T, src, script string) string {
 
 func runTSGrammarScript(t *testing.T, g *grammar.Grammar, script string) string {
 	t.Helper()
-	return runTSGrammarScriptWith(t, g, script, GenOptions{Start: "main"})
+	return runTSGrammarScriptWith(t, g, script, gen.GenOptions{Start: "main"})
 }
 
-func runTSGrammarScriptWith(t *testing.T, g *grammar.Grammar, script string, opts GenOptions) string {
+func runTSGrammarScriptWith(t *testing.T, g *grammar.Grammar, script string, opts gen.GenOptions) string {
 	t.Helper()
 	if testing.Short() {
 		t.Skip("runs generated code")
@@ -476,7 +477,7 @@ func TestGeneratedTSFieldNames(t *testing.T) {
 	// Capture names appear in the source information.
 	out := runTSGrammarScriptWith(t, g, `import { parse } from "./parser.ts";
 console.log(JSON.stringify(parse("abcd").node));
-`, GenOptions{Start: "main", SourceInfo: true})
+`, gen.GenOptions{Start: "main", SourceInfo: true})
 	n, err := compile(t, src).Parse("main", "abcd")
 	if err != nil {
 		t.Fatal(err)

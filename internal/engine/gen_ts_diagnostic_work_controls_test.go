@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 const tsDiagnosticMinimum = `function minimum(fits:(n:number)=>boolean):number {
@@ -27,7 +29,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  const retry=p.parseWithOptions(input,{unit,maxInputWork:0});check(retry.node===null&&retry.error instanceof p.SyntaxError&&retry.error.message===ordinary.error.message,"fresh line diagnostic retry");
 }
 `
-	runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 }
 
 func TestGeneratedTSWorkControlDiagnosticMessage(t *testing.T) {
@@ -44,7 +46,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  const retry=p.parseWithOptions("x",{unit,maxSteps:0});check(retry.error instanceof p.SyntaxError&&retry.error.message===ordinary.error.message,"fresh custom diagnostic retry");
 }
 `
-	runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 }
 
 func TestGeneratedTSWorkControlDiagnosticSort(t *testing.T) {
@@ -69,7 +71,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  check(p.parseWithOptions("",{unit,maxSteps:0}).error instanceof p.SyntaxError,"fresh sorted diagnostic retry");
 }
 `
-	runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 }
 
 func TestGeneratedTSWorkControlRecoveredMessage(t *testing.T) {
@@ -90,7 +92,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  const retry=p.parseWithOptions("!",{unit,maxSteps:0});check(retry.node!==null&&retry.error instanceof p.SyntaxErrors&&retry.error.message===ordinary.error.message&&retained.message===ordinary.error.errors[0]!.message,"retained recovery and fresh retry");
 }
 `
-	runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 }
 
 func TestGeneratedTSWorkControlDiagnosticParity(t *testing.T) {
@@ -110,7 +112,7 @@ for(const unit of [p.CodePoints,p.Bytes])for(const rule of ["main","custom"]) {
  if(rule==="custom")check(stable(active.error.messages)===stable(["one","two"]),"custom messages preserve choice order");
 }
 `
-			runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+			runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 		})
 	}
 }

@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // PEGO_TYPED_FRAMED_CUT_DIR preserves current direct/reference modules for
@@ -20,7 +22,7 @@ func testGeneratedTypedFramedCutWorkloads(t *testing.T) {
 	if dir == "" {
 		dir = t.TempDir()
 	}
-	control := GenOptions{}
+	control := gen.GenOptions{}
 	t.Run("LR", func(t *testing.T) {
 		testGeneratedTypedBodyWorkload(t, `type Doc = { Items []node[string]; N int }
 rule main Doc = e:expr $$ => $e

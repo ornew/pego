@@ -9,6 +9,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 const aliasExportsGrammar = `type Word = { Text string }
@@ -62,13 +64,13 @@ func testGeneratedAliasExports(t *testing.T) {
 	var bodies strings.Builder
 	for i, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("g%d", i)
-		opts := GenOptions{Package: pkg, Module: "aliasexports/" + pkg, Runtime: RuntimeImport, Start: "main", Types: true, convertTypes: convert}
+		opts := gen.GenOptions{Package: pkg, Module: "aliasexports/" + pkg, Runtime: gen.RuntimeImport, Start: "main", Types: true, ConvertTypes: convert}
 		files, err := Generate(g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
 		again, err := Generate(g, opts)
-		if err != nil || !slices.EqualFunc(files, again, func(a, b GeneratedFile) bool { return a.Path == b.Path && bytes.Equal(a.Content, b.Content) }) {
+		if err != nil || !slices.EqualFunc(files, again, func(a, b gen.GeneratedFile) bool { return a.Path == b.Path && bytes.Equal(a.Content, b.Content) }) {
 			t.Fatalf("generation is not deterministic: %v", err)
 		}
 		for _, f := range files {
@@ -135,7 +137,7 @@ func BenchmarkGenerateAliasExports(b *testing.B) {
 			}
 			b.ReportAllocs()
 			for b.Loop() {
-				if _, err := generateCode(g, GenOptions{Package: "bench", Start: "main", Types: true}); err != nil {
+				if _, err := generateCode(g, gen.GenOptions{Package: "bench", Start: "main", Types: true}); err != nil {
 					b.Fatal(err)
 				}
 			}

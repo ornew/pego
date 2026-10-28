@@ -5,6 +5,8 @@ import (
 	"math"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestRuleTableLimits(t *testing.T) {
@@ -42,7 +44,7 @@ func TestGenerateRejectsRuleTableOverLimit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = Generate(g, GenOptions{Package: "p", Start: "main", Runtime: RuntimeImport})
+	_, err = Generate(g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport})
 	if err == nil || !strings.Contains(err.Error(), "distinct capture or variable lists") {
 		t.Fatalf("Generate = %v, want the rule table limit error", err)
 	}

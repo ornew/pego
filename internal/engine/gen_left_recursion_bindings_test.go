@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -45,7 +46,7 @@ func testGeneratedLeftRecursionGuardIgnoresVariables(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("gentest")), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	opts := GenOptions{Start: "main", Recognize: true, MaxDepth: 400, leftRecursionBindings: true}
+	opts := gen.GenOptions{Start: "main", Recognize: true, MaxDepth: 400, LeftRecursionBindings: true}
 	generatePackage(t, dir, "g", mustParse(lrBindingSource), opts)
 	opts.Types = true
 	if code := generatePackage(t, dir, "tg", mustParse(typedLRBindingSource), opts); !strings.Contains(code, "TParse(trules") {
@@ -161,7 +162,7 @@ func TestGeneratedTSLeftRecursionGuardIgnoresVariables(t *testing.T) {
 			fmt.Fprintf(&want, "%s null\n", n.String())
 		}
 	}
-	out := runTSGrammarScriptWith(t, mustParse(lrBindingSource), script.String(), GenOptions{Start: "main", Recognize: true, MaxDepth: 400, leftRecursionBindings: true})
+	out := runTSGrammarScriptWith(t, mustParse(lrBindingSource), script.String(), gen.GenOptions{Start: "main", Recognize: true, MaxDepth: 400, LeftRecursionBindings: true})
 	if out != want.String() {
 		t.Fatalf("generated\n%s\nengine\n%s", out, want.String())
 	}

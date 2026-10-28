@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // A parser generated without work controls holds no code that charges work or reads a control, does not
@@ -24,7 +26,7 @@ rule num = [0-9]+ ("." [0-9]+)?
 		t.Fatal(err)
 	}
 	gen := func(workControls bool, document ...bool) string {
-		files, err := Generate(g, GenOptions{Package: "wc", Module: "wc", Start: "main", Runtime: RuntimeImport, Types: true, Recognize: true, WorkControls: workControls, Document: len(document) > 0})
+		files, err := Generate(g, gen.GenOptions{Package: "wc", Module: "wc", Start: "main", Runtime: gen.RuntimeImport, Types: true, Recognize: true, WorkControls: workControls, Document: len(document) > 0})
 		if err != nil {
 			t.Fatal(err)
 		}

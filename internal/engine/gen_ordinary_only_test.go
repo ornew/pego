@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // The parsers generated without work controls (the form most parsers have) and with typed-only entry
@@ -178,13 +180,13 @@ const ordinaryOnlyTypedNode = `
 `
 
 // ordinaryOnlyPackage generates the grammar src as the package pkg of the module dir, with opts.
-func ordinaryOnlyPackage(t *testing.T, dir, pkg, src string, opts GenOptions, program string, inputs []string) {
+func ordinaryOnlyPackage(t *testing.T, dir, pkg, src string, opts gen.GenOptions, program string, inputs []string) {
 	t.Helper()
 	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}
-	opts.Runtime = RuntimeImport
+	opts.Runtime = gen.RuntimeImport
 	opts.Package, opts.Module, opts.Start = pkg, "ordtest/"+pkg, "main"
 	files, err := Generate(g, opts)
 	if err != nil {
@@ -255,15 +257,15 @@ func TestGeneratedOrdinaryOnlyMatchesControlled(t *testing.T) {
 	}
 	cases := []struct {
 		name, src, mutated, program string
-		opts                        GenOptions
+		opts                        gen.GenOptions
 		inputs                      []string
 		want                        []string // lines the transcript must contain, so that it is not trivially equal
 	}{
 		{"untyped", ordinaryOnlyUntyped, strings.Replace(ordinaryOnlyUntyped, `"+"`, `"-"`, 1), ordinaryOnlyUntypedProgram,
-			GenOptions{Recognize: true, Document: true, Stream: true}, ordinaryOnlyUntypedInputs,
+			gen.GenOptions{Recognize: true, Document: true, Stream: true}, ordinaryOnlyUntypedInputs,
 			[]string{"parse \"1+2;3;\" ", "syntax error", "stream \"1+2;3;\":", "iterate \"1;\":", "document edited", "depth"}},
 		{"typed", ordinaryOnlyTyped, strings.Replace(ordinaryOnlyTyped, `"+"`, `"-"`, 1), strings.Replace(ordinaryOnlyTypedProgram, "NODE", ordinaryOnlyTypedNode, 1),
-			GenOptions{Types: true, Recognize: true, Document: true}, ordinaryOnlyTypedInputs,
+			gen.GenOptions{Types: true, Recognize: true, Document: true}, ordinaryOnlyTypedInputs,
 			[]string{"ast \"a+a\"", "syntax error", "document edited", "rule sum", "unknown rule"}},
 	}
 	for _, tc := range cases {

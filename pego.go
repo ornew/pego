@@ -10,6 +10,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/syntax"
 	"github.com/ornew/pego/internal/value"
@@ -424,7 +425,7 @@ func (d *Document) Parse(opts ...ParseOption) (*Node, error) {
 func (d *Document) Stats() ParseStats { return d.doc.Stats() }
 
 // GenOption configures code generation.
-type GenOption func(*engine.GenOptions)
+type GenOption func(*gen.GenOptions)
 
 // WithTypes generates declarations for the grammar's types and typed results.
 // Go adds ParseAST for the start rule and ParseRuleAST for named rules.
@@ -432,19 +433,19 @@ type GenOption func(*engine.GenOptions)
 // Node result into plain objects and arrays. Declared aliases preserve the target value type.
 // For Go, the types are declared in the package module/types, so the module path is required.
 func WithTypes() GenOption {
-	return func(o *engine.GenOptions) { o.Types = true }
+	return func(o *gen.GenOptions) { o.Types = true }
 }
 
 // WithGeneratedDefaultValue makes the generated parser produce default values, as WithDefaultValue
 // does for a compiled parser. It cannot be combined with WithTypes.
 func WithGeneratedDefaultValue() GenOption {
-	return func(o *engine.GenOptions) { o.DefaultValue = true }
+	return func(o *gen.GenOptions) { o.DefaultValue = true }
 }
 
 // WithGeneratedSourceInfo makes the generated parser record source information, as WithSourceInfo
 // does for a compiled parser.
 func WithGeneratedSourceInfo() GenOption {
-	return func(o *engine.GenOptions) { o.SourceInfo = true }
+	return func(o *gen.GenOptions) { o.SourceInfo = true }
 }
 
 // WithDocument generates a mutable incremental Document for Go. Combined with
@@ -452,7 +453,7 @@ func WithGeneratedSourceInfo() GenOption {
 // for eligible grammars and Node conversion otherwise. TypeScript generation does
 // not support Documents.
 func WithDocument() GenOption {
-	return func(o *engine.GenOptions) { o.Document = true }
+	return func(o *gen.GenOptions) { o.Document = true }
 }
 
 // WithStream generates ParseStream for Go, which reads the input from an
@@ -462,14 +463,14 @@ func WithDocument() GenOption {
 // and IterateAST, which pass the typed value of each element. TypeScript
 // generation does not support it.
 func WithStream() GenOption {
-	return func(o *engine.GenOptions) { o.Stream = true }
+	return func(o *gen.GenOptions) { o.Stream = true }
 }
 
 // WithGeneratedObservability emits rule tracing and profiling for Go batch
 // parsers and Documents, and for TypeScript batch parsers. Both include typed
 // entry points when WithTypes is enabled. Collection is selected per invocation.
 func WithGeneratedObservability() GenOption {
-	return func(o *engine.GenOptions) { o.Observability = true }
+	return func(o *gen.GenOptions) { o.Observability = true }
 }
 
 // WithWorkControls generates the work-controlled form of the parser, which supports cancellation
@@ -479,65 +480,65 @@ func WithGeneratedObservability() GenOption {
 // returns an error. The controlled form is the only form of the parser: a parse that sets no limit
 // runs it too, and is slower than with a parser generated without work controls.
 func WithWorkControls() GenOption {
-	return func(o *engine.GenOptions) { o.WorkControls = true }
+	return func(o *gen.GenOptions) { o.WorkControls = true }
 }
 
 // WithTypedOnly generates only the typed entry points of a parser: ParseAST and its siblings, and
 // no Parse, ParseRule or Recognize. The generated package is smaller and builds faster. It needs
 // WithTypes and cannot be combined with WithRecognize, WithDocument or WithStream.
 func WithTypedOnly() GenOption {
-	return func(o *engine.GenOptions) { o.TypedOnly = true }
+	return func(o *gen.GenOptions) { o.TypedOnly = true }
 }
 
 // WithRecognize also generates a function Recognize, which checks the input against the start rule
 // without building a tree, like Parse with RecognizeOnly.
 func WithRecognize() GenOption {
-	return func(o *engine.GenOptions) { o.Recognize = true }
+	return func(o *gen.GenOptions) { o.Recognize = true }
 }
 
 // WithGeneratedMaxDepth sets the generated parser's default nested rule-call limit.
 // Zero selects 100,000; negative values fail generation. TypeScript additionally
 // requires an exact JavaScript integer. Individual invocations may override it.
 func WithGeneratedMaxDepth(n int) GenOption {
-	return func(o *engine.GenOptions) { o.MaxDepth = n }
+	return func(o *gen.GenOptions) { o.MaxDepth = n }
 }
 
 // WithoutPackageDoc leaves the package comment out of a generated Go parser, for a package that has
 // its own documentation in another file.
 func WithoutPackageDoc() GenOption {
-	return func(o *engine.GenOptions) { o.OmitPackageDoc = true }
+	return func(o *gen.GenOptions) { o.OmitPackageDoc = true }
 }
 
 // RuntimeMode selects how generated Go code reaches the runtime package.
-type RuntimeMode = engine.RuntimeMode
+type RuntimeMode = gen.RuntimeMode
 
 // The runtime modes of GenerateGo.
 const (
 	// RuntimeEmbed writes a copy of the runtime into the generated package's internal/runtime
 	// directory, so that the generated code depends only on the standard library. It is the default.
-	RuntimeEmbed = engine.RuntimeEmbed
+	RuntimeEmbed = gen.RuntimeEmbed
 	// RuntimeImport imports the runtime, github.com/ornew/pego/runtime, from this module.
-	RuntimeImport = engine.RuntimeImport
+	RuntimeImport = gen.RuntimeImport
 	// RuntimeOnly generates only the embedded copy of the runtime, to refresh a package generated
 	// with RuntimeEmbed without regenerating its parser.
-	RuntimeOnly = engine.RuntimeOnly
+	RuntimeOnly = gen.RuntimeOnly
 )
 
 // WithRuntime selects how generated Go code reaches the runtime (RuntimeEmbed by default).
 func WithRuntime(mode RuntimeMode) GenOption {
-	return func(o *engine.GenOptions) { o.Runtime = mode }
+	return func(o *gen.GenOptions) { o.Runtime = mode }
 }
 
 // WithPackageName sets the package name of generated Go code. It defaults to the last element
 // of the module path, without a major version suffix (example.com/m/v2 gives m). It is also the
 // only name a RuntimeImport parser needs, so the module path may then be empty.
 func WithPackageName(name string) GenOption {
-	return func(o *engine.GenOptions) { o.Package = name }
+	return func(o *gen.GenOptions) { o.Package = name }
 }
 
 // GeneratedFile is a file of generated code. Path is relative to the directory of the generated
 // package and uses slashes.
-type GeneratedFile = engine.GeneratedFile
+type GeneratedFile = gen.GeneratedFile
 
 // GenerateGo generates the files of a Go parser for g in the package with import path module: its
 // Parse(input) parses from the rule start, which must be a start rule (a rule marked @start); an
@@ -548,7 +549,7 @@ type GeneratedFile = engine.GeneratedFile
 // WithRuntime selects another mode. WithDocument adds incremental Node parsing; combined with WithTypes it also generates
 // typed Document.ParseAST. WithStream adds Node stream parsing.
 func GenerateGo(g *grammar.Grammar, module, start string, opts ...GenOption) ([]GeneratedFile, error) {
-	o := engine.GenOptions{Module: module, Start: start}
+	o := gen.GenOptions{Module: module, Start: start}
 	for _, opt := range opts {
 		opt(&o)
 	}
@@ -558,7 +559,7 @@ func GenerateGo(g *grammar.Grammar, module, start string, opts ...GenOption) ([]
 // GenerateGoRuntime generates only the embedded copy of the runtime for the package with import
 // path module (RuntimeOnly).
 func GenerateGoRuntime(module string) ([]GeneratedFile, error) {
-	return engine.Generate(nil, engine.GenOptions{Module: module, Runtime: RuntimeOnly})
+	return engine.Generate(nil, gen.GenOptions{Module: module, Runtime: RuntimeOnly})
 }
 
 // WithRuntimeModule sets the module specifier from which a TypeScript parser generated with
@@ -566,7 +567,7 @@ func GenerateGoRuntime(module string) ([]GeneratedFile, error) {
 // runtime module is the runtime.ts of GenerateTypeScriptRuntime (or of any parser generated with
 // RuntimeEmbed). It is an error with another mode.
 func WithRuntimeModule(specifier string) GenOption {
-	return func(o *engine.GenOptions) { o.RuntimeModule = specifier }
+	return func(o *gen.GenOptions) { o.RuntimeModule = specifier }
 }
 
 // GenerateTypeScript generates the files of a TypeScript parser for g: its parse(input) parses from
@@ -582,7 +583,7 @@ func WithRuntimeModule(specifier string) GenOption {
 // RuntimeOnly generates only runtime.ts, for which g may be nil. It does not support stream or
 // incremental parsing.
 func GenerateTypeScript(g *grammar.Grammar, start string, opts ...GenOption) ([]GeneratedFile, error) {
-	o := engine.GenOptions{Start: start}
+	o := gen.GenOptions{Start: start}
 	for _, opt := range opts {
 		opt(&o)
 	}
@@ -592,7 +593,7 @@ func GenerateTypeScript(g *grammar.Grammar, start string, opts ...GenOption) ([]
 // GenerateTypeScriptRuntime generates only the runtime of TypeScript parsers, runtime.ts
 // (RuntimeOnly).
 func GenerateTypeScriptRuntime() ([]GeneratedFile, error) {
-	return engine.GenerateTS(nil, engine.GenOptions{Runtime: RuntimeOnly})
+	return engine.GenerateTS(nil, gen.GenOptions{Runtime: RuntimeOnly})
 }
 
 // CompiledMode is the mode of a compiled grammar file, chosen when it is saved. A file holds the
@@ -676,4 +677,4 @@ func (p *Parser) DefaultStart() string { return p.prog.DefaultStart() }
 func (p *Parser) Grammar() *grammar.Grammar { return p.prog.SourceGrammar() }
 
 // ParseRuntimeMode returns the runtime mode named s: "embed", "import" or "only".
-func ParseRuntimeMode(s string) (RuntimeMode, error) { return engine.ParseRuntimeMode(s) }
+func ParseRuntimeMode(s string) (RuntimeMode, error) { return gen.ParseRuntimeMode(s) }

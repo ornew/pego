@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // The published typed values of a Document are shared with later results, so every test here
@@ -84,7 +86,7 @@ func sharingPackages(t *testing.T, tests map[string]string) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		generatePackageIn(t, dir, "sharedtypeddocument", pkg.name, g, GenOptions{Start: "main", Types: true, Document: true, disableTypedOutputBootstrap: pkg.legacy})
+		generatePackageIn(t, dir, "sharedtypeddocument", pkg.name, g, gen.GenOptions{Start: "main", Types: true, Document: true, DisableTypedOutputBootstrap: pkg.legacy})
 	}
 	for name, text := range tests {
 		write(name, text)

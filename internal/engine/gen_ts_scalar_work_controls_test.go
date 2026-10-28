@@ -3,6 +3,8 @@ package engine
 import (
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedTSWorkControlScalarStrings(t *testing.T) {
@@ -39,7 +41,7 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ["z",new Uint8Array(
 			if tt.name == "concatenation" {
 				src = strings.Replace(src, "{$x.Ok}", "{$x.S != \"\"}", 1)
 			}
-			runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+			runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 		})
 	}
 	t.Run("source-text", func(t *testing.T) {
@@ -70,7 +72,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  check(p.parseWithOptions(input,{unit,maxSteps:0}).error===null,"source materialization retry");
 }
 `
-		runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+		runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 	})
 	t.Run("unicode-and-byte-order", func(t *testing.T) {
 		src := `type Box = {
@@ -95,7 +97,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  check(p.recognizeWithOptions(input,{unit,signal:{aborted:false}})===null,"recognition uses required scalar actions");
 }
 `
-		runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+		runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 	})
 }
 
@@ -108,5 +110,5 @@ rule main Generator = t:("z") #atomic => Generator{Text: text($t)}`
 ` + tsTypedAssert + `
  const value: Generator|null=parseAST("z").value;
  check(value?.type==="Generator"&&stable(value).includes("Generator"),"existing Generator export remains usable");`
-	runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true}, "")
 }

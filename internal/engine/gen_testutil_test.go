@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 )
 
 // The engine tests build the programs they generate in temporary directories. The generated code
@@ -190,7 +191,7 @@ func testGoModAt(module, dir string) string {
 
 // writeGenerated writes the files of a generated package into dir. A go.mod for the module is
 // written when dir has none.
-func writeGenerated(t testing.TB, dir, module string, files []GeneratedFile) {
+func writeGenerated(t testing.TB, dir, module string, files []gen.GeneratedFile) {
 	t.Helper()
 	for _, f := range files {
 		path := filepath.Join(dir, filepath.FromSlash(f.Path))
@@ -213,18 +214,18 @@ func writeGenerated(t testing.TB, dir, module string, files []GeneratedFile) {
 // gentest/<pkg>, writes its files (parser.go, api.go and types/types.go) below dir/<pkg> in the
 // module of dir, and returns its parser.go. Unlike generateCode, it keeps the types package
 // apart, so that grammar types named like the names of the parser package compile.
-func generatePackage(t testing.TB, dir, pkg string, g *grammar.Grammar, opts GenOptions) string {
+func generatePackage(t testing.TB, dir, pkg string, g *grammar.Grammar, opts gen.GenOptions) string {
 	t.Helper()
 	return generatePackageIn(t, dir, "gentest", pkg, g, opts)
 }
 
 // generatePackageIn is generatePackage for a test module whose path is root.
-func generatePackageIn(t testing.TB, dir, root, pkg string, g *grammar.Grammar, opts GenOptions) string {
+func generatePackageIn(t testing.TB, dir, root, pkg string, g *grammar.Grammar, opts gen.GenOptions) string {
 	t.Helper()
-	opts.Runtime = RuntimeImport
+	opts.Runtime = gen.RuntimeImport
 	opts.WorkControls = fixtureWorkControls()
 	opts.Package, opts.Module = pkg, root+"/"+pkg
-	opts.keepComments = true
+	opts.KeepComments = true
 	files, err := Generate(g, opts)
 	if err != nil {
 		t.Fatal(err)
@@ -247,9 +248,9 @@ func generatePackageIn(t testing.TB, dir, root, pkg string, g *grammar.Grammar, 
 
 // generateCode generates a parser that imports the runtime from this module and returns its
 // parser.go and api.go as one source file, which tests write as parser.go.
-func generateCode(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
-	opts.Runtime = RuntimeImport
-	opts.keepComments = true
+func generateCode(g *grammar.Grammar, opts gen.GenOptions) ([]byte, error) {
+	opts.Runtime = gen.RuntimeImport
+	opts.KeepComments = true
 	opts.WorkControls = fixtureWorkControls()
 	if opts.Module == "" && opts.Types {
 		opts.Module = "example.com/generated"
@@ -268,8 +269,8 @@ func generateCode(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 // mergeGenerated joins the Go files of a generated package into one file. The types package of
 // a typed parser (types/types.go) joins the file too, with the references to it unqualified, so
 // that the fixtures of the tests name the types without importing the package.
-func mergeGenerated(files []GeneratedFile) []byte {
-	var parts []GeneratedFile
+func mergeGenerated(files []gen.GeneratedFile) []byte {
+	var parts []gen.GeneratedFile
 	for _, f := range files {
 		switch {
 		case f.Path == "types/types.go":

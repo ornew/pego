@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedGoMemoEnvironmentWork(t *testing.T) {
@@ -38,7 +40,7 @@ rule word Word = t:(x:[a-z]+ #atomic {text($x) == v}) => Word{Text: text($t)}`
 		t.Fatal(err)
 	}
 	pkg := "memo"
-	code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true})
+	code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}

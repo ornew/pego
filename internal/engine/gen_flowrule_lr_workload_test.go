@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // PEGO_TYPED_LR_DIR preserves both same-generator routes for prebuilt paired
@@ -49,10 +51,10 @@ rule expr Doc = previous:expr ";" items:(x:[a-z] #atomic -",") #repeat(3) / item
 
 func testTypedLRWorkload(t *testing.T, src, fixture, dir string) {
 	t.Helper()
-	testGeneratedTypedBodyWorkload(t, src, fixture, dir, "(typed LR body inlined)", GenOptions{})
+	testGeneratedTypedBodyWorkload(t, src, fixture, dir, "(typed LR body inlined)", gen.GenOptions{})
 }
 
-func testGeneratedTypedBodyWorkload(t *testing.T, src, fixture, dir, marker string, reference GenOptions, unaffectedMarkers ...int) {
+func testGeneratedTypedBodyWorkload(t *testing.T, src, fixture, dir, marker string, reference gen.GenOptions, unaffectedMarkers ...int) {
 	t.Helper()
 	g, err := parseTest(src)
 	if err != nil {
@@ -60,7 +62,7 @@ func testGeneratedTypedBodyWorkload(t *testing.T, src, fixture, dir, marker stri
 	}
 	var want []byte
 	for _, variant := range []string{"direct", "general"} {
-		opts := GenOptions{}
+		opts := gen.GenOptions{}
 		if variant == "general" {
 			opts = reference
 		}

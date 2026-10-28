@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // TestGeneratedDocumentBenchmarkFixture exports source for a focused benchmark.
@@ -74,7 +76,7 @@ func testGeneratedDocumentBenchmarkFixtureGrammarsTypeCheck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := generateCode(node, GenOptions{Package: "generateddocument", Start: "main", Document: true}); err != nil {
+	if _, err := generateCode(node, gen.GenOptions{Package: "generateddocument", Start: "main", Document: true}); err != nil {
 		t.Fatal(err)
 	}
 	typed, err := parseTest(documentBenchTypedGrammar)
@@ -82,7 +84,7 @@ func testGeneratedDocumentBenchmarkFixtureGrammarsTypeCheck(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, convert := range []bool{false, true} {
-		if _, err := generateCode(typed, GenOptions{Package: "typeddocument", Start: "main", Types: true, Document: true, convertTypes: convert}); err != nil {
+		if _, err := generateCode(typed, gen.GenOptions{Package: "typeddocument", Start: "main", Types: true, Document: true, ConvertTypes: convert}); err != nil {
 			t.Fatalf("convertTypes=%v: %v", convert, err)
 		}
 	}
@@ -103,7 +105,7 @@ func writeGeneratedDocumentBenchmarkFixture(t testing.TB, dir string) {
 		{"generatedbatch", false},
 		{"generateddocument", true},
 	} {
-		code, err := generateCode(g, GenOptions{Package: variant.name, Start: "main", Document: variant.document, Observability: observability})
+		code, err := generateCode(g, gen.GenOptions{Package: variant.name, Start: "main", Document: variant.document, Observability: observability})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -127,7 +129,7 @@ func writeGeneratedDocumentBenchmarkFixture(t testing.TB, dir string) {
 		{"typeddocument", true, false},
 		{"typeddocumentconv", true, true},
 	} {
-		code, err := generateCode(typedGrammar, GenOptions{Package: variant.name, Start: "main", Types: true, Document: variant.document, Observability: observability, convertTypes: variant.convertNodes})
+		code, err := generateCode(typedGrammar, gen.GenOptions{Package: variant.name, Start: "main", Types: true, Document: variant.document, Observability: observability, ConvertTypes: variant.convertNodes})
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -8,13 +8,15 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
-func runTypedTSFixture(t *testing.T, src, consumer string, opts GenOptions, keep string) {
+func runTypedTSFixture(t *testing.T, src, consumer string, opts gen.GenOptions, keep string) {
 	runTypedTSFixtureWithLib(t, src, consumer, opts, keep, "es2020")
 }
 
-func runTypedTSFixtureWithLib(t *testing.T, src, consumer string, opts GenOptions, keep, lib string) {
+func runTypedTSFixtureWithLib(t *testing.T, src, consumer string, opts gen.GenOptions, keep, lib string) {
 	t.Helper()
 	if testing.Short() {
 		t.Skip("runs generated TypeScript consumers")
@@ -40,7 +42,7 @@ func runTypedTSFixtureWithLib(t *testing.T, src, consumer string, opts GenOption
 		t.Fatal(err)
 	}
 	again, err := GenerateTS(g, opts)
-	if err != nil || !slices.EqualFunc(files, again, func(a, b GeneratedFile) bool { return a.Path == b.Path && string(a.Content) == string(b.Content) }) {
+	if err != nil || !slices.EqualFunc(files, again, func(a, b gen.GeneratedFile) bool { return a.Path == b.Path && string(a.Content) == string(b.Content) }) {
 		t.Fatal("typed generation is not deterministic", err)
 	}
 	dir := t.TempDir()
@@ -133,7 +135,7 @@ check(parseAST("1").value === null && parseAST("1").error !== null, "ordinary fa
 // @ts-expect-error Converted grammar fields are readonly.
 v.I = 1;
 `
-	runTypedTSFixture(t, src, consumer, GenOptions{}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{}, "")
 }
 
 func TestGeneratedTSTypedNameCollisions(t *testing.T) {
@@ -153,7 +155,7 @@ func TestGeneratedTSTypedNameCollisions(t *testing.T) {
 	}
 	src.WriteString("rule main = n0\n")
 	consumer := "import {parseAST} from \"./parser.ts\";\n" + imports.String() + tsTypedAssert + vals.String() + `check(parseAST("x").value?.type === "Actx", "discriminator preserves grammar name"); check(stable(parseAST("x").value).includes("Actx"), "result");`
-	runTypedTSFixture(t, src.String(), consumer, GenOptions{}, "")
+	runTypedTSFixture(t, src.String(), consumer, gen.GenOptions{}, "")
 }
 
 func TestGeneratedTSTypedRecovery(t *testing.T) {
@@ -181,7 +183,7 @@ for (const unit of [CodePoints, Bytes]) {
   const before = stable(v); parseAST("abc;"); check(stable(v) === before, "recovery ownership");
 }
 `
-	runTypedTSFixture(t, src, consumer, GenOptions{}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{}, "")
 }
 
 func TestGeneratedTSTypedUnicodeIntegers(t *testing.T) {
@@ -199,7 +201,7 @@ for (const unit of [Bytes, CodePoints]) for (const input of ["😀é\ud800�",
 check(parseAST(new Uint8Array([0xff]), Bytes).value?.Text === "\udcff", "byte surrogate escape");
 check(parseAST(new Uint8Array([0xff]), CodePoints).value?.Text === "�", "decoded replacement");
 `
-	runTypedTSFixture(t, src, consumer, GenOptions{}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{}, "")
 }
 
 const tsTypedDAGTypes = `type Leaf = { Text string }
@@ -230,7 +232,7 @@ check(stable(parseAST("xx").value).includes("Branch"), "small DAG value");
 			if out := os.Getenv("PEGO_TS_TYPED_DIR"); out != "" {
 				keep = filepath.Join(out, name)
 			}
-			runTypedTSFixture(t, tsTypedDAGTypes+body, consumer, GenOptions{Recognize: true}, keep)
+			runTypedTSFixture(t, tsTypedDAGTypes+body, consumer, gen.GenOptions{Recognize: true}, keep)
 			if keep != "" {
 				inputs := tsStrings([]string{"x", strings.Repeat("x", 8), strings.Repeat("x", 6000)})
 				if err := os.WriteFile(filepath.Join(keep, "inputs.json"), []byte(inputs), 0o644); err != nil {
@@ -252,19 +254,19 @@ rule main *U = "" => nil`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			runTypedTSFixture(t, src, `import {parse, parseAST} from "./parser.ts";
-`+tsTypedAssert+`const r = parseAST(""); check(r.error === null && r.value === null && parse("").error === null, "nil success"); check(stable(r.value) === "null", "nil transport");`, GenOptions{}, "")
+`+tsTypedAssert+`const r = parseAST(""); check(r.error === null && r.value === null && parse("").error === null, "nil success"); check(stable(r.value) === "null", "nil transport");`, gen.GenOptions{}, "")
 		})
 	}
 	runTypedTSFixture(t, `type T = { X node[string] }
 rule main T = x:n #atomic => T{X: $x}
 rule n = "(" n ")" / "x"`, `import {parseAST, parseASTWithOptions} from "./parser.ts";
-`+tsTypedAssert+`check(parseAST("(((x)))").error?.message.includes("nesting too deep"), "generated limit"); check(parseASTWithOptions("(((x)))", {maxDepth:20}).value?.X?.value === "(((x)))", "override"); check(stable(parseASTWithOptions("x", {maxDepth:0}).value).includes("T"), "zero default");`, GenOptions{MaxDepth: 3}, "")
+`+tsTypedAssert+`check(parseAST("(((x)))").error?.message.includes("nesting too deep"), "generated limit"); check(parseASTWithOptions("(((x)))", {maxDepth:20}).value?.X?.value === "(((x)))", "override"); check(stable(parseASTWithOptions("x", {maxDepth:0}).value).includes("T"), "zero default");`, gen.GenOptions{MaxDepth: 3}, "")
 	for _, scalar := range []string{"int", "string", "bool"} {
 		g, err := parseTest("rule main " + scalar + ` = "" => nil`)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := generateTSBundle(g, GenOptions{Start: "main", Types: true}); err == nil {
+		if _, err := generateTSBundle(g, gen.GenOptions{Start: "main", Types: true}); err == nil {
 			t.Errorf("top-level scalar %s unexpectedly accepted", scalar)
 		}
 	}
@@ -300,7 +302,7 @@ rule item Good = x:[a-zé😀]+ #atomic ";" => Good{Token: $x}`, "a;1;", strings
 			if dir := os.Getenv("PEGO_TS_TYPED_DIR"); dir != "" {
 				keep = filepath.Join(dir, c.name)
 			}
-			runTypedTSFixture(t, c.src, consumer, GenOptions{Recognize: true}, keep)
+			runTypedTSFixture(t, c.src, consumer, gen.GenOptions{Recognize: true}, keep)
 			if keep != "" {
 				if err := os.WriteFile(filepath.Join(keep, "inputs.json"), []byte(inputs), 0o644); err != nil {
 					t.Fatal(err)
@@ -355,7 +357,7 @@ import type {TypedValue, TypedParseResult} from "./types.ts";
 			case "nil-rule-recovery":
 				consumer += `const success = parseAST("a"); check(success.value === null && success.error === null, "normal inferred nil success");`
 			}
-			runTypedTSFixture(t, c.src, consumer, GenOptions{}, "")
+			runTypedTSFixture(t, c.src, consumer, gen.GenOptions{}, "")
 		})
 	}
 }
@@ -367,7 +369,7 @@ rule wrapped Text = t:("x�y") #atomic => Text{Text: text($t)}`
 	for _, start := range []string{"main", "wrapped"} {
 		t.Run(start, func(t *testing.T) {
 			consumer := strings.ReplaceAll(tsByteStringSurrogateConsumer, "START_WRAPPED", fmt.Sprint(start == "wrapped"))
-			runTypedTSFixture(t, src, consumer, GenOptions{Start: start, Types: true, Recognize: true}, "")
+			runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: start, Types: true, Recognize: true}, "")
 		})
 	}
 }
@@ -431,7 +433,7 @@ const r: TypedParseResult<TNode<unknown> | null> = parseAST("ab");
 check(r.error === null && r.value !== null && Array.isArray(r.value.value), "tuple node value");
 check(r.value!.start === 0 && r.value!.end === 2 && stable(r.value).length > 0, "span");
 `
-	runTypedTSFixture(t, src, consumer, GenOptions{}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{}, "")
 }
 
 // A join with the error member must not gain an open-node member, whether it is named by an alias
@@ -462,7 +464,7 @@ rule let Let = n:([a-z]+) ";" => Let{N: text($n)}`
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := GenerateTS(g, GenOptions{Types: true, Start: "main"})
+	files, err := GenerateTS(g, gen.GenOptions{Types: true, Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -474,7 +476,7 @@ rule let Let = n:([a-z]+) ";" => Let{N: text($n)}`
 			t.Errorf("parser.ts has an open-node fallback for the join with error")
 		}
 	}
-	goFiles, err := Generate(g, GenOptions{Types: true, Start: "main", Module: "example.com/m", Package: "p"})
+	goFiles, err := Generate(g, gen.GenOptions{Types: true, Start: "main", Module: "example.com/m", Package: "p"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -499,7 +501,7 @@ rule any node[_] = x:[0-9]+ ";"`
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := GenerateTS(g, GenOptions{Types: true, Start: "main"})
+	files, err := GenerateTS(g, gen.GenOptions{Types: true, Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -27,10 +28,10 @@ func TestTypedOnlyUnreachedNodeRulesAreLeftOut(t *testing.T) { eachMode(t, testT
 func testTypedOnlyUnreached(t *testing.T) {
 	src := typedOnlyLonelyGrammar(t)
 	for _, controls := range []bool{false, true} {
-		opts := GenOptions{Types: true, TypedOnly: true, WorkControls: controls}
+		opts := gen.GenOptions{Types: true, TypedOnly: true, WorkControls: controls}
 		pruned := generateReach(t, src, opts)
 		kept := opts
-		kept.keepUnreachable = true
+		kept.KeepUnreachable = true
 		full := generateReach(t, src, kept)
 		if !strings.Contains(string(full), `"zz"`) || strings.Contains(string(pruned), `"zz"`) {
 			t.Errorf("controls=%v: the unreached rule is not left out of the typed-only output", controls)
@@ -63,7 +64,7 @@ func testTypedOnlyUnreachedCalleeFails(t *testing.T) {
 		}
 	}
 	defer func() { reachHook = nil }()
-	_, err = generateCode(g, GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: true})
+	_, err = generateCode(g, gen.GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: true})
 	if err == nil || !strings.Contains(err.Error(), "left out") {
 		t.Errorf("typed-only generation with the Node rules left out: err = %v, want an internal error", err)
 	}
@@ -80,7 +81,7 @@ func testTypedOnlyTypedCalleeFails(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	opts := GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: true}
+	opts := gen.GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: true}
 	if _, err := generateCode(g, opts); err != nil {
 		t.Fatalf("typed-only generation without the hook: %v", err)
 	}

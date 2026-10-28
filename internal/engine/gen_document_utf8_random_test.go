@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // TestGeneratedDocumentInvalidUTF8EditEquivalence is the generated Document
@@ -46,7 +48,7 @@ rule other Char = t:(.) #atomic => Char{Text: text($t)}`,
 			t.Fatal(err)
 		}
 		pkg := fmt.Sprintf("g%d", i)
-		code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
+		code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
 		if err != nil {
 			t.Fatal(err)
 		}

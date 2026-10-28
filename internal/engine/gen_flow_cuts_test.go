@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 )
 
 // The rules whose bodies cut print from Flow IR in the Node and recognizer tables, as the framed bodies of
@@ -49,7 +50,7 @@ func TestFlowCutsPrintFromFlow(t *testing.T) {
 				if err != nil {
 					continue
 				}
-				if _, err := Generate(g, GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
+				if _, err := Generate(g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
 					t.Fatalf("%s: %v", c.name, err)
 				}
 			}

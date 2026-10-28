@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedTSTrace(t *testing.T) {
@@ -87,7 +89,7 @@ rule part W = t:("input, o.unit, o.maxDepth, control)") #atomic => W{Text: text(
 			if typed {
 				name += "_typed"
 			}
-			opts := GenOptions{Start: "main", WorkControls: true, Types: typed, Recognize: true}
+			opts := gen.GenOptions{Start: "main", WorkControls: true, Types: typed, Recognize: true}
 			reference, err := generateTSBundle(g, opts)
 			if err != nil {
 				t.Fatal(name, err)

@@ -14,6 +14,8 @@ import (
 	"strings"
 	"testing"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // The Node and recognizer tables of a parser with work controls are printed from Flow IR, which makes
@@ -229,7 +231,7 @@ func runWorkProbes(t *testing.T, cases []genCase, start string, mutate func([]by
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		o := GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true}
+		o := gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true}
 		code, err := generateCode(g, o)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)

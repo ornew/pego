@@ -3,6 +3,8 @@ package engine
 import (
 	"fmt"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // The bodies of left-recursion leaders print from Flow IR in the Node and recognizer tables, and in the stream
@@ -38,7 +40,7 @@ func TestFlowLeadersPrintFromFlow(t *testing.T) {
 				if err != nil {
 					continue
 				}
-				if _, err := Generate(g, GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
+				if _, err := Generate(g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
 					t.Fatalf("%s: %v", c.name, err)
 				}
 			}

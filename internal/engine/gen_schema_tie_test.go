@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // The parser package of a typed parser reinterprets a string node of a named node type as the type of
@@ -43,7 +45,7 @@ func schemaTiePair(t *testing.T, root, name, src string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	generatePackageIn(t, root, "gentest", name, g, GenOptions{Start: "main", Types: true})
+	generatePackageIn(t, root, "gentest", name, g, gen.GenOptions{Start: "main", Types: true})
 }
 
 func schemaTieBuild(t *testing.T, root string) (string, error) {
@@ -112,7 +114,7 @@ func TestGeneratedSchemaIgnoresComments(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		files, err := Generate(g, GenOptions{Start: "main", Package: "p", Module: "gentest/p", Types: true, Runtime: RuntimeImport})
+		files, err := Generate(g, gen.GenOptions{Start: "main", Package: "p", Module: "gentest/p", Types: true, Runtime: gen.RuntimeImport})
 		if err != nil {
 			t.Fatal(err)
 		}

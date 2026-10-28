@@ -13,6 +13,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -359,7 +360,7 @@ func testGeneratedNegativeMaximum(t *testing.T) {
 	want := strings.Join(expected, "\n") + "\n"
 	for _, typed := range []bool{false, true} {
 		t.Run(fmt.Sprintf("Go typed=%v", typed), func(t *testing.T) {
-			code, err := generateCode(g, GenOptions{Package: "main", Start: "main", Types: typed})
+			code, err := generateCode(g, gen.GenOptions{Package: "main", Start: "main", Types: typed})
 			if err != nil {
 				t.Fatal(err)
 			}

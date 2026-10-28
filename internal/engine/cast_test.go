@@ -11,6 +11,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/gen"
 )
 
 const castRules = "type Num = { Text string }\ntype P = { N Num }\nrule n Num = t:([0-9]+) #atomic => Num{Text: text($t)}\nrule w = [a-z]+\nrule pair = n:n \"=\" => P{N: $n}\n"
@@ -157,9 +158,9 @@ func TestCastGeneratedGoParity(t *testing.T) { eachMode(t, testCastGeneratedGoPa
 
 func testCastGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, castCases(), GenOptions{})
-	testGeneratedParsersCorpus(t, goBin, castCases(), GenOptions{SourceInfo: true})
-	testGeneratedTypesCorpus(t, goBin, castCases(), GenOptions{convertTypes: true})
+	testGeneratedParsersCorpus(t, goBin, castCases(), gen.GenOptions{})
+	testGeneratedParsersCorpus(t, goBin, castCases(), gen.GenOptions{SourceInfo: true})
+	testGeneratedTypesCorpus(t, goBin, castCases(), gen.GenOptions{ConvertTypes: true})
 }
 
 func TestCastGeneratedTypeScriptParity(t *testing.T) {
@@ -167,6 +168,6 @@ func TestCastGeneratedTypeScriptParity(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	testGeneratedTSParsersCorpus(t, node, castCases(), GenOptions{})
-	testGeneratedTSParsersCorpus(t, node, castCases(), GenOptions{SourceInfo: true})
+	testGeneratedTSParsersCorpus(t, node, castCases(), gen.GenOptions{})
+	testGeneratedTSParsersCorpus(t, node, castCases(), gen.GenOptions{SourceInfo: true})
 }

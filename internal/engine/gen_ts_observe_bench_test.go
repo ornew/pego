@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // Export standalone controls and raw measurements outside the repository.
@@ -49,7 +51,7 @@ func TestExportGeneratedTSTraceBenchmarks(t *testing.T) {
 				if enabled {
 					variant = "observed"
 				}
-				files, err := GenerateTS(g, GenOptions{Start: "main", Types: typed, Recognize: true, Observability: enabled})
+				files, err := GenerateTS(g, gen.GenOptions{Start: "main", Types: typed, Recognize: true, Observability: enabled})
 				if err != nil {
 					t.Fatal(err)
 				}

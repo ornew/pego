@@ -7,15 +7,17 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGenerateDirectTypedDocument(t *testing.T) {
-	testDirectTypedDocument(t, GenOptions{})
+	testDirectTypedDocument(t, gen.GenOptions{})
 }
 
 // testDirectTypedDocument builds typed Document parsers generated with the options extra, which
 // may set private generator options, and checks them against parsers that convert Node values.
-func testDirectTypedDocument(t *testing.T, extra GenOptions) {
+func testDirectTypedDocument(t *testing.T, extra gen.GenOptions) {
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
@@ -91,7 +93,7 @@ rule main Text = v1:[aé😀]* #atomic => Text{S: text($v1)}`, []string{"", "aé
 			t.Fatalf("%s uses conversion instead of direct matching", pkg)
 		}
 		write(pkg+"/parser.go", string(code))
-		reference, err := generateCode(g, GenOptions{Package: "reference", Start: "main", Types: true, Document: true, convertTypes: true})
+		reference, err := generateCode(g, gen.GenOptions{Package: "reference", Start: "main", Types: true, Document: true, ConvertTypes: true})
 		if err != nil {
 			t.Fatal(err)
 		}

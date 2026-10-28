@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGenerateDocumentNode(t *testing.T) {
@@ -14,14 +16,14 @@ func TestGenerateDocumentNode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Document: true})
+	code, err := generateCode(g, gen.GenOptions{Package: "fixture", Start: "main", Document: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(code), "func NewDocument(") || !strings.Contains(string(code), "type Document = rt.Document") {
 		t.Fatal("Document public API missing from requested source")
 	}
-	ordinary, err := generateCode(g, GenOptions{Package: "fixture", Start: "main"})
+	ordinary, err := generateCode(g, gen.GenOptions{Package: "fixture", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,11 +156,11 @@ func testGenerateDocumentCombinations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	typed, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Document: true, Types: true})
+	typed, err := generateCode(g, gen.GenOptions{Package: "fixture", Start: "main", Document: true, Types: true})
 	if err != nil || !strings.Contains(string(typed), "func (d *Document) ParseAST(") {
 		t.Fatalf("typed Document generation: %v", err)
 	}
-	if _, err := generateTSBundle(g, GenOptions{Start: "main", Document: true}); err == nil {
+	if _, err := generateTSBundle(g, gen.GenOptions{Start: "main", Document: true}); err == nil {
 		t.Fatal("TypeScript Document generation was accepted")
 	}
 }

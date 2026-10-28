@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // typedLeaderValueCases are left-recursion leaders without an action of their own, whose values
@@ -54,5 +56,5 @@ func testGeneratedTypedLeaderValues(t *testing.T) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
-	testGeneratedTypesCorpus(t, goBin, typedLeaderValueCases, GenOptions{convertTypes: true}, len(typedLeaderValueCases))
+	testGeneratedTypesCorpus(t, goBin, typedLeaderValueCases, gen.GenOptions{ConvertTypes: true}, len(typedLeaderValueCases))
 }

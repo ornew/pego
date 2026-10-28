@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // PEGO_TYPED_RECOVERY_DIR retains generated modules for separately built,
@@ -24,7 +26,7 @@ func TestGeneratedTypedRecoveryWorkloads(t *testing.T) {
 				"ERRORS_PER_ITEM", c.errors).Replace(typedRecoveryWorkloadFixture)
 			testGeneratedTypedBodyWorkload(t, typedRecoveryWorkloadTypes+c.src, fixture,
 				filepath.Join(dir, c.name), "// Recovery inlined under the runtime-owned frame.",
-				GenOptions{})
+				gen.GenOptions{})
 		})
 	}
 }
@@ -66,7 +68,7 @@ func BenchmarkTypedRecoveryGeneration(b *testing.B) {
 	for _, c := range typedRecoveryWorkloads {
 		cases = append(cases, struct{ name, src string }{c.name, typedRecoveryWorkloadTypes + c.src})
 	}
-	opts := GenOptions{Package: "recoveryfixture", Start: "main", Types: true, Recognize: true}
+	opts := gen.GenOptions{Package: "recoveryfixture", Start: "main", Types: true, Recognize: true}
 	for _, c := range cases {
 		b.Run(c.name, func(b *testing.B) {
 			g, err := parseTest(c.src)

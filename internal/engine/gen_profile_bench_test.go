@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // Export standalone controls; keep generated fixtures and results outside Git.
@@ -50,7 +52,7 @@ func TestExportGeneratedGoProfileBenchmarks(t *testing.T) {
 				if observed {
 					variant = "observed"
 				}
-				code, err := generateCode(g, GenOptions{Package: variant, Start: "main", Types: typed, Recognize: true, Observability: observed})
+				code, err := generateCode(g, gen.GenOptions{Package: variant, Start: "main", Types: typed, Recognize: true, Observability: observed})
 				if err != nil {
 					t.Fatal(err)
 				}

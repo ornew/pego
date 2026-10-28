@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedGoClassDispatchWork(t *testing.T) {
@@ -36,7 +38,7 @@ rule fallback Text = t:([` + chars.String() + `] / "z") #atomic => Text{Text: te
 	}
 	for _, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("class_%v", convert)
-		code, e := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert})
+		code, e := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert})
 		if e != nil {
 			t.Fatal(e)
 		}

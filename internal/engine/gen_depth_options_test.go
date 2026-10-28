@@ -9,6 +9,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedMaxDepthValidation(t *testing.T) { eachMode(t, testGeneratedMaxDepthValidation) }
@@ -20,10 +22,10 @@ func testGeneratedMaxDepthValidation(t *testing.T) {
 	}
 	safe := uint64(9007199254740991)
 	if uint64(^uint(0)>>1) >= safe+1 {
-		if got, err := generateTSBundle(g, GenOptions{Start: "main", MaxDepth: int(safe)}); err != nil || len(got) == 0 {
+		if got, err := generateTSBundle(g, gen.GenOptions{Start: "main", MaxDepth: int(safe)}); err != nil || len(got) == 0 {
 			t.Fatalf("safe JavaScript boundary rejected: %v", err)
 		}
-		if got, err := generateTSBundle(g, GenOptions{Start: "main", MaxDepth: int(safe + 1)}); err == nil || len(got) != 0 {
+		if got, err := generateTSBundle(g, gen.GenOptions{Start: "main", MaxDepth: int(safe + 1)}); err == nil || len(got) != 0 {
 			t.Fatal("unsafe JavaScript boundary accepted")
 		}
 	}
@@ -32,18 +34,18 @@ func testGeneratedMaxDepthValidation(t *testing.T) {
 		if ts {
 			generate = generateTSBundle
 		}
-		base, err := generate(g, GenOptions{Package: "depth", Start: "main"})
+		base, err := generate(g, gen.GenOptions{Package: "depth", Start: "main"})
 		if err != nil {
 			t.Fatal(err)
 		}
 		for _, n := range []int{0, DefaultMaxDepth} {
-			got, err := generate(g, GenOptions{Package: "depth", Start: "main", MaxDepth: n})
+			got, err := generate(g, gen.GenOptions{Package: "depth", Start: "main", MaxDepth: n})
 			if err != nil || !bytes.Equal(base, got) {
 				t.Fatalf("ts=%v depth=%d equivalent default differs: %v", ts, n, err)
 			}
 		}
 		for _, n := range []int{3, int(^uint(0) >> 1)} {
-			got, err := generate(g, GenOptions{Package: "depth", Start: "main", MaxDepth: n})
+			got, err := generate(g, gen.GenOptions{Package: "depth", Start: "main", MaxDepth: n})
 			if ts && uint64(n) > 9007199254740991 {
 				if err == nil || len(got) != 0 {
 					t.Fatal("unsafe JavaScript default accepted")
@@ -58,7 +60,7 @@ func testGeneratedMaxDepthValidation(t *testing.T) {
 				t.Fatalf("custom default %d: %v", n, err)
 			}
 		}
-		if got, err := generate(g, GenOptions{Package: "depth", Start: "main", MaxDepth: -1}); err == nil || len(got) != 0 {
+		if got, err := generate(g, gen.GenOptions{Package: "depth", Start: "main", MaxDepth: -1}); err == nil || len(got) != 0 {
 			t.Fatal("negative default accepted")
 		}
 	}
@@ -120,7 +122,7 @@ rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: te
 		prog := compile(t, c.src)
 		for _, conv := range []bool{false, true} {
 			pkg := fmt.Sprintf("g%d_%v", i, conv)
-			code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, MaxDepth: 4, convertTypes: conv})
+			code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, MaxDepth: 4, ConvertTypes: conv})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -228,13 +230,13 @@ rule main WithUnit = t:("é") #atomic => ParseOption{Text: text($t)}`
 		if conv {
 			name = "convert"
 		}
-		opts := GenOptions{Package: name, Module: "collisions/" + name, Runtime: RuntimeImport, Start: "main", Types: true, convertTypes: conv}
+		opts := gen.GenOptions{Package: name, Module: "collisions/" + name, Runtime: gen.RuntimeImport, Start: "main", Types: true, ConvertTypes: conv}
 		files, err := Generate(g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
 		again, err := Generate(g, opts)
-		if err != nil || !slices.EqualFunc(files, again, func(a, b GeneratedFile) bool { return a.Path == b.Path && bytes.Equal(a.Content, b.Content) }) {
+		if err != nil || !slices.EqualFunc(files, again, func(a, b gen.GeneratedFile) bool { return a.Path == b.Path && bytes.Equal(a.Content, b.Content) }) {
 			t.Fatal("unstable generation")
 		}
 		var typesSource string
@@ -260,7 +262,7 @@ func TestExports(t *testing.T){
  _,_=other,box
 }
 `
-		files = append(files, GeneratedFile{"consumer_test.go", []byte(consumer)})
+		files = append(files, gen.GeneratedFile{Path: "consumer_test.go", Content: []byte(consumer)})
 		for _, f := range files {
 			path := filepath.Join(dir, name, filepath.FromSlash(f.Path))
 			os.MkdirAll(filepath.Dir(path), 0755)

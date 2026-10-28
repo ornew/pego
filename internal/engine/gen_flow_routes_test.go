@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 )
 
 // The grammars of testdata/routes exercise the routes of typed rules that the Flow IR prints:
@@ -89,7 +90,7 @@ func TestFlowRoutesBuild(t *testing.T) {
 		t.Skip("go command not found")
 	}
 	eachMode(t, func(t *testing.T) {
-		testGeneratedTypesCorpus(t, goBin, routeCases(t), GenOptions{convertTypes: true}, 1)
+		testGeneratedTypesCorpus(t, goBin, routeCases(t), gen.GenOptions{ConvertTypes: true}, 1)
 	})
 }
 
@@ -149,7 +150,7 @@ rule o = #operators {
 				seq.Items[len(seq.Items)-1] = w(op)
 			}
 		}
-		if _, err = generate(g, GenOptions{Types: true, TypedOnly: true, Module: "example.com/p"}); err == nil {
+		if _, err = generate(g, gen.GenOptions{Types: true, TypedOnly: true, Module: "example.com/p"}); err == nil {
 			t.Errorf("generate with an Operators Rule spliced into a %s inside a leader: accepted", name)
 		}
 	}

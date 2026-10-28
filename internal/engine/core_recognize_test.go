@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
 )
 
@@ -62,8 +63,8 @@ func guardedClassCount(m *core.Module) int {
 
 // recognizerGenModes are the modes in which the Core IR of the recognizers is frozen.
 var recognizerGenModes = []coreGenMode{
-	{"lean", GenOptions{Recognize: true}},
-	{"controlled", GenOptions{Recognize: true, WorkControls: true}},
+	{"lean", gen.GenOptions{Recognize: true}},
+	{"controlled", gen.GenOptions{Recognize: true, WorkControls: true}},
 }
 
 // recognizerCorpus is the corpus grammars of the recognizer freeze.

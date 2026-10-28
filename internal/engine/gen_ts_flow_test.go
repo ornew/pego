@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // The lean value-free rules of the TypeScript parser are printed from Flow IR, as labeled blocks.
@@ -16,7 +18,7 @@ rule word = [a-z]+ ("-" [a-z]+)*`
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := GenerateTS(g, GenOptions{Start: "main", Recognize: true})
+	files, err := GenerateTS(g, gen.GenOptions{Start: "main", Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +59,7 @@ func TestGeneratedTSOutlinesLargeAndRepeatedNodes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := GenerateTS(g, GenOptions{Start: "main", Recognize: true})
+	files, err := GenerateTS(g, gen.GenOptions{Start: "main", Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +95,7 @@ func TestGeneratedTSOutlinedFunctionsAreShared(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := GenerateTS(g, GenOptions{Start: "main", Recognize: true})
+	files, err := GenerateTS(g, gen.GenOptions{Start: "main", Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,7 +177,7 @@ for (let n = 40050; n <= 60000; n += 61) {
   }
 }
 console.log("ok");
-`, GenOptions{Start: "main", WorkControls: true})
+`, gen.GenOptions{Start: "main", WorkControls: true})
 	if !strings.Contains(out, "ok") {
 		t.Fatalf("output %q", out)
 	}

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -64,10 +65,10 @@ func testGeneratedGoStartRules(t *testing.T) {
 	names := fmt.Sprintf("%#v", startEntryNames)
 	for _, tc := range []struct {
 		name string
-		opts GenOptions
+		opts gen.GenOptions
 		body string
 	}{
-		{"generic", GenOptions{Package: "p"}, `func main() {
+		{"generic", gen.GenOptions{Package: "p"}, `func main() {
 	for _, name := range ` + names + ` {
 		_, err := p.ParseRule(name, "a")
 		report(name, err)
@@ -79,7 +80,7 @@ func testGeneratedGoStartRules(t *testing.T) {
 	fmt.Println("empty:", empty == nil)
 }
 `},
-		{"typed", GenOptions{Package: "p", Types: true}, `func main() {
+		{"typed", gen.GenOptions{Package: "p", Types: true}, `func main() {
 	for _, name := range ` + names + ` {
 		_, err := p.ParseRuleAST(name, "a")
 		report(name, err)
@@ -96,7 +97,7 @@ func testGeneratedGoStartRules(t *testing.T) {
 	fmt.Println("empty:", empty == nil, emptyAST == nil)
 }
 `},
-		{"typed only", GenOptions{Package: "p", Types: true, TypedOnly: true}, `func main() {
+		{"typed only", gen.GenOptions{Package: "p", Types: true, TypedOnly: true}, `func main() {
 	for _, name := range ` + names + ` {
 		_, err := p.ParseRuleAST(name, "a")
 		report(name, err)
@@ -108,7 +109,7 @@ func testGeneratedGoStartRules(t *testing.T) {
 	fmt.Println("empty:", emptyAST == nil)
 }
 `},
-		{"named start", GenOptions{Package: "p", Start: "item"}, `func main() {
+		{"named start", gen.GenOptions{Package: "p", Start: "item"}, `func main() {
 	for _, name := range ` + names + ` {
 		_, err := p.ParseRule(name, "a")
 		report(name, err)
@@ -198,7 +199,7 @@ console.log("empty: " + (parseRule("", "aa").error === null) + " " + (parseRuleW
 	for _, start := range []string{"", "item"} {
 		// An empty name selects the declared default start rule main, which matches "aa",
 		// even in a parser generated for item.
-		out := runTSGrammarScriptWith(t, g, script, GenOptions{Start: start})
+		out := runTSGrammarScriptWith(t, g, script, gen.GenOptions{Start: start})
 		parse := "default: true true\n"
 		if start == "item" {
 			parse = "default: true false\n"

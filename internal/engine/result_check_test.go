@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/syntax"
 )
@@ -360,7 +361,7 @@ rule ops Int | O = #operators {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, GenOptions{Package: "p", Start: "main"})
+	code, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -524,10 +525,10 @@ func testGeneratedRuleResultChecks(t *testing.T) {
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	cases := resultCheckCases()
-	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true})
+	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true})
 	if node, err := exec.LookPath("node"); err == nil {
-		testGeneratedTSParsersCorpus(t, node, cases, GenOptions{})
+		testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{})
 	} else {
 		t.Error("Node is required for result-check parity")
 	}
@@ -549,5 +550,5 @@ check(ok.error === null && ok.value !== null && stable(ok.value.F).length > 0, "
 const no = p.parseAST("v");
 check(no.error !== null, "missing f");
 `
-	runTypedTSFixture(t, src, consumer, GenOptions{Start: "main"}, "")
+	runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main"}, "")
 }

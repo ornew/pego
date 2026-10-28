@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // PEGO_GENERATED_SHARING_DIR preserves standalone controls for prebuilt
@@ -33,10 +35,10 @@ func testGeneratedSharingWorkloads(t *testing.T) {
 			}
 			var want, wantTS string
 			for _, mode := range []string{"default", "combined", "methods", "literals", "both"} {
-				opts := GenOptions{Package: "sharingfixture", Start: "main", Types: true, Recognize: true,
-					disableMethodSharing:   mode == "methods" || mode == "both",
-					disableLiteralSharing:  mode == "literals" || mode == "both",
-					enableTSLiteralSharing: mode != "default"}
+				opts := gen.GenOptions{Package: "sharingfixture", Start: "main", Types: true, Recognize: true,
+					DisableMethodSharing:   mode == "methods" || mode == "both",
+					DisableLiteralSharing:  mode == "literals" || mode == "both",
+					EnableTSLiteralSharing: mode != "default"}
 				code, err := generateCode(g, opts)
 				if err != nil {
 					t.Fatal(err)
@@ -189,6 +191,6 @@ func testGeneratedSharingLocalLayout(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	testGeneratedParsersCorpus(t, goBin, []genCase{c}, GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, typedLocalLayoutCases[:5], GenOptions{disableMethodSharing: true, disableLiteralSharing: true})
+	testGeneratedParsersCorpus(t, goBin, []genCase{c}, gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, typedLocalLayoutCases[:5], gen.GenOptions{DisableMethodSharing: true, DisableLiteralSharing: true})
 }

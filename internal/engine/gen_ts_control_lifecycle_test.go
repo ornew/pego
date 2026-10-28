@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func runGeneratedTSControlGCTest(t *testing.T, consumer string, hooks string) {
@@ -26,7 +28,7 @@ rule main Text = t:([a]* #atomic) => Text{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	opts := GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}
+	opts := gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}
 	code, err := generateTSBundle(g, opts)
 	if err != nil {
 		t.Fatal(err)

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 )
 
 type predicateBlockCase struct {
@@ -187,7 +188,7 @@ func TestPredicateBlocksGeneratedGoParity(t *testing.T) {
 }
 
 func testPredicateBlocksGeneratedGoParity(t *testing.T) {
-	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), predicateBlockGeneratedCases(), GenOptions{})
+	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), predicateBlockGeneratedCases(), gen.GenOptions{})
 }
 
 func TestPredicateBlocksGeneratedTypeScriptParity(t *testing.T) {
@@ -195,5 +196,5 @@ func TestPredicateBlocksGeneratedTypeScriptParity(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	testGeneratedTSParsersCorpus(t, node, predicateBlockGeneratedCases(), GenOptions{})
+	testGeneratedTSParsersCorpus(t, node, predicateBlockGeneratedCases(), gen.GenOptions{})
 }

@@ -5,6 +5,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 var typedFrameLayoutCases = []genCase{
@@ -72,7 +74,7 @@ func testGeneratedTypedFrameLayouts(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		opts := GenOptions{Package: "layouts", Start: "main", Types: true, Recognize: true}
+		opts := gen.GenOptions{Package: "layouts", Start: "main", Types: true, Recognize: true}
 		candidate, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
@@ -86,6 +88,6 @@ func testGeneratedTypedFrameLayouts(t *testing.T) {
 		}
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true})
+	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true})
 }

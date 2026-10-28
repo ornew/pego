@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -296,7 +297,7 @@ func testGeneratedStreamMatchesEngine(t *testing.T) {
 			cases = append(cases, c)
 		}
 	}
-	for name, opts := range map[string]GenOptions{"default": {},
+	for name, opts := range map[string]gen.GenOptions{"default": {},
 		"observability": {Observability: true}, "document": {Document: true, Recognize: true}} {
 		t.Run(name, func(t *testing.T) {
 			testGeneratedStreams(t, goBin, cases, opts)
@@ -304,7 +305,7 @@ func testGeneratedStreamMatchesEngine(t *testing.T) {
 	}
 }
 
-func testGeneratedStreams(t *testing.T, goBin string, cases []genCase, opts GenOptions) {
+func testGeneratedStreams(t *testing.T, goBin string, cases []genCase, opts gen.GenOptions) {
 	dir := t.TempDir()
 	write := func(name, content string) {
 		path := filepath.Join(dir, name)
@@ -552,7 +553,7 @@ rule other = "b"`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	plain, err := generateCode(g, GenOptions{Package: "fixture", Start: "main"})
+	plain, err := generateCode(g, gen.GenOptions{Package: "fixture", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -561,29 +562,29 @@ rule other = "b"`)
 			t.Errorf("ordinary output contains %s", marker)
 		}
 	}
-	code, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Stream: true})
+	code, err := generateCode(g, gen.GenOptions{Package: "fixture", Start: "main", Stream: true})
 	if err != nil || !strings.Contains(string(code), "func ParseStream(") || strings.Contains(string(code), "stream:") {
 		t.Fatalf("stream output: %v", err)
 	}
 	for _, tc := range []struct {
-		opts GenOptions
+		opts gen.GenOptions
 		want string
 	}{
-		{GenOptions{Start: "other", Stream: true}, "needs a #stream repetition"},
+		{gen.GenOptions{Start: "other", Stream: true}, "needs a #stream repetition"},
 	} {
 		tc.opts.Package = "fixture"
 		if _, err := generateCode(g, tc.opts); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%+v: %v, want %q", tc.opts, err, tc.want)
 		}
 	}
-	if _, err := generateTSBundle(g, GenOptions{Start: "main", Stream: true}); err == nil {
+	if _, err := generateTSBundle(g, gen.GenOptions{Start: "main", Stream: true}); err == nil {
 		t.Error("TypeScript accepted stream generation")
 	}
-	typed, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Stream: true, Types: true})
+	typed, err := generateCode(g, gen.GenOptions{Package: "fixture", Start: "main", Stream: true, Types: true})
 	if err != nil || !strings.Contains(string(typed), "func ParseStreamAST(") || !strings.Contains(string(typed), "type StreamValue = ") {
 		t.Fatalf("typed stream output: %v", err)
 	}
-	if typed, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Types: true}); err != nil || strings.Contains(string(typed), "ParseStreamAST") {
+	if typed, err := generateCode(g, gen.GenOptions{Package: "fixture", Start: "main", Types: true}); err != nil || strings.Contains(string(typed), "ParseStreamAST") {
 		t.Fatalf("typed output without streams: %v", err)
 	}
 }
@@ -659,7 +660,7 @@ func testGeneratedTypedStreamMatchesBatch(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := generateCode(g, GenOptions{Package: fmt.Sprintf("g%d", i), Start: "main", Stream: true, Types: true})
+		code, err := generateCode(g, gen.GenOptions{Package: fmt.Sprintf("g%d", i), Start: "main", Stream: true, Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -925,7 +926,7 @@ func testGenerateStreamKeepsBatchBodies(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, opts := range []GenOptions{{}, {Observability: true}} {
+		for _, opts := range []gen.GenOptions{{}, {Observability: true}} {
 			opts.Package, opts.Start = "p", "main"
 			plain, err := generateCode(g, opts)
 			if err != nil {
@@ -977,7 +978,7 @@ rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Val
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Stream: true, Observability: true})
+	code, err := generateCode(g, gen.GenOptions{Package: "fixture", Start: "main", Stream: true, Observability: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -999,7 +1000,7 @@ rule atom = [a-z] #atomic " "?`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err = generateCode(memo, GenOptions{Package: "memo", Start: "main", Stream: true, Observability: true})
+	code, err = generateCode(memo, gen.GenOptions{Package: "memo", Start: "main", Stream: true, Observability: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1010,7 +1011,7 @@ rule item P = x:[a-z] ys:[0-9]* ";" => P{A: $x, B: $x, Xs: $ys.Value}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err = generateCode(typed, GenOptions{Package: "typed", Start: "main", Stream: true, Types: true})
+	code, err = generateCode(typed, gen.GenOptions{Package: "typed", Start: "main", Stream: true, Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1021,7 +1022,7 @@ rule stmt S = n:[a-z]+ #atomic ";" => S{N: $n}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err = generateCode(recovering, GenOptions{Package: "recovering", Start: "main", Stream: true, Types: true, Document: true, Recognize: true})
+	code, err = generateCode(recovering, gen.GenOptions{Package: "recovering", Start: "main", Stream: true, Types: true, Document: true, Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1030,7 +1031,7 @@ rule stmt S = n:[a-z]+ #atomic ";" => S{N: $n}`)
 	files["typed/parser_test.go"] = generatedTypedStreamConsumer
 	files["memo/parser_test.go"] = generatedStreamMemoConsumer
 	for _, pkg := range []string{"lists"} {
-		code, err := generateCode(lists, GenOptions{Package: pkg, Start: "main", Stream: true, Observability: true})
+		code, err := generateCode(lists, gen.GenOptions{Package: pkg, Start: "main", Stream: true, Observability: true})
 		if err != nil {
 			t.Fatal(err)
 		}

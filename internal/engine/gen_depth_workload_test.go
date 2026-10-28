@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // TestGeneratedDepthBenchmarkWorkloads validates benchmarks without timing them.
@@ -50,7 +52,7 @@ rule n Word = t:("(" n ")" / "é") #atomic => Word{Text: text($t)}`)
 		if convert {
 			pkg = "convert"
 		}
-		code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert})
+		code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -152,7 +154,7 @@ if unit==CodePoints{for b.Loop(){switch route{case "Node":depthNode,depthError=P
 		bench += directBench
 		write(pkg+"/depth_bench_test.go", []byte(bench))
 	}
-	code, err := generateTSBundle(g, GenOptions{Start: "main", Recognize: true})
+	code, err := generateTSBundle(g, gen.GenOptions{Start: "main", Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}

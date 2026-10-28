@@ -13,6 +13,7 @@ import (
 
 	pegort "github.com/ornew/pego/runtime"
 
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -114,7 +115,7 @@ func testGeneratedTreeTraversal(t *testing.T) {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	generatePackage(t, dir, "tree", grammar, GenOptions{Start: "main", Types: true})
+	generatePackage(t, dir, "tree", grammar, gen.GenOptions{Start: "main", Types: true})
 	typesSource, err := os.ReadFile(filepath.Join(dir, "tree", "types", "types.go"))
 	if err != nil {
 		t.Fatal(err)
@@ -179,7 +180,7 @@ func testGeneratedDuckDBInspectCompatibility(t *testing.T) {
 		}
 	}
 	write("go.mod", []byte(testGoMod("gentest")))
-	generatePackage(t, dir, "duckdb", grammar, GenOptions{Start: "main", Types: true})
+	generatePackage(t, dir, "duckdb", grammar, gen.GenOptions{Start: "main", Types: true})
 	write("duckdb/inspect.go", helper)
 	write("duckdb/walk_test.go", []byte(`package duckdb
 import (

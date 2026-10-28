@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // stringFieldCases read struct fields in actions and predicates. direct reports whether the
@@ -92,7 +94,7 @@ func testGeneratedStringFieldReads(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := generateCode(g, GenOptions{Package: "p", Start: "main", Types: true})
+		code, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -105,9 +107,9 @@ func testGeneratedStringFieldReads(t *testing.T) {
 		cases = append(cases, c.genCase)
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true}, direct)
+	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, direct)
 	if node, err := exec.LookPath("node"); err == nil {
-		testGeneratedTSParsersCorpus(t, node, cases, GenOptions{})
+		testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{})
 	}
 }

@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // The typed values of a TypeScript parser keep the tokens of its own node tree for a hidden rule that
@@ -30,7 +32,7 @@ func TestGeneratedTSRecursiveSpliceTypesKeepTheTree(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		files, err := GenerateTS(g, GenOptions{Start: "main", Types: true})
+		files, err := GenerateTS(g, gen.GenOptions{Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

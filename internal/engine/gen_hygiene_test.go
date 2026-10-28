@@ -5,6 +5,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedGoActionContextAndExpressions(t *testing.T) {
@@ -19,7 +21,7 @@ rule leaf = "a"
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(grammar, GenOptions{Package: "hygiene", Start: "main", Types: true})
+	code, err := generateCode(grammar, gen.GenOptions{Package: "hygiene", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,5 +73,5 @@ rule second Result = y:"b"? => Result{N: 1 / len($y)}
 `,
 		inputs: []string{"a", "ab", "b"},
 	}}
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, GenOptions{convertTypes: true}, 1)
+	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{ConvertTypes: true}, 1)
 }

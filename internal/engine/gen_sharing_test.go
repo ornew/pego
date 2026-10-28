@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedSharingIdentity(t *testing.T) {
@@ -55,13 +57,13 @@ rule a = ("é" / "ab")+ #atomic`)
 	}
 	for _, generate := range []struct {
 		name string
-		fn   func(GenOptions) ([]byte, error)
+		fn   func(gen.GenOptions) ([]byte, error)
 	}{
-		{"Go", func(opts GenOptions) ([]byte, error) { return generateCode(g, opts) }},
-		{"TypeScript", func(opts GenOptions) ([]byte, error) { return generateTSBundle(g, opts) }},
+		{"Go", func(opts gen.GenOptions) ([]byte, error) { return generateCode(g, opts) }},
+		{"TypeScript", func(opts gen.GenOptions) ([]byte, error) { return generateTSBundle(g, opts) }},
 	} {
 		t.Run(generate.name, func(t *testing.T) {
-			opts := GenOptions{Package: "shared", Start: "main", Recognize: true}
+			opts := gen.GenOptions{Package: "shared", Start: "main", Recognize: true}
 			first, err := generate.fn(opts)
 			if err != nil {
 				t.Fatal(err)
@@ -71,23 +73,23 @@ rule a = ("é" / "ab")+ #atomic`)
 				t.Fatal("generation must be deterministic")
 			}
 			if generate.name == "TypeScript" {
-				opts.disableLiteralSharing = true
+				opts.DisableLiteralSharing = true
 				ref, err := generate.fn(opts)
 				if err != nil || !bytes.Equal(first, ref) {
 					t.Fatal("production TypeScript must leave literal tables unshared")
 				}
-				opts.enableTSLiteralSharing = true
+				opts.EnableTSLiteralSharing = true
 				ref, err = generate.fn(opts)
 				if err != nil || !bytes.Equal(first, ref) {
 					t.Fatal("explicit literal-sharing disable must override the experiment")
 				}
-				opts.disableLiteralSharing = false
+				opts.DisableLiteralSharing = false
 				experiment, err := generate.fn(opts)
 				if err != nil || len(experiment) >= len(first) {
 					t.Fatal("fixture must exercise experimental literal sharing")
 				}
 			}
-			opts.disableMethodSharing, opts.disableLiteralSharing = true, true
+			opts.DisableMethodSharing, opts.DisableLiteralSharing = true, true
 			ref, err := generate.fn(opts)
 			if err != nil {
 				t.Fatal(err)
@@ -107,7 +109,7 @@ func testGeneratedUnsharedParsersMatchEngine(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	opts := GenOptions{disableMethodSharing: true, disableLiteralSharing: true}
+	opts := gen.GenOptions{DisableMethodSharing: true, DisableLiteralSharing: true}
 	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), genCorpus(t), opts)
 	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), genCorpus(t), opts)
 }
@@ -120,7 +122,7 @@ func TestGeneratedUnsharedTSParsersMatchEngine(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	testGeneratedTSParsersCorpus(t, node, genCorpus(t), GenOptions{disableMethodSharing: true, disableLiteralSharing: true})
+	testGeneratedTSParsersCorpus(t, node, genCorpus(t), gen.GenOptions{DisableMethodSharing: true, DisableLiteralSharing: true})
 }
 
 // PEGO_GENERATED_SHARING selects generation-only controls: combined also
@@ -128,11 +130,11 @@ func TestGeneratedUnsharedTSParsersMatchEngine(t *testing.T) {
 // both disables the corresponding mechanism in that experiment. Empty uses
 // production defaults. Standalone parsers have no matching-time selector.
 func BenchmarkGeneratedSharing(b *testing.B) {
-	opts := GenOptions{Package: "shared", Start: "main", Types: true, Recognize: true}
+	opts := gen.GenOptions{Package: "shared", Start: "main", Types: true, Recognize: true}
 	mode := os.Getenv("PEGO_GENERATED_SHARING")
-	opts.disableMethodSharing = mode == "methods" || mode == "both"
-	opts.disableLiteralSharing = mode == "literals" || mode == "both"
-	opts.enableTSLiteralSharing = mode == "combined" || mode == "methods" || mode == "literals" || mode == "both"
+	opts.DisableMethodSharing = mode == "methods" || mode == "both"
+	opts.DisableLiteralSharing = mode == "literals" || mode == "both"
+	opts.EnableTSLiteralSharing = mode == "combined" || mode == "methods" || mode == "literals" || mode == "both"
 	for _, name := range []string{"json", "typescript", "duckdb"} {
 		src, err := os.ReadFile(filepath.Join("../../parsers", name, name+".pego"))
 		if err != nil {

@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // An edit can complete an incomplete UTF-8 sequence that ends before it. The
@@ -39,7 +41,7 @@ var utf8Cases = []struct{ text string; edits []documentEdit }{
 `
 	for _, tc := range []struct {
 		name, grammar, parse, test string
-		opts                       GenOptions
+		opts                       gen.GenOptions
 	}{
 		{"node", nodeGrammar, "Parse", `
 func TestCompletedPrefix(t *testing.T) {
@@ -68,7 +70,7 @@ func TestCompletedPrefix(t *testing.T) {
   if _, err := d.Parse(); err != nil || d.Stats().Reused == 0 { t.Fatalf("unit %d: %v, stats %+v", unit, err, d.Stats()) }
  }
 }
-`, GenOptions{Package: "fixture", Start: "main", Document: true}},
+`, gen.GenOptions{Package: "fixture", Start: "main", Document: true}},
 		{"typed", typedGrammar, "ParseAST", `
 func TestCompletedPrefix(t *testing.T) {
  for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -87,7 +89,7 @@ func TestCompletedPrefix(t *testing.T) {
   }
  }
 }
-`, GenOptions{Package: "fixture", Start: "main", Types: true, Document: true}},
+`, gen.GenOptions{Package: "fixture", Start: "main", Types: true, Document: true}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			g, err := parseTest(tc.grammar)

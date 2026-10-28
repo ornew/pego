@@ -10,6 +10,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // spliceTypeCases are grammars whose hidden rule calls itself, in every place that takes one
@@ -111,7 +113,7 @@ func testGeneratedRecursiveSpliceTypesKeepTheTree(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		generatePackageIn(t, dir, "splicefix", fmt.Sprintf("g%d", i), g, GenOptions{Start: "main", Types: true})
+		generatePackageIn(t, dir, "splicefix", fmt.Sprintf("g%d", i), g, gen.GenOptions{Start: "main", Types: true})
 		fmt.Fprintf(&imports, "\tg%d \"splicefix/g%[1]d\"\n", i)
 		fmt.Fprintf(&table, "\tfunc(s string) [4]string { n, e1 := g%d.Parse(s); v, e2 := g%[1]d.ParseAST(s); b, _ := json.Marshal(v); return [4]string{fmt.Sprint(n), string(b), fmt.Sprint(e1 != nil), fmt.Sprint(e2 != nil)} },\n", i)
 	}

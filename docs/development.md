@@ -19,6 +19,7 @@ This document describes the repository layout and architecture, how to run tests
 | `internal/value/` | `Node`, the value that parsing produces: kinds, fields, JSON form, traversal and the representation that the engine packages share |
 | `internal/limits/` | Work limits of a parse invocation, the error of an exhausted limit and overflow-safe work arithmetic, shared by the parser, the Document and structural queries |
 | `internal/bytecode/` | The bytecode instruction set and module, its disassembly, the encoding of modules in compiled grammars and the validation of loaded modules |
+| `internal/gen/` | What the Go and TypeScript generators share: generation options, the runtime mode of generated Go parsers and generated files |
 | `runtime/` | Runtime package of generated Go parsers, imported by them or copied into them (`github.com/ornew/pego/runtime`) |
 | `internal/engine/tsrt/` | Source of `runtime.ts`, the runtime that generated TypeScript parsers import (joined from `runtime.ts`, `work.ts`, `trace.ts` and `profile.ts`) |
 | `cmd/pego/` | Command-line tool |

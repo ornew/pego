@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen"
 )
 
 func typedFramedCutCases(t *testing.T) []genCase {
@@ -65,7 +66,7 @@ func testGeneratedTypedFramedCuts(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		opts := GenOptions{Package: "framedcuts", Start: "main", Types: true, Recognize: true}
+		opts := gen.GenOptions{Package: "framedcuts", Start: "main", Types: true, Recognize: true}
 		code, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
@@ -80,6 +81,6 @@ func testGeneratedTypedFramedCuts(t *testing.T) {
 	}
 	cases = append(cases, prefixPartCutCorpus())
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true})
+	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true})
 }

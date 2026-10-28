@@ -9,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/value"
 )
@@ -30,12 +31,12 @@ func testStreamRecoveryRejected(t *testing.T) {
 			}
 		}
 		for name, generate := range map[string]func() error{
-			"Go": func() error { _, err := generateCode(g, GenOptions{Start: "main", Package: "test"}); return err },
+			"Go": func() error { _, err := generateCode(g, gen.GenOptions{Start: "main", Package: "test"}); return err },
 			"typed Go": func() error {
-				_, err := generateCode(g, GenOptions{Start: "main", Package: "test", Types: true})
+				_, err := generateCode(g, gen.GenOptions{Start: "main", Package: "test", Types: true})
 				return err
 			},
-			"TS": func() error { _, err := generateTSBundle(g, GenOptions{Start: "main"}); return err },
+			"TS": func() error { _, err := generateTSBundle(g, gen.GenOptions{Start: "main"}); return err },
 		} {
 			if err := generate(); err == nil || !strings.Contains(err.Error(), streamRecoveryError) {
 				t.Errorf("%s generation: %v", name, err)

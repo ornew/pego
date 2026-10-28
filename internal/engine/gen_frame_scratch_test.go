@@ -3,6 +3,8 @@ package engine
 import (
 	"os/exec"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedNodeFrameScratchCorpus(t *testing.T) {
@@ -36,5 +38,5 @@ func testGeneratedNodeFrameScratchCorpus(t *testing.T) {
 	if len(wanted) != 0 {
 		t.Fatalf("missing selected capture cases: %v", wanted)
 	}
-	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
+	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
 }

@@ -13,6 +13,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -224,8 +225,8 @@ func TestIndexGeneratedGoParity(t *testing.T) { eachMode(t, testIndexGeneratedGo
 
 func testIndexGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, indexCases(), GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, indexCases(), GenOptions{})
+	testGeneratedParsersCorpus(t, goBin, indexCases(), gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, indexCases(), gen.GenOptions{})
 }
 
 func TestIndexGeneratedTypeScriptParity(t *testing.T) {
@@ -233,7 +234,7 @@ func TestIndexGeneratedTypeScriptParity(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	testGeneratedTSParsersCorpus(t, node, indexCases(), GenOptions{})
+	testGeneratedTSParsersCorpus(t, node, indexCases(), gen.GenOptions{})
 }
 
 // Generated parsers index the same with and without work limits, which select the
@@ -255,7 +256,7 @@ rule item = [a-z]`)
 	}
 	for _, types := range []bool{false, true} {
 		pkg := fmt.Sprintf("index_%v", types)
-		code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: types})
+		code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: types})
 		if err != nil {
 			t.Fatal(err)
 		}

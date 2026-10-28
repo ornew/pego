@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedTraceOptions(t *testing.T) { eachMode(t, testGeneratedTraceOptions) }
@@ -16,7 +18,7 @@ func testGeneratedTraceOptions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	plain, err := generateCode(g, GenOptions{Package: "fixture", Start: "main"})
+	plain, err := generateCode(g, gen.GenOptions{Package: "fixture", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,19 +27,19 @@ func testGeneratedTraceOptions(t *testing.T) {
 			t.Fatalf("ordinary output contains %s", marker)
 		}
 	}
-	if _, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Types: true, Observability: true}); err != nil {
+	if _, err := generateCode(g, gen.GenOptions{Package: "fixture", Start: "main", Types: true, Observability: true}); err != nil {
 		t.Fatal("typed observability:", err)
 	}
-	for _, opts := range []GenOptions{{Document: true}, {Document: true, Types: true}} {
+	for _, opts := range []gen.GenOptions{{Document: true}, {Document: true, Types: true}} {
 		opts.Package, opts.Start, opts.Observability = "fixture", "main", true
 		if _, err := generateCode(g, opts); err != nil {
 			t.Fatal("Document observability:", err)
 		}
 	}
-	if code, err := generateTSBundle(g, GenOptions{Start: "main", Observability: true}); err != nil || !strings.Contains(string(code), "export interface TraceEvent") {
+	if code, err := generateTSBundle(g, gen.GenOptions{Start: "main", Observability: true}); err != nil || !strings.Contains(string(code), "export interface TraceEvent") {
 		t.Fatal("TypeScript observability:", err)
 	}
-	if _, err := generateTSBundle(g, GenOptions{Start: "main", Observability: true, Document: true}); err == nil {
+	if _, err := generateTSBundle(g, gen.GenOptions{Start: "main", Observability: true, Document: true}); err == nil {
 		t.Fatal("TypeScript accepted unsupported Document")
 	}
 }
@@ -82,7 +84,7 @@ rule part = "é"`, "éé", `last:=events[len(events)-1];expectedEnd:=2;if unit==
 		if err != nil {
 			t.Fatal(fixture.name, err)
 		}
-		referenceCode, err := generateCode(g, GenOptions{Package: "reference_" + fixture.name, Start: "main", Recognize: true})
+		referenceCode, err := generateCode(g, gen.GenOptions{Package: "reference_" + fixture.name, Start: "main", Recognize: true})
 		if err != nil {
 			t.Fatal(fixture.name, err)
 		}
@@ -93,7 +95,7 @@ rule part = "é"`, "éé", `last:=events[len(events)-1];expectedEnd:=2;if unit==
 		if err := os.WriteFile(filepath.Join(referenceDir, "parser.go"), referenceCode, 0644); err != nil {
 			t.Fatal(err)
 		}
-		code, err := generateCode(g, GenOptions{Package: fixture.name, Start: "main", Recognize: true, Observability: true})
+		code, err := generateCode(g, gen.GenOptions{Package: fixture.name, Start: "main", Recognize: true, Observability: true})
 		if err != nil {
 			t.Fatal(fixture.name, err)
 		}

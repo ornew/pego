@@ -11,6 +11,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -123,10 +124,10 @@ func testGeneratedNodeConstructors(t *testing.T) {
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	cases := constructorCases()
-	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true}, 4)
+	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, 4)
 	if node, err := exec.LookPath("node"); err == nil {
-		testGeneratedTSParsersCorpus(t, node, cases, GenOptions{})
+		testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{})
 	} else {
 		t.Error("Node is required for constructor parity")
 	}
@@ -146,7 +147,7 @@ for (const unit of [CodePoints, Bytes]) {
   check(v.start === 0 && v.end === (unit === Bytes ? 4 : 1), "span");
   check(parse("😀", unit).error === null, "generic output");
 }
-`, GenOptions{}, "")
+`, gen.GenOptions{}, "")
 }
 
 func TestTypedNodeConstructorErrors(t *testing.T) {

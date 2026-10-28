@@ -5,6 +5,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 var typedLRBodyCases = []genCase{
@@ -84,7 +86,7 @@ func testGeneratedTypedLRBodies(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		opts := GenOptions{Package: "lrbody", Start: "main", Types: true, Recognize: true}
+		opts := gen.GenOptions{Package: "lrbody", Start: "main", Types: true, Recognize: true}
 		code, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
@@ -107,6 +109,6 @@ func testGeneratedTypedLRBodies(t *testing.T) {
 		}
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedTypesCorpus(t, goBin, typedLRBodyCases, GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, typedLRBodyCases, GenOptions{convertTypes: true})
+	testGeneratedTypesCorpus(t, goBin, typedLRBodyCases, gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, typedLRBodyCases, gen.GenOptions{ConvertTypes: true})
 }

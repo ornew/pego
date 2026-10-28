@@ -7,6 +7,8 @@ import (
 	"go/token"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // A generated parser has one form of its rule bodies. With work controls its bodies charge steps
@@ -89,7 +91,7 @@ func testGeneratedRuleBodiesHaveOneForm(t *testing.T) {
 	}
 	for _, types := range []bool{false, true} {
 		for _, document := range []bool{false, true} {
-			opts := GenOptions{Package: "ordinaryfixture", Types: types, Document: document, Recognize: true, Start: "main"}
+			opts := gen.GenOptions{Package: "ordinaryfixture", Types: types, Document: document, Recognize: true, Start: "main"}
 			src, err := generateCode(g, opts)
 			if err != nil {
 				t.Fatal(err)
@@ -115,7 +117,7 @@ func TestGeneratedRuleBodiesHaveOneFormNegativeControls(t *testing.T) {
 		t.Fatal(err)
 	}
 	gen := func(controls, document bool) []byte {
-		files, err := Generate(g, GenOptions{Package: "ordinaryfixture", Module: "example.com/generated", Runtime: RuntimeImport, Types: true, Document: document, Recognize: true, Start: "main", WorkControls: controls})
+		files, err := Generate(g, gen.GenOptions{Package: "ordinaryfixture", Module: "example.com/generated", Runtime: gen.RuntimeImport, Types: true, Document: document, Recognize: true, Start: "main", WorkControls: controls})
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedGoDiagnosticWork(t *testing.T) {
@@ -28,7 +30,7 @@ rule letter Word = t:("z" / "a" / "é") #atomic => Word{Text: text($t)}`)
 	}
 	for _, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("diagnostic_%v", convert)
-		code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, convertTypes: convert})
+		code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: true, ConvertTypes: convert})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -151,7 +153,7 @@ type Doc = { Text Text }
 	}
 	for _, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("text_%v", convert)
-		code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert})
+		code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert})
 		if err != nil {
 			t.Fatal(err)
 		}

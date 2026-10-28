@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGenerateTypedDocument(t *testing.T) {
@@ -17,7 +19,7 @@ func TestGenerateTypedDocument(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Types: true, Document: true})
+	code, err := generateCode(g, gen.GenOptions{Package: "fixture", Start: "main", Types: true, Document: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +112,7 @@ func testGenerateTypedDocumentNilAndRecovery(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, entry := range []struct{ pkg, start string }{{"optional", "optional"}, {"recovery", "recoverTerminal"}} {
-		generatePackageIn(t, dir, "typeddocument", entry.pkg, g, GenOptions{Start: entry.start, Types: true, Document: true})
+		generatePackageIn(t, dir, "typeddocument", entry.pkg, g, gen.GenOptions{Start: entry.start, Types: true, Document: true})
 	}
 	const consumer = `package typeddocument_test
 import (
@@ -180,7 +182,7 @@ rule c = "c" "d"`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, GenOptions{Package: "openunion", Start: "main", Types: true, Document: true})
+	code, err := generateCode(g, gen.GenOptions{Package: "openunion", Start: "main", Types: true, Document: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -238,7 +240,7 @@ rule main Document = t:("a") #atomic => Document{Text: text($t)}`)
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	generatePackageIn(t, dir, "typedcollision", "fixture", g, GenOptions{Start: "main", Types: true, Document: true})
+	generatePackageIn(t, dir, "typedcollision", "fixture", g, gen.GenOptions{Start: "main", Types: true, Document: true})
 	typesSource, err := os.ReadFile(filepath.Join(dir, "fixture", "types", "types.go"))
 	if err != nil {
 		t.Fatal(err)
@@ -290,8 +292,8 @@ rule main ErrDocumentBusy = t:("a") #atomic => ErrDocumentBusy{Text: text($t)}`)
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	generatePackageIn(t, dir, "observedcollision", "plain", g, GenOptions{Start: "main", Types: true, Document: true})
-	generatePackageIn(t, dir, "observedcollision", "fixture", g, GenOptions{Start: "main", Types: true, Document: true, Observability: true})
+	generatePackageIn(t, dir, "observedcollision", "plain", g, gen.GenOptions{Start: "main", Types: true, Document: true})
+	generatePackageIn(t, dir, "observedcollision", "fixture", g, gen.GenOptions{Start: "main", Types: true, Document: true, Observability: true})
 	for _, pkg := range []string{"plain", "fixture"} {
 		typesSource, err := os.ReadFile(filepath.Join(dir, pkg, "types", "types.go"))
 		if err != nil {

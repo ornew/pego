@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 const namedASTGrammar = `type T = { Text string }
@@ -67,7 +69,7 @@ func testGeneratedNamedAST(t *testing.T) {
 			if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("namedfixture")), 0644); err != nil {
 				t.Fatal(err)
 			}
-			code := generatePackageIn(t, dir, "namedfixture", "named", g, GenOptions{Start: variant.start, Types: true, convertTypes: variant.force, MaxDepth: 32})
+			code := generatePackageIn(t, dir, "namedfixture", "named", g, gen.GenOptions{Start: variant.start, Types: true, ConvertTypes: variant.force, MaxDepth: 32})
 			typesSource, err := os.ReadFile(filepath.Join(dir, "named", "types", "types.go"))
 			if err != nil {
 				t.Fatal(err)
@@ -107,14 +109,14 @@ func testGeneratedNamedASTUntypedAndTS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	plain, err := generateCode(g, GenOptions{Package: "plain", Start: "main"})
+	plain, err := generateCode(g, gen.GenOptions{Package: "plain", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if strings.Contains(string(plain), "func ParseRuleAST(") {
 		t.Fatal("typed entry point in untyped parser")
 	}
-	ts, err := generateTSBundle(g, GenOptions{Package: "plain", Start: "main"})
+	ts, err := generateTSBundle(g, gen.GenOptions{Package: "plain", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +141,7 @@ func testGeneratedNamedASTScalarResults(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		out, err := generateCode(g, GenOptions{Package: "named", Start: "main", Types: true})
+		out, err := generateCode(g, gen.GenOptions{Package: "named", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%q: %v", tc.source, err)
 		}
@@ -151,7 +153,7 @@ func testGeneratedNamedASTScalarResults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = generateCode(g, GenOptions{Package: "named", Start: "main", Types: true}); err == nil || !strings.Contains(err.Error(), "not assignable to int") {
+	if _, err = generateCode(g, gen.GenOptions{Package: "named", Start: "main", Types: true}); err == nil || !strings.Contains(err.Error(), "not assignable to int") {
 		t.Fatalf("got %v", err)
 	}
 }
@@ -251,7 +253,7 @@ func testGeneratedNamedASTXMLFragments(t *testing.T) {
 	}
 	for _, convert := range []bool{false, true} {
 		t.Run(fmt.Sprint(convert), func(t *testing.T) {
-			code, err := generateCode(g, GenOptions{Package: "xml", Start: "main", Types: true, convertTypes: convert})
+			code, err := generateCode(g, gen.GenOptions{Package: "xml", Start: "main", Types: true, ConvertTypes: convert})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -332,7 +334,7 @@ rule nilUnion MaybeU = t:term? => $t
 	for _, start := range []string{"nilAny", "nilNode", "nilUnion"} {
 		for _, conversion := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/%v", start, conversion), func(t *testing.T) {
-				code, err := generateCode(g, GenOptions{Package: "named", Start: start, Types: true, convertTypes: conversion})
+				code, err := generateCode(g, gen.GenOptions{Package: "named", Start: start, Types: true, ConvertTypes: conversion})
 				if err != nil {
 					t.Fatal(err)
 				}

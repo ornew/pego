@@ -3,6 +3,8 @@ package engine
 import (
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // Without work controls no function of the parser package or the types package charges steps, including the
@@ -15,9 +17,9 @@ func TestGeneratedNoStepChargesInTypedCode(t *testing.T) {
 			t.Fatal(err)
 		}
 		// generated returns the source of the parser package and of the types package.
-		generated := func(opts GenOptions) string {
+		generated := func(opts gen.GenOptions) string {
 			t.Helper()
-			opts.Package, opts.Module, opts.Start, opts.Runtime = "p", "example.com/p", "main", RuntimeImport
+			opts.Package, opts.Module, opts.Start, opts.Runtime = "p", "example.com/p", "main", gen.RuntimeImport
 			files, err := Generate(g, opts)
 			if err != nil {
 				t.Fatal(err)
@@ -33,12 +35,12 @@ func TestGeneratedNoStepChargesInTypedCode(t *testing.T) {
 			}
 			return all
 		}
-		for _, opts := range []GenOptions{{Types: true}, {Types: true, TypedOnly: true}, {Types: true, Document: true}, {Types: true, Recognize: true, Document: true}} {
+		for _, opts := range []gen.GenOptions{{Types: true}, {Types: true, TypedOnly: true}, {Types: true, Document: true}, {Types: true, Recognize: true, Document: true}} {
 			if out := generated(opts); strings.Contains(out, "StepWork") {
 				t.Errorf("%+v: a parser without work controls charges steps", opts)
 			}
 		}
-		if out := generated(GenOptions{Types: true, Document: true, WorkControls: true}); !strings.Contains(out, "StepWork") {
+		if out := generated(gen.GenOptions{Types: true, Document: true, WorkControls: true}); !strings.Contains(out, "StepWork") {
 			t.Error("a controlled parser does not charge steps: the check is void")
 		}
 	}
@@ -47,7 +49,7 @@ func TestGeneratedNoStepChargesInTypedCode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := Generate(g, GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: RuntimeImport, Types: true, WorkControls: true})
+	files, err := Generate(g, gen.GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: gen.RuntimeImport, Types: true, WorkControls: true})
 	if err != nil {
 		t.Fatal(err)
 	}

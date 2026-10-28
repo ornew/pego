@@ -4,6 +4,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestVarLinesExcept(t *testing.T) {
@@ -42,7 +44,7 @@ func testGeneratedMethodsGroupVariables(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, GenOptions{Package: "p", Start: "main", Types: true})
+	code, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}

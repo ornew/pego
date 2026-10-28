@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 var typedLocalLayoutCases = []genCase{
@@ -82,7 +84,7 @@ func testGeneratedTypedLocalLayouts(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		opts := GenOptions{Package: "localfixture", Start: "main", Types: true, Recognize: true}
+		opts := gen.GenOptions{Package: "localfixture", Start: "main", Types: true, Recognize: true}
 		code, err := generateCode(ast, opts)
 		if err != nil || !strings.Contains(string(code), "rt.TParse(trules") || !localBodyInlined(code) {
 			t.Fatalf("%s: typed local body unavailable: %v", c.name, err)
@@ -90,8 +92,8 @@ func testGeneratedTypedLocalLayouts(t *testing.T) {
 	}
 	if !testing.Short() {
 		goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-		testGeneratedTypesCorpus(t, goBin, typedLocalLayoutCases, GenOptions{})
-		testGeneratedTypesCorpus(t, goBin, typedLocalLayoutCases, GenOptions{convertTypes: true})
+		testGeneratedTypesCorpus(t, goBin, typedLocalLayoutCases, gen.GenOptions{})
+		testGeneratedTypesCorpus(t, goBin, typedLocalLayoutCases, gen.GenOptions{ConvertTypes: true})
 	}
 }
 
@@ -120,7 +122,7 @@ func testGeneratedTypedLocalLayoutControls(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		opts := GenOptions{Package: "localfixture", Start: "main", Types: true, Recognize: true}
+		opts := gen.GenOptions{Package: "localfixture", Start: "main", Types: true, Recognize: true}
 		if _, err := generateCode(ast, opts); err != nil {
 			t.Fatal(err)
 		}

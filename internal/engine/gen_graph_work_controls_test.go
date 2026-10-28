@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedGoGraphWork(t *testing.T) {
@@ -35,7 +37,7 @@ rule rollback Bag = (x:leaf "z" / x:leaf) rest:(part:leaf "b")* last:leaf #cut =
 	}
 	for _, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("graph_%v", convert)
-		code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert})
+		code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert})
 		if err != nil {
 			t.Fatal(err)
 		}

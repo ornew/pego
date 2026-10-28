@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // guardedClassCases are grammars whose choices have alternatives that begin with character
@@ -57,7 +59,7 @@ func TestGuardedClassGeneration(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, disabled := range []bool{false, true} {
-			code, err := generateCode(g, GenOptions{Package: "guarded", Start: "main", Types: true, TypedOnly: true, disableGuardedClasses: disabled})
+			code, err := generateCode(g, gen.GenOptions{Package: "guarded", Start: "main", Types: true, TypedOnly: true, DisableGuardedClasses: disabled})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -74,7 +76,7 @@ func TestGuardedClassGeneration(t *testing.T) {
 // in both position units, and their errors with the engine's.
 func TestGuardedClassDisabledParity(t *testing.T) {
 	t.Setenv("PEGO_TEST_ORDINARY", "1")
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), guardedClassCases(), GenOptions{disableGuardedClasses: true}, 0)
+	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), guardedClassCases(), gen.GenOptions{DisableGuardedClasses: true}, 0)
 }
 
 // TestGuardedClassEligibility checks that parsers that charge work for reading (work controls or
@@ -85,9 +87,9 @@ func TestGuardedClassEligibility(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, opts := range []GenOptions{{TypedOnly: true}, {TypedOnly: true, WorkControls: true}, {Types: true, WorkControls: true}, {Types: true, Document: true}} {
+		for _, opts := range []gen.GenOptions{{TypedOnly: true}, {TypedOnly: true, WorkControls: true}, {Types: true, WorkControls: true}, {Types: true, Document: true}} {
 			want := !opts.WorkControls && !opts.Document
-			opts.Package, opts.Module, opts.Start, opts.Types, opts.Runtime = "guarded", "example.com/generated", "main", true, RuntimeImport
+			opts.Package, opts.Module, opts.Start, opts.Types, opts.Runtime = "guarded", "example.com/generated", "main", true, gen.RuntimeImport
 			files, err := Generate(g, opts)
 			if err != nil {
 				t.Fatal(err)

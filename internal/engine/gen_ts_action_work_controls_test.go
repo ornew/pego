@@ -3,6 +3,8 @@ package engine
 import (
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 func TestGeneratedTSWorkControlActions(t *testing.T) {
@@ -27,7 +29,7 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ["z",new Uint8Array(
  check(p.parse(input,unit).error===null,"fresh retry after action interruption");
 }
 `
-		runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+		runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 	})
 	t.Run("lists-and-folds", func(t *testing.T) {
 		src := `type Box = {
@@ -58,6 +60,6 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  check(p.parseWithOptions("zz",{unit}).error===null,"fresh collection retry");
 }
 `
-		runTypedTSFixture(t, src, consumer, GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+		runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 	})
 }

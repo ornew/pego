@@ -8,13 +8,15 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 // localErrors type-checks the Go files of a generated package against empty stand-ins for its
 // imports and returns the type errors, such as a variable that is declared and not used or a name
 // that is undefined (a removed variable). The imported packages are empty, so errors about names
 // taken from them, and about fields and methods of the types built from them, are not reported.
-func localErrors(t *testing.T, files []GeneratedFile) []string {
+func localErrors(t *testing.T, files []gen.GeneratedFile) []string {
 	t.Helper()
 	fset := token.NewFileSet()
 	var parsed []*goast.File
@@ -80,16 +82,16 @@ func blankLinesInFunctions(src string) []string {
 func TestGeneratedLocalVariables(t *testing.T) {
 	forms := []struct {
 		name  string
-		opts  GenOptions
+		opts  gen.GenOptions
 		blank bool // the form has no blank lines inside functions
 	}{
-		{"ordinary", GenOptions{Types: true}, true},
-		{"work controls", GenOptions{Types: true, WorkControls: true}, false},
-		{"document", GenOptions{Types: true, Document: true}, false},
-		{"nodes", GenOptions{}, true},
-		{"typed only", GenOptions{Types: true, TypedOnly: true}, true},
-		{"recognize", GenOptions{Types: true, Recognize: true}, true},
-		{"observability", GenOptions{Types: true, Observability: true}, true},
+		{"ordinary", gen.GenOptions{Types: true}, true},
+		{"work controls", gen.GenOptions{Types: true, WorkControls: true}, false},
+		{"document", gen.GenOptions{Types: true, Document: true}, false},
+		{"nodes", gen.GenOptions{}, true},
+		{"typed only", gen.GenOptions{Types: true, TypedOnly: true}, true},
+		{"recognize", gen.GenOptions{Types: true, Recognize: true}, true},
+		{"observability", gen.GenOptions{Types: true, Observability: true}, true},
 	}
 	checked := 0
 	cases := genCorpus(t)
@@ -100,7 +102,7 @@ func TestGeneratedLocalVariables(t *testing.T) {
 		}
 		for _, f := range forms {
 			opts := f.opts
-			opts.Package, opts.Start, opts.Runtime, opts.Module = "p", "main", RuntimeImport, "example.com/p"
+			opts.Package, opts.Start, opts.Runtime, opts.Module = "p", "main", gen.RuntimeImport, "example.com/p"
 			files, err := Generate(g, opts)
 			if err != nil {
 				// Every test grammar generates in every form.
@@ -127,7 +129,7 @@ func TestGeneratedLocalVariables(t *testing.T) {
 
 // The check reports a variable that is declared and not used (negative control).
 func TestLocalErrorsDetectsUnusedVariable(t *testing.T) {
-	files := []GeneratedFile{{Path: "p.go", Content: []byte("package p\n\nfunc f() {\n\tvar x int\n\ty := 1\n\t_ = z\n}\n")}}
+	files := []gen.GeneratedFile{{Path: "p.go", Content: []byte("package p\n\nfunc f() {\n\tvar x int\n\ty := 1\n\t_ = z\n}\n")}}
 	got := localErrors(t, files)
 	if len(got) != 3 {
 		t.Fatalf("errors = %q, want an unused x, an unused y and an undefined z", got)
@@ -144,12 +146,12 @@ func TestShakeVarsMutantFailsToCompile(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		files, err := Generate(g, GenOptions{Types: true, Package: "p", Start: "main", Runtime: RuntimeImport, Module: "example.com/p"})
+		files, err := Generate(g, gen.GenOptions{Types: true, Package: "p", Start: "main", Runtime: gen.RuntimeImport, Module: "example.com/p"})
 		if err != nil {
 			t.Errorf("%s: %v", c.name, err)
 			continue
 		}
-		var mutated []GeneratedFile
+		var mutated []gen.GeneratedFile
 		dropped := 0
 		for _, f := range files {
 			if f.Path == "parser.go" {

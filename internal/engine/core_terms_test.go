@@ -179,7 +179,7 @@ func TestCoreTermRewritesFrozen(t *testing.T) {
 			}
 		}
 		fields := 3
-		if mode.opts.boxedComparisons {
+		if mode.opts.BoxedComparisons {
 			fields = 0
 		}
 		if forms["text-eq"] != 2 || forms["field-cmp"] != fields {

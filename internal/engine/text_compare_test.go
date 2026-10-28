@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/limits"
 )
 
@@ -72,7 +73,7 @@ func TestGeneratedTextFieldComparisons(t *testing.T) {
 	pkg := func(convert, boxed bool) string { return fmt.Sprintf("compare_%v_%v", convert, boxed) }
 	for _, convert := range []bool{false, true} {
 		for _, boxed := range []bool{false, true} {
-			code, err := generateCode(g, GenOptions{Package: pkg(convert, boxed), Start: "main", Types: true, convertTypes: convert, boxedComparisons: boxed})
+			code, err := generateCode(g, gen.GenOptions{Package: pkg(convert, boxed), Start: "main", Types: true, ConvertTypes: convert, BoxedComparisons: boxed})
 			if err != nil {
 				t.Fatal(err)
 			}

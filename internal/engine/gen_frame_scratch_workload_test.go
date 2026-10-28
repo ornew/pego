@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen"
 )
 
 const nodeFrameScratchGrammar = `type Tok = { Text string }
@@ -67,7 +69,7 @@ rule main Tok = t:(("é" / "�")* $$) #atomic => Tok{Text: text($t)}`, `func fr
 			}
 			{
 				variant := "scratch"
-				code, err := generateCode(g, GenOptions{Package: "framefixture", Start: "main", Types: true, Recognize: true})
+				code, err := generateCode(g, gen.GenOptions{Package: "framefixture", Start: "main", Types: true, Recognize: true})
 				if err != nil {
 					t.Fatal(err)
 				}
