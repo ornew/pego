@@ -128,10 +128,7 @@ func tmk_Alias(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	rt.FieldSpanOf(f1, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0, f1)
 }
 
 func tmk_BinaryExpr(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
@@ -144,11 +141,7 @@ func tmk_BinaryExpr(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	rt.FieldSpanOf(f1, &first, &start, &end)
-	rt.FieldSpanOf(f2, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0, f1, f2)
 }
 
 func tmk_CallExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
@@ -160,10 +153,7 @@ func tmk_CallExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	rt.FieldSpanOf(f1, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0, f1)
 }
 
 func tmk_Comprehension(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
@@ -176,11 +166,7 @@ func tmk_Comprehension(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	rt.FieldSpanOf(f1, &first, &start, &end)
-	rt.FieldSpanOf(f2, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0, f1, f2)
 }
 
 func tmk_Ellipsis(c *rt.TActCtx, final bool, f0 any) any {
@@ -191,9 +177,7 @@ func tmk_Ellipsis(c *rt.TActCtx, final bool, f0 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0)
 }
 
 func tmk_EmbedDecl(c *rt.TActCtx, final bool, f0 any, f1 any) any {
@@ -205,10 +189,7 @@ func tmk_EmbedDecl(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	rt.FieldSpanOf(f1, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0, f1)
 }
 
 func tmk_FallbackClause(c *rt.TActCtx, final bool, f0 any) any {
@@ -219,9 +200,7 @@ func tmk_FallbackClause(c *rt.TActCtx, final bool, f0 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0)
 }
 
 func tmk_Field(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
@@ -236,13 +215,7 @@ func tmk_Field(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	rt.FieldSpanOf(f1, &first, &start, &end)
-	rt.FieldSpanOf(f2, &first, &start, &end)
-	rt.FieldSpanOf(f3, &first, &start, &end)
-	rt.FieldSpanOf(f4, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0, f1, f2, f3, f4)
 }
 
 func tmk_File(c *rt.TActCtx, final bool, f0 any) any {
@@ -253,9 +226,7 @@ func tmk_File(c *rt.TActCtx, final bool, f0 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0)
 }
 
 func tmk_ForClause(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
@@ -268,11 +239,7 @@ func tmk_ForClause(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	rt.FieldSpanOf(f1, &first, &start, &end)
-	rt.FieldSpanOf(f2, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0, f1, f2)
 }
 
 func tmk_IfClause(c *rt.TActCtx, final bool, f0 any) any {
@@ -283,9 +250,7 @@ func tmk_IfClause(c *rt.TActCtx, final bool, f0 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0)
 }
 
 func tmk_ImportDecl(c *rt.TActCtx, final bool, f0 any, f1 any) any {
@@ -297,10 +262,7 @@ func tmk_ImportDecl(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	rt.FieldSpanOf(f1, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0, f1)
 }
 
 func tmk_ImportSpec(c *rt.TActCtx, final bool, f0 any, f1 any) any {
@@ -312,10 +274,7 @@ func tmk_ImportSpec(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	rt.FieldSpanOf(f1, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0, f1)
 }
 
 func tmk_IndexExpr(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
@@ -328,11 +287,7 @@ func tmk_IndexExpr(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	rt.FieldSpanOf(f1, &first, &start, &end)
-	rt.FieldSpanOf(f2, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0, f1, f2)
 }
 
 func tmk_Interpolation(c *rt.TActCtx, final bool, f0 any) any {
@@ -343,9 +298,7 @@ func tmk_Interpolation(c *rt.TActCtx, final bool, f0 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0)
 }
 
 func tmk_LetClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
@@ -357,10 +310,7 @@ func tmk_LetClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	rt.FieldSpanOf(f1, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0, f1)
 }
 
 func tmk_ListLit(c *rt.TActCtx, final bool, f0 any) any {
@@ -371,9 +321,7 @@ func tmk_ListLit(c *rt.TActCtx, final bool, f0 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0)
 }
 
 func tmk_Package(c *rt.TActCtx, final bool, f0 any) any {
@@ -384,9 +332,7 @@ func tmk_Package(c *rt.TActCtx, final bool, f0 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0)
 }
 
 func tmk_ParenExpr(c *rt.TActCtx, final bool, f0 any) any {
@@ -397,9 +343,7 @@ func tmk_ParenExpr(c *rt.TActCtx, final bool, f0 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0)
 }
 
 func tmk_PostfixAlias(c *rt.TActCtx, final bool, f0 any, f1 any) any {
@@ -411,10 +355,7 @@ func tmk_PostfixAlias(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	rt.FieldSpanOf(f1, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0, f1)
 }
 
 func tmk_PostfixExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
@@ -426,10 +367,7 @@ func tmk_PostfixExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	rt.FieldSpanOf(f1, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0, f1)
 }
 
 func tmk_SelectorExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
@@ -441,10 +379,7 @@ func tmk_SelectorExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	rt.FieldSpanOf(f1, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0, f1)
 }
 
 func tmk_SliceExpr(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
@@ -457,11 +392,7 @@ func tmk_SliceExpr(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	rt.FieldSpanOf(f1, &first, &start, &end)
-	rt.FieldSpanOf(f2, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0, f1, f2)
 }
 
 func tmk_String(c *rt.TActCtx, final bool, f0 any) any {
@@ -472,9 +403,7 @@ func tmk_String(c *rt.TActCtx, final bool, f0 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0)
 }
 
 func tmk_StructLit(c *rt.TActCtx, final bool, f0 any) any {
@@ -485,9 +414,7 @@ func tmk_StructLit(c *rt.TActCtx, final bool, f0 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0)
 }
 
 func tmk_TryClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
@@ -499,10 +426,7 @@ func tmk_TryClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	rt.FieldSpanOf(f1, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0, f1)
 }
 
 func tmk_UnaryExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
@@ -514,10 +438,7 @@ func tmk_UnaryExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
-	first, start, end := true, 0, 0
-	rt.FieldSpanOf(f0, &first, &start, &end)
-	rt.FieldSpanOf(f1, &first, &start, &end)
-	return c.Made(v, first, start, end)
+	return c.MadeOf(v, f0, f1)
 }
 
 func tl0(a *tslabs, v any) []types.Expr {

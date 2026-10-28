@@ -1877,27 +1877,27 @@ func ttypeName(v any) string {
 	return fmt.Sprintf("%T", v)
 }
 
-// FieldSpanOf widens the range [*start, *end) to cover the field value v if it is a node (first is
-// set until a node has been seen), as NewStruct does.
+// MadeOf finishes a struct value n made by an action from the field values it was made of: n takes
+// the range that covers the field values that are nodes, or the range of the rule if there is none
+// (see NewStruct). The variadic list stays on the stack of the generated constructor.
 //
-// FieldSpanOf is for generated parsers; not a stable API.
-func FieldSpanOf(v any, first *bool, start, end *int) {
-	child := AsTval(v)
-	if child == nil {
-		return
+// MadeOf is for generated parsers; not a stable API.
+func (c *TActCtx) MadeOf(n TVal, fields ...any) any {
+	first, start, end := true, 0, 0
+	for _, f := range fields {
+		child := AsTval(f)
+		if child == nil {
+			continue
+		}
+		s, e := child.TSpan()
+		if first || s < start {
+			start = s
+		}
+		if first || e > end {
+			end = e
+		}
+		first = false
 	}
-	s, e := child.TSpan()
-	if *first || s < *start {
-		*start = s
-	}
-	if *first || e > *end {
-		*end = e
-	}
-	*first = false
-}
-
-// Made finishes a struct value n made by an action with the given range (see NewStruct).
-func (c *TActCtx) Made(n TVal, first bool, start, end int) any {
 	if first {
 		start, end = c.Start, c.End
 	}

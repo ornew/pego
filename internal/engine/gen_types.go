@@ -1294,11 +1294,11 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 		for i, f := range fields {
 			fmt.Fprintf(&cons, "\tv.%s = %s\n", t.fieldGo(f.name), t.dconv(f.t, fmt.Sprintf("f%d", i), "a"))
 		}
-		fmt.Fprintf(&cons, "\tif final {\n\t\tv.%[1]s = %[1]s{Start: c.Start, End: c.End}\n\t\treturn v\n\t}\n\tfirst, start, end := true, 0, 0\n", span)
+		fmt.Fprintf(&cons, "\tif final {\n\t\tv.%[1]s = %[1]s{Start: c.Start, End: c.End}\n\t\treturn v\n\t}\n\treturn c.MadeOf(v", span)
 		for i := range fields {
-			fmt.Fprintf(&cons, "\tFieldSpanOf(f%d, &first, &start, &end)\n", i)
+			fmt.Fprintf(&cons, ", f%d", i)
 		}
-		cons.WriteString("\treturn c.Made(v, first, start, end)\n}\n\n")
+		cons.WriteString(")\n}\n\n")
 	}
 	// List converters and the helpers of value-model types (more may be added while writing them,
 	// for lists of lists).
