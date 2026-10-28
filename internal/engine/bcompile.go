@@ -24,7 +24,7 @@ func (prog *Program) Module() *bytecode.Module {
 
 type bcompiler struct {
 	prog *Program
-	cur  *rule             // rule being compiled
+	cur  *staticRule       // rule being compiled
 	proj map[string]string // projected captures of its body (ruleProjections)
 	m    *bytecode.Module
 	strs map[string]int
@@ -137,7 +137,7 @@ func (c *bcompiler) compile() {
 		}
 	}
 	// Rule table (body positions are filled in later)
-	all := append(append([]*rule(nil), c.prog.rules...), c.prog.twins...)
+	all := append(append([]*staticRule(nil), c.prog.rules...), c.prog.twins...)
 	for _, r := range all {
 		ri := bytecode.RuleInfo{Name: int(c.str(r.name)), Entry: -1, Action: -1, NodeType: -1, OperatorsRule: -1,
 			Memo: r.memo, Leader: r.leader, Positional: r.positional, NoValue: r.novalue, Transient: r.transient, Where: -1, Splice: r.splice, Vars: c.strs2(r.vars)}

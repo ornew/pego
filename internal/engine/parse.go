@@ -104,6 +104,14 @@ func (prog *Program) backend(b Backend) Backend {
 	return b
 }
 
+// closureRule returns the rule the closure backend runs for the rule name, or nil if there is none.
+func (prog *Program) closureRule(name string) *rule {
+	if sr := prog.byName[name]; sr != nil {
+		return prog.closureRules[sr.id]
+	}
+	return nil
+}
+
 // rule returns the rule name for backend b.
 func (prog *Program) rule(b Backend, name string) (*rule, error) {
 	if err := EntryError(name); err != nil {
@@ -124,7 +132,7 @@ func (prog *Program) rule(b Backend, name string) (*rule, error) {
 		if prog.Grammar == nil {
 			return nil, errClosureNeedsSource
 		}
-		r = prog.byName[name]
+		r = prog.closureRule(name)
 	default:
 		return nil, fmt.Errorf("unknown backend %d", b)
 	}

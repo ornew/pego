@@ -17,7 +17,7 @@ type exprBuilder[M any] interface {
 	// Any matches one character.
 	Any(build bool) M
 	// Call calls the rule r, at the binding level min of an Operators Rule.
-	Call(r *rule, min int) M
+	Call(r *staticRule, min int) M
 	// Seq matches the items in order. flat marks the items whose value is the elements of a
 	// sequence, valued those with one value; n is the number of values of the sequence.
 	Seq(items []M, flat, valued []bool, n int, build bool) M
@@ -62,10 +62,10 @@ type exprBuilder[M any] interface {
 	// Step charges the work of running m once, if the forms charge it per expression.
 	Step(m M) M
 	// RuleBody completes the rule r with its body.
-	RuleBody(r *rule, body M)
+	RuleBody(r *staticRule, body M)
 	// OperatorsRule completes the Operators Rule r with its trivia skip (if hasSkip), operand
 	// lines and operator lines.
-	OperatorsRule(r *rule, skip M, hasSkip bool, operands, operators []opLine[M])
+	OperatorsRule(r *staticRule, skip M, hasSkip bool, operands, operators []opLine[M])
 }
 
 // first is the terminal that an alternative of a choice must begin with (firstTerminal), or none.
@@ -97,7 +97,7 @@ type walker[M any] struct {
 	b exprBuilder[M]
 }
 
-func (c *walker[M]) compileRule(r *rule) {
+func (c *walker[M]) compileRule(r *staticRule) {
 	control := c.control
 	c.control.poll()
 	c.rule = r
@@ -386,7 +386,7 @@ func (c *walker[M]) attributed(e *grammar.Attributed, s *scope, build bool) M {
 }
 
 // compileOperatorsRule walks the Operators Rule e, the body of the rule r.
-func (c *walker[M]) compileOperatorsRule(r *rule, e *grammar.OperatorsRule) {
+func (c *walker[M]) compileOperatorsRule(r *staticRule, e *grammar.OperatorsRule) {
 	var skip M
 	if e.Skip != nil {
 		c.noCaptures(e.Skip)

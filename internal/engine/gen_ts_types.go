@@ -31,7 +31,7 @@ func qualifyTypes(typ string) string {
 }
 
 // typedTS returns the declarations of types.ts and the code that parser.ts adds for typed values.
-func (g *tsGen) typedTS(start *rule) (types, parser string, err error) {
+func (g *tsGen) typedTS(start *staticRule) (types, parser string, err error) {
 	if g.prog.typed == nil {
 		return "", "", fmt.Errorf("typed values need the grammar's types (type checking did not run)")
 	}

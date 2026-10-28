@@ -29,12 +29,12 @@ func testGeneratedFlowRecognizerParity(t *testing.T) {
 	}
 	cases := genCorpus(t)
 	taken, framed := 0, 0
-	leanRouteHook = func(table string, r *rule) {
+	leanRouteHook = func(table string, r *staticRule) {
 		if table == "recRules" {
 			taken++
 		}
 	}
-	framedRouteHook = func(table string, r *rule) {
+	framedRouteHook = func(table string, r *staticRule) {
 		if table == "recRules" {
 			framed++
 		}
@@ -292,14 +292,14 @@ func TestFlowRecognizerFallbackMatchesEngine(t *testing.T) {
 		"rule main = ws item* !.\nrule ws = ([ ] / comment)*\nrule comment = \"--\" [^\\n]* / block_comment\nrule block_comment = \"/*\" (block_comment / !\"*/\" .)* \"*/\"\nrule item = [a-z]+ / [0-9]+\n",
 		[]string{"", "a", "a 1 b2", "-- c\n a", "/* x */ a", "/* /* y */ */ 1", "/* open", "a -- tail", "@", "a /* x */ /* y */ 2", "--"}}
 	refused, framed := map[string]bool{}, map[string]bool{}
-	refuseFlowRecRule = func(r *rule) bool {
+	refuseFlowRecRule = func(r *staticRule) bool {
 		if recFlowEligible(r) {
 			refused[r.name] = true
 			return true
 		}
 		return false
 	}
-	framedRouteHook = func(table string, r *rule) {
+	framedRouteHook = func(table string, r *staticRule) {
 		if table == "recRules" {
 			framed[r.name] = true
 		}

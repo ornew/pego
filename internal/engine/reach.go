@@ -101,7 +101,7 @@ func (l *liveRules) missingBodies(table string, printed map[ruleKey]bool) []rule
 }
 
 // pruned reports whether the second pass leaves out everything of rule r of the current table.
-func (g *generator) pruned(r *rule) bool {
+func (g *generator) pruned(r *staticRule) bool {
 	if g.live == nil || g.keepTableRules && g.table != "trules" {
 		return false
 	}
@@ -110,12 +110,12 @@ func (g *generator) pruned(r *rule) bool {
 
 // slotReached reports whether the Body of rule r is printed: something enters the rule through its
 // slot, and not only through its wrapper.
-func (g *generator) slotReached(r *rule) bool {
+func (g *generator) slotReached(r *staticRule) bool {
 	return g.live == nil || g.table == "trules" || g.live.reach[ruleKey{g.table, r.id, false}]
 }
 
 // beginRule and endRule attribute the calls generated between them to the body of r.
-func (g *generator) beginRule(r *rule) {
+func (g *generator) beginRule(r *staticRule) {
 	g.emitting, g.emittingOK = ruleKey{g.table, r.id, false}, true
 }
 
@@ -123,7 +123,7 @@ func (g *generator) endRule() { g.emittingOK = false }
 
 // noteCall records a call of r from the body being generated, through its wrapper or its slot, and
 // checks in the second pass that the callee was not left out.
-func (g *generator) noteCall(r *rule, wrapper bool) {
+func (g *generator) noteCall(r *staticRule, wrapper bool) {
 	to := ruleKey{g.table, r.id, wrapper}
 	if g.collect != nil {
 		from := rootKey
@@ -138,7 +138,7 @@ func (g *generator) noteCall(r *rule, wrapper bool) {
 }
 
 // printedBody records that the Body of rule r of the current table is printed.
-func (g *generator) printedBody(r *rule) {
+func (g *generator) printedBody(r *staticRule) {
 	if g.bodySet == nil {
 		g.bodySet = map[ruleKey]bool{}
 	}

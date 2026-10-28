@@ -20,7 +20,7 @@ import (
 // recFlowEligible reports whether the rule r of the Node table or of the recognizer table is printed
 // from Flow IR as a flat rule: a lean value-free rule (leanRuleOK). Its captures
 // are Flow statements as in any rule; a semantic predicate keeps a rule out of leanRuleOK.
-func recFlowEligible(r *rule) bool {
+func recFlowEligible(r *staticRule) bool {
 	if !leanRuleOK(r) {
 		return false
 	}
@@ -64,13 +64,13 @@ func (g *generator) startRecFlow(rec *Program) error {
 	// Classes are inline tests, as the Node runtime's generated code writes them.
 	opts := flow.Options{Work: !g.noWork, Recovers: flow.Recovers(m), GuardedClasses: g.ordinary && !g.disableGuardedClasses,
 		InlineLiterals: maxInlineLiteral, Observe: g.observability, Node: true, Document: g.document}
-	g.flow = &flowState{m: m, origin: origin, opts: opts, rules: append(append([]*rule(nil), rec.rules...), rec.twins...)}
+	g.flow = &flowState{m: m, origin: origin, opts: opts, rules: append(append([]*staticRule(nil), rec.rules...), rec.twins...)}
 	return nil
 }
 
 // refuseFlowRecRule, if set by a test, makes flowRecRule refuse the rules it selects, so that the
 // framed body that takes their place is exercised. No manifest grammar reaches that fallback.
-var refuseFlowRecRule func(*rule) bool
+var refuseFlowRecRule func(*staticRule) bool
 
 // flowRecRule prints the eligible rule r of the recognizer from Flow IR as a flat rule. It returns
 // nil in three cases, and the caller (generator.rules) then prints the rule's framed body from Flow IR
@@ -80,7 +80,7 @@ var refuseFlowRecRule func(*rule) bool
 //   - the printed function would read its start or its context, which a value-free flat rule has
 //     no parameters for;
 //   - a variable of the function has a type that untypedGoType cannot name.
-func (g *generator) flowRecRule(r *rule) *flatRule {
+func (g *generator) flowRecRule(r *staticRule) *flatRule {
 	if refuseFlowRecRule != nil && refuseFlowRecRule(r) {
 		return nil
 	}

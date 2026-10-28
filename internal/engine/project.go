@@ -21,7 +21,7 @@ import (
 //   - no predicate reads $x, and the names x and f are captured only once in the rule;
 //   - f is captured in every element (an item of the element's sequence), with a value that is
 //     never nil (nonNil): otherwise an element can have no record, and $e.$f would be an error.
-func ruleProjectionsControlled(prog *Program, r *rule, control *compileControl) map[string]string {
+func ruleProjectionsControlled(prog *Program, r *staticRule, control *compileControl) map[string]string {
 	control.poll()
 	if prog.noProjections || r.action == nil || usesItems(r.action, control) {
 		return nil
@@ -372,6 +372,6 @@ func usesItems(t grammar.Term, control *compileControl) bool {
 	return found
 }
 
-func ruleProjections(prog *Program, r *rule) map[string]string {
+func ruleProjections(prog *Program, r *staticRule) map[string]string {
 	return ruleProjectionsControlled(prog, r, nil)
 }

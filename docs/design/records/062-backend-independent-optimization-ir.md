@@ -286,7 +286,7 @@ types, the declared variables, and the rules. A rule holds its name, its value t
 policy: memoized, transient, plain, left-recursion leader, splice, the variables it reads, and its variant
 key (value or value-free, recognition, work-control and Document modes, observability, and for closures
 and bytecode the family). These are the
-attributes that `rule` in `compile.go` holds today; Core IR makes them the input of every backend instead of
+attributes that `staticRule` in `compile.go` holds today; Core IR makes them the input of every backend instead of
 flags that each backend interprets.
 
 Expression nodes:

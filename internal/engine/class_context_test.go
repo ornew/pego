@@ -218,9 +218,9 @@ func TestClassConstructionProgramReleasesCompileContext(t *testing.T) {
 
 func TestFirstTerminalContextFacts(t *testing.T) {
 	leaf := &grammar.Literal{Value: "a"}
-	a := &rule{def: &grammar.RuleDef{Name: "a", Expr: &grammar.Ref{Name: "b"}}}
-	b := &rule{def: &grammar.RuleDef{Name: "b", Expr: &grammar.Capture{Name: "x", Expr: &grammar.Atomic{Expr: &grammar.Discard{Expr: &grammar.Seq{Items: []grammar.Expr{leaf}}}}}}}
-	p := &Program{byName: map[string]*rule{"a": a, "b": b}}
+	a := &staticRule{def: &grammar.RuleDef{Name: "a", Expr: &grammar.Ref{Name: "b"}}}
+	b := &staticRule{def: &grammar.RuleDef{Name: "b", Expr: &grammar.Capture{Name: "x", Expr: &grammar.Atomic{Expr: &grammar.Discard{Expr: &grammar.Seq{Items: []grammar.Expr{leaf}}}}}}}
+	p := &Program{byName: map[string]*staticRule{"a": a, "b": b}}
 	for _, control := range []*compileControl{nil, {ctx: context.Background()}} {
 		got, depth := firstTerminalControlled(p, &grammar.Ref{Name: "a"}, 0, map[string]bool{}, control)
 		if got != leaf || depth != 2 {

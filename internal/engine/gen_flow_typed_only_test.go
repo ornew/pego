@@ -30,13 +30,13 @@ func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
 	}{{"ordinary", false}, {"controls", true}} {
 		t.Run(form.name, func(t *testing.T) {
 			taken, framed, operators, generated := 0, 0, 0, 0
-			leanRouteHook = func(table string, r *rule) {
+			leanRouteHook = func(table string, r *staticRule) {
 				if table == "rules" {
 					taken++
 				}
 			}
-			framedRouteHook = func(table string, r *rule) { framed++ }
-			operatorsRouteHook = func(table string, r *rule) { operators++ }
+			framedRouteHook = func(table string, r *staticRule) { framed++ }
+			operatorsRouteHook = func(table string, r *staticRule) { operators++ }
 			defer func() { leanRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil }()
 			for _, c := range cases {
 				g, err := parseTest(c.src)
@@ -171,13 +171,13 @@ func TestFlowTypedOnlyEntriesMatchFull(t *testing.T) {
 			dir := t.TempDir()
 			writeGoMod(t, dir)
 			taken := 0
-			leanRouteHook = func(table string, r *rule) {
+			leanRouteHook = func(table string, r *staticRule) {
 				if table == "rules" {
 					taken++
 				}
 			}
-			framedRouteHook = func(table string, r *rule) { taken++ }
-			operatorsRouteHook = func(table string, r *rule) { taken++ }
+			framedRouteHook = func(table string, r *staticRule) { taken++ }
+			operatorsRouteHook = func(table string, r *staticRule) { taken++ }
 			var pkgs []string
 			for i, c := range typedOnlyConverted {
 				base := gen.GenOptions{Types: true, WorkControls: form.controls}

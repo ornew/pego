@@ -15,6 +15,9 @@ type closureBuilder struct {
 	// plainDispatch leaves out the per-expression work charge (Options.controlledDispatch builds
 	// the metered closure graph).
 	plainDispatch bool
+	// rules holds the rules the parser runs, by ID (staticRule.id). They are made when a body or a
+	// call needs them and get the facts of their static rules in finish.
+	rules []*rule
 }
 
 var _ exprBuilder[matcher] = (*closureBuilder)(nil)
@@ -24,6 +27,36 @@ func newClosureWalker(c *compiler, plainDispatch bool) *walker[matcher] {
 	return &walker[matcher]{compiler: c, b: &closureBuilder{prog: c.prog, control: c.control, plainDispatch: plainDispatch}}
 }
 
+// rule returns the rule the parser runs for the static rule r.
+func (b *closureBuilder) rule(r *staticRule) *rule {
+	for len(b.rules) <= r.id {
+		b.rules = append(b.rules, nil)
+	}
+	if b.rules[r.id] == nil {
+		b.rules[r.id] = &rule{}
+	}
+	return b.rules[r.id]
+}
+
+// finish gives the rules the facts that the compiler found out about them, once it is done, and
+// returns them by ID.
+func (b *closureBuilder) finish() []*rule {
+	for _, rs := range [][]*staticRule{b.prog.rules, b.prog.twins} {
+		for _, sr := range rs {
+			r := b.rule(sr)
+			r.staticRule = *sr
+			r.initVals = b.prog.vars.valuesOf(sr.vars)
+			if sr.nodeType != "" {
+				r.nodeKinds = value.NewNodeTypeKinds(sr.nodeType)
+			}
+			if sr.opNodeType != "" {
+				r.opKinds = value.NewNodeTypeKinds(sr.opNodeType)
+			}
+		}
+	}
+	return b.rules
+}
+
 func (b *closureBuilder) Step(m matcher) matcher {
 	if !workControlsEnabled || b.plainDispatch {
 		return m
@@ -31,21 +64,23 @@ func (b *closureBuilder) Step(m matcher) matcher {
 	return func(p *parser) (*value.Node, bool) { p.stepWork(); return m(p) }
 }
 
-func (b *closureBuilder) RuleBody(r *rule, m matcher) {
-	r.kinds = value.NewRuleKinds(r.name)
-	if r.splice {
+func (b *closureBuilder) RuleBody(sr *staticRule, m matcher) {
+	r := b.rule(sr)
+	r.kinds = value.NewRuleKinds(sr.name)
+	if sr.splice {
 		r.value = func(_ *parser, v *value.Node, _ int) *value.Node { return v }
 	} else {
-		r.value = scopeValueOf(b.prog, r.bodyExpr())
+		r.value = scopeValueOf(b.prog, sr.bodyExpr())
 	}
 	r.body = func(p *parser, _ int) (*value.Node, bool) { return m(p) }
-	if r.action != nil {
-		r.act = termEvaluator(r.action)
+	if sr.action != nil {
+		r.act = termEvaluator(sr.action)
 	}
 }
 
-func (b *closureBuilder) OperatorsRule(r *rule, skip matcher, hasSkip bool, operands, operators []opLine[matcher]) {
-	r.kinds = value.NewRuleKinds(r.name)
+func (b *closureBuilder) OperatorsRule(sr *staticRule, skip matcher, hasSkip bool, operands, operators []opLine[matcher]) {
+	r := b.rule(sr)
+	r.kinds = value.NewRuleKinds(sr.name)
 	// The lines build the rule's value.
 	r.value = func(_ *parser, v *value.Node, _ int) *value.Node { return v }
 	pr := &operatorsRule{}
@@ -115,7 +150,8 @@ func (b *closureBuilder) Any(build bool) matcher {
 	return single(build, idAny, func(*parser, rune) bool { return true })
 }
 
-func (b *closureBuilder) Call(r *rule, min int) matcher {
+func (b *closureBuilder) Call(sr *staticRule, min int) matcher {
+	r := b.rule(sr)
 	return func(p *parser) (*value.Node, bool) {
 		if r.plain && !p.noPlain {
 			return p.invokePlain(r, min) // what call does for such a rule, without its checks

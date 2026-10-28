@@ -117,8 +117,8 @@ rule expr = #operators {
 			if controlled == nil || !reflect.DeepEqual(prog.descTable, controlled.descTable) || prog.nseen != controlled.nseen || len(prog.twins) != len(controlled.twins) {
 				t.Fatal("lazy graph metadata differs")
 			}
-			for i, r := range append(append([]*rule{}, prog.rules...), prog.twins...) {
-				all := append(append([]*rule{}, controlled.rules...), controlled.twins...)
+			for i, r := range append(append([]*staticRule{}, prog.rules...), prog.twins...) {
+				all := append(append([]*staticRule{}, controlled.rules...), controlled.twins...)
 				other := all[i]
 				if r.id != other.id || r.memo != other.memo || r.leader != other.leader || r.seen != other.seen || r.positional != other.positional || r.plain != other.plain || !reflect.DeepEqual(r.scope.names, other.scope.names) {
 					t.Fatalf("rule metadata differs: %s", r.name)

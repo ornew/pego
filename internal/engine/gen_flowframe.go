@@ -22,7 +22,7 @@ func frameRefsKnown(t grammar.Term, s *scope, locals ...string) bool {
 // typedFrameComment reports whether the body of the typed rule r is printed in place under the
 // runtime-owned frame, a left-recursion leader or a rule that recovers, and returns the comment of
 // its matcher.
-func (g *generator) typedFrameComment(r *rule) (string, bool) {
+func (g *generator) typedFrameComment(r *staticRule) (string, bool) {
 	comment := "typed recovery body inlined"
 	if r.leader {
 		comment = "typed LR body inlined"

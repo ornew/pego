@@ -20,7 +20,7 @@ func shapeElems(p *Program, e grammar.Expr) []valueElem {
 }
 
 // spliceBody returns the body of the rule name if it is a splice rule: a rule that makes no node of
-// its own, so that a call of it contributes what its body does, as a group (rule.splice).
+// its own, so that a call of it contributes what its body does, as a group (staticRule.splice).
 func (p *Program) spliceBody(name string) (grammar.Expr, bool) {
 	if p == nil {
 		return nil, false

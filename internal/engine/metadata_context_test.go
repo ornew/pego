@@ -55,7 +55,7 @@ func TestProjectionMetadataCancellation(t *testing.T) {
 		run  func(*compileControl)
 	}{
 		{"candidate-walk", func(c *compileControl) {
-			ruleProjectionsControlled(&Program{}, &rule{def: &grammar.RuleDef{Expr: expr}, action: &grammar.StringLit{}}, c)
+			ruleProjectionsControlled(&Program{}, &staticRule{def: &grammar.RuleDef{Expr: expr}, action: &grammar.StringLit{}}, c)
 		}},
 		{"action-use", func(c *compileControl) { markProjectedMaps(term, nil, map[*grammar.Call]bool{}, c) }},
 		{"action-indices", func(c *compileControl) { usesItems(term, c) }},

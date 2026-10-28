@@ -122,7 +122,7 @@ func TestParseStreamDiscardsInput(t *testing.T) {
 		maxBuf = max(maxBuf, len(p.in))
 		return nil
 	}
-	if _, ok := p.call(prog.byName["main"], 0); !ok {
+	if _, ok := p.call(prog.closureRule("main"), 0); !ok {
 		t.Fatal(p.syntaxError())
 	}
 	if maxBuf > 10000 {

@@ -467,13 +467,13 @@ type generator struct {
 	flowRules  int
 	flowFrames int
 	// nodeScopes records the frame layouts shared by typed rule metadata.
-	nodeScopes map[*rule][]string
+	nodeScopes map[*staticRule][]string
 	// typedOnly leaves out the untyped Node family: the rule table keeps only the metadata the
 	// typed table shares.
 	typedOnly bool
 	prog      *Program
-	table     string // the rule table being generated: rules, or recRules for Recognize
-	cur       *rule  // the rule being generated
+	table     string      // the rule table being generated: rules, or recRules for Recognize
+	cur       *staticRule // the rule being generated
 	// proj holds the projected repetition captures of the rule being generated (projections).
 	proj map[string]string
 	// final is the struct constructor that makes an action's result in the typed runtime: its
@@ -492,13 +492,13 @@ type generator struct {
 	descIDs map[string]expID
 	// streamStart is the start rule of ParseStream, whose separate body
 	// (generated while streamBody is set) emits its #stream elements.
-	streamStart *rule
+	streamStart *staticRule
 	streamBody  bool
 	streamErr   error
 	// plainCalled holds the plain rules that a generated call refers to by their wrapper
 	// (ruleCall). wrappers are the methods of the plain rules, which dropUnusedWrappers keeps only
 	// for the rules in plainCalled.
-	plainCalled map[*rule]bool
+	plainCalled map[*staticRule]bool
 	wrappers    []wrapperSpan
 	// live and collect are the passes of generate (reach.go): live leaves out the unreachable
 	// rules of the Node and recognizer tables, collect records the calls that reach them.
@@ -667,7 +667,7 @@ func (g *generator) recovers() bool {
 			}
 		}
 	}
-	for _, rs := range [][]*rule{g.prog.rules, g.prog.twins} {
+	for _, rs := range [][]*staticRule{g.prog.rules, g.prog.twins} {
 		for _, r := range rs {
 			walkExpr(r.def.Expr, check)
 			walkExpr(r.bodyExpr(), check)
@@ -683,27 +683,27 @@ func (g *generator) recovers() bool {
 // leanRouteHook is called with the rule table and the rule for each rule that takes the lean route
 // in rules, in a Node or recognizer table. Tests set it to check the route that is chosen, not the text
 // of the generated code.
-var leanRouteHook func(table string, r *rule)
+var leanRouteHook func(table string, r *staticRule)
 
 // framedRouteHook is called with the rule table and the rule for each rule whose framed body is printed
 // from Flow IR (flowNodeFrameBody), in a Node or recognizer table. Tests set it as leanRouteHook.
-var framedRouteHook func(table string, r *rule)
+var framedRouteHook func(table string, r *staticRule)
 
 // operatorsRouteHook is called with the rule table and the Operators Rule for each line of a Node or
 // recognizer table that is printed from Flow IR. Tests set it as leanRouteHook.
-var operatorsRouteHook func(table string, r *rule)
+var operatorsRouteHook func(table string, r *staticRule)
 
 // streamRouteHook is called with the rule table and the rule for each ParseStream start rule whose
 // stream body is printed from Flow IR (flowStreamBody). Tests set it as leanRouteHook.
-var streamRouteHook func(table string, r *rule)
+var streamRouteHook func(table string, r *staticRule)
 
 func (g *generator) rules() {
 	init := &g.init
 	methodsBefore := g.methods.String()
-	bodies := map[*rule]string{}
-	scopes := map[*rule]*scope{}
-	flats := map[*rule]*flatRule{}
-	all := append(append([]*rule(nil), g.prog.rules...), g.prog.twins...)
+	bodies := map[*staticRule]string{}
+	scopes := map[*staticRule]*scope{}
+	flats := map[*staticRule]*flatRule{}
+	all := append(append([]*staticRule(nil), g.prog.rules...), g.prog.twins...)
 	for _, r := range all {
 		s := newScope()
 		scopes[r] = s
@@ -760,7 +760,7 @@ func (g *generator) rules() {
 		}
 	}
 	if g.table == "rules" {
-		g.nodeScopes = make(map[*rule][]string, len(all))
+		g.nodeScopes = make(map[*staticRule][]string, len(all))
 		for _, r := range all {
 			g.nodeScopes[r] = append([]string(nil), scopes[r].names...)
 		}
@@ -986,7 +986,7 @@ func (g *generator) nodeTypeID(name string) string {
 // typedResultConversion returns the statement that converts the value v of rule r to the rule's
 // named node type in the typed runtime (what finish does), or "" if r has none. body, if not "",
 // holds the fresh node of the rule's body (tfreshNode), which converts in place.
-func (g *generator) typedResultConversion(r *rule, v, body string) string {
+func (g *generator) typedResultConversion(r *staticRule, v, body string) string {
 	if r.nodeType == "" {
 		return ""
 	}
@@ -998,7 +998,7 @@ func (g *generator) typedResultConversion(r *rule, v, body string) string {
 
 // ownsBody reports whether finishing the value of rule r in the typed runtime converts the fresh
 // node of its body in place: the rule has a named node type and returns its body's value.
-func (g *generator) ownsBody(r *rule) bool {
+func (g *generator) ownsBody(r *staticRule) bool {
 	return r.nodeType != "" && !r.novalue && r.action == nil
 }
 
@@ -1010,7 +1010,7 @@ func (g *generator) ownsBody(r *rule) bool {
 //
 // For a flat rule (d, see gen_flowrule.go), the method that runs the body (s<id>, v<id> or i<id>)
 // has it inlined, with the action.
-func (g *generator) typedCall(r *rule, body string, s *scope, d *flatRule) {
+func (g *generator) typedCall(r *staticRule, body string, s *scope, d *flatRule) {
 	if _, operatorsRule := r.def.Expr.(*grammar.OperatorsRule); operatorsRule || r.leader {
 		return // the general call
 	}
@@ -1128,7 +1128,7 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *flatRule) {
 
 // wrapperSpan is the span [start, end) of the methods of a plain rule's wrapper in generator.methods.
 type wrapperSpan struct {
-	r          *rule
+	r          *staticRule
 	start, end int
 }
 
@@ -1277,7 +1277,7 @@ func shaperLit(prog *Program, e grammar.Expr) string {
 
 // plainCall writes the method r<id>, which does what invokePlain does for the rule r (a rule never
 // memoized and without captures) with a direct call of its body.
-func (g *generator) plainCall(r *rule, body string) {
+func (g *generator) plainCall(r *staticRule, body string) {
 	name := fmt.Sprintf("%s%d", g.plainPrefix(), r.id)
 	if g.observability {
 		name = g.tracePlainWrapper(r, name)
@@ -1305,7 +1305,7 @@ func (g *generator) plainCall(r *rule, body string) {
 
 // projections returns the projected repetition captures of the rule r (see ruleProjections), none
 // in the recognizer.
-func (g *generator) projections(r *rule) map[string]string {
+func (g *generator) projections(r *staticRule) map[string]string {
 	if g.table == "recRules" {
 		return nil
 	}
@@ -1406,7 +1406,7 @@ func classReject(e *grammar.CharClass) string {
 	return "!(" + cond + ")"
 }
 
-func (g *generator) operatorsRule(r *rule, e *grammar.OperatorsRule) {
+func (g *generator) operatorsRule(r *staticRule, e *grammar.OperatorsRule) {
 	var b strings.Builder
 	fmt.Fprintf(&b, "\t%s[%d].OperatorsRule = &%s{\n", g.table, r.id, g.pick("OperatorsRule", "TOperatorsRule"))
 	// The lines of the rule's Core IR, in the order of e, if they are printed from Flow IR.
@@ -1489,7 +1489,7 @@ func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, opera
 }
 
 // ruleCall returns the call of the rule r from Operators Rule level min.
-func (g *generator) ruleCall(r *rule, min int) string {
+func (g *generator) ruleCall(r *staticRule, min int) string {
 	_, operatorsRule := r.def.Expr.(*grammar.OperatorsRule)
 	switch {
 	case g.document && g.table == "rules":
@@ -1505,7 +1505,7 @@ func (g *generator) ruleCall(r *rule, min int) string {
 		// Never memoized and without captures: call does nothing but invokePlain, which a
 		// method of its own does with a direct call of the body (see plainCalls).
 		if g.plainCalled == nil {
-			g.plainCalled = map[*rule]bool{}
+			g.plainCalled = map[*staticRule]bool{}
 		}
 		g.plainCalled[r] = true
 		return fmt.Sprintf("%s%d(p)", g.plainPrefix(), r.id)

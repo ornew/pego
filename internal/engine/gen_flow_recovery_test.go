@@ -48,7 +48,7 @@ func TestFlowRecoveryPrintsFromFlow(t *testing.T) {
 	for _, controls := range []bool{false, true} {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
-			framedRouteHook = func(table string, r *rule) {
+			framedRouteHook = func(table string, r *staticRule) {
 				if !hasRecovery(r.bodyExpr()) {
 					return
 				}
@@ -60,7 +60,7 @@ func TestFlowRecoveryPrintsFromFlow(t *testing.T) {
 					taken[table+" recovery with a leader"]++
 				}
 			}
-			operatorsRouteHook = func(table string, r *rule) { taken[table+" operators line"]++ }
+			operatorsRouteHook = func(table string, r *staticRule) { taken[table+" operators line"]++ }
 			defer func() { framedRouteHook, operatorsRouteHook = nil, nil }()
 			for _, c := range cases {
 				g, err := parseTest(c.src)

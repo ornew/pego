@@ -177,7 +177,11 @@ func newVMProgram(m *bytecode.Module, iterative bool) *vmProgram {
 			vm.byName[r.name] = r
 		}
 	}
-	vm.nseen = numberSeen(vm.rules)
+	statics := make([]*staticRule, len(vm.rules))
+	for i, r := range vm.rules {
+		statics[i] = &r.staticRule
+	}
+	vm.nseen = numberSeen(statics)
 	vm.runSites = make([]*vmRunSite, len(m.Code))
 	for ip, in := range m.Code {
 		if in.Op == bytecode.OpRepeat || in.Op == bytecode.OpRepeatWide {

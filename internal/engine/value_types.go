@@ -209,7 +209,7 @@ type valueInference struct {
 	quiet       bool // while a lambda body is typed again with a wider parameter type
 	rule        *grammar.RuleDef
 	// spliced holds the splice rules whose bodies are being expanded; a call inside them is an
-	// element of its own (rule.splice).
+	// element of its own (staticRule.splice).
 	spliced map[string]bool
 	// nodeMembers, if not nil, receives the member accesses that read only node members.
 	nodeMembers map[*grammar.Member]bool

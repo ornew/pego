@@ -46,9 +46,9 @@ func buildCoreFrom(prog *Program, origin map[core.Node]grammar.Expr) (*core.Modu
 // (ruleProjections is ignored), the shape of the values the recognizer's table writes its actions for
 // (generator.projections).
 func buildCoreProjecting(prog *Program, origin map[core.Node]grammar.Expr, project bool) (*core.Module, error) {
-	all := append(append([]*rule(nil), prog.rules...), prog.twins...)
+	all := append(append([]*staticRule(nil), prog.rules...), prog.twins...)
 	b := &coreBuilder{prog: prog, m: &core.Module{Rules: make([]*core.Rule, len(all))}, origin: origin,
-		exps: map[string]core.ExpID{}, classes: map[string]*core.Class{}, starts: map[*rule]bool{}}
+		exps: map[string]core.ExpID{}, classes: map[string]*core.Class{}, starts: map[*staticRule]bool{}}
 	b.noProject = !project
 	b.rec = prog.valueRecord()
 	for _, d := range fixedDescs {
@@ -94,7 +94,7 @@ func buildCoreProjecting(prog *Program, origin map[core.Node]grammar.Expr, proje
 type coreBuilder struct {
 	prog *Program
 	m    *core.Module
-	cur  *rule
+	cur  *staticRule
 	// noProject builds no projected repetition: proj stays empty.
 	noProject bool
 	// proj holds the projected repetition captures of the rule being built (ruleProjections).
@@ -109,14 +109,14 @@ type coreBuilder struct {
 	exps    map[string]core.ExpID
 	classes map[string]*core.Class
 	// starts holds the start rules.
-	starts map[*rule]bool
+	starts map[*staticRule]bool
 	// streamTop holds the expressions of the rule being built where #stream makes a Stream: its
 	// body, the items of its body sequence and the operands of captures that are one of these.
 	streamTop map[grammar.Expr]bool
 }
 
 // callLevel returns the minimum binding level of a call of the rule r (core.Call.Level).
-func callLevel(e *grammar.Ref, r *rule) (int, error) {
+func callLevel(e *grammar.Ref, r *staticRule) (int, error) {
 	if e.Level == "" {
 		return 0, nil
 	}
@@ -209,7 +209,7 @@ func (s *coreScope) lookup(name string) (int, bool) {
 	return 0, false
 }
 
-func (b *coreBuilder) rule(r *rule) (*core.Rule, error) {
+func (b *coreBuilder) rule(r *staticRule) (*core.Rule, error) {
 	b.cur = r
 	cr := &core.Rule{ID: r.id, Name: r.name, Where: r.whereName(), Want: !r.lean}
 	if b.rec != nil && !r.novalue {
@@ -335,7 +335,7 @@ func coreShape(prog *Program, e grammar.Expr) core.Shape {
 // coreLayout returns the frame layout of a scope with the body e: the captures written in it in
 // the order they are first met, unreachable ones included, following the build policy of the
 // rule r with the projections proj.
-func coreLayout(prog *Program, r *rule, proj map[string]string, e grammar.Expr, build bool) *coreScope {
+func coreLayout(prog *Program, r *staticRule, proj map[string]string, e grammar.Expr, build bool) *coreScope {
 	s := &coreScope{}
 	var visit func(grammar.Expr, bool)
 	visit = func(e grammar.Expr, build bool) {

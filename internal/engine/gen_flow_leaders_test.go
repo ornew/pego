@@ -29,7 +29,7 @@ func TestFlowLeadersPrintFromFlow(t *testing.T) {
 	for _, controls := range []bool{false, true} {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
-			framedRouteHook = func(table string, r *rule) {
+			framedRouteHook = func(table string, r *staticRule) {
 				if r.leader {
 					taken[table]++
 				}

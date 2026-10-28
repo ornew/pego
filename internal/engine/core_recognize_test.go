@@ -18,7 +18,7 @@ func coreRecognizeCase(name, mode string, g *generator) (*coreGenCase, error) {
 		return nil, err
 	}
 	c := &coreGenCase{name: name, mode: mode, table: "recRules", golden: recognizerGolden, gen: g, origin: map[core.Node]grammar.Expr{}}
-	c.rules = append(append([]*rule(nil), rec.rules...), rec.twins...)
+	c.rules = append(append([]*staticRule(nil), rec.rules...), rec.twins...)
 	m, err := buildCoreFrom(rec, c.origin)
 	if err != nil {
 		return nil, err

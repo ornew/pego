@@ -402,6 +402,26 @@ func (p *parser) mergeExpected(far int, ids []expID) {
 	}
 }
 
+// rule is a rule as the parser runs it: the facts of the compiled rule and the executable parts that
+// a backend built for it (closures.go, vm.go).
+type rule struct {
+	staticRule
+	// kinds are the node kinds the rule makes (value.NewRuleKinds).
+	kinds value.RuleKinds
+	body  func(p *parser, min int) (*value.Node, bool)
+	// nodeKinds and opKinds are the kinds of nodeType and opNodeType.
+	nodeKinds, opKinds *value.NodeTypeKinds
+	operatorsRule      *operatorsRule
+	// act evaluates the action (nil if there is no action).
+	act evaluator
+	// value makes the rule's value from the value of its body, for a rule without an action.
+	value func(p *parser, v *value.Node, start int) *value.Node
+	// entry is the start of the body in bytecode (only for rules of the bytecode backend).
+	entry int
+	// initVals are the initial values of vars, in the same order (nil when vars is empty).
+	initVals []any
+}
+
 // call calls rule r at binding level min.
 // The work is split into callBegin, growBegin/growStep/growEnd, invoke, and callEnd, and the
 // iterative-model VM (ivm.go) calls the same functions from its own stack.
@@ -500,22 +520,6 @@ func (p *parser) firstCall(r *rule) bool {
 		return false
 	}
 	return p.memoFirstCall(p.pos, r.seen)
-}
-
-// numberSeen numbers the rules whose memoization firstCall may defer (rule.seen) and returns
-// their count.
-func numberSeen(lists ...[]*rule) int {
-	n := 0
-	for _, rules := range lists {
-		for _, r := range rules {
-			r.seen = -1
-			if r.memo && !r.transient && !r.leader {
-				r.seen = n
-				n++
-			}
-		}
-	}
-	return n
 }
 
 // callState is the state saved across a memoized rule call.

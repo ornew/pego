@@ -6,11 +6,11 @@ import (
 	"github.com/ornew/pego/grammar"
 )
 
-func (g *generator) tracePlainWrapper(r *rule, name string) string {
+func (g *generator) tracePlainWrapper(r *staticRule, name string) string {
 	return g.traceCallWrapper(r, name, true)
 }
 
-func (g *generator) traceCallWrapper(r *rule, name string, evaluated bool) string {
+func (g *generator) traceCallWrapper(r *staticRule, name string, evaluated bool) string {
 	body := name + "ObservedBody"
 	eval := ""
 	if evaluated {

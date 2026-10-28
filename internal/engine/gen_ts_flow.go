@@ -51,7 +51,7 @@ func (g *tsGen) startTSFlow() bool {
 // flow.LocalRule accepts prints as a flat function; a rule whose body is a framed body prints under the
 // frame the runtime owns, which also runs its action and finish. On success it sets scope to the
 // capture scope of the printed body.
-func (g *tsGen) flowRule(r *rule, scope *scope) (call string, ok bool) {
+func (g *tsGen) flowRule(r *staticRule, scope *scope) (call string, ok bool) {
 	if g.flow == nil {
 		return "", false
 	}
@@ -1042,7 +1042,7 @@ func (p *tsFlowPrinter) decl(name, s string) {
 }
 
 // call returns the call of the rule r from the Operators Rule level min.
-func (p *tsFlowPrinter) call(r *rule, min int) string {
+func (p *tsFlowPrinter) call(r *staticRule, min int) string {
 	g := p.g
 	_, operatorsRule := r.def.Expr.(*grammar.OperatorsRule)
 	switch {

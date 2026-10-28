@@ -240,7 +240,7 @@ func moduleDefaultStart(m *bytecode.Module) string { return m.Strings[m.Rules[m.
 // moduleProgram builds a program from a module alone, without the grammar; only the bytecode
 // backends run it.
 func moduleProgram(m *bytecode.Module) *Program {
-	prog := &Program{byName: map[string]*rule{}, types: map[string]grammar.TypeDecl{}, sourceInfo: m.SourceInfo, defaultValue: m.DefaultValue}
+	prog := &Program{byName: map[string]*staticRule{}, types: map[string]grammar.TypeDecl{}, sourceInfo: m.SourceInfo, defaultValue: m.DefaultValue}
 	for _, t := range m.Types {
 		if t.Node >= 0 {
 			// The run time needs only that the type is a node type.

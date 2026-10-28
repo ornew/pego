@@ -26,11 +26,11 @@ type Program struct {
 	// unsupportedSeen holds the type syntax reported as not supported yet while compiling, so that
 	// an alias resolved from several places, by several checkers, is reported once.
 	unsupportedSeen map[grammar.TypeExpr]bool
-	rules           []*rule
-	descTable       []string  // expectation table (starting with fixedDescs)
-	twins           []*rule   // value-free twins (rule.twin); ids start at len(rules)
-	nseen           int       // number of rules with rule.seen set
-	typed           *typeInfo // types found by the type checker (nil if it did not run)
+	rules           []*staticRule
+	descTable       []string      // expectation table (starting with fixedDescs)
+	twins           []*staticRule // value-free twins (staticRule.twin); ids start at len(rules)
+	nseen           int           // number of rules with staticRule.seen set
+	typed           *typeInfo     // types found by the type checker (nil if it did not run)
 	// projected holds the map calls of actions that read a projected repetition (project.go).
 	projected     map[*grammar.Call]bool
 	noProjections bool
@@ -39,7 +39,9 @@ type Program struct {
 	// defaultValue reports that value actions and declared rule types were dropped
 	// (Options.DefaultValue).
 	defaultValue bool
-	byName       map[string]*rule
+	byName       map[string]*staticRule
+	// closureRules holds the rules the closure backend runs, by ID (rule.id).
+	closureRules []*rule
 	// starts holds the start rules in declaration order and defaultStart the default one
 	// (resolveStarts).
 	starts       []string
@@ -118,52 +120,40 @@ type Options struct {
 // succeeded. On failure the position is unspecified; the caller restores it.
 type matcher func(p *parser) (*value.Node, bool)
 
-type rule struct {
-	// where names the rule in the message of a failed action, if not name (rule.whereName).
+// staticRule is a rule of a compiled program: what the compiler found out about it. Every backend and
+// generator reads it; the parser runs a rule (runtime.go) made from it.
+type staticRule struct {
+	// where names the rule in the message of a failed action, if not name (staticRule.whereName).
 	where string
 	// splice reports that the rule makes no node of its own: a hidden rule without an action, whose
 	// elements are those of the sequence that calls it.
 	splice bool
-	// kinds are the node kinds the rule makes (newRuleKinds).
-	kinds  value.RuleKinds
 	id     int
 	name   string
 	def    *grammar.RuleDef
 	scope  *scope
-	body   func(p *parser, min int) (*value.Node, bool)
 	action grammar.Term
 	// nodeType, if not "", is the named node type the rule's value is converted to
-	// (Program.ruleNodeType), whose kinds are nodeKinds.
-	nodeType  string
-	nodeKinds *value.NodeTypeKinds
+	// (Program.ruleNodeType).
+	nodeType string
 	// opNodeType, if not "", is the named node type every operator node of an Operators Rule is
-	// converted to (Program.operatorsNodeType), whose kinds are opKinds.
-	opNodeType    string
-	opKinds       *value.NodeTypeKinds
-	memo          bool
-	missing       bool // this rule or a callee contains #missing
-	leader        bool
-	operatorsRule *operatorsRule
+	// converted to (Program.operatorsNodeType).
+	opNodeType string
+	memo       bool
+	missing    bool // this rule or a callee contains #missing
+	leader     bool
 	// stream reports that the top level of the rule body has a #stream repetition.
 	stream bool
 	// positional reports that the result may depend on position values (analysis.positional).
 	positional bool
-	// act evaluates the action (nil if there is no action).
-	act evaluator
-	// value makes the rule's value from the value of its body, for a rule without an action.
-	value func(p *parser, v *value.Node, start int) *value.Node
-	// entry is the start of the body in bytecode (only for rules of the bytecode backend).
-	entry int
 	// twin is the value-free twin used for calls from places where the value is discarded (#atomic, -, !,
 	// value-free bodies). It is created for rules that return a CST (no action) and are not part of a left-recursion cycle (twinOK), when such a call exists. It matches the
 	// same input in the same way, but keeps a separate memo (ids from len(rules) on).
-	twin   *rule
+	twin   *staticRule
 	twinOK bool
 	// vars are the variables that the rule or the rules it calls read, sorted. The rule's result is
 	// memoized per combination of their values at the call (memoKey.env).
 	vars []string
-	// initVals are the initial values of vars, in the same order (nil when vars is empty).
-	initVals []any
 	// transient reports that the rule is not memoized in ordinary parses (it is memoized only by
 	// the incremental Document) (transientRules).
 	transient bool
@@ -252,7 +242,7 @@ type compiler struct {
 	an             *analysis
 	opts           Options
 	errs           ErrorList
-	rule           *rule
+	rule           *staticRule
 	descIDs        map[string]expID
 	missingSites   int
 	missingSiteIDs map[*grammar.Attribute]int
@@ -293,7 +283,7 @@ func Compile(g *grammar.Grammar, opts Options) (*Program, error) {
 // grammars so loading can skip the analysis.
 type ruleFlags struct {
 	memo, leader, positional bool
-	// twin reports that the rule has a value-free twin (rule.twin).
+	// twin reports that the rule has a value-free twin (staticRule.twin).
 	twin bool
 }
 
@@ -424,7 +414,7 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 			return nil, normalizationError
 		}
 	}
-	prog := &Program{Grammar: g, source: source, byName: map[string]*rule{}, types: map[string]grammar.TypeDecl{},
+	prog := &Program{Grammar: g, source: source, byName: map[string]*staticRule{}, types: map[string]grammar.TypeDecl{},
 		descTable: append([]string(nil), fixedDescs...)}
 	c := &compiler{control: control, prog: prog, opts: opts}
 	if control != nil {
@@ -463,7 +453,7 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 			c.errorf(rd.Diagnostic(), "rule %s is already defined", rd.Name)
 			continue
 		}
-		r := &rule{id: i, name: rd.Name, def: rd, scope: newScope(), action: rd.Action, splice: spliceRule(rd)}
+		r := &staticRule{id: i, name: rd.Name, def: rd, scope: newScope(), action: rd.Action, splice: spliceRule(rd)}
 		if r.splice && rd.Type != nil {
 			c.errorf(rd.Diagnostic(), "rule %s makes no node of its own, so it cannot have a result type", rd.Name)
 		}
@@ -496,7 +486,6 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 		}
 		r.transient = transient[r.name]
 		r.vars = vars[r.name]
-		r.initVals = c.prog.vars.valuesOf(r.vars)
 		if flags == nil {
 			_, isOperatorsRule := r.def.Expr.(*grammar.OperatorsRule)
 			twin = r.action == nil && !isOperatorsRule && !c.an.cyclic[r.name] && !hasStream(r.def.Expr, control)
@@ -558,16 +547,16 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 			prog.typeKinds[name] = value.KindOf(name, "")
 		}
 	}
-	for _, rs := range [][]*rule{prog.rules, prog.twins} {
+	for _, rs := range [][]*staticRule{prog.rules, prog.twins} {
 		control.poll()
 		for _, r := range rs {
 			control.poll()
 			r.plain = !r.leader && (!r.memo || r.transient) && len(r.scope.names) == 0
 			if n, ok := prog.ruleNodeType(r.def); ok && !r.novalue {
-				r.nodeType, r.nodeKinds = n.name, value.NewNodeTypeKinds(n.name)
+				r.nodeType = n.name
 			}
 			if n, ok := prog.operatorsNodeType(r.def); ok && !r.novalue {
-				r.opNodeType, r.opKinds = n.name, value.NewNodeTypeKinds(n.name)
+				r.opNodeType = n.name
 			}
 		}
 	}
@@ -584,6 +573,7 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 	}
 
 	control.check()
+	prog.closureRules = w.b.(*closureBuilder).finish()
 	return prog, nil
 }
 
@@ -604,26 +594,42 @@ func validateGrammar(g *grammar.Grammar, control *compileControl) error {
 }
 
 // bodyExpr returns the expression the rule's body matches.
-func (r *rule) bodyExpr() grammar.Expr {
+func (r *staticRule) bodyExpr() grammar.Expr {
 	return r.def.Expr
 }
 
 // leanBody reports whether the value of the rule body is unused. It is unused when there is an
 // action, which reads captures only, provided the rule has no #stream. Every backend and the
 // code generator use this test to compile the body value-free.
-func leanBody(r *rule) bool {
+func leanBody(r *staticRule) bool {
 	if r.stream {
 		return false
 	}
 	return r.action != nil
 }
 
+// numberSeen numbers the rules whose memoization firstCall may defer (staticRule.seen) and returns
+// their count.
+func numberSeen(lists ...[]*staticRule) int {
+	n := 0
+	for _, rules := range lists {
+		for _, r := range rules {
+			r.seen = -1
+			if r.memo && !r.transient && !r.leader {
+				r.seen = n
+				n++
+			}
+		}
+	}
+	return n
+}
+
 // twinOf returns the value-free twin of rule r (creating it if needed; it is assembled later).
-func (c *compiler) twinOf(r *rule) *rule {
+func (c *compiler) twinOf(r *staticRule) *staticRule {
 	if r.twin == nil {
 		prog := c.prog
-		r.twin = &rule{id: len(prog.rules) + len(prog.twins), name: r.name, def: r.def, scope: newScope(),
-			memo: r.memo, missing: r.missing, transient: r.transient, vars: r.vars, initVals: r.initVals, positional: r.positional, novalue: true}
+		r.twin = &staticRule{id: len(prog.rules) + len(prog.twins), name: r.name, def: r.def, scope: newScope(),
+			memo: r.memo, missing: r.missing, transient: r.transient, vars: r.vars, positional: r.positional, novalue: true}
 		prog.twins = append(prog.twins, r.twin)
 	}
 	return r.twin
@@ -945,7 +951,7 @@ func classAccept(e *grammar.CharClass) func(*parser, rune) bool {
 }
 
 // levelMin returns the minimum binding level of a call with a binding level.
-func (c *compiler) levelMin(e *grammar.Ref, r *rule) int {
+func (c *compiler) levelMin(e *grammar.Ref, r *staticRule) int {
 	pr, ok := r.def.Expr.(*grammar.OperatorsRule)
 	if !ok {
 		c.errorf(e.Diagnostic(), "rule %s has no Operators Rule levels", e.Name)
@@ -1079,7 +1085,7 @@ func (p *Program) SourceGrammar() *grammar.Grammar {
 }
 
 // whereName returns the text that names the rule in the message of a failed action.
-func (r *rule) whereName() string {
+func (r *staticRule) whereName() string {
 	if r.where != "" {
 		return r.where
 	}

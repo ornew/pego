@@ -76,7 +76,7 @@ func GenerateTS(g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, e
 	if err != nil {
 		return nil, err
 	}
-	tsg := &tsGen{generator: &generator{prog: prog, table: "rules", observability: opts.Observability, disableMethodSharing: opts.DisableMethodSharing, disableLiteralSharing: opts.DisableLiteralSharing || !opts.EnableTSLiteralSharing, disableLiteralTextDispatch: opts.DisableLiteralTextDispatch}, plainUsed: map[*rule]bool{}}
+	tsg := &tsGen{generator: &generator{prog: prog, table: "rules", observability: opts.Observability, disableMethodSharing: opts.DisableMethodSharing, disableLiteralSharing: opts.DisableLiteralSharing || !opts.EnableTSLiteralSharing, disableLiteralTextDispatch: opts.DisableLiteralTextDispatch}, plainUsed: map[*staticRule]bool{}}
 	tsg.noWork = !opts.WorkControls
 	tsg.optionsType = "ParseOptions"
 	if !opts.WorkControls {
@@ -357,7 +357,7 @@ func tsFieldType(t *fieldType) string {
 type tsGen struct {
 	*generator
 	// plainUsed holds the plain rules whose function (plainCall) is called.
-	plainUsed map[*rule]bool
+	plainUsed map[*staticRule]bool
 	// optionsType is the name of the runtime's options type that the entry points take: ParseOptions
 	// with work controls, PlainParseOptions without.
 	optionsType string
@@ -401,7 +401,7 @@ func (g *tsGen) seenVar() string {
 }
 
 // ruleVar returns the constant that holds the rule r of the table being generated.
-func (g *tsGen) ruleVar(r *rule) string {
+func (g *tsGen) ruleVar(r *staticRule) string {
 	if g.table == "rules" {
 		return fmt.Sprintf("R%d", r.id)
 	}
@@ -469,9 +469,9 @@ func (g *tsGen) action(t grammar.Term, s *scope, locals map[string]string) strin
 func (g *tsGen) rules() {
 	g.startTSFlow()
 	init := &g.init
-	bodies := map[*rule]string{}
-	scopes := map[*rule]*scope{}
-	all := append(append([]*rule(nil), g.prog.rules...), g.prog.twins...)
+	bodies := map[*staticRule]string{}
+	scopes := map[*staticRule]*scope{}
+	all := append(append([]*staticRule(nil), g.prog.rules...), g.prog.twins...)
 	for _, r := range all {
 		s := newScope()
 		scopes[r] = s
@@ -557,7 +557,7 @@ func (g *tsGen) rules() {
 
 // plainCall writes the function r<id>, which does what invokePlain does for the rule r (a rule never
 // memoized and without captures) with a direct call of its body.
-func (g *tsGen) plainCall(r *rule, body string) {
+func (g *tsGen) plainCall(r *staticRule, body string) {
 	m := &g.methods
 	name := g.tracePlainCall(r, fmt.Sprintf("%s%d", g.plainPrefix(), r.id))
 	fmt.Fprintf(m, "// %s, called as by invokePlain\nfunction %s(p: Parser): R {\n", r.name, name)
@@ -612,7 +612,7 @@ func tsShaper(prog *Program, e grammar.Expr) int {
 	return s
 }
 
-func (g *tsGen) operatorsRule(r *rule, e *grammar.OperatorsRule) {
+func (g *tsGen) operatorsRule(r *staticRule, e *grammar.OperatorsRule) {
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s.operatorsRule = {\n", g.ruleVar(r))
 	// The lines of the rule's Core IR, in the order of e, if the printer prints them from Flow IR.

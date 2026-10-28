@@ -6,7 +6,7 @@ import (
 	"github.com/ornew/pego/grammar"
 )
 
-func (g *tsGen) tracePlainCall(r *rule, name string) string {
+func (g *tsGen) tracePlainCall(r *staticRule, name string) string {
 	if !g.observability {
 		return name
 	}

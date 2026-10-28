@@ -42,7 +42,7 @@ type coreGenCase struct {
 	m      *core.Module
 	origin map[core.Node]grammar.Expr
 	// rules holds the rules of the program by ID, value-free twins included.
-	rules []*rule
+	rules []*staticRule
 	// passErrs holds the violations Verify found after a pass.
 	passErrs []string
 	// broken is set where a negative control broke a pass of this case.

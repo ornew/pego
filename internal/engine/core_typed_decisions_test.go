@@ -67,7 +67,7 @@ var (
 )
 
 // typedDecisionsWalk returns the expressions of the rule's body in walk order, and their indexes.
-func typedDecisionsWalk(r *rule) ([]grammar.Expr, map[grammar.Expr]int) {
+func typedDecisionsWalk(r *staticRule) ([]grammar.Expr, map[grammar.Expr]int) {
 	var exprs []grammar.Expr
 	idx := map[grammar.Expr]int{}
 	if e := r.bodyExpr(); e != nil {
@@ -310,16 +310,16 @@ func (gd *decisionsGolden) freeze(t *testing.T, modes []coreGenMode, cases func(
 }
 
 // typedRules returns the rules of the program of the generator by ID, value-free twins included.
-func typedRules(g *generator) []*rule {
-	return append(append([]*rule(nil), g.prog.rules...), g.prog.twins...)
+func typedRules(g *generator) []*staticRule {
+	return append(append([]*staticRule(nil), g.prog.rules...), g.prog.twins...)
 }
 
 // recognizerRules returns the rules of the recognizer program of the generator by ID, value-free
 // twins included.
-func recognizerRules(g *generator) []*rule {
+func recognizerRules(g *generator) []*staticRule {
 	rec, err := g.prog.recognizer()
 	if err != nil {
 		panic(err)
 	}
-	return append(append([]*rule(nil), rec.rules...), rec.twins...)
+	return append(append([]*staticRule(nil), rec.rules...), rec.twins...)
 }

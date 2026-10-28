@@ -34,7 +34,7 @@ type flowState struct {
 	origin map[core.Node]grammar.Expr
 	opts   flow.Options
 	// rules holds the rules of the program by ID, value-free twins included.
-	rules []*rule
+	rules []*staticRule
 }
 
 // flowVarsErr records the internal error that resolving the variables of a printed function found.
@@ -65,7 +65,7 @@ func (g *generator) startFlow() error {
 	if err != nil {
 		return err
 	}
-	g.flow = &flowState{m: m, origin: origin, rules: append(append([]*rule(nil), g.prog.rules...), g.prog.twins...),
+	g.flow = &flowState{m: m, origin: origin, rules: append(append([]*staticRule(nil), g.prog.rules...), g.prog.twins...),
 		opts: g.flowOptions(m)}
 	return nil
 }
@@ -81,7 +81,7 @@ func (g *generator) flowOptions(m *core.Module) flow.Options {
 
 // flowTypedRule prints the rule r from Flow IR as a flat rule, or returns nil if r is not
 // printed from Flow IR.
-func (g *generator) flowTypedRule(r *rule) *flatRule {
+func (g *generator) flowTypedRule(r *staticRule) *flatRule {
 	if g.flow == nil || g.table != "trules" {
 		return nil
 	}
@@ -123,7 +123,7 @@ func (g *generator) flowTypedRule(r *rule) *flatRule {
 
 // flowFrameBody prints the body of the typed rule r from Flow IR as the matcher of its frame
 // body, or returns "" if Flow IR does not print r that way.
-func (g *generator) flowFrameBody(r *rule, scope *scope) string {
+func (g *generator) flowFrameBody(r *staticRule, scope *scope) string {
 	if g.flow == nil || g.table != "trules" {
 		return ""
 	}
@@ -151,7 +151,7 @@ func (g *generator) flowFrameBody(r *rule, scope *scope) string {
 // memo, frame, action and finish. With work controls (Options.Work) the method that holds the body charges
 // one step on entry (Func.Entered) and the body charges one on each iteration of a repetition, plus the input
 // work of each Peek; the limits of a parse hold at these charges.
-func (g *generator) flowNodeFrameBody(r *rule, scope *scope) string {
+func (g *generator) flowNodeFrameBody(r *staticRule, scope *scope) string {
 	cr, ok := g.flowNodeFrameOK(r)
 	if !ok {
 		return ""
@@ -172,7 +172,7 @@ func (g *generator) flowNodeFrameBody(r *rule, scope *scope) string {
 // frame body, with the repetition of its #stream delivering the elements (flow.Options.Stream), or
 // returns "" if the rule is not printed that way: a rule is eligible as for flowNodeFrameBody. The
 // capture layout of the printed body must be the batch body's, which the action addresses by slot.
-func (g *generator) flowStreamBody(r *rule, scope *scope) string {
+func (g *generator) flowStreamBody(r *staticRule, scope *scope) string {
 	cr, ok := g.flowNodeFrameOK(r)
 	if !ok || !g.flow.opts.Node {
 		return ""
@@ -196,7 +196,7 @@ func (g *generator) flowStreamBody(r *rule, scope *scope) string {
 // around its body, so the body is the matcher of any other rule; its left-recursive alternatives have no
 // first set and are never guarded. The runtime's RecoverAttr sequence is lowered inline, with NewErrorNode
 // building the error node.
-func flowFrameExprOK(r *rule) bool {
+func flowFrameExprOK(r *staticRule) bool {
 	return flowBodyOK(r.bodyExpr(), true, true)
 }
 
@@ -208,7 +208,7 @@ func flowFrameExprOK(r *rule) bool {
 // which are the ones Core IR makes, so a Core-lowered body agrees with them. The recognizer's table writes
 // its actions without projections, so its Core IR is built without them (buildCoreProjecting) and agrees with
 // them as well; either table's body is eligible when its action reads only captures of the frame.
-func (g *generator) flowNodeFrameOK(r *rule) (*core.Rule, bool) {
+func (g *generator) flowNodeFrameOK(r *staticRule) (*core.Rule, bool) {
 	if g.flow == nil || g.table == "trules" || !flowFrameExprOK(r) {
 		return nil, false
 	}
@@ -263,7 +263,7 @@ func (g *generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope 
 // flowOperatorsRule returns the Core IR of the Operators Rule r, or nil if its lines are not
 // printed from Flow IR: the typed table prints them all from it, the Node and recognizer tables
 // when their Flow route is on (flowOperatorsRuleBody decides each line).
-func (g *generator) flowOperatorsRule(r *rule) *core.OperatorsRule {
+func (g *generator) flowOperatorsRule(r *staticRule) *core.OperatorsRule {
 	if g.flow == nil || g.table != "trules" && !g.flow.opts.Node {
 		return nil
 	}

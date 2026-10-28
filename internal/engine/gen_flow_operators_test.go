@@ -40,7 +40,7 @@ func TestOperatorsLinesWithRecoveryPrintFromFlow(t *testing.T) {
 				t.Fatal(err)
 			}
 			flowed := map[string]int{}
-			operatorsRouteHook = func(table string, r *rule) { flowed[table+"/"+r.name]++ }
+			operatorsRouteHook = func(table string, r *staticRule) { flowed[table+"/"+r.name]++ }
 			defer func() { operatorsRouteHook = nil }()
 			if _, err := generateCode(g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
 				t.Fatal(err)

@@ -77,7 +77,7 @@ func newValueResolver(p *Program, ownType func(ty) bool) valueResolver {
 
 // ruleType returns the type that selects the Go type of the values of rule r: its declared type, or
 // a vrule for a rule whose Go type comes from its value type.
-func (t *typedGen) ruleType(r *rule) ty {
+func (t *typedGen) ruleType(r *staticRule) ty {
 	return t.ruleRef(r.name)
 }
 

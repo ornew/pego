@@ -121,7 +121,7 @@ func (prog *Program) resolveStart(name string) string {
 }
 
 // startRule returns the start rule name selects.
-func (prog *Program) startRule(name string) (*rule, error) {
+func (prog *Program) startRule(name string) (*staticRule, error) {
 	if err := prog.CheckStart(name); err != nil {
 		return nil, err
 	}

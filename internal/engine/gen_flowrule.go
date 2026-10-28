@@ -39,7 +39,7 @@ import (
 
 // flatRuleOK reports whether the rule r can be printed as a flat rule: it is not a left-recursion
 // leader and its body has no cut, recovery or Operators Rule.
-func flatRuleOK(r *rule) bool {
+func flatRuleOK(r *staticRule) bool {
 	return !r.leader && flowBodyOK(r.bodyExpr(), false, false)
 }
 
@@ -69,7 +69,7 @@ func flowBodyOK(expr grammar.Expr, cuts, recovery bool) bool {
 // leanRuleOK selects value-free plain rules of the Node runtime. Captures
 // unused by recognition are omitted; predicates keep the general code because
 // they can require values, capture frames and variable bindings.
-func leanRuleOK(r *rule) bool {
+func leanRuleOK(r *staticRule) bool {
 	if !r.plain || !r.lean || !r.novalue || !flatRuleOK(r) {
 		return false
 	}
@@ -223,7 +223,7 @@ type flatRule struct {
 
 // flatMethod writes the method name that calls the flat rule r: as invokePlain does if plain
 // (restoring the position and the recovered errors when it fails), otherwise as invoke does.
-func (g *generator) flatMethod(r *rule, d *flatRule, name, comment string, plain bool) {
+func (g *generator) flatMethod(r *staticRule, d *flatRule, name, comment string, plain bool) {
 	observeBody := g.observability && g.table == "trules" && (!r.plain || g.directTypedDocument)
 	if g.observability && !observeBody {
 		name = g.tracePlainWrapper(r, name)
@@ -287,7 +287,7 @@ func (g *generator) flatMethod(r *rule, d *flatRule, name, comment string, plain
 
 // leanRuleBody provides the rule-table body for external entry and generic
 // fallback calls. Its caller owns depth and failure rollback, so it adds neither.
-func (g *generator) leanRuleBody(r *rule, d *flatRule) string {
+func (g *generator) leanRuleBody(r *staticRule, d *flatRule) string {
 	return g.bodyMethod(r.name+" (value-free body inlined)", g.leanRuleText(d))
 }
 

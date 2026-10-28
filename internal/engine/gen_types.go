@@ -45,7 +45,7 @@ type typedOutput struct {
 // their names; that of the parser package refers to the types of the grammar as types.Name, and the
 // names that only the types package declares (Error, TNode, Unit, TupleN, PegoHooks) unqualified,
 // which qualifyRuntime resolves.
-func (g *generator) typedGo(start *rule, conv bool) (typedOutput, error) {
+func (g *generator) typedGo(start *staticRule, conv bool) (typedOutput, error) {
 	info := g.prog.typed
 	if info == nil {
 		return typedOutput{}, fmt.Errorf("typed values need the grammar's types (type checking did not run)")
@@ -69,7 +69,7 @@ func (g *generator) typedGo(start *rule, conv bool) (typedOutput, error) {
 `
 	st := ruleType(start)
 	directStart := !conv && t.runtimeOK(st)
-	enter := func(r *rule) {
+	enter := func(r *staticRule) {
 		g.typedRoots = append(g.typedRoots, ruleKey{"trules", r.id, true})
 		if g.typedEntry == nil {
 			g.typedEntry = map[int]bool{}
@@ -189,7 +189,7 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 `, r.name, t.goType(et), newConv, result)
 	}
 	// Only start rules are entries, so only they need a case and its converters.
-	starts := make([]*rule, len(g.prog.starts))
+	starts := make([]*staticRule, len(g.prog.starts))
 	for i, name := range g.prog.starts {
 		starts[i] = g.prog.byName[name]
 	}
@@ -1288,7 +1288,7 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 		reg.WriteString("\t}\n\treturn nil\n\t}\n")
 		fmt.Fprintf(&reg, "\tfor i, name := range %s {\n\t\t%s[i+1] = TRegisterNodeType(name, tnamedPub)\n\t}\n", goStrings(t.nodeTypes), nodeTypesName)
 	}
-	for _, r := range append(append([]*rule(nil), t.g.prog.rules...), t.g.prog.twins...) {
+	for _, r := range append(append([]*staticRule(nil), t.g.prog.rules...), t.g.prog.twins...) {
 		if r.opNodeType != "" {
 			fmt.Fprintf(&reg, "\ttrules[%d].OpNt = %s\n", r.id, t.g.nodeTypeID(r.opNodeType))
 		}

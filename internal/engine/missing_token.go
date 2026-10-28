@@ -249,7 +249,7 @@ func (prog *Program) markMissingRules(control *compileControl) {
 			}
 		}
 	}
-	refs := make(map[*rule][]string)
+	refs := make(map[*staticRule][]string)
 	for _, r := range prog.rules {
 		if usesMissingType(r.def.Type) {
 			prog.hasMissing = true
