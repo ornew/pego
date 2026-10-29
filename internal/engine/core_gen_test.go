@@ -3,10 +3,12 @@ package engine
 import (
 	"fmt"
 	"regexp"
+	"runtime"
 	"slices"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
@@ -156,22 +158,37 @@ rule pair P = n:[0-9]+ s:[a-z] => P{N: len($n), S: text($s)}
 }
 
 // coreGenerations generates every corpus grammar in the mode, once for all tests: those that the
-// generator accepts and whose typed rules have a Core IR.
+// generator accepts and whose typed rules have a Core IR. The grammars are generated concurrently,
+// since the tests that read them run before the parallel tests and would otherwise wait for each.
 func coreGenerations(t *testing.T, mode coreGenMode) []coreGenerated1 {
 	t.Helper()
 	if out, ok := coreGenerated[mode.name]; ok {
 		return out
 	}
+	cases := append(schemaCorpus(t), coreExtraGrammars...)
+	gens := make([]*gogen.Generator, len(cases))
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, runtime.GOMAXPROCS(0))
+	for i, gc := range cases {
+		wg.Go(func() {
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			gen, ok := coreGenerate(gc.src, mode.opts)
+			if !ok {
+				return
+			}
+			if m, err := gen.TypedCore(map[core.Node]grammar.Expr{}); err != nil || len(m.Rules) == 0 {
+				return
+			}
+			gens[i] = gen
+		})
+	}
+	wg.Wait()
 	var out []coreGenerated1
-	for _, gc := range append(schemaCorpus(t), coreExtraGrammars...) {
-		gen, ok := coreGenerate(gc.src, mode.opts)
-		if !ok {
-			continue
+	for i, gen := range gens {
+		if gen != nil {
+			out = append(out, coreGenerated1{cases[i].name, gen})
 		}
-		if m, err := gen.TypedCore(map[core.Node]grammar.Expr{}); err != nil || len(m.Rules) == 0 {
-			continue
-		}
-		out = append(out, coreGenerated1{gc.name, gen})
 	}
 	if len(out) < 100 {
 		t.Fatalf("%s: %d grammars", mode.name, len(out))
