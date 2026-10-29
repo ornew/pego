@@ -10,7 +10,7 @@ before choosing an edit location:
 | Public Go API and grammar AST | `pego.go`, `grammar/` |
 | Grammar source parsing | `internal/syntax/` |
 | Compiler and static analysis | `internal/compile/` |
-| Runtime: execution, bytecode VMs, Documents, streams and work controls | `internal/engine/` |
+| Runtime: execution, bytecode VMs, Documents, streams and work controls | `internal/engine/` (shared state in `core/`, backends in `closure/` and `vm/`, the Document in `document/`) |
 | Code generation entry points | `gen/` (`gen.Go`, `gen.TypeScript`, embedded runtime copy `gen/_runtime`), `internal/gen/` |
 | Output schema and structural queries | `schema/` (the types, their validation and `Compare`), `internal/schema/` (the export and the queries) |
 | Generated Go parser source | Generator `internal/gen/gogen/generator.go` and runtime package `runtime/` (imported or copied into generated parsers); generated parsers under `parsers/` and `internal/bench/gen/` are outputs |

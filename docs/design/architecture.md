@@ -119,9 +119,11 @@ contract is [Observability](../../spec/runtime/observability.md).
 |:--|:--|
 | Grammar syntax, text and JSON forms | `internal/syntax/`, `grammar/` |
 | Compilation, analysis, checking and the bytecode compiler | `internal/compile/` |
-| The parser runtime: closures, VMs, Documents, streams and work controls | `internal/engine/` |
+| The parser runtime: compilation entry points, streams and work controls, over the backends and the Document | `internal/engine/` |
 | The parse state that every backend shares, and what a backend provides | `internal/engine/core/` |
 | The closure backend | `internal/engine/closure/` |
+| The bytecode VMs, recursive and iterative | `internal/engine/vm/` |
+| The incremental Document, its snapshots and change reports | `internal/engine/document/` |
 | Output schemas and structural queries | `schema/` (the types, their validation and `Compare`), `internal/schema/` (the export and the queries) |
 | Core and Flow IR and their passes | `internal/ir/core/`, `internal/ir/flow/` |
 | Generated Go and TypeScript | The Go generator in `internal/gen/gogen/`, the TypeScript generator in `internal/gen/tsgen/` and the runtimes in `runtime/` and `internal/gen/tsgen/tsrt/` |
