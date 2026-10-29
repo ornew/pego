@@ -108,9 +108,9 @@ func (prog *Program) prepareControlledRule(b Backend, name string, c *workContro
 	c.check() // Also the checkpoint immediately before VM preparation.
 	switch prog.backend(b) {
 	case Bytecode:
-		prog.vmOnce.Do(func() { prog.vm = newVMProgram(m, false) })
+		prog.vmOnce.Do(func() { prog.vm = newVMProgram(m) })
 	case BytecodeIterative:
-		prog.ivmOnce.Do(func() { prog.ivm = newVMProgram(m, true) })
+		prog.ivmOnce.Do(func() { prog.ivm = newIVMProgram(m) })
 	}
 	c.check()
 	return prog.rule(b, name)

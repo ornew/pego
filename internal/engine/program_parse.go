@@ -124,10 +124,10 @@ func (prog *Program) rule(b Backend, name string) (*rule, error) {
 	var r *rule
 	switch prog.backend(b) {
 	case Bytecode:
-		prog.vmOnce.Do(func() { prog.vm = newVMProgram(prog.Module(), false) })
+		prog.vmOnce.Do(func() { prog.vm = newVMProgram(prog.Module()) })
 		r = prog.vm.byName[name]
 	case BytecodeIterative:
-		prog.ivmOnce.Do(func() { prog.ivm = newVMProgram(prog.Module(), true) })
+		prog.ivmOnce.Do(func() { prog.ivm = newIVMProgram(prog.Module()) })
 		r = prog.ivm.byName[name]
 	case Closure:
 		if prog.Grammar == nil {

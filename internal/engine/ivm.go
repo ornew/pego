@@ -2,9 +2,22 @@ package engine
 
 import (
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 
 	"github.com/ornew/pego/internal/value"
 )
+
+// newIVMProgram prepares a module for execution with the iterative model.
+func newIVMProgram(m *bytecode.Module) *vmProgram { return buildVMProgram(m, iterateBody) }
+
+// iterateBody runs a rule body with the iterative model: calls push frames instead of recursing.
+func iterateBody(vm *vmProgram, r *rule, entry int) func(p *parser, min int) (*value.Node, bool) {
+	return func(p *parser, min int) (*value.Node, bool) {
+		mc := ivmMachineOf(p)
+		res := mc.iterate(vm, mc.bodyFrame(entry, r, min, false))
+		return res.v, res.ok
+	}
+}
 
 // The iterative-model VM. It runs rule calls, left-recursion growth, Operators Rule expression loops, and
 // longest matching as state machines pushed on the VM stack (a slice of iframe) instead of using

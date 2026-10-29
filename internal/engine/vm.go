@@ -82,8 +82,24 @@ func (vm *vmProgram) runSite(ip int) *vmRunSite {
 	return site
 }
 
-// newVMProgram prepares a module for execution. If iterative, it runs with the iterative model.
-func newVMProgram(m *bytecode.Module, iterative bool) *vmProgram {
+// vmBodies returns the body of the rule r, whose code starts at entry in vm. Each driver of the
+// VM passes its own to buildVMProgram, deciding how a body runs the code: the recursive VM's
+// execBody calls exec, which recurses for each rule call.
+type vmBodies func(vm *vmProgram, r *rule, entry int) func(p *parser, min int) (*value.Node, bool)
+
+// newVMProgram prepares a module for execution with the recursive model.
+func newVMProgram(m *bytecode.Module) *vmProgram { return buildVMProgram(m, execBody) }
+
+// execBody runs a rule body with the recursive model: each call recurses into exec.
+func execBody(vm *vmProgram, r *rule, entry int) func(p *parser, min int) (*value.Node, bool) {
+	return func(p *parser, min int) (*value.Node, bool) {
+		v, ok, _ := vmMachineOf(p).exec(vm, entry, r, min)
+		return v, ok
+	}
+}
+
+// buildVMProgram prepares a module for execution. bodies makes the rule bodies.
+func buildVMProgram(m *bytecode.Module, bodies vmBodies) *vmProgram {
 	vm := &vmProgram{m: m, byName: map[string]*rule{}, descs: append(append([]string(nil), compile.FixedDescs...), m.Strings...)}
 	vm.literals = m.Strings
 	normalized := false
@@ -173,18 +189,7 @@ func newVMProgram(m *bytecode.Module, iterative bool) *vmProgram {
 		entry := ri.Entry
 		r.entry = entry
 		r.Stream = vm.streams(entry)
-		if iterative {
-			r.body = func(p *parser, min int) (*value.Node, bool) {
-				mc := ivmMachineOf(p)
-				res := mc.iterate(vm, mc.bodyFrame(entry, r, min, false))
-				return res.v, res.ok
-			}
-		} else {
-			r.body = func(p *parser, min int) (*value.Node, bool) {
-				v, ok, _ := vmMachineOf(p).exec(vm, entry, r, min)
-				return v, ok
-			}
-		}
+		r.body = bodies(vm, r, entry)
 	}
 	return vm
 }
@@ -785,7 +790,7 @@ func (mc *vmMachine) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.
 					mc.push(v)
 				} else if in.B != 0 { // in a value-free repetition, the element scope exists only for predicates
 					top := len(mc.vals) - 1
-					mc.vals[top] = p.attachCapturesNames(asNodeValue(mc.vals[top]), vm.scopes[rep.scope], p.frame, e.save.pos, p.pos)
+					mc.vals[top] = p.attachCaptures(asNodeValue(mc.vals[top]), &compile.Scope{Names: vm.scopes[rep.scope]}, p.frame, e.save.pos, p.pos)
 				}
 				p.frame = e.save.frame
 			}
@@ -1024,11 +1029,6 @@ func (mc *vmMachine) single(size int, b bool) {
 	if b {
 		mc.push(p.newNode(value.Data{Kind: value.MatchKind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), Terminal: true, Fresh: true}))
 	}
-}
-
-// attachCapturesNames attaches captures by a list of names (same as attachCaptures).
-func (p *parser) attachCapturesNames(v *value.Node, names []string, f *frame, start, end int) *value.Node {
-	return p.attachCaptures(v, &compile.Scope{Names: names}, f, start, end)
 }
 
 // --- Running expression code ---

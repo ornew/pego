@@ -6,7 +6,7 @@ would repeat setup work.
 
 ## Mechanism and Invariants
 
-`newVMProgram` resolves the module's strings into reusable rune and byte literal
+`buildVMProgram` resolves the module's strings into reusable rune and byte literal
 arrays and builds ASCII masks for its classes. Literal and class instructions
 reference this prepared data. The original module and its descriptions still
 determine diagnostics; non-ASCII classes retain exact range checks. Recursive
@@ -34,7 +34,7 @@ Evidence records:
 [017](../017-ascii-bitmaps-for-character-classes-in-the-vms.md),
 [032](../032-matching-literals-against-loaded-input-in-one-loop.md).
 
-Source owners: [`newVMProgram, vmProgram.runes, bytes and
+Source owners: [`buildVMProgram, vmProgram.runes, bytes and
 ascii`](../../../internal/engine/vm.go), [`iterative VM literal/class
 execution`](../../../internal/engine/ivm.go).
 
