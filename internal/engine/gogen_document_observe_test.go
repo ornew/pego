@@ -83,7 +83,7 @@ func TestGeneratedDocumentObservation(t *testing.T) {
 			write(name+"/observation_test.go", consumer+generatedProfileCheck)
 		}
 	}
-	cmd := exec.Command("go", "test", "-p", "1", "-race", "-count=1", "./...")
+	cmd := exec.Command("go", "test", "-p", "4", "-race", "-count=1", "./...")
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("generated Document observation: %v\n%s", err, out)

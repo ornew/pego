@@ -128,7 +128,7 @@ The tests of `internal/engine` that build generated parsers build them in two fo
 
 | Kind of test | Runs | How |
 |:--|:--|:--|
-| Tests that build fixtures and check their behavior, output or equivalence with the engine | Both forms, as the subtests `controls` and `ordinary` | The test body runs under `eachMode` |
+| Tests that build fixtures and check their behavior, output or equivalence with the engine | Both forms, as the subtests `controls` and `ordinary` | The test body runs under `eachMode`, as the test's last statement; the two subtests run in parallel |
 | Tests that pass a control option (`WithContext`, `WithWorkLimits`) | With controls only | `needsWorkControls` |
 | Tests of output that exists only without work controls (terminal programs, the Flow IR recognizer and Node rules, choice guards) | Without controls only | `pinOrdinary` |
 | Tests that do not build fixtures | Not form-specific | |

@@ -130,8 +130,9 @@ func unwrappedFixtureTests() []string {
 // fixtureModes are the forms in which eachMode runs a test, by subtest name.
 var fixtureModes = []struct{ name, value string }{{"controls", "0"}, {"ordinary", "1"}}
 
-// eachMode runs body once per form of the generated fixtures, as the subtests "controls" and
-// "ordinary". When modeEnv is set in the environment, it runs body once, in that form.
+// eachMode runs body once per form of the generated fixtures, as the parallel subtests "controls"
+// and "ordinary", so it must be the caller's last statement. When modeEnv is set in the
+// environment, it runs body once, in that form.
 func eachMode(t *testing.T, body func(t *testing.T)) {
 	t.Helper()
 	if envForm != "" {
@@ -140,6 +141,7 @@ func eachMode(t *testing.T, body func(t *testing.T)) {
 	}
 	for _, m := range fixtureModes {
 		t.Run(m.name, func(t *testing.T) {
+			t.Parallel()
 			setFixtureForm(t, m.value)
 			body(t)
 		})

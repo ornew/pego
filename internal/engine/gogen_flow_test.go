@@ -159,6 +159,7 @@ func TestFlowPrintsTypedRules(t *testing.T) {
 	cases := append(schemaCorpus(t), coreExtraGrammars...)
 	for _, mode := range flowModes {
 		t.Run(mode.name, func(t *testing.T) {
+			t.Parallel()
 			compared, grammars, printed, framed := 0, 0, 0, 0
 			for _, gc := range cases {
 				_, n, frames, ok := flowGenerate(gc.src, mode.opts)

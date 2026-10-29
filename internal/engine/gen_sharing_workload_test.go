@@ -14,6 +14,12 @@ import (
 // parsing, generation-size, compiler-cost and binary-size measurements.
 func TestGeneratedSharingWorkloads(t *testing.T) {
 	t.Parallel()
+	if os.Getenv("PEGO_GENERATED_SHARING_DIR") != "" {
+		// The preserved controls have one layout, so they are written in one form.
+		pinOrdinary(t)
+		testGeneratedSharingWorkloads(t)
+		return
+	}
 	eachMode(t, testGeneratedSharingWorkloads)
 }
 

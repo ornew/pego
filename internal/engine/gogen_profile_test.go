@@ -56,7 +56,7 @@ func TestGeneratedGoProfile(t *testing.T) {
 			write(pkg+"/profile_test.go", []byte(consumer))
 		}
 	}
-	cmd := exec.Command("go", "test", "-p", "1", "-race", "-count=1", "./...")
+	cmd := exec.Command("go", "test", "-p", "4", "-race", "-count=1", "./...")
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("generated profiles: %v\n%s", err, out)

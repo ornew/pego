@@ -122,7 +122,7 @@ rule part WithTrace = t:("a") #atomic => WithTrace{Text: text($t)}`, input: "a",
 			write(pkg, "trace_test.go", []byte(nodeChecks+typedChecks))
 		}
 	}
-	cmd := exec.Command("go", "test", "-p", "1", "-race", "-count=1", "./...")
+	cmd := exec.Command("go", "test", "-p", "4", "-race", "-count=1", "./...")
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("generated typed tracing: %v\n%s", err, out)

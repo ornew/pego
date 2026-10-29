@@ -114,7 +114,7 @@ rule part = "é"`, "éé", `last:=events[len(events)-1];expectedEnd:=2;if unit==
 			}
 		}
 	}
-	cmd := exec.Command("go", "test", "-p", "1", "-race", "-count=1", "./...")
+	cmd := exec.Command("go", "test", "-p", "4", "-race", "-count=1", "./...")
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("generated tracing: %v\n%s", err, out)
