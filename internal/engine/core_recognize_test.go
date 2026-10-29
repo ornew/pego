@@ -7,6 +7,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 	irbuild "github.com/ornew/pego/internal/ir/build"
 	"github.com/ornew/pego/internal/ir/core"
 )
@@ -14,7 +15,7 @@ import (
 // coreRecognizeCase builds the Core IR of the recognizer of the parser generated with Recognize,
 // with the passes that apply to its rule table recRules (no terminal programs and no class runs
 // there), verifying the module after each pass.
-func coreRecognizeCase(name, mode string, g *generator) (*coreGenCase, error) {
+func coreRecognizeCase(name, mode string, g *gogen.Generator) (*coreGenCase, error) {
 	rec, err := recognizerOf(g)
 	if err != nil {
 		return nil, err

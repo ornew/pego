@@ -74,7 +74,7 @@ errors and memoization decisions are literally shared. The generator writes the 
   generated call methods. Live caller undo entries remain available. Recycling clears the full trail and Operators Rule
   saved-capture backing slices, since their lengths may have shrunk after retaining overwritten values. This releases
   discarded captures from pooled scratch while preserving returned terminals/structs; it does not rely on a later pool GC.
-- **Flat rules** (`gen_flowrule.go`). Eligible rule bodies are inlined into the
+- **Flat rules** (`internal/gen/gogen/flowrule.go`). Eligible rule bodies are inlined into the
   method that calls the rule (`s<id>`, `v<id>` or `i<id>`), each expression
   jumping to a label when it fails, with captures in Go variables instead of a
   frame. Where the general code resets to a mark, which undoes the trail, a

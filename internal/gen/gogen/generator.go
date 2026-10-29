@@ -1,4 +1,4 @@
-package engine
+package gogen
 
 import (
 	"fmt"
@@ -32,43 +32,44 @@ func DefaultPackageName(module string) string {
 	return base
 }
 
-// generateGo is Generate with the compiler c.
-func generateGo(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
+// Generate generates the files of a Go parser for g, compiling it with c; engine.Generate describes
+// the files and options.
+func Generate(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
 	if opts.Runtime == gen.RuntimeOnly {
 		return runtimeFiles()
 	}
-	return generate(g, c, opts)
+	return GenerateParser(g, c, opts)
 }
 
-// generatorHook, if set by a test, receives the generator of the pass that writes the output, before it
-// prints, so that the test can build the Core IR of the same options (generator.typedCore).
-var generatorHook func(*generator)
+// GeneratorHook, if set by a test, receives the generator of the pass that writes the output, before it
+// prints, so that the test can build the Core IR of the same options (Generator.TypedCore).
+var GeneratorHook func(*Generator)
 
-// generate generates the files of Generate (other than for RuntimeOnly). It generates twice: the
+// GenerateParser generates the files of Generate (other than for RuntimeOnly). It generates twice: the
 // first pass records which rules of the Node, recognizer and typed tables a generated call or an
-// entry point can reach (liveRules), and the second leaves out the others. A typed-only parser
+// entry point can reach (LiveRules), and the second leaves out the others. A typed-only parser
 // without Node rules has no Node or recognizer rule to leave out (keepTableRules); one that keeps
 // Node rules for its converting entry points prints those that the entry points reach, like any
 // other output.
-func generate(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
+func GenerateParser(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
 	if opts.KeepUnreachable {
 		return generateOnce(g, c, opts, nil, nil)
 	}
-	var lv liveRules
+	var lv LiveRules
 	if _, err := generateOnce(g, c, opts, nil, &lv); err != nil {
 		return nil, err
 	}
-	if reachHook != nil {
-		reachHook(&lv)
+	if ReachHook != nil {
+		ReachHook(&lv)
 	}
 	return generateOnce(g, c, opts, &lv, nil)
 }
 
-// generateOnce is one pass of generate. A pass with collect records the reachable rules into it;
+// generateOnce is one pass of GenerateParser. A pass with collect records the reachable rules into it;
 // a pass with live omits the rules that are not reachable in live.
-func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, live, collect *liveRules) (files []gen.GeneratedFile, err error) {
+func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, live, collect *LiveRules) (files []gen.GeneratedFile, err error) {
 	if collect != nil {
-		*collect = liveRules{}
+		*collect = LiveRules{}
 	}
 	if opts.Module == "" && (opts.Runtime == gen.RuntimeEmbed || opts.Package == "") {
 		return nil, fmt.Errorf("module path is required")
@@ -100,7 +101,7 @@ func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, live,
 	if err := opts.ValidateDefaultValue(); err != nil {
 		return nil, err
 	}
-	info, err := loadRuntime()
+	info, err := LoadRuntime()
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +121,7 @@ func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, live,
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.Name)
 		}
 	}
-	goGen := &generator{typedOnly: opts.TypedOnly && !opts.KeepNodes, Observability: opts.Observability, Document: opts.Document, goWorkControls: true, NoWork: !opts.WorkControls, Ordinary: !opts.WorkControls && !opts.Document, Prog: prog, Table: "rules", DisableMethodSharing: opts.DisableMethodSharing, DisableLiteralSharing: opts.DisableLiteralSharing, DisableLiteralTextDispatch: opts.DisableLiteralTextDispatch, disableTerminalPrograms: opts.DisableTerminalPrograms, DisableGuardedClasses: opts.DisableGuardedClasses, BoxedComparisons: opts.BoxedComparisons, disableTypedObjectSlabs: opts.DisableTypedObjectSlabs, disableTypedListSlabs: opts.DisableTypedListSlabs, disableTypedOutputBootstrap: opts.DisableTypedOutputBootstrap, live: live, collect: collect, keepTableRules: opts.TypedOnly && !opts.KeepNodes}
+	goGen := &Generator{typedOnly: opts.TypedOnly && !opts.KeepNodes, Observability: opts.Observability, Document: opts.Document, GoWorkControls: true, NoWork: !opts.WorkControls, Ordinary: !opts.WorkControls && !opts.Document, Prog: prog, Table: "rules", DisableMethodSharing: opts.DisableMethodSharing, DisableLiteralSharing: opts.DisableLiteralSharing, DisableLiteralTextDispatch: opts.DisableLiteralTextDispatch, disableTerminalPrograms: opts.DisableTerminalPrograms, DisableGuardedClasses: opts.DisableGuardedClasses, BoxedComparisons: opts.BoxedComparisons, disableTypedObjectSlabs: opts.DisableTypedObjectSlabs, disableTypedListSlabs: opts.DisableTypedListSlabs, disableTypedOutputBootstrap: opts.DisableTypedOutputBootstrap, live: live, collect: collect, keepTableRules: opts.TypedOnly && !opts.KeepNodes}
 	if live != nil {
 		goGen.SeedDescs()
 		for _, d := range live.descs[len(goGen.Descs):] {
@@ -132,8 +133,8 @@ func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, live,
 		goGen.streamStart = start
 	}
 	goGen.Desc(compile.FixedDescs[0]) // the fixed expectations come first
-	if generatorHook != nil && collect == nil {
-		generatorHook(goGen)
+	if GeneratorHook != nil && collect == nil {
+		GeneratorHook(goGen)
 	}
 	if err := goGen.StartRecFlow(prog); err != nil {
 		return nil, err
@@ -309,8 +310,8 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	if err != nil {
 		return nil, fmt.Errorf("generated code does not compile: %w\n%s", err, out.String())
 	}
-	body := shakeVars(strings.TrimPrefix(string(whole), "package "+opts.Package+"\n"))
-	var tp *typesPackage
+	body := ShakeVars(strings.TrimPrefix(string(whole), "package "+opts.Package+"\n"))
+	var tp *TypesPackage
 	var typesFile []byte
 	if opts.Types {
 		if typesFile, tp, err = typesPackageFile(opts, typesBody); err != nil {
@@ -322,7 +323,7 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	if goGen.chunksInRuntime {
 		body = chunkNames.Replace(body)
 	}
-	body, err = qualifyRuntime(runtimeImport(opts), body, info, tp)
+	body, err = QualifyRuntime(runtimeImport(opts), body, info, tp)
 	if err != nil {
 		return nil, err
 	}
@@ -337,7 +338,7 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		return nil, fmt.Errorf("generated code does not compile: %w", err)
 	}
 	if !opts.KeepComments {
-		if src, err = trimComments(src); err != nil {
+		if src, err = TrimComments(src); err != nil {
 			return nil, fmt.Errorf("generated code does not compile: %w", err)
 		}
 	}
@@ -379,14 +380,14 @@ func goFieldType(t *compile.FieldType) string {
 	return b.String() + "}"
 }
 
-type generator struct {
+type Generator struct {
 	gen.Generator
 	// hoist collects the statements the term being printed needs before its expression (see stmts); nil
 	// outside a term.
 	hoist *[]string
-	// goWorkControls emits work-control charging; Go output always has it, TypeScript output has
+	// GoWorkControls emits work-control charging; Go output always has it, TypeScript output has
 	// its own runtime work controls.
-	goWorkControls      bool
+	GoWorkControls      bool
 	directTypedDocument bool
 	workClassNames      map[string]string
 	workClassKeys       []string
@@ -394,8 +395,8 @@ type generator struct {
 	shaperKeys          []string
 	recoveryProg        map[*compile.Program]bool // whether a program can recover from errors
 	tableErr            error                     // the rule table does not fit the form of runtime.RuleSpec
-	// coreHook, if set, is called by typedCore with the module after it is built and after each pass.
-	coreHook func(pass string, m *core.Module)
+	// CoreHook, if set, is called by TypedCore with the module after it is built and after each pass.
+	CoreHook func(pass string, m *core.Module)
 	// chunksInRuntime is set when the typed values take their storage from the runtime (Chunk).
 	chunksInRuntime             bool
 	ruleTypesDone               bool // the types of the rule table entries are written
@@ -403,10 +404,10 @@ type generator struct {
 	disableTypedObjectSlabs     bool
 	disableTypedListSlabs       bool
 	disableTypedOutputBootstrap bool
-	flowRules                   int
-	flowFrames                  int
-	// nodeScopes records the frame layouts shared by typed rule metadata.
-	nodeScopes map[*compile.Rule][]string
+	FlowRules                   int
+	FlowFrames                  int
+	// NodeScopes records the frame layouts shared by typed rule metadata.
+	NodeScopes map[*compile.Rule][]string
 	// typedOnly leaves out the untyped Node family: the rule table keeps only the metadata the
 	// typed table shares.
 	typedOnly bool
@@ -414,7 +415,7 @@ type generator struct {
 	// range is the rule's (see tctx.result), so it computes none and is not recorded as created.
 	final grammar.Term
 	// caps maps capture names to the Go variables that hold them in a flat rule of the typed
-	// runtime (see gen_flowrule.go), instead of frame slots.
+	// runtime (see flowrule.go), instead of frame slots.
 	caps map[string]string
 	// streamStart is the start rule of ParseStream, whose separate body
 	// (generated while streamBody is set) emits its #stream elements.
@@ -426,9 +427,9 @@ type generator struct {
 	// for the rules in plainCalled.
 	plainCalled map[*compile.Rule]bool
 	wrappers    []wrapperSpan
-	// live and collect are the passes of generate (reach.go): live leaves out the unreachable
+	// live and collect are the passes of GenerateParser (reach.go): live leaves out the unreachable
 	// rules of the Node and recognizer tables, collect records the calls that reach them.
-	live, collect *liveRules
+	live, collect *LiveRules
 	// keepTableRules marks a typed-only parser without Node rules: its Node and recognizer tables
 	// have no rule bodies to check; the typed table leaves its unreached rules out as usual.
 	keepTableRules bool
@@ -436,15 +437,15 @@ type generator struct {
 	// needs the Node rule bodies.
 	convertsNodes bool
 	// typedRoots are the typed rules whose Entry a typed entry point runs, and typedEntry their IDs.
-	typedRoots []ruleKey
+	typedRoots []RuleKey
 	typedEntry map[int]bool
-	emitting   ruleKey
+	emitting   RuleKey
 	emittingOK bool
-	bodySet    map[ruleKey]bool
+	bodySet    map[RuleKey]bool
 	reachErr   error
 }
 
-func (g *generator) literal(value string) string {
+func (g *Generator) literal(value string) string {
 	name, shared := g.LiteralName(value)
 	if !shared {
 		fmt.Fprintf(&g.Vars, "var %s = []rune(%q)\n", name, value)
@@ -460,9 +461,9 @@ func goStrings(xs []string) string {
 	return "[]string{" + strings.Join(q, ", ") + "}"
 }
 
-// ruleTableLimits reports whether a rule table with nstrs lists of strings and nseen deferred
+// RuleTableLimits reports whether a rule table with nstrs lists of strings and nseen deferred
 // memoization indexes fits the fields of runtime.RuleSpec (Scope and Vars are 16 bits, Seen 32).
-func ruleTableLimits(nstrs, nseen int) error {
+func RuleTableLimits(nstrs, nseen int) error {
 	if nstrs > math.MaxUint16+1 {
 		return fmt.Errorf("the rule table needs %d distinct capture or variable lists, more than %d", nstrs, math.MaxUint16+1)
 	}
@@ -475,21 +476,21 @@ func ruleTableLimits(nstrs, nseen int) error {
 // saveRec returns the variables that a backtracking point saves, start and, if the program can
 // recover, rec, followed by more; saveRecValues their values. restoreRec returns the statement that
 // goes back to them.
-func (g *generator) saveRec(more string) string {
+func (g *Generator) saveRec(more string) string {
 	if g.recovers() {
 		return "start, rec" + more
 	}
 	return "start" + more
 }
 
-func (g *generator) saveRecValues(more string) string {
+func (g *Generator) saveRecValues(more string) string {
 	if g.recovers() {
 		return "p.Pos, len(p.Recovered)" + more
 	}
 	return "p.Pos" + more
 }
 
-func (g *generator) restoreRec(pos, rec string) string {
+func (g *Generator) restoreRec(pos, rec string) string {
 	if g.recovers() {
 		return fmt.Sprintf("p.Restore(%s, %s)", pos, rec)
 	}
@@ -499,7 +500,7 @@ func (g *generator) restoreRec(pos, rec string) string {
 // recovers reports whether a parse of the program being generated can append to p.Recovered: only
 // recovery (#recover) does. Without it p.Recovered stays empty, so
 // the positions that backtracking restores need no saved length of it.
-func (g *generator) recovers() bool {
+func (g *Generator) recovers() bool {
 	if v, ok := g.recoveryProg[g.Prog]; ok {
 		return v
 	}
@@ -529,24 +530,24 @@ func (g *generator) recovers() bool {
 	return found
 }
 
-// leanRouteHook is called with the rule table and the rule for each rule that takes the lean route
+// LeanRouteHook is called with the rule table and the rule for each rule that takes the lean route
 // in rules, in a Node or recognizer table. Tests set it to check the route that is chosen, not the text
 // of the generated code.
-var leanRouteHook func(table string, r *compile.Rule)
+var LeanRouteHook func(table string, r *compile.Rule)
 
-// framedRouteHook is called with the rule table and the rule for each rule whose framed body is printed
-// from Flow IR (flowNodeFrameBody), in a Node or recognizer table. Tests set it as leanRouteHook.
-var framedRouteHook func(table string, r *compile.Rule)
+// FramedRouteHook is called with the rule table and the rule for each rule whose framed body is printed
+// from Flow IR (flowNodeFrameBody), in a Node or recognizer table. Tests set it as LeanRouteHook.
+var FramedRouteHook func(table string, r *compile.Rule)
 
-// operatorsRouteHook is called with the rule table and the Operators Rule for each line of a Node or
-// recognizer table that is printed from Flow IR. Tests set it as leanRouteHook.
-var operatorsRouteHook func(table string, r *compile.Rule)
+// OperatorsRouteHook is called with the rule table and the Operators Rule for each line of a Node or
+// recognizer table that is printed from Flow IR. Tests set it as LeanRouteHook.
+var OperatorsRouteHook func(table string, r *compile.Rule)
 
-// streamRouteHook is called with the rule table and the rule for each ParseStream start rule whose
-// stream body is printed from Flow IR (flowStreamBody). Tests set it as leanRouteHook.
-var streamRouteHook func(table string, r *compile.Rule)
+// StreamRouteHook is called with the rule table and the rule for each ParseStream start rule whose
+// stream body is printed from Flow IR (flowStreamBody). Tests set it as LeanRouteHook.
+var StreamRouteHook func(table string, r *compile.Rule)
 
-func (g *generator) rules() {
+func (g *Generator) rules() {
 	init := &g.Init
 	methodsBefore := g.Methods.String()
 	bodies := map[*compile.Rule]string{}
@@ -558,7 +559,7 @@ func (g *generator) rules() {
 		scopes[r] = s
 		if g.pruned(r) {
 			// Not printed; its table row keeps the capture layout of the first pass.
-			s.Names = append(s.Names, g.live.scopes[ruleKey{g.Table, r.ID, false}]...)
+			s.Names = append(s.Names, g.live.scopes[RuleKey{g.Table, r.ID, false}]...)
 			continue
 		}
 		g.beginRule(r)
@@ -573,8 +574,8 @@ func (g *generator) rules() {
 			// for one whose types it cannot name; such a rule takes its framed body below and is called through
 			// the rule table (plainCall).
 			if d := g.flowRecRule(r); d != nil {
-				if leanRouteHook != nil && g.collect == nil {
-					leanRouteHook(g.Table, r)
+				if LeanRouteHook != nil && g.collect == nil {
+					LeanRouteHook(g.Table, r)
 				}
 				flats[r] = d
 				if g.slotReached(r) {
@@ -586,8 +587,8 @@ func (g *generator) rules() {
 		if _, ok := r.Def.Expr.(*grammar.OperatorsRule); !ok {
 			if g.Table != "trules" {
 				if body := g.flowNodeFrameBody(r, s); body != "" {
-					if framedRouteHook != nil && g.collect == nil {
-						framedRouteHook(g.Table, r)
+					if FramedRouteHook != nil && g.collect == nil {
+						FramedRouteHook(g.Table, r)
 					}
 					bodies[r] = body
 					continue
@@ -602,16 +603,16 @@ func (g *generator) rules() {
 	g.endRule()
 	if g.collect != nil && g.Table != "trules" {
 		if g.collect.scopes == nil {
-			g.collect.scopes = map[ruleKey][]string{}
+			g.collect.scopes = map[RuleKey][]string{}
 		}
 		for _, r := range all {
-			g.collect.scopes[ruleKey{g.Table, r.ID, false}] = append([]string(nil), scopes[r].Names...)
+			g.collect.scopes[RuleKey{g.Table, r.ID, false}] = append([]string(nil), scopes[r].Names...)
 		}
 	}
 	if g.Table == "rules" {
-		g.nodeScopes = make(map[*compile.Rule][]string, len(all))
+		g.NodeScopes = make(map[*compile.Rule][]string, len(all))
 		for _, r := range all {
-			g.nodeScopes[r] = append([]string(nil), scopes[r].Names...)
+			g.NodeScopes[r] = append([]string(nil), scopes[r].Names...)
 		}
 	}
 	if g.Table == "trules" {
@@ -677,7 +678,7 @@ func (g *generator) rules() {
 				extras = append(extras, fmt.Sprintf("\t{%d, %q, %q, %q},\n", r.ID, w, r.NodeType, r.OpNodeType))
 			}
 		}
-		if err := ruleTableLimits(len(strs), g.Prog.NSeen); err != nil {
+		if err := RuleTableLimits(len(strs), g.Prog.NSeen); err != nil {
 			g.tableErr = err
 		}
 		spec, strTable, extraTable := g.Table+"Spec", g.Table+"Strs", g.Table+"Extras"
@@ -760,8 +761,8 @@ func (g *generator) rules() {
 		s := compile.NewScope()
 		body := g.flowStreamBody(r, s)
 		if body != "" {
-			if streamRouteHook != nil && g.collect == nil {
-				streamRouteHook(g.Table, r)
+			if StreamRouteHook != nil && g.collect == nil {
+				StreamRouteHook(g.Table, r)
 			}
 		} else {
 			g.FailFlow("the stream body of rule " + r.Name)
@@ -806,7 +807,7 @@ func (g *generator) rules() {
 
 // nodeTypeNames returns the names of the grammar's named node types, sorted, in the order of their
 // generated indexes from 1 (nodeTypeIndex).
-func (g *generator) nodeTypeNames() []string {
+func (g *Generator) nodeTypeNames() []string {
 	var names []string
 	for name, spec := range g.Prog.Types {
 		if td, ok := spec.(*grammar.TypeDef); ok && td.Struct() == nil {
@@ -818,7 +819,7 @@ func (g *generator) nodeTypeNames() []string {
 }
 
 // nodeTypeIndex returns the generated index of the named node type name, from 1.
-func (g *generator) nodeTypeIndex(name string) int {
+func (g *Generator) nodeTypeIndex(name string) int {
 	n, ok := g.Prog.NodeTypeOf(name)
 	if !ok {
 		panic("internal error: " + name + " is not a named node type")
@@ -828,14 +829,14 @@ func (g *generator) nodeTypeIndex(name string) int {
 
 // nodeTypeID returns the Go expression of the registered index of the named node type name in the
 // typed runtime (nt in tmatch and tnode).
-func (g *generator) nodeTypeID(name string) string {
+func (g *Generator) nodeTypeID(name string) string {
 	return fmt.Sprintf("%s[%d]", nodeTypesName, g.nodeTypeIndex(name))
 }
 
 // typedResultConversion returns the statement that converts the value v of rule r to the rule's
 // named node type in the typed runtime (what finish does), or "" if r has none. body, if not "",
 // holds the fresh node of the rule's body (tfreshNode), which converts in place.
-func (g *generator) typedResultConversion(r *compile.Rule, v, body string) string {
+func (g *Generator) typedResultConversion(r *compile.Rule, v, body string) string {
 	if r.NodeType == "" {
 		return ""
 	}
@@ -847,7 +848,7 @@ func (g *generator) typedResultConversion(r *compile.Rule, v, body string) strin
 
 // ownsBody reports whether finishing the value of rule r in the typed runtime converts the fresh
 // node of its body in place: the rule has a named node type and returns its body's value.
-func (g *generator) ownsBody(r *compile.Rule) bool {
+func (g *Generator) ownsBody(r *compile.Rule) bool {
 	return r.NodeType != "" && !r.Novalue && r.Action == nil
 }
 
@@ -857,9 +858,9 @@ func (g *generator) ownsBody(r *compile.Rule) bool {
 // directly and finishes the value as the rule's kind requires (what finish does), so a call goes
 // through no rule table entry or function value.
 //
-// For a flat rule (d, see gen_flowrule.go), the method that runs the body (s<id>, v<id> or i<id>)
+// For a flat rule (d, see flowrule.go), the method that runs the body (s<id>, v<id> or i<id>)
 // has it inlined, with the action.
-func (g *generator) typedCall(r *compile.Rule, body string, s *compile.Scope, d *flatRule) {
+func (g *Generator) typedCall(r *compile.Rule, body string, s *compile.Scope, d *flatRule) {
 	if _, operatorsRule := r.Def.Expr.(*grammar.OperatorsRule); operatorsRule || r.Leader {
 		return // the general call
 	}
@@ -985,7 +986,7 @@ type wrapperSpan struct {
 // runs after the bodies and the stream body, which are the last generated calls, so that a wrapper
 // is kept exactly when a call of it was generated. Spans are removed from the last one to the first,
 // so the earlier spans keep their offsets.
-func (g *generator) dropUnusedWrappers() {
+func (g *Generator) dropUnusedWrappers() {
 	text := g.Methods.String()
 	for i := len(g.wrappers) - 1; i >= 0; i-- {
 		w := g.wrappers[i]
@@ -1003,7 +1004,7 @@ func (g *generator) dropUnusedWrappers() {
 
 // plainPrefix is the prefix of the methods written by plainCall, and seenVar the variable that
 // holds the number of rules with rule.seen set, for the rule table being generated.
-func (g *generator) plainPrefix() string {
+func (g *Generator) plainPrefix() string {
 	switch g.Table {
 	case "rules":
 		return "r"
@@ -1014,16 +1015,16 @@ func (g *generator) plainPrefix() string {
 }
 
 // pick returns untyped for the Node runtime and typed for the typed runtime (trules).
-func (g *generator) pick(untyped, typed string) string {
+func (g *Generator) pick(untyped, typed string) string {
 	if g.Table == "trules" {
 		return typed
 	}
 	return untyped
 }
 
-func (g *generator) recv() string    { return g.pick("Parser", "TParser") }
-func (g *generator) valType() string { return g.pick("*Node", "any") }
-func (g *generator) ctxType() string { return g.pick("ActCtx", "TActCtx") }
+func (g *Generator) recv() string    { return g.pick("Parser", "TParser") }
+func (g *Generator) valType() string { return g.pick("*Node", "any") }
+func (g *Generator) ctxType() string { return g.pick("ActCtx", "TActCtx") }
 
 // comparison reports whether op compares two values.
 func comparison(op string) bool {
@@ -1042,7 +1043,7 @@ func fieldRead(t grammar.Term) bool {
 
 // operand returns an operand (TOperand) of a comparison: a field read keeps a string field
 // unboxed.
-func (g *generator) operand(t grammar.Term, s *compile.Scope, locals map[string]string) string {
+func (g *Generator) operand(t grammar.Term, s *compile.Scope, locals map[string]string) string {
 	if fieldRead(t) {
 		m := t.(*grammar.Member)
 		return fmt.Sprintf("c.FieldOperand(%s, %q)", g.term(m.X, s, locals), m.Name)
@@ -1051,26 +1052,26 @@ func (g *generator) operand(t grammar.Term, s *compile.Scope, locals map[string]
 }
 
 // step returns the statement that charges one step to the work control of recv, if there is one.
-func (g *generator) step(recv string) string {
+func (g *Generator) step(recv string) string {
 	if g.NoWork {
 		return ""
 	}
 	return recv + ".StepWork()\n"
 }
 
-func (g *generator) frameVar() string { return g.pick("EmptyFrame", "EmptyTFrame") }
-func (g *generator) rt() string       { return g.pick("rt", "trt") }
+func (g *Generator) frameVar() string { return g.pick("EmptyFrame", "EmptyTFrame") }
+func (g *Generator) rt() string       { return g.pick("rt", "trt") }
 
 // grammarVar returns the generated grammar of the rule table being generated.
-func (g *generator) grammarVar() string {
+func (g *Generator) grammarVar() string {
 	if g.Table == "rules" {
 		return "pegoGrammar"
 	}
 	return "pegoRecGrammar"
 }
 
-// method emits a method with the given body and returns its name.
-func (g *generator) method(comment, body string) string {
+// Method emits a method with the given body and returns its name.
+func (g *Generator) Method(comment, body string) string {
 	name, shared := g.MethodName(g.recv()+"/"+g.valType(), body)
 	if shared {
 		return name
@@ -1085,7 +1086,7 @@ func (g *generator) method(comment, body string) string {
 // bodyMethod emits the function of a rule body and returns its name. It has the signature of the
 // Body field of the rule table, so the table names it without a closure; the Operators Rule level
 // it ignores is 0 where the generated code calls it.
-func (g *generator) bodyMethod(comment, body string) string {
+func (g *Generator) bodyMethod(comment, body string) string {
 	name, shared := g.MethodName(g.recv()+"/"+g.valType()+"/body", body)
 	if shared {
 		return name
@@ -1099,13 +1100,13 @@ func (g *generator) bodyMethod(comment, body string) string {
 
 // shaper returns the name of the package variable that holds the runtime shaper of the expression
 // e, its static shape (internal/compile/value_shape.go). Few distinct shapes occur, so the variables are shared.
-func (g *generator) shaper(e grammar.Expr) string {
+func (g *Generator) shaper(e grammar.Expr) string {
 	return g.shaperOf(shaperLit(g.Prog, e))
 }
 
 // shaperOf returns the name of the package variable that holds the shaper of the literal lit,
 // declaring it on first use.
-func (g *generator) shaperOf(lit string) string {
+func (g *Generator) shaperOf(lit string) string {
 	if g.shaperNames == nil {
 		g.shaperNames = map[string]string{}
 	}
@@ -1126,7 +1127,7 @@ func shaperLit(prog *compile.Program, e grammar.Expr) string {
 
 // plainCall writes the method r<id>, which does what invokePlain does for the rule r (a rule never
 // memoized and without captures) with a direct call of its body.
-func (g *generator) plainCall(r *compile.Rule, body string) {
+func (g *Generator) plainCall(r *compile.Rule, body string) {
 	name := fmt.Sprintf("%s%d", g.plainPrefix(), r.ID)
 	if g.Observability {
 		name = g.tracePlainWrapper(r, name)
@@ -1159,7 +1160,7 @@ func (g *generator) plainCall(r *compile.Rule, body string) {
 // Then e fails at once without the terminal, recording only that expectation (a call memoizes the
 // same failure, and memoization only affects speed), so a choice can skip it; unless the calls on
 // the way would exceed the nesting limit.
-func (g *generator) first(e grammar.Expr, depth int, seen map[string]bool) (string, compile.ExpID, int, bool) {
+func (g *Generator) first(e grammar.Expr, depth int, seen map[string]bool) (string, compile.ExpID, int, bool) {
 	switch e := e.(type) {
 	case *grammar.Literal:
 		if e.Value == "" {
@@ -1177,7 +1178,7 @@ func (g *generator) first(e grammar.Expr, depth int, seen map[string]bool) (stri
 		}
 		return fmt.Sprintf("ch == %d", r), g.Desc(strconv.Quote(e.Value)), depth, true
 	case *grammar.CharClass:
-		return negateCondition(g.controlledClassReject(e)), g.Desc(compile.CharClassString(e)), depth, true
+		return NegateCondition(g.ControlledClassReject(e)), g.Desc(compile.CharClassString(e)), depth, true
 	case *grammar.Seq:
 		if len(e.Items) > 0 {
 			return g.first(e.Items[0], depth, seen)
@@ -1210,9 +1211,9 @@ func depthLimit(depth int) string {
 	return fmt.Sprintf("p.Depth+%d <= p.MaxDepth", depth)
 }
 
-// negateCondition inverts a generated condition without retaining a leading
+// NegateCondition inverts a generated condition without retaining a leading
 // logical negation as a double negation.
-func negateCondition(condition string) string {
+func NegateCondition(condition string) string {
 	if strings.HasPrefix(condition, "!") {
 		return strings.TrimPrefix(condition, "!")
 	}
@@ -1239,7 +1240,7 @@ func classReject(e *grammar.CharClass) string {
 	return "!(" + cond + ")"
 }
 
-func (g *generator) operatorsRule(r *compile.Rule, e *grammar.OperatorsRule) {
+func (g *Generator) operatorsRule(r *compile.Rule, e *grammar.OperatorsRule) {
 	var b strings.Builder
 	fmt.Fprintf(&b, "\t%s[%d].OperatorsRule = &%s{\n", g.Table, r.ID, g.pick("OperatorsRule", "TOperatorsRule"))
 	// The lines of the rule's Core IR, in the order of e, if they are printed from Flow IR.
@@ -1293,7 +1294,7 @@ func (g *generator) operatorsRule(r *compile.Rule, e *grammar.OperatorsRule) {
 
 // operatorsRuleLine returns the line of an Operators Rule with the expression e and the action;
 // l is its Core IR if it is printed from Flow IR, or nil.
-func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator bool, l *core.OpLine) string {
+func (g *Generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator bool, l *core.OpLine) string {
 	s := compile.NewScope()
 	var locals []string
 	if operator {
@@ -1322,7 +1323,7 @@ func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, opera
 }
 
 // ruleCall returns the call of the rule r from Operators Rule level min.
-func (g *generator) ruleCall(r *compile.Rule, min int) string {
+func (g *Generator) ruleCall(r *compile.Rule, min int) string {
 	_, operatorsRule := r.Def.Expr.(*grammar.OperatorsRule)
 	switch {
 	case g.Document && g.Table == "rules":
@@ -1356,7 +1357,7 @@ func (g *generator) ruleCall(r *compile.Rule, min int) string {
 
 // term converts a value expression into a Go expression of type any. locals maps names, such as lambda
 // parameters, to Go expressions.
-func (g *generator) term(t grammar.Term, s *compile.Scope, locals map[string]string) string {
+func (g *Generator) term(t grammar.Term, s *compile.Scope, locals map[string]string) string {
 	switch t := t.(type) {
 	case *grammar.IntLit:
 		return fmt.Sprintf("any(%d)", t.Value)
@@ -1473,13 +1474,13 @@ func (g *generator) term(t grammar.Term, s *compile.Scope, locals map[string]str
 		case "text":
 			return "c.Text(" + args[0] + ")"
 		case "foldl", "foldr":
-			if g.goWorkControls {
+			if g.GoWorkControls {
 				return fmt.Sprintf("c.Fold(%q, %v, %s, %s, %s)", t.Func, t.Func == "foldr", args[0], args[1], g.lambda(t.Args[2], s, locals))
 			}
 			return fmt.Sprintf("%sFold(%q, %v, %s, %s, %s)", g.rt(), t.Func, t.Func == "foldr", args[0], args[1], g.lambda(t.Args[2], s, locals))
 		case "map":
 			if x, ok := g.Projected(t, locals); ok {
-				if g.goWorkControls {
+				if g.GoWorkControls {
 					return "c.NewList(c.ListItems(\"map\", " + g.term(x, s, locals) + "))"
 				}
 				return "c.NewList(" + g.pick("listItems", "tlistItems") + "(\"map\", " + g.term(x, s, locals) + "))"
@@ -1497,7 +1498,7 @@ func (g *generator) term(t grammar.Term, s *compile.Scope, locals map[string]str
 			if rx, ok := compile.TextArg(t.R); ok {
 				// Compare the strings directly (see evalCtx.binary).
 				xs := g.terms([]grammar.Term{lx, rx}, s, locals)
-				if g.goWorkControls {
+				if g.GoWorkControls {
 					return fmt.Sprintf("any(c.P.TextEqual(c.TextStr(%s), c.TextStr(%s)) == %v)", xs[0], xs[1], t.Op == "==")
 				}
 				return fmt.Sprintf("any(c.TextStr(%s) %s c.TextStr(%s))", xs[0], t.Op, xs[1])
@@ -1512,14 +1513,14 @@ func (g *generator) term(t grammar.Term, s *compile.Scope, locals map[string]str
 			// The right operand is evaluated only if the left one does not decide the result.
 			l, r := g.term(t.L, s, locals), g.closure(t.R, s, locals)
 			fn := map[string]string{"&&": "And", "||": "Or"}[t.Op]
-			if g.goWorkControls {
+			if g.GoWorkControls {
 				return fmt.Sprintf("c.%s(%s, %s)", fn, l, r)
 			}
 			return fmt.Sprintf("%s%s(%s, %s)", g.rt(), fn, l, r)
 		}
 		xs := g.terms([]grammar.Term{t.L, t.R}, s, locals)
 		l, r := xs[0], xs[1]
-		if g.goWorkControls {
+		if g.GoWorkControls {
 			return fmt.Sprintf("c.Binary(%q, %s, %s)", t.Op, l, r)
 		}
 		return fmt.Sprintf("%sBinary(%q, %s, %s)", g.rt(), t.Op, l, r)
@@ -1533,7 +1534,7 @@ func (g *generator) term(t grammar.Term, s *compile.Scope, locals map[string]str
 		line, col := g.Prog.CastPos(t)
 		return fmt.Sprintf("c.Cast(%s, %s, %d, %d)", x, v, line, col)
 	case *grammar.Unary:
-		if g.goWorkControls {
+		if g.GoWorkControls {
 			return fmt.Sprintf("c.Unary(%q, %s)", t.Op, g.term(t.X, s, locals))
 		}
 		return fmt.Sprintf("%sUnary(%q, %s)", g.rt(), t.Op, g.term(t.X, s, locals))
@@ -1543,7 +1544,7 @@ func (g *generator) term(t grammar.Term, s *compile.Scope, locals map[string]str
 
 // predicateBody returns the body of a function that returns the value of the predicate term t. A
 // membership of a captured text in literals is a switch.
-func (g *generator) predicateBody(t grammar.Term, s *compile.Scope, locals map[string]string) string {
+func (g *Generator) predicateBody(t grammar.Term, s *compile.Scope, locals map[string]string) string {
 	if !g.DisableLiteralTextDispatch {
 		if name, literals, ok := gen.LiteralTextMembership(t); ok {
 			var cases []string
@@ -1556,7 +1557,7 @@ func (g *generator) predicateBody(t grammar.Term, s *compile.Scope, locals map[s
 			}
 			_, text := g.stmts(func() string { return g.term(&grammar.CaptureRef{Name: name}, s, locals) })
 			fast := fmt.Sprintf("switch c.TextStr(%s) { case %s: return true }; return false", text, strings.Join(cases, ", "))
-			if g.goWorkControls {
+			if g.GoWorkControls {
 				return "if c.P.Control != nil { " + g.termBody(t, s, locals) + " }; " + fast
 			}
 			return fast
@@ -1566,7 +1567,7 @@ func (g *generator) predicateBody(t grammar.Term, s *compile.Scope, locals map[s
 }
 
 // concatParts emits the statements that push the elements of the arguments of the concat call t.
-func (g *generator) concatParts(t *grammar.Call, s *compile.Scope, locals map[string]string) {
+func (g *Generator) concatParts(t *grammar.Call, s *compile.Scope, locals map[string]string) {
 	for _, a := range t.Args {
 		call, ok := a.(*grammar.Call)
 		switch {
@@ -1588,7 +1589,7 @@ func (g *generator) concatParts(t *grammar.Call, s *compile.Scope, locals map[st
 }
 
 // emit adds a statement to run before the expression of the term being printed.
-func (g *generator) emit(stmt string) {
+func (g *Generator) emit(stmt string) {
 	if g.hoist == nil {
 		panic("generator: a term is printed outside a statement context")
 	}
@@ -1597,7 +1598,7 @@ func (g *generator) emit(stmt string) {
 
 // stmts prints with f, which prints terms, and returns the statements the terms need before the
 // expression f returns, joined as the statements of a block.
-func (g *generator) stmts(f func() string) (stmts, expr string) {
+func (g *Generator) stmts(f func() string) (stmts, expr string) {
 	prev := g.hoist
 	var own []string
 	g.hoist = &own
@@ -1612,20 +1613,20 @@ func (g *generator) stmts(f func() string) (stmts, expr string) {
 
 // termBody returns the body of a function that returns the value of t: the statements t needs, then
 // the return of its expression.
-func (g *generator) termBody(t grammar.Term, s *compile.Scope, locals map[string]string) string {
+func (g *Generator) termBody(t grammar.Term, s *compile.Scope, locals map[string]string) string {
 	stmts, expr := g.stmts(func() string { return g.term(t, s, locals) })
 	return stmts + "return " + expr
 }
 
 // closure returns a function literal that evaluates t when it is called, for a term that is
 // evaluated only if needed.
-func (g *generator) closure(t grammar.Term, s *compile.Scope, locals map[string]string) string {
+func (g *Generator) closure(t grammar.Term, s *compile.Scope, locals map[string]string) string {
 	return "func() any { " + g.termBody(t, s, locals) + " }"
 }
 
 // terms prints the terms of ts, other than lambdas, in the order they are evaluated (see seq). The
 // lambdas stay empty.
-func (g *generator) terms(ts []grammar.Term, s *compile.Scope, locals map[string]string) []string {
+func (g *Generator) terms(ts []grammar.Term, s *compile.Scope, locals map[string]string) []string {
 	parts := make([]func() string, len(ts))
 	for i, t := range ts {
 		parts[i] = func() string {
@@ -1641,7 +1642,7 @@ func (g *generator) terms(ts []grammar.Term, s *compile.Scope, locals map[string
 // seq prints the operands of an expression in the order Go evaluates them. If an operand needs
 // statements before its expression, the expressions of the operands before it are assigned to
 // temporaries first, ahead of those statements, so they are still evaluated before it.
-func (g *generator) seq(parts ...func() string) []string {
+func (g *Generator) seq(parts ...func() string) []string {
 	out := make([]string, len(parts))
 	for i, part := range parts {
 		mark := len(*g.hoist)
@@ -1669,7 +1670,7 @@ func (g *generator) seq(parts ...func() string) []string {
 // temporaries, alone or in the parentheses or UnboxValue call that print a parameter (see term).
 var fixedValue = regexp.MustCompile(`^(any\((-?\d+|"([^"\\]|\\.)*"|true|false|nil)\)|c\.Cap\(\d+\)|(?:(?:\w+\.)?UnboxValue)?\(l_\d+\)|[lt]_\d+|[kv]\d+)$`)
 
-func (g *generator) lambda(t grammar.Term, s *compile.Scope, locals map[string]string) string {
+func (g *Generator) lambda(t grammar.Term, s *compile.Scope, locals map[string]string) string {
 	l := t.(*grammar.Lambda)
 	inner := map[string]string{}
 	for k, v := range locals {
@@ -1684,11 +1685,11 @@ func (g *generator) lambda(t grammar.Term, s *compile.Scope, locals map[string]s
 	return fmt.Sprintf("func(%s any) any { %s }", strings.Join(params, ", "), g.termBody(l.Body, s, inner))
 }
 
-// controlledClassReject preserves the compact inactive condition while bounded
+// ControlledClassReject preserves the compact inactive condition while bounded
 // membership uses immutable generated range tables. TS keeps its own runtime.
-func (g *generator) controlledClassReject(e *grammar.CharClass) string {
+func (g *Generator) ControlledClassReject(e *grammar.CharClass) string {
 	ordinary := classReject(e)
-	if !g.goWorkControls || g.NoWork || len(e.Ranges) <= 4 {
+	if !g.GoWorkControls || g.NoWork || len(e.Ranges) <= 4 {
 		// Without work controls the class is tested without a control, so it has no range table.
 		return ordinary
 	}
@@ -1712,14 +1713,14 @@ func (g *generator) controlledClassReject(e *grammar.CharClass) string {
 
 // atEnd and atLineStart name the runtime methods that test the anchors; a parser without
 // ParseStream uses the forms that need not consider a stream, which inline.
-func (g *generator) atEnd() string {
+func (g *Generator) atEnd() string {
 	if g.streamStart == nil {
 		return g.helper("AtEndBatch")
 	}
 	return g.helper("AtEnd")
 }
 
-func (g *generator) atLineStart() string {
+func (g *Generator) atLineStart() string {
 	if g.streamStart == nil {
 		return g.helper("AtLineStartBatch")
 	}
@@ -1729,7 +1730,7 @@ func (g *generator) atLineStart() string {
 // helper names the runtime method that a generated execution function calls on its parser. A
 // parser generated without work controls and without Documents has no controlled form of its
 // bodies, so they call the Ordinary form of the method.
-func (g *generator) helper(name string) string {
+func (g *Generator) helper(name string) string {
 	if g.Ordinary && ordinaryHelperName(name) {
 		return name + "Ordinary"
 	}
@@ -1737,13 +1738,13 @@ func (g *generator) helper(name string) string {
 }
 
 // leanTyped reports whether typed rule bodies are emitted in their ordinary form only.
-func (g *generator) leanTyped() bool {
-	return g.Ordinary && g.goWorkControls && g.Table == "trules"
+func (g *Generator) leanTyped() bool {
+	return g.Ordinary && g.GoWorkControls && g.Table == "trules"
 }
 
 // classTable returns the name of the package variable that holds the membership table of e,
 // declaring it on first use.
-func (g *generator) classTable(e *grammar.CharClass) string {
+func (g *Generator) classTable(e *grammar.CharClass) string {
 	key := fmt.Sprintf("cls%v%#v", e.Negated, e.Ranges)
 	if g.workClassNames == nil {
 		g.workClassNames = map[string]string{}
@@ -1754,7 +1755,7 @@ func (g *generator) classTable(e *grammar.CharClass) string {
 	name := g.Name("cls")
 	g.workClassNames[key] = name
 	g.workClassKeys = append(g.workClassKeys, key)
-	ascii, wideRunes := classBits(e)
+	ascii, wideRunes := ClassBits(e)
 	var wide []string
 	for _, r := range wideRunes {
 		wide = append(wide, strconv.Itoa(int(r)))
@@ -1772,7 +1773,7 @@ func (g *generator) classTable(e *grammar.CharClass) string {
 
 // classSteps returns the name of the package variable that lists the class steps of items, which
 // are character classes, declaring it on first use.
-func (g *generator) classSteps(items []grammar.Expr) string {
+func (g *Generator) classSteps(items []grammar.Expr) string {
 	var steps []string
 	for _, it := range items {
 		c := it.(*grammar.CharClass)
@@ -1790,10 +1791,10 @@ func (g *generator) classSteps(items []grammar.Expr) string {
 	return name
 }
 
-// classBits returns the membership tables of a character class as the runtime's Class holds
+// ClassBits returns the membership tables of a character class as the runtime's Class holds
 // them: the bitset of the matching characters below 128, with the negation applied, and the
 // inclusive pairs of the ranges at or above 128 (a range that starts below is cut at 128).
-func classBits(e *grammar.CharClass) (ascii [2]uint64, wide []rune) {
+func ClassBits(e *grammar.CharClass) (ascii [2]uint64, wide []rune) {
 	for c := rune(0); c < 128; c++ {
 		in := false
 		for _, r := range e.Ranges {

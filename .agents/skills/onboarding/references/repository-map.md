@@ -11,7 +11,7 @@ before choosing an edit location:
 | Grammar source parsing | `internal/syntax/` |
 | Compiler and static analysis | `internal/compile/` |
 | Execution, bytecode VMs and code generation | `internal/engine/` |
-| Generated Go parser source | Generator `internal/engine/gen.go` and runtime package `runtime/` (imported or copied into generated parsers); generated parsers under `parsers/` and `bench/gen/` are outputs |
+| Generated Go parser source | Generator `internal/gen/gogen/generator.go` and runtime package `runtime/` (imported or copied into generated parsers); generated parsers under `parsers/` and `bench/gen/` are outputs |
 | CLI, editor service and sample generation | `cmd/pego/`, `internal/lsp/`, `sample/` |
 | Ready-made parsers, playground and site | `parsers/`, `cmd/playground/`, `site/` |
 

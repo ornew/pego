@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 func TestTrimComments(t *testing.T) {
@@ -50,7 +51,7 @@ func (e *Exported) method() {}
 // tbl explains an unexported variable.
 var tbl = 1
 `
-	got, err := trimComments([]byte(src))
+	got, err := gogen.TrimComments([]byte(src))
 	if err != nil {
 		t.Fatal(err)
 	}

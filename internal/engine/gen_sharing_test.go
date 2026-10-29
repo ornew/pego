@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 	"github.com/ornew/pego/internal/gen/tsgen"
 )
 
@@ -20,14 +21,14 @@ func TestGeneratedSharingIdentity(t *testing.T) {
 	if ts.Method("recognition", "return [null, true];\n") != name {
 		t.Fatal("identical TypeScript bodies should share across rule tables")
 	}
-	g := &generator{Table: "rules"}
-	a := g.method("first", "return nil, true\n")
+	g := &gogen.Generator{Table: "rules"}
+	a := g.Method("first", "return nil, true\n")
 	g.Table = "recRules"
-	if g.method("recognition", "return nil, true\n") != a {
+	if g.Method("recognition", "return nil, true\n") != a {
 		t.Fatal("identical Node bodies should share across rule tables")
 	}
 	g.Table = "trules"
-	if g.method("typed", "return nil, true\n") == a {
+	if g.Method("typed", "return nil, true\n") == a {
 		t.Fatal("different receivers and value types must not share")
 	}
 	g.Table = "rules"
@@ -41,7 +42,7 @@ func TestGeneratedSharingIdentity(t *testing.T) {
 		"return p.Frame.Vals[1], true\n",
 	} {
 		before := g.Methods.Len()
-		g.method("", body)
+		g.Method("", body)
 		if g.Methods.Len() == before {
 			t.Fatal("semantically distinct bodies must not share")
 		}

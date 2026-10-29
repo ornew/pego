@@ -309,12 +309,13 @@ func RecFlowEligible(r *compile.Rule) bool {
 	return ok
 }
 
-// StartRecFlow builds the Core IR of the program rec (the recognizer, or the program of the Node table),
-// with the passes of the untyped tables (no terminal programs and no class runs), for printing its
-// eligible rules from Flow IR. It runs the passes of typedCore that the Node runtime's rules use:
-// rewrites, Analyze, Guards, scans and the repeats, which irbuild.FollowRepeats keeps in step with the scans.
-// It omits Terminals and ClassRuns, which the Go generator's typedCore runs only for lean typed rules (leanTyped): the Node recognizer writes
-// its terminals and classes as inline tests.
+// StartRecFlow builds the Core IR of the program rec (the recognizer, or the program of the Node
+// table), with the passes of the untyped tables (no terminal programs and no class runs), for
+// printing its eligible rules from Flow IR. It runs the passes of gogen.Generator.TypedCore that the
+// Node runtime's rules use: rewrites, Analyze, Guards, scans and the repeats, which
+// irbuild.FollowRepeats keeps in step with the scans. It omits Terminals and ClassRuns, which
+// gogen.Generator.TypedCore runs only for lean typed rules (leanTyped): the Node recognizer writes its
+// terminals and classes as inline tests.
 func (g *Generator) StartRecFlow(rec *compile.Program) error {
 	origin := map[core.Node]grammar.Expr{}
 	m, err := irbuild.CoreProjecting(rec, origin, g.Table != "recRules")
@@ -322,8 +323,8 @@ func (g *Generator) StartRecFlow(rec *compile.Program) error {
 		return err
 	}
 	core.RewriteTerms(m, core.TermOptions{TextDispatch: !g.DisableLiteralTextDispatch, FieldCompare: !g.BoxedComparisons})
-	// Guards read the First sets that Analyze computes, as typedCore does: without this pass the
-	// alternatives of a choice get no first-character guard, and the Flow form calls the rules of
+	// Guards read the First sets that Analyze computes, as gogen.Generator.TypedCore does: without this
+	// pass the alternatives of a choice get no first-character guard, and the Flow form calls the rules of
 	// the later alternatives at every position (duckdb: block_comment, 84k calls against none).
 	core.Analyze(m)
 	core.Guards(m, g.Ordinary && !g.DisableGuardedClasses)

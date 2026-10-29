@@ -3,6 +3,7 @@ package engine
 import (
 	"testing"
 
+	"github.com/ornew/pego/internal/gen/gogen"
 	irbuild "github.com/ornew/pego/internal/ir/build"
 	"github.com/ornew/pego/internal/ir/core"
 )
@@ -209,7 +210,7 @@ func TestCoreTerminalsFrozen(t *testing.T) {
 		}},
 		{"spurious terminal", "terminals", []string{"terminal"}, func(c *coreGenCase, m *core.Module) bool {
 			for _, r := range m.Rules {
-				if !coreLocalRule(r) {
+				if !gogen.CoreLocalRule(r) {
 					continue
 				}
 				if seq := valueFreeSeq(r.Body, func(n core.Node) bool {
@@ -338,8 +339,8 @@ func TestCoreScans(t *testing.T) {
 	if !ok {
 		t.Fatal("does not compile")
 	}
-	g := &generator{Prog: prog.staticProgram, Table: "trules", goWorkControls: true}
-	m, err := g.typedCore(nil)
+	g := &gogen.Generator{Prog: prog.staticProgram, Table: "trules", GoWorkControls: true}
+	m, err := g.TypedCore(nil)
 	if err != nil {
 		t.Fatal(err)
 	}

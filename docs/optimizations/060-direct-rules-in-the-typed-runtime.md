@@ -5,7 +5,7 @@
   profile of JSON `ParseAST` spread the time over those methods, `setCapture` and `reset`, `newFrame` and
   `freeFrame`, and the action plumbing (about 10%). A rule without a cut or `#recover` that does not contain an Operators Rule
   nor a left-recursion leader is now compiled into the method that calls it (design 012, "Direct rules";
-  `gen_flowrule.go`): failures jump to labels, captures are Go variables that backtracking points save and restore,
+  `internal/gen/gogen/flowrule.go`): failures jump to labels, captures are Go variables that backtracking points save and restore,
   and the action is a Go expression over them, without the checks of `tctx.result` when it makes a struct with the
   rule's range. Every rule of the JSON, XML and outline grammars is direct; in the calculators, all but the Operators Rule
   expression and the three left-recursive rules.

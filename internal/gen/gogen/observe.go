@@ -1,4 +1,4 @@
-package engine
+package gogen
 
 import (
 	"fmt"
@@ -7,11 +7,11 @@ import (
 	"github.com/ornew/pego/internal/compile"
 )
 
-func (g *generator) tracePlainWrapper(r *compile.Rule, name string) string {
+func (g *Generator) tracePlainWrapper(r *compile.Rule, name string) string {
 	return g.traceCallWrapper(r, name, true)
 }
 
-func (g *generator) traceCallWrapper(r *compile.Rule, name string, evaluated bool) string {
+func (g *Generator) traceCallWrapper(r *compile.Rule, name string, evaluated bool) string {
 	body := name + "ObservedBody"
 	eval := ""
 	if evaluated {
@@ -34,7 +34,7 @@ func %[1]s(p *%[2]s) (%[3]s, bool) {
 
 // A guard may suppress a whole sequence or a chain of rule references. Report
 // only its first identifiable rule call site, without inventing nested calls.
-func (g *generator) traceSkip(expr grammar.Expr) string {
+func (g *Generator) traceSkip(expr grammar.Expr) string {
 	if !g.Observability {
 		return ""
 	}

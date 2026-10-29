@@ -1,4 +1,4 @@
-package engine
+package gogen
 
 // ordinaryHelperName reports whether the runtime has an Ordinary form of the method name, which
 // a parser without work controls and Documents calls instead (the runtime writes them by hand).

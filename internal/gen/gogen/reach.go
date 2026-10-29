@@ -1,4 +1,4 @@
-package engine
+package gogen
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ import (
 // so a rule referenced only from value-free contexts has an original body that nothing calls, and
 // so on transitively.
 //
-// generate finds the reachable rules with a first pass whose calls (ruleCall) are the edges, and a
+// GenerateParser finds the reachable rules with a first pass whose calls (ruleCall) are the edges, and a
 // second pass leaves out the others. The rule tables still list every rule: only the Body, Action,
 // Entry and OperatorsRule assignments and the functions of an unreachable rule are left out. What a
 // left-out rule would have declared (its expectations, literals, class tables and typed helpers) is
@@ -26,144 +26,144 @@ import (
 // pass up to the end of those tables, because a left-out rule of them keeps its table row. The
 // typed table has no such rows, so the expectations of its left-out rules are not in any table.
 
-// ruleKey names what of a rule is entered: its slot in the rule table (the Body that p.Call and
+// RuleKey names what of a rule is entered: its slot in the rule table (the Body that p.Call and
 // InvokePlain run), or the wrapper function of a plain rule, which a call of it (ruleCall) uses
 // instead and which does not run the Body.
-type ruleKey struct {
-	table   string
-	id      int
-	wrapper bool
+type RuleKey struct {
+	Table   string
+	ID      int
+	Wrapper bool
 }
 
 // rule returns the key of the rule that k enters part of.
-func (k ruleKey) rule() ruleKey { k.wrapper = false; return k }
+func (k RuleKey) rule() RuleKey { k.Wrapper = false; return k }
 
-// rootKey is the origin of the calls that are not generated for the body of a rule: the stream
+// RootKey is the origin of the calls that are not generated for the body of a rule: the stream
 // body and the entry points.
-var rootKey = ruleKey{"", -1, false}
+var RootKey = RuleKey{"", -1, false}
 
-// liveRules is what the first pass of generate records for the second.
-type liveRules struct {
+// LiveRules is what the first pass of GenerateParser records for the second.
+type LiveRules struct {
 	log    []ruleEdge                   // the calls generated so far, which a rolled back attempt truncates
-	edges  map[ruleKey]map[ruleKey]bool // the rules a rule's printed body calls, from log
-	scopes map[ruleKey][]string         // the capture layout of each rule, which its table row lists
+	Edges  map[RuleKey]map[RuleKey]bool // the rules a rule's printed body calls, from log
+	scopes map[RuleKey][]string         // the capture layout of each rule, which its table row lists
 	descs  []string                     // the expectation table, whose IDs the printed bodies keep
-	roots  []ruleKey                    // the start rules of the tables and the entries of the typed table
-	reach  map[ruleKey]bool
+	Roots  []RuleKey                    // the start rules of the tables and the entries of the typed table
+	Reach  map[RuleKey]bool
 }
 
-// reachHook is called by tests with the result of the first pass of generate, before the second
+// ReachHook is called by tests with the result of the first pass of GenerateParser, before the second
 // pass; a test removes a root from it to show that the output then fails.
-var reachHook func(*liveRules)
+var ReachHook func(*LiveRules)
 
 // ruleEdge is a call of rule to from the body of rule from.
-type ruleEdge struct{ from, to ruleKey }
+type ruleEdge struct{ from, to RuleKey }
 
 // buildEdges sets l.edges to the calls of l.log.
-func (l *liveRules) buildEdges() {
-	l.edges = map[ruleKey]map[ruleKey]bool{}
+func (l *LiveRules) buildEdges() {
+	l.Edges = map[RuleKey]map[RuleKey]bool{}
 	for _, e := range l.log {
-		if l.edges[e.from] == nil {
-			l.edges[e.from] = map[ruleKey]bool{}
+		if l.Edges[e.from] == nil {
+			l.Edges[e.from] = map[RuleKey]bool{}
 		}
-		l.edges[e.from][e.to] = true
+		l.Edges[e.from][e.to] = true
 	}
 }
 
-// reachFrom sets l.reach to the rules that the roots and the calls outside rule bodies reach
+// ReachFrom sets l.reach to the rules that the roots and the calls outside rule bodies reach
 // through the recorded edges.
-func (l *liveRules) reachFrom(roots []ruleKey) {
-	l.reach = map[ruleKey]bool{}
-	work := append([]ruleKey(nil), roots...)
-	for to := range l.edges[rootKey] {
+func (l *LiveRules) ReachFrom(roots []RuleKey) {
+	l.Reach = map[RuleKey]bool{}
+	work := append([]RuleKey(nil), roots...)
+	for to := range l.Edges[RootKey] {
 		work = append(work, to)
 	}
 	for len(work) > 0 {
 		k := work[len(work)-1]
 		work = work[:len(work)-1]
-		if l.reach[k] {
+		if l.Reach[k] {
 			continue
 		}
-		l.reach[k] = true
-		for to := range l.edges[k.rule()] {
+		l.Reach[k] = true
+		for to := range l.Edges[k.rule()] {
 			work = append(work, to)
 		}
 	}
 }
 
-// missingBodies returns the rules of the table that are reachable but have no printed Body.
-func (l *liveRules) missingBodies(table string, printed map[ruleKey]bool) []ruleKey {
-	var miss []ruleKey
-	for k := range l.reach {
-		if k.table == table && !k.wrapper && !printed[k] {
+// MissingBodies returns the rules of the table that are reachable but have no printed Body.
+func (l *LiveRules) MissingBodies(table string, printed map[RuleKey]bool) []RuleKey {
+	var miss []RuleKey
+	for k := range l.Reach {
+		if k.Table == table && !k.Wrapper && !printed[k] {
 			miss = append(miss, k)
 		}
 	}
-	sort.Slice(miss, func(i, j int) bool { return miss[i].id < miss[j].id })
+	sort.Slice(miss, func(i, j int) bool { return miss[i].ID < miss[j].ID })
 	return miss
 }
 
 // pruned reports whether the second pass leaves out everything of rule r of the current table.
-func (g *generator) pruned(r *compile.Rule) bool {
+func (g *Generator) pruned(r *compile.Rule) bool {
 	if g.live == nil || g.keepTableRules && g.Table != "trules" {
 		return false
 	}
-	return !g.live.reach[ruleKey{g.Table, r.ID, false}] && !g.live.reach[ruleKey{g.Table, r.ID, true}]
+	return !g.live.Reach[RuleKey{g.Table, r.ID, false}] && !g.live.Reach[RuleKey{g.Table, r.ID, true}]
 }
 
 // slotReached reports whether the Body of rule r is printed: something enters the rule through its
 // slot, and not only through its wrapper.
-func (g *generator) slotReached(r *compile.Rule) bool {
-	return g.live == nil || g.Table == "trules" || g.live.reach[ruleKey{g.Table, r.ID, false}]
+func (g *Generator) slotReached(r *compile.Rule) bool {
+	return g.live == nil || g.Table == "trules" || g.live.Reach[RuleKey{g.Table, r.ID, false}]
 }
 
 // beginRule and endRule attribute the calls generated between them to the body of r.
-func (g *generator) beginRule(r *compile.Rule) {
-	g.emitting, g.emittingOK = ruleKey{g.Table, r.ID, false}, true
+func (g *Generator) beginRule(r *compile.Rule) {
+	g.emitting, g.emittingOK = RuleKey{g.Table, r.ID, false}, true
 }
 
-func (g *generator) endRule() { g.emittingOK = false }
+func (g *Generator) endRule() { g.emittingOK = false }
 
 // noteCall records a call of r from the body being generated, through its wrapper or its slot, and
 // checks in the second pass that the callee was not left out.
-func (g *generator) noteCall(r *compile.Rule, wrapper bool) {
-	to := ruleKey{g.Table, r.ID, wrapper}
+func (g *Generator) noteCall(r *compile.Rule, wrapper bool) {
+	to := RuleKey{g.Table, r.ID, wrapper}
 	if g.collect != nil {
-		from := rootKey
+		from := RootKey
 		if g.emittingOK {
 			from = g.emitting
 		}
 		g.collect.log = append(g.collect.log, ruleEdge{from, to})
 	}
-	if g.live != nil && !g.live.reach[to] && g.reachErr == nil && (g.Table == "trules" || !g.keepTableRules) {
+	if g.live != nil && !g.live.Reach[to] && g.reachErr == nil && (g.Table == "trules" || !g.keepTableRules) {
 		g.reachErr = fmt.Errorf("internal error: a generated call reaches the rule %s of %s, whose body is left out", r.Name, g.Table)
 	}
 }
 
 // printedBody records that the Body of rule r of the current table is printed.
-func (g *generator) printedBody(r *compile.Rule) {
+func (g *Generator) printedBody(r *compile.Rule) {
 	if g.bodySet == nil {
-		g.bodySet = map[ruleKey]bool{}
+		g.bodySet = map[RuleKey]bool{}
 	}
-	g.bodySet[ruleKey{g.Table, r.ID, false}] = true
+	g.bodySet[RuleKey{g.Table, r.ID, false}] = true
 }
 
 // finishReach ends a pass: the first pass computes the reachable rules from the start rules and
 // the calls outside rule bodies; the second checks that no printed call reaches a rule left out and
 // that every reachable rule has its Body.
-func (g *generator) finishReach(prog, rec *compile.Program) error {
+func (g *Generator) finishReach(prog, rec *compile.Program) error {
 	if g.collect != nil {
-		var roots []ruleKey
+		var roots []RuleKey
 		for _, name := range prog.StartRules {
-			roots = append(roots, ruleKey{"rules", prog.ByName[name].ID, false})
+			roots = append(roots, RuleKey{"rules", prog.ByName[name].ID, false})
 			if rec != nil {
-				roots = append(roots, ruleKey{"recRules", rec.ByName[name].ID, false})
+				roots = append(roots, RuleKey{"recRules", rec.ByName[name].ID, false})
 			}
 		}
 		roots = append(roots, g.typedRoots...)
-		g.collect.roots = roots
+		g.collect.Roots = roots
 		g.collect.buildEdges()
-		g.collect.reachFrom(roots)
+		g.collect.ReachFrom(roots)
 	}
 	if g.keepTableRules && g.convertsNodes {
 		return fmt.Errorf("internal error: a typed entry point converts Nodes, but the parser prints no Node rule bodies")
@@ -178,8 +178,8 @@ func (g *generator) finishReach(prog, rec *compile.Program) error {
 		if g.keepTableRules {
 			break // the Node and recognizer rules are all kept
 		}
-		if miss := g.live.missingBodies(table, g.bodySet); len(miss) > 0 {
-			return fmt.Errorf("internal error: the reachable rule slot %s[%d] has no Body", table, miss[0].id)
+		if miss := g.live.MissingBodies(table, g.bodySet); len(miss) > 0 {
+			return fmt.Errorf("internal error: the reachable rule slot %s[%d] has no Body", table, miss[0].ID)
 		}
 	}
 	return nil

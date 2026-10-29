@@ -55,7 +55,7 @@ func TestCoreBuildCorpus(t *testing.T) {
 			if _, ok := m.Rules[r.ID].Body.(*core.OperatorsRule); ok {
 				continue
 			}
-			if got, want := core.SlotNames(m.Rules[r.ID].Scope), g.nodeScopes[r]; !slices.Equal(got, want) {
+			if got, want := core.SlotNames(m.Rules[r.ID].Scope), g.NodeScopes[r]; !slices.Equal(got, want) {
 				t.Errorf("%s: rule %s (%d): scope %v, generated Node rule %v", c.name, r.Name, r.ID, got, want)
 			}
 		}

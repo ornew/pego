@@ -17,6 +17,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 // streamCases are the grammars with a #stream repetition of the generated-code tests, and the checked-in
@@ -67,8 +68,8 @@ func testFlowStreamBodyIsBatchBody(t *testing.T) {
 	flowN := 0
 	var flowed []string
 	var cur string
-	streamRouteHook = func(table string, r *compile.Rule) { flowN++; flowed = append(flowed, cur) }
-	t.Cleanup(func() { streamRouteHook = nil })
+	gogen.StreamRouteHook = func(table string, r *compile.Rule) { flowN++; flowed = append(flowed, cur) }
+	t.Cleanup(func() { gogen.StreamRouteHook = nil })
 	for _, form := range streamForms {
 		for _, c := range streamCases(t) {
 			t.Run(c.name+"/"+form.name, func(t *testing.T) {
@@ -103,7 +104,7 @@ func testFlowStreamBodyIsBatchBody(t *testing.T) {
 			})
 		}
 	}
-	streamRouteHook = nil
+	gogen.StreamRouteHook = nil
 	if flowN == 0 {
 		t.Fatal("no stream body is printed from Flow IR: the test exercises nothing")
 	}
@@ -184,8 +185,8 @@ func testGeneratedFlowStreamMatchesEngine(t *testing.T) {
 	}
 	cases := streamCases(t)
 	taken := 0
-	streamRouteHook = func(table string, r *compile.Rule) { taken++ }
-	t.Cleanup(func() { streamRouteHook = nil })
+	gogen.StreamRouteHook = func(table string, r *compile.Rule) { taken++ }
+	t.Cleanup(func() { gogen.StreamRouteHook = nil })
 	for _, form := range streamForms {
 		t.Run(form.name, func(t *testing.T) {
 			before := taken

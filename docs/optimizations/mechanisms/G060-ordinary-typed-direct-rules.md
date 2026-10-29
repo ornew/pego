@@ -33,9 +33,9 @@ unsupported rules.
 
 Evidence records: [060](../060-direct-rules-in-the-typed-runtime.md).
 
-Source owners: [`generator.flowTypedRule`](../../../internal/engine/gen_flow.go), [`typed framed body
-lowering`](../../../internal/engine/gen_flowframe.go), [`GenOptions private
-typed controls`](../../../internal/engine/gen.go), [`runtime invocation
+Source owners: [`Generator.flowTypedRule`](../../../internal/gen/gogen/flow.go), [`typed framed body
+lowering`](../../../internal/gen/gogen/flowframe.go), [`GenOptions private
+typed controls`](../../../internal/gen/gogen/generator.go), [`runtime invocation
 ownership`](../../../runtime/typed.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

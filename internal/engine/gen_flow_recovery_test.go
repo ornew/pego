@@ -8,6 +8,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 // The bodies with recovery (#recover) print from Flow IR in the Node and recognizer tables, in the lines of
@@ -49,7 +50,7 @@ func TestFlowRecoveryPrintsFromFlow(t *testing.T) {
 	for _, controls := range []bool{false, true} {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
-			framedRouteHook = func(table string, r *compile.Rule) {
+			gogen.FramedRouteHook = func(table string, r *compile.Rule) {
 				if !hasRecovery(r.BodyExpr()) {
 					return
 				}
@@ -61,8 +62,8 @@ func TestFlowRecoveryPrintsFromFlow(t *testing.T) {
 					taken[table+" recovery with a leader"]++
 				}
 			}
-			operatorsRouteHook = func(table string, r *compile.Rule) { taken[table+" operators line"]++ }
-			defer func() { framedRouteHook, operatorsRouteHook = nil, nil }()
+			gogen.OperatorsRouteHook = func(table string, r *compile.Rule) { taken[table+" operators line"]++ }
+			defer func() { gogen.FramedRouteHook, gogen.OperatorsRouteHook = nil, nil }()
 			for _, c := range cases {
 				g, err := parseTest(c.src)
 				if err != nil {

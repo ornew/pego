@@ -7,6 +7,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 // The rules of the recognizer table (and the lean rules of the Node table) that have captures print from Flow IR,
@@ -40,12 +41,12 @@ func TestFlowRecognizerPrintsCapturesFromFlow(t *testing.T) {
 	for _, controls := range []bool{false, true} {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
-			leanRouteHook = func(table string, r *compile.Rule) {
+			gogen.LeanRouteHook = func(table string, r *compile.Rule) {
 				if c, _ := hasCaptureOfRepeat(r.BodyExpr()); c {
 					taken[table+" lean with captures"]++
 				}
 			}
-			framedRouteHook = func(table string, r *compile.Rule) {
+			gogen.FramedRouteHook = func(table string, r *compile.Rule) {
 				c, rep := hasCaptureOfRepeat(r.BodyExpr())
 				if c {
 					taken[table+" framed with captures"]++
@@ -54,7 +55,7 @@ func TestFlowRecognizerPrintsCapturesFromFlow(t *testing.T) {
 					taken[table+" framed with a captured repetition"]++
 				}
 			}
-			defer func() { leanRouteHook, framedRouteHook = nil, nil }()
+			defer func() { gogen.LeanRouteHook, gogen.FramedRouteHook = nil, nil }()
 			for _, c := range cases {
 				g, err := parseTest(c.src)
 				if err != nil {

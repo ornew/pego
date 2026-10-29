@@ -23,9 +23,9 @@ The default pipeline reproduces today's generated output byte for byte. Users se
 
 The passes run as follows today, and this is the inventory the proposal starts from.
 
-- The sequence is written twice. `generator.typedCore` (`internal/engine/gen_typed_core.go`) runs `Terminals`,
+- The sequence is written twice. `Generator.TypedCore` (`internal/gen/gogen/typed_core.go`) runs `Terminals`,
   `RewriteTerms`, `Analyze`, `Guards`, `Scans`, `ClassRuns`, `Analyze`, `Verify`. `gen.Generator.StartRecFlow`
-  (`internal/engine/gen_flow_recognizer.go`) runs the same minus `Terminals` and `ClassRuns`. The order matters and is
+  (`internal/gen/generator.go`) runs the same minus `Terminals` and `ClassRuns`. The order matters and is
   nowhere declared: `Guards` reads what the first `Analyze` computes, and a missing `Analyze` leaves choices unguarded
   without an error (`StartRecFlow` carries a comment about 84,000 calls on the DuckDB grammar that the wrong order
   caused).
@@ -62,7 +62,7 @@ negative-control test. This record gives that rule a mechanism.
 - Passes over Flow IR. Flow IR has no optimization passes today (lowering makes the choices; see
   [Flow IR](../intermediate-representations.md#flow-ir)). The manager is written for Core IR and can host Flow passes
   when they exist.
-- The textual pass that rewrites generated Go (`qualifyRuntime`). It stays a text pass: record 062 moves the
+- The textual pass that rewrites generated Go (`QualifyRuntime`). It stays a text pass: record 062 moves the
   other rewrites into the printers and leaves the cost of this one to an independent fix.
 - The closure backend, bytecode and TypeScript, which do not use Core IR today.
 - Changes to what a parser does. Flags and profiles change generated code, never results, errors or events.
@@ -108,7 +108,7 @@ valid, recomputing the stale ones. After a pass it marks the invalidated ones st
 pass lists a requirement the manager cannot compute, if two enabled passes violate an `After` order, or if verification
 fails.
 
-Applied to the typed table with every optimization enabled, the manager performs the same calls as `typedCore` today:
+Applied to the typed table with every optimization enabled, the manager performs the same calls as `TypedCore` today:
 `attributes` is stale after `terminals` and is recomputed before `guards`; it is stale again after `scans` and
 `class-runs` and is recomputed once before the final verification. The recognizer pipeline is the same list without
 `terminals` and `class-runs`, and `Scan` origins are followed as `build.FollowRepeats` does.
@@ -182,7 +182,7 @@ same hook. A command-line front end prints with `core.Print(m, true)`, and the F
 1. Introduce the pass declarations, the manager and the two pipelines in `core`, together with a test that holds the
    old straight-line sequences as an oracle. For every grammar of the corpus and every mode of `coreGenModes`, run
    the oracle and the pipeline and compare `core.Print(m, true)`. No call site changes.
-2. Switch `typedCore` and `StartRecFlow` to the pipelines. Gate on three checks: `go generate ./parsers ./bench` leaves
+2. Switch `TypedCore` and `StartRecFlow` to the pipelines. Gate on three checks: `go generate ./parsers ./bench` leaves
    no diff, the corpus tests of the generator pass in default and `PEGO_TEST_ORDINARY=1` runs, and a byte comparison
    of the generated sources of the corpus before and after the switch (all modes) is empty.
 3. Replace the `disable*` booleans with the flag set. Existing tests set flags instead of fields; the flag names come

@@ -6,11 +6,12 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 func TestVarLinesExcept(t *testing.T) {
 	// The first variable of each type places the type, so dead x1 keeps int before any.
-	vs := []dvar{{"x1", "int"}, {"v2", "any"}, {"x3", "int"}, {"c", "*TActCtx"}, {"v4", "any"}}
+	vs := []gogen.Dvar{{Name: "x1", Typ: "int"}, {Name: "v2", Typ: "any"}, {Name: "x3", Typ: "int"}, {Name: "c", Typ: "*TActCtx"}, {Name: "v4", Typ: "any"}}
 	for _, tc := range []struct {
 		name        string
 		dead, quiet map[string]bool
@@ -25,11 +26,11 @@ func TestVarLinesExcept(t *testing.T) {
 		{"quiet variables are silenced after their declaration", nil, map[string]bool{"x3": true, "v2": true, "v4": true}, "var x1, x3 int\n_ = x3\nvar v2, v4 any\n_, _ = v2, v4\nvar c *TActCtx\n"},
 		{"a variable that is dead is not silenced", map[string]bool{"x3": true}, map[string]bool{"x3": true}, "var x1 int\nvar v2, v4 any\nvar c *TActCtx\n"},
 	} {
-		if got := varLinesExcept(vs, tc.dead, tc.quiet); got != tc.want {
+		if got := gogen.VarLinesExcept(vs, tc.dead, tc.quiet); got != tc.want {
 			t.Errorf("%s: varLinesExcept = %q, want %q", tc.name, got, tc.want)
 		}
 	}
-	if varLinesExcept(nil, nil, nil) != "" {
+	if gogen.VarLinesExcept(nil, nil, nil) != "" {
 		t.Error("varLinesExcept of nothing is not empty")
 	}
 }

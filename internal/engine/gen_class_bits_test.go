@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/gen/gogen"
 	pegort "github.com/ornew/pego/runtime"
 )
 
@@ -22,7 +23,7 @@ func TestClassBits(t *testing.T) {
 	for _, rs := range ranges {
 		for _, neg := range []bool{false, true} {
 			e := &grammar.CharClass{Ranges: rs, Negated: neg}
-			ascii, wide := classBits(e)
+			ascii, wide := gogen.ClassBits(e)
 			c := pegort.Class{ASCII: ascii, Wide: wide, Neg: neg}
 			for r := rune(0); r < 0x200; r++ {
 				in := false

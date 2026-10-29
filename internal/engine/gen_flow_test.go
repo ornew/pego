@@ -11,9 +11,10 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
-// The tests here check the typed rules printed from Flow IR (gen_flow.go), generating every corpus
+// The tests here check the typed rules printed from Flow IR (internal/gen/gogen/flow.go), generating every corpus
 // grammar in the modes of flowModes. The engine oracle of the corpus tests checks their values.
 
 // flowModes are the generator options under which the default prints rules from Flow IR, lean and
@@ -130,11 +131,11 @@ func flowGenerate(src string, opts gen.GenOptions) (string, int, int, bool) {
 	if err != nil {
 		return "", 0, 0, false
 	}
-	var gen *generator
-	generatorHook = func(x *generator) { gen = x }
-	defer func() { generatorHook = nil }()
+	var gen *gogen.Generator
+	gogen.GeneratorHook = func(x *gogen.Generator) { gen = x }
+	defer func() { gogen.GeneratorHook = nil }()
 	opts.Module, opts.KeepComments = "example.com/p", true
-	files, err := generate(g, compileForGenerator, opts)
+	files, err := gogen.GenerateParser(g, compileForGenerator, opts)
 	if err != nil {
 		return "", 0, 0, false
 	}
@@ -145,7 +146,7 @@ func flowGenerate(src string, opts gen.GenOptions) (string, int, int, bool) {
 	}
 	n, frames := 0, 0
 	if gen != nil {
-		n, frames = gen.flowRules, gen.flowFrames
+		n, frames = gen.FlowRules, gen.FlowFrames
 	}
 	return b.String(), n, frames, true
 }

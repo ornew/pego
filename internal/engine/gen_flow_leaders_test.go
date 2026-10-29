@@ -6,6 +6,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 // The bodies of left-recursion leaders print from Flow IR in the Node and recognizer tables, and in the stream
@@ -30,12 +31,12 @@ func TestFlowLeadersPrintFromFlow(t *testing.T) {
 	for _, controls := range []bool{false, true} {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
-			framedRouteHook = func(table string, r *compile.Rule) {
+			gogen.FramedRouteHook = func(table string, r *compile.Rule) {
 				if r.Leader {
 					taken[table]++
 				}
 			}
-			defer func() { framedRouteHook = nil }()
+			defer func() { gogen.FramedRouteHook = nil }()
 			for _, c := range cases {
 				g, err := parseTest(c.src)
 				if err != nil {

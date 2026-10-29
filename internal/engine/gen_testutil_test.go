@@ -17,6 +17,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 // The engine tests build the programs they generate in temporary directories. The generated code
@@ -109,7 +110,7 @@ func needsWorkControls(t testing.TB) {
 }
 
 func init() {
-	SetRuntimeSource(os.DirFS(filepath.Join("..", "..", "runtime")))
+	gogen.SetRuntimeSource(os.DirFS(filepath.Join("..", "..", "runtime")))
 }
 
 // repoRoot returns the root directory of this module.
@@ -297,7 +298,7 @@ func mergeGenerated(files []gen.GeneratedFile) []byte {
 		type span struct{ lo, hi int }
 		var cut []span
 		for _, imp := range file.Imports {
-			if imp.Name != nil && imp.Name.Name == typesAlias {
+			if imp.Name != nil && imp.Name.Name == gogen.TypesAlias {
 				continue
 			}
 			text := string(src[fset.Position(imp.Pos()).Offset:fset.Position(imp.End()).Offset])
@@ -345,7 +346,7 @@ func unqualifyTypes(src []byte) []byte {
 	var cuts [][2]int
 	goast.Inspect(file, func(n goast.Node) bool {
 		if sel, ok := n.(*goast.SelectorExpr); ok {
-			if id, ok := sel.X.(*goast.Ident); ok && id.Name == typesAlias && id.Obj == nil {
+			if id, ok := sel.X.(*goast.Ident); ok && id.Name == gogen.TypesAlias && id.Obj == nil {
 				cuts = append(cuts, [2]int{fset.Position(id.Pos()).Offset, fset.Position(sel.Sel.Pos()).Offset})
 			}
 		}

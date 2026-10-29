@@ -48,8 +48,8 @@ parse of a parser generated without `-work-controls` by 17% (YAML `Parse`), 27% 
 [121](../121-inactive-work-control-checks.md) hold earlier measurements of the ordinary body of a
 function and of the inlined runtime helpers.
 
-Source owners: [`Flow printer`](../../../internal/engine/gen_flow.go), [`helper
-names`](../../../internal/engine/gen_helper_names.go), [`metered runtime
+Source owners: [`Flow printer`](../../../internal/gen/gogen/flow.go), [`helper
+names`](../../../internal/gen/gogen/helper_names.go), [`metered runtime
 helpers`](../../../runtime/work.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

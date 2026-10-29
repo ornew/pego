@@ -1,4 +1,4 @@
-package engine
+package gogen
 
 import (
 	"fmt"
@@ -26,72 +26,72 @@ import (
 // identifier) stays declared and, if nothing reads it, is silenced with `_ = x`.
 //
 // The statements that are removable are formed while the function is printed and replaced by their
-// text, or by nothing, when its variables are known (flowVars.text).
+// text, or by nothing, when its variables are known (FlowVars.Resolve).
 
-// flowVarsMutant, set by a test, makes every variable of the function unread: the generated code must then fail
+// FlowVarsMutant, set by a test, makes every variable of the function unread: the generated code must then fail
 // to compile, which shows that the tests of generated code catch a wrong decision.
-var flowVarsMutant bool
+var FlowVarsMutant bool
 
-// flowVarsMutantUses, set by a test, ignores the reads of the values of assignments that stay, which
+// FlowVarsMutantUses, set by a test, ignores the reads of the values of assignments that stay, which
 // leaves variables that only they read undeclared: the generated code must then fail to compile.
-var flowVarsMutantUses bool
+var FlowVarsMutantUses bool
 
-// flowVars collects the assignments of a printed function and the reads that decide which variables
+// FlowVars collects the assignments of a printed function and the reads that decide which variables
 // it keeps.
-type flowVars struct {
-	// hard holds the variables read by statements that stay whatever is removed.
-	hard map[*flow.Var]bool
+type FlowVars struct {
+	// Hard holds the variables read by statements that stay whatever is removed.
+	Hard map[*flow.Var]bool
 	// sink, while an assignment is formed, takes the reads of its values.
 	sink map[*flow.Var]bool
-	// stuck holds the variables assigned where no statement can be left out, and pinned those
+	// Stuck holds the variables assigned where no statement can be left out, and Pinned those
 	// assigned opposite an untyped nil.
-	stuck, pinned map[*flow.Var]bool
-	stmts         []*varStmt
+	Stuck, Pinned map[*flow.Var]bool
+	stmts         []*VarStmt
 }
 
-// varStmt is an assignment or increment that is left out if its variables are unread.
-type varStmt struct {
-	// targets are the variables it writes, nil for a place that is not a variable. Only a variable of
-	// the function (flowVars.cand) can be unread.
-	targets []*flow.Var
-	uses    map[*flow.Var]bool
-	// pure reports that evaluating the values has no effect and cannot panic, which allows leaving
+// VarStmt is an assignment or increment that is left out if its variables are unread.
+type VarStmt struct {
+	// Targets are the variables it writes, nil for a place that is not a variable. Only a variable of
+	// the function (see FlowVars.Resolve) can be unread.
+	Targets []*flow.Var
+	Uses    map[*flow.Var]bool
+	// Pure reports that evaluating the values has no effect and cannot panic, which allows leaving
 	// the statement out. A statement that is not pure is kept with the blank identifier for each
 	// unread target.
-	pure bool
-	// text returns the statement, with the blank identifier for the variables that dead reports.
-	text func(dead func(*flow.Var) bool) string
+	Pure bool
+	// Text returns the statement, with the blank identifier for the variables that dead reports.
+	Text func(dead func(*flow.Var) bool) string
 }
 
-func newFlowVars() flowVars {
-	return flowVars{hard: map[*flow.Var]bool{}, stuck: map[*flow.Var]bool{}, pinned: map[*flow.Var]bool{}}
+func NewFlowVars() FlowVars {
+	return FlowVars{Hard: map[*flow.Var]bool{}, Stuck: map[*flow.Var]bool{}, Pinned: map[*flow.Var]bool{}}
 }
 
 // read records that the variable v is read.
-func (fv *flowVars) read(v *flow.Var) {
+func (fv *FlowVars) read(v *flow.Var) {
 	if fv.sink != nil {
 		fv.sink[v] = true
 		return
 	}
-	fv.hard[v] = true
+	fv.Hard[v] = true
 }
 
 // marker is the text that stands for the statement i until the variables are known.
 func varMarker(i int) string { return "\x00" + strconv.Itoa(i) + "\x00" }
 
-// add registers the removable statement st, formed with its reads in st.uses, and returns its marker.
-func (fv *flowVars) add(st *varStmt) string {
+// Add registers the removable statement st, formed with its reads in st.uses, and returns its marker.
+func (fv *FlowVars) Add(st *VarStmt) string {
 	fv.stmts = append(fv.stmts, st)
 	return varMarker(len(fv.stmts) - 1)
 }
 
 // begin starts collecting the reads of the values of an assignment into the statement's uses.
-func (fv *flowVars) begin() map[*flow.Var]bool {
+func (fv *FlowVars) begin() map[*flow.Var]bool {
 	fv.sink = map[*flow.Var]bool{}
 	return fv.sink
 }
 
-func (fv *flowVars) end() { fv.sink = nil }
+func (fv *FlowVars) end() { fv.sink = nil }
 
 // pureValues reports whether none of the printed values has an effect or can panic.
 func pureValues(xs []string) bool {
@@ -106,19 +106,19 @@ func pureValues(xs []string) bool {
 
 // flowVarsResult is the outcome of resolve.
 type flowVarsResult struct {
-	// dead reports that the variable is not declared: nothing reads it and nothing forces it to stay.
-	dead func(*flow.Var) bool
-	// read reports that a statement that stays reads the variable.
-	read func(*flow.Var) bool
-	// body is the printed body with the removable statements settled.
-	body string
-	// err reports an internal error: the body names a variable that is not declared.
-	err error
+	// Dead reports that the variable is not declared: nothing reads it and nothing forces it to stay.
+	Dead func(*flow.Var) bool
+	// Read reports that a statement that stays reads the variable.
+	Read func(*flow.Var) bool
+	// Body is the printed body with the removable statements settled.
+	Body string
+	// Err reports an internal error: the body names a variable that is not declared.
+	Err error
 }
 
-// resolve decides which of the variables vars are unread, in the printed body, and settles the
+// Resolve decides which of the variables vars are unread, in the printed body, and settles the
 // removable statements in it.
-func (fv *flowVars) resolve(vars []*flow.Var, body string) flowVarsResult {
+func (fv *FlowVars) Resolve(vars []*flow.Var, body string) flowVarsResult {
 	cand := map[*flow.Var]bool{}
 	for _, v := range vars {
 		cand[v] = true
@@ -126,25 +126,25 @@ func (fv *flowVars) resolve(vars []*flow.Var, body string) flowVarsResult {
 	// Start with every read kept, as removing statements one at a time does, and remove what
 	// becomes unread until nothing changes.
 	reads := map[*flow.Var]bool{}
-	for v := range fv.hard {
+	for v := range fv.Hard {
 		reads[v] = true
 	}
 	for _, st := range fv.stmts {
-		for v := range st.uses {
-			reads[v] = !flowVarsMutantUses
+		for v := range st.Uses {
+			reads[v] = !FlowVarsMutantUses
 		}
 	}
 	isDead := func(v *flow.Var) bool {
-		if flowVarsMutant {
+		if FlowVarsMutant {
 			return v != nil && cand[v]
 		}
-		return v != nil && cand[v] && !reads[v] && !fv.stuck[v] && !fv.pinned[v]
+		return v != nil && cand[v] && !reads[v] && !fv.Stuck[v] && !fv.Pinned[v]
 	}
-	cut := func(st *varStmt) bool {
-		if !st.pure {
+	cut := func(st *VarStmt) bool {
+		if !st.Pure {
 			return false
 		}
-		for _, t := range st.targets {
+		for _, t := range st.Targets {
 			if !isDead(t) {
 				return false
 			}
@@ -153,12 +153,12 @@ func (fv *flowVars) resolve(vars []*flow.Var, body string) flowVarsResult {
 	}
 	for {
 		next := map[*flow.Var]bool{}
-		for v := range fv.hard {
+		for v := range fv.Hard {
 			next[v] = true
 		}
 		for _, st := range fv.stmts {
-			if !cut(st) && !flowVarsMutantUses {
-				for v := range st.uses {
+			if !cut(st) && !FlowVarsMutantUses {
+				for v := range st.Uses {
 					next[v] = true
 				}
 			}
@@ -182,13 +182,13 @@ func (fv *flowVars) resolve(vars []*flow.Var, body string) flowVarsResult {
 		}
 		b.WriteString(rest[:i])
 		if st := fv.stmts[n]; !cut(st) {
-			b.WriteString(st.text(isDead))
+			b.WriteString(st.Text(isDead))
 		}
 		rest = rest[j+1:]
 	}
 	b.WriteString(rest)
 	var err error
-	if !flowVarsMutant && !flowVarsMutantUses {
+	if !FlowVarsMutant && !FlowVarsMutantUses {
 		// A variable that is not declared must not be named: the name would bind to a package-level
 		// function or variable of the same name.
 		dead := map[string]bool{}
@@ -198,7 +198,7 @@ func (fv *flowVars) resolve(vars []*flow.Var, body string) flowVarsResult {
 			}
 		}
 		if len(dead) > 0 {
-			for _, id := range freeIdents(b.String()) {
+			for _, id := range FreeIdents(b.String()) {
 				if dead[id] {
 					err = fmt.Errorf("internal error: the printed body names the variable %s, which is not declared", id)
 					break
@@ -206,11 +206,11 @@ func (fv *flowVars) resolve(vars []*flow.Var, body string) flowVarsResult {
 			}
 		}
 	}
-	return flowVarsResult{dead: isDead, read: func(v *flow.Var) bool { return reads[v] }, body: b.String(), err: err}
+	return flowVarsResult{Dead: isDead, Read: func(v *flow.Var) bool { return reads[v] }, Body: b.String(), Err: err}
 }
 
-// freeIdents returns the identifiers of the Go statements src that are not selected from a value.
-func freeIdents(src string) []string {
+// FreeIdents returns the identifiers of the Go statements src that are not selected from a value.
+func FreeIdents(src string) []string {
 	var sc scanner.Scanner
 	fset := token.NewFileSet()
 	sc.Init(fset.AddFile("", fset.Base(), len(src)), []byte(src), func(token.Position, string) {}, 0)

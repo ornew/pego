@@ -19,14 +19,14 @@ func TestFlowVerifiesCorpus(t *testing.T) {
 			lowered, framed, observed, skips := 0, 0, 0, 0
 			for _, gen := range coreGenerations(t, mode) {
 				g := gen.gen
-				m, err := g.typedCore(map[core.Node]grammar.Expr{})
+				m, err := g.TypedCore(map[core.Node]grammar.Expr{})
 				if err != nil {
 					t.Fatalf("%s: %v", gen.name, err)
 				}
 				// The options of the generator, which lowers while it generates the typed table.
 				table := g.Table
 				g.Table = "trules"
-				opts := g.flowOptions(m)
+				opts := g.FlowOptions(m)
 				g.Table = table
 				if opts.Observe != g.Observability {
 					t.Fatalf("%s: lowering options do not follow the observability of the mode", gen.name)

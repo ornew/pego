@@ -4,7 +4,7 @@ import (
 	"embed"
 	"io/fs"
 
-	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 // runtimeFiles holds the files of the runtime package, which GenerateGo copies into packages
@@ -18,5 +18,5 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	engine.SetRuntimeSource(sub)
+	gogen.SetRuntimeSource(sub)
 }

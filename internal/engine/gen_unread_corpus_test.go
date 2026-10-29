@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 // localErrors type-checks the Go files of a generated package against empty stand-ins for its
@@ -157,7 +158,7 @@ func TestShakeVarsMutantFailsToCompile(t *testing.T) {
 			if f.Path == "parser.go" {
 				var keep []string
 				for _, l := range strings.SplitAfter(string(f.Content), "\n") {
-					if shakableVar.MatchString(l) {
+					if gogen.ShakableVar.MatchString(l) {
 						dropped++
 						continue
 					}

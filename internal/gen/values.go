@@ -9,7 +9,7 @@ import (
 )
 
 // Vrule is a reference to a rule whose Go type is that of its value in the value model; the rule's
-// resolved value type, with references replaced, is typedGen.vres[name].
+// resolved value type, with references replaced, is ValueResolver.Vres[name].
 type Vrule struct{ Name string }
 
 func (r Vrule) String() string { return r.Name }
@@ -18,7 +18,7 @@ func (r Vrule) String() string { return r.Name }
 type ValueResolver struct {
 	Prog *compile.Program
 	info *compile.TypeInfo
-	// values holds the value types of the rules and ruleDefs their definitions; vres holds the
+	// values holds the value types of the rules and ruleDefs their definitions; Vres holds the
 	// resolved value types of the rules whose typed values come from them, and resolving the rules
 	// being resolved.
 	values    map[string]compile.Ty

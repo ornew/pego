@@ -1,4 +1,4 @@
-package engine
+package gogen
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 
 // documentClone emits the CloneAST path, which copies the private values retained
 // by a typed Document into independent values. Cloning uses an explicit task stack for recursive structs.
-func (t *typedGen) documentClone(b *strings.Builder, result compile.Ty) string {
+func (t *TypedGen) documentClone(b *strings.Builder, result compile.Ty) string {
 	var methods, tasks strings.Builder
 	listNames := map[string]string{}
 	var lists []listConv
@@ -50,7 +50,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result compile.Ty) string {
 			}
 			return "c." + name + "(" + value + ")"
 		case compile.JoinTy:
-			if name, ok := t.joins[x.String()]; ok {
+			if name, ok := t.Joins[x.String()]; ok {
 				return "c." + convName(name) + "(" + value + ")"
 			}
 			if _, ok := t.joinGoType(x); ok {
@@ -101,7 +101,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result compile.Ty) string {
 		case compile.RecordTy:
 			return true
 		case compile.NamedTy:
-			_, ok := t.info.Fields[x.Name]
+			_, ok := t.Info.Fields[x.Name]
 			return ok || x.Kind == 'c'
 		case compile.OptTy:
 			return containsStruct(x.Elem)
@@ -120,7 +120,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result compile.Ty) string {
 	}
 	for _, name := range t.structs {
 		deferred := false
-		for _, f := range t.info.Fields[name] {
+		for _, f := range t.Info.Fields[name] {
 			deferred = deferred || containsStruct(f.T)
 		}
 		fmt.Fprintf(&methods, `func (c *typedDocumentClone) %[3]s(v *%[1]s) *%[1]s {
@@ -137,7 +137,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result compile.Ty) string {
 			fmt.Fprintf(&tasks, " case *%s:\n out := task.Target.(*%s)\n _ = out; _ = v\n", t.ref(name), t.ref(name))
 			target = &tasks
 		}
-		for _, f := range t.info.Fields[name] {
+		for _, f := range t.Info.Fields[name] {
 			fmt.Fprintf(target, " c.Step(1)\n out.%s = %s\n", t.fieldGo(f.Name), clone(f.T, "v."+t.fieldGo(f.Name)))
 		}
 		if !deferred {
@@ -184,8 +184,8 @@ func (t *typedGen) documentClone(b *strings.Builder, result compile.Ty) string {
 	for _, name := range t.structs {
 		fmt.Fprintf(&methods, " case *%s: return c.%s(v)\n", t.ref(name), convName(name))
 	}
-	for _, name := range t.nodeTypes {
-		n, _ := t.g.Prog.NodeTypeOf(name)
+	for _, name := range t.NodeTypes {
+		n, _ := t.G.Prog.NodeTypeOf(name)
 		fmt.Fprintf(&methods, " case *%s: return %s\n", t.ref(name), clone(n, "v"))
 	}
 	methods.WriteString(` }

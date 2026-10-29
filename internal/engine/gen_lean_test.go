@@ -11,6 +11,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 // External rule-table entry and nested direct calls must count the same rule
@@ -44,9 +45,9 @@ rule left = left "+" "é" / "é"
 	}
 	// The depth comparison below runs the recognizer table (recRules), so the route is checked there.
 	taken := map[string]bool{}
-	leanRouteHook = func(table string, r *compile.Rule) { taken[table+"/"+r.Name] = true }
+	gogen.LeanRouteHook = func(table string, r *compile.Rule) { taken[table+"/"+r.Name] = true }
 	code, err := generateCode(g, gen.GenOptions{Package: "depth", Start: "main", Recognize: true})
-	leanRouteHook = nil
+	gogen.LeanRouteHook = nil
 	if err != nil {
 		t.Fatal(err)
 	}

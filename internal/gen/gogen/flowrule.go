@@ -1,4 +1,4 @@
-package engine
+package gogen
 
 import (
 	"fmt"
@@ -38,7 +38,7 @@ import (
 // Left-recursion leaders and rules that cut or recover are framed: they keep runtime growth and
 // finalization, and only their expression bodies are printed in place.
 
-type dvar struct{ name, typ string }
+type Dvar struct{ Name, Typ string }
 
 // markVar records, of the variable name of d.vars, that it is not declared (dead) or that it stays
 // declared with nothing to read it (quiet).
@@ -53,23 +53,23 @@ func (d *flatRule) markVar(name string, dead bool) {
 	(*m)[name] = true
 }
 
-// varLinesExcept declares the variables vs, those of one type together (var x1, x2 int) in the order
+// VarLinesExcept declares the variables vs, those of one type together (var x1, x2 int) in the order
 // of the first of each type, without the variables in dead, which still give the declarations their
 // order: the first variable of each type, dead or not, places the type. Separate statements need no
 // alignment, unlike the lines of a var block. A declaration that declares
 // a variable of quiet is followed by the statement that assigns the quiet variables of it to the blank
 // identifier.
-func varLinesExcept(vs []dvar, dead, quiet map[string]bool) string {
+func VarLinesExcept(vs []Dvar, dead, quiet map[string]bool) string {
 	var types []string
 	names := map[string][]string{}
 	seen := map[string]bool{}
 	for _, v := range vs {
-		if !seen[v.typ] {
-			seen[v.typ] = true
-			types = append(types, v.typ)
+		if !seen[v.Typ] {
+			seen[v.Typ] = true
+			types = append(types, v.Typ)
 		}
-		if !dead[v.name] {
-			names[v.typ] = append(names[v.typ], v.name)
+		if !dead[v.Name] {
+			names[v.Typ] = append(names[v.Typ], v.Name)
 		}
 	}
 	var b strings.Builder
@@ -103,7 +103,7 @@ func advance(n int) string {
 // flatRule is a flat rule's printed body: the declarations and statements of the method that
 // calls it, up to the rule's value in v (success falls through; failure jumps to fail).
 type flatRule struct {
-	vars       []dvar
+	vars       []Dvar
 	dead       map[string]bool // the variables of vars that are not declared (varLinesExcept)
 	quiet      map[string]bool // the variables of vars that are declared, unread and silenced after their declaration
 	body       string
@@ -115,7 +115,7 @@ type flatRule struct {
 
 // flatMethod writes the method name that calls the flat rule r: as invokePlain does if plain
 // (restoring the position and the recovered errors when it fails), otherwise as invoke does.
-func (g *generator) flatMethod(r *compile.Rule, d *flatRule, name, comment string, plain bool) {
+func (g *Generator) flatMethod(r *compile.Rule, d *flatRule, name, comment string, plain bool) {
 	observeBody := g.Observability && g.Table == "trules" && (!r.Plain || g.directTypedDocument)
 	if g.Observability && !observeBody {
 		name = g.tracePlainWrapper(r, name)
@@ -127,23 +127,23 @@ func (g *generator) flatMethod(r *compile.Rule, d *flatRule, name, comment strin
 	}
 	restore := plain && d.fail
 	start, rec := d.start || restore, restore && g.recovers()
-	var vs []dvar
+	var vs []Dvar
 	if start {
-		vs = append(vs, dvar{"start", "int"})
+		vs = append(vs, Dvar{"start", "int"})
 	}
 	if d.succeed {
-		vs = append(vs, dvar{"v", g.valType()})
+		vs = append(vs, Dvar{"v", g.valType()})
 	}
 	if d.ctx {
-		vs = append(vs, dvar{"c", "*TActCtx"})
+		vs = append(vs, Dvar{"c", "*TActCtx"})
 	}
 	if rec {
-		vs = append(vs, dvar{"rec", "int"})
+		vs = append(vs, Dvar{"rec", "int"})
 	}
 	if d.binds {
-		vs = append(vs, dvar{"prevEnv", "*Env"})
+		vs = append(vs, Dvar{"prevEnv", "*Env"})
 	}
-	m.WriteString(varLinesExcept(append(vs, d.vars...), d.dead, d.quiet))
+	m.WriteString(VarLinesExcept(append(vs, d.vars...), d.dead, d.quiet))
 	switch {
 	case rec:
 		m.WriteString("\tstart, rec = p.Pos, len(p.Recovered)\n")
@@ -179,18 +179,18 @@ func (g *generator) flatMethod(r *compile.Rule, d *flatRule, name, comment strin
 
 // leanRuleBody provides the rule-table body for external entry and generic
 // fallback calls. Its caller owns depth and failure rollback, so it adds neither.
-func (g *generator) leanRuleBody(r *compile.Rule, d *flatRule) string {
+func (g *Generator) leanRuleBody(r *compile.Rule, d *flatRule) string {
 	return g.bodyMethod(r.Name+" (value-free body inlined)", g.leanRuleText(d))
 }
 
 // leanRuleText returns the text of the method body of the value-free flat rule d.
-func (g *generator) leanRuleText(d *flatRule) string {
+func (g *Generator) leanRuleText(d *flatRule) string {
 	var b strings.Builder
-	var vs []dvar
+	var vs []Dvar
 	if d.succeed {
-		vs = append(vs, dvar{"v", "*Node"})
+		vs = append(vs, Dvar{"v", "*Node"})
 	}
-	b.WriteString(varLinesExcept(append(vs, d.vars...), d.dead, d.quiet))
+	b.WriteString(VarLinesExcept(append(vs, d.vars...), d.dead, d.quiet))
 	b.WriteString(d.body)
 	if d.succeed {
 		b.WriteString("return v, true\n")

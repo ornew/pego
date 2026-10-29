@@ -1,4 +1,4 @@
-package engine
+package gogen
 
 import (
 	"fmt"
@@ -11,14 +11,14 @@ import (
 // Value-free rules of the Node runtime printed from Flow IR.
 //
 // The rules of a recognizer (recRules) and the lean rules of the Node table (rules) that
-// recFlowEligible accepts are built as Core IR, lowered by flow.Lower and printed by flowPrinter for
-// the untyped Node runtime. The other rules print their framed body from Flow IR as well
-// (flowNodeFrameBody), in the same output. Both tables share the helpers whose printed text is equal. The text passes
-// run on the whole output afterwards.
+// gen.RecFlowEligible accepts are built as Core IR, lowered by flow.Lower and printed by
+// flowPrinter for the untyped Node runtime. The other rules print their framed body from Flow IR as
+// well (flowNodeFrameBody), in the same output. Both tables share the helpers whose printed text is
+// equal. The text passes run on the whole output afterwards.
 
-// refuseFlowRecRule, if set by a test, makes flowRecRule refuse the rules it selects, so that the
+// RefuseFlowRecRule, if set by a test, makes flowRecRule refuse the rules it selects, so that the
 // framed body that takes their place is exercised. No manifest grammar reaches that fallback.
-var refuseFlowRecRule func(*compile.Rule) bool
+var RefuseFlowRecRule func(*compile.Rule) bool
 
 // flowRecRule prints the eligible rule r of the recognizer from Flow IR as a flat rule. It returns
 // nil in three cases, and the caller (generator.rules) then prints the rule's framed body from Flow IR
@@ -28,8 +28,8 @@ var refuseFlowRecRule func(*compile.Rule) bool
 //   - the printed function would read its start or its context, which a value-free flat rule has
 //     no parameters for;
 //   - a variable of the function has a type that untypedGoType cannot name.
-func (g *generator) flowRecRule(r *compile.Rule) *flatRule {
-	if refuseFlowRecRule != nil && refuseFlowRecRule(r) {
+func (g *Generator) flowRecRule(r *compile.Rule) *flatRule {
+	if RefuseFlowRecRule != nil && RefuseFlowRecRule(r) {
 		return nil
 	}
 	cr := g.Flow.M.Rules[r.ID]
@@ -49,7 +49,7 @@ func (g *generator) flowRecRule(r *compile.Rule) *flatRule {
 		return nil
 	}
 	out := &flatRule{fail: p.used[f.Fail], succeed: !p.dead}
-	res := p.vars.resolve(f.Vars, p.b.String())
+	res := p.vars.Resolve(f.Vars, p.b.String())
 	g.flowVarsErr(res)
 	var unread []string
 	for _, v := range f.Vars {
@@ -57,21 +57,21 @@ func (g *generator) flowRecRule(r *compile.Rule) *flatRule {
 		if !ok {
 			return nil
 		}
-		out.vars = append(out.vars, dvar{v.Name, t})
+		out.vars = append(out.vars, Dvar{v.Name, t})
 		switch {
-		case res.dead(v):
+		case res.Dead(v):
 			out.markVar(v.Name, true)
 		case !p.reads[v]:
 			unread = append(unread, v.Name)
-		case !res.read(v):
+		case !res.Read(v):
 			out.markVar(v.Name, false)
 		}
 	}
-	out.body = res.body
+	out.body = res.Body
 	if len(unread) > 0 {
 		out.body = "\t" + strings.Repeat("_, ", len(unread)-1) + "_ = " + strings.Join(unread, ", ") + "\n" + out.body
 	}
-	g.flowRules++
+	g.FlowRules++
 	return out
 }
 

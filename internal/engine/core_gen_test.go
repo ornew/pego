@@ -12,12 +12,14 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 	irbuild "github.com/ornew/pego/internal/ir/build"
 	"github.com/ornew/pego/internal/ir/core"
 )
 
-// The tests here check the Core IR of the typed Go rules, after the passes of typedCore, against
-// the decisions frozen in testdata/typed_decisions.golden (core_typed_decisions_test.go).
+// The tests here check the Core IR of the typed Go rules, after the passes of
+// gogen.Generator.TypedCore, against the decisions frozen in testdata/typed_decisions.golden
+// (core_typed_decisions_test.go).
 
 // coreGenMode is a set of generator options under which the Core passes are frozen.
 type coreGenMode struct {
@@ -40,7 +42,7 @@ type coreGenCase struct {
 	// recognizer.
 	table  string
 	golden *decisionsGolden
-	gen    *generator
+	gen    *gogen.Generator
 	m      *core.Module
 	origin map[core.Node]grammar.Expr
 	// rules holds the rules of the program by ID, value-free twins included.
@@ -53,7 +55,7 @@ type coreGenCase struct {
 	lines []string
 }
 
-func (c *coreGenCase) g() *generator { return c.gen }
+func (c *coreGenCase) g() *gogen.Generator { return c.gen }
 
 // altOrigin returns the expression of the alternative i of the choice x, which the decisions are
 // keyed by: the alternative of the grammar choice x is built from. (The origin of an alternative's
@@ -72,18 +74,18 @@ func (c *coreGenCase) altOrigin(x *core.Choice, i int) (grammar.Expr, bool) {
 }
 
 // coreGenerate generates the parser of the grammar source with the options and returns the
-// generator that wrote it, for the Core IR of the same options (generator.typedCore). It reports
+// generator that wrote it, for the Core IR of the same options (gogen.Generator.TypedCore). It reports
 // false for a grammar that the generator rejects.
-func coreGenerate(src string, opts gen.GenOptions) (*generator, bool) {
+func coreGenerate(src string, opts gen.GenOptions) (*gogen.Generator, bool) {
 	g, err := parseTest(src)
 	if err != nil {
 		return nil, false
 	}
-	var gen *generator
-	generatorHook = func(x *generator) { gen = x }
-	defer func() { generatorHook = nil }()
+	var gen *gogen.Generator
+	gogen.GeneratorHook = func(x *gogen.Generator) { gen = x }
+	defer func() { gogen.GeneratorHook = nil }()
 	opts.Module = "example.com/p"
-	if _, err := generate(g, compileForGenerator, opts); err != nil || gen == nil {
+	if _, err := gogen.GenerateParser(g, compileForGenerator, opts); err != nil || gen == nil {
 		return nil, false
 	}
 	return gen, true
@@ -91,7 +93,7 @@ func coreGenerate(src string, opts gen.GenOptions) (*generator, bool) {
 
 // recognizerOf returns the recognizer of the program that the generator g prints, compiled as
 // Program.recognizer compiles it.
-func recognizerOf(g *generator) (*compile.Program, error) {
+func recognizerOf(g *gogen.Generator) (*compile.Program, error) {
 	rec, err := (&Program{staticProgram: g.Prog}).recognizer()
 	if err != nil {
 		return nil, err
@@ -100,14 +102,14 @@ func recognizerOf(g *generator) (*compile.Program, error) {
 }
 
 // coreTypedCase builds the Core IR of the typed rules of the generated parser with the passes of
-// typedCore, verifying the module after each pass and following the repetitions the scan pass
-// replaces, so that every scan has the origin of its repetition. If breaks is not nil, it is called
+// gogen.Generator.TypedCore, verifying the module after each pass and following the repetitions
+// the scan pass replaces, so that every scan has the origin of its repetition. If breaks is not nil, it is called
 // after each pass, before the module is verified: a negative control breaks a pass there.
-func coreTypedCase(name, mode string, gen *generator, breaks func(c *coreGenCase, pass string, m *core.Module)) (*coreGenCase, error) {
+func coreTypedCase(name, mode string, gen *gogen.Generator, breaks func(c *coreGenCase, pass string, m *core.Module)) (*coreGenCase, error) {
 	c := &coreGenCase{name: name, mode: mode, table: "trules", golden: typedGolden, gen: gen, origin: map[core.Node]grammar.Expr{}}
 	c.rules = typedRules(gen)
 	var repeats []func()
-	gen.coreHook = func(pass string, m *core.Module) {
+	gen.CoreHook = func(pass string, m *core.Module) {
 		if breaks != nil {
 			breaks(c, pass, m)
 		}
@@ -124,8 +126,8 @@ func coreTypedCase(name, mode string, gen *generator, breaks func(c *coreGenCase
 			}
 		}
 	}
-	defer func() { gen.coreHook = nil }()
-	m, err := gen.typedCore(c.origin)
+	defer func() { gen.CoreHook = nil }()
+	m, err := gen.TypedCore(c.origin)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +140,7 @@ var coreGenerated = map[string][]coreGenerated1{}
 
 type coreGenerated1 struct {
 	name string
-	gen  *generator
+	gen  *gogen.Generator
 }
 
 // coreExtraGrammars are grammars with term forms that the typed rules of the corpus lack: text
@@ -166,7 +168,7 @@ func coreGenerations(t *testing.T, mode coreGenMode) []coreGenerated1 {
 		if !ok {
 			continue
 		}
-		if m, err := gen.typedCore(map[core.Node]grammar.Expr{}); err != nil || len(m.Rules) == 0 {
+		if m, err := gen.TypedCore(map[core.Node]grammar.Expr{}); err != nil || len(m.Rules) == 0 {
 			continue
 		}
 		out = append(out, coreGenerated1{gc.name, gen})
@@ -221,7 +223,7 @@ var workClassName = regexp.MustCompile(`workClass[0-9]+`)
 // guardString is the guard of a Core alternative as a Go condition: the condition on the
 // next character and the expectation. The numbers of work class tables are left out: they depend on
 // the order in which the generator met the classes, and the ranges of the condition name the class.
-func guardString(g *generator, m *core.Module, f *core.First) (string, string) {
+func guardString(g *gogen.Generator, m *core.Module, f *core.First) (string, string) {
 	if f.Lit {
 		if f.Fold {
 			return fmt.Sprintf("ch == %d || ch == %d", f.Rune, f.Rune-('a'-'A')), m.Exps[f.Exp]
@@ -232,7 +234,7 @@ func guardString(g *generator, m *core.Module, f *core.First) (string, string) {
 	for _, r := range f.Class.Ranges {
 		e.Ranges = append(e.Ranges, grammar.CharRange{Lo: r.Lo, Hi: r.Hi})
 	}
-	cond := negateCondition(g.controlledClassReject(e))
+	cond := gogen.NegateCondition(g.ControlledClassReject(e))
 	return workClassName.ReplaceAllString(cond, "workClass"), m.Exps[f.Exp]
 }
 

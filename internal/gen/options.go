@@ -56,7 +56,7 @@ type GenOptions struct {
 	// selects the default start rule.
 	Start string
 	// Types generates Go types, ParseAST for the start rule, and ParseRuleAST
-	// for a named rule as values of those types (see gen_types.go).
+	// for a named rule as values of those types (see gogen/types.go).
 	Types bool
 	// Recognize also generates Recognize, which checks the input without building a tree (as the
 	// engine's ParseOptions.Recognize does).
@@ -73,7 +73,7 @@ type GenOptions struct {
 	// itself, when a typed entry point converts the Node result.
 	KeepNodes bool
 	// KeepUnreachable emits the bodies of the rules that no entry point or generated call reaches
-	// (reach.go), as before they were left out, for differential tests and size comparisons.
+	// (gogen/reach.go), as before they were left out, for differential tests and size comparisons.
 	KeepUnreachable bool
 	// KeepComments keeps the comments of unexported generated code, which tests read as route markers.
 	KeepComments bool
@@ -93,7 +93,7 @@ type GenOptions struct {
 	// expression path for differential tests and same-generator measurements.
 	DisableLiteralTextDispatch bool
 	// DisableTerminalPrograms keeps value-free terminal expressions of lean typed parsers as
-	// straight-line code (gen_terminal.go) for differential tests and measurements.
+	// straight-line code (gogen/terminal.go) for differential tests and measurements.
 	DisableTerminalPrograms bool
 	// DisableGuardedClasses makes the first class of an alternative read and test the character
 	// that the guard of its choice has accepted (core.Alt.GuardedClass), for differential tests.

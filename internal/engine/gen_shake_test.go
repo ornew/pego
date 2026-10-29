@@ -11,27 +11,28 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestKeptUnits(t *testing.T) {
-	units := []shakeUnit{
-		{"a", "func a() { b() }"},
-		{"b", "func b() {}"},
-		{"c", "func c() { d() }"},
-		{"d", "func d() {}"},
-		{"e", "func e() {}"},
+	units := []gogen.ShakeUnit{
+		{Name: "a", Text: "func a() { b() }"},
+		{Name: "b", Text: "func b() {}"},
+		{Name: "c", Text: "func c() { d() }"},
+		{Name: "d", Text: "func d() {}"},
+		{Name: "e", Text: "func e() {}"},
 	}
 	// a is named by the text and b by a; c and d name each other only through c, which nothing names;
 	// e is named only inside a comment, which counts as a mention.
-	kept := keptUnits(units, "func main() { a() }\n// e is not called\n")
+	kept := gogen.KeptUnits(units, "func main() { a() }\n// e is not called\n")
 	for i, want := range []bool{true, true, false, false, true} {
 		if kept[i] != want {
-			t.Errorf("unit %s kept = %v, want %v", units[i].name, kept[i], want)
+			t.Errorf("unit %s kept = %v, want %v", units[i].Name, kept[i], want)
 		}
 	}
 	// A name matches whole identifiers only.
-	if kept := keptUnits(units[:1], "func main() { aa(); a1(); xa() }"); kept[0] {
+	if kept := gogen.KeptUnits(units[:1], "func main() { aa(); a1(); xa() }"); kept[0] {
 		t.Errorf("a was kept by a longer identifier")
 	}
 }
@@ -52,7 +53,7 @@ var rows = [...]int{
 
 func f() { _ = lit2; _ = steps4 }
 `
-	got := shakeVars(src)
+	got := gogen.ShakeVars(src)
 	for _, want := range []string{"var lit2 ", "var cls3 ", "var steps4 ", "var other ", "var rows ", "func f()"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("shakeVars lost %q:\n%s", want, got)
@@ -63,7 +64,7 @@ func f() { _ = lit2; _ = steps4 }
 			t.Errorf("shakeVars kept %q:\n%s", gone, got)
 		}
 	}
-	if again := shakeVars(got); again != got {
+	if again := gogen.ShakeVars(got); again != got {
 		t.Errorf("shakeVars is not idempotent")
 	}
 }
@@ -127,11 +128,11 @@ func TestTypedUnreachedCalleeFailsGeneration(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		reachHook = func(l *liveRules) {
+		gogen.ReachHook = func(l *gogen.LiveRules) {
 			n := 0
-			for k := range l.reach {
-				if k.table == "trules" && !l.isRoot(k) {
-					delete(l.reach, k)
+			for k := range l.Reach {
+				if k.Table == "trules" && !isRoot(l, k) {
+					delete(l.Reach, k)
 					n++
 				}
 			}
@@ -139,7 +140,7 @@ func TestTypedUnreachedCalleeFailsGeneration(t *testing.T) {
 				t.Error("the first pass reached no typed rule besides the start rule")
 			}
 		}
-		defer func() { reachHook = nil }()
+		defer func() { gogen.ReachHook = nil }()
 		_, err = generateCode(g, gen.GenOptions{Start: "main", Package: "p", Types: true})
 		if err == nil || !strings.Contains(err.Error(), "left out") {
 			t.Errorf("generation with a typed callee left out: err = %v, want an internal error", err)
@@ -147,9 +148,9 @@ func TestTypedUnreachedCalleeFailsGeneration(t *testing.T) {
 	})
 }
 
-// isRoot reports whether k is one of the roots of the first pass.
-func (l *liveRules) isRoot(k ruleKey) bool {
-	for _, r := range l.roots {
+// isRoot reports whether k is one of the roots of the first pass of l.
+func isRoot(l *gogen.LiveRules, k gogen.RuleKey) bool {
+	for _, r := range l.Roots {
 		if r == k {
 			return true
 		}

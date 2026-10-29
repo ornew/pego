@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -56,14 +57,14 @@ func testTypedOnlyUnreachedCalleeFails(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	reachHook = func(l *liveRules) {
-		for k := range l.reach {
-			if k.table == "rules" && k.id != 0 {
-				delete(l.reach, k)
+	gogen.ReachHook = func(l *gogen.LiveRules) {
+		for k := range l.Reach {
+			if k.Table == "rules" && k.ID != 0 {
+				delete(l.Reach, k)
 			}
 		}
 	}
-	defer func() { reachHook = nil }()
+	defer func() { gogen.ReachHook = nil }()
 	_, err = generateCode(g, gen.GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: true})
 	if err == nil || !strings.Contains(err.Error(), "left out") {
 		t.Errorf("typed-only generation with the Node rules left out: err = %v, want an internal error", err)
@@ -85,14 +86,14 @@ func testTypedOnlyTypedCalleeFails(t *testing.T) {
 	if _, err := generateCode(g, opts); err != nil {
 		t.Fatalf("typed-only generation without the hook: %v", err)
 	}
-	reachHook = func(l *liveRules) {
-		for k := range l.reach {
-			if k.table == "trules" && !l.isRoot(k) {
-				delete(l.reach, k)
+	gogen.ReachHook = func(l *gogen.LiveRules) {
+		for k := range l.Reach {
+			if k.Table == "trules" && !isRoot(l, k) {
+				delete(l.Reach, k)
 			}
 		}
 	}
-	defer func() { reachHook = nil }()
+	defer func() { gogen.ReachHook = nil }()
 	_, err = generateCode(g, opts)
 	if err == nil || !strings.Contains(err.Error(), "left out") {
 		t.Errorf("typed-only generation with a typed callee left out: err = %v, want an internal error", err)

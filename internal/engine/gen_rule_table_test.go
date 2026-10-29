@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 func TestRuleTableLimits(t *testing.T) {
@@ -19,7 +20,7 @@ func TestRuleTableLimits(t *testing.T) {
 		{math.MaxUint16 + 2, 0, false},
 		{1, math.MaxInt32 + 1, false},
 	} {
-		if err := ruleTableLimits(c.strs, c.seen); (err == nil) != c.ok {
+		if err := gogen.RuleTableLimits(c.strs, c.seen); (err == nil) != c.ok {
 			t.Errorf("ruleTableLimits(%d, %d) = %v, want ok=%v", c.strs, c.seen, err, c.ok)
 		}
 	}

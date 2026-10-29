@@ -32,8 +32,8 @@ Evidence records: [048](../048-a-typed-runtime-for-parseast.md),
 [074](../074-smaller-first-chunks-for-generated-typed-values.md),
 [098](../098-bootstrap-generated-typed-output-allocations.md).
 
-Source owners: [`astSlice generation`](../../../internal/engine/gen_types.go),
-[`disableTypedListSlabs`](../../../internal/engine/gen.go), [`slices/individual
+Source owners: [`astSlice generation`](../../../internal/gen/gogen/types.go),
+[`disableTypedListSlabs`](../../../internal/gen/gogen/generator.go), [`slices/individual
 controls`](../../../internal/engine/gen_typed_output_retention_test.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

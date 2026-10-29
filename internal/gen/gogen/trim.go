@@ -1,4 +1,4 @@
-package engine
+package gogen
 
 import (
 	goast "go/ast"
@@ -9,13 +9,13 @@ import (
 	"strings"
 )
 
-// trimComments removes the comments of the generated source that explain unexported code: nobody
+// TrimComments removes the comments of the generated source that explain unexported code: nobody
 // reads generated code, and the comments are a few percent of its size. It keeps the file header,
 // the package comment, compiler directives (`//go:`, `// +build`, `//line`, `/*line`), lint
 // directives (`//nolint`), the comments of exported declarations (the API documentation,
 // including their bodies), and the markers that begin with "rule " and name the grammar rule of
 // the code that follows.
-func trimComments(src []byte) ([]byte, error) {
+func TrimComments(src []byte) ([]byte, error) {
 	fset := token.NewFileSet()
 	f, err := goparser.ParseFile(fset, "parser.go", src, goparser.ParseComments)
 	if err != nil {

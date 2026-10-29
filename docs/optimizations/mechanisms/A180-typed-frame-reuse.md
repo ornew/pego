@@ -30,7 +30,7 @@ Evidence records: [048](../048-a-typed-runtime-for-parseast.md).
 
 Source owners: [`typed frame allocation and
 freeFrame`](../../../runtime/typed.go), [`direct local
-captures`](../../../internal/engine/gen_flowrule.go).
+captures`](../../../internal/gen/gogen/flowrule.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

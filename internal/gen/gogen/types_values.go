@@ -1,4 +1,4 @@
-package engine
+package gogen
 
 import (
 	"fmt"
@@ -50,12 +50,12 @@ func (h *vhelpers) get(prefix, key string, x compile.Ty) string {
 
 // ruleType returns the type that selects the Go type of the values of rule r: its declared type, or
 // a vrule for a rule whose Go type comes from its value type.
-func (t *typedGen) ruleType(r *compile.Rule) compile.Ty {
+func (t *TypedGen) ruleType(r *compile.Rule) compile.Ty {
 	return t.RuleRef(r.Name)
 }
 
 // tupleType returns the Go type of a tuple, recording the tuple types to declare.
-func (t *typedGen) tupleType(x compile.TupleTy) string {
+func (t *TypedGen) tupleType(x compile.TupleTy) string {
 	if len(x.Elems) == 0 {
 		t.unitUsed = true
 		return "Unit"
@@ -70,7 +70,7 @@ func (t *typedGen) tupleType(x compile.TupleTy) string {
 
 // joinGoType returns the Go type shared by the arguments of a join, if they have one.
 // The tuple types of the arguments are declared only if the join has their Go type.
-func (t *typedGen) joinGoType(x compile.JoinTy) (string, bool) {
+func (t *TypedGen) joinGoType(x compile.JoinTy) (string, bool) {
 	sizes, unit := map[int]bool{}, t.unitUsed
 	for n := range t.tupleSizes {
 		sizes[n] = true
@@ -88,7 +88,7 @@ func (t *typedGen) joinGoType(x compile.JoinTy) (string, bool) {
 }
 
 // tupleDecls writes the declarations of the tuple types used.
-func (t *typedGen) tupleDecls(b *strings.Builder) {
+func (t *TypedGen) tupleDecls(b *strings.Builder) {
 	if t.unitUsed {
 		b.WriteString("// Unit is the value of the empty tuple ().\ntype Unit struct{}\n\n")
 	}
@@ -110,7 +110,7 @@ func (t *typedGen) tupleDecls(b *strings.Builder) {
 
 // vconvHelper returns the name of the astConv method converting a value of the value-model type x
 // (a vrule, tuple, node or optional tuple) from a node.
-func (t *typedGen) vconvHelper(x compile.Ty) string {
+func (t *TypedGen) vconvHelper(x compile.Ty) string {
 	key := t.goType(x)
 	if r, ok := x.(gen.Vrule); ok {
 		key = "rule " + r.Name
@@ -119,7 +119,7 @@ func (t *typedGen) vconvHelper(x compile.Ty) string {
 }
 
 // vdconvHelper returns the name of the function converting a value of the typed runtime.
-func (t *typedGen) vdconvHelper(x compile.Ty) string {
+func (t *TypedGen) vdconvHelper(x compile.Ty) string {
 	key := t.goType(x)
 	if r, ok := x.(gen.Vrule); ok {
 		key = "rule " + r.Name
@@ -128,7 +128,7 @@ func (t *typedGen) vdconvHelper(x compile.Ty) string {
 }
 
 // nodeHelpers writes the pending astConv helpers, and reports whether it wrote any.
-func (t *typedGen) nodeHelpers(b *strings.Builder, done *int) bool {
+func (t *TypedGen) nodeHelpers(b *strings.Builder, done *int) bool {
 	wrote := false
 	for ; *done < len(t.nhelpers.order); *done++ {
 		wrote = true
@@ -168,7 +168,7 @@ func (t *typedGen) nodeHelpers(b *strings.Builder, done *int) bool {
 }
 
 // typedHelpers writes the pending typed runtime helpers, and reports whether it wrote any.
-func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
+func (t *TypedGen) typedHelpers(b *strings.Builder, done *int) bool {
 	wrote := false
 	for ; *done < len(t.dhelpers.order); *done++ {
 		wrote = true
@@ -191,7 +191,7 @@ func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
 				// A string node of a named node type is its own public value (tmatchAs): the type is declared as
 				// struct{ TNode[string] } in the types package, which the schema constant ties to this parser.
 				g := t.ref(x.Name)
-				fmt.Fprintf(b, "\tx, _ := v.(*TMatch)\n\tif x == nil || x.Nt != %s {\n\t\treturn nil\n\t}\n\treturn TMatchAs[%s](x)\n", t.g.nodeTypeID(x.Name), g)
+				fmt.Fprintf(b, "\tx, _ := v.(*TMatch)\n\tif x == nil || x.Nt != %s {\n\t\treturn nil\n\t}\n\treturn TMatchAs[%s](x)\n", t.G.nodeTypeID(x.Name), g)
 				break
 			}
 			if x.Name != "" {
@@ -243,7 +243,7 @@ func streamValue(p *compile.Program, rd *grammar.RuleDef) (compile.Ty, bool) {
 
 // backHelper returns the name of the function converting a value of the value-model type x (a
 // vrule, tuple, node or optional tuple) into a value of the typed runtime.
-func (t *typedGen) backHelper(x compile.Ty) string {
+func (t *TypedGen) backHelper(x compile.Ty) string {
 	key := t.goType(x)
 	if r, ok := x.(gen.Vrule); ok {
 		key = "rule " + r.Name
@@ -252,7 +252,7 @@ func (t *typedGen) backHelper(x compile.Ty) string {
 }
 
 // backHelpers writes the pending helpers of back, and reports whether it wrote any.
-func (t *typedGen) backHelpers(b *strings.Builder, done *int) bool {
+func (t *TypedGen) backHelpers(b *strings.Builder, done *int) bool {
 	wrote := false
 	for ; *done < len(t.bhelpers.order); *done++ {
 		wrote = true
@@ -279,7 +279,7 @@ func (t *typedGen) backHelpers(b *strings.Builder, done *int) bool {
 		case compile.NodeTy:
 			b.WriteString("\tif v == nil {\n\t\treturn nil\n\t}\n")
 			if x.Name != "" {
-				fmt.Fprintf(b, "\treturn rt.TSetNodeType(%s, %s)\n}\n\n", t.back(x.Underlying(), "&v.TNode"), t.g.nodeTypeID(x.Name))
+				fmt.Fprintf(b, "\treturn rt.TSetNodeType(%s, %s)\n}\n\n", t.back(x.Underlying(), "&v.TNode"), t.G.nodeTypeID(x.Name))
 				continue
 			}
 			switch value := x.Value.(type) {

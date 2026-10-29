@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -180,7 +181,7 @@ STREAM
 
 // runReach builds the pruned (p) and the full (k) parser of src and returns their outputs for the
 // inputs of the grammar.
-func runReach(t *testing.T, src string, opts gen.GenOptions, hook func(*liveRules)) (pruned, full []string) {
+func runReach(t *testing.T, src string, opts gen.GenOptions, hook func(*gogen.LiveRules)) (pruned, full []string) {
 	t.Helper()
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	g, err := syntax.Parse(src)
@@ -198,9 +199,9 @@ func runReach(t *testing.T, src string, opts gen.GenOptions, hook func(*liveRule
 	write("go.mod", testGoMod("reachtest"))
 	opts.Start = "main"
 	opts.Package = "p"
-	reachHook = hook
+	gogen.ReachHook = hook
 	code, err := generateCode(g, opts)
-	reachHook = nil
+	gogen.ReachHook = nil
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -317,36 +318,36 @@ func testUnreachableRootControls(t *testing.T) {
 		name string
 		src  string
 		opts gen.GenOptions
-		hook func(*liveRules)
+		hook func(*gogen.LiveRules)
 		line string // the output that must panic
 	}{
-		{"start rule of Parse", reachTwinGrammar, gen.GenOptions{Recognize: true}, func(l *liveRules) {
-			var keep []ruleKey
-			for _, k := range l.roots {
-				if k.table != "rules" {
+		{"start rule of Parse", reachTwinGrammar, gen.GenOptions{Recognize: true}, func(l *gogen.LiveRules) {
+			var keep []gogen.RuleKey
+			for _, k := range l.Roots {
+				if k.Table != "rules" {
 					keep = append(keep, k)
 				}
 			}
-			l.roots = keep
-			l.reachFrom(keep)
+			l.Roots = keep
+			l.ReachFrom(keep)
 		}, "parse"},
-		{"start rule of Recognize", reachTwinGrammar, gen.GenOptions{Recognize: true}, func(l *liveRules) {
-			var keep []ruleKey
-			for _, k := range l.roots {
-				if k.table != "recRules" {
+		{"start rule of Recognize", reachTwinGrammar, gen.GenOptions{Recognize: true}, func(l *gogen.LiveRules) {
+			var keep []gogen.RuleKey
+			for _, k := range l.Roots {
+				if k.Table != "recRules" {
 					keep = append(keep, k)
 				}
 			}
-			l.roots = keep
-			l.reachFrom(keep)
+			l.Roots = keep
+			l.ReachFrom(keep)
 		}, "recognize"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			pruned, full := runReach(t, tc.src, tc.opts, func(l *liveRules) {
-				before := len(l.reach)
+			pruned, full := runReach(t, tc.src, tc.opts, func(l *gogen.LiveRules) {
+				before := len(l.Reach)
 				tc.hook(l)
-				if len(l.reach) >= before {
-					t.Fatalf("the hook left out nothing: %d rules stay reachable of %d", len(l.reach), before)
+				if len(l.Reach) >= before {
+					t.Fatalf("the hook left out nothing: %d rules stay reachable of %d", len(l.Reach), before)
 				}
 			})
 			panics := 0
@@ -379,14 +380,14 @@ func testUnreachableCalleeFailsGeneration(t *testing.T) {
 		t.Fatal(err)
 	}
 	// word is called from main: leaving it out of the reachable rules is a contradiction.
-	reachHook = func(l *liveRules) {
-		for k := range l.reach {
-			if k.table == "rules" && k.id != 0 {
-				delete(l.reach, k)
+	gogen.ReachHook = func(l *gogen.LiveRules) {
+		for k := range l.Reach {
+			if k.Table == "rules" && k.ID != 0 {
+				delete(l.Reach, k)
 			}
 		}
 	}
-	defer func() { reachHook = nil }()
+	defer func() { gogen.ReachHook = nil }()
 	_, err = generateCode(g, gen.GenOptions{Start: "main", Package: "p"})
 	if err == nil || !strings.Contains(err.Error(), "left out") {
 		t.Errorf("generation with a callee left out: err = %v, want an internal error", err)
@@ -399,25 +400,25 @@ func testUnreachableCalleeFailsGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	reachHook = func(l *liveRules) {
-		delete(l.edges, rootKey)
-		for _, k := range l.roots {
-			delete(l.edges, k)
+	gogen.ReachHook = func(l *gogen.LiveRules) {
+		delete(l.Edges, gogen.RootKey)
+		for _, k := range l.Roots {
+			delete(l.Edges, k)
 		}
-		l.reachFrom(l.roots)
+		l.ReachFrom(l.Roots)
 	}
 	_, err = generateCode(gs, gen.GenOptions{Start: "main", Package: "p", Stream: true})
 	if err == nil || !strings.Contains(err.Error(), "left out") {
 		t.Errorf("generation with the stream body's callee left out: err = %v, want an internal error", err)
 	}
 
-	l := &liveRules{reach: map[ruleKey]bool{{"rules", 1, false}: true, {"rules", 3, false}: true, {"rules", 4, true}: true, {"recRules", 2, false}: true}}
-	printed := map[ruleKey]bool{{"rules", 1, false}: true}
-	miss := l.missingBodies("rules", printed)
-	if len(miss) != 1 || miss[0].id != 3 {
+	l := &gogen.LiveRules{Reach: map[gogen.RuleKey]bool{{Table: "rules", ID: 1, Wrapper: false}: true, {Table: "rules", ID: 3, Wrapper: false}: true, {Table: "rules", ID: 4, Wrapper: true}: true, {Table: "recRules", ID: 2, Wrapper: false}: true}}
+	printed := map[gogen.RuleKey]bool{{Table: "rules", ID: 1, Wrapper: false}: true}
+	miss := l.MissingBodies("rules", printed)
+	if len(miss) != 1 || miss[0].ID != 3 {
 		t.Errorf("missingBodies = %v, want rule 3", miss)
 	}
-	if miss := l.missingBodies("recRules", printed); len(miss) != 1 || miss[0].id != 2 {
+	if miss := l.MissingBodies("recRules", printed); len(miss) != 1 || miss[0].ID != 2 {
 		t.Errorf("missingBodies(recRules) = %v, want rule 2", miss)
 	}
 }

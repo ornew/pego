@@ -16,6 +16,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 // goVetAndTest runs go vet and go test in the module in dir.
@@ -243,7 +244,7 @@ func TestGeneratedTypeNamedLikeTypesPackageName(t *testing.T) {
 // unresolved that is an export of the runtime: it refers to the runtime by its package name, so a
 // type of the grammar named like an export cannot capture the reference.
 func TestGeneratedTypesPackageNamesTheRuntimeExplicitly(t *testing.T) {
-	info, err := loadRuntime()
+	info, err := gogen.LoadRuntime()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -266,7 +267,7 @@ func TestGeneratedTypesPackageNamesTheRuntimeExplicitly(t *testing.T) {
 				t.Fatal(err)
 			}
 			for _, id := range f.Unresolved {
-				if _, ok := info.decls[id.Name]; ok {
+				if _, ok := info.Decls[id.Name]; ok {
 					t.Errorf("types/types.go leaves %s to the runtime unqualified", id.Name)
 				}
 			}
@@ -279,12 +280,12 @@ func TestGeneratedTypesPackageNamesTheRuntimeExplicitly(t *testing.T) {
 // type keeps its name, except the one that the types package declares itself (TNode). No grammar
 // may make the generator fail.
 func TestGeneratedTypesNamedLikeEveryRuntimeExport(t *testing.T) {
-	info, err := loadRuntime()
+	info, err := gogen.LoadRuntime()
 	if err != nil {
 		t.Fatal(err)
 	}
 	var names []string
-	for name := range info.decls {
+	for name := range info.Decls {
 		if name == "TNode" {
 			continue
 		}
@@ -357,7 +358,7 @@ func TestParserAndAPIDeclareDistinctNames(t *testing.T) {
 		if f.Path != "parser.go" && f.Path != "api.go" {
 			continue
 		}
-		declared, err := declaredNames(string(f.Content))
+		declared, err := gogen.DeclaredNames(string(f.Content))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -442,7 +443,7 @@ func TestDefaultPackageName(t *testing.T) {
 		"example.com/my-parser":    "my-parser",
 		"example.com/my-parser/v3": "my-parser",
 	} {
-		if got := DefaultPackageName(module); got != want {
+		if got := gogen.DefaultPackageName(module); got != want {
 			t.Errorf("DefaultPackageName(%q) = %q, want %q", module, got, want)
 		}
 	}
@@ -468,7 +469,7 @@ func TestDefaultPackageName(t *testing.T) {
 // literals are qualified whatever the literal's type is spelled like, while field names of structs
 // are not.
 func TestQualifyRuntimeConstantKeys(t *testing.T) {
-	info, err := loadRuntime()
+	info, err := gogen.LoadRuntime()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -492,7 +493,7 @@ var m = map[NodeKind][]pair{KindList: {{KindString: 1}}}
 var n = Fields{{Name: "x"}}
 var o = [2]NodeKind{1: KindTuple}
 `
-	out, err := qualifyRuntime(RuntimeImportPath, body, info, nil)
+	out, err := gogen.QualifyRuntime(gogen.RuntimeImportPath, body, info, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -519,8 +520,8 @@ type Pair struct{ KindString, KindTuple int }`, goparser.SkipObjectResolution)
 			decls[s.(*goast.TypeSpec).Name.Name] = s.(*goast.TypeSpec).Type
 		}
 	}
-	tp := &typesPackage{importPath: "example.com/m/types", declared: func(string) bool { return false }, types: decls}
-	out, err = qualifyRuntime(RuntimeImportPath, `
+	tp := &gogen.TypesPackage{ImportPath: "example.com/m/types", Declared: func(string) bool { return false }, Types: decls}
+	out, err = gogen.QualifyRuntime(gogen.RuntimeImportPath, `
 var a = types.Table{KindString: "s"}
 var b = &types.Pair{KindString: 1}
 var c = []types.Table{{KindList: "l"}}
@@ -584,7 +585,7 @@ func TestGeneratedRichGrammarsWithTypesNamedLikeRuntimeExports(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}
-	info, err := loadRuntime()
+	info, err := gogen.LoadRuntime()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -603,7 +604,7 @@ func TestGeneratedRichGrammarsWithTypesNamedLikeRuntimeExports(t *testing.T) {
 			src.Write(data)
 			src.WriteString("\n")
 			var names []string
-			for n := range info.decls {
+			for n := range info.Decls {
 				names = append(names, n)
 			}
 			sort.Strings(names)

@@ -49,7 +49,7 @@ Source owners: [`firstTerminal`](../../../internal/compile/compile.go),
 [`Walker.ExprForm and Compiler.first`](../../../internal/compile/compile_walk.go),
 [`closureBuilder.Choice and guard`](../../../internal/engine/closures.go), [`GUARD
 emission`](../../../internal/compile/bcompile.go), [`generated choice
-guards`](../../../internal/engine/gen.go), [`TypeScript choice
+guards`](../../../internal/gen/gogen/generator.go), [`TypeScript choice
 guards`](../../../internal/gen/tsgen/generator.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

@@ -16,6 +16,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 // TestGeneratedFlowRecognizerParity runs the generated recognizers printed from Flow IR against the
@@ -30,17 +31,17 @@ func testGeneratedFlowRecognizerParity(t *testing.T) {
 	}
 	cases := genCorpus(t)
 	taken, framed := 0, 0
-	leanRouteHook = func(table string, r *compile.Rule) {
+	gogen.LeanRouteHook = func(table string, r *compile.Rule) {
 		if table == "recRules" {
 			taken++
 		}
 	}
-	framedRouteHook = func(table string, r *compile.Rule) {
+	gogen.FramedRouteHook = func(table string, r *compile.Rule) {
 		if table == "recRules" {
 			framed++
 		}
 	}
-	t.Cleanup(func() { leanRouteHook, framedRouteHook = nil, nil })
+	t.Cleanup(func() { gogen.LeanRouteHook, gogen.FramedRouteHook = nil, nil })
 	for _, c := range cases {
 		g, err := parseTest(c.src)
 		if err != nil {
@@ -50,7 +51,7 @@ func testGeneratedFlowRecognizerParity(t *testing.T) {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 	}
-	leanRouteHook, framedRouteHook = nil, nil
+	gogen.LeanRouteHook, gogen.FramedRouteHook = nil, nil
 	if taken == 0 || framed == 0 {
 		t.Fatalf("%d direct and %d framed rules of the recognizer take the Flow route: the parity test exercises nothing", taken, framed)
 	}
@@ -293,19 +294,19 @@ func TestFlowRecognizerFallbackMatchesEngine(t *testing.T) {
 		"rule main = ws item* !.\nrule ws = ([ ] / comment)*\nrule comment = \"--\" [^\\n]* / block_comment\nrule block_comment = \"/*\" (block_comment / !\"*/\" .)* \"*/\"\nrule item = [a-z]+ / [0-9]+\n",
 		[]string{"", "a", "a 1 b2", "-- c\n a", "/* x */ a", "/* /* y */ */ 1", "/* open", "a -- tail", "@", "a /* x */ /* y */ 2", "--"}}
 	refused, framed := map[string]bool{}, map[string]bool{}
-	refuseFlowRecRule = func(r *compile.Rule) bool {
+	gogen.RefuseFlowRecRule = func(r *compile.Rule) bool {
 		if gen.RecFlowEligible(r) {
 			refused[r.Name] = true
 			return true
 		}
 		return false
 	}
-	framedRouteHook = func(table string, r *compile.Rule) {
+	gogen.FramedRouteHook = func(table string, r *compile.Rule) {
 		if table == "recRules" {
 			framed[r.Name] = true
 		}
 	}
-	t.Cleanup(func() { refuseFlowRecRule, framedRouteHook = nil, nil })
+	t.Cleanup(func() { gogen.RefuseFlowRecRule, gogen.FramedRouteHook = nil, nil })
 	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), []genCase{c}, gen.GenOptions{})
 	if len(refused) == 0 {
 		t.Fatal("no rule was refused: the fallback is not exercised")

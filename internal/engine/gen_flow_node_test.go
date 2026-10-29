@@ -10,12 +10,13 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
-// The rules of the Node table are printed from Flow IR (the lean value-free rules by the same route as
-// the recognizer's, startRecFlow, and the others as framed bodies). The tests below check the routes the
-// rules take and run the parsers against the engine; the generated text of the ten checked-in grammars is
-// frozen in parsers/testdata/output_manifest.txt.
+// The rules of the Node table are printed from Flow IR (the lean value-free rules by the same route
+// as the recognizer's, gen.Generator.StartRecFlow, and the others as framed bodies). The tests
+// below check the routes the rules take and run the parsers against the engine; the generated text
+// of the ten checked-in grammars is frozen in parsers/testdata/output_manifest.txt.
 
 // TestGeneratedFlowNodeParity runs the generated Node parsers and recognizers of the generated-corpus
 // harness with the lean rules of the Node table printed from Flow IR, against the engine, and with the
@@ -29,11 +30,11 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 	}
 	cases := genCorpus(t)
 	taken := map[string]int{}
-	leanRouteHook = func(table string, r *compile.Rule) { taken[table]++ }
+	gogen.LeanRouteHook = func(table string, r *compile.Rule) { taken[table]++ }
 	framed, operators := map[string]int{}, map[string]int{}
-	framedRouteHook = func(table string, r *compile.Rule) { framed[table]++ }
-	operatorsRouteHook = func(table string, r *compile.Rule) { operators[table]++ }
-	t.Cleanup(func() { leanRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil })
+	gogen.FramedRouteHook = func(table string, r *compile.Rule) { framed[table]++ }
+	gogen.OperatorsRouteHook = func(table string, r *compile.Rule) { operators[table]++ }
+	t.Cleanup(func() { gogen.LeanRouteHook, gogen.FramedRouteHook, gogen.OperatorsRouteHook = nil, nil, nil })
 	for _, c := range cases {
 		g, err := parseTest(c.src)
 		if err != nil {
@@ -43,7 +44,7 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 	}
-	leanRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil
+	gogen.LeanRouteHook, gogen.FramedRouteHook, gogen.OperatorsRouteHook = nil, nil, nil
 	for _, table := range []string{"rules", "recRules"} {
 		if operators[table] == 0 {
 			t.Errorf("no Operators Rule line of the %s table is printed from Flow IR: the parity test does not cover them", table)
@@ -90,14 +91,14 @@ func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 				}
 				o := gen.GenOptions{Package: "x", Module: "example.com/x", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: form.controls, Observability: form.observe, Document: form.document}
 				taken, framed, operators := 0, 0, 0
-				leanRouteHook = func(table string, r *compile.Rule) {
+				gogen.LeanRouteHook = func(table string, r *compile.Rule) {
 					if table == "rules" {
 						taken++
 					}
 				}
-				framedRouteHook = func(table string, r *compile.Rule) { framed++ }
-				operatorsRouteHook = func(table string, r *compile.Rule) { operators++ }
-				defer func() { leanRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil }()
+				gogen.FramedRouteHook = func(table string, r *compile.Rule) { framed++ }
+				gogen.OperatorsRouteHook = func(table string, r *compile.Rule) { operators++ }
+				defer func() { gogen.LeanRouteHook, gogen.FramedRouteHook, gogen.OperatorsRouteHook = nil, nil, nil }()
 				files, err := Generate(g, o)
 				if err != nil {
 					t.Fatal(err)

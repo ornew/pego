@@ -1,4 +1,4 @@
-package engine
+package gogen
 
 import (
 	"regexp"
@@ -15,17 +15,17 @@ import (
 // fixed ast helpers are never the name of a local variable, parameter or field of the generated
 // code, so no check of scopes is needed.
 
-// shakeUnit is a declaration that is left out unless the kept text names it.
-type shakeUnit struct {
-	name string // the identifier that the rest of the code uses to name it
-	text string
+// ShakeUnit is a declaration that is left out unless the kept text names it.
+type ShakeUnit struct {
+	Name string // the identifier that the rest of the code uses to name it
+	Text string
 }
 
-// keptUnits returns which of units the texts name, directly or through another kept unit.
-func keptUnits(units []shakeUnit, texts ...string) []bool {
+// KeptUnits returns which of units the texts name, directly or through another kept unit.
+func KeptUnits(units []ShakeUnit, texts ...string) []bool {
 	index := make(map[string]int, len(units))
 	for i, u := range units {
-		index[u.name] = i
+		index[u.Name] = i
 	}
 	kept := make([]bool, len(units))
 	var queue []int
@@ -53,7 +53,7 @@ func keptUnits(units []shakeUnit, texts ...string) []bool {
 	for len(queue) > 0 {
 		k := queue[len(queue)-1]
 		queue = queue[:len(queue)-1]
-		scan(units[k].text)
+		scan(units[k].Text)
 	}
 	return kept
 }
@@ -64,27 +64,27 @@ func isIdentStart(c byte) bool {
 
 func isIdentPart(c byte) bool { return isIdentStart(c) || c >= '0' && c <= '9' }
 
-// shakableVar matches the one-line package variables that generated code names by a number: the
+// ShakableVar matches the one-line package variables that generated code names by a number: the
 // capture layouts, literals, shapers, class tables and class steps of rule bodies.
-var shakableVar = regexp.MustCompile(`^var ((?:scope|lit|sh|cls|steps|workClass)[0-9]+) = `)
+var ShakableVar = regexp.MustCompile(`^var ((?:scope|lit|sh|cls|steps|workClass)[0-9]+) = `)
 
-// shakeVars returns the source without the shakable variables that neither the rest of it nor the
+// ShakeVars returns the source without the shakable variables that neither the rest of it nor the
 // variables that stay name. It runs after the passes that edit the text of the functions, which can
 // leave a variable unused.
-func shakeVars(vars string) string {
+func ShakeVars(vars string) string {
 	lines := strings.SplitAfter(vars, "\n")
-	var units []shakeUnit
+	var units []ShakeUnit
 	unitOf := make([]int, len(lines)) // the index+1 of the unit of a line, or 0
 	var fixed strings.Builder
 	for i, l := range lines {
-		if m := shakableVar.FindStringSubmatch(l); m != nil {
-			units = append(units, shakeUnit{m[1], l})
+		if m := ShakableVar.FindStringSubmatch(l); m != nil {
+			units = append(units, ShakeUnit{m[1], l})
 			unitOf[i] = len(units)
 			continue
 		}
 		fixed.WriteString(l)
 	}
-	kept := keptUnits(units, fixed.String())
+	kept := KeptUnits(units, fixed.String())
 	var out strings.Builder
 	out.Grow(len(vars))
 	for i, l := range lines {

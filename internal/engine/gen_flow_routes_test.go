@@ -9,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 // The grammars of testdata/routes exercise the routes of typed rules that the Flow IR prints:
@@ -150,7 +151,7 @@ rule o = #operators {
 				seq.Items[len(seq.Items)-1] = w(op)
 			}
 		}
-		if _, err = generate(g, compileForGenerator, gen.GenOptions{Types: true, TypedOnly: true, Module: "example.com/p"}); err == nil {
+		if _, err = gogen.GenerateParser(g, compileForGenerator, gen.GenOptions{Types: true, TypedOnly: true, Module: "example.com/p"}); err == nil {
 			t.Errorf("generate with an Operators Rule spliced into a %s inside a leader: accepted", name)
 		}
 	}

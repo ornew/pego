@@ -44,7 +44,7 @@ Evidence records: [007](../007-recognition-mode-3f7e9bf.md),
 Source owners: [`Program.recognizer`](../../../internal/engine/parse.go),
 [`recognize compilation and predicate capture
 analysis`](../../../internal/compile/compile.go), [`recognizer
-generation`](../../../internal/engine/gen.go), [`generated recognize entry
+generation`](../../../internal/gen/gogen/generator.go), [`generated recognize entry
 point`](../../../internal/gen/tsgen/generator.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

@@ -5,6 +5,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 // The lines of an Operators Rule in the Node and recognizer tables are printed from Flow IR. The tests
@@ -41,8 +42,8 @@ func TestOperatorsLinesWithRecoveryPrintFromFlow(t *testing.T) {
 				t.Fatal(err)
 			}
 			flowed := map[string]int{}
-			operatorsRouteHook = func(table string, r *compile.Rule) { flowed[table+"/"+r.Name]++ }
-			defer func() { operatorsRouteHook = nil }()
+			gogen.OperatorsRouteHook = func(table string, r *compile.Rule) { flowed[table+"/"+r.Name]++ }
+			defer func() { gogen.OperatorsRouteHook = nil }()
 			if _, err := generateCode(g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
 				t.Fatal(err)
 			}

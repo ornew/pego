@@ -1,4 +1,4 @@
-package engine
+package gogen
 
 import (
 	"bytes"
@@ -30,7 +30,7 @@ const RuntimeImportPath = "github.com/ornew/pego/runtime"
 // it gives to the types package of a typed parser.
 const (
 	runtimeAlias = "rt"
-	typesAlias   = "types"
+	TypesAlias   = "types"
 )
 
 var runtimeSrc struct {
@@ -62,23 +62,23 @@ type runtimeDecl struct {
 
 type runtimeInfo struct {
 	files []runtimeFile
-	decls map[string]*runtimeDecl
+	Decls map[string]*runtimeDecl
 }
 
-func loadRuntime() (*runtimeInfo, error) {
+func LoadRuntime() (*runtimeInfo, error) {
 	runtimeSrc.mu.Lock()
 	defer runtimeSrc.mu.Unlock()
 	if runtimeSrc.info != nil {
 		return runtimeSrc.info, nil
 	}
 	if runtimeSrc.fsys == nil {
-		return nil, fmt.Errorf("the runtime source is not registered: import github.com/ornew/pego, or call engine.SetRuntimeSource")
+		return nil, fmt.Errorf("the runtime source is not registered: import github.com/ornew/pego, or call gogen.SetRuntimeSource")
 	}
 	entries, err := fs.ReadDir(runtimeSrc.fsys, ".")
 	if err != nil {
 		return nil, err
 	}
-	info := &runtimeInfo{decls: map[string]*runtimeDecl{}}
+	info := &runtimeInfo{Decls: map[string]*runtimeDecl{}}
 	fset := token.NewFileSet()
 	for _, e := range entries {
 		name := e.Name()
@@ -98,7 +98,7 @@ func loadRuntime() (*runtimeInfo, error) {
 			switch d := d.(type) {
 			case *goast.FuncDecl:
 				if d.Recv == nil && d.Name.IsExported() {
-					info.decls[d.Name.Name] = &runtimeDecl{token.FUNC, d.Doc.Text(), d}
+					info.Decls[d.Name.Name] = &runtimeDecl{token.FUNC, d.Doc.Text(), d}
 				}
 			case *goast.GenDecl:
 				for _, s := range d.Specs {
@@ -109,7 +109,7 @@ func loadRuntime() (*runtimeInfo, error) {
 							doc = s.Doc
 						}
 						if s.Name.IsExported() {
-							info.decls[s.Name.Name] = &runtimeDecl{token.TYPE, doc.Text(), s}
+							info.Decls[s.Name.Name] = &runtimeDecl{token.TYPE, doc.Text(), s}
 						}
 					case *goast.ValueSpec:
 						if s.Doc != nil {
@@ -117,7 +117,7 @@ func loadRuntime() (*runtimeInfo, error) {
 						}
 						for _, n := range s.Names {
 							if n.IsExported() {
-								info.decls[n.Name] = &runtimeDecl{d.Tok, doc.Text(), s}
+								info.Decls[n.Name] = &runtimeDecl{d.Tok, doc.Text(), s}
 							}
 						}
 					}
@@ -135,7 +135,7 @@ func loadRuntime() (*runtimeInfo, error) {
 
 // runtimeFiles returns the copy of the runtime that RuntimeEmbed writes.
 func runtimeFiles() ([]gen.GeneratedFile, error) {
-	info, err := loadRuntime()
+	info, err := LoadRuntime()
 	if err != nil {
 		return nil, err
 	}
@@ -166,26 +166,26 @@ var stdImports = map[string]string{
 	"utf8": "unicode/utf8",
 }
 
-// typesPackage describes the types package of a typed parser for qualifyRuntime.
-type typesPackage struct {
-	importPath string
-	// declared reports whether the types package declares the name besides the types of the
+// TypesPackage describes the types package of a typed parser for QualifyRuntime.
+type TypesPackage struct {
+	ImportPath string
+	// Declared reports whether the types package declares the name besides the types of the
 	// grammar, which the parser package refers to as types.Name (a type of the grammar is
 	// written so in the source).
-	declared func(name string) bool
-	// types holds the type declarations of the types package, which resolve the literals of
+	Declared func(name string) bool
+	// Types holds the type declarations of the types package, which resolve the literals of
 	// types.Name.
-	types map[string]goast.Expr
+	Types map[string]goast.Expr
 	// schema is the name of the constant of the types package that ties it to the parser package.
 	schema string
 }
 
-// qualifyRuntime finishes the generated source body of a package. Every identifier that the body
+// QualifyRuntime finishes the generated source body of a package. Every identifier that the body
 // leaves unresolved and that is an exported name of the runtime is the runtime's, and is qualified
 // with the runtime package; one that the types package tp (if any) declares is qualified with the
 // types package. The standard-library packages the body uses are imported, and the runtime and
 // types packages.
-func qualifyRuntime(rtImport, body string, info *runtimeInfo, tp *typesPackage) (string, error) {
+func QualifyRuntime(rtImport, body string, info *runtimeInfo, tp *TypesPackage) (string, error) {
 	const prefix = "package p\n"
 	fset := token.NewFileSet()
 	f, err := goparser.ParseFile(fset, "body.go", prefix+body, goparser.ParseComments)
@@ -206,11 +206,11 @@ func qualifyRuntime(rtImport, body string, info *runtimeInfo, tp *typesPackage) 
 	})
 	var typeOffsets []int
 	for _, id := range f.Unresolved {
-		if tp != nil && tp.declared(id.Name) {
+		if tp != nil && tp.Declared(id.Name) {
 			typeOffsets = append(typeOffsets, fset.Position(id.Pos()).Offset-len(prefix))
 			continue
 		}
-		if _, ok := info.decls[id.Name]; ok {
+		if _, ok := info.Decls[id.Name]; ok {
 			offsets = append(offsets, fset.Position(id.Pos()).Offset-len(prefix))
 			continue
 		}
@@ -218,7 +218,7 @@ func qualifyRuntime(rtImport, body string, info *runtimeInfo, tp *typesPackage) 
 			if p, ok := stdImports[id.Name]; ok {
 				std[p] = true
 			}
-			if tp != nil && id.Name == typesAlias {
+			if tp != nil && id.Name == TypesAlias {
 				typeOffsets = append(typeOffsets, -1)
 			}
 		}
@@ -251,7 +251,7 @@ func qualifyRuntime(rtImport, body string, info *runtimeInfo, tp *typesPackage) 
 				continue
 			}
 			if id, ok := kv.Key.(*goast.Ident); ok && kind != 's' && id.Obj == nil {
-				if d, ok := info.decls[id.Name]; ok && (d.kind == token.CONST || d.kind == token.VAR) {
+				if d, ok := info.Decls[id.Name]; ok && (d.kind == token.CONST || d.kind == token.VAR) {
 					offsets = append(offsets, fset.Position(id.Pos()).Offset-len(prefix))
 				}
 			}
@@ -282,7 +282,7 @@ func qualifyRuntime(rtImport, body string, info *runtimeInfo, tp *typesPackage) 
 	for _, off := range typeOffsets {
 		typesUsed = true
 		if off >= 0 {
-			inserts = append(inserts, insertion{off, typesAlias + "."})
+			inserts = append(inserts, insertion{off, TypesAlias + "."})
 		}
 	}
 	sort.Slice(inserts, func(i, j int) bool { return inserts[i].off < inserts[j].off })
@@ -312,7 +312,7 @@ func qualifyRuntime(rtImport, body string, info *runtimeInfo, tp *typesPackage) 
 	}
 	fmt.Fprintf(&imports, "\n\t%s %q\n", runtimeAlias, rtImport)
 	if typesUsed {
-		fmt.Fprintf(&imports, "\t%s %q\n", typesAlias, tp.importPath)
+		fmt.Fprintf(&imports, "\t%s %q\n", TypesAlias, tp.ImportPath)
 	}
 	imports.WriteString(")\n\n")
 	return imports.String() + out.String(), nil
@@ -322,7 +322,7 @@ func qualifyRuntime(rtImport, body string, info *runtimeInfo, tp *typesPackage) 
 // map, 'a' for an array or slice, 0 if unknown) and the types of its keys and elements (nil if
 // unknown). Named types are resolved through types, the type declarations of the body, and then
 // through the runtime's.
-func literalType(typ goast.Expr, types map[string]goast.Expr, info *runtimeInfo, tp *typesPackage) (kind byte, key, elem goast.Expr) {
+func literalType(typ goast.Expr, types map[string]goast.Expr, info *runtimeInfo, tp *TypesPackage) (kind byte, key, elem goast.Expr) {
 	for depth := 0; typ != nil && depth < 32; depth++ {
 		switch t := typ.(type) {
 		case *goast.ParenExpr:
@@ -337,8 +337,8 @@ func literalType(typ goast.Expr, types map[string]goast.Expr, info *runtimeInfo,
 			return 's', nil, nil
 		case *goast.SelectorExpr:
 			// A type of the types package.
-			if id, ok := t.X.(*goast.Ident); ok && id.Name == typesAlias && tp != nil {
-				if next, ok := tp.types[t.Sel.Name]; ok {
+			if id, ok := t.X.(*goast.Ident); ok && id.Name == TypesAlias && tp != nil {
+				if next, ok := tp.Types[t.Sel.Name]; ok {
 					typ = next
 					continue
 				}
@@ -351,7 +351,7 @@ func literalType(typ goast.Expr, types map[string]goast.Expr, info *runtimeInfo,
 		case *goast.Ident:
 			if next, ok := types[t.Name]; ok {
 				typ = next
-			} else if d, ok := info.decls[t.Name]; ok && d.kind == token.TYPE {
+			} else if d, ok := info.Decls[t.Name]; ok && d.kind == token.TYPE {
 				typ = d.spec.(*goast.TypeSpec).Type
 			} else {
 				return 0, nil, nil
@@ -363,8 +363,8 @@ func literalType(typ goast.Expr, types map[string]goast.Expr, info *runtimeInfo,
 	return 0, nil, nil
 }
 
-// declaredNames returns the top-level names (other than methods) that the Go source declares.
-func declaredNames(src string) ([]string, error) {
+// DeclaredNames returns the top-level names (other than methods) that the Go source declares.
+func DeclaredNames(src string) ([]string, error) {
 	f, err := goparser.ParseFile(token.NewFileSet(), "src.go", src, goparser.SkipObjectResolution)
 	if err != nil {
 		return nil, err
@@ -434,7 +434,7 @@ func apiSource(opts gen.GenOptions, info *runtimeInfo) (string, error) {
 	fmt.Fprintf(&b, "\t%s %q\n)\n\n", runtimeAlias, runtimeImport(opts))
 	b.WriteString("var _ context.Context\n\n")
 	for _, name := range apiNames(opts) {
-		d := info.decls[name]
+		d := info.Decls[name]
 		if d == nil {
 			return "", fmt.Errorf("internal error: the runtime has no %s", name)
 		}

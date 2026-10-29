@@ -1,4 +1,4 @@
-package engine
+package gogen
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ import (
 
 // Typed Go rules printed from Flow IR.
 //
-// The typed rules are built as Core IR (typedCore) and printed from Flow IR here. The rules that
+// The typed rules are built as Core IR (TypedCore) and printed from Flow IR here. The rules that
 // flow.LocalRule accepts are lowered to local functions (flow.Lower) and printed into the flat
 // rule that typedCall and flatMethod wrap. The bodies of left-recursion leaders and of rules
 // that recover, and the lines of Operators Rules, are lowered to framed functions
@@ -27,40 +27,41 @@ import (
 // The printer follows reachability: a statement at an unreachable point is left out,
 // but its text is still formed, so that the package variables it names (literals, expectations,
 // class tables, shapers, scopes) are declared in the same order. A variable that no printed statement
-// reads is not declared and its assignments are left out (flowVars); one that must stay is assigned to the
+// reads is not declared and its assignments are left out (FlowVars); one that must stay is assigned to the
 // blank identifier on the first line.
 
 // flowVarsErr records the internal error that resolving the variables of a printed function found.
-func (g *generator) flowVarsErr(res flowVarsResult) {
-	if res.err != nil && g.FlowErr == nil {
-		g.FlowErr = res.err
+func (g *Generator) flowVarsErr(res flowVarsResult) {
+	if res.Err != nil && g.FlowErr == nil {
+		g.FlowErr = res.Err
 	}
 }
 
 // startFlow builds the Core IR of the typed rules for printing them from Flow IR.
-func (g *generator) startFlow() error {
+func (g *Generator) startFlow() error {
 	origin := map[core.Node]grammar.Expr{}
-	m, err := g.typedCore(origin)
+	m, err := g.TypedCore(origin)
 	if err != nil {
 		return err
 	}
 	g.Flow = &gen.FlowState{M: m, Origin: origin, Rules: append(append([]*compile.Rule(nil), g.Prog.RuleList...), g.Prog.Twins...),
-		Opts: g.flowOptions(m)}
+		Opts: g.FlowOptions(m)}
 	return nil
 }
 
-// flowOptions returns the options of lowering the typed rules of the Core IR m, while the typed
+// FlowOptions returns the options of lowering the typed rules of the Core IR m, while the typed
 // table is generated.
-func (g *generator) flowOptions(m *core.Module) flow.Options {
-	// Node is false: the options of the Node and recognizer tables (startRecFlow) are built apart, and
-	// a function lowered with one set of options is never printed for the other runtime.
+func (g *Generator) FlowOptions(m *core.Module) flow.Options {
+	// Node is false: the options of the Node and recognizer tables (gen.Generator.StartRecFlow) are
+	// built apart, and a function lowered with one set of options is never printed for the other
+	// runtime.
 	return flow.Options{Work: !g.NoWork, Recovers: flow.Recovers(m), ClassTables: g.leanTyped(),
 		GuardedClasses: g.Ordinary && !g.DisableGuardedClasses, InlineLiterals: gen.MaxInlineLiteral, Observe: g.Observability, Document: g.Document}
 }
 
 // flowTypedRule prints the rule r from Flow IR as a flat rule, or returns nil if r is not
 // printed from Flow IR.
-func (g *generator) flowTypedRule(r *compile.Rule) *flatRule {
+func (g *Generator) flowTypedRule(r *compile.Rule) *flatRule {
 	if g.Flow == nil || g.Table != "trules" {
 		return nil
 	}
@@ -77,39 +78,39 @@ func (g *generator) flowTypedRule(r *compile.Rule) *flatRule {
 	p := newFlowPrinter(g, false)
 	p.document = f.Document
 	p.stmts(f.Body)
-	res := p.vars.resolve(f.Vars, p.b.String())
+	res := p.vars.Resolve(f.Vars, p.b.String())
 	g.flowVarsErr(res)
-	out := &flatRule{fail: p.used[f.Fail], succeed: !p.dead, binds: f.Binds, start: res.read(f.Start), ctx: res.read(f.Ctx)}
+	out := &flatRule{fail: p.used[f.Fail], succeed: !p.dead, binds: f.Binds, start: res.Read(f.Start), ctx: res.Read(f.Ctx)}
 	var unread []string
 	for _, v := range f.Vars {
-		out.vars = append(out.vars, dvar{v.Name, goType(v.Type)})
+		out.vars = append(out.vars, Dvar{v.Name, goType(v.Type)})
 		switch {
-		case res.dead(v):
+		case res.Dead(v):
 			out.markVar(v.Name, true)
 		case !p.reads[v]:
 			unread = append(unread, v.Name)
-		case !res.read(v):
+		case !res.Read(v):
 			out.markVar(v.Name, false)
 		}
 	}
-	out.body = res.body
+	out.body = res.Body
 	if len(unread) > 0 {
 		out.body = "\t" + strings.Repeat("_, ", len(unread)-1) + "_ = " + strings.Join(unread, ", ") + "\n" + out.body
 	}
-	g.flowRules++
+	g.FlowRules++
 	return out
 }
 
 // flowFrameBody prints the body of the typed rule r from Flow IR as the matcher of its frame
 // body, or returns "" if Flow IR does not print r that way.
-func (g *generator) flowFrameBody(r *compile.Rule, scope *compile.Scope) string {
+func (g *Generator) flowFrameBody(r *compile.Rule, scope *compile.Scope) string {
 	if g.Flow == nil || g.Table != "trules" {
 		return ""
 	}
 	comment, ok := g.typedFrameComment(r)
 	cr := g.Flow.M.Rules[r.ID]
 	// The runtime-owned frame has the slots of the Node rule's scope.
-	if !ok || !flow.FramedBody(cr.Body) || !slices.Equal(core.SlotNames(cr.Scope), g.nodeScopes[r]) {
+	if !ok || !flow.FramedBody(cr.Body) || !slices.Equal(core.SlotNames(cr.Scope), g.NodeScopes[r]) {
 		return ""
 	}
 	if g.Flow.Opts.Node {
@@ -125,12 +126,13 @@ func (g *generator) flowFrameBody(r *compile.Rule, scope *compile.Scope) string 
 }
 
 // flowNodeFrameBody prints the body of the rule r of the Node table from Flow IR as the matcher of
-// its frame body, or returns "" if r takes another route. The rule is eligible (flowNodeFrameOK) when
-// its Core body is a framed body and its action reads only captures of the frame; the runtime owns depth,
-// memo, frame, action and finish. With work controls (Options.Work) the method that holds the body charges
-// one step on entry (Func.Entered) and the body charges one on each iteration of a repetition, plus the input
-// work of each Peek; the limits of a parse hold at these charges.
-func (g *generator) flowNodeFrameBody(r *compile.Rule, scope *compile.Scope) string {
+// its frame body, or returns "" if r takes another route. The rule is eligible
+// (gen.Generator.FlowNodeFrameOK) when its Core body is a framed body and its action reads only
+// captures of the frame; the runtime owns depth, memo, frame, action and finish. With work controls
+// (Options.Work) the method that holds the body charges one step on entry (Func.Entered) and the
+// body charges one on each iteration of a repetition, plus the input work of each Peek; the limits
+// of a parse hold at these charges.
+func (g *Generator) flowNodeFrameBody(r *compile.Rule, scope *compile.Scope) string {
 	cr, ok := g.FlowNodeFrameOK(r)
 	if !ok {
 		return ""
@@ -151,7 +153,7 @@ func (g *generator) flowNodeFrameBody(r *compile.Rule, scope *compile.Scope) str
 // frame body, with the repetition of its #stream delivering the elements (flow.Options.Stream), or
 // returns "" if the rule is not printed that way: a rule is eligible as for flowNodeFrameBody. The
 // capture layout of the printed body must be the batch body's, which the action addresses by slot.
-func (g *generator) flowStreamBody(r *compile.Rule, scope *compile.Scope) string {
+func (g *Generator) flowStreamBody(r *compile.Rule, scope *compile.Scope) string {
 	cr, ok := g.FlowNodeFrameOK(r)
 	if !ok || !g.Flow.Opts.Node {
 		return ""
@@ -176,7 +178,7 @@ func (g *generator) flowStreamBody(r *compile.Rule, scope *compile.Scope) string
 // on the shape of every capture, and the checker lets an action name only captures of its line. With work
 // controls (Options.Work) the method that holds the function charges its entry and the function charges
 // each iteration of a repetition, as Flow IR makes them explicit.
-func (g *generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope *compile.Scope, build bool) string {
+func (g *Generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope *compile.Scope, build bool) string {
 	if g.Flow == nil || l == nil || !gen.FlowLineOK(e) || !flow.FramedBody(l.Body) {
 		return ""
 	}
@@ -191,8 +193,8 @@ func (g *generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope 
 	g.Proj = nil // the actions of the lines use no projections of the rule
 	defer func() { g.Proj = prev }()
 	if g.Table != "trules" {
-		if operatorsRouteHook != nil && g.collect == nil {
-			operatorsRouteHook(g.Table, g.Cur)
+		if OperatorsRouteHook != nil && g.collect == nil {
+			OperatorsRouteHook(g.Table, g.Cur)
 		}
 		return g.flowFramed(f, l.Scope, scope, g.Cur.Name+" (OperatorsRule body inlined)", false)
 	}
@@ -202,7 +204,7 @@ func (g *generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope 
 // flowOperatorsRule returns the Core IR of the Operators Rule r, or nil if its lines are not
 // printed from Flow IR: the typed table prints them all from it, the Node and recognizer tables
 // when their Flow route is on (flowOperatorsRuleBody decides each line).
-func (g *generator) flowOperatorsRule(r *compile.Rule) *core.OperatorsRule {
+func (g *Generator) flowOperatorsRule(r *compile.Rule) *core.OperatorsRule {
 	if g.Flow == nil || g.Table != "trules" && !g.Flow.Opts.Node {
 		return nil
 	}
@@ -213,7 +215,7 @@ func (g *generator) flowOperatorsRule(r *compile.Rule) *core.OperatorsRule {
 // flowFramed prints the framed function f, whose capture scope has the slots, as a matcher method
 // with the comment, as finishFrameBody does, and sets scope to its capture scope. A rule body (ruleBody)
 // has the signature of the Body field of the rule table (see bodyMethod).
-func (g *generator) flowFramed(f *flow.Func, slots []core.Slot, scope *compile.Scope, comment string, ruleBody bool) string {
+func (g *Generator) flowFramed(f *flow.Func, slots []core.Slot, scope *compile.Scope, comment string, ruleBody bool) string {
 	p := newFlowPrinter(g, true)
 	p.document = f.Document
 	p.stmts(f.Body)
@@ -236,36 +238,36 @@ func (g *generator) flowFramed(f *flow.Func, slots []core.Slot, scope *compile.S
 		p.write("return nil, false\n")
 	}
 	var b strings.Builder
-	res := p.vars.resolve(f.Vars, p.b.String())
+	res := p.vars.Resolve(f.Vars, p.b.String())
 	g.flowVarsErr(res)
-	var vars []dvar
+	var vars []Dvar
 	dead, quiet := map[string]bool{}, map[string]bool{}
 	var unread []string
 	for _, v := range f.Vars {
-		vars = append(vars, dvar{v.Name, p.goType(v.Type)})
+		vars = append(vars, Dvar{v.Name, p.goType(v.Type)})
 		switch {
-		case res.dead(v):
+		case res.Dead(v):
 			dead[v.Name] = true
 		case !p.reads[v]:
 			unread = append(unread, v.Name)
-		case !res.read(v):
+		case !res.Read(v):
 			quiet[v.Name] = true
 		}
 	}
-	b.WriteString(varLinesExcept(vars, dead, quiet))
+	b.WriteString(VarLinesExcept(vars, dead, quiet))
 	if len(unread) > 0 {
 		fmt.Fprintf(&b, "%s_ = %s\n", strings.Repeat("_, ", len(unread)-1), strings.Join(unread, ", "))
 	}
-	b.WriteString(res.body)
+	b.WriteString(res.Body)
 	*scope = *compile.NewScope()
 	for _, sl := range slots {
 		scope.Slot(sl.Name)
 	}
-	g.flowFrames++
+	g.FlowFrames++
 	if ruleBody {
 		return g.bodyMethod(comment, b.String())
 	}
-	return g.method(comment, b.String())
+	return g.Method(comment, b.String())
 }
 
 func goType(t flow.Type) string {
@@ -293,7 +295,7 @@ func (p *flowPrinter) goType(t flow.Type) string {
 // flowPrinter prints the body of a Flow IR function as the statements of a flat rule or, if
 // frame, of a matcher method.
 type flowPrinter struct {
-	g     *generator
+	g     *Generator
 	frame bool
 	// document reports that the function is lowered for Documents (flow.Func.Document): its in-place reads
 	// are guarded by p.Document == nil, so that a Document parse reads through the recording primitives.
@@ -306,7 +308,7 @@ type flowPrinter struct {
 	reads map[*flow.Var]bool
 	loops map[*flow.Label]bool
 	// vars holds the assignments of the function that are left out when their variables are unread.
-	vars flowVars
+	vars FlowVars
 	// names holds the package variables of the capture names of scopes, declared on first use
 	// unless a DeclareNames statement declares them.
 	names map[*flow.Names]string
@@ -314,9 +316,9 @@ type flowPrinter struct {
 	pre string
 }
 
-func newFlowPrinter(g *generator, frame bool) *flowPrinter {
+func newFlowPrinter(g *Generator, frame bool) *flowPrinter {
 	return &flowPrinter{g: g, frame: frame, used: map[*flow.Label]bool{}, reads: map[*flow.Var]bool{},
-		loops: map[*flow.Label]bool{}, names: map[*flow.Names]string{}, vars: newFlowVars()}
+		loops: map[*flow.Label]bool{}, names: map[*flow.Names]string{}, vars: NewFlowVars()}
 }
 
 // scopeNames returns the package variable of the capture names n, naming it on first use.
@@ -545,7 +547,7 @@ func (p *flowPrinter) ifStmt(s *flow.If, kw string) {
 		if !p.dead {
 			for _, d := range s.Init.Dst {
 				if v, ok := d.(*flow.Var); ok {
-					p.vars.stuck[v] = true
+					p.vars.Stuck[v] = true
 				}
 			}
 		}
@@ -601,7 +603,7 @@ func (p *flowPrinter) setParts(s *flow.Set) (dst, xs []string) {
 }
 
 // setStmt writes the assignment s as a statement of a list, which is left out or has the blank
-// identifier for its places if they are variables nothing reads (see flowVars).
+// identifier for its places if they are variables nothing reads (see FlowVars).
 func (p *flowPrinter) setStmt(s *flow.Set) {
 	if p.dead {
 		p.setParts(s)
@@ -620,17 +622,17 @@ func (p *flowPrinter) setStmt(s *flow.Set) {
 			panic("flow printer: an assignment of an Eval with other values")
 		}
 	}
-	st := &varStmt{uses: uses, pure: pre == "" && len(dst) == len(xs) && pureValues(xs)}
+	st := &VarStmt{Uses: uses, Pure: pre == "" && len(dst) == len(xs) && pureValues(xs)}
 	for i, d := range s.Dst {
 		v, _ := d.(*flow.Var)
-		st.targets = append(st.targets, v)
+		st.Targets = append(st.Targets, v)
 		if _, isNil := s.X[min(i, len(s.X)-1)].(*flow.Nil); isNil && len(s.Dst) > 1 && len(s.Dst) == len(s.X) && v != nil {
-			p.vars.pinned[v] = true
+			p.vars.Pinned[v] = true
 		}
 	}
-	st.text = func(dead func(*flow.Var) bool) string {
+	st.Text = func(dead func(*flow.Var) bool) string {
 		out := slices.Clone(dst)
-		for i, v := range st.targets {
+		for i, v := range st.Targets {
 			if dead(v) {
 				out[i] = "_"
 			}
@@ -641,7 +643,7 @@ func (p *flowPrinter) setStmt(s *flow.Set) {
 		}
 		return assign
 	}
-	p.b.WriteString(p.vars.add(st))
+	p.b.WriteString(p.vars.Add(st))
 }
 
 // incStmt writes the increment of the variable v, which is left out if nothing reads v.
@@ -649,7 +651,7 @@ func (p *flowPrinter) incStmt(v *flow.Var) {
 	if p.dead {
 		return
 	}
-	p.b.WriteString(p.vars.add(&varStmt{targets: []*flow.Var{v}, pure: true, text: func(func(*flow.Var) bool) string {
+	p.b.WriteString(p.vars.Add(&VarStmt{Targets: []*flow.Var{v}, Pure: true, Text: func(func(*flow.Var) bool) string {
 		return v.Name + "++\n"
 	}}))
 }
@@ -669,8 +671,8 @@ func (p *flowPrinter) peekStmt(s *flow.Peek) {
 	if p.dead {
 		return
 	}
-	st := &varStmt{targets: []*flow.Var{s.Ch, s.Size, s.OK}}
-	st.text = func(dead func(*flow.Var) bool) string {
+	st := &VarStmt{Targets: []*flow.Var{s.Ch, s.Size, s.OK}}
+	st.Text = func(dead func(*flow.Var) bool) string {
 		name := func(v *flow.Var) string {
 			if v == nil || dead(v) {
 				return "_"
@@ -685,7 +687,7 @@ func (p *flowPrinter) peekStmt(s *flow.Peek) {
 		}
 		return controlled
 	}
-	p.b.WriteString(p.vars.add(st))
+	p.b.WriteString(p.vars.Add(st))
 }
 
 // fixedExpNames names the expectations of the runtime that every parser has, by ID.
@@ -714,7 +716,7 @@ func grammarClass(c *core.Class) *grammar.CharClass {
 
 // reject returns the condition under which the code point in the variable ch is not in the class.
 func (p *flowPrinter) reject(c *core.Class, ch *flow.Var) string {
-	cond := p.g.controlledClassReject(grammarClass(c))
+	cond := p.g.ControlledClassReject(grammarClass(c))
 	if ch.Name != "ch" {
 		cond = chIdent.ReplaceAllString(cond, ch.Name)
 	}
@@ -820,7 +822,7 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 				cond = fmt.Sprintf("ch == %d || ch == %d", x.Guard.Rune, x.Guard.Rune-('a'-'A'))
 			}
 		} else {
-			cond = negateCondition(g.controlledClassReject(grammarClass(x.Guard.Class)))
+			cond = NegateCondition(g.ControlledClassReject(grammarClass(x.Guard.Class)))
 		}
 		return fmt.Sprintf("!(%s && (%s)) && %s", x.More.Name, chIdent.ReplaceAllString(cond, x.Ch.Name), depthLimit(x.Guard.Depth))
 	case *flow.CallRule:

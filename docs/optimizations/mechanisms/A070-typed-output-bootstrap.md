@@ -40,9 +40,9 @@ Evidence records:
 [098](../098-bootstrap-generated-typed-output-allocations.md).
 
 Source owners: [`typed allocation helper
-emission`](../../../internal/engine/gen_types.go), [`typed allocator
+emission`](../../../internal/gen/gogen/types.go), [`typed allocator
 state`](../../../runtime/typed.go),
-[`disableTypedOutputBootstrap`](../../../internal/engine/gen.go),
+[`disableTypedOutputBootstrap`](../../../internal/gen/gogen/generator.go),
 [`retained-output
 fixture`](../../../internal/engine/gen_typed_output_retention_test.go).
 

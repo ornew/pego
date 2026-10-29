@@ -105,7 +105,7 @@ classification.
 Emit a name switch from the grammar's rule table. Each case must use the
 selected rule's own entry and inferred result type; it must not route through
 the configured start rule. Select direct typed execution only when the existing
-full `typedGen.runtimeOK` guard succeeds for the grammar and selected result.
+full `TypedGen.runtimeOK` guard succeeds for the grammar and selected result.
 That guard also rejects field-reading actions or predicates and any
 unrepresentable field type anywhere in the generated structs; do not replace
 it with a selected-result-only check. On the direct path, call the corresponding

@@ -1,4 +1,4 @@
-package engine
+package gogen
 
 import (
 	"fmt"
@@ -79,7 +79,7 @@ func terminalLeaves(e grammar.Expr) (leaves int, choice, ok bool) {
 // terminalTable returns the package variable that holds e lowered to a TerminalProgram, if e is
 // a value-free terminal expression worth lowering in a lean typed parser, declaring it on first
 // use.
-func (g *generator) terminalTable(e grammar.Expr) (string, bool) {
+func (g *Generator) terminalTable(e grammar.Expr) (string, bool) {
 	if !g.leanTyped() || g.Observability || g.disableTerminalPrograms {
 		return "", false
 	}
@@ -130,7 +130,7 @@ const terminalNoTable = 0xffff
 
 // terminalProgram assembles the code of a runtime.TerminalProgram.
 type terminalProgram struct {
-	g                 *generator
+	g                 *Generator
 	code              []uint16
 	classes, literals map[string]int
 	classNames        []string

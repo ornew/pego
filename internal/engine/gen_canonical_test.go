@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 // canonicalValueSource is the Go code of the generated program that turns a typed value into the
@@ -235,7 +237,7 @@ func canonicalTyped(v any) (any, error) {
 // a "_" to a field whose name is a runtime method name or the name of the embedded span, so a single
 // trailing "_" over such a name is removed. Other names are returned as they are.
 func goFieldName(goName string) string {
-	if base, ok := strings.CutSuffix(goName, "_"); ok && runtimeMethodNames[base] {
+	if base, ok := strings.CutSuffix(goName, "_"); ok && gogen.RuntimeMethodNames[base] {
 		return base
 	}
 	return goName

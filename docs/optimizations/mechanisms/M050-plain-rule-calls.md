@@ -48,7 +48,7 @@ Source owners: [`Rule.Plain
 classification`](../../../internal/compile/compile.go),
 [`parser.invokePlain`](../../../internal/engine/runtime.go),
 [`plainCallFrame`](../../../internal/engine/ivm.go), [`plain call
-emission`](../../../internal/engine/gen.go),
+emission`](../../../internal/gen/gogen/generator.go),
 [`tsgen.Generator.plainCall`](../../../internal/gen/tsgen/generator.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

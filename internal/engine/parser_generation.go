@@ -4,6 +4,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 	"github.com/ornew/pego/internal/gen/tsgen"
 )
 
@@ -17,7 +18,7 @@ import (
 // and predicates become Go expressions, and the runtime (package runtime of this module) behaves
 // exactly like the engine in this package. Without opts.Stream, #stream is a plain repetition.
 func Generate(g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
-	return generateGo(g, compileForGenerator, opts)
+	return gogen.Generate(g, compileForGenerator, opts)
 }
 
 // GenerateTS generates the files of a TypeScript parser for a grammar that behaves exactly like the

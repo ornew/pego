@@ -9,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 // A typed-only parser has no Node family unless a typed entry point converts the Node result of a rule; then
@@ -31,14 +32,14 @@ func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
 	}{{"ordinary", false}, {"controls", true}} {
 		t.Run(form.name, func(t *testing.T) {
 			taken, framed, operators, generated := 0, 0, 0, 0
-			leanRouteHook = func(table string, r *compile.Rule) {
+			gogen.LeanRouteHook = func(table string, r *compile.Rule) {
 				if table == "rules" {
 					taken++
 				}
 			}
-			framedRouteHook = func(table string, r *compile.Rule) { framed++ }
-			operatorsRouteHook = func(table string, r *compile.Rule) { operators++ }
-			defer func() { leanRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil }()
+			gogen.FramedRouteHook = func(table string, r *compile.Rule) { framed++ }
+			gogen.OperatorsRouteHook = func(table string, r *compile.Rule) { operators++ }
+			defer func() { gogen.LeanRouteHook, gogen.FramedRouteHook, gogen.OperatorsRouteHook = nil, nil, nil }()
 			for _, c := range cases {
 				g, err := parseTest(c.src)
 				if err != nil {
@@ -172,13 +173,13 @@ func TestFlowTypedOnlyEntriesMatchFull(t *testing.T) {
 			dir := t.TempDir()
 			writeGoMod(t, dir)
 			taken := 0
-			leanRouteHook = func(table string, r *compile.Rule) {
+			gogen.LeanRouteHook = func(table string, r *compile.Rule) {
 				if table == "rules" {
 					taken++
 				}
 			}
-			framedRouteHook = func(table string, r *compile.Rule) { taken++ }
-			operatorsRouteHook = func(table string, r *compile.Rule) { taken++ }
+			gogen.FramedRouteHook = func(table string, r *compile.Rule) { taken++ }
+			gogen.OperatorsRouteHook = func(table string, r *compile.Rule) { taken++ }
 			var pkgs []string
 			for i, c := range typedOnlyConverted {
 				base := gen.GenOptions{Types: true, WorkControls: form.controls}
@@ -211,7 +212,7 @@ func TestFlowTypedOnlyEntriesMatchFull(t *testing.T) {
 				ordinaryOnlyPackage(t, dir, mutated, mut, mo, typedOnlyTranscript, c.inputs)
 				pkgs = append(pkgs, full, flowOnly, mutated)
 			}
-			leanRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil
+			gogen.LeanRouteHook, gogen.FramedRouteHook, gogen.OperatorsRouteHook = nil, nil, nil
 			out := runTranscripts(t, dir, pkgs...)
 			for i, c := range typedOnlyConverted {
 				full, flowOnly, mutated := out[fmt.Sprintf("full%d", i)], out[fmt.Sprintf("flow%d", i)], out[fmt.Sprintf("mut%d", i)]

@@ -14,6 +14,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
 )
 
 // Compare public typed values with the existing generated Go Node-conversion
@@ -127,12 +128,12 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
 		if err != nil {
 			t.Fatal(err)
 		}
-		meta := &typedGen{g: &generator{Prog: prog.staticProgram}, info: prog.Typed, joins: map[string]string{}, anon: map[string]compile.JoinTy{}}
-		meta.ValueResolver = gen.NewValueResolver(prog.staticProgram, func(x compile.Ty) bool { _, ok := meta.joins[x.String()]; return ok })
-		if err := meta.name(); err != nil {
+		meta := &gogen.TypedGen{G: &gogen.Generator{Prog: prog.staticProgram}, Info: prog.Typed, Joins: map[string]string{}, Anon: map[string]compile.JoinTy{}}
+		meta.ValueResolver = gen.NewValueResolver(prog.staticProgram, func(x compile.Ty) bool { _, ok := meta.Joins[x.String()]; return ok })
+		if err := meta.Name(); err != nil {
 			t.Fatal(err)
 		}
-		named = append(named, append([]string{}, meta.nodeTypes...))
+		named = append(named, append([]string{}, meta.NodeTypes...))
 		for name := range prog.Types {
 			fmt.Fprintf(&valueNames, "%q:%q,\n", fmt.Sprintf("replay/g%d/types.%s", i, name), name)
 		}

@@ -33,8 +33,8 @@ Evidence records: [048](../048-a-typed-runtime-for-parseast.md),
 [074](../074-smaller-first-chunks-for-generated-typed-values.md),
 [098](../098-bootstrap-generated-typed-output-allocations.md).
 
-Source owners: [`astNew generation`](../../../internal/engine/gen_types.go),
-[`disableTypedObjectSlabs`](../../../internal/engine/gen.go),
+Source owners: [`astNew generation`](../../../internal/gen/gogen/types.go),
+[`disableTypedObjectSlabs`](../../../internal/gen/gogen/generator.go),
 [`objects/individual
 controls`](../../../internal/engine/gen_typed_output_retention_test.go).
 
