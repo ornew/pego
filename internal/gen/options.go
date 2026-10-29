@@ -147,7 +147,8 @@ const (
 	RuntimeOnly
 )
 
-// String returns the lowercase name of the mode: embed, import or only.
+// String returns the lowercase name of the mode: embed, import or only, and RuntimeMode(n) for
+// a value that names no mode.
 func (m RuntimeMode) String() string {
 	switch m {
 	case RuntimeEmbed:
