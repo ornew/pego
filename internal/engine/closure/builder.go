@@ -1,4 +1,4 @@
-package engine
+package closure
 
 import (
 	"unicode/utf8"
@@ -9,28 +9,29 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-// closureBuilder builds the closure backend's form of a program: a matcher per expression, and the
+// Builder builds the closure backend's form of a program: a matcher per expression, and the
 // bodies, values and actions of the rules.
-type closureBuilder struct {
-	prog    *compile.Program
+type Builder struct {
+	prog *compile.Program
+	// control is the work control of the compilation, or nil.
 	control *compile.Control
 	// plainDispatch leaves out the per-expression work charge (Options.ControlledDispatch builds
 	// the metered closure graph).
 	plainDispatch bool
 	// rules holds the rules the parser runs, by ID (staticRule.ID). They are made when a body or a
-	// call needs them and get the facts of their static rules in finish.
+	// call needs them and get the facts of their static rules in Finish.
 	rules []*core.Rule
 }
 
-var _ compile.ExprBuilder[core.Matcher] = (*closureBuilder)(nil)
+var _ compile.ExprBuilder[core.Matcher] = (*Builder)(nil)
 
-// newClosureBuilder returns the builder of the closure backend's form for the compiler c.
-func newClosureBuilder(c *compile.Compiler, plainDispatch bool) *closureBuilder {
-	return &closureBuilder{prog: c.Prog, control: c.Control, plainDispatch: plainDispatch}
+// NewBuilder returns the builder of the closure backend's form for the compiler c.
+func NewBuilder(c *compile.Compiler, plainDispatch bool) *Builder {
+	return &Builder{prog: c.Prog, control: c.Control, plainDispatch: plainDispatch}
 }
 
 // rule returns the rule the parser runs for the static rule r.
-func (b *closureBuilder) rule(r *compile.Rule) *core.Rule {
+func (b *Builder) rule(r *compile.Rule) *core.Rule {
 	for len(b.rules) <= r.ID {
 		b.rules = append(b.rules, nil)
 	}
@@ -40,9 +41,9 @@ func (b *closureBuilder) rule(r *compile.Rule) *core.Rule {
 	return b.rules[r.ID]
 }
 
-// finish gives the rules the facts that the compiler found out about them, once it is done, and
+// Finish gives the rules the facts that the compiler found out about them, once it is done, and
 // returns them by ID.
-func (b *closureBuilder) finish() []*core.Rule {
+func (b *Builder) Finish() []*core.Rule {
 	for _, rs := range [][]*compile.Rule{b.prog.RuleList, b.prog.Twins} {
 		for _, sr := range rs {
 			r := b.rule(sr)
@@ -59,14 +60,14 @@ func (b *closureBuilder) finish() []*core.Rule {
 	return b.rules
 }
 
-func (b *closureBuilder) Step(m core.Matcher) core.Matcher {
+func (b *Builder) Step(m core.Matcher) core.Matcher {
 	if !core.WorkControlsEnabled || b.plainDispatch {
 		return m
 	}
 	return func(p *core.Parser) (*value.Node, bool) { p.StepWork(); return m(p) }
 }
 
-func (b *closureBuilder) RuleBody(sr *compile.Rule, m core.Matcher) {
+func (b *Builder) RuleBody(sr *compile.Rule, m core.Matcher) {
 	r := b.rule(sr)
 	r.Kinds = value.NewRuleKinds(sr.Name)
 	if sr.Splice {
@@ -80,7 +81,7 @@ func (b *closureBuilder) RuleBody(sr *compile.Rule, m core.Matcher) {
 	}
 }
 
-func (b *closureBuilder) OperatorsRule(sr *compile.Rule, skip core.Matcher, hasSkip bool, operands, operators []compile.OpLine[core.Matcher]) {
+func (b *Builder) OperatorsRule(sr *compile.Rule, skip core.Matcher, hasSkip bool, operands, operators []compile.OpLine[core.Matcher]) {
 	r := b.rule(sr)
 	r.Kinds = value.NewRuleKinds(sr.Name)
 	// The lines build the rule's value.
@@ -104,7 +105,7 @@ func (b *closureBuilder) OperatorsRule(sr *compile.Rule, skip core.Matcher, hasS
 	r.Body = func(p *core.Parser, min int) (*value.Node, bool) { return p.OperatorsRuleParse(r, min) }
 }
 
-func (b *closureBuilder) line(l compile.OpLine[core.Matcher]) *core.OperatorsRuleLine {
+func (b *Builder) line(l compile.OpLine[core.Matcher]) *core.OperatorsRuleLine {
 	pl := &core.OperatorsRuleLine{Scope: l.Scope, M: l.Form, Key: l.Key}
 	pl.Value, pl.Single, pl.Shape = scopeValueOf(b.prog, l.Expr), compile.SingleModeOf(b.prog, l.Expr), compile.ShaperOf(b.prog, l.Expr)
 	if l.Action != nil {
@@ -113,7 +114,7 @@ func (b *closureBuilder) line(l compile.OpLine[core.Matcher]) *core.OperatorsRul
 	return pl
 }
 
-func (b *closureBuilder) Literal(e *grammar.Literal, desc core.ExpID, build bool) core.Matcher {
+func (b *Builder) Literal(e *grammar.Literal, desc core.ExpID, build bool) core.Matcher {
 	val := value.LiteralValue(e.Value)
 	if e.IgnoreCase {
 		rs := compile.FoldedRunes([]rune(val))
@@ -144,15 +145,15 @@ func (b *closureBuilder) Literal(e *grammar.Literal, desc core.ExpID, build bool
 	}
 }
 
-func (b *closureBuilder) Class(e *grammar.CharClass, desc core.ExpID, build bool) core.Matcher {
-	return single(build, desc, classAcceptControlled(e, b.control))
+func (b *Builder) Class(e *grammar.CharClass, desc core.ExpID, build bool) core.Matcher {
+	return single(build, desc, ClassAcceptControlled(e, b.control))
 }
 
-func (b *closureBuilder) Any(build bool) core.Matcher {
+func (b *Builder) Any(build bool) core.Matcher {
 	return single(build, compile.IDAny, func(*core.Parser, rune) bool { return true })
 }
 
-func (b *closureBuilder) Call(sr *compile.Rule, min int) core.Matcher {
+func (b *Builder) Call(sr *compile.Rule, min int) core.Matcher {
 	r := b.rule(sr)
 	return func(p *core.Parser) (*value.Node, bool) {
 		if r.Plain && !p.NoPlain {
@@ -162,7 +163,7 @@ func (b *closureBuilder) Call(sr *compile.Rule, min int) core.Matcher {
 	}
 }
 
-func (b *closureBuilder) Seq(ms []core.Matcher, flat, valued []bool, n int, build bool) core.Matcher {
+func (b *Builder) Seq(ms []core.Matcher, flat, valued []bool, n int, build bool) core.Matcher {
 	// The value is the tuple node of the elements, flattened through nested sequences.
 	return func(p *core.Parser) (*value.Node, bool) {
 		start := p.Pos
@@ -192,14 +193,14 @@ func (b *closureBuilder) Seq(ms []core.Matcher, flat, valued []bool, n int, buil
 	}
 }
 
-func (b *closureBuilder) Choice(e *grammar.Choice, ms []core.Matcher, firsts []compile.First, build bool) core.Matcher {
+func (b *Builder) Choice(e *grammar.Choice, ms []core.Matcher, firsts []compile.First, build bool) core.Matcher {
 	guards := make([]firstGuard, len(e.Alts))
 	guarded := false
 	for i, alt := range e.Alts {
 		if build {
 			ms[i] = singleMatcher(b.prog, alt, ms[i])
 		}
-		guards[i] = b.guard(firsts[i])
+		guards[i] = b.Guard(firsts[i])
 		guarded = guarded || guards[i].accept != nil
 	}
 	if guarded {
@@ -262,8 +263,8 @@ type firstGuard struct {
 	depth  int
 }
 
-// guard returns the test of the next character that the alternative beginning with f.term needs.
-func (b *closureBuilder) guard(f compile.First) firstGuard {
+// Guard returns the test of the next character that the alternative beginning with f.term needs.
+func (b *Builder) Guard(f compile.First) firstGuard {
 	switch t := f.Term.(type) {
 	case *grammar.Literal:
 		r0, _ := utf8.DecodeRuneInString(t.Value)
@@ -273,12 +274,12 @@ func (b *closureBuilder) guard(f compile.First) firstGuard {
 		}
 		return firstGuard{func(_ *core.Parser, r rune) bool { return r == r0 }, f.Desc, f.Depth}
 	case *grammar.CharClass:
-		return firstGuard{classAcceptControlled(t, b.control), f.Desc, f.Depth}
+		return firstGuard{ClassAcceptControlled(t, b.control), f.Desc, f.Depth}
 	}
 	return firstGuard{}
 }
 
-func (b *closureBuilder) Optional(e *grammar.Optional, m core.Matcher, build bool) core.Matcher {
+func (b *Builder) Optional(e *grammar.Optional, m core.Matcher, build bool) core.Matcher {
 	if build {
 		m = singleMatcher(b.prog, e.Expr, m)
 	}
@@ -300,7 +301,7 @@ func (b *closureBuilder) Optional(e *grammar.Optional, m core.Matcher, build boo
 	}
 }
 
-func (b *closureBuilder) And(m core.Matcher) core.Matcher {
+func (b *Builder) And(m core.Matcher) core.Matcher {
 	return func(p *core.Parser) (*value.Node, bool) {
 		start, prevCut := p.Pos, p.Cut
 		p.Silent++
@@ -312,7 +313,7 @@ func (b *closureBuilder) And(m core.Matcher) core.Matcher {
 	}
 }
 
-func (b *closureBuilder) Not(m core.Matcher) core.Matcher {
+func (b *Builder) Not(m core.Matcher) core.Matcher {
 	return func(p *core.Parser) (*value.Node, bool) {
 		m0 := p.Mark()
 		prevCut := p.Cut
@@ -325,7 +326,7 @@ func (b *closureBuilder) Not(m core.Matcher) core.Matcher {
 	}
 }
 
-func (b *closureBuilder) Atomic(m core.Matcher, build bool) core.Matcher {
+func (b *Builder) Atomic(m core.Matcher, build bool) core.Matcher {
 	return func(p *core.Parser) (*value.Node, bool) {
 		start := p.Pos
 		if _, ok := m(p); !ok {
@@ -338,14 +339,14 @@ func (b *closureBuilder) Atomic(m core.Matcher, build bool) core.Matcher {
 	}
 }
 
-func (b *closureBuilder) Discard(m core.Matcher) core.Matcher {
+func (b *Builder) Discard(m core.Matcher) core.Matcher {
 	return func(p *core.Parser) (*value.Node, bool) {
 		_, ok := m(p)
 		return nil, ok
 	}
 }
 
-func (b *closureBuilder) Capture(e *grammar.Capture, slot int, m core.Matcher, projected, build bool) core.Matcher {
+func (b *Builder) Capture(e *grammar.Capture, slot int, m core.Matcher, projected, build bool) core.Matcher {
 	if !projected {
 		m = captureMatcher(b.prog, e.Expr, m)
 	}
@@ -361,23 +362,23 @@ func (b *closureBuilder) Capture(e *grammar.Capture, slot int, m core.Matcher, p
 	}
 }
 
-func (b *closureBuilder) Cut() core.Matcher {
+func (b *Builder) Cut() core.Matcher {
 	return func(p *core.Parser) (*value.Node, bool) {
 		p.Cut = true
 		return nil, true
 	}
 }
 
-func (b *closureBuilder) Empty() core.Matcher {
+func (b *Builder) Empty() core.Matcher {
 	// _ matches the empty input and has no value.
 	return func(p *core.Parser) (*value.Node, bool) { return nil, true }
 }
 
-func (b *closureBuilder) Fail() core.Matcher {
+func (b *Builder) Fail() core.Matcher {
 	return func(p *core.Parser) (*value.Node, bool) { return nil, false }
 }
 
-func (b *closureBuilder) Anchor(e grammar.Expr, desc core.ExpID) core.Matcher {
+func (b *Builder) Anchor(e grammar.Expr, desc core.ExpID) core.Matcher {
 	switch e.(type) {
 	case *grammar.BeginInput:
 		return anchor(func(p *core.Parser) bool { return p.AtInputStart() }, desc)
@@ -419,7 +420,7 @@ func single(build bool, desc core.ExpID, accept func(*core.Parser, rune) bool) c
 	}
 }
 
-func (b *closureBuilder) Predicate(e *grammar.Predicate, s *compile.Scope) core.Matcher {
+func (b *Builder) Predicate(e *grammar.Predicate, s *compile.Scope) core.Matcher {
 	if a, ok := e.Term.(*grammar.Bind); ok {
 		return func(p *core.Parser) (*value.Node, bool) {
 			ctx := p.UseCtx(core.EvalCtx{P: p, Scope: s, Frame: p.Frame, Start: p.Pos, End: p.Pos, Cbase: len(p.Created)})
@@ -452,10 +453,10 @@ func (b *closureBuilder) Predicate(e *grammar.Predicate, s *compile.Scope) core.
 // ScanRepeat advances over the repetition without saving and restoring state per element.
 // Expectations are recorded as for a general repetition (once, at the position that did not match
 // last).
-func (b *closureBuilder) ScanRepeat(e *grammar.Repeat, desc core.ExpID) core.Matcher {
+func (b *Builder) ScanRepeat(e *grammar.Repeat, desc core.ExpID) core.Matcher {
 	accept := func(*core.Parser, rune) bool { return true }
 	if x, ok := e.Expr.(*grammar.CharClass); ok {
-		accept = classAcceptControlled(x, b.control)
+		accept = ClassAcceptControlled(x, b.control)
 	}
 	min, max := e.Min, e.Max
 	return func(p *core.Parser) (*value.Node, bool) {
@@ -473,7 +474,7 @@ func (b *closureBuilder) ScanRepeat(e *grammar.Repeat, desc core.ExpID) core.Mat
 	}
 }
 
-func (b *closureBuilder) Repeat(e *grammar.Repeat, m core.Matcher, elemScope *compile.Scope, ownScope, build, stream bool, site int, shiftable bool) core.Matcher {
+func (b *Builder) Repeat(e *grammar.Repeat, m core.Matcher, elemScope *compile.Scope, ownScope, build, stream bool, site int, shiftable bool) core.Matcher {
 	min, max := e.Min, e.Max
 	elemValue := scopeValueOf(b.prog, e.Expr)
 	var rs *core.RunSite
@@ -552,7 +553,7 @@ func (b *closureBuilder) Repeat(e *grammar.Repeat, m core.Matcher, elemScope *co
 
 // ProjectRepeat gathers the values of a capture of the elements, which share one capture frame:
 // nothing refers to an element's frame once its value is taken.
-func (b *closureBuilder) ProjectRepeat(e *grammar.Repeat, m core.Matcher, slot, n int) core.Matcher {
+func (b *Builder) ProjectRepeat(e *grammar.Repeat, m core.Matcher, slot, n int) core.Matcher {
 	min, max := e.Min, e.Max
 	return func(p *core.Parser) (*value.Node, bool) {
 		start := p.Pos
@@ -589,11 +590,11 @@ func (b *closureBuilder) ProjectRepeat(e *grammar.Repeat, m core.Matcher, slot, 
 	}
 }
 
-func (b *closureBuilder) Missing(m core.Matcher, site int, expected string, build bool) core.Matcher {
+func (b *Builder) Missing(m core.Matcher, site int, expected string, build bool) core.Matcher {
 	return core.MissingLiteral(m, site, expected, build)
 }
 
-func (b *closureBuilder) ErrorMessage(m core.Matcher, msg core.ExpID, missingScope bool) core.Matcher {
+func (b *Builder) ErrorMessage(m core.Matcher, msg core.ExpID, missingScope bool) core.Matcher {
 	m = errorAttr(m, msg)
 	if missingScope {
 		m = core.MissingErrorScope(m, msg)
@@ -601,11 +602,11 @@ func (b *closureBuilder) ErrorMessage(m core.Matcher, msg core.ExpID, missingSco
 	return m
 }
 
-func (b *closureBuilder) Diagnostic(m core.Matcher, name core.ExpID) core.Matcher {
+func (b *Builder) Diagnostic(m core.Matcher, name core.ExpID) core.Matcher {
 	return diagnosticAttr(m, name)
 }
 
-func (b *closureBuilder) Recover(e grammar.Expr, m, skip core.Matcher, build bool) core.Matcher {
+func (b *Builder) Recover(e grammar.Expr, m, skip core.Matcher, build bool) core.Matcher {
 	// What recovers is one element: the value of the expression, or the error.
 	if build {
 		m = captureMatcher(b.prog, e, m)

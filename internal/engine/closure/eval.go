@@ -1,4 +1,4 @@
-package engine
+package closure
 
 import (
 	"fmt"
@@ -9,47 +9,48 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-// closureMachine is the state of the closure backend's evaluator for one parse, beside the parser
+// Machine is the state of the closure backend's evaluator for one parse, beside the parser
 // it runs on: the lambdas of the running evaluation, the contexts and parameters of the lambda
 // calls in progress, and the field names of a struct being built. The parser holds it as its
-// backend state (closureMachineOf).
-type closureMachine struct {
-	p        *core.Parser
+// backend state; evaluation installs it on first use.
+type Machine struct {
+	// P is the parser the machine is attached to; nil once released.
+	P        *core.Parser
 	names    []string                 // field names for NewStruct
 	closures core.Arena[closure]      // lambdas; they live until the next evaluation (evalTerm)
 	lctxs    core.Arena[core.EvalCtx] // contexts of the lambda calls in progress (closure.Apply)
 	locals   core.Arena[core.Local]   // parameters of the lambda calls in progress
 }
 
-// closureMachineOf returns the closure evaluator state of the parse that p runs, making it on
+// MachineOf returns the closure evaluator state of the parse that p runs, making it on
 // first use.
-func closureMachineOf(p *core.Parser) *closureMachine {
-	if cm, ok := p.Backend.(*closureMachine); ok {
+func MachineOf(p *core.Parser) *Machine {
+	if cm, ok := p.Backend.(*Machine); ok {
 		return cm
 	}
-	cm := &closureMachine{p: p}
+	cm := &Machine{P: p}
 	p.Backend = cm
 	return cm
 }
 
-func (cm *closureMachine) SplitChunks()   {}
-func (cm *closureMachine) ClearInactive() {}
+func (cm *Machine) SplitChunks()   {}
+func (cm *Machine) ClearInactive() {}
 
-func (cm *closureMachine) Attach(p *core.Parser) { cm.p = p }
+func (cm *Machine) Attach(p *core.Parser) { cm.P = p }
 
 // Keep keeps nothing: the lambdas and their contexts belong to the parse that made them.
-func (cm *closureMachine) Keep(int, bool) { cm.Release() }
+func (cm *Machine) Keep(int, bool) { cm.Release() }
 
-func (cm *closureMachine) Release() { *cm = closureMachine{} }
+func (cm *Machine) Release() { *cm = Machine{} }
 
-func (cm *closureMachine) RetainedBytes() uint64 { return 0 }
+func (cm *Machine) RetainedBytes() uint64 { return 0 }
 
 // closure is a lambda of the closure backend: its body is evaluated as an AST.
 type closure struct {
 	params []string
 	body   grammar.Term
 	ctx    *core.EvalCtx
-	cm     *closureMachine
+	cm     *Machine
 }
 
 func (f *closure) Arity() int { return len(f.params) }
@@ -57,7 +58,7 @@ func (f *closure) Arity() int { return len(f.params) }
 // The closure backend implements the interfaces of core for lambdas and backend state.
 var (
 	_ core.Function     = (*closure)(nil)
-	_ core.BackendState = (*closureMachine)(nil)
+	_ core.BackendState = (*Machine)(nil)
 )
 
 // termEvaluator returns an evaluator for an AST value expression.
@@ -69,15 +70,15 @@ func termEvaluator(t grammar.Term) core.Evaluator {
 // evaluations never nest, and no lambda outlives one, so it reuses the lambdas of the previous
 // evaluation.
 func evalTerm(ctx *core.EvalCtx, t grammar.Term) (any, error) {
-	cm := closureMachineOf(ctx.P)
+	cm := MachineOf(ctx.P)
 	core.ResetWork(ctx.P, &cm.closures, 0)
-	return cm.eval(ctx, t)
+	return cm.Eval(ctx, t)
 }
 
 // convert evaluates the node type constructor t, T{x}: it converts the value of x to the named
 // node type T.
-func (cm *closureMachine) convert(c *core.EvalCtx, t *grammar.New) (any, error) {
-	x, err := cm.eval(c, t.Args[0])
+func (cm *Machine) convert(c *core.EvalCtx, t *grammar.New) (any, error) {
+	x, err := cm.Eval(c, t.Args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +95,7 @@ func (cm *closureMachine) convert(c *core.EvalCtx, t *grammar.New) (any, error) 
 	return n, nil
 }
 
-func (cm *closureMachine) eval(c *core.EvalCtx, t grammar.Term) (any, error) {
+func (cm *Machine) Eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 	c.P.StepWork()
 	switch t := t.(type) {
 	case *grammar.IntLit:
@@ -129,7 +130,7 @@ func (cm *closureMachine) eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 		return v, nil
 
 	case *grammar.Member:
-		x, err := cm.eval(c, t.X)
+		x, err := cm.Eval(c, t.X)
 		if err != nil {
 			return nil, err
 		}
@@ -145,7 +146,7 @@ func (cm *closureMachine) eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 		base := len(p.Estack)
 		for _, fi := range t.Fields {
 			p.StepWork()
-			v, err := cm.eval(c, fi.Value)
+			v, err := cm.Eval(c, fi.Value)
 			if err != nil {
 				p.Estack = p.Estack[:base]
 				return nil, err
@@ -168,7 +169,7 @@ func (cm *closureMachine) eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 	case *grammar.Call:
 		if c.P.Prog.Projected[t] {
 			// map($x, (e) => e.$f) of a projected repetition: $x holds the values already.
-			x, err := cm.eval(c, t.Args[0])
+			x, err := cm.Eval(c, t.Args[0])
 			if err != nil {
 				return nil, err
 			}
@@ -195,7 +196,7 @@ func (cm *closureMachine) eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 		base := len(p.Estack)
 		for _, a := range t.Args {
 			c.P.StepWork()
-			v, err := cm.eval(c, a)
+			v, err := cm.Eval(c, a)
 			if err != nil {
 				p.Estack = p.Estack[:base]
 				return nil, err
@@ -212,14 +213,14 @@ func (cm *closureMachine) eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 		return f, nil
 
 	case *grammar.Unary:
-		x, err := cm.eval(c, t.X)
+		x, err := cm.Eval(c, t.X)
 		if err != nil {
 			return nil, err
 		}
 		return c.P.ValueUnary(t.Op, x)
 
 	case *grammar.Cast:
-		x, err := cm.eval(c, t.X)
+		x, err := cm.Eval(c, t.X)
 		if err != nil {
 			return nil, err
 		}
@@ -239,11 +240,11 @@ func (cm *closureMachine) eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 }
 
 // evalList shares the existing list builder without allocating a synthetic AST.
-func (cm *closureMachine) evalList(c *core.EvalCtx, items []grammar.Term) (any, error) {
+func (cm *Machine) evalList(c *core.EvalCtx, items []grammar.Term) (any, error) {
 	p := c.P
 	base := len(p.Estack)
 	for _, item := range items {
-		val, err := cm.eval(c, item)
+		val, err := cm.Eval(c, item)
 		if err != nil {
 			p.Estack = p.Estack[:base]
 			return nil, err
@@ -256,11 +257,11 @@ func (cm *closureMachine) evalList(c *core.EvalCtx, items []grammar.Term) (any, 
 }
 
 // evalTuple evaluates the elements of a tuple literal, left to right, and returns the tuple value.
-func (cm *closureMachine) evalTuple(c *core.EvalCtx, elems []grammar.Term) (any, error) {
+func (cm *Machine) evalTuple(c *core.EvalCtx, elems []grammar.Term) (any, error) {
 	p := c.P
 	base := len(p.Estack)
 	for _, e := range elems {
-		val, err := cm.eval(c, e)
+		val, err := cm.Eval(c, e)
 		if err != nil {
 			p.Estack = p.Estack[:base]
 			return nil, err
@@ -282,7 +283,7 @@ func (cm *closureMachine) evalTuple(c *core.EvalCtx, elems []grammar.Term) (any,
 	return c.TupleNode(p.Kids(kb)), nil
 }
 
-func (cm *closureMachine) binary(c *core.EvalCtx, t *grammar.Binary) (any, error) {
+func (cm *Machine) binary(c *core.EvalCtx, t *grammar.Binary) (any, error) {
 	if t.Op == "==" || t.Op == "!=" {
 		// Comparing two texts (such as an end tag with its start tag) compares the strings
 		// directly: storing a string in an interface would allocate.
@@ -300,7 +301,7 @@ func (cm *closureMachine) binary(c *core.EvalCtx, t *grammar.Binary) (any, error
 			}
 		}
 	}
-	l, err := cm.eval(c, t.L)
+	l, err := cm.Eval(c, t.L)
 	if err != nil {
 		return nil, err
 	}
@@ -313,7 +314,7 @@ func (cm *closureMachine) binary(c *core.EvalCtx, t *grammar.Binary) (any, error
 		if lb == (t.Op == "||") {
 			return lb, nil
 		}
-		r, err := cm.eval(c, t.R)
+		r, err := cm.Eval(c, t.R)
 		if err != nil {
 			return nil, err
 		}
@@ -323,7 +324,7 @@ func (cm *closureMachine) binary(c *core.EvalCtx, t *grammar.Binary) (any, error
 		}
 		return rb, nil
 	}
-	r, err := cm.eval(c, t.R)
+	r, err := cm.Eval(c, t.R)
 	if err != nil {
 		return nil, err
 	}
@@ -331,8 +332,8 @@ func (cm *closureMachine) binary(c *core.EvalCtx, t *grammar.Binary) (any, error
 }
 
 // textOf evaluates x and returns text(x) as a string.
-func (cm *closureMachine) textOf(c *core.EvalCtx, x grammar.Term) (string, error) {
-	v, err := cm.eval(c, x)
+func (cm *Machine) textOf(c *core.EvalCtx, x grammar.Term) (string, error) {
+	v, err := cm.Eval(c, x)
 	if err != nil {
 		return "", err
 	}
@@ -340,10 +341,10 @@ func (cm *closureMachine) textOf(c *core.EvalCtx, x grammar.Term) (string, error
 }
 
 // pushConcatArg pushes onto KidStack the elements of t, an argument of a fusable concat call.
-func (cm *closureMachine) pushConcatArg(c *core.EvalCtx, t grammar.Term) error {
+func (cm *Machine) pushConcatArg(c *core.EvalCtx, t grammar.Term) error {
 	c.P.StepWork()
 	if call, ok := t.(*grammar.Call); ok && c.P.Prog.Projected[call] {
-		v, err := cm.eval(c, call.Args[0])
+		v, err := cm.Eval(c, call.Args[0])
 		if err != nil {
 			return err
 		}
@@ -354,7 +355,7 @@ func (cm *closureMachine) pushConcatArg(c *core.EvalCtx, t grammar.Term) error {
 		base := len(p.Estack)
 		for _, a := range call.Args {
 			c.P.StepWork()
-			v, err := cm.eval(c, a)
+			v, err := cm.Eval(c, a)
 			if err != nil {
 				p.Estack = p.Estack[:base]
 				return err
@@ -374,7 +375,7 @@ func (cm *closureMachine) pushConcatArg(c *core.EvalCtx, t grammar.Term) error {
 		}
 		return nil
 	}
-	v, err := cm.eval(c, t)
+	v, err := cm.Eval(c, t)
 	if err != nil {
 		return err
 	}
@@ -397,7 +398,7 @@ func (f *closure) Apply(x, y any) (any, error) {
 		*l = core.Local{Name: name, Val: args[i], Next: ctx.Locals}
 		ctx.Locals = l
 	}
-	v, err := cm.eval(ctx, f.body)
+	v, err := cm.Eval(ctx, f.body)
 	core.ResetWork(p, &cm.lctxs, mc)
 	core.ResetWork(p, &cm.locals, ml)
 	return v, err

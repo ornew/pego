@@ -12,6 +12,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/closure"
 	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
@@ -111,11 +112,11 @@ func TestWorkActionErrorProducersAreEager(t *testing.T) {
 		make func(*core.Parser) error
 	}{
 		{"undefined variable", func(p *core.Parser) error {
-			_, err := closureMachineOf(p).eval(&core.EvalCtx{P: p}, &grammar.VarRef{Name: long})
+			_, err := closure.MachineOf(p).Eval(&core.EvalCtx{P: p}, &grammar.VarRef{Name: long})
 			return err
 		}},
 		{"undefined capture", func(p *core.Parser) error {
-			_, err := closureMachineOf(p).eval(&core.EvalCtx{P: p, Scope: &compile.Scope{}}, &grammar.CaptureRef{Name: long})
+			_, err := closure.MachineOf(p).Eval(&core.EvalCtx{P: p, Scope: &compile.Scope{}}, &grammar.CaptureRef{Name: long})
 			return err
 		}},
 		{"invalid member", func(p *core.Parser) error { _, err := (&core.EvalCtx{P: p}).Member(1, long); return err }},

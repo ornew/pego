@@ -9,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/closure"
 	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/syntax"
@@ -311,5 +312,5 @@ func toCodePoints(input string, n *value.Node, err error) (*value.Node, error) {
 
 // newClosureWalker returns the walker that builds the closure backend's form for the compiler c.
 func newClosureWalker(c *compile.Compiler, plainDispatch bool) *compile.Walker[core.Matcher] {
-	return &compile.Walker[core.Matcher]{Compiler: c, Builder: newClosureBuilder(c, plainDispatch)}
+	return &compile.Walker[core.Matcher]{Compiler: c, Builder: closure.NewBuilder(c, plainDispatch)}
 }

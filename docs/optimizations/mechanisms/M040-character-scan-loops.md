@@ -36,7 +36,7 @@ Evidence records:
 [008](../008-fast-path-for-unmemoized-calls-scan-nesting-limit-d2db87d.md).
 
 Source owners: [`Walker.scanRepeat`](../../../internal/compile/compile_walk.go),
-[`closureBuilder.ScanRepeat`](../../../internal/engine/closure_builder.go),
+[`closure.Builder.ScanRepeat`](../../../internal/engine/closure/builder.go),
 [`SCAN lowering`](../../../internal/compile/bcompile.go),
 [`Scans pass`](../../../internal/ir/core/passes.go),
 [`Flow scan lowering`](../../../internal/ir/flow/lower.go), which lowers the

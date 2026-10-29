@@ -40,7 +40,7 @@ Evidence records: [052](../052-projected-repetitions-in-generated-parse.md),
 
 Source owners: [`RuleProjections`](../../../internal/compile/project.go),
 [`Walker.ProjectRepeat`](../../../internal/compile/compile_walk.go),
-[`closureBuilder.ProjectRepeat`](../../../internal/engine/closure_builder.go), [`projected
+[`closure.Builder.ProjectRepeat`](../../../internal/engine/closure/builder.go), [`projected
 repetition lowering`](../../../internal/compile/bcompile.go),
 [`Flow projectRepeat`](../../../internal/ir/flow/lower.go), which lowers the
 projected repetitions of generated Go and TypeScript.

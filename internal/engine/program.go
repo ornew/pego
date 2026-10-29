@@ -8,6 +8,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/closure"
 	"github.com/ornew/pego/internal/engine/core"
 )
 
@@ -160,13 +161,13 @@ func CompileContext(ctx context.Context, g *grammar.Grammar, opts Options) (prog
 // buildNamed is buildControlled; names receives the hidden rules that the lowering of inline actions
 // generates.
 func buildNamed(g *grammar.Grammar, opts compile.Options, flags []compile.RuleFlags, names compile.InlineNames, control *compile.Control) (*Program, error) {
-	var b *closureBuilder
+	var b *closure.Builder
 	prog, err := compile.CompileProgram(g, opts, flags, names, control, func(c *compile.Compiler) compile.ExprBuilder[core.Matcher] {
-		b = newClosureBuilder(c, !opts.ControlledDispatch)
+		b = closure.NewBuilder(c, !opts.ControlledDispatch)
 		return b
 	})
 	if err != nil {
 		return nil, err
 	}
-	return newProgram(prog, b.finish()), nil
+	return newProgram(prog, b.Finish()), nil
 }

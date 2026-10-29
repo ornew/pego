@@ -46,7 +46,7 @@ The evidence below was measured at commit `4e2f3763` with Go 1.27.1 on an Apple 
 | Generated TypeScript | A printer that wrote TypeScript directly from the expression tree (`tsGen.expr` and helpers in `gen_ts.go`) | 400 |
 
 Line counts are the lengths of the functions named in each row. Actions and predicates are lowered four
-more times: the closure evaluator in `closure_eval.go`, bytecode expression code in `bcompile.go`, Go terms in
+more times: the closure evaluator in `closure/eval.go`, bytecode expression code in `bcompile.go`, Go terms in
 `gen.go` and `gen_types*.go`, and TypeScript terms in `gen_ts.go`. In the non-test files of
 `internal/engine`, 123 function declarations in 23 files have a parameter of type `grammar.Expr` or
 `[]grammar.Expr` (counted with `go/ast`). Each lowering re-derives what an expression means for values
@@ -384,7 +384,7 @@ A traced or profiled parse (`WithTrace`, `WithProfile`) reports an enter and an 
 call, and a Document parse memoizes transient rules ([Engine Tracing](../../../spec/runtime/observability.md#engine-tracing),
 [Rule Calls](../../../spec/bytecode/README.md#rule-calls)). Both are options of a parse. The closure backend and the
 VMs share one program between these parses and all others and decide at every call whether to take the
-plain path (`r.plain && !p.noPlain` in `closure_builder.go`, `vm.go` and `ivm.go`; `setTrace` in `trace.go` and
+plain path (`r.plain && !p.noPlain` in `closure/builder.go`, `vm.go` and `ivm.go`; `setTrace` in `trace.go` and
 every Document parse in `document.go` set `noPlain`). Recognition and, in the closure backend, work
 controls already select separate programs, built on first use under a `sync.Once` of the shared
 `Program` (`Program.Recognizer` in `program_parse.go`, `prepareControlledProgram` in `program_work_setup.go`); a program
@@ -655,8 +655,8 @@ stage of its first consumer, so its differential tests and negative controls run
    `noPlain` checks.
 5. **Closures**, in both families. Gate: unchanged results and engine event streams; event-free equality
    of the two families; `Compile` plus the first-use build of the inlined family within noise of today's
-   `Compile` in time and allocations, and the first-use build of the call-preserving family measured. Then remove the closure builder (`closure_builder.go`), its helpers, the term compilation of
-   `closure_eval.go` and `noPlain`. If `Compile` time
+   `Compile` in time and allocations, and the first-use build of the call-preserving family measured. Then remove the closure builder (`closure/builder.go`), its helpers, the term compilation of
+   `closure/eval.go` and `noPlain`. If `Compile` time
    regresses, the stage does not flip; the remedies to measure are building Core IR per rule on first use
    and skipping optimizing passes and closure construction for compilations that only report diagnostics,
    such as the language server's `CompileContext`.

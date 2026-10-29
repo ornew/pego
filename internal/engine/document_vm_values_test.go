@@ -9,6 +9,7 @@ import (
 	"weak"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/closure"
 	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
@@ -294,8 +295,8 @@ rule line = [a-z]+ "\n"`)
 					if mc.p != nil {
 						t.Fatal("kept machine refers to the finished parser")
 					}
-				case *closureMachine:
-					if mc.p != nil {
+				case *closure.Machine:
+					if mc.P != nil {
 						t.Fatal("kept machine refers to the finished parser")
 					}
 				default:

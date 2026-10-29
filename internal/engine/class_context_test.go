@@ -12,6 +12,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/closure"
 	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/starttest"
@@ -39,13 +40,13 @@ func TestClassConstructionContextCancellation(t *testing.T) {
 		{"descriptor", func(c *compile.Control) { compile.CharClassStringControlled(cl, c) }},
 		{"copy", func(c *compile.Control) { compile.CopyClassRanges(cl.Ranges, c) }},
 		{"bitmap", func(c *compile.Control) { compile.ClassASCII(cl.Ranges, false, c) }},
-		{"accept-construction", func(c *compile.Control) { classAcceptControlled(cl, c) }},
+		{"accept-construction", func(c *compile.Control) { closure.ClassAcceptControlled(cl, c) }},
 		{"matcher", func(c *compile.Control) {
 			newClosureWalker(&compile.Compiler{Control: c}, false).ExprForm(cl, compile.NewScope(), true)
 		}},
-		{"choice-guard", func(c *compile.Control) { (&closureBuilder{control: c}).guard(compile.First{Term: cl}) }},
+		{"choice-guard", func(c *compile.Control) { closure.NewBuilder(&compile.Compiler{Control: c}, false).Guard(compile.First{Term: cl}) }},
 		{"scan-repeat", func(c *compile.Control) {
-			(&closureBuilder{control: c}).ScanRepeat(&grammar.Repeat{Expr: cl, Max: -1}, 0)
+			closure.NewBuilder(&compile.Compiler{Control: c}, false).ScanRepeat(&grammar.Repeat{Expr: cl, Max: -1}, 0)
 		}},
 		{"guard-extraction", func(c *compile.Control) {
 			compile.FirstTerminalControlled(&compile.Program{}, deep, 0, map[string]bool{}, c)
@@ -81,7 +82,7 @@ func TestClassConstructionContextFacts(t *testing.T) {
 				if got := compile.CharClassStringControlled(cl, c); got != compile.CharClassString(cl) {
 					t.Fatalf("descriptor %s", got)
 				}
-				ordinary, controlled := classAccept(cl), classAcceptControlled(cl, c)
+				ordinary, controlled := closure.ClassAccept(cl), closure.ClassAcceptControlled(cl, c)
 				runes := []rune{'β', '😀', 0x10ffff}
 				for r := rune(0); r < 256; r++ {
 					runes = append(runes, r)
@@ -115,7 +116,7 @@ func TestClassConstructionContextFacts(t *testing.T) {
 	}
 	rs := contextClassRanges()
 	cl = &grammar.CharClass{Ranges: rs}
-	accept := classAcceptControlled(cl, &compile.Control{Ctx: context.Background()})
+	accept := closure.ClassAcceptControlled(cl, &compile.Control{Ctx: context.Background()})
 	rs[0] = grammar.CharRange{Lo: 'a', Hi: 'a'}
 	if !accept(&core.Parser{}, 256) || accept(&core.Parser{}, 'a') {
 		t.Fatal("matcher aliases source range slice")

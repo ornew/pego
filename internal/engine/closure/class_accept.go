@@ -1,4 +1,4 @@
-package engine
+package closure
 
 import (
 	"github.com/ornew/pego/grammar"
@@ -7,9 +7,9 @@ import (
 	"github.com/ornew/pego/internal/compile"
 )
 
-// classAccept returns the membership test of a character class. Classes of one or two ranges,
+// ClassAccept returns the membership test of a character class. Classes of one or two ranges,
 // which are most of them, compare against constants; others test ASCII characters with a bitmap.
-func classAccept(e *grammar.CharClass) func(*core.Parser, rune) bool {
+func ClassAccept(e *grammar.CharClass) func(*core.Parser, rune) bool {
 	neg := e.Negated
 	switch len(e.Ranges) {
 	case 1:
@@ -51,9 +51,9 @@ func classAccept(e *grammar.CharClass) func(*core.Parser, rune) bool {
 	}
 }
 
-func classAcceptControlled(e *grammar.CharClass, control *compile.Control) func(*core.Parser, rune) bool {
+func ClassAcceptControlled(e *grammar.CharClass, control *compile.Control) func(*core.Parser, rune) bool {
 	if control == nil || len(e.Ranges) <= 2 {
-		return classAccept(e)
+		return ClassAccept(e)
 	}
 	ranges := compile.CopyClassRanges(e.Ranges, control)
 	neg := e.Negated
