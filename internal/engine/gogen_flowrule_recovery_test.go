@@ -32,6 +32,6 @@ func TestGeneratedTypedRecoveryBodies(t *testing.T) {
 		}
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedTypesCorpus(t, goBin, gentest.TypedRecoveryCases, gen.GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, gentest.TypedRecoveryCases, gen.GenOptions{ConvertTypes: true})
+	gentest.GeneratedTypesCorpus(t, goBin, gentest.TypedRecoveryCases, gen.GenOptions{})
+	gentest.GeneratedTypesCorpus(t, goBin, gentest.TypedRecoveryCases, gen.GenOptions{ConvertTypes: true})
 }

@@ -42,9 +42,9 @@ func TestCastAcrossBackends(t *testing.T) {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
 					for _, input := range fixture.Inputs {
-						baseline := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit, Recognize: recognize}))
+						baseline := gentest.ResultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit, Recognize: recognize}))
 						for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-							actual := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Recognize: recognize}))
+							actual := gentest.ResultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Recognize: recognize}))
 							if actual != baseline {
 								t.Fatalf("%s/%s recognize=%t input=%q: %s / %s", backend, unit, recognize, input, actual, baseline)
 							}
@@ -69,7 +69,7 @@ func TestCastValues(t *testing.T) {
 	} {
 		program := mustCompile(t, tc.src)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			if got := resultJSON(program.ParseWith("main", tc.input, ParseOptions{Backend: backend})); !strings.Contains(got, tc.want) {
+			if got := gentest.ResultJSON(program.ParseWith("main", tc.input, ParseOptions{Backend: backend})); !strings.Contains(got, tc.want) {
 				t.Errorf("%s %q: %s, want %s", backend, tc.input, got, tc.want)
 			}
 		}
@@ -139,7 +139,7 @@ func TestCastSyntax(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, input := range []string{"1", "a"} {
-		if got, want := resultJSON(loaded.ParseWith("main", input, ParseOptions{})), resultJSON(program.ParseWith("main", input, ParseOptions{})); got != want {
+		if got, want := gentest.ResultJSON(loaded.ParseWith("main", input, ParseOptions{})), gentest.ResultJSON(program.ParseWith("main", input, ParseOptions{})); got != want {
 			t.Fatalf("loaded %q: %s / %s", input, got, want)
 		}
 	}
@@ -167,9 +167,9 @@ func TestCastGeneratedGoParity(t *testing.T) {
 
 func testCastGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, castCases(), gen.GenOptions{})
-	testGeneratedParsersCorpus(t, goBin, castCases(), gen.GenOptions{SourceInfo: true})
-	testGeneratedTypesCorpus(t, goBin, castCases(), gen.GenOptions{ConvertTypes: true})
+	gentest.GeneratedParsersCorpus(t, goBin, castCases(), gen.GenOptions{})
+	gentest.GeneratedParsersCorpus(t, goBin, castCases(), gen.GenOptions{SourceInfo: true})
+	gentest.GeneratedTypesCorpus(t, goBin, castCases(), gen.GenOptions{ConvertTypes: true})
 }
 
 func TestCastGeneratedTypeScriptParity(t *testing.T) {

@@ -189,7 +189,7 @@ func testGeneratedInvalidUTF8Literals(t *testing.T) {
 			for _, input := range tc.Inputs {
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					n, err := prog.ParseWith("main", input, ParseOptions{Unit: unit})
-					want.WriteString(resultJSON(n, err) + "\n")
+					want.WriteString(gentest.ResultJSON(n, err) + "\n")
 					fmt.Fprintf(&harness, "{ input:=%q; unit:=%s.%s; n,err:=%s.Parse(input,%[4]s.WithUnit(unit)); rec:=%s.Recognize(input,%[4]s.WithUnit(unit)); if fmt.Sprint(rec)!=fmt.Sprint(err){panic(\"recognition differs\")}\n", input, pkg, map[PositionUnit]string{CodePoints: "CodePoints", Bytes: "Bytes"}[unit], pkg, pkg)
 					if mode != "untyped" {
 						fmt.Fprintf(&harness, `ast,ae:=%s.ParseAST(input,%[1]s.WithUnit(unit)); if fmt.Sprint(ae)!=fmt.Sprint(err){panic("typed error differs")}; if err==nil {child:=n.Field("T").(*%s.Node); wantText:=input; if unit==%s.CodePoints{wantText=string([]rune(input))};if child.Text()!=wantText{panic("matched text differs from input")}; if ast==nil || ast.T==nil || ast.T.Start!=child.Start() || ast.T.End!=child.End() || ast.T.Value!=child.Text() {panic("typed literal value differs")}}`+"\n", pkg, pkg, pkg)
@@ -248,7 +248,7 @@ func TestGeneratedTSInvalidUTF8Literals(t *testing.T) {
 				fmt.Fprintf(&script, `for (const unit of [CodePoints,Bytes]){const input=new Uint8Array(Buffer.from(%q,"base64"));const r=parse(input,unit);const rec=recognize(input,unit);if((rec?.message??null)!==(r.error?.message??null))throw new Error("recognition differs");const child=r.node?.field("T");const expected=unit===Bytes?String.fromCharCode(...%s):String.fromCharCode(...%s);if(!r.error && (!(child instanceof Node)||child.text!==expected))throw new Error("matched bytes differ");const out:Record<string,unknown>={};if(r.error)out["err"]=r.error.message;out["node"]=JSON.parse(marshal(r.node));console.log(JSON.stringify(out));}`+"\n", base64.StdEncoding.EncodeToString([]byte(input)), tsgen.TsInts(literalTextUnits(input, Bytes)), tsgen.TsInts(literalTextUnits(input, CodePoints)))
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					n, err := prog.ParseWith("main", input, ParseOptions{Unit: unit})
-					want.WriteString(resultJSON(n, err) + "\n")
+					want.WriteString(gentest.ResultJSON(n, err) + "\n")
 				}
 			}
 			dir := t.TempDir()

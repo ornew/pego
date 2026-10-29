@@ -74,8 +74,8 @@ func checkCompiledRoundTrip(t *testing.T, prog *Program, inputs []string) {
 		wantClosureRefused(t, err)
 		for _, in := range inputs {
 			for _, b := range []Backend{Default, Bytecode, BytecodeIterative} {
-				want := resultJSON(prog.ParseWith("main", in, servedBy(mode, ParseOptions{Backend: b})))
-				if got := resultJSON(loaded.ParseWith(start, in, servedBy(mode, ParseOptions{Backend: b}))); got != want {
+				want := gentest.ResultJSON(prog.ParseWith("main", in, servedBy(mode, ParseOptions{Backend: b})))
+				if got := gentest.ResultJSON(loaded.ParseWith(start, in, servedBy(mode, ParseOptions{Backend: b}))); got != want {
 					t.Errorf("%s mode %v: input %q\n original %s\n loaded   %s", mode, b, in, want, got)
 				}
 			}
@@ -119,7 +119,7 @@ func TestCompiledStreamAndDocument(t *testing.T) {
 	doc.Edit(4, 5, "(7)")
 	n, err := doc.Parse()
 	fn, ferr := fresh.Parse("main", doc.Text())
-	if resultJSON(n, err) != resultJSON(fn, ferr) || doc.Stats().Reused == 0 {
+	if gentest.ResultJSON(n, err) != gentest.ResultJSON(fn, ferr) || doc.Stats().Reused == 0 {
 		t.Errorf("document on loaded program: %v %v %+v", n, err, doc.Stats())
 	}
 }
@@ -325,7 +325,7 @@ rule pair node[(string)] = [a-z]`
 		for _, in := range []string{"a", "ab", ""} {
 			n1, err1 := prog.Parse(rule, in)
 			n2, err2 := loaded.Parse(rule, in)
-			if a, b := resultJSON(n1, err1), resultJSON(n2, err2); a != b {
+			if a, b := gentest.ResultJSON(n1, err1), gentest.ResultJSON(n2, err2); a != b {
 				t.Errorf("%s %q\n original %s\n loaded   %s", rule, in, a, b)
 			}
 		}

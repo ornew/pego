@@ -128,9 +128,9 @@ func TestOperatorsRuleNamedNodeTypeAcrossBackends(t *testing.T) {
 			{
 				prog := compileBare(t, c.Src, compile.Options{SourceInfo: sourceInfo})
 				for _, input := range c.Inputs {
-					want := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure}))
+					want := gentest.ResultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure}))
 					for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-						if got := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend})); got != want {
+						if got := gentest.ResultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend})); got != want {
 							t.Errorf("%s sourceInfo=%t %s %q:\n got %s\nwant %s", c.Name, sourceInfo, backend, input, got, want)
 						}
 					}
@@ -160,7 +160,7 @@ func TestOperatorsRuleNamedNodeTypeDocument(t *testing.T) {
 			}
 			n, err := doc.Parse()
 			fresh, ferr := prog.ParseWith("main", doc.Text(), opts)
-			if got, want := resultJSON(n, err), resultJSON(fresh, ferr); got != want {
+			if got, want := gentest.ResultJSON(n, err), gentest.ResultJSON(fresh, ferr); got != want {
 				t.Fatalf("%s edit %d %q: got %s; fresh %s", backend, i, doc.Text(), got, want)
 			}
 			if err == nil && strings.Contains(operatorsNodeTypeNames(n), "tuple(") && !strings.Contains(doc.Text(), "[") {
@@ -183,10 +183,10 @@ func testOperatorsRuleNamedNodeTypeGenerated(t *testing.T) {
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	cases := operatorsNamedNodeCases()
-	t.Run("go", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{}) })
-	t.Run("go source info", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{SourceInfo: true}) })
+	t.Run("go", func(t *testing.T) { gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{}) })
+	t.Run("go source info", func(t *testing.T) { gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{SourceInfo: true}) })
 	t.Run("typed go", func(t *testing.T) {
-		testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, len(cases))
+		gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, len(cases))
 	})
 	t.Run("typescript", func(t *testing.T) {
 		node, err := exec.LookPath("node")

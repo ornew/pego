@@ -94,7 +94,7 @@ func TestFlowRoutesBuild(t *testing.T) {
 		t.Skip("go command not found")
 	}
 	gentest.EachMode(t, func(t *testing.T) {
-		testGeneratedTypesCorpus(t, goBin, routeCases(t), gen.GenOptions{ConvertTypes: true}, 1)
+		gentest.GeneratedTypesCorpus(t, goBin, routeCases(t), gen.GenOptions{ConvertTypes: true}, 1)
 	})
 }
 

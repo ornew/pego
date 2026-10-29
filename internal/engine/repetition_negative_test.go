@@ -128,8 +128,8 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 												ref = servedBy(mode, ref)
 											}
 											got, ge := prog.ParseWith("main", input, ref)
-											if resultJSON(got, ge) != resultJSON(want, we) {
-												t.Errorf("%s/%s recognize=%v input=%q: got %s, want %s", b, unit, recognize, input, resultJSON(got, ge), resultJSON(want, we))
+											if gentest.ResultJSON(got, ge) != gentest.ResultJSON(want, we) {
+												t.Errorf("%s/%s recognize=%v input=%q: got %s, want %s", b, unit, recognize, input, gentest.ResultJSON(got, ge), gentest.ResultJSON(want, we))
 											}
 										}
 									}
@@ -250,8 +250,8 @@ func TestNegativeMaximumWithWideMinimum(t *testing.T) {
 						want, we := p.ParseWith("main", "éé", ref)
 						ref.Backend = b
 						got, ge := loaded.ParseWith("main", "éé", servedBy(mode, ref))
-						if resultJSON(got, ge) != resultJSON(want, we) {
-							t.Fatalf("wide %s/%s got %s, want %s", b, unit, resultJSON(got, ge), resultJSON(want, we))
+						if gentest.ResultJSON(got, ge) != gentest.ResultJSON(want, we) {
+							t.Fatalf("wide %s/%s got %s, want %s", b, unit, gentest.ResultJSON(got, ge), gentest.ResultJSON(want, we))
 						}
 					}
 				}
@@ -285,7 +285,7 @@ func testGeneratedNegativeMaximum(t *testing.T) {
 	for _, input := range []string{"", "é", "ééé", "x", "éx"} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			n, err := p.ParseWith("main", input, ParseOptions{Unit: unit})
-			expected = append(expected, resultJSON(n, err))
+			expected = append(expected, gentest.ResultJSON(n, err))
 		}
 	}
 	want := strings.Join(expected, "\n") + "\n"

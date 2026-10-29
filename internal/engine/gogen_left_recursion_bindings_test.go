@@ -71,7 +71,7 @@ func testGeneratedLeftRecursionGuardIgnoresVariables(t *testing.T) {
 			n, err := prog.ParseWith("main", in, o)
 			_, recErr := prog.ParseWith("main", in, ParseOptions{Unit: unit, MaxDepth: 400, Recognize: true})
 			v, typedErr := typed.ParseWith("main", in, o)
-			line := fmt.Sprintf("%s %v %v | %v\n", resultJSON(n, err), recErr, typedErr, typedN(v))
+			line := fmt.Sprintf("%s %v %v | %v\n", gentest.ResultJSON(n, err), recErr, typedErr, typedN(v))
 			want.WriteString(line)
 			if controls {
 				// The same under a step limit, which takes the controlled memo lookups.

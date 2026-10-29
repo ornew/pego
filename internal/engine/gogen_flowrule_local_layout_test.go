@@ -30,8 +30,8 @@ func testGeneratedTypedLocalLayouts(t *testing.T) {
 	}
 	if !testing.Short() {
 		goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-		testGeneratedTypesCorpus(t, goBin, gentest.TypedLocalLayoutCases, gen.GenOptions{})
-		testGeneratedTypesCorpus(t, goBin, gentest.TypedLocalLayoutCases, gen.GenOptions{ConvertTypes: true})
+		gentest.GeneratedTypesCorpus(t, goBin, gentest.TypedLocalLayoutCases, gen.GenOptions{})
+		gentest.GeneratedTypesCorpus(t, goBin, gentest.TypedLocalLayoutCases, gen.GenOptions{ConvertTypes: true})
 	}
 }
 

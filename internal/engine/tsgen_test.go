@@ -308,7 +308,7 @@ func TestGenerateTSErrors(t *testing.T) {
 	}
 }
 
-// deepResultJSON returns resultJSON(n, err), also for trees nested too deeply for encoding/json
+// deepResultJSON returns gentest.ResultJSON(n, err), also for trees nested too deeply for encoding/json
 // (which fails beyond 10,000 levels, and then resultJSON returns ""): it writes the node with
 // WriteJSON, which keeps its own stack, and checks that it agrees with resultJSON where that
 // succeeds.
@@ -324,7 +324,7 @@ func deepResultJSON(t *testing.T, n *value.Node, err error) string {
 		t.Fatal(err)
 	}
 	b.WriteByte('}')
-	if std := resultJSON(n, err); std != "" && std != b.String() {
+	if std := gentest.ResultJSON(n, err); std != "" && std != b.String() {
 		t.Fatalf("deepResultJSON differs from resultJSON:\n %s\n %s", b.String(), std)
 	}
 	return b.String()

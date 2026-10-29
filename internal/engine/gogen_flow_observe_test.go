@@ -426,13 +426,13 @@ func checkObservations(t *testing.T, group string, cases []gentest.Case, start s
 	if checked == 0 || events == 0 {
 		t.Fatalf("%d reports checked with %d events", checked, events)
 	}
-	observationGoldenFile.check(t, group+"/"+gentest.FixtureForm(t)+"/", observationDigests(t, group, cases, lines))
+	observationGoldenFile.Check(t, group+"/"+gentest.FixtureForm(t)+"/", observationDigests(t, group, cases, lines))
 }
 
 const observationGoldenHeader = "# Digests of the observations (trace and profile) of the generated Node parsers, by group, mode and case\n" +
-	"# (see gogen_flow_observe_test.go). Rewrite with: go test ./internal/engine -run Observation -update\n" + goldenRules
+	"# (see gogen_flow_observe_test.go). Rewrite with: go test ./internal/engine -run Observation -update\n" + gentest.GoldenRules
 
-var observationGoldenFile = goldenFile{path: observationGolden, header: observationGoldenHeader}
+var observationGoldenFile = gentest.GoldenFile{Path: observationGolden, Header: observationGoldenHeader}
 
 // TestFlowNodeObservationsMatchEngine checks the observations of the generated corpus with observability.
 func TestFlowNodeObservationsMatchEngine(t *testing.T) {
@@ -536,7 +536,7 @@ func TestFlowNodeObservationMutants(t *testing.T) {
 	}
 	gentest.PinOrdinary(t)
 	cases := append(gentest.GenCorpus(t), observeShapes...)
-	golden := readGolden(t, observationGolden)
+	golden := gentest.ReadGolden(t, observationGolden)
 	changed := func(lines []string) int {
 		n := 0
 		for k, v := range observationDigests(t, "corpus", cases, lines) {

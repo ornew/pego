@@ -6,6 +6,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestDocumentSeedDependencyCompletion(t *testing.T) {
@@ -160,7 +161,7 @@ rule num = [0-9]+ #atomic`
 				}
 				got, gotErr := doc.Parse()
 				want, wantErr := prog.ParseWith("main", doc.Text(), ParseOptions{Backend: backend})
-				if resultJSON(got, gotErr) != resultJSON(want, wantErr) {
+				if gentest.ResultJSON(got, gotErr) != gentest.ResultJSON(want, wantErr) {
 					b.Fatal("edited Document differs from a fresh parse")
 				}
 			})

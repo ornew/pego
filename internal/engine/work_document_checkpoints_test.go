@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -193,7 +194,7 @@ func TestWorkDocumentShiftReplayAndSharedEmptyGraph(t *testing.T) {
 	leaf := value.Ptr(value.Data{Start: 3, End: 4})
 	root := value.Ptr(value.Data{Start: 0, End: 0, Children: []*value.Node{empty, leaf}, Fields: value.Fields{{Name: "empty", Value: empty}, {Name: "leaf", Value: leaf}}})
 	clone := root.Clone()
-	history := resultJSON(clone, nil)
+	history := gentest.ResultJSON(clone, nil)
 	p = stateWorkParser(limits.WorkLimits{MaxSteps: 32})
 	p.Gen = 1
 	p.Moved = map[*value.Node]*value.Node{}
@@ -204,7 +205,7 @@ func TestWorkDocumentShiftReplayAndSharedEmptyGraph(t *testing.T) {
 	if value.D(leaf).Start != 5 || value.D(got).Children[1] != value.D(got).Fields[1].Value.(*value.Node) {
 		t.Fatal("shared non-empty descendant was moved more than once")
 	}
-	if resultJSON(clone, nil) != history {
+	if gentest.ResultJSON(clone, nil) != history {
 		t.Fatal("movement changed historical Clone")
 	}
 }

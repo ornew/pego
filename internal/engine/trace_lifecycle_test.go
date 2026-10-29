@@ -79,7 +79,7 @@ func TestTraceLifecycleStreamDetachment(t *testing.T) {
 					got := traceLifecycleRecover(func() {
 						err = prog.ParseStreamWith("main", r, func(n *value.Node) error {
 							nodes = append(nodes, n)
-							snapshots = append(snapshots, resultJSON(n, nil))
+							snapshots = append(snapshots, gentest.ResultJSON(n, nil))
 							if outcome == "emit-error" {
 								return stop
 							}
@@ -132,7 +132,7 @@ func TestTraceLifecycleStreamDetachment(t *testing.T) {
 						t.Fatal(err)
 					}
 					for i, n := range nodes {
-						if resultJSON(n, nil) != snapshots[i] {
+						if gentest.ResultJSON(n, nil) != snapshots[i] {
 							t.Fatal("teardown/retry changed an emitted prefix")
 						}
 					}

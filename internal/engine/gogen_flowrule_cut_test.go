@@ -52,5 +52,5 @@ func testGeneratedTypedDirectCuts(t *testing.T) {
 			}
 		}
 	}
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), gentest.TypedDirectCutCases, gen.GenOptions{ConvertTypes: true})
+	gentest.GeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), gentest.TypedDirectCutCases, gen.GenOptions{ConvertTypes: true})
 }

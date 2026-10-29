@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/limits"
 )
 
@@ -97,7 +98,7 @@ rule expr = #operators {
 					t.Fatal(err)
 				}
 				fresh, err := prog.ParseWith("main", d.Text(), o)
-				if resultJSON(got, nil) != resultJSON(fresh, err) {
+				if gentest.ResultJSON(got, nil) != gentest.ResultJSON(fresh, err) {
 					t.Fatal("Document graph switch changed output")
 				}
 				if err := d.Edit(0, 1, "a"); err != nil {
@@ -112,7 +113,7 @@ rule expr = #operators {
 				o := ParseOptions{Unit: unit, WorkLimits: limits}
 				got, gotErr := d.ParseWith(o)
 				fresh, freshErr := prog.ParseWith("main", d.Text(), o)
-				if gotErr == nil || resultJSON(got, gotErr) != resultJSON(fresh, freshErr) {
+				if gotErr == nil || gentest.ResultJSON(got, gotErr) != gentest.ResultJSON(fresh, freshErr) {
 					t.Fatalf("resumed diagnostics differ: %v / %v", gotErr, freshErr)
 				}
 			}

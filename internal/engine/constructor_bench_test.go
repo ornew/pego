@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // BenchmarkNodeListConstruction compares explicit element types with the
@@ -31,7 +32,7 @@ func BenchmarkNodeListConstruction(b *testing.B) {
 					if err != nil {
 						b.Fatal(err)
 					}
-					got := resultJSON(n, nil)
+					got := gentest.ResultJSON(n, nil)
 					if want == "" {
 						want = got
 					} else if got != want {

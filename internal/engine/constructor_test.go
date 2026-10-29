@@ -52,7 +52,7 @@ func TestTypedNodeConstructors(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				got := resultJSON(n, nil)
+				got := gentest.ResultJSON(n, nil)
 				if want == "" {
 					want = got
 				} else if got != want {
@@ -97,8 +97,8 @@ func testGeneratedNodeConstructors(t *testing.T) {
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	cases := gentest.ConstructorCases()
-	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, 4)
+	gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
+	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, 4)
 	if node, err := exec.LookPath("node"); err == nil {
 		testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{})
 	} else {
@@ -231,7 +231,7 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 		for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				opts := ParseOptions{Backend: backend, Unit: unit}
-				if got, want := resultJSON(loaded.ParseWith("main", "😀", servedBy(mode, opts))), resultJSON(p.ParseWith("main", "😀", opts)); got != want {
+				if got, want := gentest.ResultJSON(loaded.ParseWith("main", "😀", servedBy(mode, opts))), gentest.ResultJSON(p.ParseWith("main", "😀", opts)); got != want {
 					t.Fatalf("loaded constructors: %s / %s", got, want)
 				}
 			}

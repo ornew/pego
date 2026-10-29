@@ -62,7 +62,7 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 		t.Fatal("no rule of the Node table takes a direct route: the parity test exercises nothing")
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	t.Run("flow node rules", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{}) })
+	t.Run("flow node rules", func(t *testing.T) { gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{}) })
 }
 
 // operatorGrammars are the checked-in grammars with an Operators Rule.
@@ -193,5 +193,5 @@ func testFlowNodeRecognizersOnGrammars(t *testing.T) {
 		cases = append(cases, gc)
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
+	gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
 }

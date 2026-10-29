@@ -8,15 +8,6 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-var aliasTypedGoldens = map[string]string{
-	"terminal singleton union":   `{"Start":0,"End":2,"Value":"éé"}`,
-	"alias terminal":             `{"Start":0,"End":2,"Value":"éé"}`,
-	"alias terminals in structs": `{"Start":0,"End":2,"Value":{"Start":0,"End":2,"Value":"éé"}}`,
-	"alias constructors":         `{"Start":0,"End":2,"Value":{"Start":0,"End":2,"Value":"éé"},"N":7}`,
-	"alias singleton unions":     `{"Start":0,"End":2,"Value":{"Start":0,"End":2,"Value":"éé"}}`,
-	"alias terminal action":      `{"Start":0,"End":2,"Value":"éé"}`,
-}
-
 func TestAliasNodeIdentity(t *testing.T) {
 	t.Parallel()
 	for _, c := range gentest.AliasCases {
@@ -43,7 +34,7 @@ func TestAliasNodeIdentity(t *testing.T) {
 						terminal, _ = v.(*value.Node)
 					}
 					if terminal == nil || terminal.Type() != "Num" || value.D(terminal).Text != "éé" {
-						t.Errorf("%s: expected a Num terminal, got %s", unit, resultJSON(terminal, nil))
+						t.Errorf("%s: expected a Num terminal, got %s", unit, gentest.ResultJSON(terminal, nil))
 					}
 				}
 				for _, input := range c.Inputs {
@@ -61,8 +52,8 @@ func TestAliasNodeIdentity(t *testing.T) {
 							for _, input := range c.Inputs {
 								want, wantErr := prog.ParseWith("main", input, ParseOptions{Unit: unit})
 								got, gotErr := loaded.ParseWith("main", input, servedBy(mode, ParseOptions{Backend: backend, Unit: unit}))
-								if resultJSON(got, gotErr) != resultJSON(want, wantErr) {
-									t.Errorf("loaded %s/%s on %q: got %s, want %s", backend, unit, input, resultJSON(got, gotErr), resultJSON(want, wantErr))
+								if gentest.ResultJSON(got, gotErr) != gentest.ResultJSON(want, wantErr) {
+									t.Errorf("loaded %s/%s on %q: got %s, want %s", backend, unit, input, gentest.ResultJSON(got, gotErr), gentest.ResultJSON(want, wantErr))
 								}
 							}
 						}

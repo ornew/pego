@@ -9,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -74,8 +75,8 @@ func TestWorkPrimitiveASTAliases(t *testing.T) {
 								opts := ParseOptions{Unit: unit, Recognize: recognize, WorkLimits: limits}
 								a, ae := shared.ParseWith("main", text, opts)
 								b, be := reference.ParseWith("main", text, opts)
-								if resultJSON(a, ae) != resultJSON(b, be) {
-									t.Fatalf("unit=%v recognize=%v text=%q limits=%+v: shared=%s distinct=%s", unit, recognize, text, limits, resultJSON(a, ae), resultJSON(b, be))
+								if gentest.ResultJSON(a, ae) != gentest.ResultJSON(b, be) {
+									t.Fatalf("unit=%v recognize=%v text=%q limits=%+v: shared=%s distinct=%s", unit, recognize, text, limits, gentest.ResultJSON(a, ae), gentest.ResultJSON(b, be))
 								}
 							}
 						}

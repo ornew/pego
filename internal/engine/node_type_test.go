@@ -23,9 +23,9 @@ func TestNamedNodeTypesAcrossBackends(t *testing.T) {
 	for _, sourceInfo := range []bool{false, true} {
 		prog := compileBare(t, gentest.NodeTypeGrammar, compile.Options{SourceInfo: sourceInfo})
 		for _, input := range inputs {
-			want := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure}))
+			want := gentest.ResultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure}))
 			for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-				got := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend}))
+				got := gentest.ResultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend}))
 				if got != want {
 					t.Errorf("sourceInfo=%t %s %q:\n got %s\nwant %s", sourceInfo, backend, input, got, want)
 				}
@@ -37,7 +37,7 @@ func TestNamedNodeTypesAcrossBackends(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := resultJSON(n, err)
+	got := gentest.ResultJSON(n, err)
 	for _, want := range []string{`{"type":"Ident","start":0,"end":2,"value":"ab"}`, `{"type":"Num","start":3,"end":5,"value":"12"}`, `"Pair":{"type":"Pair","start":6`, `"Nums":{"type":"Nums"`, `"Len":4`, `"Text":"ab12"`} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %s in %s", want, got)
@@ -122,7 +122,7 @@ rule m M = "m"`, map[string]string{
 				}
 				want = strings.Replace(want, "%s", suffix, 1)
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-					if got := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend})); got != want {
+					if got := gentest.ResultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend})); got != want {
 						t.Errorf("%s %q:\n got %s\nwant %s", backend, input, got, want)
 					}
 				}
@@ -135,7 +135,7 @@ type Out = { Size int; First *Tree }
 rule main Out = t:tree $$ => Out{Size: len($t.Value), First: $t.Value[0]}
 rule tree Tree = "(" ts:tree* ")" => Tree{$ts}`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		got := resultJSON(prog.ParseWith("main", "(()(()))", ParseOptions{Backend: backend}))
+		got := gentest.ResultJSON(prog.ParseWith("main", "(()(()))", ParseOptions{Backend: backend}))
 		if want := `"First":{"type":"Tree","start":2,"end":2,"value":[]},"Size":2`; !strings.Contains(got, want) {
 			t.Errorf("%s: got %s, want %s", backend, got, want)
 		}
@@ -666,8 +666,8 @@ func testGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
 		}
 	}
 	typed := len(cases) - len(converted)
-	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, typed)
+	gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
+	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, typed)
 }
 
 // TestGeneratedNamedNodeTypesDocument checks direct typed Documents of grammars with named node
@@ -818,8 +818,8 @@ func testGeneratedDeclaredNodeAny(t *testing.T) {
 			t.Errorf("%s: generated typed Go converts nodes instead of using the typed runtime", c.Name)
 		}
 	}
-	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, len(cases))
+	gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
+	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, len(cases))
 }
 
 // TestNamedNodeTypeText checks that the S-expression of a node of a named node type names the type

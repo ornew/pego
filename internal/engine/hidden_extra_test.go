@@ -42,11 +42,11 @@ func TestHiddenRulesNegativeControl(t *testing.T) {
 			if _, err := inlined.Parse("main", input); err != nil {
 				continue
 			}
-			want := resultJSON(inlined.Parse("main", input))
-			if got := resultJSON(hidden.Parse("main", input)); got != want {
+			want := gentest.ResultJSON(inlined.Parse("main", input))
+			if got := gentest.ResultJSON(hidden.Parse("main", input)); got != want {
 				t.Errorf("%s %q: hidden %s, inlined %s", tc.Name, input, got, want)
 			}
-			if resultJSON(shown.Parse("main", input)) != want {
+			if gentest.ResultJSON(shown.Parse("main", input)) != want {
 				differs++
 			}
 		}
@@ -74,11 +74,11 @@ func TestDefaultValueKeepsTheNodeOfHiddenRulesWithActions(t *testing.T) {
 			for _, input := range []string{"abcd", "abd", "a", ""} {
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 					o := ParseOptions{Backend: backend}
-					want, got := resultJSON(plain.ParseWith("main", input, o)), resultJSON(def.ParseWith("main", input, o))
+					want, got := gentest.ResultJSON(plain.ParseWith("main", input, o)), gentest.ResultJSON(def.ParseWith("main", input, o))
 					if got != want {
 						t.Errorf("%q on %s:\ndefault value: %s\nas written:    %s", input, backend, got, want)
 					}
-					if resultJSON(spliced.ParseWith("main", input, o)) != want {
+					if gentest.ResultJSON(spliced.ParseWith("main", input, o)) != want {
 						differs = true
 					}
 				}

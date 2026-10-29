@@ -65,7 +65,7 @@ rule main Tok = t:(("é" / "�")* $$) #atomic => Tok{Text: text($t)}`, `func fr
 					for _, unit := range []PositionUnit{CodePoints, Bytes} {
 						n, err := prog.ParseWith("main", input, ParseOptions{Unit: unit})
 						_, rerr := prog.ParseWith("main", input, ParseOptions{Unit: unit, Recognize: true})
-						fmt.Fprintf(&rows, "{%q,%s,%q,%q},\n", input, map[PositionUnit]string{CodePoints: "CodePoints", Bytes: "Bytes"}[unit], resultJSON(n, err), fmt.Sprint(rerr))
+						fmt.Fprintf(&rows, "{%q,%s,%q,%q},\n", input, map[PositionUnit]string{CodePoints: "CodePoints", Bytes: "Bytes"}[unit], gentest.ResultJSON(n, err), fmt.Sprint(rerr))
 					}
 				}
 			}

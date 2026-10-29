@@ -106,7 +106,7 @@ func testGeneratedTypedConstructorEvaluationOrder(t *testing.T) {
 rule main Result = x:"a"? y:"b"? => Result{A: list(1, 2)[len($x) + 3], C: list(1)[len($y) + 7]}
 `, Inputs: []string{"", "a", "b", "ab"}},
 	}
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{ConvertTypes: true}, 1)
+	gentest.GeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{ConvertTypes: true}, 1)
 	// Negative control: the two orders fail differently, so a parser that swapped them would
 	// differ from the engine.
 	first := mustCompile(t, rule(a, b))
@@ -142,7 +142,7 @@ func testGeneratedTermStatementsEvaluationOrder(t *testing.T) {
 		{Name: "typed/statements_after_binary_operand", Src: sum(a, b), Inputs: []string{"", "a", "b", "ab"}},
 		{Name: "typed/statements_in_first_binary_operand", Src: sum(b, a), Inputs: []string{"", "a", "b", "ab"}},
 	}
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{ConvertTypes: true}, 1)
+	gentest.GeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{ConvertTypes: true}, 1)
 	// Negative control: the two orders fail differently.
 	first := mustCompile(t, rule(a, b))
 	second := mustCompile(t, rule(b, a))

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/syntax"
 	"github.com/ornew/pego/internal/value"
 )
@@ -58,8 +59,8 @@ func TestStreamCaptureRecognition(t *testing.T) {
 								}
 								n, err := program.ParseWith("main", tc.input, opts)
 								want, werr := plain.ParseWith("main", tc.input, opts)
-								if (err == nil) != tc.ok || resultJSON(n, err) != resultJSON(want, werr) {
-									t.Errorf("%s/%s recognition=%v: %s; want %s", backend, unit, recognize, resultJSON(n, err), resultJSON(want, werr))
+								if (err == nil) != tc.ok || gentest.ResultJSON(n, err) != gentest.ResultJSON(want, werr) {
+									t.Errorf("%s/%s recognition=%v: %s; want %s", backend, unit, recognize, gentest.ResultJSON(n, err), gentest.ResultJSON(want, werr))
 								}
 							}
 							opts.Recognize = false

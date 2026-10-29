@@ -224,7 +224,7 @@ func TestFlowTypedCorpus(t *testing.T) {
 		t.Skip("go command not found")
 	}
 	gentest.EachMode(t, func(t *testing.T) {
-		testGeneratedTypesCorpus(t, goBin, generatedTypesCases(t), gen.GenOptions{ConvertTypes: true})
+		gentest.GeneratedTypesCorpus(t, goBin, generatedTypesCases(t), gen.GenOptions{ConvertTypes: true})
 	})
 }
 
@@ -272,7 +272,7 @@ func testFlowTypedObservable(t *testing.T) {
 			if printed < 80 || framed < 10 {
 				t.Fatalf("%d rules and %d framed bodies printed from Flow IR", printed, framed)
 			}
-			testGeneratedTypesCorpus(t, goBin, cases, mode.opts)
+			gentest.GeneratedTypesCorpus(t, goBin, cases, mode.opts)
 		})
 	}
 }

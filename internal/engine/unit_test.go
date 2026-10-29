@@ -90,7 +90,7 @@ func TestDocumentInBytes(t *testing.T) {
 		}
 		n, err := doc.Parse()
 		fn, ferr := prog.ParseWith("main", doc.Text(), ParseOptions{Unit: Bytes})
-		if a, b := resultJSON(n, err), resultJSON(fn, ferr); a != b {
+		if a, b := gentest.ResultJSON(n, err), gentest.ResultJSON(fn, ferr); a != b {
 			t.Fatalf("edit %d: text %q\n got  %s\n want %s", i, doc.Text(), a, b)
 		}
 	}

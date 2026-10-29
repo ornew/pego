@@ -29,5 +29,5 @@ var n int
 rule main Row = {n := 0} w:word ({n := 1; false} / {n := 2; n == 2}) $$ => Row{Word: $w, Code: n}
 rule word Word = t:("é") #atomic => Word{Text: text($t)}`, Inputs: []string{"é", "", "a", "éé"}},
 	}
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{ConvertTypes: true}, len(cases))
+	gentest.GeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{ConvertTypes: true}, len(cases))
 }

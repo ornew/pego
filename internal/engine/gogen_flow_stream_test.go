@@ -387,10 +387,10 @@ const (
 	streamGolden       = "testdata/stream.golden"
 	streamGoldenHeader = "# Reports of the stream parses with observability, per form and case: the number of inputs, trace events and\n" +
 		"# elements and a digest of the reports of all inputs and reader chunkings (trace and profile hashes, elements with the\n" +
-		"# reader calls before each, errors); the report of an input that ended with an error is listed under its case.\n" + goldenRules
+		"# reader calls before each, errors); the report of an input that ended with an error is listed under its case.\n" + gentest.GoldenRules
 )
 
-var streamGoldenFile = goldenFile{path: streamGolden, header: streamGoldenHeader, caseOf: goldenCaseBefore}
+var streamGoldenFile = gentest.GoldenFile{Path: streamGolden, Header: streamGoldenHeader, CaseOf: gentest.GoldenCaseBefore}
 
 // streamEntries returns the entries of the golden for the reports of the cases built.
 func streamEntries(t *testing.T, form string, lines []string, kept []gentest.Case) map[string]string {
@@ -459,7 +459,7 @@ func testFlowStreamObservationsMatchGolden(t *testing.T) {
 		t.Run(form.name, func(t *testing.T) {
 			lines, kept := runStreamProbes(t, cases, form, nil)
 			streamReportDiffs(t, lines, lines) // events and elements exist
-			streamGoldenFile.check(t, form.name+"/", streamEntries(t, form.name, lines, kept))
+			streamGoldenFile.Check(t, form.name+"/", streamEntries(t, form.name, lines, kept))
 		})
 	}
 }

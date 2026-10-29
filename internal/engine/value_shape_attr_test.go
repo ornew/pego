@@ -39,7 +39,7 @@ func TestAttributeKeepsValueShape(t *testing.T) {
 						}
 						continue
 					}
-					if g, w := resultJSON(got, nil), resultJSON(want, nil); g != w {
+					if g, w := gentest.ResultJSON(got, nil), gentest.ResultJSON(want, nil); g != w {
 						t.Errorf("backend=%v input=%q: with attribute %s, without %s", backend, input, g, w)
 					}
 				}

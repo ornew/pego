@@ -40,5 +40,5 @@ func testGeneratedNodeFrameScratchCorpus(t *testing.T) {
 	if len(wanted) != 0 {
 		t.Fatalf("missing selected capture cases: %v", wanted)
 	}
-	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
+	gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
 }

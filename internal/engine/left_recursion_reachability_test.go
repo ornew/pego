@@ -51,7 +51,7 @@ func TestLeftRecursionIgnoresUnreachableRecoveryChain(t *testing.T) {
 						o := ParseOptions{Backend: backend, Unit: unit}
 						got, err := p.ParseWith("r2", "", o)
 						want, wantErr := q.ParseWith("r2", "", o)
-						if resultJSON(got, err) != resultJSON(want, wantErr) {
+						if gentest.ResultJSON(got, err) != gentest.ResultJSON(want, wantErr) {
 							t.Errorf("%s/%s memo disabled=%v: dead recovery chain changes result: %v, %v vs %v, %v", backend, unit, options.DisableMemo, got, err, want, wantErr)
 						}
 					}
@@ -80,7 +80,7 @@ func TestLeftRecursionReachabilitySavedAndDocuments(t *testing.T) {
 							for _, text := range c.Inputs {
 								want, wantErr := p.ParseWith("main", text, o)
 								got, gotErr := q.ParseWith("main", text, servedBy(mode, o))
-								if resultJSON(got, gotErr) != resultJSON(want, wantErr) {
+								if gentest.ResultJSON(got, gotErr) != gentest.ResultJSON(want, wantErr) {
 									t.Fatalf("saved %s mode %s/%s input %q differs", mode, backend, unit, text)
 								}
 								doc, err := q.NewDocumentWith("main", text, o)
@@ -100,7 +100,7 @@ func TestLeftRecursionReachabilitySavedAndDocuments(t *testing.T) {
 									}
 									want, wantErr := q.ParseWith("main", doc.Text(), servedBy(mode, o))
 									got, gotErr := doc.Parse()
-									if resultJSON(got, gotErr) != resultJSON(want, wantErr) {
+									if gentest.ResultJSON(got, gotErr) != gentest.ResultJSON(want, wantErr) {
 										t.Fatalf("Document %s/%s input %q differs from fresh", backend, unit, doc.Text())
 									}
 								}

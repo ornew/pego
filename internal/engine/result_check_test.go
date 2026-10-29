@@ -408,8 +408,8 @@ func testGeneratedRuleResultChecks(t *testing.T) {
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	cases := gentest.ResultCheckCases()
-	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true})
+	gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
+	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true})
 	if node, err := exec.LookPath("node"); err == nil {
 		testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{})
 	} else {

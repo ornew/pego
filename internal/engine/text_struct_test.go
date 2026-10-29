@@ -39,14 +39,14 @@ func TestTextStructsAcrossBackends(t *testing.T) {
 		prog := compileBare(t, textStructGrammar, compile.Options{SourceInfo: sourceInfo})
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, input := range inputs {
-				want := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit}))
-				wantRecognized := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit, Recognize: true}))
+				want := gentest.ResultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit}))
+				wantRecognized := gentest.ResultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit, Recognize: true}))
 				for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-					got := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit}))
+					got := gentest.ResultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit}))
 					if got != want {
 						t.Errorf("sourceInfo=%t %s/%s %q:\n got %s\nwant %s", sourceInfo, backend, unit, input, got, want)
 					}
-					got = resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Recognize: true}))
+					got = gentest.ResultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Recognize: true}))
 					if got != wantRecognized {
 						t.Errorf("recognize sourceInfo=%t %s/%s %q:\n got %s\nwant %s", sourceInfo, backend, unit, input, got, wantRecognized)
 					}
@@ -67,8 +67,8 @@ func testGeneratedTextStructs(t *testing.T) {
 	}
 	cases := []gentest.Case{{Name: "text structs", Src: textStructGrammar, Inputs: []string{"", "ab", "ab 12 3.5", "<x> ! #a # @b @", "ab ?", "12.", "! ab <yz> 7", "[ab]ab", "[ab]cd 1"}}}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, 1)
+	gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
+	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, 1)
 	if node, err := exec.LookPath("node"); err == nil {
 		testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{})
 	}

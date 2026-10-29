@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // decodedBoundaries is an independent oracle for edit validation: invalid
@@ -62,8 +63,8 @@ func TestDocumentCompletesUTF8Prefix(t *testing.T) {
 				}
 				got, err := d.Parse()
 				want, werr := p.ParseWith("main", s+suffix, ParseOptions{Backend: backend, Unit: Bytes})
-				if err != nil || werr != nil || resultJSON(got, err) != resultJSON(want, werr) {
-					t.Fatalf("completed prefix: got %s, want %s", resultJSON(got, err), resultJSON(want, werr))
+				if err != nil || werr != nil || gentest.ResultJSON(got, err) != gentest.ResultJSON(want, werr) {
+					t.Fatalf("completed prefix: got %s, want %s", gentest.ResultJSON(got, err), gentest.ResultJSON(want, werr))
 				}
 			})
 		}
@@ -87,8 +88,8 @@ func TestDocumentInvalidUTF8EditEquivalence(t *testing.T) {
 					for i := 0; i < 500; i++ {
 						got, err := d.Parse()
 						want, werr := p.ParseWith("main", d.Text(), ParseOptions{Backend: backend, Unit: unit})
-						if resultJSON(got, err) != resultJSON(want, werr) || fmt.Sprint(got) != fmt.Sprint(want) {
-							t.Fatalf("edit %d text %x: got %s, want %s", i, d.Text(), resultJSON(got, err), resultJSON(want, werr))
+						if gentest.ResultJSON(got, err) != gentest.ResultJSON(want, werr) || fmt.Sprint(got) != fmt.Sprint(want) {
+							t.Fatalf("edit %d text %x: got %s, want %s", i, d.Text(), gentest.ResultJSON(got, err), gentest.ResultJSON(want, werr))
 						}
 						bounds := decodedBoundaries(d.Text())
 						if unit == CodePoints {

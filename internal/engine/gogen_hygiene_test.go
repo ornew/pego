@@ -77,5 +77,5 @@ rule second Result = y:"b"? => Result{N: 1 / len($y)}
 `,
 		Inputs: []string{"a", "ab", "b"},
 	}}
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{ConvertTypes: true}, 1)
+	gentest.GeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{ConvertTypes: true}, 1)
 }

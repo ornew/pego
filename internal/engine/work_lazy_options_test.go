@@ -3,11 +3,13 @@
 package engine
 
 import (
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/limits"
+
+	"testing"
 
 	"github.com/ornew/pego/internal/compile"
 )
-import "testing"
 
 func TestWorkLazyClosureSavedFlagsAndOptions(t *testing.T) {
 	t.Parallel()
@@ -28,7 +30,7 @@ rule item = [a-z]+`)
 				plain, plainErr := p.ParseWith("main", "abc,def", o)
 				o.WorkLimits = limits.WorkLimits{MaxSteps: 1000000, MaxInputWork: 1000000}
 				active, activeErr := p.ParseWith("main", "abc,def", o)
-				if resultJSON(plain, plainErr) != resultJSON(active, activeErr) || activeErr != nil {
+				if gentest.ResultJSON(plain, plainErr) != gentest.ResultJSON(active, activeErr) || activeErr != nil {
 					t.Fatalf("options changed output: %v", activeErr)
 				}
 				o.Recognize = true

@@ -40,6 +40,6 @@ func testGeneratedTypedFramedCuts(t *testing.T) {
 	}
 	cases = append(cases, gentest.PrefixPartCutCorpus())
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true})
+	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{})
+	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true})
 }

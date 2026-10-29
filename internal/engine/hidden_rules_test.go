@@ -125,7 +125,7 @@ rule _b = "b"`
 		if err != nil {
 			t.Fatalf("%+v: %v", opts, err)
 		}
-		if got, want := resultJSON(loaded.Parse("main", "ab")), resultJSON(p.Parse("main", "ab")); got != want {
+		if got, want := gentest.ResultJSON(loaded.Parse("main", "ab")), gentest.ResultJSON(p.Parse("main", "ab")); got != want {
 			t.Errorf("%+v: loaded %s, compiled %s", opts, got, want)
 		}
 	}

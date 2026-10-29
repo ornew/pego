@@ -51,9 +51,9 @@ func TestIndexAcrossBackends(t *testing.T) {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
 					for _, input := range fixture.Inputs {
-						baseline := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit, Recognize: recognize}))
+						baseline := gentest.ResultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit, Recognize: recognize}))
 						for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-							actual := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Recognize: recognize}))
+							actual := gentest.ResultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Recognize: recognize}))
 							if actual != baseline {
 								t.Fatalf("%s/%s recognize=%t input=%q: %s / %s", backend, unit, recognize, input, actual, baseline)
 							}
@@ -217,7 +217,7 @@ rule item = [a-z]`
 		}
 		for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 			options := ParseOptions{Backend: backend}
-			if got, want := resultJSON(loaded.ParseWith("main", "ab", servedBy(mode, options))), resultJSON(program.ParseWith("main", "ab", options)); got != want {
+			if got, want := gentest.ResultJSON(loaded.ParseWith("main", "ab", servedBy(mode, options))), gentest.ResultJSON(program.ParseWith("main", "ab", options)); got != want {
 				t.Fatalf("loaded index: %s / %s", got, want)
 			}
 		}
@@ -236,8 +236,8 @@ func TestIndexGeneratedGoParity(t *testing.T) {
 
 func testIndexGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, indexCases(), gen.GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, indexCases(), gen.GenOptions{})
+	gentest.GeneratedParsersCorpus(t, goBin, indexCases(), gen.GenOptions{})
+	gentest.GeneratedTypesCorpus(t, goBin, indexCases(), gen.GenOptions{})
 }
 
 func TestIndexGeneratedTypeScriptParity(t *testing.T) {

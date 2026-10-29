@@ -79,7 +79,7 @@ func TestGuardedClassGeneration(t *testing.T) {
 func TestGuardedClassDisabledParity(t *testing.T) {
 	t.Parallel()
 	gentest.PinOrdinary(t)
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), guardedClassCases(), gen.GenOptions{DisableGuardedClasses: true}, 0)
+	gentest.GeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), guardedClassCases(), gen.GenOptions{DisableGuardedClasses: true}, 0)
 }
 
 // TestGuardedClassEligibility checks that parsers that charge work for reading (work controls or

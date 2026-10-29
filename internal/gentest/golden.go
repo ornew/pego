@@ -1,4 +1,4 @@
-package engine
+package gentest
 
 import (
 	"bufio"
@@ -10,16 +10,16 @@ import (
 	"testing"
 )
 
-// updateGoldens rewrites the entries of the key/value goldens (goldenFile.check) that a run checks, instead
+// UpdateGoldens rewrites the entries of the key/value goldens (GoldenFile.check) that a run checks, instead
 // of comparing them; entries of the checked scope that the run no longer produces are removed:
 //
-//	go test ./internal/engine -run <test> -update
+//	go test <package> -run <test> -update
 //
 // Review the diff of a rewritten golden: a regenerated golden makes a regression pass.
-var updateGoldens = flag.Bool("update", false, "rewrite the entries of the golden files that the run checks")
+var UpdateGoldens = flag.Bool("update", false, "rewrite the entries of the golden files that the run checks")
 
-// readGolden reads the file of "key<TAB>value" lines.
-func readGolden(t testing.TB, path string) map[string]string {
+// ReadGolden reads the file of "key<TAB>value" lines.
+func ReadGolden(t testing.TB, path string) map[string]string {
 	t.Helper()
 	out := map[string]string{}
 	f, err := os.Open(path)
@@ -67,38 +67,38 @@ func writeGolden(t testing.TB, path, header string, entries map[string]string) {
 	}
 }
 
-// goldenRules is the part of the header of every key/value golden that says how it is kept.
-const goldenRules = "# A run checks every entry of its scope: an entry that is missing, stale or different fails. -update replaces the\n" +
+// GoldenRules is the part of the header of every key/value golden that says how it is kept.
+const GoldenRules = "# A run checks every entry of its scope: an entry that is missing, stale or different fails. -update replaces the\n" +
 	"# entries of the scope, drops stale ones and logs a summary per case. Review the diff: it is a regression freeze.\n"
 
-// goldenFile describes a key/value golden: its path, its header, how a key maps to the case it belongs to
+// GoldenFile describes a key/value golden: its path, its header, how a key maps to the case it belongs to
 // (for the update summary; nil means the key is the case) and, for goldens of measured totals, the two
 // totals of a value that the summary sums (nil for none).
-type goldenFile struct {
-	path, header string
-	caseOf       func(key string) string
-	totals       func(value string) (a, b uint64)
-	totalNames   [2]string
+type GoldenFile struct {
+	Path, Header string
+	CaseOf       func(key string) string
+	Totals       func(value string) (a, b uint64)
+	TotalNames   [2]string
 }
 
-// goldenCaseBefore returns a caseOf for keys "case | entry": the part before the last " | ".
-func goldenCaseBefore(key string) string {
+// GoldenCaseBefore returns a caseOf for keys "case | entry": the part before the last " | ".
+func GoldenCaseBefore(key string) string {
 	if i := strings.LastIndex(key, " | "); i >= 0 {
 		return key[:i]
 	}
 	return key
 }
 
-// check compares the entries of got, which are all the keys with the prefix scope that a complete run
+// Check compares the entries of got, which are all the keys with the prefix scope that a complete run
 // produces, with the golden. A key of got that the golden lacks, a value that differs and a key of the
 // golden with the prefix scope that the run did not produce (a case that was removed or renamed, or a
 // report that is missing) are errors. A run that filters its entries must not call check. With -update
 // the entries with the prefix scope are replaced by got, the others stay, and the summary of what changed
 // is logged for each case.
-func (g goldenFile) check(t *testing.T, scope string, got map[string]string) {
+func (g GoldenFile) Check(t *testing.T, scope string, got map[string]string) {
 	t.Helper()
 	if len(got) == 0 {
-		t.Errorf("%s: nothing to compare with %s", t.Name(), g.path)
+		t.Errorf("%s: nothing to compare with %s", t.Name(), g.Path)
 		return
 	}
 	for k := range got {
@@ -106,8 +106,8 @@ func (g goldenFile) check(t *testing.T, scope string, got map[string]string) {
 			t.Fatalf("%s: key %q is outside the scope %q", t.Name(), k, scope)
 		}
 	}
-	want := readGolden(t, g.path)
-	if *updateGoldens {
+	want := ReadGolden(t, g.Path)
+	if *UpdateGoldens {
 		g.logSummary(t, scope, want, got)
 		for k := range want {
 			if strings.HasPrefix(k, scope) {
@@ -117,7 +117,7 @@ func (g goldenFile) check(t *testing.T, scope string, got map[string]string) {
 		for k, v := range got {
 			want[k] = v
 		}
-		writeGolden(t, g.path, g.header, want)
+		writeGolden(t, g.Path, g.Header, want)
 		return
 	}
 	var problems []string
@@ -137,10 +137,10 @@ func (g goldenFile) check(t *testing.T, scope string, got map[string]string) {
 	}
 	for i, p := range problems {
 		if i == 20 {
-			t.Errorf("%s: and %d more differences from %s", t.Name(), len(problems)-i, g.path)
+			t.Errorf("%s: and %d more differences from %s", t.Name(), len(problems)-i, g.Path)
 			break
 		}
-		t.Errorf("%s: %s in %s (run with -update after review)", t.Name(), p, g.path)
+		t.Errorf("%s: %s in %s (run with -update after review)", t.Name(), p, g.Path)
 	}
 }
 
@@ -155,7 +155,7 @@ func sortedKeys(m map[string]string) []string {
 
 // logSummary logs, for each case with a change under scope, the number of changed, added and removed
 // entries and, for a golden with totals, the sums of the totals before and after.
-func (g goldenFile) logSummary(t *testing.T, scope string, old, got map[string]string) {
+func (g GoldenFile) logSummary(t *testing.T, scope string, old, got map[string]string) {
 	t.Helper()
 	type delta struct {
 		changed, added, removed int
@@ -164,8 +164,8 @@ func (g goldenFile) logSummary(t *testing.T, scope string, old, got map[string]s
 	deltas := map[string]*delta{}
 	of := func(k string) *delta {
 		c := k
-		if g.caseOf != nil {
-			c = g.caseOf(k)
+		if g.CaseOf != nil {
+			c = g.CaseOf(k)
 		}
 		d := deltas[c]
 		if d == nil {
@@ -175,8 +175,8 @@ func (g goldenFile) logSummary(t *testing.T, scope string, old, got map[string]s
 		return d
 	}
 	sum := func(arr *[2]uint64, v string) {
-		if g.totals != nil {
-			a, b := g.totals(v)
+		if g.Totals != nil {
+			a, b := g.Totals(v)
 			arr[0], arr[1] = arr[0]+a, arr[1]+b
 		}
 	}
@@ -210,11 +210,11 @@ func (g goldenFile) logSummary(t *testing.T, scope string, old, got map[string]s
 	for _, c := range names {
 		d := deltas[c]
 		tc, ta, tr = tc+d.changed, ta+d.added, tr+d.removed
-		line := fmt.Sprintf("update %s: %s: %d changed, %d added, %d removed", g.path, c, d.changed, d.added, d.removed)
-		if g.totals != nil {
-			line += fmt.Sprintf("; %s %d -> %d, %s %d -> %d", g.totalNames[0], d.before[0], d.after[0], g.totalNames[1], d.before[1], d.after[1])
+		line := fmt.Sprintf("update %s: %s: %d changed, %d added, %d removed", g.Path, c, d.changed, d.added, d.removed)
+		if g.Totals != nil {
+			line += fmt.Sprintf("; %s %d -> %d, %s %d -> %d", g.TotalNames[0], d.before[0], d.after[0], g.TotalNames[1], d.before[1], d.after[1])
 		}
 		t.Log(line)
 	}
-	t.Logf("update %s scope %q: %d cases changed (%d entries changed, %d added, %d removed) of %d entries", g.path, scope, len(names), tc, ta, tr, len(got))
+	t.Logf("update %s scope %q: %d cases changed (%d entries changed, %d added, %d removed) of %d entries", g.Path, scope, len(names), tc, ta, tr, len(got))
 }

@@ -176,7 +176,7 @@ func checkUnits(t *testing.T, prog *Program, start, input string, b Backend) {
 	n1, err1 := prog.ParseWith(start, input, ParseOptions{Unit: CodePoints, Backend: b})
 	n2, err2 := prog.ParseWith(start, input, ParseOptions{Unit: Bytes, Backend: b})
 	n2, err2 = toCodePoints(input, n2, err2)
-	if a, b := resultJSON(n1, err1), resultJSON(n2, err2); a != b {
+	if a, b := gentest.ResultJSON(n1, err1), gentest.ResultJSON(n2, err2); a != b {
 		t.Errorf("input %q: results differ between units\n codepoints %s\n bytes      %s", input, a, b)
 	}
 }
@@ -186,11 +186,11 @@ func checkBackends(t *testing.T, prog *Program, start, input string) {
 	t.Helper()
 	for _, u := range []PositionUnit{CodePoints, Bytes} {
 		n1, err1 := prog.ParseWith(start, input, ParseOptions{Unit: u})
-		want := resultJSON(n1, err1)
+		want := gentest.ResultJSON(n1, err1)
 		checkRecognize(t, prog, start, input, u, err1)
 		for _, b := range []Backend{Bytecode, BytecodeIterative} {
 			n2, err2 := prog.ParseWith(start, input, ParseOptions{Unit: u, Backend: b})
-			if got := resultJSON(n2, err2); got != want {
+			if got := gentest.ResultJSON(n2, err2); got != want {
 				t.Errorf("input %q (unit %v): %v differs from closure\n closure %s\n %v %s", input, u, b, want, b, got)
 			}
 		}

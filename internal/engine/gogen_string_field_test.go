@@ -111,8 +111,8 @@ func testGeneratedStringFieldReads(t *testing.T) {
 		cases = append(cases, c.Case)
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, direct)
+	gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
+	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, direct)
 	if node, err := exec.LookPath("node"); err == nil {
 		testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{})
 	}

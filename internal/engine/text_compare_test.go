@@ -44,10 +44,10 @@ func TestTextFieldComparisons(t *testing.T) {
 				if controlled {
 					opts.WorkLimits = limits
 				}
-				want := resultJSON(prog.ParseWith("main", input, opts))
+				want := gentest.ResultJSON(prog.ParseWith("main", input, opts))
 				for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 					opts.Backend = backend
-					if got := resultJSON(prog.ParseWith("main", input, opts)); got != want {
+					if got := gentest.ResultJSON(prog.ParseWith("main", input, opts)); got != want {
 						t.Errorf("controlled=%t %s/%s %q:\n got %s\nwant %s", controlled, backend, unit, input, got, want)
 					}
 				}
@@ -153,7 +153,7 @@ func parseSteps(t *testing.T, prog *Program, backend Backend, unit PositionUnit,
 	p.MaxDepth = core.DepthLimit(o, o.Backend)
 	p.DeferMemo = true
 	n, err := active.Run(p, o.Backend, "main")
-	return control.StepsUsed, resultJSON(n, err)
+	return control.StepsUsed, gentest.ResultJSON(n, err)
 }
 
 // textCompareEdgeGrammar compares fields in actions that fail, read the built-in members of a
@@ -197,12 +197,12 @@ func TestTextFieldComparisonEdges(t *testing.T) {
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, input := range inputs {
 			_, wantResult := parseSteps(t, prog, Closure, unit, input)
-			wantUncontrolled := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit}))
+			wantUncontrolled := gentest.ResultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit}))
 			for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 				if _, gotResult := parseSteps(t, prog, backend, unit, input); gotResult != wantResult {
 					t.Errorf("%s/%s %q: %s\nwant %s", backend, unit, input, gotResult, wantResult)
 				}
-				if got := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit})); got != wantUncontrolled {
+				if got := gentest.ResultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit})); got != wantUncontrolled {
 					t.Errorf("%s/%s %q uncontrolled:\n got %s\nwant %s", backend, unit, input, got, wantUncontrolled)
 				}
 			}

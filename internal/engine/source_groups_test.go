@@ -54,7 +54,7 @@ rule number Alias = v1:[0-9]+ => Number{Text: text($v1)}
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, source := range []string{"123", "0", "", "x"} {
 					opts := ParseOptions{Backend: backend, Unit: unit}
-					if got, want := resultJSON(p.ParseWith("main", source, opts)), resultJSON(ref.ParseWith("main", source, opts)); got != want {
+					if got, want := gentest.ResultJSON(p.ParseWith("main", source, opts)), gentest.ResultJSON(ref.ParseWith("main", source, opts)); got != want {
 						t.Fatalf("JSON=%v %s/%s %q: got %s want %s", fromJSON, backend, unit, source, got, want)
 					}
 				}

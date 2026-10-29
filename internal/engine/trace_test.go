@@ -55,7 +55,7 @@ func traceLines(prog *Program, start, input string, o ParseOptions) ([]string, s
 		out = append(out, b.String())
 	}
 	n, err := prog.ParseWith(start, input, o)
-	return out, resultJSON(n, err)
+	return out, gentest.ResultJSON(n, err)
 }
 
 // checkTrace checks that tracing changes no result on any backend, nor the work of the parse
@@ -68,7 +68,7 @@ func checkTrace(t *testing.T, prog *Program, start, input string, o ParseOptions
 		o.Backend = b
 		o.Trace = nil
 		n, err := prog.ParseWith(start, input, o)
-		want := resultJSON(n, err)
+		want := gentest.ResultJSON(n, err)
 		if _, got := traceLines(prog, start, input, o); got != want {
 			t.Errorf("input %q (%v, unit %v, recognize %v): tracing changes the result\n without %s\n with    %s", input, b, o.Unit, o.Recognize, want, got)
 		}
@@ -98,7 +98,7 @@ func parseWork(prog *Program, start, input string, o ParseOptions) (parseWorkSta
 	if o.Recognize {
 		rp, err := prog.Recognizer()
 		if err != nil {
-			return parseWorkStats{}, resultJSON(nil, err)
+			return parseWorkStats{}, gentest.ResultJSON(nil, err)
 		}
 		target = rp
 	}
@@ -135,7 +135,7 @@ func parseWork(prog *Program, start, input string, o ParseOptions) (parseWorkSta
 			}
 		}
 	}))
-	return w, resultJSON(n, err)
+	return w, gentest.ResultJSON(n, err)
 }
 
 // checkEvents checks that the events of a parse nest and that exits agree with their enters.
@@ -217,7 +217,7 @@ func checkTraceDocument(t *testing.T, prog *Program, input string) {
 		for i := 0; ; i++ {
 			n1, e1 := plain.Parse()
 			n2, e2 := traced.Parse()
-			if a, c := resultJSON(n1, e1), resultJSON(n2, e2); a != c || plain.Stats() != traced.Stats() {
+			if a, c := gentest.ResultJSON(n1, e1), gentest.ResultJSON(n2, e2); a != c || plain.Stats() != traced.Stats() {
 				t.Errorf("input %q (%v), after %d edits: tracing changes the document\n without %+v %s\n with    %+v %s", input, b, i, plain.Stats(), a, traced.Stats(), c)
 			}
 			if i == len(edits) {
@@ -519,7 +519,7 @@ func dispatchFreeTrace(prog *Program, input string, o ParseOptions) ([]string, s
 			out = append(out, l.text)
 		}
 	}
-	return out, resultJSON(n, err)
+	return out, gentest.ResultJSON(n, err)
 }
 
 // TestTracesAgreeAcrossBackends checks that the backends' traces of the corpus differ only in the

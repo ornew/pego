@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/limits"
 )
 
@@ -48,7 +49,7 @@ rule expr = #operators {
 					t.Fatal(err)
 				}
 				fresh, err := prog.ParseWith("main", d.Text(), opts)
-				if err != nil || resultJSON(got, nil) != resultJSON(fresh, err) {
+				if err != nil || gentest.ResultJSON(got, nil) != gentest.ResultJSON(fresh, err) {
 					t.Fatalf("iteration %d: cached/fresh mismatch: %v", i, err)
 				}
 				// A cached tree must not bypass admission on the other dispatch graph.

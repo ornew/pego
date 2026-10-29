@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/limits"
 )
 
@@ -85,8 +86,8 @@ func TestLeftRecursionGuardIgnoresVariables(t *testing.T) {
 					for _, limits := range []limits.WorkLimits{{}, {MaxSteps: 1 << 40}} {
 						opts := ParseOptions{Backend: backend, Unit: unit, Recognize: recognize, MaxDepth: 400, WorkLimits: limits}
 						for _, input := range inputs {
-							got := resultJSON(prog.ParseWith("main", input, opts))
-							want := resultJSON(plain.ParseWith("main", input, opts))
+							got := gentest.ResultJSON(prog.ParseWith("main", input, opts))
+							want := gentest.ResultJSON(plain.ParseWith("main", input, opts))
 							if got != want {
 								t.Fatalf("%s/%s recognize=%t DisableMemo=%t limits=%v %q:\n got  %s\n want %s", backend, unit, recognize, options.DisableMemo, limits, input, got, want)
 							}
@@ -104,8 +105,8 @@ func TestLeftRecursionGuardIgnoresVariables(t *testing.T) {
 					if err := d.Edit(edit.start, edit.end, edit.text); err != nil {
 						t.Fatal(err)
 					}
-					got := resultJSON(d.Parse())
-					want := resultJSON(plain.ParseWith("main", d.Text(), ParseOptions{Backend: backend, Unit: unit}))
+					got := gentest.ResultJSON(d.Parse())
+					want := gentest.ResultJSON(plain.ParseWith("main", d.Text(), ParseOptions{Backend: backend, Unit: unit}))
 					if got != want {
 						t.Fatalf("%s/%s Document %q:\n got  %s\n want %s", backend, unit, d.Text(), got, want)
 					}

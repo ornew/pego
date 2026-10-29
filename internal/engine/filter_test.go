@@ -66,9 +66,9 @@ func TestFilterAcrossBackends(t *testing.T) {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
 					for _, input := range fixture.Inputs {
-						baseline := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit, Recognize: recognize}))
+						baseline := gentest.ResultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit, Recognize: recognize}))
 						for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-							actual := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Recognize: recognize}))
+							actual := gentest.ResultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Recognize: recognize}))
 							if actual != baseline {
 								t.Fatalf("%s/%s recognize=%t input=%q: %s / %s", backend, unit, recognize, input, actual, baseline)
 							}
@@ -124,7 +124,7 @@ func TestFilterCompiledInstructionSet(t *testing.T) {
 		for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				options := ParseOptions{Backend: backend, Unit: unit}
-				if got, want := resultJSON(loaded.ParseWith("main", "ab", servedBy(mode, options))), resultJSON(program.ParseWith("main", "ab", options)); got != want {
+				if got, want := gentest.ResultJSON(loaded.ParseWith("main", "ab", servedBy(mode, options))), gentest.ResultJSON(program.ParseWith("main", "ab", options)); got != want {
 					t.Fatalf("loaded filter: %s / %s", got, want)
 				}
 			}
@@ -159,8 +159,8 @@ func TestFilterGeneratedGoParity(t *testing.T) {
 
 func testFilterGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, filterCases(), gen.GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, filterCases(), gen.GenOptions{})
+	gentest.GeneratedParsersCorpus(t, goBin, filterCases(), gen.GenOptions{})
+	gentest.GeneratedTypesCorpus(t, goBin, filterCases(), gen.GenOptions{})
 }
 
 func TestFilterGeneratedTypeScriptParity(t *testing.T) {

@@ -202,6 +202,6 @@ func testGeneratedSharingLocalLayout(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	testGeneratedParsersCorpus(t, goBin, []gentest.Case{c}, gen.GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, gentest.TypedLocalLayoutCases[:5], gen.GenOptions{DisableMethodSharing: true, DisableLiteralSharing: true})
+	gentest.GeneratedParsersCorpus(t, goBin, []gentest.Case{c}, gen.GenOptions{})
+	gentest.GeneratedTypesCorpus(t, goBin, gentest.TypedLocalLayoutCases[:5], gen.GenOptions{DisableMethodSharing: true, DisableLiteralSharing: true})
 }

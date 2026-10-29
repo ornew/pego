@@ -60,5 +60,5 @@ func testGeneratedTypedLeaderValues(t *testing.T) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
-	testGeneratedTypesCorpus(t, goBin, typedLeaderValueCases, gen.GenOptions{ConvertTypes: true}, len(typedLeaderValueCases))
+	gentest.GeneratedTypesCorpus(t, goBin, typedLeaderValueCases, gen.GenOptions{ConvertTypes: true}, len(typedLeaderValueCases))
 }

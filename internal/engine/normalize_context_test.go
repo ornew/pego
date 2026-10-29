@@ -10,6 +10,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestNormalizationContextCancellation(t *testing.T) {
@@ -129,7 +130,7 @@ rule main (Alias) = n:([0-9]+) => (T{Text: (text($n))})`,
 			if !reflect.DeepEqual(gotErr, wantErr) {
 				t.Fatalf("compile diagnostics differ: %v / %v", gotErr, wantErr)
 			}
-			if gotErr == nil && resultJSON(got.Parse("main", "a")) != resultJSON(want.Parse("main", "a")) {
+			if gotErr == nil && gentest.ResultJSON(got.Parse("main", "a")) != gentest.ResultJSON(want.Parse("main", "a")) {
 				t.Fatal("context changed compiled behavior")
 			}
 		})

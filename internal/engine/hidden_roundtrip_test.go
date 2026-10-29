@@ -35,8 +35,8 @@ func TestHiddenRulesCompiledRoundTrip(t *testing.T) {
 								wantClosureRefused(t, err) // the closure backend needs the grammar
 								continue
 							}
-							want := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend}))
-							got := resultJSON(loaded.ParseWith("main", input, servedBy(mode, ParseOptions{Backend: backend})))
+							want := gentest.ResultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend}))
+							got := gentest.ResultJSON(loaded.ParseWith("main", input, servedBy(mode, ParseOptions{Backend: backend})))
 							if got != want {
 								t.Errorf("%+v %s mode %q on %s:\nloaded:   %s\ncompiled: %s", opts, mode, input, backend, got, want)
 							}

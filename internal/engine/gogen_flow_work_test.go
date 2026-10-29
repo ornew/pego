@@ -298,12 +298,12 @@ func parseWorkReports(t *testing.T, lines []string) []workReport {
 const (
 	workGolden       = "testdata/work.golden"
 	workGoldenHeader = "# Work totals of the generated parsers with work controls: steps, input work, context polls and result\n" +
-		"# of each input and entry, by group, case and input. Not a limit: stage 3 optimizations move the totals.\n" + goldenRules
+		"# of each input and entry, by group, case and input. Not a limit: stage 3 optimizations move the totals.\n" + gentest.GoldenRules
 )
 
-var workGoldenFile = goldenFile{
-	path: workGolden, header: workGoldenHeader, caseOf: goldenCaseBefore, totalNames: [2]string{"steps", "input work"},
-	totals: func(v string) (a, b uint64) {
+var workGoldenFile = gentest.GoldenFile{
+	Path: workGolden, Header: workGoldenHeader, CaseOf: gentest.GoldenCaseBefore, TotalNames: [2]string{"steps", "input work"},
+	Totals: func(v string) (a, b uint64) {
 		f := strings.Fields(v)
 		a, _ = strconv.ParseUint(f[0], 10, 64)
 		b, _ = strconv.ParseUint(f[1], 10, 64)
@@ -347,7 +347,7 @@ func checkWorkInvariants(t *testing.T, group string, cases []gentest.Case, start
 	for _, p := range problems {
 		t.Error(p)
 	}
-	workGoldenFile.check(t, group+"/", got)
+	workGoldenFile.Check(t, group+"/", got)
 }
 
 // workTotals builds the cases (the code of each parser changed by mutate if not nil), runs the consumer and
@@ -423,7 +423,7 @@ func TestFlowNodeWorkMutants(t *testing.T) {
 		t.Skip("builds generated consumers")
 	}
 	cases := gentest.GenCorpus(t)
-	golden := readGolden(t, workGolden)
+	golden := gentest.ReadGolden(t, workGolden)
 	for _, m := range []struct {
 		name   string
 		mutate func([]byte) []byte

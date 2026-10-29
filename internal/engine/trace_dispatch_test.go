@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // TestTraceFirstCharacterDispatch records executed calls, not synthetic calls
@@ -45,7 +47,7 @@ rule tail = "b"`)
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			n, err := prog.ParseWith("main", tc.input, ParseOptions{Backend: Closure})
-			wantResult := resultJSON(n, err)
+			wantResult := gentest.ResultJSON(n, err)
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				t.Run(fmt.Sprint(backend), func(t *testing.T) {
 					var pr Profile
@@ -63,11 +65,11 @@ rule tail = "b"`)
 					if (err == nil) != tc.matched {
 						t.Fatalf("match=%v, error=%v", tc.matched, err)
 					}
-					if result := resultJSON(n, err); result != wantResult {
+					if result := gentest.ResultJSON(n, err); result != wantResult {
 						t.Fatalf("trace changes result: got %s, want %s", result, wantResult)
 					}
 					plain, plainErr := prog.ParseWith("main", tc.input, ParseOptions{Backend: backend})
-					if result := resultJSON(plain, plainErr); result != wantResult {
+					if result := gentest.ResultJSON(plain, plainErr); result != wantResult {
 						t.Fatalf("untraced backend result: got %s, want %s", result, wantResult)
 					}
 

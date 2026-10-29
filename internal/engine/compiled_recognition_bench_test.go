@@ -7,6 +7,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -121,8 +122,8 @@ func BenchmarkCompiledRecognitionASTBearing(b *testing.B) {
 				for _, tc := range inputs {
 					want, wantErr := source.ParseWith("main", tc.input, ParseOptions{Backend: backend})
 					got, gotErr := loaded.ParseWith("main", tc.input, ParseOptions{Backend: backend})
-					if resultJSON(got, gotErr) != resultJSON(want, wantErr) {
-						b.Fatalf("loaded fixture differs for %v/%s: got %s want %s", backend, tc.name, resultJSON(got, gotErr), resultJSON(want, wantErr))
+					if gentest.ResultJSON(got, gotErr) != gentest.ResultJSON(want, wantErr) {
+						b.Fatalf("loaded fixture differs for %v/%s: got %s want %s", backend, tc.name, gentest.ResultJSON(got, gotErr), gentest.ResultJSON(want, wantErr))
 					}
 				}
 			}

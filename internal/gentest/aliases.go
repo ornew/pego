@@ -31,3 +31,11 @@ type Alias ~ Num
 rule main Alias = v:num $$ => $v
 rule num Num = ("é"+) #atomic`, []string{"éé", "", "x"}},
 }
+var aliasTypedGoldens = map[string]string{
+	"terminal singleton union":   `{"Start":0,"End":2,"Value":"éé"}`,
+	"alias terminal":             `{"Start":0,"End":2,"Value":"éé"}`,
+	"alias terminals in structs": `{"Start":0,"End":2,"Value":{"Start":0,"End":2,"Value":"éé"}}`,
+	"alias constructors":         `{"Start":0,"End":2,"Value":{"Start":0,"End":2,"Value":"éé"},"N":7}`,
+	"alias singleton unions":     `{"Start":0,"End":2,"Value":{"Start":0,"End":2,"Value":"éé"}}`,
+	"alias terminal action":      `{"Start":0,"End":2,"Value":"éé"}`,
+}

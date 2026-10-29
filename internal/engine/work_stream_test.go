@@ -119,7 +119,7 @@ func TestWorkStreamUnlimitedParity(t *testing.T) {
 					if withError {
 						r.err = stop
 					}
-					errs[i] = prog.ParseStreamWith("main", r, func(n *value.Node) error { results[i] = append(results[i], resultJSON(n, nil)); return nil }, o)
+					errs[i] = prog.ParseStreamWith("main", r, func(n *value.Node) error { results[i] = append(results[i], gentest.ResultJSON(n, nil)); return nil }, o)
 				}
 				if !reflect.DeepEqual(results[0], results[1]) || fmt.Sprint(errs[0]) != fmt.Sprint(errs[1]) {
 					t.Fatalf("controlled results/errors differ: %v %v; %v %v", results[0], errs[0], results[1], errs[1])
@@ -183,7 +183,7 @@ func TestWorkStreamEmitPrecedenceAndOwnership(t *testing.T) {
 			err := prog.ParseStreamWith("main", strings.NewReader("#records\na=1\nbc=22\n"), func(n *value.Node) error {
 				count++
 				node = n
-				snapshot = resultJSON(n, nil)
+				snapshot = gentest.ResultJSON(n, nil)
 				cancel()
 				if fail {
 					return stop
@@ -195,10 +195,10 @@ func TestWorkStreamEmitPrecedenceAndOwnership(t *testing.T) {
 			if fail {
 				want = stop
 			}
-			if err != want || count != 1 || node == nil || resultJSON(node, nil) != snapshot {
-				t.Fatalf("error=%v emits=%d snapshot changed=%t", err, count, resultJSON(node, nil) != snapshot)
+			if err != want || count != 1 || node == nil || gentest.ResultJSON(node, nil) != snapshot {
+				t.Fatalf("error=%v emits=%d snapshot changed=%t", err, count, gentest.ResultJSON(node, nil) != snapshot)
 			}
-			if err := prog.ParseStreamWith("main", strings.NewReader("#records\nxy=3\n"), func(*value.Node) error { return nil }, base); err != nil || resultJSON(node, nil) != snapshot {
+			if err := prog.ParseStreamWith("main", strings.NewReader("#records\nxy=3\n"), func(*value.Node) error { return nil }, base); err != nil || gentest.ResultJSON(node, nil) != snapshot {
 				t.Fatalf("fresh replay error=%v", err)
 			}
 		}
@@ -431,7 +431,7 @@ func TestWorkStreamCommitAfterDelivery(t *testing.T) {
 		err := prog.ParseStreamWith("main", strings.NewReader("#records\na=1\nbc=22\n"), func(n *value.Node) error {
 			count++
 			node = n
-			before = resultJSON(n, nil)
+			before = gentest.ResultJSON(n, nil)
 			p := core.TraceParser(saved)
 			controller = p.Control
 			// Force the normal inactive-capacity clear at the next commit.
@@ -468,13 +468,13 @@ func TestWorkStreamCommitAfterDelivery(t *testing.T) {
 			t.Fatalf("normal commit interruption error=%v emits=%d", err, count)
 		}
 		assertTraceParserDetached(t, core.TraceParser(saved), false)
-		if node == nil || resultJSON(node, nil) != before {
+		if node == nil || gentest.ResultJSON(node, nil) != before {
 			t.Fatal("commit changed emitted Node")
 		}
 		o.WorkLimits = limits.WorkLimits{}
 		o.Trace = nil
 		replay := 0
-		if err := prog.ParseStreamWith("main", strings.NewReader("#records\na=1\nbc=22\n"), func(*value.Node) error { replay++; return nil }, o); err != nil || replay != 2 || resultJSON(node, nil) != before {
+		if err := prog.ParseStreamWith("main", strings.NewReader("#records\na=1\nbc=22\n"), func(*value.Node) error { replay++; return nil }, o); err != nil || replay != 2 || gentest.ResultJSON(node, nil) != before {
 			t.Fatalf("fresh replay error=%v emits=%d", err, replay)
 		}
 	})

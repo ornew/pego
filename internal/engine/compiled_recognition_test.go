@@ -89,8 +89,8 @@ func TestCompiledRecognitionRoundTrip(t *testing.T) {
 									wantModeRefused(t, gerr, mode, CompiledRecognize)
 									continue
 								}
-								if got != nil || want != nil || resultJSON(got, gerr) != resultJSON(want, werr) {
-									t.Fatalf("%s mode start=%s unit=%v backend=%v input=%q: got %s want %s", mode, name, unit, backend, input, resultJSON(got, gerr), resultJSON(want, werr))
+								if got != nil || want != nil || gentest.ResultJSON(got, gerr) != gentest.ResultJSON(want, werr) {
+									t.Fatalf("%s mode start=%s unit=%v backend=%v input=%q: got %s want %s", mode, name, unit, backend, input, gentest.ResultJSON(got, gerr), gentest.ResultJSON(want, werr))
 								}
 							}
 						}
@@ -176,8 +176,8 @@ rule second = "é"`)
 				wantModeRefused(t, noRecognitionErr, CompiledParse, CompiledRecognize)
 				want, wantErr := p.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit})
 				got, gotErr = parsing.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit})
-				if resultJSON(got, gotErr) != resultJSON(want, wantErr) {
-					t.Fatalf("normal parse %v/%v %q: got %s want %s", backend, unit, tc.input, resultJSON(got, gotErr), resultJSON(want, wantErr))
+				if gentest.ResultJSON(got, gotErr) != gentest.ResultJSON(want, wantErr) {
+					t.Fatalf("normal parse %v/%v %q: got %s want %s", backend, unit, tc.input, gentest.ResultJSON(got, gotErr), gentest.ResultJSON(want, wantErr))
 				}
 				_, gotErr = recognizing.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit})
 				wantModeRefused(t, gotErr, CompiledRecognize, CompiledParse)

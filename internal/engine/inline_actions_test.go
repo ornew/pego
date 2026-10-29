@@ -31,8 +31,8 @@ func TestInlineActionsMatchRules(t *testing.T) {
 			}
 			for _, input := range tc.Inputs {
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-					want := resultJSON(explicit.ParseWith("main", input, ParseOptions{Backend: backend}))
-					got := hiddenWhere(resultJSON(inline.ParseWith("main", input, ParseOptions{Backend: backend})))
+					want := gentest.ResultJSON(explicit.ParseWith("main", input, ParseOptions{Backend: backend}))
+					got := hiddenWhere(gentest.ResultJSON(inline.ParseWith("main", input, ParseOptions{Backend: backend})))
 					if got != want {
 						t.Errorf("%q on %s:\ninline:   %s\nexplicit: %s", input, backend, got, want)
 					}
@@ -135,7 +135,7 @@ func TestInlineActionsCompiledRoundTrip(t *testing.T) {
 			for _, mode := range valueModes {
 				loaded := saveLoad(t, prog, "main", mode)
 				for _, input := range tc.Inputs {
-					want, got := resultJSON(prog.Parse("main", input)), resultJSON(loaded.ParseWith("main", input, servedBy(mode, ParseOptions{})))
+					want, got := gentest.ResultJSON(prog.Parse("main", input)), gentest.ResultJSON(loaded.ParseWith("main", input, servedBy(mode, ParseOptions{})))
 					if got != want {
 						t.Errorf("%q (%s mode): %s / %s", input, mode, got, want)
 					}

@@ -161,7 +161,7 @@ func testGeneratedTypedAnonymousJoinValues(t *testing.T) {
 		t.Skip("go command not found")
 	}
 	cases := []gentest.Case{{Name: "anonymous joins", Src: anonJoinGrammar, Inputs: []string{"", "a;", "(a;b;)", "a;(a;b;)c;", "(a;"}}}
-	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, len(cases))
+	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, len(cases))
 }
 
 // The name of an interface follows the order of the members where the set first appears in the
@@ -274,5 +274,5 @@ func testGeneratedTypedAnonymousJoinOneNodeAndErrorValues(t *testing.T) {
 		t.Skip("go command not found")
 	}
 	cases := []gentest.Case{{Name: "one node and error", Src: anonErrorJoinGrammar, Inputs: []string{"", "a;", "a;b;", "1;a;", "a;2;b;"}}}
-	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, len(cases))
+	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, len(cases))
 }

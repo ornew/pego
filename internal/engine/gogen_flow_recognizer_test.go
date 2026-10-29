@@ -61,7 +61,7 @@ func testGeneratedFlowRecognizerParity(t *testing.T) {
 		t.Fatalf("%d direct and %d framed rules of the recognizer take the Flow route: the parity test exercises nothing", taken, framed)
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
+	gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
 }
 
 // invertClassTests inverts every range test of a character class in the code, as a printer would
@@ -204,7 +204,7 @@ func TestGeneratedFlowRecognizerMutantChild(t *testing.T) {
 	}
 	gentest.PinOrdinary(t)
 	cases := gentest.GenCorpus(t)
-	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{})
+	gentest.GeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{})
 	if mutated == 0 {
 		t.Fatalf("the %s mutant changes no generated recognizer", name)
 	}
@@ -312,7 +312,7 @@ func TestFlowRecognizerFallbackMatchesEngine(t *testing.T) {
 			framed[r.Name] = true
 		}
 	}
-	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), []gentest.Case{c}, gen.GenOptions{})
+	gentest.GeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), []gentest.Case{c}, gen.GenOptions{})
 	if len(refused) == 0 {
 		t.Fatal("no rule was refused: the fallback is not exercised")
 	}

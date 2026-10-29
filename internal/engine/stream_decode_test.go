@@ -12,6 +12,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -67,7 +68,7 @@ func TestOpenPipeStreamEmitsCompleteItem(t *testing.T) {
 						done := make(chan error, 1)
 						go func() {
 							defer pr.Close() // Unblock a writer if parsing fails before all chunks arrive.
-							done <- p.ParseStreamWith("main", pr, func(n *value.Node) error { emitted <- resultJSON(n, nil); return nil }, ParseOptions{Backend: b, Unit: unit})
+							done <- p.ParseStreamWith("main", pr, func(n *value.Node) error { emitted <- gentest.ResultJSON(n, nil); return nil }, ParseOptions{Backend: b, Unit: unit})
 						}()
 						t.Cleanup(func() {
 							pw.Close()
@@ -96,7 +97,7 @@ func TestOpenPipeStreamEmitsCompleteItem(t *testing.T) {
 							t.Fatal(err)
 						}
 						want := ""
-						refErr := p.ParseStreamWith("main", strings.NewReader(s+"\n"), func(n *value.Node) error { want = resultJSON(n, nil); return nil }, ParseOptions{Unit: unit})
+						refErr := p.ParseStreamWith("main", strings.NewReader(s+"\n"), func(n *value.Node) error { want = gentest.ResultJSON(n, nil); return nil }, ParseOptions{Unit: unit})
 						if refErr != nil {
 							t.Fatal(refErr)
 						}

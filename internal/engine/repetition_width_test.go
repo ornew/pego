@@ -134,8 +134,8 @@ func TestWideRepetitionBounds(t *testing.T) {
 							for _, input := range c.Inputs {
 								want, wantErr := prog.ParseWith("main", input, ParseOptions{Unit: unit})
 								got, gotErr := loaded.ParseWith("main", input, servedBy(mode, ParseOptions{Backend: backend, Unit: unit}))
-								if resultJSON(got, gotErr) != resultJSON(want, wantErr) {
-									t.Errorf("loaded %s/%s on %q: got %s, want %s", backend, unit, input, resultJSON(got, gotErr), resultJSON(want, wantErr))
+								if gentest.ResultJSON(got, gotErr) != gentest.ResultJSON(want, wantErr) {
+									t.Errorf("loaded %s/%s on %q: got %s, want %s", backend, unit, input, gentest.ResultJSON(got, gotErr), gentest.ResultJSON(want, wantErr))
 								}
 							}
 						}
@@ -173,7 +173,7 @@ func TestWideRepetitionDocumentsAndStreams(t *testing.T) {
 					count := 0
 					err := p.ParseStreamWith("main", strings.NewReader("éé"), func(n *value.Node) error {
 						if value.D(n).Text != "é" {
-							t.Errorf("unexpected stream element: %s", resultJSON(n, nil))
+							t.Errorf("unexpected stream element: %s", gentest.ResultJSON(n, nil))
 						}
 						count++
 						return nil
@@ -195,8 +195,8 @@ func TestWideRepetitionDocumentsAndStreams(t *testing.T) {
 					for range 2 {
 						n, err := d.Parse()
 						want, wantErr := prog.ParseWith("main", d.Text(), ParseOptions{Unit: unit})
-						if resultJSON(n, err) != resultJSON(want, wantErr) {
-							t.Errorf("Document %s/%s: got %s, want %s", backend, unit, resultJSON(n, err), resultJSON(want, wantErr))
+						if gentest.ResultJSON(n, err) != gentest.ResultJSON(want, wantErr) {
+							t.Errorf("Document %s/%s: got %s, want %s", backend, unit, gentest.ResultJSON(n, err), gentest.ResultJSON(want, wantErr))
 						}
 						if err := d.Edit(0, 0, "é"); err != nil {
 							t.Fatal(err)

@@ -90,7 +90,7 @@ func TestStreamCallerPanicIdentity(t *testing.T) {
 								got := catchStreamPanic(func() {
 									err = prog.ParseStreamWith("main", reader, func(n *value.Node) error {
 										nodes = append(nodes, n)
-										before = append(before, resultJSON(n, nil))
+										before = append(before, gentest.ResultJSON(n, nil))
 										if phase == "emit" && len(nodes) == 2 {
 											panic(token)
 										}
@@ -114,7 +114,7 @@ func TestStreamCallerPanicIdentity(t *testing.T) {
 									t.Fatalf("retry error=%v emitted=%d", err, retryCount)
 								}
 								for i, n := range nodes {
-									if resultJSON(n, nil) != before[i] {
+									if gentest.ResultJSON(n, nil) != before[i] {
 										t.Fatal("panic or retry changed a delivered prefix")
 									}
 								}

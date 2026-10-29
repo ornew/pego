@@ -35,8 +35,8 @@ func TestFormatPreservesMinusSemantics(t *testing.T) {
 							opts := ParseOptions{Backend: backend, Unit: unit}
 							n1, err1 := before.ParseWith("main", input, opts)
 							n2, err2 := after.ParseWith("main", input, opts)
-							if resultJSON(n1, err1) != resultJSON(n2, err2) {
-								t.Errorf("%s/%s on %q: formatting changes %s to %s", backend, unit, input, resultJSON(n1, err1), resultJSON(n2, err2))
+							if gentest.ResultJSON(n1, err1) != gentest.ResultJSON(n2, err2) {
+								t.Errorf("%s/%s on %q: formatting changes %s to %s", backend, unit, input, gentest.ResultJSON(n1, err1), gentest.ResultJSON(n2, err2))
 							}
 						}
 					}
@@ -100,7 +100,7 @@ func TestFormatPreservesCorpus(t *testing.T) {
 					opts := ParseOptions{Unit: unit}
 					n1, err1 := p1.ParseWith("main", input, opts)
 					n2, err2 := p2.ParseWith("main", input, opts)
-					if r1, r2 := resultJSON(n1, err1), resultJSON(n2, err2); r1 != r2 {
+					if r1, r2 := gentest.ResultJSON(n1, err1), gentest.ResultJSON(n2, err2); r1 != r2 {
 						t.Errorf("%v on %q: formatting changes %s to %s", unit, input, r1, r2)
 					}
 				}

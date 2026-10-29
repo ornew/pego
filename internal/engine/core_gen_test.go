@@ -446,7 +446,7 @@ func compareCoreDecisions(c *coreGenCase, n *coreDecisionCounts) []string {
 	for _, e := range c.passErrs {
 		errs = append(errs, "verify: "+e)
 	}
-	if !*updateGoldens {
+	if !*gentest.UpdateGoldens {
 		c.golden.read()
 		want, ok := c.golden.lines[decisionsKey{c.mode, c.name}]
 		if !ok {

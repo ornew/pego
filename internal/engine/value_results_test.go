@@ -34,12 +34,12 @@ func TestValueResultsAcrossBackends(t *testing.T) {
 		t.Run(fixture.Name, func(t *testing.T) {
 			program := mustCompile(t, fixture.Src)
 			for _, input := range fixture.Inputs {
-				baseline := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure}))
+				baseline := gentest.ResultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure}))
 				if strings.Contains(baseline, "error") {
 					t.Fatalf("input=%q: %s", input, baseline)
 				}
 				for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-					if actual := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend})); actual != baseline {
+					if actual := gentest.ResultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend})); actual != baseline {
 						t.Fatalf("%s input=%q: %s / %s", backend, input, actual, baseline)
 					}
 				}
@@ -86,8 +86,8 @@ func TestValueResultsGeneratedGoParity(t *testing.T) {
 
 func testValueResultsGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, valueResultCases(), gen.GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, valueResultCases(), gen.GenOptions{ConvertTypes: true})
+	gentest.GeneratedParsersCorpus(t, goBin, valueResultCases(), gen.GenOptions{})
+	gentest.GeneratedTypesCorpus(t, goBin, valueResultCases(), gen.GenOptions{ConvertTypes: true})
 }
 
 func TestValueResultsGeneratedTypeScriptParity(t *testing.T) {

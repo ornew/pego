@@ -30,7 +30,7 @@ func TestBackendsMatchOnCorpus(t *testing.T) {
 				for _, u := range []PositionUnit{CodePoints, Bytes} {
 					n1, err1 := prog.ParseWith("main", in, ParseOptions{Unit: u})
 					n2, err2 := plain.ParseWith("main", in, ParseOptions{Unit: u})
-					if a, b := resultJSON(n1, err1), resultJSON(n2, err2); a != b {
+					if a, b := gentest.ResultJSON(n1, err1), gentest.ResultJSON(n2, err2); a != b {
 						t.Errorf("input %q (%v): projected repetitions differ\n projected %s\n plain     %s", in, u, a, b)
 					}
 				}

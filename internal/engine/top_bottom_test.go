@@ -38,9 +38,9 @@ func TestTopBottomAcrossBackends(t *testing.T) {
 		t.Run(fixture.Name, func(t *testing.T) {
 			program := mustCompile(t, fixture.Src)
 			for _, input := range fixture.Inputs {
-				baseline := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure}))
+				baseline := gentest.ResultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure}))
 				for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-					if actual := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend})); actual != baseline {
+					if actual := gentest.ResultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend})); actual != baseline {
 						t.Fatalf("%s input=%q: %s / %s", backend, input, actual, baseline)
 					}
 				}
@@ -309,9 +309,9 @@ func TestTopBottomGeneratedGoParity(t *testing.T) {
 
 func testTopBottomGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, topBottomCases(), gen.GenOptions{})
+	gentest.GeneratedParsersCorpus(t, goBin, topBottomCases(), gen.GenOptions{})
 	// A field of type _, like one of type any, keeps the reference runtime.
-	testGeneratedTypesCorpus(t, goBin, topBottomCases(), gen.GenOptions{ConvertTypes: true}, 2)
+	gentest.GeneratedTypesCorpus(t, goBin, topBottomCases(), gen.GenOptions{ConvertTypes: true}, 2)
 }
 
 func TestTopBottomGeneratedTypeScriptParity(t *testing.T) {

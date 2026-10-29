@@ -102,7 +102,7 @@ func testLiteralTextPredicateDispatchDisabledParity(t *testing.T) {
 	if len(cases) < 5 {
 		t.Fatalf("only %d literal text predicate cases", len(cases))
 	}
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{DisableLiteralTextDispatch: true})
+	gentest.GeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{DisableLiteralTextDispatch: true})
 }
 
 func TestLiteralTextPredicateDispatchTSDisabledParity(t *testing.T) {

@@ -47,6 +47,6 @@ func testGeneratedTypedLRBodies(t *testing.T) {
 		}
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedTypesCorpus(t, goBin, gentest.TypedLRBodyCases, gen.GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, gentest.TypedLRBodyCases, gen.GenOptions{ConvertTypes: true})
+	gentest.GeneratedTypesCorpus(t, goBin, gentest.TypedLRBodyCases, gen.GenOptions{})
+	gentest.GeneratedTypesCorpus(t, goBin, gentest.TypedLRBodyCases, gen.GenOptions{ConvertTypes: true})
 }

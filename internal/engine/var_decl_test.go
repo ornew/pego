@@ -6,6 +6,7 @@ import (
 
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -202,8 +203,8 @@ func TestGrammarWithoutVariables(t *testing.T) {
 	for _, in := range []string{"abc", "a", "ab?"} {
 		a, errA := prog.ParseWith("main", in, ParseOptions{Backend: Closure})
 		b, errB := prog.ParseWith("main", in, ParseOptions{Backend: Bytecode})
-		if resultJSON(a, errA) != resultJSON(b, errB) {
-			t.Errorf("%q: %s / %s", in, resultJSON(a, errA), resultJSON(b, errB))
+		if gentest.ResultJSON(a, errA) != gentest.ResultJSON(b, errB) {
+			t.Errorf("%q: %s / %s", in, gentest.ResultJSON(a, errA), gentest.ResultJSON(b, errB))
 		}
 	}
 }

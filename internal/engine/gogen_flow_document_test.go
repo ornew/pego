@@ -271,9 +271,9 @@ const documentGolden = "testdata/document.golden"
 
 const documentGoldenHeader = "# Digests of the Document parses of the generated Node parsers (results, errors, evaluation and reuse counts after\n" +
 	"# every edit of a seeded sequence), by group, mode and case (see gogen_flow_document_test.go).\n" +
-	"# Rewrite with: go test ./internal/engine -run Document -update\n" + goldenRules
+	"# Rewrite with: go test ./internal/engine -run Document -update\n" + gentest.GoldenRules
 
-var documentGoldenFile = goldenFile{path: documentGolden, header: documentGoldenHeader}
+var documentGoldenFile = gentest.GoldenFile{Path: documentGolden, Header: documentGoldenHeader}
 
 // documentDigests returns, for each case, the hash of its report lines, keyed by group/mode/name.
 func documentDigests(t testing.TB, group string, cases []documentCase, lines []string) map[string]string {
@@ -320,7 +320,7 @@ func checkDocumentReports(t *testing.T, group string, cases []documentCase, line
 	if reused == 0 {
 		t.Fatal("no parse after an edit reuses a result")
 	}
-	documentGoldenFile.check(t, group+"/"+gentest.FixtureForm(t)+"/", documentDigests(t, group, cases, lines))
+	documentGoldenFile.Check(t, group+"/"+gentest.FixtureForm(t)+"/", documentDigests(t, group, cases, lines))
 }
 
 // documentShapes examine the input beyond the end of the result of their rule, which a Document must record to
@@ -393,7 +393,7 @@ func TestFlowNodeDocumentMutants(t *testing.T) {
 	for _, c := range documentShapes {
 		cases = append(cases, documentCase{c, 300})
 	}
-	golden := readGolden(t, documentGolden)
+	golden := gentest.ReadGolden(t, documentGolden)
 	digestsDiffer := func(lines []string) bool {
 		for k, v := range documentDigests(t, "corpus", cases, lines) {
 			if w, ok := golden[k]; !ok || w != v {

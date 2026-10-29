@@ -92,8 +92,8 @@ func TestPredicateBlocksAdjacentParity(t *testing.T) {
 					for _, recognize := range []bool{false, true} {
 						options := ParseOptions{Backend: backend, Unit: unit, Recognize: recognize}
 						for _, input := range fixture.inputs {
-							got := resultJSON(block.ParseWith("main", input, options))
-							want := resultJSON(adjacent.ParseWith("main", input, options))
+							got := gentest.ResultJSON(block.ParseWith("main", input, options))
+							want := gentest.ResultJSON(adjacent.ParseWith("main", input, options))
 							if got != want {
 								t.Fatalf("%s/%s recognize=%t input=%q: block %s; adjacent %s", backend, unit, recognize, input, got, want)
 							}
@@ -137,8 +137,8 @@ func TestPredicateBlocksSourceAndSavedGrammar(t *testing.T) {
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, input := range []string{"é", "", "a", "éé"} {
 						parseOptions := ParseOptions{Backend: backend, Unit: unit}
-						got := resultJSON(loaded.ParseWith("main", input, servedBy(mode, parseOptions)))
-						want := resultJSON(program.ParseWith("main", input, parseOptions))
+						got := gentest.ResultJSON(loaded.ParseWith("main", input, servedBy(mode, parseOptions)))
+						want := gentest.ResultJSON(program.ParseWith("main", input, parseOptions))
 						if got != want {
 							t.Fatalf("saved %s/%s input=%q: %s / %s", backend, unit, input, got, want)
 						}
@@ -195,7 +195,7 @@ func TestPredicateBlocksGeneratedGoParity(t *testing.T) {
 }
 
 func testPredicateBlocksGeneratedGoParity(t *testing.T) {
-	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), predicateBlockGeneratedCases(), gen.GenOptions{})
+	gentest.GeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), predicateBlockGeneratedCases(), gen.GenOptions{})
 }
 
 func TestPredicateBlocksGeneratedTypeScriptParity(t *testing.T) {

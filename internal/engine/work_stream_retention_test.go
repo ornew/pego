@@ -100,7 +100,7 @@ func runStreamControlRetentionCase(t *testing.T, prog *Program, outcome string, 
 				panic("emit sentinel missing")
 			}
 			nodes = append(nodes, n)
-			snapshots = append(snapshots, resultJSON(n, nil))
+			snapshots = append(snapshots, gentest.ResultJSON(n, nil))
 			switch outcome {
 			case "emit-error":
 				return stop
@@ -196,7 +196,7 @@ func TestWorkStreamTraceRetentionWithActiveControls(t *testing.T) {
 					t.Fatalf("emitted nodes/snapshots = %d/%d", len(run.nodes), len(run.snapshots))
 				}
 				for i, n := range run.nodes {
-					if got := resultJSON(n, nil); got != run.snapshots[i] {
+					if got := gentest.ResultJSON(n, nil); got != run.snapshots[i] {
 						t.Fatalf("emitted node %d changed before GC", i)
 					}
 				}
@@ -224,7 +224,7 @@ func TestWorkStreamTraceRetentionWithActiveControls(t *testing.T) {
 					t.Fatal("GC changed saved trace metadata")
 				}
 				for i, n := range run.nodes {
-					if got := resultJSON(n, nil); got != run.snapshots[i] {
+					if got := gentest.ResultJSON(n, nil); got != run.snapshots[i] {
 						t.Fatalf("GC changed emitted node %d", i)
 					}
 				}
@@ -236,7 +236,7 @@ func TestWorkStreamTraceRetentionWithActiveControls(t *testing.T) {
 					t.Fatalf("program retry err=%v emitted=%d", err, retryCount)
 				}
 				for i, n := range run.nodes {
-					if got := resultJSON(n, nil); got != run.snapshots[i] {
+					if got := gentest.ResultJSON(n, nil); got != run.snapshots[i] {
 						t.Fatalf("later parse changed emitted node %d", i)
 					}
 				}

@@ -12,6 +12,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // The lowering decisions of the Core IR passes over the corpus are frozen in two golden files:
@@ -292,7 +293,7 @@ func (gd *decisionsGolden) freeze(t *testing.T, modes []coreGenMode, cases func(
 				}
 				fresh[mode.name][c.name] = c.lines
 			}
-			if !*updateGoldens {
+			if !*gentest.UpdateGoldens {
 				gd.read()
 				for k := range gd.lines {
 					if _, ok := fresh[mode.name][k.grammar]; k.mode == mode.name && !ok {
@@ -303,7 +304,7 @@ func (gd *decisionsGolden) freeze(t *testing.T, modes []coreGenMode, cases func(
 			check(t, mode, &n)
 		})
 	}
-	if *updateGoldens {
+	if *gentest.UpdateGoldens {
 		if len(fresh) != len(modes) || t.Failed() {
 			t.Fatalf("not rewriting %s: the run did not complete in every mode", gd.path)
 		}

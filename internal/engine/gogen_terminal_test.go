@@ -112,7 +112,7 @@ func TestTerminalProgramGeneration(t *testing.T) {
 func TestTerminalProgramDisabledParity(t *testing.T) {
 	t.Parallel()
 	gentest.PinOrdinary(t)
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), terminalCases(), gen.GenOptions{DisableTerminalPrograms: true}, 0)
+	gentest.GeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), terminalCases(), gen.GenOptions{DisableTerminalPrograms: true}, 0)
 }
 
 // TestTerminalProgramEligibility pins where the generator lowers a terminal expression: only

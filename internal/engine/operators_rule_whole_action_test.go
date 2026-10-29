@@ -124,7 +124,7 @@ func testOperatorsRuleExplicitDefaultAction(t *testing.T) {
 					if input != "" && (n == nil || err != nil) || input == "" && err == nil {
 						t.Fatalf("%s/%s input %q: node=%v error=%v", backend, unit, input, n, err)
 					}
-					if got, want := resultJSON(n, err), resultJSON(plain.ParseWith("main", input, parseOpts)); got != want {
+					if got, want := gentest.ResultJSON(n, err), gentest.ResultJSON(plain.ParseWith("main", input, parseOpts)); got != want {
 						t.Fatalf("%s/%s input %q: explicit %s; omitted %s", backend, unit, input, got, want)
 					}
 				}

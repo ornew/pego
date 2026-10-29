@@ -79,9 +79,9 @@ func TestMemberAccessOnJoinAcrossBackends(t *testing.T) {
 		t.Run(fixture.Name, func(t *testing.T) {
 			program := mustCompile(t, fixture.Src)
 			for _, input := range fixture.Inputs {
-				baseline := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure}))
+				baseline := gentest.ResultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure}))
 				for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-					if actual := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend})); actual != baseline {
+					if actual := gentest.ResultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend})); actual != baseline {
 						t.Fatalf("%s input=%q: %s / %s", backend, input, actual, baseline)
 					}
 				}
@@ -104,7 +104,7 @@ func TestMemberAccessOnJoinValues(t *testing.T) {
 	} {
 		program := mustCompile(t, tc.src)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			if got := resultJSON(program.ParseWith("main", tc.input, ParseOptions{Backend: backend})); !strings.Contains(got, tc.want) {
+			if got := gentest.ResultJSON(program.ParseWith("main", tc.input, ParseOptions{Backend: backend})); !strings.Contains(got, tc.want) {
 				t.Errorf("%s %q: %s, want %s", backend, tc.input, got, tc.want)
 			}
 		}
@@ -131,9 +131,9 @@ func TestMemberAccessOnJoinGeneratedGoParity(t *testing.T) {
 
 func testMemberAccessOnJoinGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedParsersCorpus(t, goBin, append(joinMemberCases(), typedJoinMemberCases()...), gen.GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, joinMemberCases(), gen.GenOptions{ConvertTypes: true}, 0)
-	testGeneratedTypesCorpus(t, goBin, typedJoinMemberCases(), gen.GenOptions{ConvertTypes: true}, 0)
+	gentest.GeneratedParsersCorpus(t, goBin, append(joinMemberCases(), typedJoinMemberCases()...), gen.GenOptions{})
+	gentest.GeneratedTypesCorpus(t, goBin, joinMemberCases(), gen.GenOptions{ConvertTypes: true}, 0)
+	gentest.GeneratedTypesCorpus(t, goBin, typedJoinMemberCases(), gen.GenOptions{ConvertTypes: true}, 0)
 }
 
 func TestMemberAccessOnJoinGeneratedTypeScriptParity(t *testing.T) {

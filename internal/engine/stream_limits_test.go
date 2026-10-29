@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -48,7 +49,7 @@ func TestFiniteStreamRepetitions(t *testing.T) {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				var expected []string
 				refErr := prog.ParseStreamWith("main", strings.NewReader(tc.input), func(n *value.Node) error {
-					expected = append(expected, resultJSON(n, nil))
+					expected = append(expected, gentest.ResultJSON(n, nil))
 					return nil
 				}, ParseOptions{Backend: Closure, Unit: unit})
 				if len(expected) != tc.count || (refErr == nil) != tc.ok {
@@ -72,10 +73,10 @@ func TestFiniteStreamRepetitions(t *testing.T) {
 						}
 						var got []string
 						err := p.ParseStreamWith("main", strings.NewReader(tc.input), func(n *value.Node) error {
-							got = append(got, resultJSON(n, nil))
+							got = append(got, gentest.ResultJSON(n, nil))
 							return nil
 						}, opts)
-						if strings.Join(got, "\n") != strings.Join(expected, "\n") || resultJSON(nil, err) != resultJSON(nil, refErr) {
+						if strings.Join(got, "\n") != strings.Join(expected, "\n") || gentest.ResultJSON(nil, err) != gentest.ResultJSON(nil, refErr) {
 							t.Errorf("stream %s/%s: emitted %d, error %v; want %d, error %v", backend, unit, len(got), err, len(expected), refErr)
 						}
 					}
@@ -110,8 +111,8 @@ func TestZeroRepetitionDoesNotRunElement(t *testing.T) {
 					}
 					for range 2 {
 						n, err := d.Parse()
-						if resultJSON(n, err) != resultJSON(want, nil) {
-							t.Errorf("Document %s/%s: got %s, want %s", backend, unit, resultJSON(n, err), resultJSON(want, nil))
+						if gentest.ResultJSON(n, err) != gentest.ResultJSON(want, nil) {
+							t.Errorf("Document %s/%s: got %s, want %s", backend, unit, gentest.ResultJSON(n, err), gentest.ResultJSON(want, nil))
 						}
 					}
 				}

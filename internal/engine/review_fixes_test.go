@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // A fold whose accumulator keeps growing in nesting depth does not converge; the callback result
@@ -93,7 +94,7 @@ func TestNodeTopIsCastToSupplyElements(t *testing.T) {
 	}
 	program := mustCompile(t, "rule main = n:xs $$ => len(map($n.([]_), (x) => x))\n"+rules)
 	checkBackends(t, program, "main", "aaa")
-	if got := resultJSON(program.ParseWith("main", "aaa", ParseOptions{})); !strings.Contains(got, "3") {
+	if got := gentest.ResultJSON(program.ParseWith("main", "aaa", ParseOptions{})); !strings.Contains(got, "3") {
 		t.Errorf("got %s, want 3", got)
 	}
 }

@@ -116,7 +116,7 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 						{"parse bytecode", loadedBare, CompiledParse, Bytecode},
 					} {
 						n, err := run.prog.ParseWith("main", in, servedBy(run.mode, ParseOptions{Backend: run.b, Unit: unit}))
-						got := resultJSON(n, err)
+						got := gentest.ResultJSON(n, err)
 						if want == "" {
 							want = got
 						} else if got != want {
@@ -269,8 +269,8 @@ func testGeneratedConstructedFieldChecks(t *testing.T) {
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	cases := gentest.FieldCheckCases()
-	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true})
+	gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
+	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true})
 	if node, err := exec.LookPath("node"); err == nil {
 		testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{})
 	} else {
