@@ -353,15 +353,15 @@ func vmMachineOf(p *parser) *vmMachine {
 	return mc
 }
 
-func (mc *vmMachine) splitChunks() { mc.funcSlab = nil }
+func (mc *vmMachine) SplitChunks() { mc.funcSlab = nil }
 
-func (mc *vmMachine) clearInactive() { clearWork(mc.p, mc.vals[len(mc.vals):cap(mc.vals)]) }
+func (mc *vmMachine) ClearInactive() { clearWork(mc.p, mc.vals[len(mc.vals):cap(mc.vals)]) }
 
-func (mc *vmMachine) attach(p *parser) { mc.p = p }
+func (mc *vmMachine) Attach(p *parser) { mc.p = p }
 
-// keep keeps only the value stack, whose capacity a Document reuses (reuseDocumentVMValues), and
+// Keep keeps only the value stack, whose capacity a Document reuses (reuseDocumentVMValues), and
 // the reset driver state.
-func (mc *vmMachine) keep(n int, clearUsed bool) {
+func (mc *vmMachine) Keep(n int, clearUsed bool) {
 	vals := mc.vals[:0]
 	// A large document may have been replaced with a small input. Bound the kept capacity by
 	// the current size, with room for small grammars' fixed stack overhead. Division avoids int
@@ -378,7 +378,7 @@ func (mc *vmMachine) keep(n int, clearUsed bool) {
 	*mc = vmMachine{vals: vals, driver: mc.driver}
 }
 
-func (mc *vmMachine) release() {
+func (mc *vmMachine) Release() {
 	clear(mc.vals[:cap(mc.vals)])
 	if mc.driver != nil {
 		mc.driver.reset()
@@ -386,7 +386,7 @@ func (mc *vmMachine) release() {
 	*mc = vmMachine{driver: mc.driver}
 }
 
-func (mc *vmMachine) retainedBytes() uint64 {
+func (mc *vmMachine) RetainedBytes() uint64 {
 	return uint64(cap(mc.vals)) * uint64(unsafe.Sizeof(any(nil)))
 }
 

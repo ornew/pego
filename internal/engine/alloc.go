@@ -22,7 +22,7 @@ func (p *parser) splitChunks() {
 	if len(p.nodeSlab) < nodeChunk/8 || p.nodeChunks >= 2 {
 		p.nodeSlab, p.ptrSlab, p.fieldSlab = nil, nil, nil
 		if p.backend != nil {
-			p.backend.splitChunks()
+			p.backend.SplitChunks()
 		}
 		if !streamFrameScratch {
 			p.frameSlab = nil
@@ -208,7 +208,7 @@ func (a *arena[T]) reset(n int) {
 func (p *parser) startStreamChunks() {
 	p.nodeSlab, p.ptrSlab, p.fieldSlab = nil, nil, nil
 	if p.backend != nil {
-		p.backend.splitChunks()
+		p.backend.SplitChunks()
 	}
 	p.nodeChunks = 0
 	if streamFrameScratch {

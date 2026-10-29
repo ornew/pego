@@ -147,22 +147,22 @@ type parser struct {
 // can find it. The shared code calls it where it lets go of parse state; a Document keeps it from
 // one parse to the next.
 type backendState interface {
-	// splitChunks lets go of the chunks the backend allocates values from, when the parser
+	// SplitChunks lets go of the chunks the backend allocates values from, when the parser
 	// splits its own chunks (splitChunks, startStreamChunks).
-	splitChunks()
-	// clearInactive clears the unused capacity of the backend's stacks when a stream commits.
-	clearInactive()
-	// attach makes the state serve the parser p, for a Document that kept it from a parse with
+	SplitChunks()
+	// ClearInactive clears the unused capacity of the backend's stacks when a stream commits.
+	ClearInactive()
+	// Attach makes the state serve the parser p, for a Document that kept it from a parse with
 	// another parser.
-	attach(p *parser)
-	// keep prepares the state to be kept for a later parse of an input of n units. It lets go
-	// of the parser, which attach replaces, and drops buffers much larger than such a parse
+	Attach(p *parser)
+	// Keep prepares the state to be kept for a later parse of an input of n units. It lets go
+	// of the parser, which Attach replaces, and drops buffers much larger than such a parse
 	// needs; clear also clears the used capacity.
-	keep(n int, clear bool)
-	// release lets go of the parser and clears and drops the buffers of the state.
-	release()
-	// retainedBytes estimates the memory of the buffers the state keeps.
-	retainedBytes() uint64
+	Keep(n int, clear bool)
+	// Release lets go of the parser and clears and drops the buffers of the state.
+	Release()
+	// RetainedBytes estimates the memory of the buffers the state keeps.
+	RetainedBytes() uint64
 }
 
 type memoKey struct {

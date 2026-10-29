@@ -66,7 +66,7 @@ func (d *Document) CacheStats() CacheStats {
 	s.EstimatedBytes += uint64(cap(d.edits)) * uint64(unsafe.Sizeof(docEdit{}))
 	s.EstimatedBytes += uint64(cap(d.kids)) * uint64(unsafe.Sizeof((*value.Node)(nil)))
 	if d.machine != nil {
-		s.EstimatedBytes += d.machine.retainedBytes()
+		s.EstimatedBytes += d.machine.RetainedBytes()
 	}
 	return s
 }

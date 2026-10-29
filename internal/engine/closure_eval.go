@@ -31,17 +31,17 @@ func closureMachineOf(p *parser) *closureMachine {
 	return cm
 }
 
-func (cm *closureMachine) splitChunks()   {}
-func (cm *closureMachine) clearInactive() {}
+func (cm *closureMachine) SplitChunks()   {}
+func (cm *closureMachine) ClearInactive() {}
 
-func (cm *closureMachine) attach(p *parser) { cm.p = p }
+func (cm *closureMachine) Attach(p *parser) { cm.p = p }
 
-// keep keeps nothing: the lambdas and their contexts belong to the parse that made them.
-func (cm *closureMachine) keep(int, bool) { cm.release() }
+// Keep keeps nothing: the lambdas and their contexts belong to the parse that made them.
+func (cm *closureMachine) Keep(int, bool) { cm.Release() }
 
-func (cm *closureMachine) release() { *cm = closureMachine{} }
+func (cm *closureMachine) Release() { *cm = closureMachine{} }
 
-func (cm *closureMachine) retainedBytes() uint64 { return 0 }
+func (cm *closureMachine) RetainedBytes() uint64 { return 0 }
 
 // closure is a lambda of the closure backend: its body is evaluated as an AST.
 type closure struct {

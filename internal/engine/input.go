@@ -623,7 +623,7 @@ func (p *parser) commit(pos int) {
 			clearWork(p, p.trail[:cap(p.trail)])
 		}
 		if streamStackCleanup && p.backend != nil {
-			p.backend.clearInactive()
+			p.backend.ClearInactive()
 		}
 		p.pruneStreamMemo(pos)
 		p.pruned = pos

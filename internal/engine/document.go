@@ -161,8 +161,8 @@ func (d *Document) parseWithCapture(o ParseOptions, capture func(*parser, *value
 	p.setTrace(o.Trace)
 	c.check()
 	if reuseDocumentVMValues && d.machine != nil {
-		d.machine.keep(d.in.loaded(), false)
-		d.machine.attach(p)
+		d.machine.Keep(d.in.loaded(), false)
+		d.machine.Attach(p)
 		p.backend = d.machine
 	}
 	executionStarted = true
@@ -195,7 +195,7 @@ func (d *Document) finishParse(p *parser) {
 		if d.machine != nil {
 			// A whole-rule memo hit evaluates no bodies and never writes the
 			// backend's stacks. Their already cleared storage needs no second scan.
-			d.machine.keep(d.in.loaded(), p.stats.Evaluated != 0)
+			d.machine.Keep(d.in.loaded(), p.stats.Evaluated != 0)
 		}
 	}
 	// Keep the tables the parse built on demand, so later parses and edits reuse them.
@@ -213,7 +213,7 @@ func (d *Document) finishParse(p *parser) {
 func (d *Document) invalidateParseState() {
 	clear(d.kids[:cap(d.kids)])
 	if d.machine != nil {
-		d.machine.release()
+		d.machine.Release()
 	}
 	d.memo = newMemoTable()
 	d.runs, d.kids, d.machine, d.resumed = nil, nil, nil, 0
