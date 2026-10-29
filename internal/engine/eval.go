@@ -16,10 +16,10 @@ import (
 // function is a function (lambda) passed to a built-in function: *closure when evaluating the
 // AST, *vmFunc in bytecode.
 type function interface {
-	arity() int
-	// apply calls the function with the arguments x and y; y is ignored by a function of one
+	Arity() int
+	// Apply calls the function with the arguments x and y; y is ignored by a function of one
 	// parameter. (Arguments are not passed as a slice, which would escape through the interface.)
-	apply(x, y any) (any, error)
+	Apply(x, y any) (any, error)
 }
 
 // evaluator evaluates an action expression (it differs per backend).
@@ -338,7 +338,7 @@ func (c *evalCtx) builtin(fn string, args []any) (any, error) {
 		return s, nil
 	case "foldl", "foldr":
 		f, ok := args[2].(function)
-		if !ok || f.arity() != 2 {
+		if !ok || f.Arity() != 2 {
 			return nil, c.p.actionError(fn, ": third argument must be a function of two parameters")
 		}
 		items, err := c.p.valueListItems(fn, args[1])
@@ -352,7 +352,7 @@ func (c *evalCtx) builtin(fn string, args []any) (any, error) {
 			if fn == "foldr" {
 				it = items[len(items)-1-i]
 			}
-			if acc, err = f.apply(acc, value.UnboxNode(it)); err != nil {
+			if acc, err = f.Apply(acc, value.UnboxNode(it)); err != nil {
 				return nil, err
 			}
 		}
@@ -398,7 +398,7 @@ func (c *evalCtx) pushElems(fn string, args []any) error {
 		return c.pushFiltered(args)
 	case "map":
 		f, ok := args[1].(function)
-		if !ok || f.arity() != 1 {
+		if !ok || f.Arity() != 1 {
 			return c.p.actionError("map: second argument must be a function of one parameter")
 		}
 		items, err := c.p.valueListItems("map", args[0])
@@ -407,7 +407,7 @@ func (c *evalCtx) pushElems(fn string, args []any) error {
 		}
 		for _, it := range items {
 			c.p.stepWork()
-			v, err := f.apply(value.UnboxNode(it), nil)
+			v, err := f.Apply(value.UnboxNode(it), nil)
 			if err != nil {
 				return err
 			}

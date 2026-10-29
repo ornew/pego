@@ -51,7 +51,7 @@ type closure struct {
 	cm     *closureMachine
 }
 
-func (f *closure) arity() int { return len(f.params) }
+func (f *closure) Arity() int { return len(f.params) }
 
 // termEvaluator returns an evaluator for an AST value expression.
 func termEvaluator(t grammar.Term) evaluator {
@@ -374,7 +374,7 @@ func (cm *closureMachine) pushConcatArg(c *evalCtx, t grammar.Term) error {
 	return c.pushElems("concat", []any{v})
 }
 
-func (f *closure) apply(x, y any) (any, error) {
+func (f *closure) Apply(x, y any) (any, error) {
 	// The context and the parameters are freed when the call returns; a lambda created by the body
 	// keeps a copy of them (keep).
 	cm := f.cm

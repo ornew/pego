@@ -6,7 +6,7 @@ import "github.com/ornew/pego/internal/value"
 // return an actual bool; truthiness and static type narrowing are not implied.
 func (c *evalCtx) pushFiltered(args []any) error {
 	f, ok := args[1].(function)
-	if !ok || f.arity() != 1 {
+	if !ok || f.Arity() != 1 {
 		return c.p.actionError("filter: second argument must be a function of one parameter")
 	}
 	items, err := c.p.valueListItems("filter", args[0])
@@ -15,7 +15,7 @@ func (c *evalCtx) pushFiltered(args []any) error {
 	}
 	for _, item := range items {
 		c.p.stepWork()
-		val, err := f.apply(value.UnboxNode(item), nil)
+		val, err := f.Apply(value.UnboxNode(item), nil)
 		if err != nil {
 			return err
 		}

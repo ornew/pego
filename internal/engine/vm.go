@@ -1042,8 +1042,8 @@ type vmFunc struct {
 	ctx    *evalCtx
 }
 
-func (f *vmFunc) arity() int { return f.n }
-func (f *vmFunc) apply(x, y any) (any, error) {
+func (f *vmFunc) Arity() int { return f.n }
+func (f *vmFunc) Apply(x, y any) (any, error) {
 	// The locals are placed on the expression stack below the operands of the body.
 	p := f.ctx.p
 	p.stepWork()

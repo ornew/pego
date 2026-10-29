@@ -7,7 +7,7 @@ type workActionFunc struct {
 	fn     func(any, any) (any, error)
 }
 
-func (f workActionFunc) arity() int { return f.params }
-func (f workActionFunc) apply(x, y any) (any, error) {
+func (f workActionFunc) Arity() int { return f.params }
+func (f workActionFunc) Apply(x, y any) (any, error) {
 	return f.fn(x, y)
 }
