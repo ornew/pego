@@ -73,7 +73,7 @@ func (f *bodyFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult
 	case evCall:
 		in := &vm.m.Code[f.b.ip]
 		r, min := vm.rules[in.A], int(in.B)
-		if r.plain && !p.noPlain {
+		if r.Plain && !p.noPlain {
 			return p.plainCallFrame(r, min), iresult{}, false
 		}
 		if p.tr != nil {
@@ -81,7 +81,7 @@ func (f *bodyFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult
 		}
 		// What callChild does, written out on this hot path
 		if !p.memoizes(r) || p.firstCall(r) {
-			if len(r.scope.names) == 0 {
+			if len(r.Scope.Names) == 0 {
 				return p.plainCallFrame(r, min), iresult{}, false
 			}
 			return p.callFrame(r, min, false), iresult{}, false
@@ -112,7 +112,7 @@ func (f *bodyFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult
 // callChild returns the frame that runs a call of r (the same steps as call).
 func (p *parser) callChild(r *rule, min int) iframe {
 	if !p.memoizes(r) || p.firstCall(r) {
-		if len(r.scope.names) == 0 {
+		if len(r.Scope.Names) == 0 {
 			return p.plainCallFrame(r, min)
 		}
 		return p.callFrame(r, min, false)
@@ -266,7 +266,7 @@ func (f *callFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult
 			return nil, iresult{v: v, ok: ok}, true
 		}
 		f.st = st
-		if r.leader {
+		if r.Leader {
 			f.g = p.growBegin(st.key)
 		}
 		return f.invoke(p), iresult{}, false
@@ -279,7 +279,7 @@ func (f *callFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult
 			}
 			return nil, iresult{v: v, ok: ok}, true
 		}
-		if r.leader {
+		if r.Leader {
 			if p.growStep(&f.g, v, ok) {
 				return f.invoke(p), iresult{}, false
 			}
@@ -366,7 +366,7 @@ func (f *longestFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, ires
 		return nil, iresult{cutFailed: f.cutFailed}, true
 	}
 	f.prevFrame, f.prevCut = p.frame, p.cut
-	f.f = p.newFrame(len(f.ops[f.i].line.scope.names))
+	f.f = p.newFrame(len(f.ops[f.i].line.scope.Names))
 	p.frame, p.cut = f.f, false
 	return blockFrame(p, f.ops[f.i].line.entry), iresult{}, false
 }
@@ -432,7 +432,7 @@ func (f *nudFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult,
 			}
 			o := pr.operands[f.i]
 			f.prevFrame, f.prevCut = p.frame, p.cut
-			f.f = p.newFrame(len(o.scope.names))
+			f.f = p.newFrame(len(o.scope.Names))
 			p.frame, p.cut = f.f, false
 			f.state = nOperandDone
 			return blockFrame(p, o.entry), iresult{}, false

@@ -32,8 +32,8 @@ parser-throughput estimates.
 Evidence records:
 [073](../073-dependency-component-propagation-of-variable-reads.md).
 
-Source owners: [`ruleVariables and dependency
-components`](../../../internal/engine/analysis.go).
+Source owners: [`RuleVariables and dependency
+components`](../../../internal/compile/analysis.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -23,7 +24,7 @@ func BenchmarkStreamFrameScratch(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		prog, err := Compile(g, Options{})
+		prog, err := Compile(g, compile.Options{})
 		if err != nil {
 			b.Fatal(err)
 		}

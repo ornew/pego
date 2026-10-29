@@ -316,7 +316,7 @@ rule expr = expr "a" / "a"`)
 	p := acquirePooledParser(prog)
 	retained := value.Ptr(value.Data{Text: "retained", Children: []*value.Node{value.Ptr(value.Data{Text: "child"})}})
 	before, _ := json.Marshal(retained)
-	key := memoKey{rule: prog.byName["expr"].id}
+	key := memoKey{rule: prog.ByName["expr"].ID}
 	g := p.growBegin(key)
 	oldSeed := g.best
 	workMemoPrefix(p.memo, retained)

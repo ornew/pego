@@ -15,6 +15,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
@@ -163,7 +164,7 @@ func testGeneratedInvalidUTF8Literals(t *testing.T) {
 	i := 0
 	for _, tc := range invalidLiteralCorpus() {
 		g := literalCorpusGrammar(t, tc)
-		prog, err := Compile(g, Options{})
+		prog, err := Compile(g, compile.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -224,7 +225,7 @@ func TestGeneratedTSInvalidUTF8Literals(t *testing.T) {
 	for _, tc := range invalidLiteralCorpus() {
 		t.Run(tc.name, func(t *testing.T) {
 			g := literalCorpusGrammar(t, tc)
-			prog, err := Compile(g, Options{})
+			prog, err := Compile(g, compile.Options{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -336,7 +337,7 @@ func BenchmarkByteLiteralMatching(b *testing.B) {
 					if err != nil {
 						b.Fatal(err)
 					}
-					p, err := Compile(g, Options{})
+					p, err := Compile(g, compile.Options{})
 					if err != nil {
 						b.Fatal(err)
 					}

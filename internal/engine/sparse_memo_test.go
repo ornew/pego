@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 func TestSparseMemoRuleAndPageBoundaries(t *testing.T) {
@@ -94,11 +96,11 @@ func TestSparseMemoParseControls(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	prog, err := Compile(g, Options{})
+	prog, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if prog.nseen <= 64 {
+	if prog.NSeen <= 64 {
 		t.Fatal("control no longer exercises sparse rule count")
 	}
 	for i, input := range []string{"const 日本語 = \"😀\";\nconst v = [1, 2].map(x => x + 1);\n", "function f( { return 1;", strings.Repeat("const 日本語 = 1 + 2;\n", 100), strings.Repeat("const a = 1;\n", 100) + "function f( { return 1;"} {
@@ -123,7 +125,7 @@ func TestSparseMemoInputSelection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	prog, err := Compile(g, Options{})
+	prog, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}

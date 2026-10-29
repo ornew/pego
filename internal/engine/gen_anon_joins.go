@@ -5,13 +5,14 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 )
 
 // anonJoin is a join of declared node types that the typed output writes where no alias declares
 // it: the type of a field, of a list element or option, or the value type of a rule.
 type anonJoin struct {
 	// members are the distinct declared node types in the order written, nested joins flattened.
-	members joinTy
+	members compile.JoinTy
 	// alias is the alias that declares the same members, or empty if none does; then the join is
 	// the type of that alias.
 	alias string
@@ -29,12 +30,12 @@ type anonJoin struct {
 func (r *valueResolver) anonJoins() []anonJoin {
 	aliasOf := map[string]string{} // the set of the members of an alias join -> the alias
 	var aliasNames []string
-	for name := range r.info.aliases {
+	for name := range r.info.Aliases {
 		aliasNames = append(aliasNames, name)
 	}
 	sort.Strings(aliasNames)
 	for _, name := range aliasNames {
-		if u, ok := r.info.aliases[name].(joinTy); ok {
+		if u, ok := r.info.Aliases[name].(compile.JoinTy); ok {
 			if m, ok := joinKey(u); ok {
 				if _, dup := aliasOf[joinSetKey(m)]; !dup {
 					aliasOf[joinSetKey(m)] = name
@@ -44,21 +45,21 @@ func (r *valueResolver) anonJoins() []anonJoin {
 	}
 	var out []anonJoin
 	index := map[string]int{}
-	var collect func(x ty)
-	collect = func(x ty) {
+	var collect func(x compile.Ty)
+	collect = func(x compile.Ty) {
 		switch x := x.(type) {
-		case listTy:
-			collect(x.elem)
-		case optTy:
-			collect(x.elem)
-		case nodeTy:
-			collect(x.value)
-		case tupleTy:
-			for _, e := range x.elems {
+		case compile.ListTy:
+			collect(x.Elem)
+		case compile.OptTy:
+			collect(x.Elem)
+		case compile.NodeTy:
+			collect(x.Value)
+		case compile.TupleTy:
+			for _, e := range x.Elems {
 				collect(e)
 			}
-		case joinTy:
-			for _, a := range x.alts {
+		case compile.JoinTy:
+			for _, a := range x.Alts {
 				collect(a)
 			}
 			m, ok := joinKey(x)
@@ -92,17 +93,17 @@ func (r *valueResolver) anonJoins() []anonJoin {
 	for _, d := range r.prog.Grammar.File.Decls {
 		switch d := d.(type) {
 		case *grammar.TypeDef:
-			for _, f := range r.info.fields[d.Name] {
-				collect(f.t)
+			for _, f := range r.info.Fields[d.Name] {
+				collect(f.T)
 			}
 		case *grammar.TypeAlias:
 			// The members of an alias are joined by the alias itself, but a member can be a join.
-			if u, ok := r.info.aliases[d.Name].(joinTy); ok {
-				for _, a := range u.alts {
+			if u, ok := r.info.Aliases[d.Name].(compile.JoinTy); ok {
+				for _, a := range u.Alts {
 					collect(a)
 				}
 			} else {
-				collect(r.info.aliases[d.Name])
+				collect(r.info.Aliases[d.Name])
 			}
 		case *grammar.RuleDef:
 			if _, ok := r.ruleDefs[d.Name]; ok {
@@ -111,10 +112,10 @@ func (r *valueResolver) anonJoins() []anonJoin {
 			}
 		}
 	}
-	for _, rl := range r.prog.rules {
+	for _, rl := range r.prog.RuleList {
 		// Rules that the lowering of the grammar added follow the declared ones.
-		if _, ok := r.ruleDefs[rl.name]; ok && !visited[rl.name] {
-			collectRule(rl.name)
+		if _, ok := r.ruleDefs[rl.Name]; ok && !visited[rl.Name] {
+			collectRule(rl.Name)
 		}
 	}
 	return out
@@ -123,32 +124,32 @@ func (r *valueResolver) anonJoins() []anonJoin {
 // joinKey returns the members of a join as anonJoins compares them, and whether the join is one
 // that has an interface: at least two distinct members, or one with error, all of them declared
 // node types. Error is no member to compare: it implements every interface of a join.
-func joinKey(u joinTy) (joinTy, bool) {
-	var alts []ty
+func joinKey(u compile.JoinTy) (compile.JoinTy, bool) {
+	var alts []compile.Ty
 	seen := map[string]bool{}
 	hasError := false
-	var add func(x ty) bool
-	add = func(x ty) bool {
-		if m, ok := joinMembers(x).(joinTy); ok {
-			for _, a := range m.alts {
+	var add func(x compile.Ty) bool
+	add = func(x compile.Ty) bool {
+		if m, ok := compile.JoinMembers(x).(compile.JoinTy); ok {
+			for _, a := range m.Alts {
 				if !add(a) {
 					return false
 				}
 			}
 			return true
 		}
-		x = joinMembers(joinTy{[]ty{x}}).(joinTy).alts[0]
+		x = compile.JoinMembers(compile.JoinTy{Alts: []compile.Ty{x}}).(compile.JoinTy).Alts[0]
 		switch a := x.(type) {
-		case namedTy:
-			if a == tyError {
+		case compile.NamedTy:
+			if a == compile.TyError {
 				hasError = true // every interface of a join has the Error member
 				return true
 			}
-			if a.kind != 's' {
+			if a.Kind != 's' {
 				return false
 			}
-		case nodeTy:
-			if a.name == "" {
+		case compile.NodeTy:
+			if a.Name == "" {
 				return false
 			}
 		default:
@@ -162,21 +163,21 @@ func joinKey(u joinTy) (joinTy, bool) {
 	}
 	// A declared node type with error is a join, too: the value of a rule that recovers.
 	if !add(u) || len(alts) < 2 && !(len(alts) == 1 && hasError) {
-		return joinTy{}, false
+		return compile.JoinTy{}, false
 	}
-	return joinTy{alts}, true
+	return compile.JoinTy{Alts: alts}, true
 }
 
 // anonJoinName returns the Go name of the interface of an undeclared join: its members in the order
 // written, joined by Or; one declared node type and error is that type and Error.
-func anonJoinName(u joinTy) string {
-	parts := make([]string, len(u.alts))
-	for i, a := range u.alts {
+func anonJoinName(u compile.JoinTy) string {
+	parts := make([]string, len(u.Alts))
+	for i, a := range u.Alts {
 		switch a := a.(type) {
-		case namedTy:
-			parts[i] = a.name
-		case nodeTy:
-			parts[i] = a.name
+		case compile.NamedTy:
+			parts[i] = a.Name
+		case compile.NodeTy:
+			parts[i] = a.Name
 		}
 	}
 	if len(parts) == 1 {
@@ -187,17 +188,17 @@ func anonJoinName(u joinTy) string {
 
 // anonJoinText returns the join u of anonJoins as written: one declared node type is that type and
 // error.
-func anonJoinText(u joinTy) string {
-	if len(u.alts) == 1 {
+func anonJoinText(u compile.JoinTy) string {
+	if len(u.Alts) == 1 {
 		return u.String() + " | error"
 	}
 	return u.String()
 }
 
 // joinSetKey returns a string that is the same for joins with the same members in any order.
-func joinSetKey(u joinTy) string {
-	names := make([]string, len(u.alts))
-	for i, a := range u.alts {
+func joinSetKey(u compile.JoinTy) string {
+	names := make([]string, len(u.Alts))
+	for i, a := range u.Alts {
 		names[i] = a.String()
 	}
 	sort.Strings(names)

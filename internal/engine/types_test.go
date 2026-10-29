@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 func TestTypeErrors(t *testing.T) {
@@ -156,7 +158,7 @@ rule r3 = ((c1:r3 {v := len($c1)}) c2:r1 ";" #recover(skip=[^;]* ";")) @error(me
 	}
 	done := make(chan error, 1)
 	go func() {
-		_, err := Compile(g, Options{})
+		_, err := Compile(g, compile.Options{})
 		done <- err
 	}()
 	select {
@@ -220,7 +222,7 @@ func TestAliasErrorsReportedOnce(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
-		_, err = Compile(g, Options{})
+		_, err = Compile(g, compile.Options{})
 		if err == nil || strings.Count(err.Error(), tc.want) != 1 {
 			t.Errorf("%q: got %v, want %q once", tc.src, err, tc.want)
 		}

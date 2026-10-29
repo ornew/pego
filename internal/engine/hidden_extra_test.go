@@ -3,6 +3,8 @@ package engine
 import (
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 // Captures made in a hidden rule are not visible to its caller, and those of the caller are not
@@ -63,7 +65,7 @@ func TestDefaultValueKeepsTheNodeOfHiddenRulesWithActions(t *testing.T) {
 		{"nested", `rule main = "a" (x:"b" (y:"c" => text($y)) => text($x)) "d"`, `rule main = "a" (x:"b" (y:"c" => ...) => ...) "d"`, `rule main = "a" ("b" "c") "d"`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			def, plain, spliced := compileBare(t, tc.actions, Options{DefaultValue: true}), compileBare(t, tc.plain), compileBare(t, tc.spliced)
+			def, plain, spliced := compileBare(t, tc.actions, compile.Options{DefaultValue: true}), compileBare(t, tc.plain), compileBare(t, tc.spliced)
 			differs := false
 			for _, input := range []string{"abcd", "abd", "a", ""} {
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {

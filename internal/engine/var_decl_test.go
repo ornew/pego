@@ -5,17 +5,18 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
 // compileMessage compiles src and returns the error message, or "" if it compiles.
-func compileMessage(t *testing.T, src string, opts ...Options) string {
+func compileMessage(t *testing.T, src string, opts ...compile.Options) string {
 	t.Helper()
 	g, err := parseTest(src)
 	if err != nil {
 		t.Fatalf("%q: %v", src, err)
 	}
-	var o Options
+	var o compile.Options
 	if len(opts) > 0 {
 		o = opts[0]
 	}
@@ -190,8 +191,8 @@ rule main V = {d := d + 2} {tag := tag + "!"} "a" => V{N: d * 3, S: tag, B: on &
 // variable table and no variables in its module.
 func TestGrammarWithoutVariables(t *testing.T) {
 	prog := mustCompile(t, `rule main = "a" ("b" / "c")* $$`)
-	if prog.vars != nil || len(prog.Module().Vars) != 0 {
-		t.Fatalf("variables: %v, %v", prog.vars, prog.Module().Vars)
+	if prog.Vars != nil || len(prog.Module().Vars) != 0 {
+		t.Fatalf("variables: %v, %v", prog.Vars, prog.Module().Vars)
 	}
 	for _, in := range []string{"abc", "a", "ab?"} {
 		a, errA := prog.ParseWith("main", in, ParseOptions{Backend: Closure})
@@ -271,7 +272,7 @@ func TestLoadedBindingNeedsNoCheck(t *testing.T) {
 			m.Code[i].C = 1
 		}
 	}
-	if err := validateModule(m); err == nil {
+	if err := compile.ValidateModule(m); err == nil {
 		t.Error("an ASSIGN with a check operand was accepted")
 	}
 

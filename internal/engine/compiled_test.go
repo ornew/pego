@@ -13,6 +13,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -246,7 +247,7 @@ func TestCompiledCorruptionDoesNotPanic(t *testing.T) {
 func FuzzLoadProgram(f *testing.F) {
 	for _, src := range []string{arith, ast, incrementalGrammar, records} {
 		g := mustParse(src)
-		prog, err := Compile(g, Options{})
+		prog, err := Compile(g, compile.Options{})
 		if err != nil {
 			f.Fatal(err)
 		}
@@ -272,12 +273,12 @@ func BenchmarkLoad(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	prog, _ := Compile(mustParse(string(src)), Options{})
+	prog, _ := Compile(mustParse(string(src)), compile.Options{})
 	data, _ := prog.MarshalBinary("main")
 	b.Run("source", func(b *testing.B) {
 		for b.Loop() {
 			g, _ := parseTest(string(src))
-			Compile(g, Options{})
+			Compile(g, compile.Options{})
 		}
 	})
 	b.Run("compiled", func(b *testing.B) {

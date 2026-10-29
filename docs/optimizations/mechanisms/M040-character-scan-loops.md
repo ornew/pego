@@ -35,9 +35,9 @@ targets.
 Evidence records:
 [008](../008-fast-path-for-unmemoized-calls-scan-nesting-limit-d2db87d.md).
 
-Source owners: [`walker.scanRepeat`](../../../internal/engine/compile_walk.go),
+Source owners: [`Walker.scanRepeat`](../../../internal/compile/compile_walk.go),
 [`closureBuilder.ScanRepeat`](../../../internal/engine/closures.go),
-[`SCAN lowering`](../../../internal/engine/bcompile.go),
+[`SCAN lowering`](../../../internal/compile/bcompile.go),
 [`Scans pass`](../../../internal/ir/core/passes.go),
 [`Flow scan lowering`](../../../internal/ir/flow/lower.go), which lowers the
 scans of generated Go and TypeScript.

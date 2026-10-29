@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -29,12 +30,12 @@ func testGeneratedFlowRecognizerParity(t *testing.T) {
 	}
 	cases := genCorpus(t)
 	taken, framed := 0, 0
-	leanRouteHook = func(table string, r *staticRule) {
+	leanRouteHook = func(table string, r *compile.Rule) {
 		if table == "recRules" {
 			taken++
 		}
 	}
-	framedRouteHook = func(table string, r *staticRule) {
+	framedRouteHook = func(table string, r *compile.Rule) {
 		if table == "recRules" {
 			framed++
 		}
@@ -292,16 +293,16 @@ func TestFlowRecognizerFallbackMatchesEngine(t *testing.T) {
 		"rule main = ws item* !.\nrule ws = ([ ] / comment)*\nrule comment = \"--\" [^\\n]* / block_comment\nrule block_comment = \"/*\" (block_comment / !\"*/\" .)* \"*/\"\nrule item = [a-z]+ / [0-9]+\n",
 		[]string{"", "a", "a 1 b2", "-- c\n a", "/* x */ a", "/* /* y */ */ 1", "/* open", "a -- tail", "@", "a /* x */ /* y */ 2", "--"}}
 	refused, framed := map[string]bool{}, map[string]bool{}
-	refuseFlowRecRule = func(r *staticRule) bool {
+	refuseFlowRecRule = func(r *compile.Rule) bool {
 		if recFlowEligible(r) {
-			refused[r.name] = true
+			refused[r.Name] = true
 			return true
 		}
 		return false
 	}
-	framedRouteHook = func(table string, r *staticRule) {
+	framedRouteHook = func(table string, r *compile.Rule) {
 		if table == "recRules" {
-			framed[r.name] = true
+			framed[r.Name] = true
 		}
 	}
 	t.Cleanup(func() { refuseFlowRecRule, framedRouteHook = nil, nil })

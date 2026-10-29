@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -16,7 +17,7 @@ func TestWalkHiddenCaptures(t *testing.T) {
 rule x = #operators {
     operand "x"
     level { prefix "-" }
-}`, Options{})
+}`, compile.Options{})
 	n, err := prog.Parse("main", strings.Repeat("-", 40)+"x")
 	if err != nil {
 		t.Fatal(err)
@@ -44,7 +45,7 @@ func TestWalkElementCaptures(t *testing.T) {
 rule x = #operators {
     operand "x"
     level { prefix "-" }
-}`, Options{SourceInfo: true})
+}`, compile.Options{SourceInfo: true})
 	n, err := prog.Parse("main", strings.Repeat("-", 40)+"x")
 	if err != nil {
 		t.Fatal(err)
@@ -64,7 +65,7 @@ rule x = #operators {
 	}
 
 	prog = compileBare(t, `rule main = &s:word w:word "!"
-rule word = [a-z]+`, Options{SourceInfo: true})
+rule word = [a-z]+`, compile.Options{SourceInfo: true})
 	n, err = prog.Parse("main", "ab!")
 	if err != nil {
 		t.Fatal(err)

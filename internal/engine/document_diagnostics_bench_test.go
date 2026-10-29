@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 var documentDiagnosticBenchmarkError error
 
 func BenchmarkDocumentDiagnosticPublication(b *testing.B) {
 	prog, err := Compile(mustParse(`rule main = item* $$
-rule item = "a;" @error(message="original") #recover(skip="?;")`), Options{})
+rule item = "a;" @error(message="original") #recover(skip="?;")`), compile.Options{})
 	if err != nil {
 		b.Fatal(err)
 	}

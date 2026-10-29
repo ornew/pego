@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/limits"
 )
@@ -31,7 +32,7 @@ var textCompareInputs = []string{"", "a,b", "b,a", "ab,ab", "%ab:<ab>", "%z:<a>"
 // TestTextFieldComparisons checks that the backends agree on comparisons of string fields, with
 // and without work controls.
 func TestTextFieldComparisons(t *testing.T) {
-	prog := compileBare(t, textCompareGrammar, Options{})
+	prog := compileBare(t, textCompareGrammar, compile.Options{})
 	limits := limits.WorkLimits{MaxInputWork: 1 << 40, MaxSteps: 1 << 40}
 	for _, controlled := range []bool{false, true} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -186,7 +187,7 @@ func TestTextFieldComparisonsRejected(t *testing.T) {
 // textCompareEdgeGrammar, including the errors, with and without work controls.
 func TestTextFieldComparisonEdges(t *testing.T) {
 	inputs := []string{"?!", "?a!", "#a", "^ab", "^m", "~ab", "=a", "&x,y", "&a,b", "&b,a", "&ab,ab"}
-	prog := compileBare(t, textCompareEdgeGrammar, Options{})
+	prog := compileBare(t, textCompareEdgeGrammar, compile.Options{})
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, input := range inputs {
 			_, wantResult := parseSteps(t, prog, Closure, unit, input)

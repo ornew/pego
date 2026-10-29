@@ -9,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/value"
@@ -25,7 +26,7 @@ func testStreamRecoveryRejected(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, opts := range []Options{{}, {recognize: true}} {
+		for _, opts := range []compile.Options{{}, {Recognize: true}} {
 			if _, err := Compile(g, opts); err == nil || !strings.Contains(err.Error(), streamRecoveryError) {
 				t.Errorf("%s: %v", src, err)
 			}
@@ -50,8 +51,8 @@ func testStreamRecoveryRejected(t *testing.T) {
 		Skip: &grammar.Repeat{Expr: &grammar.Any{}, Min: 0, Max: -1},
 	}}}}}
 	starttest.MarkAll(g)
-	_, err := Compile(g, Options{})
-	if errs, ok := err.(ErrorList); !ok || len(errs) != 1 || errs[0].Pos != pos || !strings.Contains(err.Error(), streamRecoveryError) {
+	_, err := Compile(g, compile.Options{})
+	if errs, ok := err.(compile.ErrorList); !ok || len(errs) != 1 || errs[0].Pos != pos || !strings.Contains(err.Error(), streamRecoveryError) {
 		t.Errorf("public AST: %v; want positioned recovery error", err)
 	}
 }
@@ -192,7 +193,7 @@ func BenchmarkStreamRecoveryPreparation(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		p, err := Compile(g, Options{})
+		p, err := Compile(g, compile.Options{})
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -203,7 +204,7 @@ func BenchmarkStreamRecoveryPreparation(b *testing.B) {
 		b.Run(fmt.Sprintf("Compile/%d", n), func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				if _, err := Compile(g, Options{}); err != nil {
+				if _, err := Compile(g, compile.Options{}); err != nil {
 					b.Fatal(err)
 				}
 			}

@@ -5,6 +5,7 @@ import (
 	"io"
 	"runtime"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -35,7 +36,7 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *value.No
 			}
 		}
 	}()
-	start = prog.resolveStart(start) // an empty name selects the default start rule
+	start = prog.ResolveStart(start) // an empty name selects the default start rule
 	if err := prog.checkMode(o, false); err != nil {
 		return nil, err
 	}
@@ -49,7 +50,7 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *value.No
 	p.input = newControlledTextInput(input, o.Unit, !o.Recognize, p.scratch, control)
 	p.maxDepth = o.maxDepth(o.Backend)
 	p.deferMemo = true
-	if o.MissingTokens > 0 && active.hasMissing {
+	if o.MissingTokens > 0 && active.HasMissing {
 		p.missing, p.missingLen = &missingTokenState{limit: o.MissingTokens}, 0
 	}
 	p.setTrace(o.Trace)
@@ -84,11 +85,11 @@ func (prog *Program) recognizer() (*Program, error) {
 			}
 			return
 		}
-		flags := make([]ruleFlags, len(prog.rules))
-		for i, r := range prog.rules {
-			flags[i] = ruleFlags{memo: r.memo, leader: r.leader, positional: r.positional, twin: r.twinOK}
+		flags := make([]compile.RuleFlags, len(prog.RuleList))
+		for i, r := range prog.RuleList {
+			flags[i] = compile.RuleFlags{Memo: r.Memo, Leader: r.Leader, Positional: r.Positional, Twin: r.TwinOK}
 		}
-		prog.rec, prog.recErr = build(prog.Grammar, Options{recognize: true, recognizer: true, SourceInfo: prog.sourceInfo, DefaultValue: prog.defaultValue}, flags)
+		prog.rec, prog.recErr = build(prog.Grammar, compile.Options{Recognize: true, Recognizer: true, SourceInfo: prog.RecordsSourceInfo, DefaultValue: prog.MakesDefaultValue}, flags)
 	})
 	return prog.rec, prog.recErr
 }
@@ -106,19 +107,19 @@ func (prog *Program) backend(b Backend) Backend {
 
 // closureRule returns the rule the closure backend runs for the rule name, or nil if there is none.
 func (prog *Program) closureRule(name string) *rule {
-	if sr := prog.byName[name]; sr != nil {
-		return prog.closureRules[sr.id]
+	if sr := prog.ByName[name]; sr != nil {
+		return prog.closureRules[sr.ID]
 	}
 	return nil
 }
 
 // rule returns the rule name for backend b.
 func (prog *Program) rule(b Backend, name string) (*rule, error) {
-	if err := EntryError(name); err != nil {
+	if err := compile.EntryError(name); err != nil {
 		return nil, err
 	}
-	if prog.hasMissing && prog.backend(b) != Closure {
-		return nil, missingUnsupported("bytecode backends")
+	if prog.HasMissing && prog.backend(b) != Closure {
+		return nil, compile.MissingUnsupported("bytecode backends")
 	}
 	var r *rule
 	switch prog.backend(b) {
@@ -158,7 +159,7 @@ func (prog *Program) descs(b Backend) []string {
 	case BytecodeIterative:
 		return prog.ivm.descs
 	}
-	return prog.descTable
+	return prog.DescTable
 }
 
 // recoverParse turns an aborted parse (fatal) into an error. Runtime faults in bytecode
@@ -192,7 +193,7 @@ func (prog *Program) run(p *parser, b Backend, start string) (n *value.Node, err
 		return nil, err
 	}
 	p.descs = prog.descs(b)
-	p.memo.stride = prog.nseen
+	p.memo.stride = prog.NSeen
 	if be := prog.backend(b); be == Bytecode || be == BytecodeIterative {
 		p.memo.stride = prog.vmFor(be).nseen
 	}
@@ -213,7 +214,7 @@ func (prog *Program) run(p *parser, b Backend, start string) (n *value.Node, err
 		return v, nil
 	}
 	if ok {
-		p.expect(p.pos, idEndInput)
+		p.expect(p.pos, compile.IDEndInput)
 	}
 	return nil, p.syntaxError()
 }
@@ -226,17 +227,17 @@ func (prog *Program) Rules() []string {
 		var names []string
 		seen := map[string]bool{}
 		for _, r := range m.Rules {
-			if name := m.Strings[r.Name]; !seen[name] && !hiddenRule(name) { // value-free twins follow the original rules
+			if name := m.Strings[r.Name]; !seen[name] && !compile.HiddenRule(name) { // value-free twins follow the original rules
 				seen[name] = true
 				names = append(names, name)
 			}
 		}
 		return names
 	}
-	names := make([]string, 0, len(prog.rules))
-	for _, r := range prog.rules {
-		if !hiddenRule(r.name) {
-			names = append(names, r.name)
+	names := make([]string, 0, len(prog.RuleList))
+	for _, r := range prog.RuleList {
+		if !compile.HiddenRule(r.Name) {
+			names = append(names, r.Name)
 		}
 	}
 	return names
@@ -272,7 +273,7 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*value
 	if o.Recognize {
 		return fmt.Errorf("recognition is not supported for stream parsing")
 	}
-	start = prog.resolveStart(start) // an empty name selects the default start rule
+	start = prog.ResolveStart(start) // an empty name selects the default start rule
 	if err := prog.checkMode(o, false); err != nil {
 		return err
 	}
@@ -328,7 +329,7 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*value
 		return nil
 	}
 	if ok {
-		p.expect(p.pos, idEndInput)
+		p.expect(p.pos, compile.IDEndInput)
 	}
 	err = p.syntaxError()
 	control.check()

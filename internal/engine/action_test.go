@@ -340,7 +340,7 @@ func TestActionEnvironments(t *testing.T) {
 	prog := mustCompile(t, actionEnvironmentGrammar)
 	// peek calls plain at the start twice with another depth, so batch parsers
 	// memoize it there before main calls it.
-	if r := prog.byName["plain"]; !r.memo || r.transient || len(r.vars) != 2 {
+	if r := prog.ByName["plain"]; !r.Memo || r.Transient || len(r.Vars) != 2 {
 		t.Fatal("plain must be memoized by its two variables")
 	}
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {

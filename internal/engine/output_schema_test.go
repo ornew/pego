@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 )
 
 func TestOutputSchemaPrototype(t *testing.T) {
@@ -21,7 +22,7 @@ rule unused = "z"`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := Compile(g, Options{})
+	p, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +113,7 @@ rule unused = "z"`)
 		}
 	}
 	// A program without the grammar has no metadata to export from.
-	if _, err := (&Program{staticProgram: &staticProgram{}}).OutputSchemaPrototype("main", false); !errors.Is(err, ErrSchemaUnavailable) {
+	if _, err := (&Program{staticProgram: &compile.Program{}}).OutputSchemaPrototype("main", false); !errors.Is(err, ErrSchemaUnavailable) {
 		t.Fatal(err)
 	}
 }
@@ -123,7 +124,7 @@ func TestOutputSchemaEmptyJoinRoundTrip(t *testing.T) {
 rule main = "a"`); !strings.Contains(message, "no values") {
 		t.Fatalf("field without values: %s", message)
 	}
-	empty, err := schemaValue(tyBottom)
+	empty, err := schemaValue(compile.TyBottom)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,12 +147,12 @@ rule main = "a"`); !strings.Contains(message, "no values") {
 }
 
 func TestOutputSchemaInferredCaptureAndDynamic(t *testing.T) {
-	shape, err := schemaValue(nodeTy{
-		value: tupleTy{[]ty{tyStringNode, tyTop, optTy{listTy{tyString}}}},
-		caps: []capIndex{
-			{name: "z", paths: [][]int{{1}}, t: tyTop},
-			{name: "a", paths: [][]int{{2}, {0}}, t: optTy{listTy{tyString}}},
-			{name: "s", side: true, t: tyStringNode},
+	shape, err := schemaValue(compile.NodeTy{
+		Value: compile.TupleTy{Elems: []compile.Ty{compile.TyStringNode, compile.TyTop, compile.OptTy{Elem: compile.ListTy{Elem: compile.TyString}}}},
+		Caps: []compile.CapIndex{
+			{Name: "z", Paths: [][]int{{1}}, T: compile.TyTop},
+			{Name: "a", Paths: [][]int{{2}, {0}}, T: compile.OptTy{Elem: compile.ListTy{Elem: compile.TyString}}},
+			{Name: "s", Side: true, T: compile.TyStringNode},
 		},
 	})
 	if err != nil {
@@ -164,14 +165,14 @@ func TestOutputSchemaInferredCaptureAndDynamic(t *testing.T) {
 		len(shape.Captures[1].Paths) != 0 || shape.Captures[2].Name != "z" || shape.Captures[2].Shape.Kind != "top" {
 		t.Fatalf("shape %+v", shape)
 	}
-	joinShape, err := schemaValue(joinTy{[]ty{tyString, tyInt}})
+	joinShape, err := schemaValue(compile.JoinTy{Alts: []compile.Ty{compile.TyString, compile.TyInt}})
 	if err != nil || len(joinShape.Alternatives) != 2 {
 		t.Fatalf("join %+v %v", joinShape, err)
 	}
 }
 
 func TestOutputSchemaRejectsUnresolvedShapes(t *testing.T) {
-	p := &Program{staticProgram: &staticProgram{types: map[string]grammar.TypeDecl{"Known": &grammar.TypeDef{Name: "Known", Type: &grammar.StructType{}}}}}
+	p := &Program{staticProgram: &compile.Program{Types: map[string]grammar.TypeDecl{"Known": &grammar.TypeDef{Name: "Known", Type: &grammar.StructType{}}}}}
 	// The checker reports undefined names, which resolve to _ so that checking can go on; a
 	// checked program has none. *_ is _, since _ includes nil.
 	for _, expr := range []grammar.TypeExpr{
@@ -189,12 +190,12 @@ func TestOutputSchemaRejectsUnresolvedShapes(t *testing.T) {
 	if message := compileError(t, "type T = { F UnknownShape }\nrule main = \"a\""); !strings.Contains(message, "UnknownShape") {
 		t.Errorf("undefined field type: %s", message)
 	}
-	for _, inferred := range []ty{basicTy("other"), namedTy{name: "Known", kind: '?'}, (*listTy)(nil)} {
+	for _, inferred := range []compile.Ty{compile.BasicTy("other"), compile.NamedTy{Name: "Known", Kind: '?'}, (*compile.ListTy)(nil)} {
 		if shape, err := schemaValue(inferred); err == nil {
 			t.Errorf("accepted unresolved inferred shape %T: %+v", inferred, shape)
 		}
 	}
-	if shape, err := schemaValue(tyBottom); err != nil || shape.Kind != "join" || len(shape.Alternatives) != 0 {
+	if shape, err := schemaValue(compile.TyBottom); err != nil || shape.Kind != "join" || len(shape.Alternatives) != 0 {
 		t.Errorf("_|_ is not the empty join: %+v %v", shape, err)
 	}
 }
@@ -206,7 +207,7 @@ rule main = (-"a")*`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := Compile(g, Options{})
+	p, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +234,7 @@ rule main = (-"a")*`)
 // TestOutputSchemaMergesRepeatedCaptures checks that captures of one name in one node export as a
 // single capture with the paths of all of them, which keeps the schema valid.
 func TestOutputSchemaMergesRepeatedCaptures(t *testing.T) {
-	p := compileBare(t, "@start\nrule main = a:\"x\" b:\"y\" a:\"z\"\n", Options{DefaultValue: true})
+	p := compileBare(t, "@start\nrule main = a:\"x\" b:\"y\" a:\"z\"\n", compile.Options{DefaultValue: true})
 	s, err := p.OutputSchemaPrototype("main", false)
 	if err != nil {
 		t.Fatal(err)
@@ -258,7 +259,7 @@ func TestOutputSchemaMergesRepeatedCaptures(t *testing.T) {
 // bind. The types of the places are joined once: the result is flat, sorted and without duplicates,
 // and it is the same whatever the order of the places.
 func TestOutputSchemaRepeatedCaptureJoin(t *testing.T) {
-	p := compileBare(t, "@start\nrule main = a:\"x\" a:[0-9]+ a:\"q\" a:[0-9]+\n", Options{DefaultValue: true})
+	p := compileBare(t, "@start\nrule main = a:\"x\" a:[0-9]+ a:\"q\" a:[0-9]+\n", compile.Options{DefaultValue: true})
 	s, err := p.OutputSchemaPrototype("main", false)
 	if err != nil {
 		t.Fatal(err)
@@ -289,7 +290,7 @@ func TestOutputSchemaLookaheadCapture(t *testing.T) {
 		{"differing shapes", "@start\nrule main = &a:[0-9]+ b:\"y\" a:\"z\"\n", true, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			p := compileBare(t, tc.src, Options{DefaultValue: true})
+			p := compileBare(t, tc.src, compile.Options{DefaultValue: true})
 			s, err := p.OutputSchemaPrototype("main", false)
 			if err != nil {
 				t.Fatal(err)
@@ -319,14 +320,14 @@ func TestOutputSchemaLookaheadCapture(t *testing.T) {
 // TestOutputSchemaCaptureOrderIndependent checks that the capture entries of a node do not depend on
 // the order in which the captures are listed.
 func TestOutputSchemaCaptureOrderIndependent(t *testing.T) {
-	caps := []capIndex{
-		{name: "b", paths: [][]int{{1}}, t: tyString},
-		{name: "a", paths: [][]int{{0}}, t: listTy{elem: tyString}},
-		{name: "a", paths: [][]int{{2}}, t: tyString},
+	caps := []compile.CapIndex{
+		{Name: "b", Paths: [][]int{{1}}, T: compile.TyString},
+		{Name: "a", Paths: [][]int{{0}}, T: compile.ListTy{Elem: compile.TyString}},
+		{Name: "a", Paths: [][]int{{2}}, T: compile.TyString},
 	}
-	reversed := []capIndex{caps[2], caps[1], caps[0]}
-	render := func(caps []capIndex) string {
-		v, err := schemaValue(nodeTy{value: tyString, caps: caps})
+	reversed := []compile.CapIndex{caps[2], caps[1], caps[0]}
+	render := func(caps []compile.CapIndex) string {
+		v, err := schemaValue(compile.NodeTy{Value: compile.TyString, Caps: caps})
 		if err != nil {
 			t.Fatal(err)
 		}

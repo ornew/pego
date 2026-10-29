@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
 	"github.com/ornew/pego/internal/ir/flow"
@@ -51,17 +52,17 @@ func (g *tsGen) startTSFlow() bool {
 // flow.LocalRule accepts prints as a flat function; a rule whose body is a framed body prints under the
 // frame the runtime owns, which also runs its action and finish. On success it sets scope to the
 // capture scope of the printed body.
-func (g *tsGen) flowRule(r *staticRule, scope *scope) (call string, ok bool) {
+func (g *tsGen) flowRule(r *compile.Rule, scope *compile.Scope) (call string, ok bool) {
 	if g.flow == nil {
 		return "", false
 	}
 	var f *flow.Func
 	var slots []core.Slot
-	cr := g.flow.m.Rules[r.id]
+	cr := g.flow.m.Rules[r.ID]
 	if recFlowEligible(r) && flow.LocalRule(cr) {
 		var err error
-		if f, err = flow.Lower(g.flow.m, cr, r.name, g.flow.opts); err != nil {
-			panic(fmt.Errorf("rule %s of table %s: %w", r.name, g.table, err)) // LocalRule holds
+		if f, err = flow.Lower(g.flow.m, cr, r.Name, g.flow.opts); err != nil {
+			panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.table, err)) // LocalRule holds
 		}
 		if f.Binds {
 			f = nil // the runtime owns the frame the binds write
@@ -72,18 +73,18 @@ func (g *tsGen) flowRule(r *staticRule, scope *scope) (call string, ok bool) {
 			return "", false
 		}
 		var err error
-		if f, err = flow.LowerFrame(g.flow.m, cr, cr.Body, cr.Scope, !r.lean, r.name, g.flow.opts); err != nil {
-			panic(fmt.Errorf("rule %s of table %s: %w", r.name, g.table, err)) // FramedBody holds
+		if f, err = flow.LowerFrame(g.flow.m, cr, cr.Body, cr.Scope, !r.Lean, r.Name, g.flow.opts); err != nil {
+			panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.table, err)) // FramedBody holds
 		}
 		slots = cr.Scope
 	}
-	return g.flowFunc(f, slots, scope, gen.Describe(r.bodyExpr()))
+	return g.flowFunc(f, slots, scope, gen.Describe(r.BodyExpr()))
 }
 
 // flowFunc prints the function f, whose capture scope has the slots, as a function of its own and
 // returns the call expression that runs it, or false if the printer does not print f. On success it
 // sets scope to the capture scope of a framed f. The comment describes the function.
-func (g *tsGen) flowFunc(f *flow.Func, slots []core.Slot, scope *scope, comment string) (call string, ok bool) {
+func (g *tsGen) flowFunc(f *flow.Func, slots []core.Slot, scope *compile.Scope, comment string) (call string, ok bool) {
 	defer func() {
 		if e := recover(); e != nil {
 			if _, unsupported := e.(tsFlowUnsupported); !unsupported {
@@ -99,9 +100,9 @@ func (g *tsGen) flowFunc(f *flow.Func, slots []core.Slot, scope *scope, comment 
 	}
 	b.WriteString(indent(body))
 	if f.Frame {
-		*scope = *newScope()
+		*scope = *compile.NewScope()
 		for _, sl := range slots {
-			scope.slot(sl.Name)
+			scope.Slot(sl.Name)
 		}
 	}
 	name, shared := g.methodName("Parser/R", tsSharedKey(b.String(), decls))
@@ -900,7 +901,7 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 		return p.expr(x.L) + " " + op + " " + p.expr(x.R)
 	case *flow.MatchLit:
 		if x.Lit.Fold {
-			folded := string(foldedRunes([]rune(x.Lit.Text)))
+			folded := string(compile.FoldedRunes([]rune(x.Lit.Text)))
 			if p.dry {
 				return ""
 			}
@@ -1042,14 +1043,14 @@ func (p *tsFlowPrinter) decl(name, s string) {
 }
 
 // call returns the call of the rule r from the Operators Rule level min.
-func (p *tsFlowPrinter) call(r *staticRule, min int) string {
+func (p *tsFlowPrinter) call(r *compile.Rule, min int) string {
 	g := p.g
-	_, operatorsRule := r.def.Expr.(*grammar.OperatorsRule)
+	_, operatorsRule := r.Def.Expr.(*grammar.OperatorsRule)
 	switch {
-	case r.plain && !operatorsRule:
+	case r.Plain && !operatorsRule:
 		g.plainUsed[r] = true
-		return fmt.Sprintf("%s%d(p)", g.plainPrefix(), r.id)
-	case r.plain:
+		return fmt.Sprintf("%s%d(p)", g.plainPrefix(), r.ID)
+	case r.Plain:
 		return fmt.Sprintf("p.invokePlain(%s, %d)", g.ruleVar(r), min)
 	}
 	return fmt.Sprintf("p.call(%s, %d)", g.ruleVar(r), min)
@@ -1142,18 +1143,18 @@ func tsUnisolate(s *flow.Set) (*flow.Unisolate, bool) {
 // function and returns the call expression that runs it, or false if the printer does not print
 // the line. It sets scope to the capture scope of the line. With work controls the runtime loop that
 // runs the line charges its entry and the function charges each iteration of a repetition.
-func (g *tsGen) flowLine(l *core.OpLine, e grammar.Expr, scope *scope, build bool) (string, bool) {
+func (g *tsGen) flowLine(l *core.OpLine, e grammar.Expr, scope *compile.Scope, build bool) (string, bool) {
 	if g.flow == nil || l == nil || !flowLineOK(e) || !flow.FramedBody(l.Body) {
 		return "", false
 	}
-	f, err := flow.LowerFrame(g.flow.m, g.flow.m.Rules[g.cur.id], l.Body, l.Scope, build, g.cur.name, g.flow.opts)
+	f, err := flow.LowerFrame(g.flow.m, g.flow.m.Rules[g.cur.ID], l.Body, l.Scope, build, g.cur.Name, g.flow.opts)
 	if err != nil {
-		panic(fmt.Errorf("line of Operators Rule %s in table %s: %w", g.cur.name, g.table, err)) // FramedBody holds
+		panic(fmt.Errorf("line of Operators Rule %s in table %s: %w", g.cur.Name, g.table, err)) // FramedBody holds
 	}
 	prev := g.proj
 	g.proj = nil // the actions of the lines use no projections of the rule
 	defer func() { g.proj = prev }()
-	return g.flowFunc(f, l.Scope, scope, g.cur.name+" (OperatorsRule line)")
+	return g.flowFunc(f, l.Scope, scope, g.cur.Name+" (OperatorsRule line)")
 }
 
 // outline prints the function of the outlined node x and returns the call of it. The passes that only
@@ -1166,11 +1167,11 @@ func (p *tsFlowPrinter) outline(x *flow.CallOutline) string {
 		return call
 	}
 	g := p.g
-	f, err := flow.LowerOutline(g.flow.m, g.flow.m.Rules[g.cur.id], x.Node, x.Slots, x.Build, g.cur.name, g.flow.opts)
+	f, err := flow.LowerOutline(g.flow.m, g.flow.m.Rules[g.cur.ID], x.Node, x.Slots, x.Build, g.cur.Name, g.flow.opts)
 	if err != nil {
-		panic(fmt.Errorf("outlined node of rule %s in table %s: %w", g.cur.name, g.table, err)) // Outlinable holds
+		panic(fmt.Errorf("outlined node of rule %s in table %s: %w", g.cur.Name, g.table, err)) // Outlinable holds
 	}
-	call, ok := g.flowFunc(f, x.Slots, newScope(), g.cur.name+" (outlined)")
+	call, ok := g.flowFunc(f, x.Slots, compile.NewScope(), g.cur.Name+" (outlined)")
 	if !ok {
 		panic(tsFlowUnsupported("an outlined node"))
 	}

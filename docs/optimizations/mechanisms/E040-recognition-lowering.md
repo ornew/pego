@@ -43,7 +43,7 @@ Evidence records: [007](../007-recognition-mode-3f7e9bf.md),
 
 Source owners: [`Program.recognizer`](../../../internal/engine/parse.go),
 [`recognize compilation and predicate capture
-analysis`](../../../internal/engine/compile.go), [`recognizer
+analysis`](../../../internal/compile/compile.go), [`recognizer
 generation`](../../../internal/engine/gen.go), [`generated recognize entry
 point`](../../../internal/engine/gen_ts.go).
 

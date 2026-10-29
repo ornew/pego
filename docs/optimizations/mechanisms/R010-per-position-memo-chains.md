@@ -41,7 +41,7 @@ Evidence records: [005](../005-memo-table-with-per-position-chains-cf77e4f.md),
 
 Source owners: [`memoTable.get and put`](../../../internal/engine/memo.go),
 [`envValues and callBegin`](../../../internal/engine/runtime.go),
-[`ruleVariables`](../../../internal/engine/analysis.go), [`generated memo
+[`RuleVariables`](../../../internal/compile/analysis.go), [`generated memo
 table`](../../../runtime/runtime.go), [`TypeScript memo
 entries`](../../../internal/engine/tsrt/runtime.ts).
 

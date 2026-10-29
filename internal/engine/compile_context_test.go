@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 )
 
 // Cancel at a deterministic poll, without timing or global compiler hooks.
@@ -49,7 +50,7 @@ func TestCompileContextCancellation(t *testing.T) {
 	}
 	for _, polls := range []int{1, 3, 12} {
 		ctx := compileTestContext(t, polls)
-		prog, err := CompileContext(ctx, g, Options{})
+		prog, err := CompileContext(ctx, g, compile.Options{})
 		if prog != nil || !errors.Is(err, context.Canceled) {
 			t.Fatalf("polls=%d: program=%v error=%v", polls, prog, err)
 		}
@@ -72,13 +73,13 @@ func TestCompileContextCancelsDuringGrammarValidation(t *testing.T) {
 	g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{
 		&grammar.RuleDef{Name: "main", Expr: &grammar.Seq{Items: items}},
 	}}}
-	if _, err := Compile(g, Options{}); err == nil {
+	if _, err := Compile(g, compile.Options{}); err == nil {
 		t.Fatal("fixture must fail ordinary grammar validation")
 	}
 	// CompileContext and buildControlled make two entry checks, followed by
 	// ValidateContext's entry check. The fourth check is within AST traversal.
 	ctx := compileTestContext(t, 4)
-	prog, err := CompileContext(ctx, g, Options{})
+	prog, err := CompileContext(ctx, g, compile.Options{})
 	if prog != nil || !errors.Is(err, context.Canceled) {
 		t.Fatalf("validation cancellation: program=%v error=%v", prog, err)
 	}
@@ -89,24 +90,24 @@ func TestCompileContextCancelsDuringGrammarValidation(t *testing.T) {
 
 func TestCompileContextPhaseCancellation(t *testing.T) {
 	g := compileTestGrammar(t)
-	p, err := Compile(g, Options{})
+	p, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, phase := range []string{"static-analysis", "success-proof", "failure-proof", "cut-proof", "dependency-graph", "type-checking", "type-inference", "matcher-construction", "list-constructor-type"} {
 		t.Run(phase, func(t *testing.T) {
 			ctx := compileTestContext(t, 1)
-			control := &compileControl{ctx: ctx}
+			control := &compile.Control{Ctx: ctx}
 			defer func() {
 				failure := recover()
-				cancelled, ok := failure.(compileCancellation)
-				if !ok || !errors.Is(cancelled.err, context.Canceled) {
+				cancelled, ok := failure.(compile.Cancellation)
+				if !ok || !errors.Is(cancelled.Err, context.Canceled) {
 					t.Fatalf("unexpected unwind: %v", failure)
 				}
 			}()
 			switch phase {
 			case "static-analysis":
-				analyzeControlled(g.Rules(), control)
+				compile.AnalyzeControlled(g.Rules(), control)
 			case "success-proof", "failure-proof", "cut-proof":
 				items := make([]grammar.Expr, 1024)
 				for i := range items {
@@ -123,19 +124,19 @@ func TestCompileContextPhaseCancellation(t *testing.T) {
 				}
 				// Only the shared proof traversal can reach the first context
 				// checkpoint; no outer analysis loop contributes polling here.
-				a := &analysis{control: control}
-				a.alwaysSucceeds(expr)
+				a := &compile.Analysis{Control: control}
+				a.AlwaysSucceeds(expr)
 			case "dependency-graph":
 				edges := map[string][]string{}
 				for _, rd := range g.Rules() {
-					edges[rd.Name] = allCalls(rd.Expr, nil)
+					edges[rd.Name] = compile.AllCalls(rd.Expr, nil)
 				}
-				tarjan(g.Rules(), edges, control)
+				compile.Tarjan(g.Rules(), edges, control)
 			case "type-checking":
-				var diagnostics ErrorList
-				checkTypesControlled(p.staticProgram, &diagnostics, control)
+				var diagnostics compile.ErrorList
+				compile.CheckTypesControlled(p.staticProgram, &diagnostics, control)
 			case "type-inference":
-				valueTypes(p.staticProgram, control)
+				compile.ValueTypes(p.staticProgram, control)
 			case "list-constructor-type":
 				// The entry poll alone cannot cancel: cancellation must be
 				// observed inside the temporary checker resolving Elem.
@@ -143,15 +144,15 @@ func TestCompileContextPhaseCancellation(t *testing.T) {
 				for range 1024 {
 					elem = &grammar.ListType{Elem: elem}
 				}
-				c := &compiler{prog: p.staticProgram, control: control}
-				c.checkTerm(&grammar.ListConstructor{Elem: elem}, newScope(), nil)
+				c := &compile.Compiler{Prog: p.staticProgram, Control: control}
+				c.CheckTerm(&grammar.ListConstructor{Elem: elem}, compile.NewScope(), nil)
 			case "matcher-construction":
 				items := make([]grammar.Expr, 1024)
 				for i := range items {
 					items[i] = &grammar.Literal{Value: "a"}
 				}
-				c := newClosureWalker(&compiler{prog: p.staticProgram, control: control}, true)
-				c.expr(&grammar.Seq{Items: items}, newScope(), true)
+				c := newClosureWalker(&compile.Compiler{Prog: p.staticProgram, Control: control}, true)
+				c.Expr(&grammar.Seq{Items: items}, compile.NewScope(), true)
 			}
 			t.Fatal("phase completed without cancellation")
 		})
@@ -171,9 +172,9 @@ func TestCompileContextOrdinaryParity(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		ordinary, ordinaryErr := Compile(g, Options{})
+		ordinary, ordinaryErr := Compile(g, compile.Options{})
 		ctx, cancel := context.WithCancel(context.Background())
-		controlled, controlledErr := CompileContext(ctx, g, Options{})
+		controlled, controlledErr := CompileContext(ctx, g, compile.Options{})
 		cancel()
 		if (ordinaryErr == nil) != (controlledErr == nil) {
 			t.Fatalf("error mismatch: %v / %v", ordinaryErr, controlledErr)

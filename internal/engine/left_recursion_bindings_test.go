@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/limits"
 )
 
@@ -71,8 +72,8 @@ const (
 // without the binding instead of nesting until the depth limit.
 func TestLeftRecursionGuardIgnoresVariables(t *testing.T) {
 	inputs := []string{"x", "xxx", "xxxxxxxxxx", "", "y"}
-	for _, options := range []Options{{}, {DisableMemo: true}} {
-		options.leftRecursionBindings = true
+	for _, options := range []compile.Options{{}, {DisableMemo: true}} {
+		options.LeftRecursionBindings = true
 		prog := mustCompile(t, lrBindingSource, options)
 		plain := mustCompile(t, plainLRSource, options)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {

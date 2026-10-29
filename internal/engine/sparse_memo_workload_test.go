@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"unsafe"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 var sparseMemoSynthetic = func() string {
@@ -78,7 +80,7 @@ func BenchmarkSparseMemoTypeScript(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	prog, err := Compile(g, Options{})
+	prog, err := Compile(g, compile.Options{})
 	if err != nil {
 		b.Fatal(err)
 	}

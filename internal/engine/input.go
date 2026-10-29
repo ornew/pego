@@ -8,6 +8,7 @@ import (
 	"slices"
 	"unicode/utf8"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -727,7 +728,7 @@ func (p *parser) matchLiteralFold(rs []rune) bool {
 	for _, want := range rs {
 		p.inputWork(1)
 		got, size, ok := p.peek()
-		if !ok || foldASCIIRune(got) != want {
+		if !ok || compile.FoldASCIIRune(got) != want {
 			return false
 		}
 		p.pos += size

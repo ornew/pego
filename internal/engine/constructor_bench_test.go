@@ -3,6 +3,8 @@ package engine
 import (
 	"fmt"
 	"testing"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 // BenchmarkNodeListConstruction compares explicit element types with the
@@ -20,7 +22,7 @@ func BenchmarkNodeListConstruction(b *testing.B) {
 				if err != nil {
 					b.Fatal(err)
 				}
-				p, err := Compile(g, Options{})
+				p, err := Compile(g, compile.Options{})
 				if err != nil {
 					b.Fatal(err)
 				}

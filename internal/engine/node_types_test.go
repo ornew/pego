@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -79,7 +80,7 @@ func TestNodeTypesCheckedAtCompileTime(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), tc.static) {
+		if _, err := Compile(g, compile.Options{}); err == nil || !strings.Contains(err.Error(), tc.static) {
 			t.Errorf("%q: got %v, want %q", tc.src, err, tc.static)
 		}
 	}

@@ -30,9 +30,9 @@ There is no numbered optimization record or isolated timing/allocation
 measurement. Warm parse results do not quantify avoided setup, and first-use
 timing must separate preparation from steady-state matching.
 
-Source owners: [`staticProgram.moduleOnce`](../../../internal/engine/compile.go),
+Source owners: [`Program.BytecodeOnce`](../../../internal/compile/compile.go),
 [`Program.recOnce, vmOnce, ivmOnce and Module`](../../../internal/engine/program.go),
-[`staticProgram.bytecodeModule`](../../../internal/engine/bcompile.go), [`Program.recognizer
+[`Program.BytecodeModule`](../../../internal/compile/bcompile.go), [`Program.recognizer
 and rule`](../../../internal/engine/parse.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

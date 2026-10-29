@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 func TestErrorAttribute(t *testing.T) {
@@ -54,7 +56,7 @@ rule stmt = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")`)
 func TestRecoverBacktracking(t *testing.T) {
 	src := `rule main = item "!" / item "?"
 rule item = ("a" #atomic ";") #recover(skip=[^;]+ ";")`
-	for _, opts := range []Options{{}, {DisableMemo: true}} {
+	for _, opts := range []compile.Options{{}, {DisableMemo: true}} {
 		prog := mustCompile(t, src, opts)
 		n, err := prog.Parse("main", "x;?")
 		if n == nil {

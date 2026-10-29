@@ -5,6 +5,7 @@ import (
 	"maps"
 	"strings"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -441,7 +442,7 @@ func (p *parser) call(r *rule, min int) (*value.Node, bool) {
 	if !p.memoizes(r) || p.firstCall(r) {
 		// A call without memoization. The examined range (hw, lw) only grows, so it need not be saved
 		// and restored, and expectations need not be recorded separately.
-		if len(r.scope.names) == 0 {
+		if len(r.Scope.Names) == 0 {
 			return p.invokePlain(r, min)
 		}
 		start, rec, missing := p.pos, len(p.recovered), p.missingMark()
@@ -459,7 +460,7 @@ func (p *parser) call(r *rule, min int) (*value.Node, bool) {
 	if hit {
 		return v, ok
 	}
-	if r.leader {
+	if r.Leader {
 		g := p.growBegin(st.key)
 		for {
 			v, ok = p.invoke(r, min)
@@ -505,12 +506,12 @@ func (p *parser) memoEnv(r *rule) []any {
 	if p.env == p.initEnv && r.initVals != nil && (!workControlsEnabled || p.control == nil) {
 		return r.initVals
 	}
-	return p.envValues(r.vars)
+	return p.envValues(r.Vars)
 }
 
 // memoizes reports whether the results of rule r are memoized.
 func (p *parser) memoizes(r *rule) bool {
-	return r.leader || r.memo && (!r.transient || p.memoAll) && !(p.missing != nil && r.missing)
+	return r.Leader || r.Memo && (!r.Transient || p.memoAll) && !(p.missing != nil && r.Missing)
 }
 
 // firstCall reports whether this is the first call of the memoized rule r at the current
@@ -520,10 +521,10 @@ func (p *parser) memoizes(r *rule) bool {
 // evaluates a rule at most twice per position, so parse time stays linear.
 // Left-recursion leaders are always memoized (the memo drives the growing of the seed).
 func (p *parser) firstCall(r *rule) bool {
-	if !p.deferMemo || r.seen < 0 {
+	if !p.deferMemo || r.Seen < 0 {
 		return false
 	}
-	return p.memoFirstCall(p.pos, r.seen)
+	return p.memoFirstCall(p.pos, r.Seen)
 }
 
 // callState is the state saved across a memoized rule call.
@@ -542,8 +543,8 @@ type callState struct {
 // firstCall). It looks up the memo; if a usable result exists, it sets hit and returns that
 // result. Otherwise it prepares for the call.
 func (p *parser) callBegin(r *rule, min int) (st callState, v *value.Node, ok, hit bool) {
-	key := memoKey{rule: r.id, pos: p.pos, min: min, missingSilent: p.missing != nil && r.missing && p.silent > 0}
-	if len(r.vars) > 0 {
+	key := memoKey{rule: r.ID, pos: p.pos, min: min, missingSilent: p.missing != nil && r.Missing && p.silent > 0}
+	if len(r.Vars) > 0 {
 		key.env = p.memoEnv(r)
 	}
 	// A result computed inside a lookahead recorded no expectations, so it is not reused outside
@@ -551,7 +552,7 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *value.Node, ok, h
 	// recovered errors is reused only in the same kind of context it was computed in.
 	var e *memoEntry
 	found := false
-	if r.leader && key.env != nil {
+	if r.Leader && key.env != nil {
 		// The left-recursion guard is keyed by rule and position only: while the rule grows
 		// here, a call reads the growing result whatever its variable values.
 		e, found = p.memoGrowing(key)
@@ -562,7 +563,7 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *value.Node, ok, h
 			found = false // an edit since invalidated it
 		}
 	}
-	if found && (p.missing == nil || !r.missing || e.growing) && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
+	if found && (p.missing == nil || !r.Missing || e.growing) && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
 		p.touch(e.examined)
 		p.lw = min2(p.lw, e.from)
 		p.stats.Reused++
@@ -602,7 +603,7 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *value.Node, ok, h
 // the state from before the call.
 func (p *parser) callEnd(r *rule, st *callState, v *value.Node, ok bool) (*value.Node, bool) {
 	var e *memoEntry
-	if r.leader {
+	if r.Leader {
 		e, _ = p.memoGet(st.key)
 	} else {
 		if !ok {
@@ -613,7 +614,7 @@ func (p *parser) callEnd(r *rule, st *callState, v *value.Node, ok bool) (*value
 		}
 		e = p.memo.alloc()
 		*e = memoEntry{node: v, ok: ok, end: p.pos, examined: p.hw, from: p.lw, silent: p.silent > 0, gen: p.gen, vgen: p.gen,
-			positional: r.positional, errs: appendWork(p, []*SyntaxError(nil), p.recovered[st.rec:])}
+			positional: r.Positional, errs: appendWork(p, []*SyntaxError(nil), p.recovered[st.rec:])}
 		p.memoPut(st.key, e)
 	}
 	far, inner := p.unisolate(st.exp)
@@ -695,7 +696,7 @@ func (p *parser) growEnd(r *rule, g *growState) (*value.Node, bool) {
 	best.silent = p.silent > 0
 	best.examined = p.hw
 	best.from = p.lw
-	best.positional = r.positional
+	best.positional = r.Positional
 	p.pos = best.end
 	p.recovered = p.recovered[:g.rec]
 	if p.missing != nil {
@@ -758,7 +759,7 @@ type invokeState struct {
 
 func (p *parser) invokeBegin(r *rule) invokeState {
 	p.stepWork()
-	st := invokeState{f: p.newFrame(len(r.scope.names)), prevFrame: p.frame, prevEnv: p.env, prevCut: p.cut, trail: len(p.trail), start: p.pos}
+	st := invokeState{f: p.newFrame(len(r.Scope.Names)), prevFrame: p.frame, prevEnv: p.env, prevCut: p.cut, trail: len(p.trail), start: p.pos}
 	p.frame, p.cut = st.f, false
 	p.depth++
 	if p.depth > p.maxDepth {
@@ -782,7 +783,7 @@ func (p *parser) invokeEnd(r *rule, st *invokeState, v *value.Node, ok bool) (*v
 // finish builds the rule's value from the value of the rule body, and converts it to the rule's named node type, if any. A value-free
 // rule is never checked.
 func (p *parser) finish(r *rule, f *frame, v *value.Node, start int) *value.Node {
-	if r.novalue {
+	if r.Novalue {
 		return nil
 	}
 	if r.act != nil {
@@ -793,20 +794,20 @@ func (p *parser) finish(r *rule, f *frame, v *value.Node, start int) *value.Node
 		return v
 	}
 	v = r.value(p, v, start)
-	if r.splice {
+	if r.Splice {
 		// No node of its own, and its captures end here: the caller takes the elements.
 		if v != nil {
 			value.D(v).Fresh = false
 		}
 		return v
 	}
-	if len(r.scope.names) > 0 {
-		v = p.attachCaptures(v, r.scope, f, start, p.pos)
+	if len(r.Scope.Names) > 0 {
+		v = p.attachCaptures(v, r.Scope, f, start, p.pos)
 	}
 	owned := v != nil && value.D(v).Fresh
 	if owned {
-		if p.prog.sourceInfo && value.D(v).Kind.Rule == "" {
-			value.D(v).Kind = r.kinds.Named(value.D(v).Kind, r.name)
+		if p.prog.RecordsSourceInfo && value.D(v).Kind.Rule == "" {
+			value.D(v).Kind = r.kinds.Named(value.D(v).Kind, r.Name)
 		}
 		value.D(v).Fresh = false
 	}
@@ -823,14 +824,14 @@ func (p *parser) finish(r *rule, f *frame, v *value.Node, start int) *value.Node
 func (p *parser) convertResult(r *rule, v *value.Node) *value.Node {
 	n, ok := r.nodeKinds.Convert(value.UnboxNode(v))
 	if !ok {
-		p.fail("cannot convert %s to %s in result of rule %s", typeName(value.UnboxNode(v)), r.nodeType, r.whereName())
+		p.fail("cannot convert %s to %s in result of rule %s", typeName(value.UnboxNode(v)), r.NodeType, r.WhereName())
 	}
 	return n
 }
 
 // attachCaptures attaches captures to the node as fields. Captures that did not match (nil) are
 // not attached. If the node belongs to another rule, it is wrapped in a tuple node first.
-func (p *parser) attachCaptures(v *value.Node, s *scope, f *frame, start, end int) *value.Node {
+func (p *parser) attachCaptures(v *value.Node, s *compile.Scope, f *frame, start, end int) *value.Node {
 	found := false
 	wrap := v == nil || !value.D(v).Fresh
 	for _, c := range f.vals {
@@ -850,10 +851,10 @@ func (p *parser) attachCaptures(v *value.Node, s *scope, f *frame, start, end in
 		v = p.newNode(value.Data{Kind: value.SeqKind, Start: int32(start), End: int32(end), Children: append(p.nodes(1)[:0], v), Fresh: true})
 	}
 	if value.D(v).Fields == nil {
-		value.D(v).Fields = p.fields(len(s.names))
+		value.D(v).Fields = p.fields(len(s.Names))
 	}
-	value.D(v).Labeled = p.prog.sourceInfo
-	for i, name := range s.names {
+	value.D(v).Labeled = p.prog.RecordsSourceInfo
+	for i, name := range s.Names {
 		p.stepWork()
 		if f.vals[i] != nil {
 			p.setValueField(&value.D(v).Fields, name, f.vals[i])
@@ -1095,8 +1096,8 @@ func (p *parser) nodeValue(n *value.Node) any {
 // seedVars gives the parser the initial environment of the program's variables. Every parse
 // calls it once, before it enters the start rule.
 func (p *parser) seedVars() {
-	if t := p.prog.vars; t != nil {
+	if t := p.prog.Vars; t != nil {
 		p.env, p.initEnv = p.prog.initEnv, p.prog.initEnv
-		p.bound = maps.Clone(t.bound)
+		p.bound = maps.Clone(t.Bound)
 	}
 }

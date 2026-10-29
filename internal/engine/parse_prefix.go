@@ -1,6 +1,10 @@
 package engine
 
-import "github.com/ornew/pego/internal/value"
+import (
+	"github.com/ornew/pego/internal/value"
+
+	"github.com/ornew/pego/internal/compile"
+)
 
 // PrefixResult records the successful cursor independently of the rule's value.
 type PrefixResult struct {
@@ -17,8 +21,8 @@ func (prog *Program) ParsePrefixWith(start, input string, o ParseOptions) (resul
 	if err := o.validateStreamDiagnostics(false); err != nil {
 		return PrefixResult{}, err
 	}
-	if prog.hasMissing || o.MissingTokens > 0 {
-		return PrefixResult{}, missingUnsupported("prefix parsing")
+	if prog.HasMissing || o.MissingTokens > 0 {
+		return PrefixResult{}, compile.MissingUnsupported("prefix parsing")
 	}
 	defer func() {
 		if x := recover(); x != nil {
@@ -31,7 +35,7 @@ func (prog *Program) ParsePrefixWith(start, input string, o ParseOptions) (resul
 			}
 		}
 	}()
-	start = prog.resolveStart(start) // an empty name selects the default start rule
+	start = prog.ResolveStart(start) // an empty name selects the default start rule
 	if err := prog.checkMode(o, false); err != nil {
 		return PrefixResult{}, err
 	}
@@ -68,7 +72,7 @@ func (prog *Program) runPrefix(p *parser, b Backend, start string) (result Prefi
 		return PrefixResult{}, err
 	}
 	p.descs = prog.descs(b)
-	p.memo.stride = prog.nseen
+	p.memo.stride = prog.NSeen
 	if be := prog.backend(b); be == Bytecode || be == BytecodeIterative {
 		p.memo.stride = prog.vmFor(be).nseen
 	}

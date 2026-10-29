@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -40,7 +41,7 @@ func compiledRecognitionBenchmarkGrammar(b *testing.B, ruleCount int) (*grammar.
 	if err != nil {
 		b.Fatalf("parse benchmark grammar: %v", err)
 	}
-	p, err := Compile(g, Options{})
+	p, err := Compile(g, compile.Options{})
 	if err != nil {
 		b.Fatalf("compile benchmark grammar: %v", err)
 	}
@@ -70,7 +71,7 @@ func BenchmarkCompiledRecognitionSerialization(b *testing.B) {
 				b.Run("CompileAndFirstSave/"+mode.String(), func(b *testing.B) {
 					b.ReportAllocs()
 					for b.Loop() {
-						fresh, err := Compile(g, Options{})
+						fresh, err := Compile(g, compile.Options{})
 						if err != nil {
 							b.Fatal(err)
 						}
@@ -100,7 +101,7 @@ func BenchmarkCompiledRecognitionASTBearing(b *testing.B) {
 			g, source := compiledRecognitionBenchmarkGrammar(b, ruleCount)
 			// Use a separately compiled Program so that preparing the cached save
 			// cannot affect the first-save measurement.
-			saved, err := Compile(g, Options{})
+			saved, err := Compile(g, compile.Options{})
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -136,7 +137,7 @@ func BenchmarkCompiledRecognitionASTBearing(b *testing.B) {
 			b.Run("CompileAndFirstSave", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
-					fresh, err := Compile(g, Options{})
+					fresh, err := Compile(g, compile.Options{})
 					if err != nil {
 						b.Fatal(err)
 					}

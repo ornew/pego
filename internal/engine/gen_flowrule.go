@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 )
 
 // Flat and framed rules of the Node and recognizer tables, as the Flow IR printer shapes them.
@@ -39,15 +40,15 @@ import (
 
 // flatRuleOK reports whether the rule r can be printed as a flat rule: it is not a left-recursion
 // leader and its body has no cut, recovery or Operators Rule.
-func flatRuleOK(r *staticRule) bool {
-	return !r.leader && flowBodyOK(r.bodyExpr(), false, false)
+func flatRuleOK(r *compile.Rule) bool {
+	return !r.Leader && flowBodyOK(r.BodyExpr(), false, false)
 }
 
 // flowBodyOK reports whether Flow IR can print the expression e in place. A cut is allowed if cuts is
 // set and a recovery attribute if recovery is set; an Operators Rule never is.
 func flowBodyOK(expr grammar.Expr, cuts, recovery bool) bool {
 	ok := true
-	walkExpr(expr, func(e grammar.Expr) {
+	compile.WalkExpr(expr, func(e grammar.Expr) {
 		switch e := e.(type) {
 		case *grammar.Cut:
 			if !cuts {
@@ -69,12 +70,12 @@ func flowBodyOK(expr grammar.Expr, cuts, recovery bool) bool {
 // leanRuleOK selects value-free plain rules of the Node runtime. Captures
 // unused by recognition are omitted; predicates keep the general code because
 // they can require values, capture frames and variable bindings.
-func leanRuleOK(r *staticRule) bool {
-	if !r.plain || !r.lean || !r.novalue || !flatRuleOK(r) {
+func leanRuleOK(r *compile.Rule) bool {
+	if !r.Plain || !r.Lean || !r.Novalue || !flatRuleOK(r) {
 		return false
 	}
 	ok := true
-	walkExpr(r.bodyExpr(), func(e grammar.Expr) {
+	compile.WalkExpr(r.BodyExpr(), func(e grammar.Expr) {
 		if _, predicate := e.(*grammar.Predicate); predicate {
 			ok = false
 		}
@@ -223,13 +224,13 @@ type flatRule struct {
 
 // flatMethod writes the method name that calls the flat rule r: as invokePlain does if plain
 // (restoring the position and the recovered errors when it fails), otherwise as invoke does.
-func (g *generator) flatMethod(r *staticRule, d *flatRule, name, comment string, plain bool) {
-	observeBody := g.observability && g.table == "trules" && (!r.plain || g.directTypedDocument)
+func (g *generator) flatMethod(r *compile.Rule, d *flatRule, name, comment string, plain bool) {
+	observeBody := g.observability && g.table == "trules" && (!r.Plain || g.directTypedDocument)
 	if g.observability && !observeBody {
 		name = g.tracePlainWrapper(r, name)
 	}
 	m := &g.methods
-	fmt.Fprintf(m, "// %s, %s (body inlined)\nfunc %s(p *%s) (%s, bool) {\n%s", r.name, comment, name, g.recv(), g.valType(), g.step("\tp"))
+	fmt.Fprintf(m, "// %s, %s (body inlined)\nfunc %s(p *%s) (%s, bool) {\n%s", r.Name, comment, name, g.recv(), g.valType(), g.step("\tp"))
 	if observeBody {
 		m.WriteString("p.Observation.Evaluated()\n")
 	}
@@ -287,8 +288,8 @@ func (g *generator) flatMethod(r *staticRule, d *flatRule, name, comment string,
 
 // leanRuleBody provides the rule-table body for external entry and generic
 // fallback calls. Its caller owns depth and failure rollback, so it adds neither.
-func (g *generator) leanRuleBody(r *staticRule, d *flatRule) string {
-	return g.bodyMethod(r.name+" (value-free body inlined)", g.leanRuleText(d))
+func (g *generator) leanRuleBody(r *compile.Rule, d *flatRule) string {
+	return g.bodyMethod(r.Name+" (value-free body inlined)", g.leanRuleText(d))
 }
 
 // leanRuleText returns the text of the method body of the value-free flat rule d.
@@ -311,7 +312,7 @@ func (g *generator) leanRuleText(d *flatRule) string {
 
 func exprRecovers(e grammar.Expr) bool {
 	found := false
-	walkExpr(e, func(e grammar.Expr) {
+	compile.WalkExpr(e, func(e grammar.Expr) {
 		if e, ok := e.(*grammar.Attributed); ok {
 			for _, a := range e.Attrs {
 				if a.Name == "recover" {

@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
 )
@@ -111,21 +112,21 @@ func generateOnce(g *grammar.Grammar, opts gen.GenOptions, live, collect *liveRu
 	if err != nil {
 		return nil, err
 	}
-	compiled, err := Compile(g, Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue, leftRecursionBindings: opts.LeftRecursionBindings})
+	compiled, err := Compile(g, compile.Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue, LeftRecursionBindings: opts.LeftRecursionBindings})
 	if err != nil {
 		return nil, err
 	}
 	prog := compiled.staticProgram
-	if prog.hasMissing {
-		return nil, missingUnsupported("generated parsers")
+	if prog.HasMissing {
+		return nil, compile.MissingUnsupported("generated parsers")
 	}
-	start, err := prog.startRule(opts.Start)
+	start, err := prog.StartRule(opts.Start)
 	if err != nil {
 		return nil, err
 	}
 	if opts.Stream {
-		if !start.stream {
-			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
+		if !start.Stream {
+			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.Name)
 		}
 	}
 	goGen := &generator{typedOnly: opts.TypedOnly && !opts.KeepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls, ordinary: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableMethodSharing: opts.DisableMethodSharing, disableLiteralSharing: opts.DisableLiteralSharing, disableLiteralTextDispatch: opts.DisableLiteralTextDispatch, disableTerminalPrograms: opts.DisableTerminalPrograms, disableGuardedClasses: opts.DisableGuardedClasses, boxedComparisons: opts.BoxedComparisons, disableTypedObjectSlabs: opts.DisableTypedObjectSlabs, disableTypedListSlabs: opts.DisableTypedListSlabs, disableTypedOutputBootstrap: opts.DisableTypedOutputBootstrap, live: live, collect: collect, keepTableRules: opts.TypedOnly && !opts.KeepNodes}
@@ -139,7 +140,7 @@ func generateOnce(g *grammar.Grammar, opts gen.GenOptions, live, collect *liveRu
 	if opts.Stream {
 		goGen.streamStart = start
 	}
-	goGen.desc(fixedDescs[0]) // the fixed expectations come first
+	goGen.desc(compile.FixedDescs[0]) // the fixed expectations come first
 	if generatorHook != nil && collect == nil {
 		generatorHook(goGen)
 	}
@@ -157,7 +158,7 @@ func generateOnce(g *grammar.Grammar, opts gen.GenOptions, live, collect *liveRu
 	if goGen.flowErr != nil {
 		return nil, goGen.flowErr
 	}
-	var rec *staticProgram
+	var rec *compile.Program
 	if opts.Recognize {
 		// The recognizer: the program in which no rule builds a value (Program.recognizer), in a
 		// rule table of its own.
@@ -198,8 +199,8 @@ func generateOnce(g *grammar.Grammar, opts gen.GenOptions, live, collect *liveRu
 		}
 		return nil, goGen.finishReach(prog, rec)
 	}
-	fmt.Fprintf(&goGen.init, "\tpegoGrammar.Starts = %s\n", goStrings(prog.starts))
-	fmt.Fprintf(&goGen.init, "\tpegoGrammar.DefaultStart = %q\n", prog.defaultStart)
+	fmt.Fprintf(&goGen.init, "\tpegoGrammar.Starts = %s\n", goStrings(prog.StartRules))
+	fmt.Fprintf(&goGen.init, "\tpegoGrammar.DefaultStart = %q\n", prog.DefaultStartRule)
 	if !opts.TypedOnly {
 		fmt.Fprintf(&goGen.init, "\tpegoGrammar.Descs = %s\n", goStrings(goGen.descs))
 	}
@@ -209,14 +210,14 @@ func generateOnce(g *grammar.Grammar, opts gen.GenOptions, live, collect *liveRu
 	if !opts.WorkControls {
 		goGen.init.WriteString("\tpegoGrammar.NoWorkControls = true\n")
 	}
-	if prog.sourceInfo {
+	if prog.RecordsSourceInfo {
 		goGen.init.WriteString("\tpegoGrammar.SourceInfo = true\n")
 	}
-	if t := prog.vars; t != nil {
+	if t := prog.Vars; t != nil {
 		var names, vals []string
-		for _, d := range t.list {
-			names = append(names, d.name)
-			vals = append(vals, fmt.Sprintf("%#v", d.init))
+		for _, d := range t.List {
+			names = append(names, d.Name)
+			vals = append(vals, fmt.Sprintf("%#v", d.Init))
 		}
 		fmt.Fprintf(&goGen.init, "\tpegoGrammar.SetVars(%s, []any{%s})\n", goStrings(names), strings.Join(vals, ", "))
 	}
@@ -230,12 +231,12 @@ func generateOnce(g *grammar.Grammar, opts gen.GenOptions, live, collect *liveRu
 	}
 	out.WriteString("// --- Generated code ---\n\n")
 	if !opts.TypedOnly {
-		fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. Options select position units, depth, cancellation and work limits.\n", start.name)
+		fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. Options select position units, depth, cancellation and work limits.\n", start.Name)
 		out.WriteString("// If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.\n")
-		fmt.Fprintf(&out, "func Parse(input string, opts ...ParseOption) (*Node, error) { return RunParse(rules[%d], input, opts) }\n\n", start.id)
+		fmt.Fprintf(&out, "func Parse(input string, opts ...ParseOption) (*Node, error) { return RunParse(rules[%d], input, opts) }\n\n", start.ID)
 	}
 	if opts.Stream {
-		fmt.Fprintf(&out, "// ParseStream parses the input read from r with the rule %s, passing each committed element of\n", start.name)
+		fmt.Fprintf(&out, "// ParseStream parses the input read from r with the rule %s, passing each committed element of\n", start.Name)
 		out.WriteString("// its #stream repetition to emit (nil if the element has no value) without retaining it. Committed\n// elements are final even if the parse fails later. A non-EOF error from r or an error returned by\n// emit ends the parse and is returned unchanged. A nil emit collects the repetition instead.\n")
 		out.WriteString("func ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseOption) error {\n\treturn RunParseStream(streamRule, r, emit, opts)\n}\n\n")
 		out.WriteString(`// Iterate returns an iterator over the elements that ParseStream would pass to emit, parsing only as
@@ -252,17 +253,17 @@ func Iterate(r io.Reader, opts ...ParseOption) (*StreamIterator, error) {
 `)
 	}
 	if opts.Document {
-		fmt.Fprintf(&out, "// NewDocument creates an incremental Node document for the start rule %s.\n", start.name)
+		fmt.Fprintf(&out, "// NewDocument creates an incremental Node document for the start rule %s.\n", start.Name)
 		if opts.Types {
-			fmt.Fprintf(&out, "func NewDocument(text string, opts ...ParseOption) (*Document, error) {\n\td, err := MakeDocument(rules[%d], text, opts)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treturn &Document{d}, nil\n}\n\n", start.id)
+			fmt.Fprintf(&out, "func NewDocument(text string, opts ...ParseOption) (*Document, error) {\n\td, err := MakeDocument(rules[%d], text, opts)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treturn &Document{d}, nil\n}\n\n", start.ID)
 		} else {
-			fmt.Fprintf(&out, "func NewDocument(text string, opts ...ParseOption) (*Document, error) { return MakeDocument(rules[%d], text, opts) }\n\n", start.id)
+			fmt.Fprintf(&out, "func NewDocument(text string, opts ...ParseOption) (*Document, error) { return MakeDocument(rules[%d], text, opts) }\n\n", start.ID)
 		}
 	}
 	if rec != nil {
-		fmt.Fprintf(&out, "// Recognize checks that the whole input matches the rule %s without building a tree, and returns the\n", start.name)
+		fmt.Fprintf(&out, "// Recognize checks that the whole input matches the rule %s without building a tree, and returns the\n", start.Name)
 		out.WriteString("// syntax errors Parse would return (SyntaxErrors for errors recovered with #recover). Actions needed by\n// predicates are evaluated and can report runtime errors; other actions are skipped.\n")
-		fmt.Fprintf(&out, "func Recognize(input string, opts ...ParseOption) error {\n\t_, err := RunParse(recRules[%d], input, opts)\n\treturn err\n}\n\n", rec.byName[start.name].id)
+		fmt.Fprintf(&out, "func Recognize(input string, opts ...ParseOption) error {\n\t_, err := RunParse(recRules[%d], input, opts)\n\treturn err\n}\n\n", rec.ByName[start.Name].ID)
 		fmt.Fprintf(&out, "// recRules is the rule table of Recognize, and pegoRecGrammar its grammar.\nvar recRules []*Rule\nvar pegoRecGrammar = NewGrammar(%d)\n\n", generatedMaxDepth(opts))
 	}
 	fmt.Fprintf(&out, "// rules is the rule table, and pegoGrammar its grammar.\nvar rules []*Rule\nvar pegoGrammar = NewGrammar(%d)\n\n", generatedMaxDepth(opts))
@@ -372,7 +373,7 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 
 // fieldTypeVar returns the variable holding check type ft of key, declaring it with decl the
 // first time.
-func (g *generator) fieldTypeVar(key any, ft ty, decl func(v string, t *fieldType) string) string {
+func (g *generator) fieldTypeVar(key any, ft compile.Ty, decl func(v string, t *compile.FieldType) string) string {
 	v, ok := g.fieldTypes[key]
 	if !ok {
 		if g.fieldTypes == nil {
@@ -381,24 +382,24 @@ func (g *generator) fieldTypeVar(key any, ft ty, decl func(v string, t *fieldTyp
 		v = fmt.Sprintf("fieldType%d", len(g.fieldTypes)+1)
 		g.fieldTypes[key] = v
 		g.fieldTypeKeys = append(g.fieldTypeKeys, key)
-		g.vars.WriteString(decl(v, newFieldType(ft)))
+		g.vars.WriteString(decl(v, compile.NewFieldType(ft)))
 	}
 	return v
 }
 
 // goFieldType writes a field type as a generated fieldType value.
-func goFieldType(t *fieldType) string {
+func goFieldType(t *compile.FieldType) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "&FieldType{Kind: %q, Text: %q", rune(t.kind), t.text)
-	if t.name != "" {
-		fmt.Fprintf(&b, ", Name: %q", t.name)
+	fmt.Fprintf(&b, "&FieldType{Kind: %q, Text: %q", rune(t.Kind), t.Text)
+	if t.Name != "" {
+		fmt.Fprintf(&b, ", Name: %q", t.Name)
 	}
-	if t.elem != nil {
-		b.WriteString(", Elem: " + goFieldType(t.elem))
+	if t.Elem != nil {
+		b.WriteString(", Elem: " + goFieldType(t.Elem))
 	}
-	if len(t.alts) > 0 {
-		alts := make([]string, len(t.alts))
-		for i, a := range t.alts {
+	if len(t.Alts) > 0 {
+		alts := make([]string, len(t.Alts))
+		for i, a := range t.Alts {
 			alts[i] = goFieldType(a)
 		}
 		b.WriteString(", Alts: []*FieldType{" + strings.Join(alts, ", ") + "}")
@@ -408,8 +409,8 @@ func goFieldType(t *fieldType) string {
 
 // useSparseMemo removes the representation selector entirely when neither
 // emitted rule table can cross the sparse-storage threshold.
-func useSparseMemo(opts gen.GenOptions, prog, rec *staticProgram) bool {
-	return !opts.DisableSparseMemo && (prog.nseen > 64 || rec != nil && rec.nseen > 64)
+func useSparseMemo(opts gen.GenOptions, prog, rec *compile.Program) bool {
+	return !opts.DisableSparseMemo && (prog.NSeen > 64 || rec != nil && rec.NSeen > 64)
 }
 
 func generatedMaxDepth(o gen.GenOptions) int {
@@ -440,8 +441,8 @@ type generator struct {
 	workClassKeys       []string
 	shaperNames         map[string]string
 	shaperKeys          []string
-	recoveryProg        map[*staticProgram]bool // whether a program can recover from errors
-	tableErr            error                   // the rule table does not fit the form of runtime.RuleSpec
+	recoveryProg        map[*compile.Program]bool // whether a program can recover from errors
+	tableErr            error                     // the rule table does not fit the form of runtime.RuleSpec
 	// coreHook, if set, is called by typedCore with the module after it is built and after each pass.
 	coreHook              func(pass string, m *core.Module)
 	flowErr               error // the first rule, line or stream body that Flow IR does not print, or the first internal error of the unread-variable check
@@ -470,13 +471,13 @@ type generator struct {
 	flowRules  int
 	flowFrames int
 	// nodeScopes records the frame layouts shared by typed rule metadata.
-	nodeScopes map[*staticRule][]string
+	nodeScopes map[*compile.Rule][]string
 	// typedOnly leaves out the untyped Node family: the rule table keeps only the metadata the
 	// typed table shares.
 	typedOnly bool
-	prog      *staticProgram
-	table     string      // the rule table being generated: rules, or recRules for Recognize
-	cur       *staticRule // the rule being generated
+	prog      *compile.Program
+	table     string        // the rule table being generated: rules, or recRules for Recognize
+	cur       *compile.Rule // the rule being generated
 	// proj holds the projected repetition captures of the rule being generated (projections).
 	proj map[string]string
 	// final is the struct constructor that makes an action's result in the typed runtime: its
@@ -495,13 +496,13 @@ type generator struct {
 	descIDs map[string]expID
 	// streamStart is the start rule of ParseStream, whose separate body
 	// (generated while streamBody is set) emits its #stream elements.
-	streamStart *staticRule
+	streamStart *compile.Rule
 	streamBody  bool
 	streamErr   error
 	// plainCalled holds the plain rules that a generated call refers to by their wrapper
 	// (ruleCall). wrappers are the methods of the plain rules, which dropUnusedWrappers keeps only
 	// for the rules in plainCalled.
-	plainCalled map[*staticRule]bool
+	plainCalled map[*compile.Rule]bool
 	wrappers    []wrapperSpan
 	// live and collect are the passes of generate (reach.go): live leaves out the unreachable
 	// rules of the Node and recognizer tables, collect records the calls that reach them.
@@ -583,7 +584,7 @@ func (g *generator) seedDescs() {
 		return
 	}
 	g.descIDs = map[string]expID{}
-	for i, d := range fixedDescs {
+	for i, d := range compile.FixedDescs {
 		g.descs = append(g.descs, d)
 		g.descIDs[d] = expID(i)
 	}
@@ -670,14 +671,14 @@ func (g *generator) recovers() bool {
 			}
 		}
 	}
-	for _, rs := range [][]*staticRule{g.prog.rules, g.prog.twins} {
+	for _, rs := range [][]*compile.Rule{g.prog.RuleList, g.prog.Twins} {
 		for _, r := range rs {
-			walkExpr(r.def.Expr, check)
-			walkExpr(r.bodyExpr(), check)
+			compile.WalkExpr(r.Def.Expr, check)
+			compile.WalkExpr(r.BodyExpr(), check)
 		}
 	}
 	if g.recoveryProg == nil {
-		g.recoveryProg = map[*staticProgram]bool{}
+		g.recoveryProg = map[*compile.Program]bool{}
 	}
 	g.recoveryProg[g.prog] = found
 	return found
@@ -686,33 +687,33 @@ func (g *generator) recovers() bool {
 // leanRouteHook is called with the rule table and the rule for each rule that takes the lean route
 // in rules, in a Node or recognizer table. Tests set it to check the route that is chosen, not the text
 // of the generated code.
-var leanRouteHook func(table string, r *staticRule)
+var leanRouteHook func(table string, r *compile.Rule)
 
 // framedRouteHook is called with the rule table and the rule for each rule whose framed body is printed
 // from Flow IR (flowNodeFrameBody), in a Node or recognizer table. Tests set it as leanRouteHook.
-var framedRouteHook func(table string, r *staticRule)
+var framedRouteHook func(table string, r *compile.Rule)
 
 // operatorsRouteHook is called with the rule table and the Operators Rule for each line of a Node or
 // recognizer table that is printed from Flow IR. Tests set it as leanRouteHook.
-var operatorsRouteHook func(table string, r *staticRule)
+var operatorsRouteHook func(table string, r *compile.Rule)
 
 // streamRouteHook is called with the rule table and the rule for each ParseStream start rule whose
 // stream body is printed from Flow IR (flowStreamBody). Tests set it as leanRouteHook.
-var streamRouteHook func(table string, r *staticRule)
+var streamRouteHook func(table string, r *compile.Rule)
 
 func (g *generator) rules() {
 	init := &g.init
 	methodsBefore := g.methods.String()
-	bodies := map[*staticRule]string{}
-	scopes := map[*staticRule]*scope{}
-	flats := map[*staticRule]*flatRule{}
-	all := append(append([]*staticRule(nil), g.prog.rules...), g.prog.twins...)
+	bodies := map[*compile.Rule]string{}
+	scopes := map[*compile.Rule]*compile.Scope{}
+	flats := map[*compile.Rule]*flatRule{}
+	all := append(append([]*compile.Rule(nil), g.prog.RuleList...), g.prog.Twins...)
 	for _, r := range all {
-		s := newScope()
+		s := compile.NewScope()
 		scopes[r] = s
 		if g.pruned(r) {
 			// Not printed; its table row keeps the capture layout of the first pass.
-			s.names = append(s.names, g.live.scopes[ruleKey{g.table, r.id, false}]...)
+			s.Names = append(s.Names, g.live.scopes[ruleKey{g.table, r.ID, false}]...)
 			continue
 		}
 		g.beginRule(r)
@@ -737,7 +738,7 @@ func (g *generator) rules() {
 				continue
 			}
 		}
-		if _, ok := r.def.Expr.(*grammar.OperatorsRule); !ok {
+		if _, ok := r.Def.Expr.(*grammar.OperatorsRule); !ok {
 			if g.table != "trules" {
 				if body := g.flowNodeFrameBody(r, s); body != "" {
 					if framedRouteHook != nil && g.collect == nil {
@@ -750,7 +751,7 @@ func (g *generator) rules() {
 				bodies[r] = body
 				continue
 			}
-			g.failFlow("the body of rule " + r.name)
+			g.failFlow("the body of rule " + r.Name)
 		}
 	}
 	g.endRule()
@@ -759,13 +760,13 @@ func (g *generator) rules() {
 			g.collect.scopes = map[ruleKey][]string{}
 		}
 		for _, r := range all {
-			g.collect.scopes[ruleKey{g.table, r.id, false}] = append([]string(nil), scopes[r].names...)
+			g.collect.scopes[ruleKey{g.table, r.ID, false}] = append([]string(nil), scopes[r].Names...)
 		}
 	}
 	if g.table == "rules" {
-		g.nodeScopes = make(map[*staticRule][]string, len(all))
+		g.nodeScopes = make(map[*compile.Rule][]string, len(all))
 		for _, r := range all {
-			g.nodeScopes[r] = append([]string(nil), scopes[r].names...)
+			g.nodeScopes[r] = append([]string(nil), scopes[r].Names...)
 		}
 	}
 	if g.table == "trules" {
@@ -791,27 +792,27 @@ func (g *generator) rules() {
 		}
 		var extras []string
 		for i, r := range all {
-			if r.id != i {
+			if r.ID != i {
 				panic("rule ids are not positions in the rule table")
 			}
 			value := "nil"
-			if _, ok := r.def.Expr.(*grammar.OperatorsRule); !ok { // the lines build the value of an Operators Rule
-				value = "&" + g.shaper(r.bodyExpr())
+			if _, ok := r.Def.Expr.(*grammar.OperatorsRule); !ok { // the lines build the value of an Operators Rule
+				value = "&" + g.shaper(r.BodyExpr())
 			}
 			var flags []string
-			if r.memo && !r.transient {
+			if r.Memo && !r.Transient {
 				flags = append(flags, "RuleMemo")
 			}
-			if r.leader {
+			if r.Leader {
 				flags = append(flags, "RuleLeader")
 			}
-			if r.novalue {
+			if r.Novalue {
 				flags = append(flags, "RuleNovalue")
 			}
-			if g.document && (r.leader || r.memo) {
+			if g.document && (r.Leader || r.Memo) {
 				flags = append(flags, "RuleDocMemo")
 			}
-			if r.splice {
+			if r.Splice {
 				flags = append(flags, "RuleSplice")
 			}
 			flagsLit := "0"
@@ -819,19 +820,19 @@ func (g *generator) rules() {
 				flagsLit = strings.Join(flags, " | ")
 			}
 			seen := 0
-			if r.seen >= 0 {
-				seen = r.seen + 1
+			if r.Seen >= 0 {
+				seen = r.Seen + 1
 			}
-			fmt.Fprintf(&tab, "\t{%q, %s, %s, %d, %d, %d},\n", r.name, value, flagsLit, seen, strsOf(scopes[r].names), strsOf(r.vars))
-			w := r.whereName()
-			if w == r.name {
+			fmt.Fprintf(&tab, "\t{%q, %s, %s, %d, %d, %d},\n", r.Name, value, flagsLit, seen, strsOf(scopes[r].Names), strsOf(r.Vars))
+			w := r.WhereName()
+			if w == r.Name {
 				w = ""
 			}
-			if w != "" || r.nodeType != "" || r.opNodeType != "" {
-				extras = append(extras, fmt.Sprintf("\t{%d, %q, %q, %q},\n", r.id, w, r.nodeType, r.opNodeType))
+			if w != "" || r.NodeType != "" || r.OpNodeType != "" {
+				extras = append(extras, fmt.Sprintf("\t{%d, %q, %q, %q},\n", r.ID, w, r.NodeType, r.OpNodeType))
 			}
 		}
-		if err := ruleTableLimits(len(strs), g.prog.nseen); err != nil {
+		if err := ruleTableLimits(len(strs), g.prog.NSeen); err != nil {
 			g.tableErr = err
 		}
 		spec, strTable, extraTable := g.table+"Spec", g.table+"Strs", g.table+"Extras"
@@ -853,7 +854,7 @@ func (g *generator) rules() {
 		g.vars.WriteString("}\n\n")
 		fmt.Fprintf(&g.vars, "var %s = [...]ruleExtra{\n%s}\n\n", extraTable, strings.Join(extras, ""))
 		fmt.Fprintf(init, "\t%s = NewRules(%s[:], %s[:], %s[:])\n", g.table, spec, strTable, extraTable)
-		fmt.Fprintf(init, "\t%s.SetRules(%s, %d)\n", g.grammarVar(), g.table, g.prog.nseen)
+		fmt.Fprintf(init, "\t%s.SetRules(%s, %d)\n", g.grammarVar(), g.table, g.prog.NSeen)
 	}
 	nodeCode := g.table == "rules" && g.typedOnly
 	if nodeCode {
@@ -870,7 +871,7 @@ func (g *generator) rules() {
 			continue
 		}
 		g.beginRule(r)
-		if pr, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
+		if pr, ok := r.Def.Expr.(*grammar.OperatorsRule); ok {
 			g.cur = r
 			g.operatorsRule(r, pr)
 			continue
@@ -880,26 +881,26 @@ func (g *generator) rules() {
 			continue
 		}
 		if g.slotReached(r) {
-			fmt.Fprintf(init, "\t%s[%d].Body = %s\n", g.table, r.id, bodies[r])
+			fmt.Fprintf(init, "\t%s[%d].Body = %s\n", g.table, r.ID, bodies[r])
 			g.printedBody(r)
 		}
-		if r.action != nil && g.table == "trules" {
+		if r.Action != nil && g.table == "trules" {
 			// A function of its own, which typedCall calls directly.
-			g.proj, g.final = g.projections(r), r.action
-			fmt.Fprintf(&g.methods, "// The action of %s.\nfunc ta%d(c *TActCtx) any { %s }\n\n", r.name, r.id, g.termBody(r.action, scopes[r], nil))
+			g.proj, g.final = g.projections(r), r.Action
+			fmt.Fprintf(&g.methods, "// The action of %s.\nfunc ta%d(c *TActCtx) any { %s }\n\n", r.Name, r.ID, g.termBody(r.Action, scopes[r], nil))
 			g.proj, g.final = nil, nil
-			fmt.Fprintf(init, "\ttrules[%d].Action = ta%d\n", r.id, r.id)
-		} else if r.action != nil {
+			fmt.Fprintf(init, "\ttrules[%d].Action = ta%d\n", r.ID, r.ID)
+		} else if r.Action != nil {
 			g.proj = g.projections(r)
-			fmt.Fprintf(init, "\t%s[%d].Action = func(c *%s) any { %s }\n", g.table, r.id, g.ctxType(), g.termBody(r.action, scopes[r], nil))
+			fmt.Fprintf(init, "\t%s[%d].Action = func(c *%s) any { %s }\n", g.table, r.ID, g.ctxType(), g.termBody(r.Action, scopes[r], nil))
 			g.proj = nil
 		}
 		if g.table == "trules" {
 			g.typedCall(r, bodies[r], scopes[r], nil)
-		} else if r.plain {
+		} else if r.Plain {
 			start := g.methods.Len()
 			if d := flats[r]; d != nil {
-				g.flatMethod(r, d, fmt.Sprintf("%s%d", g.plainPrefix(), r.id), "called as by invokePlain", true)
+				g.flatMethod(r, d, fmt.Sprintf("%s%d", g.plainPrefix(), r.ID), "called as by invokePlain", true)
 			} else {
 				g.plainCall(r, bodies[r])
 			}
@@ -911,20 +912,20 @@ func (g *generator) rules() {
 		// ParseStream calls a copy of the start rule whose body emits the
 		// #stream elements, generated last so that the batch code is the same
 		// as without streams. Its captures have a layout of their own.
-		s := newScope()
+		s := compile.NewScope()
 		body := g.flowStreamBody(r, s)
 		if body != "" {
 			if streamRouteHook != nil && g.collect == nil {
 				streamRouteHook(g.table, r)
 			}
 		} else {
-			g.failFlow("the stream body of rule " + r.name)
+			g.failFlow("the stream body of rule " + r.Name)
 		}
-		if strings.Join(s.names, "\x00") != strings.Join(scopes[r].names, "\x00") {
+		if strings.Join(s.Names, "\x00") != strings.Join(scopes[r].Names, "\x00") {
 			// The copied action addresses captures by the batch body's slots.
-			g.streamErr = fmt.Errorf("internal error: the stream body of %s has a different capture layout", r.name)
+			g.streamErr = fmt.Errorf("internal error: the stream body of %s has a different capture layout", r.Name)
 		}
-		fmt.Fprintf(init, "\tstreamRule = new(Rule)\n\t*streamRule = *rules[%d]\n\tstreamRule.Scope = %s\n\tstreamRule.Body = %s\n", r.id, goStrings(s.names), body)
+		fmt.Fprintf(init, "\tstreamRule = new(Rule)\n\t*streamRule = *rules[%d]\n\tstreamRule.Scope = %s\n\tstreamRule.Body = %s\n", r.ID, goStrings(s.Names), body)
 		g.methods.WriteString("// streamRule is the start rule of ParseStream.\nvar streamRule *Rule\n\n")
 	}
 	g.dropUnusedWrappers()
@@ -933,7 +934,7 @@ func (g *generator) rules() {
 	}
 	// Struct fields, used to detect references to undeclared fields at run time.
 	var names []string
-	for name, spec := range g.prog.types {
+	for name, spec := range g.prog.Types {
 		if td, ok := spec.(*grammar.TypeDef); ok && td.Struct() != nil {
 			names = append(names, name)
 		}
@@ -941,7 +942,7 @@ func (g *generator) rules() {
 	sort.Strings(names)
 	for _, name := range names {
 		var fields []string
-		for _, f := range defFields(g.prog.types[name].(*grammar.TypeDef)) {
+		for _, f := range compile.DefFields(g.prog.Types[name].(*grammar.TypeDef)) {
 			fields = append(fields, fmt.Sprintf("%q: true", f.Name))
 		}
 		fmt.Fprintf(init, "\tpegoGrammar.StructFields[%q] = map[string]bool{%s}\n", name, strings.Join(fields, ", "))
@@ -949,12 +950,12 @@ func (g *generator) rules() {
 	}
 	// The kinds of the named node types, under their names and those of their aliases.
 	names = names[:0]
-	for name := range g.prog.nodeKinds {
+	for name := range g.prog.NodeKinds {
 		names = append(names, name)
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		fmt.Fprintf(init, "\tpegoGrammar.NodeTypes[%q] = NewNodeTypeKinds(%q)\n", name, g.prog.nodeKinds[name][0].Type)
+		fmt.Fprintf(init, "\tpegoGrammar.NodeTypes[%q] = NewNodeTypeKinds(%q)\n", name, g.prog.NodeKinds[name][0].Type)
 	}
 }
 
@@ -962,7 +963,7 @@ func (g *generator) rules() {
 // generated indexes from 1 (nodeTypeIndex).
 func (g *generator) nodeTypeNames() []string {
 	var names []string
-	for name, spec := range g.prog.types {
+	for name, spec := range g.prog.Types {
 		if td, ok := spec.(*grammar.TypeDef); ok && td.Struct() == nil {
 			names = append(names, name)
 		}
@@ -973,11 +974,11 @@ func (g *generator) nodeTypeNames() []string {
 
 // nodeTypeIndex returns the generated index of the named node type name, from 1.
 func (g *generator) nodeTypeIndex(name string) int {
-	n, ok := g.prog.nodeTypeOf(name)
+	n, ok := g.prog.NodeTypeOf(name)
 	if !ok {
 		panic("internal error: " + name + " is not a named node type")
 	}
-	return sort.SearchStrings(g.nodeTypeNames(), n.name) + 1
+	return sort.SearchStrings(g.nodeTypeNames(), n.Name) + 1
 }
 
 // nodeTypeID returns the Go expression of the registered index of the named node type name in the
@@ -989,20 +990,20 @@ func (g *generator) nodeTypeID(name string) string {
 // typedResultConversion returns the statement that converts the value v of rule r to the rule's
 // named node type in the typed runtime (what finish does), or "" if r has none. body, if not "",
 // holds the fresh node of the rule's body (tfreshNode), which converts in place.
-func (g *generator) typedResultConversion(r *staticRule, v, body string) string {
-	if r.nodeType == "" {
+func (g *generator) typedResultConversion(r *compile.Rule, v, body string) string {
+	if r.NodeType == "" {
 		return ""
 	}
 	if body != "" {
-		return fmt.Sprintf("%s = p.TConvertResultOwned(trules[%d], %s, %s)", v, r.id, v, body)
+		return fmt.Sprintf("%s = p.TConvertResultOwned(trules[%d], %s, %s)", v, r.ID, v, body)
 	}
-	return fmt.Sprintf("%s = p.TConvertResult(trules[%d], %s)", v, r.id, v)
+	return fmt.Sprintf("%s = p.TConvertResult(trules[%d], %s)", v, r.ID, v)
 }
 
 // ownsBody reports whether finishing the value of rule r in the typed runtime converts the fresh
 // node of its body in place: the rule has a named node type and returns its body's value.
-func (g *generator) ownsBody(r *staticRule) bool {
-	return r.nodeType != "" && !r.novalue && r.action == nil
+func (g *generator) ownsBody(r *compile.Rule) bool {
+	return r.NodeType != "" && !r.Novalue && r.Action == nil
 }
 
 // typedCall writes the methods that call the rule r in the typed runtime: s<id> for a rule never
@@ -1013,22 +1014,22 @@ func (g *generator) ownsBody(r *staticRule) bool {
 //
 // For a flat rule (d, see gen_flowrule.go), the method that runs the body (s<id>, v<id> or i<id>)
 // has it inlined, with the action.
-func (g *generator) typedCall(r *staticRule, body string, s *scope, d *flatRule) {
-	if _, operatorsRule := r.def.Expr.(*grammar.OperatorsRule); operatorsRule || r.leader {
+func (g *generator) typedCall(r *compile.Rule, body string, s *compile.Scope, d *flatRule) {
+	if _, operatorsRule := r.Def.Expr.(*grammar.OperatorsRule); operatorsRule || r.Leader {
 		return // the general call
 	}
 	m := &g.methods
-	entry := fmt.Sprintf("u%d", r.id)
-	if r.plain {
-		entry = fmt.Sprintf("s%d", r.id)
+	entry := fmt.Sprintf("u%d", r.ID)
+	if r.Plain {
+		entry = fmt.Sprintf("s%d", r.ID)
 	}
-	if g.typedEntry[r.id] {
+	if g.typedEntry[r.ID] {
 		// Only a typed entry point runs an Entry; every other call names the function.
-		fmt.Fprintf(&g.init, "\ttrules[%d].Entry = %s\n", r.id, entry)
+		fmt.Fprintf(&g.init, "\ttrules[%d].Entry = %s\n", r.ID, entry)
 	}
-	ncaps := len(s.names)
+	ncaps := len(s.Names)
 	if d != nil {
-		ncaps = len(r.scope.names)
+		ncaps = len(r.Scope.Names)
 	}
 	finish := func(frame string) {
 		body := ""
@@ -1037,15 +1038,15 @@ func (g *generator) typedCall(r *staticRule, body string, s *scope, d *flatRule)
 			m.WriteString("\t\tbody := TFreshNode(v)\n")
 		}
 		switch {
-		case r.novalue:
+		case r.Novalue:
 			m.WriteString("\t\tv = nil\n")
-		case r.action != nil:
+		case r.Action != nil:
 			fmt.Fprintf(m, "\t\tc := p.UseCtx(TActCtx{P: p, F: %s, Start: start, End: p.Pos, Cbase: len(p.Created)})\n", frame)
-			fmt.Fprintf(m, "\t\tv = c.Result(ta%d, %q)\n", r.id, r.whereName())
+			fmt.Fprintf(m, "\t\tv = c.Result(ta%d, %q)\n", r.ID, r.WhereName())
 		default:
-			fmt.Fprintf(m, "\t\tv = p.ScopeValue(trules[%d].Value, v, start)\n", r.id)
-			if len(s.names) > 0 {
-				fmt.Fprintf(m, "\t\tv = p.AttachCaptures(v, trules[%d].Scope, %s.Vals, start, p.Pos)\n", r.id, frame)
+			fmt.Fprintf(m, "\t\tv = p.ScopeValue(trules[%d].Value, v, start)\n", r.ID)
+			if len(s.Names) > 0 {
+				fmt.Fprintf(m, "\t\tv = p.AttachCaptures(v, trules[%d].Scope, %s.Vals, start, p.Pos)\n", r.ID, frame)
 			}
 			m.WriteString("\t\tif n := AsTval(v); n != nil {\n\t\t\tn.TSetFresh(false)\n\t\t}\n")
 		}
@@ -1058,69 +1059,69 @@ func (g *generator) typedCall(r *staticRule, body string, s *scope, d *flatRule)
 			g.flatMethod(r, d, name, "called as by invokePlain", true)
 			return
 		}
-		if g.observability && r.plain && !g.directTypedDocument {
+		if g.observability && r.Plain && !g.directTypedDocument {
 			name = g.tracePlainWrapper(r, name)
 		}
-		fmt.Fprintf(m, "// %s, called as by invokePlain\nfunc %s(p *TParser) (any, bool) {\n", r.name, name)
+		fmt.Fprintf(m, "// %s, called as by invokePlain\nfunc %s(p *TParser) (any, bool) {\n", r.Name, name)
 		m.WriteString("\t" + g.saveRec(", trail") + " := " + g.saveRecValues(", len(p.Trail)") + "\n\tprevEnv, prevCut := p.Env, p.Cut\n\tp.Cut = false\n\tp.Enter()\n")
-		if g.observability && (!r.plain || g.directTypedDocument) {
+		if g.observability && (!r.Plain || g.directTypedDocument) {
 			m.WriteString("p.Observation.Evaluated()\n")
 		}
 		fmt.Fprintf(m, "\tv, ok := %s(p, 0)\n\tp.Depth--\n\tp.Cut = prevCut\n\tp.DropTrail(trail)\n\tif ok {\n", body)
 		finish("EmptyTFrame")
 		m.WriteString("\t} else {\n\t\t" + g.restoreRec("start", "rec") + "\n\t}\n\tp.Env = prevEnv\n\treturn v, ok\n}\n\n")
 	}
-	if r.plain {
+	if r.Plain {
 		if g.directTypedDocument {
-			name := fmt.Sprintf("s%d", r.id)
+			name := fmt.Sprintf("s%d", r.ID)
 			if g.observability {
 				name = g.traceCallWrapper(r, name, false)
 			}
-			fmt.Fprintf(m, "func %s(p *TParser) (any, bool) {\n if p.TypedDocument != nil { return p.DocumentCall(trules[%d], 0, ds%d) }; return ds%d(p)\n}\n", name, r.id, r.id, r.id)
-			plain(fmt.Sprintf("ds%d", r.id))
+			fmt.Fprintf(m, "func %s(p *TParser) (any, bool) {\n if p.TypedDocument != nil { return p.DocumentCall(trules[%d], 0, ds%d) }; return ds%d(p)\n}\n", name, r.ID, r.ID, r.ID)
+			plain(fmt.Sprintf("ds%d", r.ID))
 			return
 		}
-		plain(fmt.Sprintf("s%d", r.id))
+		plain(fmt.Sprintf("s%d", r.ID))
 		return
 	}
 	// u<id>: the call. An unmemoized call of a rule without captures is plain.
-	name := fmt.Sprintf("u%d", r.id)
+	name := fmt.Sprintf("u%d", r.ID)
 	if g.observability {
 		name = g.traceCallWrapper(r, name, false)
 	}
-	fmt.Fprintf(m, "// rule %s\nfunc %s(p *TParser) (any, bool) {\n", r.name, name)
+	fmt.Fprintf(m, "// rule %s\nfunc %s(p *TParser) (any, bool) {\n", r.Name, name)
 	// Without Documents the invocation of a flat rule without captures is its plain method: the
 	// two bodies differ only in the rollback to the start on failure, which the callers of the
 	// invocation repeat harmlessly, so one body serves both. A Document reads the position the
 	// invocation leaves at its failure to find the frontier it examined, so Documents keep both.
 	merged := d != nil && ncaps == 0 && !g.document
-	iname := fmt.Sprintf("i%d", r.id)
+	iname := fmt.Sprintf("i%d", r.ID)
 	if merged {
-		iname = fmt.Sprintf("v%d", r.id)
+		iname = fmt.Sprintf("v%d", r.ID)
 	}
 	if g.directTypedDocument {
-		fmt.Fprintf(m, " if p.TypedDocument != nil { return p.DocumentCall(trules[%d], 0, %s) }\n", r.id, iname)
+		fmt.Fprintf(m, " if p.TypedDocument != nil { return p.DocumentCall(trules[%d], 0, %s) }\n", r.ID, iname)
 	}
-	memo := r.memo && !r.transient
+	memo := r.Memo && !r.Transient
 	if memo {
-		fmt.Fprintf(m, "\tif !p.FirstCall(rules[%d]) {\n\t\treturn p.CallMemo(trules[%d], %s)\n\t}\n", r.id, r.id, iname)
+		fmt.Fprintf(m, "\tif !p.FirstCall(rules[%d]) {\n\t\treturn p.CallMemo(trules[%d], %s)\n\t}\n", r.ID, r.ID, iname)
 	}
 	if ncaps == 0 {
-		fmt.Fprintf(m, "\treturn v%d(p)\n}\n\n", r.id)
-		plain(fmt.Sprintf("v%d", r.id))
+		fmt.Fprintf(m, "\treturn v%d(p)\n}\n\n", r.ID)
+		plain(fmt.Sprintf("v%d", r.ID))
 	} else {
-		fmt.Fprintf(m, "\t%s := %s\n\tv, ok := i%d(p)\n\tif !ok {\n\t\t%s\n\t}\n\treturn v, ok\n}\n\n", g.saveRec(""), g.saveRecValues(""), r.id, g.restoreRec("start", "rec"))
+		fmt.Fprintf(m, "\t%s := %s\n\tv, ok := i%d(p)\n\tif !ok {\n\t\t%s\n\t}\n\treturn v, ok\n}\n\n", g.saveRec(""), g.saveRecValues(""), r.ID, g.restoreRec("start", "rec"))
 	}
 	// i<id>: the invocation (also used by the memo).
 	if merged {
 		return // v<id>
 	}
 	if d != nil {
-		g.flatMethod(r, d, fmt.Sprintf("i%d", r.id), "invoked as by invoke", false)
+		g.flatMethod(r, d, fmt.Sprintf("i%d", r.ID), "invoked as by invoke", false)
 		return
 	}
-	fmt.Fprintf(m, "// %s, invoked as by invoke\nfunc i%d(p *TParser) (any, bool) {\n", r.name, r.id)
-	fmt.Fprintf(m, "\tf := p.NewFrame(%d)\n\tprevFrame, prevEnv, prevCut, trail := p.Frame, p.Env, p.Cut, len(p.Trail)\n\tp.Frame, p.Cut = f, false\n\tp.Enter()\n\tstart := p.Pos\n\t_ = start\n", len(s.names))
+	fmt.Fprintf(m, "// %s, invoked as by invoke\nfunc i%d(p *TParser) (any, bool) {\n", r.Name, r.ID)
+	fmt.Fprintf(m, "\tf := p.NewFrame(%d)\n\tprevFrame, prevEnv, prevCut, trail := p.Frame, p.Env, p.Cut, len(p.Trail)\n\tp.Frame, p.Cut = f, false\n\tp.Enter()\n\tstart := p.Pos\n\t_ = start\n", len(s.Names))
 	if g.observability {
 		m.WriteString("p.Observation.Evaluated()\n")
 	}
@@ -1131,7 +1132,7 @@ func (g *generator) typedCall(r *staticRule, body string, s *scope, d *flatRule)
 
 // wrapperSpan is the span [start, end) of the methods of a plain rule's wrapper in generator.methods.
 type wrapperSpan struct {
-	r          *staticRule
+	r          *compile.Rule
 	start, end int
 }
 
@@ -1144,7 +1145,7 @@ func (g *generator) dropUnusedWrappers() {
 	for i := len(g.wrappers) - 1; i >= 0; i-- {
 		w := g.wrappers[i]
 		if !strings.HasPrefix(text[w.start:w.end], "// ") || !strings.HasSuffix(text[w.start:w.end], "}\n\n") {
-			panic(fmt.Sprintf("internal error: the wrapper of %s is not at its recorded span", w.r.name))
+			panic(fmt.Sprintf("internal error: the wrapper of %s is not at its recorded span", w.r.Name))
 		}
 		if !g.plainCalled[w.r] {
 			text = text[:w.start] + text[w.end:]
@@ -1196,7 +1197,7 @@ func fieldRead(t grammar.Term) bool {
 
 // operand returns an operand (TOperand) of a comparison: a field read keeps a string field
 // unboxed.
-func (g *generator) operand(t grammar.Term, s *scope, locals map[string]string) string {
+func (g *generator) operand(t grammar.Term, s *compile.Scope, locals map[string]string) string {
 	if fieldRead(t) {
 		m := t.(*grammar.Member)
 		return fmt.Sprintf("c.FieldOperand(%s, %q)", g.term(m.X, s, locals), m.Name)
@@ -1252,7 +1253,7 @@ func (g *generator) bodyMethod(comment, body string) string {
 }
 
 // shaper returns the name of the package variable that holds the runtime shaper of the expression
-// e, its static shape (value_shape.go). Few distinct shapes occur, so the variables are shared.
+// e, its static shape (internal/compile/value_shape.go). Few distinct shapes occur, so the variables are shared.
 func (g *generator) shaper(e grammar.Expr) string {
 	return g.shaperOf(shaperLit(g.prog, e))
 }
@@ -1274,18 +1275,18 @@ func (g *generator) shaperOf(lit string) string {
 }
 
 // shaperLit returns the literal of the runtime shaper of the expression e.
-func shaperLit(prog *staticProgram, e grammar.Expr) string {
-	return fmt.Sprintf("Shaper{Elems: %v, K: %d, Mode: %d, Tuple: %v, Shared: %v}", isElems(prog, e), valuedCount(prog, e), singleModeOf(prog, e), scopeTuple(prog, e), isElems(prog, e) && sharesTuple(prog, e))
+func shaperLit(prog *compile.Program, e grammar.Expr) string {
+	return fmt.Sprintf("Shaper{Elems: %v, K: %d, Mode: %d, Tuple: %v, Shared: %v}", compile.IsElems(prog, e), compile.ValuedCount(prog, e), compile.SingleModeOf(prog, e), compile.ScopeTuple(prog, e), compile.IsElems(prog, e) && compile.SharesTuple(prog, e))
 }
 
 // plainCall writes the method r<id>, which does what invokePlain does for the rule r (a rule never
 // memoized and without captures) with a direct call of its body.
-func (g *generator) plainCall(r *staticRule, body string) {
-	name := fmt.Sprintf("%s%d", g.plainPrefix(), r.id)
+func (g *generator) plainCall(r *compile.Rule, body string) {
+	name := fmt.Sprintf("%s%d", g.plainPrefix(), r.ID)
 	if g.observability {
 		name = g.tracePlainWrapper(r, name)
 	}
-	fmt.Fprintf(&g.methods, "// %s, called as by invokePlain\nfunc %s(p *%s) (%s, bool) {\n%s", r.name, name, g.recv(), g.valType(), g.step("p"))
+	fmt.Fprintf(&g.methods, "// %s, called as by invokePlain\nfunc %s(p *%s) (%s, bool) {\n%s", r.Name, name, g.recv(), g.valType(), g.step("p"))
 	g.methods.WriteString("\t" + g.saveRec(", trail") + " := " + g.saveRecValues(", len(p.Trail)") + "\n")
 	g.methods.WriteString(`	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
@@ -1293,10 +1294,10 @@ func (g *generator) plainCall(r *staticRule, body string) {
 `)
 	fmt.Fprintf(&g.methods, "\tv, ok := %s(p, 0)\n", body)
 	g.methods.WriteString("\tp.Depth--\n\tp.Cut = prevCut\n" + g.pick("\tp.Trail = p.Trail[:trail]\n", "\tp.DropTrail(trail)\n") + "\tif ok {\n")
-	if r.novalue {
+	if r.Novalue {
 		g.methods.WriteString("\t\tv = nil\n")
 	} else {
-		fmt.Fprintf(&g.methods, "\t\tv = p.Finish(%s[%d], %s, v, start)\n", g.table, r.id, g.frameVar())
+		fmt.Fprintf(&g.methods, "\t\tv = p.Finish(%s[%d], %s, v, start)\n", g.table, r.ID, g.frameVar())
 	}
 	g.methods.WriteString("\t} else {\n\t\t" + g.restoreRec("start", "rec") + "\n\t}\n")
 	g.methods.WriteString(`	p.Env = prevEnv
@@ -1308,17 +1309,17 @@ func (g *generator) plainCall(r *staticRule, body string) {
 
 // projections returns the projected repetition captures of the rule r (see ruleProjections), none
 // in the recognizer.
-func (g *generator) projections(r *staticRule) map[string]string {
+func (g *generator) projections(r *compile.Rule) map[string]string {
 	if g.table == "recRules" {
 		return nil
 	}
-	return ruleProjections(g.prog, r)
+	return compile.RuleProjections(g.prog, r)
 }
 
 // projected reports whether the map call t reads a projected capture (projections), and returns
 // the capture.
 func (g *generator) projected(t *grammar.Call, locals map[string]string) (grammar.Term, bool) {
-	x, ok := projectedMap(t, g.proj, func(name string) bool { _, local := locals[name]; return local })
+	x, ok := compile.ProjectedMap(t, g.proj, func(name string) bool { _, local := locals[name]; return local })
 	return x, ok
 }
 
@@ -1338,16 +1339,16 @@ func (g *generator) first(e grammar.Expr, depth int, seen map[string]bool) (stri
 		r, _ := utf8.DecodeRuneInString(e.Value)
 		if e.IgnoreCase {
 			// The next character matches the first code point in either case of an ASCII letter.
-			f := foldASCIIRune(r)
+			f := compile.FoldASCIIRune(r)
 			cond := fmt.Sprintf("ch == %d", f)
 			if 'a' <= f && f <= 'z' {
 				cond += fmt.Sprintf(" || ch == %d", f-('a'-'A'))
 			}
-			return cond, g.desc(literalDesc(e)), depth, true
+			return cond, g.desc(compile.LiteralDesc(e)), depth, true
 		}
 		return fmt.Sprintf("ch == %d", r), g.desc(strconv.Quote(e.Value)), depth, true
 	case *grammar.CharClass:
-		return negateCondition(g.controlledClassReject(e)), g.desc(charClassString(e)), depth, true
+		return negateCondition(g.controlledClassReject(e)), g.desc(compile.CharClassString(e)), depth, true
 	case *grammar.Seq:
 		if len(e.Items) > 0 {
 			return g.first(e.Items[0], depth, seen)
@@ -1359,15 +1360,15 @@ func (g *generator) first(e grammar.Expr, depth int, seen map[string]bool) (stri
 	case *grammar.Discard:
 		return g.first(e.Expr, depth, seen)
 	case *grammar.Ref:
-		r := g.prog.byName[e.Name]
-		if r == nil || r.leader || seen[e.Name] {
+		r := g.prog.ByName[e.Name]
+		if r == nil || r.Leader || seen[e.Name] {
 			break
 		}
-		if _, operatorsRule := r.def.Expr.(*grammar.OperatorsRule); operatorsRule {
+		if _, operatorsRule := r.Def.Expr.(*grammar.OperatorsRule); operatorsRule {
 			break
 		}
 		seen[e.Name] = true
-		return g.first(r.def.Expr, depth+1, seen)
+		return g.first(r.Def.Expr, depth+1, seen)
 	}
 	return "", 0, 0, false
 }
@@ -1409,20 +1410,20 @@ func classReject(e *grammar.CharClass) string {
 	return "!(" + cond + ")"
 }
 
-func (g *generator) operatorsRule(r *staticRule, e *grammar.OperatorsRule) {
+func (g *generator) operatorsRule(r *compile.Rule, e *grammar.OperatorsRule) {
 	var b strings.Builder
-	fmt.Fprintf(&b, "\t%s[%d].OperatorsRule = &%s{\n", g.table, r.id, g.pick("OperatorsRule", "TOperatorsRule"))
+	fmt.Fprintf(&b, "\t%s[%d].OperatorsRule = &%s{\n", g.table, r.ID, g.pick("OperatorsRule", "TOperatorsRule"))
 	// The lines of the rule's Core IR, in the order of e, if they are printed from Flow IR.
 	co := g.flowOperatorsRule(r)
 	if e.Skip != nil {
-		s := newScope()
+		s := compile.NewScope()
 		var skip *core.OpLine
 		if co != nil {
 			skip = co.Skip
 		}
 		m := g.flowOperatorsRuleBody(skip, e.Skip, s, false)
 		if m == "" {
-			g.failFlow("the skip of an Operators Rule of rule " + g.cur.name)
+			g.failFlow("the skip of an Operators Rule of rule " + g.cur.Name)
 		}
 		fmt.Fprintf(&b, "\t\tSkip: %s,\n", m)
 	}
@@ -1456,7 +1457,7 @@ func (g *generator) operatorsRule(r *staticRule, e *grammar.OperatorsRule) {
 	fmt.Fprintf(&b, "\t\tPrefix: []*%s{%s},\n", op, strings.Join(prefix, ",\n"))
 	fmt.Fprintf(&b, "\t\tLed: []*%s{%s},\n", op, strings.Join(led, ",\n"))
 	b.WriteString("\t}\n")
-	fmt.Fprintf(&b, "\t%s[%d].Body = func(p *%s, min int) (%s, bool) { return p.OperatorsRuleParse(%s[%d], min) }\n", g.table, r.id, g.recv(), g.valType(), g.table, r.id)
+	fmt.Fprintf(&b, "\t%s[%d].Body = func(p *%s, min int) (%s, bool) { return p.OperatorsRuleParse(%s[%d], min) }\n", g.table, r.ID, g.recv(), g.valType(), g.table, r.ID)
 	g.printedBody(r)
 	g.init.WriteString(b.String())
 }
@@ -1464,20 +1465,20 @@ func (g *generator) operatorsRule(r *staticRule, e *grammar.OperatorsRule) {
 // operatorsRuleLine returns the line of an Operators Rule with the expression e and the action;
 // l is its Core IR if it is printed from Flow IR, or nil.
 func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator bool, l *core.OpLine) string {
-	s := newScope()
+	s := compile.NewScope()
 	var locals []string
 	if operator {
 		locals = []string{"lhs", "rhs", "op"}
 	}
 	// Lines whose value is unused are matched without values, as in the engine; so are all lines
 	// of a rule without a value (in the recognizer).
-	build := !g.cur.novalue && !leanLine(action, locals)
+	build := !g.cur.Novalue && !compile.LeanLine(action, locals)
 	m := g.flowOperatorsRuleBody(l, e, s, build)
 	if m == "" {
-		g.failFlow("a line of an Operators Rule of rule " + g.cur.name)
+		g.failFlow("a line of an Operators Rule of rule " + g.cur.Name)
 	}
 	act := "nil"
-	if action != nil && !g.cur.novalue {
+	if action != nil && !g.cur.Novalue {
 		var locals map[string]string
 		if operator {
 			locals = map[string]string{"lhs": "c.Lhs", "rhs": "c.Rhs", "op": "c.Op"}
@@ -1488,45 +1489,45 @@ func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, opera
 		act = fmt.Sprintf("func(c *%s) any { %s }", g.ctxType(), g.termBody(action, s, locals))
 		g.final = nil
 	}
-	return fmt.Sprintf("&%s{Scope: %s, M: %s, Action: %s, Value: %s}", g.pick("OperatorsRuleLine", "TOperatorsRuleLine"), goStrings(s.names), m, act, g.shaper(e))
+	return fmt.Sprintf("&%s{Scope: %s, M: %s, Action: %s, Value: %s}", g.pick("OperatorsRuleLine", "TOperatorsRuleLine"), goStrings(s.Names), m, act, g.shaper(e))
 }
 
 // ruleCall returns the call of the rule r from Operators Rule level min.
-func (g *generator) ruleCall(r *staticRule, min int) string {
-	_, operatorsRule := r.def.Expr.(*grammar.OperatorsRule)
+func (g *generator) ruleCall(r *compile.Rule, min int) string {
+	_, operatorsRule := r.Def.Expr.(*grammar.OperatorsRule)
 	switch {
 	case g.document && g.table == "rules":
 		// Document parses route every call through call, which memoizes per rule.docMemo,
 		// including otherwise plain rules.
 		g.noteCall(r, false)
-		return fmt.Sprintf("p.Call(%s[%d], %d)", g.table, r.id, min)
+		return fmt.Sprintf("p.Call(%s[%d], %d)", g.table, r.ID, min)
 	case g.directTypedDocument && g.table == "trules" && operatorsRule:
 		g.noteCall(r, false)
-		return fmt.Sprintf("p.Call(%s[%d], %d)", g.table, r.id, min)
-	case r.plain && !operatorsRule:
+		return fmt.Sprintf("p.Call(%s[%d], %d)", g.table, r.ID, min)
+	case r.Plain && !operatorsRule:
 		g.noteCall(r, true)
 		// Never memoized and without captures: call does nothing but invokePlain, which a
 		// method of its own does with a direct call of the body (see plainCalls).
 		if g.plainCalled == nil {
-			g.plainCalled = map[*staticRule]bool{}
+			g.plainCalled = map[*compile.Rule]bool{}
 		}
 		g.plainCalled[r] = true
-		return fmt.Sprintf("%s%d(p)", g.plainPrefix(), r.id)
-	case g.table == "trules" && !operatorsRule && !r.leader:
+		return fmt.Sprintf("%s%d(p)", g.plainPrefix(), r.ID)
+	case g.table == "trules" && !operatorsRule && !r.Leader:
 		// The typed runtime calls a method of the rule's own (typedCall).
 		g.noteCall(r, true)
-		return fmt.Sprintf("u%d(p)", r.id)
-	case r.plain:
+		return fmt.Sprintf("u%d(p)", r.ID)
+	case r.Plain:
 		g.noteCall(r, false)
-		return fmt.Sprintf("p.InvokePlain(%s[%d], %d)", g.table, r.id, min)
+		return fmt.Sprintf("p.InvokePlain(%s[%d], %d)", g.table, r.ID, min)
 	}
 	g.noteCall(r, false)
-	return fmt.Sprintf("p.Call(%s[%d], %d)", g.table, r.id, min)
+	return fmt.Sprintf("p.Call(%s[%d], %d)", g.table, r.ID, min)
 }
 
 // term converts a value expression into a Go expression of type any. locals maps names, such as lambda
 // parameters, to Go expressions.
-func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) string {
+func (g *generator) term(t grammar.Term, s *compile.Scope, locals map[string]string) string {
 	switch t := t.(type) {
 	case *grammar.IntLit:
 		return fmt.Sprintf("any(%d)", t.Value)
@@ -1544,7 +1545,7 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 		if g.caps != nil {
 			return g.caps[t.Name]
 		}
-		return fmt.Sprintf("c.Cap(%d)", s.slots[t.Name])
+		return fmt.Sprintf("c.Cap(%d)", s.Slots[t.Name])
 	case *grammar.VarRef:
 		return fmt.Sprintf("c.Lookup(%q)", t.Name)
 	case *grammar.Member:
@@ -1553,14 +1554,14 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 		if len(t.Args) != 0 {
 			// A node type constructor converts its value (see evalCtx.convert).
 			x := g.term(t.Args[0], s, locals)
-			n, _ := g.prog.nodeTypeOf(t.Type) // the type's own name, also for an alias of it
+			n, _ := g.prog.NodeTypeOf(t.Type) // the type's own name, also for an alias of it
 			if g.table == "trules" {
 				// The typed runtime names the type by its registered index.
-				return fmt.Sprintf("c.Convert(%s, %s)", g.nodeTypeID(n.name), x)
+				return fmt.Sprintf("c.Convert(%s, %s)", g.nodeTypeID(n.Name), x)
 			}
-			return fmt.Sprintf("c.Convert(%q, %s)", n.name, x)
+			return fmt.Sprintf("c.Convert(%q, %s)", n.Name, x)
 		}
-		name, spec := g.prog.structType(t.Type)
+		name, spec := g.prog.StructType(t.Type)
 		if g.table == "trules" {
 			// The typed runtime calls the constructor of the type (tmk_T, see typedRuntime) with
 			// the fields in declaration order.
@@ -1568,7 +1569,7 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 			// next), then passed in declaration order.
 			// The fields can be the arguments themselves when they are written in declaration order: Go
 			// evaluates the arguments from left to right.
-			fields := defFields(spec)
+			fields := compile.DefFields(spec)
 			args := []string{"c", strconv.FormatBool(grammar.Term(t) == g.final)}
 			next, inOrder := 0, true
 			for _, given := range t.Fields {
@@ -1622,7 +1623,7 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 	case *grammar.TupleLit:
 		return "c.Tuple(" + strings.Join(g.terms(t.Elems, s, locals), ", ") + ")"
 	case *grammar.Call:
-		if t.Func == "concat" && fusable(t) {
+		if t.Func == "concat" && compile.Fusable(t) {
 			// Push the elements of list, map and concat arguments directly (see fusable and
 			// evalCtx.pushConcatArg).
 			base := g.name("b_")
@@ -1663,8 +1664,8 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 			return "c.Concat(" + strings.Join(args, ", ") + ")"
 		}
 	case *grammar.Binary:
-		if lx, ok := textArg(t.L); ok && (t.Op == "==" || t.Op == "!=") {
-			if rx, ok := textArg(t.R); ok {
+		if lx, ok := compile.TextArg(t.L); ok && (t.Op == "==" || t.Op == "!=") {
+			if rx, ok := compile.TextArg(t.R); ok {
 				// Compare the strings directly (see evalCtx.binary).
 				xs := g.terms([]grammar.Term{lx, rx}, s, locals)
 				if g.goWorkControls {
@@ -1695,12 +1696,12 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 		return fmt.Sprintf("%sBinary(%q, %s, %s)", g.rt(), t.Op, l, r)
 	case *grammar.Cast:
 		x := g.term(t.X, s, locals)
-		ft := g.prog.resolveCheck(t.Type)
+		ft := g.prog.ResolveCheck(t.Type)
 		if ft == nil {
 			return x
 		}
-		v := g.fieldTypeVar(t, ft, func(v string, t *fieldType) string { return fmt.Sprintf("var %s = %s\n", v, goFieldType(t)) })
-		line, col := g.prog.castPos(t)
+		v := g.fieldTypeVar(t, ft, func(v string, t *compile.FieldType) string { return fmt.Sprintf("var %s = %s\n", v, goFieldType(t)) })
+		line, col := g.prog.CastPos(t)
 		return fmt.Sprintf("c.Cast(%s, %s, %d, %d)", x, v, line, col)
 	case *grammar.Unary:
 		if g.goWorkControls {
@@ -1729,12 +1730,12 @@ func literalTextMembership(t grammar.Term) (string, []string, bool) {
 		}
 		var capture *grammar.CaptureRef
 		var literal *grammar.StringLit
-		if x, ok := textArg(b.L); ok {
+		if x, ok := compile.TextArg(b.L); ok {
 			capture, _ = x.(*grammar.CaptureRef)
 			literal, _ = b.R.(*grammar.StringLit)
 		}
 		if capture == nil || literal == nil {
-			if x, ok := textArg(b.R); ok {
+			if x, ok := compile.TextArg(b.R); ok {
 				capture, _ = x.(*grammar.CaptureRef)
 				literal, _ = b.L.(*grammar.StringLit)
 			}
@@ -1754,7 +1755,7 @@ func literalTextMembership(t grammar.Term) (string, []string, bool) {
 
 // predicateBody returns the body of a function that returns the value of the predicate term t. A
 // membership of a captured text in literals is a switch.
-func (g *generator) predicateBody(t grammar.Term, s *scope, locals map[string]string) string {
+func (g *generator) predicateBody(t grammar.Term, s *compile.Scope, locals map[string]string) string {
 	if !g.disableLiteralTextDispatch {
 		if name, literals, ok := literalTextMembership(t); ok {
 			var cases []string
@@ -1777,7 +1778,7 @@ func (g *generator) predicateBody(t grammar.Term, s *scope, locals map[string]st
 }
 
 // concatParts emits the statements that push the elements of the arguments of the concat call t.
-func (g *generator) concatParts(t *grammar.Call, s *scope, locals map[string]string) {
+func (g *generator) concatParts(t *grammar.Call, s *compile.Scope, locals map[string]string) {
 	for _, a := range t.Args {
 		call, ok := a.(*grammar.Call)
 		switch {
@@ -1823,20 +1824,20 @@ func (g *generator) stmts(f func() string) (stmts, expr string) {
 
 // termBody returns the body of a function that returns the value of t: the statements t needs, then
 // the return of its expression.
-func (g *generator) termBody(t grammar.Term, s *scope, locals map[string]string) string {
+func (g *generator) termBody(t grammar.Term, s *compile.Scope, locals map[string]string) string {
 	stmts, expr := g.stmts(func() string { return g.term(t, s, locals) })
 	return stmts + "return " + expr
 }
 
 // closure returns a function literal that evaluates t when it is called, for a term that is
 // evaluated only if needed.
-func (g *generator) closure(t grammar.Term, s *scope, locals map[string]string) string {
+func (g *generator) closure(t grammar.Term, s *compile.Scope, locals map[string]string) string {
 	return "func() any { " + g.termBody(t, s, locals) + " }"
 }
 
 // terms prints the terms of ts, other than lambdas, in the order they are evaluated (see seq). The
 // lambdas stay empty.
-func (g *generator) terms(ts []grammar.Term, s *scope, locals map[string]string) []string {
+func (g *generator) terms(ts []grammar.Term, s *compile.Scope, locals map[string]string) []string {
 	parts := make([]func() string, len(ts))
 	for i, t := range ts {
 		parts[i] = func() string {
@@ -1880,7 +1881,7 @@ func (g *generator) seq(parts ...func() string) []string {
 // temporaries, alone or in the parentheses or UnboxValue call that print a parameter (see term).
 var fixedValue = regexp.MustCompile(`^(any\((-?\d+|"([^"\\]|\\.)*"|true|false|nil)\)|c\.Cap\(\d+\)|(?:(?:\w+\.)?UnboxValue)?\(l_\d+\)|[lt]_\d+|[kv]\d+)$`)
 
-func (g *generator) lambda(t grammar.Term, s *scope, locals map[string]string) string {
+func (g *generator) lambda(t grammar.Term, s *compile.Scope, locals map[string]string) string {
 	l := t.(*grammar.Lambda)
 	inner := map[string]string{}
 	for k, v := range locals {
@@ -1987,7 +1988,7 @@ func (g *generator) classSteps(items []grammar.Expr) string {
 	var steps []string
 	for _, it := range items {
 		c := it.(*grammar.CharClass)
-		steps = append(steps, fmt.Sprintf("{C: &%s, ID: %d}", g.classTable(c), g.desc(charClassString(c))))
+		steps = append(steps, fmt.Sprintf("{C: &%s, ID: %d}", g.classTable(c), g.desc(compile.CharClassString(c))))
 	}
 	body := strings.Join(steps, ", ")
 	key := "steps" + body

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -117,7 +118,7 @@ func TestPredicateBlocksSourceAndSavedGrammar(t *testing.T) {
 		t.Fatalf("formatter round trip: %v", err)
 	}
 	for _, original := range []*grammar.Grammar{g, jsonActionBlockGrammar(t, g), formattedGrammar} {
-		program, err := Compile(original, Options{})
+		program, err := Compile(original, compile.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -160,7 +161,7 @@ rule main = {x := 1; len(true)} "a"`,
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Compile(g, Options{}); err == nil {
+		if _, err := Compile(g, compile.Options{}); err == nil {
 			t.Fatalf("accepted invalid statement: %s", source)
 		}
 	}
@@ -169,7 +170,7 @@ rule main = {x := 1; len(true)} "a"`,
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), "action statement blocks are not implemented") {
+		if _, err := Compile(g, compile.Options{}); err == nil || !strings.Contains(err.Error(), "action statement blocks are not implemented") {
 			t.Fatalf("unsupported boundary %s: %v", source, err)
 		}
 	}

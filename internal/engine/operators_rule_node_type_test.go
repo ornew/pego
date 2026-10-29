@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
@@ -91,7 +92,7 @@ func TestOperatorsRuleNamedNodeTypeShape(t *testing.T) {
 	cases := operatorsNamedNodeCases()
 	for _, sourceInfo := range []bool{false, true} {
 		{
-			prog := compileBare(t, cases[0].src, Options{SourceInfo: sourceInfo})
+			prog := compileBare(t, cases[0].src, compile.Options{SourceInfo: sourceInfo})
 			for _, tc := range []struct{ input, want string }{
 				{"1", "Expr"},
 				{"1+2", "Expr(Expr string Expr)"},
@@ -122,7 +123,7 @@ func TestOperatorsRuleNamedNodeTypeAcrossBackends(t *testing.T) {
 	for _, c := range operatorsNamedNodeCases() {
 		for _, sourceInfo := range []bool{false, true} {
 			{
-				prog := compileBare(t, c.src, Options{SourceInfo: sourceInfo})
+				prog := compileBare(t, c.src, compile.Options{SourceInfo: sourceInfo})
 				for _, input := range c.inputs {
 					want := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure}))
 					for _, backend := range []Backend{Bytecode, BytecodeIterative} {
@@ -286,7 +287,7 @@ func TestOperatorsRuleNamedNodeTypeErrors(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if _, err := Compile(g, compile.Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%q: got %v, want %q", tc.src, err, tc.want)
 		}
 	}

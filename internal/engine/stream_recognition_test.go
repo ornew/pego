@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/syntax"
 	"github.com/ornew/pego/internal/value"
 )
@@ -34,7 +35,7 @@ func TestStreamCaptureRecognition(t *testing.T) {
 			source := "rule main = (" + tc.body + ")" + tc.bound + " #stream $$\nrule r = \"é\" => nil"
 			plain := mustCompile(t, strings.ReplaceAll(source, " #stream", ""))
 			for _, disableMemo := range []bool{false, true} {
-				p := mustCompile(t, source, Options{DisableMemo: disableMemo})
+				p := mustCompile(t, source, compile.Options{DisableMemo: disableMemo})
 				programs := []*Program{p}
 				for _, mode := range allModes {
 					programs = append(programs, saveLoad(t, p, "main", mode))
@@ -94,7 +95,7 @@ func BenchmarkStreamCaptureRecognition(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		p, err := Compile(g, Options{})
+		p, err := Compile(g, compile.Options{})
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -126,7 +127,7 @@ func TestStreamRecognitionCompiled(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	prog, err := Compile(g, Options{recognize: true})
+	prog, err := Compile(g, compile.Options{Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,7 +159,7 @@ func TestStreamRecognitionCompiled(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ordinary, err := Compile(g, Options{})
+	ordinary, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +167,7 @@ func TestStreamRecognitionCompiled(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if r := rec.byName["main"]; !r.novalue {
+	if r := rec.ByName["main"]; !r.Novalue {
 		t.Error("the recognizer builds values for the rule with a #stream repetition")
 	}
 }

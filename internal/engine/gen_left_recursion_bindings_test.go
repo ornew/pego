@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
@@ -52,8 +53,8 @@ func testGeneratedLeftRecursionGuardIgnoresVariables(t *testing.T) {
 	if code := generatePackage(t, dir, "tg", mustParse(typedLRBindingSource), opts); !strings.Contains(code, "TParse(trules") {
 		t.Fatal("typed runtime is not exercised")
 	}
-	prog := compileBare(t, lrBindingSource, Options{leftRecursionBindings: true})
-	typed := compileBare(t, typedLRBindingSource, Options{leftRecursionBindings: true})
+	prog := compileBare(t, lrBindingSource, compile.Options{LeftRecursionBindings: true})
+	typed := compileBare(t, typedLRBindingSource, compile.Options{LeftRecursionBindings: true})
 	controls := fixtureWorkControls()
 	var limited, typedLimited string
 	if controls {
@@ -151,7 +152,7 @@ func TestGeneratedTSLeftRecursionGuardIgnoresVariables(t *testing.T) {
 	var script strings.Builder
 	script.WriteString("import { parse, recognize } from \"./parser.ts\";\n")
 	var want strings.Builder
-	prog := compileBare(t, lrBindingSource, Options{leftRecursionBindings: true})
+	prog := compileBare(t, lrBindingSource, compile.Options{LeftRecursionBindings: true})
 	for _, in := range lrBindingInputs {
 		fmt.Fprintf(&script, "{ const r = parse(%q); const e = recognize(%[1]q); console.log(r.error === null ? String(r.node) : \"error: \" + r.error.message, e === null ? \"null\" : e.message); }\n", in)
 		n, err := prog.ParseWith("main", in, ParseOptions{MaxDepth: 400})

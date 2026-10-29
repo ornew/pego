@@ -13,6 +13,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
@@ -95,7 +96,7 @@ func TestIndexTypeErrors(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
-		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if _, err := Compile(g, compile.Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%q: got %v, want %q", tc.src, err, tc.want)
 		}
 	}
@@ -107,7 +108,7 @@ func TestIndexTypeErrors(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%q: %v", src, err)
 		}
-		if _, err := Compile(g, Options{}); err != nil {
+		if _, err := Compile(g, compile.Options{}); err != nil {
 			t.Errorf("%q: %v", src, err)
 		}
 	}
@@ -120,7 +121,7 @@ func TestIndexTypeErrors(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Compile(g, Options{}); (err == nil) != tc.ok {
+		if _, err := Compile(g, compile.Options{}); (err == nil) != tc.ok {
 			t.Errorf("field %s: %v", tc.field, err)
 		}
 	}

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 	"testing"
 )
@@ -13,7 +14,7 @@ func classMembershipProgram(t *testing.T, expr grammar.Expr) *Program {
 		t.Fatal(err)
 	}
 	g.Rules()[0].Expr = expr
-	p, err := Compile(g, Options{})
+	p, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatalf("compile class grammar: %v", err)
 	}

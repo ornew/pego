@@ -3,6 +3,8 @@ package engine
 import (
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 // A hidden rule without an action makes no node of its own: a call of it contributes what its
@@ -54,7 +56,7 @@ rule _m = [a-z]+ #atomic`, `rule main = (([a-z]+ #atomic) ";")* $$ #recover(skip
 func TestHiddenRulesSpliceTheirExpression(t *testing.T) {
 	for _, tc := range spliceCases() {
 		t.Run(tc.name, func(t *testing.T) {
-			for _, opts := range []Options{{}, {DefaultValue: true}, {SourceInfo: true}, {DisableMemo: true}} {
+			for _, opts := range []compile.Options{{}, {DefaultValue: true}, {SourceInfo: true}, {DisableMemo: true}} {
 				hidden, inlined := compileBare(t, tc.hidden, opts), compileBare(t, tc.inlined, opts)
 				matched := false
 				for _, input := range tc.inputs {

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 )
 
 // varModuleSource declares variables of each type, reads them in predicates and rebinds them.
@@ -27,7 +28,7 @@ func TestModuleVariableValidation(t *testing.T) {
 		m.Rules = append([]bytecode.RuleInfo(nil), m.Rules...)
 		return &m
 	}
-	if err := validateModule(fresh()); err != nil {
+	if err := compile.ValidateModule(fresh()); err != nil {
 		t.Fatal(err)
 	}
 	undeclared := func(m *bytecode.Module) int {
@@ -71,7 +72,7 @@ func TestModuleVariableValidation(t *testing.T) {
 			if !tc.mutate(m) {
 				t.Fatal("nothing to mutate")
 			}
-			if err := validateModule(m); err == nil || !strings.Contains(err.Error(), `variable "ghost" is not declared`) {
+			if err := compile.ValidateModule(m); err == nil || !strings.Contains(err.Error(), `variable "ghost" is not declared`) {
 				t.Fatalf("got %v", err)
 			}
 		})
@@ -124,7 +125,7 @@ func TestLoadedVariablesMatch(t *testing.T) {
 					t.Fatal(err)
 				}
 				loaded, _, err := LoadProgram(data)
-				if verr := validateModule(m); verr != nil {
+				if verr := compile.ValidateModule(m); verr != nil {
 					if err == nil {
 						t.Fatalf("a module that fails validation (%v) was loaded", verr)
 					}
@@ -133,7 +134,7 @@ func TestLoadedVariablesMatch(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if err := sameVars(loaded.vars, moduleVarTable(m)); err != nil {
+				if err := sameVars(loaded.Vars, moduleVarTable(m)); err != nil {
 					t.Fatalf("the loaded variables differ from the module: %v", err)
 				}
 			})
@@ -160,7 +161,7 @@ func TestModuleInitialValueMatchesType(t *testing.T) {
 			m := *mustCompile(t, varModuleSource).Module()
 			m.Vars = append([]bytecode.VarInfo(nil), m.Vars...)
 			tc.mutate(&m)
-			if err := validateModule(&m); err == nil {
+			if err := compile.ValidateModule(&m); err == nil {
 				t.Fatal("a module with a mistyped initial value was accepted")
 			}
 		})
@@ -169,15 +170,15 @@ func TestModuleInitialValueMatchesType(t *testing.T) {
 
 // sameVars reports the first difference between the variables of two tables: their number, names,
 // types and initial values.
-func sameVars(a, b *varTable) error {
-	x, y := a.all(), b.all()
+func sameVars(a, b *compile.VarTable) error {
+	x, y := a.All(), b.All()
 	if len(x) != len(y) {
 		return fmt.Errorf("%d variables in one table and %d in the other", len(x), len(y))
 	}
 	for i := range x {
-		if x[i].name != y[i].name || x[i].typ != y[i].typ || x[i].init != y[i].init {
+		if x[i].Name != y[i].Name || x[i].Typ != y[i].Typ || x[i].Init != y[i].Init {
 			return fmt.Errorf("variable %s (%s = %v) differs from variable %s (%s = %v)",
-				x[i].name, x[i].typ, x[i].init, y[i].name, y[i].typ, y[i].init)
+				x[i].Name, x[i].Typ, x[i].Init, y[i].Name, y[i].Typ, y[i].Init)
 		}
 	}
 	return nil

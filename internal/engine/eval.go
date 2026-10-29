@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -41,7 +42,7 @@ type local struct {
 // evalCtx is the context needed to evaluate value expressions.
 type evalCtx struct {
 	p          *parser
-	scope      *scope
+	scope      *compile.Scope
 	frame      *frame
 	items      []*value.Node // elements referenced by $n
 	start, end int           // range matched by the rule
@@ -51,8 +52,8 @@ type evalCtx struct {
 
 // runAction evaluates the rule's action.
 func (p *parser) runAction(r *rule, f *frame, items []*value.Node, start, end int) *value.Node {
-	ctx := p.useCtx(evalCtx{p: p, scope: r.scope, frame: f, items: items, start: start, end: end, cbase: len(p.created)})
-	return p.actionResult(ctx, r.act, r.whereName())
+	ctx := p.useCtx(evalCtx{p: p, scope: r.Scope, frame: f, items: items, start: start, end: end, cbase: len(p.created)})
+	return p.actionResult(ctx, r.act, r.WhereName())
 }
 
 // termEvaluator returns an evaluator for an AST value expression.
@@ -135,7 +136,7 @@ func (c *evalCtx) convert(t *grammar.New) (any, error) {
 		return nil, err
 	}
 	p := c.p
-	ks := p.prog.nodeKinds[t.Type]
+	ks := p.prog.NodeKinds[t.Type]
 	if ks == nil {
 		return nil, p.convertError(x, t.Type)
 	}
@@ -166,7 +167,7 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 				return value.UnboxValue(l.val), nil
 			}
 		}
-		if i, ok := c.scope.slots[t.Name]; ok && c.frame != nil {
+		if i, ok := c.scope.Slots[t.Name]; ok && c.frame != nil {
 			return value.UnboxNode(c.frame.vals[i]), nil
 		}
 		return nil, c.p.actionError("undefined capture $", t.Name)
@@ -219,7 +220,7 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		return c.evalTuple(t.Elems)
 
 	case *grammar.Call:
-		if c.p.prog.projected[t] {
+		if c.p.prog.Projected[t] {
 			// map($x, (e) => e.$f) of a projected repetition: $x holds the values already.
 			x, err := c.eval(t.Args[0])
 			if err != nil {
@@ -276,8 +277,8 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		if ft := c.p.prog.castType(t); ft != nil && !c.p.fieldConforms(ft, x) {
-			line, col := c.p.prog.castPos(t)
+		if ft := c.p.prog.CastType(t); ft != nil && !c.p.fieldConforms(ft, x) {
+			line, col := c.p.prog.CastPos(t)
 			return nil, c.p.castError(x, ft, c.start, line, col)
 		}
 		return x, nil
@@ -353,13 +354,13 @@ func (c *evalCtx) member(x any, name string) (any, error) {
 	}
 	if capture, ok := strings.CutPrefix(name, "$"); ok {
 		// x.$y reads a capture, which struct values do not have; an unmatched capture is nil.
-		if _, ok := c.p.prog.types[n.Type()].(*grammar.TypeDef); ok {
+		if _, ok := c.p.prog.Types[n.Type()].(*grammar.TypeDef); ok {
 			return nil, c.p.actionError(n.Type(), " has no capture ", capture)
 		}
 		v, _ := c.p.valueField(value.D(n).Fields, capture)
 		return value.UnboxValue(v), nil
 	}
-	if st, ok := c.p.prog.types[n.Type()].(*grammar.TypeDef); ok && !c.p.hasValueField(st, name) {
+	if st, ok := c.p.prog.Types[n.Type()].(*grammar.TypeDef); ok && !c.p.hasValueField(st, name) {
 		return nil, c.p.actionError(n.Type(), " has no field ", name)
 	}
 	// Unset fields and unmatched captures are nil.
@@ -370,7 +371,7 @@ func (c *evalCtx) member(x any, name string) (any, error) {
 // newStruct creates a struct node. Its range covers the ranges of the fields whose values are
 // nodes, or is the rule's range if there are none.
 func (c *evalCtx) newStruct(typ string, names []string, vals []any) (*value.Node, error) {
-	n := c.p.newNode(value.Data{Kind: c.p.prog.typeKind(typ), Fields: c.p.fields(len(names))})
+	n := c.p.newNode(value.Data{Kind: c.p.prog.TypeKind(typ), Fields: c.p.fields(len(names))})
 	first := true
 	for i, name := range names {
 		c.p.stepWork()
@@ -453,8 +454,8 @@ func (c *evalCtx) binary(t *grammar.Binary) (any, error) {
 	if t.Op == "==" || t.Op == "!=" {
 		// Comparing two texts (such as an end tag with its start tag) compares the strings
 		// directly: storing a string in an interface would allocate.
-		if lx, ok := textArg(t.L); ok {
-			if rx, ok := textArg(t.R); ok {
+		if lx, ok := compile.TextArg(t.L); ok {
+			if rx, ok := compile.TextArg(t.R); ok {
 				ls, err := c.textOf(lx)
 				if err != nil {
 					return nil, err
@@ -719,7 +720,7 @@ func (c *evalCtx) pushElems(fn string, args []any) error {
 // pushConcatArg pushes onto kidStack the elements of t, an argument of a fusable concat call.
 func (c *evalCtx) pushConcatArg(t grammar.Term) error {
 	c.p.stepWork()
-	if call, ok := t.(*grammar.Call); ok && c.p.prog.projected[call] {
+	if call, ok := t.(*grammar.Call); ok && c.p.prog.Projected[call] {
 		v, err := c.eval(call.Args[0])
 		if err != nil {
 			return err

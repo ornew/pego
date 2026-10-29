@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/syntax"
 	"github.com/ornew/pego/internal/value"
@@ -605,8 +606,8 @@ func testGeneratedParsersCorpus(t *testing.T, goBin string, cases []genCase, opt
 		fmt.Fprintf(&recognizers, "\tfunc(s string, b bool) error { u := g%d.CodePoints; if b { u = g%d.Bytes }; return g%d.Recognize(s, g%[3]d.WithUnit(u)) },\n", i, i, i)
 		fmt.Fprintf(&viewers, "\tfunc(n any) string { return %s },\n", strings.ReplaceAll(nodeViewsSource, "PKG", fmt.Sprintf("g%d", i)))
 		inputs = append(inputs, c.inputs)
-		// The generated code projects (project.go), and records source information as asked.
-		prog := compileBare(t, c.src, Options{noProjections: true, SourceInfo: opts.SourceInfo})
+		// The generated code projects (internal/compile/project.go), and records source information as asked.
+		prog := compileBare(t, c.src, compile.Options{NoProjections: true, SourceInfo: opts.SourceInfo})
 		for _, in := range c.inputs {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				n, err := prog.ParseWith("main", in, ParseOptions{Unit: unit})

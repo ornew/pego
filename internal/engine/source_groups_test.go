@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -41,7 +42,7 @@ rule number Alias = v1:[0-9]+ => Number{Text: text($v1)}
 				t.Fatal(err)
 			}
 		}
-		p, err := Compile(input, Options{})
+		p, err := Compile(input, compile.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}

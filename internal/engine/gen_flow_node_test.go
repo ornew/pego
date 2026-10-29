@@ -8,6 +8,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -28,10 +29,10 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 	}
 	cases := genCorpus(t)
 	taken := map[string]int{}
-	leanRouteHook = func(table string, r *staticRule) { taken[table]++ }
+	leanRouteHook = func(table string, r *compile.Rule) { taken[table]++ }
 	framed, operators := map[string]int{}, map[string]int{}
-	framedRouteHook = func(table string, r *staticRule) { framed[table]++ }
-	operatorsRouteHook = func(table string, r *staticRule) { operators[table]++ }
+	framedRouteHook = func(table string, r *compile.Rule) { framed[table]++ }
+	operatorsRouteHook = func(table string, r *compile.Rule) { operators[table]++ }
 	t.Cleanup(func() { leanRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil })
 	for _, c := range cases {
 		g, err := parseTest(c.src)
@@ -89,13 +90,13 @@ func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 				}
 				o := gen.GenOptions{Package: "x", Module: "example.com/x", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: form.controls, Observability: form.observe, Document: form.document}
 				taken, framed, operators := 0, 0, 0
-				leanRouteHook = func(table string, r *staticRule) {
+				leanRouteHook = func(table string, r *compile.Rule) {
 					if table == "rules" {
 						taken++
 					}
 				}
-				framedRouteHook = func(table string, r *staticRule) { framed++ }
-				operatorsRouteHook = func(table string, r *staticRule) { operators++ }
+				framedRouteHook = func(table string, r *compile.Rule) { framed++ }
+				operatorsRouteHook = func(table string, r *compile.Rule) { operators++ }
 				defer func() { leanRouteHook, framedRouteHook, operatorsRouteHook = nil, nil, nil }()
 				files, err := Generate(g, o)
 				if err != nil {

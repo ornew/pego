@@ -6,6 +6,7 @@ import (
 	"testing"
 	"unsafe"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -180,7 +181,7 @@ func BenchmarkDocumentVMValuesShrinkEdits(b *testing.B) {
 }
 
 func benchmarkDocumentVMValuesShrink(b *testing.B, edit bool) {
-	prog, err := Compile(mustParse(reparseGrammar), Options{})
+	prog, err := Compile(mustParse(reparseGrammar), compile.Options{})
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -234,7 +235,7 @@ func benchmarkDocumentVMValuesShrink(b *testing.B, edit bool) {
 }
 
 func BenchmarkDocumentVMValuesUnchanged(b *testing.B) {
-	prog, err := Compile(mustParse(reparseGrammar), Options{})
+	prog, err := Compile(mustParse(reparseGrammar), compile.Options{})
 	if err != nil {
 		b.Fatal(err)
 	}

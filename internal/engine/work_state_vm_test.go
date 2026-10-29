@@ -13,6 +13,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -105,7 +106,7 @@ func TestWorkStateOperatorsRuleFrameSnapshotAndRestoration(t *testing.T) {
 			p := stateWorkParser(limits.WorkLimits{MaxSteps: limit})
 			retained := value.Ptr(value.Data{Text: "retained", Fields: value.Fields{{Name: "keep", Value: "unchanged"}}})
 			before, _ := json.Marshal(retained)
-			op := &operatorsRuleOp{kind: grammar.Prefix, line: &operatorsRuleLine{scope: &scope{names: make([]string, 320)}}}
+			op := &operatorsRuleOp{kind: grammar.Prefix, line: &operatorsRuleLine{scope: &compile.Scope{Names: make([]string, 320)}}}
 			setup := func(f *frame) {
 				for i := range f.vals {
 					f.vals[i] = retained
@@ -149,8 +150,8 @@ func TestWorkStateProjectedFrameClear(t *testing.T) {
 	for i := range count {
 		items = append(items, &grammar.Capture{Name: fmt.Sprintf("f%d", i), Expr: &grammar.Atomic{Expr: &grammar.Top{}}})
 	}
-	c := newClosureWalker(&compiler{}, false)
-	m := c.projectRepeat(&grammar.Repeat{Expr: &grammar.Seq{Items: items}, Min: 0, Max: 1}, "f0")
+	c := newClosureWalker(&compile.Compiler{}, false)
+	m := c.ProjectRepeat(&grammar.Repeat{Expr: &grammar.Seq{Items: items}, Min: 0, Max: 1}, "f0")
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 64})
 	if err := catchFatal(t, func() { m(p) }); !errors.Is(err, limits.ErrWorkLimit) || len(p.trail) != 0 {
 		t.Fatalf("projected clear err=%v capture writes=%d", err, len(p.trail))

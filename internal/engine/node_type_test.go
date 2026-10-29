@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
@@ -40,7 +41,7 @@ rule anything Any = "!" x:("a" / "bc") => Any{$x}
 func TestNamedNodeTypesAcrossBackends(t *testing.T) {
 	inputs := []string{"", "ab", "ab 12 c3", "<1,x>", "ab <12,y>[1]!bc", "12 ?", "[]!a"}
 	for _, sourceInfo := range []bool{false, true} {
-		prog := compileBare(t, nodeTypeGrammar, Options{SourceInfo: sourceInfo})
+		prog := compileBare(t, nodeTypeGrammar, compile.Options{SourceInfo: sourceInfo})
 		for _, input := range inputs {
 			want := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure}))
 			for _, backend := range []Backend{Bytecode, BytecodeIterative} {
@@ -128,7 +129,7 @@ rule m M = "m"`, map[string]string{
 		}},
 	} {
 		for _, sourceInfo := range []bool{false, true} {
-			prog := compileBare(t, tc.src, Options{SourceInfo: sourceInfo})
+			prog := compileBare(t, tc.src, compile.Options{SourceInfo: sourceInfo})
 			for input, want := range tc.inputs {
 				// With source information the error names the grammar position of the cast.
 				suffix := ""
@@ -309,7 +310,7 @@ func runGeneratedNamedNodeProgram(t *testing.T, src, body, want string) {
 func TestNamedNodeTypeModuleValidation(t *testing.T) {
 	prog := compileBare(t, nodeTypeGrammar)
 	base := prog.Module()
-	if err := validateModule(base); err != nil {
+	if err := compile.ValidateModule(base); err != nil {
 		t.Fatal(err)
 	}
 	str := func(m *bytecode.Module, s string) int {
@@ -363,7 +364,7 @@ func TestNamedNodeTypeModuleValidation(t *testing.T) {
 	} {
 		m := clone()
 		tc.edit(m)
-		if err := validateModule(m); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if err := compile.ValidateModule(m); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%s: got %v, want %s", name, err, tc.want)
 		}
 	}
@@ -439,7 +440,7 @@ rule tree Tree = "(" ts:tree* ")" => Tree{$ts}`,
 		if err != nil {
 			t.Fatal(err)
 		}
-		prog, err := Compile(g, Options{})
+		prog, err := Compile(g, compile.Options{})
 		if err == nil {
 			_, err = prog.Parse("main", "((()))")
 		}
@@ -463,7 +464,7 @@ rule tree Tree = "(" ts:tree* ")" => Tree{$ts}`,
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Compile(g, Options{}); err != nil {
+	if _, err := Compile(g, compile.Options{}); err != nil {
 		t.Fatal(err)
 	}
 	if d := time.Since(start); d > 5*time.Second {
@@ -831,7 +832,7 @@ func testGeneratedDeclaredNodeAny(t *testing.T) {
 func TestNamedNodeTypeText(t *testing.T) {
 	const want = `Out{Any: Any("bc"), Items: [Ident("ab") Num("12")], Len: 4, Nums: Nums[Num("3")], Pair: Pair(Num("1") Ident("x")), Start: 3, Text: "ab12"}`
 	for _, sourceInfo := range []bool{false, true} {
-		prog := compileBare(t, nodeTypeGrammar, Options{SourceInfo: sourceInfo})
+		prog := compileBare(t, nodeTypeGrammar, compile.Options{SourceInfo: sourceInfo})
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			n, err := prog.ParseWith("main", "ab 12<1,x>[3]!bc", ParseOptions{Backend: backend})
 			if err != nil {

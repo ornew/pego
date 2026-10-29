@@ -9,7 +9,8 @@ before choosing an edit location:
 |:--|:--|
 | Public Go API and grammar AST | `pego.go`, `grammar/` |
 | Grammar source parsing | `internal/syntax/` |
-| Compiler, execution and bytecode | `internal/engine/` |
+| Compiler and static analysis | `internal/compile/` |
+| Execution, bytecode VMs and code generation | `internal/engine/` |
 | Generated Go parser source | Generator `internal/engine/gen.go` and runtime package `runtime/` (imported or copied into generated parsers); generated parsers under `parsers/` and `bench/gen/` are outputs |
 | CLI, editor service and sample generation | `cmd/pego/`, `internal/lsp/`, `sample/` |
 | Ready-made parsers, playground and site | `parsers/`, `cmd/playground/`, `site/` |

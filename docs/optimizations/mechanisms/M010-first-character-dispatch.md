@@ -45,10 +45,10 @@ Evidence records:
 [050](../050-first-character-dispatch-in-the-closure-backend.md),
 [051](../051-first-character-dispatch-in-the-vms-instruction-set-3.md).
 
-Source owners: [`firstTerminal`](../../../internal/engine/compile.go),
-[`walker.exprForm and compiler.first`](../../../internal/engine/compile_walk.go),
+Source owners: [`firstTerminal`](../../../internal/compile/compile.go),
+[`Walker.ExprForm and Compiler.first`](../../../internal/compile/compile_walk.go),
 [`closureBuilder.Choice and guard`](../../../internal/engine/closures.go), [`GUARD
-emission`](../../../internal/engine/bcompile.go), [`generated choice
+emission`](../../../internal/compile/bcompile.go), [`generated choice
 guards`](../../../internal/engine/gen.go), [`TypeScript choice
 guards`](../../../internal/engine/gen_ts.go).
 

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -122,17 +123,17 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
 			t.Fatalf("%s: %v", c.name, err)
 		}
 		generatePackageIn(t, dir, "replay", fmt.Sprintf("g%d", i), g, gen.GenOptions{Start: "main", Types: true, ConvertTypes: true, Recognize: true})
-		prog, err := Compile(g, Options{})
+		prog, err := Compile(g, compile.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}
-		meta := &typedGen{g: &generator{prog: prog.staticProgram}, info: prog.typed, joins: map[string]string{}, anon: map[string]joinTy{}}
-		meta.valueResolver = newValueResolver(prog.staticProgram, func(x ty) bool { _, ok := meta.joins[x.String()]; return ok })
+		meta := &typedGen{g: &generator{prog: prog.staticProgram}, info: prog.Typed, joins: map[string]string{}, anon: map[string]compile.JoinTy{}}
+		meta.valueResolver = newValueResolver(prog.staticProgram, func(x compile.Ty) bool { _, ok := meta.joins[x.String()]; return ok })
 		if err := meta.name(); err != nil {
 			t.Fatal(err)
 		}
 		named = append(named, append([]string{}, meta.nodeTypes...))
-		for name := range prog.types {
+		for name := range prog.Types {
 			fmt.Fprintf(&valueNames, "%q:%q,\n", fmt.Sprintf("replay/g%d/types.%s", i, name), name)
 		}
 		fmt.Fprintf(&terminalNames, "%q:true,\n", fmt.Sprintf("replay/g%d/types.Error", i))

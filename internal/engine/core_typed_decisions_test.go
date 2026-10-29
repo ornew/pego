@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 )
 
 // The lowering decisions of the Core IR passes over the corpus are frozen in two golden files:
@@ -67,11 +68,11 @@ var (
 )
 
 // typedDecisionsWalk returns the expressions of the rule's body in walk order, and their indexes.
-func typedDecisionsWalk(r *staticRule) ([]grammar.Expr, map[grammar.Expr]int) {
+func typedDecisionsWalk(r *compile.Rule) ([]grammar.Expr, map[grammar.Expr]int) {
 	var exprs []grammar.Expr
 	idx := map[grammar.Expr]int{}
-	if e := r.bodyExpr(); e != nil {
-		walkExpr(e, func(x grammar.Expr) {
+	if e := r.BodyExpr(); e != nil {
+		compile.WalkExpr(e, func(x grammar.Expr) {
 			if _, ok := idx[x]; !ok {
 				idx[x] = len(exprs)
 			}
@@ -310,16 +311,16 @@ func (gd *decisionsGolden) freeze(t *testing.T, modes []coreGenMode, cases func(
 }
 
 // typedRules returns the rules of the program of the generator by ID, value-free twins included.
-func typedRules(g *generator) []*staticRule {
-	return append(append([]*staticRule(nil), g.prog.rules...), g.prog.twins...)
+func typedRules(g *generator) []*compile.Rule {
+	return append(append([]*compile.Rule(nil), g.prog.RuleList...), g.prog.Twins...)
 }
 
 // recognizerRules returns the rules of the recognizer program of the generator by ID, value-free
 // twins included.
-func recognizerRules(g *generator) []*staticRule {
+func recognizerRules(g *generator) []*compile.Rule {
 	rec, err := recognizerOf(g)
 	if err != nil {
 		panic(err)
 	}
-	return append(append([]*staticRule(nil), rec.rules...), rec.twins...)
+	return append(append([]*compile.Rule(nil), rec.RuleList...), rec.Twins...)
 }

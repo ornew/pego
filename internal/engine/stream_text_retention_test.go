@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -18,7 +19,7 @@ rule row = key:[a-z]+ #atomic "=" value:[0-9]+ #atomic "\n"`)
 	if err != nil {
 		b.Fatal(err)
 	}
-	prog, err := Compile(g, Options{})
+	prog, err := Compile(g, compile.Options{})
 	if err != nil {
 		b.Fatal(err)
 	}

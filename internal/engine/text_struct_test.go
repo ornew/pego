@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -33,7 +34,7 @@ rule other = t:("@" [a-z]*) #atomic => Other{Text: text($t)}`
 func TestTextStructsAcrossBackends(t *testing.T) {
 	inputs := []string{"", "ab", "ab 12 3.5", "<x> ! #a # @b @", "ab ?", "12.", "<x", "! ab <yz> 7", "[ab]ab", "[ab]cd 1"}
 	for _, sourceInfo := range []bool{false, true} {
-		prog := compileBare(t, textStructGrammar, Options{SourceInfo: sourceInfo})
+		prog := compileBare(t, textStructGrammar, compile.Options{SourceInfo: sourceInfo})
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, input := range inputs {
 				want := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit}))
@@ -72,9 +73,9 @@ func testGeneratedTextStructs(t *testing.T) {
 func TestNodeTypeModuleValidation(t *testing.T) {
 	prog := compileBare(t, `type Name = node[string]
 rule main = name ("," name)*
-rule name Name = ([a-z]+) #atomic`, Options{})
+rule name Name = ([a-z]+) #atomic`, compile.Options{})
 	m := *prog.Module()
-	if err := validateModule(&m); err != nil {
+	if err := compile.ValidateModule(&m); err != nil {
 		t.Fatal(err)
 	}
 	m.Rules = append([]bytecode.RuleInfo(nil), m.Rules...)
@@ -89,7 +90,7 @@ rule name Name = ([a-z]+) #atomic`, Options{})
 	if !found {
 		t.Fatal("no rule of a named node type")
 	}
-	if err := validateModule(&m); err == nil || !strings.Contains(err.Error(), "is not a named node type") {
+	if err := compile.ValidateModule(&m); err == nil || !strings.Contains(err.Error(), "is not a named node type") {
 		t.Fatalf("got %v", err)
 	}
 }

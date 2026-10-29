@@ -26,7 +26,7 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 | [E020](mechanisms/E020-value-free-rule-twins.md) | Value-free CST twins | All six; distinct memo identities, excludes LR cycles | Partial | Partial | Partial | Partial | Partial | Partial | Default | None maintained |
 | [E030](mechanisms/E030-operators-line-value-elision.md) | Operators Rule line value elision | All six; line-specific eligibility | Partial | Partial | Partial | Partial | Partial | Partial | Default | None maintained |
 | [E040](mechanisms/E040-recognition-lowering.md) | Recognition value/capture/action lowering | Core and generated recognition | Partial | Partial | Partial | Partial | — | Partial | Default | None maintained |
-| [E050](mechanisms/E050-projected-repetition-values.md) | Projected repetition results | All six; eligible subset, including TS projection | Partial | Partial | Partial | Partial | Partial | Partial | Default | Compile Options.noProjections |
+| [E050](mechanisms/E050-projected-repetition-values.md) | Projected repetition results | All six; eligible subset, including TS projection | Partial | Partial | Partial | Partial | Partial | Partial | Default | Compile Options.NoProjections |
 | [E060](mechanisms/E060-concat-input-fusion.md) | Fuse eligible concat inputs | Eligible action inputs | Partial | Partial | Partial | Partial | Partial | Partial | Default | None maintained |
 
 ### M — Matching and Calls
@@ -107,7 +107,7 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 | [G010](mechanisms/G010-generated-helper-sharing.md) | Share exact generated helper bodies | GN/TG/TS default; literals independent | — | — | — | ✓ | ✓ | ✓ | Default | GenOptions.DisableMethodSharing |
 | [G020](mechanisms/G020-lazy-backend-preparation.md) | Lazy one-time setup of optional engine recognizer/VM backends | First-use engine setup; closure recognition only, ordinary closure graph is eager | Partial | Partial | Partial | — | — | — | Default on demand | None maintained |
 | [G030](mechanisms/G030-constructor-dependency-analysis.md) | Sample constructor dependency propagation | Shared sampling analysis, runtime cells N/A | — | — | — | — | — | — | Default setup path | None maintained |
-| [G040](mechanisms/G040-copy-on-change-attribute-normalization.md) | Reuse unchanged AST paths during attribute normalization | Shared compile/generation preprocessing only, not runtime matching | — | — | — | — | — | — | Default setup path | Compile Options.eagerAttributeCopies |
+| [G040](mechanisms/G040-copy-on-change-attribute-normalization.md) | Reuse unchanged AST paths during attribute normalization | Shared compile/generation preprocessing only, not runtime matching | — | — | — | — | — | — | Default setup path | Compile Options.EagerAttributeCopies |
 | [G050](mechanisms/G050-generated-work-control-specialization.md) | Print one form of the generated Go functions per option set | GN/TG only; adopted; effect scope from record 096 | — | — | — | ✓ | ✓ | — | Default | — |
 | [G060](mechanisms/G060-ordinary-typed-direct-rules.md) | Ordinary typed direct bodies | TG eligible default; later extensions separately keyed | — | — | — | — | Partial | — | Default | None maintained |
 | [G070](mechanisms/G070-literal-text-predicates.md) | Pure literal-text disjunction lowering | GN/TG/TS eligible default | — | — | — | Partial | Partial | Partial | Default | GenOptions.DisableLiteralTextDispatch |

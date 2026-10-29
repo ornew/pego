@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 // BenchmarkDocumentInputEdit isolates storage and memo-splice costs from
 // parsing and full-text materialization. The two variants keep length stable.
 func BenchmarkDocumentInputEdit(b *testing.B) {
-	program, err := Compile(mustParse(`rule main = .*`), Options{})
+	program, err := Compile(mustParse(`rule main = .*`), compile.Options{})
 	if err != nil {
 		b.Fatal(err)
 	}

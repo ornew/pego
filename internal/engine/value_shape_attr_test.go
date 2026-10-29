@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
@@ -128,7 +129,7 @@ func TestStreamSeesThroughGroupsAndAttributes(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", src, err)
 		}
-		if _, err := Compile(g, Options{}); err == nil {
+		if _, err := Compile(g, compile.Options{}); err == nil {
 			t.Errorf("%s: compiled, want a #stream placement error", src)
 		}
 	}

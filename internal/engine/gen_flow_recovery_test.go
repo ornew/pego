@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -23,7 +24,7 @@ import (
 
 // hasRecovery reports a recovery in e, read from the expression itself.
 func hasRecovery(e grammar.Expr) (found bool) {
-	walkExpr(e, func(e grammar.Expr) {
+	compile.WalkExpr(e, func(e grammar.Expr) {
 		switch e := e.(type) {
 		case *grammar.Recovery:
 			found = true
@@ -48,19 +49,19 @@ func TestFlowRecoveryPrintsFromFlow(t *testing.T) {
 	for _, controls := range []bool{false, true} {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
-			framedRouteHook = func(table string, r *staticRule) {
-				if !hasRecovery(r.bodyExpr()) {
+			framedRouteHook = func(table string, r *compile.Rule) {
+				if !hasRecovery(r.BodyExpr()) {
 					return
 				}
 				taken[table+" recovery"]++
-				if hasCut(r.bodyExpr()) {
+				if hasCut(r.BodyExpr()) {
 					taken[table+" recovery with a cut"]++
 				}
-				if r.leader {
+				if r.Leader {
 					taken[table+" recovery with a leader"]++
 				}
 			}
-			operatorsRouteHook = func(table string, r *staticRule) { taken[table+" operators line"]++ }
+			operatorsRouteHook = func(table string, r *compile.Rule) { taken[table+" operators line"]++ }
 			defer func() { framedRouteHook, operatorsRouteHook = nil, nil }()
 			for _, c := range cases {
 				g, err := parseTest(c.src)

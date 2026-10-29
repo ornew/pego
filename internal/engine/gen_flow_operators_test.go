@@ -3,6 +3,7 @@ package engine
 import (
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -40,7 +41,7 @@ func TestOperatorsLinesWithRecoveryPrintFromFlow(t *testing.T) {
 				t.Fatal(err)
 			}
 			flowed := map[string]int{}
-			operatorsRouteHook = func(table string, r *staticRule) { flowed[table+"/"+r.name]++ }
+			operatorsRouteHook = func(table string, r *compile.Rule) { flowed[table+"/"+r.Name]++ }
 			defer func() { operatorsRouteHook = nil }()
 			if _, err := generateCode(g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
 				t.Fatal(err)

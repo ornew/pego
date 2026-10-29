@@ -103,7 +103,7 @@ own and may recur.
 
 ## Implementation
 
-`lowerInlineActions` (`internal/engine/inline_actions.go`) replaces each inline
+`LowerInlineActions` (`internal/compile/inline_actions.go`) replaces each inline
 action by a reference to a hidden rule placed after the rule that holds it,
 before attribute normalization. It runs once, in the compiler, so the closure
 and bytecode VMs and the generated Go (generic, typed and direct) parsers need

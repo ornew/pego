@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -31,7 +32,7 @@ func TestWorkPrimitiveASTAliases(t *testing.T) {
 			}
 			rules := g.Rules()
 			rules[1].Expr = primitiveOf(rules[0].Expr)
-			shared, err := Compile(g, Options{SourceInfo: true})
+			shared, err := Compile(g, compile.Options{SourceInfo: true})
 			if err != nil {
 				t.Fatal(err)
 			}

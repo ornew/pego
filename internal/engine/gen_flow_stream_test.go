@@ -15,6 +15,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -66,7 +67,7 @@ func testFlowStreamBodyIsBatchBody(t *testing.T) {
 	flowN := 0
 	var flowed []string
 	var cur string
-	streamRouteHook = func(table string, r *staticRule) { flowN++; flowed = append(flowed, cur) }
+	streamRouteHook = func(table string, r *compile.Rule) { flowN++; flowed = append(flowed, cur) }
 	t.Cleanup(func() { streamRouteHook = nil })
 	for _, form := range streamForms {
 		for _, c := range streamCases(t) {
@@ -183,7 +184,7 @@ func testGeneratedFlowStreamMatchesEngine(t *testing.T) {
 	}
 	cases := streamCases(t)
 	taken := 0
-	streamRouteHook = func(table string, r *staticRule) { taken++ }
+	streamRouteHook = func(table string, r *compile.Rule) { taken++ }
 	t.Cleanup(func() { streamRouteHook = nil })
 	for _, form := range streamForms {
 		t.Run(form.name, func(t *testing.T) {

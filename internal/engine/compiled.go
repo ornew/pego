@@ -9,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 )
 
 // The compiled grammar format (.pegoc), specified in the File format section of
@@ -138,8 +139,8 @@ func (prog *Program) Marshal(start string, mode CompiledMode) ([]byte, error) {
 	if int(mode) >= len(compiledModeNames) {
 		return nil, fmt.Errorf("unknown compiled grammar mode %d", mode)
 	}
-	if prog.hasMissing {
-		return nil, missingUnsupported("compiled grammar serialization")
+	if prog.HasMissing {
+		return nil, compile.MissingUnsupported("compiled grammar serialization")
 	}
 	if start != "" {
 		if err := prog.CheckStart(start); err != nil {
@@ -212,7 +213,7 @@ func LoadProgram(data []byte) (*Program, string, error) {
 	if r.Err != nil {
 		return nil, "", r.Err
 	}
-	if err := validateModule(m); err != nil {
+	if err := compile.ValidateModule(m); err != nil {
 		return nil, "", fmt.Errorf("invalid compiled grammar: %w", err)
 	}
 	prog := moduleProgram(m)
@@ -240,42 +241,42 @@ func moduleDefaultStart(m *bytecode.Module) string { return m.Strings[m.Rules[m.
 // moduleProgram builds a program from a module alone, without the grammar; only the bytecode
 // backends run it.
 func moduleProgram(m *bytecode.Module) *Program {
-	prog := &staticProgram{byName: map[string]*staticRule{}, types: map[string]grammar.TypeDecl{}, sourceInfo: m.SourceInfo, defaultValue: m.DefaultValue}
+	prog := &compile.Program{ByName: map[string]*compile.Rule{}, Types: map[string]grammar.TypeDecl{}, RecordsSourceInfo: m.SourceInfo, MakesDefaultValue: m.DefaultValue}
 	for _, t := range m.Types {
 		if t.Node >= 0 {
 			// The run time needs only that the type is a node type.
-			prog.types[m.Strings[t.Name]] = &grammar.TypeDef{Name: m.Strings[t.Name], Type: &grammar.TypeApp{Name: "node", Args: []grammar.TypeExpr{&grammar.TypeRef{Name: "_"}}}}
+			prog.Types[m.Strings[t.Name]] = &grammar.TypeDef{Name: m.Strings[t.Name], Type: &grammar.TypeApp{Name: "node", Args: []grammar.TypeExpr{&grammar.TypeRef{Name: "_"}}}}
 			continue
 		}
 		st := &grammar.StructType{}
 		for _, f := range t.Fields {
 			st.Fields = append(st.Fields, &grammar.Field{Name: m.Strings[f]})
 		}
-		prog.types[m.Strings[t.Name]] = &grammar.TypeDef{Name: m.Strings[t.Name], Type: st}
+		prog.Types[m.Strings[t.Name]] = &grammar.TypeDef{Name: m.Strings[t.Name], Type: st}
 	}
-	prog.vars = moduleVarTable(m)
-	prog.starts, prog.defaultStart = moduleStarts(m), moduleDefaultStart(m)
-	prog.moduleOnce.Do(func() { prog.module = m })
+	prog.Vars = moduleVarTable(m)
+	prog.StartRules, prog.DefaultStartRule = moduleStarts(m), moduleDefaultStart(m)
+	prog.BytecodeOnce.Do(func() { prog.Bytecode = m })
 	return newProgram(prog, nil)
 }
 
 // moduleVarTable returns the variable table of the module m, or nil when it declares no variable.
-func moduleVarTable(m *bytecode.Module) *varTable {
-	var t *varTable
+func moduleVarTable(m *bytecode.Module) *compile.VarTable {
+	var t *compile.VarTable
 	for _, v := range m.Vars {
-		d := &varDecl{name: m.Strings[v.Name]}
+		d := &compile.VarDecl{Name: m.Strings[v.Name]}
 		switch v.Type {
 		case bytecode.VarInt:
-			d.typ, d.init = tyInt, v.Int
+			d.Typ, d.Init = compile.TyInt, v.Int
 		case bytecode.VarString:
-			d.typ, d.init = tyString, m.Strings[v.Str]
+			d.Typ, d.Init = compile.TyString, m.Strings[v.Str]
 		default:
-			d.typ, d.init = tyBool, v.Int == 1
+			d.Typ, d.Init = compile.TyBool, v.Int == 1
 		}
 		if t == nil {
-			t = newVarTable()
+			t = compile.NewVarTable()
 		}
-		t.add(d)
+		t.Add(d)
 	}
 	return t
 }

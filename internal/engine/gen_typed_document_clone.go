@@ -3,72 +3,74 @@ package engine
 import (
 	"fmt"
 	"strings"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 // documentClone emits the CloneAST path, which copies the private values retained
 // by a typed Document into independent values. Cloning uses an explicit task stack for recursive structs.
-func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
+func (t *typedGen) documentClone(b *strings.Builder, result compile.Ty) string {
 	var methods, tasks strings.Builder
 	listNames := map[string]string{}
 	var lists []listConv
-	var clone func(ty, string) string
-	clone = func(x ty, value string) string {
+	var clone func(compile.Ty, string) string
+	clone = func(x compile.Ty, value string) string {
 		switch x := x.(type) {
-		case basicTy:
-			if x == tyInt || x == tyString || x == tyBool {
+		case compile.BasicTy:
+			if x == compile.TyInt || x == compile.TyString || x == compile.TyBool {
 				return value
 			}
-			if x == tyErr {
+			if x == compile.TyErr {
 				return "c.toError(" + value + ")"
 			}
 			return "c.toOpen(" + value + ")"
 		case vrule:
 			return "c." + t.chelpers.get("cv", "rule "+x.name, x) + "(" + value + ")"
-		case tupleTy:
-			if len(x.elems) == 0 {
+		case compile.TupleTy:
+			if len(x.Elems) == 0 {
 				return value
 			}
 			return "c." + t.chelpers.get("cv", t.goType(x), x) + "(" + value + ")"
-		case nodeTy:
-			if x.name == "" && (x.value == tyTop || x.value == tyAny) {
+		case compile.NodeTy:
+			if x.Name == "" && (x.Value == compile.TyTop || x.Value == compile.TyAny) {
 				return "c.toNode(" + value + ")"
 			}
 			return "c." + t.chelpers.get("cv", t.goType(x), x) + "(" + value + ")"
-		case recordTy:
+		case compile.RecordTy:
 			return "c.toNode(" + value + ")"
-		case namedTy:
-			name := convName(x.name)
-			if x == tyMatch {
+		case compile.NamedTy:
+			name := convName(x.Name)
+			if x == compile.TyMatch {
 				name = "toMatch"
-			} else if x == tyError {
+			} else if x == compile.TyError {
 				name = "toError"
-			} else if x.kind == 'c' {
+			} else if x.Kind == 'c' {
 				name = "toNode"
 			}
 			return "c." + name + "(" + value + ")"
-		case joinTy:
+		case compile.JoinTy:
 			if name, ok := t.joins[x.String()]; ok {
 				return "c." + convName(name) + "(" + value + ")"
 			}
 			if _, ok := t.joinGoType(x); ok {
-				return clone(x.alts[0], value)
+				return clone(x.Alts[0], value)
 			}
 			return "c.toOpen(" + value + ")"
-		case optTy:
-			if scalar, ok := x.elem.(basicTy); ok && (scalar == tyInt || scalar == tyString || scalar == tyBool) {
+		case compile.OptTy:
+			if scalar, ok := x.Elem.(compile.BasicTy); ok && (scalar == compile.TyInt || scalar == compile.TyString || scalar == compile.TyBool) {
 				return "typedDocumentClonePointer(c, " + value + ")"
 			}
-			if _, ok := x.elem.(tupleTy); ok {
+			if _, ok := x.Elem.(compile.TupleTy); ok {
 				return "c." + t.chelpers.get("cv", t.goType(x), x) + "(" + value + ")"
 			}
-			return clone(x.elem, value)
-		case listTy:
+			return clone(x.Elem, value)
+		case compile.ListTy:
 			key := t.goType(x)
 			name := listNames[key]
 			if name == "" {
 				name = fmt.Sprintf("list%d", len(lists))
 				listNames[key] = name
-				lists = append(lists, listConv{name: name, elem: x.elem})
+				lists = append(lists, listConv{name: name, elem: x.Elem})
 			}
 			return "c." + name + "(" + value + ")"
 		}
@@ -90,35 +92,35 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 }
 `, terminal.name, terminal.chunk, terminal.goType)
 	}
-	var containsStruct func(ty) bool
-	containsStruct = func(x ty) bool {
+	var containsStruct func(compile.Ty) bool
+	containsStruct = func(x compile.Ty) bool {
 		switch x := x.(type) {
-		case basicTy:
-			return x != tyInt && x != tyString && x != tyBool // an open value may hold one
-		case recordTy:
+		case compile.BasicTy:
+			return x != compile.TyInt && x != compile.TyString && x != compile.TyBool // an open value may hold one
+		case compile.RecordTy:
 			return true
-		case namedTy:
-			_, ok := t.info.fields[x.name]
-			return ok || x.kind == 'c'
-		case optTy:
-			return containsStruct(x.elem)
-		case listTy:
-			return containsStruct(x.elem)
-		case joinTy:
-			for _, a := range x.alts {
+		case compile.NamedTy:
+			_, ok := t.info.Fields[x.Name]
+			return ok || x.Kind == 'c'
+		case compile.OptTy:
+			return containsStruct(x.Elem)
+		case compile.ListTy:
+			return containsStruct(x.Elem)
+		case compile.JoinTy:
+			for _, a := range x.Alts {
 				if containsStruct(a) {
 					return true
 				}
 			}
-		case vrule, tupleTy, nodeTy:
+		case vrule, compile.TupleTy, compile.NodeTy:
 			return true
 		}
 		return false
 	}
 	for _, name := range t.structs {
 		deferred := false
-		for _, f := range t.info.fields[name] {
-			deferred = deferred || containsStruct(f.t)
+		for _, f := range t.info.Fields[name] {
+			deferred = deferred || containsStruct(f.T)
 		}
 		fmt.Fprintf(&methods, `func (c *typedDocumentClone) %[3]s(v *%[1]s) *%[1]s {
  c.Step(1)
@@ -134,8 +136,8 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 			fmt.Fprintf(&tasks, " case *%s:\n out := task.Target.(*%s)\n _ = out; _ = v\n", t.ref(name), t.ref(name))
 			target = &tasks
 		}
-		for _, f := range t.info.fields[name] {
-			fmt.Fprintf(target, " c.Step(1)\n out.%s = %s\n", t.fieldGo(f.name), clone(f.t, "v."+t.fieldGo(f.name)))
+		for _, f := range t.info.Fields[name] {
+			fmt.Fprintf(target, " c.Step(1)\n out.%s = %s\n", t.fieldGo(f.Name), clone(f.T, "v."+t.fieldGo(f.Name)))
 		}
 		if !deferred {
 			methods.WriteString(" return out\n}\n")
@@ -149,7 +151,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 		fmt.Fprintf(&methods, "func (c *typedDocumentClone) %s(v %s) %s {\n c.Step(1)\n switch v := v.(type) {\n case *Error: return c.toError(v)\n", convName(name), t.ref(name), t.ref(name))
 		seen := map[string]bool{"*Error": true}
 		open := false
-		for _, alternative := range u.alts {
+		for _, alternative := range u.Alts {
 			goType := t.goType(alternative)
 			if goType == "any" {
 				// An open member, such as node, takes every other value of the join. A case
@@ -182,7 +184,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 		fmt.Fprintf(&methods, " case *%s: return c.%s(v)\n", t.ref(name), convName(name))
 	}
 	for _, name := range t.nodeTypes {
-		n, _ := t.g.prog.nodeTypeOf(name)
+		n, _ := t.g.prog.NodeTypeOf(name)
 		fmt.Fprintf(&methods, " case *%s: return %s\n", t.ref(name), clone(n, "v"))
 	}
 	methods.WriteString(` }
@@ -214,21 +216,21 @@ func (c *typedDocumentClone) toElems(v []any) []any {
 			switch x := h.x.(type) {
 			case vrule:
 				fmt.Fprintf(&methods, " return %s\n", clone(t.vres[x.name], "v"))
-			case optTy:
-				fmt.Fprintf(&methods, " if v == nil { return nil }\n x := %s\n return &x\n", clone(x.elem, "*v"))
-			case tupleTy:
+			case compile.OptTy:
+				fmt.Fprintf(&methods, " if v == nil { return nil }\n x := %s\n return &x\n", clone(x.Elem, "*v"))
+			case compile.TupleTy:
 				methods.WriteString(" out := v\n")
-				for j, e := range x.elems {
+				for j, e := range x.Elems {
 					fmt.Fprintf(&methods, " out.E%d = %s\n", j, clone(e, fmt.Sprintf("v.E%d", j)))
 				}
 				methods.WriteString(" return out\n")
-			case nodeTy:
-				if x.name != "" {
+			case compile.NodeTy:
+				if x.Name != "" {
 					// A node of a named node type clones the node it embeds.
-					fmt.Fprintf(&methods, " if v == nil { return nil }\n if old, ok := c.Values[v]; ok { return old.(%s) }\n out := &%s{}\n c.Remember(v, out)\n if u := %s; u != nil { out.TNode = *u }\n return out\n", g, g[1:], clone(x.underlying(), "&v.TNode"))
+					fmt.Fprintf(&methods, " if v == nil { return nil }\n if old, ok := c.Values[v]; ok { return old.(%s) }\n out := &%s{}\n c.Remember(v, out)\n if u := %s; u != nil { out.TNode = *u }\n return out\n", g, g[1:], clone(x.Underlying(), "&v.TNode"))
 					break
 				}
-				fmt.Fprintf(&methods, " if v == nil { return nil }\n if old, ok := c.Values[v]; ok { return old.(%s) }\n out := &%s{Span: v.Span}\n c.Remember(v, out)\n out.Value = %s\n return out\n", g, g[1:], clone(x.value, "v.Value"))
+				fmt.Fprintf(&methods, " if v == nil { return nil }\n if old, ok := c.Values[v]; ok { return old.(%s) }\n out := &%s{Span: v.Span}\n c.Remember(v, out)\n out.Value = %s\n return out\n", g, g[1:], clone(x.Value, "v.Value"))
 			}
 			methods.WriteString("}\n")
 		}

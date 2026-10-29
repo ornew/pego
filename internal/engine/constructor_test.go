@@ -11,6 +11,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
@@ -44,7 +45,7 @@ func TestTypedNodeConstructors(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, input := range []*grammar.Grammar{g, decoded} {
-		p, err := Compile(input, Options{})
+		p, err := Compile(input, compile.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -173,7 +174,7 @@ rule dyn _ = _ => 1`)
 			if err != nil {
 				t.Fatal(err)
 			}
-			_, err = Compile(g, Options{})
+			_, err = Compile(g, compile.Options{})
 			if err == nil || !strings.Contains(err.Error(), tc.message) {
 				t.Fatalf("got %v; want %q", err, tc.message)
 			}
@@ -185,7 +186,7 @@ rule dyn _ = _ => 1`)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Compile(g, Options{}); err != nil {
+		if _, err := Compile(g, compile.Options{}); err != nil {
 			t.Errorf("%s: %v", action, err)
 		}
 	}
@@ -196,7 +197,7 @@ rule dyn _ = _ => 1`)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Compile(g, Options{}); err != nil {
+		if _, err := Compile(g, compile.Options{}); err != nil {
 			t.Errorf("%s: %v", action, err)
 		}
 	}
@@ -216,7 +217,7 @@ rule main = {value := 1} {Int{value} != nil} "x" / "x"`,
 			t.Fatal(err)
 		}
 		// The checker rejects these constructors when the grammar is compiled.
-		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), "cannot use int as string in field Text of Int") {
+		if _, err := Compile(g, compile.Options{}); err == nil || !strings.Contains(err.Error(), "cannot use int as string in field Text of Int") {
 			t.Fatalf("compilation: %v", err)
 		}
 	}
@@ -270,7 +271,7 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 				break
 			}
 		}
-		if err := validateModule(module); err == nil {
+		if err := compile.ValidateModule(module); err == nil {
 			t.Fatal("invalid constructor field list accepted")
 		}
 	}
@@ -290,20 +291,20 @@ func TestNodeConstructorShapes(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Compile(g, Options{}); err == nil {
+		if _, err := Compile(g, compile.Options{}); err == nil {
 			t.Fatalf("accepted unsupported constructor shape: %s", action)
 		}
 	}
 	for _, action := range []string{`[]int{}`, `[][]string{}`} {
 		if g, err := parseLegacyTest(header + action); err != nil {
 			t.Fatal(err)
-		} else if _, err := Compile(g, Options{}); err != nil {
+		} else if _, err := Compile(g, compile.Options{}); err != nil {
 			t.Errorf("rejected a list of values %s: %v", action, err)
 		}
 	}
 	if g, err := parseLegacyTest(header + `Int{}`); err != nil {
 		t.Fatal(err)
-	} else if _, err := Compile(g, Options{}); err != nil {
+	} else if _, err := Compile(g, compile.Options{}); err != nil {
 		t.Fatalf("Int{} is a text struct with no field set: %v", err)
 	}
 	// Values of the wrong type are rejected when the grammar is compiled, in actions and predicates.
@@ -312,7 +313,7 @@ func TestNodeConstructorShapes(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Compile(g, Options{}); err == nil {
+		if _, err := Compile(g, compile.Options{}); err == nil {
 			t.Errorf("%s was accepted", action)
 		}
 	}
@@ -321,7 +322,7 @@ func TestNodeConstructorShapes(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Compile(g, Options{}); err == nil {
+		if _, err := Compile(g, compile.Options{}); err == nil {
 			t.Errorf("predicate %s was accepted", action)
 		}
 	}

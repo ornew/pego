@@ -8,6 +8,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -291,7 +292,7 @@ func TestIgnoreCaseMissingSpellingBackends(t *testing.T) {
 func TestIgnoreCasePragmaReachesArguments(t *testing.T) {
 	prog := mustCompile(t, `rule main = ("ab" #recover(skip="x")) #ignorecase`)
 	found := map[string]bool{}
-	walkExpr(prog.byName["main"].def.Expr, func(e grammar.Expr) {
+	compile.WalkExpr(prog.ByName["main"].Def.Expr, func(e grammar.Expr) {
 		if l, ok := e.(*grammar.Literal); ok {
 			found[l.Value] = l.IgnoreCase
 		}

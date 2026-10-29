@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
 )
@@ -42,7 +43,7 @@ type coreGenCase struct {
 	m      *core.Module
 	origin map[core.Node]grammar.Expr
 	// rules holds the rules of the program by ID, value-free twins included.
-	rules []*staticRule
+	rules []*compile.Rule
 	// passErrs holds the violations Verify found after a pass.
 	passErrs []string
 	// broken is set where a negative control broke a pass of this case.
@@ -89,7 +90,7 @@ func coreGenerate(src string, opts gen.GenOptions) (*generator, bool) {
 
 // recognizerOf returns the recognizer of the program that the generator g prints, compiled as
 // Program.recognizer compiles it.
-func recognizerOf(g *generator) (*staticProgram, error) {
+func recognizerOf(g *generator) (*compile.Program, error) {
 	rec, err := (&Program{staticProgram: g.prog}).recognizer()
 	if err != nil {
 		return nil, err
@@ -264,7 +265,7 @@ func coreDecisionLines(c *coreGenCase, n *coreDecisionCounts) (lines, problems [
 		r := c.rules[cr.ID]
 		_, idx := typedDecisionsWalk(r)
 		problem := func(aspect, format string, args ...any) {
-			problems = append(problems, fmt.Sprintf("%s: rule %s: ", aspect, r.name)+fmt.Sprintf(format, args...))
+			problems = append(problems, fmt.Sprintf("%s: rule %s: ", aspect, r.Name)+fmt.Sprintf(format, args...))
 		}
 		// at returns the index of the expression in the rule's body.
 		at := func(aspect string, e grammar.Expr) (int, bool) {
@@ -370,7 +371,7 @@ func coreDecisionLines(c *coreGenCase, n *coreDecisionCounts) (lines, problems [
 					n.scopes++
 				}
 			case *core.OperatorsRule:
-				lineList, exprs, actions := opLines(x, r.def.Expr.(*grammar.OperatorsRule))
+				lineList, exprs, actions := opLines(x, r.Def.Expr.(*grammar.OperatorsRule))
 				for i, l := range lineList {
 					if ei, ok := at("scope", exprs[i]); ok {
 						add("scope", ei, "\t%s", names(l.Scope))
@@ -445,7 +446,7 @@ func compareCoreDecisions(c *coreGenCase, n *coreDecisionCounts) []string {
 			id, _ := strconv.Atoi(f[1])
 			name := "?"
 			if id >= 0 && id < len(c.rules) {
-				name = c.rules[id].name
+				name = c.rules[id].Name
 			}
 			who, other := "Core", "golden"
 			if k < 0 {

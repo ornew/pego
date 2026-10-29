@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -190,11 +191,11 @@ func (prog *Program) admitMissing(o ParseOptions, stream bool) error {
 	if o.MissingTokens < 0 {
 		return fmt.Errorf("missing token limit must be nonnegative")
 	}
-	if stream && (prog.hasMissing || o.MissingTokens > 0) {
-		return missingUnsupported("stream parsing")
+	if stream && (prog.HasMissing || o.MissingTokens > 0) {
+		return compile.MissingUnsupported("stream parsing")
 	}
-	if prog.backend(o.Backend) != Closure && (prog.hasMissing || o.MissingTokens > 0) {
-		return missingUnsupported("bytecode backends")
+	if prog.backend(o.Backend) != Closure && (prog.HasMissing || o.MissingTokens > 0) {
+		return compile.MissingUnsupported("bytecode backends")
 	}
 	return nil
 }

@@ -3,6 +3,7 @@ package engine
 import (
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -57,8 +58,8 @@ func TestMemoActionVariables(t *testing.T) {
 	for _, c := range actionVariableCases {
 		t.Run(c.name, func(t *testing.T) {
 			for _, disable := range []bool{false, true} {
-				prog := mustCompile(t, c.src, Options{DisableMemo: disable})
-				if vars := prog.byName["r"].vars; len(vars) != 1 || vars[0] != "x" {
+				prog := mustCompile(t, c.src, compile.Options{DisableMemo: disable})
+				if vars := prog.ByName["r"].Vars; len(vars) != 1 || vars[0] != "x" {
 					t.Errorf("r variable dependencies: %v", vars)
 				}
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {

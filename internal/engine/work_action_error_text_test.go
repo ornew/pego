@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -110,12 +111,12 @@ func TestWorkActionErrorProducersAreEager(t *testing.T) {
 	}{
 		{"undefined variable", func(p *parser) error { _, err := (&evalCtx{p: p}).eval(&grammar.VarRef{Name: long}); return err }},
 		{"undefined capture", func(p *parser) error {
-			_, err := (&evalCtx{p: p, scope: &scope{}}).eval(&grammar.CaptureRef{Name: long})
+			_, err := (&evalCtx{p: p, scope: &compile.Scope{}}).eval(&grammar.CaptureRef{Name: long})
 			return err
 		}},
 		{"invalid member", func(p *parser) error { _, err := (&evalCtx{p: p}).member(1, long); return err }},
 		{"missing field", func(p *parser) error {
-			_, err := (&evalCtx{p: p}).member(value.Ptr(value.Data{Kind: prog.typeKind("A")}), long)
+			_, err := (&evalCtx{p: p}).member(value.Ptr(value.Data{Kind: prog.TypeKind("A")}), long)
 			return err
 		}},
 		{"function field", func(p *parser) error {

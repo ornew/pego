@@ -363,8 +363,8 @@ rule other = "b"`)
 					break
 				}
 			}
-			if r.id != first {
-				t.Fatalf("%s: rule %s starts at rule %d, want %d", backend, name, r.id, first)
+			if r.ID != first {
+				t.Fatalf("%s: rule %s starts at rule %d, want %d", backend, name, r.ID, first)
 			}
 		}
 	}

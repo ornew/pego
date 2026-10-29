@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -17,7 +18,7 @@ import (
 
 // hasCaptureOfRepeat reports a capture of a repetition in e, the shape that Core IR projects in the Node table.
 func hasCaptureOfRepeat(e grammar.Expr) (capture, repeated bool) {
-	walkExpr(e, func(e grammar.Expr) {
+	compile.WalkExpr(e, func(e grammar.Expr) {
 		if c, ok := e.(*grammar.Capture); ok {
 			capture = true
 			if _, ok := c.Expr.(*grammar.Repeat); ok {
@@ -39,13 +40,13 @@ func TestFlowRecognizerPrintsCapturesFromFlow(t *testing.T) {
 	for _, controls := range []bool{false, true} {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
-			leanRouteHook = func(table string, r *staticRule) {
-				if c, _ := hasCaptureOfRepeat(r.bodyExpr()); c {
+			leanRouteHook = func(table string, r *compile.Rule) {
+				if c, _ := hasCaptureOfRepeat(r.BodyExpr()); c {
 					taken[table+" lean with captures"]++
 				}
 			}
-			framedRouteHook = func(table string, r *staticRule) {
-				c, rep := hasCaptureOfRepeat(r.bodyExpr())
+			framedRouteHook = func(table string, r *compile.Rule) {
+				c, rep := hasCaptureOfRepeat(r.BodyExpr())
 				if c {
 					taken[table+" framed with captures"]++
 				}

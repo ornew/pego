@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -204,7 +205,7 @@ process.stdout.write(JSON.stringify(out));
 	if err := json.Unmarshal(out, &got); err != nil {
 		t.Fatalf("decode Node results: %v\n%s", err, out)
 	}
-	prog, err := Compile(g, Options{})
+	prog, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -237,7 +238,7 @@ func TestGeneratedLiteralDispatchWorkload(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", workload.name, err)
 		}
-		prog, err := Compile(g, Options{})
+		prog, err := Compile(g, compile.Options{})
 		if err != nil {
 			t.Fatalf("%s compile engine reference: %v", workload.name, err)
 		}

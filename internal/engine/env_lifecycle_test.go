@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -109,7 +110,7 @@ rule main = {limit := 1} {i := 0} {j := 0} (` + c.body + `)* $$`)
 					if err != nil {
 						b.Fatal(err)
 					}
-					prog, err := Compile(g, Options{})
+					prog, err := Compile(g, compile.Options{})
 					if err != nil {
 						b.Fatal(err)
 					}
@@ -144,7 +145,7 @@ func BenchmarkDistinctBindings(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			prog, err := Compile(g, Options{})
+			prog, err := Compile(g, compile.Options{})
 			if err != nil {
 				b.Fatal(err)
 			}

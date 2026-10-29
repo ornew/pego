@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/ir/core"
 	"github.com/ornew/pego/internal/ir/flow"
 )
@@ -20,12 +21,12 @@ import (
 // recFlowEligible reports whether the rule r of the Node table or of the recognizer table is printed
 // from Flow IR as a flat rule: a lean value-free rule (leanRuleOK). Its captures
 // are Flow statements as in any rule; a semantic predicate keeps a rule out of leanRuleOK.
-func recFlowEligible(r *staticRule) bool {
+func recFlowEligible(r *compile.Rule) bool {
 	if !leanRuleOK(r) {
 		return false
 	}
 	ok := true
-	walkExpr(r.bodyExpr(), func(e grammar.Expr) {
+	compile.WalkExpr(r.BodyExpr(), func(e grammar.Expr) {
 		switch e.(type) {
 		case *grammar.Predicate:
 			ok = false
@@ -40,7 +41,7 @@ func recFlowEligible(r *staticRule) bool {
 // rewrites, Analyze, Guards, scans and the repeats, which followRepeats keeps in step with the scans.
 // It omits Terminals and ClassRuns, which typedCore runs only for lean typed rules (leanTyped): the Node recognizer writes
 // its terminals and classes as inline tests.
-func (g *generator) startRecFlow(rec *staticProgram) error {
+func (g *generator) startRecFlow(rec *compile.Program) error {
 	origin := map[core.Node]grammar.Expr{}
 	m, err := buildCoreProjecting(rec, origin, g.table != "recRules")
 	if err != nil {
@@ -64,13 +65,13 @@ func (g *generator) startRecFlow(rec *staticProgram) error {
 	// Classes are inline tests, as the Node runtime's generated code writes them.
 	opts := flow.Options{Work: !g.noWork, Recovers: flow.Recovers(m), GuardedClasses: g.ordinary && !g.disableGuardedClasses,
 		InlineLiterals: maxInlineLiteral, Observe: g.observability, Node: true, Document: g.document}
-	g.flow = &flowState{m: m, origin: origin, opts: opts, rules: append(append([]*staticRule(nil), rec.rules...), rec.twins...)}
+	g.flow = &flowState{m: m, origin: origin, opts: opts, rules: append(append([]*compile.Rule(nil), rec.RuleList...), rec.Twins...)}
 	return nil
 }
 
 // refuseFlowRecRule, if set by a test, makes flowRecRule refuse the rules it selects, so that the
 // framed body that takes their place is exercised. No manifest grammar reaches that fallback.
-var refuseFlowRecRule func(*staticRule) bool
+var refuseFlowRecRule func(*compile.Rule) bool
 
 // flowRecRule prints the eligible rule r of the recognizer from Flow IR as a flat rule. It returns
 // nil in three cases, and the caller (generator.rules) then prints the rule's framed body from Flow IR
@@ -80,17 +81,17 @@ var refuseFlowRecRule func(*staticRule) bool
 //   - the printed function would read its start or its context, which a value-free flat rule has
 //     no parameters for;
 //   - a variable of the function has a type that untypedGoType cannot name.
-func (g *generator) flowRecRule(r *staticRule) *flatRule {
+func (g *generator) flowRecRule(r *compile.Rule) *flatRule {
 	if refuseFlowRecRule != nil && refuseFlowRecRule(r) {
 		return nil
 	}
-	cr := g.flow.m.Rules[r.id]
+	cr := g.flow.m.Rules[r.ID]
 	if !flow.LocalRule(cr) {
 		return nil
 	}
-	f, err := flow.Lower(g.flow.m, cr, r.name, g.flow.opts)
+	f, err := flow.Lower(g.flow.m, cr, r.Name, g.flow.opts)
 	if err != nil {
-		panic(fmt.Errorf("rule %s of table %s: %w", r.name, g.table, err)) // LocalRule holds
+		panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.table, err)) // LocalRule holds
 	}
 	g.cur, g.proj = r, g.projections(r)
 	defer func() { g.proj = nil }()

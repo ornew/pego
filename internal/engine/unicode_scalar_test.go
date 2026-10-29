@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -22,8 +23,8 @@ func testInvalidCharacterClassEntryPoints(t *testing.T) {
 			cc := &grammar.CharClass{SourceInfo: grammar.SourceInfo{Pos: grammar.Pos{Line: 3, Col: 7}}, Ranges: []grammar.CharRange{cr}}
 			g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: cc}}}}
 			for name, run := range map[string]func() error{
-				"compile":           func() error { _, err := Compile(g, Options{}); return err },
-				"saved AST rebuild": func() error { _, err := build(g, Options{}, []ruleFlags{{}}); return err },
+				"compile":           func() error { _, err := Compile(g, compile.Options{}); return err },
+				"saved AST rebuild": func() error { _, err := build(g, compile.Options{}, []compile.RuleFlags{{}}); return err },
 				"Go generator":      func() error { _, err := generateCode(g, gen.GenOptions{Start: "main", Package: "p"}); return err },
 				"typed Go generator": func() error {
 					_, err := generateCode(g, gen.GenOptions{Start: "main", Package: "p", Types: true})
@@ -33,7 +34,7 @@ func testInvalidCharacterClassEntryPoints(t *testing.T) {
 			} {
 				t.Run(name, func(t *testing.T) {
 					err := run()
-					if errs, ok := err.(ErrorList); !ok || len(errs) != 1 || errs[0].Pos != cc.Pos || !strings.Contains(err.Error(), "$.file.decls[0].expr.ranges[0]") {
+					if errs, ok := err.(compile.ErrorList); !ok || len(errs) != 1 || errs[0].Pos != cc.Pos || !strings.Contains(err.Error(), "$.file.decls[0].expr.ranges[0]") {
 						t.Fatalf("got %v, want positioned range error", err)
 					}
 				})
@@ -107,7 +108,7 @@ func BenchmarkCharacterRangeValidation(b *testing.B) {
 			b.Run("Compile", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
-					if _, err := Compile(g, Options{}); err != nil {
+					if _, err := Compile(g, compile.Options{}); err != nil {
 						b.Fatal(err)
 					}
 				}

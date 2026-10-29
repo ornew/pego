@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -33,7 +34,7 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 				p := diagnosticParser(limits.WorkLimits{})
 				p.memo, p.recovered = newMemoTable(), []*SyntaxError{prefix}
 				p.memo.slots = make([]*memoEntry, 1)
-				r := &rule{id: 7}
+				r := &rule{ID: 7}
 				key := memoKey{rule: 7}
 				steps := uint64(len(records))
 				var run, completed, aborted func()
@@ -99,7 +100,7 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 					run = func() { p.growEnd(r, &g) }
 					completed = assertReplay
 				case "OperatorsRule snapshot", "iterative OperatorsRule snapshot":
-					op := &operatorsRuleOp{kind: grammar.Prefix, line: &operatorsRuleLine{scope: &scope{}}}
+					op := &operatorsRuleOp{kind: grammar.Prefix, line: &operatorsRuleLine{scope: &compile.Scope{}}}
 					var best operatorsRuleAttempt
 					if name == "OperatorsRule snapshot" {
 						op.line.m = func(p *parser) (*value.Node, bool) {

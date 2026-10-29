@@ -127,7 +127,7 @@ rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: te
 				t.Fatal(err)
 			}
 			var rows strings.Builder
-			for _, name := range []string{"main", prog.rules[len(prog.rules)-1].name} {
+			for _, name := range []string{"main", prog.RuleList[len(prog.RuleList)-1].Name} {
 				for _, in := range c.inputs {
 					for _, unit := range []PositionUnit{CodePoints, Bytes} {
 						for _, limit := range []int{1, 2, 3, 4, 5, 6, 8, 20} {

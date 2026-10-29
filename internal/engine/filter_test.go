@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
@@ -90,7 +91,7 @@ rule main = v1:"a" => Out{Items: filter(list($v1, nil), (x) => x != nil)}`,
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Compile(g, Options{}); err == nil {
+		if _, err := Compile(g, compile.Options{}); err == nil {
 			t.Fatalf("accepted invalid filter: %s", source)
 		}
 	}
@@ -137,7 +138,7 @@ func TestFilterCompiledInstructionSet(t *testing.T) {
 	for i := range module.Exprs {
 		if module.Exprs[i].Op == bytecode.ECall && module.Exprs[i].A == bytecode.BuiltinFilter {
 			module.Exprs[i].B = 0
-			if err := validateModule(module); err == nil || !strings.Contains(err.Error(), "filter requires two arguments") {
+			if err := compile.ValidateModule(module); err == nil || !strings.Contains(err.Error(), "filter requires two arguments") {
 				t.Fatalf("invalid filter call arity: %v", err)
 			}
 			return

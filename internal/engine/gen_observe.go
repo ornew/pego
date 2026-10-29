@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 )
 
-func (g *generator) tracePlainWrapper(r *staticRule, name string) string {
+func (g *generator) tracePlainWrapper(r *compile.Rule, name string) string {
 	return g.traceCallWrapper(r, name, true)
 }
 
-func (g *generator) traceCallWrapper(r *staticRule, name string, evaluated bool) string {
+func (g *generator) traceCallWrapper(r *compile.Rule, name string, evaluated bool) string {
 	body := name + "ObservedBody"
 	eval := ""
 	if evaluated {
@@ -27,7 +28,7 @@ func %[1]s(p *%[2]s) (%[3]s, bool) {
  return v, ok
 }
 
-`, name, g.recv(), g.valType(), body, r.name, eval)
+`, name, g.recv(), g.valType(), body, r.Name, eval)
 	return body
 }
 

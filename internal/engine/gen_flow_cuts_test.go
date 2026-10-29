@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -20,7 +21,7 @@ import (
 
 // hasCut reports a cut in e.
 func hasCut(e grammar.Expr) (found bool) {
-	walkExpr(e, func(e grammar.Expr) {
+	compile.WalkExpr(e, func(e grammar.Expr) {
 		if _, ok := e.(*grammar.Cut); ok {
 			found = true
 		}
@@ -39,8 +40,8 @@ func TestFlowCutsPrintFromFlow(t *testing.T) {
 	for _, controls := range []bool{false, true} {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
-			framedRouteHook = func(table string, r *staticRule) {
-				if hasCut(r.bodyExpr()) {
+			framedRouteHook = func(table string, r *compile.Rule) {
+				if hasCut(r.BodyExpr()) {
 					taken[table]++
 				}
 			}

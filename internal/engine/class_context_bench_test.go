@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 )
 
 func BenchmarkClassCompileCancellation(b *testing.B) {
@@ -26,9 +27,9 @@ func BenchmarkClassCompileCancellation(b *testing.B) {
 			for b.Loop() {
 				var err error
 				if controlled {
-					normalizationBenchmarkProgram, err = CompileContext(ctx, g, Options{})
+					normalizationBenchmarkProgram, err = CompileContext(ctx, g, compile.Options{})
 				} else {
-					normalizationBenchmarkProgram, err = Compile(g, Options{})
+					normalizationBenchmarkProgram, err = Compile(g, compile.Options{})
 				}
 				if err != nil {
 					b.Fatal(err)

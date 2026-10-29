@@ -2,6 +2,7 @@ package engine
 
 import (
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -17,14 +18,14 @@ type operatorsRule struct {
 
 // operatorsRuleLine is an operand line or an operator line. Each has its own capture scope.
 type operatorsRuleLine struct {
-	scope *scope
+	scope *compile.Scope
 	m     matcher
 	act   evaluator // action (nil if none)
 	// value makes the value of an operand line without an action, and single that of an operator
 	// line's operator, from the value of the line's expression.
 	value  func(p *parser, v *value.Node, start int) *value.Node
-	single singleMode
-	shape  shaper
+	single compile.SingleMode
+	shape  compile.Shaper
 	entry  int // start of the bytecode (bytecode backend only)
 	// key is the line's *grammar.OperatorsRuleOperand or *grammar.OperatorsRuleOperator.
 	key any
@@ -71,7 +72,7 @@ func (p *parser) longest(ops []*operatorsRuleOp) (best operatorsRuleAttempt, cut
 	m0 := p.mark()
 	for _, op := range ops {
 		prevFrame, prevCut := p.frame, p.cut
-		f := p.newFrame(len(op.line.scope.names))
+		f := p.newFrame(len(op.line.scope.Names))
 		p.frame, p.cut = f, false
 		v, ok := op.line.m(p)
 		cut := p.cut
@@ -213,7 +214,7 @@ func (p *parser) operatorsRuleNud(r *rule) (*value.Node, bool) {
 	}
 	for _, o := range pr.operands {
 		prevFrame, prevCut := p.frame, p.cut
-		f := p.newFrame(len(o.scope.names))
+		f := p.newFrame(len(o.scope.Names))
 		p.frame, p.cut = f, false
 		v, ok := o.m(p)
 		cut := p.cut
@@ -232,20 +233,20 @@ func (p *parser) operatorsRuleNud(r *rule) (*value.Node, bool) {
 // lineResult builds the value of an operand line, and checks it against the rule's declared type
 // if needed.
 func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *value.Node, start int, locals *local) *value.Node {
-	if r.novalue {
+	if r.Novalue {
 		return nil
 	}
 	if l.act != nil {
 		ctx := p.useCtx(evalCtx{p: p, scope: l.scope, frame: f, start: start, end: p.pos, locals: locals, cbase: len(p.created)})
-		v = p.actionResult(ctx, l.act, r.whereName())
+		v = p.actionResult(ctx, l.act, r.WhereName())
 	} else {
 		v = l.value(p, v, start)
-		if len(l.scope.names) > 0 {
+		if len(l.scope.Names) > 0 {
 			v = p.attachCaptures(v, l.scope, f, start, p.pos)
 		}
 		if v != nil && value.D(v).Fresh {
-			if p.prog.sourceInfo && value.D(v).Kind.Rule == "" {
-				value.D(v).Kind = r.kinds.Named(value.D(v).Kind, r.name)
+			if p.prog.RecordsSourceInfo && value.D(v).Kind.Rule == "" {
+				value.D(v).Kind = r.kinds.Named(value.D(v).Kind, r.Name)
 			}
 			value.D(v).Fresh = false
 		}
@@ -258,14 +259,14 @@ func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *value.No
 func (p *parser) convertOperator(r *rule, v *value.Node) *value.Node {
 	n, ok := r.opKinds.Convert(value.UnboxNode(v))
 	if !ok {
-		p.fail("cannot convert %s to %s in result of rule %s", typeName(value.UnboxNode(v)), r.opNodeType, r.whereName())
+		p.fail("cannot convert %s to %s in result of rule %s", typeName(value.UnboxNode(v)), r.OpNodeType, r.WhereName())
 	}
 	return n
 }
 
 // operatorsRuleBuild builds the value of an operator application.
 func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *value.Node) *value.Node {
-	if r.novalue {
+	if r.Novalue {
 		return nil
 	}
 	start, end := a.start, p.pos
@@ -282,7 +283,7 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 	if !ok {
 		opv = p.newNode(value.Data{Kind: value.SeqKind, Start: int32(a.start), End: int32(a.end)})
 	}
-	if l.single == singleTuple && len(l.scope.names) > 0 {
+	if l.single == compile.SingleTuple && len(l.scope.Names) > 0 {
 		opv = p.attachCaptures(opv, l.scope, a.frame, a.start, a.end)
 	}
 	if opv != nil {
@@ -302,7 +303,7 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 			locals = &ls[2]
 		}
 		ctx := p.useCtx(evalCtx{p: p, scope: l.scope, frame: a.frame, start: start, end: end, locals: locals, cbase: len(p.created)})
-		v := p.actionResult(ctx, l.act, r.whereName())
+		v := p.actionResult(ctx, l.act, r.WhereName())
 		if r.opKinds != nil {
 			v = p.convertOperator(r, v)
 		}
@@ -329,9 +330,9 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 	kind := value.SeqKind
 	if r.opKinds != nil {
 		kind = r.opKinds[value.BaseTuple] // made with the named node type of the operators
-	} else if p.prog.sourceInfo {
-		kind = r.kinds.Named(value.SeqKind, r.name)
+	} else if p.prog.RecordsSourceInfo {
+		kind = r.kinds.Named(value.SeqKind, r.Name)
 	}
-	n := p.newNode(value.Data{Kind: kind, Start: int32(start), End: int32(end), Children: kids, Fields: fields, Labeled: p.prog.sourceInfo})
+	n := p.newNode(value.Data{Kind: kind, Start: int32(start), End: int32(end), Children: kids, Fields: fields, Labeled: p.prog.RecordsSourceInfo})
 	return n
 }

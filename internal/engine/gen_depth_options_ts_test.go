@@ -54,14 +54,14 @@ rule n = ("(" n ")" / "é") #recover(skip="?")`, []string{"é", "(é)", "((é))"
 		}
 		prog := mustCompile(t, c.src)
 		if i == 0 {
-			code = append(code, []byte(fmt.Sprintf("\nexport function installTestAction(fn: () => void): void { R%d.action = () => {fn(); return null;}; }\n", prog.byName["trigger"].id))...)
+			code = append(code, []byte(fmt.Sprintf("\nexport function installTestAction(fn: () => void): void { R%d.action = () => {fn(); return null;}; }\n", prog.ByName["trigger"].ID))...)
 		}
 		path := filepath.Join(dir, fmt.Sprintf("g%d.ts", i))
 		if err := os.WriteFile(path, code, 0644); err != nil {
 			t.Fatal(err)
 		}
 		fmt.Fprintf(&script, "{ const m = await import('./g%d.ts'); const rows = [\n", i)
-		for _, name := range []string{"main", prog.rules[len(prog.rules)-1].name} {
+		for _, name := range []string{"main", prog.RuleList[len(prog.RuleList)-1].Name} {
 			for _, input := range c.inputs {
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, limit := range []int{1, 2, 3, 4, 5, 6, 8, 20} {

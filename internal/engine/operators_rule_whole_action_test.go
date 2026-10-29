@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -34,9 +35,9 @@ func testOperatorsRuleWholeActionRejection(t *testing.T) {
 			}{{"source AST", g}, {"JSON AST", decoded}} {
 				t.Run(input.name, func(t *testing.T) {
 					for name, run := range map[string]func() error{
-						"compile":            func() error { _, err := Compile(input.g, Options{}); return err },
-						"recognizer compile": func() error { _, err := Compile(input.g, Options{recognize: true}); return err },
-						"saved AST rebuild":  func() error { _, err := build(input.g, Options{}, []ruleFlags{{}}); return err },
+						"compile":            func() error { _, err := Compile(input.g, compile.Options{}); return err },
+						"recognizer compile": func() error { _, err := Compile(input.g, compile.Options{Recognize: true}); return err },
+						"saved AST rebuild":  func() error { _, err := build(input.g, compile.Options{}, []compile.RuleFlags{{}}); return err },
 						"Go generator":       func() error { _, err := generateCode(input.g, gen.GenOptions{Start: "main", Package: "p"}); return err },
 						"typed Go generator": func() error {
 							_, err := generateCode(input.g, gen.GenOptions{Start: "main", Package: "p", Types: true})
@@ -50,7 +51,7 @@ func testOperatorsRuleWholeActionRejection(t *testing.T) {
 					} {
 						t.Run(name, func(t *testing.T) {
 							err := run()
-							errs, ok := err.(ErrorList)
+							errs, ok := err.(compile.ErrorList)
 							if !ok || len(errs) != 1 || !strings.Contains(errs[0].Msg, message) {
 								t.Fatalf("got %v; want a whole-rule action compile error", err)
 							}
@@ -89,7 +90,7 @@ func testOperatorsRuleExplicitDefaultAction(t *testing.T) {
     level { infix left "+" }
 }`
 	plain := mustCompile(t, source)
-	for _, opts := range []Options{{SourceInfo: true}} {
+	for _, opts := range []compile.Options{{SourceInfo: true}} {
 		g, err := parseTest(source + " => ...")
 		if err != nil {
 			t.Fatal(err)

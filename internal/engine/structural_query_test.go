@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -99,7 +100,7 @@ rule item = [a-z]`)
 	}
 	pattern := QueryPattern{Rule: "item", Capture: "item"}
 	for _, sourceInfo := range []bool{false, true} {
-		p, err := Compile(g, Options{SourceInfo: sourceInfo})
+		p, err := Compile(g, compile.Options{SourceInfo: sourceInfo})
 		if err != nil {
 			t.Fatal(err)
 		}

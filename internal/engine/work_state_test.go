@@ -10,12 +10,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
 
 func stateWorkParser(limits limits.WorkLimits) *parser {
-	return &parser{prog: &Program{staticProgram: &staticProgram{}}, input: input{control: newWorkControl(nil, limits)}}
+	return &parser{prog: &Program{staticProgram: &compile.Program{}}, input: input{control: newWorkControl(nil, limits)}}
 }
 
 func undoFixture(p *parser) (*frame, []*value.Node) {
@@ -121,7 +122,7 @@ func TestWorkAttachCapturesNilFrameAndFieldOrder(t *testing.T) {
 	retained := value.Ptr(value.Data{Text: "base", Fields: value.Fields{{Name: "existing", Value: "kept"}}})
 	allNil := &frame{vals: make([]*value.Node, 320)}
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 100_000})
-	got := p.attachCaptures(retained, &scope{names: make([]string, len(allNil.vals))}, allNil, 2, 9)
+	got := p.attachCaptures(retained, &compile.Scope{Names: make([]string, len(allNil.vals))}, allNil, 2, 9)
 	if got != retained || len(value.D(retained).Fields) != 1 || value.D(retained).Fields[0].Value != "kept" {
 		t.Fatal("all-nil capture frame changed the base node")
 	}
@@ -131,7 +132,7 @@ func TestWorkAttachCapturesNilFrameAndFieldOrder(t *testing.T) {
 		value.Ptr(value.Data{Text: "first-value"}), value.Ptr(value.Data{Text: "old-duplicate"}), value.Ptr(value.Data{Text: "third-value"}), value.Ptr(value.Data{Text: "new-duplicate"}), value.Ptr(value.Data{Text: "late-value"}),
 	}
 	base := value.Ptr(value.Data{Text: "fresh-body", Fresh: true})
-	result := p.attachCaptures(base, &scope{names: fields}, &frame{vals: values}, 0, 5)
+	result := p.attachCaptures(base, &compile.Scope{Names: fields}, &frame{vals: values}, 0, 5)
 	if result != base {
 		t.Fatal("fresh body was unexpectedly wrapped")
 	}
@@ -154,7 +155,7 @@ func TestWorkAttachCapturesWrapsNonfreshAndSelfCapture(t *testing.T) {
 	prior := value.Fields{{Name: "prior", Value: "unchanged"}}
 	shared := value.Ptr(value.Data{Text: "shared", Fields: append(value.Fields(nil), prior...)})
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 100_000})
-	wrapped := p.attachCaptures(shared, &scope{names: []string{"child"}}, &frame{vals: []*value.Node{child}}, 4, 7)
+	wrapped := p.attachCaptures(shared, &compile.Scope{Names: []string{"child"}}, &frame{vals: []*value.Node{child}}, 4, 7)
 	if wrapped == shared || len(value.D(wrapped).Children) != 1 || value.D(wrapped).Children[0] != shared {
 		t.Fatal("nonfresh node was not wrapped before capture attachment")
 	}
@@ -166,7 +167,7 @@ func TestWorkAttachCapturesWrapsNonfreshAndSelfCapture(t *testing.T) {
 	}
 
 	self := value.Ptr(value.Data{Text: "self", Fresh: true})
-	got := p.attachCaptures(self, &scope{names: []string{"self"}}, &frame{vals: []*value.Node{self}}, 1, 2)
+	got := p.attachCaptures(self, &compile.Scope{Names: []string{"self"}}, &frame{vals: []*value.Node{self}}, 1, 2)
 	if got == self || len(value.D(got).Children) != 1 || value.D(got).Children[0] != self {
 		t.Fatal("self-capture did not wrap the body node")
 	}
@@ -179,7 +180,7 @@ func TestWorkAttachCapturesInterruptsDiscoveryAndFieldWalk(t *testing.T) {
 	base := value.Ptr(value.Data{Text: "retained", Fields: value.Fields{{Name: "prior", Value: "kept"}}})
 	wide := &frame{vals: make([]*value.Node, 320)}
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 128})
-	if err := catchFatal(t, func() { _ = p.attachCaptures(base, &scope{names: make([]string, 320)}, wide, 0, 1) }); !errors.Is(err, limits.ErrWorkLimit) {
+	if err := catchFatal(t, func() { _ = p.attachCaptures(base, &compile.Scope{Names: make([]string, 320)}, wide, 0, 1) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("all-nil discovery interruption = %v, want ErrWorkLimit", err)
 	}
 	if len(value.D(base).Fields) != 1 || value.D(base).Fields[0].Value != "kept" {
@@ -195,7 +196,7 @@ func TestWorkAttachCapturesInterruptsDiscoveryAndFieldWalk(t *testing.T) {
 	}
 	retained := value.Ptr(value.Data{Text: "shared-retained", Fields: value.Fields{{Name: "existing", Value: "stable"}}})
 	p = stateWorkParser(limits.WorkLimits{MaxSteps: 256})
-	if err := catchFatal(t, func() { _ = p.attachCaptures(retained, &scope{names: names}, &frame{vals: vals}, 3, 9) }); !errors.Is(err, limits.ErrWorkLimit) {
+	if err := catchFatal(t, func() { _ = p.attachCaptures(retained, &compile.Scope{Names: names}, &frame{vals: vals}, 3, 9) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("capture field walk interruption = %v, want ErrWorkLimit", err)
 	}
 	if len(value.D(retained).Fields) != 1 || value.D(retained).Fields[0].Name != "existing" || value.D(retained).Fields[0].Value != "stable" || value.D(retained).Text != "shared-retained" {

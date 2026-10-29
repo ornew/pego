@@ -3,6 +3,7 @@ package engine
 import (
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -50,7 +51,7 @@ var aliasTypedGoldens = map[string]string{
 func TestAliasNodeIdentity(t *testing.T) {
 	for _, c := range aliasCases {
 		t.Run(c.name, func(t *testing.T) {
-			for _, options := range []Options{{}, {DisableMemo: true}} {
+			for _, options := range []compile.Options{{}, {DisableMemo: true}} {
 				prog := mustCompile(t, c.src, options)
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					n, err := prog.ParseWith("main", "éé", ParseOptions{Unit: unit})

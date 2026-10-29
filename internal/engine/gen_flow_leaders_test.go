@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -29,8 +30,8 @@ func TestFlowLeadersPrintFromFlow(t *testing.T) {
 	for _, controls := range []bool{false, true} {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
-			framedRouteHook = func(table string, r *staticRule) {
-				if r.leader {
+			framedRouteHook = func(table string, r *compile.Rule) {
+				if r.Leader {
 					taken[table]++
 				}
 			}

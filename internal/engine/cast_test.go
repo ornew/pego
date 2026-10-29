@@ -11,6 +11,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -84,7 +85,7 @@ func TestCastErrors(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
-		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if _, err := Compile(g, compile.Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%q: got %v, want %q", tc.src, err, tc.want)
 		}
 	}
@@ -93,7 +94,7 @@ func TestCastErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), "Nope") {
+	if _, err := Compile(g, compile.Options{}); err == nil || !strings.Contains(err.Error(), "Nope") {
 		t.Fatalf("unknown cast type: %v", err)
 	}
 }

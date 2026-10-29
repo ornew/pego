@@ -11,6 +11,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/syntax"
 )
@@ -87,14 +88,14 @@ rule num Num = t:([0-9]+ #atomic) => Num{Text: text($t)}`)
 // the engine from JSON grammars, reads a field: on a node it is rejected with a pointer to .$y.
 func TestCaptureAccessMatchesField(t *testing.T) {
 	access := mustCompile(t, `rule main = xs:(-"," y:[a-z])* $$ => map($xs, (i) => i.$y)`)
-	if a := ruleProjections(access.staticProgram, access.rules[0]); a["xs"] != "y" {
+	if a := compile.RuleProjections(access.staticProgram, access.RuleList[0]); a["xs"] != "y" {
 		t.Fatalf("projection: %v", a)
 	}
 	g, err := parseLegacyTest(`rule main = xs:(-"," y:[a-z])* $$ => map($xs, (i) => i.y)`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), "read the capture with .$y") {
+	if _, err := Compile(g, compile.Options{}); err == nil || !strings.Contains(err.Error(), "read the capture with .$y") {
 		t.Fatalf("field access on a node: %v", err)
 	}
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -123,7 +124,7 @@ func TestCaptureAccessErrors(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
-		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if _, err := Compile(g, compile.Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%q: got %v, want %q", tc.src, err, tc.want)
 		}
 	}

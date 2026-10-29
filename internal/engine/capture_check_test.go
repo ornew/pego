@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 )
 
 // A name captured several times in one match has the join of the types of its captures: the
@@ -41,8 +42,8 @@ func TestDuplicateCaptureTypes(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			var errs ErrorList
-			checkTypes(p.staticProgram, &errs)
+			var errs compile.ErrorList
+			compile.CheckTypes(p.staticProgram, &errs)
 			got, ok := captureType(p, "main", "x")
 			if tc.action {
 				got, ok = inferredType(p, "main")
@@ -61,16 +62,16 @@ func TestDuplicateCaptureTypes(t *testing.T) {
 // Compare the capture merger with the join, including values whose top-level optional/union
 // normalization must not be skipped.
 func TestCaptureJoinEquivalence(t *testing.T) {
-	str := tyStringNode
-	tuple := nodeTy{value: tupleTy{[]ty{str, str}}}
-	ts := []ty{tyAny, tyBottom, tyNil, str, tyInt, tyString, namedTy{"A", 's'}, listTy{str},
-		optTy{str}, optTy{optTy{str}}, joinTy{[]ty{str, tuple}}, joinTy{[]ty{tuple, str}},
-		joinTy{[]ty{str, str, tyBottom}}, joinTy{[]ty{tyAny, str}}, listTy{optTy{str}},
-		nodeTy{value: listTy{joinTy{[]ty{str, tuple}}}}}
+	str := compile.TyStringNode
+	tuple := compile.NodeTy{Value: compile.TupleTy{Elems: []compile.Ty{str, str}}}
+	ts := []compile.Ty{compile.TyAny, compile.TyBottom, compile.TyNil, str, compile.TyInt, compile.TyString, compile.NamedTy{Name: "A", Kind: 's'}, compile.ListTy{Elem: str},
+		compile.OptTy{Elem: str}, compile.OptTy{Elem: compile.OptTy{Elem: str}}, compile.JoinTy{Alts: []compile.Ty{str, tuple}}, compile.JoinTy{Alts: []compile.Ty{tuple, str}},
+		compile.JoinTy{Alts: []compile.Ty{str, str, compile.TyBottom}}, compile.JoinTy{Alts: []compile.Ty{compile.TyAny, str}}, compile.ListTy{Elem: compile.OptTy{Elem: str}},
+		compile.NodeTy{Value: compile.ListTy{Elem: compile.JoinTy{Alts: []compile.Ty{str, tuple}}}}}
 	for i, a := range ts {
 		for j, b := range ts {
-			got := mergeCap([]capIndex{{name: "x", paths: [][]int{{0}}, t: a}}, capIndex{name: "x", paths: [][]int{{1}}, t: b})
-			if want := vjoin(a, b); len(got) != 1 || got[0].t.String() != want.String() || len(got[0].paths) != 2 {
+			got := compile.MergeCap([]compile.CapIndex{{Name: "x", Paths: [][]int{{0}}, T: a}}, compile.CapIndex{Name: "x", Paths: [][]int{{1}}, T: b})
+			if want := compile.Vjoin(a, b); len(got) != 1 || got[0].T.String() != want.String() || len(got[0].Paths) != 2 {
 				t.Fatalf("pair %d/%d: got %v, want %s", i, j, got, want)
 			}
 		}
@@ -96,9 +97,9 @@ func captureCheckProgram(src string) (*Program, error) {
 	if err != nil {
 		return nil, err
 	}
-	p := &Program{staticProgram: &staticProgram{Grammar: g, types: map[string]grammar.TypeDecl{}}}
+	p := &Program{staticProgram: &compile.Program{Grammar: g, Types: map[string]grammar.TypeDecl{}}}
 	for _, d := range g.Types() {
-		p.types[d.DeclName()] = d
+		p.Types[d.DeclName()] = d
 	}
 	return p, nil
 }
@@ -142,8 +143,8 @@ func BenchmarkCaptureChecking(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for range b.N {
-				var errs ErrorList
-				checkTypes(p.staticProgram, &errs)
+				var errs compile.ErrorList
+				compile.CheckTypes(p.staticProgram, &errs)
 				if len(errs) != 0 {
 					b.Fatal(errs)
 				}
@@ -160,8 +161,8 @@ func BenchmarkCaptureChecking(b *testing.B) {
 				b.ReportAllocs()
 				b.ResetTimer()
 				for range b.N {
-					var errs ErrorList
-					checkTypes(p.staticProgram, &errs)
+					var errs compile.ErrorList
+					compile.CheckTypes(p.staticProgram, &errs)
 					if len(errs) != 0 {
 						b.Fatal(errs)
 					}
@@ -177,8 +178,8 @@ func BenchmarkCaptureChecking(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for range b.N {
-			var errs ErrorList
-			checkTypes(p.staticProgram, &errs)
+			var errs compile.ErrorList
+			compile.CheckTypes(p.staticProgram, &errs)
 			if len(errs) != 0 {
 				b.Fatal(errs)
 			}

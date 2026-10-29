@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -23,16 +24,16 @@ rule _main_1 = "b"`)
 		t.Fatal(got)
 	}
 	names := map[string]bool{}
-	for _, r := range p.rules {
-		names[r.name] = true
+	for _, r := range p.RuleList {
+		names[r.Name] = true
 	}
 	if !names["_main_1"] || !names["_main_1_"] {
 		t.Fatalf("rules: %v", names)
 	}
-	if p.rules[len(p.rules)-1].name != "_main_1" && p.byName["_main_1_"].def.Action == nil {
+	if p.RuleList[len(p.RuleList)-1].Name != "_main_1" && p.ByName["_main_1_"].Def.Action == nil {
 		t.Fatal("the inline action's rule is not the one that has the action")
 	}
-	if p.byName["_main_1"].def.Action != nil {
+	if p.ByName["_main_1"].Def.Action != nil {
 		t.Fatal("the declared rule was replaced")
 	}
 }
@@ -91,7 +92,7 @@ func TestSourceGrammarKeepsInlineActionsInEveryMode(t *testing.T) {
 	src := `type A = { X node[string] }
 rule main = (x:"a" => A{X: $x}) _b
 rule _b = "b"`
-	for _, opts := range []Options{{}, {DefaultValue: true}, {SourceInfo: true}} {
+	for _, opts := range []compile.Options{{}, {DefaultValue: true}, {SourceInfo: true}} {
 		p := compileBare(t, src, opts)
 		g := p.SourceGrammar()
 		inline := 0
@@ -99,7 +100,7 @@ rule _b = "b"`
 			if strings.HasPrefix(rd.Name, "_main") {
 				t.Errorf("%+v: the grammar as written has the generated rule %s", opts, rd.Name)
 			}
-			walkExpr(rd.Expr, func(e grammar.Expr) {
+			compile.WalkExpr(rd.Expr, func(e grammar.Expr) {
 				if _, ok := e.(*grammar.InlineAction); ok {
 					inline++
 				}
@@ -144,16 +145,16 @@ func TestDefaultValueAcceptsWhatItDropsWithInlineActions(t *testing.T) {
 			if rd.Action != nil {
 				rd.Action = bad
 			}
-			walkExpr(rd.Expr, func(e grammar.Expr) {
+			compile.WalkExpr(rd.Expr, func(e grammar.Expr) {
 				if a, ok := e.(*grammar.InlineAction); ok {
 					a.Action = bad
 				}
 			})
 		}
-		if _, err := Compile(g, Options{}); err == nil {
+		if _, err := Compile(g, compile.Options{}); err == nil {
 			t.Errorf("%s: compiled without the option", src)
 		}
-		if _, err := Compile(g, Options{DefaultValue: true}); err != nil {
+		if _, err := Compile(g, compile.Options{DefaultValue: true}); err != nil {
 			t.Errorf("%s: %v", src, err)
 		}
 	}
@@ -182,7 +183,7 @@ func TestDefaultValueValidationReportsTheGrammarAsWritten(t *testing.T) {
 			rules := g.Rules()
 			repeats := 0
 			for _, rd := range rules {
-				walkExpr(rd.Expr, func(e grammar.Expr) {
+				compile.WalkExpr(rd.Expr, func(e grammar.Expr) {
 					if r, ok := e.(*grammar.Repeat); ok {
 						r.Min = -1
 						repeats++
@@ -192,8 +193,8 @@ func TestDefaultValueValidationReportsTheGrammarAsWritten(t *testing.T) {
 			if repeats != 1 {
 				t.Fatalf("%d repetitions to corrupt", repeats)
 			}
-			_, withActions := Compile(g, Options{})
-			_, withDefault := Compile(g, Options{DefaultValue: true})
+			_, withActions := Compile(g, compile.Options{})
+			_, withDefault := Compile(g, compile.Options{DefaultValue: true})
 			if withActions == nil || withDefault == nil {
 				t.Fatalf("no error: %v / %v", withActions, withDefault)
 			}
@@ -209,17 +210,17 @@ func TestDefaultValueValidationReportsTheGrammarAsWritten(t *testing.T) {
 
 // The messages of the compiler describe an inline action by the rule that holds it.
 func TestInlineActionNamesInMessages(t *testing.T) {
-	names := inlineNames{"_main_1": {rule: "main", n: 1}, "_main_10": {rule: "main", n: 10}}
+	names := compile.InlineNames{"_main_1": {Rule: "main", N: 1}, "_main_10": {Rule: "main", N: 10}}
 	for _, c := range []struct{ in, want string }{
 		{"rule _main_1 produces int", "the inline action in rule main produces int"},
 		{"result of rule _main_10: _main_1", "result of the inline action in rule main: the inline action in rule main"},
 		{"_main_1_ is not _main_1", "_main_1_ is not the inline action in rule main"},
 	} {
-		if got := names.text(c.in); got != c.want {
+		if got := names.Text(c.in); got != c.want {
 			t.Errorf("%q: %q, want %q", c.in, got, c.want)
 		}
 	}
-	if got, ok := names.describe("main"); ok {
+	if got, ok := names.Describe("main"); ok {
 		t.Errorf("describes a declared rule: %q", got)
 	}
 }
@@ -252,18 +253,18 @@ func TestPruneSpliceTypesFollowsTheStructureOfTypes(t *testing.T) {
 	rules := p.Grammar.Rules()
 	for _, c := range []struct {
 		name string
-		main ty
+		main compile.Ty
 		kept bool
 	}{
-		{"element", tupleTy{[]ty{tyStringNode, optTy{ruleTy{"_m"}}}}, true},
-		{"list", listTy{ruleTy{"_m"}}, true},
-		{"join", joinTy{[]ty{tyStringNode, ruleTy{"_m"}}}, true},
-		{"capture", nodeTy{value: tyStringNode, caps: []capIndex{{name: "x", paths: [][]int{{0}}, t: ruleTy{"_m"}}}}, true},
-		{"capture set", nodeTy{value: tyStringNode, caps: []capIndex{{name: "x", paths: [][]int{{0}}, t: tyStringNode, maybe: true, set: ruleTy{"_m"}}}}, true},
-		{"no reference", tupleTy{[]ty{tyStringNode}}, false},
-		{"a name that holds the rule's", ruleTy{"x_m"}, false},
+		{"element", compile.TupleTy{Elems: []compile.Ty{compile.TyStringNode, compile.OptTy{Elem: compile.RuleTy{Name: "_m"}}}}, true},
+		{"list", compile.ListTy{Elem: compile.RuleTy{Name: "_m"}}, true},
+		{"join", compile.JoinTy{Alts: []compile.Ty{compile.TyStringNode, compile.RuleTy{Name: "_m"}}}, true},
+		{"capture", compile.NodeTy{Value: compile.TyStringNode, Caps: []compile.CapIndex{{Name: "x", Paths: [][]int{{0}}, T: compile.RuleTy{Name: "_m"}}}}, true},
+		{"capture set", compile.NodeTy{Value: compile.TyStringNode, Caps: []compile.CapIndex{{Name: "x", Paths: [][]int{{0}}, T: compile.TyStringNode, Maybe: true, Set: compile.RuleTy{Name: "_m"}}}}, true},
+		{"no reference", compile.TupleTy{Elems: []compile.Ty{compile.TyStringNode}}, false},
+		{"a name that holds the rule's", compile.RuleTy{Name: "x_m"}, false},
 	} {
-		out := pruneSpliceTypes(p.staticProgram, rules, map[string]ty{"main": c.main, "_m": tyStringNode})
+		out := compile.PruneSpliceTypes(p.staticProgram, rules, map[string]compile.Ty{"main": c.main, "_m": compile.TyStringNode})
 		if _, got := out["_m"]; got != c.kept {
 			t.Errorf("%s: kept %v, want %v", c.name, got, c.kept)
 		}

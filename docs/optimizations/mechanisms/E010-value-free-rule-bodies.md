@@ -46,8 +46,8 @@ wholly to body elision; current isolated all-backend effects are unmeasured.
 Evidence records:
 [001](../001-value-free-rule-bodies-value-free-twins-transient-rules-0b2c903.md).
 
-Source owners: [`leanBody`](../../../internal/engine/compile.go),
-[`walker.compileRule`](../../../internal/engine/compile_walk.go), [`body value
+Source owners: [`leanBody`](../../../internal/compile/compile.go),
+[`Walker.compileRule`](../../../internal/compile/compile_walk.go), [`body value
 lowering`](../../../internal/engine/gen.go), [`direct body build
 mode`](../../../internal/engine/gen_flowrule.go), [`TypeScript body build
 mode`](../../../internal/engine/gen_ts.go).

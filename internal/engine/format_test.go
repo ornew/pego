@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -21,7 +22,7 @@ func TestFormatPreservesMinusSemantics(t *testing.T) {
 		"type P = { N int }\nrule main P = \"a\" $$ => P{N: - -1}",
 	} {
 		t.Run(src, func(t *testing.T) {
-			for _, options := range []Options{{}, {DisableMemo: true}} {
+			for _, options := range []compile.Options{{}, {DisableMemo: true}} {
 				before := mustCompile(t, src, options)
 				after := mustCompile(t, grammar.Format(before.Grammar), options)
 				for _, input := range []string{"", "a", "b", "aa", "ab", "ac"} {
@@ -90,7 +91,7 @@ func TestFormatPreservesCorpus(t *testing.T) {
 			if len(s.inputs) == 0 {
 				return
 			}
-			p1, p2 := mustCompile(t, s.src, Options{noProjections: true}), mustCompile(t, formatted, Options{noProjections: true})
+			p1, p2 := mustCompile(t, s.src, compile.Options{NoProjections: true}), mustCompile(t, formatted, compile.Options{NoProjections: true})
 			for _, input := range s.inputs {
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					opts := ParseOptions{Unit: unit}

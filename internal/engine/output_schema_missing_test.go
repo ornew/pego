@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 const missingSchemaGrammar = `type P = { M missing; E error; O *missing; L []missing }
@@ -16,7 +18,7 @@ func missingSchema(t *testing.T) *OutputSchema {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := Compile(g, Options{})
+	p, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}

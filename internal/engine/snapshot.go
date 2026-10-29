@@ -11,6 +11,7 @@ import (
 	"unsafe"
 	"weak"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -303,8 +304,8 @@ func (d *Document) SnapshotWith(o ParseOptions) (*Snapshot, error) {
 }
 
 func (d *Document) snapshotWith(o ParseOptions, legacy **value.Node) (*Snapshot, error) {
-	if d.prog.hasMissing || o.MissingTokens != 0 {
-		return nil, missingUnsupported("Document parsing")
+	if d.prog.HasMissing || o.MissingTokens != 0 {
+		return nil, compile.MissingUnsupported("Document parsing")
 	}
 	var observed *snapshotContext
 	if o.Context != nil {

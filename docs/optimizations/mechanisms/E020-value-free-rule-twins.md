@@ -32,9 +32,9 @@ twins. No current isolated twin effect is reported.
 Evidence records:
 [001](../001-value-free-rule-bodies-value-free-twins-transient-rules-0b2c903.md).
 
-Source owners: [`compiler.twinOf and
-staticRule.twinOK`](../../../internal/engine/compile.go), [`twin rule
-bytecode`](../../../internal/engine/bcompile.go), [`all rule/twin
+Source owners: [`Compiler.twinOf and
+Rule.TwinOK`](../../../internal/compile/compile.go), [`twin rule
+bytecode`](../../../internal/compile/bcompile.go), [`all rule/twin
 generation`](../../../internal/engine/gen.go), [`TypeScript twin rule
 generation`](../../../internal/engine/gen_ts.go).
 

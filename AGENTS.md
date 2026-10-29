@@ -28,7 +28,7 @@ with implementation changes; regenerate generated files.
 ## Development and checks
 
 - Public APIs: `pego.go`, `grammar/`; parser/compiler: `internal/syntax/`,
-  `internal/engine/`; generated parsers: `parsers/`.
+  `internal/compile/`, `internal/engine/`; generated parsers: `parsers/`.
 - Use Go 1.27.1. Run `go test -timeout=30m ./...` for the root module. After
   engine or generator changes, run `go generate ./parsers ./bench` and
   `parsers/test.sh`. For site changes, run `cd site && go test ./...` and the

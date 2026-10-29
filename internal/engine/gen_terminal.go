@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/ir/core"
 	"github.com/ornew/pego/internal/value"
 )
@@ -189,7 +190,7 @@ func (t *terminalProgram) emit(e grammar.Expr) {
 	case *grammar.CharClass:
 		t.code = append(t.code, terminalClass, 4)
 		t.word(t.class(e))
-		t.word(int(g.desc(charClassString(e))))
+		t.word(int(g.desc(compile.CharClassString(e))))
 	case *grammar.Seq:
 		at := t.open(terminalSeq)
 		for _, it := range e.Items {
@@ -265,7 +266,7 @@ func (t *terminalProgram) first(e grammar.Expr) (*grammar.CharClass, expID, bool
 		r, _ := utf8.DecodeRuneInString(e.Value)
 		return &grammar.CharClass{Ranges: []grammar.CharRange{{Lo: r, Hi: r}}}, g.desc(strconv.Quote(e.Value)), true
 	case *grammar.CharClass:
-		return e, g.desc(charClassString(e)), true
+		return e, g.desc(compile.CharClassString(e)), true
 	case *grammar.Seq:
 		if len(e.Items) > 0 {
 			return t.first(e.Items[0])

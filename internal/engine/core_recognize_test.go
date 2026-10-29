@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
 )
@@ -18,7 +19,7 @@ func coreRecognizeCase(name, mode string, g *generator) (*coreGenCase, error) {
 		return nil, err
 	}
 	c := &coreGenCase{name: name, mode: mode, table: "recRules", golden: recognizerGolden, gen: g, origin: map[core.Node]grammar.Expr{}}
-	c.rules = append(append([]*staticRule(nil), rec.rules...), rec.twins...)
+	c.rules = append(append([]*compile.Rule(nil), rec.RuleList...), rec.Twins...)
 	m, err := buildCoreFrom(rec, c.origin)
 	if err != nil {
 		return nil, err

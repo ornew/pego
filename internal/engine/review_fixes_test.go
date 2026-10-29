@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 // A fold whose accumulator keeps growing in nesting depth does not converge; the callback result
@@ -27,13 +29,13 @@ func TestFoldAccumulatorMustConverge(t *testing.T) {
 func TestCompiledBytesIgnoreLayoutWithoutSourceInfo(t *testing.T) {
 	const a = "rule main = x:(n / w) $$ => $x.(Num)\n" + castRules
 	b := "\n\n  " + strings.ReplaceAll(a, " => ", "   =>   ")
-	bytesOf := func(src string, opts ...Options) []byte {
+	bytesOf := func(src string, opts ...compile.Options) []byte {
 		t.Helper()
 		g, err := parseTest(src)
 		if err != nil {
 			t.Fatal(err)
 		}
-		o := Options{}
+		o := compile.Options{}
 		if len(opts) > 0 {
 			o = opts[0]
 		}
@@ -50,7 +52,7 @@ func TestCompiledBytesIgnoreLayoutWithoutSourceInfo(t *testing.T) {
 	if !bytes.Equal(bytesOf(a), bytesOf(b)) {
 		t.Error("compiled bytes depend on whitespace without source information")
 	}
-	if bytes.Equal(bytesOf(a, Options{SourceInfo: true}), bytesOf(b, Options{SourceInfo: true})) {
+	if bytes.Equal(bytesOf(a, compile.Options{SourceInfo: true}), bytesOf(b, compile.Options{SourceInfo: true})) {
 		t.Error("compiled bytes with source information lack the cast position")
 	}
 }

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 func inferredChain(depth int, reverse bool, mainType string) string {
@@ -36,7 +38,7 @@ func TestInferenceDependencyChains(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				_, err = Compile(g, Options{})
+				_, err = Compile(g, compile.Options{})
 				if err == nil || !strings.Contains(err.Error(), "produces P, which is not assignable to node[string]") {
 					t.Errorf("long-chain type mismatch: %v", err)
 				}
@@ -151,7 +153,7 @@ func BenchmarkInferenceDependencies(b *testing.B) {
 			}
 			b.ReportAllocs()
 			for b.Loop() {
-				if _, err := Compile(g, Options{}); err != nil {
+				if _, err := Compile(g, compile.Options{}); err != nil {
 					b.Fatal(err)
 				}
 			}
@@ -213,7 +215,7 @@ func TestInferenceChainFieldMismatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = Compile(g, Options{})
+	_, err = Compile(g, compile.Options{})
 	if err == nil || !strings.Contains(err.Error(), "cannot use P as node[string] in field Value of Holder") {
 		t.Errorf("long-chain field mismatch: %v", err)
 	}
@@ -223,27 +225,27 @@ func TestInferenceChainFieldMismatch(t *testing.T) {
 // refers to replaced by their values at the top level and in unions and optional types. RuleType
 // refers to a rule without a declared type by name instead.
 func inferredType(p *Program, name string) (string, bool) {
-	t, ok := p.typed.values[name]
+	t, ok := p.Typed.Values[name]
 	if !ok {
 		return "", false
 	}
-	v := &valueInference{prog: p.staticProgram, out: p.typed.values}
-	return v.expand(t).String(), true
+	v := &compile.ValueInference{Prog: p.staticProgram, Out: p.Typed.Values}
+	return v.Expand(t).String(), true
 }
 
 // captureType returns the type of the capture cap in the value of the rule name, after checkTypes:
 // the union of the types of all captures of that name.
 func captureType(p *Program, name, cap string) (string, bool) {
-	t, ok := p.typed.values[name]
+	t, ok := p.Typed.Values[name]
 	if !ok {
 		return "", false
 	}
-	v := &valueInference{prog: p.staticProgram, out: p.typed.values}
-	n, ok := v.expand(t).(nodeTy)
+	v := &compile.ValueInference{Prog: p.staticProgram, Out: p.Typed.Values}
+	n, ok := v.Expand(t).(compile.NodeTy)
 	if !ok {
 		return "", false
 	}
-	ct, ok := capType(n.caps, cap)
+	ct, ok := compile.CapType(n.Caps, cap)
 	if !ok {
 		return "", false
 	}

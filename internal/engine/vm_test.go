@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -15,14 +16,14 @@ import (
 func TestBackendsMatchOnCorpus(t *testing.T) {
 	for _, c := range genCorpus(t) {
 		t.Run(c.name, func(t *testing.T) {
-			for _, o := range []Options{{}, {DisableMemo: true}} {
+			for _, o := range []compile.Options{{}, {DisableMemo: true}} {
 				prog := mustCompile(t, c.src, o)
 				for _, in := range c.inputs {
 					checkBackends(t, prog, "main", in)
 				}
 			}
-			// Projected repetitions (project.go) give what the repetitions as written give.
-			prog, plain := mustCompile(t, c.src), mustCompile(t, c.src, Options{noProjections: true})
+			// Projected repetitions (internal/compile/project.go) give what the repetitions as written give.
+			prog, plain := mustCompile(t, c.src), mustCompile(t, c.src, compile.Options{NoProjections: true})
 			for _, in := range c.inputs {
 				for _, u := range []PositionUnit{CodePoints, Bytes} {
 					n1, err1 := prog.ParseWith("main", in, ParseOptions{Unit: u})
@@ -124,7 +125,7 @@ rule e = #operators {
     level { postfix "!" }
 }`
 	for _, disableMemo := range []bool{false, true} {
-		prog := mustCompile(t, src, Options{DisableMemo: disableMemo})
+		prog := mustCompile(t, src, compile.Options{DisableMemo: disableMemo})
 		for _, tc := range []struct {
 			input string
 			depth int

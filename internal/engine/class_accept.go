@@ -1,6 +1,10 @@
 package engine
 
-import "github.com/ornew/pego/grammar"
+import (
+	"github.com/ornew/pego/grammar"
+
+	"github.com/ornew/pego/internal/compile"
+)
 
 // classAccept returns the membership test of a character class. Classes of one or two ranges,
 // which are most of them, compare against constants; others test ASCII characters with a bitmap.
@@ -46,11 +50,11 @@ func classAccept(e *grammar.CharClass) func(*parser, rune) bool {
 	}
 }
 
-func classAcceptControlled(e *grammar.CharClass, control *compileControl) func(*parser, rune) bool {
+func classAcceptControlled(e *grammar.CharClass, control *compile.Control) func(*parser, rune) bool {
 	if control == nil || len(e.Ranges) <= 2 {
 		return classAccept(e)
 	}
-	ranges := copyClassRanges(e.Ranges, control)
+	ranges := compile.CopyClassRanges(e.Ranges, control)
 	neg := e.Negated
 	slow := func(r rune) bool {
 		for _, rg := range ranges {
@@ -60,7 +64,7 @@ func classAcceptControlled(e *grammar.CharClass, control *compileControl) func(*
 		}
 		return neg
 	}
-	ascii := classASCII(ranges, neg, control)
+	ascii := compile.ClassASCII(ranges, neg, control)
 	return func(p *parser, r rune) bool {
 		if uint32(r) < 128 {
 			return ascii[r>>6]&(1<<(r&63)) != 0

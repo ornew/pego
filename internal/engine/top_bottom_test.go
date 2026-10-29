@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -71,7 +72,7 @@ func TestTopBottomTypes(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
-		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if _, err := Compile(g, compile.Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%q: got %v, want %q", tc.src, err, tc.want)
 		}
 	}
@@ -94,7 +95,7 @@ func TestTopBottomTypes(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%q: %v", src, err)
 		}
-		if _, err := Compile(g, Options{}); err != nil {
+		if _, err := Compile(g, compile.Options{}); err != nil {
 			t.Errorf("%q: %v", src, err)
 		}
 	}
@@ -108,7 +109,7 @@ func TestTopBottomListCheck(t *testing.T) {
 		{"*[]_ | int", "*([]_ | int)"},
 	} {
 		src := "type T = { A " + tc.field + " }\ntype U = { F _ }\nrule main = x:\"a\" => T{A: U{F: \"s\"}.F.(" + tc.field + ")}\nrule ok = x:\"a\"* => T{A: U{F: $x.Value}.F.(" + tc.field + ")}\nrule rule []_ = x:\"a\"* => U{F: $x.Value}.F.([]_)\nrule bad []_ = x:\"a\" => U{F: $x}.F.([]_)"
-		for _, opts := range []Options{{}} {
+		for _, opts := range []compile.Options{{}} {
 			program := mustCompile(t, src, opts)
 			data, err := program.MarshalBinary("main")
 			if err != nil {
@@ -145,7 +146,7 @@ func TestTopBottomReportedOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = Compile(g, Options{})
+	_, err = Compile(g, compile.Options{})
 	if err == nil || strings.Count(err.Error(), "_|_") != 1 || strings.Contains(err.Error(), "never") {
 		t.Fatalf("got %v, want one _|_ error", err)
 	}
@@ -153,7 +154,7 @@ func TestTopBottomReportedOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = Compile(g, Options{}); err == nil || strings.Count(err.Error(), "_|_") != 1 {
+	if _, err = Compile(g, compile.Options{}); err == nil || strings.Count(err.Error(), "_|_") != 1 {
 		t.Fatalf("got %v, want one _|_ error", err)
 	}
 	// An empty meet (only an AST can hold one) is _.
@@ -162,7 +163,7 @@ func TestTopBottomReportedOnce(t *testing.T) {
 		t.Fatal(err)
 	}
 	g.Types()[0].(*grammar.TypeDef).Struct().Fields[0].Type = &grammar.MeetType{}
-	if _, err := Compile(g, Options{}); err != nil {
+	if _, err := Compile(g, compile.Options{}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -182,7 +183,7 @@ func TestTopBottomLocationsAreRejected(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
-		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if _, err := Compile(g, compile.Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%q: got %v, want %q", tc.src, err, tc.want)
 		}
 	}
@@ -191,7 +192,7 @@ func TestTopBottomLocationsAreRejected(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), "cannot use int") {
+	if _, err := Compile(g, compile.Options{}); err == nil || !strings.Contains(err.Error(), "cannot use int") {
 		t.Fatalf("got %v, want a type error", err)
 	}
 }

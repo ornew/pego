@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -52,7 +53,7 @@ func TestReservedTypeSyntax(t *testing.T) {
 		"rule main = \"a\" => [](node[string], node[_]){}",
 		"type A ~ node[node[string]] | node[int]\nrule main = \"a\"",
 	} {
-		for _, opts := range []Options{{}} {
+		for _, opts := range []compile.Options{{}} {
 			g, err := parseTest(src)
 			if err != nil {
 				t.Fatalf("%q: %v", src, err)
@@ -71,7 +72,7 @@ func TestReservedTypeSyntax(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
-		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if _, err := Compile(g, compile.Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%q: got %v, want %q", tc.src, err, tc.want)
 		}
 	}
@@ -86,7 +87,7 @@ func TestReservedTypeSyntax(t *testing.T) {
 		{"type T = { F Nope[int] }\nrule main = \"a\"", "undefined type Nope"},
 		{"rule main Nope[int] = \"a\"", "undefined type Nope"},
 	} {
-		for _, opts := range []Options{{}} {
+		for _, opts := range []compile.Options{{}} {
 			g, err := parseTest(tc.src)
 			if err != nil {
 				t.Fatalf("%q: %v", tc.src, err)
@@ -104,7 +105,7 @@ func TestReservedTypeSyntax(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), "undefined type Nope") || strings.Contains(err.Error(), "takes no type arguments") {
+	if _, err := Compile(g, compile.Options{}); err == nil || !strings.Contains(err.Error(), "undefined type Nope") || strings.Contains(err.Error(), "takes no type arguments") {
 		t.Fatalf("got %v", err)
 	}
 	// A type used from several places, also by the checks of separate actions, is reported once.
@@ -112,7 +113,7 @@ func TestReservedTypeSyntax(t *testing.T) {
 		"type A ~ node[string, int]\nrule main A = \"a\"\nrule other A = \"b\"",
 		"type A ~ node[string, int]\nrule main = x:\"a\" {$x.(A) == $x} => $x.(A)",
 	} {
-		for _, opts := range []Options{{}} {
+		for _, opts := range []compile.Options{{}} {
 			g, err := parseTest(src)
 			if err != nil {
 				t.Fatal(err)
@@ -132,7 +133,7 @@ func TestNodeStringType(t *testing.T) {
 		"rule main = x:\"a\" => $x.(node[string])",
 		"type W = { V int }\ntype T ~ node[string] | W\nrule main T = \"a\"",
 	} {
-		for _, opts := range []Options{{}} {
+		for _, opts := range []compile.Options{{}} {
 			g, err := parseTest(src)
 			if err != nil {
 				t.Fatalf("%q: %v", src, err)
@@ -155,7 +156,7 @@ func TestNodeStringType(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if _, err := Compile(g, compile.Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%q: got %v, want %q", tc.src, err, tc.want)
 		}
 	}
@@ -163,7 +164,7 @@ func TestNodeStringType(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := Compile(g, Options{})
+	p, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,7 +235,7 @@ func TestReservedUnnamedStructType(t *testing.T) {
 		{"type A ~ { A node[string] }\nrule main = x:\"a\" => []A{$x}\nrule b = x:\"a\" => []A{$x}", "1:10"},
 		{"type A ~ { A node[string] }\nrule main = x:\"a\" {[]A{$x} == nil} => []A{$x}", "1:10"},
 	} {
-		for _, opts := range []Options{{}} {
+		for _, opts := range []compile.Options{{}} {
 			g, err := parseTest(tc.src)
 			if err != nil {
 				t.Fatalf("%q: %v", tc.src, err)
@@ -287,7 +288,7 @@ rule opt *TYPE = x:val? => $x`
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), "node takes a type argument: write node[T] with the type T of the node's value") {
+		if _, err := Compile(g, compile.Options{}); err == nil || !strings.Contains(err.Error(), "node takes a type argument: write node[T] with the type T of the node's value") {
 			t.Errorf("%s: got %v", typ, err)
 		}
 	}
@@ -303,7 +304,7 @@ rule cast = x:"a" => S{F: 1}`
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, err = Compile(g, Options{})
+		_, err = Compile(g, compile.Options{})
 		if err == nil {
 			t.Fatalf("%s: accepted", typ)
 		}

@@ -6,6 +6,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -209,9 +210,9 @@ func (p *parser) setValueField(fs *value.Fields, name string, v any) {
 
 func (p *parser) hasValueField(st *grammar.TypeDef, name string) bool {
 	if !workControlsEnabled || p.control == nil {
-		return fieldOf(st, name) != nil
+		return compile.FieldOf(st, name) != nil
 	}
-	for _, f := range defFields(st) {
+	for _, f := range compile.DefFields(st) {
 		p.stepWork()
 		if p.valueEqual(f.Name, name) {
 			return true
@@ -237,7 +238,7 @@ func (p *parser) lookupValue(name string) (any, bool) {
 // compiler's setup-time analysis. Charge that runtime grammar walk as steps.
 func (p *parser) fusable(t *grammar.Call) bool {
 	if !workControlsEnabled || p.control == nil {
-		return fusable(t)
+		return compile.Fusable(t)
 	}
 	for _, a := range t.Args {
 		p.stepWork()

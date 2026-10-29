@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 var outputSchemaExportSink *OutputSchema
@@ -30,7 +32,7 @@ func BenchmarkOutputSchemaExport(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			p, err := Compile(g, Options{})
+			p, err := Compile(g, compile.Options{})
 			if err != nil {
 				b.Fatal(err)
 			}

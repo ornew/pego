@@ -190,7 +190,7 @@ func (p *parser) traceEnter(r *rule, min int) {
 	t.stack = append(t.stack, tracedCallState{r: r, min: min, start: p.pos, evals: p.stats.Evaluated, resumed: p.resumed, hw: p.hw, rec: len(p.recovered)})
 	p.hw = p.pos
 	t.stack[len(t.stack)-1].exp = p.isolate(p.pos)
-	t.emit(TraceEvent{Kind: TraceEnter, Rule: r.name, Level: min, Depth: len(t.stack), Pos: p.pos, Lookahead: p.silent > 0, p: p})
+	t.emit(TraceEvent{Kind: TraceEnter, Rule: r.Name, Level: min, Depth: len(t.stack), Pos: p.pos, Lookahead: p.silent > 0, p: p})
 }
 
 // traceExit reports the end of the innermost call in progress, whose result is ok.
@@ -199,7 +199,7 @@ func (p *parser) traceExit(ok bool) {
 	c := t.stack[len(t.stack)-1]
 	all := p.stats.Evaluated - c.evals
 	far, inner := p.unisolate(c.exp)
-	ev := TraceEvent{Kind: TraceExit, Rule: c.r.name, Level: c.min, Depth: len(t.stack), Pos: c.start,
+	ev := TraceEvent{Kind: TraceExit, Rule: c.r.Name, Level: c.min, Depth: len(t.stack), Pos: c.start,
 		Lookahead: p.silent > 0, Matched: ok, End: c.start, Memo: all == 0, Evals: all - c.nested,
 		Examined: p.hw, ReusedElements: p.resumed - c.resumed, p: p, far: far, exp: inner}
 	if ok {

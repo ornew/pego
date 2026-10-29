@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -62,7 +63,7 @@ func TestRawInvalidASTLiterals(t *testing.T) {
 				// Share the raw string with an action constant/string-table entry. VM
 				// preparation must normalize matching data without changing action values.
 				g.Rules()[0].Action.(*grammar.New).Fields[1].Value.(*grammar.StringLit).Value = raw
-				p, err := Compile(g, Options{})
+				p, err := Compile(g, compile.Options{})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -72,7 +73,7 @@ func TestRawInvalidASTLiterals(t *testing.T) {
 				canonical := mustParse(src)
 				replaceFirstLiteral(canonical.Rules()[0].Expr, string([]rune(raw)))
 				canonical.Rules()[0].Action.(*grammar.New).Fields[1].Value.(*grammar.StringLit).Value = raw
-				want, err := Compile(canonical, Options{})
+				want, err := Compile(canonical, compile.Options{})
 				if err != nil {
 					t.Fatal(err)
 				}

@@ -5,6 +5,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 // BenchmarkDocumentChangesSnapshotEdit compares identical same-length middle
@@ -15,7 +17,7 @@ import (
 // does not model shifted spans, Unicode edits, errors, or slow consumers.
 func BenchmarkDocumentChangesSnapshotEdit(b *testing.B) {
 	prog, err := Compile(mustParse(`rule main = item* $$
-rule item = [a-z]`), Options{})
+rule item = [a-z]`), compile.Options{})
 	if err != nil {
 		b.Fatal(err)
 	}

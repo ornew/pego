@@ -34,7 +34,7 @@ four ways:
   evaluation of a body can scan any amount of input, and the memo does not share that scan with evaluations that start
   at later positions.
 - Rules on a left-recursion cycle that are not its leader are not memoized
-  (`compileProgram` in `internal/engine/compile.go`: `memo = !DisableMemo && !cyclic`).
+  (`CompileProgram` in `internal/compile/compile.go`: `memo = !DisableMemo && !cyclic`).
 - A left-recursion leader grows a seed at each position, and Operators Rules fold operators at each position. The
   result at p shares nothing with the result at p+1.
 - Rules that read variables are memoized per combination of values
@@ -222,13 +222,13 @@ hint with a witness, not a proof that a slow input exists.
 
 ### Where It Plugs In
 
-- `internal/engine/analysis.go` already computes, over the grammar AST:
-  - nullability, rules that always succeed, the left-call graph, its SCCs and leaders, and the cycle members (`analyzeControlled`, lines 31-153);
-  - the variables each rule reads (`ruleVariables`, line 298);
+- `internal/compile/analysis.go` already computes, over the grammar AST:
+  - nullability, rules that always succeed, the left-call graph, its SCCs and leaders, and the cycle members (`AnalyzeControlled`);
+  - the variables each rule reads (`RuleVariables`);
   - the transient rules (`compile.go`).
 
   The classifier is a further pass over the same data, run on demand and not at every compile. L1 extends
-  `ruleVariables` with the expressions each binding reads. L2 reads `cyclic` and `leaders`.
+  `RuleVariables` with the expressions each binding reads. L2 reads `cyclic` and `leaders`.
 - Core IR carries the facts that L3 needs, per node:
   - first terminals and nullability ([Attributes and Effects](../../../spec/core-ir/attributes.md#first-terminals));
   - effect summaries that say which nodes can fail and consume (`internal/ir/core/attrs.go`, `Analyze`);

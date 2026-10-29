@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 )
 
 func TestNormalizationCopyOnChangeParity(t *testing.T) {
@@ -39,8 +40,8 @@ rule main (Alias) = {count := (1)} {(count == 1)} n:([0-9]+) => (Number{Text: (t
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, gotErr := normalizeAttributesWithCopies(g, false)
-			want, wantErr := normalizeAttributesWithCopies(g, true)
+			got, gotErr := compile.NormalizeAttributesWithCopies(g, false)
+			want, wantErr := compile.NormalizeAttributesWithCopies(g, true)
 			if !reflect.DeepEqual(gotErr, wantErr) || !reflect.DeepEqual(got, want) {
 				t.Fatalf("normalization differs: got %#v / %v; want %#v / %v", got, gotErr, want, wantErr)
 			}
@@ -51,8 +52,8 @@ rule main (Alias) = {count := (1)} {(count == 1)} n:([0-9]+) => (Number{Text: (t
 			if gotErr != nil {
 				return
 			}
-			optimized, optimizedErr := Compile(g, Options{})
-			eager, eagerErr := Compile(g, Options{eagerAttributeCopies: true})
+			optimized, optimizedErr := Compile(g, compile.Options{})
+			eager, eagerErr := Compile(g, compile.Options{EagerAttributeCopies: true})
 			if !reflect.DeepEqual(optimizedErr, eagerErr) {
 				t.Fatalf("compile errors differ: %v / %v", optimizedErr, eagerErr)
 			}
@@ -93,16 +94,16 @@ func TestNormalizationContainerShapes(t *testing.T) {
 		&grammar.Attributed{Expr: literal, Attrs: []*grammar.Attribute{{Name: "custom", Args: []any{nil, map[string]any{"x": []int{1, 2}}}, KwArgs: map[string]any{"x": []int{3}}}}},
 	} {
 		g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: expr}}}}
-		got, gotErr := normalizeAttributesWithCopies(g, false)
-		want, wantErr := normalizeAttributesWithCopies(g, true)
+		got, gotErr := compile.NormalizeAttributesWithCopies(g, false)
+		want, wantErr := compile.NormalizeAttributesWithCopies(g, true)
 		if !reflect.DeepEqual(gotErr, wantErr) || !reflect.DeepEqual(got, want) {
 			t.Fatalf("%T: normalized shape differs", expr)
 		}
 	}
 	for _, statements := range [][]grammar.Decl{nil, {}} {
 		g := &grammar.Grammar{File: grammar.File{Decls: statements}}
-		got, _ := normalizeAttributesWithCopies(g, false)
-		want, _ := normalizeAttributesWithCopies(g, true)
+		got, _ := compile.NormalizeAttributesWithCopies(g, false)
+		want, _ := compile.NormalizeAttributesWithCopies(g, true)
 		if !reflect.DeepEqual(got, want) {
 			t.Fatal("empty grammar shape differs")
 		}
@@ -116,8 +117,8 @@ func TestNormalizationAttributeBindingDoesNotMutate(t *testing.T) {
 			key = "skip"
 		}
 		a := &grammar.Attribute{Name: name, Pragma: name == "recover", Args: []any{&grammar.Literal{Value: "x"}}, KwArgs: map[string]any{"custom": []int{1, 2}}}
-		n := &attributeNormalizer{}
-		bound := n.bind(n.attribute(a), key)
+		n := &compile.AttributeNormalizer{}
+		bound := n.Bind(n.Attribute(a), key)
 		if len(a.Args) != 1 || len(a.KwArgs) != 1 || len(bound.Args) != 0 || len(bound.KwArgs) != 2 {
 			t.Fatal("binding mutated source")
 		}
@@ -132,7 +133,7 @@ func TestNormalizationSharesUnchangedNodes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	normalized, err := normalizeAttributes(g)
+	normalized, err := compile.NormalizeAttributes(g)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,7 +144,7 @@ func TestNormalizationSharesUnchangedNodes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	normalized, err = normalizeAttributes(g)
+	normalized, err = compile.NormalizeAttributes(g)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,7 +192,7 @@ func BenchmarkAttributeNormalization(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
 					var err error
-					normalizationBenchmarkGrammar, err = normalizeAttributesWithCopies(g, eager)
+					normalizationBenchmarkGrammar, err = compile.NormalizeAttributesWithCopies(g, eager)
 					if err != nil {
 						b.Fatal(err)
 					}
@@ -201,7 +202,7 @@ func BenchmarkAttributeNormalization(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
 					var err error
-					normalizationBenchmarkProgram, err = Compile(g, Options{eagerAttributeCopies: eager})
+					normalizationBenchmarkProgram, err = Compile(g, compile.Options{EagerAttributeCopies: eager})
 					if err != nil {
 						b.Fatal(err)
 					}
@@ -214,7 +215,7 @@ func BenchmarkAttributeNormalization(b *testing.B) {
 					if err != nil {
 						b.Fatal(err)
 					}
-					normalizationBenchmarkProgram, err = Compile(ast, Options{eagerAttributeCopies: eager})
+					normalizationBenchmarkProgram, err = Compile(ast, compile.Options{EagerAttributeCopies: eager})
 					if err != nil {
 						b.Fatal(err)
 					}

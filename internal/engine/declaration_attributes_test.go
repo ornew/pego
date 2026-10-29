@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 )
 
 func TestUnknownDeclarationAttribute(t *testing.T) {
@@ -18,7 +19,7 @@ func TestUnknownDeclarationAttribute(t *testing.T) {
 	// A declaration attribute is never a # pragma.
 	g := mustParse("rule a = \"x\"\n")
 	g.Rules()[0].Attrs = []*grammar.Attribute{{Name: "atomic", Pragma: true}}
-	if _, err := Compile(g, Options{}); err == nil || err.Error() != "unknown declaration attribute #atomic" {
+	if _, err := Compile(g, compile.Options{}); err == nil || err.Error() != "unknown declaration attribute #atomic" {
 		t.Errorf("pragma: %v", err)
 	}
 }

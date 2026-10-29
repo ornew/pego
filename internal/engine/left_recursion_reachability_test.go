@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -62,7 +63,7 @@ func TestLeftRecursionIgnoresUnreachableRecoveryChain(t *testing.T) {
 			}
 			fmt.Fprintf(&original, "rule chain%d = \"\"", depth)
 			fmt.Fprintf(&removed, "rule chain%d = \"\"", depth)
-			for _, options := range []Options{{}, {DisableMemo: true}} {
+			for _, options := range []compile.Options{{}, {DisableMemo: true}} {
 				p, q := mustCompile(t, original.String(), options), mustCompile(t, removed.String(), options)
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 					for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -82,7 +83,7 @@ func TestLeftRecursionIgnoresUnreachableRecoveryChain(t *testing.T) {
 func TestLeftRecursionReachabilitySavedAndDocuments(t *testing.T) {
 	for _, c := range reachabilityGeneratedCases {
 		t.Run(c.name, func(t *testing.T) {
-			for _, options := range []Options{{}, {DisableMemo: true}} {
+			for _, options := range []compile.Options{{}, {DisableMemo: true}} {
 				p := mustCompile(t, c.src, options)
 				for _, mode := range valueModes {
 					q := saveLoad(t, p, "main", mode)
@@ -131,7 +132,7 @@ func TestLeftRecursionReachabilitySavedAndDocuments(t *testing.T) {
 }
 
 func TestLeftRecursionRecoverySkipStreams(t *testing.T) {
-	for _, options := range []Options{{}, {DisableMemo: true}} {
+	for _, options := range []compile.Options{{}, {DisableMemo: true}} {
 		p := mustCompile(t, `rule main = (a "\n")* #stream $$
 rule a = "x" #recover(skip=a) / "y"`, options)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -166,7 +167,7 @@ func TestLeftRecursionIgnoresUnreachableAlternatives(t *testing.T) {
 	const original = leftRecursionDeadTail
 	const removed = `rule r1 = r2?
 rule r2 = (("a" / r1 / "\n") / ("" / "\n")) #repeat(0, 1)`
-	for _, options := range []Options{{}, {DisableMemo: true}} {
+	for _, options := range []compile.Options{{}, {DisableMemo: true}} {
 		p, q := mustCompile(t, original, options), mustCompile(t, removed, options)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -196,7 +197,7 @@ func TestLeftRecursionUnconditionalSuffixForms(t *testing.T) {
 			prefix := fmt.Sprintf("rule r1 = r2?\nrule r2 = ((\"a\" / r1 / \"\\n\") / (%s)", prior)
 			original := prefix + " / (r2 / $$)) #repeat(0, 1)\nrule empty = \"\"\nrule alias = empty"
 			removed := prefix + ") #repeat(0, 1)\nrule empty = \"\"\nrule alias = empty"
-			for _, options := range []Options{{}, {DisableMemo: true}} {
+			for _, options := range []compile.Options{{}, {DisableMemo: true}} {
 				p, q := mustCompile(t, original, options), mustCompile(t, removed, options)
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 					for _, unit := range []PositionUnit{CodePoints, Bytes} {

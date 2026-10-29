@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -80,17 +81,17 @@ func testGeneratedTypedDirectCuts(t *testing.T) {
 		if c.name == "typed/direct_cut_callee" && !strings.Contains(string(code), "// part, called as by invokePlain (body inlined)") {
 			t.Fatal("callee containing cuts must use the direct typed route")
 		}
-		for _, r := range mustCompile(t, c.src).rules {
-			if !directCuts(r.def.Expr) {
+		for _, r := range mustCompile(t, c.src).RuleList {
+			if !directCuts(r.Def.Expr) {
 				continue
 			}
 			inlined := false
 			for _, route := range []string{"invoked as by invoke", "called as by invokePlain"} {
-				marker := "// " + r.name + ", " + route + " (body inlined)"
+				marker := "// " + r.Name + ", " + route + " (body inlined)"
 				inlined = inlined || strings.Contains(string(code), marker)
 			}
 			if !inlined {
-				t.Fatalf("%s: cut-bearing %s must use the direct typed route", c.name, r.name)
+				t.Fatalf("%s: cut-bearing %s must use the direct typed route", c.name, r.Name)
 			}
 		}
 	}
@@ -100,7 +101,7 @@ func testGeneratedTypedDirectCuts(t *testing.T) {
 // directCuts reports whether the expression contains a cut.
 func directCuts(e grammar.Expr) bool {
 	found := false
-	walkExpr(e, func(e grammar.Expr) {
+	compile.WalkExpr(e, func(e grammar.Expr) {
 		if _, ok := e.(*grammar.Cut); ok {
 			found = true
 		}

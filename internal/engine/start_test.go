@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/syntax"
 	"github.com/ornew/pego/internal/value"
@@ -18,7 +19,7 @@ func compileStarts(t *testing.T, src string) (*Program, error) {
 	if err != nil {
 		t.Fatalf("syntax error: %v\n%s", err, src)
 	}
-	return Compile(g, Options{})
+	return Compile(g, compile.Options{})
 }
 
 func TestStartRules(t *testing.T) {
@@ -116,9 +117,9 @@ func testStartHiddenRule(t *testing.T) {
 		t.Fatal(err)
 	}
 	var helpers []string
-	for _, r := range prog.rules {
-		if hiddenRule(r.name) {
-			helpers = append(helpers, r.name)
+	for _, r := range prog.RuleList {
+		if compile.HiddenRule(r.Name) {
+			helpers = append(helpers, r.Name)
 		}
 	}
 	if len(helpers) != 2 || !slices.Equal(prog.Starts(), []string{"a"}) || prog.DefaultStart() != "a" {
@@ -249,7 +250,7 @@ func TestStartRestriction(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		prog, err := Compile(g, Options{recognize: recognition})
+		prog, err := Compile(g, compile.Options{Recognize: recognition})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -270,7 +271,7 @@ func TestStartRoundTrip(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			prog, err := Compile(g, Options{recognize: recognition})
+			prog, err := Compile(g, compile.Options{Recognize: recognition})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -326,7 +327,7 @@ func TestStartModuleValidation(t *testing.T) {
 		return &m
 	}
 	m := fresh()
-	if err := validateModule(m); err != nil {
+	if err := compile.ValidateModule(m); err != nil {
 		t.Fatal(err)
 	}
 	if len(m.Starts) != 2 || m.DefaultStart != m.Starts[0] {
@@ -354,7 +355,7 @@ func TestStartModuleValidation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			m := fresh()
 			tc.mutate(m)
-			if err := validateModule(m); err == nil || !strings.Contains(err.Error(), tc.want) {
+			if err := compile.ValidateModule(m); err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("got %v, want %s", err, tc.want)
 			}
 		})

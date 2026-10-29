@@ -5,6 +5,7 @@ import (
 	"unicode/utf8"
 	"weak"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -77,8 +78,8 @@ func (prog *Program) NewDocument(start, text string) (*Document, error) {
 // NewDocumentWith creates a Document with options such as the position unit. Positions passed
 // to Edit use the same unit.
 func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (d *Document, err error) {
-	if prog.hasMissing || o.MissingTokens != 0 {
-		return nil, missingUnsupported("Document parsing")
+	if prog.HasMissing || o.MissingTokens != 0 {
+		return nil, compile.MissingUnsupported("Document parsing")
 	}
 	if err := o.validateStreamDiagnostics(false); err != nil {
 		return nil, err
@@ -97,7 +98,7 @@ func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (d *Doc
 	if o.Recognize {
 		return nil, fmt.Errorf("recognition is not supported for documents")
 	}
-	start = prog.resolveStart(start) // an empty name selects the default start rule
+	start = prog.ResolveStart(start) // an empty name selects the default start rule
 	if err := prog.checkMode(o, true); err != nil {
 		return nil, err
 	}
@@ -140,8 +141,8 @@ func (d *Document) ParseWith(o ParseOptions) (*value.Node, error) {
 // parseWithCapture keeps parsing and result capture inside one interruption and
 // cleanup boundary. capture uses the same controller as the parser.
 func (d *Document) parseWithCapture(o ParseOptions, capture func(*parser, *value.Node, error) error) (n *value.Node, err error) {
-	if d.prog.hasMissing || o.MissingTokens != 0 {
-		return nil, missingUnsupported("Document parsing")
+	if d.prog.HasMissing || o.MissingTokens != 0 {
+		return nil, compile.MissingUnsupported("Document parsing")
 	}
 	if err := o.validateStreamDiagnostics(false); err != nil {
 		return nil, err

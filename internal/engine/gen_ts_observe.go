@@ -4,9 +4,10 @@ import (
 	"fmt"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 )
 
-func (g *tsGen) tracePlainCall(r *staticRule, name string) string {
+func (g *tsGen) tracePlainCall(r *compile.Rule, name string) string {
 	if !g.observability {
 		return name
 	}
@@ -22,7 +23,7 @@ function %s(p: Parser): R {
   return v;
 }
 
-`, name, body, tsString(r.name), body)
+`, name, body, tsString(r.Name), body)
 	return body
 }
 
@@ -46,7 +47,7 @@ func (g *tsGen) traceSkipped(expr grammar.Expr) string {
 		case *grammar.Ref:
 			min := 0
 			if e.Level != "" {
-				for i, l := range g.prog.byName[e.Name].def.Expr.(*grammar.OperatorsRule).Levels {
+				for i, l := range g.prog.ByName[e.Name].Def.Expr.(*grammar.OperatorsRule).Levels {
 					if l.Name == e.Level {
 						min = i
 					}

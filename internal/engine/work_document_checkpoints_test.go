@@ -301,7 +301,7 @@ func TestWorkDocumentRunStateClearReservation(t *testing.T) {
 
 func TestWorkDocumentStaleMemoCallReplayIsBounded(t *testing.T) {
 	p := &parser{memo: newMemoTable(), pos: 19, gen: 3, edits: []docEdit{{start: 0, end: 1, delta: 2}, {start: 0, end: 1, delta: 3}, {start: 0, end: 1, delta: 4}}}
-	r := &rule{id: 1}
+	r := &rule{ID: 1}
 	e := &memoEntry{ok: true, end: 12, from: 10, examined: 13, far: 12}
 	p.memo.put(memoKey{rule: 1, pos: 19}, e)
 	e.pos = 10 // A shifted slot can retain older value coordinates until replay.

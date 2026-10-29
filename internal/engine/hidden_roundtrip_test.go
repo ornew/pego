@@ -1,6 +1,10 @@
 package engine
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/ornew/pego/internal/compile"
+)
 
 // A compiled grammar keeps hidden rules and inline actions, with and without default values, and
 // loads to a program that gives the same results on every backend.
@@ -18,7 +22,7 @@ func TestHiddenRulesCompiledRoundTrip(t *testing.T) {
 	}
 	for _, s := range sources {
 		t.Run(s.name, func(t *testing.T) {
-			for _, opts := range []Options{{}, {DefaultValue: true}, {SourceInfo: true}} {
+			for _, opts := range []compile.Options{{}, {DefaultValue: true}, {SourceInfo: true}} {
 				prog := compileBare(t, s.src, opts)
 				for _, mode := range valueModes {
 					loaded := saveLoad(t, prog, "main", mode)

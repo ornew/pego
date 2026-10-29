@@ -7,6 +7,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 )
 
 // Program is a compiled grammar. It can be used by multiple parses concurrently.
@@ -39,59 +40,59 @@ type Program struct {
 
 // newProgram returns the program that runs the static program sp with the rules of the closure
 // backend.
-func newProgram(sp *staticProgram, closureRules []*rule) *Program {
+func newProgram(sp *compile.Program, closureRules []*rule) *Program {
 	prog := &Program{staticProgram: sp, closureRules: closureRules}
-	for _, d := range sp.vars.all() {
-		prog.initEnv = &env{name: d.name, val: d.init, next: prog.initEnv}
+	for _, d := range sp.Vars.All() {
+		prog.initEnv = &env{name: d.Name, val: d.Init, next: prog.initEnv}
 	}
 	return prog
 }
 
 // SourceInfo reports whether the program records source information in its results
 // (Options.SourceInfo).
-func (p *Program) SourceInfo() bool { return p.sourceInfo }
+func (p *Program) SourceInfo() bool { return p.RecordsSourceInfo }
 
 // DefaultValue reports whether the program was compiled to make default values (Options.DefaultValue).
-func (p *Program) DefaultValue() bool { return p.defaultValue }
+func (p *Program) DefaultValue() bool { return p.MakesDefaultValue }
 
 // SourceGrammar returns the grammar the program was compiled from: the grammar as written, without
 // the hidden rules that inline actions are lowered to.
 func (p *Program) SourceGrammar() *grammar.Grammar {
-	if p.source != nil {
-		return p.source
+	if p.Source != nil {
+		return p.Source
 	}
 	return p.Grammar
 }
 
 // Starts returns the start rules of the grammar, the rules marked @start where
 // parsing may begin, in declaration order.
-func (prog *Program) Starts() []string { return slices.Clone(prog.starts) }
+func (prog *Program) Starts() []string { return slices.Clone(prog.StartRules) }
 
 // DefaultStart returns the default start rule: the one marked
 // @start(default), or the only start rule.
-func (prog *Program) DefaultStart() string { return prog.defaultStart }
+func (prog *Program) DefaultStart() string { return prog.DefaultStartRule }
 
 // CheckStart reports an error unless name selects a start rule: it is the name
 // of a start rule, or empty for the default start rule.
-func (prog *Program) CheckStart(name string) error { return prog.checkStart(name) }
+func (prog *Program) CheckStart(name string) error { return prog.staticProgram.CheckStart(name) }
 
 // Module compiles the program to bytecode. The result is stored in the program and reused on
 // subsequent calls.
-func (prog *Program) Module() *bytecode.Module { return prog.bytecodeModule() }
+func (prog *Program) Module() *bytecode.Module { return prog.BytecodeModule() }
 
 // RuleType returns the type of the value of the rule name: its declared type, or the inferred
 // type of its value (for example "[]Expr | node[[]node[string]]"). In an inferred type, a
 // reference to another rule is that rule's declared type, or the rule's name if it has none. It
 // reports false if the program has no such rule or its types were not checked
 // (a program loaded from a compiled grammar).
-func (prog *Program) RuleType(name string) (string, bool) { return prog.ruleType(name) }
+func (prog *Program) RuleType(name string) (string, bool) { return prog.staticProgram.RuleType(name) }
 
 // RuleTypeWithPoll is RuleType with invocation-owned polling for editor display.
 // It does not retain poll. Callback panics propagate unchanged to the caller.
 // Individual allocations and string comparisons/concatenations may finish
 // before the next callback. A nil callback uses the ordinary type renderer.
 func (prog *Program) RuleTypeWithPoll(name string, poll func()) (string, bool) {
-	return prog.ruleTypeWithPoll(name, poll)
+	return prog.staticProgram.RuleTypeWithPoll(name, poll)
 }
 
 // ShapeSignature returns a text that describes the elements and captures that every subexpression
@@ -104,13 +105,13 @@ func (prog *Program) ShapeSignature(name string, poll func()) (string, bool) {
 	if prog == nil {
 		return "", false
 	}
-	return prog.shapeSignature(name, poll)
+	return prog.staticProgram.ShapeSignature(name, poll)
 }
 
 // ValueType returns the type of the value that the rule name builds in the value model (for
 // example "node[(*node[string],)]"). It reports false if the program has no such rule or its
 // types were not checked.
-func (prog *Program) ValueType(name string) (string, bool) { return prog.valueType(name) }
+func (prog *Program) ValueType(name string) (string, bool) { return prog.staticProgram.ValueType(name) }
 
 // Compile compiles the grammar.
 func Compile(g *grammar.Grammar, opts Options) (*Program, error) {
@@ -119,15 +120,15 @@ func Compile(g *grammar.Grammar, opts Options) (*Program, error) {
 
 // build builds a program from the grammar. If flags is not nil, it skips static analysis and
 // type checking and uses flags instead.
-func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error) {
+func build(g *grammar.Grammar, opts compile.Options, flags []compile.RuleFlags) (*Program, error) {
 	return buildControlled(g, opts, flags, nil)
 }
 
-func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, control *compileControl) (*Program, error) {
-	names := inlineNames{}
+func buildControlled(g *grammar.Grammar, opts compile.Options, flags []compile.RuleFlags, control *compile.Control) (*Program, error) {
+	names := compile.InlineNames{}
 	prog, err := buildNamed(g, opts, flags, names, control)
 	if err != nil {
-		return nil, names.rewrite(err)
+		return nil, names.Rewrite(err)
 	}
 	return prog, nil
 }
@@ -148,22 +149,22 @@ func CompileContext(ctx context.Context, g *grammar.Grammar, opts Options) (prog
 	}
 	defer func() {
 		if failure := recover(); failure != nil {
-			if cancelled, ok := failure.(compileCancellation); ok {
-				prog, err = nil, cancelled.err
+			if cancelled, ok := failure.(compile.Cancellation); ok {
+				prog, err = nil, cancelled.Err
 			} else {
 				panic(failure)
 			}
 		}
 	}()
-	return buildControlled(g, opts, nil, &compileControl{ctx: ctx})
+	return buildControlled(g, opts, nil, &compile.Control{Ctx: ctx})
 }
 
 // buildNamed is buildControlled; names receives the hidden rules that the lowering of inline actions
 // generates.
-func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlineNames, control *compileControl) (*Program, error) {
+func buildNamed(g *grammar.Grammar, opts compile.Options, flags []compile.RuleFlags, names compile.InlineNames, control *compile.Control) (*Program, error) {
 	var b *closureBuilder
-	prog, err := compileProgram(g, opts, flags, names, control, func(c *compiler) exprBuilder[matcher] {
-		b = newClosureBuilder(c, !opts.controlledDispatch)
+	prog, err := compile.CompileProgram(g, opts, flags, names, control, func(c *compile.Compiler) compile.ExprBuilder[matcher] {
+		b = newClosureBuilder(c, !opts.ControlledDispatch)
 		return b
 	})
 	if err != nil {

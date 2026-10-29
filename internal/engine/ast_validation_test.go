@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -20,7 +21,7 @@ func TestCompileMalformedAST(t *testing.T) {
 		{"reversed repeat", &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "p", Expr: &grammar.Repeat{Expr: &grammar.Literal{Value: "a"}, Min: 2, Max: 1}}}}}, "$.file.decls[0].expr.max"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			for _, opts := range []Options{{}} {
+			for _, opts := range []compile.Options{{}} {
 				func() {
 					defer func() {
 						if r := recover(); r != nil {
@@ -46,8 +47,8 @@ func testMalformedASTEntryPointsAndPosition(t *testing.T) {
 	e.Expr = e
 	g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "p", Expr: e}}}}
 	for name, run := range map[string]func() error{
-		"compile":           func() error { _, err := Compile(g, Options{}); return err },
-		"saved AST rebuild": func() error { _, err := build(g, Options{}, []ruleFlags{{}}); return err },
+		"compile":           func() error { _, err := Compile(g, compile.Options{}); return err },
+		"saved AST rebuild": func() error { _, err := build(g, compile.Options{}, []compile.RuleFlags{{}}); return err },
 		"Go generator":      func() error { _, err := generateCode(g, gen.GenOptions{Start: "p", Package: "p"}); return err },
 		"typed Go generator": func() error {
 			_, err := generateCode(g, gen.GenOptions{Start: "p", Package: "p", Types: true})
@@ -57,7 +58,7 @@ func testMalformedASTEntryPointsAndPosition(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			err := run()
-			if errs, ok := err.(ErrorList); !ok || len(errs) != 1 || errs[0].Pos != e.Pos || !strings.Contains(err.Error(), "$.file.decls[0].expr.expr") {
+			if errs, ok := err.(compile.ErrorList); !ok || len(errs) != 1 || errs[0].Pos != e.Pos || !strings.Contains(err.Error(), "$.file.decls[0].expr.expr") {
 				t.Fatalf("got %v; want positioned pointer-cycle error", err)
 			}
 		})

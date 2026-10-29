@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 const reparseGrammar = `rule main = line* $$
@@ -127,7 +129,7 @@ rule line = [a-z]+ #atomic "\n" #recover(skip="\n")`,
 // BenchmarkDocumentReparse measures Edit plus Parse. The optional unchanged
 // Parse runs outside the timer; it must not destroy later repetition reuse.
 func BenchmarkDocumentReparse(b *testing.B) {
-	prog, err := Compile(mustParse(reparseGrammar), Options{})
+	prog, err := Compile(mustParse(reparseGrammar), compile.Options{})
 	if err != nil {
 		b.Fatal(err)
 	}

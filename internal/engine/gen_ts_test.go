@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/syntax"
 	"github.com/ornew/pego/internal/value"
@@ -167,8 +168,8 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, op
 		write(name, string(code))
 		files = append(files, name)
 		var in []input
-		// The generated code projects (project.go), and records source information as asked.
-		prog := compileBare(t, c.src, Options{noProjections: true, SourceInfo: opts.SourceInfo})
+		// The generated code projects (internal/compile/project.go), and records source information as asked.
+		prog := compileBare(t, c.src, compile.Options{NoProjections: true, SourceInfo: opts.SourceInfo})
 		for _, s := range c.inputs {
 			in = append(in, input{base64.StdEncoding.EncodeToString([]byte(s)), utf8.ValidString(s)})
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {

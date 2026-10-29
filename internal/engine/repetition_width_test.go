@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -125,7 +126,7 @@ func TestWideRepetitionBounds(t *testing.T) {
 	}
 	for _, c := range wideRepetitionCases() {
 		t.Run(c.name, func(t *testing.T) {
-			for _, options := range []Options{{}, {DisableMemo: true}} {
+			for _, options := range []compile.Options{{}, {DisableMemo: true}} {
 				prog := mustCompile(t, c.src, options)
 				for _, input := range c.inputs {
 					checkBackends(t, prog, "main", input)

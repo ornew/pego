@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"strings"
 	"testing"
 )
@@ -24,29 +25,29 @@ func TestShapeAnalysisPollsContext(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	prog, err := Compile(g, Options{})
+	prog, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if prog.shapeControl != nil {
+	if prog.ShapeControl != nil {
 		t.Fatal("the compilation's control outlives the compilation")
 	}
-	expr := prog.rules[0].def.Expr
-	want := len(shapeElems(prog.staticProgram, expr))
+	expr := prog.RuleList[0].Def.Expr
+	want := len(compile.ShapeElems(prog.staticProgram, expr))
 	if want != items {
 		t.Fatalf("shape has %d elements, want %d", want, items)
 	}
 	ctx := compileTestContext(t, 1<<20)
-	prog.shapeControl = &compileControl{ctx: ctx}
-	if got := len(shapeElems(prog.staticProgram, expr)); got != want {
+	prog.ShapeControl = &compile.Control{Ctx: ctx}
+	if got := len(compile.ShapeElems(prog.staticProgram, expr)); got != want {
 		t.Fatalf("shape with a control has %d elements, want %d", got, want)
 	}
-	if got := checks(ctx); got < items/compilePollStride {
-		t.Errorf("the shape analysis of %d items made %d checks, want at least %d", items, got, items/compilePollStride)
+	if got := checks(ctx); got < items/compile.PollStride {
+		t.Errorf("the shape analysis of %d items made %d checks, want at least %d", items, got, items/compile.PollStride)
 	}
-	prog.shapeControl = nil
+	prog.ShapeControl = nil
 	ctx = compileTestContext(t, 1<<20)
-	shapeElems(prog.staticProgram, expr)
+	compile.ShapeElems(prog.staticProgram, expr)
 	if got := checks(ctx); got != 0 {
 		t.Errorf("without a control the shape analysis checked a context %d times", got)
 	}
@@ -68,11 +69,11 @@ func TestRuleCyclesPollsContext(t *testing.T) {
 		byName[rd.Name] = rd
 	}
 	ctx := compileTestContext(t, 1<<20)
-	cycles := ruleCycles(defs, byName, &compileControl{ctx: ctx})
+	cycles := compile.RuleCycles(defs, byName, &compile.Control{Ctx: ctx})
 	if len(cycles) != rules || len(cycles["r0"]) != rules {
 		t.Fatalf("cycles for %d rules, the first of %d", len(cycles), len(cycles["r0"]))
 	}
-	if got := checks(ctx); got < rules/compilePollStride {
-		t.Errorf("%d rules made %d checks, want at least %d", rules, got, rules/compilePollStride)
+	if got := checks(ctx); got < rules/compile.PollStride {
+		t.Errorf("%d rules made %d checks, want at least %d", rules, got, rules/compile.PollStride)
 	}
 }

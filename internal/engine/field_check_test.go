@@ -13,6 +13,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -172,7 +173,7 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 			if err != nil {
 				t.Fatal(err)
 			}
-			checked, err := Compile(g, Options{})
+			checked, err := Compile(g, compile.Options{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -205,7 +206,7 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 					}
 				}
 				name := fieldCheckValueName(value)
-				msg := fmt.Sprintf("cannot cast %s to %s", name, checked.typed.fields["S"][0].t)
+				msg := fmt.Sprintf("cannot cast %s to %s", name, checked.Typed.Fields["S"][0].T)
 				switch {
 				case in[1] == '!' && accepted:
 					if !strings.Contains(want, yes) {
@@ -314,7 +315,7 @@ func TestCompiledFieldChecksValidation(t *testing.T) {
 		t.Fatalf("earlier instruction set: %v", err)
 	}
 	m := *prog.Module()
-	if err := validateModule(&m); err != nil {
+	if err := compile.ValidateModule(&m); err != nil {
 		t.Fatal(err)
 	}
 	for _, text := range []string{"Other", "[]", "*(Int)", "Int |", "(Int | Match", "Int  | Match", "[]Int)", "", "terminal", "Missing"} {
@@ -325,12 +326,12 @@ func TestCompiledFieldChecksValidation(t *testing.T) {
 				m.Exprs[i].A = int32(len(m.Strings) - 1)
 			}
 		}
-		if err := validateModule(&m); err == nil || !strings.Contains(err.Error(), "invalid field type") {
+		if err := compile.ValidateModule(&m); err == nil || !strings.Contains(err.Error(), "invalid field type") {
 			t.Errorf("type text %q: %v", text, err)
 		}
 	}
 	for _, text := range []string{"Int", "*Int", "[]*(Int | node[string])", "*(Box | bool)", "[][]Int", "int | string", "error", "node[_]", "node[string] | error"} {
-		if _, err := parseFieldType(text, map[string]bool{"Int": true, "Box": true}); err != nil {
+		if _, err := compile.ParseFieldType(text, map[string]bool{"Int": true, "Box": true}); err != nil {
 			t.Errorf("type text %q: %v", text, err)
 		}
 	}

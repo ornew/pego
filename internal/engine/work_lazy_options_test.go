@@ -2,19 +2,23 @@
 
 package engine
 
-import "github.com/ornew/pego/internal/limits"
+import (
+	"github.com/ornew/pego/internal/limits"
+
+	"github.com/ornew/pego/internal/compile"
+)
 import "testing"
 
 func TestWorkLazyClosureSavedFlagsAndOptions(t *testing.T) {
 	original := mustCompile(t, `rule main = first:item rest:(-"," value:item)* $$ => concat(list($first), map($rest, (e) => e.$value))
 rule item = [a-z]+`)
-	flags := make([]ruleFlags, len(original.rules))
-	for i, r := range original.rules {
-		flags[i] = ruleFlags{memo: r.memo, leader: r.leader, positional: r.positional, twin: r.twinOK}
+	flags := make([]compile.RuleFlags, len(original.RuleList))
+	for i, r := range original.RuleList {
+		flags[i] = compile.RuleFlags{Memo: r.Memo, Leader: r.Leader, Positional: r.Positional, Twin: r.TwinOK}
 	}
-	for _, savedFlags := range [][]ruleFlags{nil, flags} {
+	for _, savedFlags := range [][]compile.RuleFlags{nil, flags} {
 		for _, noProjections := range []bool{false, true} {
-			p, err := build(original.Grammar, Options{noProjections: noProjections}, savedFlags)
+			p, err := build(original.Grammar, compile.Options{NoProjections: noProjections}, savedFlags)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -31,7 +35,7 @@ rule item = [a-z]+`)
 					t.Fatalf("recognition options: %v", err)
 				}
 			}
-			if p.workProgram == nil || p.workProgram.noProjections != noProjections {
+			if p.workProgram == nil || p.workProgram.NoProjections != noProjections {
 				t.Fatal("projection policy changed")
 			}
 		}

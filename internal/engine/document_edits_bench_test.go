@@ -5,12 +5,14 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 // BenchmarkDocumentOwnerCreation excludes compilation and parsing. It tracks
 // the cold allocation cost of document identity and input representation.
 func BenchmarkDocumentOwnerCreation(b *testing.B) {
-	p, err := Compile(mustParse(`rule main = .*`), Options{})
+	p, err := Compile(mustParse(`rule main = .*`), compile.Options{})
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -36,7 +38,7 @@ func BenchmarkDocumentOwnerCreation(b *testing.B) {
 // coordinates identical; documents and initial parse are prepared once.
 func BenchmarkDocumentEditTransaction(b *testing.B) {
 	p, err := Compile(mustParse(`rule main = line* $$
-rule line = [a-z]+ #atomic -"\n"`), Options{})
+rule line = [a-z]+ #atomic -"\n"`), compile.Options{})
 	if err != nil {
 		b.Fatal(err)
 	}

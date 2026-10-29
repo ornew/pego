@@ -156,7 +156,7 @@ rule val = [0-9]+ #atomic`,
 	}
 	for name, src := range grammars {
 		prog := mustCompile(t, src)
-		if r := prog.byName["key"]; r != nil && (!r.memo || r.transient || len(r.vars) == 0) {
+		if r := prog.ByName["key"]; r != nil && (!r.Memo || r.Transient || len(r.Vars) == 0) {
 			t.Fatalf("%s: key must be memoized, non-transient and read variables", name)
 		}
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {

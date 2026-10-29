@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/limits"
 )
 
@@ -114,14 +115,14 @@ rule expr = #operators {
 				}
 			}
 			controlled := prog.workProgram
-			if controlled == nil || !reflect.DeepEqual(prog.descTable, controlled.descTable) || prog.nseen != controlled.nseen || len(prog.twins) != len(controlled.twins) {
+			if controlled == nil || !reflect.DeepEqual(prog.DescTable, controlled.DescTable) || prog.NSeen != controlled.NSeen || len(prog.Twins) != len(controlled.Twins) {
 				t.Fatal("lazy graph metadata differs")
 			}
-			for i, r := range append(append([]*staticRule{}, prog.rules...), prog.twins...) {
-				all := append(append([]*staticRule{}, controlled.rules...), controlled.twins...)
+			for i, r := range append(append([]*compile.Rule{}, prog.RuleList...), prog.Twins...) {
+				all := append(append([]*compile.Rule{}, controlled.RuleList...), controlled.Twins...)
 				other := all[i]
-				if r.id != other.id || r.memo != other.memo || r.leader != other.leader || r.seen != other.seen || r.positional != other.positional || r.plain != other.plain || !reflect.DeepEqual(r.scope.names, other.scope.names) {
-					t.Fatalf("rule metadata differs: %s", r.name)
+				if r.ID != other.ID || r.Memo != other.Memo || r.Leader != other.Leader || r.Seen != other.Seen || r.Positional != other.Positional || r.Plain != other.Plain || !reflect.DeepEqual(r.Scope.Names, other.Scope.Names) {
+					t.Fatalf("rule metadata differs: %s", r.Name)
 				}
 			}
 		}

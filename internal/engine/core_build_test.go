@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
 )
@@ -18,8 +19,8 @@ func coreCorpusProgram(t *testing.T, c genCase) (*Program, bool) {
 	if err != nil {
 		return nil, false
 	}
-	prog, err := Compile(g, Options{})
-	if err != nil || prog.hasMissing {
+	prog, err := Compile(g, compile.Options{})
+	if err != nil || prog.HasMissing {
 		return nil, false
 	}
 	return prog, true
@@ -50,11 +51,11 @@ func TestCoreBuildCorpus(t *testing.T) {
 			continue
 		}
 		for _, r := range typedRules(g) {
-			if _, ok := m.Rules[r.id].Body.(*core.OperatorsRule); ok {
+			if _, ok := m.Rules[r.ID].Body.(*core.OperatorsRule); ok {
 				continue
 			}
-			if got, want := core.SlotNames(m.Rules[r.id].Scope), g.nodeScopes[r]; !slices.Equal(got, want) {
-				t.Errorf("%s: rule %s (%d): scope %v, generated Node rule %v", c.name, r.name, r.id, got, want)
+			if got, want := core.SlotNames(m.Rules[r.ID].Scope), g.nodeScopes[r]; !slices.Equal(got, want) {
+				t.Errorf("%s: rule %s (%d): scope %v, generated Node rule %v", c.name, r.Name, r.ID, got, want)
 			}
 		}
 		built++
@@ -116,7 +117,7 @@ func coreProgram(t *testing.T, src string) *Program {
 	if err != nil {
 		t.Fatal(err)
 	}
-	prog, err := Compile(g, Options{})
+	prog, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +129,7 @@ func typeString(x core.Type) string {
 	if x == nil {
 		return "<nil>"
 	}
-	return x.(ty).String()
+	return x.(compile.Ty).String()
 }
 
 // TestCoreBuildTypes checks that the module carries the checked types: named types, rule values,
@@ -253,11 +254,11 @@ rule e = #operators {
 	if !slices.Equal(levels, []int{1, 0}) {
 		t.Errorf("levels %v, want [1 0]", levels)
 	}
-	e := prog.rules[1]
+	e := prog.RuleList[1]
 	if _, err := callLevel(&grammar.Ref{Name: "e", Level: "power"}, e); err == nil {
 		t.Error("unknown level: no error")
 	}
-	if _, err := callLevel(&grammar.Ref{Name: "main", Level: "sum"}, prog.rules[0]); err == nil {
+	if _, err := callLevel(&grammar.Ref{Name: "main", Level: "sum"}, prog.RuleList[0]); err == nil {
 		t.Error("level of a rule without levels: no error")
 	}
 }

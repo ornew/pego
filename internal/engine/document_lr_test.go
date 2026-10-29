@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 func TestDocumentIndirectLeftRecursionEdits(t *testing.T) {
@@ -12,7 +14,7 @@ func TestDocumentIndirectLeftRecursionEdits(t *testing.T) {
 	const src = `rule main = (l:([^\n] / ![ab] r2) "\n" / r1 / m:[^\n]* "\n")* [^\n]* $$
 rule r1 = (r2 / "b") #repeat(0, 2)
 rule r2 = r1 / r2 "a" "b"`
-	for _, options := range []Options{{}, {DisableMemo: true}} {
+	for _, options := range []compile.Options{{}, {DisableMemo: true}} {
 		prog := mustCompile(t, src, options)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -66,7 +68,7 @@ rule r2 = r1 / r2 "a" "b"`
 func TestDocumentSeedDependencyCompletion(t *testing.T) {
 	for _, imported := range []bool{false, true} {
 		p := &parser{memo: newMemoTable(), memoAll: true}
-		r := &rule{id: 1, leader: true}
+		r := &rule{ID: 1, Leader: true}
 		st, _, _, hit := p.callBegin(r, 0)
 		if hit {
 			t.Fatal("new leader unexpectedly memoized")
@@ -77,12 +79,12 @@ func TestDocumentSeedDependencyCompletion(t *testing.T) {
 			e := p.memo.alloc()
 			*e = memoEntry{ok: true, provisional: true}
 			p.memo.put(memoKey{rule: 2}, e)
-			r = &rule{id: 2}
+			r = &rule{ID: 2}
 		}
 		if _, _, _, hit := p.callBegin(r, 0); !hit {
 			t.Fatal("seed or imported helper was not reused")
 		}
-		r = &rule{id: 1, leader: true}
+		r = &rule{ID: 1, Leader: true}
 		v, ok := p.growEnd(r, &g)
 		p.callEnd(r, &st, v, ok)
 		e, _ := p.memo.get(st.key)
@@ -95,7 +97,7 @@ func TestDocumentSeedDependencyCompletion(t *testing.T) {
 	}
 	t.Run("nested head retains outer dependency", func(t *testing.T) {
 		p := &parser{memo: newMemoTable(), memoAll: true}
-		outer, inner := &rule{id: 1, leader: true}, &rule{id: 2, leader: true}
+		outer, inner := &rule{ID: 1, Leader: true}, &rule{ID: 2, Leader: true}
 		outerCall, _, _, _ := p.callBegin(outer, 0)
 		outerGrow := p.growBegin(outerCall.key)
 		innerCall, _, _, _ := p.callBegin(inner, 0)
@@ -118,7 +120,7 @@ func TestDocumentSeedDependencyCompletion(t *testing.T) {
 	})
 	t.Run("nested own seeds are resolved", func(t *testing.T) {
 		p := &parser{memo: newMemoTable(), memoAll: true}
-		outer, inner := &rule{id: 1, leader: true}, &rule{id: 2, leader: true}
+		outer, inner := &rule{ID: 1, Leader: true}, &rule{ID: 2, Leader: true}
 		outerCall, _, _, _ := p.callBegin(outer, 0)
 		outerGrow := p.growBegin(outerCall.key)
 		innerCall, _, _, _ := p.callBegin(inner, 0)
@@ -146,7 +148,7 @@ func TestDocumentSeedDependencyCompletion(t *testing.T) {
 	})
 	t.Run("fresh intermediate dependency survives completion", func(t *testing.T) {
 		p := &parser{memo: newMemoTable(), memoAll: true}
-		head, helper := &rule{id: 1, leader: true}, &rule{id: 2}
+		head, helper := &rule{ID: 1, Leader: true}, &rule{ID: 2}
 		headCall, _, _, _ := p.callBegin(head, 0)
 		growth := p.growBegin(headCall.key)
 		helperCall, _, _, hit := p.callBegin(helper, 0)
@@ -187,7 +189,7 @@ rule expr = expr "+" term / term
 rule term = term "*" num / num
 rule num = [0-9]+ #atomic`
 		}
-		prog, err := Compile(mustParse(src), Options{})
+		prog, err := Compile(mustParse(src), compile.Options{})
 		if err != nil {
 			b.Fatal(err)
 		}

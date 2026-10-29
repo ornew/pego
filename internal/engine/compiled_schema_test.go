@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 )
 
 // schemaJSON exports the schema of p for start, or every rule with allRules, as canonical JSON.
@@ -65,10 +66,10 @@ func wantSchemaNeedsSource(t *testing.T, err error) {
 // the loaded file again reproduces it.
 func TestCompiledSchemaMatchesSource(t *testing.T) {
 	for _, c := range schemaCorpus(t) {
-		for _, options := range []Options{{SourceInfo: true}, {DefaultValue: true}} {
+		for _, options := range []compile.Options{{SourceInfo: true}, {DefaultValue: true}} {
 			t.Run(c.name, func(t *testing.T) {
 				src := compileBare(t, c.src, options)
-				if len(src.starts) == 0 {
+				if len(src.StartRules) == 0 {
 					t.Fatal("no start rule")
 				}
 				def := src.DefaultStart()
@@ -88,7 +89,7 @@ func TestCompiledSchemaMatchesSource(t *testing.T) {
 					if err != nil || !bytes.Equal(data, again) {
 						t.Fatalf("%s mode file changed on save: %v", mode, err)
 					}
-					for _, start := range append(append([]string{}, src.starts...), "") {
+					for _, start := range append(append([]string{}, src.StartRules...), "") {
 						name := start
 						if name == "" {
 							name = def

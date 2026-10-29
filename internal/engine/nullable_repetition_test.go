@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -18,7 +19,7 @@ func TestNullableRepetitionMinimum(t *testing.T) {
 			t.Run(body+bound.text, func(t *testing.T) {
 				src := "rule main = (" + body + ")" + bound.text + " #stream $$\nrule r = _ => nil"
 				for _, disabled := range []bool{false, true} {
-					prog := mustCompile(t, src, Options{DisableMemo: disabled})
+					prog := mustCompile(t, src, compile.Options{DisableMemo: disabled})
 					programs := []*Program{prog}
 					for _, mode := range allModes {
 						programs = append(programs, saveLoad(t, prog, "main", mode))
@@ -156,14 +157,14 @@ func TestNullableRepetitionAnalysis(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := analyze(g.Rules()).nullable["main"]; got != (minimum <= 1) {
+		if got := compile.Analyze(g.Rules()).Nullable["main"]; got != (minimum <= 1) {
 			t.Errorf("minimum %d: nullable=%v", minimum, got)
 		}
 		g, err = parseTest(fmt.Sprintf("rule main = _ #repeat(%d, ) r / \"a\"\nrule r = main", minimum))
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := analyze(g.Rules()).cyclic["main"]; got != (minimum <= 1) {
+		if got := compile.Analyze(g.Rules()).Cyclic["main"]; got != (minimum <= 1) {
 			t.Errorf("minimum %d: left-call cycle=%v", minimum, got)
 		}
 	}
@@ -181,7 +182,7 @@ rule item = "a" / _`},
 		if err != nil {
 			b.Fatal(err)
 		}
-		p, err := Compile(g, Options{})
+		p, err := Compile(g, compile.Options{})
 		if err != nil {
 			b.Fatal(err)
 		}

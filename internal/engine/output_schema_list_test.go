@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 func TestOutputSchemaListQueries(t *testing.T) {
@@ -43,7 +45,7 @@ rule main = "x" => Holder{Values: [][]Token{[]Token{Token{Text: "one"}}}}`, "x",
 			if err != nil {
 				t.Fatal(err)
 			}
-			p, err := Compile(g, Options{})
+			p, err := Compile(g, compile.Options{})
 			if err != nil {
 				t.Fatal(err)
 			}

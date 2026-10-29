@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 )
 
 // Typed values of rules in the value model.
@@ -30,7 +31,7 @@ func (r vrule) String() string { return r.name }
 // vhelper is a generated helper that converts or clones values of one Go type.
 type vhelper struct {
 	name string
-	x    ty
+	x    compile.Ty
 }
 
 // vhelpers registers helpers by the Go type they produce.
@@ -39,7 +40,7 @@ type vhelpers struct {
 	order []vhelper
 }
 
-func (h *vhelpers) get(prefix, key string, x ty) string {
+func (h *vhelpers) get(prefix, key string, x compile.Ty) string {
 	if h.names == nil {
 		h.names = map[string]string{}
 	}
@@ -54,37 +55,37 @@ func (h *vhelpers) get(prefix, key string, x ty) string {
 
 // valueResolver resolves the value types of the rules whose typed values come from them.
 type valueResolver struct {
-	prog *staticProgram
-	info *typeInfo
+	prog *compile.Program
+	info *compile.TypeInfo
 	// values holds the value types of the rules and ruleDefs their definitions; vres holds the
 	// resolved value types of the rules whose typed values come from them, and resolving the rules
 	// being resolved.
-	values    map[string]ty
+	values    map[string]compile.Ty
 	ruleDefs  map[string]*grammar.RuleDef
-	vres      map[string]ty
+	vres      map[string]compile.Ty
 	resolving map[string]bool
 	// ownType reports that a legacy type has a typed representation of its own (a named join).
-	ownType func(ty) bool
+	ownType func(compile.Ty) bool
 }
 
-func newValueResolver(p *staticProgram, ownType func(ty) bool) valueResolver {
-	r := valueResolver{prog: p, info: p.typed, values: p.valueTypes(), ruleDefs: map[string]*grammar.RuleDef{}, vres: map[string]ty{}, resolving: map[string]bool{}, ownType: ownType}
-	for _, rl := range p.rules {
-		r.ruleDefs[rl.name] = rl.def
+func newValueResolver(p *compile.Program, ownType func(compile.Ty) bool) valueResolver {
+	r := valueResolver{prog: p, info: p.Typed, values: p.ValueTypes(), ruleDefs: map[string]*grammar.RuleDef{}, vres: map[string]compile.Ty{}, resolving: map[string]bool{}, ownType: ownType}
+	for _, rl := range p.RuleList {
+		r.ruleDefs[rl.Name] = rl.Def
 	}
 	return r
 }
 
 // ruleType returns the type that selects the Go type of the values of rule r: its declared type, or
 // a vrule for a rule whose Go type comes from its value type.
-func (t *typedGen) ruleType(r *staticRule) ty {
-	return t.ruleRef(r.name)
+func (t *typedGen) ruleType(r *compile.Rule) compile.Ty {
+	return t.ruleRef(r.Name)
 }
 
-func (t *valueResolver) ruleRef(name string) ty {
-	var legacy ty = tyAny
+func (t *valueResolver) ruleRef(name string) compile.Ty {
+	var legacy compile.Ty = compile.TyAny
 	if def := t.ruleDefs[name]; def != nil && def.Type != nil {
-		legacy = (&typeResolver{prog: t.prog}).resolve(def.Type)
+		legacy = (&compile.TypeResolver{Prog: t.prog}).Resolve(def.Type)
 	}
 	if !t.usesValue(name, legacy) {
 		return legacy
@@ -93,7 +94,7 @@ func (t *valueResolver) ruleRef(name string) ty {
 		return vrule{name}
 	}
 	if t.resolving[name] {
-		return tyTop // a cycle: the reference becomes any
+		return compile.TyTop // a cycle: the reference becomes any
 	}
 	t.resolving[name] = true
 	res := t.resolveValue(t.values[name])
@@ -104,10 +105,10 @@ func (t *valueResolver) ruleRef(name string) ty {
 
 // A rule has the Go type of its value if it has no declared type; a declared type is the rule's Go
 // type, node[_] included.
-func (t *valueResolver) usesValue(name string, legacy ty) bool {
+func (t *valueResolver) usesValue(name string, legacy compile.Ty) bool {
 	v, ok := t.values[name]
 	def := t.ruleDefs[name]
-	if !ok || v == nil || v == tyAny || def == nil {
+	if !ok || v == nil || v == compile.TyAny || def == nil {
 		return false
 	}
 	if def.Type != nil && def.Action != nil {
@@ -123,59 +124,59 @@ func (t *valueResolver) usesValue(name string, legacy ty) bool {
 }
 
 // resolveValue replaces the rule references in a value type.
-func (t *valueResolver) resolveValue(x ty) ty {
+func (t *valueResolver) resolveValue(x compile.Ty) compile.Ty {
 	switch x := x.(type) {
-	case ruleTy:
-		return t.ruleRef(x.name)
-	case tupleTy:
-		elems := make([]ty, len(x.elems))
-		for i, e := range x.elems {
+	case compile.RuleTy:
+		return t.ruleRef(x.Name)
+	case compile.TupleTy:
+		elems := make([]compile.Ty, len(x.Elems))
+		for i, e := range x.Elems {
 			elems[i] = t.resolveValue(e)
 		}
-		return tupleTy{elems}
-	case nodeTy:
-		return nodeTy{value: t.resolveValue(x.value)}
-	case listTy:
-		return listTy{t.resolveValue(x.elem)}
-	case optTy:
-		return optTy{t.resolveValue(x.elem)}
-	case joinTy:
-		alts := make([]ty, len(x.alts))
-		for i, a := range x.alts {
+		return compile.TupleTy{Elems: elems}
+	case compile.NodeTy:
+		return compile.NodeTy{Value: t.resolveValue(x.Value)}
+	case compile.ListTy:
+		return compile.ListTy{Elem: t.resolveValue(x.Elem)}
+	case compile.OptTy:
+		return compile.OptTy{Elem: t.resolveValue(x.Elem)}
+	case compile.JoinTy:
+		alts := make([]compile.Ty, len(x.Alts))
+		for i, a := range x.Alts {
 			alts[i] = t.resolveValue(a)
 		}
-		return joinTy{alts}
-	case basicTy:
-		if x == tyBottom || x == tyNil {
-			return tyTop
+		return compile.JoinTy{Alts: alts}
+	case compile.BasicTy:
+		if x == compile.TyBottom || x == compile.TyNil {
+			return compile.TyTop
 		}
 	}
 	return x
 }
 
 // tupleType returns the Go type of a tuple, recording the tuple types to declare.
-func (t *typedGen) tupleType(x tupleTy) string {
-	if len(x.elems) == 0 {
+func (t *typedGen) tupleType(x compile.TupleTy) string {
+	if len(x.Elems) == 0 {
 		t.unitUsed = true
 		return "Unit"
 	}
-	t.tupleSizes[len(x.elems)] = true
-	elems := make([]string, len(x.elems))
-	for i, e := range x.elems {
+	t.tupleSizes[len(x.Elems)] = true
+	elems := make([]string, len(x.Elems))
+	for i, e := range x.Elems {
 		elems[i] = t.goType(e)
 	}
-	return fmt.Sprintf("Tuple%d[%s]", len(x.elems), strings.Join(elems, ", "))
+	return fmt.Sprintf("Tuple%d[%s]", len(x.Elems), strings.Join(elems, ", "))
 }
 
 // joinGoType returns the Go type shared by the arguments of a join, if they have one.
 // The tuple types of the arguments are declared only if the join has their Go type.
-func (t *typedGen) joinGoType(x joinTy) (string, bool) {
+func (t *typedGen) joinGoType(x compile.JoinTy) (string, bool) {
 	sizes, unit := map[int]bool{}, t.unitUsed
 	for n := range t.tupleSizes {
 		sizes[n] = true
 	}
 	common := ""
-	for _, a := range x.alts {
+	for _, a := range x.Alts {
 		g := t.goType(a)
 		if common != "" && g != common {
 			t.tupleSizes, t.unitUsed = sizes, unit
@@ -209,7 +210,7 @@ func (t *typedGen) tupleDecls(b *strings.Builder) {
 
 // vconvHelper returns the name of the astConv method converting a value of the value-model type x
 // (a vrule, tuple, node or optional tuple) from a node.
-func (t *typedGen) vconvHelper(x ty) string {
+func (t *typedGen) vconvHelper(x compile.Ty) string {
 	key := t.goType(x)
 	if r, ok := x.(vrule); ok {
 		key = "rule " + r.name
@@ -218,7 +219,7 @@ func (t *typedGen) vconvHelper(x ty) string {
 }
 
 // vdconvHelper returns the name of the function converting a value of the typed runtime.
-func (t *typedGen) vdconvHelper(x ty) string {
+func (t *typedGen) vdconvHelper(x compile.Ty) string {
 	key := t.goType(x)
 	if r, ok := x.(vrule); ok {
 		key = "rule " + r.name
@@ -237,24 +238,24 @@ func (t *typedGen) nodeHelpers(b *strings.Builder, done *int) bool {
 		switch x := h.x.(type) {
 		case vrule:
 			fmt.Fprintf(b, "\treturn %s\n", t.conv(t.vres[x.name], "v"))
-		case optTy:
-			fmt.Fprintf(b, "\tif astIsNil(v) {\n\t\treturn nil\n\t}\n\tx := %s\n\treturn &x\n", t.conv(x.elem, "v"))
-		case tupleTy:
+		case compile.OptTy:
+			fmt.Fprintf(b, "\tif astIsNil(v) {\n\t\treturn nil\n\t}\n\tx := %s\n\treturn &x\n", t.conv(x.Elem, "v"))
+		case compile.TupleTy:
 			fmt.Fprintf(b, "\tvar out %s\n\tn := astNode(v)\n\tif n == nil {\n\t\treturn out\n\t}\n", g)
-			for i, e := range x.elems {
+			for i, e := range x.Elems {
 				fmt.Fprintf(b, "\tout.E%d = %s\n", i, t.conv(e, fmt.Sprintf("astKid(n.RawChildren, %d)", i)))
 			}
 			b.WriteString("\treturn out\n")
-		case nodeTy:
+		case compile.NodeTy:
 			fmt.Fprintf(b, "\tn := astNode(v)\n\tif n == nil || n.Type() == \"error\" {\n\t\treturn nil\n\t}\n\tout := &%s{Span: Span{Start: int(n.RawStart), End: int(n.RawEnd)}}\n", g[1:])
-			switch value := x.value.(type) {
-			case basicTy:
-				if value == tyString {
+			switch value := x.Value.(type) {
+			case compile.BasicTy:
+				if value == compile.TyString {
 					b.WriteString("\tout.Value = n.RawText\n")
 				} else {
 					fmt.Fprintf(b, "\tout.Value = %s\n", t.conv(value, "a.nodeValue(n)"))
 				}
-			case tupleTy, listTy:
+			case compile.TupleTy, compile.ListTy:
 				fmt.Fprintf(b, "\tout.Value = %s\n", t.conv(value, "n"))
 			default:
 				fmt.Fprintf(b, "\tout.Value = %s\n", t.conv(value, "a.nodeValue(n)"))
@@ -277,41 +278,41 @@ func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
 		switch x := h.x.(type) {
 		case vrule:
 			fmt.Fprintf(b, "\treturn %s\n", t.dconv(t.vres[x.name], "v", "a"))
-		case optTy:
-			fmt.Fprintf(b, "\tif v == nil {\n\t\treturn nil\n\t}\n\tx := %s\n\treturn &x\n", t.dconv(x.elem, "v", "a"))
-		case tupleTy:
+		case compile.OptTy:
+			fmt.Fprintf(b, "\tif v == nil {\n\t\treturn nil\n\t}\n\tx := %s\n\treturn &x\n", t.dconv(x.Elem, "v", "a"))
+		case compile.TupleTy:
 			fmt.Fprintf(b, "\tvar out %s\n\tx, _ := v.(*TSeq)\n\tif x == nil {\n\t\treturn out\n\t}\n", g)
-			for i, e := range x.elems {
+			for i, e := range x.Elems {
 				fmt.Fprintf(b, "\tout.E%d = %s\n", i, t.dconv(e, fmt.Sprintf("TKid(x.Kids, %d)", i), "a"))
 			}
 			b.WriteString("\treturn out\n")
-		case nodeTy:
-			if x.name != "" && x.value == tyString {
+		case compile.NodeTy:
+			if x.Name != "" && x.Value == compile.TyString {
 				// A string node of a named node type is its own public value (tmatchAs): the type is declared as
 				// struct{ TNode[string] } in the types package, which the schema constant ties to this parser.
-				g := t.ref(x.name)
-				fmt.Fprintf(b, "\tx, _ := v.(*TMatch)\n\tif x == nil || x.Nt != %s {\n\t\treturn nil\n\t}\n\treturn TMatchAs[%s](x)\n", t.g.nodeTypeID(x.name), g)
+				g := t.ref(x.Name)
+				fmt.Fprintf(b, "\tx, _ := v.(*TMatch)\n\tif x == nil || x.Nt != %s {\n\t\treturn nil\n\t}\n\treturn TMatchAs[%s](x)\n", t.g.nodeTypeID(x.Name), g)
 				break
 			}
-			if x.name != "" {
+			if x.Name != "" {
 				// A tuple or list node of a named node type, as the node it was converted from,
 				// remembered so that the node converts to one value everywhere (as astConv does).
-				g := t.ref(x.name)
-				fmt.Fprintf(b, "\tx := AsTval(v)\n\tif x == nil || x.TName() != %q {\n\t\treturn nil\n\t}\n\tif out, ok := a.named[x]; ok {\n\t\treturn out.(*%s)\n\t}\n", x.name, g)
-				fmt.Fprintf(b, "\tu := %s\n\tif u == nil {\n\t\treturn nil\n\t}\n\tout := astNew(&a.t%s)\n\tout.TNode = *u\n\tif a.named == nil {\n\t\ta.named = map[any]any{}\n\t}\n\ta.named[x] = out\n\treturn out\n", t.dconv(x.underlying(), "v", "a"), x.name)
+				g := t.ref(x.Name)
+				fmt.Fprintf(b, "\tx := AsTval(v)\n\tif x == nil || x.TName() != %q {\n\t\treturn nil\n\t}\n\tif out, ok := a.named[x]; ok {\n\t\treturn out.(*%s)\n\t}\n", x.Name, g)
+				fmt.Fprintf(b, "\tu := %s\n\tif u == nil {\n\t\treturn nil\n\t}\n\tout := astNew(&a.t%s)\n\tout.TNode = *u\n\tif a.named == nil {\n\t\ta.named = map[any]any{}\n\t}\n\ta.named[x] = out\n\treturn out\n", t.dconv(x.Underlying(), "v", "a"), x.Name)
 				break
 			}
 			fmt.Fprintf(b, "\tswitch x := v.(type) {\n\tcase *TSeq:\n\t\tif x.Typ == TypeTupleValue || x.Typ == TypeListValue {\n\t\t\treturn nil\n\t\t}\n\t\tout := &%s{Span: x.Span}\n", g[1:])
-			switch value := x.value.(type) {
-			case tupleTy, listTy:
+			switch value := x.Value.(type) {
+			case compile.TupleTy, compile.ListTy:
 				fmt.Fprintf(b, "\t\tout.Value = %s\n", t.dconv(value, "x", "a"))
 			default:
-				if value != tyString {
+				if value != compile.TyString {
 					fmt.Fprintf(b, "\t\tout.Value = %s\n", t.dconv(value, "tnodeValue(x)", "a"))
 				}
 			}
 			fmt.Fprintf(b, "\t\treturn out\n\tcase *TError:\n\t\treturn nil\n\tcase TVal:\n\t\tif x.TStruct() {\n\t\t\treturn nil\n\t\t}\n\t\ts, e := x.TSpan()\n\t\ttext, _ := x.TText()\n\t\t_ = text\n\t\tout := &%s{Span: Span{Start: s, End: e}}\n", g[1:])
-			fmt.Fprintf(b, "\t\tout.Value = %s\n\t\treturn out\n\t}\n\treturn nil\n", t.dconv(x.value, "text", "a"))
+			fmt.Fprintf(b, "\t\tout.Value = %s\n\t\treturn out\n\t}\n\treturn nil\n", t.dconv(x.Value, "text", "a"))
 		}
 		b.WriteString("}\n\n")
 	}
@@ -319,12 +320,12 @@ func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
 }
 
 // streamValue returns the value type of the elements of the #stream repetition of the rule rd.
-func streamValue(p *staticProgram, rd *grammar.RuleDef) (ty, bool) {
+func streamValue(p *compile.Program, rd *grammar.RuleDef) (compile.Ty, bool) {
 	var rep *grammar.Repeat
-	walkExpr(rd.Expr, func(e grammar.Expr) {
+	compile.WalkExpr(rd.Expr, func(e grammar.Expr) {
 		if a, ok := e.(*grammar.Attributed); ok {
 			for _, at := range a.Attrs {
-				if r, ok := seeThrough(a.Expr).(*grammar.Repeat); ok && at.Name == "stream" {
+				if r, ok := compile.SeeThrough(a.Expr).(*grammar.Repeat); ok && at.Name == "stream" {
 					rep = r
 				}
 			}
@@ -333,16 +334,16 @@ func streamValue(p *staticProgram, rd *grammar.RuleDef) (ty, bool) {
 	if rep == nil {
 		return nil, false
 	}
-	v := &valueInference{prog: p, rules: map[string]*grammar.RuleDef{}, out: map[string]ty{}, approx: map[string]ty{}, computing: map[string]bool{}, quiet: true, rule: rd}
+	v := &compile.ValueInference{Prog: p, Rules: map[string]*grammar.RuleDef{}, Out: map[string]compile.Ty{}, Approx: map[string]compile.Ty{}, Computing: map[string]bool{}, Quiet: true, Rule: rd}
 	for _, r := range p.Grammar.Rules() {
-		v.rules[r.Name] = r
+		v.Rules[r.Name] = r
 	}
-	return v.scopeValue(rep.Expr), true
+	return v.ScopeValue(rep.Expr), true
 }
 
 // backHelper returns the name of the function converting a value of the value-model type x (a
 // vrule, tuple, node or optional tuple) into a value of the typed runtime.
-func (t *typedGen) backHelper(x ty) string {
+func (t *typedGen) backHelper(x compile.Ty) string {
 	key := t.goType(x)
 	if r, ok := x.(vrule); ok {
 		key = "rule " + r.name
@@ -357,9 +358,9 @@ func (t *typedGen) backHelpers(b *strings.Builder, done *int) bool {
 		wrote = true
 		h := t.bhelpers.order[*done]
 		fmt.Fprintf(b, "func %s(v %s) any {\n", h.name, t.goType(h.x))
-		elems := func(x tupleTy, v string) string {
-			kids := make([]string, len(x.elems))
-			for i, e := range x.elems {
+		elems := func(x compile.TupleTy, v string) string {
+			kids := make([]string, len(x.Elems))
+			for i, e := range x.Elems {
 				kids[i] = t.back(e, fmt.Sprintf("%s.E%d", v, i))
 			}
 			return "[]any{" + strings.Join(kids, ", ") + "}"
@@ -367,25 +368,25 @@ func (t *typedGen) backHelpers(b *strings.Builder, done *int) bool {
 		switch x := h.x.(type) {
 		case vrule:
 			fmt.Fprintf(b, "\treturn %s\n", t.back(t.vres[x.name], "v"))
-		case optTy:
-			fmt.Fprintf(b, "\tif v == nil {\n\t\treturn nil\n\t}\n\treturn %s\n", t.back(x.elem, "(*v)"))
-		case tupleTy:
-			if len(x.elems) == 0 {
+		case compile.OptTy:
+			fmt.Fprintf(b, "\tif v == nil {\n\t\treturn nil\n\t}\n\treturn %s\n", t.back(x.Elem, "(*v)"))
+		case compile.TupleTy:
+			if len(x.Elems) == 0 {
 				b.WriteString("\treturn &rt.TSeq{Typ: rt.TypeTupleValue}\n")
 			} else {
 				fmt.Fprintf(b, "\treturn &rt.TSeq{Typ: rt.TypeTupleValue, Kids: %s}\n", elems(x, "v"))
 			}
-		case nodeTy:
+		case compile.NodeTy:
 			b.WriteString("\tif v == nil {\n\t\treturn nil\n\t}\n")
-			if x.name != "" {
-				fmt.Fprintf(b, "\treturn rt.TSetNodeType(%s, %s)\n}\n\n", t.back(x.underlying(), "&v.TNode"), t.g.nodeTypeID(x.name))
+			if x.Name != "" {
+				fmt.Fprintf(b, "\treturn rt.TSetNodeType(%s, %s)\n}\n\n", t.back(x.Underlying(), "&v.TNode"), t.g.nodeTypeID(x.Name))
 				continue
 			}
-			switch value := x.value.(type) {
-			case listTy:
-				fmt.Fprintf(b, "\tkids := make([]any, len(v.Value))\n\tfor i, x := range v.Value {\n\t\tkids[i] = %s\n\t}\n\treturn &rt.TSeq{Span: v.Span, Typ: \"list\", Kids: kids}\n", t.back(value.elem, "x"))
-			case tupleTy:
-				if len(value.elems) == 0 {
+			switch value := x.Value.(type) {
+			case compile.ListTy:
+				fmt.Fprintf(b, "\tkids := make([]any, len(v.Value))\n\tfor i, x := range v.Value {\n\t\tkids[i] = %s\n\t}\n\treturn &rt.TSeq{Span: v.Span, Typ: \"list\", Kids: kids}\n", t.back(value.Elem, "x"))
+			case compile.TupleTy:
+				if len(value.Elems) == 0 {
 					fmt.Fprintf(b, "\treturn &rt.TSeq{Span: v.Span, Typ: \"tuple\"}\n")
 				} else {
 					fmt.Fprintf(b, "\treturn &rt.TSeq{Span: v.Span, Typ: \"tuple\", Kids: %s}\n", elems(value, "v.Value"))

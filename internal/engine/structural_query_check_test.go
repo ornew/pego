@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -102,7 +103,7 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 		if err != nil {
 			continue
 		}
-		prog, err := Compile(g, Options{SourceInfo: true})
+		prog, err := Compile(g, compile.Options{SourceInfo: true})
 		if err != nil {
 			continue
 		}
@@ -178,7 +179,7 @@ func TestStructuralQueryRecoveryNodes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	prog, err := Compile(g, Options{})
+	prog, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}

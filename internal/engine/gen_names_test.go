@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -289,7 +290,7 @@ func TestGeneratedTypesNamedLikeEveryRuntimeExport(t *testing.T) {
 		}
 		// The grammar language reserves some names (Error, ...).
 		if g, err := parseTest("type " + name + " = { Value int }\nrule main = \"a\"\n"); err == nil {
-			if _, err := Compile(g, Options{}); err == nil {
+			if _, err := Compile(g, compile.Options{}); err == nil {
 				names = append(names, name)
 			}
 		}
@@ -613,7 +614,7 @@ func TestGeneratedRichGrammarsWithTypesNamedLikeRuntimeExports(t *testing.T) {
 				// The grammar language reserves some names (Error, ...).
 				if g, err := parseTest("type " + n + " = { Value int }\nrule main = \"a\"\n"); err != nil {
 					continue
-				} else if _, err := Compile(g, Options{}); err != nil {
+				} else if _, err := Compile(g, compile.Options{}); err != nil {
 					continue
 				}
 				fmt.Fprintf(&src, "type %s = { Value int }\n", n)

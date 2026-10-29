@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -54,13 +55,13 @@ type vmProgram struct {
 	runSites []*vmRunSite
 	// fieldTypes holds the type of each ECAST, by the string index of its text
 	// (nil when the module has none); typeNames are the module's type names it resolves.
-	fieldTypes []*fieldType
+	fieldTypes []*compile.FieldType
 	typeNames  map[string]bool
 	// nodeKinds holds the kinds of the module's named node types by the string index of their
 	// names (nil when the module has none).
 	nodeKinds []*value.NodeTypeKinds
 	// vars is the module's variable table (nil when it declares none).
-	vars *varTable
+	vars *compile.VarTable
 }
 
 // vmRunSite is a repetition that a Document can resume (resume.go): the REPEAT at ip, whose ITER
@@ -97,10 +98,10 @@ func (vm *vmProgram) runSite(ip int) *vmRunSite {
 				return nil
 			}
 			r := vm.rules[in.A]
-			if len(r.vars) > 0 {
+			if len(r.Vars) > 0 {
 				return nil
 			}
-			if r.positional {
+			if r.Positional {
 				site.shiftable = false
 			}
 		}
@@ -110,7 +111,7 @@ func (vm *vmProgram) runSite(ip int) *vmRunSite {
 
 // newVMProgram prepares a module for execution. If iterative, it runs with the iterative model.
 func newVMProgram(m *bytecode.Module, iterative bool) *vmProgram {
-	vm := &vmProgram{m: m, byName: map[string]*rule{}, descs: append(append([]string(nil), fixedDescs...), m.Strings...)}
+	vm := &vmProgram{m: m, byName: map[string]*rule{}, descs: append(append([]string(nil), compile.FixedDescs...), m.Strings...)}
 	vm.literals = m.Strings
 	normalized := false
 	for i, s := range m.Strings {
@@ -153,35 +154,35 @@ func newVMProgram(m *bytecode.Module, iterative bool) *vmProgram {
 	for i := range m.Rules {
 		ri := &m.Rules[i]
 		r := &rule{
-			id: i, name: m.Strings[ri.Name], scope: vm.scope(ri.Scope),
-			memo: ri.Memo, leader: ri.Leader, positional: ri.Positional, novalue: ri.NoValue, transient: ri.Transient, splice: ri.Splice, vars: vm.names(ri.Vars),
+			ID: i, Name: m.Strings[ri.Name], Scope: vm.scope(ri.Scope),
+			Memo: ri.Memo, Leader: ri.Leader, Positional: ri.Positional, Novalue: ri.NoValue, Transient: ri.Transient, Splice: ri.Splice, Vars: vm.names(ri.Vars),
 		}
 		if ri.Where >= 0 {
-			r.where = m.Strings[ri.Where]
+			r.Where = m.Strings[ri.Where]
 		}
-		r.initVals = vtable.valuesOf(r.vars)
+		r.initVals = vtable.ValuesOf(r.Vars)
 		if ri.NodeType >= 0 {
 			if ri.OperatorsRule >= 0 {
-				r.opNodeType, r.opKinds = m.Strings[ri.NodeType], vm.nodeKinds[ri.NodeType]
+				r.OpNodeType, r.opKinds = m.Strings[ri.NodeType], vm.nodeKinds[ri.NodeType]
 			} else {
-				r.nodeType, r.nodeKinds = m.Strings[ri.NodeType], vm.nodeKinds[ri.NodeType]
+				r.NodeType, r.nodeKinds = m.Strings[ri.NodeType], vm.nodeKinds[ri.NodeType]
 			}
 		}
-		r.kinds = value.NewRuleKinds(r.name)
+		r.kinds = value.NewRuleKinds(r.Name)
 		r.value = func(_ *parser, v *value.Node, _ int) *value.Node { return v } // the code pushes the value of the body's scope
 		if ri.Action >= 0 {
 			r.act = vm.evaluator(ri.Action, false)
 		}
 		vm.rules = append(vm.rules, r)
-		if _, twin := vm.byName[r.name]; !twin { // value-free twins follow the original rules
-			vm.byName[r.name] = r
+		if _, twin := vm.byName[r.Name]; !twin { // value-free twins follow the original rules
+			vm.byName[r.Name] = r
 		}
 	}
-	statics := make([]*staticRule, len(vm.rules))
+	statics := make([]*compile.Rule, len(vm.rules))
 	for i, r := range vm.rules {
 		statics[i] = &r.staticRule
 	}
-	vm.nseen = numberSeen(statics)
+	vm.nseen = compile.NumberSeen(statics)
 	vm.runSites = make([]*vmRunSite, len(m.Code))
 	for ip, in := range m.Code {
 		if in.Op == bytecode.OpRepeat || in.Op == bytecode.OpRepeatWide {
@@ -189,7 +190,7 @@ func newVMProgram(m *bytecode.Module, iterative bool) *vmProgram {
 		}
 	}
 	for _, r := range vm.rules {
-		r.plain = !r.leader && (!r.memo || r.transient) && len(r.scope.names) == 0
+		r.Plain = !r.Leader && (!r.Memo || r.Transient) && len(r.Scope.Names) == 0
 	}
 	for i := range m.Rules {
 		ri, r := &m.Rules[i], vm.rules[i]
@@ -198,7 +199,7 @@ func newVMProgram(m *bytecode.Module, iterative bool) *vmProgram {
 		}
 		entry := ri.Entry
 		r.entry = entry
-		r.stream = vm.streams(entry)
+		r.Stream = vm.streams(entry)
 		if iterative {
 			r.body = func(p *parser, min int) (*value.Node, bool) {
 				res := p.iterate(vm, p.bodyFrame(entry, r, min, false))
@@ -227,10 +228,10 @@ func (vm *vmProgram) names(ids []int) []string {
 	return out
 }
 
-func (vm *vmProgram) scope(ids []int) *scope {
-	s := newScope()
+func (vm *vmProgram) scope(ids []int) *compile.Scope {
+	s := compile.NewScope()
 	for _, n := range vm.names(ids) {
-		s.slot(n)
+		s.Slot(n)
 	}
 	return s
 }
@@ -250,10 +251,10 @@ func (vm *vmProgram) block(entry int) matcher {
 func (vm *vmProgram) line(l *bytecode.LineInfo, operator bool) *operatorsRuleLine {
 	// The code pushes the line's value already: the value of an operand line's scope, or the
 	// operator's value, which is the node of its tuple if IsSeq (its captures are attached to it).
-	pl := &operatorsRuleLine{scope: vm.scope(l.Scope), m: vm.block(l.Entry), entry: l.Entry, single: singlePass,
+	pl := &operatorsRuleLine{scope: vm.scope(l.Scope), m: vm.block(l.Entry), entry: l.Entry, single: compile.SinglePass,
 		value: func(_ *parser, v *value.Node, _ int) *value.Node { return v }}
 	if operator && l.IsSeq {
-		pl.single, pl.shape = singleTuple, shaper{elems: true}
+		pl.single, pl.shape = compile.SingleTuple, compile.Shaper{Elems: true}
 	}
 	if l.Action >= 0 {
 		pl.act = vm.evaluator(l.Action, operator)
@@ -262,16 +263,16 @@ func (vm *vmProgram) line(l *bytecode.LineInfo, operator bool) *operatorsRuleLin
 }
 
 // checkType returns the check type whose text is string i of the module.
-func (vm *vmProgram) checkType(i int) *fieldType {
+func (vm *vmProgram) checkType(i int) *compile.FieldType {
 	if vm.fieldTypes == nil {
-		vm.fieldTypes, vm.typeNames = make([]*fieldType, len(vm.m.Strings)), moduleTypeNames(vm.m)
+		vm.fieldTypes, vm.typeNames = make([]*compile.FieldType, len(vm.m.Strings)), compile.ModuleTypeNames(vm.m)
 	}
 	if vm.fieldTypes[i] == nil {
 		// Loading validated the text. A module built in memory with an invalid one gets a type
 		// that no value fits.
-		t, err := parseFieldType(vm.m.Strings[i], vm.typeNames)
+		t, err := compile.ParseFieldType(vm.m.Strings[i], vm.typeNames)
 		if err != nil {
-			t = &fieldType{kind: ftJoin, text: vm.m.Strings[i]}
+			t = &compile.FieldType{Kind: compile.FtJoin, Text: vm.m.Strings[i]}
 		}
 		vm.fieldTypes[i] = t
 	}
@@ -285,7 +286,7 @@ func (vm *vmProgram) cast(p *parser, v any, pos, ip int) (any, error) {
 	in := &vm.m.Exprs[ip]
 	if t := vm.fieldTypes[in.A]; t == nil || !p.fieldConforms(t, v) {
 		if t == nil {
-			t = &fieldType{text: vm.m.Strings[in.A]}
+			t = &compile.FieldType{Text: vm.m.Strings[in.A]}
 		}
 		return nil, p.castError(v, t, pos, int(in.B), int(in.C))
 	}
@@ -443,7 +444,7 @@ func (p *parser) exec(vm *vmProgram, ip int, r *rule, min int) (result *value.No
 		switch ev {
 		case evCall:
 			in := &vm.m.Code[b.ip]
-			if r := vm.rules[in.A]; r.plain && !p.noPlain {
+			if r := vm.rules[in.A]; r.Plain && !p.noPlain {
 				v, ok = p.invokePlain(r, int(in.B)) // what call does for such a rule
 			} else {
 				v, ok = p.call(r, int(in.B))
@@ -502,7 +503,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 		case bytecode.OpStr:
 			start := p.pos
 			if !p.matchLiteral(vm.runes[in.A], vm.bytes[in.A]) {
-				p.expect(start, numFixedDescs+expID(in.B))
+				p.expect(start, compile.NumFixedDescs+expID(in.B))
 				goto fail
 			}
 			if in.C == 1 {
@@ -511,7 +512,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 		case bytecode.OpStrFold:
 			start := p.pos
 			if !p.matchLiteralFold(vm.runes[in.A]) {
-				p.expect(start, numFixedDescs+expID(in.B))
+				p.expect(start, compile.NumFixedDescs+expID(in.B))
 				goto fail
 			}
 			if in.C == 1 {
@@ -520,14 +521,14 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 		case bytecode.OpClass:
 			ch, size, ok := p.peek()
 			if !ok || !vm.has(p, in.A, ch) {
-				p.expect(p.pos, numFixedDescs+expID(in.B))
+				p.expect(p.pos, compile.NumFixedDescs+expID(in.B))
 				goto fail
 			}
 			p.single(size, in.C == 1)
 		case bytecode.OpGuard:
 			ch, _, ok := p.peek()
 			if !(ok && vm.has(p, in.A, ch)) && p.depth+int(in.B) <= p.maxDepth {
-				p.expect(p.pos, numFixedDescs+expID(m.Classes[in.A].Desc))
+				p.expect(p.pos, compile.NumFixedDescs+expID(m.Classes[in.A].Desc))
 				ip = int(in.C)
 				continue
 			}
@@ -541,9 +542,9 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 				ch, size, ok := p.peek()
 				if !ok || in.A >= 0 && !vm.has(p, in.A, ch) {
 					if in.A >= 0 {
-						p.expect(p.pos, numFixedDescs+expID(m.Classes[in.A].Desc))
+						p.expect(p.pos, compile.NumFixedDescs+expID(m.Classes[in.A].Desc))
 					} else {
-						p.expect(p.pos, idAny)
+						p.expect(p.pos, compile.IDAny)
 					}
 					break
 				}
@@ -556,7 +557,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 		case bytecode.OpAny:
 			_, size, ok := p.peek()
 			if !ok {
-				p.expect(p.pos, idAny)
+				p.expect(p.pos, compile.IDAny)
 				goto fail
 			}
 			p.single(size, in.A == 1)
@@ -571,14 +572,14 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 			var desc expID
 			switch in.A {
 			case 0:
-				ok, desc = p.atInputStart(), idBeginInput
+				ok, desc = p.atInputStart(), compile.IDBeginInput
 			case 1:
-				ok, desc = p.atEOF(), idEndInput
+				ok, desc = p.atEOF(), compile.IDEndInput
 			case 2:
-				ok, desc = p.atLineStart(), idBeginLine
+				ok, desc = p.atLineStart(), compile.IDBeginLine
 			default:
 				ch, _, more := p.peek()
-				ok, desc = !more || ch == '\n' || ch == '\r', idEndLine
+				ok, desc = !more || ch == '\n' || ch == '\r', compile.IDEndLine
 			}
 			if !ok {
 				p.expect(p.pos, desc)
@@ -897,9 +898,9 @@ func (p *parser) unwind(m *bytecode.Module, ebase int) (ip int, ok bool) {
 			l := p.popLab(&e)
 			far, inner := p.unisolate(expMark{l.far, l.base, l.bits})
 			if l.mode == 0 {
-				p.expect(far, msgBit|(numFixedDescs+expID(l.msg)))
+				p.expect(far, msgBit|(compile.NumFixedDescs+expID(l.msg)))
 			} else {
-				p.mergeExpected(far, renamedExpected(p, inner, numFixedDescs+expID(l.msg)))
+				p.mergeExpected(far, renamedExpected(p, inner, compile.NumFixedDescs+expID(l.msg)))
 			}
 			continue
 		case eRecover:
@@ -959,7 +960,7 @@ func (p *parser) single(size int, b bool) {
 
 // attachCapturesNames attaches captures by a list of names (same as attachCaptures).
 func (p *parser) attachCapturesNames(v *value.Node, names []string, f *frame, start, end int) *value.Node {
-	return p.attachCaptures(v, &scope{names: names}, f, start, end)
+	return p.attachCaptures(v, &compile.Scope{Names: names}, f, start, end)
 }
 
 // --- Running expression code ---

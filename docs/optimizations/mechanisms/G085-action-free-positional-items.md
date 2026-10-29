@@ -29,7 +29,7 @@ grammars check 2–8% faster.
 Evidence records:
 [101](../101-skip-positional-items-for-action-free-rules.md).
 
-Source owners: [`rule type checking`](../../../internal/engine/check.go).
+Source owners: [`rule type checking`](../../../internal/compile/check.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

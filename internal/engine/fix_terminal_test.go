@@ -3,6 +3,7 @@ package engine
 import (
 	"testing"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -19,7 +20,7 @@ func TestFixTerminalTypes(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
-		for _, opts := range []Options{{}} {
+		for _, opts := range []compile.Options{{}} {
 			g, err := parseTest(fixed)
 			if err != nil {
 				t.Fatalf("%q: %v", fixed, err)

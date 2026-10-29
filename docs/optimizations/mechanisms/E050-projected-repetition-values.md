@@ -6,7 +6,7 @@ intermediate records and the later field traversal.
 
 ## Mechanism and Invariants
 
-`ruleProjections` accepts a capture used only as `map($x, (e) => e.$f)`. No
+`RuleProjections` accepts a capture used only as `map($x, (e) => e.$f)`. No
 predicate may read `$x`, positional body values must be unused, both capture
 names must occur once, and every element must produce a non-nil `f`. These
 checks prevent replacing a field-access error with a successful projection.
@@ -22,7 +22,7 @@ calls into fused operations.
 
 ## Reference Control
 
-Private core compilation option `noProjections` constructs a same-source general
+Internal compilation option `NoProjections` constructs a same-source general
 route for differential tests. Corpus comparisons use that engine reference to
 check all optimized backends. It is not a public parser option or a standalone
 disable selector for every generated output.
@@ -38,10 +38,10 @@ timing.
 Evidence records: [052](../052-projected-repetitions-in-generated-parse.md),
 [053](../053-projected-repetitions-in-the-engine-and-the-vms.md).
 
-Source owners: [`ruleProjections`](../../../internal/engine/project.go),
-[`walker.projectRepeat`](../../../internal/engine/compile_walk.go),
+Source owners: [`RuleProjections`](../../../internal/compile/project.go),
+[`Walker.ProjectRepeat`](../../../internal/compile/compile_walk.go),
 [`closureBuilder.ProjectRepeat`](../../../internal/engine/closures.go), [`projected
-repetition lowering`](../../../internal/engine/bcompile.go),
+repetition lowering`](../../../internal/compile/bcompile.go),
 [`Flow projectRepeat`](../../../internal/ir/flow/lower.go), which lowers the
 projected repetitions of generated Go and TypeScript.
 

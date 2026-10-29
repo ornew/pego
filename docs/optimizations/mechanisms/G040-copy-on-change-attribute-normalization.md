@@ -6,7 +6,7 @@ paths.
 
 ## Mechanism and Invariants
 
-`normalizeAttributes` returns an original node when no supported child or
+`NormalizeAttributes` returns an original node when no supported child or
 attribute changes. A changed descendant requires copying each modified ancestor
 before replacement, preserving the source AST. Attribute order, binding,
 validation, diagnostics and legacy nil/empty container shapes remain exact.
@@ -21,7 +21,7 @@ implied.
 
 ## Reference Control
 
-Private compilation option `eagerAttributeCopies` restores the eager same-source
+Internal compilation option `EagerAttributeCopies` restores the eager same-source
 normalizer. Selection occurs during compilation and adds no matching-loop
 branch.
 
@@ -35,8 +35,8 @@ preparation speedup or a matching benefit.
 Evidence records: [095](../095-attribute-copy-on-change.md).
 
 Source owners:
-[`normalizeAttributes`](../../../internal/engine/normalize_attributes.go),
-[`Options.eagerAttributeCopies`](../../../internal/engine/compile.go), [`source
+[`NormalizeAttributes`](../../../internal/compile/normalize_attributes.go),
+[`Options.EagerAttributeCopies`](../../../internal/compile/compile.go), [`source
 immutability and reference
 checks`](../../../internal/engine/normalize_attributes_test.go).
 

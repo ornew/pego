@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/compile"
 )
 
 // The value types of rules follow the value model (spec/language/types.md).
@@ -69,11 +71,11 @@ func TestValueTypes(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
-		p, err := Compile(g, Options{})
+		p, err := Compile(g, compile.Options{})
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
-		if got := p.valueTypes()[tc.rule].String(); got != tc.want {
+		if got := p.ValueTypes()[tc.rule].String(); got != tc.want {
 			t.Errorf("%q: rule %s\ngot  %s\nwant %s", tc.src, tc.rule, got, tc.want)
 		}
 	}
@@ -101,13 +103,13 @@ func TestValueTypesOfRepositoryGrammars(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", path, err)
 		}
-		p, err := Compile(g, Options{})
+		p, err := Compile(g, compile.Options{})
 		if err != nil {
 			t.Fatalf("%s: %v", path, err)
 		}
-		p.valueErrors() // checks every action without failing
+		p.ValueErrors() // checks every action without failing
 		for _, rd := range g.Rules() {
-			if v, ok := p.valueTypes()[rd.Name]; !ok || v == nil || v == tyBottom {
+			if v, ok := p.ValueTypes()[rd.Name]; !ok || v == nil || v == compile.TyBottom {
 				t.Errorf("%s: rule %s has value type %v", path, rd.Name, v)
 			}
 		}
@@ -120,34 +122,34 @@ func TestValueTypesOptionalCaptures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := Compile(g, Options{})
+	p, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	outer := p.valueTypes()["a"].(nodeTy)
-	if len(outer.caps) != 1 || outer.caps[0].t.String() != "*b" {
-		t.Fatalf("outer captures %+v", outer.caps)
+	outer := p.ValueTypes()["a"].(compile.NodeTy)
+	if len(outer.Caps) != 1 || outer.Caps[0].T.String() != "*b" {
+		t.Fatalf("outer captures %+v", outer.Caps)
 	}
-	inner := outer.value.(tupleTy).elems[0].(optTy).elem.(nodeTy)
-	if len(inner.caps) != 1 || inner.caps[0].t.String() != "b" {
-		t.Fatalf("inner captures %+v", inner.caps)
+	inner := outer.Value.(compile.TupleTy).Elems[0].(compile.OptTy).Elem.(compile.NodeTy)
+	if len(inner.Caps) != 1 || inner.Caps[0].T.String() != "b" {
+		t.Fatalf("inner captures %+v", inner.Caps)
 	}
 }
 
 // valueTypesOf builds src without running the type check, as a compiled grammar is rebuilt, and returns the value types of its rules and
 // the errors of its actions. It accepts earlier syntax, which still reaches the engine from JSON
 // grammars.
-func valueTypesOf(t *testing.T, src string) (map[string]ty, ErrorList) {
+func valueTypesOf(t *testing.T, src string) (map[string]compile.Ty, compile.ErrorList) {
 	t.Helper()
 	g, err := parseLegacyTest(src)
 	if err != nil {
 		t.Fatalf("%q: %v", src, err)
 	}
-	p, err := build(g, Options{}, make([]ruleFlags, len(g.Rules())))
+	p, err := build(g, compile.Options{}, make([]compile.RuleFlags, len(g.Rules())))
 	if err != nil {
 		t.Fatalf("%q: %v", src, err)
 	}
-	return valueTypes(p.staticProgram, nil)
+	return compile.ValueTypes(p.staticProgram, nil)
 }
 
 // Actions are typed in the value model: captures have the types of their values, and nodes expose

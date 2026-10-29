@@ -4,53 +4,54 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
 // closureBuilder builds the closure backend's form of a program: a matcher per expression, and the
 // bodies, values and actions of the rules.
 type closureBuilder struct {
-	prog    *staticProgram
-	control *compileControl
-	// plainDispatch leaves out the per-expression work charge (Options.controlledDispatch builds
+	prog    *compile.Program
+	control *compile.Control
+	// plainDispatch leaves out the per-expression work charge (Options.ControlledDispatch builds
 	// the metered closure graph).
 	plainDispatch bool
-	// rules holds the rules the parser runs, by ID (staticRule.id). They are made when a body or a
+	// rules holds the rules the parser runs, by ID (staticRule.ID). They are made when a body or a
 	// call needs them and get the facts of their static rules in finish.
 	rules []*rule
 }
 
-var _ exprBuilder[matcher] = (*closureBuilder)(nil)
+var _ compile.ExprBuilder[matcher] = (*closureBuilder)(nil)
 
 // newClosureBuilder returns the builder of the closure backend's form for the compiler c.
-func newClosureBuilder(c *compiler, plainDispatch bool) *closureBuilder {
-	return &closureBuilder{prog: c.prog, control: c.control, plainDispatch: plainDispatch}
+func newClosureBuilder(c *compile.Compiler, plainDispatch bool) *closureBuilder {
+	return &closureBuilder{prog: c.Prog, control: c.Control, plainDispatch: plainDispatch}
 }
 
 // rule returns the rule the parser runs for the static rule r.
-func (b *closureBuilder) rule(r *staticRule) *rule {
-	for len(b.rules) <= r.id {
+func (b *closureBuilder) rule(r *compile.Rule) *rule {
+	for len(b.rules) <= r.ID {
 		b.rules = append(b.rules, nil)
 	}
-	if b.rules[r.id] == nil {
-		b.rules[r.id] = &rule{}
+	if b.rules[r.ID] == nil {
+		b.rules[r.ID] = &rule{}
 	}
-	return b.rules[r.id]
+	return b.rules[r.ID]
 }
 
 // finish gives the rules the facts that the compiler found out about them, once it is done, and
 // returns them by ID.
 func (b *closureBuilder) finish() []*rule {
-	for _, rs := range [][]*staticRule{b.prog.rules, b.prog.twins} {
+	for _, rs := range [][]*compile.Rule{b.prog.RuleList, b.prog.Twins} {
 		for _, sr := range rs {
 			r := b.rule(sr)
 			r.staticRule = *sr
-			r.initVals = b.prog.vars.valuesOf(sr.vars)
-			if sr.nodeType != "" {
-				r.nodeKinds = value.NewNodeTypeKinds(sr.nodeType)
+			r.initVals = b.prog.Vars.ValuesOf(sr.Vars)
+			if sr.NodeType != "" {
+				r.nodeKinds = value.NewNodeTypeKinds(sr.NodeType)
 			}
-			if sr.opNodeType != "" {
-				r.opKinds = value.NewNodeTypeKinds(sr.opNodeType)
+			if sr.OpNodeType != "" {
+				r.opKinds = value.NewNodeTypeKinds(sr.OpNodeType)
 			}
 		}
 	}
@@ -64,23 +65,23 @@ func (b *closureBuilder) Step(m matcher) matcher {
 	return func(p *parser) (*value.Node, bool) { p.stepWork(); return m(p) }
 }
 
-func (b *closureBuilder) RuleBody(sr *staticRule, m matcher) {
+func (b *closureBuilder) RuleBody(sr *compile.Rule, m matcher) {
 	r := b.rule(sr)
-	r.kinds = value.NewRuleKinds(sr.name)
-	if sr.splice {
+	r.kinds = value.NewRuleKinds(sr.Name)
+	if sr.Splice {
 		r.value = func(_ *parser, v *value.Node, _ int) *value.Node { return v }
 	} else {
-		r.value = scopeValueOf(b.prog, sr.bodyExpr())
+		r.value = scopeValueOf(b.prog, sr.BodyExpr())
 	}
 	r.body = func(p *parser, _ int) (*value.Node, bool) { return m(p) }
-	if sr.action != nil {
-		r.act = termEvaluator(sr.action)
+	if sr.Action != nil {
+		r.act = termEvaluator(sr.Action)
 	}
 }
 
-func (b *closureBuilder) OperatorsRule(sr *staticRule, skip matcher, hasSkip bool, operands, operators []opLine[matcher]) {
+func (b *closureBuilder) OperatorsRule(sr *compile.Rule, skip matcher, hasSkip bool, operands, operators []compile.OpLine[matcher]) {
 	r := b.rule(sr)
-	r.kinds = value.NewRuleKinds(sr.name)
+	r.kinds = value.NewRuleKinds(sr.Name)
 	// The lines build the rule's value.
 	r.value = func(_ *parser, v *value.Node, _ int) *value.Node { return v }
 	pr := &operatorsRule{}
@@ -92,8 +93,8 @@ func (b *closureBuilder) OperatorsRule(sr *staticRule, skip matcher, hasSkip boo
 		pr.operands = append(pr.operands, b.line(l))
 	}
 	for _, l := range operators {
-		o := &operatorsRuleOp{id: l.id, kind: l.kind, assoc: l.assoc, level: l.level, line: b.line(l)}
-		if l.kind == grammar.Prefix {
+		o := &operatorsRuleOp{id: l.ID, kind: l.Kind, assoc: l.Assoc, level: l.Level, line: b.line(l)}
+		if l.Kind == grammar.Prefix {
 			pr.prefix = append(pr.prefix, o)
 		} else {
 			pr.led = append(pr.led, o)
@@ -102,11 +103,11 @@ func (b *closureBuilder) OperatorsRule(sr *staticRule, skip matcher, hasSkip boo
 	r.body = func(p *parser, min int) (*value.Node, bool) { return p.operatorsRuleParse(r, min) }
 }
 
-func (b *closureBuilder) line(l opLine[matcher]) *operatorsRuleLine {
-	pl := &operatorsRuleLine{scope: l.scope, m: l.m, key: l.key}
-	pl.value, pl.single, pl.shape = scopeValueOf(b.prog, l.expr), singleModeOf(b.prog, l.expr), shaperOf(b.prog, l.expr)
-	if l.action != nil {
-		pl.act = termEvaluator(l.action)
+func (b *closureBuilder) line(l compile.OpLine[matcher]) *operatorsRuleLine {
+	pl := &operatorsRuleLine{scope: l.Scope, m: l.Form, key: l.Key}
+	pl.value, pl.single, pl.shape = scopeValueOf(b.prog, l.Expr), compile.SingleModeOf(b.prog, l.Expr), compile.ShaperOf(b.prog, l.Expr)
+	if l.Action != nil {
+		pl.act = termEvaluator(l.Action)
 	}
 	return pl
 }
@@ -114,7 +115,7 @@ func (b *closureBuilder) line(l opLine[matcher]) *operatorsRuleLine {
 func (b *closureBuilder) Literal(e *grammar.Literal, desc expID, build bool) matcher {
 	val := value.LiteralValue(e.Value)
 	if e.IgnoreCase {
-		rs := foldedRunes([]rune(val))
+		rs := compile.FoldedRunes([]rune(val))
 		return func(p *parser) (*value.Node, bool) {
 			start := p.pos
 			if !p.matchLiteralFold(rs) {
@@ -147,13 +148,13 @@ func (b *closureBuilder) Class(e *grammar.CharClass, desc expID, build bool) mat
 }
 
 func (b *closureBuilder) Any(build bool) matcher {
-	return single(build, idAny, func(*parser, rune) bool { return true })
+	return single(build, compile.IDAny, func(*parser, rune) bool { return true })
 }
 
-func (b *closureBuilder) Call(sr *staticRule, min int) matcher {
+func (b *closureBuilder) Call(sr *compile.Rule, min int) matcher {
 	r := b.rule(sr)
 	return func(p *parser) (*value.Node, bool) {
-		if r.plain && !p.noPlain {
+		if r.Plain && !p.noPlain {
 			return p.invokePlain(r, min) // what call does for such a rule, without its checks
 		}
 		return p.call(r, min)
@@ -190,7 +191,7 @@ func (b *closureBuilder) Seq(ms []matcher, flat, valued []bool, n int, build boo
 	}
 }
 
-func (b *closureBuilder) Choice(e *grammar.Choice, ms []matcher, firsts []first, build bool) matcher {
+func (b *closureBuilder) Choice(e *grammar.Choice, ms []matcher, firsts []compile.First, build bool) matcher {
 	guards := make([]firstGuard, len(e.Alts))
 	guarded := false
 	for i, alt := range e.Alts {
@@ -261,17 +262,17 @@ type firstGuard struct {
 }
 
 // guard returns the test of the next character that the alternative beginning with f.term needs.
-func (b *closureBuilder) guard(f first) firstGuard {
-	switch t := f.term.(type) {
+func (b *closureBuilder) guard(f compile.First) firstGuard {
+	switch t := f.Term.(type) {
 	case *grammar.Literal:
 		r0, _ := utf8.DecodeRuneInString(t.Value)
 		if t.IgnoreCase {
-			f0 := foldASCIIRune(r0)
-			return firstGuard{func(_ *parser, r rune) bool { return foldASCIIRune(r) == f0 }, f.desc, f.depth}
+			f0 := compile.FoldASCIIRune(r0)
+			return firstGuard{func(_ *parser, r rune) bool { return compile.FoldASCIIRune(r) == f0 }, f.Desc, f.Depth}
 		}
-		return firstGuard{func(_ *parser, r rune) bool { return r == r0 }, f.desc, f.depth}
+		return firstGuard{func(_ *parser, r rune) bool { return r == r0 }, f.Desc, f.Depth}
 	case *grammar.CharClass:
-		return firstGuard{classAcceptControlled(t, b.control), f.desc, f.depth}
+		return firstGuard{classAcceptControlled(t, b.control), f.Desc, f.Depth}
 	}
 	return firstGuard{}
 }
@@ -417,7 +418,7 @@ func single(build bool, desc expID, accept func(*parser, rune) bool) matcher {
 	}
 }
 
-func (b *closureBuilder) Predicate(e *grammar.Predicate, s *scope) matcher {
+func (b *closureBuilder) Predicate(e *grammar.Predicate, s *compile.Scope) matcher {
 	if a, ok := e.Term.(*grammar.Bind); ok {
 		return func(p *parser) (*value.Node, bool) {
 			ctx := p.useCtx(evalCtx{p: p, scope: s, frame: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
@@ -471,7 +472,7 @@ func (b *closureBuilder) ScanRepeat(e *grammar.Repeat, desc expID) matcher {
 	}
 }
 
-func (b *closureBuilder) Repeat(e *grammar.Repeat, m matcher, elemScope *scope, ownScope, build, stream bool, site int, shiftable bool) matcher {
+func (b *closureBuilder) Repeat(e *grammar.Repeat, m matcher, elemScope *compile.Scope, ownScope, build, stream bool, site int, shiftable bool) matcher {
 	min, max := e.Min, e.Max
 	elemValue := scopeValueOf(b.prog, e.Expr)
 	var rs *runSite
@@ -494,7 +495,7 @@ func (b *closureBuilder) Repeat(e *grammar.Repeat, m matcher, elemScope *scope, 
 			p.cut = false
 			var f *frame
 			if ownScope {
-				f = p.newFrame(len(elemScope.names))
+				f = p.newFrame(len(elemScope.Names))
 				p.frame = f
 			}
 			v, ok := m(p)
@@ -692,15 +693,15 @@ func recoverAttr(m, skip matcher, build bool) matcher {
 }
 
 // shapeTuple returns the tuple node, shaped by s, of the result v of a match of [start, p.pos).
-func shapeTuple(p *parser, s shaper, v *value.Node, start int) *value.Node {
-	if s.elems {
-		if s.shared && v != nil {
+func shapeTuple(p *parser, s compile.Shaper, v *value.Node, start int) *value.Node {
+	if s.Elems {
+		if s.Shared && v != nil {
 			return p.newNode(value.Data{Kind: value.SeqKind, Start: value.D(v).Start, End: value.D(v).End, Children: value.D(v).Children, Fresh: true})
 		}
 		return v
 	}
 	var kids []*value.Node
-	if s.k == 1 {
+	if s.K == 1 {
 		kids = p.nodes(1)
 		kids[0] = v
 	}
@@ -709,11 +710,11 @@ func shapeTuple(p *parser, s shaper, v *value.Node, start int) *value.Node {
 
 // shapeSingle returns the value, shaped by s, of the result v where the expression takes one
 // element; ok is false when it has no value.
-func shapeSingle(p *parser, s shaper, mode singleMode, v *value.Node, start int) (*value.Node, bool) {
+func shapeSingle(p *parser, s compile.Shaper, mode compile.SingleMode, v *value.Node, start int) (*value.Node, bool) {
 	switch mode {
-	case singlePass:
-		return s.one(v), true
-	case singleTuple:
+	case compile.SinglePass:
+		return s.One(v), true
+	case compile.SingleTuple:
 		return shapeTuple(p, s, v, start), true
 	}
 	return nil, false
@@ -721,9 +722,9 @@ func shapeSingle(p *parser, s shaper, mode singleMode, v *value.Node, start int)
 
 // singleMatcher returns a matcher of the value of e where it takes one element (an alternative or
 // the operand of ?), from the building matcher m of e. Without a value the result is nil.
-func singleMatcher(prog *staticProgram, e grammar.Expr, m matcher) matcher {
-	mode, sh := singleModeOf(prog, e), shaperOf(prog, e)
-	if mode == singlePass && !sh.elems {
+func singleMatcher(prog *compile.Program, e grammar.Expr, m matcher) matcher {
+	mode, sh := compile.SingleModeOf(prog, e), compile.ShaperOf(prog, e)
+	if mode == compile.SinglePass && !sh.Elems {
 		return m
 	}
 	return func(p *parser) (*value.Node, bool) {
@@ -739,9 +740,9 @@ func singleMatcher(prog *staticProgram, e grammar.Expr, m matcher) matcher {
 
 // captureMatcher is singleMatcher for a capture or a recovered expression, whose value is the
 // unit node of the range matched when e has no value.
-func captureMatcher(prog *staticProgram, e grammar.Expr, m matcher) matcher {
-	mode, sh := singleModeOf(prog, e), shaperOf(prog, e)
-	if mode == singlePass && !sh.elems {
+func captureMatcher(prog *compile.Program, e grammar.Expr, m matcher) matcher {
+	mode, sh := compile.SingleModeOf(prog, e), compile.ShaperOf(prog, e)
+	if mode == compile.SinglePass && !sh.Elems {
 		return m
 	}
 	return func(p *parser) (*value.Node, bool) {
@@ -758,10 +759,10 @@ func captureMatcher(prog *staticProgram, e grammar.Expr, m matcher) matcher {
 }
 
 // scopeValue returns the value of a scope whose body e matched [start, p.pos) with the result v.
-func scopeValueOf(prog *staticProgram, e grammar.Expr) func(p *parser, v *value.Node, start int) *value.Node {
-	sh := shaperOf(prog, e)
-	if scopeTuple(prog, e) {
+func scopeValueOf(prog *compile.Program, e grammar.Expr) func(p *parser, v *value.Node, start int) *value.Node {
+	sh := compile.ShaperOf(prog, e)
+	if compile.ScopeTuple(prog, e) {
 		return func(p *parser, v *value.Node, start int) *value.Node { return shapeTuple(p, sh, v, start) }
 	}
-	return func(_ *parser, v *value.Node, _ int) *value.Node { return sh.one(v) }
+	return func(_ *parser, v *value.Node, _ int) *value.Node { return sh.One(v) }
 }

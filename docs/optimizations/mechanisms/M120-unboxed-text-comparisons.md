@@ -34,7 +34,7 @@ Evidence records: [036](../036-comparing-texts-without-boxing-them.md),
 [102](../102-read-text-struct-fields-without-a-struct-lookup.md).
 
 Source owners: [`text equality evaluator`](../../../internal/engine/eval.go),
-[`ETEXTCHK and ETEXTEQ`](../../../internal/engine/bcompile.go), [`native text
+[`ETEXTCHK and ETEXTEQ`](../../../internal/compile/bcompile.go), [`native text
 comparison instructions`](../../../internal/engine/vm.go), [`text comparison
 emission`](../../../internal/engine/gen.go), [`TypeScript text comparison
 emission`](../../../internal/engine/gen_ts.go).

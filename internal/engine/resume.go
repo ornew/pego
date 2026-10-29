@@ -3,6 +3,7 @@ package engine
 import (
 	"slices"
 
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -29,7 +30,7 @@ import (
 type runSite struct {
 	id              int
 	m               matcher
-	scope           *scope
+	scope           *compile.Scope
 	ownScope, build bool
 	min, max        int
 	shiftable       bool // the elements' values contain no position values
@@ -274,7 +275,7 @@ func (p *parser) resumeRepeat(rs *runSite) (*value.Node, bool) {
 		p.cut = false
 		var f *frame
 		if rs.ownScope {
-			f = p.newFrame(len(rs.scope.names))
+			f = p.newFrame(len(rs.scope.Names))
 			p.frame = f
 		}
 		p.beginElem(&r)

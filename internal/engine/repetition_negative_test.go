@@ -13,6 +13,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
@@ -33,7 +34,7 @@ func grammarWithNegativeMaximum(t testing.TB, src string, maximum int) *grammar.
 		t.Fatal(err)
 	}
 	for _, r := range g.Rules() {
-		walkExpr(r.Expr, func(e grammar.Expr) {
+		compile.WalkExpr(r.Expr, func(e grammar.Expr) {
 			if rep, ok := e.(*grammar.Repeat); ok {
 				rep.Max = maximum
 			}
@@ -59,7 +60,7 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				for _, opts := range []Options{{}, {DisableMemo: true}, {noProjections: true}} {
+				for _, opts := range []compile.Options{{}, {DisableMemo: true}, {NoProjections: true}} {
 					p, err := Compile(g, opts)
 					if err != nil {
 						t.Fatal(err)
@@ -88,7 +89,7 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 							t.Errorf("negative maxima alone must not lower to %s", in.Op)
 						}
 					}
-					if err := validateModule(p.Module()); err != nil {
+					if err := compile.ValidateModule(p.Module()); err != nil {
 						t.Errorf("module: %v", err)
 					}
 					if ast := executableASTJSON(t, p.Grammar); ast != savedAST {
@@ -188,7 +189,7 @@ func TestCompiledSourceMetadataOmitted(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := Compile(g, Options{})
+	p, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,7 +219,7 @@ func TestNegativeMaximumWithWideMinimum(t *testing.T) {
 	for _, body := range []string{`"é" #repeat(2147483648, ) $$`, `[é] #repeat(2147483648, ) #atomic $$`} {
 		for _, maximum := range negativeMaxima() {
 			g := grammarWithNegativeMaximum(t, "rule main = "+body, maximum)
-			p, err := Compile(g, Options{})
+			p, err := Compile(g, compile.Options{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -262,7 +263,7 @@ func TestNegativeMaximumDocumentsAndStreams(t *testing.T) {
 	minRecorded = 1
 	for _, maximum := range negativeMaxima() {
 		g := grammarWithNegativeMaximum(t, `rule main = "é"* #stream $$`, maximum)
-		p, err := Compile(g, Options{})
+		p, err := Compile(g, compile.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -346,7 +347,7 @@ func testGeneratedNegativeMaximum(t *testing.T) {
 		maximum = -2
 	}
 	g := grammarWithNegativeMaximum(t, `rule main []node[string] = v1:"é"* $$ => $v1.Value`, maximum)
-	p, err := Compile(g, Options{})
+	p, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -429,15 +430,15 @@ func BenchmarkBytecodeLowering(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			p, err := Compile(g, Options{})
+			p, err := Compile(g, compile.Options{})
 			if err != nil {
 				b.Fatal(err)
 			}
 			b.ReportAllocs()
 			b.ResetTimer()
 			for b.Loop() {
-				compiler := &bcompiler{prog: p.staticProgram, m: &bytecode.Module{}, strs: map[string]int{}}
-				compiler.compile()
+				compiler := &compile.Bcompiler{Prog: p.staticProgram, M: &bytecode.Module{}, Strs: map[string]int{}}
+				compiler.Compile()
 			}
 		})
 	}

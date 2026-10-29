@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
@@ -308,7 +309,7 @@ rule main Root = x:(";" #missing) => Root{Token: $x}`
 	if err != nil {
 		t.Fatal(err)
 	}
-	reloaded, err := Compile(parsed, Options{})
+	reloaded, err := Compile(parsed, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -413,7 +414,7 @@ rule token = ";" #missing`)
 rule outer = inner
 rule inner = ";" #missing`)
 	for _, name := range []string{"main", "outer", "inner"} {
-		if !dependent.byName[name].missing {
+		if !dependent.ByName[name].Missing {
 			t.Fatal("missing dependency not transitive", name)
 		}
 	}
@@ -505,7 +506,7 @@ rule main = "a"`)
 	if n, err := prog.Parse("main", "a"); n == nil || err != nil {
 		t.Fatal(n, err)
 	}
-	if !prog.hasMissing {
+	if !prog.HasMissing {
 		t.Fatal("reserved Missing reference was not recorded")
 	}
 	if _, err := prog.MarshalBinary("main"); err == nil {

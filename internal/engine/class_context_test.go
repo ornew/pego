@@ -11,6 +11,7 @@ import (
 	"weak"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/starttest"
 )
@@ -32,29 +33,33 @@ func TestClassConstructionContextCancellation(t *testing.T) {
 	}
 	for _, phase := range []struct {
 		name string
-		run  func(*compileControl)
+		run  func(*compile.Control)
 	}{
-		{"descriptor", func(c *compileControl) { charClassStringControlled(cl, c) }},
-		{"copy", func(c *compileControl) { copyClassRanges(cl.Ranges, c) }},
-		{"bitmap", func(c *compileControl) { classASCII(cl.Ranges, false, c) }},
-		{"accept-construction", func(c *compileControl) { classAcceptControlled(cl, c) }},
-		{"matcher", func(c *compileControl) { newClosureWalker(&compiler{control: c}, false).exprForm(cl, newScope(), true) }},
-		{"choice-guard", func(c *compileControl) { (&closureBuilder{control: c}).guard(first{term: cl}) }},
-		{"scan-repeat", func(c *compileControl) {
+		{"descriptor", func(c *compile.Control) { compile.CharClassStringControlled(cl, c) }},
+		{"copy", func(c *compile.Control) { compile.CopyClassRanges(cl.Ranges, c) }},
+		{"bitmap", func(c *compile.Control) { compile.ClassASCII(cl.Ranges, false, c) }},
+		{"accept-construction", func(c *compile.Control) { classAcceptControlled(cl, c) }},
+		{"matcher", func(c *compile.Control) {
+			newClosureWalker(&compile.Compiler{Control: c}, false).ExprForm(cl, compile.NewScope(), true)
+		}},
+		{"choice-guard", func(c *compile.Control) { (&closureBuilder{control: c}).guard(compile.First{Term: cl}) }},
+		{"scan-repeat", func(c *compile.Control) {
 			(&closureBuilder{control: c}).ScanRepeat(&grammar.Repeat{Expr: cl, Max: -1}, 0)
 		}},
-		{"guard-extraction", func(c *compileControl) { firstTerminalControlled(&staticProgram{}, deep, 0, map[string]bool{}, c) }},
+		{"guard-extraction", func(c *compile.Control) {
+			compile.FirstTerminalControlled(&compile.Program{}, deep, 0, map[string]bool{}, c)
+		}},
 	} {
 		t.Run(phase.name, func(t *testing.T) {
-			c := &compileControl{ctx: compileTestContext(t, 1)}
+			c := &compile.Control{Ctx: compileTestContext(t, 1)}
 			defer func() {
 				failure := recover()
-				stop, ok := failure.(compileCancellation)
-				if !ok || !errors.Is(stop.err, context.Canceled) {
+				stop, ok := failure.(compile.Cancellation)
+				if !ok || !errors.Is(stop.Err, context.Canceled) {
 					t.Fatalf("class phase did not cancel internally: %v", failure)
 				}
-				if c.steps != compilePollStride {
-					t.Fatalf("poll outside class traversal: %d", c.steps)
+				if c.Steps != compile.PollStride {
+					t.Fatalf("poll outside class traversal: %d", c.Steps)
 				}
 				if !reflect.DeepEqual(before, cl.Ranges) {
 					t.Fatal("cancellation mutated ranges")
@@ -71,8 +76,8 @@ func TestClassConstructionContextFacts(t *testing.T) {
 		for _, neg := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%d/%t", i, neg), func(t *testing.T) {
 				cl := &grammar.CharClass{Ranges: rs, Negated: neg}
-				c := &compileControl{ctx: context.Background()}
-				if got := charClassStringControlled(cl, c); got != charClassString(cl) {
+				c := &compile.Control{Ctx: context.Background()}
+				if got := compile.CharClassStringControlled(cl, c); got != compile.CharClassString(cl) {
 					t.Fatalf("descriptor %s", got)
 				}
 				ordinary, controlled := classAccept(cl), classAcceptControlled(cl, c)
@@ -104,12 +109,12 @@ func TestClassConstructionContextFacts(t *testing.T) {
 		}
 	}
 	cl := &grammar.CharClass{Ranges: []grammar.CharRange{{Lo: '-', Hi: '-'}, {Lo: '[', Hi: '['}, {Lo: ']', Hi: ']'}, {Lo: '^', Hi: '^'}, {Lo: '\\', Hi: '\\'}}}
-	if got := charClassStringControlled(cl, &compileControl{ctx: context.Background()}); got != `[\-\[\]\^\\]` {
+	if got := compile.CharClassStringControlled(cl, &compile.Control{Ctx: context.Background()}); got != `[\-\[\]\^\\]` {
 		t.Fatalf("escaped descriptor %q", got)
 	}
 	rs := contextClassRanges()
 	cl = &grammar.CharClass{Ranges: rs}
-	accept := classAcceptControlled(cl, &compileControl{ctx: context.Background()})
+	accept := classAcceptControlled(cl, &compile.Control{Ctx: context.Background()})
 	rs[0] = grammar.CharRange{Lo: 'a', Hi: 'a'}
 	if !accept(&parser{}, 256) || accept(&parser{}, 'a') {
 		t.Fatal("matcher aliases source range slice")
@@ -129,12 +134,12 @@ func TestClassConstructionCompileContextParity(t *testing.T) {
 		g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: e}}}}
 		starttest.MarkAll(g)
 		for _, compiledRecognition := range []bool{false, true} {
-			a, err := Compile(g, Options{recognize: compiledRecognition})
+			a, err := Compile(g, compile.Options{Recognize: compiledRecognition})
 			if err != nil {
 				t.Fatal(err)
 			}
 			ctx, cancel := context.WithCancel(context.Background())
-			b, err := CompileContext(ctx, g, Options{recognize: compiledRecognition})
+			b, err := CompileContext(ctx, g, compile.Options{Recognize: compiledRecognition})
 			cancel()
 			if err != nil {
 				t.Fatal(err)
@@ -183,7 +188,7 @@ func classProgramWithoutContext(t *testing.T) (*Program, weak.Pointer[classCompi
 	cl := &grammar.CharClass{Ranges: []grammar.CharRange{{Lo: 'a', Hi: 'a'}, {Lo: 'b', Hi: 'b'}, {Lo: 'β', Hi: 'β'}}}
 	g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: &grammar.Choice{Alts: []grammar.Expr{&grammar.Seq{Items: []grammar.Expr{cl, &grammar.EndInput{}}}, &grammar.Discard{Expr: &grammar.Repeat{Expr: cl, Min: 1, Max: -1}}}}}}}}
 	starttest.MarkAll(g)
-	p, err := CompileContext(ctx, g, Options{})
+	p, err := CompileContext(ctx, g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,22 +223,22 @@ func TestClassConstructionProgramReleasesCompileContext(t *testing.T) {
 
 func TestFirstTerminalContextFacts(t *testing.T) {
 	leaf := &grammar.Literal{Value: "a"}
-	a := &staticRule{def: &grammar.RuleDef{Name: "a", Expr: &grammar.Ref{Name: "b"}}}
-	b := &staticRule{def: &grammar.RuleDef{Name: "b", Expr: &grammar.Capture{Name: "x", Expr: &grammar.Atomic{Expr: &grammar.Discard{Expr: &grammar.Seq{Items: []grammar.Expr{leaf}}}}}}}
-	p := &staticProgram{byName: map[string]*staticRule{"a": a, "b": b}}
-	for _, control := range []*compileControl{nil, {ctx: context.Background()}} {
-		got, depth := firstTerminalControlled(p, &grammar.Ref{Name: "a"}, 0, map[string]bool{}, control)
+	a := &compile.Rule{Def: &grammar.RuleDef{Name: "a", Expr: &grammar.Ref{Name: "b"}}}
+	b := &compile.Rule{Def: &grammar.RuleDef{Name: "b", Expr: &grammar.Capture{Name: "x", Expr: &grammar.Atomic{Expr: &grammar.Discard{Expr: &grammar.Seq{Items: []grammar.Expr{leaf}}}}}}}
+	p := &compile.Program{ByName: map[string]*compile.Rule{"a": a, "b": b}}
+	for _, control := range []*compile.Control{nil, {Ctx: context.Background()}} {
+		got, depth := compile.FirstTerminalControlled(p, &grammar.Ref{Name: "a"}, 0, map[string]bool{}, control)
 		if got != leaf || depth != 2 {
 			t.Fatalf("terminal=%v depth=%d", got, depth)
 		}
 		for _, expr := range []grammar.Expr{&grammar.Literal{}, &grammar.Ref{Name: "missing"}, &grammar.Optional{Expr: leaf}} {
-			if got, depth := firstTerminalControlled(p, expr, 0, map[string]bool{}, control); got != nil || depth != 0 {
+			if got, depth := compile.FirstTerminalControlled(p, expr, 0, map[string]bool{}, control); got != nil || depth != 0 {
 				t.Fatal("guard crossed an unsupported boundary")
 			}
 		}
 	}
-	b.def.Expr = &grammar.Ref{Name: "a"}
-	if got, depth := firstTerminalControlled(p, &grammar.Ref{Name: "a"}, 0, map[string]bool{}, &compileControl{ctx: context.Background()}); got != nil || depth != 0 {
+	b.Def.Expr = &grammar.Ref{Name: "a"}
+	if got, depth := compile.FirstTerminalControlled(p, &grammar.Ref{Name: "a"}, 0, map[string]bool{}, &compile.Control{Ctx: context.Background()}); got != nil || depth != 0 {
 		t.Fatal("cyclic guard did not stop")
 	}
 }
@@ -243,7 +248,7 @@ func TestClassBitmapPollingBoundaries(t *testing.T) {
 		contextClassRanges(),
 		{{Lo: 0, Hi: 31}, {Lo: 'a', Hi: 'z'}, {Lo: 127, Hi: 127}},
 	} {
-		for _, start := range []uint32{0, compilePollStride - 1, ^uint32(0) - 1} {
+		for _, start := range []uint32{0, compile.PollStride - 1, ^uint32(0) - 1} {
 			for _, neg := range []bool{false, true} {
 				// Count a reference scan one visit at a time, including early matches.
 				var visits uint64
@@ -262,11 +267,11 @@ func TestClassBitmapPollingBoundaries(t *testing.T) {
 					}
 				}
 				ctx := compileTestContext(t, 1<<20)
-				c := &compileControl{ctx: ctx, steps: start}
-				got := classASCII(rs, neg, c)
-				checks := (uint64(start%compilePollStride) + visits) / compilePollStride
-				if got != want || c.steps != start+uint32(visits) || (1<<20)-ctx.left != int(checks) {
-					t.Fatalf("start=%d neg=%t steps=%d checks=%d wantchecks=%d", start, neg, c.steps, (1<<20)-ctx.left, checks)
+				c := &compile.Control{Ctx: ctx, Steps: start}
+				got := compile.ClassASCII(rs, neg, c)
+				checks := (uint64(start%compile.PollStride) + visits) / compile.PollStride
+				if got != want || c.Steps != start+uint32(visits) || (1<<20)-ctx.left != int(checks) {
+					t.Fatalf("start=%d neg=%t steps=%d checks=%d wantchecks=%d", start, neg, c.Steps, (1<<20)-ctx.left, checks)
 				}
 			}
 		}

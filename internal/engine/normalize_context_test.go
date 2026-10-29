@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 )
 
 func TestNormalizationContextCancellation(t *testing.T) {
@@ -63,8 +64,8 @@ func TestNormalizationContextCancellation(t *testing.T) {
 				var diagnostics error
 				defer func() {
 					failure := recover()
-					cancelled, ok := failure.(compileCancellation)
-					if !ok || !errors.Is(cancelled.err, context.Canceled) || ctx.left != 0 {
+					cancelled, ok := failure.(compile.Cancellation)
+					if !ok || !errors.Is(cancelled.Err, context.Canceled) || ctx.left != 0 {
 						t.Fatalf("normalization did not cancel during traversal: %v", failure)
 					}
 					if result != nil || diagnostics != nil {
@@ -75,7 +76,7 @@ func TestNormalizationContextCancellation(t *testing.T) {
 						t.Fatalf("cancelled normalization changed source: %v", err)
 					}
 				}()
-				result, diagnostics = normalizeAttributesControlled(g, eager, &compileControl{ctx: ctx})
+				result, diagnostics = compile.NormalizeAttributesControlled(g, eager, &compile.Control{Ctx: ctx})
 				t.Fatal("normalization finished without cancellation")
 			})
 		}
@@ -109,8 +110,8 @@ rule main (Alias) = n:([0-9]+) => (T{Text: (text($n))})`,
 			for _, eager := range []bool{false, true} {
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
-				got, gotErr := normalizeAttributesControlled(g, eager, &compileControl{ctx: ctx})
-				want, wantErr := normalizeAttributesWithCopies(g, eager)
+				got, gotErr := compile.NormalizeAttributesControlled(g, eager, &compile.Control{Ctx: ctx})
+				want, wantErr := compile.NormalizeAttributesWithCopies(g, eager)
 				if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(gotErr, wantErr) {
 					t.Fatalf("context changed normalized result: %v / %v", gotErr, wantErr)
 				}
@@ -121,8 +122,8 @@ rule main (Alias) = n:([0-9]+) => (T{Text: (text($n))})`,
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			got, gotErr := CompileContext(ctx, g, Options{})
-			want, wantErr := Compile(g, Options{})
+			got, gotErr := CompileContext(ctx, g, compile.Options{})
+			want, wantErr := Compile(g, compile.Options{})
 			if !reflect.DeepEqual(gotErr, wantErr) {
 				t.Fatalf("compile diagnostics differ: %v / %v", gotErr, wantErr)
 			}
@@ -154,11 +155,11 @@ func TestNormalizationCopiesObserveCancellation(t *testing.T) {
 				t.Fatal(err)
 			}
 			ctx := compileTestContext(t, 3)
-			control := &compileControl{ctx: ctx}
+			control := &compile.Control{Ctx: ctx}
 			defer func() {
 				failure := recover()
-				cancelled, ok := failure.(compileCancellation)
-				if !ok || !errors.Is(cancelled.err, context.Canceled) || ctx.left != 0 {
+				cancelled, ok := failure.(compile.Cancellation)
+				if !ok || !errors.Is(cancelled.Err, context.Canceled) || ctx.left != 0 {
 					t.Fatalf("copy did not cancel: %v", failure)
 				}
 				after, err := json.Marshal([]any{values, keywords, attrs, terms, expressions})
@@ -168,15 +169,15 @@ func TestNormalizationCopiesObserveCancellation(t *testing.T) {
 			}()
 			switch phase {
 			case "slice":
-				normalizationClone(values, control)
+				compile.NormalizationClone(values, control)
 			case "keywords":
-				cloneAttributeKeywords(keywords, control)
+				compile.CloneAttributeKeywords(keywords, control)
 			case "attribute-append":
-				appendNormalizedAttribute(attrs, &grammar.Attribute{Name: "other"}, control)
+				compile.AppendNormalizedAttribute(attrs, &grammar.Attribute{Name: "other"}, control)
 			case "predicate-flatten":
 				source := []grammar.Expr{&grammar.Predicate{Term: &grammar.Block{Statements: terms}}}
 				normalized := []grammar.Expr{&grammar.Seq{Items: expressions}}
-				expandPredicateBlocks(source, normalized, control)
+				compile.ExpandPredicateBlocks(source, normalized, control)
 			}
 			t.Fatal("copy finished without cancellation")
 		})
@@ -187,11 +188,11 @@ func TestNormalizationFinalCheckpoint(t *testing.T) {
 	g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: &grammar.Literal{Value: "a"}}}}}
 	ctx := compileTestContext(t, 2)
 	defer func() {
-		cancelled, ok := recover().(compileCancellation)
-		if !ok || !errors.Is(cancelled.err, context.Canceled) || ctx.left != 0 {
+		cancelled, ok := recover().(compile.Cancellation)
+		if !ok || !errors.Is(cancelled.Err, context.Canceled) || ctx.left != 0 {
 			t.Fatal("short normalization ignored final cancellation")
 		}
 	}()
-	normalizeAttributesControlled(g, false, &compileControl{ctx: ctx})
+	compile.NormalizeAttributesControlled(g, false, &compile.Control{Ctx: ctx})
 	t.Fatal("normalization returned a cancelled result")
 }

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/syntax"
@@ -165,7 +166,7 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 			if err != nil {
 				t.Fatal(err)
 			}
-			checked, err := Compile(g, Options{})
+			checked, err := Compile(g, compile.Options{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -180,12 +181,12 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 			if err != nil {
 				t.Fatal(err)
 			}
-			untyped, err := Compile(ug, Options{})
+			untyped, err := Compile(ug, compile.Options{})
 			if err != nil {
 				t.Fatal(err)
 			}
 			limits := limits.WorkLimits{MaxSteps: 1 << 30}
-			declared := checked.typed.fields["S"][0].t.String() // as the value checker resolves it
+			declared := checked.Typed.Fields["S"][0].T.String() // as the value checker resolves it
 			for _, in := range resultCheckInputs() {
 				value := fieldCheckValues[in[:1]]
 				rule := resultCheckRoutes[in[1]]
@@ -411,7 +412,7 @@ func TestOperatorResultChecks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	prog, err := Compile(g, Options{})
+	prog, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}

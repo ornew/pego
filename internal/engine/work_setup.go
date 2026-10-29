@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/compile"
 )
 
 // admitParse validates fixed metadata before caller Context methods. Callers
@@ -32,7 +33,7 @@ func (prog *Program) admitParse(start string, o ParseOptions, stream bool) (*Pro
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		if stream && !r.stream {
+		if stream && !r.Stream {
 			return nil, nil, nil, fmt.Errorf("rule %s has no #stream repetition", start)
 		}
 		return prog, r, nil, nil
@@ -83,16 +84,16 @@ func (prog *Program) preflightRule(b Backend, name string, stream bool) (bool, e
 		return false, fmt.Errorf("unknown backend %d", b)
 	}
 	if prog.Grammar != nil {
-		r := prog.byName[name]
+		r := prog.ByName[name]
 		if r == nil {
 			return false, fmt.Errorf("rule %s is not defined", name)
 		}
-		return r.stream, nil
+		return r.Stream, nil
 	}
-	if prog.module != nil {
-		for _, ri := range prog.module.Rules {
-			if prog.module.Strings[ri.Name] == name {
-				return stream && moduleStreams(prog.module, ri.Entry), nil
+	if prog.Bytecode != nil {
+		for _, ri := range prog.Bytecode.Rules {
+			if prog.Bytecode.Strings[ri.Name] == name {
+				return stream && moduleStreams(prog.Bytecode, ri.Entry), nil
 			}
 		}
 	}
@@ -137,16 +138,16 @@ func (prog *Program) prepareControlledProgram(b Backend, c *workControl) (*Progr
 	}
 	c.check()
 	prog.workOnce.Do(func() {
-		flags := make([]ruleFlags, len(prog.rules))
-		for i, r := range prog.rules {
-			flags[i] = ruleFlags{memo: r.memo, leader: r.leader, positional: r.positional, twin: r.twinOK}
+		flags := make([]compile.RuleFlags, len(prog.RuleList))
+		for i, r := range prog.RuleList {
+			flags[i] = compile.RuleFlags{Memo: r.Memo, Leader: r.Leader, Positional: r.Positional, Twin: r.TwinOK}
 		}
-		prog.workProgram, prog.workErr = build(prog.Grammar, Options{
-			recognize:          prog.workRecognize,
-			recognizer:         prog.workRecognizer,
-			noProjections:      prog.noProjections,
-			controlledDispatch: true,
-			SourceInfo:         prog.sourceInfo,
+		prog.workProgram, prog.workErr = build(prog.Grammar, compile.Options{
+			Recognize:          prog.WorkRecognize,
+			Recognizer:         prog.WorkRecognizer,
+			NoProjections:      prog.NoProjections,
+			ControlledDispatch: true,
+			SourceInfo:         prog.RecordsSourceInfo,
 		}, flags)
 	})
 	c.check()

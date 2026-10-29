@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
 )
@@ -122,7 +123,7 @@ func guardProbes(t *testing.T, src string, cases []*coreGenCase) (*Program, []gu
 		if err != nil {
 			return nil, err
 		}
-		return Compile(g, Options{})
+		return Compile(g, compile.Options{})
 	}
 	var idx []int
 	for i := range alts {

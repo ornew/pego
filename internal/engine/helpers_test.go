@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/syntax"
 	"github.com/ornew/pego/internal/value"
@@ -29,9 +30,9 @@ func parseTest(src string) (*grammar.Grammar, error) {
 
 // mustCompile compiles PEGO source with source information, so that results show rule names and
 // capture labels.
-func mustCompile(t *testing.T, src string, opts ...Options) *Program {
+func mustCompile(t *testing.T, src string, opts ...compile.Options) *Program {
 	t.Helper()
-	var o Options
+	var o compile.Options
 	if len(opts) > 0 {
 		o = opts[0]
 	}
@@ -41,13 +42,13 @@ func mustCompile(t *testing.T, src string, opts ...Options) *Program {
 
 // compileBare compiles PEGO source with the options as given: without source information unless
 // they request it.
-func compileBare(t *testing.T, src string, opts ...Options) *Program {
+func compileBare(t *testing.T, src string, opts ...compile.Options) *Program {
 	t.Helper()
 	g, err := parseTest(src)
 	if err != nil {
 		t.Fatalf("syntax error: %v\n%s", err, src)
 	}
-	var o Options
+	var o compile.Options
 	if len(opts) > 0 {
 		o = opts[0]
 	}
@@ -60,13 +61,13 @@ func compileBare(t *testing.T, src string, opts ...Options) *Program {
 
 // compileLegacy compiles source that still uses the retired terminal type syntax, which only
 // syntax.ParseLegacy accepts; the engine still accepts grammar.TerminalSpec from JSON ASTs.
-func compileLegacy(t *testing.T, src string, opts ...Options) *Program {
+func compileLegacy(t *testing.T, src string, opts ...compile.Options) *Program {
 	t.Helper()
 	g, err := parseLegacyTest(src)
 	if err != nil {
 		t.Fatalf("syntax error: %v\n%s", err, src)
 	}
-	var o Options
+	var o compile.Options
 	if len(opts) > 0 {
 		o = opts[0]
 	}
@@ -85,7 +86,7 @@ func compileError(t *testing.T, src string) string {
 	if err != nil {
 		t.Fatalf("syntax error: %v\n%s", err, src)
 	}
-	_, err = Compile(g, Options{})
+	_, err = Compile(g, compile.Options{})
 	if err == nil {
 		t.Fatalf("expected a compile error\n%s", src)
 	}
@@ -115,7 +116,7 @@ type parseCase struct {
 func check(t *testing.T, src string, cases ...parseCase) {
 	t.Helper()
 	prog := mustCompile(t, src)
-	noMemo := mustCompile(t, src, Options{DisableMemo: true})
+	noMemo := mustCompile(t, src, compile.Options{DisableMemo: true})
 	for _, c := range cases {
 		got := result(prog, c.input)
 		if got != c.want && !(strings.HasPrefix(c.want, "error: ") && strings.Contains(got, c.want[len("error: "):]) && strings.HasPrefix(got, "error: ")) {
@@ -308,6 +309,6 @@ func toCodePoints(input string, n *value.Node, err error) (*value.Node, error) {
 }
 
 // newClosureWalker returns the walker that builds the closure backend's form for the compiler c.
-func newClosureWalker(c *compiler, plainDispatch bool) *walker[matcher] {
-	return &walker[matcher]{compiler: c, b: newClosureBuilder(c, plainDispatch)}
+func newClosureWalker(c *compile.Compiler, plainDispatch bool) *compile.Walker[matcher] {
+	return &compile.Walker[matcher]{Compiler: c, Builder: newClosureBuilder(c, plainDispatch)}
 }
