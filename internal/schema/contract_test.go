@@ -1,4 +1,4 @@
-package engine
+package schema
 
 import (
 	"encoding/json"
@@ -6,52 +6,50 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/schema"
 )
 
 func TestOutputSchemaCanonicalContract(t *testing.T) {
 	for _, tc := range []struct {
 		name string
-		edit func(*schema.Output)
+		edit func(*Output)
 		want string
 	}{
-		{"missing start", func(s *schema.Output) { s.Start = "absent" }, "start rule"},
-		{"missing inferred type", func(s *schema.Output) { s.Types = s.Types[:1] }, "unresolved"},
-		{"direct declared result", func(s *schema.Output) { s.Rules[0].Result.Ref = "declared/Item" }, "must reference"},
-		{"inline result", func(s *schema.Output) { s.Rules[0].Result = schema.Shape{Kind: "nil"} }, "must reference"},
-		{"different rule result", func(s *schema.Output) {
-			s.Types = append(s.Types, schema.Type{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: schema.Shape{Kind: "nil"}})
+		{"missing start", func(s *Output) { s.Start = "absent" }, "start rule"},
+		{"missing inferred type", func(s *Output) { s.Types = s.Types[:1] }, "unresolved"},
+		{"direct declared result", func(s *Output) { s.Rules[0].Result.Ref = "declared/Item" }, "must reference"},
+		{"inline result", func(s *Output) { s.Rules[0].Result = Shape{Kind: "nil"} }, "must reference"},
+		{"different rule result", func(s *Output) {
+			s.Types = append(s.Types, Type{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: Shape{Kind: "nil"}})
 			s.Rules[0].Result.Ref = "inferred/other"
 		}, "must reference"},
-		{"CST namespace", func(s *schema.Output) {
-			s.Types = append(s.Types, schema.Type{ID: "cst/Match", Name: "Match", Origin: "cst", Shape: schema.Shape{Kind: "node", Value: &schema.Shape{Kind: "scalar", Scalar: "string"}}})
+		{"CST namespace", func(s *Output) {
+			s.Types = append(s.Types, Type{ID: "cst/Match", Name: "Match", Origin: "cst", Shape: Shape{Kind: "node", Value: &Shape{Kind: "scalar", Scalar: "string"}}})
 		}, "identity"},
-		{"declared non-struct", func(s *schema.Output) {
-			s.Types = append(s.Types, schema.Type{ID: "declared/Alias", Name: "Alias", Origin: "declared", Shape: schema.Shape{Kind: "top"}})
+		{"declared non-struct", func(s *Output) {
+			s.Types = append(s.Types, Type{ID: "declared/Alias", Name: "Alias", Origin: "declared", Shape: Shape{Kind: "top"}})
 		}, "must be a struct"},
-		{"node without value", func(s *schema.Output) {
-			s.Types = append(s.Types, schema.Type{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: schema.Shape{Kind: "node"}})
+		{"node without value", func(s *Output) {
+			s.Types = append(s.Types, Type{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: Shape{Kind: "node"}})
 		}, "node value"},
-		{"capture without location", func(s *schema.Output) {
-			s.Types = append(s.Types, schema.Type{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: schema.Shape{
-				Kind: "node", Value: &schema.Shape{Kind: "nil"}, Captures: []schema.Capture{{Name: "x", Shape: schema.Shape{Kind: "nil"}}},
+		{"capture without location", func(s *Output) {
+			s.Types = append(s.Types, Type{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: Shape{
+				Kind: "node", Value: &Shape{Kind: "nil"}, Captures: []Capture{{Name: "x", Shape: Shape{Kind: "nil"}}},
 			}})
 		}, "no location"},
-		{"duplicate capture", func(s *schema.Output) {
-			c := schema.Capture{Name: "x", Side: true, Shape: schema.Shape{Kind: "nil"}}
-			s.Types = append(s.Types, schema.Type{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: schema.Shape{
-				Kind: "node", Value: &schema.Shape{Kind: "nil"}, Captures: []schema.Capture{c, c},
+		{"duplicate capture", func(s *Output) {
+			c := Capture{Name: "x", Side: true, Shape: Shape{Kind: "nil"}}
+			s.Types = append(s.Types, Type{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: Shape{
+				Kind: "node", Value: &Shape{Kind: "nil"}, Captures: []Capture{c, c},
 			}})
 		}, "duplicate"},
-		{"negative capture index", func(s *schema.Output) {
-			s.Types = append(s.Types, schema.Type{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: schema.Shape{
-				Kind: "node", Value: &schema.Shape{Kind: "tuple"}, Captures: []schema.Capture{{Name: "x", Paths: [][]int{{-1}}, Shape: schema.Shape{Kind: "nil"}}},
+		{"negative capture index", func(s *Output) {
+			s.Types = append(s.Types, Type{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: Shape{
+				Kind: "node", Value: &Shape{Kind: "tuple"}, Captures: []Capture{{Name: "x", Paths: [][]int{{-1}}, Shape: Shape{Kind: "nil"}}},
 			}})
 		}, "negative"},
-		{"members of another kind", func(s *schema.Output) {
-			s.Types = append(s.Types, schema.Type{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: schema.Shape{
-				Kind: "tuple", Value: &schema.Shape{Kind: "nil"},
+		{"members of another kind", func(s *Output) {
+			s.Types = append(s.Types, Type{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: Shape{
+				Kind: "tuple", Value: &Shape{Kind: "nil"},
 			}})
 		}, "unexpected"},
 	} {
@@ -65,7 +63,7 @@ func TestOutputSchemaCanonicalContract(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got := schema.Output{Format: "sentinel"}
+			got := Output{Format: "sentinel"}
 			if err := json.Unmarshal(data, &got); err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("decode = %v; want %q", err, tc.want)
 			}
@@ -78,12 +76,12 @@ func TestOutputSchemaCanonicalContract(t *testing.T) {
 	s := validInMemoryOutputSchema()
 	for i, kind := range []string{"nil", "top", "error", "tuple", "join", "struct"} {
 		name := fmt.Sprintf("empty%d", i)
-		shape := schema.Shape{Kind: kind, Fields: []schema.Field{}, Alternatives: []schema.Shape{}, Elements: []schema.Shape{}, Captures: []schema.Capture{}}
+		shape := Shape{Kind: kind, Fields: []Field{}, Alternatives: []Shape{}, Elements: []Shape{}, Captures: []Capture{}}
 		if kind == "struct" {
-			s.Types = append(s.Types, schema.Type{ID: "declared/" + name, Name: name, Origin: "declared", Shape: shape})
+			s.Types = append(s.Types, Type{ID: "declared/" + name, Name: name, Origin: "declared", Shape: shape})
 			continue
 		}
-		s.Types = append(s.Types, schema.Type{ID: "inferred/" + name, Name: name, Origin: "inferred", Shape: shape})
+		s.Types = append(s.Types, Type{ID: "inferred/" + name, Name: name, Origin: "inferred", Shape: shape})
 	}
 	if err := s.Validate(); err != nil {
 		t.Fatalf("shapes with empty omitted members: %v", err)
@@ -92,19 +90,19 @@ func TestOutputSchemaCanonicalContract(t *testing.T) {
 
 func TestOutputSchemaJSONExactKeysAndDuplicates(t *testing.T) {
 	s := validInMemoryOutputSchema()
-	s.Types[0].Shape.Fields = []schema.Field{{Name: "Value", Shape: schema.Shape{Kind: "join", Alternatives: []schema.Shape{
-		{Kind: "scalar", Scalar: "string"}, {Kind: "optional", Element: &schema.Shape{Kind: "scalar", Scalar: "bool"}},
+	s.Types[0].Shape.Fields = []Field{{Name: "Value", Shape: Shape{Kind: "join", Alternatives: []Shape{
+		{Kind: "scalar", Scalar: "string"}, {Kind: "optional", Element: &Shape{Kind: "scalar", Scalar: "bool"}},
 	}}}}
-	s.Types = append(s.Types, schema.Type{ID: "inferred/pair", Name: "pair", Origin: "inferred", Shape: schema.Shape{
+	s.Types = append(s.Types, Type{ID: "inferred/pair", Name: "pair", Origin: "inferred", Shape: Shape{
 		Kind:     "node",
-		Value:    &schema.Shape{Kind: "tuple", Elements: []schema.Shape{{Kind: "scalar", Scalar: "int"}, {Kind: "nil"}}},
-		Captures: []schema.Capture{{Name: "x", Paths: [][]int{{0}}, Shape: schema.Shape{Kind: "scalar", Scalar: "int"}}},
+		Value:    &Shape{Kind: "tuple", Elements: []Shape{{Kind: "scalar", Scalar: "int"}, {Kind: "nil"}}},
+		Captures: []Capture{{Name: "x", Paths: [][]int{{0}}, Shape: Shape{Kind: "scalar", Scalar: "int"}}},
 	}})
 	data, err := json.Marshal(s)
 	if err != nil {
 		t.Fatal(err)
 	}
-	var roundTrip schema.Output
+	var roundTrip Output
 	if err := json.Unmarshal(data, &roundTrip); err != nil || !reflect.DeepEqual(s, roundTrip) {
 		t.Fatalf("fixture round trip: %v", err)
 	}
@@ -134,7 +132,7 @@ func TestOutputSchemaJSONExactKeysAndDuplicates(t *testing.T) {
 					t.Fatal("mutation does not match fixture")
 				}
 				input := strings.Replace(string(data), spot.prefix, mutation.replacement, 1)
-				got := schema.Output{Format: "sentinel"}
+				got := Output{Format: "sentinel"}
 				if err := json.Unmarshal([]byte(input), &got); err == nil || !strings.Contains(err.Error(), mutation.want) {
 					t.Fatalf("decode = %v; want %s", err, mutation.want)
 				}
@@ -148,14 +146,14 @@ func TestOutputSchemaJSONExactKeysAndDuplicates(t *testing.T) {
 
 func TestOutputSchemaJSONMalformedAndDeepInput(t *testing.T) {
 	for _, input := range []string{`[]`, `null`, `{`, `{"types":{}}`, `{"types":[1]}`, `{"types":[}`, `{} {}`, `{"types":null,"types":[]}`} {
-		got := schema.Output{Format: "sentinel"}
+		got := Output{Format: "sentinel"}
 		if err := got.UnmarshalJSON([]byte(input)); err == nil || got.Format != "sentinel" {
 			t.Fatalf("direct decode %q: schema=%+v err=%v", input, got, err)
 		}
 	}
 	deep := strings.Repeat(`{"kind":"optional","element":`, 10001) + `{"kind":"nil"}` + strings.Repeat("}", 10001)
 	input := `{"types":[{"shape":` + deep + `}]}`
-	got := schema.Output{Format: "sentinel"}
+	got := Output{Format: "sentinel"}
 	if err := got.UnmarshalJSON([]byte(input)); err == nil || !strings.Contains(err.Error(), "depth") || got.Format != "sentinel" {
 		t.Fatalf("deep input: schema=%+v err=%v", got, err)
 	}
@@ -171,7 +169,7 @@ func FuzzOutputSchemaJSONIntake(f *testing.F) {
 		f.Add([]byte(input))
 	}
 	f.Fuzz(func(t *testing.T, data []byte) {
-		got := schema.Output{Format: "sentinel"}
+		got := Output{Format: "sentinel"}
 		if err := got.UnmarshalJSON(data); err != nil {
 			if got.Format != "sentinel" {
 				t.Fatal("failed decode changed receiver")
@@ -188,7 +186,7 @@ func FuzzOutputSchemaJSONIntake(f *testing.F) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		var again schema.Output
+		var again Output
 		if err := again.UnmarshalJSON(encoded); err != nil {
 			t.Fatalf("round trip: %v", err)
 		}

@@ -42,7 +42,7 @@ func (c *Control) poll() {
 	}
 }
 
-func (c *Control) Rules(g *grammar.Grammar) []*grammar.RuleDef {
+func (c *Control) rules(g *grammar.Grammar) []*grammar.RuleDef {
 	if c == nil {
 		return g.Rules()
 	}
@@ -53,7 +53,7 @@ func (c *Control) Rules(g *grammar.Grammar) []*grammar.RuleDef {
 	return result
 }
 
-func (c *Control) Types(g *grammar.Grammar) []grammar.TypeDecl {
+func (c *Control) types(g *grammar.Grammar) []grammar.TypeDecl {
 	if c == nil {
 		return g.Types()
 	}
@@ -64,7 +64,7 @@ func (c *Control) Types(g *grammar.Grammar) []grammar.TypeDecl {
 	return result
 }
 
-func (c *Control) ExpressionArgs(a *grammar.Attribute) []grammar.Expr {
+func (c *Control) expressionArgs(a *grammar.Attribute) []grammar.Expr {
 	if c == nil {
 		return a.ExpressionArgs()
 	}

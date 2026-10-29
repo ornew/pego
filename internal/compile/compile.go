@@ -18,9 +18,9 @@ import (
 // engine's Program adds what the parser runs.
 type Program struct {
 	HasMissing bool // immutable syntax metadata; bytecode/generation are unsupported
-	// ShapeControl is the compilation's cancellation control while the program is being built, so that
+	// shapeControl is the compilation's cancellation control while the program is being built, so that
 	// the shape analysis of rule bodies (shapeElems) polls it; nil otherwise.
-	ShapeControl *Control
+	shapeControl *Control
 	Grammar      *grammar.Grammar
 	// Source is the grammar as written when Grammar is its lowering (inline actions replaced by
 	// hidden rules, inline_actions.go); nil when Grammar is the grammar itself.
@@ -303,7 +303,7 @@ func CompileProgram[M any](g *grammar.Grammar, opts Options, flags []RuleFlags, 
 			}
 		})
 	}
-	for _, rd := range control.Rules(g) {
+	for _, rd := range control.rules(g) {
 		control.poll()
 		checkBlocks(rd.Action)
 		root := rd.Expr
@@ -346,7 +346,7 @@ func CompileProgram[M any](g *grammar.Grammar, opts Options, flags []RuleFlags, 
 			}
 		}, control)
 	}
-	starts, defaultStart, startErrors := resolveStarts(control.Rules(g), control)
+	starts, defaultStart, startErrors := resolveStarts(control.rules(g), control)
 	control.check()
 	if len(unsupported) != 0 {
 		return nil, unsupported
@@ -369,9 +369,9 @@ func CompileProgram[M any](g *grammar.Grammar, opts Options, flags []RuleFlags, 
 		DescTable: append([]string(nil), FixedDescs...)}
 	c := &Compiler{Control: control, Prog: prog, opts: opts}
 	if control != nil {
-		prog.ShapeControl = control
+		prog.shapeControl = control
 		defer func() {
-			prog.ShapeControl = nil
+			prog.shapeControl = nil
 			c.Control = nil
 			if c.an != nil {
 				c.an.Control = nil
@@ -384,7 +384,7 @@ func CompileProgram[M any](g *grammar.Grammar, opts Options, flags []RuleFlags, 
 	prog.RecordsSourceInfo = opts.SourceInfo
 	prog.MakesDefaultValue = opts.DefaultValue
 
-	for _, td := range control.Types(g) {
+	for _, td := range control.types(g) {
 		control.poll()
 		switch {
 		case builtinTypes[td.DeclName()]:
@@ -397,7 +397,7 @@ func CompileProgram[M any](g *grammar.Grammar, opts Options, flags []RuleFlags, 
 			prog.Types[td.DeclName()] = td
 		}
 	}
-	rules := control.Rules(g)
+	rules := control.rules(g)
 	for i, rd := range rules {
 		control.poll()
 		if prog.ByName[rd.Name] != nil {
@@ -589,14 +589,14 @@ func transientRules(rules []*grammar.RuleDef, control *Control) map[string]bool 
 	refs := map[string]int{}
 	for _, rd := range rules {
 		control.poll()
-		for _, name := range AllCallsControlled(rd.Expr, nil, control) {
+		for _, name := range allCallsControlled(rd.Expr, nil, control) {
 			refs[name]++
 		}
 	}
 	out := map[string]bool{}
 	for _, rd := range rules {
 		control.poll()
-		out[rd.Name] = refs[rd.Name] < 2 || len(AllCallsControlled(rd.Expr, nil, control)) == 0
+		out[rd.Name] = refs[rd.Name] < 2 || len(allCallsControlled(rd.Expr, nil, control)) == 0
 	}
 	return out
 }
@@ -635,7 +635,7 @@ func valueNeededRules(rules []*grammar.RuleDef, control *Control, streams bool) 
 			return
 		}
 		needed[name] = true
-		for _, callee := range AllCallsControlled(byName[name].Expr, nil, control) {
+		for _, callee := range allCallsControlled(byName[name].Expr, nil, control) {
 			control.poll()
 			mark(callee)
 		}
@@ -648,7 +648,7 @@ func valueNeededRules(rules []*grammar.RuleDef, control *Control, streams bool) 
 		pc := predicateCaptures(rd.Expr, control)
 		walkExprControlled(rd.Expr, func(x grammar.Expr) {
 			if cp, ok := x.(*grammar.Capture); ok && pc[cp.Name] {
-				for _, callee := range AllCallsControlled(cp.Expr, nil, control) {
+				for _, callee := range allCallsControlled(cp.Expr, nil, control) {
 					control.poll()
 					mark(callee)
 				}
@@ -886,9 +886,9 @@ func IsStream(e grammar.Expr) bool {
 	return false
 }
 
-// CheckStream checks that #stream appears only at the top level of a rule body (the body itself
+// checkStream checks that #stream appears only at the top level of a rule body (the body itself
 // or an element of a sequence) and reports whether it is present.
-func (c *Compiler) CheckStream(body grammar.Expr) bool {
+func (c *Compiler) checkStream(body grammar.Expr) bool {
 	control := c.Control
 	top := StreamTops(body)
 	n := 0

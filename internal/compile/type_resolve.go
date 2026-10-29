@@ -303,7 +303,7 @@ func DefFields(spec *grammar.TypeDef) []*grammar.Field {
 // that do not start with an uppercase letter, and types that do not resolve (undefined names,
 // aliases that refer to themselves, unsupported syntax and fields of type _|_).
 func (k *TypeResolver) checkTypeDefinitions() {
-	for _, td := range k.control.Types(k.Prog.Grammar) {
+	for _, td := range k.control.types(k.Prog.Grammar) {
 		k.control.poll()
 		switch spec := td.(type) {
 		case *grammar.TypeDef:

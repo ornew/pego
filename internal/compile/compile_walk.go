@@ -106,15 +106,15 @@ func (c *Walker[M]) compileRule(r *Rule) {
 		return
 	}
 	body := r.BodyExpr()
-	r.Stream = c.CheckStream(body)
+	r.Stream = c.checkStream(body)
 	r.Lean = r.Novalue || leanBody(r)
-	c.proj = RuleProjectionsControlled(c.Prog, r, control)
+	c.proj = ruleProjectionsControlled(c.Prog, r, control)
 	m := c.Expr(body, r.Scope, !r.Lean)
 	if c.proj != nil {
 		if c.Prog.Projected == nil {
 			c.Prog.Projected = map[*grammar.Call]bool{}
 		}
-		MarkProjectedMaps(r.Action, c.proj, c.Prog.Projected, control)
+		markProjectedMaps(r.Action, c.proj, c.Prog.Projected, control)
 	}
 	c.proj = nil
 	if r.Action != nil {

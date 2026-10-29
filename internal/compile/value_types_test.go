@@ -1,4 +1,4 @@
-package engine
+package compile
 
 import (
 	"fmt"
@@ -6,11 +6,14 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/compile"
 )
 
 // The value types of rules follow the value model (spec/language/types.md).
+
+// castRules are the rules that the cast cases of TestValueCheckerDiagnostics cast between; the
+// engine's cast tests run the same rules.
+const castRules = "type Num = { Text string }\ntype P = { N Num }\nrule n Num = t:([0-9]+) #atomic => Num{Text: text($t)}\nrule w = [a-z]+\nrule pair = n:n \"=\" => P{N: $n}\n"
+
 func TestValueTypes(t *testing.T) {
 	for _, tc := range []struct{ src, rule, want string }{
 		// The examples of the record.
@@ -71,7 +74,7 @@ func TestValueTypes(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
-		p, err := Compile(g, compile.Options{})
+		p, err := compileStatic(g, Options{}, nil)
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
@@ -103,13 +106,13 @@ func TestValueTypesOfRepositoryGrammars(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", path, err)
 		}
-		p, err := Compile(g, compile.Options{})
+		p, err := compileStatic(g, Options{}, nil)
 		if err != nil {
 			t.Fatalf("%s: %v", path, err)
 		}
-		p.ValueErrors() // checks every action without failing
+		p.valueErrors() // checks every action without failing
 		for _, rd := range g.Rules() {
-			if v, ok := p.ValueTypes()[rd.Name]; !ok || v == nil || v == compile.TyBottom {
+			if v, ok := p.ValueTypes()[rd.Name]; !ok || v == nil || v == TyBottom {
 				t.Errorf("%s: rule %s has value type %v", path, rd.Name, v)
 			}
 		}
@@ -122,15 +125,15 @@ func TestValueTypesOptionalCaptures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := Compile(g, compile.Options{})
+	p, err := compileStatic(g, Options{}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	outer := p.ValueTypes()["a"].(compile.NodeTy)
+	outer := p.ValueTypes()["a"].(NodeTy)
 	if len(outer.Caps) != 1 || outer.Caps[0].T.String() != "*b" {
 		t.Fatalf("outer captures %+v", outer.Caps)
 	}
-	inner := outer.Value.(compile.TupleTy).Elems[0].(compile.OptTy).Elem.(compile.NodeTy)
+	inner := outer.Value.(TupleTy).Elems[0].(OptTy).Elem.(NodeTy)
 	if len(inner.Caps) != 1 || inner.Caps[0].T.String() != "b" {
 		t.Fatalf("inner captures %+v", inner.Caps)
 	}
@@ -139,17 +142,17 @@ func TestValueTypesOptionalCaptures(t *testing.T) {
 // valueTypesOf builds src without running the type check, as a compiled grammar is rebuilt, and returns the value types of its rules and
 // the errors of its actions. It accepts earlier syntax, which still reaches the engine from JSON
 // grammars.
-func valueTypesOf(t *testing.T, src string) (map[string]compile.Ty, compile.ErrorList) {
+func valueTypesOf(t *testing.T, src string) (map[string]Ty, ErrorList) {
 	t.Helper()
 	g, err := parseLegacyTest(src)
 	if err != nil {
 		t.Fatalf("%q: %v", src, err)
 	}
-	p, err := build(g, compile.Options{}, make([]compile.RuleFlags, len(g.Rules())))
+	p, err := compileStatic(g, Options{}, make([]RuleFlags, len(g.Rules())))
 	if err != nil {
 		t.Fatalf("%q: %v", src, err)
 	}
-	return compile.ValueTypes(p.staticProgram, nil)
+	return ValueTypes(p, nil)
 }
 
 // Actions are typed in the value model: captures have the types of their values, and nodes expose
@@ -407,6 +410,49 @@ rule main = x:"a" {v := text($x)} {n := len($x)} {b := n > 0} "b"`,
 	} {
 		if _, errs := valueTypesOf(t, src); len(errs) > 0 {
 			t.Errorf("%q: unexpected errors %v", src, errs)
+		}
+	}
+}
+
+// joinMemberRules declares the joins whose members TestMemberAccessOnJoinTypes accesses; the
+// engine's member-join tests parse with the same rules.
+const joinMemberRules = `type A = { F string; X int }
+type B = { F int }
+type C = { F string; In A }
+type D = { In B }
+type N = node[string]
+type U ~ A | B
+type S ~ A | C
+type V ~ C | D
+rule a = "a" => A{F: "a", X: 1}
+rule b = "b" => B{F: 2}
+rule c = "c" => C{F: "c", In: A{F: "ca", X: 3}}
+rule d = "d" => D{In: B{F: 4}}
+rule n N = [0-9]+ #atomic
+rule w = [a-z]+ #atomic
+rule u U = a / b
+rule s S = a / c
+rule v V = c / d
+`
+
+func TestMemberAccessOnJoinTypes(t *testing.T) {
+	for _, tc := range []struct{ src, rule, want string }{
+		{joinMemberRules + "rule main = x:s => $x.F", "main", `string`},
+		{joinMemberRules + "rule main = x:u => $x.F", "main", `string | int`},
+		{joinMemberRules + "rule main = x:v => $x.In", "main", `A | B`},
+		{joinMemberRules + "rule main = x:v => $x.In.F", "main", `string | int`},
+		{joinMemberRules + "rule main = x:(n / w) => $x.Start", "main", `int`},
+		{joinMemberRules + "rule main = x:(n / w) => $x.Value", "main", `string`},
+		// A cast to a member that has the field is accepted.
+		{joinMemberRules + "rule main = x:u => $x.(A).X", "main", `int`},
+	} {
+		types, errs := valueTypesOf(t, tc.src)
+		if len(errs) > 0 {
+			t.Errorf("%q: %v", tc.src, errs)
+			continue
+		}
+		if got := types[tc.rule].String(); got != tc.want {
+			t.Errorf("%q: %s, want %s", tc.src, got, tc.want)
 		}
 	}
 }

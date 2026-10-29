@@ -44,7 +44,7 @@ func (p *Program) ShapeSignature(name string, poll func()) (string, bool) {
 			return
 		}
 		fmt.Fprintf(&b, "%T{", e)
-		for _, el := range ShapeElems(p, e) {
+		for _, el := range shapeElems(p, e) {
 			step()
 			if el.t != nil {
 				b.WriteString(el.t.String())

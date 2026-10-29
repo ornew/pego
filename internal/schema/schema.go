@@ -16,8 +16,8 @@ import (
 // ErrUnavailable reports missing checked grammar metadata.
 var ErrUnavailable = errors.New("output schema unavailable")
 
-// Version is the version of the output schema format.
-const Version = 2
+// version is the version of the output schema format.
+const version = 2
 
 // Output is an experimental, grammar-level description of possible values.
 // It is independent of position units and generated target-language layouts.
@@ -96,7 +96,7 @@ func (s *Output) Validate() error {
 	if s == nil {
 		return fmt.Errorf("nil output schema")
 	}
-	if s.Format != "pego-output-schema" || s.Version != Version {
+	if s.Format != "pego-output-schema" || s.Version != version {
 		return fmt.Errorf("unsupported output schema format %q version %d", s.Format, s.Version)
 	}
 	if s.Start == "" || !s.PositionUnitIndependent || s.Types == nil || s.Rules == nil {
@@ -150,7 +150,7 @@ func Export(p *compile.Program, start string, allRules bool) (*Output, error) {
 			if !ok {
 				return nil, fmt.Errorf("schema type %q: unresolved node type", td.DeclName())
 			}
-			shape, err := ShapeOf(n.Underlying())
+			shape, err := shapeOf(n.Underlying())
 			if err != nil {
 				return nil, fmt.Errorf("schema type %q: %w", td.DeclName(), err)
 			}
@@ -159,7 +159,7 @@ func Export(p *compile.Program, start string, allRules bool) (*Output, error) {
 		}
 		shape := Shape{Kind: "struct"}
 		for _, f := range compile.DefFields(spec) {
-			fieldShape, err := Declared(p, f.Type)
+			fieldShape, err := declared(p, f.Type)
 			if err != nil {
 				return nil, fmt.Errorf("schema type %q field %q: %w", td.DeclName(), f.Name, err)
 			}
@@ -168,7 +168,7 @@ func Export(p *compile.Program, start string, allRules bool) (*Output, error) {
 		sort.Slice(shape.Fields, func(i, j int) bool { return shape.Fields[i].Name < shape.Fields[j].Name })
 		all[id] = Type{id, td.DeclName(), "declared", shape}
 	}
-	s := &Output{Format: "pego-output-schema", Version: Version, Start: start, PositionUnitIndependent: true, SourceInfo: p.RecordsSourceInfo, Types: []Type{}, Rules: []Rule{}}
+	s := &Output{Format: "pego-output-schema", Version: version, Start: start, PositionUnitIndependent: true, SourceInfo: p.RecordsSourceInfo, Types: []Type{}, Rules: []Rule{}}
 	selected := map[string]bool{}
 	noType := map[string]bool{}
 	wanted := map[string]bool{}
@@ -230,7 +230,7 @@ func Export(p *compile.Program, start string, allRules bool) (*Output, error) {
 		if !ok || t == nil {
 			return nil, ErrUnavailable
 		}
-		shape, err := ShapeOf(t)
+		shape, err := shapeOf(t)
 		if err != nil {
 			return nil, fmt.Errorf("schema rule %q: %w", name, err)
 		}
@@ -273,14 +273,14 @@ func cutPrefix(s, prefix string) (string, bool) {
 	return "", false
 }
 
-// Declared describes the type a field declares.
-func Declared(p *compile.Program, t grammar.TypeExpr) (Shape, error) {
+// declared describes the type a field declares.
+func declared(p *compile.Program, t grammar.TypeExpr) (Shape, error) {
 	k := &compile.TypeResolver{Prog: p}
-	return ShapeOf(k.Resolve(t))
+	return shapeOf(k.Resolve(t))
 }
 
-// ShapeOf describes a type of the value model.
-func ShapeOf(t compile.Ty) (Shape, error) {
+// shapeOf describes a type of the value model.
+func shapeOf(t compile.Ty) (Shape, error) {
 	switch t := t.(type) {
 	case compile.BasicTy:
 		switch t {
@@ -303,7 +303,7 @@ func ShapeOf(t compile.Ty) (Shape, error) {
 		if t.Kind != 's' {
 			v := compile.FromLegacy(t)
 			if n, ok := v.(compile.NamedTy); !ok || n.Kind == 's' {
-				return ShapeOf(v)
+				return shapeOf(v)
 			}
 			return Shape{}, fmt.Errorf("unresolved schema type %s", t.Name)
 		}
@@ -314,7 +314,7 @@ func ShapeOf(t compile.Ty) (Shape, error) {
 		if t.Name != "" {
 			return Shape{Kind: "ref", Ref: "declared/" + t.Name}, nil
 		}
-		v, err := ShapeOf(t.Value)
+		v, err := shapeOf(t.Value)
 		if err != nil {
 			return Shape{}, err
 		}
@@ -347,7 +347,7 @@ func ShapeOf(t compile.Ty) (Shape, error) {
 		}
 		sort.Slice(groups, func(i, j int) bool { return groups[i].name < groups[j].name })
 		for _, g := range groups {
-			cs, err := ShapeOf(compile.Vjoin(g.types...))
+			cs, err := shapeOf(compile.Vjoin(g.types...))
 			if err != nil {
 				return Shape{}, fmt.Errorf("capture %s: %w", g.name, err)
 			}
@@ -357,7 +357,7 @@ func ShapeOf(t compile.Ty) (Shape, error) {
 	case compile.TupleTy:
 		s := Shape{Kind: "tuple"}
 		for _, e := range t.Elems {
-			es, err := ShapeOf(e)
+			es, err := shapeOf(e)
 			if err != nil {
 				return Shape{}, err
 			}
@@ -365,15 +365,15 @@ func ShapeOf(t compile.Ty) (Shape, error) {
 		}
 		return s, nil
 	case compile.ListTy:
-		e, err := ShapeOf(t.Elem)
+		e, err := shapeOf(t.Elem)
 		return Shape{Kind: "list", Element: &e}, err
 	case compile.OptTy:
-		e, err := ShapeOf(t.Elem)
+		e, err := shapeOf(t.Elem)
 		return Shape{Kind: "optional", Element: &e}, err
 	case compile.JoinTy:
 		s := Shape{Kind: "join"}
 		for _, a := range t.Alts {
-			v, err := ShapeOf(a)
+			v, err := shapeOf(a)
 			if err != nil {
 				return s, err
 			}
@@ -382,7 +382,7 @@ func ShapeOf(t compile.Ty) (Shape, error) {
 		sortSchemaAlternatives(s.Alternatives)
 		return s, nil
 	case compile.RecordTy:
-		return ShapeOf(compile.FromLegacy(t))
+		return shapeOf(compile.FromLegacy(t))
 	}
 	return Shape{}, fmt.Errorf("unresolved schema type %T", t)
 }

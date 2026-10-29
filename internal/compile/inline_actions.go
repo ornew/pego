@@ -139,11 +139,11 @@ func isNameByte(c byte) bool {
 // never satisfy one.
 func undeclaredRules(g *grammar.Grammar, control *Control) ErrorList {
 	declared := map[string]bool{}
-	for _, rd := range control.Rules(g) {
+	for _, rd := range control.rules(g) {
 		declared[rd.Name] = true
 	}
 	var errs ErrorList
-	for _, rd := range control.Rules(g) {
+	for _, rd := range control.rules(g) {
 		walkExprControlled(rd.Expr, func(e grammar.Expr) {
 			if ref, ok := e.(*grammar.Ref); ok && !declared[ref.Name] {
 				errs = append(errs, &Error{Pos: ref.Diagnostic(), Msg: "undefined rule " + ref.Name})
@@ -159,7 +159,7 @@ func hasInlineAction(g *grammar.Grammar, control *Control) bool {
 		return false
 	}
 	found := false
-	for _, rd := range control.Rules(g) {
+	for _, rd := range control.rules(g) {
 		walkExprControlled(rd.Expr, func(e grammar.Expr) {
 			if _, ok := e.(*grammar.InlineAction); ok {
 				found = true
@@ -191,7 +191,7 @@ type inlineLowerer struct {
 func lowerInlineActions(g *grammar.Grammar, names InlineNames, control *Control) (*grammar.Grammar, ErrorList) {
 	var errs ErrorList
 	taken := map[string]bool{}
-	for _, rd := range control.Rules(g) {
+	for _, rd := range control.rules(g) {
 		taken[rd.Name] = true
 	}
 	decls := make([]grammar.Decl, 0, len(g.File.Decls))

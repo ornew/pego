@@ -119,7 +119,7 @@ Structural queries are checked against the schema. The query compiler validates 
 
 ## Testing and Performance
 
-The tests cover the export, decoding and validation of the JSON contract, the semantic diff, the refusal of schema export by loaded compiled grammars and the backend agreement. They are in `internal/engine/output_schema_*_test.go`, `internal/engine/compiled_schema_test.go` and `schema_diff_test.go`. Export time and allocations are measured separately from parse and code generation, with `internal/engine/output_schema_export_bench_test.go`, `internal/engine/output_schema_validate_bench_test.go` and `schema_diff_bench_test.go`.
+The tests cover the export, decoding and validation of the JSON contract, the semantic diff, the refusal of schema export by loaded compiled grammars and the backend agreement. They are in `internal/schema/*_test.go`, `internal/engine/output_schema_*_test.go`, `internal/engine/compiled_schema_test.go` and `schema_diff_test.go`. Export time and allocations are measured separately from parse and code generation, with `internal/engine/output_schema_export_bench_test.go`, `internal/engine/output_schema_validate_bench_test.go` and `schema_diff_bench_test.go`.
 
 ## Performance and Results
 

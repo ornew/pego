@@ -35,7 +35,7 @@ func CheckTypesControlled(prog *Program, errs *ErrorList, control *Control) {
 	defer dropRepeatedErrors(errs, len(*errs))
 	k := &TypeResolver{control: control, Prog: prog, errs: errs, report: true}
 	k.checkTypeDefinitions()
-	rules := control.Rules(prog.Grammar)
+	rules := control.rules(prog.Grammar)
 	for _, rd := range rules {
 		control.poll()
 		if rd.Type != nil {
@@ -51,9 +51,9 @@ func CheckTypesControlled(prog *Program, errs *ErrorList, control *Control) {
 	// Keep the types for code generation (typedGo).
 	info := &TypeInfo{Fields: map[string][]typedField{}, Aliases: map[string]Ty{}, NodeMembers: nodeMembers, Values: values, valueErrs: valueErrs}
 	info.valuesOnce.Do(func() {})
-	info.Shown = shownRuleTypes(prog, rules, values, control)
+	info.shown = shownRuleTypes(prog, rules, values, control)
 	k.report = false
-	for _, td := range control.Types(prog.Grammar) {
+	for _, td := range control.types(prog.Grammar) {
 		control.poll()
 		switch spec := td.(type) {
 		case *grammar.TypeDef:
@@ -73,7 +73,7 @@ type TypeInfo struct {
 	// Values holds the type of each rule's value in the value model (Program.ValueTypes).
 	Values     map[string]Ty
 	valueErrs  ErrorList     // the errors of actions in the value model
-	Shown      map[string]Ty // the type of each rule as RuleType shows it (shownRuleTypes)
+	shown      map[string]Ty // the type of each rule as RuleType shows it (shownRuleTypes)
 	valuesOnce sync.Once
 	Fields     map[string][]typedField // the fields of each struct type, in declaration order
 	Aliases    map[string]Ty           // the type each alias stands for
@@ -106,7 +106,7 @@ func (p *Program) RuleType(name string) (string, bool) {
 	if p.Typed == nil {
 		return "", false
 	}
-	t, ok := p.Typed.Shown[name]
+	t, ok := p.Typed.shown[name]
 	if !ok {
 		return "", false
 	}

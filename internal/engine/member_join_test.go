@@ -44,28 +44,6 @@ func joinMemberCases() []genCase {
 	}
 }
 
-func TestMemberAccessOnJoinTypes(t *testing.T) {
-	for _, tc := range []struct{ src, rule, want string }{
-		{joinMemberRules + "rule main = x:s => $x.F", "main", `string`},
-		{joinMemberRules + "rule main = x:u => $x.F", "main", `string | int`},
-		{joinMemberRules + "rule main = x:v => $x.In", "main", `A | B`},
-		{joinMemberRules + "rule main = x:v => $x.In.F", "main", `string | int`},
-		{joinMemberRules + "rule main = x:(n / w) => $x.Start", "main", `int`},
-		{joinMemberRules + "rule main = x:(n / w) => $x.Value", "main", `string`},
-		// A cast to a member that has the field is accepted.
-		{joinMemberRules + "rule main = x:u => $x.(A).X", "main", `int`},
-	} {
-		types, errs := valueTypesOf(t, tc.src)
-		if len(errs) > 0 {
-			t.Errorf("%q: %v", tc.src, errs)
-			continue
-		}
-		if got := types[tc.rule].String(); got != tc.want {
-			t.Errorf("%q: %s, want %s", tc.src, got, tc.want)
-		}
-	}
-}
-
 func TestMemberAccessOnJoinTypeErrors(t *testing.T) {
 	for _, tc := range []struct{ src, want string }{
 		// No member declares the field.

@@ -76,7 +76,7 @@ func (c *Compiler) CheckTerm(t grammar.Term, s *Scope, locals []string) {
 		elem := k.Resolve(t.Elem)
 		if len(c.errs) > reported || k.sawUnsupported {
 			// The element type is in error already.
-		} else if elem == TyNever {
+		} else if elem == tyNever {
 			c.errorf(t.Diagnostic(), "the list element has type _|_, which has no values")
 		} else if !concreteListElement(elem) {
 			c.errorf(t.Diagnostic(), "list constructors require a concrete element type, got %s", elem)

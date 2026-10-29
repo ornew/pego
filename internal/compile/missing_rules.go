@@ -55,7 +55,7 @@ func (prog *Program) markMissingRules(control *Control) {
 		}
 		return false
 	}
-	for _, td := range control.Types(prog.Grammar) {
+	for _, td := range control.types(prog.Grammar) {
 		switch t := td.(type) {
 		case *grammar.TypeDef:
 			for _, f := range DefFields(t) {

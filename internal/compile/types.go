@@ -15,7 +15,7 @@ type BasicTy string
 
 const (
 	TyAny    BasicTy = "unknown" // type not known statically (compatible with every type); no type can be written to mean it
-	TyNever  BasicTy = "_|_"     // no value, and the initial value for inference
+	tyNever  BasicTy = "_|_"     // no value, and the initial value for inference
 	TyInt    BasicTy = "int"
 	TyString BasicTy = "string"
 	TyBool   BasicTy = "bool"
@@ -47,7 +47,7 @@ func (t NamedTy) String() string {
 
 var (
 	TyMatch   = NamedTy{value.TypeString, 'c'}
-	TySeq     = NamedTy{value.TypeTuple, 'c'}
+	tySeq     = NamedTy{value.TypeTuple, 'c'}
 	tyList    = NamedTy{value.TypeList, 'c'}
 	TyError   = NamedTy{value.TypeError, 'c'}
 	TyMissing = NamedTy{value.TypeMissing, 'c'}
@@ -73,17 +73,17 @@ func (t JoinTy) String() string {
 
 // RecordTy is the type of a tuple node whose fields are its captures. Diagnostics print it as
 // node{k: T, ...}.
-type RecordTy struct{ Fields map[string]Ty }
+type RecordTy struct{ fields map[string]Ty }
 
 func (t RecordTy) String() string {
-	names := make([]string, 0, len(t.Fields))
-	for n := range t.Fields {
+	names := make([]string, 0, len(t.fields))
+	for n := range t.fields {
 		names = append(names, n)
 	}
 	sort.Strings(names)
 	parts := make([]string, len(names))
 	for i, n := range names {
-		parts[i] = n + ": " + t.Fields[n].String()
+		parts[i] = n + ": " + t.fields[n].String()
 	}
 	return "node{" + strings.Join(parts, ", ") + "}"
 }
@@ -101,7 +101,7 @@ func IsNode(t Ty) bool {
 	case NamedTy, ListTy, RecordTy:
 		return true
 	case BasicTy:
-		return t == TyNode || t == TyAny || t == TyNever
+		return t == TyNode || t == TyAny || t == tyNever
 	case NodeTy:
 		return t.Name != "" // a named node type has a Go type of its own
 	case JoinTy:

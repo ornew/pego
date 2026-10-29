@@ -15,15 +15,15 @@ import (
 // as it is (both produce a list of the same values; the list the repetition makes is visible to the
 // action alone).
 
-// RuleProjectionsControlled returns the captures of repetitions that the rule r's action reads
+// ruleProjectionsControlled returns the captures of repetitions that the rule r's action reads
 // only as map($x, (e) => e.$f), mapped to the capture f, polling control. The conditions:
 //   - the action uses no $n, which could reach the same list (it is an element of the body);
 //   - no predicate reads $x, and the names x and f are captured only once in the rule;
 //   - f is captured in every element (an item of the element's sequence), with a value that is
 //     never nil (nonNil): otherwise an element can have no record, and $e.$f would be an error.
-func RuleProjectionsControlled(prog *Program, r *Rule, control *Control) map[string]string {
+func ruleProjectionsControlled(prog *Program, r *Rule, control *Control) map[string]string {
 	control.poll()
-	if prog.NoProjections || r.Action == nil || UsesItems(r.Action, control) {
+	if prog.NoProjections || r.Action == nil || usesItems(r.Action, control) {
 		return nil
 	}
 	if _, operatorsRule := r.Def.Expr.(*grammar.OperatorsRule); operatorsRule {
@@ -177,8 +177,8 @@ func ProjectedMap(t *grammar.Call, proj map[string]string, local func(string) bo
 	return x, true
 }
 
-// MarkProjectedMaps adds to set the map calls in the action t that read a projected capture.
-func MarkProjectedMaps(t grammar.Term, proj map[string]string, set map[*grammar.Call]bool, control *Control) {
+// markProjectedMaps adds to set the map calls in the action t that read a projected capture.
+func markProjectedMaps(t grammar.Term, proj map[string]string, set map[*grammar.Call]bool, control *Control) {
 	control.poll()
 	var walk func(t grammar.Term, shadow map[string]bool)
 	walk = func(t grammar.Term, shadow map[string]bool) {
@@ -359,8 +359,8 @@ func lineNonNil(prog *Program, e grammar.Expr, t grammar.Term, operator bool, se
 	return false
 }
 
-// UsesItems reports whether the action refers to the body's elements ($n).
-func UsesItems(t grammar.Term, control *Control) bool {
+// usesItems reports whether the action refers to the body's elements ($n).
+func usesItems(t grammar.Term, control *Control) bool {
 	control.poll()
 	found := false
 	WalkTerm(t, func(x grammar.Term) {
@@ -373,5 +373,5 @@ func UsesItems(t grammar.Term, control *Control) bool {
 }
 
 func RuleProjections(prog *Program, r *Rule) map[string]string {
-	return RuleProjectionsControlled(prog, r, nil)
+	return ruleProjectionsControlled(prog, r, nil)
 }

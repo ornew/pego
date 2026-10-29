@@ -29,15 +29,10 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-// Core builds the Core IR of the program: its rules and then its value-free twins, each at
+// CoreFrom builds the Core IR of the program: its rules and then its value-free twins, each at
 // the position of its ID. Shapes are those of the value model (internal/compile/value_shape.go);
-// Analyze has not run.
-func Core(prog *compile.Program) (*core.Module, error) {
-	return CoreFrom(prog, nil)
-}
-
-// CoreFrom is Core that also records, in origin if it is not nil, the expression each
-// node is built from (the innermost one, for nodes built from a chain of expressions).
+// Analyze has not run. If origin is not nil, it records the expression each node is built from
+// (the innermost one, for nodes built from a chain of expressions).
 func CoreFrom(prog *compile.Program, origin map[core.Node]grammar.Expr) (*core.Module, error) {
 	return CoreProjecting(prog, origin, true)
 }
@@ -115,8 +110,8 @@ type coreBuilder struct {
 	streamTop map[grammar.Expr]bool
 }
 
-// CallLevel returns the minimum binding level of a call of the rule r (core.Call.Level).
-func CallLevel(e *grammar.Ref, r *compile.Rule) (int, error) {
+// callLevel returns the minimum binding level of a call of the rule r (core.Call.Level).
+func callLevel(e *grammar.Ref, r *compile.Rule) (int, error) {
 	if e.Level == "" {
 		return 0, nil
 	}
@@ -421,7 +416,7 @@ func (b *coreBuilder) node(e grammar.Expr, s *coreScope, build bool) (core.Node,
 		if r == nil {
 			return nil, fmt.Errorf("undefined rule %s", e.Name)
 		}
-		level, err := CallLevel(e, r)
+		level, err := callLevel(e, r)
 		if err != nil {
 			return nil, err
 		}

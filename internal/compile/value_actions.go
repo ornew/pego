@@ -16,14 +16,14 @@ import (
 // or the value of an inline action; it fits everywhere without an error. tyTop is the type _,
 // which fits only _.
 
-// ValueEnv is the environment of an action: the captures of its scope, and the lambda parameters
+// valueEnv is the environment of an action: the captures of its scope, and the lambda parameters
 // and Operators Rule names $lhs, $op and $rhs.
-type ValueEnv struct {
+type valueEnv struct {
 	caps   []CapIndex
 	locals map[string]Ty
 }
 
-func (e *ValueEnv) with(names []string, ts []Ty) *ValueEnv {
+func (e *valueEnv) with(names []string, ts []Ty) *valueEnv {
 	n := *e
 	n.locals = map[string]Ty{}
 	for k, t := range e.locals {
@@ -359,7 +359,7 @@ func anyNode(t Ty) bool {
 
 // convertTerm returns the type of the node type constructor t, N{x}, which converts x to the
 // named node type n.
-func (v *ValueInference) convertTerm(t *grammar.New, n NodeTy, env *ValueEnv) Ty {
+func (v *ValueInference) convertTerm(t *grammar.New, n NodeTy, env *valueEnv) Ty {
 	for _, fi := range t.Fields {
 		v.term(fi.Value, env)
 	}
@@ -501,7 +501,7 @@ func sameCaps(a, b []CapIndex) bool {
 }
 
 // term returns the type of the value expression t.
-func (v *ValueInference) term(t grammar.Term, env *ValueEnv) Ty {
+func (v *ValueInference) term(t grammar.Term, env *valueEnv) Ty {
 	r := v.termType(t, env)
 	if v.rec != nil && !v.Quiet {
 		v.rec.Terms[t] = r
@@ -509,8 +509,8 @@ func (v *ValueInference) term(t grammar.Term, env *ValueEnv) Ty {
 	return r
 }
 
-func (v *ValueInference) termType(t grammar.Term, env *ValueEnv) Ty {
-	v.Control.poll()
+func (v *ValueInference) termType(t grammar.Term, env *valueEnv) Ty {
+	v.control.poll()
 	switch t := t.(type) {
 	case *grammar.TermGroup:
 		return v.term(t.Term, env)
@@ -610,7 +610,7 @@ func (v *ValueInference) termType(t grammar.Term, env *ValueEnv) Ty {
 	return TyAny
 }
 
-func (v *ValueInference) binary(t *grammar.Binary, env *ValueEnv) Ty {
+func (v *ValueInference) binary(t *grammar.Binary, env *valueEnv) Ty {
 	l, r := v.term(t.L, env), v.term(t.R, env)
 	both := func(want Ty) bool { return v.assignable(l, want) && v.assignable(r, want) }
 	bad := func() Ty {
@@ -987,7 +987,7 @@ func (v *ValueInference) overlaps(a, b Ty, depth int) bool {
 	return false
 }
 
-func (v *ValueInference) call(t *grammar.Call, env *ValueEnv) Ty {
+func (v *ValueInference) call(t *grammar.Call, env *valueEnv) Ty {
 	if n, ok := builtins[t.Func]; !ok || n >= 0 && n != len(t.Args) {
 		return TyAny // reported when the action is compiled
 	}

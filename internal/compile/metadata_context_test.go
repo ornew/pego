@@ -1,4 +1,4 @@
-package engine
+package compile
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
 )
 
 func TestCompileMetadataCollectionCancellation(t *testing.T) {
@@ -19,22 +18,22 @@ func TestCompileMetadataCollectionCancellation(t *testing.T) {
 	expr := &grammar.Attributed{Expr: &grammar.Literal{Value: "a"}, Attrs: []*grammar.Attribute{a}}
 	for _, phase := range []struct {
 		name string
-		run  func(*compile.Control)
+		run  func(*Control)
 	}{
-		{"rules", func(c *compile.Control) { c.Rules(g) }},
-		{"types", func(c *compile.Control) { c.Types(g) }},
-		{"arguments", func(c *compile.Control) { c.ExpressionArgs(a) }},
-		{"call-walk", func(c *compile.Control) { compile.AllCallsControlled(expr, nil, c) }},
-		{"type-check-arguments", func(c *compile.Control) {
-			(&compile.ValueInference{Control: c}).Predicates(expr, &compile.ValueEnv{})
+		{"rules", func(c *Control) { c.rules(g) }},
+		{"types", func(c *Control) { c.types(g) }},
+		{"arguments", func(c *Control) { c.expressionArgs(a) }},
+		{"call-walk", func(c *Control) { allCallsControlled(expr, nil, c) }},
+		{"type-check-arguments", func(c *Control) {
+			(&ValueInference{control: c}).predicates(expr, &valueEnv{})
 		}},
-		{"stream-walk", func(c *compile.Control) { (&compile.Compiler{Control: c}).CheckStream(expr) }},
+		{"stream-walk", func(c *Control) { (&Compiler{Control: c}).checkStream(expr) }},
 	} {
 		t.Run(phase.name, func(t *testing.T) {
-			control := &compile.Control{Ctx: compileTestContext(t, 2)}
+			control := &Control{Ctx: compileTestContext(t, 2)}
 			defer func() {
 				failure := recover()
-				stopped, ok := failure.(compile.Cancellation)
+				stopped, ok := failure.(Cancellation)
 				if !ok || !errors.Is(stopped.Err, context.Canceled) {
 					t.Fatalf("collection did not unwind as compilation cancellation: %v", failure)
 				}
@@ -53,19 +52,19 @@ func TestProjectionMetadataCancellation(t *testing.T) {
 	}
 	for _, phase := range []struct {
 		name string
-		run  func(*compile.Control)
+		run  func(*Control)
 	}{
-		{"candidate-walk", func(c *compile.Control) {
-			compile.RuleProjectionsControlled(&compile.Program{}, &compile.Rule{Def: &grammar.RuleDef{Expr: expr}, Action: &grammar.StringLit{}}, c)
+		{"candidate-walk", func(c *Control) {
+			ruleProjectionsControlled(&Program{}, &Rule{Def: &grammar.RuleDef{Expr: expr}, Action: &grammar.StringLit{}}, c)
 		}},
-		{"action-use", func(c *compile.Control) { compile.MarkProjectedMaps(term, nil, map[*grammar.Call]bool{}, c) }},
-		{"action-indices", func(c *compile.Control) { compile.UsesItems(term, c) }},
+		{"action-use", func(c *Control) { markProjectedMaps(term, nil, map[*grammar.Call]bool{}, c) }},
+		{"action-indices", func(c *Control) { usesItems(term, c) }},
 	} {
 		t.Run(phase.name, func(t *testing.T) {
-			control := &compile.Control{Ctx: compileTestContext(t, 1)}
+			control := &Control{Ctx: compileTestContext(t, 1)}
 			defer func() {
 				failure := recover()
-				stopped, ok := failure.(compile.Cancellation)
+				stopped, ok := failure.(Cancellation)
 				if !ok || !errors.Is(stopped.Err, context.Canceled) {
 					t.Fatalf("projection metadata did not stop: %v", failure)
 				}
@@ -80,13 +79,13 @@ func TestTypeCheckEmptyAttributeCancellation(t *testing.T) {
 	for i := range attrs {
 		attrs[i] = &grammar.Attribute{Name: "error"}
 	}
-	control := &compile.Control{Ctx: compileTestContext(t, 1)}
+	control := &Control{Ctx: compileTestContext(t, 1)}
 	defer func() {
 		failure := recover()
-		stopped, ok := failure.(compile.Cancellation)
+		stopped, ok := failure.(Cancellation)
 		if !ok || !errors.Is(stopped.Err, context.Canceled) {
 			t.Fatalf("empty attribute rows did not stop: %v", failure)
 		}
 	}()
-	(&compile.ValueInference{Control: control}).Predicates(&grammar.Attributed{Expr: &grammar.Literal{Value: "a"}, Attrs: attrs}, &compile.ValueEnv{})
+	(&ValueInference{control: control}).predicates(&grammar.Attributed{Expr: &grammar.Literal{Value: "a"}, Attrs: attrs}, &valueEnv{})
 }

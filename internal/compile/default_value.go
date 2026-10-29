@@ -10,7 +10,7 @@ import "github.com/ornew/pego/grammar"
 // recognition) keep their actions and types. Unchanged declarations are shared with g; g itself
 // does not change.
 func defaultValueGrammar(g *grammar.Grammar, control *Control) *grammar.Grammar {
-	needed := valueNeededRules(control.Rules(g), control, false)
+	needed := valueNeededRules(control.rules(g), control, false)
 	decls, changed := normalizeItems(g.File.Decls, false, func(d grammar.Decl) grammar.Decl {
 		control.poll()
 		rd, ok := d.(*grammar.RuleDef)
@@ -45,7 +45,7 @@ func defaultValueGrammar(g *grammar.Grammar, control *Control) *grammar.Grammar 
 // numbered differently and whose generated rules the author never wrote.
 func sourceDefaultValueGrammar(source, lowered, dv *grammar.Grammar, names InlineNames, control *Control) *grammar.Grammar {
 	dvRules := map[string]*grammar.RuleDef{}
-	for _, rd := range control.Rules(dv) {
+	for _, rd := range control.rules(dv) {
 		dvRules[rd.Name] = rd
 	}
 	// An inline action keeps its action when the rule it was lowered to does.

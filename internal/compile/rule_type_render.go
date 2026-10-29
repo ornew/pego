@@ -14,18 +14,18 @@ func (p *Program) RuleTypeWithPoll(name string, poll func()) (string, bool) {
 	if p.Typed == nil {
 		return "", false
 	}
-	t, ok := p.Typed.Shown[name]
+	t, ok := p.Typed.shown[name]
 	if !ok {
 		return "", false
 	}
-	return RenderRuleType(t, poll), true
+	return renderRuleType(t, poll), true
 }
 
-func RenderRuleType(t Ty, poll func()) string {
+func renderRuleType(t Ty, poll func()) string {
 	poll()
 	finish := func(s string) string { poll(); return s }
 	term := func(t Ty) string {
-		s := RenderRuleType(t, poll)
+		s := renderRuleType(t, poll)
 		if _, ok := t.(JoinTy); ok {
 			return "(" + s + ")"
 		}
@@ -40,14 +40,14 @@ func RenderRuleType(t Ty, poll func()) string {
 		parts := make([]string, len(t.Alts))
 		for i, alt := range t.Alts {
 			poll()
-			parts[i] = RenderRuleType(alt, poll)
+			parts[i] = renderRuleType(alt, poll)
 		}
 		return finish(joinRuleType(parts, " | ", poll))
 	case TupleTy:
 		parts := make([]string, len(t.Elems))
 		for i, e := range t.Elems {
 			poll()
-			parts[i] = RenderRuleType(e, poll)
+			parts[i] = renderRuleType(e, poll)
 		}
 		if len(parts) == 1 {
 			return finish("(" + parts[0] + ",)")
@@ -60,14 +60,14 @@ func RenderRuleType(t Ty, poll func()) string {
 		if len(t.Caps) == 0 && t.Value == TyTop {
 			return finish("node[_]")
 		}
-		value := RenderRuleType(t.Value, poll)
+		value := renderRuleType(t.Value, poll)
 		if len(t.Caps) == 0 {
 			return finish("node[" + value + "]")
 		}
 		return finish("node[" + value + ", " + t.capsText() + "]")
 	case RecordTy:
-		names := make([]string, 0, len(t.Fields))
-		for name := range t.Fields {
+		names := make([]string, 0, len(t.fields))
+		for name := range t.fields {
 			poll()
 			names = append(names, name)
 		}
@@ -75,7 +75,7 @@ func RenderRuleType(t Ty, poll func()) string {
 		parts := make([]string, len(names))
 		for i, name := range names {
 			poll()
-			parts[i] = name + ": " + RenderRuleType(t.Fields[name], poll)
+			parts[i] = name + ": " + renderRuleType(t.fields[name], poll)
 		}
 		return finish("node{" + joinRuleType(parts, ", ", poll) + "}")
 	default:

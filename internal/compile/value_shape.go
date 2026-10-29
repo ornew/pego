@@ -9,14 +9,14 @@ import (
 // The static shapes of values in the value model. Every backend builds the values of an
 // expression from these, so that they agree with the inferred types (value_types.go).
 
-// ShapeElems returns the elements e contributes to the tuple of its scope, without types of rule
+// shapeElems returns the elements e contributes to the tuple of its scope, without types of rule
 // calls (they do not change the shape).
-func ShapeElems(p *Program, e grammar.Expr) []valueElem {
+func shapeElems(p *Program, e grammar.Expr) []valueElem {
 	var control *Control
 	if p != nil {
-		control = p.ShapeControl
+		control = p.shapeControl
 	}
-	return (&ValueInference{Prog: p, Control: control}).elems(e)
+	return (&ValueInference{Prog: p, control: control}).elems(e)
 }
 
 // SpliceBody returns the body of the rule name if it is a splice rule: a rule that makes no node of
@@ -64,7 +64,7 @@ func isSeq(p *Program, e grammar.Expr) bool {
 // Elements without one only hold captures kept beside the tuple.
 func ValuedCount(p *Program, e grammar.Expr) int {
 	n := 0
-	for _, el := range ShapeElems(p, e) {
+	for _, el := range shapeElems(p, e) {
 		if el.t != nil {
 			n++
 		}
@@ -131,7 +131,7 @@ func SingleModeOf(p *Program, e grammar.Expr) SingleMode {
 // ScopeTuple reports whether the value of a scope with the body e (a rule body, a repetition
 // element or an Operators Rule line) is the node of its tuple, rather than its one element.
 func ScopeTuple(p *Program, e grammar.Expr) bool {
-	elems := ShapeElems(p, e)
+	elems := shapeElems(p, e)
 	seq := isSeq(p, e)
 	return seq || len(elems) != 1 || elems[0].t == nil || len(elems[0].caps) != 0
 }

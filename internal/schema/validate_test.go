@@ -1,12 +1,10 @@
-package engine
+package schema
 
 import (
 	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/schema"
 )
 
 func TestOutputSchemaDecodeRejectsInvalidGraph(t *testing.T) {
@@ -79,7 +77,7 @@ func TestOutputSchemaDecodeRejectsInvalidGraph(t *testing.T) {
 				body += `,"rules":[]`
 			}
 			data := []byte(`{"format":"pego-output-schema","version":2,"start":"main","positionUnitIndependent":true,` + body + `}`)
-			original := schema.Output{Format: "sentinel"}
+			original := Output{Format: "sentinel"}
 			got := original
 			if err := json.Unmarshal(data, &got); err == nil || !strings.Contains(err.Error(), tt.want) {
 				t.Fatalf("decode error = %v, want %q", err, tt.want)
@@ -93,7 +91,7 @@ func TestOutputSchemaDecodeRejectsInvalidGraph(t *testing.T) {
 
 func TestOutputSchemaDecodeRejectsUnknownFieldsAndInvalidEnvelope(t *testing.T) {
 	sch := validInMemoryOutputSchema()
-	sch.Types[0].Shape.Fields = []schema.Field{{Name: "Value", Shape: schema.Shape{Kind: "scalar", Scalar: "string"}}}
+	sch.Types[0].Shape.Fields = []Field{{Name: "Value", Shape: Shape{Kind: "scalar", Scalar: "string"}}}
 	encoded, err := json.Marshal(sch)
 	if err != nil {
 		t.Fatal(err)
@@ -101,7 +99,7 @@ func TestOutputSchemaDecodeRejectsUnknownFieldsAndInvalidEnvelope(t *testing.T) 
 	valid := string(encoded)
 	typesJSON, _ := json.Marshal(sch.Types)
 	rulesJSON, _ := json.Marshal(sch.Rules)
-	var accepted schema.Output
+	var accepted Output
 	if err := json.Unmarshal([]byte(valid), &accepted); err != nil {
 		t.Fatalf("valid fixture: %v", err)
 	}
@@ -128,7 +126,7 @@ func TestOutputSchemaDecodeRejectsUnknownFieldsAndInvalidEnvelope(t *testing.T) 
 				t.Fatalf("fixture does not contain %q", tt.old)
 			}
 			data := []byte(strings.Replace(valid, tt.old, tt.replacement, 1))
-			got := schema.Output{Format: "sentinel"}
+			got := Output{Format: "sentinel"}
 			original := got
 			if err := json.Unmarshal(data, &got); err == nil || !strings.Contains(err.Error(), tt.want) {
 				t.Fatalf("decode error = %v, want %q", err, tt.want)
@@ -142,7 +140,7 @@ func TestOutputSchemaDecodeRejectsUnknownFieldsAndInvalidEnvelope(t *testing.T) 
 
 func TestOutputSchemaDecodeAcceptsNodeCaptureShape(t *testing.T) {
 	data := []byte(`{"format":"pego-output-schema","version":2,"start":"main","positionUnitIndependent":true,"sourceInfo":true,"types":[{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"node","value":{"kind":"tuple","elements":[{"kind":"node","value":{"kind":"scalar","scalar":"string"}},{"kind":"list","element":{"kind":"top"}}]},"captures":[{"name":"value","paths":[[0],[1,2]],"shape":{"kind":"node","value":{"kind":"scalar","scalar":"string"}}},{"name":"look","side":true,"shape":{"kind":"error"}}]}}],"rules":[{"name":"main","origin":"inferred","result":{"kind":"ref","ref":"inferred/main"}}]}`)
-	var got schema.Output
+	var got Output
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +152,7 @@ func TestOutputSchemaDecodeAcceptsNodeCaptureShape(t *testing.T) {
 
 func TestOutputSchemaDecodeAcceptsNamedRecursiveReference(t *testing.T) {
 	data := []byte(`{"format":"pego-output-schema","version":2,"start":"main","positionUnitIndependent":true,"types":[{"id":"declared/Item","name":"Item","origin":"declared","shape":{"kind":"struct","fields":[{"name":"Next","shape":{"kind":"optional","element":{"kind":"ref","ref":"declared/Item"}}}]}},{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"ref","ref":"declared/Item"}}],"rules":[{"name":"main","origin":"declared","result":{"kind":"ref","ref":"inferred/main"}}]}`)
-	var got schema.Output
+	var got Output
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatal(err)
 	}
@@ -163,35 +161,35 @@ func TestOutputSchemaDecodeAcceptsNamedRecursiveReference(t *testing.T) {
 	}
 }
 
-func validInMemoryOutputSchema() schema.Output {
-	return schema.Output{
+func validInMemoryOutputSchema() Output {
+	return Output{
 		Format: "pego-output-schema", Version: 2, Start: "main", PositionUnitIndependent: true,
-		Types: []schema.Type{
-			{ID: "declared/Item", Name: "Item", Origin: "declared", Shape: schema.Shape{Kind: "struct"}},
-			{ID: "inferred/main", Name: "main", Origin: "inferred", Shape: schema.Shape{Kind: "ref", Ref: "declared/Item"}},
+		Types: []Type{
+			{ID: "declared/Item", Name: "Item", Origin: "declared", Shape: Shape{Kind: "struct"}},
+			{ID: "inferred/main", Name: "main", Origin: "inferred", Shape: Shape{Kind: "ref", Ref: "declared/Item"}},
 		},
-		Rules: []schema.Rule{{Name: "main", Origin: "declared", Result: schema.Shape{Kind: "ref", Ref: "inferred/main"}}},
+		Rules: []Rule{{Name: "main", Origin: "declared", Result: Shape{Kind: "ref", Ref: "inferred/main"}}},
 	}
 }
 
 func TestOutputSchemaValidateInMemory(t *testing.T) {
-	if err := (*schema.Output)(nil).Validate(); err == nil || !strings.Contains(err.Error(), "nil output schema") {
+	if err := (*Output)(nil).Validate(); err == nil || !strings.Contains(err.Error(), "nil output schema") {
 		t.Fatalf("nil schema error = %v", err)
 	}
-	if err := new(schema.Output).Validate(); err == nil || !strings.Contains(err.Error(), "unsupported") {
+	if err := new(Output).Validate(); err == nil || !strings.Contains(err.Error(), "unsupported") {
 		t.Fatalf("zero schema error = %v", err)
 	}
 	tests := []struct {
 		name string
-		edit func(*schema.Output)
+		edit func(*Output)
 		want string
 	}{
-		{"missing envelope flag", func(s *schema.Output) { s.PositionUnitIndependent = false }, "envelope"},
-		{"missing arrays", func(s *schema.Output) { s.Types = nil }, "envelope"},
-		{"duplicate type", func(s *schema.Output) { s.Types = append(s.Types, s.Types[0]) }, "duplicate"},
-		{"unresolved reference", func(s *schema.Output) { s.Types[1].Shape.Ref = "declared/Missing" }, "unresolved"},
-		{"inline cycle", func(s *schema.Output) {
-			shape := &schema.Shape{Kind: "optional"}
+		{"missing envelope flag", func(s *Output) { s.PositionUnitIndependent = false }, "envelope"},
+		{"missing arrays", func(s *Output) { s.Types = nil }, "envelope"},
+		{"duplicate type", func(s *Output) { s.Types = append(s.Types, s.Types[0]) }, "duplicate"},
+		{"unresolved reference", func(s *Output) { s.Types[1].Shape.Ref = "declared/Missing" }, "unresolved"},
+		{"inline cycle", func(s *Output) {
+			shape := &Shape{Kind: "optional"}
 			shape.Element = shape
 			s.Types[1].Shape = *shape
 		}, "cyclic inline"},
@@ -209,10 +207,10 @@ func TestOutputSchemaValidateInMemory(t *testing.T) {
 
 func TestOutputSchemaValidateAllowsNamedRecursionAndSharedInlineShape(t *testing.T) {
 	s := validInMemoryOutputSchema()
-	shared := &schema.Shape{Kind: "ref", Ref: "declared/Item"}
-	s.Types[0].Shape = schema.Shape{Kind: "struct", Fields: []schema.Field{
-		{Name: "Left", Shape: schema.Shape{Kind: "optional", Element: shared}},
-		{Name: "Right", Shape: schema.Shape{Kind: "optional", Element: shared}},
+	shared := &Shape{Kind: "ref", Ref: "declared/Item"}
+	s.Types[0].Shape = Shape{Kind: "struct", Fields: []Field{
+		{Name: "Left", Shape: Shape{Kind: "optional", Element: shared}},
+		{Name: "Right", Shape: Shape{Kind: "optional", Element: shared}},
 	}}
 	if err := s.Validate(); err != nil {
 		t.Fatal(err)
@@ -221,9 +219,9 @@ func TestOutputSchemaValidateAllowsNamedRecursionAndSharedInlineShape(t *testing
 
 func TestOutputSchemaValidateLayeredSharedDAG(t *testing.T) {
 	s := validInMemoryOutputSchema()
-	shared := &schema.Shape{Kind: "scalar", Scalar: "string"}
+	shared := &Shape{Kind: "scalar", Scalar: "string"}
 	for range 28 {
-		shared = &schema.Shape{Kind: "join", Alternatives: []schema.Shape{
+		shared = &Shape{Kind: "join", Alternatives: []Shape{
 			{Kind: "list", Element: shared},
 			{Kind: "optional", Element: shared},
 		}}

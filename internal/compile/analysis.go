@@ -63,7 +63,7 @@ func AnalyzeControlled(rules []*grammar.RuleDef, control *Control) *Analysis {
 	calls := map[string][]string{}
 	for _, r := range rules {
 		control.poll()
-		calls[r.Name] = AllCallsControlled(r.Expr, nil, control)
+		calls[r.Name] = allCallsControlled(r.Expr, nil, control)
 	}
 	for _, r := range rules {
 		control.poll()
@@ -282,10 +282,10 @@ func (a *Analysis) leftCalls(e grammar.Expr, acc []string) []string {
 
 // AllCalls returns every rule called in the expression.
 func AllCalls(e grammar.Expr, acc []string) []string {
-	return AllCallsControlled(e, acc, nil)
+	return allCallsControlled(e, acc, nil)
 }
 
-func AllCallsControlled(e grammar.Expr, acc []string, control *Control) []string {
+func allCallsControlled(e grammar.Expr, acc []string, control *Control) []string {
 	walkExprControlled(e, func(x grammar.Expr) {
 		control.poll()
 		if r, ok := x.(*grammar.Ref); ok {
@@ -333,7 +333,7 @@ func ruleVariablesControlled(rules []*grammar.RuleDef, control *Control) map[str
 	calls := make(map[string][]string, len(rules))
 	for _, r := range rules {
 		control.poll()
-		calls[r.Name] = AllCallsControlled(r.Expr, nil, control)
+		calls[r.Name] = allCallsControlled(r.Expr, nil, control)
 	}
 	// Tarjan emits callees before their callers. Every rule in a recursive
 	// component reaches all its peers, so compute their union only once.
@@ -424,7 +424,7 @@ func walkExprControlled(e grammar.Expr, f func(grammar.Expr), control *Control) 
 		walkExprControlled(e.Expr, f, control)
 		for _, at := range e.Attrs {
 			control.poll()
-			for _, arg := range control.ExpressionArgs(at) {
+			for _, arg := range control.expressionArgs(at) {
 				walkExprControlled(arg, f, control)
 			}
 		}
