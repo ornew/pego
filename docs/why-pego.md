@@ -1,21 +1,34 @@
 # Why PEGO
 
-PEGO is for a Go team that needs a parser for its own DSL, configuration, query or policy language and wants typed
-values, declared error recovery and incremental reparsing from one grammar, with no cgo.
+PEGO is a grammar compiler and parsing platform designed for every target, engine and use. You write one grammar. Today
+PEGO checks and compiles it once, generates Go and TypeScript parsers from it, and runs it on three engine backends in
+Go. It aims to do the same for any target language, engine and optimization profile, and for every use (batch trees,
+typed values, incremental documents, streaming, recognition and, as a goal, editors), under one contract and with the
+best measured speed in each, against the fastest tools for each platform. The breadth is in targets and uses, not in
+grammar class: grammars are PEG-based, with ordered choice.
 
-- **You get** typed Go values, declared recovery, an incremental `Document`, a default depth cap, opt-in work limits
-  and a TypeScript parser from one grammar, stdlib-only and tested against one engine. That breadth under one
-  contract is the reason to choose PEGO.
-- **Instead of** a hand-written parser, goyacc, pigeon, pointlander/peg, participle or the ANTLR Go runtime; or embed
-  cel-go or Expr if an existing expression language fits ([Choosing a Tool](#choosing-a-tool)).
-- **It costs** pre-release status (no tagged release; language, API and file formats may change), speed (slower than
-  hand-written Go parsers), limits you must switch on, and no editor support for your language yet
-  ([Current Limits](#current-limits)).
+PEGO is pre-release, and much of that aim is still ahead. Each part is paired with where it stands today:
+
+| Aim | Today | Goal |
+|:--|:--|:--|
+| One compilation path | The Core IR and Flow IR feed the Go and TypeScript generators; the engine backends compile the grammar by their own routes | Every backend on the Core IR ([design record 062](design/records/062-backend-independent-optimization-ir.md), accepted, not implemented) |
+| Any target language | Two: generated Go and generated TypeScript | More target languages |
+| Any engine | A closure backend, a recursive VM and an iterative VM, in Go; a bytecode with a [published specification](../spec/bytecode/README.md), implemented only by the Go VMs and unstable until it is declared stable and versioned, which the first tagged release does not do | A stable, versioned bytecode, then another implementation of it |
+| Selectable optimization profiles | One fixed set of optimizations | Generation profiles for speed, memory and size |
+| Every use | Trees, typed values, recognition, recovery, `Document` and streaming, with per-target gaps ([What One Grammar Gives You](#what-one-grammar-gives-you)) | Editor support for the languages you define |
+| The best measured speed in each | Slower than Go's hand-written parsers on every comparable workload so far: 1.1–5.4× for typed values, 1.6–6.8× for trees ([Measured Today](#measured-today)) | Match, then beat them, and show it in a public cross-tool benchmark with every loss published ([Commitments and Targets](#commitments-and-targets)) |
+| Safe by default | A nesting cap; work limits are opt-in | Work limits on by default; optional input-length and memory caps |
+
+**Best fit today:** a Go program, alone or with a TypeScript front end, that parses its own DSL, configuration, query
+or policy language and wants typed values, declared recovery and incremental reparsing from one grammar. The reason to
+choose PEGO today is breadth under one contract: typed values, declared recovery, an incremental `Document`, a default
+depth cap, opt-in work limits and a TypeScript parser from one grammar, stdlib-only and tested against one engine.
+[Current Limits](#current-limits) lists what it does not do yet.
 
 ## Choosing a Tool
 
-Choose by the job, not by the parsing algorithm. Where the table names competitors, it is checked against the versions
-listed under [Sources](#sources).
+Choose by the job, not by the parsing algorithm. The PEGO rows state where it fits best today. Where the table names
+competitors, it is checked against the versions listed under [Sources](#sources).
 
 | If you need | Consider | Because |
 |:--|:--|:--|
@@ -23,7 +36,7 @@ listed under [Sources](#sources).
 | The highest throughput for one fixed format in Go | The standard library or a hand-written parser | On PEGO's benchmarks, Go's hand-written parsers are faster on every comparable workload today: 1.1–5.4× for typed values, 1.6–6.8× for trees, 8.05× for recognition and 11.5× for streaming (engine, not generated Go) |
 | A small Go grammar whose types are the grammar | participle | The grammar is struct tags on your Go types, with no generated parser |
 | An existing grammar for a mainstream language, or many target languages | ANTLR 4 | A large grammar library, ten runtime targets (the Go runtime is pure Go) and automatic error recovery |
-| A Go parser for your own DSL, configuration, query or policy language, with typed values, declared recovery and no cgo | PEGO | One grammar gives typed Go values, `#recover`, a default depth cap and a stdlib-only parser. Work limits are opt-in: generate with `-work-controls`, then set them per call |
+| A parser for a language you own (a DSL, configuration, query or policy language), with typed values, declared recovery and no cgo | PEGO | One grammar gives typed values in Go or TypeScript, `#recover`, a default depth cap and a stdlib-only parser. Work limits are opt-in: generate with `-work-controls`, then set them per call |
 | The same parser in a Go backend and in a browser or Node | PEGO, ANTLR (Go, JavaScript and TypeScript targets) or tree-sitter (Go binding or gotreesitter, plus `web-tree-sitter`) | PEGO's generated Go and TypeScript need no runtime dependency and are tested against one engine. Its TypeScript has no incremental parsing or streaming, counts positions in code points or UTF-8 bytes (not UTF-16), and reaches a few hundred to a few thousand nested rule calls on Node's default stack. The repository tests run it under Node; Deno, Bun and browsers are documented but not exercised by the tests |
 | A Go tool that reparses a grammar you write after small edits, on inputs that usually parse | PEGO | `Document` reuses rule results with no grammar annotations. Recovery must be declared: an unclosed construct that no `#recover` rule covers yields an error, not a tree. There is no language server for your language |
 | Highlighting and structural editing for many existing languages | tree-sitter, or gotreesitter in pure Go | Hundreds of community grammars with highlight and injection queries, a tree for every input, and editors that load them |
@@ -79,7 +92,7 @@ memoization on and off, recognition against full parses, and generated Go and Ty
 features each backend lacks are listed rather than approximated (see
 [What One Grammar Gives You](#what-one-grammar-gives-you)).
 
-**Performance is a design commitment.** The runtime and generators avoid allocation (slab storage for nodes, lists and
+**The best speed is the aim.** The runtime and generators avoid allocation (slab storage for nodes, lists and
 typed values, pooled frames, and typed values built without an intermediate tree). They also defer memoization for
 rules whose results are never reused, drop values that recognition and discarded captures do not need, and use
 specialized matching loops. The [optimization catalog](optimizations/README.md) indexes 85 mechanisms with their
@@ -128,6 +141,13 @@ For a given artifact, input and options, a work limit stops a parse at the same 
 cancellation follows the caller's clock. Limits on by default are a committed goal (see
 [Commitments and Targets](#commitments-and-targets)).
 
+**One compilation, aimed at every target.** A grammar is checked and compiled once. Generated TypeScript prints the
+matching code of every rule from the Flow IR, and generated Go prints part of its code from it; the engine backends
+compile the grammar by their own routes today ([intermediate representations](design/intermediate-representations.md)).
+Moving every backend onto the Core IR is an accepted design, not implemented yet
+([design record 062](design/records/062-backend-independent-optimization-ir.md)). The conformance tests that hold
+both generators to the engine's results are the bar for every target and engine that follows.
+
 **No cgo and no runtime dependencies.** The module uses only the Go standard library. Generated Go needs only the
 standard library, and generated TypeScript has no dependencies. The toolchain itself runs in the browser as WebAssembly
 ([Playground](guide/playground.md)). The bytecode has a [published specification](../spec/bytecode/README.md); only the
@@ -162,16 +182,18 @@ language can express and serve as large test workloads.
 
 ## Performance
 
-Speed and memory are a core design commitment. This section separates what is measured today from what is targeted.
+The aim is the best measured speed in every target, engine and use, against the fastest tools for each platform and with
+every loss published, with memory and size chosen per program. This section gives where PEGO stands today and the first
+targets toward that aim.
 
 ### Measured Today
 
-All figures come from [Benchmark Results](benchmarks.md): commit `13b3d186`, Go 1.27.1, Apple M3 Max (darwin/arm64,
-16 cores), median of three runs, positions in code points, measured on 2026-10-29. Times differ between machines.
-The standard-library parsers produce different outputs (no positions, or tokens instead of a tree), so the ratios
-compare different work. The JSON baseline is `encoding/json` `Unmarshal` into `any`, as built by Go 1.27.1; the report
-does not record the `GOEXPERIMENT` setting, and a baseline that decodes with `encoding/json/jsontext` directly is not
-measured.
+All figures come from [Benchmark Results](benchmarks.md): commit `13b3d186`, Go 1.27.1, Apple M3 Max (darwin/arm64, 16
+cores), median of three runs, positions in code points, measured on 2026-10-29. Times differ between machines. The
+standard-library parsers do different work, so the ratios compare different outputs: `encoding/json` builds values
+without positions, `encoding/xml` returns tokens, `encoding/csv` returns records, and `go/parser` builds a positioned Go
+syntax tree. The JSON baseline is `encoding/json` `Unmarshal` into `any`, as built by Go 1.27.1; the report does not
+record the `GOEXPERIMENT` setting, and a baseline that decodes with `encoding/json/jsontext` directly is not measured.
 
 | Workload | Generated Go `Parse` | Generated Go typed `ParseAST` | Go standard library | `ParseAST` ÷ standard library |
 |:--|--:|--:|--:|--:|
@@ -209,15 +231,19 @@ These are goals, not results.
   comparable workload while it still returns positioned trees or typed values, and then go below it. The current
   standard-library baselines are a minimum bar for this goal, not the fastest Go parsers; the JSON comparison moves to a
   `jsontext` baseline once it is measured.
-- **Work limits on by default.** Every parse gets a work budget proportional to the input length (c·n), with c
-  calibrated by the complexity analysis on the repository grammars and ready-made parsers, so that ordinary grammars
-  stay well below it. A grammar that the analysis does not show to be linear gets a fixed fallback budget, c·n with a
-  large constant, and a lint warning. An unlimited parse has to be requested explicitly. The overhead of the limits is to shrink alongside, but the default does not wait for it.
+- **Work limits on by default.** Every parse gets a work budget proportional to the input length (c·n). At first, c
+  is one fixed, large constant, calibrated on the repository grammars and ready-made parsers so that ordinary
+  grammars stay well below it, and a lint warns about grammars outside the specification's sufficient conditions for
+  linear work. An unlimited parse has to be requested explicitly. A complexity classifier, which is research, can
+  later refine c per grammar. The overhead of the limits is to shrink alongside, but the default does not wait for it.
 - **One place for production limits.** Optional caps on input length and on estimated memory (memo entries and
   result trees) fail with the same kind of error as the work limit.
 - **Choose the trade-off.** Generation profiles for speed, memory and size, each a named set of optimization passes,
   so a program can choose the smallest parser or the fastest one
   ([design record 063](design/records/063-configurable-optimization-pass-pipeline.md), accepted, not implemented).
+- **Every target and use.** Recognition, streaming, `Document` editing and generated TypeScript each have their
+  own targets, and each target language or engine added later gets its own against the fastest tools for its
+  platform.
 - **Prove it in public.** A cross-tool benchmark with fixed workloads, stated machines and a published harness,
   starting with the Go tools that this page names as alternatives, so that any comparison can be rerun.
 
@@ -230,7 +256,8 @@ planned to reach them.
   bytecode) may change between versions with no compatibility shims. The ready-made parser modules cannot be fetched
   with `go get` from another module ([Ready-Made Parsers](guide/ready-made-parsers.md)). PEGO itself requires Go 1.27.1.
 - **Not safe by default for untrusted input yet.** The nesting cap is on by default; nothing else is. Default work
-  limits and input-length and memory caps are committed goals ([Commitments and Targets](#commitments-and-targets)).
+  limits and optional input-length and memory caps are committed goals
+  ([Commitments and Targets](#commitments-and-targets)).
   - Work limits and cancellation are opt-in. Generated parsers carry them only when generated with `-work-controls`,
     which costs 1.30–1.47× on generated Go `Parse` (JSON and XML), and the three engine backends take 1.45–1.79× with
     a context or limits active ([Performance](performance.md)).
@@ -242,7 +269,10 @@ planned to reach them.
   - `pego parse` has no flag for work limits.
 - **No linear-time guarantee.** Some grammars take quadratic, cubic or exponential time, and no tool classifies a
   grammar or warns about it yet ([design record 064](design/records/064-grammar-complexity.md), proposed).
-- **Slower than hand-written Go parsers** on every comparable workload measured (see [Measured Today](#measured-today)).
+- **Not the fastest yet.** Generated Go is slower than Go's hand-written parsers on every comparable workload
+  measured, and no benchmark against another parser framework exists yet (see [Measured Today](#measured-today)).
+- **Two targets and one engine language.** Parsers are generated for Go and TypeScript only, and only the Go VMs
+  implement the bytecode.
 - **Not yet editor-grade.**
   - A `Document` returns a tree only if the grammar's `#recover` rules handle each error. `#missing` is not available
     in a `Document`, so a buffer with an unclosed construct that no `#recover` rule covers gets an error, not a tree.
@@ -291,7 +321,7 @@ tables describe documented behavior; they are not benchmarks.
 
 | Tool | Targets | Go and browser from one grammar | From Go without cgo | Stated worst case | Built-in resource controls | Editor tooling from the grammar |
 |:--|:--|:--|:--|:--|:--|:--|
-| PEGO (pre-release) | Go engine, generated Go, generated TypeScript, bytecode | Yes (generated TypeScript; no `Document` or streaming) | Yes | No polynomial bound for every grammar; classes of growth specified | Depth cap (default on); work limits and cancellation (opt-in, generated in with `-work-controls`); no memory limit | None for your language; language server for `.pego` sources |
+| PEGO (pre-release) | Two languages: Go (engine and generated) and TypeScript (generated); bytecode run by the Go VMs | Yes (generated TypeScript; no `Document` or streaming) | Yes | No polynomial bound for every grammar; classes of growth specified | Depth cap (default on); work limits and cancellation (opt-in, generated in with `-work-controls`); no memory limit | None for your language; language server for `.pego` sources |
 | tree-sitter 0.27.1 | C runtime with bindings (Go, Rust, Node, Wasm and others) | Yes (Go binding and `web-tree-sitter`) | No (Go bindings use cgo) | Not documented | Progress callback for cancellation | Highlight, injection and tag queries |
 | gotreesitter 0.56.0 | Go, WebAssembly | Yes (Wasm runtime) | Yes | Not documented | Deterministic work limits (iterations, stack depth, nodes), on by default with thresholds derived from the input; per-parse memory budget (on by default) and a process-heap ceiling; timeout; cancellation flag | tree-sitter queries, highlighting, tags; UTF-16 coordinates |
 | Lezer 1.4.11 | JavaScript | No Go runtime | Not applicable | Not documented | Step-wise `PartialParse.advance()` and `stopAt`; the caller bounds time | CodeMirror highlighting and folding |
@@ -309,16 +339,18 @@ PEGO's closure backend and recursive VM use the Go stack for rule calls, and gen
 stack, which is why PEGO caps nesting depth by default; the iterative VM keeps rule calls on its own stack
 ([Choosing a Backend](guide/backends.md)).
 
-**What the reader at the top of this page needs, and who covers it.** Typed values built from a grammar: ANTLR
+**Who covers which part today.** Typed values built from a grammar: ANTLR
 (context classes), participle (your structs) and gotreesitter (typed query matches) cover parts of it. A parser for
 Go and for the browser from one grammar: ANTLR, tree-sitter and gotreesitter. Recovery: tree-sitter, Lezer and ANTLR
 recover automatically, while PEGO's is declared. Incremental reparsing in pure Go: gotreesitter and gpeg. Bounded
 work: gotreesitter (on by default) and PEGO (opt-in today). PEGO's case is that one grammar covers all of these for a
-language the team owns, with stdlib-only Go and dependency-free TypeScript. It is not a claim of being better at any
+language you own, with stdlib-only Go and dependency-free TypeScript. It is not a claim of being better at any
 one of them.
 
 **What other tools do better today.**
 
+- ANTLR generates parsers for ten target languages, and tree-sitter's C runtime has bindings for Go, Rust, Node and
+  others and runs in browsers through Wasm. Both cover far more targets than PEGO's two today.
 - tree-sitter returns a tree for every input, with ERROR and MISSING nodes and changed ranges. It also has persistent
   trees, included ranges for embedded languages and a random-edit fuzzer for every grammar author.
 - gotreesitter brings 206 tree-sitter grammars to pure Go. Its deterministic work limits and per-parse memory budget

@@ -1,32 +1,49 @@
 # Project Strategy
 
-This page covers where PEGO competes, whom it serves first, what must become true for it to win there, and how
+This page covers what PEGO aims to be, where it earns its first proof, what must become true on the way, and how
 progress is measured. It is written for contributors who are choosing what to work on and judging the result; the
 summary for readers is [Why PEGO](why-pego.md). Facts about PEGO refer to this repository. Benchmark figures come from
 [Benchmark Results](benchmarks.md) (commit `13b3d186`, Go 1.27.1, Apple M3 Max, darwin/arm64, median of three runs,
 positions in code points). Comparisons checked on 2026-10-29.
 
-## Mission and Positioning
+## Vision and Positioning
 
-**Mission.** Make a grammar the only parser code a program needs. One typed grammar compiles into correct, fast and
-resource-bounded parsers for every mode and target the program uses.
+**Mission.** Make a grammar the only parser code a program needs, whatever language the program is written in and
+whatever it parses for, as fast as the fastest tools for its platform.
 
-**Wedge.** PEGO is for a Go team that needs a parser for its own DSL, configuration, query or policy language and wants
-typed values, declared error recovery and incremental reparsing from one grammar, with no cgo.
+**Identity.** PEGO aims to be one grammar for every target, engine and use: a grammar compiler and parsing platform
+that turns one grammar into parsers for any target language, engine and optimization profile, and for every use
+(batch trees, typed values, incremental documents, streaming, recognition and, as a goal, editors). The aim is the
+best measured speed in each, against the fastest tools for each platform, with every loss published. The breadth is
+in targets and uses, not in grammar class: grammars are PEG-based, with ordered choice (see the non-goals). Each part
+of the aim is stated with its status today:
 
-**Positioning.** The reason to choose PEGO is breadth under one contract. One PEG-based grammar yields typed Go
-values, recognition, incremental documents and bounded streams. The same parser is also available in TypeScript.
-Every backend returns the same results for the features it shares, and the tests check this. PEGO needs no cgo.
+| Aim | Today | Goal |
+|:--|:--|:--|
+| One compilation path | The Core IR and Flow IR feed the Go and TypeScript generators; the engine backends compile the grammar by their own routes | Every backend on the Core IR ([design record 062](design/records/062-backend-independent-optimization-ir.md), accepted, not implemented) |
+| Any target language | Two: generated Go and generated TypeScript | More target languages ([Targets and engines](#wedge-and-sequencing) track) |
+| Any engine | Three engine backends in Go (closure, recursive VM, iterative VM); a bytecode with a published specification, implemented only by the Go VMs and unstable until it is declared stable and versioned, which the first tagged release does not do | A stable, versioned bytecode, then another implementation of it |
+| Selectable optimization profiles | One fixed set of optimizations | Generation profiles for speed, memory and size ([design record 063](design/records/063-configurable-optimization-pass-pipeline.md), accepted, not implemented) |
+| Every use | Batch trees, typed values, recognition, recovery, `Document` and streaming, with per-target gaps ([What One Grammar Gives You](why-pego.md#what-one-grammar-gives-you)); a language server for `.pego` sources | Editor-grade tooling for the languages users define ([Editor-Grade Parsing](#editor-grade-parsing)) |
+| The best measured speed in each | Generated Go is slower than Go's hand-written standard-library parsers on every comparable workload (1.1–5.4× for typed values, 1.6–6.8× for trees); no cross-tool benchmark yet | The targets of [Performance Leadership](#performance-leadership), first for the targets and uses that exist, then for each new one |
+| Safe by default | A nesting cap only | Work limits on by default; optional input-length and memory caps ([Predictable Cost and Safety](#predictable-cost-and-safety)) |
 
-- **Today.** That breadth is the claim. PEGO has no editor ecosystem and no grammar library. It has no speed lead:
-  generated Go is slower than Go's hand-written standard-library parsers on every comparable workload (1.1–5.4× for
-  typed values, 1.6–6.8× for trees).
-- **Commitment.** Speed, memory and size are design commitments and a pillar, not an afterthought. The goal is to
-  match and then beat hand-written parsers while returning typed values, and to show it in a public cross-tool
-  benchmark ([Performance Leadership](#performance-leadership)).
+**Positioning.** The reason to choose PEGO is breadth under one contract. One PEG-based grammar yields typed values,
+recognition, incremental documents and bounded streams, in every target that supports them. Every backend returns the
+same results for the features it shares, and the tests check this. PEGO needs no cgo.
+
+- **Today.** That breadth is the claim. PEGO has no editor ecosystem, no grammar library and no speed lead.
+- **Ambition.** Speed, memory and size are a pillar. The goal is to match and then beat hand-written parsers in every
+  target and use while returning typed values, and to show it in a public cross-tool benchmark
+  ([Performance Leadership](#performance-leadership)).
 - **Not claimed.** PEGO is not safe by default for untrusted input yet, and it is not editor-grade yet. Both are goals
   with stated gaps ([Predictable Cost and Safety](#predictable-cost-and-safety),
   [Editor-Grade Parsing](#editor-grade-parsing)).
+
+**First proof.** The identity covers every target and use, but proof is earned in order. The first users to win are
+Go teams that own a DSL, configuration, query or policy language and want typed values, declared error recovery and
+incremental reparsing from one grammar, with no cgo ([Order of Proof](#order-of-proof)). This orders the work; it does
+not narrow what PEGO is for.
 
 **Non-goals.**
 
@@ -41,8 +58,8 @@ Every backend returns the same results for the features it shares, and the tests
   inside an inference loop, a different product with its own incumbents.
 - Compatibility before the first release. Grammar syntax, the Go API, `.pegoc`, JSON forms and bytecode change freely
   until then.
-- Deferred by policy: go-gettable ready-made parser modules, 32-bit Go, generators for other languages and a second
-  VM implementation. They are not part of the release.
+- Deferred by policy: go-gettable ready-made parser modules and 32-bit Go. Further target languages and a second VM
+  implementation are goals of the Targets and engines track, after the release.
 
 ## Market Map
 
@@ -255,7 +272,12 @@ What the incumbents do better today, and what PEGO's documents must not obscure:
 - rust-analyzer, rowan and Roslyn: lossless trees, cheap edits without extra state, a tree for every input.
 - grmtools and Menhir: recovery and error messages checked or measured at build time.
 
-## Target Segments
+## Order of Proof
+
+PEGO aims to serve the parsing need of every segment of the market map in the long term. The non-goals above still
+apply: a grammar corpus to rival tree-sitter's, general context-free parsing and the semantic layer of a language stay
+out of scope. The ranking below decides where PEGO earns proof first, so that one segment's adoption makes the case
+for the next; it orders the work, it does not limit the scope.
 
 ### Scoring Criteria
 
@@ -282,7 +304,7 @@ judgements until the size proxies are measured.
 | 6 | TypeScript DSLs with IDE support | 2 | 1 | 1 | 1 | 1 | 6 |
 | 7 | Compilers of large programming languages | 1 | 1 | 1 | 1 | 1 | 5 |
 
-Segment 1 is the wedge.
+Segment 1 is the first proof (the wedge).
 
 - **Gap scores 2.** The ANTLR Go runtime and pigeon cover much of the need. What they do not cover is typed values
   from a target-independent grammar, the same parser in TypeScript, deterministic work counts and incremental
@@ -296,12 +318,12 @@ Segment 1 is the wedge.
 
 ## Wedge and Sequencing
 
-Work runs in tracks. Until the release, the Release checklist and at most one other track are active; after it, at
-most two tracks are active at a time, each with one major item in progress. When a track frees up, the next one is
-taken in this order: Safety, Credibility, Performance, Editor, TypeScript parity, Adoption. Only one milestone is a
-gate: **Credibility**. It is met when the cross-tool benchmark is published with its harness and its losses. Until
-then, no document claims speed relative to another tool. Performance targets are tracked continuously; they are not
-gates, and the release does not wait for them.
+Work runs in tracks. Until the release, the Release checklist and at most one other track are active; after it, at most
+two tracks are active at a time, each with one major item in progress. When a track frees up, the next one is taken in
+this order: Safety, Credibility, Performance, Editor, TypeScript parity, Adoption, Targets and engines. Only one
+milestone is a gate: **Credibility**. It is met when the cross-tool benchmark is published with its harness and its
+losses. Until then, no document claims speed relative to another tool. Performance targets are tracked continuously;
+they are not gates, and the release does not wait for them.
 
 **Release (the first milestone, a checklist).** A version that segment 1 can depend on:
 
@@ -309,9 +331,10 @@ gates, and the release does not wait for them.
   API) and the unstable ones (`.pegoc`, bytecode, JSON forms);
 - the minimum Go version of generated code, documented and tested, including the effect of `go get -tool` on a
   consumer module;
-- work limits on by default (a budget proportional to the input length, with a fixed fallback and a lint warning for
-  grammars not shown to be linear), at whatever overhead they have then, plus a
-  work-limit flag in `pego parse` and a `SECURITY.md`; reducing the overhead follows in the Performance track;
+- work limits on by default: one fixed budget proportional to the input length (c·n with a large constant), and a lint
+  warning for grammars outside the specification's sufficient conditions for linear work; at whatever overhead the
+  limits have then, plus a work-limit flag in `pego parse` and a `SECURITY.md`; reducing the overhead follows in the
+  Performance track, and the release does not wait for the complexity classifier;
 - one work budget in place of two counters;
 - readable long expected lists;
 - typed entry points under their final names;
@@ -330,14 +353,16 @@ condition.
 |:--|:--|:--|
 | Credibility (the gate) | The wedge benchmark; then the full cross-tool harness on Apple silicon and Linux x86-64; recovery quality on two languages | Recovery quality on more languages |
 | Performance | The work-limit overhead first, then the targets below by impact; a `jsontext` baseline | Generation profiles once the pass pipeline exists |
-| Safety | Default work limits; the work-limit flag; `SECURITY.md`; input-length and memory caps; regression suites with step ratios | The complexity classifier (research, not on the critical path to release) |
+| Safety | Default work limits; the work-limit flag; `SECURITY.md`; optional input-length and memory caps; regression suites with step ratios | The complexity classifier (research, not on the critical path to release) |
 | Editor | A language server for one user grammar; a public position map with UTF-16; tree-producing recovery in a `Document` | Semantic tokens through the server; an action-free concrete tree; text query syntax and standalone highlighting output |
 | TypeScript parity | UTF-16 positions | `Document` and streaming in generated TypeScript |
 | Adoption | `llms.txt` and a compact grammar reference; pigeon and participle migration recipes; a contributor guide | A pigeon grammar converter |
-| Deferred by policy | None | go-gettable ready-made parsers; 32-bit Go; a third target language; a second bytecode VM |
+| Targets and engines | None before the release | A third target language, once every backend is on the Core IR and the conformance suite runs independent of the target; a second implementation of the bytecode in another language, once the bytecode is stable and versioned |
+| Deferred by policy | None | go-gettable ready-made parsers; 32-bit Go |
 
-The order follows the ranked segments. Segment 1 needs Release and the wedge benchmark. Segment 2 needs the Editor
-track, and Credibility makes its adoption defensible. Segment 3 needs TypeScript parity.
+The order follows the order of proof. Segment 1 needs Release and the wedge benchmark. Segment 2 needs the Editor
+track, and Credibility makes its adoption defensible. Segment 3 needs TypeScript parity. Each new target language or
+engine then extends the same contract and the same targets.
 
 ## Pillars
 
@@ -361,7 +386,10 @@ backend's limits. A `Document` gives what a fresh parse gives.
 
 ### Performance Leadership
 
-Speed, memory and size are design commitments. The aim is the best result in each, chosen per program.
+Speed, memory and size are a pillar. The aim is the best measured speed in every target language, engine and use,
+against the fastest tools for each platform and with every loss published, with memory and size chosen per program. The
+targets below are the start of that aim: they cover generated Go, generated TypeScript and the engine, which exist
+today, and each new target or engine adds its own rows against the best tools for its language.
 
 **Baseline.** The design avoids allocation by construction: slab storage for nodes and lists, pooled frames, deferred
 memoization, typed values built without an intermediate tree, and value elision in recognition. The
@@ -394,8 +422,9 @@ leadership, not a comparison with the fastest Go parsers. The JSON rows move to 
 exists.
 
 **Targets.** Ratios are measured with the repository suite on the same machine and revision, in the default
-configuration: once work limits are on by default, every speed row includes their cost. The standard library builds
-less (no positions, or tokens instead of a tree), so each row names the output class it compares; typed values and
+configuration: once work limits are on by default, every speed row includes their cost. The standard-library parsers do
+different work (`encoding/json` builds no positions, `encoding/xml` returns tokens, `encoding/csv` returns records,
+`go/parser` builds a positioned Go syntax tree), so each row names the output class it compares; typed values and
 recognition are the like-for-like comparisons and carry the strictest targets. "Credibility" is the target for the
 Credibility milestone report; "long-term" is the leadership goal. A value marked "stretch" needs a mechanism without a
 measured prototype, or it conflicts with what the outputs differ in; it becomes a commitment once a prototype is
@@ -510,10 +539,11 @@ for untrusted input; the goals below make it so.
   - There is no memory or input-size limit. Work limits do not bound memory, and the specification has a grammar with
     a linear number of evaluations and exponential value size.
   - `pego parse` has no work-limit flag. There is no `SECURITY.md`.
-- **Goal: work limits on by default.** Every parse gets a work budget proportional to the input length (c·n), with c
-  calibrated by the complexity analysis on the repository grammars and ready-made parsers, so that ordinary grammars
-  stay well below it. A grammar that the analysis does not show to be linear gets a fixed fallback budget, c·n with a
-  large constant, and a lint warning. An unlimited parse has to be requested explicitly. The default ships at the
+- **Goal: work limits on by default.** Every parse gets a work budget proportional to the input length (c·n). At the
+  release, c is one fixed, large constant, calibrated on the repository grammars and ready-made parsers so that
+  ordinary grammars stay well below it, and a lint warns about grammars outside the specification's sufficient
+  conditions for linear work. An unlimited parse has to be requested explicitly. The complexity classifier of the
+  research track can later refine c per grammar; the release does not wait for it. The default ships at the
   overhead the limits have then; the overhead target follows separately.
 - **Goal: one place for production limits.** Optional caps on input length and on estimated memory (memo entries and
   result trees) fail with the same kind of error as the work limit.
@@ -533,7 +563,8 @@ for untrusted input; the goals below make it so.
   interfaces; stdlib-only Go; dependency-free TypeScript; a published bytecode specification implemented by the Go
   VMs.
 - **Goals.** Static types through generated Go; union interfaces generated from value types; `Document` and streaming
-  in TypeScript; UTF-16 positions in TypeScript. A third target language and a second VM implementation are deferred.
+  in TypeScript; UTF-16 positions in TypeScript; then more target languages and a second VM implementation, each
+  held to the same contract.
 
 ### Editor-Grade Parsing
 
@@ -559,7 +590,7 @@ for untrusted input; the goals below make it so.
 |:--|:--|:--|:--|
 | Users can depend on a version | Tagged v0.x release; compatibility policy naming stable and unstable surfaces | No tag | Release |
 | Generated code states its requirements | Minimum Go version documented and tested; `go get -tool` effect on consumers stated | Undocumented; PEGO requires Go 1.27.1 | Release |
-| Untrusted input is bounded by default | Default work budget, with a fixed fallback and a lint warning for grammars not shown to be linear; `SECURITY.md`; work-limit flag in `pego parse` | Limits opt-in; no policy; no flag | Release |
+| Untrusted input is bounded by default | Default work budget (one fixed c·n budget, and a lint warning for grammars outside the sufficient conditions for linear work); `SECURITY.md`; work-limit flag in `pego parse` | Limits opt-in; no policy; no flag | Release |
 | Limits are simple | One work budget across Go API, engine, generated Go and TypeScript | Two counters | Release |
 | Errors are readable | Long expected lists capped or grouped, with a test on a large grammar | Full lists | Release |
 | Public claims match measurements | README and site claims match this document's limits (tagline, untrusted input, tested runtimes) and [Benchmark Results](benchmarks.md) | Figures match; the tagline and the runtime list do not | Release |
@@ -586,7 +617,7 @@ Each risk has a trigger that forces a decision, not only a signal to watch.
 | The Go 1.27.1 floor narrows adoption; `go get -tool` may raise a consumer module's `go` line (inferred, not tested) | Medium / medium | Requests for older Go versions; consumers pinning old toolchains | Document and test an older minimum for generated code; document `go run` as an alternative to the tool route |
 | Format churn after the release (Core IR for every backend, profiles, possible default changes) | Medium / medium | A format or API change needed after the tag | Release as v0.x; name stable surfaces (grammar syntax, generated Go API) and unstable ones (`.pegoc`, bytecode, JSON forms); the formatter and `pego fix` rewrite old syntax |
 | A safety incident: an exponential grammar or an unbounded input hangs or exhausts memory in a user's service | Medium / high | One public report of a hang or out-of-memory | Before release: the default-limit decision, `SECURITY.md`, guides that require limits for untrusted input. After an incident: make limits the default |
-| Bus factor: one maintainer holds the work and the knowledge | High / high | Any pause in maintenance longer than a month | Design records and specifications carry the reasoning; a scripted release process; a contributor guide and good-first-issue labels; reduce the surface (consider freezing one of the two bytecode VMs) |
+| Bus factor: one maintainer holds the work and the knowledge | High / high | Any pause in maintenance longer than a month | Design records and specifications carry the reasoning; a scripted release process; a contributor guide and good-first-issue labels; reduce the surface (consider freezing one of the two Go bytecode VMs; a second implementation of the bytecode belongs to the Targets and engines track, in another language, after the release) |
 | Research pull: research-heavy goals (classifier, profiles, a second VM) compete with the release | Medium / medium | A research item is in progress while a Release item is open | The classifier stays a research track; one major item in progress per track |
 | Benchmark methodology is challenged | High / medium | Issues from other maintainers | Published harness, pinned versions, output classes, invited review, losses reported |
 | Typed output stops being a difference: gotreesitter already generates typed Go structs for query matches, and tree-sitter's `node-types.json` exists for code generators | Medium / medium | A typed tree generator for tree-sitter grammars in Go gains users | Lead on values built by grammar actions (not only typed nodes), generated TypeScript from the same grammar and the tested contract |
