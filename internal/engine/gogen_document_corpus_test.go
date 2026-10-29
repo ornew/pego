@@ -2,7 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // TestGeneratedDocumentsMatchBatchOnCorpus checks generated Documents against
@@ -21,7 +21,7 @@ import (
 // position units.
 func TestGeneratedDocumentsMatchBatchOnCorpus(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedDocumentsMatchBatchOnCorpus)
+	gentest.EachMode(t, testGeneratedDocumentsMatchBatchOnCorpus)
 }
 
 func testGeneratedDocumentsMatchBatchOnCorpus(t *testing.T) {
@@ -40,7 +40,7 @@ func testGeneratedDocumentsMatchBatchOnCorpus(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", testGoMod("doctest"))
+	write("go.mod", gentest.GoMod("doctest"))
 	var imports, checks strings.Builder
 	cases := gentest.GenCorpus(t)
 	for i, c := range cases {
@@ -48,7 +48,7 @@ func testGeneratedDocumentsMatchBatchOnCorpus(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
-		generatePackageIn(t, dir, "doctest", fmt.Sprintf("g%d", i), g, gen.GenOptions{Start: "main", Types: true, Document: true})
+		gentest.GeneratePackageIn(t, dir, "doctest", fmt.Sprintf("g%d", i), g, gen.GenOptions{Start: "main", Types: true, Document: true})
 		fmt.Fprintf(&imports, "\tg%d \"doctest/g%d\"\n", i, i)
 		fmt.Fprintf(&checks, `	func(texts []string, b bool) (out []string) {
 		u := g%[1]d.CodePoints

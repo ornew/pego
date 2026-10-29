@@ -12,6 +12,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -33,7 +34,7 @@ var lrBindingInputs = []string{"x", "xxx", "xxxxxxxxxx", "", "y"}
 // re-entered with other variable values match the engine instead of nesting until the limit.
 func TestGeneratedLeftRecursionGuardIgnoresVariables(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedLeftRecursionGuardIgnoresVariables)
+	gentest.EachMode(t, testGeneratedLeftRecursionGuardIgnoresVariables)
 }
 
 func testGeneratedLeftRecursionGuardIgnoresVariables(t *testing.T) {
@@ -45,18 +46,18 @@ func testGeneratedLeftRecursionGuardIgnoresVariables(t *testing.T) {
 		t.Skip("go command not found")
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("gentest")), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("gentest")), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	opts := gen.GenOptions{Start: "main", Recognize: true, MaxDepth: 400, LeftRecursionBindings: true}
-	generatePackage(t, dir, "g", mustParse(lrBindingSource), opts)
+	gentest.GeneratePackage(t, dir, "g", mustParse(lrBindingSource), opts)
 	opts.Types = true
-	if code := generatePackage(t, dir, "tg", mustParse(typedLRBindingSource), opts); !strings.Contains(code, "TParse(trules") {
+	if code := gentest.GeneratePackage(t, dir, "tg", mustParse(typedLRBindingSource), opts); !strings.Contains(code, "TParse(trules") {
 		t.Fatal("typed runtime is not exercised")
 	}
 	prog := compileBare(t, lrBindingSource, compile.Options{LeftRecursionBindings: true})
 	typed := compileBare(t, typedLRBindingSource, compile.Options{LeftRecursionBindings: true})
-	controls := fixtureWorkControls(t)
+	controls := gentest.FixtureWorkControls(t)
 	var limited, typedLimited string
 	if controls {
 		limited, typedLimited = "g.WithWorkLimits(g.WorkLimits{MaxSteps: 1 << 40})", "tg.WithWorkLimits(tg.WorkLimits{MaxSteps: 1 << 40})"

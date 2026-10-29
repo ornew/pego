@@ -111,7 +111,7 @@ without a build step, and only the ES2020 library (for `BigInt`), so it needs no
 ### Verifying Identical Behavior
 
 `TestGeneratedTSParsersMatchEngine` (`internal/engine/tsgen_test.go`) generates a module for every grammar of the
-corpus of the Go generator's test (the engine's test grammars, `testdata/typed` and `examples/`), plus a grammar of ints
+corpus of the Go generator's test (the grammars of `internal/gentest`, its `testdata/typed` and `examples/`), plus a grammar of ints
 and strings that exercises wrapping, big ints, negative division and code-point comparison, and the nested-parentheses
 grammar exactly at and beyond the nesting limit. Node.js runs every input in both units, as bytes and (when valid UTF-8)
 as a string, in a worker with a 1 GB stack. For each it compares with the engine (compiled without projections, as the

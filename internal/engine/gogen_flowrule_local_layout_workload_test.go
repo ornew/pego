@@ -6,13 +6,14 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // PEGO_TYPED_LOCAL_LAYOUT_DIR preserves generated controls for benchmarks of
 // prebuilt binaries, independently of source generation and compilation.
 func TestGeneratedTypedLocalLayoutWorkloads(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedLocalLayoutWorkloads)
+	gentest.EachMode(t, testGeneratedTypedLocalLayoutWorkloads)
 }
 
 func testGeneratedTypedLocalLayoutWorkloads(t *testing.T) {
@@ -75,14 +76,14 @@ func BenchmarkTypedLocalLayoutGeneration(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			code, err := generateCode(b, g, opts)
+			code, err := gentest.GenerateCode(b, g, opts)
 			if err != nil {
 				b.Fatal(err)
 			}
 			b.ReportAllocs()
 			b.ResetTimer()
 			for b.Loop() {
-				if _, err := generateCode(b, g, opts); err != nil {
+				if _, err := gentest.GenerateCode(b, g, opts); err != nil {
 					b.Fatal(err)
 				}
 			}

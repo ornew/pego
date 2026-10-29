@@ -11,6 +11,7 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/limits"
 )
 
@@ -61,7 +62,7 @@ func TestTextFieldComparisons(t *testing.T) {
 // strings: the least step limit that each parse succeeds with is the same.
 func TestGeneratedTextFieldComparisons(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
@@ -70,14 +71,14 @@ func TestGeneratedTextFieldComparisons(t *testing.T) {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("comparefixture")), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("comparefixture")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	inputs := fmt.Sprintf("%#v", textCompareInputs)
 	pkg := func(convert, boxed bool) string { return fmt.Sprintf("compare_%v_%v", convert, boxed) }
 	for _, convert := range []bool{false, true} {
 		for _, boxed := range []bool{false, true} {
-			code, err := generateCode(t, g, gen.GenOptions{Package: pkg(convert, boxed), Start: "main", Types: true, ConvertTypes: convert, BoxedComparisons: boxed})
+			code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: pkg(convert, boxed), Start: "main", Types: true, ConvertTypes: convert, BoxedComparisons: boxed})
 			if err != nil {
 				t.Fatal(err)
 			}

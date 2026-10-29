@@ -2,7 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -93,7 +93,7 @@ func TestNamedNodeTypeErrors(t *testing.T) {
 // elements.
 func TestNamedNodeTypeConversions(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testNamedNodeTypeConversions)
+	gentest.EachMode(t, testNamedNodeTypeConversions)
 }
 
 func testNamedNodeTypeConversions(t *testing.T) {
@@ -163,7 +163,7 @@ rule main A = x:"a" => A{$x}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	goCode, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main"})
+	goCode, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "p", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,7 +181,7 @@ rule main A = x:"a" => A{$x}`)
 // member of.
 func TestGeneratedNamedNodeTypes(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedNamedNodeTypes)
+	gentest.EachMode(t, testGeneratedNamedNodeTypes)
 }
 
 func testGeneratedNamedNodeTypes(t *testing.T) {
@@ -216,7 +216,7 @@ func main() {
 // node types where a plain node type is expected, also when the same node is converted as both.
 func TestGeneratedNamedNodesAsPlainNodes(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedNamedNodesAsPlainNodes)
+	gentest.EachMode(t, testGeneratedNamedNodesAsPlainNodes)
 }
 
 func testGeneratedNamedNodesAsPlainNodes(t *testing.T) {
@@ -260,13 +260,13 @@ func runGeneratedNamedNodeProgram(t *testing.T, src, body, want string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
+	code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
 	for name, content := range map[string]string{
-		"go.mod":      testGoMod("gentest"),
+		"go.mod":      gentest.GoMod("gentest"),
 		"p/parser.go": string(code),
 		"main.go":     "package main\n\nimport (\n\t\"fmt\"\n\n\t\"gentest/p\"\n)\n\n" + body,
 	} {
@@ -467,7 +467,7 @@ rule tree Tree = "(" ts:tree* ")" => Tree{$ts}`,
 // open fields, unions and lists of typed Go values, and that a node converts to one value.
 func TestGeneratedNamedNodeDynamicTypes(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedNamedNodeDynamicTypes)
+	gentest.EachMode(t, testGeneratedNamedNodeDynamicTypes)
 }
 
 func testGeneratedNamedNodeDynamicTypes(t *testing.T) {
@@ -636,7 +636,7 @@ rule n N = [a-z]+ #atomic`, Inputs: []string{"abc", "", "1"}},
 // Parse gives, and that the generated Node parsers give what the engine does.
 func TestGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedNamedNodeTypesTypedRuntime)
+	gentest.EachMode(t, testGeneratedNamedNodeTypesTypedRuntime)
 }
 
 func testGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
@@ -656,7 +656,7 @@ func testGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
-		code, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
@@ -674,7 +674,7 @@ func testGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
 // types against the conversion of the Document's nodes, across edits.
 func TestGeneratedNamedNodeTypesDocument(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}
@@ -689,7 +689,7 @@ func TestGeneratedNamedNodeTypesDocument(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", testGoMod("directtypeddocument"))
+	write("go.mod", gentest.GoMod("directtypeddocument"))
 	for i, c := range []struct {
 		grammar string
 		inputs  []string
@@ -722,7 +722,7 @@ rule a A = [a-zé] #atomic`, []string{"()abcd", "(()(()))abcd", "((é))éaéa", 
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}
-		code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}
@@ -730,7 +730,7 @@ rule a A = [a-zé] #atomic`, []string{"()abcd", "(()(()))abcd", "((é))éaéa", 
 			t.Fatalf("%s uses conversion instead of direct matching", pkg)
 		}
 		write(pkg+"/parser.go", string(code))
-		reference, err := generateCode(t, g, gen.GenOptions{Package: "reference", Start: "main", Types: true, Document: true, ConvertTypes: true})
+		reference, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "reference", Start: "main", Types: true, Document: true, ConvertTypes: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -772,7 +772,7 @@ rule tail node[_] = item item?`, Inputs: []string{"abab", "ababab", "abx", ""}},
 // that they match the conversion of the nodes of Parse.
 func TestGeneratedDeclaredNodeAny(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedDeclaredNodeAny)
+	gentest.EachMode(t, testGeneratedDeclaredNodeAny)
 }
 
 func testGeneratedDeclaredNodeAny(t *testing.T) {
@@ -781,7 +781,7 @@ func testGeneratedDeclaredNodeAny(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
+	code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -810,7 +810,7 @@ func testGeneratedDeclaredNodeAny(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
-		code, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}

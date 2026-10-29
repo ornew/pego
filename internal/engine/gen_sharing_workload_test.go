@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // PEGO_GENERATED_SHARING_DIR preserves standalone controls for prebuilt
@@ -17,11 +17,11 @@ func TestGeneratedSharingWorkloads(t *testing.T) {
 	t.Parallel()
 	if os.Getenv("PEGO_GENERATED_SHARING_DIR") != "" {
 		// The preserved controls have one layout, so they are written in one form.
-		pinOrdinary(t)
+		gentest.PinOrdinary(t)
 		testGeneratedSharingWorkloads(t)
 		return
 	}
-	eachMode(t, testGeneratedSharingWorkloads)
+	gentest.EachMode(t, testGeneratedSharingWorkloads)
 }
 
 func testGeneratedSharingWorkloads(t *testing.T) {
@@ -49,7 +49,7 @@ func testGeneratedSharingWorkloads(t *testing.T) {
 					DisableMethodSharing:   mode == "methods" || mode == "both",
 					DisableLiteralSharing:  mode == "literals" || mode == "both",
 					EnableTSLiteralSharing: mode != "default"}
-				code, err := generateCode(t, g, opts)
+				code, err := gentest.GenerateCode(t, g, opts)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -60,7 +60,7 @@ func testGeneratedSharingWorkloads(t *testing.T) {
 				fixture := strings.ReplaceAll(generatedSharingFixture, "LANG", lang)
 				for name, data := range map[string][]byte{
 					"parser.go": code, "sharing_test.go": []byte(fixture),
-					"go.mod": []byte(testGoMod("sharingfixture")),
+					"go.mod": []byte(gentest.GoMod("sharingfixture")),
 				} {
 					if err := os.WriteFile(filepath.Join(path, name), data, 0o644); err != nil {
 						t.Fatal(err)
@@ -190,7 +190,7 @@ if(process.argv.includes("--check")) {
 
 func TestGeneratedSharingLocalLayout(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedSharingLocalLayout)
+	gentest.EachMode(t, testGeneratedSharingLocalLayout)
 }
 
 func testGeneratedSharingLocalLayout(t *testing.T) {

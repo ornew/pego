@@ -14,9 +14,8 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/internal/gentest"
-
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // The Node and recognizer tables of a parser with work controls are printed from Flow IR, which makes
@@ -225,7 +224,7 @@ func runWorkProbes(t *testing.T, cases []gentest.Case, start string, mutate func
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", testGoMod("wprobe"))
+	write("go.mod", gentest.GoMod("wprobe"))
 	var inputs [][]string
 	for i, c := range cases {
 		g, err := parseTest(c.Src)
@@ -233,7 +232,7 @@ func runWorkProbes(t *testing.T, cases []gentest.Case, start string, mutate func
 			t.Fatalf("%s: %v", c.Name, err)
 		}
 		o := gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true}
-		code, err := generateCode(t, g, o)
+		code, err := gentest.GenerateCode(t, g, o)
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
@@ -333,7 +332,7 @@ var workGoldenFile = goldenFile{
 // and every function of this corpus is verified when generated.
 func TestFlowNodeWorkInvariants(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
@@ -419,7 +418,7 @@ func dropLastStep(code []byte) []byte {
 // removed, some report violates an invariant or differs from the golden.
 func TestFlowNodeWorkMutants(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
@@ -468,7 +467,7 @@ const (
 // six each), with the default start rule.
 func TestFlowNodeWorkInvariantsOnGrammars(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds the large parsers twice")
 	}

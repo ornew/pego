@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGenerateDirectTypedDocument(t *testing.T) {
@@ -19,7 +20,7 @@ func TestGenerateDirectTypedDocument(t *testing.T) {
 // testDirectTypedDocument builds typed Document parsers generated with the options extra, which
 // may set private generator options, and checks them against parsers that convert Node values.
 func testDirectTypedDocument(t *testing.T, extra gen.GenOptions) {
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}
@@ -34,7 +35,7 @@ func testDirectTypedDocument(t *testing.T, extra gen.GenOptions) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", testGoMod("directtypeddocument"))
+	write("go.mod", gentest.GoMod("directtypeddocument"))
 	for i, c := range []struct {
 		grammar string
 		inputs  []string
@@ -86,7 +87,7 @@ rule main Text = v1:[aé😀]* #atomic => Text{S: text($v1)}`, []string{"", "aé
 		}
 		opts := extra
 		opts.Package, opts.Start, opts.Types, opts.Document = pkg, "main", true, true
-		code, err := generateCode(t, g, opts)
+		code, err := gentest.GenerateCode(t, g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}
@@ -94,7 +95,7 @@ rule main Text = v1:[aé😀]* #atomic => Text{S: text($v1)}`, []string{"", "aé
 			t.Fatalf("%s uses conversion instead of direct matching", pkg)
 		}
 		write(pkg+"/parser.go", string(code))
-		reference, err := generateCode(t, g, gen.GenOptions{Package: "reference", Start: "main", Types: true, Document: true, ConvertTypes: true})
+		reference, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "reference", Start: "main", Types: true, Document: true, ConvertTypes: true})
 		if err != nil {
 			t.Fatal(err)
 		}

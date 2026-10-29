@@ -9,11 +9,12 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedGoDiagnosticWork(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated diagnostic-control consumers")
 	}
@@ -26,12 +27,12 @@ rule letter Word = t:("z" / "a" / "é") #atomic => Word{Text: text($t)}`)
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("diagnosticfixture")), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("diagnosticfixture")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	for _, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("diagnostic_%v", convert)
-		code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, ConvertTypes: convert})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, ConvertTypes: convert})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -138,7 +139,7 @@ func TestRecoveredPublicDiagnostics(t *testing.T){
 
 func TestGeneratedGoRecoveryMessageWork(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated long recovery-message consumers")
 	}
@@ -150,12 +151,12 @@ type Doc = { Text Text }
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("recoverytext")), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("recoverytext")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	for _, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("text_%v", convert)
-		code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert})
 		if err != nil {
 			t.Fatal(err)
 		}

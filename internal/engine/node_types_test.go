@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // node[T] takes any value type T, and tuple types (A, B) are value types: they are checked
@@ -92,7 +92,7 @@ func TestNodeTypesCheckedAtCompileTime(t *testing.T) {
 
 func TestNodeTypesGeneratedGoParity(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testNodeTypesGeneratedGoParity)
+	gentest.EachMode(t, testNodeTypesGeneratedGoParity)
 }
 
 func testNodeTypesGeneratedGoParity(t *testing.T) {

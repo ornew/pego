@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	goast "go/ast"
 	"go/importer"
 	goparser "go/parser"
@@ -14,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // typeCheck fails the test if src does not compile (it reports unused variables).
@@ -42,7 +42,7 @@ rule leaf Leaf = d:[0-9]+ => Leaf{N: len($d)}
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := Generate(t, g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Types: true, Module: "example.com/p"})
+	files, err := gentest.Generate(t, g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Types: true, Module: "example.com/p"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +76,7 @@ rule leaf Leaf = d:[0-9]+ => Leaf{N: len($d)}
 		t.Errorf("fields out of order do not keep the order written:\n%s", src)
 	}
 	// Negative control: with work controls the steps are charged.
-	files, err = Generate(t, g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Types: true, Module: "example.com/p", WorkControls: true})
+	files, err = gentest.Generate(t, g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Types: true, Module: "example.com/p", WorkControls: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +91,7 @@ rule leaf Leaf = d:[0-9]+ => Leaf{N: len($d)}
 // parser can only agree with the engine if it evaluates them in the same order.
 func TestGeneratedTypedConstructorEvaluationOrder(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedConstructorEvaluationOrder)
+	gentest.EachMode(t, testGeneratedTypedConstructorEvaluationOrder)
 }
 
 func testGeneratedTypedConstructorEvaluationOrder(t *testing.T) {
@@ -125,7 +125,7 @@ rule main Result = x:"a"? y:"b"? => Result{A: list(1, 2)[len($x) + 3], C: list(1
 // the order written.
 func TestGeneratedTermStatementsEvaluationOrder(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTermStatementsEvaluationOrder)
+	gentest.EachMode(t, testGeneratedTermStatementsEvaluationOrder)
 }
 
 func testGeneratedTermStatementsEvaluationOrder(t *testing.T) {

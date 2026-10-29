@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 var typedAllocatorControls = []struct {
@@ -26,7 +27,7 @@ var typedAllocatorControls = []struct {
 // retained-heap and parse-throughput benchmarks below. Normal tests clean it up.
 func TestGeneratedTypedOutputRetentionFixture(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedOutputRetentionFixture)
+	gentest.EachMode(t, testGeneratedTypedOutputRetentionFixture)
 }
 
 func testGeneratedTypedOutputRetentionFixture(t *testing.T) {
@@ -64,7 +65,7 @@ rule small Token = t:("b") #atomic => Token{Text: text($t)}
 				name += "-conversion"
 			}
 			t.Run(name, func(t *testing.T) {
-				code, err := generateCode(t, g, gen.GenOptions{Package: "typedoutput", Start: "main", Types: true,
+				code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "typedoutput", Start: "main", Types: true,
 					ConvertTypes: conversion, DisableTypedObjectSlabs: variant.objects, DisableTypedListSlabs: variant.lists, DisableTypedOutputBootstrap: variant.legacy})
 				if err != nil {
 					t.Fatal(err)
@@ -87,7 +88,7 @@ rule small Token = t:("b") #atomic => Token{Text: text($t)}
 				for name, contents := range map[string][]byte{
 					"parser.go":                code,
 					"output_retention_test.go": []byte(typedOutputRetentionFixture + "\nconst forceOutputConversion = " + strconv.FormatBool(conversion) + "\n"),
-					"go.mod":                   []byte(testGoMod("typedoutput")),
+					"go.mod":                   []byte(gentest.GoMod("typedoutput")),
 				} {
 					if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
 						t.Fatal(err)

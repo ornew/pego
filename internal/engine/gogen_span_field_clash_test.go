@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // TestGeneratedTypedFieldsNamedLikeSpanFields checks that a struct field named Start or End does
@@ -13,7 +14,7 @@ import (
 // underscore, so Start and End keep reading the span.
 func TestGeneratedTypedFieldsNamedLikeSpanFields(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedFieldsNamedLikeSpanFields)
+	gentest.EachMode(t, testGeneratedTypedFieldsNamedLikeSpanFields)
 }
 
 func testGeneratedTypedFieldsNamedLikeSpanFields(t *testing.T) {
@@ -22,7 +23,7 @@ rule main Thing = a:"a" => Thing{Start: 7, End: 8}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
+	code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}

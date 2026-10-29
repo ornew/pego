@@ -3,13 +3,13 @@ package engine
 import (
 	"errors"
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"io"
 	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 

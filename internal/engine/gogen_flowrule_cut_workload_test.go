@@ -8,13 +8,14 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // PEGO_TYPED_CUT_DIR preserves both latest-generator variants so their test
 // binaries can be built once and measured in alternating benchmark runs.
 func TestGeneratedTypedCutWorkload(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedCutWorkload)
+	gentest.EachMode(t, testGeneratedTypedCutWorkload)
 }
 
 func testGeneratedTypedCutWorkload(t *testing.T) {
@@ -35,7 +36,7 @@ rule row Row = "let" " " #cut key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" / 
 	}
 	var want []byte
 	for _, variant := range []string{"direct"} {
-		code, err := generateCode(t, g, gen.GenOptions{Package: "cutfixture", Start: "main", Types: true})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "cutfixture", Start: "main", Types: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -44,7 +45,7 @@ rule row Row = "let" " " #cut key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" / 
 			t.Fatal(err)
 		}
 		for name, contents := range map[string][]byte{
-			"parser.go": code, "cut_test.go": []byte(typedCutWorkloadFixture), "go.mod": []byte(testGoMod("cutfixture")),
+			"parser.go": code, "cut_test.go": []byte(typedCutWorkloadFixture), "go.mod": []byte(gentest.GoMod("cutfixture")),
 		} {
 			if err := os.WriteFile(filepath.Join(path, name), contents, 0o644); err != nil {
 				t.Fatal(err)

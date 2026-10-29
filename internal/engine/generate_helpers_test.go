@@ -1,13 +1,8 @@
 package engine
 
 import (
-	"testing"
-
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
-	"github.com/ornew/pego/internal/gen/gogen"
-	"github.com/ornew/pego/internal/gen/tsgen"
 	ischema "github.com/ornew/pego/internal/schema"
 	"github.com/ornew/pego/schema"
 )
@@ -15,20 +10,6 @@ import (
 // The engine does not import the generators or the output schema; packages gen and pego join them
 // (gen.Go, gen.TypeScript and Parser.OutputSchema). These helpers join them the
 // same way for the tests of this package.
-
-// Generate generates a Go parser for g, as gen.Go.Generate does, with the hooks of the generator
-// that t set (setGenHooks).
-func Generate(t testing.TB, g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
-	if opts.Runtime == gen.RuntimeOnly {
-		return gogen.Generate(g, compileForGenerator, opts)
-	}
-	return gogen.GenerateParser(g, compileForGenerator, opts, testGenHooks(t))
-}
-
-// GenerateTS generates a TypeScript parser for g, as gen.TypeScript.Generate does.
-func GenerateTS(g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
-	return tsgen.Generate(g, compileForGenerator, opts)
-}
 
 // compileForGenerator compiles g for the generators, as the root package's compileForGenerator
 // does.

@@ -1,10 +1,10 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"testing"
 
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 	irbuild "github.com/ornew/pego/internal/ir/build"
 	"github.com/ornew/pego/internal/ir/core"
 )

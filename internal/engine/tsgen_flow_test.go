@@ -6,9 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gentest"
-
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // The lean value-free rules of the TypeScript parser are printed from Flow IR, as labeled blocks.
@@ -20,7 +19,7 @@ rule word = [a-z]+ ("-" [a-z]+)*`
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := GenerateTS(g, gen.GenOptions{Start: "main", Recognize: true})
+	files, err := gentest.GenerateTS(g, gen.GenOptions{Start: "main", Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +43,7 @@ func TestGeneratedTSOutlinesLargeAndRepeatedNodes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := GenerateTS(g, gen.GenOptions{Start: "main", Recognize: true})
+	files, err := gentest.GenerateTS(g, gen.GenOptions{Start: "main", Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +80,7 @@ func TestGeneratedTSOutlinedFunctionsAreShared(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := GenerateTS(g, gen.GenOptions{Start: "main", Recognize: true})
+	files, err := gentest.GenerateTS(g, gen.GenOptions{Start: "main", Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}

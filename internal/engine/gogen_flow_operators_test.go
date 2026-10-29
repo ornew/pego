@@ -1,12 +1,12 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // The lines of an Operators Rule in the Node and recognizer tables are printed from Flow IR. The tests
@@ -17,7 +17,7 @@ import (
 // Node and recognizer tables (a line Flow IR does not print fails the generation).
 func TestOperatorsLinesWithRecoveryPrintFromFlow(t *testing.T) {
 	t.Parallel()
-	pinOrdinary(t)
+	gentest.PinOrdinary(t)
 	for _, c := range gentest.OperatorsLineRecoveryCases {
 		t.Run(c.Name, func(t *testing.T) {
 			g, err := parseTest(c.Src)
@@ -26,9 +26,9 @@ func TestOperatorsLinesWithRecoveryPrintFromFlow(t *testing.T) {
 			}
 			flowed := map[string]int{}
 			gh := &gogen.Hooks{}
-			setGenHooks(t, gh)
+			gentest.SetGenHooks(t, gh)
 			gh.OperatorsRoute = func(table string, r *compile.Rule) { flowed[table+"/"+r.Name]++ }
-			if _, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
+			if _, err := gentest.GenerateCode(t, g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
 				t.Fatal(err)
 			}
 			for _, table := range []string{"rules", "recRules"} {

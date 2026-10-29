@@ -11,6 +11,7 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/engine/closure"
 	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/syntax"
 	"github.com/ornew/pego/internal/value"
@@ -151,7 +152,7 @@ func TestMain(m *testing.M) {
 	// -mod=mod lets the temporary modules that replace this module resolve it without a go.sum.
 	os.Setenv("GOFLAGS", strings.TrimSpace(os.Getenv("GOFLAGS")+" -trimpath -mod=mod"))
 	code := m.Run()
-	if names := unwrappedFixtureTests(); len(names) > 0 {
+	if names := gentest.UnwrappedFixtureTests(); len(names) > 0 {
 		fmt.Fprintf(os.Stderr, "FAIL: tests build generated fixtures without choosing their form: %s\nWrap the test body in eachMode, or call needsWorkControls, or pin the form with pinOrdinary\n", strings.Join(names, ", "))
 		code = 1
 	}

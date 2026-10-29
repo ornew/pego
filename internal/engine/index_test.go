@@ -3,7 +3,6 @@ package engine
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"hash/crc32"
 	"os"
 	"os/exec"
@@ -16,6 +15,7 @@ import (
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -231,7 +231,7 @@ rule item = [a-z]`
 
 func TestIndexGeneratedGoParity(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testIndexGeneratedGoParity)
+	gentest.EachMode(t, testIndexGeneratedGoParity)
 }
 
 func testIndexGeneratedGoParity(t *testing.T) {
@@ -253,7 +253,7 @@ func TestIndexGeneratedTypeScriptParity(t *testing.T) {
 // work-accounting runtime.
 func TestIndexGeneratedGoWork(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
@@ -264,12 +264,12 @@ rule item = [a-z]`)
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("indexwork")), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("indexwork")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	for _, types := range []bool{false, true} {
 		pkg := fmt.Sprintf("index_%v", types)
-		code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: types})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: types})
 		if err != nil {
 			t.Fatal(err)
 		}

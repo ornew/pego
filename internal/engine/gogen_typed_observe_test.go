@@ -9,11 +9,12 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedTypedTrace(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds standalone typed trace consumers")
 	}
@@ -84,7 +85,7 @@ rule main TraceEvent = p:part => TraceEvent{Value:$p}
 rule part WithTrace = t:("a") #atomic => WithTrace{Text: text($t)}`, input: "a", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("typedtracefixture")), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("typedtracefixture")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	write := func(pkg, name string, data []byte) {
@@ -108,9 +109,9 @@ rule part WithTrace = t:("a") #atomic => WithTrace{Text: text($t)}`, input: "a",
 				pkg += "_converted"
 			}
 			opts := gen.GenOptions{Package: "reference_" + pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert}
-			generatePackageIn(t, dir, "typedtracefixture", opts.Package, g, opts)
+			gentest.GeneratePackageIn(t, dir, "typedtracefixture", opts.Package, g, opts)
 			opts.Package, opts.Observability = pkg, true
-			code := generatePackageIn(t, dir, "typedtracefixture", pkg, g, opts)
+			code := gentest.GeneratePackageIn(t, dir, "typedtracefixture", pkg, g, opts)
 			if !convert && !f.fallback && !strings.Contains(code, "return rt.TParse(trules[") {
 				t.Fatal(pkg, "direct start unexpectedly unavailable")
 			}
@@ -188,7 +189,7 @@ func TestTypedTraceLifecycle(t *testing.T){
 
 func TestGeneratedTracePrivateTypeNamesRemainInvalid(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTracePrivateTypeNamesRemainInvalid)
+	gentest.EachMode(t, testGeneratedTracePrivateTypeNamesRemainInvalid)
 }
 
 func testGeneratedTracePrivateTypeNamesRemainInvalid(t *testing.T) {
@@ -198,7 +199,7 @@ func testGeneratedTracePrivateTypeNamesRemainInvalid(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, observed := range []bool{false, true} {
-			if _, err := generateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main", Types: true, Observability: observed}); err == nil || !strings.Contains(err.Error(), "must start with an uppercase letter") {
+			if _, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main", Types: true, Observability: observed}); err == nil || !strings.Contains(err.Error(), "must start with an uppercase letter") {
 				t.Fatalf("%s observed=%v: %v", name, observed, err)
 			}
 		}

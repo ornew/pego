@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // The parser package of a typed parser reinterprets a string node of a named node type as the type of
@@ -45,7 +46,7 @@ func schemaTiePair(t *testing.T, root, name, src string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	generatePackageIn(t, root, "gentest", name, g, gen.GenOptions{Start: "main", Types: true})
+	gentest.GeneratePackageIn(t, root, "gentest", name, g, gen.GenOptions{Start: "main", Types: true})
 }
 
 func schemaTieBuild(t *testing.T, root string) (string, error) {
@@ -60,7 +61,7 @@ func schemaTieBuild(t *testing.T, root string) (string, error) {
 
 func TestGeneratedSchemaTie(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedSchemaTie)
+	gentest.EachMode(t, testGeneratedSchemaTie)
 }
 
 func testGeneratedSchemaTie(t *testing.T) {
@@ -68,7 +69,7 @@ func testGeneratedSchemaTie(t *testing.T) {
 		t.Skip("builds generated packages")
 	}
 	root := t.TempDir()
-	if err := os.WriteFile(filepath.Join(root, "go.mod"), []byte(testGoMod("gentest")), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "go.mod"), []byte(gentest.GoMod("gentest")), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	schemaTiePair(t, root, "one", schemaTieGrammar)
@@ -118,7 +119,7 @@ func TestGeneratedSchemaIgnoresComments(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		files, err := Generate(t, g, gen.GenOptions{Start: "main", Package: "p", Module: "gentest/p", Types: true, Runtime: gen.RuntimeImport})
+		files, err := gentest.Generate(t, g, gen.GenOptions{Start: "main", Package: "p", Module: "gentest/p", Types: true, Runtime: gen.RuntimeImport})
 		if err != nil {
 			t.Fatal(err)
 		}

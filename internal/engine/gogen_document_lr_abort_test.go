@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // TestGeneratedDocumentLeftRecursionAbortedGrowth is the generated Document
@@ -20,7 +21,7 @@ import (
 // for Node and typed Documents.
 func TestGeneratedDocumentLeftRecursionAbortedGrowth(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated Documents")
 	}
@@ -49,7 +50,7 @@ rule sum S = l:y "+" r:a => S{L: $l, R: $r}
 rule y E = x
 rule a A = t:("a") #atomic => A{Text: text($t)}`, "a+a+a+a"},
 	}
-	files := map[string]string{"go.mod": testGoMod("fixture")}
+	files := map[string]string{"go.mod": gentest.GoMod("fixture")}
 	for i, g := range grammars {
 		parsed, err := parseTest(g.src)
 		if err != nil {
@@ -60,7 +61,7 @@ rule a A = t:("a") #atomic => A{Text: text($t)}`, "a+a+a+a"},
 			if typed {
 				pkg, route = fmt.Sprintf("t%d", i), generatedDocumentTypedRoute
 			}
-			code, err := generateCode(t, parsed, gen.GenOptions{Package: pkg, Start: "main", Document: true, Types: typed, Observability: true})
+			code, err := gentest.GenerateCode(t, parsed, gen.GenOptions{Package: pkg, Start: "main", Document: true, Types: typed, Observability: true})
 			if err != nil {
 				t.Fatal(err)
 			}

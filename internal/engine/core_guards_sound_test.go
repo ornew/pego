@@ -2,7 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -10,6 +9,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/ir/core"
 )
 

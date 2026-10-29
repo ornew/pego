@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // An edit can complete an incomplete UTF-8 sequence that ends before it. The
@@ -14,7 +15,7 @@ import (
 // not be reused.
 func TestGeneratedDocumentCompletesUTF8Prefix(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedDocumentCompletesUTF8Prefix)
+	gentest.EachMode(t, testGeneratedDocumentCompletesUTF8Prefix)
 }
 
 func testGeneratedDocumentCompletesUTF8Prefix(t *testing.T) {
@@ -97,7 +98,7 @@ func TestCompletedPrefix(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			code, err := generateCode(t, g, tc.opts)
+			code, err := gentest.GenerateCode(t, g, tc.opts)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -118,7 +119,7 @@ var _ = json.Marshal
 			}
 			dir := t.TempDir()
 			for name, source := range map[string]string{
-				"go.mod":         testGoMod("fixture"),
+				"go.mod":         gentest.GoMod("fixture"),
 				"parser.go":      string(code),
 				"parser_test.go": "package fixture\n" + imports + cases + tc.test,
 			} {

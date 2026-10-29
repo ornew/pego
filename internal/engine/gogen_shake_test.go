@@ -12,6 +12,7 @@ import (
 
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -88,7 +89,7 @@ rule digits = [0-9]*`
 // nothing it does not define.
 func TestTypedUnreachedRulesAreLeftOut(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testTypedUnreachedRulesAreLeftOut)
+	gentest.EachMode(t, testTypedUnreachedRulesAreLeftOut)
 }
 
 func testTypedUnreachedRulesAreLeftOut(t *testing.T) {
@@ -99,12 +100,12 @@ func testTypedUnreachedRulesAreLeftOut(t *testing.T) {
 	funcs := regexp.MustCompile(`(?m)^func [su][0-9]+\(`)
 	for _, typedOnly := range []bool{false, true} {
 		opts := gen.GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: typedOnly}
-		pruned, err := generateCode(t, g, opts)
+		pruned, err := gentest.GenerateCode(t, g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
 		opts.KeepUnreachable = true
-		full, err := generateCode(t, g, opts)
+		full, err := gentest.GenerateCode(t, g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -129,13 +130,13 @@ func testTypedUnreachedRulesAreLeftOut(t *testing.T) {
 // out is noticed by the second: the call of it does not compile away silently.
 func TestTypedUnreachedCalleeFailsGeneration(t *testing.T) {
 	t.Parallel()
-	eachMode(t, func(t *testing.T) {
+	gentest.EachMode(t, func(t *testing.T) {
 		g, err := syntax.Parse(reachTypedGrammar)
 		if err != nil {
 			t.Fatal(err)
 		}
 		gh := &gogen.Hooks{}
-		setGenHooks(t, gh)
+		gentest.SetGenHooks(t, gh)
 		gh.Reach = func(l *gogen.LiveRules) {
 			n := 0
 			for k := range l.Reach {
@@ -148,7 +149,7 @@ func TestTypedUnreachedCalleeFailsGeneration(t *testing.T) {
 				t.Error("the first pass reached no typed rule besides the start rule")
 			}
 		}
-		_, err = generateCode(t, g, gen.GenOptions{Start: "main", Package: "p", Types: true})
+		_, err = gentest.GenerateCode(t, g, gen.GenOptions{Start: "main", Package: "p", Types: true})
 		if err == nil || !strings.Contains(err.Error(), "left out") {
 			t.Errorf("generation with a typed callee left out: err = %v, want an internal error", err)
 		}
@@ -169,7 +170,7 @@ func isRoot(l *gogen.LiveRules, k gogen.RuleKey) bool {
 // out (p) and the one that keeps them (k) and compares what ParseAST returns for the same inputs.
 func TestTypedUnreachedRulesRunLikeTheFullOutput(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testTypedUnreachedRulesRunLikeTheFullOutput)
+	gentest.EachMode(t, testTypedUnreachedRulesRunLikeTheFullOutput)
 }
 
 func testTypedUnreachedRulesRunLikeTheFullOutput(t *testing.T) {
@@ -200,11 +201,11 @@ func testTypedUnreachedRulesRunLikeTheFullOutput(t *testing.T) {
 						t.Fatal(err)
 					}
 				}
-				write("go.mod", testGoMod("typedreach"))
+				write("go.mod", gentest.GoMod("typedreach"))
 				opts := gen.GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: typedOnly}
 				for _, pkg := range []string{"p", "k"} {
 					opts.Package, opts.KeepUnreachable = pkg, pkg == "k"
-					code, err := generateCode(t, g, opts)
+					code, err := gentest.GenerateCode(t, g, opts)
 					if err != nil {
 						t.Fatal(err)
 					}

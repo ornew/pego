@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"io"
 	"reflect"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )

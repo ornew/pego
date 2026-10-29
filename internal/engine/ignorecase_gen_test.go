@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // ignoreCaseGenGrammar has case-insensitive literals in a choice, whose alternatives the generated
@@ -64,13 +65,13 @@ func runGeneratedProgramWith(t *testing.T, src string, opts gen.GenOptions, body
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(t, g, opts)
+	code, err := gentest.GenerateCode(t, g, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
 	for name, content := range map[string]string{
-		"go.mod":      testGoMod("gentest"),
+		"go.mod":      gentest.GoMod("gentest"),
 		"p/parser.go": string(code),
 		"main.go":     "package main\n\nimport (\n\t\"fmt\"\n\n\t\"gentest/p\"\n)\n\n" + body,
 	} {
@@ -112,7 +113,7 @@ func ignoreCaseGoBody(inputs []string) string {
 // case-insensitive literals.
 func TestIgnoreCaseGeneratedGo(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testIgnoreCaseGeneratedGo)
+	gentest.EachMode(t, testIgnoreCaseGeneratedGo)
 }
 
 func testIgnoreCaseGeneratedGo(t *testing.T) {
@@ -141,7 +142,7 @@ func TestIgnoreCaseGeneratedTS(t *testing.T) {
 // closure backend accepts, for case-insensitive literals in a choice and in a sequence.
 func TestIgnoreCaseGeneratedTypedGo(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testIgnoreCaseGeneratedTypedGo)
+	gentest.EachMode(t, testIgnoreCaseGeneratedTypedGo)
 }
 
 func testIgnoreCaseGeneratedTypedGo(t *testing.T) {
@@ -168,7 +169,7 @@ func testIgnoreCaseGeneratedTypedGo(t *testing.T) {
 // the closure backend, whose expectation of a case-insensitive literal keeps its suffix.
 func TestIgnoreCaseGeneratedExpectation(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testIgnoreCaseGeneratedExpectation)
+	gentest.EachMode(t, testIgnoreCaseGeneratedExpectation)
 }
 
 func testIgnoreCaseGeneratedExpectation(t *testing.T) {
@@ -238,7 +239,7 @@ func ignoreCaseDocBody() string {
 // of folded literals, agrees with the closure backend after every edit.
 func TestIgnoreCaseGeneratedDocument(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	want := ignoreCaseDocWant(t)
 	runGeneratedProgramWith(t, ignoreCaseGenGrammar, gen.GenOptions{Package: "p", Start: "main", Document: true}, ignoreCaseDocBody(), want)
 }
@@ -258,7 +259,7 @@ rule ws = " "*
 func TestIgnoreCaseGeneratedTypedTerminal(t *testing.T) {
 	t.Parallel()
 	// Terminal programs are for parsers without work controls.
-	pinOrdinary(t)
+	gentest.PinOrdinary(t)
 	inputs := []string{"", "alpha", "ALPHA", "Beta", "BETA", "beta", "upsilon", "UPSILON", "xi", "Xi", "XI", "alpha BETA", "alphax", "ALPHAX", "tau Tau sigma", "SIGMA"}
 	prog := mustCompile(t, ignoreCaseTerminalGrammar)
 	var want, list strings.Builder

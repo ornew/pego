@@ -11,10 +11,10 @@ import (
 	"strings"
 	"testing"
 
-	pegort "github.com/ornew/pego/runtime"
-
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
+	pegort "github.com/ornew/pego/runtime"
 )
 
 // Exercise the exported APIs against the same hand-built DAG, including nil,
@@ -101,7 +101,7 @@ func TestTreeRuntimeParity(t *testing.T) {
 // typed-name collisions that direct runtime package tests cannot establish.
 func TestGeneratedTreeTraversal(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTreeTraversal)
+	gentest.EachMode(t, testGeneratedTreeTraversal)
 }
 
 func testGeneratedTreeTraversal(t *testing.T) {
@@ -119,7 +119,7 @@ func testGeneratedTreeTraversal(t *testing.T) {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	generatePackage(t, dir, "tree", grammar, gen.GenOptions{Start: "main", Types: true})
+	gentest.GeneratePackage(t, dir, "tree", grammar, gen.GenOptions{Start: "main", Types: true})
 	typesSource, err := os.ReadFile(filepath.Join(dir, "tree", "types", "types.go"))
 	if err != nil {
 		t.Fatal(err)
@@ -135,7 +135,7 @@ func testGeneratedTreeTraversal(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte(testGoMod("gentest")))
+	write("go.mod", []byte(gentest.GoMod("gentest")))
 	// The traversal itself is the runtime's and is tested there; this checks that the generated
 	// package declares the colliding grammar types beside the runtime's names and walks a tree.
 	var consumer strings.Builder
@@ -165,7 +165,7 @@ func testGeneratedTreeTraversal(t *testing.T) {
 // helper beside a fresh generated parser and exercise both traversal surfaces.
 func TestGeneratedDuckDBInspectCompatibility(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedDuckDBInspectCompatibility)
+	gentest.EachMode(t, testGeneratedDuckDBInspectCompatibility)
 }
 
 func testGeneratedDuckDBInspectCompatibility(t *testing.T) {
@@ -184,8 +184,8 @@ func testGeneratedDuckDBInspectCompatibility(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte(testGoMod("gentest")))
-	generatePackage(t, dir, "duckdb", grammar, gen.GenOptions{Start: "main", Types: true})
+	write("go.mod", []byte(gentest.GoMod("gentest")))
+	gentest.GeneratePackage(t, dir, "duckdb", grammar, gen.GenOptions{Start: "main", Types: true})
 	write("duckdb/inspect.go", helper)
 	write("duckdb/walk_test.go", []byte(`package duckdb
 import (

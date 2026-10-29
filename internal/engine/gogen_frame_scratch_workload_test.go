@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 const nodeFrameScratchGrammar = `type Tok = { Text string }
@@ -27,7 +28,7 @@ rule recovering = x:("é" "!") #recover(skip="?") $$ => $x
 // This test validates fixtures without running their benchmarks.
 func TestGeneratedNodeFrameScratchWorkloads(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedNodeFrameScratchWorkloads)
+	gentest.EachMode(t, testGeneratedNodeFrameScratchWorkloads)
 }
 
 func testGeneratedNodeFrameScratchWorkloads(t *testing.T) {
@@ -70,7 +71,7 @@ rule main Tok = t:(("é" / "�")* $$) #atomic => Tok{Text: text($t)}`, `func fr
 			}
 			{
 				variant := "scratch"
-				code, err := generateCode(t, g, gen.GenOptions{Package: "framefixture", Start: "main", Types: true, Recognize: true})
+				code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "framefixture", Start: "main", Types: true, Recognize: true})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -88,7 +89,7 @@ rule main Tok = t:(("é" / "�")* $$) #atomic => Tok{Text: text($t)}`, `func fr
 				if err := os.MkdirAll(path, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				for name, data := range map[string][]byte{"parser.go": code, "frames_test.go": []byte(fixture), "bench_test.go": []byte(workload), "go.mod": []byte(testGoMod("framefixture"))} {
+				for name, data := range map[string][]byte{"parser.go": code, "frames_test.go": []byte(fixture), "bench_test.go": []byte(workload), "go.mod": []byte(gentest.GoMod("framefixture"))} {
 					if err := os.WriteFile(filepath.Join(path, name), data, 0o644); err != nil {
 						t.Fatal(err)
 					}

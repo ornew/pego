@@ -8,11 +8,12 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGenerateTypedDocument(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds a standalone generated parser")
 	}
@@ -20,7 +21,7 @@ func TestGenerateTypedDocument(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main", Types: true, Document: true})
+	code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main", Types: true, Document: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +30,7 @@ func TestGenerateTypedDocument(t *testing.T) {
 	}
 	dir := t.TempDir()
 	for name, source := range map[string]string{
-		"go.mod":    testGoMod("typeddocument"),
+		"go.mod":    gentest.GoMod("typeddocument"),
 		"parser.go": string(code),
 		"parser_test.go": `package fixture
 import (
@@ -94,7 +95,7 @@ func TestTypedDocumentConversionBudget(t *testing.T) {
 
 func TestGenerateTypedDocumentNilAndRecovery(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGenerateTypedDocumentNilAndRecovery)
+	gentest.EachMode(t, testGenerateTypedDocumentNilAndRecovery)
 }
 
 func testGenerateTypedDocumentNilAndRecovery(t *testing.T) {
@@ -110,11 +111,11 @@ func testGenerateTypedDocumentNilAndRecovery(t *testing.T) {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("typeddocument")), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("typeddocument")), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	for _, entry := range []struct{ pkg, start string }{{"optional", "optional"}, {"recovery", "recoverTerminal"}} {
-		generatePackageIn(t, dir, "typeddocument", entry.pkg, g, gen.GenOptions{Start: entry.start, Types: true, Document: true})
+		gentest.GeneratePackageIn(t, dir, "typeddocument", entry.pkg, g, gen.GenOptions{Start: entry.start, Types: true, Document: true})
 	}
 	const consumer = `package typeddocument_test
 import (
@@ -166,7 +167,7 @@ func TestNilAndRecovery(t *testing.T) {
 // values implement; a Document clones them through that interface.
 func TestGenerateTypedDocumentOpenUnion(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGenerateTypedDocumentOpenUnion)
+	gentest.EachMode(t, testGenerateTypedDocumentOpenUnion)
 }
 
 func testGenerateTypedDocumentOpenUnion(t *testing.T) {
@@ -185,13 +186,13 @@ rule c = "c" "d"`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(t, g, gen.GenOptions{Package: "openunion", Start: "main", Types: true, Document: true})
+	code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "openunion", Start: "main", Types: true, Document: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
 	for name, content := range map[string]string{
-		"go.mod":    testGoMod("openunion"),
+		"go.mod":    gentest.GoMod("openunion"),
 		"parser.go": string(code),
 		"open_union_test.go": `package openunion
 import (
@@ -229,7 +230,7 @@ func anysF(xs []First) []any { out := []any{}; for _, x := range xs { out = appe
 
 func TestGenerateTypedDocumentNameCollisions(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGenerateTypedDocumentNameCollisions)
+	gentest.EachMode(t, testGenerateTypedDocumentNameCollisions)
 }
 
 func testGenerateTypedDocumentNameCollisions(t *testing.T) {
@@ -244,7 +245,7 @@ rule main Document = t:("a") #atomic => Document{Text: text($t)}`)
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	generatePackageIn(t, dir, "typedcollision", "fixture", g, gen.GenOptions{Start: "main", Types: true, Document: true})
+	gentest.GeneratePackageIn(t, dir, "typedcollision", "fixture", g, gen.GenOptions{Start: "main", Types: true, Document: true})
 	typesSource, err := os.ReadFile(filepath.Join(dir, "fixture", "types", "types.go"))
 	if err != nil {
 		t.Fatal(err)
@@ -255,7 +256,7 @@ rule main Document = t:("a") #atomic => Document{Text: text($t)}`)
 		}
 	}
 	for name, source := range map[string]string{
-		"go.mod": testGoMod("typedcollision"),
+		"go.mod": gentest.GoMod("typedcollision"),
 		"fixture/parser_test.go": `package fixture
 import ("testing"; "typedcollision/fixture/types")
 func TestCollision(t *testing.T) {
@@ -284,7 +285,7 @@ func TestCollision(t *testing.T) {
 
 func TestGenerateObservedDocumentNameCollisions(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGenerateObservedDocumentNameCollisions)
+	gentest.EachMode(t, testGenerateObservedDocumentNameCollisions)
 }
 
 func testGenerateObservedDocumentNameCollisions(t *testing.T) {
@@ -297,8 +298,8 @@ rule main ErrDocumentBusy = t:("a") #atomic => ErrDocumentBusy{Text: text($t)}`)
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	generatePackageIn(t, dir, "observedcollision", "plain", g, gen.GenOptions{Start: "main", Types: true, Document: true})
-	generatePackageIn(t, dir, "observedcollision", "fixture", g, gen.GenOptions{Start: "main", Types: true, Document: true, Observability: true})
+	gentest.GeneratePackageIn(t, dir, "observedcollision", "plain", g, gen.GenOptions{Start: "main", Types: true, Document: true})
+	gentest.GeneratePackageIn(t, dir, "observedcollision", "fixture", g, gen.GenOptions{Start: "main", Types: true, Document: true, Observability: true})
 	for _, pkg := range []string{"plain", "fixture"} {
 		typesSource, err := os.ReadFile(filepath.Join(dir, pkg, "types", "types.go"))
 		if err != nil {
@@ -309,7 +310,7 @@ rule main ErrDocumentBusy = t:("a") #atomic => ErrDocumentBusy{Text: text($t)}`)
 		}
 	}
 	for name, source := range map[string]string{
-		"go.mod": testGoMod("observedcollision"),
+		"go.mod": gentest.GoMod("observedcollision"),
 		"fixture/parser_test.go": `package fixture
 
 import pegort "github.com/ornew/pego/runtime"

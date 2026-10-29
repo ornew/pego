@@ -2,11 +2,11 @@ package engine
 
 import (
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestInferenceDependencyChains(t *testing.T) {

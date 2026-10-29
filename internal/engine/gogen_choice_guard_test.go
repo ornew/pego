@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"math/rand"
 	"path/filepath"
 	"runtime"
@@ -9,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // guardedClassCases are grammars whose choices have alternatives that begin with character
@@ -54,14 +54,14 @@ rule item = [\uFFFD] "a" / [\uFFFD-\u{10FFFF}] [é]? "b" / [^a-z ] "c" / [日] [
 
 func TestGuardedClassGeneration(t *testing.T) {
 	t.Parallel()
-	pinOrdinary(t)
+	gentest.PinOrdinary(t)
 	for _, c := range guardedClassCases() {
 		g, err := parseTest(c.Src)
 		if err != nil {
 			t.Fatal(err)
 		}
 		for _, disabled := range []bool{false, true} {
-			code, err := generateCode(t, g, gen.GenOptions{Package: "guarded", Start: "main", Types: true, TypedOnly: true, DisableGuardedClasses: disabled})
+			code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "guarded", Start: "main", Types: true, TypedOnly: true, DisableGuardedClasses: disabled})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -78,7 +78,7 @@ func TestGuardedClassGeneration(t *testing.T) {
 // in both position units, and their errors with the engine's.
 func TestGuardedClassDisabledParity(t *testing.T) {
 	t.Parallel()
-	pinOrdinary(t)
+	gentest.PinOrdinary(t)
 	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), guardedClassCases(), gen.GenOptions{DisableGuardedClasses: true}, 0)
 }
 
@@ -94,11 +94,11 @@ func TestGuardedClassEligibility(t *testing.T) {
 		for _, opts := range []gen.GenOptions{{TypedOnly: true}, {TypedOnly: true, WorkControls: true}, {Types: true, WorkControls: true}, {Types: true, Document: true}} {
 			want := !opts.WorkControls && !opts.Document
 			opts.Package, opts.Module, opts.Start, opts.Types, opts.Runtime = "guarded", "example.com/generated", "main", true, gen.RuntimeImport
-			files, err := Generate(t, g, opts)
+			files, err := gentest.Generate(t, g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got := strings.Contains(string(mergeGenerated(files)), "p.Pos += x"); got != want {
+			if got := strings.Contains(string(gentest.MergeGenerated(files)), "p.Pos += x"); got != want {
 				t.Errorf("%s (work controls %v, document %v): a class consumes the guard's character: %v, want %v", c.Name, opts.WorkControls, opts.Document, got, want)
 			}
 		}

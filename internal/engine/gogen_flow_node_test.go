@@ -2,7 +2,6 @@ package engine
 
 import (
 	"bytes"
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -12,6 +11,7 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // The rules of the Node table are printed from Flow IR (the lean value-free rules by the same route
@@ -25,7 +25,7 @@ import (
 // the test cannot pass without exercising it.
 func TestGeneratedFlowNodeParity(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedFlowNodeParity)
+	gentest.EachMode(t, testGeneratedFlowNodeParity)
 }
 
 func testGeneratedFlowNodeParity(t *testing.T) {
@@ -35,7 +35,7 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 	cases := gentest.GenCorpus(t)
 	taken := map[string]int{}
 	gh := &gogen.Hooks{}
-	setGenHooks(t, gh)
+	gentest.SetGenHooks(t, gh)
 	gh.LeanRoute = func(table string, r *compile.Rule) { taken[table]++ }
 	framed, operators := map[string]int{}, map[string]int{}
 	gh.FramedRoute = func(table string, r *compile.Rule) { framed[table]++ }
@@ -45,7 +45,7 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
-		if _, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
+		if _, err := gentest.GenerateCode(t, g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
 	}
@@ -98,7 +98,7 @@ func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 				o := gen.GenOptions{Package: "x", Module: "example.com/x", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: form.controls, Observability: form.observe, Document: form.document}
 				taken, framed, operators := 0, 0, 0
 				gh := &gogen.Hooks{}
-				setGenHooks(t, gh)
+				gentest.SetGenHooks(t, gh)
 				gh.LeanRoute = func(table string, r *compile.Rule) {
 					if table == "rules" {
 						taken++
@@ -106,11 +106,11 @@ func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 				}
 				gh.FramedRoute = func(table string, r *compile.Rule) { framed++ }
 				gh.OperatorsRoute = func(table string, r *compile.Rule) { operators++ }
-				files, err := Generate(t, g, o)
+				files, err := gentest.Generate(t, g, o)
 				if err != nil {
 					t.Fatal(err)
 				}
-				flow := mergeGenerated(files)
+				flow := gentest.MergeGenerated(files)
 				if taken == 0 {
 					t.Errorf("no rule of the Node table of %s takes the Flow route", name)
 				}
@@ -136,7 +136,7 @@ func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 // for the whole Node program, so Verify must accept the stream there, as the grammar and the engine do.
 func TestFlowNodeRulesAcceptStreamInWrappedSequence(t *testing.T) {
 	t.Parallel()
-	pinOrdinary(t)
+	gentest.PinOrdinary(t)
 	for name, src := range map[string]string{
 		"attributed sequence": `rule main = (([a-z] #atomic)* #stream "!") @diagnostic(name="x") $$`,
 		"attributed group": `rule main = (item* #stream) @diagnostic(name="items") "." $$
@@ -150,7 +150,7 @@ rule item = [a-z] #atomic`,
 		}
 		for _, stream := range []bool{false, true} {
 			opts := gen.GenOptions{Start: "main", Package: "gen", Stream: stream}
-			if _, err := generateCode(t, g, opts); err != nil {
+			if _, err := gentest.GenerateCode(t, g, opts); err != nil {
 				t.Errorf("%s (stream %v): %v", name, stream, err)
 			}
 		}
@@ -164,7 +164,7 @@ rule item = [a-z] #atomic`,
 // actions read.
 func TestFlowNodeRecognizersOnGrammars(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testFlowNodeRecognizersOnGrammars)
+	gentest.EachMode(t, testFlowNodeRecognizersOnGrammars)
 }
 
 func testFlowNodeRecognizersOnGrammars(t *testing.T) {

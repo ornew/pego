@@ -11,6 +11,7 @@ import (
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/value"
 )
@@ -19,7 +20,7 @@ const streamRecoveryError = "#recover cannot wrap a #stream repetition; recover 
 
 func TestStreamRecoveryRejected(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testStreamRecoveryRejected)
+	gentest.EachMode(t, testStreamRecoveryRejected)
 }
 
 func testStreamRecoveryRejected(t *testing.T) {
@@ -35,9 +36,12 @@ func testStreamRecoveryRejected(t *testing.T) {
 			}
 		}
 		for name, generate := range map[string]func() error{
-			"Go": func() error { _, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "test"}); return err },
+			"Go": func() error {
+				_, err := gentest.GenerateCode(t, g, gen.GenOptions{Start: "main", Package: "test"})
+				return err
+			},
 			"typed Go": func() error {
-				_, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "test", Types: true})
+				_, err := gentest.GenerateCode(t, g, gen.GenOptions{Start: "main", Package: "test", Types: true})
 				return err
 			},
 			"TS": func() error { _, err := generateTSBundle(g, gen.GenOptions{Start: "main"}); return err },

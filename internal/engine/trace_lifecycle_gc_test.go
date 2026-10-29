@@ -2,7 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"io"
 	"runtime"
 	"strings"
@@ -10,6 +9,7 @@ import (
 	"unsafe"
 	"weak"
 
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 

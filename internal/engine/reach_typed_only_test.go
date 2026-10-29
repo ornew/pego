@@ -6,6 +6,7 @@ import (
 
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -26,7 +27,7 @@ func typedOnlyLonelyGrammar(t *testing.T) string {
 // the Node rules that its entry points reach, and neither a function nor a slot Body of the others.
 func TestTypedOnlyUnreachedNodeRulesAreLeftOut(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testTypedOnlyUnreached)
+	gentest.EachMode(t, testTypedOnlyUnreached)
 }
 
 func testTypedOnlyUnreached(t *testing.T) {
@@ -53,7 +54,7 @@ func testTypedOnlyUnreached(t *testing.T) {
 // removed from the first pass, generation of the typed-only parser reports the calls and slots left out.
 func TestTypedOnlyUnreachedCalleeFailsGeneration(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testTypedOnlyUnreachedCalleeFails)
+	gentest.EachMode(t, testTypedOnlyUnreachedCalleeFails)
 }
 
 func testTypedOnlyUnreachedCalleeFails(t *testing.T) {
@@ -62,7 +63,7 @@ func testTypedOnlyUnreachedCalleeFails(t *testing.T) {
 		t.Fatal(err)
 	}
 	gh := &gogen.Hooks{}
-	setGenHooks(t, gh)
+	gentest.SetGenHooks(t, gh)
 	gh.Reach = func(l *gogen.LiveRules) {
 		for k := range l.Reach {
 			if k.Table == "rules" && k.ID != 0 {
@@ -70,7 +71,7 @@ func testTypedOnlyUnreachedCalleeFails(t *testing.T) {
 			}
 		}
 	}
-	_, err = generateCode(t, g, gen.GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: true})
+	_, err = gentest.GenerateCode(t, g, gen.GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: true})
 	if err == nil || !strings.Contains(err.Error(), "left out") {
 		t.Errorf("typed-only generation with the Node rules left out: err = %v, want an internal error", err)
 	}
@@ -80,7 +81,7 @@ func testTypedOnlyUnreachedCalleeFails(t *testing.T) {
 // without Node rules: a typed rule that a printed call reaches and the first pass left out fails generation.
 func TestTypedOnlyTypedCalleeFailsGeneration(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testTypedOnlyTypedCalleeFails)
+	gentest.EachMode(t, testTypedOnlyTypedCalleeFails)
 }
 
 func testTypedOnlyTypedCalleeFails(t *testing.T) {
@@ -89,11 +90,11 @@ func testTypedOnlyTypedCalleeFails(t *testing.T) {
 		t.Fatal(err)
 	}
 	opts := gen.GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: true}
-	if _, err := generateCode(t, g, opts); err != nil {
+	if _, err := gentest.GenerateCode(t, g, opts); err != nil {
 		t.Fatalf("typed-only generation without the hook: %v", err)
 	}
 	gh := &gogen.Hooks{}
-	setGenHooks(t, gh)
+	gentest.SetGenHooks(t, gh)
 	gh.Reach = func(l *gogen.LiveRules) {
 		for k := range l.Reach {
 			if k.Table == "trules" && !isRoot(l, k) {
@@ -101,7 +102,7 @@ func testTypedOnlyTypedCalleeFails(t *testing.T) {
 			}
 		}
 	}
-	_, err = generateCode(t, g, opts)
+	_, err = gentest.GenerateCode(t, g, opts)
 	if err == nil || !strings.Contains(err.Error(), "left out") {
 		t.Errorf("typed-only generation with a typed callee left out: err = %v, want an internal error", err)
 	}

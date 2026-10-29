@@ -12,13 +12,14 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // External rule-table entry and nested direct calls must count the same rule
 // depth. A small generated limit exercises both routes without large inputs.
 func TestGeneratedLeanDepth(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedLeanDepth)
+	gentest.EachMode(t, testGeneratedLeanDepth)
 }
 
 func testGeneratedLeanDepth(t *testing.T) {
@@ -49,9 +50,9 @@ rule left = left "+" "é" / "é"
 	// The depth comparison below runs the recognizer table (recRules), so the route is checked there.
 	taken := map[string]bool{}
 	gh := &gogen.Hooks{}
-	setGenHooks(t, gh)
+	gentest.SetGenHooks(t, gh)
 	gh.LeanRoute = func(table string, r *compile.Rule) { taken[table+"/"+r.Name] = true }
-	code, err := generateCode(t, g, gen.GenOptions{Package: "depth", Start: "main", Recognize: true})
+	code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "depth", Start: "main", Recognize: true})
 	gh.LeanRoute = nil
 	if err != nil {
 		t.Fatal(err)
@@ -97,7 +98,7 @@ func TestRoutesAndReuse(t *testing.T) {
 }
 `
 	dir := t.TempDir()
-	for name, data := range map[string][]byte{"parser.go": code, "depth_test.go": []byte(tests), "go.mod": []byte(testGoMod("depth"))} {
+	for name, data := range map[string][]byte{"parser.go": code, "depth_test.go": []byte(tests), "go.mod": []byte(gentest.GoMod("depth"))} {
 		if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
 			t.Fatal(err)
 		}

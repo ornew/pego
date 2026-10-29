@@ -10,11 +10,12 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedGoWorkControls(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated work-control consumers")
 	}
@@ -29,12 +30,12 @@ rule predicate Word = t:(!("a"* "é") "a"* "b") #atomic => Word{Text: text($t)}`
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("workfixture")), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("workfixture")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	for _, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("work_%v", convert)
-		code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -201,7 +202,7 @@ func TestConcurrentLimits(t *testing.T){
 
 func TestGeneratedGoConversionWork(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated conversion consumers")
 	}
@@ -218,11 +219,11 @@ rule leaf Leaf = t:("é") #atomic => Leaf{Text: text($t)}`)
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("gentest")), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("gentest")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	pkg := "conversion"
-	generatePackage(t, dir, pkg, g, gen.GenOptions{Start: "main", Types: true, ConvertTypes: true})
+	gentest.GeneratePackage(t, dir, pkg, g, gen.GenOptions{Start: "main", Types: true, ConvertTypes: true})
 	fixture := strings.ReplaceAll(generatedGoConversionConsumer, "PACKAGE", pkg)
 	if err := os.WriteFile(filepath.Join(dir, pkg, "conversion_test.go"), []byte(fixture), 0644); err != nil {
 		t.Fatal(err)
@@ -304,17 +305,17 @@ rule main WorkLimits = t:("é") #atomic => WorkLimits{Text: text($t)}`)
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("workcollision")), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("workcollision")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	for _, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("collision_%v", convert)
 		opts := gen.GenOptions{Package: pkg, Module: "workcollision/" + pkg, Runtime: gen.RuntimeImport, Start: "main", Types: true, ConvertTypes: convert, WorkControls: true}
-		files, err := Generate(t, g, opts)
+		files, err := gentest.Generate(t, g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
-		again, err := Generate(t, g, opts)
+		again, err := gentest.Generate(t, g, opts)
 		if err != nil || !slices.EqualFunc(files, again, func(a, b gen.GeneratedFile) bool { return a.Path == b.Path && string(a.Content) == string(b.Content) }) {
 			t.Fatal("unstable generation")
 		}
@@ -362,7 +363,7 @@ func TestPublicNames(t *testing.T){
 
 func TestGeneratedGoNilWorkPublication(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds typed nil publication consumer")
 	}
@@ -376,12 +377,12 @@ rule letter Word = t:("é") #atomic => Word{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(t, g, gen.GenOptions{Package: "nilpublication", Start: "main", Types: true})
+	code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "nilpublication", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	for name, data := range map[string][]byte{"go.mod": []byte(testGoMod("nilpublication")), "parser.go": code, "nil_test.go": []byte(generatedGoNilPublicationConsumer)} {
+	for name, data := range map[string][]byte{"go.mod": []byte(gentest.GoMod("nilpublication")), "parser.go": code, "nil_test.go": []byte(generatedGoNilPublicationConsumer)} {
 		if err := os.WriteFile(filepath.Join(dir, name), data, 0644); err != nil {
 			t.Fatal(err)
 		}
@@ -450,7 +451,7 @@ func TestRecoveredNilClonePublication(t *testing.T){
 
 func TestGeneratedGoLegacyNilControls(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds configured legacy nil consumers")
 	}
@@ -462,12 +463,12 @@ rule leaf Word = t:("é") #atomic => Word{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(t, g, gen.GenOptions{Package: "legacynil", Start: "main", Types: true})
+	code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "legacynil", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	for name, data := range map[string][]byte{"go.mod": []byte(testGoMod("legacynil")), "parser.go": code, "nil_test.go": []byte(generatedGoLegacyNilConsumer)} {
+	for name, data := range map[string][]byte{"go.mod": []byte(gentest.GoMod("legacynil")), "parser.go": code, "nil_test.go": []byte(generatedGoLegacyNilConsumer)} {
 		if err := os.WriteFile(filepath.Join(dir, name), data, 0644); err != nil {
 			t.Fatal(err)
 		}
@@ -512,7 +513,7 @@ func TestLegacyAndInterruptedNil(t *testing.T){
 
 func TestGeneratedGoConfiguredNilOrdinaryErrors(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds configured nil error consumers")
 	}
@@ -527,13 +528,13 @@ rule recurse = "a" recurse?`, "aa", "WithMaxDepth(1)"},
 			if err != nil {
 				t.Fatal(err)
 			}
-			code, err := generateCode(t, g, gen.GenOptions{Package: "ordinarynil", Start: "main", Types: true})
+			code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "ordinarynil", Start: "main", Types: true})
 			if err != nil {
 				t.Fatal(err)
 			}
 			consumer := strings.NewReplacer("INPUT", fmt.Sprintf("%q", tc.input), "OPTION", tc.option).Replace(generatedGoOrdinaryNilErrorConsumer)
 			dir := t.TempDir()
-			for name, data := range map[string][]byte{"go.mod": []byte(testGoMod("ordinarynil")), "parser.go": code, "nil_test.go": []byte(consumer)} {
+			for name, data := range map[string][]byte{"go.mod": []byte(gentest.GoMod("ordinarynil")), "parser.go": code, "nil_test.go": []byte(consumer)} {
 				if err := os.WriteFile(filepath.Join(dir, name), data, 0644); err != nil {
 					t.Fatal(err)
 				}

@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/ornew/pego/internal/gentest"
 	"reflect"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // Cancel at a deterministic poll, without timing or global compiler hooks.

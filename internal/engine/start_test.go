@@ -8,6 +8,7 @@ import (
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/syntax"
 	"github.com/ornew/pego/internal/value"
 )
@@ -79,7 +80,7 @@ func TestStartRuleErrors(t *testing.T) {
 // behind inline actions never become start rules.
 func TestStartHiddenRule(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testStartHiddenRule)
+	gentest.EachMode(t, testStartHiddenRule)
 }
 
 func testStartHiddenRule(t *testing.T) {
@@ -97,10 +98,10 @@ func testStartHiddenRule(t *testing.T) {
 		if perr != nil {
 			t.Fatal(perr)
 		}
-		if _, err := generateCode(t, g, gen.GenOptions{Package: "p"}); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if _, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "p"}); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("Generate %q\n got %v\nwant %s", tc.src, err, tc.want)
 		}
-		if _, err := GenerateTS(g, gen.GenOptions{}); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if _, err := gentest.GenerateTS(g, gen.GenOptions{}); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("GenerateTS %q\n got %v\nwant %s", tc.src, err, tc.want)
 		}
 	}

@@ -9,11 +9,12 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedDocumentObservation(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds standalone generated Document observation consumers")
 	}
@@ -30,7 +31,7 @@ func TestGeneratedDocumentObservation(t *testing.T) {
 	}
 	// The runtime reports the teardown of each invocation and the frontier of each memo entry it
 	// keeps or reuses to hooks that the consumers set.
-	write("go.mod", testGoModAt("documentobserve", observedRuntime(t)))
+	write("go.mod", gentest.GoModAt("documentobserve", observedRuntime(t)))
 	for _, f := range []struct{ name, grammar, input string }{
 		{"plain", "type W = { Text string }\nrule main W = t:(part part part) #atomic => W{Text: text($t)}\nrule part W = t:([a-b]) #atomic => W{Text: text($t)}", "aaa"},
 		{"list", "type W = { Text string }\nrule main []W = p:part+ => $p.Value\nrule part W = t:([a-b]) #atomic => W{Text: text($t)}", "aaa"},
@@ -59,18 +60,18 @@ func TestGeneratedDocumentObservation(t *testing.T) {
 		for _, route := range []string{"node", "direct", "convert"} {
 			name := f.name + "_" + route
 			options := gen.GenOptions{Package: "reference", Start: "main", Document: true, Types: route != "node", Recognize: true, ConvertTypes: route == "convert"}
-			ref, err := generateCode(t, g, options)
+			ref, err := gentest.GenerateCode(t, g, options)
 			if err != nil {
 				t.Fatal(name, err)
 			}
 			write(name+"/reference/parser.go", string(ref))
 			options.Package = name
 			options.Observability = true
-			code, err := generateCode(t, g, options)
+			code, err := gentest.GenerateCode(t, g, options)
 			if err != nil {
 				t.Fatal(name, err)
 			}
-			again, err := generateCode(t, g, options)
+			again, err := gentest.GenerateCode(t, g, options)
 			if err != nil || string(code) != string(again) {
 				t.Fatal(name, "nondeterministic source", err)
 			}
@@ -215,7 +216,7 @@ func observedRuntime(t *testing.T) string {
 		}
 		return strings.ReplaceAll(src, old, new)
 	}
-	return runtimeCopyWith(t, func(name, src string) string {
+	return gentest.RuntimeCopyWith(t, func(name, src string) string {
 		switch name {
 		case "document.go", "typed_document.go":
 			return replace(src, "p.Observation = newObservation(&o.observe)\n\tdefer p.releaseObservation()",

@@ -2,11 +2,11 @@ package engine
 
 import (
 	"errors"
-	"github.com/ornew/pego/internal/gentest"
 	"math/rand"
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 

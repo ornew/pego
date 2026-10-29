@@ -1,18 +1,18 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedTypedLRBodies(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedLRBodies)
+	gentest.EachMode(t, testGeneratedTypedLRBodies)
 }
 
 func testGeneratedTypedLRBodies(t *testing.T) {
@@ -25,7 +25,7 @@ func testGeneratedTypedLRBodies(t *testing.T) {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
 		opts := gen.GenOptions{Package: "lrbody", Start: "main", Types: true, Recognize: true}
-		code, err := generateCode(t, g, opts)
+		code, err := gentest.GenerateCode(t, g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}

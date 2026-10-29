@@ -7,13 +7,14 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // PEGO_TYPED_FRAME_LAYOUT_DIR preserves same-generator layout controls for
 // timing prebuilt fixture binaries independently of generation and compilation.
 func TestGeneratedTypedFrameLayoutWorkloads(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedFrameLayoutWorkloads)
+	gentest.EachMode(t, testGeneratedTypedFrameLayoutWorkloads)
 }
 
 func testGeneratedTypedFrameLayoutWorkloads(t *testing.T) {
@@ -74,14 +75,14 @@ func BenchmarkTypedFrameLayoutGeneration(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			code, err := generateCode(b, g, opts)
+			code, err := gentest.GenerateCode(b, g, opts)
 			if err != nil {
 				b.Fatal(err)
 			}
 			b.ReportAllocs()
 			b.ResetTimer()
 			for b.Loop() {
-				if _, err := generateCode(b, g, opts); err != nil {
+				if _, err := gentest.GenerateCode(b, g, opts); err != nil {
 					b.Fatal(err)
 				}
 			}

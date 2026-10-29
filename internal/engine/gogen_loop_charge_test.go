@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // TestGeneratedLoopCharge checks that every repetition of a list built-in is charged. The terms of an
@@ -27,7 +28,7 @@ import (
 // the loops: every case has to violate them.
 func TestGeneratedLoopCharge(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
@@ -41,7 +42,7 @@ func TestGeneratedLoopCharge(t *testing.T) {
 	for _, typed := range []bool{false, true} {
 		form := map[bool]string{false: "node", true: "typed"}[typed]
 		t.Run(form+"/runtime", func(t *testing.T) {
-			if problems := loopChargeProblems(t, cases, runtimeCopy(), typed); len(problems) != 0 {
+			if problems := loopChargeProblems(t, cases, gentest.RuntimeCopy(), typed); len(problems) != 0 {
 				t.Error(strings.Join(problems, "\n"))
 			}
 		})
@@ -50,7 +51,7 @@ func TestGeneratedLoopCharge(t *testing.T) {
 			loop := regexp.MustCompile(`(func \(c \*T?ActCtx\) (?:PushMap|FilterList)\([^\n]*\{\n(?:[^\n]*\n)*?)\t*c\.P\.StepWork\(\)\n`)
 			fold := regexp.MustCompile(`(func \(c \*T?ActCtx\) foldControlled\([^\n]*\{\n(?:[^\n]*\n)*?)\t*c\.P\.StepWork\(\)\n`)
 			patched := 0
-			dir := runtimeCopyWith(t, func(name, src string) string {
+			dir := gentest.RuntimeCopyWith(t, func(name, src string) string {
 				for _, re := range []*regexp.Regexp{loop, fold} {
 					src = re.ReplaceAllStringFunc(src, func(m string) string {
 						patched++
@@ -105,7 +106,7 @@ func loopChargeProblems(t *testing.T, cases []loopCase, rtDir string, typed bool
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", testGoModAt("loopcharge", rtDir))
+	write("go.mod", gentest.GoModAt("loopcharge", rtDir))
 	var imports, table strings.Builder
 	gen := func(pkg, action string, list bool) {
 		if typed && list {
@@ -119,7 +120,7 @@ func loopChargeProblems(t *testing.T, cases []loopCase, rtDir string, typed bool
 		if err != nil {
 			t.Fatalf("%s: %v", action, err)
 		}
-		code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: typed})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: typed})
 		if err != nil {
 			t.Fatalf("%s: %v", action, err)
 		}

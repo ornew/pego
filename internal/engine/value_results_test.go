@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // valueResultCases have rules and list elements whose values are ints, strings and bools.
@@ -81,7 +81,7 @@ func TestValueResults(t *testing.T) {
 
 func TestValueResultsGeneratedGoParity(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testValueResultsGeneratedGoParity)
+	gentest.EachMode(t, testValueResultsGeneratedGoParity)
 }
 
 func testValueResultsGeneratedGoParity(t *testing.T) {

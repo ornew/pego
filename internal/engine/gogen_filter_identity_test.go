@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 const typedFilterIdentityGrammar = `type Word = { Text string }
@@ -36,7 +37,7 @@ rule word Word = t:([a-zé]+) #atomic => Word{Text: text($t)}`
 // must retain the same element objects through filtering and aliases.
 func TestGeneratedTypedFilterIdentity(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedFilterIdentity)
+	gentest.EachMode(t, testGeneratedTypedFilterIdentity)
 }
 
 func testGeneratedTypedFilterIdentity(t *testing.T) {
@@ -58,12 +59,12 @@ func testGeneratedTypedFilterIdentity(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte(testGoMod("filteridentity")))
+	write("go.mod", []byte(gentest.GoMod("filteridentity")))
 	var imports, consumers strings.Builder
 	for i, conversion := range []bool{false, true} {
 		for _, start := range []string{"main", "empty"} {
 			pkg := fmt.Sprintf("p%d%s", i, start)
-			code, err := generateCode(t, grammar, gen.GenOptions{Package: pkg, Start: start, Types: true, ConvertTypes: conversion})
+			code, err := gentest.GenerateCode(t, grammar, gen.GenOptions{Package: pkg, Start: start, Types: true, ConvertTypes: conversion})
 			if err != nil {
 				t.Fatalf("conversion=%t start=%s: %v", conversion, start, err)
 			}

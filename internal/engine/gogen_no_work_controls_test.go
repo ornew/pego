@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // A parser generated without work controls holds no code that charges work or reads a control, does not
@@ -27,11 +28,11 @@ rule num = [0-9]+ ("." [0-9]+)?
 		t.Fatal(err)
 	}
 	gen := func(workControls bool, document ...bool) string {
-		files, err := Generate(t, g, gen.GenOptions{Package: "wc", Module: "wc", Start: "main", Runtime: gen.RuntimeImport, Types: true, Recognize: true, WorkControls: workControls, Document: len(document) > 0})
+		files, err := gentest.Generate(t, g, gen.GenOptions{Package: "wc", Module: "wc", Start: "main", Runtime: gen.RuntimeImport, Types: true, Recognize: true, WorkControls: workControls, Document: len(document) > 0})
 		if err != nil {
 			t.Fatal(err)
 		}
-		return string(mergeGenerated(files))
+		return string(gentest.MergeGenerated(files))
 	}
 	with, without := gen(true), gen(false)
 	for _, want := range []string{"p.StepWork()", "p.Control == nil", "func WithWorkLimits", "func WithContext"} {
@@ -97,7 +98,7 @@ func TestOptions(t *testing.T) {
 }
 `
 	dir := t.TempDir()
-	for name, data := range map[string][]byte{"parser.go": []byte(without), "wc_test.go": []byte(tests), "go.mod": []byte(testGoMod("wc"))} {
+	for name, data := range map[string][]byte{"parser.go": []byte(without), "wc_test.go": []byte(tests), "go.mod": []byte(gentest.GoMod("wc"))} {
 		if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
 			t.Fatal(err)
 		}

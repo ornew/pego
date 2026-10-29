@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"io"
 	"os"
 	"os/exec"
@@ -19,6 +18,7 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/tsgen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -148,7 +148,7 @@ rule main N = t:[�] $$ => N{T: $t}`, Inputs: []string{"\xff", "\x80", "\xc3", 
 // them before the generated parser sees them.
 func TestGeneratedInvalidUTF8Literals(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedInvalidUTF8Literals)
+	gentest.EachMode(t, testGeneratedInvalidUTF8Literals)
 }
 
 func testGeneratedInvalidUTF8Literals(t *testing.T) {
@@ -166,7 +166,7 @@ func testGeneratedInvalidUTF8Literals(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte(testGoMod("literaltest")))
+	write("go.mod", []byte(gentest.GoMod("literaltest")))
 	var imports, harness, want strings.Builder
 	harness.WriteString(`func main(){`)
 	i := 0
@@ -180,7 +180,7 @@ func testGeneratedInvalidUTF8Literals(t *testing.T) {
 			pkg := fmt.Sprintf("g%d", i)
 			i++
 			opts := gen.GenOptions{Package: pkg, Start: "main", Recognize: true, Types: mode != "untyped", ConvertTypes: mode == "convert"}
-			code, err := generateCode(t, g, opts)
+			code, err := gentest.GenerateCode(t, g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}

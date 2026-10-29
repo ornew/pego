@@ -2,7 +2,6 @@ package engine
 
 import (
 	"encoding/binary"
-	"github.com/ornew/pego/internal/gentest"
 	"hash/crc32"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +12,7 @@ import (
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -154,7 +154,7 @@ func TestFilterCompiledInstructionSet(t *testing.T) {
 
 func TestFilterGeneratedGoParity(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testFilterGeneratedGoParity)
+	gentest.EachMode(t, testFilterGeneratedGoParity)
 }
 
 func testFilterGeneratedGoParity(t *testing.T) {

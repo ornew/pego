@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // TestGeneratedDocumentInvalidUTF8EditEquivalence is the generated Document
@@ -19,7 +20,7 @@ import (
 // of the current text, in both position units.
 func TestGeneratedDocumentInvalidUTF8EditEquivalence(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedDocumentInvalidUTF8EditEquivalence)
+	gentest.EachMode(t, testGeneratedDocumentInvalidUTF8EditEquivalence)
 }
 
 func testGeneratedDocumentInvalidUTF8EditEquivalence(t *testing.T) {
@@ -42,14 +43,14 @@ rule main Result = w:wide* o:other* $$ => Result{Wide: $w.Value, Other: $o.Value
 rule wide Char = t:([€😀é]) #atomic => Char{Text: text($t)}
 rule other Char = t:(.) #atomic => Char{Text: text($t)}`,
 	}
-	files := map[string]string{"go.mod": testGoMod("fixture")}
+	files := map[string]string{"go.mod": gentest.GoMod("fixture")}
 	for i, src := range grammars {
 		g, err := parseTest(src)
 		if err != nil {
 			t.Fatal(err)
 		}
 		pkg := fmt.Sprintf("g%d", i)
-		code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
 		if err != nil {
 			t.Fatal(err)
 		}

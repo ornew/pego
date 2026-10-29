@@ -7,6 +7,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestCompileMalformedAST(t *testing.T) {
@@ -41,7 +42,7 @@ func TestCompileMalformedAST(t *testing.T) {
 
 func TestMalformedASTEntryPointsAndPosition(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testMalformedASTEntryPointsAndPosition)
+	gentest.EachMode(t, testMalformedASTEntryPointsAndPosition)
 }
 
 func testMalformedASTEntryPointsAndPosition(t *testing.T) {
@@ -51,9 +52,12 @@ func testMalformedASTEntryPointsAndPosition(t *testing.T) {
 	for name, run := range map[string]func() error{
 		"compile":           func() error { _, err := Compile(g, compile.Options{}); return err },
 		"saved AST rebuild": func() error { _, err := build(g, compile.Options{}, []compile.RuleFlags{{}}); return err },
-		"Go generator":      func() error { _, err := generateCode(t, g, gen.GenOptions{Start: "p", Package: "p"}); return err },
+		"Go generator": func() error {
+			_, err := gentest.GenerateCode(t, g, gen.GenOptions{Start: "p", Package: "p"})
+			return err
+		},
 		"typed Go generator": func() error {
-			_, err := generateCode(t, g, gen.GenOptions{Start: "p", Package: "p", Types: true})
+			_, err := gentest.GenerateCode(t, g, gen.GenOptions{Start: "p", Package: "p", Types: true})
 			return err
 		},
 		"TS generator": func() error { _, err := generateTSBundle(g, gen.GenOptions{Start: "p"}); return err },

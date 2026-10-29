@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // TestGeneratedDepthBenchmarkWorkloads validates benchmarks without timing them.
@@ -16,7 +17,7 @@ import (
 // paired measurements; generation and compilation remain outside parse timing.
 func TestGeneratedDepthBenchmarkWorkloads(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedDepthBenchmarkWorkloads)
+	gentest.EachMode(t, testGeneratedDepthBenchmarkWorkloads)
 }
 
 func testGeneratedDepthBenchmarkWorkloads(t *testing.T) {
@@ -40,7 +41,7 @@ func testGeneratedDepthBenchmarkWorkloads(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte(testGoMod("depthbench")))
+	write("go.mod", []byte(gentest.GoMod("depthbench")))
 	g, err := parseTest(`type Word = { Text string }
 rule main Word = t:(n+) #atomic => Word{Text: text($t)}
 rule n Word = t:("(" n ")" / "é") #atomic => Word{Text: text($t)}`)
@@ -53,7 +54,7 @@ rule n Word = t:("(" n ")" / "é") #atomic => Word{Text: text($t)}`)
 		if convert {
 			pkg = "convert"
 		}
-		code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert})
 		if err != nil {
 			t.Fatal(err)
 		}

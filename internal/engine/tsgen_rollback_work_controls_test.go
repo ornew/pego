@@ -3,11 +3,11 @@ package engine
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedTSWorkControlCaptureRollback(t *testing.T) {

@@ -9,7 +9,7 @@
   and the action is a Go expression over them, without the checks of `tctx.result` when it makes a struct with the
   rule's range. Every rule of the JSON, XML and outline grammars is direct; in the calculators, all but the Operators Rule
   expression and the three left-recursive rules.
-- The parity test of `ParseAST` gained grammars for the new code paths (`testdata/typed/direct_*.pego`: captures and
+- The parity test of `ParseAST` gained grammars for the new code paths (`internal/gentest/testdata/typed/direct_*.pego`: captures and
   an environment restored by choices, optionals and repetition elements, elements with captures of their own that
   become records, `$n`, built-ins, errors in actions, recovered errors undone and replayed from the memo, `@error`,
   anchors, bounded repetitions and alternatives that can never be tried), and now runs in both position units.

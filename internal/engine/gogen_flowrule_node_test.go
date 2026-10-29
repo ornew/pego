@@ -2,7 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,11 +11,12 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedNodeDirectFrameRoutes(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedNodeDirectFrameRoutes)
+	gentest.EachMode(t, testGeneratedNodeDirectFrameRoutes)
 }
 
 func testGeneratedNodeDirectFrameRoutes(t *testing.T) {
@@ -30,7 +30,7 @@ rule main = n:[0-9] #atomic {size := len($n)} {size == 1} "é" $$ => $n`,
 		if err != nil {
 			t.Fatal(err)
 		}
-		code, err := generateCode(t, g, gen.GenOptions{Package: "node", Start: "main"})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "node", Start: "main"})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -44,7 +44,7 @@ rule main = n:[0-9] #atomic {size := len($n)} {size == 1} "é" $$ => $n`,
 // stacks, including when a later parse fails or uses external rule entry.
 func TestGeneratedNodeDirectRetention(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedNodeDirectRetention)
+	gentest.EachMode(t, testGeneratedNodeDirectRetention)
 }
 
 func testGeneratedNodeDirectRetention(t *testing.T) {
@@ -56,7 +56,7 @@ func testGeneratedNodeDirectRetention(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(t, g, gen.GenOptions{Package: "node", Start: "main"})
+	code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "node", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +89,7 @@ func TestRetainedTrees(t *testing.T) {
 }
 `
 	dir := t.TempDir()
-	for name, data := range map[string][]byte{"parser.go": code, "node_test.go": []byte(test), "go.mod": []byte(testGoMod("node"))} {
+	for name, data := range map[string][]byte{"parser.go": code, "node_test.go": []byte(test), "go.mod": []byte(gentest.GoMod("node"))} {
 		if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -106,7 +106,7 @@ func TestRetainedTrees(t *testing.T) {
 // through call and leave finalization to the ordinary runtime wrapper.
 func TestGeneratedNodeDirectRoutes(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedNodeDirectRoutes)
+	gentest.EachMode(t, testGeneratedNodeDirectRoutes)
 }
 
 func testGeneratedNodeDirectRoutes(t *testing.T) {
@@ -116,7 +116,7 @@ func testGeneratedNodeDirectRoutes(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			code, err := generateCode(t, g, gen.GenOptions{Package: "node", Start: "main", Recognize: true})
+			code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "node", Start: "main", Recognize: true})
 			if err != nil {
 				t.Fatal(err)
 			}

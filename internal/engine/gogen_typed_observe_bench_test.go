@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // Export isolated typed tracing controls, keeping generation, compilation and
@@ -29,7 +30,7 @@ func TestExportGeneratedTypedTraceBenchmarks(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte(testGoMod("typedtracebench")))
+	write("go.mod", []byte(gentest.GoMod("typedtracebench")))
 	manifest := map[string]struct {
 		Bytes       int
 		DirectStart bool
@@ -57,7 +58,7 @@ func TestExportGeneratedTypedTraceBenchmarks(t *testing.T) {
 				if enabled {
 					pkg = "observed"
 				}
-				code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, Observability: enabled, ConvertTypes: convert})
+				code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, Observability: enabled, ConvertTypes: convert})
 				if err != nil {
 					t.Fatal(err)
 				}

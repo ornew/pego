@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // The parsers generated without work controls (the form most parsers have) and with typed-only entry
@@ -188,7 +189,7 @@ func ordinaryOnlyPackage(t *testing.T, dir, pkg, src string, opts gen.GenOptions
 	}
 	opts.Runtime = gen.RuntimeImport
 	opts.Package, opts.Module, opts.Start = pkg, "ordtest/"+pkg, "main"
-	files, err := Generate(t, g, opts)
+	files, err := gentest.Generate(t, g, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -272,7 +273,7 @@ func TestGeneratedOrdinaryOnlyMatchesControlled(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
-			if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("ordtest")), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("ordtest")), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			controlled, ordinary := tc.opts, tc.opts

@@ -1,11 +1,11 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestHiddenRulesSpliceTheirExpression(t *testing.T) {

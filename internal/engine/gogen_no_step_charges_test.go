@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // Without work controls no function of the parser package or the types package charges steps, including the
@@ -21,7 +22,7 @@ func TestGeneratedNoStepChargesInTypedCode(t *testing.T) {
 		generated := func(opts gen.GenOptions) string {
 			t.Helper()
 			opts.Package, opts.Module, opts.Start, opts.Runtime = "p", "example.com/p", "main", gen.RuntimeImport
-			files, err := Generate(t, g, opts)
+			files, err := gentest.Generate(t, g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -50,7 +51,7 @@ func TestGeneratedNoStepChargesInTypedCode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := Generate(t, g, gen.GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: gen.RuntimeImport, Types: true, WorkControls: true})
+	files, err := gentest.Generate(t, g, gen.GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: gen.RuntimeImport, Types: true, WorkControls: true})
 	if err != nil {
 		t.Fatal(err)
 	}

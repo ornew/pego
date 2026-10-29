@@ -1,16 +1,16 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"os/exec"
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedNodeFrameScratchCorpus(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedNodeFrameScratchCorpus)
+	gentest.EachMode(t, testGeneratedNodeFrameScratchCorpus)
 }
 
 func testGeneratedNodeFrameScratchCorpus(t *testing.T) {

@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -9,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // stringFieldCases read struct fields in actions and predicates. direct reports whether the
@@ -84,7 +84,7 @@ rule b = t:[0-9]+ #atomic => B{Text: text($t)}`, Inputs: []string{"ab", "12", ""
 
 func TestGeneratedStringFieldReads(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedStringFieldReads)
+	gentest.EachMode(t, testGeneratedStringFieldReads)
 }
 
 func testGeneratedStringFieldReads(t *testing.T) {
@@ -98,7 +98,7 @@ func testGeneratedStringFieldReads(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
-		code, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}

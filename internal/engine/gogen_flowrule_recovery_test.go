@@ -1,18 +1,18 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedTypedRecoveryBodies(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -23,7 +23,7 @@ func TestGeneratedTypedRecoveryBodies(t *testing.T) {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
 		opts := gen.GenOptions{Package: "recoverybody", Start: "main", Types: true, Recognize: true}
-		candidate, err := generateCode(t, g, opts)
+		candidate, err := gentest.GenerateCode(t, g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}

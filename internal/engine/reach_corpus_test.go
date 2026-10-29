@@ -2,7 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -50,7 +50,7 @@ func parseNaturalStart(src string) (*grammar.Grammar, error) {
 // first, because sharing depends on what was printed, and must still call only rules it prints.
 func TestUnreachableCorpusGeneration(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testUnreachableCorpusGeneration)
+	gentest.EachMode(t, testUnreachableCorpusGeneration)
 }
 
 func testUnreachableCorpusGeneration(t *testing.T) {
@@ -78,11 +78,11 @@ func testUnreachableCorpusGeneration(t *testing.T) {
 			opts.Package, opts.Start = "p", "main"
 			kept := opts
 			kept.KeepUnreachable = true
-			full, keptErr := generateCode(t, g, kept)
+			full, keptErr := gentest.GenerateCode(t, g, kept)
 			if keptErr != nil {
 				continue // the grammar does not generate in this option set
 			}
-			code, err := generateCode(t, g, opts)
+			code, err := gentest.GenerateCode(t, g, opts)
 			if err != nil {
 				t.Errorf("%s with %s: generation fails with the pruning (%v), not without it", c.Name, set.name, err)
 				continue
@@ -103,7 +103,7 @@ func testUnreachableCorpusGeneration(t *testing.T) {
 // its natural start rule and requires the same Parse and Recognize result on every corpus input.
 func TestUnreachableCorpusRuns(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testUnreachableCorpusRuns)
+	gentest.EachMode(t, testUnreachableCorpusRuns)
 }
 
 func testUnreachableCorpusRuns(t *testing.T) {
@@ -119,7 +119,7 @@ func testUnreachableCorpusRuns(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", testGoMod("reachcorpus"))
+	write("go.mod", gentest.GoMod("reachcorpus"))
 	var imports, calls strings.Builder
 	n := 0
 	for _, c := range gentest.GenCorpus(t) {
@@ -131,12 +131,12 @@ func testUnreachableCorpusRuns(t *testing.T) {
 		kept := opts
 		kept.KeepUnreachable = true
 		kept.Package = fmt.Sprintf("k%d", n)
-		keptCode, err := generateCode(t, g, kept)
+		keptCode, err := gentest.GenerateCode(t, g, kept)
 		if err != nil {
 			continue
 		}
 		opts.Package = fmt.Sprintf("p%d", n)
-		code, err := generateCode(t, g, opts)
+		code, err := gentest.GenerateCode(t, g, opts)
 		if err != nil {
 			t.Fatalf("%s: generation fails with the pruning: %v", c.Name, err)
 		}

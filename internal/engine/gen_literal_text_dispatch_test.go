@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,11 +13,12 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestLiteralTextPredicateDispatchGeneration(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testLiteralTextPredicateDispatchGeneration)
+	gentest.EachMode(t, testLiteralTextPredicateDispatchGeneration)
 }
 
 func testLiteralTextPredicateDispatchGeneration(t *testing.T) {
@@ -27,14 +27,14 @@ func testLiteralTextPredicateDispatchGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(t, g, gen.GenOptions{Package: "dispatch", Start: "main", Types: true})
+	code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "dispatch", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(code), `switch c.TextStr(`) || !strings.Contains(string(code), `case "a", "b":`) {
 		t.Fatal("typed Go generator did not emit literal text dispatch")
 	}
-	baseline, err := generateCode(t, g, gen.GenOptions{Package: "dispatch", Start: "main", Types: true, DisableLiteralTextDispatch: true})
+	baseline, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "dispatch", Start: "main", Types: true, DisableLiteralTextDispatch: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +59,7 @@ func testLiteralTextPredicateDispatchGeneration(t *testing.T) {
 
 func TestLiteralTextPredicateDispatchRejectsUnsafeShapes(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testLiteralTextPredicateDispatchRejectsUnsafeShapes)
+	gentest.EachMode(t, testLiteralTextPredicateDispatchRejectsUnsafeShapes)
 }
 
 func testLiteralTextPredicateDispatchRejectsUnsafeShapes(t *testing.T) {
@@ -77,7 +77,7 @@ rule main = w:[a-z]+ #atomic {result := text($w) == "a" || text($w) == "b"} $$`,
 		if err != nil {
 			t.Fatalf("case %d: %v", i, err)
 		}
-		code, err := generateCode(t, g, gen.GenOptions{Package: "dispatch", Start: "main"})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "dispatch", Start: "main"})
 		if err != nil {
 			t.Fatalf("case %d: %v", i, err)
 		}
@@ -89,7 +89,7 @@ rule main = w:[a-z]+ #atomic {result := text($w) == "a" || text($w) == "b"} $$`,
 
 func TestLiteralTextPredicateDispatchDisabledParity(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testLiteralTextPredicateDispatchDisabledParity)
+	gentest.EachMode(t, testLiteralTextPredicateDispatchDisabledParity)
 }
 
 func testLiteralTextPredicateDispatchDisabledParity(t *testing.T) {
@@ -267,7 +267,7 @@ func TestGeneratedLiteralDispatchWorkload(t *testing.T) {
 				disabled bool
 			}{{"candidate", false}, {"reference", true}} {
 				packageName := "dispatch"
-				code, err := generateCode(t, g, gen.GenOptions{Package: packageName, Start: "main", Types: mode.types, Recognize: true, DisableLiteralTextDispatch: variant.disabled})
+				code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: packageName, Start: "main", Types: mode.types, Recognize: true, DisableLiteralTextDispatch: variant.disabled})
 				if err != nil {
 					t.Fatalf("%s/%s/%s: %v", workload.name, mode.name, variant.name, err)
 				}
@@ -317,7 +317,7 @@ func TestGeneratedLiteralDispatchWorkload(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("literaldispatch")), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("literaldispatch")), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(dir, "manifest.json"), mustJSONIndent(t, manifest), 0o644); err != nil {

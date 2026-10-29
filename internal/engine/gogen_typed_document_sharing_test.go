@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // The published typed values of a Document are shared with later results, so every test here
@@ -55,7 +56,7 @@ rule atom Atom = t:([a-z]) #atomic => Atom{Text: text($t)}`
 // the given test files. The tests run in the generated module.
 func sharingPackages(t *testing.T, tests map[string]string) {
 	t.Helper()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}
@@ -70,7 +71,7 @@ func sharingPackages(t *testing.T, tests map[string]string) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", testGoMod("sharedtypeddocument"))
+	write("go.mod", gentest.GoMod("sharedtypeddocument"))
 	for _, pkg := range []struct {
 		name, grammar string
 		legacy        bool
@@ -86,7 +87,7 @@ func sharingPackages(t *testing.T, tests map[string]string) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		generatePackageIn(t, dir, "sharedtypeddocument", pkg.name, g, gen.GenOptions{Start: "main", Types: true, Document: true, DisableTypedOutputBootstrap: pkg.legacy})
+		gentest.GeneratePackageIn(t, dir, "sharedtypeddocument", pkg.name, g, gen.GenOptions{Start: "main", Types: true, Document: true, DisableTypedOutputBootstrap: pkg.legacy})
 	}
 	for name, text := range tests {
 		write(name, text)

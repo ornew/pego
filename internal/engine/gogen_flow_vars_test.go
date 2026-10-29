@@ -6,6 +6,7 @@ import (
 
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/ir/flow"
 )
 
@@ -122,7 +123,7 @@ func TestFlowVarsMutantFailsToCompile(t *testing.T) {
 	t.Parallel()
 	for name, h := range map[string]*gogen.Hooks{"every variable unread": {FlowVarsMutant: true}, "assignment reads ignored": {FlowVarsMutantUses: true}} {
 		t.Run(name, func(t *testing.T) {
-			setGenHooks(t, h)
+			gentest.SetGenHooks(t, h)
 			testFlowVarsMutantFailsToCompile(t)
 		})
 	}
@@ -133,7 +134,7 @@ func testFlowVarsMutantFailsToCompile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := Generate(t, g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Module: "example.com/p", Types: true})
+	files, err := gentest.Generate(t, g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Module: "example.com/p", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}

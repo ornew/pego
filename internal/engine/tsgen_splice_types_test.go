@@ -34,7 +34,7 @@ func TestGeneratedTSRecursiveSpliceTypesKeepTheTree(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
-		files, err := GenerateTS(g, gen.GenOptions{Start: "main", Types: true})
+		files, err := gentest.GenerateTS(g, gen.GenOptions{Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}

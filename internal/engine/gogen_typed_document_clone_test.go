@@ -8,11 +8,12 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedTypedDocumentPublicationClone(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds a standalone generated parser")
 	}
@@ -31,13 +32,13 @@ rule token Token = t:("x") #atomic => Token{Text: text($t)}`)
 	// The types are named like the names of the parser package (Document, ParseStats, Span) and live
 	// in their own package, so that they compile next to them.
 	dir := t.TempDir()
-	generatePackage(t, dir, "doc", g, gen.GenOptions{Start: "main", Types: true, Document: true})
-	ordinary := generatePackage(t, dir, "ordinary", g, gen.GenOptions{Start: "main", Types: true})
+	gentest.GeneratePackage(t, dir, "doc", g, gen.GenOptions{Start: "main", Types: true, Document: true})
+	ordinary := gentest.GeneratePackage(t, dir, "ordinary", g, gen.GenOptions{Start: "main", Types: true})
 	if strings.Contains(ordinary, "type typedDocumentClone") {
 		t.Fatalf("default generation includes Document cloning")
 	}
 	for name, text := range map[string]string{
-		"go.mod": testGoMod("gentest"),
+		"go.mod": gentest.GoMod("gentest"),
 		"doc/parser_test.go": `package doc
 import (
 	pegort "github.com/ornew/pego/runtime"

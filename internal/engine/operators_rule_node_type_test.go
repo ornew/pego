@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -174,7 +174,7 @@ func TestOperatorsRuleNamedNodeTypeDocument(t *testing.T) {
 // the engine for Operators Rules with and without a named node type.
 func TestOperatorsRuleNamedNodeTypeGenerated(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testOperatorsRuleNamedNodeTypeGenerated)
+	gentest.EachMode(t, testOperatorsRuleNamedNodeTypeGenerated)
 }
 
 func testOperatorsRuleNamedNodeTypeGenerated(t *testing.T) {
@@ -202,7 +202,7 @@ func testOperatorsRuleNamedNodeTypeGenerated(t *testing.T) {
 // nesting level.
 func TestGeneratedTypedOperatorsRuleNamedNodeType(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedOperatorsRuleNamedNodeType)
+	gentest.EachMode(t, testGeneratedTypedOperatorsRuleNamedNodeType)
 }
 
 func testGeneratedTypedOperatorsRuleNamedNodeType(t *testing.T) {
@@ -262,7 +262,7 @@ func TestOperatorsRuleNamedNodeTypeRuntimeError(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Generate(t, g, gen.GenOptions{Package: "p", Start: "expr"}); err == nil {
+		if _, err := gentest.Generate(t, g, gen.GenOptions{Package: "p", Start: "expr"}); err == nil {
 			t.Errorf("%q: the generator accepted a grammar that cannot be type checked", tc.src)
 		}
 	}

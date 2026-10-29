@@ -6,11 +6,12 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestSourceGroupsExecutableParity(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testSourceGroupsExecutableParity)
+	gentest.EachMode(t, testSourceGroupsExecutableParity)
 }
 
 func testSourceGroupsExecutableParity(t *testing.T) {
@@ -67,7 +68,7 @@ rule number Alias = v1:[0-9]+ => Number{Text: text($v1)}
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, generate := range []func(*grammar.Grammar, gen.GenOptions) ([]byte, error){func(g *grammar.Grammar, o gen.GenOptions) ([]byte, error) { return generateCode(t, g, o) }, generateTSBundle} {
+			for _, generate := range []func(*grammar.Grammar, gen.GenOptions) ([]byte, error){func(g *grammar.Grammar, o gen.GenOptions) ([]byte, error) { return gentest.GenerateCode(t, g, o) }, generateTSBundle} {
 				got, err := generate(input, opts)
 				if err != nil {
 					t.Fatal(err)

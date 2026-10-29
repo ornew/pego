@@ -9,11 +9,12 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedGoClassDispatchWork(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated character-class control consumers")
 	}
@@ -34,12 +35,12 @@ rule fallback Text = t:([` + chars.String() + `] / "z") #atomic => Text{Text: te
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	if err = os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("classfixture")), 0644); err != nil {
+	if err = os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("classfixture")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	for _, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("class_%v", convert)
-		code, e := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert})
+		code, e := gentest.GenerateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert})
 		if e != nil {
 			t.Fatal(e)
 		}

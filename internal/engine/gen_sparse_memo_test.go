@@ -11,6 +11,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // Small tables cannot select sparse storage, so their default TypeScript
@@ -45,7 +46,7 @@ func TestGeneratedSparseMemoSmallTable(t *testing.T) {
 // separately built timing and allocation measurements.
 func TestGeneratedSparseMemo(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedSparseMemo)
+	gentest.EachMode(t, testGeneratedSparseMemo)
 }
 
 func testGeneratedSparseMemo(t *testing.T) {
@@ -66,7 +67,7 @@ func testGeneratedSparseMemo(t *testing.T) {
 	}
 	var fingerprint string
 	for _, name := range []string{"optimized"} {
-		code, err := generateCode(t, g, gen.GenOptions{Package: "memofixture", Start: "main", Types: true,
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "memofixture", Start: "main", Types: true,
 			Recognize: true})
 		if err != nil {
 			t.Fatal(err)
@@ -80,7 +81,7 @@ func testGeneratedSparseMemo(t *testing.T) {
 		}
 		fixture := sparseMemoGeneratedFixture
 		for file, data := range map[string][]byte{
-			"go.mod":    []byte(testGoMod("memofixture")),
+			"go.mod":    []byte(gentest.GoMod("memofixture")),
 			"parser.go": code, "memo_test.go": []byte(fixture),
 		} {
 			if err := os.WriteFile(filepath.Join(path, file), data, 0o644); err != nil {

@@ -2,7 +2,6 @@ package engine
 
 import (
 	"bytes"
-	"github.com/ornew/pego/internal/gentest"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -12,6 +11,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 type predicateBlockCase struct {
@@ -191,7 +191,7 @@ func predicateBlockGeneratedCases() []gentest.Case {
 
 func TestPredicateBlocksGeneratedGoParity(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testPredicateBlocksGeneratedGoParity)
+	gentest.EachMode(t, testPredicateBlocksGeneratedGoParity)
 }
 
 func testPredicateBlocksGeneratedGoParity(t *testing.T) {

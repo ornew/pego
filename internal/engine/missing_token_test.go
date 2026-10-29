@@ -12,6 +12,7 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 	"github.com/ornew/pego/schema"
@@ -478,7 +479,7 @@ func TestMissingTokensMemoSeedContextAndRecycledPointers(t *testing.T) {
 
 func TestMissingTokensTypeOnlyGrammarCannotBeLowered(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testMissingTokensTypeOnlyGrammarCannotBeLowered)
+	gentest.EachMode(t, testMissingTokensTypeOnlyGrammarCannotBeLowered)
 }
 
 func testMissingTokensTypeOnlyGrammarCannotBeLowered(t *testing.T) {
@@ -493,7 +494,7 @@ rule main = "a"`)
 	if _, err := prog.MarshalBinary("main"); err == nil {
 		t.Fatal("saved a reserved type without a supported binary representation")
 	}
-	if _, err := generateCode(t, prog.Grammar, gen.GenOptions{Package: "example", Start: "main"}); err == nil {
+	if _, err := gentest.GenerateCode(t, prog.Grammar, gen.GenOptions{Package: "example", Start: "main"}); err == nil {
 		t.Fatal("generated unsupported Missing type")
 	}
 }

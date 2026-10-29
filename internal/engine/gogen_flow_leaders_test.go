@@ -2,12 +2,12 @@ package engine
 
 import (
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // The bodies of left-recursion leaders print from Flow IR in the Node and recognizer tables, and in the stream
@@ -17,7 +17,7 @@ import (
 // the expected sets of the iterations); the generated code supplies the body that the runtime evaluates for each
 // iteration. A left-recursive alternative has no first set (ruleFirst gives none for a leader), so it is never
 // guarded and always reads the seed; the other alternatives are guarded as in any rule. The generated parsers of the corpus (the leader cases
-// of genCorpus: memoized callers, lookaheads, nesting, cuts and captures, with inputs that fail after a seed)
+// of gentest.GenCorpus: memoized callers, lookaheads, nesting, cuts and captures, with inputs that fail after a seed)
 // run as the engine's, with observation, Documents (statistics included) and work controls, and ParseStream
 // delivers the same elements and errors; the tests here assert the route.
 
@@ -34,7 +34,7 @@ func TestFlowLeadersPrintFromFlow(t *testing.T) {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
 			gh := &gogen.Hooks{}
-			setGenHooks(t, gh)
+			gentest.SetGenHooks(t, gh)
 			gh.FramedRoute = func(table string, r *compile.Rule) {
 				if r.Leader {
 					taken[table]++
@@ -45,7 +45,7 @@ func TestFlowLeadersPrintFromFlow(t *testing.T) {
 				if err != nil {
 					continue
 				}
-				if _, err := Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
+				if _, err := gentest.Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
 					t.Fatalf("%s: %v", c.Name, err)
 				}
 			}

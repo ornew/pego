@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	goast "go/ast"
 	goparser "go/parser"
 	"go/token"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // localErrors type-checks the Go files of a generated package against empty stand-ins for its
@@ -106,7 +106,7 @@ func TestGeneratedLocalVariables(t *testing.T) {
 		for _, f := range forms {
 			opts := f.opts
 			opts.Package, opts.Start, opts.Runtime, opts.Module = "p", "main", gen.RuntimeImport, "example.com/p"
-			files, err := Generate(t, g, opts)
+			files, err := gentest.Generate(t, g, opts)
 			if err != nil {
 				// Every test grammar generates in every form.
 				t.Errorf("%s (%s): %v", c.Name, f.name, err)
@@ -151,7 +151,7 @@ func TestShakeVarsMutantFailsToCompile(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
-		files, err := Generate(t, g, gen.GenOptions{Types: true, Package: "p", Start: "main", Runtime: gen.RuntimeImport, Module: "example.com/p"})
+		files, err := gentest.Generate(t, g, gen.GenOptions{Types: true, Package: "p", Start: "main", Runtime: gen.RuntimeImport, Module: "example.com/p"})
 		if err != nil {
 			t.Errorf("%s: %v", c.Name, err)
 			continue

@@ -3,7 +3,6 @@ package engine
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"math/rand/v2"
 	"os"
 	"os/exec"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/syntax"
 	"github.com/ornew/pego/internal/value"
 )
@@ -33,7 +33,7 @@ func resultJSON(n *value.Node, err error) string {
 // the engine's recognition.
 func TestGeneratedParsersMatchEngine(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedParsersMatchEngine)
+	gentest.EachMode(t, testGeneratedParsersMatchEngine)
 }
 
 func testGeneratedParsersMatchEngine(t *testing.T) {
@@ -178,7 +178,7 @@ func testGeneratedParsersCorpus(t *testing.T, goBin string, cases []gentest.Case
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", testGoMod("gentest"))
+	write("go.mod", gentest.GoMod("gentest"))
 	var imports, parsers, recognizers, viewers strings.Builder
 	var inputs [][]string
 	var want []string
@@ -188,7 +188,7 @@ func testGeneratedParsersCorpus(t *testing.T, goBin string, cases []gentest.Case
 			t.Fatalf("%s: %v", c.Name, err)
 		}
 		opts.Package, opts.Start, opts.Recognize = fmt.Sprintf("g%d", i), "main", true
-		code, err := generateCode(t, g, opts)
+		code, err := gentest.GenerateCode(t, g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
@@ -276,27 +276,27 @@ func main() {
 
 func TestGenerateErrors(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGenerateErrors)
+	gentest.EachMode(t, testGenerateErrors)
 }
 
 func testGenerateErrors(t *testing.T) {
 	g, _ := syntax.Parse("@start\nrule main = \"a\" b\nrule b = \"b\"")
-	if _, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "nope"}); err == nil || err.Error() != "rule nope is not defined" {
+	if _, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "p", Start: "nope"}); err == nil || err.Error() != "rule nope is not defined" {
 		t.Errorf("got %v", err)
 	}
-	if _, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "b"}); err == nil || err.Error() != "rule b is not a start rule; parsing can begin only at a rule marked @start" {
+	if _, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "p", Start: "b"}); err == nil || err.Error() != "rule b is not a start rule; parsing can begin only at a rule marked @start" {
 		t.Errorf("not a start rule: got %v", err)
 	}
-	if _, err := generateCode(t, g, gen.GenOptions{Start: "main"}); err == nil {
+	if _, err := gentest.GenerateCode(t, g, gen.GenOptions{Start: "main"}); err == nil {
 		t.Error("expected an error for a missing package name")
 	}
 	for _, pkg := range []string{"foo-bar", "type", "1p", "_"} {
-		if _, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main"}); err == nil || err.Error() != fmt.Sprintf("invalid package name %q", pkg) {
+		if _, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: pkg, Start: "main"}); err == nil || err.Error() != fmt.Sprintf("invalid package name %q", pkg) {
 			t.Errorf("package %q: got %v", pkg, err)
 		}
 	}
 	bad, _ := parseTest(`rule main = x`)
-	if _, err := generateCode(t, bad, gen.GenOptions{Package: "p", Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
+	if _, err := gentest.GenerateCode(t, bad, gen.GenOptions{Package: "p", Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
 		t.Errorf("got %v", err)
 	}
 }
@@ -346,7 +346,7 @@ func mutants(inputs []string, n int, seed uint64) []string {
 // typedGrammar into the expected values.
 func TestGeneratedTypes(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypes)
+	gentest.EachMode(t, testGeneratedTypes)
 }
 
 func testGeneratedTypes(t *testing.T) {
@@ -391,7 +391,7 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []gentest.Case, 
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", testGoMod("gentest"))
+	write("go.mod", gentest.GoMod("gentest"))
 	var imports, parsers, converters strings.Builder
 	var inputs [][]string
 	var wantErr []string
@@ -405,7 +405,7 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []gentest.Case, 
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
-		code := generatePackage(t, dir, fmt.Sprintf("g%d", i), g, gen.GenOptions{Start: "main", Types: true, SourceInfo: true})
+		code := gentest.GeneratePackage(t, dir, fmt.Sprintf("g%d", i), g, gen.GenOptions{Start: "main", Types: true, SourceInfo: true})
 		if strings.Contains(code, "TParse(trules") {
 			typedRuntime++
 		}
@@ -417,7 +417,7 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []gentest.Case, 
 		refOpts := reference
 		refOpts.Start, refOpts.Types = "main", true
 		refOpts.SourceInfo = true
-		generatePackage(t, dir, fmt.Sprintf("c%d", i), g, refOpts)
+		gentest.GeneratePackage(t, dir, fmt.Sprintf("c%d", i), g, refOpts)
 		fmt.Fprintf(&imports, "\tg%d \"gentest/g%d\"\n\tc%d \"gentest/c%d\"\n", i, i, i, i)
 		fmt.Fprintf(&parsers, "\tfunc(s string, b bool) (any, error) { u := g%d.CodePoints; if b { u = g%d.Bytes }; return g%d.ParseAST(s, g%[3]d.WithUnit(u)) },\n", i, i, i)
 		fmt.Fprintf(&converters, "\tfunc(s string, b bool) (any, error) { u := c%d.CodePoints; if b { u = c%d.Bytes }; return c%d.ParseAST(s, c%[3]d.WithUnit(u)) },\n", i, i, i)

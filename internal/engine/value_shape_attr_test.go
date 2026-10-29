@@ -2,13 +2,13 @@ package engine
 
 import (
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -61,7 +61,7 @@ func TestAttributeAroundStreamRepetition(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", src, err)
 		}
-		if _, err := Generate(t, g, gen.GenOptions{Start: "main", Module: "x/y", Types: true, Stream: true}); err != nil {
+		if _, err := gentest.Generate(t, g, gen.GenOptions{Start: "main", Module: "x/y", Types: true, Stream: true}); err != nil {
 			t.Errorf("%s: %v", src, err)
 		}
 	}

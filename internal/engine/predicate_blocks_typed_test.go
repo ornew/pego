@@ -1,19 +1,19 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // These declared typed-result fixtures force typed runtime execution; ordinary
 // Node parser parity alone does not cover generated typed Predicate Actions.
 func TestPredicateBlocksGeneratedTypedParity(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testPredicateBlocksGeneratedTypedParity)
+	gentest.EachMode(t, testPredicateBlocksGeneratedTypedParity)
 }
 
 func testPredicateBlocksGeneratedTypedParity(t *testing.T) {

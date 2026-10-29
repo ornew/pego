@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // TestGeneratedTypedFieldsNamedLikeRuntimeMethods checks that a struct field may be named like a
@@ -15,7 +16,7 @@ import (
 // the value reads back under the grammar name.
 func TestGeneratedTypedFieldsNamedLikeRuntimeMethods(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedFieldsNamedLikeRuntimeMethods)
+	gentest.EachMode(t, testGeneratedTypedFieldsNamedLikeRuntimeMethods)
 }
 
 func testGeneratedTypedFieldsNamedLikeRuntimeMethods(t *testing.T) {
@@ -39,12 +40,12 @@ rule main Pair = a:"a" => Pair{TName: "n", TText: "t", TKids: "k", TStruct: "s",
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", testGoMod("fieldclash"))
+	write("go.mod", gentest.GoMod("fieldclash"))
 	for _, c := range []struct {
 		pkg      string
 		document bool
 	}{{"plain", false}, {"document", true}} {
-		code, err := generateCode(t, g, gen.GenOptions{Package: c.pkg, Start: "main", Types: true, Document: c.document})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: c.pkg, Start: "main", Types: true, Document: c.document})
 		if err != nil {
 			t.Fatalf("%s: %v", c.pkg, err)
 		}

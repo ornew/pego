@@ -2,7 +2,6 @@ package engine
 
 import (
 	"encoding/binary"
-	"github.com/ornew/pego/internal/gentest"
 	"hash/crc32"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 const castRules = "type Num = { Text string }\ntype P = { N Num }\nrule n Num = t:([0-9]+) #atomic => Num{Text: text($t)}\nrule w = [a-z]+\nrule pair = n:n \"=\" => P{N: $n}\n"
@@ -162,7 +162,7 @@ func TestCastSyntax(t *testing.T) {
 
 func TestCastGeneratedGoParity(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testCastGeneratedGoParity)
+	gentest.EachMode(t, testCastGeneratedGoParity)
 }
 
 func testCastGeneratedGoParity(t *testing.T) {

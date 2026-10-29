@@ -2,13 +2,13 @@ package engine
 
 import (
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // The rules of the recognizer table (and the lean rules of the Node table) that have captures print from Flow IR,
@@ -44,7 +44,7 @@ func TestFlowRecognizerPrintsCapturesFromFlow(t *testing.T) {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
 			gh := &gogen.Hooks{}
-			setGenHooks(t, gh)
+			gentest.SetGenHooks(t, gh)
 			gh.LeanRoute = func(table string, r *compile.Rule) {
 				if c, _ := hasCaptureOfRepeat(r.BodyExpr()); c {
 					taken[table+" lean with captures"]++
@@ -64,7 +64,7 @@ func TestFlowRecognizerPrintsCapturesFromFlow(t *testing.T) {
 				if err != nil {
 					continue
 				}
-				if _, err := Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
+				if _, err := gentest.Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
 					t.Fatalf("%s: %v", c.Name, err)
 				}
 			}

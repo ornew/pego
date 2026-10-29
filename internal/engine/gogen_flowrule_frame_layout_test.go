@@ -1,18 +1,18 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedTypedFrameLayouts(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedFrameLayouts)
+	gentest.EachMode(t, testGeneratedTypedFrameLayouts)
 }
 
 func testGeneratedTypedFrameLayouts(t *testing.T) {
@@ -36,7 +36,7 @@ func testGeneratedTypedFrameLayouts(t *testing.T) {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
 		opts := gen.GenOptions{Package: "layouts", Start: "main", Types: true, Recognize: true}
-		candidate, err := generateCode(t, g, opts)
+		candidate, err := gentest.GenerateCode(t, g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}

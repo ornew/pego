@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -11,6 +10,7 @@ import (
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // textStructGrammar has rules whose actions make structs with a field Text from the text they
@@ -58,7 +58,7 @@ func TestTextStructsAcrossBackends(t *testing.T) {
 
 func TestGeneratedTextStructs(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTextStructs)
+	gentest.EachMode(t, testGeneratedTextStructs)
 }
 
 func testGeneratedTextStructs(t *testing.T) {

@@ -6,14 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gentest"
-
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedTypedDirectCuts(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedDirectCuts)
+	gentest.EachMode(t, testGeneratedTypedDirectCuts)
 }
 
 func testGeneratedTypedDirectCuts(t *testing.T) {
@@ -25,7 +24,7 @@ func testGeneratedTypedDirectCuts(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
-		code, err := generateCode(t, g, gen.GenOptions{Package: "cuts", Start: "main", Types: true})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "cuts", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}

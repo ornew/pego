@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -9,11 +8,12 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedTypedOperatorsRuleBodies(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedOperatorsRuleBodies)
+	gentest.EachMode(t, testGeneratedTypedOperatorsRuleBodies)
 }
 
 func testGeneratedTypedOperatorsRuleBodies(t *testing.T) {
@@ -33,7 +33,7 @@ func testGeneratedTypedOperatorsRuleBodies(t *testing.T) {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
 		opts := gen.GenOptions{Package: "operatorsRulebody", Start: "main", Types: true, Recognize: true}
-		code, err := generateCode(t, g, opts)
+		code, err := gentest.GenerateCode(t, g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}

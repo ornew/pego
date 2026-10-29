@@ -6,6 +6,7 @@ import (
 
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestTrimComments(t *testing.T) {
@@ -77,7 +78,7 @@ func TestGenerateTrimsComments(t *testing.T) {
 		t.Fatal(err)
 	}
 	opts := gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Types: true, Module: "example.com/p"}
-	files, err := Generate(t, g, opts)
+	files, err := gentest.Generate(t, g, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +87,7 @@ func TestGenerateTrimsComments(t *testing.T) {
 		t.Errorf("generated source keeps route comments:\n%s", src)
 	}
 	opts.KeepComments = true
-	files, err = Generate(t, g, opts)
+	files, err = gentest.Generate(t, g, opts)
 	if err != nil {
 		t.Fatal(err)
 	}

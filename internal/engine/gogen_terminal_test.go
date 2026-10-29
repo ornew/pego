@@ -2,7 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // terminalCases are grammars with value-free terminal expressions that lean typed parsers match
@@ -70,13 +70,13 @@ rule w = [a-z ]+ #atomic
 func TestTerminalProgramGeneration(t *testing.T) {
 	t.Parallel()
 	// Terminal programs are for parsers without work controls.
-	pinOrdinary(t)
+	gentest.PinOrdinary(t)
 	for _, c := range terminalCases() {
 		g, err := parseTest(c.Src)
 		if err != nil {
 			t.Fatal(err)
 		}
-		code, err := generateCode(t, g, gen.GenOptions{Package: "terminal", Start: "main", Types: true, TypedOnly: true})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "terminal", Start: "main", Types: true, TypedOnly: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -84,7 +84,7 @@ func TestTerminalProgramGeneration(t *testing.T) {
 		if got, want := strings.Contains(string(code), "p.SkipTerminal(term"), !strings.Contains(c.Name, "left recursion"); got != want {
 			t.Errorf("%s: terminal program %v, want %v", c.Name, got, want)
 		}
-		reference, err := generateCode(t, g, gen.GenOptions{Package: "terminal", Start: "main", Types: true, TypedOnly: true, DisableTerminalPrograms: true})
+		reference, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "terminal", Start: "main", Types: true, TypedOnly: true, DisableTerminalPrograms: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -95,11 +95,11 @@ func TestTerminalProgramGeneration(t *testing.T) {
 		// work for each expression.
 		for _, opts := range []gen.GenOptions{{WorkControls: true}, {Document: true}} {
 			opts.Package, opts.Module, opts.Start, opts.Types, opts.Runtime = "terminal", "example.com/generated", "main", true, gen.RuntimeImport
-			files, err := Generate(t, g, opts)
+			files, err := gentest.Generate(t, g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if strings.Contains(string(mergeGenerated(files)), "SkipTerminal") {
+			if strings.Contains(string(gentest.MergeGenerated(files)), "SkipTerminal") {
 				t.Errorf("%s: terminal program with %+v", c.Name, opts)
 			}
 		}
@@ -111,7 +111,7 @@ func TestTerminalProgramGeneration(t *testing.T) {
 // engine's, in both position units.
 func TestTerminalProgramDisabledParity(t *testing.T) {
 	t.Parallel()
-	pinOrdinary(t)
+	gentest.PinOrdinary(t)
 	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), terminalCases(), gen.GenOptions{DisableTerminalPrograms: true}, 0)
 }
 
@@ -121,7 +121,7 @@ func TestTerminalProgramDisabledParity(t *testing.T) {
 // prepared once at initialization.
 func TestTerminalProgramEligibility(t *testing.T) {
 	t.Parallel()
-	pinOrdinary(t)
+	gentest.PinOrdinary(t)
 	// 16 leaves: eight two-class alternatives.
 	choice16 := `([aA] [bB] / [cC] [dD] / [eE] [fF] / [gG] [hH] / [iI] [jJ] / [kK] [lL] / [mM] [nN] / [oO] [pP])`
 	choice15 := `([aA] [bB] / [cC] [dD] / [eE] [fF] / [gG] [hH] / [iI] [jJ] / [kK] [lL] / [mM] [nN] / [oO])`
@@ -155,11 +155,11 @@ func TestTerminalProgramEligibility(t *testing.T) {
 		if opts.Document || opts.Stream {
 			opts.TypedOnly = false
 		}
-		files, err := Generate(t, g, opts)
+		files, err := gentest.Generate(t, g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code := string(mergeGenerated(files))
+		code := string(gentest.MergeGenerated(files))
 		if got := strings.Contains(code, "SkipTerminal("); got != c.want {
 			t.Errorf("%s: lowered %v, want %v", c.name, got, c.want)
 		}
@@ -184,7 +184,7 @@ func TestTerminalProgramEligibility(t *testing.T) {
 // and nothing else raises p.Depth or changes p.MaxDepth during a parse.
 func TestDepthChecks(t *testing.T) {
 	t.Parallel()
-	pinOrdinary(t)
+	gentest.PinOrdinary(t)
 	sources := map[string]string{}
 	files, err := filepath.Glob("../../runtime/*.go")
 	if err != nil || len(files) == 0 {
@@ -207,11 +207,11 @@ func TestDepthChecks(t *testing.T) {
 		}
 		for _, opts := range []gen.GenOptions{{TypedOnly: true}, {WorkControls: true}} {
 			opts.Package, opts.Module, opts.Start, opts.Types, opts.Runtime = "terminal", "example.com/generated", "main", true, gen.RuntimeImport
-			files, err := Generate(t, g, opts)
+			files, err := gentest.Generate(t, g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
-			sources[fmt.Sprintf("%s %+v", c.Name, opts.WorkControls)] = string(mergeGenerated(files))
+			sources[fmt.Sprintf("%s %+v", c.Name, opts.WorkControls)] = string(gentest.MergeGenerated(files))
 		}
 	}
 	other := regexp.MustCompile(`\.Depth\s*(\+=|=[^=])|\.MaxDepth\s*(\+\+|--|\+=|-=|=[^=])`)

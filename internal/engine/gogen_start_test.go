@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -38,7 +39,7 @@ func startEntryWant(t *testing.T) string {
 // Generated Go parsers enter only start rules, by name or by default, with the interpreter's errors.
 func TestGeneratedGoStartRules(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedGoStartRules)
+	gentest.EachMode(t, testGeneratedGoStartRules)
 }
 
 func testGeneratedGoStartRules(t *testing.T) {
@@ -126,7 +127,7 @@ func testGeneratedGoStartRules(t *testing.T) {
 `},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			code, err := generateCode(t, g, tc.opts)
+			code, err := gentest.GenerateCode(t, g, tc.opts)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -136,7 +137,7 @@ func testGeneratedGoStartRules(t *testing.T) {
 			}
 			dir := t.TempDir()
 			for name, content := range map[string]string{
-				"go.mod":      testGoMod("gentest"),
+				"go.mod":      gentest.GoMod("gentest"),
 				"p/parser.go": string(code),
 				"main.go":     "package main\n\nimport (\n\t\"fmt\"\n\n\t\"gentest/p\"\n)\n\n" + report + tc.body,
 			} {

@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -11,6 +10,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // The grammars of testdata/routes exercise the routes of typed rules that the Flow IR prints:
@@ -93,7 +93,7 @@ func TestFlowRoutesBuild(t *testing.T) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
-	eachMode(t, func(t *testing.T) {
+	gentest.EachMode(t, func(t *testing.T) {
 		testGeneratedTypesCorpus(t, goBin, routeCases(t), gen.GenOptions{ConvertTypes: true}, 1)
 	})
 }

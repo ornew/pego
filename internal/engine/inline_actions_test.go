@@ -1,11 +1,11 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"regexp"
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/syntax"
 )
 

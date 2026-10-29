@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 const namedASTGrammar = `type T = { Text string }
@@ -47,7 +48,7 @@ rule recoveryElements [](S | error) = xs:(s:structure #recover(skip="?"))+ => ma
 
 func TestGeneratedNamedAST(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedNamedAST)
+	gentest.EachMode(t, testGeneratedNamedAST)
 }
 
 func testGeneratedNamedAST(t *testing.T) {
@@ -69,10 +70,10 @@ func testGeneratedNamedAST(t *testing.T) {
 				t.Fatal(err)
 			}
 			dir := t.TempDir()
-			if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("namedfixture")), 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("namedfixture")), 0644); err != nil {
 				t.Fatal(err)
 			}
-			code := generatePackageIn(t, dir, "namedfixture", "named", g, gen.GenOptions{Start: variant.start, Types: true, ConvertTypes: variant.force, MaxDepth: 32})
+			code := gentest.GeneratePackageIn(t, dir, "namedfixture", "named", g, gen.GenOptions{Start: variant.start, Types: true, ConvertTypes: variant.force, MaxDepth: 32})
 			typesSource, err := os.ReadFile(filepath.Join(dir, "named", "types", "types.go"))
 			if err != nil {
 				t.Fatal(err)
@@ -107,7 +108,7 @@ func testGeneratedNamedAST(t *testing.T) {
 
 func TestGeneratedNamedASTUntypedAndTS(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedNamedASTUntypedAndTS)
+	gentest.EachMode(t, testGeneratedNamedASTUntypedAndTS)
 }
 
 func testGeneratedNamedASTUntypedAndTS(t *testing.T) {
@@ -115,7 +116,7 @@ func testGeneratedNamedASTUntypedAndTS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	plain, err := generateCode(t, g, gen.GenOptions{Package: "plain", Start: "main"})
+	plain, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "plain", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +136,7 @@ func testGeneratedNamedASTUntypedAndTS(t *testing.T) {
 // type as its typed result, and that a node rule declared as an int is still rejected.
 func TestGeneratedNamedASTScalarResults(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedNamedASTScalarResults)
+	gentest.EachMode(t, testGeneratedNamedASTScalarResults)
 }
 
 func testGeneratedNamedASTScalarResults(t *testing.T) {
@@ -148,7 +149,7 @@ func testGeneratedNamedASTScalarResults(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		out, err := generateCode(t, g, gen.GenOptions{Package: "named", Start: "main", Types: true})
+		out, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "named", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%q: %v", tc.source, err)
 		}
@@ -160,7 +161,7 @@ func testGeneratedNamedASTScalarResults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = generateCode(t, g, gen.GenOptions{Package: "named", Start: "main", Types: true}); err == nil || !strings.Contains(err.Error(), "not assignable to int") {
+	if _, err = gentest.GenerateCode(t, g, gen.GenOptions{Package: "named", Start: "main", Types: true}); err == nil || !strings.Contains(err.Error(), "not assignable to int") {
 		t.Fatalf("got %v", err)
 	}
 }
@@ -239,7 +240,7 @@ func TestNamedOwnership(t *testing.T) {
 // with spans relative to the fragment rather than the synthetic document.
 func TestGeneratedNamedASTXMLFragments(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedNamedASTXMLFragments)
+	gentest.EachMode(t, testGeneratedNamedASTXMLFragments)
 }
 
 func testGeneratedNamedASTXMLFragments(t *testing.T) {
@@ -263,7 +264,7 @@ func testGeneratedNamedASTXMLFragments(t *testing.T) {
 	}
 	for _, convert := range []bool{false, true} {
 		t.Run(fmt.Sprint(convert), func(t *testing.T) {
-			code, err := generateCode(t, g, gen.GenOptions{Package: "xml", Start: "main", Types: true, ConvertTypes: convert})
+			code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "xml", Start: "main", Types: true, ConvertTypes: convert})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -271,7 +272,7 @@ func testGeneratedNamedASTXMLFragments(t *testing.T) {
 			if err := os.Mkdir(filepath.Join(dir, "xml"), 0755); err != nil {
 				t.Fatal(err)
 			}
-			for name, data := range map[string]string{"go.mod": testGoMod("xmlfixture"), "xml/parser.go": string(code), "xml_test.go": namedXMLConsumer} {
+			for name, data := range map[string]string{"go.mod": gentest.GoMod("xmlfixture"), "xml/parser.go": string(code), "xml_test.go": namedXMLConsumer} {
 				if err := os.WriteFile(filepath.Join(dir, name), []byte(data), 0644); err != nil {
 					t.Fatal(err)
 				}
@@ -322,7 +323,7 @@ func TestXMLFragments(t *testing.T) {
 
 func TestGeneratedNamedASTSuccessfulNil(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedNamedASTSuccessfulNil)
+	gentest.EachMode(t, testGeneratedNamedASTSuccessfulNil)
 }
 
 func testGeneratedNamedASTSuccessfulNil(t *testing.T) {
@@ -345,7 +346,7 @@ rule nilUnion MaybeU = t:term? => $t
 	for _, start := range []string{"nilAny", "nilNode", "nilUnion"} {
 		for _, conversion := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/%v", start, conversion), func(t *testing.T) {
-				code, err := generateCode(t, g, gen.GenOptions{Package: "named", Start: start, Types: true, ConvertTypes: conversion})
+				code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "named", Start: start, Types: true, ConvertTypes: conversion})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -354,7 +355,7 @@ rule nilUnion MaybeU = t:term? => $t
 					t.Fatal(err)
 				}
 				consumer := strings.ReplaceAll(namedNilConsumer, "START_UNION", fmt.Sprint(start == "nilUnion"))
-				for name, data := range map[string]string{"go.mod": testGoMod("namedfixture"), "named/parser.go": string(code), "nil_test.go": consumer} {
+				for name, data := range map[string]string{"go.mod": gentest.GoMod("namedfixture"), "named/parser.go": string(code), "nil_test.go": consumer} {
 					if err := os.WriteFile(filepath.Join(dir, name), []byte(data), 0644); err != nil {
 						t.Fatal(err)
 					}

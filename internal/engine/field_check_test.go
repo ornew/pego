@@ -10,12 +10,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gentest"
-
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // fieldCheckValueName names a value of fieldCheckValues as messages do, in the terms of the value
@@ -153,7 +152,7 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 // when the grammar is compiled, and a cast is the only check, one ECAST for each cast.
 func TestConstructedFieldChecksAreSelective(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testConstructedFieldChecksAreSelective)
+	gentest.EachMode(t, testConstructedFieldChecksAreSelective)
 }
 
 func testConstructedFieldChecksAreSelective(t *testing.T) {
@@ -208,7 +207,7 @@ rule val _ = "v"
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true, Recognize: true})
+	code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true, Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -261,7 +260,7 @@ func TestCompiledFieldChecksValidation(t *testing.T) {
 
 func TestGeneratedConstructedFieldChecks(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedConstructedFieldChecks)
+	gentest.EachMode(t, testGeneratedConstructedFieldChecks)
 }
 
 func testGeneratedConstructedFieldChecks(t *testing.T) {

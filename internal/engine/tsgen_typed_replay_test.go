@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,6 +15,7 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // Compare public typed values with the existing generated Go Node-conversion
@@ -23,7 +23,7 @@ import (
 // neither backend's JSON shape is being used as the other's value contract.
 func TestGeneratedTSTypedReplay(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTSTypedReplay)
+	gentest.EachMode(t, testGeneratedTSTypedReplay)
 }
 
 func testGeneratedTSTypedReplay(t *testing.T) {
@@ -116,7 +116,7 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, Inputs: []string{"", "a1", "a1b2"}
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", testGoMod("replay"))
+	write("go.mod", gentest.GoMod("replay"))
 	write("package.json", `{"type":"module"}`)
 	var imports, parsers, recognizers, terminalNames, valueNames strings.Builder
 	var inputs [][]string
@@ -127,7 +127,7 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, Inputs: []string{"", "a1", "a1b2"}
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
-		generatePackageIn(t, dir, "replay", fmt.Sprintf("g%d", i), g, gen.GenOptions{Start: "main", Types: true, ConvertTypes: true, Recognize: true})
+		gentest.GeneratePackageIn(t, dir, "replay", fmt.Sprintf("g%d", i), g, gen.GenOptions{Start: "main", Types: true, ConvertTypes: true, Recognize: true})
 		prog, err := Compile(g, compile.Options{})
 		if err != nil {
 			t.Fatal(err)
@@ -142,7 +142,7 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, Inputs: []string{"", "a1", "a1b2"}
 			fmt.Fprintf(&valueNames, "%q:%q,\n", fmt.Sprintf("replay/g%d/types.%s", i, name), name)
 		}
 		fmt.Fprintf(&terminalNames, "%q:true,\n", fmt.Sprintf("replay/g%d/types.Error", i))
-		tsFiles, err := GenerateTS(g, gen.GenOptions{Start: "main", Types: true, Recognize: true})
+		tsFiles, err := gentest.GenerateTS(g, gen.GenOptions{Start: "main", Types: true, Recognize: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}

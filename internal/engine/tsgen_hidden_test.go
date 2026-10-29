@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // A hidden rule, and the rule of an inline action, is not an entry point of a TypeScript parser
@@ -28,7 +29,7 @@ rule _c = "c"`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := GenerateTS(g, gen.GenOptions{Start: "main"})
+	files, err := gentest.GenerateTS(g, gen.GenOptions{Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -9,11 +8,12 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedTypedLocalLayouts(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedLocalLayouts)
+	gentest.EachMode(t, testGeneratedTypedLocalLayouts)
 }
 
 func testGeneratedTypedLocalLayouts(t *testing.T) {
@@ -23,7 +23,7 @@ func testGeneratedTypedLocalLayouts(t *testing.T) {
 			t.Fatal(err)
 		}
 		opts := gen.GenOptions{Package: "localfixture", Start: "main", Types: true, Recognize: true}
-		code, err := generateCode(t, ast, opts)
+		code, err := gentest.GenerateCode(t, ast, opts)
 		if err != nil || !strings.Contains(string(code), "rt.TParse(trules") || !localBodyInlined(code) {
 			t.Fatalf("%s: typed local body unavailable: %v", c.Name, err)
 		}
@@ -48,7 +48,7 @@ func localBodyInlined(code []byte) bool {
 
 func TestGeneratedTypedLocalLayoutControls(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedLocalLayoutControls)
+	gentest.EachMode(t, testGeneratedTypedLocalLayoutControls)
 }
 
 func testGeneratedTypedLocalLayoutControls(t *testing.T) {
@@ -62,7 +62,7 @@ func testGeneratedTypedLocalLayoutControls(t *testing.T) {
 			t.Fatal(err)
 		}
 		opts := gen.GenOptions{Package: "localfixture", Start: "main", Types: true, Recognize: true}
-		if _, err := generateCode(t, ast, opts); err != nil {
+		if _, err := gentest.GenerateCode(t, ast, opts); err != nil {
 			t.Fatal(err)
 		}
 	}

@@ -8,11 +8,12 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedExpectationRecords(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedExpectationRecords)
+	gentest.EachMode(t, testGeneratedExpectationRecords)
 }
 
 func testGeneratedExpectationRecords(t *testing.T) {
@@ -35,7 +36,7 @@ rule main N = ("é") #atomic`)
 	fixture = []byte(strings.Replace(string(fixture), "import (", "import (\n\tpegort \"github.com/ornew/pego/runtime\"", 1))
 	for _, mode := range []string{"plain", "direct", "conversion"} {
 		t.Run(mode, func(t *testing.T) {
-			code, err := generateCode(t, g, gen.GenOptions{Package: "engine", Start: "main", Types: mode != "plain", ConvertTypes: mode == "conversion"})
+			code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "engine", Start: "main", Types: mode != "plain", ConvertTypes: mode == "conversion"})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -70,7 +71,7 @@ func TestTypedExpectationPoolReuse(t *testing.T) {
 `
 			}
 			dir := t.TempDir()
-			for name, data := range map[string][]byte{"parser.go": code, "records_test.go": exportNames(append(append([]byte(nil), fixture...), []byte(qualifyFixtureNames.Replace(extra))...)), "go.mod": []byte(testGoMod("records"))} {
+			for name, data := range map[string][]byte{"parser.go": code, "records_test.go": gentest.ExportNames(append(append([]byte(nil), fixture...), []byte(qualifyFixtureNames.Replace(extra))...)), "go.mod": []byte(gentest.GoMod("records"))} {
 				if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
 					t.Fatal(err)
 				}

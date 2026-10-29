@@ -7,12 +7,13 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // PEGO_TYPED_OPERATORS_RULE_DIR preserves latest-generator controls for paired timing.
 func TestGeneratedTypedOperatorsRuleWorkload(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedOperatorsRuleWorkload)
+	gentest.EachMode(t, testGeneratedTypedOperatorsRuleWorkload)
 }
 
 func testGeneratedTypedOperatorsRuleWorkload(t *testing.T) {
@@ -34,7 +35,7 @@ func testGeneratedTypedOperatorsRuleWorkload(t *testing.T) {
 
 func TestGeneratedTypedOperatorsRuleActionWorkload(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedOperatorsRuleActionWorkload)
+	gentest.EachMode(t, testGeneratedTypedOperatorsRuleActionWorkload)
 }
 
 func testGeneratedTypedOperatorsRuleActionWorkload(t *testing.T) {

@@ -12,6 +12,7 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/tsgen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func runTypedTSFixture(t *testing.T, src, consumer string, opts gen.GenOptions, keep string) {
@@ -39,11 +40,11 @@ func runTypedTSFixtureWithLib(t *testing.T, src, consumer string, opts gen.GenOp
 	if opts.Start == "" {
 		opts.Start = "main"
 	}
-	files, err := GenerateTS(g, opts)
+	files, err := gentest.GenerateTS(g, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
-	again, err := GenerateTS(g, opts)
+	again, err := gentest.GenerateTS(g, opts)
 	if err != nil || !slices.EqualFunc(files, again, func(a, b gen.GeneratedFile) bool { return a.Path == b.Path && string(a.Content) == string(b.Content) }) {
 		t.Fatal("typed generation is not deterministic", err)
 	}
@@ -58,7 +59,7 @@ func runTypedTSFixtureWithLib(t *testing.T, src, consumer string, opts gen.GenOp
 	if keep != "" {
 		reference := opts
 		reference.Types = false
-		plain, err := GenerateTS(g, reference)
+		plain, err := gentest.GenerateTS(g, reference)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -477,7 +478,7 @@ rule let Let = n:([a-z]+) ";" => Let{N: text($n)}`
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := GenerateTS(g, gen.GenOptions{Types: true, Start: "main"})
+	files, err := gentest.GenerateTS(g, gen.GenOptions{Types: true, Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -489,7 +490,7 @@ rule let Let = n:([a-z]+) ";" => Let{N: text($n)}`
 			t.Errorf("parser.ts has an open-node fallback for the join with error")
 		}
 	}
-	goFiles, err := Generate(t, g, gen.GenOptions{Types: true, Start: "main", Module: "example.com/m", Package: "p"})
+	goFiles, err := gentest.Generate(t, g, gen.GenOptions{Types: true, Start: "main", Module: "example.com/m", Package: "p"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -515,7 +516,7 @@ rule any node[_] = x:[0-9]+ ";"`
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := GenerateTS(g, gen.GenOptions{Types: true, Start: "main"})
+	files, err := gentest.GenerateTS(g, gen.GenOptions{Types: true, Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}

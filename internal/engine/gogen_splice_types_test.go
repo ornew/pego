@@ -11,9 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/gentest"
-
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 var quoted = regexp.MustCompile(`"([^"\\]*)"`)
@@ -70,7 +69,7 @@ func spliceWantLeaves(name, input string, tokens []string) []string {
 // element. The typed values of every generated route keep the tokens of the node tree, in order.
 func TestGeneratedRecursiveSpliceTypesKeepTheTree(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedRecursiveSpliceTypesKeepTheTree)
+	gentest.EachMode(t, testGeneratedRecursiveSpliceTypesKeepTheTree)
 }
 
 func testGeneratedRecursiveSpliceTypesKeepTheTree(t *testing.T) {
@@ -79,7 +78,7 @@ func testGeneratedRecursiveSpliceTypesKeepTheTree(t *testing.T) {
 	}
 	cases := gentest.SpliceTypeCases(t)
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("splicefix")), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("splicefix")), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	var imports, table strings.Builder
@@ -88,7 +87,7 @@ func testGeneratedRecursiveSpliceTypesKeepTheTree(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
-		generatePackageIn(t, dir, "splicefix", fmt.Sprintf("g%d", i), g, gen.GenOptions{Start: "main", Types: true})
+		gentest.GeneratePackageIn(t, dir, "splicefix", fmt.Sprintf("g%d", i), g, gen.GenOptions{Start: "main", Types: true})
 		fmt.Fprintf(&imports, "\tg%d \"splicefix/g%[1]d\"\n", i)
 		fmt.Fprintf(&table, "\tfunc(s string) [4]string { n, e1 := g%d.Parse(s); v, e2 := g%[1]d.ParseAST(s); b, _ := json.Marshal(v); return [4]string{fmt.Sprint(n), string(b), fmt.Sprint(e1 != nil), fmt.Sprint(e2 != nil)} },\n", i)
 	}

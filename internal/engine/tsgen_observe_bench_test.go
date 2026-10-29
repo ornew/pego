@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // Export standalone controls and raw measurements outside the repository.
@@ -52,7 +53,7 @@ func TestExportGeneratedTSTraceBenchmarks(t *testing.T) {
 				if enabled {
 					variant = "observed"
 				}
-				files, err := GenerateTS(g, gen.GenOptions{Start: "main", Types: typed, Recognize: true, Observability: enabled})
+				files, err := gentest.GenerateTS(g, gen.GenOptions{Start: "main", Types: typed, Recognize: true, Observability: enabled})
 				if err != nil {
 					t.Fatal(err)
 				}

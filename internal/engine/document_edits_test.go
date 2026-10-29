@@ -2,7 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"math/rand"
 	"runtime"
 	"strings"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 //go:noinline

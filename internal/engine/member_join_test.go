@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 const joinMemberRules = `type A = { F string; X int }
@@ -126,7 +126,7 @@ func typedJoinMemberCases() []gentest.Case {
 
 func TestMemberAccessOnJoinGeneratedGoParity(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testMemberAccessOnJoinGeneratedGoParity)
+	gentest.EachMode(t, testMemberAccessOnJoinGeneratedGoParity)
 }
 
 func testMemberAccessOnJoinGeneratedGoParity(t *testing.T) {

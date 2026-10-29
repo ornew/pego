@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 const aliasExportsGrammar = `type Word = { Text string }
@@ -39,7 +40,7 @@ rule main Alias = t:("a") #atomic => Word{Text: text($t)}`
 // detect missing exports, and aliases must preserve assignment compatibility.
 func TestGeneratedAliasExports(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedAliasExports)
+	gentest.EachMode(t, testGeneratedAliasExports)
 }
 
 func testGeneratedAliasExports(t *testing.T) {
@@ -61,18 +62,18 @@ func testGeneratedAliasExports(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte(testGoMod("aliasexports")))
+	write("go.mod", []byte(gentest.GoMod("aliasexports")))
 	var tests strings.Builder
 	tests.WriteString("package aliasexports\nimport (\"testing\"\n")
 	var bodies strings.Builder
 	for i, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("g%d", i)
 		opts := gen.GenOptions{Package: pkg, Module: "aliasexports/" + pkg, Runtime: gen.RuntimeImport, Start: "main", Types: true, ConvertTypes: convert}
-		files, err := Generate(t, g, opts)
+		files, err := gentest.Generate(t, g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
-		again, err := Generate(t, g, opts)
+		again, err := gentest.Generate(t, g, opts)
 		if err != nil || !slices.EqualFunc(files, again, func(a, b gen.GeneratedFile) bool { return a.Path == b.Path && bytes.Equal(a.Content, b.Content) }) {
 			t.Fatalf("generation is not deterministic: %v", err)
 		}
@@ -140,7 +141,7 @@ func BenchmarkGenerateAliasExports(b *testing.B) {
 			}
 			b.ReportAllocs()
 			for b.Loop() {
-				if _, err := generateCode(b, g, gen.GenOptions{Package: "bench", Start: "main", Types: true}); err != nil {
+				if _, err := gentest.GenerateCode(b, g, gen.GenOptions{Package: "bench", Start: "main", Types: true}); err != nil {
 					b.Fatal(err)
 				}
 			}

@@ -9,11 +9,12 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedTraceOptions(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTraceOptions)
+	gentest.EachMode(t, testGeneratedTraceOptions)
 }
 
 func testGeneratedTraceOptions(t *testing.T) {
@@ -21,7 +22,7 @@ func testGeneratedTraceOptions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	plain, err := generateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main"})
+	plain, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,12 +31,12 @@ func testGeneratedTraceOptions(t *testing.T) {
 			t.Fatalf("ordinary output contains %s", marker)
 		}
 	}
-	if _, err := generateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main", Types: true, Observability: true}); err != nil {
+	if _, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main", Types: true, Observability: true}); err != nil {
 		t.Fatal("typed observability:", err)
 	}
 	for _, opts := range []gen.GenOptions{{Document: true}, {Document: true, Types: true}} {
 		opts.Package, opts.Start, opts.Observability = "fixture", "main", true
-		if _, err := generateCode(t, g, opts); err != nil {
+		if _, err := gentest.GenerateCode(t, g, opts); err != nil {
 			t.Fatal("Document observability:", err)
 		}
 	}
@@ -49,7 +50,7 @@ func testGeneratedTraceOptions(t *testing.T) {
 
 func TestGeneratedNodeTrace(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated standalone tracing consumers")
 	}
@@ -80,7 +81,7 @@ rule token = [a-z]+`, "abc", `if count("token",TraceEnter)!=1 {t.Fatal(events)}`
 rule part = "é"`, "éé", `last:=events[len(events)-1];expectedEnd:=2;if unit==Bytes {expectedEnd=4};if last.End!=expectedEnd {t.Fatal(last)}`},
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("tracefixture")), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("tracefixture")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	for _, fixture := range fixtures {
@@ -88,7 +89,7 @@ rule part = "é"`, "éé", `last:=events[len(events)-1];expectedEnd:=2;if unit==
 		if err != nil {
 			t.Fatal(fixture.name, err)
 		}
-		referenceCode, err := generateCode(t, g, gen.GenOptions{Package: "reference_" + fixture.name, Start: "main", Recognize: true})
+		referenceCode, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "reference_" + fixture.name, Start: "main", Recognize: true})
 		if err != nil {
 			t.Fatal(fixture.name, err)
 		}
@@ -99,7 +100,7 @@ rule part = "é"`, "éé", `last:=events[len(events)-1];expectedEnd:=2;if unit==
 		if err := os.WriteFile(filepath.Join(referenceDir, "parser.go"), referenceCode, 0644); err != nil {
 			t.Fatal(err)
 		}
-		code, err := generateCode(t, g, gen.GenOptions{Package: fixture.name, Start: "main", Recognize: true, Observability: true})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: fixture.name, Start: "main", Recognize: true, Observability: true})
 		if err != nil {
 			t.Fatal(fixture.name, err)
 		}

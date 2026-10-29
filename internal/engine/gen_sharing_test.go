@@ -2,7 +2,6 @@ package engine
 
 import (
 	"bytes"
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +12,7 @@ import (
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
 	"github.com/ornew/pego/internal/gen/tsgen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedSharingIdentity(t *testing.T) {
@@ -53,7 +53,7 @@ func TestGeneratedSharingIdentity(t *testing.T) {
 
 func TestGeneratedSharingDeterministic(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedSharingDeterministic)
+	gentest.EachMode(t, testGeneratedSharingDeterministic)
 }
 
 func testGeneratedSharingDeterministic(t *testing.T) {
@@ -66,7 +66,7 @@ rule a = ("é" / "ab")+ #atomic`)
 		name string
 		fn   func(gen.GenOptions) ([]byte, error)
 	}{
-		{"Go", func(opts gen.GenOptions) ([]byte, error) { return generateCode(t, g, opts) }},
+		{"Go", func(opts gen.GenOptions) ([]byte, error) { return gentest.GenerateCode(t, g, opts) }},
 		{"TypeScript", func(opts gen.GenOptions) ([]byte, error) { return generateTSBundle(g, opts) }},
 	} {
 		t.Run(generate.name, func(t *testing.T) {
@@ -110,7 +110,7 @@ rule a = ("é" / "ab")+ #atomic`)
 
 func TestGeneratedUnsharedParsersMatchEngine(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedUnsharedParsersMatchEngine)
+	gentest.EachMode(t, testGeneratedUnsharedParsersMatchEngine)
 }
 
 func testGeneratedUnsharedParsersMatchEngine(t *testing.T) {
@@ -155,7 +155,7 @@ func BenchmarkGeneratedSharing(b *testing.B) {
 		}
 		for _, lang := range []string{"Go", "TypeScript"} {
 			b.Run(name+"/"+lang, func(b *testing.B) {
-				generate := func() ([]byte, error) { return generateCode(b, g, opts) }
+				generate := func() ([]byte, error) { return gentest.GenerateCode(b, g, opts) }
 				if lang == "TypeScript" {
 					tsOpts := opts
 					tsOpts.Types = false

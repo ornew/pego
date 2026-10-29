@@ -7,13 +7,14 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // PEGO_TYPED_POOL_DIR preserves this generated fixture for standalone heap and
 // throughput measurements. Normal tests use an automatically removed directory.
 func TestGeneratedTypedPoolRetention(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedPoolRetention)
+	gentest.EachMode(t, testGeneratedTypedPoolRetention)
 }
 
 func testGeneratedTypedPoolRetention(t *testing.T) {
@@ -30,7 +31,7 @@ rule repeated A = t:((x:"b") #repeat(2) #cut) => A{Text: text($t)}`)
 	}
 	name := "direct"
 	t.Run(name, func(t *testing.T) {
-		code, err := generateCode(t, g, gen.GenOptions{Package: "poolfixture", Start: "main", Types: true})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "poolfixture", Start: "main", Types: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -44,7 +45,7 @@ rule repeated A = t:((x:"b") #repeat(2) #cut) => A{Text: text($t)}`)
 		}
 		fixture := typedPoolFixture
 		for name, contents := range map[string][]byte{
-			"parser.go": code, "pool_test.go": []byte(fixture), "go.mod": []byte(testGoMod("poolfixture")),
+			"parser.go": code, "pool_test.go": []byte(fixture), "go.mod": []byte(gentest.GoMod("poolfixture")),
 		} {
 			if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
 				t.Fatal(err)
@@ -63,7 +64,7 @@ rule repeated A = t:((x:"b") #repeat(2) #cut) => A{Text: text($t)}`)
 // terminal remains valid while the parser is reset.
 func TestGeneratedUntypedPoolRetention(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedUntypedPoolRetention)
+	gentest.EachMode(t, testGeneratedUntypedPoolRetention)
 }
 
 func testGeneratedUntypedPoolRetention(t *testing.T) {
@@ -77,13 +78,13 @@ rule small A = ("b") #atomic`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(t, g, gen.GenOptions{Package: "main", Start: "main"})
+	code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "main", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
 	for name, contents := range map[string][]byte{
-		"parser.go": code, "pool_test.go": []byte(untypedPoolFixture), "go.mod": []byte(testGoMod("untypedpool")),
+		"parser.go": code, "pool_test.go": []byte(untypedPoolFixture), "go.mod": []byte(gentest.GoMod("untypedpool")),
 	} {
 		if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
 			t.Fatal(err)

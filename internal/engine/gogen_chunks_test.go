@@ -8,13 +8,14 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // PEGO_TYPED_CHUNK_DIR retains both generated paths for paired allocation
 // measurements. Normal test runs remove the fixtures automatically.
 func TestGeneratedTypedChunkOwnership(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedChunkOwnership)
+	gentest.EachMode(t, testGeneratedTypedChunkOwnership)
 }
 
 func testGeneratedTypedChunkOwnership(t *testing.T) {
@@ -35,7 +36,7 @@ rule token Token = t:("é") #atomic => Token{Text: text($t)}`)
 	for _, conv := range []bool{false, true} {
 		for _, variant := range typedAllocatorControls {
 			t.Run(strconv.FormatBool(conv)+"/"+variant.name, func(t *testing.T) {
-				code, err := generateCode(t, g, gen.GenOptions{Package: "chunks", Start: "main", Types: true, ConvertTypes: conv, DisableTypedObjectSlabs: variant.objects, DisableTypedListSlabs: variant.lists, DisableTypedOutputBootstrap: variant.legacy})
+				code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "chunks", Start: "main", Types: true, ConvertTypes: conv, DisableTypedObjectSlabs: variant.objects, DisableTypedListSlabs: variant.lists, DisableTypedOutputBootstrap: variant.legacy})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -52,7 +53,7 @@ rule token Token = t:("é") #atomic => Token{Text: text($t)}`)
 					}
 				}
 				for name, data := range map[string][]byte{
-					"parser.go": code, "chunks_test.go": []byte(typedChunksFixture), "go.mod": []byte(testGoMod("chunks")),
+					"parser.go": code, "chunks_test.go": []byte(typedChunksFixture), "go.mod": []byte(gentest.GoMod("chunks")),
 				} {
 					if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
 						t.Fatal(err)

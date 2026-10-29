@@ -17,6 +17,7 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // goVetAndTest runs go vet and go test in the module in dir.
@@ -83,7 +84,7 @@ func TestGeneratedTypesNamedLikeRuntimeExports(t *testing.T) {
 			t.Run(c.name+" "+mode.String(), func(t *testing.T) {
 				opts := c.opts
 				opts.Module, opts.Package, opts.Start, opts.Runtime = "example.com/names", "names", "main", mode
-				files, err := Generate(t, g, opts)
+				files, err := gentest.Generate(t, g, opts)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -97,7 +98,7 @@ func TestGeneratedTypesNamedLikeRuntimeExports(t *testing.T) {
 					return
 				}
 				dir := t.TempDir()
-				writeGenerated(t, dir, "example.com/names", files)
+				gentest.WriteGenerated(t, dir, "example.com/names", files)
 				if err := os.WriteFile(filepath.Join(dir, "names_test.go"), []byte(`package names
 
 import (
@@ -182,7 +183,7 @@ func TestGeneratedTypeNamesIgnoreTheOutput(t *testing.T) {
 			}
 			o := opts
 			o.Module, o.Package, o.Start, o.Runtime = "example.com/same", "same", "main", gen.RuntimeImport
-			files, err := Generate(t, g, o)
+			files, err := gentest.Generate(t, g, o)
 			if err != nil {
 				t.Fatalf("%s %+v: %v", name, opts, err)
 			}
@@ -223,7 +224,7 @@ func TestGeneratedTypeNamedLikeTypesPackageName(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			files, err := Generate(t, g, gen.GenOptions{Module: "example.com/clash", Package: "clash", Start: "main", Runtime: gen.RuntimeImport, Types: true})
+			files, err := gentest.Generate(t, g, gen.GenOptions{Module: "example.com/clash", Package: "clash", Start: "main", Runtime: gen.RuntimeImport, Types: true})
 			if c.rejected {
 				if err == nil || !strings.Contains(err.Error(), "rename the type") {
 					t.Fatalf("got %v, want an error that asks to rename the type", err)
@@ -237,7 +238,7 @@ func TestGeneratedTypeNamedLikeTypesPackageName(t *testing.T) {
 				return
 			}
 			dir := t.TempDir()
-			writeGenerated(t, dir, "example.com/clash", files)
+			gentest.WriteGenerated(t, dir, "example.com/clash", files)
 			goVetAndTest(t, dir, false)
 		})
 	}
@@ -262,7 +263,7 @@ func TestGeneratedTypesPackageNamesTheRuntimeExplicitly(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			files, err := Generate(t, g, gen.GenOptions{Module: "example.com/explicit/" + name, Package: name, Start: "main", Runtime: gen.RuntimeImport, Types: true, Recognize: true, Document: true, Observability: true})
+			files, err := gentest.Generate(t, g, gen.GenOptions{Module: "example.com/explicit/" + name, Package: name, Start: "main", Runtime: gen.RuntimeImport, Types: true, Recognize: true, Document: true, Observability: true})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -325,7 +326,7 @@ func TestGeneratedTypesNamedLikeEveryRuntimeExport(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			opts := c.opts
 			opts.Module, opts.Package, opts.Start, opts.Runtime = "example.com/every", "every", "main", gen.RuntimeImport
-			files, err := Generate(t, g, opts)
+			files, err := gentest.Generate(t, g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -339,7 +340,7 @@ func TestGeneratedTypesNamedLikeEveryRuntimeExport(t *testing.T) {
 				return
 			}
 			dir := t.TempDir()
-			writeGenerated(t, dir, "example.com/every", files)
+			gentest.WriteGenerated(t, dir, "example.com/every", files)
 			goVetAndTest(t, dir, false)
 		})
 	}
@@ -354,7 +355,7 @@ func TestParserAndAPIDeclareDistinctNames(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := Generate(t, g, gen.GenOptions{Module: "example.com/distinct", Start: "main", Runtime: gen.RuntimeImport, Types: true, Document: true, Observability: true, Stream: true, Recognize: true})
+	files, err := gentest.Generate(t, g, gen.GenOptions{Module: "example.com/distinct", Start: "main", Runtime: gen.RuntimeImport, Types: true, Document: true, Observability: true, Stream: true, Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -402,12 +403,12 @@ func TestGeneratedTypedFieldNamedRange(t *testing.T) {
 	}
 	for _, mode := range []gen.RuntimeMode{gen.RuntimeEmbed, gen.RuntimeImport} {
 		t.Run(mode.String(), func(t *testing.T) {
-			files, err := Generate(t, g, gen.GenOptions{Module: "example.com/rng", Package: "rng", Start: "main", Runtime: mode, Types: true})
+			files, err := gentest.Generate(t, g, gen.GenOptions{Module: "example.com/rng", Package: "rng", Start: "main", Runtime: mode, Types: true})
 			if err != nil {
 				t.Fatal(err)
 			}
 			dir := t.TempDir()
-			writeGenerated(t, dir, "example.com/rng", files)
+			gentest.WriteGenerated(t, dir, "example.com/rng", files)
 			if err := os.WriteFile(filepath.Join(dir, "rng_test.go"), []byte(`package rng
 
 import "testing"
@@ -459,16 +460,16 @@ func TestDefaultPackageName(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Generate(t, g, gen.GenOptions{Module: "example.com/my-parser", Start: "main"}); err == nil || !strings.Contains(err.Error(), "-pkg") {
+	if _, err := gentest.Generate(t, g, gen.GenOptions{Module: "example.com/my-parser", Start: "main"}); err == nil || !strings.Contains(err.Error(), "-pkg") {
 		t.Errorf("a module with a hyphen: got %v, want an error that suggests -pkg", err)
 	}
-	if _, err := Generate(t, g, gen.GenOptions{Module: "example.com/my-parser", Package: "myparser", Start: "main"}); err != nil {
+	if _, err := gentest.Generate(t, g, gen.GenOptions{Module: "example.com/my-parser", Package: "myparser", Start: "main"}); err != nil {
 		t.Errorf("with a package name: %v", err)
 	}
-	if _, err := Generate(t, g, gen.GenOptions{Package: "myparser", Start: "main", Runtime: gen.RuntimeImport}); err != nil {
+	if _, err := gentest.Generate(t, g, gen.GenOptions{Package: "myparser", Start: "main", Runtime: gen.RuntimeImport}); err != nil {
 		t.Errorf("import mode needs no module: %v", err)
 	}
-	if _, err := Generate(t, g, gen.GenOptions{Package: "myparser", Start: "main"}); err == nil {
+	if _, err := gentest.Generate(t, g, gen.GenOptions{Package: "myparser", Start: "main"}); err == nil {
 		t.Error("embed mode without a module was accepted")
 	}
 }
@@ -564,7 +565,7 @@ func TestEmbeddedModeCompilesRichGrammars(t *testing.T) {
 				t.Fatal(err)
 			}
 			module := "example.com/rich/" + name
-			files, err := Generate(t, g, gen.GenOptions{Module: module, Package: name, Start: "main", Runtime: gen.RuntimeEmbed, Types: true, Recognize: true, Document: true, Observability: true})
+			files, err := gentest.Generate(t, g, gen.GenOptions{Module: module, Package: name, Start: "main", Runtime: gen.RuntimeEmbed, Types: true, Recognize: true, Document: true, Observability: true})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -636,12 +637,12 @@ func TestGeneratedRichGrammarsWithTypesNamedLikeRuntimeExports(t *testing.T) {
 				t.Fatal(err)
 			}
 			module := "example.com/richnames/" + name
-			files, err := Generate(t, g, gen.GenOptions{Module: module, Package: name, Start: "main", Runtime: gen.RuntimeImport, Types: true, Recognize: true, Document: true, Observability: true})
+			files, err := gentest.Generate(t, g, gen.GenOptions{Module: module, Package: name, Start: "main", Runtime: gen.RuntimeImport, Types: true, Recognize: true, Document: true, Observability: true})
 			if err != nil {
 				t.Fatal(err)
 			}
 			dir := t.TempDir()
-			writeGenerated(t, dir, module, files)
+			gentest.WriteGenerated(t, dir, module, files)
 			goVetAndTest(t, dir, false)
 		})
 	}

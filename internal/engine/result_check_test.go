@@ -2,7 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -12,6 +11,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/syntax"
 )
@@ -220,7 +220,7 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 // generated parsers keep.
 func TestRuleResultChecksAreSelective(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testRuleResultChecksAreSelective)
+	gentest.EachMode(t, testRuleResultChecksAreSelective)
 }
 
 func testRuleResultChecksAreSelective(t *testing.T) {
@@ -293,7 +293,7 @@ rule ops Int | O = #operators {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main"})
+	code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "p", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -399,7 +399,7 @@ rule e Num = #operators {
 
 func TestGeneratedRuleResultChecks(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedRuleResultChecks)
+	gentest.EachMode(t, testGeneratedRuleResultChecks)
 }
 
 func testGeneratedRuleResultChecks(t *testing.T) {

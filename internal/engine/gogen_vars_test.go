@@ -7,6 +7,7 @@ import (
 
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestVarLinesExcept(t *testing.T) {
@@ -39,7 +40,7 @@ func TestVarLinesExcept(t *testing.T) {
 // A generated rule method declares the variables of one type together.
 func TestGeneratedMethodsGroupVariables(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedMethodsGroupVariables)
+	gentest.EachMode(t, testGeneratedMethodsGroupVariables)
 }
 
 func testGeneratedMethodsGroupVariables(t *testing.T) {
@@ -47,7 +48,7 @@ func testGeneratedMethodsGroupVariables(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
+	code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}

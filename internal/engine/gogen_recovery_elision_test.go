@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // A grammar without #recover never appends to p.Recovered, so its generated parser neither saves
@@ -14,7 +15,7 @@ import (
 // TestGeneratedConstructedFieldChecks, which fail when the rollback is dropped under recovery.
 func TestGeneratedRecoveredRollbackOnlyWithRecovery(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedRecoveredRollbackOnlyWithRecovery)
+	gentest.EachMode(t, testGeneratedRecoveredRollbackOnlyWithRecovery)
 }
 
 func testGeneratedRecoveredRollbackOnlyWithRecovery(t *testing.T) {
@@ -38,7 +39,7 @@ rule item = ([a-z]+ #atomic) #recover(skip=[^;]+ ";") / [0-9]+ #atomic
 				{Package: "p", Start: "main", Types: true, TypedOnly: true},
 				{Package: "p", Start: "main", Recognize: true},
 			} {
-				code, err := generateCode(t, g, opts)
+				code, err := gentest.GenerateCode(t, g, opts)
 				if err != nil {
 					t.Fatalf("%+v: %v", opts, err)
 				}

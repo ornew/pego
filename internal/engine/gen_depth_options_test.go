@@ -3,7 +3,6 @@ package engine
 import (
 	"bytes"
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,11 +12,12 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedMaxDepthValidation(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedMaxDepthValidation)
+	gentest.EachMode(t, testGeneratedMaxDepthValidation)
 }
 
 func testGeneratedMaxDepthValidation(t *testing.T) {
@@ -35,7 +35,7 @@ func testGeneratedMaxDepthValidation(t *testing.T) {
 		}
 	}
 	for _, ts := range []bool{false, true} {
-		generate := func(g *grammar.Grammar, opts gen.GenOptions) ([]byte, error) { return generateCode(t, g, opts) }
+		generate := func(g *grammar.Grammar, opts gen.GenOptions) ([]byte, error) { return gentest.GenerateCode(t, g, opts) }
 		if ts {
 			generate = generateTSBundle
 		}
@@ -75,7 +75,7 @@ func testGeneratedMaxDepthValidation(t *testing.T) {
 // dispatch and typed direct/conversion routes, with small predictable ceilings.
 func TestGeneratedDepthOptions(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedDepthOptions)
+	gentest.EachMode(t, testGeneratedDepthOptions)
 }
 
 func testGeneratedDepthOptions(t *testing.T) {
@@ -121,7 +121,7 @@ rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: te
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte(testGoMod("depthoptions")))
+	write("go.mod", []byte(gentest.GoMod("depthoptions")))
 	for i, c := range fixtures {
 		g, err := parseTest(c.Src)
 		if err != nil {
@@ -130,7 +130,7 @@ rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: te
 		prog := mustCompile(t, c.Src)
 		for _, conv := range []bool{false, true} {
 			pkg := fmt.Sprintf("g%d_%v", i, conv)
-			code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, MaxDepth: 4, ConvertTypes: conv})
+			code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, MaxDepth: 4, ConvertTypes: conv})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -233,18 +233,18 @@ rule main WithUnit = t:("é") #atomic => ParseOption{Text: text($t)}`
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("collisions")), 0644)
+	os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("collisions")), 0644)
 	for _, conv := range []bool{false, true} {
 		name := "direct"
 		if conv {
 			name = "convert"
 		}
 		opts := gen.GenOptions{Package: name, Module: "collisions/" + name, Runtime: gen.RuntimeImport, Start: "main", Types: true, ConvertTypes: conv}
-		files, err := Generate(t, g, opts)
+		files, err := gentest.Generate(t, g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
-		again, err := Generate(t, g, opts)
+		again, err := gentest.Generate(t, g, opts)
 		if err != nil || !slices.EqualFunc(files, again, func(a, b gen.GeneratedFile) bool { return a.Path == b.Path && bytes.Equal(a.Content, b.Content) }) {
 			t.Fatal("unstable generation")
 		}

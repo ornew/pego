@@ -3,13 +3,13 @@ package engine
 import (
 	"bytes"
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 

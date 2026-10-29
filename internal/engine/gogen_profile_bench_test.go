@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // Export standalone controls; keep generated fixtures and results outside Git.
@@ -28,7 +29,7 @@ func TestExportGeneratedGoProfileBenchmarks(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte(testGoMod("profilebench")))
+	write("go.mod", []byte(gentest.GoMod("profilebench")))
 	sizes := map[string]int{}
 	for _, f := range []struct{ name, path, input string }{
 		{"json", "parsers/json/json.pego", "[" + strings.TrimSuffix(strings.Repeat(`{"name":"éclair","n":123,"ok":true},`, 64), ",") + "]"},
@@ -53,7 +54,7 @@ func TestExportGeneratedGoProfileBenchmarks(t *testing.T) {
 				if observed {
 					variant = "observed"
 				}
-				code, err := generateCode(t, g, gen.GenOptions{Package: variant, Start: "main", Types: typed, Recognize: true, Observability: observed})
+				code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: variant, Start: "main", Types: typed, Recognize: true, Observability: observed})
 				if err != nil {
 					t.Fatal(err)
 				}

@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"hash"
 	"io"
 	"os"
@@ -19,6 +18,7 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // streamCases are the grammars with a #stream repetition of the generated-code tests, and the checked-in
@@ -65,7 +65,7 @@ var streamForms = []struct {
 // the Node-table tests check, and the tests that run the parsers compare the behavior with the engine.
 func TestFlowStreamBodyIsBatchBody(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testFlowStreamBodyIsBatchBody)
+	gentest.EachMode(t, testFlowStreamBodyIsBatchBody)
 }
 
 func testFlowStreamBodyIsBatchBody(t *testing.T) {
@@ -73,7 +73,7 @@ func testFlowStreamBodyIsBatchBody(t *testing.T) {
 	var flowed []string
 	var cur string
 	gh := &gogen.Hooks{}
-	setGenHooks(t, gh)
+	gentest.SetGenHooks(t, gh)
 	gh.StreamRoute = func(table string, r *compile.Rule) { flowN++; flowed = append(flowed, cur) }
 	for _, form := range streamForms {
 		for _, c := range streamCases(t) {
@@ -84,7 +84,7 @@ func testFlowStreamBodyIsBatchBody(t *testing.T) {
 				}
 				cur = c.Name + "/" + form.name
 				before := flowN
-				code, err := generateCode(t, g, gen.GenOptions{Package: "x", Start: "main", Stream: true, SourceInfo: true, WorkControls: form.controls, Observability: form.observe})
+				code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "x", Start: "main", Stream: true, SourceInfo: true, WorkControls: form.controls, Observability: form.observe})
 				if err != nil {
 					if strings.Contains(err.Error(), "needs a #stream repetition") {
 						t.Skip("the #stream of the grammar is not at the top of the start rule")
@@ -178,7 +178,7 @@ func bodyClosure(t *testing.T, src string, ref *regexp.Regexp) string {
 // that the test cannot pass without exercising it.
 func TestGeneratedFlowStreamMatchesEngine(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedFlowStreamMatchesEngine)
+	gentest.EachMode(t, testGeneratedFlowStreamMatchesEngine)
 }
 
 func testGeneratedFlowStreamMatchesEngine(t *testing.T) {
@@ -192,7 +192,7 @@ func testGeneratedFlowStreamMatchesEngine(t *testing.T) {
 	cases := streamCases(t)
 	taken := 0
 	gh := &gogen.Hooks{}
-	setGenHooks(t, gh)
+	gentest.SetGenHooks(t, gh)
 	gh.StreamRoute = func(table string, r *compile.Rule) { taken++ }
 	for _, form := range streamForms {
 		t.Run(form.name, func(t *testing.T) {
@@ -299,7 +299,7 @@ func runStreamProbes(t *testing.T, cases []gentest.Case, form struct {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", testGoMod("streamprobe"))
+	write("go.mod", gentest.GoMod("streamprobe"))
 	var inputs [][]string
 	for _, c := range cases {
 		g, err := parseTest(c.Src)
@@ -308,7 +308,7 @@ func runStreamProbes(t *testing.T, cases []gentest.Case, form struct {
 		}
 		i := len(kept)
 		o := gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: "main", Stream: true, SourceInfo: true, WorkControls: form.controls, Observability: form.observe}
-		code, err := generateCode(t, g, o)
+		code, err := gentest.GenerateCode(t, g, o)
 		if err != nil {
 			if strings.Contains(err.Error(), "needs a #stream repetition") {
 				continue
@@ -444,7 +444,7 @@ func streamEntries(t *testing.T, form string, lines []string, kept []gentest.Cas
 // observability. Every report also has events and elements (streamReportDiffs).
 func TestFlowStreamObservationsMatchGolden(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testFlowStreamObservationsMatchGolden)
+	gentest.EachMode(t, testFlowStreamObservationsMatchGolden)
 }
 
 func testFlowStreamObservationsMatchGolden(t *testing.T) {
@@ -472,7 +472,7 @@ func TestFlowStreamObservationMutants(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	pinOrdinary(t)
+	gentest.PinOrdinary(t)
 	cases := streamCases(t)
 	form := streamForms[2]
 	d, _ := runStreamProbes(t, cases, form, nil)
@@ -577,12 +577,12 @@ func streamPlacement(src string) error {
 // original.
 func TestFlowStreamPlacementMutants(t *testing.T) {
 	t.Parallel()
-	eachMode(t, func(t *testing.T) {
+	gentest.EachMode(t, func(t *testing.T) {
 		g, err := parseTest(streamCorpus[0].Src)
 		if err != nil {
 			t.Fatal(err)
 		}
-		code, err := generateCode(t, g, gen.GenOptions{Package: "x", Start: "main", Stream: true, SourceInfo: true})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "x", Start: "main", Stream: true, SourceInfo: true})
 		if err != nil {
 			t.Fatal(err)
 		}

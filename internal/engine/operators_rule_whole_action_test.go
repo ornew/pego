@@ -7,11 +7,12 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestOperatorsRuleWholeActionRejection(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testOperatorsRuleWholeActionRejection)
+	gentest.EachMode(t, testOperatorsRuleWholeActionRejection)
 }
 
 func testOperatorsRuleWholeActionRejection(t *testing.T) {
@@ -40,11 +41,11 @@ func testOperatorsRuleWholeActionRejection(t *testing.T) {
 						"recognizer compile": func() error { _, err := Compile(input.g, compile.Options{Recognize: true}); return err },
 						"saved AST rebuild":  func() error { _, err := build(input.g, compile.Options{}, []compile.RuleFlags{{}}); return err },
 						"Go generator": func() error {
-							_, err := generateCode(t, input.g, gen.GenOptions{Start: "main", Package: "p"})
+							_, err := gentest.GenerateCode(t, input.g, gen.GenOptions{Start: "main", Package: "p"})
 							return err
 						},
 						"typed Go generator": func() error {
-							_, err := generateCode(t, input.g, gen.GenOptions{Start: "main", Package: "p", Types: true})
+							_, err := gentest.GenerateCode(t, input.g, gen.GenOptions{Start: "main", Package: "p", Types: true})
 							return err
 						},
 						"TS generator": func() error { _, err := generateTSBundle(input.g, gen.GenOptions{Start: "main"}); return err },
@@ -86,7 +87,7 @@ func testOperatorsRuleWholeActionRejection(t *testing.T) {
 
 func TestOperatorsRuleExplicitDefaultAction(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testOperatorsRuleExplicitDefaultAction)
+	gentest.EachMode(t, testOperatorsRuleExplicitDefaultAction)
 }
 
 func testOperatorsRuleExplicitDefaultAction(t *testing.T) {
@@ -130,9 +131,12 @@ func testOperatorsRuleExplicitDefaultAction(t *testing.T) {
 			}
 		}
 		for name, run := range map[string]func() error{
-			"Go generator": func() error { _, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "p"}); return err },
+			"Go generator": func() error {
+				_, err := gentest.GenerateCode(t, g, gen.GenOptions{Start: "main", Package: "p"})
+				return err
+			},
 			"typed Go generator": func() error {
-				_, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "p", Types: true})
+				_, err := gentest.GenerateCode(t, g, gen.GenOptions{Start: "main", Package: "p", Types: true})
 				return err
 			},
 			"TS generator":       func() error { _, err := generateTSBundle(g, gen.GenOptions{Start: "main"}); return err },

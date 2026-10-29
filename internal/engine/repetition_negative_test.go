@@ -15,6 +15,7 @@ import (
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func negativeMaxima() []int {
@@ -263,7 +264,7 @@ func TestNegativeMaximumWithWideMinimum(t *testing.T) {
 // loops. Check their accepted hand-built AST contract beside bytecode lowering.
 func TestGeneratedNegativeMaximum(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedNegativeMaximum)
+	gentest.EachMode(t, testGeneratedNegativeMaximum)
 }
 
 func testGeneratedNegativeMaximum(t *testing.T) {
@@ -290,7 +291,7 @@ func testGeneratedNegativeMaximum(t *testing.T) {
 	want := strings.Join(expected, "\n") + "\n"
 	for _, typed := range []bool{false, true} {
 		t.Run(fmt.Sprintf("Go typed=%v", typed), func(t *testing.T) {
-			code, err := generateCode(t, g, gen.GenOptions{Package: "main", Start: "main", Types: typed})
+			code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "main", Start: "main", Types: typed})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -312,7 +313,7 @@ func main() {
  }
 }`
 			dir := t.TempDir()
-			for name, content := range map[string]string{"go.mod": testGoMod("negative"), "parser.go": string(code), "main.go": harness} {
+			for name, content := range map[string]string{"go.mod": gentest.GoMod("negative"), "parser.go": string(code), "main.go": harness} {
 				if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
 					t.Fatal(err)
 				}

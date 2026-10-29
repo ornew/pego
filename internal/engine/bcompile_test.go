@@ -1,11 +1,11 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestModuleDisassembly(t *testing.T) {

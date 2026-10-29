@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -9,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 const anonJoinGrammar = `type Leaf = { Text string }
@@ -26,7 +26,7 @@ func goTypesOf(t *testing.T, src string) (string, error) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := Generate(t, g, gen.GenOptions{Start: "main", Types: true, Module: "example.com/m", Package: "p"})
+	files, err := gentest.Generate(t, g, gen.GenOptions{Start: "main", Types: true, Module: "example.com/m", Package: "p"})
 	if err != nil {
 		return "", err
 	}
@@ -123,7 +123,7 @@ func TestGeneratedTypedAnonymousJoinTypeScript(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := GenerateTS(g, gen.GenOptions{Types: true, Start: "main"})
+	files, err := gentest.GenerateTS(g, gen.GenOptions{Types: true, Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +149,7 @@ func TestGeneratedTypedAnonymousJoinTypeScript(t *testing.T) {
 // The typed parsers of anonymous joins compile and convert like the Node route.
 func TestGeneratedTypedAnonymousJoinValues(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedAnonymousJoinValues)
+	gentest.EachMode(t, testGeneratedTypedAnonymousJoinValues)
 }
 
 func testGeneratedTypedAnonymousJoinValues(t *testing.T) {
@@ -233,7 +233,7 @@ rule alt Block = t:[a-z]+ ";" => Block{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := GenerateTS(g, gen.GenOptions{Types: true, Start: "main"})
+	files, err := gentest.GenerateTS(g, gen.GenOptions{Types: true, Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -262,7 +262,7 @@ rule a A = t:[a-z] => A{X: text($t)}`)
 // The compiled parsers of joins of one node and error convert like the Node route.
 func TestGeneratedTypedAnonymousJoinOneNodeAndErrorValues(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedAnonymousJoinOneNodeAndErrorValues)
+	gentest.EachMode(t, testGeneratedTypedAnonymousJoinOneNodeAndErrorValues)
 }
 
 func testGeneratedTypedAnonymousJoinOneNodeAndErrorValues(t *testing.T) {

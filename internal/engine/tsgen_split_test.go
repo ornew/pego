@@ -10,6 +10,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/tsgen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // tsStrictFlags are the strictest checks there are, so that generated code compiles in any project;
@@ -116,7 +117,7 @@ process.stdout.write("ok\n");
 		}
 	}
 	t.Run("embed", func(t *testing.T) {
-		files, err := GenerateTS(g, gen.GenOptions{Start: "main", Types: true, Recognize: true})
+		files, err := gentest.GenerateTS(g, gen.GenOptions{Start: "main", Types: true, Recognize: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -133,7 +134,7 @@ process.stdout.write("ok\n");
 	})
 	t.Run("import", func(t *testing.T) {
 		// The runtime lives in a directory of its own, as a project that shares one runtime keeps it.
-		files, err := GenerateTS(g, gen.GenOptions{Start: "main", Types: true, Runtime: gen.RuntimeImport, RuntimeModule: "./shared/rt.ts"})
+		files, err := gentest.GenerateTS(g, gen.GenOptions{Start: "main", Types: true, Runtime: gen.RuntimeImport, RuntimeModule: "./shared/rt.ts"})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -159,7 +160,7 @@ process.stdout.write("ok\n");
 			g    *grammar.Grammar
 			opts gen.GenOptions
 		}{{g, gen.GenOptions{Start: "main", Types: true}}, {g2, gen.GenOptions{Start: "main", Observability: true}}} {
-			files, err := GenerateTS(gr.g, gr.opts)
+			files, err := gentest.GenerateTS(gr.g, gr.opts)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -187,7 +188,7 @@ func TestGeneratedTSReservedTypes(t *testing.T) {
 			t.Errorf("type %s: %v", name, err)
 			continue
 		}
-		_, err = GenerateTS(g, gen.GenOptions{Start: "main", Types: true})
+		_, err = gentest.GenerateTS(g, gen.GenOptions{Start: "main", Types: true})
 		if err == nil || !strings.Contains(err.Error(), name) || !strings.Contains(err.Error(), "reserved") {
 			t.Errorf("type %s: error %v", name, err)
 		}
@@ -223,7 +224,7 @@ func runTSSplit(t *testing.T, src string, opts gen.GenOptions, consumer string) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := GenerateTS(g, opts)
+	files, err := gentest.GenerateTS(g, opts)
 	if err != nil {
 		t.Fatal(err)
 	}

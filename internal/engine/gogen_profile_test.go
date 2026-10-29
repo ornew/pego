@@ -9,11 +9,12 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedGoProfile(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds standalone generated profiling consumers")
 	}
@@ -28,7 +29,7 @@ func TestGeneratedGoProfile(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte(testGoMod("profilefixture")))
+	write("go.mod", []byte(gentest.GoMod("profilefixture")))
 	for _, f := range []struct{ name, grammar, input, checks string }{
 		{"plain", "type N = { Text string }\nrule main N = t:(part part) #atomic => N{Text: text($t)}\nrule part = \"a\"", "aa", `if s.Entered!=3||s.Calls!=3||s.Evals!=3||s.Skipped!=0{t.Fatal(s)};for _,r:=range s.Rules{if r.Rule=="part"&&(r.Calls!=2||r.Consumed!=2){t.Fatal(r)}}`},
 		{"dispatch", "rule main = first / second\nrule first = \"a\"\nrule second = \"b\"", "b", `if s.Skipped!=1||s.Entered!=2{t.Fatal(s)};for _,r:=range s.Rules{if r.Rule=="first"&&(r.Calls!=0||r.Skipped!=1||len(r.SkipReasons)!=1||r.SkipReasons[0].Reason!="first-character"){t.Fatal(r)}}`},
@@ -46,7 +47,7 @@ func TestGeneratedGoProfile(t *testing.T) {
 		for _, route := range []string{"node", "direct", "convert"} {
 			pkg := f.name + "_" + route
 			opts := gen.GenOptions{Package: pkg, Start: "main", Recognize: true, Observability: true, Types: route != "node", ConvertTypes: route == "convert"}
-			generatePackageIn(t, dir, "profilefixture", pkg, g, opts)
+			gentest.GeneratePackageIn(t, dir, "profilefixture", pkg, g, opts)
 			typed := ""
 			if opts.Types {
 				typed = `operations=append(operations,func(opts ...ParseOption)(any,error){return ParseAST(INPUT,opts...)},func(opts ...ParseOption)(any,error){return ParseRuleAST("main",INPUT,opts...)})`

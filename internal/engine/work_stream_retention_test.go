@@ -5,13 +5,13 @@ package engine
 import (
 	"context"
 	"errors"
-	"github.com/ornew/pego/internal/gentest"
 	"runtime"
 	"strings"
 	"testing"
 	"weak"
 
 	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )

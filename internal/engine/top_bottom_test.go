@@ -3,7 +3,6 @@ package engine
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/ornew/pego/internal/gentest"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -13,6 +12,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 const topBottomRules = "type Num = { Text string }\nrule n Num = t:([0-9]+) #atomic => Num{Text: text($t)}\nrule w = [a-z]+\n"
@@ -304,7 +304,7 @@ func TestTopBottomSchema(t *testing.T) {
 
 func TestTopBottomGeneratedGoParity(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testTopBottomGeneratedGoParity)
+	gentest.EachMode(t, testTopBottomGeneratedGoParity)
 }
 
 func testTopBottomGeneratedGoParity(t *testing.T) {

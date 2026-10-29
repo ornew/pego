@@ -2,20 +2,20 @@ package engine
 
 import (
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // TestGeneratedActionTracking inspects state after real generated rules have
 // run, including direct typed constructors that bypass tctx.finish.
 func TestGeneratedActionTracking(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedActionTracking)
+	gentest.EachMode(t, testGeneratedActionTracking)
 }
 
 func testGeneratedActionTracking(t *testing.T) {
@@ -36,7 +36,7 @@ rule main = "a" => Outer{Inner: Inner{N: 1}}`, "a"},
 			if err != nil {
 				t.Fatal(err)
 			}
-			code, err := generateCode(t, g, gen.GenOptions{Package: "main", Start: "main", Types: true})
+			code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "main", Start: "main", Types: true})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -65,7 +65,7 @@ func main() {
     }
 }`, c.input)
 			for name, contents := range map[string][]byte{
-				"parser.go": code, "main.go": []byte(main), "go.mod": []byte(testGoMod("lifecycle")),
+				"parser.go": code, "main.go": []byte(main), "go.mod": []byte(gentest.GoMod("lifecycle")),
 			} {
 				if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
 					t.Fatal(err)
@@ -142,7 +142,7 @@ for (const unit of [CodePoints, Bytes]) {
 // return restores the caller's environment and would conceal retained history.
 func TestGeneratedEnvironmentBindings(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedEnvironmentBindings)
+	gentest.EachMode(t, testGeneratedEnvironmentBindings)
 }
 
 func testGeneratedEnvironmentBindings(t *testing.T) {
@@ -153,7 +153,7 @@ func testGeneratedEnvironmentBindings(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(t, g, gen.GenOptions{Package: "main", Start: "main"})
+	code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "main", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +179,7 @@ func main() {
   if len(names) != 3 { panic("lost binding") }
  }
 }`
-	for name, contents := range map[string][]byte{"parser.go": code, "main.go": []byte(main), "go.mod": []byte(testGoMod("lifecycle"))} {
+	for name, contents := range map[string][]byte{"parser.go": code, "main.go": []byte(main), "go.mod": []byte(gentest.GoMod("lifecycle"))} {
 		if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
 			t.Fatal(err)
 		}

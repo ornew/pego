@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // A typed-only parser has the typed entry points and none of the Node family. These tests check what it
@@ -76,11 +77,11 @@ func TestGeneratedTypedOnly(t *testing.T) {
 	}
 	generate := func(opts gen.GenOptions) (string, error) {
 		opts.Package, opts.Module, opts.Start, opts.Runtime = "p", "example.com/p", "main", gen.RuntimeImport
-		files, err := Generate(t, g, opts)
+		files, err := gentest.Generate(t, g, opts)
 		if err != nil {
 			return "", err
 		}
-		return string(mergeGenerated(files)), nil
+		return string(gentest.MergeGenerated(files)), nil
 	}
 	only, err := generate(gen.GenOptions{Types: true, TypedOnly: true})
 	if err != nil {
@@ -122,7 +123,7 @@ func TestGeneratedTypedOnly(t *testing.T) {
 			t.Errorf("%s: error %v, want %q", tc.name, err, tc.want)
 		}
 	}
-	if _, err := GenerateTS(g, gen.GenOptions{Start: "main", TypedOnly: true}); err == nil || err.Error() != "typed-only generation is only supported for Go" {
+	if _, err := gentest.GenerateTS(g, gen.GenOptions{Start: "main", TypedOnly: true}); err == nil || err.Error() != "typed-only generation is only supported for Go" {
 		t.Errorf("TypeScript: error %v", err)
 	}
 
@@ -130,7 +131,7 @@ func TestGeneratedTypedOnly(t *testing.T) {
 		t.Skip("builds generated code")
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("ordtest")), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("ordtest")), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	ordinaryOnlyPackage(t, dir, "full", ordinaryOnlyTyped, gen.GenOptions{Types: true, Recognize: true, Document: true, WorkControls: true}, ordinaryOnlyTypedEntries, ordinaryOnlyTypedInputs)
@@ -159,7 +160,7 @@ var ordinaryOnlyConvertedInputs = []string{"abc!", "!", "abc", "", "é!", "ab\xf
 
 func TestGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedOnlyConvertedEntries)
+	gentest.EachMode(t, testGeneratedTypedOnlyConvertedEntries)
 }
 
 func testGeneratedTypedOnlyConvertedEntries(t *testing.T) {
@@ -171,11 +172,11 @@ func testGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := Generate(t, g, gen.GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: gen.RuntimeImport, Types: true, TypedOnly: true})
+	files, err := gentest.Generate(t, g, gen.GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: gen.RuntimeImport, Types: true, TypedOnly: true})
 	if err != nil {
 		t.Fatalf("a typed-only parser whose entries convert Nodes: %v", err)
 	}
-	src := string(mergeGenerated(files))
+	src := string(gentest.MergeGenerated(files))
 	if !strings.Contains(src, "RunParseConverted(") {
 		t.Fatal("the entries do not convert a Node: the grammar tests nothing")
 	}
@@ -186,7 +187,7 @@ func testGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("ordtest")), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("ordtest")), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	ordinaryOnlyPackage(t, dir, "full", ordinaryOnlyConverted, gen.GenOptions{Types: true, Recognize: true}, program, ordinaryOnlyConvertedInputs)
@@ -205,7 +206,7 @@ func testGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 
 	// Negative control: without the Node rule functions the converting entries have no Node rule
 	// bodies to run, which fails generation in every form.
-	_, err = Generate(t, g, gen.GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: gen.RuntimeImport, Types: true, TypedOnly: true, DisableKeepNodes: true})
+	_, err = gentest.Generate(t, g, gen.GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: gen.RuntimeImport, Types: true, TypedOnly: true, DisableKeepNodes: true})
 	if err == nil || !strings.Contains(err.Error(), "internal error: a typed entry point converts Nodes") {
 		t.Errorf("a typed-only parser without the Node rule functions: error %v, want an internal error", err)
 	}
@@ -231,7 +232,7 @@ func TestGeneratedTypedOnlyHiddenRules(t *testing.T) {
 	// The entries start at main and at the hidden rule _t.
 	program := strings.NewReplacer(`"sum"`, `"main"`, `"a"`, `"_t"`).Replace(ordinaryOnlyTypedEntries)
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("ordtest")), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("ordtest")), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	ordinaryOnlyPackage(t, dir, "full", ordinaryOnlyHidden, gen.GenOptions{Types: true, Recognize: true}, program, ordinaryOnlyHiddenInputs)

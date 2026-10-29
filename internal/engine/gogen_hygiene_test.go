@@ -1,18 +1,18 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedGoActionContextAndExpressions(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedGoActionContextAndExpressions)
+	gentest.EachMode(t, testGeneratedGoActionContextAndExpressions)
 }
 
 func testGeneratedGoActionContextAndExpressions(t *testing.T) {
@@ -23,7 +23,7 @@ rule leaf = "a"
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(t, grammar, gen.GenOptions{Package: "hygiene", Start: "main", Types: true})
+	code, err := gentest.GenerateCode(t, grammar, gen.GenOptions{Package: "hygiene", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func TestGeneratedRuntimeWritesStringPartsWithoutConcatenation(t *testing.T) {
 
 func TestGeneratedDirectActionErrorContextAndParserReuse(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedDirectActionErrorContextAndParserReuse)
+	gentest.EachMode(t, testGeneratedDirectActionErrorContextAndParserReuse)
 }
 
 func testGeneratedDirectActionErrorContextAndParserReuse(t *testing.T) {

@@ -8,11 +8,12 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGenerateDocumentDiagnosticOwnership(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGenerateDocumentDiagnosticOwnership)
+	gentest.EachMode(t, testGenerateDocumentDiagnosticOwnership)
 }
 
 func testGenerateDocumentDiagnosticOwnership(t *testing.T) {
@@ -35,14 +36,14 @@ rule token Token = t:("a;" @error(message="want token")) #atomic => Token{Text: 
 			t.Fatal(err)
 		}
 	}
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("documentdiagnostics")), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("documentdiagnostics")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	for _, variant := range []struct {
 		name  string
 		types bool
 	}{{"node", false}, {"conversion", true}} {
-		code, err := generateCode(t, g, gen.GenOptions{Package: variant.name, Start: "main", Document: true, Types: variant.types})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: variant.name, Start: "main", Document: true, Types: variant.types})
 		if err != nil {
 			t.Fatal(err)
 		}

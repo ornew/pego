@@ -8,13 +8,14 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // PEGO_TYPED_LR_DIR preserves both same-generator routes for prebuilt paired
 // benchmarks. Normal tests remove the fixture modules automatically.
 func TestGeneratedTypedLRWorkload(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedLRWorkload)
+	gentest.EachMode(t, testGeneratedTypedLRWorkload)
 }
 
 func testGeneratedTypedLRWorkload(t *testing.T) {
@@ -34,7 +35,7 @@ func testGeneratedTypedLRWorkload(t *testing.T) {
 
 func TestGeneratedTypedLRActionWorkload(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedLRActionWorkload)
+	gentest.EachMode(t, testGeneratedTypedLRActionWorkload)
 }
 
 func testGeneratedTypedLRActionWorkload(t *testing.T) {
@@ -71,7 +72,7 @@ func testGeneratedTypedBodyWorkload(t *testing.T, src, fixture, dir, marker stri
 			opts = reference
 		}
 		opts.Package, opts.Start, opts.Types, opts.Recognize = "lrfixture", "main", true, true
-		code, err := generateCode(t, g, opts)
+		code, err := gentest.GenerateCode(t, g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -80,7 +81,7 @@ func testGeneratedTypedBodyWorkload(t *testing.T, src, fixture, dir, marker stri
 			t.Fatal(err)
 		}
 		for name, contents := range map[string][]byte{
-			"parser.go": code, "lr_test.go": []byte(fixture), "go.mod": []byte(testGoMod("lrfixture")),
+			"parser.go": code, "lr_test.go": []byte(fixture), "go.mod": []byte(gentest.GoMod("lrfixture")),
 		} {
 			if err := os.WriteFile(filepath.Join(path, name), contents, 0o644); err != nil {
 				t.Fatal(err)

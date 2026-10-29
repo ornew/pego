@@ -8,23 +8,24 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGenerateDocumentNode(t *testing.T) {
 	t.Parallel()
-	needsWorkControls(t)
+	gentest.NeedsWorkControls(t)
 	g, err := parseTest("rule main = item+ $$\nrule item = \"a\"")
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main", Document: true})
+	code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main", Document: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(code), "func NewDocument(") || !strings.Contains(string(code), "type Document = rt.Document") {
 		t.Fatal("Document public API missing from requested source")
 	}
-	ordinary, err := generateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main"})
+	ordinary, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +34,7 @@ func TestGenerateDocumentNode(t *testing.T) {
 	}
 	dir := t.TempDir()
 	for name, source := range map[string]string{
-		"go.mod":          testGoMod("fixture"),
+		"go.mod":          gentest.GoMod("fixture"),
 		"parser.go":       string(code),
 		"batch/parser.go": string(ordinary),
 		"parser_test.go": `package fixture
@@ -152,7 +153,7 @@ func TestGeneratedDocumentCloneCyclicAndSharedSlices(t *testing.T) {
 
 func TestGenerateDocumentCombinations(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGenerateDocumentCombinations)
+	gentest.EachMode(t, testGenerateDocumentCombinations)
 }
 
 func testGenerateDocumentCombinations(t *testing.T) {
@@ -160,7 +161,7 @@ func testGenerateDocumentCombinations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	typed, err := generateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main", Document: true, Types: true})
+	typed, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main", Document: true, Types: true})
 	if err != nil || !strings.Contains(string(typed), "func (d *Document) ParseAST(") {
 		t.Fatalf("typed Document generation: %v", err)
 	}

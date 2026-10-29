@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // A generated parser has one form of its rule bodies. With work controls its bodies charge steps
@@ -17,7 +18,7 @@ import (
 // an Ordinary form (NewNodeOrdinary, NextOrdinary, ...), which belongs to the form without both.
 func TestGeneratedRuleBodiesHaveOneForm(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedRuleBodiesHaveOneForm)
+	gentest.EachMode(t, testGeneratedRuleBodiesHaveOneForm)
 }
 
 const oneFormGrammar = `type Text = { Text string }
@@ -93,11 +94,11 @@ func testGeneratedRuleBodiesHaveOneForm(t *testing.T) {
 	for _, types := range []bool{false, true} {
 		for _, document := range []bool{false, true} {
 			opts := gen.GenOptions{Package: "ordinaryfixture", Types: types, Document: document, Recognize: true, Start: "main"}
-			src, err := generateCode(t, g, opts)
+			src, err := gentest.GenerateCode(t, g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
-			problems, bodies, charging := oneFormProblems(t, src, fixtureWorkControls(t), document)
+			problems, bodies, charging := oneFormProblems(t, src, gentest.FixtureWorkControls(t), document)
 			for _, p := range problems {
 				t.Errorf("types=%v document=%v: %s", types, document, p)
 			}
@@ -119,11 +120,11 @@ func TestGeneratedRuleBodiesHaveOneFormNegativeControls(t *testing.T) {
 		t.Fatal(err)
 	}
 	gen := func(controls, document bool) []byte {
-		files, err := Generate(t, g, gen.GenOptions{Package: "ordinaryfixture", Module: "example.com/generated", Runtime: gen.RuntimeImport, Types: true, Document: document, Recognize: true, Start: "main", WorkControls: controls})
+		files, err := gentest.Generate(t, g, gen.GenOptions{Package: "ordinaryfixture", Module: "example.com/generated", Runtime: gen.RuntimeImport, Types: true, Document: document, Recognize: true, Start: "main", WorkControls: controls})
 		if err != nil {
 			t.Fatal(err)
 		}
-		return mergeGenerated(files)
+		return gentest.MergeGenerated(files)
 	}
 	plain, controlled, doc := gen(false, false), gen(true, false), gen(false, true)
 	for _, c := range []struct {

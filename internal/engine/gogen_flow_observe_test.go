@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"hash"
 	"io"
 	"os"
@@ -17,6 +16,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // The Node tables of an observability build are printed from Flow IR. What the build observes (the events of
@@ -119,14 +119,14 @@ func runObserveProbes(t *testing.T, cases []gentest.Case, start string, detail [
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", testGoMod("obsprobe"))
+	write("go.mod", gentest.GoMod("obsprobe"))
 	var inputs [][]string
 	for i, c := range cases {
 		g, err := parseTest(c.Src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
-		code, err := generateCode(t, g, gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true, Observability: true})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true, Observability: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
@@ -192,7 +192,7 @@ func observationDigests(t *testing.T, group string, cases []gentest.Case, lines 
 	}
 	out := map[string]string{}
 	for i, c := range cases {
-		out[fmt.Sprintf("%s/%s/%s", group, fixtureForm(t), c.Name)] = fmt.Sprintf("events=%d %x", events[i], hashes[i].Sum(nil)[:12])
+		out[fmt.Sprintf("%s/%s/%s", group, gentest.FixtureForm(t), c.Name)] = fmt.Sprintf("events=%d %x", events[i], hashes[i].Sum(nil)[:12])
 	}
 	return out
 }
@@ -426,7 +426,7 @@ func checkObservations(t *testing.T, group string, cases []gentest.Case, start s
 	if checked == 0 || events == 0 {
 		t.Fatalf("%d reports checked with %d events", checked, events)
 	}
-	observationGoldenFile.check(t, group+"/"+fixtureForm(t)+"/", observationDigests(t, group, cases, lines))
+	observationGoldenFile.check(t, group+"/"+gentest.FixtureForm(t)+"/", observationDigests(t, group, cases, lines))
 }
 
 const observationGoldenHeader = "# Digests of the observations (trace and profile) of the generated Node parsers, by group, mode and case\n" +
@@ -440,7 +440,7 @@ func TestFlowNodeObservationsMatchEngine(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	eachMode(t, func(t *testing.T) {
+	gentest.EachMode(t, func(t *testing.T) {
 		checkObservations(t, "corpus", append(gentest.GenCorpus(t), observeShapes...), "main", nil)
 	})
 }
@@ -453,7 +453,7 @@ func TestFlowNodeObservationsOnGrammars(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds the large parsers")
 	}
-	eachMode(t, func(t *testing.T) {
+	gentest.EachMode(t, func(t *testing.T) {
 		cases := gentest.GrammarCases(t)
 		detail := make([]int, len(cases))
 		for i := range cases {
@@ -534,7 +534,7 @@ func TestFlowNodeObservationMutants(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	pinOrdinary(t)
+	gentest.PinOrdinary(t)
 	cases := append(gentest.GenCorpus(t), observeShapes...)
 	golden := readGolden(t, observationGolden)
 	changed := func(lines []string) int {

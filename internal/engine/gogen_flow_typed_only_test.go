@@ -2,7 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // A typed-only parser has no Node family unless a typed entry point converts the Node result of a rule; then
@@ -35,7 +35,7 @@ func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
 		t.Run(form.name, func(t *testing.T) {
 			taken, framed, operators, generated := 0, 0, 0, 0
 			gh := &gogen.Hooks{}
-			setGenHooks(t, gh)
+			gentest.SetGenHooks(t, gh)
 			gh.LeanRoute = func(table string, r *compile.Rule) {
 				if table == "rules" {
 					taken++
@@ -48,7 +48,7 @@ func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
 				if err != nil {
 					continue
 				}
-				_, err = Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport,
+				_, err = gentest.Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport,
 					Types: true, TypedOnly: true, KeepNodes: true, WorkControls: form.controls})
 				if err != nil {
 					t.Fatalf("%s: %v", c.Name, err)
@@ -178,7 +178,7 @@ func TestFlowTypedOnlyEntriesMatchFull(t *testing.T) {
 			writeGoMod(t, dir)
 			taken := 0
 			gh := &gogen.Hooks{}
-			setGenHooks(t, gh)
+			gentest.SetGenHooks(t, gh)
 			gh.LeanRoute = func(table string, r *compile.Rule) {
 				if table == "rules" {
 					taken++
@@ -238,7 +238,7 @@ func TestFlowTypedOnlyEntriesMatchFull(t *testing.T) {
 
 func writeGoMod(t *testing.T, dir string) {
 	t.Helper()
-	if err := writeFile(filepath.Join(dir, "go.mod"), testGoMod("ordtest")); err != nil {
+	if err := writeFile(filepath.Join(dir, "go.mod"), gentest.GoMod("ordtest")); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // TestGeneratedTraceOptionsNeedObservability checks that a parser generated without observability
@@ -31,10 +32,10 @@ func TestGeneratedTraceOptionsNeedObservability(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte(testGoMod("traceopts")))
+	write("go.mod", []byte(gentest.GoMod("traceopts")))
 	for _, observe := range []bool{false, true} {
 		pkg := map[bool]string{false: "plain", true: "observed"}[observe]
-		files, err := Generate(t, g, gen.GenOptions{Module: "traceopts/" + pkg, Package: pkg, Start: "main", Runtime: gen.RuntimeImport, Types: true, Document: true, Recognize: true, Observability: observe})
+		files, err := gentest.Generate(t, g, gen.GenOptions{Module: "traceopts/" + pkg, Package: pkg, Start: "main", Runtime: gen.RuntimeImport, Types: true, Document: true, Recognize: true, Observability: observe})
 		if err != nil {
 			t.Fatal(err)
 		}

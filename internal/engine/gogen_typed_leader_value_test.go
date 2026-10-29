@@ -1,13 +1,13 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // typedLeaderValueCases are left-recursion leaders without an action of their own, whose values
@@ -49,7 +49,7 @@ rule p string = (l:p "." x:[a-z] => $l + text($x)) / (x:[a-z] => text($x))`, Inp
 // Node conversion. TestGeneratedTypes covers the cases again within its corpus.
 func TestGeneratedTypedLeaderValues(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testGeneratedTypedLeaderValues)
+	gentest.EachMode(t, testGeneratedTypedLeaderValues)
 }
 
 func testGeneratedTypedLeaderValues(t *testing.T) {

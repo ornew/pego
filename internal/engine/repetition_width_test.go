@@ -3,7 +3,6 @@ package engine
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"hash/crc32"
 	"strconv"
 	"strings"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 

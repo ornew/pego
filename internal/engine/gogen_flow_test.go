@@ -3,7 +3,6 @@ package engine
 import (
 	"bytes"
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // The tests here check the typed rules printed from Flow IR (internal/gen/gogen/flow.go), generating every corpus
@@ -223,7 +223,7 @@ func TestFlowTypedCorpus(t *testing.T) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
-	eachMode(t, func(t *testing.T) {
+	gentest.EachMode(t, func(t *testing.T) {
 		testGeneratedTypesCorpus(t, goBin, generatedTypesCases(t), gen.GenOptions{ConvertTypes: true})
 	})
 }
@@ -233,7 +233,7 @@ func TestFlowTypedCorpus(t *testing.T) {
 // the parsers without observability and against the engine's errors.
 func TestFlowTypedObservable(t *testing.T) {
 	t.Parallel()
-	eachMode(t, testFlowTypedObservable)
+	gentest.EachMode(t, testFlowTypedObservable)
 }
 
 func testFlowTypedObservable(t *testing.T) {

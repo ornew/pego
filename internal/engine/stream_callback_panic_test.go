@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"io"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 

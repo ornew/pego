@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"github.com/ornew/pego/internal/gentest"
 	"hash"
 	"io"
 	"os"
@@ -16,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/ir/flow"
 )
 
@@ -215,7 +215,7 @@ func runDocumentProbes(t *testing.T, cases []documentCase, start string, mutate 
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", testGoMod("docprobe"))
+	write("go.mod", gentest.GoMod("docprobe"))
 	var inputs [][]documentInput
 	var imports, entries strings.Builder
 	for i, c := range cases {
@@ -223,7 +223,7 @@ func runDocumentProbes(t *testing.T, cases []documentCase, start string, mutate 
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
-		code, err := generateCode(t, g, gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true, Document: true})
+		code, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true, Document: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
@@ -289,7 +289,7 @@ func documentDigests(t testing.TB, group string, cases []documentCase, lines []s
 	}
 	out := map[string]string{}
 	for i, c := range cases {
-		out[fmt.Sprintf("%s/%s/%s", group, fixtureForm(t), c.Name)] = fmt.Sprintf("%x", hashes[i].Sum(nil)[:12])
+		out[fmt.Sprintf("%s/%s/%s", group, gentest.FixtureForm(t), c.Name)] = fmt.Sprintf("%x", hashes[i].Sum(nil)[:12])
 	}
 	return out
 }
@@ -320,7 +320,7 @@ func checkDocumentReports(t *testing.T, group string, cases []documentCase, line
 	if reused == 0 {
 		t.Fatal("no parse after an edit reuses a result")
 	}
-	documentGoldenFile.check(t, group+"/"+fixtureForm(t)+"/", documentDigests(t, group, cases, lines))
+	documentGoldenFile.check(t, group+"/"+gentest.FixtureForm(t)+"/", documentDigests(t, group, cases, lines))
 }
 
 // documentShapes examine the input beyond the end of the result of their rule, which a Document must record to
@@ -354,7 +354,7 @@ func TestFlowNodeDocumentsReuseAndMatchScratch(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	eachMode(t, func(t *testing.T) {
+	gentest.EachMode(t, func(t *testing.T) {
 		cases := documentCorpus(t)
 		checkDocumentReports(t, "corpus", cases, runDocumentProbes(t, cases, "main", nil))
 	})
@@ -367,7 +367,7 @@ func TestFlowNodeDocumentsOnGrammars(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds the large parsers")
 	}
-	eachMode(t, func(t *testing.T) {
+	gentest.EachMode(t, func(t *testing.T) {
 		var cases []documentCase
 		for _, c := range gentest.GrammarCases(t) {
 			cases = append(cases, documentCase{c, 60})
@@ -388,7 +388,7 @@ func TestFlowNodeDocumentMutants(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	pinOrdinary(t)
+	gentest.PinOrdinary(t)
 	var cases []documentCase
 	for _, c := range documentShapes {
 		cases = append(cases, documentCase{c, 300})

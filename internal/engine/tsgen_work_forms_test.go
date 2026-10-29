@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 const tsWorkFormsGrammar = `type Item = { Name string }
@@ -22,7 +23,7 @@ func TestGeneratedTSWorkControlForms(t *testing.T) {
 		t.Fatal(err)
 	}
 	generate := func(controls bool) string {
-		files, err := GenerateTS(g, gen.GenOptions{Start: "main", Types: true, Recognize: true, WorkControls: controls})
+		files, err := gentest.GenerateTS(g, gen.GenOptions{Start: "main", Types: true, Recognize: true, WorkControls: controls})
 		if err != nil {
 			t.Fatal(err)
 		}

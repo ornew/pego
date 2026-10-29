@@ -1,11 +1,11 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/gentest"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // Captures made in a hidden rule are not visible to its caller, and those of the caller are not
