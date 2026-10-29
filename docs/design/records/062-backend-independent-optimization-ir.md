@@ -83,7 +83,7 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   keeps frames out of the frame trail; `Verify` rejects the typed value ops in it and the Node ops in a typed
   function. The Flow form has no `_ = x` line for a variable it reads nowhere. The recognizer's table writes its
   actions for the values of an unprojected repetition (`generator.projections` is empty there), so the Core IR of
-  the recognizer is built without projections (`buildCoreProjecting`): a captured repetition of a recognizer rule
+  the recognizer is built without projections (`build.CoreProjecting`): a captured repetition of a recognizer rule
   builds its elements with their captures, and the rules with captures print like any other rule.
 - A body with a cut prints as a framed body, with the lowering of the typed table: a flag per backtracking point (a
   choice alternative, an optional, a repetition element), which the function reads from the runtime's cut flag on

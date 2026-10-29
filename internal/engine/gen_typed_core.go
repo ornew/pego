@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ornew/pego/grammar"
+	irbuild "github.com/ornew/pego/internal/ir/build"
 	"github.com/ornew/pego/internal/ir/core"
 )
 
@@ -14,7 +15,7 @@ import (
 // With a decisions hook (tests), it calls the hook with the module after it is built and after
 // each pass.
 func (g *generator) typedCore(origin map[core.Node]grammar.Expr) (*core.Module, error) {
-	m, err := buildCoreFrom(g.prog, origin)
+	m, err := irbuild.CoreFrom(g.prog, origin)
 	if err != nil {
 		return nil, err
 	}

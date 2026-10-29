@@ -12,6 +12,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	irbuild "github.com/ornew/pego/internal/ir/build"
 	"github.com/ornew/pego/internal/ir/core"
 )
 
@@ -116,7 +117,7 @@ func coreTypedCase(name, mode string, gen *generator, breaks func(c *coreGenCase
 		}
 		switch pass {
 		case "guards":
-			repeats = followRepeats(m, c.origin)
+			repeats = irbuild.FollowRepeats(m, c.origin)
 		case "scans":
 			for _, f := range repeats {
 				f()

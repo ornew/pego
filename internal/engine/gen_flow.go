@@ -207,7 +207,7 @@ func flowFrameExprOK(r *compile.Rule) bool {
 // Core IR gathers the values of a projected repetition (Project), and the actions that read it expect
 // that shape. The Node table writes its actions with the projections of the rule (generator.projections),
 // which are the ones Core IR makes, so a Core-lowered body agrees with them. The recognizer's table writes
-// its actions without projections, so its Core IR is built without them (buildCoreProjecting) and agrees with
+// its actions without projections, so its Core IR is built without them (irbuild.CoreProjecting) and agrees with
 // them as well; either table's body is eligible when its action reads only captures of the frame.
 func (g *generator) flowNodeFrameOK(r *compile.Rule) (*core.Rule, bool) {
 	if g.flow == nil || g.table == "trules" || !flowFrameExprOK(r) {

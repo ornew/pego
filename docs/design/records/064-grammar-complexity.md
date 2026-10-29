@@ -236,7 +236,7 @@ hint with a witness, not a proof that a slow input exists.
   - the memo policy per rule (`Memo`, `Transient`, `Leader`, `Vars`: [Policy](../../../spec/core-ir/modules.md#policy),
     `internal/ir/core/core.go:104-109`).
 
-  Core IR is built for generated parsers (`internal/engine/core_build.go`). The classifier runs as a Core analysis that
+  Core IR is built for generated parsers (`internal/ir/build/build.go`). The classifier runs as a Core analysis that
   invalidates nothing. Its verdicts are attributes of rules, which the verifier ignores. Running on Core rather than
   on the AST means it judges the module that is actually executed, after rewrites such as `Scans`.
 - `pego lint` reports the results through checks next to `long-lookahead` (`internal/lint/checks.go:1186`) and

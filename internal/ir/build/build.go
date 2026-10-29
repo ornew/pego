@@ -1,17 +1,6 @@
-package engine
-
-import (
-	"fmt"
-
-	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/ir/core"
-	"github.com/ornew/pego/internal/value"
-)
-
-// Building Core IR (internal/ir/core) from a compiled program.
+// Package build builds Core IR (internal/ir/core) from a compiled program.
 //
-// buildCore makes the module of the program variant whose rule bodies build values where the
+// Core makes the module of the program variant whose rule bodies build values where the
 // compiled rules do: a rule body builds its value unless the rule is lean (its action reads only
 // captures, or it is a value-free twin); a capture, and the sequence, choice, optional and
 // repetition around a built expression, build theirs; text (#atomic), drop (-), negative
@@ -24,29 +13,39 @@ import (
 // every capture written in it, including unreachable ones, in the order they are first met
 // (coreLayout).
 //
-// A type-checked program gives the module its checked types (valueRecord): those of the rules'
+// A type-checked program gives the module its checked types (compile.ValueRecord): those of the rules'
 // values, of the capture slots, of every term and of the named types and variables. The
-// expectations of the module begin with the fixed ones of the runtime (fixedDescs), so that Any
+// expectations of the module begin with the fixed ones of the runtime (compile.FixedDescs), so that Any
 // and the anchors, which name none, record those of the same index. A #stream repetition at the
 // top of a start rule is a Stream; elsewhere it streams nothing and is built as its repetition.
+package build
 
-// buildCore builds the Core IR of the program: its rules and then its value-free twins, each at
-// the position of its ID. Shapes are those of the value model (internal/compile/value_shape.go); Analyze has not
-// run.
-func buildCore(prog *compile.Program) (*core.Module, error) {
-	return buildCoreFrom(prog, nil)
+import (
+	"fmt"
+
+	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/ir/core"
+	"github.com/ornew/pego/internal/value"
+)
+
+// Core builds the Core IR of the program: its rules and then its value-free twins, each at
+// the position of its ID. Shapes are those of the value model (internal/compile/value_shape.go);
+// Analyze has not run.
+func Core(prog *compile.Program) (*core.Module, error) {
+	return CoreFrom(prog, nil)
 }
 
-// buildCoreFrom is buildCore that also records, in origin if it is not nil, the expression each
+// CoreFrom is Core that also records, in origin if it is not nil, the expression each
 // node is built from (the innermost one, for nodes built from a chain of expressions).
-func buildCoreFrom(prog *compile.Program, origin map[core.Node]grammar.Expr) (*core.Module, error) {
-	return buildCoreProjecting(prog, origin, true)
+func CoreFrom(prog *compile.Program, origin map[core.Node]grammar.Expr) (*core.Module, error) {
+	return CoreProjecting(prog, origin, true)
 }
 
-// buildCoreProjecting is buildCoreFrom; if project is false, no repetition gathers the values of a capture
-// (ruleProjections is ignored), the shape of the values the recognizer's table writes its actions for
-// (generator.projections).
-func buildCoreProjecting(prog *compile.Program, origin map[core.Node]grammar.Expr, project bool) (*core.Module, error) {
+// CoreProjecting is CoreFrom; if project is false, no repetition gathers the values of a
+// capture (compile.RuleProjections is ignored), the shape of the values the recognizer's table
+// writes its actions for (the Go generator's projections).
+func CoreProjecting(prog *compile.Program, origin map[core.Node]grammar.Expr, project bool) (*core.Module, error) {
 	all := append(append([]*compile.Rule(nil), prog.RuleList...), prog.Twins...)
 	b := &coreBuilder{prog: prog, m: &core.Module{Rules: make([]*core.Rule, len(all))}, origin: origin,
 		exps: map[string]core.ExpID{}, classes: map[string]*core.Class{}, starts: map[*compile.Rule]bool{}}
@@ -116,8 +115,8 @@ type coreBuilder struct {
 	streamTop map[grammar.Expr]bool
 }
 
-// callLevel returns the minimum binding level of a call of the rule r (core.Call.Level).
-func callLevel(e *grammar.Ref, r *compile.Rule) (int, error) {
+// CallLevel returns the minimum binding level of a call of the rule r (core.Call.Level).
+func CallLevel(e *grammar.Ref, r *compile.Rule) (int, error) {
 	if e.Level == "" {
 		return 0, nil
 	}
@@ -422,7 +421,7 @@ func (b *coreBuilder) node(e grammar.Expr, s *coreScope, build bool) (core.Node,
 		if r == nil {
 			return nil, fmt.Errorf("undefined rule %s", e.Name)
 		}
-		level, err := callLevel(e, r)
+		level, err := CallLevel(e, r)
 		if err != nil {
 			return nil, err
 		}
@@ -795,9 +794,9 @@ func (b *coreBuilder) termNode(t grammar.Term, s *coreScope, env map[string]*cor
 	return nil, fmt.Errorf("unsupported term %T", t)
 }
 
-// followRepeats returns functions that, once the scan pass has run, give the scan that took the
+// FollowRepeats returns functions that, once the scan pass has run, give the scan that took the
 // place of each repetition with an origin the origin of the repetition.
-func followRepeats(m *core.Module, origin map[core.Node]grammar.Expr) []func() {
+func FollowRepeats(m *core.Module, origin map[core.Node]grammar.Expr) []func() {
 	var out []func()
 	visit := func(at func() core.Node) {
 		if rep, ok := at().(*core.Repeat); ok {
@@ -811,14 +810,14 @@ func followRepeats(m *core.Module, origin map[core.Node]grammar.Expr) []func() {
 		}
 	}
 	for _, r := range m.Rules {
-		eachSlot(r, visit)
+		EachSlot(r, visit)
 	}
 	return out
 }
 
-// eachSlot calls f with an accessor of every place of the rule's body where a node is: the body,
+// EachSlot calls f with an accessor of every place of the rule's body where a node is: the body,
 // the bodies of Operators Rule lines and the children of nodes.
-func eachSlot(r *core.Rule, f func(at func() core.Node)) {
+func EachSlot(r *core.Rule, f func(at func() core.Node)) {
 	var walk func(at func() core.Node)
 	walk = func(at func() core.Node) {
 		f(at)

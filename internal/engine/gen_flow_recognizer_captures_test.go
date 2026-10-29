@@ -12,7 +12,7 @@ import (
 // The rules of the recognizer table (and the lean rules of the Node table) that have captures print from Flow IR,
 // and so do the framed rules with a repetition that gathers the values of a capture. The recognizer's table
 // writes its actions for the values of the unprojected repetition (generator.projections gives none), so its
-// Core IR is built without projections (buildCoreProjecting): a Flow-printed recognizer body leaves in its frame
+// Core IR is built without projections (irbuild.CoreProjecting): a Flow-printed recognizer body leaves in its frame
 // the captures the actions read. The recognizers run as the engine's (TestGeneratedFlowRecognizerParity and
 // TestFlowNodeRecognizersOnGrammars), and the tests here assert the route.
 

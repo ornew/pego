@@ -7,6 +7,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	irbuild "github.com/ornew/pego/internal/ir/build"
 	"github.com/ornew/pego/internal/ir/core"
 )
 
@@ -20,7 +21,7 @@ func coreRecognizeCase(name, mode string, g *generator) (*coreGenCase, error) {
 	}
 	c := &coreGenCase{name: name, mode: mode, table: "recRules", golden: recognizerGolden, gen: g, origin: map[core.Node]grammar.Expr{}}
 	c.rules = append(append([]*compile.Rule(nil), rec.RuleList...), rec.Twins...)
-	m, err := buildCoreFrom(rec, c.origin)
+	m, err := irbuild.CoreFrom(rec, c.origin)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +36,7 @@ func coreRecognizeCase(name, mode string, g *generator) (*coreGenCase, error) {
 	check("terms")
 	core.Guards(m, g.ordinary && !g.disableGuardedClasses)
 	check("guards")
-	repeats := followRepeats(m, c.origin)
+	repeats := irbuild.FollowRepeats(m, c.origin)
 	core.Scans(m)
 	for _, f := range repeats {
 		f()

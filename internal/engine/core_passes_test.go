@@ -3,6 +3,7 @@ package engine
 import (
 	"testing"
 
+	irbuild "github.com/ornew/pego/internal/ir/build"
 	"github.com/ornew/pego/internal/ir/core"
 )
 
@@ -66,7 +67,7 @@ func firstNode(m *core.Module, f func(core.Node) bool) (core.Node, func(core.Nod
 	for _, r := range m.Rules {
 		var found core.Node
 		var set func(core.Node)
-		eachSlot(r, func(at func() core.Node) {
+		irbuild.EachSlot(r, func(at func() core.Node) {
 			if found == nil && f(at()) {
 				found = at()
 				set = placeSetter(r, at)
@@ -93,7 +94,7 @@ func placeSetter(r *core.Rule, at func() core.Node) func(core.Node) {
 			r.Body = n
 			return
 		}
-		eachSlot(r, func(p func() core.Node) {
+		irbuild.EachSlot(r, func(p func() core.Node) {
 			switch x := p().(type) {
 			case *core.Seq:
 				for i := range x.Items {

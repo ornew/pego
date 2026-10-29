@@ -6,6 +6,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	irbuild "github.com/ornew/pego/internal/ir/build"
 	"github.com/ornew/pego/internal/ir/core"
 	"github.com/ornew/pego/internal/ir/flow"
 )
@@ -38,22 +39,22 @@ func recFlowEligible(r *compile.Rule) bool {
 // startRecFlow builds the Core IR of the program rec (the recognizer, or the program of the Node table),
 // with the passes of the untyped tables (no terminal programs and no class runs), for printing its
 // eligible rules from Flow IR. It runs the passes of typedCore that the Node runtime's rules use:
-// rewrites, Analyze, Guards, scans and the repeats, which followRepeats keeps in step with the scans.
+// rewrites, Analyze, Guards, scans and the repeats, which irbuild.FollowRepeats keeps in step with the scans.
 // It omits Terminals and ClassRuns, which typedCore runs only for lean typed rules (leanTyped): the Node recognizer writes
 // its terminals and classes as inline tests.
 func (g *generator) startRecFlow(rec *compile.Program) error {
 	origin := map[core.Node]grammar.Expr{}
-	m, err := buildCoreProjecting(rec, origin, g.table != "recRules")
+	m, err := irbuild.CoreProjecting(rec, origin, g.table != "recRules")
 	if err != nil {
 		return err
 	}
 	core.RewriteTerms(m, core.TermOptions{TextDispatch: !g.disableLiteralTextDispatch, FieldCompare: !g.boxedComparisons})
-	// Guards read the First sets that Analyze computes, as core_build does: without this pass the
+	// Guards read the First sets that Analyze computes, as typedCore does: without this pass the
 	// alternatives of a choice get no first-character guard, and the Flow form calls the rules of
 	// the later alternatives at every position (duckdb: block_comment, 84k calls against none).
 	core.Analyze(m)
 	core.Guards(m, g.ordinary && !g.disableGuardedClasses)
-	repeats := followRepeats(m, origin)
+	repeats := irbuild.FollowRepeats(m, origin)
 	core.Scans(m)
 	for _, f := range repeats {
 		f()

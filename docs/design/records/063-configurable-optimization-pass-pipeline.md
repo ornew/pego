@@ -23,7 +23,7 @@ The default pipeline reproduces today's generated output byte for byte. Users se
 
 The passes run as follows today, and this is the inventory the proposal starts from.
 
-- The sequence is written twice. `generator.typedCore` (`internal/engine/core_build.go`) runs `Terminals`,
+- The sequence is written twice. `generator.typedCore` (`internal/engine/gen_typed_core.go`) runs `Terminals`,
   `RewriteTerms`, `Analyze`, `Guards`, `Scans`, `ClassRuns`, `Analyze`, `Verify`. `generator.startRecFlow`
   (`internal/engine/gen_flow_recognizer.go`) runs the same minus `Terminals` and `ClassRuns`. The order matters and is
   nowhere declared: `Guards` reads what the first `Analyze` computes, and a missing `Analyze` leaves choices unguarded
@@ -111,7 +111,7 @@ fails.
 Applied to the typed table with every optimization enabled, the manager performs the same calls as `typedCore` today:
 `attributes` is stale after `terminals` and is recomputed before `guards`; it is stale again after `scans` and
 `class-runs` and is recomputed once before the final verification. The recognizer pipeline is the same list without
-`terminals` and `class-runs`, and `Scan` origins are followed as `followRepeats` does.
+`terminals` and `class-runs`, and `Scan` origins are followed as `build.FollowRepeats` does.
 
 The manager lives in `internal/ir/core` next to the passes and depends on nothing of the engine. The mode
 predicate is a value the generator passes in (`Mode`), so `core` keeps no knowledge of work controls or Documents.
