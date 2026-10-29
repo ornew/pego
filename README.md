@@ -4,8 +4,7 @@
 
 **One Grammar. Every Parser.**
 
-Today: Go and TypeScript targets, three Go engines and a published bytecode, all from one PEG-based grammar. The aim is
-every target, engine, optimization profile and use, at the best measured speed.
+Never write a parser again.
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENCE) [![Go Reference](https://pkg.go.dev/badge/github.com/ornew/pego.svg)](https://pkg.go.dev/github.com/ornew/pego) [![Go](https://img.shields.io/badge/go-1.27.1+-00ADD8?logo=go&logoColor=white)](go.mod) [![Netlify Status](https://api.netlify.com/api/v1/badges/29040d97-0646-4829-8871-188310aec03a/deploy-status)](https://app.netlify.com/projects/pego-go/deploys)
 
@@ -13,32 +12,8 @@ every target, engine, optimization profile and use, at the best measured speed.
 
 </div>
 
-A `.pego` grammar extends [Parsing Expression Grammars](https://en.wikipedia.org/wiki/Parsing_expression_grammar) with
-types, operator precedence, left recursion and error recovery, so one file defines both the syntax and the values you
-get back. PEGO is a grammar compiler and parsing platform designed for every target, engine and use: it checks and
-compiles a grammar once, and every target and engine returns the same result for the features it supports.
-
-**Today** PEGO generates Go and TypeScript and runs grammars on three engine backends in Go: a closure backend and two
-VMs for a bytecode with a published specification. Only the Go VMs implement the bytecode, and it stays unstable until
-it is declared stable and versioned, which the first tagged release does not do. One grammar gives trees, typed values,
-recognition, declared recovery, an incremental `Document` and streaming, with per-target gaps. Generated Go needs only
-the standard library, and generated TypeScript has no dependencies. Its best fit today is a Go program, alone or with a
-TypeScript front end, that parses its own DSL, configuration, query or policy language.
-
-**Next** come a tagged release with work limits on by default, a public cross-tool benchmark, faster parsers and
-generation profiles for speed, memory and size, editor support for the languages you define, and `Document` and
-streaming in TypeScript. More target languages and another implementation of the bytecode follow after the release.
-
-**Speed** is a pillar: the aim is the best measured speed in every target and use, against [published
-targets](docs/why-pego.md#commitments-and-targets). Today generated Go is slower than Go's hand-written standard-library
-parsers on every comparable workload: it takes 1.1–5.4× their time for typed values and 1.6–6.8× for trees, from JSON
-(3.89 ms against 3.50 ms for `encoding/json` `Unmarshal` into `any`, which records no positions) to left-recursive
-arithmetic (see the [benchmarks](docs/benchmarks.md)).
-
-**Not yet** released or safe by default. There is no tagged release, and the language, the API and file formats may
-change. For untrusted input, only the nesting cap is on: work limits are opt-in, there is no memory limit, and no
-run-time bound holds for every grammar. [Why PEGO](docs/why-pego.md) pairs each aim with its status today, compares
-PEGO with other tools and lists the current limits.
+Describe your language once. PEGO builds the parser: fast, safe and wherever you need it. Here is a complete
+calculator, operator precedence included:
 
 ```pego
 // calc.pego
@@ -75,61 +50,27 @@ pego parse -g calc.pego -i '1 + * 2'
 pego: 1:5: syntax error: expected "(", [0-9]
 ```
 
-```go
-p, _ := pego.CompileSource(src, "main")
-tree, err := p.Parse("1 + 2 * 3 ^ 2") // a *pego.Node, or a *pego.SyntaxError with line, column and expectations
-```
-
 > [!NOTE]
-> PEGO is pre-release: the language, the Go API and the file formats may change between versions.
-> See the [implementation status](docs/development.md) and the
-> [living backlog](https://github.com/ornew/pego/issues/1).
+> PEGO is pre-release: the language, the Go API and the file formats may change. Generated Go is not yet as fast
+> as Go's hand-written parsers, and closing that gap is the current work. [Why PEGO](docs/why-pego.md) has every
+> measured number, the current limits and how PEGO compares with other tools.
 
 ## Why PEGO
 
-- **Typed values from the grammar.** Declare struct and join types and build them in actions. Rule types are
-  inferred and checked when the grammar compiles. `pego gen -types` emits matching Go values directly, and generated
-  TypeScript converts its tree with `parseAST` (see the [code generation guide](docs/guide/generated-typed-values.md)).
-- **Errors that point the way.** Failures report the farthest position and what was expected there. `@error`
-  rewrites the message, and `#recover` skips the broken part and keeps going, where the grammar declares it.
-- **Reparse after an edit.** A `Document` keeps the rule results whose examined input an edit did not reach; how
-  much that is depends on how the grammar splits into rules (see
-  [incremental reuse](docs/guide/incremental-reuse.md)). On the Minilang workload, an 89 KB program edited by one
-  character reparses in 116–133 µs against 15.6–24.5 ms for a full parse, on the engine backends (see the
-  [benchmarks](docs/benchmarks.md)).
-- **Long input, bounded memory.** `ParseStream` hands over each element of a `#stream` repetition as it matches and
-  drops the input behind it, so the input and tree memory it keeps depend on the size of one element, not on the
-  length of the input. The start rule needs a top-level `#stream` repetition, and recovered errors are kept unless
-  you set a limit (see the [streaming guide](docs/guide/streaming.md)).
-- **Go and TypeScript today, more targets as the aim.** `pego gen` emits a standalone parser: Go that needs only the
-  standard library, or a TypeScript module with no dependencies. The repository tests run the TypeScript under Node.js;
-  Deno, Bun and browsers are documented but not tested. Generated TypeScript has no `Document` or streaming (see the
-  [TypeScript guide](docs/guide/typescript.md)).
-- **A published bytecode.** Grammars also compile to a bytecode with a [published
-  specification](spec/bytecode/README.md), implemented today by PEGO's Go VMs and unstable until it is declared stable
-  and versioned. A precompiled `.pegoc` file of the JSON or Minilang grammar is ready to parse in 35.5–135 µs.
-- **Every backend, one answer.** For the features they share, the test suite checks that the closure backend, both
-  bytecode VMs, generated Go and generated TypeScript return the same trees, values, positions and errors.
-- **Speed as a goal, measured in the open.** The aim is to match, then beat, hand-written parsers while returning typed
-  values. Today generated parsers take 1.1–5.4× the time of the Go standard library's hand-written parsers for typed
-  values and 1.6–6.8× for trees on PEGO's benchmarks, which do different work (`encoding/json` builds no positions,
-  `encoding/xml` returns tokens, `encoding/csv` returns records, `go/parser` builds a positioned Go syntax tree); a
-  recognizer validates JSON with zero allocations (see the [benchmarks](docs/benchmarks.md) and the
-  [targets](docs/why-pego.md#commitments-and-targets)).
-- **Limits you can set.** Nested rule calls are capped by default: 100,000 on the closure backend, the recursive VM
-  and generated Go, and 10,000,000 on the iterative VM, which runs on its own stack
-  ([deep nesting](docs/guide/backends.md#deep-nesting-and-withmaxdepth)). Work limits and cancellation are opt-in;
-  a generated parser carries them when it is generated with `-work-controls`
-  ([Cancellation and Work Limits](docs/guide/cancellation-and-limits.md)).
-- **Precedence without the pain.** Operators are declared by binding level in an Operators Rule, not a ladder of
-  rules. Left recursion, direct or indirect, works.
-- **See what your grammar does.** `pego trace` shows every rule call with positions, results and memo hits,
-  `pego explain` which calls make up a syntax error, and `pego profile` where the time and the backtracking go.
-  `pego lint` points out alternatives that can never match and other likely mistakes before any input does.
-- **Editor support for grammars.** `pego lsp` gives any LSP editor errors as you type in `.pego` files, formatting,
-  go to definition, hover with inferred rule types, rename and completion; a VS Code extension is included.
-- **Context when you need it.** Predicates and scoped variables handle indentation, matching tags and other things
-  plain PEG cannot.
+- **Runs anywhere, any way.** Any target language, any engine, any optimization. One grammar becomes generated code,
+  a VM or an interpreter, tuned for speed, memory or size, and every one of them returns the same tree, the same
+  positions and the same errors. Whatever you build, PEGO fits.
+- **Unmatched expressive power.** Build values of any type you define, carry state for context-sensitive syntax and
+  write a whole operator precedence table as one rule. Recover from errors with a complete tree, and parse endless
+  streams as they arrive. If you can describe a language, you can parse it.
+- **Performance pushed to the limit.** A multi-stage IR optimizes at every level, from grammar-wide rewrites down to
+  the generated code. Incremental parsing reuses everything an edit did not touch, so a fresh tree is ready between
+  keystrokes.
+- **Safe on any input.** PEGO analyzes your grammar to bound the time and memory a parse can take, and built-in
+  limits on work and nesting mean hostile input can never hang the parser or blow its stack.
+- **Complete support for building your language.** A built-in language server brings completion, diagnostics,
+  navigation and formatting to any editor. Trace, profile, lint and debug show exactly what the parser does, so you
+  never have to guess.
 
 ## Install
 
