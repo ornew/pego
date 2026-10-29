@@ -16,14 +16,14 @@ import (
 
 // lintSource lints src (which must compile) from the rule main and returns the findings as
 // "line:col severity check".
-func lintSource(t *testing.T, src string, opts Options) ([]string, []Finding) {
+func lintSource(t *testing.T, src string, opts options) ([]string, []Finding) {
 	t.Helper()
 	return lintSourceWith(t, syntax.Parse, src, opts)
 }
 
 // lintSourceWith is lintSource with the given parser, so a case can use the retired syntax
 // through syntax.ParseLegacy.
-func lintSourceWith(t *testing.T, parse func(string) (*grammar.Grammar, error), src string, opts Options) ([]string, []Finding) {
+func lintSourceWith(t *testing.T, parse func(string) (*grammar.Grammar, error), src string, opts options) ([]string, []Finding) {
 	t.Helper()
 	g, err := parse(src)
 	if err != nil {
@@ -33,7 +33,7 @@ func lintSourceWith(t *testing.T, parse func(string) (*grammar.Grammar, error), 
 	if _, err := engine.Compile(starttest.MarkAll(g.Clone()), engine.Options{}); err != nil {
 		t.Fatalf("the test grammar does not compile: %v", err)
 	}
-	fs := Run(g, "main", opts)
+	fs := runUnchecked(g, "main", opts)
 	var out []string
 	for _, f := range fs {
 		out = append(out, fmt.Sprintf("%d:%d %s %s", f.Pos.Line, f.Pos.Col, f.Severity, f.Check))
@@ -71,7 +71,7 @@ func runCases(t *testing.T, cases []lintCase) {
 					return syntax.Parse(fixed)
 				}
 			}
-			got, fs := lintSourceWith(t, parse, tc.src, Options{})
+			got, fs := lintSourceWith(t, parse, tc.src, options{})
 			if !slices.Equal(got, tc.want) {
 				var msgs []string
 				for _, f := range fs {
@@ -286,7 +286,7 @@ func TestUnreachableRule(t *testing.T) {
 		{name: "several start rules, no caller", src: "@start(default)\nrule main = \"a\"\n@start\nrule x = \"b\"\nrule z = \"c\"",
 			want: []string{"5:1 warning unreachable-rule"}, msg: "rule z is never used: no start rule calls it, directly or indirectly"},
 	})
-	got, _ := lintSource(t, "rule main = \"a\"\nrule x = \"b\"", Options{Disable: map[string]bool{CheckUnreachableRule: true}})
+	got, _ := lintSource(t, "rule main = \"a\"\nrule x = \"b\"", options{Disable: map[string]bool{CheckUnreachableRule: true}})
 	if len(got) != 0 {
 		t.Errorf("disabled: got %q", got)
 	}
@@ -359,7 +359,7 @@ func TestDirectives(t *testing.T) {
 		{name: "ordinary comment", src: "// lint is good\nrule main = \"a\""},
 	})
 	// A directive for a disabled check is not reported as unused.
-	got, _ := lintSource(t, "// lint:ignore unused-capture\nrule main = \"a\"", Options{Disable: map[string]bool{CheckUnusedCapture: true}})
+	got, _ := lintSource(t, "// lint:ignore unused-capture\nrule main = \"a\"", options{Disable: map[string]bool{CheckUnusedCapture: true}})
 	if len(got) != 0 {
 		t.Errorf("disabled: got %q", got)
 	}
@@ -368,18 +368,18 @@ func TestDirectives(t *testing.T) {
 // TestExamples lints the example grammars. They have no findings: any finding is a false positive
 // (or a new mistake in an example).
 func TestExamples(t *testing.T) {
-	files, err := filepath.Glob("../../examples/*/*.pego")
+	files, err := filepath.Glob("../examples/*/*.pego")
 	if err != nil || len(files) == 0 {
 		t.Fatalf("no example grammars: %v", err)
 	}
 	for _, f := range files {
-		name, _ := filepath.Rel("../../examples", f)
+		name, _ := filepath.Rel("../examples", f)
 		t.Run(name, func(t *testing.T) {
 			src, err := os.ReadFile(f)
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, fs := lintSource(t, string(src), Options{})
+			got, fs := lintSource(t, string(src), options{})
 			if len(got) != 0 {
 				for _, f := range fs {
 					t.Log(f)
@@ -461,7 +461,7 @@ func TestInlineActionChecks(t *testing.T) {
 		`rule main = ("a" ("b" / "bc" => "y") => "x")`,
 		"rule main = \"a\"\nrule x = (a:\"a\" \"b\" => \"x\")",
 	} {
-		_, fs := lintSource(t, src, Options{})
+		_, fs := lintSource(t, src, options{})
 		if len(fs) == 0 {
 			t.Errorf("no findings for %s", src)
 		}

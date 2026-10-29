@@ -67,7 +67,7 @@ complete, runnable examples, and points to the [specification](../../spec/README
 | [The `pego` Command](command-line.md) | The command-line workflows: parse, format, fix, convert, compile and generate |
 | [Testing Grammars](testing-grammars.md) | A test suite for a grammar in layers: examples, golden files, fixture suites, properties, generated inputs, fuzzing, reference implementations, equivalence checks, lint and format checks in CI |
 | [Debugging and Profiling](debugging.md) | Why an input fails (`pego explain`), what the parser does (`pego trace`), why a parse is slow (`pego profile`), `WithTrace` and `WithProfile` in Go, costs and limits |
-| [Linting Grammars](linting.md) | Finding likely mistakes with `pego lint` and `pego.Lint`, what the checks mean and how to fix what they report, suppressing findings |
+| [Linting Grammars](linting.md) | Finding likely mistakes with `pego lint` and package `lint`, what the checks mean and how to fix what they report, suppressing findings |
 | [Sampling Inputs and Fuzzing](sampling-and-fuzzing.md) | Generating inputs a grammar accepts with `pego sample` and package `sample`: seeds and size bounds, coverage, near-miss invalid inputs, seeding Go fuzz tests |
 | [Editor Support](editor-support.md) | The language server (`pego lsp`): diagnostics, formatting, navigation, hover, rename, completion and semantic highlighting; setting up VS Code, Neovim, Helix and Emacs |
 | [The Playground](playground.md) | The browser playground: inspecting trees and errors, sharing grammar state, its limits and the WebAssembly API |

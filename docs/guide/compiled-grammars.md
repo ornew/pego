@@ -136,7 +136,7 @@ Some things need the grammar itself, so they work only from source, whatever the
 | `RecognizeOnly()` with `WithTrace` or `WithProfile` | error: traced or profiled recognition needs the grammar source |
 | `Parser.Grammar()` | `nil` |
 | `OutputSchema` | an error that matches `ErrSchemaUnavailable` |
-| `pego.Lint`, `gen.Go.Generate`, `gen.TypeScript.Generate`, `sample.New` | need the grammar, which a loaded parser does not have |
+| `lint.Config.Run`, `gen.Go.Generate`, `gen.TypeScript.Generate`, `sample.New` | need the grammar, which a loaded parser does not have |
 | `pego convert`, `pego gen`, `pego lint`, `pego sample`, `pego schema` | error: the command needs the grammar source (`.pego` or `.json`) |
 
 A loaded parser is saved again only in its own mode: `pego compile -g pairs-check.pegoc -mode recognize -o copy.pegoc`

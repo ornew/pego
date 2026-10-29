@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ornew/pego/internal/lint"
+	"github.com/ornew/pego/lint"
 )
 
 type lspLintPollContext struct {

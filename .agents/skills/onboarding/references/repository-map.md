@@ -14,7 +14,7 @@ before choosing an edit location:
 | Code generation entry points | `gen/` (`gen.Go`, `gen.TypeScript`, embedded runtime copy `gen/_runtime`), `internal/gen/` |
 | Output schema and structural queries | `internal/schema/` |
 | Generated Go parser source | Generator `internal/gen/gogen/generator.go` and runtime package `runtime/` (imported or copied into generated parsers); generated parsers under `parsers/` and `internal/bench/gen/` are outputs |
-| CLI, editor service and sample generation | `cmd/pego/`, `internal/lsp/`, `sample/` |
+| CLI, linter, editor service and sample generation | `cmd/pego/`, `lint/`, `internal/lsp/`, `sample/` |
 | Ready-made parsers, playground and site | `parsers/`, `cmd/playground/`, `site/` |
 
 Use [specification index](../../../../spec/README.md) for supported language and

@@ -30,7 +30,7 @@ func rewrites(t *testing.T, src, check string) (fixed []string, findings int) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fs := Run(g, "main", Options{})
+	fs := runUnchecked(g, "main", options{})
 	rs, err := Rewrites(context.Background(), g, "main", fs)
 	if err != nil {
 		t.Fatal(err)

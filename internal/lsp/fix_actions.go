@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/lint"
+	"github.com/ornew/pego/lint"
 )
 
 // A lint fix is offered for a finding only when lint.Rewrites proves its kind of change, and then

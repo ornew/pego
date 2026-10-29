@@ -31,8 +31,8 @@ The combined formatter and lint cancellation measurements in [DR042](../../desig
 include these diagnostic paths, but do not isolate the prefix change. They are
 not evidence of an isolated speedup, peak-memory reduction or latency bound.
 
-Source owners: [`show`](../../../internal/lint/analysis.go) and
-[`formatting benchmark`](../../../internal/lint/format_context_bench_test.go).
+Source owners: [`show`](../../../lint/analysis.go) and
+[`formatting benchmark`](../../../lint/format_context_bench_test.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

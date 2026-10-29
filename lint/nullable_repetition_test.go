@@ -29,7 +29,7 @@ func TestNullableRepetitionProofs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, finding := range Run(g, "main", Options{}) {
+	for _, finding := range runUnchecked(g, "main", options{}) {
 		if finding.Check == CheckUselessLookahead {
 			t.Fatalf("unsound lookahead proof: %v", finding)
 		}

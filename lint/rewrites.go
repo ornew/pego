@@ -37,8 +37,9 @@ type Rewrite struct {
 func (r Rewrite) IsValid() bool { return r.Start.IsValid() && r.End.IsValid() }
 
 // Rewrites returns, for each finding of the lint run of g from start, its Rewrite or the zero
-// Rewrite. The findings must come from Run or RunContext on the same g and start, and g must be a
-// valid grammar. Cancellation discards the result.
+// Rewrite. The findings must come from Config.Run or Config.RunUnchecked on the same g and start.
+// Like RunUnchecked, Rewrites does not check its precondition that g compiles and start is a start
+// rule of g. Cancellation discards the result.
 func Rewrites(ctx context.Context, g *grammar.Grammar, start string, findings []Finding) (out []Rewrite, err error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err

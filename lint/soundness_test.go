@@ -51,7 +51,7 @@ func TestSoundness(t *testing.T) {
 		for _, in := range inputs {
 			want = append(want, result(prog, in))
 		}
-		for _, f := range Run(g, "main", Options{}) {
+		for _, f := range runUnchecked(g, "main", options{}) {
 			for _, fix := range []bool{false, true} {
 				g2, _ := syntax.Parse(src)
 				if !applyFinding(g2, f, fix) {

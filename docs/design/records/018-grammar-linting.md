@@ -6,7 +6,7 @@
 
 ## Summary
 
-`pego.Lint` and `pego lint` report likely mistakes in a grammar that compiles: alternatives of an ordered choice that
+Package `lint` and `pego lint` report likely mistakes in a grammar that compiles: alternatives of an ordered choice that
 can never match, expressions that can never match or have no effect, captures whose values are discarded, rules the
 start rule never uses, and grammar shapes that slow down incremental parsing. Each finding has a severity, the name of
 the check that reported it, a message, the position in the source, the rule it is in, and usually a suggested fix.
@@ -14,8 +14,8 @@ Comments of the form `// lint:ignore check reason` suppress findings. The guide 
 lists the checks with examples.
 
 ```go
-fs, err := pego.Lint(g, "main")                                 // err: the grammar does not compile
-fs, err = pego.Lint(g, "main", pego.DisableChecks("right-recursion"))
+fs, err := lint.Config{}.Run(ctx, g, "main")                               // err: the grammar does not compile
+fs, err = lint.Config{Disable: []string{"right-recursion"}}.Run(ctx, g, "main")
 for _, f := range fs {
 	fmt.Println(f) // 3:18: error: alternative 2 ("ab") can never match: ... [shadowed-alternative]
 }
@@ -59,7 +59,7 @@ form "always succeeds" would survive that. The analyses assume the limit is not 
 
 ## Analyses
 
-The checks share one analysis of the grammar AST (`internal/lint/analysis.go`). It works on the AST alone, so it
+The checks share one analysis of the grammar AST (`lint/analysis.go`). It works on the AST alone, so it
 applies to grammars from source or JSON (without source positions, findings then have none).
 
 - **nullable** (may succeed without consuming input) is a least fixed point over the rules, as in the engine, but
@@ -226,7 +226,7 @@ rule main = a:"x" b:"y" => $a // lint:ignore unused-capture
 - A directive that names an unknown check, or suppresses nothing, is reported (`lint-directive`), so suppressions do
   not outlive the code they excused. A directive for a disabled check is not reported as unused.
 
-`DisableChecks` (`pego lint -disable`) turns checks off for the whole run, for grammars without comments (JSON) and for
+`Config.Disable` (`pego lint -disable`) turns checks off for the whole run, for grammars without comments (JSON) and for
 projects that do not want a kind of finding at all.
 
 ## Testing
@@ -261,9 +261,10 @@ projects that do not want a kind of finding at all.
 
 - **Reporting from `Compile`**: compile errors stop compilation; most findings should not, and hints need not be seen
   every time. A separate entry point keeps compilation fast and quiet.
-- **A public `lint` package, like `sample`**: `sample` only needs the public API; the linter needs nothing internal
-  either, but it is one function, so `pego.Lint` keeps it next to `Compile`, with the implementation in
-  `internal/lint`.
+- **One function next to `Compile` in package `pego`**: linting is one call for most users, but the language server
+  lints a grammar it has already compiled (`Config.RunUnchecked`) and offers the proven rewrites (`Rewrites`), and
+  the checks, severities and findings are a vocabulary of their own. Package `lint` holds them all, so the editor
+  uses the same API as other programs.
 - **Positions from the nearest leaf**: the AST used to record positions only for rule calls, literals, classes,
   captures and predicates. The linter needs to point at `!`, `?`, `*` and anchors, so the parser now records the
   positions of prefix operators, atoms and anchors, and of the operand that postfix operators apply to.
@@ -273,6 +274,6 @@ projects that do not want a kind of finding at all.
 
 - `matchPrefix` and `prefix` give up on predicates, Operators Rule declarations, level-restricted calls and left recursion, so
   shadowing through them is not reported.
-- Comment directives need source; for JSON and compiled grammars use `DisableChecks`.
+- Comment directives need source; for JSON and compiled grammars use `Config.Disable`.
 - The hints are heuristics: a right-recursive rule for a right-associative operator is correct, and a lookahead that
   repeats `.` may be bounded by what follows.

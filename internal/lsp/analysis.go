@@ -10,8 +10,8 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/lint"
 	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/pego/lint"
 )
 
 // symKind is the namespace of a name: rules and types have separate namespaces.

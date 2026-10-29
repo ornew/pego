@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ornew/pego/internal/lint"
+	"github.com/ornew/pego/lint"
 )
 
 type findingData struct {
@@ -69,7 +69,7 @@ func (a *analysis) lintFindingsContext(ctx context.Context) ([]lint.Finding, err
 	if a.lintCached {
 		return a.lintCache, nil
 	}
-	return lint.RunContext(ctx, a.g, a.prog.DefaultStart(), lint.Options{})
+	return (lint.Config{}).RunUnchecked(ctx, a.g, a.prog.DefaultStart())
 }
 
 // cacheLintContext commits a complete lint result; cancelled work retains no partial cache.
@@ -225,7 +225,7 @@ func (s *Server) codeActionsControlled(params json.RawMessage, control *renderCo
 		}
 		if s.client.Experimental.Pego.ShowExplanation {
 			explanation := ""
-			for _, check := range lint.Checks {
+			for _, check := range lint.Checks() {
 				control.poll()
 				if check.Name == diagnostic.Code {
 					explanation = check.Summary

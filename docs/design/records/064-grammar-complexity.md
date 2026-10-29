@@ -239,8 +239,8 @@ hint with a witness, not a proof that a slow input exists.
   Core IR is built for generated parsers (`internal/ir/build/build.go`). The classifier runs as a Core analysis that
   invalidates nothing. Its verdicts are attributes of rules, which the verifier ignores. Running on Core rather than
   on the AST means it judges the module that is actually executed, after rewrites such as `Scans`.
-- `pego lint` reports the results through checks next to `long-lookahead` (`internal/lint/checks.go:1186`) and
-  `right-recursion` (`internal/lint/checks.go:996`):
+- `pego lint` reports the results through checks next to `long-lookahead` (`lint/checks.go:1186`) and
+  `right-recursion` (`lint/checks.go:996`):
   - `growing-variable`, a warning: a binding that reads the variable it binds, along a recursion or a fold, and makes
     it longer by a value that reads the variable itself (`s := s + s`, `n := n * 2`). Linear growth such as
     `indent := indent + "  "` is not reported. This is a certain fact about the grammar, so it meets the warning

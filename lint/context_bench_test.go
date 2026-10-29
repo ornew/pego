@@ -13,7 +13,7 @@ var proofLintBenchmarkFindings []Finding
 
 func BenchmarkSuccessProofLintCancellation(b *testing.B) {
 	sources := map[string]string{"attributes": `rule main = "a"` + strings.Repeat(` @error("label")`, 64)}
-	for name, path := range map[string]string{"source-grammar": "../../pego.pego", "json": "../../parsers/json/json.pego"} {
+	for name, path := range map[string]string{"source-grammar": "../pego.pego", "json": "../parsers/json/json.pego"} {
 		data, err := os.ReadFile(path)
 		if err != nil {
 			b.Fatal(err)
@@ -37,9 +37,9 @@ func BenchmarkSuccessProofLintCancellation(b *testing.B) {
 				for b.Loop() {
 					var err error
 					if controlled {
-						proofLintBenchmarkFindings, err = RunContext(ctx, g, "main", Options{})
+						proofLintBenchmarkFindings, err = runContext(ctx, g, "main", options{})
 					} else {
-						proofLintBenchmarkFindings = Run(g, "main", Options{})
+						proofLintBenchmarkFindings = runUnchecked(g, "main", options{})
 					}
 					if err != nil {
 						b.Fatal(err)

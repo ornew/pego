@@ -7,11 +7,11 @@ input. The linter finds them, and other likely mistakes, by reading the grammar 
 
 | | Command line | Go |
 |:--|:--|:--|
-| Lint a grammar | `pego lint -g g.pego` | `pego.Lint(g, "main")` |
-| Machine-readable output | `-f json` | `[]pego.Finding` |
-| Turn checks off | `-disable check,...` | `pego.DisableChecks(...)` |
+| Lint a grammar | `pego lint -g g.pego` | `lint.Config{}.Run(ctx, g, "main")` |
+| Machine-readable output | `-f json` | `[]lint.Finding` |
+| Turn checks off | `-disable check,...` | `lint.Config{Disable: []string{...}}` |
 | Fail on warnings too | `-strict` | check `Finding.Severity` |
-| List the checks | `-list` | `pego.LintChecks()` |
+| List the checks | `-list` | `lint.Checks()` |
 
 Findings can also be suppressed with comments in the grammar ([Suppressing findings](#suppressing-findings)). The
 design, and how the checks are kept free of false positives, is in
@@ -89,21 +89,22 @@ check with its severity.
 
 ## From Go
 
-`pego.Lint` takes a grammar AST and the start rule. It returns an error, and no findings, if the grammar does not
-compile:
+Package `github.com/ornew/pego/lint` lints from Go. A `lint.Config` holds the settings of a run, and its `Run`
+method takes a context, a grammar AST and the start rule. It returns an error, and no findings, if the grammar
+does not compile or the context ends:
 
 ```go
 g, err := pego.ParseGrammar(src)
 if err != nil {
 	log.Fatal(err)
 }
-findings, err := pego.Lint(g, "main", pego.DisableChecks("right-recursion"))
+findings, err := lint.Config{Disable: []string{"right-recursion"}}.Run(context.Background(), g, "main")
 if err != nil {
 	log.Fatal(err) // compile errors
 }
 for _, f := range findings {
 	fmt.Println(f) // 2:28: error: alternative 3 (`"true"`) can never match: ... [shadowed-alternative]
-	if f.Severity == pego.SeverityError {
+	if f.Severity == lint.Error {
 		// f.Pos, f.Rule, f.Check, f.Message, f.Fix
 	}
 }
@@ -117,17 +118,21 @@ func TestGrammarLint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	findings, err := pego.Lint(g, "main")
+	findings, err := lint.Config{}.Run(t.Context(), g, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, f := range findings {
-		if f.Severity >= pego.SeverityWarning {
+		if f.Severity >= lint.Warning {
 			t.Error(f)
 		}
 	}
 }
 ```
+
+A program that has already compiled the grammar, such as an editor that lints after each change, can skip the
+second compilation with `Config.RunUnchecked`. It does not check that the grammar compiles or that the start rule is
+one, and its findings for any other grammar are unspecified.
 
 A grammar decoded from JSON has no source positions; its findings have the zero
 `Pos` and name the rule they are in.
@@ -379,7 +384,7 @@ rule main = (
 
 A directive that names an unknown check, or that suppresses nothing, is reported as `lint-directive`, so that
 suppressions do not outlive what they excused. Grammars without comments (JSON) use `-disable` or
-`pego.DisableChecks` instead.
+`lint.Config.Disable` instead.
 
 ## What the Linter Does Not Find
 

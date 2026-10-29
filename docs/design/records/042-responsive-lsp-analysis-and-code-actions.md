@@ -21,7 +21,7 @@ Without lint opt-in, diagnostics retain their existing syntax and compile/type
 scope. This remains an opt-in compatibility boundary, not adoption of a default
 lint policy.
 
-The prototype shares the successful compiled analysis with `internal/lint.Run`
+The prototype shares the successful compiled analysis with `lint.Config.RunUnchecked`
 and maps its source-positioned findings to stable check codes and
 URI/version/generation/finding-key data. It uses `main` when defined; without `main`, it
 omits reachability analysis because an editor start-rule setting is not yet
@@ -164,7 +164,7 @@ restore legacy attribute syntax or accept naked multiline operator headers.
 
 The ordinary compatibility path handles each message synchronously. Its `didOpen`, `didChange` and `didSave` analyze and publish before reading the next message, and it ignores `$/cancelRequest`; the opt-in actor addresses this limitation. The implemented design measured roughly 12 ms for the largest example grammars at the time of design 017; that measurement does not establish the cost of linting or future grammars. `internal/lsp/analysis.go` tokenizes and parses every version and compiles only when syntax is valid. `internal/lsp/server.go` publishes only those diagnostics and serializes all requests.
 
-The public linter already defines stable check names and severities, returns source positions, rule names, messages and human-readable `Fix` suggestions, and applies `lint:ignore` / `lint:file-ignore` directives before returning findings (`internal/lint/lint.go`, `docs/design/records/018-grammar-linting.md`). `Fix` is explanatory text, not an edit. A grammar with syntax errors cannot be linted by the public `pego.Lint` API because lint requires a valid, compiling grammar. The editor should therefore show lint findings only for a version whose grammar compiled successfully.
+The public linter already defines stable check names and severities, returns source positions, rule names, messages and human-readable `Fix` suggestions, and applies `lint:ignore` / `lint:file-ignore` directives before returning findings (`lint/lint.go`, `docs/design/records/018-grammar-linting.md`). `Fix` is explanatory text, not an edit. A grammar with syntax errors cannot be linted by `lint.Config.Run` because lint requires a valid, compiling grammar. The editor should therefore show lint findings only for a version whose grammar compiled successfully.
 
 Design 017 deliberately has no code actions and always returns Markdown for hover and completion documentation. The editor-support follow-up also asks the server to honor plain-text documentation formats. A document version is attached to pushed diagnostics, and the server validates versioned action candidates. VS Code applies suppression edits through a command that checks the document version synchronously before `workspace.applyEdit`, which VS Code itself checks again against the editor model.
 
@@ -192,7 +192,7 @@ Keep push diagnostics. Add optional LSP diagnostic `code` and `data` fields; for
 
 After syntax parsing and compilation succeed, run lint with the same start rule and default enabled checks as `pego lint`. The linter's existing directive pass already removes suppressed findings and reports malformed, unknown, or unused directives. Do not run lint after syntax or compile failure. Preserve the last-good-analysis behavior for internal failures, but never publish lint findings from an older snapshot as if they belonged to the failed current version.
 
-Avoid compiling the same grammar twice if the LSP can call a shared lint-analysis entry point over the already compiled program. If that requires changing the public lint contract, keep it internal and verify parity against `pego.Lint`; the CLI remains authoritative for check behavior.
+Avoid compiling the same grammar twice: the LSP calls `lint.Config.RunUnchecked`, which lints a grammar its caller has already compiled and returns the same findings as `lint.Config.Run`; the CLI remains authoritative for check behavior.
 
 ### Code Actions and Explanations
 
@@ -419,6 +419,11 @@ a normalization-only operation, runtime parsing or cancellation latency.
 
 ### Shared Proof Cancellation
 
+The measurements in this and the following sections name the internal entry points they
+measured: `Compile` and `CompileContext` of the engine, and `Run` and `RunContext` of the
+linter. `Run` is the uncancellable lint of a compiled grammar; `RunContext` is the cancellable
+form, the unexported `runContext` that `lint.Config.Run` and `lint.Config.RunUnchecked` call.
+
 A separate comparison measured full `Compile`/`CompileContext` and
 `Run`/`RunContext` calls on already-parsed JSON, source-grammar, and
 64-`@error`-annotation ASTs. It used Go 1.27.1 on an Apple M3 Max
@@ -444,7 +449,7 @@ context-aware compilation; B/op differences were at most 28 bytes out of about
 3.6 MB. These are whole compile/lint calls, not proof-only cost, parser runtime,
 cancellation latency, peak memory, or real-editor behavior. Sources are
 `internal/engine/normalize_context_bench_test.go` and
-`internal/lint/context_bench_test.go`.
+`lint/context_bench_test.go`.
 
 ### Lint Metadata Cancellation
 
@@ -528,7 +533,7 @@ context −1 to 0); B/op varied by −64 to +182 for ordinary and −4 to 0 for
 context compilation. Other B/op differences were at most 4 bytes. The
 benchmarks use the existing compiler/lint drivers and
 `internal/engine/class_context_bench_test.go` plus
-`internal/lint/class_context_bench_test.go`; baseline overlays add the same
+`lint/class_context_bench_test.go`; baseline overlays add the same
 drivers. These results measure whole compile/lint calls, not parser execution,
 cancellation latency, peak memory or real-editor behavior. They do not support
 a general speedup or regression claim.
@@ -569,8 +574,8 @@ about 52% fewer bytes/op. Other lint fixtures were effectively unchanged.
 These focused measurements cover successful formatter and lint calls, not
 parsing, editor interaction, cancellation latency or peak memory. Benchmark
 drivers are `grammar/format_context_bench_test.go`,
-`internal/lint/format_context_bench_test.go`, the existing
-`internal/lint/context_bench_test.go`, and
+`lint/format_context_bench_test.go`, the existing
+`lint/context_bench_test.go`, and
 `internal/lsp/format_context_bench_test.go`; the same drivers were applied to
 the baseline. Raw results remain outside the repository.
 

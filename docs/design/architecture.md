@@ -124,7 +124,7 @@ contract is [Observability](../../spec/runtime/observability.md).
 | Core and Flow IR and their passes | `internal/ir/core/`, `internal/ir/flow/` |
 | Generated Go and TypeScript | The Go generator in `internal/gen/gogen/`, the TypeScript generator in `internal/gen/tsgen/` and the runtimes in `runtime/` and `internal/gen/tsgen/tsrt/` |
 | The public API | `pego.go`, `grammar/` |
-| Commands, linter, language server | `cmd/pego/`, `internal/lint/`, `internal/lsp/` |
+| Commands, linter, language server | `cmd/pego/`, `lint/`, `internal/lsp/` |
 | Playground and site | `cmd/playground/`, `site/` |
 
 ## Related Topics

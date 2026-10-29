@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/lint"
+	"github.com/ornew/pego/lint"
 	"strings"
 	"testing"
 )

@@ -29,9 +29,9 @@ func BenchmarkDiagnosticFormatCancellation(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
 					if active {
-						proofLintBenchmarkFindings, err = RunContext(ctx, g, "main", Options{})
+						proofLintBenchmarkFindings, err = runContext(ctx, g, "main", options{})
 					} else {
-						proofLintBenchmarkFindings = Run(g, "main", Options{})
+						proofLintBenchmarkFindings = runUnchecked(g, "main", options{})
 					}
 					if err != nil {
 						b.Fatal(err)

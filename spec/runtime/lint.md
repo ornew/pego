@@ -19,14 +19,19 @@ linter, identified by a name.
 
 | | Command line | Go |
 |:--|:--|:--|
-| Lint a grammar | `pego lint -g g.pego` | `pego.Lint(g, start, opts...)` |
-| Machine-readable output | `-f json` | `[]pego.Finding` |
-| Turn checks off | `-disable check,...` (or the flag repeated) | `pego.DisableChecks(...)` |
+| Lint a grammar | `pego lint -g g.pego` | `lint.Config.Run(ctx, g, start)` |
+| Machine-readable output | `-f json` | `[]lint.Finding` |
+| Turn checks off | `-disable check,...` (or the flag repeated) | `lint.Config.Disable` |
 | Fail on warnings too | `-strict` | Check `Finding.Severity` |
-| List the checks | `-list` | `pego.LintChecks()` |
+| List the checks | `-list` | `lint.Checks()` |
 
-- `pego.Lint` takes a grammar AST and the start rule and returns the findings. If
-  the grammar does not compile, it returns an error and no findings.
+- `lint.Config.Run` takes a context, a grammar AST and the start rule and returns the findings.
+  If the grammar does not compile, or the start rule is not a start rule of the grammar, it returns
+  an error and no findings. Cancelling the context stops the compilation and the checks and
+  discards all findings. An empty start rule selects the default start rule.
+- `lint.Config.RunUnchecked` returns the same findings as `Run` for a grammar that compiles and a
+  start rule of it, without compiling the grammar. It does not check either condition; its findings
+  for any other input are unspecified. Cancelling its context discards all findings.
 - `pego lint` accepts PEGO source and grammar JSON; a compiled grammar holds no
   grammar and is an error. The start rule is the one `-s` names, otherwise the
   default start rule of the grammar. A grammar that does not compile is reported with its compile
@@ -197,8 +202,8 @@ as `lint-directive`.
 
 | Condition | Result |
 |:--|:--|
-| The grammar does not compile | `pego.Lint` returns the compile errors and no findings |
-| `-disable` or `DisableChecks` names an unknown check | An error |
+| The grammar does not compile | `lint.Config.Run` returns the compile errors and no findings |
+| `-disable` or `Config.Disable` names an unknown check | An error |
 | A compiled grammar | Error: `lint needs the grammar source (.pego or .json)` |
 
 ## Compatibility and Support

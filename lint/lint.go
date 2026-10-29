@@ -2,13 +2,16 @@
 // match, expressions that have no effect, captures that are never read, and grammar shapes that
 // defeat incremental parsing.
 //
-// The checks work on the grammar AST alone. Each check reports only what it can prove from the
-// grammar (the exceptions are the performance hints, which have the severity Hint); see
-// docs/design/records/018-grammar-linting.md for the reasoning behind each one.
+// Config.Run compiles a grammar to check it before it lints it; Config.RunUnchecked lints a grammar
+// its caller has already compiled. The checks work on the grammar AST alone. Each check reports
+// only what it can prove from the grammar (the exceptions are the performance hints, which have
+// the severity Hint); see docs/design/records/018-grammar-linting.md for the reasoning behind each
+// one.
 package lint
 
 import (
 	"cmp"
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -104,8 +107,8 @@ const (
 	CheckDirective          = "lint-directive"
 )
 
-// Checks lists every check, in the order of the documentation.
-var Checks = []Check{
+// checks lists every check, in the order of the documentation.
+var checks = []Check{
 	{CheckShadowedAlt, Error, "an alternative of an ordered choice can never match, because an earlier one matches wherever it would"},
 	{CheckNeverMatches, Error, "an expression or rule can never match (anchors that contradict their neighbors, recursion without a base case)"},
 	{CheckUselessLookahead, Error, "a lookahead whose result is known in advance (& that always succeeds, ! that never does)"},
@@ -122,28 +125,88 @@ var Checks = []Check{
 	{CheckDirective, Warning, "a lint:ignore comment that names an unknown check or suppresses nothing"},
 }
 
-// IsCheck reports whether name is the name of a check.
-func IsCheck(name string) bool {
-	return slices.ContainsFunc(Checks, func(c Check) bool { return c.Name == name })
+// Checks returns every check, in the order of the documentation.
+func Checks() []Check { return slices.Clone(checks) }
+
+// isCheck reports whether name is the name of a check.
+func isCheck(name string) bool {
+	return slices.ContainsFunc(checks, func(c Check) bool { return c.Name == name })
 }
 
-// Options configures Run.
-type Options struct {
+// Config configures a lint run. The zero value runs every check.
+type Config struct {
+	// Disable holds the names of the checks not to run (see Checks).
+	Disable []string
+}
+
+// Run lints the grammar g from its start rule start: it reports rules the start rules never use,
+// alternatives and expressions that can never match or have no effect, captures that are never
+// read, and grammar shapes that slow down incremental parsing. The findings are sorted by
+// position. unreachable-rule reports the rules that neither start nor another @start rule
+// reaches. Comments of the form "// lint:ignore check reason" in the source
+// suppress findings (see the directive syntax in docs/guide/linting.md).
+//
+// An empty start selects the default start rule. Run returns an error, and no findings, if g does
+// not compile, if start is not a start rule of g, if c.Disable names an unknown check, or if ctx
+// ends; cancellation stops both the compilation and the checks and discards all findings.
+func (c Config) Run(ctx context.Context, g *grammar.Grammar, start string) ([]Finding, error) {
+	opts, err := c.options()
+	if err != nil {
+		return nil, err
+	}
+	prog, err := engine.CompileContext(ctx, g, engine.Options{})
+	if err != nil {
+		return nil, err
+	}
+	if start == "" {
+		start = prog.DefaultStart()
+	} else if err := prog.CheckStart(start); err != nil {
+		return nil, err
+	}
+	return runContext(ctx, g, start, opts)
+}
+
+// RunUnchecked lints g from start as Run does, without compiling g: it is for a caller that has
+// already compiled g, such as an editor that lints after each change. Its precondition is that g
+// compiles and that start is a start rule of g (the default start rule of a compiled grammar is
+// pego.Parser.DefaultStart); Run checks this, RunUnchecked does not, and the findings for any
+// other g or start are unspecified. It returns an error only if c.Disable names an unknown check
+// or ctx ends; cancellation discards all findings.
+func (c Config) RunUnchecked(ctx context.Context, g *grammar.Grammar, start string) ([]Finding, error) {
+	opts, err := c.options()
+	if err != nil {
+		return nil, err
+	}
+	return runContext(ctx, g, start, opts)
+}
+
+// options validates c.Disable and returns the options of the run.
+func (c Config) options() (options, error) {
+	var o options
+	for _, name := range c.Disable {
+		if !isCheck(name) {
+			return options{}, fmt.Errorf("unknown check %q", name)
+		}
+		if o.Disable == nil {
+			o.Disable = map[string]bool{}
+		}
+		o.Disable[name] = true
+	}
+	return o, nil
+}
+
+// options holds the settings of a run.
+type options struct {
 	// Disable holds the names of the checks not to run.
 	Disable map[string]bool
 }
 
-// Run lints the grammar g, whose start rule is start. g must be a valid grammar (one that
-// compiles); start may be "". unreachable-rule reports the rules that neither start nor a rule
-// marked @start reaches. The findings are sorted by position.
-//
-// Findings can be suppressed with comments in the source (see the directive syntax in
-// docs/guide/linting.md).
-func Run(g *grammar.Grammar, start string, opts Options) []Finding {
+// runUnchecked lints g from start without a cancellation control. g must compile; start may be "".
+func runUnchecked(g *grammar.Grammar, start string, opts options) []Finding {
 	return run(g, start, opts, nil)
 }
 
-func run(g *grammar.Grammar, start string, opts Options, control *lintControl) []Finding {
+func run(g *grammar.Grammar, start string, opts options, control *lintControl) []Finding {
 	control.check()
 	// Each inline action is a rule of its own with its captures and cuts: lint the grammar with
 	// them lowered to hidden rules, and report their findings as the inline actions written.
@@ -191,7 +254,7 @@ func run(g *grammar.Grammar, start string, opts Options, control *lintControl) [
 
 type linter struct {
 	control  *lintControl
-	opts     Options
+	opts     options
 	an       *analysis
 	findings []Finding
 	rule     *grammar.RuleDef // the rule being checked
@@ -339,7 +402,7 @@ func (l *linter) suppress(g *grammar.Grammar) []Finding {
 		var unknown []string
 		for _, name := range d.checks {
 			control.poll()
-			if !IsCheck(name) {
+			if !isCheck(name) {
 				unknown = append(unknown, name)
 			}
 		}

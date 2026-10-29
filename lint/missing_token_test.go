@@ -18,7 +18,7 @@ func TestMissingTokenDoesNotProveAChoiceShadowed(t *testing.T) {
 	if _, err := engine.Compile(starttest.MarkAll(g), engine.Options{}); err != nil {
 		t.Fatal(err)
 	}
-	for _, finding := range Run(g, "main", Options{}) {
+	for _, finding := range runUnchecked(g, "main", options{}) {
 		if finding.Check == "shadowed-alternative" {
 			t.Fatal(finding)
 		}

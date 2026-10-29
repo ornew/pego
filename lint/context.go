@@ -7,19 +7,19 @@ import (
 	"github.com/ornew/pego/internal/grammaranalysis"
 )
 
-// RunContext is the internal editor entry point. Cancellation discards all
-// findings, including those accumulated before the stopping point. Run retains
-// its ordinary behavior without an active control. Polling covers lint-owned
+// runContext is the cancellable form of runUnchecked, behind Config.RunUnchecked.
+// Cancellation discards all findings, including those accumulated before the
+// stopping point. Without an active control it is runUnchecked. Polling covers lint-owned
 // analysis, check and suppression loops, recursive analyses and result sorting.
 // Shared success proofs, metadata walks, character-range work and diagnostic
 // formatting also poll. Other individual operations retain unpolled spans; no
 // wall-clock bound is promised.
-func RunContext(ctx context.Context, g *grammar.Grammar, start string, opts Options) (findings []Finding, err error) {
+func runContext(ctx context.Context, g *grammar.Grammar, start string, opts options) (findings []Finding, err error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 	if ctx.Done() == nil {
-		return Run(g, start, opts), nil
+		return runUnchecked(g, start, opts), nil
 	}
 	defer func() {
 		if failure := recover(); failure != nil {
@@ -33,7 +33,7 @@ func RunContext(ctx context.Context, g *grammar.Grammar, start string, opts Opti
 	return run(g, start, opts, &lintControl{ctx: ctx}), nil
 }
 
-// Recursive proof routines unwind only to RunContext. A control belongs to one
+// Recursive proof routines unwind only to runContext and Rewrites. A control belongs to one
 // lint invocation; no global state, background workers or abandoned jobs exist.
 type lintCancellation struct{ err error }
 

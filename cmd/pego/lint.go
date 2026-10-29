@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -10,6 +11,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/lint"
 )
 
 // lintOutput is the JSON document that pego lint -f json prints.
@@ -22,7 +24,7 @@ type lintOutput struct {
 type lintFinding struct {
 	Line     int           `json:"line,omitempty"`
 	Col      int           `json:"col,omitempty"`
-	Severity pego.Severity `json:"severity"`
+	Severity lint.Severity `json:"severity"`
 	Check    string        `json:"check"`
 	Rule     string        `json:"rule,omitempty"`
 	Message  string        `json:"message"`
@@ -57,7 +59,7 @@ func lintCmd(args []string, stdout io.Writer) error {
 	}
 	if *list {
 		w := tabwriter.NewWriter(stdout, 0, 0, 2, ' ', 0)
-		for _, c := range pego.LintChecks() {
+		for _, c := range lint.Checks() {
 			fmt.Fprintf(w, "%s\t%s\t%s\n", c.Name, c.Severity, c.Summary)
 		}
 		return w.Flush()
@@ -79,11 +81,11 @@ func lintCmd(args []string, stdout io.Writer) error {
 		}
 		*start = p.Start()
 	}
-	findings, err := pego.Lint(g, *start, pego.DisableChecks(disable...))
+	findings, err := (lint.Config{Disable: disable}).Run(context.Background(), g, *start)
 	if err != nil {
 		return fileError(*grammarPath, err)
 	}
-	counts := map[pego.Severity]int{}
+	counts := map[lint.Severity]int{}
 	out := lintOutput{Grammar: *grammarPath, Start: *start, Findings: []lintFinding{}}
 	for _, f := range findings {
 		counts[f.Severity]++
@@ -107,13 +109,13 @@ func lintCmd(args []string, stdout io.Writer) error {
 			}
 		}
 	}
-	failed := counts[pego.SeverityError]
+	failed := counts[lint.Error]
 	if *strict {
-		failed += counts[pego.SeverityWarning]
+		failed += counts[lint.Warning]
 	}
 	if failed > 0 {
-		return fmt.Errorf("lint: %s, %s, %s", plural(counts[pego.SeverityError], "error"),
-			plural(counts[pego.SeverityWarning], "warning"), plural(counts[pego.SeverityHint], "hint"))
+		return fmt.Errorf("lint: %s, %s, %s", plural(counts[lint.Error], "error"),
+			plural(counts[lint.Warning], "warning"), plural(counts[lint.Hint], "hint"))
 	}
 	return nil
 }

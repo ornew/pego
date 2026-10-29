@@ -655,7 +655,7 @@ those of the repetition in the tree that `Parse` returns for the same input. Cop
 Check the grammar as a file, too:
 
 - **`pego lint`** finds alternatives that can never match, contradictory anchors, nullable repetitions and unused rules
-  ([linting grammars](linting.md)). `pego.Lint` makes it a test: see the example in that guide.
+  ([linting grammars](linting.md)). `lint.Config.Run` makes it a test: see the example in that guide.
 - **`pego fmt -check`** lists the files whose formatting differs from the canonical one and exits with status 1 when
   there are any (2 when a file cannot be parsed), so it can be a CI step as it is. `pego fmt -l` lists the same files
   but exits with status 0.
