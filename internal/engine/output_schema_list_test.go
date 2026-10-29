@@ -10,29 +10,29 @@ import (
 )
 
 func TestOutputSchemaListQueries(t *testing.T) {
-	token := QueryPattern{Type: "Token", Fields: []QueryFieldPattern{{Name: "Text", Pattern: QueryPattern{Category: "string"}}}, Capture: "value"}
-	nodeToken := QueryPattern{Category: "node", Value: &QueryPattern{Category: "string"}, Capture: "value"}
-	list := func(child QueryPattern) QueryPattern {
-		return QueryPattern{Category: "list", Elements: []QueryPattern{child}}
+	token := schema.QueryPattern{Type: "Token", Fields: []schema.QueryFieldPattern{{Name: "Text", Pattern: schema.QueryPattern{Category: "string"}}}, Capture: "value"}
+	nodeToken := schema.QueryPattern{Category: "node", Value: &schema.QueryPattern{Category: "string"}, Capture: "value"}
+	list := func(child schema.QueryPattern) schema.QueryPattern {
+		return schema.QueryPattern{Category: "list", Elements: []schema.QueryPattern{child}}
 	}
-	listNode := func(child QueryPattern) QueryPattern {
-		return QueryPattern{Category: "node", Elements: []QueryPattern{child}}
+	listNode := func(child schema.QueryPattern) schema.QueryPattern {
+		return schema.QueryPattern{Category: "node", Elements: []schema.QueryPattern{child}}
 	}
-	holder := func(value QueryPattern) QueryPattern {
-		return QueryPattern{Type: "Holder", Fields: []QueryFieldPattern{{Name: "Values", Pattern: value}}}
+	holder := func(value schema.QueryPattern) schema.QueryPattern {
+		return schema.QueryPattern{Type: "Holder", Fields: []schema.QueryFieldPattern{{Name: "Values", Pattern: value}}}
 	}
 	for _, tc := range []struct {
 		name, source, input string
-		pattern             QueryPattern
+		pattern             schema.QueryPattern
 	}{
 		{"repetition", `rule main = "x"*`, "x", listNode(nodeToken)},
-		{"empty repetition", `rule main = "x"*`, "", QueryPattern{Category: "node", Value: &QueryPattern{Category: "list"}, Capture: "value"}},
+		{"empty repetition", `rule main = "x"*`, "", schema.QueryPattern{Category: "node", Value: &schema.QueryPattern{Category: "list"}, Capture: "value"}},
 		{"typed field", `type Token = { Text string }
 type Holder = { Values []Token }
 rule main = "x" => Holder{Values: []Token{Token{Text: "one"}}}`, "x", holder(list(token))},
 		{"empty typed field", `type Token = { Text string }
 type Holder = { Values []Token }
-rule main = "x" => Holder{Values: []Token{}}`, "x", holder(QueryPattern{Category: "list", Capture: "value"})},
+rule main = "x" => Holder{Values: []Token{}}`, "x", holder(schema.QueryPattern{Category: "list", Capture: "value"})},
 		{"aliased field", `type Token = { Text string }
 type Tokens ~ []Token
 type Holder = { Values Tokens }
@@ -65,7 +65,7 @@ rule main = "x" => Holder{Values: [][]Token{[]Token{Token{Text: "one"}}}}`, "x",
 			if err := json.Unmarshal(data, &decoded); err != nil || !reflect.DeepEqual(sch, &decoded) {
 				t.Fatalf("schema round trip: %v", err)
 			}
-			q, err := CompileStructuralQuery(tc.pattern, &decoded)
+			q, err := schema.CompileStructuralQuery(tc.pattern, &decoded)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -76,7 +76,7 @@ rule main = "x" => Holder{Values: [][]Token{[]Token{Token{Text: "one"}}}}`, "x",
 						if err != nil {
 							t.Fatal(err)
 						}
-						matches, err := q.Matches(n, QueryOptions{})
+						matches, err := q.Matches(n, schema.QueryOptions{})
 						if err != nil || len(matches) != 1 || len(matches[0].Captures) != 1 {
 							t.Fatalf("list query: %+v, %v", matches, err)
 						}

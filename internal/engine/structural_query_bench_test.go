@@ -7,9 +7,9 @@ import (
 	"github.com/ornew/pego/internal/schema"
 )
 
-var structuralQueryCompileSink *StructuralQuery
+var structuralQueryCompileSink *schema.StructuralQuery
 var structuralQueryCompileErrorSink error
-var querySchemaSink *QuerySchema
+var querySchemaSink *schema.QuerySchema
 
 // BenchmarkCompileStructuralQuerySchema separates ordinary field checks from
 // the shared-inline-DAG nonmatch that previously repeated the same work.
@@ -17,18 +17,18 @@ func BenchmarkCompileStructuralQuerySchema(b *testing.B) {
 	for _, typeCount := range []int{16, 128} {
 		b.Run(fmt.Sprintf("Types%d", typeCount), func(b *testing.B) {
 			sch := outputSchemaValidationBenchmarkValue(typeCount)
-			known := QueryPattern{Type: "Item000", Fields: []QueryFieldPattern{{Name: "Name", Pattern: QueryPattern{Category: "string"}}}}
+			known := schema.QueryPattern{Type: "Item000", Fields: []schema.QueryFieldPattern{{Name: "Name", Pattern: schema.QueryPattern{Category: "string"}}}}
 			b.Run("KnownField", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
-					q, err := CompileStructuralQuery(known, &sch)
+					q, err := schema.CompileStructuralQuery(known, &sch)
 					if err != nil {
 						b.Fatal(err)
 					}
 					structuralQueryCompileSink = q
 				}
 			})
-			prepared, err := PrepareQuerySchema(&sch)
+			prepared, err := schema.PrepareQuerySchema(&sch)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -45,7 +45,7 @@ func BenchmarkCompileStructuralQuerySchema(b *testing.B) {
 			b.Run("Prepare", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
-					q, err := PrepareQuerySchema(&sch)
+					q, err := schema.PrepareQuerySchema(&sch)
 					if err != nil {
 						b.Fatal(err)
 					}
@@ -62,18 +62,18 @@ func BenchmarkCompileStructuralQuerySchema(b *testing.B) {
 				}}
 			}
 			sharedSchema.Types[0].Shape.Fields = append(sharedSchema.Types[0].Shape.Fields, schema.Field{Name: "Deep", Shape: *shared})
-			absent := QueryPattern{Type: "Item000", Fields: []QueryFieldPattern{{Name: "Deep", Pattern: QueryPattern{Fields: []QueryFieldPattern{{Name: "Absent"}}}}}}
+			absent := schema.QueryPattern{Type: "Item000", Fields: []schema.QueryFieldPattern{{Name: "Deep", Pattern: schema.QueryPattern{Fields: []schema.QueryFieldPattern{{Name: "Absent"}}}}}}
 			b.Run("SharedDAGAbsentField", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
-					q, err := CompileStructuralQuery(absent, &sharedSchema)
+					q, err := schema.CompileStructuralQuery(absent, &sharedSchema)
 					if err == nil || q != nil {
 						b.Fatalf("accepted impossible field: query=%+v, err=%v", q, err)
 					}
 					structuralQueryCompileErrorSink = err
 				}
 			})
-			sharedPrepared, err := PrepareQuerySchema(&sharedSchema)
+			sharedPrepared, err := schema.PrepareQuerySchema(&sharedSchema)
 			if err != nil {
 				b.Fatal(err)
 			}

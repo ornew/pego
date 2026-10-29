@@ -1,4 +1,4 @@
-package engine
+package schema
 
 import (
 	"sort"
@@ -6,39 +6,41 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-// queryVisit is the adapter boundary for a future common graph walker. Each event contains a
+// QueryVisit is the adapter boundary for a future common graph walker. Each event contains a
 // value, the carrier that immediately contains it and an owned root-relative path. Visits occur
 // in preorder per edge: the elements of a tuple, a list or a node's value, then a node's captures
 // that are not elements, by name, and the fields of a struct by name. Boxes are seen through. The
 // walker rejects active-path cycles and charges before discovery.
-type queryVisit struct {
-	value  any
+type QueryVisit struct {
+	Value  any
 	parent *value.Node
 	path   []QueryEdge
 }
 type queryVisitFrame struct {
-	visit queryVisit
+	visit QueryVisit
 	leave bool
 }
 
-func visitQueryGraph(root *value.Node, b *queryBudget, visit func(queryVisit) error) error {
-	frames := []queryVisitFrame{{visit: queryVisit{value: value.UnboxNode(root)}}}
+// VisitQueryGraph calls visit for every value reachable from root, in the order QueryVisit
+// describes, charging the work to b.
+func VisitQueryGraph(root *value.Node, b *QueryBudget, visit func(QueryVisit) error) error {
+	frames := []queryVisitFrame{{visit: QueryVisit{Value: value.UnboxNode(root)}}}
 	nodes := map[*value.Node]bool{}
 	for len(frames) > 0 {
 		f := frames[len(frames)-1]
 		frames = frames[:len(frames)-1]
 		v := f.visit
 		if f.leave {
-			delete(nodes, v.value.(*value.Node))
+			delete(nodes, v.Value.(*value.Node))
 			continue
 		}
 		if err := b.charge(uint64(1 + len(v.path))); err != nil {
 			return err
 		}
-		if _, err := queryCategory(v.value); err != nil {
+		if _, err := QueryCategory(v.Value); err != nil {
 			return err
 		}
-		x, ok := v.value.(*value.Node)
+		x, ok := v.Value.(*value.Node)
 		if ok && x != nil {
 			if nodes[x] {
 				return ErrQueryCycle
@@ -56,7 +58,7 @@ func visitQueryGraph(root *value.Node, b *queryBudget, visit func(queryVisit) er
 			if err := b.charge(uint64(len(v.path) + 1)); err != nil {
 				return err
 			}
-			frames = append(frames, queryVisitFrame{visit: queryVisit{value.UnboxValue(val), x, appendQueryPath(v.path, e)}})
+			frames = append(frames, queryVisitFrame{visit: QueryVisit{value.UnboxValue(val), x, appendQueryPath(v.path, e)}})
 			return nil
 		}
 		switch value.ShapeOf(x) {

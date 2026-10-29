@@ -1,10 +1,8 @@
-package engine
+package schema
 
 import (
 	"fmt"
 	"strings"
-
-	"github.com/ornew/pego/internal/schema"
 )
 
 // A query pattern compiled with a schema must be able to match some value the schema admits where
@@ -26,11 +24,11 @@ type queryAtom struct {
 	missing bool
 	// name and fields describe a struct.
 	name   string
-	fields []schema.Field
+	fields []Field
 	// value is the value shape of a node, and element the element shape of a list.
-	value, element *schema.Shape
+	value, element *Shape
 	// elements are the element shapes of a tuple.
-	elements []schema.Shape
+	elements []Shape
 }
 
 // category returns the query category of the values of a, or "" for top.
@@ -62,7 +60,7 @@ func (a queryAtom) describe() string {
 
 type queryShapeKey struct {
 	pattern *QueryPattern
-	shape   *schema.Shape
+	shape   *Shape
 }
 
 type queryShapeChecker struct {
@@ -73,9 +71,9 @@ type queryShapeChecker struct {
 }
 
 // errorFields are the fields of error values.
-var errorFields = []schema.Field{
-	{Name: "expected", Shape: schema.Shape{Kind: "scalar", Scalar: "string"}},
-	{Name: "message", Shape: schema.Shape{Kind: "scalar", Scalar: "string"}},
+var errorFields = []Field{
+	{Name: "expected", Shape: Shape{Kind: "scalar", Scalar: "string"}},
+	{Name: "message", Shape: Shape{Kind: "scalar", Scalar: "string"}},
 }
 
 // checkQueryShapes reports a pattern of p, a compiled copy, that matches no value the schema s
@@ -89,7 +87,7 @@ func checkQueryShapes(p *QueryPattern, s *QuerySchema) error {
 }
 
 // check reports whether p can match a value of shape (nil if unknown).
-func (k *queryShapeChecker) check(p *QueryPattern, shape *schema.Shape) error {
+func (k *queryShapeChecker) check(p *QueryPattern, shape *Shape) error {
 	key := queryShapeKey{p, shape}
 	if err, ok := k.done[key]; ok {
 		return err
@@ -100,11 +98,11 @@ func (k *queryShapeChecker) check(p *QueryPattern, shape *schema.Shape) error {
 }
 
 // shapeAtoms returns the alternatives of shape, or top if shape is nil.
-func (k *queryShapeChecker) shapeAtoms(shape *schema.Shape) []queryAtom {
+func (k *queryShapeChecker) shapeAtoms(shape *Shape) []queryAtom {
 	if shape == nil {
 		return []queryAtom{{kind: "top"}}
 	}
-	return k.atoms(shape, nil, map[string]bool{}, map[*schema.Shape]bool{})
+	return k.atoms(shape, nil, map[string]bool{}, map[*Shape]bool{})
 }
 
 // anyAtom reports nil if f accepts one of atoms, and the first reason otherwise.
@@ -132,7 +130,7 @@ func (k *queryShapeChecker) anyAtom(atoms []queryAtom, f func(queryAtom) error) 
 // met again adds no values of its own, as its values are the least solution of its equations.
 // seen holds the shapes already expanded, whose alternatives are in out, so that a shared inline
 // DAG is expanded once.
-func (k *queryShapeChecker) atoms(shape *schema.Shape, out []queryAtom, active map[string]bool, seen map[*schema.Shape]bool) []queryAtom {
+func (k *queryShapeChecker) atoms(shape *Shape, out []queryAtom, active map[string]bool, seen map[*Shape]bool) []queryAtom {
 	if seen[shape] {
 		return out
 	}
@@ -186,7 +184,7 @@ func (k *queryShapeChecker) atoms(shape *schema.Shape, out []queryAtom, active m
 
 // typeAtom returns the atom of the values of the declared type t: a struct type, or a named node
 // type, whose values are nodes of its underlying node type.
-func (k *queryShapeChecker) typeAtom(t *schema.Type) queryAtom {
+func (k *queryShapeChecker) typeAtom(t *Type) queryAtom {
 	if t.Shape.Kind == "node" {
 		return queryAtom{kind: "node", value: t.Shape.Value}
 	}
@@ -235,7 +233,7 @@ func (k *queryShapeChecker) match(p *QueryPattern, a queryAtom) error {
 	}
 	for i := range p.Fields {
 		f := &p.Fields[i]
-		var shape *schema.Shape
+		var shape *Shape
 		for j := range fields {
 			if fields[j].Name == f.Name {
 				shape = &fields[j].Shape

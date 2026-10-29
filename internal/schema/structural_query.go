@@ -1,4 +1,4 @@
-package engine
+package schema
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/internal/limits"
-	"github.com/ornew/pego/internal/schema"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -29,11 +28,17 @@ type QueryPattern struct {
 	Value    *QueryPattern
 	Elements []QueryPattern
 }
+
+// QueryFieldPattern requires the field Name, whose value matches Pattern.
 type QueryFieldPattern struct {
 	Name    string
 	Pattern QueryPattern
 }
+
+// StructuralQuery is a compiled pattern; it is immutable.
 type StructuralQuery struct{ pattern QueryPattern }
+
+// QueryEdge is one edge of the path from the root to a captured value (QueryCapture).
 type QueryEdge struct {
 	Kind  string
 	Name  string
@@ -50,12 +55,17 @@ type QueryCapture struct {
 	Parent         *value.Node
 	Path           []QueryEdge
 }
+
+// QueryMatch is one match of a pattern: the values its captures name.
 type QueryMatch struct{ Captures []QueryCapture }
+
+// QueryOptions configures one evaluation: cancellation and work limits.
 type QueryOptions struct {
 	Context    context.Context
 	WorkLimits limits.WorkLimits
 }
 
+// ErrQueryCycle reports a cycle on the active path through the values.
 var ErrQueryCycle = errors.New("structural query graph cycle")
 
 // ErrQueryNoSourceInfo reports a query with a rule constraint on values without rule names.
@@ -67,7 +77,7 @@ var queryCategories = [...]string{"node", "struct", "tuple", "list", "int", "str
 // CompileStructuralQuery copies a programmatic pattern and checks known schema
 // constraints. A nil schema defers all type/field checks to runtime. Text syntax,
 // predicates, highlighting and generated-runtime adapters are not implemented.
-func CompileStructuralQuery(pattern QueryPattern, out *schema.Output) (*StructuralQuery, error) {
+func CompileStructuralQuery(pattern QueryPattern, out *Output) (*StructuralQuery, error) {
 	var s *QuerySchema
 	if out != nil {
 		if err := out.Validate(); err != nil {
@@ -102,7 +112,7 @@ func copyQueryPattern(p QueryPattern, s *QuerySchema, depth int) (QueryPattern, 
 				return p, fmt.Errorf("unknown query type %q", p.Type)
 			}
 			for _, f := range p.Fields {
-				if !slices.ContainsFunc(t.Shape.Fields, func(known schema.Field) bool { return known.Name == f.Name }) {
+				if !slices.ContainsFunc(t.Shape.Fields, func(known Field) bool { return known.Name == f.Name }) {
 					return p, fmt.Errorf("type %s has no field %s", p.Type, f.Name)
 				}
 			}
@@ -203,13 +213,15 @@ func (p *QueryPattern) usesRule() bool {
 	return false
 }
 
-type queryBudget struct {
+// QueryBudget charges the steps of one evaluation against its work limits, checking its
+// context for cancellation.
+type QueryBudget struct {
 	ctx    context.Context
 	limits limits.WorkLimits
 	steps  uint64
 }
 
-func (b *queryBudget) charge(n uint64) error {
+func (b *QueryBudget) charge(n uint64) error {
 	if b.ctx != nil {
 		if err := b.ctx.Err(); err != nil {
 			return err
@@ -230,18 +242,18 @@ func (q *StructuralQuery) Matches(root *value.Node, opts QueryOptions) ([]QueryM
 	if q == nil {
 		return nil, fmt.Errorf("nil structural query")
 	}
-	b := &queryBudget{ctx: opts.Context, limits: opts.WorkLimits}
+	b := &QueryBudget{ctx: opts.Context, limits: opts.WorkLimits}
 	if err := b.charge(0); err != nil {
 		return nil, err
 	}
 	results := []QueryMatch{}
 	sawNode, sawRule := false, false
-	err := visitQueryGraph(root, b, func(v queryVisit) error {
-		n, ok := v.value.(*value.Node)
+	err := VisitQueryGraph(root, b, func(v QueryVisit) error {
+		n, ok := v.Value.(*value.Node)
 		if !ok || n == nil {
 			return nil
 		}
-		if category, _ := queryCategory(n); category == "node" {
+		if category, _ := QueryCategory(n); category == "node" {
 			sawNode = true
 			sawRule = sawRule || n.Rule() != ""
 		}
@@ -272,10 +284,10 @@ func (q *StructuralQuery) Matches(root *value.Node, opts QueryOptions) ([]QueryM
 
 type queryMatchTask struct {
 	pattern *QueryPattern
-	visit   queryVisit
+	visit   QueryVisit
 }
 
-func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, bool, error) {
+func (q *StructuralQuery) match(v QueryVisit, b *QueryBudget) ([]QueryCapture, bool, error) {
 	tasks := []queryMatchTask{{&q.pattern, v}}
 	captures := []QueryCapture{}
 	for len(tasks) > 0 {
@@ -285,15 +297,15 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 		task := tasks[len(tasks)-1]
 		tasks = tasks[:len(tasks)-1]
 		p, v := task.pattern, task.visit
-		v.value = value.UnboxValue(v.value)
-		category, err := queryCategory(v.value)
+		v.Value = value.UnboxValue(v.Value)
+		category, err := QueryCategory(v.Value)
 		if err != nil {
 			return nil, false, err
 		}
 		if p.Category != "" && category != p.Category {
 			return nil, false, nil
 		}
-		n, _ := v.value.(*value.Node)
+		n, _ := v.Value.(*value.Node)
 		if p.Type != "" {
 			if p.Type == "error" {
 				if category != "error" {
@@ -322,7 +334,7 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 				if err := b.charge(uint64(len(v.path) + 1)); err != nil {
 					return nil, false, err
 				}
-				tasks = append(tasks, queryMatchTask{&f.Pattern, queryVisit{val, n, appendQueryPath(v.path, QueryEdge{Kind: "field", Name: f.Name})}})
+				tasks = append(tasks, queryMatchTask{&f.Pattern, QueryVisit{val, n, appendQueryPath(v.path, QueryEdge{Kind: "field", Name: f.Name})}})
 			}
 		}
 		if p.Value != nil {
@@ -332,10 +344,10 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 			if err := b.charge(uint64(len(v.path) + 1)); err != nil {
 				return nil, false, err
 			}
-			tasks = append(tasks, queryMatchTask{p.Value, queryVisit{queryNodeValue(n), n, appendQueryPath(v.path, QueryEdge{Kind: "value"})}})
+			tasks = append(tasks, queryMatchTask{p.Value, QueryVisit{QueryNodeValue(n), n, appendQueryPath(v.path, QueryEdge{Kind: "value"})}})
 		}
 		if len(p.Elements) > 0 {
-			if !queryHasElements(n) || len(value.D(n).Children) < len(p.Elements) {
+			if !QueryHasElements(n) || len(value.D(n).Children) < len(p.Elements) {
 				return nil, false, nil
 			}
 			if err := b.charge(uint64(len(p.Elements))); err != nil {
@@ -345,21 +357,21 @@ func (q *StructuralQuery) match(v queryVisit, b *queryBudget) ([]QueryCapture, b
 				if err := b.charge(uint64(len(v.path) + 1)); err != nil {
 					return nil, false, err
 				}
-				tasks = append(tasks, queryMatchTask{&p.Elements[i], queryVisit{value.D(n).Children[i], n, appendQueryPath(v.path, QueryEdge{Kind: "element", Index: i})}})
+				tasks = append(tasks, queryMatchTask{&p.Elements[i], QueryVisit{value.D(n).Children[i], n, appendQueryPath(v.path, QueryEdge{Kind: "element", Index: i})}})
 			}
 		}
 		if p.Capture != "" {
 			if err := b.charge(uint64(1 + len(v.path))); err != nil {
 				return nil, false, err
 			}
-			captures = append(captures, QueryCapture{p.Capture, category, v.value, v.parent, append([]QueryEdge(nil), v.path...)})
+			captures = append(captures, QueryCapture{p.Capture, category, v.Value, v.parent, append([]QueryEdge(nil), v.path...)})
 		}
 	}
 	return captures, true, nil
 }
 
-// queryHasElements reports whether n is a tuple or list, or a node whose value is one.
-func queryHasElements(n *value.Node) bool {
+// QueryHasElements reports whether n is a tuple or list, or a node whose value is one.
+func QueryHasElements(n *value.Node) bool {
 	if n == nil {
 		return false
 	}
@@ -370,9 +382,9 @@ func queryHasElements(n *value.Node) bool {
 	return false
 }
 
-// queryNodeValue returns the value of the node n: its text, or a tuple or list value sharing its
+// QueryNodeValue returns the value of the node n: its text, or a tuple or list value sharing its
 // elements.
-func queryNodeValue(n *value.Node) any {
+func QueryNodeValue(n *value.Node) any {
 	switch value.ShapeOf(n) {
 	case value.ShapeTuple:
 		return value.Ptr(value.Data{Kind: value.TupleValueKind, Start: value.D(n).Start, End: value.D(n).End, Children: value.D(n).Children})
@@ -389,8 +401,8 @@ func appendQueryPath(path []QueryEdge, e QueryEdge) []QueryEdge {
 	return p
 }
 
-// queryCategory returns the category of an unboxed value.
-func queryCategory(v any) (string, error) {
+// QueryCategory returns the category of an unboxed value.
+func QueryCategory(v any) (string, error) {
 	switch v := v.(type) {
 	case nil:
 		return "nil", nil

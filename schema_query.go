@@ -3,7 +3,6 @@ package pego
 import (
 	"context"
 
-	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/schema"
 )
 
@@ -49,27 +48,27 @@ func (p *Parser) OutputSchema(opts ...SchemaOption) (*OutputSchema, error) {
 // any value of the applicable category. Elements form an ordered prefix of a
 // tuple, a list or a node's value; required fields must be present, while extra
 // elements and fields are allowed.
-type QueryPattern = engine.QueryPattern
-type QueryFieldPattern = engine.QueryFieldPattern
-type QueryEdge = engine.QueryEdge
-type QueryCapture = engine.QueryCapture
-type QueryMatch = engine.QueryMatch
+type QueryPattern = schema.QueryPattern
+type QueryFieldPattern = schema.QueryFieldPattern
+type QueryEdge = schema.QueryEdge
+type QueryCapture = schema.QueryCapture
+type QueryMatch = schema.QueryMatch
 
 // ErrQueryCycle reports a cycle on the active path through the values.
-var ErrQueryCycle = engine.ErrQueryCycle
+var ErrQueryCycle = schema.ErrQueryCycle
 
 // ErrQueryNoSourceInfo reports a query with a rule constraint on values that
 // record no rules, because the grammar was compiled without source information.
-var ErrQueryNoSourceInfo = engine.ErrQueryNoSourceInfo
+var ErrQueryNoSourceInfo = schema.ErrQueryNoSourceInfo
 
 // StructuralQuery is an immutable compiled programmatic pattern.
-type StructuralQuery struct{ query *engine.StructuralQuery }
+type StructuralQuery struct{ query *schema.StructuralQuery }
 
 // CompileStructuralQuery validates and copies a pattern. A nil schema defers
 // type and field checks until evaluation; a supplied schema is validated first
 // and rejects known impossibilities.
-func CompileStructuralQuery(pattern QueryPattern, schema *OutputSchema) (*StructuralQuery, error) {
-	q, err := engine.CompileStructuralQuery(pattern, schema)
+func CompileStructuralQuery(pattern QueryPattern, out *OutputSchema) (*StructuralQuery, error) {
+	q, err := schema.CompileStructuralQuery(pattern, out)
 	if err != nil {
 		return nil, err
 	}
@@ -81,13 +80,13 @@ func CompileStructuralQuery(pattern QueryPattern, schema *OutputSchema) (*Struct
 // schema do not affect it. It is immutable and safe for concurrent use. Obtain
 // one from PrepareQuerySchema: a nil or zero QuerySchema holds no schema and
 // defers type and field checks until evaluation.
-type QuerySchema struct{ schema *engine.QuerySchema }
+type QuerySchema struct{ schema *schema.QuerySchema }
 
-// PrepareQuerySchema validates and copies schema. Compiling a query with the
-// result performs the same checks as CompileStructuralQuery with schema, but
+// PrepareQuerySchema validates and copies the schema. Compiling a query with the
+// result performs the same checks as CompileStructuralQuery with the schema, but
 // does not validate the schema again.
-func PrepareQuerySchema(schema *OutputSchema) (*QuerySchema, error) {
-	s, err := engine.PrepareQuerySchema(schema)
+func PrepareQuerySchema(out *OutputSchema) (*QuerySchema, error) {
+	s, err := schema.PrepareQuerySchema(out)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +97,7 @@ func PrepareQuerySchema(schema *OutputSchema) (*QuerySchema, error) {
 // impossibilities in the prepared schema. A nil or zero QuerySchema defers type
 // and field checks until evaluation, as a nil OutputSchema does.
 func (s *QuerySchema) CompileStructuralQuery(pattern QueryPattern) (*StructuralQuery, error) {
-	var es *engine.QuerySchema
+	var es *schema.QuerySchema
 	if s != nil {
 		es = s.schema
 	}
@@ -110,18 +109,18 @@ func (s *QuerySchema) CompileStructuralQuery(pattern QueryPattern) (*StructuralQ
 }
 
 // QueryOption configures one query evaluation.
-type QueryOption func(*engine.QueryOptions)
+type QueryOption func(*schema.QueryOptions)
 
 // WithQueryContext selects cooperative cancellation. Nil disables it.
 func WithQueryContext(ctx context.Context) QueryOption {
-	return func(o *engine.QueryOptions) { o.Context = ctx }
+	return func(o *schema.QueryOptions) { o.Context = ctx }
 }
 
 // WithQueryWorkLimits bounds query work. MaxSteps is charged for traversal,
 // matching, paths and results; MaxInputWork is unused by structural queries.
 // A zero limit means unlimited work.
 func WithQueryWorkLimits(limits WorkLimits) QueryOption {
-	return func(o *engine.QueryOptions) { o.WorkLimits = limits }
+	return func(o *schema.QueryOptions) { o.WorkLimits = limits }
 }
 
 // Matches evaluates every incoming graph edge in preorder: children by index,
@@ -129,12 +128,12 @@ func WithQueryWorkLimits(limits WorkLimits) QueryOption {
 // graph values; callers must keep the graph stable. Cancellation, work-limit
 // exhaustion and cycles return an error without partial results.
 func (q *StructuralQuery) Matches(root *Node, opts ...QueryOption) ([]QueryMatch, error) {
-	var o engine.QueryOptions
+	var o schema.QueryOptions
 	for _, opt := range opts {
 		opt(&o)
 	}
 	if q == nil {
-		return (*engine.StructuralQuery)(nil).Matches(root, o)
+		return (*schema.StructuralQuery)(nil).Matches(root, o)
 	}
 	return q.query.Matches(root, o)
 }

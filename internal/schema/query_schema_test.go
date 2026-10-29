@@ -1,12 +1,9 @@
-package engine
+package schema
 
 import (
 	"reflect"
 	"strings"
-	"sync"
 	"testing"
-
-	"github.com/ornew/pego/internal/schema"
 )
 
 func TestQuerySchemaRejectsInvalidSchema(t *testing.T) {
@@ -24,7 +21,7 @@ func TestQuerySchemaRejectsInvalidSchema(t *testing.T) {
 // even into an invalid one, changes nothing for the prepared schema.
 func TestQuerySchemaOwnsCopy(t *testing.T) {
 	s := validInMemoryOutputSchema()
-	s.Types[0].Shape = schema.Shape{Kind: "struct", Fields: []schema.Field{{Name: "Value", Shape: schema.Shape{Kind: "optional", Element: &schema.Shape{Kind: "scalar", Scalar: "string"}}}}}
+	s.Types[0].Shape = Shape{Kind: "struct", Fields: []Field{{Name: "Value", Shape: Shape{Kind: "optional", Element: &Shape{Kind: "scalar", Scalar: "string"}}}}}
 	q, err := PrepareQuerySchema(&s)
 	if err != nil {
 		t.Fatal(err)
@@ -55,19 +52,19 @@ func TestQuerySchemaOwnsCopy(t *testing.T) {
 // sharing: copying every path would take 2^28 shapes here.
 func TestQuerySchemaCopySharesDAG(t *testing.T) {
 	s := validInMemoryOutputSchema()
-	shared := &schema.Shape{Kind: "scalar", Scalar: "string"}
+	shared := &Shape{Kind: "scalar", Scalar: "string"}
 	for range 28 {
-		shared = &schema.Shape{Kind: "join", Alternatives: []schema.Shape{
+		shared = &Shape{Kind: "join", Alternatives: []Shape{
 			{Kind: "optional", Element: shared},
 			{Kind: "optional", Element: shared},
 		}}
 	}
 	s.Types[1].Shape = *shared
 	// A slice shared by two shapes is shared in the copy as well.
-	alts := []schema.Shape{{Kind: "nil"}, {Kind: "scalar", Scalar: "int"}}
-	s.Types = append(s.Types, schema.Type{ID: "declared/Other", Name: "Other", Origin: "declared", Shape: schema.Shape{Kind: "struct", Fields: []schema.Field{
-		{Name: "A", Shape: schema.Shape{Kind: "list", Element: &schema.Shape{Kind: "join", Alternatives: alts}}},
-		{Name: "B", Shape: schema.Shape{Kind: "join", Alternatives: alts}},
+	alts := []Shape{{Kind: "nil"}, {Kind: "scalar", Scalar: "int"}}
+	s.Types = append(s.Types, Type{ID: "declared/Other", Name: "Other", Origin: "declared", Shape: Shape{Kind: "struct", Fields: []Field{
+		{Name: "A", Shape: Shape{Kind: "list", Element: &Shape{Kind: "join", Alternatives: alts}}},
+		{Name: "B", Shape: Shape{Kind: "join", Alternatives: alts}},
 	}}})
 
 	q, err := PrepareQuerySchema(&s)
@@ -99,38 +96,10 @@ func TestQuerySchemaNil(t *testing.T) {
 	}
 }
 
-// TestQuerySchemaConcurrentCompile compiles queries from several goroutines;
-// run it with -race.
-func TestQuerySchemaConcurrentCompile(t *testing.T) {
-	q, err := PrepareQuerySchema(queryShapeSchema(t))
-	if err != nil {
-		t.Fatal(err)
-	}
-	patterns := []QueryPattern{
-		{Type: "Pair", Fields: []QueryFieldPattern{field("Value", textStruct("Int"))}},
-		{Type: "Box", Fields: []QueryFieldPattern{field("Inner", QueryPattern{Fields: []QueryFieldPattern{field("Value", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", textStruct("Int"))}})}})}},
-		{Type: "Pair", Fields: []QueryFieldPattern{field("Value", QueryPattern{Type: "Box"})}},
-	}
-	var wg sync.WaitGroup
-	for g := range 8 {
-		wg.Go(func() {
-			for i := range 50 {
-				p := patterns[(g+i)%len(patterns)]
-				_, err := q.CompileStructuralQuery(p)
-				if (err == nil) != (p.Fields[0].Pattern.Type != "Box") {
-					t.Errorf("pattern %d: %v", (g+i)%len(patterns), err)
-					return
-				}
-			}
-		})
-	}
-	wg.Wait()
-}
-
 // TestQuerySchemaIndexesDeclaredNames checks that query types name declared
 // struct types only: a rule's inferred type of the same name is not a type.
 func TestQuerySchemaIndexesDeclaredNames(t *testing.T) {
-	s := &schema.Output{Types: []schema.Type{
+	s := &Output{Types: []Type{
 		{ID: "declared/A", Name: "A", Origin: "declared"},
 		{ID: "inferred/Error", Name: "Error", Origin: "inferred"},
 		{ID: "declared/Error", Name: "Error", Origin: "declared"},
@@ -144,18 +113,5 @@ func TestQuerySchemaIndexesDeclaredNames(t *testing.T) {
 		if q.byID[id] != &s.Types[i] {
 			t.Fatalf("byID[%s] = %v", id, q.byID[id])
 		}
-	}
-}
-
-// validInMemoryOutputSchema returns a small valid schema built in memory, the one the tests of
-// package schema validate.
-func validInMemoryOutputSchema() schema.Output {
-	return schema.Output{
-		Format: "pego-output-schema", Version: 2, Start: "main", PositionUnitIndependent: true,
-		Types: []schema.Type{
-			{ID: "declared/Item", Name: "Item", Origin: "declared", Shape: schema.Shape{Kind: "struct"}},
-			{ID: "inferred/main", Name: "main", Origin: "inferred", Shape: schema.Shape{Kind: "ref", Ref: "declared/Item"}},
-		},
-		Rules: []schema.Rule{{Name: "main", Origin: "declared", Result: schema.Shape{Kind: "ref", Ref: "inferred/main"}}},
 	}
 }

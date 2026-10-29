@@ -90,29 +90,29 @@ func TestOutputSchemaMissingRejectsMembers(t *testing.T) {
 // Patterns of errors apply to the values of the shape missing, and others do not.
 func TestStructuralQueryMissingShape(t *testing.T) {
 	s := missingSchema(t)
-	field := func(pattern QueryPattern) QueryPattern {
-		return QueryPattern{Type: "P", Fields: []QueryFieldPattern{{Name: "M", Pattern: pattern}}}
+	field := func(pattern schema.QueryPattern) schema.QueryPattern {
+		return schema.QueryPattern{Type: "P", Fields: []schema.QueryFieldPattern{{Name: "M", Pattern: pattern}}}
 	}
-	for _, good := range []QueryPattern{
-		field(QueryPattern{Category: "error"}),
-		field(QueryPattern{Type: "error"}),
-		field(QueryPattern{Category: "error", Fields: []QueryFieldPattern{{Name: "message", Pattern: QueryPattern{Category: "string"}}}}),
+	for _, good := range []schema.QueryPattern{
+		field(schema.QueryPattern{Category: "error"}),
+		field(schema.QueryPattern{Type: "error"}),
+		field(schema.QueryPattern{Category: "error", Fields: []schema.QueryFieldPattern{{Name: "message", Pattern: schema.QueryPattern{Category: "string"}}}}),
 	} {
-		if _, err := CompileStructuralQuery(good, s); err != nil {
+		if _, err := schema.CompileStructuralQuery(good, s); err != nil {
 			t.Errorf("rejected %+v: %v", good, err)
 		}
 	}
-	for _, bad := range []QueryPattern{
-		field(QueryPattern{Category: "string"}),
-		field(QueryPattern{Category: "nil"}),
-		field(QueryPattern{Type: "P"}),
-		field(QueryPattern{Category: "error", Fields: []QueryFieldPattern{{Name: "other"}}}),
+	for _, bad := range []schema.QueryPattern{
+		field(schema.QueryPattern{Category: "string"}),
+		field(schema.QueryPattern{Category: "nil"}),
+		field(schema.QueryPattern{Type: "P"}),
+		field(schema.QueryPattern{Category: "error", Fields: []schema.QueryFieldPattern{{Name: "other"}}}),
 	} {
-		if _, err := CompileStructuralQuery(bad, s); err == nil {
+		if _, err := schema.CompileStructuralQuery(bad, s); err == nil {
 			t.Errorf("accepted %+v", bad)
 		}
 	}
-	_, err := CompileStructuralQuery(field(QueryPattern{Category: "string"}), s)
+	_, err := schema.CompileStructuralQuery(field(schema.QueryPattern{Category: "string"}), s)
 	if err == nil || !strings.Contains(err.Error(), "value is missing, not string") {
 		t.Errorf("reason: %v", err)
 	}
