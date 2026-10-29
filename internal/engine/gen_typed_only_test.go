@@ -71,7 +71,7 @@ func TestTranscript(t *testing.T) {
 
 func TestGeneratedTypedOnly(t *testing.T) {
 	t.Parallel()
-	g, err := parseTest(ordinaryOnlyTyped)
+	g, err := parseTest(gentest.OrdinaryOnlyTyped)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,12 +134,12 @@ func TestGeneratedTypedOnly(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("ordtest")), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	ordinaryOnlyPackage(t, dir, "full", ordinaryOnlyTyped, gen.GenOptions{Types: true, Recognize: true, Document: true, WorkControls: true}, ordinaryOnlyTypedEntries, ordinaryOnlyTypedInputs)
-	ordinaryOnlyPackage(t, dir, "only", ordinaryOnlyTyped, gen.GenOptions{Types: true, TypedOnly: true}, ordinaryOnlyTypedEntries, ordinaryOnlyTypedInputs)
-	ordinaryOnlyPackage(t, dir, "mutated", strings.Replace(ordinaryOnlyTyped, `"+"`, `"-"`, 1), gen.GenOptions{Types: true, TypedOnly: true}, ordinaryOnlyTypedEntries, ordinaryOnlyTypedInputs)
-	out := runTranscripts(t, dir, "full", "only", "mutated")
+	gentest.OrdinaryOnlyPackage(t, dir, "full", gentest.OrdinaryOnlyTyped, gen.GenOptions{Types: true, Recognize: true, Document: true, WorkControls: true}, ordinaryOnlyTypedEntries, gentest.OrdinaryOnlyTypedInputs)
+	gentest.OrdinaryOnlyPackage(t, dir, "only", gentest.OrdinaryOnlyTyped, gen.GenOptions{Types: true, TypedOnly: true}, ordinaryOnlyTypedEntries, gentest.OrdinaryOnlyTypedInputs)
+	gentest.OrdinaryOnlyPackage(t, dir, "mutated", strings.Replace(gentest.OrdinaryOnlyTyped, `"+"`, `"-"`, 1), gen.GenOptions{Types: true, TypedOnly: true}, ordinaryOnlyTypedEntries, gentest.OrdinaryOnlyTypedInputs)
+	out := gentest.RunTranscripts(t, dir, "full", "only", "mutated")
 	if out["full"] != out["only"] {
-		t.Errorf("the typed-only parser differs from the full one:\n%s", firstTranscriptDifference(out["full"], out["only"]))
+		t.Errorf("the typed-only parser differs from the full one:\n%s", gentest.FirstTranscriptDifference(out["full"], out["only"]))
 	}
 	if !strings.Contains(out["only"], "syntax error") || !strings.Contains(out["only"], `"Text":"a"`) {
 		t.Error("the transcript has neither a syntax error nor a value")
@@ -181,12 +181,12 @@ func testGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("ordtest")), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	ordinaryOnlyPackage(t, dir, "full", gentest.OrdinaryOnlyConverted, gen.GenOptions{Types: true, Recognize: true}, program, gentest.OrdinaryOnlyConvertedInputs)
-	ordinaryOnlyPackage(t, dir, "only", gentest.OrdinaryOnlyConverted, gen.GenOptions{Types: true, TypedOnly: true}, program, gentest.OrdinaryOnlyConvertedInputs)
-	ordinaryOnlyPackage(t, dir, "mutated", strings.Replace(gentest.OrdinaryOnlyConverted, `"!"`, `"?"`, 1), gen.GenOptions{Types: true, TypedOnly: true}, program, gentest.OrdinaryOnlyConvertedInputs)
-	out := runTranscripts(t, dir, "full", "only", "mutated")
+	gentest.OrdinaryOnlyPackage(t, dir, "full", gentest.OrdinaryOnlyConverted, gen.GenOptions{Types: true, Recognize: true}, program, gentest.OrdinaryOnlyConvertedInputs)
+	gentest.OrdinaryOnlyPackage(t, dir, "only", gentest.OrdinaryOnlyConverted, gen.GenOptions{Types: true, TypedOnly: true}, program, gentest.OrdinaryOnlyConvertedInputs)
+	gentest.OrdinaryOnlyPackage(t, dir, "mutated", strings.Replace(gentest.OrdinaryOnlyConverted, `"!"`, `"?"`, 1), gen.GenOptions{Types: true, TypedOnly: true}, program, gentest.OrdinaryOnlyConvertedInputs)
+	out := gentest.RunTranscripts(t, dir, "full", "only", "mutated")
 	if out["full"] != out["only"] {
-		t.Errorf("the typed-only parser differs from the full one:\n%s", firstTranscriptDifference(out["full"], out["only"]))
+		t.Errorf("the typed-only parser differs from the full one:\n%s", gentest.FirstTranscriptDifference(out["full"], out["only"]))
 	}
 	if !strings.Contains(out["only"], `"Names":["abc"]`) || !strings.Contains(out["only"], "syntax error") {
 		t.Error("the transcript has neither a value nor a syntax error")
@@ -226,12 +226,12 @@ func TestGeneratedTypedOnlyHiddenRules(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("ordtest")), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	ordinaryOnlyPackage(t, dir, "full", ordinaryOnlyHidden, gen.GenOptions{Types: true, Recognize: true}, program, ordinaryOnlyHiddenInputs)
-	ordinaryOnlyPackage(t, dir, "only", ordinaryOnlyHidden, gen.GenOptions{Types: true, TypedOnly: true}, program, ordinaryOnlyHiddenInputs)
-	ordinaryOnlyPackage(t, dir, "mutated", strings.Replace(ordinaryOnlyHidden, `"!"`, `"?"`, 1), gen.GenOptions{Types: true, TypedOnly: true}, program, ordinaryOnlyHiddenInputs)
-	out := runTranscripts(t, dir, "full", "only", "mutated")
+	gentest.OrdinaryOnlyPackage(t, dir, "full", ordinaryOnlyHidden, gen.GenOptions{Types: true, Recognize: true}, program, ordinaryOnlyHiddenInputs)
+	gentest.OrdinaryOnlyPackage(t, dir, "only", ordinaryOnlyHidden, gen.GenOptions{Types: true, TypedOnly: true}, program, ordinaryOnlyHiddenInputs)
+	gentest.OrdinaryOnlyPackage(t, dir, "mutated", strings.Replace(ordinaryOnlyHidden, `"!"`, `"?"`, 1), gen.GenOptions{Types: true, TypedOnly: true}, program, ordinaryOnlyHiddenInputs)
+	out := gentest.RunTranscripts(t, dir, "full", "only", "mutated")
 	if out["full"] != out["only"] {
-		t.Errorf("the typed-only parser differs from the full one:\n%s", firstTranscriptDifference(out["full"], out["only"]))
+		t.Errorf("the typed-only parser differs from the full one:\n%s", gentest.FirstTranscriptDifference(out["full"], out["only"]))
 	}
 	if !strings.Contains(out["only"], "rule _t is hidden") || !strings.Contains(out["only"], `"E3":"ab"`) || !strings.Contains(out["only"], "syntax error") {
 		t.Errorf("the transcript lacks the refusal of a hidden rule, a value or a syntax error:\n%s", out["only"])

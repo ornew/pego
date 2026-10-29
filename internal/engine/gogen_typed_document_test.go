@@ -17,7 +17,7 @@ func TestGenerateTypedDocument(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a standalone generated parser")
 	}
-	g, err := parseTest(typedFilterIdentityGrammar)
+	g, err := parseTest(gentest.TypedFilterIdentityGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}

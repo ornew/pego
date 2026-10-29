@@ -3,6 +3,7 @@ package gogen_test
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -11,13 +12,79 @@ import (
 	"github.com/ornew/pego/internal/compiletest"
 	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/pego/internal/value"
 )
 
 // The tests of this package compile the grammars that they generate parsers for with the engine,
 // as package pego does.
 func init() {
 	gentest.Compile = compileForGenerator
+	gentest.Reference = referenceProgram
 }
+
+// mustCompile compiles PEGO source with source information, so that results show rule names and
+// capture labels.
+func mustCompile(t *testing.T, src string, opts ...compile.Options) *engine.Program {
+	t.Helper()
+	var o compile.Options
+	if len(opts) > 0 {
+		o = opts[0]
+	}
+	o.SourceInfo = true
+	return compileBare(t, src, o)
+}
+
+// compileBare compiles PEGO source with the options as given: without source information unless
+// they request it.
+func compileBare(t *testing.T, src string, opts ...compile.Options) *engine.Program {
+	t.Helper()
+	g, err := parseTest(src)
+	if err != nil {
+		t.Fatalf("syntax error: %v\n%s", err, src)
+	}
+	var o compile.Options
+	if len(opts) > 0 {
+		o = opts[0]
+	}
+	prog, err := engine.Compile(g, o)
+	if err != nil {
+		t.Fatalf("compile error: %v\n%s", err, src)
+	}
+	return prog
+}
+
+// referenceProgram compiles src with the engine for the comparisons of generated parsers with it.
+func referenceProgram(t *testing.T, src string, opts compile.Options) gentest.ReferenceParse {
+	t.Helper()
+	prog := compileBare(t, src, opts)
+	return func(input string, bytes, recognize bool) (*value.Node, error) {
+		unit := engine.CodePoints
+		if bytes {
+			unit = engine.Bytes
+		}
+		return prog.ParseWith("main", input, engine.ParseOptions{Unit: unit, Recognize: recognize})
+	}
+}
+
+// runtimeSource is the text of the runtime package, for tests that check its source.
+var runtimeSource = func() string {
+	paths, err := filepath.Glob(filepath.Join("..", "..", "..", "runtime", "*.go"))
+	if err != nil {
+		panic(err)
+	}
+	var b strings.Builder
+	for _, p := range paths {
+		if strings.HasSuffix(p, "_test.go") {
+			continue
+		}
+		data, err := os.ReadFile(p)
+		if err != nil {
+			panic(err)
+		}
+		b.Write(data)
+	}
+	return b.String()
+}()
 
 func parseTest(src string) (*grammar.Grammar, error) { return compiletest.Parse(src) }
 

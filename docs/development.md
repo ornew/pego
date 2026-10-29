@@ -73,7 +73,7 @@ This document describes the repository layout and architecture, how to run tests
 | Language tools | `lint/`, `internal/lsp/`, `editors/vscode/` | Provides static checks, editor requests and the VS Code client. |
 | Input generation | `sample/` | Generates accepted inputs and coverage; generated inputs are checked by the parser. |
 
-Files without a directory are in `internal/engine/`. There, a file's prefix names the part it belongs to: `program` for the entry points of a program (compilation, compiled grammars, the parse drivers and the runner that a Document parses through). `compile_api.go` and `core_api.go` hold the names that the engine exposes from the compiler and from `internal/engine/core`, and `profile.go` reads parse results. What every backend shares is in `internal/engine/core/`: the parser state, the input, memo and stream state (`input_`, `stream_` and `work_` files and `runtime.go`), the built-ins of actions (`eval.go`, `filter.go`) and the tracer (`trace.go`). The closure backend is in `internal/engine/closure/`, the recursive and iterative bytecode VMs are in `internal/engine/vm/`, and the Document with its snapshots, change reports and node cursor is in `internal/engine/document/`, which `document_api.go` re-exports. Tests that compare generated parsers with the engine are named after the generator they check: `gogen_` for Go, `tsgen_` for TypeScript and `gen_` for both. Optimization evidence is in the [catalog](optimizations/README.md); contracts and proposals are in `spec/` and `docs/design/records/`.
+Files without a directory are in `internal/engine/`. There, a file's prefix names the part it belongs to: `program` for the entry points of a program (compilation, compiled grammars, the parse drivers and the runner that a Document parses through). `compile_api.go` and `core_api.go` hold the names that the engine exposes from the compiler and from `internal/engine/core`, and `profile.go` reads parse results. What every backend shares is in `internal/engine/core/`: the parser state, the input, memo and stream state (`input_`, `stream_` and `work_` files and `runtime.go`), the built-ins of actions (`eval.go`, `filter.go`) and the tracer (`trace.go`). The closure backend is in `internal/engine/closure/`, the recursive and iterative bytecode VMs are in `internal/engine/vm/`, and the Document with its snapshots, change reports and node cursor is in `internal/engine/document/`, which `document_api.go` re-exports. Tests of the Go generator that compare its parsers with the engine are in `internal/gen/gogen/`, with `internal/gentest` holding the shared corpus and helpers; those that also run TypeScript parsers, and those that need engine internals, stay here, named after the generator they check: `gogen_` for Go, `tsgen_` for TypeScript and `gen_` for both. Optimization evidence is in the [catalog](optimizations/README.md); contracts and proposals are in `spec/` and `docs/design/records/`.
 
 ### Runtime
 
@@ -144,7 +144,7 @@ The `check` helper also verifies that the result is the same with memoization di
 
 The behavior of package `pego` is tested from outside it by `internal/apitest`; the root package holds only its documentation examples. Measure its coverage with `go test -coverpkg=github.com/ornew/pego ./internal/apitest`.
 
-`internal/engine/gogen_pool_lifecycle_test.go` checks generated Node and typed parser cleanup after oversized
+`internal/gen/gogen/gogen_pool_lifecycle_test.go` checks generated Node and typed parser cleanup after oversized
 inputs, retained results, and error/retry reuse in both position units.
 
 The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for its type check, `tsc`; it is skipped when they are missing.
@@ -208,7 +208,7 @@ The guides show how to test a grammar in an application. The repository uses the
 | Reference-implementation and conformance tests with fuzz targets | Each parser module's tests, for example [`parsers/json/json_test.go`](../parsers/json/json_test.go) |
 | Generated inputs and backend comparisons | [`sample/example_test.go`](../sample/example_test.go) |
 | Compiled grammars, Documents and backend equivalence | `internal/engine/` tests such as `compiled_test.go` and `document_test.go`, and the tests of `internal/engine/document/` |
-| Generated Go against the engine and regression freezes of what the engine cannot say (observation, Documents, work, streams, lowering decisions) | `internal/engine/` tests `gogen_flow_*_test.go` and `core_*_test.go` with `internal/engine/testdata/*.golden`; a change of what a golden freezes is rewritten with `go test ./internal/engine -run <test> -update` and its diff reviewed |
+| Generated Go against the engine and regression freezes of what the engine cannot say (observation, Documents, work, streams, lowering decisions) | `internal/engine/` tests `gogen_flow_*_test.go` and `core_*_test.go` with `internal/engine/testdata/*.golden`, and `internal/gen/gogen/` tests with `internal/gen/gogen/testdata/*.golden`; a change of what a golden freezes is rewritten with `go test <package> -run <test> -update` and its diff reviewed |
 
 Root `go test ./...` covers the main module. Run [`parsers/test.sh`](../parsers/test.sh) to vet and test all standalone parser modules; `cd site && go test ./...` covers the site module.
 

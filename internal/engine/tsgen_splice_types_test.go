@@ -96,13 +96,13 @@ console.log(JSON.stringify(rows));
 				continue
 			}
 			var tokens, got []string
-			for _, m := range quoted.FindAllStringSubmatch(row[0].(string), -1) {
+			for _, m := range gentest.SpliceQuoted.FindAllStringSubmatch(row[0].(string), -1) {
 				tokens = append(tokens, m[1])
 			}
 			for _, l := range row[1].([]any) {
 				got = append(got, l.(string))
 			}
-			if want := spliceWantLeaves(c.Name, s, tokens); strings.Join(got, "|") != strings.Join(want, "|") {
+			if want := gentest.SpliceWantLeaves(c.Name, s, tokens); strings.Join(got, "|") != strings.Join(want, "|") {
 				t.Errorf("%s %q: the typed value has the strings %q, want %q (tree %s)", c.Name, s, got, want, row[0])
 			}
 			checked++

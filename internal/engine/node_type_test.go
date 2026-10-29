@@ -735,7 +735,7 @@ rule a A = [a-zé] #atomic`, []string{"()abcd", "(()(()))abcd", "((é))éaéa", 
 			t.Fatal(err)
 		}
 		write(pkg+"/reference/parser.go", string(reference))
-		test := strings.ReplaceAll(directTypedDocumentTests, "PACKAGE", pkg)
+		test := strings.ReplaceAll(gentest.DirectTypedDocumentTests, "PACKAGE", pkg)
 		test = strings.ReplaceAll(test, "INPUTS", fmt.Sprintf("%#v", c.inputs))
 		write(pkg+"/parser_test.go", test)
 	}

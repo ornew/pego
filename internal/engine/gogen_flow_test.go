@@ -224,7 +224,7 @@ func TestFlowTypedCorpus(t *testing.T) {
 		t.Skip("go command not found")
 	}
 	gentest.EachMode(t, func(t *testing.T) {
-		gentest.GeneratedTypesCorpus(t, goBin, generatedTypesCases(t), gen.GenOptions{ConvertTypes: true})
+		gentest.GeneratedTypesCorpus(t, goBin, gentest.GeneratedTypesCases(t), gen.GenOptions{ConvertTypes: true})
 	})
 }
 
@@ -245,7 +245,7 @@ func testFlowTypedObservable(t *testing.T) {
 		t.Skip("go command not found")
 	}
 	var cases []gentest.Case
-	for _, c := range generatedTypesCases(t) {
+	for _, c := range gentest.GeneratedTypesCases(t) {
 		if strings.HasPrefix(c.Name, "typed/") {
 			cases = append(cases, c)
 		}
@@ -281,5 +281,5 @@ func testFlowTypedObservable(t *testing.T) {
 // and checks them as TestGenerateDirectTypedDocument does.
 func TestFlowTypedDocument(t *testing.T) {
 	t.Parallel()
-	testDirectTypedDocument(t, gen.GenOptions{})
+	gentest.DirectTypedDocument(t, gen.GenOptions{})
 }
