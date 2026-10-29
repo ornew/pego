@@ -93,10 +93,10 @@ func TestWorkDocumentConstruction(t *testing.T) {
 		var last *workControl
 		o.Trace = func(e TraceEvent) {
 			if e.Kind == TraceEnter && e.Rule == "main" {
-				if e.p.control == nil || e.p.control == last || e.p.control.inputUsed != 0 {
+				if traceParser(e).control == nil || traceParser(e).control == last || traceParser(e).control.inputUsed != 0 {
 					t.Fatal("parse inherited construction or previous counters")
 				}
-				last = e.p.control
+				last = traceParser(e).control
 			}
 		}
 		for i := 0; i < 2; i++ {
@@ -138,7 +138,7 @@ rule item = "a"`)
 				}
 				if phase == "enter" || phase == "exit" {
 					o.Trace = func(e TraceEvent) {
-						saved = e.p
+						saved = traceParser(e)
 						if e.Rule == "main" && ((phase == "enter" && e.Kind == TraceEnter) || (phase == "exit" && e.Kind == TraceExit)) {
 							cancel()
 						}

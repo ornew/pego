@@ -188,9 +188,9 @@ func (pr *Profile) Trace(e TraceEvent) {
 // dropDiscarded drops from seen the positions before the input a stream parse still holds: the
 // parser cannot return to them, so no rule is evaluated there again.
 func (pr *Profile) dropDiscarded(e TraceEvent) {
-	if e.p != nil && e.p.base > 0 {
+	if p := traceParser(e); p != nil && p.base > 0 {
 		for k := range pr.seen {
-			if k.pos < e.p.base {
+			if k.pos < p.base {
 				delete(pr.seen, k)
 			}
 		}

@@ -38,7 +38,7 @@ func (prog *Program) Iterate(start string, r io.Reader, o ParseOptions) (it *Str
 			}
 		}
 	}()
-	if err := o.validateStreamDiagnostics(true); err != nil {
+	if err := validateStreamDiagnostics(o, true); err != nil {
 		return nil, err
 	}
 	if o.Recognize {

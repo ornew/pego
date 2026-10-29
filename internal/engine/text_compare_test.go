@@ -146,7 +146,7 @@ func parseSteps(t *testing.T, prog *Program, backend Backend, unit PositionUnit,
 	p := acquirePooledParser(&active.sharedProgram)
 	defer p.releaseBatchScratch()
 	p.input = newControlledTextInput(input, o.Unit, true, p.scratch, control)
-	p.maxDepth = o.maxDepth(o.Backend)
+	p.maxDepth = depthLimit(o, o.Backend)
 	p.deferMemo = true
 	n, err := active.run(p, o.Backend, "main")
 	return control.stepsUsed, resultJSON(n, err)

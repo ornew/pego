@@ -166,8 +166,8 @@ rule item = "ab" #recover(skip=[^a]+)`)
 			var firstItemRecovered []*SyntaxError
 			o.DiagnosticCallback = func(*SyntaxError) error { callbacks++; return nil }
 			o.Trace = func(e TraceEvent) {
-				if e.Kind == TraceExit && e.Rule == "item" && len(e.p.recovered) > maxWorking {
-					maxWorking = len(e.p.recovered)
+				if e.Kind == TraceExit && e.Rule == "item" && len(traceParser(e).recovered) > maxWorking {
+					maxWorking = len(traceParser(e).recovered)
 				}
 				if e.Kind == TraceExit && e.Rule == "item" && firstItemRecovered == nil && len(e.Recovered()) > 0 {
 					firstItemRecovered = e.Recovered()

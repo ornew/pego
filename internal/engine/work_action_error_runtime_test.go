@@ -113,12 +113,12 @@ rule ` + longRule + ` = a:"a" => A{N: 1 / (len($a) - 1)}`,
 									if mode == "budget" {
 										// Public smoke coverage for fatal propagation. Exact formatter-phase
 										// exhaustion is covered by focused builder whiteboxes.
-										e.p.control.limits.MaxSteps = e.p.control.stepsUsed + 256
+										traceParser(e).control.limits.MaxSteps = traceParser(e).control.stepsUsed + 256
 									} else {
 										poll := newPollingContext(2)
-										e.p.control.ctx = poll
-										e.p.control.stepsSinceCheck = 0
-										e.p.control.inputSinceCheck = 0
+										traceParser(e).control.ctx = poll
+										traceParser(e).control.stepsSinceCheck = 0
+										traceParser(e).control.inputSinceCheck = 0
 									}
 								}
 							}

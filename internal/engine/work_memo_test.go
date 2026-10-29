@@ -177,8 +177,8 @@ func TestWorkMemoParseBudgetPoolRetryAndRetainedResult(t *testing.T) {
 				}
 				if !armed && e.Kind == TraceEnter && e.Rule == "r" {
 					armed = true
-					e.p.deferMemo = false
-					e.p.control.limits.MaxSteps = e.p.control.stepsUsed + 10_000
+					traceParser(e).deferMemo = false
+					traceParser(e).control.limits.MaxSteps = traceParser(e).control.stepsUsed + 10_000
 				}
 			}
 			if node, parseErr := prog.ParseWith("main", input, limited); node != nil || !errors.Is(parseErr, limits.ErrWorkLimit) {
@@ -369,13 +369,13 @@ rule atom = "a"`)
 						}
 						if !armed && e.Kind == TraceExit && e.Rule == "atom" {
 							armed = true
-							observed = e.p
-							workMemoPrefix(e.p.memo, retained)
-							chunks = append([][]memoEntry(nil), e.p.memo.chunks...)
+							observed = traceParser(e)
+							workMemoPrefix(traceParser(e).memo, retained)
+							chunks = append([][]memoEntry(nil), traceParser(e).memo.chunks...)
 							if cancel {
-								e.p.control.ctx = newPollingContext(2)
+								traceParser(e).control.ctx = newPollingContext(2)
 							} else {
-								e.p.control.limits.MaxSteps = e.p.control.stepsUsed + 64
+								traceParser(e).control.limits.MaxSteps = traceParser(e).control.stepsUsed + 64
 							}
 						}
 					}}

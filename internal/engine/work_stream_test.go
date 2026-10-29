@@ -256,7 +256,7 @@ func TestWorkStreamLimitsAndCallerPanics(t *testing.T) {
 			count := 0
 			var saved TraceEvent
 			o.Trace = func(e TraceEvent) {
-				if saved.p == nil {
+				if traceParser(saved) == nil {
 					saved = e
 				}
 			}
@@ -265,7 +265,7 @@ func TestWorkStreamLimitsAndCallerPanics(t *testing.T) {
 			if !errors.As(err, &we) || we.Kind != kind || count != 0 {
 				t.Fatalf("error=%v emits=%d", err, count)
 			}
-			assertTraceParserDetached(t, saved.p, false)
+			assertTraceParserDetached(t, traceParser(saved), false)
 		}
 		for _, phase := range []string{"reader", "emit", "trace", "context"} {
 			t.Run(phase, func(t *testing.T) {
@@ -280,7 +280,7 @@ func TestWorkStreamLimitsAndCallerPanics(t *testing.T) {
 				}
 				var saved TraceEvent
 				o.Trace = func(e TraceEvent) {
-					if saved.p == nil {
+					if traceParser(saved) == nil {
 						saved = e
 					}
 					if e.Kind == TraceEnter && e.Rule == "record" {
@@ -290,7 +290,7 @@ func TestWorkStreamLimitsAndCallerPanics(t *testing.T) {
 						if phase == "context" {
 							c := newWorkContextErrPanic(&workContextPanicToken{phase: phase}, 1)
 							c.armed = true
-							e.p.control.ctx = c
+							traceParser(e).control.ctx = c
 							token = nil
 						}
 					}
@@ -310,7 +310,7 @@ func TestWorkStreamLimitsAndCallerPanics(t *testing.T) {
 				} else if got != token {
 					t.Fatalf("panic=%v want %v", got, token)
 				}
-				assertTraceParserDetached(t, saved.p, false)
+				assertTraceParserDetached(t, traceParser(saved), false)
 				if r.closed {
 					t.Fatal("reader closed")
 				}
@@ -410,7 +410,7 @@ func TestWorkStreamCommitAfterDelivery(t *testing.T) {
 		o.WorkLimits.MaxSteps = 1 << 20
 		var saved TraceEvent
 		o.Trace = func(e TraceEvent) {
-			if saved.p == nil {
+			if traceParser(saved) == nil {
 				saved = e
 			}
 		}
@@ -422,7 +422,7 @@ func TestWorkStreamCommitAfterDelivery(t *testing.T) {
 			count++
 			node = n
 			before = resultJSON(n, nil)
-			p := saved.p
+			p := traceParser(saved)
 			controller = p.control
 			// Force the normal inactive-capacity clear at the next commit.
 			p.trail = make([]undo, 0, 129)
@@ -457,7 +457,7 @@ func TestWorkStreamCommitAfterDelivery(t *testing.T) {
 		if !errors.As(err, &we) || we.Kind != limits.StepWorkLimit || we.Requested != 1 || we.Used != controller.limits.MaxSteps || count != 1 {
 			t.Fatalf("normal commit interruption error=%v emits=%d", err, count)
 		}
-		assertTraceParserDetached(t, saved.p, false)
+		assertTraceParserDetached(t, traceParser(saved), false)
 		if node == nil || resultJSON(node, nil) != before {
 			t.Fatal("commit changed emitted Node")
 		}
@@ -567,7 +567,7 @@ func TestWorkStreamReaderPanicInsideTrace(t *testing.T) {
 		if got != token || r.closed {
 			t.Fatalf("panic=%v closed=%t", got, r.closed)
 		}
-		assertTraceParserDetached(t, saved.p, false)
+		assertTraceParserDetached(t, traceParser(saved), false)
 	})
 }
 
@@ -594,14 +594,14 @@ func TestWorkStreamVMFaultAttribution(t *testing.T) {
 			defer func() { vm.m.Code[ip] = old }()
 			var saved TraceEvent
 			err := prog.ParseStreamWith("main", strings.NewReader("z"), func(*value.Node) error { t.Fatal("emitted from corrupt VM"); return nil }, ParseOptions{Backend: b, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 20}, Trace: func(e TraceEvent) {
-				if saved.p == nil {
+				if traceParser(saved) == nil {
 					saved = e
 				}
 			}})
 			if err == nil || !strings.HasPrefix(err.Error(), "invalid bytecode:") {
 				t.Fatalf("VM error=%v", err)
 			}
-			assertTraceParserDetached(t, saved.p, false)
+			assertTraceParserDetached(t, traceParser(saved), false)
 			vm.m.Code[ip] = old
 			if err := prog.ParseStreamWith("main", strings.NewReader("z"), nil, ParseOptions{Backend: b}); err != nil {
 				t.Fatalf("restored VM: %v", err)
@@ -633,7 +633,7 @@ func TestWorkStreamConcurrentCounters(t *testing.T) {
 				var run result
 				o.Trace = func(e TraceEvent) {
 					if e.Kind == TraceEnter && e.Rule == "main" {
-						run.control = e.p.control
+						run.control = traceParser(e).control
 						if run.control.inputUsed != 0 {
 							panic("stream inherited input-work counters")
 						}

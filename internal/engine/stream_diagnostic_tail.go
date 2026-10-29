@@ -26,7 +26,9 @@ func (e *TruncatedSyntaxErrors) Error() string {
 // Unwrap exposes the retained errors to errors.As as SyntaxErrors.
 func (e *TruncatedSyntaxErrors) Unwrap() error { return e.Errors }
 
-func (o ParseOptions) validateStreamDiagnostics(stream bool) error {
+// validateStreamDiagnostics checks the diagnostic options of o for a stream parse (stream) or
+// another parse, which takes none of them.
+func validateStreamDiagnostics(o ParseOptions, stream bool) error {
 	if o.DiagnosticLimit < 0 {
 		return fmt.Errorf("diagnostic limit must be nonnegative")
 	}

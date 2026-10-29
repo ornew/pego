@@ -67,9 +67,9 @@ func TestWorkDocumentDiagnosticPublication(t *testing.T) {
 				}
 				o.Trace = func(e TraceEvent) {
 					if e.Kind == TraceExit && e.Rule == "main" {
-						observed, exitSteps = e.p, e.p.control.stepsUsed
+						observed, exitSteps = traceParser(e), traceParser(e).control.stepsUsed
 						if mode == "budget" {
-							e.p.control.limits.MaxSteps = exitSteps + 64
+							traceParser(e).control.limits.MaxSteps = exitSteps + 64
 						}
 					}
 				}
@@ -132,7 +132,7 @@ func TestWorkDocumentFatalSyntaxErrorsRemainUnchanged(t *testing.T) {
 		o.Trace = func(e TraceEvent) {
 			if e.Kind == TraceEnter && e.Rule == "main" {
 				ctx.fn = func() error { return original }
-				e.p.control.check()
+				traceParser(e).control.check()
 			}
 		}
 		n, err := d.ParseWith(o)

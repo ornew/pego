@@ -65,20 +65,20 @@ rule piece = .*`
 						var observed *parser
 						armed := false
 						n, err := prog.ParseWith("main", source, ParseOptions{Backend: b, Unit: u, Recognize: recognize, WorkLimits: limits.WorkLimits{MaxInputWork: 1 << 50}, Trace: func(e TraceEvent) {
-							observed = e.p
+							observed = traceParser(e)
 							if e.Kind != TraceExit || e.Rule != "piece" || !e.Matched {
 								return
 							}
 							armed = true
 							if cancel {
-								e.p.control.inputSinceCheck, e.p.control.stepsSinceCheck = 0, 0
+								traceParser(e).control.inputSinceCheck, traceParser(e).control.stepsSinceCheck = 0, 0
 								polls := 2
 								if traceText {
 									polls = 1
 								}
-								e.p.control.ctx = newPollingContext(polls)
+								traceParser(e).control.ctx = newPollingContext(polls)
 							} else {
-								e.p.control.limits.MaxInputWork = e.p.control.inputUsed + 16
+								traceParser(e).control.limits.MaxInputWork = traceParser(e).control.inputUsed + 16
 							}
 							if traceText {
 								_ = e.Text()

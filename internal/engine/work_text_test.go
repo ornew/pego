@@ -179,11 +179,11 @@ func TestWorkTraceTextInterruptionRetriesPooledParser(t *testing.T) {
 				Trace: func(e TraceEvent) {
 					if !armed && e.Kind == TraceExit && e.Rule == "main" && e.Matched {
 						armed = true
-						observed = e.p
+						observed = traceParser(e)
 						if unit == Bytes {
-							e.p.srcOK = false
+							traceParser(e).srcOK = false
 						}
-						e.p.control.limits.MaxInputWork = e.p.control.inputUsed
+						traceParser(e).control.limits.MaxInputWork = traceParser(e).control.inputUsed
 						_ = e.Text()
 					}
 				},

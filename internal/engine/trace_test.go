@@ -101,7 +101,7 @@ func parseWork(prog *Program, start, input string, o ParseOptions) (parseWorkSta
 		target = rp
 	}
 	p := newParser(&target.sharedProgram, input, o.Unit, !o.Recognize)
-	p.maxDepth = o.maxDepth(o.Backend)
+	p.maxDepth = depthLimit(o, o.Backend)
 	p.deferMemo = true
 	p.setTrace(o.Trace)
 	n, err := target.run(p, o.Backend, start)

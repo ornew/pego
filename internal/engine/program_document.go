@@ -18,7 +18,7 @@ func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (d *Doc
 	if prog.HasMissing || o.MissingTokens != 0 {
 		return nil, compile.MissingUnsupported("Document parsing")
 	}
-	if err := o.validateStreamDiagnostics(false); err != nil {
+	if err := validateStreamDiagnostics(o, false); err != nil {
 		return nil, err
 	}
 	defer func() {

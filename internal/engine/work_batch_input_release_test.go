@@ -33,8 +33,8 @@ func batchInputReleaseFixture(t *testing.T, prog *Program, backend Backend, unit
 		opts.Context = ctx
 	}
 	n, err := prog.ParseWith("main", text, opts)
-	if n != nil || err != nil || event.p == nil {
-		t.Fatalf("recognition node=%v error=%v event parser=%p", n, err, event.p)
+	if n != nil || err != nil || traceParser(event) == nil {
+		t.Fatalf("recognition node=%v error=%v event parser=%p", n, err, traceParser(event))
 	}
 	runtime.KeepAlive(text)
 	return ref, event

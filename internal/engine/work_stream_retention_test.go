@@ -113,7 +113,7 @@ func runStreamControlRetentionCase(t *testing.T, prog *Program, outcome string, 
 		}, streamControlRetentionOptions(options, ctx, func(e TraceEvent) {
 			if e.Kind == TraceEnter && e.Rule == "main" {
 				event = e
-				controlRef = weak.Make(e.p.control)
+				controlRef = weak.Make(traceParser(e).control)
 				if controlRef.Value() == nil {
 					t.Fatal("missing active controller")
 				}
@@ -121,12 +121,12 @@ func runStreamControlRetentionCase(t *testing.T, prog *Program, outcome string, 
 			switch {
 			case outcome == "trace-panic" && e.Kind == TraceEnter && e.Rule == "record" && e.Pos > 9:
 				panic(ctx.token)
-			case outcome == "input-limit" && e.Kind == TraceExit && e.Rule == "record" && e.Matched && e.p.control != nil:
-				if e.p.control.inputUsed == 0 {
+			case outcome == "input-limit" && e.Kind == TraceExit && e.Rule == "record" && e.Matched && traceParser(e).control != nil:
+				if traceParser(e).control.inputUsed == 0 {
 					panic("input limit fixture did not consume input")
 				}
 				// The first record is emitted; the next reservation must fail.
-				e.p.control.limits.MaxInputWork = e.p.control.inputUsed
+				traceParser(e).control.limits.MaxInputWork = traceParser(e).control.inputUsed
 			}
 		}))
 	})
@@ -197,7 +197,7 @@ func TestWorkStreamTraceRetentionWithActiveControls(t *testing.T) {
 						t.Fatalf("emitted node %d changed before GC", i)
 					}
 				}
-				assertTraceParserDetached(t, run.event.p, false) // Stream executions do not retain the Document abort flag.
+				assertTraceParserDetached(t, traceParser(run.event), false) // Stream executions do not retain the Document abort flag.
 				if run.readerClosed {
 					t.Fatal("parser closed caller-owned reader")
 				}

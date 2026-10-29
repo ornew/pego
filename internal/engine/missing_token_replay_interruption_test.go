@@ -48,7 +48,7 @@ rule e = e "x" / (` + strings.Repeat(`";" #missing `, literalCount) + `)`
 			MissingTokens: 8 * literalCount,
 			Recognize:     recognize,
 			Context:       ctx,
-			Trace:         func(e TraceEvent) { ctx.p = e.p },
+			Trace:         func(e TraceEvent) { ctx.p = traceParser(e) },
 		})
 		cancel()
 		if !ctx.interrupted || ctx.installedAtCancel <= 0 || ctx.installedAtCancel >= literalCount || ctx.attemptsAtCancel <= literalCount {

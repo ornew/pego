@@ -63,7 +63,7 @@ rule t = t "*" "a" / "a"`, "a*a+a+a*a*a"},
 						case "cancel":
 							cancel()
 						case "steps":
-							e.p.control.limits.MaxSteps = e.p.control.stepsUsed
+							traceParser(e).control.limits.MaxSteps = traceParser(e).control.stepsUsed
 						case "panic":
 							panic("interrupt growth")
 						}

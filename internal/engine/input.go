@@ -71,7 +71,8 @@ const (
 	DefaultMaxDepthIterative = limits.DefaultMaxDepthIterative
 )
 
-func (o ParseOptions) maxDepth(b Backend) int {
+// depthLimit returns the rule call nesting limit that the options set for backend b.
+func depthLimit(o ParseOptions, b Backend) int {
 	switch {
 	case o.MaxDepth > 0:
 		return o.MaxDepth
@@ -798,8 +799,8 @@ func (p *parser) atInputStart() bool {
 	return p.pos == 0
 }
 
-// textLen returns the length of the string in Unit.
-func (u PositionUnit) textLen(s string) int {
+// textLen returns the length of the string in unit u.
+func textLen(u PositionUnit, s string) int {
 	if u == Bytes {
 		return len(s)
 	}

@@ -19,7 +19,7 @@ func (prog *Program) Parse(start, input string) (*value.Node, error) {
 
 // ParseWith parses with options such as the position unit.
 func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *value.Node, err error) {
-	if err := o.validateStreamDiagnostics(false); err != nil {
+	if err := validateStreamDiagnostics(o, false); err != nil {
 		return nil, err
 	}
 	// Initialization can interrupt before run installs its execution recovery.
@@ -48,7 +48,7 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *value.No
 	p := acquirePooledParser(&active.sharedProgram)
 	defer p.releaseBatchScratch()
 	p.input = newControlledTextInput(input, o.Unit, !o.Recognize, p.scratch, control)
-	p.maxDepth = o.maxDepth(o.Backend)
+	p.maxDepth = depthLimit(o, o.Backend)
 	p.deferMemo = true
 	if o.MissingTokens > 0 && active.HasMissing {
 		p.missing, p.missingLen = &missingTokenState{limit: o.MissingTokens}, 0
@@ -267,7 +267,7 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*value
 			}
 		}
 	}()
-	if err := o.validateStreamDiagnostics(true); err != nil {
+	if err := validateStreamDiagnostics(o, true); err != nil {
 		return err
 	}
 	if o.Recognize {
@@ -285,7 +285,7 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*value
 	p := newControlledStreamParser(&prog.sharedProgram, r, o.Unit, control)
 	defer p.releaseTraceReferences() // after error recovery, including rethrown panics
 	control.check()
-	p.maxDepth = o.maxDepth(o.Backend)
+	p.maxDepth = depthLimit(o, o.Backend)
 	p.emit = emit
 	p.diagnostic = o.DiagnosticCallback
 	p.diagnosticTail.limit = o.DiagnosticLimit

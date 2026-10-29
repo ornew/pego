@@ -171,7 +171,7 @@ func TestStreamReaderPanicInsideTraceKeepsOriginalValue(t *testing.T) {
 				got := catchStreamPanic(func() {
 					err = prog.ParseStreamWith("main", r, nil, ParseOptions{Backend: b, Unit: u, Trace: func(e TraceEvent) {
 						if e.Kind == TraceEnter && e.Rule == "main" {
-							e.p.fill(1)
+							traceParser(e).fill(1)
 						}
 					}})
 				})

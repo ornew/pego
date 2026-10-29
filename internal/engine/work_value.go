@@ -168,7 +168,7 @@ func (p *parser) valueBinary(op string, l, r any) (any, error) {
 
 func (p *parser) valueTextLen(s string) int {
 	if !workControlsEnabled || p.control == nil || p.unit == Bytes {
-		return p.unit.textLen(s)
+		return textLen(p.unit, s)
 	}
 	n := 0
 	for off := 0; off < len(s); {

@@ -158,7 +158,7 @@ rule items = [a-z] #atomic*`)
 						n, err := prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Trace: func(e TraceEvent) {
 							if !armed && e.Kind == TraceExit && e.Rule == "items" {
 								armed = true
-								e.p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
+								traceParser(e).control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
 							}
 						}})
 						if !armed || n != nil || !errors.Is(err, limits.ErrWorkLimit) {
@@ -189,7 +189,7 @@ rule items = [a-z] #atomic*`)
 					if !armed && e.Kind == TraceExit && e.Rule == "items" {
 						armed = true
 						attempt = newWorkControl(newPollingContext(2), limits.WorkLimits{})
-						e.p.control = attempt
+						traceParser(e).control = attempt
 					}
 				}})
 				if !armed || n != nil || !errors.Is(err, context.Canceled) || attempt.stepsUsed < 128 {
@@ -219,7 +219,7 @@ rule items = [a-z]* #atomic`)
 				armContext := func(e TraceEvent, armed *bool) {
 					if !*armed && e.Kind == TraceExit && e.Rule == "items" {
 						*armed = true
-						e.p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
+						traceParser(e).control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
 					}
 				}
 				armed := false
@@ -232,7 +232,7 @@ rule items = [a-z]* #atomic`)
 				n, err = recovery.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Trace: func(e TraceEvent) {
 					if !armed && e.Kind == TraceExit && e.Rule == "items" {
 						armed = true
-						e.p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 256})
+						traceParser(e).control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 256})
 					}
 				}})
 				if !armed || n != nil || !errors.Is(err, limits.ErrWorkLimit) {

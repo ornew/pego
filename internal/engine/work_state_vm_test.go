@@ -180,16 +180,16 @@ rule arm = _`
 				fallback := 0
 				var observed *parser
 				n, err := prog.ParseWith("main", "a", ParseOptions{Backend: b, Unit: u, Recognize: recognize, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
-					observed = e.p
+					observed = traceParser(e)
 					if e.Kind == TraceEnter && e.Rule == "fallback" {
 						fallback++
 					}
 					if e.Kind == TraceExit && e.Rule == "arm" && e.Matched {
-						if len(e.p.trail) < 320 {
-							t.Fatalf("%v/%v recognize=%t: outer capture trail=%d", b, u, recognize, len(e.p.trail))
+						if len(traceParser(e).trail) < 320 {
+							t.Fatalf("%v/%v recognize=%t: outer capture trail=%d", b, u, recognize, len(traceParser(e).trail))
 						}
 						armed = true
-						e.p.control.limits.MaxSteps = e.p.control.stepsUsed + 20
+						traceParser(e).control.limits.MaxSteps = traceParser(e).control.stepsUsed + 20
 					}
 				}})
 				if !armed || n != nil || !errors.Is(err, limits.ErrWorkLimit) || fallback != 0 || observed == nil || observed.scratch != nil || observed.control != nil {

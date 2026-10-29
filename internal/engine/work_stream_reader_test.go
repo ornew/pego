@@ -91,7 +91,7 @@ rule row = .+ #atomic`)
 		o.Context = &workRawReaderPanicContext{Context: ctx, reader: reader, token: token}
 		var saved TraceEvent
 		o.Trace = func(e TraceEvent) {
-			if saved.p == nil {
+			if traceParser(saved) == nil {
 				saved = e
 			}
 		}
@@ -102,6 +102,6 @@ rule row = .+ #atomic`)
 		if got != token || err != nil || reader.calls != 1 {
 			t.Fatalf("panic=%#v error=%v calls=%d", got, err, reader.calls)
 		}
-		assertTraceParserDetached(t, saved.p, false)
+		assertTraceParserDetached(t, traceParser(saved), false)
 	})
 }

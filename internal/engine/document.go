@@ -104,7 +104,7 @@ func (d *Document) parseWithCapture(o ParseOptions, capture func(*parser, *value
 	if d.runner.shared().HasMissing || o.MissingTokens != 0 {
 		return nil, compile.MissingUnsupported("Document parsing")
 	}
-	if err := o.validateStreamDiagnostics(false); err != nil {
+	if err := validateStreamDiagnostics(o, false); err != nil {
 		return nil, err
 	}
 	if o.Unit != d.in.unit || d.runner.selectBackend(o.Backend) != d.back || o.Recognize {
@@ -155,7 +155,7 @@ func (d *Document) parseWithCapture(o ParseOptions, capture func(*parser, *value
 	} else {
 		runs = map[runKey]*runRecord{}
 	}
-	p = &parser{prog: active.shared(), input: d.in, memo: d.memo, memoAll: true, noPlain: true, maxDepth: o.maxDepth(d.back), gen: gen, edits: d.edits,
+	p = &parser{prog: active.shared(), input: d.in, memo: d.memo, memoAll: true, noPlain: true, maxDepth: depthLimit(o, d.back), gen: gen, edits: d.edits,
 		runs: runs, lastRuns: lastRuns, kidStack: d.kids}
 	p.control = c
 	p.setTrace(o.Trace)

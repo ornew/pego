@@ -53,7 +53,7 @@ func TestWorkParseCancelledFromTraceAndPanicCleanup(t *testing.T) {
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		ctx, cancel := context.WithCancel(context.Background())
 		var observed *parser
-		n, err := prog.ParseWith("main", "abc", ParseOptions{Backend: b, Context: ctx, Trace: func(e TraceEvent) { observed = e.p; cancel() }})
+		n, err := prog.ParseWith("main", "abc", ParseOptions{Backend: b, Context: ctx, Trace: func(e TraceEvent) { observed = traceParser(e); cancel() }})
 		if n != nil || !errors.Is(err, context.Canceled) || observed == nil || observed.scratch != nil || observed.control != nil {
 			t.Fatalf("%v: cancellation/cleanup node=%v err=%v parser=%v", b, n, err, observed)
 		}
@@ -61,7 +61,7 @@ func TestWorkParseCancelledFromTraceAndPanicCleanup(t *testing.T) {
 		var got any
 		func() {
 			defer func() { got = recover() }()
-			_, _ = prog.ParseWith("main", "abc", ParseOptions{Backend: b, Trace: func(e TraceEvent) { observed = e.p; panic(token) }})
+			_, _ = prog.ParseWith("main", "abc", ParseOptions{Backend: b, Trace: func(e TraceEvent) { observed = traceParser(e); panic(token) }})
 		}()
 		if got != token || observed.scratch != nil || observed.control != nil {
 			t.Fatalf("%v: panic=%v scratch=%v control=%v", b, got, observed.scratch, observed.control)
@@ -79,7 +79,7 @@ func TestWorkParseLongLiteralAndScanner(t *testing.T) {
 			n, err := prog.ParseWith("main", literal, ParseOptions{Backend: b, Unit: Bytes, Context: ctx, Trace: func(e TraceEvent) {
 				if e.Kind == TraceEnter {
 					calls++
-					e.p.control.ctx = newPollingContext(2)
+					traceParser(e).control.ctx = newPollingContext(2)
 				}
 			}})
 			cancel()
@@ -136,8 +136,8 @@ func TestWorkParseTraceAccessorInterruption(t *testing.T) {
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		var observed *parser
 		n, err := prog.ParseWith("main", "abc", ParseOptions{Backend: b, WorkLimits: limits.WorkLimits{MaxInputWork: 100}, Trace: func(e TraceEvent) {
-			observed = e.p
-			e.p.control.limits.MaxInputWork = e.p.control.inputUsed
+			observed = traceParser(e)
+			traceParser(e).control.limits.MaxInputWork = traceParser(e).control.inputUsed
 			e.LineCol(1) // Building the first line table is engine work inside caller code.
 		}})
 		if n != nil || !errors.Is(err, limits.ErrWorkLimit) || observed == nil || observed.scratch != nil {

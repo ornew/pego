@@ -152,7 +152,7 @@ rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}`,
 							trace := func(e TraceEvent) {
 								// Force eager recording for this fixture, on both paths.
 								if e.Kind == TraceEnter {
-									e.p.deferMemo = false
+									traceParser(e).deferMemo = false
 								}
 								if e.Kind == TraceExit && e.Memo && e.Rule == "r" {
 									memoObserved = true

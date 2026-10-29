@@ -60,7 +60,7 @@ rule seed = ^ "é"`, "\né", true},
 						if e.Kind != TraceExit || e.Rule != "expr" || !e.Memo || !e.Matched {
 							return
 						}
-						seed, found := e.p.memo.get(memoKey{rule: prog.ByName["expr"].ID, pos: e.Pos})
+						seed, found := traceParser(e).memo.get(memoKey{rule: prog.ByName["expr"].ID, pos: e.Pos})
 						if !found || !seed.growing || !seed.ok {
 							t.Fatal("successful growing seed is not available")
 						}

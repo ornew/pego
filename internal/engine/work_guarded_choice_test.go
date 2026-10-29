@@ -213,11 +213,11 @@ func workGuardedChoiceFatalAndRetry(t *testing.T, prog *Program, backend Backend
 			WorkLimits: limits.WorkLimits{MaxSteps: 1 << 30},
 			Trace: func(e TraceEvent) {
 				if e.Kind == TraceEnter && e.Rule == "main" {
-					observed = e.p
+					observed = traceParser(e)
 					if cancel {
-						e.p.control.ctx = newPollingContext(2)
+						traceParser(e).control.ctx = newPollingContext(2)
 					} else {
-						e.p.control.limits.MaxSteps = e.p.control.stepsUsed + 32
+						traceParser(e).control.limits.MaxSteps = traceParser(e).control.stepsUsed + 32
 					}
 				}
 				if e.Kind == TraceEnter && e.Rule == "fallback" {

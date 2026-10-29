@@ -214,13 +214,13 @@ rule row = (!"\n" .)+ #atomic "\n"`)
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
 				o.Trace = func(e TraceEvent) {
-					if saved.p == nil {
+					if traceParser(saved) == nil {
 						saved = e
 					}
 					if !armed && e.Kind == TraceEnter && e.Rule == "row" {
 						// The rule has not captured text yet. Fill loads input
 						// explicitly; Text on the entry exercises materialization.
-						p := e.p
+						p := traceParser(e)
 						p.fill(p.pos + 64)
 						previous = p.streamText
 						armed = true
@@ -241,7 +241,7 @@ rule row = (!"\n" .)+ #atomic "\n"`)
 				if !armed || !errors.Is(err, want) || emissions != 0 {
 					t.Fatalf("phase=%s armed=%t error=%v emits=%d old=%+v", phase, armed, err, emissions, previous)
 				}
-				assertTraceParserDetached(t, saved.p, false)
+				assertTraceParserDetached(t, traceParser(saved), false)
 				if err := prog.ParseStreamWith("main", strings.NewReader(text), func(*value.Node) error { return nil }, base); err != nil {
 					t.Fatalf("fresh replay: %v", err)
 				}

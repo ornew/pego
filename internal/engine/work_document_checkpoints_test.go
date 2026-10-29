@@ -197,7 +197,7 @@ rule line = [a-z] #repeat(2) #atomic "\n"`)
 				o.Context = observed
 				o.Trace = func(e TraceEvent) {
 					if e.Rule == "main" && e.Kind == TraceEnter {
-						running = e.p
+						running = traceParser(e)
 					}
 				}
 				n, err := d.ParseWith(o)

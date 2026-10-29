@@ -37,7 +37,7 @@ func TestWorkContextAttributionPreservesVMFaults(t *testing.T) {
 			var observed *parser
 			n, err := prog.ParseWith("main", "z", ParseOptions{
 				Backend: backend, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 20},
-				Trace: func(e TraceEvent) { observed = e.p },
+				Trace: func(e TraceEvent) { observed = traceParser(e) },
 			})
 			if n != nil || err == nil || !strings.HasPrefix(err.Error(), "invalid bytecode: ") {
 				t.Fatalf("VM fault node=%v error=%v", n, err)
@@ -82,8 +82,8 @@ func TestWorkContextAccessorInterruptionRemainsFatal(t *testing.T) {
 						if e.Kind != TraceEnter || e.Rule != "main" {
 							return
 						}
-						observed = e.p
-						e.p.control.limits.MaxSteps = e.p.control.stepsUsed + 1
+						observed = traceParser(e)
+						traceParser(e).control.limits.MaxSteps = traceParser(e).control.stepsUsed + 1
 						ctx.fn = func() error {
 							// The accessor's own reservation may poll the context.
 							ctx.fn = nil
@@ -92,7 +92,7 @@ func TestWorkContextAccessorInterruptionRemainsFatal(t *testing.T) {
 							return nil
 						}
 						// Keep the accessor within the trace callback's lifetime.
-						e.p.control.check()
+						traceParser(e).control.check()
 					},
 				})
 				var limit *limits.WorkLimitError
@@ -129,7 +129,7 @@ func TestWorkContextNestedAccessorPanicIdentity(t *testing.T) {
 							if e.Kind != TraceEnter || e.Rule != "main" {
 								return
 							}
-							observed = e.p
+							observed = traceParser(e)
 							ctx.fn = func() error {
 								if accessorEntered {
 									nestedPoll = true
@@ -140,7 +140,7 @@ func TestWorkContextNestedAccessorPanicIdentity(t *testing.T) {
 								return nil
 							}
 							// The accessor remains inside the trace callback.
-							e.p.control.check()
+							traceParser(e).control.check()
 						},
 					})
 				}()

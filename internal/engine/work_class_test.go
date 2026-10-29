@@ -44,9 +44,9 @@ func workClassBudgetOptions(backend Backend, unit PositionUnit, allowance uint64
 		Trace: func(e TraceEvent) {
 			if e.Kind == TraceEnter && e.Rule == "main" {
 				if observed != nil {
-					*observed = e.p
+					*observed = traceParser(e)
 				}
-				e.p.control.limits.MaxSteps = e.p.control.stepsUsed + allowance
+				traceParser(e).control.limits.MaxSteps = traceParser(e).control.stepsUsed + allowance
 			}
 		},
 	}
@@ -117,7 +117,7 @@ func TestWorkClassRangeCancellationAndPoolRetry(t *testing.T) {
 					WorkLimits: limits.WorkLimits{MaxSteps: 1 << 30},
 					Trace: func(e TraceEvent) {
 						if e.Kind == TraceEnter && e.Rule == "main" {
-							observed, control = e.p, e.p.control
+							observed, control = traceParser(e), traceParser(e).control
 							startSteps = control.stepsUsed
 							// Trace emit polls once after this callback; cancel at the next
 							// 256-step checkpoint, inside the deliberately long range scan.
@@ -266,7 +266,7 @@ func TestWorkClassOptimizedRoutes(t *testing.T) {
 							Backend: backend, Unit: unit, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 30},
 							Trace: func(e TraceEvent) {
 								if e.Kind == TraceEnter && e.Rule == "main" {
-									c = e.p.control
+									c = traceParser(e).control
 									start = c.stepsUsed
 									c.ctx = newPollingContext(2)
 								}

@@ -118,6 +118,17 @@ func (e TraceEvent) Recovered() []*SyntaxError {
 	return e.rec
 }
 
+// traceParser returns the parser that reported e, or nil for an event that no parse reported.
+// It gives code outside the public API, such as Profile, the parse state behind an event.
+func traceParser(e TraceEvent) *parser {
+	return e.p
+}
+
+// traceExpectations returns the expectations of the farthest failure that e records.
+func traceExpectations(e TraceEvent) []expID {
+	return e.exp
+}
+
 // tracer is the tracing state of a parse.
 type tracer struct {
 	fn func(TraceEvent)

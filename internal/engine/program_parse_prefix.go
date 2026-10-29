@@ -18,7 +18,7 @@ type PrefixResult struct {
 // and fatal errors return a zero result. Explicit EOF assertions still see the
 // entire supplied input.
 func (prog *Program) ParsePrefixWith(start, input string, o ParseOptions) (result PrefixResult, err error) {
-	if err := o.validateStreamDiagnostics(false); err != nil {
+	if err := validateStreamDiagnostics(o, false); err != nil {
 		return PrefixResult{}, err
 	}
 	if prog.HasMissing || o.MissingTokens > 0 {
@@ -47,7 +47,7 @@ func (prog *Program) ParsePrefixWith(start, input string, o ParseOptions) (resul
 	p := acquirePooledParser(&active.sharedProgram)
 	defer p.releaseBatchScratch()
 	p.input = newControlledTextInput(input, o.Unit, !o.Recognize, p.scratch, control)
-	p.maxDepth = o.maxDepth(o.Backend)
+	p.maxDepth = depthLimit(o, o.Backend)
 	p.deferMemo = true
 	p.setTrace(o.Trace)
 	result, err = active.runPrefix(p, o.Backend, start)

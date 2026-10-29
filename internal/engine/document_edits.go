@@ -107,7 +107,7 @@ func (d *Document) EditBatch(base DocumentVersion, edits ...TextEdit) error {
 			return fmt.Errorf("edit %d [%d,%d): %w", i, edit.Start, edit.End, err)
 		}
 		text := edit.Text
-		units := d.in.unit.textLen(text)
+		units := textLen(d.in.unit, text)
 		if d.in.unit != Bytes && !utf8.ValidString(text) {
 			text = string([]rune(text))
 		}

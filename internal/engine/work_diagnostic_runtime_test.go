@@ -197,15 +197,15 @@ func TestWorkDiagnosticBatchFailureAndTraceAccessor(t *testing.T) {
 						var c *workControl
 						var at uint64
 						n, err := active.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Recognize: recognize, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
-							observed = e.p
+							observed = traceParser(e)
 							if e.Kind == TraceEnter && e.Rule == "fallback" {
 								fallback++
 							}
 							if !armed && e.Kind == TraceExit && ((accessor && e.Rule == "bad") || (!accessor && e.Rule == "main")) {
-								if e.Matched || len(e.exp) != 16 {
-									t.Fatalf("unexpected diagnostic fixture exp=%d", len(e.exp))
+								if e.Matched || len(traceExpectations(e)) != 16 {
+									t.Fatalf("unexpected diagnostic fixture exp=%d", len(traceExpectations(e)))
 								}
-								armed, c, at = true, e.p.control, e.p.control.stepsUsed
+								armed, c, at = true, traceParser(e).control, traceParser(e).control.stepsUsed
 								if accessor {
 									if cancel {
 										c.ctx = newPollingContext(1)
@@ -269,13 +269,13 @@ rule bad = "a" @error(message=` + strconv.Quote(message) + `)`
 				armed, fallback := false, 0
 				var observed *parser
 				n, err := prog.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Recognize: recognize, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
-					observed = e.p
+					observed = traceParser(e)
 					if e.Kind == TraceEnter && e.Rule == "fallback" {
 						fallback++
 					}
 					if !armed && e.Kind == TraceExit && e.Rule == "bad" {
 						armed = true
-						e.p.control.limits.MaxSteps = e.p.control.stepsUsed + 256
+						traceParser(e).control.limits.MaxSteps = traceParser(e).control.stepsUsed + 256
 					}
 				}})
 				if !armed || n != nil || observed.scratch != nil || observed.control != nil {
@@ -292,15 +292,15 @@ rule bad = "a" @error(message=` + strconv.Quote(message) + `)`
 				if !recognize {
 					armed, fallback = false, 0
 					n, err = prog.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
-						observed = e.p
+						observed = traceParser(e)
 						if e.Kind == TraceEnter && e.Rule == "fallback" {
 							fallback++
 						}
 						if !armed && e.Kind == TraceExit && e.Rule == "bad" {
 							armed = true
 							// The post-callback check succeeds; the message copy polls next.
-							e.p.control.ctx = newPollingContext(2)
-							e.p.control.stepsSinceCheck, e.p.control.inputSinceCheck = 0, 0
+							traceParser(e).control.ctx = newPollingContext(2)
+							traceParser(e).control.stepsSinceCheck, traceParser(e).control.inputSinceCheck = 0, 0
 						}
 					}})
 					if !armed || n != nil || !errors.Is(err, context.Canceled) || fallback != 0 || observed.scratch != nil || observed.control != nil {

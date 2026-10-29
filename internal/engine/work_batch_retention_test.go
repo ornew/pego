@@ -19,10 +19,10 @@ import (
 
 func batchRetentionParser(t *testing.T, e TraceEvent) *parser {
 	t.Helper()
-	if e.p == nil {
+	if traceParser(e) == nil {
 		t.Fatal("trace callback did not retain parser")
 	}
-	return e.p
+	return traceParser(e)
 }
 
 func batchRetentionJSON(t *testing.T, n *value.Node) []byte {
@@ -145,7 +145,7 @@ func TestWorkBatchTraceCallbackPanicDetachesParserAndPreservesRetry(t *testing.T
 				got := workContextRecover(func() {
 					node, err = prog.ParseWith("main", text, ParseOptions{Backend: backend, Unit: unit, Trace: func(e TraceEvent) {
 						if e.Kind == TraceEnter && e.Rule == "main" {
-							observed = e.p
+							observed = traceParser(e)
 							panic(token)
 						}
 					}})
@@ -198,12 +198,12 @@ func TestWorkBatchTraceInterruptionDetachesParser(t *testing.T) {
 								return
 							}
 							if e.Kind == TraceEnter {
-								observed = e.p
+								observed = traceParser(e)
 								switch cause {
 								case "cancel":
 									cancel()
 								case "steps":
-									e.p.control.limits.MaxSteps = e.p.control.stepsUsed
+									traceParser(e).control.limits.MaxSteps = traceParser(e).control.stepsUsed
 								case "context-panic":
 									panicCtx.armed = true
 								}
@@ -307,8 +307,8 @@ func TestWorkBatchTraceEventReleasesCapturedContextAfterReturn(t *testing.T) {
 			for _, active := range []bool{false, true} {
 				t.Run(fmt.Sprintf("%s/%s/active=%t", backend, unit, active), func(t *testing.T) {
 					event, ref, err := batchRetentionCaptureEvent(prog, text, backend, unit, active)
-					if err != nil || event.p == nil {
-						t.Fatalf("event parser=%p err=%v", event.p, err)
+					if err != nil || traceParser(event) == nil {
+						t.Fatalf("event parser=%p err=%v", traceParser(event), err)
 					}
 					released := false
 					for range 5 {
@@ -323,7 +323,7 @@ func TestWorkBatchTraceEventReleasesCapturedContextAfterReturn(t *testing.T) {
 					if !released {
 						t.Fatal("stored event still retains its trace-captured context after bounded GC")
 					}
-					assertTraceParserDetached(t, event.p, false)
+					assertTraceParserDetached(t, traceParser(event), false)
 				})
 			}
 		}
