@@ -408,7 +408,7 @@ func (p *parser) mergeExpected(far int, ids []expID) {
 }
 
 // rule is a rule as the parser runs it: the facts of the compiled rule and the executable parts that
-// a backend built for it (closures.go, vm.go).
+// a backend built for it (closure_builder.go, vm.go).
 type rule struct {
 	staticRule
 	// kinds are the node kinds the rule makes (value.NewRuleKinds).

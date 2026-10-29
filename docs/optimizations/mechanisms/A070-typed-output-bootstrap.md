@@ -44,7 +44,7 @@ emission`](../../../internal/gen/gogen/types.go), [`typed allocator
 state`](../../../runtime/typed.go),
 [`disableTypedOutputBootstrap`](../../../internal/gen/gogen/generator.go),
 [`retained-output
-fixture`](../../../internal/engine/gen_typed_output_retention_test.go).
+fixture`](../../../internal/engine/gogen_typed_output_retention_test.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

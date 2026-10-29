@@ -36,7 +36,7 @@ Evidence records: [048](../048-a-typed-runtime-for-parseast.md),
 Source owners: [`astNew generation`](../../../internal/gen/gogen/types.go),
 [`disableTypedObjectSlabs`](../../../internal/gen/gogen/generator.go),
 [`objects/individual
-controls`](../../../internal/engine/gen_typed_output_retention_test.go).
+controls`](../../../internal/engine/gogen_typed_output_retention_test.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

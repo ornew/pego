@@ -347,7 +347,7 @@ generated output remained byte-identical to baseline `bc0e13a`; opt-in source
 grew 5.02%/4.39% for direct/conversion calculator, 9.14%/7.12% for JSON, and
 10.04%/8.00% for XML. Broad workload, binary-size, retained-heap and generation
 costs were not measured for this typed extension. The source is
-`internal/engine/gen_typed_observe_bench_test.go`; exported temporary fixtures
+`internal/engine/gogen_typed_observe_bench_test.go`; exported temporary fixtures
 and raw measurement logs are not repository artifacts.
 
 ### Generated Go Profile Measurements
@@ -395,7 +395,7 @@ per-API estimates. Each benchmark reused one `Profile` per case and excluded
 `Snapshot`. Generated source grew versus the prior trace-enabled generator by
 0.870–4.530% for Node and 0.545–3.018% for typed output, depending on fixture.
 Binary size, retained heap and generation time were not measured. The benchmark
-source is `internal/engine/gen_profile_bench_test.go`; exported fixtures and
+source is `internal/engine/gogen_profile_bench_test.go`; exported fixtures and
 raw results are not repository artifacts.
 
 To reproduce the candidate measurements, export the fixtures and run each
@@ -441,7 +441,7 @@ alternate their order:
 go test ./internal/engine -run '^$' -bench '^BenchmarkGeneratedObservabilityGeneration$' -benchmem -benchtime=200ms -count=3
 ```
 
-The benchmark source is `internal/engine/gen_observe_bench_test.go`; the
+The benchmark source is `internal/engine/gogen_observe_bench_test.go`; the
 generated fixtures and raw results are not repository artifacts.
 
 ### TypeScript Batch Measurements
@@ -473,7 +473,7 @@ ordinary generated Node/typed sources were byte-identical to baseline
 calculator Node/typed, 7.455%/7.147% for JSON and 8.541%/8.187% for XML.
 Allocations, retained memory, binary size and generation time were not measured
 for this TypeScript slice. Benchmark sources are
-`internal/engine/gen_ts_observe_bench_test.go` and the generated
+`internal/engine/tsgen_observe_bench_test.go` and the generated
 `bench.mjs`; raw results and generated fixtures are not repository artifacts.
 Export the controls, then alternate ordinary and observed processes across
 three pairs for each fixture:
@@ -531,7 +531,7 @@ PEGO_PROFILE_MODES=none,trace,profile node --expose-gc profile-bench.mjs
 Repeat for typed JSON, XML and calculator fixtures. The driver defaults to
 75 ms warmup and 150 ms timing; `PEGO_PROFILE_WARM_MS` and
 `PEGO_PROFILE_BENCH_MS` override these durations. The exporter is
-`TestExportGeneratedTSTraceBenchmarks`; the benchmark source is committed in `internal/engine/gen_ts_profile_bench_test.go`. Exported
+`TestExportGeneratedTSTraceBenchmarks`; the benchmark source is committed in `internal/engine/tsgen_profile_bench_test.go`. Exported
 sources and raw results are not repository artifacts.
 
 ## Limitations and Open Questions

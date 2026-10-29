@@ -15,7 +15,7 @@ import (
 
 // Compare the public parse result and exported diagnostic records with and
 // without a generous work limit. Fixtures are drawn from attrs_test.go,
-// gen_flowrule_recovery_test.go, and trace_lr_test.go.
+// gogen_flowrule_recovery_test.go, and trace_lr_test.go.
 func TestWorkDiagnosticPublicParity(t *testing.T) {
 	tests := []struct {
 		name, grammar string

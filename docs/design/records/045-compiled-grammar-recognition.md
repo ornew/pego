@@ -21,7 +21,7 @@ entry point is required.
 
 ## Current Behavior
 
-[parse.go](../../../internal/engine/parse.go) lazily builds a recognizer from `Program.Grammar`; without it the error is
+[program_parse.go](../../../internal/engine/program_parse.go) lazily builds a recognizer from `Program.Grammar`; without it the error is
 `recognition needs the grammar or a recognition bundle; recompile this compiled grammar from source`. [compile.go](../../../internal/compile/compile.go)
 already has a recognition compilation mode and `valueNeededRules`: rules supplying predicate captures and their
 transitive callees retain value construction/actions. Other rules suppress values and actions. Recognition can

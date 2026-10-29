@@ -1,5 +1,5 @@
 # Digests of the Document parses of the generated Node parsers (results, errors, evaluation and reuse counts after
-# every edit of a seeded sequence), by group, mode and case (see gen_flow_document_test.go).
+# every edit of a seeded sequence), by group, mode and case (see gogen_flow_document_test.go).
 # Rewrite with: go test ./internal/engine -run Document -update
 # A run checks every entry of its scope: an entry that is missing, stale or different fails. -update replaces the
 # entries of the scope, drops stale ones and logs a summary per case. Review the diff: it is a regression freeze.

@@ -47,7 +47,7 @@ Evidence records:
 
 Source owners: [`firstTerminal`](../../../internal/compile/compile.go),
 [`Walker.ExprForm and Compiler.first`](../../../internal/compile/compile_walk.go),
-[`closureBuilder.Choice and guard`](../../../internal/engine/closures.go), [`GUARD
+[`closureBuilder.Choice and guard`](../../../internal/engine/closure_builder.go), [`GUARD
 emission`](../../../internal/compile/bcompile.go), [`generated choice
 guards`](../../../internal/gen/gogen/generator.go), [`TypeScript choice
 guards`](../../../internal/gen/tsgen/generator.go).

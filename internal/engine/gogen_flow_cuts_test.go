@@ -14,7 +14,7 @@ import (
 // the other rules do (flowFrameExprOK). Flow IR lowers a cut as in the typed table: a flag per backtracking
 // point, which the function reads from and publishes to the runtime's cut flag at its outermost scope. The
 // runtime keeps the frame, memo, depth and finish of the rule, so a cut changes no runtime semantics. Leaders
-// and recovery take the Flow route as well (gen_flow_leaders_test.go and gen_flow_recovery_test.go). The
+// and recovery take the Flow route as well (gogen_flow_leaders_test.go and gogen_flow_recovery_test.go). The
 // generated parsers of the corpus run as the engine's, in both forms and with observation, documents and work
 // controls (the corpus cases "cuts in every scope" and "cut with captures and a projected repetition" fail near
 // and after cuts, so that the errors show whether the alternatives after a cut were tried); the tests here

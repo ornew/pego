@@ -384,10 +384,10 @@ A traced or profiled parse (`WithTrace`, `WithProfile`) reports an enter and an 
 call, and a Document parse memoizes transient rules ([Engine Tracing](../../../spec/runtime/observability.md#engine-tracing),
 [Rule Calls](../../../spec/bytecode/README.md#rule-calls)). Both are options of a parse. The closure backend and the
 VMs share one program between these parses and all others and decide at every call whether to take the
-plain path (`r.plain && !p.noPlain` in `closures.go`, `vm.go` and `ivm.go`; `setTrace` in `trace.go` and
+plain path (`r.plain && !p.noPlain` in `closure_builder.go`, `vm.go` and `ivm.go`; `setTrace` in `trace.go` and
 every Document parse in `document.go` set `noPlain`). Recognition and, in the closure backend, work
 controls already select separate programs, built on first use under a `sync.Once` of the shared
-`Program` (`Program.Recognizer` in `parse.go`, `prepareControlledProgram` in `work_setup.go`); a program
+`Program` (`Program.Recognizer` in `program_parse.go`, `prepareControlledProgram` in `program_work_setup.go`); a program
 saved in recognize mode stores the recognizer's module.
 
 Closures and bytecode therefore compile each program in two **families**:
@@ -655,7 +655,7 @@ stage of its first consumer, so its differential tests and negative controls run
    `noPlain` checks.
 5. **Closures**, in both families. Gate: unchanged results and engine event streams; event-free equality
    of the two families; `Compile` plus the first-use build of the inlined family within noise of today's
-   `Compile` in time and allocations, and the first-use build of the call-preserving family measured. Then remove the closure builder (`closures.go`), its helpers, the term compilation of
+   `Compile` in time and allocations, and the first-use build of the call-preserving family measured. Then remove the closure builder (`closure_builder.go`), its helpers, the term compilation of
    `eval.go` and `noPlain`. If `Compile` time
    regresses, the stage does not flip; the remedies to measure are building Core IR per rule on first use
    and skipping optimizing passes and closure construction for compilations that only report diagnostics,

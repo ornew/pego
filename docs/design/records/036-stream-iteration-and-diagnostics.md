@@ -32,7 +32,7 @@ valid only for streaming entry points and is rejected by batch parse,
 
 ## Motivation
 
-`Parser.ParseStream` pushes each `#stream` element to a callback. It returns recovered `SyntaxErrors` only at EOF and accumulates them until then. This is suitable for finite input but can retain unbounded diagnostics for a long faulty stream. The callback also cannot express demand except by returning an error to stop parsing. See [`Parser.ParseStream`](../../../pego.go), [`ParseStreamWith`](../../../internal/engine/parse.go), and the stream commitment rules in [007](007-streaming-and-incremental-parsing.md).
+`Parser.ParseStream` pushes each `#stream` element to a callback. It returns recovered `SyntaxErrors` only at EOF and accumulates them until then. This is suitable for finite input but can retain unbounded diagnostics for a long faulty stream. The callback also cannot express demand except by returning an error to stop parsing. See [`Parser.ParseStream`](../../../pego.go), [`ParseStreamWith`](../../../internal/engine/program_parse.go), and the stream commitment rules in [007](007-streaming-and-incremental-parsing.md).
 
 An `io.Reader` may block inside `Read`. Parser state cannot cancel a read in caller-owned code. The API must make that ownership limit explicit instead of creating a hidden producer goroutine or closing a reader it did not create.
 

@@ -60,7 +60,7 @@ Source size and compiler cost are measured alongside matching speed in [changes 
 
 ### Verifying Identical Behavior
 
-The runtime code is written separately from the engine, so the two can diverge. The tests (`internal/engine/gen_test.go`) therefore check the following:
+The runtime code is written separately from the engine, so the two can diverge. The tests (`internal/engine/gogen_test.go`) therefore check the following:
 
 1. Generate parsers from all grammars in `examples/` and from the grammars of the engine tests (Operators Rule, left recursion, predicates and variables, error recovery, `@error`, cut, lookahead, built-in functions, run-time errors and more).
 2. Build the generated code together in a temporary module and run it.

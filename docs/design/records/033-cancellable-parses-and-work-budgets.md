@@ -30,7 +30,7 @@ existing boundary:
   recognition, depth, and tracing; [`public APIs`](../../../pego.go) use functional
   ParseOption arguments. Document stores its construction settings; Parse has
   no per-call arguments today.
-- [`run`/`recoverParse`](../../../internal/engine/parse.go) distinguish completed
+- [`run`/`recoverParse`](../../../internal/engine/program_parse.go) distinguish completed
   syntax/recovery outcomes from fatal interruptions. Recognition skips actions
   whose values predicates do not need; predicate-dependent rules and callees
   can still execute actions. Streams synchronously call a caller-owned reader

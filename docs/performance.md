@@ -128,7 +128,7 @@ Notes:
 
 ### Generated Typed-Output Retention
 
-`internal/engine/gen_typed_output_retention_test.go` exports a generated fixture
+`internal/engine/gogen_typed_output_retention_test.go` exports a generated fixture
 and checks escaped terminal, string-node, shared-structure and returned-list values
 in both position units. It exports `slabs`, `legacy`, `objects`, `slices` and
 `individual` subdirectories. `slabs` uses the first-three-object/first-nonempty-

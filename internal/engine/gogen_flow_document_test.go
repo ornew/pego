@@ -269,7 +269,7 @@ func runDocumentProbes(t *testing.T, cases []documentCase, start string, mutate 
 const documentGolden = "testdata/document.golden"
 
 const documentGoldenHeader = "# Digests of the Document parses of the generated Node parsers (results, errors, evaluation and reuse counts after\n" +
-	"# every edit of a seeded sequence), by group, mode and case (see gen_flow_document_test.go).\n" +
+	"# every edit of a seeded sequence), by group, mode and case (see gogen_flow_document_test.go).\n" +
 	"# Rewrite with: go test ./internal/engine -run Document -update\n" + goldenRules
 
 var documentGoldenFile = goldenFile{path: documentGolden, header: documentGoldenHeader}

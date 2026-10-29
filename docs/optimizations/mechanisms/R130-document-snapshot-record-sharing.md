@@ -37,9 +37,9 @@ parse speedup.
 Evidence records: [097](../097-exact-document-snapshot-record-sharing.md).
 
 Source owners: [`snapshot graph freezing and exact
-sharing`](../../../internal/engine/snapshot.go), [`default
-policy`](../../../internal/engine/snapshot_sharing_enabled.go), [`copy
-comparator`](../../../internal/engine/snapshot_sharing_reference.go).
+sharing`](../../../internal/engine/document_snapshot.go), [`default
+policy`](../../../internal/engine/document_snapshot_sharing_enabled.go), [`copy
+comparator`](../../../internal/engine/document_snapshot_sharing_reference.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

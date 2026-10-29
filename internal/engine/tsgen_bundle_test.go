@@ -17,7 +17,7 @@ var (
 // generateTSBundle generates a TypeScript parser as one module, the way these tests have always run
 // it: the three files in one scope (runtime, types, parser), without the imports between them. Test
 // hooks append code that reaches the runtime's internals and parsers' own names this way. The tests
-// of the real file split (gen_ts_split_test.go) compile and run the files as they are written.
+// of the real file split (tsgen_split_test.go) compile and run the files as they are written.
 func generateTSBundle(g *grammar.Grammar, opts gen.GenOptions) ([]byte, error) {
 	files, err := GenerateTS(g, opts)
 	if err != nil {
