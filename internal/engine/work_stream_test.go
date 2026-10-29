@@ -492,17 +492,17 @@ func TestWorkStreamDiscardAndStackClear(t *testing.T) {
 			if phase == "trail" {
 				p.trail = make([]undo, 0, 129)
 			} else {
-				p.vals = make([]any, 1, 130)
-				p.vals[0] = node
-				for i := 1; i < cap(p.vals); i++ {
-					p.vals[:cap(p.vals)][i] = node
+				vmMachineOf(p).vals = make([]any, 1, 130)
+				vmMachineOf(p).vals[0] = node
+				for i := 1; i < cap(vmMachineOf(p).vals); i++ {
+					vmMachineOf(p).vals[:cap(vmMachineOf(p).vals)][i] = node
 				}
 			}
 			got := catchStreamPanic(func() { p.commit(2048) })
 			if _, ok := got.(fatal); !ok || p.base != 2047 || p.pruned != 0 || value.D(node).Text != "owned" {
 				t.Fatalf("commit %s interruption=%v base=%d pruned=%d", phase, got, p.base, p.pruned)
 			}
-			if phase == "values" && (p.vals[0] != node || p.vals[:cap(p.vals)][129] != node) {
+			if phase == "values" && (vmMachineOf(p).vals[0] != node || vmMachineOf(p).vals[:cap(vmMachineOf(p).vals)][129] != node) {
 				t.Fatal("clear crossed reservation or live values")
 			}
 		})

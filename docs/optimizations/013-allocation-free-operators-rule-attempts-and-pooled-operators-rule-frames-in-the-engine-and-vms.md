@@ -6,7 +6,7 @@
 - The iterative VM pools its skip, longest, nud and Operators Rule frames (generic `reuse[T]`, released in `release`), holds
   attempts by value, and pushes no skip frame when the Operators Rule has no `skip`.
 - Pitfall: putting the `operatorsRuleAttempt` into `iresult` (returned on every VM step) made the iterative VM about 20%
-  slower on every grammar, Operators Rule or not. The attempt is passed through `parser.attempt` instead, so `iresult` stays
+  slower on every grammar, Operators Rule or not. The attempt is passed through `ivmMachine.attempt` instead, so `iresult` stays
   small.
 - Effect (min of 6, codepoints, allocs/op before → after):
 

@@ -95,17 +95,13 @@ type parser struct {
 	// set for whole-input parses; Document and streams memoize on the first call.
 	deferMemo bool
 
-	// Bytecode VM state
-	vals []any      // value stack
-	ents []vmEntry  // entry stack
-	labs []labState // state of the label, recovery and skip entries on ents
-	reps []repState
+	// backend is the state that the backend running the parse keeps beside the parser, or nil
+	// when it keeps none.
+	backend backendState
 	// estack is the operand stack of expression code (vmProgram.eval), also used for the
 	// arguments of built-ins and struct fields by the closure backend's evaluator.
 	estack []any
-	names  []string  // field names for newStruct in the closure backend's evaluator
-	lists  []int     // starts on kidStack of the lists being gathered by ELISTBEGIN
-	pool   framePool // frames of the iterative-model VM
+	names  []string // field names for newStruct in the closure backend's evaluator
 
 	// Chunks of nodes and child slices (alloc.go), and the stack that collects repetition children
 	nodeSlab  []value.Node
@@ -113,7 +109,6 @@ type parser struct {
 	kidStack  []*value.Node
 	frameSlab []frame
 	fieldSlab []value.NodeField
-	posSlab   []int
 	// Document edits: gen is the number of edits made before this parse, and edits records them
 	// (see moveResult). moved holds the copies made by moveEmpty.
 	gen    uint32
@@ -136,24 +131,44 @@ type parser struct {
 	// Their dependencies are never discharged merely by finishing a new head.
 	memoProvisionalUses int
 	activeSeed          *memoEntry
-	resumed             int         // elements reused by resumeRepeat (for tests)
-	freeRuns            []*runState // runStates of finished VM repetitions (newRunState)
+	resumed             int // elements reused by resumeRepeat (for tests)
 	// scratch holds the pooled buffers the parser uses (acquirePooledParser), or nil.
 	scratch *scratch
 	// nodeChunks counts the node chunks allocated since the last splitChunks.
 	// A negative count tracks the exact-size prefix budget before #stream.
 	nodeChunks int
-	funcSlab   []vmFunc
 	ectx       evalCtx // area for useCtx
 	// Areas for lambdas of the closure backend: closures live until the next evaluation
 	// (useCtx), and the contexts and parameters of a call until it returns.
 	closures arena[closure]
 	lctxs    arena[evalCtx]
 	locals   arena[local]
-	item     [1]*value.Node       // the element list of an action whose body is not a sequence (one)
-	oplocals [3]local             // $lhs, $rhs and $op of a OperatorsRule operator action
-	saved    []*value.Node        // captures saved across a reset in longest
-	attempt  operatorsRuleAttempt // result of the longestFrame that just finished (iterative VM)
+	item     [1]*value.Node // the element list of an action whose body is not a sequence (one)
+	oplocals [3]local       // $lhs, $rhs and $op of a OperatorsRule operator action
+	saved    []*value.Node  // captures saved across a reset in longest
+}
+
+// backendState is the state that a backend keeps beside the parser for the parse it runs, such
+// as the stacks of a VM. The parser holds it so that a rule body, which receives only the parser,
+// can find it. The shared code calls it where it lets go of parse state; a Document keeps it from
+// one parse to the next.
+type backendState interface {
+	// splitChunks lets go of the chunks the backend allocates values from, when the parser
+	// splits its own chunks (splitChunks, startStreamChunks).
+	splitChunks()
+	// clearInactive clears the unused capacity of the backend's stacks when a stream commits.
+	clearInactive()
+	// attach makes the state serve the parser p, for a Document that kept it from a parse with
+	// another parser.
+	attach(p *parser)
+	// keep prepares the state to be kept for a later parse of an input of n units. It lets go
+	// of the parser, which attach replaces, and drops buffers much larger than such a parse
+	// needs; clear also clears the used capacity.
+	keep(n int, clear bool)
+	// release lets go of the parser and clears and drops the buffers of the state.
+	release()
+	// retainedBytes estimates the memory of the buffers the state keeps.
+	retainedBytes() uint64
 }
 
 type memoKey struct {

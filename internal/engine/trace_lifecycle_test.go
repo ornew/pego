@@ -92,7 +92,7 @@ func TestTraceLifecycleDocumentDetachment(t *testing.T) {
 						if got != token || n != nil || err != nil {
 							t.Fatalf("node=%v err=%v panic=%v", n, err, got)
 						}
-						if d.memo.len() != 0 || d.runs != nil || d.kids != nil || d.vals != nil {
+						if d.memo.len() != 0 || d.runs != nil || d.kids != nil || d.machine != nil {
 							t.Fatal("panic kept provisional document state")
 						}
 					}

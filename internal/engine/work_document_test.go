@@ -25,7 +25,7 @@ func workDocumentVariants(t *testing.T, run func(*testing.T, ParseOptions)) {
 
 func workDocumentAssertAborted(t *testing.T, d *Document) {
 	t.Helper()
-	if d.memo.len() != 0 || d.runs != nil || d.kids != nil || d.vals != nil || d.in.control != nil {
+	if d.memo.len() != 0 || d.runs != nil || d.kids != nil || d.machine != nil || d.in.control != nil {
 		t.Fatal("interruption retained reusable state or invocation control")
 	}
 }
@@ -34,7 +34,7 @@ func workDocumentAssertPreserved(t *testing.T, d *Document, before Document) {
 	t.Helper()
 	if d.memo != before.memo || fmt.Sprintf("%p", d.runs) != fmt.Sprintf("%p", before.runs) ||
 		fmt.Sprintf("%p", d.kids) != fmt.Sprintf("%p", before.kids) ||
-		fmt.Sprintf("%p", d.vals) != fmt.Sprintf("%p", before.vals) || !reflect.DeepEqual(*d, before) {
+		fmt.Sprintf("%p", documentVMValues(d)) != fmt.Sprintf("%p", documentVMValues(&before)) || !reflect.DeepEqual(*d, before) {
 		t.Fatal("pre-execution interruption changed Document state or retained storage")
 	}
 }
@@ -343,7 +343,7 @@ func TestWorkDocumentPreRunPreservesOversizedValues(t *testing.T) {
 			}
 			// A large parse followed by a short replacement can leave this
 			// cleared storage for the next parse's capacity policy to trim.
-			d.vals = make([]any, 0, 2048)
+			d.machine = &vmMachine{vals: make([]any, 0, 2048)}
 			before := *d
 			o := d.ParseDefaults()
 			o.Context = newPollingContext(2) // admission succeeds; pre-run cancels
@@ -352,7 +352,7 @@ func TestWorkDocumentPreRunPreservesOversizedValues(t *testing.T) {
 				t.Fatalf("node=%v error=%v", n, err)
 			}
 			workDocumentAssertPreserved(t, d, before)
-			for i, v := range d.vals[:cap(d.vals)] {
+			for i, v := range documentVMValues(d)[:cap(documentVMValues(d))] {
 				if v != nil {
 					t.Fatalf("scratch slot %d changed", i)
 				}

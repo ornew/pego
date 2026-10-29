@@ -30,8 +30,8 @@ established throughput improvement.
 Evidence records:
 [016](../016-start-positions-and-lambdas-from-chunks-in-the-vms.md).
 
-Source owners: [`parser.newPos and
-newFunc`](../../../internal/engine/alloc.go), [`PUSHPOS and EFUNC
+Source owners: [`vmMachine.newPos and
+newFunc`](../../../internal/engine/vm.go), [`PUSHPOS and EFUNC
 evaluation`](../../../internal/engine/vm.go), [`iterative value
 consumers`](../../../internal/engine/ivm.go).
 

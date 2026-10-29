@@ -134,7 +134,7 @@ func (d *Document) EditBatch(base DocumentVersion, edits ...TextEdit) error {
 	// old result Nodes remain untouched until a later ordinary Parse.
 	d.in = in
 	d.memo = newMemoTable()
-	d.edits, d.runs, d.kids, d.vals = nil, nil, nil, nil
+	d.edits, d.runs, d.kids, d.machine = nil, nil, nil, nil
 	d.runGen, d.resumed = 0, 0
 	d.sequence++
 	d.recordEdit(base, edits)

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"unsafe"
 
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
@@ -174,12 +175,13 @@ func newVMProgram(m *bytecode.Module, iterative bool) *vmProgram {
 		r.Stream = vm.streams(entry)
 		if iterative {
 			r.body = func(p *parser, min int) (*value.Node, bool) {
-				res := p.iterate(vm, p.bodyFrame(entry, r, min, false))
+				mc := ivmMachineOf(p)
+				res := mc.iterate(vm, mc.bodyFrame(entry, r, min, false))
 				return res.v, res.ok
 			}
 		} else {
 			r.body = func(p *parser, min int) (*value.Node, bool) {
-				v, ok, _ := p.exec(vm, entry, r, min)
+				v, ok, _ := vmMachineOf(p).exec(vm, entry, r, min)
 				return v, ok
 			}
 		}
@@ -212,7 +214,7 @@ func (vm *vmProgram) scope(ids []int) *compile.Scope {
 // within the section.
 func (vm *vmProgram) block(entry int) matcher {
 	return func(p *parser) (*value.Node, bool) {
-		v, ok, cut := p.exec(vm, entry, nil, 0)
+		v, ok, cut := vmMachineOf(p).exec(vm, entry, nil, 0)
 		if cut {
 			p.cut = true
 		}
@@ -310,6 +312,95 @@ func (vm *vmProgram) operatorsRule(pi *bytecode.OperatorsRuleInfo) *operatorsRul
 	return pr
 }
 
+// vmMachine is the state of the bytecode VM for one parse, beside the parser it runs on: the
+// value, entry, label and repetition stacks of the running code, the starts of the lists being
+// gathered, the chunks that lambdas and pushed positions are allocated from, and the runStates of
+// finished repetitions for reuse. The parser holds it as its backend state (vmMachineOf). A
+// driver built on this VM that needs state of its own, such as frames, embeds vmMachine in that
+// state and points driver at it.
+type vmMachine struct {
+	p        *parser
+	vals     []any      // value stack
+	ents     []vmEntry  // entry stack
+	labs     []labState // state of the label, recovery and skip entries on ents
+	reps     []repState
+	lists    []int // starts on kidStack of the lists being gathered by ELISTBEGIN
+	funcSlab []vmFunc
+	posSlab  []int       // positions pushed as values (newPos); stream splits keep it
+	freeRuns []*runState // runStates of finished repetitions (newRunState)
+	driver   vmDriverState
+}
+
+// vmDriverState is the state that a driver built on the VM keeps beside vmMachine.
+type vmDriverState interface {
+	// reset drops the state of the last parse. vmMachine keeps the driver state for the next
+	// parse only through keep, which resets it.
+	reset()
+}
+
+// vmMachineOf returns the VM state of the parse that p runs, making it on first use.
+func vmMachineOf(p *parser) *vmMachine {
+	if mc, ok := p.backend.(*vmMachine); ok {
+		return mc
+	}
+	mc := &vmMachine{p: p}
+	p.backend = mc
+	return mc
+}
+
+func (mc *vmMachine) splitChunks() { mc.funcSlab = nil }
+
+func (mc *vmMachine) clearInactive() { clearWork(mc.p, mc.vals[len(mc.vals):cap(mc.vals)]) }
+
+func (mc *vmMachine) attach(p *parser) { mc.p = p }
+
+// keep keeps only the value stack, whose capacity a Document reuses (reuseDocumentVMValues), and
+// the reset driver state.
+func (mc *vmMachine) keep(n int, clearUsed bool) {
+	vals := mc.vals[:0]
+	// A large document may have been replaced with a small input. Bound the kept capacity by
+	// the current size, with room for small grammars' fixed stack overhead. Division avoids int
+	// overflow.
+	if cap(vals)/2 > max(512, n) {
+		vals = nil
+	}
+	if clearUsed {
+		clear(vals[:cap(vals)])
+	}
+	if mc.driver != nil {
+		mc.driver.reset()
+	}
+	*mc = vmMachine{vals: vals, driver: mc.driver}
+}
+
+func (mc *vmMachine) release() {
+	clear(mc.vals[:cap(mc.vals)])
+	if mc.driver != nil {
+		mc.driver.reset()
+	}
+	*mc = vmMachine{driver: mc.driver}
+}
+
+func (mc *vmMachine) retainedBytes() uint64 {
+	return uint64(cap(mc.vals)) * uint64(unsafe.Sizeof(any(nil)))
+}
+
+// newFunc allocates a copy of the lambda f from a chunk and returns it.
+func (mc *vmMachine) newFunc(f vmFunc) *vmFunc {
+	if len(mc.funcSlab) == 0 {
+		if mc.p.privatePrefixAlloc() {
+			n := new(vmFunc)
+			*n = f
+			return n
+		}
+		mc.funcSlab = make([]vmFunc, nodeChunk/4)
+	}
+	n := &mc.funcSlab[0]
+	mc.funcSlab = mc.funcSlab[1:]
+	*n = f
+	return n
+}
+
 // --- Running matching code ---
 
 // Entry kinds
@@ -326,12 +417,12 @@ const (
 
 // vmEntry is an element of the entry stack (see the Failure section of spec/bytecode/README.md). It is
 // kept small, since a choice or an iteration pushes one: the state of the rarer label, recovery
-// and skip entries is on a separate stack (parser.labs).
+// and skip entries is on a separate stack (vmMachine.labs).
 type vmEntry struct {
 	kind uint8
 	cut  bool
 	ip   int32
-	lab  int32 // eLabel, eRecover, eSkip: index of the entry's state in parser.labs
+	lab  int32 // eLabel, eRecover, eSkip: index of the entry's state in vmMachine.labs
 	save vmSave
 }
 
@@ -346,15 +437,15 @@ type labState struct {
 }
 
 // pushLab pushes an entry of kind with the state l.
-func (p *parser) pushLab(kind uint8, ip int32, save vmSave, l labState) {
-	p.labs = append(p.labs, l)
-	p.ents = append(p.ents, vmEntry{kind: kind, ip: ip, lab: int32(len(p.labs) - 1), save: save})
+func (mc *vmMachine) pushLab(kind uint8, ip int32, save vmSave, l labState) {
+	mc.labs = append(mc.labs, l)
+	mc.ents = append(mc.ents, vmEntry{kind: kind, ip: ip, lab: int32(len(mc.labs) - 1), save: save})
 }
 
 // popLab pops the state of the entry e, which has just been popped.
-func (p *parser) popLab(e *vmEntry) labState {
-	l := p.labs[e.lab]
-	p.labs = p.labs[:e.lab]
+func (mc *vmMachine) popLab(e *vmEntry) labState {
+	l := mc.labs[e.lab]
+	mc.labs = mc.labs[:e.lab]
 	return l
 }
 
@@ -373,15 +464,17 @@ type repState struct {
 	run             *runState // the run being recorded in a Document parse, or nil
 }
 
-func (p *parser) save() vmSave {
-	return vmSave{pos: p.pos, vals: int32(len(p.vals)), reps: int32(len(p.reps)), trail: int32(len(p.trail)),
+func (mc *vmMachine) save() vmSave {
+	p := mc.p
+	return vmSave{pos: p.pos, vals: int32(len(mc.vals)), reps: int32(len(mc.reps)), trail: int32(len(p.trail)),
 		recovered: int32(len(p.recovered)), env: p.env, frame: p.frame}
 }
 
-func (p *parser) restore(s *vmSave) {
+func (mc *vmMachine) restore(s *vmSave) {
+	p := mc.p
 	p.pos = s.pos
-	p.vals = p.vals[:s.vals]
-	p.reps = p.reps[:s.reps]
+	mc.vals = mc.vals[:s.vals]
+	mc.reps = mc.reps[:s.reps]
 	p.undoCaptures(int(s.trail))
 	p.trail = p.trail[:min2(int(s.trail), len(p.trail))]
 	p.recovered = p.recovered[:s.recovered]
@@ -389,11 +482,10 @@ func (p *parser) restore(s *vmSave) {
 	p.frame = s.frame
 }
 
-func (p *parser) push(v any) { p.vals = append(p.vals, v) }
-
-func (p *parser) pop() any {
-	v := p.vals[len(p.vals)-1]
-	p.vals = p.vals[:len(p.vals)-1]
+func (mc *vmMachine) push(v any) { mc.vals = append(mc.vals, v) }
+func (mc *vmMachine) pop() any {
+	v := mc.vals[len(mc.vals)-1]
+	mc.vals = mc.vals[:len(mc.vals)-1]
 	return v
 }
 
@@ -408,10 +500,11 @@ func asNodeValue(v any) *value.Node {
 // returns the pushed value. cut reports whether a cut belonging to no choice was passed (used
 // in Operators Rule sections). Rule calls and Operators Rule expressions call the shared runtime (call,
 // operatorsRuleParse) through host recursion.
-func (p *parser) exec(vm *vmProgram, ip int, r *rule, min int) (result *value.Node, ok bool, cut bool) {
-	bv := p.newBody(ip, r, min)
+func (mc *vmMachine) exec(vm *vmProgram, ip int, r *rule, min int) (result *value.Node, ok bool, cut bool) {
+	p := mc.p
+	bv := mc.newBody(ip, r, min)
 	b := &bv
-	ev, v, ok := p.step(vm, b, false, false, nil)
+	ev, v, ok := mc.step(vm, b, false, false, nil)
 	for {
 		switch ev {
 		case evCall:
@@ -426,7 +519,7 @@ func (p *parser) exec(vm *vmProgram, ip int, r *rule, min int) (result *value.No
 		default:
 			return v, ok, b.cut
 		}
-		ev, v, ok = p.step(vm, b, true, ok, v)
+		ev, v, ok = mc.step(vm, b, true, ok, v)
 	}
 }
 
@@ -439,8 +532,8 @@ type vmBody struct {
 	cut                 bool // a cut belonging to no choice was passed
 }
 
-func (p *parser) newBody(ip int, r *rule, min int) vmBody {
-	return vmBody{ip: ip, vbase: len(p.vals), ebase: len(p.ents), rbase: len(p.reps), r: r, min: min}
+func (mc *vmMachine) newBody(ip int, r *rule, min int) vmBody {
+	return vmBody{ip: ip, vbase: len(mc.vals), ebase: len(mc.ents), rbase: len(mc.reps), r: r, min: min}
 }
 
 // Reasons step suspends
@@ -452,19 +545,20 @@ const (
 
 // step runs code until it finishes or reaches a rule call or an Operators Rule expression.
 // If resume is set, it resumes with the result (ok, v) of the suspended instruction.
-func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node) (ev int, result *value.Node, ok bool) {
+func (mc *vmMachine) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node) (ev int, result *value.Node, ok bool) {
+	p := mc.p
 	m := vm.m
 	code := m.Code
 	ip, ebase := b.ip, b.ebase
 	if resume {
 		if rok {
 			if in := &code[ip]; in.Op == bytecode.OpOperatorsRule || in.C == 1 {
-				p.push(rv)
+				mc.push(rv)
 			}
 			ip++
-		} else if ip, ok = p.unwind(m, ebase); !ok {
-			p.vals = p.vals[:b.vbase]
-			p.reps = p.reps[:b.rbase]
+		} else if ip, ok = mc.unwind(m, ebase); !ok {
+			mc.vals = mc.vals[:b.vbase]
+			mc.reps = mc.reps[:b.rbase]
 			return evDone, nil, false
 		}
 	}
@@ -479,7 +573,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 				goto fail
 			}
 			if in.C == 1 {
-				p.push(p.newNode(value.Data{Kind: value.MatchKind, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, vm.literals[in.A]), Terminal: true, Fresh: true}))
+				mc.push(p.newNode(value.Data{Kind: value.MatchKind, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, vm.literals[in.A]), Terminal: true, Fresh: true}))
 			}
 		case bytecode.OpStrFold:
 			start := p.pos
@@ -488,7 +582,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 				goto fail
 			}
 			if in.C == 1 {
-				p.push(p.newNode(value.Data{Kind: value.MatchKind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), Terminal: true, Fresh: true}))
+				mc.push(p.newNode(value.Data{Kind: value.MatchKind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), Terminal: true, Fresh: true}))
 			}
 		case bytecode.OpClass:
 			ch, size, ok := p.peek()
@@ -496,7 +590,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 				p.expect(p.pos, compile.NumFixedDescs+expID(in.B))
 				goto fail
 			}
-			p.single(size, in.C == 1)
+			mc.single(size, in.C == 1)
 		case bytecode.OpGuard:
 			ch, _, ok := p.peek()
 			if !(ok && vm.has(p, in.A, ch)) && p.depth+int(in.B) <= p.maxDepth {
@@ -532,10 +626,10 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 				p.expect(p.pos, compile.IDAny)
 				goto fail
 			}
-			p.single(size, in.A == 1)
+			mc.single(size, in.A == 1)
 		case bytecode.OpTop:
 			if in.A == 1 {
-				p.push(p.newNode(value.Data{Kind: value.MatchKind, Start: int32(p.pos), End: int32(p.pos), Terminal: true, Fresh: true}))
+				mc.push(p.newNode(value.Data{Kind: value.MatchKind, Start: int32(p.pos), End: int32(p.pos), Terminal: true, Fresh: true}))
 			}
 		case bytecode.OpFail:
 			goto fail
@@ -561,16 +655,16 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 			ip = int(in.A)
 			continue
 		case bytecode.OpChoice:
-			p.ents = append(p.ents, vmEntry{kind: eChoice, ip: in.A, save: p.save()})
+			mc.ents = append(mc.ents, vmEntry{kind: eChoice, ip: in.A, save: mc.save()})
 		case bytecode.OpCommit:
-			p.ents = p.ents[:len(p.ents)-1]
+			mc.ents = mc.ents[:len(mc.ents)-1]
 			ip = int(in.A)
 			continue
 		case bytecode.OpCut:
 			marked := false
-			for k := len(p.ents) - 1; k >= ebase; k-- {
+			for k := len(mc.ents) - 1; k >= ebase; k-- {
 				p.stepWork()
-				e := &p.ents[k]
+				e := &mc.ents[k]
 				if e.kind == eChoice || e.kind == eIter || e.kind == eRunIter {
 					e.cut = true
 					marked = true
@@ -585,42 +679,42 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 				b.cut = true
 			}
 		case bytecode.OpPushPos:
-			p.push(p.newPos(p.pos))
+			mc.push(mc.newPos(p.pos))
 		case bytecode.OpPushNil:
-			p.push(nil)
+			mc.push(nil)
 		case bytecode.OpSeq:
 			n := int(in.A)
 			kids := p.nodes(n)
-			top := len(p.vals)
+			top := len(mc.vals)
 			for k := 0; k < n; k++ {
 				p.stepWork()
-				kids[k] = asNodeValue(p.vals[top-n+k])
+				kids[k] = asNodeValue(mc.vals[top-n+k])
 			}
-			start := *p.vals[top-n-1].(*int)
-			p.vals = p.vals[:top-n-1]
-			p.push(p.newNode(value.Data{Kind: value.SeqKind, Start: int32(start), End: int32(p.pos), Children: kids, Fresh: true}))
+			start := *mc.vals[top-n-1].(*int)
+			mc.vals = mc.vals[:top-n-1]
+			mc.push(p.newNode(value.Data{Kind: value.SeqKind, Start: int32(start), End: int32(p.pos), Children: kids, Fresh: true}))
 		case bytecode.OpSpread:
-			v := p.pop()
+			v := mc.pop()
 			switch {
 			case in.B == 1:
 				if n := asNodeValue(v); n != nil {
 					for _, k := range value.D(n).Children {
 						p.stepWork()
-						p.push(k)
+						mc.push(k)
 					}
 				}
 			case in.A == 1:
-				p.push(v)
+				mc.push(v)
 			}
 		case bytecode.OpAtomic:
-			start := *p.pop().(*int)
+			start := *mc.pop().(*int)
 			if in.A == 1 {
-				p.push(p.newNode(value.Data{Kind: value.MatchKind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), Terminal: true, Fresh: true}))
+				mc.push(p.newNode(value.Data{Kind: value.MatchKind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), Terminal: true, Fresh: true}))
 			}
 		case bytecode.OpCapture:
-			p.setCapture(int(in.A), asNodeValue(p.vals[len(p.vals)-1]))
+			p.setCapture(int(in.A), asNodeValue(mc.vals[len(mc.vals)-1]))
 			if in.B == 1 {
-				p.vals = p.vals[:len(p.vals)-1]
+				mc.vals = mc.vals[:len(mc.vals)-1]
 			}
 		case bytecode.OpRepeat, bytecode.OpRepeatWide:
 			if streamPrefixIsolation && p.emit != nil && p.depth == 1 && vm.isStreamRepeat(ip) {
@@ -630,17 +724,17 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 			if in.Op == bytecode.OpRepeatWide {
 				min, max = int(m.Exprs[in.A].Integer()), int(m.Exprs[in.B].Integer())
 			}
-			p.reps = append(p.reps, repState{min: min, max: max, scope: int(in.C), base: len(p.vals)})
+			mc.reps = append(mc.reps, repState{min: min, max: max, scope: int(in.C), base: len(mc.vals)})
 			if p.runs != nil && p.silent == 0 {
 				if site := vm.runSites[ip]; site != nil {
 					// A Document parse: resume the run of the previous parse (resume.go).
-					r := p.newRunState()
+					r := mc.newRunState()
 					p.startRun(r, ip, min, max, site.shiftable)
-					rep := &p.reps[len(p.reps)-1]
+					rep := &mc.reps[len(mc.reps)-1]
 					rep.run = r
 					for el := p.nextPrefix(r); el != nil; el = p.nextPrefix(r) {
 						if site.keep {
-							p.push(el.v)
+							mc.push(el.v)
 						}
 					}
 					rep.count = r.count
@@ -651,7 +745,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 				}
 			}
 		case bytecode.OpIter:
-			rep := &p.reps[len(p.reps)-1]
+			rep := &mc.reps[len(mc.reps)-1]
 			if rep.max >= 0 && rep.count >= rep.max {
 				ip = int(in.A)
 				continue
@@ -662,7 +756,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 				if p.resync(r) {
 					for el := p.nextTail(r); el != nil; el = p.nextTail(r) {
 						if m.Code[in.A-1].B != 0 { // NEXT keeps values
-							p.push(el.v)
+							mc.push(el.v)
 						}
 					}
 					rep.count = r.count
@@ -674,24 +768,24 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 				kind = eRunIter
 				p.beginElem(r)
 			}
-			p.ents = append(p.ents, vmEntry{kind: kind, ip: in.A, save: p.save()})
-			if sc := p.reps[len(p.reps)-1].scope; sc >= 0 {
+			mc.ents = append(mc.ents, vmEntry{kind: kind, ip: in.A, save: mc.save()})
+			if sc := mc.reps[len(mc.reps)-1].scope; sc >= 0 {
 				p.frame = p.newFrame(len(vm.scopes[sc]))
 			}
 		case bytecode.OpNext:
-			e := p.ents[len(p.ents)-1]
-			p.ents = p.ents[:len(p.ents)-1]
-			rep := &p.reps[len(p.reps)-1]
+			e := mc.ents[len(mc.ents)-1]
+			mc.ents = mc.ents[:len(mc.ents)-1]
+			rep := &mc.reps[len(mc.reps)-1]
 			if rep.scope >= 0 {
 				if in.B == 3 { // a projected repetition: the value is the field's capture
 					var v *value.Node
 					if int(in.C) < len(p.frame.vals) { // (a corrupted file may name another slot)
 						v = p.frame.vals[in.C]
 					}
-					p.push(v)
+					mc.push(v)
 				} else if in.B != 0 { // in a value-free repetition, the element scope exists only for predicates
-					top := len(p.vals) - 1
-					p.vals[top] = p.attachCapturesNames(asNodeValue(p.vals[top]), vm.scopes[rep.scope], p.frame, e.save.pos, p.pos)
+					top := len(mc.vals) - 1
+					mc.vals[top] = p.attachCapturesNames(asNodeValue(mc.vals[top]), vm.scopes[rep.scope], p.frame, e.save.pos, p.pos)
 				}
 				p.frame = e.save.frame
 			}
@@ -699,13 +793,13 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 			if rep.run != nil {
 				var v *value.Node
 				if in.B != 0 {
-					v = asNodeValue(p.vals[len(p.vals)-1])
+					v = asNodeValue(mc.vals[len(mc.vals)-1])
 				}
 				p.endElem(rep.run, true, v)
 			}
 			if in.B == 2 && p.emit != nil && p.depth == 1 {
 				// Elements of the start rule's #stream are passed on without being retained, and committed.
-				v := asNodeValue(p.pop())
+				v := asNodeValue(mc.pop())
 				if v != nil {
 					value.D(v).Fresh = false
 				}
@@ -727,42 +821,42 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 			}
 			continue
 		case bytecode.OpEndRepeat:
-			rep := p.reps[len(p.reps)-1]
-			p.reps = p.reps[:len(p.reps)-1]
+			rep := mc.reps[len(mc.reps)-1]
+			mc.reps = mc.reps[:len(mc.reps)-1]
 			if rep.count < rep.min {
 				goto fail
 			}
 			if rep.run != nil {
 				p.finishRun(rep.run)
-				p.freeRunState(rep.run)
+				mc.freeRunState(rep.run)
 			}
 			if in.A == 1 {
-				kids := p.nodes(len(p.vals) - rep.base)
+				kids := p.nodes(len(mc.vals) - rep.base)
 				for k := range kids {
 					p.stepWork()
-					kids[k] = asNodeValue(p.vals[rep.base+k])
+					kids[k] = asNodeValue(mc.vals[rep.base+k])
 				}
-				start := *p.vals[rep.base-1].(*int)
-				p.vals = p.vals[:rep.base-1]
-				p.push(p.newNode(value.Data{Kind: value.ListKind, Start: int32(start), End: int32(p.pos), Children: kids, Fresh: true}))
+				start := *mc.vals[rep.base-1].(*int)
+				mc.vals = mc.vals[:rep.base-1]
+				mc.push(p.newNode(value.Data{Kind: value.ListKind, Start: int32(start), End: int32(p.pos), Children: kids, Fresh: true}))
 			}
 		case bytecode.OpLook:
 			kind := uint8(eLook)
 			if in.B == 1 {
 				kind = eNotLook
 			}
-			p.ents = append(p.ents, vmEntry{kind: kind, ip: in.A, save: p.save()})
+			mc.ents = append(mc.ents, vmEntry{kind: kind, ip: in.A, save: mc.save()})
 			p.silent++
 		case bytecode.OpEndLook:
-			e := p.ents[len(p.ents)-1]
-			p.ents = p.ents[:len(p.ents)-1]
+			e := mc.ents[len(mc.ents)-1]
+			mc.ents = mc.ents[:len(mc.ents)-1]
 			p.silent--
 			if in.A == 1 {
-				p.restore(&e.save)
+				mc.restore(&e.save)
 				goto fail
 			}
 			p.pos = e.save.pos
-			p.vals = p.vals[:int(e.save.vals)]
+			mc.vals = mc.vals[:int(e.save.vals)]
 		case bytecode.OpCall:
 			b.ip = ip
 			return evCall, nil, false
@@ -779,45 +873,45 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 			}
 		case bytecode.OpLabel:
 			mk := p.isolate(p.pos)
-			p.pushLab(eLabel, 0, vmSave{}, labState{msg: in.A, mode: in.B, far: mk.far, base: mk.base, bits: mk.bits})
+			mc.pushLab(eLabel, 0, vmSave{}, labState{msg: in.A, mode: in.B, far: mk.far, base: mk.base, bits: mk.bits})
 		case bytecode.OpEndLabel:
-			e := p.ents[len(p.ents)-1]
-			p.ents = p.ents[:len(p.ents)-1]
-			l := p.popLab(&e)
+			e := mc.ents[len(mc.ents)-1]
+			mc.ents = mc.ents[:len(mc.ents)-1]
+			l := mc.popLab(&e)
 			far, inner := p.unisolate(expMark{l.far, l.base, l.bits})
 			p.mergeExpected(far, inner)
 		case bytecode.OpRecover:
 			mk := p.isolate(p.pos)
-			p.pushLab(eRecover, in.A, p.save(), labState{far: mk.far, base: mk.base, bits: mk.bits})
+			mc.pushLab(eRecover, in.A, mc.save(), labState{far: mk.far, base: mk.base, bits: mk.bits})
 		case bytecode.OpEndRecover:
-			e := p.ents[len(p.ents)-1]
-			p.ents = p.ents[:len(p.ents)-1]
-			l := p.popLab(&e)
+			e := mc.ents[len(mc.ents)-1]
+			mc.ents = mc.ents[:len(mc.ents)-1]
+			l := mc.popLab(&e)
 			far, inner := p.unisolate(expMark{l.far, l.base, l.bits})
 			p.mergeExpected(far, inner)
 			ip = int(in.A)
 			continue
 		case bytecode.OpEndSkip:
-			e := p.ents[len(p.ents)-1]
-			p.ents = p.ents[:len(p.ents)-1]
-			l := p.popLab(&e)
+			e := mc.ents[len(mc.ents)-1]
+			mc.ents = mc.ents[:len(mc.ents)-1]
+			l := mc.popLab(&e)
 			if p.pos == e.save.pos {
-				p.restore(&e.save)
+				mc.restore(&e.save)
 				p.mergeExpected(l.far, l.exp)
 				goto fail
 			}
 			se := p.makeError(l.far, l.exp)
 			p.recovered = append(p.recovered, se)
 			if in.A == 1 {
-				p.push(p.newNode(value.Data{Kind: value.ErrorKind, Start: int32(e.save.pos), End: int32(p.pos), Text: p.text(e.save.pos, p.pos), Fields: value.Fields{{Name: "message", Value: p.recoveryErrorText(se)}}, Fresh: true, Terminal: true}))
+				mc.push(p.newNode(value.Data{Kind: value.ErrorKind, Start: int32(e.save.pos), End: int32(p.pos), Text: p.text(e.save.pos, p.pos), Fields: value.Fields{{Name: "message", Value: p.recoveryErrorText(se)}}, Fresh: true, Terminal: true}))
 			}
 		case bytecode.OpReturn, bytecode.OpEnd:
 			var v *value.Node
-			if len(p.vals) > b.vbase { // skip code builds no values
-				v = asNodeValue(p.vals[len(p.vals)-1])
+			if len(mc.vals) > b.vbase { // skip code builds no values
+				v = asNodeValue(mc.vals[len(mc.vals)-1])
 			}
-			p.vals = p.vals[:b.vbase]
-			p.reps = p.reps[:b.rbase]
+			mc.vals = mc.vals[:b.vbase]
+			mc.reps = mc.reps[:b.rbase]
 			return evDone, v, true
 		default:
 			panic(fmt.Sprintf("vm: invalid instruction %v at %d", in.Op, ip))
@@ -826,9 +920,9 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 		continue
 
 	fail:
-		if ip, ok = p.unwind(m, ebase); !ok {
-			p.vals = p.vals[:b.vbase]
-			p.reps = p.reps[:b.rbase]
+		if ip, ok = mc.unwind(m, ebase); !ok {
+			mc.vals = mc.vals[:b.vbase]
+			mc.reps = mc.reps[:b.rbase]
 			return evDone, nil, false
 		}
 	}
@@ -836,38 +930,39 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node
 
 // unwind unwinds the entry stack to ebase on failure and returns the index of the instruction to
 // resume at. ok is false if there is no entry to resume from.
-func (p *parser) unwind(m *bytecode.Module, ebase int) (ip int, ok bool) {
+func (mc *vmMachine) unwind(m *bytecode.Module, ebase int) (ip int, ok bool) {
+	p := mc.p
 	for {
-		if len(p.ents) == ebase {
+		if len(mc.ents) == ebase {
 			return 0, false
 		}
 		p.stepWork()
-		e := p.ents[len(p.ents)-1]
-		p.ents = p.ents[:len(p.ents)-1]
+		e := mc.ents[len(mc.ents)-1]
+		mc.ents = mc.ents[:len(mc.ents)-1]
 		switch e.kind {
 		case eRunIter:
-			p.endElem(p.reps[e.save.reps-1].run, false, nil)
-			p.restore(&e.save)
+			p.endElem(mc.reps[e.save.reps-1].run, false, nil)
+			mc.restore(&e.save)
 			if e.cut {
 				continue
 			}
 			return int(e.ip), true
 		case eChoice, eIter:
-			p.restore(&e.save)
+			mc.restore(&e.save)
 			if e.cut {
 				continue
 			}
 			return int(e.ip), true
 		case eLook:
 			p.silent--
-			p.restore(&e.save)
+			mc.restore(&e.save)
 			continue
 		case eNotLook:
 			p.silent--
-			p.restore(&e.save)
+			mc.restore(&e.save)
 			return int(e.ip), true
 		case eLabel:
-			l := p.popLab(&e)
+			l := mc.popLab(&e)
 			far, inner := p.unisolate(expMark{l.far, l.base, l.bits})
 			if l.mode == 0 {
 				p.expect(far, msgBit|(compile.NumFixedDescs+expID(l.msg)))
@@ -876,15 +971,15 @@ func (p *parser) unwind(m *bytecode.Module, ebase int) (ip int, ok bool) {
 			}
 			continue
 		case eRecover:
-			l := p.popLab(&e)
+			l := mc.popLab(&e)
 			far, inner := p.unisolate(expMark{l.far, l.base, l.bits})
 			exp := p.keep(inner) // keep them while skip runs
-			p.restore(&e.save)
-			p.pushLab(eSkip, 0, e.save, labState{far: far, exp: exp})
+			mc.restore(&e.save)
+			mc.pushLab(eSkip, 0, e.save, labState{far: far, exp: exp})
 			return int(e.ip), true
 		case eSkip:
-			l := p.popLab(&e)
-			p.restore(&e.save)
+			l := mc.popLab(&e)
+			mc.restore(&e.save)
 			p.mergeExpected(l.far, l.exp)
 		}
 	}
@@ -922,11 +1017,12 @@ func (vm *vmProgram) has(p *parser, a int32, ch rune) bool {
 }
 
 // single advances one character (size units) and pushes a string node if b is set.
-func (p *parser) single(size int, b bool) {
+func (mc *vmMachine) single(size int, b bool) {
+	p := mc.p
 	start := p.pos
 	p.pos += size
 	if b {
-		p.push(p.newNode(value.Data{Kind: value.MatchKind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), Terminal: true, Fresh: true}))
+		mc.push(p.newNode(value.Data{Kind: value.MatchKind, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), Terminal: true, Fresh: true}))
 	}
 }
 
@@ -947,7 +1043,6 @@ type vmFunc struct {
 }
 
 func (f *vmFunc) arity() int { return f.n }
-
 func (f *vmFunc) apply(x, y any) (any, error) {
 	// The locals are placed on the expression stack below the operands of the body.
 	p := f.ctx.p
@@ -1023,6 +1118,7 @@ func (vm *vmProgram) bind(p *parser, name string, entry int) bool {
 func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error) {
 	m := vm.m
 	p := ctx.p
+	mc := vmMachineOf(p)
 	stack := p.estack
 	base := len(stack)
 	pop := func() any {
@@ -1030,12 +1126,12 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 		stack = stack[:len(stack)-1]
 		return v
 	}
-	kids, lists := len(p.kidStack), len(p.lists)
+	kids, lists := len(p.kidStack), len(mc.lists)
 	defer func() {
 		p.estack = stack[:base]
 		if err != nil { // a failed predicate lets the parse go on: drop gathered list elements
 			p.dropKids(kids)
-			p.lists = p.lists[:lists]
+			mc.lists = mc.lists[:lists]
 		}
 	}()
 	for {
@@ -1138,7 +1234,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 				// created it (when the lambda returns it).
 				locals = appendWork(p, []any(nil), locals)
 			}
-			stack = append(stack, p.newFunc(vmFunc{vm: vm, entry: int(in.A), n: int(in.B), locals: locals, ctx: ctx}))
+			stack = append(stack, mc.newFunc(vmFunc{vm: vm, entry: int(in.A), n: int(in.B), locals: locals, ctx: ctx}))
 		case bytecode.ECall:
 			// The arguments stay on the stack during the call: lambdas called by the built-in push
 			// above them, and built-ins do not retain args.
@@ -1160,7 +1256,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 			rs, _ := ctx.textString(stack[len(stack)-1])
 			stack = append(stack[:len(stack)-2], p.valueEqual(ls, rs) != (in.A == 1))
 		case bytecode.EListBegin:
-			p.lists = append(p.lists, len(p.kidStack))
+			mc.lists = append(mc.lists, len(p.kidStack))
 		case bytecode.EListPush:
 			top := len(stack) - int(in.A)
 			if err := ctx.pushElems("list", stack[top:]); err != nil {
@@ -1190,8 +1286,8 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 			}
 			stack = stack[:top]
 		case bytecode.EListEnd:
-			b := p.lists[len(p.lists)-1]
-			p.lists = p.lists[:len(p.lists)-1]
+			b := mc.lists[len(mc.lists)-1]
+			mc.lists = mc.lists[:len(mc.lists)-1]
 			stack = append(stack, ctx.listNode(p.kids(b)))
 		case bytecode.ERet:
 			return stack[len(stack)-1], nil
@@ -1243,4 +1339,35 @@ func moduleStreams(m *bytecode.Module, entry int) bool {
 		}
 	}
 	return false
+}
+
+// newPos allocates a copy of the position pos from a chunk and returns it. Start positions are
+// pushed onto the VM value stack as *int: converting an int to an interface would allocate each
+// time.
+func (mc *vmMachine) newPos(pos int) *int {
+	if len(mc.posSlab) == 0 {
+		mc.posSlab = make([]int, ptrChunk)
+	}
+	n := &mc.posSlab[0]
+	mc.posSlab = mc.posSlab[1:]
+	*n = pos
+	return n
+}
+
+// newRunState returns a runState for a VM repetition, reusing a freed one.
+func (mc *vmMachine) newRunState() *runState {
+	if n := len(mc.freeRuns); n > 0 {
+		r := mc.freeRuns[n-1]
+		mc.freeRuns = mc.freeRuns[:n-1]
+		return r
+	}
+	return &runState{}
+}
+
+// freeRunState makes the runState of a finished repetition available to later ones.
+func (mc *vmMachine) freeRunState(r *runState) {
+	r.old = nil
+	clearWork(mc.p, r.mid)
+	clearWork(mc.p, r.post)
+	mc.freeRuns = append(mc.freeRuns, r)
 }

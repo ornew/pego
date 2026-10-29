@@ -90,7 +90,7 @@ rule t = t "*" "a" / "a"`, "a*a+a+a*a*a"},
 							t.Fatalf("node=%v err=%v", n, err)
 						}
 					}
-					if d.memo.len() != 0 || len(d.runs) != 0 || len(d.kids) != 0 || d.vals != nil {
+					if d.memo.len() != 0 || len(d.runs) != 0 || len(d.kids) != 0 || d.machine != nil {
 						t.Fatal("interrupted growth retained reusable state")
 					}
 					workDocumentAssertRetry(t, d)

@@ -40,7 +40,7 @@ rule e = #operators {
 						if got, want := resultJSON(n, err), resultJSON(prog.ParseWith("main", doc.Text(), opts)); got != want {
 							t.Fatalf("parse %d: got %s; fresh %s", i, got, want)
 						}
-						if doc.memo.len() != 0 || len(doc.runs) != 0 || len(doc.kids) != 0 || doc.vals != nil {
+						if doc.memo.len() != 0 || len(doc.runs) != 0 || len(doc.kids) != 0 || doc.machine != nil {
 							t.Fatal("aborted parse retained reusable state")
 						}
 					}
@@ -82,7 +82,7 @@ rule x = x "a" / "a"`)
 					}()
 					doc.Parse()
 				}()
-				if doc.memo.len() != 0 || len(doc.runs) != 0 || len(doc.kids) != 0 || doc.vals != nil {
+				if doc.memo.len() != 0 || len(doc.runs) != 0 || len(doc.kids) != 0 || doc.machine != nil {
 					t.Fatal("trace panic retained reusable state")
 				}
 				doc.defaults.Trace, opts.Trace = nil, nil

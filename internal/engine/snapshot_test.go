@@ -220,7 +220,7 @@ func TestSnapshotControlledFreezeBudgetAndRetry(t *testing.T) {
 			t.Fatal("memo-hit fixture", err)
 		}
 		s, err := d.SnapshotWith(o)
-		if s != nil || !errors.Is(err, limits.ErrWorkLimit) || d.memo.len() != 0 || d.runs != nil || d.kids != nil || d.vals != nil {
+		if s != nil || !errors.Is(err, limits.ErrWorkLimit) || d.memo.len() != 0 || d.runs != nil || d.kids != nil || d.machine != nil {
 			t.Fatal("freeze interruption", s, err)
 		}
 		o.WorkLimits = limits.WorkLimits{}
@@ -279,7 +279,7 @@ rule x = x "a" / "a"`)
 			}()
 			d.SnapshotWith(o)
 		}()
-		if d.memo.len() != 0 || d.runs != nil || d.kids != nil || d.vals != nil {
+		if d.memo.len() != 0 || d.runs != nil || d.kids != nil || d.machine != nil {
 			t.Fatal("trace panic retained reusable state")
 		}
 		o.Trace = nil
@@ -357,7 +357,7 @@ func TestSnapshotFreezeCancellationAndContextPanic(t *testing.T) {
 					t.Fatalf("freeze cancellation: %v %v", s, err)
 				}
 			}
-			if !ctx.seen || d.memo.len() != 0 || d.runs != nil || d.kids != nil || d.vals != nil {
+			if !ctx.seen || d.memo.len() != 0 || d.runs != nil || d.kids != nil || d.machine != nil {
 				t.Fatal("freeze cleanup")
 			}
 			o.Context = nil

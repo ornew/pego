@@ -221,24 +221,6 @@ func (p *parser) traceExit(ok bool) {
 	}
 }
 
-// traceFrame is a traced rule call in the iterative-model VM: it reports the call, runs the frame
-// that bodyFrame would have pushed for it, and reports the result.
-type traceFrame struct {
-	r       *rule
-	min     int
-	started bool
-}
-
-func (f *traceFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult, bool) {
-	if !f.started {
-		f.started = true
-		p.traceEnter(f.r, f.min)
-		return p.callChild(f.r, f.min), iresult{}, false
-	}
-	p.traceExit(res.ok)
-	return nil, res, true
-}
-
 // ComposeTrace joins public option callbacks while checking interruption before
 // starting the next individual callback. Caller-created composite functions are
 // still arbitrary caller code and cannot be preempted internally.

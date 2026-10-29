@@ -113,7 +113,7 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 						p.pos = 1
 						p.recovered = append(p.recovered, records...)
 						f := &longestFrame{started: true, ops: []*operatorsRuleOp{op}, m0: mark{recovered: 1}, f: p.newFrame(0)}
-						run = func() { f.next(p, nil, iresult{ok: true, v: retained}); best = p.attempt }
+						run = func() { f.next(ivmMachineOf(p), nil, iresult{ok: true, v: retained}); best = ivmMachineOf(p).attempt }
 					}
 					completed = func() {
 						assertSnapshot(best.errs)
@@ -122,7 +122,7 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 						}
 					}
 					aborted = func() {
-						if best.op != nil || p.attempt.op != nil {
+						if best.op != nil || ivmMachineOf(p).attempt.op != nil {
 							t.Fatal("partial OperatorsRule winner returned")
 						}
 					}

@@ -286,15 +286,16 @@ func TestWorkDocumentRunStateClearReservation(t *testing.T) {
 		r.mid[i].v = marker
 	}
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 128})
-	if err := catchFatal(t, func() { p.freeRunState(r) }); !errors.Is(err, limits.ErrWorkLimit) {
+	mc := vmMachineOf(p)
+	if err := catchFatal(t, func() { mc.freeRunState(r) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("clear interruption = %v", err)
 	}
-	if len(p.freeRuns) != 0 || r.old != nil || r.mid[128].v != marker || r.post[0].v != marker || value.D(marker).Text != "retained" {
+	if len(mc.freeRuns) != 0 || r.old != nil || r.mid[128].v != marker || r.post[0].v != marker || value.D(marker).Text != "retained" {
 		t.Fatal("incomplete clear was published or changed pointees")
 	}
 	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 130})
-	p.freeRunState(r)
-	if len(p.freeRuns) != 1 || r.mid[128].v != nil || r.post[0].v != nil {
+	mc.freeRunState(r)
+	if len(mc.freeRuns) != 1 || r.mid[128].v != nil || r.post[0].v != nil {
 		t.Fatal("completed clear did not release references")
 	}
 }

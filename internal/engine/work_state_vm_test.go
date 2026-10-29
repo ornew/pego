@@ -24,26 +24,26 @@ func TestWorkStateVMChildAssembly(t *testing.T) {
 			p := stateWorkParser(lim)
 			start := 3
 			retained := value.Ptr(value.Data{Text: "retained", Fields: value.Fields{{Name: "keep", Value: "unchanged"}}})
-			p.vals = append(p.vals, &start)
+			vmMachineOf(p).vals = append(vmMachineOf(p).vals, &start)
 			want := make([]*value.Node, 320)
 			for i := range want {
 				if i%3 != 0 {
 					want[i] = retained
 				}
-				p.vals = append(p.vals, nodeOrNil(want[i]))
+				vmMachineOf(p).vals = append(vmMachineOf(p).vals, nodeOrNil(want[i]))
 			}
 			instruction := bytecode.Instr{Op: op, A: 320}
 			if op == bytecode.OpEndRepeat {
 				instruction.A = 1
-				p.reps = []repState{{base: 1, count: 320}}
+				vmMachineOf(p).reps = []repState{{base: 1, count: 320}}
 			}
 			vm := &vmProgram{m: &bytecode.Module{Code: []bytecode.Instr{instruction, {Op: bytecode.OpEnd}}}}
 			body := vmBody{}
 			var result *value.Node
-			err := catchFatal(t, func() { _, result, _ = p.step(vm, &body, false, false, nil) })
+			err := catchFatal(t, func() { _, result, _ = vmMachineOf(p).step(vm, &body, false, false, nil) })
 			if lim.MaxSteps == 64 {
-				if !errors.Is(err, limits.ErrWorkLimit) || result != nil || len(p.vals) != 321 {
-					t.Fatalf("%v assembly interruption err=%v result=%v stack=%d", op, err, result, len(p.vals))
+				if !errors.Is(err, limits.ErrWorkLimit) || result != nil || len(vmMachineOf(p).vals) != 321 {
+					t.Fatalf("%v assembly interruption err=%v result=%v stack=%d", op, err, result, len(vmMachineOf(p).vals))
 				}
 			} else if err != nil || result == nil || !reflect.DeepEqual(value.D(result).Children, want) || value.D(result).Start != 3 {
 				t.Fatalf("%v assembled children/position differs: %v", op, err)
@@ -59,40 +59,40 @@ func TestWorkStateVMCutAndFailureUnwind(t *testing.T) {
 	for _, cut := range []bool{false, true} {
 		p := stateWorkParser(limits.WorkLimits{MaxSteps: 64})
 		for range 320 {
-			p.ents = append(p.ents, vmEntry{kind: eChoice, cut: true})
+			vmMachineOf(p).ents = append(vmMachineOf(p).ents, vmEntry{kind: eChoice, cut: true})
 		}
 		vm := &vmProgram{m: &bytecode.Module{Code: []bytecode.Instr{{Op: bytecode.OpCut}, {Op: bytecode.OpEnd}}}}
 		if cut {
-			for i := range p.ents {
-				p.ents[i].kind = eLabel
+			for i := range vmMachineOf(p).ents {
+				vmMachineOf(p).ents[i].kind = eLabel
 			}
-			p.ents[0].kind = eChoice
-			p.ents[0].cut = false
+			vmMachineOf(p).ents[0].kind = eChoice
+			vmMachineOf(p).ents[0].cut = false
 		}
 		err := catchFatal(t, func() {
 			if cut {
 				body := vmBody{}
-				p.step(vm, &body, false, false, nil)
+				vmMachineOf(p).step(vm, &body, false, false, nil)
 			} else {
-				p.unwind(vm.m, 0)
+				vmMachineOf(p).unwind(vm.m, 0)
 			}
 		})
 		if !errors.Is(err, limits.ErrWorkLimit) {
 			t.Fatalf("cut=%t err=%v", cut, err)
 		}
-		if cut && p.ents[0].cut {
+		if cut && vmMachineOf(p).ents[0].cut {
 			t.Fatal("cut reached its target after budget exhaustion")
 		}
-		if !cut && len(p.ents) != 256 {
-			t.Fatalf("unwind retained %d entries, want256", len(p.ents))
+		if !cut && len(vmMachineOf(p).ents) != 256 {
+			t.Fatalf("unwind retained %d entries, want256", len(vmMachineOf(p).ents))
 		}
 		p.control = newWorkControl(newPollingContext(1), limits.WorkLimits{})
 		if err := catchFatal(t, func() {
 			if cut {
 				body := vmBody{}
-				p.step(vm, &body, false, false, nil)
+				vmMachineOf(p).step(vm, &body, false, false, nil)
 			} else {
-				p.unwind(vm.m, 0)
+				vmMachineOf(p).unwind(vm.m, 0)
 			}
 		}); !errors.Is(err, context.Canceled) {
 			t.Fatalf("cut=%t cancellation=%v", cut, err)
@@ -119,8 +119,8 @@ func TestWorkStateOperatorsRuleFrameSnapshotAndRestoration(t *testing.T) {
 				if iterative {
 					f := &longestFrame{started: true, ops: []*operatorsRuleOp{op}, f: p.newFrame(320)}
 					setup(f.f)
-					f.next(p, nil, iresult{ok: true, v: retained})
-					best = p.attempt
+					f.next(ivmMachineOf(p), nil, iresult{ok: true, v: retained})
+					best = ivmMachineOf(p).attempt
 				} else {
 					op.line.m = func(p *parser) (*value.Node, bool) { setup(p.frame); return retained, true }
 					best, _ = p.longest([]*operatorsRuleOp{op})

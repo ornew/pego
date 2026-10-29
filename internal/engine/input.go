@@ -621,8 +621,8 @@ func (p *parser) commit(pos int) {
 		if streamUndoCleanup {
 			clearWork(p, p.trail[:cap(p.trail)])
 		}
-		if streamStackCleanup {
-			clearWork(p, p.vals[len(p.vals):cap(p.vals)])
+		if streamStackCleanup && p.backend != nil {
+			p.backend.clearInactive()
 		}
 		p.pruneStreamMemo(pos)
 		p.pruned = pos

@@ -24,7 +24,7 @@ type CacheStats struct {
 // detached from future node movement; this does not undo earlier movement.
 func (d *Document) ResetHistory() {
 	d.memo = newMemoTable()
-	d.edits, d.runs, d.kids, d.vals = nil, nil, nil, nil
+	d.edits, d.runs, d.kids, d.machine = nil, nil, nil, nil
 	d.runGen, d.resumed = 0, 0
 	d.in.offs, d.in.lines = nil, nil
 	d.previousSnapshot = weak.Pointer[snapshotGraph]{}
@@ -65,6 +65,8 @@ func (d *Document) CacheStats() CacheStats {
 	}
 	s.EstimatedBytes += uint64(cap(d.edits)) * uint64(unsafe.Sizeof(docEdit{}))
 	s.EstimatedBytes += uint64(cap(d.kids)) * uint64(unsafe.Sizeof((*value.Node)(nil)))
-	s.EstimatedBytes += uint64(cap(d.vals)) * uint64(unsafe.Sizeof(any(nil)))
+	if d.machine != nil {
+		s.EstimatedBytes += d.machine.retainedBytes()
+	}
 	return s
 }

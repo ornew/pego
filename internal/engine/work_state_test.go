@@ -74,14 +74,14 @@ func TestWorkResetAndVMRestoreInterruptionIsFatal(t *testing.T) {
 					t.Fatalf("reset partial state: pos=%d trail=%d", p.pos, len(p.trail))
 				}
 			} else {
-				p.vals = []any{"keep", "discard-one", "discard-two"}
-				p.reps = []repState{{count: 1}, {count: 2}}
+				vmMachineOf(p).vals = []any{"keep", "discard-one", "discard-two"}
+				vmMachineOf(p).reps = []repState{{count: 1}, {count: 2}}
 				save := vmSave{pos: 4, vals: 1, reps: 1, trail: 0, recovered: 0, env: nil, frame: f}
-				if err := catchFatal(t, func() { p.restore(&save) }); !errors.Is(err, limits.ErrWorkLimit) {
+				if err := catchFatal(t, func() { vmMachineOf(p).restore(&save) }); !errors.Is(err, limits.ErrWorkLimit) {
 					t.Fatalf("VM restore interruption = %v, want ErrWorkLimit", err)
 				}
-				if p.pos != 4 || len(p.vals) != 1 || len(p.reps) != 1 || len(p.trail) != 4 {
-					t.Fatalf("restore partial state: pos=%d vals=%d reps=%d trail=%d", p.pos, len(p.vals), len(p.reps), len(p.trail))
+				if p.pos != 4 || len(vmMachineOf(p).vals) != 1 || len(vmMachineOf(p).reps) != 1 || len(p.trail) != 4 {
+					t.Fatalf("restore partial state: pos=%d vals=%d reps=%d trail=%d", p.pos, len(vmMachineOf(p).vals), len(vmMachineOf(p).reps), len(p.trail))
 				}
 			}
 			// The budget permits the two newest undo records; the oldest remains pending.

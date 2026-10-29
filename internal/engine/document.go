@@ -42,7 +42,7 @@ type Document struct {
 	runs     map[runKey]*runRecord
 	runGen   uint32        // edit generation of runs; unchanged parses keep this map
 	kids     []*value.Node // the parser's stack of repetition values, kept for the next parse
-	vals     []any         // cleared VM value-stack storage, kept for the next parse
+	machine  backendState  // the backend state of the last parse, cleared and kept for the next one
 	// resumed is the number of repetition elements the last Parse resumed (for tests).
 	resumed int
 	// Candidate-only weak reference: dropped snapshots must remain collectible.
@@ -181,18 +181,14 @@ func (d *Document) parseWithCapture(o ParseOptions, capture func(*parser, *value
 	}
 	p = &parser{prog: &active.sharedProgram, input: d.in, memo: d.memo, memoAll: true, noPlain: true, maxDepth: o.maxDepth(d.back), gen: gen, edits: d.edits,
 		runs: runs, lastRuns: lastRuns, kidStack: d.kids}
-	if reuseDocumentVMValues {
-		// A large document may have been replaced with a small input.
-		// Bound cached capacity by the current size, with room for small
-		// grammars' fixed stack overhead. Division avoids int overflow.
-		p.vals = d.vals
-		if cap(p.vals)/2 > max(512, d.in.loaded()) {
-			p.vals = nil
-		}
-	}
 	p.control = c
 	p.setTrace(o.Trace)
 	c.check()
+	if reuseDocumentVMValues && d.machine != nil {
+		d.machine.keep(d.in.loaded(), false)
+		d.machine.attach(p)
+		p.backend = d.machine
+	}
 	executionStarted = true
 	n, err = active.run(p, d.back, d.start)
 	if !p.aborted {
@@ -219,14 +215,11 @@ func (d *Document) finishParse(p *parser) {
 	d.kids = p.kidStack[:0]
 	clear(d.kids[:cap(d.kids)]) // let go of the nodes, even on a trace panic
 	if reuseDocumentVMValues {
-		d.vals = p.vals[:0]
-		if cap(d.vals)/2 > max(512, d.in.loaded()) {
-			d.vals = nil
-		}
-		// A whole-rule memo hit evaluates no bodies and never writes the
-		// VM stack. Its already cleared storage needs no second scan.
-		if p.stats.Evaluated != 0 {
-			clear(d.vals[:cap(d.vals)])
+		d.machine = p.backend
+		if d.machine != nil {
+			// A whole-rule memo hit evaluates no bodies and never writes the
+			// backend's stacks. Their already cleared storage needs no second scan.
+			d.machine.keep(d.in.loaded(), p.stats.Evaluated != 0)
 		}
 	}
 	// Keep the tables the parse built on demand, so later parses and edits reuse them.
@@ -243,9 +236,11 @@ func (d *Document) finishParse(p *parser) {
 
 func (d *Document) invalidateParseState() {
 	clear(d.kids[:cap(d.kids)])
-	clear(d.vals[:cap(d.vals)])
+	if d.machine != nil {
+		d.machine.release()
+	}
 	d.memo = newMemoTable()
-	d.runs, d.kids, d.vals, d.resumed = nil, nil, nil, 0
+	d.runs, d.kids, d.machine, d.resumed = nil, nil, nil, 0
 }
 
 // Edit replaces [start, end) of the text (in the Document's position unit) with text.

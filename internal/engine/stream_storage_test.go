@@ -29,14 +29,14 @@ func TestStreamStorageCommitReferences(t *testing.T) {
 	p.trail[0] = undo{f: root, old: live}
 	p.trail[2] = undo{f: &frame{vals: []*value.Node{dead}}, old: dead}
 	p.trail = p.trail[:1]
-	p.vals = []any{live, dead, dead}
-	p.vals = p.vals[:1]
+	vmMachineOf(p).vals = []any{live, dead, dead}
+	vmMachineOf(p).vals = vmMachineOf(p).vals[:1]
 	p.commit(1023)
-	if len(p.trail) != 0 || p.pruned != 0 || p.vals[0] != live || root.vals[0] != live {
+	if len(p.trail) != 0 || p.pruned != 0 || vmMachineOf(p).vals[0] != live || root.vals[0] != live {
 		t.Fatal("early commit damaged live state or pruned too soon")
 	}
 	p.commit(1024)
-	if p.pruned != 1024 || p.vals[0] != live || root.vals[0] != live {
+	if p.pruned != 1024 || vmMachineOf(p).vals[0] != live || root.vals[0] != live {
 		t.Fatal("pruning damaged live root or active VM value")
 	}
 	if streamUndoCleanup {
@@ -47,7 +47,7 @@ func TestStreamStorageCommitReferences(t *testing.T) {
 		}
 	}
 	if streamStackCleanup {
-		for _, v := range p.vals[len(p.vals):cap(p.vals)] {
+		for _, v := range vmMachineOf(p).vals[len(vmMachineOf(p).vals):cap(vmMachineOf(p).vals)] {
 			if v != nil {
 				t.Fatal("inactive VM stack entry retained a completed value")
 			}

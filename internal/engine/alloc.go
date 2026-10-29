@@ -20,7 +20,10 @@ const (
 // (large elements, after which the loss is small in comparison).
 func (p *parser) splitChunks() {
 	if len(p.nodeSlab) < nodeChunk/8 || p.nodeChunks >= 2 {
-		p.nodeSlab, p.ptrSlab, p.fieldSlab, p.funcSlab = nil, nil, nil, nil
+		p.nodeSlab, p.ptrSlab, p.fieldSlab = nil, nil, nil
+		if p.backend != nil {
+			p.backend.splitChunks()
+		}
 		if !streamFrameScratch {
 			p.frameSlab = nil
 		}
@@ -83,35 +86,6 @@ func (p *parser) kids(base int) []*value.Node {
 	clearWork(p, p.kidStack[base:])
 	p.kidStack = p.kidStack[:base]
 	return ks
-}
-
-// newPos allocates a copy of the position pos from a chunk and returns it. Start positions are
-// pushed onto the VM value stack as *int: converting an int to an interface would allocate each
-// time.
-func (p *parser) newPos(pos int) *int {
-	if len(p.posSlab) == 0 {
-		p.posSlab = make([]int, ptrChunk)
-	}
-	n := &p.posSlab[0]
-	p.posSlab = p.posSlab[1:]
-	*n = pos
-	return n
-}
-
-// newFunc allocates a copy of the lambda f from a chunk and returns it.
-func (p *parser) newFunc(f vmFunc) *vmFunc {
-	if len(p.funcSlab) == 0 {
-		if p.privatePrefixAlloc() {
-			n := new(vmFunc)
-			*n = f
-			return n
-		}
-		p.funcSlab = make([]vmFunc, nodeChunk/4)
-	}
-	n := &p.funcSlab[0]
-	p.funcSlab = p.funcSlab[1:]
-	*n = f
-	return n
 }
 
 // dropKids discards p.kidStack[base:].
@@ -233,7 +207,10 @@ func (a *arena[T]) reset(n int) {
 // startStreamChunks separates live prefix values from element storage.
 // Only the top-level frame remains active at a stream repetition boundary.
 func (p *parser) startStreamChunks() {
-	p.nodeSlab, p.ptrSlab, p.fieldSlab, p.funcSlab = nil, nil, nil, nil
+	p.nodeSlab, p.ptrSlab, p.fieldSlab = nil, nil, nil
+	if p.backend != nil {
+		p.backend.splitChunks()
+	}
 	p.nodeChunks = 0
 	if streamFrameScratch {
 		p.resetStreamFrames()

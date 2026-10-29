@@ -2,9 +2,11 @@ package engine
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 	"testing"
 	"unsafe"
+	"weak"
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
@@ -27,10 +29,10 @@ rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 					if got, want := resultJSON(n, err), resultJSON(prog.ParseWith("main", doc.Text(), opts)); got != want {
 						t.Fatal("reused document differs from fresh parsing")
 					}
-					if len(doc.vals) != 0 {
+					if len(documentVMValues(doc)) != 0 {
 						t.Fatal("completed parse retained an active VM stack")
 					}
-					for _, v := range doc.vals[:cap(doc.vals)] {
+					for _, v := range documentVMValues(doc)[:cap(documentVMValues(doc))] {
 						if v != nil {
 							t.Fatal("VM scratch retained a result or transient value")
 						}
@@ -48,11 +50,11 @@ rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 				}
 				var backing *any
 				if reuseDocumentVMValues && backend != Closure {
-					if cap(doc.vals) < 5000 {
+					if cap(documentVMValues(doc)) < 5000 {
 						t.Fatal("large parse did not keep its VM value storage")
 					}
-					backing = &doc.vals[:cap(doc.vals)][0]
-				} else if doc.vals != nil {
+					backing = &documentVMValues(doc)[:cap(documentVMValues(doc))][0]
+				} else if documentVMValues(doc) != nil {
 					t.Fatal("closure or reference parse retained VM value storage")
 				}
 				check()
@@ -64,7 +66,7 @@ rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 					t.Fatal(err)
 				}
 				check()
-				if backing != nil && &doc.vals[:cap(doc.vals)][0] != backing {
+				if backing != nil && &documentVMValues(doc)[:cap(documentVMValues(doc))][0] != backing {
 					t.Fatal("same-sized reparse replaced the reusable VM stack")
 				}
 				if err := doc.Edit(doc.in.loaded()-1, doc.in.loaded(), "!"); err != nil {
@@ -77,7 +79,7 @@ rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 				}
 				check()
 				if backing != nil {
-					dirty := doc.vals[:cap(doc.vals)]
+					dirty := documentVMValues(doc)[:cap(documentVMValues(doc))]
 					doc.defaults.Trace = func(e TraceEvent) {
 						if e.Kind == TraceExit && e.Rule == "line" && !e.Memo && e.Matched {
 							panic("stop after writing values")
@@ -94,7 +96,7 @@ rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 						}()
 						doc.Parse()
 					}()
-					if doc.vals != nil || doc.stats.Evaluated == 0 {
+					if documentVMValues(doc) != nil || doc.stats.Evaluated == 0 {
 						t.Fatal("dirty-stack abort did not discard reusable state")
 					}
 					for _, v := range dirty {
@@ -109,7 +111,7 @@ rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 					t.Fatal(err)
 				}
 				check() // A small parse after a large one must not expose old values.
-				if cap(doc.vals) >= 5000 {
+				if cap(documentVMValues(doc)) >= 5000 {
 					t.Fatal("small document retained the large input's VM stack")
 				}
 				for i, child := range retained {
@@ -131,7 +133,7 @@ rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 						}()
 						doc.Parse()
 					}()
-					if doc.vals != nil {
+					if documentVMValues(doc) != nil {
 						t.Fatal("aborted parse retained its VM stack")
 					}
 					doc.defaults.Trace = nil
@@ -164,7 +166,7 @@ func TestDocumentVMValueStorageForEmptyInput(t *testing.T) {
 					if err != nil || n == nil || len(value.D(n).Children) != 2048 {
 						t.Fatalf("empty sequence: %v, %v", n, err)
 					}
-					if doc.vals != nil {
+					if documentVMValues(doc) != nil {
 						t.Fatal("empty input retained an oversized VM stack")
 					}
 					if got, want := resultJSON(n, err), resultJSON(prog.ParseWith("main", "", opts)); got != want {
@@ -228,7 +230,7 @@ func benchmarkDocumentVMValuesShrink(b *testing.B, edit bool) {
 						b.Fatalf("small input valid=%t: %v", valid, err)
 					}
 				}
-				b.ReportMetric(float64(cap(doc.vals))*float64(unsafe.Sizeof(any(nil))), "stack-bytes")
+				b.ReportMetric(float64(cap(documentVMValues(doc)))*float64(unsafe.Sizeof(any(nil))), "stack-bytes")
 			})
 		}
 	}
@@ -252,6 +254,51 @@ func BenchmarkDocumentVMValuesUnchanged(b *testing.B) {
 			for b.Loop() {
 				if _, err := doc.Parse(); err != nil || doc.stats.Evaluated != 0 {
 					b.Fatalf("cached parse evaluated a rule: %v", err)
+				}
+			}
+		})
+	}
+}
+
+// documentVMValues returns the VM value stack that the Document d keeps for its next parse, or nil.
+func documentVMValues(d *Document) []any {
+	if mc, ok := d.machine.(*vmMachine); ok {
+		return mc.vals
+	}
+	return nil
+}
+
+// A Document keeps the backend state of its last parse, but not the parser that ran it: the
+// parser holds the whole parse state (runs, trail, slabs), which the next parse replaces.
+func TestDocumentKeptMachineReleasesParser(t *testing.T) {
+	prog := mustCompile(t, `rule main = line* $$
+rule line = [a-z]+ "\n"`)
+	for _, backend := range []Backend{Bytecode, BytecodeIterative} {
+		t.Run(backend.String(), func(t *testing.T) {
+			doc, err := prog.NewDocumentWith("main", strings.Repeat("abc\n", 1000), ParseOptions{Backend: backend})
+			if err != nil {
+				t.Fatal(err)
+			}
+			for range 2 { // the second parse attaches the kept machine to a new parser
+				var parsed weak.Pointer[parser]
+				if _, err := doc.parseWithCapture(doc.ParseDefaults(), func(p *parser, _ *value.Node, err error) error {
+					parsed = weak.Make(p)
+					return err
+				}); err != nil {
+					t.Fatal(err)
+				}
+				mc, ok := doc.machine.(*vmMachine)
+				if !ok {
+					t.Fatalf("document kept %T, want *vmMachine", doc.machine)
+				}
+				if mc.p != nil {
+					t.Fatal("kept machine refers to the finished parser")
+				}
+				for range 5 {
+					runtime.GC()
+				}
+				if parsed.Value() != nil {
+					t.Fatal("finished parser is still reachable from the Document")
 				}
 			}
 		})

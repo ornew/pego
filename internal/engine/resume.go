@@ -343,21 +343,3 @@ func (p *parser) moveValue(v *value.Node, shift int, base uint32) *value.Node {
 	p.clearMovementWork()
 	return v
 }
-
-// newRunState returns a runState for a VM repetition, reusing a freed one.
-func (p *parser) newRunState() *runState {
-	if n := len(p.freeRuns); n > 0 {
-		r := p.freeRuns[n-1]
-		p.freeRuns = p.freeRuns[:n-1]
-		return r
-	}
-	return &runState{}
-}
-
-// freeRunState makes the runState of a finished repetition available to later ones.
-func (p *parser) freeRunState(r *runState) {
-	r.old = nil
-	clearWork(p, r.mid)
-	clearWork(p, r.post)
-	p.freeRuns = append(p.freeRuns, r)
-}
