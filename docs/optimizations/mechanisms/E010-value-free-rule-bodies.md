@@ -50,7 +50,7 @@ Source owners: [`leanBody`](../../../internal/compile/compile.go),
 [`Walker.compileRule`](../../../internal/compile/compile_walk.go), [`body value
 lowering`](../../../internal/engine/gen.go), [`direct body build
 mode`](../../../internal/engine/gen_flowrule.go), [`TypeScript body build
-mode`](../../../internal/engine/gen_ts.go).
+mode`](../../../internal/gen/tsgen/generator.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

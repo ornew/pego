@@ -39,7 +39,7 @@ Evidence records: [091](../091-specialize-pure-literal-text-disjunctions.md).
 
 Source owners: [`literal text dispatch
 recognition/emission`](../../../internal/engine/gen.go), [`TypeScript literal
-switch emission`](../../../internal/engine/gen_ts.go), [`route and unsafe-shape
+switch emission`](../../../internal/gen/tsgen/generator.go), [`route and unsafe-shape
 checks`](../../../internal/engine/gen_literal_text_dispatch_test.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

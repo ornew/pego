@@ -36,7 +36,7 @@ Source owners: [`Compiler.twinOf and
 Rule.TwinOK`](../../../internal/compile/compile.go), [`twin rule
 bytecode`](../../../internal/compile/bcompile.go), [`all rule/twin
 generation`](../../../internal/engine/gen.go), [`TypeScript twin rule
-generation`](../../../internal/engine/gen_ts.go).
+generation`](../../../internal/gen/tsgen/generator.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

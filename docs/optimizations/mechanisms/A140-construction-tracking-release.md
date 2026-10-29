@@ -39,7 +39,7 @@ cleanup`](../../../internal/engine/eval.go), [`VM evaluator
 cleanup`](../../../internal/engine/vm.go), [`generated construction
 tracking`](../../../runtime/runtime.go), [`typed
 tracking`](../../../runtime/typed.go), [`TypeScript
-cleanup`](../../../internal/engine/tsrt/runtime.ts).
+cleanup`](../../../internal/gen/tsgen/tsrt/runtime.ts).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

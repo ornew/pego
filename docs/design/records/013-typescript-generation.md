@@ -15,13 +15,13 @@ parser of the grammar is `parser.ts`, and its types (`-types`) are `types.ts`.
 
 ### The Same Generator, Another Runtime
 
-The TypeScript generator (`internal/engine/gen_ts.go`) is the Go generator with a different output: it compiles the
+The TypeScript generator (`internal/gen/tsgen/generator.go`) is the Go generator with a different output: it compiles the
 grammar with the engine, walks the same analysis results (memoized rules, left-recursion leaders, value-free twins,
 plain rules, projected repetitions, first-character dispatch, the recognizer) and emits a function per parsing
 expression and a function per action and predicate. It shares the expectation table, the naming and `first` with the
-Go generator (`tsGen` embeds `generator`).
+Go generator (both embed `gen.Generator`).
 
-The runtime, `internal/engine/tsrt/runtime.ts`, is a port of `runtime/runtime.go`, function for function: rule calls with
+The runtime, `internal/gen/tsgen/tsrt/runtime.ts`, is a port of `runtime/runtime.go`, function for function: rule calls with
 deferred memoization (`firstCall`, with the per-rule eager switch), left recursion by growing the seed, memo entries
 keyed by variable values, expectation records isolated in memoized calls and kept for reuse, captures with frames and
 the trail, `attachCaptures` and `finish`, `@error` and `#recover`, the Operators Rule loop, and every built-in function including

@@ -33,7 +33,7 @@ Evidence records: [039](../039-a-line-table-for-error-positions.md).
 Source owners: [`input.buildLines and
 lineCol`](../../../internal/engine/input.go), [`generated line
 lookup`](../../../runtime/runtime.go), [`TypeScript line
-index`](../../../internal/engine/tsrt/runtime.ts).
+index`](../../../internal/gen/tsgen/tsrt/runtime.ts).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/tsgen"
 )
 
 func TestGeneratedTSDepthOptions(t *testing.T) {
@@ -70,7 +71,7 @@ rule n = ("(" n ")" / "é") #recover(skip="?")`, []string{"é", "(é)", "((é))"
 						if err != nil {
 							want = err.Error()
 						}
-						fmt.Fprintf(&script, "{name:%s,input:%s,unit:%d,maxDepth:%d,want:%s},\n", tsString(name), tsString(input), unit, limit, tsString(want))
+						fmt.Fprintf(&script, "{name:%s,input:%s,unit:%d,maxDepth:%d,want:%s},\n", tsgen.TsString(name), tsgen.TsString(input), unit, limit, tsgen.TsString(want))
 					}
 				}
 			}

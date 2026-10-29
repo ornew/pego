@@ -50,7 +50,7 @@ Source owners: [`firstTerminal`](../../../internal/compile/compile.go),
 [`closureBuilder.Choice and guard`](../../../internal/engine/closures.go), [`GUARD
 emission`](../../../internal/compile/bcompile.go), [`generated choice
 guards`](../../../internal/engine/gen.go), [`TypeScript choice
-guards`](../../../internal/engine/gen_ts.go).
+guards`](../../../internal/gen/tsgen/generator.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

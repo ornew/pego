@@ -36,7 +36,7 @@ Source owners: [`record, isolate and
 keep`](../../../internal/engine/runtime.go),
 [`Program.DescTable`](../../../internal/compile/compile.go), [`generated
 expectation IDs`](../../../runtime/runtime.go), [`TypeScript
-description IDs`](../../../internal/engine/tsrt/runtime.ts).
+description IDs`](../../../internal/gen/tsgen/tsrt/runtime.ts).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

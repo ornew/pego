@@ -40,7 +40,7 @@ Evidence records: [011](../011-generated-parsers-catch-up-with-changes-410.md),
 Source owners: [`classAccept`](../../../internal/engine/class_accept.go), [`newASCIISet
 and VM class tests`](../../../internal/engine/vm.go), [`class test
 emission`](../../../internal/engine/gen.go), [`TypeScript class test
-emission`](../../../internal/engine/gen_ts.go).
+emission`](../../../internal/gen/tsgen/generator.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

@@ -1,4 +1,4 @@
-package engine
+package tsgen
 
 import (
 	_ "embed"
@@ -32,10 +32,11 @@ var tsProfileSource string
 // tsRuntimeMarker starts the part of tsrt/runtime.ts that is copied into generated code.
 const tsRuntimeMarker = "// --- Runtime ---\n"
 
-// generateTS is GenerateTS with the compiler c.
-func generateTS(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
+// Generate generates the files of a TypeScript parser for g, compiling it with c; engine.GenerateTS
+// describes the files and options.
+func Generate(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
 	if opts.Runtime == gen.RuntimeOnly {
-		return tsRuntimeFiles(), nil
+		return TsRuntimeFiles(), nil
 	}
 	if opts.Runtime == gen.RuntimeImport && opts.RuntimeModule == "" {
 		return nil, fmt.Errorf("the TypeScript runtime module (the specifier the parser imports the runtime from) is required with the import runtime mode")
@@ -69,7 +70,7 @@ func generateTS(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.
 	if err != nil {
 		return nil, err
 	}
-	tsg := &tsGen{Generator: gen.Generator{Prog: prog, Table: "rules", Observability: opts.Observability, DisableMethodSharing: opts.DisableMethodSharing, DisableLiteralSharing: opts.DisableLiteralSharing || !opts.EnableTSLiteralSharing, DisableLiteralTextDispatch: opts.DisableLiteralTextDispatch}, plainUsed: map[*compile.Rule]bool{}}
+	tsg := &Generator{Generator: gen.Generator{Prog: prog, Table: "rules", Observability: opts.Observability, DisableMethodSharing: opts.DisableMethodSharing, DisableLiteralSharing: opts.DisableLiteralSharing || !opts.EnableTSLiteralSharing, DisableLiteralTextDispatch: opts.DisableLiteralTextDispatch}, plainUsed: map[*compile.Rule]bool{}}
 	tsg.NoWork = !opts.WorkControls
 	tsg.optionsType = "ParseOptions"
 	if !opts.WorkControls {
@@ -153,18 +154,18 @@ export function recognizeWithOptions(input: string | Uint8Array, options?: %[1]s
 		out.WriteString(tsg.fieldCheckSource())
 	}
 	out.WriteString(tsg.Vars.String())
-	fmt.Fprintf(&out, "\nG.descs = %s;\n", tsStrings(tsg.Descs))
+	fmt.Fprintf(&out, "\nG.descs = %s;\n", TsStrings(tsg.Descs))
 	if prog.RecordsSourceInfo {
 		out.WriteString("G.sourceInfo = true;\n")
 	}
 	for _, v := range prog.Vars.All() {
 		switch x := v.Init.(type) {
 		case int:
-			fmt.Fprintf(&out, "G.initialVars.push([%s, %s]);\n", tsString(v.Name), tsInt(x))
+			fmt.Fprintf(&out, "G.initialVars.push([%s, %s]);\n", TsString(v.Name), tsInt(x))
 		case string:
-			fmt.Fprintf(&out, "G.initialVars.push([%s, %s]);\n", tsString(v.Name), tsString(x))
+			fmt.Fprintf(&out, "G.initialVars.push([%s, %s]);\n", TsString(v.Name), TsString(x))
 		default:
-			fmt.Fprintf(&out, "G.initialVars.push([%s, %v]);\n", tsString(v.Name), x)
+			fmt.Fprintf(&out, "G.initialVars.push([%s, %v]);\n", TsString(v.Name), x)
 		}
 	}
 	out.WriteString("\n")
@@ -174,12 +175,12 @@ export function recognizeWithOptions(input: string | Uint8Array, options?: %[1]s
 	return tsFiles(opts, out.String(), types), nil
 }
 
-// tsPrintRuns returns the code points that strconv.IsPrint accepts, for the runtime's quoteGo: the
+// TsPrintRuns returns the code points that strconv.IsPrint accepts, for the runtime's quoteGo: the
 // lengths of the alternating runs of code points that it rejects and accepts, from U+0000, in base
 // 36 separated by commas (about 3 KB). Writing the table of the Go that generates the parser, rather
 // than relying on the JavaScript runtime's Unicode properties, makes toString quote as the engine's
 // Node.String does even where their Unicode versions differ.
-var tsPrintRuns = sync.OnceValue(func() string {
+var TsPrintRuns = sync.OnceValue(func() string {
 	var b strings.Builder
 	prev, start := false, 0
 	for r := 0; r <= unicode.MaxRune; r++ {
@@ -196,7 +197,7 @@ var tsPrintRuns = sync.OnceValue(func() string {
 
 // fieldCheckSource returns the run-time type checks the parser uses, as runtime/fieldcheck.go
 // declares them: tsFieldCheckSource with castValue if called.
-func (g *tsGen) fieldCheckSource() string {
+func (g *Generator) fieldCheckSource() string {
 	src := tsFieldCheckSource
 	if g.NoWork {
 		src = strings.ReplaceAll(src, "    p.stepWork();\n", "")
@@ -343,11 +344,12 @@ func tsFieldType(t *compile.FieldType) string {
 	for i, a := range t.Alts {
 		alts[i] = tsFieldType(a)
 	}
-	return fmt.Sprintf("{ kind: %s, name: %s, elem: %s, alts: [%s], text: %s }", tsString(string(rune(t.Kind))), tsString(t.Name), elem, strings.Join(alts, ", "), tsString(t.Text))
+	return fmt.Sprintf("{ kind: %s, name: %s, elem: %s, alts: [%s], text: %s }", TsString(string(rune(t.Kind))), TsString(t.Name), elem, strings.Join(alts, ", "), TsString(t.Text))
 }
 
-// tsGen generates TypeScript. It shares the expectation table, names and analyses of generator.
-type tsGen struct {
+// Generator generates TypeScript. It shares the expectation table, names and analyses of the Go
+// generator through gen.Generator.
+type Generator struct {
 	gen.Generator
 	// plainUsed holds the plain rules whose function (plainCall) is called.
 	plainUsed map[*compile.Rule]bool
@@ -356,21 +358,21 @@ type tsGen struct {
 	optionsType string
 }
 
-// tsString returns s as a TypeScript string literal (JSON is valid TypeScript).
-func tsString(s string) string {
+// TsString returns s as a TypeScript string literal (JSON is valid TypeScript).
+func TsString(s string) string {
 	b, _ := json.Marshal(s)
 	return string(b)
 }
 
-func tsStrings(xs []string) string {
+func TsStrings(xs []string) string {
 	q := make([]string, len(xs))
 	for i, x := range xs {
-		q[i] = tsString(x)
+		q[i] = TsString(x)
 	}
 	return "[" + strings.Join(q, ", ") + "]"
 }
 
-func tsInts[T ~int32 | ~byte](xs []T) string {
+func TsInts[T ~int32 | ~byte](xs []T) string {
 	q := make([]string, len(xs))
 	for i, x := range xs {
 		q[i] = strconv.Itoa(int(x))
@@ -386,7 +388,7 @@ func tsJoinCondition(parts []string, op string) string {
 	return "(" + tsJoinCondition(parts[:mid], op) + op + tsJoinCondition(parts[mid:], op) + ")"
 }
 
-func (g *tsGen) seenVar() string {
+func (g *Generator) seenVar() string {
 	if g.Table == "rules" {
 		return "nseen"
 	}
@@ -394,24 +396,24 @@ func (g *tsGen) seenVar() string {
 }
 
 // ruleVar returns the constant that holds the rule r of the table being generated.
-func (g *tsGen) ruleVar(r *compile.Rule) string {
+func (g *Generator) ruleVar(r *compile.Rule) string {
 	if g.Table == "rules" {
 		return fmt.Sprintf("R%d", r.ID)
 	}
 	return fmt.Sprintf("Q%d", r.ID)
 }
 
-func (g *tsGen) plainPrefix() string {
+func (g *Generator) plainPrefix() string {
 	if g.Table == "rules" {
 		return "r"
 	}
 	return "q"
 }
 
-// method emits a function of an expression with the given body and returns its name.
+// Method emits a function of an expression with the given body and returns its name.
 //
 // fn turns a call expression into a function.
-func (g *tsGen) method(comment, body string) string {
+func (g *Generator) Method(comment, body string) string {
 	if !g.NoWork {
 		body = "  p.stepWork();\n" + body
 	}
@@ -431,11 +433,11 @@ func (g *tsGen) method(comment, body string) string {
 }
 
 // fn returns a function (a Matcher) that does what the call expression x does.
-func (g *tsGen) fn(x string) string {
+func (g *Generator) fn(x string) string {
 	if name, ok := strings.CutSuffix(x, "(p)"); ok && !strings.ContainsAny(name, "(). ") {
 		return name
 	}
-	return g.method("", "  return "+x+";\n")
+	return g.Method("", "  return "+x+";\n")
 }
 
 // tsActxUse matches a use of the evaluation context c in the text of a term.
@@ -451,7 +453,7 @@ func tsActxParam(body string) string {
 }
 
 // action emits a function that evaluates the term t (an action or a predicate) and returns its name.
-func (g *tsGen) action(t grammar.Term, s *compile.Scope, locals map[string]string) string {
+func (g *Generator) action(t grammar.Term, s *compile.Scope, locals map[string]string) string {
 	name := g.Name("a")
 	body := g.term(t, s, locals)
 	param := tsActxParam(body)
@@ -459,7 +461,7 @@ func (g *tsGen) action(t grammar.Term, s *compile.Scope, locals map[string]strin
 	return name
 }
 
-func (g *tsGen) rules() {
+func (g *Generator) rules() {
 	g.startTSFlow()
 	init := &g.Init
 	bodies := map[*compile.Rule]string{}
@@ -487,26 +489,26 @@ func (g *tsGen) rules() {
 			value = 0 // the lines build the rule's value
 		}
 		fmt.Fprintf(init, "const %s = mkRule(%d, %s, %s, %d, %v, %v, %d, %v, %s);\n", g.ruleVar(r),
-			r.ID, tsString(r.Name), tsStrings(scopes[r].Names), value, r.Memo && !r.Transient, r.Leader, r.Seen, r.Novalue, tsStrings(r.Vars))
+			r.ID, TsString(r.Name), TsStrings(scopes[r].Names), value, r.Memo && !r.Transient, r.Leader, r.Seen, r.Novalue, TsStrings(r.Vars))
 		vars = append(vars, g.ruleVar(r))
 		if r.Splice {
 			fmt.Fprintf(init, "%s.splice = true;\n", g.ruleVar(r))
 		}
 		if w := r.WhereName(); w != r.Name {
-			fmt.Fprintf(init, "%s.where = %s;\n", g.ruleVar(r), tsString(w))
+			fmt.Fprintf(init, "%s.where = %s;\n", g.ruleVar(r), TsString(w))
 		}
 		if r.NodeType != "" {
-			fmt.Fprintf(init, "%s.nodeType = %s;\n", g.ruleVar(r), tsString(r.NodeType))
+			fmt.Fprintf(init, "%s.nodeType = %s;\n", g.ruleVar(r), TsString(r.NodeType))
 		}
 		if r.OpNodeType != "" {
-			fmt.Fprintf(init, "%s.opNodeType = %s;\n", g.ruleVar(r), tsString(r.OpNodeType))
+			fmt.Fprintf(init, "%s.opNodeType = %s;\n", g.ruleVar(r), TsString(r.OpNodeType))
 		}
 	}
 	if g.Table == "rules" {
 		// The table and the start rules, for parseRule (the recognizer has none).
 		fmt.Fprintf(init, "const rules: Rule[] = [%s];\n", strings.Join(vars, ", "))
-		fmt.Fprintf(init, "const starts = %s;\n", tsStrings(g.Prog.StartRules))
-		fmt.Fprintf(init, "const defaultStart = %s;\n", tsString(g.Prog.DefaultStartRule))
+		fmt.Fprintf(init, "const starts = %s;\n", TsStrings(g.Prog.StartRules))
+		fmt.Fprintf(init, "const defaultStart = %s;\n", TsString(g.Prog.DefaultStartRule))
 	}
 	fmt.Fprintf(init, "const %s = %d;\n", g.seenVar(), g.Prog.NSeen)
 	for _, r := range all {
@@ -544,13 +546,13 @@ func (g *tsGen) rules() {
 		for _, f := range compile.DefFields(g.Prog.Types[name].(*grammar.TypeDef)) {
 			fields = append(fields, f.Name)
 		}
-		fmt.Fprintf(init, "G.structFields.set(%s, new Set(%s));\n", tsString(name), tsStrings(fields))
+		fmt.Fprintf(init, "G.structFields.set(%s, new Set(%s));\n", TsString(name), TsStrings(fields))
 	}
 }
 
 // plainCall writes the function r<id>, which does what invokePlain does for the rule r (a rule never
 // memoized and without captures) with a direct call of its body.
-func (g *tsGen) plainCall(r *compile.Rule, body string) {
+func (g *Generator) plainCall(r *compile.Rule, body string) {
 	m := &g.Methods
 	name := g.tracePlainCall(r, fmt.Sprintf("%s%d", g.plainPrefix(), r.ID))
 	fmt.Fprintf(m, "// %s, called as by invokePlain\nfunction %s(p: Parser): R {\n", r.Name, name)
@@ -605,7 +607,7 @@ func tsShaper(prog *compile.Program, e grammar.Expr) int {
 	return s
 }
 
-func (g *tsGen) operatorsRule(r *compile.Rule, e *grammar.OperatorsRule) {
+func (g *Generator) operatorsRule(r *compile.Rule, e *grammar.OperatorsRule) {
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s.operatorsRule = {\n", g.ruleVar(r))
 	// The lines of the rule's Core IR, in the order of e, if the printer prints them from Flow IR.
@@ -644,7 +646,7 @@ func (g *tsGen) operatorsRule(r *compile.Rule, e *grammar.OperatorsRule) {
 			if co != nil {
 				line = co.Ops[id].Line
 			}
-			s := fmt.Sprintf("    { id: %d, kind: %s, assoc: %s, level: %d, line: %s },\n", id, tsString(op.Kind), tsString(op.Assoc), i+1, g.operatorsRuleLine(op.Expr, op.Action, true, line))
+			s := fmt.Sprintf("    { id: %d, kind: %s, assoc: %s, level: %d, line: %s },\n", id, TsString(op.Kind), TsString(op.Assoc), i+1, g.operatorsRuleLine(op.Expr, op.Action, true, line))
 			id++
 			if op.Kind == grammar.Prefix {
 				prefix = append(prefix, s)
@@ -662,7 +664,7 @@ func (g *tsGen) operatorsRule(r *compile.Rule, e *grammar.OperatorsRule) {
 
 // operatorsRuleLine returns the line of an Operators Rule with the expression e and the action; l is
 // its Core IR if the printer prints it from Flow IR, or nil.
-func (g *tsGen) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator bool, l *core.OpLine) string {
+func (g *Generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator bool, l *core.OpLine) string {
 	s := compile.NewScope()
 	var locals []string
 	if operator {
@@ -685,7 +687,7 @@ func (g *tsGen) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator 
 		}
 		act = g.action(action, s, locals)
 	}
-	return fmt.Sprintf("{ scope: %s, m: %s, action: %s, value: %d }", tsStrings(s.Names), m, act, tsShaper(g.Prog, e))
+	return fmt.Sprintf("{ scope: %s, m: %s, action: %s, value: %d }", TsStrings(s.Names), m, act, tsShaper(g.Prog, e))
 }
 
 // tsInt returns the TypeScript value of the int v: a number when it is a safe integer, otherwise a
@@ -700,19 +702,19 @@ func tsInt(v int) string {
 
 // term converts a value expression into a TypeScript expression of type Value, charging a step for
 // it with work controls. locals maps names, such as lambda parameters, to TypeScript expressions.
-func (g *tsGen) term(t grammar.Term, s *compile.Scope, locals map[string]string) string {
+func (g *Generator) term(t grammar.Term, s *compile.Scope, locals map[string]string) string {
 	if g.NoWork {
 		return g.termBody(t, s, locals)
 	}
 	return "(c.work(), " + g.termBody(t, s, locals) + ")"
 }
 
-func (g *tsGen) termBody(t grammar.Term, s *compile.Scope, locals map[string]string) string {
+func (g *Generator) termBody(t grammar.Term, s *compile.Scope, locals map[string]string) string {
 	switch t := t.(type) {
 	case *grammar.IntLit:
 		return tsInt(t.Value)
 	case *grammar.StringLit:
-		return tsString(t.Value)
+		return TsString(t.Value)
 	case *grammar.BoolLit:
 		return strconv.FormatBool(t.Value)
 	case *grammar.NilLit:
@@ -723,20 +725,20 @@ func (g *tsGen) termBody(t grammar.Term, s *compile.Scope, locals map[string]str
 		}
 		return fmt.Sprintf("c.cap(%d)", s.Slots[t.Name])
 	case *grammar.VarRef:
-		return fmt.Sprintf("c.lookup(%s)", tsString(t.Name))
+		return fmt.Sprintf("c.lookup(%s)", TsString(t.Name))
 	case *grammar.Member:
-		return fmt.Sprintf("c.member(%s, %s)", g.term(t.X, s, locals), tsString(t.Name))
+		return fmt.Sprintf("c.member(%s, %s)", g.term(t.X, s, locals), TsString(t.Name))
 	case *grammar.New:
 		if len(t.Args) != 0 {
 			// A node type constructor converts its value (see evalCtx.convert).
 			x := g.term(t.Args[0], s, locals)
 			n, _ := g.Prog.NodeTypeOf(t.Type) // the type's own name, also for an alias of it
-			return fmt.Sprintf("c.convert(%s, %s)", tsString(n.Name), x)
+			return fmt.Sprintf("c.convert(%s, %s)", TsString(n.Name), x)
 		}
 		name, _ := g.Prog.StructType(t.Type)
-		args := []string{tsString(name)}
+		args := []string{TsString(name)}
 		for _, f := range t.Fields {
-			args = append(args, tsString(f.Name), g.term(f.Value, s, locals))
+			args = append(args, TsString(f.Name), g.term(f.Value, s, locals))
 		}
 		return "c.newStruct(" + strings.Join(args, ", ") + ")"
 	case *grammar.ListConstructor:
@@ -769,7 +771,7 @@ func (g *tsGen) termBody(t grammar.Term, s *compile.Scope, locals map[string]str
 		case "text":
 			return "c.text(" + args[0] + ")"
 		case "foldl", "foldr":
-			return fmt.Sprintf("rtFold(%s, %v, %s, %s, %s, c.p.control)", tsString(t.Func), t.Func == "foldr", args[0], args[1], g.lambda(t.Args[2], s, locals))
+			return fmt.Sprintf("rtFold(%s, %v, %s, %s, %s, c.p.control)", TsString(t.Func), t.Func == "foldr", args[0], args[1], g.lambda(t.Args[2], s, locals))
 		case "map":
 			if x, ok := g.Projected(t, locals); ok {
 				return "c.newList(listItems(\"map\", " + g.term(x, s, locals) + "))"
@@ -786,7 +788,7 @@ func (g *tsGen) termBody(t grammar.Term, s *compile.Scope, locals map[string]str
 		if lx, ok := compile.TextArg(t.L); ok && (t.Op == "==" || t.Op == "!=") {
 			if rx, ok := compile.TextArg(t.R); ok {
 				// Compare the strings directly (see evalCtx.binary).
-				return fmt.Sprintf("c.binary(%s, c.textStr(%s), c.textStr(%s))", tsString(t.Op), g.term(lx, s, locals), g.term(rx, s, locals))
+				return fmt.Sprintf("c.binary(%s, c.textStr(%s), c.textStr(%s))", TsString(t.Op), g.term(lx, s, locals), g.term(rx, s, locals))
 			}
 		}
 		l, r := g.term(t.L, s, locals), g.term(t.R, s, locals)
@@ -796,9 +798,9 @@ func (g *tsGen) termBody(t grammar.Term, s *compile.Scope, locals map[string]str
 		case "||":
 			return fmt.Sprintf("rtOr(%s, (): Value => %s)", l, r)
 		}
-		return fmt.Sprintf("c.binary(%s, %s, %s)", tsString(t.Op), l, r)
+		return fmt.Sprintf("c.binary(%s, %s, %s)", TsString(t.Op), l, r)
 	case *grammar.Unary:
-		return fmt.Sprintf("rtUnary(%s, %s)", tsString(t.Op), g.term(t.X, s, locals))
+		return fmt.Sprintf("rtUnary(%s, %s)", TsString(t.Op), g.term(t.X, s, locals))
 	case *grammar.Cast:
 		x := g.term(t.X, s, locals)
 		ft := g.Prog.ResolveCheck(t.Type)
@@ -811,7 +813,7 @@ func (g *tsGen) termBody(t grammar.Term, s *compile.Scope, locals map[string]str
 	panic(fmt.Sprintf("unsupported term %T", t))
 }
 
-func (g *tsGen) predicateTerm(t grammar.Term, s *compile.Scope) string {
+func (g *Generator) predicateTerm(t grammar.Term, s *compile.Scope) string {
 	if !g.DisableLiteralTextDispatch {
 		if name, literals, ok := gen.LiteralTextMembership(t); ok {
 			var cases []string
@@ -819,7 +821,7 @@ func (g *tsGen) predicateTerm(t grammar.Term, s *compile.Scope) string {
 			for _, literal := range literals {
 				if !seen[literal] {
 					seen[literal] = true
-					cases = append(cases, "case "+tsString(literal)+":")
+					cases = append(cases, "case "+TsString(literal)+":")
 				}
 			}
 			fast := fmt.Sprintf("((): Value => { switch (c.textStr(%s)) { %s return true; default: return false; } })()", g.term(&grammar.CaptureRef{Name: name}, s, nil), strings.Join(cases, " "))
@@ -830,7 +832,7 @@ func (g *tsGen) predicateTerm(t grammar.Term, s *compile.Scope) string {
 }
 
 // concatParts writes the statements that push the elements of the arguments of the concat call t.
-func (g *tsGen) concatParts(b *strings.Builder, t *grammar.Call, s *compile.Scope, locals map[string]string) {
+func (g *Generator) concatParts(b *strings.Builder, t *grammar.Call, s *compile.Scope, locals map[string]string) {
 	for _, a := range t.Args {
 		call, ok := a.(*grammar.Call)
 		switch {
@@ -854,7 +856,7 @@ func (g *tsGen) concatParts(b *strings.Builder, t *grammar.Call, s *compile.Scop
 	}
 }
 
-func (g *tsGen) lambda(t grammar.Term, s *compile.Scope, locals map[string]string) string {
+func (g *Generator) lambda(t grammar.Term, s *compile.Scope, locals map[string]string) string {
 	l := t.(*grammar.Lambda)
 	inner := map[string]string{}
 	for k, v := range locals {

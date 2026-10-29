@@ -1,4 +1,4 @@
-package engine
+package tsgen
 
 import (
 	"fmt"
@@ -28,7 +28,7 @@ type tsFlowUnsupported string
 
 // startTSFlow builds the Core IR of the table being generated for printing its rules from Flow IR. It
 // reports whether the Core IR was built; if not, the generation fails with the error it records.
-func (g *tsGen) startTSFlow() bool {
+func (g *Generator) startTSFlow() bool {
 	g.Flow = nil
 	if err := g.StartRecFlow(g.Prog); err != nil {
 		if g.FlowErr == nil {
@@ -52,7 +52,7 @@ func (g *tsGen) startTSFlow() bool {
 // flow.LocalRule accepts prints as a flat function; a rule whose body is a framed body prints under the
 // frame the runtime owns, which also runs its action and finish. On success it sets scope to the
 // capture scope of the printed body.
-func (g *tsGen) flowRule(r *compile.Rule, scope *compile.Scope) (call string, ok bool) {
+func (g *Generator) flowRule(r *compile.Rule, scope *compile.Scope) (call string, ok bool) {
 	if g.Flow == nil {
 		return "", false
 	}
@@ -84,7 +84,7 @@ func (g *tsGen) flowRule(r *compile.Rule, scope *compile.Scope) (call string, ok
 // flowFunc prints the function f, whose capture scope has the slots, as a function of its own and
 // returns the call expression that runs it, or false if the printer does not print f. On success it
 // sets scope to the capture scope of a framed f. The comment describes the function.
-func (g *tsGen) flowFunc(f *flow.Func, slots []core.Slot, scope *compile.Scope, comment string) (call string, ok bool) {
+func (g *Generator) flowFunc(f *flow.Func, slots []core.Slot, scope *compile.Scope, comment string) (call string, ok bool) {
 	defer func() {
 		if e := recover(); e != nil {
 			if _, unsupported := e.(tsFlowUnsupported); !unsupported {
@@ -168,7 +168,7 @@ func tsFlowZero(t flow.Type) string {
 
 // tsFlowPrinter prints the body of a Flow IR function.
 type tsFlowPrinter struct {
-	g *tsGen
+	g *Generator
 	b strings.Builder
 	// dead reports that the current point is unreachable. used holds the labels exited to from
 	// reachable points.
@@ -226,7 +226,7 @@ type tsDecl struct{ name, text string }
 
 // printTSFlow returns the statements of the function f, ending with its return, and the variables
 // the statements declare.
-func (g *tsGen) printTSFlow(f *flow.Func) (string, []string, []tsDecl) {
+func (g *Generator) printTSFlow(f *flow.Func) (string, []string, []tsDecl) {
 	parts := map[*flow.Var]*[4]*flow.Var{}
 	var reads map[*flow.Var]bool
 	for i := 0; ; i++ {
@@ -907,7 +907,7 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 			}
 			v, shared := g.LiteralName(folded)
 			if !shared {
-				p.decl(v, fmt.Sprintf("const %s: Lit = { text: %s, cps: %s, bytes: %s };\n", v, tsString(folded), tsInts([]rune(folded)), tsInts([]byte(folded))))
+				p.decl(v, fmt.Sprintf("const %s: Lit = { text: %s, cps: %s, bytes: %s };\n", v, TsString(folded), TsInts([]rune(folded)), TsInts([]byte(folded))))
 			}
 			return fmt.Sprintf("p.matchLiteralFold(%s, %d, false)", v, p.desc(x.Lit.Exp))
 		}
@@ -917,7 +917,7 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 		val := value.LiteralValue(x.Lit.Text)
 		v, shared := g.LiteralName(val)
 		if !shared {
-			p.decl(v, fmt.Sprintf("const %s: Lit = { text: %s, cps: %s, bytes: %s };\n", v, tsString(val), tsInts([]rune(val)), tsInts([]byte(val))))
+			p.decl(v, fmt.Sprintf("const %s: Lit = { text: %s, cps: %s, bytes: %s };\n", v, TsString(val), TsInts([]rune(val)), TsInts([]byte(val))))
 		}
 		var desc compile.ExpID
 		if x.Lit.Text == "" {
@@ -974,7 +974,7 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 		p.read(x.Start)
 		return fmt.Sprintf("p.text(%s, p.pos)", p.expr(x.Start))
 	case *flow.Str:
-		return tsString(x.S)
+		return TsString(x.S)
 	case *flow.NewTerminalNode:
 		return fmt.Sprintf("new Node(\"string\", \"\", %s, p.pos, %s, noNodes, noFields, true, true)", p.expr(x.Start), p.expr(x.Text))
 	case *flow.NewBranchNode:
@@ -1023,7 +1023,7 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 		name := p.g.Name("a")
 		val := p.g.term(b.Value, gen.FrameScope(x.Caps), nil)
 		p.decl(name, fmt.Sprintf("function %s(%s: Actx): Value {\n  return %s;\n}\n\n", name, tsActxParam(val), val))
-		return fmt.Sprintf("p.bind(%s, %s)", tsString(b.Name), name)
+		return fmt.Sprintf("p.bind(%s, %s)", TsString(b.Name), name)
 	case *flow.CallOutline:
 		return p.outline(x)
 	case *flow.MarkPos:
@@ -1116,7 +1116,7 @@ func (p *tsFlowPrinter) scopeNames(n *flow.Names) string {
 		p.names = map[*flow.Names]string{}
 	}
 	p.names[n] = name
-	p.decl(name, fmt.Sprintf("const %s: string[] = %s;\n", name, tsStrings(n.List)))
+	p.decl(name, fmt.Sprintf("const %s: string[] = %s;\n", name, TsStrings(n.List)))
 	return name
 }
 
@@ -1143,7 +1143,7 @@ func tsUnisolate(s *flow.Set) (*flow.Unisolate, bool) {
 // function and returns the call expression that runs it, or false if the printer does not print
 // the line. It sets scope to the capture scope of the line. With work controls the runtime loop that
 // runs the line charges its entry and the function charges each iteration of a repetition.
-func (g *tsGen) flowLine(l *core.OpLine, e grammar.Expr, scope *compile.Scope, build bool) (string, bool) {
+func (g *Generator) flowLine(l *core.OpLine, e grammar.Expr, scope *compile.Scope, build bool) (string, bool) {
 	if g.Flow == nil || l == nil || !gen.FlowLineOK(e) || !flow.FramedBody(l.Body) {
 		return "", false
 	}

@@ -10,13 +10,14 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/tsgen"
 )
 
 func TestGeneratedSharingIdentity(t *testing.T) {
-	ts := &tsGen{Generator: gen.Generator{Table: "rules"}}
-	name := ts.method("first", "return [null, true];\n")
+	ts := &tsgen.Generator{Generator: gen.Generator{Table: "rules"}}
+	name := ts.Method("first", "return [null, true];\n")
 	ts.Table = "recRules"
-	if ts.method("recognition", "return [null, true];\n") != name {
+	if ts.Method("recognition", "return [null, true];\n") != name {
 		t.Fatal("identical TypeScript bodies should share across rule tables")
 	}
 	g := &generator{Table: "rules"}

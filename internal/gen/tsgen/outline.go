@@ -1,4 +1,4 @@
-package engine
+package tsgen
 
 import (
 	"github.com/ornew/pego/internal/ir/core"
@@ -12,7 +12,7 @@ import (
 // share, and a function that large is neither compact nor fast for the JavaScript engine to compile. Some
 // of its nodes therefore run as functions of their own (flow.CallOutline), which share a body wherever the
 // text printed from a node is equal once the constants it names (literal tables, capture names) are
-// replaced by their declarations (tsSharedKey, tsGen.methodName); the generator does not share the constants
+// replaced by their declarations (tsSharedKey, Generator.MethodName); the generator does not share the constants
 // themselves, so equal nodes read tables of equal value under different names.
 //
 // The nodes are chosen by the structure of the Core IR: a node whose structure occurs in more than one

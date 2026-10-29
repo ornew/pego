@@ -46,7 +46,7 @@ selection`](../../../internal/engine/sparse_memo.go),
 [`memoTable.markSparseSeen`](../../../internal/engine/memo.go),
 [`UseSparseMemo`](../../../internal/gen/generator.go), [`generated
 sparse pages`](../../../runtime/runtime.go), [`TypeScript sparse
-seen pages`](../../../internal/engine/tsrt/runtime.ts).
+seen pages`](../../../internal/gen/tsgen/tsrt/runtime.ts).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

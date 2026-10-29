@@ -20,9 +20,10 @@ This document describes the repository layout and architecture, how to run tests
 | `internal/value/` | `Node`, the value that parsing produces: kinds, fields, JSON form, traversal and the representation that the engine packages share |
 | `internal/limits/` | Work limits of a parse invocation, the error of an exhausted limit and overflow-safe work arithmetic, shared by the parser, the Document and structural queries |
 | `internal/bytecode/` | The bytecode instruction set and module, its disassembly, the encoding of modules in compiled grammars and the validation of loaded modules |
-| `internal/gen/` | What the Go and TypeScript generators share: generation options, the runtime mode of generated Go parsers and generated files |
+| `internal/gen/` | What the Go and TypeScript generators share: generation options, the runtime mode of generated Go parsers, generated files, and the generator state both print with (the program and rule being printed, the expectation table, shared names, the Flow IR state of recognizer rules and the action value resolver) |
 | `runtime/` | Runtime package of generated Go parsers, imported by them or copied into them (`github.com/ornew/pego/runtime`) |
-| `internal/engine/tsrt/` | Source of `runtime.ts`, the runtime that generated TypeScript parsers import (joined from `runtime.ts`, `work.ts`, `trace.ts` and `profile.ts`) |
+| `internal/gen/tsgen/` | TypeScript generator: prints the parser, its types and its runtime files from the compiled program and Flow IR |
+| `internal/gen/tsgen/tsrt/` | Source of `runtime.ts`, the runtime that generated TypeScript parsers import (joined from `runtime.ts`, `work.ts`, `trace.ts` and `profile.ts`) |
 | `cmd/pego/` | Command-line tool |
 | `examples/` | Small example grammars that show the features, with golden tests |
 | `parsers/` | Ready-made parsers for common languages, each a Go module of its own (`parsers/<language>/`, with the grammar, the generated parser and conformance tests); `generate.go` and `parsers_test.go` (main module) generate them and check them on every backend ([README](../parsers/README.md)) |
@@ -56,7 +57,7 @@ This document describes the repository layout and architecture, how to run tests
 | Bytecode | `internal/bytecode/bytecode.go`, `internal/compile/bcompile.go`, `vm.go`, `ivm.go` | Runs the same grammar semantics with recursive and iterative VMs; see the [bytecode specification](../spec/bytecode/README.md). |
 | Input and documents | `input.go`, `stream_text.go`, `document.go`, `resume.go` | Tracks position units, streaming input, versioned atomic edit batches, edits and resumable repetitions; VM-backed Documents reuse cleared stacks ([record 086](optimizations/086-reuse-document-vm-values.md)), and streaming shares bounded immutable text snapshots ([record 088](optimizations/088-share-bounded-stream-text-snapshots.md)). |
 | Compiled grammars | `compiled.go`, `internal/bytecode/modulefile.go`, `internal/bytecode/codec.go` | Saves and loads the bytecode module of one mode (parse, recognize or document) and serves only that mode's operations. |
-| Code generation | `gen.go`, `gen_flowrule.go`, `runtime/`, `gen_ts.go`, `gen_ts_flow.go`, `gen_ts_outline.go`, `gen_ts_files.go`, `tsrt/` | Emits standalone Go and TypeScript parsers; exact generated helpers are shared where enabled ([090](optimizations/090-share-identical-generated-helpers.md)), eligible literal-text predicates use switch dispatch ([091](optimizations/091-specialize-pure-literal-text-disjunctions.md)), and generated Node capture scratch is bounded at recycle ([092](optimizations/092-reuse-generated-node-capture-scratch.md)). |
+| Code generation | `gen.go`, `gen_flowrule.go`, `runtime/`, `internal/gen/tsgen/` | Emits standalone Go and TypeScript parsers; exact generated helpers are shared where enabled ([090](optimizations/090-share-identical-generated-helpers.md)), eligible literal-text predicates use switch dispatch ([091](optimizations/091-specialize-pure-literal-text-disjunctions.md)), and generated Node capture scratch is bounded at recycle ([092](optimizations/092-reuse-generated-node-capture-scratch.md)). |
 | Language tools | `internal/lint/`, `internal/lsp/`, `editors/vscode/` | Provides static checks, editor requests and the VS Code client. |
 | Input generation | `sample/` | Generates accepted inputs and coverage; generated inputs are checked by the parser. |
 
@@ -132,7 +133,7 @@ inputs, retained results, and error/retry reuse in both position units.
 
 The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for its type check, `tsc`; it is skipped when they are missing.
 The generated TypeScript has the same two forms, chosen by `-work-controls`. The TypeScript tests generate the form without work controls unless the test passes a control option (`signal`, `maxInputWork`, `maxSteps`), which generates with `WorkControls`. `TestGeneratedTSParsersMatchEngine` compares both forms with the engine, and `gen_ts_work_forms_test.go` checks that the plain form has no charge, no control option and no cancellation export, and that the controlled form accepts the options.
-TypeScript is printed from the same Flow IR as Go (`gen_ts_flow.go`, `gen_ts_outline.go`); `TestGeneratedTSPrintsLeanRulesFromFlow` and the frozen decision goldens cover what is chosen, and a rule that Flow IR does not print fails generation.
+TypeScript is printed from the same Flow IR as Go (`internal/gen/tsgen/flow.go`, `internal/gen/tsgen/outline.go`); `TestGeneratedTSPrintsLeanRulesFromFlow` and the frozen decision goldens cover what is chosen, and a rule that Flow IR does not print fails generation.
 
 `internal/lint` tests every check with positive and negative cases, lints every example grammar against a hand-checked list of findings, and `TestSoundness` checks the certain findings against the engine on random grammars, exhaustively over short inputs (`-soundness=N` for a longer run).
 

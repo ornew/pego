@@ -6,7 +6,7 @@ generated Go uses, so a rewrite of the Core or Flow IR reaches both.
 ## Mechanism and Invariants
 
 Every rule of the Node and recognizer tables is lowered by `flow.Lower`, `flow.LowerFrame` or
-`flow.LowerOutline` and printed by `gen_ts_flow.go`: a block becomes a labeled block, a loop `for (;;)`,
+`flow.LowerOutline` and printed by `internal/gen/tsgen/flow.go`: a block becomes a labeled block, a loop `for (;;)`,
 a condition a Flow IR expression. A rule that Flow IR does not print fails generation; there is no second
 printer.
 
@@ -22,7 +22,7 @@ The printer keeps the text small and the functions few:
   literal tables themselves are not shared (`tsSharedKey`).
 - Framed nodes that are large, or whose structure occurs more than once, run as functions of their own
   (`flow.CallOutline`), so no function grows with the grammar and equal nodes share a body
-  (`gen_ts_outline.go`).
+  (`internal/gen/tsgen/outline.go`).
 - A recovered error carries the header line only in `stack`; `recoveredError` suspends
   `Error.stackTraceLimit` while it builds the error, because capturing a stack per recovered error
   dominated recovery time. The error of a failed parse keeps its stack.
@@ -62,7 +62,7 @@ below sets it against the new default form, without work controls, and the like-
 
 Evidence records: [122](../122-typescript-from-flow-ir.md).
 
-Source owners: [`Flow IR printer`](../../../internal/engine/gen_ts_flow.go), [`outlining`](../../../internal/engine/gen_ts_outline.go), [`Flow IR lowering`](../../../internal/ir/flow/lower.go).
+Source owners: [`Flow IR printer`](../../../internal/gen/tsgen/flow.go), [`outlining`](../../../internal/gen/tsgen/outline.go), [`Flow IR lowering`](../../../internal/ir/flow/lower.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

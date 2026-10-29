@@ -45,7 +45,7 @@ Source owners: [`evalCtx and termEvaluator`](../../../internal/engine/eval.go),
 locals`](../../../internal/engine/runtime.go), [`generated
 evalCtx`](../../../runtime/runtime.go), [`typed evaluation
 scratch`](../../../runtime/typed.go), [`Parser action
-context`](../../../internal/engine/tsrt/runtime.ts).
+context`](../../../internal/gen/tsgen/tsrt/runtime.ts).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

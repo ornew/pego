@@ -37,7 +37,7 @@ Source owners: [`LeanLine` and the Operators Rule
 walk](../../../internal/compile/compile_walk.go),
 [`Bcompiler.line`](../../../internal/compile/bcompile.go), [`Operators Rule line
 emission`](../../../internal/engine/gen.go), [`TypeScript line
-emission`](../../../internal/engine/gen_ts.go).
+emission`](../../../internal/gen/tsgen/generator.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

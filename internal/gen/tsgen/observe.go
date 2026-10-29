@@ -1,4 +1,4 @@
-package engine
+package tsgen
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"github.com/ornew/pego/internal/compile"
 )
 
-func (g *tsGen) tracePlainCall(r *compile.Rule, name string) string {
+func (g *Generator) tracePlainCall(r *compile.Rule, name string) string {
 	if !g.Observability {
 		return name
 	}
@@ -23,11 +23,11 @@ function %s(p: Parser): R {
   return v;
 }
 
-`, name, body, tsString(r.Name), body)
+`, name, body, TsString(r.Name), body)
 	return body
 }
 
-func (g *tsGen) traceSkipped(expr grammar.Expr) string {
+func (g *Generator) traceSkipped(expr grammar.Expr) string {
 	if !g.Observability {
 		return ""
 	}
@@ -53,7 +53,7 @@ func (g *tsGen) traceSkipped(expr grammar.Expr) string {
 					}
 				}
 			}
-			return fmt.Sprintf("    p.observation?.skipped(%s, p.pos, %d);\n", tsString(e.Name), min)
+			return fmt.Sprintf("    p.observation?.skipped(%s, p.pos, %d);\n", TsString(e.Name), min)
 		default:
 			return ""
 		}

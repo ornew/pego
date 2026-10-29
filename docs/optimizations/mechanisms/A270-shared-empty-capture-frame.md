@@ -34,7 +34,7 @@ Evidence records:
 Source owners: [`emptyFrame` and
 `invokePlain`](../../../internal/engine/runtime.go), [`newFrame`](../../../internal/engine/alloc.go), [`generated empty
 frame`](../../../runtime/runtime.go),
-[`Parser.newFrame`](../../../internal/engine/tsrt/runtime.ts).
+[`Parser.newFrame`](../../../internal/gen/tsgen/tsrt/runtime.ts).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

@@ -33,7 +33,7 @@ Evidence records:
 Source owners: [`parser.useCtx`](../../../internal/engine/alloc.go), [`generated
 useCtx`](../../../runtime/runtime.go), [`typed
 context`](../../../runtime/typed.go),
-[`Parser.useCtx`](../../../internal/engine/tsrt/runtime.ts).
+[`Parser.useCtx`](../../../internal/gen/tsgen/tsrt/runtime.ts).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

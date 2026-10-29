@@ -17,6 +17,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/tsgen"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -236,7 +237,7 @@ func TestGeneratedTSInvalidUTF8Literals(t *testing.T) {
 			var script, want strings.Builder
 			script.WriteString(`import {parse,recognize,marshal,Node,CodePoints,Bytes} from "./parser.ts";` + "\n")
 			for _, input := range tc.inputs {
-				fmt.Fprintf(&script, `for (const unit of [CodePoints,Bytes]){const input=new Uint8Array(Buffer.from(%q,"base64"));const r=parse(input,unit);const rec=recognize(input,unit);if((rec?.message??null)!==(r.error?.message??null))throw new Error("recognition differs");const child=r.node?.field("T");const expected=unit===Bytes?String.fromCharCode(...%s):String.fromCharCode(...%s);if(!r.error && (!(child instanceof Node)||child.text!==expected))throw new Error("matched bytes differ");const out:Record<string,unknown>={};if(r.error)out["err"]=r.error.message;out["node"]=JSON.parse(marshal(r.node));console.log(JSON.stringify(out));}`+"\n", base64.StdEncoding.EncodeToString([]byte(input)), tsInts(literalTextUnits(input, Bytes)), tsInts(literalTextUnits(input, CodePoints)))
+				fmt.Fprintf(&script, `for (const unit of [CodePoints,Bytes]){const input=new Uint8Array(Buffer.from(%q,"base64"));const r=parse(input,unit);const rec=recognize(input,unit);if((rec?.message??null)!==(r.error?.message??null))throw new Error("recognition differs");const child=r.node?.field("T");const expected=unit===Bytes?String.fromCharCode(...%s):String.fromCharCode(...%s);if(!r.error && (!(child instanceof Node)||child.text!==expected))throw new Error("matched bytes differ");const out:Record<string,unknown>={};if(r.error)out["err"]=r.error.message;out["node"]=JSON.parse(marshal(r.node));console.log(JSON.stringify(out));}`+"\n", base64.StdEncoding.EncodeToString([]byte(input)), tsgen.TsInts(literalTextUnits(input, Bytes)), tsgen.TsInts(literalTextUnits(input, CodePoints)))
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					n, err := prog.ParseWith("main", input, ParseOptions{Unit: unit})
 					want.WriteString(resultJSON(n, err) + "\n")

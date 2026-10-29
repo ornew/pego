@@ -38,7 +38,7 @@ Evidence records:
 
 Source owners: [`newTextInputIn`](../../../internal/engine/input.go),
 [`generated setSource`](../../../runtime/runtime.go), [`input
-decode/offset preparation`](../../../internal/engine/tsrt/runtime.ts).
+decode/offset preparation`](../../../internal/gen/tsgen/tsrt/runtime.ts).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

@@ -9,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/tsgen"
 )
 
 // tsStrictFlags are the strictest checks there are, so that generated code compiles in any project;
@@ -137,7 +138,7 @@ process.stdout.write("ok\n");
 		}
 		dir := t.TempDir()
 		writeTSFiles(t, dir, files)
-		writeTSFiles(t, filepath.Join(dir, "shared"), []gen.GeneratedFile{{Path: "rt.ts", Content: tsRuntimeFiles()[0].Content}})
+		writeTSFiles(t, filepath.Join(dir, "shared"), []gen.GeneratedFile{{Path: "rt.ts", Content: tsgen.TsRuntimeFiles()[0].Content}})
 		if _, err := os.Stat(filepath.Join(dir, "runtime.ts")); err == nil {
 			t.Fatal("import mode wrote runtime.ts")
 		}
@@ -145,7 +146,7 @@ process.stdout.write("ok\n");
 	})
 	t.Run("only", func(t *testing.T) {
 		// A runtime alone compiles, and equals the runtime that embedded mode writes for any grammar.
-		only := tsRuntimeFiles()
+		only := tsgen.TsRuntimeFiles()
 		if len(only) != 1 || only[0].Path != "runtime.ts" {
 			t.Fatalf("only wrote %v", only)
 		}
@@ -178,7 +179,7 @@ process.stdout.write("ok\n");
 // TestGeneratedTSReservedTypes checks that a grammar type named like a declaration of types.ts
 // is rejected, instead of silently renamed or shadowing it.
 func TestGeneratedTSReservedTypes(t *testing.T) {
-	for _, name := range tsReservedTypes {
+	for _, name := range tsgen.TsReservedTypes {
 		g, err := parseTest("type " + name + " = { Text string }\nrule main " + name + " = t:(\"x\") #atomic => " + name + "{Text: text($t)}")
 		if err != nil {
 			t.Errorf("type %s: %v", name, err)
@@ -194,8 +195,8 @@ func TestGeneratedTSReservedTypes(t *testing.T) {
 // TestTSRuntimePrintRuns checks the table of printable code points in the runtime against the one
 // the generator computes from strconv.IsPrint.
 func TestTSRuntimePrintRuns(t *testing.T) {
-	want := `export const printRuns = "` + tsPrintRuns() + `";`
-	if !strings.Contains(tsRuntimeText(), want) {
+	want := `export const printRuns = "` + tsgen.TsPrintRuns() + `";`
+	if !strings.Contains(tsgen.TsRuntimeText(), want) {
 		t.Error("printRuns in runtime.ts differs from tsPrintRuns()")
 	}
 }

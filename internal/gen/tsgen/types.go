@@ -1,4 +1,4 @@
-package engine
+package tsgen
 
 import (
 	"fmt"
@@ -13,9 +13,9 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-// tsReservedTypes are the names types.ts declares itself, or imports. A grammar type with one of
+// TsReservedTypes are the names types.ts declares itself, or imports. A grammar type with one of
 // these names would shadow or redeclare it, so the generator rejects it.
-var tsReservedTypes = []string{"Span", "TNode", "StringNode", "RecoveredError", "TypedParseResult", "TypedValue", "RuntimeNode"}
+var TsReservedTypes = []string{"Span", "TNode", "StringNode", "RecoveredError", "TypedParseResult", "TypedValue", "RuntimeNode"}
 
 // tsTypedNameRef matches the identifiers of a TypeScript type expression of typedTS.
 var tsTypedNameRef = regexp.MustCompile(`[\p{L}_$][\p{L}\p{N}_$]*`)
@@ -33,14 +33,14 @@ func qualifyTypes(typ string) string {
 }
 
 // typedTS returns the declarations of types.ts and the code that parser.ts adds for typed values.
-func (g *tsGen) typedTS(start *compile.Rule) (types, parser string, err error) {
+func (g *Generator) typedTS(start *compile.Rule) (types, parser string, err error) {
 	if g.Prog.Typed == nil {
 		return "", "", fmt.Errorf("typed values need the grammar's types (type checking did not run)")
 	}
 	t := &tsTypedGen{info: g.Prog.Typed, names: map[string]string{}, joins: map[string]bool{}, ids: map[string]int{}}
 	t.ValueResolver = gen.NewValueResolver(g.Prog, func(x compile.Ty) bool { return t.joins[x.String()] })
 	reserved := map[string]bool{}
-	for _, n := range tsReservedTypes {
+	for _, n := range TsReservedTypes {
 		reserved[n] = true
 	}
 	for name := range g.Prog.Types {
@@ -49,7 +49,7 @@ func (g *tsGen) typedTS(start *compile.Rule) (types, parser string, err error) {
 	sort.Strings(t.all)
 	for _, name := range t.all {
 		if reserved[name] {
-			return "", "", fmt.Errorf("the grammar type %s cannot be generated for TypeScript: types.ts declares a type with that name (reserved: %s)", name, strings.Join(tsReservedTypes, ", "))
+			return "", "", fmt.Errorf("the grammar type %s cannot be generated for TypeScript: types.ts declares a type with that name (reserved: %s)", name, strings.Join(TsReservedTypes, ", "))
 		}
 		t.names[name] = name
 		if a, ok := t.info.Aliases[name].(compile.JoinTy); ok && tsNodeJoin(a) {
@@ -72,13 +72,13 @@ func (g *tsGen) typedTS(start *compile.Rule) (types, parser string, err error) {
 			open = append(open, t.names[name])
 			if n, ok := g.Prog.NodeTypeOf(name); ok && spec.Struct() == nil {
 				under := strings.TrimSuffix(t.tsType(n.Underlying()), " | null")
-				fmt.Fprintf(&b, "/** Grammar node type %s = %s. */\nexport interface %s extends %s {\n  readonly type: %s;\n}\n\n", name, n.Underlying(), t.names[name], under, tsString(name))
+				fmt.Fprintf(&b, "/** Grammar node type %s = %s. */\nexport interface %s extends %s {\n  readonly type: %s;\n}\n\n", name, n.Underlying(), t.names[name], under, TsString(name))
 				t.recipe(n)
 				continue
 			}
-			fmt.Fprintf(&b, "/** Grammar struct %s. */\nexport interface %s extends Span {\n  readonly type: %s;\n", name, t.names[name], tsString(name))
+			fmt.Fprintf(&b, "/** Grammar struct %s. */\nexport interface %s extends Span {\n  readonly type: %s;\n", name, t.names[name], TsString(name))
 			for _, f := range t.info.Fields[name] {
-				fmt.Fprintf(&b, "  readonly %s: %s;\n", tsString(f.Name), t.tsType(f.T))
+				fmt.Fprintf(&b, "  readonly %s: %s;\n", TsString(f.Name), t.tsType(f.T))
 				t.recipe(f.T)
 			}
 			b.WriteString("}\n\n")
@@ -112,22 +112,22 @@ func (g *tsGen) typedTS(start *compile.Rule) (types, parser string, err error) {
 	}
 	b.WriteString(tsTypedNodeRecipeTable)
 	for _, n := range []compile.NamedTy{compile.TyMatch, compile.TyError} {
-		fmt.Fprintf(&b, "  [%s, %d],\n", tsString(n.Name), t.recipe(n))
+		fmt.Fprintf(&b, "  [%s, %d],\n", TsString(n.Name), t.recipe(n))
 	}
 	// Open values: tuple and list nodes become TNode<unknown>, and tuple and list values arrays.
 	for _, name := range []string{value.TypeTuple, value.TypeList} {
-		fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), openID)
+		fmt.Fprintf(&b, "  [%s, %d],\n", TsString(name), openID)
 	}
 	for _, name := range []string{value.TypeTupleValue, value.TypeListValue} {
-		fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), elemsID)
+		fmt.Fprintf(&b, "  [%s, %d],\n", TsString(name), elemsID)
 	}
 	for _, name := range t.all {
 		if td, ok := g.Prog.Types[name].(*grammar.TypeDef); ok {
 			if n, ok := g.Prog.NodeTypeOf(name); ok && td.Struct() == nil {
-				fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), t.recipe(n))
+				fmt.Fprintf(&b, "  [%s, %d],\n", TsString(name), t.recipe(n))
 				continue
 			}
-			fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), t.recipe(compile.NamedTy{Name: name, Kind: 's'}))
+			fmt.Fprintf(&b, "  [%s, %d],\n", TsString(name), t.recipe(compile.NamedTy{Name: name, Kind: 's'}))
 		}
 	}
 	b.WriteString("]);\n\n")
@@ -136,8 +136,8 @@ func (g *tsGen) typedTS(start *compile.Rule) (types, parser string, err error) {
 
 type tsTypedGen struct {
 	info *compile.TypeInfo
-	// valueResolver selects the rules whose typed values come from their value types (see
-	// gen_types_values.go): node[T] becomes TNode<T>, a tuple a readonly array type and () the empty
+	// ValueResolver selects the rules whose typed values come from their value types, as in the Go
+	// generator: node[T] becomes TNode<T>, a tuple a readonly array type and () the empty
 	// tuple type.
 	gen.ValueResolver
 	names   map[string]string
@@ -370,16 +370,16 @@ func (t *tsTypedGen) recipe(x compile.Ty) int {
 	id := len(t.recipes)
 	t.ids[key] = id
 	t.recipes = append(t.recipes, "")
-	r := "{ kind: " + tsString(kind)
+	r := "{ kind: " + TsString(kind)
 	switch a := x.(type) {
 	case compile.NamedTy:
 		if kind == "struct" || kind == "terminal" || kind == "error" {
-			r += ", name: " + tsString(a.Name)
+			r += ", name: " + TsString(a.Name)
 		}
 		if kind == "struct" {
 			var fields []string
 			for _, f := range t.info.Fields[a.Name] {
-				fields = append(fields, fmt.Sprintf("{ name: %s, repr: %d }", tsString(f.Name), t.recipe(f.T)))
+				fields = append(fields, fmt.Sprintf("{ name: %s, repr: %d }", TsString(f.Name), t.recipe(f.T)))
 			}
 			r += ", fields: [" + strings.Join(fields, ", ") + "]"
 		}
@@ -389,9 +389,9 @@ func (t *tsTypedGen) recipe(x compile.Ty) int {
 		r += ", elem: " + strconv.Itoa(t.recipe(a.Elem))
 	case compile.NodeTy:
 		if a.Name != "" {
-			r += ", name: " + tsString(a.Name)
+			r += ", name: " + TsString(a.Name)
 		}
-		r += ", mode: " + tsString(tnodeMode(a)) + ", elem: " + strconv.Itoa(t.recipe(a.Value))
+		r += ", mode: " + TsString(tnodeMode(a)) + ", elem: " + strconv.Itoa(t.recipe(a.Value))
 	case compile.TupleTy:
 		elems := make([]string, len(a.Elems))
 		for i, e := range a.Elems {
@@ -400,13 +400,13 @@ func (t *tsTypedGen) recipe(x compile.Ty) int {
 		r += ", elems: [" + strings.Join(elems, ", ") + "]"
 	case compile.JoinTy:
 		if kind == "union" {
-			members := []string{fmt.Sprintf("[%s, %d]", tsString(value.TypeError), t.recipe(compile.TyError))}
+			members := []string{fmt.Sprintf("[%s, %d]", TsString(value.TypeError), t.recipe(compile.TyError))}
 			for _, m := range a.Alts {
 				if m, ok := m.(compile.NamedTy); ok && (m == compile.TyMatch || m.Kind == 's') {
-					members = append(members, fmt.Sprintf("[%s, %d]", tsString(m.Name), t.recipe(m)))
+					members = append(members, fmt.Sprintf("[%s, %d]", TsString(m.Name), t.recipe(m)))
 				}
 				if m, ok := m.(compile.NodeTy); ok && m.Name != "" {
-					members = append(members, fmt.Sprintf("[%s, %d]", tsString(m.Name), t.recipe(m)))
+					members = append(members, fmt.Sprintf("[%s, %d]", TsString(m.Name), t.recipe(m)))
 				}
 			}
 			r += ", members: new Map([" + strings.Join(members, ", ") + "])"

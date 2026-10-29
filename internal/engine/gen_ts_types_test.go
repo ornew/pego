@@ -11,6 +11,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/tsgen"
 )
 
 func runTypedTSFixture(t *testing.T, src, consumer string, opts gen.GenOptions, keep string) {
@@ -235,7 +236,7 @@ check(stable(parseAST("xx").value).includes("Branch"), "small DAG value");
 			}
 			runTypedTSFixture(t, tsTypedDAGTypes+body, consumer, gen.GenOptions{Recognize: true}, keep)
 			if keep != "" {
-				inputs := tsStrings([]string{"x", strings.Repeat("x", 8), strings.Repeat("x", 6000)})
+				inputs := tsgen.TsStrings([]string{"x", strings.Repeat("x", 8), strings.Repeat("x", 6000)})
 				if err := os.WriteFile(filepath.Join(keep, "inputs.json"), []byte(inputs), 0o644); err != nil {
 					t.Fatal(err)
 				}
@@ -290,7 +291,7 @@ rule item Good = x:[a-zé😀]+ #atomic ";" => Good{Token: $x}`, "a;1;", strings
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			inputs := tsStrings([]string{c.small, c.large})
+			inputs := tsgen.TsStrings([]string{c.small, c.large})
 			consumer := `import {parse, parseAST, parseASTWithOptions, CodePoints, Bytes} from "./parser.ts";
 ` + tsTypedAssert + `for (const unit of [CodePoints, Bytes]) for (const input of ` + inputs + `) {
   const r = parseAST(input, unit), n = parse(input, unit);

@@ -4,6 +4,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/tsgen"
 )
 
 // Generate generates the files of a Go parser for a grammar: parser.go with the code generated
@@ -29,7 +30,7 @@ func Generate(g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, err
 // expressions, as in Generate; the embedded runtime (tsrt) mirrors runtime. opts.Package is not used.
 // opts.Types adds declarations and Node-to-value conversion entry points.
 func GenerateTS(g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
-	return generateTS(g, compileForGenerator, opts)
+	return tsgen.Generate(g, compileForGenerator, opts)
 }
 
 // compileForGenerator is the gen.Compiler of the engine: it compiles g with Compile and builds

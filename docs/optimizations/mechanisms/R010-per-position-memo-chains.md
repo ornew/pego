@@ -43,7 +43,7 @@ Source owners: [`memoTable.get and put`](../../../internal/engine/memo.go),
 [`envValues and callBegin`](../../../internal/engine/runtime.go),
 [`RuleVariables`](../../../internal/compile/analysis.go), [`generated memo
 table`](../../../runtime/runtime.go), [`TypeScript memo
-entries`](../../../internal/engine/tsrt/runtime.ts).
+entries`](../../../internal/gen/tsgen/tsrt/runtime.ts).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

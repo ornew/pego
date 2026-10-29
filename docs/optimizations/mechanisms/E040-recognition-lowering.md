@@ -45,7 +45,7 @@ Source owners: [`Program.recognizer`](../../../internal/engine/parse.go),
 [`recognize compilation and predicate capture
 analysis`](../../../internal/compile/compile.go), [`recognizer
 generation`](../../../internal/engine/gen.go), [`generated recognize entry
-point`](../../../internal/engine/gen_ts.go).
+point`](../../../internal/gen/tsgen/generator.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

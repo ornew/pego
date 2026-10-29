@@ -36,7 +36,7 @@ Evidence records: [037](../037-no-intermediate-lists-in-concat.md),
 Source owners: [`concat element evaluation`](../../../internal/engine/eval.go),
 [`ELISTBEGIN/ELISTPUSH/EMAPPUSH/ELISTEND`](../../../internal/compile/bcompile.go),
 [`concat emission`](../../../internal/engine/gen.go), [`concat
-emission`](../../../internal/engine/gen_ts.go).
+emission`](../../../internal/gen/tsgen/generator.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

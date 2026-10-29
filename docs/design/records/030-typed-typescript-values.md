@@ -16,7 +16,7 @@ its own correctness and measurement gates.
 
 ## Motivation
 
-`internal/engine/gen_ts.go` previously rejected `GenOptions.Types`. Generated TS
+`internal/gen/tsgen/generator.go` previously rejected `GenOptions.Types`. Generated TS
 returns `Node` values whose fields require runtime name lookup and consumer
 casts. Generated Go already maps grammar types to public values through
 `gen_types.go`; its metadata and converter semantics provide the reference

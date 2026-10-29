@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 
-const runtimePath = process.argv[2] ?? new URL("../internal/engine/tsrt/runtime.ts", import.meta.url);
+const runtimePath = process.argv[2] ?? new URL("../internal/gen/tsgen/tsrt/runtime.ts", import.meta.url);
 const source = readFileSync(runtimePath, "utf8");
 const helper = String.raw`
 export function benchmarkLiteralMatchers() {
