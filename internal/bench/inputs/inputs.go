@@ -1,4 +1,6 @@
-package bench
+// Package inputs generates the inputs of the benchmarks: documents of the benchmark grammars in
+// sizes that the benchmarks choose, from a fixed random seed.
+package inputs
 
 import (
 	"fmt"

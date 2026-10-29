@@ -4,7 +4,7 @@
 package csv
 
 import (
-	types "github.com/ornew/pego/bench/gen/csv/types"
+	types "github.com/ornew/pego/internal/bench/gen/csv/types"
 	rt "github.com/ornew/pego/runtime"
 )
 

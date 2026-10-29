@@ -3,17 +3,17 @@ package engine
 import (
 	"testing"
 
-	"github.com/ornew/pego/bench"
-	gjson "github.com/ornew/pego/bench/gen/json"
-	gxml "github.com/ornew/pego/bench/gen/xml"
+	gjson "github.com/ornew/pego/internal/bench/gen/json"
+	gxml "github.com/ornew/pego/internal/bench/gen/xml"
+	"github.com/ornew/pego/internal/bench/inputs"
 )
 
 // BenchmarkSparseMemoDenseGenerated exercises large inputs whose generated
 // rule tables stay below the sparse cutoff, including recognition in both units.
 func BenchmarkSparseMemoDenseGenerated(b *testing.B) {
 	for _, w := range []struct{ name, input string }{
-		{"JSON", bench.JSONInput(256 << 10)},
-		{"XML", bench.XMLInput(256 << 10)},
+		{"JSON", inputs.JSONInput(256 << 10)},
+		{"XML", inputs.XMLInput(256 << 10)},
 	} {
 		for _, unit := range []struct {
 			name string

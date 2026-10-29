@@ -2,7 +2,7 @@
 
 - The generated runtime (`runtime`) now defers memoization to the second call at a position with the
   same per-rule switch to eager memoization (the generator emits each rule's `seen` number and their count), and calls
-  unmemoized rules without captures through `invokePlain`. The generated files in `bench/gen` and
+  unmemoized rules without captures through `invokePlain`. The generated files in `internal/bench/gen` and
   `examples/json/generated` were regenerated.
 - Effect (min of 8 interleaved runs, Apple M3 Max, code points; time and bytes per parse):
 

@@ -441,7 +441,7 @@ both/b.go:17:6: Node redeclared in this block
 	both/a.go:17:6: other declaration of Node
 ```
 
-Give every grammar its own package (and directory), as `parsers/*` and `bench/gen/*` do. If you also
+Give every grammar its own package (and directory), as `parsers/*` and `internal/bench/gen/*` do. If you also
 want several entry points of one grammar, use `ParseRule` rather than generating it twice.
 
 ### Engine in Development, Generated in Production

@@ -4,7 +4,7 @@
 package calclr
 
 import (
-	types "github.com/ornew/pego/bench/gen/calclr/types"
+	types "github.com/ornew/pego/internal/bench/gen/calclr/types"
 	rt "github.com/ornew/pego/runtime"
 )
 

@@ -1,6 +1,7 @@
 package bench
 
 import (
+	"github.com/ornew/pego/internal/bench/inputs"
 	"runtime"
 	"strings"
 	"testing"
@@ -9,7 +10,7 @@ import (
 	"github.com/ornew/pego"
 )
 
-const streamAdoptionElements = 50001 // CSVInput(50000) includes the header.
+const streamAdoptionElements = 50001 // inputs.CSVInput(50000) includes the header.
 
 var (
 	cacheAdoptionStats pego.CacheStats
@@ -21,7 +22,7 @@ var (
 // Count ok rather than non-nil nodes: a successful stream element may be nil.
 func BenchmarkStreamDeliveryAdoption(b *testing.B) {
 	p := load(b, "../parsers/csv/csv.pego")
-	input := CSVInput(50000)
+	input := inputs.CSVInput(50000)
 	for _, be := range backends {
 		for _, u := range units {
 			for _, mode := range []string{"callback", "iterator"} {
@@ -73,7 +74,7 @@ func BenchmarkStreamDeliveryAdoption(b *testing.B) {
 // measurement does not include a callback-error or early-close path.
 func BenchmarkStreamFirstElementAdoption(b *testing.B) {
 	p := load(b, "../parsers/csv/csv.pego")
-	input := CSVInput(50000)
+	input := inputs.CSVInput(50000)
 	for _, be := range backends {
 		for _, u := range units {
 			for _, mode := range []string{"callback", "iterator"} {
@@ -131,7 +132,7 @@ func BenchmarkStreamFirstElementAdoption(b *testing.B) {
 // includes constructing and parsing a new Document with the same options.
 func BenchmarkDocumentCacheAdoption(b *testing.B) {
 	p := load(b, "../examples/minilang/minilang.pego")
-	input := MinilangInput(300, 0)
+	input := inputs.MinilangInput(300, 0)
 	for _, be := range backends {
 		for _, u := range units {
 			for _, mode := range []string{"CacheStats", "ResetAndParse", "FreshDocument"} {

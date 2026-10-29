@@ -13,7 +13,7 @@ before choosing an edit location:
 | Runtime: execution, bytecode VMs, Documents, streams and work controls | `internal/engine/` |
 | Code generation entry points | `pego.go` (`GenerateGo`, `GenerateTypeScript`), `internal/gen/` |
 | Output schema and structural queries | `internal/schema/` |
-| Generated Go parser source | Generator `internal/gen/gogen/generator.go` and runtime package `runtime/` (imported or copied into generated parsers); generated parsers under `parsers/` and `bench/gen/` are outputs |
+| Generated Go parser source | Generator `internal/gen/gogen/generator.go` and runtime package `runtime/` (imported or copied into generated parsers); generated parsers under `parsers/` and `internal/bench/gen/` are outputs |
 | CLI, editor service and sample generation | `cmd/pego/`, `internal/lsp/`, `sample/` |
 | Ready-made parsers, playground and site | `parsers/`, `cmd/playground/`, `site/` |
 

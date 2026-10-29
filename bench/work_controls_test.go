@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
-	gjson "github.com/ornew/pego/bench/gen/json"
-	gxml "github.com/ornew/pego/bench/gen/xml"
+	gjson "github.com/ornew/pego/internal/bench/gen/json"
+	gxml "github.com/ornew/pego/internal/bench/gen/xml"
 )
 
 // BenchmarkControlledParse uses finite but effectively inexhaustible counters

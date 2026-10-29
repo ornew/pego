@@ -54,7 +54,7 @@ func TestReferenceListsPublicPackages(t *testing.T) {
 		t.Fatal("the walk found no public package in the module root")
 	}
 	for _, dir := range public {
-		if !listed[dir] && !benchPackage(dir) {
+		if !listed[dir] {
 			t.Errorf("public package %s is missing from refPackages", path.Join(modulePath, dir))
 		}
 	}
@@ -83,10 +83,4 @@ func exportsNames(t *testing.T, repo, dir string) bool {
 		t.Fatalf("%s: %v", dir, err)
 	}
 	return len(pkg.Consts)+len(pkg.Vars)+len(pkg.Funcs)+len(pkg.Types) > 0
-}
-
-// benchPackage reports whether dir is a benchmark package that exports names only as a side effect
-// of how the benchmarks are built; such packages are not part of the API.
-func benchPackage(dir string) bool {
-	return dir == "bench" || strings.HasPrefix(dir, "bench/gen/")
 }

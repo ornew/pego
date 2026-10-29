@@ -21,7 +21,7 @@ func TestGeneratedRuleEntryCharge(t *testing.T) {
 	name := regexp.MustCompile(`^[eiqrsuv][0-9]+$`)
 	wrapper := regexp.MustCompile(`^[iu][0-9]+$`) // typed wrappers: state around a call of the charging function
 	var paths []string
-	for _, pattern := range []string{"../../parsers/*/parser.go", "../../bench/gen/*/parser.go"} {
+	for _, pattern := range []string{"../../parsers/*/parser.go", "../bench/gen/*/parser.go"} {
 		m, err := filepath.Glob(pattern)
 		if err != nil {
 			t.Fatal(err)

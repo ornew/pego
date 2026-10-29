@@ -4,7 +4,7 @@
 package outline
 
 import (
-	types "github.com/ornew/pego/bench/gen/outline/types"
+	types "github.com/ornew/pego/internal/bench/gen/outline/types"
 	rt "github.com/ornew/pego/runtime"
 )
 

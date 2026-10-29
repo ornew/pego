@@ -41,7 +41,7 @@
   The full benchmark report is refreshed at the stream-memory checkpoint.
 - Six pairs compare f259b37 (runtime and generated benchmark fixtures restored
   with a Go overlay) with the unique-binding change in ec2f903. Restore
-  `runtime.go`, `eval.go`, `vm.go` and `bench/gen/*/parser.go`; an unused
+  `runtime.go`, `eval.go`, `vm.go` and `internal/bench/gen/*/parser.go`; an unused
   prepend-only `bind` helper lets new snapshot tests compile on the baseline,
   whose binding paths and parser layout remain unchanged. The rollback
   workloads and heap regressions are in the benchmark/test code. Reproduce with

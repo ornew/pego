@@ -4,7 +4,7 @@
 package minilang
 
 import (
-	types "github.com/ornew/pego/bench/gen/minilang/types"
+	types "github.com/ornew/pego/internal/bench/gen/minilang/types"
 	rt "github.com/ornew/pego/runtime"
 )
 

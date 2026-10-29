@@ -11,7 +11,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ornew/pego/bench"
+	"github.com/ornew/pego/internal/bench/inputs"
 )
 
 // tsWorkload is a workload measured on the generated TypeScript parser: the grammar and the input
@@ -23,13 +23,13 @@ type tsWorkload struct {
 }
 
 var tsWorkloads = []tsWorkload{
-	{"JSON", "parsers/json/json.pego", func() string { return bench.JSONInput(256 << 10) }},
-	{"CSV", "parsers/csv/csv.pego", func() string { return bench.CSVInput(5000) }},
-	{"XML", "parsers/xml/xml.pego", func() string { return bench.XMLInput(256 << 10) }},
-	{"Arith_OperatorsRule", "examples/calculator/calc.pego", func() string { return bench.ArithInput(20000) }},
-	{"Arith_LeftRec", "examples/calculator/calc_lr.pego", func() string { return bench.ArithInput(20000) }},
-	{"Minilang", "examples/minilang/minilang.pego", func() string { return bench.MinilangInput(300, 0) }},
-	{"Outline", "examples/outline/outline.pego", func() string { return bench.OutlineInput(5000) }},
+	{"JSON", "parsers/json/json.pego", func() string { return inputs.JSONInput(256 << 10) }},
+	{"CSV", "parsers/csv/csv.pego", func() string { return inputs.CSVInput(5000) }},
+	{"XML", "parsers/xml/xml.pego", func() string { return inputs.XMLInput(256 << 10) }},
+	{"Arith_OperatorsRule", "examples/calculator/calc.pego", func() string { return inputs.ArithInput(20000) }},
+	{"Arith_LeftRec", "examples/calculator/calc_lr.pego", func() string { return inputs.ArithInput(20000) }},
+	{"Minilang", "examples/minilang/minilang.pego", func() string { return inputs.MinilangInput(300, 0) }},
+	{"Outline", "examples/outline/outline.pego", func() string { return inputs.OutlineInput(5000) }},
 }
 
 // tsModes are the entry points of a generated TypeScript parser that are measured, by the name

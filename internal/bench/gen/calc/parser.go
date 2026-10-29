@@ -4,7 +4,7 @@
 package calc
 
 import (
-	types "github.com/ornew/pego/bench/gen/calc/types"
+	types "github.com/ornew/pego/internal/bench/gen/calc/types"
 	rt "github.com/ornew/pego/runtime"
 )
 

@@ -14,7 +14,7 @@ import (
 	"runtime/debug"
 
 	"github.com/ornew/pego"
-	"github.com/ornew/pego/bench"
+	"github.com/ornew/pego/internal/bench/inputs"
 )
 
 const forcedGCs = 3
@@ -129,13 +129,13 @@ func corpus(repo, name string) (source, input string, err error) {
 	var path string
 	switch name {
 	case "json":
-		path, input = "parsers/json/json.pego", bench.JSONInput(256<<10)
+		path, input = "parsers/json/json.pego", inputs.JSONInput(256<<10)
 	case "xml":
-		path, input = "parsers/xml/xml.pego", bench.XMLInput(256<<10)
+		path, input = "parsers/xml/xml.pego", inputs.XMLInput(256<<10)
 	case "arithmetic":
-		path, input = "examples/calculator/calc.pego", bench.ArithInput(20000)
+		path, input = "examples/calculator/calc.pego", inputs.ArithInput(20000)
 	case "minilang":
-		path, input = "examples/minilang/minilang.pego", bench.MinilangInput(300, 0)
+		path, input = "examples/minilang/minilang.pego", inputs.MinilangInput(300, 0)
 	default:
 		return "", "", fmt.Errorf("unknown corpus %q", name)
 	}

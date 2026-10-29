@@ -4,7 +4,7 @@
 package json
 
 import (
-	types "github.com/ornew/pego/bench/gen/json/types"
+	types "github.com/ornew/pego/internal/bench/gen/json/types"
 	rt "github.com/ornew/pego/runtime"
 )
 

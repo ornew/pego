@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"encoding/xml"
+	"github.com/ornew/pego/internal/bench/inputs"
 	"go/parser"
 	"io"
 	"os"
@@ -12,13 +13,13 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego"
-	gcalc "github.com/ornew/pego/bench/gen/calc"
-	gcalclr "github.com/ornew/pego/bench/gen/calclr"
-	gcsv "github.com/ornew/pego/bench/gen/csv"
-	gjson "github.com/ornew/pego/bench/gen/json"
-	gminilang "github.com/ornew/pego/bench/gen/minilang"
-	goutline "github.com/ornew/pego/bench/gen/outline"
-	gxml "github.com/ornew/pego/bench/gen/xml"
+	gcalc "github.com/ornew/pego/internal/bench/gen/calc"
+	gcalclr "github.com/ornew/pego/internal/bench/gen/calclr"
+	gcsv "github.com/ornew/pego/internal/bench/gen/csv"
+	gjson "github.com/ornew/pego/internal/bench/gen/json"
+	gminilang "github.com/ornew/pego/internal/bench/gen/minilang"
+	goutline "github.com/ornew/pego/internal/bench/gen/outline"
+	gxml "github.com/ornew/pego/internal/bench/gen/xml"
 )
 
 // workload is the grammar and input of one benchmark.
@@ -43,7 +44,7 @@ func genErr[N any](_ N, err error) error { return err }
 
 var workloads = []workload{
 	{
-		name: "JSON", grammar: "../parsers/json/json.pego", input: func(k int) string { return JSONInput(256 << 10 / k) },
+		name: "JSON", grammar: "../parsers/json/json.pego", input: func(k int) string { return inputs.JSONInput(256 << 10 / k) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(gjson.Parse(s, gjson.WithUnit(gjson.Bytes)))
@@ -58,7 +59,7 @@ var workloads = []workload{
 		},
 	},
 	{
-		name: "CSV", grammar: "../parsers/csv/csv.pego", input: func(k int) string { return CSVInput(5000 / k) },
+		name: "CSV", grammar: "../parsers/csv/csv.pego", input: func(k int) string { return inputs.CSVInput(5000 / k) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(gcsv.Parse(s, gcsv.WithUnit(gcsv.Bytes)))
@@ -75,7 +76,7 @@ var workloads = []workload{
 		},
 	},
 	{
-		name: "XML", grammar: "../parsers/xml/xml.pego", input: func(k int) string { return XMLInput(256 << 10 / k) },
+		name: "XML", grammar: "../parsers/xml/xml.pego", input: func(k int) string { return inputs.XMLInput(256 << 10 / k) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(gxml.Parse(s, gxml.WithUnit(gxml.Bytes)))
@@ -96,7 +97,7 @@ var workloads = []workload{
 		},
 	},
 	{
-		name: "Arith_OperatorsRule", grammar: "../examples/calculator/calc.pego", input: func(k int) string { return ArithInput(20000 / k) },
+		name: "Arith_OperatorsRule", grammar: "../examples/calculator/calc.pego", input: func(k int) string { return inputs.ArithInput(20000 / k) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(gcalc.Parse(s, gcalc.WithUnit(gcalc.Bytes)))
@@ -108,7 +109,7 @@ var workloads = []workload{
 		stdName: "go_parser", std: func(s string) error { return genErr(parser.ParseExpr(s)) },
 	},
 	{
-		name: "Arith_LeftRec", grammar: "../examples/calculator/calc_lr.pego", input: func(k int) string { return ArithInput(20000 / k) },
+		name: "Arith_LeftRec", grammar: "../examples/calculator/calc_lr.pego", input: func(k int) string { return inputs.ArithInput(20000 / k) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(gcalclr.Parse(s, gcalclr.WithUnit(gcalclr.Bytes)))
@@ -120,7 +121,7 @@ var workloads = []workload{
 		stdName: "go_parser", std: func(s string) error { return genErr(parser.ParseExpr(s)) },
 	},
 	{
-		name: "Minilang", grammar: "../examples/minilang/minilang.pego", input: func(k int) string { return MinilangInput(300/k, 0) },
+		name: "Minilang", grammar: "../examples/minilang/minilang.pego", input: func(k int) string { return inputs.MinilangInput(300/k, 0) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(gminilang.Parse(s, gminilang.WithUnit(gminilang.Bytes)))
@@ -131,7 +132,7 @@ var workloads = []workload{
 		ast: func(s string) error { return genErr(gminilang.ParseAST(s)) },
 	},
 	{
-		name: "Recovery", grammar: "../examples/minilang/minilang.pego", input: func(k int) string { return MinilangInput(300/k, 7) },
+		name: "Recovery", grammar: "../examples/minilang/minilang.pego", input: func(k int) string { return inputs.MinilangInput(300/k, 7) },
 		partial: true,
 		gen: func(s string, b bool) error {
 			u := gminilang.CodePoints
@@ -152,7 +153,7 @@ var workloads = []workload{
 		},
 	},
 	{
-		name: "Outline", grammar: "../examples/outline/outline.pego", input: func(k int) string { return OutlineInput(5000 / k) },
+		name: "Outline", grammar: "../examples/outline/outline.pego", input: func(k int) string { return inputs.OutlineInput(5000 / k) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(goutline.Parse(s, goutline.WithUnit(goutline.Bytes)))
@@ -357,7 +358,7 @@ func BenchmarkRecognize(b *testing.B) {
 // Document (incremental) and with a fresh parse each time.
 func BenchmarkIncremental(b *testing.B) {
 	p := load(b, "../examples/minilang/minilang.pego")
-	input := MinilangInput(300, 0)
+	input := inputs.MinilangInput(300, 0)
 	// Document positions are in code points.
 	at := utf8.RuneCountInString(input[:strings.Index(input, "fn f150(")+len("fn f150(")])
 	for _, be := range backends {
@@ -399,7 +400,7 @@ func BenchmarkIncremental(b *testing.B) {
 // records) followed by a parse with a Document.
 func BenchmarkIncrementalLong(b *testing.B) {
 	p := load(b, "../parsers/csv/csv.pego")
-	input := CSVInput(50000)
+	input := inputs.CSVInput(50000)
 	at := utf8.RuneCountInString(input[:strings.Index(input, "\n25000,")+len("\n25000,")])
 	for _, be := range backends {
 		b.Run(be.name, func(b *testing.B) {
@@ -430,7 +431,7 @@ func BenchmarkIncrementalLong(b *testing.B) {
 // BenchmarkStream parses CSV as a stream, receiving one record at a time.
 func BenchmarkStream(b *testing.B) {
 	p := load(b, "../parsers/csv/csv.pego")
-	input := CSVInput(50000)
+	input := inputs.CSVInput(50000)
 	for _, be := range backends {
 		b.Run(be.name, func(b *testing.B) {
 			b.SetBytes(int64(len(input)))

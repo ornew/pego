@@ -1,6 +1,7 @@
 package bench
 
 import (
+	"github.com/ornew/pego/internal/bench/inputs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,10 +19,10 @@ func TestExportTSInputs(t *testing.T) {
 		t.Fatal(err)
 	}
 	for name, input := range map[string]string{
-		"json":  JSONInput(256 << 10),
-		"csv":   CSVInput(5000),
-		"xml":   XMLInput(256 << 10),
-		"arith": ArithInput(20000),
+		"json":  inputs.JSONInput(256 << 10),
+		"csv":   inputs.CSVInput(5000),
+		"xml":   inputs.XMLInput(256 << 10),
+		"arith": inputs.ArithInput(20000),
 	} {
 		if err := os.WriteFile(filepath.Join(dir, name+".txt"), []byte(input), 0o644); err != nil {
 			t.Fatal(err)

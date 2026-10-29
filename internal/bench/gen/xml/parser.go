@@ -4,7 +4,7 @@
 package xml
 
 import (
-	types "github.com/ornew/pego/bench/gen/xml/types"
+	types "github.com/ornew/pego/internal/bench/gen/xml/types"
 	rt "github.com/ornew/pego/runtime"
 )
 
