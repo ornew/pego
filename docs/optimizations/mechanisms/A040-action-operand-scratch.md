@@ -40,7 +40,7 @@ Evidence records: [014](../014-one-operand-stack-for-vm-expression-code.md),
 [027](../027-struct-and-call-operands-on-the-expression-stack-in-the-closure-backend.md),
 [028](../028-field-lists-and-list-built-ins-without-allocation-in-the-generated-parsers.md).
 
-Source owners: [`evalCtx and termEvaluator`](../../../internal/engine/eval.go),
+Source owners: [`evalCtx`](../../../internal/engine/eval.go), [`termEvaluator`](../../../internal/engine/closure_eval.go),
 [`vmProgram.eval`](../../../internal/engine/vm.go), [`parser.estack and operator
 locals`](../../../internal/engine/runtime.go), [`generated
 ActCtx`](../../../runtime/runtime.go), [`typed evaluation

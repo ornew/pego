@@ -46,7 +46,7 @@ The evidence below was measured at commit `4e2f3763` with Go 1.27.1 on an Apple 
 | Generated TypeScript | A printer that wrote TypeScript directly from the expression tree (`tsGen.expr` and helpers in `gen_ts.go`) | 400 |
 
 Line counts are the lengths of the functions named in each row. Actions and predicates are lowered four
-more times: the closure evaluator in `eval.go`, bytecode expression code in `bcompile.go`, Go terms in
+more times: the closure evaluator in `closure_eval.go`, bytecode expression code in `bcompile.go`, Go terms in
 `gen.go` and `gen_types*.go`, and TypeScript terms in `gen_ts.go`. In the non-test files of
 `internal/engine`, 123 function declarations in 23 files have a parameter of type `grammar.Expr` or
 `[]grammar.Expr` (counted with `go/ast`). Each lowering re-derives what an expression means for values
@@ -656,7 +656,7 @@ stage of its first consumer, so its differential tests and negative controls run
 5. **Closures**, in both families. Gate: unchanged results and engine event streams; event-free equality
    of the two families; `Compile` plus the first-use build of the inlined family within noise of today's
    `Compile` in time and allocations, and the first-use build of the call-preserving family measured. Then remove the closure builder (`closure_builder.go`), its helpers, the term compilation of
-   `eval.go` and `noPlain`. If `Compile` time
+   `closure_eval.go` and `noPlain`. If `Compile` time
    regresses, the stage does not flip; the remedies to measure are building Core IR per rule on first use
    and skipping optimizing passes and closure construction for compilations that only report diagnostics,
    such as the language server's `CompileContext`.

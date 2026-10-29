@@ -101,7 +101,6 @@ type parser struct {
 	// estack is the operand stack of expression code (vmProgram.eval), also used for the
 	// arguments of built-ins and struct fields by the closure backend's evaluator.
 	estack []any
-	names  []string // field names for newStruct in the closure backend's evaluator
 
 	// Chunks of nodes and child slices (alloc.go), and the stack that collects repetition children
 	nodeSlab  []value.Node
@@ -137,15 +136,10 @@ type parser struct {
 	// nodeChunks counts the node chunks allocated since the last splitChunks.
 	// A negative count tracks the exact-size prefix budget before #stream.
 	nodeChunks int
-	ectx       evalCtx // area for useCtx
-	// Areas for lambdas of the closure backend: closures live until the next evaluation
-	// (useCtx), and the contexts and parameters of a call until it returns.
-	closures arena[closure]
-	lctxs    arena[evalCtx]
-	locals   arena[local]
-	item     [1]*value.Node // the element list of an action whose body is not a sequence (one)
-	oplocals [3]local       // $lhs, $rhs and $op of a OperatorsRule operator action
-	saved    []*value.Node  // captures saved across a reset in longest
+	ectx       evalCtx        // area for useCtx
+	item       [1]*value.Node // the element list of an action whose body is not a sequence (one)
+	oplocals   [3]local       // $lhs, $rhs and $op of a OperatorsRule operator action
+	saved      []*value.Node  // captures saved across a reset in longest
 }
 
 // backendState is the state that a backend keeps beside the parser for the parse it runs, such

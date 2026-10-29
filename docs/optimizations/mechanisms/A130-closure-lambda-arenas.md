@@ -30,8 +30,8 @@ escaping functions.
 Evidence records:
 [026](../026-lambda-calls-without-allocation-in-the-closure-backend.md).
 
-Source owners: [`closure.apply, keep and evaluation
-arenas`](../../../internal/engine/eval.go).
+Source owners: [`closure.apply and evaluation
+arenas`](../../../internal/engine/closure_eval.go), [`evalCtx.keep`](../../../internal/engine/eval.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

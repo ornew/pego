@@ -271,9 +271,10 @@ func documentVMValues(d *Document) []any {
 // A Document keeps the backend state of its last parse, but not the parser that ran it: the
 // parser holds the whole parse state (runs, trail, slabs), which the next parse replaces.
 func TestDocumentKeptMachineReleasesParser(t *testing.T) {
-	prog := mustCompile(t, `rule main = line* $$
+	// The lambda makes the closure backend use its machine too.
+	prog := mustCompile(t, `rule main = ls:line* $$ => map($ls, (l) => l)
 rule line = [a-z]+ "\n"`)
-	for _, backend := range []Backend{Bytecode, BytecodeIterative} {
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		t.Run(backend.String(), func(t *testing.T) {
 			doc, err := prog.NewDocumentWith("main", strings.Repeat("abc\n", 1000), ParseOptions{Backend: backend})
 			if err != nil {
@@ -287,12 +288,17 @@ rule line = [a-z]+ "\n"`)
 				}); err != nil {
 					t.Fatal(err)
 				}
-				mc, ok := doc.machine.(*vmMachine)
-				if !ok {
-					t.Fatalf("document kept %T, want *vmMachine", doc.machine)
-				}
-				if mc.p != nil {
-					t.Fatal("kept machine refers to the finished parser")
+				switch mc := doc.machine.(type) {
+				case *vmMachine:
+					if mc.p != nil {
+						t.Fatal("kept machine refers to the finished parser")
+					}
+				case *closureMachine:
+					if mc.p != nil {
+						t.Fatal("kept machine refers to the finished parser")
+					}
+				default:
+					t.Fatalf("document kept %T", doc.machine)
 				}
 				for range 5 {
 					runtime.GC()

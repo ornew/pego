@@ -25,14 +25,6 @@ type function interface {
 // evaluator evaluates an action expression (it differs per backend).
 type evaluator func(ctx *evalCtx) (any, error)
 
-type closure struct {
-	params []string
-	body   grammar.Term
-	ctx    *evalCtx
-}
-
-func (f *closure) arity() int { return len(f.params) }
-
 type local struct {
 	name string
 	val  any
@@ -54,11 +46,6 @@ type evalCtx struct {
 func (p *parser) runAction(r *rule, f *frame, items []*value.Node, start, end int) *value.Node {
 	ctx := p.useCtx(evalCtx{p: p, scope: r.Scope, frame: f, items: items, start: start, end: end, cbase: len(p.created)})
 	return p.actionResult(ctx, r.act, r.WhereName())
-}
-
-// termEvaluator returns an evaluator for an AST value expression.
-func termEvaluator(t grammar.Term) evaluator {
-	return func(ctx *evalCtx) (any, error) { return ctx.eval(t) }
 }
 
 func (p *parser) actionResult(ctx *evalCtx, act evaluator, where string) *value.Node {
@@ -126,214 +113,6 @@ func typeName(v any) string {
 		return "function"
 	}
 	return fmt.Sprintf("%T", v)
-}
-
-// convert evaluates the node type constructor t, T{x}: it converts the value of x to the named
-// node type T.
-func (c *evalCtx) convert(t *grammar.New) (any, error) {
-	x, err := c.eval(t.Args[0])
-	if err != nil {
-		return nil, err
-	}
-	p := c.p
-	ks := p.prog.NodeKinds[t.Type]
-	if ks == nil {
-		return nil, p.convertError(x, t.Type)
-	}
-	name := ks[0].Type // the type's own name, also for an alias of it
-	n, ok := ks.Convert(x)
-	if !ok {
-		return nil, p.convertError(x, name)
-	}
-	return n, nil
-}
-
-func (c *evalCtx) eval(t grammar.Term) (any, error) {
-	c.p.stepWork()
-	switch t := t.(type) {
-	case *grammar.IntLit:
-		return t.Value, nil
-	case *grammar.StringLit:
-		return t.Value, nil
-	case *grammar.BoolLit:
-		return t.Value, nil
-	case *grammar.NilLit:
-		return nil, nil
-
-	case *grammar.CaptureRef:
-		for l := c.locals; l != nil; l = l.next {
-			c.p.stepWork()
-			if c.p.valueEqual(l.name, t.Name) {
-				return value.UnboxValue(l.val), nil
-			}
-		}
-		if i, ok := c.scope.Slots[t.Name]; ok && c.frame != nil {
-			return value.UnboxNode(c.frame.vals[i]), nil
-		}
-		return nil, c.p.actionError("undefined capture $", t.Name)
-
-	case *grammar.IndexRef:
-		return nil, c.p.actionError("positional captures are removed")
-
-	case *grammar.VarRef:
-		v, ok := c.p.lookupValue(t.Name)
-		if !ok {
-			return nil, c.p.actionError("variable ", t.Name, " is not defined")
-		}
-		return v, nil
-
-	case *grammar.Member:
-		x, err := c.eval(t.X)
-		if err != nil {
-			return nil, err
-		}
-		return c.member(x, t.Name)
-
-	case *grammar.New:
-		if len(t.Args) != 0 {
-			return c.convert(t)
-		}
-		// The values are kept on the expression stack (evaluations nested in them push above), and
-		// the names in a buffer filled once no evaluation is pending; newStruct retains neither.
-		p := c.p
-		base := len(p.estack)
-		for _, fi := range t.Fields {
-			p.stepWork()
-			v, err := c.eval(fi.Value)
-			if err != nil {
-				p.estack = p.estack[:base]
-				return nil, err
-			}
-			p.estack = append(p.estack, v)
-		}
-		p.names = p.names[:0]
-		for _, fi := range t.Fields {
-			p.stepWork()
-			p.names = append(p.names, fi.Name)
-		}
-		n, err := c.newStruct(t.Type, p.names, p.estack[base:])
-		p.estack = p.estack[:base]
-		return n, err
-	case *grammar.ListConstructor:
-		return c.evalList(t.Items)
-	case *grammar.TupleLit:
-		return c.evalTuple(t.Elems)
-
-	case *grammar.Call:
-		if c.p.prog.Projected[t] {
-			// map($x, (e) => e.$f) of a projected repetition: $x holds the values already.
-			x, err := c.eval(t.Args[0])
-			if err != nil {
-				return nil, err
-			}
-			items, err := c.p.valueListItems("map", x)
-			if err != nil {
-				return nil, err
-			}
-			return c.newList(items), nil
-		}
-		if t.Func == "concat" && c.p.fusable(t) {
-			base := len(c.p.kidStack)
-			for _, a := range t.Args {
-				c.p.stepWork()
-				if err := c.pushConcatArg(a); err != nil {
-					c.p.dropKids(base)
-					return nil, err
-				}
-			}
-			return c.listNode(c.p.kids(base)), nil
-		}
-		// The arguments are kept on the expression stack, as in vmProgram.eval: lambdas called by the
-		// built-in push above them, and built-ins do not retain args.
-		p := c.p
-		base := len(p.estack)
-		for _, a := range t.Args {
-			c.p.stepWork()
-			v, err := c.eval(a)
-			if err != nil {
-				p.estack = p.estack[:base]
-				return nil, err
-			}
-			p.estack = append(p.estack, v)
-		}
-		v, err := c.builtin(t.Func, p.estack[base:])
-		p.estack = p.estack[:base]
-		return v, err
-
-	case *grammar.Lambda:
-		f := c.p.closures.alloc()
-		*f = closure{params: t.Params, body: t.Body, ctx: c.keep()}
-		return f, nil
-
-	case *grammar.Unary:
-		x, err := c.eval(t.X)
-		if err != nil {
-			return nil, err
-		}
-		return c.p.valueUnary(t.Op, x)
-
-	case *grammar.Cast:
-		x, err := c.eval(t.X)
-		if err != nil {
-			return nil, err
-		}
-		if ft := c.p.prog.CastType(t); ft != nil && !c.p.fieldConforms(ft, x) {
-			line, col := c.p.prog.CastPos(t)
-			return nil, c.p.castError(x, ft, c.start, line, col)
-		}
-		return x, nil
-
-	case *grammar.Binary:
-		return c.binary(t)
-
-	case *grammar.Bind:
-		return nil, c.p.actionError("binding ", t.Name, " := ... is only allowed as a whole predicate")
-	}
-	return nil, fmt.Errorf("unsupported term %T", t)
-}
-
-// evalList shares the existing list builder without allocating a synthetic AST.
-func (c *evalCtx) evalList(items []grammar.Term) (any, error) {
-	p := c.p
-	base := len(p.estack)
-	for _, item := range items {
-		val, err := c.eval(item)
-		if err != nil {
-			p.estack = p.estack[:base]
-			return nil, err
-		}
-		p.estack = append(p.estack, val)
-	}
-	val, err := c.builtin("list", p.estack[base:])
-	p.estack = p.estack[:base]
-	return val, err
-}
-
-// evalTuple evaluates the elements of a tuple literal, left to right, and returns the tuple value.
-func (c *evalCtx) evalTuple(elems []grammar.Term) (any, error) {
-	p := c.p
-	base := len(p.estack)
-	for _, e := range elems {
-		val, err := c.eval(e)
-		if err != nil {
-			p.estack = p.estack[:base]
-			return nil, err
-		}
-		p.estack = append(p.estack, val)
-	}
-	kb := len(p.kidStack)
-	for _, v := range p.estack[base:] {
-		p.stepWork()
-		n, err := c.element("tuple", v)
-		if err != nil {
-			p.dropKids(kb)
-			p.estack = p.estack[:base]
-			return nil, err
-		}
-		p.kidStack = append(p.kidStack, n)
-	}
-	p.estack = p.estack[:base]
-	return c.tupleNode(p.kids(kb)), nil
 }
 
 // member reads x.name.
@@ -448,54 +227,6 @@ func (c *evalCtx) valueNode(kind *value.NodeKind, kids []*value.Node) *value.Nod
 		first = false
 	}
 	return n
-}
-
-func (c *evalCtx) binary(t *grammar.Binary) (any, error) {
-	if t.Op == "==" || t.Op == "!=" {
-		// Comparing two texts (such as an end tag with its start tag) compares the strings
-		// directly: storing a string in an interface would allocate.
-		if lx, ok := compile.TextArg(t.L); ok {
-			if rx, ok := compile.TextArg(t.R); ok {
-				ls, err := c.textOf(lx)
-				if err != nil {
-					return nil, err
-				}
-				rs, err := c.textOf(rx)
-				if err != nil {
-					return nil, err
-				}
-				return c.p.valueEqual(ls, rs) == (t.Op == "=="), nil
-			}
-		}
-	}
-	l, err := c.eval(t.L)
-	if err != nil {
-		return nil, err
-	}
-	// Logical operators short-circuit.
-	if t.Op == "&&" || t.Op == "||" {
-		lb, ok := l.(bool)
-		if !ok {
-			return nil, c.p.actionError("invalid operand ", typeName(l), " for ", t.Op)
-		}
-		if lb == (t.Op == "||") {
-			return lb, nil
-		}
-		r, err := c.eval(t.R)
-		if err != nil {
-			return nil, err
-		}
-		rb, ok := r.(bool)
-		if !ok {
-			return nil, c.p.actionError("invalid operand ", typeName(r), " for ", t.Op)
-		}
-		return rb, nil
-	}
-	r, err := c.eval(t.R)
-	if err != nil {
-		return nil, err
-	}
-	return c.p.valueBinary(t.Op, l, r)
 }
 
 // binaryOp performs a binary operation other than a logical one.
@@ -640,15 +371,6 @@ func (c *evalCtx) builtin(fn string, args []any) (any, error) {
 	return nil, c.p.actionError(fn, ": invalid argument ", typeName(args[0]))
 }
 
-// textOf evaluates x and returns text(x) as a string.
-func (c *evalCtx) textOf(x grammar.Term) (string, error) {
-	v, err := c.eval(x)
-	if err != nil {
-		return "", err
-	}
-	return c.textString(v)
-}
-
 // textString returns text(v) (the built-in) as a string.
 func (c *evalCtx) textString(v any) (string, error) {
 	switch v := v.(type) {
@@ -717,48 +439,6 @@ func (c *evalCtx) pushElems(fn string, args []any) error {
 	return nil
 }
 
-// pushConcatArg pushes onto kidStack the elements of t, an argument of a fusable concat call.
-func (c *evalCtx) pushConcatArg(t grammar.Term) error {
-	c.p.stepWork()
-	if call, ok := t.(*grammar.Call); ok && c.p.prog.Projected[call] {
-		v, err := c.eval(call.Args[0])
-		if err != nil {
-			return err
-		}
-		return c.pushElems("concat", []any{v})
-	}
-	if call, ok := t.(*grammar.Call); ok && (call.Func == "list" || call.Func == "map" && len(call.Args) == 2) {
-		p := c.p
-		base := len(p.estack)
-		for _, a := range call.Args {
-			c.p.stepWork()
-			v, err := c.eval(a)
-			if err != nil {
-				p.estack = p.estack[:base]
-				return err
-			}
-			p.estack = append(p.estack, v)
-		}
-		err := c.pushElems(call.Func, p.estack[base:])
-		p.estack = p.estack[:base]
-		return err
-	}
-	if call, ok := t.(*grammar.Call); ok && call.Func == "concat" {
-		for _, a := range call.Args {
-			c.p.stepWork()
-			if err := c.pushConcatArg(a); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-	v, err := c.eval(t)
-	if err != nil {
-		return err
-	}
-	return c.pushElems("concat", []any{v})
-}
-
 // index returns element i of the list l.
 func (p *parser) index(l, i any) (any, error) {
 	items, err := p.valueListItems("[]", l)
@@ -803,27 +483,6 @@ func (c *evalCtx) element(fn string, v any) (*value.Node, error) {
 		return c.p.newNode(value.Data{Kind: value.BoxKind, Box: x, Start: int32(c.start), End: int32(c.end)}), nil
 	}
 	return nil, c.p.actionError(fn, ": elements must be values, got ", typeName(v))
-}
-
-func (f *closure) apply(x, y any) (any, error) {
-	// The context and the parameters are freed when the call returns; a lambda created by the body
-	// keeps a copy of them (keep).
-	p := f.ctx.p
-	p.stepWork()
-	mc, ml := p.lctxs.n, p.locals.n
-	ctx := p.lctxs.alloc()
-	*ctx = *f.ctx
-	args := [2]any{x, y}
-	for i, name := range f.params {
-		p.stepWork()
-		l := p.locals.alloc()
-		*l = local{name: name, val: args[i], next: ctx.locals}
-		ctx.locals = l
-	}
-	v, err := ctx.eval(f.body)
-	resetWork(p, &p.lctxs, mc)
-	resetWork(p, &p.locals, ml)
-	return v, err
 }
 
 // keep returns c, or a copy of c on the heap if it belongs to a lambda call (closure.apply),

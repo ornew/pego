@@ -109,9 +109,12 @@ func TestWorkActionErrorProducersAreEager(t *testing.T) {
 		name string
 		make func(*parser) error
 	}{
-		{"undefined variable", func(p *parser) error { _, err := (&evalCtx{p: p}).eval(&grammar.VarRef{Name: long}); return err }},
+		{"undefined variable", func(p *parser) error {
+			_, err := closureMachineOf(p).eval(&evalCtx{p: p}, &grammar.VarRef{Name: long})
+			return err
+		}},
 		{"undefined capture", func(p *parser) error {
-			_, err := (&evalCtx{p: p, scope: &compile.Scope{}}).eval(&grammar.CaptureRef{Name: long})
+			_, err := closureMachineOf(p).eval(&evalCtx{p: p, scope: &compile.Scope{}}, &grammar.CaptureRef{Name: long})
 			return err
 		}},
 		{"invalid member", func(p *parser) error { _, err := (&evalCtx{p: p}).member(1, long); return err }},

@@ -104,19 +104,20 @@ func TestWorkValueTrackingCleanupAfterInterruption(t *testing.T) {
 func TestWorkActionArenaResetInterruption(t *testing.T) {
 	retained := value.Ptr(value.Data{Text: "retained"})
 	p := &parser{}
+	cm := closureMachineOf(p)
 	for range 300 {
-		*p.closures.alloc() = closure{ctx: &evalCtx{items: []*value.Node{retained}}}
+		*cm.closures.alloc() = closure{ctx: &evalCtx{items: []*value.Node{retained}}}
 	}
 	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 64})
-	if err := catchFatal(t, func() { p.useCtx(evalCtx{p: p}) }); !errors.Is(err, limits.ErrWorkLimit) {
+	if err := catchFatal(t, func() { evalTerm(p.useCtx(evalCtx{p: p}), &grammar.NilLit{}) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("arena reset interruption = %v", err)
 	}
 	p.releaseScratch()
-	p.useCtx(evalCtx{p: p})
-	if p.closures.n != 0 || value.D(retained).Text != "retained" {
+	evalTerm(p.useCtx(evalCtx{p: p}), &grammar.NilLit{})
+	if closureMachineOf(p) != cm || cm.closures.n != 0 || value.D(retained).Text != "retained" {
 		t.Fatal("reset retry failed or changed an externally retained value")
 	}
-	for _, chunk := range p.closures.chunks {
+	for _, chunk := range cm.closures.chunks {
 		for _, f := range chunk {
 			if f.ctx != nil || f.params != nil || f.body != nil {
 				t.Fatal("reset retry left references in the arena")

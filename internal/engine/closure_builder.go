@@ -422,7 +422,7 @@ func (b *closureBuilder) Predicate(e *grammar.Predicate, s *compile.Scope) match
 	if a, ok := e.Term.(*grammar.Bind); ok {
 		return func(p *parser) (*value.Node, bool) {
 			ctx := p.useCtx(evalCtx{p: p, scope: s, frame: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
-			v, err := ctx.eval(a.Value)
+			v, err := evalTerm(ctx, a.Value)
 			p.dropCreated(ctx.cbase)
 			if err != nil {
 				return nil, false
@@ -436,7 +436,7 @@ func (b *closureBuilder) Predicate(e *grammar.Predicate, s *compile.Scope) match
 	}
 	return func(p *parser) (*value.Node, bool) {
 		ctx := p.useCtx(evalCtx{p: p, scope: s, frame: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
-		v, err := ctx.eval(e.Term)
+		v, err := evalTerm(ctx, e.Term)
 		p.dropCreated(ctx.cbase)
 		if err != nil {
 			return nil, false

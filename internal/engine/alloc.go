@@ -170,10 +170,9 @@ func (p *parser) resetStreamFrames() {
 // useCtx places the evaluation context for actions and predicates in a single area owned by
 // the parser and returns it. Evaluations never nest, and no reference to the context survives
 // an evaluation (function values cannot be stored in struct fields or variables), so the area
-// can be reused, and so can the lambdas of the previous evaluation.
+// can be reused.
 func (p *parser) useCtx(c evalCtx) *evalCtx {
 	p.ectx = c
-	resetWork(p, &p.closures, 0)
 	return &p.ectx
 }
 
