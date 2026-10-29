@@ -1,10 +1,10 @@
-package engine
+package schema
 
 import "fmt"
 
 // validateOutputSchemaGraph checks version 2 identities and inline shapes. Named-reference
 // cycles are valid recursion; the traversal deliberately does not expand them.
-func validateOutputSchemaGraph(s OutputSchema) error {
+func validateOutputSchemaGraph(s Output) error {
 	ids := make(map[string]bool, len(s.Types))
 	for i := range s.Types {
 		t := &s.Types[i]
@@ -20,15 +20,15 @@ func validateOutputSchemaGraph(s OutputSchema) error {
 		}
 	}
 	type shapeFrame struct {
-		shape *SchemaShape
+		shape *Shape
 		exit  bool
 	}
 	stack := make([]shapeFrame, 0, 32)
-	active := make(map[*SchemaShape]bool)
+	active := make(map[*Shape]bool)
 	// Shared inline DAGs are valid. Rechecking them by path can take exponential work.
-	completed := make(map[*SchemaShape]bool)
+	completed := make(map[*Shape]bool)
 	seenNames := make(map[string]bool)
-	check := func(root *SchemaShape, ownerKind, ownerName string) error {
+	check := func(root *Shape, ownerKind, ownerName string) error {
 		const (
 			memberRef = 1 << iota
 			memberScalar
@@ -121,7 +121,7 @@ func validateOutputSchemaGraph(s OutputSchema) error {
 			if shape.Ref != "" && !ids[shape.Ref] {
 				return fmt.Errorf("unresolved output schema reference %q in %s %s", shape.Ref, ownerKind, ownerName)
 			}
-			for _, sub := range []*SchemaShape{shape.Element, shape.Value} {
+			for _, sub := range []*Shape{shape.Element, shape.Value} {
 				if sub != nil {
 					stack = append(stack, shapeFrame{shape: sub})
 				}

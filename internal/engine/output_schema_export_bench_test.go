@@ -7,9 +7,10 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/schema"
 )
 
-var outputSchemaExportSink *OutputSchema
+var outputSchemaExportSink *schema.Output
 var outputSchemaExportJSONSink []byte
 
 func BenchmarkOutputSchemaExport(b *testing.B) {

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/schema"
 )
 
 func TestOutputSchemaListQueries(t *testing.T) {
@@ -49,19 +50,19 @@ rule main = "x" => Holder{Values: [][]Token{[]Token{Token{Text: "one"}}}}`, "x",
 			if err != nil {
 				t.Fatal(err)
 			}
-			schema, err := p.OutputSchemaPrototype("main", false)
+			sch, err := p.OutputSchemaPrototype("main", false)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := schema.Validate(); err != nil {
+			if err := sch.Validate(); err != nil {
 				t.Fatal(err)
 			}
-			data, err := json.Marshal(schema)
+			data, err := json.Marshal(sch)
 			if err != nil {
 				t.Fatal(err)
 			}
-			var decoded OutputSchema
-			if err := json.Unmarshal(data, &decoded); err != nil || !reflect.DeepEqual(schema, &decoded) {
+			var decoded schema.Output
+			if err := json.Unmarshal(data, &decoded); err != nil || !reflect.DeepEqual(sch, &decoded) {
 				t.Fatalf("schema round trip: %v", err)
 			}
 			q, err := CompileStructuralQuery(tc.pattern, &decoded)

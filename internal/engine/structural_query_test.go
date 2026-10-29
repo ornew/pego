@@ -9,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/schema"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -237,16 +238,16 @@ func TestStructuralQueryCycleThroughValues(t *testing.T) {
 }
 
 func TestStructuralQueryValidationAndRuntimeMismatch(t *testing.T) {
-	schema := validInMemoryOutputSchema()
-	schema.Types[0].Shape.Fields = []SchemaField{{Name: "Value", Shape: SchemaShape{Kind: "scalar", Scalar: "string"}}}
-	s := &schema
+	sch := validInMemoryOutputSchema()
+	sch.Types[0].Shape.Fields = []schema.Field{{Name: "Value", Shape: schema.Shape{Kind: "scalar", Scalar: "string"}}}
+	s := &sch
 	if _, err := CompileStructuralQuery(QueryPattern{Type: "Item", Fields: []QueryFieldPattern{{"Absent", QueryPattern{}}}}, s); err == nil {
 		t.Fatal("accepted impossible field")
 	}
 	if _, err := CompileStructuralQuery(QueryPattern{Rule: "main"}, s); err == nil || !strings.Contains(err.Error(), "source information") {
 		t.Fatalf("accepted a rule without source information: %v", err)
 	}
-	schema.SourceInfo = true
+	sch.SourceInfo = true
 	if _, err := CompileStructuralQuery(QueryPattern{Rule: "missing"}, s); err == nil || !strings.Contains(err.Error(), "unknown query rule") {
 		t.Fatalf("accepted impossible rule: %v", err)
 	}
@@ -280,14 +281,14 @@ func TestStructuralQueryRejectsMalformedInMemorySchema(t *testing.T) {
 
 func TestStructuralQuerySharedInlineDAGAbsentField(t *testing.T) {
 	s := validInMemoryOutputSchema()
-	shared := &SchemaShape{Kind: "scalar", Scalar: "string"}
+	shared := &schema.Shape{Kind: "scalar", Scalar: "string"}
 	for range 28 {
-		shared = &SchemaShape{Kind: "join", Alternatives: []SchemaShape{
+		shared = &schema.Shape{Kind: "join", Alternatives: []schema.Shape{
 			{Kind: "optional", Element: shared},
 			{Kind: "optional", Element: shared},
 		}}
 	}
-	s.Types[0].Shape = SchemaShape{Kind: "struct", Fields: []SchemaField{{Name: "Deep", Shape: *shared}}}
+	s.Types[0].Shape = schema.Shape{Kind: "struct", Fields: []schema.Field{{Name: "Deep", Shape: *shared}}}
 	if _, err := CompileStructuralQuery(QueryPattern{Type: "Item", Fields: []QueryFieldPattern{{Name: "Absent"}}}, &s); err == nil || !strings.Contains(err.Error(), "has no field") {
 		t.Fatalf("shared DAG missing-field error = %v", err)
 	}
@@ -299,12 +300,12 @@ func TestStructuralQuerySharedInlineDAGAbsentField(t *testing.T) {
 
 func TestStructuralQueryNamedReferenceCycleAbsentField(t *testing.T) {
 	s := validInMemoryOutputSchema()
-	s.Types[0].Shape = SchemaShape{Kind: "struct", Fields: []SchemaField{{Name: "F", Shape: SchemaShape{Kind: "ref", Ref: "inferred/a"}}}}
+	s.Types[0].Shape = schema.Shape{Kind: "struct", Fields: []schema.Field{{Name: "F", Shape: schema.Shape{Kind: "ref", Ref: "inferred/a"}}}}
 	s.Types = append(s.Types,
-		SchemaType{ID: "inferred/a", Name: "a", Origin: "inferred", Shape: SchemaShape{Kind: "ref", Ref: "inferred/b"}},
-		SchemaType{ID: "inferred/b", Name: "b", Origin: "inferred", Shape: SchemaShape{Kind: "ref", Ref: "inferred/a"}},
-		SchemaType{ID: "declared/Other", Name: "Other", Origin: "declared", Shape: SchemaShape{Kind: "struct", Fields: []SchemaField{
-			{Name: "Present", Shape: SchemaShape{Kind: "scalar", Scalar: "string"}},
+		schema.Type{ID: "inferred/a", Name: "a", Origin: "inferred", Shape: schema.Shape{Kind: "ref", Ref: "inferred/b"}},
+		schema.Type{ID: "inferred/b", Name: "b", Origin: "inferred", Shape: schema.Shape{Kind: "ref", Ref: "inferred/a"}},
+		schema.Type{ID: "declared/Other", Name: "Other", Origin: "declared", Shape: schema.Shape{Kind: "struct", Fields: []schema.Field{
+			{Name: "Present", Shape: schema.Shape{Kind: "scalar", Scalar: "string"}},
 		}}})
 	// Rules that only call each other have no values.
 	inF := func(p QueryPattern) QueryPattern {
@@ -313,7 +314,7 @@ func TestStructuralQueryNamedReferenceCycleAbsentField(t *testing.T) {
 	if _, err := CompileStructuralQuery(inF(QueryPattern{Fields: []QueryFieldPattern{{Name: "Absent"}}}), &s); err == nil || !strings.Contains(err.Error(), "no values") {
 		t.Fatalf("named cycle error = %v", err)
 	}
-	s.Types[len(s.Types)-2].Shape = SchemaShape{Kind: "join", Alternatives: []SchemaShape{
+	s.Types[len(s.Types)-2].Shape = schema.Shape{Kind: "join", Alternatives: []schema.Shape{
 		{Kind: "ref", Ref: "inferred/a"},
 		{Kind: "ref", Ref: "declared/Other"},
 	}}
@@ -326,9 +327,9 @@ func TestStructuralQueryNamedReferenceCycleAbsentField(t *testing.T) {
 }
 
 func TestStructuralQueryOptionalScalarFieldCategory(t *testing.T) {
-	scalar := SchemaShape{Kind: "scalar", Scalar: "string"}
+	scalar := schema.Shape{Kind: "scalar", Scalar: "string"}
 	valid := validInMemoryOutputSchema()
-	valid.Types[0].Shape.Fields = []SchemaField{{Name: "Value", Shape: SchemaShape{Kind: "optional", Element: &scalar}}}
+	valid.Types[0].Shape.Fields = []schema.Field{{Name: "Value", Shape: schema.Shape{Kind: "optional", Element: &scalar}}}
 	schema := &valid
 	pattern := func(category string) QueryPattern {
 		return QueryPattern{Type: "Item", Fields: []QueryFieldPattern{{

@@ -15,6 +15,7 @@ import (
 
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/schema"
 )
 
 // schemaJSON exports the schema of p for start, or every rule with allRules, as canonical JSON.
@@ -56,7 +57,7 @@ func schemaCorpus(t *testing.T) []genCase {
 // grammar.
 func wantSchemaNeedsSource(t *testing.T, err error) {
 	t.Helper()
-	if !errors.Is(err, ErrSchemaUnavailable) || !strings.Contains(err.Error(), "export the schema from the grammar source") {
+	if !errors.Is(err, schema.ErrUnavailable) || !strings.Contains(err.Error(), "export the schema from the grammar source") {
 		t.Fatalf("schema of a loaded program: %v", err)
 	}
 }

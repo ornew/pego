@@ -10,6 +10,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/schema"
 )
 
 func TestOutputSchemaPrototype(t *testing.T) {
@@ -38,7 +39,7 @@ rule unused = "z"`)
 			t.Fatalf("unreachable type: %s", typ.Name)
 		}
 	}
-	byID := make(map[string]SchemaType, len(s.Types))
+	byID := make(map[string]schema.Type, len(s.Types))
 	for _, typ := range s.Types {
 		byID[typ.ID] = typ
 	}
@@ -46,7 +47,7 @@ rule unused = "z"`)
 	if item.Origin != "declared" || item.Shape.Kind != "struct" || len(item.Shape.Fields) != 5 {
 		t.Fatalf("declared item shape: %+v", item)
 	}
-	fields := make(map[string]SchemaShape, len(item.Shape.Fields))
+	fields := make(map[string]schema.Shape, len(item.Shape.Fields))
 	for _, field := range item.Shape.Fields {
 		fields[field.Name] = field.Shape
 	}
@@ -79,7 +80,7 @@ rule unused = "z"`)
 			t.Fatalf("nondeterministic schema: %s", got)
 		}
 	}
-	var decoded OutputSchema
+	var decoded schema.Output
 	if err := json.Unmarshal(first, &decoded); err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +114,7 @@ rule unused = "z"`)
 		}
 	}
 	// A program without the grammar has no metadata to export from.
-	if _, err := (&Program{staticProgram: &compile.Program{}}).OutputSchemaPrototype("main", false); !errors.Is(err, ErrSchemaUnavailable) {
+	if _, err := (&Program{staticProgram: &compile.Program{}}).OutputSchemaPrototype("main", false); !errors.Is(err, schema.ErrUnavailable) {
 		t.Fatal(err)
 	}
 }
@@ -124,30 +125,30 @@ func TestOutputSchemaEmptyJoinRoundTrip(t *testing.T) {
 rule main = "a"`); !strings.Contains(message, "no values") {
 		t.Fatalf("field without values: %s", message)
 	}
-	empty, err := schemaValue(compile.TyBottom)
+	empty, err := schema.ShapeOf(compile.TyBottom)
 	if err != nil {
 		t.Fatal(err)
 	}
-	schema := validInMemoryOutputSchema()
-	schema.Types[1].Shape = empty
-	if err := schema.Validate(); err != nil {
+	sch := validInMemoryOutputSchema()
+	sch.Types[1].Shape = empty
+	if err := sch.Validate(); err != nil {
 		t.Fatalf("valid empty join schema: %v", err)
 	}
-	data, err := json.Marshal(schema)
+	data, err := json.Marshal(sch)
 	if err != nil {
 		t.Fatal(err)
 	}
-	var decoded OutputSchema
+	var decoded schema.Output
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		t.Fatalf("decode valid empty join: %v", err)
 	}
-	if !reflect.DeepEqual(schema, decoded) || decoded.Types[1].Shape.Kind != "join" || len(decoded.Types[1].Shape.Alternatives) != 0 {
-		t.Fatalf("empty join round trip changed schema: before=%+v after=%+v", schema, decoded)
+	if !reflect.DeepEqual(sch, decoded) || decoded.Types[1].Shape.Kind != "join" || len(decoded.Types[1].Shape.Alternatives) != 0 {
+		t.Fatalf("empty join round trip changed schema: before=%+v after=%+v", sch, decoded)
 	}
 }
 
 func TestOutputSchemaInferredCaptureAndDynamic(t *testing.T) {
-	shape, err := schemaValue(compile.NodeTy{
+	shape, err := schema.ShapeOf(compile.NodeTy{
 		Value: compile.TupleTy{Elems: []compile.Ty{compile.TyStringNode, compile.TyTop, compile.OptTy{Elem: compile.ListTy{Elem: compile.TyString}}}},
 		Caps: []compile.CapIndex{
 			{Name: "z", Paths: [][]int{{1}}, T: compile.TyTop},
@@ -165,7 +166,7 @@ func TestOutputSchemaInferredCaptureAndDynamic(t *testing.T) {
 		len(shape.Captures[1].Paths) != 0 || shape.Captures[2].Name != "z" || shape.Captures[2].Shape.Kind != "top" {
 		t.Fatalf("shape %+v", shape)
 	}
-	joinShape, err := schemaValue(compile.JoinTy{Alts: []compile.Ty{compile.TyString, compile.TyInt}})
+	joinShape, err := schema.ShapeOf(compile.JoinTy{Alts: []compile.Ty{compile.TyString, compile.TyInt}})
 	if err != nil || len(joinShape.Alternatives) != 2 {
 		t.Fatalf("join %+v %v", joinShape, err)
 	}
@@ -181,7 +182,7 @@ func TestOutputSchemaRejectsUnresolvedShapes(t *testing.T) {
 		&grammar.JoinType{Types: []grammar.TypeExpr{&grammar.TypeRef{Name: "Known"}, &grammar.TypeRef{Name: "UnknownShape"}}},
 		&grammar.TypeGroup{},
 	} {
-		shape, err := p.schemaDeclared(expr)
+		shape, err := schema.Declared(p.staticProgram, expr)
 		if err != nil || shape.Kind != "top" && (shape.Kind != "list" || shape.Element.Kind != "top") {
 			data, _ := json.Marshal(shape)
 			t.Errorf("unresolved declared shape %T: %s %v", expr, data, err)
@@ -191,11 +192,11 @@ func TestOutputSchemaRejectsUnresolvedShapes(t *testing.T) {
 		t.Errorf("undefined field type: %s", message)
 	}
 	for _, inferred := range []compile.Ty{compile.BasicTy("other"), compile.NamedTy{Name: "Known", Kind: '?'}, (*compile.ListTy)(nil)} {
-		if shape, err := schemaValue(inferred); err == nil {
+		if shape, err := schema.ShapeOf(inferred); err == nil {
 			t.Errorf("accepted unresolved inferred shape %T: %+v", inferred, shape)
 		}
 	}
-	if shape, err := schemaValue(compile.TyBottom); err != nil || shape.Kind != "join" || len(shape.Alternatives) != 0 {
+	if shape, err := schema.ShapeOf(compile.TyBottom); err != nil || shape.Kind != "join" || len(shape.Alternatives) != 0 {
 		t.Errorf("_|_ is not the empty join: %+v %v", shape, err)
 	}
 }
@@ -215,7 +216,7 @@ rule main = (-"a")*`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	byID := make(map[string]SchemaType, len(s.Types))
+	byID := make(map[string]schema.Type, len(s.Types))
 	for _, typ := range s.Types {
 		byID[typ.ID] = typ
 	}
@@ -295,7 +296,7 @@ func TestOutputSchemaLookaheadCapture(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			var found *SchemaCapture
+			var found *schema.Capture
 			for i := range s.Types[0].Shape.Captures {
 				if c := &s.Types[0].Shape.Captures[i]; c.Name == "a" {
 					found = c
@@ -327,7 +328,7 @@ func TestOutputSchemaCaptureOrderIndependent(t *testing.T) {
 	}
 	reversed := []compile.CapIndex{caps[2], caps[1], caps[0]}
 	render := func(caps []compile.CapIndex) string {
-		v, err := schemaValue(compile.NodeTy{Value: compile.TyString, Caps: caps})
+		v, err := schema.ShapeOf(compile.NodeTy{Value: compile.TyString, Caps: caps})
 		if err != nil {
 			t.Fatal(err)
 		}

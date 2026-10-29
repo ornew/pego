@@ -4,21 +4,22 @@ import (
 	"context"
 
 	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/schema"
 )
 
 // OutputSchema describes possible grammar outputs independently of a parse.
 // Validate checks its version 2 envelope and shape graph, including schemas built in
 // memory. Decoding it with encoding/json performs the same check.
-type OutputSchema = engine.OutputSchema
-type SchemaType = engine.SchemaType
-type SchemaRule = engine.SchemaRule
-type SchemaShape = engine.SchemaShape
-type SchemaField = engine.SchemaField
-type SchemaCapture = engine.SchemaCapture
+type OutputSchema = schema.Output
+type SchemaType = schema.Type
+type SchemaRule = schema.Rule
+type SchemaShape = schema.Shape
+type SchemaField = schema.Field
+type SchemaCapture = schema.Capture
 
 // ErrSchemaUnavailable reports that checked grammar metadata is unavailable.
 // In particular, a parser loaded from a compiled file cannot export a schema.
-var ErrSchemaUnavailable = engine.ErrSchemaUnavailable
+var ErrSchemaUnavailable = schema.ErrUnavailable
 
 type schemaOptions struct{ allRules bool }
 

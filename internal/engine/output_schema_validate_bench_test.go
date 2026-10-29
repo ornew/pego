@@ -5,44 +5,46 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/ornew/pego/internal/schema"
 )
 
 // outputSchemaUnvalidated has OutputSchema's fields and JSON tags but no
 // UnmarshalJSON method, isolating encoding/json's decoding cost from graph
 // validation.
-type outputSchemaUnvalidated OutputSchema
+type outputSchemaUnvalidated schema.Output
 
-var outputSchemaValidatedSink OutputSchema
+var outputSchemaValidatedSink schema.Output
 var outputSchemaUnvalidatedSink outputSchemaUnvalidated
 
-func outputSchemaValidationBenchmarkValue(typeCount int) OutputSchema {
-	types := make([]SchemaType, typeCount)
-	rules := make([]SchemaRule, typeCount)
+func outputSchemaValidationBenchmarkValue(typeCount int) schema.Output {
+	types := make([]schema.Type, typeCount)
+	rules := make([]schema.Rule, typeCount)
 	for i := 0; i < typeCount; i++ {
 		id := fmt.Sprintf("declared/Item%03d", i)
 		next := fmt.Sprintf("declared/Item%03d", (i+1)%typeCount)
-		types[i] = SchemaType{
+		types[i] = schema.Type{
 			ID:     id,
 			Name:   fmt.Sprintf("Item%03d", i),
 			Origin: "declared",
-			Shape: SchemaShape{Kind: "struct", Fields: []SchemaField{
-				{Name: "Name", Shape: SchemaShape{Kind: "scalar", Scalar: "string"}},
-				{Name: "Next", Shape: SchemaShape{Kind: "optional", Element: &SchemaShape{Kind: "ref", Ref: next}}},
+			Shape: schema.Shape{Kind: "struct", Fields: []schema.Field{
+				{Name: "Name", Shape: schema.Shape{Kind: "scalar", Scalar: "string"}},
+				{Name: "Next", Shape: schema.Shape{Kind: "optional", Element: &schema.Shape{Kind: "ref", Ref: next}}},
 			}},
 		}
-		rules[i] = SchemaRule{
+		rules[i] = schema.Rule{
 			Name:   fmt.Sprintf("parseItem%03d", i),
 			Origin: "declared",
-			Result: SchemaShape{Kind: "ref", Ref: fmt.Sprintf("inferred/parseItem%03d", i)},
+			Result: schema.Shape{Kind: "ref", Ref: fmt.Sprintf("inferred/parseItem%03d", i)},
 		}
 	}
 	for i := range rules {
-		types = append(types, SchemaType{
+		types = append(types, schema.Type{
 			ID: rules[i].Result.Ref, Name: rules[i].Name, Origin: "inferred",
-			Shape: SchemaShape{Kind: "ref", Ref: types[i].ID},
+			Shape: schema.Shape{Kind: "ref", Ref: types[i].ID},
 		})
 	}
-	return OutputSchema{
+	return schema.Output{
 		Format:                  "pego-output-schema",
 		Version:                 2,
 		Start:                   "parseItem000",
@@ -60,7 +62,7 @@ func BenchmarkOutputSchemaUnmarshalJSON(b *testing.B) {
 				b.Fatal(err)
 			}
 
-			var validated OutputSchema
+			var validated schema.Output
 			if err := json.Unmarshal(data, &validated); err != nil {
 				b.Fatalf("validate benchmark fixture: %v", err)
 			}
@@ -68,7 +70,7 @@ func BenchmarkOutputSchemaUnmarshalJSON(b *testing.B) {
 			if err := json.Unmarshal(data, &plain); err != nil {
 				b.Fatalf("decode benchmark fixture: %v", err)
 			}
-			if !reflect.DeepEqual(validated, OutputSchema(plain)) {
+			if !reflect.DeepEqual(validated, schema.Output(plain)) {
 				b.Fatal("validated and unvalidated fixture decodes differ")
 			}
 
@@ -76,7 +78,7 @@ func BenchmarkOutputSchemaUnmarshalJSON(b *testing.B) {
 				b.ReportAllocs()
 				b.SetBytes(int64(len(data)))
 				for b.Loop() {
-					var got OutputSchema
+					var got schema.Output
 					if err := json.Unmarshal(data, &got); err != nil {
 						b.Fatal(err)
 					}

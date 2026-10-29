@@ -584,7 +584,7 @@ separate interpreter is maintained.
 | Analysis today | In this design |
 |:--|:--|
 | Type checking, type resolution (`value_types.go`, `type_resolve.go`) | Runs on the grammar before Core IR; annotates nodes, slots and terms |
-| Output schema (`output_schema.go`) | Unchanged; reads checker results |
+| Output schema (`internal/schema/schema.go`) | Unchanged; reads checker results |
 | Call graph, nullability, left calls, leaders, SCCs (`analysis.go`) | Computed once by the builder; rule policy and node attributes |
 | Transient, plain, memoized rules, variables read; the run-time `noPlain` choice | Rule call policy; the family of the program |
 | First terminals (three implementations) | One Core attribute; `Guard` |

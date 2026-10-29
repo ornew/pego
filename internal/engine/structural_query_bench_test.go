@@ -3,6 +3,8 @@ package engine
 import (
 	"fmt"
 	"testing"
+
+	"github.com/ornew/pego/internal/schema"
 )
 
 var structuralQueryCompileSink *StructuralQuery
@@ -14,19 +16,19 @@ var querySchemaSink *QuerySchema
 func BenchmarkCompileStructuralQuerySchema(b *testing.B) {
 	for _, typeCount := range []int{16, 128} {
 		b.Run(fmt.Sprintf("Types%d", typeCount), func(b *testing.B) {
-			schema := outputSchemaValidationBenchmarkValue(typeCount)
+			sch := outputSchemaValidationBenchmarkValue(typeCount)
 			known := QueryPattern{Type: "Item000", Fields: []QueryFieldPattern{{Name: "Name", Pattern: QueryPattern{Category: "string"}}}}
 			b.Run("KnownField", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
-					q, err := CompileStructuralQuery(known, &schema)
+					q, err := CompileStructuralQuery(known, &sch)
 					if err != nil {
 						b.Fatal(err)
 					}
 					structuralQueryCompileSink = q
 				}
 			})
-			prepared, err := PrepareQuerySchema(&schema)
+			prepared, err := PrepareQuerySchema(&sch)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -43,7 +45,7 @@ func BenchmarkCompileStructuralQuerySchema(b *testing.B) {
 			b.Run("Prepare", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
-					q, err := PrepareQuerySchema(&schema)
+					q, err := PrepareQuerySchema(&sch)
 					if err != nil {
 						b.Fatal(err)
 					}
@@ -52,14 +54,14 @@ func BenchmarkCompileStructuralQuerySchema(b *testing.B) {
 			})
 
 			sharedSchema := outputSchemaValidationBenchmarkValue(typeCount)
-			shared := &SchemaShape{Kind: "scalar", Scalar: "string"}
+			shared := &schema.Shape{Kind: "scalar", Scalar: "string"}
 			for range 16 {
-				shared = &SchemaShape{Kind: "join", Alternatives: []SchemaShape{
+				shared = &schema.Shape{Kind: "join", Alternatives: []schema.Shape{
 					{Kind: "optional", Element: shared},
 					{Kind: "optional", Element: shared},
 				}}
 			}
-			sharedSchema.Types[0].Shape.Fields = append(sharedSchema.Types[0].Shape.Fields, SchemaField{Name: "Deep", Shape: *shared})
+			sharedSchema.Types[0].Shape.Fields = append(sharedSchema.Types[0].Shape.Fields, schema.Field{Name: "Deep", Shape: *shared})
 			absent := QueryPattern{Type: "Item000", Fields: []QueryFieldPattern{{Name: "Deep", Pattern: QueryPattern{Fields: []QueryFieldPattern{{Name: "Absent"}}}}}}
 			b.Run("SharedDAGAbsentField", func(b *testing.B) {
 				b.ReportAllocs()

@@ -5,6 +5,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/ornew/pego/internal/schema"
 )
 
 func TestQuerySchemaRejectsInvalidSchema(t *testing.T) {
@@ -22,7 +24,7 @@ func TestQuerySchemaRejectsInvalidSchema(t *testing.T) {
 // even into an invalid one, changes nothing for the prepared schema.
 func TestQuerySchemaOwnsCopy(t *testing.T) {
 	s := validInMemoryOutputSchema()
-	s.Types[0].Shape = SchemaShape{Kind: "struct", Fields: []SchemaField{{Name: "Value", Shape: SchemaShape{Kind: "optional", Element: &SchemaShape{Kind: "scalar", Scalar: "string"}}}}}
+	s.Types[0].Shape = schema.Shape{Kind: "struct", Fields: []schema.Field{{Name: "Value", Shape: schema.Shape{Kind: "optional", Element: &schema.Shape{Kind: "scalar", Scalar: "string"}}}}}
 	q, err := PrepareQuerySchema(&s)
 	if err != nil {
 		t.Fatal(err)
@@ -53,19 +55,19 @@ func TestQuerySchemaOwnsCopy(t *testing.T) {
 // sharing: copying every path would take 2^28 shapes here.
 func TestQuerySchemaCopySharesDAG(t *testing.T) {
 	s := validInMemoryOutputSchema()
-	shared := &SchemaShape{Kind: "scalar", Scalar: "string"}
+	shared := &schema.Shape{Kind: "scalar", Scalar: "string"}
 	for range 28 {
-		shared = &SchemaShape{Kind: "join", Alternatives: []SchemaShape{
+		shared = &schema.Shape{Kind: "join", Alternatives: []schema.Shape{
 			{Kind: "optional", Element: shared},
 			{Kind: "optional", Element: shared},
 		}}
 	}
 	s.Types[1].Shape = *shared
 	// A slice shared by two shapes is shared in the copy as well.
-	alts := []SchemaShape{{Kind: "nil"}, {Kind: "scalar", Scalar: "int"}}
-	s.Types = append(s.Types, SchemaType{ID: "declared/Other", Name: "Other", Origin: "declared", Shape: SchemaShape{Kind: "struct", Fields: []SchemaField{
-		{Name: "A", Shape: SchemaShape{Kind: "list", Element: &SchemaShape{Kind: "join", Alternatives: alts}}},
-		{Name: "B", Shape: SchemaShape{Kind: "join", Alternatives: alts}},
+	alts := []schema.Shape{{Kind: "nil"}, {Kind: "scalar", Scalar: "int"}}
+	s.Types = append(s.Types, schema.Type{ID: "declared/Other", Name: "Other", Origin: "declared", Shape: schema.Shape{Kind: "struct", Fields: []schema.Field{
+		{Name: "A", Shape: schema.Shape{Kind: "list", Element: &schema.Shape{Kind: "join", Alternatives: alts}}},
+		{Name: "B", Shape: schema.Shape{Kind: "join", Alternatives: alts}},
 	}}})
 
 	q, err := PrepareQuerySchema(&s)
@@ -128,7 +130,7 @@ func TestQuerySchemaConcurrentCompile(t *testing.T) {
 // TestQuerySchemaIndexesDeclaredNames checks that query types name declared
 // struct types only: a rule's inferred type of the same name is not a type.
 func TestQuerySchemaIndexesDeclaredNames(t *testing.T) {
-	s := &OutputSchema{Types: []SchemaType{
+	s := &schema.Output{Types: []schema.Type{
 		{ID: "declared/A", Name: "A", Origin: "declared"},
 		{ID: "inferred/Error", Name: "Error", Origin: "inferred"},
 		{ID: "declared/Error", Name: "Error", Origin: "declared"},

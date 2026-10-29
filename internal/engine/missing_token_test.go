@@ -12,6 +12,7 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/schema"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -314,15 +315,15 @@ rule main Root = x:(";" #missing) => Root{Token: $x}`
 		t.Fatal(err)
 	}
 	requireInsertions(t, reloaded, "", ParseOptions{MissingTokens: 1}, 1)
-	schema, err := prog.OutputSchemaPrototype("main", false)
+	sch, err := prog.OutputSchemaPrototype("main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	data, err = json.Marshal(schema)
+	data, err = json.Marshal(sch)
 	if err != nil {
 		t.Fatal(err)
 	}
-	var roundtrip OutputSchema
+	var roundtrip schema.Output
 	if err := json.Unmarshal(data, &roundtrip); err != nil {
 		t.Fatal(err)
 	}

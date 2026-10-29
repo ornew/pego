@@ -1,4 +1,6 @@
-package engine
+// Package schema describes the outputs a grammar can produce, independently of a parse: the output
+// schema, its JSON form and its validation.
+package schema
 
 import (
 	"encoding/json"
@@ -11,44 +13,44 @@ import (
 	"github.com/ornew/pego/internal/compile"
 )
 
-// ErrSchemaUnavailable reports missing checked grammar metadata.
-var ErrSchemaUnavailable = errors.New("output schema unavailable")
+// ErrUnavailable reports missing checked grammar metadata.
+var ErrUnavailable = errors.New("output schema unavailable")
 
-// OutputSchemaVersion is the version of the output schema format.
-const OutputSchemaVersion = 2
+// Version is the version of the output schema format.
+const Version = 2
 
-// OutputSchema is an experimental, grammar-level description of possible values.
+// Output is an experimental, grammar-level description of possible values.
 // It is independent of position units and generated target-language layouts.
-type OutputSchema struct {
+type Output struct {
 	Format                  string `json:"format"`
 	Version                 int    `json:"version"`
 	Start                   string `json:"start"`
 	PositionUnitIndependent bool   `json:"positionUnitIndependent"`
 	// SourceInfo reports that the grammar was compiled with source information, so that nodes
 	// record the rules that produced them.
-	SourceInfo bool         `json:"sourceInfo"`
-	Types      []SchemaType `json:"types"`
-	Rules      []SchemaRule `json:"rules"`
+	SourceInfo bool   `json:"sourceInfo"`
+	Types      []Type `json:"types"`
+	Rules      []Rule `json:"rules"`
 }
 
-// SchemaType is a struct type defined in the grammar (origin "declared") or the value of a rule
+// Type is a struct type defined in the grammar (origin "declared") or the value of a rule
 // (origin "inferred").
-type SchemaType struct {
-	ID     string      `json:"id"`
-	Name   string      `json:"name"`
-	Origin string      `json:"origin"`
-	Shape  SchemaShape `json:"shape"`
+type Type struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Origin string `json:"origin"`
+	Shape  Shape  `json:"shape"`
 }
 
-// SchemaRule is a rule. Its result refers to the inferred type of the rule; the origin is
+// Rule is a rule. Its result refers to the inferred type of the rule; the origin is
 // "declared" when the rule declares its type.
-type SchemaRule struct {
-	Name   string      `json:"name"`
-	Origin string      `json:"origin"`
-	Result SchemaShape `json:"result"`
+type Rule struct {
+	Name   string `json:"name"`
+	Origin string `json:"origin"`
+	Result Shape  `json:"result"`
 }
 
-// SchemaShape describes the values of a type. Kind selects the members:
+// Shape describes the values of a type. Kind selects the members:
 //
 //   - "scalar": Scalar is int, string or bool.
 //   - "nil", "top" (every value), "error" (a value of error recovery) and "missing" (a token that
@@ -59,42 +61,42 @@ type SchemaRule struct {
 //   - "join": Alternatives are the shapes of the alternatives.
 //   - "struct": Fields are the fields of a defined struct type.
 //   - "ref": Ref is the ID of a type of the schema; recursive types are never expanded.
-type SchemaShape struct {
-	Kind         string          `json:"kind"`
-	Ref          string          `json:"ref,omitempty"`
-	Scalar       string          `json:"scalar,omitempty"`
-	Element      *SchemaShape    `json:"element,omitempty"`
-	Elements     []SchemaShape   `json:"elements,omitempty"`
-	Alternatives []SchemaShape   `json:"alternatives,omitempty"`
-	Fields       []SchemaField   `json:"fields,omitempty"`
-	Value        *SchemaShape    `json:"value,omitempty"`
-	Captures     []SchemaCapture `json:"captures,omitempty"`
+type Shape struct {
+	Kind         string    `json:"kind"`
+	Ref          string    `json:"ref,omitempty"`
+	Scalar       string    `json:"scalar,omitempty"`
+	Element      *Shape    `json:"element,omitempty"`
+	Elements     []Shape   `json:"elements,omitempty"`
+	Alternatives []Shape   `json:"alternatives,omitempty"`
+	Fields       []Field   `json:"fields,omitempty"`
+	Value        *Shape    `json:"value,omitempty"`
+	Captures     []Capture `json:"captures,omitempty"`
 }
 
-// SchemaField is a field of a struct type.
-type SchemaField struct {
-	Name  string      `json:"name"`
-	Shape SchemaShape `json:"shape"`
+// Field is a field of a struct type.
+type Field struct {
+	Name  string `json:"name"`
+	Shape Shape  `json:"shape"`
 }
 
-// SchemaCapture locates a capture of a node. Each path is a path of tuple indexes inside the
+// Capture locates a capture of a node. Each path is a path of tuple indexes inside the
 // node's value, one for each place the capture can be; the alternative that matched selects one.
 // Side reports that the capture can also be in a positive lookahead, whose value is kept beside
 // the tuple. Shape is the shape of the capture's value.
-type SchemaCapture struct {
-	Name  string      `json:"name"`
-	Paths [][]int     `json:"paths,omitempty"`
-	Side  bool        `json:"side,omitempty"`
-	Shape SchemaShape `json:"shape"`
+type Capture struct {
+	Name  string  `json:"name"`
+	Paths [][]int `json:"paths,omitempty"`
+	Side  bool    `json:"side,omitempty"`
+	Shape Shape   `json:"shape"`
 }
 
 // Validate checks the version 2 envelope and shape graph. It also accepts
 // schemas constructed directly in memory; named references may be recursive.
-func (s *OutputSchema) Validate() error {
+func (s *Output) Validate() error {
 	if s == nil {
 		return fmt.Errorf("nil output schema")
 	}
-	if s.Format != "pego-output-schema" || s.Version != OutputSchemaVersion {
+	if s.Format != "pego-output-schema" || s.Version != Version {
 		return fmt.Errorf("unsupported output schema format %q version %d", s.Format, s.Version)
 	}
 	if s.Start == "" || !s.PositionUnitIndependent || s.Types == nil || s.Rules == nil {
@@ -105,7 +107,7 @@ func (s *OutputSchema) Validate() error {
 
 // UnmarshalJSON rejects unsupported envelopes, noncanonical fields, duplicate
 // keys and malformed shape graphs.
-func (s *OutputSchema) UnmarshalJSON(data []byte) error {
+func (s *Output) UnmarshalJSON(data []byte) error {
 	validated, err := decodeOutputSchemaJSON(data)
 	if err != nil {
 		return err
@@ -117,26 +119,12 @@ func (s *OutputSchema) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// OutputSchemaPrototype exports the start rule, the rules it calls or whose values its values
-// contain, and the struct types they refer to; or every rule and type with allRules. It has no
-// effect on parsing or generation. A program loaded from a compiled grammar has no schema.
-func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSchema, error) {
-	if p == nil {
-		return nil, ErrSchemaUnavailable
-	}
-	if err := compile.EntryError(start); err != nil {
-		return nil, err
-	}
-	if p.Grammar == nil {
-		return nil, errSchemaNeedsSource
-	}
-	return p.exportSchema(start, allRules)
-}
-
-// exportSchema exports the schema of a checked program; see OutputSchemaPrototype.
-func (p *Program) exportSchema(start string, allRules bool) (*OutputSchema, error) {
+// Export exports the schema of the checked program p for the start rule start: the rule, the rules
+// it calls or whose values its values contain, and the struct types they refer to; or every rule
+// and type with allRules. engine.Program.OutputSchemaPrototype checks the start rule first.
+func Export(p *compile.Program, start string, allRules bool) (*Output, error) {
 	if p.Grammar == nil || p.Typed == nil {
-		return nil, ErrSchemaUnavailable
+		return nil, ErrUnavailable
 	}
 	if p.ByName[start] == nil {
 		return nil, fmt.Errorf("unknown schema start rule %q", start)
@@ -147,9 +135,9 @@ func (p *Program) exportSchema(start string, allRules bool) (*OutputSchema, erro
 	}
 	values := p.ValueTypes()
 	if values == nil {
-		return nil, ErrSchemaUnavailable
+		return nil, ErrUnavailable
 	}
-	all := map[string]SchemaType{}
+	all := map[string]Type{}
 	for _, td := range p.Grammar.Types() {
 		spec, ok := td.(*grammar.TypeDef)
 		if !ok {
@@ -162,31 +150,31 @@ func (p *Program) exportSchema(start string, allRules bool) (*OutputSchema, erro
 			if !ok {
 				return nil, fmt.Errorf("schema type %q: unresolved node type", td.DeclName())
 			}
-			shape, err := schemaValue(n.Underlying())
+			shape, err := ShapeOf(n.Underlying())
 			if err != nil {
 				return nil, fmt.Errorf("schema type %q: %w", td.DeclName(), err)
 			}
-			all[id] = SchemaType{id, td.DeclName(), "declared", shape}
+			all[id] = Type{id, td.DeclName(), "declared", shape}
 			continue
 		}
-		shape := SchemaShape{Kind: "struct"}
+		shape := Shape{Kind: "struct"}
 		for _, f := range compile.DefFields(spec) {
-			fieldShape, err := p.schemaDeclared(f.Type)
+			fieldShape, err := Declared(p, f.Type)
 			if err != nil {
 				return nil, fmt.Errorf("schema type %q field %q: %w", td.DeclName(), f.Name, err)
 			}
-			shape.Fields = append(shape.Fields, SchemaField{f.Name, fieldShape})
+			shape.Fields = append(shape.Fields, Field{f.Name, fieldShape})
 		}
 		sort.Slice(shape.Fields, func(i, j int) bool { return shape.Fields[i].Name < shape.Fields[j].Name })
-		all[id] = SchemaType{id, td.DeclName(), "declared", shape}
+		all[id] = Type{id, td.DeclName(), "declared", shape}
 	}
-	s := &OutputSchema{Format: "pego-output-schema", Version: OutputSchemaVersion, Start: start, PositionUnitIndependent: true, SourceInfo: p.RecordsSourceInfo, Types: []SchemaType{}, Rules: []SchemaRule{}}
+	s := &Output{Format: "pego-output-schema", Version: Version, Start: start, PositionUnitIndependent: true, SourceInfo: p.RecordsSourceInfo, Types: []Type{}, Rules: []Rule{}}
 	selected := map[string]bool{}
 	noType := map[string]bool{}
 	wanted := map[string]bool{}
 	var todo []string
-	var collect func(SchemaShape)
-	collect = func(shape SchemaShape) {
+	var collect func(Shape)
+	collect = func(shape Shape) {
 		if shape.Ref != "" && !wanted[shape.Ref] {
 			wanted[shape.Ref] = true
 			if t, ok := all[shape.Ref]; ok {
@@ -195,12 +183,12 @@ func (p *Program) exportSchema(start string, allRules bool) (*OutputSchema, erro
 				todo = append(todo, name)
 			}
 		}
-		for _, sub := range []*SchemaShape{shape.Element, shape.Value} {
+		for _, sub := range []*Shape{shape.Element, shape.Value} {
 			if sub != nil {
 				collect(*sub)
 			}
 		}
-		for _, list := range [][]SchemaShape{shape.Elements, shape.Alternatives} {
+		for _, list := range [][]Shape{shape.Elements, shape.Alternatives} {
 			for _, sub := range list {
 				collect(sub)
 			}
@@ -240,14 +228,14 @@ func (p *Program) exportSchema(start string, allRules bool) (*OutputSchema, erro
 			continue
 		}
 		if !ok || t == nil {
-			return nil, ErrSchemaUnavailable
+			return nil, ErrUnavailable
 		}
-		shape, err := schemaValue(t)
+		shape, err := ShapeOf(t)
 		if err != nil {
 			return nil, fmt.Errorf("schema rule %q: %w", name, err)
 		}
 		id := "inferred/" + name
-		all[id] = SchemaType{id, name, "inferred", shape}
+		all[id] = Type{id, name, "inferred", shape}
 		wanted[id] = true
 		collect(shape)
 	}
@@ -259,7 +247,7 @@ func (p *Program) exportSchema(start string, allRules bool) (*OutputSchema, erro
 		if rd.Type != nil {
 			origin = "declared"
 		}
-		s.Rules = append(s.Rules, SchemaRule{rd.Name, origin, SchemaShape{Kind: "ref", Ref: "inferred/" + rd.Name}})
+		s.Rules = append(s.Rules, Rule{rd.Name, origin, Shape{Kind: "ref", Ref: "inferred/" + rd.Name}})
 	}
 	if allRules {
 		for id := range all {
@@ -285,52 +273,52 @@ func cutPrefix(s, prefix string) (string, bool) {
 	return "", false
 }
 
-// schemaDeclared describes the type a field declares.
-func (p *Program) schemaDeclared(t grammar.TypeExpr) (SchemaShape, error) {
-	k := &compile.TypeResolver{Prog: p.staticProgram}
-	return schemaValue(k.Resolve(t))
+// Declared describes the type a field declares.
+func Declared(p *compile.Program, t grammar.TypeExpr) (Shape, error) {
+	k := &compile.TypeResolver{Prog: p}
+	return ShapeOf(k.Resolve(t))
 }
 
-// schemaValue describes a type of the value model.
-func schemaValue(t compile.Ty) (SchemaShape, error) {
+// ShapeOf describes a type of the value model.
+func ShapeOf(t compile.Ty) (Shape, error) {
 	switch t := t.(type) {
 	case compile.BasicTy:
 		switch t {
 		case compile.TyBottom:
-			return SchemaShape{Kind: "join"}, nil // no values
+			return Shape{Kind: "join"}, nil // no values
 		case compile.TyInt, compile.TyString, compile.TyBool:
-			return SchemaShape{Kind: "scalar", Scalar: string(t)}, nil
+			return Shape{Kind: "scalar", Scalar: string(t)}, nil
 		case compile.TyNil:
-			return SchemaShape{Kind: "nil"}, nil
+			return Shape{Kind: "nil"}, nil
 		case compile.TyErr:
-			return SchemaShape{Kind: "error"}, nil
+			return Shape{Kind: "error"}, nil
 		case compile.TyTop, compile.TyAny:
-			return SchemaShape{Kind: "top"}, nil
+			return Shape{Kind: "top"}, nil
 		}
-		return SchemaShape{}, fmt.Errorf("unsupported schema type %q", t)
+		return Shape{}, fmt.Errorf("unsupported schema type %q", t)
 	case compile.NamedTy:
 		if t == compile.TyMissing {
-			return SchemaShape{Kind: "missing"}, nil
+			return Shape{Kind: "missing"}, nil
 		}
 		if t.Kind != 's' {
 			v := compile.FromLegacy(t)
 			if n, ok := v.(compile.NamedTy); !ok || n.Kind == 's' {
-				return schemaValue(v)
+				return ShapeOf(v)
 			}
-			return SchemaShape{}, fmt.Errorf("unresolved schema type %s", t.Name)
+			return Shape{}, fmt.Errorf("unresolved schema type %s", t.Name)
 		}
-		return SchemaShape{Kind: "ref", Ref: "declared/" + t.Name}, nil
+		return Shape{Kind: "ref", Ref: "declared/" + t.Name}, nil
 	case compile.RuleTy:
-		return SchemaShape{Kind: "ref", Ref: "inferred/" + t.Name}, nil
+		return Shape{Kind: "ref", Ref: "inferred/" + t.Name}, nil
 	case compile.NodeTy:
 		if t.Name != "" {
-			return SchemaShape{Kind: "ref", Ref: "declared/" + t.Name}, nil
+			return Shape{Kind: "ref", Ref: "declared/" + t.Name}, nil
 		}
-		v, err := schemaValue(t.Value)
+		v, err := ShapeOf(t.Value)
 		if err != nil {
-			return SchemaShape{}, err
+			return Shape{}, err
 		}
-		s := SchemaShape{Kind: "node", Value: &v}
+		s := Shape{Kind: "node", Value: &v}
 		// A name captured in several places (an alternative, or a lookahead beside the tuple)
 		// has one entry: its locations are the union of the places, and its type is the join of
 		// the types of the places, joined once so that the result is flat and sorted.
@@ -359,33 +347,33 @@ func schemaValue(t compile.Ty) (SchemaShape, error) {
 		}
 		sort.Slice(groups, func(i, j int) bool { return groups[i].name < groups[j].name })
 		for _, g := range groups {
-			cs, err := schemaValue(compile.Vjoin(g.types...))
+			cs, err := ShapeOf(compile.Vjoin(g.types...))
 			if err != nil {
-				return SchemaShape{}, fmt.Errorf("capture %s: %w", g.name, err)
+				return Shape{}, fmt.Errorf("capture %s: %w", g.name, err)
 			}
-			s.Captures = append(s.Captures, SchemaCapture{Name: g.name, Paths: g.paths, Side: g.side, Shape: cs})
+			s.Captures = append(s.Captures, Capture{Name: g.name, Paths: g.paths, Side: g.side, Shape: cs})
 		}
 		return s, nil
 	case compile.TupleTy:
-		s := SchemaShape{Kind: "tuple"}
+		s := Shape{Kind: "tuple"}
 		for _, e := range t.Elems {
-			es, err := schemaValue(e)
+			es, err := ShapeOf(e)
 			if err != nil {
-				return SchemaShape{}, err
+				return Shape{}, err
 			}
 			s.Elements = append(s.Elements, es)
 		}
 		return s, nil
 	case compile.ListTy:
-		e, err := schemaValue(t.Elem)
-		return SchemaShape{Kind: "list", Element: &e}, err
+		e, err := ShapeOf(t.Elem)
+		return Shape{Kind: "list", Element: &e}, err
 	case compile.OptTy:
-		e, err := schemaValue(t.Elem)
-		return SchemaShape{Kind: "optional", Element: &e}, err
+		e, err := ShapeOf(t.Elem)
+		return Shape{Kind: "optional", Element: &e}, err
 	case compile.JoinTy:
-		s := SchemaShape{Kind: "join"}
+		s := Shape{Kind: "join"}
 		for _, a := range t.Alts {
-			v, err := schemaValue(a)
+			v, err := ShapeOf(a)
 			if err != nil {
 				return s, err
 			}
@@ -394,12 +382,12 @@ func schemaValue(t compile.Ty) (SchemaShape, error) {
 		sortSchemaAlternatives(s.Alternatives)
 		return s, nil
 	case compile.RecordTy:
-		return schemaValue(compile.FromLegacy(t))
+		return ShapeOf(compile.FromLegacy(t))
 	}
-	return SchemaShape{}, fmt.Errorf("unresolved schema type %T", t)
+	return Shape{}, fmt.Errorf("unresolved schema type %T", t)
 }
 
-func sortSchemaAlternatives(alts []SchemaShape) {
+func sortSchemaAlternatives(alts []Shape) {
 	sort.Slice(alts, func(i, j int) bool {
 		a, _ := json.Marshal(alts[i])
 		b, _ := json.Marshal(alts[j])

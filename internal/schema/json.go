@@ -1,4 +1,4 @@
-package engine
+package schema
 
 import (
 	"bytes"
@@ -9,17 +9,17 @@ import (
 // Standard decoding validates syntax, value types and maximum nesting before
 // the allocation-free common key scan checks exact names and duplicate keys.
 // The receiver is published only after both checks and graph validation pass.
-func decodeOutputSchemaJSON(data []byte) (OutputSchema, error) {
-	type plain OutputSchema
+func decodeOutputSchemaJSON(data []byte) (Output, error) {
+	type plain Output
 	var value plain
 	if err := json.Unmarshal(data, &value); err != nil {
-		return OutputSchema{}, err
+		return Output{}, err
 	}
 	keys := outputSchemaJSONKeys{data: data}
 	if err := keys.object(schemaJSONEnvelope); err != nil {
-		return OutputSchema{}, err
+		return Output{}, err
 	}
-	return OutputSchema(value), nil
+	return Output(value), nil
 }
 
 type schemaJSONObject uint8

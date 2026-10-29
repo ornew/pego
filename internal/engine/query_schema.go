@@ -1,22 +1,26 @@
 package engine
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/ornew/pego/internal/schema"
+)
 
 // QuerySchema is a validated output schema indexed for compiling structural
 // queries. A prepared one owns a deep copy of the schema it was made from, so
 // later changes to that schema do not affect it, and it is never modified, so
 // it is safe for concurrent use.
 type QuerySchema struct {
-	s     *OutputSchema
+	s     *schema.Output
 	rules map[string]bool
-	byID  map[string]*SchemaType
+	byID  map[string]*schema.Type
 	// byName holds the declared struct types by name.
-	byName map[string]*SchemaType
+	byName map[string]*schema.Type
 }
 
 // PrepareQuerySchema validates schema once and copies it, so that queries
 // compiled with the result skip validation.
-func PrepareQuerySchema(schema *OutputSchema) (*QuerySchema, error) {
+func PrepareQuerySchema(schema *schema.Output) (*QuerySchema, error) {
 	if err := schema.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid query schema: %w", err)
 	}
@@ -24,12 +28,12 @@ func PrepareQuerySchema(schema *OutputSchema) (*QuerySchema, error) {
 }
 
 // indexQuerySchema indexes a validated schema without copying it.
-func indexQuerySchema(s *OutputSchema) *QuerySchema {
+func indexQuerySchema(s *schema.Output) *QuerySchema {
 	q := &QuerySchema{
 		s:      s,
 		rules:  make(map[string]bool, len(s.Rules)),
-		byID:   make(map[string]*SchemaType, len(s.Types)),
-		byName: make(map[string]*SchemaType, len(s.Types)),
+		byID:   make(map[string]*schema.Type, len(s.Types)),
+		byName: make(map[string]*schema.Type, len(s.Types)),
 	}
 	for i := range s.Rules {
 		q.rules[s.Rules[i].Name] = true
@@ -66,20 +70,20 @@ func (s *QuerySchema) CompileStructuralQuery(pattern QueryPattern) (*StructuralQ
 // shapes holding different overlapping parts of one array get separate copies:
 // n such parts of n alternatives copy to about n²/2 shapes. Exported and
 // decoded schemas share no partial slices.
-func copyOutputSchema(s *OutputSchema) *OutputSchema {
+func copyOutputSchema(s *schema.Output) *schema.Output {
 	c := &schemaCopier{
-		shapes:   map[*SchemaShape]*SchemaShape{},
-		alts:     map[schemaSliceKey[SchemaShape]][]SchemaShape{},
-		fields:   map[schemaSliceKey[SchemaField]][]SchemaField{},
-		captures: map[schemaSliceKey[SchemaCapture]][]SchemaCapture{},
+		shapes:   map[*schema.Shape]*schema.Shape{},
+		alts:     map[schemaSliceKey[schema.Shape]][]schema.Shape{},
+		fields:   map[schemaSliceKey[schema.Field]][]schema.Field{},
+		captures: map[schemaSliceKey[schema.Capture]][]schema.Capture{},
 	}
 	out := *s
-	out.Types = make([]SchemaType, len(s.Types))
+	out.Types = make([]schema.Type, len(s.Types))
 	for i, t := range s.Types {
 		t.Shape = c.shape(t.Shape)
 		out.Types[i] = t
 	}
-	out.Rules = make([]SchemaRule, len(s.Rules))
+	out.Rules = make([]schema.Rule, len(s.Rules))
 	for i, r := range s.Rules {
 		r.Result = c.shape(r.Result)
 		out.Rules[i] = r
@@ -93,22 +97,22 @@ type schemaSliceKey[T any] struct {
 }
 
 type schemaCopier struct {
-	shapes   map[*SchemaShape]*SchemaShape
-	alts     map[schemaSliceKey[SchemaShape]][]SchemaShape
-	fields   map[schemaSliceKey[SchemaField]][]SchemaField
-	captures map[schemaSliceKey[SchemaCapture]][]SchemaCapture
+	shapes   map[*schema.Shape]*schema.Shape
+	alts     map[schemaSliceKey[schema.Shape]][]schema.Shape
+	fields   map[schemaSliceKey[schema.Field]][]schema.Field
+	captures map[schemaSliceKey[schema.Capture]][]schema.Capture
 }
 
-func (c *schemaCopier) shape(s SchemaShape) SchemaShape {
+func (c *schemaCopier) shape(s schema.Shape) schema.Shape {
 	s.Element = c.pointer(s.Element)
 	s.Value = c.pointer(s.Value)
 	s.Alternatives = c.slice(s.Alternatives)
 	s.Elements = c.slice(s.Elements)
 	if len(s.Captures) > 0 {
-		k := schemaSliceKey[SchemaCapture]{&s.Captures[0], len(s.Captures)}
+		k := schemaSliceKey[schema.Capture]{&s.Captures[0], len(s.Captures)}
 		captures, ok := c.captures[k]
 		if !ok {
-			captures = make([]SchemaCapture, len(s.Captures))
+			captures = make([]schema.Capture, len(s.Captures))
 			for i, capture := range s.Captures {
 				capture.Paths = make([][]int, len(capture.Paths))
 				for j, path := range s.Captures[i].Paths {
@@ -122,10 +126,10 @@ func (c *schemaCopier) shape(s SchemaShape) SchemaShape {
 		s.Captures = captures
 	}
 	if len(s.Fields) > 0 {
-		k := schemaSliceKey[SchemaField]{&s.Fields[0], len(s.Fields)}
+		k := schemaSliceKey[schema.Field]{&s.Fields[0], len(s.Fields)}
 		fields, ok := c.fields[k]
 		if !ok {
-			fields = make([]SchemaField, len(s.Fields))
+			fields = make([]schema.Field, len(s.Fields))
 			for i, f := range s.Fields {
 				f.Shape = c.shape(f.Shape)
 				fields[i] = f
@@ -138,14 +142,14 @@ func (c *schemaCopier) shape(s SchemaShape) SchemaShape {
 }
 
 // slice copies a slice of shapes, sharing it where the source shares it.
-func (c *schemaCopier) slice(shapes []SchemaShape) []SchemaShape {
+func (c *schemaCopier) slice(shapes []schema.Shape) []schema.Shape {
 	if len(shapes) == 0 {
 		return shapes
 	}
-	k := schemaSliceKey[SchemaShape]{&shapes[0], len(shapes)}
+	k := schemaSliceKey[schema.Shape]{&shapes[0], len(shapes)}
 	out, ok := c.alts[k]
 	if !ok {
-		out = make([]SchemaShape, len(shapes))
+		out = make([]schema.Shape, len(shapes))
 		for i, a := range shapes {
 			out[i] = c.shape(a)
 		}
@@ -154,14 +158,14 @@ func (c *schemaCopier) slice(shapes []SchemaShape) []SchemaShape {
 	return out
 }
 
-func (c *schemaCopier) pointer(p *SchemaShape) *SchemaShape {
+func (c *schemaCopier) pointer(p *schema.Shape) *schema.Shape {
 	if p == nil {
 		return nil
 	}
 	if q, ok := c.shapes[p]; ok {
 		return q
 	}
-	q := new(SchemaShape)
+	q := new(schema.Shape)
 	*q = c.shape(*p)
 	c.shapes[p] = q
 	return q

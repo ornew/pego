@@ -17,6 +17,7 @@ This document describes the repository layout and architecture, how to run tests
 | `internal/syntax/` | Lexer and parser for PEGO source code (source → `grammar.Grammar`) |
 | `internal/compile/` | Compiler and static analysis: type checking, call and dependency analysis, the walk of rule bodies that decides their static facts, and the bytecode compiler |
 | `internal/engine/` | Parser runtime with its closure backend, action evaluation, bytecode VMs, Documents, and the entry points of Go and TypeScript code generation |
+| `internal/schema/` | Output schema: the description of the values a grammar can produce, exported from a checked program, with its JSON form and validation |
 | `internal/value/` | `Node`, the value that parsing produces: kinds, fields, JSON form, traversal and the representation that the engine packages share |
 | `internal/limits/` | Work limits of a parse invocation, the error of an exhausted limit and overflow-safe work arithmetic, shared by the parser, the Document and structural queries |
 | `internal/bytecode/` | The bytecode instruction set and module, its disassembly, the encoding of modules in compiled grammars and the validation of loaded modules |

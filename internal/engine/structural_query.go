@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/internal/limits"
+	"github.com/ornew/pego/internal/schema"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -66,7 +67,7 @@ var queryCategories = [...]string{"node", "struct", "tuple", "list", "int", "str
 // CompileStructuralQuery copies a programmatic pattern and checks known schema
 // constraints. A nil schema defers all type/field checks to runtime. Text syntax,
 // predicates, highlighting and generated-runtime adapters are not implemented.
-func CompileStructuralQuery(pattern QueryPattern, schema *OutputSchema) (*StructuralQuery, error) {
+func CompileStructuralQuery(pattern QueryPattern, schema *schema.Output) (*StructuralQuery, error) {
 	var s *QuerySchema
 	if schema != nil {
 		if err := schema.Validate(); err != nil {
@@ -101,7 +102,7 @@ func copyQueryPattern(p QueryPattern, s *QuerySchema, depth int) (QueryPattern, 
 				return p, fmt.Errorf("unknown query type %q", p.Type)
 			}
 			for _, f := range p.Fields {
-				if !slices.ContainsFunc(t.Shape.Fields, func(known SchemaField) bool { return known.Name == f.Name }) {
+				if !slices.ContainsFunc(t.Shape.Fields, func(known schema.Field) bool { return known.Name == f.Name }) {
 					return p, fmt.Errorf("type %s has no field %s", p.Type, f.Name)
 				}
 			}

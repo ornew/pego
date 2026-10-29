@@ -6,13 +6,14 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/schema"
 )
 
 const missingSchemaGrammar = `type P = { M missing; E error; O *missing; L []missing }
 rule main = "(" semi ")" $$ => P{}
 rule semi = ";" #missing`
 
-func missingSchema(t *testing.T) *OutputSchema {
+func missingSchema(t *testing.T) *schema.Output {
 	t.Helper()
 	g, err := parseTest(missingSchemaGrammar)
 	if err != nil {
@@ -32,7 +33,7 @@ func missingSchema(t *testing.T) *OutputSchema {
 // A missing token has its own shape kind, apart from error, wherever the type missing is written.
 func TestOutputSchemaMissing(t *testing.T) {
 	s := missingSchema(t)
-	byName := map[string]SchemaShape{}
+	byName := map[string]schema.Shape{}
 	for _, typ := range s.Types {
 		if typ.ID == "declared/P" {
 			for _, f := range typ.Shape.Fields {
@@ -62,7 +63,7 @@ func TestOutputSchemaMissing(t *testing.T) {
 	if !strings.Contains(string(data), `{"name":"M","shape":{"kind":"missing"}}`) {
 		t.Errorf("JSON: %s", data)
 	}
-	var back OutputSchema
+	var back schema.Output
 	if err := json.Unmarshal(data, &back); err != nil {
 		t.Fatal(err)
 	}

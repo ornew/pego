@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/schema"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -23,7 +24,7 @@ rule int Int = t:([0-9]) #atomic => Int{Text: text($t)}
 rule name Name = t:([a-z]) #atomic => Name{Text: text($t)}
 `
 
-func queryShapeSchema(t *testing.T) *OutputSchema {
+func queryShapeSchema(t *testing.T) *schema.Output {
 	t.Helper()
 	s, err := mustCompile(t, queryShapeGrammar).OutputSchemaPrototype("main", false)
 	if err != nil {
