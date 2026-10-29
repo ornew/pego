@@ -35,7 +35,7 @@ func TestCoreBuildCorpus(t *testing.T) {
 		if !ok {
 			continue
 		}
-		m, err := irbuild.CoreFrom(prog.staticProgram, nil)
+		m, err := irbuild.CoreFrom(prog.Static(), nil)
 		if err != nil {
 			t.Errorf("%s: %v", c.name, err)
 			continue

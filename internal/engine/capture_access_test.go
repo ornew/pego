@@ -88,7 +88,7 @@ rule num Num = t:([0-9]+ #atomic) => Num{Text: text($t)}`)
 // the engine from JSON grammars, reads a field: on a node it is rejected with a pointer to .$y.
 func TestCaptureAccessMatchesField(t *testing.T) {
 	access := mustCompile(t, `rule main = xs:(-"," y:[a-z])* $$ => map($xs, (i) => i.$y)`)
-	if a := compile.RuleProjections(access.staticProgram, access.RuleList[0]); a["xs"] != "y" {
+	if a := compile.RuleProjections(access.Static(), access.RuleList[0]); a["xs"] != "y" {
 		t.Fatalf("projection: %v", a)
 	}
 	g, err := parseLegacyTest(`rule main = xs:(-"," y:[a-z])* $$ => map($xs, (i) => i.y)`)

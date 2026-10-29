@@ -4,7 +4,7 @@ import "github.com/ornew/pego/internal/compile"
 
 // Static returns the static program that p runs: the checked grammar, its rules and their facts,
 // which the generators and the output schema read.
-func (p *Program) Static() *compile.Program { return p.staticProgram }
+func (p *Program) Static() *compile.Program { return staticProgramOf(&p.sharedProgram) }
 
 // SchemaProgram returns the static program that an output schema of the start rule is exported
 // from, after checking that the export can run: p must not be nil, start must be able to start a
@@ -20,5 +20,5 @@ func (p *Program) SchemaProgram(start string) (*compile.Program, error) {
 	if p.Grammar == nil {
 		return nil, errSchemaNeedsSource
 	}
-	return p.staticProgram, nil
+	return p.Static(), nil
 }

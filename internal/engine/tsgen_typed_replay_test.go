@@ -128,8 +128,8 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
 		if err != nil {
 			t.Fatal(err)
 		}
-		meta := &gogen.TypedGen{G: &gogen.Generator{Prog: prog.staticProgram}, Info: prog.Typed, Joins: map[string]string{}, Anon: map[string]compile.JoinTy{}}
-		meta.ValueResolver = gen.NewValueResolver(prog.staticProgram, func(x compile.Ty) bool { _, ok := meta.Joins[x.String()]; return ok })
+		meta := &gogen.TypedGen{G: &gogen.Generator{Prog: prog.Static()}, Info: prog.Typed, Joins: map[string]string{}, Anon: map[string]compile.JoinTy{}}
+		meta.ValueResolver = gen.NewValueResolver(prog.Static(), func(x compile.Ty) bool { _, ok := meta.Joins[x.String()]; return ok })
 		if err := meta.Name(); err != nil {
 			t.Fatal(err)
 		}

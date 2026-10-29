@@ -229,7 +229,7 @@ func inferredType(p *Program, name string) (string, bool) {
 	if !ok {
 		return "", false
 	}
-	v := &compile.ValueInference{Prog: p.staticProgram, Out: p.Typed.Values}
+	v := &compile.ValueInference{Prog: p.Static(), Out: p.Typed.Values}
 	return v.Expand(t).String(), true
 }
 
@@ -240,7 +240,7 @@ func captureType(p *Program, name, cap string) (string, bool) {
 	if !ok {
 		return "", false
 	}
-	v := &compile.ValueInference{Prog: p.staticProgram, Out: p.Typed.Values}
+	v := &compile.ValueInference{Prog: p.Static(), Out: p.Typed.Values}
 	n, ok := v.Expand(t).(compile.NodeTy)
 	if !ok {
 		return "", false

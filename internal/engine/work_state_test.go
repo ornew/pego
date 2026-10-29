@@ -16,7 +16,9 @@ import (
 )
 
 func stateWorkParser(limits limits.WorkLimits) *parser {
-	return &parser{prog: &sharedProgram{staticProgram: &compile.Program{}}, input: input{control: newWorkControl(nil, limits)}}
+	prog := &sharedProgram{}
+	initSharedProgram(prog, &compile.Program{})
+	return &parser{prog: prog, input: input{control: newWorkControl(nil, limits)}}
 }
 
 func undoFixture(p *parser) (*frame, []*value.Node) {

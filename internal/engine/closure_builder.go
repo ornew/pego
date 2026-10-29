@@ -45,7 +45,7 @@ func (b *closureBuilder) finish() []*rule {
 	for _, rs := range [][]*compile.Rule{b.prog.RuleList, b.prog.Twins} {
 		for _, sr := range rs {
 			r := b.rule(sr)
-			r.staticRule = *sr
+			*staticRuleOf(r) = *sr
 			r.initVals = b.prog.Vars.ValuesOf(sr.Vars)
 			if sr.NodeType != "" {
 				r.nodeKinds = value.NewNodeTypeKinds(sr.NodeType)

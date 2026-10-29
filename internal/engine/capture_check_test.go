@@ -43,7 +43,7 @@ func TestDuplicateCaptureTypes(t *testing.T) {
 				t.Fatal(err)
 			}
 			var errs compile.ErrorList
-			compile.CheckTypes(p.staticProgram, &errs)
+			compile.CheckTypes(p.Static(), &errs)
 			got, ok := captureType(p, "main", "x")
 			if tc.action {
 				got, ok = inferredType(p, "main")
@@ -97,7 +97,7 @@ func captureCheckProgram(src string) (*Program, error) {
 	if err != nil {
 		return nil, err
 	}
-	p := &Program{staticProgram: &compile.Program{Grammar: g, Types: map[string]grammar.TypeDecl{}}}
+	p := newProgram(&compile.Program{Grammar: g, Types: map[string]grammar.TypeDecl{}}, nil)
 	for _, d := range g.Types() {
 		p.Types[d.DeclName()] = d
 	}
@@ -144,7 +144,7 @@ func BenchmarkCaptureChecking(b *testing.B) {
 			b.ResetTimer()
 			for range b.N {
 				var errs compile.ErrorList
-				compile.CheckTypes(p.staticProgram, &errs)
+				compile.CheckTypes(p.Static(), &errs)
 				if len(errs) != 0 {
 					b.Fatal(errs)
 				}
@@ -162,7 +162,7 @@ func BenchmarkCaptureChecking(b *testing.B) {
 				b.ResetTimer()
 				for range b.N {
 					var errs compile.ErrorList
-					compile.CheckTypes(p.staticProgram, &errs)
+					compile.CheckTypes(p.Static(), &errs)
 					if len(errs) != 0 {
 						b.Fatal(errs)
 					}
@@ -179,7 +179,7 @@ func BenchmarkCaptureChecking(b *testing.B) {
 		b.ResetTimer()
 		for range b.N {
 			var errs compile.ErrorList
-			compile.CheckTypes(p.staticProgram, &errs)
+			compile.CheckTypes(p.Static(), &errs)
 			if len(errs) != 0 {
 				b.Fatal(errs)
 			}

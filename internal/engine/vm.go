@@ -169,7 +169,7 @@ func buildVMProgram(m *bytecode.Module, bodies vmBodies) *vmProgram {
 	}
 	statics := make([]*compile.Rule, len(vm.rules))
 	for i, r := range vm.rules {
-		statics[i] = &r.staticRule
+		statics[i] = staticRuleOf(r)
 	}
 	vm.nseen = compile.NumberSeen(statics)
 	vm.runSites = make([]*vmRunSite, len(m.Code))

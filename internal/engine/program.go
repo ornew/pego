@@ -36,10 +36,8 @@ type Program struct {
 // newProgram returns the program that runs the static program sp with the rules of the closure
 // backend.
 func newProgram(sp *compile.Program, closureRules []*rule) *Program {
-	prog := &Program{sharedProgram: sharedProgram{staticProgram: sp}, closureRules: closureRules}
-	for _, d := range sp.Vars.All() {
-		prog.initEnv = &env{name: d.Name, val: d.Init, next: prog.initEnv}
-	}
+	prog := &Program{closureRules: closureRules}
+	initSharedProgram(&prog.sharedProgram, sp)
 	return prog
 }
 
@@ -69,7 +67,7 @@ func (prog *Program) DefaultStart() string { return prog.DefaultStartRule }
 
 // CheckStart reports an error unless name selects a start rule: it is the name
 // of a start rule, or empty for the default start rule.
-func (prog *Program) CheckStart(name string) error { return prog.staticProgram.CheckStart(name) }
+func (prog *Program) CheckStart(name string) error { return prog.Static().CheckStart(name) }
 
 // Module compiles the program to bytecode. The result is stored in the program and reused on
 // subsequent calls.
@@ -80,14 +78,14 @@ func (prog *Program) Module() *bytecode.Module { return prog.BytecodeModule() }
 // reference to another rule is that rule's declared type, or the rule's name if it has none. It
 // reports false if the program has no such rule or its types were not checked
 // (a program loaded from a compiled grammar).
-func (prog *Program) RuleType(name string) (string, bool) { return prog.staticProgram.RuleType(name) }
+func (prog *Program) RuleType(name string) (string, bool) { return prog.Static().RuleType(name) }
 
 // RuleTypeWithPoll is RuleType with invocation-owned polling for editor display.
 // It does not retain poll. Callback panics propagate unchanged to the caller.
 // Individual allocations and string comparisons/concatenations may finish
 // before the next callback. A nil callback uses the ordinary type renderer.
 func (prog *Program) RuleTypeWithPoll(name string, poll func()) (string, bool) {
-	return prog.staticProgram.RuleTypeWithPoll(name, poll)
+	return prog.Static().RuleTypeWithPoll(name, poll)
 }
 
 // ShapeSignature returns a text that describes the elements and captures that every subexpression
@@ -100,13 +98,13 @@ func (prog *Program) ShapeSignature(name string, poll func()) (string, bool) {
 	if prog == nil {
 		return "", false
 	}
-	return prog.staticProgram.ShapeSignature(name, poll)
+	return prog.Static().ShapeSignature(name, poll)
 }
 
 // ValueType returns the type of the value that the rule name builds in the value model (for
 // example "node[(*node[string],)]"). It reports false if the program has no such rule or its
 // types were not checked.
-func (prog *Program) ValueType(name string) (string, bool) { return prog.staticProgram.ValueType(name) }
+func (prog *Program) ValueType(name string) (string, bool) { return prog.Static().ValueType(name) }
 
 // Compile compiles the grammar.
 func Compile(g *grammar.Grammar, opts Options) (*Program, error) {

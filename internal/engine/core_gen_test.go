@@ -94,11 +94,11 @@ func coreGenerate(src string, opts gen.GenOptions) (*gogen.Generator, bool) {
 // recognizerOf returns the recognizer of the program that the generator g prints, compiled as
 // Program.Recognizer compiles it.
 func recognizerOf(g *gogen.Generator) (*compile.Program, error) {
-	rec, err := (&Program{staticProgram: g.Prog}).Recognizer()
+	rec, err := newProgram(g.Prog, nil).Recognizer()
 	if err != nil {
 		return nil, err
 	}
-	return rec.staticProgram, nil
+	return rec.Static(), nil
 }
 
 // coreTypedCase builds the Core IR of the typed rules of the generated parser with the passes of

@@ -22,6 +22,18 @@ type sharedProgram struct {
 	initEnv *env
 }
 
+// initSharedProgram makes s the shared part of a program that runs the static program sp, with
+// the declared variables of sp at their initial values.
+func initSharedProgram(s *sharedProgram, sp *staticProgram) {
+	s.staticProgram = sp
+	for _, d := range sp.Vars.All() {
+		s.initEnv = &env{name: d.Name, val: d.Init, next: s.initEnv}
+	}
+}
+
+// staticProgramOf returns the static program that s runs.
+func staticProgramOf(s *sharedProgram) *staticProgram { return s.staticProgram }
+
 // parser is the execution state of a single parse.
 type parser struct {
 	prog *sharedProgram
@@ -448,6 +460,9 @@ type rule struct {
 	// initVals are the initial values of vars, in the same order (nil when vars is empty).
 	initVals []any
 }
+
+// staticRuleOf returns the compiled rule that r runs.
+func staticRuleOf(r *rule) *staticRule { return &r.staticRule }
 
 // call calls rule r at binding level min.
 // The work is split into callBegin, growBegin/growStep/growEnd, invoke, and callEnd, and the
