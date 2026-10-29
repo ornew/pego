@@ -430,13 +430,17 @@
             "reference/README.md",
             "reference/pego/README.md",
             "reference/grammar/README.md",
-            "reference/runtime/README.md"
+            "reference/runtime/README.md",
+            "reference/sample/README.md",
+            "reference/editfuzz/README.md"
           ],
           "first": [
             "reference/README.md",
             "reference/pego/README.md",
             "reference/grammar/README.md",
-            "reference/runtime/README.md"
+            "reference/runtime/README.md",
+            "reference/sample/README.md",
+            "reference/editfuzz/README.md"
           ],
           "collapsed": true
         }
