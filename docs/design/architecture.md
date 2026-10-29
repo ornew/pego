@@ -126,7 +126,7 @@ contract is [Observability](../../spec/runtime/observability.md).
 | The incremental Document, its snapshots and change reports | `internal/engine/document/` |
 | Output schemas and structural queries | `schema/` (the types, their validation and `Compare`), `internal/schema/` (the export), `query/` (the queries) |
 | Core and Flow IR and their passes | `internal/ir/core/`, `internal/ir/flow/` |
-| Generated Go and TypeScript | The Go generator in `internal/gen/gogen/`, the TypeScript generator in `internal/gen/tsgen/` and the runtimes in `runtime/` and `internal/gen/tsgen/tsrt/` |
+| Generated Go and TypeScript | The public entry points in `gen/`, the Go generator in `internal/gen/gogen/`, the TypeScript generator in `internal/gen/tsgen/` and the runtimes in `runtime/` and `internal/gen/tsgen/tsrt/` |
 | The public API | `pego.go`, `grammar/` |
 | Commands, linter, language server | `cmd/pego/`, `lint/`, `internal/lsp/` |
 | Playground and site | `cmd/playground/`, `site/` |
