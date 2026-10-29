@@ -72,7 +72,7 @@ rules:
 
 ## Motivation
 
-`internal/engine/document_test.go` already compares randomized incremental edits with fresh parses, while `sample` supplies seeded grammar-generated inputs. These checks establish useful foundations but do not let a grammar author save and replay a failing edit sequence through the CLI. `Document` reuses mutable nodes and has no public undo operation, so a harness must compare values before a later parse can move reused nodes and must define how its own undo/redo stack operates. See [019](019-incremental-document-and-tree-tooling.md), [`Document`](../../../internal/engine/document.go), and the [sample package](../../../sample/sample.go).
+`internal/engine/document_test.go` already compares randomized incremental edits with fresh parses, while `sample` supplies seeded grammar-generated inputs. These checks establish useful foundations but do not let a grammar author save and replay a failing edit sequence through the CLI. `Document` reuses mutable nodes and has no public undo operation, so a harness must compare values before a later parse can move reused nodes and must define how its own undo/redo stack operates. See [019](019-incremental-document-and-tree-tooling.md), [`Document`](../../../internal/engine/document/document.go), and the [sample package](../../../sample/sample.go).
 
 A seed alone is not a durable reproducer: changes in generator logic, corpus ordering or Go's random implementation can change the sequence. Persisting exact edit operations makes replay independent of those changes. This design defines an edit event log, not an ordinary single-input expected-result fixture.
 

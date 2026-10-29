@@ -254,7 +254,8 @@ Generated TypeScript parsers have no document. See
 
 ## Conformance
 
-The behavior is established by `document_edits_test.go`,
-`document_snapshot_test.go`, `document_changes_test.go`,
-`document_error_ownership_test.go`, `work_document_options_test.go` and by the
-edit fuzzer of `pego edit-fuzz`, which compares every reparse with a fresh parse.
+The behavior is established by the tests of `internal/engine/document` (among
+them `document_edits_test.go`, `snapshot_test.go`, `document_changes_test.go`
+and `work_document_test.go`), by `internal/engine/document_test.go`, which
+compares random edits with fresh parses, and by the edit fuzzer of
+`pego edit-fuzz`, which compares every reparse with a fresh parse.

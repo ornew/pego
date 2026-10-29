@@ -5,6 +5,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/engine/document"
 )
 
 // NewDocument creates a Document that parses text with the rule start. Positions are in code
@@ -48,7 +49,7 @@ func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (d *Doc
 	in := core.NewControlledDocumentInput(text, o.Unit, c)
 	c.Check()
 	in.Control = nil // construction counters never become parse defaults
-	return newDocument(prog, start, prog.backend(o.Backend), o, in), nil
+	return document.New(prog, start, prog.backend(o.Backend), o, in), nil
 }
 
 // NewChangeDocumentWith creates a Document with NewDocumentWith and enables its
@@ -61,14 +62,17 @@ func (p *Program) NewChangeDocumentWith(start, text string, o ParseOptions, queu
 	if err := d.EnableChanges(queueLimit); err != nil {
 		return nil, err
 	}
-	return &ChangeDocument{d}, nil
+	return &ChangeDocument{Document: d}, nil
 }
 
-func (prog *Program) selectBackend(b Backend) Backend { return prog.backend(b) }
+// SelectBackend returns the backend that a request for b runs on.
+func (prog *Program) SelectBackend(b Backend) Backend { return prog.backend(b) }
 
-func (prog *Program) shared() *core.SharedProgram { return &prog.sharedProgram }
+// Shared returns the program part that a parser for prog reads.
+func (prog *Program) Shared() *core.SharedProgram { return &prog.sharedProgram }
 
-func (prog *Program) prepareDocumentRun(b Backend, c *core.WorkControl) (documentRunner, error) {
+// PrepareRun returns the program that parses a Document on backend b under the work control c.
+func (prog *Program) PrepareRun(b Backend, c *core.WorkControl) (document.Runner, error) {
 	active, err := prog.prepareControlledProgram(b, c)
 	if err != nil {
 		return nil, err

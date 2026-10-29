@@ -39,7 +39,7 @@ Evidence records:
 Source owners: [`memoTable.retire, put, prune and
 splice`](../../../internal/engine/core/memo.go), [`left-recursion seed
 ownership`](../../../internal/engine/core/runtime.go), [`Document edit
-invalidation`](../../../internal/engine/document.go).
+invalidation`](../../../internal/engine/document/document.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

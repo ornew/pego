@@ -140,7 +140,7 @@ func TestSparseMemoInputSelection(t *testing.T) {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				p := core.NewParser(&prog.sharedProgram, text, unit, true)
 				p.DeferMemo = true
-				if _, err := prog.run(p, backend, "main"); err != nil {
+				if _, err := prog.Run(p, backend, "main"); err != nil {
 					t.Fatal(err)
 				}
 				want := len([]rune(text)) > 1024

@@ -123,7 +123,7 @@ func BenchmarkSparseMemoTypeScript(b *testing.B) {
 						}
 						p := core.NewParser(&target.sharedProgram, source.text, unit, !recognize)
 						p.DeferMemo = true
-						if _, err := target.run(p, backend, "main"); err != nil {
+						if _, err := target.Run(p, backend, "main"); err != nil {
 							b.Fatal(err)
 						}
 						storage := sparseMemoStorage(p.Memo)

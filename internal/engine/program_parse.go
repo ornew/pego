@@ -56,7 +56,7 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *value.No
 		p.Missing, p.MissingLen = &core.MissingTokenState{Limit: o.MissingTokens}, 0
 	}
 	p.SetTrace(o.Trace)
-	n, err = active.run(p, o.Backend, start)
+	n, err = active.Run(p, o.Backend, start)
 	if !p.Aborted {
 		control.Check()
 	}
@@ -187,8 +187,8 @@ func recoverParse(x any, b Backend, err *error) {
 	panic(x)
 }
 
-// run parses the whole input of p with the start rule start.
-func (prog *Program) run(p *core.Parser, b Backend, start string) (n *value.Node, err error) {
+// Run parses the whole input of p with the start rule start.
+func (prog *Program) Run(p *core.Parser, b Backend, start string) (n *value.Node, err error) {
 	p.Aborted = false
 	r, err := prog.rule(b, start)
 	if err != nil {

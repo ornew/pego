@@ -31,7 +31,7 @@ facts, rather than current performance estimates:
 
 - [`Document`](../../../pego.go) is single-owner mutable state. Several edits may
   precede one parse; construction does not parse the input.
-- [`Document.Parse`](../../../internal/engine/document.go) reuses memo results and
+- [`Document.Parse`](../../../internal/engine/document/document.go) reuses memo results and
   repetition records. [`moveResult` and `moveTree`](../../../internal/engine/core/runtime.go)
   move reused nonempty Nodes in place, so earlier returned trees can change.
   Empty nodes can require copies because their placement is contextual.
@@ -44,7 +44,7 @@ facts, rather than current performance estimates:
   Tree sharing alone does not remove these input costs.
 - Ordinary failures and recovered errors are completed outcomes; interrupted
   action/depth failures and trace panics discard reusable parse state. Text and
-  options survive. [Existing interruption tests](../../../internal/engine/document_abort_test.go)
+  options survive. [Existing interruption tests](../../../internal/engine/document/document_abort_test.go)
   establish retry behavior.
 
 Edit-batch, Snapshot capture, materialization, and retained-version measurements

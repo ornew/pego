@@ -4632,7 +4632,7 @@ func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
 	return nil
 }
 
-// --- Iterative tree API: node_cursor (mirrors internal/engine/node_cursor.go) ---
+// --- Iterative tree API: node_cursor (mirrors internal/engine/document/node_cursor.go) ---
 
 // Cursor filters edge-oriented node visits using spans in Unit. Unit must match
 // the parse that populated Root's positions; it is never inferred or converted.

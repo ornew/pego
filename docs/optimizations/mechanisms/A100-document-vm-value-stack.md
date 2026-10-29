@@ -39,10 +39,10 @@ that keeps the stack is present in both variants.
 Evidence records: [086](../086-reuse-document-vm-values.md).
 
 Source owners: [`Document.finishParse and the kept backend
-state`](../../../internal/engine/document.go), [`vm.Machine.Keep and the capacity
+state`](../../../internal/engine/document/document.go), [`vm.Machine.Keep and the capacity
 bound`](../../../internal/engine/vm/vm.go), [`VM value cache
-switch`](../../../internal/engine/document_vm_values.go), [`ownership and
-trimming checks`](../../../internal/engine/document_vm_values_test.go).
+switch`](../../../internal/engine/document/document_vm_values.go), [`ownership and
+trimming checks`](../../../internal/engine/document/document_vm_values_test.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

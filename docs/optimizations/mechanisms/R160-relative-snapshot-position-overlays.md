@@ -41,9 +41,9 @@ established.
 
 See [record 100](../100-relative-snapshot-position-overlays.md),
 [snapshot design](../../design/records/032-versioned-document-snapshots.md),
-[`shareSnapshotGraph`](../../../internal/engine/document_snapshot.go), and the
-[enabled](../../../internal/engine/document_snapshot_position_enabled.go)/
-[default](../../../internal/engine/document_snapshot_position_reference.go) representations.
+[`shareSnapshotGraph`](../../../internal/engine/document/document_snapshot.go), and the
+[enabled](../../../internal/engine/document/document_snapshot_position_enabled.go)/
+[default](../../../internal/engine/document/document_snapshot_position_reference.go) representations.
 
 Related mechanisms: [R130](R130-document-snapshot-record-sharing.md),
 [R140](R140-share-document-snapshot-child-runs.md),

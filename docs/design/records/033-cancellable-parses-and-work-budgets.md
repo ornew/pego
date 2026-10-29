@@ -35,7 +35,7 @@ existing boundary:
   whose values predicates do not need; predicate-dependent rules and callees
   can still execute actions. Streams synchronously call a caller-owned reader
   and emission callback.
-- [`Document.Parse`](../../../internal/engine/document.go) discards memo, repetition,
+- [`Document.Parse`](../../../internal/engine/document/document.go) discards memo, repetition,
   and VM scratch state after an aborted parse because completed entries can depend
   on unfinished LR seeds. Ordinary failures retain reusable caches.
 - [VM execution](../../../internal/engine/vm/vm.go), [iterative frames](../../../internal/engine/vm/ivm.go),

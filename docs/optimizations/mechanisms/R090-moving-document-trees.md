@@ -39,7 +39,7 @@ Evidence records:
 Source owners: [`moveResult and moved Node
 handling`](../../../internal/engine/core/runtime.go), [`Node generation and
 Clone`](../../../internal/value/node.go), [`edit log and result
-shift`](../../../internal/engine/document.go).
+shift`](../../../internal/engine/document/document.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

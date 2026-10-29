@@ -98,7 +98,7 @@ func TestNilActionStreamMemoryIsBounded(t *testing.T) {
 					}
 					return nil
 				}
-				if _, err := prog.run(p, backend, "main"); err != nil || count != 60000 {
+				if _, err := prog.Run(p, backend, "main"); err != nil || count != 60000 {
 					t.Fatalf("emitted %d, error %v", count, err)
 				}
 				if growth := int64(at[1]) - int64(at[0]); growth > 4<<20 {

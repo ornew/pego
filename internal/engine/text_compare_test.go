@@ -149,7 +149,7 @@ func parseSteps(t *testing.T, prog *Program, backend Backend, unit PositionUnit,
 	p.Input = core.NewControlledTextInput(input, o.Unit, true, p.Scratch, control)
 	p.MaxDepth = core.DepthLimit(o, o.Backend)
 	p.DeferMemo = true
-	n, err := active.run(p, o.Backend, "main")
+	n, err := active.Run(p, o.Backend, "main")
 	return control.StepsUsed, resultJSON(n, err)
 }
 

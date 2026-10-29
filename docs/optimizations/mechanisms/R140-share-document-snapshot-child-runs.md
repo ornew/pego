@@ -39,8 +39,8 @@ cached-descriptor mechanism.
 Evidence records: [099](../099-share-document-snapshot-child-runs.md).
 
 Source owners: [`shareSnapshotChildren and
-snapshotChildChunks`](../../../internal/engine/document_snapshot.go), [`flat child
-comparator`](../../../internal/engine/document_snapshot_child_chunks_reference.go).
+snapshotChildChunks`](../../../internal/engine/document/document_snapshot.go), [`flat child
+comparator`](../../../internal/engine/document/document_snapshot_child_chunks_reference.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

@@ -36,7 +36,7 @@ unmeasured.
 Evidence records: [099](../099-share-document-snapshot-child-runs.md).
 
 Source owners: [`SnapshotNode, snapshotHandle and
-Child`](../../../internal/engine/document_snapshot.go).
+Child`](../../../internal/engine/document/document_snapshot.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

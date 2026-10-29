@@ -54,7 +54,7 @@ rule line = [a-z]+ #atomic -"\n"`), compile.Options{})
 						if _, err := d.Parse(); err != nil {
 							b.Fatal(err)
 						}
-						edits := []TextEdit{{0, 1, "z"}, {size / 2, size/2 + 1, "z"}, {size - 4, size - 3, "z"}}
+						edits := []TextEdit{{Start: 0, End: 1, Text: "z"}, {Start: size / 2, End: size/2 + 1, Text: "z"}, {Start: size - 4, End: size - 3, Text: "z"}}
 						b.ReportAllocs()
 						i := 0
 						for b.Loop() {

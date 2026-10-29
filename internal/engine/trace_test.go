@@ -105,7 +105,7 @@ func parseWork(prog *Program, start, input string, o ParseOptions) (parseWorkSta
 	p.MaxDepth = core.DepthLimit(o, o.Backend)
 	p.DeferMemo = true
 	p.SetTrace(o.Trace)
-	n, err := target.run(p, o.Backend, start)
+	n, err := target.Run(p, o.Backend, start)
 	if o.Recognize {
 		n = nil
 	}
