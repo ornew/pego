@@ -96,7 +96,7 @@ A file carries two version numbers after its magic number.
 | Instruction-set version | 26 | The bytecode of the value model. Every module declares it |
 
 - A runtime refuses a file of another format version with
-  `unsupported compiled grammar version N (want 5): compile the grammar again`.
+  `unsupported compiled grammar version N (want 6): compile the grammar again`.
 - A runtime refuses a module of an earlier instruction set: its bytecode builds the
   syntax trees that preceded the value model. The error asks for the grammar to be
   compiled again. A file that requires a newer instruction set is refused with
@@ -136,7 +136,7 @@ is up to the program.
 | Message | Cause |
 |:--|:--|
 | `not a compiled PEGO grammar` | The data does not start with the magic number |
-| `unsupported compiled grammar version N (want 5): compile the grammar again` | The format version is not 5 |
+| `unsupported compiled grammar version N (want 6): compile the grammar again` | The format version is not 6 |
 | `unsupported instruction set version N: the file was compiled by an older pego; compile the grammar again` | The file was compiled for an earlier instruction set |
 | `unsupported instruction set version N` | The file requires a newer instruction set |
 | `invalid compiled grammar: checksum mismatch` | The file is truncated or changed |

@@ -369,7 +369,7 @@ The consequences:
 - **A file with another instruction-set version must be compiled again.** PEGO refuses a file of an older instruction
   set with `unsupported instruction set version N: the file was compiled by an older pego; compile the grammar again`.
 - **PEGO refuses a file of another format version or a newer instruction set.** It reports
-  `unsupported compiled grammar version N (want 5): compile the grammar again` or `unsupported instruction set version N`.
+  `unsupported compiled grammar version N (want 6): compile the grammar again` or `unsupported instruction set version N`.
   A runtime with a narrower implementation `int` rejects repetition bounds outside its range.
 - **A file keeps its source information and default-value flag.** A grammar compiled with source information or with default values loads with them.
 - **The same grammar can produce different bytes in a new release**, when the compiler improves. Rebuild the file when
@@ -436,7 +436,7 @@ in a profile, and to generated code when parsing speed does.
 | Message | Cause |
 |:--|:--|
 | `not a compiled PEGO grammar` | The data does not start with the magic number: it is a source file, JSON, or something else. |
-| `unsupported compiled grammar version N (want 5): compile the grammar again` | The file was written by a different format version. Rebuild it with your release. |
+| `unsupported compiled grammar version N (want 6): compile the grammar again` | The file was written by a different format version. Rebuild it with your release. |
 | `unsupported instruction set version N` | The file requires an unsupported or newer instruction set. Upgrade PEGO or rebuild the file. |
 | `invalid compiled grammar: checksum mismatch` | The file is truncated or changed (a bad download, an editor that converted line endings, a merge). |
 | `invalid compiled grammar: ...` (other) | The structure is wrong, though the checksum matches. Rebuild the file. |
@@ -451,7 +451,7 @@ The errors of a damaged file, as `LoadParser` reports them (from a program that 
 
 ```text
 intact                 <nil>
-format version 3       unsupported compiled grammar version 3 (want 5): compile the grammar again
+format version 3       unsupported compiled grammar version 3 (want 6): compile the grammar again
 one byte changed       invalid compiled grammar: checksum mismatch
 truncated              invalid compiled grammar: checksum mismatch
 PEGO source            not a compiled PEGO grammar

@@ -314,7 +314,7 @@ A compiled grammar uses container version 6. It stores one execution-only compil
 | Part | Contents |
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
-| Version | 1 byte: 5. A loader refuses any other value. |
+| Version | 1 byte: 6. A loader refuses any other value. |
 | Mode | 1 byte: 0 parse, 1 recognize, 2 document. The module serves the operations of this mode only. A parse-mode or document-mode module is the module of the grammar; a recognize-mode module is the module of its recognizer. A loader refuses any other value. |
 | Instruction-set version | Unsigned integer for this module: 26. Every module uses this version, whatever instructions it contains. Earlier versions built the syntax trees that preceded the value model, held terminal types, wrote field types with the earlier node type names, had no named node types, had no default-value flag, had no tuple values, carried text struct node types and the text flag of `EMEMBER` and `EBIN`, did not give the node type of an Operators Rule its meaning, had no variable table, had no start rules, or checked field values, rule results and bindings when they ran (the `ECHECK` instruction, the check operands of `BIND` and `ENODE`, and the checks of rules and lines); a runtime rejects them and asks for the grammar to be compiled again. |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
