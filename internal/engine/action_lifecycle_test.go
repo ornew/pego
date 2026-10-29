@@ -26,6 +26,7 @@ rule e = #operators {
 }
 
 func TestActionResultReleasesTracking(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct {
 		name  string
 		value any

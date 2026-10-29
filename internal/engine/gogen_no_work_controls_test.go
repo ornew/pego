@@ -13,6 +13,7 @@ import (
 // A parser generated without work controls holds no code that charges work or reads a control, does not
 // export the control options, and fails a parse that passes them instead of ignoring them.
 func TestGeneratedWithoutWorkControls(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -26,7 +27,7 @@ rule num = [0-9]+ ("." [0-9]+)?
 		t.Fatal(err)
 	}
 	gen := func(workControls bool, document ...bool) string {
-		files, err := Generate(g, gen.GenOptions{Package: "wc", Module: "wc", Start: "main", Runtime: gen.RuntimeImport, Types: true, Recognize: true, WorkControls: workControls, Document: len(document) > 0})
+		files, err := Generate(t, g, gen.GenOptions{Package: "wc", Module: "wc", Start: "main", Runtime: gen.RuntimeImport, Types: true, Recognize: true, WorkControls: workControls, Document: len(document) > 0})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -76,6 +77,7 @@ rule num = [0-9]+ ("." [0-9]+)?
 	tests := `package wc
 import("strings";"testing";"context";pegort "github.com/ornew/pego/runtime")
 func TestOptions(t *testing.T) {
+	t.Parallel()
  if _,err:=Parse("abc 12.5 x"); err!=nil {t.Fatal(err)}
  if err:=Recognize("abc 12.5 x"); err!=nil {t.Fatal(err)}
  if _,err:=Parse("abc ("); err==nil {t.Fatal("no error for bad input")}

@@ -47,7 +47,10 @@ func parseNaturalStart(src string) (*grammar.Grammar, error) {
 // the option sets of the generated parsers, and requires that whatever generates without the
 // pruning generates with it: the second pass can choose a different route (Flow or direct) than the
 // first, because sharing depends on what was printed, and must still call only rules it prints.
-func TestUnreachableCorpusGeneration(t *testing.T) { eachMode(t, testUnreachableCorpusGeneration) }
+func TestUnreachableCorpusGeneration(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testUnreachableCorpusGeneration)
+}
 
 func testUnreachableCorpusGeneration(t *testing.T) {
 	optionSets := []struct {
@@ -97,7 +100,10 @@ func testUnreachableCorpusGeneration(t *testing.T) {
 
 // TestUnreachableCorpusRuns builds the pruned and the unpruned parser of every corpus grammar with
 // its natural start rule and requires the same Parse and Recognize result on every corpus input.
-func TestUnreachableCorpusRuns(t *testing.T) { eachMode(t, testUnreachableCorpusRuns) }
+func TestUnreachableCorpusRuns(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testUnreachableCorpusRuns)
+}
 
 func testUnreachableCorpusRuns(t *testing.T) {
 	if testing.Short() {

@@ -9,6 +9,7 @@ import (
 )
 
 func TestActionBlocksUnsupported(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{
 		`rule a = {}`,
 		`rule a = "x" => {1}`,
@@ -53,6 +54,7 @@ func jsonActionBlockGrammar(t *testing.T, g *grammar.Grammar) *grammar.Grammar {
 }
 
 func TestSinglePredicateBlockAST(t *testing.T) {
+	t.Parallel()
 	g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: &grammar.Predicate{Term: &grammar.Block{Statements: []grammar.Term{&grammar.BoolLit{Value: true}}}}}}}}
 	starttest.MarkAll(g)
 	if _, err := Compile(jsonActionBlockGrammar(t, g), compile.Options{}); err != nil {
@@ -64,5 +66,6 @@ func TestSinglePredicateBlockAST(t *testing.T) {
 }
 
 func TestContextualOperatorsBeforeLiteralBrace(t *testing.T) {
+	t.Parallel()
 	check(t, "rule operators = \"x\"\nrule main = operators \"{\"", ok("x{", `("x"@operators "{")@main`))
 }

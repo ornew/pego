@@ -73,6 +73,7 @@ const marker={value:"caller reason or thrown value"};
 `
 
 func TestGeneratedTSWorkControlPublicOwnersAfterGC(t *testing.T) {
+	t.Parallel()
 	consumer := tsControlGCPrelude + `
 type Mode="success"|"syntax"|"limit"|"input-limit"|"canceled"|"getter-panic"|"pre-canceled"|"pre-getter-panic";
 class OwnedSignal implements p.CancellationSignal {
@@ -173,6 +174,7 @@ export function retainControlForTest(signal:CancellationSignal,mode:string,arm:(
 `
 
 func TestGeneratedTSWorkControlFinalizerAfterGC(t *testing.T) {
+	t.Parallel()
 	consumer := tsControlGCPrelude + `
 type Mode="success"|"syntax"|"limit"|"input-limit"|"canceled"|"getter-panic"|"body-panic"|"pre-canceled"|"pre-getter-panic";
 function makeCase(mode:Mode){

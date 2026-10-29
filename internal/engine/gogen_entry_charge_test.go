@@ -18,6 +18,7 @@ import (
 // function charges nothing itself. The lowered function of Flow IR charges no entry of its own (flow.Func.Entered); the method that holds it does, so a rule
 // whose method lost the charge would consume input uncharged without Verify noticing.
 func TestGeneratedRuleEntryCharge(t *testing.T) {
+	t.Parallel()
 	name := regexp.MustCompile(`^[eiqrsuv][0-9]+$`)
 	wrapper := regexp.MustCompile(`^[iu][0-9]+$`) // typed wrappers: state around a call of the charging function
 	var paths []string

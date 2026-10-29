@@ -28,6 +28,7 @@ func actionWorkNodes(n int) []*value.Node {
 }
 
 func TestWorkActionStringHelperParity(t *testing.T) {
+	t.Parallel()
 	malformed := string([]byte{'a', 0xff, 0xc3, 0x80, 'z'})
 	left := strings.Repeat("prefix-", 2048) + "a" + string([]byte{0xff})
 	right := strings.Repeat("prefix-", 2048) + "b" + string([]byte{0x00})
@@ -67,6 +68,7 @@ func TestWorkActionStringHelperParity(t *testing.T) {
 }
 
 func TestWorkActionStringHelpersChargeLongWork(t *testing.T) {
+	t.Parallel()
 	long := strings.Repeat("a", 8192)
 	p := actionWorkParser(nil, limits.WorkLimits{MaxSteps: 256}, CodePoints)
 	if err := catchFatal(t, func() { p.CompareText(long+"x", long+"y") }); !errors.Is(err, limits.ErrWorkLimit) {
@@ -87,6 +89,7 @@ func TestWorkActionStringHelpersChargeLongWork(t *testing.T) {
 }
 
 func TestWorkActionCollectionLoopsChargeElements(t *testing.T) {
+	t.Parallel()
 	const size = 2048
 	items := actionWorkNodes(size)
 	list := value.Ptr(value.Data{Children: items})
@@ -138,6 +141,7 @@ func TestWorkActionCollectionLoopsChargeElements(t *testing.T) {
 }
 
 func TestWorkActionBatchRoutesAndPoolRetry(t *testing.T) {
+	t.Parallel()
 	routes := []struct {
 		name   string
 		action string
@@ -177,6 +181,7 @@ rule items = [a-z] #atomic*`)
 }
 
 func TestWorkActionBatchCancellationStopsPublication(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = parts:items => map($parts, (x) => x)
 
 rule items = [a-z] #atomic*`)
@@ -206,6 +211,7 @@ rule items = [a-z] #atomic*`)
 }
 
 func TestWorkActionShortCircuitAndRecoveryPropagation(t *testing.T) {
+	t.Parallel()
 	shortCircuit := mustCompile(t, `rule main = words:items {true || text($words) == text($words)} $$
 
 rule items = [a-z]* #atomic`)

@@ -349,6 +349,7 @@ func documentCorpus(t *testing.T) []documentCase {
 
 // TestFlowNodeDocumentsReuseAndMatchScratch checks the Documents of the generated corpus.
 func TestFlowNodeDocumentsReuseAndMatchScratch(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
@@ -361,6 +362,7 @@ func TestFlowNodeDocumentsReuseAndMatchScratch(t *testing.T) {
 // TestFlowNodeDocumentsOnGrammars checks the Documents of the checked-in grammars on their testdata and
 // operator inputs, with the default start rule.
 func TestFlowNodeDocumentsOnGrammars(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("builds the large parsers")
 	}
@@ -381,6 +383,7 @@ var guardedRead = regexp.MustCompile(`p\.Document == nil && `)
 // has invalidated, which differs from a parse from scratch or changes the counts the golden holds. Verify
 // rejects the same read in the IR (TestVerifyRejects in package flow).
 func TestFlowNodeDocumentMutants(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}

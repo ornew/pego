@@ -9,6 +9,7 @@ import (
 // A compiled grammar keeps hidden rules and inline actions, with and without default values, and
 // loads to a program that gives the same results on every backend.
 func TestHiddenRulesCompiledRoundTrip(t *testing.T) {
+	t.Parallel()
 	type source struct {
 		name, src string
 		inputs    []string

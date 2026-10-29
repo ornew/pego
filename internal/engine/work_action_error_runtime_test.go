@@ -16,6 +16,7 @@ import (
 // These public-API probes exercise large action error strings at the final
 // rule wrapper and at an eagerly evaluated expression used by a predicate.
 func TestWorkActionErrorPublicParityAndInterruption(t *testing.T) {
+	t.Parallel()
 	longRule := strings.Repeat("r", 8192)
 	longType := strings.Repeat("T", 8192)
 	probes := []struct {

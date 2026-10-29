@@ -9,6 +9,7 @@ import (
 )
 
 func TestDocumentPiecesMatchFlatEdits(t *testing.T) {
+	t.Parallel()
 	insertions := []string{"", "a", "é", "日", "😀", "\n", "\xc3", "\xa9", "\xff", "\xe6\xbc"}
 	for _, unit := range []PositionUnit{Bytes, CodePoints} {
 		t.Run(unit.String(), func(t *testing.T) {
@@ -75,6 +76,7 @@ func TestDocumentPiecesMatchFlatEdits(t *testing.T) {
 }
 
 func TestDocumentPieceLargeByteOffsets(t *testing.T) {
+	t.Parallel()
 	// Model a slice of a >2 GiB code-point chunk without allocating that input.
 	p := core.DocumentPiece{
 		Text: "éa", Runes: []rune{'é', 'a'},

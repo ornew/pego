@@ -14,6 +14,7 @@ import (
 // Export isolated typed tracing controls, keeping generation, compilation and
 // raw measurements outside the timed parse loop and outside the repository.
 func TestExportGeneratedTypedTraceBenchmarks(t *testing.T) {
+	t.Parallel()
 	dir := os.Getenv("PEGO_TYPED_TRACE_BENCH_DIR")
 	if dir == "" {
 		t.Skip("set PEGO_TYPED_TRACE_BENCH_DIR to export benchmark controls")

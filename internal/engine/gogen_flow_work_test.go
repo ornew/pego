@@ -331,6 +331,7 @@ var workGoldenFile = goldenFile{
 // with work controls that consumes input or iterates a loop without charging (see TestVerifyWorkCharges),
 // and every function of this corpus is verified when generated.
 func TestFlowNodeWorkInvariants(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated consumers")
@@ -416,6 +417,7 @@ func dropLastStep(code []byte) []byte {
 // printer that loses the charge of one Step: with the first, and with the last, step charge of each parser
 // removed, some report violates an invariant or differs from the golden.
 func TestFlowNodeWorkMutants(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated consumers")
@@ -464,6 +466,7 @@ const (
 // the checked-in grammars on the inputs of their testdata directories (the .txt files of up to 3 KB, at most
 // six each), with the default start rule.
 func TestFlowNodeWorkInvariantsOnGrammars(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds the large parsers twice")

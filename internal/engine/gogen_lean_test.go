@@ -16,7 +16,10 @@ import (
 
 // External rule-table entry and nested direct calls must count the same rule
 // depth. A small generated limit exercises both routes without large inputs.
-func TestGeneratedLeanDepth(t *testing.T) { eachMode(t, testGeneratedLeanDepth) }
+func TestGeneratedLeanDepth(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedLeanDepth)
+}
 
 func testGeneratedLeanDepth(t *testing.T) {
 	if testing.Short() {
@@ -45,9 +48,11 @@ rule left = left "+" "é" / "é"
 	}
 	// The depth comparison below runs the recognizer table (recRules), so the route is checked there.
 	taken := map[string]bool{}
-	gogen.LeanRouteHook = func(table string, r *compile.Rule) { taken[table+"/"+r.Name] = true }
+	gh := &gogen.Hooks{}
+	setGenHooks(t, gh)
+	gh.LeanRoute = func(table string, r *compile.Rule) { taken[table+"/"+r.Name] = true }
 	code, err := generateCode(t, g, gen.GenOptions{Package: "depth", Start: "main", Recognize: true})
-	gogen.LeanRouteHook = nil
+	gh.LeanRoute = nil
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,6 +85,7 @@ rule left = left "+" "é" / "é"
 	tests := `package depth
 import("fmt";"testing";pegort "github.com/ornew/pego/runtime")
 func TestRoutesAndReuse(t *testing.T) {
+	t.Parallel()
  cases:=[]struct{name,input string; unit PositionUnit; want string}{` + rows.String() + `}
  for repeat:=0;repeat<3;repeat++ { for _,c:=range cases {
   var selected *pegort.Rule

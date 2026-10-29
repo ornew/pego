@@ -82,10 +82,9 @@ func coreGenerate(src string, opts gen.GenOptions) (*gogen.Generator, bool) {
 		return nil, false
 	}
 	var gen *gogen.Generator
-	gogen.GeneratorHook = func(x *gogen.Generator) { gen = x }
-	defer func() { gogen.GeneratorHook = nil }()
+	h := &gogen.Hooks{Generator: func(x *gogen.Generator) { gen = x }}
 	opts.Module = "example.com/p"
-	if _, err := gogen.GenerateParser(g, compileForGenerator, opts); err != nil || gen == nil {
+	if _, err := gogen.GenerateParser(g, compileForGenerator, opts, h); err != nil || gen == nil {
 		return nil, false
 	}
 	return gen, true
@@ -135,7 +134,8 @@ func coreTypedCase(name, mode string, gen *gogen.Generator, breaks func(c *coreG
 	return c, nil
 }
 
-// coreGenerated holds the corpus grammars generated in each mode, by mode name.
+// coreGenerated holds the corpus grammars generated in each mode, by mode name. The tests that read
+// it change its generators (Generator.Table, Generator.CoreHook), so they do not run in parallel.
 var coreGenerated = map[string][]coreGenerated1{}
 
 type coreGenerated1 struct {

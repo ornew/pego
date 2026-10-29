@@ -169,6 +169,7 @@ func prefixPartCutCorpus() genCase {
 }
 
 func TestOperatorsRulePrefixPartCuts(t *testing.T) {
+	t.Parallel()
 	for _, disableMemo := range []bool{false, true} {
 		prog := mustCompile(t, prefixPartCuts, compile.Options{DisableMemo: disableMemo})
 		for _, c := range prefixPartCutInputs {

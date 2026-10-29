@@ -31,6 +31,7 @@ func inferredChain(depth int, reverse bool, mainType string) string {
 }
 
 func TestInferenceDependencyChains(t *testing.T) {
+	t.Parallel()
 	for _, depth := range []int{45, 50, 128, 512} {
 		for _, reverse := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%d/reversed=%v", depth, reverse), func(t *testing.T) {
@@ -57,6 +58,7 @@ func TestInferenceDependencyChains(t *testing.T) {
 }
 
 func TestInferenceKeepsIndependentTypes(t *testing.T) {
+	t.Parallel()
 	src := inferredChain(128, false, "") + `rule growing = xs:growing? => list($xs)
 rule constant = "(" growing ")" => P{}`
 	p := mustCompile(t, src)
@@ -72,6 +74,7 @@ rule constant = "(" growing ")" => P{}`
 }
 
 func TestInferenceKeepsLargeFiniteRecursiveTypes(t *testing.T) {
+	t.Parallel()
 	var src strings.Builder
 	src.WriteString("rule main = recursive\nrule recursive = recursive / huge\nrule huge = ")
 	for i := range 180 {
@@ -91,6 +94,7 @@ func TestInferenceKeepsLargeFiniteRecursiveTypes(t *testing.T) {
 }
 
 func TestInferenceOperatorsRuleImplicitDependencies(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, `type P = {}
 rule main = expression
 rule expression = #operators {
@@ -107,6 +111,7 @@ rule constant = "a" => P{}`)
 }
 
 func TestInferenceKeepsConstantRecursivePeer(t *testing.T) {
+	t.Parallel()
 	for _, reverse := range []bool{false, true} {
 		rules := []string{`rule growing = xs:(growing? / constant) => list($xs)`, `rule constant = "(" growing ")" => P{}`}
 		if reverse {
@@ -122,6 +127,7 @@ func TestInferenceKeepsConstantRecursivePeer(t *testing.T) {
 }
 
 func TestInferenceFiniteRecursiveChains(t *testing.T) {
+	t.Parallel()
 	var src strings.Builder
 	src.WriteString("rule main = r0\n")
 	for i := range 128 {
@@ -162,6 +168,7 @@ func BenchmarkInferenceDependencies(b *testing.B) {
 }
 
 func TestInferenceFiniteJoinCycle(t *testing.T) {
+	t.Parallel()
 	const count = 64
 	var src strings.Builder
 	src.WriteString("rule main = r0\n")
@@ -190,6 +197,7 @@ func TestInferenceFiniteJoinCycle(t *testing.T) {
 }
 
 func TestInferenceChainSavedValues(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, inferredChain(64, false, ""))
 	for _, mode := range valueModes {
 		q := saveLoad(t, p, "main", mode)
@@ -210,6 +218,7 @@ func TestInferenceChainSavedValues(t *testing.T) {
 }
 
 func TestInferenceChainFieldMismatch(t *testing.T) {
+	t.Parallel()
 	src := "type Holder = { Value node[string] }\n" + strings.Replace(inferredChain(128, false, ""), "rule main = r0", "rule main = r0:r0 => Holder{Value: $r0}", 1)
 	g, err := parseTest(src)
 	if err != nil {

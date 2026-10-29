@@ -8,6 +8,7 @@ import (
 )
 
 func TestGeneratedTSWorkControlBindings(t *testing.T) {
+	t.Parallel()
 	key := strings.Repeat("a", 1600)
 	longName := strings.Repeat("v", 1600)
 	cases := []struct {

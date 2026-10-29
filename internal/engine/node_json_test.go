@@ -68,6 +68,7 @@ func referenceField(val any) any {
 }
 
 func TestNodeWriteJSONMatchesReferenceShape(t *testing.T) {
+	t.Parallel()
 	child := value.Ptr(value.Data{Kind: value.MatchKind, Start: 3, End: 5, Text: "<&>\xff"})
 	record := value.Ptr(value.Data{
 		Kind:  value.KindOf("Record", "entry"),
@@ -104,6 +105,7 @@ func TestNodeWriteJSONMatchesReferenceShape(t *testing.T) {
 }
 
 func TestNodeWriteJSONNilAndFields(t *testing.T) {
+	t.Parallel()
 	var n *value.Node
 	got, err := n.MarshalJSON()
 	if err != nil || string(got) != "null" {
@@ -134,6 +136,7 @@ func TestNodeWriteJSONNilAndFields(t *testing.T) {
 }
 
 func TestNodeWriteJSONSharedNodesAndCycles(t *testing.T) {
+	t.Parallel()
 	leaf := value.Ptr(value.Data{Kind: value.MatchKind, Text: "shared"})
 	root := value.Ptr(value.Data{Kind: value.SeqKind, Children: []*value.Node{leaf, leaf}})
 	data, err := root.MarshalJSON()
@@ -185,6 +188,7 @@ type failingJSONValue struct{ err error }
 func (v failingJSONValue) MarshalJSON() ([]byte, error) { return nil, sentinelJSONError{v.err} }
 
 func TestNodeWriteJSONPreservesLeafErrors(t *testing.T) {
+	t.Parallel()
 	want := errors.New("leaf cause")
 	n := value.Ptr(value.Data{Kind: value.KindOf("R", ""), Fields: value.Fields{{Name: "bad", Value: failingJSONValue{want}}}})
 	for name, err := range map[string]error{
@@ -202,6 +206,7 @@ func TestNodeWriteJSONPreservesLeafErrors(t *testing.T) {
 }
 
 func TestNodeWriteJSONDeepAndStandardLibraryLimit(t *testing.T) {
+	t.Parallel()
 	const depth = 12_000
 	root := value.Ptr(value.Data{Kind: value.SeqKind})
 	current := root
@@ -236,6 +241,7 @@ type countingWriter struct{ n int }
 func (w *countingWriter) Write(p []byte) (int, error) { w.n += len(p); return len(p), nil }
 
 func TestNodeWriteJSONShortWriter(t *testing.T) {
+	t.Parallel()
 	n := value.Ptr(value.Data{Kind: value.MatchKind, Text: "x"})
 	err := n.WriteJSON(shortWriter{})
 	if !errors.Is(err, io.ErrShortWrite) {
@@ -253,6 +259,7 @@ func (shortWriter) Write(p []byte) (int, error) {
 }
 
 func TestNodeWriteJSONLargeScalarAcrossBufferBoundary(t *testing.T) {
+	t.Parallel()
 	n := value.Ptr(value.Data{Kind: value.MatchKind, Text: strings.Repeat("x", 600)})
 	want, err := json.Marshal(referenceJSON(n))
 	if err != nil {
@@ -284,6 +291,7 @@ func (w *partialAfterFlushWriter) Write(p []byte) (int, error) {
 }
 
 func TestNodeWriteJSONPartialWriteErrorAfterFlush(t *testing.T) {
+	t.Parallel()
 	n := value.Ptr(value.Data{Kind: value.MatchKind, Text: strings.Repeat("x", 600)})
 	wantErr := errors.New("writer failed")
 	w := &partialAfterFlushWriter{err: wantErr}
@@ -305,6 +313,7 @@ func TestNodeWriteJSONPartialWriteErrorAfterFlush(t *testing.T) {
 }
 
 func TestNodeWriteJSONInvalidValueParity(t *testing.T) {
+	t.Parallel()
 	n := value.Ptr(value.Data{Kind: value.KindOf("R", ""), Fields: value.Fields{{Name: "bad", Value: math.NaN()}}})
 	_, gotErr := n.MarshalJSON()
 	_, wantErr := json.Marshal(struct {
@@ -320,6 +329,7 @@ func TestNodeWriteJSONInvalidValueParity(t *testing.T) {
 }
 
 func TestNodeJSONSliceIdentityAllowsRepeatedAcyclicEdges(t *testing.T) {
+	t.Parallel()
 	shared := []any{"ok"}
 	n := value.Ptr(value.Data{Kind: value.KindOf("R", ""), Fields: value.Fields{{Name: "a", Value: shared}, {Name: "b", Value: shared}}})
 	got, err := n.MarshalJSON()
@@ -332,6 +342,7 @@ func TestNodeJSONSliceIdentityAllowsRepeatedAcyclicEdges(t *testing.T) {
 }
 
 func TestNodeWriteJSONSliceIdentityIgnoresCapacity(t *testing.T) {
+	t.Parallel()
 	x := make([]any, 1, 2)
 	x[0] = x[:1:1]
 	root := value.Ptr(value.Data{Fields: value.Fields{{Name: "x", Value: x}}})
@@ -354,6 +365,7 @@ func TestNodeWriteJSONSliceIdentityIgnoresCapacity(t *testing.T) {
 // A struct encodes the range of the rule that built it, which includes the input that the rule
 // skips at its ends, not the range of the nodes inside it.
 func TestStructJSONHasRuleRange(t *testing.T) {
+	t.Parallel()
 	program := compileBare(t, `type P = { A node[string] }
 rule main P = ws a:w ws $$ => P{A: $a}
 rule w node[string] = [a-z]+ #atomic

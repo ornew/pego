@@ -28,6 +28,7 @@ func valueResultCases() []genCase {
 }
 
 func TestValueResultsAcrossBackends(t *testing.T) {
+	t.Parallel()
 	for _, fixture := range valueResultCases() {
 		t.Run(fixture.name, func(t *testing.T) {
 			program := mustCompile(t, fixture.src)
@@ -47,6 +48,7 @@ func TestValueResultsAcrossBackends(t *testing.T) {
 }
 
 func TestValueResults(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, input, want string }{
 		{"rule main = d:[0-9]+ #atomic $$ => len($d)", "123", "3"},
 		{"rule main = xs:([a-z] #atomic)+ $$ => map($xs.Value, (x) => text(x))", "ab", `["a" "b"]`},
@@ -76,7 +78,10 @@ func TestValueResults(t *testing.T) {
 	}
 }
 
-func TestValueResultsGeneratedGoParity(t *testing.T) { eachMode(t, testValueResultsGeneratedGoParity) }
+func TestValueResultsGeneratedGoParity(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testValueResultsGeneratedGoParity)
+}
 
 func testValueResultsGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
@@ -85,6 +90,7 @@ func testValueResultsGeneratedGoParity(t *testing.T) {
 }
 
 func TestValueResultsGeneratedTypeScriptParity(t *testing.T) {
+	t.Parallel()
 	node, err := exec.LookPath("node")
 	if err != nil {
 		t.Skip("node not found")

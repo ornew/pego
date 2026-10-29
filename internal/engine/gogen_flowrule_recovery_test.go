@@ -84,6 +84,7 @@ rule expr = (expr "+" #cut "a") #recover(skip="a?") / "a"
 }
 
 func TestGeneratedTypedRecoveryBodies(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated code")

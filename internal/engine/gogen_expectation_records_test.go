@@ -23,7 +23,10 @@ rule main = ("s" &(wide "!") wide "!" / "m" (wide "!" / wide "?") / "r" (wide #r
 rule wide Token = t:("é" (` + strings.Join(choices, " / ") + `)) #atomic => Token{Text: text($t)}`
 }
 
-func TestGeneratedExpectationRecords(t *testing.T) { eachMode(t, testGeneratedExpectationRecords) }
+func TestGeneratedExpectationRecords(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedExpectationRecords)
+}
 
 func testGeneratedExpectationRecords(t *testing.T) {
 	if testing.Short() {
@@ -51,6 +54,7 @@ rule main N = ("é") #atomic`)
 			}
 			extra := `
 func TestExpectationPoolReuse(t *testing.T) {
+	t.Parallel()
  p := &Parser{}
  for id := ExpID(0); id < 160; id++ { p.Expect(0,id) }
  p.release()
@@ -66,6 +70,7 @@ func TestExpectationPoolReuse(t *testing.T) {
 			if mode == "direct" {
 				extra += `
 func TestTypedExpectationPoolReuse(t *testing.T) {
+	t.Parallel()
  p := &TParser{Parser:&Parser{}}
  for id := ExpID(0); id < 160; id++ { p.Expect(0,id|MsgBit) }
  p.recycle()

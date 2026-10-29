@@ -10,6 +10,7 @@ import (
 )
 
 func TestCacheControlsResetAfterFailureAndAbort(t *testing.T) {
+	t.Parallel()
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		p := mustCompile(t, `rule main = "a"* $$`)
 		for _, limits := range []limits.WorkLimits{{}, {MaxSteps: 1}} {
@@ -43,6 +44,7 @@ func TestCacheControlsResetAfterFailureAndAbort(t *testing.T) {
 }
 
 func TestCacheControlsReuseCounters(t *testing.T) {
+	t.Parallel()
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			prog := mustCompile(t, `rule main = line* $$
@@ -74,6 +76,7 @@ rule line = [a-z]+ #atomic "\n"`)
 }
 
 func TestCacheControlsResetAfterLargeEditAndResumption(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = line* $$
 rule line = [a-z]+ #atomic "\n"`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -117,6 +120,7 @@ rule line = [a-z]+ #atomic "\n"`)
 }
 
 func TestCacheControlsResetPreservesFreshErrorResults(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name, grammar, input string
 		recovered            bool

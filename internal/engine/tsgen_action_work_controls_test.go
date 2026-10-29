@@ -8,6 +8,7 @@ import (
 )
 
 func TestGeneratedTSWorkControlActions(t *testing.T) {
+	t.Parallel()
 	t.Run("comparison-and-predicate", func(t *testing.T) {
 		key := strings.Repeat("a", 1600)
 		src := `type Box = { Flag bool }

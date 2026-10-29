@@ -33,6 +33,7 @@ var textCompareInputs = []string{"", "a,b", "b,a", "ab,ab", "%ab:<ab>", "%z:<a>"
 // TestTextFieldComparisons checks that the backends agree on comparisons of string fields, with
 // and without work controls.
 func TestTextFieldComparisons(t *testing.T) {
+	t.Parallel()
 	prog := compileBare(t, textCompareGrammar, compile.Options{})
 	limits := limits.WorkLimits{MaxInputWork: 1 << 40, MaxSteps: 1 << 40}
 	for _, controlled := range []bool{false, true} {
@@ -59,6 +60,7 @@ func TestTextFieldComparisons(t *testing.T) {
 // and that the typed runtime's unboxed comparisons need the steps of comparisons that box the
 // strings: the least step limit that each parse succeeds with is the same.
 func TestGeneratedTextFieldComparisons(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated consumers")
@@ -169,6 +171,7 @@ rule name Name = t:([a-z]+) #atomic => Name{Text: text($t)}`
 
 // TestTextFieldComparisonsRejected checks the comparisons the checker rejects.
 func TestTextFieldComparisonsRejected(t *testing.T) {
+	t.Parallel()
 	const prelude = "type Name = { Text string }\ntype Ops = { Eq bool; Ne bool; Lt bool; Le bool; Gt bool; Ge bool }\n" +
 		"rule word = [a-z]+\nrule name Name = t:([a-z]+) #atomic => Name{Text: text($t)}\n"
 	for _, tc := range []struct{ rule, want string }{
@@ -187,6 +190,7 @@ func TestTextFieldComparisonsRejected(t *testing.T) {
 // TestTextFieldComparisonEdges checks that the backends agree on the comparisons of
 // textCompareEdgeGrammar, including the errors, with and without work controls.
 func TestTextFieldComparisonEdges(t *testing.T) {
+	t.Parallel()
 	inputs := []string{"?!", "?a!", "#a", "^ab", "^m", "~ab", "=a", "&x,y", "&a,b", "&b,a", "&ab,ab"}
 	prog := compileBare(t, textCompareEdgeGrammar, compile.Options{})
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {

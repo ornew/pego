@@ -13,6 +13,7 @@ import (
 // TestGeneratedDocumentsMatchBatchOnCorpus, TestGeneratedUnsharedParsersMatchEngine and
 // TestGeneratedConstructedFieldChecks, which fail when the rollback is dropped under recovery.
 func TestGeneratedRecoveredRollbackOnlyWithRecovery(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedRecoveredRollbackOnlyWithRecovery)
 }
 

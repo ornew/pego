@@ -8,6 +8,7 @@ import (
 )
 
 func TestGeneratedTSWideCharacterClasses(t *testing.T) {
+	t.Parallel()
 	var singles, ranges strings.Builder
 	for i := 0; i < 800; i++ {
 		singles.WriteRune(rune(0x1000 + i*2))

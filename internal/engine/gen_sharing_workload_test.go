@@ -12,7 +12,10 @@ import (
 
 // PEGO_GENERATED_SHARING_DIR preserves standalone controls for prebuilt
 // parsing, generation-size, compiler-cost and binary-size measurements.
-func TestGeneratedSharingWorkloads(t *testing.T) { eachMode(t, testGeneratedSharingWorkloads) }
+func TestGeneratedSharingWorkloads(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedSharingWorkloads)
+}
 
 func testGeneratedSharingWorkloads(t *testing.T) {
 	if testing.Short() {
@@ -118,6 +121,7 @@ func sharingInputs() (string,string,string) {
  return "const 日本語 = 1 + 2;\n",strings.Repeat("const 日本語 = 1 + 2;\n",1000),"function f( { return 1;"
 }
 func TestSharingResults(t *testing.T) {
+	t.Parallel()
  small,large,invalid:=sharingInputs()
  var saved []*Node;var snapshots []string
  for _,unit:=range []PositionUnit{CodePoints,Bytes} {
@@ -179,6 +183,7 @@ if(process.argv.includes("--check")) {
 `
 
 func TestGeneratedSharingLocalLayout(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedSharingLocalLayout)
 }
 

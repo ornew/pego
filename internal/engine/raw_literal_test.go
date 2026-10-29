@@ -51,6 +51,7 @@ func replaceFirstLiteral(e grammar.Expr, val string) *grammar.Literal {
 }
 
 func TestRawInvalidASTLiterals(t *testing.T) {
+	t.Parallel()
 	for _, raw := range rawLiteralValues() {
 		for _, shape := range []string{`t:"�"`, `t:"�" .`, `t:("�" / "other")`, `t:("�" #repeat(2)) #atomic`} {
 			t.Run(fmt.Sprintf("%x/%s", raw, shape), func(t *testing.T) {

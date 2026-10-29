@@ -14,6 +14,7 @@ import (
 )
 
 func TestFormatPreservesMinusSemantics(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{
 		`rule main = - -"a" $$`,
 		`rule main = (- -"a" / "b") $$`,
@@ -49,6 +50,7 @@ func TestFormatPreservesMinusSemantics(t *testing.T) {
 // same grammar, apart from source positions, that formatting it again changes
 // nothing, and that the corpus grammars parse their inputs the same way.
 func TestFormatPreservesCorpus(t *testing.T) {
+	t.Parallel()
 	type source struct {
 		name, src string
 		inputs    []string

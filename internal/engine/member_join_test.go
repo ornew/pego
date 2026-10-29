@@ -45,6 +45,7 @@ func joinMemberCases() []genCase {
 }
 
 func TestMemberAccessOnJoinTypeErrors(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, want string }{
 		// No member declares the field.
 		{joinMemberRules + "rule main = x:u => $x.Nope", "has no field Nope"},
@@ -72,6 +73,7 @@ func TestMemberAccessOnJoinTypeErrors(t *testing.T) {
 }
 
 func TestMemberAccessOnJoinAcrossBackends(t *testing.T) {
+	t.Parallel()
 	for _, fixture := range joinMemberCases() {
 		t.Run(fixture.name, func(t *testing.T) {
 			program := mustCompile(t, fixture.src)
@@ -88,6 +90,7 @@ func TestMemberAccessOnJoinAcrossBackends(t *testing.T) {
 }
 
 func TestMemberAccessOnJoinValues(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, input, want string }{
 		{joinMemberRules + "rule main = x:s $$ => $x.F\n", "c", `"c"`},
 		{joinMemberRules + "rule main = x:u $$ => $x.F\n", "b", `2`},
@@ -121,6 +124,7 @@ func typedJoinMemberCases() []genCase {
 }
 
 func TestMemberAccessOnJoinGeneratedGoParity(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testMemberAccessOnJoinGeneratedGoParity)
 }
 
@@ -132,6 +136,7 @@ func testMemberAccessOnJoinGeneratedGoParity(t *testing.T) {
 }
 
 func TestMemberAccessOnJoinGeneratedTypeScriptParity(t *testing.T) {
+	t.Parallel()
 	node, err := exec.LookPath("node")
 	if err != nil {
 		t.Skip("node not found")

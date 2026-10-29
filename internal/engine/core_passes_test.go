@@ -333,6 +333,7 @@ func TestCoreScopesFrozen(t *testing.T) {
 }
 
 func TestCoreScans(t *testing.T) {
+	t.Parallel()
 	src := `rule main = [a-z]* "-"#repeat(2) .#repeat(1, 3) x:[0-9]* $$ => $x
 `
 	prog, ok := coreCorpusProgram(t, genCase{src: src})

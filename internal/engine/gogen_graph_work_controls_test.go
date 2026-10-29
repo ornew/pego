@@ -12,6 +12,7 @@ import (
 )
 
 func TestGeneratedGoGraphWork(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated graph-control consumers")

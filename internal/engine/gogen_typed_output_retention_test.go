@@ -25,6 +25,7 @@ var typedAllocatorControls = []struct {
 // PEGO_TYPED_OUTPUT_RETENTION_DIR preserves the generated fixture for the
 // retained-heap and parse-throughput benchmarks below. Normal tests clean it up.
 func TestGeneratedTypedOutputRetentionFixture(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTypedOutputRetentionFixture)
 }
 
@@ -213,6 +214,7 @@ func controlResult(kind string, start int) any {
 }
 
 func TestTypedOutputOwnership(t *testing.T) {
+	t.Parallel()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, kind := range []string{"terminal", "match", "structure", "list", "slice"} {
 			t.Run(fmt.Sprintf("%s/%v", kind, unit), func(t *testing.T) {

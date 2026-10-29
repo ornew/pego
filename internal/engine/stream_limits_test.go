@@ -11,6 +11,7 @@ import (
 )
 
 func TestFiniteStreamRepetitions(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name, repeat, input, suffix, definitions string
 		count                                    int
@@ -85,6 +86,7 @@ func TestFiniteStreamRepetitions(t *testing.T) {
 }
 
 func TestZeroRepetitionDoesNotRunElement(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{
 		`rule main = ("a" "b") #repeat(0) "ab" $$`,
 		`rule main = -("a" "b") #repeat(0) "ab" $$`,
@@ -119,6 +121,7 @@ func TestZeroRepetitionDoesNotRunElement(t *testing.T) {
 }
 
 func TestFiniteStreamConsumerError(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "a" #repeat(1, 2) #stream $$`)
 	stop := errors.New("consumer stopped")
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {

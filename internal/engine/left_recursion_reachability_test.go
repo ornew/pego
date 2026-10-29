@@ -32,6 +32,7 @@ rule empty = ""`, []string{"", "a", "\n"}},
 }
 
 func TestLeftRecursionRetainsReachableSuffixes(t *testing.T) {
+	t.Parallel()
 	for _, prior := range []string{
 		`("x" #cut "y")?`, `("x" #cut "y")*`, `("x" #cut "y" / _)`,
 		`(_|_ #recover(skip=(#cut "x")))?`, `(_|_ #recover(skip=(#cut "x")))*`,
@@ -51,6 +52,7 @@ func TestLeftRecursionRetainsReachableSuffixes(t *testing.T) {
 }
 
 func TestLeftRecursionIgnoresUnreachableRecoveryChain(t *testing.T) {
+	t.Parallel()
 	for _, depth := range []int{1, 4, 8} {
 		t.Run(fmt.Sprint(depth), func(t *testing.T) {
 			prefix := "rule r1 = r2?\nrule r2 = (r1 / chain0 / r2) #repeat(0, 1)\n"
@@ -81,6 +83,7 @@ func TestLeftRecursionIgnoresUnreachableRecoveryChain(t *testing.T) {
 }
 
 func TestLeftRecursionReachabilitySavedAndDocuments(t *testing.T) {
+	t.Parallel()
 	for _, c := range reachabilityGeneratedCases {
 		t.Run(c.name, func(t *testing.T) {
 			for _, options := range []compile.Options{{}, {DisableMemo: true}} {
@@ -132,6 +135,7 @@ func TestLeftRecursionReachabilitySavedAndDocuments(t *testing.T) {
 }
 
 func TestLeftRecursionRecoverySkipStreams(t *testing.T) {
+	t.Parallel()
 	for _, options := range []compile.Options{{}, {DisableMemo: true}} {
 		p := mustCompile(t, `rule main = (a "\n")* #stream $$
 rule a = "x" #recover(skip=a) / "y"`, options)
@@ -151,6 +155,7 @@ rule a = "x" #recover(skip=a) / "y"`, options)
 }
 
 func TestLeftRecursionInRecoverySkip(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, `rule main = a
 rule a = "x" #recover(skip=a) / "y"`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -164,6 +169,7 @@ rule a = "x" #recover(skip=a) / "y"`)
 }
 
 func TestLeftRecursionIgnoresUnreachableAlternatives(t *testing.T) {
+	t.Parallel()
 	const original = leftRecursionDeadTail
 	const removed = `rule r1 = r2?
 rule r2 = (("a" / r1 / "\n") / ("" / "\n")) #repeat(0, 1)`
@@ -188,6 +194,7 @@ rule r2 = (("a" / r1 / "\n") / ("" / "\n")) #repeat(0, 1)`
 }
 
 func TestLeftRecursionUnconditionalSuffixForms(t *testing.T) {
+	t.Parallel()
 	for _, prior := range []string{
 		`_`, `""`, `"x"?`, `"x"*`, `-"x"?`, `"x"* #atomic`, `x:"x"?`,
 		`&"x"?`, `!_|_`, `("x" #cut "y")? / _`, `"x"? @error(message="x")`,

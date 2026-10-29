@@ -11,6 +11,7 @@ import (
 // syntax no longer has them, but grammars loaded from JSON or compiled files still do; they are
 // removed in every context, since an element is named with a capture.
 func TestPositionalCaptureCompileErrors(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, want string }{
 		{`rule main = "a" "b" => $3`, `1:24: positional capture $3 is removed; name the element with a capture`},
 		{`rule main = {x := $1} "a"

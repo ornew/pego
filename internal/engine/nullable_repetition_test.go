@@ -10,6 +10,7 @@ import (
 )
 
 func TestNullableRepetitionMinimum(t *testing.T) {
+	t.Parallel()
 	for _, body := range []string{`_`, `""`, `{true}`, `_ #atomic`, `x:_`, `r`} {
 		for _, bound := range []struct {
 			text  string
@@ -74,6 +75,7 @@ func TestNullableRepetitionMinimum(t *testing.T) {
 }
 
 func TestNullableRepetitionAfterConsumption(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		input string
 		min   int
@@ -102,6 +104,7 @@ func TestNullableRepetitionAfterConsumption(t *testing.T) {
 }
 
 func TestNullableRepetitionProjection(t *testing.T) {
+	t.Parallel()
 	for _, minimum := range []int{1, 2} {
 		p := mustCompile(t, fmt.Sprintf(`rule main = xs:(f:_) #repeat(%d, ) $$ => map($xs, (x) => x.$f)`, minimum))
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -115,6 +118,7 @@ func TestNullableRepetitionProjection(t *testing.T) {
 }
 
 func TestNullableRepetitionAnalysis(t *testing.T) {
+	t.Parallel()
 	for _, minimum := range []int{0, 1, 2, 3} {
 		g, err := parseTest(fmt.Sprintf("rule main = _ #repeat(%d, )", minimum))
 		if err != nil {

@@ -52,10 +52,6 @@ type LiveRules struct {
 	Reach  map[RuleKey]bool
 }
 
-// ReachHook is called by tests with the result of the first pass of GenerateParser, before the second
-// pass; a test removes a root from it to show that the output then fails.
-var ReachHook func(*LiveRules)
-
 // ruleEdge is a call of rule to from the body of rule from.
 type ruleEdge struct{ from, to RuleKey }
 

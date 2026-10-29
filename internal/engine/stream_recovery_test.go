@@ -17,7 +17,10 @@ import (
 
 const streamRecoveryError = "#recover cannot wrap a #stream repetition; recover inside each element instead"
 
-func TestStreamRecoveryRejected(t *testing.T) { eachMode(t, testStreamRecoveryRejected) }
+func TestStreamRecoveryRejected(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testStreamRecoveryRejected)
+}
 
 func testStreamRecoveryRejected(t *testing.T) {
 	for _, pragmas := range []string{`#stream #recover(skip=.*)`, `#recover(skip=.*) #stream`} {
@@ -86,6 +89,7 @@ func legacyStreamRecovery(t *testing.T, streamFirst bool) *Program {
 }
 
 func TestCompiledStreamRecoveryRejected(t *testing.T) {
+	t.Parallel()
 	for _, streamFirst := range []bool{false, true} {
 		p := legacyStreamRecovery(t, streamFirst)
 		for _, mode := range allModes {
@@ -105,6 +109,7 @@ func TestCompiledStreamRecoveryRejected(t *testing.T) {
 }
 
 func TestStreamElementRecovery(t *testing.T) {
+	t.Parallel()
 	for _, body := range []string{`("ab" #recover(skip=[^a]+))`, `(("ab" #recover(skip=[^a]+)) #recover(skip="!"))`, `item`} {
 		p := mustCompile(t, `rule main = `+body+`+ #stream $$
 rule item = "ab" @error(message="record") #recover(skip=[^a]+)`)
@@ -141,6 +146,7 @@ rule item = "ab" @error(message="record") #recover(skip=[^a]+)`)
 }
 
 func TestStreamRecoveryRegions(t *testing.T) {
+	t.Parallel()
 	safe := []bytecode.Instr{{Op: bytecode.OpRecover, A: 3}, {Op: bytecode.OpTop}, {Op: bytecode.OpEndRecover, A: 5}, {Op: bytecode.OpTop}, {Op: bytecode.OpEndSkip}, {Op: bytecode.OpNext, B: 2}, {Op: bytecode.OpEnd}}
 	for _, tc := range []struct {
 		name string

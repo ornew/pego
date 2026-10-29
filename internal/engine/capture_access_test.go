@@ -31,6 +31,7 @@ func captureAccessCases() []genCase {
 }
 
 func TestCaptureAccessAcrossBackends(t *testing.T) {
+	t.Parallel()
 	for _, fixture := range captureAccessCases() {
 		t.Run(fixture.name, func(t *testing.T) {
 			program := mustCompile(t, fixture.src)
@@ -54,6 +55,7 @@ func TestCaptureAccessAcrossBackends(t *testing.T) {
 // A value of a terminal type was a string node, with the members of a node. pego fix rewrites the
 // terminal type to a named string node, which keeps those members.
 func TestNodeMembersOfTerminalTypes(t *testing.T) {
+	t.Parallel()
 	fixed, err := syntax.Fix(`type Num terminal
 type Out = { S int; E int; V string }
 rule main = "-" n:num $$ => Out{S: $n.Start, E: $n.End, V: $n.Value}
@@ -72,6 +74,7 @@ rule num Num = [0-9]+ #atomic`)
 
 // A text struct value reads its text through its declared field.
 func TestTextStructFieldRead(t *testing.T) {
+	t.Parallel()
 	program := mustCompile(t, `type Num = { Text string }
 type Out = { V string; N int }
 rule main = "-" n:num $$ => Out{V: $n.Text, N: len($n.Text)}
@@ -87,6 +90,7 @@ rule num Num = t:([0-9]+ #atomic) => Num{Text: text($t)}`)
 // x.$y reads capture y of node x and projects a repetition. The earlier x.y, which still reaches
 // the engine from JSON grammars, reads a field: on a node it is rejected with a pointer to .$y.
 func TestCaptureAccessMatchesField(t *testing.T) {
+	t.Parallel()
 	access := mustCompile(t, `rule main = xs:(-"," y:[a-z])* $$ => map($xs, (i) => i.$y)`)
 	if a := compile.RuleProjections(access.Static(), access.RuleList[0]); a["xs"] != "y" {
 		t.Fatalf("projection: %v", a)
@@ -113,6 +117,7 @@ func TestCaptureAccessMatchesField(t *testing.T) {
 }
 
 func TestCaptureAccessErrors(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, want string }{
 		{`rule main = x:(y:"a" "b") => $x.$z`, "has no capture z"},
 		{"type T = { A node[string] }\nrule main = x:t => $x.$A\nrule t = a:\"a\" => T{A: $a}", "T has no capture A"},
@@ -135,6 +140,7 @@ func TestCaptureAccessErrors(t *testing.T) {
 }
 
 func TestCaptureAccessSyntax(t *testing.T) {
+	t.Parallel()
 	g, err := parseTest(`rule main = xs:(y:"a")+ => map($xs, (i) => i.$y.Start)`)
 	if err != nil {
 		t.Fatal(err)
@@ -160,6 +166,7 @@ func TestCaptureAccessSyntax(t *testing.T) {
 }
 
 func TestCaptureAccessGeneratedGoParity(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testCaptureAccessGeneratedGoParity)
 }
 
@@ -170,6 +177,7 @@ func testCaptureAccessGeneratedGoParity(t *testing.T) {
 }
 
 func TestCaptureAccessGeneratedTypeScriptParity(t *testing.T) {
+	t.Parallel()
 	node, err := exec.LookPath("node")
 	if err != nil {
 		t.Skip("node not found")

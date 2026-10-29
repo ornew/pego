@@ -12,6 +12,7 @@ import (
 )
 
 func TestGeneratedTSTrace(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("runs standalone TypeScript trace consumers")
 	}

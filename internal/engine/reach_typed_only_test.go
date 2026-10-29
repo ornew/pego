@@ -24,7 +24,10 @@ func typedOnlyLonelyGrammar(t *testing.T) string {
 
 // TestTypedOnlyUnreachedNodeRulesAreLeftOut checks that a typed-only parser that keeps Node rules prints
 // the Node rules that its entry points reach, and neither a function nor a slot Body of the others.
-func TestTypedOnlyUnreachedNodeRulesAreLeftOut(t *testing.T) { eachMode(t, testTypedOnlyUnreached) }
+func TestTypedOnlyUnreachedNodeRulesAreLeftOut(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testTypedOnlyUnreached)
+}
 
 func testTypedOnlyUnreached(t *testing.T) {
 	src := typedOnlyLonelyGrammar(t)
@@ -49,6 +52,7 @@ func testTypedOnlyUnreached(t *testing.T) {
 // TestTypedOnlyUnreachedCalleeFailsGeneration is the negative control: with every Node rule but the first
 // removed from the first pass, generation of the typed-only parser reports the calls and slots left out.
 func TestTypedOnlyUnreachedCalleeFailsGeneration(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testTypedOnlyUnreachedCalleeFails)
 }
 
@@ -57,14 +61,15 @@ func testTypedOnlyUnreachedCalleeFails(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gogen.ReachHook = func(l *gogen.LiveRules) {
+	gh := &gogen.Hooks{}
+	setGenHooks(t, gh)
+	gh.Reach = func(l *gogen.LiveRules) {
 		for k := range l.Reach {
 			if k.Table == "rules" && k.ID != 0 {
 				delete(l.Reach, k)
 			}
 		}
 	}
-	defer func() { gogen.ReachHook = nil }()
 	_, err = generateCode(t, g, gen.GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: true})
 	if err == nil || !strings.Contains(err.Error(), "left out") {
 		t.Errorf("typed-only generation with the Node rules left out: err = %v, want an internal error", err)
@@ -74,6 +79,7 @@ func testTypedOnlyUnreachedCalleeFails(t *testing.T) {
 // TestTypedOnlyTypedCalleeFailsGeneration is the negative control for the typed table of a typed-only parser
 // without Node rules: a typed rule that a printed call reaches and the first pass left out fails generation.
 func TestTypedOnlyTypedCalleeFailsGeneration(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testTypedOnlyTypedCalleeFails)
 }
 
@@ -86,14 +92,15 @@ func testTypedOnlyTypedCalleeFails(t *testing.T) {
 	if _, err := generateCode(t, g, opts); err != nil {
 		t.Fatalf("typed-only generation without the hook: %v", err)
 	}
-	gogen.ReachHook = func(l *gogen.LiveRules) {
+	gh := &gogen.Hooks{}
+	setGenHooks(t, gh)
+	gh.Reach = func(l *gogen.LiveRules) {
 		for k := range l.Reach {
 			if k.Table == "trules" && !isRoot(l, k) {
 				delete(l.Reach, k)
 			}
 		}
 	}
-	defer func() { gogen.ReachHook = nil }()
 	_, err = generateCode(t, g, opts)
 	if err == nil || !strings.Contains(err.Error(), "left out") {
 		t.Errorf("typed-only generation with a typed callee left out: err = %v, want an internal error", err)

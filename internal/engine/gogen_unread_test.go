@@ -32,6 +32,7 @@ func typeCheck(t *testing.T, src string) {
 // Generated functions have no blank lines, stray semicolons or closures that
 // only wrap an expression when generated without work controls.
 func TestGenerateStraightLineActions(t *testing.T) {
+	t.Parallel()
 	g, err := parseTest(`type Leaf = { N int }
 type Pair = { Left Leaf; Right Leaf }
 rule main Pair = l:leaf "," r:leaf => Pair{Right: $r, Left: $l}
@@ -40,7 +41,7 @@ rule leaf Leaf = d:[0-9]+ => Leaf{N: len($d)}
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := Generate(g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Types: true, Module: "example.com/p"})
+	files, err := Generate(t, g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Types: true, Module: "example.com/p"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +75,7 @@ rule leaf Leaf = d:[0-9]+ => Leaf{N: len($d)}
 		t.Errorf("fields out of order do not keep the order written:\n%s", src)
 	}
 	// Negative control: with work controls the steps are charged.
-	files, err = Generate(g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Types: true, Module: "example.com/p", WorkControls: true})
+	files, err = Generate(t, g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Types: true, Module: "example.com/p", WorkControls: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,6 +89,7 @@ rule leaf Leaf = d:[0-9]+ => Leaf{N: len($d)}
 // arguments of the constructor call. The two fields fail with different errors, so the generated
 // parser can only agree with the engine if it evaluates them in the same order.
 func TestGeneratedTypedConstructorEvaluationOrder(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTypedConstructorEvaluationOrder)
 }
 
@@ -121,6 +123,7 @@ rule main Result = x:"a"? y:"b"? => Result{A: list(1, 2)[len($x) + 3], C: list(1
 // fail with different errors, so the generated parser can only agree with the engine if it evaluates them in
 // the order written.
 func TestGeneratedTermStatementsEvaluationOrder(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTermStatementsEvaluationOrder)
 }
 

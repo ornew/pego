@@ -9,6 +9,7 @@ import (
 )
 
 func TestDocumentSeedDependencyCompletion(t *testing.T) {
+	t.Parallel()
 	for _, imported := range []bool{false, true} {
 		p := &core.Parser{Memo: core.NewMemoTable(), MemoAll: true}
 		r := &core.Rule{ID: 1, Leader: true}

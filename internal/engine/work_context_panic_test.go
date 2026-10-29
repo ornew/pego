@@ -103,6 +103,7 @@ func workContextVariantName(opts ParseOptions) string {
 }
 
 func TestWorkContextErrPanicIdentityBeforeExecution(t *testing.T) {
+	t.Parallel()
 	text := strings.Repeat("a", 8192)
 	prog := mustCompile(t, `rule main = "`+text+`" $$`)
 	for _, base := range workContextVariants() {
@@ -147,6 +148,7 @@ func TestWorkContextErrPanicIdentityBeforeExecution(t *testing.T) {
 }
 
 func TestWorkContextErrPanicIdentityAtTraceBoundaries(t *testing.T) {
+	t.Parallel()
 	childProg := mustCompile(t, `rule main = child $$
 
 rule child = "a"`)
@@ -200,6 +202,7 @@ rule child = "a"`)
 }
 
 func TestWorkContextErrPanicIdentityAtPublicationAndFailedReservation(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "a" $$`)
 	for _, base := range workContextVariants() {
 		backend := base.Backend
@@ -248,6 +251,7 @@ func TestWorkContextErrPanicIdentityAtPublicationAndFailedReservation(t *testing
 }
 
 func TestWorkContextErrPanicIdentityAtCountedWorkAndRetry(t *testing.T) {
+	t.Parallel()
 	literal := strings.Repeat("a", 1024)
 	prog := mustCompile(t, `rule main = "`+literal+`" $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -304,6 +308,7 @@ func TestWorkContextErrPanicIdentityAtCountedWorkAndRetry(t *testing.T) {
 }
 
 func TestWorkContextErrPanicIdentityLoadedASTOmittedProgram(t *testing.T) {
+	t.Parallel()
 	literal := strings.Repeat("a", 1024)
 	source := mustCompile(t, `rule main = "`+literal+`" $$`)
 	// The parse below is traced, which a compiled grammar serves in document mode.

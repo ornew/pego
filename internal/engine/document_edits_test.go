@@ -24,6 +24,7 @@ func documentVersionForCollection(t *testing.T, finalized chan<- struct{}) Docum
 }
 
 func TestDocumentVersionDoesNotRetainDocument(t *testing.T) {
+	t.Parallel()
 	finalized := make(chan struct{}, 1)
 	version := documentVersionForCollection(t, finalized)
 	defer runtime.KeepAlive(version)
@@ -67,6 +68,7 @@ func batchOracle(text string, unit PositionUnit, edits []TextEdit) string {
 }
 
 func TestDocumentBatchFreshParity(t *testing.T) {
+	t.Parallel()
 	replacements := []string{"", "a", "\n", "é", "😀", "\xc3", "\xa9", "\xff", "@name\n", "x = 1+2\n"}
 	for gi, grammar := range []string{`rule main = item* $$
 rule item = .`, incrementalGrammar, `rule main = ("a" @error("need a") #recover(skip=.))* $$`} {

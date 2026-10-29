@@ -12,6 +12,7 @@ import (
 )
 
 func TestWorkStreamReferenceAdmission(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

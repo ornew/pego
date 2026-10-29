@@ -45,6 +45,7 @@ func assertUndoRestored(t *testing.T, f *core.Frame, nodes []*value.Node) {
 }
 
 func TestWorkResetRestoresRepeatedCaptureWritesInReverse(t *testing.T) {
+	t.Parallel()
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 4})
 	f, nodes := undoFixture(p)
 	p.Pos = 71
@@ -61,6 +62,7 @@ func TestWorkResetRestoresRepeatedCaptureWritesInReverse(t *testing.T) {
 }
 
 func TestWorkResetPollingCancellationDuringUndo(t *testing.T) {
+	t.Parallel()
 	p := stateWorkParser(limits.WorkLimits{})
 	f := &core.Frame{Vals: make([]*value.Node, 257)}
 	for i := range f.Vals {
@@ -84,6 +86,7 @@ func TestWorkResetPollingCancellationDuringUndo(t *testing.T) {
 }
 
 func TestWorkAttachCapturesNilFrameAndFieldOrder(t *testing.T) {
+	t.Parallel()
 	retained := value.Ptr(value.Data{Text: "base", Fields: value.Fields{{Name: "existing", Value: "kept"}}})
 	allNil := &core.Frame{Vals: make([]*value.Node, 320)}
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 100_000})
@@ -116,6 +119,7 @@ func TestWorkAttachCapturesNilFrameAndFieldOrder(t *testing.T) {
 }
 
 func TestWorkAttachCapturesWrapsNonfreshAndSelfCapture(t *testing.T) {
+	t.Parallel()
 	child := value.Ptr(value.Data{Text: "retained-child"})
 	prior := value.Fields{{Name: "prior", Value: "unchanged"}}
 	shared := value.Ptr(value.Data{Text: "shared", Fields: append(value.Fields(nil), prior...)})
@@ -142,6 +146,7 @@ func TestWorkAttachCapturesWrapsNonfreshAndSelfCapture(t *testing.T) {
 }
 
 func TestWorkAttachCapturesInterruptsDiscoveryAndFieldWalk(t *testing.T) {
+	t.Parallel()
 	base := value.Ptr(value.Data{Text: "retained", Fields: value.Fields{{Name: "prior", Value: "kept"}}})
 	wide := &core.Frame{Vals: make([]*value.Node, 320)}
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 128})
@@ -170,6 +175,7 @@ func TestWorkAttachCapturesInterruptsDiscoveryAndFieldWalk(t *testing.T) {
 }
 
 func TestWorkStateBatchRollbackAndPoolRetry(t *testing.T) {
+	t.Parallel()
 	var body strings.Builder
 	body.WriteString(`c0:"a" `)
 	for i := 1; i < 320; i++ {
@@ -216,6 +222,7 @@ rule arm = _`
 }
 
 func TestWorkStateProjectedFrameClear(t *testing.T) {
+	t.Parallel()
 	const count = 320
 	var items []grammar.Expr
 	for i := range count {

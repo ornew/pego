@@ -76,7 +76,10 @@ rule body Doc = (
 `, []string{"é!", "é?", "é", "z", "", "é!!"}},
 }
 
-func TestGeneratedTypedLocalLayouts(t *testing.T) { eachMode(t, testGeneratedTypedLocalLayouts) }
+func TestGeneratedTypedLocalLayouts(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedTypedLocalLayouts)
+}
 
 func testGeneratedTypedLocalLayouts(t *testing.T) {
 	for _, c := range typedLocalLayoutCases {
@@ -109,6 +112,7 @@ func localBodyInlined(code []byte) bool {
 }
 
 func TestGeneratedTypedLocalLayoutControls(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTypedLocalLayoutControls)
 }
 

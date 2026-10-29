@@ -34,6 +34,7 @@ func ignoreCaseOutcome(t *testing.T, program *Program, input string, unit Positi
 }
 
 func TestIgnoreCaseLiterals(t *testing.T) {
+	t.Parallel()
 	cases := []ignoreCaseCase{
 		{"suffix matches any case", `rule main = "select"i`, "SELECT", "ok SELECT"},
 		{"suffix matches mixed case", `rule main = "select"i`, "sElEcT", "ok sElEcT"},
@@ -81,6 +82,7 @@ func TestIgnoreCaseLiterals(t *testing.T) {
 // TestIgnoreCaseMatchesClassForm checks the suffix against the character-class spelling of the
 // same keyword on the same inputs, including inputs that differ from the keyword in one letter.
 func TestIgnoreCaseMatchesClassForm(t *testing.T) {
+	t.Parallel()
 	folded := mustCompile(t, `rule main = "select"i`)
 	classes := mustCompile(t, `rule main = [sS][eE][lL][eE][cC][tT]`)
 	inputs := []string{"select", "SELECT", "SeLeCt", "selec", "selects", "SELECX", "sElEcT", "xelect", "", "s", "seleé", "SELEK"}
@@ -99,6 +101,7 @@ func TestIgnoreCaseMatchesClassForm(t *testing.T) {
 // suffix, including the literal that the pragma makes case-insensitive, and that the other literals
 // keep their spelling.
 func TestIgnoreCaseExpectations(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct {
 		name, src, input string
 		contains         []string
@@ -131,6 +134,7 @@ func TestIgnoreCaseExpectations(t *testing.T) {
 // TestIgnoreCaseOperatorsRule checks that the pragma reaches the operator literals written in the
 // annotated expression of an Operators Rule.
 func TestIgnoreCaseOperatorsRule(t *testing.T) {
+	t.Parallel()
 	src := `rule main = e:expr $$
 rule expr = #operators {
     operand [0-9]
@@ -154,6 +158,7 @@ rule expr = #operators {
 // makes the literals of its operands, skip and operators case-insensitive, and that it is
 // accepted only as that pragma.
 func TestIgnoreCaseOperatorsRulePragma(t *testing.T) {
+	t.Parallel()
 	src := `rule main = e:expr $$
 rule expr = #operators {
     skip " "*
@@ -194,6 +199,7 @@ rule expr = #operators {
 // for case-insensitive literals, and that a serialized program loads with the same results in every
 // mode. The plain literal keeps working in the same programs.
 func TestIgnoreCaseBackendsAgree(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct {
 		src    string
 		inputs []string
@@ -227,6 +233,7 @@ func TestIgnoreCaseBackendsAgree(t *testing.T) {
 // TestIgnoreCaseRandomAgreement compares the closure and bytecode backends on seeded random inputs
 // over letters of both cases, non-ASCII letters, and the Kelvin sign, which is not ASCII.
 func TestIgnoreCaseRandomAgreement(t *testing.T) {
+	t.Parallel()
 	alphabet := []rune("aAbBkK\u00e9\u00c9\u212ac")
 	rng := rand.New(rand.NewSource(79))
 	programs := []*Program{
@@ -249,6 +256,7 @@ func TestIgnoreCaseRandomAgreement(t *testing.T) {
 // TestIgnoreCaseMissingSpelling checks that #missing inserts the literal as written, without the
 // suffix and without a change of case.
 func TestIgnoreCaseMissingSpelling(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "Sel"i #missing $$`)
 	n, errs := requireInsertions(t, prog, "", ParseOptions{MissingTokens: 2}, 1)
 	insertions := missingNodes(t, n)
@@ -265,6 +273,7 @@ func TestIgnoreCaseMissingSpelling(t *testing.T) {
 // the suffix and from the pragma, and that the expectation keeps the suffix. The bytecode backends
 // reject missing-token recovery.
 func TestIgnoreCaseMissingSpellingBackends(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{
 		`rule main = "Sel"i #missing $$`,
 		`rule main = ("Sel" #missing $$) #ignorecase`,
@@ -290,6 +299,7 @@ func TestIgnoreCaseMissingSpellingBackends(t *testing.T) {
 // TestIgnoreCasePragmaReachesArguments checks that the pragma folds the literals of a recovery
 // skip expression written in the annotated expression, and that the skip is not a called rule.
 func TestIgnoreCasePragmaReachesArguments(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = ("ab" #recover(skip="x")) #ignorecase`)
 	found := map[string]bool{}
 	compile.WalkExpr(prog.ByName["main"].Def.Expr, func(e grammar.Expr) {
@@ -305,6 +315,7 @@ func TestIgnoreCasePragmaReachesArguments(t *testing.T) {
 // TestIgnoreCaseDocumentAndStream checks the incremental Document and the stream parse with
 // case-insensitive literals.
 func TestIgnoreCaseDocumentAndStream(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "select"i " " "x" $$`)
 	doc, err := prog.NewDocument("main", "SELECT x")
 	if err != nil {
@@ -339,6 +350,7 @@ func TestIgnoreCaseDocumentAndStream(t *testing.T) {
 // TestIgnoreCaseAttributeFormRejected checks that the attribute spelling of the pragma is rejected
 // with the spelling to use.
 func TestIgnoreCaseAttributeFormRejected(t *testing.T) {
+	t.Parallel()
 	if msg := compileError(t, `rule main = "a" @ignorecase`); !strings.Contains(msg, "use #ignorecase") {
 		t.Fatalf("attribute form: %v", msg)
 	}
@@ -347,6 +359,7 @@ func TestIgnoreCaseAttributeFormRejected(t *testing.T) {
 // TestIgnoreCaseMissingInPragmaScope checks that #missing inside the annotated expression inserts
 // the literal as written, while the expectation of the same literal keeps the suffix.
 func TestIgnoreCaseMissingInPragmaScope(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = ("Sel" #missing $$) #ignorecase`)
 	n, errs := requireInsertions(t, prog, "", ParseOptions{MissingTokens: 2}, 1)
 	insertions := missingNodes(t, n)
@@ -364,6 +377,7 @@ func TestIgnoreCaseMissingInPragmaScope(t *testing.T) {
 // TestIgnoreCaseDocumentAndStreamBackends runs the incremental Document and the stream parse on
 // every backend that supports them, with case-insensitive literals.
 func TestIgnoreCaseDocumentAndStreamBackends(t *testing.T) {
+	t.Parallel()
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		prog := mustCompile(t, `rule main = "select"i " " "x" $$`)
 		doc, err := prog.NewDocumentWith("main", "SELECT x", ParseOptions{Backend: b})
@@ -400,6 +414,7 @@ func TestIgnoreCaseDocumentAndStreamBackends(t *testing.T) {
 // TestIgnoreCaseExpectationBackends checks that the expectation of a case-insensitive literal keeps
 // its suffix on every backend that parses such a literal.
 func TestIgnoreCaseExpectationBackends(t *testing.T) {
+	t.Parallel()
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, c := range []struct {
 			src, want string

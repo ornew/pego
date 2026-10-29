@@ -8,6 +8,7 @@ import (
 )
 
 func TestModuleDisassembly(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `type P = { K node[string]; N int }
 rule main = k:key "=" v:[0-9]+ #atomic (";" / _) => P{K: $k, N: len($v) + 1}
 rule key = [a-z]+ @error(message="expected a key") #atomic`)
@@ -53,6 +54,7 @@ main.action:
 }
 
 func TestDiagnosticLabelDisassembly(t *testing.T) {
+	t.Parallel()
 	module := mustCompile(t, `rule main = "a" @error(message="explicit") / "b" @diagnostic(name="letter")`).Module()
 	text := module.Disassemble()
 	if !strings.Contains(text, `LABEL      "explicit"`+"\n") {
@@ -66,6 +68,7 @@ func TestDiagnosticLabelDisassembly(t *testing.T) {
 // TestModuleCompilesCorpus checks that every test grammar compiles to bytecode and that all
 // branch targets are within the instruction range.
 func TestModuleCompilesCorpus(t *testing.T) {
+	t.Parallel()
 	for _, c := range genCorpus(t) {
 		m := mustCompile(t, c.src).Module()
 		for i, in := range m.Code {

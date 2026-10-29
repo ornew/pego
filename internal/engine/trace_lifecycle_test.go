@@ -54,6 +54,7 @@ type traceLifecycleClosingReader struct {
 func (r *traceLifecycleClosingReader) Close() error { r.closed = true; return nil }
 
 func TestTraceLifecycleStreamDetachment(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {

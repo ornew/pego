@@ -12,7 +12,10 @@ import (
 
 // PEGO_TYPED_CUT_DIR preserves both latest-generator variants so their test
 // binaries can be built once and measured in alternating benchmark runs.
-func TestGeneratedTypedCutWorkload(t *testing.T) { eachMode(t, testGeneratedTypedCutWorkload) }
+func TestGeneratedTypedCutWorkload(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedTypedCutWorkload)
+}
 
 func testGeneratedTypedCutWorkload(t *testing.T) {
 	if testing.Short() {
@@ -85,6 +88,7 @@ import (
 func cutInput(n int) string { return strings.Repeat("let alpha:123;var beta:456;", n) }
 
 func TestCutWorkload(t *testing.T) {
+	t.Parallel()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		saved, err := ParseAST(cutInput(1), WithUnit(unit))
 		if err != nil || len(saved.Rows) != 2 || saved.Rows[0].Key.Value != "alpha" || saved.Rows[1].Value.Value != "456" {

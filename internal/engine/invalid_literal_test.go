@@ -22,6 +22,7 @@ import (
 )
 
 func TestInvalidUTF8LiteralMatching(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		literal, input string
 		ok             bool
@@ -72,6 +73,7 @@ func TestInvalidUTF8LiteralMatching(t *testing.T) {
 }
 
 func TestReplacementLiteralTextPredicate(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = c:"�" {text($c) == "�"} $$`)
 	for _, input := range []string{"\xff", "\x80", "\xc3", "�"} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -89,6 +91,7 @@ func TestReplacementLiteralTextPredicate(t *testing.T) {
 }
 
 func TestInvalidUTF8LiteralStream(t *testing.T) {
+	t.Parallel()
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, expr := range []string{`"�"`, `[�]`, `"x" / "�"`, `"a�"`} {
@@ -142,7 +145,10 @@ rule main N = t:[�] $$ => N{T: $t}`, []string{"\xff", "\x80", "\xc3", "�", "
 
 // Go string literals preserve invalid bytes; JSON input fixtures would replace
 // them before the generated parser sees them.
-func TestGeneratedInvalidUTF8Literals(t *testing.T) { eachMode(t, testGeneratedInvalidUTF8Literals) }
+func TestGeneratedInvalidUTF8Literals(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedInvalidUTF8Literals)
+}
 
 func testGeneratedInvalidUTF8Literals(t *testing.T) {
 	if testing.Short() {
@@ -223,6 +229,7 @@ func literalTextUnits(input string, unit PositionUnit) []rune {
 }
 
 func TestGeneratedTSInvalidUTF8Literals(t *testing.T) {
+	t.Parallel()
 	for _, tc := range invalidLiteralCorpus() {
 		t.Run(tc.name, func(t *testing.T) {
 			g := literalCorpusGrammar(t, tc)
@@ -273,6 +280,7 @@ func TestGeneratedTSInvalidUTF8Literals(t *testing.T) {
 }
 
 func TestOpenPipeInvalidUTF8Literal(t *testing.T) {
+	t.Parallel()
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, input := range []string{"\xff\n", "\x80\n", "\xc3\n", "�\n"} {

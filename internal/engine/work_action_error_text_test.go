@@ -19,6 +19,7 @@ import (
 )
 
 func TestWorkActionErrorTextReservationsAndOwnership(t *testing.T) {
+	t.Parallel()
 	for _, parts := range [][]string{{""}, {"", "", ""}, {"a", "", "λ\xff"}, {strings.Repeat("n", 8192)}} {
 		want := strings.Join(parts, "")
 		steps := uint64(len(want) + 2*len(parts))
@@ -53,6 +54,7 @@ func TestWorkActionErrorTextReservationsAndOwnership(t *testing.T) {
 }
 
 func TestWorkActionErrorFinalPrefixIsFlatAndBounded(t *testing.T) {
+	t.Parallel()
 	cause := core.ActionTextError("division by zero")
 	where := strings.Repeat("rule", 512)
 	want := "action in " + where + ": " + cause.Error()
@@ -88,6 +90,7 @@ func (e actionFormattingError) Format(s fmt.State, verb rune) {
 }
 
 func TestWorkActionErrorOpaqueFormattingPreservesNative(t *testing.T) {
+	t.Parallel()
 	for _, cause := range []error{errors.New("ordinary"), actionFormattingError{}, actionFormattingError{panics: true}} {
 		want := fmt.Sprintf("action in r: %v", cause)
 		p := diagnosticParser(limits.WorkLimits{MaxSteps: 1 << 50})
@@ -104,6 +107,7 @@ func TestWorkActionErrorOpaqueFormattingPreservesNative(t *testing.T) {
 }
 
 func TestWorkActionErrorProducersAreEager(t *testing.T) {
+	t.Parallel()
 	long := strings.Repeat("T", 1024)
 	prog := mustCompile(t, "type A = {\n    N int\n}\n\nrule main = \"a\"\n")
 	node := value.Ptr(value.Data{Kind: &value.NodeKind{Type: long}})

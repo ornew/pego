@@ -12,6 +12,7 @@ import (
 // straddle the ASCII bitset words (63 and 64) and the boundary at 128, and compares membership
 // with the definition for every character up to U+0200.
 func TestClassBits(t *testing.T) {
+	t.Parallel()
 	ranges := [][]grammar.CharRange{
 		{{Lo: 0x3e, Hi: 0x41}, {Lo: 0x7e, Hi: 0x101}},
 		{{Lo: 0, Hi: 0}, {Lo: 63, Hi: 64}},

@@ -11,6 +11,7 @@ import (
 )
 
 func TestSnapshotPositionOverlaysAcrossEdits(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{
 		`rule main = -[ ]* item* $$
 rule item = [a-z]`,
@@ -89,6 +90,7 @@ func equalSnapshotNodePositions(got SnapshotNode, want *Node) bool {
 }
 
 func TestSnapshotPositionOverlaysUnicodeAndInvalidUTF8(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = -[ ]* item* $$
 rule item = .`)
 	for _, text := range []string{strings.Repeat("é🙂", 513), strings.Repeat("a\xff", 513)} {
@@ -125,6 +127,7 @@ rule item = .`)
 }
 
 func TestSnapshotPositionOverlayCancellationDuringMetadataCopy(t *testing.T) {
+	t.Parallel()
 	if !workControlsEnabled {
 		t.Skip("work control reference")
 	}

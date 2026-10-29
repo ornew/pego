@@ -11,6 +11,7 @@ import (
 )
 
 func TestGenerateDocumentNode(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	g, err := parseTest("rule main = item+ $$\nrule item = \"a\"")
 	if err != nil {
@@ -44,6 +45,7 @@ import (
   "testing"
 )
 func TestGeneratedDocumentAgainstBatch(t *testing.T) {
+	t.Parallel()
   for _, unit := range []PositionUnit{CodePoints, Bytes} {
    count := 0
    d, err := NewDocument("aa", func(o *pegort.X_parseOptions) { count++; o.X_unit = unit })
@@ -62,6 +64,7 @@ func TestGeneratedDocumentAgainstBatch(t *testing.T) {
   }
 }
 func TestGeneratedDocumentContract(t *testing.T) {
+	t.Parallel()
   d, err := NewDocument("aa")
   if err != nil { t.Fatal(err) }
   first, err := d.Parse()
@@ -84,6 +87,7 @@ func TestGeneratedDocumentContract(t *testing.T) {
   if _, err := d.Parse(); err != nil { t.Fatalf("retry after cancellation: %v", err) }
 }
 func TestGeneratedDocumentByteBoundary(t *testing.T) {
+	t.Parallel()
   d, err := NewDocument("é", WithUnit(Bytes))
   if err != nil { t.Fatal(err) }
   if err := d.Edit(1, 1, "x"); err == nil || d.Text() != "é" { t.Fatal("UTF-8 interior edit accepted") }
@@ -91,6 +95,7 @@ func TestGeneratedDocumentByteBoundary(t *testing.T) {
   if d.Text() != "é" { t.Fatal("no-op edit changed text") }
 }
 func TestGeneratedDocumentCloneSharing(t *testing.T) {
+	t.Parallel()
   n := &Node{RawText: "a"}
   parent := &Node{RawChildren: []*Node{n,n}, RawFields: Fields{{Name: "value", Value: []any{n}}}}
   copy := parent.Clone()
@@ -99,6 +104,7 @@ func TestGeneratedDocumentCloneSharing(t *testing.T) {
   if value != copy.RawChildren[0] { t.Fatal("field alias not preserved") }
 }
 func TestGeneratedDocumentCloneCyclicAndSharedSlices(t *testing.T) {
+	t.Parallel()
   child := &Node{RawText: "original"}
   const backingCapacity = 1 << 16
   values := make([]any, 2, backingCapacity)
@@ -149,7 +155,10 @@ func TestGeneratedDocumentCloneCyclicAndSharedSlices(t *testing.T) {
 	}
 }
 
-func TestGenerateDocumentCombinations(t *testing.T) { eachMode(t, testGenerateDocumentCombinations) }
+func TestGenerateDocumentCombinations(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGenerateDocumentCombinations)
+}
 
 func testGenerateDocumentCombinations(t *testing.T) {
 	g, err := parseTest("rule main = \"a\"")

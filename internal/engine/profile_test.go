@@ -8,6 +8,7 @@ import (
 )
 
 func TestProfile(t *testing.T) {
+	t.Parallel()
 	// x calls no other rule, so it is not memoized (transient) and each alternative of main
 	// evaluates it again at 0; y fails after examining the whole input.
 	prog := mustCompile(t, `rule main = y / x "a" / x "b" / x "c"
@@ -59,6 +60,7 @@ rule x = "x"+`)
 // TestProfileMemoAndRecursion checks memo hits, left-recursive growth and the time of recursive
 // calls.
 func TestProfileMemoAndRecursion(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = a "!" / a "?"
 rule a = a "x" / "y"`)
 	var pr Profile
@@ -85,6 +87,7 @@ rule a = a "x" / "y"`)
 // for a position whose input has been discarded (they give 0, 0), and that the profile's
 // locations are right or unknown.
 func TestStreamLocations(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = line* #stream $$
 rule line = [a-z]* #atomic "\n"`)
 	var b strings.Builder
@@ -132,6 +135,7 @@ rule line = [a-z]* #atomic "\n"`)
 // TestHintsWithoutTime checks that, when no time was measured (so there is no time hint), a
 // profile with one finding does not also say that nothing stands out.
 func TestHintsWithoutTime(t *testing.T) {
+	t.Parallel()
 	pr := Profile{Calls: 10, Examined: 100, Rules: []*RuleProfile{
 		{Rule: "x", Calls: 10, Evals: 10, Repeats: 5, MaxEvals: 3, MaxEvalsAt: Location{0, 1, 1}},
 	}}
@@ -148,6 +152,7 @@ func TestHintsWithoutTime(t *testing.T) {
 // TestProfileStreamMemory checks that profiling a stream keeps its memory bounded: the positions
 // evaluated are forgotten once the stream has discarded them.
 func TestProfileStreamMemory(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = line* #stream $$
 rule line = [a-z]* #atomic "\n"`)
 	const lines = 50000

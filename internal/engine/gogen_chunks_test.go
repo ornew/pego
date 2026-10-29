@@ -12,7 +12,10 @@ import (
 
 // PEGO_TYPED_CHUNK_DIR retains both generated paths for paired allocation
 // measurements. Normal test runs remove the fixtures automatically.
-func TestGeneratedTypedChunkOwnership(t *testing.T) { eachMode(t, testGeneratedTypedChunkOwnership) }
+func TestGeneratedTypedChunkOwnership(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedTypedChunkOwnership)
+}
 
 func testGeneratedTypedChunkOwnership(t *testing.T) {
 	if testing.Short() {
@@ -76,6 +79,7 @@ import (
 )
 
 func TestChunkValues(t *testing.T) {
+	t.Parallel()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		empty, err := ParseAST("", WithUnit(unit))
 		if err != nil || empty == nil || empty.Groups == nil || len(empty.Groups) != 0 { t.Fatal("empty root list") }

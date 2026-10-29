@@ -90,6 +90,7 @@ var recognizerKnownDifferences = []genCase{
 // grammars of recognizerKnownDifferences must have a guarded class in the lean mode, and none in the
 // controlled one. -update rewrites the golden (core_typed_decisions_test.go).
 func TestCoreRecognizerDecisionsFrozen(t *testing.T) {
+	t.Parallel()
 	recognizerGolden.freeze(t, recognizerGenModes, func(t *testing.T, mode coreGenMode) []*coreGenCase {
 		var cases []*coreGenCase
 		for _, gc := range recognizerCorpus(t) {

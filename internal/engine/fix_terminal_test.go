@@ -10,6 +10,7 @@ import (
 // A terminal type rewritten by pego fix holds the text the terminal held: want is the text of
 // the terminal that the grammar produced before.
 func TestFixTerminalTypes(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, input, want string }{
 		{"type N terminal\nrule main N = \"-\"? [0-9]+", "-12", "-12"},
 		{"type N terminal\ntype A ~ N\nrule main A = d:[0-9] [0-9]* {text($d) != \"0\"}", "12", "12"},

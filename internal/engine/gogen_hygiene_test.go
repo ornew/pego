@@ -10,6 +10,7 @@ import (
 )
 
 func TestGeneratedGoActionContextAndExpressions(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedGoActionContextAndExpressions)
 }
 
@@ -40,6 +41,7 @@ rule leaf = "a"
 }
 
 func TestGeneratedRuntimeWritesStringPartsWithoutConcatenation(t *testing.T) {
+	t.Parallel()
 	for _, fragment := range []string{
 		strings.Join([]string{`b.WriteString("`, "`", `" + v + "`, "`", `")`}, ""),
 		`b.WriteString("(" + n.Type())`,
@@ -52,6 +54,7 @@ func TestGeneratedRuntimeWritesStringPartsWithoutConcatenation(t *testing.T) {
 }
 
 func TestGeneratedDirectActionErrorContextAndParserReuse(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedDirectActionErrorContextAndParserReuse)
 }
 

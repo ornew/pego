@@ -20,6 +20,7 @@ rule item = {n > 0} "b"?
 // TestModuleVariableValidation checks that a module whose code names a variable that its table
 // does not declare is rejected, wherever the name appears.
 func TestModuleVariableValidation(t *testing.T) {
+	t.Parallel()
 	fresh := func() *bytecode.Module {
 		m := *mustCompile(t, varModuleSource).Module()
 		m.Strings = append([]string(nil), m.Strings...)
@@ -83,6 +84,7 @@ func TestModuleVariableValidation(t *testing.T) {
 // tree, loads exactly the variables of its module in each mode: a changed variable table is the
 // one the loaded program runs with, or the file is rejected when the module validation rejects it.
 func TestLoadedVariablesMatch(t *testing.T) {
+	t.Parallel()
 	good, err := mustCompile(t, varModuleSource).MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
@@ -146,6 +148,7 @@ func TestLoadedVariablesMatch(t *testing.T) {
 // another type than its declared one is rejected: an int or bool variable with a string, a string
 // variable with an int or without a string, a bool that is neither 0 nor 1, and an unknown type.
 func TestModuleInitialValueMatchesType(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name   string
 		mutate func(m *bytecode.Module)

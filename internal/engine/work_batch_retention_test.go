@@ -36,6 +36,7 @@ func batchRetentionJSON(t *testing.T, n *value.Node) []byte {
 }
 
 func TestWorkBatchTraceEventDetachesParserOnSuccessAndSyntaxFailure(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `type Entry = {
     Key   string
     Value node[string]
@@ -134,6 +135,7 @@ rule entry = key:[a-z]+ #atomic ":" value:[0-9]+ #atomic => Entry{Key: text($key
 }
 
 func TestWorkBatchTraceCallbackPanicDetachesParserAndPreservesRetry(t *testing.T) {
+	t.Parallel()
 	text := strings.Repeat("a", 512)
 	prog := mustCompile(t, `rule main = "a"* $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -164,6 +166,7 @@ func TestWorkBatchTraceCallbackPanicDetachesParserAndPreservesRetry(t *testing.T
 }
 
 func TestWorkBatchTraceInterruptionDetachesParser(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "a"* $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{Bytes, CodePoints} {
@@ -301,6 +304,7 @@ func batchRetentionContextLive(ctx *batchRetentionContext) bool {
 }
 
 func TestWorkBatchTraceEventReleasesCapturedContextAfterReturn(t *testing.T) {
+	t.Parallel()
 	text := strings.Repeat("a", 32*1024)
 	prog := mustCompile(t, `rule main = "a"* $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {

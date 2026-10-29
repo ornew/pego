@@ -13,6 +13,7 @@ import (
 )
 
 func TestStreamTextSnapshots(t *testing.T) {
+	t.Parallel()
 	text := strings.Repeat("aé😀\xff\xc0z\n", 700)
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		t.Run(unit.String(), func(t *testing.T) {
@@ -58,6 +59,7 @@ func TestStreamTextSnapshots(t *testing.T) {
 }
 
 func TestStreamTextSnapshotNearMaximumPosition(t *testing.T) {
+	t.Parallel()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		in := core.Input{Unit: unit, Base: int(^uint(0)>>1) - 128, Reader: bufio.NewReader(strings.NewReader(strings.Repeat("x", 100)))}
 		in.Fill(in.Base + 100)
@@ -71,6 +73,7 @@ func TestStreamTextSnapshotNearMaximumPosition(t *testing.T) {
 }
 
 func TestStreamTextSnapshotBoundaries(t *testing.T) {
+	t.Parallel()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, size := range []int{63, 64, 1024, 1025, 3000} {
 			t.Run(fmt.Sprintf("%s/%d", unit, size), func(t *testing.T) {
@@ -97,6 +100,7 @@ func TestStreamTextSnapshotBoundaries(t *testing.T) {
 
 // Text extraction must never trigger a reader call just to fill a snapshot.
 func TestStreamTextSnapshotDoesNotReadAhead(t *testing.T) {
+	t.Parallel()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		reader := &snapshotOneByteReader{source: strings.Repeat("x", 200)}
 		in := core.Input{Unit: unit, Reader: bufio.NewReader(reader)}
@@ -127,6 +131,7 @@ func (r *snapshotOneByteReader) Read(p []byte) (int, error) {
 }
 
 func TestStreamTextSnapshotRetainedMalformedResults(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = rows:row* #stream $$
 rule row = x:(!"\n" .)+ #atomic "\n"`)
 	text := strings.Repeat("é😀a\xff\xc0z\n", 700)
@@ -157,6 +162,7 @@ rule row = x:(!"\n" .)+ #atomic "\n"`)
 }
 
 func TestStreamTextSnapshotSplitUTF8(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = rows:row* #stream $$
 rule row = x:(!"\n" .)+ #atomic "\n"`)
 	text := strings.Repeat(strings.Repeat("é😀\xff\xc0a", 40)+"\n", 30)

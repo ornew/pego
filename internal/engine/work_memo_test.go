@@ -28,6 +28,7 @@ func memoTestEnv(n int, prefix string) (*core.Env, map[string]bool) {
 }
 
 func TestWorkMemoEnvValuesDeepLookup(t *testing.T) {
+	t.Parallel()
 	const count = 320
 	const prefix = "shared_environment_name_with_long_prefix_"
 	root, _ := memoTestEnv(count, prefix)
@@ -55,6 +56,7 @@ func TestWorkMemoEnvValuesDeepLookup(t *testing.T) {
 }
 
 func TestWorkMemoBindPreservesSnapshotsOnInterruption(t *testing.T) {
+	t.Parallel()
 	root, bound := memoTestEnv(48, "binding_")
 	// Build a saved snapshot with a target at the tail and force the replacement path.
 	p := &core.Parser{Env: root, Bound: bound, Input: core.Input{Control: core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 56})}}
@@ -102,6 +104,7 @@ func TestWorkMemoBindPreservesSnapshotsOnInterruption(t *testing.T) {
 }
 
 func TestWorkMemoKeyEqualityAndLongChains(t *testing.T) {
+	t.Parallel()
 	table := &core.MemoTable{Slots: make([]*core.MemoEntry, 1)}
 	p := &core.Parser{Memo: table}
 	p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 1 << 30})
@@ -154,6 +157,7 @@ func workMemoVariableGrammar() string {
 }
 
 func TestWorkMemoParseBudgetPoolRetryAndRetainedResult(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, workMemoVariableGrammar())
 	input := "a"
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -203,6 +207,7 @@ func TestWorkMemoParseBudgetPoolRetryAndRetainedResult(t *testing.T) {
 }
 
 func TestWorkMemoBindCopyAndCancellation(t *testing.T) {
+	t.Parallel()
 	root, bound := memoTestEnv(320, "v")
 	// An equal tail binding performs the same search but does not copy a prefix.
 	probe := &core.Parser{Env: root, Bound: bound}
@@ -238,6 +243,7 @@ func TestWorkMemoBindCopyAndCancellation(t *testing.T) {
 }
 
 func TestWorkMemoChainAndStringLimits(t *testing.T) {
+	t.Parallel()
 	table := &core.MemoTable{Slots: make([]*core.MemoEntry, 1)}
 	for i := 0; i < 320; i++ {
 		table.Slots[0] = &core.MemoEntry{Rule: int32(i), Next: table.Slots[0]}
@@ -311,6 +317,7 @@ func requireMemoCleared(t *testing.T, chunks [][]core.MemoEntry) {
 }
 
 func TestWorkMemoGrowthFailureCleanup(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = expr $$
 
 rule expr = expr "a" / "a"`)
@@ -349,6 +356,7 @@ rule expr = expr "a" / "a"`)
 }
 
 func TestWorkMemoBatchGrowthInterruption(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = expr #recover(skip=.*) $$
 
 rule expr = expr atom / atom

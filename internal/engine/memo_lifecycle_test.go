@@ -83,6 +83,7 @@ func TestDocumentReplacedMemoMemoryIsBounded(t *testing.T) {
 }
 
 func TestMemoPruneKeepsActiveSeed(t *testing.T) {
+	t.Parallel()
 	table := core.NewMemoTable()
 	seed := table.Alloc()
 	*seed = core.MemoEntry{Growing: true, Node: value.Ptr(value.Data{Text: "active"})}

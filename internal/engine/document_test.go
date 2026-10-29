@@ -86,6 +86,7 @@ func testDocumentMatchesFreshParse(t *testing.T, b Backend) {
 }
 
 func TestDocumentReusesResults(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, incrementalGrammar)
 	var b strings.Builder
 	for i := 0; i < 200; i++ {
@@ -119,6 +120,7 @@ func TestDocumentReusesResults(t *testing.T) {
 // TestDocumentPositionalActions checks that results of position-dependent actions are
 // recomputed rather than shifted past an edit.
 func TestDocumentPositionalActions(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, incrementalGrammar)
 	doc, _ := prog.NewDocument("main", "@abc\n")
 	doc.Parse()
@@ -134,6 +136,7 @@ func TestDocumentPositionalActions(t *testing.T) {
 }
 
 func TestDocumentEditErrors(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "a"*`)
 	doc, _ := prog.NewDocument("main", "aaa")
 	for _, r := range [][2]int{{-1, 0}, {2, 1}, {0, 4}} {
@@ -149,6 +152,7 @@ func TestDocumentEditErrors(t *testing.T) {
 // TestDocumentInputStartAnchors checks that results that depend on being at the start of the
 // input (^^) or of a line (^) are not reused after text is inserted before them.
 func TestDocumentInputStartAnchors(t *testing.T) {
+	t.Parallel()
 	for _, anchor := range []string{"^^", "^"} {
 		src := "rule main = (z / a)*\nrule a = " + anchor + ` "b" / "b" "!"` + "\nrule z = \"q\""
 		prog := mustCompile(t, src)
@@ -428,6 +432,7 @@ rule item = {k == 1} [a-z!] #atomic / [a-z] #atomic "!"`, "x" + strings.Repeat("
 // reused after an edit are moved in place (so the earlier tree shares them), and a clone keeps
 // the tree as it was, sharing included.
 func TestDocumentEarlierTrees(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = line* $$
 rule line = x:[a-z]+ #atomic "\n"`)
 	doc, err := prog.NewDocument("main", strings.Repeat("ab\n", 10))

@@ -10,6 +10,7 @@ import (
 // Captures made in a hidden rule are not visible to its caller, and those of the caller are not
 // visible to it.
 func TestHiddenRuleCapturesAreInvisible(t *testing.T) {
+	t.Parallel()
 	msg := compileError(t, `type R = { V string }
 rule main = _m "c" => R{V: text($x)}
 rule _m = x:"a" "b"`)
@@ -28,6 +29,7 @@ rule _m = "b" => R{V: text($y)}`)
 // grammars with the underscore removed from the name of the rule give another value, so the
 // equality the check asserts is not vacuous.
 func TestHiddenRulesNegativeControl(t *testing.T) {
+	t.Parallel()
 	differs := 0
 	for _, tc := range spliceCases() {
 		if !strings.Contains(tc.hidden, "rule _m") || strings.Contains(tc.hidden, "_n") {
@@ -57,6 +59,7 @@ func TestHiddenRulesNegativeControl(t *testing.T) {
 // an action, or an inline action, still makes its own node then, as its action did: it does not
 // become a rule that splices into its caller.
 func TestDefaultValueKeepsTheNodeOfHiddenRulesWithActions(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ name, actions, plain, spliced string }{
 		{"inline default action", `rule main = "a" (x:"b" "c" => ...) "d"`, `rule main = "a" (x:"b" "c" => ...) "d"`, `rule main = "a" ("b" "c") "d"`},
 		{"inline action", `rule main = "a" (x:"b" "c" => text($x)) "d"`, `rule main = "a" (x:"b" "c" => ...) "d"`, `rule main = "a" ("b" "c") "d"`},

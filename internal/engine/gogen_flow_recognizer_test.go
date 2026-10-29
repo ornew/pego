@@ -23,7 +23,10 @@ import (
 // engine, on the generated-corpus harness. The route must be taken for some rule of the recognizer table,
 // so that the test cannot pass without exercising it. It runs for the fixtures with and without work
 // controls.
-func TestGeneratedFlowRecognizerParity(t *testing.T) { eachMode(t, testGeneratedFlowRecognizerParity) }
+func TestGeneratedFlowRecognizerParity(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedFlowRecognizerParity)
+}
 
 func testGeneratedFlowRecognizerParity(t *testing.T) {
 	if testing.Short() {
@@ -31,17 +34,18 @@ func testGeneratedFlowRecognizerParity(t *testing.T) {
 	}
 	cases := genCorpus(t)
 	taken, framed := 0, 0
-	gogen.LeanRouteHook = func(table string, r *compile.Rule) {
+	gh := &gogen.Hooks{}
+	setGenHooks(t, gh)
+	gh.LeanRoute = func(table string, r *compile.Rule) {
 		if table == "recRules" {
 			taken++
 		}
 	}
-	gogen.FramedRouteHook = func(table string, r *compile.Rule) {
+	gh.FramedRoute = func(table string, r *compile.Rule) {
 		if table == "recRules" {
 			framed++
 		}
 	}
-	t.Cleanup(func() { gogen.LeanRouteHook, gogen.FramedRouteHook = nil, nil })
 	for _, c := range cases {
 		g, err := parseTest(c.src)
 		if err != nil {
@@ -51,7 +55,7 @@ func testGeneratedFlowRecognizerParity(t *testing.T) {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 	}
-	gogen.LeanRouteHook, gogen.FramedRouteHook = nil, nil
+	gh.LeanRoute, gh.FramedRoute = nil, nil
 	if taken == 0 || framed == 0 {
 		t.Fatalf("%d direct and %d framed rules of the recognizer take the Flow route: the parity test exercises nothing", taken, framed)
 	}
@@ -212,6 +216,7 @@ func TestGeneratedFlowRecognizerMutantChild(t *testing.T) {
 // TestGeneratedFlowRecognizerNegativeControl checks that the parity test rejects each wrong recognizer
 // of flowRecognizerMutants: the mutant child must fail with a recognition mismatch.
 func TestGeneratedFlowRecognizerNegativeControl(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
@@ -241,6 +246,7 @@ func TestGeneratedFlowRecognizerNegativeControl(t *testing.T) {
 // depend on how the printer numbers its variables. Without the Analyze pass before Guards, the Flow route
 // prints no guards for these choices and the comparison fails.
 func TestFlowRecognizerGuardsChoiceAlternatives(t *testing.T) {
+	t.Parallel()
 	pinOrdinary(t)
 	g, err := parseTest(`rule main = item* !.
 rule item = uq / ident / sq
@@ -286,6 +292,7 @@ var (
 // input of the grammar must still agree with the engine. The test refuses every eligible rule, so that the
 // framed body is exercised for all of them, and requires that each refused rule took the framed route.
 func TestFlowRecognizerFallbackMatchesEngine(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
@@ -294,19 +301,20 @@ func TestFlowRecognizerFallbackMatchesEngine(t *testing.T) {
 		"rule main = ws item* !.\nrule ws = ([ ] / comment)*\nrule comment = \"--\" [^\\n]* / block_comment\nrule block_comment = \"/*\" (block_comment / !\"*/\" .)* \"*/\"\nrule item = [a-z]+ / [0-9]+\n",
 		[]string{"", "a", "a 1 b2", "-- c\n a", "/* x */ a", "/* /* y */ */ 1", "/* open", "a -- tail", "@", "a /* x */ /* y */ 2", "--"}}
 	refused, framed := map[string]bool{}, map[string]bool{}
-	gogen.RefuseFlowRecRule = func(r *compile.Rule) bool {
+	gh := &gogen.Hooks{}
+	setGenHooks(t, gh)
+	gh.RefuseFlowRecRule = func(r *compile.Rule) bool {
 		if gen.RecFlowEligible(r) {
 			refused[r.Name] = true
 			return true
 		}
 		return false
 	}
-	gogen.FramedRouteHook = func(table string, r *compile.Rule) {
+	gh.FramedRoute = func(table string, r *compile.Rule) {
 		if table == "recRules" {
 			framed[r.Name] = true
 		}
 	}
-	t.Cleanup(func() { gogen.RefuseFlowRecRule, gogen.FramedRouteHook = nil, nil })
 	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), []genCase{c}, gen.GenOptions{})
 	if len(refused) == 0 {
 		t.Fatal("no rule was refused: the fallback is not exercised")

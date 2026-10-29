@@ -16,6 +16,7 @@ import (
 // body for its call and its invocation only without Documents, since a Document reads the
 // position the invocation leaves at its failure.
 func TestGeneratedDocumentFrontierAfterFailure(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedDocumentFrontierAfterFailure)
 }
 
@@ -55,6 +56,7 @@ import (
 )
 
 func TestFrontier(t *testing.T) {
+	t.Parallel()
 	d, err := NewDocument("ab")
 	if err != nil {
 		t.Fatal(err)

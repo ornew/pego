@@ -19,6 +19,7 @@ import (
 // including insertions at the start and end and their removal, in both
 // position units.
 func TestGeneratedDocumentsMatchBatchOnCorpus(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedDocumentsMatchBatchOnCorpus)
 }
 

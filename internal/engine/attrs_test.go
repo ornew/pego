@@ -9,6 +9,7 @@ import (
 )
 
 func TestErrorAttribute(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = "hello" / _|_ @error(message="expect 'hello'")`,
 		ok("hello", `"hello"@main`),
 		fails("bye", `1:1: expect 'hello'`),
@@ -26,6 +27,7 @@ rule name = [a-z]+ #atomic [0-9]*`,
 }
 
 func TestRecoverAttribute(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = stmt* $$
 rule stmt = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")`)
 	n, err := prog.Parse("main", "ab;1x;cd;9;")
@@ -54,6 +56,7 @@ rule stmt = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")`)
 
 // TestRecoverBacktracking checks that recovered errors undone by backtracking are not reported.
 func TestRecoverBacktracking(t *testing.T) {
+	t.Parallel()
 	src := `rule main = item "!" / item "?"
 rule item = ("a" #atomic ";") #recover(skip=[^;]+ ";")`
 	for _, opts := range []compile.Options{{}, {DisableMemo: true}} {
@@ -74,6 +77,7 @@ rule item = ("a" #atomic ";") #recover(skip=[^;]+ ";")`
 // reused inside one, or the other way round: errors recovered inside a lookahead carry no
 // expectations, so the reused errors would differ from a parse without memoization.
 func TestRecoverInLookahead(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = r1 "ab" / r1 _
 rule r1 = &p0 p0
 rule p0 = #operators {
@@ -89,6 +93,7 @@ rule p0 = #operators {
 // lookahead) gives no value after a recovery, on every backend, inside a sequence and as a
 // rule body.
 func TestRecoverWithoutValue(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{
 		"rule main = r0 \"b\"\nrule r0 = c0:_ (&\"a\") #recover(skip=[^;]* \";\")",
 		"rule main = r0 \"b\"\nrule r0 = (&\"a\") #recover(skip=[^;]* \";\")",
@@ -110,6 +115,7 @@ func TestRecoverWithoutValue(t *testing.T) {
 }
 
 func TestRecoverTyping(t *testing.T) {
+	t.Parallel()
 	// The value of a recovered expression may be an error, which a declared result type must
 	// admit.
 	mustCompile(t, `type Stmt = { Name node[string] }
@@ -120,6 +126,7 @@ rule good Stmt = n:[a-z]+ #atomic ";" => Stmt{Name: $n}
 }
 
 func TestAttributeErrors(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, want string }{
 		{`rule main = "a" @error`, `@error requires a message argument`},
 		{`rule main = "a" @error(message=b)
@@ -137,6 +144,7 @@ rule b = "b"`, `@error: message must be a string`},
 // Recovery is a dedicated postfix pragma, so malformed pragma forms are
 // rejected by the grammar parser before engine compilation.
 func TestRecoveryPragmaSyntaxErrors(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{
 		`rule main = "a" #recover`,
 		`rule main = "a" #recover(skip="x", until="y")`,
@@ -152,6 +160,7 @@ func TestRecoveryPragmaSyntaxErrors(t *testing.T) {
 // TestRecoverInOperatorsRuleOperator checks that errors recovered inside an Operators Rule operator part are also
 // reported.
 func TestRecoverInOperatorsRuleOperator(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = e $$
 rule e = #operators {
     operand [0-9]+ #atomic

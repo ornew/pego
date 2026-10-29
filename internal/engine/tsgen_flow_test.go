@@ -12,6 +12,7 @@ import (
 
 // The lean value-free rules of the TypeScript parser are printed from Flow IR, as labeled blocks.
 func TestGeneratedTSPrintsLeanRulesFromFlow(t *testing.T) {
+	t.Parallel()
 	src := `rule main = word+
 rule word = [a-z]+ ("-" [a-z]+)*`
 	g, err := parseTest(src)
@@ -54,6 +55,7 @@ func outlineKeywords() (grammar string, inputs []string) {
 // Large and repeated parts of a rule run as functions of their own, and the parser still parses as the
 // engine does.
 func TestGeneratedTSOutlinesLargeAndRepeatedNodes(t *testing.T) {
+	t.Parallel()
 	src, _ := outlineKeywords()
 	g, err := parseTest(src)
 	if err != nil {
@@ -78,6 +80,7 @@ func TestGeneratedTSOutlinesLargeAndRepeatedNodes(t *testing.T) {
 // read are: no two functions of a generated parser have the same text once the names of constants are
 // ignored.
 func TestGeneratedTSOutlinedFunctionsAreShared(t *testing.T) {
+	t.Parallel()
 	// Two rules of the same keywords repeat every outlined node; the letters are literals, which each
 	// outlined function reads as a table of its own.
 	var alts []string
@@ -126,6 +129,7 @@ func TestGeneratedTSOutlinedFunctionsAreShared(t *testing.T) {
 // trace; the parser leaves Error.stackTraceLimit as it found it, also when the parse is interrupted at the
 // work limit while it builds the error, and an error that a parse returns keeps its stack trace.
 func TestGeneratedTSRecoveredErrorsCarryNoStack(t *testing.T) {
+	t.Parallel()
 	src := `rule main = item #recover(skip=[^;]+ ";")*
 rule item = [a-z]+ ";"`
 	g, err := parseTest(src)

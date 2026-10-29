@@ -10,6 +10,7 @@ import (
 )
 
 func TestOperatorsRuleWholeActionRejection(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testOperatorsRuleWholeActionRejection)
 }
 
@@ -84,6 +85,7 @@ func testOperatorsRuleWholeActionRejection(t *testing.T) {
 }
 
 func TestOperatorsRuleExplicitDefaultAction(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testOperatorsRuleExplicitDefaultAction)
 }
 

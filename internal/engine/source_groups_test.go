@@ -8,7 +8,10 @@ import (
 	"github.com/ornew/pego/internal/gen"
 )
 
-func TestSourceGroupsExecutableParity(t *testing.T) { eachMode(t, testSourceGroupsExecutableParity) }
+func TestSourceGroupsExecutableParity(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testSourceGroupsExecutableParity)
+}
 
 func testSourceGroupsExecutableParity(t *testing.T) {
 	const grouped = `type Number = { Text string }

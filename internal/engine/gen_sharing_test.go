@@ -15,6 +15,7 @@ import (
 )
 
 func TestGeneratedSharingIdentity(t *testing.T) {
+	t.Parallel()
 	ts := &tsgen.Generator{Generator: gen.Generator{Table: "rules"}}
 	name := ts.Method("first", "return [null, true];\n")
 	ts.Table = "recRules"
@@ -49,7 +50,10 @@ func TestGeneratedSharingIdentity(t *testing.T) {
 	}
 }
 
-func TestGeneratedSharingDeterministic(t *testing.T) { eachMode(t, testGeneratedSharingDeterministic) }
+func TestGeneratedSharingDeterministic(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedSharingDeterministic)
+}
 
 func testGeneratedSharingDeterministic(t *testing.T) {
 	g, err := parseTest(`rule main = a "!" / a "?"
@@ -104,6 +108,7 @@ rule a = ("é" / "ab")+ #atomic`)
 }
 
 func TestGeneratedUnsharedParsersMatchEngine(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedUnsharedParsersMatchEngine)
 }
 
@@ -117,6 +122,7 @@ func testGeneratedUnsharedParsersMatchEngine(t *testing.T) {
 }
 
 func TestGeneratedUnsharedTSParsersMatchEngine(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("runs generated TypeScript")
 	}

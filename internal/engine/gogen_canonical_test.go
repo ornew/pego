@@ -386,6 +386,7 @@ func keysOf(m map[string]any) []string {
 // agree, and pairs that differ in a nil field inside a struct, in a tuple slot, between null and
 // an empty list, and in the range of a struct.
 func TestCanonicalValues(t *testing.T) {
+	t.Parallel()
 	engine := `{"type":"R","start":0,"end":3,"fields":{"P":[1,"s"],"Start":0,"Q":{"type":"T","start":0,"end":1,"fields":{"Text":"a"}},"N":null,"L":[]}}`
 	agree := `{"struct":"R","span":true,"start":0,"end":3,"fields":{"P":{"struct":"Tuple2[int,string]","fields":{"E0":1,"E1":"s"}},"Start_":0,"Q":{"struct":"T","span":true,"start":0,"end":1,"fields":{"Text":"a"}},"N":null,"L":[]}}`
 	cases := []struct {
@@ -442,6 +443,7 @@ func TestCanonicalValues(t *testing.T) {
 // to a zero value: nil, "", 0, false and an empty list. canonicalDifferences treats an absent key of
 // a struct as an unset field, which is sound only while this holds.
 func TestEngineStructKeepsExplicitZeroFields(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `type Z = { P *node[string]; S string; I int; B bool; L []node[string] }
 rule main Z = x:"a" => Z{P: nil, S: "", I: 0, B: false, L: []node[string]{}}`)
 	n, err := prog.Parse("main", "a")
@@ -477,6 +479,7 @@ rule main Z = x:"a" => Z{P: nil, S: "", I: 0, B: false, L: []node[string]{}}`)
 // TestCanonicalUnsetFieldsAreDeclaredOnly checks that the exemption for an absent key applies only to
 // the fields of a struct: a zero-valued key that the engine omits elsewhere is still a difference.
 func TestCanonicalUnsetFieldsAreDeclaredOnly(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name       string
 		typed, eng map[string]any
@@ -498,6 +501,7 @@ func TestCanonicalUnsetFieldsAreDeclaredOnly(t *testing.T) {
 // TestCanonicalGenericNodeType checks that a generic typed node matches an engine node with or
 // without a named type, and that a named typed node still differs from another named type or none.
 func TestCanonicalGenericNodeType(t *testing.T) {
+	t.Parallel()
 	node := func(typ any) map[string]any {
 		n := map[string]any{"start": 0.0, "end": 1.0, "value": "a"}
 		if typ != nil {

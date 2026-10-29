@@ -32,6 +32,7 @@ rule other = t:("@" [a-z]*) #atomic => Other{Text: text($t)}`
 // TestTextStructsAcrossBackends checks that the backends agree on the structs actions make from
 // the text a rule matches.
 func TestTextStructsAcrossBackends(t *testing.T) {
+	t.Parallel()
 	inputs := []string{"", "ab", "ab 12 3.5", "<x> ! #a # @b @", "ab ?", "12.", "<x", "! ab <yz> 7", "[ab]ab", "[ab]cd 1"}
 	for _, sourceInfo := range []bool{false, true} {
 		prog := compileBare(t, textStructGrammar, compile.Options{SourceInfo: sourceInfo})
@@ -54,7 +55,10 @@ func TestTextStructsAcrossBackends(t *testing.T) {
 	}
 }
 
-func TestGeneratedTextStructs(t *testing.T) { eachMode(t, testGeneratedTextStructs) }
+func TestGeneratedTextStructs(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedTextStructs)
+}
 
 func testGeneratedTextStructs(t *testing.T) {
 	if testing.Short() {
@@ -71,6 +75,7 @@ func testGeneratedTextStructs(t *testing.T) {
 
 // A module whose rule converts its value to a type that is not a named node type is rejected.
 func TestNodeTypeModuleValidation(t *testing.T) {
+	t.Parallel()
 	prog := compileBare(t, `type Name = node[string]
 rule main = name ("," name)*
 rule name Name = ([a-z]+) #atomic`, compile.Options{})

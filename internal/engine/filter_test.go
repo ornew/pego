@@ -36,6 +36,7 @@ rule one _ = _ => 1`, []string{"a?", "a!", "a", ""}},
 }
 
 func TestFilterNodeIdentityAndEmptyInput(t *testing.T) {
+	t.Parallel()
 	program := mustCompile(t, filterIdentitySource)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -57,6 +58,7 @@ func TestFilterNodeIdentityAndEmptyInput(t *testing.T) {
 }
 
 func TestFilterAcrossBackends(t *testing.T) {
+	t.Parallel()
 	for _, fixture := range filterCases() {
 		t.Run(fixture.name, func(t *testing.T) {
 			program := mustCompile(t, fixture.src)
@@ -78,6 +80,7 @@ func TestFilterAcrossBackends(t *testing.T) {
 }
 
 func TestFilterTypeAndRuntimeValidation(t *testing.T) {
+	t.Parallel()
 	for _, source := range []string{
 		`rule main = v1:"a" => filter(list($v1), (x) => 1)`,
 		`rule main = v1:"a" => filter(list($v1), (x, y) => true)`,
@@ -106,6 +109,7 @@ rule main = v1:"a" => Out{Items: filter(list($v1, nil), (x) => x != nil)}`,
 }
 
 func TestFilterCompiledInstructionSet(t *testing.T) {
+	t.Parallel()
 	program := mustCompile(t, filterIdentitySource)
 	for _, mode := range valueModes {
 		data, err := program.Marshal("main", mode)
@@ -147,7 +151,10 @@ func TestFilterCompiledInstructionSet(t *testing.T) {
 	t.Fatal("fixture emitted no filter call")
 }
 
-func TestFilterGeneratedGoParity(t *testing.T) { eachMode(t, testFilterGeneratedGoParity) }
+func TestFilterGeneratedGoParity(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testFilterGeneratedGoParity)
+}
 
 func testFilterGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
@@ -156,6 +163,7 @@ func testFilterGeneratedGoParity(t *testing.T) {
 }
 
 func TestFilterGeneratedTypeScriptParity(t *testing.T) {
+	t.Parallel()
 	node, err := exec.LookPath("node")
 	if err != nil {
 		t.Skip("node not found")
@@ -166,6 +174,7 @@ func TestFilterGeneratedTypeScriptParity(t *testing.T) {
 // The checker rejects a predicate of type _, so a predicate that produces another value than a
 // bool is rejected when the grammar is compiled.
 func TestFilterNonBoolPredicateIsRejected(t *testing.T) {
+	t.Parallel()
 	const src = `rule main = v1:"a" d:one $$ => filter(list($v1), (item) => $d)
 rule one _ = _ => 1`
 	if got := compileMessage(t, src); !strings.Contains(got, "filter: predicate must produce a bool, got one") {

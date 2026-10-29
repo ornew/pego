@@ -89,6 +89,7 @@ func operatorsNodeTypeNames(n *value.Node) string {
 // operator nodes are converted at every nesting level; the nodes that an operator part carries (the
 // value of $op) are not operator nodes and keep their types.
 func TestOperatorsRuleNamedNodeTypeShape(t *testing.T) {
+	t.Parallel()
 	cases := operatorsNamedNodeCases()
 	for _, sourceInfo := range []bool{false, true} {
 		{
@@ -120,6 +121,7 @@ func TestOperatorsRuleNamedNodeTypeShape(t *testing.T) {
 // TestOperatorsRuleNamedNodeTypeAcrossBackends checks that the closure evaluator and the bytecode
 // backends build the same trees for an Operators Rule with and without a named node type.
 func TestOperatorsRuleNamedNodeTypeAcrossBackends(t *testing.T) {
+	t.Parallel()
 	for _, c := range operatorsNamedNodeCases() {
 		for _, sourceInfo := range []bool{false, true} {
 			{
@@ -140,6 +142,7 @@ func TestOperatorsRuleNamedNodeTypeAcrossBackends(t *testing.T) {
 // A Document reparses an Operators Rule with a named node type to the trees of a fresh parse,
 // whose operator nodes are all converted, across edits.
 func TestOperatorsRuleNamedNodeTypeDocument(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, operatorsNamedNodeCases()[0].src)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		opts := ParseOptions{Backend: backend}
@@ -169,6 +172,7 @@ func TestOperatorsRuleNamedNodeTypeDocument(t *testing.T) {
 // Generated Go parsers, plain and typed, and generated TypeScript parsers build the same trees as
 // the engine for Operators Rules with and without a named node type.
 func TestOperatorsRuleNamedNodeTypeGenerated(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testOperatorsRuleNamedNodeTypeGenerated)
 }
 
@@ -196,6 +200,7 @@ func testOperatorsRuleNamedNodeTypeGenerated(t *testing.T) {
 // Typed Go yields *Expr for every operator node of an Operators Rule declared with Expr, at every
 // nesting level.
 func TestGeneratedTypedOperatorsRuleNamedNodeType(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTypedOperatorsRuleNamedNodeType)
 }
 
@@ -242,6 +247,7 @@ func main() {
 // an operator without an action included, as the value of an ordinary rule is. Generated parsers
 // reject these grammars when they are generated.
 func TestOperatorsRuleNamedNodeTypeRuntimeError(t *testing.T) {
+	t.Parallel()
 	const defs = "type Expr = node[string]\nrule num Expr = [0-9]+ #atomic\n"
 	for _, tc := range []struct{ src, static string }{
 		{"rule expr Expr = #operators {\n operand num\n level { infix left \"+\" => 1 }\n}", "operatorsRule expr produces int, which cannot be converted to Expr"},
@@ -255,7 +261,7 @@ func TestOperatorsRuleNamedNodeTypeRuntimeError(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Generate(g, gen.GenOptions{Package: "p", Start: "expr"}); err == nil {
+		if _, err := Generate(t, g, gen.GenOptions{Package: "p", Start: "expr"}); err == nil {
 			t.Errorf("%q: the generator accepted a grammar that cannot be type checked", tc.src)
 		}
 	}
@@ -263,6 +269,7 @@ func TestOperatorsRuleNamedNodeTypeRuntimeError(t *testing.T) {
 
 // An Operators Rule without a named node type keeps the tuple nodes of its operators.
 func TestOperatorsRuleWithoutNamedNodeTypeKeepsTuples(t *testing.T) {
+	t.Parallel()
 	prog := compileBare(t, operatorsNamedNodeCases()[1].src)
 	n, err := prog.Parse("main", "-1+2!")
 	if err != nil {
@@ -276,6 +283,7 @@ func TestOperatorsRuleWithoutNamedNodeTypeKeepsTuples(t *testing.T) {
 // An operator whose node cannot be converted to the rule's named node type is a compile-time
 // error, as for the value of an ordinary rule.
 func TestOperatorsRuleNamedNodeTypeErrors(t *testing.T) {
+	t.Parallel()
 	const defs = "type Expr = node[string]\ntype S = { A int }\nrule num Expr = [0-9]+ #atomic\n"
 	for _, tc := range []struct{ src, want string }{
 		{"rule expr Expr = #operators {\n operand num\n level { infix left \"+\" }\n}", "operators of expr without an action produce a tuple node, which cannot be converted to Expr"},

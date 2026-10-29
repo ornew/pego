@@ -9,6 +9,7 @@ import (
 )
 
 func TestWalkEdgeOrderAndSharedParents(t *testing.T) {
+	t.Parallel()
 	shared := value.Ptr(value.Data{Text: "shared"})
 	left := value.Ptr(value.Data{Children: []*value.Node{shared}})
 	right := value.Ptr(value.Data{Fields: value.Fields{{Name: "nested", Value: []any{shared, nil, 7}}}})
@@ -47,6 +48,7 @@ func TestWalkEdgeOrderAndSharedParents(t *testing.T) {
 }
 
 func TestWalkCyclesAndControls(t *testing.T) {
+	t.Parallel()
 	n := &value.Node{}
 	value.D(n).Children = []*value.Node{n}
 	var cycle *value.CycleError
@@ -84,6 +86,7 @@ func TestWalkCyclesAndControls(t *testing.T) {
 }
 
 func TestWalkDeep(t *testing.T) {
+	t.Parallel()
 	n := &value.Node{}
 	const depth = 20000
 	for i := 0; i < depth; i++ {
@@ -101,6 +104,7 @@ func TestWalkDeep(t *testing.T) {
 }
 
 func TestCursorBoundariesAndUncontainedChildren(t *testing.T) {
+	t.Parallel()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		a, b, z := value.Ptr(value.Data{Start: 1, End: 3}), value.Ptr(value.Data{Start: 3, End: 4}), value.Ptr(value.Data{Start: 3, End: 3})
 		root := value.Ptr(value.Data{Start: 20, End: 21, Children: []*value.Node{a, b, z, a}})
@@ -140,6 +144,7 @@ func TestCursorBoundariesAndUncontainedChildren(t *testing.T) {
 }
 
 func TestWalkSliceIdentityIgnoresCapacity(t *testing.T) {
+	t.Parallel()
 	x := make([]any, 1, 2)
 	x[0] = x[:1:1]
 	root := value.Ptr(value.Data{Fields: value.Fields{{Name: "x", Value: x}}})

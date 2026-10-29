@@ -54,6 +54,7 @@ rule _m = [a-z]+ #atomic`, `rule main = (([a-z]+ #atomic) ";")* $$ #recover(skip
 }
 
 func TestHiddenRulesSpliceTheirExpression(t *testing.T) {
+	t.Parallel()
 	for _, tc := range spliceCases() {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, opts := range []compile.Options{{}, {DefaultValue: true}, {SourceInfo: true}, {DisableMemo: true}} {
@@ -81,6 +82,7 @@ func TestHiddenRulesSpliceTheirExpression(t *testing.T) {
 
 // The elements of a hidden rule are the elements of its caller whatever the nesting.
 func TestHiddenRulesSpliceInPlace(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = "a" _m "d"
 rule _m = x:"b" "c"`, ok("abcd", `("a" "b" "c" "d")@main`))
 	check(t, `rule main = _l
@@ -91,6 +93,7 @@ rule _e = _e "+" "a" / "a"`, ok("a+a+a", `((("a" "+" "a") "+" "a"))@main`))
 
 // A hidden rule is called as a rule: it is memoized, and it may recur.
 func TestHiddenRulesAreCalledAsRules(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, `rule main = _m "!" / _m "?"
 rule _m = "a" "b"`)
 	if got := result(p, "ab?"); got != `("a" "b" "?")@main` {
@@ -100,6 +103,7 @@ rule _m = "a" "b"`)
 
 // A hidden rule whose elements contain themselves has no fixed number of them.
 func TestHiddenRulesCannotContainThemselvesFlat(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{
 		"rule main = _a\nrule _a = \"x\" _a",
 		"rule main = _a\nrule _a = \"x\" _b\nrule _b = _a \"y\"",
@@ -113,6 +117,7 @@ func TestHiddenRulesCannotContainThemselvesFlat(t *testing.T) {
 
 // A cut in a hidden rule commits the choices of the rule, not those around the call.
 func TestHiddenRulesScopeTheirCuts(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = _m / "a" "c"
 rule _m = "a" #cut "b"`, ok("ab", `("a" "b")@main`), ok("ac", `("a" "c")@main`))
 	check(t, `rule main = ("a" #cut "b") / "a" "c"`, ok("ab", `("a" "b")@main`), fails("ac", `expected "b"`))

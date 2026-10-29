@@ -8,6 +8,7 @@ import (
 )
 
 func TestGeneratedNodeFrameScratchCorpus(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedNodeFrameScratchCorpus)
 }
 

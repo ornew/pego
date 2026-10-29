@@ -8,6 +8,7 @@ import (
 )
 
 func TestUnknownDeclarationAttribute(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, want string }{
 		{"@foo\nrule a = \"x\"\n", "1:1: unknown declaration attribute @foo"},
 		{"rule a = \"x\"\n\n@foo(1) @bar\nrule b = a\n", "3:1: unknown declaration attribute @foo\n3:9: unknown declaration attribute @bar"},

@@ -23,6 +23,7 @@ func decodedBoundaries(s string) []int {
 }
 
 func TestInvalidUTF8EditBoundaries(t *testing.T) {
+	t.Parallel()
 	corpus := []string{"", "a", "é", "日本", "😀", "\x80", "\xc3", "\xc3\x80", "\xc3x\x80", "\xe0\x80\x80", "\xed\xa0\x80", "\xf4\x90\x80\x80", "\xf0\x9f\x98", "a\x80é\xff日"}
 	rng := rand.New(rand.NewSource(15))
 	for i := 0; i < 1000; i++ {
@@ -45,6 +46,7 @@ func TestInvalidUTF8EditBoundaries(t *testing.T) {
 }
 
 func TestDocumentCompletesUTF8Prefix(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, "rule main = x $$\nrule x = .")
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, s := range []string{"\xc3", "\xe6\xbc", "\xf0\x9f\x98"} {
@@ -69,6 +71,7 @@ func TestDocumentCompletesUTF8Prefix(t *testing.T) {
 }
 
 func TestDocumentInvalidUTF8EditEquivalence(t *testing.T) {
+	t.Parallel()
 	pieces := []string{"", "a", "\n", "é", "日", "😀", "\x80", "\xa9", "\xc3", "\xe6\xbc", "\xf0\x9f\x98", "\xff", "\xed\xa0\x80"}
 	grammars := []string{"rule main = item* $$\nrule item = .", "rule main = item* $$\nrule item = \"é\" / \"日\" / \"😀\" / \"�\"", "rule main = item* $$\nrule item = [é日😀�]", "rule main = x $$\nrule x = ."}
 	for gi, grammar := range grammars {

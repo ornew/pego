@@ -9,6 +9,7 @@ import (
 // A wrapper can return a growing seed without examining another character.
 // Its dependency range must still include the input consumed by that seed.
 func TestTraceLeftRecursionSeedRange(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{
 		`rule main = expr $$
 rule expr = step / seed
@@ -41,6 +42,7 @@ rule seed = ""`,
 }
 
 func TestGrowingSeedDependencyBounds(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct {
 		src, input string
 		behind     bool

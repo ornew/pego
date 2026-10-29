@@ -16,6 +16,7 @@ import (
 )
 
 func TestKeptUnits(t *testing.T) {
+	t.Parallel()
 	units := []gogen.ShakeUnit{
 		{Name: "a", Text: "func a() { b() }"},
 		{Name: "b", Text: "func b() {}"},
@@ -38,6 +39,7 @@ func TestKeptUnits(t *testing.T) {
 }
 
 func TestShakeVars(t *testing.T) {
+	t.Parallel()
 	src := `package p
 
 var scope1 = []string{"a"}
@@ -84,7 +86,10 @@ rule digits = [0-9]*`
 // TestTypedUnreachedRulesAreLeftOut checks that the typed code of a rule that no typed entry point
 // reaches is not printed, that an Entry is set only for the start rule, and that the output calls
 // nothing it does not define.
-func TestTypedUnreachedRulesAreLeftOut(t *testing.T) { eachMode(t, testTypedUnreachedRulesAreLeftOut) }
+func TestTypedUnreachedRulesAreLeftOut(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testTypedUnreachedRulesAreLeftOut)
+}
 
 func testTypedUnreachedRulesAreLeftOut(t *testing.T) {
 	g, err := syntax.Parse(reachTypedGrammar)
@@ -123,12 +128,15 @@ func testTypedUnreachedRulesAreLeftOut(t *testing.T) {
 // TestTypedUnreachedCalleeFailsGeneration shows that a typed rule that the first pass wrongly left
 // out is noticed by the second: the call of it does not compile away silently.
 func TestTypedUnreachedCalleeFailsGeneration(t *testing.T) {
+	t.Parallel()
 	eachMode(t, func(t *testing.T) {
 		g, err := syntax.Parse(reachTypedGrammar)
 		if err != nil {
 			t.Fatal(err)
 		}
-		gogen.ReachHook = func(l *gogen.LiveRules) {
+		gh := &gogen.Hooks{}
+		setGenHooks(t, gh)
+		gh.Reach = func(l *gogen.LiveRules) {
 			n := 0
 			for k := range l.Reach {
 				if k.Table == "trules" && !isRoot(l, k) {
@@ -140,7 +148,6 @@ func TestTypedUnreachedCalleeFailsGeneration(t *testing.T) {
 				t.Error("the first pass reached no typed rule besides the start rule")
 			}
 		}
-		defer func() { gogen.ReachHook = nil }()
 		_, err = generateCode(t, g, gen.GenOptions{Start: "main", Package: "p", Types: true})
 		if err == nil || !strings.Contains(err.Error(), "left out") {
 			t.Errorf("generation with a typed callee left out: err = %v, want an internal error", err)
@@ -161,6 +168,7 @@ func isRoot(l *gogen.LiveRules, k gogen.RuleKey) bool {
 // TestTypedUnreachedRulesRunLikeTheFullOutput builds the typed parser with the unreached rules left
 // out (p) and the one that keeps them (k) and compares what ParseAST returns for the same inputs.
 func TestTypedUnreachedRulesRunLikeTheFullOutput(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testTypedUnreachedRulesRunLikeTheFullOutput)
 }
 

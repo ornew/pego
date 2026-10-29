@@ -34,6 +34,7 @@ func hasCut(e grammar.Expr) (found bool) {
 // the ordinary and the work-controlled forms, a rule with a cut takes
 // the Flow route in the Node and recognizer tables (a rule Flow IR does not print fails the generation).
 func TestFlowCutsPrintFromFlow(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("generates the corpus")
 	}
@@ -41,18 +42,19 @@ func TestFlowCutsPrintFromFlow(t *testing.T) {
 	for _, controls := range []bool{false, true} {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
-			gogen.FramedRouteHook = func(table string, r *compile.Rule) {
+			gh := &gogen.Hooks{}
+			setGenHooks(t, gh)
+			gh.FramedRoute = func(table string, r *compile.Rule) {
 				if hasCut(r.BodyExpr()) {
 					taken[table]++
 				}
 			}
-			defer func() { gogen.FramedRouteHook = nil }()
 			for _, c := range cases {
 				g, err := parseTest(c.src)
 				if err != nil {
 					continue
 				}
-				if _, err := Generate(g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
+				if _, err := Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
 					t.Fatalf("%s: %v", c.name, err)
 				}
 			}

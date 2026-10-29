@@ -8,6 +8,7 @@ import (
 )
 
 func TestGeneratedTSWorkControlScalarStrings(t *testing.T) {
+	t.Parallel()
 	key := strings.Repeat("a", 1600)
 	cases := []struct{ name, action string }{
 		{"length", `Box{Ok:len("` + key + `")==1600,N:len("` + key + `"),S:""}`},
@@ -102,6 +103,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 }
 
 func TestGeneratedTSScalarIteratorNamespace(t *testing.T) {
+	t.Parallel()
 	src := `type Generator = { Text string }
 
 rule main Generator = t:("z") #atomic => Generator{Text: text($t)}`

@@ -18,6 +18,7 @@ func fallbackTextInput(unit PositionUnit, base int, bytes []byte, runes []rune, 
 }
 
 func TestWorkInputTextNativeParityAndDetachedResult(t *testing.T) {
+	t.Parallel()
 	byteCases := []int{0, 128, 129, 4096, 4097}
 	for _, n := range byteCases {
 		source := make([]byte, n+6)
@@ -82,6 +83,7 @@ func TestWorkInputTextNativeParityAndDetachedResult(t *testing.T) {
 }
 
 func TestWorkInputTextChunkInterruptionLeavesSourceAndRetries(t *testing.T) {
+	t.Parallel()
 	byteSource := []byte(strings.Repeat("a", 4097))
 	byteBefore := append([]byte(nil), byteSource...)
 	byteInput := fallbackTextInput(Bytes, 0, byteSource, nil, core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 4096}))
@@ -115,6 +117,7 @@ func TestWorkInputTextChunkInterruptionLeavesSourceAndRetries(t *testing.T) {
 }
 
 func TestWorkInputTextPollingCancellationAtCopyAndEncoding(t *testing.T) {
+	t.Parallel()
 	bytes := []byte(strings.Repeat("b", 8192))
 	byteInput := fallbackTextInput(Bytes, 0, bytes, nil, core.NewWorkControl(newPollingContext(2), limits.WorkLimits{}))
 	if err := catchFatal(t, func() { _ = byteInput.Text(0, len(bytes)) }); !errors.Is(err, context.Canceled) {
@@ -138,6 +141,7 @@ func TestWorkInputTextPollingCancellationAtCopyAndEncoding(t *testing.T) {
 }
 
 func TestWorkInputTextSourceSubstringRemainsConstantWork(t *testing.T) {
+	t.Parallel()
 	long := strings.Repeat("x", 8192)
 	byteInput := core.Input{Unit: Bytes, Bs: []byte(long), Src: long, SrcOK: true, Control: core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 1, MaxSteps: 1})}
 	if got := byteInput.Text(1024, 7168); got != long[1024:7168] {
@@ -162,6 +166,7 @@ func TestWorkInputTextSourceSubstringRemainsConstantWork(t *testing.T) {
 }
 
 func TestWorkTraceTextInterruptionRetriesPooledParser(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = .* $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{Bytes, CodePoints} {

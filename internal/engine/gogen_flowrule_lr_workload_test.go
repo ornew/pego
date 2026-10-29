@@ -12,7 +12,10 @@ import (
 
 // PEGO_TYPED_LR_DIR preserves both same-generator routes for prebuilt paired
 // benchmarks. Normal tests remove the fixture modules automatically.
-func TestGeneratedTypedLRWorkload(t *testing.T) { eachMode(t, testGeneratedTypedLRWorkload) }
+func TestGeneratedTypedLRWorkload(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedTypedLRWorkload)
+}
 
 func testGeneratedTypedLRWorkload(t *testing.T) {
 	if testing.Short() {
@@ -30,6 +33,7 @@ func testGeneratedTypedLRWorkload(t *testing.T) {
 }
 
 func TestGeneratedTypedLRActionWorkload(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTypedLRActionWorkload)
 }
 
@@ -119,6 +123,7 @@ import (
 func lrInput(n int) string { return "a,b,c," + strings.Repeat(";d,e,f,", n) }
 
 func TestLRWorkload(t *testing.T) {
+	t.Parallel()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		saved, err := ParseAST(lrInput(1), WithUnit(unit))
 		if err != nil || saved.N != 3 || len(saved.Items) != 3 || saved.Items[0].Value != "d" {
@@ -182,6 +187,7 @@ import (
 func lrInput(n int) string { return "1" + strings.Repeat("+2*3", n) }
 
 func TestLRWorkload(t *testing.T) {
+	t.Parallel()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		saved, err := ParseAST("1+2*3", WithUnit(unit))
 		if err != nil {

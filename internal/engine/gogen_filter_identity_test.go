@@ -34,7 +34,10 @@ rule word Word = t:([a-zé]+) #atomic => Word{Text: text($t)}`
 // A separate typed consumer observes pointer identity rather than comparing
 // serialized duplicate values. Both direct construction and Node conversion
 // must retain the same element objects through filtering and aliases.
-func TestGeneratedTypedFilterIdentity(t *testing.T) { eachMode(t, testGeneratedTypedFilterIdentity) }
+func TestGeneratedTypedFilterIdentity(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedTypedFilterIdentity)
+}
 
 func testGeneratedTypedFilterIdentity(t *testing.T) {
 	if testing.Short() {
@@ -71,6 +74,7 @@ func testGeneratedTypedFilterIdentity(t *testing.T) {
 			fmt.Fprintf(&imports, "\t%s \"filteridentity/%s\"\n", pkg, pkg)
 			body := `
 func TestPACKAGEIdentity(t *testing.T) {
+	t.Parallel()
  for _, unit := range []PACKAGE.PositionUnit{PACKAGE.CodePoints, PACKAGE.Bytes} {
   result, err := PACKAGE.ParseAST("é", PACKAGE.WithUnit(unit))
   if err != nil || result == nil { t.Fatalf("parse: %v", err) }
@@ -95,6 +99,7 @@ func TestPACKAGEIdentity(t *testing.T) {
 			if start == "empty" {
 				body = `
 func TestPACKAGEEmpty(t *testing.T) {
+	t.Parallel()
  for _, unit := range []PACKAGE.PositionUnit{PACKAGE.CodePoints, PACKAGE.Bytes} {
   result, err := PACKAGE.ParseAST("", PACKAGE.WithUnit(unit))
   if err != nil || result == nil { t.Fatalf("empty parse: %v", err) }

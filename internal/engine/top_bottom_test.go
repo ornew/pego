@@ -32,6 +32,7 @@ func topBottomCases() []genCase {
 }
 
 func TestTopBottomAcrossBackends(t *testing.T) {
+	t.Parallel()
 	for _, fixture := range topBottomCases() {
 		t.Run(fixture.name, func(t *testing.T) {
 			program := mustCompile(t, fixture.src)
@@ -48,6 +49,7 @@ func TestTopBottomAcrossBackends(t *testing.T) {
 }
 
 func TestTopBottomTypes(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, want string }{
 		// A _ value is assignable only to _.
 		{"type T = { A _ }\ntype U = { B node[string] }\nrule main = x:\"a\" => U{B: T{A: $x}.A}", "_"},
@@ -103,6 +105,7 @@ func TestTopBottomTypes(t *testing.T) {
 
 // A list of _ only has to be a list value, whatever its elements.
 func TestTopBottomListCheck(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ field, want string }{
 		{"[]_", "[]_"},
 		{"*[]_", "*[]_"},
@@ -142,6 +145,7 @@ func TestTopBottomListCheck(t *testing.T) {
 }
 
 func TestTopBottomReportedOnce(t *testing.T) {
+	t.Parallel()
 	g, err := parseTest("type T = { A int & string }\nrule main = x:\"a\" => T{A: $x}")
 	if err != nil {
 		t.Fatal(err)
@@ -170,6 +174,7 @@ func TestTopBottomReportedOnce(t *testing.T) {
 
 // A location of type _|_ is an error: no value is assignable to it.
 func TestTopBottomLocationsAreRejected(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, want string }{
 		{"rule main = x:\"a\" => $x.(_|_)", "the cast has type _|_"},
 		{"rule main = x:\"a\" => $x.(int & string)", "the cast has type _|_"},
@@ -198,6 +203,7 @@ func TestTopBottomLocationsAreRejected(t *testing.T) {
 }
 
 func TestTopBottomSyntax(t *testing.T) {
+	t.Parallel()
 	src := "type A ~ []B & *C | _ & (D | B) | _|_\ntype E ~ [](B & C) & *(B | C)\ntype B = { Text string }\ntype C = { Text string }\ntype D = { Text string }\nrule main = x:\"a\" => $x.(_ & node[_])"
 	g, err := parseTest(src)
 	if err != nil {
@@ -257,6 +263,7 @@ func TestTopBottomSyntax(t *testing.T) {
 }
 
 func TestTopBottomSchema(t *testing.T) {
+	t.Parallel()
 	program := mustCompile(t, "type T = { A _; B (node[string] | int) & node[_]; C U }\ntype U ~ _\nrule main = x:\"a\" => T{A: $x, B: $x, C: 1}")
 	schema, err := outputSchemaPrototype(program, "main", false)
 	if err != nil {
@@ -294,7 +301,10 @@ func TestTopBottomSchema(t *testing.T) {
 	}
 }
 
-func TestTopBottomGeneratedGoParity(t *testing.T) { eachMode(t, testTopBottomGeneratedGoParity) }
+func TestTopBottomGeneratedGoParity(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testTopBottomGeneratedGoParity)
+}
 
 func testTopBottomGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
@@ -304,6 +314,7 @@ func testTopBottomGeneratedGoParity(t *testing.T) {
 }
 
 func TestTopBottomGeneratedTypeScriptParity(t *testing.T) {
+	t.Parallel()
 	node, err := exec.LookPath("node")
 	if err != nil {
 		t.Skip("node not found")

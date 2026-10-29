@@ -11,6 +11,7 @@ import (
 
 // PEGO_TYPED_OPERATORS_RULE_DIR preserves latest-generator controls for paired timing.
 func TestGeneratedTypedOperatorsRuleWorkload(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTypedOperatorsRuleWorkload)
 }
 
@@ -32,6 +33,7 @@ func testGeneratedTypedOperatorsRuleWorkload(t *testing.T) {
 }
 
 func TestGeneratedTypedOperatorsRuleActionWorkload(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTypedOperatorsRuleActionWorkload)
 }
 
@@ -73,6 +75,7 @@ import (
 func operatorsRuleInput(n int) string { return "a" + strings.Repeat(" [b,c,d,]", n) }
 
 func TestOperatorsRuleWorkload(t *testing.T) {
+	t.Parallel()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		saved, err := ParseAST(operatorsRuleInput(2), WithUnit(unit))
 		post, ok := saved.(*Post)

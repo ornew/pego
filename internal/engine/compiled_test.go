@@ -20,6 +20,7 @@ import (
 // TestCompiledRoundTrip checks that a program loaded from a compiled grammar returns the same
 // results as the original program.
 func TestCompiledRoundTrip(t *testing.T) {
+	t.Parallel()
 	for _, c := range genCorpus(t) {
 		t.Run(c.name, func(t *testing.T) {
 			checkCompiledRoundTrip(t, mustCompile(t, c.src), c.inputs)
@@ -30,6 +31,7 @@ func TestCompiledRoundTrip(t *testing.T) {
 // The retired terminal constructors are read with syntax.ParseLegacy as the text struct
 // constructors they mean.
 func TestCompiledRoundTripTerminalConstructors(t *testing.T) {
+	t.Parallel()
 	for name, src := range map[string]string{
 		"value error":     "type Int terminal\nvar value int\nrule main = {value := 1} \"x\" => Int{list(value, \"a\")[0].(string)}",
 		"predicate error": "type Int terminal\nvar value int\nrule main = {value := 1} {Int{list(value, \"a\")[0].(string)} != nil} \"x\" / \"x\"",
@@ -83,6 +85,7 @@ func checkCompiledRoundTrip(t *testing.T, prog *Program, inputs []string) {
 // TestCompiledStreamAndDocument checks that stream parsing works with a program loaded in parse
 // mode and incremental parsing with one loaded in document mode.
 func TestCompiledStreamAndDocument(t *testing.T) {
+	t.Parallel()
 	data, _ := mustCompile(t, records).MarshalBinary("")
 	prog, start, err := LoadProgram(data)
 	if err != nil || start != "" {
@@ -121,6 +124,7 @@ func TestCompiledStreamAndDocument(t *testing.T) {
 }
 
 func TestCompiledErrors(t *testing.T) {
+	t.Parallel()
 	data, err := mustCompile(t, arith).MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
@@ -164,6 +168,7 @@ func TestCompiledErrors(t *testing.T) {
 // the previous syntax trees, does not load and asks for the grammar to be compiled again, that a
 // file of a later version does not load either, and that one of the current version does.
 func TestCompiledEarlierInstructionSet(t *testing.T) {
+	t.Parallel()
 	src := `rule main = n:[0-9]+ #atomic => $n`
 	data, err := mustCompile(t, src).MarshalBinary("main")
 	if err != nil {
@@ -201,6 +206,7 @@ func TestCompiledEarlierInstructionSet(t *testing.T) {
 // TestCompiledCorruptionDoesNotPanic checks that loading corrupted data (with a valid checksum)
 // does not panic.
 func TestCompiledCorruptionDoesNotPanic(t *testing.T) {
+	t.Parallel()
 	var seeds [][]byte
 	for _, c := range genCorpus(t) {
 		prog := mustCompile(t, c.src)
@@ -291,6 +297,7 @@ func BenchmarkLoad(b *testing.B) {
 // TestCompiledTypeExpressions checks that a grammar with every form of type expression runs the
 // same from a compiled grammar, which holds no types: they stay with the grammar source.
 func TestCompiledTypeExpressions(t *testing.T) {
+	t.Parallel()
 	src := `type P = { A node[string]; B *(int); C []node[string] }
 type Q ~ P | node[string] & node[_]
 rule main P = a:[a-z] => P{A: $a, B: 1}
@@ -353,6 +360,7 @@ func grammarTypes(prog *Program) string {
 // TestCompiledFormatVersion checks that only the current container version is read: earlier and
 // later versions are refused with the version in the message.
 func TestCompiledFormatVersion(t *testing.T) {
+	t.Parallel()
 	data, err := mustCompile(t, `rule main = "a"`).MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)

@@ -12,6 +12,7 @@ import (
 // The generated name of an inline action's rule never satisfies a reference: a reference resolves
 // against the rules declared in the grammar as written.
 func TestGeneratedNamesDoNotSatisfyReferences(t *testing.T) {
+	t.Parallel()
 	msg := compileError(t, `rule main = (x:"a" => $x) _main_1`)
 	if !strings.Contains(msg, "undefined rule _main_1") {
 		t.Fatal(msg)
@@ -40,6 +41,7 @@ rule _main_1 = "b"`)
 
 // A hidden rule is not an entry point: not the start rule, not a rule parsed by name.
 func TestHiddenRulesAreNotEntryPoints(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, `rule main = _a "c"
 rule _a = "a" "b"`)
 	for _, name := range p.Rules() {
@@ -77,7 +79,7 @@ rule _a = "a"`, "_a"},
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Generate(parsed, gen.GenOptions{Module: "m", Start: g.start}); err == nil || !strings.Contains(err.Error(), "hidden") {
+		if _, err := Generate(t, parsed, gen.GenOptions{Module: "m", Start: g.start}); err == nil || !strings.Contains(err.Error(), "hidden") {
 			t.Errorf("Go generation with the start rule %s: %v", g.start, err)
 		}
 		if _, err := GenerateTS(parsed, gen.GenOptions{Start: g.start}); err == nil || !strings.Contains(err.Error(), "hidden") {
@@ -89,6 +91,7 @@ rule _a = "a"`, "_a"},
 // The grammar of a program is the grammar as written in every mode: the inline actions stay in it
 // and its rules are the declared ones, also when the program makes default values.
 func TestSourceGrammarKeepsInlineActionsInEveryMode(t *testing.T) {
+	t.Parallel()
 	src := `type A = { X node[string] }
 rule main = (x:"a" => A{X: $x}) _b
 rule _b = "b"`
@@ -131,6 +134,7 @@ rule _b = "b"`
 // actions as well: the grammar as written is not validated for a program that does not run its
 // actions.
 func TestDefaultValueAcceptsWhatItDropsWithInlineActions(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{
 		`rule main = "a" => nil`,
 		`rule main = (x:"a" => nil) "b"`,
@@ -166,6 +170,7 @@ func TestDefaultValueAcceptsWhatItDropsWithInlineActions(t *testing.T) {
 // action, not inside a rule it never declared. The report is the one of the same grammar compiled
 // with the actions.
 func TestDefaultValueValidationReportsTheGrammarAsWritten(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name, src string
 		want      string // a part of the path
@@ -210,6 +215,7 @@ func TestDefaultValueValidationReportsTheGrammarAsWritten(t *testing.T) {
 
 // The messages of the compiler describe an inline action by the rule that holds it.
 func TestInlineActionNamesInMessages(t *testing.T) {
+	t.Parallel()
 	names := compile.InlineNames{"_main_1": {Rule: "main", N: 1}, "_main_10": {Rule: "main", N: 10}}
 	for _, c := range []struct{ in, want string }{
 		{"rule _main_1 produces int", "the inline action in rule main produces int"},
@@ -229,6 +235,7 @@ func TestInlineActionNamesInMessages(t *testing.T) {
 // it; a type in a message never shows a name the author did not write. Elsewhere the message names
 // the rule that holds the inline action.
 func TestInlineActionTypesInMessages(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct{ src, want string }{
 		{"type T = { A node[string] }\nrule main T = (x:\"a\" \"c\" => $x) \"b\"", "rule main produces node[(node[string], node[string])], which is not assignable to T"},
 		{"type T = { A string }\nrule main = i:(x:\"a\" => 1)* \"b\" => T{A: $i}", "cannot use node[[]int] as string in field A of T"},
@@ -249,6 +256,7 @@ func TestInlineActionTypesInMessages(t *testing.T) {
 // The rules a type refers to are found in the structure of the type, including the types of the
 // captures of a node, which have no place in its text.
 func TestPruneSpliceTypesFollowsTheStructureOfTypes(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, "rule main = \"a\" _m\nrule _m = \"b\" _m?")
 	rules := p.Grammar.Rules()
 	for _, c := range []struct {

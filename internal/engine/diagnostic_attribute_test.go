@@ -13,6 +13,7 @@ import (
 )
 
 func TestDiagnosticAttribute(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = ([0-9]+ "." [0-9]+) @diagnostic(name="number")`,
 		fails("12x", `1:3: syntax error: expected number`),
 		fails("12.", `1:4: syntax error: expected number`),
@@ -42,6 +43,7 @@ func TestDiagnosticAttribute(t *testing.T) {
 }
 
 func TestDiagnosticAttributeStructuredErrors(t *testing.T) {
+	t.Parallel()
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		t.Run(backend.String(), func(t *testing.T) {
 			mixed := mustCompile(t, `rule main = ("a" @error(message="explicit") @diagnostic(name="ordinary") / "b" @diagnostic(name="bee"))`)
@@ -68,6 +70,7 @@ func TestDiagnosticAttributeStructuredErrors(t *testing.T) {
 }
 
 func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
+	t.Parallel()
 	ordinary, err := mustCompile(t, `rule main = "a"`).MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
@@ -128,6 +131,7 @@ func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
 }
 
 func TestDiagnosticAttributeValidation(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ source, want string }{
 		{`rule main = "a" @diagnostic`, `requires exactly one named argument`},
 		{`rule main = "a" @diagnostic("name")`, `requires exactly one named argument`},

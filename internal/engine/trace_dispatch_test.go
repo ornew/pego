@@ -11,6 +11,7 @@ import (
 // compiler leaves the final alternative unguarded, so both VMs enter tail even
 // when its first character cannot match. Profiling reflects that actual work.
 func TestTraceFirstCharacterDispatch(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "a" / tail
 rule tail = "b"`)
 	type event struct {

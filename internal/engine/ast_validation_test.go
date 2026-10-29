@@ -10,6 +10,7 @@ import (
 )
 
 func TestCompileMalformedAST(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name string
 		g    *grammar.Grammar
@@ -39,6 +40,7 @@ func TestCompileMalformedAST(t *testing.T) {
 }
 
 func TestMalformedASTEntryPointsAndPosition(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testMalformedASTEntryPointsAndPosition)
 }
 

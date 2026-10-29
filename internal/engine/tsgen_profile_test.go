@@ -12,6 +12,7 @@ import (
 )
 
 func TestGeneratedTSProfile(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("runs standalone TypeScript profile consumers")
 	}

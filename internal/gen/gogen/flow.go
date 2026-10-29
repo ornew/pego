@@ -193,8 +193,8 @@ func (g *Generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope 
 	g.Proj = nil // the actions of the lines use no projections of the rule
 	defer func() { g.Proj = prev }()
 	if g.Table != "trules" {
-		if OperatorsRouteHook != nil && g.collect == nil {
-			OperatorsRouteHook(g.Table, g.Cur)
+		if g.hooks.OperatorsRoute != nil && g.collect == nil {
+			g.hooks.OperatorsRoute(g.Table, g.Cur)
 		}
 		return g.flowFramed(f, l.Scope, scope, g.Cur.Name+" (OperatorsRule body inlined)", false)
 	}
@@ -317,8 +317,12 @@ type flowPrinter struct {
 }
 
 func newFlowPrinter(g *Generator, frame bool) *flowPrinter {
-	return &flowPrinter{g: g, frame: frame, used: map[*flow.Label]bool{}, reads: map[*flow.Var]bool{},
+	p := &flowPrinter{g: g, frame: frame, used: map[*flow.Label]bool{}, reads: map[*flow.Var]bool{},
 		loops: map[*flow.Label]bool{}, names: map[*flow.Names]string{}, vars: NewFlowVars()}
+	if g != nil {
+		p.vars.mutant, p.vars.mutantUses = g.hooks.FlowVarsMutant, g.hooks.FlowVarsMutantUses
+	}
+	return p
 }
 
 // scopeNames returns the package variable of the capture names n, naming it on first use.

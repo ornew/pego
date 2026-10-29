@@ -20,7 +20,10 @@ import (
 // Compare public typed values with the existing generated Go Node-conversion
 // route. Normalize spans, integer/text transport and CST Nodes explicitly;
 // neither backend's JSON shape is being used as the other's value contract.
-func TestGeneratedTSTypedReplay(t *testing.T) { eachMode(t, testGeneratedTSTypedReplay) }
+func TestGeneratedTSTypedReplay(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedTSTypedReplay)
+}
 
 func testGeneratedTSTypedReplay(t *testing.T) {
 	if testing.Short() {

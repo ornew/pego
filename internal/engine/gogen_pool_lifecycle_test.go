@@ -11,7 +11,10 @@ import (
 
 // PEGO_TYPED_POOL_DIR preserves this generated fixture for standalone heap and
 // throughput measurements. Normal tests use an automatically removed directory.
-func TestGeneratedTypedPoolRetention(t *testing.T) { eachMode(t, testGeneratedTypedPoolRetention) }
+func TestGeneratedTypedPoolRetention(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedTypedPoolRetention)
+}
 
 func testGeneratedTypedPoolRetention(t *testing.T) {
 	if testing.Short() {
@@ -58,7 +61,10 @@ rule repeated A = t:((x:"b") #repeat(2) #cut) => A{Text: text($t)}`)
 // TestGeneratedUntypedPoolRetention verifies that the untyped generated parser
 // does not keep an oversized source after release, and that a returned short
 // terminal remains valid while the parser is reset.
-func TestGeneratedUntypedPoolRetention(t *testing.T) { eachMode(t, testGeneratedUntypedPoolRetention) }
+func TestGeneratedUntypedPoolRetention(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedUntypedPoolRetention)
+}
 
 func testGeneratedUntypedPoolRetention(t *testing.T) {
 	if testing.Short() {
@@ -100,6 +106,7 @@ import (
 )
 
 func TestUntypedPoolRetention(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name string
 		unit PositionUnit
@@ -194,6 +201,7 @@ func checkTrail(t *testing.T, p *pegort.TParser) {
 }
 
 func TestTypedPoolRules(t *testing.T) {
+	t.Parallel()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		p := &pegort.TParser{Parser: &pegort.Parser{MaxDepth: pegoGrammar.X_maxDepth}}
 		v, err := p.X_run(trules[0], strings.Repeat("a", 2<<20)+"b", pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
@@ -228,6 +236,7 @@ func TestTypedPoolRules(t *testing.T) {
 }
 
 func TestTypedPoolUndoAndSaved(t *testing.T) {
+	t.Parallel()
 	p := &pegort.TParser{Parser: &pegort.Parser{MaxDepth: pegoGrammar.X_maxDepth}}
 	f := &pegort.TCaptureFrame{Vals: []any{"before"}}
 	p.Frame = f

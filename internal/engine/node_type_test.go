@@ -39,6 +39,7 @@ rule anything Any = "!" x:("a" / "bc") => Any{$x}
 `
 
 func TestNamedNodeTypesAcrossBackends(t *testing.T) {
+	t.Parallel()
 	inputs := []string{"", "ab", "ab 12 c3", "<1,x>", "ab <12,y>[1]!bc", "12 ?", "[]!a"}
 	for _, sourceInfo := range []bool{false, true} {
 		prog := compileBare(t, nodeTypeGrammar, compile.Options{SourceInfo: sourceInfo})
@@ -74,6 +75,7 @@ func TestNamedNodeTypesAcrossBackends(t *testing.T) {
 // assignable to each other, and a conversion (a rule's declared type or N{x}) needs a node whose
 // underlying type fits.
 func TestNamedNodeTypeErrors(t *testing.T) {
+	t.Parallel()
 	const defs = "type N = node[string]\ntype M = node[string]\ntype O = { A N; B node[string] }\ntype U ~ N | M\n"
 	for _, tc := range []struct{ src, want string }{
 		{`rule main O = x:"a" => O{A: $x}`, "cannot use node[string] as N in field A of O"},
@@ -110,7 +112,10 @@ func TestNamedNodeTypeErrors(t *testing.T) {
 // TestNamedNodeTypeConversions runs conversions and casts across the backends: conversions keep
 // the range and the value, a cast checks the type name, and a recursive node type reads its own
 // elements.
-func TestNamedNodeTypeConversions(t *testing.T) { eachMode(t, testNamedNodeTypeConversions) }
+func TestNamedNodeTypeConversions(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testNamedNodeTypeConversions)
+}
 
 func testNamedNodeTypeConversions(t *testing.T) {
 	for _, tc := range []struct {
@@ -195,7 +200,10 @@ rule main A = x:"a" => A{$x}`)
 // TestGeneratedNamedNodeTypes checks the Go types that pego gen -types gives named node types: a
 // defined type embedding TNode of the underlying value, which implements the unions it is a
 // member of.
-func TestGeneratedNamedNodeTypes(t *testing.T) { eachMode(t, testGeneratedNamedNodeTypes) }
+func TestGeneratedNamedNodeTypes(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedNamedNodeTypes)
+}
 
 func testGeneratedNamedNodeTypes(t *testing.T) {
 	runGeneratedNamedNodeProgram(t, nodeTypeGrammar, `var (
@@ -228,6 +236,7 @@ func main() {
 // TestGeneratedNamedNodesAsPlainNodes checks that generated typed Go converts the nodes of named
 // node types where a plain node type is expected, also when the same node is converted as both.
 func TestGeneratedNamedNodesAsPlainNodes(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedNamedNodesAsPlainNodes)
 }
 
@@ -308,6 +317,7 @@ func runGeneratedNamedNodeProgram(t *testing.T, src, body, want string) {
 // its value to a type that is not a named node type or a text struct, or if ENODE names a type
 // that is not a named node type.
 func TestNamedNodeTypeModuleValidation(t *testing.T) {
+	t.Parallel()
 	prog := compileBare(t, nodeTypeGrammar)
 	base := prog.Module()
 	if err := compile.ValidateModule(base); err != nil {
@@ -371,6 +381,7 @@ func TestNamedNodeTypeModuleValidation(t *testing.T) {
 }
 
 func TestGeneratedTSTypedNamedNodeTypes(t *testing.T) {
+	t.Parallel()
 	consumer := `import { parseAST } from "./parser.ts";
 import type { Num, Ident, Pair, Nums, Any, Expr } from "./types.ts";
 ` + tsTypedAssert + `
@@ -400,6 +411,7 @@ check(a !== null && a.type === "Any", "any " + stable(a));
 // TestGeneratedTSTypedNamedNodesAsPlainNodes is TestGeneratedNamedNodesAsPlainNodes for typed
 // TypeScript.
 func TestGeneratedTSTypedNamedNodesAsPlainNodes(t *testing.T) {
+	t.Parallel()
 	const src = `type Num = node[string]
 type Nums = node[[]Num]
 type P = node[(Num, Num)]
@@ -475,6 +487,7 @@ rule tree Tree = "(" ts:tree* ")" => Tree{$ts}`,
 // TestGeneratedNamedNodeDynamicTypes checks the dynamic types of values of named node types in
 // open fields, unions and lists of typed Go values, and that a node converts to one value.
 func TestGeneratedNamedNodeDynamicTypes(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedNamedNodeDynamicTypes)
 }
 
@@ -643,6 +656,7 @@ rule n N = [a-z]+ #atomic`, []string{"abc", "", "1"}},
 // named node types directly in the typed runtime, giving what the conversion of the nodes of
 // Parse gives, and that the generated Node parsers give what the engine does.
 func TestGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedNamedNodeTypesTypedRuntime)
 }
 
@@ -680,6 +694,7 @@ func testGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
 // TestGeneratedNamedNodeTypesDocument checks direct typed Documents of grammars with named node
 // types against the conversion of the Document's nodes, across edits.
 func TestGeneratedNamedNodeTypesDocument(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
@@ -776,7 +791,10 @@ rule tail node[_] = item item?`, []string{"abab", "ababab", "abx", ""}},
 // TestGeneratedDeclaredNodeAny checks that a rule declared node[_] without an action has the
 // declared type in generated Go and TypeScript, that the typed runtime still builds its values, and
 // that they match the conversion of the nodes of Parse.
-func TestGeneratedDeclaredNodeAny(t *testing.T) { eachMode(t, testGeneratedDeclaredNodeAny) }
+func TestGeneratedDeclaredNodeAny(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedDeclaredNodeAny)
+}
 
 func testGeneratedDeclaredNodeAny(t *testing.T) {
 	src := declaredNodeAnyCases()[0].src
@@ -830,6 +848,7 @@ func testGeneratedDeclaredNodeAny(t *testing.T) {
 // and with source information, and that a node of a reserved type stays unnamed. The corpus
 // comparisons of generated Go and TypeScript parsers check that they print the same strings.
 func TestNamedNodeTypeText(t *testing.T) {
+	t.Parallel()
 	const want = `Out{Any: Any("bc"), Items: [Ident("ab") Num("12")], Len: 4, Nums: Nums[Num("3")], Pair: Pair(Num("1") Ident("x")), Start: 3, Text: "ab12"}`
 	for _, sourceInfo := range []bool{false, true} {
 		prog := compileBare(t, nodeTypeGrammar, compile.Options{SourceInfo: sourceInfo})

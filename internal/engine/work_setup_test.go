@@ -81,6 +81,7 @@ func setupDonePanicContext(token *workContextPanicToken) context.Context {
 }
 
 func TestWorkSetupValidationPrecedesContextMethods(t *testing.T) {
+	t.Parallel()
 	ordinary := `rule main = "x" $$`
 	stream := `rule main = "x"* #stream $$`
 	for _, moduleOnly := range []bool{false, true} {
@@ -184,6 +185,7 @@ func setupProgramLabel(moduleOnly bool) string {
 }
 
 func TestWorkSetupPreCancelledLeavesColdProgramsUnprepared(t *testing.T) {
+	t.Parallel()
 	const text = "#records\na=1\nbc=22\n"
 	for _, moduleOnly := range []bool{false, true} {
 		for _, backend := range []Backend{Bytecode, BytecodeIterative} {
@@ -241,6 +243,7 @@ func TestWorkSetupPreCancelledLeavesColdProgramsUnprepared(t *testing.T) {
 }
 
 func TestWorkSetupPostBackendChecksStopBeforePublication(t *testing.T) {
+	t.Parallel()
 	for _, moduleOnly := range []bool{false, true} {
 		for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 			t.Run(setupProgramLabel(moduleOnly)+"/"+backend.String(), func(t *testing.T) {
@@ -287,6 +290,7 @@ func TestWorkSetupPostBackendChecksStopBeforePublication(t *testing.T) {
 }
 
 func TestWorkSetupChecksAfterModuleBeforeVM(t *testing.T) {
+	t.Parallel()
 	prog := setupProgram(t, `rule main = "a" $$`, false)
 	if prog.Bytecode != nil || prog.vm != nil {
 		t.Fatalf("program was not cold: module=%p vm=%p", prog.Bytecode, prog.vm)
@@ -306,6 +310,7 @@ func TestWorkSetupChecksAfterModuleBeforeVM(t *testing.T) {
 }
 
 func TestWorkSetupRecognizerPhaseChecks(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name    string
 		backend Backend
@@ -342,6 +347,7 @@ func TestWorkSetupRecognizerPhaseChecks(t *testing.T) {
 // Input preparation can fail before a parser is published to tracing. Exercise
 // its charged work directly; API fixtures above verify the outer panic boundary.
 func TestWorkSetupInputPreparationPanicIdentity(t *testing.T) {
+	t.Parallel()
 	for _, unit := range []PositionUnit{Bytes, CodePoints} {
 		t.Run(unit.String(), func(t *testing.T) {
 			token := &workContextPanicToken{phase: "input materialization"}
@@ -378,6 +384,7 @@ func (c *setupPhasePanicContext) Err() error {
 }
 
 func TestWorkSetupPostBackendPanicIdentity(t *testing.T) {
+	t.Parallel()
 	for _, moduleOnly := range []bool{false, true} {
 		for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 			for _, api := range []string{"batch", "document", "stream"} {
@@ -417,6 +424,7 @@ func TestWorkSetupPostBackendPanicIdentity(t *testing.T) {
 }
 
 func TestWorkSetupConcurrentColdCalls(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "abc" #atomic $$`)
 	results := make(chan error, 24)
 	start := make(chan struct{})

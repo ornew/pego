@@ -29,6 +29,7 @@ func checkDefaultValue(t *testing.T, src, stripped string, inputs ...string) {
 }
 
 func TestDefaultValueDropsActions(t *testing.T) {
+	t.Parallel()
 	checkDefaultValue(t, lines(
 		"type Pair = { A node[string]; B node[string] }",
 		"rule main Pair = a:\"x\" b:[a-z]+ #atomic => Pair{A: $a, B: $b}",
@@ -58,6 +59,7 @@ func TestDefaultValueDropsActions(t *testing.T) {
 }
 
 func TestDefaultValueSkipsTypeErrors(t *testing.T) {
+	t.Parallel()
 	// The action does not type-check against the declared type.
 	src := lines(
 		"type T = { A string }",
@@ -74,6 +76,7 @@ func TestDefaultValueSkipsTypeErrors(t *testing.T) {
 }
 
 func TestDefaultValueKeepsPredicates(t *testing.T) {
+	t.Parallel()
 	src := "rule main = n:[0-9]+ #atomic &{ len(text($n)) < 3 } => int(text($n))"
 	checkDefaultValue(t, src, "rule main = n:[0-9]+ #atomic &{ len(text($n)) < 3 }", "1", "12", "123")
 	prog := compileDefault(t, src)
@@ -88,6 +91,7 @@ func TestDefaultValueKeepsPredicates(t *testing.T) {
 // A predicate can read the value that an action made, so the rule behind a capture a predicate
 // reads keeps its action, and every other rule loses it.
 func TestDefaultValueKeepsActionsPredicatesRead(t *testing.T) {
+	t.Parallel()
 	src := lines(
 		"type Name = { Text string }",
 		"rule main = a:name \"=\" b:name &{ $a.Text == $b.Text } c:other => 1",
@@ -105,6 +109,7 @@ func TestDefaultValueKeepsActionsPredicatesRead(t *testing.T) {
 }
 
 func TestDefaultValueOperatorsRule(t *testing.T) {
+	t.Parallel()
 	src := lines(
 		"type Num = { Text string }",
 		"type Bin = { L node[_]; R node[_] }",
@@ -133,6 +138,7 @@ func TestDefaultValueOperatorsRule(t *testing.T) {
 }
 
 func TestDefaultValueKeepsRecovery(t *testing.T) {
+	t.Parallel()
 	src := lines(
 		"rule main = stmt* $$",
 		"rule stmt = ([a-z]+ #atomic \";\") #recover(skip=[^;]+ \";\") => 1",
@@ -151,6 +157,7 @@ func TestDefaultValueKeepsRecovery(t *testing.T) {
 }
 
 func TestDefaultValueCompiledRoundTrip(t *testing.T) {
+	t.Parallel()
 	src := lines(
 		"type T = { A string }",
 		"rule main T = x:\"x\" => T{A: 1}",
@@ -172,6 +179,7 @@ func TestDefaultValueCompiledRoundTrip(t *testing.T) {
 }
 
 func TestDefaultValueGeneratedRejectsTypes(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testDefaultValueGeneratedRejectsTypes)
 }
 

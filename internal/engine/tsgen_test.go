@@ -89,6 +89,7 @@ var tsVariantLen = 40
 // errors of the engine's recognition. Each input is parsed as bytes and, when it is valid UTF-8, as
 // a string. It also checks that the generated code type-checks, when tsc is available.
 func TestGeneratedTSParsersMatchEngine(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("runs generated code")
 	}
@@ -275,6 +276,7 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, op
 }
 
 func TestGenerateTSErrors(t *testing.T) {
+	t.Parallel()
 	g, _ := syntax.Parse("@start\nrule main = \"a\" b\nrule b = \"b\"")
 	if _, err := generateTSBundle(g, gen.GenOptions{Start: "nope"}); err == nil || err.Error() != "rule nope is not defined" {
 		t.Errorf("got %v", err)
@@ -397,6 +399,7 @@ func runTSGrammarScriptWith(t *testing.T, g *grammar.Grammar, script string, opt
 // TestGeneratedTSLoneSurrogates checks that strings with many lone surrogates, which the parser
 // replaces with U+FFFD before parsing, parse like any other input.
 func TestGeneratedTSLoneSurrogates(t *testing.T) {
+	t.Parallel()
 	out := runTSScript(t, `rule main = .*`, `import { parse } from "./parser.ts";
 for (const s of ["\uDC00".repeat(7000), "x\uDC00".repeat(15000), "\uD800", "aðŸ˜€\uDE00"]) {
   const r = parse(s);
@@ -416,6 +419,7 @@ for (const s of ["\uDC00".repeat(7000), "x\uDC00".repeat(15000), "\uD800", "aðŸ˜
 // TestGeneratedTSDeepTrees checks that the printers handle trees nested more deeply than the
 // JavaScript stack allows recursion: left recursion builds such trees without nesting calls.
 func TestGeneratedTSDeepTrees(t *testing.T) {
+	t.Parallel()
 	src := `rule main = e $$
 rule e = e "+" n / n
 rule n = [0-9]+ #atomic`
@@ -441,6 +445,7 @@ console.log(marshal(r.node));
 // Node.String does (with strconv.Quote, whose idea of printable characters follows Go's Unicode
 // version, not the JavaScript runtime's).
 func TestGeneratedTSQuotesEveryCodePoint(t *testing.T) {
+	t.Parallel()
 	out := runTSScript(t, `rule main = .*`, `import { parse } from "./parser.ts";
 const parts = [];
 for (let r = 0; r <= 0x10ffff; r++) {
@@ -470,6 +475,7 @@ process.stdout.write(r.error === null ? String(r.node) : r.error.message);
 // TestGeneratedTSFieldNames checks that JSON.stringify writes fields whose names are special in
 // JavaScript objects.
 func TestGeneratedTSFieldNames(t *testing.T) {
+	t.Parallel()
 	src := `rule main = prototype:"a" constructor:"b" toString:"c" hasOwnProperty:"d"`
 	g, err := parseTest(src)
 	if err != nil {
@@ -493,6 +499,7 @@ console.log(JSON.stringify(parse("abcd").node));
 // engines as errors (V8 and JavaScriptCore throw a RangeError, SpiderMonkey an InternalError "too
 // much recursion"), and throws other exceptions. It simulates them with an input whose bytes throw.
 func TestGeneratedTSStackOverflowErrors(t *testing.T) {
+	t.Parallel()
 	out := runTSScript(t, `rule main = .*`, `import { parse } from "./parser.ts";
 const internal = new Error("too much recursion");
 internal.name = "InternalError";

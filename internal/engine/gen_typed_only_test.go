@@ -47,6 +47,7 @@ func showAST(v any, err error) string {
 }
 
 func TestTranscript(t *testing.T) {
+	t.Parallel()
 	var b strings.Builder
 	for _, in := range INPUTS {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -69,13 +70,14 @@ func TestTranscript(t *testing.T) {
 `
 
 func TestGeneratedTypedOnly(t *testing.T) {
+	t.Parallel()
 	g, err := parseTest(ordinaryOnlyTyped)
 	if err != nil {
 		t.Fatal(err)
 	}
 	generate := func(opts gen.GenOptions) (string, error) {
 		opts.Package, opts.Module, opts.Start, opts.Runtime = "p", "example.com/p", "main", gen.RuntimeImport
-		files, err := Generate(g, opts)
+		files, err := Generate(t, g, opts)
 		if err != nil {
 			return "", err
 		}
@@ -157,6 +159,7 @@ rule item Item = n:[a-z]+ => Item{Names: list(text($n)), N: 0}`
 var ordinaryOnlyConvertedInputs = []string{"abc!", "!", "abc", "", "é!", "ab\xff!", "abc!x", "a!b!", "ab !"}
 
 func TestGeneratedTypedOnlyConvertedEntries(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTypedOnlyConvertedEntries)
 }
 
@@ -169,7 +172,7 @@ func testGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := Generate(g, gen.GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: gen.RuntimeImport, Types: true, TypedOnly: true})
+	files, err := Generate(t, g, gen.GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: gen.RuntimeImport, Types: true, TypedOnly: true})
 	if err != nil {
 		t.Fatalf("a typed-only parser whose entries convert Nodes: %v", err)
 	}
@@ -203,7 +206,7 @@ func testGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 
 	// Negative control: without the Node rule functions the converting entries have no Node rule
 	// bodies to run, which fails generation in every form.
-	_, err = Generate(g, gen.GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: gen.RuntimeImport, Types: true, TypedOnly: true, DisableKeepNodes: true})
+	_, err = Generate(t, g, gen.GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: gen.RuntimeImport, Types: true, TypedOnly: true, DisableKeepNodes: true})
 	if err == nil || !strings.Contains(err.Error(), "internal error: a typed entry point converts Nodes") {
 		t.Errorf("a typed-only parser without the Node rule functions: error %v, want an internal error", err)
 	}
@@ -222,6 +225,7 @@ rule _w = x:[a-z]+ #atomic => text($x)`
 var ordinaryOnlyHiddenInputs = []string{"()ab!", "(())a!", "((()))abc!", "()!", "(()ab!", "ab!", "", "(\xff)a!", "()ab!x"}
 
 func TestGeneratedTypedOnlyHiddenRules(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

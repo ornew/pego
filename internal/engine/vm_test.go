@@ -14,6 +14,7 @@ import (
 // TestBackendsMatchOnCorpus checks that the bytecode VM returns the same results as the closure
 // engine on all the test grammars and examples.
 func TestBackendsMatchOnCorpus(t *testing.T) {
+	t.Parallel()
 	for _, c := range genCorpus(t) {
 		t.Run(c.name, func(t *testing.T) {
 			for _, o := range []compile.Options{{}, {DisableMemo: true}} {
@@ -39,6 +40,7 @@ func TestBackendsMatchOnCorpus(t *testing.T) {
 
 // TestBackendsMatchOnStream checks that stream parsing also yields the same elements and errors.
 func TestBackendsMatchOnStream(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	inputs := []string{"#records\na=1\nbc=22\n", "#records\na=1\nb\n", "#rec"}
 	for _, in := range inputs {
@@ -92,6 +94,7 @@ rule x = #operators {
 // Operators Rule expression parses by recursion, count against an explicit nesting limit on every
 // backend: they fail with an error instead of consuming unbounded stack or frame storage.
 func TestOperatorsRuleNestingLimit(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = x $$
 rule x = #operators {
     operand "x"
@@ -116,6 +119,7 @@ rule x = #operators {
 }
 
 func TestOperatorsRuleDepthBoundaries(t *testing.T) {
+	t.Parallel()
 	const src = `rule main = (e ";" / "-;" / "x^;")* $$
 rule e = #operators {
     operand "x"
@@ -158,6 +162,7 @@ rule e = #operators {
 }
 
 func TestOperatorsRuleStreamDepthLimit(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = (e ";")* #stream $$
 rule e = #operators {
     operand "x"
@@ -195,6 +200,7 @@ rule e = #operators {
 // one Program (whose backends are prepared lazily), and checks that each gets the result of a
 // parse on its own. Run with -race to check that per-parse state is not shared.
 func TestConcurrentParses(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `type Pair = { Key node[string]; Value Node }
 type Op = { L Node; R Node }
 type Node ~ Op | node[string]

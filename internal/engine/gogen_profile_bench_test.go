@@ -13,6 +13,7 @@ import (
 
 // Export standalone controls; keep generated fixtures and results outside Git.
 func TestExportGeneratedGoProfileBenchmarks(t *testing.T) {
+	t.Parallel()
 	dir := os.Getenv("PEGO_PROFILE_BENCH_DIR")
 	if dir == "" {
 		t.Skip("set PEGO_PROFILE_BENCH_DIR to export profile benchmarks")

@@ -50,6 +50,7 @@ func nodeTSArgs(script string, args ...string) []string {
 // parser.ts) with the strictest checks, and parses through them with Node.js, in each runtime mode.
 // Most other tests join the files into one module; this one proves that the files fit together.
 func TestGeneratedTSSplitFiles(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("runs tsc and node")
 	}
@@ -179,6 +180,7 @@ process.stdout.write("ok\n");
 // TestGeneratedTSReservedTypes checks that a grammar type named like a declaration of types.ts
 // is rejected, instead of silently renamed or shadowing it.
 func TestGeneratedTSReservedTypes(t *testing.T) {
+	t.Parallel()
 	for _, name := range tsgen.TsReservedTypes {
 		g, err := parseTest("type " + name + " = { Text string }\nrule main " + name + " = t:(\"x\") #atomic => " + name + "{Text: text($t)}")
 		if err != nil {
@@ -195,6 +197,7 @@ func TestGeneratedTSReservedTypes(t *testing.T) {
 // TestTSRuntimePrintRuns checks the table of printable code points in the runtime against the one
 // the generator computes from strconv.IsPrint.
 func TestTSRuntimePrintRuns(t *testing.T) {
+	t.Parallel()
 	want := `export const printRuns = "` + tsgen.TsPrintRuns() + `";`
 	if !strings.Contains(tsgen.TsRuntimeText(), want) {
 		t.Error("printRuns in runtime.ts differs from tsPrintRuns()")
@@ -244,6 +247,7 @@ func runTSSplit(t *testing.T, src string, opts gen.GenOptions, consumer string) 
 // TestGeneratedTSTraceNameCollisions parses with grammar types that are named like the runtime's
 // tracing declarations: types.ts is a module of its own, so the names do not collide.
 func TestGeneratedTSTraceNameCollisions(t *testing.T) {
+	t.Parallel()
 	runTSSplit(t, `type TraceKind = { Text string }
 type TraceEvent = { Value Observation }
 type Observation = { Text string }
@@ -268,6 +272,7 @@ process.stdout.write("ok\n");
 // TestGeneratedTSProfileNameCollisions profiles a parser whose grammar types are named like the
 // runtime's profiling declarations.
 func TestGeneratedTSProfileNameCollisions(t *testing.T) {
+	t.Parallel()
 	runTSSplit(t, "type Profile = { Text string }\ntype ProfileSnapshot = { Text string }\ntype RuleProfile = { Text string }\ntype ProfileLocation = { Text string }\ntype SkipReasonCount = { Text string }\ntype ProfileObservation = { Text string }\ntype ProfileFrame = { Text string }\ntype ProfileData = { Text string }\ntype WeakMap = { Text string }\nrule main Profile = t:(part) #atomic => Profile{Text: text($t)}\nrule part Profile = t:(\"a\") #atomic => Profile{Text: text($t)}",
 		gen.GenOptions{Start: "main", Types: true, Recognize: true, Observability: true}, `import {Profile, parseWithOptions, parseASTWithOptions} from "./parser.ts";
 import type {Profile as GrammarProfile, ProfileSnapshot, RuleProfile, ProfileLocation, SkipReasonCount, ProfileObservation, ProfileFrame, ProfileData, WeakMap} from "./types.ts";

@@ -41,6 +41,7 @@ rule main = {x := 1} {y := 2} !({x := 3} {y := 4} "b") {x == 1} {y == 2} "a" $$ 
 }
 
 func TestEnvironmentRollback(t *testing.T) {
+	t.Parallel()
 	for i, c := range envBindingCases {
 		want := `V{X: 1, Y: 2}`
 		if i == 2 {
@@ -162,6 +163,7 @@ func BenchmarkDistinctBindings(b *testing.B) {
 }
 
 func TestBindingSnapshots(t *testing.T) {
+	t.Parallel()
 	p := &core.Parser{}
 	p.Bind("x", 1)
 	first := p.Env
@@ -211,6 +213,7 @@ func TestBindingSnapshots(t *testing.T) {
 // Compare persistent environments with independent value maps through changes
 // and restores, including names first seen only in abandoned branches.
 func TestBindingRestoresReferenceValues(t *testing.T) {
+	t.Parallel()
 	type snapshot struct {
 		env    *core.Env
 		values map[string]any
@@ -269,6 +272,7 @@ func TestBindingRestoresReferenceValues(t *testing.T) {
 // A hint created after switching between single-name snapshots must still know
 // names from the earlier snapshot when it is restored behind another binding.
 func TestBindingRestoresBeforeSecondName(t *testing.T) {
+	t.Parallel()
 	p := &core.Parser{}
 	p.Bind("x", 1)
 	saved := p.Env

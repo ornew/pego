@@ -43,6 +43,7 @@ func grammarWithNegativeMaximum(t testing.TB, src string, maximum int) *grammar.
 }
 
 func TestNegativeRepetitionMaxima(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct {
 		name, src string
 		op        bytecode.Op
@@ -184,6 +185,7 @@ func executableASTJSON(t testing.TB, g *grammar.Grammar) string {
 }
 
 func TestCompiledSourceMetadataOmitted(t *testing.T) {
+	t.Parallel()
 	g, err := parseTest("// documentation\npackage p\n// rule documentation\nrule main = \"x\" #atomic")
 	if err != nil {
 		t.Fatal(err)
@@ -212,6 +214,7 @@ func TestCompiledSourceMetadataOmitted(t *testing.T) {
 }
 
 func TestNegativeMaximumWithWideMinimum(t *testing.T) {
+	t.Parallel()
 	if strconv.IntSize < 64 {
 		t.Skip("wide minimum needs 64-bit implementation")
 	}
@@ -258,7 +261,10 @@ func TestNegativeMaximumWithWideMinimum(t *testing.T) {
 
 // Generated parsers retain negative maxima directly in their implementation-int
 // loops. Check their accepted hand-built AST contract beside bytecode lowering.
-func TestGeneratedNegativeMaximum(t *testing.T) { eachMode(t, testGeneratedNegativeMaximum) }
+func TestGeneratedNegativeMaximum(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedNegativeMaximum)
+}
 
 func testGeneratedNegativeMaximum(t *testing.T) {
 	if testing.Short() {

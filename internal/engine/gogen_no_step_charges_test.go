@@ -11,6 +11,7 @@ import (
 // typed constructors, the conversions of typed values and the closures of actions, which the specialization of
 // the rule functions does not reach.
 func TestGeneratedNoStepChargesInTypedCode(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{ordinaryOnlyTyped, ordinaryOnlyConverted} {
 		g, err := parseTest(src)
 		if err != nil {
@@ -20,7 +21,7 @@ func TestGeneratedNoStepChargesInTypedCode(t *testing.T) {
 		generated := func(opts gen.GenOptions) string {
 			t.Helper()
 			opts.Package, opts.Module, opts.Start, opts.Runtime = "p", "example.com/p", "main", gen.RuntimeImport
-			files, err := Generate(g, opts)
+			files, err := Generate(t, g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -49,7 +50,7 @@ func TestGeneratedNoStepChargesInTypedCode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := Generate(g, gen.GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: gen.RuntimeImport, Types: true, WorkControls: true})
+	files, err := Generate(t, g, gen.GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: gen.RuntimeImport, Types: true, WorkControls: true})
 	if err != nil {
 		t.Fatal(err)
 	}

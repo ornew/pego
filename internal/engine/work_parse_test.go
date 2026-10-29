@@ -14,6 +14,7 @@ import (
 )
 
 func TestWorkParsePreCancelledAndValidation(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "ok" $$`)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -32,6 +33,7 @@ func TestWorkParsePreCancelledAndValidation(t *testing.T) {
 }
 
 func TestWorkParseBudgetAndPoolRetry(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = [a-z]+ #atomic $$`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{Bytes, CodePoints} {
@@ -50,6 +52,7 @@ func TestWorkParseBudgetAndPoolRetry(t *testing.T) {
 }
 
 func TestWorkParseCancelledFromTraceAndPanicCleanup(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "abc" $$`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		ctx, cancel := context.WithCancel(context.Background())
@@ -71,6 +74,7 @@ func TestWorkParseCancelledFromTraceAndPanicCleanup(t *testing.T) {
 }
 
 func TestWorkParseLongLiteralAndScanner(t *testing.T) {
+	t.Parallel()
 	literal := strings.Repeat("a", 10000)
 	for _, src := range []string{`rule main = "` + literal + `" $$`, `rule main = [a-z]+ #atomic $$`} {
 		prog := mustCompile(t, src)
@@ -92,6 +96,7 @@ func TestWorkParseLongLiteralAndScanner(t *testing.T) {
 }
 
 func TestWorkParseRecognitionAndStatefulAdmission(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "abc" $$`)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -111,6 +116,7 @@ func TestWorkParseRecognitionAndStatefulAdmission(t *testing.T) {
 }
 
 func TestWorkParseFinalPublicationAndRecovery(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "abc" $$`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		ctx, cancel := context.WithCancel(context.Background())
@@ -133,6 +139,7 @@ rule item = "a" ";" #recover(skip=[^;]* ";")`)
 }
 
 func TestWorkParseTraceAccessorInterruption(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "abc" $$`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		var observed *core.Parser
@@ -148,6 +155,7 @@ func TestWorkParseTraceAccessorInterruption(t *testing.T) {
 }
 
 func TestWorkParseLeftRecursionAndIndependentNestedCall(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = expr $$
 
 rule expr = expr "+" "a" / "a"`)
@@ -189,6 +197,7 @@ rule expr = expr "+" "a" / "a"`)
 // Controlled preparation has its own decoder; ordinary conformance tests alone
 // do not enter it. Compare full values/spans and error fields, not formatting.
 func TestWorkParseControlledUnicodeParity(t *testing.T) {
+	t.Parallel()
 	inputs := []string{"é💡x", "é💡\n字", "\xff", "\xc3\xff", "\xf0\x9f", "�\xff", ""}
 	for _, src := range []string{`rule main = .* $$`, `rule main = "é💡" "x" $$`} {
 		prog := mustCompile(t, src)

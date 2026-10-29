@@ -13,6 +13,7 @@ import (
 )
 
 func TestStreamCaptureRecognition(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name, body, bound, input string
 		count                    int
@@ -123,6 +124,7 @@ func BenchmarkStreamCaptureRecognition(b *testing.B) {
 // or loaded from a compiled grammar, and that the recognizer built from an ordinary program
 // builds none.
 func TestStreamRecognitionCompiled(t *testing.T) {
+	t.Parallel()
 	g, err := syntax.Parse(startRestrictionSource)
 	if err != nil {
 		t.Fatal(err)

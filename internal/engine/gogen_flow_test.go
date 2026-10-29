@@ -64,6 +64,7 @@ func flowDiff(want, got string) string {
 // generation of the same options in a statement, also next to the line of unread
 // variables that it leaves out, while it ignores a change of that line alone.
 func TestFlowDiffDetectsMutations(t *testing.T) {
+	t.Parallel()
 	opts := gen.GenOptions{Types: true, TypedOnly: true}
 	mutations := []struct {
 		name   string
@@ -132,10 +133,9 @@ func flowGenerate(src string, opts gen.GenOptions) (string, int, int, bool) {
 		return "", 0, 0, false
 	}
 	var gen *gogen.Generator
-	gogen.GeneratorHook = func(x *gogen.Generator) { gen = x }
-	defer func() { gogen.GeneratorHook = nil }()
+	h := &gogen.Hooks{Generator: func(x *gogen.Generator) { gen = x }}
 	opts.Module, opts.KeepComments = "example.com/p", true
-	files, err := gogen.GenerateParser(g, compileForGenerator, opts)
+	files, err := gogen.GenerateParser(g, compileForGenerator, opts, h)
 	if err != nil {
 		return "", 0, 0, false
 	}
@@ -155,6 +155,7 @@ func flowGenerate(src string, opts gen.GenOptions) (string, int, int, bool) {
 // its typed rules printed from Flow IR, and counts the bodies and lines printed under runtime-owned
 // frames where the mode inlines them.
 func TestFlowPrintsTypedRules(t *testing.T) {
+	t.Parallel()
 	cases := append(schemaCorpus(t), coreExtraGrammars...)
 	for _, mode := range flowModes {
 		t.Run(mode.name, func(t *testing.T) {
@@ -212,6 +213,7 @@ func firstDiff(a, b string) string {
 // TestFlowTypedCorpus builds the parsers of the typed corpus with and without work controls, with
 // the default printing rules from Flow IR, and checks that they parse every input as the engine does.
 func TestFlowTypedCorpus(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -227,7 +229,10 @@ func TestFlowTypedCorpus(t *testing.T) {
 // TestFlowTypedObservable builds observable typed parsers printed from Flow IR, with nodes and
 // typed-only, for the typed test grammars (a bounded part of the corpus), and checks them against
 // the parsers without observability and against the engine's errors.
-func TestFlowTypedObservable(t *testing.T) { eachMode(t, testFlowTypedObservable) }
+func TestFlowTypedObservable(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testFlowTypedObservable)
+}
 
 func testFlowTypedObservable(t *testing.T) {
 	if testing.Short() {
@@ -273,5 +278,6 @@ func testFlowTypedObservable(t *testing.T) {
 // TestFlowTypedDocument builds typed Document parsers with the default printing rules from Flow IR
 // and checks them as TestGenerateDirectTypedDocument does.
 func TestFlowTypedDocument(t *testing.T) {
+	t.Parallel()
 	testDirectTypedDocument(t, gen.GenOptions{})
 }

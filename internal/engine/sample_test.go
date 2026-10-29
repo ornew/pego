@@ -14,6 +14,7 @@ import (
 // that each one parses, without errors, on every backend. The corpus covers predicates, variables,
 // lookahead, #recover, Operators Rule expressions, left recursion, anchors and character classes.
 func TestSampleCorpus(t *testing.T) {
+	t.Parallel()
 	for _, c := range engine.Corpus(t) {
 		t.Run(c.Name, func(t *testing.T) {
 			ast, err := pego.ParseGrammar(c.Src)

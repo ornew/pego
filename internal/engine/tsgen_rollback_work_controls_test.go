@@ -10,6 +10,7 @@ import (
 )
 
 func TestGeneratedTSWorkControlCaptureRollback(t *testing.T) {
+	t.Parallel()
 	const width = 512
 	captures := make([]string, width)
 	for i := range captures {
@@ -45,6 +46,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 }
 
 func TestGeneratedTSWorkControlOperatorsRuleCapturePreservation(t *testing.T) {
+	t.Parallel()
 	const width = 512
 	captures := make([]string, width)
 	for i := range captures {
@@ -89,6 +91,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 }
 
 func TestGeneratedTSWorkControlRecoveredMemoReplay(t *testing.T) {
+	t.Parallel()
 	// Prewarm an empty-error memo so slot allocation is common to both routes.
 	src := `rule main = &seed &seed &recovered &recovered &recovered .* #atomic $$
 
@@ -130,6 +133,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 }
 
 func TestGeneratedTSWorkControlRecoveryParity(t *testing.T) {
+	t.Parallel()
 	cases := append(append([]genCase(nil), typedOperatorsRuleBodyCases...), typedLRBodyCases...)
 	for _, tt := range cases {
 		if tt.name != "typed/OperatorsRule_recovery" && tt.name != "typed/LR_recovery" {
@@ -156,6 +160,7 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ` + string(inputs) +
 }
 
 func TestGeneratedTSWorkControlOperatorsRuleRecoveredTransfer(t *testing.T) {
+	t.Parallel()
 	src := `type Word = { Text string }
 
 type Box = {

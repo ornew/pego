@@ -11,7 +11,10 @@ import (
 	"github.com/ornew/pego/internal/gen"
 )
 
-func TestGeneratedTraceOptions(t *testing.T) { eachMode(t, testGeneratedTraceOptions) }
+func TestGeneratedTraceOptions(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedTraceOptions)
+}
 
 func testGeneratedTraceOptions(t *testing.T) {
 	g, err := parseTest(`rule main = "a"`)
@@ -45,6 +48,7 @@ func testGeneratedTraceOptions(t *testing.T) {
 }
 
 func TestGeneratedNodeTrace(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated standalone tracing consumers")

@@ -110,7 +110,10 @@ func ignoreCaseGoBody(inputs []string) string {
 
 // TestIgnoreCaseGeneratedGo checks that the generated Go parser agrees with the closure backend on
 // case-insensitive literals.
-func TestIgnoreCaseGeneratedGo(t *testing.T) { eachMode(t, testIgnoreCaseGeneratedGo) }
+func TestIgnoreCaseGeneratedGo(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testIgnoreCaseGeneratedGo)
+}
 
 func testIgnoreCaseGeneratedGo(t *testing.T) {
 	want := ignoreCaseLines(t, ignoreCaseGenGrammar, ignoreCaseGenInputs)
@@ -120,6 +123,7 @@ func testIgnoreCaseGeneratedGo(t *testing.T) {
 // TestIgnoreCaseGeneratedTS checks that the generated TypeScript parser agrees with the closure
 // backend on case-insensitive literals.
 func TestIgnoreCaseGeneratedTS(t *testing.T) {
+	t.Parallel()
 	want := ignoreCaseLines(t, ignoreCaseGenGrammar, ignoreCaseGenInputs)
 	var list strings.Builder
 	for _, in := range ignoreCaseGenInputs {
@@ -135,7 +139,10 @@ func TestIgnoreCaseGeneratedTS(t *testing.T) {
 
 // TestIgnoreCaseGeneratedTypedGo checks that the typed Go parser accepts exactly the inputs that the
 // closure backend accepts, for case-insensitive literals in a choice and in a sequence.
-func TestIgnoreCaseGeneratedTypedGo(t *testing.T) { eachMode(t, testIgnoreCaseGeneratedTypedGo) }
+func TestIgnoreCaseGeneratedTypedGo(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testIgnoreCaseGeneratedTypedGo)
+}
 
 func testIgnoreCaseGeneratedTypedGo(t *testing.T) {
 	prog := mustCompile(t, ignoreCaseGenGrammar)
@@ -160,6 +167,7 @@ func testIgnoreCaseGeneratedTypedGo(t *testing.T) {
 // TestIgnoreCaseGeneratedExpectation checks that the generated Go parser reports the same error as
 // the closure backend, whose expectation of a case-insensitive literal keeps its suffix.
 func TestIgnoreCaseGeneratedExpectation(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testIgnoreCaseGeneratedExpectation)
 }
 
@@ -229,6 +237,7 @@ func ignoreCaseDocBody() string {
 // TestIgnoreCaseGeneratedDocument checks that a generated Document, which reparses after each edit
 // of folded literals, agrees with the closure backend after every edit.
 func TestIgnoreCaseGeneratedDocument(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	want := ignoreCaseDocWant(t)
 	runGeneratedProgramWith(t, ignoreCaseGenGrammar, gen.GenOptions{Package: "p", Start: "main", Document: true}, ignoreCaseDocBody(), want)
@@ -247,6 +256,7 @@ rule ws = " "*
 // TestIgnoreCaseGeneratedTypedTerminal checks that typed generation of a large value-free choice
 // with case-insensitive literals does not fail and agrees with the closure backend.
 func TestIgnoreCaseGeneratedTypedTerminal(t *testing.T) {
+	t.Parallel()
 	// Terminal programs are for parsers without work controls.
 	pinOrdinary(t)
 	inputs := []string{"", "alpha", "ALPHA", "Beta", "BETA", "beta", "upsilon", "UPSILON", "xi", "Xi", "XI", "alpha BETA", "alphax", "ALPHAX", "tau Tau sigma", "SIGMA"}

@@ -62,6 +62,7 @@ func (r *workStreamReader) Read(dst []byte) (int, error) {
 func (r *workStreamReader) Close() error { r.closed = true; return nil }
 
 func TestWorkStreamAdmission(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, o ParseOptions) {
 		ctx, cancel := context.WithCancel(context.Background())
@@ -98,6 +99,7 @@ func TestWorkStreamAdmission(t *testing.T) {
 }
 
 func TestWorkStreamUnlimitedParity(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, base ParseOptions) {
 		for _, text := range []string{"#records\na=1\nbc=22\n", "#records\na=1\nbad=x\n"} {
@@ -133,6 +135,7 @@ func TestWorkStreamUnlimitedParity(t *testing.T) {
 }
 
 func TestWorkStreamReaderErrorPrecedence(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, base ParseOptions) {
 		for _, dataError := range []bool{false, true} {
@@ -165,6 +168,7 @@ func TestWorkStreamReaderErrorPrecedence(t *testing.T) {
 }
 
 func TestWorkStreamEmitPrecedenceAndOwnership(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, base ParseOptions) {
 		for _, fail := range []bool{false, true} {
@@ -219,6 +223,7 @@ func (r *workStreamGatedReader) Read(dst []byte) (int, error) {
 func (r *workStreamGatedReader) Close() error { r.closed = true; return nil }
 
 func TestWorkStreamBlockedReaderCooperation(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, o ParseOptions) {
 		ctx, cancel := context.WithCancel(context.Background())
@@ -244,6 +249,7 @@ func TestWorkStreamBlockedReaderCooperation(t *testing.T) {
 }
 
 func TestWorkStreamLimitsAndCallerPanics(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, base ParseOptions) {
 		for _, kind := range []limits.WorkLimitKind{limits.InputWorkLimit, limits.StepWorkLimit} {
@@ -320,6 +326,7 @@ func TestWorkStreamLimitsAndCallerPanics(t *testing.T) {
 }
 
 func TestWorkStreamCompactionChunks(t *testing.T) {
+	t.Parallel()
 	for _, shift := range []int{1, 127, 128, 129, 512} {
 		source := make([]int, 1024)
 		for i := range source {
@@ -345,6 +352,7 @@ func TestWorkStreamCompactionChunks(t *testing.T) {
 }
 
 func TestWorkStreamCommitReservations(t *testing.T) {
+	t.Parallel()
 	// The frame scan and suffix clear are separately counted; neither touches
 	// a Node already delivered to the caller.
 	node := value.Ptr(value.Data{Text: "delivered"})
@@ -405,6 +413,7 @@ func TestWorkStreamCommitReservations(t *testing.T) {
 }
 
 func TestWorkStreamCommitAfterDelivery(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, o ParseOptions) {
 		o.WorkLimits.MaxSteps = 1 << 20
@@ -471,6 +480,7 @@ func TestWorkStreamCommitAfterDelivery(t *testing.T) {
 }
 
 func TestWorkStreamEmitBoundary(t *testing.T) {
+	t.Parallel()
 	for _, phase := range []string{"before", "after", "error"} {
 		t.Run(phase, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
@@ -510,6 +520,7 @@ func TestWorkStreamEmitBoundary(t *testing.T) {
 }
 
 func TestWorkStreamReaderPanicInsideTrace(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "z"* #stream $$`)
 	workStreamVariants(t, func(t *testing.T, o ParseOptions) {
 		ctx, cancel := context.WithCancel(context.Background())
@@ -533,6 +544,7 @@ func TestWorkStreamReaderPanicInsideTrace(t *testing.T) {
 }
 
 func TestWorkStreamVMFaultAttribution(t *testing.T) {
+	t.Parallel()
 	for _, b := range []Backend{Bytecode, BytecodeIterative} {
 		t.Run(b.String(), func(t *testing.T) {
 			prog := mustCompile(t, `rule main = "z"* #stream $$`)
@@ -560,6 +572,7 @@ func TestWorkStreamVMFaultAttribution(t *testing.T) {
 }
 
 func TestWorkStreamConcurrentCounters(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, base ParseOptions) {
 		ctx, cancel := context.WithCancel(context.Background())

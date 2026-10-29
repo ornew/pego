@@ -16,10 +16,6 @@ import (
 // well (flowNodeFrameBody), in the same output. Both tables share the helpers whose printed text is
 // equal. The text passes run on the whole output afterwards.
 
-// RefuseFlowRecRule, if set by a test, makes flowRecRule refuse the rules it selects, so that the
-// framed body that takes their place is exercised. No manifest grammar reaches that fallback.
-var RefuseFlowRecRule func(*compile.Rule) bool
-
 // flowRecRule prints the eligible rule r of the recognizer from Flow IR as a flat rule. It returns
 // nil in three cases, and the caller (generator.rules) then prints the rule's framed body from Flow IR
 // (flowNodeFrameBody) and calls it through the rule table (plainCall); the generation fails if that
@@ -29,7 +25,7 @@ var RefuseFlowRecRule func(*compile.Rule) bool
 //     no parameters for;
 //   - a variable of the function has a type that untypedGoType cannot name.
 func (g *Generator) flowRecRule(r *compile.Rule) *flatRule {
-	if RefuseFlowRecRule != nil && RefuseFlowRecRule(r) {
+	if g.hooks.RefuseFlowRecRule != nil && g.hooks.RefuseFlowRecRule(r) {
 		return nil
 	}
 	cr := g.Flow.M.Rules[r.ID]

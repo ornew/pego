@@ -10,6 +10,7 @@ import (
 )
 
 func TestSnapshotSharingCyclesAndTypedNil(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "a"`)
 	d, err := prog.NewDocument("main", "a")
 	if err != nil {

@@ -28,6 +28,7 @@ func diagnosticAlternatives() string {
 }
 
 func TestWorkDiagnosticBatchFailureAndTraceAccessor(t *testing.T) {
+	t.Parallel()
 	source := diagnosticAlternatives()
 	prog := mustCompile(t, source)
 	accessorProg := mustCompile(t, strings.Replace(source, "rule main = bad $$\n", `rule main = (bad #recover(skip=.* #atomic) "!" / fallback) $$`+"\n", 1)+"\nrule fallback = .* #atomic\n")
@@ -103,6 +104,7 @@ func TestWorkDiagnosticBatchFailureAndTraceAccessor(t *testing.T) {
 }
 
 func TestWorkDiagnosticRecoveryFatalAndRetainedOutputs(t *testing.T) {
+	t.Parallel()
 	message := strings.Repeat("recovery_message_λ", 100)
 	// Stop before the trailing exclamation mark, including during the retry.
 	src := `rule main = (bad #recover(skip=(!"!" .)+) "!" / fallback) $$

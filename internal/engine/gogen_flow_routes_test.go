@@ -56,6 +56,7 @@ func routeCases(t *testing.T) []genCase {
 // flowModes mode, and that the modes with inlined bodies print framed bodies from Flow IR. The
 // engine comparison of the route grammars is TestFlowRoutesBuild.
 func TestFlowRoutesPrinted(t *testing.T) {
+	t.Parallel()
 	frames := 0
 	for _, mode := range flowModes {
 		for _, gc := range routeCases(t) {
@@ -83,6 +84,7 @@ func TestFlowRoutesPrinted(t *testing.T) {
 // values, and the same errors as the engine's. The route grammars depend on finishValue in
 // runtime/typed.go: reverting it fails this test.
 func TestFlowRoutesBuild(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -99,6 +101,7 @@ func TestFlowRoutesBuild(t *testing.T) {
 // the source forms that place it elsewhere fail to parse, and bodies spliced in through the
 // grammar API, such as a repetition or a predicate around it, make the generator fail.
 func TestFlowRoutesRejected(t *testing.T) {
+	t.Parallel()
 	base := `rule main = a $$
 rule a = a "+" "x" / "x"
 rule o = #operators {
@@ -151,7 +154,7 @@ rule o = #operators {
 				seq.Items[len(seq.Items)-1] = w(op)
 			}
 		}
-		if _, err = gogen.GenerateParser(g, compileForGenerator, gen.GenOptions{Types: true, TypedOnly: true, Module: "example.com/p"}); err == nil {
+		if _, err = gogen.GenerateParser(g, compileForGenerator, gen.GenOptions{Types: true, TypedOnly: true, Module: "example.com/p"}, nil); err == nil {
 			t.Errorf("generate with an Operators Rule spliced into a %s inside a leader: accepted", name)
 		}
 	}

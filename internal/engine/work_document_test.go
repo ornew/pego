@@ -18,6 +18,7 @@ func workDocumentVariants(t *testing.T, run func(*testing.T, ParseOptions)) {
 }
 
 func TestWorkDocumentConstructorCallerPanicIdentity(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = .* $$`)
 	workDocumentVariants(t, func(t *testing.T, base ParseOptions) {
 		for _, at := range []int{0, 1, 2} {
@@ -47,6 +48,7 @@ type workDocumentInactiveContext struct{ context.Context }
 func (workDocumentInactiveContext) Err() error { panic("inactive context must not be polled") }
 
 func TestWorkDocumentInactiveContext(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "a" $$`)
 	workDocumentVariants(t, func(t *testing.T, o ParseOptions) {
 		o.Context = workDocumentInactiveContext{Context: context.Background()}

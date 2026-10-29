@@ -12,6 +12,7 @@ import (
 )
 
 func TestSparseMemoRuleAndPageBoundaries(t *testing.T) {
+	t.Parallel()
 	for _, stride := range []int{63, 64, 65, 128, 175} {
 		memo := core.MemoTable{Stride: stride}
 		positions := []int{0, 1, 63, 64, 1023, 1024, 1025, 65535}
@@ -57,6 +58,7 @@ func sparseMemoRecord(memo *core.MemoTable, pos, rule int) bool {
 }
 
 func TestSparseMemoStrideChanges(t *testing.T) {
+	t.Parallel()
 	memo := core.MemoTable{}
 	for _, stride := range []int{175, 65, 64, 128, 175} {
 		memo.Stride = stride
@@ -70,6 +72,7 @@ func TestSparseMemoStrideChanges(t *testing.T) {
 }
 
 func TestSparseMemoResetBounds(t *testing.T) {
+	t.Parallel()
 	for _, memo := range []core.MemoTable{
 		{Pages: make([]core.SeenRulePages, 0, core.MaxScratch/5+1)},
 		{Pages: make([]core.SeenRulePages, 0, core.MaxScratch/5), BitPages: core.Arena[[16]uint64]{Chunks: []*[64][16]uint64{new([64][16]uint64)}}},
@@ -89,6 +92,7 @@ func TestSparseMemoResetBounds(t *testing.T) {
 }
 
 func TestSparseMemoParseControls(t *testing.T) {
+	t.Parallel()
 	src, err := os.ReadFile("../../parsers/typescript/typescript.pego")
 	if err != nil {
 		t.Fatal(err)
@@ -118,6 +122,7 @@ func TestSparseMemoParseControls(t *testing.T) {
 }
 
 func TestSparseMemoInputSelection(t *testing.T) {
+	t.Parallel()
 	data, err := os.ReadFile("../../parsers/typescript/typescript.pego")
 	if err != nil {
 		t.Fatal(err)

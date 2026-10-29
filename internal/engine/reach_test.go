@@ -104,7 +104,10 @@ func generateReach(t *testing.T, src string, opts gen.GenOptions) []byte {
 // TestUnreachableBodiesAreLeftOut checks that the bodies of rules that nothing can enter are not
 // printed, that the printed code calls nothing it does not define, and that the output without
 // the pruning has more bodies.
-func TestUnreachableBodiesAreLeftOut(t *testing.T) { eachMode(t, testUnreachableBodiesAreLeftOut) }
+func TestUnreachableBodiesAreLeftOut(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testUnreachableBodiesAreLeftOut)
+}
 
 func testUnreachableBodiesAreLeftOut(t *testing.T) {
 	for _, tc := range []struct {
@@ -199,9 +202,11 @@ func runReach(t *testing.T, src string, opts gen.GenOptions, hook func(*gogen.Li
 	write("go.mod", testGoMod("reachtest"))
 	opts.Start = "main"
 	opts.Package = "p"
-	gogen.ReachHook = hook
+	gh := &gogen.Hooks{}
+	setGenHooks(t, gh)
+	gh.Reach = hook
 	code, err := generateCode(t, g, opts)
-	gogen.ReachHook = nil
+	gh.Reach = nil
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -262,6 +267,7 @@ func runReach(t *testing.T, src string, opts gen.GenOptions, hook func(*gogen.Li
 }
 
 func TestUnreachableBodiesRunLikeTheFullOutput(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testUnreachableBodiesRunLikeTheFullOutput)
 }
 
@@ -308,7 +314,10 @@ func testUnreachableBodiesRunLikeTheFullOutput(t *testing.T) {
 // TestUnreachableRootControls is the negative control of the reachability: the same differential
 // run with a root left out of the first pass's result must show the missing Body at run time (the
 // output compiles; the rule's slot is nil).
-func TestUnreachableRootControls(t *testing.T) { eachMode(t, testUnreachableRootControls) }
+func TestUnreachableRootControls(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testUnreachableRootControls)
+}
 
 func testUnreachableRootControls(t *testing.T) {
 	if testing.Short() {
@@ -371,6 +380,7 @@ func testUnreachableRootControls(t *testing.T) {
 // TestUnreachableCalleeFailsGeneration checks that a generated call of a rule that the first pass
 // found unreachable fails generation, and that a reachable rule without a Body does as well.
 func TestUnreachableCalleeFailsGeneration(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testUnreachableCalleeFailsGeneration)
 }
 
@@ -380,14 +390,15 @@ func testUnreachableCalleeFailsGeneration(t *testing.T) {
 		t.Fatal(err)
 	}
 	// word is called from main: leaving it out of the reachable rules is a contradiction.
-	gogen.ReachHook = func(l *gogen.LiveRules) {
+	gh := &gogen.Hooks{}
+	setGenHooks(t, gh)
+	gh.Reach = func(l *gogen.LiveRules) {
 		for k := range l.Reach {
 			if k.Table == "rules" && k.ID != 0 {
 				delete(l.Reach, k)
 			}
 		}
 	}
-	defer func() { gogen.ReachHook = nil }()
 	_, err = generateCode(t, g, gen.GenOptions{Start: "main", Package: "p"})
 	if err == nil || !strings.Contains(err.Error(), "left out") {
 		t.Errorf("generation with a callee left out: err = %v, want an internal error", err)
@@ -400,7 +411,7 @@ func testUnreachableCalleeFailsGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gogen.ReachHook = func(l *gogen.LiveRules) {
+	gh.Reach = func(l *gogen.LiveRules) {
 		delete(l.Edges, gogen.RootKey)
 		for _, k := range l.Roots {
 			delete(l.Edges, k)

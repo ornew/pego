@@ -30,6 +30,7 @@ func compileMessage(t *testing.T, src string, opts ...compile.Options) string {
 // TestVarDeclarationErrors checks the compile errors of variable declarations and of the uses
 // of variables, with their messages.
 func TestVarDeclarationErrors(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ name, src, want string }{
 		{"duplicate", "var x int\nvar x string\nrule main = \"a\"", "2:1: variable x is already defined"},
 		{"true as a name", "var true bool\nrule main = \"a\"", "variable name true is reserved; it is a literal"},
@@ -67,6 +68,7 @@ func TestVarDeclarationErrors(t *testing.T) {
 // TestVarDeclarationsCompile checks the declarations that are valid, with and without a type
 // and an initial value.
 func TestVarDeclarationsCompile(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{
 		"var d int = 0\nrule main = \"a\"",
 		"var m string\nrule main = \"a\"",
@@ -85,6 +87,7 @@ func TestVarDeclarationsCompile(t *testing.T) {
 // TestVarInitialValues checks that every parse starts from the declared initial values, through
 // every entry point and every backend, and that a grammar can read them before it binds.
 func TestVarInitialValues(t *testing.T) {
+	t.Parallel()
 	const src = `type R = { N int; S string; B bool; M int; Z int }
 var n int = 7
 var s = "init"
@@ -170,6 +173,7 @@ rule item E = {n := n + 1} "a" => E{N: n}
 // TestVarTypedReads checks that reads and bindings have the declared type: a read can be used
 // where its type is accepted, and the checks do not apply without the type checker.
 func TestVarTypedReads(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `type V = { N int; S string; B bool }
 var d int
 var tag string = "t"
@@ -190,6 +194,7 @@ rule main V = {d := d + 2} {tag := tag + "!"} "a" => V{N: d * 3, S: tag, B: on &
 // TestGrammarWithoutVariables checks that a grammar without variable declarations has no
 // variable table and no variables in its module.
 func TestGrammarWithoutVariables(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "a" ("b" / "c")* $$`)
 	if prog.Vars != nil || len(prog.Module().Vars) != 0 {
 		t.Fatalf("variables: %v, %v", prog.Vars, prog.Module().Vars)
@@ -207,6 +212,7 @@ func TestGrammarWithoutVariables(t *testing.T) {
 // value fits the variable: a value of an unknown type is rejected with a hint to cast it, and a
 // cast makes it acceptable. Nothing is checked when the binding runs.
 func TestVarBindingsAreStatic(t *testing.T) {
+	t.Parallel()
 	const prelude = `var x int
 rule dyn _ = di / ds
 rule di = "i" => 1
@@ -264,6 +270,7 @@ rule ds = "s" => "str"
 // earlier instruction set let it, is rejected, and that a binding of a value of another type than
 // the variable's is memory-safe: variables hold any value and reads check the types they use.
 func TestLoadedBindingNeedsNoCheck(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, "var x int\nrule main = {x := 1} \"a\" => x\n")
 	m := prog.Module()
 	m.Code = append([]bytecode.Instr(nil), m.Code...)

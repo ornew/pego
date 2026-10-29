@@ -45,7 +45,10 @@ rule recoverList Items | error = nonemptyItems #recover(skip="?")
 rule recoveryElements [](S | error) = xs:(s:structure #recover(skip="?"))+ => map($xs, (x) => x.$s)
 `
 
-func TestGeneratedNamedAST(t *testing.T) { eachMode(t, testGeneratedNamedAST) }
+func TestGeneratedNamedAST(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedNamedAST)
+}
 
 func testGeneratedNamedAST(t *testing.T) {
 	if testing.Short() {
@@ -102,7 +105,10 @@ func testGeneratedNamedAST(t *testing.T) {
 	}
 }
 
-func TestGeneratedNamedASTUntypedAndTS(t *testing.T) { eachMode(t, testGeneratedNamedASTUntypedAndTS) }
+func TestGeneratedNamedASTUntypedAndTS(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedNamedASTUntypedAndTS)
+}
 
 func testGeneratedNamedASTUntypedAndTS(t *testing.T) {
 	g, err := parseTest(namedASTGrammar)
@@ -128,6 +134,7 @@ func testGeneratedNamedASTUntypedAndTS(t *testing.T) {
 // TestGeneratedNamedASTScalarResults checks that a rule producing an int, string or bool gets that
 // type as its typed result, and that a node rule declared as an int is still rejected.
 func TestGeneratedNamedASTScalarResults(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedNamedASTScalarResults)
 }
 
@@ -162,6 +169,7 @@ const namedASTConsumer = `package named_test
 import("encoding/json";"fmt";"reflect";"strings";"sync";"testing";p "namedfixture/named";g "namedfixture/named/types")
 func jsonValue(v any)string {b,err:=json.Marshal(v);if err!=nil {panic(err)};return string(b)}
 func TestNamedMappings(t *testing.T) {
+	t.Parallel()
  for _,unit:=range []p.PositionUnit{p.CodePoints,p.Bytes} {
   end:=1;if unit==p.Bytes {end=2}
   if FIELD_READ {v,err:=p.ParseRuleAST("fieldRead","é",p.WithUnit(unit));if err!=nil||v.(*g.T).End!=end {t.Fatal(v,err)}}
@@ -201,6 +209,7 @@ func counted(calls *int,opt p.ParseOption)p.ParseOption {
  f:=reflect.ValueOf(opt);return reflect.MakeFunc(f.Type(),func(args []reflect.Value)[]reflect.Value{*calls++;f.Call(args);return nil}).Interface().(p.ParseOption)
 }
 func TestNamedOptionsAndErrors(t *testing.T) {
+	t.Parallel()
  calls:=0
  v,err:=p.ParseRuleAST("missing","",counted(&calls,p.WithMaxDepth(-1)))
  if v!=nil||err==nil||!strings.Contains(err.Error(),"max depth")||calls!=1 {t.Fatalf("precedence or option replay: %v %v %d",v,err,calls)}
@@ -217,10 +226,12 @@ func TestNamedOptionsAndErrors(t *testing.T) {
  }
 }
 func TestStartUnchanged(t *testing.T) {
+	t.Parallel()
  name,input:="main","é";if START_CST {name,input="cst","xy"};var f func(string,...p.ParseOption)(START_TYPE,error)=p.ParseAST;_,_=f(input)
  v,err:=p.ParseRuleAST(name,input);if err!=nil {t.Fatal(err)};a,err:=p.ParseAST(input);if err!=nil||jsonValue(a)!=jsonValue(v) {t.Fatal(a,v,err)}
 }
 func TestNamedOwnership(t *testing.T) {
+	t.Parallel()
  v,err:=p.ParseRuleAST("items","éé");if err!=nil {t.Fatal(err)};before:=jsonValue(v)
  var wg sync.WaitGroup
  for i:=0;i<4;i++ {wg.Add(1);go func(){defer wg.Done();for j:=0;j<20;j++ {if _,err:=p.ParseRuleAST("structure","é");err!=nil {t.Error(err)}}}()};wg.Wait()
@@ -230,7 +241,10 @@ func TestNamedOwnership(t *testing.T) {
 
 // XML is only a workload: named fragments must agree with existing wrappers,
 // with spans relative to the fragment rather than the synthetic document.
-func TestGeneratedNamedASTXMLFragments(t *testing.T) { eachMode(t, testGeneratedNamedASTXMLFragments) }
+func TestGeneratedNamedASTXMLFragments(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedNamedASTXMLFragments)
+}
 
 func testGeneratedNamedASTXMLFragments(t *testing.T) {
 	if testing.Short() {
@@ -283,6 +297,7 @@ func normalized(v any,offset int)string {
  var shift func(any);shift=func(x any){switch x:=x.(type){case []any:for _,v:=range x {shift(v)};case map[string]any:if start,ok:=x["Start"].(float64);ok {x["Start"]=start-float64(offset);x["End"]=x["End"].(float64)-float64(offset)};for _,v:=range x {shift(v)}}};shift(x);data,_=json.Marshal(x);return string(data)
 }
 func TestXMLFragments(t *testing.T) {
+	t.Parallel()
  for _,unit:=range []p.PositionUnit{p.CodePoints,p.Bytes} {
   for _,c:=range []struct{name,fragment,prefix,suffix string;bad bool}{
    {"content","é<子>日本&amp;語</子><!--注-->","<r>","</r>",false},
@@ -311,6 +326,7 @@ func TestXMLFragments(t *testing.T) {
 `
 
 func TestGeneratedNamedASTSuccessfulNil(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedNamedASTSuccessfulNil)
 }
 
@@ -362,6 +378,7 @@ rule nilUnion MaybeU = t:term? => $t
 const namedNilConsumer = `package named_test
 import("testing";p "namedfixture/named")
 func TestSuccessfulNil(t *testing.T) {
+	t.Parallel()
  for _,unit:=range []p.PositionUnit{p.CodePoints,p.Bytes} {
   for _,name:=range []string{"nilAny","nilNode","nilUnion"} {
    n,err:=p.ParseRule(name,"",p.WithUnit(unit));if err!=nil||n!=nil {t.Fatalf("%s generic nil success: %v %v",name,n,err)}

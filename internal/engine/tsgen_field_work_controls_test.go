@@ -9,6 +9,7 @@ import (
 )
 
 func TestGeneratedTSWorkControlFields(t *testing.T) {
+	t.Parallel()
 	const width = 48
 	names := make([]string, width)
 	declarations := make([]string, width)

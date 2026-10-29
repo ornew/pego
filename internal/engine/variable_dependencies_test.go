@@ -108,6 +108,7 @@ func variableManyReads(n int, cyclic bool) string {
 }
 
 func TestVariableDependencyGrowingSets(t *testing.T) {
+	t.Parallel()
 	for _, cyclic := range []bool{false, true} {
 		g, err := parseTest(variableManyReads(64, cyclic))
 		if err != nil {
@@ -128,6 +129,7 @@ func TestVariableDependencyGrowingSets(t *testing.T) {
 }
 
 func TestVariableDependencyGraphs(t *testing.T) {
+	t.Parallel()
 	for _, n := range []int{64, 512, 2048} {
 		for _, reverse := range []bool{false, true} {
 			for _, reads := range []bool{false, true} {
@@ -180,6 +182,7 @@ func TestVariableDependencyGraphs(t *testing.T) {
 }
 
 func TestVariableDependencyTraversal(t *testing.T) {
+	t.Parallel()
 	// Include calls in all syntactic contexts, even those which may not run;
 	// recovery arguments and OperatorsRule actions have the same dependency contract.
 	src := `var local int

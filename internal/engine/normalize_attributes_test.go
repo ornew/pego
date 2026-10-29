@@ -10,6 +10,7 @@ import (
 )
 
 func TestNormalizationCopyOnChangeParity(t *testing.T) {
+	t.Parallel()
 	for _, source := range []string{
 		`rule main = "a"? (&"b" / !"x") "b"+ $$`,
 		`rule main = ("a" #repeat(1, 3) #atomic @error("as")) "b" $$`,
@@ -82,6 +83,7 @@ rule main (Alias) = {count := (1)} {(count == 1)} n:([0-9]+) => (Number{Text: (t
 }
 
 func TestNormalizationContainerShapes(t *testing.T) {
+	t.Parallel()
 	literal := &grammar.Literal{Value: "a"}
 	for _, expr := range []grammar.Expr{
 		&grammar.Seq{}, &grammar.Seq{Items: []grammar.Expr{}},
@@ -111,6 +113,7 @@ func TestNormalizationContainerShapes(t *testing.T) {
 }
 
 func TestNormalizationAttributeBindingDoesNotMutate(t *testing.T) {
+	t.Parallel()
 	for _, name := range []string{"error", "recover"} {
 		key := "message"
 		if name == "recover" {
@@ -129,6 +132,7 @@ func TestNormalizationAttributeBindingDoesNotMutate(t *testing.T) {
 }
 
 func TestNormalizationSharesUnchangedNodes(t *testing.T) {
+	t.Parallel()
 	g, err := parseTest(`rule main = "a" "b"*`)
 	if err != nil {
 		t.Fatal(err)

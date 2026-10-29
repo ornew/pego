@@ -16,6 +16,7 @@ const tsDiagnosticMinimum = `function minimum(fits:(n:number)=>boolean):number {
 `
 
 func TestGeneratedTSWorkControlDiagnosticLineScan(t *testing.T) {
+	t.Parallel()
 	src := `rule main = "z" #repeat(2048) "!"
 
 rule fast = "z" #repeat(2048)`
@@ -33,6 +34,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 }
 
 func TestGeneratedTSWorkControlDiagnosticMessage(t *testing.T) {
+	t.Parallel()
 	message := strings.Repeat("details λ; ", 256)
 	src := fmt.Sprintf(`rule main = "z" @error(message=%q)
  rule fast = "z" @error(message="short")`, message)
@@ -50,6 +52,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 }
 
 func TestGeneratedTSWorkControlDiagnosticSort(t *testing.T) {
+	t.Parallel()
 	const width = 64
 	alternatives := make([]string, width)
 	for i := range alternatives {
@@ -75,6 +78,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 }
 
 func TestGeneratedTSWorkControlRecoveredMessage(t *testing.T) {
+	t.Parallel()
 	message := strings.Repeat("details λ; ", 256)
 	src := fmt.Sprintf(`rule main = ("z" @error(message=%q)) #recover(skip="!")
  rule fast = ("z" @error(message="short")) #recover(skip="!")`, message)
@@ -96,6 +100,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 }
 
 func TestGeneratedTSWorkControlDiagnosticParity(t *testing.T) {
+	t.Parallel()
 	for _, width := range []int{1, 2, 3, 7, 8, 9, 127, 128, 129} {
 		alternatives := make([]string, width)
 		for i := range alternatives {

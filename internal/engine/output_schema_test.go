@@ -13,6 +13,7 @@ import (
 )
 
 func TestOutputSchemaPrototype(t *testing.T) {
+	t.Parallel()
 	g, err := parseTest(`type Item = { Value string; Next *Item; Count int; Flag bool; Values []node[string] }
 type Unused = { Text string }
 type Either ~ Item | node[string]
@@ -119,6 +120,7 @@ rule unused = "z"`)
 }
 
 func TestOutputSchemaAnyAndValueFreeRepeat(t *testing.T) {
+	t.Parallel()
 	g, err := parseTest(`type Open ~ _
 type Bag = { Values []_ }
 rule main = (-"a")*`)
@@ -152,6 +154,7 @@ rule main = (-"a")*`)
 // TestOutputSchemaMergesRepeatedCaptures checks that captures of one name in one node export as a
 // single capture with the paths of all of them, which keeps the schema valid.
 func TestOutputSchemaMergesRepeatedCaptures(t *testing.T) {
+	t.Parallel()
 	p := compileBare(t, "@start\nrule main = a:\"x\" b:\"y\" a:\"z\"\n", compile.Options{DefaultValue: true})
 	s, err := outputSchemaPrototype(p, "main", false)
 	if err != nil {
@@ -177,6 +180,7 @@ func TestOutputSchemaMergesRepeatedCaptures(t *testing.T) {
 // bind. The types of the places are joined once: the result is flat, sorted and without duplicates,
 // and it is the same whatever the order of the places.
 func TestOutputSchemaRepeatedCaptureJoin(t *testing.T) {
+	t.Parallel()
 	p := compileBare(t, "@start\nrule main = a:\"x\" a:[0-9]+ a:\"q\" a:[0-9]+\n", compile.Options{DefaultValue: true})
 	s, err := outputSchemaPrototype(p, "main", false)
 	if err != nil {
@@ -199,6 +203,7 @@ func TestOutputSchemaRepeatedCaptureJoin(t *testing.T) {
 // TestOutputSchemaLookaheadCapture checks that a capture beside a lookahead keeps the Side flag
 // whatever place comes last, and that its type joins with the type of the real capture.
 func TestOutputSchemaLookaheadCapture(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name, src string
 		side      bool

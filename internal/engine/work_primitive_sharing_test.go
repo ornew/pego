@@ -17,6 +17,7 @@ import (
 // value-building for an ordinary rule. It must preserve both modes, rule
 // names, captures and active accounting in either dispatch graph.
 func TestWorkPrimitiveASTAliases(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ name, expr, text string }{
 		{"literal", `"é"`, "é"},
 		{"class", `[a-zα-ω😀]`, "λ"},

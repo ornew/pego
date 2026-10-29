@@ -11,6 +11,7 @@ import (
 )
 
 func TestWorkSetupReferenceAdmission(t *testing.T) {
+	t.Parallel()
 	for _, omitted := range []bool{false, true} {
 		for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 			for _, api := range []string{"batch", "document", "stream"} {

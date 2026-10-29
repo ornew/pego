@@ -71,6 +71,7 @@ func requireClassWorkLimit(t *testing.T, p *Program, input string, backend Backe
 }
 
 func TestWorkClassLargeNonASCIIRangesAreCharged(t *testing.T) {
+	t.Parallel()
 	ranges := workClassRanges(workClassRangeCount)
 	late := string(ranges[len(ranges)-1].Lo)
 	gap := string(ranges[len(ranges)-1].Lo + 1)
@@ -101,6 +102,7 @@ func TestWorkClassLargeNonASCIIRangesAreCharged(t *testing.T) {
 }
 
 func TestWorkClassRangeCancellationAndPoolRetry(t *testing.T) {
+	t.Parallel()
 	ranges := workClassRanges(workClassRangeCount)
 	input := string(ranges[len(ranges)-1].Lo)
 	p := classMembershipProgram(t, &grammar.CharClass{Ranges: ranges})
@@ -150,6 +152,7 @@ func TestWorkClassRangeCancellationAndPoolRetry(t *testing.T) {
 }
 
 func TestWorkClassInterruptionBypassesChoiceAndRecovery(t *testing.T) {
+	t.Parallel()
 	ranges := workClassRanges(workClassRangeCount)
 	gap := string(ranges[len(ranges)-1].Lo + 1)
 	recoverClass := &grammar.Attributed{
@@ -179,6 +182,7 @@ func TestWorkClassInterruptionBypassesChoiceAndRecovery(t *testing.T) {
 }
 
 func TestWorkClassFastPathParity(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name  string
 		class *grammar.CharClass
@@ -211,6 +215,7 @@ func TestWorkClassFastPathParity(t *testing.T) {
 // Optimized guards can skip the expression matcher; value-free scans bypass
 // per-element expression dispatch. Their membership work must still be bounded.
 func TestWorkClassOptimizedRoutes(t *testing.T) {
+	t.Parallel()
 	ranges := workClassRanges(workClassRangeCount)
 	late := string(ranges[len(ranges)-1].Lo)
 	gap := string(ranges[len(ranges)-1].Lo + 1)

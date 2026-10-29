@@ -12,6 +12,7 @@ import (
 )
 
 func TestGeneratedTypedTrace(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds standalone typed trace consumers")
@@ -186,6 +187,7 @@ func TestTypedTraceLifecycle(t *testing.T){
 `
 
 func TestGeneratedTracePrivateTypeNamesRemainInvalid(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTracePrivateTypeNamesRemainInvalid)
 }
 

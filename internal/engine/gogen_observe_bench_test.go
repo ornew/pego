@@ -14,6 +14,7 @@ import (
 // The exporter keeps timing and generated artifacts outside the repository.
 // Run its standalone benchmarks serially with fixed toolchain and GC settings.
 func TestExportGeneratedTraceBenchmarks(t *testing.T) {
+	t.Parallel()
 	dir := os.Getenv("PEGO_TRACE_BENCH_DIR")
 	if dir == "" {
 		t.Skip("set PEGO_TRACE_BENCH_DIR to export standalone benchmarks")

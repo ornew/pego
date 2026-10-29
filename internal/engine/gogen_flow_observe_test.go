@@ -435,6 +435,7 @@ var observationGoldenFile = goldenFile{path: observationGolden, header: observat
 
 // TestFlowNodeObservationsMatchEngine checks the observations of the generated corpus with observability.
 func TestFlowNodeObservationsMatchEngine(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
@@ -447,6 +448,7 @@ func TestFlowNodeObservationsMatchEngine(t *testing.T) {
 // testdata directories (the .txt files of up to 3 KB, at most six each), with the default start rule: the
 // inputs themselves against the engine, the damaged ones against the golden.
 func TestFlowNodeObservationsOnGrammars(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("builds the large parsers")
 	}
@@ -527,6 +529,7 @@ var skippedStmt = regexp.MustCompile(`(?m)^\t*p\.Observation\.Skipped\("([^"]*)"
 // an event: it changes the code of the build in each way and requires a digest that differs from the
 // golden's for some case.
 func TestFlowNodeObservationMutants(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}

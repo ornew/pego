@@ -11,6 +11,7 @@ import (
 )
 
 func TestGenerateDocumentDiagnosticOwnership(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGenerateDocumentDiagnosticOwnership)
 }
 

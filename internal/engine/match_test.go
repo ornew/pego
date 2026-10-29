@@ -5,6 +5,7 @@ import (
 )
 
 func TestTerminals(t *testing.T) {
+	t.Parallel()
 	t.Run("literal", func(t *testing.T) {
 		check(t, `rule main = "abc"`,
 			ok("abc", `"abc"@main`),
@@ -51,6 +52,7 @@ func TestTerminals(t *testing.T) {
 }
 
 func TestSequenceAndChoice(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = "a" ("b" / "c" "d") "e"`,
 		ok("abe", `("a" "b" "e")@main`),
 		ok("acde", `("a" ("c" "d") "e")@main`),
@@ -73,6 +75,7 @@ rule b = "b" "b"`,
 }
 
 func TestRepetition(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = "a"*`,
 		ok("", `[]@main`),
 		ok("aaa", `["a" "a" "a"]@main`),
@@ -110,6 +113,7 @@ func TestRepetition(t *testing.T) {
 }
 
 func TestOptional(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = "a"? "b"`,
 		ok("ab", `("a" "b")@main`),
 		ok("b", `(nil "b")@main`),
@@ -117,6 +121,7 @@ func TestOptional(t *testing.T) {
 }
 
 func TestLookahead(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = !"if" [a-z]+ #atomic`,
 		fails("iffy", `1:1: syntax error`),
 		ok("abc", `("abc")@main`),
@@ -132,6 +137,7 @@ func TestLookahead(t *testing.T) {
 }
 
 func TestAtomicAndDiscard(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = ("a" [0-9]+) #atomic -" "+ "b"`,
 		ok("a12   b", `("a12" "b")@main`),
 	)
@@ -143,6 +149,7 @@ rule word = [a-z]+ #atomic`,
 }
 
 func TestCut(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = "a" #cut "b" / "a" #cut "c"`,
 		ok("ab", `("a" "b")@main`),
 		fails("ac", `1:2: syntax error: expected "b"`),
@@ -164,6 +171,7 @@ rule a = "a" #cut "b"`,
 }
 
 func TestAnchors(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = ^^ "a" $$`,
 		ok("a", `("a")@main`),
 	)
@@ -179,6 +187,7 @@ func TestAnchors(t *testing.T) {
 }
 
 func TestRuleNodes(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = a b c
 rule a = "a"
 rule b = x
@@ -190,6 +199,7 @@ rule c = "c"+ #atomic`,
 }
 
 func TestTerminalType(t *testing.T) {
+	t.Parallel()
 	check(t, `type Number = { Text string }
 rule main = n:number "+" number
 rule number Number = t:([0-9]+) #atomic => Number{Text: text($t)}`,
@@ -198,6 +208,7 @@ rule number Number = t:([0-9]+) #atomic => Number{Text: text($t)}`,
 }
 
 func TestLeftRecursion(t *testing.T) {
+	t.Parallel()
 	t.Run("direct", func(t *testing.T) {
 		check(t, `rule main = expr
 rule expr = expr "+" term / term
@@ -244,6 +255,7 @@ rule e = e "1" / "0"`,
 }
 
 func TestNullableLeftRecursionTerminates(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = a "b"
 rule a = a "x" / _`,
 		ok("xxb", `(((nil "x")@a "x")@a "b")@main`),
@@ -254,6 +266,7 @@ rule a = a "x" / _`,
 // variables: after the first alternative fails, r is called again at the same position with a
 // different value of n.
 func TestMemoKeyedByVariables(t *testing.T) {
+	t.Parallel()
 	src := `var n int
 rule main = {n := 1} r "x" / {n := 2} r .*
 rule r = {n == 1} "a" / {n == 2} "b"`

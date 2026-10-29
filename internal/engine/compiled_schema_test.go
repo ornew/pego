@@ -66,6 +66,7 @@ func wantSchemaNeedsSource(t *testing.T, err error) {
 // loaded parser refuses every start rule and all rules, the source still exports them, and saving
 // the loaded file again reproduces it.
 func TestCompiledSchemaMatchesSource(t *testing.T) {
+	t.Parallel()
 	for _, c := range schemaCorpus(t) {
 		for _, options := range []compile.Options{{SourceInfo: true}, {DefaultValue: true}} {
 			t.Run(c.name, func(t *testing.T) {
@@ -112,6 +113,7 @@ func TestCompiledSchemaMatchesSource(t *testing.T) {
 // the two bytecode backends also run on the file in parse mode, which has no schema before or after
 // parsing.
 func TestCompiledSchemaBackendAgreement(t *testing.T) {
+	t.Parallel()
 	for _, c := range genCorpus(t) {
 		t.Run(c.name, func(t *testing.T) {
 			src := mustCompile(t, c.src)
@@ -162,6 +164,7 @@ func marshalWithTrailing(prog *Program, start string, section []byte) []byte {
 // document after the module, valid or not, is data the format does not have, and the file is
 // rejected.
 func TestCompiledSchemaSectionErrors(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, `@start(default)
 rule main = "a"
 @start
@@ -208,6 +211,7 @@ var dropLastStart = regexp.MustCompile(`,\{"name":"other".*\]\}$`)
 // TestCompiledSchemaUnavailable checks that a loaded file in each mode reports that its schema
 // needs the grammar source, while the source exports it.
 func TestCompiledSchemaUnavailable(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, `rule main = "a"`)
 	if _, err := outputSchemaPrototype(p, "main", false); err != nil {
 		t.Fatalf("source schema: %v", err)
@@ -228,6 +232,7 @@ func TestCompiledSchemaUnavailable(t *testing.T) {
 // TestCompiledSchemaWithAST checks that a file of another container version, such as the earlier
 // one that held the grammar and a schema, is rejected and needs to be compiled again.
 func TestCompiledSchemaWithAST(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, `rule main = "a"`)
 	for _, version := range []byte{compiledVersion - 1, compiledVersion + 1} {
 		data, err := p.MarshalBinary("main")
@@ -247,6 +252,7 @@ func TestCompiledSchemaWithAST(t *testing.T) {
 // schema and only start rules otherwise, and that a loaded file refuses every name the same way,
 // because it holds no schema.
 func TestCompiledSchemaStartNames(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, `@start
 rule main = a:"x"
 rule helper = "y"`)

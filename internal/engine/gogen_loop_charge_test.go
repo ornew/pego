@@ -26,6 +26,7 @@ import (
 // The negative control runs the same checks against a copy of the runtime without the per-element charge of
 // the loops: every case has to violate them.
 func TestGeneratedLoopCharge(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated consumers")

@@ -12,6 +12,7 @@ import (
 )
 
 func TestGeneratedDocumentObservation(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds standalone generated Document observation consumers")

@@ -75,7 +75,10 @@ rule expr = (expr "+" "a" / "a") #recover(skip=";")
 `, []string{"a", "a+a+a", "a+", ";", "a+a?", "", "b"}},
 }
 
-func TestGeneratedTypedLRBodies(t *testing.T) { eachMode(t, testGeneratedTypedLRBodies) }
+func TestGeneratedTypedLRBodies(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedTypedLRBodies)
+}
 
 func testGeneratedTypedLRBodies(t *testing.T) {
 	if testing.Short() {

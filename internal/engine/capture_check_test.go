@@ -14,6 +14,7 @@ import (
 // A name captured several times in one match has the join of the types of its captures: the
 // type of the capture x in the value of main, or the type of main's value when it has an action.
 func TestDuplicateCaptureTypes(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name, src string
 		action    bool
@@ -62,6 +63,7 @@ func TestDuplicateCaptureTypes(t *testing.T) {
 // Compare the capture merger with the join, including values whose top-level optional/union
 // normalization must not be skipped.
 func TestCaptureJoinEquivalence(t *testing.T) {
+	t.Parallel()
 	str := compile.TyStringNode
 	tuple := compile.NodeTy{Value: compile.TupleTy{Elems: []compile.Ty{str, str}}}
 	ts := []compile.Ty{compile.TyAny, compile.TyBottom, compile.TyNil, str, compile.TyInt, compile.TyString, compile.NamedTy{Name: "A", Kind: 's'}, compile.ListTy{Elem: str},
@@ -79,6 +81,7 @@ func TestCaptureJoinEquivalence(t *testing.T) {
 }
 
 func TestDuplicateCaptureDiagnosticPositions(t *testing.T) {
+	t.Parallel()
 	for _, n := range []int{1, 64, 1024} {
 		t.Run(fmt.Sprint(n), func(t *testing.T) {
 			line := `rule main = ` + strings.Repeat(`"😀" x:item `, n) + `=> R{X: $x}`

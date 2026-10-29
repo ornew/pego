@@ -44,6 +44,7 @@ rule semi = ";" #missing`, Inputs: []string{"(;)", "()"}},
 // TestStructuralQueryNestedShapesAreSound checks that patterns describing actual parse results
 // compile against the grammar's schema: the check must never reject a pattern that matches.
 func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
+	t.Parallel()
 	cases := append(engine.SchemaCorpus(t), queryShapeCase)
 	cases = append(cases, queryRecoveryCases...)
 	// every matches each candidate value: every node, struct, tuple, list and error value.

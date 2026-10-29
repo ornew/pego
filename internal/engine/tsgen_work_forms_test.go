@@ -16,6 +16,7 @@ rule fast = "z"`
 // The generated TypeScript has two forms: without -work-controls the rules do not charge work and the
 // entry points reject the control options; with it they charge and accept them.
 func TestGeneratedTSWorkControlForms(t *testing.T) {
+	t.Parallel()
 	g, err := parseTest(tsWorkFormsGrammar)
 	if err != nil {
 		t.Fatal(err)
@@ -69,6 +70,7 @@ func TestGeneratedTSWorkControlForms(t *testing.T) {
 }
 
 func TestGeneratedTSWithoutWorkControlsRejectsControlOptions(t *testing.T) {
+	t.Parallel()
 	consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + `
 const input = "ab,cd";
@@ -103,6 +105,7 @@ for (const unit of [p.CodePoints, p.Bytes]) {
 }
 
 func TestGeneratedTSWithWorkControlsAcceptsControlOptions(t *testing.T) {
+	t.Parallel()
 	consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + `
 const input = "ab,cd";

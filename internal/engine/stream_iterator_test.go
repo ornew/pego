@@ -18,6 +18,7 @@ type demandReader struct {
 func (r *demandReader) Read(p []byte) (int, error) { r.calls++; return r.reader.Read(p) }
 
 func TestStreamIteratorParityDemandAndTermination(t *testing.T) {
+	t.Parallel()
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(b.String()+"/"+u.String(), func(t *testing.T) {
@@ -57,6 +58,7 @@ rule item = "あ" / "b"`)
 }
 
 func TestStreamIteratorNilEmptyCloseAndError(t *testing.T) {
+	t.Parallel()
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		p := mustCompile(t, `rule main = (-"a")* #stream $$`)
 		it, err := p.Iterate("main", strings.NewReader("aa"), ParseOptions{Backend: b})
@@ -101,6 +103,7 @@ func TestStreamIteratorNilEmptyCloseAndError(t *testing.T) {
 }
 
 func TestStreamIteratorCloseBeforeFirstNext(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, `rule main = "a"* #stream $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -127,6 +130,7 @@ func TestStreamIteratorCloseBeforeFirstNext(t *testing.T) {
 }
 
 func TestStreamIteratorRecoveredErrorsMatchCallback(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, `rule main = item+ #stream $$
 rule item = "ab" @error(message="record") #recover(skip=[^a]+)`)
 	const input = "abX!abY?ab"
@@ -190,6 +194,7 @@ rule item = "ab" @error(message="record") #recover(skip=[^a]+)`)
 // Reader cancellation is owned by the caller. Iterator.Close is deliberately
 // not invoked while Next is blocked, because concurrent ownership is invalid.
 func TestStreamIteratorCallerCancelsBlockedReader(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, `rule main = "a"* #stream $$`)
 	r, w := io.Pipe()
 	defer w.Close()

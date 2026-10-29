@@ -102,6 +102,7 @@ func inlineActionGenCases() []genCase {
 }
 
 func TestInlineActionsMatchRules(t *testing.T) {
+	t.Parallel()
 	for _, tc := range inlineCases(t) {
 		t.Run(tc.name, func(t *testing.T) {
 			inline, explicit := mustCompile(t, tc.inline), mustCompile(t, tc.explicit)
@@ -133,6 +134,7 @@ func inlineCases(t *testing.T) []inlineCase {
 }
 
 func TestInlineActionsAreRejectedWhereTheirValueIsUnused(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{
 		`rule main = &(x:"a" => $x) "a"`,
 		`rule main = !(x:"a" => $x) "b"`,
@@ -147,6 +149,7 @@ func TestInlineActionsAreRejectedWhereTheirValueIsUnused(t *testing.T) {
 }
 
 func TestInlineActionsSeeOnlyTheirOwnCaptures(t *testing.T) {
+	t.Parallel()
 	msg := compileError(t, `rule main = y:"a" (x:"b" => $y)`)
 	if !strings.Contains(msg, "undefined capture $y") {
 		t.Fatal(msg)
@@ -159,6 +162,7 @@ func TestInlineActionsSeeOnlyTheirOwnCaptures(t *testing.T) {
 }
 
 func TestInlineActionsKeepBlocksUnsupported(t *testing.T) {
+	t.Parallel()
 	msg := compileError(t, `rule main = (x:"a" => { y := $x; $y })`)
 	if !strings.Contains(msg, "action statement blocks are not implemented") {
 		t.Fatal(msg)
@@ -168,6 +172,7 @@ func TestInlineActionsKeepBlocksUnsupported(t *testing.T) {
 // The type of an inline action is that of a rule: it is checked at compile time and appears in the
 // typed values and the schema as the type of the item.
 func TestInlineActionsAreTyped(t *testing.T) {
+	t.Parallel()
 	msg := compileError(t, `type A = { X string }
 rule main = (x:"a" => A{X: $x}) "b"`)
 	if !strings.Contains(msg, "cannot use node[string] as string in field X of A") {
@@ -202,6 +207,7 @@ rule main = (x:"a" => A{X: text($x)}) "b"`)
 // The grammar of a program is the grammar as written, and the compiled form keeps it: loading it
 // gives the same results, with the inline actions still in the AST.
 func TestInlineActionsCompiledRoundTrip(t *testing.T) {
+	t.Parallel()
 	for _, tc := range inlineActionCases() {
 		t.Run(tc.name, func(t *testing.T) {
 			prog := mustCompile(t, tc.inline)

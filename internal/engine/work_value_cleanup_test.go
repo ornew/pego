@@ -14,6 +14,7 @@ import (
 )
 
 func TestWorkValueCopyInterruptionPreservesChildren(t *testing.T) {
+	t.Parallel()
 	retained := value.Ptr(value.Data{Text: "retained", Start: 7, End: 9, Fields: value.Fields{{Name: "value", Value: "unchanged"}}})
 	p := &core.Parser{KidStack: make([]*value.Node, 257)}
 	for i := range p.KidStack {
@@ -48,6 +49,7 @@ func TestWorkValueCopyInterruptionPreservesChildren(t *testing.T) {
 }
 
 func TestWorkValueFieldAndEnvironmentWalks(t *testing.T) {
+	t.Parallel()
 	fields := make(value.Fields, 300)
 	st := &grammar.TypeDef{Type: &grammar.StructType{}}
 	var bindings *core.Env
@@ -80,6 +82,7 @@ func TestWorkValueFieldAndEnvironmentWalks(t *testing.T) {
 }
 
 func TestWorkValueTrackingCleanupAfterInterruption(t *testing.T) {
+	t.Parallel()
 	retained := value.Ptr(value.Data{Text: "retained"})
 	p := &core.Parser{Created: make([]*value.Node, 258)}
 	for i := range p.Created {

@@ -282,7 +282,10 @@ rule item = q:[a-z] #atomic`, []string{"ab.", "a", "", "ab.x"}},
 // engine's ParseStream: emitted elements, the reader calls made before each,
 // and the final error, for reader chunkings, reader errors, emit errors and a
 // nil callback, in both position units.
-func TestGeneratedStreamMatchesEngine(t *testing.T) { eachMode(t, testGeneratedStreamMatchesEngine) }
+func TestGeneratedStreamMatchesEngine(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedStreamMatchesEngine)
+}
 
 func testGeneratedStreamMatchesEngine(t *testing.T) {
 	if testing.Short() {
@@ -545,7 +548,10 @@ func engineStream(prog *Program, v streamRun) string {
 	return string(b)
 }
 
-func TestGenerateStreamOptions(t *testing.T) { eachMode(t, testGenerateStreamOptions) }
+func TestGenerateStreamOptions(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGenerateStreamOptions)
+}
 
 func testGenerateStreamOptions(t *testing.T) {
 	g, err := parseTest(`rule main = item* #stream $$
@@ -633,6 +639,7 @@ rule item I = c:[a-z] ";" => I{C: $c}`, "", []string{"<a;b;>", "<>", "<a;b"}},
 // value, and its errors and number of elements with ParseStream, for reader
 // chunkings, reader errors, emit errors and a nil callback, in both units.
 func TestGeneratedTypedStreamMatchesBatch(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTypedStreamMatchesBatch)
 }
 
@@ -887,6 +894,7 @@ func main() {
 // the rule table of the ordinary output appear unchanged in the stream output,
 // whose stream body comes in addition.
 func TestGenerateStreamKeepsBatchBodies(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGenerateStreamKeepsBatchBodies)
 }
 
@@ -969,6 +977,7 @@ func testGenerateStreamKeepsBatchBodies(t *testing.T) {
 // differential test does not cover: observation, work controls, callback
 // panics and bounded memory.
 func TestGeneratedStreamAPI(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds a generated standalone stream consumer")
@@ -1115,6 +1124,7 @@ func TestDiagnosticLimitBoundsMemory(t *testing.T) {
 }
 
 func TestDiagnosticOptionsAreStreamOnly(t *testing.T) {
+	t.Parallel()
 	for _, opt := range []ParseOption{pegort.WithDiagnosticLimit(0), pegort.WithDiagnosticCallback(func(*SyntaxError) error { return nil })} {
 		check := func(name string, err error) {
 			if err == nil || !strings.Contains(err.Error(), "only supported for stream parsing") {
@@ -1163,6 +1173,7 @@ type readFunc func([]byte) (int, error)
 func (f readFunc) Read(b []byte) (int, error) { return f(b) }
 
 func TestIterateAST(t *testing.T) {
+	t.Parallel()
 	var want []StreamValue
 	err := ParseStreamAST(strings.NewReader("ab;1x;cd;"), func(v StreamValue) error { want = append(want, v); return nil })
 	var errs SyntaxErrors
@@ -1228,6 +1239,7 @@ import (
 )
 
 func TestParseStreamAST(t *testing.T) {
+	t.Parallel()
 	var got []*P
 	err := ParseStreamAST(strings.NewReader("a12;b;"), func(v StreamValue) error { got = append(got, v); return nil })
 	if err != nil || len(got) != 2 {
@@ -1247,6 +1259,7 @@ func TestParseStreamAST(t *testing.T) {
 
 // Converting elements is charged to the work limits like parsing them.
 func TestParseStreamASTWorkControls(t *testing.T) {
+	t.Parallel()
 	input := strings.Repeat("a"+strings.Repeat("1", 50)+";", 200)
 	steps := func(f func(limits WorkLimits) error) int {
 		lo, hi := 1, 1<<20
@@ -1300,6 +1313,7 @@ import (
 const input = "a=1\nbc=22\nd=3\n"
 
 func TestTraceAndProfile(t *testing.T) {
+	t.Parallel()
 	var events []pegort.TraceEvent
 	profile := &pegort.Profile{}
 	n := 0
@@ -1335,6 +1349,7 @@ func TestTraceAndProfile(t *testing.T) {
 }
 
 func TestWorkControls(t *testing.T) {
+	t.Parallel()
 	var limit *WorkLimitError
 	n := 0
 	err := ParseStream(strings.NewReader(strings.Repeat(input, 1000)), func(*Node) error { n++; return nil }, WithWorkLimits(WorkLimits{MaxSteps: 20000}))
@@ -1364,6 +1379,7 @@ type readFunc func([]byte) (int, error)
 func (f readFunc) Read(b []byte) (int, error) { return f(b) }
 
 func TestCallbackPanic(t *testing.T) {
+	t.Parallel()
 	type marker struct{}
 	defer func() {
 		if x := recover(); x != (marker{}) {

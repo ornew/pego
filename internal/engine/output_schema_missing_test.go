@@ -32,6 +32,7 @@ func missingSchema(t *testing.T) *schema.Output {
 
 // A missing token has its own shape kind, apart from error, wherever the type missing is written.
 func TestOutputSchemaMissing(t *testing.T) {
+	t.Parallel()
 	s := missingSchema(t)
 	byName := map[string]schema.Shape{}
 	for _, typ := range s.Types {
@@ -74,6 +75,7 @@ func TestOutputSchemaMissing(t *testing.T) {
 
 // The shape missing has no members.
 func TestOutputSchemaMissingRejectsMembers(t *testing.T) {
+	t.Parallel()
 	s := missingSchema(t)
 	for i := range s.Types {
 		for j := range s.Types[i].Shape.Fields {

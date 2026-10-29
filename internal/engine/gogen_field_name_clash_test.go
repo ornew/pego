@@ -14,6 +14,7 @@ import (
 // method of the generated typed values (TName, TSpan, ...): the Go field gets another name, while
 // the value reads back under the grammar name.
 func TestGeneratedTypedFieldsNamedLikeRuntimeMethods(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTypedFieldsNamedLikeRuntimeMethods)
 }
 

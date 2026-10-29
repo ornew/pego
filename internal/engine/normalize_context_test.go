@@ -13,6 +13,7 @@ import (
 )
 
 func TestNormalizationContextCancellation(t *testing.T) {
+	t.Parallel()
 	const size = 2048
 	sequence := &grammar.Seq{Items: make([]grammar.Expr, size)}
 	args := make([]any, size)
@@ -84,6 +85,7 @@ func TestNormalizationContextCancellation(t *testing.T) {
 }
 
 func TestNormalizationContextParity(t *testing.T) {
+	t.Parallel()
 	for _, source := range []string{
 		`rule main = ("a" #repeat(1, 3) #atomic @error("as")) "b" $$`,
 		`rule main = ("a" #atomic ";") #recover(skip=([^;]+ ";")) $$`,
@@ -135,6 +137,7 @@ rule main (Alias) = n:([0-9]+) => (T{Text: (text($n))})`,
 }
 
 func TestNormalizationCopiesObserveCancellation(t *testing.T) {
+	t.Parallel()
 	const size = 2048
 	values := make([]int, size)
 	keywords := make(map[string]any, size)
@@ -185,6 +188,7 @@ func TestNormalizationCopiesObserveCancellation(t *testing.T) {
 }
 
 func TestNormalizationFinalCheckpoint(t *testing.T) {
+	t.Parallel()
 	g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: &grammar.Literal{Value: "a"}}}}}
 	ctx := compileTestContext(t, 2)
 	defer func() {

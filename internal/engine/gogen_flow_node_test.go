@@ -22,7 +22,10 @@ import (
 // harness with the lean rules of the Node table printed from Flow IR, against the engine, and with the
 // recognizers printed from Flow IR as well. The route must be taken for some rule of every table, so that
 // the test cannot pass without exercising it.
-func TestGeneratedFlowNodeParity(t *testing.T) { eachMode(t, testGeneratedFlowNodeParity) }
+func TestGeneratedFlowNodeParity(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedFlowNodeParity)
+}
 
 func testGeneratedFlowNodeParity(t *testing.T) {
 	if testing.Short() {
@@ -30,11 +33,12 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 	}
 	cases := genCorpus(t)
 	taken := map[string]int{}
-	gogen.LeanRouteHook = func(table string, r *compile.Rule) { taken[table]++ }
+	gh := &gogen.Hooks{}
+	setGenHooks(t, gh)
+	gh.LeanRoute = func(table string, r *compile.Rule) { taken[table]++ }
 	framed, operators := map[string]int{}, map[string]int{}
-	gogen.FramedRouteHook = func(table string, r *compile.Rule) { framed[table]++ }
-	gogen.OperatorsRouteHook = func(table string, r *compile.Rule) { operators[table]++ }
-	t.Cleanup(func() { gogen.LeanRouteHook, gogen.FramedRouteHook, gogen.OperatorsRouteHook = nil, nil, nil })
+	gh.FramedRoute = func(table string, r *compile.Rule) { framed[table]++ }
+	gh.OperatorsRoute = func(table string, r *compile.Rule) { operators[table]++ }
 	for _, c := range cases {
 		g, err := parseTest(c.src)
 		if err != nil {
@@ -44,7 +48,7 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 	}
-	gogen.LeanRouteHook, gogen.FramedRouteHook, gogen.OperatorsRouteHook = nil, nil, nil
+	gh.LeanRoute, gh.FramedRoute, gh.OperatorsRoute = nil, nil, nil
 	for _, table := range []string{"rules", "recRules"} {
 		if operators[table] == 0 {
 			t.Errorf("no Operators Rule line of the %s table is printed from Flow IR: the parity test does not cover them", table)
@@ -68,6 +72,7 @@ var operatorGrammars = map[string]bool{"cel": true, "cue": true, "duckdb": true,
 // (a rule or line Flow IR does not print fails the generation), so that the generated text that the output manifest freezes is Flow's. In
 // the forms with observability it also checks that the matchers write the reports of skipped alternatives.
 func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("generates the large parsers")
 	}
@@ -91,15 +96,16 @@ func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 				}
 				o := gen.GenOptions{Package: "x", Module: "example.com/x", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: form.controls, Observability: form.observe, Document: form.document}
 				taken, framed, operators := 0, 0, 0
-				gogen.LeanRouteHook = func(table string, r *compile.Rule) {
+				gh := &gogen.Hooks{}
+				setGenHooks(t, gh)
+				gh.LeanRoute = func(table string, r *compile.Rule) {
 					if table == "rules" {
 						taken++
 					}
 				}
-				gogen.FramedRouteHook = func(table string, r *compile.Rule) { framed++ }
-				gogen.OperatorsRouteHook = func(table string, r *compile.Rule) { operators++ }
-				defer func() { gogen.LeanRouteHook, gogen.FramedRouteHook, gogen.OperatorsRouteHook = nil, nil, nil }()
-				files, err := Generate(g, o)
+				gh.FramedRoute = func(table string, r *compile.Rule) { framed++ }
+				gh.OperatorsRoute = func(table string, r *compile.Rule) { operators++ }
+				files, err := Generate(t, g, o)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -128,6 +134,7 @@ func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 // rule has its #stream repetition in a sequence that an attribute or a group wraps. Core IR is built
 // for the whole Node program, so Verify must accept the stream there, as the grammar and the engine do.
 func TestFlowNodeRulesAcceptStreamInWrappedSequence(t *testing.T) {
+	t.Parallel()
 	pinOrdinary(t)
 	for name, src := range map[string]string{
 		"attributed sequence": `rule main = (([a-z] #atomic)* #stream "!") @diagnostic(name="x") $$`,
@@ -154,7 +161,10 @@ rule item = [a-z] #atomic`,
 // engine, with the rules of both tables printed from Flow IR. A recognizer runs the actions of the rules
 // that predicates make value-needed, so the repetitions of its Flow-printed rules must gather what those
 // actions read.
-func TestFlowNodeRecognizersOnGrammars(t *testing.T) { eachMode(t, testFlowNodeRecognizersOnGrammars) }
+func TestFlowNodeRecognizersOnGrammars(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testFlowNodeRecognizersOnGrammars)
+}
 
 func testFlowNodeRecognizersOnGrammars(t *testing.T) {
 	if testing.Short() {

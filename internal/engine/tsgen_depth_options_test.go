@@ -13,6 +13,7 @@ import (
 )
 
 func TestGeneratedTSDepthOptions(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("runs generated TypeScript")
 	}

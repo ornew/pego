@@ -50,6 +50,7 @@ func uniqueDiagnosticIDs(n int) []core.ExpID {
 }
 
 func TestWorkExpectationCollisionScanBudgetsAndShortCircuits(t *testing.T) {
+	t.Parallel()
 	ids := collidingDiagnosticIDs(16)
 	bit := uint64(1) << diagnosticHash(ids[0])
 	prefix := append([]core.ExpID(nil), ids[:len(ids)-1]...)
@@ -88,6 +89,7 @@ func TestWorkExpectationCollisionScanBudgetsAndShortCircuits(t *testing.T) {
 }
 
 func TestWorkExpectationKeepSnapshotsAndAtomicCopy(t *testing.T) {
+	t.Parallel()
 	ids := make([]core.ExpID, 300)
 	for i := range ids {
 		ids[i] = core.ExpID(i)
@@ -152,6 +154,7 @@ func TestWorkExpectationKeepSnapshotsAndAtomicCopy(t *testing.T) {
 }
 
 func TestWorkMergeExpectedForwardAliasAndBudgets(t *testing.T) {
+	t.Parallel()
 	ids := uniqueDiagnosticIDs(12)
 	stack := make([]core.ExpID, 2+2+len(ids), 2+2+2*len(ids))
 	stack[0], stack[1], stack[2], stack[3] = 90, 91, 92, 93
@@ -194,6 +197,7 @@ func diagnosticDescriptions() []string {
 }
 
 func TestWorkMakeErrorByteSortAndMessageOrder(t *testing.T) {
+	t.Parallel()
 	p := diagnosticParser(limits.WorkLimits{MaxSteps: 100_000})
 	p.Descs = diagnosticDescriptions()
 	ids := []core.ExpID{0, core.MsgBit | 7, 1, 2, core.MsgBit | 6, 3, 4, 5}
@@ -218,6 +222,7 @@ func TestWorkMakeErrorByteSortAndMessageOrder(t *testing.T) {
 }
 
 func TestWorkMakeErrorInterruptionDuringConstructionAndSort(t *testing.T) {
+	t.Parallel()
 	const n = 300
 	descs := make([]string, n)
 	ids := make([]core.ExpID, n)

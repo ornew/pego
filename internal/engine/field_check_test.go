@@ -146,6 +146,7 @@ func fieldCheckInputs() []string {
 // TestConstructedFieldChecks checks which dynamically typed values a cast to each declared field
 // type accepts, on every backend, and from a compiled file.
 func TestConstructedFieldChecks(t *testing.T) {
+	t.Parallel()
 	// The terminal model is the same grammar in the retired terminal type syntax, which
 	// syntax.ParseLegacy reads as the text structs it means: it accepts the same values.
 	for _, model := range []struct {
@@ -232,6 +233,7 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 // runs: a value statically known to fit needs nothing, a value of an unknown type is rejected
 // when the grammar is compiled, and a cast is the only check, one ECAST for each cast.
 func TestConstructedFieldChecksAreSelective(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testConstructedFieldChecksAreSelective)
 }
 
@@ -299,6 +301,7 @@ rule val _ = "v"
 // TestCompiledFieldChecksValidation checks that loading rejects files of an earlier
 // instruction set and cast type texts that do not name a known type.
 func TestCompiledFieldChecksValidation(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, fieldCheckGrammar("[]*(Int | node[string])"))
 	data, err := prog.MarshalBinary("main")
 	if err != nil {
@@ -346,6 +349,7 @@ func fieldCheckCases() []genCase {
 }
 
 func TestGeneratedConstructedFieldChecks(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedConstructedFieldChecks)
 }
 

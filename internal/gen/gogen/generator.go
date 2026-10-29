@@ -45,12 +45,41 @@ func Generate(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.Ge
 	if opts.Runtime == gen.RuntimeOnly {
 		return runtimeFiles()
 	}
-	return GenerateParser(g, c, opts)
+	return GenerateParser(g, c, opts, nil)
 }
 
-// GeneratorHook, if set by a test, receives the generator of the pass that writes the output, before it
-// prints, so that the test can build the Core IR of the same options (Generator.TypedCore).
-var GeneratorHook func(*Generator)
+// Hooks let a test observe or change the decisions of one generation. The zero value, like nil,
+// changes nothing.
+type Hooks struct {
+	// Generator receives the generator of the pass that writes the output, before it prints, so
+	// that the test can build the Core IR of the same options (Generator.TypedCore).
+	Generator func(*Generator)
+	// Reach receives the result of the first pass of GenerateParser, before the second pass; a test
+	// removes a root from it to show that the output then fails.
+	Reach func(*LiveRules)
+	// LeanRoute is called with the rule table and the rule for each rule that takes the lean route
+	// in rules, in a Node or recognizer table, so that a test checks the route that is chosen, not
+	// the text of the generated code.
+	LeanRoute func(table string, r *compile.Rule)
+	// FramedRoute is called like LeanRoute for each rule whose framed body is printed from Flow IR
+	// (flowNodeFrameBody), in a Node or recognizer table.
+	FramedRoute func(table string, r *compile.Rule)
+	// OperatorsRoute is called like LeanRoute for each line of a Node or recognizer table that is
+	// printed from Flow IR for an Operators Rule.
+	OperatorsRoute func(table string, r *compile.Rule)
+	// StreamRoute is called like LeanRoute for each ParseStream start rule whose stream body is
+	// printed from Flow IR (flowStreamBody).
+	StreamRoute func(table string, r *compile.Rule)
+	// RefuseFlowRecRule makes flowRecRule refuse the rules it selects, so that the framed body that
+	// takes their place is exercised. No manifest grammar reaches that fallback.
+	RefuseFlowRecRule func(*compile.Rule) bool
+	// FlowVarsMutant makes every variable of a printed function unread: the generated code must
+	// then fail to compile, which shows that the tests of generated code catch a wrong decision.
+	FlowVarsMutant bool
+	// FlowVarsMutantUses ignores the reads of the values of assignments that stay, which leaves
+	// variables that only they read undeclared: the generated code must then fail to compile.
+	FlowVarsMutantUses bool
+}
 
 // GenerateParser generates the files of Generate (other than for RuntimeOnly). It generates twice: the
 // first pass records which rules of the Node, recognizer and typed tables a generated call or an
@@ -58,23 +87,26 @@ var GeneratorHook func(*Generator)
 // without Node rules has no Node or recognizer rule to leave out (keepTableRules); one that keeps
 // Node rules for its converting entry points prints those that the entry points reach, like any
 // other output.
-func GenerateParser(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
+func GenerateParser(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, h *Hooks) ([]gen.GeneratedFile, error) {
+	if h == nil {
+		h = &Hooks{}
+	}
 	if opts.KeepUnreachable {
-		return generateOnce(g, c, opts, nil, nil)
+		return generateOnce(g, c, opts, h, nil, nil)
 	}
 	var lv LiveRules
-	if _, err := generateOnce(g, c, opts, nil, &lv); err != nil {
+	if _, err := generateOnce(g, c, opts, h, nil, &lv); err != nil {
 		return nil, err
 	}
-	if ReachHook != nil {
-		ReachHook(&lv)
+	if h.Reach != nil {
+		h.Reach(&lv)
 	}
-	return generateOnce(g, c, opts, &lv, nil)
+	return generateOnce(g, c, opts, h, &lv, nil)
 }
 
 // generateOnce is one pass of GenerateParser. A pass with collect records the reachable rules into it;
 // a pass with live omits the rules that are not reachable in live.
-func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, live, collect *LiveRules) (files []gen.GeneratedFile, err error) {
+func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, h *Hooks, live, collect *LiveRules) (files []gen.GeneratedFile, err error) {
 	if collect != nil {
 		*collect = LiveRules{}
 	}
@@ -128,7 +160,7 @@ func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, live,
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.Name)
 		}
 	}
-	goGen := &Generator{typedOnly: opts.TypedOnly && !opts.KeepNodes, Observability: opts.Observability, Document: opts.Document, GoWorkControls: true, NoWork: !opts.WorkControls, Ordinary: !opts.WorkControls && !opts.Document, Prog: prog, Table: "rules", DisableMethodSharing: opts.DisableMethodSharing, DisableLiteralSharing: opts.DisableLiteralSharing, DisableLiteralTextDispatch: opts.DisableLiteralTextDispatch, disableTerminalPrograms: opts.DisableTerminalPrograms, DisableGuardedClasses: opts.DisableGuardedClasses, BoxedComparisons: opts.BoxedComparisons, disableTypedObjectSlabs: opts.DisableTypedObjectSlabs, disableTypedListSlabs: opts.DisableTypedListSlabs, disableTypedOutputBootstrap: opts.DisableTypedOutputBootstrap, live: live, collect: collect, keepTableRules: opts.TypedOnly && !opts.KeepNodes}
+	goGen := &Generator{typedOnly: opts.TypedOnly && !opts.KeepNodes, Observability: opts.Observability, Document: opts.Document, GoWorkControls: true, NoWork: !opts.WorkControls, Ordinary: !opts.WorkControls && !opts.Document, Prog: prog, Table: "rules", DisableMethodSharing: opts.DisableMethodSharing, DisableLiteralSharing: opts.DisableLiteralSharing, DisableLiteralTextDispatch: opts.DisableLiteralTextDispatch, disableTerminalPrograms: opts.DisableTerminalPrograms, DisableGuardedClasses: opts.DisableGuardedClasses, BoxedComparisons: opts.BoxedComparisons, disableTypedObjectSlabs: opts.DisableTypedObjectSlabs, disableTypedListSlabs: opts.DisableTypedListSlabs, disableTypedOutputBootstrap: opts.DisableTypedOutputBootstrap, hooks: *h, live: live, collect: collect, keepTableRules: opts.TypedOnly && !opts.KeepNodes}
 	if live != nil {
 		goGen.SeedDescs()
 		for _, d := range live.descs[len(goGen.Descs):] {
@@ -140,8 +172,8 @@ func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, live,
 		goGen.streamStart = start
 	}
 	goGen.Desc(compile.FixedDescs[0]) // the fixed expectations come first
-	if GeneratorHook != nil && collect == nil {
-		GeneratorHook(goGen)
+	if h.Generator != nil && collect == nil {
+		h.Generator(goGen)
 	}
 	if err := goGen.StartRecFlow(prog); err != nil {
 		return nil, err
@@ -191,7 +223,7 @@ func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, live,
 		goGen.convertsNodes = typed.needNodes
 		if opts.TypedOnly && typed.needNodes && !opts.KeepNodes && !opts.DisableKeepNodes {
 			opts.KeepNodes = true
-			return generateOnce(g, c, opts, live, collect)
+			return generateOnce(g, c, opts, h, live, collect)
 		}
 		return nil, goGen.finishReach(prog, rec)
 	}
@@ -291,7 +323,7 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 			// A typed entry point converts the Node result of its rule, so the Node rule functions
 			// are needed; generate again with them.
 			opts.KeepNodes = true
-			return generateOnce(g, c, opts, live, collect)
+			return generateOnce(g, c, opts, h, live, collect)
 		}
 		if opts.TypedOnly {
 			// The expectations of the typed bodies are known only now.
@@ -404,6 +436,7 @@ type Generator struct {
 	shaperKeys          []string
 	recoveryProg        map[*compile.Program]bool // whether a program can recover from errors
 	tableErr            error                     // the rule table does not fit the form of runtime.RuleSpec
+	hooks               Hooks                     // the zero value changes nothing
 	// CoreHook, if set, is called by TypedCore with the module after it is built and after each pass.
 	CoreHook func(pass string, m *core.Module)
 	// chunksInRuntime is set when the typed values take their storage from the runtime (Chunk).
@@ -539,23 +572,6 @@ func (g *Generator) recovers() bool {
 	return found
 }
 
-// LeanRouteHook is called with the rule table and the rule for each rule that takes the lean route
-// in rules, in a Node or recognizer table. Tests set it to check the route that is chosen, not the text
-// of the generated code.
-var LeanRouteHook func(table string, r *compile.Rule)
-
-// FramedRouteHook is called with the rule table and the rule for each rule whose framed body is printed
-// from Flow IR (flowNodeFrameBody), in a Node or recognizer table. Tests set it as LeanRouteHook.
-var FramedRouteHook func(table string, r *compile.Rule)
-
-// OperatorsRouteHook is called with the rule table and the Operators Rule for each line of a Node or
-// recognizer table that is printed from Flow IR. Tests set it as LeanRouteHook.
-var OperatorsRouteHook func(table string, r *compile.Rule)
-
-// StreamRouteHook is called with the rule table and the rule for each ParseStream start rule whose
-// stream body is printed from Flow IR (flowStreamBody). Tests set it as LeanRouteHook.
-var StreamRouteHook func(table string, r *compile.Rule)
-
 func (g *Generator) rules() {
 	init := &g.Init
 	methodsBefore := g.Methods.String()
@@ -583,8 +599,8 @@ func (g *Generator) rules() {
 			// for one whose types it cannot name; such a rule takes its framed body below and is called through
 			// the rule table (plainCall).
 			if d := g.flowRecRule(r); d != nil {
-				if LeanRouteHook != nil && g.collect == nil {
-					LeanRouteHook(g.Table, r)
+				if g.hooks.LeanRoute != nil && g.collect == nil {
+					g.hooks.LeanRoute(g.Table, r)
 				}
 				flats[r] = d
 				if g.slotReached(r) {
@@ -596,8 +612,8 @@ func (g *Generator) rules() {
 		if _, ok := r.Def.Expr.(*grammar.OperatorsRule); !ok {
 			if g.Table != "trules" {
 				if body := g.flowNodeFrameBody(r, s); body != "" {
-					if FramedRouteHook != nil && g.collect == nil {
-						FramedRouteHook(g.Table, r)
+					if g.hooks.FramedRoute != nil && g.collect == nil {
+						g.hooks.FramedRoute(g.Table, r)
 					}
 					bodies[r] = body
 					continue
@@ -770,8 +786,8 @@ func (g *Generator) rules() {
 		s := compile.NewScope()
 		body := g.flowStreamBody(r, s)
 		if body != "" {
-			if StreamRouteHook != nil && g.collect == nil {
-				StreamRouteHook(g.Table, r)
+			if g.hooks.StreamRoute != nil && g.collect == nil {
+				g.hooks.StreamRoute(g.Table, r)
 			}
 		} else {
 			g.FailFlow("the stream body of rule " + r.Name)

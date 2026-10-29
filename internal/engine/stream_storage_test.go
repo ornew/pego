@@ -17,6 +17,7 @@ rule row = k:"x" #atomic vs:value+ "\n"
 rule value = v:[a-z]+ #atomic ","`
 
 func TestStreamPrefixStorageIsolation(t *testing.T) {
+	t.Parallel()
 	if !core.StreamPrefixIsolation {
 		t.Skip("reference build shares prefix storage")
 	}
@@ -41,6 +42,7 @@ func TestStreamPrefixStorageIsolation(t *testing.T) {
 
 // Large prefixes must switch to slabs instead of allocating every object.
 func TestStreamPrefixAllocationBudget(t *testing.T) {
+	t.Parallel()
 	if !core.StreamPrefixIsolation {
 		t.Skip("reference build uses slabs")
 	}
@@ -64,6 +66,7 @@ func TestStreamPrefixAllocationBudget(t *testing.T) {
 // Prefix captures and emitted values must survive isolation for both compact
 // and wide repetition instructions, including bytecode loaded from a compiled grammar.
 func TestStreamPrefixLoadedRepetitions(t *testing.T) {
+	t.Parallel()
 	bounds := []string{"#repeat(0)", "#repeat(2)", "*"}
 	if strconv.IntSize == 64 {
 		bounds = append(bounds, "#repeat(0, 4294967296)")
@@ -103,6 +106,7 @@ func TestStreamPrefixLoadedRepetitions(t *testing.T) {
 }
 
 func TestStreamPrefixMemoReuse(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = &header h:header (x:"x" #atomic)* #stream $$ {text($h) == "#head\n"}
 rule header = "#head\n" #atomic`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -130,6 +134,7 @@ rule header = "#head\n" #atomic`)
 }
 
 func TestStreamPrefixLeftRecursiveRoot(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = h:(main "a" / "a" #atomic) "x"* #stream {text($h) != ""}`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -145,6 +150,7 @@ func TestStreamPrefixLeftRecursiveRoot(t *testing.T) {
 }
 
 func TestStreamPrefixLeftRecursiveCaptureSurvivesCommit(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = h:head #atomic "x"* #stream {text($h) == "aa"} $$
 rule head = head "a" / "a" #atomic`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {

@@ -142,6 +142,7 @@ rule atom Atom = t:("a" @error(message="atom")) #atomic => Atom{Text: text($t)}
 }
 
 func TestGeneratedTypedOperatorsRuleBodies(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTypedOperatorsRuleBodies)
 }
 

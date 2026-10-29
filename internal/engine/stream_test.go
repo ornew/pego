@@ -17,6 +17,7 @@ rule header = "#records\n"
 rule record = ^ k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n"`
 
 func TestParseStream(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	var got []string
 	err := prog.ParseStream("main", strings.NewReader("#records\na=1\nbc=22\n"), func(n *value.Node) error {
@@ -46,6 +47,7 @@ func TestParseStream(t *testing.T) {
 // TestParseStreamIsIncremental checks that elements are passed for the input received so far,
 // before all the input has arrived.
 func TestParseStreamIsIncremental(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	pr, pw := io.Pipe()
 	next := make(chan struct{})
@@ -78,6 +80,7 @@ func TestParseStreamIsIncremental(t *testing.T) {
 // TestParseStreamErrorPosition checks that error lines and columns are correct even after input
 // has been discarded.
 func TestParseStreamErrorPosition(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	var b strings.Builder
 	b.WriteString("#records\n")
@@ -100,6 +103,7 @@ func TestParseStreamErrorPosition(t *testing.T) {
 }
 
 func TestParseStreamEmitError(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	stop := errors.New("stop")
 	count := 0
@@ -115,6 +119,7 @@ func TestParseStreamEmitError(t *testing.T) {
 // TestParseStreamDiscardsInput checks that committed input is discarded and the buffer does not
 // grow, even for large input.
 func TestParseStreamDiscardsInput(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	r := &lineReader{header: "#records\n", line: "key=42\n", n: 100000}
 	maxBuf := 0
@@ -192,6 +197,7 @@ rule val = [0-9]+ #atomic`,
 // TestParseStreamTextOfDiscardedInput checks that text(...) of a node whose input has been
 // discarded by the stream returns what is still held instead of failing.
 func TestParseStreamTextOfDiscardedInput(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `type T = { H string; N int }
 rule main = h:("a" "b") rs:r* #stream "!" => T{H: text($h), N: len($rs)}
 rule r = "x" "y"`)
@@ -228,6 +234,7 @@ func (r *lineReader) Read(b []byte) (int, error) {
 }
 
 func TestStreamCompileErrors(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, want string }{
 		{`rule main = "a" #stream`, `#stream must be attached to a repetition`},
 		{`rule main = ("a"* #stream / "b") "c"`, `#stream is only allowed at the top level of a rule body`},
@@ -246,6 +253,7 @@ func TestStreamCompileErrors(t *testing.T) {
 }
 
 func TestStreamPragmaRejectsArguments(t *testing.T) {
+	t.Parallel()
 	if _, err := parseTest(`rule main = "a"* #stream(x="y")`); err == nil {
 		t.Fatal("accepted arguments to #stream")
 	}

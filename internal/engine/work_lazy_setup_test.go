@@ -14,6 +14,7 @@ import (
 )
 
 func TestWorkLazyClosureAdmission(t *testing.T) {
+	t.Parallel()
 	for _, api := range []string{"batch", "document", "stream"} {
 		t.Run(api, func(t *testing.T) {
 			prog := mustCompile(t, `rule main = "a"* #stream $$`)
@@ -60,6 +61,7 @@ func TestWorkLazyClosureAdmission(t *testing.T) {
 }
 
 func TestWorkLazyClosureMetadataAndDocument(t *testing.T) {
+	t.Parallel()
 	cases := []struct{ source, text string }{
 		{`type Word = { Text string }
 rule main = item+ $$
@@ -144,6 +146,7 @@ func (c *lazyReentrantContext) Err() error {
 }
 
 func TestWorkLazyClosureContextReentry(t *testing.T) {
+	t.Parallel()
 	for _, recognize := range []bool{false, true} {
 		prog := mustCompile(t, `rule main = "a" $$`)
 		ctx := &lazyReentrantContext{Context: context.Background()}
@@ -167,6 +170,7 @@ func TestWorkLazyClosureContextReentry(t *testing.T) {
 // Once has completed even if an internal initializer panicked. A later call
 // must report failed setup rather than publish or dereference a nil Program.
 func TestWorkLazyClosureIncompleteInitialization(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "a"`)
 	token := &workContextPanicToken{phase: "initializer"}
 	got := workContextRecover(func() { prog.workOnce.Do(func() { panic(token) }) })

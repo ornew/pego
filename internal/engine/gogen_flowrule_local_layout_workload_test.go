@@ -11,6 +11,7 @@ import (
 // PEGO_TYPED_LOCAL_LAYOUT_DIR preserves generated controls for benchmarks of
 // prebuilt binaries, independently of source generation and compilation.
 func TestGeneratedTypedLocalLayoutWorkloads(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTypedLocalLayoutWorkloads)
 }
 
@@ -118,6 +119,7 @@ func checkLocal(v *Doc, err error, n int, rejected bool, unit PositionUnit) bool
 }
 
 func TestLocalLayoutWorkload(t *testing.T) {
+	t.Parallel()
     for _, unit := range []PositionUnit{CodePoints,Bytes} {
         saved, err := ParseAST(localInput(3,false),WithUnit(unit))
         if !checkLocal(saved,err,3,false,unit) { t.Fatalf("saved value %v %v",saved,err) }

@@ -10,6 +10,7 @@ import (
 import "testing"
 
 func TestWorkLazyClosureSavedFlagsAndOptions(t *testing.T) {
+	t.Parallel()
 	original := mustCompile(t, `rule main = first:item rest:(-"," value:item)* $$ => concat(list($first), map($rest, (e) => e.$value))
 rule item = [a-z]+`)
 	flags := make([]compile.RuleFlags, len(original.RuleList))

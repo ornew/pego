@@ -16,6 +16,7 @@ import (
 )
 
 func TestWorkLiteralReplacementMismatchBudget(t *testing.T) {
+	t.Parallel()
 	for _, streaming := range []bool{false, true} {
 		for _, suffix := range []string{"", string(utf8.RuneError)} {
 			literal := strings.Repeat("a", 4096) + suffix
@@ -37,6 +38,7 @@ func TestWorkLiteralReplacementMismatchBudget(t *testing.T) {
 }
 
 func TestWorkLiteralReplacementPublicLookahead(t *testing.T) {
+	t.Parallel()
 	literal := strings.Repeat("a", 4096) + string(utf8.RuneError)
 	prog := mustCompile(t, "rule main = !"+strconv.Quote(literal)+" \"b\" $$")
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -59,6 +61,7 @@ func TestWorkLiteralReplacementPublicLookahead(t *testing.T) {
 }
 
 func TestWorkLiteralReplacementSentinelBoundaries(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name    string
 		literal string
@@ -94,6 +97,7 @@ func TestWorkLiteralReplacementSentinelBoundaries(t *testing.T) {
 }
 
 func TestWorkLiteralReplacementSentinelCancellation(t *testing.T) {
+	t.Parallel()
 	ctx := newPollingContext(1)
 	c := core.NewWorkControl(ctx, limits.WorkLimits{MaxSteps: 1 << 20})
 	p := &core.Parser{Input: core.Input{Control: c}}

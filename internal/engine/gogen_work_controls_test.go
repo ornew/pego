@@ -13,6 +13,7 @@ import (
 )
 
 func TestGeneratedGoWorkControls(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated work-control consumers")
@@ -199,6 +200,7 @@ func TestConcurrentLimits(t *testing.T){
 `
 
 func TestGeneratedGoConversionWork(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated conversion consumers")
@@ -273,6 +275,7 @@ func TestParseConversionSharesCounter(t *testing.T){
 `
 
 func TestGeneratedGoWorkControlNameCollisions(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("builds generated public-name collision consumers")
 	}
@@ -307,11 +310,11 @@ rule main WorkLimits = t:("é") #atomic => WorkLimits{Text: text($t)}`)
 	for _, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("collision_%v", convert)
 		opts := gen.GenOptions{Package: pkg, Module: "workcollision/" + pkg, Runtime: gen.RuntimeImport, Start: "main", Types: true, ConvertTypes: convert, WorkControls: true}
-		files, err := Generate(g, opts)
+		files, err := Generate(t, g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
-		again, err := Generate(g, opts)
+		again, err := Generate(t, g, opts)
 		if err != nil || !slices.EqualFunc(files, again, func(a, b gen.GeneratedFile) bool { return a.Path == b.Path && string(a.Content) == string(b.Content) }) {
 			t.Fatal("unstable generation")
 		}
@@ -358,6 +361,7 @@ func TestPublicNames(t *testing.T){
 `
 
 func TestGeneratedGoNilWorkPublication(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds typed nil publication consumer")
@@ -445,6 +449,7 @@ func TestRecoveredNilClonePublication(t *testing.T){
 `
 
 func TestGeneratedGoLegacyNilControls(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds configured legacy nil consumers")
@@ -506,6 +511,7 @@ func TestLegacyAndInterruptedNil(t *testing.T){
 `
 
 func TestGeneratedGoConfiguredNilOrdinaryErrors(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds configured nil error consumers")

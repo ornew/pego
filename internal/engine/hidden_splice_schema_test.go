@@ -8,6 +8,7 @@ import (
 // A hidden rule without an action adds no type to the schema, except where a recursive call of it
 // is an element of its own, which the type of the call refers to.
 func TestHiddenRulesAddNoSchemaType(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct {
 		src  string
 		want []string

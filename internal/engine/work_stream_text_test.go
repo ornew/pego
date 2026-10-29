@@ -28,6 +28,7 @@ func workStreamTextInput(u PositionUnit, text string) core.Input {
 }
 
 func TestWorkStreamTextByteSnapshotBoundaries(t *testing.T) {
+	t.Parallel()
 	if !core.StreamTextSnapshots {
 		t.Skip("snapshot path disabled")
 	}
@@ -66,6 +67,7 @@ func TestWorkStreamTextByteSnapshotBoundaries(t *testing.T) {
 }
 
 func TestWorkStreamTextFallbackAndNoReadAhead(t *testing.T) {
+	t.Parallel()
 	for _, u := range []PositionUnit{Bytes, CodePoints} {
 		for _, size := range []int{1, 63, 1025, 4097} {
 			t.Run(fmt.Sprintf("%s/%d", u, size), func(t *testing.T) {
@@ -91,6 +93,7 @@ func TestWorkStreamTextFallbackAndNoReadAhead(t *testing.T) {
 }
 
 func TestWorkStreamTextCodePointPublication(t *testing.T) {
+	t.Parallel()
 	if !core.StreamTextSnapshots {
 		t.Skip("snapshot path disabled")
 	}
@@ -137,6 +140,7 @@ func TestWorkStreamTextCodePointPublication(t *testing.T) {
 }
 
 func TestWorkStreamTextMalformedAndRetainedCache(t *testing.T) {
+	t.Parallel()
 	if !core.StreamTextSnapshots {
 		t.Skip("snapshot path disabled")
 	}
@@ -168,6 +172,7 @@ func TestWorkStreamTextMalformedAndRetainedCache(t *testing.T) {
 }
 
 func TestWorkStreamTextOffsetCancellation(t *testing.T) {
+	t.Parallel()
 	if !core.StreamTextSnapshots {
 		t.Skip("snapshot path disabled")
 	}
@@ -199,6 +204,7 @@ func (c *workStreamTextPhaseContext) Err() error {
 }
 
 func TestWorkStreamTextPublicTraceInterruption(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = row* #stream $$
 
 rule row = (!"\n" .)+ #atomic "\n"`)

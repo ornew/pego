@@ -18,6 +18,7 @@ import (
 // without a generous work limit. Fixtures are drawn from attrs_test.go,
 // gogen_flowrule_recovery_test.go, and trace_lr_test.go.
 func TestWorkDiagnosticPublicParity(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name, grammar string
 		inputs        []string

@@ -14,6 +14,7 @@ import (
 )
 
 func TestInvalidCharacterClassEntryPoints(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testInvalidCharacterClassEntryPoints)
 }
 
@@ -59,6 +60,7 @@ func testInvalidCharacterClassEntryPoints(t *testing.T) {
 }
 
 func TestUnicodeScalarRangeBackends(t *testing.T) {
+	t.Parallel()
 	for _, source := range []string{`rule main = [\u{0}-\u{10ffff}] $$`, `rule main = [\u{d7ff}-\u{e000}] $$`, `rule main = [^\u{d7ff}-\u{e000}] $$`} {
 		p := mustCompile(t, source)
 		g := mustParse(source)

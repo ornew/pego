@@ -31,6 +31,7 @@ func nodeTypeCases() []genCase {
 }
 
 func TestNodeTypesAcrossBackends(t *testing.T) {
+	t.Parallel()
 	for _, fixture := range nodeTypeCases() {
 		t.Run(fixture.name, func(t *testing.T) {
 			program := mustCompile(t, fixture.src)
@@ -53,6 +54,7 @@ func TestNodeTypesAcrossBackends(t *testing.T) {
 
 // A cast to node[T] checks the value of the node at run time.
 func TestNodeTypeCasts(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ typ, input string }{
 		{"node[(node[string], node[string])]", "cc"},
 		{"node[[]node[string]]", "ab"},
@@ -70,6 +72,7 @@ func TestNodeTypeCasts(t *testing.T) {
 // The declared node[T] and tuple types of fields and rules are checked when the grammar is
 // compiled.
 func TestNodeTypesCheckedAtCompileTime(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, static, input string }{
 		{"type P = { V node[[]node[string]] }\nrule main P = v:(\"a\" \"b\") => P{V: $v}", "cannot use", "ab"},
 		{"type P = { V node[(node[string], node[string], node[string])] }\nrule main P = v:(\"a\" \"b\") => P{V: $v}", "cannot use", "ab"},
@@ -86,7 +89,10 @@ func TestNodeTypesCheckedAtCompileTime(t *testing.T) {
 	}
 }
 
-func TestNodeTypesGeneratedGoParity(t *testing.T) { eachMode(t, testNodeTypesGeneratedGoParity) }
+func TestNodeTypesGeneratedGoParity(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testNodeTypesGeneratedGoParity)
+}
 
 func testNodeTypesGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
@@ -96,6 +102,7 @@ func testNodeTypesGeneratedGoParity(t *testing.T) {
 }
 
 func TestNodeTypesGeneratedTypeScriptParity(t *testing.T) {
+	t.Parallel()
 	node, err := exec.LookPath("node")
 	if err != nil {
 		t.Skip("node not found")

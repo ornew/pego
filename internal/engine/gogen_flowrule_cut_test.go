@@ -56,7 +56,10 @@ rule main Doc = (&probe:("a" #cut "b") #atomic v:"abx" #atomic / v:"aby" #atomic
 `, []string{"abx", "aby", "ab", "ac", ""}},
 }
 
-func TestGeneratedTypedDirectCuts(t *testing.T) { eachMode(t, testGeneratedTypedDirectCuts) }
+func TestGeneratedTypedDirectCuts(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedTypedDirectCuts)
+}
 
 func testGeneratedTypedDirectCuts(t *testing.T) {
 	if testing.Short() {

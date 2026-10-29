@@ -12,6 +12,7 @@ import (
 // Tuple types and type arguments parse, format and round-trip through JSON. Tuple types and node[T]
 // compile; other type arguments are errors.
 func TestReservedTypeSyntax(t *testing.T) {
+	t.Parallel()
 	src := "type A ~ () | (B,) | (B, *C) | node[B] | []node[(B, C), D]\ntype B = { Text string }\ntype C = { Text string }\ntype D = { Text string }\nrule main = \"a\""
 	g, err := parseTest(src)
 	if err != nil {
@@ -127,6 +128,7 @@ func TestReservedTypeSyntax(t *testing.T) {
 
 // node[string] is the type of a string node, in fields, rules and casts, and is checked like one.
 func TestNodeStringType(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{
 		"type P = { K node[string] }\nrule main P = k:[a-z]+ #atomic => P{K: $k}",
 		"rule main node[string] = \"a\"",
@@ -175,6 +177,7 @@ func TestNodeStringType(t *testing.T) {
 
 // Unnamed struct types are reserved syntax too, formatted like struct definitions.
 func TestReservedUnnamedStructType(t *testing.T) {
+	t.Parallel()
 	src := "type A ~ {} | { X int; Y *A } | []{\n  // the name\n  Name string\n  Inner { V int }\n}\ntype T = {\n  F {}\n  G (int, { H int })\n}\nrule main = \"a\""
 	g, err := syntax.Parse(src)
 	if err != nil {
@@ -252,6 +255,7 @@ func TestReservedUnnamedStructType(t *testing.T) {
 // node[_] is a node of any value: it accepts and rejects what node does, in a field, a rule's
 // declared type, a cast and an optional, on every backend, and reports the same type errors.
 func TestDynamicNodeType(t *testing.T) {
+	t.Parallel()
 	const src = `type S = { F TYPE }
 rule main S = v:val => S{F: $v}
 rule val = x:("a" / "b" "c" / "d"*) => $x

@@ -9,6 +9,7 @@ import (
 )
 
 func TestTypeErrors(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, want string }{
 		{`type A = { X Nope }`, `1:14: undefined type Nope`},
 		{`type A ~ B
@@ -68,6 +69,7 @@ rule e E = #operators {
 // TestDiagnosticNamesRuleTypes checks that a diagnostic names a rule call inside a compound type by
 // the rule's declared type, and a rule without one by its name.
 func TestDiagnosticNamesRuleTypes(t *testing.T) {
+	t.Parallel()
 	const head = `type Item = { Key node[string] }
 rule typed Item = k:[a-z]+ #atomic ";" => Item{Key: $k}
 rule untyped = [a-z]+ ";"
@@ -93,6 +95,7 @@ rule untyped = [a-z]+ ";"
 
 // TestWellTyped checks that well-typed grammars compile.
 func TestWellTyped(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{
 		// Rules, actions and list elements may produce ints, strings and bools.
 		`rule main int = d:[0-9]+ #atomic => len($d)`,
@@ -146,6 +149,7 @@ rule word = k:"a" v:"b"`,
 // TestInferenceOfGrowingTypes checks that inferring a rule type that grows at every round (lists
 // of lists of the rule's own values) finishes quickly instead of taking exponential time.
 func TestInferenceOfGrowingTypes(t *testing.T) {
+	t.Parallel()
 	src := `var v int
 rule main = (r0 / r1) r2?
 rule r0 = ";"
@@ -172,6 +176,7 @@ rule r3 = ((c1:r3 {v := len($c1)}) c2:r1 ";" #recover(skip=[^;]* ";")) @error(me
 }
 
 func TestRuleType(t *testing.T) {
+	t.Parallel()
 	// A reference to a rule with a declared type shows that type; one to a rule without a declared
 	// type shows the rule's name.
 	prog := mustCompile(t, `type N = { Text string }
@@ -213,6 +218,7 @@ rule main = ps any $$`)
 // TestAliasErrorsReportedOnce checks that an error inside an alias is reported once, however many
 // places resolve the alias.
 func TestAliasErrorsReportedOnce(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, want string }{
 		{"type A ~ Nope\nrule main A = \"a\"", "1:10: undefined type Nope"},
 		{"type A ~ Nope\ntype B = { F A; G []A }\nrule main A = \"a\"\nrule other A = \"b\"\nrule x = v:main => B{F: $v, G: list($v)}", "1:10: undefined type Nope"},

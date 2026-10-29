@@ -55,6 +55,7 @@ rule leaf = "a"`, []string{"a!", "a!b", "a!c", "a!d"}},
 }
 
 func TestMemoActionVariables(t *testing.T) {
+	t.Parallel()
 	for _, c := range actionVariableCases {
 		t.Run(c.name, func(t *testing.T) {
 			for _, disable := range []bool{false, true} {
@@ -88,6 +89,7 @@ func TestMemoActionVariables(t *testing.T) {
 }
 
 func TestDocumentActionVariableEdit(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `type V = { N int }
 var n int
 rule main = text:[a-z]+ #atomic {n := len($text)} r

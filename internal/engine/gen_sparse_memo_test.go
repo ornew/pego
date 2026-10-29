@@ -17,6 +17,7 @@ import (
 // output must match the static dense control rather than retain a
 // matching-time branch.
 func TestGeneratedSparseMemoSmallTable(t *testing.T) {
+	t.Parallel()
 	g, err := parseTest(`rule main = "a"*`)
 	if err != nil {
 		t.Fatal(err)
@@ -42,7 +43,10 @@ func TestGeneratedSparseMemoSmallTable(t *testing.T) {
 
 // PEGO_SPARSE_MEMO_GENERATED_DIR preserves the generated fixture for
 // separately built timing and allocation measurements.
-func TestGeneratedSparseMemo(t *testing.T) { eachMode(t, testGeneratedSparseMemo) }
+func TestGeneratedSparseMemo(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedSparseMemo)
+}
 
 func testGeneratedSparseMemo(t *testing.T) {
 	if testing.Short() {
@@ -101,6 +105,7 @@ func testGeneratedSparseMemo(t *testing.T) {
 }
 
 func TestGeneratedTSSparseMemoControls(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("runs generated TypeScript")
 	}
@@ -234,6 +239,7 @@ import (
 )
 
 func TestSparseGeneratedResults(t *testing.T) {
+	t.Parallel()
     if pegoGrammar.X_nseen <= 64 || pegoRecGrammar.X_nseen <= 64 { t.Fatal("fixture no longer exercises sparse tables") }
     inputs := []string{
         "const 日本語 = \"😀\"; const v = [1, 2].map(x => x + 1);",
@@ -255,6 +261,7 @@ func TestSparseGeneratedResults(t *testing.T) {
 }
 
 func TestSparseGeneratedInputSelection(t *testing.T) {
+	t.Parallel()
     p := &pegort.TParser{Parser: &pegort.Parser{}, Ext: &tslabs{}}
     for _, input := range []string{
         "/*" + strings.Repeat("a", 1020) + "*/",
@@ -276,6 +283,7 @@ func TestSparseGeneratedInputSelection(t *testing.T) {
 // An optional real corpus exercises retained scratch across successful and
 // failed large parses, with small parses between them, in the same parser.
 func TestSparseGeneratedRealCorpusReuse(t *testing.T) {
+	t.Parallel()
     path := os.Getenv("PEGO_SPARSE_MEMO_INPUT")
     if path == "" { t.Skip("PEGO_SPARSE_MEMO_INPUT not set") }
     data, err := os.ReadFile(path); if err != nil { t.Fatal(err) }

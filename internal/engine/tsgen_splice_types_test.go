@@ -16,6 +16,7 @@ import (
 // calls itself where it takes one element, as the Go ones do (TestGeneratedRecursiveSpliceTypesKeepTheTree).
 // Comparing TypeScript with Go alone would not notice a type that both get wrong.
 func TestGeneratedTSRecursiveSpliceTypesKeepTheTree(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("runs node")
 	}

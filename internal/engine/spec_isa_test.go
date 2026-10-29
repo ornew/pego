@@ -12,6 +12,7 @@ import (
 // TestSpecInstructionSetVersion checks that spec/bytecode/README.md states the instruction-set version the
 // runtime writes and accepts.
 func TestSpecInstructionSetVersion(t *testing.T) {
+	t.Parallel()
 	data, err := os.ReadFile("../../spec/bytecode/README.md")
 	if err != nil {
 		t.Fatal(err)

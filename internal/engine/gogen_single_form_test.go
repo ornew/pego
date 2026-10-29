@@ -16,6 +16,7 @@ import (
 // charges or mentions a control. A parser with work controls or a Document calls no helper that has
 // an Ordinary form (NewNodeOrdinary, NextOrdinary, ...), which belongs to the form without both.
 func TestGeneratedRuleBodiesHaveOneForm(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedRuleBodiesHaveOneForm)
 }
 
@@ -112,12 +113,13 @@ func testGeneratedRuleBodiesHaveOneForm(t *testing.T) {
 // the ordinary form judged as controlled, the controlled form as ordinary, and a Document form
 // that calls an ordinary helper.
 func TestGeneratedRuleBodiesHaveOneFormNegativeControls(t *testing.T) {
+	t.Parallel()
 	g, err := parseTest(oneFormGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}
 	gen := func(controls, document bool) []byte {
-		files, err := Generate(g, gen.GenOptions{Package: "ordinaryfixture", Module: "example.com/generated", Runtime: gen.RuntimeImport, Types: true, Document: document, Recognize: true, Start: "main", WorkControls: controls})
+		files, err := Generate(t, g, gen.GenOptions{Package: "ordinaryfixture", Module: "example.com/generated", Runtime: gen.RuntimeImport, Types: true, Document: document, Recognize: true, Start: "main", WorkControls: controls})
 		if err != nil {
 			t.Fatal(err)
 		}

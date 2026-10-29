@@ -81,7 +81,10 @@ rule b = t:[0-9]+ #atomic => B{Text: text($t)}`, []string{"ab", "12", ""}}, fals
 	}
 }
 
-func TestGeneratedStringFieldReads(t *testing.T) { eachMode(t, testGeneratedStringFieldReads) }
+func TestGeneratedStringFieldReads(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedStringFieldReads)
+}
 
 func testGeneratedStringFieldReads(t *testing.T) {
 	if testing.Short() {

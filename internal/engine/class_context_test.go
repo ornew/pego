@@ -27,6 +27,7 @@ func contextClassRanges() []grammar.CharRange {
 }
 
 func TestClassConstructionContextCancellation(t *testing.T) {
+	t.Parallel()
 	cl := &grammar.CharClass{Ranges: contextClassRanges()}
 	before := append([]grammar.CharRange(nil), cl.Ranges...)
 	var deep grammar.Expr = cl
@@ -75,6 +76,7 @@ func TestClassConstructionContextCancellation(t *testing.T) {
 }
 
 func TestClassConstructionContextFacts(t *testing.T) {
+	t.Parallel()
 	cases := [][]grammar.CharRange{nil, {{Lo: 'a', Hi: 'z'}}, {{Lo: 'a', Hi: 'z'}, {Lo: 'β', Hi: 'β'}}, {{Lo: 'a', Hi: 'f'}, {Lo: '0', Hi: '9'}, {Lo: 'β', Hi: 'β'}, {Lo: '😀', Hi: '😀'}}}
 	for i, rs := range cases {
 		for _, neg := range []bool{false, true} {
@@ -126,6 +128,7 @@ func TestClassConstructionContextFacts(t *testing.T) {
 }
 
 func TestClassConstructionCompileContextParity(t *testing.T) {
+	t.Parallel()
 	for _, shape := range []string{"single", "choice", "scan"} {
 		cl := &grammar.CharClass{Ranges: []grammar.CharRange{{Lo: 'a', Hi: 'f'}, {Lo: '0', Hi: '9'}, {Lo: 'β', Hi: 'β'}}}
 		var e grammar.Expr = cl
@@ -205,6 +208,7 @@ func classProgramWithoutContext(t *testing.T) (*Program, weak.Pointer[classCompi
 }
 
 func TestClassConstructionProgramReleasesCompileContext(t *testing.T) {
+	t.Parallel()
 	p, ref := classProgramWithoutContext(t)
 	released := false
 	for range 5 {
@@ -226,6 +230,7 @@ func TestClassConstructionProgramReleasesCompileContext(t *testing.T) {
 }
 
 func TestFirstTerminalContextFacts(t *testing.T) {
+	t.Parallel()
 	leaf := &grammar.Literal{Value: "a"}
 	a := &compile.Rule{Def: &grammar.RuleDef{Name: "a", Expr: &grammar.Ref{Name: "b"}}}
 	b := &compile.Rule{Def: &grammar.RuleDef{Name: "b", Expr: &grammar.Capture{Name: "x", Expr: &grammar.Atomic{Expr: &grammar.Discard{Expr: &grammar.Seq{Items: []grammar.Expr{leaf}}}}}}}
@@ -248,6 +253,7 @@ func TestFirstTerminalContextFacts(t *testing.T) {
 }
 
 func TestClassBitmapPollingBoundaries(t *testing.T) {
+	t.Parallel()
 	for _, rs := range [][]grammar.CharRange{
 		contextClassRanges(),
 		{{Lo: 0, Hi: 31}, {Lo: 'a', Hi: 'z'}, {Lo: 127, Hi: 127}},

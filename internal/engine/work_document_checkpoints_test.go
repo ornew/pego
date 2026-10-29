@@ -14,6 +14,7 @@ import (
 )
 
 func TestWorkDocumentMemoReplayAtomicReservation(t *testing.T) {
+	t.Parallel()
 	edits := []core.DocEdit{{Start: 0, End: 1, Delta: 2}, {Start: 0, End: 1, Delta: 3}, {Start: 0, End: 1, Delta: 4}}
 	before := core.MemoEntry{Pos: 10, End: 12, From: 10, Examined: 13, Far: 12}
 	e := before
@@ -35,6 +36,7 @@ func TestWorkDocumentMemoReplayAtomicReservation(t *testing.T) {
 }
 
 func TestWorkDocumentResyncSearchAndTailAccounting(t *testing.T) {
+	t.Parallel()
 	elems := make([]core.RunElem, 513)
 	for i := range elems {
 		elems[i] = core.RunElem{Start: i * 2, From: 100}
@@ -64,6 +66,7 @@ func TestWorkDocumentResyncSearchAndTailAccounting(t *testing.T) {
 }
 
 func TestWorkDocumentRunPublicationCopyIsProvisional(t *testing.T) {
+	t.Parallel()
 	old := make([]core.RunElem, 128)
 	mid := make([]core.RunElem, 1)
 	for i := range old {
@@ -88,6 +91,7 @@ func TestWorkDocumentRunPublicationCopyIsProvisional(t *testing.T) {
 }
 
 func TestWorkDocumentMovementChargesEdges(t *testing.T) {
+	t.Parallel()
 	child := value.Ptr(value.Data{Start: 2, End: 3})
 	field := value.Ptr(value.Data{Start: 4, End: 5})
 	root := value.Ptr(value.Data{Start: 1, End: 6, Children: []*value.Node{child}, Fields: value.Fields{{Name: "field", Value: field}}})
@@ -130,6 +134,7 @@ func TestWorkDocumentRunAssemblyMatchesOrdinarySplice(t *testing.T) {
 }
 
 func TestWorkDocumentGrowthCopyReservation(t *testing.T) {
+	t.Parallel()
 	values := make([]*value.Node, 129)
 	for i := range values {
 		values[i] = value.Ptr(value.Data{Start: int32(i)})
@@ -150,6 +155,7 @@ func TestWorkDocumentGrowthCopyReservation(t *testing.T) {
 }
 
 func TestWorkDocumentMovementMapCleanupIsCounted(t *testing.T) {
+	t.Parallel()
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 1})
 	a, b := value.Ptr(value.Data{Text: "a"}), value.Ptr(value.Data{Text: "b"})
 	p.Moved = map[*value.Node]*value.Node{a: a, b: b}
@@ -168,6 +174,7 @@ func TestWorkDocumentMovementMapCleanupIsCounted(t *testing.T) {
 }
 
 func TestWorkDocumentShiftReplayAndSharedEmptyGraph(t *testing.T) {
+	t.Parallel()
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 2})
 	p.Gen = 4
 	p.Edits = []core.DocEdit{{Start: 0, End: 1, Delta: 1}, {Start: 0, End: 1, Delta: 1}, {Start: 0, End: 1, Delta: 1}, {Start: 0, End: 1, Delta: 1}}
@@ -203,6 +210,7 @@ func TestWorkDocumentShiftReplayAndSharedEmptyGraph(t *testing.T) {
 }
 
 func TestWorkDocumentStaleMemoCallReplayIsBounded(t *testing.T) {
+	t.Parallel()
 	p := &core.Parser{Memo: core.NewMemoTable(), Pos: 19, Gen: 3, Edits: []core.DocEdit{{Start: 0, End: 1, Delta: 2}, {Start: 0, End: 1, Delta: 3}, {Start: 0, End: 1, Delta: 4}}}
 	r := &core.Rule{ID: 1}
 	e := &core.MemoEntry{Ok: true, End: 12, From: 10, Examined: 13, Far: 12}
@@ -224,6 +232,7 @@ func TestWorkDocumentStaleMemoCallReplayIsBounded(t *testing.T) {
 }
 
 func TestWorkDocumentGrowthRejectsNegativeCapacity(t *testing.T) {
+	t.Parallel()
 	panicOf := func(run func()) (got any) { defer func() { got = recover() }(); run(); return nil }
 	values := []int{1}
 	want := panicOf(func() { _ = slices.Grow(values, -1) })

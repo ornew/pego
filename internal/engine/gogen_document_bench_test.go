@@ -14,6 +14,7 @@ import (
 // It never runs the benchmarks. Keep the generated packages separate so the
 // batch control compiles the same grammar with and without Document generation.
 func TestGeneratedDocumentBenchmarkFixture(t *testing.T) {
+	t.Parallel()
 	dir := os.Getenv("PEGO_GENERATED_DOCUMENT_BENCH_DIR")
 	if dir == "" {
 		t.Skip("set PEGO_GENERATED_DOCUMENT_BENCH_DIR to export the benchmark fixture")
@@ -28,6 +29,7 @@ func TestGeneratedDocumentBenchmarkFixture(t *testing.T) {
 // TestGeneratedDocumentBenchmarkFixtureGenerates generates the fixture into a temporary directory in
 // every mode, so that a grammar or generator error in the fixture fails the normal suite.
 func TestGeneratedDocumentBenchmarkFixtureGenerates(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedDocumentBenchmarkFixtureGenerates)
 }
 
@@ -38,6 +40,7 @@ func testGeneratedDocumentBenchmarkFixtureGenerates(t *testing.T) {
 // TestGeneratedDocumentBenchmarkFixtureCompiles compiles and vets the generated module, so that the
 // benchmark files cannot drift from the generated API. It needs the go tool, so it is skipped in -short.
 func TestGeneratedDocumentBenchmarkFixtureCompiles(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedDocumentBenchmarkFixtureCompiles)
 }
 
@@ -68,6 +71,7 @@ rule item Item = k:[a-zé😀]+ #atomic "=" v:[0-9]+ #atomic ";" => Item{Key: $k
 // without writing files and without skipping, so that a grammar of the fixture that no longer type-checks
 // fails the normal suite rather than a benchmark run.
 func TestGeneratedDocumentBenchmarkFixtureGrammarsTypeCheck(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedDocumentBenchmarkFixtureGrammarsTypeCheck)
 }
 

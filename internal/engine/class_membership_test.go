@@ -23,6 +23,7 @@ func classMembershipProgram(t *testing.T, expr grammar.Expr) *Program {
 
 // Keep ordinary membership semantics covered in the instrumentation-free build.
 func TestClassMembershipBoundaries(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name      string
 		ranges    []grammar.CharRange

@@ -89,6 +89,7 @@ function stable(x: unknown): string { return JSON.stringify(x, (_key, v: unknown
 `
 
 func TestGeneratedTSTypedConsumers(t *testing.T) {
+	t.Parallel()
 	src := `type Word = { Text string }
 type W ~ Word
 type Words ~ []Word
@@ -141,6 +142,7 @@ v.I = 1;
 }
 
 func TestGeneratedTSTypedNameCollisions(t *testing.T) {
+	t.Parallel()
 	// Names of the runtime and of the generated parser are free: types.ts is a module of its own.
 	// The names types.ts declares are reserved (TestGeneratedTSReservedTypes).
 	names := []string{"Actx", "ASTRecipe", "Bytes", "Error", "Map", "Match", "Node", "Parser", "OperatorsRuleLine", "R0", "R0_", "Rule", "ReadonlyMap", "R", "Value", "Grammar", "ParseResult", "TraceKind", "Profile"}
@@ -161,6 +163,7 @@ func TestGeneratedTSTypedNameCollisions(t *testing.T) {
 }
 
 func TestGeneratedTSTypedRecovery(t *testing.T) {
+	t.Parallel()
 	src := `type Word = { Text string }
 type U ~ Word | node[string] | error
 type Mixed ~ Word | int | error
@@ -189,6 +192,7 @@ for (const unit of [CodePoints, Bytes]) {
 }
 
 func TestGeneratedTSTypedUnicodeIntegers(t *testing.T) {
+	t.Parallel()
 	src := `type R = { Text string; Token node[string]; A int; B int; C int; D int; E int; F int; G int; O *int }
 rule main R = x:.* #atomic => R{Text: text($x), Token: $x, A: 9007199254740991, B: 9007199254740992, C: -9007199254740992, D: 9223372036854775807 + 1, E: -7 % 2, F: -7 / 2, G: 9223372036854775807}`
 	consumer := `import {parse, parseAST, Bytes, CodePoints, Node} from "./parser.ts";
@@ -213,6 +217,7 @@ rule leaf Leaf = t:("x") #atomic => Leaf{Text: text($t)}
 `
 
 func TestGeneratedTSTypedSharedDAG(t *testing.T) {
+	t.Parallel()
 	for name, body := range map[string]string{
 		"fold": `rule main Tree = first:leaf rest:leaf* => foldl($first, $rest, (acc, i) => Branch{Left: acc, Right: acc})`,
 		"lr": `rule main Tree = branch / leaf
@@ -246,6 +251,7 @@ check(stable(parseAST("xx").value).includes("Branch"), "small DAG value");
 }
 
 func TestGeneratedTSTypedNilAndDepth(t *testing.T) {
+	t.Parallel()
 	for name, src := range map[string]string{
 		"any":  `rule main _ = "" => nil`,
 		"node": `rule main *node[_] = "" => nil`,
@@ -277,6 +283,7 @@ rule n = "(" n ")" / "x"`, `import {parseAST, parseASTWithOptions} from "./parse
 // Export same-revision typed/untyped sources and small/large public workloads.
 // The test checks values only; the coordinator owns time/source/peak measurements.
 func TestGeneratedTSTypedWorkloads(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name, src, small, large string
 	}{
@@ -318,6 +325,7 @@ rule item Good = x:[a-zé😀]+ #atomic ";" => Good{Token: $x}`, "a;1;", strings
 // value despite the normal rule having no value. Their advertised type must
 // include that converted Error instead of claiming TypedParseResult<null>.
 func TestGeneratedTSTypedInferredRecovery(t *testing.T) {
+	t.Parallel()
 	for name, c := range map[string]struct {
 		src, inferred string
 		recovered     bool
@@ -365,6 +373,7 @@ import type {TypedValue, TypedParseResult} from "./types.ts";
 }
 
 func TestGeneratedTSByteStringSurrogateEncoding(t *testing.T) {
+	t.Parallel()
 	src := `type Text = { Text string }
 rule main Text = t:(.*) #atomic => Text{Text: text($t)}
 rule wrapped Text = t:("x�y") #atomic => Text{Text: text($t)}`
@@ -422,6 +431,7 @@ if (!startIsWrapped) {
 // TestGeneratedTSDeclaredNodeAny checks that a rule declared node[_] without an action has the
 // declared TypeScript type, and not the type of its inferred value.
 func TestGeneratedTSDeclaredNodeAny(t *testing.T) {
+	t.Parallel()
 	src := `rule main node[_] = a b
 rule a = "a"
 rule b = "b"`
@@ -441,6 +451,7 @@ check(r.value!.start === 0 && r.value!.end === 2 && stable(r.value).length > 0, 
 // A join with the error member must not gain an open-node member, whether it is named by an alias
 // or inferred for a field: both forms share one TypeScript union and one recipe.
 func TestGeneratedTypedErrorJoinHasNoOpenMember(t *testing.T) {
+	t.Parallel()
 	if gen.CstJoin(compile.JoinTy{Alts: []compile.Ty{compile.NamedTy{Name: "A", Kind: 's'}, compile.TyErr}}) {
 		t.Error("cstJoin counts the error member as an open node")
 	}
@@ -478,7 +489,7 @@ rule let Let = n:([a-z]+) ";" => Let{N: text($n)}`
 			t.Errorf("parser.ts has an open-node fallback for the join with error")
 		}
 	}
-	goFiles, err := Generate(g, gen.GenOptions{Types: true, Start: "main", Module: "example.com/m", Package: "p"})
+	goFiles, err := Generate(t, g, gen.GenOptions{Types: true, Start: "main", Module: "example.com/m", Package: "p"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -492,6 +503,7 @@ rule let Let = n:([a-z]+) ";" => Let{N: text($n)}`
 // A join with node[_] keeps its open member in the TypeScript union and the runtime fallback, with
 // or without error in it.
 func TestGeneratedTypedOpenJoinKeepsOpenMember(t *testing.T) {
+	t.Parallel()
 	src := `type Let = { N string }
 type Box = { Items []Item }
 type Item ~ Let | node[_] | error

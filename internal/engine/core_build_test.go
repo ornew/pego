@@ -29,6 +29,7 @@ func coreCorpusProgram(t *testing.T, c genCase) (*Program, bool) {
 // and of the parsers directory, and checks that the scope of every rule is the frame layout the
 // generated Node rules use, which the typed rules share.
 func TestCoreBuildCorpus(t *testing.T) {
+	t.Parallel()
 	built := 0
 	for _, c := range schemaCorpus(t) {
 		prog, ok := coreCorpusProgram(t, c)

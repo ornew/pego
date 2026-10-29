@@ -11,6 +11,7 @@ import (
 // These declared typed-result fixtures force typed runtime execution; ordinary
 // Node parser parity alone does not cover generated typed Predicate Actions.
 func TestPredicateBlocksGeneratedTypedParity(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testPredicateBlocksGeneratedTypedParity)
 }
 

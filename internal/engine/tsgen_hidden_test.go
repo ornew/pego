@@ -14,6 +14,7 @@ import (
 // either: both rule-by-name functions refuse it, after the options, as the Go ones do, and still
 // parse the declared rules.
 func TestGeneratedTSHiddenRulesAreNotEntryPoints(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("runs node")
 	}

@@ -25,6 +25,7 @@ rule e = a:"a" => (1 / 0, $a)
 }
 
 func TestTupleLiteralValues(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = -"i" i / -"o" o / -"u" u / -"m" m / -"l" l / -"n" n
 rule i = a:"a" b:"b" => ($a, $b)[1]
 rule o = a:"a" => ($a,)
@@ -42,6 +43,7 @@ rule n = xs:[a-z]+ => (len($xs), map($xs, (x) => (x, 1)))`,
 }
 
 func TestTupleLiteralDeclaredType(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main (node[string], node[string]) = a:"a" b:"b" => ($a, $b)`,
 		ok("ab", `("a" "b")`),
 	)
@@ -52,6 +54,7 @@ rule main R = "a" => R{P: (1, "s")}`,
 }
 
 func TestTupleLiteralErrors(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ name, src, want string }{
 		{"too few elements", `rule main (node[string], node[string]) = a:"a" => ($a,)`, "not assignable"},
 		{"too many elements", `rule main (node[string], node[string]) = a:"a" => ($a, $a, $a)`, "not assignable"},
@@ -74,6 +77,7 @@ rule main R = "a" => R{P: (1, 2)}`, "cannot use"},
 }
 
 func TestTupleLiteralElementErrors(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = -"e" e
 rule e = a:"a" => (1 / 0, $a)
 `,
@@ -82,6 +86,7 @@ rule e = a:"a" => (1 / 0, $a)
 }
 
 func TestTupleLiteralTypeInference(t *testing.T) {
+	t.Parallel()
 	// The inferred type is the tuple of the element types, so it fits a declared tuple elementwise
 	// and reads back through an index.
 	check(t, `type R = { P (int, (string, bool)) }

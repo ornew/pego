@@ -22,6 +22,7 @@ import (
 // and the work-controlled forms, over the corpus, and checks that every rule and Operators Rule line takes
 // the Flow route (a rule Flow IR does not print fails the generation).
 func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("generates the corpus")
 	}
@@ -32,20 +33,21 @@ func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
 	}{{"ordinary", false}, {"controls", true}} {
 		t.Run(form.name, func(t *testing.T) {
 			taken, framed, operators, generated := 0, 0, 0, 0
-			gogen.LeanRouteHook = func(table string, r *compile.Rule) {
+			gh := &gogen.Hooks{}
+			setGenHooks(t, gh)
+			gh.LeanRoute = func(table string, r *compile.Rule) {
 				if table == "rules" {
 					taken++
 				}
 			}
-			gogen.FramedRouteHook = func(table string, r *compile.Rule) { framed++ }
-			gogen.OperatorsRouteHook = func(table string, r *compile.Rule) { operators++ }
-			defer func() { gogen.LeanRouteHook, gogen.FramedRouteHook, gogen.OperatorsRouteHook = nil, nil, nil }()
+			gh.FramedRoute = func(table string, r *compile.Rule) { framed++ }
+			gh.OperatorsRoute = func(table string, r *compile.Rule) { operators++ }
 			for _, c := range cases {
 				g, err := parseTest(c.src)
 				if err != nil {
 					continue
 				}
-				_, err = Generate(g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport,
+				_, err = Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport,
 					Types: true, TypedOnly: true, KeepNodes: true, WorkControls: form.controls})
 				if err != nil {
 					t.Fatalf("%s: %v", c.name, err)
@@ -140,6 +142,7 @@ func show(v any, err error) string {
 }
 
 func TestTranscript(t *testing.T) {
+	t.Parallel()
 	var b strings.Builder
 	for _, in := range INPUTS {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -162,6 +165,7 @@ func TestTranscript(t *testing.T) {
 // a parser with every entry point. A mutated grammar must change the
 // transcript, and the entries must convert Nodes, which the Flow route takes.
 func TestFlowTypedOnlyEntriesMatchFull(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -173,13 +177,15 @@ func TestFlowTypedOnlyEntriesMatchFull(t *testing.T) {
 			dir := t.TempDir()
 			writeGoMod(t, dir)
 			taken := 0
-			gogen.LeanRouteHook = func(table string, r *compile.Rule) {
+			gh := &gogen.Hooks{}
+			setGenHooks(t, gh)
+			gh.LeanRoute = func(table string, r *compile.Rule) {
 				if table == "rules" {
 					taken++
 				}
 			}
-			gogen.FramedRouteHook = func(table string, r *compile.Rule) { taken++ }
-			gogen.OperatorsRouteHook = func(table string, r *compile.Rule) { taken++ }
+			gh.FramedRoute = func(table string, r *compile.Rule) { taken++ }
+			gh.OperatorsRoute = func(table string, r *compile.Rule) { taken++ }
 			var pkgs []string
 			for i, c := range typedOnlyConverted {
 				base := gen.GenOptions{Types: true, WorkControls: form.controls}
@@ -212,7 +218,7 @@ func TestFlowTypedOnlyEntriesMatchFull(t *testing.T) {
 				ordinaryOnlyPackage(t, dir, mutated, mut, mo, typedOnlyTranscript, c.inputs)
 				pkgs = append(pkgs, full, flowOnly, mutated)
 			}
-			gogen.LeanRouteHook, gogen.FramedRouteHook, gogen.OperatorsRouteHook = nil, nil, nil
+			gh.LeanRoute, gh.FramedRoute, gh.OperatorsRoute = nil, nil, nil
 			out := runTranscripts(t, dir, pkgs...)
 			for i, c := range typedOnlyConverted {
 				full, flowOnly, mutated := out[fmt.Sprintf("full%d", i)], out[fmt.Sprintf("flow%d", i)], out[fmt.Sprintf("mut%d", i)]

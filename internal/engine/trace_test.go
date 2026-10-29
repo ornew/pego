@@ -184,6 +184,7 @@ func checkEvents(t *testing.T, prog *Program, start, input string, o ParseOption
 // TestTraceKeepsResults parses the corpus with and without tracing on every backend, in both
 // units and in recognition mode.
 func TestTraceKeepsResults(t *testing.T) {
+	t.Parallel()
 	for _, c := range genCorpus(t) {
 		prog := mustCompile(t, c.src)
 		for _, in := range c.inputs {
@@ -230,6 +231,7 @@ func checkTraceDocument(t *testing.T, prog *Program, input string) {
 }
 
 func TestTraceEvents(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name, src, input string
 		want             []string
@@ -382,6 +384,7 @@ rule word = [a-z]+ #atomic`,
 
 // TestTraceStreamAndDocument checks tracing in stream parses and incremental documents.
 func TestTraceStreamAndDocument(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = line* #stream $$
 rule line = [a-z]* #atomic "\n"`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -435,6 +438,7 @@ rule line = [a-z]* #atomic "\n"`)
 // own value on every backend, rather than being reported as a fault of the parse (a runtime error
 // on the bytecode backends would be "invalid bytecode").
 func TestTracePanic(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = [a-z]+ #atomic $$`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		var got any
@@ -455,6 +459,7 @@ func TestTracePanic(t *testing.T) {
 // TestTraceRecovered checks that exit events give the errors recovered during the call, which
 // are not part of Failure.
 func TestTraceRecovered(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = stmt* $$
 rule stmt = (word ";") #recover(skip=[^;]+ ";")
 rule word = [a-z]+ #atomic`)
@@ -520,6 +525,7 @@ func dispatchFreeTrace(prog *Program, input string, o ParseOptions) ([]string, s
 // calls first-character dispatch may skip: calls that fail having examined at most their first
 // character.
 func TestTracesAgreeAcrossBackends(t *testing.T) {
+	t.Parallel()
 	for _, c := range genCorpus(t) {
 		prog := mustCompile(t, c.src)
 		for _, in := range c.inputs {

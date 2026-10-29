@@ -10,6 +10,7 @@ import (
 )
 
 func TestCaptures(t *testing.T) {
+	t.Parallel()
 	t.Run("rule level", func(t *testing.T) {
 		check(t, `rule main = first:word " " last:word
 rule word = [a-z]+ #atomic`,
@@ -43,6 +44,7 @@ type R = { X *node[string] }`,
 }
 
 func TestActions(t *testing.T) {
+	t.Parallel()
 	check(t, `type KV = { Key node[string]; Op node[string]; Value node[string] }
 rule main = k:[a-z]+ #atomic op:"=" v:[0-9]+ #atomic => KV{Key: $k, Op: $op, Value: $v}`,
 		ok("abc=12", `KV{Key: "abc", Op: "=", Value: "12"}`),
@@ -61,6 +63,7 @@ rule main = v1:"a" v2:"b" => Pair{All: list($v1, $v2), N: 1 + 2 * 3, S: "x" + te
 // not labeled by the rules that receive it. Such a node can be shared through the memo, so
 // labeling it would make the result depend on which call was memoized.
 func TestActionResultsAreFinal(t *testing.T) {
+	t.Parallel()
 	src := `rule main = (a "x" / b "y")*
 rule a = r
 rule b = r
@@ -80,6 +83,7 @@ rule e = _`
 // TestConcatRejectsTopArgument checks that concat rejects an argument of type _ at compile time,
 // even when a later argument would fail when evaluated.
 func TestConcatRejectsTopArgument(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{`rule main = x:"a" d:dyn => concat($d, list(1 / 0))
 rule dyn _ = ds / di
 rule ds = "b" => "s"
@@ -96,6 +100,7 @@ rule di = _ => 1`} {
 
 // TestOptionalResults checks rules and actions whose result is an optional value (*T).
 func TestOptionalResults(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = x:"a"? => $x`,
 		ok("a", `"a"`),
 		ok("", `nil`),
@@ -108,6 +113,7 @@ rule main *C = xs:"a"* => foldr(nil, $xs, (acc, x) => C{X: x, Next: acc})`,
 }
 
 func TestFold(t *testing.T) {
+	t.Parallel()
 	src := `type Op = { Left Node; Op node[string]; Right Node }
 type Node ~ Op | node[string]
 rule main Node = (
@@ -124,6 +130,7 @@ rule num = [0-9]+ #atomic`
 }
 
 func TestListBuiltins(t *testing.T) {
+	t.Parallel()
 	check(t, `type Args = { Items []node[string]; N int }
 rule main = (
     first:item rest:(-"," x:item)*
@@ -140,6 +147,7 @@ rule group = k:[a-z] #atomic "=" xs:(v:[0-9] #atomic)* ";"`,
 }
 
 func TestMemberAccess(t *testing.T) {
+	t.Parallel()
 	check(t, `type Span = { Start int; End int; Kids int }
 rule main = "  " w:word => Span{Start: $w.Start, End: $w.End, Kids: len($w.Value)}
 rule word = [a-z] [a-z]`,
@@ -148,6 +156,7 @@ rule word = [a-z] [a-z]`,
 }
 
 func TestNodePositions(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `type Op = { Left Node; Right Node }
 type Node ~ Op | node[string]
 rule main Node = l:num rest:(-" "* -"+" r:num)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Right: i.$r})
@@ -171,6 +180,7 @@ rule num = -" "* n:[0-9]+ #atomic => $n`)
 }
 
 func TestPredicates(t *testing.T) {
+	t.Parallel()
 	t.Run("comparison", func(t *testing.T) {
 		check(t, `rule main = d:[0-9]+ #atomic {len($d) <= 3} "!"`,
 			ok("123!", `(d:"123" "!")@main`),
@@ -215,6 +225,7 @@ rule spaces = " "* #atomic`
 }
 
 func TestCompileErrors(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, want string }{
 		{`rule main = x`, `1:13: undefined rule x`},
 		{`rule main = "a"
@@ -251,6 +262,7 @@ rule x = "a"`, `rule x has no Operators Rule levels`},
 }
 
 func TestRuntimeErrors(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `type A = { N int }
 rule main = v1:"a" => A{N: 1 / (len($v1) - 1)}`)
 	_, err := prog.Parse("main", "a")
@@ -265,6 +277,7 @@ rule main = v1:"a" => A{N: 1 / (len($v1) - 1)}`)
 // TestTextOfNil checks that text of a capture that did not match is "" on every backend, as
 // specified.
 func TestTextOfNil(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = x:"a"? {text($x) == ""} "b"`, ok("b", `(nil "b")@main`))
 	check(t, `type T = { S string }
 rule main = x:"a"? "b" => T{S: text($x) + "!"}`, ok("b", `T{S: "!"}`))
@@ -272,6 +285,7 @@ rule main = x:"a"? "b" => T{S: text($x) + "!"}`, ok("b", `T{S: "!"}`))
 
 // TestLargeIntegers checks that integer literals beyond 32 bits keep their value on every backend.
 func TestLargeIntegers(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `type T = { A int; B int; C int; D int; E int }
 rule main = "a" => T{A: 3000000000, B: 0 - 3000000000, C: 9223372036854775807, D: 0 - 9223372036854775807 - 1, E: 4294967296}`)
 	want := `T{A: 3000000000, B: -3000000000, C: 9223372036854775807, D: -9223372036854775808, E: 4294967296}`
@@ -299,6 +313,7 @@ rule main = x:"a"* #atomic => I{
 // with Go's results on every backend, including the most negative integer
 // divided by -1, and that dividing by zero is a runtime error.
 func TestIntegerWrapAround(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, integerBoundaryGrammar)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, n := range []int64{1, 2} {
@@ -337,6 +352,7 @@ rule word = [a-z]+ #atomic`
 // every backend; the shared generated corpus compares the other parsers with
 // these results.
 func TestActionEnvironments(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, actionEnvironmentGrammar)
 	// peek calls plain at the start twice with another depth, so batch parsers
 	// memoize it there before main calls it.
@@ -382,6 +398,7 @@ func TestActionEnvironments(t *testing.T) {
 // TestLenOfStrings checks that len counts the characters of strings in the position unit on
 // every backend, for strings that do not come from the input too.
 func TestLenOfStrings(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `type T = { N int; M int }
 rule main = x:"a" => T{N: len("日本"), M: len(text($x) + "é")}`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {

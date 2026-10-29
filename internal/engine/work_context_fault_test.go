@@ -13,6 +13,7 @@ import (
 )
 
 func TestWorkContextAttributionPreservesVMFaults(t *testing.T) {
+	t.Parallel()
 	for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 		t.Run(backend.String(), func(t *testing.T) {
 			prog := mustCompile(t, `rule main = "z" $$`)
@@ -56,6 +57,7 @@ func (c *workContextAccessorContext) Err() error {
 }
 
 func TestWorkContextAccessorInterruptionRemainsFatal(t *testing.T) {
+	t.Parallel()
 	text := strings.Repeat("a", 1024)
 	prog := mustCompile(t, `rule main = "`+text+`" $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -99,6 +101,7 @@ func TestWorkContextAccessorInterruptionRemainsFatal(t *testing.T) {
 }
 
 func TestWorkContextNestedAccessorPanicIdentity(t *testing.T) {
+	t.Parallel()
 	text := strings.Repeat("a", 1024)
 	prog := mustCompile(t, `rule main = "`+text+`" $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {

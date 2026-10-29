@@ -47,6 +47,7 @@ func (c *snapshotPhaseContext) Err() error {
 }
 
 func TestSnapshotUnsupportedLegacyFieldPreservesParseError(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = "x"`)
 	d, _ := prog.NewDocument("main", "x")
 	legacy, err := d.Parse()

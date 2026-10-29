@@ -13,6 +13,7 @@ import (
 )
 
 func TestWorkDocumentPieceConstruction(t *testing.T) {
+	t.Parallel()
 	if !core.DocumentPieceInput {
 		t.Skip("piece input is disabled")
 	}
@@ -40,6 +41,7 @@ func TestWorkDocumentPieceConstruction(t *testing.T) {
 }
 
 func TestWorkDocumentPieceTextPublication(t *testing.T) {
+	t.Parallel()
 	if !core.DocumentPieceInput {
 		t.Skip("piece input is disabled")
 	}

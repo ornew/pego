@@ -18,6 +18,7 @@ import (
 // sequences, and each Node Parse and typed ParseAST must match a batch parse
 // of the current text, in both position units.
 func TestGeneratedDocumentInvalidUTF8EditEquivalence(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedDocumentInvalidUTF8EditEquivalence)
 }
 
@@ -93,6 +94,7 @@ func decodedBoundaries(s string) []int {
 }
 
 func TestInvalidUTF8EditEquivalence(t *testing.T) {
+	t.Parallel()
 	pieces := []string{"", "a", "\n", "é", "日", "😀", "€", "\x80", "\xa9", "\xc3", "\xe6\xbc", "\xe2\x82", "\xac", "\xf0\x9f\x98", "\xff", "\xed\xa0\x80"}
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		d, err := NewDocument("\x80\xc3", WithUnit(unit))

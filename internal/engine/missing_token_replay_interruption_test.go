@@ -37,6 +37,7 @@ func (c *missingReplayCancelContext) Err() error {
 }
 
 func TestMissingTokensCancellationDuringLRSeedReplay(t *testing.T) {
+	t.Parallel()
 	// More events than the cancellation polling interval ensure a checkpoint
 	// occurs inside replay, without relying on an exact absolute step count.
 	literalCount := int(2 * core.WorkCheckStepInterval)

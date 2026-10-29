@@ -12,6 +12,7 @@ import (
 // PEGO_TYPED_FRAME_LAYOUT_DIR preserves same-generator layout controls for
 // timing prebuilt fixture binaries independently of generation and compilation.
 func TestGeneratedTypedFrameLayoutWorkloads(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTypedFrameLayoutWorkloads)
 }
 

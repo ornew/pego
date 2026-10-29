@@ -52,6 +52,7 @@ rule item = [\uFFFD] "a" / [\uFFFD-\u{10FFFF}] [é]? "b" / [^a-z ] "c" / [日] [
 }
 
 func TestGuardedClassGeneration(t *testing.T) {
+	t.Parallel()
 	pinOrdinary(t)
 	for _, c := range guardedClassCases() {
 		g, err := parseTest(c.src)
@@ -75,6 +76,7 @@ func TestGuardedClassGeneration(t *testing.T) {
 // the first class of the alternative with parsers in which the class reads and tests it again,
 // in both position units, and their errors with the engine's.
 func TestGuardedClassDisabledParity(t *testing.T) {
+	t.Parallel()
 	pinOrdinary(t)
 	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), guardedClassCases(), gen.GenOptions{DisableGuardedClasses: true}, 0)
 }
@@ -82,6 +84,7 @@ func TestGuardedClassDisabledParity(t *testing.T) {
 // TestGuardedClassEligibility checks that parsers that charge work for reading (work controls or
 // Documents) keep the class reading and testing the character again.
 func TestGuardedClassEligibility(t *testing.T) {
+	t.Parallel()
 	for _, c := range guardedClassCases() {
 		g, err := parseTest(c.src)
 		if err != nil {
@@ -90,7 +93,7 @@ func TestGuardedClassEligibility(t *testing.T) {
 		for _, opts := range []gen.GenOptions{{TypedOnly: true}, {TypedOnly: true, WorkControls: true}, {Types: true, WorkControls: true}, {Types: true, Document: true}} {
 			want := !opts.WorkControls && !opts.Document
 			opts.Package, opts.Module, opts.Start, opts.Types, opts.Runtime = "guarded", "example.com/generated", "main", true, gen.RuntimeImport
-			files, err := Generate(g, opts)
+			files, err := Generate(t, g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}

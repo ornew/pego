@@ -12,6 +12,7 @@ import (
 // PEGO_TYPED_RECOVERY_DIR retains generated modules for separately built,
 // alternating benchmark binaries; ordinary tests use a temporary directory.
 func TestGeneratedTypedRecoveryWorkloads(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated code")
@@ -131,6 +132,7 @@ func checkRecovery(v *Doc, err error, mode string, n int) bool {
 }
 
 func TestRecoveryWorkload(t *testing.T) {
+	t.Parallel()
     for _, unit := range []PositionUnit{CodePoints, Bytes} {
         saved, savedErr := ParseAST(recoveryInput("recovered", 2), WithUnit(unit))
         if !checkRecovery(saved, savedErr, "recovered", 2) { t.Fatalf("saved value %v %v", saved, savedErr) }

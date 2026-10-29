@@ -51,6 +51,7 @@ func requireInsertions(t *testing.T, prog *Program, input string, o ParseOptions
 }
 
 func TestMissingTokensLiteralAndUnits(t *testing.T) {
+	t.Parallel()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, controlled := range []bool{false, true} {
 			if controlled && !core.WorkControlsEnabled {
@@ -111,6 +112,7 @@ func TestMissingTokensLiteralAndUnits(t *testing.T) {
 }
 
 func TestMissingTokensRollbackBudgetAndCut(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = (token "x" / token "y") $$
 rule token = ";" #missing`)
 	for _, controlled := range []bool{false, true} {
@@ -161,6 +163,7 @@ rule token = ";" #missing`)
 }
 
 func TestMissingTokensLookaheadRepetitionsAndTwins(t *testing.T) {
+	t.Parallel()
 	for _, source := range []string{
 		`rule main = !token token $$
 rule token = ";" #missing`,
@@ -193,6 +196,7 @@ rule token = ";" #missing`)
 }
 
 func TestMissingTokensLeftRecursion(t *testing.T) {
+	t.Parallel()
 	for _, controlled := range []bool{false, true} {
 		if controlled && !core.WorkControlsEnabled {
 			continue
@@ -234,6 +238,7 @@ rule e = e ";" #missing / "x"`)
 }
 
 func TestMissingTokensOperatorsCandidates(t *testing.T) {
+	t.Parallel()
 	infix := mustCompile(t, `rule main = e $$
 rule e = #operators {
     operand "a"
@@ -260,6 +265,7 @@ rule e = #operators {
 }
 
 func TestMissingTokensLabelsAndConsumingRecovery(t *testing.T) {
+	t.Parallel()
 	for _, expression := range []string{
 		`";" @error("semicolon") #missing`,
 		`";" #missing @error("semicolon")`,
@@ -281,6 +287,7 @@ func TestMissingTokensLabelsAndConsumingRecovery(t *testing.T) {
 }
 
 func TestMissingTokensValidationAndRepresentations(t *testing.T) {
+	t.Parallel()
 	for _, expression := range []string{`"" #missing`, `[a-z] #missing`, `("a" "b") #missing`, `"a" @missing`, `"a" #atomic #missing`} {
 		if message := compileError(t, `rule main = `+expression); !strings.Contains(message, "missing") {
 			t.Fatal(expression, message)
@@ -334,6 +341,7 @@ rule main Root = x:(";" #missing) => Root{Token: $x}`
 }
 
 func TestMissingTokensLedgerSeedBudget(t *testing.T) {
+	t.Parallel()
 	p := &core.Parser{Missing: &core.MissingTokenState{Limit: 2}}
 	event := core.MissingTokenEvent{Site: core.MissingTokenSite{ID: 1, Pos: 3}, Err: &SyntaxError{Pos: 3}}
 	if !p.InsertMissing(event) || p.InsertMissing(event) {
@@ -361,6 +369,7 @@ func TestMissingTokensLedgerSeedBudget(t *testing.T) {
 }
 
 func TestMissingTokensModuleGuard(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = ";" #missing`)
 	defer func() {
 		x := recover()
@@ -373,6 +382,7 @@ func TestMissingTokensModuleGuard(t *testing.T) {
 }
 
 func TestMissingTokensPredicateRecognitionAndMemoDependencies(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = x:(token #atomic) {len($x) == 0} $$
 rule token = ";" #missing`)
 	for _, recognize := range []bool{false, true} {
@@ -407,6 +417,7 @@ rule main = ";" #missing => R{N: 1/0}`)
 }
 
 func TestMissingTokensRetainedResultsAndLiteralRecursion(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = e $$
 rule e = ";" #missing e / "x"`)
 	n, errs := requireInsertions(t, prog, "x", ParseOptions{MissingTokens: 8}, 1)
@@ -432,6 +443,7 @@ rule e = ";" #missing e / "x"`)
 }
 
 func TestMissingTokensMemoSeedContextAndRecycledPointers(t *testing.T) {
+	t.Parallel()
 	p := &core.Parser{Missing: &core.MissingTokenState{Limit: 8}, Memo: core.NewMemoTable()}
 	err := &SyntaxError{Pos: 0}
 	p.InsertMissing(core.MissingTokenEvent{Site: core.MissingTokenSite{ID: 1, Pos: 0}, Err: err})
@@ -465,6 +477,7 @@ func TestMissingTokensMemoSeedContextAndRecycledPointers(t *testing.T) {
 }
 
 func TestMissingTokensTypeOnlyGrammarCannotBeLowered(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testMissingTokensTypeOnlyGrammarCannotBeLowered)
 }
 
@@ -488,6 +501,7 @@ rule main = "a"`)
 // TestMissingTypeChecked checks that a missing at run time takes only a missing token: an error
 // value of recovery is an error but not a missing.
 func TestMissingTypeChecked(t *testing.T) {
+	t.Parallel()
 	o := ParseOptions{MissingTokens: 8}
 	inserted := mustCompile(t, "type P = { M missing }\nrule main = \"a\" m:(\";\" #missing) $$ => P{M: $m.(_).(missing)}")
 	n, err := inserted.ParseWith("main", "a", o)

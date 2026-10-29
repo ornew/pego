@@ -152,6 +152,7 @@ func streamControlRetentionOptions(o ParseOptions, ctx context.Context, trace fu
 }
 
 func TestWorkStreamTraceRetentionWithActiveControls(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	workStreamVariants(t, func(t *testing.T, options ParseOptions) {
 		for _, outcome := range []string{

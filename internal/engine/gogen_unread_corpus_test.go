@@ -81,6 +81,7 @@ func blankLinesInFunctions(src string) []string {
 // The generated parsers of every test grammar, in the forms with and without work controls, declare
 // every local variable they use and use every local variable they declare.
 func TestGeneratedLocalVariables(t *testing.T) {
+	t.Parallel()
 	forms := []struct {
 		name  string
 		opts  gen.GenOptions
@@ -104,7 +105,7 @@ func TestGeneratedLocalVariables(t *testing.T) {
 		for _, f := range forms {
 			opts := f.opts
 			opts.Package, opts.Start, opts.Runtime, opts.Module = "p", "main", gen.RuntimeImport, "example.com/p"
-			files, err := Generate(g, opts)
+			files, err := Generate(t, g, opts)
 			if err != nil {
 				// Every test grammar generates in every form.
 				t.Errorf("%s (%s): %v", c.name, f.name, err)
@@ -130,6 +131,7 @@ func TestGeneratedLocalVariables(t *testing.T) {
 
 // The check reports a variable that is declared and not used (negative control).
 func TestLocalErrorsDetectsUnusedVariable(t *testing.T) {
+	t.Parallel()
 	files := []gen.GeneratedFile{{Path: "p.go", Content: []byte("package p\n\nfunc f() {\n\tvar x int\n\ty := 1\n\t_ = z\n}\n")}}
 	got := localErrors(t, files)
 	if len(got) != 3 {
@@ -141,13 +143,14 @@ func TestLocalErrorsDetectsUnusedVariable(t *testing.T) {
 // shakable variable, as a shaking that kept nothing would, leaves the generated code of each
 // corpus grammar that declares one with an undefined name.
 func TestShakeVarsMutantFailsToCompile(t *testing.T) {
+	t.Parallel()
 	declared, failed := 0, 0
 	for _, c := range genCorpus(t) {
 		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		files, err := Generate(g, gen.GenOptions{Types: true, Package: "p", Start: "main", Runtime: gen.RuntimeImport, Module: "example.com/p"})
+		files, err := Generate(t, g, gen.GenOptions{Types: true, Package: "p", Start: "main", Runtime: gen.RuntimeImport, Module: "example.com/p"})
 		if err != nil {
 			t.Errorf("%s: %v", c.name, err)
 			continue

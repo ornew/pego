@@ -12,6 +12,7 @@ import (
 )
 
 func TestGenerateDirectTypedDocument(t *testing.T) {
+	t.Parallel()
 	testDirectTypedDocument(t, gen.GenOptions{})
 }
 

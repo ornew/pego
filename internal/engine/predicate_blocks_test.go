@@ -68,6 +68,7 @@ rule main = ("a" {x := 1} {false} ";") #recover(skip="?") $$`, []string{"?", "a?
 }
 
 func TestPredicateBlockBindingComparison(t *testing.T) {
+	t.Parallel()
 	program := mustCompile(t, `var x int
 rule a = {x:=1; x<10}`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -80,6 +81,7 @@ rule a = {x:=1; x<10}`)
 }
 
 func TestPredicateBlocksAdjacentParity(t *testing.T) {
+	t.Parallel()
 	for _, fixture := range predicateBlockCases() {
 		t.Run(fixture.name, func(t *testing.T) {
 			block := mustCompile(t, fixture.block)
@@ -103,6 +105,7 @@ func TestPredicateBlocksAdjacentParity(t *testing.T) {
 }
 
 func TestPredicateBlocksSourceAndSavedGrammar(t *testing.T) {
+	t.Parallel()
 	const source = "var x int\nrule main = {\n // first\n x := (1 +\n 1)\n // second\n x == 2;\n} \"é\" $$"
 	g, err := parseTest(source)
 	if err != nil {
@@ -150,6 +153,7 @@ func TestPredicateBlocksSourceAndSavedGrammar(t *testing.T) {
 }
 
 func TestPredicateBlocksStatementValidation(t *testing.T) {
+	t.Parallel()
 	for _, source := range []string{
 		`var x int
 rule main = {x := 1; len(true)} "a"`,
@@ -185,6 +189,7 @@ func predicateBlockGeneratedCases() []genCase {
 }
 
 func TestPredicateBlocksGeneratedGoParity(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testPredicateBlocksGeneratedGoParity)
 }
 
@@ -193,6 +198,7 @@ func testPredicateBlocksGeneratedGoParity(t *testing.T) {
 }
 
 func TestPredicateBlocksGeneratedTypeScriptParity(t *testing.T) {
+	t.Parallel()
 	node, err := exec.LookPath("node")
 	if err != nil {
 		t.Skip("node not found")

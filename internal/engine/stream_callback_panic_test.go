@@ -50,6 +50,7 @@ func (r *streamCallbackReader) Close() error { r.closed = true; return nil }
 func catchStreamPanic(f func()) (val any)    { defer func() { val = recover() }(); f(); return }
 
 func TestStreamCallerPanicIdentity(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
@@ -126,6 +127,7 @@ func TestStreamCallerPanicIdentity(t *testing.T) {
 }
 
 func TestStreamCallerReturnedErrorIdentity(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
@@ -163,6 +165,7 @@ func TestStreamCallerReturnedErrorIdentity(t *testing.T) {
 }
 
 func TestStreamReaderPanicInsideTraceKeepsOriginalValue(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
@@ -186,6 +189,7 @@ func TestStreamReaderPanicInsideTraceKeepsOriginalValue(t *testing.T) {
 }
 
 func TestStreamNormalCallerReturnKeepsVMFaultAttribution(t *testing.T) {
+	t.Parallel()
 	for _, b := range []Backend{Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			for _, phase := range []string{"reader", "emit"} {
@@ -225,6 +229,7 @@ func TestStreamNormalCallerReturnKeepsVMFaultAttribution(t *testing.T) {
 }
 
 func TestStreamKeepsCallerBufferedReader(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, records)
 	for _, u := range []PositionUnit{CodePoints, Bytes} {
 		reader := bufio.NewReader(strings.NewReader("#records\na=1\n"))

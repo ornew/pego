@@ -70,6 +70,7 @@ func workGuardedChoiceSnapshot(n *value.Node) *value.Node {
 }
 
 func TestWorkGuardedChoiceSilentSkipLoopBudgetAndCancellation(t *testing.T) {
+	t.Parallel()
 	prog, choice := workGuardedChoiceProgram(t)
 	c := newClosureWalker(&compile.Compiler{Prog: prog.Static()}, false)
 	m := c.ExprForm(choice, compile.NewScope(), true)
@@ -102,6 +103,7 @@ func TestWorkGuardedChoiceSilentSkipLoopBudgetAndCancellation(t *testing.T) {
 }
 
 func TestWorkGuardedChoiceExactSkipBudget(t *testing.T) {
+	t.Parallel()
 	prog, choice := workGuardedChoiceProgram(t)
 	c := newClosureWalker(&compile.Compiler{Prog: prog.Static()}, false)
 	m := c.ExprForm(choice, compile.NewScope(), false)
@@ -137,6 +139,7 @@ func TestWorkGuardedChoiceExactSkipBudget(t *testing.T) {
 }
 
 func TestWorkGuardedChoicePassingMatcherCharge(t *testing.T) {
+	t.Parallel()
 	prog, _ := workGuardedChoiceProgram(t)
 	for _, unit := range []PositionUnit{Bytes, CodePoints} {
 		for _, skip := range []bool{false, true} {
@@ -161,6 +164,7 @@ func TestWorkGuardedChoicePassingMatcherCharge(t *testing.T) {
 }
 
 func TestWorkGuardedChoicePublicParityAndFatalRetry(t *testing.T) {
+	t.Parallel()
 	prog, _ := workGuardedChoiceProgram(t)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{Bytes, CodePoints} {

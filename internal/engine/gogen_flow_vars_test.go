@@ -36,6 +36,7 @@ func testVars(names ...string) []*flow.Var {
 }
 
 func TestFlowVarsCascade(t *testing.T) {
+	t.Parallel()
 	// b = a reads a; nothing reads b, so the statement goes and a becomes unread, and then a = p.Pos goes.
 	fv := gogen.NewFlowVars()
 	v := testVars("a", "b", "c")
@@ -52,6 +53,7 @@ func TestFlowVarsCascade(t *testing.T) {
 }
 
 func TestFlowVarsEffectsStay(t *testing.T) {
+	t.Parallel()
 	// A call has an effect: the statement stays with the blank identifier for the unread result, and the
 	// variable its arguments read stays read.
 	fv := gogen.NewFlowVars()
@@ -68,6 +70,7 @@ func TestFlowVarsEffectsStay(t *testing.T) {
 }
 
 func TestFlowVarsStaySilenced(t *testing.T) {
+	t.Parallel()
 	// A variable assigned where no statement can be left out, or opposite an untyped nil, stays declared
 	// when nothing reads it. So does the target of a statement that is not a variable of the function.
 	fv := gogen.NewFlowVars()
@@ -89,6 +92,7 @@ func TestFlowVarsStaySilenced(t *testing.T) {
 }
 
 func TestFlowVarsCycleStays(t *testing.T) {
+	t.Parallel()
 	// Two variables that only read each other stay, as the removal of one statement at a time leaves
 	// them: each statement reads the variable the other writes.
 	fv := gogen.NewFlowVars()
@@ -101,6 +105,7 @@ func TestFlowVarsCycleStays(t *testing.T) {
 }
 
 func TestFlowVarsUnreachableReadsDoNotCount(t *testing.T) {
+	t.Parallel()
 	// The printer records no read at an unreachable point, so a variable read only there is dead.
 	fv := gogen.NewFlowVars()
 	v := testVars("a")
@@ -114,10 +119,10 @@ func TestFlowVarsUnreachableReadsDoNotCount(t *testing.T) {
 // The tests of generated code catch a wrong decision of which variables are unread: one that treats
 // every variable as unread, and one that ignores the reads of the assignments that stay.
 func TestFlowVarsMutantFailsToCompile(t *testing.T) {
-	for name, flag := range map[string]*bool{"every variable unread": &gogen.FlowVarsMutant, "assignment reads ignored": &gogen.FlowVarsMutantUses} {
+	t.Parallel()
+	for name, h := range map[string]*gogen.Hooks{"every variable unread": {FlowVarsMutant: true}, "assignment reads ignored": {FlowVarsMutantUses: true}} {
 		t.Run(name, func(t *testing.T) {
-			*flag = true
-			defer func() { *flag = false }()
+			setGenHooks(t, h)
 			testFlowVarsMutantFailsToCompile(t)
 		})
 	}
@@ -128,7 +133,7 @@ func testFlowVarsMutantFailsToCompile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := Generate(g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Module: "example.com/p", Types: true})
+	files, err := Generate(t, g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Module: "example.com/p", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,6 +144,7 @@ func testFlowVarsMutantFailsToCompile(t *testing.T) {
 
 // The check of the printed body fires when it names a variable that is not declared.
 func TestFlowVarsNamedDeadVariableIsAnError(t *testing.T) {
+	t.Parallel()
 	fv := gogen.NewFlowVars()
 	v := testVars("v3", "v4")
 	body := testVarStmt(&fv, "v3 = p.Pos", true, v[:1]) + "use(v3)\n"
@@ -161,6 +167,7 @@ func TestFlowVarsNamedDeadVariableIsAnError(t *testing.T) {
 }
 
 func TestFreeIdents(t *testing.T) {
+	t.Parallel()
 	got := strings.Join(gogen.FreeIdents("x = p.v3 + f(\"v4\") // v5\n/* v6 */ y := v7\n"), " ")
 	if want := "x p f y v7"; got != want {
 		t.Errorf("freeIdents = %q, want %q (a selector, a string and a comment do not count)", got, want)

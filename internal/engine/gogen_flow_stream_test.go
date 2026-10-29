@@ -62,14 +62,18 @@ var streamForms = []struct {
 // start of the stream before the repetition, and the delivery of each element in place of gathering it) and
 // the methods it calls expanded, it is the text of the rule's batch body. The batch bodies are the ones
 // the Node-table tests check, and the tests that run the parsers compare the behavior with the engine.
-func TestFlowStreamBodyIsBatchBody(t *testing.T) { eachMode(t, testFlowStreamBodyIsBatchBody) }
+func TestFlowStreamBodyIsBatchBody(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testFlowStreamBodyIsBatchBody)
+}
 
 func testFlowStreamBodyIsBatchBody(t *testing.T) {
 	flowN := 0
 	var flowed []string
 	var cur string
-	gogen.StreamRouteHook = func(table string, r *compile.Rule) { flowN++; flowed = append(flowed, cur) }
-	t.Cleanup(func() { gogen.StreamRouteHook = nil })
+	gh := &gogen.Hooks{}
+	setGenHooks(t, gh)
+	gh.StreamRoute = func(table string, r *compile.Rule) { flowN++; flowed = append(flowed, cur) }
 	for _, form := range streamForms {
 		for _, c := range streamCases(t) {
 			t.Run(c.name+"/"+form.name, func(t *testing.T) {
@@ -104,7 +108,7 @@ func testFlowStreamBodyIsBatchBody(t *testing.T) {
 			})
 		}
 	}
-	gogen.StreamRouteHook = nil
+	gh.StreamRoute = nil
 	if flowN == 0 {
 		t.Fatal("no stream body is printed from Flow IR: the test exercises nothing")
 	}
@@ -172,6 +176,7 @@ func bodyClosure(t *testing.T, src string, ref *regexp.Regexp) string {
 // callback errors, iterators and both position units (testGeneratedStreams). The route must be taken, so
 // that the test cannot pass without exercising it.
 func TestGeneratedFlowStreamMatchesEngine(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedFlowStreamMatchesEngine)
 }
 
@@ -185,8 +190,9 @@ func testGeneratedFlowStreamMatchesEngine(t *testing.T) {
 	}
 	cases := streamCases(t)
 	taken := 0
-	gogen.StreamRouteHook = func(table string, r *compile.Rule) { taken++ }
-	t.Cleanup(func() { gogen.StreamRouteHook = nil })
+	gh := &gogen.Hooks{}
+	setGenHooks(t, gh)
+	gh.StreamRoute = func(table string, r *compile.Rule) { taken++ }
 	for _, form := range streamForms {
 		t.Run(form.name, func(t *testing.T) {
 			before := taken
@@ -436,6 +442,7 @@ func streamEntries(t *testing.T, form string, lines []string, kept []genCase) ma
 // those of testdata/stream.golden, for each stream grammar, each reader chunking and each form with
 // observability. Every report also has events and elements (streamReportDiffs).
 func TestFlowStreamObservationsMatchGolden(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testFlowStreamObservationsMatchGolden)
 }
 
@@ -460,6 +467,7 @@ func testFlowStreamObservationsMatchGolden(t *testing.T) {
 // forgets to start the stream, drops the delivery of an element, delivers at the wrong position or delivers
 // after the zero-width check instead of before.
 func TestFlowStreamObservationMutants(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
@@ -567,6 +575,7 @@ func streamPlacement(src string) error {
 // duplicated delivery, which the comparison with the batch body and the parses do not tell from the
 // original.
 func TestFlowStreamPlacementMutants(t *testing.T) {
+	t.Parallel()
 	eachMode(t, func(t *testing.T) {
 		g, err := parseTest(streamCorpus[0].src)
 		if err != nil {

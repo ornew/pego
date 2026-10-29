@@ -79,6 +79,7 @@ import (
 )
 ` + ordinaryOnlyShow + `
 func TestTranscript(t *testing.T) {
+	t.Parallel()
 	var b strings.Builder
 	for _, in := range INPUTS {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -147,6 +148,7 @@ func showAST(v any, err error) string {
 }
 
 func TestTranscript(t *testing.T) {
+	t.Parallel()
 	var b strings.Builder
 	for _, in := range INPUTS {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -188,7 +190,7 @@ func ordinaryOnlyPackage(t *testing.T, dir, pkg, src string, opts gen.GenOptions
 	}
 	opts.Runtime = gen.RuntimeImport
 	opts.Package, opts.Module, opts.Start = pkg, "ordtest/"+pkg, "main"
-	files, err := Generate(g, opts)
+	files, err := Generate(t, g, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -252,6 +254,7 @@ func runTranscripts(t *testing.T, dir string, pkgs ...string) map[string]string 
 }
 
 func TestGeneratedOrdinaryOnlyMatchesControlled(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

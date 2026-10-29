@@ -28,14 +28,6 @@ import (
 // The statements that are removable are formed while the function is printed and replaced by their
 // text, or by nothing, when its variables are known (FlowVars.Resolve).
 
-// FlowVarsMutant, set by a test, makes every variable of the function unread: the generated code must then fail
-// to compile, which shows that the tests of generated code catch a wrong decision.
-var FlowVarsMutant bool
-
-// FlowVarsMutantUses, set by a test, ignores the reads of the values of assignments that stay, which
-// leaves variables that only they read undeclared: the generated code must then fail to compile.
-var FlowVarsMutantUses bool
-
 // FlowVars collects the assignments of a printed function and the reads that decide which variables
 // it keeps.
 type FlowVars struct {
@@ -47,6 +39,8 @@ type FlowVars struct {
 	// assigned opposite an untyped nil.
 	Stuck, Pinned map[*flow.Var]bool
 	stmts         []*VarStmt
+	// mutant and mutantUses are Hooks.FlowVarsMutant and Hooks.FlowVarsMutantUses.
+	mutant, mutantUses bool
 }
 
 // VarStmt is an assignment or increment that is left out if its variables are unread.
@@ -132,11 +126,11 @@ func (fv *FlowVars) Resolve(vars []*flow.Var, body string) flowVarsResult {
 	}
 	for _, st := range fv.stmts {
 		for v := range st.Uses {
-			reads[v] = !FlowVarsMutantUses
+			reads[v] = !fv.mutantUses
 		}
 	}
 	isDead := func(v *flow.Var) bool {
-		if FlowVarsMutant {
+		if fv.mutant {
 			return v != nil && cand[v]
 		}
 		return v != nil && cand[v] && !reads[v] && !fv.Stuck[v] && !fv.Pinned[v]
@@ -158,7 +152,7 @@ func (fv *FlowVars) Resolve(vars []*flow.Var, body string) flowVarsResult {
 			next[v] = true
 		}
 		for _, st := range fv.stmts {
-			if !cut(st) && !FlowVarsMutantUses {
+			if !cut(st) && !fv.mutantUses {
 				for v := range st.Uses {
 					next[v] = true
 				}
@@ -189,7 +183,7 @@ func (fv *FlowVars) Resolve(vars []*flow.Var, body string) flowVarsResult {
 	}
 	b.WriteString(rest)
 	var err error
-	if !FlowVarsMutant && !FlowVarsMutantUses {
+	if !fv.mutant && !fv.mutantUses {
 		// A variable that is not declared must not be named: the name would bind to a package-level
 		// function or variable of the same name.
 		dead := map[string]bool{}

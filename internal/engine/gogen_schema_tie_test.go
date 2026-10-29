@@ -58,7 +58,10 @@ func schemaTieBuild(t *testing.T, root string) (string, error) {
 	return string(out), err
 }
 
-func TestGeneratedSchemaTie(t *testing.T) { eachMode(t, testGeneratedSchemaTie) }
+func TestGeneratedSchemaTie(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedSchemaTie)
+}
 
 func testGeneratedSchemaTie(t *testing.T) {
 	if testing.Short() {
@@ -109,12 +112,13 @@ func testGeneratedSchemaTie(t *testing.T) {
 
 // The digest does not depend on comments: a grammar that differs only in its comments yields the same tie.
 func TestGeneratedSchemaIgnoresComments(t *testing.T) {
+	t.Parallel()
 	name := func(src string) string {
 		g, err := parseTest(src)
 		if err != nil {
 			t.Fatal(err)
 		}
-		files, err := Generate(g, gen.GenOptions{Start: "main", Package: "p", Module: "gentest/p", Types: true, Runtime: gen.RuntimeImport})
+		files, err := Generate(t, g, gen.GenOptions{Start: "main", Package: "p", Module: "gentest/p", Types: true, Runtime: gen.RuntimeImport})
 		if err != nil {
 			t.Fatal(err)
 		}

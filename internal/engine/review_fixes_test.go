@@ -11,6 +11,7 @@ import (
 // A fold whose accumulator keeps growing in nesting depth does not converge; the callback result
 // must be cast.
 func TestFoldAccumulatorMustConverge(t *testing.T) {
+	t.Parallel()
 	const prelude = "type T = { F [][][][]int }\n"
 	for _, fold := range []string{"foldl", "foldr"} {
 		src := prelude + `rule main T = d:"a"* $$ => T{F: ` + fold + `(list(), $d, (acc, e) => list(acc))}`
@@ -27,6 +28,7 @@ func TestFoldAccumulatorMustConverge(t *testing.T) {
 
 // Compiled bytes depend on the grammar, not on its layout, unless source information is recorded.
 func TestCompiledBytesIgnoreLayoutWithoutSourceInfo(t *testing.T) {
+	t.Parallel()
 	const a = "rule main = x:(n / w) $$ => $x.(Num)\n" + castRules
 	b := "\n\n  " + strings.ReplaceAll(a, " => ", "   =>   ")
 	bytesOf := func(src string, opts ...compile.Options) []byte {
@@ -59,6 +61,7 @@ func TestCompiledBytesIgnoreLayoutWithoutSourceInfo(t *testing.T) {
 
 // A variable declared with the retired name of the top type is told to use _.
 func TestVarOfRetiredTypeName(t *testing.T) {
+	t.Parallel()
 	if got := compileMessage(t, "var d any\nrule main = \"a\""); !strings.Contains(got, "any is not a type; write _") {
 		t.Errorf("got %q", got)
 	}
@@ -67,6 +70,7 @@ func TestVarOfRetiredTypeName(t *testing.T) {
 // The type of a recursive rule nests without end; a value of it that does not fit is a mismatch,
 // not a value of unknown type, so it gets no cast hint. A value of type _ does.
 func TestCastHintOnlyForUnknownTypes(t *testing.T) {
+	t.Parallel()
 	const recursive = "type T = { F [][]int }\nrule n = p / q\nrule p = \"(\" x:n \")\" => list($x)\nrule q = \"a\" => list()\nrule main T = v:n $$ => T{F: $v}"
 	got := compileMessage(t, recursive)
 	if !strings.Contains(got, "cannot use") || strings.Contains(got, "not known") {
@@ -80,6 +84,7 @@ func TestCastHintOnlyForUnknownTypes(t *testing.T) {
 
 // A node[_] is not a list for the list built-ins; it is cast first.
 func TestNodeTopIsCastToSupplyElements(t *testing.T) {
+	t.Parallel()
 	const rules = "rule xs node[_] = \"a\"*\n"
 	for _, fn := range []string{"map($n, (x) => x)", "concat($n, $n)", "filter($n, (x) => true)"} {
 		if got := compileMessage(t, "rule main = n:xs $$ => "+fn+"\n"+rules); got == "" {

@@ -14,6 +14,7 @@ import (
 // cached, so graph selection must preserve repetition-site identities and
 // control admission even when the Document reuses an earlier result.
 func TestWorkDocumentAlternatesDispatchGraphs(t *testing.T) {
+	t.Parallel()
 	for _, source := range []string{
 		`rule main = item+ $$
 
@@ -67,6 +68,7 @@ rule expr = #operators {
 // discards CST construction so input and value work cannot mask a missing
 // dispatch charge on the controlled graph.
 func TestWorkClosureDispatchMetersZeroWidthExpressions(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, "rule main = "+strings.Repeat("^ ", 64)+"$$")
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		opts := ParseOptions{Unit: unit, Recognize: true, WorkLimits: limits.WorkLimits{MaxSteps: 16}}

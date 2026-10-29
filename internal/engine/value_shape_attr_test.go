@@ -39,6 +39,7 @@ var attributeRE = regexp.MustCompile(` ?@(diagnostic\(name="[^"]*"\)|error\("[^"
 // an expression: every backend gives the same result for a grammar as for the grammar with its
 // attributes removed.
 func TestAttributeKeepsValueShape(t *testing.T) {
+	t.Parallel()
 	for _, c := range attributeShapeCases {
 		plainSrc := attributeRE.ReplaceAllString(c.src, "")
 		if plainSrc == c.src {
@@ -70,6 +71,7 @@ func TestAttributeKeepsValueShape(t *testing.T) {
 // TestAttributeAroundStreamRepetition checks that a typed parser with a stream is generated
 // when an attribute sits between the group and the #stream repetition, or inside the element.
 func TestAttributeAroundStreamRepetition(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{
 		`rule main = ("a")* #stream @diagnostic(name="x")`,
 		`rule main = (("a")* @diagnostic(name="x")) #stream`,
@@ -79,7 +81,7 @@ func TestAttributeAroundStreamRepetition(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", src, err)
 		}
-		if _, err := Generate(g, gen.GenOptions{Start: "main", Module: "x/y", Types: true, Stream: true}); err != nil {
+		if _, err := Generate(t, g, gen.GenOptions{Start: "main", Module: "x/y", Types: true, Stream: true}); err != nil {
 			t.Errorf("%s: %v", src, err)
 		}
 	}
@@ -88,6 +90,7 @@ func TestAttributeAroundStreamRepetition(t *testing.T) {
 // TestStreamSeesThroughGroupsAndAttributes checks that #stream placement looks through groups
 // and through attributes other than #recover and #missing, on every backend.
 func TestStreamSeesThroughGroupsAndAttributes(t *testing.T) {
+	t.Parallel()
 	same := [][2]string{
 		{`rule main = (("a")* #stream "b") @diagnostic(name="x")`, `rule main = ("a"* #stream "b")`},
 		{`rule main = (("a")* #stream "b") @diagnostic(name="x")`, `rule main = ("a")* #stream "b"`},

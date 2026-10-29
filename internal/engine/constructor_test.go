@@ -31,6 +31,7 @@ rule main Values = v1:"😀" => Values{Items: []Int{Int{"0"}, Alias{text($v1)}},
 `
 
 func TestTypedNodeConstructors(t *testing.T) {
+	t.Parallel()
 	const source = legacyConstructorGrammar
 	g, err := parseLegacyTest(source)
 	if err != nil {
@@ -117,7 +118,10 @@ rule main = {value := 1} {Int{Text: list(value, "a")[0].(string)} != nil} "x" / 
 	}
 }
 
-func TestGeneratedNodeConstructors(t *testing.T) { eachMode(t, testGeneratedNodeConstructors) }
+func TestGeneratedNodeConstructors(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedNodeConstructors)
+}
 
 func testGeneratedNodeConstructors(t *testing.T) {
 	if testing.Short() {
@@ -135,6 +139,7 @@ func testGeneratedNodeConstructors(t *testing.T) {
 }
 
 func TestGeneratedTypedTSNodeConstructors(t *testing.T) {
+	t.Parallel()
 	runTypedTSFixture(t, constructorGrammar, `import {parseAST, parse, CodePoints, Bytes} from "./parser.ts";
 `+tsTypedAssert+`
 for (const unit of [CodePoints, Bytes]) {
@@ -152,6 +157,7 @@ for (const unit of [CodePoints, Bytes]) {
 }
 
 func TestTypedNodeConstructorErrors(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ action, message string }{
 		{`[]Int{nil}`, "cannot use"},
 		{`[]Int{Other{}}`, "cannot use"},
@@ -204,6 +210,7 @@ rule dyn _ = _ => 1`)
 }
 
 func TestConstructedTerminalEvaluationErrors(t *testing.T) {
+	t.Parallel()
 	for _, source := range []string{
 		`type Int terminal
 var value int
@@ -225,6 +232,7 @@ rule main = {value := 1} {Int{value} != nil} "x" / "x"`,
 
 // The text struct counterpart: a field of the wrong type is a compile error.
 func TestConstructedTextStructEvaluationErrors(t *testing.T) {
+	t.Parallel()
 	for _, source := range []string{
 		`type Int = { Text string }
 var value int
@@ -241,6 +249,7 @@ rule main = {value := 1} {Int{Text: value} != nil} "x" / "x"`,
 }
 
 func TestNodeConstructorCompiledVersions(t *testing.T) {
+	t.Parallel()
 	for _, mode := range valueModes {
 		p := compileLegacy(t, legacyConstructorGrammar)
 		data, err := p.Marshal("main", mode)
@@ -285,6 +294,7 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 }
 
 func TestNodeConstructorShapes(t *testing.T) {
+	t.Parallel()
 	const header = "type Int terminal\ntype Other = {}\nrule main = \"x\" => "
 	for _, action := range []string{`[]any{}`, `Int{"a", "b"}`, `Other{"a"}`} {
 		g, err := parseLegacyTest(header + action)

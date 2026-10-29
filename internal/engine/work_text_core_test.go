@@ -15,6 +15,7 @@ import (
 )
 
 func TestWorkTextFallbackBudgetCore(t *testing.T) {
+	t.Parallel()
 	for _, u := range []PositionUnit{Bytes, CodePoints} {
 		in := core.Input{Unit: u, Bs: make([]byte, 8192), In: make([]rune, 256), Control: core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 1})}
 		end := len(in.Bs)
@@ -28,6 +29,7 @@ func TestWorkTextFallbackBudgetCore(t *testing.T) {
 }
 
 func TestWorkTextSizingOverflow(t *testing.T) {
+	t.Parallel()
 	maxInt := int(^uint(0) >> 1)
 	if got := core.CheckedTextSize(maxInt-3, 3); got != maxInt {
 		t.Fatalf("exact maximum=%d", got)
@@ -40,6 +42,7 @@ func TestWorkTextSizingOverflow(t *testing.T) {
 }
 
 func TestWorkTextBatchPredicateAndTrace(t *testing.T) {
+	t.Parallel()
 	source := strings.Repeat("é😀\xff", 80)
 	for _, traceText := range []bool{false, true} {
 		grammar := `rule main = words:piece {text($words) != ""} $$
@@ -115,6 +118,7 @@ rule piece = .*`
 }
 
 func TestWorkTextStepBudgetAndLazyOffsets(t *testing.T) {
+	t.Parallel()
 	for _, u := range []PositionUnit{Bytes, CodePoints} {
 		in := core.Input{Unit: u, Bs: make([]byte, 4097), In: make([]rune, 129), Control: core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 128})}
 		end := len(in.In)
@@ -140,6 +144,7 @@ func TestWorkTextStepBudgetAndLazyOffsets(t *testing.T) {
 }
 
 func TestWorkTextNodeRoutesParity(t *testing.T) {
+	t.Parallel()
 	input := strings.Repeat("é\x00😀\xff", 40)
 	for _, src := range []string{`rule main = .* #atomic $$`, `type Token = { Text string }
 

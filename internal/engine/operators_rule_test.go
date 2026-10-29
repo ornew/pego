@@ -21,6 +21,7 @@ rule e = #operators {
 }`
 
 func TestOperatorsRuleCST(t *testing.T) {
+	t.Parallel()
 	check(t, arith,
 		ok("1", `(("1")@e)@main`),
 		ok("1+2*3", `((lhs:("1")@e op:"+" rhs:(lhs:("2")@e op:"*" rhs:("3")@e)@e)@e)@main`),
@@ -41,6 +42,7 @@ func TestOperatorsRuleCST(t *testing.T) {
 }
 
 func TestOperatorsRulePositions(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, arith)
 	n, err := prog.Parse("e", " 1 + 2 * 3")
 	if err != nil {
@@ -90,6 +92,7 @@ rule e Expr = #operators {
 }`
 
 func TestOperatorsRuleActions(t *testing.T) {
+	t.Parallel()
 	check(t, ast,
 		ok("1+2-3", `Bin{L: Bin{L: Num{Text: "1"}, Op: "+", R: Num{Text: "2"}}, Op: "-", R: Num{Text: "3"}}`),
 		ok("a ? b : c ? d : e", `Cond{C: "a"@ident, F: Cond{C: "c"@ident, F: "e"@ident, T: "d"@ident}, T: "b"@ident}`),
@@ -106,6 +109,7 @@ func TestOperatorsRuleActions(t *testing.T) {
 }
 
 func TestOperatorsRulePositionsWithActions(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, ast)
 	n, err := prog.Parse("e", "a + b + c")
 	if err != nil {
@@ -120,6 +124,7 @@ func TestOperatorsRulePositionsWithActions(t *testing.T) {
 }
 
 func TestOperatorsRuleJuxtaposition(t *testing.T) {
+	t.Parallel()
 	check(t, `type App = { F Expr; X Expr }
 type Expr ~ App | node[string]
 rule main = x:e $$ => $x
@@ -135,6 +140,7 @@ rule e Expr = #operators {
 }
 
 func TestOperatorsRuleCut(t *testing.T) {
+	t.Parallel()
 	src := `rule main = e "+"?
 rule e = #operators {
     operand [0-9]+ #atomic
@@ -156,6 +162,7 @@ rule e = #operators {
 }
 
 func TestOperatorsRulePrefixFallback(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = e
 rule e = #operators {
     operand "!" / [0-9]+ #atomic
@@ -168,6 +175,7 @@ rule e = #operators {
 }
 
 func TestOperatorsRuleLevelMemo(t *testing.T) {
+	t.Parallel()
 	// The same position yields different results at different binding levels.
 	check(t, `rule main = a:level(e, mul) "+" b:e
 rule e = #operators {
@@ -203,6 +211,7 @@ rule e Expr = #operators {
 }`
 
 func TestOperatorsRuleRestrictedPrefix(t *testing.T) {
+	t.Parallel()
 	check(t, restrictedPrefix,
 		ok("~é", `Prefix{Op: "~", X: Atom{Text: "é"}}`),
 		ok("~~x", `Prefix{Op: "~", X: Prefix{Op: "~", X: Atom{Text: "x"}}}`),
@@ -232,6 +241,7 @@ func TestOperatorsRuleRestrictedPrefix(t *testing.T) {
 }
 
 func TestOperatorsRuleCompileErrors(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, want string }{
 		{`rule e = #operators {
     operand e "x" / "1"
@@ -275,6 +285,7 @@ rule e = #operators {
 // TestOperatorsRuleEmptyPrefixAndPostfix checks that prefix and postfix operators that match the empty string
 // are not applied, instead of being applied forever.
 func TestOperatorsRuleEmptyPrefixAndPostfix(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = e $$
 rule e = #operators {
     operand "x"
@@ -291,6 +302,7 @@ rule e = #operators {
 // loop, as an empty iteration ends a repetition: with an operand and an operator that can both
 // match empty, the loop would never end.
 func TestOperatorsRuleEmptyApplication(t *testing.T) {
+	t.Parallel()
 	check(t, `rule main = e $$
 rule e = #operators {
     operand "a"?

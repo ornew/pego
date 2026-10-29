@@ -13,6 +13,7 @@ import (
 // well as the operands they share with the elements, made a chain of prefix operators take
 // time exponential in its length.
 func TestWalkHiddenCaptures(t *testing.T) {
+	t.Parallel()
 	prog := compileBare(t, `rule main = x
 rule x = #operators {
     operand "x"
@@ -41,6 +42,7 @@ rule x = #operators {
 // node that are not its elements, and visits those that are only as elements: an operator chain
 // takes visits linear in its length.
 func TestWalkElementCaptures(t *testing.T) {
+	t.Parallel()
 	prog := compileBare(t, `rule main = x
 rule x = #operators {
     operand "x"

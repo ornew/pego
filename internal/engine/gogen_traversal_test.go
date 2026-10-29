@@ -20,6 +20,7 @@ import (
 // Exercise the exported APIs against the same hand-built DAG, including nil,
 // nested lists and a shared value reached through different owning parents.
 func TestTreeRuntimeParity(t *testing.T) {
+	t.Parallel()
 	leaf := value.Ptr(value.Data{Kind: value.MatchKind, Terminal: true, Text: "é<&>", Start: 1, End: 3})
 	gLeaf := pegort.NewNode(pegort.KindString, 1, 3, value.D(leaf).Text, nil, "", nil, nil)
 	child := value.Ptr(value.Data{Children: []*value.Node{leaf}, Fields: value.Fields{{Name: "list", Value: []any{leaf, nil, []byte{1, 2}}}}})
@@ -98,7 +99,10 @@ func TestTreeRuntimeParity(t *testing.T) {
 // Compile the emitted single-file parser and exercise the same depth, cycle,
 // encoding and cursor regressions used by the core. This catches imports and
 // typed-name collisions that direct runtime package tests cannot establish.
-func TestGeneratedTreeTraversal(t *testing.T) { eachMode(t, testGeneratedTreeTraversal) }
+func TestGeneratedTreeTraversal(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedTreeTraversal)
+}
 
 func testGeneratedTreeTraversal(t *testing.T) {
 	if testing.Short() {
@@ -160,6 +164,7 @@ func testGeneratedTreeTraversal(t *testing.T) {
 // DuckDB supplies Inspect(any, func(any) bool) for its typed AST. Compile its actual
 // helper beside a fresh generated parser and exercise both traversal surfaces.
 func TestGeneratedDuckDBInspectCompatibility(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedDuckDBInspectCompatibility)
 }
 
@@ -187,6 +192,7 @@ import (
 	"testing"
 )
 func TestBothWalkAPIs(t *testing.T) {
+	t.Parallel()
  node, err := Parse("é")
  if err != nil { t.Fatal(err) }
  generic := 0

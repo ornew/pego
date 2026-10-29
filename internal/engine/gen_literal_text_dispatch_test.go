@@ -16,6 +16,7 @@ import (
 )
 
 func TestLiteralTextPredicateDispatchGeneration(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testLiteralTextPredicateDispatchGeneration)
 }
 
@@ -56,6 +57,7 @@ func testLiteralTextPredicateDispatchGeneration(t *testing.T) {
 }
 
 func TestLiteralTextPredicateDispatchRejectsUnsafeShapes(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testLiteralTextPredicateDispatchRejectsUnsafeShapes)
 }
 
@@ -85,6 +87,7 @@ rule main = w:[a-z]+ #atomic {result := text($w) == "a" || text($w) == "b"} $$`,
 }
 
 func TestLiteralTextPredicateDispatchDisabledParity(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testLiteralTextPredicateDispatchDisabledParity)
 }
 
@@ -102,6 +105,7 @@ func testLiteralTextPredicateDispatchDisabledParity(t *testing.T) {
 }
 
 func TestLiteralTextPredicateDispatchTSDisabledParity(t *testing.T) {
+	t.Parallel()
 	node, err := exec.LookPath("node")
 	if err != nil {
 		t.Skip("node not found")
@@ -223,6 +227,7 @@ process.stdout.write(JSON.stringify(out));
 // TestGeneratedLiteralDispatchWorkload preserves paired generated parsers for
 // separate runtime measurements when PEGO_LITERAL_DISPATCH_DIR is set.
 func TestGeneratedLiteralDispatchWorkload(t *testing.T) {
+	t.Parallel()
 	dir := os.Getenv("PEGO_LITERAL_DISPATCH_DIR")
 	if dir == "" {
 		t.Skip("set PEGO_LITERAL_DISPATCH_DIR to write standalone workload fixtures")
@@ -519,6 +524,7 @@ func loadInputs(b testing.TB, workload string) []fixtureInput {
 }
 
 func TestGeneratedFixtureParity(t *testing.T) {
+	t.Parallel()
 	const workload = "$WORKLOAD"
 	for _, input := range loadInputs(t, "inputs.json") {
 		for unitIndex, unitName := range []string{"codePoints", "bytes"} {

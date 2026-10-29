@@ -25,7 +25,7 @@ func goTypesOf(t *testing.T, src string) (string, error) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := Generate(g, gen.GenOptions{Start: "main", Types: true, Module: "example.com/m", Package: "p"})
+	files, err := Generate(t, g, gen.GenOptions{Start: "main", Types: true, Module: "example.com/m", Package: "p"})
 	if err != nil {
 		return "", err
 	}
@@ -41,6 +41,7 @@ func goTypesOf(t *testing.T, src string) (string, error) {
 // An anonymous join of declared node types is an interface named after its members; the same
 // members in another order, in a field, a list element or the value of a rule, are one interface.
 func TestGeneratedTypedAnonymousJoinInterface(t *testing.T) {
+	t.Parallel()
 	types, err := goTypesOf(t, anonJoinGrammar)
 	if err != nil {
 		t.Fatal(err)
@@ -69,6 +70,7 @@ func TestGeneratedTypedAnonymousJoinInterface(t *testing.T) {
 // A join with the members of an alias is that alias, not an interface of its own, and a join with a
 // member that is no declared node type keeps its Go type.
 func TestGeneratedTypedAnonymousJoinReusesAlias(t *testing.T) {
+	t.Parallel()
 	types, err := goTypesOf(t, `type A = { X string }
 type B = { Y string }
 type AB ~ A | B
@@ -91,6 +93,7 @@ rule a A = t:[a-z] => A{X: text($t)}`)
 
 // The interface name is a generation error if a type of the grammar has it.
 func TestGeneratedTypedAnonymousJoinNameCollision(t *testing.T) {
+	t.Parallel()
 	_, err := goTypesOf(t, `type A = { X string }
 type B = { Y string }
 type AOrB = { Z string }
@@ -114,6 +117,7 @@ rule a A = t:[a-z] => A{X: text($t)}`)
 // The TypeScript type of an anonymous join is the union of its members, in a field, a list
 // element and the start value.
 func TestGeneratedTypedAnonymousJoinTypeScript(t *testing.T) {
+	t.Parallel()
 	g, err := parseTest(anonJoinGrammar)
 	if err != nil {
 		t.Fatal(err)
@@ -143,6 +147,7 @@ func TestGeneratedTypedAnonymousJoinTypeScript(t *testing.T) {
 
 // The typed parsers of anonymous joins compile and convert like the Node route.
 func TestGeneratedTypedAnonymousJoinValues(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTypedAnonymousJoinValues)
 }
 
@@ -161,6 +166,7 @@ func testGeneratedTypedAnonymousJoinValues(t *testing.T) {
 // The name of an interface follows the order of the members where the set first appears in the
 // file, not the names of the types that hold it: renaming a type does not rename the interface.
 func TestGeneratedTypedAnonymousJoinNameFollowsSourceOrder(t *testing.T) {
+	t.Parallel()
 	grammar := func(first, second string) string {
 		return `type A = { X string }
 type B = { Y string }
@@ -189,6 +195,7 @@ rule alt Block = t:[a-z]+ ";" #recover(skip=[^;]+ ";") => Block{Text: text($t)}`
 // One declared node type and error, the value of a rule that recovers, is a join with an interface
 // named after the type and Error, implemented by *Block and *Error, and a union in TypeScript.
 func TestGeneratedTypedAnonymousJoinOneNodeAndError(t *testing.T) {
+	t.Parallel()
 	types, err := goTypesOf(t, anonErrorJoinGrammar)
 	if err != nil {
 		t.Fatal(err)
@@ -238,6 +245,7 @@ rule alt Block = t:[a-z]+ ";" => Block{Text: text($t)}`)
 
 // Two different sets of members that get the same interface name are a generation error.
 func TestGeneratedTypedAnonymousJoinSameNameDifferentSets(t *testing.T) {
+	t.Parallel()
 	_, err := goTypesOf(t, `type A = { X string }
 type B = { Y string }
 type C = { Z string }
@@ -252,6 +260,7 @@ rule a A = t:[a-z] => A{X: text($t)}`)
 
 // The compiled parsers of joins of one node and error convert like the Node route.
 func TestGeneratedTypedAnonymousJoinOneNodeAndErrorValues(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTypedAnonymousJoinOneNodeAndErrorValues)
 }
 

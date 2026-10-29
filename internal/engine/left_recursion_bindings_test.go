@@ -11,6 +11,7 @@ import (
 // TestLeftRecursionBindingErrors checks which bindings in a left-recursion cycle are compile-time
 // errors: those of a variable that the cycle reads, made before a left call into the cycle.
 func TestLeftRecursionBindingErrors(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ name, src, want string }{
 		{"direct", "var k int\nrule main = R $$\nrule R = {k := k + 1} R \"x\" / \"x\"",
 			`3:11: rule R binds variable k before its left-recursive call of R; the left recursion reads k`},
@@ -71,6 +72,7 @@ const (
 // the call being grown, on every backend and in Documents: the parse matches the same rule
 // without the binding instead of nesting until the depth limit.
 func TestLeftRecursionGuardIgnoresVariables(t *testing.T) {
+	t.Parallel()
 	inputs := []string{"x", "xxx", "xxxxxxxxxx", "", "y"}
 	for _, options := range []compile.Options{{}, {DisableMemo: true}} {
 		options.LeftRecursionBindings = true

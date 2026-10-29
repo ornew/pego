@@ -7,6 +7,7 @@ import (
 )
 
 func TestShapeSignatureShowsMovedDiscard(t *testing.T) {
+	t.Parallel()
 	compile := func(src string) *Program {
 		t.Helper()
 		p, err := Compile(mustParse(src), compile.Options{})

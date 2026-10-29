@@ -43,6 +43,7 @@ rule item = [a-z]`, []string{"ab", "a", ""}},
 }
 
 func TestIndexAcrossBackends(t *testing.T) {
+	t.Parallel()
 	for _, fixture := range indexCases() {
 		t.Run(fixture.name, func(t *testing.T) {
 			program := mustCompile(t, fixture.src)
@@ -64,6 +65,7 @@ func TestIndexAcrossBackends(t *testing.T) {
 }
 
 func TestIndexValuesAndErrors(t *testing.T) {
+	t.Parallel()
 	program := mustCompile(t, `rule main = xs:item+ $$ => $xs[1]
 rule item = [a-z]`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -87,6 +89,7 @@ rule item = [a-z]`); !strings.Contains(got, "index must be int, got string") {
 }
 
 func TestIndexTypeErrors(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, want string }{
 		{`rule main = xs:"a"+ => $xs["0"]`, "index must be int, got string"},
 		{`rule main = x:"a" => $x[0]`, "cannot index node[string]"},
@@ -130,6 +133,7 @@ func TestIndexTypeErrors(t *testing.T) {
 // Elements and captures that hold values other than nodes read as those values, not as the
 // carriers that hold them in the tree.
 func TestIndexValueElements(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		src    string
 		inputs map[string]int
@@ -156,6 +160,7 @@ func TestIndexValueElements(t *testing.T) {
 // Indexing is written directly after the indexed value; with a space before it, "[" begins a
 // character class.
 func TestIndexSyntax(t *testing.T) {
+	t.Parallel()
 	g, err := parseTest(`rule main = xs:item+ => list($xs, $xs)[1][0]
 rule item = [a-z]`)
 	if err != nil {
@@ -196,6 +201,7 @@ rule item = "a"`); err == nil || !strings.Contains(err.Error(), "write a space b
 }
 
 func TestIndexCompiledInstructionSet(t *testing.T) {
+	t.Parallel()
 	src := `rule main = xs:item+ $$ => $xs[0]
 rule item = [a-z]`
 	program := mustCompile(t, src)
@@ -222,7 +228,10 @@ rule item = [a-z]`
 	}
 }
 
-func TestIndexGeneratedGoParity(t *testing.T) { eachMode(t, testIndexGeneratedGoParity) }
+func TestIndexGeneratedGoParity(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testIndexGeneratedGoParity)
+}
 
 func testIndexGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
@@ -231,6 +240,7 @@ func testIndexGeneratedGoParity(t *testing.T) {
 }
 
 func TestIndexGeneratedTypeScriptParity(t *testing.T) {
+	t.Parallel()
 	node, err := exec.LookPath("node")
 	if err != nil {
 		t.Skip("node not found")
@@ -241,6 +251,7 @@ func TestIndexGeneratedTypeScriptParity(t *testing.T) {
 // Generated parsers index the same with and without work limits, which select the
 // work-accounting runtime.
 func TestIndexGeneratedGoWork(t *testing.T) {
+	t.Parallel()
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated consumers")

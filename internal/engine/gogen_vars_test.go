@@ -10,6 +10,7 @@ import (
 )
 
 func TestVarLinesExcept(t *testing.T) {
+	t.Parallel()
 	// The first variable of each type places the type, so dead x1 keeps int before any.
 	vs := []gogen.Dvar{{Name: "x1", Typ: "int"}, {Name: "v2", Typ: "any"}, {Name: "x3", Typ: "int"}, {Name: "c", Typ: "*TActCtx"}, {Name: "v4", Typ: "any"}}
 	for _, tc := range []struct {
@@ -37,6 +38,7 @@ func TestVarLinesExcept(t *testing.T) {
 
 // A generated rule method declares the variables of one type together.
 func TestGeneratedMethodsGroupVariables(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedMethodsGroupVariables)
 }
 

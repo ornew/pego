@@ -43,6 +43,7 @@ func wantModeRefused(t *testing.T, err error, have, need CompiledMode) {
 // TestCompiledRecognitionASTFileRejectsBundle checks that a file holds one module: a second module
 // after the first, such as the recognizer's, is data the format does not have.
 func TestCompiledRecognitionASTFileRejectsBundle(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, `rule main = "a" $$`)
 	rec, err := p.Recognizer()
 	if err != nil {
@@ -57,6 +58,7 @@ func TestCompiledRecognitionASTFileRejectsBundle(t *testing.T) {
 }
 
 func TestCompiledRecognitionRoundTrip(t *testing.T) {
+	t.Parallel()
 	for _, c := range genCorpus(t) {
 		t.Run(c.name, func(t *testing.T) {
 			p := mustCompile(t, c.src)
@@ -101,6 +103,7 @@ func TestCompiledRecognitionRoundTrip(t *testing.T) {
 // TestCompiledRecognitionWithoutBundle checks that a file in parse mode refuses recognition with the
 // mode it needs, and is saved again unchanged.
 func TestCompiledRecognitionWithoutBundle(t *testing.T) {
+	t.Parallel()
 	p := moduleProgram(mustCompile(t, `rule main = "a"`).Module())
 	data, err := p.MarshalBinary("main")
 	if err != nil {
@@ -126,6 +129,7 @@ func TestCompiledRecognitionWithoutBundle(t *testing.T) {
 // TestCompiledRecognitionBundleBaseline checks the two modes side by side: the recognize-mode file
 // recognizes and refuses value parses, and the parse-mode file parses and refuses recognition.
 func TestCompiledRecognitionBundleBaseline(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, `rule main = first / second $$
 rule first = "a"
 rule second = "é"`)
@@ -182,6 +186,7 @@ rule second = "é"`)
 }
 
 func TestCompiledRecognitionASTSaveAfterClassMutation(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, `rule main = [a-z]`)
 	p.Module() // Keep the compiled bytecode as it was before the AST change.
 	class := p.Grammar.Rules()[0].Expr.(*grammar.CharClass)
@@ -196,6 +201,7 @@ func TestCompiledRecognitionASTSaveAfterClassMutation(t *testing.T) {
 }
 
 func TestCompiledRecognitionControlsAndConcurrency(t *testing.T) {
+	t.Parallel()
 	src := mustCompile(t, `rule main = [a-z]* $$
 rule other = "é" $$`)
 	p := saveLoad(t, src, "main", CompiledRecognize)
@@ -241,6 +247,7 @@ rule other = "é" $$`)
 }
 
 func TestCompiledRecognitionRepeatedConcurrentSave(t *testing.T) {
+	t.Parallel()
 	const source = `rule main = "a" $$
 rule other = "b" $$`
 	want, err := mustCompile(t, source).Marshal("main", CompiledRecognize)
@@ -274,6 +281,7 @@ rule other = "b" $$`
 }
 
 func TestCompiledRecognitionLoadedModuleMutation(t *testing.T) {
+	t.Parallel()
 	data, err := mustCompile(t, `rule main = "a" $$`).Marshal("main", CompiledRecognize)
 	if err != nil {
 		t.Fatal(err)
@@ -293,6 +301,7 @@ func TestCompiledRecognitionLoadedModuleMutation(t *testing.T) {
 }
 
 func TestCompiledRecognitionCorruptMainAndBundle(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, `rule main = "a" $$`)
 	data, err := p.Marshal("main", CompiledRecognize)
 	if err != nil {
@@ -339,6 +348,7 @@ func TestCompiledRecognitionCorruptMainAndBundle(t *testing.T) {
 // the first rule of that name, the rule itself rather than its value-free twin, and that truncated
 // or extended files are rejected.
 func TestCompiledRecognitionBundleValidation(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, `rule main = "a"
 rule other = "b"`)
 	valid, err := p.Marshal("main", CompiledRecognize)

@@ -50,16 +50,43 @@ func setFixtureForm(t testing.TB, form string) {
 // fixtureForm returns the form of the fixtures of t: the one that t or the nearest test above it
 // set, else the one of the environment, else "".
 func fixtureForm(t testing.TB) string {
+	if form, ok := byTest(&fixtureForms, t); ok {
+		return form.(string)
+	}
+	return envForm
+}
+
+// byTest returns the value that m holds for t or, failing that, for the nearest test above it.
+func byTest(m *sync.Map, t testing.TB) (any, bool) {
 	for name := t.Name(); ; {
-		if form, ok := fixtureForms.Load(name); ok {
-			return form.(string)
+		if v, ok := m.Load(name); ok {
+			return v, true
 		}
 		i := strings.LastIndexByte(name, '/')
 		if i < 0 {
-			return envForm
+			return nil, false
 		}
 		name = name[:i]
 	}
+}
+
+// genHooks maps the name of a test to the hooks of the generator that it set.
+var genHooks sync.Map
+
+// setGenHooks makes the Go parsers that t and its subtests generate use h, so that tests that
+// observe the generator run in parallel.
+func setGenHooks(t testing.TB, h *gogen.Hooks) {
+	name := t.Name()
+	genHooks.Store(name, h)
+	t.Cleanup(func() { genHooks.Delete(name) })
+}
+
+// testGenHooks returns the hooks of the generator for t, or nil.
+func testGenHooks(t testing.TB) *gogen.Hooks {
+	if h, ok := byTest(&genHooks, t); ok {
+		return h.(*gogen.Hooks)
+	}
+	return nil
 }
 
 // fixtureWorkControls reports whether the generated fixtures of t have work controls. A test that
@@ -252,7 +279,7 @@ func generatePackageIn(t testing.TB, dir, root, pkg string, g *grammar.Grammar, 
 	opts.WorkControls = fixtureWorkControls(t)
 	opts.Package, opts.Module = pkg, root+"/"+pkg
 	opts.KeepComments = true
-	files, err := Generate(g, opts)
+	files, err := Generate(t, g, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -281,7 +308,7 @@ func generateCode(t testing.TB, g *grammar.Grammar, opts gen.GenOptions) ([]byte
 	if opts.Module == "" && opts.Types {
 		opts.Module = "example.com/generated"
 	}
-	files, err := Generate(g, opts)
+	files, err := Generate(t, g, opts)
 	if err != nil {
 		return nil, err
 	}

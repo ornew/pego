@@ -32,6 +32,7 @@ var lrBindingInputs = []string{"x", "xxx", "xxxxxxxxxx", "", "y"}
 // for generated Go parsers: Parse, Recognize and the typed ParseAST of a left-recursive rule
 // re-entered with other variable values match the engine instead of nesting until the limit.
 func TestGeneratedLeftRecursionGuardIgnoresVariables(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedLeftRecursionGuardIgnoresVariables)
 }
 
@@ -149,6 +150,7 @@ func typedN(n *value.Node) string {
 // TestGeneratedTSLeftRecursionGuardIgnoresVariables is TestLeftRecursionGuardIgnoresVariables
 // for generated TypeScript parsers.
 func TestGeneratedTSLeftRecursionGuardIgnoresVariables(t *testing.T) {
+	t.Parallel()
 	var script strings.Builder
 	script.WriteString("import { parse, recognize } from \"./parser.ts\";\n")
 	var want strings.Builder

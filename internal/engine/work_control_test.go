@@ -30,6 +30,7 @@ func catchFatal(t *testing.T, f func()) error {
 }
 
 func TestNewWorkControlDisabled(t *testing.T) {
+	t.Parallel()
 	var absent *core.WorkControl
 	absent.Check()
 	absent.Charge(1, 1)
@@ -51,6 +52,7 @@ func TestNewWorkControlDisabled(t *testing.T) {
 }
 
 func TestWorkControlExactLimitsAndOverflow(t *testing.T) {
+	t.Parallel()
 	c := core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 5, MaxSteps: 3})
 	c.Charge(5, 3)
 	if c.InputUsed != 5 || c.StepsUsed != 3 {
@@ -78,6 +80,7 @@ func TestWorkControlExactLimitsAndOverflow(t *testing.T) {
 }
 
 func TestWorkControlAtomicReservationAndPriority(t *testing.T) {
+	t.Parallel()
 	c := core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 4, MaxSteps: 2})
 	c.Charge(2, 1)
 	var got *limits.WorkLimitError
@@ -93,6 +96,7 @@ func TestWorkControlAtomicReservationAndPriority(t *testing.T) {
 }
 
 func TestWorkControlUnlimitedCountersSaturate(t *testing.T) {
+	t.Parallel()
 	c := core.NewWorkControl(newPollingContext(0), limits.WorkLimits{})
 	c.Charge(math.MaxUint64-2, math.MaxUint64-3)
 	c.Charge(10, 11)
@@ -105,6 +109,7 @@ func TestWorkControlUnlimitedCountersSaturate(t *testing.T) {
 }
 
 func TestWorkControlCancellationAndCause(t *testing.T) {
+	t.Parallel()
 	cause := errors.New("caller cause")
 	ctx, cancel := context.WithCancelCause(context.Background())
 	cancel(cause)
@@ -149,6 +154,7 @@ func (c *pollingContext) Err() error {
 }
 
 func TestWorkControlPollIntervals(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name string
 		work func(*core.WorkControl, uint64)
@@ -175,6 +181,7 @@ func TestWorkControlPollIntervals(t *testing.T) {
 }
 
 func TestWorkControlExplicitCheck(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	c := core.NewWorkControl(ctx, limits.WorkLimits{})
 	c.Charge(1, 1)

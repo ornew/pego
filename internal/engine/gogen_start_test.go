@@ -36,7 +36,10 @@ func startEntryWant(t *testing.T) string {
 }
 
 // Generated Go parsers enter only start rules, by name or by default, with the interpreter's errors.
-func TestGeneratedGoStartRules(t *testing.T) { eachMode(t, testGeneratedGoStartRules) }
+func TestGeneratedGoStartRules(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedGoStartRules)
+}
 
 func testGeneratedGoStartRules(t *testing.T) {
 	if testing.Short() {
@@ -180,6 +183,7 @@ func testGeneratedGoStartRules(t *testing.T) {
 
 // Generated TypeScript parsers enter only start rules, with the interpreter's errors.
 func TestGeneratedTSStartRules(t *testing.T) {
+	t.Parallel()
 	want := startEntryWant(t)
 	g, err := syntax.Parse(startRestrictionSource)
 	if err != nil {

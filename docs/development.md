@@ -137,6 +137,8 @@ Each test records its form by name and its subtests inherit it, so tests of eith
 
 `PEGO_TEST_ORDINARY` restricts a run to one form: `0` runs everything that builds fixtures with work controls, and `1` runs it without, skipping the tests that pass a control. Use it to reproduce a failure of one form; it does not widen coverage.
 
+The top-level tests of `internal/engine` call `t.Parallel()`. A test stays sequential when it measures heap or time in the test process, changes a process-wide setting such as `debug.SetMaxStack` or `core.MinRecorded`, or shares mutable fixtures with other tests (the generators cached by `coreGenerations`); Go runs every sequential test before it releases the parallel ones, so these run alone. A test that observes or changes the Go generator passes `gogen.Hooks` to the generation, directly or for itself and its subtests with `setGenHooks`, instead of setting package state.
+
 Engine tests write grammars in PEGO source and compare results using the S-expression form of nodes (`Node.String`).
 The `check` helper also verifies that the result is the same with memoization disabled, with every backend (closure, recursive bytecode, iterative bytecode), with both position units, in recognition-only mode, and with tracing on.
 

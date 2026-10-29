@@ -35,6 +35,7 @@ func wideRepetitionCases() []genCase {
 }
 
 func TestWideRepetitionModuleValidation(t *testing.T) {
+	t.Parallel()
 	if strconv.IntSize < 64 {
 		t.Skip("bounds exceed a 32-bit implementation's source integer range")
 	}
@@ -90,6 +91,7 @@ func TestWideRepetitionModuleValidation(t *testing.T) {
 }
 
 func TestWideRepetitionInstructionSet(t *testing.T) {
+	t.Parallel()
 	ordinary := mustCompile(t, `rule main = "a"* $$`)
 	data, err := ordinary.MarshalBinary("main")
 	if err != nil {
@@ -121,6 +123,7 @@ func TestWideRepetitionInstructionSet(t *testing.T) {
 }
 
 func TestWideRepetitionBounds(t *testing.T) {
+	t.Parallel()
 	if strconv.IntSize < 64 {
 		t.Skip("bounds exceed a 32-bit implementation's source integer range")
 	}
@@ -164,6 +167,7 @@ func TestWideRepetitionBounds(t *testing.T) {
 }
 
 func TestWideRepetitionDocumentsAndStreams(t *testing.T) {
+	t.Parallel()
 	if strconv.IntSize < 64 {
 		t.Skip("bounds exceed a 32-bit implementation's source integer range")
 	}

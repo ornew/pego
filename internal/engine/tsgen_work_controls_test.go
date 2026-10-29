@@ -8,6 +8,7 @@ import (
 )
 
 func TestGeneratedTSWorkControlFoundation(t *testing.T) {
+	t.Parallel()
 	src := `type Word = { Text string }
 
 type Bag = {
@@ -108,6 +109,7 @@ for (const unit of [p.CodePoints,p.Bytes]) {
 `
 
 func TestGeneratedTSWorkControlErrorLibraries(t *testing.T) {
+	t.Parallel()
 	src := `type Word = { Text string }
 
 rule main Word = t:("a") #atomic => Word{Text: text($t)}`
@@ -138,6 +140,7 @@ check(canceled.value===null&&canceled.error instanceof ParseInterruptionError&&c
 `
 
 func TestGeneratedTSWorkControlMalformedText(t *testing.T) {
+	t.Parallel()
 	src := `type Text = { Text string }
 
 rule main Text = t:(.*) #atomic => Text{Text: text($t)}`
@@ -160,6 +163,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 }
 
 func TestGeneratedTSWorkControlMatcherBudgets(t *testing.T) {
+	t.Parallel()
 	src := `type Text = { Text string }
 
 rule main Text = t:(reread #recover(skip=.+)) #atomic => Text{Text: text($t)}
@@ -211,6 +215,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 }
 
 func TestGeneratedTSWorkControlWideClassSteps(t *testing.T) {
+	t.Parallel()
 	// A wide class is tested by comparisons that cost no work of their own: a character is charged
 	// once, by the peek that reads it, and each repetition by its step. The budgets that parse and
 	// recognition need for one character and for a run of them are pinned, so that a long input of
@@ -259,6 +264,7 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 }
 
 func TestGeneratedTSWorkControlMemoKeys(t *testing.T) {
+	t.Parallel()
 	t.Run("rollback", func(t *testing.T) {
 		src := `type Word = { Text string }
 

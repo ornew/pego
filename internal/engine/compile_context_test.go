@@ -43,6 +43,7 @@ func compileTestGrammar(t *testing.T) *grammar.Grammar {
 }
 
 func TestCompileContextCancellation(t *testing.T) {
+	t.Parallel()
 	g := compileTestGrammar(t)
 	before, err := json.Marshal(g)
 	if err != nil {
@@ -65,6 +66,7 @@ func TestCompileContextCancellation(t *testing.T) {
 }
 
 func TestCompileContextCancelsDuringGrammarValidation(t *testing.T) {
+	t.Parallel()
 	items := make([]grammar.Expr, 1024)
 	for i := range items {
 		items[i] = &grammar.Literal{Value: "a"}
@@ -89,6 +91,7 @@ func TestCompileContextCancelsDuringGrammarValidation(t *testing.T) {
 }
 
 func TestCompileContextPhaseCancellation(t *testing.T) {
+	t.Parallel()
 	g := compileTestGrammar(t)
 	p, err := Compile(g, compile.Options{})
 	if err != nil {
@@ -160,6 +163,7 @@ func TestCompileContextPhaseCancellation(t *testing.T) {
 }
 
 func TestCompileContextOrdinaryParity(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{
 		`type P = {}; rule main = "a" => P{}`,
 		`rule main = #operators { operand [0-9]; level sum { infix left "+" } }`,

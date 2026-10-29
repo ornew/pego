@@ -13,6 +13,7 @@ import (
 // invalid bytes were separate characters, so results that examined them must
 // not be reused.
 func TestGeneratedDocumentCompletesUTF8Prefix(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedDocumentCompletesUTF8Prefix)
 }
 
@@ -45,6 +46,7 @@ var utf8Cases = []struct{ text string; edits []documentEdit }{
 	}{
 		{"node", nodeGrammar, "Parse", `
 func TestCompletedPrefix(t *testing.T) {
+	t.Parallel()
  for _, unit := range []PositionUnit{CodePoints, Bytes} {
   for _, c := range utf8Cases {
    d, err := NewDocument(c.text, WithUnit(unit))
@@ -73,6 +75,7 @@ func TestCompletedPrefix(t *testing.T) {
 `, gen.GenOptions{Package: "fixture", Start: "main", Document: true}},
 		{"typed", typedGrammar, "ParseAST", `
 func TestCompletedPrefix(t *testing.T) {
+	t.Parallel()
  for _, unit := range []PositionUnit{CodePoints, Bytes} {
   for _, c := range utf8Cases {
    d, err := NewDocument(c.text, WithUnit(unit))

@@ -43,6 +43,7 @@ func hasRecovery(e grammar.Expr) (found bool) {
 // Node and recognizer tables is printed from Flow IR (otherwise the generation fails), and the rules with a recovery (alone, with a cut and
 // with a leader) take the Flow route.
 func TestFlowRecoveryPrintsFromFlow(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("generates the corpus")
 	}
@@ -50,7 +51,9 @@ func TestFlowRecoveryPrintsFromFlow(t *testing.T) {
 	for _, controls := range []bool{false, true} {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
-			gogen.FramedRouteHook = func(table string, r *compile.Rule) {
+			gh := &gogen.Hooks{}
+			setGenHooks(t, gh)
+			gh.FramedRoute = func(table string, r *compile.Rule) {
 				if !hasRecovery(r.BodyExpr()) {
 					return
 				}
@@ -62,15 +65,14 @@ func TestFlowRecoveryPrintsFromFlow(t *testing.T) {
 					taken[table+" recovery with a leader"]++
 				}
 			}
-			gogen.OperatorsRouteHook = func(table string, r *compile.Rule) { taken[table+" operators line"]++ }
-			defer func() { gogen.FramedRouteHook, gogen.OperatorsRouteHook = nil, nil }()
+			gh.OperatorsRoute = func(table string, r *compile.Rule) { taken[table+" operators line"]++ }
 			for _, c := range cases {
 				g, err := parseTest(c.src)
 				if err != nil {
 					continue
 				}
 				for _, stream := range []bool{false, true} {
-					if _, err := Generate(g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, Stream: stream, WorkControls: controls}); err != nil && (!stream || strings.Contains(err.Error(), "Flow IR does not print")) {
+					if _, err := Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, Stream: stream, WorkControls: controls}); err != nil && (!stream || strings.Contains(err.Error(), "Flow IR does not print")) {
 						t.Fatalf("%s: %v", c.name, err)
 					}
 				}

@@ -14,6 +14,7 @@ func newChangeTestDocument(t *testing.T, prog *Program, text string, o ParseOpti
 }
 
 func TestDocumentChangesOverflowRequiresFullRefresh(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = .* $$`)
 	d := newChangeTestDocument(t, prog, "a", ParseOptions{}, 1)
 	base := d.Version()
@@ -41,6 +42,7 @@ func TestDocumentChangesOverflowRequiresFullRefresh(t *testing.T) {
 }
 
 func TestDocumentChangesByteBoundaryRejectionAndNormalizedText(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = .* $$`)
 	d := newChangeTestDocument(t, prog, "é", ParseOptions{Unit: Bytes}, 8)
 	v := d.Version()

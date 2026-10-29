@@ -54,7 +54,10 @@ rule expr Expr = #operators {
 	return cases
 }
 
-func TestGeneratedTypedFramedCuts(t *testing.T) { eachMode(t, testGeneratedTypedFramedCuts) }
+func TestGeneratedTypedFramedCuts(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedTypedFramedCuts)
+}
 
 func testGeneratedTypedFramedCuts(t *testing.T) {
 	if testing.Short() {

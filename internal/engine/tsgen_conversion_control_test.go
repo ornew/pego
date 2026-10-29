@@ -7,6 +7,7 @@ import (
 )
 
 func TestGeneratedTSConversionControlCheckpoints(t *testing.T) {
+	t.Parallel()
 	src := `type Word = { Text string }
  type Bag = { Items []Word }
  rule main Bag = x:word* #cut => Bag{Items: $x.Value}

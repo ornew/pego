@@ -13,6 +13,7 @@ import (
 
 // Export standalone controls and raw measurements outside the repository.
 func TestExportGeneratedTSTraceBenchmarks(t *testing.T) {
+	t.Parallel()
 	dir := os.Getenv("PEGO_TS_TRACE_BENCH_DIR")
 	if dir == "" {
 		t.Skip("set PEGO_TS_TRACE_BENCH_DIR to export TypeScript trace controls")

@@ -14,7 +14,10 @@ import (
 	"github.com/ornew/pego/internal/gen"
 )
 
-func TestGeneratedMaxDepthValidation(t *testing.T) { eachMode(t, testGeneratedMaxDepthValidation) }
+func TestGeneratedMaxDepthValidation(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedMaxDepthValidation)
+}
 
 func testGeneratedMaxDepthValidation(t *testing.T) {
 	g, err := parseTest(`rule main = "x"`)
@@ -69,7 +72,10 @@ func testGeneratedMaxDepthValidation(t *testing.T) {
 
 // Differentially exercise every rule-call owner, including first-character
 // dispatch and typed direct/conversion routes, with small predictable ceilings.
-func TestGeneratedDepthOptions(t *testing.T) { eachMode(t, testGeneratedDepthOptions) }
+func TestGeneratedDepthOptions(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedDepthOptions)
+}
 
 func testGeneratedDepthOptions(t *testing.T) {
 	if testing.Short() {
@@ -142,6 +148,7 @@ rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: te
 			harness := `package ` + pkg + `
 import("fmt";"strings";"sync";"testing";pegort "github.com/ornew/pego/runtime")
 func TestLimitsAndReuse(t *testing.T) {
+	t.Parallel()
  rows:=[]struct{name,input string;unit PositionUnit;limit int;want,recWant string}{` + rows.String() + `}
  for repeat:=0;repeat<3;repeat++ {for _,c:=range rows {
   opts:=[]ParseOption{WithUnit(c.unit),WithMaxDepth(c.limit)}
@@ -176,6 +183,7 @@ func TestLimitsAndReuse(t *testing.T) {
  }}})};wg.Wait()
 }
 func TestConfiguration(t *testing.T) {
+	t.Parallel()
  bad:=WithMaxDepth(-7)
  for _,parse:=range []func(string,...ParseOption)(*Node,error){Parse,func(s string,o ...ParseOption)(*Node,error){return ParseRule("missing",s,o...)}} {
   n,err:=parse("?",bad);if n!=nil || err==nil || !strings.Contains(err.Error(),"max depth must be non-negative: -7") {t.Fatalf("config precedence: %v",err)}
@@ -212,6 +220,7 @@ func TestConfiguration(t *testing.T) {
 }
 
 func TestGeneratedDepthNameCollisions(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("runs generated code")
 	}
@@ -232,11 +241,11 @@ rule main WithUnit = t:("é") #atomic => ParseOption{Text: text($t)}`
 			name = "convert"
 		}
 		opts := gen.GenOptions{Package: name, Module: "collisions/" + name, Runtime: gen.RuntimeImport, Start: "main", Types: true, ConvertTypes: conv}
-		files, err := Generate(g, opts)
+		files, err := Generate(t, g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
-		again, err := Generate(g, opts)
+		again, err := Generate(t, g, opts)
 		if err != nil || !slices.EqualFunc(files, again, func(a, b gen.GeneratedFile) bool { return a.Path == b.Path && bytes.Equal(a.Content, b.Content) }) {
 			t.Fatal("unstable generation")
 		}

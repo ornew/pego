@@ -12,6 +12,7 @@ import (
 // rejects the trace and profile options on every entry point instead of returning partial data,
 // and that one generated with it accepts them.
 func TestGeneratedTraceOptionsNeedObservability(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}
@@ -33,7 +34,7 @@ func TestGeneratedTraceOptionsNeedObservability(t *testing.T) {
 	write("go.mod", []byte(testGoMod("traceopts")))
 	for _, observe := range []bool{false, true} {
 		pkg := map[bool]string{false: "plain", true: "observed"}[observe]
-		files, err := Generate(g, gen.GenOptions{Module: "traceopts/" + pkg, Package: pkg, Start: "main", Runtime: gen.RuntimeImport, Types: true, Document: true, Recognize: true, Observability: observe})
+		files, err := Generate(t, g, gen.GenOptions{Module: "traceopts/" + pkg, Package: pkg, Start: "main", Runtime: gen.RuntimeImport, Types: true, Document: true, Recognize: true, Observability: observe})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -54,6 +55,7 @@ import (
 )
 
 func TestTraceOptions(t *testing.T) {
+	t.Parallel()
 	observed := `+want+`
 	var events int
 	var profile pegort.Profile

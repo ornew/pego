@@ -54,6 +54,7 @@ func BenchmarkStreamFrameScratch(b *testing.B) {
 }
 
 func TestStreamFrameScratchCompletionPaths(t *testing.T) {
+	t.Parallel()
 	stop := errors.New("stop after retained element")
 	for _, tc := range []struct {
 		name, src, input string
@@ -103,6 +104,7 @@ rule item = x:"x" #atomic / e:"" #atomic`, strings.Repeat("x", 300), 301, false,
 // Retained results must remain independent of capture frames reused by later
 // elements, including elements that exhaust more than one frame chunk.
 func TestStreamFrameScratchRetainedResults(t *testing.T) {
+	t.Parallel()
 	t.Run("CST", func(t *testing.T) {
 		checkStreamFrameScratchRetainedResults(t, frameScratchGrammar)
 	})
@@ -174,6 +176,7 @@ func checkStreamFrameScratchRetainedResults(t *testing.T, src string) {
 }
 
 func TestStreamFrameScratchClearsDeadFrames(t *testing.T) {
+	t.Parallel()
 	if !core.StreamFrameScratch {
 		t.Skip("reference build does not reuse capture frames")
 	}

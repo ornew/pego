@@ -52,7 +52,10 @@ rule expr Doc = #operators {
 `, []string{"é", "z", "", "é?"}},
 }
 
-func TestGeneratedTypedFrameLayouts(t *testing.T) { eachMode(t, testGeneratedTypedFrameLayouts) }
+func TestGeneratedTypedFrameLayouts(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedTypedFrameLayouts)
+}
 
 func testGeneratedTypedFrameLayouts(t *testing.T) {
 	if testing.Short() {

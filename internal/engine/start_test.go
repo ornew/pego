@@ -23,6 +23,7 @@ func compileStarts(t *testing.T, src string) (*Program, error) {
 }
 
 func TestStartRules(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		src    string
 		starts []string
@@ -48,6 +49,7 @@ func TestStartRules(t *testing.T) {
 }
 
 func TestStartRuleErrors(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, want string }{
 		{"rule a = b\nrule b = \"x\"\n", "1:1: the grammar has no start rule: mark each rule where parsing may begin with @start"},
 		{"package p\n", "the grammar has no start rule: mark each rule where parsing may begin with @start"},
@@ -75,7 +77,10 @@ func TestStartRuleErrors(t *testing.T) {
 // A hidden rule cannot be a start rule: @start on it is an error at the
 // attribute, whether the program is compiled or generated, and the rules
 // behind inline actions never become start rules.
-func TestStartHiddenRule(t *testing.T) { eachMode(t, testStartHiddenRule) }
+func TestStartHiddenRule(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testStartHiddenRule)
+}
 
 func testStartHiddenRule(t *testing.T) {
 	const hidden = "rule _x is hidden: a hidden rule cannot be a start rule"
@@ -245,6 +250,7 @@ func checkStartRestriction(t *testing.T, prog *Program, o ParseOptions) {
 }
 
 func TestStartRestriction(t *testing.T) {
+	t.Parallel()
 	for _, recognition := range []bool{false, true} {
 		g, err := syntax.Parse(startRestrictionSource)
 		if err != nil {
@@ -265,6 +271,7 @@ func TestStartRestriction(t *testing.T) {
 }
 
 func TestStartRoundTrip(t *testing.T) {
+	t.Parallel()
 	for _, recognition := range []bool{false, true} {
 		for _, mode := range allModes {
 			g, err := syntax.Parse(startRestrictionSource)
@@ -317,6 +324,7 @@ func TestStartRoundTrip(t *testing.T) {
 }
 
 func TestStartModuleValidation(t *testing.T) {
+	t.Parallel()
 	fresh := func() *bytecode.Module {
 		prog, err := compileStarts(t, startRestrictionSource)
 		if err != nil {

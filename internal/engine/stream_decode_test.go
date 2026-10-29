@@ -25,6 +25,7 @@ type failOnRead struct {
 func (r *failOnRead) Read([]byte) (int, error) { r.calls++; return 0, r.err }
 
 func TestByteDecodeDoesNotReadPastCompleteRune(t *testing.T) {
+	t.Parallel()
 	for _, s := range []string{"a", "é", "漢", "😀", string([]byte{0xff}), string([]byte{0xc3, '('})} {
 		t.Run(fmt.Sprintf("%x", s), func(t *testing.T) {
 			stop := errors.New("unrelated read")
@@ -54,6 +55,7 @@ func TestByteDecodeDoesNotReadPastCompleteRune(t *testing.T) {
 }
 
 func TestOpenPipeStreamEmitsCompleteItem(t *testing.T) {
+	t.Parallel()
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, s := range []string{"a", "é", "漢", "😀", string([]byte{0xff})} {
@@ -118,6 +120,7 @@ func TestOpenPipeStreamEmitsCompleteItem(t *testing.T) {
 }
 
 func TestByteDecodeIncompletePrefixAtEOF(t *testing.T) {
+	t.Parallel()
 	for _, s := range []string{"", "\xc3", "\xe6\xbc", "\xf0\x9f\x98"} {
 		t.Run(fmt.Sprintf("%x", s), func(t *testing.T) {
 			in := core.Input{Unit: Bytes, Reader: bufio.NewReader(strings.NewReader(s))}
@@ -134,6 +137,7 @@ func TestByteDecodeIncompletePrefixAtEOF(t *testing.T) {
 }
 
 func TestStreamIncompletePrefixPropagatesReaderError(t *testing.T) {
+	t.Parallel()
 	p := mustCompile(t, "rule main = item* #stream $$\nrule item = . \"\\n\"")
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {

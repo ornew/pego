@@ -37,7 +37,10 @@ rule main Alias = t:("a") #atomic => Word{Text: text($t)}`
 
 // Compile a separate consumer: compiling the generated package alone does not
 // detect missing exports, and aliases must preserve assignment compatibility.
-func TestGeneratedAliasExports(t *testing.T) { eachMode(t, testGeneratedAliasExports) }
+func TestGeneratedAliasExports(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedAliasExports)
+}
 
 func testGeneratedAliasExports(t *testing.T) {
 	if testing.Short() {
@@ -65,11 +68,11 @@ func testGeneratedAliasExports(t *testing.T) {
 	for i, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("g%d", i)
 		opts := gen.GenOptions{Package: pkg, Module: "aliasexports/" + pkg, Runtime: gen.RuntimeImport, Start: "main", Types: true, ConvertTypes: convert}
-		files, err := Generate(g, opts)
+		files, err := Generate(t, g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
-		again, err := Generate(g, opts)
+		again, err := Generate(t, g, opts)
 		if err != nil || !slices.EqualFunc(files, again, func(a, b gen.GeneratedFile) bool { return a.Path == b.Path && bytes.Equal(a.Content, b.Content) }) {
 			t.Fatalf("generation is not deterministic: %v", err)
 		}

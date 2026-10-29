@@ -34,6 +34,7 @@ func hasCaptureOfRepeat(e grammar.Expr) (capture, repeated bool) {
 // ten grammars, in the ordinary and the work-controlled forms, every rule of the Node and recognizer tables is printed from Flow IR (a rule
 // it does not print fails the generation), and the rules with captures (and with captured repetitions) take the Flow route.
 func TestFlowRecognizerPrintsCapturesFromFlow(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("generates the corpus")
 	}
@@ -41,12 +42,14 @@ func TestFlowRecognizerPrintsCapturesFromFlow(t *testing.T) {
 	for _, controls := range []bool{false, true} {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
-			gogen.LeanRouteHook = func(table string, r *compile.Rule) {
+			gh := &gogen.Hooks{}
+			setGenHooks(t, gh)
+			gh.LeanRoute = func(table string, r *compile.Rule) {
 				if c, _ := hasCaptureOfRepeat(r.BodyExpr()); c {
 					taken[table+" lean with captures"]++
 				}
 			}
-			gogen.FramedRouteHook = func(table string, r *compile.Rule) {
+			gh.FramedRoute = func(table string, r *compile.Rule) {
 				c, rep := hasCaptureOfRepeat(r.BodyExpr())
 				if c {
 					taken[table+" framed with captures"]++
@@ -55,13 +58,12 @@ func TestFlowRecognizerPrintsCapturesFromFlow(t *testing.T) {
 					taken[table+" framed with a captured repetition"]++
 				}
 			}
-			defer func() { gogen.LeanRouteHook, gogen.FramedRouteHook = nil, nil }()
 			for _, c := range cases {
 				g, err := parseTest(c.src)
 				if err != nil {
 					continue
 				}
-				if _, err := Generate(g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
+				if _, err := Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
 					t.Fatalf("%s: %v", c.name, err)
 				}
 			}

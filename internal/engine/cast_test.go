@@ -34,6 +34,7 @@ func castCases() []genCase {
 }
 
 func TestCastAcrossBackends(t *testing.T) {
+	t.Parallel()
 	for _, fixture := range castCases() {
 		t.Run(fixture.name, func(t *testing.T) {
 			program := mustCompile(t, fixture.src)
@@ -55,6 +56,7 @@ func TestCastAcrossBackends(t *testing.T) {
 }
 
 func TestCastValues(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, input, want string }{
 		{"rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, "12", `"type":"Num","start":0,"end":2,"fields":{"Text":"12"}`},
 		{"rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, "ab", "cannot cast node[[]_] to Num"},
@@ -74,6 +76,7 @@ func TestCastValues(t *testing.T) {
 }
 
 func TestCastErrors(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ src, want string }{
 		{`rule main = x:"a" => $x.(int)`, "cannot cast node[string] to int"},
 		{`rule main = x:"a" => $x.(Nope)`, "Nope"},
@@ -100,6 +103,7 @@ func TestCastErrors(t *testing.T) {
 }
 
 func TestCastSyntax(t *testing.T) {
+	t.Parallel()
 	g, err := parseTest("type Foo = { A node[string] }\ntype Word = { Text string }\nrule main = x:\"a\" => $x.( []Foo | *Word ).Start\nrule one = \"a\" => (1).(int)")
 	if err != nil {
 		t.Fatal(err)
@@ -155,7 +159,10 @@ func TestCastSyntax(t *testing.T) {
 	}
 }
 
-func TestCastGeneratedGoParity(t *testing.T) { eachMode(t, testCastGeneratedGoParity) }
+func TestCastGeneratedGoParity(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testCastGeneratedGoParity)
+}
 
 func testCastGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
@@ -165,6 +172,7 @@ func testCastGeneratedGoParity(t *testing.T) {
 }
 
 func TestCastGeneratedTypeScriptParity(t *testing.T) {
+	t.Parallel()
 	node, err := exec.LookPath("node")
 	if err != nil {
 		t.Skip("node not found")

@@ -196,6 +196,7 @@ func firstRunes(s string, n int) string {
 // the recognizers of the corpus and the checked-in grammars, that the engine matches it only where its
 // guard accepts the first character, and that a mutant that narrows the guards fails the check.
 func TestCoreGuardsAreSound(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("probes the corpus with the engine")
 	}

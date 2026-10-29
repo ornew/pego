@@ -13,6 +13,7 @@ import (
 // backends, recognition, and with invalid UTF-8, also from concurrent goroutines. The grammar
 // calls key twice at a position, so that the memo is used.
 func TestScratchReuse(t *testing.T) {
+	t.Parallel()
 	const src = `rule main = (line / blank)* $$
 rule line = ^ (k:key " = " v:val / k:key " : " v:val) "\n"
 rule key = [a-z_]+ #atomic

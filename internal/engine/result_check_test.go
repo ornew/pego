@@ -140,6 +140,7 @@ func resultCheckTypesOf(fields map[string]string) []string {
 // values that fit, on every backend, in every program form, and
 // that the values it accepts give the same results as when the rules are declared _.
 func TestRuleResultChecks(t *testing.T) {
+	t.Parallel()
 	// The terminal model is the same grammar in the retired terminal type syntax, which
 	// syntax.ParseLegacy reads as the text structs it means: it accepts the same values.
 	for _, model := range []struct {
@@ -290,7 +291,10 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 // not statically known to fit the rule's declared type is rejected when the grammar is compiled,
 // whether or not the rule has an action, and a cast is the only check, which compiled files and
 // generated parsers keep.
-func TestRuleResultChecksAreSelective(t *testing.T) { eachMode(t, testRuleResultChecksAreSelective) }
+func TestRuleResultChecksAreSelective(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testRuleResultChecksAreSelective)
+}
 
 func testRuleResultChecksAreSelective(t *testing.T) {
 	const decls = `type Int = { Text string }
@@ -408,6 +412,7 @@ var operatorResultCheckInputs = []string{"om^", "ot^", "ol^", "oz^", "!mo", "!lo
 // by the operator application rather than by the rule, and the checks of rules that compiling
 // copies, in every program form.
 func TestOperatorResultChecks(t *testing.T) {
+	t.Parallel()
 	g, err := parseTest(operatorResultCheckGrammar)
 	if err != nil {
 		t.Fatal(err)
@@ -481,6 +486,7 @@ rule val Int = t:"m" #atomic => Int{Text: text($t)}
 var terminalOperatorsRuleInputs = []string{"m", "m+m", "m+", ""}
 
 func TestTerminalOperatorsRuleNeedsAction(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{terminalOperatorsRuleGrammar, `type Num terminal
 rule main = e
 rule e Num = #operators {
@@ -518,7 +524,10 @@ func resultCheckCases() []genCase {
 		genCase{"text struct Operators Rule", textStructOperatorsRuleGrammar, terminalOperatorsRuleInputs})
 }
 
-func TestGeneratedRuleResultChecks(t *testing.T) { eachMode(t, testGeneratedRuleResultChecks) }
+func TestGeneratedRuleResultChecks(t *testing.T) {
+	t.Parallel()
+	eachMode(t, testGeneratedRuleResultChecks)
+}
 
 func testGeneratedRuleResultChecks(t *testing.T) {
 	if testing.Short() {
@@ -538,6 +547,7 @@ func testGeneratedRuleResultChecks(t *testing.T) {
 // TestGeneratedCheckTypeName checks that a grammar type named like the generated check type
 // is renamed in typed TypeScript.
 func TestGeneratedCheckTypeName(t *testing.T) {
+	t.Parallel()
 	src := `type Int = { Text string }
 type FieldType = { Text string }
 type S = { F Int }

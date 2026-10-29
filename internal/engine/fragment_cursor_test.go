@@ -7,6 +7,7 @@ import (
 )
 
 func TestFragmentCursorOriginalBytes(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name, source string
 		offsets      []int
@@ -46,6 +47,7 @@ func TestFragmentCursorOriginalBytes(t *testing.T) {
 }
 
 func TestFragmentCursorMalformedPrefixParity(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = . .`)
 	source := "😀\xffunconsumed"
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {

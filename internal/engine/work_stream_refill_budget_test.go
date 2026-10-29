@@ -44,6 +44,7 @@ func streamRefillObserver(reader io.Reader, control *core.WorkControl) (*core.St
 }
 
 func TestStreamReaderObserverChargesEachUnderlyingRead(t *testing.T) {
+	t.Parallel()
 	reader := &streamRefillScript{results: []streamRefillResult{{data: []byte("a")}, {data: []byte("b")}}}
 	control := core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 2})
 	observer, _ := streamRefillObserver(reader, control)
@@ -63,6 +64,7 @@ func TestStreamReaderObserverChargesEachUnderlyingRead(t *testing.T) {
 }
 
 func TestStreamReaderObserverBoundsBufioRetries(t *testing.T) {
+	t.Parallel()
 	t.Run("empty retries", func(t *testing.T) {
 		reader := &streamRefillScript{results: []streamRefillResult{{}, {}, {}, {}}}
 		control := core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 3})
@@ -100,6 +102,7 @@ func TestStreamReaderObserverBoundsBufioRetries(t *testing.T) {
 }
 
 func TestWorkStreamEmptyRefillBudget(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = row* #stream $$
 
 rule row = .+ #atomic`)
@@ -116,6 +119,7 @@ rule row = .+ #atomic`)
 }
 
 func TestStreamReaderObserverOneShortFailsBeforeCallerRead(t *testing.T) {
+	t.Parallel()
 	reader := &streamRefillScript{results: []streamRefillResult{{data: []byte("a")}, {data: []byte("b")}}}
 	control := core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 1})
 	observer, _ := streamRefillObserver(reader, control)
@@ -134,6 +138,7 @@ func TestStreamReaderObserverOneShortFailsBeforeCallerRead(t *testing.T) {
 }
 
 func TestStreamReaderObserverCancellationAndReadErrorPrecedence(t *testing.T) {
+	t.Parallel()
 	t.Run("cancellation before exhausted reservation", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		control := core.NewWorkControl(ctx, limits.WorkLimits{MaxSteps: 1})
@@ -174,6 +179,7 @@ func TestStreamReaderObserverCancellationAndReadErrorPrecedence(t *testing.T) {
 }
 
 func TestStreamReaderObserverNilControlRemainsUnbounded(t *testing.T) {
+	t.Parallel()
 	reader := &streamRefillScript{results: []streamRefillResult{{data: []byte("x")}, {data: []byte("y")}}}
 	observer, _ := streamRefillObserver(reader, nil)
 	for range 2 {

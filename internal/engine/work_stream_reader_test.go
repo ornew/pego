@@ -32,6 +32,7 @@ func (r *workCancelledRefillReader) Read(dst []byte) (int, error) {
 }
 
 func TestWorkStreamRawReaderCancellation(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = row* #stream $$
 
 rule row = .+ #atomic`)
@@ -56,6 +57,7 @@ rule row = .+ #atomic`)
 }
 
 func TestWorkStreamRawReaderAdmission(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	caller := &workCancelledRefillReader{cancel: func() {}}
@@ -81,6 +83,7 @@ func (c *workRawReaderPanicContext) Err() error {
 }
 
 func TestWorkStreamRawReaderContextPanicIdentity(t *testing.T) {
+	t.Parallel()
 	prog := mustCompile(t, `rule main = row* #stream $$
 
 rule row = .+ #atomic`)

@@ -12,6 +12,7 @@ import (
 // not shadow the fields the struct promotes from the embedded Span: the Go field gets a trailing
 // underscore, so Start and End keep reading the span.
 func TestGeneratedTypedFieldsNamedLikeSpanFields(t *testing.T) {
+	t.Parallel()
 	eachMode(t, testGeneratedTypedFieldsNamedLikeSpanFields)
 }
 

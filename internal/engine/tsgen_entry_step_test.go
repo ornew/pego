@@ -11,6 +11,7 @@ import (
 // runs its body without a capture frame; the call charges the step there once, and the plain
 // evaluation of the body does not charge it again.
 func TestGeneratedTSRuleEntryChargesOneStep(t *testing.T) {
+	t.Parallel()
 	src := `rule main = expr $$
 rule expr = expr "+" "a" / "a"`
 	g, err := parseTest(src)
