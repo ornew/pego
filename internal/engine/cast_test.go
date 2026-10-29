@@ -2,6 +2,7 @@ package engine
 
 import (
 	"encoding/binary"
+	"github.com/ornew/pego/internal/gentest"
 	"hash/crc32"
 	"os/exec"
 	"path/filepath"
@@ -17,30 +18,30 @@ import (
 
 const castRules = "type Num = { Text string }\ntype P = { N Num }\nrule n Num = t:([0-9]+) #atomic => Num{Text: text($t)}\nrule w = [a-z]+\nrule pair = n:n \"=\" => P{N: $n}\n"
 
-func castCases() []genCase {
-	return []genCase{
-		{"terminal", "rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, []string{"12", "ab", ""}},
-		{"list", "rule main = x:(n+ / w) $$ => $x.([]Num)\n" + castRules, []string{"1", "ab", ""}},
-		{"optional", "rule main = x:(n / w)? $$ => $x.(*Num)\n" + castRules, []string{"1", "", "ab"}},
-		{"union", "rule main = x:(n / w / pair) $$ => $x.(Num | P)\n" + castRules, []string{"1", "1=", "ab"}},
-		{"field", "rule main = x:(pair / w) $$ => $x.(P).N\n" + castRules, []string{"1=", "ab"}},
-		{"predicate", "rule main = x:(n / w) ({$x.(Num) == $x} \"!\" / \"?\") $$\n" + castRules, []string{"1!", "a?", "a!", "1?"}},
-		{"constructor", "rule main = x:(n / w) $$ => P{N: $x.(Num)}\n" + castRules, []string{"1", "a"}},
-		{"top", "rule main = x:(n / w) $$ => $x.(_)\n" + castRules, []string{"1", "a"}},
+func castCases() []gentest.Case {
+	return []gentest.Case{
+		{Name: "terminal", Src: "rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, Inputs: []string{"12", "ab", ""}},
+		{Name: "list", Src: "rule main = x:(n+ / w) $$ => $x.([]Num)\n" + castRules, Inputs: []string{"1", "ab", ""}},
+		{Name: "optional", Src: "rule main = x:(n / w)? $$ => $x.(*Num)\n" + castRules, Inputs: []string{"1", "", "ab"}},
+		{Name: "union", Src: "rule main = x:(n / w / pair) $$ => $x.(Num | P)\n" + castRules, Inputs: []string{"1", "1=", "ab"}},
+		{Name: "field", Src: "rule main = x:(pair / w) $$ => $x.(P).N\n" + castRules, Inputs: []string{"1=", "ab"}},
+		{Name: "predicate", Src: "rule main = x:(n / w) ({$x.(Num) == $x} \"!\" / \"?\") $$\n" + castRules, Inputs: []string{"1!", "a?", "a!", "1?"}},
+		{Name: "constructor", Src: "rule main = x:(n / w) $$ => P{N: $x.(Num)}\n" + castRules, Inputs: []string{"1", "a"}},
+		{Name: "top", Src: "rule main = x:(n / w) $$ => $x.(_)\n" + castRules, Inputs: []string{"1", "a"}},
 		// The error names where the action started, after a newline, in code points and bytes.
-		{"position", "rule main = \"\\u00e9\\n\" r\nrule r = x:(n / w) $$ => $x.(Num)\n" + castRules, []string{"\u00e9\n1", "\u00e9\nab"}},
-		{"int", "rule main = x:w $$ {len(text($x)).(int) > 1} => $x\n" + castRules, []string{"ab", "a"}},
+		{Name: "position", Src: "rule main = \"\\u00e9\\n\" r\nrule r = x:(n / w) $$ => $x.(Num)\n" + castRules, Inputs: []string{"\u00e9\n1", "\u00e9\nab"}},
+		{Name: "int", Src: "rule main = x:w $$ {len(text($x)).(int) > 1} => $x\n" + castRules, Inputs: []string{"ab", "a"}},
 	}
 }
 
 func TestCastAcrossBackends(t *testing.T) {
 	t.Parallel()
 	for _, fixture := range castCases() {
-		t.Run(fixture.name, func(t *testing.T) {
-			program := mustCompile(t, fixture.src)
+		t.Run(fixture.Name, func(t *testing.T) {
+			program := mustCompile(t, fixture.Src)
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
-					for _, input := range fixture.inputs {
+					for _, input := range fixture.Inputs {
 						baseline := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit, Recognize: recognize}))
 						for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 							actual := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Recognize: recognize}))

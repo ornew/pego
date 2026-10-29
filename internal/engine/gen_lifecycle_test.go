@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -88,7 +89,7 @@ func TestGeneratedTSActionTracking(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	g, err := parseTest(nilActionStream)
+	g, err := parseTest(gentest.NilActionStream)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"hash"
 	"io"
 	"os"
@@ -108,7 +109,7 @@ func observeSources(pkg string, n int) string {
 // runObserveProbes builds the cases as the packages f0..fN with observability, runs the consumer and
 // returns its lines. The first detail[i] inputs of case i are reported with their events and profile; a nil
 // detail reports none. mutate, if not nil, changes the code of every package.
-func runObserveProbes(t *testing.T, cases []genCase, start string, detail []int, mutate func([]byte) []byte) []string {
+func runObserveProbes(t *testing.T, cases []gentest.Case, start string, detail []int, mutate func([]byte) []byte) []string {
 	t.Helper()
 	dir := t.TempDir()
 	write := func(name, content string) {
@@ -121,19 +122,19 @@ func runObserveProbes(t *testing.T, cases []genCase, start string, detail []int,
 	write("go.mod", testGoMod("obsprobe"))
 	var inputs [][]string
 	for i, c := range cases {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		code, err := generateCode(t, g, gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true, Observability: true})
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		if mutate != nil {
 			code = mutate(code)
 		}
 		write(fmt.Sprintf("f%d/parser.go", i), string(code))
-		inputs = append(inputs, c.inputs)
+		inputs = append(inputs, c.Inputs)
 	}
 	write("main.go", observeSources("f", len(cases)))
 	if detail == nil {
@@ -169,7 +170,7 @@ const observationGolden = "testdata/observation.golden"
 
 // observationDigests returns, for each case, the number of events of its reports and the hash of its report
 // lines, keyed by group/mode/name. The reports are those of the lines in the order the consumer printed them.
-func observationDigests(t *testing.T, group string, cases []genCase, lines []string) map[string]string {
+func observationDigests(t *testing.T, group string, cases []gentest.Case, lines []string) map[string]string {
 	t.Helper()
 	hashes := make([]hash.Hash, len(cases))
 	events := make([]int, len(cases))
@@ -191,7 +192,7 @@ func observationDigests(t *testing.T, group string, cases []genCase, lines []str
 	}
 	out := map[string]string{}
 	for i, c := range cases {
-		out[fmt.Sprintf("%s/%s/%s", group, fixtureForm(t), c.name)] = fmt.Sprintf("events=%d %x", events[i], hashes[i].Sum(nil)[:12])
+		out[fmt.Sprintf("%s/%s/%s", group, fixtureForm(t), c.Name)] = fmt.Sprintf("events=%d %x", events[i], hashes[i].Sum(nil)[:12])
 	}
 	return out
 }
@@ -387,24 +388,24 @@ func engineTraceMismatch(eng []TraceEvent, got []observedEvent, in string) strin
 // checkObservations builds the cases with the start rule start, checks the first detail[i] inputs of case i
 // (all of them if detail is nil) against the engine and the profile against the events, and compares the
 // digests of all reports with the golden.
-func checkObservations(t *testing.T, group string, cases []genCase, start string, detail []int) {
+func checkObservations(t *testing.T, group string, cases []gentest.Case, start string, detail []int) {
 	t.Helper()
 	if detail == nil {
 		detail = make([]int, len(cases))
 		for i, c := range cases {
-			detail[i] = len(c.inputs)
+			detail[i] = len(c.Inputs)
 		}
 	}
 	lines := runObserveProbes(t, cases, start, detail, nil)
 	reports := detailReports(t, lines)
 	events, checked := 0, 0
 	for i, c := range cases {
-		prog := mustCompile(t, c.src)
-		for j := 0; j < detail[i] && j < len(c.inputs); j++ {
+		prog := mustCompile(t, c.Src)
+		for j := 0; j < detail[i] && j < len(c.Inputs); j++ {
 			for _, entry := range []string{"parse", "recognize"} {
 				r := reports[fmt.Sprintf("%d/%d %s", i, j, entry)]
 				if r == nil {
-					t.Errorf("%s %q %s: no report", c.name, c.inputs[j], entry)
+					t.Errorf("%s %q %s: no report", c.Name, c.Inputs[j], entry)
 					continue
 				}
 				checked++
@@ -412,12 +413,12 @@ func checkObservations(t *testing.T, group string, cases []genCase, start string
 				var eng []TraceEvent
 				o := ParseOptions{Backend: Closure, Unit: CodePoints, Recognize: entry == "recognize"}
 				o.Trace = func(e TraceEvent) { eng = append(eng, e) }
-				prog.ParseWith(start, c.inputs[j], o)
-				if msg := engineTraceMismatch(eng, r.events, c.inputs[j]); msg != "" {
-					t.Errorf("%s %q %s: %s", c.name, c.inputs[j], entry, msg)
+				prog.ParseWith(start, c.Inputs[j], o)
+				if msg := engineTraceMismatch(eng, r.events, c.Inputs[j]); msg != "" {
+					t.Errorf("%s %q %s: %s", c.Name, c.Inputs[j], entry, msg)
 				}
 				if msg := profileMismatch(r); msg != "" {
-					t.Errorf("%s %q %s: profile: %s", c.name, c.inputs[j], entry, msg)
+					t.Errorf("%s %q %s: profile: %s", c.Name, c.Inputs[j], entry, msg)
 				}
 			}
 		}
@@ -440,7 +441,7 @@ func TestFlowNodeObservationsMatchEngine(t *testing.T) {
 		t.Skip("builds generated consumers")
 	}
 	eachMode(t, func(t *testing.T) {
-		checkObservations(t, "corpus", append(genCorpus(t), observeShapes...), "main", nil)
+		checkObservations(t, "corpus", append(gentest.GenCorpus(t), observeShapes...), "main", nil)
 	})
 }
 
@@ -453,11 +454,11 @@ func TestFlowNodeObservationsOnGrammars(t *testing.T) {
 		t.Skip("builds the large parsers")
 	}
 	eachMode(t, func(t *testing.T) {
-		cases := grammarCases(t)
+		cases := gentest.GrammarCases(t)
 		detail := make([]int, len(cases))
 		for i := range cases {
-			detail[i] = len(cases[i].inputs)
-			cases[i].inputs = withDamagedInputs(cases[i].inputs)
+			detail[i] = len(cases[i].Inputs)
+			cases[i].Inputs = withDamagedInputs(cases[i].Inputs)
 		}
 		checkObservations(t, "grammars", cases, "", detail)
 	})
@@ -466,8 +467,8 @@ func TestFlowNodeObservationsOnGrammars(t *testing.T) {
 // observeShapes are grammars whose rules call other rules in shapes where a first-character guard skips the call
 // of an alternative or not: choices of rule references in framed bodies and in the lines of Operators Rules,
 // with captures, repetitions and nested groups.
-var observeShapes = []genCase{
-	{"line choice of rules", `rule main = e $$
+var observeShapes = []gentest.Case{
+	{Name: "line choice of rules", Src: `rule main = e $$
 rule e = #operators {
     operand num
     level { infix left (plus / minus) }
@@ -478,8 +479,8 @@ rule num = [0-9]+
 rule plus = "+"
 rule minus = "-"
 rule bang = "!"
-`, []string{"1", "1+2", "1-2", "-1", "+1", "1!", "1?", "1+-2", "--1+2!", "1*2", ""}},
-	{"line choice with captures and skip", `rule main = e $$
+`, Inputs: []string{"1", "1+2", "1-2", "-1", "+1", "1!", "1?", "1+-2", "--1+2!", "1*2", ""}},
+	{Name: "line choice with captures and skip", Src: `rule main = e $$
 rule e = #operators {
     skip " "*
     operand x:num => $x
@@ -491,18 +492,18 @@ rule plus = "+"
 rule minus = "-"
 rule star = "*"
 rule slash = "/"
-`, []string{"1", "1 + 2", "1 - 2 * 3", "1 ^ 2", "1 / 2 / 3", "1 +", " 1 *  2", "1 ? 2"}},
-	{"framed choice of rules", `rule main = item+ $$
+`, Inputs: []string{"1", "1 + 2", "1 - 2 * 3", "1 ^ 2", "1 / 2 / 3", "1 +", " 1 *  2", "1 ? 2"}},
+	{Name: "framed choice of rules", Src: `rule main = item+ $$
 rule item = (alpha / digit / space) #recover(skip=" ")
 rule alpha = [a-z]+
 rule digit = [0-9]+
 rule space = " "
-`, []string{"ab 12", "a1b2", "?", "", "ab ?", "12ab"}},
-	{"guarded repetition of rules", `rule main = (word (comma / semi)?)* $$
+`, Inputs: []string{"ab 12", "a1b2", "?", "", "ab ?", "12ab"}},
+	{Name: "guarded repetition of rules", Src: `rule main = (word (comma / semi)?)* $$
 rule word = [a-z]+
 rule comma = ","
 rule semi = ";"
-`, []string{"a", "a,b", "a;b,c", "a,,", ",", ""}},
+`, Inputs: []string{"a", "a,b", "a;b,c", "a,,", ",", ""}},
 }
 
 // withDamagedInputs returns the inputs with, for each, prefixes at eight evenly spaced lengths and the input
@@ -534,7 +535,7 @@ func TestFlowNodeObservationMutants(t *testing.T) {
 		t.Skip("builds generated consumers")
 	}
 	pinOrdinary(t)
-	cases := append(genCorpus(t), observeShapes...)
+	cases := append(gentest.GenCorpus(t), observeShapes...)
 	golden := readGolden(t, observationGolden)
 	changed := func(lines []string) int {
 		n := 0

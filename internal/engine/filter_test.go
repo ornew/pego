@@ -2,6 +2,7 @@ package engine
 
 import (
 	"encoding/binary"
+	"github.com/ornew/pego/internal/gentest"
 	"hash/crc32"
 	"os/exec"
 	"path/filepath"
@@ -18,20 +19,20 @@ import (
 const filterIdentitySource = `type Out = { First node[string]; Kept []node[string]; Empty []node[string] }
 rule main = first:"a" second:"b" $$ => Out{First: $first, Kept: filter(list($first, $second, $first), (x) => text(x) == "a"), Empty: filter(nil, (x) => true)}`
 
-func filterCases() []genCase {
-	return []genCase{
-		{"identity and nil input", filterIdentitySource, []string{"ab", "a", "ac", ""}},
-		{"nil elements", `type Out = { Items []*node[string] }
-rule main = x:"é" $$ => Out{Items: filter(list(nil, $x, nil, $x), (item) => item == nil || text(item) == "é")}`, []string{"é", "a", ""}},
-		{"remove all", `rule main = v1:"é" $$ => filter(list($v1), (item) => false)`, []string{"é", "", "a"}},
-		{"keep order", `rule main = x:[a-z]* #atomic $$ => filter(list($x, nil, $x), (item) => item != nil)`, []string{"ab", "", "é"}},
-		{"nested lambda", `rule main = v1:"a" $$ => filter(list($v1), (item) => len(filter(list(item, nil), (inner) => inner != nil)) == 1)`, []string{"a", "", "ab"}},
-		{"predicate error rollback", `rule main = a:"a" ({len(filter(list($a), (item) => 1 / 0 == 0)) == 1} "!" / "?") $$`, []string{"a?", "a!", "a", ""}},
-		{"value error", `rule main = v1:"a" $$ => filter(list($v1), (item) => 1 / 0 == 0)`, []string{"a", "", "ab"}},
-		{"dynamic nonbool", `rule main = v1:"a" d:one $$ => filter(list($v1), (item) => $d.(bool))
-rule one _ = _ => 1`, []string{"a", "", "ab"}},
-		{"dynamic nonbool predicate", `rule main = a:"a" d:one ({len(filter(list($a), (item) => $d.(bool))) == 1} "!" / "?") $$
-rule one _ = _ => 1`, []string{"a?", "a!", "a", ""}},
+func filterCases() []gentest.Case {
+	return []gentest.Case{
+		{Name: "identity and nil input", Src: filterIdentitySource, Inputs: []string{"ab", "a", "ac", ""}},
+		{Name: "nil elements", Src: `type Out = { Items []*node[string] }
+rule main = x:"é" $$ => Out{Items: filter(list(nil, $x, nil, $x), (item) => item == nil || text(item) == "é")}`, Inputs: []string{"é", "a", ""}},
+		{Name: "remove all", Src: `rule main = v1:"é" $$ => filter(list($v1), (item) => false)`, Inputs: []string{"é", "", "a"}},
+		{Name: "keep order", Src: `rule main = x:[a-z]* #atomic $$ => filter(list($x, nil, $x), (item) => item != nil)`, Inputs: []string{"ab", "", "é"}},
+		{Name: "nested lambda", Src: `rule main = v1:"a" $$ => filter(list($v1), (item) => len(filter(list(item, nil), (inner) => inner != nil)) == 1)`, Inputs: []string{"a", "", "ab"}},
+		{Name: "predicate error rollback", Src: `rule main = a:"a" ({len(filter(list($a), (item) => 1 / 0 == 0)) == 1} "!" / "?") $$`, Inputs: []string{"a?", "a!", "a", ""}},
+		{Name: "value error", Src: `rule main = v1:"a" $$ => filter(list($v1), (item) => 1 / 0 == 0)`, Inputs: []string{"a", "", "ab"}},
+		{Name: "dynamic nonbool", Src: `rule main = v1:"a" d:one $$ => filter(list($v1), (item) => $d.(bool))
+rule one _ = _ => 1`, Inputs: []string{"a", "", "ab"}},
+		{Name: "dynamic nonbool predicate", Src: `rule main = a:"a" d:one ({len(filter(list($a), (item) => $d.(bool))) == 1} "!" / "?") $$
+rule one _ = _ => 1`, Inputs: []string{"a?", "a!", "a", ""}},
 	}
 }
 
@@ -60,11 +61,11 @@ func TestFilterNodeIdentityAndEmptyInput(t *testing.T) {
 func TestFilterAcrossBackends(t *testing.T) {
 	t.Parallel()
 	for _, fixture := range filterCases() {
-		t.Run(fixture.name, func(t *testing.T) {
-			program := mustCompile(t, fixture.src)
+		t.Run(fixture.Name, func(t *testing.T) {
+			program := mustCompile(t, fixture.Src)
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
-					for _, input := range fixture.inputs {
+					for _, input := range fixture.Inputs {
 						baseline := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit, Recognize: recognize}))
 						for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 							actual := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Recognize: recognize}))

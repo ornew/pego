@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/ornew/pego/internal/gentest"
 	"slices"
 	"testing"
 
@@ -12,9 +13,9 @@ import (
 
 // coreCorpusProgram compiles a corpus grammar for the Core IR tests, or reports false for a
 // grammar that does not compile or that generated parsers refuse (#missing).
-func coreCorpusProgram(t *testing.T, c genCase) (*Program, bool) {
+func coreCorpusProgram(t *testing.T, c gentest.Case) (*Program, bool) {
 	t.Helper()
-	g, err := parseTest(c.src)
+	g, err := parseTest(c.Src)
 	if err != nil {
 		return nil, false
 	}
@@ -31,22 +32,22 @@ func coreCorpusProgram(t *testing.T, c genCase) (*Program, bool) {
 func TestCoreBuildCorpus(t *testing.T) {
 	t.Parallel()
 	built := 0
-	for _, c := range schemaCorpus(t) {
+	for _, c := range gentest.CorpusWithParsers(t) {
 		prog, ok := coreCorpusProgram(t, c)
 		if !ok {
 			continue
 		}
 		m, err := irbuild.CoreFrom(prog.Static(), nil)
 		if err != nil {
-			t.Errorf("%s: %v", c.name, err)
+			t.Errorf("%s: %v", c.Name, err)
 			continue
 		}
 		core.Analyze(m)
 		if err := core.Verify(m); err != nil {
-			t.Errorf("%s: %v", c.name, err)
+			t.Errorf("%s: %v", c.Name, err)
 			continue
 		}
-		g, ok := coreGenerate(c.src, gen.GenOptions{})
+		g, ok := coreGenerate(c.Src, gen.GenOptions{})
 		if !ok {
 			continue
 		}
@@ -55,7 +56,7 @@ func TestCoreBuildCorpus(t *testing.T) {
 				continue
 			}
 			if got, want := core.SlotNames(m.Rules[r.ID].Scope), g.NodeScopes[r]; !slices.Equal(got, want) {
-				t.Errorf("%s: rule %s (%d): scope %v, generated Node rule %v", c.name, r.Name, r.ID, got, want)
+				t.Errorf("%s: rule %s (%d): scope %v, generated Node rule %v", c.Name, r.Name, r.ID, got, want)
 			}
 		}
 		built++

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"encoding/binary"
+	"github.com/ornew/pego/internal/gentest"
 	"hash/crc32"
 	"os/exec"
 	"path/filepath"
@@ -16,28 +17,28 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-func captureAccessCases() []genCase {
-	return []genCase{
-		{"map elements", `rule main = xs:(y:[a-z] [0-9])+ $$ => map($xs, (i) => i.$y)`, []string{"a1b2", "a1", "", "a"}},
-		{"unmatched alternative", `rule main = xs:(y:"a" / z:"b")+ $$ => filter($xs, (i) => i.$y != nil)`, []string{"abab", "bb", ""}},
-		{"both captures", `rule main = xs:(y:"a" z:"b")+ $$ => list($xs[0].$z, $xs[0].$y)`, []string{"ab", "abab", "a", ""}},
-		{"predicate", `rule main = xs:(y:"a"? "b")+ ({$xs[0].$y != nil} "!" / "?") $$`, []string{"ab!", "b?", "b!", "ab?"}},
-		{"chained", `rule main = xs:(ys:(z:"a" "b")+ "c")+ $$ => $xs[0].$ys[0].$z`, []string{"abc", "ababc", "c", ""}},
-		{"indexed", `rule main = xs:(y:[a-z] [0-9])+ $$ => $xs[len($xs) - 1].$y`, []string{"a1b2", ""}},
-		{"struct field", "type Out = { Y *node[string]; Z *node[string] }\nrule main = xs:(y:\"a\"? z:\"b\")+ $$ => Out{Y: $xs[0].$y, Z: $xs[0].$z}", []string{"ab", "b", ""}},
-		{"sequence capture", `rule main = x:(y:"a" "b") $$ => $x.$y`, []string{"ab", "a", ""}},
-		{"struct list", "type Out = { Ys []node[string] }\nrule main = xs:(-\",\" y:[a-z])* $$ => Out{Ys: map($xs, (i) => i.$y)}", []string{",a,b", "", ",a,"}},
+func captureAccessCases() []gentest.Case {
+	return []gentest.Case{
+		{Name: "map elements", Src: `rule main = xs:(y:[a-z] [0-9])+ $$ => map($xs, (i) => i.$y)`, Inputs: []string{"a1b2", "a1", "", "a"}},
+		{Name: "unmatched alternative", Src: `rule main = xs:(y:"a" / z:"b")+ $$ => filter($xs, (i) => i.$y != nil)`, Inputs: []string{"abab", "bb", ""}},
+		{Name: "both captures", Src: `rule main = xs:(y:"a" z:"b")+ $$ => list($xs[0].$z, $xs[0].$y)`, Inputs: []string{"ab", "abab", "a", ""}},
+		{Name: "predicate", Src: `rule main = xs:(y:"a"? "b")+ ({$xs[0].$y != nil} "!" / "?") $$`, Inputs: []string{"ab!", "b?", "b!", "ab?"}},
+		{Name: "chained", Src: `rule main = xs:(ys:(z:"a" "b")+ "c")+ $$ => $xs[0].$ys[0].$z`, Inputs: []string{"abc", "ababc", "c", ""}},
+		{Name: "indexed", Src: `rule main = xs:(y:[a-z] [0-9])+ $$ => $xs[len($xs) - 1].$y`, Inputs: []string{"a1b2", ""}},
+		{Name: "struct field", Src: "type Out = { Y *node[string]; Z *node[string] }\nrule main = xs:(y:\"a\"? z:\"b\")+ $$ => Out{Y: $xs[0].$y, Z: $xs[0].$z}", Inputs: []string{"ab", "b", ""}},
+		{Name: "sequence capture", Src: `rule main = x:(y:"a" "b") $$ => $x.$y`, Inputs: []string{"ab", "a", ""}},
+		{Name: "struct list", Src: "type Out = { Ys []node[string] }\nrule main = xs:(-\",\" y:[a-z])* $$ => Out{Ys: map($xs, (i) => i.$y)}", Inputs: []string{",a,b", "", ",a,"}},
 	}
 }
 
 func TestCaptureAccessAcrossBackends(t *testing.T) {
 	t.Parallel()
 	for _, fixture := range captureAccessCases() {
-		t.Run(fixture.name, func(t *testing.T) {
-			program := mustCompile(t, fixture.src)
+		t.Run(fixture.Name, func(t *testing.T) {
+			program := mustCompile(t, fixture.Src)
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
-					for _, input := range fixture.inputs {
+					for _, input := range fixture.Inputs {
 						baseline := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit, Recognize: recognize}))
 						for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 							actual := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Recognize: recognize}))

@@ -2,40 +2,19 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
 )
 
-func inferredChain(depth int, reverse bool, mainType string) string {
-	var src strings.Builder
-	src.WriteString("type P = {}\n")
-	annotation := ""
-	if mainType != "" {
-		annotation = " " + strings.TrimPrefix(mainType, ":")
-	}
-	fmt.Fprintf(&src, "rule main%s = r0\n", annotation)
-	for j := range depth {
-		i := j
-		if reverse {
-			i = depth - 1 - j
-		}
-		if i == depth-1 {
-			fmt.Fprintf(&src, "rule r%d = \"a\" => P{}\n", i)
-		} else {
-			fmt.Fprintf(&src, "rule r%d = r%d\n", i, i+1)
-		}
-	}
-	return src.String()
-}
-
 func TestInferenceDependencyChains(t *testing.T) {
 	t.Parallel()
 	for _, depth := range []int{45, 50, 128, 512} {
 		for _, reverse := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%d/reversed=%v", depth, reverse), func(t *testing.T) {
-				g, err := parseTest(inferredChain(depth, reverse, ":node[string]"))
+				g, err := parseTest(gentest.InferredChain(depth, reverse, ":node[string]"))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -43,7 +22,7 @@ func TestInferenceDependencyChains(t *testing.T) {
 				if err == nil || !strings.Contains(err.Error(), "produces P, which is not assignable to node[string]") {
 					t.Errorf("long-chain type mismatch: %v", err)
 				}
-				p := mustCompile(t, inferredChain(depth, reverse, ""))
+				p := mustCompile(t, gentest.InferredChain(depth, reverse, ""))
 				for i := range depth {
 					if got, ok := inferredType(p, fmt.Sprint("r", i)); !ok || got != "P" {
 						t.Fatalf("r%d type = %q, %v; want P", i, got, ok)
@@ -59,7 +38,7 @@ func TestInferenceDependencyChains(t *testing.T) {
 
 func TestInferenceKeepsIndependentTypes(t *testing.T) {
 	t.Parallel()
-	src := inferredChain(128, false, "") + `rule growing = xs:growing? => list($xs)
+	src := gentest.InferredChain(128, false, "") + `rule growing = xs:growing? => list($xs)
 rule constant = "(" growing ")" => P{}`
 	p := mustCompile(t, src)
 	for _, name := range []string{"main", "r0", "r127", "constant"} {
@@ -147,9 +126,9 @@ func TestInferenceFiniteRecursiveChains(t *testing.T) {
 
 func BenchmarkInferenceDependencies(b *testing.B) {
 	for _, c := range []struct{ name, source string }{
-		{"caller-first-64", inferredChain(64, false, "")},
-		{"callee-first-64", inferredChain(64, true, "")},
-		{"caller-first-512", inferredChain(512, false, "")},
+		{"caller-first-64", gentest.InferredChain(64, false, "")},
+		{"callee-first-64", gentest.InferredChain(64, true, "")},
+		{"caller-first-512", gentest.InferredChain(512, false, "")},
 		{"growing-list", `rule main = xs:main? => list($xs)`},
 	} {
 		b.Run(c.name, func(b *testing.B) {
@@ -198,7 +177,7 @@ func TestInferenceFiniteJoinCycle(t *testing.T) {
 
 func TestInferenceChainSavedValues(t *testing.T) {
 	t.Parallel()
-	p := mustCompile(t, inferredChain(64, false, ""))
+	p := mustCompile(t, gentest.InferredChain(64, false, ""))
 	for _, mode := range valueModes {
 		q := saveLoad(t, p, "main", mode)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -219,7 +198,7 @@ func TestInferenceChainSavedValues(t *testing.T) {
 
 func TestInferenceChainFieldMismatch(t *testing.T) {
 	t.Parallel()
-	src := "type Holder = { Value node[string] }\n" + strings.Replace(inferredChain(128, false, ""), "rule main = r0", "rule main = r0:r0 => Holder{Value: $r0}", 1)
+	src := "type Holder = { Value node[string] }\n" + strings.Replace(gentest.InferredChain(128, false, ""), "rule main = r0", "rule main = r0:r0 => Holder{Value: $r0}", 1)
 	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)

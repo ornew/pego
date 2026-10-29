@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"math/bits"
 	"slices"
 	"strings"
@@ -185,9 +186,9 @@ func checkEvents(t *testing.T, prog *Program, start, input string, o ParseOption
 // units and in recognition mode.
 func TestTraceKeepsResults(t *testing.T) {
 	t.Parallel()
-	for _, c := range genCorpus(t) {
-		prog := mustCompile(t, c.src)
-		for _, in := range c.inputs {
+	for _, c := range gentest.GenCorpus(t) {
+		prog := mustCompile(t, c.Src)
+		for _, in := range c.Inputs {
 			for _, u := range []PositionUnit{CodePoints, Bytes} {
 				checkTrace(t, prog, "main", in, ParseOptions{Unit: u})
 				checkTrace(t, prog, "main", in, ParseOptions{Unit: u, Recognize: true})
@@ -526,9 +527,9 @@ func dispatchFreeTrace(prog *Program, input string, o ParseOptions) ([]string, s
 // character.
 func TestTracesAgreeAcrossBackends(t *testing.T) {
 	t.Parallel()
-	for _, c := range genCorpus(t) {
-		prog := mustCompile(t, c.src)
-		for _, in := range c.inputs {
+	for _, c := range gentest.GenCorpus(t) {
+		prog := mustCompile(t, c.Src)
+		for _, in := range c.Inputs {
 			for _, o := range []ParseOptions{{Unit: CodePoints}, {Unit: Bytes}, {Unit: CodePoints, Recognize: true}} {
 				o.Backend = Closure
 				want, wantResult := dispatchFreeTrace(prog, in, o)
@@ -536,11 +537,11 @@ func TestTracesAgreeAcrossBackends(t *testing.T) {
 					o.Backend = b
 					got, result := dispatchFreeTrace(prog, in, o)
 					if result != wantResult {
-						t.Fatalf("%s %q (%v, unit %v, recognize %v): result %s, closure %s", c.name, in, b, o.Unit, o.Recognize, result, wantResult)
+						t.Fatalf("%s %q (%v, unit %v, recognize %v): result %s, closure %s", c.Name, in, b, o.Unit, o.Recognize, result, wantResult)
 					}
 					if i := firstDifference(got, want); i >= 0 {
 						t.Errorf("%s %q (%v, unit %v, recognize %v): event %d differs from the closure backend's\n got  %s\n want %s",
-							c.name, in, b, o.Unit, o.Recognize, i, at(got, i), at(want, i))
+							c.Name, in, b, o.Unit, o.Recognize, i, at(got, i), at(want, i))
 					}
 				}
 			}

@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/ornew/pego/internal/gentest"
 	goast "go/ast"
 	"go/importer"
 	goparser "go/parser"
@@ -98,12 +99,12 @@ func testGeneratedTypedConstructorEvaluationOrder(t *testing.T) {
 	rule := func(first, second string) string {
 		return "type Result = { A int; B int }\nrule main Result = x:\"a\"? y:\"b\"? => Result{" + first + ", " + second + "}\n"
 	}
-	cases := []genCase{
-		{"typed/constructor_fields_declaration_order", rule(a, b), []string{"", "a", "b", "ab"}},
-		{"typed/constructor_fields_written_out_of_order", rule(b, a), []string{"", "a", "b", "ab"}},
-		{"typed/constructor_fields_partial", `type Result = { A int; B int; C int }
+	cases := []gentest.Case{
+		{Name: "typed/constructor_fields_declaration_order", Src: rule(a, b), Inputs: []string{"", "a", "b", "ab"}},
+		{Name: "typed/constructor_fields_written_out_of_order", Src: rule(b, a), Inputs: []string{"", "a", "b", "ab"}},
+		{Name: "typed/constructor_fields_partial", Src: `type Result = { A int; B int; C int }
 rule main Result = x:"a"? y:"b"? => Result{A: list(1, 2)[len($x) + 3], C: list(1)[len($y) + 7]}
-`, []string{"", "a", "b", "ab"}},
+`, Inputs: []string{"", "a", "b", "ab"}},
 	}
 	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{ConvertTypes: true}, 1)
 	// Negative control: the two orders fail differently, so a parser that swapped them would
@@ -135,11 +136,11 @@ func testGeneratedTermStatementsEvaluationOrder(t *testing.T) {
 	sum := func(first, second string) string {
 		return "type Result = { N int }\nrule main Result = x:\"a\"? y:\"b\"? => Result{N: " + first + " + " + second + "}\n"
 	}
-	cases := []genCase{
-		{"typed/statements_after_operand", rule(a, b), []string{"", "a", "b", "ab"}},
-		{"typed/statements_in_first_operand", rule(b, a), []string{"", "a", "b", "ab"}},
-		{"typed/statements_after_binary_operand", sum(a, b), []string{"", "a", "b", "ab"}},
-		{"typed/statements_in_first_binary_operand", sum(b, a), []string{"", "a", "b", "ab"}},
+	cases := []gentest.Case{
+		{Name: "typed/statements_after_operand", Src: rule(a, b), Inputs: []string{"", "a", "b", "ab"}},
+		{Name: "typed/statements_in_first_operand", Src: rule(b, a), Inputs: []string{"", "a", "b", "ab"}},
+		{Name: "typed/statements_after_binary_operand", Src: sum(a, b), Inputs: []string{"", "a", "b", "ab"}},
+		{Name: "typed/statements_in_first_binary_operand", Src: sum(b, a), Inputs: []string{"", "a", "b", "ab"}},
 	}
 	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{ConvertTypes: true}, 1)
 	// Negative control: the two orders fail differently.

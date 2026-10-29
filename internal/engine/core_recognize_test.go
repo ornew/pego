@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
@@ -71,8 +72,8 @@ var recognizerGenModes = []coreGenMode{
 }
 
 // recognizerCorpus is the corpus grammars of the recognizer freeze.
-func recognizerCorpus(t *testing.T) []genCase {
-	return append(append(schemaCorpus(t), coreExtraGrammars...), recognizerKnownDifferences...)
+func recognizerCorpus(t *testing.T) []gentest.Case {
+	return append(append(gentest.CorpusWithParsers(t), coreExtraGrammars...), recognizerKnownDifferences...)
 }
 
 // recognizerKnownDifferences are grammars where the Core IR guards differently from what the
@@ -80,9 +81,9 @@ func recognizerCorpus(t *testing.T) []genCase {
 // nothing in Core IR, so the class it captures can be a guarded class, and a rule that recovers has a
 // class guard in Core IR that the printer did not write. Flow IR prints Core's guards, so the
 // freeze holds them and TestCoreRecognizerDecisionsFrozen requires the guarded class.
-var recognizerKnownDifferences = []genCase{
-	{name: "uncaptured class", src: "rule main = (x:[a-z] \"1\" / \"b\") $$\n"},
-	{name: "recovering rule", src: "rule main = x* $$\nrule x = (\"a\" \"b\") #recover(skip=[^;]*) / [0-9]\n"},
+var recognizerKnownDifferences = []gentest.Case{
+	{Name: "uncaptured class", Src: "rule main = (x:[a-z] \"1\" / \"b\") $$\n"},
+	{Name: "recovering rule", Src: "rule main = x* $$\nrule x = (\"a\" \"b\") #recover(skip=[^;]*) / [0-9]\n"},
 }
 
 // TestCoreRecognizerDecisionsFrozen compares the decisions of the Core IR of the recognizers of the
@@ -94,20 +95,20 @@ func TestCoreRecognizerDecisionsFrozen(t *testing.T) {
 	recognizerGolden.freeze(t, recognizerGenModes, func(t *testing.T, mode coreGenMode) []*coreGenCase {
 		var cases []*coreGenCase
 		for _, gc := range recognizerCorpus(t) {
-			gen, ok := coreGenerate(gc.src, mode.opts)
+			gen, ok := coreGenerate(gc.Src, mode.opts)
 			if !ok {
 				continue
 			}
 			if _, err := recognizerOf(gen); err != nil {
 				continue
 			}
-			c, err := coreRecognizeCase(gc.name, mode.name, gen)
+			c, err := coreRecognizeCase(gc.Name, mode.name, gen)
 			if err != nil {
-				t.Errorf("%s: %v", gc.name, err)
+				t.Errorf("%s: %v", gc.Name, err)
 				continue
 			}
 			for _, known := range recognizerKnownDifferences {
-				if known.name != gc.name {
+				if known.Name != gc.Name {
 					continue
 				}
 				want := 0
@@ -115,7 +116,7 @@ func TestCoreRecognizerDecisionsFrozen(t *testing.T) {
 					want = 1
 				}
 				if got := guardedClassCount(c.m); got != want {
-					t.Errorf("%s: %d guarded classes, want %d", gc.name, got, want)
+					t.Errorf("%s: %d guarded classes, want %d", gc.Name, got, want)
 				}
 			}
 			cases = append(cases, c)

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -21,32 +22,32 @@ func TestGeneratedTSDepthOptions(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	fixtures := []genCase{
-		{"ordinary", `rule main = trigger n
+	fixtures := []gentest.Case{
+		{Name: "ordinary", Src: `rule main = trigger n
 rule trigger = v1:_ => list($v1)
-rule n = "(" n ")" / "é"`, []string{"é", "(é)", "((é))", "((((é))))", "?"}},
-		{"left", `rule main = n
-rule n = n "+" "é" / "(" n ")" / "é"`, []string{"é", "é+é+é", "((é))", "?"}},
-		{"operatorsRule", `rule main = n
+rule n = "(" n ")" / "é"`, Inputs: []string{"é", "(é)", "((é))", "((((é))))", "?"}},
+		{Name: "left", Src: `rule main = n
+rule n = n "+" "é" / "(" n ")" / "é"`, Inputs: []string{"é", "é+é+é", "((é))", "?"}},
+		{Name: "operatorsRule", Src: `rule main = n
 rule n = #operators {
     operand "(" n ")" / "é"
     level { prefix "-" }
     level { infix right "^" }
-}`, []string{"é", "--é", "é^é^é", "((é))", "?"}},
-		{"dispatch", `rule main = "a" one / "b" two / "c" three
+}`, Inputs: []string{"é", "--é", "é^é^é", "((é))", "?"}},
+		{Name: "dispatch", Src: `rule main = "a" one / "b" two / "c" three
 rule one = two
 rule two = three
 rule three = four
-rule four = "é"`, []string{"aé", "bé", "cé", "a?", "b?", "c?"}},
-		{"recovery", `rule main = n
-rule n = ("(" n ")" / "é") #recover(skip="?")`, []string{"é", "(é)", "((é))", "?", "(?)"}},
+rule four = "é"`, Inputs: []string{"aé", "bé", "cé", "a?", "b?", "c?"}},
+		{Name: "recovery", Src: `rule main = n
+rule n = ("(" n ")" / "é") #recover(skip="?")`, Inputs: []string{"é", "(é)", "((é))", "?", "(?)"}},
 	}
 	dir := t.TempDir()
 	var script strings.Builder
 	script.WriteString(`import assert from "node:assert/strict";
 `)
 	for i, c := range fixtures {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -54,7 +55,7 @@ rule n = ("(" n ")" / "é") #recover(skip="?")`, []string{"é", "(é)", "((é))"
 		if err != nil {
 			t.Fatal(err)
 		}
-		prog := mustCompile(t, c.src)
+		prog := mustCompile(t, c.Src)
 		if i == 0 {
 			code = append(code, []byte(fmt.Sprintf("\nexport function installTestAction(fn: () => void): void { R%d.action = () => {fn(); return null;}; }\n", prog.ByName["trigger"].ID))...)
 		}
@@ -64,7 +65,7 @@ rule n = ("(" n ")" / "é") #recover(skip="?")`, []string{"é", "(é)", "((é))"
 		}
 		fmt.Fprintf(&script, "{ const m = await import('./g%d.ts'); const rows = [\n", i)
 		for _, name := range []string{"main", prog.RuleList[len(prog.RuleList)-1].Name} {
-			for _, input := range c.inputs {
+			for _, input := range c.Inputs {
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, limit := range []int{1, 2, 3, 4, 5, 6, 8, 20} {
 						_, err := prog.ParseWith(name, input, ParseOptions{Unit: unit, MaxDepth: limit})

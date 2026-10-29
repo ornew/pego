@@ -3,6 +3,7 @@ package engine
 import (
 	"bytes"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -81,14 +82,14 @@ func testGeneratedDepthOptions(t *testing.T) {
 	if testing.Short() {
 		t.Skip("runs generated code")
 	}
-	fixtures := []genCase{
-		{"ordinary", `type Word = { Text string }
+	fixtures := []gentest.Case{
+		{Name: "ordinary", Src: `type Word = { Text string }
 rule main Word = t:(n) #atomic => Word{Text: text($t)}
-rule n Word = t:("(" n ")" / "é") #atomic => Word{Text: text($t)}`, []string{"é", "(é)", "((é))", "((((é))))", "?", "(é"}},
-		{"left recursion", `type Word = { Text string }
+rule n Word = t:("(" n ")" / "é") #atomic => Word{Text: text($t)}`, Inputs: []string{"é", "(é)", "((é))", "((((é))))", "?", "(é"}},
+		{Name: "left recursion", Src: `type Word = { Text string }
 rule main Word = t:(n) #atomic => Word{Text: text($t)}
-rule n Word = t:(n "+" "é" / "(" n ")" / "é") #atomic => Word{Text: text($t)}`, []string{"é", "é+é+é", "(é)", "((é+é))", "é+", "?"}},
-		{"OperatorsRule", `type Word = { Text string }
+rule n Word = t:(n "+" "é" / "(" n ")" / "é") #atomic => Word{Text: text($t)}`, Inputs: []string{"é", "é+é+é", "(é)", "((é+é))", "é+", "?"}},
+		{Name: "OperatorsRule", Src: `type Word = { Text string }
 rule main Word = t:(n) #atomic => Word{Text: text($t)}
 rule n Word = #operators {
     operand w:base => $w
@@ -96,18 +97,18 @@ rule n Word = #operators {
     level { prefix "-" => $rhs }
     level { infix right "^" => $rhs }
 }
-rule base Word = t:"é" #atomic => Word{Text: text($t)}`, []string{"é", "--é", "é^é^é", "(-é^é)", "((é))", "?"}},
-		{"dispatch", `type Word = { Text string }
+rule base Word = t:"é" #atomic => Word{Text: text($t)}`, Inputs: []string{"é", "--é", "é^é^é", "(-é^é)", "((é))", "?"}},
+		{Name: "dispatch", Src: `type Word = { Text string }
 rule main Word = t:("a" one / "b" two / "c" three) #atomic => Word{Text: text($t)}
 rule one Word = t:(two) #atomic => Word{Text: text($t)}
 rule two Word = t:(three) #atomic => Word{Text: text($t)}
 rule three Word = t:(four) #atomic => Word{Text: text($t)}
-rule four Word = t:("é") #atomic => Word{Text: text($t)}`, []string{"aé", "bé", "cé", "a?", "b?", "c?"}},
-		{"action", `type Word = { N int }
-rule main = x:"a"* #atomic => Word{N: 1 / len($x)}`, []string{"", "a", "aa", "?"}},
-		{"recovery", `type Word = { Text string }
+rule four Word = t:("é") #atomic => Word{Text: text($t)}`, Inputs: []string{"aé", "bé", "cé", "a?", "b?", "c?"}},
+		{Name: "action", Src: `type Word = { N int }
+rule main = x:"a"* #atomic => Word{N: 1 / len($x)}`, Inputs: []string{"", "a", "aa", "?"}},
+		{Name: "recovery", Src: `type Word = { Text string }
 rule main Word = t:(n) #atomic => Word{Text: text($t)}
-rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: text($t)}`, []string{"é", "(é)", "((é))", "?", "(?)"}},
+rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: text($t)}`, Inputs: []string{"é", "(é)", "((é))", "?", "(?)"}},
 	}
 	dir := t.TempDir()
 	write := func(name string, b []byte) {
@@ -122,11 +123,11 @@ rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: te
 	}
 	write("go.mod", []byte(testGoMod("depthoptions")))
 	for i, c := range fixtures {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
-		prog := mustCompile(t, c.src)
+		prog := mustCompile(t, c.Src)
 		for _, conv := range []bool{false, true} {
 			pkg := fmt.Sprintf("g%d_%v", i, conv)
 			code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, MaxDepth: 4, ConvertTypes: conv})
@@ -135,7 +136,7 @@ rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: te
 			}
 			var rows strings.Builder
 			for _, name := range []string{"main", prog.RuleList[len(prog.RuleList)-1].Name} {
-				for _, in := range c.inputs {
+				for _, in := range c.Inputs {
 					for _, unit := range []PositionUnit{CodePoints, Bytes} {
 						for _, limit := range []int{1, 2, 3, 4, 5, 6, 8, 20} {
 							_, err := prog.ParseWith(name, in, ParseOptions{Unit: unit, MaxDepth: limit})

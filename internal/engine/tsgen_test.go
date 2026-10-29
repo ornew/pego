@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -97,28 +98,28 @@ func TestGeneratedTSParsersMatchEngine(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	cases := genCorpus(t)
+	cases := gentest.GenCorpus(t)
 	// Exactly at and just beyond the nesting limit, as in TestGeneratedParsersMatchEngine; the
 	// harness gives the parser a stack large enough to reach it.
-	cases = append(cases, genCase{"nesting limit", `rule main = n
-rule n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2),
+	cases = append(cases, gentest.Case{Name: "nesting limit", Src: `rule main = n
+rule n = "(" n ")" / "x"`, Inputs: []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2),
 		strings.Repeat("(", DefaultMaxDepth-1) + "x" + strings.Repeat(")", DefaultMaxDepth-1)}})
 	// Values that JavaScript represents differently from Go: 64-bit ints that wrap around (the
 	// runtime switches to bigint beyond the safe integers), negative division, -0, strings
 	// compared and measured by code points or UTF-8 bytes (JavaScript strings are UTF-16), and
 	// variables holding big ints as memo keys.
-	cases = append(cases, genCase{"ints and strings", `type R = { A int; B int; C int; D int; E int; F int; G bool; H bool; I int; J string; K int; L bool; M int }
+	cases = append(cases, gentest.Case{Name: "ints and strings", Src: `type R = { A int; B int; C int; D int; E int; F int; G bool; H bool; I int; J string; K int; L bool; M int }
 var big int
 rule main = x:[a-z]* #atomic ","? y:[^!]* #atomic {big := 9007199254740992 + len($x)} z:big? => R{A: 9223372036854775807 + len($x), B: -9223372036854775807 - 1 - len($x), C: 4611686018427387904 * (len($x) + 1), D: -7 / 2 * len($x), E: -7 % 2 + 0 * -1, F: (9007199254740993 + len($y)) / 3, G: text($y) < "😀", H: "！" < "😀", I: len($y), J: text($y) + "!", K: -(9223372036854775807 - len($x) + 1), L: big == 9007199254740992 + len($x), M: len($z)}
-rule big = {big > 9007199254740992} "!"+ #atomic`, []string{"", "a", "ab,c😀", ",！", "z,日本", "abc,😀x", "a,!!"}})
+rule big = {big > 9007199254740992} "!"+ #atomic`, Inputs: []string{"", "a", "ab,c😀", ",！", "z,日本", "abc,😀x", "a,!!"}})
 	// Variants of the short inputs: every prefix, and the input without each byte. They fail in many
 	// places (expectations, recovery, cuts, memoized failures), and some are not valid UTF-8.
 	for i := range cases {
 		seen := map[string]bool{}
-		for _, s := range cases[i].inputs {
+		for _, s := range cases[i].Inputs {
 			seen[s] = true
 		}
-		for _, s := range cases[i].inputs {
+		for _, s := range cases[i].Inputs {
 			if len(s) > tsVariantLen {
 				continue
 			}
@@ -126,7 +127,7 @@ rule big = {big > 9007199254740992} "!"+ #atomic`, []string{"", "a", "ab,c😀",
 				for _, v := range []string{s[:k], s[:k] + s[k+1:]} {
 					if !seen[v] {
 						seen[v] = true
-						cases[i].inputs = append(cases[i].inputs, v)
+						cases[i].Inputs = append(cases[i].Inputs, v)
 					}
 				}
 			}
@@ -137,7 +138,7 @@ rule big = {big > 9007199254740992} "!"+ #atomic`, []string{"", "a", "ab,c😀",
 	t.Run("work controls", func(t *testing.T) { testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{WorkControls: true}) })
 }
 
-func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, opts gen.GenOptions) {
+func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []gentest.Case, opts gen.GenOptions) {
 	t.Helper()
 	dir := t.TempDir()
 	write := func(name, content string) {
@@ -156,22 +157,22 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, op
 	var wants []want
 	var files []string
 	for i, c := range cases {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		opts.Start, opts.Recognize = "main", true
 		code, err := generateTSBundle(g, opts)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		name := fmt.Sprintf("g%d.ts", i)
 		write(name, string(code))
 		files = append(files, name)
 		var in []input
 		// The generated code projects (internal/compile/project.go), and records source information as asked.
-		prog := compileBare(t, c.src, compile.Options{NoProjections: true, SourceInfo: opts.SourceInfo})
-		for _, s := range c.inputs {
+		prog := compileBare(t, c.Src, compile.Options{NoProjections: true, SourceInfo: opts.SourceInfo})
+		for _, s := range c.Inputs {
 			in = append(in, input{base64.StdEncoding.EncodeToString([]byte(s)), utf8.ValidString(s)})
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				n, err := prog.ParseWith("main", s, ParseOptions{Unit: unit})
@@ -218,7 +219,7 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, op
 	results := bufio.NewReader(f)
 	k, w := 0, 0
 	for _, c := range cases {
-		for _, s := range c.inputs {
+		for _, s := range c.Inputs {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				forms := []string{"bytes"}
 				if utf8.ValidString(s) {
@@ -251,7 +252,7 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, op
 					}
 					if res != wants[w].out {
 						at := diffAt(res, wants[w].out)
-						t.Errorf("%s (%v, %s): input %q\n generated %s\n engine    %s", c.name, unit, form, in, clip(res, at), clip(wants[w].out, at))
+						t.Errorf("%s (%v, %s): input %q\n generated %s\n engine    %s", c.Name, unit, form, in, clip(res, at), clip(wants[w].out, at))
 					}
 					str, err := base64.StdEncoding.DecodeString(got.Str)
 					if err != nil {
@@ -259,10 +260,10 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, op
 					}
 					if string(str) != wants[w].str {
 						at := diffAt(string(str), wants[w].str)
-						t.Errorf("%s (%v, %s): input %q: String\n generated %s\n engine    %s", c.name, unit, form, in, clip(string(str), at), clip(wants[w].str, at))
+						t.Errorf("%s (%v, %s): input %q: String\n generated %s\n engine    %s", c.Name, unit, form, in, clip(string(str), at), clip(wants[w].str, at))
 					}
 					if got.Rec != wants[w].rec {
-						t.Errorf("%s (%v, %s): input %q: recognize\n generated %s\n engine    %s", c.name, unit, form, in, got.Rec, wants[w].rec)
+						t.Errorf("%s (%v, %s): input %q: recognize\n generated %s\n engine    %s", c.Name, unit, form, in, got.Rec, wants[w].rec)
 					}
 				}
 				w++

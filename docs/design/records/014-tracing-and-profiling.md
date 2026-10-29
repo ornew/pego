@@ -168,7 +168,7 @@ positions and clock reads) dominates.
   Each parse is also repeated through a copy of `ParseWith` that exposes the parser (`parseWork`), and the work it did
   must be the same traced and untraced: `Stats` (evaluations and memo reuses), the number of memo entries, the first
   calls recorded and the rules memoized eagerly, that is, the memoization decisions.
-- `TestTraceKeepsResults` does the same for the backend corpus (`genCorpus`: the example grammars with their test
+- `TestTraceKeepsResults` does the same for the backend corpus (`gentest.GenCorpus`: the example grammars with their test
   inputs, the typed-runtime cases and others), in both position units and in recognition mode. For each input it also
   parses a `Document`, traced and untraced, before and after three edits, and compares the results and
   `Document.Stats`.

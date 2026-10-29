@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,33 +17,11 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-// nodeTypeGrammar uses named node types: rule conversions, constructors, unions of named
-// node types, and the node members and functions on them.
-const nodeTypeGrammar = `type Num = node[string]
-type Ident = node[string]
-type Pair = node[(Num, Ident)]
-type Nums = node[[]Num]
-type Any = node[_]
-type Expr ~ Num | Ident
-type Out = { Items []Expr; Pair *Pair; Len int; Text string; Start int; Nums *Nums; Any *Any }
-rule main Out = items:spaced* p:pair? ns:nums? a:anything? $$ => Out{
-  Items: $items.Value, Pair: $p, Len: foldl(0, $items, (n, x) => n + len(x)),
-  Text: foldl("", $items, (s, x) => s + text(x)), Start: foldl(0, $items, (n, x) => x.Start), Nums: $ns, Any: $a
-}
-rule spaced Expr = -" "* x:item => $x
-rule item Expr = num / ident
-rule num Num = [0-9]+ #atomic
-rule ident Ident = t:([a-z]+ #atomic) => Ident{$t}
-rule pair Pair = "<" t:(num -"," ident) ">" => Pair{$t}
-rule nums Nums = "[" ns:num* "]" => Nums{$ns}
-rule anything Any = "!" x:("a" / "bc") => Any{$x}
-`
-
 func TestNamedNodeTypesAcrossBackends(t *testing.T) {
 	t.Parallel()
 	inputs := []string{"", "ab", "ab 12 c3", "<1,x>", "ab <12,y>[1]!bc", "12 ?", "[]!a"}
 	for _, sourceInfo := range []bool{false, true} {
-		prog := compileBare(t, nodeTypeGrammar, compile.Options{SourceInfo: sourceInfo})
+		prog := compileBare(t, gentest.NodeTypeGrammar, compile.Options{SourceInfo: sourceInfo})
 		for _, input := range inputs {
 			want := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure}))
 			for _, backend := range []Backend{Bytecode, BytecodeIterative} {
@@ -53,7 +32,7 @@ func TestNamedNodeTypesAcrossBackends(t *testing.T) {
 			}
 		}
 	}
-	prog := compileBare(t, nodeTypeGrammar)
+	prog := compileBare(t, gentest.NodeTypeGrammar)
 	n, err := prog.Parse("main", "ab 12<1,x>[3]")
 	if err != nil {
 		t.Fatal(err)
@@ -206,7 +185,7 @@ func TestGeneratedNamedNodeTypes(t *testing.T) {
 }
 
 func testGeneratedNamedNodeTypes(t *testing.T) {
-	runGeneratedNamedNodeProgram(t, nodeTypeGrammar, `var (
+	runGeneratedNamedNodeProgram(t, gentest.NodeTypeGrammar, `var (
 	_ p.Expr = (*p.Num)(nil)
 	_ p.Expr = (*p.Ident)(nil)
 )
@@ -318,7 +297,7 @@ func runGeneratedNamedNodeProgram(t *testing.T, src, body, want string) {
 // that is not a named node type.
 func TestNamedNodeTypeModuleValidation(t *testing.T) {
 	t.Parallel()
-	prog := compileBare(t, nodeTypeGrammar)
+	prog := compileBare(t, gentest.NodeTypeGrammar)
 	base := prog.Module()
 	if err := compile.ValidateModule(base); err != nil {
 		t.Fatal(err)
@@ -405,7 +384,7 @@ check(ns !== null && ns.type === "Nums" && ns.value?.length === 1 && ns.value[0]
 const a: Any | null = v.Any;
 check(a !== null && a.type === "Any", "any " + stable(a));
 `
-	runTypedTSFixture(t, nodeTypeGrammar, consumer, gen.GenOptions{}, "")
+	runTypedTSFixture(t, gentest.NodeTypeGrammar, consumer, gen.GenOptions{}, "")
 }
 
 // TestGeneratedTSTypedNamedNodesAsPlainNodes is TestGeneratedNamedNodesAsPlainNodes for typed
@@ -524,26 +503,26 @@ rule m M = "m"
 
 // namedNodeTypeCases are grammars with named node types over string, tuple, list and open nodes,
 // converted by rules and constructors, in unions, cast, and read by actions.
-func namedNodeTypeCases() []genCase {
-	return []genCase{
-		{"named node types", nodeTypeGrammar, []string{"", "ab", "ab 12 c3", "<1,x>", "ab <12,y>[1]!bc", "12 ?", "[]!a", "ab 12<1,x>[3]!bc"}},
-		{"named nodes as plain nodes", `type Num = node[string]
+func namedNodeTypeCases() []gentest.Case {
+	return []gentest.Case{
+		{Name: "named node types", Src: gentest.NodeTypeGrammar, Inputs: []string{"", "ab", "ab 12 c3", "<1,x>", "ab <12,y>[1]!bc", "12 ?", "[]!a", "ab 12<1,x>[3]!bc"}},
+		{Name: "named nodes as plain nodes", Src: `type Num = node[string]
 type Nums = node[[]Num]
 type P = node[(Num, Num)]
 type O = { C *node[string]; D []node[string]; E *Nums; F node[(node[string], node[string])]; G []Num; H *P; I node[_]; J _ }
 rule main O = ns:nums p:pair $$ => O{C: $ns.Value[0], D: $ns.Value, E: $ns, F: $p, G: $ns.Value, H: $p, I: $ns, J: $p}
 rule nums Nums = "[" ns:num* "]" => Nums{$ns}
 rule num Num = [0-9] #atomic
-rule pair P = "<" t:(num num) ">" => P{$t}`, []string{"[12]<34>", "[1]<34>", "[]<12>", "[1", ""}},
-		{"named node casts", `type N = node[string]
+rule pair P = "<" t:(num num) ">" => P{$t}`, Inputs: []string{"[12]<34>", "[1]<34>", "[]<12>", "[1", ""}},
+		{Name: "named node casts", Src: `type N = node[string]
 type M = node[string]
 type U ~ N | M
 type Out = { X M; L []U; A _; T string; Y *U }
 rule main Out = xs:u* $$ => Out{X: $xs.Value[0].(M), L: $xs.Value, A: $xs.Value[0], T: text($xs), Y: $xs.Value[len($xs.Value) - 1]}
 rule u U = n / m
 rule n N = "n"
-rule m M = "m"`, []string{"m", "mn", "mnm", "n", "", "x"}},
-		{"named node rule conversions", `type N = node[string]
+rule m M = "m"`, Inputs: []string{"m", "mn", "mnm", "n", "", "x"}},
+		{Name: "named node rule conversions", Src: `type N = node[string]
 type M = node[string]
 type T = node[(N, M)]
 type A = node[_]
@@ -554,21 +533,21 @@ rule open A = "x" "y"
 rule word A = "w"
 rule conv N = m
 rule n N = "n"
-rule m M = "m"`, []string{"nmxywm", "nmxywmm", "nmxyw", "nmxy", "mm"}},
-		{"named node roots", `type N = node[string]
-rule main N = x:[a-z]+ #atomic => N{$x}`, []string{"abc", "", "1"}},
-		{"named list root", `type Tree = node[[]Tree]
-rule main Tree = "(" ts:main* ")" => Tree{$ts}`, []string{"()", "(()(()))", "(()", ""}},
-		{"named node memo", `type N = node[string]
+rule m M = "m"`, Inputs: []string{"nmxywm", "nmxywmm", "nmxyw", "nmxy", "mm"}},
+		{Name: "named node roots", Src: `type N = node[string]
+rule main N = x:[a-z]+ #atomic => N{$x}`, Inputs: []string{"abc", "", "1"}},
+		{Name: "named list root", Src: `type Tree = node[[]Tree]
+rule main Tree = "(" ts:main* ")" => Tree{$ts}`, Inputs: []string{"()", "(()(()))", "(()", ""}},
+		{Name: "named node memo", Src: `type N = node[string]
 type Out = { A N; B N; Same bool }
 rule main Out = &(x:n) y:n $$ => Out{A: $x, B: $y, Same: $x == $y}
-rule n N = [a-z] #atomic`, []string{"a", "", "ab"}},
-		{"named node predicates", `type N = node[string]
+rule n N = [a-z] #atomic`, Inputs: []string{"a", "", "ab"}},
+		{Name: "named node predicates", Src: `type N = node[string]
 type Out = { L []N; S int }
 rule main Out = xs:long* $$ => Out{L: $xs.Value, S: foldl(0, $xs, (s, x) => s + x.End - x.Start)}
 rule long N = x:n {len($x.Value) > 1 && text($x) != "zz"} => $x
-rule n N = -" "* t:[a-z]+ #atomic => N{$t}`, []string{"ab cd", "", "abc d"}},
-		{"named node conversion chains", `type N = node[string]
+rule n N = -" "* t:[a-z]+ #atomic => N{$t}`, Inputs: []string{"ab cd", "", "abc d"}},
+		{Name: "named node conversion chains", Src: `type N = node[string]
 type M = node[string]
 type P = node[(M, M)]
 type R = node[(M, M)]
@@ -581,20 +560,20 @@ rule letter = "q"
 rule mk N = m:c => N{$m}
 rule conv N = "z"
 rule pp P = c c
-rule rr R = pp`, []string{"q,q,z,q,qq", "q,q,z,q!,qq", "q,q,z,q,qq?", "q,q,z", "z", ""}},
-		{"named recursive tree", `type Tree = node[[]Tree]
+rule rr R = pp`, Inputs: []string{"q,q,z,q,qq", "q,q,z,q!,qq", "q,q,z,q,qq?", "q,q,z", "z", ""}},
+		{Name: "named recursive tree", Src: `type Tree = node[[]Tree]
 type Out = { A _; L []Tree; C node[_]; T Tree; N int }
 rule main Out = t:tree ts:tree* $$ => Out{A: $t, L: $ts.Value, C: $t, T: $t, N: len($ts.Value)}
-rule tree Tree = "(" ts:tree* ")" => Tree{$ts}`, []string{"()", "(())()", "(()(()))(())()", "(", ""}},
-		{"named rule bodies", `type N = node[string]
+rule tree Tree = "(" ts:tree* ")" => Tree{$ts}`, Inputs: []string{"()", "(())()", "(()(()))(())()", "(", ""}},
+		{Name: "named rule bodies", Src: `type N = node[string]
 type L = node[[]N]
 type P = node[(N, node[string])]
 type Out = { L L; P P; A _; B _ }
 rule main Out = l:list "," p:pair $$ => Out{L: $l, P: $p, A: $l, B: $p}
 rule list L = n*
 rule pair P = n "!"
-rule n N = [a-z] #atomic`, []string{"ab,c!", ",a!", "a,b", "a,!", ""}},
-		{"named node backtracking", `type N = node[string]
+rule n N = [a-z] #atomic`, Inputs: []string{"ab,c!", ",a!", "a,b", "a,!", ""}},
+		{Name: "named node backtracking", Src: `type N = node[string]
 type P = node[(N, N, node[string])]
 type Q = node[(N, node[string])]
 type U ~ P | Q | N
@@ -603,13 +582,13 @@ rule main Out = xs:item* $$ => Out{L: $xs.Value, A: $xs}
 rule item U = p / q / n
 rule p P = n n "!"
 rule q Q = n "?"
-rule n N = [a-z] #atomic`, []string{"ab!a?c", "ab?", "a", "", "!"}},
-		{"named node recovery", `type N = node[string]
+rule n N = [a-z] #atomic`, Inputs: []string{"ab!a?c", "ab?", "a", "", "!"}},
+		{Name: "named node recovery", Src: `type N = node[string]
 type Out = { L []_ }
 rule main Out = xs:item* $$ => Out{L: $xs.Value}
 rule item _ = x:(n #recover(skip=[^;]+)) ";" => $x
-rule n N = [a-z]+ #atomic`, []string{"ab;cd;", "ab;12;cd;", "1;", ""}},
-		{"named children of open nodes", `type N = node[string]
+rule n N = [a-z]+ #atomic`, Inputs: []string{"ab;cd;", "ab;12;cd;", "1;", ""}},
+		{Name: "named children of open nodes", Src: `type N = node[string]
 type M = node[string]
 type A = node[_]
 type Out = { A A; B _; C A }
@@ -617,8 +596,8 @@ rule main Out = a:open "," c:open2 $$ => Out{A: $a, B: $a, C: $c}
 rule open A = n m n
 rule open2 A = ns:n* => A{$ns}
 rule n N = "n"
-rule m M = "m"`, []string{"nmn,nn", "nmn,", "nm,n", ""}},
-		{"named node aliases", `type N = node[string]
+rule m M = "m"`, Inputs: []string{"nmn,nn", "nmn,", "nm,n", ""}},
+		{Name: "named node aliases", Src: `type N = node[string]
 type M = node[string]
 type K ~ N
 type U ~ K | M
@@ -627,28 +606,28 @@ rule main Out = k:k xs:u* $$ => Out{X: $k, Y: $xs.Value[0].(K), L: $xs.Value, A:
 rule k K = x:"k" => K{$x}
 rule u U = n / m
 rule n K = "n"
-rule m M = "m"`, []string{"knm", "kmn", "k", "kn", ""}},
-		{"named node Go names", `type Node = node[string]
+rule m M = "m"`, Inputs: []string{"knm", "kmn", "k", "kn", ""}},
+		{Name: "named node Go names", Src: `type Node = node[string]
 type Span = node[(Node, Node)]
 type TList = node[[]Node]
 type Out = { A Node; B Span; C TList; D _ }
 rule main Out = a:node b:span c:tlist $$ => Out{A: $a, B: $b, C: $c, D: $b}
 rule node Node = [a-z] #atomic
 rule span Span = node node
-rule tlist TList = "[" xs:node* "]" => TList{$xs}`, []string{"abc[de]", "abc[]", "ab[", ""}},
-		{"named left recursion", `type N = node[string]
+rule tlist TList = "[" xs:node* "]" => TList{$xs}`, Inputs: []string{"abc[de]", "abc[]", "ab[", ""}},
+		{Name: "named left recursion", Src: `type N = node[string]
 type S = node[_]
 type Out = { S S; T S; A _ }
 rule main Out = s:sum "," t:prod $$ => Out{S: $s, T: $t, A: $s}
 rule sum S = sum -"+" n / n
 rule prod S = x:(prod -"*" n / n) => S{$x}
-rule n N = [0-9] #atomic`, []string{"1+2+3,4*5", "1,2", "1+,2", ""}},
-		{"named node in any fields", `type N = node[string]
+rule n N = [0-9] #atomic`, Inputs: []string{"1+2+3,4*5", "1,2", "1+,2", ""}},
+		{Name: "named node in any fields", Src: `type N = node[string]
 type H = { V _ }
 type Out = { H H; X N; T string }
 rule main Out = h:holder $$ => Out{H: $h, X: $h.V.(N), T: text($h.V.(N))}
 rule holder H = x:n => H{V: $x}
-rule n N = [a-z]+ #atomic`, []string{"abc", "", "1"}},
+rule n N = [a-z]+ #atomic`, Inputs: []string{"abc", "", "1"}},
 	}
 }
 
@@ -673,17 +652,17 @@ func testGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
 	converted := map[string]bool{"named node in any fields": true}
 	cases := namedNodeTypeCases()
 	for _, c := range cases {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		code, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		direct := strings.Contains(string(code), "return rt.TParse(trules[") && !strings.Contains(string(code), "rt.RunParseConverted(")
-		if direct == converted[c.name] {
-			t.Errorf("%s: generated typed Go uses the typed runtime: %v, want %v", c.name, direct, !converted[c.name])
+		if direct == converted[c.Name] {
+			t.Errorf("%s: generated typed Go uses the typed runtime: %v, want %v", c.Name, direct, !converted[c.Name])
 		}
 	}
 	typed := len(cases) - len(converted)
@@ -770,21 +749,21 @@ rule a A = [a-zé] #atomic`, []string{"()abcd", "(()(()))abcd", "((é))éaéa", 
 
 // declaredNodeAnyCases are grammars whose rules declare node[_] without an action: the declared
 // type, and not the inferred value type, is the rule's type.
-func declaredNodeAnyCases() []genCase {
-	return []genCase{
-		{"declared node[_] tuple", `rule main node[_] = a b
+func declaredNodeAnyCases() []gentest.Case {
+	return []gentest.Case{
+		{Name: "declared node[_] tuple", Src: `rule main node[_] = a b
 rule a = "a"
-rule b = "b"`, []string{"ab", "a", "", "abb"}},
-		{"declared node[_] in a union", `type B = { X node[_] }
+rule b = "b"`, Inputs: []string{"ab", "a", "", "abb"}},
+		{Name: "declared node[_] in a union", Src: `type B = { X node[_] }
 type U ~ node[_] | B
 type O = { P U; Q U; R []node[_] }
 rule main O = p:one q:(wrap / two) r:two* $$ => O{P: $p, Q: $q, R: $r.Value}
 rule wrap B = x:one => B{X: $x}
 rule one node[_] = "a" "b"
-rule two node[_] = "c"+`, []string{"abab", "abcab", "abccc", "ab", ""}},
-		{"declared node[_] list and reference", `rule main node[_] = xs:item* t:tail
+rule two node[_] = "c"+`, Inputs: []string{"abab", "abcab", "abccc", "ab", ""}},
+		{Name: "declared node[_] list and reference", Src: `rule main node[_] = xs:item* t:tail
 rule item node[_] = "a" "b"
-rule tail node[_] = item item?`, []string{"abab", "ababab", "abx", ""}},
+rule tail node[_] = item item?`, Inputs: []string{"abab", "ababab", "abx", ""}},
 	}
 }
 
@@ -797,7 +776,7 @@ func TestGeneratedDeclaredNodeAny(t *testing.T) {
 }
 
 func testGeneratedDeclaredNodeAny(t *testing.T) {
-	src := declaredNodeAnyCases()[0].src
+	src := declaredNodeAnyCases()[0].Src
 	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
@@ -827,16 +806,16 @@ func testGeneratedDeclaredNodeAny(t *testing.T) {
 	}
 	cases := declaredNodeAnyCases()
 	for _, c := range cases {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		code, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		if !strings.Contains(string(code), "return rt.TParse(trules[") || strings.Contains(string(code), "rt.RunParseConverted(") {
-			t.Errorf("%s: generated typed Go converts nodes instead of using the typed runtime", c.name)
+			t.Errorf("%s: generated typed Go converts nodes instead of using the typed runtime", c.Name)
 		}
 	}
 	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
@@ -851,7 +830,7 @@ func TestNamedNodeTypeText(t *testing.T) {
 	t.Parallel()
 	const want = `Out{Any: Any("bc"), Items: [Ident("ab") Num("12")], Len: 4, Nums: Nums[Num("3")], Pair: Pair(Num("1") Ident("x")), Start: 3, Text: "ab12"}`
 	for _, sourceInfo := range []bool{false, true} {
-		prog := compileBare(t, nodeTypeGrammar, compile.Options{SourceInfo: sourceInfo})
+		prog := compileBare(t, gentest.NodeTypeGrammar, compile.Options{SourceInfo: sourceInfo})
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			n, err := prog.ParseWith("main", "ab 12<1,x>[3]!bc", ParseOptions{Backend: backend})
 			if err != nil {

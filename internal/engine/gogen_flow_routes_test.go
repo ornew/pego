@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -31,12 +32,12 @@ var routeInputs = map[string][]string{
 }
 
 // routeCases returns the route grammars with their inputs.
-func routeCases(t *testing.T) []genCase {
+func routeCases(t *testing.T) []gentest.Case {
 	paths, err := filepath.Glob(filepath.Join("testdata", "routes", "*.pego"))
 	if err != nil || len(paths) != len(routeInputs) {
 		t.Fatalf("route grammars: %d files, want %d: %v", len(paths), len(routeInputs), err)
 	}
-	var cases []genCase
+	var cases []gentest.Case
 	for _, p := range paths {
 		src, err := os.ReadFile(p)
 		if err != nil {
@@ -47,7 +48,7 @@ func routeCases(t *testing.T) []genCase {
 		if !ok {
 			t.Fatalf("no inputs for route grammar %s", name)
 		}
-		cases = append(cases, genCase{name, string(src), inputs})
+		cases = append(cases, gentest.Case{Name: name, Src: string(src), Inputs: inputs})
 	}
 	return cases
 }
@@ -60,12 +61,12 @@ func TestFlowRoutesPrinted(t *testing.T) {
 	frames := 0
 	for _, mode := range flowModes {
 		for _, gc := range routeCases(t) {
-			_, n, f, ok := flowGenerate(gc.src, mode.opts)
+			_, n, f, ok := flowGenerate(gc.Src, mode.opts)
 			if !ok {
-				t.Fatalf("%s %s: rejected", mode.name, gc.name)
+				t.Fatalf("%s %s: rejected", mode.name, gc.Name)
 			}
 			if n == 0 {
-				t.Errorf("%s %s: no rule printed from Flow IR", mode.name, gc.name)
+				t.Errorf("%s %s: no rule printed from Flow IR", mode.name, gc.Name)
 			}
 			if mode.frames {
 				frames += f

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	goast "go/ast"
 	goparser "go/parser"
 	"go/printer"
@@ -191,91 +192,91 @@ rule key = {n >= 0} word
 rule word = [a-z]+ #atomic
 rule val = [0-9]+ #atomic`
 
-var streamCorpus = []genCase{
-	{"records", records, []string{"#records\na=1\nbc=22\n", "#records\nx\n", "#records\n", "", "#records\na=1\nb"}},
-	{"actions", `type Pair = { Key node[string]; Value node[string] }
+var streamCorpus = []gentest.Case{
+	{Name: "records", Src: gentest.Records, Inputs: []string{"#records\na=1\nbc=22\n", "#records\nx\n", "#records\n", "", "#records\na=1\nb"}},
+	{Name: "actions", Src: `type Pair = { Key node[string]; Value node[string] }
 rule main = item* #stream $$
-rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Value: $v}`, []string{"a=1\nb=2\n", "a=1\nb=x\n", ""}},
-	{"discarded text", `type T = { H string; N int }
+rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Value: $v}`, Inputs: []string{"a=1\nb=2\n", "a=1\nb=x\n", ""}},
+	{Name: "discarded text", Src: `type T = { H string; N int }
 rule main = h:("a" "b") rs:r* #stream "!" => T{H: text($h), N: len($rs)}
-rule r = "x" "y"`, []string{"abxyxy!", "ab!", "abxyx!", "ab" + strings.Repeat("xy", 3000) + "!"}},
-	{"zero width", `rule main = ("a" / "") * #stream $$`, []string{"", "a", "aa", "ab"}},
-	{"bounded", `rule main = ("é" / "x") #repeat(1, 2) #stream rest
-rule rest = "!" $$`, []string{"!", "é!", "éx!", "éxé!", "xé"}},
-	{"minimum failure", `rule main = "x" #repeat(3) #stream $$`, []string{"xx", "xxx", "xxxx", "y", ""}},
-	{"lookahead", `rule main = item* #stream $$
-rule item = "a" &"b" / "b" !"c" / "c"`, []string{"abab", "abc", "bc", "cab", "ac"}},
-	{"line anchors", `rule main = line* #stream $$
-rule line = ^ [a-z]* #atomic $ "\n"`, []string{"ab\ncd\n", "ab\n\nc\n", "ab\nc", "\n\n"}},
-	{"left recursive elements", `rule main = (e ";") * #stream $$
+rule r = "x" "y"`, Inputs: []string{"abxyxy!", "ab!", "abxyx!", "ab" + strings.Repeat("xy", 3000) + "!"}},
+	{Name: "zero width", Src: `rule main = ("a" / "") * #stream $$`, Inputs: []string{"", "a", "aa", "ab"}},
+	{Name: "bounded", Src: `rule main = ("é" / "x") #repeat(1, 2) #stream rest
+rule rest = "!" $$`, Inputs: []string{"!", "é!", "éx!", "éxé!", "xé"}},
+	{Name: "minimum failure", Src: `rule main = "x" #repeat(3) #stream $$`, Inputs: []string{"xx", "xxx", "xxxx", "y", ""}},
+	{Name: "lookahead", Src: `rule main = item* #stream $$
+rule item = "a" &"b" / "b" !"c" / "c"`, Inputs: []string{"abab", "abc", "bc", "cab", "ac"}},
+	{Name: "line anchors", Src: `rule main = line* #stream $$
+rule line = ^ [a-z]* #atomic $ "\n"`, Inputs: []string{"ab\ncd\n", "ab\n\nc\n", "ab\nc", "\n\n"}},
+	{Name: "left recursive elements", Src: `rule main = (e ";") * #stream $$
 rule e = e "+" t / t
-rule t = [0-9]+ #atomic`, []string{"1+2;3;", "1+;", "1+2+3;4+5;"}},
-	{"operators elements", `rule main = (e ";") * #stream $$
+rule t = [0-9]+ #atomic`, Inputs: []string{"1+2;3;", "1+;", "1+2+3;4+5;"}},
+	{Name: "operators elements", Src: `rule main = (e ";") * #stream $$
 rule e = #operators {
     operand [0-9]+ #atomic
     level { infix left "+" }
     level { prefix "-" }
-}`, []string{"1+-2;3;", "-;", "1+2+3;"}},
-	{"cut elements", `rule main = item* #stream $$
-rule item = "a" #cut "b" / "c"`, []string{"abc", "ac", "abab"}},
-	{"variables", `var n int
+}`, Inputs: []string{"1+-2;3;", "-;", "1+2+3;"}},
+	{Name: "cut elements", Src: `rule main = item* #stream $$
+rule item = "a" #cut "b" / "c"`, Inputs: []string{"abc", "ac", "abab"}},
+	{Name: "variables", Src: `var n int
 rule main = {n := 0} item* #stream $$
-rule item = "a" {n := n + 1} / "b" {n > 0}`, []string{"ab", "b", "aab"}},
-	{"recovery", `rule main = stmt* #stream $$
-rule stmt = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")`, []string{"ab;1x;cd;9;", "1x;ab", "ab;"}},
-	{"unicode", `rule main = ch* #stream $$
-rule ch = "é" / "😀" / "\u{fffd}" / [a-z]`, []string{"aé😀b", "é\xe2\x82", "\xff\xfe", "a\xe2\x82\xacb", "\xf0\x9f\x98", "😀😀"}},
-	{"errors after discard", `rule main = line* #stream $$
-rule line = [a-z]+ #atomic "\n"`, []string{strings.Repeat("abc\n", 3000) + "x1\n", strings.Repeat("ab\n", 2000) + "\n"}},
+rule item = "a" {n := n + 1} / "b" {n > 0}`, Inputs: []string{"ab", "b", "aab"}},
+	{Name: "recovery", Src: `rule main = stmt* #stream $$
+rule stmt = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")`, Inputs: []string{"ab;1x;cd;9;", "1x;ab", "ab;"}},
+	{Name: "unicode", Src: `rule main = ch* #stream $$
+rule ch = "é" / "😀" / "\u{fffd}" / [a-z]`, Inputs: []string{"aé😀b", "é\xe2\x82", "\xff\xfe", "a\xe2\x82\xacb", "\xf0\x9f\x98", "😀😀"}},
+	{Name: "errors after discard", Src: `rule main = line* #stream $$
+rule line = [a-z]+ #atomic "\n"`, Inputs: []string{strings.Repeat("abc\n", 3000) + "x1\n", strings.Repeat("ab\n", 2000) + "\n"}},
 	// Elements backtrack into a memoized rule that reads variables.
-	{"memoized elements", streamMemoGrammar, []string{"a=1\nb:2\n", "a=1\n:2\n", strings.Repeat("ab=1\ncd:2\n", 1500)}},
+	{Name: "memoized elements", Src: streamMemoGrammar, Inputs: []string{"a=1\nb:2\n", "a=1\n:2\n", strings.Repeat("ab=1\ncd:2\n", 1500)}},
 	// The start rule is memoized at 0 after the memo before it was pruned.
-	{"recursive start", `rule main = item* #stream
-rule item = "(" main ")" / [a-z] / "[" main "]" / "(" [0-9]`, []string{strings.Repeat("x", 3000), strings.Repeat("(a)", 1000), "[a(b)]c(1", "(1"}},
+	{Name: "recursive start", Src: `rule main = item* #stream
+rule item = "(" main ")" / [a-z] / "[" main "]" / "(" [0-9]`, Inputs: []string{strings.Repeat("x", 3000), strings.Repeat("(a)", 1000), "[a(b)]c(1", "(1"}},
 	// The groups and attributes around the stream repetition or its sequence do not change what
 	// streams.
-	{"stream in an attributed sequence", `rule main = (([a-z] #atomic)* #stream "!") @diagnostic(name="x") $$`, []string{"ab!", "!", "", "a"}},
-	{"stream in an attributed group", `rule main = (item* #stream) @diagnostic(name="items") "." $$
-rule item = [a-z] #atomic`, []string{"ab.", "a", ".", "ab"}},
+	{Name: "stream in an attributed sequence", Src: `rule main = (([a-z] #atomic)* #stream "!") @diagnostic(name="x") $$`, Inputs: []string{"ab!", "!", "", "a"}},
+	{Name: "stream in an attributed group", Src: `rule main = (item* #stream) @diagnostic(name="items") "." $$
+rule item = [a-z] #atomic`, Inputs: []string{"ab.", "a", ".", "ab"}},
 	// Shapes around the stream repetition and its elements: a diagnostic or an error label on the repetition
 	// itself, captures with an action in each element, a recursive start rule that keeps captures, the
 	// environment changed by an element and read by a predicate and a lookahead after it, recovery in the
 	// element rule, and recovery in the start rule.
-	{"diagnostic on the repetition", `rule main = (item* #stream @diagnostic(name="items")) "." $$
-rule item = [a-z] #atomic`, []string{"ab.", "a", ".", "ab1"}},
-	{"error label on the repetition", `rule main = (item* #stream @error(message="expected items")) "." $$
-rule item = [a-z] #atomic`, []string{"ab.", "a", ".", "ab1"}},
-	{"element captures and actions", `rule main = h:"#" rs:item* #stream t:"!"? => ($h, len($rs), $t)
-rule item = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic ";" => ($k, $v)`, []string{"#a=1;b=22;!", "#a=1;b=;", "#", "#a=1;b=2"}},
-	{"recursive start with captures", `rule main = a:item* #stream b:"."? => ($a, $b)
-rule item = ("(" m:main ")" => $m) / (x:[a-z] #atomic => $x)`, []string{"a(b)c.", "((a)", "(a(b))", strings.Repeat("(", 40) + "a" + strings.Repeat(")", 40)}},
-	{"environment, predicate and lookahead", `var n int
+	{Name: "diagnostic on the repetition", Src: `rule main = (item* #stream @diagnostic(name="items")) "." $$
+rule item = [a-z] #atomic`, Inputs: []string{"ab.", "a", ".", "ab1"}},
+	{Name: "error label on the repetition", Src: `rule main = (item* #stream @error(message="expected items")) "." $$
+rule item = [a-z] #atomic`, Inputs: []string{"ab.", "a", ".", "ab1"}},
+	{Name: "element captures and actions", Src: `rule main = h:"#" rs:item* #stream t:"!"? => ($h, len($rs), $t)
+rule item = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic ";" => ($k, $v)`, Inputs: []string{"#a=1;b=22;!", "#a=1;b=;", "#", "#a=1;b=2"}},
+	{Name: "recursive start with captures", Src: `rule main = a:item* #stream b:"."? => ($a, $b)
+rule item = ("(" m:main ")" => $m) / (x:[a-z] #atomic => $x)`, Inputs: []string{"a(b)c.", "((a)", "(a(b))", strings.Repeat("(", 40) + "a" + strings.Repeat(")", 40)}},
+	{Name: "environment, predicate and lookahead", Src: `var n int
 rule main = {n := 0} item* #stream &"!" $$ "!"
-rule item = "a" {n := n + 1} / "b" {n > 1} / "c" !"d"`, []string{"aab!", "ab!", "aacc!", "acd!", "b"}},
-	{"recovery in the element rule", `rule main = stmt* #stream $$
+rule item = "a" {n := n + 1} / "b" {n > 1} / "c" !"d"`, Inputs: []string{"aab!", "ab!", "aacc!", "acd!", "b"}},
+	{Name: "recovery in the element rule", Src: `rule main = stmt* #stream $$
 rule stmt = (word ";") #recover(skip=[^;]* ";")
-rule word = [a-z]+ #atomic`, []string{"ab;1;cd;", "1;ab", "ab;;", ";"}},
-	{"recovery in the start rule", `rule main = (word ";" #recover(skip=[^;]* ";"))* #stream $$
-rule word = [a-z]+ #atomic`, []string{"ab;1;cd;", "1;ab", "ab;;", ";"}},
+rule word = [a-z]+ #atomic`, Inputs: []string{"ab;1;cd;", "1;ab", "ab;;", ";"}},
+	{Name: "recovery in the start rule", Src: `rule main = (word ";" #recover(skip=[^;]* ";"))* #stream $$
+rule word = [a-z]+ #atomic`, Inputs: []string{"ab;1;cd;", "1;ab", "ab;;", ";"}},
 	// Each growth of the start rule allocates its capture frame again.
 	// A leader that grows through an optional prefix of itself before the streamed elements, with a mandatory end.
-	{"left recursive start choice", `rule main = (main "+")? item* #stream "."
-rule item = q:[a-z] #atomic`, []string{"ab.", "ab.+c.", "ab.+c.+d.", ".", "+", "ab", "ab.+", ""}},
+	{Name: "left recursive start choice", Src: `rule main = (main "+")? item* #stream "."
+rule item = q:[a-z] #atomic`, Inputs: []string{"ab.", "ab.+c.", "ab.+c.+d.", ".", "+", "ab", "ab.+", ""}},
 	// An indirect cycle and mutual leaders through the start rule, whose elements stream after the cycle.
-	{"indirect leader start", `rule main = (a "y")? item* #stream "."
+	{Name: "indirect leader start", Src: `rule main = (a "y")? item* #stream "."
 rule a = main "x" / "n"
-rule item = q:[a-z] #atomic`, []string{"ab.", "nxy.", "ab.xyab.", "ab.xy", "n", "", "ab.x"}},
-	{"mutual leader start", `rule main = (a "w")? item* #stream "."
+rule item = q:[a-z] #atomic`, Inputs: []string{"ab.", "nxy.", "ab.xyab.", "ab.xy", "n", "", "ab.x"}},
+	{Name: "mutual leader start", Src: `rule main = (a "w")? item* #stream "."
 rule a = main "x" / a "v" / "n"
-rule item = q:[a-z] #atomic`, []string{"nw.", "nvw.", "nvvw.", "ab.xwc.", "nwab.xvw.", "nwab", "nv", "w.", ""}},
+rule item = q:[a-z] #atomic`, Inputs: []string{"nw.", "nvw.", "nvvw.", "ab.xwc.", "nwab.xvw.", "nwab", "nv", "w.", ""}},
 	// Cuts and recovery in streamed elements and in a leader start rule.
-	{"stream element with a cut and recovery", `rule main = stmt* #stream $$
+	{Name: "stream element with a cut and recovery", Src: `rule main = stmt* #stream $$
 rule stmt = ("(" #cut word ")") #recover(skip=[^)]* ")") / word ";"
-rule word = [a-z]+ #atomic`, []string{"(ab)cd;", "(1)ab;", "(ab", "(1", "cd;(ab)", ";", ""}},
-	{"leader start rule with recovery", `rule main = (main "+")? item* #stream "."
-rule item = ([a-z] ";") #recover(skip=[^;.]* ";")`, []string{"a;b;.", "a;b;.+c;.", "ab;.", "1;.", "a;.+", "a;.+1;.", ""}},
-	{"left recursive start", `rule main = a:(main "x")? b:item* #stream c:"."?
-rule item = q:[a-z] #atomic`, []string{"ab.", "a", "", "ab.x"}},
+rule word = [a-z]+ #atomic`, Inputs: []string{"(ab)cd;", "(1)ab;", "(ab", "(1", "cd;(ab)", ";", ""}},
+	{Name: "leader start rule with recovery", Src: `rule main = (main "+")? item* #stream "."
+rule item = ([a-z] ";") #recover(skip=[^;.]* ";")`, Inputs: []string{"a;b;.", "a;b;.+c;.", "ab;.", "1;.", "a;.+", "a;.+1;.", ""}},
+	{Name: "left recursive start", Src: `rule main = a:(main "x")? b:item* #stream c:"."?
+rule item = q:[a-z] #atomic`, Inputs: []string{"ab.", "a", "", "ab.x"}},
 }
 
 // TestGeneratedStreamMatchesEngine compares generated ParseStream with the
@@ -295,9 +296,9 @@ func testGeneratedStreamMatchesEngine(t *testing.T) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
-	cases := append([]genCase(nil), streamCorpus...)
-	for _, c := range genCorpus(t) {
-		if strings.Contains(c.src, "#stream") {
+	cases := append([]gentest.Case(nil), streamCorpus...)
+	for _, c := range gentest.GenCorpus(t) {
+		if strings.Contains(c.Src, "#stream") {
 			cases = append(cases, c)
 		}
 	}
@@ -309,7 +310,7 @@ func testGeneratedStreamMatchesEngine(t *testing.T) {
 	}
 }
 
-func testGeneratedStreams(t *testing.T, goBin string, cases []genCase, opts gen.GenOptions) {
+func testGeneratedStreams(t *testing.T, goBin string, cases []gentest.Case, opts gen.GenOptions) {
 	dir := t.TempDir()
 	write := func(name, content string) {
 		path := filepath.Join(dir, name)
@@ -324,9 +325,9 @@ func testGeneratedStreams(t *testing.T, goBin string, cases []genCase, opts gen.
 	var want []string
 	var names []string
 	for i, c := range cases {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		opts.Package, opts.Start, opts.Stream, opts.SourceInfo = fmt.Sprintf("g%d", i), "main", true, true // compile gives the engine source information
 		code, err := generateCode(t, g, opts)
@@ -334,7 +335,7 @@ func testGeneratedStreams(t *testing.T, goBin string, cases []genCase, opts gen.
 			if strings.Contains(err.Error(), "needs a #stream repetition") {
 				continue // the corpus grammar has #stream elsewhere
 			}
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		write(fmt.Sprintf("g%d/parser.go", i), string(code))
 		fmt.Fprintf(&imports, "\tg%d \"streamtest/g%d\"\n", i, i)
@@ -369,8 +370,8 @@ func testGeneratedStreams(t *testing.T, goBin string, cases []genCase, opts gen.
 		return g%[1]d.ParseStream(r, e, opts...)
 	},
 `, i)
-		prog := mustCompile(t, c.src, compile.Options{NoProjections: true})
-		for _, in := range c.inputs {
+		prog := mustCompile(t, c.Src, compile.Options{NoProjections: true})
+		for _, in := range c.Inputs {
 			for _, bytes := range []bool{false, true} {
 				variants := append([]streamRun{{Chunk: 0}, {Chunk: 1}, {Chunk: 2, EOFWithData: true}, {Chunk: 3, Fail: true}, {Chunk: 1, StopAt: 2}, {NilEmit: true}}, streamDiagVariants...)
 				if len(in) > 1000 {
@@ -380,7 +381,7 @@ func testGeneratedStreams(t *testing.T, goBin string, cases []genCase, opts gen.
 					v.Case, v.Input, v.Bytes = i, []byte(in), bytes
 					runs = append(runs, v)
 					want = append(want, engineStream(prog, v))
-					names = append(names, fmt.Sprintf("%s %q %+v", c.name, in, v))
+					names = append(names, fmt.Sprintf("%s %q %+v", c.Name, in, v))
 				}
 			}
 		}
@@ -899,9 +900,9 @@ func TestGenerateStreamKeepsBatchBodies(t *testing.T) {
 }
 
 func testGenerateStreamKeepsBatchBodies(t *testing.T) {
-	cases := append([]genCase(nil), streamCorpus...)
-	for _, c := range genCorpus(t) {
-		if strings.Contains(c.src, "#stream") {
+	cases := append([]gentest.Case(nil), streamCorpus...)
+	for _, c := range gentest.GenCorpus(t) {
+		if strings.Contains(c.Src, "#stream") {
 			cases = append(cases, c)
 		}
 	}
@@ -931,7 +932,7 @@ func testGenerateStreamKeepsBatchBodies(t *testing.T) {
 	}
 	n := 0
 	for _, c := range cases {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -953,7 +954,7 @@ func testGenerateStreamKeepsBatchBodies(t *testing.T) {
 			got := decls(stream)
 			for name, body := range decls(plain) {
 				if got[name] != body {
-					t.Errorf("%s %+v: method %s differs with stream generation", c.name, opts, name)
+					t.Errorf("%s %+v: method %s differs with stream generation", c.Name, opts, name)
 				}
 			}
 			table := func(code []byte) string {
@@ -964,7 +965,7 @@ func testGenerateStreamKeepsBatchBodies(t *testing.T) {
 				return src[i : j+strings.Index(src[j:], "\n\n")]
 			}
 			if table(plain) != table(stream) {
-				t.Errorf("%s: rule table differs with stream generation", c.name)
+				t.Errorf("%s: rule table differs with stream generation", c.Name)
 			}
 		}
 	}

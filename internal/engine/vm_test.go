@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -15,17 +16,17 @@ import (
 // engine on all the test grammars and examples.
 func TestBackendsMatchOnCorpus(t *testing.T) {
 	t.Parallel()
-	for _, c := range genCorpus(t) {
-		t.Run(c.name, func(t *testing.T) {
+	for _, c := range gentest.GenCorpus(t) {
+		t.Run(c.Name, func(t *testing.T) {
 			for _, o := range []compile.Options{{}, {DisableMemo: true}} {
-				prog := mustCompile(t, c.src, o)
-				for _, in := range c.inputs {
+				prog := mustCompile(t, c.Src, o)
+				for _, in := range c.Inputs {
 					checkBackends(t, prog, "main", in)
 				}
 			}
 			// Projected repetitions (internal/compile/project.go) give what the repetitions as written give.
-			prog, plain := mustCompile(t, c.src), mustCompile(t, c.src, compile.Options{NoProjections: true})
-			for _, in := range c.inputs {
+			prog, plain := mustCompile(t, c.Src), mustCompile(t, c.Src, compile.Options{NoProjections: true})
+			for _, in := range c.Inputs {
 				for _, u := range []PositionUnit{CodePoints, Bytes} {
 					n1, err1 := prog.ParseWith("main", in, ParseOptions{Unit: u})
 					n2, err2 := plain.ParseWith("main", in, ParseOptions{Unit: u})
@@ -41,7 +42,7 @@ func TestBackendsMatchOnCorpus(t *testing.T) {
 // TestBackendsMatchOnStream checks that stream parsing also yields the same elements and errors.
 func TestBackendsMatchOnStream(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, records)
+	prog := mustCompile(t, gentest.Records)
 	inputs := []string{"#records\na=1\nbc=22\n", "#records\na=1\nb\n", "#rec"}
 	for _, in := range inputs {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {

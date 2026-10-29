@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,7 +27,7 @@ func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
 	if testing.Short() {
 		t.Skip("generates the corpus")
 	}
-	cases := grammarCases(t)
+	cases := gentest.GrammarCases(t)
 	for _, form := range []struct {
 		name     string
 		controls bool
@@ -43,14 +44,14 @@ func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
 			gh.FramedRoute = func(table string, r *compile.Rule) { framed++ }
 			gh.OperatorsRoute = func(table string, r *compile.Rule) { operators++ }
 			for _, c := range cases {
-				g, err := parseTest(c.src)
+				g, err := parseTest(c.Src)
 				if err != nil {
 					continue
 				}
 				_, err = Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport,
 					Types: true, TypedOnly: true, KeepNodes: true, WorkControls: form.controls})
 				if err != nil {
-					t.Fatalf("%s: %v", c.name, err)
+					t.Fatalf("%s: %v", c.Name, err)
 				}
 				generated++
 			}
@@ -64,9 +65,9 @@ func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
 // typedOnlyConverted are grammars whose typed entry points convert Nodes (an action reads a field of a struct), so
 // that a typed-only parser keeps the Node rules and its entry points run them: a plain sequence, recovery, a
 // fold, a left-recursive leader, a cut with an environment and an Operators Rule.
-var typedOnlyConverted = []genCase{
-	{"converted sequence", ordinaryOnlyConverted, ordinaryOnlyConvertedInputs},
-	{"recovery", `type Item = { Name node[string] }
+var typedOnlyConverted = []gentest.Case{
+	{Name: "converted sequence", Src: ordinaryOnlyConverted, Inputs: ordinaryOnlyConvertedInputs},
+	{Name: "recovery", Src: `type Item = { Name node[string] }
 type Box = { Items node[_]; F Item | error; FT string }
 type Out = { Box Box; Start int; End int; Text string; FNil bool }
 rule main Out = b:box => Out{Box: $b, Start: $b.Items.Start, End: $b.Items.End, Text: text($b.Items), FNil: $b.F == nil}
@@ -75,27 +76,27 @@ rule item Item = " "* i:item2 => $i
 rule item2 Item = n:"x" #atomic => Item{Name: $n}
 rule fitem Item | error = yitem #recover(skip=[a-z]+)
 rule yitem Item = n:"y" #atomic => Item{Name: $n}`,
-		[]string{"(x x)y", "(xx)y", "( x )q", "(x)", "(x x", "(x x)zzy", "", "(é)y"}},
-	{"fold", `type Op = { Left Node; Op node[string]; Right Node }
+		Inputs: []string{"(x x)y", "(xx)y", "( x )q", "(x)", "(x x", "(x x)zzy", "", "(é)y"}},
+	{Name: "fold", Src: `type Op = { Left Node; Op node[string]; Right Node }
 type Node ~ Op | node[string]
 type Args = { Items []node[string]; N int; S string }
 rule main Args = e:(expr #atomic) ";" a:args => Args{Items: concat($a.Items, $a.Items), N: len($a.Items) * 2 - 1, S: text($e) + "!"}
 rule expr Node = l:num rest:(op:("+" / "-") #atomic r:num)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.$op, Right: i.$r})
 rule args Args = first:num rest:(-"," x:num)* => Args{Items: concat(list($first), map($rest, (r) => r.$x)), N: len($rest)}
 rule num = [0-9]+ #atomic`,
-		[]string{"1+2-3;4,5,6", "1;2", "1-;2", "", "1+2;", "12+3;4,", ";"}},
-	{"left recursion", `type E = { Items []node[string]; N int }
+		Inputs: []string{"1+2-3;4,5,6", "1;2", "1-;2", "", "1+2;", "12+3;4,", ";"}},
+	{Name: "left recursion", Src: `type E = { Items []node[string]; N int }
 rule main E = e:expr "!" => E{Items: $e.Items, N: len($e.Items)}
 rule expr E = (l:expr "," x:item => E{Items: concat($l.Items, list($x)), N: 0}) / (x:item => E{Items: list($x), N: 0})
 rule item = [a-z]+ #atomic`,
-		[]string{"a!", "a,b,c!", "a,b", ",a!", "a,,b!", "", "a,b,!", "ab,cd!x"}},
-	{"cut and variables", `type R = { Names node[_]; N int }
+		Inputs: []string{"a!", "a,b,c!", "a,b", ",a!", "a,,b!", "", "a,b,!", "ab,cd!x"}},
+	{Name: "cut and variables", Src: `type R = { Names node[_]; N int }
 var n int = 0
 rule main R = i:item "!" => R{Names: $i.Names, N: n}
 rule item R = ("a" #cut {n := n + 1} xs:name+ => R{Names: $xs, N: 0}) / ("b" {n := n + 2} xs:name* => R{Names: $xs, N: 0})
 rule name = [a-z] #atomic ","?`,
-		[]string{"ab,c,!", "b!", "bx!", "a!", "a", "c!", "bxy,z!", ""}},
-	{"operators", `type It = { L []string }
+		Inputs: []string{"ab,c,!", "b!", "bx!", "a!", "a", "c!", "bxy,z!", ""}},
+	{Name: "operators", Src: `type It = { L []string }
 rule main It = e:expr $$ => It{L: concat($e.L, list("!"))}
 rule expr It = #operators {
     skip " "*
@@ -104,7 +105,7 @@ rule expr It = #operators {
     level { infix right o:("*" / "/") => It{L: concat(list("["), $lhs.L, list(text($o)), $rhs.L, list("]"))} }
 }
 rule num It = d:[0-9]+ #atomic => It{L: list(text($d))}`,
-		[]string{"1", "1 + 2", "1 - 2 * 3", "1 * 2 / 3 + 4", "1 +", "", " 1  *  2", "1 + 2 +"}},
+		Inputs: []string{"1", "1 + 2", "1 - 2 * 3", "1 * 2 / 3 + 4", "1 +", "", " 1  *  2", "1 + 2 +"}},
 }
 
 // typedOnlyTranscript prints the typed results of the entry points of the package PKG on INPUTS in both position
@@ -192,29 +193,29 @@ func TestFlowTypedOnlyEntriesMatchFull(t *testing.T) {
 				before := taken
 				only := base
 				only.TypedOnly = true
-				ordinaryOnlyPackage(t, dir, flowOnly, c.src, only, typedOnlyTranscript, c.inputs)
+				ordinaryOnlyPackage(t, dir, flowOnly, c.Src, only, typedOnlyTranscript, c.Inputs)
 				if taken == before {
-					t.Errorf("%s: no Node rule of the typed-only parser takes the Flow route", c.name)
+					t.Errorf("%s: no Node rule of the typed-only parser takes the Flow route", c.Name)
 				}
 				if src, err := os.ReadFile(filepath.Join(dir, flowOnly, "parser.go")); err != nil || !strings.Contains(string(src), "RunParseConverted(") {
-					t.Errorf("%s: the entries of the typed-only parser do not convert Nodes (%v)", c.name, err)
+					t.Errorf("%s: the entries of the typed-only parser do not convert Nodes (%v)", c.Name, err)
 				}
 				full1 := base
 				full1.Recognize = true
-				ordinaryOnlyPackage(t, dir, full, c.src, full1, typedOnlyTranscript, c.inputs)
-				mut := strings.Replace(c.src, `"!"`, `"?"`, 1)
-				if mut == c.src {
-					mut = strings.Replace(c.src, `"x"`, `"w"`, 1)
+				ordinaryOnlyPackage(t, dir, full, c.Src, full1, typedOnlyTranscript, c.Inputs)
+				mut := strings.Replace(c.Src, `"!"`, `"?"`, 1)
+				if mut == c.Src {
+					mut = strings.Replace(c.Src, `"x"`, `"w"`, 1)
 				}
-				if mut == c.src {
-					mut = strings.Replace(c.src, `[a-z]`, `[a-y]`, 1)
+				if mut == c.Src {
+					mut = strings.Replace(c.Src, `[a-z]`, `[a-y]`, 1)
 				}
-				if mut == c.src {
-					mut = strings.Replace(c.src, `[0-9]`, `[0-8]`, 1)
+				if mut == c.Src {
+					mut = strings.Replace(c.Src, `[0-9]`, `[0-8]`, 1)
 				}
 				mo := base
 				mo.TypedOnly = true
-				ordinaryOnlyPackage(t, dir, mutated, mut, mo, typedOnlyTranscript, c.inputs)
+				ordinaryOnlyPackage(t, dir, mutated, mut, mo, typedOnlyTranscript, c.Inputs)
 				pkgs = append(pkgs, full, flowOnly, mutated)
 			}
 			gh.LeanRoute, gh.FramedRoute, gh.OperatorsRoute = nil, nil, nil
@@ -222,13 +223,13 @@ func TestFlowTypedOnlyEntriesMatchFull(t *testing.T) {
 			for i, c := range typedOnlyConverted {
 				full, flowOnly, mutated := out[fmt.Sprintf("full%d", i)], out[fmt.Sprintf("flow%d", i)], out[fmt.Sprintf("mut%d", i)]
 				if flowOnly != full {
-					t.Errorf("%s: the typed-only parser differs from the full one:\n%s", c.name, firstTranscriptDifference(full, flowOnly))
+					t.Errorf("%s: the typed-only parser differs from the full one:\n%s", c.Name, firstTranscriptDifference(full, flowOnly))
 				}
 				if mutated == flowOnly {
-					t.Errorf("%s: the transcripts of a mutated grammar are the same: the comparison cannot fail", c.name)
+					t.Errorf("%s: the transcripts of a mutated grammar are the same: the comparison cannot fail", c.Name)
 				}
 				if !strings.Contains(flowOnly, "syntax error") {
-					t.Errorf("%s: no input fails in the transcript", c.name)
+					t.Errorf("%s: no input fails in the transcript", c.Name)
 				}
 			}
 		})

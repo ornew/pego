@@ -2,34 +2,13 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
-
-const leftRecursionDeadTail = `rule r1 = r2?
-rule r2 = (("a" / r1 / "\n") / ("" / "\n") / (r2 / $$)) #repeat(0, 1)`
-
-var reachabilityGeneratedCases = []genCase{
-	{"unreachable LR tail", leftRecursionDeadTail + "\nrule main = r2", []string{"", "a", "\n", "aa", "b"}},
-	{"unreachable LR alias tail", `rule r1 = r2?
-rule r2 = (("a" / r1 / "\n") / empty / (r2 / $$)) #repeat(0, 1)
-rule empty = alias
-rule alias = ""
-rule main = r2`, []string{"", "a", "\n", "b"}},
-	{"LR cut inside optional", `rule r1 = r2?
-rule r2 = (("a" / r1 / "\n") / ("x" #cut "y")? / (r2 / $$)) #repeat(0, 1)
-rule main = r2`, []string{"", "x", "xy", "\n"}},
-	{"left recursion in recovery skip", `rule main = a
-rule a = "x" #recover(skip=a) / "y"`, []string{"", "y", "x", "b"}},
-	{"unreachable recovery chain", `rule r1 = r2?
-rule r2 = (r1 / main / r2) #repeat(0, 1)
-rule main = empty #recover(skip=main)
-rule empty = ""`, []string{"", "a", "\n"}},
-	{"cut in recovery skip", `rule main = _|_ #recover(skip=#cut "x")? / ""`, []string{"", "x", "b"}},
-}
 
 func TestLeftRecursionRetainsReachableSuffixes(t *testing.T) {
 	t.Parallel()
@@ -84,10 +63,10 @@ func TestLeftRecursionIgnoresUnreachableRecoveryChain(t *testing.T) {
 
 func TestLeftRecursionReachabilitySavedAndDocuments(t *testing.T) {
 	t.Parallel()
-	for _, c := range reachabilityGeneratedCases {
-		t.Run(c.name, func(t *testing.T) {
+	for _, c := range gentest.ReachabilityGeneratedCases {
+		t.Run(c.Name, func(t *testing.T) {
 			for _, options := range []compile.Options{{}, {DisableMemo: true}} {
-				p := mustCompile(t, c.src, options)
+				p := mustCompile(t, c.Src, options)
 				for _, mode := range valueModes {
 					q := saveLoad(t, p, "main", mode)
 					for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -98,7 +77,7 @@ func TestLeftRecursionReachabilitySavedAndDocuments(t *testing.T) {
 						}
 						for _, unit := range []PositionUnit{CodePoints, Bytes} {
 							o := ParseOptions{Backend: backend, Unit: unit}
-							for _, text := range c.inputs {
+							for _, text := range c.Inputs {
 								want, wantErr := p.ParseWith("main", text, o)
 								got, gotErr := q.ParseWith("main", text, servedBy(mode, o))
 								if resultJSON(got, gotErr) != resultJSON(want, wantErr) {
@@ -170,7 +149,7 @@ rule a = "x" #recover(skip=a) / "y"`)
 
 func TestLeftRecursionIgnoresUnreachableAlternatives(t *testing.T) {
 	t.Parallel()
-	const original = leftRecursionDeadTail
+	const original = gentest.LeftRecursionDeadTail
 	const removed = `rule r1 = r2?
 rule r2 = (("a" / r1 / "\n") / ("" / "\n")) #repeat(0, 1)`
 	for _, options := range []compile.Options{{}, {DisableMemo: true}} {

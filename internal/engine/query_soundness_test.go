@@ -4,14 +4,14 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/value"
 	"github.com/ornew/pego/query"
 )
 
 // queryShapeCase nests unions, optional values and lists of declared types.
-var queryShapeCase = engine.CorpusCase{Name: "query shapes", Src: `type Int = { Text string }
+var queryShapeCase = gentest.Case{Name: "query shapes", Src: `type Int = { Text string }
 type Name = { Text string }
 type Pair = { Key Name; Value *(Int | Name | Pair); Items []Int }
 type Box = { Inner *Pair }
@@ -26,7 +26,7 @@ rule name Name = t:([a-z]) #atomic => Name{Text: text($t)}
 `, Inputs: []string{"[]", "[a=1]", "[a=b12]", "[a=(b=_3)4]", "[a=_]"}}
 
 // queryRecoveryCases put Error and Missing nodes where declared types expect other nodes.
-var queryRecoveryCases = []engine.CorpusCase{
+var queryRecoveryCases = []gentest.Case{
 	{Name: "query recovery in terminal field", Src: `type Num = { Text string }
 type P = { V Num | error; W Num }
 rule main = "(" v:(num #recover(skip=[^),]+)) "," w:num ")" $$ => P{V: $v, W: $w}
@@ -45,7 +45,7 @@ rule semi = ";" #missing`, Inputs: []string{"(;)", "()"}},
 // compile against the grammar's schema: the check must never reject a pattern that matches.
 func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 	t.Parallel()
-	cases := append(engine.SchemaCorpus(t), queryShapeCase)
+	cases := append(gentest.SchemaCorpus(t), queryShapeCase)
 	cases = append(cases, queryRecoveryCases...)
 	// every matches each candidate value: every node, struct, tuple, list and error value.
 	every, err := query.Compile(query.Pattern{Capture: "value"}, nil)

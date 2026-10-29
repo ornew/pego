@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -14,55 +15,6 @@ import (
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/syntax"
 )
-
-// resultCheckGrammar declares the rules rA to rE with the type rt and passes them the dynamically
-// typed values of fieldCheckValues, which each rule casts to typ: input "<value><route>" reaches
-// rA (route "."), whose action forwards the value; rB (","), which does so with a second capture;
-// the Operators Rule operand lines rC (":") and rD ("+"); rE, which forwards a scalar value (input
-// "<i|s|b>="); and, through a predicate that reads the value, rA and rB ("!" and "~"). S gives the
-// type typ a field, for the expected messages; W wraps the result in a field of type rt, so that
-// generated parsers use the typed runtime when rt is representable.
-func resultCheckGrammar(typ, rt string) string {
-	return `type Int = { Text string }
-type Alias ~ Int
-type Box = { Value Int }
-type S = { F ` + typ + ` }
-type W = { V ` + rt + ` }
-rule main W = ma / mb / mc / md / me / mp / mq
-rule ma W = &(. ".") v:rA "." => W{V: $v}
-rule mb W = &(. ",") v:rB "," => W{V: $v}
-rule mc W = &(. ":") v:rC ":" => W{V: $v}
-rule md W = &(. "+") v:rD "+" => W{V: $v}
-rule me W = &(. "=") v:rE => W{V: $v}
-rule mp W = &(. "!") v:rA {$v == nil || $v != nil} "!" => W{V: $v}
-rule mq W = &(. "~") v:rB {$v == nil || $v != nil} "~" => W{V: $v}
-rule rA ` + rt + ` = v:val => $v.(` + typ + `)
-rule rB ` + rt + ` = v:val => $v.(` + typ + `)
-rule rC ` + rt + ` = #operators {
-    operand v:val => $v.(` + typ + `)
-}
-rule rD ` + rt + ` = #operators {
-    operand v:val => $v.(` + typ + `)
-}
-rule rE ` + rt + ` = v:sc "=" => $v.(` + typ + `)
-rule sc _ = si / ss / sb
-rule si = "i" => 1
-rule ss = "s" => "s"
-rule sb = "b" => true
-rule val _ = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz
-rule vm = "m"
-rule vt = "t" => Int{Text: "t"}
-rule vl = "l" => []Int{Int{Text: "a"}}
-rule vk = k:"k" => list($k)
-rule ve = "e" => list(nil)
-rule vn = "n" => list()
-rule vq = "q" => Box{Value: Int{Text: "q"}}
-rule vr = ("r" ";") #recover(skip="?")
-rule vw = "w" => [][]Int{[]Int{Int{Text: "w"}}}
-rule vp = "p" => list(Int{Text: "a"}, nil)
-rule vz = "z" => nil
-`
-}
 
 // resultCheckGrammarLegacy is resultCheckGrammar with a terminal type Int, in the retired syntax that
 // only syntax.ParseLegacy accepts: grammars that reach the engine as JSON ASTs may still use it.
@@ -111,31 +63,6 @@ rule vz = "z" => nil
 // resultCheckRoutes maps an input's route character to the rule it reaches.
 var resultCheckRoutes = map[byte]string{'.': "rA", ',': "rB", ':': "rC", '+': "rD", '=': "rE", '!': "rA", '~': "rB"}
 
-func resultCheckInputs() []string {
-	var in []string
-	for _, v := range "mtlkenq?wpz" {
-		for _, r := range ".,:+!~" {
-			in = append(in, string(v)+string(r))
-		}
-	}
-	return append(in, "i=", "s=", "b=")
-}
-
-// resultCheckTypes are the types of fieldCheckFields that a rule can declare.
-func resultCheckTypes() []string { return resultCheckTypesOf(fieldCheckFields) }
-
-func resultCheckTypesOf(fields map[string]string) []string {
-	var types []string
-	for _, typ := range fieldCheckTypesOf(fields) {
-		switch typ {
-		case "int", "string", "bool", "Int | string", "*(Box | bool)":
-		default:
-			types = append(types, typ)
-		}
-	}
-	return types
-}
-
 // TestRuleResultChecks checks that a cast of a rule result to the rule's declared type accepts the
 // values that fit, on every backend, in every program form, and
 // that the values it accepts give the same results as when the rules are declared _.
@@ -149,11 +76,11 @@ func TestRuleResultChecks(t *testing.T) {
 		parse   func(string) (*grammar.Grammar, error)
 		fields  map[string]string
 	}{
-		{"text struct", resultCheckGrammar, parseTest, fieldCheckFields},
-		{"terminal", resultCheckGrammarLegacy, parseLegacyTest, fieldCheckFields},
+		{"text struct", gentest.ResultCheckGrammar, parseTest, gentest.FieldCheckFields},
+		{"terminal", resultCheckGrammarLegacy, parseLegacyTest, gentest.FieldCheckFields},
 	} {
 		t.Run(model.name, func(t *testing.T) {
-			for _, typ := range resultCheckTypesOf(model.fields) {
+			for _, typ := range gentest.ResultCheckTypesOf(model.fields) {
 				t.Run(typ, func(t *testing.T) { checkRuleResultType(t, typ, model.grammar, model.parse, model.fields) })
 			}
 		})
@@ -188,8 +115,8 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 			}
 			limits := limits.WorkLimits{MaxSteps: 1 << 30}
 			declared := checked.Typed.Fields["S"][0].T.String() // as the value checker resolves it
-			for _, in := range resultCheckInputs() {
-				value := fieldCheckValues[in[:1]]
+			for _, in := range gentest.ResultCheckInputs() {
+				value := gentest.FieldCheckValues[in[:1]]
 				rule := resultCheckRoutes[in[1]]
 				accepted := strings.Contains(fields[typ], in[:1])
 				runs := []struct {
@@ -378,42 +305,12 @@ rule ops Int | O = #operators {
 	}
 }
 
-// operatorResultCheckGrammar has operator lines with actions whose values are dynamically typed:
-// input "o<value>^" applies the postfix operator, "!<value>o" the prefix one and "o+<value>o" the
-// infix one, each forwarding the value it captures. Input "<<value>#" reaches the left-recursive
-// rule lr, which generated typed parsers call like Operators Rules, through their rule table, and
-// "@<value>@" the rule rr, whose recovery expression keeps it from a direct typed body. Input
-// "%<value>%" constructs W in a rule with a recovery expression, which compiling copies.
-const operatorResultCheckGrammar = `type Int = { Text string }
-type W = { V []Int }
-rule main W = ml / mr / mf / me
-rule mf W = "%" v:val ("%" #recover(skip="%")) => W{V: $v.([]Int)}
-rule mr W = "@" v:rr => W{V: $v}
-rule rr []Int = v:val ("@" #recover(skip="@")) => $v.([]Int)
-rule ml W = "<" v:lr => W{V: $v}
-rule me W = v:e => W{V: $v}
-rule lr []Int = (v:lr "^" / v:val "#") => $v.([]Int)
-rule e []Int = #operators {
-    operand "o" => []Int{Int{Text: "o"}}
-    level { infix left "+" v:val => $v.([]Int) }
-    level { prefix "!" v:val => $v.([]Int) }
-    level { postfix v:val "^" => $v.([]Int) }
-}
-rule val _ = vm / vt / vl / vz
-rule vm = "m"
-rule vt = "t" => Int{Text: "t"}
-rule vl = "l" => []Int{Int{Text: "l"}}
-rule vz = "z" => nil
-`
-
-var operatorResultCheckInputs = []string{"om^", "ot^", "ol^", "oz^", "!mo", "!lo", "!zo", "o+mo", "o+lo", "o+to", "ol^+lo", "<l#", "<m#", "<l#^", "<t#^", "<z#", "@l@", "@m@", "@t@", "%l%", "%m%", "%z%"}
-
 // TestOperatorResultChecks checks the values of operator lines with actions, which are finished
 // by the operator application rather than by the rule, and the checks of rules that compiling
 // copies, in every program form.
 func TestOperatorResultChecks(t *testing.T) {
 	t.Parallel()
-	g, err := parseTest(operatorResultCheckGrammar)
+	g, err := parseTest(gentest.OperatorResultCheckGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -431,7 +328,7 @@ func TestOperatorResultChecks(t *testing.T) {
 	}
 	_, err = loaded.ParseWith("main", "", ParseOptions{Backend: Closure})
 	wantClosureRefused(t, err)
-	for _, in := range operatorResultCheckInputs {
+	for _, in := range gentest.OperatorResultCheckInputs {
 		want := resultWith(prog, in, ParseOptions{})
 		rejected := !strings.Contains(in, "l")
 		if got := strings.Contains(want, "cannot cast "); got != rejected {
@@ -471,20 +368,6 @@ rule e Int = #operators {
 rule val _ = "m"
 `
 
-// textStructOperatorsRuleGrammar is the text struct counterpart of terminalOperatorsRuleGrammar:
-// the Operators Rule produces the text struct through its actions.
-const textStructOperatorsRuleGrammar = `type Int = { Text string }
-type S = { F Int }
-rule main = v:e => S{F: $v}
-rule e Int = #operators {
-    operand v:val => $v
-    level { infix left "+" v:val => $v }
-}
-rule val Int = t:"m" #atomic => Int{Text: text($t)}
-`
-
-var terminalOperatorsRuleInputs = []string{"m", "m+m", "m+", ""}
-
 func TestTerminalOperatorsRuleNeedsAction(t *testing.T) {
 	t.Parallel()
 	for _, src := range []string{terminalOperatorsRuleGrammar, `type Num terminal
@@ -499,10 +382,10 @@ rule e Num = #operators {
 		}
 	}
 	// The text struct counterpart builds the struct in its actions.
-	prog := mustCompile(t, textStructOperatorsRuleGrammar)
+	prog := mustCompile(t, gentest.TextStructOperatorsRuleGrammar)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		o := ParseOptions{Backend: b}
-		for _, in := range terminalOperatorsRuleInputs {
+		for _, in := range gentest.TerminalOperatorsRuleInputs {
 			want := resultWith(prog, in, ParseOptions{})
 			if strings.Contains(want, "cannot use") {
 				t.Fatalf("%q: %s", in, want)
@@ -512,16 +395,6 @@ rule e Num = #operators {
 			}
 		}
 	}
-}
-
-func resultCheckCases() []genCase {
-	var cases []genCase
-	for _, typ := range resultCheckTypes() {
-		cases = append(cases, genCase{"result check " + typ, resultCheckGrammar(typ, typ), resultCheckInputs()})
-	}
-	return append(cases,
-		genCase{"operator result check", operatorResultCheckGrammar, operatorResultCheckInputs},
-		genCase{"text struct Operators Rule", textStructOperatorsRuleGrammar, terminalOperatorsRuleInputs})
 }
 
 func TestGeneratedRuleResultChecks(t *testing.T) {
@@ -534,7 +407,7 @@ func testGeneratedRuleResultChecks(t *testing.T) {
 		t.Skip("builds generated consumers")
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	cases := resultCheckCases()
+	cases := gentest.ResultCheckCases()
 	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
 	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true})
 	if node, err := exec.LookPath("node"); err == nil {

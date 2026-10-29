@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
@@ -28,7 +29,7 @@ func TestFlowLeadersPrintFromFlow(t *testing.T) {
 	if testing.Short() {
 		t.Skip("generates the corpus")
 	}
-	cases := append(append(genCorpus(t), grammarCases(t)...), observeShapes...)
+	cases := append(append(gentest.GenCorpus(t), gentest.GrammarCases(t)...), observeShapes...)
 	for _, controls := range []bool{false, true} {
 		t.Run(fmt.Sprint("controls=", controls), func(t *testing.T) {
 			taken := map[string]int{}
@@ -40,12 +41,12 @@ func TestFlowLeadersPrintFromFlow(t *testing.T) {
 				}
 			}
 			for _, c := range cases {
-				g, err := parseTest(c.src)
+				g, err := parseTest(c.Src)
 				if err != nil {
 					continue
 				}
 				if _, err := Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
-					t.Fatalf("%s: %v", c.name, err)
+					t.Fatalf("%s: %v", c.Name, err)
 				}
 			}
 			for _, table := range []string{"rules", "recRules"} {

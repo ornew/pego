@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -16,28 +17,28 @@ import (
 // terminalCases are grammars with value-free terminal expressions that lean typed parsers match
 // through a TerminalProgram, with inputs that reach their alternatives, guards, options and
 // lookaheads, and fail inside them so that syntax errors report their expectations.
-func terminalCases() []genCase {
-	cases := []genCase{
+func terminalCases() []gentest.Case {
+	cases := []gentest.Case{
 		// A keyword list spelled as a trie of case-insensitive classes, as in the SQL grammar,
 		// in a negative lookahead and in a discard, whose failures are reported, and again
 		// behind the farthest position; guards that overlap, one of a Unicode literal, and an
 		// unguarded alternative after the guarded ones.
-		{"terminal keyword trie", `rule main = (stmt ";")* $$
+		{Name: "terminal keyword trie", Src: `rule main = (stmt ";")* $$
 rule stmt = -kw "(" / -kw "[" / !kw id
 rule kw = ([aA] ([bB] ([oO] [rR] [tT] / [sS] [oO] [lL] [uU] [tT] [eE]) / [cC] [tT] [iI] [oO] [nN] / [lL] [lL]) / [cC] ([aA] [lL] [lL] ([eE] [dD])? / [hH] [eE] [cC] [kK]) / [dD] [oO] / [a-e] [xX] / [eE] [nN] [dD] / [fF] [oO] [rR] / "é" [tT] / "q"? [zZ] [qQ]) ![a-z_]
 rule id = [a-z_]+ #atomic
-`, []string{"abort(;", "ABSOLUTE(;", "abo;", "all(;allx;", "call(;called(;calle;", "check;", "do(;dox;", "action(;", "a;", "", "x;", "abortx;", "Call(;", "CALLED(;", "ch(;", "abs(;", "abo(;", "ab(;", "abso(;", "cal(;", "calle(;", "ac(;", "chec(;", "d(;", "\xff(;", "a\xffort(;", "abort\xc3;", "ax(;", "ex[;", "end[;", "en[;", "for[;", "fo(;", "ét(;", "ét[;", "é;", "ab[;", "callx[;", "do[;dox;", "zq;", "qzq;", "zq(;", "qzq[;", "z;", "qz(;"}},
+`, Inputs: []string{"abort(;", "ABSOLUTE(;", "abo;", "all(;allx;", "call(;called(;calle;", "check;", "do(;dox;", "action(;", "a;", "", "x;", "abortx;", "Call(;", "CALLED(;", "ch(;", "abs(;", "abo(;", "ab(;", "abso(;", "cal(;", "calle(;", "ac(;", "chec(;", "d(;", "\xff(;", "a\xffort(;", "abort\xc3;", "ax(;", "ex[;", "end[;", "en[;", "for[;", "fo(;", "ét(;", "ét[;", "é;", "ab[;", "callx[;", "do[;dox;", "zq;", "qzq;", "zq(;", "qzq[;", "z;", "qz(;"}},
 		// A terminal expression in the typed body of a left-recursive rule.
-		{"terminal in left recursion", `rule main = e $$
+		{Name: "terminal in left recursion", Src: `rule main = e $$
 rule e = e -([aA] [bB] / [cC] [dD] / [eE] [fF] / [gG] [hH] / [iI] [jJ] / [kK] [lL] / [mM] [nN] / [oO] [pP]) [0-9] / [0-9]
-`, []string{"1", "1ab2", "1AB2cd3", "1ab", "1a2", "1x2", "", "1op9OP0", "1ab2\xff"}},
+`, Inputs: []string{"1", "1ab2", "1AB2cd3", "1ab", "1a2", "1x2", "", "1op9OP0", "1ab2\xff"}},
 		// Literals of several lengths and an empty one, Unicode, options and lookaheads inside
 		// the expression, and alternatives that no guard covers (they begin with an option or a
 		// lookahead); the first alternative that matches wins even where a later one is longer.
-		{"terminal literals and lookaheads", `rule main = (-op / w)* $$
+		{Name: "terminal literals and lookaheads", Src: `rule main = (-op / w)* $$
 rule op = ("<<=" / "<<" / "<=" / "<" / ">>>=" / ">>>" / ">>=" / ">>" / ">=" / ">" / "=" !"=" / "==" "="? / "é" "日本"? / !"!" "!" "=" / [α-ω] [^a-z]? / ("+" / "-")? "#" / "" "?" "?"?) !"~"
 rule w = [a-z ]+ #atomic
-`, []string{"a<<=b", "<<", "<=<", ">>>=>>>>", "==", "===", "=", "é日本", "éé", "!=", "!", "α", "αa", "ωω", "+#", "#", "-#-", "??", "?", "<~", "~", "", "a b c", "<<~", "日", "\xff", "é\xff", "<\xe6\x97"}},
+`, Inputs: []string{"a<<=b", "<<", "<=<", ">>>=>>>>", "==", "===", "=", "é日本", "éé", "!=", "!", "α", "αa", "ωω", "+#", "#", "-#-", "??", "?", "<~", "~", "", "a b c", "<<~", "日", "\xff", "é\xff", "<\xe6\x97"}},
 	}
 	// A choice whose dispatch table would have more entries than it can index (1200 guards
 	// that admit 127 ASCII characters each) tests its guards in turn.
@@ -50,7 +51,7 @@ rule w = [a-z ]+ #atomic
 		fmt.Fprintf(&huge, "[^X] \"k%04d\"", i)
 	}
 	huge.WriteString("\n")
-	cases = append(cases, genCase{"terminal choice without a table", huge.String(), []string{"ab;", "ak0001;", "zk1199;", "ak1200;", "Xk0001;", "k0000;", "1k0500x;", "ak;", "", "ab", "\xffk0001;", "ék0002;"}})
+	cases = append(cases, gentest.Case{Name: "terminal choice without a table", Src: huge.String(), Inputs: []string{"ab;", "ak0001;", "zk1199;", "ak1200;", "Xk0001;", "k0000;", "1k0500x;", "ak;", "", "ab", "\xffk0001;", "ék0002;"}})
 	// Random inputs over the characters the grammars mention.
 	alphabet := []rune("abcdeklorstuhnfACBOLEX_ ;([é日本<=>!α~+-#?xy")
 	rng := rand.New(rand.NewSource(1))
@@ -60,7 +61,7 @@ rule w = [a-z ]+ #atomic
 			for range rng.Intn(14) {
 				b.WriteRune(alphabet[rng.Intn(len(alphabet))])
 			}
-			cases[i].inputs = append(cases[i].inputs, b.String())
+			cases[i].Inputs = append(cases[i].Inputs, b.String())
 		}
 	}
 	return cases
@@ -71,7 +72,7 @@ func TestTerminalProgramGeneration(t *testing.T) {
 	// Terminal programs are for parsers without work controls.
 	pinOrdinary(t)
 	for _, c := range terminalCases() {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -80,15 +81,15 @@ func TestTerminalProgramGeneration(t *testing.T) {
 			t.Fatal(err)
 		}
 		// The frame body of a left-recursive rule keeps straight-line code.
-		if got, want := strings.Contains(string(code), "p.SkipTerminal(term"), !strings.Contains(c.name, "left recursion"); got != want {
-			t.Errorf("%s: terminal program %v, want %v", c.name, got, want)
+		if got, want := strings.Contains(string(code), "p.SkipTerminal(term"), !strings.Contains(c.Name, "left recursion"); got != want {
+			t.Errorf("%s: terminal program %v, want %v", c.Name, got, want)
 		}
 		reference, err := generateCode(t, g, gen.GenOptions{Package: "terminal", Start: "main", Types: true, TypedOnly: true, DisableTerminalPrograms: true})
 		if err != nil {
 			t.Fatal(err)
 		}
 		if strings.Contains(string(reference), "SkipTerminal") {
-			t.Errorf("%s: the reference has a terminal program", c.name)
+			t.Errorf("%s: the reference has a terminal program", c.Name)
 		}
 		// Parsers with work controls or Documents keep the straight-line code, which charges
 		// work for each expression.
@@ -99,7 +100,7 @@ func TestTerminalProgramGeneration(t *testing.T) {
 				t.Fatal(err)
 			}
 			if strings.Contains(string(mergeGenerated(files)), "SkipTerminal") {
-				t.Errorf("%s: terminal program with %+v", c.name, opts)
+				t.Errorf("%s: terminal program with %+v", c.Name, opts)
 			}
 		}
 	}
@@ -200,7 +201,7 @@ func TestDepthChecks(t *testing.T) {
 		sources[f] = string(b)
 	}
 	for _, c := range terminalCases() {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -210,7 +211,7 @@ func TestDepthChecks(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			sources[fmt.Sprintf("%s %+v", c.name, opts.WorkControls)] = string(mergeGenerated(files))
+			sources[fmt.Sprintf("%s %+v", c.Name, opts.WorkControls)] = string(mergeGenerated(files))
 		}
 	}
 	other := regexp.MustCompile(`\.Depth\s*(\+=|=[^=])|\.MaxDepth\s*(\+\+|--|\+=|-=|=[^=])`)

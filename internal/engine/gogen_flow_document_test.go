@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"hash"
 	"io"
 	"os"
@@ -171,7 +172,7 @@ type documentInput struct {
 
 // documentCase is a grammar with the inputs of its Documents and the number of edits applied to each.
 type documentCase struct {
-	genCase
+	gentest.Case
 	edits int
 }
 
@@ -184,7 +185,7 @@ func documentInputs(c documentCase) []documentInput {
 			alpha = append(alpha, r)
 		}
 	}
-	for _, in := range c.inputs {
+	for _, in := range c.Inputs {
 		for _, r := range in {
 			if len(alpha) < 48 {
 				add(r)
@@ -195,7 +196,7 @@ func documentInputs(c documentCase) []documentInput {
 		add(r)
 	}
 	var out []documentInput
-	for _, in := range append([]string{""}, c.inputs...) {
+	for _, in := range append([]string{""}, c.Inputs...) {
 		out = append(out, documentInput{in, c.edits, string(alpha)})
 	}
 	return out
@@ -218,13 +219,13 @@ func runDocumentProbes(t *testing.T, cases []documentCase, start string, mutate 
 	var inputs [][]documentInput
 	var imports, entries strings.Builder
 	for i, c := range cases {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		code, err := generateCode(t, g, gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true, Document: true})
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		if mutate != nil {
 			code = mutate(code)
@@ -288,7 +289,7 @@ func documentDigests(t testing.TB, group string, cases []documentCase, lines []s
 	}
 	out := map[string]string{}
 	for i, c := range cases {
-		out[fmt.Sprintf("%s/%s/%s", group, fixtureForm(t), c.name)] = fmt.Sprintf("%x", hashes[i].Sum(nil)[:12])
+		out[fmt.Sprintf("%s/%s/%s", group, fixtureForm(t), c.Name)] = fmt.Sprintf("%x", hashes[i].Sum(nil)[:12])
 	}
 	return out
 }
@@ -325,23 +326,23 @@ func checkDocumentReports(t *testing.T, group string, cases []documentCase, line
 // documentShapes examine the input beyond the end of the result of their rule, which a Document must record to
 // know when an edit invalidates the result: a lookahead over several characters, a negative lookahead and a
 // lookahead over a class. The corpus grammars rarely look further than one character past a result.
-var documentShapes = []genCase{
-	{"positive lookahead", "rule main = item* $$\nrule item = \"a\" &\"bcd\" x / \"a\" y / \"b\" / \"c\" / \"d\"\nrule x = \"\"\nrule y = \"\"\n",
-		[]string{"abcd", "abcdabce", "abcabcd"}},
-	{"negative lookahead", "rule main = item* $$\nrule item = \"a\" !\"bc\" x / \"a\" y / [b-e]\nrule x = \"\"\nrule y = \"\"\n",
-		[]string{"abcd", "abdabce", "aab"}},
-	{"sequence lookahead", "rule main = item* $$\nrule item = \"a\" &(\"b\" [c-d] \"e\") x / \"a\" y / [b-e]\nrule x = \"\"\nrule y = \"\"\n",
-		[]string{"abce", "abdeabce", "abcf"}},
-	{"any-character lookahead", "rule main = item* $$\nrule item = \"a\" &(. . .) x / \"a\" y / [b-e] / \" \"\nrule x = \"\"\nrule y = \"\"\n",
-		[]string{"abcd", "ab cdab", "a  "}},
-	{"class lookahead", "rule main = item* $$\nrule item = [a-c] &[0-9] [0-9]+ / [a-c] / [0-9] / \" \"\n",
-		[]string{"a1 b c2 3", "a b1", "c33a"}},
+var documentShapes = []gentest.Case{
+	{Name: "positive lookahead", Src: "rule main = item* $$\nrule item = \"a\" &\"bcd\" x / \"a\" y / \"b\" / \"c\" / \"d\"\nrule x = \"\"\nrule y = \"\"\n",
+		Inputs: []string{"abcd", "abcdabce", "abcabcd"}},
+	{Name: "negative lookahead", Src: "rule main = item* $$\nrule item = \"a\" !\"bc\" x / \"a\" y / [b-e]\nrule x = \"\"\nrule y = \"\"\n",
+		Inputs: []string{"abcd", "abdabce", "aab"}},
+	{Name: "sequence lookahead", Src: "rule main = item* $$\nrule item = \"a\" &(\"b\" [c-d] \"e\") x / \"a\" y / [b-e]\nrule x = \"\"\nrule y = \"\"\n",
+		Inputs: []string{"abce", "abdeabce", "abcf"}},
+	{Name: "any-character lookahead", Src: "rule main = item* $$\nrule item = \"a\" &(. . .) x / \"a\" y / [b-e] / \" \"\nrule x = \"\"\nrule y = \"\"\n",
+		Inputs: []string{"abcd", "ab cdab", "a  "}},
+	{Name: "class lookahead", Src: "rule main = item* $$\nrule item = [a-c] &[0-9] [0-9]+ / [a-c] / [0-9] / \" \"\n",
+		Inputs: []string{"a1 b c2 3", "a b1", "c33a"}},
 }
 
 // documentCorpus returns the generated-corpus grammars and the shape grammars with the edits of each input.
 func documentCorpus(t *testing.T) []documentCase {
 	var cases []documentCase
-	for _, c := range append(append(genCorpus(t), observeShapes...), documentShapes...) {
+	for _, c := range append(append(gentest.GenCorpus(t), observeShapes...), documentShapes...) {
 		cases = append(cases, documentCase{c, 300})
 	}
 	return cases
@@ -368,7 +369,7 @@ func TestFlowNodeDocumentsOnGrammars(t *testing.T) {
 	}
 	eachMode(t, func(t *testing.T) {
 		var cases []documentCase
-		for _, c := range grammarCases(t) {
+		for _, c := range gentest.GrammarCases(t) {
 			cases = append(cases, documentCase{c, 60})
 		}
 		checkDocumentReports(t, "grammars", cases, runDocumentProbes(t, cases, "", nil))

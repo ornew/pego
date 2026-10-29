@@ -5,6 +5,7 @@ package engine
 import (
 	"context"
 	"errors"
+	"github.com/ornew/pego/internal/gentest"
 	"io"
 	"strings"
 	"testing"
@@ -223,7 +224,7 @@ func TestWorkSetupPreCancelledLeavesColdProgramsUnprepared(t *testing.T) {
 						t.Fatal("pre-cancelled Document construction compiled its lazy Module")
 					}
 
-					streamProg := setupProgram(t, records, moduleOnly)
+					streamProg := setupProgram(t, gentest.Records, moduleOnly)
 					ctx, cancel = context.WithCancel(context.Background())
 					cancel()
 					reader := &setupCountingReader{r: strings.NewReader(text)}
@@ -270,7 +271,7 @@ func TestWorkSetupPostBackendChecksStopBeforePublication(t *testing.T) {
 					t.Fatalf("NewDocumentWith retry document=%v err=%v", d, err)
 				}
 
-				streamProg := setupProgram(t, records, moduleOnly)
+				streamProg := setupProgram(t, gentest.Records, moduleOnly)
 				streamGate := newSetupPhaseContext(func() bool { return setupBackendReady(streamProg, backend) })
 				reader := &setupCountingReader{r: strings.NewReader("#records\na=1\n")}
 				emits, traces := 0, 0
@@ -389,7 +390,7 @@ func TestWorkSetupPostBackendPanicIdentity(t *testing.T) {
 		for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 			for _, api := range []string{"batch", "document", "stream"} {
 				t.Run(setupProgramLabel(moduleOnly)+"/"+backend.String()+"/"+api, func(t *testing.T) {
-					prog := setupProgram(t, records, moduleOnly)
+					prog := setupProgram(t, gentest.Records, moduleOnly)
 					ctx, cancel := context.WithCancel(context.Background())
 					defer cancel()
 					token := &workContextPanicToken{phase: "post-backend setup"}

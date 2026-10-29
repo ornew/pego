@@ -3,6 +3,7 @@ package engine
 import (
 	"bytes"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -99,12 +100,12 @@ func TestFlowDiffDetectsMutations(t *testing.T) {
 	for _, m := range mutations {
 		t.Run(m.name, func(t *testing.T) {
 			applied := 0
-			for _, gc := range append(schemaCorpus(t), coreExtraGrammars...)[:60] {
-				want, _, _, ok := flowGenerate(gc.src, opts)
+			for _, gc := range append(gentest.CorpusWithParsers(t), coreExtraGrammars...)[:60] {
+				want, _, _, ok := flowGenerate(gc.Src, opts)
 				if !ok {
 					continue
 				}
-				got, n, _, _ := flowGenerate(gc.src, opts)
+				got, n, _, _ := flowGenerate(gc.Src, opts)
 				if n == 0 || flowDiff(want, got) != "" {
 					continue
 				}
@@ -114,7 +115,7 @@ func TestFlowDiffDetectsMutations(t *testing.T) {
 				}
 				applied++
 				if found := flowDiff(want, mutated) != ""; found != m.found {
-					t.Errorf("%s: difference reported %v, want %v", gc.name, found, m.found)
+					t.Errorf("%s: difference reported %v, want %v", gc.Name, found, m.found)
 				}
 			}
 			if applied < 10 {
@@ -156,15 +157,15 @@ func flowGenerate(src string, opts gen.GenOptions) (string, int, int, bool) {
 // frames where the mode inlines them.
 func TestFlowPrintsTypedRules(t *testing.T) {
 	t.Parallel()
-	cases := append(schemaCorpus(t), coreExtraGrammars...)
+	cases := append(gentest.CorpusWithParsers(t), coreExtraGrammars...)
 	for _, mode := range flowModes {
 		t.Run(mode.name, func(t *testing.T) {
 			t.Parallel()
 			compared, grammars, printed, framed := 0, 0, 0, 0
 			for _, gc := range cases {
-				_, n, frames, ok := flowGenerate(gc.src, mode.opts)
+				_, n, frames, ok := flowGenerate(gc.Src, mode.opts)
 				if !ok {
-					t.Errorf("%s: rejected", gc.name)
+					t.Errorf("%s: rejected", gc.Name)
 					continue
 				}
 				compared++
@@ -243,9 +244,9 @@ func testFlowTypedObservable(t *testing.T) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
-	var cases []genCase
+	var cases []gentest.Case
 	for _, c := range generatedTypesCases(t) {
-		if strings.HasPrefix(c.name, "typed/") {
+		if strings.HasPrefix(c.Name, "typed/") {
 			cases = append(cases, c)
 		}
 	}
@@ -264,7 +265,7 @@ func testFlowTypedObservable(t *testing.T) {
 			for _, c := range cases {
 				opts := mode.opts
 				opts.Types = true
-				_, n, frames, _ := flowGenerate(c.src, opts)
+				_, n, frames, _ := flowGenerate(c.Src, opts)
 				printed, framed = printed+n, framed+frames
 			}
 			t.Logf("%d rules and %d framed bodies printed from Flow IR", printed, framed)

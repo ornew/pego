@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"io"
 	"runtime"
 	"strings"
@@ -100,7 +101,7 @@ func traceLifecycleStream(t *testing.T, p *Program, b Backend, u PositionUnit) (
 func TestTraceLifecycleReleasesOwnersAfterGC(t *testing.T) {
 	t.Parallel()
 	doc := mustCompile(t, `rule main = "a"* $$`)
-	stream := mustCompile(t, records)
+	stream := mustCompile(t, gentest.Records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("document/%s/%s", b, u), func(t *testing.T) {

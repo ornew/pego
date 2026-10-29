@@ -122,7 +122,7 @@ errors and memoization decisions are literally shared. The generator writes the 
 
 The parity test generates every corpus grammar twice, with the typed runtime and with conversion (below), and checks
 that `ParseAST` returns the same values and errors, also when parsing concurrently. The corpus includes the cases two
-reviews found where the first version differed (`internal/engine/testdata/typed`): field reads in actions, the order
+reviews found where the first version differed (`internal/gentest/testdata/typed`): field reads in actions, the order
 in which fields are evaluated, projections of names captured twice, of lists that `$n` also reaches and of nil
 values, and an `Error` where a list is expected; and grammars for the code paths of direct rules (`direct_*.pego`).
 It runs in both position units.

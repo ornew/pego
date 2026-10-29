@@ -2,6 +2,7 @@ package engine
 
 import (
 	"encoding/json"
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -56,8 +57,8 @@ func TestFormatPreservesCorpus(t *testing.T) {
 		inputs    []string
 	}
 	var sources []source
-	for _, c := range genCorpus(t) {
-		sources = append(sources, source{c.name, c.src, c.inputs})
+	for _, c := range gentest.GenCorpus(t) {
+		sources = append(sources, source{c.Name, c.Src, c.Inputs})
 	}
 	out, err := exec.Command("git", "-C", "../..", "ls-files", "*.pego").Output()
 	if err != nil {

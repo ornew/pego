@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -159,7 +160,7 @@ func testGeneratedTypedAnonymousJoinValues(t *testing.T) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
-	cases := []genCase{{"anonymous joins", anonJoinGrammar, []string{"", "a;", "(a;b;)", "a;(a;b;)c;", "(a;"}}}
+	cases := []gentest.Case{{Name: "anonymous joins", Src: anonJoinGrammar, Inputs: []string{"", "a;", "(a;b;)", "a;(a;b;)c;", "(a;"}}}
 	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, len(cases))
 }
 
@@ -272,6 +273,6 @@ func testGeneratedTypedAnonymousJoinOneNodeAndErrorValues(t *testing.T) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
-	cases := []genCase{{"one node and error", anonErrorJoinGrammar, []string{"", "a;", "a;b;", "1;a;", "a;2;b;"}}}
+	cases := []gentest.Case{{Name: "one node and error", Src: anonErrorJoinGrammar, Inputs: []string{"", "a;", "a;b;", "1;a;", "a;2;b;"}}}
 	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, len(cases))
 }

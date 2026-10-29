@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -9,137 +10,6 @@ import (
 
 	"github.com/ornew/pego/internal/gen"
 )
-
-var typedOperatorsRuleBodyCases = []genCase{
-	{"typed/OperatorsRule_associativity", `type Number = { Text string }
-type Binary = { Left Expr; Right Expr; Op node[string] }
-type Unary = { X Expr; Op node[string] }
-type Expr ~ Number | Binary | Unary
-rule main Expr = e:expr $$ => $e
-rule expr Expr = #operators {
-    skip " "*
-    operand number
-    operand "(" e:expr ")" => $e
-    level { infix none "=" => Binary{Left: $lhs, Right: $rhs, Op: $op} }
-    level { infix left "+" / "-" => Binary{Left: $lhs, Right: $rhs, Op: $op} }
-    level { prefix "-" => Unary{X: $rhs, Op: $op} }
-    level { infix right "^" => Binary{Left: $lhs, Right: $rhs, Op: $op} }
-    level { postfix "!" => Unary{X: $lhs, Op: $op} }
-}
-rule number Number = t:([0-9]+) #atomic => Number{Text: text($t)}
-`, []string{"1+2-3", "1^2^3", "-1^2!", "(1+2)!", "1=2", "1=2=3", "1+", "-", "1!+", "(1+2", " 1 + 2", ""}},
-	{"typed/OperatorsRule_longest_ties", `type Atom = { Text string }
-type Prefix = { X Expr; Tag int }
-type Expr ~ Atom | Prefix
-rule main Expr = e:expr $$ => $e
-rule expr Expr = #operators {
-    operand atom
-    level {
-        prefix "-" => Prefix{X: $rhs, Tag: 1}
-        prefix "--" => Prefix{X: $rhs, Tag: 2}
-        prefix "--" => Prefix{X: $rhs, Tag: 3}
-        prefix "¬" => Prefix{X: $rhs, Tag: 4}
-    }
-}
-rule atom Atom = t:("-x" / "a" / "é") #atomic => Atom{Text: text($t)}
-`, []string{"a", "-a", "--a", "---a", "--", "-x", "¬é", "¬", "--x", ""}},
-	{"typed/OperatorsRule_element_captures", `type Atom = { Text string }
-type Post = { X Expr; Items []node[string]; N int }
-type Expr ~ Atom | Post
-rule main Expr = e:expr $$ => $e
-rule expr Expr = #operators {
-    operand atom
-    level {
-        postfix "[" items:(x:[a-z] #atomic {len($x) == 1} -",") #repeat(1, 3) "]" => Post{X: $lhs, Items: map($items, (e) => e.$x), N: len($items)}
-    }
-}
-rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}
-`, []string{"a", "a[b,]", "a[b,c,][d,]", "a[]", "a[b,", "a[b,c,d,e,]", "a[é,]", ""}},
-	{"typed/OperatorsRule_positional_actions", `type Atom = { Text string }
-type Doc = { Text node[string]; Items []node[_] }
-type Expr ~ Atom | Doc
-rule main Expr = e:expr $$ => $e
-rule expr Expr = #operators {
-    operand atom
-    operand v1:"[" "é" #atomic "]" => Doc{Text: $v1, Items: list($v1)}
-    level { postfix "(" x:"x" #atomic ")" => Doc{Text: $x, Items: list($op)} }
-}
-rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}
-`, []string{"a", "[é]", "[é](x)", "a(x)", "[é", "a(x", "a(y)", ""}},
-	{"typed/OperatorsRule_environment_rollback", `type Atom = { Text string }
-type Prefix = { X Expr; Tag int; Text node[string] }
-type Expr ~ Atom | Prefix
-var n int
-rule main Expr = {n := 0} e:expr $$ => $e
-rule expr Expr = #operators {
-    skip " " {n := 8} "!" / " "*
-    operand atom
-    level {
-        prefix o:"-" #atomic {n := 1} "x" "z" => Prefix{X: $rhs, Tag: n, Text: $o}
-        prefix o:"-" #atomic {n := 2} "x" => Prefix{X: $rhs, Tag: n, Text: $o}
-    }
-}
-rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}
-`, []string{"a", "-xa", "-xza", " -xa", " !a", "-x", "-xz", " -x", "", "-x?a"}},
-	{"typed/OperatorsRule_lookahead_memo", `type Atom = { Text string }
-type Prefix = { X Expr; Text node[string] }
-type Expr ~ Atom | Prefix
-rule main Expr = &(expr "!") e:expr "!" $$ => $e
-rule expr Expr = #operators {
-    operand atom
-    level { prefix &x:"¬" #atomic x:"¬" #atomic => Prefix{X: $rhs, Text: $x} }
-}
-rule atom Atom = t:("é") #atomic => Atom{Text: text($t)}
-`, []string{"é!", "¬é!", "¬¬é!", "¬!", "¬é?", "é!!", ""}},
-	{"typed/OperatorsRule_nullable_parts", `type Atom = { Text string }
-type Prefix = { X Expr }
-type Expr ~ Atom | Prefix
-rule main Expr = e:expr $$ => $e
-rule expr Expr = #operators {
-    operand atom
-    level { prefix "" => Prefix{X: $rhs} }
-}
-rule atom Atom = t:("a"?) #atomic => Atom{Text: text($t)}
-`, []string{"", "a", "aa", "b"}},
-	{"typed/OperatorsRule_framed_cuts", `type Doc = { Text node[_] }
-rule main Doc = e:expr $$ => $e
-rule expr Doc = #operators {
-    operand x:"a" #atomic #cut => Doc{Text: $x}
-    level { prefix "-" #cut "z" => Doc{Text: $op} }
-}
-`, []string{"a", "-za", "-a", "-z", "a?", "", "-x"}},
-	{"typed/OperatorsRule_recovery", `type Doc = { Text node[string] | error }
-rule main Doc = e:expr $$ => $e
-rule expr Doc = #operators {
-    operand x:"a" #recover(skip=";") #atomic => Doc{Text: $x}
-    level { prefix "-" #recover(skip=";") => Doc{Text: $op} }
-}
-`, []string{"a", ";", "-a", "a?", "", "-;"}},
-	{"typed/OperatorsRule_unreachable_capture", `type Doc = { Text *node[string] }
-rule main Doc = e:expr $$ => $e
-rule expr Doc = #operators {
-    operand x:"a" #atomic / _|_ ignored:"b" #atomic => Doc{Text: $ignored}
-}
-`, []string{"a", "b", "", "a?"}},
-	{"typed/OperatorsRule_mixed_routes", `type Doc = { Text *node[string] }
-rule main Doc = e:expr $$ => $e
-rule expr Doc = #operators {
-    operand x:"a" #atomic => Doc{Text: $x}
-    operand x:"b" #atomic / _|_ ignored:"c" #atomic => Doc{Text: $ignored}
-    operand x:"é" #atomic => Doc{Text: $x}
-}
-`, []string{"a", "b", "é", "c", "", "é?"}},
-	{"typed/OperatorsRule_error_isolation", `type Atom = { Text string }
-type Prefix = { X Expr; Text node[string] }
-type Expr ~ Atom | Prefix
-rule main Expr = e:expr $$ => $e
-rule expr Expr = #operators {
-    operand atom
-    level { prefix (x:"-" #atomic "z") @error(message="prefix marker") => Prefix{X: $rhs, Text: $x} }
-}
-rule atom Atom = t:("a" @error(message="atom")) #atomic => Atom{Text: text($t)}
-`, []string{"a", "-za", "-z", "-a", "-", "b", ""}},
-}
 
 func TestGeneratedTypedOperatorsRuleBodies(t *testing.T) {
 	t.Parallel()
@@ -154,28 +24,28 @@ func testGeneratedTypedOperatorsRuleBodies(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cases := append([]genCase(nil), typedOperatorsRuleBodyCases...)
-	cases = append(cases, genCase{"typed/OperatorsRule_calculator", string(calculator), []string{"1", "1+2*3", "2^3^4", "-(1+2)", "1+", "(1+2", "é", ""}})
-	cases = append(cases, prefixPartCutCorpus())
+	cases := append([]gentest.Case(nil), gentest.TypedOperatorsRuleBodyCases...)
+	cases = append(cases, gentest.Case{Name: "typed/OperatorsRule_calculator", Src: string(calculator), Inputs: []string{"1", "1+2*3", "2^3^4", "-(1+2)", "1+", "(1+2", "é", ""}})
+	cases = append(cases, gentest.PrefixPartCutCorpus())
 	for _, c := range cases {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		opts := gen.GenOptions{Package: "operatorsRulebody", Start: "main", Types: true, Recognize: true}
 		code, err := generateCode(t, g, opts)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		if !strings.Contains(string(code), "TParse(trules") {
-			t.Fatalf("%s: typed runtime is not exercised", c.name)
+			t.Fatalf("%s: typed runtime is not exercised", c.Name)
 		}
 		inlined := strings.Contains(string(code), "(typed OperatorsRule body inlined)")
-		fallback := strings.HasSuffix(c.name, "_fallback")
+		fallback := strings.HasSuffix(c.Name, "_fallback")
 		if inlined == fallback {
-			t.Fatalf("%s: incorrect OperatorsRule body route (inline=%v)", c.name, inlined)
+			t.Fatalf("%s: incorrect OperatorsRule body route (inline=%v)", c.Name, inlined)
 		}
-		if c.name == "typed/OperatorsRule_mixed_routes" && strings.Count(string(code), "(typed OperatorsRule body inlined)") != 3 {
+		if c.Name == "typed/OperatorsRule_mixed_routes" && strings.Count(string(code), "(typed OperatorsRule body inlined)") != 3 {
 			t.Fatal("mixed routes: all three operands must use unfinished bodies")
 		}
 	}

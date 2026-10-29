@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"io"
 	"reflect"
 	"strings"
@@ -55,7 +56,7 @@ func (r *traceLifecycleClosingReader) Close() error { r.closed = true; return ni
 
 func TestTraceLifecycleStreamDetachment(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, records)
+	prog := mustCompile(t, gentest.Records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			for _, outcome := range []string{"success", "syntax", "reader-error", "emit-error", "trace-panic", "emit-panic"} {

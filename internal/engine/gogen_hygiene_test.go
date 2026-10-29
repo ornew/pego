@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/ornew/pego/internal/gentest"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -59,22 +60,22 @@ func TestGeneratedDirectActionErrorContextAndParserReuse(t *testing.T) {
 }
 
 func testGeneratedDirectActionErrorContextAndParserReuse(t *testing.T) {
-	cases := []genCase{{
-		name: "typed/direct_action_error_context_and_reuse",
-		src: `type Result = { N int }
+	cases := []gentest.Case{{
+		Name: "typed/direct_action_error_context_and_reuse",
+		Src: `type Result = { N int }
 rule main Result = child
 rule child Result = x:"a"? => Result{N: 1 / len($x)}
 `,
-		inputs: []string{"", "a", "x"},
+		Inputs: []string{"", "a", "x"},
 	}, {
 		// The failing action runs after another rule's action succeeded.
-		name: "typed/direct_action_error_context_after_action",
-		src: `type Result = { N int }
+		Name: "typed/direct_action_error_context_after_action",
+		Src: `type Result = { N int }
 rule main Result = f:first second => $f
 rule first Result = x:"a" => Result{N: 1}
 rule second Result = y:"b"? => Result{N: 1 / len($y)}
 `,
-		inputs: []string{"a", "ab", "b"},
+		Inputs: []string{"a", "ab", "b"},
 	}}
 	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{ConvertTypes: true}, 1)
 }

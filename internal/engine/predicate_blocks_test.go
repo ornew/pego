@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bytes"
+	"github.com/ornew/pego/internal/gentest"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -180,10 +181,10 @@ rule main = {x := 1; len(true)} "a"`,
 	}
 }
 
-func predicateBlockGeneratedCases() []genCase {
-	var cases []genCase
+func predicateBlockGeneratedCases() []gentest.Case {
+	var cases []gentest.Case
 	for _, fixture := range predicateBlockCases() {
-		cases = append(cases, genCase{name: fixture.name, src: fixture.block, inputs: fixture.inputs})
+		cases = append(cases, gentest.Case{Name: fixture.name, Src: fixture.block, Inputs: fixture.inputs})
 	}
 	return cases
 }

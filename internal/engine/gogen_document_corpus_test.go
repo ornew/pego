@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -41,11 +42,11 @@ func testGeneratedDocumentsMatchBatchOnCorpus(t *testing.T) {
 	}
 	write("go.mod", testGoMod("doctest"))
 	var imports, checks strings.Builder
-	cases := genCorpus(t)
+	cases := gentest.GenCorpus(t)
 	for i, c := range cases {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		generatePackageIn(t, dir, "doctest", fmt.Sprintf("g%d", i), g, gen.GenOptions{Start: "main", Types: true, Document: true})
 		fmt.Fprintf(&imports, "\tg%d \"doctest/g%d\"\n", i, i)
@@ -89,11 +90,11 @@ func testGeneratedDocumentsMatchBatchOnCorpus(t *testing.T) {
 	}
 	var inputs strings.Builder
 	for _, c := range cases {
-		fmt.Fprintf(&inputs, "\t%#v,\n", append([]string{""}, c.inputs...))
+		fmt.Fprintf(&inputs, "\t%#v,\n", append([]string{""}, c.Inputs...))
 	}
 	var names strings.Builder
 	for _, c := range cases {
-		fmt.Fprintf(&names, "\t%q,\n", c.name)
+		fmt.Fprintf(&names, "\t%q,\n", c.Name)
 	}
 	write("main.go", `package main
 

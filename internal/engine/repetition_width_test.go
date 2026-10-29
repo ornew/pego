@@ -3,6 +3,7 @@ package engine
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"hash/crc32"
 	"strconv"
 	"strings"
@@ -12,27 +13,6 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
-
-func wideRepetitionCases() []genCase {
-	if strconv.IntSize < 64 {
-		return nil // Source bounds follow the implementation's int range.
-	}
-	var cases []genCase
-	for _, bound := range []string{"2147483648", "4294967296", "9223372036854775807"} {
-		for _, c := range []struct{ name, body string }{
-			{"minimum", `"é" #repeat(%s) $$`},
-			{"unbounded minimum", `"é" #repeat(%s,) $$`},
-			{"scan minimum", `[é] #repeat(%s) #atomic $$`},
-			{"maximum", `"é" #repeat(0,%s) $$`},
-			{"class scan", `[é] #repeat(0,%s) #atomic $$`},
-			{"any scan", `. #repeat(0,%s) #atomic $$`},
-			{"projection", `xs:(v:"é") #repeat(0,%s) $$ => map($xs, (x) => x.$v)`},
-		} {
-			cases = append(cases, genCase{"wide " + c.name + " " + bound, "rule main = " + fmt.Sprintf(c.body, bound), []string{"", "é", "éé", "x"}})
-		}
-	}
-	return cases
-}
 
 func TestWideRepetitionModuleValidation(t *testing.T) {
 	t.Parallel()
@@ -127,11 +107,11 @@ func TestWideRepetitionBounds(t *testing.T) {
 	if strconv.IntSize < 64 {
 		t.Skip("bounds exceed a 32-bit implementation's source integer range")
 	}
-	for _, c := range wideRepetitionCases() {
-		t.Run(c.name, func(t *testing.T) {
+	for _, c := range gentest.WideRepetitionCases() {
+		t.Run(c.Name, func(t *testing.T) {
 			for _, options := range []compile.Options{{}, {DisableMemo: true}} {
-				prog := mustCompile(t, c.src, options)
-				for _, input := range c.inputs {
+				prog := mustCompile(t, c.Src, options)
+				for _, input := range c.Inputs {
 					checkBackends(t, prog, "main", input)
 				}
 				for _, mode := range valueModes {
@@ -146,12 +126,12 @@ func TestWideRepetitionBounds(t *testing.T) {
 					}
 					for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 						if backend == Closure {
-							_, err := loaded.ParseWith("main", c.inputs[0], servedBy(mode, ParseOptions{Backend: backend}))
+							_, err := loaded.ParseWith("main", c.Inputs[0], servedBy(mode, ParseOptions{Backend: backend}))
 							wantClosureRefused(t, err)
 							continue
 						}
 						for _, unit := range []PositionUnit{CodePoints, Bytes} {
-							for _, input := range c.inputs {
+							for _, input := range c.Inputs {
 								want, wantErr := prog.ParseWith("main", input, ParseOptions{Unit: unit})
 								got, gotErr := loaded.ParseWith("main", input, servedBy(mode, ParseOptions{Backend: backend, Unit: unit}))
 								if resultJSON(got, gotErr) != resultJSON(want, wantErr) {

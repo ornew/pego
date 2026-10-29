@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/ornew/pego/internal/gentest"
 	"os/exec"
 	"testing"
 
@@ -29,11 +30,11 @@ func testGeneratedNodeFrameScratchCorpus(t *testing.T) {
 		"typed/OperatorsRule_environment_rollback": true, "typed/OperatorsRule_lookahead_memo": true,
 		"typed/recovery_capture_environment": true, "typed/recovery_cut_scope": true,
 	}
-	cases := append([]genCase(nil), nodeDirectCases...)
-	for _, c := range genCorpus(t) {
-		if wanted[c.name] {
+	cases := append([]gentest.Case(nil), gentest.NodeDirectCases...)
+	for _, c := range gentest.GenCorpus(t) {
+		if wanted[c.Name] {
 			cases = append(cases, c)
-			delete(wanted, c.name)
+			delete(wanted, c.Name)
 		}
 	}
 	if len(wanted) != 0 {

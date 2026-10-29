@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/ornew/pego/internal/gentest"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -64,7 +65,7 @@ func testGeneratedTextStructs(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	cases := []genCase{{"text structs", textStructGrammar, []string{"", "ab", "ab 12 3.5", "<x> ! #a # @b @", "ab ?", "12.", "! ab <yz> 7", "[ab]ab", "[ab]cd 1"}}}
+	cases := []gentest.Case{{Name: "text structs", Src: textStructGrammar, Inputs: []string{"", "ab", "ab 12 3.5", "<x> ! #a # @b @", "ab ?", "12.", "! ab <yz> 7", "[ab]ab", "[ab]cd 1"}}}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
 	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, 1)

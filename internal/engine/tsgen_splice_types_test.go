@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // The typed values of a TypeScript parser keep the tokens of its own node tree for a hidden rule that
@@ -24,23 +25,23 @@ func TestGeneratedTSRecursiveSpliceTypesKeepTheTree(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	cases := spliceTypeCases(t)
+	cases := gentest.SpliceTypeCases(t)
 	dir := t.TempDir()
 	var imports, list strings.Builder
 	var inputs [][]string
 	for i, c := range cases {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		files, err := GenerateTS(g, gen.GenOptions{Start: "main", Types: true})
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		writeTSFiles(t, filepath.Join(dir, fmt.Sprintf("g%d", i)), files)
 		fmt.Fprintf(&imports, "import * as g%d from \"./g%[1]d/parser.ts\";\n", i)
 		fmt.Fprintf(&list, "g%d, ", i)
-		inputs = append(inputs, c.inputs)
+		inputs = append(inputs, c.Inputs)
 	}
 	data, _ := json.Marshal(inputs)
 	if err := os.WriteFile(filepath.Join(dir, "inputs.json"), data, 0o644); err != nil {
@@ -86,10 +87,10 @@ console.log(JSON.stringify(rows));
 	}
 	checked := 0
 	for i, c := range cases {
-		for j, s := range c.inputs {
+		for j, s := range c.Inputs {
 			row := rows[i][j]
 			if row[2] != row[3] {
-				t.Errorf("%s %q: parse failed %v, parseAST failed %v", c.name, s, row[2], row[3])
+				t.Errorf("%s %q: parse failed %v, parseAST failed %v", c.Name, s, row[2], row[3])
 			}
 			if row[2] == true {
 				continue
@@ -101,8 +102,8 @@ console.log(JSON.stringify(rows));
 			for _, l := range row[1].([]any) {
 				got = append(got, l.(string))
 			}
-			if want := spliceWantLeaves(c.name, s, tokens); strings.Join(got, "|") != strings.Join(want, "|") {
-				t.Errorf("%s %q: the typed value has the strings %q, want %q (tree %s)", c.name, s, got, want, row[0])
+			if want := spliceWantLeaves(c.Name, s, tokens); strings.Join(got, "|") != strings.Join(want, "|") {
+				t.Errorf("%s %q: the typed value has the strings %q, want %q (tree %s)", c.Name, s, got, want, row[0])
 			}
 			checked++
 		}

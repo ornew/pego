@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/ornew/pego/internal/gentest"
 	goast "go/ast"
 	goparser "go/parser"
 	"go/token"
@@ -96,11 +97,11 @@ func TestGeneratedLocalVariables(t *testing.T) {
 		{"observability", gen.GenOptions{Types: true, Observability: true}, true},
 	}
 	checked := 0
-	cases := genCorpus(t)
+	cases := gentest.GenCorpus(t)
 	for _, c := range cases {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		for _, f := range forms {
 			opts := f.opts
@@ -108,17 +109,17 @@ func TestGeneratedLocalVariables(t *testing.T) {
 			files, err := Generate(t, g, opts)
 			if err != nil {
 				// Every test grammar generates in every form.
-				t.Errorf("%s (%s): %v", c.name, f.name, err)
+				t.Errorf("%s (%s): %v", c.Name, f.name, err)
 				continue
 			}
 			checked++
 			for _, e := range localErrors(t, files) {
-				t.Errorf("%s (%s): %s", c.name, f.name, e)
+				t.Errorf("%s (%s): %s", c.Name, f.name, e)
 			}
 			for _, fl := range files {
 				if fl.Path == "parser.go" && f.blank {
 					for _, fn := range blankLinesInFunctions(string(fl.Content)) {
-						t.Errorf("%s (%s): blank line in %s", c.name, f.name, fn)
+						t.Errorf("%s (%s): blank line in %s", c.Name, f.name, fn)
 					}
 				}
 			}
@@ -145,14 +146,14 @@ func TestLocalErrorsDetectsUnusedVariable(t *testing.T) {
 func TestShakeVarsMutantFailsToCompile(t *testing.T) {
 	t.Parallel()
 	declared, failed := 0, 0
-	for _, c := range genCorpus(t) {
-		g, err := parseTest(c.src)
+	for _, c := range gentest.GenCorpus(t) {
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		files, err := Generate(t, g, gen.GenOptions{Types: true, Package: "p", Start: "main", Runtime: gen.RuntimeImport, Module: "example.com/p"})
 		if err != nil {
-			t.Errorf("%s: %v", c.name, err)
+			t.Errorf("%s: %v", c.Name, err)
 			continue
 		}
 		var mutated []gen.GeneratedFile
@@ -178,7 +179,7 @@ func TestShakeVarsMutantFailsToCompile(t *testing.T) {
 		if len(localErrors(t, mutated)) > 0 {
 			failed++
 		} else {
-			t.Errorf("%s: dropping %d shakable variables left code that compiles: the shaking keeps nothing that it needs to keep", c.name, dropped)
+			t.Errorf("%s: dropping %d shakable variables left code that compiles: the shaking keeps nothing that it needs to keep", c.Name, dropped)
 		}
 	}
 	if declared == 0 || failed != declared {

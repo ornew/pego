@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -201,35 +202,35 @@ func TestCoreGuardsAreSound(t *testing.T) {
 		t.Skip("probes the corpus with the engine")
 	}
 	var guarded, skipped, checked, mutantBad, mutantGrammars int
-	for _, gc := range append(genCorpus(t), grammarCases(t)...) {
-		if len(gc.inputs) == 0 {
+	for _, gc := range append(gentest.GenCorpus(t), gentest.GrammarCases(t)...) {
+		if len(gc.Inputs) == 0 {
 			continue
 		}
 		var cases []*coreGenCase
-		if gen, ok := coreGenerate(gc.src, gen.GenOptions{Types: true, TypedOnly: true}); ok {
-			if c, err := coreTypedCase(gc.name, "lean", gen, nil); err == nil {
+		if gen, ok := coreGenerate(gc.Src, gen.GenOptions{Types: true, TypedOnly: true}); ok {
+			if c, err := coreTypedCase(gc.Name, "lean", gen, nil); err == nil {
 				cases = append(cases, c)
 			}
 		}
-		if gen, ok := coreGenerate(gc.src, gen.GenOptions{Recognize: true}); ok {
-			if c, err := coreRecognizeCase(gc.name, "lean", gen); err == nil {
+		if gen, ok := coreGenerate(gc.Src, gen.GenOptions{Recognize: true}); ok {
+			if c, err := coreRecognizeCase(gc.Name, "lean", gen); err == nil {
 				cases = append(cases, c)
 			}
 		}
 		if len(cases) == 0 {
 			continue
 		}
-		prog, probes, skip := guardProbes(t, gc.src, cases)
+		prog, probes, skip := guardProbes(t, gc.Src, cases)
 		if len(probes) == 0 {
 			continue
 		}
 		guarded += len(probes)
 		skipped += skip
-		inputs := guardProbeInputs(gc.inputs)
+		inputs := guardProbeInputs(gc.Inputs)
 		bad, n := guardViolations(prog, probes, inputs, nil)
 		checked += n
 		for _, b := range bad {
-			t.Errorf("%s: %s", gc.name, b)
+			t.Errorf("%s: %s", gc.Name, b)
 		}
 		if bad, _ := guardViolations(prog, probes, inputs, guardNarrowed); len(bad) > 0 {
 			mutantBad += len(bad)

@@ -3,6 +3,7 @@ package engine
 import (
 	"bytes"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -32,7 +33,7 @@ func testGeneratedFlowRecognizerParity(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	cases := genCorpus(t)
+	cases := gentest.GenCorpus(t)
 	taken, framed := 0, 0
 	gh := &gogen.Hooks{}
 	setGenHooks(t, gh)
@@ -47,12 +48,12 @@ func testGeneratedFlowRecognizerParity(t *testing.T) {
 		}
 	}
 	for _, c := range cases {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		if _, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 	}
 	gh.LeanRoute, gh.FramedRoute = nil, nil
@@ -206,7 +207,7 @@ func TestGeneratedFlowRecognizerMutantChild(t *testing.T) {
 		return mutant
 	}
 	pinOrdinary(t)
-	cases := genCorpus(t)
+	cases := gentest.GenCorpus(t)
 	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{})
 	if mutated == 0 {
 		t.Fatalf("the %s mutant changes no generated recognizer", name)
@@ -297,9 +298,9 @@ func TestFlowRecognizerFallbackMatchesEngine(t *testing.T) {
 		t.Skip("builds generated consumers")
 	}
 	pinOrdinary(t)
-	c := genCase{"fallback of the Flow recognizer",
-		"rule main = ws item* !.\nrule ws = ([ ] / comment)*\nrule comment = \"--\" [^\\n]* / block_comment\nrule block_comment = \"/*\" (block_comment / !\"*/\" .)* \"*/\"\nrule item = [a-z]+ / [0-9]+\n",
-		[]string{"", "a", "a 1 b2", "-- c\n a", "/* x */ a", "/* /* y */ */ 1", "/* open", "a -- tail", "@", "a /* x */ /* y */ 2", "--"}}
+	c := gentest.Case{Name: "fallback of the Flow recognizer",
+		Src:    "rule main = ws item* !.\nrule ws = ([ ] / comment)*\nrule comment = \"--\" [^\\n]* / block_comment\nrule block_comment = \"/*\" (block_comment / !\"*/\" .)* \"*/\"\nrule item = [a-z]+ / [0-9]+\n",
+		Inputs: []string{"", "a", "a 1 b2", "-- c\n a", "/* x */ a", "/* /* y */ */ 1", "/* open", "a -- tail", "@", "a /* x */ /* y */ 2", "--"}}
 	refused, framed := map[string]bool{}, map[string]bool{}
 	gh := &gogen.Hooks{}
 	setGenHooks(t, gh)
@@ -315,7 +316,7 @@ func TestFlowRecognizerFallbackMatchesEngine(t *testing.T) {
 			framed[r.Name] = true
 		}
 	}
-	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), []genCase{c}, gen.GenOptions{})
+	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), []gentest.Case{c}, gen.GenOptions{})
 	if len(refused) == 0 {
 		t.Fatal("no rule was refused: the fallback is not exercised")
 	}

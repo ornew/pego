@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"github.com/ornew/pego/internal/gentest"
 	"hash/crc32"
 	"strings"
 	"sync"
@@ -59,9 +60,9 @@ func TestCompiledRecognitionASTFileRejectsBundle(t *testing.T) {
 
 func TestCompiledRecognitionRoundTrip(t *testing.T) {
 	t.Parallel()
-	for _, c := range genCorpus(t) {
-		t.Run(c.name, func(t *testing.T) {
-			p := mustCompile(t, c.src)
+	for _, c := range gentest.GenCorpus(t) {
+		t.Run(c.Name, func(t *testing.T) {
+			p := mustCompile(t, c.Src)
 			for _, mode := range allModes {
 				data, err := p.Marshal("main", mode)
 				if err != nil {
@@ -79,7 +80,7 @@ func TestCompiledRecognitionRoundTrip(t *testing.T) {
 					t.Fatalf("resave differs: %v", err)
 				}
 				for _, name := range moduleRuleNames(p.Module()) {
-					for _, input := range append(append([]string{}, c.inputs...), "\xff", "", "trailing") {
+					for _, input := range append(append([]string{}, c.Inputs...), "\xff", "", "trailing") {
 						for _, unit := range []PositionUnit{CodePoints, Bytes} {
 							want, werr := p.ParseWith(name, input, ParseOptions{Recognize: true, Unit: unit})
 							for _, backend := range []Backend{Default, Bytecode, BytecodeIterative} {

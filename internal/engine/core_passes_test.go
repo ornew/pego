@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/ornew/pego/internal/gentest"
 	"testing"
 
 	"github.com/ornew/pego/internal/gen/gogen"
@@ -336,7 +337,7 @@ func TestCoreScans(t *testing.T) {
 	t.Parallel()
 	src := `rule main = [a-z]* "-"#repeat(2) .#repeat(1, 3) x:[0-9]* $$ => $x
 `
-	prog, ok := coreCorpusProgram(t, genCase{src: src})
+	prog, ok := coreCorpusProgram(t, gentest.Case{Src: src})
 	if !ok {
 		t.Fatal("does not compile")
 	}

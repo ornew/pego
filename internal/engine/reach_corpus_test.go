@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -67,11 +68,11 @@ func testUnreachableCorpusGeneration(t *testing.T) {
 		{"types recognize", gen.GenOptions{Types: true, Recognize: true}},
 	}
 	checked, pruned := 0, 0
-	for _, c := range genCorpus(t) {
+	for _, c := range gentest.GenCorpus(t) {
 		for _, set := range optionSets {
-			g, err := parseNaturalStart(c.src)
+			g, err := parseNaturalStart(c.Src)
 			if err != nil {
-				t.Fatalf("%s: %v", c.name, err)
+				t.Fatalf("%s: %v", c.Name, err)
 			}
 			opts := set.opts
 			opts.Package, opts.Start = "p", "main"
@@ -83,7 +84,7 @@ func testUnreachableCorpusGeneration(t *testing.T) {
 			}
 			code, err := generateCode(t, g, opts)
 			if err != nil {
-				t.Errorf("%s with %s: generation fails with the pruning (%v), not without it", c.name, set.name, err)
+				t.Errorf("%s with %s: generation fails with the pruning (%v), not without it", c.Name, set.name, err)
 				continue
 			}
 			checked++
@@ -121,10 +122,10 @@ func testUnreachableCorpusRuns(t *testing.T) {
 	write("go.mod", testGoMod("reachcorpus"))
 	var imports, calls strings.Builder
 	n := 0
-	for _, c := range genCorpus(t) {
-		g, err := parseNaturalStart(c.src)
+	for _, c := range gentest.GenCorpus(t) {
+		g, err := parseNaturalStart(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		opts := gen.GenOptions{Recognize: true, Start: "main"}
 		kept := opts
@@ -137,13 +138,13 @@ func testUnreachableCorpusRuns(t *testing.T) {
 		opts.Package = fmt.Sprintf("p%d", n)
 		code, err := generateCode(t, g, opts)
 		if err != nil {
-			t.Fatalf("%s: generation fails with the pruning: %v", c.name, err)
+			t.Fatalf("%s: generation fails with the pruning: %v", c.Name, err)
 		}
 		write(fmt.Sprintf("p%d/parser.go", n), string(code))
 		write(fmt.Sprintf("k%d/parser.go", n), string(keptCode))
 		fmt.Fprintf(&imports, "\tp%[1]d \"reachcorpus/p%[1]d\"\n\tk%[1]d \"reachcorpus/k%[1]d\"\n", n)
 		var in []string
-		for _, s := range c.inputs {
+		for _, s := range c.Inputs {
 			in = append(in, fmt.Sprintf("%q", s))
 		}
 		fmt.Fprintf(&calls, `	for _, in := range []string{%s} {

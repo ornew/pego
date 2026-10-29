@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bytes"
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -31,7 +32,7 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	cases := genCorpus(t)
+	cases := gentest.GenCorpus(t)
 	taken := map[string]int{}
 	gh := &gogen.Hooks{}
 	setGenHooks(t, gh)
@@ -40,12 +41,12 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 	gh.FramedRoute = func(table string, r *compile.Rule) { framed[table]++ }
 	gh.OperatorsRoute = func(table string, r *compile.Rule) { operators[table]++ }
 	for _, c := range cases {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		if _, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 	}
 	gh.LeanRoute, gh.FramedRoute, gh.OperatorsRoute = nil, nil, nil
@@ -170,14 +171,14 @@ func testFlowNodeRecognizersOnGrammars(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	var cases []genCase
+	var cases []gentest.Case
 	for _, name := range []string{"json", "cel", "cue", "duckdb", "golang", "python", "xml", "yaml", "csv", "typescript"} {
 		dir := filepath.Join("..", "..", "parsers", name)
 		src, err := os.ReadFile(filepath.Join(dir, name+".pego"))
 		if err != nil {
 			t.Fatal(err)
 		}
-		gc := genCase{name: name, src: string(src)}
+		gc := gentest.Case{Name: name, Src: string(src)}
 		files, err := filepath.Glob(filepath.Join(dir, "testdata", "*.txt"))
 		if err != nil || len(files) == 0 {
 			t.Fatalf("%s: no test data inputs (%v)", name, err)
@@ -187,7 +188,7 @@ func testFlowNodeRecognizersOnGrammars(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			gc.inputs = append(gc.inputs, string(in))
+			gc.Inputs = append(gc.Inputs, string(in))
 		}
 		cases = append(cases, gc)
 	}

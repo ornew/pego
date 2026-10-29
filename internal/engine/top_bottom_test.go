@@ -3,6 +3,7 @@ package engine
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/ornew/pego/internal/gentest"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -16,27 +17,27 @@ import (
 
 const topBottomRules = "type Num = { Text string }\nrule n Num = t:([0-9]+) #atomic => Num{Text: text($t)}\nrule w = [a-z]+\n"
 
-func topBottomCases() []genCase {
-	return []genCase{
-		{"top field", "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: $x}\n" + topBottomRules, []string{"1", "a"}},
+func topBottomCases() []gentest.Case {
+	return []gentest.Case{
+		{Name: "top field", Src: "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: $x}\n" + topBottomRules, Inputs: []string{"1", "a"}},
 		// text applies to nodes of string values, so both alternatives are plain nodes here.
-		{"top primitive", "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: len(text($x))}\nrule n = [0-9]+ #atomic\nrule w = [a-z]+\n", []string{"12", "a"}},
-		{"top cast", "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: $x}.A.(Num)\n" + topBottomRules, []string{"1", "a"}},
-		{"top compare", "type T = { A _ }\nrule main = x:(n / w) {T{A: $x}.A == $x} $$\n" + topBottomRules, []string{"1", "a"}},
+		{Name: "top primitive", Src: "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: len(text($x))}\nrule n = [0-9]+ #atomic\nrule w = [a-z]+\n", Inputs: []string{"12", "a"}},
+		{Name: "top cast", Src: "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: $x}.A.(Num)\n" + topBottomRules, Inputs: []string{"1", "a"}},
+		{Name: "top compare", Src: "type T = { A _ }\nrule main = x:(n / w) {T{A: $x}.A == $x} $$\n" + topBottomRules, Inputs: []string{"1", "a"}},
 		// A struct is not a node, so the meet is node[string].
-		{"meet field", "type T = { A (Num | node[string] | int) & node[_] }\nrule main = x:([a-z]+ #atomic) $$ => T{A: $x}\n" + topBottomRules, []string{"a", "1"}},
-		{"top list", "type T = { A []_ }\ntype U = { F _ }\nrule main = x:(n / w)+ $$ => T{A: U{F: $x}.F.([]_)}\n" + topBottomRules, []string{"1", "1a"}},
-		{"top list mismatch", "type T = { A []_ | int }\ntype U = { F _ }\nrule main = x:(n / w) $$ => T{A: U{F: $x}.F.([]_ | int)}\n" + topBottomRules, []string{"1", "a"}},
-		{"meet list", "type T = { A [](Num | node[string]) & []node[_] }\nrule main = xs:[a-z]+ $$ => T{A: $xs.Value}\n" + topBottomRules, []string{"ab", ""}},
+		{Name: "meet field", Src: "type T = { A (Num | node[string] | int) & node[_] }\nrule main = x:([a-z]+ #atomic) $$ => T{A: $x}\n" + topBottomRules, Inputs: []string{"a", "1"}},
+		{Name: "top list", Src: "type T = { A []_ }\ntype U = { F _ }\nrule main = x:(n / w)+ $$ => T{A: U{F: $x}.F.([]_)}\n" + topBottomRules, Inputs: []string{"1", "1a"}},
+		{Name: "top list mismatch", Src: "type T = { A []_ | int }\ntype U = { F _ }\nrule main = x:(n / w) $$ => T{A: U{F: $x}.F.([]_ | int)}\n" + topBottomRules, Inputs: []string{"1", "a"}},
+		{Name: "meet list", Src: "type T = { A [](Num | node[string]) & []node[_] }\nrule main = xs:[a-z]+ $$ => T{A: $xs.Value}\n" + topBottomRules, Inputs: []string{"ab", ""}},
 	}
 }
 
 func TestTopBottomAcrossBackends(t *testing.T) {
 	t.Parallel()
 	for _, fixture := range topBottomCases() {
-		t.Run(fixture.name, func(t *testing.T) {
-			program := mustCompile(t, fixture.src)
-			for _, input := range fixture.inputs {
+		t.Run(fixture.Name, func(t *testing.T) {
+			program := mustCompile(t, fixture.Src)
+			for _, input := range fixture.Inputs {
 				baseline := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure}))
 				for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 					if actual := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend})); actual != baseline {

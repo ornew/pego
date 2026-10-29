@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"io"
 	"runtime"
 	"strings"
@@ -12,13 +13,9 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-const records = `rule main = ^^ header items:record* #stream $$
-rule header = "#records\n"
-rule record = ^ k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n"`
-
 func TestParseStream(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, records)
+	prog := mustCompile(t, gentest.Records)
 	var got []string
 	err := prog.ParseStream("main", strings.NewReader("#records\na=1\nbc=22\n"), func(n *value.Node) error {
 		got = append(got, fmt.Sprintf("%s [%d,%d)", n, value.D(n).Start, value.D(n).End))
@@ -48,7 +45,7 @@ func TestParseStream(t *testing.T) {
 // before all the input has arrived.
 func TestParseStreamIsIncremental(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, records)
+	prog := mustCompile(t, gentest.Records)
 	pr, pw := io.Pipe()
 	next := make(chan struct{})
 	go func() {
@@ -81,7 +78,7 @@ func TestParseStreamIsIncremental(t *testing.T) {
 // has been discarded.
 func TestParseStreamErrorPosition(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, records)
+	prog := mustCompile(t, gentest.Records)
 	var b strings.Builder
 	b.WriteString("#records\n")
 	for i := 0; i < 5000; i++ {
@@ -104,7 +101,7 @@ func TestParseStreamErrorPosition(t *testing.T) {
 
 func TestParseStreamEmitError(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, records)
+	prog := mustCompile(t, gentest.Records)
 	stop := errors.New("stop")
 	count := 0
 	err := prog.ParseStream("main", strings.NewReader("#records\na=1\nb=2\n"), func(*value.Node) error {
@@ -120,7 +117,7 @@ func TestParseStreamEmitError(t *testing.T) {
 // grow, even for large input.
 func TestParseStreamDiscardsInput(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, records)
+	prog := mustCompile(t, gentest.Records)
 	r := &lineReader{header: "#records\n", line: "key=42\n", n: 100000}
 	maxBuf := 0
 	p := core.NewStreamParser(&prog.sharedProgram, r, CodePoints)
@@ -144,7 +141,7 @@ func TestParseStreamDiscardsInput(t *testing.T) {
 // plain CST values, on every backend.
 func TestParseStreamMemoryIsBounded(t *testing.T) {
 	grammars := map[string]string{
-		"records": records,
+		"records": gentest.Records,
 		"action": `type Pair = { Key node[string]; Value node[string] }
 rule main = item* #stream $$
 rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Value: $v}`,

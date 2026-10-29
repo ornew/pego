@@ -14,8 +14,8 @@ import (
 func typedOnlyLonelyGrammar(t *testing.T) string {
 	t.Helper()
 	for _, c := range typedOnlyConverted {
-		if c.name == "left recursion" {
-			return strings.Replace(c.src, "rule main", "@start\nrule main", 1) + "\nrule lonely = \"zz\" item \"q\"+\n"
+		if c.Name == "left recursion" {
+			return strings.Replace(c.Src, "rule main", "@start\nrule main", 1) + "\nrule lonely = \"zz\" item \"q\"+\n"
 		}
 	}
 	t.Fatal("the left recursion grammar is missing")

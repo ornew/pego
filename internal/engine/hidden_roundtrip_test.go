@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/ornew/pego/internal/gentest"
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
@@ -15,11 +16,11 @@ func TestHiddenRulesCompiledRoundTrip(t *testing.T) {
 		inputs    []string
 	}
 	var sources []source
-	for _, tc := range spliceCases() {
-		sources = append(sources, source{"hidden " + tc.name, tc.hidden, tc.inputs})
+	for _, tc := range gentest.SpliceCases() {
+		sources = append(sources, source{"hidden " + tc.Name, tc.Hidden, tc.Inputs})
 	}
-	for _, tc := range inlineActionCases() {
-		sources = append(sources, source{"inline " + tc.name, tc.inline, tc.inputs})
+	for _, tc := range gentest.InlineActionCases() {
+		sources = append(sources, source{"inline " + tc.Name, tc.Inline, tc.Inputs})
 	}
 	for _, s := range sources {
 		t.Run(s.name, func(t *testing.T) {

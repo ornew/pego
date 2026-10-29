@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -92,9 +93,9 @@ func TestLiteralTextPredicateDispatchDisabledParity(t *testing.T) {
 }
 
 func testLiteralTextPredicateDispatchDisabledParity(t *testing.T) {
-	var cases []genCase
-	for _, c := range genCorpus(t) {
-		if strings.HasPrefix(c.name, "literal text ") {
+	var cases []gentest.Case
+	for _, c := range gentest.GenCorpus(t) {
+		if strings.HasPrefix(c.Name, "literal text ") {
 			cases = append(cases, c)
 		}
 	}

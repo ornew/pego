@@ -155,7 +155,7 @@ TypeScript is printed from the same Flow IR as Go (`internal/gen/tsgen/flow.go`,
 
 `internal/lsp` tests talk to the server in process over pipes (lifecycle, malformed messages, incremental edits with non-ASCII and astral characters and `\r\n`, every request) and analyze every example grammar. In `editors/vscode`, `npm install && npm run check` compiles the TextMate grammar's regular expressions with Oniguruma and checks the scopes of a sample, and tokenizes the example and ready-made parser grammars; `npm run check-server -- <path to pego>` talks to the server with the VS Code client's JSON-RPC library.
 
-`sample` tests generate inputs for every example grammar and every grammar of the engine's test corpus (`internal/engine/sample_test.go`, through `export_test.go`) and parse them on every backend.
+`sample` tests generate inputs for every example grammar and every grammar of the shared test corpus (`internal/engine/sample_test.go`, with the corpus of `internal/gentest`) and parse them on every backend.
 
 `go generate ./spec/language` renders the simple grammar view from `pego.pego` and `spec/language/syntax.md.tmpl`; edit the template rather than the generated page. `spec/language/source_grammar_test.go` verifies the simplified display against the canonical source grammar, checks concrete trees and recovery across backends, and builds a generated typed Go consumer. `spec/language/syntax_test.go` runs the grammar of [Grammar Syntax](../spec/language/syntax.md) on every `.pego` file and every `pego` code block of the repository and requires it to agree with the parser of `internal/syntax`.
 

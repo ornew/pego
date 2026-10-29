@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bytes"
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -117,8 +118,8 @@ func testGeneratedUnsharedParsersMatchEngine(t *testing.T) {
 		t.Skip("builds generated code")
 	}
 	opts := gen.GenOptions{DisableMethodSharing: true, DisableLiteralSharing: true}
-	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), genCorpus(t), opts)
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), genCorpus(t), opts)
+	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), gentest.GenCorpus(t), opts)
+	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), gentest.GenCorpus(t), opts)
 }
 
 func TestGeneratedUnsharedTSParsersMatchEngine(t *testing.T) {
@@ -130,7 +131,7 @@ func TestGeneratedUnsharedTSParsersMatchEngine(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	testGeneratedTSParsersCorpus(t, node, genCorpus(t), gen.GenOptions{DisableMethodSharing: true, DisableLiteralSharing: true})
+	testGeneratedTSParsersCorpus(t, node, gentest.GenCorpus(t), gen.GenOptions{DisableMethodSharing: true, DisableLiteralSharing: true})
 }
 
 // PEGO_GENERATED_SHARING selects generation-only controls: combined also

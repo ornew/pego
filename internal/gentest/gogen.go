@@ -1,0 +1,465 @@
+package gentest
+
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+// Case is a grammar with the inputs that tests parse with it.
+type Case struct {
+	Name   string
+	Src    string
+	Inputs []string
+}
+
+// GenCorpus returns the grammars and inputs used to compare backends and generated parsers with the engine.
+func GenCorpus(t *testing.T) []Case {
+	keywords, keywordInputs := OutlineKeywords()
+	cases := []Case{
+		{"outlined keywords", keywords, keywordInputs},
+		{"declared variable initial values", `type R = { N int; S string; B bool; M int }
+var n int = 7
+var s = "init"
+var b bool
+var m = -3
+rule main R = {s := s + "!"} g:grow "," h:grow "," t:test $$ => R{N: n + $g + $h, S: s, B: b || $t, M: m}
+rule grow int = {n := n + 1} "a" => n
+rule test bool = "y" {b == false} => b == false
+`, []string{"a,a,y", "a,a,x", "a,a,", "a,", "y", ""}},
+		// Case-insensitive literals: a suffix and a pragma. Their first characters are both cases, so a
+		// guard of such an alternative must test both.
+		{"case-insensitive literal alternatives", `rule main = (kw / id)+ !.
+rule kw = "select"i / "from"i / "x"
+rule id = [a-z]+`, []string{"SELECT", "select", "From fRoM", "sel x", "Xx", "x", "", "1"}},
+		{"ignorecase group", `rule main = (("ab" / "cd") #ignorecase "e" / "x") !.`, []string{"ABe", "cdE", "CDe", "ABE", "x", "xe", "", "ab", "cde"}},
+		// item is called three times at the same position under different values of d, so a memo
+		// entry made for d = 2 would serve the call with d = 3 if d were left out of the key.
+		{"memo entries are keyed by the variables the rule reads", `var d int
+rule main = a1 / a2 / a3 $$
+rule a1 = {d := 1} v:item {$v == "none"}
+rule a2 = {d := 2} v:item {$v == "none"}
+rule a3 = {d := 3} v:item {$v == "three"} => $v
+rule item string = i1 / i2 / i3
+rule i1 string = {d == 1} "x" => "one"
+rule i2 string = {d == 2} "x" => "two"
+rule i3 string = {d == 3} "x" => "three"
+`, []string{"x", "y", ""}},
+		// A rule is memoized from its second call at a position, so the middle call stores the entry
+		// that the last one must not reuse. The last call, made after the bindings are undone, reads
+		// the initial values, which must key the memo like the same values bound explicitly.
+		{"initial values key the memo like bound ones", `var d int = 1
+rule main = a1 / a2 / a3
+rule a1 = {d := 1} v:item {$v == "none"}
+rule a2 = {d := 2} v:item {$v == "none"}
+rule a3 string = v:item $$ => $v
+rule item string = i1 / i2
+rule i1 string = {d == 1} "x" => "one"
+rule i2 string = {d == 2} "x" => "two"
+`, []string{"x", "y", ""}},
+		{"bindings of a cast value", `var x int
+rule main = d:dyn {x := $d.(int)} "z" => x
+rule dyn _ = di / ds
+rule di = "i" => 1
+rule ds = "s" => "str"
+`, []string{"iz", "sz", "i", ""}},
+		// A failed cast is an evaluation error, so the binding fails and the choice goes on.
+		{"a failed cast in a binding backtracks", `var x int
+rule main = (d:dyn {x := $d.(int)} "z" / "s" "y") / "s" "w" => x
+rule dyn _ = di / ds
+rule di = "i" => 1
+rule ds = "s" => "str"
+`, []string{"iz", "sz", "sy", "sw", "i", ""}},
+		{"a cast binding in an Operators Rule operand", `var x int
+rule main = e $$
+rule e = #operators {
+    operand d:dyn {x := $d.(int)}
+    level { infix left "+" }
+}
+rule dyn _ = di / ds
+rule di = "i" => 1
+rule ds = "s" => "str"
+`, []string{"i", "i+i", "s", "i+s", "s+i", ""}},
+		{"declared variables are part of the memo key", `var d int
+rule main = {d := 1} item "|" {d := 2} item "|" item $$
+rule item = {d == 1} "x" / {d == 2} "y" / {d == 0} "z"
+`, []string{"x|y|z", "x|y|x", "z|y|z", "x|x|z", ""}},
+		{"Operators Rule explicit default action", `rule main = e $$
+rule e = #operators {
+    operand "α"
+    level { infix left "+" }
+} => ...`, []string{"α", "α+α", "α+α+α", "α+", "+α", ""}},
+		{"direct value-free rollback", `rule main = "a" ("é" "!" / "é" "?") $$ / "o" ("é" "!")? "é"? $$ / "r" ("é" "!") #repeat(1, 3) "é"? $$ / "z" (x:_) #repeat(2, ) $$ / "p" &("é" "!") "é" !"?" "!" $$ / "l" "é" @error(message="letter") #atomic "!" $$ / "e" "ab" @error(message="pair") $$
+`, []string{"aé!", "aé?", "aé@", "aé", "o", "oé!", "oé", "oé?", "ré!é!é", "ré!é", "ré", "z", "zé", "zéé", "zééé", "pé!", "pé?", "pé", "lé!", "lé?", "l?", "eab", "ea?", "e", ""}},
+		{"direct value-free fallback calls", `var n int
+rule main = "m" &(cached "!") cached "!" $$ / "c" #cut plain "!" $$ / "v" {n := 1} plain "?" $$ / "g" {n := 2} plain $$ / "h" recovering $$ / "j" prefixed $$ / "k" left $$
+rule cached = "é" / "ab"
+rule plain = "é" / guarded
+rule guarded = {n == 2} "a"
+rule recovering = ("é" ";") #recover(skip="?")
+rule prefixed = #operators {
+    operand "é"
+    level { prefix "-" }
+}
+rule left = left "+" "é" / "é"
+`, []string{"mé!", "mab!", "mé?", "mab", "cé!", "cé?", "ca!", "vé?", "va?", "ga", "gé", "g?", "hé;", "h?", "h", "j-é", "j--é", "j-", "ké+é", "ké+", ""}},
+		{"direct value-free decoding and anchors", `rule main = "u" a:("é" / "�" / "�é" / "😀") #atomic $$ / ^^ "na" $ "\n" ^ "é" $$ / "s" [a-z] #repeat(1, 3) $$ / "t" ("x" / _) #repeat(2, ) $$
+`, []string{"ué", "u�", "u�é", "u😀", "u?", "na\né", "na\n?", "sabc", "sab", "sabcd", "s", "t", "tx", "txx", "txxx"}},
+		{"wide expectation scopes", WideExpectationsGrammar(), []string{"sé00!", "sé@", "mé@", "mé00!", "mé00?", "mé00@", "ré@;é!;", "ré79", "eé@", "eé79", ""}},
+		{"stream element recovery", `rule main = "ab" #recover(skip=[^a]+) #recover(skip="!")* #stream $$`,
+			[]string{"", "ab", "abab", "abX!ab", "X!", "a"}},
+		{"nullable minimum repetitions", `rule main = ("z" zero / "o" one / "t" two / "u" unbounded / "a" atomic / "d" discarded / "p" projected / "f" fallback) $$
+rule zero = ("é" / _) #repeat(0) #stream
+rule one = ("é" / _) #repeat(0, 1) #stream
+rule two = ("é" / _) #repeat(2) #stream
+rule unbounded = ("é" / _) #repeat(2, ) #stream
+rule atomic = ("é" / _) #repeat(2, ) #atomic
+rule discarded = -("é" / _) #repeat(2, )
+rule projected = xs:(f:("é" / _)) #repeat(2, ) => map($xs, (x) => x.$f)
+rule fallback = ("é" / _) #repeat(3) / "é"`,
+			[]string{"z", "zé", "o", "oé", "oéé", "t", "té", "téé", "tééé", "u", "ué", "uéé", "uééé", "a", "aé", "aéé", "d", "dé", "déé", "p", "pé", "péé", "f", "fé", "féé", "fééé", ""}},
+		{"stream capture recognition", `type N = { T []node[string] }
+rule main = items:(x:"é" #atomic {text($x) == "é"}) #repeat(0, 2) #stream $$ => N{T: map($items, (i) => i.$x)}`,
+			[]string{"", "é", "éé", "ééé", "a", "éa"}},
+		{"literal text predicate dispatch", `type R = { X *node[string] }
+rule main = w:[^!]+ #atomic {text($w) == "a" || "b" == text($w) || text($w) == "c" || text($w) == "é" || text($w) == "😀" || text($w) == "λ" || text($w) == "日本語" || text($w) == "long-literal"} $$ => R{X: $w}`,
+			[]string{"a", "b", "c", "é", "😀", "λ", "日本語", "long-literal", "absent", "A", ""}},
+		{"literal text predicate controls", `type R = { X *node[string] }
+rule main = n:[0-9]+ #atomic {len($n) == 1 || len($n) == 2} {text($n) != "0" && text($n) != "00"} $$ => R{X: $n}`,
+			[]string{"1", "2", "0", "00", "123", "x", ""}},
+		{"literal text mixed control", `type R = { X *node[string] }
+rule main = w:[a-z]+ #atomic {text($w) == "a" || len($w) == 1} $$ => R{X: $w}`,
+			[]string{"a", "b", "ab", ""}},
+		{"literal text different captures control", `type R = { X *node[string] }
+rule main = x:[a-z] #atomic y:[a-z] #atomic {text($x) == "a" || text($y) == "b"} $$ => R{X: $x}`,
+			[]string{"ab", "ac", "cb", "ca", "a", ""}},
+		{"literal text negation control", `type R = { X *node[string] }
+rule main = w:[a-z]+ #atomic {text($w) == "a" || !(text($w) == "b")} $$ => R{X: $w}`,
+			[]string{"a", "b", "c", ""}},
+		{"literal text missing capture", `type R = { X *node[string] }
+rule main = (w:[a-z] #atomic)? {text($w) == "" || text($w) == "a" || text($w) == "b" || text($w) == "a"} $$ => R{X: $w}`,
+			[]string{"", "a", "b", "c"}},
+		{"literal text variable alias control", `type R = { X node[string] }
+var alias string
+rule main = w:[a-z]+ #atomic {alias := text($w)} {alias == "a" || alias == "b"} $$ => R{X: $w}`,
+			[]string{"a", "b", "c", ""}},
+		{"stream empty capture recognition", `rule main = (x:_) #repeat(1) #stream $$`, []string{"", "a", "é"}},
+		{"unicode scalar boundaries", `type N = { T node[string] }
+rule main = t:("f" [\u{0}-\u{10ffff}] / "e" [\u{d7ff}-\u{e000}] / "n" [^\u{d7ff}-\u{e000}] / "l" ("\u{10ffff}" / "�" / "\u{ffff}")) #atomic $$ => N{T: $t}`,
+			[]string{"f\x00", "fa", "f\ud7ff", "f\ue000", "f\ufffd", "f\uffff", "f\U0010ffff", "e\ud7ff", "e\ue000", "e\ue001", "na", "n\ue000", "l\U0010ffff", "l\ufffd", "l\uffff", "la", "f", "f😀x"}},
+		{"long inferred chain", InferredChain(64, false, ""), []string{"a", "", "aa", "b"}},
+		{"arith", Arith, []string{"1+2*3", "-2^2", "3!!", "(1+2)*3", "1==2==3", "1+", ""}},
+		{"ast", AST, []string{"a ? b : c ? d : e", "f(a = 1, b), c", "-a(1)[2]", "a->b-c", "f()", "f(,)"}},
+		{"restricted OperatorsRule prefixes", RestrictedPrefix, []string{"~é", "~~x", "x*y", "é!", "x^y^z", "~é+y", "x*~y+z", "x^~y+z", "x+y", "x|y", "é?", "~é|y", "~é?", "~", ""}},
+		{"restricted OperatorsRule prefix memo", strings.Replace(RestrictedPrefix,
+			`rule main = x:level(e, mul) $$ => $x`, `rule main = &(level(e, mul) "|") x:e $$ => $x`, 1), []string{"~é+y|z", "~é+y", "x|y", "é|z"}},
+		{"incremental", IncrementalGrammar, []string{"x = 1+2\nab,cd\n@pos\n\ny = (3)*-4\n", "x = (1\n", "@\n"}},
+		{"records", Records, []string{"#records\na=1\nbc=22\n", "#records\nx\n"}},
+		{"indent", `var indent int
+rule main = {indent := 0} block $$
+rule block = item+
+rule item = s:spaces {len($s) == indent} name:[a-z]+ #atomic "\n" children?
+rule children = &s:spaces {len($s) > indent} {indent := len($s)} block
+rule spaces = " "* #atomic`, []string{"a\n  b\n  c\n    d\ne\n", "a\n   b\n c\n"}},
+		{"recover", `rule main = stmt* $$
+rule stmt = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")`, []string{"ab;1x;cd;9;", "1x;ab"}},
+		{"error attr", `rule main = "let" " " name @error(message="expected a name") ";"
+rule name = [a-z]+ #atomic [0-9]*`, []string{"let 1;", "let a", "let ab1;"}},
+		{"diagnostic attr", `rule main = "n" number $$ / "e" ("a" @error(message="explicit") @diagnostic(name="letter")) $$ / "s" ("a"+ @diagnostic(name="letter") "b") $$ / "c" ("a" @diagnostic(name="letter") / "b") $$ / "r" ("a" @diagnostic(name="letter") #recover(skip=";")) $$ / "q" ("a" #recover(skip=";") @diagnostic(name="letter")) $$
+rule number = ([0-9]+ "." [0-9]+) @diagnostic(name="number")`, []string{"n12x", "n12.", "n12.3", "ex", "ea", "saac", "saab", "cx", "ca", "cb", "r;", "q;", "r", "q", ""}},
+		{"left recursion", `rule main = a
+rule a = b "x" / "y"
+rule b = a "z" / c
+rule c = a "w" / "v"`, []string{"y", "vx", "yzxwx", "yz"}},
+		{"fold and lists", `type Op = { Left Node; Op node[string]; Right Node }
+type Node ~ Op | node[string]
+type Args = { Items []node[string]; N int; S string; B bool }
+rule main = e:(expr #atomic) ";" a:args => Args{Items: concat($a.Items, $a.Items), N: len($a.Items) * 2 - 1, S: text($e) + "!", B: !($a.N == 0) || false}
+rule expr Node = l:num rest:(op:("+" / "-") #atomic r:num)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.$op, Right: i.$r})
+rule args Args = first:num rest:(-"," x:num)* => Args{Items: concat(list($first), map($rest, (r) => r.$x)), N: len($rest)}
+rule num = [0-9]+ #atomic`, []string{"1+2-3;4,5,6", "1;2", "1-;2"}},
+		{"projected and indexed repetition", `type L = { Items []node[string]; Rest node[_]; N int }
+rule main = first:x rest:(-"," r:x)* => L{Items: concat(list($first), map($rest, (e) => e.$r)), Rest: $rest, N: len($rest)}
+rule x = [a-z]+ #atomic`, []string{"a,b,c", "a", "a,"}},
+		// A predicate reads a capture, so the rules called within it build values in the recognizer and
+		// keep their actions. The action of imp reads a projected capture of a repetition with map.
+		{"recognizer action over a projected repetition", `type Import = { Names []Alias }
+type Alias = { Name string }
+rule main = x:stmts {text($x) != ""} !.
+rule stmts = imp+
+rule imp Import = "import" ws f:al r:(-ws -"," -ws a:al)* ";" => Import{Names: concat(list($f), map($r, (x) => x.$a))}
+rule al Alias = n:name => Alias{Name: text($n)}
+rule ws = " "*
+rule name = [a-z]+ #atomic`, []string{"import a;", "import a, b ,c;import d;", "import a,;", "import ;", "import a,b", ""}},
+		// Captures nested in a captured repetition, with a projected repetition in its elements: the recognizer runs the
+		// action of table (a predicate reads it) over the unprojected shapes of both repetitions.
+		{"nested captured repetitions", `type Cell = { Name string }
+type Row = { Cells []Cell }
+type Table = { Rows []Row; N int }
+rule main = t:table {$t.N >= 0} !.
+rule table Table = "{" rs:(r:row ";")* "}" => Table{Rows: map($rs, (e) => e.$r), N: len($rs)}
+rule row Row = f:cell rest:(-"," c:cell)* => Row{Cells: concat(list($f), map($rest, (e) => e.$c))}
+rule cell Cell = n:name => Cell{Name: text($n)}
+rule name = [a-z]+ #atomic`, []string{"{a,b;c;}", "{a;}", "{}", "{a,;}", "{a,b}", "{a,b;c,d,e;f;}", "{;}", "x", ""}},
+		// The projected repetition reuses one frame for all elements. In the second alternative the
+		// predicate reads b, which only the first sets, so it must see the capture unset, not the value
+		// of an earlier element.
+		{"projected repetition clears its frame", `type L = { Items []node[string] }
+rule main = xs:(a:item ("+" b:item / "-" {len(text($b)) == 0}) ",")* "." => L{Items: map($xs, (e) => e.$a)}
+rule item = [a-z]+ #atomic`, []string{"x+y,z-,.", "x-,z-,.", "x+y,z+w,.", "x+y,z-,w", "x+y,z-", "x+y,z", "x+y,.", ".", ""}},
+		{"runtime error", `type A = { N int }
+rule main = x:"a"* #atomic => A{N: 10 / len($x)}`, []string{"aa", ""}},
+		// Integers are 64-bit and wrap around; the operands depend on the input.
+		{"integer boundaries", IntegerBoundaryGrammar, []string{"a", "aa", ""}},
+		{"cut and lookahead", `rule main = ("a" #cut "b" / "a" #cut "c") rest
+rule rest = &x:"!" "!"? !"?" .*`, []string{"ab!x", "ac", "ab?"}},
+		// Cuts in every backtracking scope of a body: the alternatives of a choice, an optional, a repetition and a
+		// called rule, with inputs that fail near and after each cut, so that the error position and the expected
+		// set show whether the alternatives after a cut were tried.
+		{"cuts in every scope", `rule main = item* $$
+rule item = "let" #cut " " name "=" num ";" / "if" #cut "(" name ")" (block / item) / "w" ("x" #cut "y")? "x"? "z" / "r" ("a" #cut "b")* "a" "c" / name ";" / "!" !("a" #cut "b") .
+rule block = "{" item* "}"
+rule name = [a-z]+ #atomic
+rule num = [0-9]+`, []string{"let a=1;", "let a=;", "let a;", "let;", "if;", "if(a)b;", "if(a){b;c;}", "if(a)", "if a", "wxyz", "wxz", "wz", "wxq", "rabac", "rabbc", "rac", "rc", "x;", "!b", "!ab", "!a", "a;b;", "", "?"}},
+		// A body with captures, a projected repetition and an action whose rule cuts after its opening bracket: the
+		// calls after the cut cannot fall back to another alternative of the repetition.
+		{"cut with captures and a projected repetition", `type Call = { Fn node[string]; Args []node[string] }
+type Prog = { Calls []Call }
+rule main Prog = cs:(c:call ";")* "." => Prog{Calls: map($cs, (e) => e.$c)}
+rule call Call = f:name "(" #cut args:(a:name ","?)* ")" => Call{Fn: $f, Args: map($args, (e) => e.$a)}
+rule name = [a-z]+ #atomic`, []string{"f(a,b);g();.", "f(a b);.", "f(a,;", "f;", "f(a", "g(.", ".", "", "f(a);g(b", "f(1);", "f(a);;."}},
+		// Where a cut is committed and where it is discarded, one grammar for each shape, with inputs that
+		// succeed, fail at the cut and fail after it.
+		{"cut in an inner alternative of a nested choice", `rule main = ("a" ("b" #cut "c" / "b" "d") / "a" "e") "!"? $$`,
+			[]string{"abc", "abc!", "abd", "ae", "ae!", "abx", "a", "ab", ""}},
+		{"cut inside a positive lookahead", `rule main = (&("a" #cut "b") "a" / "a") "c"? $$`,
+			[]string{"ab", "abc", "ac", "a", "ax", ""}},
+		{"cut in a rule called from a negative lookahead", `rule main = (!guard "a" "c" / "a") "x"? $$
+rule guard = "a" #cut "b"`, []string{"ac", "acx", "ab", "abx", "a", "ad", ""}},
+		{"top-level cut in a called rule", `rule main = (w "!" / "w" "?") $$
+rule w = "w" #cut "o"`, []string{"wo!", "wo?", "w?", "wx", "wo", "w", ""}},
+		{"memoized rule with a cut called at one position", `rule main = (&m m "x" / m "y") $$
+rule m = "a" #cut "b" / "a" "c"`, []string{"abx", "aby", "ab", "acx", "ax", "a", ""}},
+		{"optional with a cut followed by input", `rule main = "a" ("b" #cut "c")? "d" $$`,
+			[]string{"ad", "abcd", "abd", "abc", "abcx", "a", ""}},
+		{"two cuts in a repetition inside a choice", `rule main = ("(" ("a" #cut "b" #cut "c")* ")" / "(" "a" ")") $$`,
+			[]string{"()", "(abc)", "(abcabc)", "(ab)", "(a)", "(abca)", "(abx)", "(ax)", "("}},
+		{"cut before a call of an Operators Rule", `rule main = "e" #cut e $$ / "e" "q" $$
+rule e = #operators {
+    operand "x"
+    level { infix left "+" }
+}`, []string{"ex", "ex+x", "ex+", "eq", "e", "e+", ""}},
+		// Left-recursion leaders, whose growth the runtime drives around the printed body: a leader called at one
+		// position by several alternatives and lookaheads (its memo entry is read as a seed and as a result), nested
+		// leaders, a leader with a cut, captures in the growing alternative, and inputs that fail after a seed.
+		{"leader with memoized callers", `rule main = (&e "!" / e "?" / e) $$
+rule e = e "+" t / t
+rule t = [0-9]+ #atomic`, []string{"1+2", "1+2!", "1+2?", "1+2+3?", "1+", "+", "1", "12+3+45!", "1+2x", "5+6+7?", "9", ""}},
+		{"nested left recursion", `rule main = e $$
+rule e = e "+" t / t
+rule t = t "*" f / f
+rule f = [0-9] / "(" e ")"`, []string{"1+2*3", "(1+2)*3", "1+*2", "1*", "(1+", "1+2*(3+4)*5", "((1))", "()", ""}},
+		{"leader with a cut", `rule main = e $$
+rule e = e "+" #cut t / t
+rule t = [0-9]+ #atomic`, []string{"1", "1+2", "1+2+3", "1+", "1+2+", "1+x", "1x", "5+6+7", ""}},
+		{"leader in lookaheads", `rule main = (&(e "x") e "x" / !(e "y") e "z") $$
+rule e = e "+" t / t
+rule t = [0-9]+ #atomic`, []string{"1+2x", "1+2z", "1+2y", "1x", "1z", "z", "1+x", ""}},
+		{"leader with captures", `rule main = e $$
+rule e = l:e "+" r:t / t
+rule t = [0-9]+ #atomic`, []string{"1+2+3", "1", "1+", "+1", "7+8+9", ""}},
+		// More shapes of leaders: an indirect cycle, mutual leaders, a hidden leader behind an optional prefix, a leader
+		// behind lookahead prefixes, sibling alternatives that start with a leader, a leader in a repetition, and a
+		// leader choice with several operators; the inputs fail after a seed and at the prefixes.
+		{"indirect leader cycle", `rule main = a $$
+rule a = b "x" / "n"
+rule b = a "y" / "m"`, []string{"n", "nyx", "nyxyx", "mx", "ny", "nyxy", "nx", "x", "m", ""}},
+		{"mutual leaders", `rule main = a $$
+rule a = a "x" / b "y" / "n"
+rule b = b "z" / a "w" / "m"`, []string{"n", "nx", "nwy", "nxwy", "mzy", "mzzy", "nwzy", "nw", "nwz", "y", ""}},
+		{"hidden leader behind an optional prefix", `rule main = "q"? a $$
+rule a = a "x" / "n"`, []string{"n", "nx", "qnxx", "qn", "q", "qx", "xn", ""}},
+		{"leader behind lookahead prefixes", `rule main = &"n" !"nz" a $$ / "z" a "!" $$
+rule a = a "x" / "n"`, []string{"nxx", "nz", "n", "znx!", "znx", "z", "zx!", ""}},
+		{"sibling alternatives starting with a leader", `rule main = (a "1" / a "2" / a) $$
+rule a = a "x" / "n"`, []string{"n", "nx1", "nxx2", "nxx", "nx3", "n1", "x", ""}},
+		{"leader in a repetition", `rule main = (a ";")* $$
+rule a = a "x" / "n"`, []string{"n;", "nx;n;", "nxx;nx;", "n", "nx;nxy;", "n;;", ";", ""}},
+		{"leader choice with several operators", `rule main = e $$
+rule e = e "+" t / e "-" t / e "|" t / t
+rule t = [0-9]+ #atomic`, []string{"1", "1+2-3|4", "1+2-", "1|", "12+34-5", "+1", "1+2+3-4+5", "1*2", ""}},
+		// Recovery in the shapes that the bodies of rules take: a statement list whose skip can consume nothing, a
+		// recovery after a cut, a recovery of a leader, and nested recoveries, with inputs that recover, fail to
+		// skip, make no progress and fail after a recovered error.
+		{"recovery in a statement list", `rule main = (stmt ";")* $$
+rule stmt = ([a-z]+ #atomic "=" [0-9]+ #atomic) #recover(skip=[^;]*)`,
+			[]string{"a=1;b=2;", "a=;b=2;", "a;b=2;", "=;", "a=1;b", "a=1;;", ";", ""}},
+		{"recovery whose skip fails after consuming", `rule main = stmt* $$
+rule stmt = ("a" "=" [0-9]+) #recover(skip=[^;]+ ";") / [0-9]`,
+			[]string{"a=1", "ax;", "ax", "ax;1", "axy", "a=1ax;", "a=1ax", "1a", ""}},
+		{"recovery after a cut", `rule main = item* $$
+rule item = ("(" #cut [a-z]+ ")") #recover(skip=[^()]*) / [a-z]`,
+			[]string{"(a)", "(a", "(1)b", "(a)(b)", "x", "(", "(1", "(a(b)", ""}},
+		{"recovery of a leader", `rule main = e $$
+rule e = (e "+" n) #recover(skip=[^+]+) / n
+rule n = [0-9]+ #atomic`, []string{"1+2", "1+x", "x", "1+x+3", "1+", "1+2+x+4", "+", ""}},
+		{"nested recoveries", `rule main = (a ";")+ $$
+rule a = ("(" ("x" #recover(skip=[^)]+)) ")") #recover(skip=[^;]+)`,
+			[]string{"(x);", "(y);", "(;", "(x;", "z;", "(xy);(x);", "(y;(x);", ""}},
+		// Adversarial shapes of recovery: a cut in a recovered body with later alternatives, a cut in the skip, a
+		// recovery inside a leader body and a leader wrapped in a recovery, a failure at the far choice, a
+		// skip that fails after consuming or consumes nothing, recovery under & and !, and an error node as a
+		// capture value, in a capture group and in a projected repetition.
+		{"cut in a recovered body before later alternatives", `rule main = item* $$
+rule item = ("(" #cut [a-z]+ ")") #recover(skip=[^()]*) / "(" "x" ")" / [a-z]`,
+			[]string{"(a)", "(x)", "(1)", "(a", "(x", "b(x)", "((", "(1)(x)", "(1)b", ""}},
+		{"cut in the skip of a recovery", `rule main = item* $$
+rule item = ("a" "=" [0-9]+) #recover(skip=[^;]* #cut ";") / [0-9]`,
+			[]string{"a=1", "a=x;", "a=x", "a=x;a=1;", "5", ";", "a=x;5", "a=x;;", ""}},
+		{"recovery inside a leader body", `rule main = e $$
+rule e = e "+" (n #recover(skip=[^+]*)) / n
+rule n = [0-9]+ #atomic`, []string{"1+2", "1+x", "1+x+3", "1+", "x", "1++2", "1+2+", ""}},
+		{"leader wrapped in a recovery", `rule main = e $$
+rule e = (e "+" n / n) #recover(skip=[^+]*)
+rule n = [0-9]+ #atomic`, []string{"1+2", "1+x", "x+1", "1+x+y", "1+", "x", "", "1+2+3"}},
+		{"recovery with a far failing choice", `rule main = (item ";")* $$
+rule item = ("a" "b" "c") #recover(skip="x") / "d" "e" / "f"`,
+			[]string{"abc;", "abd;", "ab;", "axx;", "ax;", "de;", "dd;", "f;", "x;", ";", ""}},
+		{"recovery with a zero-consumption skip", `rule main = (item ";")* $$
+rule item = ("a" "b") #recover(skip=[x]*)`, []string{"ab;", "a;", "ax;", "axx;", ";", "x;", "ab", ""}},
+		{"recovery under a lookahead", `rule main = &(("a" "b") #recover(skip="x")) [a-z]* $$`,
+			[]string{"ab", "ax", "a", "x", "abc", "axc", ""}},
+		{"recovery under a negative lookahead", `rule main = !(("a" "b") #recover(skip="x")) [a-z]* $$`,
+			[]string{"b", "ac", "ab", "ax", "xx", "", "aby"}},
+		{"error node as a capture value", `rule main = v:stmt ";" => $v
+rule stmt = ("a" "=" [0-9]+) #recover(skip=[^;]*)`, []string{"a=1;", "a=;", "x;", "a;", "a=1", ""}},
+		{"error node in a capture group", `rule main = g:(s:stmt ";") r:[a-z]* $$ => ($g, $r)
+rule stmt = ("a" "=" [0-9]+) #recover(skip=[^;]*)`, []string{"a=1;bc", "a=;bc", "x;", "a;b", ";", ""}},
+		{"error node in a projected repetition", `rule main = xs:item* $$ => $xs
+rule item = s:stmt ";" => $s
+rule stmt = ("a" "=" [0-9]+) #recover(skip=[^;]*)`, []string{"a=1;a=2;", "a=1;x;a=3;", "x;y;", "a=1;a=", ";", ""}},
+		{"memo keyed by variables", `var n int
+rule main = {n := 1} r "x" / {n := 2} r .*
+rule r = {n == 1} "a" / {n == 2} "b"`, []string{"ax", "b", "ay", "bx"}},
+		// Value and predicate actions read callers' variables, shadow them,
+		// roll back failed definitions and keep definitions from repetition
+		// elements; the failing peek first calls the memoized plain twice
+		// with another depth at the same position. An undefined variable fails
+		// a predicate but aborts the parse in a value action.
+		{"action environments", ActionEnvironmentGrammar, []string{"a", "a%b", "(a)", "((ab?))", "#x:a", "#x:((b))", "#x:(#y:b!)", "((b))", "a!!", "a!", "(((a)))", "~a", "a(#t:b)c?", "[a,bc]", "[]", "(#q:[x])y", "a)", ""}},
+		{"empty prefix and postfix", `rule main = e $$
+rule e = #operators {
+    operand "x"
+    level { prefix "-"? }
+    level { postfix "!"? }
+}`, []string{"x", "-x!", "--x", ""}},
+		// An empty operand and an empty infix operator: an application that consumes nothing ends
+		// the expression.
+		{"empty operand and infix", `rule main = e $$
+rule e = #operators {
+    operand "a"?
+    level { infix left _ }
+}`, []string{"a", "", "aa"}},
+		{"anchors and classes", `rule main = (^ [a-z]+ #atomic $ "\n"?)* $$ [^\n]? _`, []string{"ab\ncd\n", "ab\n1", "日本", "é\n\xff"}},
+		{"scans", `rule main = a:[a-z]* -[0-9] #repeat(2, 3) -. #repeat(1, 2) -[^,]+ "," rest:.* #atomic`, []string{"ab12xy,z", "123,", "1", "abc12éq,é"}},
+	}
+	cases = append(cases, PrefixPartCutCorpus())
+	cases = append(cases, TypedDirectCutCases...)
+	cases = append(cases, ActionVariableCases...)
+	cases = append(cases, ActionLifecycleCases...)
+	cases = append(cases, EnvBindingCases...)
+	cases = append(cases, AliasCases...)
+	cases = append(cases, WideRepetitionCases()...)
+	cases = append(cases, ReachabilityGeneratedCases...)
+	cases = append(cases, NodeDirectCases...)
+	cases = append(cases, TypedLRBodyCases...)
+	cases = append(cases, TypedOperatorsRuleBodyCases...)
+	cases = append(cases, OperatorsRuleOperandActionCases...)
+	for _, c := range OperatorsLineRecoveryCases {
+		cases = append(cases, c.Case)
+	}
+	cases = append(cases, TypedFramedCutCases(t)...)
+	cases = append(cases, TypedFrameLayoutCases...)
+	cases = append(cases, TypedRecoveryCases...)
+	cases = append(cases, TypedLocalLayoutCases...)
+	cases = append(cases, AttributeShapeCases...)
+	// Grammars of typed values with their inputs, from reviews of the typed runtime: each was a
+	// case where it differed from converting the result of Parse.
+	typed, _ := filepath.Glob(path(t, "testdata/typed/*.pego"))
+	for _, gp := range typed {
+		src, err := os.ReadFile(gp)
+		if err != nil {
+			t.Fatal(err)
+		}
+		data, err := os.ReadFile(strings.TrimSuffix(gp, ".pego") + ".json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		c := Case{Name: "testdata/typed/" + filepath.Base(gp), Src: string(src)}
+		if err := json.Unmarshal(data, &c.Inputs); err != nil {
+			t.Fatalf("%s: %v", gp, err)
+		}
+		cases = append(cases, c)
+	}
+	// Grammars and inputs from examples/.
+	grammars, _ := filepath.Glob(path(t, "../../examples/*/*.pego"))
+	for _, gp := range grammars {
+		src, err := os.ReadFile(gp)
+		if err != nil {
+			t.Fatal(err)
+		}
+		inputs, _ := filepath.Glob(filepath.Join(filepath.Dir(gp), "testdata", "*.txt"))
+		c := Case{Name: "../../examples/" + filepath.Base(filepath.Dir(gp)) + "/" + filepath.Base(gp), Src: string(src)}
+		for _, in := range inputs {
+			data, _ := os.ReadFile(in)
+			c.Inputs = append(c.Inputs, string(data))
+		}
+		cases = append(cases, c)
+	}
+	return append(append(append(ConstructorCases(), TupleLiteralCases...), InlineActionGenCases()...), append(SpliceGenCases(), cases...)...)
+}
+
+// TypedGrammar exercises typed values: unions with CST members, lists of lists, optional
+// matches (s always matches, maybe empty; o may be nil), int and bool fields, a user type named like a runtime type (Node) and Error nodes
+// left by #recover.
+const TypedGrammar = `type Name = { Text string }
+type Num = { Text string }
+type Node ~ Call | Name | Num | node[_] | error
+type Call = { Fn Name; Args []Node; Span node[string]; N int; Opt *node[string]; Rows [][]Num; Ok bool }
+rule main []Node = xs:item* $$ => concat(map($xs, (x) => x))
+rule item Node = (call / name / num / grp) #recover(skip=[^;]+ ";")
+rule call Call = f:name "(" a:args? ")" s:"!"? #atomic o:"?"? ";" => Call{Fn: $f, Args: concat($a), Span: $s, N: len($a), Opt: $o, Rows: list(list()), Ok: true}
+rule args = first:item rest:(-"," x:item)* => concat(list($first), map($rest, (r) => r.$x))
+rule grp = "[" n:num "]" ";"
+rule name Name = t:([a-z]+) #atomic => Name{Text: text($t)}
+rule num Num = t:([0-9]+) #atomic => Num{Text: text($t)}`
+
+// SpliceTypeCases are grammars whose hidden rule calls itself, in every place that takes one
+// element. Their typed values are checked against the node tree, which they must not lose data
+// from.
+func SpliceTypeCases(t *testing.T) []Case {
+	t.Helper()
+	files, _ := filepath.Glob(path(t, "testdata/typed/splice_recursive_*.pego"))
+	if len(files) == 0 {
+		t.Fatal("no recursive splice grammars")
+	}
+	var cases []Case
+	for _, gp := range files {
+		src, err := os.ReadFile(gp)
+		if err != nil {
+			t.Fatal(err)
+		}
+		data, err := os.ReadFile(strings.TrimSuffix(gp, ".pego") + ".json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		c := Case{Name: strings.TrimSuffix(filepath.Base(gp), ".pego"), Src: string(src)}
+		if err := json.Unmarshal(data, &c.Inputs); err != nil {
+			t.Fatalf("%s: %v", gp, err)
+		}
+		cases = append(cases, c)
+	}
+	return cases
+}

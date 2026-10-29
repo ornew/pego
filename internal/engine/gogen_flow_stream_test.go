@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"hash"
 	"io"
 	"os"
@@ -22,11 +23,11 @@ import (
 
 // streamCases are the grammars with a #stream repetition of the generated-code tests, and the checked-in
 // grammars that have one.
-func streamCases(t *testing.T) []genCase {
+func streamCases(t *testing.T) []gentest.Case {
 	t.Helper()
-	cases := append([]genCase(nil), streamCorpus...)
-	for _, c := range genCorpus(t) {
-		if strings.Contains(c.src, "#stream") {
+	cases := append([]gentest.Case(nil), streamCorpus...)
+	for _, c := range gentest.GenCorpus(t) {
+		if strings.Contains(c.Src, "#stream") {
 			cases = append(cases, c)
 		}
 	}
@@ -35,7 +36,7 @@ func streamCases(t *testing.T) []genCase {
 		if err != nil {
 			t.Fatal(err)
 		}
-		c := genCase{name: name, src: string(src), inputs: []string{"", "\ufeffa,b\r\n", "a,\"x\"\"y\"\n\n", "a,\"unterminated", "a\rb\r\n"}}
+		c := gentest.Case{Name: name, Src: string(src), Inputs: []string{"", "\ufeffa,b\r\n", "a,\"x\"\"y\"\n\n", "a,\"unterminated", "a\rb\r\n"}}
 		files, _ := filepath.Glob(filepath.Join("..", "..", "parsers", name, "testdata", "*.txt"))
 		for _, f := range files {
 			in, err := os.ReadFile(f)
@@ -43,7 +44,7 @@ func streamCases(t *testing.T) []genCase {
 				t.Fatal(err)
 			}
 			if len(in) <= 3<<10 {
-				c.inputs = append(c.inputs, string(in))
+				c.Inputs = append(c.Inputs, string(in))
 			}
 		}
 		cases = append(cases, c)
@@ -76,12 +77,12 @@ func testFlowStreamBodyIsBatchBody(t *testing.T) {
 	gh.StreamRoute = func(table string, r *compile.Rule) { flowN++; flowed = append(flowed, cur) }
 	for _, form := range streamForms {
 		for _, c := range streamCases(t) {
-			t.Run(c.name+"/"+form.name, func(t *testing.T) {
-				g, err := parseTest(c.src)
+			t.Run(c.Name+"/"+form.name, func(t *testing.T) {
+				g, err := parseTest(c.Src)
 				if err != nil {
 					t.Fatal(err)
 				}
-				cur = c.name + "/" + form.name
+				cur = c.Name + "/" + form.name
 				before := flowN
 				code, err := generateCode(t, g, gen.GenOptions{Package: "x", Start: "main", Stream: true, SourceInfo: true, WorkControls: form.controls, Observability: form.observe})
 				if err != nil {
@@ -285,10 +286,10 @@ var streamProbeLine = regexp.MustCompile(`^(\S+) stream events=(\d+) trace=(\w+)
 // runStreamProbes builds the cases with a stream as the packages f0..fN (the stream body printed from Flow IR,
 // mutated by mutate if not nil), and returns the report lines and the cases built (those with a #stream at the
 // top of the start rule); the lines of a mutant are nil if its consumer fails.
-func runStreamProbes(t *testing.T, cases []genCase, form struct {
+func runStreamProbes(t *testing.T, cases []gentest.Case, form struct {
 	name              string
 	controls, observe bool
-}, mutate func([]byte) []byte) (lines []string, kept []genCase) {
+}, mutate func([]byte) []byte) (lines []string, kept []gentest.Case) {
 	t.Helper()
 	dir := t.TempDir()
 	write := func(name, content string) {
@@ -301,9 +302,9 @@ func runStreamProbes(t *testing.T, cases []genCase, form struct {
 	write("go.mod", testGoMod("streamprobe"))
 	var inputs [][]string
 	for _, c := range cases {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		i := len(kept)
 		o := gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: "main", Stream: true, SourceInfo: true, WorkControls: form.controls, Observability: form.observe}
@@ -312,14 +313,14 @@ func runStreamProbes(t *testing.T, cases []genCase, form struct {
 			if strings.Contains(err.Error(), "needs a #stream repetition") {
 				continue
 			}
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		if mutate != nil {
 			code = mutate(code)
 		}
 		write(fmt.Sprintf("f%d/parser.go", i), string(code))
 		kept = append(kept, c)
-		inputs = append(inputs, c.inputs)
+		inputs = append(inputs, c.Inputs)
 	}
 	var imports, entries strings.Builder
 	for i := range kept {
@@ -392,7 +393,7 @@ const (
 var streamGoldenFile = goldenFile{path: streamGolden, header: streamGoldenHeader, caseOf: goldenCaseBefore}
 
 // streamEntries returns the entries of the golden for the reports of the cases built.
-func streamEntries(t *testing.T, form string, lines []string, kept []genCase) map[string]string {
+func streamEntries(t *testing.T, form string, lines []string, kept []gentest.Case) map[string]string {
 	t.Helper()
 	hashes := make([]hash.Hash, len(kept))
 	reports, events, elems := make([]int, len(kept)), make([]int, len(kept)), make([]int, len(kept))
@@ -404,10 +405,10 @@ func streamEntries(t *testing.T, form string, lines []string, kept []genCase) ma
 	labels := make([]string, len(kept))
 	seen := map[string]int{}
 	for i, c := range kept {
-		seen[c.name]++
-		labels[i] = c.name
-		if seen[c.name] > 1 {
-			labels[i] = fmt.Sprintf("%s#%d", c.name, seen[c.name])
+		seen[c.Name]++
+		labels[i] = c.Name
+		if seen[c.Name] > 1 {
+			labels[i] = fmt.Sprintf("%s#%d", c.Name, seen[c.Name])
 		}
 	}
 	got := map[string]string{}
@@ -577,7 +578,7 @@ func streamPlacement(src string) error {
 func TestFlowStreamPlacementMutants(t *testing.T) {
 	t.Parallel()
 	eachMode(t, func(t *testing.T) {
-		g, err := parseTest(streamCorpus[0].src)
+		g, err := parseTest(streamCorpus[0].Src)
 		if err != nil {
 			t.Fatal(err)
 		}

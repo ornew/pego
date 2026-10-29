@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/ornew/pego/internal/gentest"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -16,9 +17,9 @@ import (
 // postfix node the rule builds, at every nesting level, is converted to that type, whether it is
 // the tuple node of an operator without an action or the node that an action returns. The operands
 // come from other rules that convert their own values.
-func operatorsNamedNodeCases() []genCase {
-	return []genCase{
-		{"operators named tuple", `type Expr = node[_]
+func operatorsNamedNodeCases() []gentest.Case {
+	return []gentest.Case{
+		{Name: "operators named tuple", Src: `type Expr = node[_]
 type Other = node[string]
 rule main Expr = e:expr ws $$ => $e
 rule expr Expr = #operators {
@@ -35,8 +36,8 @@ rule expr Expr = #operators {
     level { infix right "^" }
 }
 rule num Expr = [0-9]+ #atomic
-rule ws = [ ]*`, []string{"", "1", "1+2", "1+2*3", "-1+2", "1+-2", "2!", "(1+2)[3]*4", "1+2!+3", "1 + (2 - 3) * 4", "2^3^4", "-2^3", "1+", "-", "1[2][3]!", "((1))"}},
-		{"operators without a named type", `type Expr ~ node[_]
+rule ws = [ ]*`, Inputs: []string{"", "1", "1+2", "1+2*3", "-1+2", "1+-2", "2!", "(1+2)[3]*4", "1+2!+3", "1 + (2 - 3) * 4", "2^3^4", "-2^3", "1+", "-", "1[2][3]!", "((1))"}},
+		{Name: "operators without a named type", Src: `type Expr ~ node[_]
 rule main = e:expr ws $$ => $e
 rule expr Expr = #operators {
     skip ws
@@ -47,8 +48,8 @@ rule expr Expr = #operators {
     level { postfix "!" }
 }
 rule num = [0-9]+ #atomic
-rule ws = [ ]*`, []string{"", "1", "1+2", "-1+2!", "(1+2)!"}},
-		{"operators named through an alias", `type Expr = node[_]
+rule ws = [ ]*`, Inputs: []string{"", "1", "1+2", "-1+2!", "(1+2)!"}},
+		{Name: "operators named through an alias", Src: `type Expr = node[_]
 type Alias ~ Expr
 rule main Alias = e:expr ws $$ => $e
 rule expr Alias = #operators {
@@ -60,7 +61,7 @@ rule expr Alias = #operators {
     level { postfix "!" }
 }
 rule num Alias = [0-9]+ #atomic
-rule ws = [ ]*`, []string{"", "1", "1+2", "-1+2!", "(1+2)!", "1+"}},
+rule ws = [ ]*`, Inputs: []string{"", "1", "1+2", "-1+2!", "(1+2)!", "1+"}},
 	}
 }
 
@@ -93,7 +94,7 @@ func TestOperatorsRuleNamedNodeTypeShape(t *testing.T) {
 	cases := operatorsNamedNodeCases()
 	for _, sourceInfo := range []bool{false, true} {
 		{
-			prog := compileBare(t, cases[0].src, compile.Options{SourceInfo: sourceInfo})
+			prog := compileBare(t, cases[0].Src, compile.Options{SourceInfo: sourceInfo})
 			for _, tc := range []struct{ input, want string }{
 				{"1", "Expr"},
 				{"1+2", "Expr(Expr string Expr)"},
@@ -125,12 +126,12 @@ func TestOperatorsRuleNamedNodeTypeAcrossBackends(t *testing.T) {
 	for _, c := range operatorsNamedNodeCases() {
 		for _, sourceInfo := range []bool{false, true} {
 			{
-				prog := compileBare(t, c.src, compile.Options{SourceInfo: sourceInfo})
-				for _, input := range c.inputs {
+				prog := compileBare(t, c.Src, compile.Options{SourceInfo: sourceInfo})
+				for _, input := range c.Inputs {
 					want := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure}))
 					for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 						if got := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend})); got != want {
-							t.Errorf("%s sourceInfo=%t %s %q:\n got %s\nwant %s", c.name, sourceInfo, backend, input, got, want)
+							t.Errorf("%s sourceInfo=%t %s %q:\n got %s\nwant %s", c.Name, sourceInfo, backend, input, got, want)
 						}
 					}
 				}
@@ -143,7 +144,7 @@ func TestOperatorsRuleNamedNodeTypeAcrossBackends(t *testing.T) {
 // whose operator nodes are all converted, across edits.
 func TestOperatorsRuleNamedNodeTypeDocument(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, operatorsNamedNodeCases()[0].src)
+	prog := mustCompile(t, operatorsNamedNodeCases()[0].Src)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		opts := ParseOptions{Backend: backend}
 		doc, err := prog.NewDocumentWith("main", "1+2*3+(4-5)!", opts)
@@ -205,7 +206,7 @@ func TestGeneratedTypedOperatorsRuleNamedNodeType(t *testing.T) {
 }
 
 func testGeneratedTypedOperatorsRuleNamedNodeType(t *testing.T) {
-	runGeneratedNamedNodeProgram(t, operatorsNamedNodeCases()[0].src, `func walk(v any) string {
+	runGeneratedNamedNodeProgram(t, operatorsNamedNodeCases()[0].Src, `func walk(v any) string {
 	x, ok := v.(*p.Expr)
 	if !ok {
 		return fmt.Sprintf("%T", v)
@@ -270,7 +271,7 @@ func TestOperatorsRuleNamedNodeTypeRuntimeError(t *testing.T) {
 // An Operators Rule without a named node type keeps the tuple nodes of its operators.
 func TestOperatorsRuleWithoutNamedNodeTypeKeepsTuples(t *testing.T) {
 	t.Parallel()
-	prog := compileBare(t, operatorsNamedNodeCases()[1].src)
+	prog := compileBare(t, operatorsNamedNodeCases()[1].Src)
 	n, err := prog.Parse("main", "-1+2!")
 	if err != nil {
 		t.Fatal(err)

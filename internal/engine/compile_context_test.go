@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/ornew/pego/internal/gentest"
 	"reflect"
 	"testing"
 
@@ -35,7 +36,7 @@ func compileTestContext(t *testing.T, polls int) *compilePollContext {
 
 func compileTestGrammar(t *testing.T) *grammar.Grammar {
 	t.Helper()
-	g, err := parseTest(inferredChain(1024, false, ""))
+	g, err := parseTest(gentest.InferredChain(1024, false, ""))
 	if err != nil {
 		t.Fatal(err)
 	}

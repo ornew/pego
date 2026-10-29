@@ -2,6 +2,7 @@ package engine
 
 import (
 	"errors"
+	"github.com/ornew/pego/internal/gentest"
 	"math/rand"
 	"strings"
 	"testing"
@@ -62,7 +63,7 @@ rule main = s:.* #atomic => N{N: len($s) + len(text($s))}`)
 
 func TestDocumentInBytes(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, incrementalGrammar)
+	prog := mustCompile(t, gentest.IncrementalGrammar)
 	rng := rand.New(rand.NewSource(2))
 	pieces := []string{"a", "x = ", "1", "+", "é", "日", "\n", "@", "(", ")"}
 	doc, err := prog.NewDocumentWith("main", "x = 1+2\nab,cd\n@pos\n", ParseOptions{Unit: Bytes})
@@ -105,7 +106,7 @@ func utf8RuneStart(b byte) bool { return b&0xC0 != 0x80 }
 
 func TestStreamInBytes(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, records)
+	prog := mustCompile(t, gentest.Records)
 	var got []string
 	err := prog.ParseStreamWith("main", strings.NewReader("#records\nä=1\nb=2\n"), func(n *value.Node) error {
 		got = append(got, n.String())

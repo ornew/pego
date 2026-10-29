@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/ornew/pego/internal/gentest"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -14,30 +15,30 @@ import (
 // node[T] takes any value type T, and tuple types (A, B) are value types: they are checked
 // statically, and at run time where a value may not fit, the same way on every backend and in
 // generated parsers.
-func nodeTypeCases() []genCase {
-	return []genCase{
-		{"tuple node field", "type P = { V node[(node[string], node[string])] }\nrule main P = v:(\"a\" \"b\") $$ => P{V: $v}", []string{"ab", "a"}},
-		{"list node field", "type P = { V node[[]node[string]] }\nrule main P = v:[a-z]* $$ => P{V: $v}", []string{"ab", "", "1"}},
-		{"nested node field", "type P = { V node[(node[string], node[(node[string], node[string])])] }\nrule main P = v:(\"a\" bc) $$ => P{V: $v}\nrule bc = \"b\" \"c\"", []string{"abc", "ab"}},
-		{"tuple value field", "type P = { T (node[string], node[string]) }\nrule main P = v:(\"a\" \"b\") $$ => P{T: $v.Value}", []string{"ab"}},
-		{"optional tuple field", "type P = { T *(node[string], node[string]) }\nrule main P = ab / c\nrule ab P = v:(\"a\" \"b\") $$ => P{T: $v.Value}\nrule c P = \"c\" $$ => P{T: nil}", []string{"ab", "c", "a"}},
-		{"optional tuple list field", "type P = { T []*(node[string], node[string]) }\nrule main P = v:(\"a\" \"b\") $$ => P{T: []*(node[string], node[string]){$v.Value, nil}}", []string{"ab", "a"}},
-		{"union field", "type P = { V node[(node[string], node[string])] | node[[]node[string]] }\nrule main P = v:(\"a\" \"b\" / \"c\"*) $$ => P{V: $v}", []string{"ab", "cc", ""}},
-		{"rule type", "rule main node[(node[string], node[[]node[string]])] = \"a\" \"b\"* $$", []string{"abb", "a", "b"}},
-		{"cast tuple node", "rule main = x:(\"a\" \"b\" / \"c\"*) $$ => $x.(node[_]).(node[(node[string], node[string])])", []string{"ab", "cc", ""}},
-		{"cast list node", "rule main = x:(\"a\" \"b\" / \"c\"*) $$ => $x.(node[_]).(node[[]node[string]])", []string{"ab", "cc", ""}},
-		{"node of int", "type P = { V *node[int] }\nrule main P = \"a\" $$ => P{V: nil}", []string{"a"}},
+func nodeTypeCases() []gentest.Case {
+	return []gentest.Case{
+		{Name: "tuple node field", Src: "type P = { V node[(node[string], node[string])] }\nrule main P = v:(\"a\" \"b\") $$ => P{V: $v}", Inputs: []string{"ab", "a"}},
+		{Name: "list node field", Src: "type P = { V node[[]node[string]] }\nrule main P = v:[a-z]* $$ => P{V: $v}", Inputs: []string{"ab", "", "1"}},
+		{Name: "nested node field", Src: "type P = { V node[(node[string], node[(node[string], node[string])])] }\nrule main P = v:(\"a\" bc) $$ => P{V: $v}\nrule bc = \"b\" \"c\"", Inputs: []string{"abc", "ab"}},
+		{Name: "tuple value field", Src: "type P = { T (node[string], node[string]) }\nrule main P = v:(\"a\" \"b\") $$ => P{T: $v.Value}", Inputs: []string{"ab"}},
+		{Name: "optional tuple field", Src: "type P = { T *(node[string], node[string]) }\nrule main P = ab / c\nrule ab P = v:(\"a\" \"b\") $$ => P{T: $v.Value}\nrule c P = \"c\" $$ => P{T: nil}", Inputs: []string{"ab", "c", "a"}},
+		{Name: "optional tuple list field", Src: "type P = { T []*(node[string], node[string]) }\nrule main P = v:(\"a\" \"b\") $$ => P{T: []*(node[string], node[string]){$v.Value, nil}}", Inputs: []string{"ab", "a"}},
+		{Name: "union field", Src: "type P = { V node[(node[string], node[string])] | node[[]node[string]] }\nrule main P = v:(\"a\" \"b\" / \"c\"*) $$ => P{V: $v}", Inputs: []string{"ab", "cc", ""}},
+		{Name: "rule type", Src: "rule main node[(node[string], node[[]node[string]])] = \"a\" \"b\"* $$", Inputs: []string{"abb", "a", "b"}},
+		{Name: "cast tuple node", Src: "rule main = x:(\"a\" \"b\" / \"c\"*) $$ => $x.(node[_]).(node[(node[string], node[string])])", Inputs: []string{"ab", "cc", ""}},
+		{Name: "cast list node", Src: "rule main = x:(\"a\" \"b\" / \"c\"*) $$ => $x.(node[_]).(node[[]node[string]])", Inputs: []string{"ab", "cc", ""}},
+		{Name: "node of int", Src: "type P = { V *node[int] }\nrule main P = \"a\" $$ => P{V: nil}", Inputs: []string{"a"}},
 	}
 }
 
 func TestNodeTypesAcrossBackends(t *testing.T) {
 	t.Parallel()
 	for _, fixture := range nodeTypeCases() {
-		t.Run(fixture.name, func(t *testing.T) {
-			program := mustCompile(t, fixture.src)
+		t.Run(fixture.Name, func(t *testing.T) {
+			program := mustCompile(t, fixture.Src)
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
-					for _, input := range fixture.inputs {
+					for _, input := range fixture.Inputs {
 						baseline := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit, Recognize: recognize}))
 						for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 							actual := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Recognize: recognize}))

@@ -3,6 +3,7 @@ package engine
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"math/rand"
 	"strings"
 	"testing"
@@ -11,25 +12,6 @@ import (
 	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
-
-// incrementalGrammar is a grammar with left recursion, an Operators Rule expression, line starts (which
-// examine the preceding character), captures, and position-dependent actions.
-const incrementalGrammar = `type Pos = { At int; Name node[string] }
-rule main = (line / blank)* $$
-rule blank = "\n"
-rule line = ^ (assign / list / pos) "\n"
-rule assign = n:name " = " e:expr
-rule list = list "," item / item
-rule item = [a-z]+ #atomic
-rule pos Pos = "@" n:name => Pos{At: $n.Start, Name: $n}
-rule name = [a-z]+ #atomic
-rule expr = #operators {
-    operand [0-9]+ #atomic
-    operand "(" x:expr ")" => $x
-    level { infix left "+" / "-" }
-    level { infix left "*" }
-    level { prefix "-" }
-}`
 
 func dump(t *testing.T, n *value.Node, err error) string {
 	t.Helper()
@@ -55,7 +37,7 @@ func TestDocumentMatchesFreshParse(t *testing.T) {
 }
 
 func testDocumentMatchesFreshParse(t *testing.T, b Backend) {
-	prog := mustCompile(t, incrementalGrammar)
+	prog := mustCompile(t, gentest.IncrementalGrammar)
 	o := ParseOptions{Backend: b}
 	rng := rand.New(rand.NewSource(1))
 	pieces := []string{"a", "b", "x = ", "1", "+", "2*3", "(", ")", "-", ",", "\n", "@", "q", " "}
@@ -87,7 +69,7 @@ func testDocumentMatchesFreshParse(t *testing.T, b Backend) {
 
 func TestDocumentReusesResults(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, incrementalGrammar)
+	prog := mustCompile(t, gentest.IncrementalGrammar)
 	var b strings.Builder
 	for i := 0; i < 200; i++ {
 		b.WriteString("x = 1+2*(3-4)\nab,cd,ef\n")
@@ -121,7 +103,7 @@ func TestDocumentReusesResults(t *testing.T) {
 // recomputed rather than shifted past an edit.
 func TestDocumentPositionalActions(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, incrementalGrammar)
+	prog := mustCompile(t, gentest.IncrementalGrammar)
 	doc, _ := prog.NewDocument("main", "@abc\n")
 	doc.Parse()
 	doc.Edit(0, 0, "\n\n")
@@ -180,7 +162,7 @@ func TestDocumentMovesReusedTrees(t *testing.T) {
 		grammar, text string
 		pieces        []string
 	}{
-		{strings.Replace(incrementalGrammar, "(line / blank)*", "(line / blank / junk)*", 1) + "\nrule junk = [^\\n]* #atomic \"\\n\"",
+		{strings.Replace(gentest.IncrementalGrammar, "(line / blank)*", "(line / blank / junk)*", 1) + "\nrule junk = [^\\n]* #atomic \"\\n\"",
 			"x = 1+2\nab,cd\n@pos\n\ny = (3)*-4\n",
 			[]string{"a", "b", "x = ", "1", "+", "2*3", "(", ")", "-", ",", "\n", "@", "q", " ", ""}},
 		{`type W = { Pre node[string]; Word node[string]; Post node[string]; Gap node[string] }

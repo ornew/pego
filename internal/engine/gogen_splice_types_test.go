@@ -11,36 +11,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gentest"
+
 	"github.com/ornew/pego/internal/gen"
 )
-
-// spliceTypeCases are grammars whose hidden rule calls itself, in every place that takes one
-// element. Their typed values are checked against the node tree, which they must not lose data
-// from.
-func spliceTypeCases(t *testing.T) []genCase {
-	t.Helper()
-	files, _ := filepath.Glob("testdata/typed/splice_recursive_*.pego")
-	if len(files) == 0 {
-		t.Fatal("no recursive splice grammars")
-	}
-	var cases []genCase
-	for _, gp := range files {
-		src, err := os.ReadFile(gp)
-		if err != nil {
-			t.Fatal(err)
-		}
-		data, err := os.ReadFile(strings.TrimSuffix(gp, ".pego") + ".json")
-		if err != nil {
-			t.Fatal(err)
-		}
-		c := genCase{name: strings.TrimSuffix(filepath.Base(gp), ".pego"), src: string(src)}
-		if err := json.Unmarshal(data, &c.inputs); err != nil {
-			t.Fatalf("%s: %v", gp, err)
-		}
-		cases = append(cases, c)
-	}
-	return cases
-}
 
 var quoted = regexp.MustCompile(`"([^"\\]*)"`)
 
@@ -103,16 +77,16 @@ func testGeneratedRecursiveSpliceTypesKeepTheTree(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	cases := spliceTypeCases(t)
+	cases := gentest.SpliceTypeCases(t)
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("splicefix")), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	var imports, table strings.Builder
 	for i, c := range cases {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		generatePackageIn(t, dir, "splicefix", fmt.Sprintf("g%d", i), g, gen.GenOptions{Start: "main", Types: true})
 		fmt.Fprintf(&imports, "\tg%d \"splicefix/g%[1]d\"\n", i)
@@ -141,7 +115,7 @@ func testGeneratedRecursiveSpliceTypesKeepTheTree(t *testing.T) {
 	}
 	var inputs [][]string
 	for _, c := range cases {
-		inputs = append(inputs, c.inputs)
+		inputs = append(inputs, c.Inputs)
 	}
 	in, _ := json.Marshal(inputs)
 	cmd := exec.Command("go", "run", "-trimpath", ".")
@@ -158,10 +132,10 @@ func testGeneratedRecursiveSpliceTypesKeepTheTree(t *testing.T) {
 		t.Fatal(err)
 	}
 	for i, c := range cases {
-		for j, s := range c.inputs {
+		for j, s := range c.Inputs {
 			row := out[i][j]
 			if row[2] != row[3] {
-				t.Errorf("%s %q: Parse failed %s, ParseAST failed %s", c.name, s, row[2], row[3])
+				t.Errorf("%s %q: Parse failed %s, ParseAST failed %s", c.Name, s, row[2], row[3])
 			}
 			if row[2] == "true" {
 				continue // no tree
@@ -170,15 +144,15 @@ func testGeneratedRecursiveSpliceTypesKeepTheTree(t *testing.T) {
 			for _, m := range quoted.FindAllStringSubmatch(row[0], -1) {
 				tokens = append(tokens, m[1])
 			}
-			want := spliceWantLeaves(c.name, s, tokens)
+			want := spliceWantLeaves(c.Name, s, tokens)
 			var v any
 			if err := json.Unmarshal([]byte(row[1]), &v); err != nil {
-				t.Fatalf("%s %q: %v", c.name, s, err)
+				t.Fatalf("%s %q: %v", c.Name, s, err)
 			}
 			var got []string
 			jsonLeaves(v, &got)
 			if strings.Join(got, "|") != strings.Join(want, "|") {
-				t.Errorf("%s %q: the typed value has the tokens %q, the tree %s\n%s", c.name, s, got, row[0], row[1])
+				t.Errorf("%s %q: the typed value has the tokens %q, the tree %s\n%s", c.Name, s, got, row[0], row[1])
 			}
 		}
 	}

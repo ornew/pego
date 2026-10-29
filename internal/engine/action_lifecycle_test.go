@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"runtime"
 	"testing"
 
@@ -10,20 +11,6 @@ import (
 	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
-
-const nilActionStream = `type V = { N int }
-rule main = item* #stream $$
-rule item = "a" => foldl(nil, list(V{N: 1}), (acc, v) => nil)`
-
-var actionLifecycleCases = []genCase{
-	{"nil allocating action", nilActionStream, []string{"", "a", "aaa", "ab"}},
-	{"nil OperatorsRule action", `type V = { N int }
-rule main = e $$
-rule e = #operators {
-    operand "a" => foldl(nil, list(V{N: 1}), (acc, v) => nil)
-    level { postfix "!" => foldl(nil, list(V{N: 2}), (acc, v) => nil) }
-}`, []string{"a", "a!", "a!!", "a?"}},
-}
 
 func TestActionResultReleasesTracking(t *testing.T) {
 	t.Parallel()
@@ -74,7 +61,7 @@ func TestActionResultReleasesTracking(t *testing.T) {
 }
 
 func TestNilActionStreamMemoryIsBounded(t *testing.T) {
-	prog := mustCompile(t, nilActionStream)
+	prog := mustCompile(t, gentest.NilActionStream)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
@@ -113,7 +100,7 @@ func TestNilActionStreamMemoryIsBounded(t *testing.T) {
 }
 
 func BenchmarkNilActionStream(b *testing.B) {
-	g, err := parseTest(nilActionStream)
+	g, err := parseTest(gentest.NilActionStream)
 	if err != nil {
 		b.Fatal(err)
 	}

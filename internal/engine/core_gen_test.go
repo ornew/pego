@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"regexp"
 	"runtime"
 	"slices"
@@ -147,10 +148,10 @@ type coreGenerated1 struct {
 
 // coreExtraGrammars are grammars with term forms that the typed rules of the corpus lack: text
 // comparisons of two captures and comparisons of fields.
-var coreExtraGrammars = []genCase{
-	{name: "text equality", src: `rule main = a:[a-z]+ "=" b:[a-z]+ => text($a) != text($b) || text($a) == text($b)
+var coreExtraGrammars = []gentest.Case{
+	{Name: "text equality", Src: `rule main = a:[a-z]+ "=" b:[a-z]+ => text($a) != text($b) || text($a) == text($b)
 `},
-	{name: "field comparison", src: `type P = { N int; S string }
+	{Name: "field comparison", Src: `type P = { N int; S string }
 type R = { A bool; B bool; C bool }
 rule main R = p:pair q:pair => R{A: $p.N == 1, B: $p.S != "x", C: $p.N < $q.N}
 rule pair P = n:[0-9]+ s:[a-z] => P{N: len($n), S: text($s)}
@@ -165,7 +166,7 @@ func coreGenerations(t *testing.T, mode coreGenMode) []coreGenerated1 {
 	if out, ok := coreGenerated[mode.name]; ok {
 		return out
 	}
-	cases := append(schemaCorpus(t), coreExtraGrammars...)
+	cases := append(gentest.CorpusWithParsers(t), coreExtraGrammars...)
 	gens := make([]*gogen.Generator, len(cases))
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, runtime.GOMAXPROCS(0))
@@ -173,7 +174,7 @@ func coreGenerations(t *testing.T, mode coreGenMode) []coreGenerated1 {
 		wg.Go(func() {
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			gen, ok := coreGenerate(gc.src, mode.opts)
+			gen, ok := coreGenerate(gc.Src, mode.opts)
 			if !ok {
 				return
 			}
@@ -187,7 +188,7 @@ func coreGenerations(t *testing.T, mode coreGenMode) []coreGenerated1 {
 	var out []coreGenerated1
 	for i, gen := range gens {
 		if gen != nil {
-			out = append(out, coreGenerated1{cases[i].name, gen})
+			out = append(out, coreGenerated1{cases[i].Name, gen})
 		}
 	}
 	if len(out) < 100 {

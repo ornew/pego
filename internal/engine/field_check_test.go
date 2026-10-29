@@ -7,22 +7,16 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gentest"
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 )
-
-// fieldCheckValues are the dynamically typed values that fieldCheckGrammar passes to a struct
-// field, by the first input character: nodes, nil and scalars from the rule val of type _.
-var fieldCheckValues = map[string]string{
-	"m": "Match", "t": "Int", "l": "[]Int", "k": "[]Match", "e": "[]nil", "n": "empty List",
-	"q": "Box", "?": "Error", "w": "[][]Int", "p": "[]*Int", "z": "nil", "i": "int", "s": "string", "b": "bool",
-}
 
 // fieldCheckValueName names a value of fieldCheckValues as messages do, in the terms of the value
 // model: lists built by actions are list values, whose elements messages do not examine.
@@ -36,61 +30,6 @@ func fieldCheckValueName(value string) string {
 		return "error"
 	}
 	return value
-}
-
-// fieldCheckFields maps the declared types of fieldCheckGrammar's field F to the values they
-// accept. A match is a string node and a value of the text struct Int is a node of its own type,
-// lists built by actions are list values, which are not nodes, and an error value fits only a type
-// that admits error.
-var fieldCheckFields = map[string]string{
-	"Alias":                    "t",
-	"*Int":                     "tz",
-	"[]Int":                    "ln",
-	"[]*Int":                   "lnep",
-	"Int | string":             "ts",
-	"int":                      "i",
-	"string":                   "s",
-	"bool":                     "b",
-	"_":                        "mtlkenq?wpzisb",
-	"node[_]":                  "m",
-	"[][]Int":                  "wn",
-	"*(Box | bool)":            "qzb",
-	"node[string]":             "m",
-	"*[]*Int":                  "lnepz",
-	"Int | error":              "t?",
-	"[](node[string] | error)": "kn",
-}
-
-// fieldCheckGrammar gives S a field F of type typ, set from the dynamically typed value of val, which
-// the grammar must cast to typ. Constructing S succeeds with an accepted value (input
-// "<value>.") and is an action error of the cast otherwise; in a predicate (input "<value>!")
-// the rejected value makes the predicate fail, so the rule no matches instead.
-func fieldCheckGrammar(typ string) string {
-	return `type Int = { Text string }
-type Alias ~ Int
-type Box = { Value Int }
-type S = { F ` + typ + ` }
-type Result ~ S | Int
-rule main Result = nodeCase / nodePred / no
-rule nodeCase = v:val "." => S{F: $v.(` + typ + `)}
-rule nodePred = v:val {S{F: $v.(` + typ + `)} != nil} "!" => Int{Text: "yes"}
-rule no = [a-z!.?;]+ => Int{Text: "no"}
-rule val _ = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz / vi / vs / vb
-rule vm = "m"
-rule vt = "t" => Int{Text: "t"}
-rule vl = "l" => []Int{Int{Text: "a"}}
-rule vk = k:"k" => list($k)
-rule ve = "e" => list(nil)
-rule vn = "n" => list()
-rule vq = "q" => Box{Value: Int{Text: "q"}}
-rule vr = ("r" ";") #recover(skip="?")
-rule vw = "w" => [][]Int{[]Int{Int{Text: "w"}}}
-rule vp = "p" => list(Int{Text: "a"}, nil)
-rule vz = "z" => nil
-rule vi = "i" => 1
-rule vs = "s" => "s"
-rule vb = "b" => true
-`
 }
 
 // fieldCheckGrammarLegacy is fieldCheckGrammar with a terminal type Int, in the retired syntax that
@@ -123,26 +62,6 @@ rule vb = "b" => true
 `
 }
 
-func fieldCheckTypes() []string { return fieldCheckTypesOf(fieldCheckFields) }
-
-func fieldCheckTypesOf(fields map[string]string) []string {
-	var types []string
-	for typ := range fields {
-		types = append(types, typ)
-	}
-	sort.Strings(types)
-	return types
-}
-
-func fieldCheckInputs() []string {
-	var in []string
-	for v := range fieldCheckValues {
-		in = append(in, v+".")
-	}
-	sort.Strings(in)
-	return append(in, "l!", "k!", "z!", "i!", "s!", "?!")
-}
-
 // TestConstructedFieldChecks checks which dynamically typed values a cast to each declared field
 // type accepts, on every backend, and from a compiled file.
 func TestConstructedFieldChecks(t *testing.T) {
@@ -155,11 +74,11 @@ func TestConstructedFieldChecks(t *testing.T) {
 		parse   func(string) (*grammar.Grammar, error)
 		fields  map[string]string
 	}{
-		{"text struct", fieldCheckGrammar, parseTest, fieldCheckFields},
-		{"terminal", fieldCheckGrammarLegacy, parseLegacyTest, fieldCheckFields},
+		{"text struct", gentest.FieldCheckGrammar, parseTest, gentest.FieldCheckFields},
+		{"terminal", fieldCheckGrammarLegacy, parseLegacyTest, gentest.FieldCheckFields},
 	} {
 		t.Run(model.name, func(t *testing.T) {
-			for _, typ := range fieldCheckTypesOf(model.fields) {
+			for _, typ := range gentest.FieldCheckTypesOf(model.fields) {
 				t.Run(typ, func(t *testing.T) { checkConstructedFieldType(t, typ, model.grammar(typ), model.parse, model.fields) })
 			}
 		})
@@ -182,8 +101,8 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 			loadedBare := saveLoad(t, checked, "main", CompiledParse)
 			_, err = loaded.ParseWith("main", "", servedBy(CompiledDocument, ParseOptions{Backend: Closure}))
 			wantClosureRefused(t, err)
-			for _, in := range fieldCheckInputs() {
-				value := fieldCheckValues[in[:1]]
+			for _, in := range gentest.FieldCheckInputs() {
+				value := gentest.FieldCheckValues[in[:1]]
 				accepted := strings.Contains(fields[typ], in[:1])
 				var want string
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -302,7 +221,7 @@ rule val _ = "v"
 // instruction set and cast type texts that do not name a known type.
 func TestCompiledFieldChecksValidation(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, fieldCheckGrammar("[]*(Int | node[string])"))
+	prog := mustCompile(t, gentest.FieldCheckGrammar("[]*(Int | node[string])"))
 	data, err := prog.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
@@ -340,14 +259,6 @@ func TestCompiledFieldChecksValidation(t *testing.T) {
 	}
 }
 
-func fieldCheckCases() []genCase {
-	var cases []genCase
-	for _, typ := range fieldCheckTypes() {
-		cases = append(cases, genCase{"field check " + typ, fieldCheckGrammar(typ), fieldCheckInputs()})
-	}
-	return cases
-}
-
 func TestGeneratedConstructedFieldChecks(t *testing.T) {
 	t.Parallel()
 	eachMode(t, testGeneratedConstructedFieldChecks)
@@ -358,7 +269,7 @@ func testGeneratedConstructedFieldChecks(t *testing.T) {
 		t.Skip("builds generated consumers")
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	cases := fieldCheckCases()
+	cases := gentest.FieldCheckCases()
 	testGeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
 	testGeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true})
 	if node, err := exec.LookPath("node"); err == nil {

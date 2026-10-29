@@ -3,6 +3,7 @@ package engine
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"hash/crc32"
 	"os"
 	"os/exec"
@@ -18,38 +19,38 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-func indexCases() []genCase {
-	return []genCase{
-		{"first and last", `rule main = xs:item+ $$ => list($xs[0], $xs[len($xs) - 1])
-rule item = [a-z]`, []string{"abc", "a", "", "1"}},
-		{"out of range", `rule main = xs:item* $$ => $xs[2]
-rule item = [a-z]`, []string{"abc", "ab", ""}},
-		{"negative", `rule main = xs:item* $$ => $xs[0 - 1]
-rule item = [a-z]`, []string{"a", ""}},
-		{"nil list", `rule main = xs:(item+)? $$ => list($xs)[0]
-rule item = [a-z]`, []string{"a", ""}},
-		{"nested", `rule main = xs:item+ $$ => list($xs, list($xs[0]))[1][0]
-rule item = [a-z]`, []string{"ab", ""}},
-		{"lambda parameter", `rule main = xs:item+ $$ => map(list($xs), (l) => l[0])
-rule item = [a-z]`, []string{"ab", ""}},
-		{"predicate", `rule main = xs:item+ ({text($xs[0]) == "a"} "!" / "?") $$
-rule item = [a-z]`, []string{"ab!", "ab?", "ba!", "ba?", ""}},
-		{"predicate error rollback", `rule main = xs:item+ ({$xs[5] == nil} "!" / "?") $$
-rule item = [a-z]`, []string{"ab!", "ab?", ""}},
-		{"dynamic index", `var i int
+func indexCases() []gentest.Case {
+	return []gentest.Case{
+		{Name: "first and last", Src: `rule main = xs:item+ $$ => list($xs[0], $xs[len($xs) - 1])
+rule item = [a-z]`, Inputs: []string{"abc", "a", "", "1"}},
+		{Name: "out of range", Src: `rule main = xs:item* $$ => $xs[2]
+rule item = [a-z]`, Inputs: []string{"abc", "ab", ""}},
+		{Name: "negative", Src: `rule main = xs:item* $$ => $xs[0 - 1]
+rule item = [a-z]`, Inputs: []string{"a", ""}},
+		{Name: "nil list", Src: `rule main = xs:(item+)? $$ => list($xs)[0]
+rule item = [a-z]`, Inputs: []string{"a", ""}},
+		{Name: "nested", Src: `rule main = xs:item+ $$ => list($xs, list($xs[0]))[1][0]
+rule item = [a-z]`, Inputs: []string{"ab", ""}},
+		{Name: "lambda parameter", Src: `rule main = xs:item+ $$ => map(list($xs), (l) => l[0])
+rule item = [a-z]`, Inputs: []string{"ab", ""}},
+		{Name: "predicate", Src: `rule main = xs:item+ ({text($xs[0]) == "a"} "!" / "?") $$
+rule item = [a-z]`, Inputs: []string{"ab!", "ab?", "ba!", "ba?", ""}},
+		{Name: "predicate error rollback", Src: `rule main = xs:item+ ({$xs[5] == nil} "!" / "?") $$
+rule item = [a-z]`, Inputs: []string{"ab!", "ab?", ""}},
+		{Name: "dynamic index", Src: `var i int
 rule main = {i := 1} xs:item+ $$ => $xs[i]
-rule item = [a-z]`, []string{"ab", "a", ""}},
+rule item = [a-z]`, Inputs: []string{"ab", "a", ""}},
 	}
 }
 
 func TestIndexAcrossBackends(t *testing.T) {
 	t.Parallel()
 	for _, fixture := range indexCases() {
-		t.Run(fixture.name, func(t *testing.T) {
-			program := mustCompile(t, fixture.src)
+		t.Run(fixture.Name, func(t *testing.T) {
+			program := mustCompile(t, fixture.Src)
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
-					for _, input := range fixture.inputs {
+					for _, input := range fixture.Inputs {
 						baseline := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit, Recognize: recognize}))
 						for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 							actual := resultJSON(program.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Recognize: recognize}))

@@ -3,6 +3,7 @@ package engine
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"strings"
 	"testing"
 
@@ -134,13 +135,13 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 
 func TestGeneratedTSWorkControlRecoveryParity(t *testing.T) {
 	t.Parallel()
-	cases := append(append([]genCase(nil), typedOperatorsRuleBodyCases...), typedLRBodyCases...)
+	cases := append(append([]gentest.Case(nil), gentest.TypedOperatorsRuleBodyCases...), gentest.TypedLRBodyCases...)
 	for _, tt := range cases {
-		if tt.name != "typed/OperatorsRule_recovery" && tt.name != "typed/LR_recovery" {
+		if tt.Name != "typed/OperatorsRule_recovery" && tt.Name != "typed/LR_recovery" {
 			continue
 		}
-		t.Run(tt.name, func(t *testing.T) {
-			inputs, err := json.Marshal(tt.inputs)
+		t.Run(tt.Name, func(t *testing.T) {
+			inputs, err := json.Marshal(tt.Inputs)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -154,7 +155,7 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ` + string(inputs) +
  check(p.recognizeWithOptions(input,{unit,signal:{aborted:false}})?.message===p.recognize(input,unit)?.message,"recognizer recovered parity");
 }
 `
-			runTypedTSFixture(t, tt.src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
+			runTypedTSFixture(t, tt.Src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 		})
 	}
 }

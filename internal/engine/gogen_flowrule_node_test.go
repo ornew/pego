@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,23 +13,6 @@ import (
 
 	"github.com/ornew/pego/internal/gen"
 )
-
-var nodeDirectCases = []genCase{
-	{"node/direct_memo_action", `type Pair = { Left node[string]; Right node[string] }
-rule main = pair "!" $$ / pair "?" $$
-rule pair Pair = left:[a-z] #atomic "-" right:number => Pair{Left: $left, Right: $right}
-rule number = [0-9]+ #atomic
-`, []string{"a-12!", "a-12?", "a-x?", "a-12", "é-12?", ""}},
-	{"node/direct_nested_frames", `type Item = { Name node[string]; Value node[string] }
-type Doc = { Items []Item }
-rule main Doc = items:item #repeat(1, 3) $$ => Doc{Items: $items.Value}
-rule item Item = name:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" => Item{Name: $name, Value: $value}
-`, []string{"a:1;b:22;", "a:1;", "a:1;b:x;", "a:1;b:2;c:3;d:4;", ""}},
-	{"node/direct_expectations", `rule main = item ";" $$
-rule item = "let" " " name @error(message="expected a name") / "let" " " "_" name
-rule name = [a-z]+ #atomic
-`, []string{"let abc;", "let ;", "let _abc;", "let 1;", "let abc", ""}},
-}
 
 func TestGeneratedNodeDirectFrameRoutes(t *testing.T) {
 	t.Parallel()
@@ -67,8 +51,8 @@ func testGeneratedNodeDirectRetention(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	c := nodeDirectCases[0]
-	g, err := parseTest(c.src)
+	c := gentest.NodeDirectCases[0]
+	g, err := parseTest(c.Src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +60,7 @@ func testGeneratedNodeDirectRetention(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := compileBare(t, c.src) // generated parsers keep no source information by default
+	p := compileBare(t, c.Src) // generated parsers keep no source information by default
 	var rows strings.Builder
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, rule := range []string{"main", "pair"} {
@@ -126,9 +110,9 @@ func TestGeneratedNodeDirectRoutes(t *testing.T) {
 }
 
 func testGeneratedNodeDirectRoutes(t *testing.T) {
-	for _, c := range nodeDirectCases {
-		t.Run(c.name, func(t *testing.T) {
-			g, err := parseTest(c.src)
+	for _, c := range gentest.NodeDirectCases {
+		t.Run(c.Name, func(t *testing.T) {
+			g, err := parseTest(c.Src)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -137,7 +121,7 @@ func testGeneratedNodeDirectRoutes(t *testing.T) {
 				t.Fatal(err)
 			}
 			name := "item"
-			if strings.Contains(c.name, "memo_action") {
+			if strings.Contains(c.Name, "memo_action") {
 				name = "pair"
 			}
 			body := regexp.MustCompile(`// ` + name + ` \(Node body inlined\)\s+func (\w+)\(p \*rt\.Parser, _ int\)`).FindSubmatch(code)

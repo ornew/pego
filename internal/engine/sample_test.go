@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
-	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/sample"
 )
@@ -15,7 +15,7 @@ import (
 // lookahead, #recover, Operators Rule expressions, left recursion, anchors and character classes.
 func TestSampleCorpus(t *testing.T) {
 	t.Parallel()
-	for _, c := range engine.Corpus(t) {
+	for _, c := range gentest.GenCorpus(t) {
 		t.Run(c.Name, func(t *testing.T) {
 			ast, err := pego.ParseGrammar(c.Src)
 			if err != nil {

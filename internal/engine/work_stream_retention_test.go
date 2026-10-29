@@ -5,6 +5,7 @@ package engine
 import (
 	"context"
 	"errors"
+	"github.com/ornew/pego/internal/gentest"
 	"runtime"
 	"strings"
 	"testing"
@@ -153,7 +154,7 @@ func streamControlRetentionOptions(o ParseOptions, ctx context.Context, trace fu
 
 func TestWorkStreamTraceRetentionWithActiveControls(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, records)
+	prog := mustCompile(t, gentest.Records)
 	workStreamVariants(t, func(t *testing.T, options ParseOptions) {
 		for _, outcome := range []string{
 			"success", "syntax", "input-limit", "canceled", "reader-error", "emit-error",

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"math/rand"
 	"runtime"
 	"strings"
@@ -71,7 +72,7 @@ func TestDocumentBatchFreshParity(t *testing.T) {
 	t.Parallel()
 	replacements := []string{"", "a", "\n", "é", "😀", "\xc3", "\xa9", "\xff", "@name\n", "x = 1+2\n"}
 	for gi, grammar := range []string{`rule main = item* $$
-rule item = .`, incrementalGrammar, `rule main = ("a" @error("need a") #recover(skip=.))* $$`} {
+rule item = .`, gentest.IncrementalGrammar, `rule main = ("a" @error("need a") #recover(skip=.))* $$`} {
 		original := mustCompile(t, grammar)
 		programs := []*Program{original}
 		loaded := saveLoad(t, original, "main", CompiledDocument)

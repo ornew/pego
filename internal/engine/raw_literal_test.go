@@ -3,6 +3,7 @@ package engine
 import (
 	"bytes"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"strconv"
 	"strings"
 	"testing"
@@ -165,8 +166,8 @@ func rawLiteralValues() []string {
 	return []string{"\xc3", "\x80", "\xff", "\xc0\xaf", "\xed\xa0\x80", "é\xc3x", "abcdefghijk\xffxyz"}
 }
 
-func rawLiteralGenCorpus() []genCase {
-	var cases []genCase
+func rawLiteralGenCorpus() []gentest.Case {
+	var cases []gentest.Case
 	for _, raw := range rawLiteralValues() {
 		canonical := string([]rune(raw))
 		for _, shape := range []string{"exact", "suffix", "choice", "predicate"} {
@@ -180,20 +181,20 @@ func rawLiteralGenCorpus() []genCase {
 			case "choice":
 				expr = "(" + expr + ` / "other")`
 			}
-			cases = append(cases, genCase{fmt.Sprintf("raw AST/%x/%s", raw, shape),
-				"type N = { T node[string] }\nrule main N = t:" + expr + predicate + " $$ => N{T:$t}",
-				[]string{raw, canonical, raw + "x", canonical + "x", "é", "éx", "other", "", "\xffx", "\x80x"}})
+			cases = append(cases, gentest.Case{Name: fmt.Sprintf("raw AST/%x/%s", raw, shape),
+				Src:    "type N = { T node[string] }\nrule main N = t:" + expr + predicate + " $$ => N{T:$t}",
+				Inputs: []string{raw, canonical, raw + "x", canonical + "x", "é", "éx", "other", "", "\xffx", "\x80x"}})
 		}
 	}
 	return cases
 }
 
-func literalCorpusGrammar(t *testing.T, tc genCase) *grammar.Grammar {
+func literalCorpusGrammar(t *testing.T, tc gentest.Case) *grammar.Grammar {
 	t.Helper()
-	g := mustParse(tc.src)
-	if strings.HasPrefix(tc.name, "raw AST/") {
+	g := mustParse(tc.Src)
+	if strings.HasPrefix(tc.Name, "raw AST/") {
 		for _, raw := range rawLiteralValues() {
-			if strings.HasPrefix(tc.name, fmt.Sprintf("raw AST/%x/", raw)) {
+			if strings.HasPrefix(tc.Name, fmt.Sprintf("raw AST/%x/", raw)) {
 				if replaceFirstLiteral(g.Rules()[0].Expr, raw) == nil {
 					t.Fatal("missing literal")
 				}

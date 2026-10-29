@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -37,73 +38,73 @@ func testGeneratedTSTypedReplay(t *testing.T) {
 	if err != nil {
 		t.Skip("tsc not found")
 	}
-	cases := append([]genCase(nil), aliasCases...)
-	cases = append(cases, genCase{"typed", typedGrammar, []string{"f(1,x)!?;[3];zz", "f(1,(;g();", "f(a);", ""}})
-	for _, c := range genCorpus(t) {
-		if strings.HasPrefix(c.name, "testdata/typed/splice_recursive_") {
+	cases := append([]gentest.Case(nil), gentest.AliasCases...)
+	cases = append(cases, gentest.Case{Name: "typed", Src: gentest.TypedGrammar, Inputs: []string{"f(1,x)!?;[3];zz", "f(1,(;g();", "f(a);", ""}})
+	for _, c := range gentest.GenCorpus(t) {
+		if strings.HasPrefix(c.Name, "testdata/typed/splice_recursive_") {
 			cases = append(cases, c)
 			continue
 		}
-		switch c.name {
+		switch c.Name {
 		case "Operators Rule explicit default action", "fold and lists", "runtime error", "cut and lookahead", "typed/OperatorsRule_recovery", "typed/OperatorsRule_framed_cuts", "typed/LR_indirect", "typed/LR_recovery", "typed/OperatorsRule_positional_actions", "diagnostic attr":
 			cases = append(cases, c)
 		}
 	}
-	cases = append(cases, genCase{"mixed union recovery", `type Word = { Text string }
+	cases = append(cases, gentest.Case{Name: "mixed union recovery", Src: `type Word = { Text string }
 type Mixed ~ Word | int | error
 type U ~ Word | node[string] | error
 type WE ~ Word | error
 type R = { A Mixed; B U; C WE; D _; E []WE; O *int; I int }
 rule main R = x:word #recover(skip=[^;]+ ";") xs:word #recover(skip=[^;]+ ";")* => R{A: $x, B: $x, C: $x, D: $x, E: $xs.Value, I: 7}
-rule word Word = t:([a-z😀]+ ";") #atomic => Word{Text: text($t)}`, []string{"😀;abc;", "1;abc;2;", "", "x;"}})
-	cases = append(cases, genCase{"shared fold", tsTypedDAGTypes + `rule main Tree = first:leaf rest:leaf* => foldl($first, $rest, (acc, i) => Branch{Left: acc, Right: acc})`, []string{"x", "xxxxxxxx"}}, genCase{"shared LR", tsTypedDAGTypes + `rule main Tree = branch / leaf
-rule branch Branch = prev:main "x" => Branch{Left: $prev, Right: $prev}`, []string{"x", "xxxxxxxx"}}, genCase{"raw Unicode text", `type R = { Text string; Token node[string] }
-rule main R = x:.* #atomic => R{Text: text($x), Token: $x}`, []string{"😀é", string([]byte{0x61, 0xff, 0xe2, 0x82})}})
-	cases = append(cases, genCase{"inferred nil recovery", `rule leaf = "a" => nil
-rule main = leaf #recover(skip=.+)`, []string{"a", "!", ""}}, genCase{"inferred never recovery", `rule leaf = leaf
-rule main = leaf #recover(skip=.+)`, []string{"!", ""}})
-	cases = append(cases, genCase{"nil-valued expression recovery", `rule main = (-"a") #recover(skip=.+)`, []string{"a", "!", ""}}, genCase{"inferred never start", `rule main = main`, []string{"!", ""}})
-	cases = append(cases, genCase{"indexed values", `type R = { A int; B int; C int; D int; E int; F int }
-rule main R = x:"a"* j:"b"* => R{A: list(1, 2)[len($j)], B: (1, 2)[1], C: list(list(1, 2), list(3, 4))[1][len($j)], D: list(len($x), 5)[0], E: (list(7, 8), 9)[0][1], F: (1, (2, 3))[1][1]}`, []string{"", "b", "ab", "aabb", "bbb"}},
-		genCase{"indexed out of range", `rule main = j:"b"* => list(1, 2)[len($j)]`, []string{"", "b", "bb", "bbb"}},
-		genCase{"indexed in node fields", `type N = { V int; W string }
-rule main N = j:"b"* => N{V: list(10, 20, 30)[len($j)], W: list("p", "q")[len($j)]}`, []string{"", "b", "bb", "bbb"}})
-	cases = append(cases, genCase{"indexed root values", `rule main = j:"b"* => (1, 2)[1]`, []string{"", "b"}},
-		genCase{"indexed root string", `rule main = j:"b"* => list("p", "q")[len($j)]`, []string{"", "b", "bb"}},
-		genCase{"indexed root bool", `rule main = j:"b"* => list(true, false)[len($j)]`, []string{"", "b"}},
-		genCase{"indexed root union", `type W = { T string }
+rule word Word = t:([a-z😀]+ ";") #atomic => Word{Text: text($t)}`, Inputs: []string{"😀;abc;", "1;abc;2;", "", "x;"}})
+	cases = append(cases, gentest.Case{Name: "shared fold", Src: tsTypedDAGTypes + `rule main Tree = first:leaf rest:leaf* => foldl($first, $rest, (acc, i) => Branch{Left: acc, Right: acc})`, Inputs: []string{"x", "xxxxxxxx"}}, gentest.Case{Name: "shared LR", Src: tsTypedDAGTypes + `rule main Tree = branch / leaf
+rule branch Branch = prev:main "x" => Branch{Left: $prev, Right: $prev}`, Inputs: []string{"x", "xxxxxxxx"}}, gentest.Case{Name: "raw Unicode text", Src: `type R = { Text string; Token node[string] }
+rule main R = x:.* #atomic => R{Text: text($x), Token: $x}`, Inputs: []string{"😀é", string([]byte{0x61, 0xff, 0xe2, 0x82})}})
+	cases = append(cases, gentest.Case{Name: "inferred nil recovery", Src: `rule leaf = "a" => nil
+rule main = leaf #recover(skip=.+)`, Inputs: []string{"a", "!", ""}}, gentest.Case{Name: "inferred never recovery", Src: `rule leaf = leaf
+rule main = leaf #recover(skip=.+)`, Inputs: []string{"!", ""}})
+	cases = append(cases, gentest.Case{Name: "nil-valued expression recovery", Src: `rule main = (-"a") #recover(skip=.+)`, Inputs: []string{"a", "!", ""}}, gentest.Case{Name: "inferred never start", Src: `rule main = main`, Inputs: []string{"!", ""}})
+	cases = append(cases, gentest.Case{Name: "indexed values", Src: `type R = { A int; B int; C int; D int; E int; F int }
+rule main R = x:"a"* j:"b"* => R{A: list(1, 2)[len($j)], B: (1, 2)[1], C: list(list(1, 2), list(3, 4))[1][len($j)], D: list(len($x), 5)[0], E: (list(7, 8), 9)[0][1], F: (1, (2, 3))[1][1]}`, Inputs: []string{"", "b", "ab", "aabb", "bbb"}},
+		gentest.Case{Name: "indexed out of range", Src: `rule main = j:"b"* => list(1, 2)[len($j)]`, Inputs: []string{"", "b", "bb", "bbb"}},
+		gentest.Case{Name: "indexed in node fields", Src: `type N = { V int; W string }
+rule main N = j:"b"* => N{V: list(10, 20, 30)[len($j)], W: list("p", "q")[len($j)]}`, Inputs: []string{"", "b", "bb", "bbb"}})
+	cases = append(cases, gentest.Case{Name: "indexed root values", Src: `rule main = j:"b"* => (1, 2)[1]`, Inputs: []string{"", "b"}},
+		gentest.Case{Name: "indexed root string", Src: `rule main = j:"b"* => list("p", "q")[len($j)]`, Inputs: []string{"", "b", "bb"}},
+		gentest.Case{Name: "indexed root bool", Src: `rule main = j:"b"* => list(true, false)[len($j)]`, Inputs: []string{"", "b"}},
+		gentest.Case{Name: "indexed root union", Src: `type W = { T string }
 type U ~ W | int
-rule main U = j:"b"* => list(3, 4)[len($j)]`, []string{"", "b"}},
-		genCase{"indexed root optional", `rule main *int = j:"b"* => list(3, 4)[len($j)]`, []string{"", "b", "bb"}},
-		genCase{"indexed nested lists", `rule main = j:"b"* => list(list(1, 2), list(3))[len($j)][0]`, []string{"", "b"}},
-		genCase{"indexed list result", `rule main = j:"b"* => list(list(1, 2), list(3))[len($j)]`, []string{"", "b"}},
-		genCase{"indexed tuple result", `rule main = j:"b"* => list((1, "x"), (2, "y"))[len($j)]`, []string{"", "b"}},
-		genCase{"indexed capture list", `rule main = j:"b"* k:"c"* => $j[len($k)]`, []string{"b", "bc", "bbc", "c", "bbcc"}},
-		genCase{"indexed any", `type R = { V _ }
-rule main R = j:"b"* => R{V: list(1, "s", true)[len($j)]}`, []string{"", "b", "bb", "bbb"}})
-	cases = append(cases, genCase{"named node types in sequences and lists", `type Id = node[string]
+rule main U = j:"b"* => list(3, 4)[len($j)]`, Inputs: []string{"", "b"}},
+		gentest.Case{Name: "indexed root optional", Src: `rule main *int = j:"b"* => list(3, 4)[len($j)]`, Inputs: []string{"", "b", "bb"}},
+		gentest.Case{Name: "indexed nested lists", Src: `rule main = j:"b"* => list(list(1, 2), list(3))[len($j)][0]`, Inputs: []string{"", "b"}},
+		gentest.Case{Name: "indexed list result", Src: `rule main = j:"b"* => list(list(1, 2), list(3))[len($j)]`, Inputs: []string{"", "b"}},
+		gentest.Case{Name: "indexed tuple result", Src: `rule main = j:"b"* => list((1, "x"), (2, "y"))[len($j)]`, Inputs: []string{"", "b"}},
+		gentest.Case{Name: "indexed capture list", Src: `rule main = j:"b"* k:"c"* => $j[len($k)]`, Inputs: []string{"b", "bc", "bbc", "c", "bbcc"}},
+		gentest.Case{Name: "indexed any", Src: `type R = { V _ }
+rule main R = j:"b"* => R{V: list(1, "s", true)[len($j)]}`, Inputs: []string{"", "b", "bb", "bbb"}})
+	cases = append(cases, gentest.Case{Name: "named node types in sequences and lists", Src: `type Id = node[string]
 type P = { A Id; B []Id; C (Id, int) }
 rule main P = a:id b:id* => P{A: $a, B: $b.Value, C: ($a, 1)}
-rule id Id = t:([a-z]+) #atomic => Id{$t}`, []string{"a", "abc", ""}})
-	cases = append(cases, genCase{"named node types everywhere", `type Id = node[string]
+rule id Id = t:([a-z]+) #atomic => Id{$t}`, Inputs: []string{"a", "abc", ""}})
+	cases = append(cases, gentest.Case{Name: "named node types everywhere", Src: `type Id = node[string]
 type Pair = node[(Id, int)]
 type P = { A Id; B []Id; C (Id, int); D *Id }
 rule main P = a:id b:id* => P{A: $a, B: $b.Value, C: ($a, 1), D: nil}
-rule id Id = t:([a-z]+) #atomic => Id{$t}`, []string{"a", "abc", ""}},
-		genCase{"named node type root", `type Id = node[string]
-rule main Id = t:([a-z]+) #atomic => Id{$t}`, []string{"a", "", "1"}},
-		genCase{"named node type list root", `type Id = node[string]
+rule id Id = t:([a-z]+) #atomic => Id{$t}`, Inputs: []string{"a", "abc", ""}},
+		gentest.Case{Name: "named node type root", Src: `type Id = node[string]
+rule main Id = t:([a-z]+) #atomic => Id{$t}`, Inputs: []string{"a", "", "1"}},
+		gentest.Case{Name: "named node type list root", Src: `type Id = node[string]
 rule main []Id = xs:id* => $xs.Value
-rule id Id = t:([a-z]) #atomic => Id{$t}`, []string{"", "a", "abc"}},
-		genCase{"named node type tuple root", `type Id = node[string]
+rule id Id = t:([a-z]) #atomic => Id{$t}`, Inputs: []string{"", "a", "abc"}},
+		gentest.Case{Name: "named node type tuple root", Src: `type Id = node[string]
 rule main (Id, Id) = a:id b:id => ($a, $b)
-rule id Id = t:([a-z]) #atomic => Id{$t}`, []string{"ab", "a", ""}},
-		genCase{"named node type sequence", `type Id = node[string]
+rule id Id = t:([a-z]) #atomic => Id{$t}`, Inputs: []string{"ab", "a", ""}},
+		gentest.Case{Name: "named node type sequence", Src: `type Id = node[string]
 type Num = node[string]
 type S = { Items [](Id, Num) }
 rule main S = xs:(a:id n:num)* => S{Items: map($xs.Value, (x) => (x.$a, x.$n))}
 rule id Id = t:([a-z]) #atomic => Id{$t}
-rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
+rule num Num = t:([0-9]) #atomic => Num{$t}`, Inputs: []string{"", "a1", "a1b2"}})
 	dir := t.TempDir()
 	write := func(path, text string) {
 		t.Helper()
@@ -122,9 +123,9 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
 	var named [][]string
 	var files []string
 	for i, c := range cases {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		generatePackageIn(t, dir, "replay", fmt.Sprintf("g%d", i), g, gen.GenOptions{Start: "main", Types: true, ConvertTypes: true, Recognize: true})
 		prog, err := Compile(g, compile.Options{})
@@ -143,7 +144,7 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
 		fmt.Fprintf(&terminalNames, "%q:true,\n", fmt.Sprintf("replay/g%d/types.Error", i))
 		tsFiles, err := GenerateTS(g, gen.GenOptions{Start: "main", Types: true, Recognize: true})
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		for _, f := range tsFiles {
 			write(fmt.Sprintf("ts/g%d/%s", i, f.Path), string(f.Content))
@@ -153,7 +154,7 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
 		fmt.Fprintf(&parsers, "func(s string, bytes bool)(any,error){u:=g%d.CodePoints; if bytes {u=g%d.Bytes};return g%d.ParseAST(s,g%d.WithUnit(u))},\n", i, i, i, i)
 		fmt.Fprintf(&recognizers, "func(s string, bytes bool)error{u:=g%d.CodePoints; if bytes {u=g%d.Bytes};return g%d.Recognize(s,g%d.WithUnit(u))},\n", i, i, i, i)
 		var in []string
-		for _, s := range c.inputs {
+		for _, s := range c.Inputs {
 			in = append(in, base64.StdEncoding.EncodeToString([]byte(s)))
 		}
 		inputs = append(inputs, in)

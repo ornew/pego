@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/ornew/pego/internal/gentest"
 	"strings"
 	"testing"
 
@@ -31,19 +32,19 @@ rule _m = "b" => R{V: text($y)}`)
 func TestHiddenRulesNegativeControl(t *testing.T) {
 	t.Parallel()
 	differs := 0
-	for _, tc := range spliceCases() {
-		if !strings.Contains(tc.hidden, "rule _m") || strings.Contains(tc.hidden, "_n") {
+	for _, tc := range gentest.SpliceCases() {
+		if !strings.Contains(tc.Hidden, "rule _m") || strings.Contains(tc.Hidden, "_n") {
 			continue
 		}
-		visible := strings.ReplaceAll(tc.hidden, "_m", "m")
-		hidden, shown, inlined := compileBare(t, tc.hidden), compileBare(t, visible), compileBare(t, tc.inlined)
-		for _, input := range tc.inputs {
+		visible := strings.ReplaceAll(tc.Hidden, "_m", "m")
+		hidden, shown, inlined := compileBare(t, tc.Hidden), compileBare(t, visible), compileBare(t, tc.Inlined)
+		for _, input := range tc.Inputs {
 			if _, err := inlined.Parse("main", input); err != nil {
 				continue
 			}
 			want := resultJSON(inlined.Parse("main", input))
 			if got := resultJSON(hidden.Parse("main", input)); got != want {
-				t.Errorf("%s %q: hidden %s, inlined %s", tc.name, input, got, want)
+				t.Errorf("%s %q: hidden %s, inlined %s", tc.Name, input, got, want)
 			}
 			if resultJSON(shown.Parse("main", input)) != want {
 				differs++

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/ornew/pego/internal/gentest"
 	"io"
 	"strings"
 	"testing"
@@ -51,7 +52,7 @@ func catchStreamPanic(f func()) (val any)    { defer func() { val = recover() }(
 
 func TestStreamCallerPanicIdentity(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, records)
+	prog := mustCompile(t, gentest.Records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			for _, traced := range []bool{false, true} {
@@ -128,7 +129,7 @@ func TestStreamCallerPanicIdentity(t *testing.T) {
 
 func TestStreamCallerReturnedErrorIdentity(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, records)
+	prog := mustCompile(t, gentest.Records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			for _, traced := range []bool{false, true} {
@@ -166,7 +167,7 @@ func TestStreamCallerReturnedErrorIdentity(t *testing.T) {
 
 func TestStreamReaderPanicInsideTraceKeepsOriginalValue(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, records)
+	prog := mustCompile(t, gentest.Records)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(b.String()+"/"+u.String(), func(t *testing.T) {
@@ -230,7 +231,7 @@ func TestStreamNormalCallerReturnKeepsVMFaultAttribution(t *testing.T) {
 
 func TestStreamKeepsCallerBufferedReader(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, records)
+	prog := mustCompile(t, gentest.Records)
 	for _, u := range []PositionUnit{CodePoints, Bytes} {
 		reader := bufio.NewReader(strings.NewReader("#records\na=1\n"))
 		if p := core.NewStreamParser(&prog.sharedProgram, reader, u); p.Reader != reader {

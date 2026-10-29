@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/ornew/pego/internal/gentest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -193,7 +194,7 @@ func TestGeneratedSharingLocalLayout(t *testing.T) {
 }
 
 func testGeneratedSharingLocalLayout(t *testing.T) {
-	c := typedLocalLayoutCases[0]
+	c := gentest.TypedLocalLayoutCases[0]
 	if testing.Short() {
 		return
 	}
@@ -201,6 +202,6 @@ func testGeneratedSharingLocalLayout(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	testGeneratedParsersCorpus(t, goBin, []genCase{c}, gen.GenOptions{})
-	testGeneratedTypesCorpus(t, goBin, typedLocalLayoutCases[:5], gen.GenOptions{DisableMethodSharing: true, DisableLiteralSharing: true})
+	testGeneratedParsersCorpus(t, goBin, []gentest.Case{c}, gen.GenOptions{})
+	testGeneratedTypesCorpus(t, goBin, gentest.TypedLocalLayoutCases[:5], gen.GenOptions{DisableMethodSharing: true, DisableLiteralSharing: true})
 }

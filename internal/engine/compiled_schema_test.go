@@ -7,11 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"hash/crc32"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/gentest"
 
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
@@ -32,27 +32,6 @@ func schemaJSON(t *testing.T, p *Program, start string, allRules bool) string {
 	return string(data)
 }
 
-// schemaCorpus returns the grammars of the schema agreement tests: the backend corpus and the
-// grammars of the parsers directory, which are the examples of the generated parsers.
-func schemaCorpus(t *testing.T) []genCase {
-	cases := genCorpus(t)
-	paths, err := filepath.Glob(filepath.Join("..", "..", "parsers", "*", "*.pego"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, path := range paths {
-		src, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if testing.Short() && len(src) > 20000 {
-			continue
-		}
-		cases = append(cases, genCase{name: "parsers/" + filepath.Base(filepath.Dir(path)), src: string(src)})
-	}
-	return cases
-}
-
 // wantSchemaNeedsSource fails unless err is the schema error of a program loaded from a compiled
 // grammar.
 func wantSchemaNeedsSource(t *testing.T, err error) {
@@ -67,10 +46,10 @@ func wantSchemaNeedsSource(t *testing.T, err error) {
 // the loaded file again reproduces it.
 func TestCompiledSchemaMatchesSource(t *testing.T) {
 	t.Parallel()
-	for _, c := range schemaCorpus(t) {
+	for _, c := range gentest.CorpusWithParsers(t) {
 		for _, options := range []compile.Options{{SourceInfo: true}, {DefaultValue: true}} {
-			t.Run(c.name, func(t *testing.T) {
-				src := compileBare(t, c.src, options)
+			t.Run(c.Name, func(t *testing.T) {
+				src := compileBare(t, c.Src, options)
 				if len(src.StartRules) == 0 {
 					t.Fatal("no start rule")
 				}
@@ -114,13 +93,13 @@ func TestCompiledSchemaMatchesSource(t *testing.T) {
 // parsing.
 func TestCompiledSchemaBackendAgreement(t *testing.T) {
 	t.Parallel()
-	for _, c := range genCorpus(t) {
-		t.Run(c.name, func(t *testing.T) {
-			src := mustCompile(t, c.src)
+	for _, c := range gentest.GenCorpus(t) {
+		t.Run(c.Name, func(t *testing.T) {
+			src := mustCompile(t, c.Src)
 			def := src.DefaultStart()
 			want := schemaJSON(t, src, def, true)
 			loaded := saveLoad(t, src, def, CompiledParse)
-			for _, input := range c.inputs {
+			for _, input := range c.Inputs {
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 					src.ParseWith(def, input, ParseOptions{Backend: backend})
 				}

@@ -9,11 +9,12 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"testing"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/internal/gentest"
 
 	"github.com/ornew/pego/internal/gen"
 )
@@ -214,7 +215,7 @@ func workProbeSources(pkg string, n int) string {
 
 // runWorkProbes builds the cases as the packages f0..fN with the rules printed from Flow IR and returns the
 // reports of the consumer; mutate, if not nil, changes the code of each parser.
-func runWorkProbes(t *testing.T, cases []genCase, start string, mutate func([]byte) []byte) []string {
+func runWorkProbes(t *testing.T, cases []gentest.Case, start string, mutate func([]byte) []byte) []string {
 	t.Helper()
 	dir := t.TempDir()
 	write := func(name, content string) {
@@ -227,20 +228,20 @@ func runWorkProbes(t *testing.T, cases []genCase, start string, mutate func([]by
 	write("go.mod", testGoMod("wprobe"))
 	var inputs [][]string
 	for i, c := range cases {
-		g, err := parseTest(c.src)
+		g, err := parseTest(c.Src)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		o := gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true}
 		code, err := generateCode(t, g, o)
 		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
+			t.Fatalf("%s: %v", c.Name, err)
 		}
 		if mutate != nil {
 			code = mutate(code)
 		}
 		write(fmt.Sprintf("f%d/parser.go", i), string(code))
-		inputs = append(inputs, c.inputs)
+		inputs = append(inputs, c.Inputs)
 	}
 	write("main.go", strings.Replace(workProbeSources("f", len(cases)), "IMPORTS", "", 1))
 	data, _ := json.Marshal(inputs)
@@ -336,12 +337,12 @@ func TestFlowNodeWorkInvariants(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	checkWorkInvariants(t, "corpus", genCorpus(t), "main")
+	checkWorkInvariants(t, "corpus", gentest.GenCorpus(t), "main")
 }
 
 // checkWorkInvariants builds the cases with the start rule start, runs the consumer and checks the
 // invariants of TestFlowNodeWorkInvariants and the golden.
-func checkWorkInvariants(t *testing.T, group string, cases []genCase, start string) {
+func checkWorkInvariants(t *testing.T, group string, cases []gentest.Case, start string) {
 	t.Helper()
 	got, problems := workTotals(t, group, cases, start, nil)
 	for _, p := range problems {
@@ -352,7 +353,7 @@ func checkWorkInvariants(t *testing.T, group string, cases []genCase, start stri
 
 // workTotals builds the cases (the code of each parser changed by mutate if not nil), runs the consumer and
 // returns the entries of the golden and the violations of the invariants of the reports.
-func workTotals(t *testing.T, group string, cases []genCase, start string, mutate func([]byte) []byte) (got map[string]string, problems []string) {
+func workTotals(t *testing.T, group string, cases []gentest.Case, start string, mutate func([]byte) []byte) (got map[string]string, problems []string) {
 	t.Helper()
 	lines := runWorkProbes(t, cases, start, mutate)
 	if len(lines) == 0 {
@@ -380,10 +381,10 @@ func workTotals(t *testing.T, group string, cases []genCase, start string, mutat
 		j, _, _ := strings.Cut(rest, " ")
 		jn, _ := strconv.Atoi(j)
 		entry := strings.Fields(rest)[1]
-		if r.result == "<nil>" && r.input < uint64(utf8.RuneCountInString(cases[n].inputs[jn])) {
-			problems = append(problems, fmt.Sprintf("%s: %d input work for a parsed input of %d characters", r.id, r.input, utf8.RuneCountInString(cases[n].inputs[jn])))
+		if r.result == "<nil>" && r.input < uint64(utf8.RuneCountInString(cases[n].Inputs[jn])) {
+			problems = append(problems, fmt.Sprintf("%s: %d input work for a parsed input of %d characters", r.id, r.input, utf8.RuneCountInString(cases[n].Inputs[jn])))
 		}
-		key := fmt.Sprintf("%s/%s | %s %s", group, cases[n].name, j, entry)
+		key := fmt.Sprintf("%s/%s | %s %s", group, cases[n].Name, j, entry)
 		if _, dup := got[key]; dup {
 			t.Fatalf("two reports under the key %q: case names repeat", key)
 		}
@@ -422,7 +423,7 @@ func TestFlowNodeWorkMutants(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	cases := genCorpus(t)
+	cases := gentest.GenCorpus(t)
 	golden := readGolden(t, workGolden)
 	for _, m := range []struct {
 		name   string
@@ -471,44 +472,6 @@ func TestFlowNodeWorkInvariantsOnGrammars(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds the large parsers twice")
 	}
-	cases := grammarCases(t)
+	cases := gentest.GrammarCases(t)
 	checkWorkInvariants(t, "grammars", cases, "")
-}
-
-// grammarCases returns the ten checked-in grammars with the inputs of their testdata directories (the .txt
-// files of up to 3 KB, at most six each).
-func grammarCases(t *testing.T) []genCase {
-	t.Helper()
-	var cases []genCase
-	for _, name := range []string{"json", "cel", "cue", "duckdb", "golang", "python", "xml", "yaml", "csv", "typescript"} {
-		src, err := os.ReadFile(filepath.Join("..", "..", "parsers", name, name+".pego"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		files, _ := filepath.Glob(filepath.Join("..", "..", "parsers", name, "testdata", "*.txt"))
-		sort.Strings(files)
-		c := genCase{name: name, src: string(src)}
-		for _, f := range files {
-			if b, err := os.ReadFile(f); err == nil && len(b) <= 3<<10 && len(c.inputs) < 6 {
-				c.inputs = append(c.inputs, string(b))
-			}
-		}
-		c.inputs = append(c.inputs, grammarOperatorInputs[name]...)
-		if len(c.inputs) == 0 {
-			t.Fatalf("%s: no inputs in testdata", name)
-		}
-		cases = append(cases, c)
-	}
-	return cases
-}
-
-// grammarOperatorInputs are short inputs that use many operators of the grammars with an Operators Rule, so
-// that the guards of the choices of operator tokens skip some alternatives and the lines match others.
-var grammarOperatorInputs = map[string][]string{
-	"duckdb":     {"SELECT a BETWEEN 1 + 2 AND 3 - 4, b BETWEEN 7 / 8 % 9 AND 5 * 6, c BETWEEN 1 AND 2 // 3, d BETWEEN 4 ^ 5 AND 6 ** 7;\n", "SELECT 1 / 2, 3 % 4, 5 * 6, 7 - 8, 9 + 10, 2 ^ 3, 6 // 4, 1 < 2, 1 >= 2, a AND b OR NOT c;\n"},
-	"cel":        {"1 / 2 % 3 * 4 - 5 + 6 < 7 && 8 >= 9 || !x", "a ? b : c", "-x + y * z"},
-	"cue":        {"x: 1 / 2 * 3 - 4 + 5 & !true | 6 < 7 && 8 || 9\n"},
-	"golang":     {"package p\nfunc f() {\n\tx = a / b * c % d - e + f << 1 >> 2 & g | h ^ i &^ j && !k || l < m\n}\n"},
-	"python":     {"x = a / b * c % d - e + f ** 2 // 3 << 1 >> 2 & g | h ^ i and not j or k < l\n"},
-	"typescript": {"x = a / b * c % d - e + f ** 2 << 1 >> 2 >>> 3 & g | h ^ i && !j || k < l ?? m;\n"},
 }
