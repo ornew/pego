@@ -64,8 +64,8 @@ type Parser struct {
 	Silent   int
 	Farthest int
 	// Exp is the stack of expectation records. The current record is Exp[ExpBase:], the
-	// expectations at Farthest. An expectation is an index into descs; an @error message is an index
-	// with MsgBit set (ExpID).
+	// expectations at Farthest. An expectation is an index into the expectation descriptions; an
+	// @error message is an index with MsgBit set (ExpID).
 	Exp     []ExpID
 	ExpBase int
 	// ExpBits cheaply excludes IDs absent from the current record. Collisions still scan.
