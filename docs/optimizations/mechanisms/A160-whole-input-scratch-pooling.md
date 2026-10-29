@@ -36,7 +36,7 @@ Evidence records:
 
 Source owners: [`acquirePooledParser and
 releaseScratch`](../../../internal/engine/input.go),
-[`Program.scratch`](../../../internal/engine/program.go), [`generated parser
+[`sharedProgram.scratch`](../../../internal/engine/runtime.go), [`generated parser
 pool`](../../../runtime/runtime.go), [`typed pool and
 release`](../../../runtime/typed.go).
 

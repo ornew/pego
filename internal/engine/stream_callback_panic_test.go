@@ -227,7 +227,7 @@ func TestStreamKeepsCallerBufferedReader(t *testing.T) {
 	prog := mustCompile(t, records)
 	for _, u := range []PositionUnit{CodePoints, Bytes} {
 		reader := bufio.NewReader(strings.NewReader("#records\na=1\n"))
-		if p := newStreamParser(prog, reader, u); p.reader != reader {
+		if p := newStreamParser(&prog.sharedProgram, reader, u); p.reader != reader {
 			t.Fatal("stream parser replaced caller's buffered reader")
 		}
 	}

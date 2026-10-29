@@ -12,7 +12,7 @@ import (
 
 // Program is a compiled grammar. It can be used by multiple parses concurrently.
 type Program struct {
-	*staticProgram
+	sharedProgram
 	// closureRules holds the rules the closure backend runs, by ID (rule.id).
 	closureRules []*rule
 
@@ -31,17 +31,12 @@ type Program struct {
 	// parses of mode only (checkMode).
 	loaded bool
 	mode   CompiledMode
-	// scratch holds the buffers of finished parses for later ones (*scratch).
-	scratch sync.Pool
-	// initEnv is the environment of the declared variables that every parse starts from
-	// (parser.seedVars). Environments are persistent, so every parse shares it.
-	initEnv *env
 }
 
 // newProgram returns the program that runs the static program sp with the rules of the closure
 // backend.
 func newProgram(sp *compile.Program, closureRules []*rule) *Program {
-	prog := &Program{staticProgram: sp, closureRules: closureRules}
+	prog := &Program{sharedProgram: sharedProgram{staticProgram: sp}, closureRules: closureRules}
 	for _, d := range sp.Vars.All() {
 		prog.initEnv = &env{name: d.Name, val: d.Init, next: prog.initEnv}
 	}

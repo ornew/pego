@@ -57,7 +57,7 @@ func TestBoundStreamMemoryIsBounded(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
-				p := newStreamParser(prog, &lineReader{line: "a", n: 60000}, unit)
+				p := newStreamParser(&prog.sharedProgram, &lineReader{line: "a", n: 60000}, unit)
 				count := 0
 				var at [2]uint64
 				p.emit = func(*value.Node) error {

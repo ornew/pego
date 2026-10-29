@@ -19,7 +19,7 @@ rule value = v:[a-z]+ #atomic ","`
 // Completed calls can leave references beyond slice length. Stream commits
 // must release them at the next prune without disturbing active root values.
 func TestStreamStorageCommitReferences(t *testing.T) {
-	p := newParser(mustCompile(t, `rule main = "a"`), strings.Repeat("a", 4096), CodePoints, false)
+	p := newParser(&mustCompile(t, `rule main = "a"`).sharedProgram, strings.Repeat("a", 4096), CodePoints, false)
 	live := value.Ptr(value.Data{Text: "live"})
 	dead := value.Ptr(value.Data{Text: "dead"})
 	root := p.newFrame(1)
@@ -59,7 +59,7 @@ func TestStreamPrefixStorageIsolation(t *testing.T) {
 	if !streamPrefixIsolation {
 		t.Skip("reference build shares prefix storage")
 	}
-	p := newStreamParser(mustCompile(t, `rule main = "a"`), strings.NewReader("a"), CodePoints)
+	p := newStreamParser(&mustCompile(t, `rule main = "a"`).sharedProgram, strings.NewReader("a"), CodePoints)
 	root := p.newFrame(1)
 	p.frame = root
 	prefix := p.newNode(value.Data{Text: "prefix"})
@@ -83,7 +83,7 @@ func TestStreamPrefixAllocationBudget(t *testing.T) {
 	if !streamPrefixIsolation {
 		t.Skip("reference build uses slabs")
 	}
-	p := newStreamParser(mustCompile(t, `rule main = "a"`), strings.NewReader("a"), CodePoints)
+	p := newStreamParser(&mustCompile(t, `rule main = "a"`).sharedProgram, strings.NewReader("a"), CodePoints)
 	for range nodeChunk/8 + 4 {
 		p.newNode(value.Data{Text: "prefix"})
 	}
@@ -277,7 +277,7 @@ func BenchmarkStreamStorageRetainedHeap(b *testing.B) {
 						runtime.GC()
 						var before, during runtime.MemStats
 						runtime.ReadMemStats(&before)
-						p := newStreamParser(prog, strings.NewReader(text), unit)
+						p := newStreamParser(&prog.sharedProgram, strings.NewReader(text), unit)
 						p.descs = prog.descs(backend)
 						count := 0
 						p.emit = func(n *value.Node) error {

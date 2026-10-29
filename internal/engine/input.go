@@ -233,7 +233,7 @@ func newTextInputIn(s string, unit PositionUnit, offsets bool, sc *scratch) inpu
 }
 
 // newParser returns a parser of the input s; offsets is as for newTextInput.
-func newParser(prog *Program, s string, unit PositionUnit, offsets bool) *parser {
+func newParser(prog *sharedProgram, s string, unit PositionUnit, offsets bool) *parser {
 	return &parser{prog: prog, input: newTextInput(s, unit, offsets), memo: newMemoTable(), maxDepth: DefaultMaxDepth}
 }
 
@@ -253,7 +253,7 @@ const maxScratch = 1 << 22
 
 // acquirePooledParser separates scratch acquisition from input initialization,
 // so a caller can arm release before controlled decoding can interrupt.
-func acquirePooledParser(prog *Program) *parser {
+func acquirePooledParser(prog *sharedProgram) *parser {
 	sc, _ := prog.scratch.Get().(*scratch)
 	if sc == nil {
 		sc = &scratch{}
@@ -318,11 +318,11 @@ func grow[T any](buf []T, n int) []T {
 	return make([]T, n)
 }
 
-func newStreamParser(prog *Program, r io.Reader, unit PositionUnit) *parser {
+func newStreamParser(prog *sharedProgram, r io.Reader, unit PositionUnit) *parser {
 	return newControlledStreamParser(prog, r, unit, nil)
 }
 
-func newControlledStreamParser(prog *Program, r io.Reader, unit PositionUnit, control *workControl) *parser {
+func newControlledStreamParser(prog *sharedProgram, r io.Reader, unit PositionUnit, control *workControl) *parser {
 	p := &parser{prog: prog, input: input{unit: unit, control: control, baseLine: 1, baseCol: 1}, memo: newMemoTable(), maxDepth: DefaultMaxDepth}
 	if workControlsEnabled && control != nil {
 		r = &streamReaderObserver{reader: r, result: &p.readerResult, control: control}

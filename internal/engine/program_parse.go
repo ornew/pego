@@ -45,7 +45,7 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *value.No
 		return nil, err
 	}
 	control.check()
-	p := acquirePooledParser(active)
+	p := acquirePooledParser(&active.sharedProgram)
 	defer p.releaseBatchScratch()
 	p.input = newControlledTextInput(input, o.Unit, !o.Recognize, p.scratch, control)
 	p.maxDepth = o.maxDepth(o.Backend)
@@ -282,7 +282,7 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*value
 		return err
 	}
 	control.check()
-	p := newControlledStreamParser(prog, r, o.Unit, control)
+	p := newControlledStreamParser(&prog.sharedProgram, r, o.Unit, control)
 	defer p.releaseTraceReferences() // after error recovery, including rethrown panics
 	control.check()
 	p.maxDepth = o.maxDepth(o.Backend)

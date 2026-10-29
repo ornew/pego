@@ -4,14 +4,27 @@ import (
 	"fmt"
 	"maps"
 	"strings"
+	"sync"
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
+// sharedProgram is the part of a program that the parses of every backend read: the static
+// program, the environment the declared variables start from and the buffers of finished parses.
+// Program embeds it, and a parser points to it.
+type sharedProgram struct {
+	*staticProgram
+	// scratch holds the buffers of finished parses for later ones (*scratch).
+	scratch sync.Pool
+	// initEnv is the environment of the declared variables that every parse starts from
+	// (parser.seedVars). Environments are persistent, so every parse shares it.
+	initEnv *env
+}
+
 // parser is the execution state of a single parse.
 type parser struct {
-	prog *Program
+	prog *sharedProgram
 	input
 	pos int
 	// hw and lw are the input range [lw, hw) examined by the current rule call. They are used by

@@ -176,7 +176,7 @@ func TestStreamFrameScratchClearsDeadFrames(t *testing.T) {
 	if !streamFrameScratch {
 		t.Skip("reference build does not reuse capture frames")
 	}
-	p := newParser(mustCompile(t, `rule main = "a"`), "a", CodePoints, false)
+	p := newParser(&mustCompile(t, `rule main = "a"`).sharedProgram, "a", CodePoints, false)
 	root := p.newFrame(1)
 	root.vals[0] = value.Ptr(value.Data{Text: "live root"})
 	p.frame = root

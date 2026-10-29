@@ -248,7 +248,7 @@ rule item = "a" #recover(skip="!")`)
 func TestStreamDiagnosticTailCommitScratchOwnership(t *testing.T) {
 	prog := mustCompile(t, `rule main = "a"`)
 	for _, traced := range []bool{false, true} {
-		p := newParser(prog, "a", CodePoints, false)
+		p := newParser(&prog.sharedProgram, "a", CodePoints, false)
 		p.diagnosticTail.limit = 1
 		if traced {
 			p.tr = &tracer{}

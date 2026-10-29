@@ -120,7 +120,7 @@ func BenchmarkSparseMemoTypeScript(b *testing.B) {
 								b.Fatal(err)
 							}
 						}
-						p := newParser(target, source.text, unit, !recognize)
+						p := newParser(&target.sharedProgram, source.text, unit, !recognize)
 						p.deferMemo = true
 						if _, err := target.run(p, backend, "main"); err != nil {
 							b.Fatal(err)

@@ -313,7 +313,7 @@ func TestWorkMemoGrowthFailureCleanup(t *testing.T) {
 	prog := mustCompile(t, `rule main = expr $$
 
 rule expr = expr "a" / "a"`)
-	p := acquirePooledParser(prog)
+	p := acquirePooledParser(&prog.sharedProgram)
 	retained := value.Ptr(value.Data{Text: "retained", Children: []*value.Node{value.Ptr(value.Data{Text: "child"})}})
 	before, _ := json.Marshal(retained)
 	key := memoKey{rule: prog.ByName["expr"].ID}

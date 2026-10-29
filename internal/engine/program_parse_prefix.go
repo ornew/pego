@@ -44,7 +44,7 @@ func (prog *Program) ParsePrefixWith(start, input string, o ParseOptions) (resul
 		return PrefixResult{}, err
 	}
 	control.check()
-	p := acquirePooledParser(active)
+	p := acquirePooledParser(&active.sharedProgram)
 	defer p.releaseBatchScratch()
 	p.input = newControlledTextInput(input, o.Unit, !o.Recognize, p.scratch, control)
 	p.maxDepth = o.maxDepth(o.Backend)

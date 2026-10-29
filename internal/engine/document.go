@@ -179,7 +179,7 @@ func (d *Document) parseWithCapture(o ParseOptions, capture func(*parser, *value
 	} else {
 		runs = map[runKey]*runRecord{}
 	}
-	p = &parser{prog: active, input: d.in, memo: d.memo, memoAll: true, noPlain: true, maxDepth: o.maxDepth(d.back), gen: gen, edits: d.edits,
+	p = &parser{prog: &active.sharedProgram, input: d.in, memo: d.memo, memoAll: true, noPlain: true, maxDepth: o.maxDepth(d.back), gen: gen, edits: d.edits,
 		runs: runs, lastRuns: lastRuns, kidStack: d.kids}
 	if reuseDocumentVMValues {
 		// A large document may have been replaced with a small input.

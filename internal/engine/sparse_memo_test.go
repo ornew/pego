@@ -137,7 +137,7 @@ func TestSparseMemoInputSelection(t *testing.T) {
 	} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
-				p := newParser(prog, text, unit, true)
+				p := newParser(&prog.sharedProgram, text, unit, true)
 				p.deferMemo = true
 				if _, err := prog.run(p, backend, "main"); err != nil {
 					t.Fatal(err)

@@ -117,7 +117,7 @@ func TestParseStreamDiscardsInput(t *testing.T) {
 	prog := mustCompile(t, records)
 	r := &lineReader{header: "#records\n", line: "key=42\n", n: 100000}
 	maxBuf := 0
-	p := newStreamParser(prog, r, CodePoints)
+	p := newStreamParser(&prog.sharedProgram, r, CodePoints)
 	p.emit = func(*value.Node) error {
 		maxBuf = max(maxBuf, len(p.in))
 		return nil

@@ -143,7 +143,7 @@ func parseSteps(t *testing.T, prog *Program, backend Backend, unit PositionUnit,
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := acquirePooledParser(active)
+	p := acquirePooledParser(&active.sharedProgram)
 	defer p.releaseBatchScratch()
 	p.input = newControlledTextInput(input, o.Unit, true, p.scratch, control)
 	p.maxDepth = o.maxDepth(o.Backend)

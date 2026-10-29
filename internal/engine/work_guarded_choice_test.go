@@ -75,7 +75,7 @@ func TestWorkGuardedChoiceSilentSkipLoopBudgetAndCancellation(t *testing.T) {
 
 	for _, unit := range []PositionUnit{Bytes, CodePoints} {
 		t.Run(unit.String()+"/budget", func(t *testing.T) {
-			p := newParser(prog, "z", unit, false)
+			p := newParser(&prog.sharedProgram, "z", unit, false)
 			p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: workGuardedChoiceAlternatives})
 			p.silent = 1
 			p.maxDepth = workGuardedChoiceAlternatives + 1
@@ -87,7 +87,7 @@ func TestWorkGuardedChoiceSilentSkipLoopBudgetAndCancellation(t *testing.T) {
 		})
 
 		t.Run(unit.String()+"/cancel", func(t *testing.T) {
-			p := newParser(prog, "z", unit, false)
+			p := newParser(&prog.sharedProgram, "z", unit, false)
 			ctx := newPollingContext(1)
 			p.control = newWorkControl(ctx, limits.WorkLimits{})
 			p.silent = 1
@@ -108,7 +108,7 @@ func TestWorkGuardedChoiceExactSkipBudget(t *testing.T) {
 		for _, text := range []string{"z", ""} {
 			for _, silent := range []bool{true, false} {
 				t.Run(unit.String()+"/input="+strconv.Quote(text)+"/silent="+strconv.FormatBool(silent), func(t *testing.T) {
-					p := newParser(prog, text, unit, false)
+					p := newParser(&prog.sharedProgram, text, unit, false)
 					p.control = newWorkControl(nil, limits.WorkLimits{MaxInputWork: 1, MaxSteps: workGuardedChoiceAlternatives + 1})
 					p.maxDepth = workGuardedChoiceAlternatives + 1
 					if silent {
@@ -148,7 +148,7 @@ func TestWorkGuardedChoicePassingMatcherCharge(t *testing.T) {
 				}
 				c := newClosureWalker(&compile.Compiler{Prog: prog.staticProgram}, false)
 				m := c.ExprForm(&grammar.Choice{Alts: alts}, compile.NewScope(), false)
-				p := newParser(prog, "z", unit, false)
+				p := newParser(&prog.sharedProgram, "z", unit, false)
 				p.control = newWorkControl(nil, limits.WorkLimits{MaxInputWork: 2, MaxSteps: steps})
 				p.silent = 1
 				if n, ok := m(p); n != nil || !ok || p.pos != 1 || p.control.stepsUsed != steps || p.control.inputUsed != 2 {

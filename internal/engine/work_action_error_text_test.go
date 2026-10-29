@@ -132,7 +132,7 @@ func TestWorkActionErrorProducersAreEager(t *testing.T) {
 	for _, tc := range producers {
 		t.Run(tc.name, func(t *testing.T) {
 			p := diagnosticParser(limits.WorkLimits{MaxSteps: 1 << 50})
-			p.prog = prog
+			p.prog = &prog.sharedProgram
 			owned := tc.make(p)
 			if owned == nil {
 				t.Fatal("expected expression error")
