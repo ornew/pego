@@ -67,13 +67,13 @@ var queryCategories = [...]string{"node", "struct", "tuple", "list", "int", "str
 // CompileStructuralQuery copies a programmatic pattern and checks known schema
 // constraints. A nil schema defers all type/field checks to runtime. Text syntax,
 // predicates, highlighting and generated-runtime adapters are not implemented.
-func CompileStructuralQuery(pattern QueryPattern, schema *schema.Output) (*StructuralQuery, error) {
+func CompileStructuralQuery(pattern QueryPattern, out *schema.Output) (*StructuralQuery, error) {
 	var s *QuerySchema
-	if schema != nil {
-		if err := schema.Validate(); err != nil {
+	if out != nil {
+		if err := out.Validate(); err != nil {
 			return nil, fmt.Errorf("invalid query schema: %w", err)
 		}
-		s = indexQuerySchema(schema)
+		s = indexQuerySchema(out)
 	}
 	return s.CompileStructuralQuery(pattern)
 }
