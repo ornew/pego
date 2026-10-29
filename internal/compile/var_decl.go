@@ -2,6 +2,7 @@ package compile
 
 import (
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/bytecode"
 )
 
 // A parser variable is declared by a top-level var declaration. Its type is int, string or
@@ -181,4 +182,26 @@ func (c *Compiler) varDecl(vd *grammar.VarDef) *VarDecl {
 		return nil
 	}
 	return &VarDecl{Name: vd.Name, Typ: valueType(v), Init: v}
+}
+
+// ModuleVarTable returns the variable table that the module m declares, or nil when it declares
+// none. It reads back the table that the bytecode compiler writes.
+func ModuleVarTable(m *bytecode.Module) *VarTable {
+	var t *VarTable
+	for _, v := range m.Vars {
+		d := &VarDecl{Name: m.Strings[v.Name]}
+		switch v.Type {
+		case bytecode.VarInt:
+			d.Typ, d.Init = TyInt, v.Int
+		case bytecode.VarString:
+			d.Typ, d.Init = TyString, m.Strings[v.Str]
+		default:
+			d.Typ, d.Init = TyBool, v.Int == 1
+		}
+		if t == nil {
+			t = NewVarTable()
+		}
+		t.Add(d)
+	}
+	return t
 }

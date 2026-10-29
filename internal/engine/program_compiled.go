@@ -254,7 +254,7 @@ func moduleProgram(m *bytecode.Module) *Program {
 		}
 		prog.Types[m.Strings[t.Name]] = &grammar.TypeDef{Name: m.Strings[t.Name], Type: st}
 	}
-	prog.Vars = moduleVarTable(m)
+	prog.Vars = compile.ModuleVarTable(m)
 	prog.StartRules, prog.DefaultStartRule = moduleStarts(m), moduleDefaultStart(m)
 	prog.BytecodeOnce.Do(func() { prog.Bytecode = m })
 	return newProgram(prog, nil)

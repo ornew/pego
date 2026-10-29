@@ -134,7 +134,7 @@ func TestLoadedVariablesMatch(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if err := sameVars(loaded.Vars, moduleVarTable(m)); err != nil {
+				if err := sameVars(loaded.Vars, compile.ModuleVarTable(m)); err != nil {
 					t.Fatalf("the loaded variables differ from the module: %v", err)
 				}
 			})

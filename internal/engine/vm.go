@@ -139,7 +139,7 @@ func buildVMProgram(m *bytecode.Module, bodies vmBodies) *vmProgram {
 			vm.nodeKinds[t.Name] = value.NewNodeTypeKinds(m.Strings[t.Name])
 		}
 	}
-	vtable := moduleVarTable(m)
+	vtable := compile.ModuleVarTable(m)
 	vm.vars = vtable
 	for i := range m.Rules {
 		ri := &m.Rules[i]
@@ -197,7 +197,7 @@ func buildVMProgram(m *bytecode.Module, bodies vmBodies) *vmProgram {
 
 // streams reports whether the rule body (from entry to RETURN) has a #stream repetition.
 func (vm *vmProgram) streams(entry int) bool {
-	return moduleStreams(vm.m, entry)
+	return vm.m.RuleStreams(entry)
 }
 
 func (vm *vmProgram) names(ids []int) []string {
@@ -1313,40 +1313,6 @@ func (vm *vmProgram) isStreamRepeat(ip int) bool {
 	}
 	end := int(code[ip+1].A)
 	return end > ip+2 && end < len(code) && code[end].Op == bytecode.OpEndRepeat && code[end-1].Op == bytecode.OpNext && code[end-1].B == 2
-}
-
-// moduleVarTable returns the variable table of the module m, or nil when it declares no variable.
-func moduleVarTable(m *bytecode.Module) *compile.VarTable {
-	var t *compile.VarTable
-	for _, v := range m.Vars {
-		d := &compile.VarDecl{Name: m.Strings[v.Name]}
-		switch v.Type {
-		case bytecode.VarInt:
-			d.Typ, d.Init = compile.TyInt, v.Int
-		case bytecode.VarString:
-			d.Typ, d.Init = compile.TyString, m.Strings[v.Str]
-		default:
-			d.Typ, d.Init = compile.TyBool, v.Int == 1
-		}
-		if t == nil {
-			t = compile.NewVarTable()
-		}
-		t.Add(d)
-	}
-	return t
-}
-
-// moduleStreams inspects rule bytecode metadata without building an executable VM.
-func moduleStreams(m *bytecode.Module, entry int) bool {
-	for _, in := range m.Code[entry:] {
-		switch {
-		case in.Op == bytecode.OpReturn:
-			return false
-		case in.Op == bytecode.OpNext && in.B == 2:
-			return true
-		}
-	}
-	return false
 }
 
 // newPos allocates a copy of the position pos from a chunk and returns it. Start positions are

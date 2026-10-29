@@ -27,6 +27,20 @@ type Module struct {
 	DefaultValue bool
 }
 
+// RuleStreams reports whether the rule body that starts at entry passes values to the stream:
+// whether a NEXT with f = 2 comes before its RETURN.
+func (m *Module) RuleStreams(entry int) bool {
+	for _, in := range m.Code[entry:] {
+		switch {
+		case in.Op == OpReturn:
+			return false
+		case in.Op == OpNext && in.B == 2:
+			return true
+		}
+	}
+	return false
+}
+
 // InstructionSetVersion is the instruction set of every module: the value model's.
 func (m *Module) InstructionSetVersion() int { return ISAVersion }
 
