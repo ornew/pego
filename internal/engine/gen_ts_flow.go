@@ -835,7 +835,7 @@ func (p *tsFlowPrinter) exp(id core.ExpID) string {
 	return strconv.Itoa(int(p.desc(id)))
 }
 
-func (p *tsFlowPrinter) desc(id core.ExpID) expID { return p.g.desc(p.g.flow.m.Exps[id]) }
+func (p *tsFlowPrinter) desc(id core.ExpID) compile.ExpID { return p.g.desc(p.g.flow.m.Exps[id]) }
 
 // classIn returns the condition that the code point in ch is in the class c (false at the end of the
 // input is the caller's check).
@@ -919,7 +919,7 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 		if !shared {
 			p.decl(v, fmt.Sprintf("const %s: Lit = { text: %s, cps: %s, bytes: %s };\n", v, tsString(val), tsInts([]rune(val)), tsInts([]byte(val))))
 		}
-		var desc expID
+		var desc compile.ExpID
 		if x.Lit.Text == "" {
 			desc = g.desc(strconv.Quote(""))
 		} else {

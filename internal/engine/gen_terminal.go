@@ -256,7 +256,7 @@ func (t *terminalProgram) emit(e grammar.Expr) {
 // first returns the class and expectation of the guard of an alternative, as generator.first
 // finds them for a terminal expression: the first literal or class that the alternative must
 // match first, a literal standing for its first code point.
-func (t *terminalProgram) first(e grammar.Expr) (*grammar.CharClass, expID, bool) {
+func (t *terminalProgram) first(e grammar.Expr) (*grammar.CharClass, compile.ExpID, bool) {
 	g := t.g
 	switch e := e.(type) {
 	case *grammar.Literal:

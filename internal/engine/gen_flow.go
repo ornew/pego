@@ -763,7 +763,7 @@ func (p *flowPrinter) exp(id core.ExpID) string {
 }
 
 // desc returns the ID in the parser's table of the expectation id of the module.
-func (p *flowPrinter) desc(id core.ExpID) expID { return p.g.desc(p.g.flow.m.Exps[id]) }
+func (p *flowPrinter) desc(id core.ExpID) compile.ExpID { return p.g.desc(p.g.flow.m.Exps[id]) }
 
 // grammarClass returns the character class expression of the class c.
 func grammarClass(c *core.Class) *grammar.CharClass {
@@ -867,7 +867,7 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 			return fmt.Sprintf("%s.%s(%s, %d, false)", p.matcher(), p.helper("MatchLiteralFold"), g.literal(string(compile.FoldedRunes([]rune(x.Lit.Text)))), p.desc(x.Lit.Exp))
 		}
 		lit := g.literal(x.Lit.Text)
-		var desc expID
+		var desc compile.ExpID
 		if x.Lit.Text == "" {
 			desc = g.desc(strconv.Quote(""))
 		} else {

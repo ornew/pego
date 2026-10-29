@@ -83,7 +83,7 @@ func coreGenerate(src string, opts gen.GenOptions) (*generator, bool) {
 	generatorHook = func(x *generator) { gen = x }
 	defer func() { generatorHook = nil }()
 	opts.Module = "example.com/p"
-	if _, err := generate(g, opts); err != nil || gen == nil {
+	if _, err := generate(g, compileForGenerator, opts); err != nil || gen == nil {
 		return nil, false
 	}
 	return gen, true

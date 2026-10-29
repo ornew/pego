@@ -32,16 +32,8 @@ var tsProfileSource string
 // tsRuntimeMarker starts the part of tsrt/runtime.ts that is copied into generated code.
 const tsRuntimeMarker = "// --- Runtime ---\n"
 
-// GenerateTS generates the files of a TypeScript parser for a grammar that behaves exactly like the
-// engine (and the generated Go parsers): runtime.ts, with the runtime (RuntimeEmbed), parser.ts, with
-// the code generated from the grammar, and with opts.Types types.ts, with the declarations of the
-// grammar's types. RuntimeImport imports the runtime from opts.RuntimeModule instead of writing it,
-// and RuntimeOnly writes only runtime.ts, for which g may be nil.
-//
-// Each parsing expression becomes a function and actions and predicates become TypeScript
-// expressions, as in Generate; the embedded runtime (tsrt) mirrors runtime. opts.Package is not used.
-// opts.Types adds declarations and Node-to-value conversion entry points.
-func GenerateTS(g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
+// generateTS is GenerateTS with the compiler c.
+func generateTS(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
 	if opts.Runtime == gen.RuntimeOnly {
 		return tsRuntimeFiles(), nil
 	}
@@ -66,11 +58,10 @@ func GenerateTS(g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, e
 	if err := opts.ValidateDefaultValue(); err != nil {
 		return nil, err
 	}
-	compiled, err := Compile(g, compile.Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue, LeftRecursionBindings: opts.LeftRecursionBindings})
+	prog, recognizer, err := c(g, compile.Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue, LeftRecursionBindings: opts.LeftRecursionBindings})
 	if err != nil {
 		return nil, err
 	}
-	prog := compiled.staticProgram
 	if prog.HasMissing {
 		return nil, compile.MissingUnsupported("generated parsers")
 	}
@@ -91,11 +82,9 @@ func GenerateTS(g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, e
 	}
 	var rec *compile.Program
 	if opts.Recognize {
-		recognizer, err := compiled.recognizer()
-		if err != nil {
+		if rec, err = recognizer(); err != nil {
 			return nil, err
 		}
-		rec = recognizer.staticProgram
 		tsg.prog, tsg.table = rec, "recRules"
 		tsg.rules()
 		tsg.prog, tsg.table = prog, "rules"

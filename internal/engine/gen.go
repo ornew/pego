@@ -17,6 +17,7 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
+	"github.com/ornew/pego/internal/limits"
 )
 
 // DefaultPackageName returns the package name of the generated code for a module path: its last
@@ -32,20 +33,12 @@ func DefaultPackageName(module string) string {
 	return base
 }
 
-// Generate generates the files of a Go parser for a grammar: parser.go with the code generated
-// from the grammar, api.go, which re-exports the names the runtime defines for the users of the
-// parser, with opts.Types types/types.go, the package of the Go types of the typed values, and, with
-// opts.Runtime RuntimeEmbed, a copy of the runtime in internal/runtime. Paths are relative to the
-// directory of the generated package.
-//
-// Eligible rule bodies inline their expressions; other expressions become Go functions. Actions
-// and predicates become Go expressions, and the runtime (package runtime of this module) behaves
-// exactly like the engine in this package. Without opts.Stream, #stream is a plain repetition.
-func Generate(g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
+// generateGo is Generate with the compiler c.
+func generateGo(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
 	if opts.Runtime == gen.RuntimeOnly {
 		return runtimeFiles()
 	}
-	return generate(g, opts)
+	return generate(g, c, opts)
 }
 
 // generatorHook, if set by a test, receives the generator of the pass that writes the output, before it
@@ -58,23 +51,23 @@ var generatorHook func(*generator)
 // without Node rules has no Node or recognizer rule to leave out (keepTableRules); one that keeps
 // Node rules for its converting entry points prints those that the entry points reach, like any
 // other output.
-func generate(g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
+func generate(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
 	if opts.KeepUnreachable {
-		return generateOnce(g, opts, nil, nil)
+		return generateOnce(g, c, opts, nil, nil)
 	}
 	var lv liveRules
-	if _, err := generateOnce(g, opts, nil, &lv); err != nil {
+	if _, err := generateOnce(g, c, opts, nil, &lv); err != nil {
 		return nil, err
 	}
 	if reachHook != nil {
 		reachHook(&lv)
 	}
-	return generateOnce(g, opts, &lv, nil)
+	return generateOnce(g, c, opts, &lv, nil)
 }
 
 // generateOnce is one pass of generate. A pass with collect records the reachable rules into it;
 // a pass with live omits the rules that are not reachable in live.
-func generateOnce(g *grammar.Grammar, opts gen.GenOptions, live, collect *liveRules) (files []gen.GeneratedFile, err error) {
+func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, live, collect *liveRules) (files []gen.GeneratedFile, err error) {
 	if collect != nil {
 		*collect = liveRules{}
 	}
@@ -112,11 +105,10 @@ func generateOnce(g *grammar.Grammar, opts gen.GenOptions, live, collect *liveRu
 	if err != nil {
 		return nil, err
 	}
-	compiled, err := Compile(g, compile.Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue, LeftRecursionBindings: opts.LeftRecursionBindings})
+	prog, recognizer, err := c(g, compile.Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue, LeftRecursionBindings: opts.LeftRecursionBindings})
 	if err != nil {
 		return nil, err
 	}
-	prog := compiled.staticProgram
 	if prog.HasMissing {
 		return nil, compile.MissingUnsupported("generated parsers")
 	}
@@ -133,7 +125,7 @@ func generateOnce(g *grammar.Grammar, opts gen.GenOptions, live, collect *liveRu
 	if live != nil {
 		goGen.seedDescs()
 		for _, d := range live.descs[len(goGen.descs):] {
-			goGen.descIDs[d] = expID(len(goGen.descs))
+			goGen.descIDs[d] = compile.ExpID(len(goGen.descs))
 			goGen.descs = append(goGen.descs, d)
 		}
 	}
@@ -160,13 +152,10 @@ func generateOnce(g *grammar.Grammar, opts gen.GenOptions, live, collect *liveRu
 	}
 	var rec *compile.Program
 	if opts.Recognize {
-		// The recognizer: the program in which no rule builds a value (Program.recognizer), in a
-		// rule table of its own.
-		recognizer, err := compiled.recognizer()
-		if err != nil {
+		// The recognizer: the program in which no rule builds a value, in a rule table of its own.
+		if rec, err = recognizer(); err != nil {
 			return nil, err
 		}
-		rec = recognizer.staticProgram
 		goGen.prog, goGen.table = rec, "recRules"
 		if err := goGen.startRecFlow(rec); err != nil {
 			return nil, err
@@ -195,7 +184,7 @@ func generateOnce(g *grammar.Grammar, opts gen.GenOptions, live, collect *liveRu
 		goGen.convertsNodes = typed.needNodes
 		if opts.TypedOnly && typed.needNodes && !opts.KeepNodes && !opts.DisableKeepNodes {
 			opts.KeepNodes = true
-			return generateOnce(g, opts, live, collect)
+			return generateOnce(g, c, opts, live, collect)
 		}
 		return nil, goGen.finishReach(prog, rec)
 	}
@@ -295,7 +284,7 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 			// A typed entry point converts the Node result of its rule, so the Node rule functions
 			// are needed; generate again with them.
 			opts.KeepNodes = true
-			return generateOnce(g, opts, live, collect)
+			return generateOnce(g, c, opts, live, collect)
 		}
 		if opts.TypedOnly {
 			// The expectations of the typed bodies are known only now.
@@ -415,7 +404,7 @@ func useSparseMemo(opts gen.GenOptions, prog, rec *compile.Program) bool {
 
 func generatedMaxDepth(o gen.GenOptions) int {
 	if o.MaxDepth == 0 {
-		return DefaultMaxDepth
+		return limits.DefaultMaxDepth
 	}
 	return o.MaxDepth
 }
@@ -493,7 +482,7 @@ type generator struct {
 	// descs is the expectation table of the generated parser (descs in runtime); descIDs maps a
 	// description to its ID.
 	descs   []string
-	descIDs map[string]expID
+	descIDs map[string]compile.ExpID
 	// streamStart is the start rule of ParseStream, whose separate body
 	// (generated while streamBody is set) emits its #stream elements.
 	streamStart *compile.Rule
@@ -583,20 +572,20 @@ func (g *generator) seedDescs() {
 	if g.descIDs != nil {
 		return
 	}
-	g.descIDs = map[string]expID{}
+	g.descIDs = map[string]compile.ExpID{}
 	for i, d := range compile.FixedDescs {
 		g.descs = append(g.descs, d)
-		g.descIDs[d] = expID(i)
+		g.descIDs[d] = compile.ExpID(i)
 	}
 }
 
 // desc returns the expectation ID of description s, adding it to the table.
-func (g *generator) desc(s string) expID {
+func (g *generator) desc(s string) compile.ExpID {
 	g.seedDescs()
 	if id, ok := g.descIDs[s]; ok {
 		return id
 	}
-	id := expID(len(g.descs))
+	id := compile.ExpID(len(g.descs))
 	g.descs = append(g.descs, s)
 	g.descIDs[s] = id
 	return id
@@ -1330,7 +1319,7 @@ func (g *generator) projected(t *grammar.Call, locals map[string]string) (gramma
 // Then e fails at once without the terminal, recording only that expectation (a call memoizes the
 // same failure, and memoization only affects speed), so a choice can skip it; unless the calls on
 // the way would exceed the nesting limit.
-func (g *generator) first(e grammar.Expr, depth int, seen map[string]bool) (string, expID, int, bool) {
+func (g *generator) first(e grammar.Expr, depth int, seen map[string]bool) (string, compile.ExpID, int, bool) {
 	switch e := e.(type) {
 	case *grammar.Literal:
 		if e.Value == "" {

@@ -67,8 +67,8 @@ type ParseOptions struct {
 // Default limits on call nesting depth. Backends that run recursively use the host stack, so
 // their limit is smaller.
 const (
-	DefaultMaxDepth          = 100_000
-	DefaultMaxDepthIterative = 10_000_000
+	DefaultMaxDepth          = limits.DefaultMaxDepth
+	DefaultMaxDepthIterative = limits.DefaultMaxDepthIterative
 )
 
 func (o ParseOptions) maxDepth(b Backend) int {

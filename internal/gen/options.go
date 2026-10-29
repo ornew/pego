@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
 )
 
 // GenOptions configures code generation.
@@ -185,3 +186,8 @@ func Describe(e grammar.Expr) string {
 	}
 	return s
 }
+
+// Compiler compiles a grammar for a generator. It returns the compiled program and a function
+// that returns the program of its recognizer (the program in which no rule builds a value),
+// which it compiles on first use.
+type Compiler func(g *grammar.Grammar, opts compile.Options) (prog *compile.Program, recognizer func() (*compile.Program, error), err error)

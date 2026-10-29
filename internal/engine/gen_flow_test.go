@@ -134,7 +134,7 @@ func flowGenerate(src string, opts gen.GenOptions) (string, int, int, bool) {
 	generatorHook = func(x *generator) { gen = x }
 	defer func() { generatorHook = nil }()
 	opts.Module, opts.KeepComments = "example.com/p", true
-	files, err := generate(g, opts)
+	files, err := generate(g, compileForGenerator, opts)
 	if err != nil {
 		return "", 0, 0, false
 	}
