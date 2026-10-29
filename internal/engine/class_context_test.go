@@ -44,7 +44,9 @@ func TestClassConstructionContextCancellation(t *testing.T) {
 		{"matcher", func(c *compile.Control) {
 			newClosureWalker(&compile.Compiler{Control: c}, false).ExprForm(cl, compile.NewScope(), true)
 		}},
-		{"choice-guard", func(c *compile.Control) { closure.NewBuilder(&compile.Compiler{Control: c}, false).Guard(compile.First{Term: cl}) }},
+		{"choice-guard", func(c *compile.Control) {
+			closure.NewBuilder(&compile.Compiler{Control: c}, false).Guard(compile.First{Term: cl})
+		}},
 		{"scan-repeat", func(c *compile.Control) {
 			closure.NewBuilder(&compile.Compiler{Control: c}, false).ScanRepeat(&grammar.Repeat{Expr: cl, Max: -1}, 0)
 		}},
