@@ -33,7 +33,7 @@ not establish a current isolated effect in all targets.
 Evidence records: [037](../037-no-intermediate-lists-in-concat.md),
 [044](../044-changes-36-and-37-in-the-vms-instruction-set-2.md).
 
-Source owners: [`concat element evaluation`](../../../internal/engine/eval.go),
+Source owners: [`concat element evaluation`](../../../internal/engine/core/eval.go),
 [`ELISTBEGIN/ELISTPUSH/EMAPPUSH/ELISTEND`](../../../internal/compile/bcompile.go),
 [`concat emission`](../../../internal/gen/gogen/generator.go), [`concat
 emission`](../../../internal/gen/tsgen/generator.go).

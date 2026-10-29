@@ -8,6 +8,8 @@ import (
 	"testing"
 	"unsafe"
 	"weak"
+
+	"github.com/ornew/pego/internal/engine/core"
 )
 
 //go:noinline
@@ -33,8 +35,8 @@ func batchInputReleaseFixture(t *testing.T, prog *Program, backend Backend, unit
 		opts.Context = ctx
 	}
 	n, err := prog.ParseWith("main", text, opts)
-	if n != nil || err != nil || traceParser(event) == nil {
-		t.Fatalf("recognition node=%v error=%v event parser=%p", n, err, traceParser(event))
+	if n != nil || err != nil || core.TraceParser(event) == nil {
+		t.Fatalf("recognition node=%v error=%v event parser=%p", n, err, core.TraceParser(event))
 	}
 	runtime.KeepAlive(text)
 	return ref, event
@@ -46,7 +48,7 @@ func TestWorkBatchTraceEventReleasesOriginalInputAfterGC(t *testing.T) {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, active := range []bool{false, true} {
 				t.Run(fmt.Sprintf("%s/%s/active=%t", backend, unit, active), func(t *testing.T) {
-					if active && !workControlsEnabled {
+					if active && !core.WorkControlsEnabled {
 						t.Skip("active controls are unavailable in the reference build")
 					}
 					ref, event := batchInputReleaseFixture(t, prog, backend, unit, active)

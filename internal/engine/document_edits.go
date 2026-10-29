@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/internal/engine/core"
 )
 
 // documentIdentity deliberately has nonzero size. Tokens retain only this
@@ -30,7 +32,7 @@ type TextEdit struct {
 func (d *Document) Version() DocumentVersion { return DocumentVersion{d.identity, d.sequence} }
 
 // Unit returns the position unit selected at document construction.
-func (d *Document) Unit() PositionUnit { return d.in.unit }
+func (d *Document) Unit() PositionUnit { return d.in.Unit }
 
 func (d *Document) nextVersion() error {
 	if d.sequence == ^uint64(0) {
@@ -52,7 +54,7 @@ func (d *Document) EditBatch(base DocumentVersion, edits ...TextEdit) error {
 	if len(edits) == 0 {
 		return nil
 	}
-	n := d.in.loaded()
+	n := d.in.Loaded()
 	for i, edit := range edits {
 		fail := func(err error) error { return fmt.Errorf("edit %d [%d,%d): %w", i, edit.Start, edit.End, err) }
 		if edit.Start < 0 || edit.End < edit.Start || edit.End > n {
@@ -62,14 +64,14 @@ func (d *Document) EditBatch(base DocumentVersion, edits ...TextEdit) error {
 			return fail(fmt.Errorf("edits must have strictly increasing starts and nonoverlapping ranges"))
 		}
 	}
-	if d.in.unit == Bytes {
+	if d.in.Unit == Bytes {
 		for i, edit := range edits {
 			for _, pos := range []int{edit.Start, edit.End} {
 				var err error
-				if documentPieceInput && d.in.pieces != nil {
-					err = d.in.pieces.validBoundary(pos)
+				if core.DocumentPieceInput && d.in.Pieces != nil {
+					err = d.in.Pieces.ValidBoundary(pos)
 				} else {
-					err = validBoundary(d.in.src, Bytes, pos)
+					err = core.ValidBoundary(d.in.Src, Bytes, pos)
 				}
 				if err != nil {
 					return fmt.Errorf("edit %d [%d,%d): %w", i, edit.Start, edit.End, err)
@@ -83,9 +85,9 @@ func (d *Document) EditBatch(base DocumentVersion, edits ...TextEdit) error {
 	// Reading code-point text may populate offset tables or a piece full-text
 	// cache. Prepare from private copies so any later size error is atomic too.
 	source := d.in
-	if source.pieces != nil {
-		pieces := *source.pieces
-		source.pieces = &pieces
+	if source.Pieces != nil {
+		pieces := *source.Pieces
+		source.Pieces = &pieces
 	}
 	var parts []string
 	finalUnits, finalBytes, pos := 0, 0, 0
@@ -103,12 +105,12 @@ func (d *Document) EditBatch(base DocumentVersion, edits ...TextEdit) error {
 		return nil
 	}
 	for i, edit := range edits {
-		if err := add(source.text(pos, edit.Start), edit.Start-pos); err != nil {
+		if err := add(source.Text(pos, edit.Start), edit.Start-pos); err != nil {
 			return fmt.Errorf("edit %d [%d,%d): %w", i, edit.Start, edit.End, err)
 		}
 		text := edit.Text
-		units := textLen(d.in.unit, text)
-		if d.in.unit != Bytes && !utf8.ValidString(text) {
+		units := core.TextLen(d.in.Unit, text)
+		if d.in.Unit != Bytes && !utf8.ValidString(text) {
 			text = string([]rune(text))
 		}
 		if err := add(text, units); err != nil {
@@ -116,7 +118,7 @@ func (d *Document) EditBatch(base DocumentVersion, edits ...TextEdit) error {
 		}
 		pos = edit.End
 	}
-	if err := add(source.text(pos, n), n-pos); err != nil {
+	if err := add(source.Text(pos, n), n-pos); err != nil {
 		return fmt.Errorf("edit %d [%d,%d): %w", len(edits)-1, edits[len(edits)-1].Start, edits[len(edits)-1].End, err)
 	}
 	var builder strings.Builder
@@ -125,15 +127,15 @@ func (d *Document) EditBatch(base DocumentVersion, edits ...TextEdit) error {
 		builder.WriteString(part)
 	}
 	text := builder.String()
-	in := newDocumentInput(text, d.in.unit)
-	if d.in.pieces != nil && in.pieces == nil {
+	in := newDocumentInput(text, d.in.Unit)
+	if d.in.Pieces != nil && in.Pieces == nil {
 		// Promotion is one-way, including batches that shrink the input.
-		in = input{unit: d.in.unit, eof: true, baseLine: 1, baseCol: 1, pieces: newDocumentPieces(text, d.in.unit)}
+		in = core.Input{Unit: d.in.Unit, Eof: true, BaseLine: 1, BaseCol: 1, Pieces: core.NewDocumentPieces(text, d.in.Unit)}
 	}
 	// Publication follows all ordinary failure points. No Parse is performed;
 	// old result Nodes remain untouched until a later ordinary Parse.
 	d.in = in
-	d.memo = newMemoTable()
+	d.memo = core.NewMemoTable()
 	d.edits, d.runs, d.kids, d.machine = nil, nil, nil, nil
 	d.runGen, d.resumed = 0, 0
 	d.sequence++
@@ -148,9 +150,9 @@ func checkedDocumentLength(length, added int) (int, error) {
 	return length + added, nil
 }
 
-func newDocumentInput(text string, unit PositionUnit) input {
-	if useDocumentPieces(text, unit) {
-		return input{unit: unit, eof: true, baseLine: 1, baseCol: 1, pieces: newDocumentPieces(text, unit)}
+func newDocumentInput(text string, unit PositionUnit) core.Input {
+	if core.UseDocumentPieces(text, unit) {
+		return core.Input{Unit: unit, Eof: true, BaseLine: 1, BaseCol: 1, Pieces: core.NewDocumentPieces(text, unit)}
 	}
-	return newTextInput(text, unit, true)
+	return core.NewTextInput(text, unit, true)
 }

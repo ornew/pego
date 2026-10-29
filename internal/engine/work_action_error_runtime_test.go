@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -113,12 +114,12 @@ rule ` + longRule + ` = a:"a" => A{N: 1 / (len($a) - 1)}`,
 									if mode == "budget" {
 										// Public smoke coverage for fatal propagation. Exact formatter-phase
 										// exhaustion is covered by focused builder whiteboxes.
-										traceParser(e).control.limits.MaxSteps = traceParser(e).control.stepsUsed + 256
+										core.TraceParser(e).Control.Limits.MaxSteps = core.TraceParser(e).Control.StepsUsed + 256
 									} else {
 										poll := newPollingContext(2)
-										traceParser(e).control.ctx = poll
-										traceParser(e).control.stepsSinceCheck = 0
-										traceParser(e).control.inputSinceCheck = 0
+										core.TraceParser(e).Control.Ctx = poll
+										core.TraceParser(e).Control.StepsSinceCheck = 0
+										core.TraceParser(e).Control.InputSinceCheck = 0
 									}
 								}
 							}

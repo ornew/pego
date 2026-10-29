@@ -33,7 +33,7 @@ Do not infer a universal allocation or speed reduction.
 Evidence records: [069](../069-bound-persistent-variable-binding-histories.md).
 
 Source owners: [`environment lookup and
-replacement`](../../../internal/engine/runtime.go), [`generated environment
+replacement`](../../../internal/engine/core/runtime.go), [`generated environment
 binding`](../../../runtime/runtime.go), [`TypeScript persistent
 environment`](../../../internal/gen/tsgen/tsrt/runtime.ts).
 

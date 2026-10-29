@@ -240,7 +240,7 @@ func TestDocumentNoEditTracePanicClearsRuns(t *testing.T) {
 					}()
 					doc.Parse()
 				}()
-				if doc.memo.len() != 0 || len(doc.runs) != 0 || len(doc.kids) != 0 || doc.resumed != 0 {
+				if doc.memo.Len() != 0 || len(doc.runs) != 0 || len(doc.kids) != 0 || doc.resumed != 0 {
 					t.Fatal("interrupted no-edit parse retained state")
 				}
 				interrupt = false

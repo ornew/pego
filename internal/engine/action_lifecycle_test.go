@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -39,15 +40,15 @@ func TestActionResultReleasesTracking(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			prefix := value.Ptr(value.Data{Text: "keep"})
-			p := &parser{created: []*value.Node{prefix}}
-			ctx := &evalCtx{p: p, cbase: 1, start: 3, end: 4}
+			p := &core.Parser{Created: []*value.Node{prefix}}
+			ctx := &core.EvalCtx{P: p, Cbase: 1, Start: 3, End: 4}
 			var panicked any
 			func() {
 				defer func() { panicked = recover() }()
-				n := p.actionResult(ctx, func(*evalCtx) (any, error) {
-					p.created = append(p.created, value.Ptr(value.Data{Text: "temporary"}))
+				n := p.ActionResult(ctx, func(*core.EvalCtx) (any, error) {
+					p.Created = append(p.Created, value.Ptr(value.Data{Text: "temporary"}))
 					if n, ok := c.value.(*value.Node); ok && n != nil {
-						p.created = append(p.created, n)
+						p.Created = append(p.Created, n)
 					}
 					return c.value, c.err
 				}, "test")
@@ -59,10 +60,10 @@ func TestActionResultReleasesTracking(t *testing.T) {
 			if (panicked != nil) != wantPanic {
 				t.Errorf("panic = %v, want panic %v", panicked, wantPanic)
 			}
-			if len(p.created) != 1 || p.created[0] != prefix {
-				t.Fatalf("tracking prefix changed: %v", p.created)
+			if len(p.Created) != 1 || p.Created[0] != prefix {
+				t.Fatalf("tracking prefix changed: %v", p.Created)
 			}
-			for _, n := range p.created[len(p.created):cap(p.created)] {
+			for _, n := range p.Created[len(p.Created):cap(p.Created)] {
 				if n != nil {
 					t.Fatal("tracking backing array retains a discarded node")
 				}
@@ -76,15 +77,15 @@ func TestNilActionStreamMemoryIsBounded(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
-				p := newStreamParser(&prog.sharedProgram, &lineReader{line: "a", n: 60000}, unit)
+				p := core.NewStreamParser(&prog.sharedProgram, &lineReader{line: "a", n: 60000}, unit)
 				var at [2]uint64
 				count := 0
-				p.emit = func(n *value.Node) error {
+				p.Emit = func(n *value.Node) error {
 					count++
-					if n != nil || len(p.created) != 0 {
-						return fmt.Errorf("element %d: node %v, tracking length %d", count, n, len(p.created))
+					if n != nil || len(p.Created) != 0 {
+						return fmt.Errorf("element %d: node %v, tracking length %d", count, n, len(p.Created))
 					}
-					for _, n := range p.created[:cap(p.created)] {
+					for _, n := range p.Created[:cap(p.Created)] {
 						if n != nil {
 							return fmt.Errorf("element %d: stale tracking reference", count)
 						}
@@ -103,7 +104,7 @@ func TestNilActionStreamMemoryIsBounded(t *testing.T) {
 				if growth := int64(at[1]) - int64(at[0]); growth > 4<<20 {
 					t.Errorf("live heap grew %d KiB", growth>>10)
 				}
-				t.Logf("live heap %d -> %d bytes, tracking capacity %d", at[0], at[1], cap(p.created))
+				t.Logf("live heap %d -> %d bytes, tracking capacity %d", at[0], at[1], cap(p.Created))
 				runtime.KeepAlive(p)
 			})
 		}

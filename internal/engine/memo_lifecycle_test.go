@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -82,27 +83,27 @@ func TestDocumentReplacedMemoMemoryIsBounded(t *testing.T) {
 }
 
 func TestMemoPruneKeepsActiveSeed(t *testing.T) {
-	table := newMemoTable()
-	seed := table.alloc()
-	*seed = memoEntry{growing: true, node: value.Ptr(value.Data{Text: "active"})}
-	table.put(memoKey{rule: 1}, seed)
-	completed := table.alloc()
-	*completed = memoEntry{node: value.Ptr(value.Data{Text: "retired"})}
-	table.put(memoKey{rule: 2}, completed)
-	table.prune(1)
-	if seed.node == nil || value.D(seed.node).Text != "active" || !seed.growing {
+	table := core.NewMemoTable()
+	seed := table.Alloc()
+	*seed = core.MemoEntry{Growing: true, Node: value.Ptr(value.Data{Text: "active"})}
+	table.Put(core.MemoKey{Rule: 1}, seed)
+	completed := table.Alloc()
+	*completed = core.MemoEntry{Node: value.Ptr(value.Data{Text: "retired"})}
+	table.Put(core.MemoKey{Rule: 2}, completed)
+	table.Prune(1)
+	if seed.Node == nil || value.D(seed.Node).Text != "active" || !seed.Growing {
 		t.Fatal("pruning overwrote a stack-owned growth seed")
 	}
-	if table.len() != 0 {
+	if table.Len() != 0 {
 		t.Fatal("pruned entries remain in the lookup table")
 	}
-	if next := table.alloc(); next == seed || next.node != nil || next.env != nil || next.expected != nil {
+	if next := table.Alloc(); next == seed || next.Node != nil || next.Env != nil || next.Expected != nil {
 		t.Fatal("allocation reused an active seed or retained a retired result")
 	}
-	if !table.reset() {
+	if !table.Reset() {
 		t.Fatal("small memo could not reset")
 	}
-	if next := table.alloc(); next.node != nil || next.next != nil {
+	if next := table.Alloc(); next.Node != nil || next.Next != nil {
 		t.Fatal("reset left stale slab/free-list references")
 	}
 }

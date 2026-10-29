@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -171,7 +172,7 @@ func TestStreamReaderPanicInsideTraceKeepsOriginalValue(t *testing.T) {
 				got := catchStreamPanic(func() {
 					err = prog.ParseStreamWith("main", r, nil, ParseOptions{Backend: b, Unit: u, Trace: func(e TraceEvent) {
 						if e.Kind == TraceEnter && e.Rule == "main" {
-							traceParser(e).fill(1)
+							core.TraceParser(e).Fill(1)
 						}
 					}})
 				})
@@ -227,7 +228,7 @@ func TestStreamKeepsCallerBufferedReader(t *testing.T) {
 	prog := mustCompile(t, records)
 	for _, u := range []PositionUnit{CodePoints, Bytes} {
 		reader := bufio.NewReader(strings.NewReader("#records\na=1\n"))
-		if p := newStreamParser(&prog.sharedProgram, reader, u); p.reader != reader {
+		if p := core.NewStreamParser(&prog.sharedProgram, reader, u); p.Reader != reader {
 			t.Fatal("stream parser replaced caller's buffered reader")
 		}
 	}

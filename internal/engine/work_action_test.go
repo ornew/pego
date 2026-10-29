@@ -10,12 +10,13 @@ import (
 	"testing"
 	"unicode/utf8"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
 
-func actionWorkParser(ctx context.Context, limits limits.WorkLimits, unit PositionUnit) *parser {
-	return &parser{input: input{unit: unit, control: newWorkControl(ctx, limits)}}
+func actionWorkParser(ctx context.Context, limits limits.WorkLimits, unit PositionUnit) *core.Parser {
+	return &core.Parser{Input: core.Input{Unit: unit, Control: core.NewWorkControl(ctx, limits)}}
 }
 
 func actionWorkNodes(n int) []*value.Node {
@@ -37,30 +38,30 @@ func TestWorkActionStringHelperParity(t *testing.T) {
 		if unit == CodePoints {
 			wantLen = utf8.RuneCountInString(malformed)
 		}
-		if got := p.valueTextLen(malformed); got != wantLen {
+		if got := p.ValueTextLen(malformed); got != wantLen {
 			t.Errorf("%v valueTextLen(%q) = %d, want %d", unit, malformed, got, wantLen)
 		}
-		if got, want := p.compareText(left, right), strings.Compare(left, right); got != want {
+		if got, want := p.CompareText(left, right), strings.Compare(left, right); got != want {
 			t.Errorf("%v compareText(long equal prefix) = %d, want %d", unit, got, want)
 		}
-		if got := p.compareText(malformed, malformed); got != 0 {
+		if got := p.CompareText(malformed, malformed); got != 0 {
 			t.Errorf("%v compareText(malformed equal strings) = %d, want 0", unit, got)
 		}
-		joined, err := p.valueBinary("+", malformed, string([]byte{0xfe, 'q'}))
+		joined, err := p.ValueBinary("+", malformed, string([]byte{0xfe, 'q'}))
 		if err != nil {
 			t.Fatalf("%v string addition: %v", unit, err)
 		}
 		if got, want := []byte(joined.(string)), append([]byte(malformed), 0xfe, 'q'); string(got) != string(want) {
 			t.Errorf("%v string addition bytes = %v, want %v", unit, got, want)
 		}
-		if got, err := p.valueBinary("<", left, right); err != nil || got != true {
+		if got, err := p.ValueBinary("<", left, right); err != nil || got != true {
 			t.Errorf("%v lexical binary comparison = %v, %v; want true", unit, got, err)
 		}
-		if got, err := p.valueBinary("+", 20, 22); err != nil || got != 42 {
+		if got, err := p.ValueBinary("+", 20, 22); err != nil || got != 42 {
 			t.Errorf("%v integer addition = %v, %v; want 42", unit, got, err)
 		}
-		if p.control.inputUsed != 0 || p.control.stepsUsed == 0 {
-			t.Fatalf("scalar work counters: input=%d steps=%d", p.control.inputUsed, p.control.stepsUsed)
+		if p.Control.InputUsed != 0 || p.Control.StepsUsed == 0 {
+			t.Fatalf("scalar work counters: input=%d steps=%d", p.Control.InputUsed, p.Control.StepsUsed)
 		}
 	}
 }
@@ -68,19 +69,19 @@ func TestWorkActionStringHelperParity(t *testing.T) {
 func TestWorkActionStringHelpersChargeLongWork(t *testing.T) {
 	long := strings.Repeat("a", 8192)
 	p := actionWorkParser(nil, limits.WorkLimits{MaxSteps: 256}, CodePoints)
-	if err := catchFatal(t, func() { p.compareText(long+"x", long+"y") }); !errors.Is(err, limits.ErrWorkLimit) {
+	if err := catchFatal(t, func() { p.CompareText(long+"x", long+"y") }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("long equal-prefix comparison error = %v, want ErrWorkLimit", err)
 	}
 
 	p = actionWorkParser(nil, limits.WorkLimits{MaxSteps: 128}, Bytes)
 	if err := catchFatal(t, func() {
-		_, _ = p.valueBinary("+", long, long)
+		_, _ = p.ValueBinary("+", long, long)
 	}); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("long string concatenation error = %v, want ErrWorkLimit", err)
 	}
 
 	p = actionWorkParser(nil, limits.WorkLimits{MaxSteps: 128}, CodePoints)
-	if err := catchFatal(t, func() { p.valueTextLen(long) }); !errors.Is(err, limits.ErrWorkLimit) {
+	if err := catchFatal(t, func() { p.ValueTextLen(long) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("long rune length error = %v, want ErrWorkLimit", err)
 	}
 }
@@ -94,36 +95,36 @@ func TestWorkActionCollectionLoopsChargeElements(t *testing.T) {
 
 	cases := []struct {
 		name string
-		run  func(*evalCtx) error
+		run  func(*core.EvalCtx) error
 	}{
-		{"map", func(c *evalCtx) error { _, err := c.builtin("map", []any{list, identity}); return err }},
-		{"foldl", func(c *evalCtx) error { _, err := c.builtin("foldl", []any{nil, list, keepLeft}); return err }},
-		{"foldr", func(c *evalCtx) error { _, err := c.builtin("foldr", []any{nil, list, keepLeft}); return err }},
-		{"list", func(c *evalCtx) error {
+		{"map", func(c *core.EvalCtx) error { _, err := c.Builtin("map", []any{list, identity}); return err }},
+		{"foldl", func(c *core.EvalCtx) error { _, err := c.Builtin("foldl", []any{nil, list, keepLeft}); return err }},
+		{"foldr", func(c *core.EvalCtx) error { _, err := c.Builtin("foldr", []any{nil, list, keepLeft}); return err }},
+		{"list", func(c *core.EvalCtx) error {
 			args := make([]any, len(items))
 			for i, item := range items {
 				args[i] = item
 			}
-			_, err := c.builtin("list", args)
+			_, err := c.Builtin("list", args)
 			return err
 		}},
-		{"concat", func(c *evalCtx) error { _, err := c.builtin("concat", []any{list}); return err }},
-		{"newList", func(c *evalCtx) error { _ = c.newList(items); return nil }},
-		{"listNode", func(c *evalCtx) error { _ = c.listNode(items); return nil }},
-		{"local copy", func(c *evalCtx) error { _ = c.keep(); return nil }},
+		{"concat", func(c *core.EvalCtx) error { _, err := c.Builtin("concat", []any{list}); return err }},
+		{"newList", func(c *core.EvalCtx) error { _ = c.NewList(items); return nil }},
+		{"listNode", func(c *core.EvalCtx) error { _ = c.ListNode(items); return nil }},
+		{"local copy", func(c *core.EvalCtx) error { _ = c.Keep(); return nil }},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := newPollingContext(1)
 			p := actionWorkParser(ctx, limits.WorkLimits{}, CodePoints)
-			var locals *local
+			var locals *core.Local
 			if tc.name == "local copy" {
 				for i := 0; i < size; i++ {
-					locals = &local{name: fmt.Sprintf("v%d", i), val: i, next: locals}
+					locals = &core.Local{Name: fmt.Sprintf("v%d", i), Val: i, Next: locals}
 				}
 			}
-			c := &evalCtx{p: p, locals: locals}
+			c := &core.EvalCtx{P: p, Locals: locals}
 			var returned error
 			fatalErr := catchFatal(t, func() { returned = tc.run(c) })
 			if returned != nil {
@@ -158,7 +159,7 @@ rule items = [a-z] #atomic*`)
 						n, err := prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Trace: func(e TraceEvent) {
 							if !armed && e.Kind == TraceExit && e.Rule == "items" {
 								armed = true
-								traceParser(e).control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
+								core.TraceParser(e).Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
 							}
 						}})
 						if !armed || n != nil || !errors.Is(err, limits.ErrWorkLimit) {
@@ -184,15 +185,15 @@ rule items = [a-z] #atomic*`)
 		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			t.Run(fmt.Sprintf("%v/%v", backend, unit), func(t *testing.T) {
 				armed := false
-				var attempt *workControl
+				var attempt *core.WorkControl
 				n, err := prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Trace: func(e TraceEvent) {
 					if !armed && e.Kind == TraceExit && e.Rule == "items" {
 						armed = true
-						attempt = newWorkControl(newPollingContext(2), limits.WorkLimits{})
-						traceParser(e).control = attempt
+						attempt = core.NewWorkControl(newPollingContext(2), limits.WorkLimits{})
+						core.TraceParser(e).Control = attempt
 					}
 				}})
-				if !armed || n != nil || !errors.Is(err, context.Canceled) || attempt.stepsUsed < 128 {
+				if !armed || n != nil || !errors.Is(err, context.Canceled) || attempt.StepsUsed < 128 {
 					t.Fatalf("controlled parse: armed=%t node=%v err=%v, want cancellation and no result", armed, n, err)
 				}
 				n, err = prog.ParseWith("main", "abc", ParseOptions{Backend: backend, Unit: unit})
@@ -219,7 +220,7 @@ rule items = [a-z]* #atomic`)
 				armContext := func(e TraceEvent, armed *bool) {
 					if !*armed && e.Kind == TraceExit && e.Rule == "items" {
 						*armed = true
-						traceParser(e).control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
+						core.TraceParser(e).Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 128})
 					}
 				}
 				armed := false
@@ -232,7 +233,7 @@ rule items = [a-z]* #atomic`)
 				n, err = recovery.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit, Trace: func(e TraceEvent) {
 					if !armed && e.Kind == TraceExit && e.Rule == "items" {
 						armed = true
-						traceParser(e).control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 256})
+						core.TraceParser(e).Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 256})
 					}
 				}})
 				if !armed || n != nil || !errors.Is(err, limits.ErrWorkLimit) {

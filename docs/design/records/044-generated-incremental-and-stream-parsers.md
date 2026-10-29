@@ -16,7 +16,7 @@ TypeScript Documents/streams are not implemented.
 ## Existing Contracts and Goals
 
 [Design 007](007-streaming-and-incremental-parsing.md), [Document](../../../internal/engine/document.go),
-[resume.go](../../../internal/engine/resume.go), and [stream pragma](../../../spec/language/pragmas.md#stream) define the
+[resume.go](../../../internal/engine/core/resume.go), and [stream pragma](../../../spec/language/pragmas.md#stream) define the
 engine reference. The current generated Go path supports a Node `Document` with an optional typed `ParseAST`, and a
 Node Reader stream. Generated TS still uses synchronous recursive expression functions
 ([design 013](013-typescript-generation.md)) and has no Document or stream API. Retaining a runtime's input and

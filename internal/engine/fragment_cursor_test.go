@@ -1,6 +1,10 @@
 package engine
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/ornew/pego/internal/engine/core"
+)
 
 func TestFragmentCursorOriginalBytes(t *testing.T) {
 	cases := []struct {
@@ -17,23 +21,23 @@ func TestFragmentCursorOriginalBytes(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, indexed := range []bool{false, true} {
-				in := newTextInput(tc.source, CodePoints, indexed)
+				in := core.NewTextInput(tc.source, CodePoints, indexed)
 				for cursor, want := range tc.offsets {
-					if got := in.prefixByteOffset(tc.source, cursor); got != want {
+					if got := in.PrefixByteOffset(tc.source, cursor); got != want {
 						t.Fatalf("indexed=%v cursor=%d: byte endpoint=%d, want %d", indexed, cursor, got, want)
 					}
 				}
-				if in.src != tc.source {
+				if in.Src != tc.source {
 					t.Fatal("endpoint conversion changed original source")
 				}
-				if !indexed && in.offs != nil {
+				if !indexed && in.Offs != nil {
 					t.Fatal("fallback retained a lazy index")
 				}
 			}
 			// A byte-mode cursor can address a valid UTF-8 scalar's interior.
-			in := newTextInput(tc.source, Bytes, false)
+			in := core.NewTextInput(tc.source, Bytes, false)
 			for cursor := 0; cursor <= len(tc.source); cursor++ {
-				if got := in.prefixByteOffset(tc.source, cursor); got != cursor {
+				if got := in.PrefixByteOffset(tc.source, cursor); got != cursor {
 					t.Fatalf("byte cursor=%d: endpoint=%d", cursor, got)
 				}
 			}

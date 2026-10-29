@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -124,7 +125,7 @@ func checkStreamFrameScratchRetainedResults(t *testing.T, src string) {
 		// One large element crosses both the pointer and capture-frame chunks.
 		n := 1 + i%4
 		if i == 160 {
-			n = nodeChunk + 37
+			n = core.NodeChunk + 37
 		}
 		for j := range n {
 			fmt.Fprintf(&input, "%d,", i+j)
@@ -173,33 +174,33 @@ func checkStreamFrameScratchRetainedResults(t *testing.T, src string) {
 }
 
 func TestStreamFrameScratchClearsDeadFrames(t *testing.T) {
-	if !streamFrameScratch {
+	if !core.StreamFrameScratch {
 		t.Skip("reference build does not reuse capture frames")
 	}
-	p := newParser(&mustCompile(t, `rule main = "a"`).sharedProgram, "a", CodePoints, false)
-	root := p.newFrame(1)
-	root.vals[0] = value.Ptr(value.Data{Text: "live root"})
-	p.frame = root
-	dead := p.newFrame(1)
-	dead.vals[0] = value.Ptr(value.Data{Text: "previous element"})
-	p.resetStreamFrames()
-	if value.D(root.vals[0]).Text != "live root" || dead.vals != nil {
+	p := core.NewParser(&mustCompile(t, `rule main = "a"`).sharedProgram, "a", CodePoints, false)
+	root := p.NewFrame(1)
+	root.Vals[0] = value.Ptr(value.Data{Text: "live root"})
+	p.Frame = root
+	dead := p.NewFrame(1)
+	dead.Vals[0] = value.Ptr(value.Data{Text: "previous element"})
+	p.ResetStreamFrames()
+	if value.D(root.Vals[0]).Text != "live root" || dead.Vals != nil {
 		t.Fatal("commit lost the live root or retained a dead capture frame")
 	}
-	if next := p.newFrame(1); next != dead || next.vals[0] != nil {
+	if next := p.NewFrame(1); next != dead || next.Vals[0] != nil {
 		t.Fatal("next element did not reuse the cleared frame with fresh child storage")
 	}
 	// The root can remain in an older chunk after a large element. The current
 	// chunk is then entirely dead, while the older live root must survive.
-	for range nodeChunk + 7 {
-		p.newFrame(1).vals[0] = value.Ptr(value.Data{Text: "large element"})
+	for range core.NodeChunk + 7 {
+		p.NewFrame(1).Vals[0] = value.Ptr(value.Data{Text: "large element"})
 	}
-	p.resetStreamFrames()
-	if len(p.frameSlab) != 0 || cap(p.frameSlab) != nodeChunk || value.D(root.vals[0]).Text != "live root" {
+	p.ResetStreamFrames()
+	if len(p.FrameSlab) != 0 || cap(p.FrameSlab) != core.NodeChunk || value.D(root.Vals[0]).Text != "live root" {
 		t.Fatal("large element prevented scratch reuse or damaged the older root")
 	}
-	for _, f := range p.frameSlab[:cap(p.frameSlab)] {
-		if f.vals != nil {
+	for _, f := range p.FrameSlab[:cap(p.FrameSlab)] {
+		if f.Vals != nil {
 			t.Fatal("dead frame retains the large element")
 		}
 	}

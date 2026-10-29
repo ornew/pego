@@ -14,6 +14,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -32,14 +33,14 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 				before, _ := json.Marshal(records)
 				retained := value.Ptr(value.Data{Text: "retained", Fields: value.Fields{{Name: "keep", Value: "stable"}}})
 				p := diagnosticParser(limits.WorkLimits{})
-				p.memo, p.recovered = newMemoTable(), []*SyntaxError{prefix}
-				p.memo.slots = make([]*memoEntry, 1)
-				r := &rule{ID: 7}
-				key := memoKey{rule: 7}
+				p.Memo, p.Recovered = core.NewMemoTable(), []*SyntaxError{prefix}
+				p.Memo.Slots = make([]*core.MemoEntry, 1)
+				r := &core.Rule{ID: 7}
+				key := core.MemoKey{Rule: 7}
 				steps := uint64(len(records))
 				var run, completed, aborted func()
 				assertReplay := func() {
-					if len(p.recovered) != 321 || p.recovered[0] != prefix || !slices.Equal(p.recovered[1:], records) {
+					if len(p.Recovered) != 321 || p.Recovered[0] != prefix || !slices.Equal(p.Recovered[1:], records) {
 						t.Fatal("recovered replay changed pointer order or prefix")
 					}
 				}
@@ -51,11 +52,11 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 				aborted = func() {}
 				switch name {
 				case "memo replay":
-					p.memo.slots[0] = &memoEntry{rule: 7, ok: true, end: 1, node: retained, errs: records}
+					p.Memo.Slots[0] = &core.MemoEntry{Rule: 7, Ok: true, End: 1, Node: retained, Errs: records}
 					steps += 2 // lookup and entry visit, then the controlled replay
 					var ok, hit bool
 					var val *value.Node
-					run = func() { _, val, ok, hit = p.callBegin(r, 0) }
+					run = func() { _, val, ok, hit = p.CallBegin(r, 0) }
 					completed = func() {
 						assertReplay()
 						if !ok || !hit || val != retained {
@@ -63,85 +64,85 @@ func TestWorkDiagnosticRecoveredCopies(t *testing.T) {
 						}
 					}
 				case "memo snapshot":
-					p.pos = 1
-					p.recovered = append(p.recovered, records...)
+					p.Pos = 1
+					p.Recovered = append(p.Recovered, records...)
 					steps += 2 // atomic memo put after the snapshot
-					run = func() { p.callEnd(r, &callState{key: key, rec: 1}, retained, true) }
-					completed = func() { assertSnapshot(p.memo.slots[0].errs) }
+					run = func() { p.CallEnd(r, &core.CallState{Key: key, Rec: 1}, retained, true) }
+					completed = func() { assertSnapshot(p.Memo.Slots[0].Errs) }
 					aborted = func() {
-						if p.memo.slots[0] != nil {
+						if p.Memo.Slots[0] != nil {
 							t.Fatal("partial memo snapshot published")
 						}
 					}
 				case "LR snapshot":
-					seed := &memoEntry{rule: 7, growing: true}
-					p.memo.slots[0], p.activeSeed, p.pos = seed, seed, 1
-					p.recovered = append(p.recovered, records...)
-					g := growState{key: key, rec: 1, best: seed}
+					seed := &core.MemoEntry{Rule: 7, Growing: true}
+					p.Memo.Slots[0], p.ActiveSeed, p.Pos = seed, seed, 1
+					p.Recovered = append(p.Recovered, records...)
+					g := core.GrowState{Key: key, Rec: 1, Best: seed}
 					steps += 4 // growth visit plus replacement put
 					run = func() {
-						if !p.growStep(&g, retained, true) {
+						if !p.GrowStep(&g, retained, true) {
 							t.Fatal("LR seed did not grow")
 						}
 					}
 					completed = func() {
-						assertSnapshot(g.best.errs)
-						if p.activeSeed != g.best || p.memo.slots[0] != g.best || len(p.recovered) != 1 {
+						assertSnapshot(g.Best.Errs)
+						if p.ActiveSeed != g.Best || p.Memo.Slots[0] != g.Best || len(p.Recovered) != 1 {
 							t.Fatal("LR publication state differs")
 						}
 					}
 					aborted = func() {
-						if p.memo.slots[0] != seed || p.activeSeed != seed {
+						if p.Memo.Slots[0] != seed || p.ActiveSeed != seed {
 							t.Fatal("partial LR seed published")
 						}
 					}
 				case "LR replay":
-					g := growState{rec: 1, best: &memoEntry{ok: true, end: 1, node: retained, errs: records}}
-					run = func() { p.growEnd(r, &g) }
+					g := core.GrowState{Rec: 1, Best: &core.MemoEntry{Ok: true, End: 1, Node: retained, Errs: records}}
+					run = func() { p.GrowEnd(r, &g) }
 					completed = assertReplay
 				case "OperatorsRule snapshot", "iterative OperatorsRule snapshot":
-					op := &operatorsRuleOp{kind: grammar.Prefix, line: &operatorsRuleLine{scope: &compile.Scope{}}}
-					var best operatorsRuleAttempt
+					op := &core.OperatorsRuleOp{Kind: grammar.Prefix, Line: &core.OperatorsRuleLine{Scope: &compile.Scope{}}}
+					var best core.OperatorsRuleAttempt
 					if name == "OperatorsRule snapshot" {
-						op.line.m = func(p *parser) (*value.Node, bool) {
-							p.pos = 1
-							p.recovered = append(p.recovered, records...)
+						op.Line.M = func(p *core.Parser) (*value.Node, bool) {
+							p.Pos = 1
+							p.Recovered = append(p.Recovered, records...)
 							return retained, true
 						}
-						run = func() { best, _ = p.longest([]*operatorsRuleOp{op}) }
+						run = func() { best, _ = p.Longest([]*core.OperatorsRuleOp{op}) }
 					} else {
-						p.pos = 1
-						p.recovered = append(p.recovered, records...)
-						f := &longestFrame{started: true, ops: []*operatorsRuleOp{op}, m0: mark{recovered: 1}, f: p.newFrame(0)}
+						p.Pos = 1
+						p.Recovered = append(p.Recovered, records...)
+						f := &longestFrame{started: true, ops: []*core.OperatorsRuleOp{op}, m0: core.Mark{Recovered: 1}, f: p.NewFrame(0)}
 						run = func() { f.next(ivmMachineOf(p), nil, iresult{ok: true, v: retained}); best = ivmMachineOf(p).attempt }
 					}
 					completed = func() {
-						assertSnapshot(best.errs)
-						if best.op != op || best.v != retained || len(p.recovered) != 1 {
+						assertSnapshot(best.Errs)
+						if best.Op != op || best.V != retained || len(p.Recovered) != 1 {
 							t.Fatal("OperatorsRule winner or rollback differs")
 						}
 					}
 					aborted = func() {
-						if best.op != nil || ivmMachineOf(p).attempt.op != nil {
+						if best.Op != nil || ivmMachineOf(p).attempt.Op != nil {
 							t.Fatal("partial OperatorsRule winner returned")
 						}
 					}
 				case "OperatorsRule replay":
-					run = func() { p.apply(&operatorsRuleAttempt{end: 1, errs: records}) }
+					run = func() { p.Apply(&core.OperatorsRuleAttempt{End: 1, Errs: records}) }
 					completed = assertReplay
 				}
 				if mode == "complete" {
-					p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: steps})
+					p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: steps})
 				} else if mode == "budget" {
 					// Less than the copy itself, so failure cannot be at a later put.
-					p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 319})
+					p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 319})
 				} else {
-					p.control = newWorkControl(newPollingContext(1), limits.WorkLimits{})
+					p.Control = core.NewWorkControl(newPollingContext(1), limits.WorkLimits{})
 				}
 				err := catchFatal(t, run)
 				if mode == "complete" {
-					if err != nil || p.control.stepsUsed != steps {
-						t.Fatalf("copy error=%v steps=%d want%d", err, p.control.stepsUsed, steps)
+					if err != nil || p.Control.StepsUsed != steps {
+						t.Fatalf("copy error=%v steps=%d want%d", err, p.Control.StepsUsed, steps)
 					}
 					completed()
 				} else {
@@ -193,32 +194,32 @@ func TestWorkDiagnosticBatchFailureAndTraceAccessor(t *testing.T) {
 						}
 						armed, accessorReturned := false, false
 						fallback := 0
-						var observed *parser
-						var c *workControl
+						var observed *core.Parser
+						var c *core.WorkControl
 						var at uint64
 						n, err := active.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Recognize: recognize, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
-							observed = traceParser(e)
+							observed = core.TraceParser(e)
 							if e.Kind == TraceEnter && e.Rule == "fallback" {
 								fallback++
 							}
 							if !armed && e.Kind == TraceExit && ((accessor && e.Rule == "bad") || (!accessor && e.Rule == "main")) {
-								if e.Matched || len(traceExpectations(e)) != 16 {
-									t.Fatalf("unexpected diagnostic fixture exp=%d", len(traceExpectations(e)))
+								if e.Matched || len(core.TraceExpectations(e)) != 16 {
+									t.Fatalf("unexpected diagnostic fixture exp=%d", len(core.TraceExpectations(e)))
 								}
-								armed, c, at = true, traceParser(e).control, traceParser(e).control.stepsUsed
+								armed, c, at = true, core.TraceParser(e).Control, core.TraceParser(e).Control.StepsUsed
 								if accessor {
 									if cancel {
-										c.ctx = newPollingContext(1)
-										c.stepsSinceCheck, c.inputSinceCheck = 0, 0
+										c.Ctx = newPollingContext(1)
+										c.StepsSinceCheck, c.InputSinceCheck = 0, 0
 									} else {
-										c.limits.MaxSteps = at + 1
+										c.Limits.MaxSteps = at + 1
 									}
 									_ = e.Failure()
 									accessorReturned = true
 								} else {
 									// More than every possible merge collision and descriptor visit;
 									// long-string sorting must perform the eventual interruption.
-									c.limits.MaxSteps = at + 4096
+									c.Limits.MaxSteps = at + 4096
 								}
 							}
 						}})
@@ -226,10 +227,10 @@ func TestWorkDiagnosticBatchFailureAndTraceAccessor(t *testing.T) {
 						if cancel {
 							want = context.Canceled
 						}
-						if !armed || n != nil || !errors.Is(err, want) || accessorReturned || fallback != 0 || observed == nil || observed.scratch != nil || observed.control != nil {
+						if !armed || n != nil || !errors.Is(err, want) || accessorReturned || fallback != 0 || observed == nil || observed.Scratch != nil || observed.Control != nil {
 							t.Fatalf("%v/%v recognize=%t accessor=%t cancel=%t: armed=%t node=%t err=%v returned=%t fallback=%d", b, u, recognize, accessor, cancel, armed, n != nil, err, accessorReturned, fallback)
 						}
-						if !accessor && c.stepsUsed <= at+16*17 {
+						if !accessor && c.StepsUsed <= at+16*17 {
 							t.Fatal("budget exhausted before diagnostic sorting")
 						}
 						n, err = active.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Recognize: recognize})
@@ -267,18 +268,18 @@ rule bad = "a" @error(message=` + strconv.Quote(message) + `)`
 			beforeErr, _ := json.Marshal(retainedErr)
 			for _, recognize := range []bool{false, true} {
 				armed, fallback := false, 0
-				var observed *parser
+				var observed *core.Parser
 				n, err := prog.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Recognize: recognize, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
-					observed = traceParser(e)
+					observed = core.TraceParser(e)
 					if e.Kind == TraceEnter && e.Rule == "fallback" {
 						fallback++
 					}
 					if !armed && e.Kind == TraceExit && e.Rule == "bad" {
 						armed = true
-						traceParser(e).control.limits.MaxSteps = traceParser(e).control.stepsUsed + 256
+						core.TraceParser(e).Control.Limits.MaxSteps = core.TraceParser(e).Control.StepsUsed + 256
 					}
 				}})
-				if !armed || n != nil || observed.scratch != nil || observed.control != nil {
+				if !armed || n != nil || observed.Scratch != nil || observed.Control != nil {
 					t.Fatalf("recovery interruption fixture/cleanup differs: armed=%t node=%t error=%v fallback=%d", armed, n != nil, err, fallback)
 				}
 				if recognize {
@@ -292,18 +293,18 @@ rule bad = "a" @error(message=` + strconv.Quote(message) + `)`
 				if !recognize {
 					armed, fallback = false, 0
 					n, err = prog.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
-						observed = traceParser(e)
+						observed = core.TraceParser(e)
 						if e.Kind == TraceEnter && e.Rule == "fallback" {
 							fallback++
 						}
 						if !armed && e.Kind == TraceExit && e.Rule == "bad" {
 							armed = true
 							// The post-callback check succeeds; the message copy polls next.
-							traceParser(e).control.ctx = newPollingContext(2)
-							traceParser(e).control.stepsSinceCheck, traceParser(e).control.inputSinceCheck = 0, 0
+							core.TraceParser(e).Control.Ctx = newPollingContext(2)
+							core.TraceParser(e).Control.StepsSinceCheck, core.TraceParser(e).Control.InputSinceCheck = 0, 0
 						}
 					}})
-					if !armed || n != nil || !errors.Is(err, context.Canceled) || fallback != 0 || observed.scratch != nil || observed.control != nil {
+					if !armed || n != nil || !errors.Is(err, context.Canceled) || fallback != 0 || observed.Scratch != nil || observed.Control != nil {
 						t.Fatalf("recovery message cancellation entered alternative or retained scratch: %v fallback=%d", err, fallback)
 					}
 				}

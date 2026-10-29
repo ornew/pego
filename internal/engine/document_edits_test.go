@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/internal/engine/core"
 )
 
 //go:noinline
@@ -104,7 +106,7 @@ func TestDocumentBatchValidationPreservesState(t *testing.T) {
 			for _, back := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				text := "éab"
 				if large {
-					text += strings.Repeat("x", documentPieceMinSize)
+					text += strings.Repeat("x", core.DocumentPieceMinSize)
 				}
 				d, err := p.NewDocumentWith("main", text, ParseOptions{Unit: unit, Backend: back})
 				if err != nil {
@@ -118,9 +120,9 @@ func TestDocumentBatchValidationPreservesState(t *testing.T) {
 				beforeVersion, beforeText := d.Version(), d.Text()
 				input := d.in
 				memo, runs, stats, runGen, resumed := d.memo, d.runs, d.stats, d.runGen, d.resumed
-				editsCopy := append([]docEdit(nil), d.edits...)
+				editsCopy := append([]core.DocEdit(nil), d.edits...)
 				rejects := [][]TextEdit{
-					{{-1, 0, "x"}}, {{0, -1, "x"}}, {{0, d.in.loaded() + 1, "x"}},
+					{{-1, 0, "x"}}, {{0, -1, "x"}}, {{0, d.in.Loaded() + 1, "x"}},
 					{{1, 1, "x"}, {0, 0, "y"}}, {{0, 2, "x"}, {1, 3, "y"}}, {{0, 0, "x"}, {0, 1, "y"}},
 				}
 				if unit == Bytes {
@@ -192,7 +194,7 @@ rule item = .`, incrementalGrammar, `rule main = ("a" @error("need a") #recover(
 						t.Run(fmt.Sprintf("%d/%d/%s/%s/%v", gi, pi, back, unit, large), func(t *testing.T) {
 							initial := "é\xc3x\xa9\n"
 							if large {
-								initial += strings.Repeat("a", documentPieceMinSize)
+								initial += strings.Repeat("a", core.DocumentPieceMinSize)
 							}
 							d, err := p.NewDocumentWith("main", initial, ParseOptions{Backend: back, Unit: unit})
 							if err != nil {
@@ -246,7 +248,7 @@ rule item = .`, incrementalGrammar, `rule main = ("a" @error("need a") #recover(
 
 func TestDocumentBatchOriginalUTF8Boundaries(t *testing.T) {
 	p := mustCompile(t, `rule main = .*`)
-	for _, prefix := range []string{"", strings.Repeat("a", documentPieceMinSize)} {
+	for _, prefix := range []string{"", strings.Repeat("a", core.DocumentPieceMinSize)} {
 		text := prefix + "\xc3x\xa9"
 		d, _ := p.NewDocumentWith("main", text, ParseOptions{Unit: Bytes})
 		n := len(prefix)
@@ -275,13 +277,13 @@ func TestDocumentBatchOriginalUTF8Boundaries(t *testing.T) {
 }
 
 func TestDocumentBatchPreservesPiecePromotion(t *testing.T) {
-	if !documentPieceInput {
+	if !core.DocumentPieceInput {
 		t.Skip("piece input disabled by reference build")
 	}
 	p := mustCompile(t, `rule main = .* $$`)
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, promoted := range []bool{false, true} {
-			text := strings.Repeat("x", documentPieceMinSize)
+			text := strings.Repeat("x", core.DocumentPieceMinSize)
 			if promoted {
 				text = "x"
 			}
@@ -290,23 +292,23 @@ func TestDocumentBatchPreservesPiecePromotion(t *testing.T) {
 				t.Fatal(err)
 			}
 			if promoted {
-				if err := d.Edit(1, 1, strings.Repeat("x", documentPieceMinSize)); err != nil {
+				if err := d.Edit(1, 1, strings.Repeat("x", core.DocumentPieceMinSize)); err != nil {
 					t.Fatal(err)
 				}
 			}
-			if d.in.pieces == nil {
+			if d.in.Pieces == nil {
 				t.Fatal("missing initial/promoted pieces")
 			}
-			if err := d.EditBatch(d.Version(), TextEdit{0, d.in.loaded(), "é"}); err != nil {
+			if err := d.EditBatch(d.Version(), TextEdit{0, d.in.Loaded(), "é"}); err != nil {
 				t.Fatal(err)
 			}
-			if d.in.pieces == nil || d.Text() != "é" {
+			if d.in.Pieces == nil || d.Text() != "é" {
 				t.Fatal("batch reversed promotion")
 			}
-			if err := d.Edit(d.in.loaded(), d.in.loaded(), "z"); err != nil {
+			if err := d.Edit(d.in.Loaded(), d.in.Loaded(), "z"); err != nil {
 				t.Fatal(err)
 			}
-			if d.in.pieces == nil || d.Text() != "éz" {
+			if d.in.Pieces == nil || d.Text() != "éz" {
 				t.Fatal("ordinary edit reversed promotion")
 			}
 			old, err := d.Parse()

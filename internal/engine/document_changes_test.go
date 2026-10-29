@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -268,7 +269,7 @@ func TestDocumentChangesByteBoundaryRejectionAndNormalizedText(t *testing.T) {
 
 func changeGraphSnapshot(t *testing.T, root *value.Node) *Snapshot {
 	t.Helper()
-	graph, err := freezeSnapshotGraph(&parser{}, root)
+	graph, err := freezeSnapshotGraph(&core.Parser{}, root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -326,16 +327,16 @@ func TestDocumentChangesConservativeGraphEquality(t *testing.T) {
 func TestDocumentChangesComparisonUsesCumulativeBudget(t *testing.T) {
 	leaf := value.Ptr(value.Data{Kind: value.KindOf("Leaf", "leaf"), Terminal: true, Text: strings.Repeat("x", 8192)})
 	a, b := changeGraphSnapshot(t, leaf), changeGraphSnapshot(t, leaf.Clone())
-	control := newWorkControl(nil, limits.WorkLimits{MaxInputWork: 8192})
-	control.charge(4096, 1) // Work already spent by parsing/capture in this invocation.
-	p := &parser{control: control}
+	control := core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 8192})
+	control.Charge(4096, 1) // Work already spent by parsing/capture in this invocation.
+	p := &core.Parser{Control: control}
 	if err := catchFatal(t, func() { equalChangeSnapshotsControlled(p, a, b) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatal("comparison escaped cumulative budget", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	if err := catchFatal(t, func() {
-		equalChangeSnapshotsControlled(&parser{control: newWorkControl(ctx, limits.WorkLimits{})}, a, b)
+		equalChangeSnapshotsControlled(&core.Parser{Control: core.NewWorkControl(ctx, limits.WorkLimits{})}, a, b)
 	}); !errors.Is(err, context.Canceled) {
 		t.Fatal("comparison ignored cancellation", err)
 	}

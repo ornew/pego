@@ -8,11 +8,12 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 )
 
 func TestSparseMemoRuleAndPageBoundaries(t *testing.T) {
 	for _, stride := range []int{63, 64, 65, 128, 175} {
-		memo := memoTable{stride: stride}
+		memo := core.MemoTable{Stride: stride}
 		positions := []int{0, 1, 63, 64, 1023, 1024, 1025, 65535}
 		for _, pos := range positions {
 			for _, rule := range []int{0, stride - 1} {
@@ -26,15 +27,15 @@ func TestSparseMemoRuleAndPageBoundaries(t *testing.T) {
 				t.Fatal("returning to an earlier page lost its bit")
 			}
 		}
-		if !memo.reset() {
+		if !memo.Reset() {
 			t.Fatal("bounded memo table rejected reuse")
 		}
-		for _, dir := range memo.pages {
-			if dir.last != nil {
+		for _, dir := range memo.Pages {
+			if dir.Last != nil {
 				t.Fatal("cached page pointer survived reset")
 			}
 		}
-		memo.stride = stride
+		memo.Stride = stride
 		for _, pos := range positions {
 			for _, rule := range []int{0, stride - 1} {
 				if !sparseMemoRecord(&memo, pos, rule) {
@@ -42,47 +43,47 @@ func TestSparseMemoRuleAndPageBoundaries(t *testing.T) {
 				}
 			}
 		}
-		if sparseMemo && stride > 64 && len(memo.seen) != 0 {
+		if core.SparseMemo && stride > 64 && len(memo.Seen) != 0 {
 			t.Fatal("sparse path allocated the dense bitset")
 		}
 	}
 }
 
-func sparseMemoRecord(memo *memoTable, pos, rule int) bool {
-	if sparseMemo && memo.stride > 64 {
-		return memo.markSparseSeen(pos, rule)
+func sparseMemoRecord(memo *core.MemoTable, pos, rule int) bool {
+	if core.SparseMemo && memo.Stride > 64 {
+		return memo.MarkSparseSeen(pos, rule)
 	}
-	return memo.markSeen(pos, rule)
+	return memo.MarkSeen(pos, rule)
 }
 
 func TestSparseMemoStrideChanges(t *testing.T) {
-	memo := memoTable{}
+	memo := core.MemoTable{}
 	for _, stride := range []int{175, 65, 64, 128, 175} {
-		memo.stride = stride
+		memo.Stride = stride
 		if !sparseMemoRecord(&memo, 1024, stride-1) || sparseMemoRecord(&memo, 1024, stride-1) {
 			t.Fatal("stride change reused a stale bit")
 		}
-		if !memo.reset() {
+		if !memo.Reset() {
 			t.Fatal("bounded table rejected reuse")
 		}
 	}
 }
 
 func TestSparseMemoResetBounds(t *testing.T) {
-	for _, memo := range []memoTable{
-		{pages: make([]seenRulePages, 0, maxScratch/5+1)},
-		{pages: make([]seenRulePages, 0, maxScratch/5), bitPages: arena[[16]uint64]{chunks: []*[64][16]uint64{new([64][16]uint64)}}},
-		{pages: []seenRulePages{{pages: make([]*[16]uint64, 0, maxScratch+1)}}},
+	for _, memo := range []core.MemoTable{
+		{Pages: make([]core.SeenRulePages, 0, core.MaxScratch/5+1)},
+		{Pages: make([]core.SeenRulePages, 0, core.MaxScratch/5), BitPages: core.Arena[[16]uint64]{Chunks: []*[64][16]uint64{new([64][16]uint64)}}},
+		{Pages: []core.SeenRulePages{{Pages: make([]*[16]uint64, 0, core.MaxScratch+1)}}},
 	} {
-		if memo.reset() {
+		if memo.Reset() {
 			t.Fatal("oversized directory retained")
 		}
 	}
-	memo := memoTable{stride: 65}
-	for i := 0; i <= maxScratch/16; i++ {
-		memo.markSparseSeen(i*1024, 0)
+	memo := core.MemoTable{Stride: 65}
+	for i := 0; i <= core.MaxScratch/16; i++ {
+		memo.MarkSparseSeen(i*1024, 0)
 	}
-	if memo.reset() {
+	if memo.Reset() {
 		t.Fatal("oversized pages retained")
 	}
 }
@@ -137,8 +138,8 @@ func TestSparseMemoInputSelection(t *testing.T) {
 	} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
-				p := newParser(&prog.sharedProgram, text, unit, true)
-				p.deferMemo = true
+				p := core.NewParser(&prog.sharedProgram, text, unit, true)
+				p.DeferMemo = true
 				if _, err := prog.run(p, backend, "main"); err != nil {
 					t.Fatal(err)
 				}
@@ -146,11 +147,11 @@ func TestSparseMemoInputSelection(t *testing.T) {
 				if unit == Bytes {
 					want = len(text) > 1024
 				}
-				want = want && sparseMemo
-				if p.memo.sparse != want {
-					t.Fatalf("%s/%s: sparse=%t want=%t", backend, unit, p.memo.sparse, want)
+				want = want && core.SparseMemo
+				if p.Memo.Sparse != want {
+					t.Fatalf("%s/%s: sparse=%t want=%t", backend, unit, p.Memo.Sparse, want)
 				}
-				if !want && len(p.memo.pages) != 0 {
+				if !want && len(p.Memo.Pages) != 0 {
 					t.Fatal("short input allocated sparse directory")
 				}
 			}

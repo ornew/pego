@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// TestScratchReuse checks that parses that reuse the buffers of earlier ones (acquirePooledParser)
+// TestScratchReuse checks that parses that reuse the buffers of earlier ones (core.AcquirePooledParser)
 // return what parses with fresh buffers return, across inputs of different lengths, units,
 // backends, recognition, and with invalid UTF-8, also from concurrent goroutines. The grammar
 // calls key twice at a position, so that the memo is used.

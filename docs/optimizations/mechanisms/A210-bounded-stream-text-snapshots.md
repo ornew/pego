@@ -33,9 +33,9 @@ not ensure less allocated volume or faster every stream.
 Evidence records: [088](../088-share-bounded-stream-text-snapshots.md).
 
 Source owners: [`bounded snapshot
-cache`](../../../internal/engine/stream_text_snapshots.go), [`copy
-reference`](../../../internal/engine/stream_text_snapshots_reference.go),
-[`input.text`](../../../internal/engine/input.go).
+cache`](../../../internal/engine/core/stream_text_snapshots.go), [`copy
+reference`](../../../internal/engine/core/stream_text_snapshots_reference.go),
+[`input.text`](../../../internal/engine/core/input.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

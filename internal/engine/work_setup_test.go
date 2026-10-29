@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -107,7 +108,9 @@ func TestWorkSetupValidationPrecedesContextMethods(t *testing.T) {
 					t.Fatalf("NewDocumentWith recognition rejection panic=%v err=%v", got, returnedErr)
 				}
 				if moduleOnly {
-					got = workContextRecover(func() { _, returnedErr = p.ParseWith("main", "x", ParseOptions{Backend: Closure, Context: ctx}) })
+					got = workContextRecover(func() {
+						_, returnedErr = p.ParseWith("main", "x", ParseOptions{Backend: Closure, Context: ctx})
+					})
 					if got != nil || returnedErr == nil {
 						t.Fatalf("AST-moduleOnly Closure panic=%v err=%v", got, returnedErr)
 					}
@@ -343,18 +346,18 @@ func TestWorkSetupInputPreparationPanicIdentity(t *testing.T) {
 		t.Run(unit.String(), func(t *testing.T) {
 			token := &workContextPanicToken{phase: "input materialization"}
 			ctx := newWorkContextErrPanic(token, 1)
-			c := newWorkControl(ctx, limits.WorkLimits{})
+			c := core.NewWorkControl(ctx, limits.WorkLimits{})
 			ctx.control, ctx.armed = c, true
 			completed := false
 			got := workContextRecover(func() {
-				_ = newControlledTextInput(strings.Repeat("a", 8192), unit, true, nil, c)
+				_ = core.NewControlledTextInput(strings.Repeat("a", 8192), unit, true, nil, c)
 				completed = true
 			})
-			attributed, ok := got.(contextPanic)
-			if !ok || attributed.value != token || completed {
+			attributed, ok := got.(core.ContextPanic)
+			if !ok || attributed.Value != token || completed {
 				t.Fatalf("panic=%#v completed=%t", got, completed)
 			}
-			if unit == CodePoints && c.stepsUsed == 0 {
+			if unit == CodePoints && c.StepsUsed == 0 {
 				t.Fatal("CodePoints fixture did not enter preparation loop")
 			}
 		})

@@ -14,6 +14,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
@@ -259,8 +260,8 @@ func TestNegativeMaximumWithWideMinimum(t *testing.T) {
 
 func TestNegativeMaximumDocumentsAndStreams(t *testing.T) {
 	// Force recording of this short repetition so edits exercise resumption.
-	defer func(n int) { minRecorded = n }(minRecorded)
-	minRecorded = 1
+	defer func(n int) { core.MinRecorded = n }(core.MinRecorded)
+	core.MinRecorded = 1
 	for _, maximum := range negativeMaxima() {
 		g := grammarWithNegativeMaximum(t, `rule main = "é"* #stream $$`, maximum)
 		p, err := Compile(g, compile.Options{})

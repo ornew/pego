@@ -8,16 +8,17 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
 
-func assertTraceParserDetached(t *testing.T, p *parser, aborted bool) {
+func assertTraceParserDetached(t *testing.T, p *core.Parser, aborted bool) {
 	t.Helper()
 	if p == nil {
 		t.Fatal("trace callback did not expose a parser")
 	}
-	if p.aborted != aborted {
-		t.Fatalf("aborted=%t want %t", p.aborted, aborted)
+	if p.Aborted != aborted {
+		t.Fatalf("aborted=%t want %t", p.Aborted, aborted)
 	}
 	var inspect func(reflect.Value, string)
 	inspect = func(v reflect.Value, path string) {
@@ -85,18 +86,18 @@ func TestTraceLifecycleDocumentDetachment(t *testing.T) {
 						if got != nil || n != nil || !errors.As(err, &se) {
 							t.Fatalf("node=%v err=%v panic=%v", n, err, got)
 						}
-						if d.memo.len() == 0 {
+						if d.memo.Len() == 0 {
 							t.Fatal("syntax failure discarded reusable memo")
 						}
 					case "trace-panic":
 						if got != token || n != nil || err != nil {
 							t.Fatalf("node=%v err=%v panic=%v", n, err, got)
 						}
-						if d.memo.len() != 0 || d.runs != nil || d.kids != nil || d.machine != nil {
+						if d.memo.Len() != 0 || d.runs != nil || d.kids != nil || d.machine != nil {
 							t.Fatal("panic kept provisional document state")
 						}
 					}
-					assertTraceParserDetached(t, traceParser(e), outcome == "trace-panic")
+					assertTraceParserDetached(t, core.TraceParser(e), outcome == "trace-panic")
 					if e.Kind != TraceEnter || e.Rule != "main" || e.Depth != 1 || e.Pos != 0 {
 						t.Fatal("saved event metadata changed")
 					}
@@ -114,7 +115,7 @@ func TestTraceLifecycleDocumentDetachment(t *testing.T) {
 						if _, err := d.Parse(); err != nil || d.Stats().Reused == 0 {
 							t.Fatal("unchanged document did not reuse memo")
 						}
-						assertTraceParserDetached(t, traceParser(e), false)
+						assertTraceParserDetached(t, core.TraceParser(e), false)
 					}
 					fixed := "#records\nxy=3\n"
 					if err := d.Edit(0, len(text), fixed); err != nil {
@@ -123,7 +124,7 @@ func TestTraceLifecycleDocumentDetachment(t *testing.T) {
 					if got, want := resultJSON(d.Parse()), resultJSON(prog.ParseWith("main", fixed, ParseOptions{Backend: b, Unit: u})); got != want {
 						t.Fatalf("retry %s; fresh %s", got, want)
 					}
-					assertTraceParserDetached(t, traceParser(e), false)
+					assertTraceParserDetached(t, core.TraceParser(e), false)
 					if clone != nil && resultJSON(clone, nil) != before {
 						t.Fatal("document teardown/retry changed cloned historical result")
 					}
@@ -203,7 +204,7 @@ func TestTraceLifecycleStreamDetachment(t *testing.T) {
 							t.Fatalf("err=%v panic=%v nodes=%d", err, got, len(nodes))
 						}
 					}
-					assertTraceParserDetached(t, traceParser(e), false) // Stream has no Document invalidation flag.
+					assertTraceParserDetached(t, core.TraceParser(e), false) // Stream has no Document invalidation flag.
 					if e.Rule != "main" || e.Depth != 1 || e.Pos != 0 {
 						t.Fatal("saved stream metadata changed")
 					}

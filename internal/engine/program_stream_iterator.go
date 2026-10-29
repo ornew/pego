@@ -6,6 +6,7 @@ import (
 	"io"
 	"iter"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -29,16 +30,16 @@ type StreamIterator struct {
 func (prog *Program) Iterate(start string, r io.Reader, o ParseOptions) (it *StreamIterator, err error) {
 	defer func() {
 		if x := recover(); x != nil {
-			if f, ok := x.(fatal); ok {
-				it, err = nil, f.err
-			} else if cp, ok := x.(contextPanic); ok {
-				panic(cp.value)
+			if f, ok := x.(core.Fatal); ok {
+				it, err = nil, f.Err
+			} else if cp, ok := x.(core.ContextPanic); ok {
+				panic(cp.Value)
 			} else {
 				panic(x)
 			}
 		}
 	}()
-	if err := validateStreamDiagnostics(o, true); err != nil {
+	if err := core.ValidateStreamDiagnostics(o, true); err != nil {
 		return nil, err
 	}
 	if o.Recognize {

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -48,8 +49,8 @@ func TestDocumentMatchesFreshParse(t *testing.T) {
 		t.Run(b.String(), func(t *testing.T) { testDocumentMatchesFreshParse(t, b) })
 	}
 	// Record every repetition's run, so that the short repetitions of the test resume too.
-	defer func(n int) { minRecorded = n }(minRecorded)
-	minRecorded = 1
+	defer func(n int) { core.MinRecorded = n }(core.MinRecorded)
+	core.MinRecorded = 1
 	t.Run("resume", func(t *testing.T) { testDocumentMatchesFreshParse(t, Closure) })
 }
 
@@ -170,38 +171,38 @@ func TestDocumentEditKeepsMemo(t *testing.T) {
 				ins += pieces[rng.Intn(len(pieces))]
 			}
 			delta := len([]rune(ins)) - (end - start)
-			want := map[*memoEntry]int{}
-			doc.memo.each(func(e *memoEntry) {
-				if !advanceEntry(e, doc.edits) {
+			want := map[*core.MemoEntry]int{}
+			doc.memo.Each(func(e *core.MemoEntry) {
+				if !core.AdvanceEntry(e, doc.edits) {
 					return // invalidated by an earlier edit, and not looked up since
 				}
 				switch {
-				case e.growing || e.provisional:
-				case e.examined <= start:
-					want[e] = e.pos
-				case e.from >= end && !e.positional && len(e.errs) == 0:
-					want[e] = e.pos + delta
+				case e.Growing || e.Provisional:
+				case e.Examined <= start:
+					want[e] = e.Pos
+				case e.From >= end && !e.Positional && len(e.Errs) == 0:
+					want[e] = e.Pos + delta
 				}
 			})
 			if err := doc.Edit(start, end, ins); err != nil {
 				t.Fatal(err)
 			}
 			// Entries are brought up to date when they are looked up: do it for every entry.
-			got := map[*memoEntry]int{}
+			got := map[*core.MemoEntry]int{}
 			m := doc.memo
-			for idx, head := range m.slots {
+			for idx, head := range m.Slots {
 				at := idx
-				if idx >= m.gap+m.gapLen {
-					at -= m.gapLen
-				} else if idx >= m.gap && head != nil {
+				if idx >= m.Gap+m.GapLen {
+					at -= m.GapLen
+				} else if idx >= m.Gap && head != nil {
 					t.Fatalf("edit %d: entry in the gap", i)
 				}
-				for e := head; e != nil; e = e.next {
-					if !advanceEntry(e, doc.edits) {
+				for e := head; e != nil; e = e.Next {
+					if !core.AdvanceEntry(e, doc.edits) {
 						continue
 					}
-					if e.pos != at {
-						t.Fatalf("edit %d: entry for position %d is listed at %d", i, e.pos, at)
+					if e.Pos != at {
+						t.Fatalf("edit %d: entry for position %d is listed at %d", i, e.Pos, at)
 					}
 					got[e] = at
 				}
@@ -239,7 +240,7 @@ func TestDocumentEditText(t *testing.T) {
 				// Edit at character boundaries of the current bytes.
 				var bounds []int
 				for k := 0; k <= len(refBytes); k++ {
-					if validBoundary(string(refBytes), Bytes, k) == nil {
+					if core.ValidBoundary(string(refBytes), Bytes, k) == nil {
 						bounds = append(bounds, k)
 					}
 				}
@@ -263,14 +264,14 @@ func TestDocumentEditText(t *testing.T) {
 			if unit == CodePoints {
 				wantText = string(ref)
 			}
-			want := newInput(wantText, unit)
+			want := core.NewInput(wantText, unit)
 			got := doc.in
-			if got.loaded() != want.loaded() || doc.Text() != wantText {
+			if got.Loaded() != want.Loaded() || doc.Text() != wantText {
 				t.Fatalf("%v, edit %d: [%d,%d) -> %q: text differs from a fresh read", unit, i, start, end, piece)
 			}
-			for _, pos := range []int{0, min(start, got.loaded()), min(end, got.loaded()), got.loaded()} {
-				gr, gs, ge, gok := got.decode(pos)
-				wr, ws, we, wok := want.decode(pos)
+			for _, pos := range []int{0, min(start, got.Loaded()), min(end, got.Loaded()), got.Loaded()} {
+				gr, gs, ge, gok := got.Decode(pos)
+				wr, ws, we, wok := want.Decode(pos)
 				if gr != wr || gs != ws || ge != we || gok != wok {
 					t.Fatalf("%v, edit %d, position %d: decoded %U/%d/%d/%v, want %U/%d/%d/%v", unit, i, pos, gr, gs, ge, gok, wr, ws, we, wok)
 				}
@@ -292,22 +293,22 @@ func TestDocumentKeepsInputTables(t *testing.T) {
 	if _, err := doc.Parse(); err == nil {
 		t.Fatal("expected a syntax error")
 	}
-	if doc.in.lines == nil {
+	if doc.in.Lines == nil {
 		t.Fatal("line starts missing")
 	}
-	if doc.in.pieces != nil && (len(doc.in.pieces.parts) == 0 || doc.in.pieces.parts[0].offs == nil) || doc.in.pieces == nil && doc.in.offs == nil {
+	if doc.in.Pieces != nil && (len(doc.in.Pieces.Parts) == 0 || doc.in.Pieces.Parts[0].Offs == nil) || doc.in.Pieces == nil && doc.in.Offs == nil {
 		t.Fatal("text offsets missing")
 	}
 	if err := doc.Edit(6, 7, "ef\n"); err != nil {
 		t.Fatal(err)
 	}
-	if doc.in.pieces != nil {
-		for _, p := range doc.in.pieces.parts {
-			if p.offs == nil {
+	if doc.in.Pieces != nil {
+		for _, p := range doc.in.Pieces.Parts {
+			if p.Offs == nil {
 				t.Fatal("piece offsets missing after edit")
 			}
 		}
-	} else if doc.in.offs == nil {
+	} else if doc.in.Offs == nil {
 		t.Fatal("flat offsets missing after edit")
 	}
 	if n, err := doc.Parse(); err != nil || n.String() != `([("ab" "\n") ("cd" "\n") ("ef" "\n")])@main` {
@@ -369,8 +370,8 @@ rule peek2 = &k:[a-z]+ #atomic => S{K: $k}
 rule peek3 = &([a-z]* #atomic m:"" #atomic)
 rule junk = [^;]* #atomic ";"`, "ab;cd;", []string{"a", "b", ";", "x;", "", "1"}},
 	}
-	defer func(n int) { minRecorded = n }(minRecorded)
-	minRecorded = 1 // resume short repetitions too
+	defer func(n int) { core.MinRecorded = n }(core.MinRecorded)
+	core.MinRecorded = 1 // resume short repetitions too
 	// Edits leave the last character alone: each text ends with a terminator that lets it parse.
 	for ci, c := range cases {
 		prog := mustCompile(t, c.grammar)
@@ -419,7 +420,7 @@ rule junk = [^;]* #atomic ";"`, "ab;cd;", []string{"a", "b", ";", "x;", "", "1"}
 }
 
 // TestDocumentResumesRepetitions checks that a reparse resumes long repetitions around the edit
-// (resume.go), with results equal to parsing from scratch.
+// (core/resume.go), with results equal to parsing from scratch.
 func TestDocumentResumesRepetitions(t *testing.T) {
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		t.Run(b.String(), func(t *testing.T) { testDocumentResumesRepetitions(t, b) })
@@ -522,8 +523,8 @@ func TestDocumentResumeEdges(t *testing.T) {
 }
 
 func testDocumentResumeEdges(t *testing.T, backend Backend) {
-	defer func(n int) { minRecorded = n }(minRecorded)
-	minRecorded = 1
+	defer func(n int) { core.MinRecorded = n }(core.MinRecorded)
+	core.MinRecorded = 1
 	cases := []struct {
 		name, grammar, text string
 		pieces              []string
@@ -591,8 +592,8 @@ rule rest = [^\n]* #atomic`)
 			t.Fatal(err)
 		}
 		doc.Parse()
-		for _, e := range []docEdit{{0, 1, 0}, {11, 12, 0}} {
-			doc.Edit(e.start, e.end, "z?"[e.start/11:e.start/11+1])
+		for _, e := range []core.DocEdit{{Start: 0, End: 1, Delta: 0}, {Start: 11, End: 12, Delta: 0}} {
+			doc.Edit(e.Start, e.End, "z?"[e.Start/11:e.Start/11+1])
 			got, err := doc.Parse()
 			fn, ferr := prog.Parse("main", doc.Text())
 			if g, w := dump(t, got, err), dump(t, fn, ferr); g != w {
@@ -650,21 +651,21 @@ rule mid = [a-z] #atomic / "\n"`)
 // TestDocumentResumeSequences checks edit sequences that resumed repetitions must get right on
 // every backend.
 func TestDocumentResumeSequences(t *testing.T) {
-	defer func(n int) { minRecorded = n }(minRecorded)
-	minRecorded = 1
+	defer func(n int) { core.MinRecorded = n }(core.MinRecorded)
+	core.MinRecorded = 1
 	cases := []struct {
 		name, grammar, text string
-		edits               []docEdit // delta is ignored: the inserted text is ins
+		edits               []core.DocEdit // delta is ignored: the inserted text is ins
 		ins                 []string
 	}{
 		// A minimum met only by reused elements: the edit is after all of them.
-		{"minimum", `rule main = ("a" [a-z] #atomic)+ [0-9]* #atomic $$`, strings.Repeat("ab", 20) + "123", []docEdit{{41, 42, 0}, {40, 41, 0}}, []string{"9", ""}},
+		{"minimum", `rule main = ("a" [a-z] #atomic)+ [0-9]* #atomic $$`, strings.Repeat("ab", 20) + "123", []core.DocEdit{{Start: 41, End: 42, Delta: 0}, {Start: 40, End: 41, Delta: 0}}, []string{"9", ""}},
 		// Elements that call a rule reading a variable defined before the repetition: an edit to
 		// the header changes how they parse, though not the input they examined.
 		{"variables", `var k int
 rule main = h:hdr {k := len($h)} item* $$
 rule hdr = "x"* #atomic
-rule item = {k == 1} [a-z!] #atomic / [a-z] #atomic "!"`, "x" + strings.Repeat("a!", 20), []docEdit{{0, 1, 0}, {0, 0, 0}, {0, 0, 0}}, []string{"", "x", "x"}},
+rule item = {k == 1} [a-z!] #atomic / [a-z] #atomic "!"`, "x" + strings.Repeat("a!", 20), []core.DocEdit{{Start: 0, End: 1, Delta: 0}, {Start: 0, End: 0, Delta: 0}, {Start: 0, End: 0, Delta: 0}}, []string{"", "x", "x"}},
 	}
 	for _, c := range cases {
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -676,7 +677,7 @@ rule item = {k == 1} [a-z!] #atomic / [a-z] #atomic "!"`, "x" + strings.Repeat("
 				}
 				doc.Parse()
 				for i, e := range c.edits {
-					doc.Edit(e.start, e.end, c.ins[i])
+					doc.Edit(e.Start, e.End, c.ins[i])
 					got, err := doc.Parse()
 					fn, ferr := prog.Parse("main", doc.Text())
 					if g, w := dump(t, got, err), dump(t, fn, ferr); g != w {
@@ -796,8 +797,8 @@ rule item = "(" item* ")" / "x"`, "xxxx(x)", 0, ParseOptions{MaxDepth: 30},
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			t.Run(c.name+"/"+b.String(), func(t *testing.T) {
 				if c.minRecorded > 0 {
-					defer func(n int) { minRecorded = n }(minRecorded)
-					minRecorded = c.minRecorded
+					defer func(n int) { core.MinRecorded = n }(core.MinRecorded)
+					core.MinRecorded = c.minRecorded
 				}
 				prog := mustCompile(t, c.grammar)
 				o := c.o

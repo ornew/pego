@@ -36,7 +36,7 @@ Evidence records: [054](../054-resuming-long-repetitions-in-a-document.md),
 [059](../059-resuming-long-repetitions-in-the-vms.md).
 
 Source owners: [`run records and
-resumeRepeat`](../../../internal/engine/resume.go), [`VM repetition run
+resumeRepeat`](../../../internal/engine/core/resume.go), [`VM repetition run
 sites`](../../../internal/engine/vm.go), [`saved runs and
 eligibility`](../../../internal/engine/document.go).
 

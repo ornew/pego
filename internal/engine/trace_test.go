@@ -8,6 +8,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -100,25 +101,25 @@ func parseWork(prog *Program, start, input string, o ParseOptions) (parseWorkSta
 		}
 		target = rp
 	}
-	p := newParser(&target.sharedProgram, input, o.Unit, !o.Recognize)
-	p.maxDepth = depthLimit(o, o.Backend)
-	p.deferMemo = true
-	p.setTrace(o.Trace)
+	p := core.NewParser(&target.sharedProgram, input, o.Unit, !o.Recognize)
+	p.MaxDepth = core.DepthLimit(o, o.Backend)
+	p.DeferMemo = true
+	p.SetTrace(o.Trace)
 	n, err := target.run(p, o.Backend, start)
 	if o.Recognize {
 		n = nil
 	}
-	w := parseWorkStats{Stats: p.stats}
-	for _, e := range p.memo.slots {
-		for ; e != nil; e = e.next {
+	w := parseWorkStats{Stats: p.Stats}
+	for _, e := range p.Memo.Slots {
+		for ; e != nil; e = e.Next {
 			w.entries++
 		}
 	}
-	for _, x := range p.memo.seen {
+	for _, x := range p.Memo.Seen {
 		w.firstCalls += bits.OnesCount64(x)
 	}
-	for _, dir := range p.memo.pages {
-		for _, page := range dir.pages {
+	for _, dir := range p.Memo.Pages {
+		for _, page := range dir.Pages {
 			if page != nil {
 				for _, x := range page {
 					w.firstCalls += bits.OnesCount64(x)
@@ -127,8 +128,8 @@ func parseWork(prog *Program, start, input string, o ParseOptions) (parseWorkSta
 		}
 	}
 	w.eager = fmt.Sprint(slices.Collect(func(yield func(bool) bool) {
-		for _, c := range p.memo.calls {
-			if !yield(c.eager) {
+		for _, c := range p.Memo.Calls {
+			if !yield(c.Eager) {
 				return
 			}
 		}

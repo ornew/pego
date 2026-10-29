@@ -25,7 +25,7 @@ The remaining super-linear constructs are reported and bounded by the work budge
 ### The current claim
 
 The runtime comment on deferred memoization says that evaluating a memoized rule at most twice per position keeps
-"parse time" linear (`internal/engine/runtime.go:490-495`). The bound on evaluations is correct. Linear time does not
+"parse time" linear (`internal/engine/core/runtime.go:490-495`). The bound on evaluations is correct. Linear time does not
 follow from it. Ford's linearity argument assumes that every nonterminal does a constant amount of work per position
 besides its calls, and that every repetition is desugared into a memoized right-recursive nonterminal. PEGO deviates in
 four ways:
@@ -76,7 +76,7 @@ the work done, because the closure backend charges value construction by size.
 A further case is a correctness defect rather than a cost. `var k int; R = {k := k + 1} R "x" / "x"` recurses
 without consuming input until the nesting limit stops it. The time grows quadratically with the limit: 4, 14, 56 and
 227 ms for limits of 1k, 2k, 4k and 8k. The left-recursion guard is found through the memo, whose key includes the
-variable environment (`internal/engine/runtime.go:142-148`). A call with a different environment therefore does not
+variable environment (`internal/engine/core/runtime.go:142-148`). A call with a different environment therefore does not
 fail as [Left recursion](../../../spec/language/parser-expressions.md#left-recursion) requires. A separate change
 rejects such a grammar at compile time: a binding of a variable that a left-recursion cycle reads is an error when the
 binding may run before a left call into the cycle. A binding that runs only after the left call is allowed, because the

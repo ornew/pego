@@ -34,13 +34,14 @@ rule main N = ("é") #atomic`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fixture, err := os.ReadFile("expectation_records_test.go")
+	fixture, err := os.ReadFile("core/expectation_records_test.go")
 	if err != nil {
 		t.Fatal(err)
 	}
-	// The fixture is also an engine test; the generated runtime exports the names it uses.
-	fixture = []byte(strings.NewReplacer("*parser", "*pegort.Parser", "&parser{", "&pegort.Parser{", "expID", "pegort.ExpID", "expMark", "pegort.ExpMark", "msgBit", "pegort.MsgBit",
-		".keep(", ".Keep(", ".silent", ".Silent", ".mergeExpected(", ".MergeExpected(", ".unisolate(", ".Unisolate(", ".isolate(", ".Isolate(", ".expect(", ".Expect(").Replace(string(fixture)))
+	// The fixture is also a test of the core package; the generated runtime exports the names it
+	// uses except for the expectation record itself, which the runtime keeps unexported.
+	fixture = []byte(strings.NewReplacer("package core", "package engine", "&Parser{", "&pegort.Parser{", "ExpID", "pegort.ExpID", "ExpMark", "pegort.ExpMark", "MsgBit", "pegort.MsgBit",
+		"p.ExpBase", "p.expBase", "p.Expect(", "p.Expect(", "p.Exp", "p.exp", "p.Farthest", "p.farthest").Replace(string(fixture)))
 	fixture = []byte(strings.Replace(string(fixture), "import (", "import (\n\tpegort \"github.com/ornew/pego/runtime\"", 1))
 	for _, mode := range []string{"plain", "direct", "conversion"} {
 		t.Run(mode, func(t *testing.T) {

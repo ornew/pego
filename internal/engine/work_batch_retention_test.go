@@ -13,16 +13,17 @@ import (
 	"testing"
 	"weak"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
 
-func batchRetentionParser(t *testing.T, e TraceEvent) *parser {
+func batchRetentionParser(t *testing.T, e TraceEvent) *core.Parser {
 	t.Helper()
-	if traceParser(e) == nil {
+	if core.TraceParser(e) == nil {
 		t.Fatal("trace callback did not retain parser")
 	}
-	return traceParser(e)
+	return core.TraceParser(e)
 }
 
 func batchRetentionJSON(t *testing.T, n *value.Node) []byte {
@@ -51,7 +52,7 @@ rule entry = key:[a-z]+ #atomic ":" value:[0-9]+ #atomic => Entry{Key: text($key
 				for _, active := range []bool{false, true} {
 					name := backend.String() + "/" + unit.String() + "/recognize=" + map[bool]string{false: "false", true: "true"}[recognize] + "/controls=" + map[bool]string{false: "inactive", true: "active"}[active]
 					t.Run(name, func(t *testing.T) {
-						if active && !workControlsEnabled {
+						if active && !core.WorkControlsEnabled {
 							t.Skip("active work controls are unavailable in the reference build")
 						}
 						parse := func(input string, wantFailure bool) (*value.Node, error, TraceEvent) {
@@ -139,13 +140,13 @@ func TestWorkBatchTraceCallbackPanicDetachesParserAndPreservesRetry(t *testing.T
 		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
 				token := &struct{ marker string }{"trace panic"}
-				var observed *parser
+				var observed *core.Parser
 				var node *value.Node
 				var err error
 				got := workContextRecover(func() {
 					node, err = prog.ParseWith("main", text, ParseOptions{Backend: backend, Unit: unit, Trace: func(e TraceEvent) {
 						if e.Kind == TraceEnter && e.Rule == "main" {
-							observed = traceParser(e)
+							observed = core.TraceParser(e)
 							panic(token)
 						}
 					}})
@@ -175,7 +176,7 @@ func TestWorkBatchTraceInterruptionDetachesParser(t *testing.T) {
 						}
 						before := batchRetentionJSON(t, held)
 						token := &workContextPanicToken{phase: cause}
-						var observed *parser
+						var observed *core.Parser
 						var panicCtx *workContextErrPanic
 						var cancel context.CancelFunc
 						opts := ParseOptions{Backend: backend, Unit: unit, Recognize: recognize}
@@ -198,12 +199,12 @@ func TestWorkBatchTraceInterruptionDetachesParser(t *testing.T) {
 								return
 							}
 							if e.Kind == TraceEnter {
-								observed = traceParser(e)
+								observed = core.TraceParser(e)
 								switch cause {
 								case "cancel":
 									cancel()
 								case "steps":
-									traceParser(e).control.limits.MaxSteps = traceParser(e).control.stepsUsed
+									core.TraceParser(e).Control.Limits.MaxSteps = core.TraceParser(e).Control.StepsUsed
 								case "context-panic":
 									panicCtx.armed = true
 								}
@@ -307,8 +308,8 @@ func TestWorkBatchTraceEventReleasesCapturedContextAfterReturn(t *testing.T) {
 			for _, active := range []bool{false, true} {
 				t.Run(fmt.Sprintf("%s/%s/active=%t", backend, unit, active), func(t *testing.T) {
 					event, ref, err := batchRetentionCaptureEvent(prog, text, backend, unit, active)
-					if err != nil || traceParser(event) == nil {
-						t.Fatalf("event parser=%p err=%v", traceParser(event), err)
+					if err != nil || core.TraceParser(event) == nil {
+						t.Fatalf("event parser=%p err=%v", core.TraceParser(event), err)
 					}
 					released := false
 					for range 5 {
@@ -323,7 +324,7 @@ func TestWorkBatchTraceEventReleasesCapturedContextAfterReturn(t *testing.T) {
 					if !released {
 						t.Fatal("stored event still retains its trace-captured context after bounded GC")
 					}
-					assertTraceParserDetached(t, traceParser(event), false)
+					assertTraceParserDetached(t, core.TraceParser(event), false)
 				})
 			}
 		}

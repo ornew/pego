@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -19,7 +20,7 @@ func (prog *Program) Parse(start, input string) (*value.Node, error) {
 
 // ParseWith parses with options such as the position unit.
 func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *value.Node, err error) {
-	if err := validateStreamDiagnostics(o, false); err != nil {
+	if err := core.ValidateStreamDiagnostics(o, false); err != nil {
 		return nil, err
 	}
 	// Initialization can interrupt before run installs its execution recovery.
@@ -27,10 +28,10 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *value.No
 	// caller panics, so an outer boundary must not classify them again.
 	defer func() {
 		if x := recover(); x != nil {
-			if f, ok := x.(fatal); ok {
-				n, err = nil, f.err
-			} else if cp, ok := x.(contextPanic); ok {
-				panic(cp.value)
+			if f, ok := x.(core.Fatal); ok {
+				n, err = nil, f.Err
+			} else if cp, ok := x.(core.ContextPanic); ok {
+				panic(cp.Value)
 			} else {
 				panic(x)
 			}
@@ -44,19 +45,19 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *value.No
 	if err != nil {
 		return nil, err
 	}
-	control.check()
-	p := acquirePooledParser(&active.sharedProgram)
-	defer p.releaseBatchScratch()
-	p.input = newControlledTextInput(input, o.Unit, !o.Recognize, p.scratch, control)
-	p.maxDepth = depthLimit(o, o.Backend)
-	p.deferMemo = true
+	control.Check()
+	p := core.AcquirePooledParser(&active.sharedProgram)
+	defer p.ReleaseBatchScratch()
+	p.Input = core.NewControlledTextInput(input, o.Unit, !o.Recognize, p.Scratch, control)
+	p.MaxDepth = core.DepthLimit(o, o.Backend)
+	p.DeferMemo = true
 	if o.MissingTokens > 0 && active.HasMissing {
-		p.missing, p.missingLen = &missingTokenState{limit: o.MissingTokens}, 0
+		p.Missing, p.MissingLen = &core.MissingTokenState{Limit: o.MissingTokens}, 0
 	}
-	p.setTrace(o.Trace)
+	p.SetTrace(o.Trace)
 	n, err = active.run(p, o.Backend, start)
-	if !p.aborted {
-		control.check()
+	if !p.Aborted {
+		control.Check()
 	}
 	if o.Recognize {
 		n = nil
@@ -106,7 +107,7 @@ func (prog *Program) backend(b Backend) Backend {
 }
 
 // closureRule returns the rule the closure backend runs for the rule name, or nil if there is none.
-func (prog *Program) closureRule(name string) *rule {
+func (prog *Program) closureRule(name string) *core.Rule {
 	if sr := prog.ByName[name]; sr != nil {
 		return prog.closureRules[sr.ID]
 	}
@@ -114,14 +115,14 @@ func (prog *Program) closureRule(name string) *rule {
 }
 
 // rule returns the rule name for backend b.
-func (prog *Program) rule(b Backend, name string) (*rule, error) {
+func (prog *Program) rule(b Backend, name string) (*core.Rule, error) {
 	if err := compile.EntryError(name); err != nil {
 		return nil, err
 	}
 	if prog.HasMissing && prog.backend(b) != Closure {
 		return nil, compile.MissingUnsupported("bytecode backends")
 	}
-	var r *rule
+	var r *core.Rule
 	switch prog.backend(b) {
 	case Bytecode:
 		prog.vmOnce.Do(func() { prog.vm = newVMProgram(prog.Module()) })
@@ -168,15 +169,15 @@ func recoverParse(x any, b Backend, err *error) {
 	if x == nil {
 		return
 	}
-	if f, ok := x.(fatal); ok {
-		*err = f.err
+	if f, ok := x.(core.Fatal); ok {
+		*err = f.Err
 		return
 	}
-	if tp, ok := x.(tracePanic); ok {
-		panic(tp.value) // a panic of the trace function, not of the parse
+	if tp, ok := x.(core.TracePanic); ok {
+		panic(tp.Value) // a panic of the trace function, not of the parse
 	}
-	if cp, ok := x.(contextPanic); ok {
-		panic(cp.value)
+	if cp, ok := x.(core.ContextPanic); ok {
+		panic(cp.Value)
 	}
 	if re, ok := x.(runtime.Error); ok && (b == Bytecode || b == BytecodeIterative) {
 		*err = fmt.Errorf("invalid bytecode: %v", re)
@@ -186,37 +187,37 @@ func recoverParse(x any, b Backend, err *error) {
 }
 
 // run parses the whole input of p with the start rule start.
-func (prog *Program) run(p *parser, b Backend, start string) (n *value.Node, err error) {
-	p.aborted = false
+func (prog *Program) run(p *core.Parser, b Backend, start string) (n *value.Node, err error) {
+	p.Aborted = false
 	r, err := prog.rule(b, start)
 	if err != nil {
 		return nil, err
 	}
-	p.descs = prog.descs(b)
-	p.memo.stride = prog.NSeen
+	p.Descs = prog.descs(b)
+	p.Memo.Stride = prog.NSeen
 	if be := prog.backend(b); be == Bytecode || be == BytecodeIterative {
-		p.memo.stride = prog.vmFor(be).nseen
+		p.Memo.Stride = prog.vmFor(be).nseen
 	}
-	p.memo.sparse = sparseMemo && p.memo.stride > 64 && p.loaded() > 1024
-	p.seedVars()
+	p.Memo.Sparse = core.SparseMemo && p.Memo.Stride > 64 && p.Loaded() > 1024
+	p.SeedVars()
 	defer func() {
 		if x := recover(); x != nil {
-			p.aborted = true
+			p.Aborted = true
 			n = nil
 			recoverParse(x, prog.backend(b), &err)
 		}
 	}()
-	v, ok := p.call(r, 0)
-	if ok && p.atEOF() {
-		if len(p.recovered) > 0 {
-			return v, SyntaxErrors(p.recovered)
+	v, ok := p.Call(r, 0)
+	if ok && p.AtEOF() {
+		if len(p.Recovered) > 0 {
+			return v, SyntaxErrors(p.Recovered)
 		}
 		return v, nil
 	}
 	if ok {
-		p.expect(p.pos, compile.IDEndInput)
+		p.Expect(p.Pos, compile.IDEndInput)
 	}
-	return nil, p.syntaxError()
+	return nil, p.SyntaxError()
 }
 
 // Rules returns the names of the rules that can be entry points, in declaration order. A hidden
@@ -258,16 +259,16 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*value
 	// Preserve their panic values rather than classifying them as VM faults.
 	defer func() {
 		if x := recover(); x != nil {
-			if f, ok := x.(fatal); ok {
-				err = f.err
-			} else if cp, ok := x.(contextPanic); ok {
-				panic(cp.value)
+			if f, ok := x.(core.Fatal); ok {
+				err = f.Err
+			} else if cp, ok := x.(core.ContextPanic); ok {
+				panic(cp.Value)
 			} else {
 				panic(x)
 			}
 		}
 	}()
-	if err := validateStreamDiagnostics(o, true); err != nil {
+	if err := core.ValidateStreamDiagnostics(o, true); err != nil {
 		return err
 	}
 	if o.Recognize {
@@ -281,58 +282,58 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*value
 	if err != nil {
 		return err
 	}
-	control.check()
-	p := newControlledStreamParser(&prog.sharedProgram, r, o.Unit, control)
-	defer p.releaseTraceReferences() // after error recovery, including rethrown panics
-	control.check()
-	p.maxDepth = depthLimit(o, o.Backend)
-	p.emit = emit
-	p.diagnostic = o.DiagnosticCallback
-	p.diagnosticTail.limit = o.DiagnosticLimit
-	if (p.diagnostic != nil || o.DiagnosticLimit > 0) && p.emit == nil {
+	control.Check()
+	p := core.NewControlledStreamParser(&prog.sharedProgram, r, o.Unit, control)
+	defer p.ReleaseTraceReferences() // after error recovery, including rethrown panics
+	control.Check()
+	p.MaxDepth = core.DepthLimit(o, o.Backend)
+	p.Emit = emit
+	p.Diagnostic = o.DiagnosticCallback
+	p.DiagnosticTail.Limit = o.DiagnosticLimit
+	if (p.Diagnostic != nil || o.DiagnosticLimit > 0) && p.Emit == nil {
 		// A diagnostic-only stream still needs element commit boundaries.
-		p.emit = func(*value.Node) error { return nil }
+		p.Emit = func(*value.Node) error { return nil }
 	}
-	if streamPrefixIsolation && p.emit == nil {
-		p.nodeChunks = 0 // No callback: collect the ordinary repetition instead.
+	if core.StreamPrefixIsolation && p.Emit == nil {
+		p.NodeChunks = 0 // No callback: collect the ordinary repetition instead.
 	}
-	p.descs = prog.descs(o.Backend)
-	p.setTrace(o.Trace)
+	p.Descs = prog.descs(o.Backend)
+	p.SetTrace(o.Trace)
 	defer func() {
 		x := recover()
-		if x != nil && (p.readerCall || p.emitCall) {
+		if x != nil && (p.ReaderCall || p.EmitCall) {
 			// A caller panic is not a VM fault. Trace callbacks may have
 			// already attributed a nested reader panic; unwrap it as usual.
-			if tp, ok := x.(tracePanic); ok {
-				panic(tp.value)
+			if tp, ok := x.(core.TracePanic); ok {
+				panic(tp.Value)
 			}
 			panic(x)
 		}
 		recoverParse(x, prog.backend(o.Backend), &err)
 	}()
-	control.check()
-	p.seedVars()
-	_, ok := p.call(rule, 0)
-	if ok && p.atEOF() {
-		control.check()
-		if p.diagnostic != nil || p.diagnosticTail.limit > 0 {
-			if err := p.reportRecovered(); err != nil {
+	control.Check()
+	p.SeedVars()
+	_, ok := p.Call(rule, 0)
+	if ok && p.AtEOF() {
+		control.Check()
+		if p.Diagnostic != nil || p.DiagnosticTail.Limit > 0 {
+			if err := p.ReportRecovered(); err != nil {
 				return err
 			}
 		}
-		if p.diagnosticTail.limit > 0 {
-			return p.diagnosticTail.result(p)
+		if p.DiagnosticTail.Limit > 0 {
+			return p.DiagnosticTail.Result(p)
 		}
-		if len(p.recovered) > 0 {
-			return SyntaxErrors(p.recovered)
+		if len(p.Recovered) > 0 {
+			return SyntaxErrors(p.Recovered)
 		}
 		return nil
 	}
 	if ok {
-		p.expect(p.pos, compile.IDEndInput)
+		p.Expect(p.Pos, compile.IDEndInput)
 	}
-	err = p.syntaxError()
-	control.check()
+	err = p.SyntaxError()
+	control.Check()
 	return err
 }
 

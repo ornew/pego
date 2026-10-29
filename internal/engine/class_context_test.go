@@ -12,6 +12,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/starttest"
 )
@@ -87,10 +88,10 @@ func TestClassConstructionContextFacts(t *testing.T) {
 				}
 				for _, r := range runes {
 					for _, active := range []bool{false, true} {
-						p, q := &parser{}, &parser{}
+						p, q := &core.Parser{}, &core.Parser{}
 						if active {
-							p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 1 << 30})
-							q.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 1 << 30})
+							p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 1 << 30})
+							q.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 1 << 30})
 						}
 						expected := false
 						for _, rg := range rs {
@@ -100,7 +101,7 @@ func TestClassConstructionContextFacts(t *testing.T) {
 						if ordinary(p, r) != expected || controlled(q, r) != expected {
 							t.Fatalf("membership rune %U active=%t", r, active)
 						}
-						if active && p.control.stepsUsed != q.control.stepsUsed {
+						if active && p.Control.StepsUsed != q.Control.StepsUsed {
 							t.Fatal("runtime work charge changed")
 						}
 					}
@@ -116,7 +117,7 @@ func TestClassConstructionContextFacts(t *testing.T) {
 	cl = &grammar.CharClass{Ranges: rs}
 	accept := classAcceptControlled(cl, &compile.Control{Ctx: context.Background()})
 	rs[0] = grammar.CharRange{Lo: 'a', Hi: 'a'}
-	if !accept(&parser{}, 256) || accept(&parser{}, 'a') {
+	if !accept(&core.Parser{}, 256) || accept(&core.Parser{}, 'a') {
 		t.Fatal("matcher aliases source range slice")
 	}
 }

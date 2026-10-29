@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -67,13 +68,13 @@ rule item = ("a" #recover(skip="x")) ("b" #recover(skip="y"))`)
 
 func TestStreamDiagnosticCallbackCopiesErrorSlices(t *testing.T) {
 	original := &SyntaxError{Pos: 3, Expected: []string{"before"}, Messages: []string{"message"}}
-	p := &parser{recovered: []*SyntaxError{original}, diagnostic: func(e *SyntaxError) error {
+	p := &core.Parser{Recovered: []*SyntaxError{original}, Diagnostic: func(e *SyntaxError) error {
 		e.Pos = 10
 		e.Expected[0] = "after"
 		e.Messages[0] = "after"
 		return nil
 	}}
-	if err := p.reportRecovered(); err != nil {
+	if err := p.ReportRecovered(); err != nil {
 		t.Fatal(err)
 	}
 	if original.Pos != 3 || original.Expected[0] != "before" || original.Messages[0] != "message" {
@@ -166,8 +167,8 @@ rule item = "ab" #recover(skip=[^a]+)`)
 			var firstItemRecovered []*SyntaxError
 			o.DiagnosticCallback = func(*SyntaxError) error { callbacks++; return nil }
 			o.Trace = func(e TraceEvent) {
-				if e.Kind == TraceExit && e.Rule == "item" && len(traceParser(e).recovered) > maxWorking {
-					maxWorking = len(traceParser(e).recovered)
+				if e.Kind == TraceExit && e.Rule == "item" && len(core.TraceParser(e).Recovered) > maxWorking {
+					maxWorking = len(core.TraceParser(e).Recovered)
 				}
 				if e.Kind == TraceExit && e.Rule == "item" && firstItemRecovered == nil && len(e.Recovered()) > 0 {
 					firstItemRecovered = e.Recovered()
@@ -198,12 +199,12 @@ rule item = "ab" #recover(skip=[^a]+)`)
 }
 
 func TestStreamDiagnosticTailSaturatesCounts(t *testing.T) {
-	tail := streamDiagnosticTail{limit: 1, total: ^uint64(0) - 1, dropped: ^uint64(0) - 1}
-	tail.add(&SyntaxError{Pos: 1})
-	tail.add(&SyntaxError{Pos: 2})
-	tail.add(&SyntaxError{Pos: 3})
-	tail.add(&SyntaxError{Pos: 4})
-	result, ok := tail.result(&parser{}).(*TruncatedSyntaxErrors)
+	tail := core.StreamDiagnosticTail{Limit: 1, Total: ^uint64(0) - 1, Dropped: ^uint64(0) - 1}
+	tail.Add(&SyntaxError{Pos: 1})
+	tail.Add(&SyntaxError{Pos: 2})
+	tail.Add(&SyntaxError{Pos: 3})
+	tail.Add(&SyntaxError{Pos: 4})
+	result, ok := tail.Result(&core.Parser{}).(*TruncatedSyntaxErrors)
 	if !ok || result.Total != ^uint64(0) || result.Dropped != ^uint64(0) ||
 		!result.CountsSaturated || len(result.Errors) != 1 || result.Errors[0].Pos != 4 {
 		t.Fatalf("saturated counts: %+v", result)
@@ -211,16 +212,16 @@ func TestStreamDiagnosticTailSaturatesCounts(t *testing.T) {
 }
 
 func TestStreamDiagnosticTailPreviewSuffix(t *testing.T) {
-	tail := streamDiagnosticTail{limit: 2}
+	tail := core.StreamDiagnosticTail{Limit: 2}
 	for pos := range 3 {
-		tail.add(&SyntaxError{Pos: pos})
+		tail.Add(&SyntaxError{Pos: pos})
 	}
 	suffix := []*SyntaxError{{Pos: 3}, {Pos: 4}}
-	preview := tail.preview(&parser{}, suffix)
+	preview := tail.Preview(&core.Parser{}, suffix)
 	if len(preview) != 2 || preview[0].Pos != 3 || preview[1].Pos != 4 {
 		t.Fatalf("suffix preview: %v", preview)
 	}
-	if got := tail.result(&parser{}).(*TruncatedSyntaxErrors); got.Errors[0].Pos != 1 || got.Errors[1].Pos != 2 {
+	if got := tail.Result(&core.Parser{}).(*TruncatedSyntaxErrors); got.Errors[0].Pos != 1 || got.Errors[1].Pos != 2 {
 		t.Fatalf("preview changed collector: %v", got.Errors)
 	}
 }
@@ -248,42 +249,42 @@ rule item = "a" #recover(skip="!")`)
 func TestStreamDiagnosticTailCommitScratchOwnership(t *testing.T) {
 	prog := mustCompile(t, `rule main = "a"`)
 	for _, traced := range []bool{false, true} {
-		p := newParser(&prog.sharedProgram, "a", CodePoints, false)
-		p.diagnosticTail.limit = 1
+		p := core.NewParser(&prog.sharedProgram, "a", CodePoints, false)
+		p.DiagnosticTail.Limit = 1
 		if traced {
-			p.tr = &tracer{}
+			p.Tr = &core.Tracer{}
 		}
 		current := &SyntaxError{Pos: 7}
 		stale := &SyntaxError{Pos: 8}
-		p.recovered = make([]*SyntaxError, 8)
-		p.recovered[0] = current
+		p.Recovered = make([]*SyntaxError, 8)
+		p.Recovered[0] = current
 		for i := 1; i < 8; i++ {
-			p.recovered[i] = stale
+			p.Recovered[i] = stale
 		}
-		p.recovered = p.recovered[:1]
-		p.diagnosticTail.add(current)
-		backing := &p.recovered[0]
-		held := p.recovered[:1:1]
-		p.commit(1)
-		if p.diagnosticTail.errors[0] != current || p.diagnosed != 0 {
+		p.Recovered = p.Recovered[:1]
+		p.DiagnosticTail.Add(current)
+		backing := &p.Recovered[0]
+		held := p.Recovered[:1:1]
+		p.Commit(1)
+		if p.DiagnosticTail.Errors[0] != current || p.Diagnosed != 0 {
 			t.Fatalf("traced=%v lost retained diagnostic", traced)
 		}
 		if traced {
-			if p.recovered != nil || held[0] != current {
-				t.Fatalf("trace snapshot changed: recovered=%v held=%v", p.recovered, held)
+			if p.Recovered != nil || held[0] != current {
+				t.Fatalf("trace snapshot changed: recovered=%v held=%v", p.Recovered, held)
 			}
 			continue
 		}
-		if len(p.recovered) != 0 || cap(p.recovered) != 8 {
-			t.Fatalf("scratch not reused: len=%d cap=%d", len(p.recovered), cap(p.recovered))
+		if len(p.Recovered) != 0 || cap(p.Recovered) != 8 {
+			t.Fatalf("scratch not reused: len=%d cap=%d", len(p.Recovered), cap(p.Recovered))
 		}
-		for i, e := range p.recovered[:cap(p.recovered)] {
+		for i, e := range p.Recovered[:cap(p.Recovered)] {
 			if e != nil {
 				t.Fatalf("scratch retained stale diagnostic at %d", i)
 			}
 		}
-		p.recovered = append(p.recovered, &SyntaxError{Pos: 9})
-		if &p.recovered[0] != backing || p.diagnosticTail.errors[0] != current {
+		p.Recovered = append(p.Recovered, &SyntaxError{Pos: 9})
+		if &p.Recovered[0] != backing || p.DiagnosticTail.Errors[0] != current {
 			t.Fatal("scratch reuse changed collector ownership")
 		}
 	}

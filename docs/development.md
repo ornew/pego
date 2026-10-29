@@ -19,6 +19,7 @@ This document describes the repository layout and architecture, how to run tests
 | `internal/syntax/` | Lexer and parser for PEGO source code (source → `grammar.Grammar`) |
 | `internal/compile/` | Compiler and static analysis: type checking, call and dependency analysis, the walk of rule bodies that decides their static facts, and the bytecode compiler |
 | `internal/engine/` | Parser runtime: `Compile` with its closure backend, action evaluation, bytecode VMs, compiled grammars, Documents, streams and work controls. It does not import the generators or the output schema; the root package joins them to it |
+| `internal/engine/core/` | The part of the parser runtime that every backend shares: the parser state, input, memo table, expectations, values, built-ins of actions, work controls, tracing and stream state, and the parse options, results and errors that `internal/engine` re-exports. Its package documentation states what a backend provides and what it may use |
 | `internal/schema/` | Output schema: the description of the values a grammar can produce, exported from a checked program, with its JSON form and validation; structural queries, which match patterns against parse results and check them against a schema |
 | `internal/value/` | `Node`, the value that parsing produces: kinds, fields, JSON form, traversal and the representation that the engine packages share |
 | `internal/limits/` | Work limits of a parse invocation, the error of an exhausted limit and overflow-safe work arithmetic, shared by the parser, the Document and structural queries |
@@ -65,7 +66,7 @@ This document describes the repository layout and architecture, how to run tests
 | Language tools | `lint/`, `internal/lsp/`, `editors/vscode/` | Provides static checks, editor requests and the VS Code client. |
 | Input generation | `sample/` | Generates accepted inputs and coverage; generated inputs are checked by the parser. |
 
-Files without a directory are in `internal/engine/`. There, a file's prefix names the part it belongs to: `closure_` for the closure backend, `vm` and `ivm` for the recursive and iterative bytecode VMs, `document_` for Documents and `program` for the entry points of a program (compilation, compiled grammars and the parse drivers). Files with the prefixes `input_`, `stream_` and `work_` and the files without a prefix hold what every backend shares: the parser state, the built-ins of actions (`eval.go`, `filter.go`) and the types that the API exposes from the compiler and the tracer (`compile_api.go`, `trace.go`). The exceptions are `profile.go` and `node_cursor.go`, which read parse results. Tests that compare generated parsers with the engine are named after the generator they check: `gogen_` for Go, `tsgen_` for TypeScript and `gen_` for both. Optimization evidence is in the [catalog](optimizations/README.md); contracts and proposals are in `spec/` and `docs/design/records/`.
+Files without a directory are in `internal/engine/`. There, a file's prefix names the part it belongs to: `closure_` for the closure backend, `vm` and `ivm` for the recursive and iterative bytecode VMs, `document_` for Documents and `program` for the entry points of a program (compilation, compiled grammars and the parse drivers). `compile_api.go` and `core_api.go` hold the names that the engine exposes from the compiler and from `internal/engine/core`, and `profile.go` and `node_cursor.go` read parse results. What every backend shares is in `internal/engine/core/`: the parser state, the input, memo and stream state (`input_`, `stream_` and `work_` files and `runtime.go`), the built-ins of actions (`eval.go`, `filter.go`) and the tracer (`trace.go`). Tests that compare generated parsers with the engine are named after the generator they check: `gogen_` for Go, `tsgen_` for TypeScript and `gen_` for both. Optimization evidence is in the [catalog](optimizations/README.md); contracts and proposals are in `spec/` and `docs/design/records/`.
 
 ### Runtime
 
@@ -166,9 +167,9 @@ Explicit expansion at the cap compacts materialized branches; paths that cannot 
 control. Controlled row-count, reference/focus and boundary tests cover these resource limits. The tree benchmark
 distinguishes equivalent small-tree work from wide-tree display reduction; real browser checks cover DOM/WASM wiring.
 
-The same-source work-control reference build compiles and tests the engine package without core work-control
+The same-source work-control reference build compiles and tests the engine packages without core work-control
 instrumentation. After changing `internal/engine` test files, check that both builds compile with
-`go vet ./internal/engine` and `go vet -tags pego_work_controls_reference ./internal/engine`; test files that use
+`go vet ./internal/engine/...` and `go vet -tags pego_work_controls_reference ./internal/engine/...`; test files that use
 helpers defined in untagged files keep both builds compiling.
 
 GitHub Actions runs the root module and `parsers/test.sh` (including `go vet` for every parser module), site tests, and

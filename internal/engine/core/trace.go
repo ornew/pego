@@ -1,0 +1,246 @@
+package core
+
+import "github.com/ornew/pego/internal/value"
+
+// Tracing reports every rule call of a parse to a function (ParseOptions.Trace). It is built
+// around the one function all backends call for a rule (Parser.Call), so that an ordinary parse
+// pays for it with a single nil check per call of a rule that is not plain; plain calls, which
+// skip call, take that path only when the parser allows it (Parser.NoPlain), which a traced
+// parse does not. See docs/design/records/014-tracing-and-profiling.md.
+
+// TraceKind tells whether a TraceEvent starts or ends a rule call.
+type TraceKind uint8
+
+const (
+	// TraceEnter is reported when a rule is called, before the memo is consulted.
+	TraceEnter TraceKind = iota
+	// TraceExit is reported when the call returns.
+	TraceExit
+)
+
+func (k TraceKind) String() string {
+	if k == TraceExit {
+		return "exit"
+	}
+	return "enter"
+}
+
+// TraceEvent describes the start or the end of a rule call. Events nest: every TraceEnter is
+// followed, after the events of the calls the rule makes, by its TraceExit, unless the parse is
+// aborted: by a runtime error in an action, an error returned by a stream's emit function or
+// reader, the nesting limit, or a panic in the trace function, which propagates out of the parse
+// unchanged.
+//
+// The methods LineCol, Text and Failure read the parser's state: call them only from the trace
+// function, while it handles the event.
+type TraceEvent struct {
+	Kind TraceKind
+	// Rule is the name of the rule called.
+	Rule string
+	// Level is the binding level the rule was called with: for an Operators Rule rule called as e:level,
+	// the operators that bind no tighter than that level are left to the caller. It is 0 for
+	// calls without a level.
+	Level int
+	// Depth is the nesting depth of the call: 1 for the start rule.
+	Depth int
+	// Pos is the position at which the call starts.
+	Pos int
+	// Lookahead reports that the call is inside a lookahead (& or !), where failures record no
+	// expectations.
+	Lookahead bool
+
+	// The remaining fields are set on TraceExit only.
+
+	// Matched reports whether the rule matched.
+	Matched bool
+	// End is the position after the match (Pos if the rule failed).
+	End int
+	// Memo reports that the result came from the memo, without evaluating the rule body.
+	Memo bool
+	// Evals is the number of times this call evaluated the rule body: 0 for a result from the
+	// memo, 1 usually, and one more per step for a left-recursive rule whose match grows. Bodies of
+	// nested calls are not included.
+	Evals int
+	// ReusedElements counts repetition elements reused during this call, including nested calls.
+	// It measures resumption performed in this invocation, not the calls skipped by reusing an
+	// element or work from the parse that originally built a memo result.
+	ReusedElements int
+	// Examined is the end of the input the call examined (exclusive): looking at a character to
+	// reject it counts, as do lookaheads.
+	Examined int
+
+	p   *Parser
+	far int
+	exp []ExpID
+	rec []*SyntaxError
+}
+
+// LineCol returns the 1-based line and column of the position pos. In a stream parse, it returns
+// 0, 0 for a position (other than 0) in input that has been discarded or not read yet: keeping
+// the line starts of discarded input would make the memory of a stream grow with its length.
+func (e TraceEvent) LineCol(pos int) (line, col int) {
+	switch {
+	case e.p == nil:
+		return 0, 0
+	case pos == 0:
+		return 1, 1
+	case pos < e.p.Base || pos > e.p.Loaded():
+		return 0, 0
+	}
+	return e.p.lineCol(pos)
+}
+
+// Text returns the input the call matched (empty for an enter event or a failure). Input that a
+// stream parse has already discarded is not available.
+func (e TraceEvent) Text() string {
+	if e.p == nil || e.Kind != TraceExit || !e.Matched {
+		return ""
+	}
+	return e.p.Text(e.Pos, e.End)
+}
+
+// Failure returns, for an exit event, the farthest failure recorded during the call: the position
+// and what was expected there, as a parse that failed there would report it. It is nil when the
+// call recorded no expectation (inside a lookahead, or when nothing failed). A call that matched
+// can have one too: the input after its match was tried and rejected.
+func (e TraceEvent) Failure() *SyntaxError {
+	if e.p == nil || len(e.exp) == 0 {
+		return nil
+	}
+	return e.p.MakeError(e.far, e.exp)
+}
+
+// Recovered returns, for an exit event of a call that matched, the syntax errors that #recover
+// recovered from during the call, in nested calls too, or taken from the memo with the call's
+// result. The expectations of a recovered error are not part of Failure: recovering removes them
+// from the record of the call that contains the #recover.
+func (e TraceEvent) Recovered() []*SyntaxError {
+	return e.rec
+}
+
+// TraceParser returns the parser that reported e, or nil for an event that no parse reported.
+// It gives code outside the public API, such as Profile, the parse state behind an event.
+func TraceParser(e TraceEvent) *Parser {
+	return e.p
+}
+
+// TraceExpectations returns the expectations of the farthest failure that e records.
+func TraceExpectations(e TraceEvent) []ExpID {
+	return e.exp
+}
+
+// Tracer is the tracing state of a parse.
+type Tracer struct {
+	fn func(TraceEvent)
+	// direct is set by tracedCall just before it calls call for the call it has reported, so that
+	// call runs it instead of reporting it again.
+	direct bool
+	stack  []tracedCallState
+}
+
+// emit passes ev to the trace function. A panic there is carried through recoverParse as a
+// TracePanic, so that it is not taken for a fault of the parse (a runtime error on a bytecode
+// backend is reported as invalid bytecode), and is raised again unchanged.
+func (t *Tracer) emit(ev TraceEvent) {
+	ev.p.Control.Check()
+	defer func() {
+		if x := recover(); x != nil {
+			if _, ok := x.(Fatal); ok {
+				panic(x) // a charged TraceEvent accessor interrupted engine work
+			}
+			panic(TracePanic{x})
+		}
+	}()
+	t.fn(ev)
+	ev.p.Control.Check()
+}
+
+// TracePanic is a panic of the trace function, with the value it panicked with.
+type TracePanic struct{ Value any }
+
+// tracedCallState is the state of a traced call in progress.
+type tracedCallState struct {
+	r     *Rule
+	min   int
+	start int
+	// evals is the number of body evaluations of the parse when the call started, and nested
+	// those made by nested calls since.
+	evals, nested int
+	// resumed is the parse's repetition-element reuse count when the call started.
+	resumed int
+	// hw is the end of the examined input when the call started, and rec the number of
+	// recovered errors.
+	hw, rec int
+	exp     ExpMark
+}
+
+// SetTrace makes the parse report its rule calls to fn (nothing if fn is nil).
+func (p *Parser) SetTrace(fn func(TraceEvent)) {
+	if fn == nil {
+		return
+	}
+	p.Tr = &Tracer{fn: fn}
+	p.NoPlain = true
+}
+
+// tracedCall reports a call of r, runs it with call, and reports its result.
+func (p *Parser) tracedCall(r *Rule, min int) (*value.Node, bool) {
+	p.TraceEnter(r, min)
+	p.Tr.direct = true
+	v, ok := p.Call(r, min)
+	p.TraceExit(ok)
+	return v, ok
+}
+
+// TraceEnter reports the start of a call of r and starts measuring it. The call's examined range
+// and expectations are recorded separately, as CallBegin does for a memoized call, and merged
+// back by TraceExit; doing so for any call leaves the parse's own records unchanged (both only
+// keep a maximum).
+func (p *Parser) TraceEnter(r *Rule, min int) {
+	t := p.Tr
+	t.stack = append(t.stack, tracedCallState{r: r, min: min, start: p.Pos, evals: p.Stats.Evaluated, resumed: p.Resumed, hw: p.Hw, rec: len(p.Recovered)})
+	p.Hw = p.Pos
+	t.stack[len(t.stack)-1].exp = p.Isolate(p.Pos)
+	t.emit(TraceEvent{Kind: TraceEnter, Rule: r.Name, Level: min, Depth: len(t.stack), Pos: p.Pos, Lookahead: p.Silent > 0, p: p})
+}
+
+// TraceExit reports the end of the innermost call in progress, whose result is ok.
+func (p *Parser) TraceExit(ok bool) {
+	t := p.Tr
+	c := t.stack[len(t.stack)-1]
+	all := p.Stats.Evaluated - c.evals
+	far, inner := p.Unisolate(c.exp)
+	ev := TraceEvent{Kind: TraceExit, Rule: c.r.Name, Level: c.min, Depth: len(t.stack), Pos: c.start,
+		Lookahead: p.Silent > 0, Matched: ok, End: c.start, Memo: all == 0, Evals: all - c.nested,
+		Examined: p.Hw, ReusedElements: p.Resumed - c.resumed, p: p, far: far, exp: inner}
+	if ok {
+		ev.End = p.Pos
+		if len(t.stack) == 1 && p.DiagnosticTail.Limit > 0 {
+			// A bounded stream has released earlier committed recoveries.
+			// Report the same ordered tail, including a successful suffix.
+			ev.rec = p.DiagnosticTail.Preview(p, p.Recovered)
+		} else if len(p.Recovered) > c.rec {
+			ev.rec = p.Recovered[c.rec:len(p.Recovered):len(p.Recovered)]
+		}
+	}
+	t.emit(ev)
+	p.MergeExpected(far, inner)
+	p.Hw = max(c.hw, p.Hw)
+	t.stack = t.stack[:len(t.stack)-1]
+	if n := len(t.stack); n > 0 {
+		t.stack[n-1].nested += all
+	}
+}
+
+// ComposeTrace joins public option callbacks while checking interruption before
+// starting the next individual callback. Caller-created composite functions are
+// still arbitrary caller code and cannot be preempted internally.
+func ComposeTrace(prev, next func(TraceEvent)) func(TraceEvent) {
+	return func(ev TraceEvent) {
+		prev(ev)
+		if WorkControlsEnabled {
+			ev.p.Control.Check()
+		}
+		next(ev)
+	}
+}

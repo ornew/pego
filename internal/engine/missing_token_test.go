@@ -10,6 +10,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/schema"
@@ -52,7 +53,7 @@ func requireInsertions(t *testing.T, prog *Program, input string, o ParseOptions
 func TestMissingTokensLiteralAndUnits(t *testing.T) {
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, controlled := range []bool{false, true} {
-			if controlled && !workControlsEnabled {
+			if controlled && !core.WorkControlsEnabled {
 				continue
 			}
 			o := ParseOptions{Unit: unit, MissingTokens: 8}
@@ -113,7 +114,7 @@ func TestMissingTokensRollbackBudgetAndCut(t *testing.T) {
 	prog := mustCompile(t, `rule main = (token "x" / token "y") $$
 rule token = ";" #missing`)
 	for _, controlled := range []bool{false, true} {
-		if controlled && !workControlsEnabled {
+		if controlled && !core.WorkControlsEnabled {
 			continue
 		}
 		o := ParseOptions{MissingTokens: 2}
@@ -193,7 +194,7 @@ rule token = ";" #missing`)
 
 func TestMissingTokensLeftRecursion(t *testing.T) {
 	for _, controlled := range []bool{false, true} {
-		if controlled && !workControlsEnabled {
+		if controlled && !core.WorkControlsEnabled {
 			continue
 		}
 		o := ParseOptions{MissingTokens: 64}
@@ -333,30 +334,30 @@ rule main Root = x:(";" #missing) => Root{Token: $x}`
 }
 
 func TestMissingTokensLedgerSeedBudget(t *testing.T) {
-	p := &parser{missing: &missingTokenState{limit: 2}}
-	event := missingTokenEvent{site: missingTokenSite{1, 3}, err: &SyntaxError{Pos: 3}}
-	if !p.insertMissing(event) || p.insertMissing(event) {
+	p := &core.Parser{Missing: &core.MissingTokenState{Limit: 2}}
+	event := core.MissingTokenEvent{Site: core.MissingTokenSite{ID: 1, Pos: 3}, Err: &SyntaxError{Pos: 3}}
+	if !p.InsertMissing(event) || p.InsertMissing(event) {
 		t.Fatal("site guard")
 	}
-	seed := p.missingEvents(0)
-	p.resetMissing(0)
-	if p.missing.attempts != 1 || seed[0].site != event.site {
+	seed := p.MissingEvents(0)
+	p.ResetMissing(0)
+	if p.Missing.Attempts != 1 || seed[0].Site != event.Site {
 		t.Fatal("rollback refunded budget or cleared owned seed")
 	}
-	p.replayMissing(seed, []*SyntaxError{event.err})
-	p.replayMissing(seed, []*SyntaxError{event.err})
-	if p.missing.attempts != 2 || len(p.recovered) != 1 {
+	p.ReplayMissing(seed, []*SyntaxError{event.Err})
+	p.ReplayMissing(seed, []*SyntaxError{event.Err})
+	if p.Missing.Attempts != 2 || len(p.Recovered) != 1 {
 		t.Fatal("installed event replay was charged or duplicated")
 	}
-	p.resetMissing(0)
+	p.ResetMissing(0)
 	defer func() {
-		f, ok := recover().(fatal)
+		f, ok := recover().(core.Fatal)
 		var limit *MissingTokenLimitError
-		if !ok || !errors.As(f.err, &limit) || limit.Position != 3 {
+		if !ok || !errors.As(f.Err, &limit) || limit.Position != 3 {
 			t.Fatal("seed replay did not exhaust budget")
 		}
 	}()
-	p.replayMissing(seed, []*SyntaxError{event.err})
+	p.ReplayMissing(seed, []*SyntaxError{event.Err})
 }
 
 func TestMissingTokensDocumentChangesRejectionPreservesBaseline(t *testing.T) {
@@ -465,33 +466,33 @@ rule e = ";" #missing e / "x"`)
 }
 
 func TestMissingTokensMemoSeedContextAndRecycledPointers(t *testing.T) {
-	p := &parser{missing: &missingTokenState{limit: 8}, memo: newMemoTable()}
+	p := &core.Parser{Missing: &core.MissingTokenState{Limit: 8}, Memo: core.NewMemoTable()}
 	err := &SyntaxError{Pos: 0}
-	p.insertMissing(missingTokenEvent{missingTokenSite{1, 0}, err})
-	e := &memoEntry{}
-	p.recordMissingSeed(e, 0)
-	if len(p.missingSeedEvents(e)) != 1 {
+	p.InsertMissing(core.MissingTokenEvent{Site: core.MissingTokenSite{ID: 1, Pos: 0}, Err: err})
+	e := &core.MemoEntry{}
+	p.RecordMissingSeed(e, 0)
+	if len(p.MissingSeedEvents(e)) != 1 {
 		t.Fatal("seed did not retain insertion")
 	}
-	p.resetMissing(0)
+	p.ResetMissing(0)
 	// A pointer retired by the memo slab can become a seed with no insertions.
-	p.recordMissingSeed(e, 0)
-	if len(p.missingSeedEvents(e)) != 0 {
+	p.RecordMissingSeed(e, 0)
+	if len(p.MissingSeedEvents(e)) != 0 {
 		t.Fatal("recycled pointer inherited an insertion")
 	}
 	for _, controlled := range []bool{false, true} {
-		p := &parser{memo: newMemoTable()}
-		if controlled && workControlsEnabled {
-			p.control = newWorkControl(context.Background(), limits.WorkLimits{})
+		p := &core.Parser{Memo: core.NewMemoTable()}
+		if controlled && core.WorkControlsEnabled {
+			p.Control = core.NewWorkControl(context.Background(), limits.WorkLimits{})
 		}
-		ordinary := memoKey{rule: 1}
-		lookahead := memoKey{rule: 1, missingSilent: true}
-		p.memoPut(ordinary, &memoEntry{ok: true, end: 7})
-		p.memoPut(lookahead, &memoEntry{ok: false})
-		if e, ok := p.memoGet(ordinary); !ok || !e.ok || e.end != 7 {
+		ordinary := core.MemoKey{Rule: 1}
+		lookahead := core.MemoKey{Rule: 1, MissingSilent: true}
+		p.MemoPut(ordinary, &core.MemoEntry{Ok: true, End: 7})
+		p.MemoPut(lookahead, &core.MemoEntry{Ok: false})
+		if e, ok := p.MemoGet(ordinary); !ok || !e.Ok || e.End != 7 {
 			t.Fatal("lookahead replaced insertion-enabled seed")
 		}
-		if e, ok := p.memoGet(lookahead); !ok || e.ok {
+		if e, ok := p.MemoGet(lookahead); !ok || e.Ok {
 			t.Fatal("lookahead imported an insertion-enabled seed")
 		}
 	}

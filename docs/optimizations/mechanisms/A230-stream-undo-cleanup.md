@@ -33,8 +33,8 @@ Evidence records:
 [089](../089-isolate-stream-prefixes-and-batch-scratch-cleanup.md).
 
 Source owners: [`undo backing
-cleanup`](../../../internal/engine/stream_undo.go), [`parser.commit and
-pruning`](../../../internal/engine/input.go).
+cleanup`](../../../internal/engine/core/stream_undo.go), [`parser.commit and
+pruning`](../../../internal/engine/core/input.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

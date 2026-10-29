@@ -1,10 +1,14 @@
 package engine
 
-import "github.com/ornew/pego/internal/compile"
+import (
+	"github.com/ornew/pego/internal/compile"
+
+	"github.com/ornew/pego/internal/engine/core"
+)
 
 // Static returns the static program that p runs: the checked grammar, its rules and their facts,
 // which the generators and the output schema read.
-func (p *Program) Static() *compile.Program { return staticProgramOf(&p.sharedProgram) }
+func (p *Program) Static() *compile.Program { return core.StaticProgramOf(&p.sharedProgram) }
 
 // SchemaProgram returns the static program that an output schema of the start rule is exported
 // from, after checking that the export can run: p must not be nil, start must be able to start a

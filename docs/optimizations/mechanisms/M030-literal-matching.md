@@ -34,7 +34,7 @@ TypeScript, stream or all-literal benefits.
 Evidence records:
 [032](../032-matching-literals-against-loaded-input-in-one-loop.md).
 
-Source owners: [`parser.matchLiteral`](../../../internal/engine/input.go),
+Source owners: [`parser.matchLiteral`](../../../internal/engine/core/input.go),
 [`generated literal matcher`](../../../runtime/runtime.go),
 [`TypeScript literal matcher`](../../../internal/gen/tsgen/tsrt/runtime.ts).
 

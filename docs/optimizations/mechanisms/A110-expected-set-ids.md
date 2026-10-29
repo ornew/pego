@@ -33,7 +33,7 @@ Evidence records:
 [004](../004-expected-sets-as-interned-ids-on-a-shared-stack-11a6ce3.md).
 
 Source owners: [`record, isolate and
-keep`](../../../internal/engine/runtime.go),
+keep`](../../../internal/engine/core/runtime.go),
 [`Program.DescTable`](../../../internal/compile/compile.go), [`generated
 expectation IDs`](../../../runtime/runtime.go), [`TypeScript
 description IDs`](../../../internal/gen/tsgen/tsrt/runtime.ts).

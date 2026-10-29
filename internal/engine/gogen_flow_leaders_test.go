@@ -11,7 +11,7 @@ import (
 
 // The bodies of left-recursion leaders print from Flow IR in the Node and recognizer tables, and in the stream
 // body of a start rule that is a leader, as the framed bodies of the other rules do (flowFrameExprOK). The
-// runtime owns the growth of a leader's seed (call, growBegin, growStep and growEnd around the body, the memo
+// runtime owns the growth of a leader's seed (Call, GrowBegin, GrowStep and GrowEnd around the body, the memo
 // entry that a left-recursive call reads as the seed, the dependency counts of the seed reads, and the merging of
 // the expected sets of the iterations); the generated code supplies the body that the runtime evaluates for each
 // iteration. A left-recursive alternative has no first set (ruleFirst gives none for a leader), so it is never

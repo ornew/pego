@@ -34,7 +34,7 @@ zero-overhead expectation handling.
 Evidence records: [075](../075-exclude-absent-expectations-before-scanning.md).
 
 Source owners: [`parser.expect and record
-marks`](../../../internal/engine/runtime.go), [`generated expectation
+marks`](../../../internal/engine/core/runtime.go), [`generated expectation
 filter`](../../../runtime/runtime.go), [`VM label/recovery
 state`](../../../internal/engine/vm.go).
 

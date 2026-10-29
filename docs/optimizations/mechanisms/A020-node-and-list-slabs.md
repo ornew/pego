@@ -35,7 +35,7 @@ Evidence records:
 [006](../006-slab-allocation-for-nodes-child-lists-and-frames-5d03bf2.md).
 
 Source owners: [`parser.newNode, nodes, fields and
-kids`](../../../internal/engine/runtime.go), [`generated ptrSlab and node/list
+kids`](../../../internal/engine/core/runtime.go), [`generated ptrSlab and node/list
 allocation`](../../../runtime/runtime.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

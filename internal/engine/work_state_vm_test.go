@@ -14,6 +14,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -30,7 +31,7 @@ func TestWorkStateVMChildAssembly(t *testing.T) {
 				if i%3 != 0 {
 					want[i] = retained
 				}
-				vmMachineOf(p).vals = append(vmMachineOf(p).vals, nodeOrNil(want[i]))
+				vmMachineOf(p).vals = append(vmMachineOf(p).vals, core.NodeOrNil(want[i]))
 			}
 			instruction := bytecode.Instr{Op: op, A: 320}
 			if op == bytecode.OpEndRepeat {
@@ -86,7 +87,7 @@ func TestWorkStateVMCutAndFailureUnwind(t *testing.T) {
 		if !cut && len(vmMachineOf(p).ents) != 256 {
 			t.Fatalf("unwind retained %d entries, want256", len(vmMachineOf(p).ents))
 		}
-		p.control = newWorkControl(newPollingContext(1), limits.WorkLimits{})
+		p.Control = core.NewWorkControl(newPollingContext(1), limits.WorkLimits{})
 		if err := catchFatal(t, func() {
 			if cut {
 				body := vmBody{}
@@ -106,34 +107,34 @@ func TestWorkStateOperatorsRuleFrameSnapshotAndRestoration(t *testing.T) {
 			p := stateWorkParser(limits.WorkLimits{MaxSteps: limit})
 			retained := value.Ptr(value.Data{Text: "retained", Fields: value.Fields{{Name: "keep", Value: "unchanged"}}})
 			before, _ := json.Marshal(retained)
-			op := &operatorsRuleOp{kind: grammar.Prefix, line: &operatorsRuleLine{scope: &compile.Scope{Names: make([]string, 320)}}}
-			setup := func(f *frame) {
-				for i := range f.vals {
-					f.vals[i] = retained
+			op := &core.OperatorsRuleOp{Kind: grammar.Prefix, Line: &core.OperatorsRuleLine{Scope: &compile.Scope{Names: make([]string, 320)}}}
+			setup := func(f *core.Frame) {
+				for i := range f.Vals {
+					f.Vals[i] = retained
 				}
-				p.trail = []undo{{f: f, slot: 0, old: nil}}
-				p.pos = 1
+				p.Trail = []core.Undo{{F: f, Slot: 0, Old: nil}}
+				p.Pos = 1
 			}
-			var best operatorsRuleAttempt
+			var best core.OperatorsRuleAttempt
 			err := catchFatal(t, func() {
 				if iterative {
-					f := &longestFrame{started: true, ops: []*operatorsRuleOp{op}, f: p.newFrame(320)}
+					f := &longestFrame{started: true, ops: []*core.OperatorsRuleOp{op}, f: p.NewFrame(320)}
 					setup(f.f)
 					f.next(ivmMachineOf(p), nil, iresult{ok: true, v: retained})
 					best = ivmMachineOf(p).attempt
 				} else {
-					op.line.m = func(p *parser) (*value.Node, bool) { setup(p.frame); return retained, true }
-					best, _ = p.longest([]*operatorsRuleOp{op})
+					op.Line.M = func(p *core.Parser) (*value.Node, bool) { setup(p.Frame); return retained, true }
+					best, _ = p.Longest([]*core.OperatorsRuleOp{op})
 				}
 			})
 			if limit < 10000 {
-				if !errors.Is(err, limits.ErrWorkLimit) || best.op != nil {
-					t.Fatalf("iterative=%t limit=%d err=%v partial=%v", iterative, limit, err, best.op)
+				if !errors.Is(err, limits.ErrWorkLimit) || best.Op != nil {
+					t.Fatalf("iterative=%t limit=%d err=%v partial=%v", iterative, limit, err, best.Op)
 				}
-				if p.control.stepsUsed != limit {
-					t.Fatalf("snapshot/restore boundary used=%d want%d", p.control.stepsUsed, limit)
+				if p.Control.StepsUsed != limit {
+					t.Fatalf("snapshot/restore boundary used=%d want%d", p.Control.StepsUsed, limit)
 				}
-			} else if err != nil || best.op != op || best.frame.vals[0] != retained {
+			} else if err != nil || best.Op != op || best.Frame.Vals[0] != retained {
 				t.Fatalf("iterative=%t winning captures lost: %v", iterative, err)
 			}
 			after, _ := json.Marshal(retained)
@@ -153,8 +154,8 @@ func TestWorkStateProjectedFrameClear(t *testing.T) {
 	c := newClosureWalker(&compile.Compiler{}, false)
 	m := c.ProjectRepeat(&grammar.Repeat{Expr: &grammar.Seq{Items: items}, Min: 0, Max: 1}, "f0")
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 64})
-	if err := catchFatal(t, func() { m(p) }); !errors.Is(err, limits.ErrWorkLimit) || len(p.trail) != 0 {
-		t.Fatalf("projected clear err=%v capture writes=%d", err, len(p.trail))
+	if err := catchFatal(t, func() { m(p) }); !errors.Is(err, limits.ErrWorkLimit) || len(p.Trail) != 0 {
+		t.Fatalf("projected clear err=%v capture writes=%d", err, len(p.Trail))
 	}
 }
 
@@ -178,21 +179,21 @@ rule arm = _`
 			for _, recognize := range []bool{false, true} {
 				armed := false
 				fallback := 0
-				var observed *parser
+				var observed *core.Parser
 				n, err := prog.ParseWith("main", "a", ParseOptions{Backend: b, Unit: u, Recognize: recognize, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
-					observed = traceParser(e)
+					observed = core.TraceParser(e)
 					if e.Kind == TraceEnter && e.Rule == "fallback" {
 						fallback++
 					}
 					if e.Kind == TraceExit && e.Rule == "arm" && e.Matched {
-						if len(traceParser(e).trail) < 320 {
-							t.Fatalf("%v/%v recognize=%t: outer capture trail=%d", b, u, recognize, len(traceParser(e).trail))
+						if len(core.TraceParser(e).Trail) < 320 {
+							t.Fatalf("%v/%v recognize=%t: outer capture trail=%d", b, u, recognize, len(core.TraceParser(e).Trail))
 						}
 						armed = true
-						traceParser(e).control.limits.MaxSteps = traceParser(e).control.stepsUsed + 20
+						core.TraceParser(e).Control.Limits.MaxSteps = core.TraceParser(e).Control.StepsUsed + 20
 					}
 				}})
-				if !armed || n != nil || !errors.Is(err, limits.ErrWorkLimit) || fallback != 0 || observed == nil || observed.scratch != nil || observed.control != nil {
+				if !armed || n != nil || !errors.Is(err, limits.ErrWorkLimit) || fallback != 0 || observed == nil || observed.Scratch != nil || observed.Control != nil {
 					t.Fatalf("%v/%v recognize=%t: armed=%t returned=%t err=%v fallback=%d", b, u, recognize, armed, n != nil, err, fallback)
 				}
 				n, err = prog.ParseWith("main", "a", ParseOptions{Backend: b, Unit: u, Recognize: recognize})

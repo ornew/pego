@@ -10,80 +10,81 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
 
 func TestWorkDocumentMemoReplayAtomicReservation(t *testing.T) {
-	edits := []docEdit{{start: 0, end: 1, delta: 2}, {start: 0, end: 1, delta: 3}, {start: 0, end: 1, delta: 4}}
-	before := memoEntry{pos: 10, end: 12, from: 10, examined: 13, far: 12}
+	edits := []core.DocEdit{{Start: 0, End: 1, Delta: 2}, {Start: 0, End: 1, Delta: 3}, {Start: 0, End: 1, Delta: 4}}
+	before := core.MemoEntry{Pos: 10, End: 12, From: 10, Examined: 13, Far: 12}
 	e := before
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 2})
-	if err := catchFatal(t, func() { p.advanceEntry(&e, edits) }); !errors.Is(err, limits.ErrWorkLimit) {
+	if err := catchFatal(t, func() { p.AdvanceEntry(&e, edits) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("interruption = %v", err)
 	}
 	if !reflect.DeepEqual(e, before) {
 		t.Fatal("interrupted replay published partial memo state")
 	}
-	if p.control.inputUsed != 0 || p.control.stepsUsed != 2 {
+	if p.Control.InputUsed != 0 || p.Control.StepsUsed != 2 {
 		t.Fatal("edit replay charged input or failed reservation")
 	}
 	p = stateWorkParser(limits.WorkLimits{MaxSteps: 3})
 	want := before
-	if !advanceEntry(&want, edits) || !p.advanceEntry(&e, edits) || !reflect.DeepEqual(e, want) {
+	if !core.AdvanceEntry(&want, edits) || !p.AdvanceEntry(&e, edits) || !reflect.DeepEqual(e, want) {
 		t.Fatal("completed replay differs from ordinary edit replay")
 	}
 }
 
 func TestWorkDocumentResyncSearchAndTailAccounting(t *testing.T) {
-	elems := make([]runElem, 513)
+	elems := make([]core.RunElem, 513)
 	for i := range elems {
-		elems[i] = runElem{start: i * 2, from: 100}
+		elems[i] = core.RunElem{Start: i * 2, From: 100}
 	}
 	for _, at := range []int{-1, 0, 1, 510, 1024, 1025} {
 		p := stateWorkParser(limits.WorkLimits{MaxSteps: 100})
-		want := (&parser{}).runSearch(elems, 3, at)
-		if got := p.runSearch(elems, 3, at); got != want {
+		want := (&core.Parser{}).RunSearch(elems, 3, at)
+		if got := p.RunSearch(elems, 3, at); got != want {
 			t.Fatalf("search(%d) = %d, want %d", at, got, want)
 		}
 	}
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 1})
-	if err := catchFatal(t, func() { p.runSearch(elems, 0, 510) }); !errors.Is(err, limits.ErrWorkLimit) {
+	if err := catchFatal(t, func() { p.RunSearch(elems, 0, 510) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("search interruption = %v", err)
 	}
 	p = stateWorkParser(limits.WorkLimits{MaxSteps: 2})
-	if err := catchFatal(t, func() { p.runAfter(elems[:3], 100) }); !errors.Is(err, limits.ErrWorkLimit) {
+	if err := catchFatal(t, func() { p.RunAfter(elems[:3], 100) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("tail interruption = %v", err)
 	}
-	if p.control.inputUsed != 0 {
+	if p.Control.InputUsed != 0 {
 		t.Fatal("run traversal charged input")
 	}
 	p = stateWorkParser(limits.WorkLimits{MaxSteps: 3})
-	if !p.runAfter(elems[:3], 100) || p.control.stepsUsed != 3 {
+	if !p.RunAfter(elems[:3], 100) || p.Control.StepsUsed != 3 {
 		t.Fatal("tail traversal did not account for each element")
 	}
 }
 
 func TestWorkDocumentRunPublicationCopyIsProvisional(t *testing.T) {
-	old := make([]runElem, 128)
-	mid := make([]runElem, 1)
+	old := make([]core.RunElem, 128)
+	mid := make([]core.RunElem, 1)
 	for i := range old {
-		old[i].start = i
+		old[i].Start = i
 	}
-	mid[0].start = 900
-	r := runState{key: runKey{site: 1}, old: old, k: 128, j: -1, mid: mid, count: 129}
-	retained := &runRecord{elems: old}
+	mid[0].Start = 900
+	r := core.RunState{Key: core.RunKey{Site: 1}, Old: old, K: 128, J: -1, Mid: mid, Count: 129}
+	retained := &core.RunRecord{Elems: old}
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 128})
-	p.runs = map[runKey]*runRecord{r.key: retained}
-	if err := catchFatal(t, func() { p.finishRun(&r) }); !errors.Is(err, limits.ErrWorkLimit) {
+	p.Runs = map[core.RunKey]*core.RunRecord{r.Key: retained}
+	if err := catchFatal(t, func() { p.FinishRun(&r) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("copy interruption = %v", err)
 	}
-	if p.runs[r.key] != retained || len(retained.elems) != 128 || retained.elems[127].start != 127 {
+	if p.Runs[r.Key] != retained || len(retained.Elems) != 128 || retained.Elems[127].Start != 127 {
 		t.Fatal("interrupted assembly replaced retained run")
 	}
-	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 129})
-	p.finishRun(&r)
-	if len(p.runs[r.key].elems) != 129 || p.runs[r.key].elems[128].start != 900 {
+	p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 129})
+	p.FinishRun(&r)
+	if len(p.Runs[r.Key].Elems) != 129 || p.Runs[r.Key].Elems[128].Start != 900 {
 		t.Fatal("completed run assembly differs")
 	}
 }
@@ -93,36 +94,36 @@ func TestWorkDocumentMovementChargesEdges(t *testing.T) {
 	field := value.Ptr(value.Data{Start: 4, End: 5})
 	root := value.Ptr(value.Data{Start: 1, End: 6, Children: []*value.Node{child}, Fields: value.Fields{{Name: "field", Value: field}}})
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 3})
-	p.gen = 1
-	if err := catchFatal(t, func() { p.moveTree(root, 10) }); !errors.Is(err, limits.ErrWorkLimit) {
+	p.Gen = 1
+	if err := catchFatal(t, func() { p.MoveTree(root, 10) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("movement interruption = %v", err)
 	}
 	// Legacy movement is non-transactional, but later unvisited fields remain.
 	if value.D(root).Start != 11 || value.D(child).Start != 12 || value.D(field).Start != 4 {
 		t.Fatal("movement checkpoints do not precede individual edges")
 	}
-	if p.control.inputUsed != 0 {
+	if p.Control.InputUsed != 0 {
 		t.Fatal("graph traversal charged input")
 	}
 }
 
 func TestWorkDocumentRunAssemblyMatchesOrdinarySplice(t *testing.T) {
-	defer func(n int) { minRecorded = n }(minRecorded)
-	minRecorded = 1 // Keep the splice fixture small, independent of the recording heuristic.
+	defer func(n int) { core.MinRecorded = n }(core.MinRecorded)
+	core.MinRecorded = 1 // Keep the splice fixture small, independent of the recording heuristic.
 	for _, controlled := range []bool{false, true} {
-		old := make([]runElem, 8)
+		old := make([]core.RunElem, 8)
 		for i := range old {
-			old[i].start = i
+			old[i].Start = i
 		}
-		r := runState{key: runKey{site: 1}, old: old, k: 2, j: 4, t: 3, mid: []runElem{{start: 900}}, post: []runElem{{start: 901}, {start: 902}}, count: 8}
-		p := &parser{runs: map[runKey]*runRecord{}}
+		r := core.RunState{Key: core.RunKey{Site: 1}, Old: old, K: 2, J: 4, T: 3, Mid: []core.RunElem{{Start: 900}}, Post: []core.RunElem{{Start: 901}, {Start: 902}}, Count: 8}
+		p := &core.Parser{Runs: map[core.RunKey]*core.RunRecord{}}
 		if controlled {
-			p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 8})
+			p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 8})
 		}
-		p.finishRun(&r)
+		p.FinishRun(&r)
 		var got []int
-		for _, el := range p.runs[r.key].elems {
-			got = append(got, el.start)
+		for _, el := range p.Runs[r.Key].Elems {
+			got = append(got, el.Start)
 		}
 		if !reflect.DeepEqual(got, []int{0, 1, 900, 4, 5, 6, 901, 902}) {
 			t.Fatalf("controlled=%v: %v", controlled, got)
@@ -137,14 +138,14 @@ func TestWorkDocumentGrowthCopyReservation(t *testing.T) {
 	}
 	before := append([]*value.Node(nil), values...)
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 128})
-	if err := catchFatal(t, func() { growWork(p, values, 1) }); !errors.Is(err, limits.ErrWorkLimit) {
+	if err := catchFatal(t, func() { core.GrowWork(p, values, 1) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("growth interruption = %v", err)
 	}
 	if !reflect.DeepEqual(values, before) {
 		t.Fatal("growth changed source references")
 	}
-	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 129})
-	got := growWork(p, values, 1)
+	p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 129})
+	got := core.GrowWork(p, values, 1)
 	if len(got) != 129 || cap(got) < 130 || !reflect.DeepEqual(got, values) {
 		t.Fatal("growth did not preserve length and values")
 	}
@@ -183,13 +184,13 @@ rule line = [a-z] #repeat(2) #atomic "\n"`)
 					t.Fatal(err)
 				}
 				expectedText := text[:start] + replacement + text[end:]
-				var running *parser
+				var running *core.Parser
 				stoppedAt := 0
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
 				observed := &workDocumentReuseContext{Context: ctx, observe: func() {
-					if running != nil && running.resumed >= 32 {
-						stoppedAt = running.resumed
+					if running != nil && running.Resumed >= 32 {
+						stoppedAt = running.Resumed
 						cancel()
 					}
 				}}
@@ -197,7 +198,7 @@ rule line = [a-z] #repeat(2) #atomic "\n"`)
 				o.Context = observed
 				o.Trace = func(e TraceEvent) {
 					if e.Rule == "main" && e.Kind == TraceEnter {
-						running = traceParser(e)
+						running = core.TraceParser(e)
 					}
 				}
 				n, err := d.ParseWith(o)
@@ -214,7 +215,7 @@ rule line = [a-z] #repeat(2) #atomic "\n"`)
 				if d.Text() != expectedText || d.ParseDefaults().Context != nil {
 					t.Fatal("interruption changed text or defaults")
 				}
-				if running.control != nil || running.tr != nil || running.prog != nil {
+				if running.Control != nil || running.Tr != nil || running.Prog != nil {
 					t.Fatal("interruption retained trace or invocation references")
 				}
 				if resultJSON(clone, nil) != history {
@@ -229,35 +230,35 @@ rule line = [a-z] #repeat(2) #atomic "\n"`)
 func TestWorkDocumentMovementMapCleanupIsCounted(t *testing.T) {
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 1})
 	a, b := value.Ptr(value.Data{Text: "a"}), value.Ptr(value.Data{Text: "b"})
-	p.moved = map[*value.Node]*value.Node{a: a, b: b}
-	p.shifts = map[uint32]int{1: 3, 2: 4}
-	if err := catchFatal(t, func() { p.clearMovementWork() }); !errors.Is(err, limits.ErrWorkLimit) {
+	p.Moved = map[*value.Node]*value.Node{a: a, b: b}
+	p.Shifts = map[uint32]int{1: 3, 2: 4}
+	if err := catchFatal(t, func() { p.ClearMovementWork() }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("cleanup interruption = %v", err)
 	}
-	if len(p.moved) != 1 || len(p.shifts) != 2 || value.D(a).Text != "a" || value.D(b).Text != "b" {
+	if len(p.Moved) != 1 || len(p.Shifts) != 2 || value.D(a).Text != "a" || value.D(b).Text != "b" {
 		t.Fatal("cleanup changed pointees or skipped reservations")
 	}
-	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 3})
-	p.clearMovementWork()
-	if len(p.moved) != 0 || len(p.shifts) != 0 || p.control.stepsUsed != 3 {
+	p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 3})
+	p.ClearMovementWork()
+	if len(p.Moved) != 0 || len(p.Shifts) != 0 || p.Control.StepsUsed != 3 {
 		t.Fatal("cleanup did not finish remaining entries")
 	}
 }
 
 func TestWorkDocumentShiftReplayAndSharedEmptyGraph(t *testing.T) {
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 2})
-	p.gen = 4
-	p.edits = []docEdit{{start: 0, end: 1, delta: 1}, {start: 0, end: 1, delta: 1}, {start: 0, end: 1, delta: 1}, {start: 0, end: 1, delta: 1}}
+	p.Gen = 4
+	p.Edits = []core.DocEdit{{Start: 0, End: 1, Delta: 1}, {Start: 0, End: 1, Delta: 1}, {Start: 0, End: 1, Delta: 1}, {Start: 0, End: 1, Delta: 1}}
 	n := value.Ptr(value.Data{Start: 10, End: 11, Gen: 1})
-	if err := catchFatal(t, func() { p.shiftOf(n) }); !errors.Is(err, limits.ErrWorkLimit) {
+	if err := catchFatal(t, func() { p.ShiftOf(n) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("shift interruption = %v", err)
 	}
-	if p.shifts != nil || value.D(n).Start != 10 {
+	if p.Shifts != nil || value.D(n).Start != 10 {
 		t.Fatal("interrupted shift replay published state")
 	}
-	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 3})
-	if got := p.shiftOf(n); got != 3 || p.shifts[1] != 3 {
-		t.Fatalf("shift = %d, cache=%v", got, p.shifts)
+	p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 3})
+	if got := p.ShiftOf(n); got != 3 || p.Shifts[1] != 3 {
+		t.Fatalf("shift = %d, cache=%v", got, p.Shifts)
 	}
 	empty := value.Ptr(value.Data{Start: 0, End: 0})
 	leaf := value.Ptr(value.Data{Start: 3, End: 4})
@@ -265,9 +266,9 @@ func TestWorkDocumentShiftReplayAndSharedEmptyGraph(t *testing.T) {
 	clone := root.Clone()
 	history := resultJSON(clone, nil)
 	p = stateWorkParser(limits.WorkLimits{MaxSteps: 32})
-	p.gen = 1
-	p.moved = map[*value.Node]*value.Node{}
-	got := p.moveEmpty(root, 2)
+	p.Gen = 1
+	p.Moved = map[*value.Node]*value.Node{}
+	got := p.MoveEmpty(root, 2)
 	if got == root || value.D(root).Start != 0 || value.D(empty).Start != 0 || value.D(got).Children[0] != value.D(got).Fields[0].Value.(*value.Node) {
 		t.Fatal("empty shared nodes were mutated or duplicated")
 	}
@@ -281,43 +282,43 @@ func TestWorkDocumentShiftReplayAndSharedEmptyGraph(t *testing.T) {
 
 func TestWorkDocumentRunStateClearReservation(t *testing.T) {
 	marker := value.Ptr(value.Data{Text: "retained"})
-	r := &runState{old: []runElem{{v: marker}}, mid: make([]runElem, 129), post: []runElem{{v: marker}}}
-	for i := range r.mid {
-		r.mid[i].v = marker
+	r := &core.RunState{Old: []core.RunElem{{V: marker}}, Mid: make([]core.RunElem, 129), Post: []core.RunElem{{V: marker}}}
+	for i := range r.Mid {
+		r.Mid[i].V = marker
 	}
 	p := stateWorkParser(limits.WorkLimits{MaxSteps: 128})
 	mc := vmMachineOf(p)
 	if err := catchFatal(t, func() { mc.freeRunState(r) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("clear interruption = %v", err)
 	}
-	if len(mc.freeRuns) != 0 || r.old != nil || r.mid[128].v != marker || r.post[0].v != marker || value.D(marker).Text != "retained" {
+	if len(mc.freeRuns) != 0 || r.Old != nil || r.Mid[128].V != marker || r.Post[0].V != marker || value.D(marker).Text != "retained" {
 		t.Fatal("incomplete clear was published or changed pointees")
 	}
-	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 130})
+	p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 130})
 	mc.freeRunState(r)
-	if len(mc.freeRuns) != 1 || r.mid[128].v != nil || r.post[0].v != nil {
+	if len(mc.freeRuns) != 1 || r.Mid[128].V != nil || r.Post[0].V != nil {
 		t.Fatal("completed clear did not release references")
 	}
 }
 
 func TestWorkDocumentStaleMemoCallReplayIsBounded(t *testing.T) {
-	p := &parser{memo: newMemoTable(), pos: 19, gen: 3, edits: []docEdit{{start: 0, end: 1, delta: 2}, {start: 0, end: 1, delta: 3}, {start: 0, end: 1, delta: 4}}}
-	r := &rule{ID: 1}
-	e := &memoEntry{ok: true, end: 12, from: 10, examined: 13, far: 12}
-	p.memo.put(memoKey{rule: 1, pos: 19}, e)
-	e.pos = 10 // A shifted slot can retain older value coordinates until replay.
+	p := &core.Parser{Memo: core.NewMemoTable(), Pos: 19, Gen: 3, Edits: []core.DocEdit{{Start: 0, End: 1, Delta: 2}, {Start: 0, End: 1, Delta: 3}, {Start: 0, End: 1, Delta: 4}}}
+	r := &core.Rule{ID: 1}
+	e := &core.MemoEntry{Ok: true, End: 12, From: 10, Examined: 13, Far: 12}
+	p.Memo.Put(core.MemoKey{Rule: 1, Pos: 19}, e)
+	e.Pos = 10 // A shifted slot can retain older value coordinates until replay.
 	before := *e
-	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 4}) // Lookup costs two; only two of three edits fit.
-	if err := catchFatal(t, func() { p.callBegin(r, 0) }); !errors.Is(err, limits.ErrWorkLimit) {
+	p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 4}) // Lookup costs two; only two of three edits fit.
+	if err := catchFatal(t, func() { p.CallBegin(r, 0) }); !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("stale hit interruption = %v", err)
 	}
 	if !reflect.DeepEqual(*e, before) {
 		t.Fatal("stale hit published partial replay")
 	}
-	p.control = newWorkControl(nil, limits.WorkLimits{MaxSteps: 5})
-	_, _, ok, hit := p.callBegin(r, 0)
-	if !ok || !hit || p.pos != 21 || e.vgen != 3 || e.gen != 3 {
-		t.Fatalf("completed stale hit: ok=%v hit=%v pos=%d entry=%+v", ok, hit, p.pos, e)
+	p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 5})
+	_, _, ok, hit := p.CallBegin(r, 0)
+	if !ok || !hit || p.Pos != 21 || e.Vgen != 3 || e.Gen != 3 {
+		t.Fatalf("completed stale hit: ok=%v hit=%v pos=%d entry=%+v", ok, hit, p.Pos, e)
 	}
 }
 
@@ -325,12 +326,12 @@ func TestWorkDocumentGrowthRejectsNegativeCapacity(t *testing.T) {
 	panicOf := func(run func()) (got any) { defer func() { got = recover() }(); run(); return nil }
 	values := []int{1}
 	want := panicOf(func() { _ = slices.Grow(values, -1) })
-	for _, p := range []*parser{{}, stateWorkParser(limits.WorkLimits{MaxSteps: 1})} {
-		got := panicOf(func() { growWork(p, values, -1) })
+	for _, p := range []*core.Parser{{}, stateWorkParser(limits.WorkLimits{MaxSteps: 1})} {
+		got := panicOf(func() { core.GrowWork(p, values, -1) })
 		if got == nil || !reflect.DeepEqual(got, want) {
 			t.Fatalf("negative capacity panic=%v, want=%v", got, want)
 		}
-		if p.control != nil && p.control.stepsUsed != 0 {
+		if p.Control != nil && p.Control.StepsUsed != 0 {
 			t.Fatal("invalid growth consumed work")
 		}
 	}

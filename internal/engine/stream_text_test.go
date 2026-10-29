@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -15,9 +16,9 @@ func TestStreamTextSnapshots(t *testing.T) {
 	text := strings.Repeat("aé😀\xff\xc0z\n", 700)
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		t.Run(unit.String(), func(t *testing.T) {
-			in := input{unit: unit, reader: bufio.NewReader(strings.NewReader(text)), baseLine: 1, baseCol: 1}
-			in.fill(1 << 20)
-			n := in.loaded()
+			in := core.Input{Unit: unit, Reader: bufio.NewReader(strings.NewReader(text)), BaseLine: 1, BaseCol: 1}
+			in.Fill(1 << 20)
+			n := in.Loaded()
 			want := func(start, end int) string {
 				if unit == Bytes {
 					return text[start:end]
@@ -30,23 +31,23 @@ func TestStreamTextSnapshots(t *testing.T) {
 			for range 500 {
 				start := rng.IntN(n + 1)
 				end := start + rng.IntN(n-start+1)
-				got := in.text(start, end)
+				got := in.Text(start, end)
 				if got != want(start, end) {
 					t.Fatalf("[%d:%d]: %q", start, end, got)
 				}
 				retained = append(retained, got)
 				expected = append(expected, want(start, end))
-				if in.streamText.end-in.streamText.base > streamTextChunk || len(in.streamText.source) > 4*streamTextChunk {
+				if in.StreamText.End-in.StreamText.Base > core.StreamTextChunk || len(in.StreamText.Source) > 4*core.StreamTextChunk {
 					t.Fatal("snapshot exceeded its retention bound")
 				}
 			}
-			in.discard(n)
-			if in.streamText.source != "" {
+			in.Discard(n)
+			if in.StreamText.Source != "" {
 				t.Fatal("discard retained snapshot source")
 			}
-			in.reader = bufio.NewReader(strings.NewReader(strings.Repeat("y", n)))
-			in.eof = false
-			in.fill(n + n)
+			in.Reader = bufio.NewReader(strings.NewReader(strings.Repeat("y", n)))
+			in.Eof = false
+			in.Fill(n + n)
 			for i, got := range retained {
 				if got != expected[i] {
 					t.Fatalf("retained text %d changed", i)
@@ -58,12 +59,12 @@ func TestStreamTextSnapshots(t *testing.T) {
 
 func TestStreamTextSnapshotNearMaximumPosition(t *testing.T) {
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
-		in := input{unit: unit, base: int(^uint(0)>>1) - 128, reader: bufio.NewReader(strings.NewReader(strings.Repeat("x", 100)))}
-		in.fill(in.base + 100)
-		if got := in.text(in.base, in.base+10); got != "xxxxxxxxxx" {
+		in := core.Input{Unit: unit, Base: int(^uint(0)>>1) - 128, Reader: bufio.NewReader(strings.NewReader(strings.Repeat("x", 100)))}
+		in.Fill(in.Base + 100)
+		if got := in.Text(in.Base, in.Base+10); got != "xxxxxxxxxx" {
 			t.Fatal(got)
 		}
-		if streamTextSnapshots && in.streamText.end != in.base+100 {
+		if core.StreamTextSnapshots && in.StreamText.End != in.Base+100 {
 			t.Fatal("snapshot end overflowed")
 		}
 	}
@@ -78,15 +79,15 @@ func TestStreamTextSnapshotBoundaries(t *testing.T) {
 					data.WriteByte(byte('a' + i%26))
 				}
 				text := data.String()
-				in := input{unit: unit, reader: bufio.NewReader(strings.NewReader(text)), baseLine: 1, baseCol: 1}
-				in.fill(size)
+				in := core.Input{Unit: unit, Reader: bufio.NewReader(strings.NewReader(text)), BaseLine: 1, BaseCol: 1}
+				in.Fill(size)
 				for _, r := range [][2]int{{0, 0}, {0, 1}, {0, min(1024, size)}, {0, min(1025, size)}, {min(1010, size), min(1040, size)}, {0, min(32, size)}, {size - 1, size}} {
-					if got := in.text(r[0], r[1]); got != text[r[0]:r[1]] {
+					if got := in.Text(r[0], r[1]); got != text[r[0]:r[1]] {
 						t.Fatalf("range %v: %q", r, got)
 					}
 				}
-				in.discard(size - 1)
-				if got := in.text(0, size); got != text[size-1:] {
+				in.Discard(size - 1)
+				if got := in.Text(0, size); got != text[size-1:] {
 					t.Fatalf("clipped text: %q", got)
 				}
 			})
@@ -98,13 +99,13 @@ func TestStreamTextSnapshotBoundaries(t *testing.T) {
 func TestStreamTextSnapshotDoesNotReadAhead(t *testing.T) {
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		reader := &snapshotOneByteReader{source: strings.Repeat("x", 200)}
-		in := input{unit: unit, reader: bufio.NewReader(reader)}
-		in.fill(1)
+		in := core.Input{Unit: unit, Reader: bufio.NewReader(reader)}
+		in.Fill(1)
 		calls := reader.calls
-		if got := in.text(0, 1); got != "x" || reader.calls != calls {
+		if got := in.Text(0, 1); got != "x" || reader.calls != calls {
 			t.Fatal("text read ahead")
 		}
-		if in.streamText.source != "" {
+		if in.StreamText.Source != "" {
 			t.Fatal("tiny fragment allocated a snapshot")
 		}
 	}

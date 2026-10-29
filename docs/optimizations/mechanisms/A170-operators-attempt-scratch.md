@@ -32,7 +32,7 @@ Evidence records: [011](../011-generated-parsers-catch-up-with-changes-410.md),
 [013](../013-allocation-free-operators-rule-attempts-and-pooled-operators-rule-frames-in-the-engine-and-vms.md).
 
 Source owners: [`parser.longest and saved
-captures`](../../../internal/engine/runtime.go), [`Operators Rule attempt
+captures`](../../../internal/engine/core/runtime.go), [`Operators Rule attempt
 state`](../../../internal/engine/ivm.go), [`generated
 longest`](../../../runtime/runtime.go), [`typed Operators Rule
 attempts`](../../../runtime/typed.go).

@@ -30,7 +30,7 @@ speedup, and direct typed code may avoid the context entirely.
 Evidence records:
 [010](../010-zero-copy-token-text-reusable-evaluation-context.md).
 
-Source owners: [`parser.useCtx`](../../../internal/engine/alloc.go), [`generated
+Source owners: [`parser.useCtx`](../../../internal/engine/core/alloc.go), [`generated
 useCtx`](../../../runtime/runtime.go), [`typed
 context`](../../../runtime/typed.go),
 [`Parser.useCtx`](../../../internal/gen/tsgen/tsrt/runtime.ts).

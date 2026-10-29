@@ -12,7 +12,7 @@ This draft investigates three independent axes: whether to suppress only the imp
 
 ## Current Behavior
 
-The specification says the rule's `skip` expression is inserted before each operand and each operator part, but not inside either part. The implementation in `internal/engine/operators_rule.go` calls `skipTrivia` before `longest` tests led operators and before prefix/operand parsing in `operatorsRuleNud`. Thus an operator part does not see the trivia consumed at the implicit entry boundary. Without a rule-level `skip`, authors can write trivia explicitly in ordinary operator parts.
+The specification says the rule's `skip` expression is inserted before each operand and each operator part, but not inside either part. The implementation in `internal/engine/core/operators_rule.go` calls `skipTrivia` before `longest` tests led operators and before prefix/operand parsing in `operatorsRuleNud`. Thus an operator part does not see the trivia consumed at the implicit entry boundary. Without a rule-level `skip`, authors can write trivia explicitly in ordinary operator parts.
 
 ## Design Questions
 

@@ -36,7 +36,7 @@ Evidence records:
 [040](../040-one-pass-to-prepare-code-point-input-in-generated-parsers.md),
 [041](../041-building-the-offset-table-while-decoding-for-full-parses.md).
 
-Source owners: [`newTextInputIn`](../../../internal/engine/input.go),
+Source owners: [`newTextInputIn`](../../../internal/engine/core/input.go),
 [`generated setSource`](../../../runtime/runtime.go), [`input
 decode/offset preparation`](../../../internal/gen/tsgen/tsrt/runtime.ts).
 

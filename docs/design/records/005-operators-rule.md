@@ -4,7 +4,7 @@
 - **Author**: @ornew
 - **Date**: 2026-10-07
 
-> **Note (2026-10)**: Implemented in `internal/engine/operators_rule.go`. The CST field names were changed to match the engine rewrite (see the CST section of [spec/language/operators-rule.md](../../../spec/language/operators-rule.md)).
+> **Note (2026-10)**: Implemented in `internal/engine/core/operators_rule.go`. The CST field names were changed to match the engine rewrite (see the CST section of [spec/language/operators-rule.md](../../../spec/language/operators-rule.md)).
 
 ## Summary
 

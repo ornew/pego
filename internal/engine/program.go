@@ -8,13 +8,18 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 )
+
+// sharedProgram names the part of a program that every backend shares, so that Program embeds it
+// under an unexported field name.
+type sharedProgram = core.SharedProgram
 
 // Program is a compiled grammar. It can be used by multiple parses concurrently.
 type Program struct {
 	sharedProgram
 	// closureRules holds the rules the closure backend runs, by ID (rule.id).
-	closureRules []*rule
+	closureRules []*core.Rule
 
 	workOnce    sync.Once
 	workProgram *Program
@@ -35,9 +40,9 @@ type Program struct {
 
 // newProgram returns the program that runs the static program sp with the rules of the closure
 // backend.
-func newProgram(sp *compile.Program, closureRules []*rule) *Program {
+func newProgram(sp *compile.Program, closureRules []*core.Rule) *Program {
 	prog := &Program{closureRules: closureRules}
-	initSharedProgram(&prog.sharedProgram, sp)
+	core.InitSharedProgram(&prog.sharedProgram, sp)
 	return prog
 }
 
@@ -156,7 +161,7 @@ func CompileContext(ctx context.Context, g *grammar.Grammar, opts Options) (prog
 // generates.
 func buildNamed(g *grammar.Grammar, opts compile.Options, flags []compile.RuleFlags, names compile.InlineNames, control *compile.Control) (*Program, error) {
 	var b *closureBuilder
-	prog, err := compile.CompileProgram(g, opts, flags, names, control, func(c *compile.Compiler) compile.ExprBuilder[matcher] {
+	prog, err := compile.CompileProgram(g, opts, flags, names, control, func(c *compile.Compiler) compile.ExprBuilder[core.Matcher] {
 		b = newClosureBuilder(c, !opts.ControlledDispatch)
 		return b
 	})

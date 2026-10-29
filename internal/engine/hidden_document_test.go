@@ -3,6 +3,8 @@ package engine
 import (
 	"math/rand"
 	"testing"
+
+	"github.com/ornew/pego/internal/engine/core"
 )
 
 // A Document that edits a grammar with hidden rules gives what a fresh parse gives, on every
@@ -45,7 +47,7 @@ rule _op = "+" / "-"`
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		t.Run(b.String(), func(t *testing.T) { run(t, b) })
 	}
-	defer func(n int) { minRecorded = n }(minRecorded)
-	minRecorded = 1
+	defer func(n int) { core.MinRecorded = n }(core.MinRecorded)
+	core.MinRecorded = 1
 	t.Run("resume", func(t *testing.T) { run(t, Closure) })
 }

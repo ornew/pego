@@ -46,7 +46,7 @@ Evidence records:
 
 Source owners: [`Rule.Plain
 classification`](../../../internal/compile/compile.go),
-[`parser.invokePlain`](../../../internal/engine/runtime.go),
+[`parser.invokePlain`](../../../internal/engine/core/runtime.go),
 [`plainCallFrame`](../../../internal/engine/ivm.go), [`plain call
 emission`](../../../internal/gen/gogen/generator.go),
 [`tsgen.Generator.plainCall`](../../../internal/gen/tsgen/generator.go).

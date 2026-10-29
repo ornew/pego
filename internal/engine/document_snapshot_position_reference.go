@@ -2,6 +2,8 @@
 
 package engine
 
+import "github.com/ornew/pego/internal/engine/core"
+
 const snapshotPositionOverlayEnabled = false
 
 // SnapshotNode is a comparable read-only handle. Its zero value denotes nil.
@@ -28,4 +30,4 @@ func (g *snapshotGraph) position(_ int, r *snapshotRecord) snapshotPosition {
 	return snapshotPosition{r.start, r.end, r.gen}
 }
 
-func (g *snapshotGraph) setPositions(_ *parser, _ *snapshotGraph) {}
+func (g *snapshotGraph) setPositions(_ *core.Parser, _ *snapshotGraph) {}

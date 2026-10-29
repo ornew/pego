@@ -9,6 +9,7 @@ import (
 	"unsafe"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 )
 
 var sparseMemoSynthetic = func() string {
@@ -120,14 +121,14 @@ func BenchmarkSparseMemoTypeScript(b *testing.B) {
 								b.Fatal(err)
 							}
 						}
-						p := newParser(&target.sharedProgram, source.text, unit, !recognize)
-						p.deferMemo = true
+						p := core.NewParser(&target.sharedProgram, source.text, unit, !recognize)
+						p.DeferMemo = true
 						if _, err := target.run(p, backend, "main"); err != nil {
 							b.Fatal(err)
 						}
-						storage := sparseMemoStorage(p.memo)
+						storage := sparseMemoStorage(p.Memo)
 						b.ReportMetric(float64(storage), "seen-storage-B")
-						if !p.memo.reset() {
+						if !p.Memo.Reset() {
 							storage = 0
 						}
 						b.ReportMetric(float64(storage), "seen-retained-B")
@@ -138,11 +139,11 @@ func BenchmarkSparseMemoTypeScript(b *testing.B) {
 	}
 }
 
-func sparseMemoStorage(m *memoTable) int {
-	size := cap(m.seen)*8 + cap(m.pages)*int(unsafe.Sizeof(seenRulePages{}))
-	size += len(m.bitPages.chunks)*64*16*8 + cap(m.bitPages.chunks)*int(unsafe.Sizeof(uintptr(0)))
-	for _, dir := range m.pages {
-		size += cap(dir.pages) * int(unsafe.Sizeof(uintptr(0)))
+func sparseMemoStorage(m *core.MemoTable) int {
+	size := cap(m.Seen)*8 + cap(m.Pages)*int(unsafe.Sizeof(core.SeenRulePages{}))
+	size += len(m.BitPages.Chunks)*64*16*8 + cap(m.BitPages.Chunks)*int(unsafe.Sizeof(uintptr(0)))
+	for _, dir := range m.Pages {
+		size += cap(dir.Pages) * int(unsafe.Sizeof(uintptr(0)))
 	}
 	return size
 }

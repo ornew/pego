@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -25,7 +26,7 @@ func workDocumentVariants(t *testing.T, run func(*testing.T, ParseOptions)) {
 
 func workDocumentAssertAborted(t *testing.T, d *Document) {
 	t.Helper()
-	if d.memo.len() != 0 || d.runs != nil || d.kids != nil || d.machine != nil || d.in.control != nil {
+	if d.memo.Len() != 0 || d.runs != nil || d.kids != nil || d.machine != nil || d.in.Control != nil {
 		t.Fatal("interruption retained reusable state or invocation control")
 	}
 }
@@ -61,7 +62,7 @@ func TestWorkDocumentConstruction(t *testing.T) {
 			case "input":
 				o.WorkLimits.MaxInputWork = 1
 			case "steps":
-				if documentPieceInput && base.Unit == Bytes {
+				if core.DocumentPieceInput && base.Unit == Bytes {
 					continue
 				}
 				o.WorkLimits.MaxSteps = 1
@@ -87,16 +88,16 @@ func TestWorkDocumentConstruction(t *testing.T) {
 		if err != nil || d == nil {
 			t.Fatalf("fresh construction: %v", err)
 		}
-		if d.in.control != nil {
+		if d.in.Control != nil {
 			t.Fatal("construction control retained")
 		}
-		var last *workControl
+		var last *core.WorkControl
 		o.Trace = func(e TraceEvent) {
 			if e.Kind == TraceEnter && e.Rule == "main" {
-				if traceParser(e).control == nil || traceParser(e).control == last || traceParser(e).control.inputUsed != 0 {
+				if core.TraceParser(e).Control == nil || core.TraceParser(e).Control == last || core.TraceParser(e).Control.InputUsed != 0 {
 					t.Fatal("parse inherited construction or previous counters")
 				}
-				last = traceParser(e).control
+				last = core.TraceParser(e).Control
 			}
 		}
 		for i := 0; i < 2; i++ {
@@ -129,7 +130,7 @@ rule item = "a"`)
 				defer cancel()
 				o := base
 				o.Context = ctx
-				var saved *parser
+				var saved *core.Parser
 				if phase == "setup" {
 					cancel()
 				}
@@ -138,7 +139,7 @@ rule item = "a"`)
 				}
 				if phase == "enter" || phase == "exit" {
 					o.Trace = func(e TraceEvent) {
-						saved = traceParser(e)
+						saved = core.TraceParser(e)
 						if e.Rule == "main" && ((phase == "enter" && e.Kind == TraceEnter) || (phase == "exit" && e.Kind == TraceExit)) {
 							cancel()
 						}
@@ -163,7 +164,7 @@ rule item = "a"`)
 				if d.Text() != "aaa" {
 					t.Fatal("interruption changed text")
 				}
-				if saved != nil && (saved.control != nil || saved.tr != nil || saved.prog != nil) {
+				if saved != nil && (saved.Control != nil || saved.Tr != nil || saved.Prog != nil) {
 					t.Fatal("saved trace retained parser references")
 				}
 				workDocumentAssertRetry(t, d)

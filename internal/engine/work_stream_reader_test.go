@@ -8,6 +8,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -59,7 +60,7 @@ func TestWorkStreamRawReaderAdmission(t *testing.T) {
 	cancel()
 	caller := &workCancelledRefillReader{cancel: func() {}}
 	var returned error
-	observer := &streamReaderObserver{reader: caller, result: &returned, control: newWorkControl(ctx, limits.WorkLimits{})}
+	observer := &core.StreamReaderObserver{Reader: caller, Result: &returned, Control: core.NewWorkControl(ctx, limits.WorkLimits{})}
 	err := catchFatal(t, func() { _, _ = observer.Read(make([]byte, 4)) })
 	if !errors.Is(err, context.Canceled) || caller.calls != 0 || returned != nil {
 		t.Fatalf("error=%v calls=%d returned=%v", err, caller.calls, returned)
@@ -91,7 +92,7 @@ rule row = .+ #atomic`)
 		o.Context = &workRawReaderPanicContext{Context: ctx, reader: reader, token: token}
 		var saved TraceEvent
 		o.Trace = func(e TraceEvent) {
-			if traceParser(saved) == nil {
+			if core.TraceParser(saved) == nil {
 				saved = e
 			}
 		}
@@ -102,6 +103,6 @@ rule row = .+ #atomic`)
 		if got != token || err != nil || reader.calls != 1 {
 			t.Fatalf("panic=%#v error=%v calls=%d", got, err, reader.calls)
 		}
-		assertTraceParserDetached(t, traceParser(saved), false)
+		assertTraceParserDetached(t, core.TraceParser(saved), false)
 	})
 }

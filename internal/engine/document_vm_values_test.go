@@ -9,6 +9,7 @@ import (
 	"weak"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -61,7 +62,7 @@ rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 				if doc.stats.Evaluated != 0 {
 					t.Fatal("unchanged parse did not reuse the whole root")
 				}
-				at := doc.in.loaded() / 2
+				at := doc.in.Loaded() / 2
 				if err := doc.Edit(at, at+1, "x"); err != nil {
 					t.Fatal(err)
 				}
@@ -69,12 +70,12 @@ rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 				if backing != nil && &documentVMValues(doc)[:cap(documentVMValues(doc))][0] != backing {
 					t.Fatal("same-sized reparse replaced the reusable VM stack")
 				}
-				if err := doc.Edit(doc.in.loaded()-1, doc.in.loaded(), "!"); err != nil {
+				if err := doc.Edit(doc.in.Loaded()-1, doc.in.Loaded(), "!"); err != nil {
 					t.Fatal(err)
 				}
 				check() // An ordinary syntax error must still clear every slot.
 				check() // Repeated failure can reuse memoized work.
-				if err := doc.Edit(doc.in.loaded()-1, doc.in.loaded(), "\n"); err != nil {
+				if err := doc.Edit(doc.in.Loaded()-1, doc.in.Loaded(), "\n"); err != nil {
 					t.Fatal(err)
 				}
 				check()
@@ -107,7 +108,7 @@ rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 					doc.defaults.Trace = nil
 					check()
 				}
-				if err := doc.Edit(0, doc.in.loaded(), "é😀\n"); err != nil {
+				if err := doc.Edit(0, doc.in.Loaded(), "é😀\n"); err != nil {
 					t.Fatal(err)
 				}
 				check() // A small parse after a large one must not expose old values.
@@ -201,7 +202,7 @@ func benchmarkDocumentVMValuesShrink(b *testing.B, edit bool) {
 				if !valid {
 					small = "!\n"
 				}
-				if err := doc.Edit(0, doc.in.loaded(), small); err != nil {
+				if err := doc.Edit(0, doc.in.Loaded(), small); err != nil {
 					b.Fatal(err)
 				}
 				if _, err := doc.Parse(); (err == nil) != valid {
@@ -281,8 +282,8 @@ rule line = [a-z]+ "\n"`)
 				t.Fatal(err)
 			}
 			for range 2 { // the second parse attaches the kept machine to a new parser
-				var parsed weak.Pointer[parser]
-				if _, err := doc.parseWithCapture(doc.ParseDefaults(), func(p *parser, _ *value.Node, err error) error {
+				var parsed weak.Pointer[core.Parser]
+				if _, err := doc.parseWithCapture(doc.ParseDefaults(), func(p *core.Parser, _ *value.Node, err error) error {
 					parsed = weak.Make(p)
 					return err
 				}); err != nil {

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -63,7 +64,7 @@ rule t = t "*" "a" / "a"`, "a*a+a+a*a*a"},
 						case "cancel":
 							cancel()
 						case "steps":
-							traceParser(e).control.limits.MaxSteps = traceParser(e).control.stepsUsed
+							core.TraceParser(e).Control.Limits.MaxSteps = core.TraceParser(e).Control.StepsUsed
 						case "panic":
 							panic("interrupt growth")
 						}
@@ -90,7 +91,7 @@ rule t = t "*" "a" / "a"`, "a*a+a+a*a*a"},
 							t.Fatalf("node=%v err=%v", n, err)
 						}
 					}
-					if d.memo.len() != 0 || len(d.runs) != 0 || len(d.kids) != 0 || d.machine != nil {
+					if d.memo.Len() != 0 || len(d.runs) != 0 || len(d.kids) != 0 || d.machine != nil {
 						t.Fatal("interrupted growth retained reusable state")
 					}
 					workDocumentAssertRetry(t, d)

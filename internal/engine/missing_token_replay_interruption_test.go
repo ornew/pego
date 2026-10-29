@@ -7,6 +7,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/engine/core"
 )
 
 // Cancel only after a real grammar has produced a successful LR seed and a
@@ -15,19 +17,19 @@ import (
 type missingReplayCancelContext struct {
 	context.Context
 	cancel                              context.CancelFunc
-	p                                   *parser
+	p                                   *core.Parser
 	literalCount                        int
 	interrupted                         bool
 	installedAtCancel, attemptsAtCancel int
 }
 
 func (c *missingReplayCancelContext) Err() error {
-	if p := c.p; p != nil && p.missing != nil && p.activeSeed != nil {
-		s := p.missing
-		events := s.seeds[p.activeSeed]
-		if len(events) == c.literalCount && s.attempts > c.literalCount && len(s.path) > 0 && len(s.path) < len(events) {
+	if p := c.p; p != nil && p.Missing != nil && p.ActiveSeed != nil {
+		s := p.Missing
+		events := s.Seeds[p.ActiveSeed]
+		if len(events) == c.literalCount && s.Attempts > c.literalCount && len(s.Path) > 0 && len(s.Path) < len(events) {
 			c.interrupted = true
-			c.installedAtCancel, c.attemptsAtCancel = len(s.path), s.attempts
+			c.installedAtCancel, c.attemptsAtCancel = len(s.Path), s.Attempts
 			c.cancel()
 		}
 	}
@@ -37,7 +39,7 @@ func (c *missingReplayCancelContext) Err() error {
 func TestMissingTokensCancellationDuringLRSeedReplay(t *testing.T) {
 	// More events than the cancellation polling interval ensure a checkpoint
 	// occurs inside replay, without relying on an exact absolute step count.
-	literalCount := int(2 * workCheckStepInterval)
+	literalCount := int(2 * core.WorkCheckStepInterval)
 	source := `rule main = e $$
 rule e = e "x" / (` + strings.Repeat(`";" #missing `, literalCount) + `)`
 	prog := mustCompile(t, source)
@@ -48,7 +50,7 @@ rule e = e "x" / (` + strings.Repeat(`";" #missing `, literalCount) + `)`
 			MissingTokens: 8 * literalCount,
 			Recognize:     recognize,
 			Context:       ctx,
-			Trace:         func(e TraceEvent) { ctx.p = traceParser(e) },
+			Trace:         func(e TraceEvent) { ctx.p = core.TraceParser(e) },
 		})
 		cancel()
 		if !ctx.interrupted || ctx.installedAtCancel <= 0 || ctx.installedAtCancel >= literalCount || ctx.attemptsAtCancel <= literalCount {
@@ -57,7 +59,7 @@ rule e = e "x" / (` + strings.Repeat(`";" #missing `, literalCount) + `)`
 		if n != nil || !errors.Is(err, context.Canceled) {
 			t.Fatalf("interrupted replay returned tree=%v, error=%v", n, err)
 		}
-		if ctx.p == nil || !ctx.p.aborted || ctx.p.missing != nil || ctx.p.activeSeed != nil {
+		if ctx.p == nil || !ctx.p.Aborted || ctx.p.Missing != nil || ctx.p.ActiveSeed != nil {
 			t.Fatal("aborted traced invocation retained provisional insertion/seed state")
 		}
 		// A retry must start with a new ledger and budget rather than import

@@ -1,9 +1,13 @@
 package engine
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/ornew/pego/internal/engine/core"
+)
 
 func TestDocumentDiagnosticContainers(t *testing.T) {
-	p := &parser{}
+	p := &core.Parser{}
 	if copyDocumentDiagnostics(p, nil) != nil {
 		t.Fatal("nil diagnostics became nonnil")
 	}

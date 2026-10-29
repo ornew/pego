@@ -14,7 +14,7 @@ This design does not add a public rope, input callback, edit-batch API, or immut
 
 `input.replace` currently uses `slices.Replace` on the full `[]byte` or `[]rune` input. It also splices the source string and, for code-point input, the byte-offset table. A small edit can therefore move work proportional to the document size. This is distinct from the parser's memo invalidation and reparse work.
 
-`Document` owns fully loaded input and memo state. `Parser.Parse` uses a separate whole-input path, and stream parsing reads and discards a contiguous prefix. The earlier input-storage design already identifies chunked Document input as a separate internal stage; immutable snapshots and public storage callbacks remain out of scope here. See [design 019](019-incremental-document-and-tree-tooling.md), [design 032](032-versioned-document-snapshots.md), and the current [input implementation](../../../internal/engine/input.go) and [Document implementation](../../../internal/engine/document.go).
+`Document` owns fully loaded input and memo state. `Parser.Parse` uses a separate whole-input path, and stream parsing reads and discards a contiguous prefix. The earlier input-storage design already identifies chunked Document input as a separate internal stage; immutable snapshots and public storage callbacks remain out of scope here. See [design 019](019-incremental-document-and-tree-tooling.md), [design 032](032-versioned-document-snapshots.md), and the current [input implementation](../../../internal/engine/core/input.go) and [Document implementation](../../../internal/engine/document.go).
 
 ## Goals
 

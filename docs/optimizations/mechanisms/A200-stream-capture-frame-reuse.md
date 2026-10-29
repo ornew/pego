@@ -33,8 +33,8 @@ clear broad speedup or removal of input/capture-value copying.
 Evidence records: [085](../085-reuse-stream-capture-frames.md).
 
 Source owners: [`stream frame
-allocation/commit`](../../../internal/engine/runtime.go), [`frame reuse
-selection`](../../../internal/engine/stream_frame_scratch.go).
+allocation/commit`](../../../internal/engine/core/runtime.go), [`frame reuse
+selection`](../../../internal/engine/core/stream_frame_scratch.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

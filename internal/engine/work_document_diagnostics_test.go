@@ -7,6 +7,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -37,7 +38,7 @@ func TestWorkDocumentDiagnosticPublication(t *testing.T) {
 					t.Fatal("missing recovered error")
 				}
 				before := d.memo
-				var observed *parser
+				var observed *core.Parser
 				var exitSteps uint64
 				publicationPolled := false
 				token := new(int)
@@ -45,7 +46,7 @@ func TestWorkDocumentDiagnosticPublication(t *testing.T) {
 				syntaxErrors := SyntaxErrors{syntaxError}
 				ctx := &workContextAccessorContext{Context: context.Background(), done: make(chan struct{})}
 				ctx.fn = func() error {
-					if observed == nil || observed.control.stepsUsed < exitSteps+2048 {
+					if observed == nil || observed.Control.StepsUsed < exitSteps+2048 {
 						return nil
 					}
 					publicationPolled = true
@@ -67,9 +68,9 @@ func TestWorkDocumentDiagnosticPublication(t *testing.T) {
 				}
 				o.Trace = func(e TraceEvent) {
 					if e.Kind == TraceExit && e.Rule == "main" {
-						observed, exitSteps = traceParser(e), traceParser(e).control.stepsUsed
+						observed, exitSteps = core.TraceParser(e), core.TraceParser(e).Control.StepsUsed
 						if mode == "budget" {
-							traceParser(e).control.limits.MaxSteps = exitSteps + 64
+							core.TraceParser(e).Control.Limits.MaxSteps = exitSteps + 64
 						}
 					}
 				}
@@ -109,7 +110,7 @@ func TestWorkDocumentDiagnosticPublication(t *testing.T) {
 					t.Fatal("did not interrupt during diagnostic copying")
 				}
 				workDocumentAssertAborted(t, d)
-				if before == d.memo || observed.control != nil {
+				if before == d.memo || observed.Control != nil {
 					t.Fatal("interruption retained memo or controller")
 				}
 				workDocumentAssertRetry(t, d)
@@ -132,7 +133,7 @@ func TestWorkDocumentFatalSyntaxErrorsRemainUnchanged(t *testing.T) {
 		o.Trace = func(e TraceEvent) {
 			if e.Kind == TraceEnter && e.Rule == "main" {
 				ctx.fn = func() error { return original }
-				traceParser(e).control.check()
+				core.TraceParser(e).Control.Check()
 			}
 		}
 		n, err := d.ParseWith(o)

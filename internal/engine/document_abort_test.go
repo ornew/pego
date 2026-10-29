@@ -40,7 +40,7 @@ rule e = #operators {
 						if got, want := resultJSON(n, err), resultJSON(prog.ParseWith("main", doc.Text(), opts)); got != want {
 							t.Fatalf("parse %d: got %s; fresh %s", i, got, want)
 						}
-						if doc.memo.len() != 0 || len(doc.runs) != 0 || len(doc.kids) != 0 || doc.machine != nil {
+						if doc.memo.Len() != 0 || len(doc.runs) != 0 || len(doc.kids) != 0 || doc.machine != nil {
 							t.Fatal("aborted parse retained reusable state")
 						}
 					}
@@ -82,7 +82,7 @@ rule x = x "a" / "a"`)
 					}()
 					doc.Parse()
 				}()
-				if doc.memo.len() != 0 || len(doc.runs) != 0 || len(doc.kids) != 0 || doc.machine != nil {
+				if doc.memo.Len() != 0 || len(doc.runs) != 0 || len(doc.kids) != 0 || doc.machine != nil {
 					t.Fatal("trace panic retained reusable state")
 				}
 				doc.defaults.Trace, opts.Trace = nil, nil
@@ -110,7 +110,7 @@ rule x = "b" #recover(skip="a")`,
 			}
 			memo := doc.memo
 			first := resultJSON(doc.Parse())
-			if doc.memo != memo || doc.memo.len() == 0 {
+			if doc.memo != memo || doc.memo.Len() == 0 {
 				t.Fatal("normal syntax error discarded the memo")
 			}
 			if got := resultJSON(doc.Parse()); got != first || doc.stats.Reused == 0 {

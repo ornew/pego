@@ -26,7 +26,7 @@ also need to abandon outdated work while preserving a Document for retry.
 Source inspection at `6fac14632cbf933d91fee7f8e5df9e82fb134c56` establishes the
 existing boundary:
 
-- [`ParseOptions`](../../../internal/engine/input.go) carries unit, backend,
+- [`ParseOptions`](../../../internal/engine/core/input.go) carries unit, backend,
   recognition, depth, and tracing; [`public APIs`](../../../pego.go) use functional
   ParseOption arguments. Document stores its construction settings; Parse has
   no per-call arguments today.
@@ -39,8 +39,8 @@ existing boundary:
   and VM scratch state after an aborted parse because completed entries can depend
   on unfinished LR seeds. Ordinary failures retain reusable caches.
 - [VM execution](../../../internal/engine/vm.go), [iterative frames](../../../internal/engine/ivm.go),
-  [input loops](../../../internal/engine/input.go), and
-  [repetition resumption](../../../internal/engine/resume.go) contain work outside a
+  [input loops](../../../internal/engine/core/input.go), and
+  [repetition resumption](../../../internal/engine/core/resume.go) contain work outside a
   rule-entry depth check.
 - [Generated Go](../../../runtime/runtime.go) resolves options per
   invocation, pools private scratch, and separately supports

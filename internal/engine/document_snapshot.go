@@ -12,6 +12,7 @@ import (
 	"weak"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -314,16 +315,16 @@ func (d *Document) snapshotWith(o ParseOptions, legacy **value.Node) (*Snapshot,
 	}
 	var result *Snapshot
 	output := OutputUnavailable
-	_, err := d.parseWithCapture(o, func(p *parser, root *value.Node, parseErr error) error {
+	_, err := d.parseWithCapture(o, func(p *core.Parser, root *value.Node, parseErr error) error {
 		if observed != nil && observed.interrupted || errors.Is(parseErr, limits.ErrWorkLimit) {
 			return parseErr
 		}
-		p.control.check()
+		p.Control.Check()
 		err := copySnapshotError(p, parseErr)
 		graph, captureErr := freezeSnapshotGraph(p, root)
 		if captureErr != nil {
 			captureErr.ParseError = err
-			p.control.check()
+			p.Control.Check()
 			return captureErr
 		}
 		if snapshotSharingEnabled && graph.root != 0 {
@@ -331,18 +332,18 @@ func (d *Document) snapshotWith(o ParseOptions, legacy **value.Node) (*Snapshot,
 		}
 		// input.text may lazily build tables. Keep that work private to this
 		// capture, rather than mutating Document-owned input during freezing.
-		in := p.input
-		in.control = p.control
-		if in.pieces != nil {
-			pieces := *in.pieces
-			in.pieces = &pieces
+		in := p.Input
+		in.Control = p.Control
+		if in.Pieces != nil {
+			pieces := *in.Pieces
+			in.Pieces = &pieces
 		}
-		text := in.text(0, in.loaded())
+		text := in.Text(0, in.Loaded())
 		// Always copy the full text through bounded input reservations.
 		var out strings.Builder
 		for off := 0; off < len(text); {
 			n := min(4096, len(text)-off)
-			p.control.charge(uint64(n), 1)
+			p.Control.Charge(uint64(n), 1)
 			if off == 0 {
 				out.Grow(len(text))
 			}
@@ -350,8 +351,8 @@ func (d *Document) snapshotWith(o ParseOptions, legacy **value.Node) (*Snapshot,
 			off += n
 		}
 		returnedError := copySnapshotError(p, err)
-		p.control.check()
-		candidate := &Snapshot{version: d.Version(), unit: d.Unit(), text: out.String(), graph: graph, parseError: err, stats: p.reportedStats()}
+		p.Control.Check()
+		candidate := &Snapshot{version: d.Version(), unit: d.Unit(), text: out.String(), graph: graph, parseError: err, stats: p.ReportedStats()}
 		nextOutput := OutputMayHaveChanged
 		if d.changes != nil && d.changes.previous != nil {
 			nextOutput = OutputChanged
@@ -359,7 +360,7 @@ func (d *Document) snapshotWith(o ParseOptions, legacy **value.Node) (*Snapshot,
 				nextOutput = OutputUnchanged
 			}
 		}
-		p.control.check()
+		p.Control.Check()
 		result, output = candidate, nextOutput
 		if legacy != nil {
 			*legacy = root
@@ -373,7 +374,7 @@ func (d *Document) snapshotWith(o ParseOptions, legacy **value.Node) (*Snapshot,
 	return result, err
 }
 
-func snapshotStrings(p *parser, in []string) []string {
+func snapshotStrings(p *core.Parser, in []string) []string {
 	if in == nil {
 		return nil
 	}
@@ -381,17 +382,17 @@ func snapshotStrings(p *parser, in []string) []string {
 	if p == nil {
 		copy(out, in)
 	} else {
-		copyWork(p, out, in)
+		core.CopyWork(p, out, in)
 	}
 	return out
 }
-func copySnapshotError(p *parser, err error) error {
+func copySnapshotError(p *core.Parser, err error) error {
 	syntax := func(e *SyntaxError) *SyntaxError {
 		if e == nil {
 			return nil
 		}
 		if p != nil {
-			p.stepWork()
+			p.StepWork()
 		}
 		out := *e
 		out.Expected, out.Messages = snapshotStrings(p, e.Expected), snapshotStrings(p, e.Messages)
@@ -438,7 +439,7 @@ type snapshotFrame struct {
 // freezeSnapshotGraph registers identities before following their edges. The
 // explicit DFS stack gives deterministic child-then-field rejection paths and
 // supports arbitrary depth and caller-created cycles without recursion.
-func freezeSnapshotGraph(p *parser, root *value.Node) (snapshotGraph, *SnapshotCaptureError) {
+func freezeSnapshotGraph(p *core.Parser, root *value.Node) (snapshotGraph, *SnapshotCaptureError) {
 	var g snapshotGraph
 	if root == nil {
 		return g, nil
@@ -451,7 +452,7 @@ func freezeSnapshotGraph(p *parser, root *value.Node) (snapshotGraph, *SnapshotC
 		if id, ok := seen[n]; ok {
 			return id, false
 		}
-		p.stepWork()
+		p.StepWork()
 		r := snapshotRecord{kind: value.D(n).Kind, start: value.D(n).Start, end: value.D(n).End, text: value.D(n).Text, fresh: value.D(n).Fresh, terminal: value.D(n).Terminal, gen: value.D(n).Gen}
 		if value.D(n).Children != nil {
 			r.children = make([]int, len(value.D(n).Children))
@@ -459,7 +460,7 @@ func freezeSnapshotGraph(p *parser, root *value.Node) (snapshotGraph, *SnapshotC
 		if value.D(n).Fields != nil {
 			r.fields = make(value.Fields, len(value.D(n).Fields))
 		}
-		g.nodes = growWork(p, g.nodes, 1)
+		g.nodes = core.GrowWork(p, g.nodes, 1)
 		g.nodes = append(g.nodes, r)
 		id := len(g.nodes)
 		seen[n] = id
@@ -468,7 +469,7 @@ func freezeSnapshotGraph(p *parser, root *value.Node) (snapshotGraph, *SnapshotC
 	g.root, _ = register(root)
 	stack := []snapshotFrame{{node: root, id: g.root}}
 	for len(stack) > 0 {
-		p.stepWork()
+		p.StepWork()
 		f := &stack[len(stack)-1]
 		var child *value.Node
 		var edge snapshotEdge
@@ -502,17 +503,17 @@ func freezeSnapshotGraph(p *parser, root *value.Node) (snapshotGraph, *SnapshotC
 		}
 		f.next++
 		if fresh {
-			stack = growWork(p, stack, 1)
+			stack = core.GrowWork(p, stack, 1)
 			stack = append(stack, snapshotFrame{node: child, id: id, edge: edge})
 		}
 	}
 	return g, nil
 }
-func snapshotFieldPath(p *parser, stack []snapshotFrame, edge snapshotEdge) string {
+func snapshotFieldPath(p *core.Parser, stack []snapshotFrame, edge snapshotEdge) string {
 	var out strings.Builder
 	out.WriteString("root")
 	write := func(e snapshotEdge) {
-		p.stepWork()
+		p.StepWork()
 		if e.child {
 			out.WriteString(".Children[")
 			out.WriteString(strconv.Itoa(e.index))
@@ -526,7 +527,7 @@ func snapshotFieldPath(p *parser, stack []snapshotFrame, edge snapshotEdge) stri
 		// remain interruptible while building the rejection path.
 		out.WriteByte('"')
 		for _, r := range e.name {
-			p.stepWork()
+			p.StepWork()
 			q := strconv.QuoteRune(r)
 			if r == '\'' {
 				q = "'"
@@ -549,7 +550,7 @@ func snapshotFieldPath(p *parser, stack []snapshotFrame, edge snapshotEdge) stri
 // shareSnapshotGraph reuses immutable records after freezing the current parse.
 // The default requires exact metadata; the private position-overlay candidate
 // keeps changed metadata separately. No mutable Node or parser slice is shared.
-func shareSnapshotGraph(p *parser, previous *snapshotGraph, next snapshotGraph) snapshotGraph {
+func shareSnapshotGraph(p *core.Parser, previous *snapshotGraph, next snapshotGraph) snapshotGraph {
 	if previous == nil || previous.root != next.root {
 		return next
 	}
@@ -560,7 +561,7 @@ func shareSnapshotGraph(p *parser, previous *snapshotGraph, next snapshotGraph) 
 		relative := make([]uint64, len(matches))
 		relativeCount := 0
 		for i := range next.nodes {
-			p.stepWork()
+			p.StepWork()
 			if i < previous.count() && sameSnapshotPayload(p, previous, previous.at(i), &next, &next.nodes[i]) {
 				old := previous.position(i, previous.at(i))
 				current := next.position(i, &next.nodes[i])
@@ -579,14 +580,14 @@ func shareSnapshotGraph(p *parser, previous *snapshotGraph, next snapshotGraph) 
 		// pointer to one record can keep its entire old backing array alive.
 		if uint64(relativeCount)*uint64(unsafe.Sizeof(snapshotRecord{})) > uint64(len(next.nodes))*uint64(unsafe.Sizeof(snapshotPositionDelta{}))*4/3 {
 			for i := range matches {
-				p.stepWork()
+				p.StepWork()
 				matches[i] |= relative[i]
 			}
 			ownedCount -= relativeCount
 		}
 	} else if previous.childChunks == nil {
 		for i := range next.nodes {
-			p.stepWork()
+			p.StepWork()
 			if i < previous.count() && sameFlatSnapshotRecord(p, previous.at(i), &next.nodes[i]) {
 				matches[i/64] |= 1 << uint(i%64)
 			} else {
@@ -595,7 +596,7 @@ func shareSnapshotGraph(p *parser, previous *snapshotGraph, next snapshotGraph) 
 		}
 	} else {
 		for i := range next.nodes {
-			p.stepWork()
+			p.StepWork()
 			if i < previous.count() && sameSnapshotRecord(p, previous, previous.at(i), &next, &next.nodes[i]) {
 				matches[i/64] |= 1 << uint(i%64)
 			} else {
@@ -613,7 +614,7 @@ func shareSnapshotGraph(p *parser, previous *snapshotGraph, next snapshotGraph) 
 	ownedAt := 0
 	needsPositions := false
 	for i := range next.nodes {
-		p.stepWork()
+		p.StepWork()
 		if matches[i/64]&(1<<uint(i%64)) != 0 {
 			ref := previous.at(i)
 			shared.refs[i] = ref
@@ -648,19 +649,19 @@ func shareSnapshotGraph(p *parser, previous *snapshotGraph, next snapshotGraph) 
 	return shared
 }
 
-func sameSnapshotPayload(p *parser, ag *snapshotGraph, a *snapshotRecord, bg *snapshotGraph, b *snapshotRecord) bool {
+func sameSnapshotPayload(p *core.Parser, ag *snapshotGraph, a *snapshotRecord, bg *snapshotGraph, b *snapshotRecord) bool {
 	if a.kind != b.kind || a.fresh != b.fresh || a.terminal != b.terminal ||
 		ag.hasChildren(a) != bg.hasChildren(b) || (a.fields == nil) != (b.fields == nil) ||
 		ag.childCount(a) != bg.childCount(b) || len(a.fields) != len(b.fields) || len(a.text) != len(b.text) {
 		return false
 	}
-	if p.compareText(a.text, b.text) != 0 || !sameSnapshotChildren(p, ag, a, bg, b) {
+	if p.CompareText(a.text, b.text) != 0 || !sameSnapshotChildren(p, ag, a, bg, b) {
 		return false
 	}
 	for i, f := range a.fields {
-		p.stepWork()
+		p.StepWork()
 		other := b.fields[i]
-		if p.compareText(f.Name, other.Name) != 0 || !sameSnapshotFieldValue(p, f.Value, other.Value) {
+		if p.CompareText(f.Name, other.Name) != 0 || !sameSnapshotFieldValue(p, f.Value, other.Value) {
 			return false
 		}
 	}
@@ -671,7 +672,7 @@ func sameSnapshotPayload(p *parser, ag *snapshotGraph, a *snapshotRecord, bg *sn
 // point into an older flat child slice, but never into an old graph or parser.
 // Changed runs own exact-size backing arrays, so later snapshots do not retain
 // a whole discarded child slice through one changed run.
-func shareSnapshotChildren(p *parser, previousGraph *snapshotGraph, previous, next *snapshotRecord) *snapshotChildChunks {
+func shareSnapshotChildren(p *core.Parser, previousGraph *snapshotGraph, previous, next *snapshotRecord) *snapshotChildChunks {
 	if len(next.children) < 4*snapshotChildChunkSize || !previousGraph.hasChildren(previous) {
 		return nil
 	}
@@ -681,7 +682,7 @@ func shareSnapshotChildren(p *parser, previousGraph *snapshotGraph, previous, ne
 	for i := range equal {
 		start := i * snapshotChildChunkSize
 		end := min(start+snapshotChildChunkSize, len(next.children))
-		p.control.charge(0, uint64(end-start))
+		p.Control.Charge(0, uint64(end-start))
 		old := previousGraph.childChunk(previous, i, end-start)
 		if len(old) != 0 && slices.Equal(old, next.children[start:end]) {
 			equal[i] = true
@@ -693,14 +694,14 @@ func shareSnapshotChildren(p *parser, previousGraph *snapshotGraph, previous, ne
 	}
 	chunks := make([][]int, count)
 	for i := range chunks {
-		p.stepWork()
+		p.StepWork()
 		start := i * snapshotChildChunkSize
 		end := min(start+snapshotChildChunkSize, len(next.children))
 		if equal[i] {
 			chunks[i] = previousGraph.childChunk(previous, i, end-start)
 		} else {
 			chunks[i] = make([]int, end-start)
-			copyWork(p, chunks[i], next.children[start:end])
+			core.CopyWork(p, chunks[i], next.children[start:end])
 		}
 	}
 	length := len(next.children)
@@ -709,7 +710,7 @@ func shareSnapshotChildren(p *parser, previousGraph *snapshotGraph, previous, ne
 	return &snapshotChildChunks{parts: chunks, length: length}
 }
 
-func sameSnapshotRecord(p *parser, ag *snapshotGraph, a *snapshotRecord, bg *snapshotGraph, b *snapshotRecord) bool {
+func sameSnapshotRecord(p *core.Parser, ag *snapshotGraph, a *snapshotRecord, bg *snapshotGraph, b *snapshotRecord) bool {
 	if !a.childChunked && !b.childChunked {
 		return sameFlatSnapshotRecord(p, a, b)
 	}
@@ -720,7 +721,7 @@ func sameSnapshotRecord(p *parser, ag *snapshotGraph, a *snapshotRecord, bg *sna
 		len(a.fields) != len(b.fields) || len(a.text) != len(b.text) {
 		return false
 	}
-	if p.compareText(a.text, b.text) != 0 {
+	if p.CompareText(a.text, b.text) != 0 {
 		return false
 	}
 	// A large repetition root can have many edges even when no node changed.
@@ -729,16 +730,16 @@ func sameSnapshotRecord(p *parser, ag *snapshotGraph, a *snapshotRecord, bg *sna
 		return false
 	}
 	for i, f := range a.fields {
-		p.stepWork()
+		p.StepWork()
 		other := b.fields[i]
-		if p.compareText(f.Name, other.Name) != 0 || !sameSnapshotFieldValue(p, f.Value, other.Value) {
+		if p.CompareText(f.Name, other.Name) != 0 || !sameSnapshotFieldValue(p, f.Value, other.Value) {
 			return false
 		}
 	}
 	return true
 }
 
-func sameFlatSnapshotRecord(p *parser, a, b *snapshotRecord) bool {
+func sameFlatSnapshotRecord(p *core.Parser, a, b *snapshotRecord) bool {
 	if a.kind != b.kind || a.start != b.start || a.end != b.end ||
 		a.fresh != b.fresh || a.terminal != b.terminal ||
 		a.gen != b.gen || (a.children == nil) != (b.children == nil) ||
@@ -746,32 +747,32 @@ func sameFlatSnapshotRecord(p *parser, a, b *snapshotRecord) bool {
 		len(a.fields) != len(b.fields) || len(a.text) != len(b.text) {
 		return false
 	}
-	if p.compareText(a.text, b.text) != 0 {
+	if p.CompareText(a.text, b.text) != 0 {
 		return false
 	}
 	for offset := 0; offset < len(a.children); offset += 4096 {
 		end := min(offset+4096, len(a.children))
-		p.control.charge(0, uint64(end-offset))
+		p.Control.Charge(0, uint64(end-offset))
 		if !slices.Equal(a.children[offset:end], b.children[offset:end]) {
 			return false
 		}
 	}
 	for i, f := range a.fields {
-		p.stepWork()
+		p.StepWork()
 		other := b.fields[i]
-		if p.compareText(f.Name, other.Name) != 0 || !sameSnapshotFieldValue(p, f.Value, other.Value) {
+		if p.CompareText(f.Name, other.Name) != 0 || !sameSnapshotFieldValue(p, f.Value, other.Value) {
 			return false
 		}
 	}
 	return true
 }
 
-func sameSnapshotChildren(p *parser, ag *snapshotGraph, a *snapshotRecord, bg *snapshotGraph, b *snapshotRecord) bool {
+func sameSnapshotChildren(p *core.Parser, ag *snapshotGraph, a *snapshotRecord, bg *snapshotGraph, b *snapshotRecord) bool {
 	count := ag.childCount(a)
 	if !a.childChunked && !b.childChunked {
 		for offset := 0; offset < count; offset += 4096 {
 			end := min(offset+4096, count)
-			p.control.charge(0, uint64(end-offset))
+			p.Control.Charge(0, uint64(end-offset))
 			if !slices.Equal(a.children[offset:end], b.children[offset:end]) {
 				return false
 			}
@@ -780,7 +781,7 @@ func sameSnapshotChildren(p *parser, ag *snapshotGraph, a *snapshotRecord, bg *s
 	}
 	for offset := 0; offset < count; offset += snapshotChildChunkSize {
 		end := min(offset+snapshotChildChunkSize, count)
-		p.control.charge(0, uint64(end-offset))
+		p.Control.Charge(0, uint64(end-offset))
 		if !slices.Equal(ag.childChunk(a, offset/snapshotChildChunkSize, end-offset), bg.childChunk(b, offset/snapshotChildChunkSize, end-offset)) {
 			return false
 		}
@@ -788,7 +789,7 @@ func sameSnapshotChildren(p *parser, ag *snapshotGraph, a *snapshotRecord, bg *s
 	return true
 }
 
-func sameSnapshotFieldValue(p *parser, a, b any) bool {
+func sameSnapshotFieldValue(p *core.Parser, a, b any) bool {
 	switch v := a.(type) {
 	case nil:
 		return b == nil
@@ -800,7 +801,7 @@ func sameSnapshotFieldValue(p *parser, a, b any) bool {
 		return ok && v == w
 	case string:
 		w, ok := b.(string)
-		return ok && p.compareText(v, w) == 0
+		return ok && p.CompareText(v, w) == 0
 	case bool:
 		w, ok := b.(bool)
 		return ok && v == w

@@ -172,7 +172,7 @@ func TestTraceDocumentReusedElementsPanicRetry(t *testing.T) {
 						childResumed = r.ReusedElements
 					}
 				}
-				if childResumed != 31 || doc.memo.len() != 0 || len(doc.runs) != 0 {
+				if childResumed != 31 || doc.memo.Len() != 0 || len(doc.runs) != 0 {
 					t.Fatalf("child resumed=%d; aborted document retained reusable state", childResumed)
 				}
 				pr = Profile{}

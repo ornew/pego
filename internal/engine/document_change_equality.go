@@ -1,8 +1,10 @@
 package engine
 
+import "github.com/ornew/pego/internal/engine/core"
+
 // equalChangeDiagnostics compares complete supported diagnostic values. Unknown
 // diagnostic types conservatively differ rather than running uncontrolled code.
-func equalChangeDiagnostics(p *parser, a, b error) bool {
+func equalChangeDiagnostics(p *core.Parser, a, b error) bool {
 	if a == nil || b == nil {
 		return a == nil && b == nil
 	}
@@ -15,7 +17,7 @@ func equalChangeDiagnostics(p *parser, a, b error) bool {
 		if x == nil || y == nil {
 			return x == nil && y == nil
 		}
-		p.stepWork()
+		p.StepWork()
 		if x.Pos != y.Pos || x.Line != y.Line || x.Col != y.Col {
 			return false
 		}
@@ -37,7 +39,7 @@ func equalChangeDiagnostics(p *parser, a, b error) bool {
 			return false
 		}
 		for i := range x {
-			p.stepWork()
+			p.StepWork()
 			if !equalChangeDiagnostics(p, x[i], y[i]) {
 				return false
 			}
@@ -48,14 +50,14 @@ func equalChangeDiagnostics(p *parser, a, b error) bool {
 	}
 }
 
-func equalChangeText(p *parser, a, b string) bool {
-	p.stepWork()
+func equalChangeText(p *core.Parser, a, b string) bool {
+	p.StepWork()
 	if len(a) != len(b) {
 		return false
 	}
 	for off := 0; off < len(a); {
 		end := min(len(a), off+2048)
-		p.control.charge(uint64(end-off)*2, 1)
+		p.Control.Charge(uint64(end-off)*2, 1)
 		if a[off:end] != b[off:end] {
 			return false
 		}
@@ -65,7 +67,7 @@ func equalChangeText(p *parser, a, b string) bool {
 }
 
 func equalChangeSnapshots(a, b *Snapshot) bool {
-	return equalChangeSnapshotsControlled(&parser{}, a, b)
+	return equalChangeSnapshotsControlled(&core.Parser{}, a, b)
 }
 
 // equalChangeSnapshotsControlled compares corresponding immutable directory IDs.
@@ -73,9 +75,9 @@ func equalChangeSnapshots(a, b *Snapshot) bool {
 // Exact directory equality proves equal metadata, ordered edges and alias topology,
 // including cycles. A different directory layout may conservatively differ; no
 // allocation or isomorphism search is needed to establish unchanged output.
-func equalChangeSnapshotsControlled(p *parser, a, b *Snapshot) bool {
-	p.control.check()
-	p.stepWork()
+func equalChangeSnapshotsControlled(p *core.Parser, a, b *Snapshot) bool {
+	p.Control.Check()
+	p.StepWork()
 	if a.Unit() != b.Unit() || !equalChangeDiagnostics(p, a.parseError, b.parseError) {
 		return false
 	}
@@ -84,7 +86,7 @@ func equalChangeSnapshotsControlled(p *parser, a, b *Snapshot) bool {
 		return false
 	}
 	for i := 0; i < ag.count(); i++ {
-		p.stepWork()
+		p.StepWork()
 		x, y := ag.at(i), bg.at(i)
 		xp, yp := ag.position(i, x), bg.position(i, y)
 		if !equalChangeText(p, x.kind.TypeName(), y.kind.TypeName()) || !equalChangeText(p, x.kind.RuleName(), y.kind.RuleName()) || xp.start != yp.start || xp.end != yp.end || !equalChangeText(p, x.text, y.text) || x.terminal != y.terminal || ag.hasChildren(x) != bg.hasChildren(y) || ag.childCount(x) != bg.childCount(y) {
@@ -94,7 +96,7 @@ func equalChangeSnapshotsControlled(p *parser, a, b *Snapshot) bool {
 			return false
 		}
 		for j, field := range x.fields {
-			p.stepWork()
+			p.StepWork()
 			other := y.fields[j]
 			if !equalChangeText(p, field.Name, other.Name) {
 				return false
@@ -114,12 +116,12 @@ func equalChangeSnapshotsControlled(p *parser, a, b *Snapshot) bool {
 			}
 		}
 		for j := 0; j < ag.childCount(x); j++ {
-			p.stepWork()
+			p.StepWork()
 			if ag.childID(x, j) != bg.childID(y, j) {
 				return false
 			}
 		}
 	}
-	p.control.check()
+	p.Control.Check()
 	return true
 }

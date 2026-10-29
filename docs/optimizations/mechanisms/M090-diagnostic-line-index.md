@@ -31,7 +31,7 @@ valid-parse gain.
 Evidence records: [039](../039-a-line-table-for-error-positions.md).
 
 Source owners: [`input.buildLines and
-lineCol`](../../../internal/engine/input.go), [`generated line
+lineCol`](../../../internal/engine/core/input.go), [`generated line
 lookup`](../../../runtime/runtime.go), [`TypeScript line
 index`](../../../internal/gen/tsgen/tsrt/runtime.ts).
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -19,34 +20,34 @@ rule value = v:[a-z]+ #atomic ","`
 // Completed calls can leave references beyond slice length. Stream commits
 // must release them at the next prune without disturbing active root values.
 func TestStreamStorageCommitReferences(t *testing.T) {
-	p := newParser(&mustCompile(t, `rule main = "a"`).sharedProgram, strings.Repeat("a", 4096), CodePoints, false)
+	p := core.NewParser(&mustCompile(t, `rule main = "a"`).sharedProgram, strings.Repeat("a", 4096), CodePoints, false)
 	live := value.Ptr(value.Data{Text: "live"})
 	dead := value.Ptr(value.Data{Text: "dead"})
-	root := p.newFrame(1)
-	root.vals[0] = live
-	p.frame = root
-	p.trail = make([]undo, 3)
-	p.trail[0] = undo{f: root, old: live}
-	p.trail[2] = undo{f: &frame{vals: []*value.Node{dead}}, old: dead}
-	p.trail = p.trail[:1]
+	root := p.NewFrame(1)
+	root.Vals[0] = live
+	p.Frame = root
+	p.Trail = make([]core.Undo, 3)
+	p.Trail[0] = core.Undo{F: root, Old: live}
+	p.Trail[2] = core.Undo{F: &core.Frame{Vals: []*value.Node{dead}}, Old: dead}
+	p.Trail = p.Trail[:1]
 	vmMachineOf(p).vals = []any{live, dead, dead}
 	vmMachineOf(p).vals = vmMachineOf(p).vals[:1]
-	p.commit(1023)
-	if len(p.trail) != 0 || p.pruned != 0 || vmMachineOf(p).vals[0] != live || root.vals[0] != live {
+	p.Commit(1023)
+	if len(p.Trail) != 0 || p.Pruned != 0 || vmMachineOf(p).vals[0] != live || root.Vals[0] != live {
 		t.Fatal("early commit damaged live state or pruned too soon")
 	}
-	p.commit(1024)
-	if p.pruned != 1024 || vmMachineOf(p).vals[0] != live || root.vals[0] != live {
+	p.Commit(1024)
+	if p.Pruned != 1024 || vmMachineOf(p).vals[0] != live || root.Vals[0] != live {
 		t.Fatal("pruning damaged live root or active VM value")
 	}
-	if streamUndoCleanup {
-		for _, u := range p.trail[:cap(p.trail)] {
-			if u.f != nil || u.old != nil {
+	if core.StreamUndoCleanup {
+		for _, u := range p.Trail[:cap(p.Trail)] {
+			if u.F != nil || u.Old != nil {
 				t.Fatal("inactive undo entry retained a completed value")
 			}
 		}
 	}
-	if streamStackCleanup {
+	if core.StreamStackCleanup {
 		for _, v := range vmMachineOf(p).vals[len(vmMachineOf(p).vals):cap(vmMachineOf(p).vals)] {
 			if v != nil {
 				t.Fatal("inactive VM stack entry retained a completed value")
@@ -56,46 +57,46 @@ func TestStreamStorageCommitReferences(t *testing.T) {
 }
 
 func TestStreamPrefixStorageIsolation(t *testing.T) {
-	if !streamPrefixIsolation {
+	if !core.StreamPrefixIsolation {
 		t.Skip("reference build shares prefix storage")
 	}
-	p := newStreamParser(&mustCompile(t, `rule main = "a"`).sharedProgram, strings.NewReader("a"), CodePoints)
-	root := p.newFrame(1)
-	p.frame = root
-	prefix := p.newNode(value.Data{Text: "prefix"})
-	root.vals[0] = prefix
-	if p.nodeSlab != nil || p.ptrSlab != nil || p.frameSlab != nil {
+	p := core.NewStreamParser(&mustCompile(t, `rule main = "a"`).sharedProgram, strings.NewReader("a"), CodePoints)
+	root := p.NewFrame(1)
+	p.Frame = root
+	prefix := p.NewNode(value.Data{Text: "prefix"})
+	root.Vals[0] = prefix
+	if p.NodeSlab != nil || p.PtrSlab != nil || p.FrameSlab != nil {
 		t.Fatal("prefix wasted or shared a bulk allocation")
 	}
-	p.startStreamChunks()
-	next := p.newNode(value.Data{Text: "element"})
-	element := p.newFrame(1)
-	if next == prefix || &element.vals[0] == &root.vals[0] || element == root {
+	p.StartStreamChunks()
+	next := p.NewNode(value.Data{Text: "element"})
+	element := p.NewFrame(1)
+	if next == prefix || &element.Vals[0] == &root.Vals[0] || element == root {
 		t.Fatal("element allocation still shares live prefix chunks")
 	}
-	if p.frame != root || root.vals[0] != prefix || value.D(prefix).Text != "prefix" {
+	if p.Frame != root || root.Vals[0] != prefix || value.D(prefix).Text != "prefix" {
 		t.Fatal("prefix isolation changed live root capture")
 	}
 }
 
 // Large prefixes must switch to slabs instead of allocating every object.
 func TestStreamPrefixAllocationBudget(t *testing.T) {
-	if !streamPrefixIsolation {
+	if !core.StreamPrefixIsolation {
 		t.Skip("reference build uses slabs")
 	}
-	p := newStreamParser(&mustCompile(t, `rule main = "a"`).sharedProgram, strings.NewReader("a"), CodePoints)
-	for range nodeChunk/8 + 4 {
-		p.newNode(value.Data{Text: "prefix"})
+	p := core.NewStreamParser(&mustCompile(t, `rule main = "a"`).sharedProgram, strings.NewReader("a"), CodePoints)
+	for range core.NodeChunk/8 + 4 {
+		p.NewNode(value.Data{Text: "prefix"})
 	}
-	if len(p.nodeSlab) == 0 || p.nodeChunks != 1 {
+	if len(p.NodeSlab) == 0 || p.NodeChunks != 1 {
 		t.Fatal("large prefix did not switch to bounded slab allocation")
 	}
-	p.startStreamChunks()
-	if p.nodeChunks != 0 || len(p.nodeSlab) != 0 {
+	p.StartStreamChunks()
+	if p.NodeChunks != 0 || len(p.NodeSlab) != 0 {
 		t.Fatal("stream boundary did not seal large prefix storage")
 	}
-	p.newNode(value.Data{Text: "element"})
-	if p.nodeChunks != 1 || len(p.nodeSlab) != nodeChunk-1 {
+	p.NewNode(value.Data{Text: "element"})
+	if p.NodeChunks != 1 || len(p.NodeSlab) != core.NodeChunk-1 {
 		t.Fatal("elements did not resume normal slab allocation")
 	}
 }
@@ -277,10 +278,10 @@ func BenchmarkStreamStorageRetainedHeap(b *testing.B) {
 						runtime.GC()
 						var before, during runtime.MemStats
 						runtime.ReadMemStats(&before)
-						p := newStreamParser(&prog.sharedProgram, strings.NewReader(text), unit)
-						p.descs = prog.descs(backend)
+						p := core.NewStreamParser(&prog.sharedProgram, strings.NewReader(text), unit)
+						p.Descs = prog.descs(backend)
 						count := 0
-						p.emit = func(n *value.Node) error {
+						p.Emit = func(n *value.Node) error {
 							count++
 							if count == 200 {
 								runtime.GC()
@@ -290,8 +291,8 @@ func BenchmarkStreamStorageRetainedHeap(b *testing.B) {
 							runtime.KeepAlive(n)
 							return nil
 						}
-						if _, ok := p.call(rule, 0); !ok || !p.atEOF() || count != 301 {
-							b.Fatalf("count=%d pos=%d: %v", count, p.pos, p.syntaxError())
+						if _, ok := p.Call(rule, 0); !ok || !p.AtEOF() || count != 301 {
+							b.Fatalf("count=%d pos=%d: %v", count, p.Pos, p.SyntaxError())
 						}
 						runtime.KeepAlive(p)
 						runtime.KeepAlive(text)

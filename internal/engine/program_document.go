@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 )
 
 // NewDocument creates a Document that parses text with the rule start. Positions are in code
@@ -18,15 +19,15 @@ func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (d *Doc
 	if prog.HasMissing || o.MissingTokens != 0 {
 		return nil, compile.MissingUnsupported("Document parsing")
 	}
-	if err := validateStreamDiagnostics(o, false); err != nil {
+	if err := core.ValidateStreamDiagnostics(o, false); err != nil {
 		return nil, err
 	}
 	defer func() {
 		if x := recover(); x != nil {
-			if f, ok := x.(fatal); ok {
-				d, err = nil, f.err
-			} else if cp, ok := x.(contextPanic); ok {
-				panic(cp.value)
+			if f, ok := x.(core.Fatal); ok {
+				d, err = nil, f.Err
+			} else if cp, ok := x.(core.ContextPanic); ok {
+				panic(cp.Value)
 			} else {
 				panic(x)
 			}
@@ -43,10 +44,10 @@ func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (d *Doc
 	if err != nil {
 		return nil, err
 	}
-	c.check()
-	in := newControlledDocumentInput(text, o.Unit, c)
-	c.check()
-	in.control = nil // construction counters never become parse defaults
+	c.Check()
+	in := core.NewControlledDocumentInput(text, o.Unit, c)
+	c.Check()
+	in.Control = nil // construction counters never become parse defaults
 	return newDocument(prog, start, prog.backend(o.Backend), o, in), nil
 }
 
@@ -65,9 +66,9 @@ func (p *Program) NewChangeDocumentWith(start, text string, o ParseOptions, queu
 
 func (prog *Program) selectBackend(b Backend) Backend { return prog.backend(b) }
 
-func (prog *Program) shared() *sharedProgram { return &prog.sharedProgram }
+func (prog *Program) shared() *core.SharedProgram { return &prog.sharedProgram }
 
-func (prog *Program) prepareDocumentRun(b Backend, c *workControl) (documentRunner, error) {
+func (prog *Program) prepareDocumentRun(b Backend, c *core.WorkControl) (documentRunner, error) {
 	active, err := prog.prepareControlledProgram(b, c)
 	if err != nil {
 		return nil, err

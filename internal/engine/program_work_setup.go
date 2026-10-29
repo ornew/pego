@@ -4,12 +4,13 @@ import (
 	"fmt"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 )
 
 // admitParse validates fixed metadata before caller Context methods. Callers
 // resolve an empty start to the default start rule first. Lazy setup
 // is not charged, but active calls check immediately around each component.
-func (prog *Program) admitParse(start string, o ParseOptions, stream bool) (*Program, *rule, *workControl, error) {
+func (prog *Program) admitParse(start string, o ParseOptions, stream bool) (*Program, *core.Rule, *core.WorkControl, error) {
 	if err := prog.CheckStart(start); err != nil {
 		return nil, nil, nil, err
 	}
@@ -49,15 +50,15 @@ func (prog *Program) admitParse(start string, o ParseOptions, stream bool) (*Pro
 			return nil, nil, nil, err
 		}
 	}
-	c := newWorkControl(o.Context, o.WorkLimits)
-	if !workControlsEnabled && c != nil {
+	c := core.NewWorkControl(o.Context, o.WorkLimits)
+	if !core.WorkControlsEnabled && c != nil {
 		return nil, nil, nil, fmt.Errorf("work controls are unavailable in the reference build")
 	}
-	c.check()
+	c.Check()
 	active := prog
 	if o.Recognize {
 		active, err = prog.Recognizer()
-		c.check()
+		c.Check()
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -99,30 +100,30 @@ func (prog *Program) preflightRule(b Backend, name string, stream bool) (bool, e
 	return false, fmt.Errorf("rule %s is not defined", name)
 }
 
-func (prog *Program) prepareControlledRule(b Backend, name string, c *workControl) (*rule, error) {
-	if !workControlsEnabled || c == nil || prog.backend(b) == Closure {
+func (prog *Program) prepareControlledRule(b Backend, name string, c *core.WorkControl) (*core.Rule, error) {
+	if !core.WorkControlsEnabled || c == nil || prog.backend(b) == Closure {
 		return prog.rule(b, name)
 	}
-	c.check()
+	c.Check()
 	m := prog.Module()
-	c.check() // Also the checkpoint immediately before VM preparation.
+	c.Check() // Also the checkpoint immediately before VM preparation.
 	switch prog.backend(b) {
 	case Bytecode:
 		prog.vmOnce.Do(func() { prog.vm = newVMProgram(m) })
 	case BytecodeIterative:
 		prog.ivmOnce.Do(func() { prog.ivm = newIVMProgram(m) })
 	}
-	c.check()
+	c.Check()
 	return prog.rule(b, name)
 }
 
 // prepareControlledProgram builds the metered closure graph only when needed.
 // Context methods stay outside Once so reentrant calls cannot deadlock setup.
-func (prog *Program) prepareControlledProgram(b Backend, c *workControl) (*Program, error) {
-	if !workControlsEnabled || c == nil || prog.backend(b) != Closure {
+func (prog *Program) prepareControlledProgram(b Backend, c *core.WorkControl) (*Program, error) {
+	if !core.WorkControlsEnabled || c == nil || prog.backend(b) != Closure {
 		return prog, nil
 	}
-	c.check()
+	c.Check()
 	prog.workOnce.Do(func() {
 		flags := make([]compile.RuleFlags, len(prog.RuleList))
 		for i, r := range prog.RuleList {
@@ -136,7 +137,7 @@ func (prog *Program) prepareControlledProgram(b Backend, c *workControl) (*Progr
 			SourceInfo:         prog.RecordsSourceInfo,
 		}, flags)
 	})
-	c.check()
+	c.Check()
 	if prog.workProgram == nil && prog.workErr == nil {
 		return nil, fmt.Errorf("controlled closure initialization did not complete")
 	}

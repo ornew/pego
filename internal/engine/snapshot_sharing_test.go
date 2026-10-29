@@ -9,12 +9,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
 
 func TestSnapshotSharedRecordsAndInterruption(t *testing.T) {
-	if !workControlsEnabled {
+	if !core.WorkControlsEnabled {
 		t.Skip("work controls reference")
 	}
 	prog := mustCompile(t, `rule main = item* $$
@@ -50,7 +51,7 @@ rule item = [a-z]`)
 		ctx := &snapshotPhaseContext{Context: context.Background(), done: make(chan struct{}), phase: "shareSnapshotGraph"}
 		o.Context = ctx
 		interrupted, err := d.SnapshotWith(o)
-		if interrupted != nil || !errors.Is(err, context.Canceled) || !ctx.seen || d.memo.len() != 0 {
+		if interrupted != nil || !errors.Is(err, context.Canceled) || !ctx.seen || d.memo.Len() != 0 {
 			t.Fatal("share interruption", interrupted, err)
 		}
 		o.Context = nil
@@ -64,7 +65,7 @@ rule item = [a-z]`)
 }
 
 func TestSnapshotSharedStringComparisonRespectsWorkLimit(t *testing.T) {
-	if !workControlsEnabled {
+	if !core.WorkControlsEnabled {
 		t.Skip("work controls reference")
 	}
 	long := strings.Repeat("a", 1<<16)
@@ -78,7 +79,7 @@ func TestSnapshotSharedStringComparisonRespectsWorkLimit(t *testing.T) {
 		{"field value", snapshotRecord{fields: value.Fields{{Name: "x", Value: long}}}, snapshotRecord{fields: value.Fields{{Name: "x", Value: strings.Clone(long)}}}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			p := &parser{control: newWorkControl(nil, limits.WorkLimits{MaxSteps: 1024})}
+			p := &core.Parser{Control: core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 1024})}
 			err := catchFatal(t, func() { sameSnapshotRecord(p, &snapshotGraph{}, &tc.a, &snapshotGraph{}, &tc.b) })
 			var limit *limits.WorkLimitError
 			if !errors.As(err, &limit) || limit.Kind != limits.StepWorkLimit {
@@ -209,7 +210,7 @@ rule item = [a-z]`)
 }
 
 func TestSnapshotChildRunCopyRespectsWorkLimit(t *testing.T) {
-	if !snapshotChildChunksEnabled || !workControlsEnabled {
+	if !snapshotChildChunksEnabled || !core.WorkControlsEnabled {
 		t.Skip("child run or work control reference")
 	}
 	children := make([]int, 1025)
@@ -223,7 +224,7 @@ func TestSnapshotChildRunCopyRespectsWorkLimit(t *testing.T) {
 	changed[512] = 9999
 	next := snapshotRecord{children: changed}
 	graph := snapshotGraph{nodes: []snapshotRecord{old}}
-	p := &parser{control: newWorkControl(nil, limits.WorkLimits{MaxSteps: 1170})}
+	p := &core.Parser{Control: core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 1170})}
 	err := catchFatal(t, func() { shareSnapshotChildren(p, &graph, &graph.nodes[0], &next) })
 	var limit *limits.WorkLimitError
 	if !errors.As(err, &limit) || limit.Kind != limits.StepWorkLimit {
@@ -232,7 +233,7 @@ func TestSnapshotChildRunCopyRespectsWorkLimit(t *testing.T) {
 	if next.childChunked || len(next.children) != 1025 || next.children[512] != 9999 {
 		t.Fatal("interrupted copy changed the source record")
 	}
-	p = &parser{control: newWorkControl(nil, limits.WorkLimits{})}
+	p = &core.Parser{Control: core.NewWorkControl(nil, limits.WorkLimits{})}
 	chunks := shareSnapshotChildren(p, &graph, &graph.nodes[0], &next)
 	if chunks == nil || !next.childChunked || next.children != nil || chunks.length != 1025 || len(chunks.parts[4]) != 1 {
 		t.Fatal("successful copy did not retain the exact child shape")
@@ -252,7 +253,7 @@ func TestSnapshotChunkedHandleIdentity(t *testing.T) {
 	children[0] = 1 // The wide child points back to the root.
 	wide := snapshotRecord{children: children}
 	previous := snapshotGraph{nodes: []snapshotRecord{wide}}
-	p := &parser{control: newWorkControl(nil, limits.WorkLimits{})}
+	p := &core.Parser{Control: core.NewWorkControl(nil, limits.WorkLimits{})}
 	chunks := shareSnapshotChildren(p, &previous, &previous.nodes[0], &wide)
 	if chunks == nil {
 		t.Fatal("wide child sequence did not share")

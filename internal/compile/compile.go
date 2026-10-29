@@ -101,7 +101,7 @@ type Options struct {
 
 // Rule is a rule of a compiled program: what the compiler found out about it. Every backend and
 // generator reads it; the engine's parser runs a rule
-// (internal/engine/runtime.go) made from it.
+// (internal/engine/core/runtime.go) made from it.
 type Rule struct {
 	// Where names the rule in the message of a failed action, if not name (Rule.WhereName).
 	Where string

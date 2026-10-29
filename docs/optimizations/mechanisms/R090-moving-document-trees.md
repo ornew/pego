@@ -37,7 +37,7 @@ Evidence records:
 [045](../045-moving-reused-trees-in-place-after-document-edits.md).
 
 Source owners: [`moveResult and moved Node
-handling`](../../../internal/engine/runtime.go), [`Node generation and
+handling`](../../../internal/engine/core/runtime.go), [`Node generation and
 Clone`](../../../internal/value/node.go), [`edit log and result
 shift`](../../../internal/engine/document.go).
 

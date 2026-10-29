@@ -34,7 +34,7 @@ do not describe current piece-table input or every recognition grammar.
 Evidence records:
 [030](../030-building-the-code-point-offset-table-on-demand.md).
 
-Source owners: [`input.buildOffs and text`](../../../internal/engine/input.go),
+Source owners: [`input.buildOffs and text`](../../../internal/engine/core/input.go),
 [`Document input-table retention`](../../../internal/engine/document.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

@@ -23,17 +23,3 @@ type InlineActionNames = compile.InlineActionNames
 func LowerInlineActions(g *grammar.Grammar) (*grammar.Grammar, *InlineActionNames, error) {
 	return compile.LowerInlineActions(g)
 }
-
-// staticProgram and staticRule are the compiler's program and rule. Program and rule embed them
-// under these names, so the embedded fields stay unexported.
-type (
-	staticProgram = compile.Program
-	staticRule    = compile.Rule
-)
-
-// expID and msgBit are the compiler's expectation IDs and the bit that marks an @error message;
-// the runtime records them under these names, which the runtime package of generated parsers
-// exports as ExpID and MsgBit.
-type expID = compile.ExpID
-
-const msgBit = compile.MsgBit

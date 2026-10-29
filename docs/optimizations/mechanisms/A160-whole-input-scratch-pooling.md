@@ -35,8 +35,8 @@ Evidence records:
 [058](../058-pooling-the-scratch-memory-of-generated-parse-and-recognize.md).
 
 Source owners: [`acquirePooledParser and
-releaseScratch`](../../../internal/engine/input.go),
-[`sharedProgram.scratch`](../../../internal/engine/runtime.go), [`generated parser
+releaseScratch`](../../../internal/engine/core/input.go),
+[`sharedProgram.scratch`](../../../internal/engine/core/runtime.go), [`generated parser
 pool`](../../../runtime/runtime.go), [`typed pool and
 release`](../../../runtime/typed.go).
 

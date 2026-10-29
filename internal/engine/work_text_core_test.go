@@ -10,17 +10,18 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 )
 
 func TestWorkTextFallbackBudgetCore(t *testing.T) {
 	for _, u := range []PositionUnit{Bytes, CodePoints} {
-		in := input{unit: u, bs: make([]byte, 8192), in: make([]rune, 256), control: newWorkControl(nil, limits.WorkLimits{MaxInputWork: 1})}
-		end := len(in.bs)
+		in := core.Input{Unit: u, Bs: make([]byte, 8192), In: make([]rune, 256), Control: core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 1})}
+		end := len(in.Bs)
 		if u == CodePoints {
-			end = len(in.in)
+			end = len(in.In)
 		}
-		if err := catchFatal(t, func() { _ = in.text(0, end) }); !errors.Is(err, limits.ErrWorkLimit) {
+		if err := catchFatal(t, func() { _ = in.Text(0, end) }); !errors.Is(err, limits.ErrWorkLimit) {
 			t.Fatalf("%v materialization error=%v, want work limit", u, err)
 		}
 	}
@@ -28,11 +29,11 @@ func TestWorkTextFallbackBudgetCore(t *testing.T) {
 
 func TestWorkTextSizingOverflow(t *testing.T) {
 	maxInt := int(^uint(0) >> 1)
-	if got := checkedTextSize(maxInt-3, 3); got != maxInt {
+	if got := core.CheckedTextSize(maxInt-3, 3); got != maxInt {
 		t.Fatalf("exact maximum=%d", got)
 	}
 	for _, args := range [][2]int{{maxInt, 1}, {maxInt - 2, 3}, {-1, 1}, {0, -1}} {
-		if err := catchFatal(t, func() { checkedTextSize(args[0], args[1]) }); err == nil {
+		if err := catchFatal(t, func() { core.CheckedTextSize(args[0], args[1]) }); err == nil {
 			t.Fatalf("sizing %v did not fail", args)
 		}
 	}
@@ -62,29 +63,29 @@ rule piece = .*`
 						if cancel && u == Bytes {
 							continue
 						}
-						var observed *parser
+						var observed *core.Parser
 						armed := false
 						n, err := prog.ParseWith("main", source, ParseOptions{Backend: b, Unit: u, Recognize: recognize, WorkLimits: limits.WorkLimits{MaxInputWork: 1 << 50}, Trace: func(e TraceEvent) {
-							observed = traceParser(e)
+							observed = core.TraceParser(e)
 							if e.Kind != TraceExit || e.Rule != "piece" || !e.Matched {
 								return
 							}
 							armed = true
 							if cancel {
-								traceParser(e).control.inputSinceCheck, traceParser(e).control.stepsSinceCheck = 0, 0
+								core.TraceParser(e).Control.InputSinceCheck, core.TraceParser(e).Control.StepsSinceCheck = 0, 0
 								polls := 2
 								if traceText {
 									polls = 1
 								}
-								traceParser(e).control.ctx = newPollingContext(polls)
+								core.TraceParser(e).Control.Ctx = newPollingContext(polls)
 							} else {
-								traceParser(e).control.limits.MaxInputWork = traceParser(e).control.inputUsed + 16
+								core.TraceParser(e).Control.Limits.MaxInputWork = core.TraceParser(e).Control.InputUsed + 16
 							}
 							if traceText {
 								_ = e.Text()
 							}
 						}})
-						if !armed || observed == nil || observed.scratch != nil || observed.control != nil {
+						if !armed || observed == nil || observed.Scratch != nil || observed.Control != nil {
 							t.Fatalf("%v/%v trace=%t recognition=%t cancel=%t: trace/cleanup failed", b, u, traceText, recognize, cancel)
 						}
 						if u == CodePoints {
@@ -115,25 +116,25 @@ rule piece = .*`
 
 func TestWorkTextStepBudgetAndLazyOffsets(t *testing.T) {
 	for _, u := range []PositionUnit{Bytes, CodePoints} {
-		in := input{unit: u, bs: make([]byte, 4097), in: make([]rune, 129), control: newWorkControl(nil, limits.WorkLimits{MaxSteps: 128})}
-		end := len(in.in)
+		in := core.Input{Unit: u, Bs: make([]byte, 4097), In: make([]rune, 129), Control: core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 128})}
+		end := len(in.In)
 		if u == Bytes {
-			end = len(in.bs)
-			in.control.limits.MaxSteps = 1
+			end = len(in.Bs)
+			in.Control.Limits.MaxSteps = 1
 		}
-		err := catchFatal(t, func() { _ = in.text(0, end) })
+		err := catchFatal(t, func() { _ = in.Text(0, end) })
 		var limit *limits.WorkLimitError
 		if !errors.As(err, &limit) || limit.Kind != limits.StepWorkLimit {
 			t.Fatalf("%v step error=%v", u, err)
 		}
 	}
 	source := "aé😀z"
-	in := input{unit: CodePoints, src: source, srcOK: true, in: []rune(source), control: newWorkControl(nil, limits.WorkLimits{MaxInputWork: 1})}
-	if err := catchFatal(t, func() { _ = in.text(1, 3) }); !errors.Is(err, limits.ErrWorkLimit) || in.offs != nil {
-		t.Fatalf("lazy offsets error=%v offsets=%v", err, in.offs)
+	in := core.Input{Unit: CodePoints, Src: source, SrcOK: true, In: []rune(source), Control: core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 1})}
+	if err := catchFatal(t, func() { _ = in.Text(1, 3) }); !errors.Is(err, limits.ErrWorkLimit) || in.Offs != nil {
+		t.Fatalf("lazy offsets error=%v offsets=%v", err, in.Offs)
 	}
-	in.control = newWorkControl(nil, limits.WorkLimits{MaxInputWork: 100})
-	if got := in.text(1, 3); got != "é😀" {
+	in.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxInputWork: 100})
+	if got := in.Text(1, 3); got != "é😀" {
 		t.Fatalf("offset retry=%q", got)
 	}
 }

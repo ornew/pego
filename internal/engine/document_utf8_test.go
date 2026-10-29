@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/internal/engine/core"
 )
 
 // decodedBoundaries is an independent oracle for edit validation: invalid
@@ -35,7 +37,7 @@ func TestInvalidUTF8EditBoundaries(t *testing.T) {
 			want[pos] = true
 		}
 		for pos := 0; pos <= len(s); pos++ {
-			if got := validBoundary(s, Bytes, pos) == nil; got != want[pos] {
+			if got := core.ValidBoundary(s, Bytes, pos) == nil; got != want[pos] {
 				t.Fatalf("input %x position %d: valid=%v, want %v", s, pos, got, want[pos])
 			}
 		}
@@ -139,7 +141,7 @@ func BenchmarkDecodedEditBoundary(b *testing.B) {
 			pos := len(s) - len(string([]rune(s)[0]))
 			b.ReportAllocs()
 			for b.Loop() {
-				if err := validBoundary(s, Bytes, pos); err != nil {
+				if err := core.ValidBoundary(s, Bytes, pos); err != nil {
 					b.Fatal(err)
 				}
 			}
@@ -148,7 +150,7 @@ func BenchmarkDecodedEditBoundary(b *testing.B) {
 			b.Run(fmt.Sprintf("%x/interior", s[:min(len(s), 4)]), func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
-					if err := validBoundary(s, Bytes, len(s)-1); err == nil {
+					if err := core.ValidBoundary(s, Bytes, len(s)-1); err == nil {
 						b.Fatal("accepted interior position")
 					}
 				}
@@ -160,10 +162,10 @@ func BenchmarkDecodedEditBoundary(b *testing.B) {
 func BenchmarkByteDecodeDependency(b *testing.B) {
 	for _, s := range []string{"a", "é", "日", "😀", "\x80", "\xc3", "\xe6\xbc", "\xf0\x9f\x98"} {
 		b.Run(fmt.Sprintf("%x", s), func(b *testing.B) {
-			in := newInput(s, Bytes)
+			in := core.NewInput(s, Bytes)
 			b.ReportAllocs()
 			for b.Loop() {
-				if _, size, _, ok := in.decode(0); !ok || size < 1 {
+				if _, size, _, ok := in.Decode(0); !ok || size < 1 {
 					b.Fatal("failed decoding")
 				}
 			}

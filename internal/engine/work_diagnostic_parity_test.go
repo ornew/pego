@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -152,7 +153,7 @@ rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}`,
 							trace := func(e TraceEvent) {
 								// Force eager recording for this fixture, on both paths.
 								if e.Kind == TraceEnter {
-									traceParser(e).deferMemo = false
+									core.TraceParser(e).DeferMemo = false
 								}
 								if e.Kind == TraceExit && e.Memo && e.Rule == "r" {
 									memoObserved = true

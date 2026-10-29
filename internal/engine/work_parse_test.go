@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 )
 
@@ -52,19 +53,19 @@ func TestWorkParseCancelledFromTraceAndPanicCleanup(t *testing.T) {
 	prog := mustCompile(t, `rule main = "abc" $$`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		ctx, cancel := context.WithCancel(context.Background())
-		var observed *parser
-		n, err := prog.ParseWith("main", "abc", ParseOptions{Backend: b, Context: ctx, Trace: func(e TraceEvent) { observed = traceParser(e); cancel() }})
-		if n != nil || !errors.Is(err, context.Canceled) || observed == nil || observed.scratch != nil || observed.control != nil {
+		var observed *core.Parser
+		n, err := prog.ParseWith("main", "abc", ParseOptions{Backend: b, Context: ctx, Trace: func(e TraceEvent) { observed = core.TraceParser(e); cancel() }})
+		if n != nil || !errors.Is(err, context.Canceled) || observed == nil || observed.Scratch != nil || observed.Control != nil {
 			t.Fatalf("%v: cancellation/cleanup node=%v err=%v parser=%v", b, n, err, observed)
 		}
 		token := &struct{ label string }{"caller panic"}
 		var got any
 		func() {
 			defer func() { got = recover() }()
-			_, _ = prog.ParseWith("main", "abc", ParseOptions{Backend: b, Trace: func(e TraceEvent) { observed = traceParser(e); panic(token) }})
+			_, _ = prog.ParseWith("main", "abc", ParseOptions{Backend: b, Trace: func(e TraceEvent) { observed = core.TraceParser(e); panic(token) }})
 		}()
-		if got != token || observed.scratch != nil || observed.control != nil {
-			t.Fatalf("%v: panic=%v scratch=%v control=%v", b, got, observed.scratch, observed.control)
+		if got != token || observed.Scratch != nil || observed.Control != nil {
+			t.Fatalf("%v: panic=%v scratch=%v control=%v", b, got, observed.Scratch, observed.Control)
 		}
 	}
 }
@@ -79,7 +80,7 @@ func TestWorkParseLongLiteralAndScanner(t *testing.T) {
 			n, err := prog.ParseWith("main", literal, ParseOptions{Backend: b, Unit: Bytes, Context: ctx, Trace: func(e TraceEvent) {
 				if e.Kind == TraceEnter {
 					calls++
-					traceParser(e).control.ctx = newPollingContext(2)
+					core.TraceParser(e).Control.Ctx = newPollingContext(2)
 				}
 			}})
 			cancel()
@@ -134,13 +135,13 @@ rule item = "a" ";" #recover(skip=[^;]* ";")`)
 func TestWorkParseTraceAccessorInterruption(t *testing.T) {
 	prog := mustCompile(t, `rule main = "abc" $$`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		var observed *parser
+		var observed *core.Parser
 		n, err := prog.ParseWith("main", "abc", ParseOptions{Backend: b, WorkLimits: limits.WorkLimits{MaxInputWork: 100}, Trace: func(e TraceEvent) {
-			observed = traceParser(e)
-			traceParser(e).control.limits.MaxInputWork = traceParser(e).control.inputUsed
+			observed = core.TraceParser(e)
+			core.TraceParser(e).Control.Limits.MaxInputWork = core.TraceParser(e).Control.InputUsed
 			e.LineCol(1) // Building the first line table is engine work inside caller code.
 		}})
-		if n != nil || !errors.Is(err, limits.ErrWorkLimit) || observed == nil || observed.scratch != nil {
+		if n != nil || !errors.Is(err, limits.ErrWorkLimit) || observed == nil || observed.Scratch != nil {
 			t.Fatalf("%v accessor interruption: node=%v err=%v parser=%v", b, n, err, observed)
 		}
 	}

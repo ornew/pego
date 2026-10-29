@@ -36,8 +36,8 @@ Evidence records:
 [022](../022-bounded-memory-and-less-copying-in-stream-parsing.md).
 
 Source owners: [`input.discard and
-parser.commit`](../../../internal/engine/input.go),
-[`memoTable.prune`](../../../internal/engine/memo.go).
+parser.commit`](../../../internal/engine/core/input.go),
+[`memoTable.prune`](../../../internal/engine/core/memo.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

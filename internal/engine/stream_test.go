@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -117,18 +118,18 @@ func TestParseStreamDiscardsInput(t *testing.T) {
 	prog := mustCompile(t, records)
 	r := &lineReader{header: "#records\n", line: "key=42\n", n: 100000}
 	maxBuf := 0
-	p := newStreamParser(&prog.sharedProgram, r, CodePoints)
-	p.emit = func(*value.Node) error {
-		maxBuf = max(maxBuf, len(p.in))
+	p := core.NewStreamParser(&prog.sharedProgram, r, CodePoints)
+	p.Emit = func(*value.Node) error {
+		maxBuf = max(maxBuf, len(p.In))
 		return nil
 	}
-	if _, ok := p.call(prog.closureRule("main"), 0); !ok {
-		t.Fatal(p.syntaxError())
+	if _, ok := p.Call(prog.closureRule("main"), 0); !ok {
+		t.Fatal(p.SyntaxError())
 	}
 	if maxBuf > 10000 {
 		t.Errorf("buffer grew to %d runes", maxBuf)
 	}
-	if n := p.memo.len(); n > 5000 {
+	if n := p.Memo.Len(); n > 5000 {
 		t.Errorf("memo has %d entries", n)
 	}
 }

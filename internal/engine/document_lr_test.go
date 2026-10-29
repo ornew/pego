@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 )
 
 func TestDocumentIndirectLeftRecursionEdits(t *testing.T) {
@@ -67,104 +68,104 @@ rule r2 = r1 / r2 "a" "b"`
 
 func TestDocumentSeedDependencyCompletion(t *testing.T) {
 	for _, imported := range []bool{false, true} {
-		p := &parser{memo: newMemoTable(), memoAll: true}
-		r := &rule{ID: 1, Leader: true}
-		st, _, _, hit := p.callBegin(r, 0)
+		p := &core.Parser{Memo: core.NewMemoTable(), MemoAll: true}
+		r := &core.Rule{ID: 1, Leader: true}
+		st, _, _, hit := p.CallBegin(r, 0)
 		if hit {
 			t.Fatal("new leader unexpectedly memoized")
 		}
-		g := p.growBegin(st.key)
+		g := p.GrowBegin(st.Key)
 		if imported {
 			// This helper was computed under an earlier head in this generation.
-			e := p.memo.alloc()
-			*e = memoEntry{ok: true, provisional: true}
-			p.memo.put(memoKey{rule: 2}, e)
-			r = &rule{ID: 2}
+			e := p.Memo.Alloc()
+			*e = core.MemoEntry{Ok: true, Provisional: true}
+			p.Memo.Put(core.MemoKey{Rule: 2}, e)
+			r = &core.Rule{ID: 2}
 		}
-		if _, _, _, hit := p.callBegin(r, 0); !hit {
+		if _, _, _, hit := p.CallBegin(r, 0); !hit {
 			t.Fatal("seed or imported helper was not reused")
 		}
-		r = &rule{ID: 1, Leader: true}
-		v, ok := p.growEnd(r, &g)
-		p.callEnd(r, &st, v, ok)
-		e, _ := p.memo.get(st.key)
-		if e.provisional != imported || p.provisional != 1 || p.memoSeedUses != 0 {
-			t.Fatalf("imported=%v: provisional=%v, seed uses=%d, repetition uses=%d", imported, e.provisional, p.memoSeedUses, p.provisional)
+		r = &core.Rule{ID: 1, Leader: true}
+		v, ok := p.GrowEnd(r, &g)
+		p.CallEnd(r, &st, v, ok)
+		e, _ := p.Memo.Get(st.Key)
+		if e.Provisional != imported || p.Provisional != 1 || p.MemoSeedUses != 0 {
+			t.Fatalf("imported=%v: provisional=%v, seed uses=%d, repetition uses=%d", imported, e.Provisional, p.MemoSeedUses, p.Provisional)
 		}
-		if valid := advanceEntry(e, []docEdit{{start: 10, end: 10, delta: 1}}); valid == imported {
+		if valid := core.AdvanceEntry(e, []core.DocEdit{{Start: 10, End: 10, Delta: 1}}); valid == imported {
 			t.Fatalf("imported=%v: entry validity after an unrelated edit=%v", imported, valid)
 		}
 	}
 	t.Run("nested head retains outer dependency", func(t *testing.T) {
-		p := &parser{memo: newMemoTable(), memoAll: true}
-		outer, inner := &rule{ID: 1, Leader: true}, &rule{ID: 2, Leader: true}
-		outerCall, _, _, _ := p.callBegin(outer, 0)
-		outerGrow := p.growBegin(outerCall.key)
-		innerCall, _, _, _ := p.callBegin(inner, 0)
-		innerGrow := p.growBegin(innerCall.key)
-		if _, _, _, hit := p.callBegin(outer, 0); !hit {
+		p := &core.Parser{Memo: core.NewMemoTable(), MemoAll: true}
+		outer, inner := &core.Rule{ID: 1, Leader: true}, &core.Rule{ID: 2, Leader: true}
+		outerCall, _, _, _ := p.CallBegin(outer, 0)
+		outerGrow := p.GrowBegin(outerCall.Key)
+		innerCall, _, _, _ := p.CallBegin(inner, 0)
+		innerGrow := p.GrowBegin(innerCall.Key)
+		if _, _, _, hit := p.CallBegin(outer, 0); !hit {
 			t.Fatal("outer seed was not reused")
 		}
-		v, ok := p.growEnd(inner, &innerGrow)
-		p.callEnd(inner, &innerCall, v, ok)
-		e, _ := p.memo.get(innerCall.key)
-		if !e.provisional || p.memoProvisionalUses == 0 {
+		v, ok := p.GrowEnd(inner, &innerGrow)
+		p.CallEnd(inner, &innerCall, v, ok)
+		e, _ := p.Memo.Get(innerCall.Key)
+		if !e.Provisional || p.MemoProvisionalUses == 0 {
 			t.Fatal("inner completion discharged an unresolved outer seed")
 		}
-		v, ok = p.growEnd(outer, &outerGrow)
-		p.callEnd(outer, &outerCall, v, ok)
-		e, _ = p.memo.get(outerCall.key)
-		if !e.provisional || p.activeSeed != nil || p.memoSeedUses != 0 {
+		v, ok = p.GrowEnd(outer, &outerGrow)
+		p.CallEnd(outer, &outerCall, v, ok)
+		e, _ = p.Memo.Get(outerCall.Key)
+		if !e.Provisional || p.ActiveSeed != nil || p.MemoSeedUses != 0 {
 			t.Fatal("outer completion lost the intermediate dependency")
 		}
 	})
 	t.Run("nested own seeds are resolved", func(t *testing.T) {
-		p := &parser{memo: newMemoTable(), memoAll: true}
-		outer, inner := &rule{ID: 1, Leader: true}, &rule{ID: 2, Leader: true}
-		outerCall, _, _, _ := p.callBegin(outer, 0)
-		outerGrow := p.growBegin(outerCall.key)
-		innerCall, _, _, _ := p.callBegin(inner, 0)
-		innerGrow := p.growBegin(innerCall.key)
-		p.callBegin(inner, 0)
-		p.pos = 1
-		if !p.growStep(&innerGrow, nil, true) || p.activeSeed != innerGrow.best {
+		p := &core.Parser{Memo: core.NewMemoTable(), MemoAll: true}
+		outer, inner := &core.Rule{ID: 1, Leader: true}, &core.Rule{ID: 2, Leader: true}
+		outerCall, _, _, _ := p.CallBegin(outer, 0)
+		outerGrow := p.GrowBegin(outerCall.Key)
+		innerCall, _, _, _ := p.CallBegin(inner, 0)
+		innerGrow := p.GrowBegin(innerCall.Key)
+		p.CallBegin(inner, 0)
+		p.Pos = 1
+		if !p.GrowStep(&innerGrow, nil, true) || p.ActiveSeed != innerGrow.Best {
 			t.Fatal("active seed did not advance with growth")
 		}
-		p.callBegin(inner, 0)
-		v, ok := p.growEnd(inner, &innerGrow)
-		p.callEnd(inner, &innerCall, v, ok)
-		e, _ := p.memo.get(innerCall.key)
-		if e.provisional || p.activeSeed != outerGrow.best {
+		p.CallBegin(inner, 0)
+		v, ok := p.GrowEnd(inner, &innerGrow)
+		p.CallEnd(inner, &innerCall, v, ok)
+		e, _ := p.Memo.Get(innerCall.Key)
+		if e.Provisional || p.ActiveSeed != outerGrow.Best {
 			t.Fatal("inner own-seed dependency survived completion")
 		}
-		p.pos = 0
-		p.callBegin(outer, 0)
-		v, ok = p.growEnd(outer, &outerGrow)
-		p.callEnd(outer, &outerCall, v, ok)
-		e, _ = p.memo.get(outerCall.key)
-		if e.provisional || p.activeSeed != nil || p.provisional != 3 {
+		p.Pos = 0
+		p.CallBegin(outer, 0)
+		v, ok = p.GrowEnd(outer, &outerGrow)
+		p.CallEnd(outer, &outerCall, v, ok)
+		e, _ = p.Memo.Get(outerCall.Key)
+		if e.Provisional || p.ActiveSeed != nil || p.Provisional != 3 {
 			t.Fatal("outer completion failed to resolve own seeds or changed repetition tracking")
 		}
 	})
 	t.Run("fresh intermediate dependency survives completion", func(t *testing.T) {
-		p := &parser{memo: newMemoTable(), memoAll: true}
-		head, helper := &rule{ID: 1, Leader: true}, &rule{ID: 2}
-		headCall, _, _, _ := p.callBegin(head, 0)
-		growth := p.growBegin(headCall.key)
-		helperCall, _, _, hit := p.callBegin(helper, 0)
+		p := &core.Parser{Memo: core.NewMemoTable(), MemoAll: true}
+		head, helper := &core.Rule{ID: 1, Leader: true}, &core.Rule{ID: 2}
+		headCall, _, _, _ := p.CallBegin(head, 0)
+		growth := p.GrowBegin(headCall.Key)
+		helperCall, _, _, hit := p.CallBegin(helper, 0)
 		if hit {
 			t.Fatal("fresh helper unexpectedly memoized")
 		}
-		p.callBegin(head, 0) // The fresh helper reads the active seed.
-		p.callEnd(helper, &helperCall, nil, false)
-		e, _ := p.memo.get(helperCall.key)
-		if !e.provisional {
+		p.CallBegin(head, 0) // The fresh helper reads the active seed.
+		p.CallEnd(helper, &helperCall, nil, false)
+		e, _ := p.Memo.Get(helperCall.Key)
+		if !e.Provisional {
 			t.Fatal("fresh intermediate dependency was not recorded")
 		}
-		v, ok := p.growEnd(head, &growth)
-		p.callEnd(head, &headCall, v, ok)
-		e, _ = p.memo.get(headCall.key)
-		if !e.provisional || p.memoProvisionalUses == 0 {
+		v, ok := p.GrowEnd(head, &growth)
+		p.CallEnd(head, &headCall, v, ok)
+		e, _ = p.Memo.Get(headCall.Key)
+		if !e.Provisional || p.MemoProvisionalUses == 0 {
 			t.Fatal("head completion discharged the fresh helper dependency")
 		}
 	})

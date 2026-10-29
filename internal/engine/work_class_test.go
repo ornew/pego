@@ -11,6 +11,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -36,7 +37,7 @@ func workClassNode(t *testing.T, p *Program, input string, opts ParseOptions) *v
 	return n
 }
 
-func workClassBudgetOptions(backend Backend, unit PositionUnit, allowance uint64, observed **parser) ParseOptions {
+func workClassBudgetOptions(backend Backend, unit PositionUnit, allowance uint64, observed **core.Parser) ParseOptions {
 	return ParseOptions{
 		Backend:    backend,
 		Unit:       unit,
@@ -44,17 +45,17 @@ func workClassBudgetOptions(backend Backend, unit PositionUnit, allowance uint64
 		Trace: func(e TraceEvent) {
 			if e.Kind == TraceEnter && e.Rule == "main" {
 				if observed != nil {
-					*observed = traceParser(e)
+					*observed = core.TraceParser(e)
 				}
-				traceParser(e).control.limits.MaxSteps = traceParser(e).control.stepsUsed + allowance
+				core.TraceParser(e).Control.Limits.MaxSteps = core.TraceParser(e).Control.StepsUsed + allowance
 			}
 		},
 	}
 }
 
-func requireClassWorkLimit(t *testing.T, p *Program, input string, backend Backend, unit PositionUnit) *parser {
+func requireClassWorkLimit(t *testing.T, p *Program, input string, backend Backend, unit PositionUnit) *core.Parser {
 	t.Helper()
-	var observed *parser
+	var observed *core.Parser
 	n, err := p.ParseWith("main", input, workClassBudgetOptions(backend, unit, 32, &observed))
 	if n != nil || !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("%v/%v input %q: node=%v err type=%T, want fatal work-limit error", backend, unit, input, n, err)
@@ -107,8 +108,8 @@ func TestWorkClassRangeCancellationAndPoolRetry(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
-				var observed *parser
-				var control *workControl
+				var observed *core.Parser
+				var control *core.WorkControl
 				var startSteps uint64
 				exits := 0
 				opts := ParseOptions{
@@ -117,11 +118,11 @@ func TestWorkClassRangeCancellationAndPoolRetry(t *testing.T) {
 					WorkLimits: limits.WorkLimits{MaxSteps: 1 << 30},
 					Trace: func(e TraceEvent) {
 						if e.Kind == TraceEnter && e.Rule == "main" {
-							observed, control = traceParser(e), traceParser(e).control
-							startSteps = control.stepsUsed
+							observed, control = core.TraceParser(e), core.TraceParser(e).Control
+							startSteps = control.StepsUsed
 							// Trace emit polls once after this callback; cancel at the next
 							// 256-step checkpoint, inside the deliberately long range scan.
-							control.ctx = newPollingContext(2)
+							control.Ctx = newPollingContext(2)
 						} else if e.Kind == TraceExit {
 							exits++
 						}
@@ -131,14 +132,14 @@ func TestWorkClassRangeCancellationAndPoolRetry(t *testing.T) {
 				if n != nil || !errors.Is(err, context.Canceled) {
 					t.Fatalf("node=%v err=%v, want cancellation during class membership", n, err)
 				}
-				if observed == nil || control == nil || control.stepsUsed-startSteps < 128 {
+				if observed == nil || control == nil || control.StepsUsed-startSteps < 128 {
 					t.Fatalf("cancellation occurred before a substantial range scan: parser observed=%v steps=%v", observed != nil, control)
 				}
 				if exits != 0 {
 					t.Fatalf("trace exits after fatal interruption=%d, want 0", exits)
 				}
-				if observed.scratch != nil || observed.control != nil {
-					t.Fatalf("parser retained work state after interruption: scratch=%v control=%v", observed.scratch, observed.control)
+				if observed.Scratch != nil || observed.Control != nil {
+					t.Fatalf("parser retained work state after interruption: scratch=%v control=%v", observed.Scratch, observed.Control)
 				}
 				if n := workClassNode(t, p, input, ParseOptions{Backend: backend, Unit: unit}); value.D(n).Text != input {
 					t.Fatalf("retry text=%q, want %q", value.D(n).Text, input)
@@ -260,19 +261,19 @@ func TestWorkClassOptimizedRoutes(t *testing.T) {
 						}
 						workClassNode(t, program, tc.input, servedBy(program.mode, ParseOptions{Backend: backend, Unit: unit}))
 						requireClassWorkLimit(t, program, tc.input, backend, unit)
-						var c *workControl
+						var c *core.WorkControl
 						var start uint64
 						n, err := program.ParseWith("main", tc.input, ParseOptions{
 							Backend: backend, Unit: unit, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 30},
 							Trace: func(e TraceEvent) {
 								if e.Kind == TraceEnter && e.Rule == "main" {
-									c = traceParser(e).control
-									start = c.stepsUsed
-									c.ctx = newPollingContext(2)
+									c = core.TraceParser(e).Control
+									start = c.StepsUsed
+									c.Ctx = newPollingContext(2)
 								}
 							},
 						})
-						if n != nil || !errors.Is(err, context.Canceled) || c == nil || c.stepsUsed-start < 128 {
+						if n != nil || !errors.Is(err, context.Canceled) || c == nil || c.StepsUsed-start < 128 {
 							t.Fatalf("%v/%v: cancellation did not interrupt optimized membership: node=%v error type=%T", backend, unit, n, err)
 						}
 						workClassNode(t, program, tc.input, servedBy(program.mode, ParseOptions{Backend: backend, Unit: unit}))

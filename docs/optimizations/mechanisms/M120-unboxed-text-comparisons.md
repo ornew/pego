@@ -33,7 +33,7 @@ Evidence records: [036](../036-comparing-texts-without-boxing-them.md),
 [044](../044-changes-36-and-37-in-the-vms-instruction-set-2.md),
 [102](../102-read-text-struct-fields-without-a-struct-lookup.md).
 
-Source owners: [`text equality evaluator`](../../../internal/engine/eval.go),
+Source owners: [`text equality evaluator`](../../../internal/engine/core/eval.go),
 [`ETEXTCHK and ETEXTEQ`](../../../internal/compile/bcompile.go), [`native text
 comparison instructions`](../../../internal/engine/vm.go), [`text comparison
 emission`](../../../internal/gen/gogen/generator.go), [`TypeScript text comparison

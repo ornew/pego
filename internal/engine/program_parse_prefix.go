@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 
 	"github.com/ornew/pego/internal/compile"
@@ -18,7 +19,7 @@ type PrefixResult struct {
 // and fatal errors return a zero result. Explicit EOF assertions still see the
 // entire supplied input.
 func (prog *Program) ParsePrefixWith(start, input string, o ParseOptions) (result PrefixResult, err error) {
-	if err := validateStreamDiagnostics(o, false); err != nil {
+	if err := core.ValidateStreamDiagnostics(o, false); err != nil {
 		return PrefixResult{}, err
 	}
 	if prog.HasMissing || o.MissingTokens > 0 {
@@ -26,10 +27,10 @@ func (prog *Program) ParsePrefixWith(start, input string, o ParseOptions) (resul
 	}
 	defer func() {
 		if x := recover(); x != nil {
-			if f, ok := x.(fatal); ok {
-				result, err = PrefixResult{}, f.err
-			} else if cp, ok := x.(contextPanic); ok {
-				panic(cp.value)
+			if f, ok := x.(core.Fatal); ok {
+				result, err = PrefixResult{}, f.Err
+			} else if cp, ok := x.(core.ContextPanic); ok {
+				panic(cp.Value)
 			} else {
 				panic(x)
 			}
@@ -43,55 +44,55 @@ func (prog *Program) ParsePrefixWith(start, input string, o ParseOptions) (resul
 	if err != nil {
 		return PrefixResult{}, err
 	}
-	control.check()
-	p := acquirePooledParser(&active.sharedProgram)
-	defer p.releaseBatchScratch()
-	p.input = newControlledTextInput(input, o.Unit, !o.Recognize, p.scratch, control)
-	p.maxDepth = depthLimit(o, o.Backend)
-	p.deferMemo = true
-	p.setTrace(o.Trace)
+	control.Check()
+	p := core.AcquirePooledParser(&active.sharedProgram)
+	defer p.ReleaseBatchScratch()
+	p.Input = core.NewControlledTextInput(input, o.Unit, !o.Recognize, p.Scratch, control)
+	p.MaxDepth = core.DepthLimit(o, o.Backend)
+	p.DeferMemo = true
+	p.SetTrace(o.Trace)
 	result, err = active.runPrefix(p, o.Backend, start)
-	if !p.aborted {
-		control.check()
+	if !p.Aborted {
+		control.Check()
 	}
 	if o.Recognize {
 		result.Node = nil
 	}
-	result.ConsumedBytes = p.input.prefixByteOffset(input, result.Consumed)
+	result.ConsumedBytes = p.Input.PrefixByteOffset(input, result.Consumed)
 
-	if !p.aborted {
-		control.check()
+	if !p.Aborted {
+		control.Check()
 	}
 	return result, err
 }
 
-func (prog *Program) runPrefix(p *parser, b Backend, start string) (result PrefixResult, err error) {
-	p.aborted = false
+func (prog *Program) runPrefix(p *core.Parser, b Backend, start string) (result PrefixResult, err error) {
+	p.Aborted = false
 	r, err := prog.rule(b, start)
 	if err != nil {
 		return PrefixResult{}, err
 	}
-	p.descs = prog.descs(b)
-	p.memo.stride = prog.NSeen
+	p.Descs = prog.descs(b)
+	p.Memo.Stride = prog.NSeen
 	if be := prog.backend(b); be == Bytecode || be == BytecodeIterative {
-		p.memo.stride = prog.vmFor(be).nseen
+		p.Memo.Stride = prog.vmFor(be).nseen
 	}
-	p.memo.sparse = sparseMemo && p.memo.stride > 64 && p.loaded() > 1024
+	p.Memo.Sparse = core.SparseMemo && p.Memo.Stride > 64 && p.Loaded() > 1024
 	defer func() {
 		if x := recover(); x != nil {
-			p.aborted = true
+			p.Aborted = true
 			result = PrefixResult{}
 			recoverParse(x, prog.backend(b), &err)
 		}
 	}()
-	p.seedVars()
-	v, ok := p.call(r, 0)
+	p.SeedVars()
+	v, ok := p.Call(r, 0)
 	if !ok {
-		return PrefixResult{}, p.syntaxError()
+		return PrefixResult{}, p.SyntaxError()
 	}
-	result = PrefixResult{Node: v, Consumed: p.pos}
-	if len(p.recovered) > 0 {
-		err = SyntaxErrors(p.recovered)
+	result = PrefixResult{Node: v, Consumed: p.Pos}
+	if len(p.Recovered) > 0 {
+		err = SyntaxErrors(p.Recovered)
 	}
 	return result, err
 }

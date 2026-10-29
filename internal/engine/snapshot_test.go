@@ -10,6 +10,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -27,7 +28,7 @@ func TestSnapshotGraphIdentityAndOwnership(t *testing.T) {
 	leaf := value.Ptr(value.Data{Kind: value.KindOf("Leaf", "leaf"), Start: 2, End: 3, Text: "x", Terminal: true, Children: []*value.Node{}, Fields: value.Fields{}})
 	root := value.Ptr(value.Data{Kind: value.SeqKind, Start: 1, End: 4, Children: []*value.Node{leaf, nil, leaf}})
 	value.D(root).Fields = value.Fields{{Name: "self", Value: root}, {Name: "leaf", Value: leaf}, {Name: "typedNil", Value: (*value.Node)(nil)}, {Name: "nil", Value: nil}, {Name: "int", Value: 42}, {Name: "text", Value: "hi"}, {Name: "bool", Value: true}}
-	g, err := freezeSnapshotGraph(&parser{}, root)
+	g, err := freezeSnapshotGraph(&core.Parser{}, root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +104,7 @@ func TestSnapshotGraphDeepAndUnsupported(t *testing.T) {
 		at = next
 	}
 	value.D(at).Fields = value.Fields{{Name: "back", Value: root}}
-	g, err := freezeSnapshotGraph(&parser{}, root)
+	g, err := freezeSnapshotGraph(&core.Parser{}, root)
 	if err != nil || len(g.nodes) != 20001 {
 		t.Fatal("deep capture", err)
 	}
@@ -119,7 +120,7 @@ func TestSnapshotGraphDeepAndUnsupported(t *testing.T) {
 	for _, val := range []any{namedInt(1), []int(nil), map[string]int(nil), (*int)(nil), (chan int)(nil), (func())(nil)} {
 		child := value.Ptr(value.Data{Fields: value.Fields{{Name: "bad\"name", Value: val}}})
 		root := value.Ptr(value.Data{Children: []*value.Node{child}, Fields: value.Fields{{Name: "other", Value: val}}})
-		_, err := freezeSnapshotGraph(&parser{}, root)
+		_, err := freezeSnapshotGraph(&core.Parser{}, root)
 		if err == nil || err.ValueType != reflect.TypeOf(val) || err.Path != `root.Children[0].Fields[0]("bad\"name")` {
 			t.Fatalf("rejection %v", err)
 		}
@@ -189,7 +190,7 @@ rule item = [a-zé]`)
 
 func TestSnapshotDiagnosticCopyAndNilResult(t *testing.T) {
 	original := SyntaxErrors{&SyntaxError{Expected: []string{}, Messages: []string{"problem"}}, nil}
-	copy := copySnapshotError(&parser{}, original).(SyntaxErrors)
+	copy := copySnapshotError(&core.Parser{}, original).(SyntaxErrors)
 	original[0].Messages[0] = "changed"
 	original[0] = nil
 	if copy[0].Messages[0] != "problem" || copy[0].Expected == nil || copy[1] != nil {
@@ -204,7 +205,7 @@ func TestSnapshotDiagnosticCopyAndNilResult(t *testing.T) {
 }
 
 func TestSnapshotControlledFreezeBudgetAndRetry(t *testing.T) {
-	if !workControlsEnabled {
+	if !core.WorkControlsEnabled {
 		t.Skip("work controls reference")
 	}
 	prog := mustCompile(t, `rule main = .* $$`)
@@ -220,7 +221,7 @@ func TestSnapshotControlledFreezeBudgetAndRetry(t *testing.T) {
 			t.Fatal("memo-hit fixture", err)
 		}
 		s, err := d.SnapshotWith(o)
-		if s != nil || !errors.Is(err, limits.ErrWorkLimit) || d.memo.len() != 0 || d.runs != nil || d.kids != nil || d.machine != nil {
+		if s != nil || !errors.Is(err, limits.ErrWorkLimit) || d.memo.Len() != 0 || d.runs != nil || d.kids != nil || d.machine != nil {
 			t.Fatal("freeze interruption", s, err)
 		}
 		o.WorkLimits = limits.WorkLimits{}
@@ -279,7 +280,7 @@ rule x = x "a" / "a"`)
 			}()
 			d.SnapshotWith(o)
 		}()
-		if d.memo.len() != 0 || d.runs != nil || d.kids != nil || d.machine != nil {
+		if d.memo.Len() != 0 || d.runs != nil || d.kids != nil || d.machine != nil {
 			t.Fatal("trace panic retained reusable state")
 		}
 		o.Trace = nil
@@ -326,7 +327,7 @@ func (c *snapshotPhaseContext) Err() error {
 }
 
 func TestSnapshotFreezeCancellationAndContextPanic(t *testing.T) {
-	if !workControlsEnabled {
+	if !core.WorkControlsEnabled {
 		t.Skip("work controls reference")
 	}
 	prog := mustCompile(t, `rule main = .* $$`)
@@ -357,7 +358,7 @@ func TestSnapshotFreezeCancellationAndContextPanic(t *testing.T) {
 					t.Fatalf("freeze cancellation: %v %v", s, err)
 				}
 			}
-			if !ctx.seen || d.memo.len() != 0 || d.runs != nil || d.kids != nil || d.machine != nil {
+			if !ctx.seen || d.memo.Len() != 0 || d.runs != nil || d.kids != nil || d.machine != nil {
 				t.Fatal("freeze cleanup")
 			}
 			o.Context = nil

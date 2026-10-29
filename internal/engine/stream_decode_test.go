@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -33,20 +34,20 @@ func TestByteDecodeDoesNotReadPastCompleteRune(t *testing.T) {
 			if _, err := reader.Peek(len(s)); err != nil {
 				t.Fatal(err)
 			}
-			in := input{unit: Bytes, reader: reader}
+			in := core.Input{Unit: Bytes, Reader: reader}
 			defer func() {
 				if x := recover(); x != nil {
 					t.Errorf("decode attempted unrelated read: %v", x)
 				}
 			}()
-			got, size, examined, ok := in.decode(0)
+			got, size, examined, ok := in.Decode(0)
 			want, wantSize := utf8.DecodeRuneInString(s)
 			wantExamined := wantSize
 			if want == utf8.RuneError && wantSize == 1 {
 				wantExamined = len(s)
 			}
-			if !ok || size != wantSize || got != want || examined != wantExamined || r.calls != 0 || in.eof {
-				t.Fatalf("rune=%U size=%d ok=%v reads=%d eof=%v", got, size, ok, r.calls, in.eof)
+			if !ok || size != wantSize || got != want || examined != wantExamined || r.calls != 0 || in.Eof {
+				t.Fatalf("rune=%U size=%d ok=%v reads=%d eof=%v", got, size, ok, r.calls, in.Eof)
 			}
 		})
 	}
@@ -119,14 +120,14 @@ func TestOpenPipeStreamEmitsCompleteItem(t *testing.T) {
 func TestByteDecodeIncompletePrefixAtEOF(t *testing.T) {
 	for _, s := range []string{"", "\xc3", "\xe6\xbc", "\xf0\x9f\x98"} {
 		t.Run(fmt.Sprintf("%x", s), func(t *testing.T) {
-			in := input{unit: Bytes, reader: bufio.NewReader(strings.NewReader(s))}
-			got, size, examined, ok := in.decode(0)
+			in := core.Input{Unit: Bytes, Reader: bufio.NewReader(strings.NewReader(s))}
+			got, size, examined, ok := in.Decode(0)
 			if s == "" {
-				if ok || size != 0 || examined != 1 || !in.eof {
+				if ok || size != 0 || examined != 1 || !in.Eof {
 					t.Fatalf("empty EOF: %U %d %d %v", got, size, examined, ok)
 				}
-			} else if !ok || got != utf8.RuneError || size != 1 || examined != len(s)+1 || !in.eof {
-				t.Fatalf("incomplete EOF: %U %d %d %v eof=%v", got, size, examined, ok, in.eof)
+			} else if !ok || got != utf8.RuneError || size != 1 || examined != len(s)+1 || !in.Eof {
+				t.Fatalf("incomplete EOF: %U %d %d %v eof=%v", got, size, examined, ok, in.Eof)
 			}
 		})
 	}

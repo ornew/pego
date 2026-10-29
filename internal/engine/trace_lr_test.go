@@ -1,6 +1,10 @@
 package engine
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/ornew/pego/internal/engine/core"
+)
 
 // A wrapper can return a growing seed without examining another character.
 // Its dependency range must still include the input consumed by that seed.
@@ -60,17 +64,17 @@ rule seed = ^ "é"`, "\né", true},
 						if e.Kind != TraceExit || e.Rule != "expr" || !e.Memo || !e.Matched {
 							return
 						}
-						seed, found := traceParser(e).memo.get(memoKey{rule: prog.ByName["expr"].ID, pos: e.Pos})
-						if !found || !seed.growing || !seed.ok {
+						seed, found := core.TraceParser(e).Memo.Get(core.MemoKey{Rule: prog.ByName["expr"].ID, Pos: e.Pos})
+						if !found || !seed.Growing || !seed.Ok {
 							t.Fatal("successful growing seed is not available")
 						}
 						seen = true
 						if c.behind {
-							if seed.from != 0 {
-								t.Errorf("line-start dependency from=%d, want 0", seed.from)
+							if seed.From != 0 {
+								t.Errorf("line-start dependency from=%d, want 0", seed.From)
 							}
-						} else if seed.examined != e.End+2 || e.Examined != e.End+2 {
-							t.Errorf("lookahead dependency seed=%d, trace=%d, want %d", seed.examined, e.Examined, e.End+2)
+						} else if seed.Examined != e.End+2 || e.Examined != e.End+2 {
+							t.Errorf("lookahead dependency seed=%d, trace=%d, want %d", seed.Examined, e.Examined, e.End+2)
 						}
 					}
 					if _, err := prog.ParseWith("main", c.input, o); err != nil {

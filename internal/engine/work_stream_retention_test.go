@@ -10,6 +10,7 @@ import (
 	"testing"
 	"weak"
 
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -45,7 +46,7 @@ func (c *streamControlRetentionContext) Err() error {
 type streamControlRetentionRun struct {
 	event        TraceEvent
 	program      *Program
-	control      weak.Pointer[workControl]
+	control      weak.Pointer[core.WorkControl]
 	context      weak.Pointer[streamControlRetentionContext]
 	reader       weak.Pointer[streamCallbackReader]
 	emitState    weak.Pointer[streamControlRetentionSentinel]
@@ -87,7 +88,7 @@ func runStreamControlRetentionCase(t *testing.T, prog *Program, outcome string, 
 		ctx.token = &streamRuntimePanicToken{phase: outcome}
 	}
 	panicToken := ctx.token
-	var controlRef weak.Pointer[workControl]
+	var controlRef weak.Pointer[core.WorkControl]
 	var event TraceEvent
 	var nodes []*value.Node
 	var snapshots []string
@@ -113,7 +114,7 @@ func runStreamControlRetentionCase(t *testing.T, prog *Program, outcome string, 
 		}, streamControlRetentionOptions(options, ctx, func(e TraceEvent) {
 			if e.Kind == TraceEnter && e.Rule == "main" {
 				event = e
-				controlRef = weak.Make(traceParser(e).control)
+				controlRef = weak.Make(core.TraceParser(e).Control)
 				if controlRef.Value() == nil {
 					t.Fatal("missing active controller")
 				}
@@ -121,12 +122,12 @@ func runStreamControlRetentionCase(t *testing.T, prog *Program, outcome string, 
 			switch {
 			case outcome == "trace-panic" && e.Kind == TraceEnter && e.Rule == "record" && e.Pos > 9:
 				panic(ctx.token)
-			case outcome == "input-limit" && e.Kind == TraceExit && e.Rule == "record" && e.Matched && traceParser(e).control != nil:
-				if traceParser(e).control.inputUsed == 0 {
+			case outcome == "input-limit" && e.Kind == TraceExit && e.Rule == "record" && e.Matched && core.TraceParser(e).Control != nil:
+				if core.TraceParser(e).Control.InputUsed == 0 {
 					panic("input limit fixture did not consume input")
 				}
 				// The first record is emitted; the next reservation must fail.
-				traceParser(e).control.limits.MaxInputWork = traceParser(e).control.inputUsed
+				core.TraceParser(e).Control.Limits.MaxInputWork = core.TraceParser(e).Control.InputUsed
 			}
 		}))
 	})
@@ -197,7 +198,7 @@ func TestWorkStreamTraceRetentionWithActiveControls(t *testing.T) {
 						t.Fatalf("emitted node %d changed before GC", i)
 					}
 				}
-				assertTraceParserDetached(t, traceParser(run.event), false) // Stream executions do not retain the Document abort flag.
+				assertTraceParserDetached(t, core.TraceParser(run.event), false) // Stream executions do not retain the Document abort flag.
 				if run.readerClosed {
 					t.Fatal("parser closed caller-owned reader")
 				}

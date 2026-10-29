@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/limits"
 )
@@ -143,13 +144,13 @@ func parseSteps(t *testing.T, prog *Program, backend Backend, unit PositionUnit,
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := acquirePooledParser(&active.sharedProgram)
-	defer p.releaseBatchScratch()
-	p.input = newControlledTextInput(input, o.Unit, true, p.scratch, control)
-	p.maxDepth = depthLimit(o, o.Backend)
-	p.deferMemo = true
+	p := core.AcquirePooledParser(&active.sharedProgram)
+	defer p.ReleaseBatchScratch()
+	p.Input = core.NewControlledTextInput(input, o.Unit, true, p.Scratch, control)
+	p.MaxDepth = core.DepthLimit(o, o.Backend)
+	p.DeferMemo = true
 	n, err := active.run(p, o.Backend, "main")
-	return control.stepsUsed, resultJSON(n, err)
+	return control.StepsUsed, resultJSON(n, err)
 }
 
 // textCompareEdgeGrammar compares fields in actions that fail, read the built-in members of a

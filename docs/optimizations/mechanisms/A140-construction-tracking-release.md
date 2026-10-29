@@ -35,7 +35,7 @@ Evidence records:
 [068](../068-release-construction-tracking-when-an-action-returns-nil.md).
 
 Source owners: [`constructor tracking
-cleanup`](../../../internal/engine/eval.go), [`VM evaluator
+cleanup`](../../../internal/engine/core/eval.go), [`VM evaluator
 cleanup`](../../../internal/engine/vm.go), [`generated construction
 tracking`](../../../runtime/runtime.go), [`typed
 tracking`](../../../runtime/typed.go), [`TypeScript

@@ -3,6 +3,7 @@ package engine
 import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/engine/core"
 
 	"github.com/ornew/pego/internal/value"
 )
@@ -11,8 +12,8 @@ import (
 func newIVMProgram(m *bytecode.Module) *vmProgram { return buildVMProgram(m, iterateBody) }
 
 // iterateBody runs a rule body with the iterative model: calls push frames instead of recursing.
-func iterateBody(vm *vmProgram, r *rule, entry int) func(p *parser, min int) (*value.Node, bool) {
-	return func(p *parser, min int) (*value.Node, bool) {
+func iterateBody(vm *vmProgram, r *core.Rule, entry int) func(p *core.Parser, min int) (*value.Node, bool) {
+	return func(p *core.Parser, min int) (*value.Node, bool) {
 		mc := ivmMachineOf(p)
 		res := mc.iterate(vm, mc.bodyFrame(entry, r, min, false))
 		return res.v, res.ok
@@ -22,7 +23,7 @@ func iterateBody(vm *vmProgram, r *rule, entry int) func(p *parser, min int) (*v
 // The iterative-model VM. It runs rule calls, left-recursion growth, Operators Rule expression loops, and
 // longest matching as state machines pushed on the VM stack (a slice of iframe) instead of using
 // host recursion. Each state machine calls the shared runtime used by the recursive model (the
-// callBegin family, operatorsRuleBuild, and so on) in the same order, so the results match the recursive
+// CallBegin family, OperatorsRuleBuild, and so on) in the same order, so the results match the recursive
 // model. Action and predicate expressions are evaluated with host calls, because their depth is
 // determined by the grammar (not by the input).
 
@@ -32,14 +33,14 @@ func iterateBody(vm *vmProgram, r *rule, entry int) func(p *parser, min int) (*v
 // driver points back here.
 type ivmMachine struct {
 	vmMachine
-	pool    framePool            // frames of the iterative-model VM
-	attempt operatorsRuleAttempt // result of the longestFrame that just finished
+	pool    framePool                 // frames of the iterative-model VM
+	attempt core.OperatorsRuleAttempt // result of the longestFrame that just finished
 }
 
 // ivmMachineOf returns the iterative-model VM state of the parse that p runs, making it on first
 // use.
-func ivmMachineOf(p *parser) *ivmMachine {
-	if mc, ok := p.backend.(*vmMachine); ok {
+func ivmMachineOf(p *core.Parser) *ivmMachine {
+	if mc, ok := p.Backend.(*vmMachine); ok {
 		if im, ok := mc.driver.(*ivmMachine); ok {
 			return im
 		}
@@ -50,18 +51,18 @@ func ivmMachineOf(p *parser) *ivmMachine {
 // newIVMMachine makes the iterative-model VM state of the parse that p runs. It takes over the
 // stacks of the VM state that p has, such as the value stack a Document kept. The first rule body
 // of a parse makes it, before any code holds the VM state that it replaces.
-func newIVMMachine(p *parser) *ivmMachine {
+func newIVMMachine(p *core.Parser) *ivmMachine {
 	im := &ivmMachine{}
-	if mc, ok := p.backend.(*vmMachine); ok {
+	if mc, ok := p.Backend.(*vmMachine); ok {
 		im.vmMachine = *mc
 	}
 	im.p, im.driver = p, im
-	p.backend = &im.vmMachine
+	p.Backend = &im.vmMachine
 	return im
 }
 
 func (im *ivmMachine) reset() {
-	im.pool, im.attempt = framePool{}, operatorsRuleAttempt{}
+	im.pool, im.attempt = framePool{}, core.OperatorsRuleAttempt{}
 }
 
 // iresult is the result of running a child.
@@ -83,7 +84,7 @@ func (mc *ivmMachine) iterate(vm *vmProgram, root iframe) iresult {
 	stack := []iframe{root}
 	var res iresult
 	for {
-		p.stepWork()
+		p.StepWork()
 		child, out, done := stack[len(stack)-1].next(mc, vm, res)
 		if !done {
 			stack = append(stack, child)
@@ -100,15 +101,15 @@ func (mc *ivmMachine) iterate(vm *vmProgram, root iframe) iresult {
 }
 
 // bodyFrame runs code (a rule body or an Operators Rule section). For an unmemoized call of a rule without
-// captures, the body frame also does the steps of the call (invokePlain), so that such calls,
+// captures, the body frame also does the steps of the call (InvokePlain), so that such calls,
 // the most common, push one frame instead of two.
 type bodyFrame struct {
 	b       vmBody
 	block   bool // OperatorsRule section (reports a cut to the caller through p.cut)
 	started bool
-	call    bool        // a plain call of b.r: run the end of invokePlain when the body finishes
-	inv     invokeState // call: the state saved by the call
-	rec     int         // call: recovered errors before the call
+	call    bool             // a plain call of b.r: run the end of InvokePlain when the body finishes
+	inv     core.InvokeState // call: the state saved by the call
+	rec     int              // call: recovered errors before the call
 }
 
 func (f *bodyFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, iresult, bool) {
@@ -126,14 +127,14 @@ func (f *bodyFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, ir
 	case evCall:
 		in := &vm.m.Code[f.b.ip]
 		r, min := vm.rules[in.A], int(in.B)
-		if r.Plain && !p.noPlain {
+		if r.Plain && !p.NoPlain {
 			return mc.plainCallFrame(r, min), iresult{}, false
 		}
-		if p.tr != nil {
+		if p.Tr != nil {
 			return &traceFrame{r: r, min: min}, iresult{}, false
 		}
 		// What callChild does, written out on this hot path
-		if !p.memoizes(r) || p.firstCall(r) {
+		if !p.Memoizes(r) || p.FirstCall(r) {
 			if len(r.Scope.Names) == 0 {
 				return mc.plainCallFrame(r, min), iresult{}, false
 			}
@@ -144,28 +145,28 @@ func (f *bodyFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, ir
 		return mc.operatorsRuleFrame(f.b.r, f.b.min), iresult{}, false
 	}
 	if f.block && f.b.cut {
-		p.cut = true
+		p.Cut = true
 	}
-	if f.call { // the end of invokePlain
+	if f.call { // the end of InvokePlain
 		r := f.b.r
-		p.depth--
-		p.cut = f.inv.prevCut
-		p.trail = p.trail[:min2(f.inv.trail, len(p.trail))]
+		p.Depth--
+		p.Cut = f.inv.PrevCut
+		p.Trail = p.Trail[:core.Min2(f.inv.Trail, len(p.Trail))]
 		if ok {
-			v = p.finish(r, emptyFrame, v, f.inv.start)
+			v = p.Finish(r, core.EmptyFrame, v, f.inv.Start)
 		} else {
-			p.pos = f.inv.start
-			p.recovered = p.recovered[:f.rec]
+			p.Pos = f.inv.Start
+			p.Recovered = p.Recovered[:f.rec]
 		}
-		p.env = f.inv.prevEnv
+		p.Env = f.inv.PrevEnv
 	}
 	return nil, iresult{v: v, ok: ok}, true
 }
 
 // callChild returns the frame that runs a call of r (the same steps as call).
-func (mc *ivmMachine) callChild(r *rule, min int) iframe {
+func (mc *ivmMachine) callChild(r *core.Rule, min int) iframe {
 	p := mc.p
-	if !p.memoizes(r) || p.firstCall(r) {
+	if !p.Memoizes(r) || p.FirstCall(r) {
 		if len(r.Scope.Names) == 0 {
 			return mc.plainCallFrame(r, min)
 		}
@@ -174,20 +175,20 @@ func (mc *ivmMachine) callChild(r *rule, min int) iframe {
 	return mc.callFrame(r, min, true)
 }
 
-// plainCallFrame starts an unmemoized call of a rule without captures (the start of invokePlain)
+// plainCallFrame starts an unmemoized call of a rule without captures (the start of InvokePlain)
 // and returns the frame that runs its body.
-func (mc *ivmMachine) plainCallFrame(r *rule, min int) *bodyFrame {
+func (mc *ivmMachine) plainCallFrame(r *core.Rule, min int) *bodyFrame {
 	p := mc.p
-	f := mc.bodyFrame(r.entry, r, min, false)
+	f := mc.bodyFrame(r.Entry, r, min, false)
 	f.call = true
-	f.inv = invokeState{prevEnv: p.env, prevCut: p.cut, trail: len(p.trail), start: p.pos}
-	f.rec = len(p.recovered)
-	p.cut = false
-	p.depth++
-	if p.depth > p.maxDepth {
-		p.fail("nesting too deep: more than %d rule calls", p.maxDepth)
+	f.inv = core.InvokeState{PrevEnv: p.Env, PrevCut: p.Cut, Trail: len(p.Trail), Start: p.Pos}
+	f.rec = len(p.Recovered)
+	p.Cut = false
+	p.Depth++
+	if p.Depth > p.MaxDepth {
+		p.Fail("nesting too deep: more than %d rule calls", p.MaxDepth)
 	}
-	p.stats.Evaluated++
+	p.Stats.Evaluated++
 	return f
 }
 
@@ -215,36 +216,36 @@ func reuse[T any](list *[]*T) *T {
 	return new(T)
 }
 
-func (mc *ivmMachine) skipFrame(pr *operatorsRule) *skipFrame {
+func (mc *ivmMachine) skipFrame(pr *core.OperatorsRule) *skipFrame {
 	f := reuse(&mc.pool.skips)
 	*f = skipFrame{pr: pr}
 	return f
 }
 
-func (mc *ivmMachine) longestFrame(ops []*operatorsRuleOp) *longestFrame {
+func (mc *ivmMachine) longestFrame(ops []*core.OperatorsRuleOp) *longestFrame {
 	f := reuse(&mc.pool.longests)
 	*f = longestFrame{ops: ops}
 	return f
 }
 
-func (mc *ivmMachine) nudFrame(r *rule) *nudFrame {
+func (mc *ivmMachine) nudFrame(r *core.Rule) *nudFrame {
 	f := reuse(&mc.pool.nuds)
 	*f = nudFrame{r: r}
 	return f
 }
 
-func (mc *ivmMachine) operatorsRuleFrame(r *rule, min int) *operatorsRuleFrame {
+func (mc *ivmMachine) operatorsRuleFrame(r *core.Rule, min int) *operatorsRuleFrame {
 	p := mc.p
-	p.depth++
-	if p.depth > p.maxDepth {
-		p.fail("nesting too deep: more than %d rule calls", p.maxDepth)
+	p.Depth++
+	if p.Depth > p.MaxDepth {
+		p.Fail("nesting too deep: more than %d rule calls", p.MaxDepth)
 	}
 	f := reuse(&mc.pool.operatorsRules)
 	*f = operatorsRuleFrame{r: r, min: min}
 	return f
 }
 
-func (mc *ivmMachine) bodyFrame(entry int, r *rule, min int, block bool) *bodyFrame {
+func (mc *ivmMachine) bodyFrame(entry int, r *core.Rule, min int, block bool) *bodyFrame {
 	var f *bodyFrame
 	if n := len(mc.pool.bodies); n > 0 {
 		f = mc.pool.bodies[n-1]
@@ -258,7 +259,7 @@ func (mc *ivmMachine) bodyFrame(entry int, r *rule, min int, block bool) *bodyFr
 
 // callFrame returns the frame of a call of r, memoized or not (the caller has decided, calling
 // firstCall once).
-func (mc *ivmMachine) callFrame(r *rule, min int, memoized bool) *callFrame {
+func (mc *ivmMachine) callFrame(r *core.Rule, min int, memoized bool) *callFrame {
 	var f *callFrame
 	if n := len(mc.pool.calls); n > 0 {
 		f = mc.pool.calls[n-1]
@@ -276,7 +277,7 @@ func (mc *ivmMachine) releaseFrame(f iframe) {
 	case *bodyFrame:
 		mc.pool.bodies = append(mc.pool.bodies, f)
 	case *callFrame:
-		f.g = growState{}
+		f.g = core.GrowState{}
 		mc.pool.calls = append(mc.pool.calls, f)
 	case *skipFrame:
 		mc.pool.skips = append(mc.pool.skips, f)
@@ -285,22 +286,22 @@ func (mc *ivmMachine) releaseFrame(f iframe) {
 	case *nudFrame:
 		mc.pool.nuds = append(mc.pool.nuds, f)
 	case *operatorsRuleFrame:
-		mc.p.depth--
+		mc.p.Depth--
 		mc.pool.operatorsRules = append(mc.pool.operatorsRules, f)
 	}
 }
 
 // callFrame is a rule call (same steps as parser.call).
 type callFrame struct {
-	r     *rule
+	r     *core.Rule
 	min   int
 	state int
-	// memoized is set for a memoized call (callBegin and callEnd); otherwise the call is not
+	// memoized is set for a memoized call (CallBegin and CallEnd); otherwise the call is not
 	// memoized (unmemoized calls of rules without captures use plainCallFrame instead).
 	memoized   bool
-	st         callState
-	g          growState
-	inv        invokeState
+	st         core.CallState
+	g          core.GrowState
+	inv        core.InvokeState
 	start, rec int // unmemoized calls: state to restore on failure
 }
 
@@ -315,34 +316,34 @@ func (f *callFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, ir
 	switch f.state {
 	case cBegin:
 		if !f.memoized {
-			f.start, f.rec = p.pos, len(p.recovered)
+			f.start, f.rec = p.Pos, len(p.Recovered)
 			return f.invoke(mc), iresult{}, false
 		}
-		st, v, ok, hit := p.callBegin(r, f.min)
+		st, v, ok, hit := p.CallBegin(r, f.min)
 		if hit {
 			return nil, iresult{v: v, ok: ok}, true
 		}
 		f.st = st
 		if r.Leader {
-			f.g = p.growBegin(st.key)
+			f.g = p.GrowBegin(st.Key)
 		}
 		return f.invoke(mc), iresult{}, false
 	default: // cInvoked
-		v, ok := p.invokeEnd(r, &f.inv, res.v, res.ok)
+		v, ok := p.InvokeEnd(r, &f.inv, res.v, res.ok)
 		if !f.memoized {
 			if !ok {
-				p.pos = f.start
-				p.recovered = p.recovered[:f.rec]
+				p.Pos = f.start
+				p.Recovered = p.Recovered[:f.rec]
 			}
 			return nil, iresult{v: v, ok: ok}, true
 		}
 		if r.Leader {
-			if p.growStep(&f.g, v, ok) {
+			if p.GrowStep(&f.g, v, ok) {
 				return f.invoke(mc), iresult{}, false
 			}
-			v, ok = p.growEnd(r, &f.g)
+			v, ok = p.GrowEnd(r, &f.g)
 		}
-		v, ok = p.callEnd(r, &f.st, v, ok)
+		v, ok = p.CallEnd(r, &f.st, v, ok)
 		return nil, iresult{v: v, ok: ok}, true
 	}
 }
@@ -351,73 +352,73 @@ func (f *callFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, ir
 func (f *callFrame) invoke(mc *ivmMachine) iframe {
 	p := mc.p
 	f.state = cInvoked
-	f.inv = p.invokeBegin(f.r)
-	return mc.bodyFrame(f.r.entry, f.r, f.min, false)
+	f.inv = p.InvokeBegin(f.r)
+	return mc.bodyFrame(f.r.Entry, f.r, f.min, false)
 }
 
 // skipFrame is the skip of an Operators Rule expression (same steps as parser.skipTrivia).
 type skipFrame struct {
-	pr      *operatorsRule
-	m       mark
+	pr      *core.OperatorsRule
+	m       core.Mark
 	started bool
 }
 
 func (f *skipFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, iresult, bool) {
 	p := mc.p
-	if f.pr.skipEntry < 0 {
+	if f.pr.SkipEntry < 0 {
 		return nil, iresult{ok: true}, true
 	}
 	if !f.started {
 		f.started = true
-		f.m = p.mark()
-		p.silent++
-		return blockFrame(mc, f.pr.skipEntry), iresult{}, false
+		f.m = p.Mark()
+		p.Silent++
+		return blockFrame(mc, f.pr.SkipEntry), iresult{}, false
 	}
-	p.silent--
+	p.Silent--
 	if !res.ok {
-		p.reset(f.m)
+		p.Reset(f.m)
 	}
 	return nil, iresult{ok: true}, true
 }
 
-// longestFrame is the longest match over operator parts (same steps as parser.longest).
+// longestFrame is the longest match over operator parts (same steps as Parser.Longest).
 type longestFrame struct {
-	ops       []*operatorsRuleOp
+	ops       []*core.OperatorsRuleOp
 	i         int
 	started   bool
-	m0        mark
-	best      operatorsRuleAttempt
+	m0        core.Mark
+	best      core.OperatorsRuleAttempt
 	cutFailed bool
-	prevFrame *frame
+	prevFrame *core.Frame
 	prevCut   bool
-	f         *frame
+	f         *core.Frame
 }
 
 func (f *longestFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, iresult, bool) {
 	p := mc.p
 	if !f.started {
 		f.started = true
-		f.m0 = p.mark()
+		f.m0 = p.Mark()
 	} else {
 		op := f.ops[f.i]
-		cut := p.cut
-		p.frame, p.cut = f.prevFrame, f.prevCut
-		if res.ok && p.pos == f.m0.pos && op.kind != grammar.Infix {
-			res.ok = false // see parser.longest: empty prefix and postfix matches are not candidates
+		cut := p.Cut
+		p.Frame, p.Cut = f.prevFrame, f.prevCut
+		if res.ok && p.Pos == f.m0.Pos && op.Kind != grammar.Infix {
+			res.ok = false // see Parser.Longest: empty prefix and postfix matches are not candidates
 		}
-		if res.ok && (f.best.op == nil || p.pos > f.best.end) {
-			f.best = operatorsRuleAttempt{op: op, frame: f.f, v: res.v, start: f.m0.pos, end: p.pos, env: p.env, cut: cut,
-				errs: appendWork(p, []*SyntaxError(nil), p.recovered[f.m0.recovered:])}
+		if res.ok && (f.best.Op == nil || p.Pos > f.best.End) {
+			f.best = core.OperatorsRuleAttempt{Op: op, Frame: f.f, V: res.v, Start: f.m0.Pos, End: p.Pos, Env: p.Env, Cut: cut,
+				Errs: core.AppendWork(p, []*SyntaxError(nil), p.Recovered[f.m0.Recovered:])}
 		}
 		if !res.ok && cut {
 			f.cutFailed = true
 		}
-		if len(f.f.vals) == 0 {
-			p.reset(f.m0)
+		if len(f.f.Vals) == 0 {
+			p.Reset(f.m0)
 		} else {
-			p.saved = appendWork(p, p.saved[:0], f.f.vals) // see parser.longest
-			p.reset(f.m0)
-			copyWork(p, f.f.vals, p.saved)
+			p.Saved = core.AppendWork(p, p.Saved[:0], f.f.Vals) // see Parser.Longest
+			p.Reset(f.m0)
+			core.CopyWork(p, f.f.Vals, p.Saved)
 		}
 		f.i++
 	}
@@ -425,22 +426,22 @@ func (f *longestFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe,
 		mc.attempt = f.best // passed through the parser to keep iresult small
 		return nil, iresult{cutFailed: f.cutFailed}, true
 	}
-	f.prevFrame, f.prevCut = p.frame, p.cut
-	f.f = p.newFrame(len(f.ops[f.i].line.scope.Names))
-	p.frame, p.cut = f.f, false
-	return blockFrame(mc, f.ops[f.i].line.entry), iresult{}, false
+	f.prevFrame, f.prevCut = p.Frame, p.Cut
+	f.f = p.NewFrame(len(f.ops[f.i].Line.Scope.Names))
+	p.Frame, p.Cut = f.f, false
+	return blockFrame(mc, f.ops[f.i].Line.Entry), iresult{}, false
 }
 
 // nudFrame is the beginning of an expression (same steps as parser.operatorsRuleNud).
 type nudFrame struct {
-	r         *rule
+	r         *core.Rule
 	state     int
-	m0        mark
-	a         operatorsRuleAttempt
+	m0        core.Mark
+	a         core.OperatorsRuleAttempt
 	i         int
-	prevFrame *frame
+	prevFrame *core.Frame
 	prevCut   bool
-	f         *frame
+	f         *core.Frame
 }
 
 const (
@@ -454,57 +455,57 @@ const (
 
 func (f *nudFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, iresult, bool) {
 	p := mc.p
-	pr := f.r.operatorsRule
+	pr := f.r.OperatorsRule
 	for {
 		switch f.state {
 		case nBegin:
 			f.state = nSkipped
-			if pr.skipEntry >= 0 {
+			if pr.SkipEntry >= 0 {
 				return mc.skipFrame(pr), iresult{}, false
 			}
 		case nSkipped:
-			f.m0 = p.mark()
+			f.m0 = p.Mark()
 			f.state = nPrefix
-			return mc.longestFrame(pr.prefix), iresult{}, false
+			return mc.longestFrame(pr.Prefix), iresult{}, false
 		case nPrefix:
 			f.a = mc.attempt
-			if f.a.op == nil {
+			if f.a.Op == nil {
 				if res.cutFailed {
 					return nil, iresult{}, true
 				}
 				f.state = nOperand
 				continue
 			}
-			p.apply(&f.a)
+			p.Apply(&f.a)
 			f.state = nRHS
-			return mc.operatorsRuleFrame(f.r, f.a.op.level), iresult{}, false
+			return mc.operatorsRuleFrame(f.r, f.a.Op.Level), iresult{}, false
 		case nRHS:
 			if res.ok {
-				return nil, iresult{v: p.operatorsRuleBuild(f.r, &f.a, nil, res.v), ok: true}, true
+				return nil, iresult{v: p.OperatorsRuleBuild(f.r, &f.a, nil, res.v), ok: true}, true
 			}
-			if f.a.cut {
+			if f.a.Cut {
 				return nil, iresult{}, true
 			}
-			p.reset(f.m0)
+			p.Reset(f.m0)
 			f.state = nOperand
 		case nOperand:
-			if f.i == len(pr.operands) {
+			if f.i == len(pr.Operands) {
 				return nil, iresult{}, true
 			}
-			o := pr.operands[f.i]
-			f.prevFrame, f.prevCut = p.frame, p.cut
-			f.f = p.newFrame(len(o.scope.Names))
-			p.frame, p.cut = f.f, false
+			o := pr.Operands[f.i]
+			f.prevFrame, f.prevCut = p.Frame, p.Cut
+			f.f = p.NewFrame(len(o.Scope.Names))
+			p.Frame, p.Cut = f.f, false
 			f.state = nOperandDone
-			return blockFrame(mc, o.entry), iresult{}, false
+			return blockFrame(mc, o.Entry), iresult{}, false
 		case nOperandDone:
-			o := pr.operands[f.i]
-			cut := p.cut
-			p.frame, p.cut = f.prevFrame, f.prevCut
+			o := pr.Operands[f.i]
+			cut := p.Cut
+			p.Frame, p.Cut = f.prevFrame, f.prevCut
 			if res.ok {
-				return nil, iresult{v: p.lineResult(f.r, o, f.f, res.v, f.m0.pos, nil), ok: true}, true
+				return nil, iresult{v: p.LineResult(f.r, o, f.f, res.v, f.m0.Pos, nil), ok: true}, true
 			}
-			p.reset(f.m0)
+			p.Reset(f.m0)
 			if cut {
 				return nil, iresult{}, true
 			}
@@ -515,15 +516,15 @@ func (f *nudFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, ire
 }
 
 // operatorsRuleFrame parses an expression, absorbing only operators that bind tighter than binding level
-// min (same steps as parser.operatorsRuleParse).
+// min (same steps as Parser.OperatorsRuleParse).
 type operatorsRuleFrame struct {
-	r        *rule
+	r        *core.Rule
 	min      int
 	state    int
 	lhs      *value.Node
 	lastNone int
-	m0       mark
-	a        operatorsRuleAttempt
+	m0       core.Mark
+	a        core.OperatorsRuleAttempt
 }
 
 const (
@@ -537,7 +538,7 @@ const (
 
 func (f *operatorsRuleFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, iresult, bool) {
 	p := mc.p
-	pr := f.r.operatorsRule
+	pr := f.r.OperatorsRule
 	for {
 		switch f.state {
 		case pBegin:
@@ -550,40 +551,40 @@ func (f *operatorsRuleFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (i
 			f.lhs, f.lastNone = res.v, -1
 			f.state = pLoop
 		case pLoop:
-			f.m0 = p.mark()
+			f.m0 = p.Mark()
 			f.state = pSkipped
-			if pr.skipEntry >= 0 {
+			if pr.SkipEntry >= 0 {
 				return mc.skipFrame(pr), iresult{}, false
 			}
 		case pSkipped:
 			f.state = pLed
-			return mc.longestFrame(pr.led), iresult{}, false
+			return mc.longestFrame(pr.Led), iresult{}, false
 		case pLed:
 			f.a = mc.attempt
 			a := &f.a
-			if a.op == nil {
-				p.reset(f.m0)
+			if a.Op == nil {
+				p.Reset(f.m0)
 				if res.cutFailed {
 					return nil, iresult{}, true
 				}
 				return nil, iresult{v: f.lhs, ok: true}, true
 			}
-			if a.op.level <= f.min || a.op.assoc == grammar.AssocNone && a.op.level == f.lastNone {
-				p.reset(f.m0)
+			if a.Op.Level <= f.min || a.Op.Assoc == grammar.AssocNone && a.Op.Level == f.lastNone {
+				p.Reset(f.m0)
 				return nil, iresult{v: f.lhs, ok: true}, true
 			}
-			p.apply(a)
-			if a.op.kind == grammar.Postfix {
-				f.lhs = p.operatorsRuleBuild(f.r, a, f.lhs, nil)
+			p.Apply(a)
+			if a.Op.Kind == grammar.Postfix {
+				f.lhs = p.OperatorsRuleBuild(f.r, a, f.lhs, nil)
 				f.lastNone = -1
-				if p.pos == f.m0.pos { // as in parser.operatorsRuleParse
+				if p.Pos == f.m0.Pos { // as in Parser.OperatorsRuleParse
 					return nil, iresult{v: f.lhs, ok: true}, true
 				}
 				f.state = pLoop
 				continue
 			}
-			rmin := a.op.level
-			if a.op.assoc == grammar.AssocRight {
+			rmin := a.Op.Level
+			if a.Op.Assoc == grammar.AssocRight {
 				rmin--
 			}
 			f.state = pRHS
@@ -591,18 +592,18 @@ func (f *operatorsRuleFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (i
 		case pRHS:
 			a := &f.a
 			if !res.ok {
-				if a.cut {
+				if a.Cut {
 					return nil, iresult{}, true
 				}
-				p.reset(f.m0)
+				p.Reset(f.m0)
 				return nil, iresult{v: f.lhs, ok: true}, true
 			}
-			f.lhs = p.operatorsRuleBuild(f.r, a, f.lhs, res.v)
+			f.lhs = p.OperatorsRuleBuild(f.r, a, f.lhs, res.v)
 			f.lastNone = -1
-			if a.op.assoc == grammar.AssocNone {
-				f.lastNone = a.op.level
+			if a.Op.Assoc == grammar.AssocNone {
+				f.lastNone = a.Op.Level
 			}
-			if p.pos == f.m0.pos { // as in parser.operatorsRuleParse
+			if p.Pos == f.m0.Pos { // as in Parser.OperatorsRuleParse
 				return nil, iresult{v: f.lhs, ok: true}, true
 			}
 			f.state = pLoop
@@ -613,7 +614,7 @@ func (f *operatorsRuleFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (i
 // traceFrame is a traced rule call in the iterative-model VM: it reports the call, runs the frame
 // that bodyFrame would have pushed for it, and reports the result.
 type traceFrame struct {
-	r       *rule
+	r       *core.Rule
 	min     int
 	started bool
 }
@@ -622,9 +623,9 @@ func (f *traceFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, i
 	p := mc.p
 	if !f.started {
 		f.started = true
-		p.traceEnter(f.r, f.min)
+		p.TraceEnter(f.r, f.min)
 		return mc.callChild(f.r, f.min), iresult{}, false
 	}
-	p.traceExit(res.ok)
+	p.TraceExit(res.ok)
 	return nil, res, true
 }
