@@ -65,17 +65,18 @@ tree, err := p.Parse("1 + 2 * 3 ^ 2") // a *pego.Node, or a *pego.SyntaxError wi
 
 ## Why PEGO
 
-- **Edits in a blink.** `Document` reparses only what an edit touched: about 1 ms after a one-character edit to an
-  89 KB program, 15× faster than parsing it again.
-- **Infinite input, flat memory.** `ParseStream` emits each element as soon as it matches and drops the input it
-  has consumed, so memory stays constant however long the stream runs.
+- **Edits in a blink.** `Document` reparses only what an edit touched: about 0.13 ms after a one-character edit to an
+  89 KB program, over 100× faster than parsing it again (see the [benchmarks](docs/benchmarks.md)).
+- **Infinite input, bounded memory.** `ParseStream` emits each element as soon as it matches and drops the input
+  behind it, so memory follows the largest element, not the length of the input.
 - **Write once, run anywhere.** Grammars compile to a language-independent bytecode with a
-  [published specification](spec/bytecode/README.md). Precompiled `.pegoc` files load in tens of microseconds, and
+  [published specification](spec/bytecode/README.md). Precompiled `.pegoc` files load in 35–135 µs, and
   `pego gen` emits a standalone parser: Go that needs nothing but the standard library, or a TypeScript module with
   no dependencies for Node.js, Deno, Bun and browsers. With `-types`, TypeScript also exports declarations and
   `parseAST` conversion (see the [TypeScript guide](docs/guide/typescript.md#typed-values)).
-- **Fast out of the box.** A 262 KB JSON document becomes a fully typed, positioned tree in about 3 ms with a
-  generated parser — less time than merely validating it. Recognition mode validates without building a tree at all.
+- **Fast out of the box.** A 262 KB JSON document becomes a fully typed, positioned tree in under 4 ms with a
+  generated parser, close to the 3.5 ms `encoding/json` needs to decode it without positions. Recognition mode
+  validates without building a tree at all.
 - **Every backend, one answer.** Closure engine, recursive VM, iterative VM, generated Go and TypeScript: the test
   suite checks that all of them return identical trees, positions and errors.
 - **No nesting too deep.** The iterative VM runs on its own stack, up to 10 million nested rule calls.
