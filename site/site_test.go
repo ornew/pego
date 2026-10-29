@@ -139,6 +139,7 @@ func TestBuild(t *testing.T) {
 		"reference/pego/index.html": {
 			`id="CompileSource"`, `id="Parser.Parse"`, "type Node struct", `id="Node.Clone"`, "pkg.go.dev",
 			"MaxInputWork uint64", `id="WorkLimitError.Error"`,
+			"type SyntaxError struct", `id="TraceEvent.LineCol"`,
 		},
 		"reference/gen/index.html":       {`id="Go.Generate"`, `id="Generator"`, `id="RuntimeMode.String"`, "Content []byte"},
 		"reference/lint/index.html":      {`id="Config.Run"`, `id="Config.RunUnchecked"`, `id="Checks"`, `id="Severity.String"`},

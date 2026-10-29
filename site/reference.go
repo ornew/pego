@@ -114,24 +114,13 @@ version of PEGO. The reference of released versions is also on
 		}
 		r := &refRenderer{s: s, page: p, fset: fset, files: files, pkg: pkg, dir: rp.dir, internal: map[string]*refRenderer{}}
 		for _, t := range pkg.Types {
-			qual, target := aliasTarget(t)
-			if target == "" {
-				continue
+			in, it, err := r.resolveAlias(t)
+			if err != nil {
+				return fmt.Errorf("reference %s: %w", rp.importPath, err)
 			}
-			in := r.internal[qual]
-			if in == nil {
-				dir, ok := internalImport(files, qual)
-				if !ok {
-					continue
-				}
-				ifset, ifiles, ipkg, err := loadPackage(s.cfg.Repo, dir, modulePath+"/"+dir)
-				if err != nil {
-					return fmt.Errorf("reference %s: %w", rp.importPath, err)
-				}
-				in = &refRenderer{s: s, page: p, fset: ifset, files: ifiles, pkg: ipkg, dir: dir, ids: map[string]bool{}}
-				r.internal[qual] = in
+			if it != nil {
+				in.ids[it.Name] = true
 			}
-			in.ids[target] = true
 		}
 		p.Body = template.HTML(r.render(rp))
 		p.TOC = r.toc
@@ -165,8 +154,8 @@ type refRenderer struct {
 	// ids, if set, lists the symbols on the page; links to other symbols of the package are not
 	// linked (used for the internal package, whose types appear only through aliases).
 	ids map[string]bool
-	// internal documents the targets of aliases to types of internal packages, by the name that
-	// qualifies them in the source (as engine in type Program = engine.Program).
+	// internal documents the targets of aliases to types of internal packages, by the repository
+	// directory of the internal package.
 	internal map[string]*refRenderer
 }
 
@@ -395,38 +384,73 @@ func internalImport(files []*ast.File, qual string) (string, bool) {
 // of. The internal package is not importable, so without this the reference (like pkg.go.dev) would
 // not show them.
 func (r *refRenderer) aliasTarget(t *doc.Type) {
-	qual, name := aliasTarget(t)
-	in := r.internal[qual]
-	if name == "" || in == nil {
+	in, it, err := r.resolveAlias(t)
+	if err != nil || it == nil {
 		return
 	}
-	for _, it := range in.pkg.Types {
-		if it.Name != name {
+	in.b.Reset()
+	in.b.WriteString("<div class=\"alias-target\">\n")
+	fmt.Fprintf(&in.b, "<p class=\"alias-note\">The type it stands for is defined in an internal package as follows. %s</p>\n",
+		in.source(it.Decl.Pos()))
+	in.b.WriteString(in.decl(it.Decl))
+	if it.Doc != t.Doc {
+		in.b.WriteString(in.docHTML(it.Doc))
+	}
+	for _, f := range it.Methods {
+		if !ast.IsExported(f.Name) {
 			continue
 		}
-		in.b.Reset()
-		in.b.WriteString("<div class=\"alias-target\">\n")
-		fmt.Fprintf(&in.b, "<p class=\"alias-note\">The type it stands for is defined in an internal package as follows. %s</p>\n",
-			in.source(it.Decl.Pos()))
-		in.b.WriteString(in.decl(it.Decl))
-		if it.Doc != t.Doc {
-			in.b.WriteString(in.docHTML(it.Doc))
-		}
-		for _, f := range it.Methods {
-			if !ast.IsExported(f.Name) {
-				continue
-			}
-			id := t.Name + "." + f.Name
-			in.b.WriteString("<div class=\"symbol\" id=\"" + id + "\">\n")
-			fmt.Fprintf(&in.b, "<h4><a class=\"anchor\" href=\"#%s\" aria-hidden=\"true\">#</a>func (%s) %s %s</h4>\n",
-				id, template.HTMLEscapeString(f.Recv), f.Name, in.source(f.Decl.Pos()))
-			r.toc = append(r.toc, Heading{Level: 4, ID: id, Text: "func (" + f.Recv + ") " + f.Name})
-			in.b.WriteString(in.decl(f.Decl))
-			in.b.WriteString(in.docHTML(f.Doc))
-			in.b.WriteString("</div>\n")
-		}
+		id := t.Name + "." + f.Name
+		in.b.WriteString("<div class=\"symbol\" id=\"" + id + "\">\n")
+		fmt.Fprintf(&in.b, "<h4><a class=\"anchor\" href=\"#%s\" aria-hidden=\"true\">#</a>func (%s) %s %s</h4>\n",
+			id, template.HTMLEscapeString(f.Recv), f.Name, in.source(f.Decl.Pos()))
+		r.toc = append(r.toc, Heading{Level: 4, ID: id, Text: "func (" + f.Recv + ") " + f.Name})
+		in.b.WriteString(in.decl(f.Decl))
+		in.b.WriteString(in.docHTML(f.Doc))
 		in.b.WriteString("</div>\n")
-		r.b.WriteString(in.b.String())
-		return
 	}
+	in.b.WriteString("</div>\n")
+	r.b.WriteString(in.b.String())
+}
+
+// resolveAlias returns the type of an internal package that t stands for, with the renderer of
+// that package, if t aliases a type of an internal package. It follows aliases from one internal
+// package to another (as in type ParseOptions = engine.ParseOptions, where engine declares
+// type ParseOptions = core.ParseOptions) to the type definition, loading each package once.
+func (r *refRenderer) resolveAlias(t *doc.Type) (*refRenderer, *doc.Type, error) {
+	from, ft := r, t
+	for {
+		qual, name := aliasTarget(ft)
+		if name == "" {
+			break
+		}
+		dir, ok := internalImport(from.files, qual)
+		if !ok {
+			break
+		}
+		in := r.internal[dir]
+		if in == nil {
+			fset, files, pkg, err := loadPackage(r.s.cfg.Repo, dir, modulePath+"/"+dir)
+			if err != nil {
+				return nil, nil, err
+			}
+			in = &refRenderer{s: r.s, page: r.page, fset: fset, files: files, pkg: pkg, dir: dir, ids: map[string]bool{}}
+			r.internal[dir] = in
+		}
+		var next *doc.Type
+		for _, it := range in.pkg.Types {
+			if it.Name == name {
+				next = it
+				break
+			}
+		}
+		if next == nil || next == ft {
+			break
+		}
+		from, ft = in, next
+	}
+	if from == r {
+		return nil, nil, nil
+	}
+	return from, ft, nil
 }
