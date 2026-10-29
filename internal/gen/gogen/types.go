@@ -46,7 +46,7 @@ type typedOutput struct {
 // The source of the types package refers to the runtime by its package name and to the types by
 // their names; that of the parser package refers to the types of the grammar as types.Name, and the
 // names that only the types package declares (Error, TNode, Unit, TupleN, PegoHooks) unqualified,
-// which QualifyRuntime resolves.
+// which qualifyRuntime resolves.
 func (g *Generator) typedGo(start *compile.Rule, conv bool) (typedOutput, error) {
 	info := g.Prog.Typed
 	if info == nil {
@@ -72,7 +72,7 @@ func (g *Generator) typedGo(start *compile.Rule, conv bool) (typedOutput, error)
 	st := ruleType(start)
 	directStart := !conv && t.runtimeOK(st)
 	enter := func(r *compile.Rule) {
-		g.typedRoots = append(g.typedRoots, RuleKey{"trules", r.ID, true})
+		g.typedRoots = append(g.typedRoots, ruleKey{"trules", r.ID, true})
 		if g.typedEntry == nil {
 			g.typedEntry = map[int]bool{}
 		}
@@ -232,7 +232,7 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 		}
 	}
 	named.WriteString("\tdefault:\n\t\treturn nil, pegoGrammar.StartError(name)\n\t}\n}\n")
-	units := append([]ShakeUnit(nil), astHelperUnits...)
+	units := append([]shakeUnit(nil), astHelperUnits...)
 	bootstrap := !g.disableTypedOutputBootstrap
 	// The default form of the chunk helpers is the runtime's (Chunk, Alloc, AllocSlice); only the
 	// measurement references (separate allocation, no bootstrap, plain slabs) print local helpers.
@@ -247,19 +247,19 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 	} else {
 		switch {
 		case g.disableTypedObjectSlabs:
-			units = append(units, ShakeUnit{"astNew", astIndividualObjectHelper})
+			units = append(units, shakeUnit{"astNew", astIndividualObjectHelper})
 		case bootstrap:
-			units = append(units, ShakeUnit{"astNew", astBootstrapObjectHelper})
+			units = append(units, shakeUnit{"astNew", astBootstrapObjectHelper})
 		default:
-			units = append(units, ShakeUnit{"astNew", astObjectSlabHelper})
+			units = append(units, shakeUnit{"astNew", astObjectSlabHelper})
 		}
 		switch {
 		case g.disableTypedListSlabs:
-			units = append(units, ShakeUnit{"astSlice", astIndividualListHelper})
+			units = append(units, shakeUnit{"astSlice", astIndividualListHelper})
 		case bootstrap:
-			units = append(units, ShakeUnit{"astSlice", astBootstrapListHelper})
+			units = append(units, shakeUnit{"astSlice", astBootstrapListHelper})
 		default:
-			units = append(units, ShakeUnit{"astSlice", astListSlabHelper})
+			units = append(units, shakeUnit{"astSlice", astListSlabHelper})
 		}
 	}
 	if g.directTypedDocument {
@@ -321,7 +321,7 @@ func CloneAST(value %s) %s {
 	}
 	// The helpers come first; only those that the typed code names are kept.
 	code := b.String()
-	kept := KeptUnits(units, code, g.Methods.String(), g.Init.String(), g.Vars.String())
+	kept := keptUnits(units, code, g.Methods.String(), g.Init.String(), g.Vars.String())
 	var parser strings.Builder
 	for i, u := range units {
 		if kept[i] {
@@ -1359,8 +1359,8 @@ func (c chunkRename) Replace(src string) string {
 }
 
 // astHelperUnits are the conversion helpers of typed values; typedGo keeps those that the typed
-// code names (ShakeUnit). The object and list helpers that follow them are chosen by the options.
-var astHelperUnits = []ShakeUnit{
+// code names (shakeUnit). The object and list helpers that follow them are chosen by the options.
+var astHelperUnits = []shakeUnit{
 	{"astNode", `func astNode(v any) *Node { n, _ := v.(*Node); return n }
 
 `},

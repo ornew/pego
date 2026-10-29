@@ -13,7 +13,7 @@ import (
 // the rule functions does not reach.
 func TestGeneratedNoStepChargesInTypedCode(t *testing.T) {
 	t.Parallel()
-	for _, src := range []string{ordinaryOnlyTyped, ordinaryOnlyConverted} {
+	for _, src := range []string{ordinaryOnlyTyped, gentest.OrdinaryOnlyConverted} {
 		g, err := parseTest(src)
 		if err != nil {
 			t.Fatal(err)
@@ -47,7 +47,7 @@ func TestGeneratedNoStepChargesInTypedCode(t *testing.T) {
 		}
 	}
 	// The conversions of the types package charge steps only in a controlled parser, for a list.
-	g, err := parseTest(ordinaryOnlyConverted)
+	g, err := parseTest(gentest.OrdinaryOnlyConverted)
 	if err != nil {
 		t.Fatal(err)
 	}

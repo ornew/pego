@@ -1,4 +1,4 @@
-package engine
+package gogen_test
 
 import (
 	"fmt"
@@ -174,7 +174,7 @@ func TestTypedUnreachedRulesRunLikeTheFullOutput(t *testing.T) {
 }
 
 func testTypedUnreachedRulesRunLikeTheFullOutput(t *testing.T) {
-	jsonSrc, err := os.ReadFile("../../parsers/json/json.pego")
+	jsonSrc, err := os.ReadFile("../../../parsers/json/json.pego")
 	if err != nil {
 		t.Fatal(err)
 	}

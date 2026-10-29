@@ -149,15 +149,6 @@ func TestGeneratedTypedOnly(t *testing.T) {
 	}
 }
 
-// ordinaryOnlyConverted needs the Node result of its rules: an action reads a field of a struct, so the
-// typed entry points convert the Node that the rule functions build instead of building the values
-// directly.
-const ordinaryOnlyConverted = `type Item = { Names []string; N int }
-rule main Item = i:item "!" => Item{Names: $i.Names, N: len($i.Names)}
-rule item Item = n:[a-z]+ => Item{Names: list(text($n)), N: 0}`
-
-var ordinaryOnlyConvertedInputs = []string{"abc!", "!", "abc", "", "é!", "ab\xff!", "abc!x", "a!b!", "ab !"}
-
 func TestGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 	t.Parallel()
 	gentest.EachMode(t, testGeneratedTypedOnlyConvertedEntries)
@@ -168,7 +159,7 @@ func testGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 		t.Skip("builds generated code")
 	}
 	program := strings.NewReplacer(`"sum"`, `"main"`, `"a"`, `"item"`).Replace(ordinaryOnlyTypedEntries)
-	g, err := parseTest(ordinaryOnlyConverted)
+	g, err := parseTest(gentest.OrdinaryOnlyConverted)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,9 +181,9 @@ func testGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("ordtest")), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	ordinaryOnlyPackage(t, dir, "full", ordinaryOnlyConverted, gen.GenOptions{Types: true, Recognize: true}, program, ordinaryOnlyConvertedInputs)
-	ordinaryOnlyPackage(t, dir, "only", ordinaryOnlyConverted, gen.GenOptions{Types: true, TypedOnly: true}, program, ordinaryOnlyConvertedInputs)
-	ordinaryOnlyPackage(t, dir, "mutated", strings.Replace(ordinaryOnlyConverted, `"!"`, `"?"`, 1), gen.GenOptions{Types: true, TypedOnly: true}, program, ordinaryOnlyConvertedInputs)
+	ordinaryOnlyPackage(t, dir, "full", gentest.OrdinaryOnlyConverted, gen.GenOptions{Types: true, Recognize: true}, program, gentest.OrdinaryOnlyConvertedInputs)
+	ordinaryOnlyPackage(t, dir, "only", gentest.OrdinaryOnlyConverted, gen.GenOptions{Types: true, TypedOnly: true}, program, gentest.OrdinaryOnlyConvertedInputs)
+	ordinaryOnlyPackage(t, dir, "mutated", strings.Replace(gentest.OrdinaryOnlyConverted, `"!"`, `"?"`, 1), gen.GenOptions{Types: true, TypedOnly: true}, program, gentest.OrdinaryOnlyConvertedInputs)
 	out := runTranscripts(t, dir, "full", "only", "mutated")
 	if out["full"] != out["only"] {
 		t.Errorf("the typed-only parser differs from the full one:\n%s", firstTranscriptDifference(out["full"], out["only"]))
@@ -210,7 +201,7 @@ func testGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "internal error: a typed entry point converts Nodes") {
 		t.Errorf("a typed-only parser without the Node rule functions: error %v, want an internal error", err)
 	}
-	if countBodies([]byte(src)) == 0 {
+	if gentest.CountBodies([]byte(src)) == 0 {
 		t.Error("the typed-only parser with the Node rule functions has no Node rule bodies")
 	}
 }

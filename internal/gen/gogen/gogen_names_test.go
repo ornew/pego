@@ -1,4 +1,4 @@
-package engine
+package gogen_test
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	goparser "go/parser"
 	"go/token"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -15,27 +14,11 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
 	"github.com/ornew/pego/internal/gentest"
 )
-
-// goVetAndTest runs go vet and go test in the module in dir.
-func goVetAndTest(t *testing.T, dir string, test bool) {
-	t.Helper()
-	args := [][]string{{"vet", "./..."}}
-	if test {
-		args = append(args, []string{"test", "-count=1", "./..."})
-	}
-	for _, a := range args {
-		cmd := exec.Command("go", a...)
-		cmd.Dir = dir
-		cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS=-mod=mod -trimpath")
-		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatalf("go %s: %v\n%s", a[0], err, out)
-		}
-	}
-}
 
 // runtimeNameTypes are names that the runtime and the generated parser package declare. A type of a
 // typed grammar may take each of them: the types are declared in the package types, apart from
@@ -134,7 +117,7 @@ func TestNames(t *testing.T) {
 `), 0o644); err != nil {
 					t.Fatal(err)
 				}
-				goVetAndTest(t, dir, true)
+				gentest.GoVetAndTest(t, dir, true)
 			})
 		}
 	}
@@ -239,7 +222,7 @@ func TestGeneratedTypeNamedLikeTypesPackageName(t *testing.T) {
 			}
 			dir := t.TempDir()
 			gentest.WriteGenerated(t, dir, "example.com/clash", files)
-			goVetAndTest(t, dir, false)
+			gentest.GoVetAndTest(t, dir, false)
 		})
 	}
 }
@@ -255,7 +238,7 @@ func TestGeneratedTypesPackageNamesTheRuntimeExplicitly(t *testing.T) {
 	}
 	for _, name := range []string{"json", "csv", "cel", "yaml"} {
 		t.Run(name, func(t *testing.T) {
-			data, err := os.ReadFile(filepath.Join("..", "..", "parsers", name, name+".pego"))
+			data, err := os.ReadFile(filepath.Join("..", "..", "..", "parsers", name, name+".pego"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -297,7 +280,7 @@ func TestGeneratedTypesNamedLikeEveryRuntimeExport(t *testing.T) {
 		}
 		// The grammar language reserves some names (Error, ...).
 		if g, err := parseTest("type " + name + " = { Value int }\nrule main = \"a\"\n"); err == nil {
-			if _, err := Compile(g, compile.Options{}); err == nil {
+			if _, err := engine.Compile(g, compile.Options{}); err == nil {
 				names = append(names, name)
 			}
 		}
@@ -341,7 +324,7 @@ func TestGeneratedTypesNamedLikeEveryRuntimeExport(t *testing.T) {
 			}
 			dir := t.TempDir()
 			gentest.WriteGenerated(t, dir, "example.com/every", files)
-			goVetAndTest(t, dir, false)
+			gentest.GoVetAndTest(t, dir, false)
 		})
 	}
 }
@@ -431,7 +414,7 @@ func TestRange(t *testing.T) {
 `), 0o644); err != nil {
 				t.Fatal(err)
 			}
-			goVetAndTest(t, dir, true)
+			gentest.GoVetAndTest(t, dir, true)
 		})
 	}
 }
@@ -556,7 +539,7 @@ func TestEmbeddedModeCompilesRichGrammars(t *testing.T) {
 	}
 	for _, name := range []string{"json", "csv", "cel", "yaml"} {
 		t.Run(name, func(t *testing.T) {
-			data, err := os.ReadFile(filepath.Join("..", "..", "parsers", name, name+".pego"))
+			data, err := os.ReadFile(filepath.Join("..", "..", "..", "parsers", name, name+".pego"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -583,7 +566,7 @@ func TestEmbeddedModeCompilesRichGrammars(t *testing.T) {
 			if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module "+module+"\n\ngo 1.27.1\n"), 0o644); err != nil {
 				t.Fatal(err)
 			}
-			goVetAndTest(t, dir, false)
+			gentest.GoVetAndTest(t, dir, false)
 		})
 	}
 }
@@ -604,7 +587,7 @@ func TestGeneratedRichGrammarsWithTypesNamedLikeRuntimeExports(t *testing.T) {
 	declares := regexp.MustCompile(`(?m)^\s*type\s+(\w+)`)
 	for _, name := range []string{"json", "csv", "cel", "yaml"} {
 		t.Run(name, func(t *testing.T) {
-			data, err := os.ReadFile(filepath.Join("..", "..", "parsers", name, name+".pego"))
+			data, err := os.ReadFile(filepath.Join("..", "..", "..", "parsers", name, name+".pego"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -627,7 +610,7 @@ func TestGeneratedRichGrammarsWithTypesNamedLikeRuntimeExports(t *testing.T) {
 				// The grammar language reserves some names (Error, ...).
 				if g, err := parseTest("type " + n + " = { Value int }\nrule main = \"a\"\n"); err != nil {
 					continue
-				} else if _, err := Compile(g, compile.Options{}); err != nil {
+				} else if _, err := engine.Compile(g, compile.Options{}); err != nil {
 					continue
 				}
 				fmt.Fprintf(&src, "type %s = { Value int }\n", n)
@@ -643,7 +626,7 @@ func TestGeneratedRichGrammarsWithTypesNamedLikeRuntimeExports(t *testing.T) {
 			}
 			dir := t.TempDir()
 			gentest.WriteGenerated(t, dir, module, files)
-			goVetAndTest(t, dir, false)
+			gentest.GoVetAndTest(t, dir, false)
 		})
 	}
 }

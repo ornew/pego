@@ -38,8 +38,8 @@ import (
 // Left-recursion leaders and rules that cut or recover are framed: they keep runtime growth and
 // finalization, and only their expression bodies are printed in place.
 
-// Dvar is a variable that a printed function declares: its name and Go type.
-type Dvar struct{ Name, Typ string }
+// dvar is a variable that a printed function declares: its name and Go type.
+type dvar struct{ Name, Typ string }
 
 // markVar records, of the variable name of d.vars, that it is not declared (dead) or that it stays
 // declared with nothing to read it (quiet).
@@ -54,13 +54,13 @@ func (d *flatRule) markVar(name string, dead bool) {
 	(*m)[name] = true
 }
 
-// VarLinesExcept declares the variables vs, those of one type together (var x1, x2 int) in the order
+// varLinesExcept declares the variables vs, those of one type together (var x1, x2 int) in the order
 // of the first of each type, without the variables in dead, which still give the declarations their
 // order: the first variable of each type, dead or not, places the type. Separate statements need no
 // alignment, unlike the lines of a var block. A declaration that declares
 // a variable of quiet is followed by the statement that assigns the quiet variables of it to the blank
 // identifier.
-func VarLinesExcept(vs []Dvar, dead, quiet map[string]bool) string {
+func varLinesExcept(vs []dvar, dead, quiet map[string]bool) string {
 	var types []string
 	names := map[string][]string{}
 	seen := map[string]bool{}
@@ -104,7 +104,7 @@ func advance(n int) string {
 // flatRule is a flat rule's printed body: the declarations and statements of the method that
 // calls it, up to the rule's value in v (success falls through; failure jumps to fail).
 type flatRule struct {
-	vars       []Dvar
+	vars       []dvar
 	dead       map[string]bool // the variables of vars that are not declared (varLinesExcept)
 	quiet      map[string]bool // the variables of vars that are declared, unread and silenced after their declaration
 	body       string
@@ -128,23 +128,23 @@ func (g *Generator) flatMethod(r *compile.Rule, d *flatRule, name, comment strin
 	}
 	restore := plain && d.fail
 	start, rec := d.start || restore, restore && g.recovers()
-	var vs []Dvar
+	var vs []dvar
 	if start {
-		vs = append(vs, Dvar{"start", "int"})
+		vs = append(vs, dvar{"start", "int"})
 	}
 	if d.succeed {
-		vs = append(vs, Dvar{"v", g.valType()})
+		vs = append(vs, dvar{"v", g.valType()})
 	}
 	if d.ctx {
-		vs = append(vs, Dvar{"c", "*TActCtx"})
+		vs = append(vs, dvar{"c", "*TActCtx"})
 	}
 	if rec {
-		vs = append(vs, Dvar{"rec", "int"})
+		vs = append(vs, dvar{"rec", "int"})
 	}
 	if d.binds {
-		vs = append(vs, Dvar{"prevEnv", "*Env"})
+		vs = append(vs, dvar{"prevEnv", "*Env"})
 	}
-	m.WriteString(VarLinesExcept(append(vs, d.vars...), d.dead, d.quiet))
+	m.WriteString(varLinesExcept(append(vs, d.vars...), d.dead, d.quiet))
 	switch {
 	case rec:
 		m.WriteString("\tstart, rec = p.Pos, len(p.Recovered)\n")
@@ -187,11 +187,11 @@ func (g *Generator) leanRuleBody(r *compile.Rule, d *flatRule) string {
 // leanRuleText returns the text of the method body of the value-free flat rule d.
 func (g *Generator) leanRuleText(d *flatRule) string {
 	var b strings.Builder
-	var vs []Dvar
+	var vs []dvar
 	if d.succeed {
-		vs = append(vs, Dvar{"v", "*Node"})
+		vs = append(vs, dvar{"v", "*Node"})
 	}
-	b.WriteString(VarLinesExcept(append(vs, d.vars...), d.dead, d.quiet))
+	b.WriteString(varLinesExcept(append(vs, d.vars...), d.dead, d.quiet))
 	b.WriteString(d.body)
 	if d.succeed {
 		b.WriteString("return v, true\n")

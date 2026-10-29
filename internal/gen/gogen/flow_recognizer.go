@@ -53,7 +53,7 @@ func (g *Generator) flowRecRule(r *compile.Rule) *flatRule {
 		if !ok {
 			return nil
 		}
-		out.vars = append(out.vars, Dvar{v.Name, t})
+		out.vars = append(out.vars, dvar{v.Name, t})
 		switch {
 		case res.Dead(v):
 			out.markVar(v.Name, true)

@@ -105,5 +105,5 @@ func TestTraceOptions(t *testing.T) {
 }
 `))
 	}
-	goVetAndTest(t, dir, true)
+	gentest.GoVetAndTest(t, dir, true)
 }

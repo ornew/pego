@@ -1,4 +1,4 @@
-package engine
+package gogen_test
 
 import (
 	"fmt"
@@ -86,8 +86,6 @@ func undefinedGenerated(t *testing.T, src []byte) []string {
 	return undefined
 }
 
-func countBodies(src []byte) int { return strings.Count(string(src), "].Body = ") }
-
 func generateReach(t *testing.T, src string, opts gen.GenOptions) []byte {
 	t.Helper()
 	g, err := syntax.Parse(src)
@@ -133,8 +131,8 @@ func testUnreachableBodiesAreLeftOut(t *testing.T) {
 			if got := undefinedGenerated(t, pruned); len(got) > 0 {
 				t.Errorf("the pruned output calls undefined functions %v", got)
 			}
-			if tc.src != reachStreamGrammar && countBodies(pruned) >= countBodies(full) {
-				t.Errorf("pruned output has %d rule bodies, the full output %d", countBodies(pruned), countBodies(full))
+			if tc.src != reachStreamGrammar && gentest.CountBodies(pruned) >= gentest.CountBodies(full) {
+				t.Errorf("pruned output has %d rule bodies, the full output %d", gentest.CountBodies(pruned), gentest.CountBodies(full))
 			}
 			if len(pruned) > len(full) {
 				t.Errorf("pruned output is larger: %d > %d bytes", len(pruned), len(full))

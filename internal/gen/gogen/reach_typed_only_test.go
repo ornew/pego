@@ -1,4 +1,4 @@
-package engine
+package gogen_test
 
 import (
 	"strings"
@@ -14,7 +14,7 @@ import (
 // that nothing reaches.
 func typedOnlyLonelyGrammar(t *testing.T) string {
 	t.Helper()
-	for _, c := range typedOnlyConverted {
+	for _, c := range gentest.TypedOnlyConverted {
 		if c.Name == "left recursion" {
 			return strings.Replace(c.Src, "rule main", "@start\nrule main", 1) + "\nrule lonely = \"zz\" item \"q\"+\n"
 		}
@@ -44,8 +44,8 @@ func testTypedOnlyUnreached(t *testing.T) {
 		if got := undefinedGenerated(t, pruned); len(got) > 0 {
 			t.Errorf("controls=%v: the output calls undefined functions %v", controls, got)
 		}
-		if countBodies(pruned) >= countBodies(full) {
-			t.Errorf("controls=%v: pruned output has %d Node rule bodies, the full output %d", controls, countBodies(pruned), countBodies(full))
+		if gentest.CountBodies(pruned) >= gentest.CountBodies(full) {
+			t.Errorf("controls=%v: pruned output has %d Node rule bodies, the full output %d", controls, gentest.CountBodies(pruned), gentest.CountBodies(full))
 		}
 	}
 }

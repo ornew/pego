@@ -19,10 +19,10 @@ import (
 	"github.com/ornew/pego/internal/ir/core"
 )
 
-// DefaultPackageName returns the package name of the generated code for a module path: its last
+// defaultPackageName returns the package name of the generated code for a module path: its last
 // element, without a trailing major version element (example.com/m/v2 gives m), as Go tooling
 // names a package.
-func DefaultPackageName(module string) string {
+func defaultPackageName(module string) string {
 	base := path.Base(module)
 	if dir := path.Dir(module); dir != "." && dir != "/" && len(base) >= 2 && base[0] == 'v' && base[1] != '0' && strings.Trim(base[1:], "0123456789") == "" {
 		if base[1] != '1' || len(base) > 2 {
@@ -56,7 +56,7 @@ type Hooks struct {
 	Generator func(*Generator)
 	// Reach receives the result of the first pass of GenerateParser, before the second pass; a test
 	// removes a root from it to show that the output then fails.
-	Reach func(*LiveRules)
+	Reach func(*liveRules)
 	// LeanRoute is called with the rule table and the rule for each rule that takes the lean route
 	// in rules, in a Node or recognizer table, so that a test checks the route that is chosen, not
 	// the text of the generated code.
@@ -83,7 +83,7 @@ type Hooks struct {
 
 // GenerateParser generates the files of Generate (other than for RuntimeOnly). It generates twice: the
 // first pass records which rules of the Node, recognizer and typed tables a generated call or an
-// entry point can reach (LiveRules), and the second leaves out the others. A typed-only parser
+// entry point can reach (liveRules), and the second leaves out the others. A typed-only parser
 // without Node rules has no Node or recognizer rule to leave out (keepTableRules); one that keeps
 // Node rules for its converting entry points prints those that the entry points reach, like any
 // other output.
@@ -94,7 +94,7 @@ func GenerateParser(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, h *
 	if opts.KeepUnreachable {
 		return generateOnce(g, c, opts, h, nil, nil)
 	}
-	var lv LiveRules
+	var lv liveRules
 	if _, err := generateOnce(g, c, opts, h, nil, &lv); err != nil {
 		return nil, err
 	}
@@ -106,16 +106,16 @@ func GenerateParser(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, h *
 
 // generateOnce is one pass of GenerateParser. A pass with collect records the reachable rules into it;
 // a pass with live omits the rules that are not reachable in live.
-func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, h *Hooks, live, collect *LiveRules) (files []gen.GeneratedFile, err error) {
+func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, h *Hooks, live, collect *liveRules) (files []gen.GeneratedFile, err error) {
 	if collect != nil {
-		*collect = LiveRules{}
+		*collect = liveRules{}
 	}
 	if opts.Module == "" && (opts.Runtime == gen.RuntimeEmbed || opts.Package == "") {
 		return nil, fmt.Errorf("module path is required")
 	}
 	derived := opts.Package == ""
 	if derived {
-		opts.Package = DefaultPackageName(opts.Module)
+		opts.Package = defaultPackageName(opts.Module)
 	}
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		if derived {
@@ -140,7 +140,7 @@ func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, h *Ho
 	if err := opts.ValidateDefaultValue(); err != nil {
 		return nil, err
 	}
-	info, err := LoadRuntime()
+	info, err := loadRuntime()
 	if err != nil {
 		return nil, err
 	}
@@ -349,8 +349,8 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	if err != nil {
 		return nil, fmt.Errorf("generated code does not compile: %w\n%s", err, out.String())
 	}
-	body := ShakeVars(strings.TrimPrefix(string(whole), "package "+opts.Package+"\n"))
-	var tp *TypesPackage
+	body := shakeVars(strings.TrimPrefix(string(whole), "package "+opts.Package+"\n"))
+	var tp *typesPackage
 	var typesFile []byte
 	if opts.Types {
 		if typesFile, tp, err = typesPackageFile(opts, typesBody); err != nil {
@@ -362,7 +362,7 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	if goGen.chunksInRuntime {
 		body = chunkNames.Replace(body)
 	}
-	body, err = QualifyRuntime(runtimeImport(opts), body, info, tp)
+	body, err = qualifyRuntime(runtimeImport(opts), body, info, tp)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +377,7 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		return nil, fmt.Errorf("generated code does not compile: %w", err)
 	}
 	if !opts.KeepComments {
-		if src, err = TrimComments(src); err != nil {
+		if src, err = trimComments(src); err != nil {
 			return nil, fmt.Errorf("generated code does not compile: %w", err)
 		}
 	}
@@ -471,7 +471,7 @@ type Generator struct {
 	wrappers    []wrapperSpan
 	// live and collect are the passes of GenerateParser (reach.go): live leaves out the unreachable
 	// rules of the Node and recognizer tables, collect records the calls that reach them.
-	live, collect *LiveRules
+	live, collect *liveRules
 	// keepTableRules marks a typed-only parser without Node rules: its Node and recognizer tables
 	// have no rule bodies to check; the typed table leaves its unreached rules out as usual.
 	keepTableRules bool
@@ -479,11 +479,11 @@ type Generator struct {
 	// needs the Node rule bodies.
 	convertsNodes bool
 	// typedRoots are the typed rules whose Entry a typed entry point runs, and typedEntry their IDs.
-	typedRoots []RuleKey
+	typedRoots []ruleKey
 	typedEntry map[int]bool
-	emitting   RuleKey
+	emitting   ruleKey
 	emittingOK bool
-	bodySet    map[RuleKey]bool
+	bodySet    map[ruleKey]bool
 	reachErr   error
 }
 
@@ -503,9 +503,9 @@ func goStrings(xs []string) string {
 	return "[]string{" + strings.Join(q, ", ") + "}"
 }
 
-// RuleTableLimits reports whether a rule table with nstrs lists of strings and nseen deferred
+// ruleTableLimits reports whether a rule table with nstrs lists of strings and nseen deferred
 // memoization indexes fits the fields of runtime.RuleSpec (Scope and Vars are 16 bits, Seen 32).
-func RuleTableLimits(nstrs, nseen int) error {
+func ruleTableLimits(nstrs, nseen int) error {
 	if nstrs > math.MaxUint16+1 {
 		return fmt.Errorf("the rule table needs %d distinct capture or variable lists, more than %d", nstrs, math.MaxUint16+1)
 	}
@@ -584,7 +584,7 @@ func (g *Generator) rules() {
 		scopes[r] = s
 		if g.pruned(r) {
 			// Not printed; its table row keeps the capture layout of the first pass.
-			s.Names = append(s.Names, g.live.scopes[RuleKey{g.Table, r.ID, false}]...)
+			s.Names = append(s.Names, g.live.scopes[ruleKey{g.Table, r.ID, false}]...)
 			continue
 		}
 		g.beginRule(r)
@@ -628,10 +628,10 @@ func (g *Generator) rules() {
 	g.endRule()
 	if g.collect != nil && g.Table != "trules" {
 		if g.collect.scopes == nil {
-			g.collect.scopes = map[RuleKey][]string{}
+			g.collect.scopes = map[ruleKey][]string{}
 		}
 		for _, r := range all {
-			g.collect.scopes[RuleKey{g.Table, r.ID, false}] = append([]string(nil), scopes[r].Names...)
+			g.collect.scopes[ruleKey{g.Table, r.ID, false}] = append([]string(nil), scopes[r].Names...)
 		}
 	}
 	if g.Table == "rules" {
@@ -703,7 +703,7 @@ func (g *Generator) rules() {
 				extras = append(extras, fmt.Sprintf("\t{%d, %q, %q, %q},\n", r.ID, w, r.NodeType, r.OpNodeType))
 			}
 		}
-		if err := RuleTableLimits(len(strs), g.Prog.NSeen); err != nil {
+		if err := ruleTableLimits(len(strs), g.Prog.NSeen); err != nil {
 			g.tableErr = err
 		}
 		spec, strTable, extraTable := g.Table+"Spec", g.Table+"Strs", g.Table+"Extras"
@@ -1780,7 +1780,7 @@ func (g *Generator) classTable(e *grammar.CharClass) string {
 	name := g.Name("cls")
 	g.workClassNames[key] = name
 	g.workClassKeys = append(g.workClassKeys, key)
-	ascii, wideRunes := ClassBits(e)
+	ascii, wideRunes := classBits(e)
 	var wide []string
 	for _, r := range wideRunes {
 		wide = append(wide, strconv.Itoa(int(r)))
@@ -1816,10 +1816,10 @@ func (g *Generator) classSteps(items []grammar.Expr) string {
 	return name
 }
 
-// ClassBits returns the membership tables of a character class as the runtime's Class holds
+// classBits returns the membership tables of a character class as the runtime's Class holds
 // them: the bitset of the matching characters below 128, with the negation applied, and the
 // inclusive pairs of the ranges at or above 128 (a range that starts below is cut at 128).
-func ClassBits(e *grammar.CharClass) (ascii [2]uint64, wide []rune) {
+func classBits(e *grammar.CharClass) (ascii [2]uint64, wide []rune) {
 	for c := rune(0); c < 128; c++ {
 		in := false
 		for _, r := range e.Ranges {

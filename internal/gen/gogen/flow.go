@@ -27,7 +27,7 @@ import (
 // The printer follows reachability: a statement at an unreachable point is left out,
 // but its text is still formed, so that the package variables it names (literals, expectations,
 // class tables, shapers, scopes) are declared in the same order. A variable that no printed statement
-// reads is not declared and its assignments are left out (FlowVars); one that must stay is assigned to the
+// reads is not declared and its assignments are left out (flowVars); one that must stay is assigned to the
 // blank identifier on the first line.
 
 // flowVarsErr records the internal error that resolving the variables of a printed function found.
@@ -83,7 +83,7 @@ func (g *Generator) flowTypedRule(r *compile.Rule) *flatRule {
 	out := &flatRule{fail: p.used[f.Fail], succeed: !p.dead, binds: f.Binds, start: res.Read(f.Start), ctx: res.Read(f.Ctx)}
 	var unread []string
 	for _, v := range f.Vars {
-		out.vars = append(out.vars, Dvar{v.Name, goType(v.Type)})
+		out.vars = append(out.vars, dvar{v.Name, goType(v.Type)})
 		switch {
 		case res.Dead(v):
 			out.markVar(v.Name, true)
@@ -240,11 +240,11 @@ func (g *Generator) flowFramed(f *flow.Func, slots []core.Slot, scope *compile.S
 	var b strings.Builder
 	res := p.vars.Resolve(f.Vars, p.b.String())
 	g.flowVarsErr(res)
-	var vars []Dvar
+	var vars []dvar
 	dead, quiet := map[string]bool{}, map[string]bool{}
 	var unread []string
 	for _, v := range f.Vars {
-		vars = append(vars, Dvar{v.Name, p.goType(v.Type)})
+		vars = append(vars, dvar{v.Name, p.goType(v.Type)})
 		switch {
 		case res.Dead(v):
 			dead[v.Name] = true
@@ -254,7 +254,7 @@ func (g *Generator) flowFramed(f *flow.Func, slots []core.Slot, scope *compile.S
 			quiet[v.Name] = true
 		}
 	}
-	b.WriteString(VarLinesExcept(vars, dead, quiet))
+	b.WriteString(varLinesExcept(vars, dead, quiet))
 	if len(unread) > 0 {
 		fmt.Fprintf(&b, "%s_ = %s\n", strings.Repeat("_, ", len(unread)-1), strings.Join(unread, ", "))
 	}
@@ -308,7 +308,7 @@ type flowPrinter struct {
 	reads map[*flow.Var]bool
 	loops map[*flow.Label]bool
 	// vars holds the assignments of the function that are left out when their variables are unread.
-	vars FlowVars
+	vars flowVars
 	// names holds the package variables of the capture names of scopes, declared on first use
 	// unless a DeclareNames statement declares them.
 	names map[*flow.Names]string
@@ -318,7 +318,7 @@ type flowPrinter struct {
 
 func newFlowPrinter(g *Generator, frame bool) *flowPrinter {
 	p := &flowPrinter{g: g, frame: frame, used: map[*flow.Label]bool{}, reads: map[*flow.Var]bool{},
-		loops: map[*flow.Label]bool{}, names: map[*flow.Names]string{}, vars: NewFlowVars()}
+		loops: map[*flow.Label]bool{}, names: map[*flow.Names]string{}, vars: newFlowVars()}
 	if g != nil {
 		p.vars.mutant, p.vars.mutantUses = g.hooks.FlowVarsMutant, g.hooks.FlowVarsMutantUses
 	}
@@ -607,7 +607,7 @@ func (p *flowPrinter) setParts(s *flow.Set) (dst, xs []string) {
 }
 
 // setStmt writes the assignment s as a statement of a list, which is left out or has the blank
-// identifier for its places if they are variables nothing reads (see FlowVars).
+// identifier for its places if they are variables nothing reads (see flowVars).
 func (p *flowPrinter) setStmt(s *flow.Set) {
 	if p.dead {
 		p.setParts(s)
@@ -626,7 +626,7 @@ func (p *flowPrinter) setStmt(s *flow.Set) {
 			panic("flow printer: an assignment of an Eval with other values")
 		}
 	}
-	st := &VarStmt{Uses: uses, Pure: pre == "" && len(dst) == len(xs) && pureValues(xs)}
+	st := &varStmt{Uses: uses, Pure: pre == "" && len(dst) == len(xs) && pureValues(xs)}
 	for i, d := range s.Dst {
 		v, _ := d.(*flow.Var)
 		st.Targets = append(st.Targets, v)
@@ -655,7 +655,7 @@ func (p *flowPrinter) incStmt(v *flow.Var) {
 	if p.dead {
 		return
 	}
-	p.b.WriteString(p.vars.Add(&VarStmt{Targets: []*flow.Var{v}, Pure: true, Text: func(func(*flow.Var) bool) string {
+	p.b.WriteString(p.vars.Add(&varStmt{Targets: []*flow.Var{v}, Pure: true, Text: func(func(*flow.Var) bool) string {
 		return v.Name + "++\n"
 	}}))
 }
@@ -675,7 +675,7 @@ func (p *flowPrinter) peekStmt(s *flow.Peek) {
 	if p.dead {
 		return
 	}
-	st := &VarStmt{Targets: []*flow.Var{s.Ch, s.Size, s.OK}}
+	st := &varStmt{Targets: []*flow.Var{s.Ch, s.Size, s.OK}}
 	st.Text = func(dead func(*flow.Var) bool) string {
 		name := func(v *flow.Var) string {
 			if v == nil || dead(v) {

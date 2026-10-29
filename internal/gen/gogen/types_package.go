@@ -59,8 +59,8 @@ func typesImport(opts gen.GenOptions) string {
 }
 
 // typesPackageFile returns types/types.go for the body of the package (its declarations, in which the
-// runtime is written as rt), and the description of the package for QualifyRuntime.
-func typesPackageFile(opts gen.GenOptions, body string) ([]byte, *TypesPackage, error) {
+// runtime is written as rt), and the description of the package for qualifyRuntime.
+func typesPackageFile(opts gen.GenOptions, body string) ([]byte, *typesPackage, error) {
 	formatted, err := format.Source([]byte("package " + typesPackageName + "\n" + body))
 	if err != nil {
 		return nil, nil, fmt.Errorf("generated types do not compile: %w\n%s", err, body)
@@ -71,7 +71,7 @@ func typesPackageFile(opts gen.GenOptions, body string) ([]byte, *TypesPackage, 
 		return nil, nil, err
 	}
 	src += fmt.Sprintf("\n// %[1]s ties the parser package to this package: the parser refers to it once, so a\n// parser and a types package generated from different schemas do not compile together.\n// It is for generated parsers; not a stable API.\nconst %[1]s = 0\n", schema)
-	declared, err := DeclaredNames("package p\n" + src)
+	declared, err := declaredNames("package p\n" + src)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -97,7 +97,7 @@ func typesPackageFile(opts gen.GenOptions, body string) ([]byte, *TypesPackage, 
 		}
 	}
 	// The source names the runtime explicitly, so none of its names is qualified here.
-	qualified, err := QualifyRuntime(runtimeImport(opts), src, &runtimeInfo{}, nil)
+	qualified, err := qualifyRuntime(runtimeImport(opts), src, &runtimeInfo{}, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -111,7 +111,7 @@ func typesPackageFile(opts gen.GenOptions, body string) ([]byte, *TypesPackage, 
 	if err != nil {
 		return nil, nil, fmt.Errorf("generated types do not compile: %w", err)
 	}
-	return out, &TypesPackage{ImportPath: typesImport(opts), Declared: func(name string) bool { return own[name] }, Types: decls, schema: schema}, nil
+	return out, &typesPackage{ImportPath: typesImport(opts), Declared: func(name string) bool { return own[name] }, Types: decls, schema: schema}, nil
 }
 
 // schemaPrefix starts the name of the constant that ties a parser package to its types package.

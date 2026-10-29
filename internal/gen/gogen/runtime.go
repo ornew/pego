@@ -23,8 +23,8 @@ import (
 // this module or carries a copy of its files (embed mode), which the generator reads from the
 // source registered with SetRuntimeSource.
 
-// RuntimeImportPath is the import path of the runtime package in this module.
-const RuntimeImportPath = "github.com/ornew/pego/runtime"
+// runtimeImportPath is the import path of the runtime package in this module.
+const runtimeImportPath = "github.com/ornew/pego/runtime"
 
 // runtimeAlias is the name generated code gives to the runtime package, and typesAlias the name
 // it gives to the types package of a typed parser.
@@ -65,9 +65,9 @@ type runtimeInfo struct {
 	Decls map[string]*runtimeDecl
 }
 
-// LoadRuntime parses the registered runtime source once and returns its files and exported
+// loadRuntime parses the registered runtime source once and returns its files and exported
 // declarations.
-func LoadRuntime() (*runtimeInfo, error) {
+func loadRuntime() (*runtimeInfo, error) {
 	runtimeSrc.mu.Lock()
 	defer runtimeSrc.mu.Unlock()
 	if runtimeSrc.info != nil {
@@ -137,7 +137,7 @@ func LoadRuntime() (*runtimeInfo, error) {
 
 // runtimeFiles returns the copy of the runtime that RuntimeEmbed writes.
 func runtimeFiles() ([]gen.GeneratedFile, error) {
-	info, err := LoadRuntime()
+	info, err := loadRuntime()
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func runtimeImport(opts gen.GenOptions) string {
 	if opts.Runtime == gen.RuntimeEmbed {
 		return path.Join(opts.Module, "internal", "runtime")
 	}
-	return RuntimeImportPath
+	return runtimeImportPath
 }
 
 // stdImports are the standard-library packages generated code may use, by the name it uses them
@@ -168,8 +168,8 @@ var stdImports = map[string]string{
 	"utf8": "unicode/utf8",
 }
 
-// TypesPackage describes the types package of a typed parser for QualifyRuntime.
-type TypesPackage struct {
+// typesPackage describes the types package of a typed parser for qualifyRuntime.
+type typesPackage struct {
 	ImportPath string
 	// Declared reports whether the types package declares the name besides the types of the
 	// grammar, which the parser package refers to as types.Name (a type of the grammar is
@@ -182,12 +182,12 @@ type TypesPackage struct {
 	schema string
 }
 
-// QualifyRuntime finishes the generated source body of a package. Every identifier that the body
+// qualifyRuntime finishes the generated source body of a package. Every identifier that the body
 // leaves unresolved and that is an exported name of the runtime is the runtime's, and is qualified
 // with the runtime package; one that the types package tp (if any) declares is qualified with the
 // types package. The standard-library packages the body uses are imported, and the runtime and
 // types packages.
-func QualifyRuntime(rtImport, body string, info *runtimeInfo, tp *TypesPackage) (string, error) {
+func qualifyRuntime(rtImport, body string, info *runtimeInfo, tp *typesPackage) (string, error) {
 	const prefix = "package p\n"
 	fset := token.NewFileSet()
 	f, err := goparser.ParseFile(fset, "body.go", prefix+body, goparser.ParseComments)
@@ -324,7 +324,7 @@ func QualifyRuntime(rtImport, body string, info *runtimeInfo, tp *TypesPackage) 
 // map, 'a' for an array or slice, 0 if unknown) and the types of its keys and elements (nil if
 // unknown). Named types are resolved through types, the type declarations of the body, and then
 // through the runtime's.
-func literalType(typ goast.Expr, types map[string]goast.Expr, info *runtimeInfo, tp *TypesPackage) (kind byte, key, elem goast.Expr) {
+func literalType(typ goast.Expr, types map[string]goast.Expr, info *runtimeInfo, tp *typesPackage) (kind byte, key, elem goast.Expr) {
 	for depth := 0; typ != nil && depth < 32; depth++ {
 		switch t := typ.(type) {
 		case *goast.ParenExpr:
@@ -365,8 +365,8 @@ func literalType(typ goast.Expr, types map[string]goast.Expr, info *runtimeInfo,
 	return 0, nil, nil
 }
 
-// DeclaredNames returns the top-level names (other than methods) that the Go source declares.
-func DeclaredNames(src string) ([]string, error) {
+// declaredNames returns the top-level names (other than methods) that the Go source declares.
+func declaredNames(src string) ([]string, error) {
 	f, err := goparser.ParseFile(token.NewFileSet(), "src.go", src, goparser.SkipObjectResolution)
 	if err != nil {
 		return nil, err
