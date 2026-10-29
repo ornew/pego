@@ -67,7 +67,7 @@ func testGeneratedTypedDirectCuts(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := generateCode(g, gen.GenOptions{Package: "cuts", Start: "main", Types: true})
+		code, err := generateCode(t, g, gen.GenOptions{Package: "cuts", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

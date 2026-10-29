@@ -173,7 +173,7 @@ func testGeneratedInvalidUTF8Literals(t *testing.T) {
 			pkg := fmt.Sprintf("g%d", i)
 			i++
 			opts := gen.GenOptions{Package: pkg, Start: "main", Recognize: true, Types: mode != "untyped", ConvertTypes: mode == "convert"}
-			code, err := generateCode(g, opts)
+			code, err := generateCode(t, g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}

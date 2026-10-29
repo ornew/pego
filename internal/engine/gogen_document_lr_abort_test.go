@@ -59,7 +59,7 @@ rule a A = t:("a") #atomic => A{Text: text($t)}`, "a+a+a+a"},
 			if typed {
 				pkg, route = fmt.Sprintf("t%d", i), generatedDocumentTypedRoute
 			}
-			code, err := generateCode(parsed, gen.GenOptions{Package: pkg, Start: "main", Document: true, Types: typed, Observability: true})
+			code, err := generateCode(t, parsed, gen.GenOptions{Package: pkg, Start: "main", Document: true, Types: typed, Observability: true})
 			if err != nil {
 				t.Fatal(err)
 			}

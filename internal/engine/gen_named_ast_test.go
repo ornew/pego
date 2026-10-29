@@ -109,7 +109,7 @@ func testGeneratedNamedASTUntypedAndTS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	plain, err := generateCode(g, gen.GenOptions{Package: "plain", Start: "main"})
+	plain, err := generateCode(t, g, gen.GenOptions{Package: "plain", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +141,7 @@ func testGeneratedNamedASTScalarResults(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		out, err := generateCode(g, gen.GenOptions{Package: "named", Start: "main", Types: true})
+		out, err := generateCode(t, g, gen.GenOptions{Package: "named", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%q: %v", tc.source, err)
 		}
@@ -153,7 +153,7 @@ func testGeneratedNamedASTScalarResults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = generateCode(g, gen.GenOptions{Package: "named", Start: "main", Types: true}); err == nil || !strings.Contains(err.Error(), "not assignable to int") {
+	if _, err = generateCode(t, g, gen.GenOptions{Package: "named", Start: "main", Types: true}); err == nil || !strings.Contains(err.Error(), "not assignable to int") {
 		t.Fatalf("got %v", err)
 	}
 }
@@ -253,7 +253,7 @@ func testGeneratedNamedASTXMLFragments(t *testing.T) {
 	}
 	for _, convert := range []bool{false, true} {
 		t.Run(fmt.Sprint(convert), func(t *testing.T) {
-			code, err := generateCode(g, gen.GenOptions{Package: "xml", Start: "main", Types: true, ConvertTypes: convert})
+			code, err := generateCode(t, g, gen.GenOptions{Package: "xml", Start: "main", Types: true, ConvertTypes: convert})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -334,7 +334,7 @@ rule nilUnion MaybeU = t:term? => $t
 	for _, start := range []string{"nilAny", "nilNode", "nilUnion"} {
 		for _, conversion := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/%v", start, conversion), func(t *testing.T) {
-				code, err := generateCode(g, gen.GenOptions{Package: "named", Start: start, Types: true, ConvertTypes: conversion})
+				code, err := generateCode(t, g, gen.GenOptions{Package: "named", Start: start, Types: true, ConvertTypes: conversion})
 				if err != nil {
 					t.Fatal(err)
 				}

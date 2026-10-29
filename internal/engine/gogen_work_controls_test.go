@@ -33,7 +33,7 @@ rule predicate Word = t:(!("a"* "é") "a"* "b") #atomic => Word{Text: text($t)}`
 	}
 	for _, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("work_%v", convert)
-		code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert})
+		code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -372,7 +372,7 @@ rule letter Word = t:("é") #atomic => Word{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, gen.GenOptions{Package: "nilpublication", Start: "main", Types: true})
+	code, err := generateCode(t, g, gen.GenOptions{Package: "nilpublication", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -457,7 +457,7 @@ rule leaf Word = t:("é") #atomic => Word{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, gen.GenOptions{Package: "legacynil", Start: "main", Types: true})
+	code, err := generateCode(t, g, gen.GenOptions{Package: "legacynil", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -521,7 +521,7 @@ rule recurse = "a" recurse?`, "aa", "WithMaxDepth(1)"},
 			if err != nil {
 				t.Fatal(err)
 			}
-			code, err := generateCode(g, gen.GenOptions{Package: "ordinarynil", Start: "main", Types: true})
+			code, err := generateCode(t, g, gen.GenOptions{Package: "ordinarynil", Start: "main", Types: true})
 			if err != nil {
 				t.Fatal(err)
 			}

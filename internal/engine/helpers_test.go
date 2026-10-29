@@ -152,7 +152,7 @@ func TestMain(m *testing.M) {
 	os.Setenv("GOFLAGS", strings.TrimSpace(os.Getenv("GOFLAGS")+" -trimpath -mod=mod"))
 	code := m.Run()
 	if names := unwrappedFixtureTests(); len(names) > 0 {
-		fmt.Fprintf(os.Stderr, "FAIL: tests build generated fixtures without choosing their form: %s\nWrap the test body in eachMode, or call needsWorkControls, or pin the form with t.Setenv(modeEnv, \"1\")\n", strings.Join(names, ", "))
+		fmt.Fprintf(os.Stderr, "FAIL: tests build generated fixtures without choosing their form: %s\nWrap the test body in eachMode, or call needsWorkControls, or pin the form with pinOrdinary\n", strings.Join(names, ", "))
 		code = 1
 	}
 	os.Exit(code)

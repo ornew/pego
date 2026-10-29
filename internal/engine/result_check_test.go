@@ -362,7 +362,7 @@ rule ops Int | O = #operators {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main"})
+	code, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}

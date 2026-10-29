@@ -118,7 +118,7 @@ func loopChargeProblems(t *testing.T, cases []loopCase, rtDir string, typed bool
 		if err != nil {
 			t.Fatalf("%s: %v", action, err)
 		}
-		code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: typed})
+		code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: typed})
 		if err != nil {
 			t.Fatalf("%s: %v", action, err)
 		}

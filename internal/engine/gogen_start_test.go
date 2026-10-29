@@ -123,7 +123,7 @@ func testGeneratedGoStartRules(t *testing.T) {
 `},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			code, err := generateCode(g, tc.opts)
+			code, err := generateCode(t, g, tc.opts)
 			if err != nil {
 				t.Fatal(err)
 			}

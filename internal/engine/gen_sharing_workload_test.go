@@ -39,7 +39,7 @@ func testGeneratedSharingWorkloads(t *testing.T) {
 					DisableMethodSharing:   mode == "methods" || mode == "both",
 					DisableLiteralSharing:  mode == "literals" || mode == "both",
 					EnableTSLiteralSharing: mode != "default"}
-				code, err := generateCode(g, opts)
+				code, err := generateCode(t, g, opts)
 				if err != nil {
 					t.Fatal(err)
 				}

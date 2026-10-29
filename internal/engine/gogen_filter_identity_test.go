@@ -60,7 +60,7 @@ func testGeneratedTypedFilterIdentity(t *testing.T) {
 	for i, conversion := range []bool{false, true} {
 		for _, start := range []string{"main", "empty"} {
 			pkg := fmt.Sprintf("p%d%s", i, start)
-			code, err := generateCode(grammar, gen.GenOptions{Package: pkg, Start: start, Types: true, ConvertTypes: conversion})
+			code, err := generateCode(t, grammar, gen.GenOptions{Package: pkg, Start: start, Types: true, ConvertTypes: conversion})
 			if err != nil {
 				t.Fatalf("conversion=%t start=%s: %v", conversion, start, err)
 			}

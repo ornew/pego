@@ -40,7 +40,7 @@ func testGeneratedFlowNodeParity(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		if _, err := generateCode(g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
+		if _, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 	}
@@ -128,7 +128,7 @@ func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 // rule has its #stream repetition in a sequence that an attribute or a group wraps. Core IR is built
 // for the whole Node program, so Verify must accept the stream there, as the grammar and the engine do.
 func TestFlowNodeRulesAcceptStreamInWrappedSequence(t *testing.T) {
-	t.Setenv("PEGO_TEST_ORDINARY", "1")
+	pinOrdinary(t)
 	for name, src := range map[string]string{
 		"attributed sequence": `rule main = (([a-z] #atomic)* #stream "!") @diagnostic(name="x") $$`,
 		"attributed group": `rule main = (item* #stream) @diagnostic(name="items") "." $$
@@ -142,7 +142,7 @@ rule item = [a-z] #atomic`,
 		}
 		for _, stream := range []bool{false, true} {
 			opts := gen.GenOptions{Start: "main", Package: "gen", Stream: stream}
-			if _, err := generateCode(g, opts); err != nil {
+			if _, err := generateCode(t, g, opts); err != nil {
 				t.Errorf("%s (stream %v): %v", name, stream, err)
 			}
 		}

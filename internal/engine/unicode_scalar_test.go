@@ -25,9 +25,9 @@ func testInvalidCharacterClassEntryPoints(t *testing.T) {
 			for name, run := range map[string]func() error{
 				"compile":           func() error { _, err := Compile(g, compile.Options{}); return err },
 				"saved AST rebuild": func() error { _, err := build(g, compile.Options{}, []compile.RuleFlags{{}}); return err },
-				"Go generator":      func() error { _, err := generateCode(g, gen.GenOptions{Start: "main", Package: "p"}); return err },
+				"Go generator":      func() error { _, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "p"}); return err },
 				"typed Go generator": func() error {
-					_, err := generateCode(g, gen.GenOptions{Start: "main", Package: "p", Types: true})
+					_, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "p", Types: true})
 					return err
 				},
 				"TS generator": func() error { _, err := generateTSBundle(g, gen.GenOptions{Start: "main"}); return err },

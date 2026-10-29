@@ -94,12 +94,12 @@ func testTypedUnreachedRulesAreLeftOut(t *testing.T) {
 	funcs := regexp.MustCompile(`(?m)^func [su][0-9]+\(`)
 	for _, typedOnly := range []bool{false, true} {
 		opts := gen.GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: typedOnly}
-		pruned, err := generateCode(g, opts)
+		pruned, err := generateCode(t, g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
 		opts.KeepUnreachable = true
-		full, err := generateCode(g, opts)
+		full, err := generateCode(t, g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -141,7 +141,7 @@ func TestTypedUnreachedCalleeFailsGeneration(t *testing.T) {
 			}
 		}
 		defer func() { gogen.ReachHook = nil }()
-		_, err = generateCode(g, gen.GenOptions{Start: "main", Package: "p", Types: true})
+		_, err = generateCode(t, g, gen.GenOptions{Start: "main", Package: "p", Types: true})
 		if err == nil || !strings.Contains(err.Error(), "left out") {
 			t.Errorf("generation with a typed callee left out: err = %v, want an internal error", err)
 		}
@@ -196,7 +196,7 @@ func testTypedUnreachedRulesRunLikeTheFullOutput(t *testing.T) {
 				opts := gen.GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: typedOnly}
 				for _, pkg := range []string{"p", "k"} {
 					opts.Package, opts.KeepUnreachable = pkg, pkg == "k"
-					code, err := generateCode(g, opts)
+					code, err := generateCode(t, g, opts)
 					if err != nil {
 						t.Fatal(err)
 					}

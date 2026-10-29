@@ -96,7 +96,7 @@ func TestCompletedPrefix(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			code, err := generateCode(g, tc.opts)
+			code, err := generateCode(t, g, tc.opts)
 			if err != nil {
 				t.Fatal(err)
 			}

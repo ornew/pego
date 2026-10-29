@@ -64,7 +64,7 @@ func runGeneratedProgramWith(t *testing.T, src string, opts gen.GenOptions, body
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, opts)
+	code, err := generateCode(t, g, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +248,7 @@ rule ws = " "*
 // with case-insensitive literals does not fail and agrees with the closure backend.
 func TestIgnoreCaseGeneratedTypedTerminal(t *testing.T) {
 	// Terminal programs are for parsers without work controls.
-	t.Setenv("PEGO_TEST_ORDINARY", "1")
+	pinOrdinary(t)
 	inputs := []string{"", "alpha", "ALPHA", "Beta", "BETA", "beta", "upsilon", "UPSILON", "xi", "Xi", "XI", "alpha BETA", "alphax", "ALPHAX", "tau Tau sigma", "SIGMA"}
 	prog := mustCompile(t, ignoreCaseTerminalGrammar)
 	var want, list strings.Builder

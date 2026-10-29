@@ -52,7 +52,7 @@ rule n Word = t:("(" n ")" / "é") #atomic => Word{Text: text($t)}`)
 		if convert {
 			pkg = "convert"
 		}
-		code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert})
+		code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, ConvertTypes: convert})
 		if err != nil {
 			t.Fatal(err)
 		}

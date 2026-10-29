@@ -21,7 +21,7 @@ rule main Thing = a:"a" => Thing{Start: 7, End: 8}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main", Types: true})
+	code, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}

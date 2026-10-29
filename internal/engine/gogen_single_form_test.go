@@ -92,11 +92,11 @@ func testGeneratedRuleBodiesHaveOneForm(t *testing.T) {
 	for _, types := range []bool{false, true} {
 		for _, document := range []bool{false, true} {
 			opts := gen.GenOptions{Package: "ordinaryfixture", Types: types, Document: document, Recognize: true, Start: "main"}
-			src, err := generateCode(g, opts)
+			src, err := generateCode(t, g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
-			problems, bodies, charging := oneFormProblems(t, src, fixtureWorkControls(), document)
+			problems, bodies, charging := oneFormProblems(t, src, fixtureWorkControls(t), document)
 			for _, p := range problems {
 				t.Errorf("types=%v document=%v: %s", types, document, p)
 			}

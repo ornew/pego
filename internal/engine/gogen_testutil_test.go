@@ -9,7 +9,6 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
-	"runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -27,24 +26,53 @@ import (
 // cancellation and limits can use them, and without, the form that most parsers have. Tests that
 // build fixtures run in both forms (eachMode); tests that use a control (WithContext,
 // WithWorkLimits) run with controls only (needsWorkControls); tests of the ordinary-only output
-// pin the ordinary form (t.Setenv(modeEnv, "1")).
+// pin the ordinary form (pinOrdinary).
 //
-// The form of a fixture is the value of modeEnv: "0" with work controls and "1" without. Unset,
-// it selects both forms. Set in the environment of go test, "0" or "1" restricts the run to
-// that form, and the tests that need controls then skip under "1".
+// A form is "0" with work controls and "1" without. Each test records its form by name, and its
+// subtests inherit it, so that tests in either form run in parallel. Set in the environment of go
+// test, modeEnv restricts the run to one form: eachMode then runs its body once, in that form,
+// and the tests that need controls skip under "1".
 const modeEnv = "PEGO_TEST_ORDINARY"
 
-// fixtureWorkControls reports whether the generated fixtures have work controls. A test that
-// builds fixtures reaches it inside eachMode, needsWorkControls or a pinned mode; one that
-// does not is recorded and fails the run (see TestMain), because it would exercise one form only.
-func fixtureWorkControls() bool {
-	switch os.Getenv(modeEnv) {
+// envForm is the form to which the environment restricts the run, or "".
+var envForm = os.Getenv(modeEnv)
+
+// fixtureForms maps the name of a test to the form it set.
+var fixtureForms sync.Map
+
+// setFixtureForm sets the form of the fixtures of t and its subtests.
+func setFixtureForm(t testing.TB, form string) {
+	name := t.Name()
+	fixtureForms.Store(name, form)
+	t.Cleanup(func() { fixtureForms.Delete(name) })
+}
+
+// fixtureForm returns the form of the fixtures of t: the one that t or the nearest test above it
+// set, else the one of the environment, else "".
+func fixtureForm(t testing.TB) string {
+	for name := t.Name(); ; {
+		if form, ok := fixtureForms.Load(name); ok {
+			return form.(string)
+		}
+		i := strings.LastIndexByte(name, '/')
+		if i < 0 {
+			return envForm
+		}
+		name = name[:i]
+	}
+}
+
+// fixtureWorkControls reports whether the generated fixtures of t have work controls. A test that
+// builds fixtures reaches it inside eachMode, needsWorkControls or a pinned form; one that does
+// not is recorded and fails the run (see TestMain), because it would exercise one form only.
+func fixtureWorkControls(t testing.TB) bool {
+	switch fixtureForm(t) {
 	case "0":
 		return true
 	case "1":
 		return false
 	}
-	noteUnwrappedFixture()
+	noteUnwrappedFixture(t)
 	return true
 }
 
@@ -53,24 +81,16 @@ var (
 	unwrappedTests = map[string]bool{}
 )
 
-// noteUnwrappedFixture records the test that asks for a fixture without a form. Benchmarks and
-// other callers outside a Test function are not recorded.
-func noteUnwrappedFixture() {
-	pcs := make([]uintptr, 64)
-	frames := runtime.CallersFrames(pcs[:runtime.Callers(2, pcs)])
-	for {
-		f, more := frames.Next()
-		name := f.Function[strings.LastIndex(f.Function, "/")+1:]
-		if _, name, ok := strings.Cut(name, "."); ok && strings.HasPrefix(name, "Test") && !strings.HasPrefix(name, "TestMain") {
-			unwrappedMu.Lock()
-			unwrappedTests[strings.SplitN(name, ".", 2)[0]] = true
-			unwrappedMu.Unlock()
-			return
-		}
-		if !more {
-			return
-		}
+// noteUnwrappedFixture records the test that asks for a fixture without a form. Benchmarks are
+// not recorded.
+func noteUnwrappedFixture(t testing.TB) {
+	if _, ok := t.(*testing.T); !ok {
+		return
 	}
+	name, _, _ := strings.Cut(t.Name(), "/")
+	unwrappedMu.Lock()
+	unwrappedTests[name] = true
+	unwrappedMu.Unlock()
 }
 
 // unwrappedFixtureTests returns the sorted names of the tests recorded by noteUnwrappedFixture.
@@ -87,13 +107,13 @@ var fixtureModes = []struct{ name, value string }{{"controls", "0"}, {"ordinary"
 // "ordinary". When modeEnv is set in the environment, it runs body once, in that form.
 func eachMode(t *testing.T, body func(t *testing.T)) {
 	t.Helper()
-	if os.Getenv(modeEnv) != "" {
+	if envForm != "" {
 		body(t)
 		return
 	}
 	for _, m := range fixtureModes {
 		t.Run(m.name, func(t *testing.T) {
-			t.Setenv(modeEnv, m.value)
+			setFixtureForm(t, m.value)
 			body(t)
 		})
 	}
@@ -103,10 +123,15 @@ func eachMode(t *testing.T, body func(t *testing.T)) {
 // controls, and skips it when they are restricted to the ordinary form.
 func needsWorkControls(t testing.TB) {
 	t.Helper()
-	if os.Getenv(modeEnv) == "1" {
+	if envForm == "1" {
 		t.Skip("uses work controls; the fixtures are generated without them")
 	}
-	t.Setenv(modeEnv, "0")
+	setFixtureForm(t, "0")
+}
+
+// pinOrdinary makes the fixtures of a test of the ordinary-only output have no work controls.
+func pinOrdinary(t testing.TB) {
+	setFixtureForm(t, "1")
 }
 
 func init() {
@@ -224,7 +249,7 @@ func generatePackage(t testing.TB, dir, pkg string, g *grammar.Grammar, opts gen
 func generatePackageIn(t testing.TB, dir, root, pkg string, g *grammar.Grammar, opts gen.GenOptions) string {
 	t.Helper()
 	opts.Runtime = gen.RuntimeImport
-	opts.WorkControls = fixtureWorkControls()
+	opts.WorkControls = fixtureWorkControls(t)
 	opts.Package, opts.Module = pkg, root+"/"+pkg
 	opts.KeepComments = true
 	files, err := Generate(g, opts)
@@ -249,10 +274,10 @@ func generatePackageIn(t testing.TB, dir, root, pkg string, g *grammar.Grammar, 
 
 // generateCode generates a parser that imports the runtime from this module and returns its
 // parser.go and api.go as one source file, which tests write as parser.go.
-func generateCode(g *grammar.Grammar, opts gen.GenOptions) ([]byte, error) {
+func generateCode(t testing.TB, g *grammar.Grammar, opts gen.GenOptions) ([]byte, error) {
 	opts.Runtime = gen.RuntimeImport
 	opts.KeepComments = true
-	opts.WorkControls = fixtureWorkControls()
+	opts.WorkControls = fixtureWorkControls(t)
 	if opts.Module == "" && opts.Types {
 		opts.Module = "example.com/generated"
 	}

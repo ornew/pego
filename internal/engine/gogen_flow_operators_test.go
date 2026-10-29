@@ -34,7 +34,7 @@ rule e = #operators {
 // TestOperatorsLinesWithRecoveryPrintFromFlow checks that a line with recovery is printed from Flow IR in the
 // Node and recognizer tables (a line Flow IR does not print fails the generation).
 func TestOperatorsLinesWithRecoveryPrintFromFlow(t *testing.T) {
-	t.Setenv("PEGO_TEST_ORDINARY", "1")
+	pinOrdinary(t)
 	for _, c := range operatorsLineRecoveryCases {
 		t.Run(c.name, func(t *testing.T) {
 			g, err := parseTest(c.src)
@@ -44,7 +44,7 @@ func TestOperatorsLinesWithRecoveryPrintFromFlow(t *testing.T) {
 			flowed := map[string]int{}
 			gogen.OperatorsRouteHook = func(table string, r *compile.Rule) { flowed[table+"/"+r.Name]++ }
 			defer func() { gogen.OperatorsRouteHook = nil }()
-			if _, err := generateCode(g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
+			if _, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
 				t.Fatal(err)
 			}
 			for _, table := range []string{"rules", "recRules"} {

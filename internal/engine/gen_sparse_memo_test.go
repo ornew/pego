@@ -62,7 +62,7 @@ func testGeneratedSparseMemo(t *testing.T) {
 	}
 	var fingerprint string
 	for _, name := range []string{"optimized"} {
-		code, err := generateCode(g, gen.GenOptions{Package: "memofixture", Start: "main", Types: true,
+		code, err := generateCode(t, g, gen.GenOptions{Package: "memofixture", Start: "main", Types: true,
 			Recognize: true})
 		if err != nil {
 			t.Fatal(err)

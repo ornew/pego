@@ -37,7 +37,7 @@ rule item = ([a-z]+ #atomic) #recover(skip=[^;]+ ";") / [0-9]+ #atomic
 				{Package: "p", Start: "main", Types: true, TypedOnly: true},
 				{Package: "p", Start: "main", Recognize: true},
 			} {
-				code, err := generateCode(g, opts)
+				code, err := generateCode(t, g, opts)
 				if err != nil {
 					t.Fatalf("%+v: %v", opts, err)
 				}

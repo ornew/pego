@@ -130,10 +130,10 @@ The tests of `internal/engine` that build generated parsers build them in two fo
 |:--|:--|:--|
 | Tests that build fixtures and check their behavior, output or equivalence with the engine | Both forms, as the subtests `controls` and `ordinary` | The test body runs under `eachMode` |
 | Tests that pass a control option (`WithContext`, `WithWorkLimits`) | With controls only | `needsWorkControls` |
-| Tests of output that exists only without work controls (terminal programs, the Flow IR recognizer and Node rules, choice guards) | Without controls only | The test sets `PEGO_TEST_ORDINARY=1` itself |
+| Tests of output that exists only without work controls (terminal programs, the Flow IR recognizer and Node rules, choice guards) | Without controls only | `pinOrdinary` |
 | Tests that do not build fixtures | Not form-specific | |
 
-A test that builds a fixture without any of these fails the run when it finishes, because it would check one form only. `go test ./...` therefore covers both forms and needs no setting.
+Each test records its form by name and its subtests inherit it, so tests of either form can run in parallel. A test that builds a fixture without any of these fails the run when it finishes, because it would check one form only. `go test ./...` therefore covers both forms and needs no setting.
 
 `PEGO_TEST_ORDINARY` restricts a run to one form: `0` runs everything that builds fixtures with work controls, and `1` runs it without, skipping the tests that pass a control. Use it to reproduce a failure of one form; it does not widen coverage.
 

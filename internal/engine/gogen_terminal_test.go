@@ -68,13 +68,13 @@ rule w = [a-z ]+ #atomic
 
 func TestTerminalProgramGeneration(t *testing.T) {
 	// Terminal programs are for parsers without work controls.
-	t.Setenv("PEGO_TEST_ORDINARY", "1")
+	pinOrdinary(t)
 	for _, c := range terminalCases() {
 		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatal(err)
 		}
-		code, err := generateCode(g, gen.GenOptions{Package: "terminal", Start: "main", Types: true, TypedOnly: true})
+		code, err := generateCode(t, g, gen.GenOptions{Package: "terminal", Start: "main", Types: true, TypedOnly: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -82,7 +82,7 @@ func TestTerminalProgramGeneration(t *testing.T) {
 		if got, want := strings.Contains(string(code), "p.SkipTerminal(term"), !strings.Contains(c.name, "left recursion"); got != want {
 			t.Errorf("%s: terminal program %v, want %v", c.name, got, want)
 		}
-		reference, err := generateCode(g, gen.GenOptions{Package: "terminal", Start: "main", Types: true, TypedOnly: true, DisableTerminalPrograms: true})
+		reference, err := generateCode(t, g, gen.GenOptions{Package: "terminal", Start: "main", Types: true, TypedOnly: true, DisableTerminalPrograms: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -108,7 +108,7 @@ func TestTerminalProgramGeneration(t *testing.T) {
 // through programs with the same parsers generated without them, and their errors with the
 // engine's, in both position units.
 func TestTerminalProgramDisabledParity(t *testing.T) {
-	t.Setenv("PEGO_TEST_ORDINARY", "1")
+	pinOrdinary(t)
 	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), terminalCases(), gen.GenOptions{DisableTerminalPrograms: true}, 0)
 }
 
@@ -117,7 +117,7 @@ func TestTerminalProgramDisabledParity(t *testing.T) {
 // literals and classes, in lean typed parsers without observability; a program is static data
 // prepared once at initialization.
 func TestTerminalProgramEligibility(t *testing.T) {
-	t.Setenv("PEGO_TEST_ORDINARY", "1")
+	pinOrdinary(t)
 	// 16 leaves: eight two-class alternatives.
 	choice16 := `([aA] [bB] / [cC] [dD] / [eE] [fF] / [gG] [hH] / [iI] [jJ] / [kK] [lL] / [mM] [nN] / [oO] [pP])`
 	choice15 := `([aA] [bB] / [cC] [dD] / [eE] [fF] / [gG] [hH] / [iI] [jJ] / [kK] [lL] / [mM] [nN] / [oO])`
@@ -179,7 +179,7 @@ func TestTerminalProgramEligibility(t *testing.T) {
 // in the runtime and in generated code, is followed by the check that panics past p.MaxDepth,
 // and nothing else raises p.Depth or changes p.MaxDepth during a parse.
 func TestDepthChecks(t *testing.T) {
-	t.Setenv("PEGO_TEST_ORDINARY", "1")
+	pinOrdinary(t)
 	sources := map[string]string{}
 	files, err := filepath.Glob("../../runtime/*.go")
 	if err != nil || len(files) == 0 {

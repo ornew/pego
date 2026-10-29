@@ -42,7 +42,7 @@ func TestGeneratedGoActionErrorWork(t *testing.T) {
 		}
 		for _, convert := range []bool{false, true} {
 			pkg := fmt.Sprintf("action_%s_%v", c.name, convert)
-			code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: c.start, Types: true, Recognize: true, ConvertTypes: convert})
+			code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: c.start, Types: true, Recognize: true, ConvertTypes: convert})
 			if err != nil {
 				t.Fatal(err)
 			}

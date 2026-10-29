@@ -95,7 +95,7 @@ func TestGeneratedTypedRecoveryBodies(t *testing.T) {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 		opts := gen.GenOptions{Package: "recoverybody", Start: "main", Types: true, Recognize: true}
-		candidate, err := generateCode(g, opts)
+		candidate, err := generateCode(t, g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

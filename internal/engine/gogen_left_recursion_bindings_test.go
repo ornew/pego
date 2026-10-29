@@ -55,7 +55,7 @@ func testGeneratedLeftRecursionGuardIgnoresVariables(t *testing.T) {
 	}
 	prog := compileBare(t, lrBindingSource, compile.Options{LeftRecursionBindings: true})
 	typed := compileBare(t, typedLRBindingSource, compile.Options{LeftRecursionBindings: true})
-	controls := fixtureWorkControls()
+	controls := fixtureWorkControls(t)
 	var limited, typedLimited string
 	if controls {
 		limited, typedLimited = "g.WithWorkLimits(g.WorkLimits{MaxSteps: 1 << 40})", "tg.WithWorkLimits(tg.WorkLimits{MaxSteps: 1 << 40})"

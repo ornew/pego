@@ -52,14 +52,14 @@ rule item = [\uFFFD] "a" / [\uFFFD-\u{10FFFF}] [é]? "b" / [^a-z ] "c" / [日] [
 }
 
 func TestGuardedClassGeneration(t *testing.T) {
-	t.Setenv("PEGO_TEST_ORDINARY", "1")
+	pinOrdinary(t)
 	for _, c := range guardedClassCases() {
 		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatal(err)
 		}
 		for _, disabled := range []bool{false, true} {
-			code, err := generateCode(g, gen.GenOptions{Package: "guarded", Start: "main", Types: true, TypedOnly: true, DisableGuardedClasses: disabled})
+			code, err := generateCode(t, g, gen.GenOptions{Package: "guarded", Start: "main", Types: true, TypedOnly: true, DisableGuardedClasses: disabled})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -75,7 +75,7 @@ func TestGuardedClassGeneration(t *testing.T) {
 // the first class of the alternative with parsers in which the class reads and tests it again,
 // in both position units, and their errors with the engine's.
 func TestGuardedClassDisabledParity(t *testing.T) {
-	t.Setenv("PEGO_TEST_ORDINARY", "1")
+	pinOrdinary(t)
 	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), guardedClassCases(), gen.GenOptions{DisableGuardedClasses: true}, 0)
 }
 

@@ -19,7 +19,7 @@ func TestGenerateTypedDocument(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, gen.GenOptions{Package: "fixture", Start: "main", Types: true, Document: true})
+	code, err := generateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main", Types: true, Document: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +182,7 @@ rule c = "c" "d"`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, gen.GenOptions{Package: "openunion", Start: "main", Types: true, Document: true})
+	code, err := generateCode(t, g, gen.GenOptions{Package: "openunion", Start: "main", Types: true, Document: true})
 	if err != nil {
 		t.Fatal(err)
 	}

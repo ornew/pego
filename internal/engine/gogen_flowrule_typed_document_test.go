@@ -85,7 +85,7 @@ rule main Text = v1:[aé😀]* #atomic => Text{S: text($v1)}`, []string{"", "aé
 		}
 		opts := extra
 		opts.Package, opts.Start, opts.Types, opts.Document = pkg, "main", true, true
-		code, err := generateCode(g, opts)
+		code, err := generateCode(t, g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}
@@ -93,7 +93,7 @@ rule main Text = v1:[aé😀]* #atomic => Text{S: text($v1)}`, []string{"", "aé
 			t.Fatalf("%s uses conversion instead of direct matching", pkg)
 		}
 		write(pkg+"/parser.go", string(code))
-		reference, err := generateCode(g, gen.GenOptions{Package: "reference", Start: "main", Types: true, Document: true, ConvertTypes: true})
+		reference, err := generateCode(t, g, gen.GenOptions{Package: "reference", Start: "main", Types: true, Document: true, ConvertTypes: true})
 		if err != nil {
 			t.Fatal(err)
 		}

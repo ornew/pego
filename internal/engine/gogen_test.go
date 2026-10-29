@@ -596,7 +596,7 @@ func testGeneratedParsersCorpus(t *testing.T, goBin string, cases []genCase, opt
 			t.Fatalf("%s: %v", c.name, err)
 		}
 		opts.Package, opts.Start, opts.Recognize = fmt.Sprintf("g%d", i), "main", true
-		code, err := generateCode(g, opts)
+		code, err := generateCode(t, g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -686,22 +686,22 @@ func TestGenerateErrors(t *testing.T) { eachMode(t, testGenerateErrors) }
 
 func testGenerateErrors(t *testing.T) {
 	g, _ := syntax.Parse("@start\nrule main = \"a\" b\nrule b = \"b\"")
-	if _, err := generateCode(g, gen.GenOptions{Package: "p", Start: "nope"}); err == nil || err.Error() != "rule nope is not defined" {
+	if _, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "nope"}); err == nil || err.Error() != "rule nope is not defined" {
 		t.Errorf("got %v", err)
 	}
-	if _, err := generateCode(g, gen.GenOptions{Package: "p", Start: "b"}); err == nil || err.Error() != "rule b is not a start rule; parsing can begin only at a rule marked @start" {
+	if _, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "b"}); err == nil || err.Error() != "rule b is not a start rule; parsing can begin only at a rule marked @start" {
 		t.Errorf("not a start rule: got %v", err)
 	}
-	if _, err := generateCode(g, gen.GenOptions{Start: "main"}); err == nil {
+	if _, err := generateCode(t, g, gen.GenOptions{Start: "main"}); err == nil {
 		t.Error("expected an error for a missing package name")
 	}
 	for _, pkg := range []string{"foo-bar", "type", "1p", "_"} {
-		if _, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main"}); err == nil || err.Error() != fmt.Sprintf("invalid package name %q", pkg) {
+		if _, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main"}); err == nil || err.Error() != fmt.Sprintf("invalid package name %q", pkg) {
 			t.Errorf("package %q: got %v", pkg, err)
 		}
 	}
 	bad, _ := parseTest(`rule main = x`)
-	if _, err := generateCode(bad, gen.GenOptions{Package: "p", Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
+	if _, err := generateCode(t, bad, gen.GenOptions{Package: "p", Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
 		t.Errorf("got %v", err)
 	}
 }

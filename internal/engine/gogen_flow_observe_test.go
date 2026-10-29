@@ -125,7 +125,7 @@ func runObserveProbes(t *testing.T, cases []genCase, start string, detail []int,
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := generateCode(g, gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true, Observability: true})
+		code, err := generateCode(t, g, gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true, Observability: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -191,7 +191,7 @@ func observationDigests(t *testing.T, group string, cases []genCase, lines []str
 	}
 	out := map[string]string{}
 	for i, c := range cases {
-		out[fmt.Sprintf("%s/%s/%s", group, os.Getenv(modeEnv), c.name)] = fmt.Sprintf("events=%d %x", events[i], hashes[i].Sum(nil)[:12])
+		out[fmt.Sprintf("%s/%s/%s", group, fixtureForm(t), c.name)] = fmt.Sprintf("events=%d %x", events[i], hashes[i].Sum(nil)[:12])
 	}
 	return out
 }
@@ -425,7 +425,7 @@ func checkObservations(t *testing.T, group string, cases []genCase, start string
 	if checked == 0 || events == 0 {
 		t.Fatalf("%d reports checked with %d events", checked, events)
 	}
-	observationGoldenFile.check(t, group+"/"+os.Getenv(modeEnv)+"/", observationDigests(t, group, cases, lines))
+	observationGoldenFile.check(t, group+"/"+fixtureForm(t)+"/", observationDigests(t, group, cases, lines))
 }
 
 const observationGoldenHeader = "# Digests of the observations (trace and profile) of the generated Node parsers, by group, mode and case\n" +
@@ -530,7 +530,7 @@ func TestFlowNodeObservationMutants(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	t.Setenv(modeEnv, "1")
+	pinOrdinary(t)
 	cases := append(genCorpus(t), observeShapes...)
 	golden := readGolden(t, observationGolden)
 	changed := func(lines []string) int {

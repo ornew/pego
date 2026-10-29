@@ -137,7 +137,7 @@ func BenchmarkGenerateAliasExports(b *testing.B) {
 			}
 			b.ReportAllocs()
 			for b.Loop() {
-				if _, err := generateCode(g, gen.GenOptions{Package: "bench", Start: "main", Types: true}); err != nil {
+				if _, err := generateCode(b, g, gen.GenOptions{Package: "bench", Start: "main", Types: true}); err != nil {
 					b.Fatal(err)
 				}
 			}

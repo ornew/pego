@@ -58,18 +58,18 @@ func TestGeneratedDocumentObservation(t *testing.T) {
 		for _, route := range []string{"node", "direct", "convert"} {
 			name := f.name + "_" + route
 			options := gen.GenOptions{Package: "reference", Start: "main", Document: true, Types: route != "node", Recognize: true, ConvertTypes: route == "convert"}
-			ref, err := generateCode(g, options)
+			ref, err := generateCode(t, g, options)
 			if err != nil {
 				t.Fatal(name, err)
 			}
 			write(name+"/reference/parser.go", string(ref))
 			options.Package = name
 			options.Observability = true
-			code, err := generateCode(g, options)
+			code, err := generateCode(t, g, options)
 			if err != nil {
 				t.Fatal(name, err)
 			}
-			again, err := generateCode(g, options)
+			again, err := generateCode(t, g, options)
 			if err != nil || string(code) != string(again) {
 				t.Fatal(name, "nondeterministic source", err)
 			}

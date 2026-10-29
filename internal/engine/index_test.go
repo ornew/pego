@@ -257,7 +257,7 @@ rule item = [a-z]`)
 	}
 	for _, types := range []bool{false, true} {
 		pkg := fmt.Sprintf("index_%v", types)
-		code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: types})
+		code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: types})
 		if err != nil {
 			t.Fatal(err)
 		}

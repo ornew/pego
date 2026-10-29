@@ -92,7 +92,7 @@ func testStartHiddenRule(t *testing.T) {
 		if perr != nil {
 			t.Fatal(perr)
 		}
-		if _, err := generateCode(g, gen.GenOptions{Package: "p"}); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if _, err := generateCode(t, g, gen.GenOptions{Package: "p"}); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("Generate %q\n got %v\nwant %s", tc.src, err, tc.want)
 		}
 		if _, err := GenerateTS(g, gen.GenOptions{}); err == nil || !strings.Contains(err.Error(), tc.want) {

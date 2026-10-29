@@ -16,14 +16,14 @@ func TestGenerateDocumentNode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, gen.GenOptions{Package: "fixture", Start: "main", Document: true})
+	code, err := generateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main", Document: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(code), "func NewDocument(") || !strings.Contains(string(code), "type Document = rt.Document") {
 		t.Fatal("Document public API missing from requested source")
 	}
-	ordinary, err := generateCode(g, gen.GenOptions{Package: "fixture", Start: "main"})
+	ordinary, err := generateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,7 +156,7 @@ func testGenerateDocumentCombinations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	typed, err := generateCode(g, gen.GenOptions{Package: "fixture", Start: "main", Document: true, Types: true})
+	typed, err := generateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main", Document: true, Types: true})
 	if err != nil || !strings.Contains(string(typed), "func (d *Document) ParseAST(") {
 		t.Fatalf("typed Document generation: %v", err)
 	}

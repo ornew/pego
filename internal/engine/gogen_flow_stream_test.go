@@ -79,7 +79,7 @@ func testFlowStreamBodyIsBatchBody(t *testing.T) {
 				}
 				cur = c.name + "/" + form.name
 				before := flowN
-				code, err := generateCode(g, gen.GenOptions{Package: "x", Start: "main", Stream: true, SourceInfo: true, WorkControls: form.controls, Observability: form.observe})
+				code, err := generateCode(t, g, gen.GenOptions{Package: "x", Start: "main", Stream: true, SourceInfo: true, WorkControls: form.controls, Observability: form.observe})
 				if err != nil {
 					if strings.Contains(err.Error(), "needs a #stream repetition") {
 						t.Skip("the #stream of the grammar is not at the top of the start rule")
@@ -301,7 +301,7 @@ func runStreamProbes(t *testing.T, cases []genCase, form struct {
 		}
 		i := len(kept)
 		o := gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: "main", Stream: true, SourceInfo: true, WorkControls: form.controls, Observability: form.observe}
-		code, err := generateCode(g, o)
+		code, err := generateCode(t, g, o)
 		if err != nil {
 			if strings.Contains(err.Error(), "needs a #stream repetition") {
 				continue
@@ -463,7 +463,7 @@ func TestFlowStreamObservationMutants(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	t.Setenv(modeEnv, "1")
+	pinOrdinary(t)
 	cases := streamCases(t)
 	form := streamForms[2]
 	d, _ := runStreamProbes(t, cases, form, nil)
@@ -572,7 +572,7 @@ func TestFlowStreamPlacementMutants(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		code, err := generateCode(g, gen.GenOptions{Package: "x", Start: "main", Stream: true, SourceInfo: true})
+		code, err := generateCode(t, g, gen.GenOptions{Package: "x", Start: "main", Stream: true, SourceInfo: true})
 		if err != nil {
 			t.Fatal(err)
 		}

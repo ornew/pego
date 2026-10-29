@@ -41,7 +41,7 @@ rule token Token = t:("a;" @error(message="want token")) #atomic => Token{Text: 
 		name  string
 		types bool
 	}{{"node", false}, {"conversion", true}} {
-		code, err := generateCode(g, gen.GenOptions{Package: variant.name, Start: "main", Document: true, Types: variant.types})
+		code, err := generateCode(t, g, gen.GenOptions{Package: variant.name, Start: "main", Document: true, Types: variant.types})
 		if err != nil {
 			t.Fatal(err)
 		}

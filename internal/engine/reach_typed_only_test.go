@@ -65,7 +65,7 @@ func testTypedOnlyUnreachedCalleeFails(t *testing.T) {
 		}
 	}
 	defer func() { gogen.ReachHook = nil }()
-	_, err = generateCode(g, gen.GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: true})
+	_, err = generateCode(t, g, gen.GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: true})
 	if err == nil || !strings.Contains(err.Error(), "left out") {
 		t.Errorf("typed-only generation with the Node rules left out: err = %v, want an internal error", err)
 	}
@@ -83,7 +83,7 @@ func testTypedOnlyTypedCalleeFails(t *testing.T) {
 		t.Fatal(err)
 	}
 	opts := gen.GenOptions{Start: "main", Package: "p", Types: true, TypedOnly: true}
-	if _, err := generateCode(g, opts); err != nil {
+	if _, err := generateCode(t, g, opts); err != nil {
 		t.Fatalf("typed-only generation without the hook: %v", err)
 	}
 	gogen.ReachHook = func(l *gogen.LiveRules) {
@@ -94,7 +94,7 @@ func testTypedOnlyTypedCalleeFails(t *testing.T) {
 		}
 	}
 	defer func() { gogen.ReachHook = nil }()
-	_, err = generateCode(g, opts)
+	_, err = generateCode(t, g, opts)
 	if err == nil || !strings.Contains(err.Error(), "left out") {
 		t.Errorf("typed-only generation with a typed callee left out: err = %v, want an internal error", err)
 	}

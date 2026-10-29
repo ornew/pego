@@ -87,7 +87,7 @@ func testGeneratedTypedLRBodies(t *testing.T) {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 		opts := gen.GenOptions{Package: "lrbody", Start: "main", Types: true, Recognize: true}
-		code, err := generateCode(g, opts)
+		code, err := generateCode(t, g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

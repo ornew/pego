@@ -67,7 +67,7 @@ func testGeneratedTypedBodyWorkload(t *testing.T, src, fixture, dir, marker stri
 			opts = reference
 		}
 		opts.Package, opts.Start, opts.Types, opts.Recognize = "lrfixture", "main", true, true
-		code, err := generateCode(g, opts)
+		code, err := generateCode(t, g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}

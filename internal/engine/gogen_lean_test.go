@@ -46,7 +46,7 @@ rule left = left "+" "é" / "é"
 	// The depth comparison below runs the recognizer table (recRules), so the route is checked there.
 	taken := map[string]bool{}
 	gogen.LeanRouteHook = func(table string, r *compile.Rule) { taken[table+"/"+r.Name] = true }
-	code, err := generateCode(g, gen.GenOptions{Package: "depth", Start: "main", Recognize: true})
+	code, err := generateCode(t, g, gen.GenOptions{Package: "depth", Start: "main", Recognize: true})
 	gogen.LeanRouteHook = nil
 	if err != nil {
 		t.Fatal(err)

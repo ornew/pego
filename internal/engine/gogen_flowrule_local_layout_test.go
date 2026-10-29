@@ -85,7 +85,7 @@ func testGeneratedTypedLocalLayouts(t *testing.T) {
 			t.Fatal(err)
 		}
 		opts := gen.GenOptions{Package: "localfixture", Start: "main", Types: true, Recognize: true}
-		code, err := generateCode(ast, opts)
+		code, err := generateCode(t, ast, opts)
 		if err != nil || !strings.Contains(string(code), "rt.TParse(trules") || !localBodyInlined(code) {
 			t.Fatalf("%s: typed local body unavailable: %v", c.name, err)
 		}
@@ -123,7 +123,7 @@ func testGeneratedTypedLocalLayoutControls(t *testing.T) {
 			t.Fatal(err)
 		}
 		opts := gen.GenOptions{Package: "localfixture", Start: "main", Types: true, Recognize: true}
-		if _, err := generateCode(ast, opts); err != nil {
+		if _, err := generateCode(t, ast, opts); err != nil {
 			t.Fatal(err)
 		}
 	}

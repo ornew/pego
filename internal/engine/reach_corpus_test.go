@@ -74,11 +74,11 @@ func testUnreachableCorpusGeneration(t *testing.T) {
 			opts.Package, opts.Start = "p", "main"
 			kept := opts
 			kept.KeepUnreachable = true
-			full, keptErr := generateCode(g, kept)
+			full, keptErr := generateCode(t, g, kept)
 			if keptErr != nil {
 				continue // the grammar does not generate in this option set
 			}
-			code, err := generateCode(g, opts)
+			code, err := generateCode(t, g, opts)
 			if err != nil {
 				t.Errorf("%s with %s: generation fails with the pruning (%v), not without it", c.name, set.name, err)
 				continue
@@ -124,12 +124,12 @@ func testUnreachableCorpusRuns(t *testing.T) {
 		kept := opts
 		kept.KeepUnreachable = true
 		kept.Package = fmt.Sprintf("k%d", n)
-		keptCode, err := generateCode(g, kept)
+		keptCode, err := generateCode(t, g, kept)
 		if err != nil {
 			continue
 		}
 		opts.Package = fmt.Sprintf("p%d", n)
-		code, err := generateCode(g, opts)
+		code, err := generateCode(t, g, opts)
 		if err != nil {
 			t.Fatalf("%s: generation fails with the pruning: %v", c.name, err)
 		}

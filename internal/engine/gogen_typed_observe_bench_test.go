@@ -56,7 +56,7 @@ func TestExportGeneratedTypedTraceBenchmarks(t *testing.T) {
 				if enabled {
 					pkg = "observed"
 				}
-				code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, Observability: enabled, ConvertTypes: convert})
+				code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, Observability: enabled, ConvertTypes: convert})
 				if err != nil {
 					t.Fatal(err)
 				}

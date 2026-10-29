@@ -74,14 +74,14 @@ func BenchmarkTypedLocalLayoutGeneration(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			code, err := generateCode(g, opts)
+			code, err := generateCode(b, g, opts)
 			if err != nil {
 				b.Fatal(err)
 			}
 			b.ReportAllocs()
 			b.ResetTimer()
 			for b.Loop() {
-				if _, err := generateCode(g, opts); err != nil {
+				if _, err := generateCode(b, g, opts); err != nil {
 					b.Fatal(err)
 				}
 			}

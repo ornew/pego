@@ -32,7 +32,7 @@ rule main = "a" => Outer{Inner: Inner{N: 1}}`, "a"},
 			if err != nil {
 				t.Fatal(err)
 			}
-			code, err := generateCode(g, gen.GenOptions{Package: "main", Start: "main", Types: true})
+			code, err := generateCode(t, g, gen.GenOptions{Package: "main", Start: "main", Types: true})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -145,7 +145,7 @@ func testGeneratedEnvironmentBindings(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, gen.GenOptions{Package: "main", Start: "main"})
+	code, err := generateCode(t, g, gen.GenOptions{Package: "main", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}

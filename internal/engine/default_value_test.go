@@ -177,13 +177,13 @@ func TestDefaultValueGeneratedRejectsTypes(t *testing.T) {
 
 func testDefaultValueGeneratedRejectsTypes(t *testing.T) {
 	g := mustParse("rule main = \"a\" => 1")
-	if _, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main", Types: true, DefaultValue: true}); err == nil || !strings.Contains(err.Error(), "default values") {
+	if _, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true, DefaultValue: true}); err == nil || !strings.Contains(err.Error(), "default values") {
 		t.Errorf("typed output with default values: %v", err)
 	}
 	if _, err := generateTSBundle(g, gen.GenOptions{Start: "main", Types: true, DefaultValue: true}); err == nil || !strings.Contains(err.Error(), "default values") {
 		t.Errorf("typed TypeScript output with default values: %v", err)
 	}
-	if _, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main", DefaultValue: true}); err != nil {
+	if _, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main", DefaultValue: true}); err != nil {
 		t.Errorf("generation with default values: %v", err)
 	}
 }

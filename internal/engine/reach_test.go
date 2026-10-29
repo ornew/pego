@@ -94,7 +94,7 @@ func generateReach(t *testing.T, src string, opts gen.GenOptions) []byte {
 		t.Fatal(err)
 	}
 	opts.Package, opts.Start = "p", "main"
-	code, err := generateCode(g, opts)
+	code, err := generateCode(t, g, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,14 +200,14 @@ func runReach(t *testing.T, src string, opts gen.GenOptions, hook func(*gogen.Li
 	opts.Start = "main"
 	opts.Package = "p"
 	gogen.ReachHook = hook
-	code, err := generateCode(g, opts)
+	code, err := generateCode(t, g, opts)
 	gogen.ReachHook = nil
 	if err != nil {
 		t.Fatal(err)
 	}
 	write("p/parser.go", string(code))
 	opts.Package, opts.KeepUnreachable = "k", true
-	if code, err = generateCode(g, opts); err != nil {
+	if code, err = generateCode(t, g, opts); err != nil {
 		t.Fatal(err)
 	}
 	write("k/parser.go", string(code))
@@ -388,7 +388,7 @@ func testUnreachableCalleeFailsGeneration(t *testing.T) {
 		}
 	}
 	defer func() { gogen.ReachHook = nil }()
-	_, err = generateCode(g, gen.GenOptions{Start: "main", Package: "p"})
+	_, err = generateCode(t, g, gen.GenOptions{Start: "main", Package: "p"})
 	if err == nil || !strings.Contains(err.Error(), "left out") {
 		t.Errorf("generation with a callee left out: err = %v, want an internal error", err)
 	}
@@ -407,7 +407,7 @@ func testUnreachableCalleeFailsGeneration(t *testing.T) {
 		}
 		l.ReachFrom(l.Roots)
 	}
-	_, err = generateCode(gs, gen.GenOptions{Start: "main", Package: "p", Stream: true})
+	_, err = generateCode(t, gs, gen.GenOptions{Start: "main", Package: "p", Stream: true})
 	if err == nil || !strings.Contains(err.Error(), "left out") {
 		t.Errorf("generation with the stream body's callee left out: err = %v, want an internal error", err)
 	}

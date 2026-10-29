@@ -27,7 +27,7 @@ rule repeated A = t:((x:"b") #repeat(2) #cut) => A{Text: text($t)}`)
 	}
 	name := "direct"
 	t.Run(name, func(t *testing.T) {
-		code, err := generateCode(g, gen.GenOptions{Package: "poolfixture", Start: "main", Types: true})
+		code, err := generateCode(t, g, gen.GenOptions{Package: "poolfixture", Start: "main", Types: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -71,7 +71,7 @@ rule small A = ("b") #atomic`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, gen.GenOptions{Package: "main", Start: "main"})
+	code, err := generateCode(t, g, gen.GenOptions{Package: "main", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}

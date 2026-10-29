@@ -162,7 +162,7 @@ func testGeneratedTypedOperatorsRuleBodies(t *testing.T) {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 		opts := gen.GenOptions{Package: "operatorsRulebody", Start: "main", Types: true, Recognize: true}
-		code, err := generateCode(g, opts)
+		code, err := generateCode(t, g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

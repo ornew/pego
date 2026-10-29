@@ -47,7 +47,7 @@ func testGeneratedFlowRecognizerParity(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		if _, err := generateCode(g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
+		if _, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true}); err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 	}
@@ -201,7 +201,7 @@ func TestGeneratedFlowRecognizerMutantChild(t *testing.T) {
 		}
 		return mutant
 	}
-	t.Setenv("PEGO_TEST_ORDINARY", "1")
+	pinOrdinary(t)
 	cases := genCorpus(t)
 	testGeneratedParsersCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), cases, gen.GenOptions{})
 	if mutated == 0 {
@@ -241,7 +241,7 @@ func TestGeneratedFlowRecognizerNegativeControl(t *testing.T) {
 // depend on how the printer numbers its variables. Without the Analyze pass before Guards, the Flow route
 // prints no guards for these choices and the comparison fails.
 func TestFlowRecognizerGuardsChoiceAlternatives(t *testing.T) {
-	t.Setenv("PEGO_TEST_ORDINARY", "1")
+	pinOrdinary(t)
 	g, err := parseTest(`rule main = item* !.
 rule item = uq / ident / sq
 rule uq = [uU] "&" "\"" [^"]+ "\""
@@ -251,7 +251,7 @@ rule sq = "'" [^']* "'" / [uU] "&'" [^']* "'"
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true})
+	code, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "gen", Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -289,7 +289,7 @@ func TestFlowRecognizerFallbackMatchesEngine(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	t.Setenv("PEGO_TEST_ORDINARY", "1")
+	pinOrdinary(t)
 	c := genCase{"fallback of the Flow recognizer",
 		"rule main = ws item* !.\nrule ws = ([ ] / comment)*\nrule comment = \"--\" [^\\n]* / block_comment\nrule block_comment = \"/*\" (block_comment / !\"*/\" .)* \"*/\"\nrule item = [a-z]+ / [0-9]+\n",
 		[]string{"", "a", "a 1 b2", "-- c\n a", "/* x */ a", "/* /* y */ */ 1", "/* open", "a -- tail", "@", "a /* x */ /* y */ 2", "--"}}

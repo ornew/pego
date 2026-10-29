@@ -232,7 +232,7 @@ func runWorkProbes(t *testing.T, cases []genCase, start string, mutate func([]by
 			t.Fatalf("%s: %v", c.name, err)
 		}
 		o := gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true}
-		code, err := generateCode(g, o)
+		code, err := generateCode(t, g, o)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/gen"
 )
 
@@ -30,7 +31,7 @@ func testGeneratedMaxDepthValidation(t *testing.T) {
 		}
 	}
 	for _, ts := range []bool{false, true} {
-		generate := generateCode
+		generate := func(g *grammar.Grammar, opts gen.GenOptions) ([]byte, error) { return generateCode(t, g, opts) }
 		if ts {
 			generate = generateTSBundle
 		}
@@ -122,7 +123,7 @@ rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: te
 		prog := mustCompile(t, c.src)
 		for _, conv := range []bool{false, true} {
 			pkg := fmt.Sprintf("g%d_%v", i, conv)
-			code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, MaxDepth: 4, ConvertTypes: conv})
+			code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, MaxDepth: 4, ConvertTypes: conv})
 			if err != nil {
 				t.Fatal(err)
 			}

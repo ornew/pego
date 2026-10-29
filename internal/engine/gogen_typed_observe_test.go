@@ -196,7 +196,7 @@ func testGeneratedTracePrivateTypeNamesRemainInvalid(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, observed := range []bool{false, true} {
-			if _, err := generateCode(g, gen.GenOptions{Package: "fixture", Start: "main", Types: true, Observability: observed}); err == nil || !strings.Contains(err.Error(), "must start with an uppercase letter") {
+			if _, err := generateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main", Types: true, Observability: observed}); err == nil || !strings.Contains(err.Error(), "must start with an uppercase letter") {
 				t.Fatalf("%s observed=%v: %v", name, observed, err)
 			}
 		}

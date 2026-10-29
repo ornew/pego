@@ -25,14 +25,14 @@ func testLiteralTextPredicateDispatchGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, gen.GenOptions{Package: "dispatch", Start: "main", Types: true})
+	code, err := generateCode(t, g, gen.GenOptions{Package: "dispatch", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(code), `switch c.TextStr(`) || !strings.Contains(string(code), `case "a", "b":`) {
 		t.Fatal("typed Go generator did not emit literal text dispatch")
 	}
-	baseline, err := generateCode(g, gen.GenOptions{Package: "dispatch", Start: "main", Types: true, DisableLiteralTextDispatch: true})
+	baseline, err := generateCode(t, g, gen.GenOptions{Package: "dispatch", Start: "main", Types: true, DisableLiteralTextDispatch: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +74,7 @@ rule main = w:[a-z]+ #atomic {result := text($w) == "a" || text($w) == "b"} $$`,
 		if err != nil {
 			t.Fatalf("case %d: %v", i, err)
 		}
-		code, err := generateCode(g, gen.GenOptions{Package: "dispatch", Start: "main"})
+		code, err := generateCode(t, g, gen.GenOptions{Package: "dispatch", Start: "main"})
 		if err != nil {
 			t.Fatalf("case %d: %v", i, err)
 		}
@@ -261,7 +261,7 @@ func TestGeneratedLiteralDispatchWorkload(t *testing.T) {
 				disabled bool
 			}{{"candidate", false}, {"reference", true}} {
 				packageName := "dispatch"
-				code, err := generateCode(g, gen.GenOptions{Package: packageName, Start: "main", Types: mode.types, Recognize: true, DisableLiteralTextDispatch: variant.disabled})
+				code, err := generateCode(t, g, gen.GenOptions{Package: packageName, Start: "main", Types: mode.types, Recognize: true, DisableLiteralTextDispatch: variant.disabled})
 				if err != nil {
 					t.Fatalf("%s/%s/%s: %v", workload.name, mode.name, variant.name, err)
 				}

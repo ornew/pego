@@ -32,7 +32,7 @@ rule row Row = "let" " " #cut key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" / 
 	}
 	var want []byte
 	for _, variant := range []string{"direct"} {
-		code, err := generateCode(g, gen.GenOptions{Package: "cutfixture", Start: "main", Types: true})
+		code, err := generateCode(t, g, gen.GenOptions{Package: "cutfixture", Start: "main", Types: true})
 		if err != nil {
 			t.Fatal(err)
 		}

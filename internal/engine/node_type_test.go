@@ -179,7 +179,7 @@ rule main A = x:"a" => A{$x}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	goCode, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main"})
+	goCode, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -272,7 +272,7 @@ func runGeneratedNamedNodeProgram(t *testing.T, src, body, want string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main", Types: true})
+	code, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -663,7 +663,7 @@ func testGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main", Types: true})
+		code, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -728,7 +728,7 @@ rule a A = [a-zé] #atomic`, []string{"()abcd", "(()(()))abcd", "((é))éaéa", 
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}
-		code, err := generateCode(g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
+		code, err := generateCode(t, g, gen.GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}
@@ -736,7 +736,7 @@ rule a A = [a-zé] #atomic`, []string{"()abcd", "(()(()))abcd", "((é))éaéa", 
 			t.Fatalf("%s uses conversion instead of direct matching", pkg)
 		}
 		write(pkg+"/parser.go", string(code))
-		reference, err := generateCode(g, gen.GenOptions{Package: "reference", Start: "main", Types: true, Document: true, ConvertTypes: true})
+		reference, err := generateCode(t, g, gen.GenOptions{Package: "reference", Start: "main", Types: true, Document: true, ConvertTypes: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -784,7 +784,7 @@ func testGeneratedDeclaredNodeAny(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main", Types: true})
+	code, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -813,7 +813,7 @@ func testGeneratedDeclaredNodeAny(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := generateCode(g, gen.GenOptions{Package: "p", Start: "main", Types: true})
+		code, err := generateCode(t, g, gen.GenOptions{Package: "p", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

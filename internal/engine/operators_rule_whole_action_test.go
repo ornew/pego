@@ -38,9 +38,12 @@ func testOperatorsRuleWholeActionRejection(t *testing.T) {
 						"compile":            func() error { _, err := Compile(input.g, compile.Options{}); return err },
 						"recognizer compile": func() error { _, err := Compile(input.g, compile.Options{Recognize: true}); return err },
 						"saved AST rebuild":  func() error { _, err := build(input.g, compile.Options{}, []compile.RuleFlags{{}}); return err },
-						"Go generator":       func() error { _, err := generateCode(input.g, gen.GenOptions{Start: "main", Package: "p"}); return err },
+						"Go generator": func() error {
+							_, err := generateCode(t, input.g, gen.GenOptions{Start: "main", Package: "p"})
+							return err
+						},
 						"typed Go generator": func() error {
-							_, err := generateCode(input.g, gen.GenOptions{Start: "main", Package: "p", Types: true})
+							_, err := generateCode(t, input.g, gen.GenOptions{Start: "main", Package: "p", Types: true})
 							return err
 						},
 						"TS generator": func() error { _, err := generateTSBundle(input.g, gen.GenOptions{Start: "main"}); return err },
@@ -125,9 +128,9 @@ func testOperatorsRuleExplicitDefaultAction(t *testing.T) {
 			}
 		}
 		for name, run := range map[string]func() error{
-			"Go generator": func() error { _, err := generateCode(g, gen.GenOptions{Start: "main", Package: "p"}); return err },
+			"Go generator": func() error { _, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "p"}); return err },
 			"typed Go generator": func() error {
-				_, err := generateCode(g, gen.GenOptions{Start: "main", Package: "p", Types: true})
+				_, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "p", Types: true})
 				return err
 			},
 			"TS generator":       func() error { _, err := generateTSBundle(g, gen.GenOptions{Start: "main"}); return err },

@@ -222,7 +222,7 @@ func runDocumentProbes(t *testing.T, cases []documentCase, start string, mutate 
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := generateCode(g, gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true, Document: true})
+		code, err := generateCode(t, g, gen.GenOptions{Package: fmt.Sprintf("f%d", i), Start: start, Recognize: true, Document: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -275,7 +275,7 @@ const documentGoldenHeader = "# Digests of the Document parses of the generated 
 var documentGoldenFile = goldenFile{path: documentGolden, header: documentGoldenHeader}
 
 // documentDigests returns, for each case, the hash of its report lines, keyed by group/mode/name.
-func documentDigests(group string, cases []documentCase, lines []string) map[string]string {
+func documentDigests(t testing.TB, group string, cases []documentCase, lines []string) map[string]string {
 	hashes := make([]hash.Hash, len(cases))
 	for i := range hashes {
 		hashes[i] = sha256.New()
@@ -288,7 +288,7 @@ func documentDigests(group string, cases []documentCase, lines []string) map[str
 	}
 	out := map[string]string{}
 	for i, c := range cases {
-		out[fmt.Sprintf("%s/%s/%s", group, os.Getenv(modeEnv), c.name)] = fmt.Sprintf("%x", hashes[i].Sum(nil)[:12])
+		out[fmt.Sprintf("%s/%s/%s", group, fixtureForm(t), c.name)] = fmt.Sprintf("%x", hashes[i].Sum(nil)[:12])
 	}
 	return out
 }
@@ -319,7 +319,7 @@ func checkDocumentReports(t *testing.T, group string, cases []documentCase, line
 	if reused == 0 {
 		t.Fatal("no parse after an edit reuses a result")
 	}
-	documentGoldenFile.check(t, group+"/"+os.Getenv(modeEnv)+"/", documentDigests(group, cases, lines))
+	documentGoldenFile.check(t, group+"/"+fixtureForm(t)+"/", documentDigests(t, group, cases, lines))
 }
 
 // documentShapes examine the input beyond the end of the result of their rule, which a Document must record to
@@ -384,14 +384,14 @@ func TestFlowNodeDocumentMutants(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	t.Setenv(modeEnv, "1")
+	pinOrdinary(t)
 	var cases []documentCase
 	for _, c := range documentShapes {
 		cases = append(cases, documentCase{c, 300})
 	}
 	golden := readGolden(t, documentGolden)
 	digestsDiffer := func(lines []string) bool {
-		for k, v := range documentDigests("corpus", cases, lines) {
+		for k, v := range documentDigests(t, "corpus", cases, lines) {
 			if w, ok := golden[k]; !ok || w != v {
 				return true
 			}

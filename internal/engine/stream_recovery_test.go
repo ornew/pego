@@ -32,9 +32,9 @@ func testStreamRecoveryRejected(t *testing.T) {
 			}
 		}
 		for name, generate := range map[string]func() error{
-			"Go": func() error { _, err := generateCode(g, gen.GenOptions{Start: "main", Package: "test"}); return err },
+			"Go": func() error { _, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "test"}); return err },
 			"typed Go": func() error {
-				_, err := generateCode(g, gen.GenOptions{Start: "main", Package: "test", Types: true})
+				_, err := generateCode(t, g, gen.GenOptions{Start: "main", Package: "test", Types: true})
 				return err
 			},
 			"TS": func() error { _, err := generateTSBundle(g, gen.GenOptions{Start: "main"}); return err },

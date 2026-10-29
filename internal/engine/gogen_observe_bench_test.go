@@ -49,7 +49,7 @@ func TestExportGeneratedTraceBenchmarks(t *testing.T) {
 			if enabled {
 				variant = "observed"
 			}
-			code, err := generateCode(g, gen.GenOptions{Package: variant, Start: "main", Recognize: true, Observability: enabled})
+			code, err := generateCode(t, g, gen.GenOptions{Package: variant, Start: "main", Recognize: true, Observability: enabled})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -104,7 +104,7 @@ func BenchmarkGeneratedObservabilityGeneration(b *testing.B) {
 					b.ReportAllocs()
 					for b.Loop() {
 						var err error
-						generatedTraceBenchmarkSource, err = generateCode(g, gen.GenOptions{Package: "fixture", Start: "main", Recognize: true, Observability: enabled})
+						generatedTraceBenchmarkSource, err = generateCode(b, g, gen.GenOptions{Package: "fixture", Start: "main", Recognize: true, Observability: enabled})
 						if err != nil {
 							b.Fatal(err)
 						}

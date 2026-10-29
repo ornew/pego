@@ -43,7 +43,7 @@ rule main Pair = a:"a" => Pair{TName: "n", TText: "t", TKids: "k", TStruct: "s",
 		pkg      string
 		document bool
 	}{{"plain", false}, {"document", true}} {
-		code, err := generateCode(g, gen.GenOptions{Package: c.pkg, Start: "main", Types: true, Document: c.document})
+		code, err := generateCode(t, g, gen.GenOptions{Package: c.pkg, Start: "main", Types: true, Document: c.document})
 		if err != nil {
 			t.Fatalf("%s: %v", c.pkg, err)
 		}
