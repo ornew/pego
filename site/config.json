@@ -431,6 +431,7 @@
             "reference/pego/README.md",
             "reference/grammar/README.md",
             "reference/runtime/README.md",
+            "reference/gen/README.md",
             "reference/sample/README.md",
             "reference/editfuzz/README.md"
           ],
@@ -439,6 +440,7 @@
             "reference/pego/README.md",
             "reference/grammar/README.md",
             "reference/runtime/README.md",
+            "reference/gen/README.md",
             "reference/sample/README.md",
             "reference/editfuzz/README.md"
           ],

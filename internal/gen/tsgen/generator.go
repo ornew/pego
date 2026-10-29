@@ -37,7 +37,7 @@ const tsRuntimeMarker = "// --- Runtime ---\n"
 // (RuntimeEmbed), parser.ts, with the code generated from the grammar, and with opts.Types
 // types.ts, with the declarations of the grammar's types. RuntimeImport imports the runtime from
 // opts.RuntimeModule instead of writing it, and RuntimeOnly writes only runtime.ts, for which g may
-// be nil. pego.GenerateTypeScript describes the options.
+// be nil. gen.TypeScript describes the options.
 //
 // Each parsing expression becomes a function and actions and predicates become TypeScript
 // expressions, as in the Go generator; the embedded runtime (tsrt) mirrors runtime. opts.Package

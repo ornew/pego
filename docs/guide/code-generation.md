@@ -250,18 +250,18 @@ Details:
 
 ### From Go
 
-The same generator is available as a function, for build tools that produce parsers programmatically:
+The same generator is available from Go, in package `github.com/ornew/pego/gen`, for build tools that produce parsers programmatically:
 
 ```go
 g, err := pego.ParseGrammar(src)
 if err != nil {
 	log.Fatal(err)
 }
-files, err := pego.GenerateGo(g, "example.com/pairs/pairsparser", "main") // grammar, import path, start rule
+files, err := gen.Go{Module: "example.com/pairs/pairsparser"}.Generate(g, "main") // grammar, start rule
 if err != nil {
 	log.Fatal(err)
 }
-for _, f := range files { // parser.go, api.go, types/types.go with WithTypes, and internal/runtime/*.go
+for _, f := range files { // parser.go, api.go, types/types.go with Types, and internal/runtime/*.go
 	path := filepath.Join("pairsparser", filepath.FromSlash(f.Path))
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		log.Fatal(err)
@@ -272,9 +272,9 @@ for _, f := range files { // parser.go, api.go, types/types.go with WithTypes, a
 }
 ```
 
-Options follow the start rule: `pego.GenerateGo(g, "example.com/pairs/pairsparser", "main", pego.WithTypes())` is `pego gen -types`; `pego.WithDocument()` is `-document`; `pego.WithStream()` is `-stream`; `pego.WithRecognize()` is `-recognize`; `pego.WithTypedOnly()` is `-typed-only`; `pego.WithWorkControls()` is `-work-controls`; `pego.WithGeneratedObservability()` is `-observability`; `pego.WithGeneratedDefaultValue()` is `-default-value`; `pego.WithoutPackageDoc()` is `-nodoc`; `pego.WithRuntime(pego.RuntimeImport)` is `-runtime import`; `pego.WithPackageName("p")` is `-pkg p`; and `pego.WithGeneratedMaxDepth(600_000)` is `-max-depth 600000`. Omitted, zero and explicit 100,000 defaults generate identical source. Observability supports standalone Go Node and typed batch parsers, including `ParseAST` and `ParseRuleAST`, Go Documents and streams, and TypeScript batch parsers with or without `-types`. Generated Go Node, typed and Document packages expose `WithProfile`; TypeScript batch packages expose `Profile` through per-call options. Typed direct execution and Node-conversion fallback report their actual rule calls; conversion itself has no separate event. Invalid defaults return an error before generated output is written.
+The fields of `gen.Go` are the flags of `pego gen`: `Module` is `-module`; `Types: true` is `-types`; `Document` is `-document`; `Stream` is `-stream`; `Recognize` is `-recognize`; `TypedOnly` is `-typed-only`; `WorkControls` is `-work-controls`; `Observability` is `-observability`; `SourceInfo` is `-source-info`; `DefaultValue` is `-default-value`; `OmitPackageDoc` is `-nodoc`; `Runtime: gen.RuntimeImport` is `-runtime import`; `PackageName: "p"` is `-pkg p`; and `MaxDepth: 600_000` is `-max-depth 600000`. Omitted, zero and explicit 100,000 defaults generate identical source. Observability supports standalone Go Node and typed batch parsers, including `ParseAST` and `ParseRuleAST`, Go Documents and streams, and TypeScript batch parsers with or without `-types`. Generated Go Node, typed and Document packages expose `WithProfile`; TypeScript batch packages expose `Profile` through per-call options. Typed direct execution and Node-conversion fallback report their actual rule calls; conversion itself has no separate event. Invalid defaults return an error before generated output is written.
 
-`pego gen` is a thin wrapper around `pego.GenerateGo` (and `pego.GenerateTypeScript` with `-lang ts`, which returns the files too). Because a grammar built with the `grammar` package (see the
+`pego gen` is a thin wrapper around `gen.Go` (and `gen.TypeScript` with `-lang ts`, whose `Generate` returns the files too); both implement `gen.Generator`. Because a grammar built with the `grammar` package (see the
 [Running Parsers](running-parsers.md#from-go-values-programmatic-grammars)) is just an AST, it can be generated from, too.
 
 When `-observability` is enabled, the generated Go or TypeScript package
@@ -354,7 +354,7 @@ func TestGeneratedIsUpToDate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want, err := pego.GenerateGo(g, "example.com/pairs/pairsparser", "main")
+	want, err := gen.Go{Module: "example.com/pairs/pairsparser"}.Generate(g, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

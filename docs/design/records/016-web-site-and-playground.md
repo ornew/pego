@@ -188,7 +188,7 @@ still require a reload; overlapping production promotions need serialized public
 | The whole published directory (47 pages, 65 files) | 10.6 MB |
 
 Stripping symbols saves little for WebAssembly (about 140 KB). Most of the binary is the Go runtime, `reflect` and
-`encoding/json`, and the Go printer and parser packages that `GenerateGo` uses to format generated code. TinyGo might
+`encoding/json`, and the Go printer and parser packages that `gen.Go.Generate` uses to format generated code. TinyGo might
 produce a much smaller binary, but it would be a second compiler to install and to test the library against; it was not
 evaluated. The landing page loads the binary only when its live
 example is about to become visible.

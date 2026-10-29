@@ -6,7 +6,7 @@
 
 ## Summary
 
-With `pego gen -types` (`pego.WithTypes()`), a generated parser also defines a Go type for each type of the grammar
+With `pego gen -types` (`gen.Go{Types: true}`), a generated parser also defines a Go type for each type of the grammar
 and a function `ParseAST`, which parses like `Parse` and returns the result of the start rule as values of those
 types instead of `*Node`.
 

@@ -6,7 +6,8 @@ This document describes the repository layout and architecture, how to run tests
 
 | Path | Contents |
 |:--|:--|
-| `pego.go`, `lint.go` | Public API of package `pego` (`ParseGrammar`, `Compile`, `CompileSource`, `Parser.Parse`, `Lint`, and others), which joins the engine to the generators (`GenerateGo`, `GenerateTypeScript`) and the output schema (`Parser.OutputSchema`) |
+| `pego.go`, `lint.go` | Public API of package `pego` (`ParseGrammar`, `Compile`, `CompileSource`, `Parser.Parse`, `Lint`, and others), which joins the engine to the output schema (`Parser.OutputSchema`) |
+| `gen/` | Public package of code generation (`gen.Go`, `gen.TypeScript`, `gen.Generator`), which joins the engine to the generators of `internal/gen/`. It embeds the copy of the runtime that generated Go packages carry (`gen/_runtime`, refreshed by `go generate ./gen` and checked against `runtime/` by a test) |
 | `grammar/` | Grammar AST, structural validation (`Validate`), JSON conversion (`MarshalJSON`, `UnmarshalJSON`, strict `DecodeJSON`) and formatting as PEGO source (`Format`, which preserves comments). Public package. |
 | `internal/grammaranalysis/` | Conservative success and cut proofs shared by the compiler and linter |
 | `internal/lint/` | Grammar linter behind `pego.Lint` and `pego lint`: shared static analysis (`analysis.go`) and checks (`checks.go`) |
@@ -87,9 +88,9 @@ for backend scope, cleanup and measured costs.
 Generated Go and TypeScript parsers embed their runtime and depend only on their standard libraries. Generated Go
 is printed from Flow IR ([design 062](design/records/062-backend-independent-optimization-ir.md)): lean value-free rules as direct rules and the others as framed bodies the runtime calls; typed Go also emits inferred Go types
 and `ParseAST`/`ParseRuleAST` for configured-start and named rules
-([design 029](design/records/029-typed-named-rule-parsing.md)). Generation defaults (`WithGeneratedMaxDepth`, `gen -max-depth`) and invocation-local depth
+([design 029](design/records/029-typed-named-rule-parsing.md)). Generation defaults (`MaxDepth` of `gen.Go` and `gen.TypeScript`, `gen -max-depth`) and invocation-local depth
 options are implemented ([design 022](design/records/022-generated-parser-depth-limits.md)); Go entry points accept
-functional `ParseOption`s, and TypeScript adds options-aware entry points. With `WithTypes` or `-types`, TypeScript
+functional `ParseOption`s, and TypeScript adds options-aware entry points. With `Types` or `-types`, TypeScript
 exports grammar declarations and configured-start `parseAST` conversion ([guide](guide/typescript.md#typed-values),
 [design 030](design/records/030-typed-typescript-values.md)). Generated paths preserve the engine's tree, error, depth,
 action and memo semantics.

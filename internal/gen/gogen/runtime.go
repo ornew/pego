@@ -40,8 +40,8 @@ var runtimeSrc struct {
 }
 
 // SetRuntimeSource registers the files of the runtime package (the directory runtime of this
-// module, in fsys's root) that Generate copies and reads. The pego package registers its embedded
-// copy when it is imported.
+// module, in fsys's root) that Generate copies and reads. Package github.com/ornew/pego/gen
+// registers its embedded copy when it is imported.
 func SetRuntimeSource(fsys fs.FS) {
 	runtimeSrc.mu.Lock()
 	defer runtimeSrc.mu.Unlock()
@@ -74,7 +74,7 @@ func LoadRuntime() (*runtimeInfo, error) {
 		return runtimeSrc.info, nil
 	}
 	if runtimeSrc.fsys == nil {
-		return nil, fmt.Errorf("the runtime source is not registered: import github.com/ornew/pego, or call gogen.SetRuntimeSource")
+		return nil, fmt.Errorf("the runtime source is not registered: import github.com/ornew/pego/gen, or call gogen.SetRuntimeSource")
 	}
 	entries, err := fs.ReadDir(runtimeSrc.fsys, ".")
 	if err != nil {

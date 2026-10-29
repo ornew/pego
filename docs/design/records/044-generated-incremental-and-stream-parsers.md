@@ -33,13 +33,13 @@ TS VM, immutable snapshots, a new text-storage algorithm, or recognition on Docu
 
 ## Current and Proposed APIs
 
-The current Go Document is opt-in through `pego.WithDocument()` or the `-document` CLI option. It selects the
+The current Go Document is opt-in through `gen.Go{Document: true}` or the `-document` CLI option. It selects the
 configured start rule and can be combined with typed Go generation (`-types`), but not TypeScript generation.
 For grammars eligible for direct batch typed parsing, `Document.ParseAST` uses direct typed incremental matching;
-other grammars keep the Node-result conversion path. Existing generation without `WithDocument`/`-document`
+other grammars keep the Node-result conversion path. Existing generation without `Document`/`-document`
 retains the batch source path. A generated `Document` is a mutable parse view, not an immutable snapshot.
 
-The current Go Node stream is opt-in through `pego.WithStream()` or the `-stream` CLI option. Generation fails
+The current Go Node stream is opt-in through `gen.Go{Stream: true}` or the `-stream` CLI option. Generation fails
 unless the configured start rule has a `#stream` repetition at its top level; batch `Parse` still treats `#stream`
 as an ordinary repetition. Combined with typed values it also adds `ParseStreamAST`; stream generation cannot yet be
 combined with TypeScript, which fails explicitly. Observability is supported. Documents select the configured start rule initially; generic
@@ -52,7 +52,7 @@ func NewDocument(text string, opts ...ParseOption) (*Document, error)
 func (d *Document) Text() string
 func (d *Document) Edit(start, end int, text string) error
 func (d *Document) Parse(opts ...ParseOption) (*Node, error)
-// Generated only with WithTypes / -types.
+// Generated only with Types / -types.
 func (d *Document) ParseAST(opts ...ParseOption) (StartValue, error)
 func (d *Document) Stats() ParseStats
 ```
@@ -145,7 +145,7 @@ memory and allocations; do not infer typed incremental gains from Node memo reus
 
 ```go
 func ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseOption) error
-// WithTypes only; StreamValue denotes the inferred type of one repeated element.
+// Types only; StreamValue denotes the inferred type of one repeated element.
 func ParseStreamAST(r io.Reader, emit func(StreamValue) error, opts ...ParseOption) error
 ```
 
@@ -225,7 +225,7 @@ interface StreamResult {
 }
 ```
 
-WithTypes, `createASTStream` has the same protocol with the inferred typed element join. `waiting` means suspended
+With `Types`, `createASTStream` has the same protocol with the inferred typed element join. `waiting` means suspended
 for required bytes; it is not a failed literal or EOF. `final:true` supplies actual EOF and produces done/failed.
 Error is null while waiting; final recovered SyntaxErrors accompany done, and fatal/syntax errors accompany failed.
 Previously delivered elements are never repeated or retracted. A failed feed may still return newly committed

@@ -7,7 +7,7 @@
 ## Summary
 
 Generate TypeScript modules for a parser, without dependencies, from a grammar (`pego gen -lang ts`,
-`pego.GenerateTypeScript`). They return the same trees and errors as the engine and the generated Go parsers
+`gen.TypeScript.Generate`). They return the same trees and errors as the engine and the generated Go parsers
 ([008](008-code-generation.md)). The runtime is a module of its own, `runtime.ts`, the same for every grammar; the
 parser of the grammar is `parser.ts`, and its types (`-types`) are `types.ts`.
 
@@ -100,9 +100,9 @@ The runtime hides each difference, so that results are the engine's, not merely 
 has both a tree and errors, as Go's `(node, err)` does. Errors are `SyntaxError` and `SyntaxErrors` (subclasses of
 `Error`, whose `message` is Go's `Error()`), or a plain `Error` for runtime errors in actions and too deep nesting.
 
-`pego.GenerateTypeScript(g, start, opts...)` is a function of its own rather than an option of `GenerateGo`:
-TypeScript needs no Go package name. `GenOption`s are shared: `WithRecognize` works for both.
-The initial TypeScript implementation rejected `WithTypes`; typed conversion was added later
+`gen.TypeScript` is a configuration of its own rather than a setting of `gen.Go`: TypeScript needs no Go module or
+package name and has its own `RuntimeModule`. Settings both languages have, such as `Recognize`, are fields of both,
+and both implement `gen.Generator`. The initial TypeScript implementation rejected `Types`; typed conversion was added later
 (see [design 030](030-typed-typescript-values.md)). The command keeps one `gen` command with `-lang go|ts`.
 
 The module uses only erasable TypeScript (no enums, namespaces or parameter properties), so Node.js, Deno and Bun run it

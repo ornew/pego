@@ -27,13 +27,13 @@ with implementation changes; regenerate generated files.
 
 ## Development and checks
 
-- Public APIs: `pego.go` (which joins the runtime to the generators and the
-  output schema), `grammar/`; parser/compiler: `internal/syntax/`,
+- Public APIs: `pego.go` (which joins the runtime to the output schema),
+  `gen/` (code generation), `grammar/`, `sample/`, `editfuzz/`; parser/compiler: `internal/syntax/`,
   `internal/compile/`; runtime: `internal/engine/`; generators:
   `internal/gen/`; generated parsers: `parsers/`.
 - Use Go 1.27.1. Run `go test -timeout=30m ./...` for the root module. After
-  engine or generator changes, run `go generate ./parsers ./bench` and
-  `parsers/test.sh`. For site changes, run `cd site && go test ./...` and the
+  engine, generator or runtime changes, run `go generate ./gen ./parsers ./bench`
+  and `parsers/test.sh`. For site changes, run `cd site && go test ./...` and the
   site build/check commands in `docs/site.md`.
 - Keep generated benchmark reports/results unedited by hand and align
   `spec/bytecode/README.md` with VM changes.

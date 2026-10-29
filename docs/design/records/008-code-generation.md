@@ -6,7 +6,7 @@
 
 ## Summary
 
-Generate Go source code for a parser that depends only on the standard library, from a grammar (`pego gen`, `pego.GenerateGo`).
+Generate Go source code for a parser that depends only on the standard library, from a grammar (`pego gen`, `gen.Go.Generate`).
 
 ## Design
 

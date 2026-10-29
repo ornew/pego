@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/gen"
 )
 
 // The typed conformance checks compare the generated typed outputs with the output schema of their
@@ -545,7 +546,7 @@ func checkTypedGeneration(t *testing.T, sc confSchema, g typedGeneration, src st
 	if err != nil {
 		t.Fatal(err)
 	}
-	ts, err := pego.GenerateTypeScript(gr, "", pego.WithTypes())
+	ts, err := gen.TypeScript{Types: true}.Generate(gr, "")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -161,19 +161,6 @@ func (m RuntimeMode) String() string {
 	return fmt.Sprintf("RuntimeMode(%d)", int(m))
 }
 
-// ParseRuntimeMode returns the mode named s: embed, import or only.
-func ParseRuntimeMode(s string) (RuntimeMode, error) {
-	switch s {
-	case "embed":
-		return RuntimeEmbed, nil
-	case "import":
-		return RuntimeImport, nil
-	case "only":
-		return RuntimeOnly, nil
-	}
-	return 0, fmt.Errorf("unknown runtime mode %q: want embed, import or only", s)
-}
-
 // GeneratedFile is a file of generated code. Path is relative to the directory of the generated
 // package and uses slashes.
 type GeneratedFile struct {

@@ -36,7 +36,7 @@ func DefaultPackageName(module string) string {
 // generated from the grammar, api.go, which re-exports the names the runtime defines for the users
 // of the parser, with opts.Types types/types.go, the package of the Go types of the typed values,
 // and, with opts.Runtime RuntimeEmbed, a copy of the runtime in internal/runtime. Paths are
-// relative to the directory of the generated package. pego.GenerateGo describes the options.
+// relative to the directory of the generated package. gen.Go describes the options.
 //
 // Eligible rule bodies inline their expressions; other expressions become Go functions. Actions
 // and predicates become Go expressions, and the runtime (package runtime of this module) behaves
@@ -87,7 +87,7 @@ func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, live,
 	}
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		if derived {
-			return nil, fmt.Errorf("the module path %q gives the package name %q, which is not a valid Go identifier; choose the package name with -pkg (WithPackageName)", opts.Module, opts.Package)
+			return nil, fmt.Errorf("the module path %q gives the package name %q, which is not a valid Go identifier; choose the package name with -pkg (PackageName)", opts.Module, opts.Package)
 		}
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}

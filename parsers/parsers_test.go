@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/gen"
 )
 
 var update = flag.Bool("update", false, "update golden files")
@@ -17,7 +18,7 @@ var update = flag.Bool("update", false, "update golden files")
 type generation struct {
 	grammar, module, out string
 	hasTypes             bool
-	opts                 []pego.GenOption
+	config               gen.Go
 }
 
 // generations reads the go:generate lines of generate.go.
@@ -60,18 +61,18 @@ func generationsIn(t *testing.T, dir string) []generation {
 				if fs[i] != "import" {
 					t.Fatalf("generate.go: unknown runtime mode %s", fs[i])
 				}
-				g.opts = append(g.opts, pego.WithRuntime(pego.RuntimeImport))
+				g.config.Runtime = gen.RuntimeImport
 			case "-types":
 				g.hasTypes = true
-				g.opts = append(g.opts, pego.WithTypes())
+				g.config.Types = true
 			case "-recognize":
-				g.opts = append(g.opts, pego.WithRecognize())
+				g.config.Recognize = true
 			case "-work-controls":
-				g.opts = append(g.opts, pego.WithWorkControls())
+				g.config.WorkControls = true
 			case "-typed-only":
-				g.opts = append(g.opts, pego.WithTypedOnly())
+				g.config.TypedOnly = true
 			case "-nodoc":
-				g.opts = append(g.opts, pego.WithoutPackageDoc())
+				g.config.OmitPackageDoc = true
 			default:
 				t.Fatalf("generate.go: unknown argument %s", fs[i])
 			}
@@ -98,7 +99,9 @@ func TestGeneratedParsersAreUpToDate(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s:%v", g.grammar, err)
 		}
-		want, err := pego.GenerateGo(gr, g.module, "main", g.opts...)
+		c := g.config
+		c.Module = g.module
+		want, err := c.Generate(gr, "main")
 		if err != nil {
 			t.Fatal(err)
 		}

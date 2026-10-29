@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/gen"
 	"github.com/ornew/pego/internal/engine"
 )
 
@@ -130,10 +131,10 @@ func TestMissingTokensUnsupportedPublicPaths(t *testing.T) {
 	if _, err := p.MarshalBinary(); err == nil {
 		t.Fatal("binary serialization silently discarded #missing")
 	}
-	if _, err := pego.GenerateGo(p.Grammar(), "example", "main"); err == nil {
+	if _, err := (gen.Go{Module: "example"}).Generate(p.Grammar(), "main"); err == nil {
 		t.Fatal("Go generator silently discarded #missing")
 	}
-	if _, err := pego.GenerateTypeScript(p.Grammar(), "main"); err == nil {
+	if _, err := (gen.TypeScript{}).Generate(p.Grammar(), "main"); err == nil {
 		t.Fatal("TS generator silently discarded #missing")
 	}
 	strict, err := compileTestSource(`rule main = ";" $$`, "main")

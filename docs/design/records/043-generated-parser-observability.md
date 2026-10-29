@@ -18,7 +18,7 @@ Generated Go and TypeScript runtimes specialize calls into direct generated meth
 
 The initial Go batch implementation is generation-time opt-in tracing for
 standalone generated Go Node parsers. Generation uses
-`pego.WithGeneratedObservability()` or `pego gen -observability`; enabled
+`Observability: true` in `gen.Go` or `gen.TypeScript`, or `pego gen -observability`; enabled
 parsers trace `Parse`, `ParseRule` and `Recognize`. Events cover actual plain,
 direct, general, memoized and left-recursive calls, plus first-character
 dispatch skips only where the generated call site can identify the target.
@@ -32,7 +32,7 @@ their own contracts below.
 
 ### Typed Go Batch Trace Extension
 
-With `WithGeneratedObservability()` and `WithTypes()`, generated Go packages
+With `Observability` and `Types`, generated Go packages
 trace `ParseAST` and `ParseRuleAST` as well as Node `Parse`, `ParseRule` and
 optional `Recognize`. This covers direct typed execution and Node-conversion
 fallback. Events describe parser calls made by the selected route; converting
@@ -86,7 +86,7 @@ examined-input metrics remain open.
 
 ### Generation-Time Opt-In and Public API
 
-Generation-time opt-in keeps ordinary generated output free of observability fields, callbacks, clock reads, or trace branches. Go Node, typed batch, and Document parsers support `GenerateGo` with `pego gen -observability`; TypeScript batch tracing and profiling support `GenerateTypeScript` with the same option. Generated Go profiling is available for Node, typed batch, and Document parsers.
+Generation-time opt-in keeps ordinary generated output free of observability fields, callbacks, clock reads, or trace branches. Go Node, typed batch, and Document parsers support `gen.Go{Observability: true}` and `pego gen -observability`; TypeScript batch tracing and profiling support `gen.TypeScript{Observability: true}` and the same flag. Generated Go profiling is available for Node, typed batch, and Document parsers.
 
 Generated Go batch API:
 

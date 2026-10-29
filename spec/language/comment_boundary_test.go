@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/gen"
 )
 
 const commentOwnerExample = "// orphan\n\n// foo\npackage foo // trailing\n// trailing\n\n// B2\n// B2\n\n// B1\n// B1\nrule B = \"b\" // trailing\n// trailing\n"
@@ -129,7 +130,7 @@ func TestSourceCommentBoundaryGeneratedGo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := pego.GenerateGo(g, "comments", "owner_example", pego.WithTypes())
+	code, err := gen.Go{Module: "comments", Types: true}.Generate(g, "owner_example")
 	if err != nil {
 		t.Fatal(err)
 	}

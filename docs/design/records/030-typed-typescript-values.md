@@ -6,7 +6,7 @@
 
 ## Summary
 
-Allow `pego gen -lang ts -types` and `GenerateTypeScript(..., WithTypes())`
+Allow `pego gen -lang ts -types` and `gen.TypeScript{Types: true}`
 to generate interfaces, aliases and unions corresponding to grammar types (a grammar join type becomes a TypeScript union),
 plus typed parse-result entry points. The first implementation runs
 the existing Node parser once and converts its completed result into typed

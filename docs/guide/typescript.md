@@ -139,16 +139,16 @@ pego gen -lang ts -g <grammar> -o <directory> [-s <rule>] [-runtime embed|import
 `-pkg` and `-nodoc` are for Go and are rejected with `-lang ts`. As for Go, the output is deterministic (generating
 twice gives identical files), and grammar errors are reported with positions before any file is written.
 
-The same generator is available from Go, for build tools:
+The same generator is available from Go, in package `github.com/ornew/pego/gen`, for build tools:
 
 ```go
-files, err := pego.GenerateTypeScript(g, "main") // grammar, start rule: runtime.ts and parser.ts
-files, err = pego.GenerateTypeScript(g, "main", pego.WithRecognize(), pego.WithGeneratedMaxDepth(600_000))
-files, err = pego.GenerateTypeScript(g, "main", pego.WithRuntime(pego.RuntimeImport), pego.WithRuntimeModule("../shared/runtime.ts"))
-runtime := pego.GenerateTypeScriptRuntime() // runtime.ts alone
+files, err := gen.TypeScript{}.Generate(g, "main") // grammar, start rule: runtime.ts and parser.ts
+files, err = gen.TypeScript{Recognize: true, MaxDepth: 600_000}.Generate(g, "main")
+files, err = gen.TypeScript{Runtime: gen.RuntimeImport, RuntimeModule: "../shared/runtime.ts"}.Generate(g, "main")
+runtime, err := gen.TypeScript{}.GenerateRuntime() // runtime.ts alone
 ```
 
-`pego.WithTypes()` enables typed TypeScript declarations and result conversion: `pego.GenerateTypeScript(g, "main", pego.WithTypes())`.
+`Types: true` enables typed TypeScript declarations and result conversion: `gen.TypeScript{Types: true}.Generate(g, "main")`.
 
 ## The Generated API
 
@@ -487,7 +487,7 @@ that you terminate for cancellation. The units of the limits are explained in
 ## Deep Nesting and the JavaScript Stack
 
 The generated parser calls rules recursively, like the generated Go parser, and defaults to the same limit of 100,000 nested
-rule calls. `-max-depth` / `pego.WithGeneratedMaxDepth` set a generated default; `parseWithOptions`,
+rule calls. `-max-depth` / `gen.TypeScript.MaxDepth` set a generated default; `parseWithOptions`,
 `parseRuleWithOptions` and `recognizeWithOptions` accept `maxDepth` for one invocation. Omitted or zero selects the
 generated default; a positive safe integer overrides it. Negative values, fractions, NaN, infinity and unsafe
 integers return a configuration error through the normal result, before matching or named-rule lookup. Options are

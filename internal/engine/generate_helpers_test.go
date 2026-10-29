@@ -9,16 +9,16 @@ import (
 	"github.com/ornew/pego/internal/schema"
 )
 
-// The engine does not import the generators or the output schema; the root package joins them
-// (pego.GenerateGo, pego.GenerateTypeScript and Parser.OutputSchema). These helpers join them the
+// The engine does not import the generators or the output schema; packages gen and pego join them
+// (gen.Go, gen.TypeScript and Parser.OutputSchema). These helpers join them the
 // same way for the tests of this package.
 
-// Generate generates a Go parser for g, as pego.GenerateGo does.
+// Generate generates a Go parser for g, as gen.Go.Generate does.
 func Generate(g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
 	return gogen.Generate(g, compileForGenerator, opts)
 }
 
-// GenerateTS generates a TypeScript parser for g, as pego.GenerateTypeScript does.
+// GenerateTS generates a TypeScript parser for g, as gen.TypeScript.Generate does.
 func GenerateTS(g *grammar.Grammar, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
 	return tsgen.Generate(g, compileForGenerator, opts)
 }

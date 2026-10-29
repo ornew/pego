@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/pego/gen"
 )
 
-func generatedFile(path string) pego.GeneratedFile {
-	return pego.GeneratedFile{Path: path, Content: []byte(generatedHeader + " DO NOT EDIT.\n\npackage p\n")}
+func generatedFile(path string) gen.File {
+	return gen.File{Path: path, Content: []byte(generatedHeader + " DO NOT EDIT.\n\npackage p\n")}
 }
 
 // TestWriteGeneratedSymlink checks that nothing is written through a symbolic link at an owned
@@ -20,7 +20,7 @@ func TestWriteGeneratedSymlink(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("symbolic links need privileges")
 	}
-	files := []pego.GeneratedFile{generatedFile("parser.go"), generatedFile("types/types.go")}
+	files := []gen.File{generatedFile("parser.go"), generatedFile("types/types.go")}
 	t.Run("file", func(t *testing.T) {
 		dir, outside := t.TempDir(), t.TempDir()
 		target := filepath.Join(outside, "target.go")
@@ -31,7 +31,7 @@ func TestWriteGeneratedSymlink(t *testing.T) {
 		if err := os.Symlink(target, link); err != nil {
 			t.Fatal(err)
 		}
-		err := writeGenerated(dir, files, pego.RuntimeEmbed, false)
+		err := writeGenerated(dir, files, runtimeEmbed, false)
 		if err == nil || !strings.Contains(err.Error(), link) || !strings.Contains(err.Error(), "symbolic link") {
 			t.Fatalf("error %v, want one naming the symbolic link %s", err, link)
 		}
@@ -48,7 +48,7 @@ func TestWriteGeneratedSymlink(t *testing.T) {
 		if err := os.Symlink(outside, link); err != nil {
 			t.Fatal(err)
 		}
-		err := writeGenerated(dir, files, pego.RuntimeEmbed, false)
+		err := writeGenerated(dir, files, runtimeEmbed, false)
 		if err == nil || !strings.Contains(err.Error(), link) {
 			t.Fatalf("error %v, want one naming the symbolic link %s", err, link)
 		}
@@ -81,7 +81,7 @@ func TestWriteGeneratedChecksBeforeWriting(t *testing.T) {
 	if err := os.WriteFile(parser, old, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	err := writeGenerated(dir, []pego.GeneratedFile{generatedFile("parser.go"), generatedFile("types/types.go")}, pego.RuntimeEmbed, false)
+	err := writeGenerated(dir, []gen.File{generatedFile("parser.go"), generatedFile("types/types.go")}, runtimeEmbed, false)
 	if err == nil {
 		t.Fatal("no error for an unreadable owned file")
 	}

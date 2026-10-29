@@ -11,7 +11,7 @@ individual parsing invocation. Keep the existing default of 100,000 calls. The g
 parser's default; a positive per-call override replaces it for that invocation only. Preserve calls without options while moving Go/typed Go entry points to functional options; keep TypeScript's existing
 unit arguments and add options-aware entry points there.
 
-The generation API is `pego.WithGeneratedMaxDepth(n)` and the CLI flag is `pego gen -max-depth n`.
+The generation API is the `MaxDepth` field of `gen.Go` and `gen.TypeScript`, and the CLI flag is `pego gen -max-depth n`.
 Generated Go uses `Parse(input, opts ...ParseOption)`, `WithMaxDepth(n)` and `WithUnit(unit)`; TypeScript exposes
 `ParseOptions` and `parseWithOptions`. The APIs and parser-local accounting described here are implemented.
 
@@ -51,7 +51,7 @@ override permits that distinction without regenerating or changing concurrent ca
 ### Generation-Time Default
 
 ```go
-code, err := pego.GenerateGo(g, "example.com/parser", "main", pego.WithGeneratedMaxDepth(600_000))
+files, err := gen.Go{Module: "example.com/parser", MaxDepth: 600_000}.Generate(g, "main")
 ```
 
 ```sh
@@ -187,8 +187,8 @@ APIs while retaining their current defaults and documented reference deviations.
 
 The reference/depth probes above are complete. The implementation adds the following regression coverage:
 
-- `TestGeneratedMaxDepthValidation` and `TestWithGeneratedMaxDepth` check generation/API default equivalence,
-  custom defaults, invalid/range errors and last-setting precedence. `TestGenMaxDepth` checks the same CLI defaults
+- `TestGeneratedMaxDepthValidation` and `TestMaxDepth` (in `gen/depth_test.go`) check generation/API default
+  equivalence, custom defaults and invalid/range errors. `TestGenMaxDepth` checks the same CLI defaults
   and confirms invalid options preserve an existing output file.
 - `TestGeneratedDepthOptions` compares small limits with equally configured engines across ordinary recursion,
   left recursion, Operators Rule prefixes/RHS operands, first-character dispatch and recovery, both position units and typed

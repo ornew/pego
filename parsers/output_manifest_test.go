@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/gen"
 )
 
 // manifestFile is the checked-in manifest of the generated output of manifestGrammars in every
@@ -40,28 +41,28 @@ var manifestGrammars = []struct{ name, path string }{
 	{"outline", "../examples/outline/outline.pego"},
 }
 
-// manifestModes are the option sets of the output manifest. Each is generated for every grammar.
+// manifestModes are the configurations of the output manifest. Each is generated for every grammar.
 var manifestModes = []struct {
-	name string
-	opts []pego.GenOption
+	name   string
+	config gen.Go
 }{
-	{"node", nil},
-	{"node-rec", []pego.GenOption{pego.WithRecognize()}},
-	{"node-wc", []pego.GenOption{pego.WithWorkControls()}},
-	{"node-rec-wc", []pego.GenOption{pego.WithRecognize(), pego.WithWorkControls()}},
-	{"node-doc", []pego.GenOption{pego.WithDocument()}},
-	{"node-obs", []pego.GenOption{pego.WithGeneratedObservability()}},
-	{"node-rec-obs", []pego.GenOption{pego.WithRecognize(), pego.WithGeneratedObservability()}},
-	{"node-doc-wc", []pego.GenOption{pego.WithDocument(), pego.WithWorkControls()}},
-	{"node-stream", []pego.GenOption{pego.WithStream()}},
-	{"typed", []pego.GenOption{pego.WithTypes()}},
-	{"typed-only", []pego.GenOption{pego.WithTypes(), pego.WithTypedOnly()}},
-	{"typed-rec-wc", []pego.GenOption{pego.WithTypes(), pego.WithRecognize(), pego.WithWorkControls()}},
-	{"typed-doc", []pego.GenOption{pego.WithTypes(), pego.WithDocument()}},
-	{"typed-stream", []pego.GenOption{pego.WithTypes(), pego.WithStream()}},
-	{"typed-only-wc", []pego.GenOption{pego.WithTypes(), pego.WithTypedOnly(), pego.WithWorkControls()}},
-	{"default-value", []pego.GenOption{pego.WithGeneratedDefaultValue()}},
-	{"source-info", []pego.GenOption{pego.WithGeneratedSourceInfo()}},
+	{"node", gen.Go{}},
+	{"node-rec", gen.Go{Recognize: true}},
+	{"node-wc", gen.Go{WorkControls: true}},
+	{"node-rec-wc", gen.Go{Recognize: true, WorkControls: true}},
+	{"node-doc", gen.Go{Document: true}},
+	{"node-obs", gen.Go{Observability: true}},
+	{"node-rec-obs", gen.Go{Recognize: true, Observability: true}},
+	{"node-doc-wc", gen.Go{Document: true, WorkControls: true}},
+	{"node-stream", gen.Go{Stream: true}},
+	{"typed", gen.Go{Types: true}},
+	{"typed-only", gen.Go{Types: true, TypedOnly: true}},
+	{"typed-rec-wc", gen.Go{Types: true, Recognize: true, WorkControls: true}},
+	{"typed-doc", gen.Go{Types: true, Document: true}},
+	{"typed-stream", gen.Go{Types: true, Stream: true}},
+	{"typed-only-wc", gen.Go{Types: true, TypedOnly: true, WorkControls: true}},
+	{"default-value", gen.Go{DefaultValue: true}},
+	{"source-info", gen.Go{SourceInfo: true}},
 }
 
 // manifestOutputs generates every output of the manifest and returns its lines, sorted by grammar,
@@ -80,15 +81,16 @@ func manifestOutputs(t *testing.T) ([]string, map[string]string) {
 			t.Fatalf("%s: %v", g.path, err)
 		}
 		for _, m := range manifestModes {
-			opts := append([]pego.GenOption{pego.WithRuntime(pego.RuntimeImport)}, m.opts...)
-			files, err := pego.GenerateGo(gr, "gentest/"+g.name, "", opts...)
+			c := m.config
+			c.Module, c.Runtime = "gentest/"+g.name, gen.RuntimeImport
+			files, err := c.Generate(gr, "")
 			if err != nil {
 				// A combination the generator rejects, such as -stream without a #stream repetition,
 				// is a line of the manifest too, so that a change of rejection fails the test.
 				lines = append(lines, fmt.Sprintf("%s %s error %s", g.name, m.name, strings.ReplaceAll(err.Error(), "\n", " ")))
 				continue
 			}
-			slices.SortFunc(files, func(a, b pego.GeneratedFile) int { return strings.Compare(a.Path, b.Path) })
+			slices.SortFunc(files, func(a, b gen.File) int { return strings.Compare(a.Path, b.Path) })
 			for _, f := range files {
 				sum := sha256.Sum256(f.Content)
 				funcs := 0

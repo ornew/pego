@@ -1,6 +1,6 @@
 # 47. Recognition in Generated Parsers
 
-- Generated parsers had no recognition mode. `pego gen -recognize` (`pego.WithRecognize()`) now also generates the
+- Generated parsers had no recognition mode. `pego gen -recognize` (`Recognize` in `gen.Go` and `gen.TypeScript`) now also generates the
   recognizer (`Program.Recognizer`, the program in which no rule builds a value) into a second rule table, behind
   `Recognize(input) error`. The generator follows the engine there: captures that no predicate reads are not
   recorded, and Operators Rule lines of rules without a value build nothing (the generated runtime's `lineResult` and

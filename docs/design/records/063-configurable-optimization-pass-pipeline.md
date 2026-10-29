@@ -239,8 +239,8 @@ passes became rule-local. Rejected for now.
 It makes the output depend on a heuristic that users cannot predict or override. Rejected.
 
 **Flags only on the command line, with no Go option.** Matches how `pego gen` options are read today, but the
-Go API (`GenerateGo`) is what the build tooling of other projects calls. The options mirror each other today
-(`-types` and `WithTypes`) and the new ones should too.
+Go API (`gen.Go`) is what the build tooling of other projects calls. The options mirror each other today
+(`-types` and `Types`) and the new ones should too.
 
 ## Testing
 
@@ -268,7 +268,7 @@ None of these tests exists yet; they land with the pipeline.
 ## Performance and Results
 
 The default pipeline must not change generation time beyond noise: the manager adds a constant number of checks to a
-sequence of passes that is linear in the grammar. Measure `GenerateGo` with `WithTypes` on the DuckDB grammar before
+sequence of passes that is linear in the grammar. Measure `gen.Go{Types: true}.Generate` on the DuckDB grammar before
 and after step 2 with the method of [record 062](062-backend-independent-optimization-ir.md#performance-and-results).
 The `memory` and `size` presets are measured as described under [Profiles](#profiles) before they are named or
 documented; until then they do not ship.

@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/gen"
 )
 
 // helperName matches the names of the generated helpers: eN are the methods of expressions and qN the
@@ -66,7 +67,7 @@ func TestRecognizerHelpersReferenced(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", g.path, err)
 		}
-		files, err := pego.GenerateGo(gr, "gentest/"+g.name, "", pego.WithRuntime(pego.RuntimeImport), pego.WithRecognize())
+		files, err := gen.Go{Module: "gentest/" + g.name, Runtime: gen.RuntimeImport, Recognize: true}.Generate(gr, "")
 		if err != nil {
 			t.Fatalf("%s: %v", g.path, err)
 		}

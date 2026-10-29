@@ -1,6 +1,6 @@
 # Typed Values in Generated Go
 
-With `-types` (`pego.WithTypes()`), the generated package also gets a subpackage, `types`, that defines a Go type for each type of the
+With `-types` (`Types` of `gen.Go`), the generated package also gets a subpackage, `types`, that defines a Go type for each type of the
 grammar, and a function that returns the result as values of those types. This guide describes those types and functions; the rest of
 the generated package is in [The Generated Go API](generated-go-api.md).
 

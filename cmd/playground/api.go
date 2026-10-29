@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/gen"
 	"github.com/ornew/pego/grammar"
 )
 
@@ -545,22 +546,14 @@ func generate(req generateRequest) generateResult {
 		pkg = "parser"
 	}
 	start := req.Start // empty selects the default start rule
-	var opts []pego.GenOption
-	if req.Types {
-		opts = append(opts, pego.WithTypes())
-	}
-	if req.Recognize {
-		opts = append(opts, pego.WithRecognize())
-	}
-	var files []pego.GeneratedFile
+	var files []gen.File
 	var err error
 	switch req.Language {
 	case "", "go":
 		// The runtime is imported, so the files shown are the generated package without a copy of it.
-		opts = append(opts, pego.WithRuntime(pego.RuntimeImport), pego.WithPackageName(pkg))
-		files, err = pego.GenerateGo(c.g, "example.com/"+pkg, start, opts...)
+		files, err = gen.Go{Module: "example.com/" + pkg, PackageName: pkg, Runtime: gen.RuntimeImport, Types: req.Types, Recognize: req.Recognize}.Generate(c.g, start)
 	case "typescript":
-		files, err = pego.GenerateTypeScript(c.g, start, opts...)
+		files, err = gen.TypeScript{Types: req.Types, Recognize: req.Recognize}.Generate(c.g, start)
 	default:
 		res.Diagnostics = []diagnostic{{Message: fmt.Sprintf("unknown generation language %q", req.Language)}}
 		return res
@@ -575,7 +568,7 @@ func generate(req generateRequest) generateResult {
 	}
 	// The runtime is long and the same for every grammar: display it after the files of the grammar.
 	shown := slices.Clone(files)
-	slices.SortStableFunc(shown, func(a, b pego.GeneratedFile) int {
+	slices.SortStableFunc(shown, func(a, b gen.File) int {
 		return cmp.Compare(btoi(a.Path == "runtime.ts"), btoi(b.Path == "runtime.ts"))
 	})
 	for i, f := range shown {

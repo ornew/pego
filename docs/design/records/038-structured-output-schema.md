@@ -104,7 +104,7 @@ A compiled grammar holds only the bytecode of one mode ([Compiled Grammars](../.
 
 ## Compatibility and Backend Support
 
-Schema export is metadata on a compiled grammar and is independent of runtime backend: Closure, recursive bytecode, and iterative bytecode return the same schema, and the tests check this agreement. Generated Go and TypeScript typed values are already supported; the schema describes their grammar-level shapes without claiming target-language layout or serializer identity. `GenerateGo`/`GenerateTypeScript` are separate APIs. Grammar JSON and Node JSON are separate formats.
+Schema export is metadata on a compiled grammar and is independent of runtime backend: Closure, recursive bytecode, and iterative bytecode return the same schema, and the tests check this agreement. Generated Go and TypeScript typed values are already supported; the schema describes their grammar-level shapes without claiming target-language layout or serializer identity. `gen.Go`/`gen.TypeScript` are separate APIs. Grammar JSON and Node JSON are separate formats.
 
 ## Schema Consumers
 

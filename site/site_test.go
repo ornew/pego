@@ -138,8 +138,9 @@ func TestBuild(t *testing.T) {
 		},
 		"reference/pego/index.html": {
 			`id="CompileSource"`, `id="Parser.Parse"`, "type Node struct", `id="Node.Clone"`, "pkg.go.dev",
-			"MaxInputWork uint64", `id="WorkLimitError.Error"`, `id="RuntimeMode.String"`, "Content []byte",
+			"MaxInputWork uint64", `id="WorkLimitError.Error"`,
 		},
+		"reference/gen/index.html":       {`id="Go.Generate"`, `id="Generator"`, `id="RuntimeMode.String"`, "Content []byte"},
 		"reference/grammar/index.html":   {`id="Format"`, `id="Grammar.Rules"`, "type RuleDef struct"},
 		"reference/cli/index.html":       {`id="cmd-parse"`, "<code>-g string</code>", "-backend string", `id="commands"`},
 		"docs/design/records/index.html": {"012. Typed Values in Generated Parsers", "Implemented"},

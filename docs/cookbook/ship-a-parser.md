@@ -105,6 +105,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/gen"
 )
 
 //go:embed version.pego
@@ -117,7 +118,7 @@ func TestGeneratedIsUpToDate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want, err := pego.GenerateGo(g, "example.com/ship/versionparser", "main", pego.WithTypes())
+	want, err := gen.Go{Module: "example.com/ship/versionparser", Types: true}.Generate(g, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -13,6 +13,7 @@ import (
 	"text/template"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/gen"
 	"github.com/ornew/pego/grammar"
 )
 
@@ -388,7 +389,7 @@ func TestSourceGrammarGeneratedGo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := pego.GenerateGo(g, "sourceparser", "main", pego.WithTypes())
+	code, err := gen.Go{Module: "sourceparser", Types: true}.Generate(g, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

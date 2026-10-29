@@ -16,7 +16,7 @@ and the clauses of the removed control in class tests. Together they made the
 Three changes shrink the output without changing what a parse does.
 
 1. **Work controls on request.** The generation flag `-work-controls`
-   (`pego.WithWorkControls`) emits the work-controlled form. Without it the
+   (`WorkControls` in `gen.Go`) emits the work-controlled form. Without it the
    ordinary specialization replaces each body, so a function exists once; with
    `-document` the function is the form that serves a Document, with no charge
    and no control read (the typed constructors and the closures of actions

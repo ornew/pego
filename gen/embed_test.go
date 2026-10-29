@@ -1,4 +1,4 @@
-package pego_test
+package gen_test
 
 import (
 	"os"
@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/gen"
 )
 
 // TestGenerateGoEmbeddedPackageBuilds generates a parser with the runtime embedded, as pego gen does
@@ -23,7 +24,7 @@ rule main Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := pego.GenerateGo(g, "example.com/embedded/v2", "main", pego.WithTypes(), pego.WithRecognize(), pego.WithDocument(), pego.WithGeneratedObservability())
+	files, err := gen.Go{Module: "example.com/embedded/v2", Types: true, Recognize: true, Document: true, Observability: true}.Generate(g, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

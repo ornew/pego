@@ -6,8 +6,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego"
 )
 
 // listGenerated returns the files below dir, relative to it and with slashes.
@@ -174,10 +172,10 @@ func TestOwnedFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	parser, api, types := filepath.Join(dir, "parser.go"), filepath.Join(dir, "api.go"), filepath.Join(dir, "types", "types.go")
-	for mode, want := range map[pego.RuntimeMode][]string{
-		pego.RuntimeEmbed:  {parser, api, types, rt},
-		pego.RuntimeImport: {parser, api, types, rt},
-		pego.RuntimeOnly:   {rt},
+	for mode, want := range map[genRuntime][]string{
+		runtimeEmbed:  {parser, api, types, rt},
+		runtimeImport: {parser, api, types, rt},
+		runtimeOnly:   {rt},
 	} {
 		if got := ownedFiles(dir, mode, false); !slices.Equal(got, want) {
 			t.Errorf("%v owns %v, want %v", mode, got, want)
@@ -275,10 +273,10 @@ func TestGenImportNeedsOnlyPackageName(t *testing.T) {
 func TestOwnedFilesTS(t *testing.T) {
 	dir := t.TempDir()
 	parser, types, rt := filepath.Join(dir, "parser.ts"), filepath.Join(dir, "types.ts"), filepath.Join(dir, "runtime.ts")
-	for mode, want := range map[pego.RuntimeMode][]string{
-		pego.RuntimeEmbed:  {parser, types, rt},
-		pego.RuntimeImport: {parser, types},
-		pego.RuntimeOnly:   {rt},
+	for mode, want := range map[genRuntime][]string{
+		runtimeEmbed:  {parser, types, rt},
+		runtimeImport: {parser, types},
+		runtimeOnly:   {rt},
 	} {
 		if got := ownedFiles(dir, mode, true); !slices.Equal(got, want) {
 			t.Errorf("%v owns %v, want %v", mode, got, want)

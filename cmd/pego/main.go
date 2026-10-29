@@ -36,6 +36,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/gen"
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/syntax"
 )
@@ -242,7 +243,7 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 	case "test":
 		return testCmd(args[1:], stdout)
 	case "gen":
-		return gen(args[1:], stdout)
+		return genCmd(args[1:], stdout)
 	case "compile":
 		return compileCmd(args[1:])
 	case "fmt":
@@ -798,7 +799,7 @@ func isFlagSet(fs *flag.FlagSet, name string) bool {
 	return set
 }
 
-func gen(args []string, stdout io.Writer) error {
+func genCmd(args []string, stdout io.Writer) error {
 	fs := flag.NewFlagSet("gen", flag.ContinueOnError)
 	grammarPath := fs.String("g", "", "grammar file (.pego or .json)")
 	lang := fs.String("lang", "go", "language of the generated code: go or ts (TypeScript)")
@@ -822,7 +823,7 @@ func gen(args []string, stdout io.Writer) error {
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	mode, err := pego.ParseRuntimeMode(*runtimeMode)
+	mode, err := parseGenRuntime(*runtimeMode)
 	if err != nil {
 		return err
 	}
@@ -835,13 +836,13 @@ func gen(args []string, stdout io.Writer) error {
 			return fmt.Errorf("-runtime-module is only supported with -lang ts")
 		}
 		switch mode {
-		case pego.RuntimeOnly:
+		case runtimeOnly:
 			for _, name := range []string{"g", "s", "pkg", "module", "types", "document", "stream", "observability", "work-controls", "typed-only", "recognize", "max-depth", "nodoc", "source-info", "default-value"} {
 				if isFlagSet(fs, name) {
 					return fmt.Errorf("-%s cannot be combined with -runtime only, which writes just the runtime", name)
 				}
 			}
-		case pego.RuntimeImport:
+		case runtimeImport:
 			if *grammarPath == "" {
 				return fmt.Errorf("-g is required")
 			}
@@ -864,13 +865,13 @@ func gen(args []string, stdout io.Writer) error {
 			return fmt.Errorf("-o (an output directory) is required")
 		}
 		switch mode {
-		case pego.RuntimeOnly:
+		case runtimeOnly:
 			for _, name := range []string{"g", "s", "types", "observability", "work-controls", "recognize", "max-depth", "source-info", "default-value", "runtime-module"} {
 				if isFlagSet(fs, name) {
 					return fmt.Errorf("-%s cannot be combined with -runtime only, which writes just the runtime", name)
 				}
 			}
-		case pego.RuntimeImport:
+		case runtimeImport:
 			if *grammarPath == "" {
 				return fmt.Errorf("-g is required")
 			}
@@ -888,14 +889,39 @@ func gen(args []string, stdout io.Writer) error {
 	default:
 		return fmt.Errorf("unknown language %q (want go or ts)", *lang)
 	}
-	if mode == pego.RuntimeOnly {
-		var files []pego.GeneratedFile
-		var err error
-		if *lang == "ts" {
-			files, err = pego.GenerateTypeScriptRuntime()
-		} else {
-			files, err = pego.GenerateGoRuntime(*module)
+	var generator gen.Generator
+	if *lang == "ts" {
+		generator = gen.TypeScript{
+			Runtime:       mode.generated(),
+			RuntimeModule: *runtimeModule,
+			Types:         *types,
+			DefaultValue:  *defaultValue,
+			SourceInfo:    *sourceInfo,
+			Observability: *observability,
+			WorkControls:  *workControls,
+			Recognize:     *recognize,
+			MaxDepth:      *maxDepth,
 		}
+	} else {
+		generator = gen.Go{
+			Module:         *module,
+			PackageName:    *pkg,
+			Runtime:        mode.generated(),
+			Types:          *types,
+			DefaultValue:   *defaultValue,
+			SourceInfo:     *sourceInfo,
+			Observability:  *observability,
+			WorkControls:   *workControls,
+			Recognize:      *recognize,
+			MaxDepth:       *maxDepth,
+			Document:       *document,
+			Stream:         *stream,
+			TypedOnly:      *typedOnly,
+			OmitPackageDoc: *nodoc,
+		}
+	}
+	if mode == runtimeOnly {
+		files, err := generator.GenerateRuntime()
 		if err != nil {
 			return err
 		}
@@ -905,56 +931,42 @@ func gen(args []string, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
-	opts := []pego.GenOption{pego.WithGeneratedMaxDepth(*maxDepth)}
-	if *types {
-		opts = append(opts, pego.WithTypes())
-	}
-	if *document {
-		opts = append(opts, pego.WithDocument())
-	}
-	if *stream {
-		opts = append(opts, pego.WithStream())
-	}
-	if *workControls {
-		opts = append(opts, pego.WithWorkControls())
-	}
-	if *typedOnly {
-		opts = append(opts, pego.WithTypedOnly())
-	}
-	if *recognize {
-		opts = append(opts, pego.WithRecognize())
-	}
-	if *observability {
-		opts = append(opts, pego.WithGeneratedObservability())
-	}
-	if *nodoc {
-		opts = append(opts, pego.WithoutPackageDoc())
-	}
-	if *sourceInfo {
-		opts = append(opts, pego.WithGeneratedSourceInfo())
-	}
-	if *defaultValue {
-		opts = append(opts, pego.WithGeneratedDefaultValue())
-	}
-	if *pkg != "" {
-		opts = append(opts, pego.WithPackageName(*pkg))
-	}
-	opts = append(opts, pego.WithRuntime(mode))
-	if *lang == "ts" {
-		if *runtimeModule != "" {
-			opts = append(opts, pego.WithRuntimeModule(*runtimeModule))
-		}
-		files, err := pego.GenerateTypeScript(g, *start, opts...)
-		if err != nil {
-			return fileError(*grammarPath, err)
-		}
-		return writeGenerated(*output, files, mode, true)
-	}
-	files, err := pego.GenerateGo(g, *module, *start, opts...)
+	files, err := generator.Generate(g, *start)
 	if err != nil {
 		return fileError(*grammarPath, err)
 	}
-	return writeGenerated(*output, files, mode, false)
+	return writeGenerated(*output, files, mode, *lang == "ts")
+}
+
+// genRuntime is the value of pego gen -runtime: how the generated parser reaches the runtime
+// (embed or import), or only, which writes just the embedded copy of the runtime.
+type genRuntime int
+
+const (
+	runtimeEmbed genRuntime = iota
+	runtimeImport
+	runtimeOnly
+)
+
+func (m genRuntime) String() string { return [...]string{"embed", "import", "only"}[m] }
+
+// parseGenRuntime returns the -runtime value named s.
+func parseGenRuntime(s string) (genRuntime, error) {
+	for m := runtimeEmbed; m <= runtimeOnly; m++ {
+		if m.String() == s {
+			return m, nil
+		}
+	}
+	return 0, fmt.Errorf("unknown runtime mode %q: want embed, import or only", s)
+}
+
+// generated returns the runtime mode of the generator for m. runtimeOnly calls GenerateRuntime
+// instead of Generate, so its mode is not used.
+func (m genRuntime) generated() gen.RuntimeMode {
+	if m == runtimeImport {
+		return gen.RuntimeImport
+	}
+	return gen.RuntimeEmbed
 }
 
 // generatedHeader starts the files the generator writes, which it may remove when a later
@@ -965,21 +977,21 @@ const generatedHeader = "// Code generated by pego."
 // removes those of an earlier generation that it did not write again. Only mode never touches
 // parser.go, api.go or types/types.go, which belong to the parser; the other modes own them and
 // internal/runtime. Other files of the directories are never touched.
-func ownedFiles(dir string, mode pego.RuntimeMode, ts bool) []string {
+func ownedFiles(dir string, mode genRuntime, ts bool) []string {
 	var owned []string
 	if ts {
 		// A TypeScript parser is parser.ts and, with types, types.ts. The runtime is runtime.ts, which
 		// a generation owns unless it imports the runtime: that runtime is shared and belongs to
 		// whoever generated it with -runtime only.
-		if mode != pego.RuntimeOnly {
+		if mode != runtimeOnly {
 			owned = append(owned, filepath.Join(dir, "parser.ts"), filepath.Join(dir, "types.ts"))
 		}
-		if mode != pego.RuntimeImport {
+		if mode != runtimeImport {
 			owned = append(owned, filepath.Join(dir, "runtime.ts"))
 		}
 		return owned
 	}
-	if mode != pego.RuntimeOnly {
+	if mode != runtimeOnly {
 		owned = append(owned, filepath.Join(dir, "parser.go"), filepath.Join(dir, "api.go"), filepath.Join(dir, "types", "types.go"))
 	}
 	rt, _ := filepath.Glob(filepath.Join(dir, "internal", "runtime", "*.go"))
@@ -991,7 +1003,7 @@ func ownedFiles(dir string, mode pego.RuntimeMode, ts bool) []string {
 // write: it refuses, leaving dir untouched, to replace or remove a file that was not generated by
 // pego, to write through a symbolic link at an owned path or directory, and to continue after a
 // file it cannot read.
-func writeGenerated(dir string, files []pego.GeneratedFile, mode pego.RuntimeMode, ts bool) error {
+func writeGenerated(dir string, files []gen.File, mode genRuntime, ts bool) error {
 	generated := func(name string) (exists, ours bool, err error) {
 		data, err := os.ReadFile(name)
 		if errors.Is(err, os.ErrNotExist) {

@@ -211,7 +211,7 @@ func i0(p *pegort.TParser) (any, bool) {
 	v = func() any { return k1 }()
 ```
 
-The post-passes also dominate generation time. `GenerateGo` with `WithTypes()` on the DuckDB grammar took
+The post-passes also dominate generation time. `gen.Go{Types: true}.Generate` on the DuckDB grammar took
 16.6 s per run (three runs); of the CPU samples under `generate`, `qualifyRuntime` had 51.6 %,
 the ordinary-method specialization 24.5 %, the removal of unreached typed entries 8.6 %, the charge stripping 7.5 % and the final
 `go/format.Source` 5.4 %; compilation and emission had less than 2 %. `qualifyRuntime` inserts each
