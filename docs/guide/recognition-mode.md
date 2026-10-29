@@ -17,7 +17,7 @@ rule ws = [ \t\n]*
 ```
 
 With it, `Parse` returns a `nil` node and the same syntax errors as a full parse. It is faster and allocates less: the
-benchmarks measure recognition at 1.4–1.8× faster than a full parse on the closure backend.
+benchmarks measure recognition at 1.3–1.6× faster than a full parse on the closure backend.
 
 ```go
 n, err := p.Parse("abc=12", pego.RecognizeOnly())

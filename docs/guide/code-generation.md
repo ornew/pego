@@ -22,7 +22,7 @@ TypeScript modules with the same behavior instead; it has a guide of its own, [T
 
 | | Engine (`pego.CompileSource`) | Generated parser |
 |:--|:--|:--|
-| Speed | Closure backend by default | Generated Go takes 0.41–0.60× closure time in CodePoints and 0.47–0.62× in Bytes; direct typed values take 0.63–1.02× generated `Parse` time ([benchmarks](../benchmarks.md), [analysis](../performance.md#where-pego-stands)) |
+| Speed | Closure backend by default | Generated Go takes 0.44–0.61× closure time in CodePoints and 0.50–0.66× in Bytes; direct typed values take 0.69–0.98× generated `Parse` time ([benchmarks](../benchmarks.md), [analysis](../performance.md#where-pego-stands)) |
 | Dependencies | `github.com/ornew/pego` | Standard library only (the runtime is copied into the package; `-runtime import` imports it from `github.com/ornew/pego/runtime` instead) |
 | Grammar at run time | Loaded and compiled (or loaded from `.pegoc`) | Gone: it is compiled into Go code |
 | Grammar changes | Edit the grammar, restart | Regenerate and rebuild |
@@ -406,8 +406,8 @@ and inputs that exercise each feature of your grammar.
 
 ## Trade-Offs
 
-- **Speed.** In the current [benchmark results](../benchmarks.md), generated Go takes 0.41–0.60× closure time in
-  CodePoints and 0.47–0.62× in Bytes across eight workloads. Direct `ParseAST` values take 0.63–1.02× generated
+- **Speed.** In the current [benchmark results](../benchmarks.md), generated Go takes 0.44–0.61× closure time in
+  CodePoints and 0.50–0.66× in Bytes across eight workloads. Direct `ParseAST` values take 0.69–0.98× generated
   `Parse` time; conversion workloads that include generic nodes can take longer. Standard-library comparisons produce
   different outputs and remain faster where they apply. These measurements are from one machine and commit; run
   `go run ./bench/report` to measure yours.
