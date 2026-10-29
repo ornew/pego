@@ -80,7 +80,7 @@ func terminalLeaves(e grammar.Expr) (leaves int, choice, ok bool) {
 // a value-free terminal expression worth lowering in a lean typed parser, declaring it on first
 // use.
 func (g *generator) terminalTable(e grammar.Expr) (string, bool) {
-	if !g.leanTyped() || g.observability || g.disableTerminalPrograms {
+	if !g.leanTyped() || g.Observability || g.disableTerminalPrograms {
 		return "", false
 	}
 	leaves, choice, ok := terminalLeaves(e)
@@ -105,11 +105,11 @@ func (g *generator) terminalTable(e grammar.Expr) (string, bool) {
 	if name := g.workClassNames[key]; name != "" {
 		return name, true
 	}
-	name := g.name("term")
+	name := g.Name("term")
 	g.workClassNames[key] = name
 	g.workClassKeys = append(g.workClassKeys, key)
 	// The program is static data; Prepare builds its dispatch tables at initialization.
-	fmt.Fprintf(&g.vars, "var %sData = TerminalProgram%s\nvar %[1]s = %[1]sData.Prepare()\n", name, body)
+	fmt.Fprintf(&g.Vars, "var %sData = TerminalProgram%s\nvar %[1]s = %[1]sData.Prepare()\n", name, body)
 	return name, true
 }
 
@@ -186,11 +186,11 @@ func (t *terminalProgram) emit(e grammar.Expr) {
 		}
 		t.code = append(t.code, terminalLiteral, 4)
 		t.word(i)
-		t.word(int(g.desc(strconv.Quote(e.Value))))
+		t.word(int(g.Desc(strconv.Quote(e.Value))))
 	case *grammar.CharClass:
 		t.code = append(t.code, terminalClass, 4)
 		t.word(t.class(e))
-		t.word(int(g.desc(compile.CharClassString(e))))
+		t.word(int(g.Desc(compile.CharClassString(e))))
 	case *grammar.Seq:
 		at := t.open(terminalSeq)
 		for _, it := range e.Items {
@@ -264,9 +264,9 @@ func (t *terminalProgram) first(e grammar.Expr) (*grammar.CharClass, compile.Exp
 			break
 		}
 		r, _ := utf8.DecodeRuneInString(e.Value)
-		return &grammar.CharClass{Ranges: []grammar.CharRange{{Lo: r, Hi: r}}}, g.desc(strconv.Quote(e.Value)), true
+		return &grammar.CharClass{Ranges: []grammar.CharRange{{Lo: r, Hi: r}}}, g.Desc(strconv.Quote(e.Value)), true
 	case *grammar.CharClass:
-		return e, g.desc(compile.CharClassString(e)), true
+		return e, g.Desc(compile.CharClassString(e)), true
 	case *grammar.Seq:
 		if len(e.Items) > 0 {
 			return t.first(e.Items[0])

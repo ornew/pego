@@ -24,10 +24,10 @@ The default pipeline reproduces today's generated output byte for byte. Users se
 The passes run as follows today, and this is the inventory the proposal starts from.
 
 - The sequence is written twice. `generator.typedCore` (`internal/engine/gen_typed_core.go`) runs `Terminals`,
-  `RewriteTerms`, `Analyze`, `Guards`, `Scans`, `ClassRuns`, `Analyze`, `Verify`. `generator.startRecFlow`
+  `RewriteTerms`, `Analyze`, `Guards`, `Scans`, `ClassRuns`, `Analyze`, `Verify`. `gen.Generator.StartRecFlow`
   (`internal/engine/gen_flow_recognizer.go`) runs the same minus `Terminals` and `ClassRuns`. The order matters and is
   nowhere declared: `Guards` reads what the first `Analyze` computes, and a missing `Analyze` leaves choices unguarded
-  without an error (`startRecFlow` carries a comment about 84,000 calls on the DuckDB grammar that the wrong order
+  without an error (`StartRecFlow` carries a comment about 84,000 calls on the DuckDB grammar that the wrong order
   caused).
 - Applicability is derived in several places: `lean` (no work controls and no Documents), `leanTyped`, `observability`
   and the private `disable*` fields of `GenOptions`. A pass such as `ClassRuns` is sound only in lean builds, because
@@ -131,7 +131,7 @@ Each optimization has a flag with the pass name. Variants of one pass have their
 | `scans` | `scans` | none |
 | `class-runs` | `class-runs` | none |
 | `class-tables` | `flow.Options.ClassTables` | the `leanTyped` condition |
-| `inline-literals` | `flow.Options.InlineLiterals` (a count, 0 turns it off) | the constant `maxInlineLiteral` |
+| `inline-literals` | `flow.Options.InlineLiterals` (a count, 0 turns it off) | the constant `gen.MaxInlineLiteral` |
 
 A flag can only turn an optimization off. Turning it on never overrides `Applies`: `class-runs` stays off in a build
 with work controls whatever the flag says, because the pass is unsound there. The mode facts of `flow.Options` (`Work`,
@@ -182,7 +182,7 @@ same hook. A command-line front end prints with `core.Print(m, true)`, and the F
 1. Introduce the pass declarations, the manager and the two pipelines in `core`, together with a test that holds the
    old straight-line sequences as an oracle. For every grammar of the corpus and every mode of `coreGenModes`, run
    the oracle and the pipeline and compare `core.Print(m, true)`. No call site changes.
-2. Switch `typedCore` and `startRecFlow` to the pipelines. Gate on three checks: `go generate ./parsers ./bench` leaves
+2. Switch `typedCore` and `StartRecFlow` to the pipelines. Gate on three checks: `go generate ./parsers ./bench` leaves
    no diff, the corpus tests of the generator pass in default and `PEGO_TEST_ORDINARY=1` runs, and a byte comparison
    of the generated sources of the corpus before and after the switch (all modes) is empty.
 3. Replace the `disable*` booleans with the flag set. Existing tests set flags instead of fields; the flag names come

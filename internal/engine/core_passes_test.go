@@ -338,7 +338,7 @@ func TestCoreScans(t *testing.T) {
 	if !ok {
 		t.Fatal("does not compile")
 	}
-	g := &generator{prog: prog.staticProgram, table: "trules", goWorkControls: true}
+	g := &generator{Prog: prog.staticProgram, Table: "trules", goWorkControls: true}
 	m, err := g.typedCore(nil)
 	if err != nil {
 		t.Fatal(err)

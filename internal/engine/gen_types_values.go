@@ -7,6 +7,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gen"
 )
 
 // Typed values of rules in the value model.
@@ -50,7 +51,7 @@ func (h *vhelpers) get(prefix, key string, x compile.Ty) string {
 // ruleType returns the type that selects the Go type of the values of rule r: its declared type, or
 // a vrule for a rule whose Go type comes from its value type.
 func (t *typedGen) ruleType(r *compile.Rule) compile.Ty {
-	return t.ruleRef(r.Name)
+	return t.RuleRef(r.Name)
 }
 
 // tupleType returns the Go type of a tuple, recording the tuple types to declare.
@@ -111,8 +112,8 @@ func (t *typedGen) tupleDecls(b *strings.Builder) {
 // (a vrule, tuple, node or optional tuple) from a node.
 func (t *typedGen) vconvHelper(x compile.Ty) string {
 	key := t.goType(x)
-	if r, ok := x.(vrule); ok {
-		key = "rule " + r.name
+	if r, ok := x.(gen.Vrule); ok {
+		key = "rule " + r.Name
 	}
 	return t.nhelpers.get("v", key, x)
 }
@@ -120,8 +121,8 @@ func (t *typedGen) vconvHelper(x compile.Ty) string {
 // vdconvHelper returns the name of the function converting a value of the typed runtime.
 func (t *typedGen) vdconvHelper(x compile.Ty) string {
 	key := t.goType(x)
-	if r, ok := x.(vrule); ok {
-		key = "rule " + r.name
+	if r, ok := x.(gen.Vrule); ok {
+		key = "rule " + r.Name
 	}
 	return t.dhelpers.get("tv", key, x)
 }
@@ -135,8 +136,8 @@ func (t *typedGen) nodeHelpers(b *strings.Builder, done *int) bool {
 		g := t.goType(h.x)
 		fmt.Fprintf(b, "func (a *astConv) %s(v any) %s {\n\ta.stepWork()\n", h.name, g)
 		switch x := h.x.(type) {
-		case vrule:
-			fmt.Fprintf(b, "\treturn %s\n", t.conv(t.vres[x.name], "v"))
+		case gen.Vrule:
+			fmt.Fprintf(b, "\treturn %s\n", t.conv(t.Vres[x.Name], "v"))
 		case compile.OptTy:
 			fmt.Fprintf(b, "\tif astIsNil(v) {\n\t\treturn nil\n\t}\n\tx := %s\n\treturn &x\n", t.conv(x.Elem, "v"))
 		case compile.TupleTy:
@@ -175,8 +176,8 @@ func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
 		g := t.goType(h.x)
 		fmt.Fprintf(b, "func %s(a *tslabs, v any) %s {\n\ta.stepWork()\n", h.name, g)
 		switch x := h.x.(type) {
-		case vrule:
-			fmt.Fprintf(b, "\treturn %s\n", t.dconv(t.vres[x.name], "v", "a"))
+		case gen.Vrule:
+			fmt.Fprintf(b, "\treturn %s\n", t.dconv(t.Vres[x.Name], "v", "a"))
 		case compile.OptTy:
 			fmt.Fprintf(b, "\tif v == nil {\n\t\treturn nil\n\t}\n\tx := %s\n\treturn &x\n", t.dconv(x.Elem, "v", "a"))
 		case compile.TupleTy:
@@ -244,8 +245,8 @@ func streamValue(p *compile.Program, rd *grammar.RuleDef) (compile.Ty, bool) {
 // vrule, tuple, node or optional tuple) into a value of the typed runtime.
 func (t *typedGen) backHelper(x compile.Ty) string {
 	key := t.goType(x)
-	if r, ok := x.(vrule); ok {
-		key = "rule " + r.name
+	if r, ok := x.(gen.Vrule); ok {
+		key = "rule " + r.Name
 	}
 	return t.bhelpers.get("tb", key, x)
 }
@@ -265,8 +266,8 @@ func (t *typedGen) backHelpers(b *strings.Builder, done *int) bool {
 			return "[]any{" + strings.Join(kids, ", ") + "}"
 		}
 		switch x := h.x.(type) {
-		case vrule:
-			fmt.Fprintf(b, "\treturn %s\n", t.back(t.vres[x.name], "v"))
+		case gen.Vrule:
+			fmt.Fprintf(b, "\treturn %s\n", t.back(t.Vres[x.Name], "v"))
 		case compile.OptTy:
 			fmt.Fprintf(b, "\tif v == nil {\n\t\treturn nil\n\t}\n\treturn %s\n", t.back(x.Elem, "(*v)"))
 		case compile.TupleTy:

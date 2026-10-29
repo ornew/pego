@@ -32,9 +32,9 @@ func coreRecognizeCase(name, mode string, g *generator) (*coreGenCase, error) {
 		}
 	}
 	check("build")
-	core.RewriteTerms(m, core.TermOptions{TextDispatch: !g.disableLiteralTextDispatch, FieldCompare: !g.boxedComparisons})
+	core.RewriteTerms(m, core.TermOptions{TextDispatch: !g.DisableLiteralTextDispatch, FieldCompare: !g.BoxedComparisons})
 	check("terms")
-	core.Guards(m, g.ordinary && !g.disableGuardedClasses)
+	core.Guards(m, g.Ordinary && !g.DisableGuardedClasses)
 	check("guards")
 	repeats := irbuild.FollowRepeats(m, c.origin)
 	core.Scans(m)

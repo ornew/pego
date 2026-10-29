@@ -105,21 +105,21 @@ func (l *liveRules) missingBodies(table string, printed map[ruleKey]bool) []rule
 
 // pruned reports whether the second pass leaves out everything of rule r of the current table.
 func (g *generator) pruned(r *compile.Rule) bool {
-	if g.live == nil || g.keepTableRules && g.table != "trules" {
+	if g.live == nil || g.keepTableRules && g.Table != "trules" {
 		return false
 	}
-	return !g.live.reach[ruleKey{g.table, r.ID, false}] && !g.live.reach[ruleKey{g.table, r.ID, true}]
+	return !g.live.reach[ruleKey{g.Table, r.ID, false}] && !g.live.reach[ruleKey{g.Table, r.ID, true}]
 }
 
 // slotReached reports whether the Body of rule r is printed: something enters the rule through its
 // slot, and not only through its wrapper.
 func (g *generator) slotReached(r *compile.Rule) bool {
-	return g.live == nil || g.table == "trules" || g.live.reach[ruleKey{g.table, r.ID, false}]
+	return g.live == nil || g.Table == "trules" || g.live.reach[ruleKey{g.Table, r.ID, false}]
 }
 
 // beginRule and endRule attribute the calls generated between them to the body of r.
 func (g *generator) beginRule(r *compile.Rule) {
-	g.emitting, g.emittingOK = ruleKey{g.table, r.ID, false}, true
+	g.emitting, g.emittingOK = ruleKey{g.Table, r.ID, false}, true
 }
 
 func (g *generator) endRule() { g.emittingOK = false }
@@ -127,7 +127,7 @@ func (g *generator) endRule() { g.emittingOK = false }
 // noteCall records a call of r from the body being generated, through its wrapper or its slot, and
 // checks in the second pass that the callee was not left out.
 func (g *generator) noteCall(r *compile.Rule, wrapper bool) {
-	to := ruleKey{g.table, r.ID, wrapper}
+	to := ruleKey{g.Table, r.ID, wrapper}
 	if g.collect != nil {
 		from := rootKey
 		if g.emittingOK {
@@ -135,8 +135,8 @@ func (g *generator) noteCall(r *compile.Rule, wrapper bool) {
 		}
 		g.collect.log = append(g.collect.log, ruleEdge{from, to})
 	}
-	if g.live != nil && !g.live.reach[to] && g.reachErr == nil && (g.table == "trules" || !g.keepTableRules) {
-		g.reachErr = fmt.Errorf("internal error: a generated call reaches the rule %s of %s, whose body is left out", r.Name, g.table)
+	if g.live != nil && !g.live.reach[to] && g.reachErr == nil && (g.Table == "trules" || !g.keepTableRules) {
+		g.reachErr = fmt.Errorf("internal error: a generated call reaches the rule %s of %s, whose body is left out", r.Name, g.Table)
 	}
 }
 
@@ -145,7 +145,7 @@ func (g *generator) printedBody(r *compile.Rule) {
 	if g.bodySet == nil {
 		g.bodySet = map[ruleKey]bool{}
 	}
-	g.bodySet[ruleKey{g.table, r.ID, false}] = true
+	g.bodySet[ruleKey{g.Table, r.ID, false}] = true
 }
 
 // finishReach ends a pass: the first pass computes the reachable rules from the start rules and

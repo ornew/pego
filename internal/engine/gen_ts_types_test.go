@@ -440,17 +440,17 @@ check(r.value!.start === 0 && r.value!.end === 2 && stable(r.value).length > 0, 
 // A join with the error member must not gain an open-node member, whether it is named by an alias
 // or inferred for a field: both forms share one TypeScript union and one recipe.
 func TestGeneratedTypedErrorJoinHasNoOpenMember(t *testing.T) {
-	if cstJoin(compile.JoinTy{Alts: []compile.Ty{compile.NamedTy{Name: "A", Kind: 's'}, compile.TyErr}}) {
+	if gen.CstJoin(compile.JoinTy{Alts: []compile.Ty{compile.NamedTy{Name: "A", Kind: 's'}, compile.TyErr}}) {
 		t.Error("cstJoin counts the error member as an open node")
 	}
-	if !cstJoin(compile.JoinTy{Alts: []compile.Ty{compile.NamedTy{Name: "A", Kind: 's'}, compile.TyInt}}) {
+	if !gen.CstJoin(compile.JoinTy{Alts: []compile.Ty{compile.NamedTy{Name: "A", Kind: 's'}, compile.TyInt}}) {
 		t.Error("cstJoin must keep counting a scalar member as an open node")
 	}
 	// The raw spelling of node[_] is an open member, with or without error next to it.
-	if !cstJoin(compile.JoinTy{Alts: []compile.Ty{compile.NamedTy{Name: "A", Kind: 's'}, compile.NodeTy{Value: compile.TyTop}}}) {
+	if !gen.CstJoin(compile.JoinTy{Alts: []compile.Ty{compile.NamedTy{Name: "A", Kind: 's'}, compile.NodeTy{Value: compile.TyTop}}}) {
 		t.Error("cstJoin does not count a raw node[_] member as an open node")
 	}
-	if !cstJoin(compile.JoinTy{Alts: []compile.Ty{compile.NamedTy{Name: "A", Kind: 's'}, compile.NodeTy{Value: compile.TyTop}, compile.TyErr}}) {
+	if !gen.CstJoin(compile.JoinTy{Alts: []compile.Ty{compile.NamedTy{Name: "A", Kind: 's'}, compile.NodeTy{Value: compile.TyTop}, compile.TyErr}}) {
 		t.Error("cstJoin does not count a raw node[_] member next to error as an open node")
 	}
 	src := `type Block = { Body []Stmt }

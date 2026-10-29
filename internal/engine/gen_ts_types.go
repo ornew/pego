@@ -9,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -33,16 +34,16 @@ func qualifyTypes(typ string) string {
 
 // typedTS returns the declarations of types.ts and the code that parser.ts adds for typed values.
 func (g *tsGen) typedTS(start *compile.Rule) (types, parser string, err error) {
-	if g.prog.Typed == nil {
+	if g.Prog.Typed == nil {
 		return "", "", fmt.Errorf("typed values need the grammar's types (type checking did not run)")
 	}
-	t := &tsTypedGen{info: g.prog.Typed, names: map[string]string{}, joins: map[string]bool{}, ids: map[string]int{}}
-	t.valueResolver = newValueResolver(g.prog, func(x compile.Ty) bool { return t.joins[x.String()] })
+	t := &tsTypedGen{info: g.Prog.Typed, names: map[string]string{}, joins: map[string]bool{}, ids: map[string]int{}}
+	t.ValueResolver = gen.NewValueResolver(g.Prog, func(x compile.Ty) bool { return t.joins[x.String()] })
 	reserved := map[string]bool{}
 	for _, n := range tsReservedTypes {
 		reserved[n] = true
 	}
-	for name := range g.prog.Types {
+	for name := range g.Prog.Types {
 		t.all = append(t.all, name)
 	}
 	sort.Strings(t.all)
@@ -56,9 +57,9 @@ func (g *tsGen) typedTS(start *compile.Rule) (types, parser string, err error) {
 		}
 	}
 	// A join that no alias declares is a union of its members, too.
-	for _, j := range t.anonJoins() {
-		t.joins[j.members.String()] = true
-		for _, s := range j.spellings {
+	for _, j := range t.AnonJoins() {
+		t.joins[j.Members.String()] = true
+		for _, s := range j.Spellings {
 			t.joins[s] = true
 		}
 	}
@@ -66,10 +67,10 @@ func (g *tsGen) typedTS(start *compile.Rule) (types, parser string, err error) {
 	b.WriteString(tsTypedDeclarations)
 	open := []string{"RuntimeNode", "StringNode", "TNode<unknown>", "TypedValue[]", "RecoveredError", "number", "bigint", "string", "boolean", "null"}
 	for _, name := range t.all {
-		switch spec := g.prog.Types[name].(type) {
+		switch spec := g.Prog.Types[name].(type) {
 		case *grammar.TypeDef:
 			open = append(open, t.names[name])
-			if n, ok := g.prog.NodeTypeOf(name); ok && spec.Struct() == nil {
+			if n, ok := g.Prog.NodeTypeOf(name); ok && spec.Struct() == nil {
 				under := strings.TrimSuffix(t.tsType(n.Underlying()), " | null")
 				fmt.Fprintf(&b, "/** Grammar node type %s = %s. */\nexport interface %s extends %s {\n  readonly type: %s;\n}\n\n", name, n.Underlying(), t.names[name], under, tsString(name))
 				t.recipe(n)
@@ -90,13 +91,13 @@ func (g *tsGen) typedTS(start *compile.Rule) (types, parser string, err error) {
 	fmt.Fprintf(&b, "%s%s;\n\n", tsTypedValueDeclaration, strings.Join(open, " | "))
 	types = b.String()
 	b.Reset()
-	st := t.ruleRef(start.Name)
+	st := t.RuleRef(start.Name)
 	repr := t.recipe(st)
 	stType := qualifyTypes(t.tsType(st))
 	b.WriteString("\n// --- Typed values (pego gen -types) ---\n\n")
 	fmt.Fprintf(&b, tsTypedAPI, stType, start.ID, repr, g.optionsType)
 	runtime := tsTypedRuntime
-	if g.noWork {
+	if g.NoWork {
 		runtime = tsTypedCharge.ReplaceAllString(runtime, "")
 	}
 	b.WriteString(runtime)
@@ -121,8 +122,8 @@ func (g *tsGen) typedTS(start *compile.Rule) (types, parser string, err error) {
 		fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), elemsID)
 	}
 	for _, name := range t.all {
-		if td, ok := g.prog.Types[name].(*grammar.TypeDef); ok {
-			if n, ok := g.prog.NodeTypeOf(name); ok && td.Struct() == nil {
+		if td, ok := g.Prog.Types[name].(*grammar.TypeDef); ok {
+			if n, ok := g.Prog.NodeTypeOf(name); ok && td.Struct() == nil {
 				fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), t.recipe(n))
 				continue
 			}
@@ -138,7 +139,7 @@ type tsTypedGen struct {
 	// valueResolver selects the rules whose typed values come from their value types (see
 	// gen_types_values.go): node[T] becomes TNode<T>, a tuple a readonly array type and () the empty
 	// tuple type.
-	valueResolver
+	gen.ValueResolver
 	names   map[string]string
 	all     []string
 	joins   map[string]bool
@@ -168,8 +169,8 @@ func (t *tsTypedGen) tsType(x compile.Ty) string {
 		case compile.TyErr:
 			return "RecoveredError | null"
 		}
-	case vrule:
-		return t.tsType(t.vres[x.name])
+	case gen.Vrule:
+		return t.tsType(t.Vres[x.Name])
 	case compile.TupleTy:
 		elems := make([]string, len(x.Elems))
 		for i, e := range x.Elems {
@@ -218,7 +219,7 @@ func (t *tsTypedGen) tsType(x compile.Ty) string {
 					}
 				}
 			}
-			if cstJoin(x) {
+			if gen.CstJoin(x) {
 				parts = append(parts, "TNode<unknown>")
 			}
 			return strings.Join(parts, " | ")
@@ -256,8 +257,8 @@ func (t *tsTypedGen) conversionKey(x compile.Ty) string {
 		if x == compile.TyErr {
 			return "named:Error"
 		}
-	case vrule:
-		return t.conversionKey(t.vres[x.name])
+	case gen.Vrule:
+		return t.conversionKey(t.Vres[x.Name])
 	case compile.TupleTy:
 		keys := make([]string, len(x.Elems))
 		for i, e := range x.Elems {
@@ -325,15 +326,15 @@ func (t *tsTypedGen) recipe(x compile.Ty) int {
 		case compile.TyErr:
 			return t.recipe(compile.TyError)
 		}
-	case vrule:
-		return t.recipe(t.vres[a.name])
+	case gen.Vrule:
+		return t.recipe(t.Vres[a.Name])
 	case compile.TupleTy:
 		kind, key = "tuple", t.conversionKey(a)
 	case compile.NodeTy:
 		kind, key = "tnode", t.conversionKey(a)
 		if a.Name != "" {
 			// The type's definition gives its value, also inside the type itself.
-			x, _ = t.prog.NodeTypeOf(a.Name)
+			x, _ = t.Prog.NodeTypeOf(a.Name)
 		}
 	case compile.NamedTy:
 		kind, key = "terminal", "named:"+a.Name
@@ -409,7 +410,7 @@ func (t *tsTypedGen) recipe(x compile.Ty) int {
 				}
 			}
 			r += ", members: new Map([" + strings.Join(members, ", ") + "])"
-			if cstJoin(a) {
+			if gen.CstJoin(a) {
 				r += ", fallback: " + strconv.Itoa(t.recipe(openNode))
 			}
 		}

@@ -71,10 +71,10 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
 - Generated Go is printed from Flow IR: the typed rules and Operators Rule lines, and the rules and lines of the
   Node and recognizer tables. Generation fails if Flow IR prints none of the forms below for a rule, a line or the
   start rule of a stream parse, so no table has another route.
-- The lean value-free rules that `recFlowEligible` accepts print as direct rules, in the Node table and the
-  recognizer (`startRecFlow`, `gen_flow_recognizer.go`). A direct rule whose printed function would read its start
+- The lean value-free rules that `gen.RecFlowEligible` accepts print as direct rules, in the Node table and the
+  recognizer (`gen.Generator.StartRecFlow`). A direct rule whose printed function would read its start
   or context, or whose variables have a type the printer cannot name, prints its framed body instead, as every
-  other rule does: the rules that `flowNodeFrameOK` accepts print as the matcher of their framed body, which the
+  other rule does: the rules that `gen.Generator.FlowNodeFrameOK` accepts print as the matcher of their framed body, which the
   runtime calls under the frame, memo, depth, action and finish it owns (`flow.FramedBody` accepts no Nest,
   Operators Rule or Terminal node). A typed-only build has Node rules only when a typed entry point converts the
   Node result of a rule (`keepNodes`); they print like those of any Node build. Both tables print through the same

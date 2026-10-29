@@ -1,4 +1,4 @@
-package engine
+package gen
 
 import (
 	"sort"
@@ -8,59 +8,59 @@ import (
 	"github.com/ornew/pego/internal/compile"
 )
 
-// vrule is a reference to a rule whose Go type is that of its value in the value model; the rule's
+// Vrule is a reference to a rule whose Go type is that of its value in the value model; the rule's
 // resolved value type, with references replaced, is typedGen.vres[name].
-type vrule struct{ name string }
+type Vrule struct{ Name string }
 
-func (r vrule) String() string { return r.name }
+func (r Vrule) String() string { return r.Name }
 
-// valueResolver resolves the value types of the rules whose typed values come from them.
-type valueResolver struct {
-	prog *compile.Program
+// ValueResolver resolves the value types of the rules whose typed values come from them.
+type ValueResolver struct {
+	Prog *compile.Program
 	info *compile.TypeInfo
 	// values holds the value types of the rules and ruleDefs their definitions; vres holds the
 	// resolved value types of the rules whose typed values come from them, and resolving the rules
 	// being resolved.
 	values    map[string]compile.Ty
 	ruleDefs  map[string]*grammar.RuleDef
-	vres      map[string]compile.Ty
+	Vres      map[string]compile.Ty
 	resolving map[string]bool
 	// ownType reports that a legacy type has a typed representation of its own (a named join).
 	ownType func(compile.Ty) bool
 }
 
-func newValueResolver(p *compile.Program, ownType func(compile.Ty) bool) valueResolver {
-	r := valueResolver{prog: p, info: p.Typed, values: p.ValueTypes(), ruleDefs: map[string]*grammar.RuleDef{}, vres: map[string]compile.Ty{}, resolving: map[string]bool{}, ownType: ownType}
+func NewValueResolver(p *compile.Program, ownType func(compile.Ty) bool) ValueResolver {
+	r := ValueResolver{Prog: p, info: p.Typed, values: p.ValueTypes(), ruleDefs: map[string]*grammar.RuleDef{}, Vres: map[string]compile.Ty{}, resolving: map[string]bool{}, ownType: ownType}
 	for _, rl := range p.RuleList {
 		r.ruleDefs[rl.Name] = rl.Def
 	}
 	return r
 }
 
-func (t *valueResolver) ruleRef(name string) compile.Ty {
+func (t *ValueResolver) RuleRef(name string) compile.Ty {
 	var legacy compile.Ty = compile.TyAny
 	if def := t.ruleDefs[name]; def != nil && def.Type != nil {
-		legacy = (&compile.TypeResolver{Prog: t.prog}).Resolve(def.Type)
+		legacy = (&compile.TypeResolver{Prog: t.Prog}).Resolve(def.Type)
 	}
 	if !t.usesValue(name, legacy) {
 		return legacy
 	}
-	if _, ok := t.vres[name]; ok {
-		return vrule{name}
+	if _, ok := t.Vres[name]; ok {
+		return Vrule{name}
 	}
 	if t.resolving[name] {
 		return compile.TyTop // a cycle: the reference becomes any
 	}
 	t.resolving[name] = true
-	res := t.resolveValue(t.values[name])
+	res := t.ResolveValue(t.values[name])
 	delete(t.resolving, name)
-	t.vres[name] = res
-	return vrule{name}
+	t.Vres[name] = res
+	return Vrule{name}
 }
 
 // A rule has the Go type of its value if it has no declared type; a declared type is the rule's Go
 // type, node[_] included.
-func (t *valueResolver) usesValue(name string, legacy compile.Ty) bool {
+func (t *ValueResolver) usesValue(name string, legacy compile.Ty) bool {
 	v, ok := t.values[name]
 	def := t.ruleDefs[name]
 	if !ok || v == nil || v == compile.TyAny || def == nil {
@@ -78,27 +78,27 @@ func (t *valueResolver) usesValue(name string, legacy compile.Ty) bool {
 	return def.Type == nil
 }
 
-// resolveValue replaces the rule references in a value type.
-func (t *valueResolver) resolveValue(x compile.Ty) compile.Ty {
+// ResolveValue replaces the rule references in a value type.
+func (t *ValueResolver) ResolveValue(x compile.Ty) compile.Ty {
 	switch x := x.(type) {
 	case compile.RuleTy:
-		return t.ruleRef(x.Name)
+		return t.RuleRef(x.Name)
 	case compile.TupleTy:
 		elems := make([]compile.Ty, len(x.Elems))
 		for i, e := range x.Elems {
-			elems[i] = t.resolveValue(e)
+			elems[i] = t.ResolveValue(e)
 		}
 		return compile.TupleTy{Elems: elems}
 	case compile.NodeTy:
-		return compile.NodeTy{Value: t.resolveValue(x.Value)}
+		return compile.NodeTy{Value: t.ResolveValue(x.Value)}
 	case compile.ListTy:
-		return compile.ListTy{Elem: t.resolveValue(x.Elem)}
+		return compile.ListTy{Elem: t.ResolveValue(x.Elem)}
 	case compile.OptTy:
-		return compile.OptTy{Elem: t.resolveValue(x.Elem)}
+		return compile.OptTy{Elem: t.ResolveValue(x.Elem)}
 	case compile.JoinTy:
 		alts := make([]compile.Ty, len(x.Alts))
 		for i, a := range x.Alts {
-			alts[i] = t.resolveValue(a)
+			alts[i] = t.ResolveValue(a)
 		}
 		return compile.JoinTy{Alts: alts}
 	case compile.BasicTy:
@@ -112,23 +112,23 @@ func (t *valueResolver) resolveValue(x compile.Ty) compile.Ty {
 // anonJoin is a join of declared node types that the typed output writes where no alias declares
 // it: the type of a field, of a list element or option, or the value type of a rule.
 type anonJoin struct {
-	// members are the distinct declared node types in the order written, nested joins flattened.
-	members compile.JoinTy
-	// alias is the alias that declares the same members, or empty if none does; then the join is
+	// Members are the distinct declared node types in the order written, nested joins flattened.
+	Members compile.JoinTy
+	// Alias is the alias that declares the same members, or empty if none does; then the join is
 	// the type of that alias.
-	alias string
-	// spellings are the written forms (joinTy.String) of the type, which the generators look it up
+	Alias string
+	// Spellings are the written forms (joinTy.String) of the type, which the generators look it up
 	// by.
-	spellings []string
+	Spellings []string
 }
 
-// anonJoins returns the joins that the typed output of the program writes without naming them: the
+// AnonJoins returns the joins that the typed output of the program writes without naming them: the
 // types of fields, of list elements and options inside them, of aliases, and the value types of
 // rules, in the order of the declarations of the file and of the fields in them. A join is
 // returned once for the same set of members, in the order of its first appearance there. Each has at least two distinct members, all of them declared node types (a struct or
 // a named node type), besides error, or one declared node type and error; a join with a member that is not a declared node type, such as
 // node[string] or a list, has no interface to give and keeps its Go type.
-func (r *valueResolver) anonJoins() []anonJoin {
+func (r *ValueResolver) AnonJoins() []anonJoin {
 	aliasOf := map[string]string{} // the set of the members of an alias join -> the alias
 	var aliasNames []string
 	for name := range r.info.Aliases {
@@ -171,27 +171,27 @@ func (r *valueResolver) anonJoins() []anonJoin {
 			if !seen {
 				i = len(out)
 				index[joinSetKey(m)] = i
-				out = append(out, anonJoin{members: m, alias: aliasOf[joinSetKey(m)]})
+				out = append(out, anonJoin{Members: m, Alias: aliasOf[joinSetKey(m)]})
 			}
-			for _, s := range out[i].spellings {
+			for _, s := range out[i].Spellings {
 				if s == x.String() {
 					return
 				}
 			}
-			out[i].spellings = append(out[i].spellings, x.String())
+			out[i].Spellings = append(out[i].Spellings, x.String())
 		}
 	}
 	// The joins are collected in source order, so the first spelling of a set of members, which
 	// names its interface, does not depend on the names of the types.
 	collectRule := func(name string) {
-		if ref, ok := r.ruleRef(name).(vrule); ok {
-			collect(r.vres[ref.name])
+		if ref, ok := r.RuleRef(name).(Vrule); ok {
+			collect(r.Vres[ref.Name])
 		} else {
-			collect(r.ruleRef(name))
+			collect(r.RuleRef(name))
 		}
 	}
 	visited := map[string]bool{}
-	for _, d := range r.prog.Grammar.File.Decls {
+	for _, d := range r.Prog.Grammar.File.Decls {
 		switch d := d.(type) {
 		case *grammar.TypeDef:
 			for _, f := range r.info.Fields[d.Name] {
@@ -213,7 +213,7 @@ func (r *valueResolver) anonJoins() []anonJoin {
 			}
 		}
 	}
-	for _, rl := range r.prog.RuleList {
+	for _, rl := range r.Prog.RuleList {
 		// Rules that the lowering of the grammar added follow the declared ones.
 		if _, ok := r.ruleDefs[rl.Name]; ok && !visited[rl.Name] {
 			collectRule(rl.Name)

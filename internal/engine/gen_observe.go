@@ -17,7 +17,7 @@ func (g *generator) traceCallWrapper(r *compile.Rule, name string, evaluated boo
 	if evaluated {
 		eval = "p.Observation.Evaluated()\n"
 	}
-	fmt.Fprintf(&g.methods, `// %[1]s observes one actual direct rule call.
+	fmt.Fprintf(&g.Methods, `// %[1]s observes one actual direct rule call.
 func %[1]s(p *%[2]s) (%[3]s, bool) {
  if p.Observation == nil { return %[4]s(p) }
  p.Observation.Enter(%[5]q, p.Pos, 0)
@@ -35,7 +35,7 @@ func %[1]s(p *%[2]s) (%[3]s, bool) {
 // A guard may suppress a whole sequence or a chain of rule references. Report
 // only its first identifiable rule call site, without inventing nested calls.
 func (g *generator) traceSkip(expr grammar.Expr) string {
-	if !g.observability {
+	if !g.Observability {
 		return ""
 	}
 	for {

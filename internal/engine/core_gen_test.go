@@ -92,7 +92,7 @@ func coreGenerate(src string, opts gen.GenOptions) (*generator, bool) {
 // recognizerOf returns the recognizer of the program that the generator g prints, compiled as
 // Program.recognizer compiles it.
 func recognizerOf(g *generator) (*compile.Program, error) {
-	rec, err := (&Program{staticProgram: g.prog}).recognizer()
+	rec, err := (&Program{staticProgram: g.Prog}).recognizer()
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +281,7 @@ func coreDecisionLines(c *coreGenCase, n *coreDecisionCounts) (lines, problems [
 		}
 		names := func(s []core.Slot) string { return strings.Join(core.SlotNames(s), ",") }
 		term := func(at int, t core.Term) {
-			tree := coreTermTree(t, g.noWork && c.table == "trules") // only the typed runtime takes fields in order
+			tree := coreTermTree(t, g.NoWork && c.table == "trules") // only the typed runtime takes fields in order
 			if n.forms == nil {
 				n.forms = map[string]int{}
 			}

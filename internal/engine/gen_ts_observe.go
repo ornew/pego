@@ -8,11 +8,11 @@ import (
 )
 
 func (g *tsGen) tracePlainCall(r *compile.Rule, name string) string {
-	if !g.observability {
+	if !g.Observability {
 		return name
 	}
 	body := name + "ObservedBody"
-	fmt.Fprintf(&g.methods, `// Observes one actual generated rule call.
+	fmt.Fprintf(&g.Methods, `// Observes one actual generated rule call.
 function %s(p: Parser): R {
   const o = p.observation;
   if (o === null) return %s(p);
@@ -28,7 +28,7 @@ function %s(p: Parser): R {
 }
 
 func (g *tsGen) traceSkipped(expr grammar.Expr) string {
-	if !g.observability {
+	if !g.Observability {
 		return ""
 	}
 	for {
@@ -47,7 +47,7 @@ func (g *tsGen) traceSkipped(expr grammar.Expr) string {
 		case *grammar.Ref:
 			min := 0
 			if e.Level != "" {
-				for i, l := range g.prog.ByName[e.Name].Def.Expr.(*grammar.OperatorsRule).Levels {
+				for i, l := range g.Prog.ByName[e.Name].Def.Expr.(*grammar.OperatorsRule).Levels {
 					if l.Name == e.Level {
 						min = i
 					}

@@ -24,14 +24,14 @@ func TestFlowVerifiesCorpus(t *testing.T) {
 					t.Fatalf("%s: %v", gen.name, err)
 				}
 				// The options of the generator, which lowers while it generates the typed table.
-				table := g.table
-				g.table = "trules"
+				table := g.Table
+				g.Table = "trules"
 				opts := g.flowOptions(m)
-				g.table = table
-				if opts.Observe != g.observability {
+				g.Table = table
+				if opts.Observe != g.Observability {
 					t.Fatalf("%s: lowering options do not follow the observability of the mode", gen.name)
 				}
-				if g.observability {
+				if g.Observability {
 					observed++
 				}
 				check := func(f *flow.Func, err error) {

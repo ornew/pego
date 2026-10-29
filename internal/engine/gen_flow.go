@@ -8,6 +8,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
 	"github.com/ornew/pego/internal/ir/flow"
 	"github.com/ornew/pego/internal/value"
@@ -31,8 +32,8 @@ import (
 
 // flowVarsErr records the internal error that resolving the variables of a printed function found.
 func (g *generator) flowVarsErr(res flowVarsResult) {
-	if res.err != nil && g.flowErr == nil {
-		g.flowErr = res.err
+	if res.err != nil && g.FlowErr == nil {
+		g.FlowErr = res.err
 	}
 }
 
@@ -43,8 +44,8 @@ func (g *generator) startFlow() error {
 	if err != nil {
 		return err
 	}
-	g.flow = &flowState{m: m, origin: origin, rules: append(append([]*compile.Rule(nil), g.prog.RuleList...), g.prog.Twins...),
-		opts: g.flowOptions(m)}
+	g.Flow = &gen.FlowState{M: m, Origin: origin, Rules: append(append([]*compile.Rule(nil), g.Prog.RuleList...), g.Prog.Twins...),
+		Opts: g.flowOptions(m)}
 	return nil
 }
 
@@ -53,26 +54,26 @@ func (g *generator) startFlow() error {
 func (g *generator) flowOptions(m *core.Module) flow.Options {
 	// Node is false: the options of the Node and recognizer tables (startRecFlow) are built apart, and
 	// a function lowered with one set of options is never printed for the other runtime.
-	return flow.Options{Work: !g.noWork, Recovers: flow.Recovers(m), ClassTables: g.leanTyped(),
-		GuardedClasses: g.ordinary && !g.disableGuardedClasses, InlineLiterals: maxInlineLiteral, Observe: g.observability, Document: g.document}
+	return flow.Options{Work: !g.NoWork, Recovers: flow.Recovers(m), ClassTables: g.leanTyped(),
+		GuardedClasses: g.Ordinary && !g.DisableGuardedClasses, InlineLiterals: gen.MaxInlineLiteral, Observe: g.Observability, Document: g.Document}
 }
 
 // flowTypedRule prints the rule r from Flow IR as a flat rule, or returns nil if r is not
 // printed from Flow IR.
 func (g *generator) flowTypedRule(r *compile.Rule) *flatRule {
-	if g.flow == nil || g.table != "trules" {
+	if g.Flow == nil || g.Table != "trules" {
 		return nil
 	}
-	cr := g.flow.m.Rules[r.ID]
+	cr := g.Flow.M.Rules[r.ID]
 	if !flow.LocalRule(cr) {
 		return nil
 	}
-	f, err := flow.Lower(g.flow.m, cr, r.Name, g.flow.opts)
+	f, err := flow.Lower(g.Flow.M, cr, r.Name, g.Flow.Opts)
 	if err != nil {
-		panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.table, err)) // LocalRule holds
+		panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.Table, err)) // LocalRule holds
 	}
-	g.cur, g.proj = r, g.projections(r)
-	defer func() { g.proj = nil }()
+	g.Cur, g.Proj = r, g.Projections(r)
+	defer func() { g.Proj = nil }()
 	p := newFlowPrinter(g, false)
 	p.document = f.Document
 	p.stmts(f.Body)
@@ -102,24 +103,24 @@ func (g *generator) flowTypedRule(r *compile.Rule) *flatRule {
 // flowFrameBody prints the body of the typed rule r from Flow IR as the matcher of its frame
 // body, or returns "" if Flow IR does not print r that way.
 func (g *generator) flowFrameBody(r *compile.Rule, scope *compile.Scope) string {
-	if g.flow == nil || g.table != "trules" {
+	if g.Flow == nil || g.Table != "trules" {
 		return ""
 	}
 	comment, ok := g.typedFrameComment(r)
-	cr := g.flow.m.Rules[r.ID]
+	cr := g.Flow.M.Rules[r.ID]
 	// The runtime-owned frame has the slots of the Node rule's scope.
 	if !ok || !flow.FramedBody(cr.Body) || !slices.Equal(core.SlotNames(cr.Scope), g.nodeScopes[r]) {
 		return ""
 	}
-	if g.flow.opts.Node {
+	if g.Flow.Opts.Node {
 		panic("internal error: a typed rule is lowered with the options of the Node tables")
 	}
-	f, err := flow.LowerFrame(g.flow.m, cr, cr.Body, cr.Scope, cr.Want, r.Name, g.flow.opts)
+	f, err := flow.LowerFrame(g.Flow.M, cr, cr.Body, cr.Scope, cr.Want, r.Name, g.Flow.Opts)
 	if err != nil {
-		panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.table, err)) // FramedBody holds
+		panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.Table, err)) // FramedBody holds
 	}
-	g.cur, g.proj = r, g.projections(r)
-	defer func() { g.proj = nil }()
+	g.Cur, g.Proj = r, g.Projections(r)
+	defer func() { g.Proj = nil }()
 	return g.flowFramed(f, cr.Scope, scope, r.Name+" ("+comment+")", true)
 }
 
@@ -130,19 +131,19 @@ func (g *generator) flowFrameBody(r *compile.Rule, scope *compile.Scope) string 
 // one step on entry (Func.Entered) and the body charges one on each iteration of a repetition, plus the input
 // work of each Peek; the limits of a parse hold at these charges.
 func (g *generator) flowNodeFrameBody(r *compile.Rule, scope *compile.Scope) string {
-	cr, ok := g.flowNodeFrameOK(r)
+	cr, ok := g.FlowNodeFrameOK(r)
 	if !ok {
 		return ""
 	}
-	if !g.flow.opts.Node {
+	if !g.Flow.Opts.Node {
 		panic("internal error: a Node rule is lowered with the options of the typed table")
 	}
-	f, err := flow.LowerFrame(g.flow.m, cr, cr.Body, cr.Scope, !r.Lean, r.Name, g.flow.opts)
+	f, err := flow.LowerFrame(g.Flow.M, cr, cr.Body, cr.Scope, !r.Lean, r.Name, g.Flow.Opts)
 	if err != nil {
-		panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.table, err)) // FramedBody holds
+		panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.Table, err)) // FramedBody holds
 	}
-	g.cur, g.proj = r, g.projections(r)
-	defer func() { g.proj = nil }()
+	g.Cur, g.Proj = r, g.Projections(r)
+	defer func() { g.Proj = nil }()
 	return g.flowFramed(f, cr.Scope, scope, r.Name+" (Node body inlined)", true)
 }
 
@@ -151,18 +152,18 @@ func (g *generator) flowNodeFrameBody(r *compile.Rule, scope *compile.Scope) str
 // returns "" if the rule is not printed that way: a rule is eligible as for flowNodeFrameBody. The
 // capture layout of the printed body must be the batch body's, which the action addresses by slot.
 func (g *generator) flowStreamBody(r *compile.Rule, scope *compile.Scope) string {
-	cr, ok := g.flowNodeFrameOK(r)
-	if !ok || !g.flow.opts.Node {
+	cr, ok := g.FlowNodeFrameOK(r)
+	if !ok || !g.Flow.Opts.Node {
 		return ""
 	}
-	opts := g.flow.opts
+	opts := g.Flow.Opts
 	opts.Stream = true
-	f, err := flow.LowerFrame(g.flow.m, cr, cr.Body, cr.Scope, !r.Lean, r.Name, opts)
+	f, err := flow.LowerFrame(g.Flow.M, cr, cr.Body, cr.Scope, !r.Lean, r.Name, opts)
 	if err != nil {
 		panic(fmt.Errorf("stream body of rule %s: %w", r.Name, err)) // FramedBody holds
 	}
-	g.cur, g.proj = r, g.projections(r)
-	defer func() { g.proj = nil }()
+	g.Cur, g.Proj = r, g.Projections(r)
+	defer func() { g.Proj = nil }()
 	return g.flowFramed(f, cr.Scope, scope, r.Name+" (stream body)", true)
 }
 
@@ -176,36 +177,36 @@ func (g *generator) flowStreamBody(r *compile.Rule, scope *compile.Scope) string
 // controls (Options.Work) the method that holds the function charges its entry and the function charges
 // each iteration of a repetition, as Flow IR makes them explicit.
 func (g *generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope *compile.Scope, build bool) string {
-	if g.flow == nil || l == nil || !flowLineOK(e) || !flow.FramedBody(l.Body) {
+	if g.Flow == nil || l == nil || !gen.FlowLineOK(e) || !flow.FramedBody(l.Body) {
 		return ""
 	}
-	if g.table != "trules" && !flowBodyOK(e, true, true) {
+	if g.Table != "trules" && !gen.FlowBodyOK(e, true, true) {
 		return ""
 	}
-	f, err := flow.LowerFrame(g.flow.m, g.flow.m.Rules[g.cur.ID], l.Body, l.Scope, build, g.cur.Name, g.flow.opts)
+	f, err := flow.LowerFrame(g.Flow.M, g.Flow.M.Rules[g.Cur.ID], l.Body, l.Scope, build, g.Cur.Name, g.Flow.Opts)
 	if err != nil {
-		panic(fmt.Errorf("line of Operators Rule %s in table %s: %w", g.cur.Name, g.table, err)) // FramedBody holds
+		panic(fmt.Errorf("line of Operators Rule %s in table %s: %w", g.Cur.Name, g.Table, err)) // FramedBody holds
 	}
-	prev := g.proj
-	g.proj = nil // the actions of the lines use no projections of the rule
-	defer func() { g.proj = prev }()
-	if g.table != "trules" {
+	prev := g.Proj
+	g.Proj = nil // the actions of the lines use no projections of the rule
+	defer func() { g.Proj = prev }()
+	if g.Table != "trules" {
 		if operatorsRouteHook != nil && g.collect == nil {
-			operatorsRouteHook(g.table, g.cur)
+			operatorsRouteHook(g.Table, g.Cur)
 		}
-		return g.flowFramed(f, l.Scope, scope, g.cur.Name+" (OperatorsRule body inlined)", false)
+		return g.flowFramed(f, l.Scope, scope, g.Cur.Name+" (OperatorsRule body inlined)", false)
 	}
-	return g.flowFramed(f, l.Scope, scope, g.cur.Name+" (typed OperatorsRule body inlined)", false)
+	return g.flowFramed(f, l.Scope, scope, g.Cur.Name+" (typed OperatorsRule body inlined)", false)
 }
 
 // flowOperatorsRule returns the Core IR of the Operators Rule r, or nil if its lines are not
 // printed from Flow IR: the typed table prints them all from it, the Node and recognizer tables
 // when their Flow route is on (flowOperatorsRuleBody decides each line).
 func (g *generator) flowOperatorsRule(r *compile.Rule) *core.OperatorsRule {
-	if g.flow == nil || g.table != "trules" && !g.flow.opts.Node {
+	if g.Flow == nil || g.Table != "trules" && !g.Flow.Opts.Node {
 		return nil
 	}
-	o, _ := g.flow.m.Rules[r.ID].Body.(*core.OperatorsRule)
+	o, _ := g.Flow.M.Rules[r.ID].Body.(*core.OperatorsRule)
 	return o
 }
 
@@ -323,7 +324,7 @@ func (p *flowPrinter) scopeNames(n *flow.Names) string {
 	if name, ok := p.names[n]; ok {
 		return name
 	}
-	name := p.g.name("scope")
+	name := p.g.Name("scope")
 	p.names[n] = name
 	if !n.Declared {
 		p.declare(n)
@@ -332,11 +333,11 @@ func (p *flowPrinter) scopeNames(n *flow.Names) string {
 }
 
 func (p *flowPrinter) declare(n *flow.Names) {
-	fmt.Fprintf(&p.g.vars, "var %s = %s\n", p.names[n], goStrings(n.List))
+	fmt.Fprintf(&p.g.Vars, "var %s = %s\n", p.names[n], goStrings(n.List))
 }
 
 // untyped reports whether the printer writes the Node runtime's code (the Node and recognizer tables).
-func (p *flowPrinter) untyped() bool { return p.g.table == "recRules" || p.g.table == "rules" }
+func (p *flowPrinter) untyped() bool { return p.g.Table == "recRules" || p.g.Table == "rules" }
 
 // matcher returns the parser whose methods match literals: the embedded Node parser of a typed
 // parser, or the Node parser itself.
@@ -523,9 +524,9 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 	case *flow.ObserveSkip:
 		// The alternative's expression begins with the call it skips, if any; a blank line follows
 		// the report, except in the ordinary form, which has none.
-		if trace := p.g.traceSkip(p.g.flow.origin[s.Alt]); trace != "" {
+		if trace := p.g.traceSkip(p.g.Flow.Origin[s.Alt]); trace != "" {
 			trace = strings.TrimPrefix(trace, "\n")
-			if !p.g.ordinary {
+			if !p.g.Ordinary {
 				trace += "\n"
 			}
 			p.write(trace)
@@ -662,7 +663,7 @@ func (p *flowPrinter) peekStmt(s *flow.Peek) {
 	}
 	// The inlined read charges its input work and leaves a Document's examined range to Peek.
 	work := "p.InputWork(1)\n"
-	if !p.g.flow.opts.Work {
+	if !p.g.Flow.Opts.Work {
 		work = ""
 	}
 	if p.dead {
@@ -679,7 +680,7 @@ func (p *flowPrinter) peekStmt(s *flow.Peek) {
 		ch, size, ok := name(s.Ch), name(s.Size), name(s.OK)
 		controlled := fmt.Sprintf("if %s {\n%s%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[3]s, %[4]s, %[5]s = p.Peek()\n}\n", guard, work, ch, size, ok)
 		// The inlined read and its fallback are one call of the runtime, which the compiler inlines.
-		if p.g.ordinary {
+		if p.g.Ordinary {
 			return fmt.Sprintf("%s, %s, %s = p.NextOrdinary()\n", ch, size, ok)
 		}
 		return controlled
@@ -700,7 +701,7 @@ func (p *flowPrinter) exp(id core.ExpID) string {
 }
 
 // desc returns the ID in the parser's table of the expectation id of the module.
-func (p *flowPrinter) desc(id core.ExpID) compile.ExpID { return p.g.desc(p.g.flow.m.Exps[id]) }
+func (p *flowPrinter) desc(id core.ExpID) compile.ExpID { return p.g.Desc(p.g.Flow.M.Exps[id]) }
 
 // grammarClass returns the character class expression of the class c.
 func grammarClass(c *core.Class) *grammar.CharClass {
@@ -786,16 +787,16 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 			}
 		}
 		if p.document {
-			if g.noWork {
+			if g.NoWork {
 				return "p.Document == nil && (" + cond + ")"
 			}
 			return "p.Document == nil && p.Control == nil && (" + cond + ")"
 		}
-		if p.untyped() && !g.flow.opts.Work {
+		if p.untyped() && !g.Flow.Opts.Work {
 			// The Node runtime's generated code of a parser without work controls has no such check.
 			return cond
 		}
-		if g.ordinary {
+		if g.Ordinary {
 			return cond
 		}
 		return "p.Control == nil && (" + cond + ")"
@@ -806,7 +807,7 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 		lit := g.literal(x.Lit.Text)
 		var desc compile.ExpID
 		if x.Lit.Text == "" {
-			desc = g.desc(strconv.Quote(""))
+			desc = g.Desc(strconv.Quote(""))
 		} else {
 			desc = p.desc(x.Lit.Exp)
 		}
@@ -823,7 +824,7 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 		}
 		return fmt.Sprintf("!(%s && (%s)) && %s", x.More.Name, chIdent.ReplaceAllString(cond, x.Ch.Name), depthLimit(x.Guard.Depth))
 	case *flow.CallRule:
-		return g.ruleCall(g.flow.rules[x.Rule], x.Level)
+		return g.ruleCall(g.Flow.Rules[x.Rule], x.Level)
 	case *flow.Isolate:
 		return "p.Isolate(p.Pos)"
 	case *flow.Unisolate:
@@ -906,9 +907,9 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 		return fmt.Sprintf("p.UseCtx(TActCtx{P: p, Start: %s, End: p.Pos, Cbase: len(p.Created)})", p.expr(x.Start))
 	case *flow.Eval:
 		defer p.caps(x.Caps)()
-		g.final = g.cur.Action
+		g.final = g.Cur.Action
 		defer func() { g.final = nil }()
-		stmts, expr := g.stmts(func() string { return g.term(g.cur.Action, compile.NewScope(), nil) })
+		stmts, expr := g.stmts(func() string { return g.term(g.Cur.Action, compile.NewScope(), nil) })
 		p.pre += stmts
 		return expr
 	case *flow.CtxFinish:
@@ -941,7 +942,7 @@ func (p *flowPrinter) not(x flow.Expr) string {
 	case *flow.InClass:
 		return p.reject(x.Class, x.Ch)
 	case *flow.SkipTerminal:
-		table, ok := g.terminalTable(g.flow.origin[x.T.Body])
+		table, ok := g.terminalTable(g.Flow.Origin[x.T.Body])
 		if !ok {
 			panic("flow printer: terminal region without a terminal program")
 		}
@@ -955,14 +956,14 @@ func (p *flowPrinter) not(x flow.Expr) string {
 	case *flow.Pred:
 		if x.Caps.Vars == nil {
 			// The term reads the current frame.
-			return fmt.Sprintf("!p.Predicate(func(c *%s) any { %s })", g.ctxType(), g.predicateBody(p.term(x.Node), frameScope(x.Caps), nil))
+			return fmt.Sprintf("!p.Predicate(func(c *%s) any { %s })", g.ctxType(), g.predicateBody(p.term(x.Node), gen.FrameScope(x.Caps), nil))
 		}
 		defer p.caps(x.Caps)()
 		return fmt.Sprintf("!p.Predicate(func(c *TActCtx) any { %s })", g.predicateBody(p.term(x.Node), compile.NewScope(), nil))
 	case *flow.Bind:
 		b := p.term(x.Node).(*grammar.Bind)
 		if x.Caps.Vars == nil {
-			return fmt.Sprintf("!p.Bind(%q, func(c *%s) any { %s })", b.Name, g.ctxType(), g.termBody(b.Value, frameScope(x.Caps), nil))
+			return fmt.Sprintf("!p.Bind(%q, func(c *%s) any { %s })", b.Name, g.ctxType(), g.termBody(b.Value, gen.FrameScope(x.Caps), nil))
 		}
 		defer p.caps(x.Caps)()
 		return fmt.Sprintf("!p.Bind(%q, func(c *TActCtx) any { %s })", b.Name, g.termBody(b.Value, compile.NewScope(), nil))
@@ -972,7 +973,7 @@ func (p *flowPrinter) not(x flow.Expr) string {
 
 // term returns the term of the grammar predicate that the node n is built from.
 func (p *flowPrinter) term(n core.Node) grammar.Term {
-	e, ok := p.g.flow.origin[n].(*grammar.Predicate)
+	e, ok := p.g.Flow.Origin[n].(*grammar.Predicate)
 	if !ok {
 		panic(fmt.Sprintf("flow printer: no grammar predicate for %T", n))
 	}

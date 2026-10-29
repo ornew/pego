@@ -116,11 +116,11 @@ type flatRule struct {
 // flatMethod writes the method name that calls the flat rule r: as invokePlain does if plain
 // (restoring the position and the recovered errors when it fails), otherwise as invoke does.
 func (g *generator) flatMethod(r *compile.Rule, d *flatRule, name, comment string, plain bool) {
-	observeBody := g.observability && g.table == "trules" && (!r.Plain || g.directTypedDocument)
-	if g.observability && !observeBody {
+	observeBody := g.Observability && g.Table == "trules" && (!r.Plain || g.directTypedDocument)
+	if g.Observability && !observeBody {
 		name = g.tracePlainWrapper(r, name)
 	}
-	m := &g.methods
+	m := &g.Methods
 	fmt.Fprintf(m, "// %s, %s (body inlined)\nfunc %s(p *%s) (%s, bool) {\n%s", r.Name, comment, name, g.recv(), g.valType(), g.step("\tp"))
 	if observeBody {
 		m.WriteString("p.Observation.Evaluated()\n")

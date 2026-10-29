@@ -16,7 +16,7 @@ The printer keeps the text small and the functions few:
   recovered count) is declared only as far as it is read, and an unread assignment is not printed.
 - Consecutive step charges merge into one `p.stepWork(n)`, and an expectation unisolate followed by a
   merge of the same variables is one `p.unisolateMerge(mark)` that merges in place.
-- Functions whose printed bodies are equal share one method (`tsGen.methodName`). The key of a function
+- Functions whose printed bodies are equal share one method (`gen.Generator.MethodName`). The key of a function
   replaces each constant it names (a literal table, the capture names, a bind function) by the declaration
   of the constant, so functions that read equal tables under different names share one method although the
   literal tables themselves are not shared (`tsSharedKey`).

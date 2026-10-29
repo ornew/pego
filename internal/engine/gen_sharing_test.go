@@ -13,23 +13,23 @@ import (
 )
 
 func TestGeneratedSharingIdentity(t *testing.T) {
-	ts := &tsGen{genBase: genBase{table: "rules"}}
+	ts := &tsGen{Generator: gen.Generator{Table: "rules"}}
 	name := ts.method("first", "return [null, true];\n")
-	ts.table = "recRules"
+	ts.Table = "recRules"
 	if ts.method("recognition", "return [null, true];\n") != name {
 		t.Fatal("identical TypeScript bodies should share across rule tables")
 	}
-	g := &generator{table: "rules"}
+	g := &generator{Table: "rules"}
 	a := g.method("first", "return nil, true\n")
-	g.table = "recRules"
+	g.Table = "recRules"
 	if g.method("recognition", "return nil, true\n") != a {
 		t.Fatal("identical Node bodies should share across rule tables")
 	}
-	g.table = "trules"
+	g.Table = "trules"
 	if g.method("typed", "return nil, true\n") == a {
 		t.Fatal("different receivers and value types must not share")
 	}
-	g.table = "rules"
+	g.Table = "rules"
 	for _, body := range []string{
 		"return p.MatchLiteral(lit1, \"x\", 4, false)\n",
 		"return p.MatchLiteral(lit1, \"x\", 5, false)\n",
@@ -39,9 +39,9 @@ func TestGeneratedSharingIdentity(t *testing.T) {
 		"return p.Frame.Vals[0], true\n",
 		"return p.Frame.Vals[1], true\n",
 	} {
-		before := g.methods.Len()
+		before := g.Methods.Len()
 		g.method("", body)
-		if g.methods.Len() == before {
+		if g.Methods.Len() == before {
 			t.Fatal("semantically distinct bodies must not share")
 		}
 	}

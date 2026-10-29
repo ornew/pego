@@ -32,16 +32,16 @@ func (g *generator) flowRecRule(r *compile.Rule) *flatRule {
 	if refuseFlowRecRule != nil && refuseFlowRecRule(r) {
 		return nil
 	}
-	cr := g.flow.m.Rules[r.ID]
+	cr := g.Flow.M.Rules[r.ID]
 	if !flow.LocalRule(cr) {
 		return nil
 	}
-	f, err := flow.Lower(g.flow.m, cr, r.Name, g.flow.opts)
+	f, err := flow.Lower(g.Flow.M, cr, r.Name, g.Flow.Opts)
 	if err != nil {
-		panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.table, err)) // LocalRule holds
+		panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.Table, err)) // LocalRule holds
 	}
-	g.cur, g.proj = r, g.projections(r)
-	defer func() { g.proj = nil }()
+	g.Cur, g.Proj = r, g.Projections(r)
+	defer func() { g.Proj = nil }()
 	p := newFlowPrinter(g, false)
 	p.document = f.Document
 	p.stmts(f.Body)

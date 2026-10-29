@@ -9,6 +9,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gen"
 )
 
 // Typed values in generated parsers (GenOptions.Types).
@@ -47,12 +48,12 @@ type typedOutput struct {
 // names that only the types package declares (Error, TNode, Unit, TupleN, PegoHooks) unqualified,
 // which qualifyRuntime resolves.
 func (g *generator) typedGo(start *compile.Rule, conv bool) (typedOutput, error) {
-	info := g.prog.Typed
+	info := g.Prog.Typed
 	if info == nil {
 		return typedOutput{}, fmt.Errorf("typed values need the grammar's types (type checking did not run)")
 	}
 	t := &typedGen{g: g, info: info, joins: map[string]string{}, anon: map[string]compile.JoinTy{}, lists: map[string]string{}, tlists: map[string]string{}, tupleSizes: map[int]bool{}}
-	t.valueResolver = newValueResolver(g.prog, func(x compile.Ty) bool { _, ok := t.joins[x.String()]; return ok })
+	t.ValueResolver = gen.NewValueResolver(g.Prog, func(x compile.Ty) bool { _, ok := t.joins[x.String()]; return ok })
 	if err := t.name(); err != nil {
 		return typedOutput{}, err
 	}
@@ -77,7 +78,7 @@ func (g *generator) typedGo(start *compile.Rule, conv bool) (typedOutput, error)
 		}
 		g.typedEntry[r.ID] = true
 	}
-	g.directTypedDocument = g.document && directStart
+	g.directTypedDocument = g.Document && directStart
 	needTyped, needNodes := false, false
 	if directStart {
 		needTyped = true
@@ -108,7 +109,7 @@ func ParseAST(input string, opts ...ParseOption) (%s, error) {
 
 `, doc, t.goType(st), t.goType(st), newConv, returnResult, start.ID)
 	}
-	if g.document && !g.directTypedDocument {
+	if g.Document && !g.directTypedDocument {
 		// A Document reuses Node results. Convert only the finalized result, with
 		// the same invocation controller and cleanup boundary as its Node parse.
 		needNodes = true
@@ -134,11 +135,11 @@ func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
 		// emits, each with a converter of its own, so that typed values
 		// share nothing with later elements.
 		needNodes = true
-		v, ok := streamValue(g.prog, r.Def)
+		v, ok := streamValue(g.Prog, r.Def)
 		if !ok {
 			return typedOutput{}, fmt.Errorf("internal error: no element type for the #stream repetition of %s", r.Name)
 		}
-		et := t.resolveValue(v)
+		et := t.ResolveValue(v)
 		result := t.conv(et, "n")
 		newConv := ""
 		if strings.Contains(result, "a.") {
@@ -190,9 +191,9 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 `, r.Name, t.goType(et), newConv, result)
 	}
 	// Only start rules are entries, so only they need a case and its converters.
-	starts := make([]*compile.Rule, len(g.prog.StartRules))
-	for i, name := range g.prog.StartRules {
-		starts[i] = g.prog.ByName[name]
+	starts := make([]*compile.Rule, len(g.Prog.StartRules))
+	for i, name := range g.Prog.StartRules {
+		starts[i] = g.Prog.ByName[name]
 	}
 	named.WriteString("// ParseRuleAST parses the whole input with the named start rule and returns its typed value; an empty\n// name selects the grammar's default start rule.\n")
 	named.WriteString("// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.\n// Invalid options and names of rules that are not start rules return nil with an error. Start rule result types:\n")
@@ -208,7 +209,7 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 `)
 	for _, r := range starts {
 		x := ruleType(r)
-		if r.Name == g.prog.DefaultStartRule {
+		if r.Name == g.Prog.DefaultStartRule {
 			// An empty name selects the default start rule.
 			fmt.Fprintf(&named, "\tcase %q, \"\":\n", r.Name)
 		} else {
@@ -267,16 +268,16 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 	}
 	if needTyped {
 		// Emit the typed table if any public entry point can use it.
-		g.table = "trules"
+		g.Table = "trules"
 		if err := g.startFlow(); err != nil {
 			return typedOutput{}, err
 		}
 		g.rules()
-		if g.flowErr != nil {
-			return typedOutput{}, g.flowErr
+		if g.FlowErr != nil {
+			return typedOutput{}, g.FlowErr
 		}
-		g.flow = nil
-		g.table = "rules"
+		g.Flow = nil
+		g.Table = "rules"
 		t.typedRuntime(&b)
 	}
 	if needNodes {
@@ -320,7 +321,7 @@ func CloneAST(value %s) %s {
 	}
 	// The helpers come first; only those that the typed code names are kept.
 	code := b.String()
-	kept := keptUnits(units, code, g.methods.String(), g.init.String(), g.vars.String())
+	kept := keptUnits(units, code, g.Methods.String(), g.Init.String(), g.Vars.String())
 	var parser strings.Builder
 	for i, u := range units {
 		if kept[i] {
@@ -355,7 +356,7 @@ type typedGen struct {
 	aliases     []string // canonical node join names, sorted, then those of the undeclared joins
 	typeAliases []string // other declared aliases, sorted
 	// valueResolver selects the rules whose Go types come from their value types.
-	valueResolver
+	gen.ValueResolver
 	tupleSizes map[int]bool // the sizes of the tuple types used
 	unitUsed   bool
 	// nhelpers, dhelpers and chelpers are the helpers converting value-model values from nodes,
@@ -401,7 +402,7 @@ func (t *typedGen) checkTypesNames() error {
 		declared[fmt.Sprintf("Tuple%d", n)] = fmt.Sprintf("tuples of %d elements", n)
 	}
 	var names []string
-	for name := range t.g.prog.Types {
+	for name := range t.g.Prog.Types {
 		if _, ok := declared[name]; ok {
 			names = append(names, name)
 		}
@@ -440,12 +441,12 @@ func (t *typedGen) fieldGo(name string) string {
 // they are the name of a method or of the embedded field of a typed value.
 func (t *typedGen) name() error {
 	var all []string
-	for name := range t.g.prog.Types {
+	for name := range t.g.Prog.Types {
 		all = append(all, name)
 	}
 	sort.Strings(all)
 	for _, name := range all {
-		switch spec := t.g.prog.Types[name].(type) {
+		switch spec := t.g.Prog.Types[name].(type) {
 		case *grammar.TypeDef:
 			if spec.Struct() == nil {
 				t.nodeTypes = append(t.nodeTypes, name)
@@ -463,28 +464,28 @@ func (t *typedGen) name() error {
 			t.typeAliases = append(t.typeAliases, name)
 		}
 	}
-	for _, j := range t.anonJoins() {
-		name := j.alias
+	for _, j := range t.AnonJoins() {
+		name := j.Alias
 		if _, ok := t.anon[name]; !ok && !slices.Contains(t.aliases, name) {
-			name = anonJoinName(j.members)
-			if _, ok := t.g.prog.Types[name]; ok {
-				return fmt.Errorf("the join %s needs a generated interface named %s, which is also the name of a type of the grammar; rename the type", anonJoinText(j.members), name)
+			name = anonJoinName(j.Members)
+			if _, ok := t.g.Prog.Types[name]; ok {
+				return fmt.Errorf("the join %s needs a generated interface named %s, which is also the name of a type of the grammar; rename the type", anonJoinText(j.Members), name)
 			}
-			if other, ok := t.anon[name]; ok && other.String() != j.members.String() {
-				return fmt.Errorf("the joins %s and %s need generated interfaces with the same name %s", anonJoinText(other), anonJoinText(j.members), name)
+			if other, ok := t.anon[name]; ok && other.String() != j.Members.String() {
+				return fmt.Errorf("the joins %s and %s need generated interfaces with the same name %s", anonJoinText(other), anonJoinText(j.Members), name)
 			}
 			if _, ok := t.anon[name]; !ok {
-				t.anon[name] = j.members
+				t.anon[name] = j.Members
 				t.aliases = append(t.aliases, name)
 			}
 		}
-		for _, s := range j.spellings {
+		for _, s := range j.Spellings {
 			if _, ok := t.joins[s]; !ok {
 				t.joins[s] = name
 			}
 		}
-		if _, ok := t.joins[j.members.String()]; !ok {
-			t.joins[j.members.String()] = name
+		if _, ok := t.joins[j.Members.String()]; !ok {
+			t.joins[j.Members.String()] = name
 		}
 	}
 	t.fieldNames = map[string]string{}
@@ -535,8 +536,8 @@ func (t *typedGen) goType(x compile.Ty) string {
 			return "*Error"
 		}
 		return "any"
-	case vrule:
-		return t.goType(t.vres[x.name])
+	case gen.Vrule:
+		return t.goType(t.Vres[x.Name])
 	case compile.TupleTy:
 		return t.tupleType(x)
 	case compile.NodeTy:
@@ -597,7 +598,7 @@ func (t *typedGen) conv(x compile.Ty, v string) string {
 			return "a.toError(astNode(" + v + "))"
 		}
 		return "a.anyValue(" + v + ")"
-	case vrule:
+	case gen.Vrule:
 		return "a." + t.vconvHelper(x) + "(" + v + ")"
 	case compile.TupleTy:
 		if len(x.Elems) == 0 {
@@ -667,7 +668,7 @@ func (t *typedGen) decls(b *strings.Builder) {
 		b.WriteString("}\n\n")
 	}
 	for _, name := range t.nodeTypes {
-		n, _ := t.g.prog.NodeTypeOf(name)
+		n, _ := t.g.Prog.NodeTypeOf(name)
 		fmt.Fprintf(b, "// %s is the node type %s = %s.\n", name, name, n.Underlying())
 		fmt.Fprintf(b, "type %s struct{ %s }\n\n", name, strings.TrimPrefix(t.goType(n.Underlying()), "*"))
 	}
@@ -700,7 +701,7 @@ func (t *typedGen) decls(b *strings.Builder) {
 				}
 			}
 		}
-		if cstJoin(u) {
+		if gen.CstJoin(u) {
 			members["TNode"] = true
 		}
 		for m := range members {
@@ -804,7 +805,7 @@ func (a *astConv) toError(n *Node) *Error {
 	b.WriteString("\t}\n\treturn n\n}\n\n")
 	for _, name := range t.nodeTypes {
 		// A node of a named node type converts as the node it was converted from (baseNode).
-		n, _ := t.g.prog.NodeTypeOf(name)
+		n, _ := t.g.Prog.NodeTypeOf(name)
 		fmt.Fprintf(b, "func (a *astConv) %[4]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tu := %[3]s\n\tif u == nil {\n\t\treturn nil\n\t}\n\tv := &%[1]s{*u}\n\ta.remember(n, v)\n\treturn v\n}\n\n", t.ref(name), name, t.conv(n.Underlying(), "n.BaseNode()"), convName(name))
 	}
 	for _, name := range t.structs {
@@ -833,7 +834,7 @@ func (a *astConv) toError(n *Node) *Error {
 				}
 			}
 		}
-		if cstJoin(u) {
+		if gen.CstJoin(u) {
 			b.WriteString("\t}\n\treturn a.toNode(n)\n}\n\n")
 		} else {
 			b.WriteString("\t}\n\treturn nil\n}\n\n")
@@ -959,7 +960,7 @@ func (t *typedGen) readsFields() bool {
 			}
 		})
 	}
-	for _, r := range t.g.prog.RuleList {
+	for _, r := range t.g.Prog.RuleList {
 		expr(r.Def.Expr)
 		if r.Def.Action != nil {
 			terms = append(terms, r.Def.Action)
@@ -1024,7 +1025,7 @@ func (t *typedGen) representable(x compile.Ty) bool {
 			return true
 		}
 		return false
-	case compile.NamedTy, compile.RecordTy, vrule:
+	case compile.NamedTy, compile.RecordTy, gen.Vrule:
 		return true
 	case compile.TupleTy:
 		for _, e := range x.Elems {
@@ -1127,7 +1128,7 @@ func (t *typedGen) back(x compile.Ty, v string) string {
 			return back(v)
 		}
 		return t.backHelper(x) + "(" + v + ")"
-	case compile.TupleTy, vrule:
+	case compile.TupleTy, gen.Vrule:
 		return t.backHelper(x) + "(" + v + ")"
 	case compile.OptTy:
 		if b, ok := x.Elem.(compile.BasicTy); ok && (b == compile.TyInt || b == compile.TyString || b == compile.TyBool) {
@@ -1176,7 +1177,7 @@ func (t *typedGen) dconv(x compile.Ty, v, a string) string {
 			return "(*Error)(TPubError(" + v + "))"
 		}
 		return t.tpub(v, a)
-	case vrule:
+	case gen.Vrule:
 		return t.vdconvHelper(x) + "(" + a + ", " + v + ")"
 	case compile.TupleTy:
 		if len(x.Elems) == 0 {
@@ -1263,13 +1264,13 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 		// (nodeTypesName holds the registered indexes, nt, by the generated index).
 		reg.WriteString("\ttnamedPub := func(a any, x TVal) any {\n\ts, _ := a.(*tslabs)\n\tif s == nil {\n\t\ts = &tslabs{}\n\t}\n\tswitch x.TName() {\n")
 		for _, name := range t.nodeTypes {
-			n, _ := t.g.prog.NodeTypeOf(name)
+			n, _ := t.g.Prog.NodeTypeOf(name)
 			fmt.Fprintf(&reg, "\tcase %q:\n\t\treturn %s\n", name, t.dconv(n, "x", "s"))
 		}
 		reg.WriteString("\t}\n\treturn nil\n\t}\n")
 		fmt.Fprintf(&reg, "\tfor i, name := range %s {\n\t\t%s[i+1] = TRegisterNodeType(name, tnamedPub)\n\t}\n", goStrings(t.nodeTypes), nodeTypesName)
 	}
-	for _, r := range append(append([]*compile.Rule(nil), t.g.prog.RuleList...), t.g.prog.Twins...) {
+	for _, r := range append(append([]*compile.Rule(nil), t.g.Prog.RuleList...), t.g.Prog.Twins...) {
 		if r.OpNodeType != "" {
 			fmt.Fprintf(&reg, "\ttrules[%d].OpNt = %s\n", r.ID, t.g.nodeTypeID(r.OpNodeType))
 		}
@@ -1319,7 +1320,7 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 	// remembered by their values; string nodes are their own public forms (tmatchAs).
 	var remembered []string
 	for _, name := range t.nodeTypes {
-		if n, _ := t.g.prog.NodeTypeOf(name); n.Value != compile.TyString {
+		if n, _ := t.g.Prog.NodeTypeOf(name); n.Value != compile.TyString {
 			remembered = append(remembered, name)
 		}
 	}

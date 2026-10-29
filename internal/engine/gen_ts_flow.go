@@ -29,20 +29,20 @@ type tsFlowUnsupported string
 // startTSFlow builds the Core IR of the table being generated for printing its rules from Flow IR. It
 // reports whether the Core IR was built; if not, the generation fails with the error it records.
 func (g *tsGen) startTSFlow() bool {
-	g.flow = nil
-	if err := g.startRecFlow(g.prog); err != nil {
-		if g.flowErr == nil {
-			g.flowErr = err
+	g.Flow = nil
+	if err := g.StartRecFlow(g.Prog); err != nil {
+		if g.FlowErr == nil {
+			g.FlowErr = err
 		}
 		return false
 	}
 	// The generated TypeScript reads input through the runtime's peek and matches literals through
 	// matchLiteral: it has no in-place reads and no class tables.
-	g.flow.opts.GuardedClasses = false
-	g.flow.opts.InlineLiterals = 0
-	g.flow.opts.ClassTables = false
-	if chosen := outlineNodes(g.flow.m, g.table == "rules"); len(chosen) > 0 {
-		g.flow.opts.Outline = func(n core.Node) bool { return chosen[n] }
+	g.Flow.Opts.GuardedClasses = false
+	g.Flow.Opts.InlineLiterals = 0
+	g.Flow.Opts.ClassTables = false
+	if chosen := outlineNodes(g.Flow.M, g.Table == "rules"); len(chosen) > 0 {
+		g.Flow.Opts.Outline = func(n core.Node) bool { return chosen[n] }
 	}
 	return true
 }
@@ -53,28 +53,28 @@ func (g *tsGen) startTSFlow() bool {
 // frame the runtime owns, which also runs its action and finish. On success it sets scope to the
 // capture scope of the printed body.
 func (g *tsGen) flowRule(r *compile.Rule, scope *compile.Scope) (call string, ok bool) {
-	if g.flow == nil {
+	if g.Flow == nil {
 		return "", false
 	}
 	var f *flow.Func
 	var slots []core.Slot
-	cr := g.flow.m.Rules[r.ID]
-	if recFlowEligible(r) && flow.LocalRule(cr) {
+	cr := g.Flow.M.Rules[r.ID]
+	if gen.RecFlowEligible(r) && flow.LocalRule(cr) {
 		var err error
-		if f, err = flow.Lower(g.flow.m, cr, r.Name, g.flow.opts); err != nil {
-			panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.table, err)) // LocalRule holds
+		if f, err = flow.Lower(g.Flow.M, cr, r.Name, g.Flow.Opts); err != nil {
+			panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.Table, err)) // LocalRule holds
 		}
 		if f.Binds {
 			f = nil // the runtime owns the frame the binds write
 		}
 	}
 	if f == nil {
-		if _, eligible := g.flowNodeFrameOK(r); !eligible {
+		if _, eligible := g.FlowNodeFrameOK(r); !eligible {
 			return "", false
 		}
 		var err error
-		if f, err = flow.LowerFrame(g.flow.m, cr, cr.Body, cr.Scope, !r.Lean, r.Name, g.flow.opts); err != nil {
-			panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.table, err)) // FramedBody holds
+		if f, err = flow.LowerFrame(g.Flow.M, cr, cr.Body, cr.Scope, !r.Lean, r.Name, g.Flow.Opts); err != nil {
+			panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.Table, err)) // FramedBody holds
 		}
 		slots = cr.Scope
 	}
@@ -105,18 +105,18 @@ func (g *tsGen) flowFunc(f *flow.Func, slots []core.Slot, scope *compile.Scope, 
 			scope.Slot(sl.Name)
 		}
 	}
-	name, shared := g.methodName("Parser/R", tsSharedKey(b.String(), decls))
+	name, shared := g.MethodName("Parser/R", tsSharedKey(b.String(), decls))
 	if !shared {
 		for _, d := range decls {
 			if tsNamesIdentifier(b.String(), d.name) {
-				g.vars.WriteString(d.text)
+				g.Vars.WriteString(d.text)
 			}
 		}
 		param := "p"
 		if !strings.Contains(b.String(), "p.") && !strings.Contains(b.String(), "(p)") {
 			param = "_p"
 		}
-		fmt.Fprintf(&g.methods, "// %s\nfunction %s(%s: Parser): R {\n%s}\n\n", comment, name, param, b.String())
+		fmt.Fprintf(&g.Methods, "// %s\nfunction %s(%s: Parser): R {\n%s}\n\n", comment, name, param, b.String())
 	}
 	return name + "(p)", true
 }
@@ -577,7 +577,7 @@ func (p *tsFlowPrinter) stmt(s flow.Stmt) {
 		if p.dead || p.dry {
 			return
 		}
-		trace := p.g.traceSkipped(p.g.flow.origin[s.Alt])
+		trace := p.g.traceSkipped(p.g.Flow.Origin[s.Alt])
 		p.b.WriteString(strings.TrimLeft(trace, " "))
 	default:
 		panic(tsFlowUnsupported(fmt.Sprintf("statement %T", s)))
@@ -835,7 +835,7 @@ func (p *tsFlowPrinter) exp(id core.ExpID) string {
 	return strconv.Itoa(int(p.desc(id)))
 }
 
-func (p *tsFlowPrinter) desc(id core.ExpID) compile.ExpID { return p.g.desc(p.g.flow.m.Exps[id]) }
+func (p *tsFlowPrinter) desc(id core.ExpID) compile.ExpID { return p.g.Desc(p.g.Flow.M.Exps[id]) }
 
 // classIn returns the condition that the code point in ch is in the class c (false at the end of the
 // input is the caller's check).
@@ -905,7 +905,7 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 			if p.dry {
 				return ""
 			}
-			v, shared := g.literalName(folded)
+			v, shared := g.LiteralName(folded)
 			if !shared {
 				p.decl(v, fmt.Sprintf("const %s: Lit = { text: %s, cps: %s, bytes: %s };\n", v, tsString(folded), tsInts([]rune(folded)), tsInts([]byte(folded))))
 			}
@@ -915,13 +915,13 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 			return ""
 		}
 		val := value.LiteralValue(x.Lit.Text)
-		v, shared := g.literalName(val)
+		v, shared := g.LiteralName(val)
 		if !shared {
 			p.decl(v, fmt.Sprintf("const %s: Lit = { text: %s, cps: %s, bytes: %s };\n", v, tsString(val), tsInts([]rune(val)), tsInts([]byte(val))))
 		}
 		var desc compile.ExpID
 		if x.Lit.Text == "" {
-			desc = g.desc(strconv.Quote(""))
+			desc = g.Desc(strconv.Quote(""))
 		} else {
 			desc = p.desc(x.Lit.Exp)
 		}
@@ -955,7 +955,7 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 			return "p.atLineEnd()"
 		}
 	case *flow.CallRule:
-		return p.call(g.flow.rules[x.Rule], x.Level)
+		return p.call(g.Flow.Rules[x.Rule], x.Level)
 	case *flow.Isolate:
 		return "p.isolate()"
 	case *flow.Keep:
@@ -1006,7 +1006,7 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 		if p.dry {
 			return "p.predicate(a)"
 		}
-		body := p.g.predicateTerm(p.grammarTerm(x.Node), frameScope(x.Caps))
+		body := p.g.predicateTerm(p.grammarTerm(x.Node), gen.FrameScope(x.Caps))
 		return fmt.Sprintf("p.predicate((%s) => %s)", tsActxParam(body), body)
 	case *flow.Bind:
 		if x.Caps.Vars != nil {
@@ -1020,8 +1020,8 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 			return "p.bind(a)"
 		}
 		// The function is declared only if the rule keeps the printed text.
-		name := p.g.name("a")
-		val := p.g.term(b.Value, frameScope(x.Caps), nil)
+		name := p.g.Name("a")
+		val := p.g.term(b.Value, gen.FrameScope(x.Caps), nil)
 		p.decl(name, fmt.Sprintf("function %s(%s: Actx): Value {\n  return %s;\n}\n\n", name, tsActxParam(val), val))
 		return fmt.Sprintf("p.bind(%s, %s)", tsString(b.Name), name)
 	case *flow.CallOutline:
@@ -1111,7 +1111,7 @@ func (p *tsFlowPrinter) scopeNames(n *flow.Names) string {
 	if name, ok := p.names[n]; ok {
 		return name
 	}
-	name := p.g.name("scope")
+	name := p.g.Name("scope")
 	if p.names == nil {
 		p.names = map[*flow.Names]string{}
 	}
@@ -1123,7 +1123,7 @@ func (p *tsFlowPrinter) scopeNames(n *flow.Names) string {
 // grammarTerm returns the term of the grammar predicate that the node n is built from, which the
 // term printer prints.
 func (p *tsFlowPrinter) grammarTerm(n core.Node) grammar.Term {
-	e, ok := p.g.flow.origin[n].(*grammar.Predicate)
+	e, ok := p.g.Flow.Origin[n].(*grammar.Predicate)
 	if !ok {
 		panic(tsFlowUnsupported(fmt.Sprintf("no grammar predicate for %T", n)))
 	}
@@ -1144,17 +1144,17 @@ func tsUnisolate(s *flow.Set) (*flow.Unisolate, bool) {
 // the line. It sets scope to the capture scope of the line. With work controls the runtime loop that
 // runs the line charges its entry and the function charges each iteration of a repetition.
 func (g *tsGen) flowLine(l *core.OpLine, e grammar.Expr, scope *compile.Scope, build bool) (string, bool) {
-	if g.flow == nil || l == nil || !flowLineOK(e) || !flow.FramedBody(l.Body) {
+	if g.Flow == nil || l == nil || !gen.FlowLineOK(e) || !flow.FramedBody(l.Body) {
 		return "", false
 	}
-	f, err := flow.LowerFrame(g.flow.m, g.flow.m.Rules[g.cur.ID], l.Body, l.Scope, build, g.cur.Name, g.flow.opts)
+	f, err := flow.LowerFrame(g.Flow.M, g.Flow.M.Rules[g.Cur.ID], l.Body, l.Scope, build, g.Cur.Name, g.Flow.Opts)
 	if err != nil {
-		panic(fmt.Errorf("line of Operators Rule %s in table %s: %w", g.cur.Name, g.table, err)) // FramedBody holds
+		panic(fmt.Errorf("line of Operators Rule %s in table %s: %w", g.Cur.Name, g.Table, err)) // FramedBody holds
 	}
-	prev := g.proj
-	g.proj = nil // the actions of the lines use no projections of the rule
-	defer func() { g.proj = prev }()
-	return g.flowFunc(f, l.Scope, scope, g.cur.Name+" (OperatorsRule line)")
+	prev := g.Proj
+	g.Proj = nil // the actions of the lines use no projections of the rule
+	defer func() { g.Proj = prev }()
+	return g.flowFunc(f, l.Scope, scope, g.Cur.Name+" (OperatorsRule line)")
 }
 
 // outline prints the function of the outlined node x and returns the call of it. The passes that only
@@ -1167,11 +1167,11 @@ func (p *tsFlowPrinter) outline(x *flow.CallOutline) string {
 		return call
 	}
 	g := p.g
-	f, err := flow.LowerOutline(g.flow.m, g.flow.m.Rules[g.cur.ID], x.Node, x.Slots, x.Build, g.cur.Name, g.flow.opts)
+	f, err := flow.LowerOutline(g.Flow.M, g.Flow.M.Rules[g.Cur.ID], x.Node, x.Slots, x.Build, g.Cur.Name, g.Flow.Opts)
 	if err != nil {
-		panic(fmt.Errorf("outlined node of rule %s in table %s: %w", g.cur.Name, g.table, err)) // Outlinable holds
+		panic(fmt.Errorf("outlined node of rule %s in table %s: %w", g.Cur.Name, g.Table, err)) // Outlinable holds
 	}
-	call, ok := g.flowFunc(f, x.Slots, compile.NewScope(), g.cur.Name+" (outlined)")
+	call, ok := g.flowFunc(f, x.Slots, compile.NewScope(), g.Cur.Name+" (outlined)")
 	if !ok {
 		panic(tsFlowUnsupported("an outlined node"))
 	}

@@ -294,7 +294,7 @@ func TestFlowRecognizerFallbackMatchesEngine(t *testing.T) {
 		[]string{"", "a", "a 1 b2", "-- c\n a", "/* x */ a", "/* /* y */ */ 1", "/* open", "a -- tail", "@", "a /* x */ /* y */ 2", "--"}}
 	refused, framed := map[string]bool{}, map[string]bool{}
 	refuseFlowRecRule = func(r *compile.Rule) bool {
-		if recFlowEligible(r) {
+		if gen.RecFlowEligible(r) {
 			refused[r.Name] = true
 			return true
 		}

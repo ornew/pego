@@ -2,6 +2,7 @@ package engine
 
 import (
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gen"
 )
 
 // typedFrameComment reports whether the body of the typed rule r is printed in place under the
@@ -14,7 +15,7 @@ func (g *generator) typedFrameComment(r *compile.Rule) (string, bool) {
 	} else if !exprRecovers(r.BodyExpr()) {
 		return "", false
 	}
-	if !flowBodyOK(r.BodyExpr(), true, true) {
+	if !gen.FlowBodyOK(r.BodyExpr(), true, true) {
 		return "", false
 	}
 	return comment, true

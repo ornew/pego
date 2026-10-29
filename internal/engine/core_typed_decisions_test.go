@@ -312,7 +312,7 @@ func (gd *decisionsGolden) freeze(t *testing.T, modes []coreGenMode, cases func(
 
 // typedRules returns the rules of the program of the generator by ID, value-free twins included.
 func typedRules(g *generator) []*compile.Rule {
-	return append(append([]*compile.Rule(nil), g.prog.RuleList...), g.prog.Twins...)
+	return append(append([]*compile.Rule(nil), g.Prog.RuleList...), g.Prog.Twins...)
 }
 
 // recognizerRules returns the rules of the recognizer program of the generator by ID, value-free

@@ -19,7 +19,7 @@ the charges out of the text leaves residue in every action:
 
 A term is the expression itself in every form, with or without work controls: the terms of an
 action and the fields of a typed constructor carry no charge, and nothing wraps them in a function
-literal. The generator knows that it writes no work controls (`generator.noWork`: no
+literal. The generator knows that it writes no work controls (`gen.Generator.NoWork`: no
 `WorkControls`) and emits no step charges at all: not the `StepWork` and `InputWork` statements of rules, constructors and list
 converters. Work-controlled output keeps the charges of rule entries, loops and list converters;
 the runtime built-ins that call lambdas charge one step per element.

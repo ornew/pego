@@ -15,7 +15,7 @@ import (
 // With a decisions hook (tests), it calls the hook with the module after it is built and after
 // each pass.
 func (g *generator) typedCore(origin map[core.Node]grammar.Expr) (*core.Module, error) {
-	m, err := irbuild.CoreFrom(g.prog, origin)
+	m, err := irbuild.CoreFrom(g.Prog, origin)
 	if err != nil {
 		return nil, err
 	}
@@ -24,15 +24,15 @@ func (g *generator) typedCore(origin map[core.Node]grammar.Expr) (*core.Module, 
 		hook = g.coreHook
 	}
 	hook("build", m)
-	leanTyped := g.ordinary && g.goWorkControls
-	if leanTyped && !g.observability && !g.disableTerminalPrograms {
+	leanTyped := g.Ordinary && g.goWorkControls
+	if leanTyped && !g.Observability && !g.disableTerminalPrograms {
 		core.Terminals(m, coreLocalRule)
 		hook("terminals", m)
 	}
-	core.RewriteTerms(m, core.TermOptions{TextDispatch: !g.disableLiteralTextDispatch, FieldCompare: !g.boxedComparisons})
+	core.RewriteTerms(m, core.TermOptions{TextDispatch: !g.DisableLiteralTextDispatch, FieldCompare: !g.BoxedComparisons})
 	hook("terms", m)
 	core.Analyze(m)
-	core.Guards(m, g.ordinary && !g.disableGuardedClasses)
+	core.Guards(m, g.Ordinary && !g.DisableGuardedClasses)
 	hook("guards", m)
 	core.Scans(m)
 	hook("scans", m)

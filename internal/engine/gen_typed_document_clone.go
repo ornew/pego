@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/gen"
 )
 
 // documentClone emits the CloneAST path, which copies the private values retained
@@ -24,8 +25,8 @@ func (t *typedGen) documentClone(b *strings.Builder, result compile.Ty) string {
 				return "c.toError(" + value + ")"
 			}
 			return "c.toOpen(" + value + ")"
-		case vrule:
-			return "c." + t.chelpers.get("cv", "rule "+x.name, x) + "(" + value + ")"
+		case gen.Vrule:
+			return "c." + t.chelpers.get("cv", "rule "+x.Name, x) + "(" + value + ")"
 		case compile.TupleTy:
 			if len(x.Elems) == 0 {
 				return value
@@ -112,7 +113,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result compile.Ty) string {
 					return true
 				}
 			}
-		case vrule, compile.TupleTy, compile.NodeTy:
+		case gen.Vrule, compile.TupleTy, compile.NodeTy:
 			return true
 		}
 		return false
@@ -184,7 +185,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result compile.Ty) string {
 		fmt.Fprintf(&methods, " case *%s: return c.%s(v)\n", t.ref(name), convName(name))
 	}
 	for _, name := range t.nodeTypes {
-		n, _ := t.g.prog.NodeTypeOf(name)
+		n, _ := t.g.Prog.NodeTypeOf(name)
 		fmt.Fprintf(&methods, " case *%s: return %s\n", t.ref(name), clone(n, "v"))
 	}
 	methods.WriteString(` }
@@ -214,8 +215,8 @@ func (c *typedDocumentClone) toElems(v []any) []any {
 			g := t.goType(h.x)
 			fmt.Fprintf(&methods, "func (c *typedDocumentClone) %s(v %s) %s {\n c.Step(1)\n", h.name, g, g)
 			switch x := h.x.(type) {
-			case vrule:
-				fmt.Fprintf(&methods, " return %s\n", clone(t.vres[x.name], "v"))
+			case gen.Vrule:
+				fmt.Fprintf(&methods, " return %s\n", clone(t.Vres[x.Name], "v"))
 			case compile.OptTy:
 				fmt.Fprintf(&methods, " if v == nil { return nil }\n x := %s\n return &x\n", clone(x.Elem, "*v"))
 			case compile.TupleTy:
