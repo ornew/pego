@@ -10,7 +10,6 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/schema"
 )
 
 // The compiled grammar format (.pegoc), specified in the File format section of
@@ -83,7 +82,7 @@ var errClosureNeedsSource = errors.New("the closure backend needs the grammar so
 
 // errSchemaNeedsSource is the error of a schema export from a program loaded from a compiled
 // grammar.
-var errSchemaNeedsSource = fmt.Errorf("%w: a compiled grammar holds no schema; export the schema from the grammar source", schema.ErrUnavailable)
+var errSchemaNeedsSource = fmt.Errorf("%w: a compiled grammar holds no schema; export the schema from the grammar source", compile.ErrSchemaUnavailable)
 
 // ErrNotCompiled reports that the data is not a compiled grammar.
 var ErrNotCompiled = errors.New("not a compiled PEGO grammar")
@@ -156,7 +155,7 @@ func (prog *Program) Marshal(start string, mode CompiledMode) ([]byte, error) {
 	case prog.loaded || mode != CompiledRecognize:
 		m = prog.Module()
 	default:
-		rec, err := prog.recognizer()
+		rec, err := prog.Recognizer()
 		if err != nil {
 			return nil, err
 		}

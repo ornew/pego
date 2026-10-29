@@ -32,8 +32,15 @@ func DefaultPackageName(module string) string {
 	return base
 }
 
-// Generate generates the files of a Go parser for g, compiling it with c; engine.Generate describes
-// the files and options.
+// Generate generates the files of a Go parser for g, compiling it with c: parser.go with the code
+// generated from the grammar, api.go, which re-exports the names the runtime defines for the users
+// of the parser, with opts.Types types/types.go, the package of the Go types of the typed values,
+// and, with opts.Runtime RuntimeEmbed, a copy of the runtime in internal/runtime. Paths are
+// relative to the directory of the generated package. pego.GenerateGo describes the options.
+//
+// Eligible rule bodies inline their expressions; other expressions become Go functions. Actions
+// and predicates become Go expressions, and the runtime (package runtime of this module) behaves
+// exactly like the engine. Without opts.Stream, #stream is a plain repetition.
 func Generate(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
 	if opts.Runtime == gen.RuntimeOnly {
 		return runtimeFiles()

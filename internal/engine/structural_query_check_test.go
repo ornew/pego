@@ -27,7 +27,7 @@ rule name Name = t:([a-z]) #atomic => Name{Text: text($t)}
 
 func queryShapeSchema(t *testing.T) *schema.Output {
 	t.Helper()
-	s, err := mustCompile(t, queryShapeGrammar).OutputSchemaPrototype("main", false)
+	s, err := outputSchemaPrototype(mustCompile(t, queryShapeGrammar), "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +110,7 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 			continue
 		}
 		start := g.Rules()[0].Name
-		s, err := prog.OutputSchemaPrototype(start, false)
+		s, err := outputSchemaPrototype(prog, start, false)
 		if err != nil {
 			continue
 		}
@@ -185,7 +185,7 @@ func TestStructuralQueryRecoveryNodes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, err := prog.OutputSchemaPrototype("main", false)
+	s, err := outputSchemaPrototype(prog, "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -227,7 +227,7 @@ func TestStructuralQueryErrorSize(t *testing.T) {
 		src += "type " + n + " = { X E }\n"
 	}
 	src += "rule main E = e\nrule e E = n:[0-9] => Num{Text: text($n)}\n"
-	s, err := mustCompile(t, src).OutputSchemaPrototype("main", true)
+	s, err := outputSchemaPrototype(mustCompile(t, src), "main", true)
 	if err != nil {
 		t.Fatal(err)
 	}

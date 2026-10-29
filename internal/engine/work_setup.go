@@ -22,7 +22,7 @@ func (prog *Program) admitParse(start string, o ParseOptions, stream bool) (*Pro
 			if _, err := prog.preflightRule(o.Backend, start, stream); err != nil {
 				return nil, nil, nil, err
 			}
-			active, err := prog.recognizer()
+			active, err := prog.Recognizer()
 			if err != nil {
 				return nil, nil, nil, err
 			}
@@ -57,7 +57,7 @@ func (prog *Program) admitParse(start string, o ParseOptions, stream bool) (*Pro
 	c.check()
 	active := prog
 	if o.Recognize {
-		active, err = prog.recognizer()
+		active, err = prog.Recognizer()
 		c.check()
 		if err != nil {
 			return nil, nil, nil, err

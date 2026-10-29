@@ -387,7 +387,7 @@ VMs share one program between these parses and all others and decide at every ca
 plain path (`r.plain && !p.noPlain` in `closures.go`, `vm.go` and `ivm.go`; `setTrace` in `trace.go` and
 every Document parse in `document.go` set `noPlain`). Recognition and, in the closure backend, work
 controls already select separate programs, built on first use under a `sync.Once` of the shared
-`Program` (`Program.recognizer` in `parse.go`, `prepareControlledProgram` in `work_setup.go`); a program
+`Program` (`Program.Recognizer` in `parse.go`, `prepareControlledProgram` in `work_setup.go`); a program
 saved in recognize mode stores the recognizer's module.
 
 Closures and bytecode therefore compile each program in two **families**:

@@ -6,7 +6,7 @@ needed to decide predicates.
 
 ## Mechanism and Invariants
 
-`Program.recognizer` builds a separate rule graph with independent memo
+`Program.Recognizer` builds a separate rule graph with independent memo
 identities. Unused captures and actions are omitted; value-producing actions
 required by predicates still execute and can fail. Syntax errors, recovered
 errors and matching rollback preserve the recognition contract. Recognition is
@@ -41,7 +41,7 @@ equivalent-output decoder comparisons.
 Evidence records: [007](../007-recognition-mode-3f7e9bf.md),
 [047](../047-recognition-in-generated-parsers.md).
 
-Source owners: [`Program.recognizer`](../../../internal/engine/parse.go),
+Source owners: [`Program.Recognizer`](../../../internal/engine/parse.go),
 [`recognize compilation and predicate capture
 analysis`](../../../internal/compile/compile.go), [`recognizer
 generation`](../../../internal/gen/gogen/generator.go), [`generated recognize entry

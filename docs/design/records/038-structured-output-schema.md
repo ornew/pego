@@ -176,7 +176,7 @@ in [design 040](040-structural-queries-and-highlighting.md).
 
 ## Implemented Go API
 
-`engine.Program.OutputSchemaPrototype(start, allRules)` provides the schema version 2
+`schema.Export(program, start, allRules)` provides the schema version 2
 implementation, exposed through `Parser.OutputSchema` and
 `WithAllSchemaRules` in Go. It requires a checked grammar: a parser
 loaded from a compiled grammar returns `ErrSchemaUnavailable`. It does not change parse results. The public types mirror the

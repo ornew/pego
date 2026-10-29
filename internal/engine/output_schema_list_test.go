@@ -50,7 +50,7 @@ rule main = "x" => Holder{Values: [][]Token{[]Token{Token{Text: "one"}}}}`, "x",
 			if err != nil {
 				t.Fatal(err)
 			}
-			sch, err := p.OutputSchemaPrototype("main", false)
+			sch, err := outputSchemaPrototype(p, "main", false)
 			if err != nil {
 				t.Fatal(err)
 			}

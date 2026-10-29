@@ -7,8 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -38,7 +37,7 @@ func TestGeneratedTSFullWorkloadParity(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			generated, err := engine.GenerateTS(grammar, gen.GenOptions{Start: "main", Types: true, Recognize: true, WorkControls: true})
+			generated, err := pego.GenerateTypeScript(grammar, "main", pego.WithTypes(), pego.WithRecognize(), pego.WithWorkControls())
 			if err != nil {
 				t.Fatal(err)
 			}

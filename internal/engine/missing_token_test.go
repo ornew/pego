@@ -315,7 +315,7 @@ rule main Root = x:(";" #missing) => Root{Token: $x}`
 		t.Fatal(err)
 	}
 	requireInsertions(t, reloaded, "", ParseOptions{MissingTokens: 1}, 1)
-	sch, err := prog.OutputSchemaPrototype("main", false)
+	sch, err := outputSchemaPrototype(prog, "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}

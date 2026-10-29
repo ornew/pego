@@ -115,7 +115,7 @@ func BenchmarkSparseMemoTypeScript(b *testing.B) {
 						b.StopTimer()
 						target := prog
 						if recognize {
-							target, err = prog.recognizer()
+							target, err = prog.Recognizer()
 							if err != nil {
 								b.Fatal(err)
 							}

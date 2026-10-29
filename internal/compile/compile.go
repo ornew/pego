@@ -1,6 +1,7 @@
 package compile
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -81,9 +82,9 @@ type Options struct {
 	// ControlledDispatch builds only the metered closure graph for lazy work setup.
 	ControlledDispatch bool
 	// Recognize builds a program that only checks whether the input conforms to the grammar, without
-	// building a tree (the engine's Program.recognizer).
+	// building a tree (the engine's Program.Recognizer).
 	Recognize bool
-	// Recognizer marks the program the engine's Program.recognizer builds, which only runs
+	// Recognizer marks the program the engine's Program.Recognizer builds, which only runs
 	// with Recognize: it builds no stream elements either.
 	Recognizer bool
 	// NoProjections compiles repetitions as written (project.go), for tests: with projections in
@@ -189,6 +190,10 @@ func (e *Error) Error() string {
 	}
 	return e.Msg
 }
+
+// ErrSchemaUnavailable reports that the checked grammar metadata an output schema is exported
+// from is unavailable.
+var ErrSchemaUnavailable = errors.New("output schema unavailable")
 
 // ErrorList is a list of compile errors.
 type ErrorList []*Error

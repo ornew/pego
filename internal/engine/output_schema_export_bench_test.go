@@ -37,7 +37,7 @@ func BenchmarkOutputSchemaExport(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			schema, err := p.OutputSchemaPrototype("main", false)
+			schema, err := outputSchemaPrototype(p, "main", false)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -49,7 +49,7 @@ func BenchmarkOutputSchemaExport(b *testing.B) {
 				b.Run(fmt.Sprintf("JSON%t", serialize), func(b *testing.B) {
 					b.ReportAllocs()
 					for b.Loop() {
-						s, err := p.OutputSchemaPrototype("main", false)
+						s, err := outputSchemaPrototype(p, "main", false)
 						if err != nil {
 							b.Fatal(err)
 						}

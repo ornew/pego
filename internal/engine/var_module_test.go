@@ -111,7 +111,7 @@ func TestLoadedVariablesMatch(t *testing.T) {
 				p := mustCompile(t, varModuleSource)
 				saved := p
 				if mode == CompiledRecognize {
-					rec, err := p.recognizer()
+					rec, err := p.Recognizer()
 					if err != nil {
 						t.Fatal(err)
 					}

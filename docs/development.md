@@ -6,7 +6,7 @@ This document describes the repository layout and architecture, how to run tests
 
 | Path | Contents |
 |:--|:--|
-| `pego.go`, `lint.go` | Public API of package `pego` (`ParseGrammar`, `Compile`, `CompileSource`, `Parser.Parse`, `Lint`, and others) |
+| `pego.go`, `lint.go` | Public API of package `pego` (`ParseGrammar`, `Compile`, `CompileSource`, `Parser.Parse`, `Lint`, and others), which joins the engine to the generators (`GenerateGo`, `GenerateTypeScript`) and the output schema (`Parser.OutputSchema`) |
 | `grammar/` | Grammar AST, structural validation (`Validate`), JSON conversion (`MarshalJSON`, `UnmarshalJSON`, strict `DecodeJSON`) and formatting as PEGO source (`Format`, which preserves comments). Public package. |
 | `internal/grammaranalysis/` | Conservative success and cut proofs shared by the compiler and linter |
 | `internal/lint/` | Grammar linter behind `pego.Lint` and `pego lint`: shared static analysis (`analysis.go`) and checks (`checks.go`) |
@@ -16,7 +16,7 @@ This document describes the repository layout and architecture, how to run tests
 | `pego.pego` | Typed source grammar and recoverable syntax tree; the generated source-parser integration is [proposed](design/records/054-generated-grammar-source-parser.md). |
 | `internal/syntax/` | Lexer and parser for PEGO source code (source → `grammar.Grammar`) |
 | `internal/compile/` | Compiler and static analysis: type checking, call and dependency analysis, the walk of rule bodies that decides their static facts, and the bytecode compiler |
-| `internal/engine/` | Parser runtime with its closure backend, action evaluation, bytecode VMs, Documents, and the entry points of Go and TypeScript code generation |
+| `internal/engine/` | Parser runtime: `Compile` with its closure backend, action evaluation, bytecode VMs, compiled grammars, Documents, streams and work controls. It does not import the generators or the output schema; the root package joins them to it |
 | `internal/schema/` | Output schema: the description of the values a grammar can produce, exported from a checked program, with its JSON form and validation; structural queries, which match patterns against parse results and check them against a schema |
 | `internal/value/` | `Node`, the value that parsing produces: kinds, fields, JSON form, traversal and the representation that the engine packages share |
 | `internal/limits/` | Work limits of a parse invocation, the error of an exhausted limit and overflow-safe work arithmetic, shared by the parser, the Document and structural queries |

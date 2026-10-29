@@ -44,7 +44,7 @@ func wantModeRefused(t *testing.T, err error, have, need CompiledMode) {
 // after the first, such as the recognizer's, is data the format does not have.
 func TestCompiledRecognitionASTFileRejectsBundle(t *testing.T) {
 	p := mustCompile(t, `rule main = "a" $$`)
-	rec, err := p.recognizer()
+	rec, err := p.Recognizer()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -321,7 +321,7 @@ func TestCompiledRecognitionCorruptMainAndBundle(t *testing.T) {
 	}
 
 	// Invalid rule names are rejected.
-	rec, err := p.recognizer()
+	rec, err := p.Recognizer()
 	if err != nil {
 		t.Fatal(err)
 	}

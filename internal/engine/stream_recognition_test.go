@@ -163,7 +163,7 @@ func TestStreamRecognitionCompiled(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rec, err := ordinary.recognizer()
+	rec, err := ordinary.Recognizer()
 	if err != nil {
 		t.Fatal(err)
 	}

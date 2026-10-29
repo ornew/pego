@@ -53,7 +53,7 @@ rule _a = "a" "b"`)
 	if _, err := p.MarshalBinary("_a"); err == nil || !strings.Contains(err.Error(), "hidden") {
 		t.Fatalf("marshal with a hidden start: %v", err)
 	}
-	if _, err := p.OutputSchemaPrototype("_a", false); err == nil || !strings.Contains(err.Error(), "hidden") {
+	if _, err := outputSchemaPrototype(p, "_a", false); err == nil || !strings.Contains(err.Error(), "hidden") {
 		t.Fatalf("schema of a hidden rule: %v", err)
 	}
 	data, err := p.MarshalBinary("main")

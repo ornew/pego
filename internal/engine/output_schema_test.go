@@ -25,7 +25,7 @@ rule unused = "z"`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, err := p.OutputSchemaPrototype("main", false)
+	s, err := outputSchemaPrototype(p, "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ rule unused = "z"`)
 		t.Fatal(err)
 	}
 	for i := 0; i < 10; i++ {
-		next, err := p.OutputSchemaPrototype("main", false)
+		next, err := outputSchemaPrototype(p, "main", false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -95,7 +95,7 @@ rule unused = "z"`)
 	if err := json.Unmarshal([]byte(`{"format":"pego-output-schema","version":1}`), &decoded); err == nil {
 		t.Fatal("accepted version 1")
 	}
-	all, err := p.OutputSchemaPrototype("main", true)
+	all, err := outputSchemaPrototype(p, "main", true)
 	if err != nil || len(all.Rules) != 3 {
 		t.Fatalf("all rules: %+v %v", all, err)
 	}
@@ -103,7 +103,7 @@ rule unused = "z"`)
 		if _, err := p.ParseWith("main", "a", ParseOptions{Backend: backend}); err != nil {
 			t.Fatalf("%s parse: %v", backend, err)
 		}
-		byBackend, err := p.OutputSchemaPrototype("main", false)
+		byBackend, err := outputSchemaPrototype(p, "main", false)
 		if err != nil {
 			t.Fatalf("%s schema: %v", backend, err)
 		}
@@ -112,7 +112,7 @@ rule unused = "z"`)
 		}
 	}
 	// A program without the grammar has no metadata to export from.
-	if _, err := (&Program{staticProgram: &compile.Program{}}).OutputSchemaPrototype("main", false); !errors.Is(err, schema.ErrUnavailable) {
+	if _, err := outputSchemaPrototype((&Program{staticProgram: &compile.Program{}}), "main", false); !errors.Is(err, schema.ErrUnavailable) {
 		t.Fatal(err)
 	}
 }
@@ -128,7 +128,7 @@ rule main = (-"a")*`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, err := p.OutputSchemaPrototype("main", true)
+	s, err := outputSchemaPrototype(p, "main", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +152,7 @@ rule main = (-"a")*`)
 // single capture with the paths of all of them, which keeps the schema valid.
 func TestOutputSchemaMergesRepeatedCaptures(t *testing.T) {
 	p := compileBare(t, "@start\nrule main = a:\"x\" b:\"y\" a:\"z\"\n", compile.Options{DefaultValue: true})
-	s, err := p.OutputSchemaPrototype("main", false)
+	s, err := outputSchemaPrototype(p, "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -177,7 +177,7 @@ func TestOutputSchemaMergesRepeatedCaptures(t *testing.T) {
 // and it is the same whatever the order of the places.
 func TestOutputSchemaRepeatedCaptureJoin(t *testing.T) {
 	p := compileBare(t, "@start\nrule main = a:\"x\" a:[0-9]+ a:\"q\" a:[0-9]+\n", compile.Options{DefaultValue: true})
-	s, err := p.OutputSchemaPrototype("main", false)
+	s, err := outputSchemaPrototype(p, "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -208,7 +208,7 @@ func TestOutputSchemaLookaheadCapture(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p := compileBare(t, tc.src, compile.Options{DefaultValue: true})
-			s, err := p.OutputSchemaPrototype("main", false)
+			s, err := outputSchemaPrototype(p, "main", false)
 			if err != nil {
 				t.Fatal(err)
 			}

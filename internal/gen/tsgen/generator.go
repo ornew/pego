@@ -32,8 +32,16 @@ var tsProfileSource string
 // tsRuntimeMarker starts the part of tsrt/runtime.ts that is copied into generated code.
 const tsRuntimeMarker = "// --- Runtime ---\n"
 
-// Generate generates the files of a TypeScript parser for g, compiling it with c; engine.GenerateTS
-// describes the files and options.
+// Generate generates the files of a TypeScript parser for g, compiling it with c, that behaves
+// exactly like the engine (and the generated Go parsers): runtime.ts, with the runtime
+// (RuntimeEmbed), parser.ts, with the code generated from the grammar, and with opts.Types
+// types.ts, with the declarations of the grammar's types. RuntimeImport imports the runtime from
+// opts.RuntimeModule instead of writing it, and RuntimeOnly writes only runtime.ts, for which g may
+// be nil. pego.GenerateTypeScript describes the options.
+//
+// Each parsing expression becomes a function and actions and predicates become TypeScript
+// expressions, as in the Go generator; the embedded runtime (tsrt) mirrors runtime. opts.Package
+// is not used. opts.Types adds declarations and Node-to-value conversion entry points.
 func Generate(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
 	if opts.Runtime == gen.RuntimeOnly {
 		return TsRuntimeFiles(), nil

@@ -22,7 +22,7 @@ rule item = [a-z]`)
 		if err != nil {
 			t.Fatal(err)
 		}
-		s, err := p.OutputSchemaPrototype("main", false)
+		s, err := outputSchemaPrototype(p, "main", false)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -3,8 +3,9 @@
 This page explains how PEGO turns a grammar into a parser, at the level of ideas: which stages exist, why they are
 separate, and which rules hold across packages. It does not list files, fields or functions; the code is the source of
 truth for those, and the package comments say what each package owns. Read this page to learn how the parts fit before
-you work in `internal/engine/`, `runtime/` or a generator. The contracts every stage must keep are in the
-[specification](../../spec/README.md); the middle of the pipeline is in [Core and Flow IR](intermediate-representations.md).
+you work in `internal/compile/`, `internal/engine/`, `runtime/` or a generator. The contracts every stage must keep are
+in the [specification](../../spec/README.md); the middle of the pipeline is in
+[Core and Flow IR](intermediate-representations.md).
 
 ## From Grammar to Parser
 
@@ -117,7 +118,9 @@ contract is [Observability](../../spec/runtime/observability.md).
 | To work on | Start in |
 |:--|:--|
 | Grammar syntax, text and JSON forms | `internal/syntax/`, `grammar/` |
-| Compilation, analysis, checking, closures, VMs, Documents | `internal/engine/` |
+| Compilation, analysis, checking and the bytecode compiler | `internal/compile/` |
+| The parser runtime: closures, VMs, Documents, streams and work controls | `internal/engine/` |
+| Output schemas and structural queries | `internal/schema/` |
 | Core and Flow IR and their passes | `internal/ir/core/`, `internal/ir/flow/` |
 | Generated Go and TypeScript | The Go generator in `internal/gen/gogen/`, the TypeScript generator in `internal/gen/tsgen/` and the runtimes in `runtime/` and `internal/gen/tsgen/tsrt/` |
 | The public API | `pego.go`, `grammar/` |

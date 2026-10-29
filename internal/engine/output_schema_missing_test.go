@@ -23,7 +23,7 @@ func missingSchema(t *testing.T) *schema.Output {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, err := p.OutputSchemaPrototype("main", true)
+	s, err := outputSchemaPrototype(p, "main", true)
 	if err != nil {
 		t.Fatal(err)
 	}

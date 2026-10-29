@@ -3,6 +3,7 @@ package pego
 import (
 	"context"
 
+	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/schema"
 )
 
@@ -41,7 +42,19 @@ func (p *Parser) OutputSchema(opts ...SchemaOption) (*OutputSchema, error) {
 	for _, opt := range opts {
 		opt(&o)
 	}
-	return p.prog.OutputSchemaPrototype(p.start, o.allRules)
+	return outputSchemaPrototype(p.prog, p.start, o.allRules)
+}
+
+// outputSchemaPrototype exports the start rule of prog, the rules it calls or whose values its
+// values contain, and the struct types they refer to; or every rule and type with allRules. It
+// has no effect on parsing or generation. A program loaded from a compiled grammar has no schema
+// (engine.Program.SchemaProgram).
+func outputSchemaPrototype(prog *engine.Program, start string, allRules bool) (*OutputSchema, error) {
+	sp, err := prog.SchemaProgram(start)
+	if err != nil {
+		return nil, err
+	}
+	return schema.Export(sp, start, allRules)
 }
 
 // QueryPattern is a programmatic structural pattern. Empty constraints match

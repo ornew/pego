@@ -94,7 +94,7 @@ type parseWorkStats struct {
 func parseWork(prog *Program, start, input string, o ParseOptions) (parseWorkStats, string) {
 	target := prog
 	if o.Recognize {
-		rp, err := prog.recognizer()
+		rp, err := prog.Recognizer()
 		if err != nil {
 			return parseWorkStats{}, resultJSON(nil, err)
 		}

@@ -175,7 +175,7 @@ rule main = (x:"a" => A{X: $x}) "b"`)
 	}
 	p := compileBare(t, `type A = { X string }
 rule main = (x:"a" => A{X: text($x)}) "b"`)
-	s, err := p.OutputSchemaPrototype("main", false)
+	s, err := outputSchemaPrototype(p, "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}

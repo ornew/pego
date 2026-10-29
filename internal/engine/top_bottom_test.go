@@ -258,7 +258,7 @@ func TestTopBottomSyntax(t *testing.T) {
 
 func TestTopBottomSchema(t *testing.T) {
 	program := mustCompile(t, "type T = { A _; B (node[string] | int) & node[_]; C U }\ntype U ~ _\nrule main = x:\"a\" => T{A: $x, B: $x, C: 1}")
-	schema, err := program.OutputSchemaPrototype("main", false)
+	schema, err := outputSchemaPrototype(program, "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -276,7 +276,7 @@ func TestTopBottomSchema(t *testing.T) {
 	}
 	// Aliases are not exported, and a field cannot have a type without values.
 	for _, src := range []string{"type B ~ _|_\nrule main = \"a\"", "type B ~ int & string\nrule main = \"a\"", "type B ~ *(int & string)\nrule main = \"a\""} {
-		if _, err := mustCompile(t, src).OutputSchemaPrototype("main", false); err != nil {
+		if _, err := outputSchemaPrototype(mustCompile(t, src), "main", false); err != nil {
 			t.Fatalf("%q schema: %v", src, err)
 		}
 		if message := compileError(t, strings.Replace(src, "rule main", "type T = { F B }\nrule main", 1)); !strings.Contains(message, "no values") {
@@ -285,7 +285,7 @@ func TestTopBottomSchema(t *testing.T) {
 	}
 	// _|_ adds nothing to a union.
 	program = mustCompile(t, "type B ~ _|_ | node[string]\ntype T = { A _|_ | node[string]; C B }\nrule main = x:\"a\" => T{A: $x, C: $x}")
-	schema, err = program.OutputSchemaPrototype("main", false)
+	schema, err = outputSchemaPrototype(program, "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -11,6 +11,8 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gen/gogen"
+	"github.com/ornew/pego/internal/gen/tsgen"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/syntax"
 	"github.com/ornew/pego/internal/value"
@@ -553,13 +555,13 @@ func GenerateGo(g *grammar.Grammar, module, start string, opts ...GenOption) ([]
 	for _, opt := range opts {
 		opt(&o)
 	}
-	return engine.Generate(g, o)
+	return gogen.Generate(g, compileForGenerator, o)
 }
 
 // GenerateGoRuntime generates only the embedded copy of the runtime for the package with import
 // path module (RuntimeOnly).
 func GenerateGoRuntime(module string) ([]GeneratedFile, error) {
-	return engine.Generate(nil, gen.GenOptions{Module: module, Runtime: RuntimeOnly})
+	return gogen.Generate(nil, compileForGenerator, gen.GenOptions{Module: module, Runtime: RuntimeOnly})
 }
 
 // WithRuntimeModule sets the module specifier from which a TypeScript parser generated with
@@ -587,13 +589,13 @@ func GenerateTypeScript(g *grammar.Grammar, start string, opts ...GenOption) ([]
 	for _, opt := range opts {
 		opt(&o)
 	}
-	return engine.GenerateTS(g, o)
+	return tsgen.Generate(g, compileForGenerator, o)
 }
 
 // GenerateTypeScriptRuntime generates only the runtime of TypeScript parsers, runtime.ts
 // (RuntimeOnly).
 func GenerateTypeScriptRuntime() ([]GeneratedFile, error) {
-	return engine.GenerateTS(nil, gen.GenOptions{Runtime: RuntimeOnly})
+	return tsgen.Generate(nil, compileForGenerator, gen.GenOptions{Runtime: RuntimeOnly})
 }
 
 // CompiledMode is the mode of a compiled grammar file, chosen when it is saved. A file holds the

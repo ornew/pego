@@ -1,10 +1,10 @@
 // Package schema describes the outputs a grammar can produce, independently of a parse: the output
-// schema, its JSON form and its validation.
+// schema, its JSON form and its validation, and the structural queries that match patterns against
+// parse results and check them against a schema.
 package schema
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"slices"
 	"sort"
@@ -13,8 +13,9 @@ import (
 	"github.com/ornew/pego/internal/compile"
 )
 
-// ErrUnavailable reports missing checked grammar metadata.
-var ErrUnavailable = errors.New("output schema unavailable")
+// ErrUnavailable reports missing checked grammar metadata: it is compile.ErrSchemaUnavailable,
+// which the runtime returns for a program that has no schema.
+var ErrUnavailable = compile.ErrSchemaUnavailable
 
 // version is the version of the output schema format.
 const version = 2
@@ -121,7 +122,7 @@ func (s *Output) UnmarshalJSON(data []byte) error {
 
 // Export exports the schema of the checked program p for the start rule start: the rule, the rules
 // it calls or whose values its values contain, and the struct types they refer to; or every rule
-// and type with allRules. engine.Program.OutputSchemaPrototype checks the start rule first.
+// and type with allRules. engine.Program.SchemaProgram checks the start rule first.
 func Export(p *compile.Program, start string, allRules bool) (*Output, error) {
 	if p.Grammar == nil || p.Typed == nil {
 		return nil, ErrUnavailable

@@ -21,7 +21,7 @@ import (
 // schemaJSON exports the schema of p for start, or every rule with allRules, as canonical JSON.
 func schemaJSON(t *testing.T, p *Program, start string, allRules bool) string {
 	t.Helper()
-	s, err := p.OutputSchemaPrototype(start, allRules)
+	s, err := outputSchemaPrototype(p, start, allRules)
 	if err != nil {
 		t.Fatalf("schema of %s (all rules %t): %v", start, allRules, err)
 	}
@@ -97,7 +97,7 @@ func TestCompiledSchemaMatchesSource(t *testing.T) {
 						}
 						for _, all := range []bool{false, true} {
 							schemaJSON(t, src, name, all)
-							_, err := loaded.OutputSchemaPrototype(name, all)
+							_, err := outputSchemaPrototype(loaded, name, all)
 							wantSchemaNeedsSource(t, err)
 						}
 					}
@@ -128,9 +128,9 @@ func TestCompiledSchemaBackendAgreement(t *testing.T) {
 				if got := schemaJSON(t, src, def, true); got != want {
 					t.Fatalf("source schema changed after parsing %q", input)
 				}
-				_, err := loaded.OutputSchemaPrototype(def, true)
+				_, err := outputSchemaPrototype(loaded, def, true)
 				wantSchemaNeedsSource(t, err)
-				_, err = loaded.OutputSchemaPrototype(def, false)
+				_, err = outputSchemaPrototype(loaded, def, false)
 				wantSchemaNeedsSource(t, err)
 			}
 		})
@@ -169,7 +169,7 @@ rule other = "b"`)
 	if _, _, err := LoadProgram(marshalWithTrailing(p, "main", nil)); err != nil {
 		t.Fatalf("file without trailing data: %v", err)
 	}
-	s, err := p.OutputSchemaPrototype("main", true)
+	s, err := outputSchemaPrototype(p, "main", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -209,12 +209,12 @@ var dropLastStart = regexp.MustCompile(`,\{"name":"other".*\]\}$`)
 // needs the grammar source, while the source exports it.
 func TestCompiledSchemaUnavailable(t *testing.T) {
 	p := mustCompile(t, `rule main = "a"`)
-	if _, err := p.OutputSchemaPrototype("main", false); err != nil {
+	if _, err := outputSchemaPrototype(p, "main", false); err != nil {
 		t.Fatalf("source schema: %v", err)
 	}
 	for _, mode := range allModes {
 		loaded := saveLoad(t, p, "main", mode)
-		_, err := loaded.OutputSchemaPrototype("main", false)
+		_, err := outputSchemaPrototype(loaded, "main", false)
 		wantSchemaNeedsSource(t, err)
 		// A loaded file is saved again only in its own mode, never with a schema.
 		for _, other := range allModes {
@@ -252,26 +252,26 @@ rule main = a:"x"
 rule helper = "y"`)
 	loaded := saveLoad(t, p, "main", CompiledParse)
 	for _, start := range []string{"helper", "nosuch"} {
-		_, wantErr := p.OutputSchemaPrototype(start, true)
+		_, wantErr := outputSchemaPrototype(p, start, true)
 		if (wantErr == nil) != (start == "helper") {
 			t.Fatalf("start %q: source error %v", start, wantErr)
 		}
 		if wantErr != nil && wantErr.Error() != `unknown schema start rule "nosuch"` {
 			t.Fatalf("start %q: source error %v", start, wantErr)
 		}
-		_, gotErr := loaded.OutputSchemaPrototype(start, true)
+		_, gotErr := outputSchemaPrototype(loaded, start, true)
 		wantSchemaNeedsSource(t, gotErr)
 	}
 	// Without all rules only start rules export: a rule that is not a start rule is an unknown start.
 	for _, start := range []string{"helper", "nosuch"} {
-		_, wantErr := p.OutputSchemaPrototype(start, false)
+		_, wantErr := outputSchemaPrototype(p, start, false)
 		if wantErr == nil || wantErr.Error() != fmt.Sprintf("unknown schema start rule %q", start) {
 			t.Fatalf("start %q without all rules: source error %v", start, wantErr)
 		}
-		_, gotErr := loaded.OutputSchemaPrototype(start, false)
+		_, gotErr := outputSchemaPrototype(loaded, start, false)
 		wantSchemaNeedsSource(t, gotErr)
 	}
-	if _, err := p.OutputSchemaPrototype("main", false); err != nil {
+	if _, err := outputSchemaPrototype(p, "main", false); err != nil {
 		t.Fatalf("start rule main: %v", err)
 	}
 }

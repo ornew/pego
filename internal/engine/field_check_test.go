@@ -276,7 +276,7 @@ rule main = a:item d:val {S{Static: $a, Dynamic: $d.(Int)} != nil}
 rule item Int = "i" => Int{Text: "i"}
 rule val _ = "v"
 `)
-	rec, err := pred.recognizer()
+	rec, err := pred.Recognizer()
 	if err != nil {
 		t.Fatal(err)
 	}

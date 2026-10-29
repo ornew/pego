@@ -74,10 +74,10 @@ func (prog *Program) recognizable() error {
 	return modeError(prog.mode, CompiledRecognize, "recognition needs")
 }
 
-// recognizer returns a program that only checks whether the input conforms to the grammar,
+// Recognizer returns a program that only checks whether the input conforms to the grammar,
 // without building a tree (recognition); it is built on first use. The memo for value-free rules
 // belongs to that separate program, so it does not mix with that of ordinary parses.
-func (prog *Program) recognizer() (*Program, error) {
+func (prog *Program) Recognizer() (*Program, error) {
 	prog.recOnce.Do(func() {
 		if prog.Grammar == nil {
 			if prog.recErr = prog.recognizable(); prog.recErr == nil {
