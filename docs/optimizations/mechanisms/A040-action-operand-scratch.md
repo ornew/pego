@@ -43,7 +43,7 @@ Evidence records: [014](../014-one-operand-stack-for-vm-expression-code.md),
 Source owners: [`evalCtx and termEvaluator`](../../../internal/engine/eval.go),
 [`vmProgram.eval`](../../../internal/engine/vm.go), [`parser.estack and operator
 locals`](../../../internal/engine/runtime.go), [`generated
-evalCtx`](../../../runtime/runtime.go), [`typed evaluation
+ActCtx`](../../../runtime/runtime.go), [`typed evaluation
 scratch`](../../../runtime/typed.go), [`Parser action
 context`](../../../internal/gen/tsgen/tsrt/runtime.ts).
 

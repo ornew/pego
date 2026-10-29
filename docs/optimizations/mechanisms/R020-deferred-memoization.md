@@ -40,7 +40,7 @@ Evidence records: [018](../018-memoizing-from-the-second-call-at-a-position.md),
 
 Source owners: [`parser.firstCall`](../../../internal/engine/runtime.go),
 [`memoTable.firstCall`](../../../internal/engine/memo.go), [`generated
-firstCall`](../../../runtime/runtime.go), [`TypeScript
+FirstCall`](../../../runtime/runtime.go), [`TypeScript
 firstCall`](../../../internal/gen/tsgen/tsrt/runtime.ts).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
