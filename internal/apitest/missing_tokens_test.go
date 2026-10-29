@@ -1,6 +1,6 @@
 //go:build !pego_work_controls_reference
 
-package pego_test
+package apitest_test
 
 import (
 	"context"

@@ -1,6 +1,6 @@
 //go:build !pego_work_controls_reference
 
-package pego
+package apitest_test
 
 import (
 	"context"
@@ -8,25 +8,26 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/ornew/pego"
 	"github.com/ornew/pego/internal/engine"
 )
 
 func TestWorkDocumentPublicDefaultsAndOptionsOnce(t *testing.T) {
-	p, err := CompileSource(`@start
+	p, err := pego.CompileSource(`@start
 rule main = inner $$
 
 rule inner = "a"`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
 		t.Run(backend.String(), func(t *testing.T) {
 			constructCalls, parseCalls := 0, 0
 			var order []string
-			d, err := p.NewDocument("a", WithBackend(backend), WithMaxDepth(1),
+			d, err := p.NewDocument("a", pego.WithBackend(backend), pego.WithMaxDepth(1),
 				func(o *engine.ParseOptions) { constructCalls++ },
-				WithTrace(func(e TraceEvent) {
-					if e.Rule == "main" && e.Kind == TraceEnter {
+				pego.WithTrace(func(e pego.TraceEvent) {
+					if e.Rule == "main" && e.Kind == pego.TraceEnter {
 						order = append(order, "default")
 					}
 				}))
@@ -37,9 +38,9 @@ rule inner = "a"`, "main")
 				t.Fatalf("default depth: node=%v error=%v", n, err)
 			}
 			order = nil
-			n, err := d.Parse(WithMaxDepth(20), func(o *engine.ParseOptions) { parseCalls++ },
-				WithTrace(func(e TraceEvent) {
-					if e.Rule == "main" && e.Kind == TraceEnter {
+			n, err := d.Parse(pego.WithMaxDepth(20), func(o *engine.ParseOptions) { parseCalls++ },
+				pego.WithTrace(func(e pego.TraceEvent) {
+					if e.Rule == "main" && e.Kind == pego.TraceEnter {
 						order = append(order, "invocation")
 					}
 				}))
@@ -62,14 +63,14 @@ rule inner = "a"`, "main")
 }
 
 func TestWorkDocumentPublicContextOverrideAndTraceOrder(t *testing.T) {
-	p, err := CompileSource(`@start
+	p, err := pego.CompileSource(`@start
 rule main = "a" $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
 		ctx, cancel := context.WithCancel(context.Background())
-		d, err := p.NewDocument("a", WithBackend(backend), WithContext(ctx), WithWorkLimits(WorkLimits{MaxInputWork: 10000, MaxSteps: 10000}))
+		d, err := p.NewDocument("a", pego.WithBackend(backend), pego.WithContext(ctx), pego.WithWorkLimits(pego.WorkLimits{MaxInputWork: 10000, MaxSteps: 10000}))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -77,7 +78,7 @@ rule main = "a" $$`, "main")
 		if n, err := d.Parse(); n != nil || !errors.Is(err, context.Canceled) {
 			t.Fatalf("%s defaults: node=%v error=%v", backend, n, err)
 		}
-		if n, err := d.Parse(WithContext(nil), WithWorkLimits(WorkLimits{})); n == nil || err != nil {
+		if n, err := d.Parse(pego.WithContext(nil), pego.WithWorkLimits(pego.WorkLimits{})); n == nil || err != nil {
 			t.Fatalf("%s override: node=%v error=%v", backend, n, err)
 		}
 		if n, err := d.Parse(); n != nil || !errors.Is(err, context.Canceled) {
@@ -85,7 +86,7 @@ rule main = "a" $$`, "main")
 		}
 		ctx, cancel = context.WithCancel(context.Background())
 		first, second := 0, 0
-		_, err = d.Parse(WithContext(ctx), WithTrace(func(TraceEvent) { first++; cancel() }), WithTrace(func(TraceEvent) { second++ }))
+		_, err = d.Parse(pego.WithContext(ctx), pego.WithTrace(func(pego.TraceEvent) { first++; cancel() }), pego.WithTrace(func(pego.TraceEvent) { second++ }))
 		cancel()
 		if !errors.Is(err, context.Canceled) || first != 1 || second != 0 {
 			t.Fatalf("%s callbacks: error=%v first=%d second=%d", backend, err, first, second)

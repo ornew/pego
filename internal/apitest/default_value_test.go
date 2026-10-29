@@ -1,4 +1,4 @@
-package pego_test
+package apitest_test
 
 import (
 	"encoding/json"
@@ -64,6 +64,7 @@ func stripActions(t *testing.T, g *grammar.Grammar) *grammar.Grammar {
 // values keep their actions; for them the backends must agree, and the input must match exactly
 // when it matches the grammar without actions (if that compiles).
 func TestDefaultValueCorpus(t *testing.T) {
+	chdirModuleRoot(t)
 	grammars, _ := filepath.Glob("examples/*/*.pego")
 	more, _ := filepath.Glob("parsers/*/*.pego")
 	grammars = append(grammars, more...)

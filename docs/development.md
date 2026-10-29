@@ -27,6 +27,7 @@ This document describes the repository layout and architecture, how to run tests
 | `query/` | Structural queries: patterns that match values of parse results, checked against an output schema when they compile (`Compile`, `Prepare`, `Query.Matches`). Public package |
 | `internal/schema/` | The export of a checked program's output schema as a `schema.Output` |
 | `internal/value/` | `Node`, the value that parsing produces: kinds, fields, JSON form, traversal and the representation that the engine packages share |
+| `internal/apitest/` | The behavior tests of package `pego`, from outside it: they call its public API, with internal packages only to build values, to mark start rules and to count how often options apply; the root package keeps its source and its documentation examples |
 | `internal/limits/` | Work limits of a parse invocation, the error of an exhausted limit and overflow-safe work arithmetic, shared by the parser, the Document and package `query` |
 | `internal/bytecode/` | The bytecode instruction set and module, its disassembly, the encoding of modules in compiled grammars and the validation of loaded modules |
 | `internal/gen/` | What the Go and TypeScript generators share: generation options, the runtime mode of generated Go parsers, generated files, and the generator state both print with (the program and rule being printed, the expectation table, shared names, the Flow IR state of recognizer rules and the action value resolver) |
@@ -139,6 +140,8 @@ A test that builds a fixture without any of these fails the run when it finishes
 Engine tests write grammars in PEGO source and compare results using the S-expression form of nodes (`Node.String`).
 The `check` helper also verifies that the result is the same with memoization disabled, with every backend (closure, recursive bytecode, iterative bytecode), with both position units, in recognition-only mode, and with tracing on.
 
+The behavior of package `pego` is tested from outside it by `internal/apitest`; the root package holds only its documentation examples. Measure its coverage with `go test -coverpkg=github.com/ornew/pego ./internal/apitest`.
+
 `internal/engine/gogen_pool_lifecycle_test.go` checks generated Node and typed parser cleanup after oversized
 inputs, retained results, and error/retry reuse in both position units.
 
@@ -174,9 +177,10 @@ control. Controlled row-count, reference/focus and boundary tests cover these re
 distinguishes equivalent small-tree work from wide-tree display reduction; real browser checks cover DOM/WASM wiring.
 
 The same-source work-control reference build compiles and tests the engine packages without core work-control
-instrumentation. After changing `internal/engine` test files, check that both builds compile with
-`go vet ./internal/engine/...` and `go vet -tags pego_work_controls_reference ./internal/engine/...`; test files that use
-helpers defined in untagged files keep both builds compiling.
+instrumentation. After changing test files of `internal/engine` or `internal/apitest`, check that both builds compile
+with `go vet ./internal/engine/... ./internal/apitest` and
+`go vet -tags pego_work_controls_reference ./internal/engine/... ./internal/apitest`; test files that use helpers
+defined in untagged files keep both builds compiling.
 
 GitHub Actions runs the root module and `parsers/test.sh` (including `go vet` for every parser module), site tests, and
 Node.js/WebAssembly/generated-TypeScript checks as separate jobs. A newer run on the same branch or pull-request

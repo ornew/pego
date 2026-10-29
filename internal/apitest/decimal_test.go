@@ -1,4 +1,4 @@
-package pego_test
+package apitest_test
 
 import (
 	"strconv"

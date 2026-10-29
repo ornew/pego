@@ -1,4 +1,4 @@
-package pego_test
+package apitest_test
 
 import (
 	"os"
@@ -17,6 +17,7 @@ var unformattedFixtures = map[string]string{}
 // Every checked-in grammar is what `pego fmt` writes. Run `pego fmt -w` on a
 // file reported here.
 func TestCheckedInGrammarsAreFormatted(t *testing.T) {
+	chdirModuleRoot(t)
 	// Only tracked files: untracked scratch grammars are not checked in.
 	out, err := exec.Command("git", "ls-files", "*.pego").Output()
 	if err != nil {

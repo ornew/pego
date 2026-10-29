@@ -1,19 +1,21 @@
 //go:build !pego_work_controls_reference
 
-package pego
+package apitest_test
 
 import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego"
 )
 
 // leastSteps returns the least MaxSteps limit under which the parse succeeds, and the error text of
 // the parse one step below it.
-func leastSteps(t *testing.T, p *Parser, in string) (uint64, string) {
+func leastSteps(t *testing.T, p *pego.Parser, in string) (uint64, string) {
 	t.Helper()
 	fails := func(n uint64) (bool, string) {
-		_, err := p.Parse(in, WithWorkLimits(WorkLimits{MaxSteps: n}))
+		_, err := p.Parse(in, pego.WithWorkLimits(pego.WorkLimits{MaxSteps: n}))
 		if err == nil {
 			return false, ""
 		}
@@ -42,7 +44,7 @@ func leastSteps(t *testing.T, p *Parser, in string) (uint64, string) {
 // the memo storage that an earlier parse left in a pooled parser, nor on when a collection empties
 // the pool.
 func TestWorkChargeIndependentOfPoolState(t *testing.T) {
-	p, err := CompileSource(`@start
+	p, err := pego.CompileSource(`@start
 rule main = (pair / item ","?)* $$
 rule pair = item ";"
 rule item = word / num
@@ -78,11 +80,11 @@ rule num = [0-9]+`, "main")
 	want, wantMsg := leastSteps(t, p, input)
 	for _, s := range states {
 		s.prep()
-		if _, err := p.Parse(input, WithWorkLimits(WorkLimits{MaxSteps: want})); err != nil {
+		if _, err := p.Parse(input, pego.WithWorkLimits(pego.WorkLimits{MaxSteps: want})); err != nil {
 			t.Errorf("%s: limit %d fails: %v", s.name, want, err)
 		}
 		s.prep()
-		_, err := p.Parse(input, WithWorkLimits(WorkLimits{MaxSteps: want - 1}))
+		_, err := p.Parse(input, pego.WithWorkLimits(pego.WorkLimits{MaxSteps: want - 1}))
 		if err == nil || err.Error() != wantMsg {
 			t.Errorf("%s: limit %d: error %v, want %q", s.name, want-1, err, wantMsg)
 		}
