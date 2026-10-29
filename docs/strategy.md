@@ -26,7 +26,7 @@ of the aim is stated with its status today:
 | Selectable optimization profiles | One fixed set of optimizations | Generation profiles for speed, memory and size ([design record 063](design/records/063-configurable-optimization-pass-pipeline.md), accepted, not implemented) |
 | Every use | Batch trees, typed values, recognition, recovery, `Document` and streaming, with per-target gaps ([What One Grammar Gives You](why-pego.md#what-one-grammar-gives-you)); a language server for `.pego` sources | Editor-grade tooling for the languages users define ([Editor-Grade Parsing](#editor-grade-parsing)) |
 | The best measured speed in each | Generated Go is slower than Go's hand-written standard-library parsers on every comparable workload (1.1–5.4× for typed values, 1.6–6.8× for trees); no cross-tool benchmark yet | The targets of [Performance Leadership](#performance-leadership), first for the targets and uses that exist, then for each new one |
-| Safe by default | A nesting cap only | Work limits on by default; optional input-length and memory caps ([Predictable Cost and Safety](#predictable-cost-and-safety)) |
+| Safe by default | A nesting cap only | Work limits on by default, in generated parsers too; optional input-length and memory caps ([Predictable Cost and Safety](#predictable-cost-and-safety)) |
 
 **Positioning.** The reason to choose PEGO is breadth under one contract. One PEG-based grammar yields typed values,
 recognition, incremental documents and bounded streams, in every target that supports them. Every backend returns the
@@ -309,9 +309,10 @@ Segment 1 is the first proof (the wedge).
 - **Gap scores 2.** The ANTLR Go runtime and pigeon cover much of the need. What they do not cover is typed values
   from a target-independent grammar, the same parser in TypeScript, deterministic work counts and incremental
   reparsing under one contract.
-- **Readiness scores 2 for trusted input and 1 for untrusted input.** A tagged release with a compatibility policy
-  and a documented minimum Go version for generated code are missing. For untrusted input, safe defaults are missing
-  too (see [Predictable Cost and Safety](#predictable-cost-and-safety)).
+- **Readiness scores 2 for trusted input and 1 for untrusted input.** A tagged release is missing; the compatibility
+  policy and the Go version that generated code needs are written down ([Releasing](releasing.md)) but no release
+  carries them yet. For untrusted input, safe defaults are missing too (see
+  [Predictable Cost and Safety](#predictable-cost-and-safety)).
 - **Segment 2 Readiness scores 1.** It needs a language server, UTF-16 positions and tree-producing recovery in a
   `Document`.
 - **Sensitivity.** Segment 1 stays first under any single-point change to any score.
@@ -329,12 +330,14 @@ they are not gates, and the release does not wait for them.
 
 - a tagged v0.x release with a compatibility policy that names the stable surfaces (grammar syntax, the generated Go
   API) and the unstable ones (`.pegoc`, bytecode, JSON forms);
-- the minimum Go version of generated code, documented and tested, including the effect of `go get -tool` on a
-  consumer module;
-- work limits on by default: one fixed budget proportional to the input length (c·n with a large constant), and a lint
-  warning for grammars outside the specification's sufficient conditions for linear work; at whatever overhead the
-  limits have then, plus a work-limit flag in `pego parse` and a `SECURITY.md`; reducing the overhead follows in the
-  Performance track, and the release does not wait for the complexity classifier;
+- the Go version that generated code needs, documented: Go 1.27.1, the same as the module, with the effect of
+  `go get -tool` on a consumer module ([Go Versions](releasing.md#go-versions));
+- work limits on by default: `pego gen` generates parsers with work controls by default (what `-work-controls` turns
+  on today), one fixed budget proportional to the input length (c·n with a large constant), and a lint warning for
+  grammars outside the specification's sufficient conditions for linear work; at whatever overhead the limits have
+  then, plus a work-limit flag in `pego parse` and [SECURITY.md](../SECURITY.md) updated to these defaults; published
+  performance figures are measured with the limits on; reducing the overhead follows in the Performance track, and the
+  release does not wait for the complexity classifier;
 - one work budget in place of two counters;
 - readable long expected lists;
 - typed entry points under their final names;
@@ -422,7 +425,8 @@ leadership, not a comparison with the fastest Go parsers. The JSON rows move to 
 exists.
 
 **Targets.** Ratios are measured with the repository suite on the same machine and revision, in the default
-configuration: once work limits are on by default, every speed row includes their cost. The standard-library parsers do
+configuration. From the first release, generated parsers have work controls by default and published figures are
+measured with the limits on, so every speed row includes their cost. The standard-library parsers do
 different work (`encoding/json` builds no positions, `encoding/xml` returns tokens, `encoding/csv` returns records,
 `go/parser` builds a positioned Go syntax tree), so each row names the output class it compares; typed values and
 recognition are the like-for-like comparisons and carry the strictest targets. "Credibility" is the target for the
@@ -538,13 +542,16 @@ for untrusted input; the goals below make it so.
   - Cancellation follows the caller's clock, and a blocked reader or callback cannot be interrupted.
   - There is no memory or input-size limit. Work limits do not bound memory, and the specification has a grammar with
     a linear number of evaluations and exponential value size.
-  - `pego parse` has no work-limit flag. There is no `SECURITY.md`.
+  - `pego parse` has no work-limit flag. [SECURITY.md](../SECURITY.md) states what a parse bounds today and what the
+    caller must bound.
 - **Goal: work limits on by default.** Every parse gets a work budget proportional to the input length (c·n). At the
   release, c is one fixed, large constant, calibrated on the repository grammars and ready-made parsers so that
   ordinary grammars stay well below it, and a lint warns about grammars outside the specification's sufficient
   conditions for linear work. An unlimited parse has to be requested explicitly. The complexity classifier of the
-  research track can later refine c per grammar; the release does not wait for it. The default ships at the
-  overhead the limits have then; the overhead target follows separately.
+  research track can later refine c per grammar; the release does not wait for it. Generated parsers are included:
+  from the first release, `pego gen` generates them with work controls by default, as `-work-controls` does today,
+  and published performance figures are measured with the limits on. The default ships at the overhead the limits
+  have then; the overhead target follows separately.
 - **Goal: one place for production limits.** Optional caps on input length and on estimated memory (memo entries and
   result trees) fail with the same kind of error as the work limit.
 - **Other goals.**
@@ -589,8 +596,8 @@ for untrusted input; the goals below make it so.
 | Goal | Measure | Today | Milestone or track |
 |:--|:--|:--|:--|
 | Users can depend on a version | Tagged v0.x release; compatibility policy naming stable and unstable surfaces | No tag | Release |
-| Generated code states its requirements | Minimum Go version documented and tested; `go get -tool` effect on consumers stated | Undocumented; PEGO requires Go 1.27.1 | Release |
-| Untrusted input is bounded by default | Default work budget (one fixed c·n budget, and a lint warning for grammars outside the sufficient conditions for linear work); `SECURITY.md`; work-limit flag in `pego parse` | Limits opt-in; no policy; no flag | Release |
+| Generated code states its requirements | Minimum Go version documented; `go get -tool` effect on consumers stated | Documented in [Releasing](releasing.md#go-versions): Go 1.27.1 for PEGO and generated code; `go get -tool` raises a consumer's `go` line to 1.27.1 | Release |
+| Untrusted input is bounded by default | Default work budget (one fixed c·n budget, and a lint warning for grammars outside the sufficient conditions for linear work); work controls generated by default; `SECURITY.md`; work-limit flag in `pego parse` | Limits opt-in, and in generated parsers only with `-work-controls`; `SECURITY.md` states today's policy; no flag | Release |
 | Limits are simple | One work budget across Go API, engine, generated Go and TypeScript | Two counters | Release |
 | Errors are readable | Long expected lists capped or grouped, with a test on a large grammar | Full lists | Release |
 | Public claims match measurements | README and site claims match this document's limits (tagline, untrusted input, tested runtimes) and [Benchmark Results](benchmarks.md) | The README's figures, tagline, runtime list and untrusted-input statement match; site pages not audited | Release |
@@ -614,9 +621,9 @@ Each risk has a trigger that forces a decision, not only a signal to watch.
 | Language models make hand-written parsers cheap, and they know ANTLR, tree-sitter and pigeon grammars but not `.pego` | High / high | The share of PEGO-generated parsers among new public Go parser modules does not rise for two consecutive quarters after the launch | Argue with verified properties (fresh-parse equality, limits, differential tests) that generated hand-written code lacks; publish `llms.txt`, a compact grammar reference and worked conversions |
 | A cgo-free tree-sitter path matures: gotreesitter reaches v1 with incremental equality, or tree-sitter runs under a pure-Go WebAssembly runtime such as wazero | Medium / high | gotreesitter v1, or a general wazero-based tree-sitter module | Demote segment 2; redirect the Editor track to language servers for typed DSLs; compete on typed values, generated TypeScript and limits |
 | Visibility: PEGO loses on awareness, not on design (3 stars and no release after three years; gotreesitter reached 581 stars in eight months) | High / high | Fewer than 10 external importers six months after the launch | Launch plan with channels (Go forums, newsletters, a talk); playground share links in every guide; reconsider segment 1 messaging |
-| The Go 1.27.1 floor narrows adoption; `go get -tool` may raise a consumer module's `go` line (inferred, not tested) | Medium / medium | Requests for older Go versions; consumers pinning old toolchains | Document and test an older minimum for generated code; document `go run` as an alternative to the tool route |
+| The Go 1.27.1 floor narrows adoption; `go get -tool` raises a consumer module's `go` line to 1.27.1 | Medium / medium | Requests for older Go versions; consumers pinning old toolchains | Reconsider the floor if requests for older Go versions arrive; document `go run` as an alternative to the tool route |
 | Format churn after the release (Core IR for every backend, profiles, possible default changes) | Medium / medium | A format or API change needed after the tag | Release as v0.x; name stable surfaces (grammar syntax, generated Go API) and unstable ones (`.pegoc`, bytecode, JSON forms); the formatter and `pego fix` rewrite old syntax |
-| A safety incident: an exponential grammar or an unbounded input hangs or exhausts memory in a user's service | Medium / high | One public report of a hang or out-of-memory | Before release: the default-limit decision, `SECURITY.md`, guides that require limits for untrusted input. After an incident: make limits the default |
+| A safety incident: an exponential grammar or an unbounded input hangs or exhausts memory in a user's service | Medium / high | One public report of a hang or out-of-memory | Before release: limits on by default, generated parsers included; `SECURITY.md`; guides that require limits for untrusted input. After an incident: revisit the default budget and the priority of the input-length and memory caps |
 | Bus factor: one maintainer holds the work and the knowledge | High / high | Any pause in maintenance longer than a month | Design records and specifications carry the reasoning; a scripted release process; a contributor guide and good-first-issue labels; reduce the surface (consider freezing one of the two Go bytecode VMs; a second implementation of the bytecode belongs to the Targets and engines track, in another language, after the release) |
 | Research pull: research-heavy goals (classifier, profiles, a second VM) compete with the release | Medium / medium | A research item is in progress while a Release item is open | The classifier stays a research track; one major item in progress per track |
 | Benchmark methodology is challenged | High / medium | Issues from other maintainers | Published harness, pinned versions, output classes, invited review, losses reported |

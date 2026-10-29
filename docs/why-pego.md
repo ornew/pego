@@ -17,7 +17,7 @@ PEGO is pre-release, and much of that aim is still ahead. Each part is paired wi
 | Selectable optimization profiles | One fixed set of optimizations | Generation profiles for speed, memory and size |
 | Every use | Trees, typed values, recognition, recovery, `Document` and streaming, with per-target gaps ([What One Grammar Gives You](#what-one-grammar-gives-you)) | Editor support for the languages you define |
 | The best measured speed in each | Slower than Go's hand-written parsers on every comparable workload so far: 1.1–5.4× for typed values, 1.6–6.8× for trees ([Measured Today](#measured-today)) | Match, then beat them, and show it in a public cross-tool benchmark with every loss published ([Commitments and Targets](#commitments-and-targets)) |
-| Safe by default | A nesting cap; work limits are opt-in | Work limits on by default; optional input-length and memory caps |
+| Safe by default | A nesting cap; work limits are opt-in | Work limits on by default, in generated parsers too; optional input-length and memory caps |
 
 **Best fit today:** a Go program, alone or with a TypeScript front end, that parses its own DSL, configuration, query
 or policy language and wants typed values, declared recovery and incremental reparsing from one grammar. The reason to
@@ -194,6 +194,8 @@ standard-library parsers do different work, so the ratios compare different outp
 without positions, `encoding/xml` returns tokens, `encoding/csv` returns records, and `go/parser` builds a positioned Go
 syntax tree. The JSON baseline is `encoding/json` `Unmarshal` into `any`, as built by Go 1.27.1; the report does not
 record the `GOEXPERIMENT` setting, and a baseline that decodes with `encoding/json/jsontext` directly is not measured.
+The parsers are generated without `-work-controls`, so the figures are measured without work limits; with limits on,
+generated Go `Parse` takes 1.30–1.47× as long on JSON and XML.
 
 | Workload | Generated Go `Parse` | Generated Go typed `ParseAST` | Go standard library | `ParseAST` ÷ standard library |
 |:--|--:|--:|--:|--:|
@@ -234,8 +236,10 @@ These are goals, not results.
 - **Work limits on by default.** Every parse gets a work budget proportional to the input length (c·n). At first, c
   is one fixed, large constant, calibrated on the repository grammars and ready-made parsers so that ordinary
   grammars stay well below it, and a lint warns about grammars outside the specification's sufficient conditions for
-  linear work. An unlimited parse has to be requested explicitly. A complexity classifier, which is research, can
-  later refine c per grammar. The overhead of the limits is to shrink alongside, but the default does not wait for it.
+  linear work. An unlimited parse has to be requested explicitly. From the first release, `pego gen` generates
+  parsers with work controls by default (today `-work-controls` turns them on), and published performance figures
+  are measured with the limits on. A complexity classifier, which is research, can later refine c per grammar. The
+  overhead of the limits is to shrink alongside, but the default does not wait for it.
 - **One place for production limits.** Optional caps on input length and on estimated memory (memo entries and
   result trees) fail with the same kind of error as the work limit.
 - **Choose the trade-off.** Generation profiles for speed, memory and size, each a named set of optimization passes,
@@ -254,7 +258,8 @@ planned to reach them.
 
 - **Pre-release.** There is no tagged release yet; the language, the Go API and file formats (`.pegoc`, JSON forms,
   bytecode) may change between versions with no compatibility shims. The ready-made parser modules cannot be fetched
-  with `go get` from another module ([Ready-Made Parsers](guide/ready-made-parsers.md)). PEGO itself requires Go 1.27.1.
+  with `go get` from another module ([Ready-Made Parsers](guide/ready-made-parsers.md)). PEGO and the Go code it
+  generates require Go 1.27.1 ([Go Versions](releasing.md#go-versions)).
 - **Not safe by default for untrusted input yet.** The nesting cap is on by default; nothing else is. Default work
   limits and optional input-length and memory caps are committed goals
   ([Commitments and Targets](#commitments-and-targets)).

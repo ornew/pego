@@ -5,6 +5,7 @@
   "branch": "main",
   "include": [
     "README.md",
+    "SECURITY.md",
     "docs/**/*.md",
     "spec/**/*.md",
     "examples/README.md",
@@ -462,6 +463,7 @@
       "title": "Project",
       "match": [
         "examples/README.md",
+        "SECURITY.md",
         "docs/*.md",
         "docs/design/*.md",
         "docs/optimizations/*.md",
@@ -472,6 +474,8 @@
         "docs/strategy.md",
         "examples/README.md",
         "docs/development.md",
+        "docs/releasing.md",
+        "SECURITY.md",
         "docs/design/README.md",
         "docs/design/architecture.md",
         "docs/design/intermediate-representations.md",
@@ -561,6 +565,8 @@
     "docs/strategy.md",
     "examples/README.md",
     "docs/development.md",
+    "docs/releasing.md",
+    "SECURITY.md",
     "docs/design/README.md",
     "docs/design/architecture.md",
     "docs/design/intermediate-representations.md",
