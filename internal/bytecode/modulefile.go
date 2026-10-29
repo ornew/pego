@@ -565,7 +565,7 @@ func ValidateStreamRecovery(code []Instr) error {
 				}
 			}
 			regions = append(regions, region{skip, end})
-		} else if in.Op == OpNext && in.B == 2 && len(regions) > 0 {
+		} else if in.StreamsValue() && len(regions) > 0 {
 			return fmt.Errorf("recovery region encloses a stream commitment at %d", ip)
 		}
 	}

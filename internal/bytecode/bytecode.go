@@ -28,18 +28,23 @@ type Module struct {
 }
 
 // RuleStreams reports whether the rule body that starts at entry passes values to the stream:
-// whether a NEXT with f = 2 comes before its RETURN.
+// whether an instruction that passes a value to the stream (Instr.StreamsValue) comes
+// before its RETURN.
 func (m *Module) RuleStreams(entry int) bool {
 	for _, in := range m.Code[entry:] {
 		switch {
 		case in.Op == OpReturn:
 			return false
-		case in.Op == OpNext && in.B == 2:
+		case in.StreamsValue():
 			return true
 		}
 	}
 	return false
 }
+
+// StreamsValue reports whether in is a NEXT that passes the value of the iteration to the stream
+// (f = 2).
+func (in Instr) StreamsValue() bool { return in.Op == OpNext && in.B == 2 }
 
 // InstructionSetVersion is the instruction set of every module: the value model's.
 func (m *Module) InstructionSetVersion() int { return ISAVersion }

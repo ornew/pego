@@ -1333,7 +1333,7 @@ func (vm *Program) isStreamRepeat(ip int) bool {
 		return false
 	}
 	end := int(code[ip+1].A)
-	return end > ip+2 && end < len(code) && code[end].Op == bytecode.OpEndRepeat && code[end-1].Op == bytecode.OpNext && code[end-1].B == 2
+	return end > ip+2 && end < len(code) && code[end].Op == bytecode.OpEndRepeat && code[end-1].StreamsValue()
 }
 
 // newPos allocates a copy of the position pos from a chunk and returns it. Start positions are
