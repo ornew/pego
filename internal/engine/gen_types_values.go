@@ -22,12 +22,6 @@ import (
 // A reference that closes a cycle of rules becomes any, as do joins whose arguments have different
 // Go types.
 
-// vrule is a reference to a rule whose Go type is that of its value in the value model; the rule's
-// resolved value type, with references replaced, is typedGen.vres[name].
-type vrule struct{ name string }
-
-func (r vrule) String() string { return r.name }
-
 // vhelper is a generated helper that converts or clones values of one Go type.
 type vhelper struct {
 	name string
@@ -53,105 +47,10 @@ func (h *vhelpers) get(prefix, key string, x compile.Ty) string {
 	return name
 }
 
-// valueResolver resolves the value types of the rules whose typed values come from them.
-type valueResolver struct {
-	prog *compile.Program
-	info *compile.TypeInfo
-	// values holds the value types of the rules and ruleDefs their definitions; vres holds the
-	// resolved value types of the rules whose typed values come from them, and resolving the rules
-	// being resolved.
-	values    map[string]compile.Ty
-	ruleDefs  map[string]*grammar.RuleDef
-	vres      map[string]compile.Ty
-	resolving map[string]bool
-	// ownType reports that a legacy type has a typed representation of its own (a named join).
-	ownType func(compile.Ty) bool
-}
-
-func newValueResolver(p *compile.Program, ownType func(compile.Ty) bool) valueResolver {
-	r := valueResolver{prog: p, info: p.Typed, values: p.ValueTypes(), ruleDefs: map[string]*grammar.RuleDef{}, vres: map[string]compile.Ty{}, resolving: map[string]bool{}, ownType: ownType}
-	for _, rl := range p.RuleList {
-		r.ruleDefs[rl.Name] = rl.Def
-	}
-	return r
-}
-
 // ruleType returns the type that selects the Go type of the values of rule r: its declared type, or
 // a vrule for a rule whose Go type comes from its value type.
 func (t *typedGen) ruleType(r *compile.Rule) compile.Ty {
 	return t.ruleRef(r.Name)
-}
-
-func (t *valueResolver) ruleRef(name string) compile.Ty {
-	var legacy compile.Ty = compile.TyAny
-	if def := t.ruleDefs[name]; def != nil && def.Type != nil {
-		legacy = (&compile.TypeResolver{Prog: t.prog}).Resolve(def.Type)
-	}
-	if !t.usesValue(name, legacy) {
-		return legacy
-	}
-	if _, ok := t.vres[name]; ok {
-		return vrule{name}
-	}
-	if t.resolving[name] {
-		return compile.TyTop // a cycle: the reference becomes any
-	}
-	t.resolving[name] = true
-	res := t.resolveValue(t.values[name])
-	delete(t.resolving, name)
-	t.vres[name] = res
-	return vrule{name}
-}
-
-// A rule has the Go type of its value if it has no declared type; a declared type is the rule's Go
-// type, node[_] included.
-func (t *valueResolver) usesValue(name string, legacy compile.Ty) bool {
-	v, ok := t.values[name]
-	def := t.ruleDefs[name]
-	if !ok || v == nil || v == compile.TyAny || def == nil {
-		return false
-	}
-	if def.Type != nil && def.Action != nil {
-		return false // the action's value has the declared type
-	}
-	if _, operators := def.Expr.(*grammar.OperatorsRule); operators && def.Type != nil {
-		return false
-	}
-	if t.ownType(legacy) {
-		return false
-	}
-	return def.Type == nil
-}
-
-// resolveValue replaces the rule references in a value type.
-func (t *valueResolver) resolveValue(x compile.Ty) compile.Ty {
-	switch x := x.(type) {
-	case compile.RuleTy:
-		return t.ruleRef(x.Name)
-	case compile.TupleTy:
-		elems := make([]compile.Ty, len(x.Elems))
-		for i, e := range x.Elems {
-			elems[i] = t.resolveValue(e)
-		}
-		return compile.TupleTy{Elems: elems}
-	case compile.NodeTy:
-		return compile.NodeTy{Value: t.resolveValue(x.Value)}
-	case compile.ListTy:
-		return compile.ListTy{Elem: t.resolveValue(x.Elem)}
-	case compile.OptTy:
-		return compile.OptTy{Elem: t.resolveValue(x.Elem)}
-	case compile.JoinTy:
-		alts := make([]compile.Ty, len(x.Alts))
-		for i, a := range x.Alts {
-			alts[i] = t.resolveValue(a)
-		}
-		return compile.JoinTy{Alts: alts}
-	case compile.BasicTy:
-		if x == compile.TyBottom || x == compile.TyNil {
-			return compile.TyTop
-		}
-	}
-	return x
 }
 
 // tupleType returns the Go type of a tuple, recording the tuple types to declare.

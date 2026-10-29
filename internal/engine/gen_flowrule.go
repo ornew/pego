@@ -38,51 +38,6 @@ import (
 // Left-recursion leaders and rules that cut or recover are framed: they keep runtime growth and
 // finalization, and only their expression bodies are printed in place.
 
-// flatRuleOK reports whether the rule r can be printed as a flat rule: it is not a left-recursion
-// leader and its body has no cut, recovery or Operators Rule.
-func flatRuleOK(r *compile.Rule) bool {
-	return !r.Leader && flowBodyOK(r.BodyExpr(), false, false)
-}
-
-// flowBodyOK reports whether Flow IR can print the expression e in place. A cut is allowed if cuts is
-// set and a recovery attribute if recovery is set; an Operators Rule never is.
-func flowBodyOK(expr grammar.Expr, cuts, recovery bool) bool {
-	ok := true
-	compile.WalkExpr(expr, func(e grammar.Expr) {
-		switch e := e.(type) {
-		case *grammar.Cut:
-			if !cuts {
-				ok = false
-			}
-		case *grammar.OperatorsRule:
-			ok = false
-		case *grammar.Attributed:
-			for _, a := range e.Attrs {
-				if a.Name == "recover" && !recovery {
-					ok = false
-				}
-			}
-		}
-	})
-	return ok
-}
-
-// leanRuleOK selects value-free plain rules of the Node runtime. Captures
-// unused by recognition are omitted; predicates keep the general code because
-// they can require values, capture frames and variable bindings.
-func leanRuleOK(r *compile.Rule) bool {
-	if !r.Plain || !r.Lean || !r.Novalue || !flatRuleOK(r) {
-		return false
-	}
-	ok := true
-	compile.WalkExpr(r.BodyExpr(), func(e grammar.Expr) {
-		if _, predicate := e.(*grammar.Predicate); predicate {
-			ok = false
-		}
-	})
-	return ok
-}
-
 type dvar struct{ name, typ string }
 
 // markVar records, of the variable name of d.vars, that it is not declared (dead) or that it stays
@@ -143,70 +98,6 @@ func advance(n int) string {
 		return "p.Pos++"
 	}
 	return fmt.Sprintf("p.Pos += %d", n)
-}
-
-// maxInlineLiteral is the longest literal (in code points) compared in place.
-const maxInlineLiteral = 4
-
-// capRefs calls f with the name of each capture the term t refers to outside lambdas that bind
-// the name.
-func capRefs(t grammar.Term, f func(name string)) {
-	var walk func(t grammar.Term, shadow map[string]bool)
-	walk = func(t grammar.Term, shadow map[string]bool) {
-		switch t := t.(type) {
-		case *grammar.CaptureRef:
-			if !shadow[t.Name] {
-				f(t.Name)
-			}
-		case *grammar.Lambda:
-			inner := map[string]bool{}
-			for k := range shadow {
-				inner[k] = true
-			}
-			for _, p := range t.Params {
-				inner[p] = true
-			}
-			walk(t.Body, inner)
-		default:
-			walkChildren(t, func(x grammar.Term) { walk(x, shadow) })
-		}
-	}
-	walk(t, map[string]bool{})
-}
-
-// walkChildren calls f with the direct subterms of t (those walkTerm visits next).
-func walkChildren(t grammar.Term, f func(grammar.Term)) {
-	switch t := t.(type) {
-	case *grammar.Member:
-		f(t.X)
-	case *grammar.New:
-		for _, fi := range t.Fields {
-			f(fi.Value)
-		}
-	case *grammar.ListConstructor:
-		for _, item := range t.Items {
-			f(item)
-		}
-	case *grammar.TupleLit:
-		for _, x := range t.Elems {
-			f(x)
-		}
-	case *grammar.Call:
-		for _, a := range t.Args {
-			f(a)
-		}
-	case *grammar.Lambda:
-		f(t.Body)
-	case *grammar.Binary:
-		f(t.L)
-		f(t.R)
-	case *grammar.Unary:
-		f(t.X)
-	case *grammar.Cast:
-		f(t.X)
-	case *grammar.Bind:
-		f(t.Value)
-	}
 }
 
 // flatRule is a flat rule's printed body: the declarations and statements of the method that

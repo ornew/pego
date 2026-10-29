@@ -69,7 +69,7 @@ func generateTS(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.
 	if err != nil {
 		return nil, err
 	}
-	tsg := &tsGen{generator: &generator{prog: prog, table: "rules", observability: opts.Observability, disableMethodSharing: opts.DisableMethodSharing, disableLiteralSharing: opts.DisableLiteralSharing || !opts.EnableTSLiteralSharing, disableLiteralTextDispatch: opts.DisableLiteralTextDispatch}, plainUsed: map[*compile.Rule]bool{}}
+	tsg := &tsGen{genBase: genBase{prog: prog, table: "rules", observability: opts.Observability, disableMethodSharing: opts.DisableMethodSharing, disableLiteralSharing: opts.DisableLiteralSharing || !opts.EnableTSLiteralSharing, disableLiteralTextDispatch: opts.DisableLiteralTextDispatch}, plainUsed: map[*compile.Rule]bool{}}
 	tsg.noWork = !opts.WorkControls
 	tsg.optionsType = "ParseOptions"
 	if !opts.WorkControls {
@@ -348,7 +348,7 @@ func tsFieldType(t *compile.FieldType) string {
 
 // tsGen generates TypeScript. It shares the expectation table, names and analyses of generator.
 type tsGen struct {
-	*generator
+	genBase
 	// plainUsed holds the plain rules whose function (plainCall) is called.
 	plainUsed map[*compile.Rule]bool
 	// optionsType is the name of the runtime's options type that the entry points take: ParseOptions

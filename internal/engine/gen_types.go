@@ -524,26 +524,6 @@ func (t *typedGen) nodeJoin(u compile.JoinTy) bool {
 	return true
 }
 
-// cstJoin reports whether the join has members that stay *Node. The members are read as
-// joinMembers writes them, so a join that is spelled with node[_] or error has the same answer as
-// the alias that names it: node[_] stays a node, and error converts to an Error.
-func cstJoin(u compile.JoinTy) bool {
-	if m, ok := compile.JoinMembers(u).(compile.JoinTy); ok {
-		u = m
-	}
-	for _, a := range u.Alts {
-		switch a := a.(type) {
-		case compile.NamedTy:
-			if a.Kind == 'c' && a != compile.TyMatch && a != compile.TyError {
-				return true
-			}
-		case compile.BasicTy, compile.ListTy, compile.RecordTy:
-			return true
-		}
-	}
-	return false
-}
-
 // goType returns the Go type of values of type x.
 func (t *typedGen) goType(x compile.Ty) string {
 	switch x := x.(type) {
@@ -1502,7 +1482,6 @@ func astSlice[T any](s *astChunk[T], n int) []T {
 	return v
 }
 
-
 `
 
 const astBootstrapListHelper = `// astSlice allocates the first nonempty small list independently to keep
@@ -1541,7 +1520,6 @@ const astIndividualListHelper = `// astSlice returns an independent list with ca
 func astSlice[T any](_ *astChunk[T], n int) []T {
 	return make([]T, n)
 }
-
 
 `
 

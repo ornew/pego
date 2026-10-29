@@ -17,7 +17,6 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
-	"github.com/ornew/pego/internal/limits"
 )
 
 // DefaultPackageName returns the package name of the generated code for a module path: its last
@@ -360,22 +359,6 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	return files, nil
 }
 
-// fieldTypeVar returns the variable holding check type ft of key, declaring it with decl the
-// first time.
-func (g *generator) fieldTypeVar(key any, ft compile.Ty, decl func(v string, t *compile.FieldType) string) string {
-	v, ok := g.fieldTypes[key]
-	if !ok {
-		if g.fieldTypes == nil {
-			g.fieldTypes = map[any]string{}
-		}
-		v = fmt.Sprintf("fieldType%d", len(g.fieldTypes)+1)
-		g.fieldTypes[key] = v
-		g.fieldTypeKeys = append(g.fieldTypeKeys, key)
-		g.vars.WriteString(decl(v, compile.NewFieldType(ft)))
-	}
-	return v
-}
-
 // goFieldType writes a field type as a generated fieldType value.
 func goFieldType(t *compile.FieldType) string {
 	var b strings.Builder
@@ -396,36 +379,15 @@ func goFieldType(t *compile.FieldType) string {
 	return b.String() + "}"
 }
 
-// useSparseMemo removes the representation selector entirely when neither
-// emitted rule table can cross the sparse-storage threshold.
-func useSparseMemo(opts gen.GenOptions, prog, rec *compile.Program) bool {
-	return !opts.DisableSparseMemo && (prog.NSeen > 64 || rec != nil && rec.NSeen > 64)
-}
-
-func generatedMaxDepth(o gen.GenOptions) int {
-	if o.MaxDepth == 0 {
-		return limits.DefaultMaxDepth
-	}
-	return o.MaxDepth
-}
-
 type generator struct {
-	observability bool
+	genBase
 	// hoist collects the statements the term being printed needs before its expression (see stmts); nil
 	// outside a term.
 	hoist *[]string
 	// goWorkControls emits work-control charging; Go output always has it, TypeScript output has
 	// its own runtime work controls.
-	goWorkControls bool
-	// noWork leaves the step charges out of Go output generated without work controls, where
-	// no control exists to charge: the statements, and the closures that only held one.
-	noWork bool
-	// ordinary prints the bodies in their ordinary form (no work controls and no Documents): the
-	// helpers with an Ordinary form, no charges, inline class tests, and for typed rule bodies the
-	// lean lowering (terminal programs, class runs and tables, guarded classes).
-	ordinary            bool
+	goWorkControls      bool
 	directTypedDocument bool
-	document            bool
 	workClassNames      map[string]string
 	workClassKeys       []string
 	shaperNames         map[string]string
@@ -433,56 +395,27 @@ type generator struct {
 	recoveryProg        map[*compile.Program]bool // whether a program can recover from errors
 	tableErr            error                     // the rule table does not fit the form of runtime.RuleSpec
 	// coreHook, if set, is called by typedCore with the module after it is built and after each pass.
-	coreHook              func(pass string, m *core.Module)
-	flowErr               error // the first rule, line or stream body that Flow IR does not print, or the first internal error of the unread-variable check
-	disableMethodSharing  bool
-	disableLiteralSharing bool
-	// Only exact emitted bodies with the same signature share a helper. Rule
-	// wrappers, memo IDs, frame layouts and expectation IDs remain in the code.
-	methodNames  map[generatedMethod]string
-	literalNames map[string]string
-	methodKeys   []generatedMethod
+	coreHook func(pass string, m *core.Module)
 	// chunksInRuntime is set when the typed values take their storage from the runtime (Chunk).
 	chunksInRuntime             bool
 	ruleTypesDone               bool // the types of the rule table entries are written
-	literalKeys                 []string
-	disableLiteralTextDispatch  bool
 	disableTerminalPrograms     bool
-	disableGuardedClasses       bool
-	boxedComparisons            bool
 	disableTypedObjectSlabs     bool
 	disableTypedListSlabs       bool
 	disableTypedOutputBootstrap bool
-	// flow holds the Core IR of the typed rules while they are printed from Flow IR, or nil;
-	// flowRules counts the rules printed from Flow IR as flat rules and flowFrames the bodies
-	// and lines printed as matchers of runtime-owned frames.
-	flow       *flowState
-	flowRules  int
-	flowFrames int
+	flowRules                   int
+	flowFrames                  int
 	// nodeScopes records the frame layouts shared by typed rule metadata.
 	nodeScopes map[*compile.Rule][]string
 	// typedOnly leaves out the untyped Node family: the rule table keeps only the metadata the
 	// typed table shares.
 	typedOnly bool
-	prog      *compile.Program
-	table     string        // the rule table being generated: rules, or recRules for Recognize
-	cur       *compile.Rule // the rule being generated
-	// proj holds the projected repetition captures of the rule being generated (projections).
-	proj map[string]string
 	// final is the struct constructor that makes an action's result in the typed runtime: its
 	// range is the rule's (see tctx.result), so it computes none and is not recorded as created.
 	final grammar.Term
 	// caps maps capture names to the Go variables that hold them in a flat rule of the typed
 	// runtime (see gen_flowrule.go), instead of frame slots.
-	caps    map[string]string
-	vars    strings.Builder
-	init    strings.Builder
-	methods strings.Builder
-	n       int
-	// descs is the expectation table of the generated parser (descs in runtime); descIDs maps a
-	// description to its ID.
-	descs   []string
-	descIDs map[string]compile.ExpID
+	caps map[string]string
 	// streamStart is the start rule of ParseStream, whose separate body
 	// (generated while streamBody is set) emits its #stream elements.
 	streamStart *compile.Rule
@@ -509,54 +442,6 @@ type generator struct {
 	emittingOK bool
 	bodySet    map[ruleKey]bool
 	reachErr   error
-	// fieldTypes names the field type variable of each checked constructed field, result and cast (by
-	// *grammar.FieldInit or checkInfo.results key), numbered separately so that checks do not
-	// rename other generated names (runtime/fieldcheck.go).
-	fieldTypes map[any]string
-	// fieldTypeKeys are the keys of fieldTypes in the order of their variables, for rollback.
-	fieldTypeKeys []any
-}
-
-type generatedMethod struct {
-	signature string
-	body      string
-}
-
-// methodName returns an existing exact helper or reserves the next name.
-// The signature keeps Node, typed Go and TypeScript functions distinct.
-func (g *generator) methodName(signature, body string) (string, bool) {
-	if g.disableMethodSharing {
-		return g.name("e"), false
-	}
-	key := generatedMethod{signature, body}
-	if name, ok := g.methodNames[key]; ok {
-		return name, true
-	}
-	if g.methodNames == nil {
-		g.methodNames = make(map[generatedMethod]string)
-	}
-	name := g.name("e")
-	g.methodNames[key] = name
-	g.methodKeys = append(g.methodKeys, key)
-	return name, false
-}
-
-// literalName shares immutable literal tables by decoded text. Descriptions
-// belong to each matcher, so spellings with different expectations stay distinct.
-func (g *generator) literalName(value string) (string, bool) {
-	if g.disableLiteralSharing {
-		return g.name("lit"), false
-	}
-	if name, ok := g.literalNames[value]; ok {
-		return name, true
-	}
-	if g.literalNames == nil {
-		g.literalNames = make(map[string]string)
-	}
-	name := g.name("lit")
-	g.literalNames[value] = name
-	g.literalKeys = append(g.literalKeys, value)
-	return name, false
 }
 
 func (g *generator) literal(value string) string {
@@ -565,35 +450,6 @@ func (g *generator) literal(value string) string {
 		fmt.Fprintf(&g.vars, "var %s = []rune(%q)\n", name, value)
 	}
 	return name
-}
-
-// seedDescs starts the table of expectation descriptions with the fixed ones.
-func (g *generator) seedDescs() {
-	if g.descIDs != nil {
-		return
-	}
-	g.descIDs = map[string]compile.ExpID{}
-	for i, d := range compile.FixedDescs {
-		g.descs = append(g.descs, d)
-		g.descIDs[d] = compile.ExpID(i)
-	}
-}
-
-// desc returns the expectation ID of description s, adding it to the table.
-func (g *generator) desc(s string) compile.ExpID {
-	g.seedDescs()
-	if id, ok := g.descIDs[s]; ok {
-		return id
-	}
-	id := compile.ExpID(len(g.descs))
-	g.descs = append(g.descs, s)
-	g.descIDs[s] = id
-	return id
-}
-
-func (g *generator) name(prefix string) string {
-	g.n++
-	return fmt.Sprintf("%s%d", prefix, g.n)
 }
 
 func goStrings(xs []string) string {
@@ -1296,22 +1152,6 @@ func (g *generator) plainCall(r *compile.Rule, body string) {
 `)
 }
 
-// projections returns the projected repetition captures of the rule r (see ruleProjections), none
-// in the recognizer.
-func (g *generator) projections(r *compile.Rule) map[string]string {
-	if g.table == "recRules" {
-		return nil
-	}
-	return compile.RuleProjections(g.prog, r)
-}
-
-// projected reports whether the map call t reads a projected capture (projections), and returns
-// the capture.
-func (g *generator) projected(t *grammar.Call, locals map[string]string) (grammar.Term, bool) {
-	x, ok := compile.ProjectedMap(t, g.proj, func(name string) bool { _, local := locals[name]; return local })
-	return x, ok
-}
-
 // first returns the condition on the next character ch under which the expression e can match,
 // when e must begin with a given terminal (a literal or a character class, possibly behind
 // sequences, captures, @, - and calls of rules that are not left-recursive or OperatorsRule), with the
@@ -1699,47 +1539,6 @@ func (g *generator) term(t grammar.Term, s *compile.Scope, locals map[string]str
 		return fmt.Sprintf("%sUnary(%q, %s)", g.rt(), t.Op, g.term(t.X, s, locals))
 	}
 	panic(fmt.Sprintf("unsupported term %T", t))
-}
-
-// literalTextMembership recognizes a side-effect-free disjunction of text
-// equality checks against one captured value. Restricting the capture to a
-// direct reference makes evaluating text once observably equivalent to the
-// original ordered comparisons.
-func literalTextMembership(t grammar.Term) (string, []string, bool) {
-	var name string
-	var literals []string
-	var walk func(grammar.Term) bool
-	walk = func(t grammar.Term) bool {
-		if b, ok := t.(*grammar.Binary); ok && b.Op == "||" {
-			return walk(b.L) && walk(b.R)
-		}
-		b, ok := t.(*grammar.Binary)
-		if !ok || b.Op != "==" {
-			return false
-		}
-		var capture *grammar.CaptureRef
-		var literal *grammar.StringLit
-		if x, ok := compile.TextArg(b.L); ok {
-			capture, _ = x.(*grammar.CaptureRef)
-			literal, _ = b.R.(*grammar.StringLit)
-		}
-		if capture == nil || literal == nil {
-			if x, ok := compile.TextArg(b.R); ok {
-				capture, _ = x.(*grammar.CaptureRef)
-				literal, _ = b.L.(*grammar.StringLit)
-			}
-		}
-		if capture == nil || literal == nil || (name != "" && name != capture.Name) {
-			return false
-		}
-		name = capture.Name
-		literals = append(literals, literal.Value)
-		return true
-	}
-	if !walk(t) || len(literals) < 2 {
-		return "", nil, false
-	}
-	return name, literals, true
 }
 
 // predicateBody returns the body of a function that returns the value of the predicate term t. A

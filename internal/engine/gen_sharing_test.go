@@ -13,7 +13,7 @@ import (
 )
 
 func TestGeneratedSharingIdentity(t *testing.T) {
-	ts := &tsGen{generator: &generator{table: "rules"}}
+	ts := &tsGen{genBase: genBase{table: "rules"}}
 	name := ts.method("first", "return [null, true];\n")
 	ts.table = "recRules"
 	if ts.method("recognition", "return [null, true];\n") != name {

@@ -29,34 +29,11 @@ import (
 // reads is not declared and its assignments are left out (flowVars); one that must stay is assigned to the
 // blank identifier on the first line.
 
-// flowState holds the Core IR of the typed rules while they are printed from Flow IR.
-type flowState struct {
-	m      *core.Module
-	origin map[core.Node]grammar.Expr
-	opts   flow.Options
-	// rules holds the rules of the program by ID, value-free twins included.
-	rules []*compile.Rule
-}
-
 // flowVarsErr records the internal error that resolving the variables of a printed function found.
 func (g *generator) flowVarsErr(res flowVarsResult) {
 	if res.err != nil && g.flowErr == nil {
 		g.flowErr = res.err
 	}
-}
-
-// failFlow records that Flow IR does not print a part of a table, which fails the generation: every
-// table is printed from Flow IR and has no other route.
-func (g *generator) failFlow(what string) {
-	if g.flowErr == nil {
-		g.flowErr = fmt.Errorf("Flow IR does not print %s", what)
-	}
-}
-
-// flowLineOK reports whether the Operators Rule line e is a framed body that Flow IR can print
-// inside the runtime-owned frame of its rule.
-func flowLineOK(e grammar.Expr) bool {
-	return flowBodyOK(e, true, true)
 }
 
 // startFlow builds the Core IR of the typed rules for printing them from Flow IR.
@@ -187,46 +164,6 @@ func (g *generator) flowStreamBody(r *compile.Rule, scope *compile.Scope) string
 	g.cur, g.proj = r, g.projections(r)
 	defer func() { g.proj = nil }()
 	return g.flowFramed(f, cr.Scope, scope, r.Name+" (stream body)", true)
-}
-
-// flowFrameExprOK reports whether the body of the rule r is one that Flow IR prints as a framed body of the
-// Node or recognizer table: as flatRuleOK, except that a body may cut or recover, and that the rule may be a
-// left-recursion leader. Flow IR lowers a cut as the typed table does (a flag per backtracking point,
-// published to the runtime's cut flag on return), so the
-// runtime's frame, memo and finish ownership are the same. The runtime owns the growth of a leader's seed
-// around its body, so the body is the matcher of any other rule; its left-recursive alternatives have no
-// first set and are never guarded. The runtime's RecoverAttr sequence is lowered inline, with NewErrorNode
-// building the error node.
-func flowFrameExprOK(r *compile.Rule) bool {
-	return flowBodyOK(r.BodyExpr(), true, true)
-}
-
-// flowNodeFrameOK reports whether the rule r of the Node or recognizer table is printed from Flow IR as
-// a framed body, with its Core rule.
-//
-// Core IR gathers the values of a projected repetition (Project), and the actions that read it expect
-// that shape. The Node table writes its actions with the projections of the rule (generator.projections),
-// which are the ones Core IR makes, so a Core-lowered body agrees with them. The recognizer's table writes
-// its actions without projections, so its Core IR is built without them (irbuild.CoreProjecting) and agrees with
-// them as well; either table's body is eligible when its action reads only captures of the frame.
-func (g *generator) flowNodeFrameOK(r *compile.Rule) (*core.Rule, bool) {
-	if g.flow == nil || g.table == "trules" || !flowFrameExprOK(r) {
-		return nil, false
-	}
-	cr := g.flow.m.Rules[r.ID]
-	if !flow.FramedBody(cr.Body) {
-		return nil, false
-	}
-	if r.Action != nil {
-		known := compile.NewScope()
-		for _, sl := range cr.Scope {
-			known.Slot(sl.Name)
-		}
-		if !frameRefsKnown(r.Action, known) {
-			return nil, false
-		}
-	}
-	return cr, true
 }
 
 // flowOperatorsRuleBody prints the line l of the Operators Rule g.cur, whose expression is e, from Flow
@@ -1040,13 +977,4 @@ func (p *flowPrinter) term(n core.Node) grammar.Term {
 		panic(fmt.Sprintf("flow printer: no grammar predicate for %T", n))
 	}
 	return e.Term
-}
-
-// frameScope returns the scope of the frame whose slots the captures c name.
-func frameScope(c flow.Captures) *compile.Scope {
-	s := compile.NewScope()
-	for _, name := range c.Names {
-		s.Slot(name)
-	}
-	return s
 }

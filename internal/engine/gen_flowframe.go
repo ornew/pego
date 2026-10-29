@@ -1,24 +1,8 @@
 package engine
 
 import (
-	"slices"
-
-	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 )
-
-func frameRefsKnown(t grammar.Term, s *compile.Scope, locals ...string) bool {
-	ok := true
-	capRefs(t, func(name string) {
-		if slices.Contains(locals, name) {
-			return
-		}
-		if _, found := s.Slots[name]; !found {
-			ok = false
-		}
-	})
-	return ok
-}
 
 // typedFrameComment reports whether the body of the typed rule r is printed in place under the
 // runtime-owned frame, a left-recursion leader or a rule that recovers, and returns the comment of
