@@ -4,7 +4,8 @@ A parse of untrusted or very large input should be able to stop: when a caller g
 the work exceeds a budget. This guide shows the per-call options that do that and what a stopped parse returns. The
 nesting limit, which bounds rule calls, is described with the [backends](backends.md#deep-nesting-and-withmaxdepth).
 
-The examples use a parser `p` compiled as in [Running Parsers](running-parsers.md).
+The examples use a parser `p` compiled as in [Running Parsers](running-parsers.md). The repository's security policy,
+`SECURITY.md` at the root of the repository, lists what a parse bounds and what the caller must bound.
 
 ## Cancelling a Parse
 

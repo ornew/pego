@@ -241,7 +241,8 @@ left-recursive), an indentation-based outline format and a small programming lan
 ## Contributing
 
 Bug reports, ideas and pull requests are welcome. Run `go test ./...` before sending changes, and follow the
-[commit message guidelines](docs/commit-messages.md).
+[commit message guidelines](docs/commit-messages.md). Report security vulnerabilities privately, as the
+[security policy](SECURITY.md) describes.
 
 ## License
 
