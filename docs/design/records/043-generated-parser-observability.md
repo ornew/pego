@@ -347,7 +347,7 @@ generated output remained byte-identical to baseline `bc0e13a`; opt-in source
 grew 5.02%/4.39% for direct/conversion calculator, 9.14%/7.12% for JSON, and
 10.04%/8.00% for XML. Broad workload, binary-size, retained-heap and generation
 costs were not measured for this typed extension. The source is
-`internal/engine/gogen_typed_observe_bench_test.go`; exported temporary fixtures
+`internal/gen/gogen/gogen_typed_observe_bench_test.go`; exported temporary fixtures
 and raw measurement logs are not repository artifacts.
 
 ### Generated Go Profile Measurements
@@ -395,7 +395,7 @@ per-API estimates. Each benchmark reused one `Profile` per case and excluded
 `Snapshot`. Generated source grew versus the prior trace-enabled generator by
 0.870–4.530% for Node and 0.545–3.018% for typed output, depending on fixture.
 Binary size, retained heap and generation time were not measured. The benchmark
-source is `internal/engine/gogen_profile_bench_test.go`; exported fixtures and
+source is `internal/gen/gogen/gogen_profile_bench_test.go`; exported fixtures and
 raw results are not repository artifacts.
 
 To reproduce the candidate measurements, export the fixtures and run each
@@ -403,7 +403,7 @@ ordinary/observed package in a separate process, alternating their order for
 each fixture and unit:
 
 ```sh
-PEGO_PROFILE_BENCH_DIR=/tmp/pego-profile-bench go test ./internal/engine -run '^TestExportGeneratedGoProfileBenchmarks$' -count=1
+PEGO_PROFILE_BENCH_DIR=/tmp/pego-profile-bench go test ./internal/gen/gogen -run '^TestExportGeneratedGoProfileBenchmarks$' -count=1
 cd /tmp/pego-profile-bench/json/node/ordinary || exit 1
 go test -run '^$' -bench '^(Benchmark(Parse|ParseAST|Recognize|TraceParse)|BenchmarkProfile(Parse|Recognize|ParseAST))$' -benchmem -benchtime=150ms
 # Repeat from json/node/observed and the typed routes, then alternate order for xml and calc.
@@ -427,7 +427,7 @@ package benchmark in separate processes, alternating ordinary and observed
 order across repeated samples:
 
 ```sh
-PEGO_TRACE_BENCH_DIR=/tmp/pego-trace-bench go test ./internal/engine -run '^TestExportGeneratedTraceBenchmarks$' -count=1
+PEGO_TRACE_BENCH_DIR=/tmp/pego-trace-bench go test ./internal/gen/gogen -run '^TestExportGeneratedTraceBenchmarks$' -count=1
 cd /tmp/pego-trace-bench/json/ordinary || exit 1
 go test -run '^$' -bench '^(BenchmarkParse|BenchmarkRecognize|BenchmarkTrace)$' -benchmem -benchtime=200ms
 # Repeat from json/observed, then alternate order for xml and calc.
@@ -438,10 +438,10 @@ filter the ordinary and observed subbenchmarks into separate processes and
 alternate their order:
 
 ```sh
-go test ./internal/engine -run '^$' -bench '^BenchmarkGeneratedObservabilityGeneration$' -benchmem -benchtime=200ms -count=3
+go test ./internal/gen/gogen -run '^$' -bench '^BenchmarkGeneratedObservabilityGeneration$' -benchmem -benchtime=200ms -count=3
 ```
 
-The benchmark source is `internal/engine/gogen_observe_bench_test.go`; the
+The benchmark source is `internal/gen/gogen/gogen_observe_bench_test.go`; the
 generated fixtures and raw results are not repository artifacts.
 
 ### TypeScript Batch Measurements

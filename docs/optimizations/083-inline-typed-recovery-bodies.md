@@ -93,7 +93,7 @@ Generate same-generator direct and reference fixtures and check their parity:
 
 ```sh
 export PEGO_TYPED_RECOVERY_DIR=/tmp/pego-typed-recovery
-go test ./internal/engine -run '^TestGeneratedTypedRecoveryWorkloads$' -count=1
+go test ./internal/gen/gogen -run '^TestGeneratedTypedRecoveryWorkloads$' -count=1
 ```
 
 Build each workload and route as a separate benchmark binary:

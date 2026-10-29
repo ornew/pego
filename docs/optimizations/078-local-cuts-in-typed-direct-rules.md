@@ -50,7 +50,7 @@ same values and errors:
 
 ```sh
 export PEGO_TYPED_CUT_DIR=/tmp/pego-typed-cuts
-go test ./internal/engine -run '^TestGeneratedTypedCutWorkload$' -count=1
+go test ./internal/gen/gogen -run '^TestGeneratedTypedCutWorkload$' -count=1
 ```
 
 Build each fixture into its own benchmark binary:

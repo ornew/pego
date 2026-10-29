@@ -51,7 +51,7 @@ Generate same-revision direct and reference fixtures and check parity:
 
 ```sh
 export PEGO_TYPED_FRAMED_CUT_DIR=/tmp/pego-typed-framed-cuts
-go test ./internal/engine -run '^TestGeneratedTypedFramedCutWorkloads$' -count=1
+go test ./internal/gen/gogen -run '^TestGeneratedTypedFramedCutWorkloads$' -count=1
 ```
 
 Build each fixture as a separate benchmark binary:

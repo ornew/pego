@@ -78,8 +78,8 @@ show a broad parser speedup.
 Reproduce the ownership tests and benchmark setup:
 
 ```sh
-go test ./internal/engine -run '^TestDocumentVMValueStorage' -count=1
-go test -tags pego_reference_document_vm_values ./internal/engine \
+go test ./internal/engine/document -run '^TestDocumentVMValueStorage' -count=1
+go test -tags pego_reference_document_vm_values ./internal/engine/document \
   -run '^TestDocumentVMValueStorage' -count=1
 go test -c -o /tmp/document-vm-values.test ./internal/engine
 go test -tags pego_reference_document_vm_values -c \

@@ -128,7 +128,7 @@ Notes:
 
 ### Generated Typed-Output Retention
 
-`internal/engine/gogen_typed_output_retention_test.go` exports a generated fixture
+`internal/gen/gogen/gogen_typed_output_retention_test.go` exports a generated fixture
 and checks escaped terminal, string-node, shared-structure and returned-list values
 in both position units. It exports `slabs`, `legacy`, `objects`, `slices` and
 `individual` subdirectories. `slabs` uses the first-three-object/first-nonempty-
@@ -141,7 +141,7 @@ for the focused results and limits.
 
 ```bash
 PEGO_TYPED_OUTPUT_RETENTION_DIR=/tmp/typed-output-retention \
-  go test ./internal/engine -run '^TestGeneratedTypedOutputRetentionFixture$' -count=1
+  go test ./internal/gen/gogen -run '^TestGeneratedTypedOutputRetentionFixture$' -count=1
 cd /tmp/typed-output-retention/slabs
 go test -c -o typed-retention.test .
 ./typed-retention.test -test.run '^$' -test.bench '^BenchmarkTypedOutputParse$' -test.benchmem -test.benchtime=500ms

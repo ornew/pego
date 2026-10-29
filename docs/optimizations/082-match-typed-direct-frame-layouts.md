@@ -66,7 +66,7 @@ parity:
 
 ```sh
 export PEGO_TYPED_FRAME_LAYOUT_DIR=/tmp/pego-typed-frame-layouts
-go test ./internal/engine -run '^TestGeneratedTypedFrameLayoutWorkloads$' -count=1
+go test ./internal/gen/gogen -run '^TestGeneratedTypedFrameLayoutWorkloads$' -count=1
 ```
 
 Build the direct/general fixtures into separate binaries:
@@ -92,9 +92,9 @@ To compare generation separately, keep `PEGO_REFERENCE_FRAME_LAYOUTS` fixed
 before each timed run:
 
 ```sh
-PEGO_REFERENCE_FRAME_LAYOUTS=0 go test ./internal/engine -run '^$' \
+PEGO_REFERENCE_FRAME_LAYOUTS=0 go test ./internal/gen/gogen -run '^$' \
   -bench '^BenchmarkTypedFrameLayoutGeneration$' -benchtime=300ms -benchmem
-PEGO_REFERENCE_FRAME_LAYOUTS=1 go test ./internal/engine -run '^$' \
+PEGO_REFERENCE_FRAME_LAYOUTS=1 go test ./internal/gen/gogen -run '^$' \
   -bench '^BenchmarkTypedFrameLayoutGeneration$' -benchtime=300ms -benchmem
 ```
 

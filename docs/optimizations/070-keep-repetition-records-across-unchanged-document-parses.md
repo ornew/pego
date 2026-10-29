@@ -41,7 +41,7 @@
   panic clears the shared run map/memo/scratch, then retry and edit reuse work.
   Existing action/depth and provisional-left-recursion invalidation tests pass.
 - Reproduce with
-  `go test ./internal/engine -run '^$' -bench '^BenchmarkDocumentReparse$' -benchtime=200ms -benchmem`
+  `go test ./internal/engine/document -run '^$' -bench '^BenchmarkDocumentReparse$' -benchtime=200ms -benchmem`
   and `go test ./bench -run '^$' -bench '^BenchmarkIncremental(Long)?$' -benchtime=200ms -benchmem`.
   Build separate baseline/candidate binaries with the same benchmark source;
   restore only `internal/engine/document.go` from the baseline via a Go overlay

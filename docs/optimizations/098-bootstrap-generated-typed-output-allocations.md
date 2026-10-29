@@ -27,7 +27,7 @@ The retained-output fixture exports direct and conversion variants, including th
 
 ```sh
 PEGO_TYPED_OUTPUT_RETENTION_DIR=/tmp/retention \
-  go test ./internal/engine -run '^TestGeneratedTypedOutputRetentionFixture$' -count=1
+  go test ./internal/gen/gogen -run '^TestGeneratedTypedOutputRetentionFixture$' -count=1
 ```
 
 Measure retained output separately for each exported variant:
@@ -42,7 +42,7 @@ for variant in slabs legacy; do
 done
 ```
 
-For ordinary generated typed workloads, export same-generator controls; `ref` is the default and `legacy` is the generation-only allocation reference:
+For ordinary generated typed workloads, export same-generator controls with the exporter that is in the tree up to commit `0a3ef83f^`; `ref` is the default and `legacy` is the generation-only allocation reference:
 
 ```sh
 PEGO_TYPED_OUTPUT_SWEEP_EXPORT_DIR=/tmp/ordinary \

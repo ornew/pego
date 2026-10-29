@@ -73,7 +73,7 @@ error parity:
 
 ```sh
 export PEGO_TYPED_LOCAL_LAYOUT_DIR=/tmp/pego-typed-local-layouts
-go test ./internal/engine -run '^TestGeneratedTypedLocalLayoutWorkloads$' -count=1
+go test ./internal/gen/gogen -run '^TestGeneratedTypedLocalLayoutWorkloads$' -count=1
 ```
 
 Build each workload and route as a separate benchmark binary:

@@ -49,7 +49,7 @@ values and errors:
 
 ```sh
 export PEGO_TYPED_OPERATORS_RULE_DIR=/tmp/pego-typed-operators-rule
-go test ./internal/engine -run '^TestGeneratedTypedOperatorsRule(Workload|ActionWorkload)$' -count=1
+go test ./internal/gen/gogen -run '^TestGeneratedTypedOperatorsRule(Workload|ActionWorkload)$' -count=1
 ```
 
 Build each fixture from the `direct` and `general` folders into separate

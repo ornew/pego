@@ -61,7 +61,7 @@
   `cd parsers/cel && go test -run '^$' -bench 'Benchmark(PoliciesParseAST|LargeParseAST)$' -benchtime=300ms -count=1`.
   Use the final benchmark sources on both production versions. For the
   ownership workloads, generate both paths with
-  `PEGO_TYPED_CHUNK_DIR=/tmp/pego-chunks go test ./internal/engine -run '^TestGeneratedTypedChunkOwnership$' -count=1`,
+  `PEGO_TYPED_CHUNK_DIR=/tmp/pego-chunks go test ./internal/gen/gogen -run '^TestGeneratedTypedChunkOwnership$' -count=1`,
   using a Go overlay of baseline `internal/engine/gen_types.go` when building
   the parent. In each generated `false`/`true` directory, benchmark
   `BenchmarkChunkParseAST` with the same 300 ms flags. Alternate five pairs
