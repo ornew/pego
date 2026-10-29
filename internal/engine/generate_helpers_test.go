@@ -6,7 +6,8 @@ import (
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
 	"github.com/ornew/pego/internal/gen/tsgen"
-	"github.com/ornew/pego/internal/schema"
+	ischema "github.com/ornew/pego/internal/schema"
+	"github.com/ornew/pego/schema"
 )
 
 // The engine does not import the generators or the output schema; packages gen and pego join them
@@ -46,5 +47,5 @@ func outputSchemaPrototype(p *Program, start string, allRules bool) (*schema.Out
 	if err != nil {
 		return nil, err
 	}
-	return schema.Export(sp, start, allRules)
+	return ischema.Export(sp, start, allRules)
 }

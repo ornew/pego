@@ -1,16 +1,17 @@
-package pego_test
+package schema_test
 
 import (
 	"testing"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/schema"
 )
 
 // A field that changes between error and missing is a change of its type.
-func TestDiffOutputSchemasMissingAndError(t *testing.T) {
-	compile := func(typ string) *pego.OutputSchema {
+func TestCompareMissingAndError(t *testing.T) {
+	compile := func(typ string) *schema.Output {
 		t.Helper()
-		p, err := compileTestSource("type P = { S "+typ+" }\nrule main = \"(\" semi \")\" $$ => P{}\nrule semi = \";\" #missing", "main")
+		p, err := pego.CompileSource("type P = { S "+typ+" }\n@start\nrule main = \"(\" semi \")\" $$ => P{}\nrule semi = \";\" #missing", "main")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -21,12 +22,12 @@ func TestDiffOutputSchemasMissingAndError(t *testing.T) {
 		return s
 	}
 	missing, errored := compile("missing"), compile("error")
-	same, err := pego.DiffOutputSchemas(missing, compile("missing"))
+	same, err := schema.Compare(missing, compile("missing"))
 	if err != nil || len(same.Types) != 0 || len(same.Rules) != 0 {
 		t.Fatalf("equal schemas: %+v %v", same, err)
 	}
-	diff, err := pego.DiffOutputSchemas(missing, errored)
-	if err != nil || len(diff.Types) != 1 || diff.Types[0].ID != "declared/P" || diff.Types[0].Kind != pego.SchemaChanged {
+	diff, err := schema.Compare(missing, errored)
+	if err != nil || len(diff.Types) != 1 || diff.Types[0].ID != "declared/P" || diff.Types[0].Kind != schema.Changed {
 		t.Fatalf("diff: %+v %v", diff, err)
 	}
 	if got := diff.Types[0].Before.Shape.Fields[0].Shape.Kind; got != "missing" {

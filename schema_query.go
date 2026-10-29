@@ -4,22 +4,13 @@ import (
 	"context"
 
 	"github.com/ornew/pego/internal/engine"
-	"github.com/ornew/pego/internal/schema"
+	ischema "github.com/ornew/pego/internal/schema"
+	"github.com/ornew/pego/schema"
 )
-
-// OutputSchema describes possible grammar outputs independently of a parse.
-// Validate checks its version 2 envelope and shape graph, including schemas built in
-// memory. Decoding it with encoding/json performs the same check.
-type OutputSchema = schema.Output
-type SchemaType = schema.Type
-type SchemaRule = schema.Rule
-type SchemaShape = schema.Shape
-type SchemaField = schema.Field
-type SchemaCapture = schema.Capture
 
 // ErrSchemaUnavailable reports that checked grammar metadata is unavailable.
 // In particular, a parser loaded from a compiled file cannot export a schema.
-var ErrSchemaUnavailable = schema.ErrUnavailable
+var ErrSchemaUnavailable = ischema.ErrUnavailable
 
 type schemaOptions struct{ allRules bool }
 
@@ -34,7 +25,7 @@ func WithAllSchemaRules() SchemaOption {
 
 // OutputSchema exports checked grammar metadata. It does not inspect parse
 // results or change parsing.
-func (p *Parser) OutputSchema(opts ...SchemaOption) (*OutputSchema, error) {
+func (p *Parser) OutputSchema(opts ...SchemaOption) (*schema.Output, error) {
 	if p == nil || p.prog == nil {
 		return nil, ErrSchemaUnavailable
 	}
@@ -49,39 +40,39 @@ func (p *Parser) OutputSchema(opts ...SchemaOption) (*OutputSchema, error) {
 // values contain, and the struct types they refer to; or every rule and type with allRules. It
 // has no effect on parsing or generation. A program loaded from a compiled grammar has no schema
 // (engine.Program.SchemaProgram).
-func outputSchemaPrototype(prog *engine.Program, start string, allRules bool) (*OutputSchema, error) {
+func outputSchemaPrototype(prog *engine.Program, start string, allRules bool) (*schema.Output, error) {
 	sp, err := prog.SchemaProgram(start)
 	if err != nil {
 		return nil, err
 	}
-	return schema.Export(sp, start, allRules)
+	return ischema.Export(sp, start, allRules)
 }
 
 // QueryPattern is a programmatic structural pattern. Empty constraints match
 // any value of the applicable category. Elements form an ordered prefix of a
 // tuple, a list or a node's value; required fields must be present, while extra
 // elements and fields are allowed.
-type QueryPattern = schema.QueryPattern
-type QueryFieldPattern = schema.QueryFieldPattern
-type QueryEdge = schema.QueryEdge
-type QueryCapture = schema.QueryCapture
-type QueryMatch = schema.QueryMatch
+type QueryPattern = ischema.QueryPattern
+type QueryFieldPattern = ischema.QueryFieldPattern
+type QueryEdge = ischema.QueryEdge
+type QueryCapture = ischema.QueryCapture
+type QueryMatch = ischema.QueryMatch
 
 // ErrQueryCycle reports a cycle on the active path through the values.
-var ErrQueryCycle = schema.ErrQueryCycle
+var ErrQueryCycle = ischema.ErrQueryCycle
 
 // ErrQueryNoSourceInfo reports a query with a rule constraint on values that
 // record no rules, because the grammar was compiled without source information.
-var ErrQueryNoSourceInfo = schema.ErrQueryNoSourceInfo
+var ErrQueryNoSourceInfo = ischema.ErrQueryNoSourceInfo
 
 // StructuralQuery is an immutable compiled programmatic pattern.
-type StructuralQuery struct{ query *schema.StructuralQuery }
+type StructuralQuery struct{ query *ischema.StructuralQuery }
 
 // CompileStructuralQuery validates and copies a pattern. A nil schema defers
 // type and field checks until evaluation; a supplied schema is validated first
 // and rejects known impossibilities.
-func CompileStructuralQuery(pattern QueryPattern, out *OutputSchema) (*StructuralQuery, error) {
-	q, err := schema.CompileStructuralQuery(pattern, out)
+func CompileStructuralQuery(pattern QueryPattern, out *schema.Output) (*StructuralQuery, error) {
+	q, err := ischema.CompileStructuralQuery(pattern, out)
 	if err != nil {
 		return nil, err
 	}
@@ -93,13 +84,13 @@ func CompileStructuralQuery(pattern QueryPattern, out *OutputSchema) (*Structura
 // schema do not affect it. It is immutable and safe for concurrent use. Obtain
 // one from PrepareQuerySchema: a nil or zero QuerySchema holds no schema and
 // defers type and field checks until evaluation.
-type QuerySchema struct{ schema *schema.QuerySchema }
+type QuerySchema struct{ schema *ischema.QuerySchema }
 
 // PrepareQuerySchema validates and copies the schema. Compiling a query with the
 // result performs the same checks as CompileStructuralQuery with the schema, but
 // does not validate the schema again.
-func PrepareQuerySchema(out *OutputSchema) (*QuerySchema, error) {
-	s, err := schema.PrepareQuerySchema(out)
+func PrepareQuerySchema(out *schema.Output) (*QuerySchema, error) {
+	s, err := ischema.PrepareQuerySchema(out)
 	if err != nil {
 		return nil, err
 	}
@@ -108,9 +99,9 @@ func PrepareQuerySchema(out *OutputSchema) (*QuerySchema, error) {
 
 // CompileStructuralQuery validates and copies a pattern, rejecting known
 // impossibilities in the prepared schema. A nil or zero QuerySchema defers type
-// and field checks until evaluation, as a nil OutputSchema does.
+// and field checks until evaluation, as a nil *schema.Output does.
 func (s *QuerySchema) CompileStructuralQuery(pattern QueryPattern) (*StructuralQuery, error) {
-	var es *schema.QuerySchema
+	var es *ischema.QuerySchema
 	if s != nil {
 		es = s.schema
 	}
@@ -122,18 +113,18 @@ func (s *QuerySchema) CompileStructuralQuery(pattern QueryPattern) (*StructuralQ
 }
 
 // QueryOption configures one query evaluation.
-type QueryOption func(*schema.QueryOptions)
+type QueryOption func(*ischema.QueryOptions)
 
 // WithQueryContext selects cooperative cancellation. Nil disables it.
 func WithQueryContext(ctx context.Context) QueryOption {
-	return func(o *schema.QueryOptions) { o.Context = ctx }
+	return func(o *ischema.QueryOptions) { o.Context = ctx }
 }
 
 // WithQueryWorkLimits bounds query work. MaxSteps is charged for traversal,
 // matching, paths and results; MaxInputWork is unused by structural queries.
 // A zero limit means unlimited work.
 func WithQueryWorkLimits(limits WorkLimits) QueryOption {
-	return func(o *schema.QueryOptions) { o.WorkLimits = limits }
+	return func(o *ischema.QueryOptions) { o.WorkLimits = limits }
 }
 
 // Matches evaluates every incoming graph edge in preorder: children by index,
@@ -141,12 +132,12 @@ func WithQueryWorkLimits(limits WorkLimits) QueryOption {
 // graph values; callers must keep the graph stable. Cancellation, work-limit
 // exhaustion and cycles return an error without partial results.
 func (q *StructuralQuery) Matches(root *Node, opts ...QueryOption) ([]QueryMatch, error) {
-	var o schema.QueryOptions
+	var o ischema.QueryOptions
 	for _, opt := range opts {
 		opt(&o)
 	}
 	if q == nil {
-		return (*schema.StructuralQuery)(nil).Matches(root, o)
+		return (*ischema.StructuralQuery)(nil).Matches(root, o)
 	}
 	return q.query.Matches(root, o)
 }

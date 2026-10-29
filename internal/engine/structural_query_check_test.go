@@ -7,8 +7,9 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/schema"
+	ischema "github.com/ornew/pego/internal/schema"
 	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/pego/schema"
 )
 
 const queryShapeGrammar = `type Int = { Text string }
@@ -34,50 +35,50 @@ func queryShapeSchema(t *testing.T) *schema.Output {
 	return s
 }
 
-func field(name string, p schema.QueryPattern) schema.QueryFieldPattern {
-	return schema.QueryFieldPattern{Name: name, Pattern: p}
+func field(name string, p ischema.QueryPattern) ischema.QueryFieldPattern {
+	return ischema.QueryFieldPattern{Name: name, Pattern: p}
 }
 
 // textStruct matches a value of the text struct type name, such as Int or Name.
-func textStruct(name string) schema.QueryPattern {
-	return schema.QueryPattern{Type: name, Fields: []schema.QueryFieldPattern{{Name: "Text", Pattern: schema.QueryPattern{Category: "string"}}}}
+func textStruct(name string) ischema.QueryPattern {
+	return ischema.QueryPattern{Type: name, Fields: []ischema.QueryFieldPattern{{Name: "Text", Pattern: ischema.QueryPattern{Category: "string"}}}}
 }
 
 // TestStructuralQueryNestedShapes checks that a pattern compiles if, and only if, some value of the
 // schema can match it where it is applied, through unions, optional values, lists and nesting.
 func TestStructuralQueryNestedShapes(t *testing.T) {
 	s := queryShapeSchema(t)
-	prepared, err := schema.PrepareQuerySchema(s)
+	prepared, err := ischema.PrepareQuerySchema(s)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, tc := range []struct {
 		name    string
-		pattern schema.QueryPattern
+		pattern ischema.QueryPattern
 		err     string // "" if the pattern compiles
 	}{
-		{"union alternative", schema.QueryPattern{Type: "Pair", Fields: []schema.QueryFieldPattern{field("Value", textStruct("Int"))}}, ""},
-		{"nested union alternative", schema.QueryPattern{Type: "Pair", Fields: []schema.QueryFieldPattern{field("Value", schema.QueryPattern{Fields: []schema.QueryFieldPattern{field("Key", textStruct("Name"))}})}}, ""},
-		{"nil alternative", schema.QueryPattern{Type: "Pair", Fields: []schema.QueryFieldPattern{field("Value", schema.QueryPattern{Category: "nil"})}}, ""},
-		{"through optional", schema.QueryPattern{Type: "Box", Fields: []schema.QueryFieldPattern{field("Inner", schema.QueryPattern{Fields: []schema.QueryFieldPattern{field("Items", schema.QueryPattern{})}})}}, ""},
-		{"list element", schema.QueryPattern{Type: "Pair", Fields: []schema.QueryFieldPattern{field("Items", schema.QueryPattern{Category: "list", Elements: []schema.QueryPattern{textStruct("Int")}})}}, ""},
-		{"deep", schema.QueryPattern{Type: "Box", Fields: []schema.QueryFieldPattern{field("Inner", schema.QueryPattern{Fields: []schema.QueryFieldPattern{field("Value", schema.QueryPattern{Type: "Pair", Fields: []schema.QueryFieldPattern{field("Value", textStruct("Int"))}})}})}}, ""},
-		{"untyped root", schema.QueryPattern{Fields: []schema.QueryFieldPattern{field("Anything", schema.QueryPattern{Category: "int"})}}, ""},
-		{"rule result elements", schema.QueryPattern{Category: "node", Elements: []schema.QueryPattern{{Type: "Box"}}}, ""},
+		{"union alternative", ischema.QueryPattern{Type: "Pair", Fields: []ischema.QueryFieldPattern{field("Value", textStruct("Int"))}}, ""},
+		{"nested union alternative", ischema.QueryPattern{Type: "Pair", Fields: []ischema.QueryFieldPattern{field("Value", ischema.QueryPattern{Fields: []ischema.QueryFieldPattern{field("Key", textStruct("Name"))}})}}, ""},
+		{"nil alternative", ischema.QueryPattern{Type: "Pair", Fields: []ischema.QueryFieldPattern{field("Value", ischema.QueryPattern{Category: "nil"})}}, ""},
+		{"through optional", ischema.QueryPattern{Type: "Box", Fields: []ischema.QueryFieldPattern{field("Inner", ischema.QueryPattern{Fields: []ischema.QueryFieldPattern{field("Items", ischema.QueryPattern{})}})}}, ""},
+		{"list element", ischema.QueryPattern{Type: "Pair", Fields: []ischema.QueryFieldPattern{field("Items", ischema.QueryPattern{Category: "list", Elements: []ischema.QueryPattern{textStruct("Int")}})}}, ""},
+		{"deep", ischema.QueryPattern{Type: "Box", Fields: []ischema.QueryFieldPattern{field("Inner", ischema.QueryPattern{Fields: []ischema.QueryFieldPattern{field("Value", ischema.QueryPattern{Type: "Pair", Fields: []ischema.QueryFieldPattern{field("Value", textStruct("Int"))}})}})}}, ""},
+		{"untyped root", ischema.QueryPattern{Fields: []ischema.QueryFieldPattern{field("Anything", ischema.QueryPattern{Category: "int"})}}, ""},
+		{"rule result elements", ischema.QueryPattern{Category: "node", Elements: []ischema.QueryPattern{{Type: "Box"}}}, ""},
 
-		{"type outside union", schema.QueryPattern{Type: "Pair", Fields: []schema.QueryFieldPattern{field("Value", schema.QueryPattern{Type: "Box"})}}, "alternatives matches"},
-		{"field no alternative has", schema.QueryPattern{Type: "Pair", Fields: []schema.QueryFieldPattern{field("Value", schema.QueryPattern{Fields: []schema.QueryFieldPattern{field("Inner", schema.QueryPattern{})}})}}, "alternatives matches"},
-		{"scalar category in node union", schema.QueryPattern{Type: "Pair", Fields: []schema.QueryFieldPattern{field("Value", schema.QueryPattern{Category: "string"})}}, "alternatives matches"},
-		{"wrong type", schema.QueryPattern{Type: "Box", Fields: []schema.QueryFieldPattern{field("Inner", schema.QueryPattern{Type: "Box"})}}, "value is a struct Pair, not Box"},
-		{"nested wrong field", schema.QueryPattern{Type: "Box", Fields: []schema.QueryFieldPattern{field("Inner", schema.QueryPattern{Fields: []schema.QueryFieldPattern{field("Inner", schema.QueryPattern{})}})}}, "a struct Pair has no field Inner"},
-		{"text struct has no such field", schema.QueryPattern{Type: "Pair", Fields: []schema.QueryFieldPattern{field("Key", schema.QueryPattern{Fields: []schema.QueryFieldPattern{field("X", schema.QueryPattern{})}})}}, "a struct Name has no field X"},
-		{"text struct is not a node", schema.QueryPattern{Type: "Pair", Fields: []schema.QueryFieldPattern{field("Key", schema.QueryPattern{Value: &schema.QueryPattern{Category: "int"}})}}, "value is a struct Name, not a node"},
-		{"list element type", schema.QueryPattern{Type: "Pair", Fields: []schema.QueryFieldPattern{field("Items", schema.QueryPattern{Elements: []schema.QueryPattern{{Category: "int"}}})}}, "element 0"},
-		{"terminal has no elements", schema.QueryPattern{Type: "Pair", Fields: []schema.QueryFieldPattern{field("Key", schema.QueryPattern{Elements: []schema.QueryPattern{{}}})}}, "has no elements"},
-		{"named type below unknown", schema.QueryPattern{Fields: []schema.QueryFieldPattern{field("X", schema.QueryPattern{Type: "Pair", Fields: []schema.QueryFieldPattern{field("Key", schema.QueryPattern{Category: "int"})}})}}, "field Key"},
+		{"type outside union", ischema.QueryPattern{Type: "Pair", Fields: []ischema.QueryFieldPattern{field("Value", ischema.QueryPattern{Type: "Box"})}}, "alternatives matches"},
+		{"field no alternative has", ischema.QueryPattern{Type: "Pair", Fields: []ischema.QueryFieldPattern{field("Value", ischema.QueryPattern{Fields: []ischema.QueryFieldPattern{field("Inner", ischema.QueryPattern{})}})}}, "alternatives matches"},
+		{"scalar category in node union", ischema.QueryPattern{Type: "Pair", Fields: []ischema.QueryFieldPattern{field("Value", ischema.QueryPattern{Category: "string"})}}, "alternatives matches"},
+		{"wrong type", ischema.QueryPattern{Type: "Box", Fields: []ischema.QueryFieldPattern{field("Inner", ischema.QueryPattern{Type: "Box"})}}, "value is a struct Pair, not Box"},
+		{"nested wrong field", ischema.QueryPattern{Type: "Box", Fields: []ischema.QueryFieldPattern{field("Inner", ischema.QueryPattern{Fields: []ischema.QueryFieldPattern{field("Inner", ischema.QueryPattern{})}})}}, "a struct Pair has no field Inner"},
+		{"text struct has no such field", ischema.QueryPattern{Type: "Pair", Fields: []ischema.QueryFieldPattern{field("Key", ischema.QueryPattern{Fields: []ischema.QueryFieldPattern{field("X", ischema.QueryPattern{})}})}}, "a struct Name has no field X"},
+		{"text struct is not a node", ischema.QueryPattern{Type: "Pair", Fields: []ischema.QueryFieldPattern{field("Key", ischema.QueryPattern{Value: &ischema.QueryPattern{Category: "int"}})}}, "value is a struct Name, not a node"},
+		{"list element type", ischema.QueryPattern{Type: "Pair", Fields: []ischema.QueryFieldPattern{field("Items", ischema.QueryPattern{Elements: []ischema.QueryPattern{{Category: "int"}}})}}, "element 0"},
+		{"terminal has no elements", ischema.QueryPattern{Type: "Pair", Fields: []ischema.QueryFieldPattern{field("Key", ischema.QueryPattern{Elements: []ischema.QueryPattern{{}}})}}, "has no elements"},
+		{"named type below unknown", ischema.QueryPattern{Fields: []ischema.QueryFieldPattern{field("X", ischema.QueryPattern{Type: "Pair", Fields: []ischema.QueryFieldPattern{field("Key", ischema.QueryPattern{Category: "int"})}})}}, "field Key"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := schema.CompileStructuralQuery(tc.pattern, s)
+			_, err := ischema.CompileStructuralQuery(tc.pattern, s)
 			switch {
 			case tc.err == "" && err != nil:
 				t.Fatalf("rejected: %v", err)
@@ -115,7 +116,7 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 			continue
 		}
 		schemas++
-		prepared, err := schema.PrepareQuerySchema(s)
+		prepared, err := ischema.PrepareQuerySchema(s)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -125,7 +126,7 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 			if root == nil {
 				continue
 			}
-			err = schema.VisitQueryGraph(root, &schema.QueryBudget{}, func(v schema.QueryVisit) error {
+			err = ischema.VisitQueryGraph(root, &ischema.QueryBudget{}, func(v ischema.QueryVisit) error {
 				n, ok := v.Value.(*value.Node)
 				if !ok || n == nil {
 					return nil
@@ -135,12 +136,12 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 				if value.ShapeOf(n) == value.ShapeError {
 					recovered++
 				}
-				q, err := schema.CompileStructuralQuery(p, s)
+				q, err := ischema.CompileStructuralQuery(p, s)
 				if err != nil {
 					t.Errorf("%s %q: pattern of %s rejected: %v", c.name, in, n, err)
 					return nil
 				}
-				if m, err := q.Matches(n, schema.QueryOptions{}); err != nil || len(m) == 0 {
+				if m, err := q.Matches(n, ischema.QueryOptions{}); err != nil || len(m) == 0 {
 					t.Errorf("%s %q: pattern of %s does not match it: %v", c.name, in, n, err)
 				}
 				if _, err := prepared.CompileStructuralQuery(p); err != nil {
@@ -189,31 +190,31 @@ func TestStructuralQueryRecoveryNodes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ok := schema.QueryPattern{Type: "P", Fields: []schema.QueryFieldPattern{field("V", schema.QueryPattern{Type: "error", Fields: []schema.QueryFieldPattern{field("message", schema.QueryPattern{Category: "string"})}})}}
-	q, err := schema.CompileStructuralQuery(ok, s)
+	ok := ischema.QueryPattern{Type: "P", Fields: []ischema.QueryFieldPattern{field("V", ischema.QueryPattern{Type: "error", Fields: []ischema.QueryFieldPattern{field("message", ischema.QueryPattern{Category: "string"})}})}}
+	q, err := ischema.CompileStructuralQuery(ok, s)
 	if err != nil {
 		t.Fatal(err)
 	}
 	root, _ := prog.ParseWith("main", "(x,2)", ParseOptions{})
-	if m, err := q.Matches(root, schema.QueryOptions{}); err != nil || len(m) != 1 {
+	if m, err := q.Matches(root, ischema.QueryOptions{}); err != nil || len(m) != 1 {
 		t.Fatalf("matches %v %v", m, err)
 	}
-	for _, good := range []schema.QueryPattern{
-		{Type: "error", Fields: []schema.QueryFieldPattern{field("message", schema.QueryPattern{})}},
-		{Type: "P", Fields: []schema.QueryFieldPattern{field("V", schema.QueryPattern{Category: "error", Fields: []schema.QueryFieldPattern{field("expected", schema.QueryPattern{Category: "string"})}})}},
+	for _, good := range []ischema.QueryPattern{
+		{Type: "error", Fields: []ischema.QueryFieldPattern{field("message", ischema.QueryPattern{})}},
+		{Type: "P", Fields: []ischema.QueryFieldPattern{field("V", ischema.QueryPattern{Category: "error", Fields: []ischema.QueryFieldPattern{field("expected", ischema.QueryPattern{Category: "string"})}})}},
 	} {
-		if _, err := schema.CompileStructuralQuery(good, s); err != nil {
+		if _, err := ischema.CompileStructuralQuery(good, s); err != nil {
 			t.Errorf("rejected %+v: %v", good, err)
 		}
 	}
-	for _, bad := range []schema.QueryPattern{
-		{Type: "P", Fields: []schema.QueryFieldPattern{field("V", schema.QueryPattern{Type: "error", Fields: []schema.QueryFieldPattern{field("message", schema.QueryPattern{Category: "int"})}})}},
-		{Type: "P", Fields: []schema.QueryFieldPattern{field("V", schema.QueryPattern{Type: "error", Fields: []schema.QueryFieldPattern{field("other", schema.QueryPattern{})}})}},
-		{Type: "P", Fields: []schema.QueryFieldPattern{field("V", schema.QueryPattern{Category: "error", Fields: []schema.QueryFieldPattern{field("other", schema.QueryPattern{})}})}},
-		{Type: "P", Fields: []schema.QueryFieldPattern{field("V", schema.QueryPattern{Elements: []schema.QueryPattern{{}}})}},
-		{Type: "P", Fields: []schema.QueryFieldPattern{field("W", schema.QueryPattern{Type: "error", Rule: "num"})}},
+	for _, bad := range []ischema.QueryPattern{
+		{Type: "P", Fields: []ischema.QueryFieldPattern{field("V", ischema.QueryPattern{Type: "error", Fields: []ischema.QueryFieldPattern{field("message", ischema.QueryPattern{Category: "int"})}})}},
+		{Type: "P", Fields: []ischema.QueryFieldPattern{field("V", ischema.QueryPattern{Type: "error", Fields: []ischema.QueryFieldPattern{field("other", ischema.QueryPattern{})}})}},
+		{Type: "P", Fields: []ischema.QueryFieldPattern{field("V", ischema.QueryPattern{Category: "error", Fields: []ischema.QueryFieldPattern{field("other", ischema.QueryPattern{})}})}},
+		{Type: "P", Fields: []ischema.QueryFieldPattern{field("V", ischema.QueryPattern{Elements: []ischema.QueryPattern{{}}})}},
+		{Type: "P", Fields: []ischema.QueryFieldPattern{field("W", ischema.QueryPattern{Type: "error", Rule: "num"})}},
 	} {
-		if _, err := schema.CompileStructuralQuery(bad, s); err == nil {
+		if _, err := ischema.CompileStructuralQuery(bad, s); err == nil {
 			t.Errorf("accepted %+v", bad)
 		}
 	}
@@ -231,22 +232,22 @@ func TestStructuralQueryErrorSize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := schema.QueryPattern{Category: "string"}
+	p := ischema.QueryPattern{Category: "string"}
 	for range 16 {
-		p = schema.QueryPattern{Fields: []schema.QueryFieldPattern{field("X", p)}}
+		p = ischema.QueryPattern{Fields: []ischema.QueryFieldPattern{field("X", p)}}
 	}
 	p.Type = "A"
-	_, err = schema.CompileStructuralQuery(p, s)
+	_, err = ischema.CompileStructuralQuery(p, s)
 	if err == nil || len(err.Error()) > 4096 {
 		t.Fatalf("error of %d bytes: %.200v", len(fmt.Sprint(err)), err)
 	}
 }
 
 // describeQueryValue returns a pattern that matches v, describing it to the given depth.
-func describeQueryValue(v any, depth int) schema.QueryPattern {
+func describeQueryValue(v any, depth int) ischema.QueryPattern {
 	v = value.UnboxValue(v)
-	category, _ := schema.QueryCategory(v)
-	p := schema.QueryPattern{Category: category}
+	category, _ := ischema.QueryCategory(v)
+	p := ischema.QueryPattern{Category: category}
 	n, ok := v.(*value.Node)
 	if !ok || n == nil || depth == 0 {
 		return p
@@ -258,16 +259,16 @@ func describeQueryValue(v any, depth int) schema.QueryPattern {
 		p.Type = "error"
 	case "node":
 		p.Rule = n.Rule()
-		val := describeQueryValue(schema.QueryNodeValue(n), depth-1)
+		val := describeQueryValue(ischema.QueryNodeValue(n), depth-1)
 		val.Elements = nil
 		p.Value = &val
 	}
 	if category == "struct" || category == "error" {
 		for _, f := range value.D(n).Fields {
-			p.Fields = append(p.Fields, schema.QueryFieldPattern{Name: f.Name, Pattern: describeQueryValue(f.Value, depth-1)})
+			p.Fields = append(p.Fields, ischema.QueryFieldPattern{Name: f.Name, Pattern: describeQueryValue(f.Value, depth-1)})
 		}
 	}
-	if schema.QueryHasElements(n) {
+	if ischema.QueryHasElements(n) {
 		for i, c := range value.D(n).Children {
 			if i == 2 {
 				break
@@ -281,14 +282,14 @@ func describeQueryValue(v any, depth int) schema.QueryPattern {
 // TestQuerySchemaConcurrentCompile compiles queries from several goroutines;
 // run it with -race.
 func TestQuerySchemaConcurrentCompile(t *testing.T) {
-	q, err := schema.PrepareQuerySchema(queryShapeSchema(t))
+	q, err := ischema.PrepareQuerySchema(queryShapeSchema(t))
 	if err != nil {
 		t.Fatal(err)
 	}
-	patterns := []schema.QueryPattern{
-		{Type: "Pair", Fields: []schema.QueryFieldPattern{field("Value", textStruct("Int"))}},
-		{Type: "Box", Fields: []schema.QueryFieldPattern{field("Inner", schema.QueryPattern{Fields: []schema.QueryFieldPattern{field("Value", schema.QueryPattern{Type: "Pair", Fields: []schema.QueryFieldPattern{field("Value", textStruct("Int"))}})}})}},
-		{Type: "Pair", Fields: []schema.QueryFieldPattern{field("Value", schema.QueryPattern{Type: "Box"})}},
+	patterns := []ischema.QueryPattern{
+		{Type: "Pair", Fields: []ischema.QueryFieldPattern{field("Value", textStruct("Int"))}},
+		{Type: "Box", Fields: []ischema.QueryFieldPattern{field("Inner", ischema.QueryPattern{Fields: []ischema.QueryFieldPattern{field("Value", ischema.QueryPattern{Type: "Pair", Fields: []ischema.QueryFieldPattern{field("Value", textStruct("Int"))}})}})}},
+		{Type: "Pair", Fields: []ischema.QueryFieldPattern{field("Value", ischema.QueryPattern{Type: "Box"})}},
 	}
 	var wg sync.WaitGroup
 	for g := range 8 {

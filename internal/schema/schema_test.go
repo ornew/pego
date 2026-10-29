@@ -9,6 +9,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/compiletest"
+	"github.com/ornew/pego/schema"
 )
 
 // compileError compiles src, which must not compile, and returns the error.
@@ -44,7 +45,7 @@ rule main = "a"`); !strings.Contains(message, "no values") {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var decoded Output
+	var decoded schema.Output
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		t.Fatalf("decode valid empty join: %v", err)
 	}

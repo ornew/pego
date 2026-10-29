@@ -8,7 +8,8 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/schema"
+	ischema "github.com/ornew/pego/internal/schema"
+	"github.com/ornew/pego/schema"
 )
 
 func TestOutputSchemaPrototype(t *testing.T) {
@@ -112,7 +113,7 @@ rule unused = "z"`)
 		}
 	}
 	// A program without the grammar has no metadata to export from.
-	if _, err := outputSchemaPrototype(newProgram(&compile.Program{}, nil), "main", false); !errors.Is(err, schema.ErrUnavailable) {
+	if _, err := outputSchemaPrototype(newProgram(&compile.Program{}, nil), "main", false); !errors.Is(err, ischema.ErrUnavailable) {
 		t.Fatal(err)
 	}
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/ornew/pego"
 	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/pego/schema"
 )
 
 func TestPublicOutputSchema(t *testing.T) {
@@ -49,7 +50,7 @@ rule unused = "z"`, "main")
 	if err != nil || len(all.Rules) != 3 {
 		t.Fatalf("all rules: %+v, %v", all, err)
 	}
-	var decoded pego.OutputSchema
+	var decoded schema.Output
 	if err := json.Unmarshal(first, &decoded); err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +156,7 @@ func TestPublicSchemaQueryMatchesUncapturedElements(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var main *pego.SchemaShape
+	var main *schema.Shape
 	for i := range s.Types {
 		if s.Types[i].ID == "inferred/main" {
 			main = &s.Types[i].Shape
@@ -321,7 +322,7 @@ rule main = x:"a" "b" => Item{Value: $x}`, "main")
 	}
 }
 
-func marshalJSON(t *testing.T, s *pego.OutputSchema) []byte {
+func marshalJSON(t *testing.T, s *schema.Output) []byte {
 	t.Helper()
 	data, err := json.Marshal(s)
 	if err != nil {

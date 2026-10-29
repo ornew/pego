@@ -1,4 +1,4 @@
-package pego
+package schema
 
 import (
 	"cmp"
@@ -7,47 +7,47 @@ import (
 	"sort"
 )
 
-// SchemaChangeKind identifies an entry added, removed, or changed by a diff.
-type SchemaChangeKind string
+// ChangeKind identifies an entry added, removed, or changed by a diff.
+type ChangeKind string
 
 const (
-	SchemaAdded   SchemaChangeKind = "added"
-	SchemaRemoved SchemaChangeKind = "removed"
-	SchemaChanged SchemaChangeKind = "changed"
+	Added   ChangeKind = "added"
+	Removed ChangeKind = "removed"
+	Changed ChangeKind = "changed"
 )
 
-// SchemaTypeChange describes one type, keyed by its namespace-qualified ID.
+// TypeChange describes one type, keyed by its namespace-qualified ID.
 // Before is nil for additions; After is nil for removals.
-type SchemaTypeChange struct {
+type TypeChange struct {
 	ID     string
-	Kind   SchemaChangeKind
-	Before *SchemaType
-	After  *SchemaType
+	Kind   ChangeKind
+	Before *Type
+	After  *Type
 }
 
-// SchemaRuleChange describes one rule, using the rule name as its ID.
+// RuleChange describes one rule, using the rule name as its ID.
 // Before is nil for additions; After is nil for removals.
-type SchemaRuleChange struct {
+type RuleChange struct {
 	ID     string
-	Kind   SchemaChangeKind
-	Before *SchemaRule
-	After  *SchemaRule
+	Kind   ChangeKind
+	Before *Rule
+	After  *Rule
 }
 
-// OutputSchemaDiff contains type and rule changes sorted by ID. It does not
+// Diff contains type and rule changes sorted by ID. It does not
 // classify compatibility or compare envelope fields such as Start.
-type OutputSchemaDiff struct {
-	Types []SchemaTypeChange
-	Rules []SchemaRuleChange
+type Diff struct {
+	Types []TypeChange
+	Rules []RuleChange
 }
 
-// DiffOutputSchemas compares version-2 type and rule contents. Type and rule
+// Compare compares version-2 type and rule contents. Type and rule
 // array order, field order, capture order, capture path order and join
 // alternative order are insignificant; tuple element order and named
 // references are preserved. Both inputs must satisfy the complete version-2
-// schema contract checked by OutputSchema.Validate.
-func DiffOutputSchemas(before, after *OutputSchema) (*OutputSchemaDiff, error) {
-	canonical := &schemaCanonicalizer{copies: make(map[*SchemaShape]canonicalSchemaCopy), comparisons: make(map[schemaShapePair]int)}
+// schema contract checked by Output.Validate.
+func Compare(before, after *Output) (*Diff, error) {
+	canonical := &schemaCanonicalizer{copies: make(map[*Shape]canonicalSchemaCopy), comparisons: make(map[schemaShapePair]int)}
 	left, err := indexOutputSchema(before, canonical)
 	if err != nil {
 		return nil, fmt.Errorf("before schema: %w", err)
@@ -56,17 +56,17 @@ func DiffOutputSchemas(before, after *OutputSchema) (*OutputSchemaDiff, error) {
 	if err != nil {
 		return nil, fmt.Errorf("after schema: %w", err)
 	}
-	diff := &OutputSchemaDiff{Types: []SchemaTypeChange{}, Rules: []SchemaRuleChange{}}
+	diff := &Diff{Types: []TypeChange{}, Rules: []RuleChange{}}
 	for _, id := range sortedSchemaKeys(left.types, right.types) {
 		old, hadOld := left.types[id]
 		new, hasNew := right.types[id]
 		switch {
 		case !hadOld:
-			diff.Types = append(diff.Types, SchemaTypeChange{ID: id, Kind: SchemaAdded, After: &new.value})
+			diff.Types = append(diff.Types, TypeChange{ID: id, Kind: Added, After: &new.value})
 		case !hasNew:
-			diff.Types = append(diff.Types, SchemaTypeChange{ID: id, Kind: SchemaRemoved, Before: &old.value})
+			diff.Types = append(diff.Types, TypeChange{ID: id, Kind: Removed, Before: &old.value})
 		case old.value.Origin != new.value.Origin || canonical.compare(old.shape, new.shape) != 0:
-			diff.Types = append(diff.Types, SchemaTypeChange{ID: id, Kind: SchemaChanged, Before: &old.value, After: &new.value})
+			diff.Types = append(diff.Types, TypeChange{ID: id, Kind: Changed, Before: &old.value, After: &new.value})
 		}
 	}
 	for _, id := range sortedSchemaKeys(left.rules, right.rules) {
@@ -74,32 +74,32 @@ func DiffOutputSchemas(before, after *OutputSchema) (*OutputSchemaDiff, error) {
 		new, hasNew := right.rules[id]
 		switch {
 		case !hadOld:
-			diff.Rules = append(diff.Rules, SchemaRuleChange{ID: id, Kind: SchemaAdded, After: &new.value})
+			diff.Rules = append(diff.Rules, RuleChange{ID: id, Kind: Added, After: &new.value})
 		case !hasNew:
-			diff.Rules = append(diff.Rules, SchemaRuleChange{ID: id, Kind: SchemaRemoved, Before: &old.value})
+			diff.Rules = append(diff.Rules, RuleChange{ID: id, Kind: Removed, Before: &old.value})
 		case old.value.Origin != new.value.Origin || canonical.compare(old.shape, new.shape) != 0:
-			diff.Rules = append(diff.Rules, SchemaRuleChange{ID: id, Kind: SchemaChanged, Before: &old.value, After: &new.value})
+			diff.Rules = append(diff.Rules, RuleChange{ID: id, Kind: Changed, Before: &old.value, After: &new.value})
 		}
 	}
 	return diff, nil
 }
 
 type indexedOutputSchema struct {
-	types map[string]indexedSchemaEntry[SchemaType]
-	rules map[string]indexedSchemaEntry[SchemaRule]
+	types map[string]indexedSchemaEntry[Type]
+	rules map[string]indexedSchemaEntry[Rule]
 }
 
 type indexedSchemaEntry[T any] struct {
 	value T
-	shape *SchemaShape
+	shape *Shape
 }
 
-func indexOutputSchema(schema *OutputSchema, canonical *schemaCanonicalizer) (indexedOutputSchema, error) {
+func indexOutputSchema(schema *Output, canonical *schemaCanonicalizer) (indexedOutputSchema, error) {
 	var index indexedOutputSchema
 	if err := schema.Validate(); err != nil {
 		return index, err
 	}
-	index.types = make(map[string]indexedSchemaEntry[SchemaType], len(schema.Types))
+	index.types = make(map[string]indexedSchemaEntry[Type], len(schema.Types))
 	for i := range schema.Types {
 		entry := schema.Types[i]
 		shape, _, err := canonical.copy(&schema.Types[i].Shape, 2)
@@ -107,9 +107,9 @@ func indexOutputSchema(schema *OutputSchema, canonical *schemaCanonicalizer) (in
 			return index, fmt.Errorf("type %q: %w", entry.ID, err)
 		}
 		entry.Shape = *shape
-		index.types[entry.ID] = indexedSchemaEntry[SchemaType]{value: entry, shape: shape}
+		index.types[entry.ID] = indexedSchemaEntry[Type]{value: entry, shape: shape}
 	}
-	index.rules = make(map[string]indexedSchemaEntry[SchemaRule], len(schema.Rules))
+	index.rules = make(map[string]indexedSchemaEntry[Rule], len(schema.Rules))
 	for i := range schema.Rules {
 		entry := schema.Rules[i]
 		shape, _, err := canonical.copy(&schema.Rules[i].Result, 2)
@@ -117,26 +117,26 @@ func indexOutputSchema(schema *OutputSchema, canonical *schemaCanonicalizer) (in
 			return index, fmt.Errorf("rule %q: %w", entry.Name, err)
 		}
 		entry.Result = *shape
-		index.rules[entry.Name] = indexedSchemaEntry[SchemaRule]{value: entry, shape: shape}
+		index.rules[entry.Name] = indexedSchemaEntry[Rule]{value: entry, shape: shape}
 	}
 	return index, nil
 }
 
 type canonicalSchemaCopy struct {
-	shape  *SchemaShape
+	shape  *Shape
 	height int
 }
 
-type schemaShapePair struct{ left, right *SchemaShape }
+type schemaShapePair struct{ left, right *Shape }
 
 type schemaCanonicalizer struct {
-	copies      map[*SchemaShape]canonicalSchemaCopy
+	copies      map[*Shape]canonicalSchemaCopy
 	comparisons map[schemaShapePair]int
 }
 
 // Validation has already rejected cycles. Copy each inline node once and keep
 // shared pointers; serializing a DAG to JSON here would expand it exponentially.
-func (c *schemaCanonicalizer) copy(shape *SchemaShape, depth int) (*SchemaShape, int, error) {
+func (c *schemaCanonicalizer) copy(shape *Shape, depth int) (*Shape, int, error) {
 	if shape == nil {
 		return nil, 0, nil
 	}
@@ -149,9 +149,9 @@ func (c *schemaCanonicalizer) copy(shape *SchemaShape, depth int) (*SchemaShape,
 		}
 		return cached.shape, cached.height, nil
 	}
-	out := &SchemaShape{Kind: shape.Kind, Ref: shape.Ref, Scalar: shape.Scalar}
+	out := &Shape{Kind: shape.Kind, Ref: shape.Ref, Scalar: shape.Scalar}
 	height := 1
-	copyChild := func(child *SchemaShape, offset int) (*SchemaShape, error) {
+	copyChild := func(child *Shape, offset int) (*Shape, error) {
 		value, childHeight, err := c.copy(child, depth+offset)
 		if child != nil {
 			height = max(height, offset+childHeight)
@@ -172,7 +172,7 @@ func (c *schemaCanonicalizer) copy(shape *SchemaShape, depth int) (*SchemaShape,
 		}
 		out.Elements = append(out.Elements, *element)
 	}
-	alternatives := make([]*SchemaShape, len(shape.Alternatives))
+	alternatives := make([]*Shape, len(shape.Alternatives))
 	for i := range shape.Alternatives {
 		if alternatives[i], err = copyChild(&shape.Alternatives[i], 2); err != nil {
 			return nil, 0, err
@@ -188,7 +188,7 @@ func (c *schemaCanonicalizer) copy(shape *SchemaShape, depth int) (*SchemaShape,
 		if err != nil {
 			return nil, 0, err
 		}
-		out.Fields = append(out.Fields, SchemaField{Name: field.Name, Shape: *value})
+		out.Fields = append(out.Fields, Field{Name: field.Name, Shape: *value})
 	}
 	sort.Slice(out.Fields, func(i, j int) bool { return out.Fields[i].Name < out.Fields[j].Name })
 	for i := range shape.Captures {
@@ -202,7 +202,7 @@ func (c *schemaCanonicalizer) copy(shape *SchemaShape, depth int) (*SchemaShape,
 			paths[j] = append([]int{}, path...)
 		}
 		sort.Slice(paths, func(i, j int) bool { return slices.Compare(paths[i], paths[j]) < 0 })
-		out.Captures = append(out.Captures, SchemaCapture{Name: capture.Name, Paths: paths, Side: capture.Side, Shape: *value})
+		out.Captures = append(out.Captures, Capture{Name: capture.Name, Paths: paths, Side: capture.Side, Shape: *value})
 	}
 	sort.Slice(out.Captures, func(i, j int) bool { return out.Captures[i].Name < out.Captures[j].Name })
 	c.copies[shape] = canonicalSchemaCopy{shape: out, height: height}
@@ -211,7 +211,7 @@ func (c *schemaCanonicalizer) copy(shape *SchemaShape, depth int) (*SchemaShape,
 
 // Canonical children are immutable before comparison. Remember shape pairs so
 // comparing separately allocated but equal shared DAGs also avoids path expansion.
-func (c *schemaCanonicalizer) compare(left, right *SchemaShape) int {
+func (c *schemaCanonicalizer) compare(left, right *Shape) int {
 	if left == right {
 		return 0
 	}
@@ -231,7 +231,7 @@ func (c *schemaCanonicalizer) compare(left, right *SchemaShape) int {
 	return result
 }
 
-func (c *schemaCanonicalizer) compareContents(left, right *SchemaShape) int {
+func (c *schemaCanonicalizer) compareContents(left, right *Shape) int {
 	for _, pair := range [][2]string{{left.Kind, right.Kind}, {left.Ref, right.Ref}, {left.Scalar, right.Scalar}} {
 		if order := cmp.Compare(pair[0], pair[1]); order != 0 {
 			return order

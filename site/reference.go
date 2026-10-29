@@ -31,6 +31,7 @@ var refPackages = []refPackage{
 	{dir: "runtime", importPath: modulePath + "/runtime", url: "reference/runtime/", title: "Package pego/runtime", label: "pego/runtime"},
 	{dir: "gen", importPath: modulePath + "/gen", url: "reference/gen/", title: "Package pego/gen", label: "pego/gen"},
 	{dir: "lint", importPath: modulePath + "/lint", url: "reference/lint/", title: "Package pego/lint", label: "pego/lint"},
+	{dir: "schema", importPath: modulePath + "/schema", url: "reference/schema/", title: "Package pego/schema", label: "pego/schema"},
 	{dir: "sample", importPath: modulePath + "/sample", url: "reference/sample/", title: "Package pego/sample", label: "pego/sample"},
 	{dir: "editfuzz", importPath: modulePath + "/editfuzz", url: "reference/editfuzz/", title: "Package pego/editfuzz", label: "pego/editfuzz"},
 }

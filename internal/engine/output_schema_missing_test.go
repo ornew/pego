@@ -6,7 +6,8 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/schema"
+	ischema "github.com/ornew/pego/internal/schema"
+	"github.com/ornew/pego/schema"
 )
 
 const missingSchemaGrammar = `type P = { M missing; E error; O *missing; L []missing }
@@ -90,29 +91,29 @@ func TestOutputSchemaMissingRejectsMembers(t *testing.T) {
 // Patterns of errors apply to the values of the shape missing, and others do not.
 func TestStructuralQueryMissingShape(t *testing.T) {
 	s := missingSchema(t)
-	field := func(pattern schema.QueryPattern) schema.QueryPattern {
-		return schema.QueryPattern{Type: "P", Fields: []schema.QueryFieldPattern{{Name: "M", Pattern: pattern}}}
+	field := func(pattern ischema.QueryPattern) ischema.QueryPattern {
+		return ischema.QueryPattern{Type: "P", Fields: []ischema.QueryFieldPattern{{Name: "M", Pattern: pattern}}}
 	}
-	for _, good := range []schema.QueryPattern{
-		field(schema.QueryPattern{Category: "error"}),
-		field(schema.QueryPattern{Type: "error"}),
-		field(schema.QueryPattern{Category: "error", Fields: []schema.QueryFieldPattern{{Name: "message", Pattern: schema.QueryPattern{Category: "string"}}}}),
+	for _, good := range []ischema.QueryPattern{
+		field(ischema.QueryPattern{Category: "error"}),
+		field(ischema.QueryPattern{Type: "error"}),
+		field(ischema.QueryPattern{Category: "error", Fields: []ischema.QueryFieldPattern{{Name: "message", Pattern: ischema.QueryPattern{Category: "string"}}}}),
 	} {
-		if _, err := schema.CompileStructuralQuery(good, s); err != nil {
+		if _, err := ischema.CompileStructuralQuery(good, s); err != nil {
 			t.Errorf("rejected %+v: %v", good, err)
 		}
 	}
-	for _, bad := range []schema.QueryPattern{
-		field(schema.QueryPattern{Category: "string"}),
-		field(schema.QueryPattern{Category: "nil"}),
-		field(schema.QueryPattern{Type: "P"}),
-		field(schema.QueryPattern{Category: "error", Fields: []schema.QueryFieldPattern{{Name: "other"}}}),
+	for _, bad := range []ischema.QueryPattern{
+		field(ischema.QueryPattern{Category: "string"}),
+		field(ischema.QueryPattern{Category: "nil"}),
+		field(ischema.QueryPattern{Type: "P"}),
+		field(ischema.QueryPattern{Category: "error", Fields: []ischema.QueryFieldPattern{{Name: "other"}}}),
 	} {
-		if _, err := schema.CompileStructuralQuery(bad, s); err == nil {
+		if _, err := ischema.CompileStructuralQuery(bad, s); err == nil {
 			t.Errorf("accepted %+v", bad)
 		}
 	}
-	_, err := schema.CompileStructuralQuery(field(schema.QueryPattern{Category: "string"}), s)
+	_, err := ischema.CompileStructuralQuery(field(ischema.QueryPattern{Category: "string"}), s)
 	if err == nil || !strings.Contains(err.Error(), "value is missing, not string") {
 		t.Errorf("reason: %v", err)
 	}

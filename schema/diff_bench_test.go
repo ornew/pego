@@ -1,16 +1,16 @@
-package pego_test
+package schema_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/ornew/pego"
+	"github.com/ornew/pego/schema"
 )
 
-var schemaDiffBenchmarkSink *pego.OutputSchemaDiff
+var schemaDiffBenchmarkSink *schema.Diff
 
-func schemaDiffBenchmarkInput(count int, changed bool) *pego.OutputSchema {
-	s := &pego.OutputSchema{Format: "pego-output-schema", Version: 2, Start: "parseItem000", PositionUnitIndependent: true}
+func schemaDiffBenchmarkInput(count int, changed bool) *schema.Output {
+	s := &schema.Output{Format: "pego-output-schema", Version: 2, Start: "parseItem000", PositionUnitIndependent: true}
 	for i := range count {
 		name := fmt.Sprintf("Item%03d", i)
 		rule := fmt.Sprintf("parseItem%03d", i)
@@ -19,24 +19,24 @@ func schemaDiffBenchmarkInput(count int, changed bool) *pego.OutputSchema {
 			scalar = "bool"
 		}
 		s.Types = append(s.Types,
-			pego.SchemaType{ID: "declared/" + name, Name: name, Origin: "declared", Shape: pego.SchemaShape{Kind: "struct", Fields: []pego.SchemaField{
-				{Name: "Value", Shape: pego.SchemaShape{Kind: "scalar", Scalar: scalar}},
+			schema.Type{ID: "declared/" + name, Name: name, Origin: "declared", Shape: schema.Shape{Kind: "struct", Fields: []schema.Field{
+				{Name: "Value", Shape: schema.Shape{Kind: "scalar", Scalar: scalar}},
 			}}},
-			pego.SchemaType{ID: "inferred/" + rule, Name: rule, Origin: "inferred", Shape: pego.SchemaShape{Kind: "ref", Ref: "declared/" + name}},
+			schema.Type{ID: "inferred/" + rule, Name: rule, Origin: "inferred", Shape: schema.Shape{Kind: "ref", Ref: "declared/" + name}},
 		)
-		s.Rules = append(s.Rules, pego.SchemaRule{Name: rule, Origin: "declared", Result: pego.SchemaShape{Kind: "ref", Ref: "inferred/" + rule}})
+		s.Rules = append(s.Rules, schema.Rule{Name: rule, Origin: "declared", Result: schema.Shape{Kind: "ref", Ref: "inferred/" + rule}})
 	}
 	return s
 }
 
-func BenchmarkDiffOutputSchemas(b *testing.B) {
+func BenchmarkCompare(b *testing.B) {
 	for _, count := range []int{16, 128} {
 		for _, changed := range []bool{false, true} {
 			b.Run(fmt.Sprintf("Types%d/Changed%t", count, changed), func(b *testing.B) {
 				before, after := schemaDiffBenchmarkInput(count, false), schemaDiffBenchmarkInput(count, changed)
 				b.ReportAllocs()
 				for b.Loop() {
-					got, err := pego.DiffOutputSchemas(before, after)
+					got, err := schema.Compare(before, after)
 					if err != nil {
 						b.Fatal(err)
 					}
@@ -47,11 +47,11 @@ func BenchmarkDiffOutputSchemas(b *testing.B) {
 	}
 	for _, depth := range []int{4, 8} {
 		b.Run(fmt.Sprintf("SharedDAG%d", depth), func(b *testing.B) {
-			makeInput := func() *pego.OutputSchema {
+			makeInput := func() *schema.Output {
 				s := schemaDiffBenchmarkInput(1, false)
-				shape := &pego.SchemaShape{Kind: "scalar", Scalar: "string"}
+				shape := &schema.Shape{Kind: "scalar", Scalar: "string"}
 				for range depth {
-					shape = &pego.SchemaShape{Kind: "join", Alternatives: []pego.SchemaShape{
+					shape = &schema.Shape{Kind: "join", Alternatives: []schema.Shape{
 						{Kind: "optional", Element: shape}, {Kind: "list", Element: shape},
 					}}
 				}
@@ -61,7 +61,7 @@ func BenchmarkDiffOutputSchemas(b *testing.B) {
 			before, after := makeInput(), makeInput()
 			b.ReportAllocs()
 			for b.Loop() {
-				got, err := pego.DiffOutputSchemas(before, after)
+				got, err := schema.Compare(before, after)
 				if err != nil {
 					b.Fatal(err)
 				}

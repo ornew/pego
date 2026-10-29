@@ -13,8 +13,8 @@ import (
 	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/limits"
-	"github.com/ornew/pego/internal/schema"
 	"github.com/ornew/pego/internal/value"
+	"github.com/ornew/pego/schema"
 )
 
 func missingNodes(t *testing.T, root *value.Node) []*value.Node {

@@ -28,7 +28,7 @@ The following text-query API is illustrative and is not implemented. The impleme
 type QueryOption func(*queryOptions)
 type Query struct { /* compiled pattern */ }
 type QueryMatch struct { Captures []QueryCapture }
-func CompileQuery(source string, schema *OutputSchema) (*Query, error)
+func CompileQuery(source string, out *schema.Output) (*Query, error)
 func (q *Query) Matches(root *Node, opts ...QueryOption) ([]QueryMatch, error)
 func WithQueryUnit(unit Unit) QueryOption
 func WithQueryContext(ctx context.Context) QueryOption
@@ -46,7 +46,7 @@ An illustrative pattern is:
 
 Patterns constrain a node by type or rule, require child/field structure, and bind captures. Initial syntax should avoid arbitrary host callbacks, unbounded regex, or other operations without a charging rule. The exact grammar and text-predicate operators remain proposed. Text predicates inspect only Node text or a caller-supplied source snapshot; they cannot see discarded punctuation/comments. A TypeScript counterpart could expose `compileQuery(source, schema)` and `query.matches(root, options)`, with position unit, safe-integer work limits, and an optional structural cancellation signal following design 033.
 
-Compilation may receive an `OutputSchema`. The implemented Go subset performs a narrow scalar check when a query names a declared struct field directly and its shape is scalar or optional scalar: for example, `Value *string` permits `string` and `nil` categories and rejects other known categories. It follows declared type-alias chains that resolve to those shapes. Nested patterns are checked against the shapes of the values they apply to; a join needs one alternative that the pattern can match. Unresolved references remain runtime-checked. Dynamic or unknown types remain runtime-checked. Since schema v1 has no cross-grammar digest, the compiled query is tied to the schema content supplied at compilation; it does not claim portable identity across grammars. Without a schema, type and field checks are deferred to evaluation. Captures are always checked against their runtime value categories, even with a schema: mutable Nodes carry no certification that they came from that grammar or still conform to its shape. Mismatches are ordinary nonmatches or explicit query errors according to the operator contract, never unsafe type assertions.
+Compilation may receive a `schema.Output`. The implemented Go subset performs a narrow scalar check when a query names a declared struct field directly and its shape is scalar or optional scalar: for example, `Value *string` permits `string` and `nil` categories and rejects other known categories. It follows declared type-alias chains that resolve to those shapes. Nested patterns are checked against the shapes of the values they apply to; a join needs one alternative that the pattern can match. Unresolved references remain runtime-checked. Dynamic or unknown types remain runtime-checked. Since schema v1 has no cross-grammar digest, the compiled query is tied to the schema content supplied at compilation; it does not claim portable identity across grammars. Without a schema, type and field checks are deferred to evaluation. Captures are always checked against their runtime value categories, even with a schema: mutable Nodes carry no certification that they came from that grammar or still conform to its shape. Mismatches are ordinary nonmatches or explicit query errors according to the operator contract, never unsafe type assertions.
 
 A capture stores its value category, value, immediate parent node, and incoming edge path. Scalar fields are scalar captures, not synthetic Nodes. Optional/nil-capable schema fields do not imply a separate runtime-presence bit. Lists are traversed in index order; empty lists have no elements. A root has no parent. A shared Node is evaluated once per incoming edge so captures retain parent/path context. Cycles on the active path return an error; valid shared DAG paths are allowed.
 
@@ -80,7 +80,7 @@ The syntax and initial text-predicate set need implementation review; recommenda
 
 ## Implemented Go API
 
-`CompileStructuralQuery(QueryPattern, *OutputSchema)` accepts a programmatic
+`CompileStructuralQuery(QueryPattern, *schema.Output)` accepts a programmatic
 pattern rather than adopting the illustrative text syntax. Validating the schema
 dominates its cost, so `PrepareQuerySchema` validates a schema once into an
 immutable handle that owns a deep copy, keeping inline DAGs shared, and indexes

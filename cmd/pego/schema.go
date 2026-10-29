@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/schema"
 )
 
 // schemaDiffOutput is the JSON document that pego schema diff -f json prints.
@@ -20,18 +21,18 @@ type schemaDiffOutput struct {
 // schemaTypeChangeOutput is one type of a schema diff. Before and After are the entries in the two
 // schemas; one of them is absent for an addition or a removal.
 type schemaTypeChangeOutput struct {
-	ID     string                `json:"id"`
-	Kind   pego.SchemaChangeKind `json:"kind"`
-	Before *pego.SchemaType      `json:"before,omitempty"`
-	After  *pego.SchemaType      `json:"after,omitempty"`
+	ID     string            `json:"id"`
+	Kind   schema.ChangeKind `json:"kind"`
+	Before *schema.Type      `json:"before,omitempty"`
+	After  *schema.Type      `json:"after,omitempty"`
 }
 
 // schemaRuleChangeOutput is one rule of a schema diff, with the same convention as schemaTypeChangeOutput.
 type schemaRuleChangeOutput struct {
-	ID     string                `json:"id"`
-	Kind   pego.SchemaChangeKind `json:"kind"`
-	Before *pego.SchemaRule      `json:"before,omitempty"`
-	After  *pego.SchemaRule      `json:"after,omitempty"`
+	ID     string            `json:"id"`
+	Kind   schema.ChangeKind `json:"kind"`
+	Before *schema.Rule      `json:"before,omitempty"`
+	After  *schema.Rule      `json:"after,omitempty"`
 }
 
 // schemaOptions returns the export options of the -all-rules flag.
@@ -84,13 +85,13 @@ func schemaCmd(args []string, stdout io.Writer) error {
 
 // loadSchemaOperand reads one operand of schema diff: a schema JSON file, which is validated as it
 // is decoded, or a grammar, whose schema is exported with the start rule and -all-rules options.
-func loadSchemaOperand(path, start string, allRules bool) (*pego.OutputSchema, error) {
+func loadSchemaOperand(path, start string, allRules bool) (*schema.Output, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 	if isOutputSchema(data) {
-		var s pego.OutputSchema
+		var s schema.Output
 		if err := json.Unmarshal(data, &s); err != nil {
 			return nil, fmt.Errorf("%s: %w", path, err)
 		}
@@ -139,7 +140,7 @@ func schemaDiffCmd(args []string, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
-	diff, err := pego.DiffOutputSchemas(before, after)
+	diff, err := schema.Compare(before, after)
 	if err != nil {
 		return err
 	}

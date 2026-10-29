@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/schema"
 )
 
 const schemaGrammar = `type Pair = { Key node[string]; Value node[string] }
@@ -37,7 +38,7 @@ func TestSchemaExport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var got pego.OutputSchema
+	var got schema.Output
 	if err := json.Unmarshal([]byte(out), &got); err != nil {
 		t.Fatalf("output is not a valid schema: %v\n%s", err, out)
 	}
@@ -116,7 +117,7 @@ func TestSchemaDiff(t *testing.T) {
 	if err := json.Unmarshal([]byte(jsonOut), &doc); err != nil {
 		t.Fatalf("%v\n%s", err, jsonOut)
 	}
-	if len(doc.Types) != 1 || len(doc.Rules) != 1 || doc.Rules[0].ID != "extra" || doc.Rules[0].Kind != pego.SchemaAdded || doc.Rules[0].Before != nil {
+	if len(doc.Types) != 1 || len(doc.Rules) != 1 || doc.Rules[0].ID != "extra" || doc.Rules[0].Kind != schema.Added || doc.Rules[0].Before != nil {
 		t.Errorf("rules: %+v", doc.Rules)
 	}
 	if doc.Types == nil || doc.Rules == nil {

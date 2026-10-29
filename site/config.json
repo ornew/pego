@@ -434,6 +434,7 @@
             "reference/runtime/README.md",
             "reference/gen/README.md",
             "reference/lint/README.md",
+            "reference/schema/README.md",
             "reference/sample/README.md",
             "reference/editfuzz/README.md"
           ],
@@ -444,6 +445,7 @@
             "reference/runtime/README.md",
             "reference/gen/README.md",
             "reference/lint/README.md",
+            "reference/schema/README.md",
             "reference/sample/README.md",
             "reference/editfuzz/README.md"
           ],

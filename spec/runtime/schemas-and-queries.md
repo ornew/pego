@@ -95,7 +95,7 @@ establish compatibility between grammars.
 
 ### Comparing Schemas
 
-`pego.DiffOutputSchemas(before, after)` validates both complete operands and
+`schema.Compare(before, after)` validates both complete operands and
 compares their contents by type ID and rule name. It returns the added, removed and
 changed entries in sorted order; for equal schemas its `Types` and `Rules` slices are
 empty. The comparison ignores the order of entries, of struct fields, of join
@@ -186,7 +186,7 @@ matches or an error.
 | Condition | Result |
 |:--|:--|
 | Schema export from a parser loaded from a compiled grammar | `pego.ErrSchemaUnavailable` |
-| Invalid schema | An error from `Validate`, `CompileStructuralQuery`, `PrepareQuerySchema` or `DiffOutputSchemas` |
+| Invalid schema | An error from `Validate`, `CompileStructuralQuery`, `PrepareQuerySchema` or `schema.Compare` |
 | Pattern that cannot match any value the schema describes | An error from compilation |
 | Cycle on the active path during evaluation | `pego.ErrQueryCycle` |
 | Rule constraint on a result without source information | `pego.ErrQueryNoSourceInfo` |

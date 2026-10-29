@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/schema"
+	"github.com/ornew/pego/schema"
 )
 
 var outputSchemaExportSink *schema.Output

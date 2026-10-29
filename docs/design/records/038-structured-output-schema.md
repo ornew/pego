@@ -22,24 +22,27 @@ PEGO parses declared `TypeDef` values in `grammar/ast.go`, checks and infers rul
 
 ## Public Go Contract
 
-The Go API exposes the engine schema through public aliases:
+The schema types and the comparison are in package `schema`; the parser exports a schema:
 
 ```go
-type OutputSchema struct {
+// package schema
+type Output struct {
     Format string
     Version int
     Start string
     PositionUnitIndependent bool
     SourceInfo bool
-    Types []SchemaType
-    Rules []SchemaRule
+    Types []Type
+    Rules []Rule
 }
-func (p *Parser) OutputSchema(opts ...SchemaOption) (*OutputSchema, error)
+func (s *Output) Validate() error
+func (s *Output) UnmarshalJSON(data []byte) error
+func Compare(before, after *Output) (*Diff, error)
+
+// package pego
+func (p *Parser) OutputSchema(opts ...SchemaOption) (*schema.Output, error)
 func WithAllSchemaRules() SchemaOption
 var ErrSchemaUnavailable error
-func (s *OutputSchema) Validate() error
-func (s *OutputSchema) UnmarshalJSON(data []byte) error
-func DiffOutputSchemas(before, after *OutputSchema) (*OutputSchemaDiff, error)
 ```
 
 `encoding/json` marshals the exported fields. `Validate` checks the version 2 envelope
@@ -47,7 +50,7 @@ and shape graph for both decoded and directly constructed schemas. The
 `UnmarshalJSON` contract rejects unknown fields, field names with incorrect
 case, and duplicate object keys at every nesting level. Validation rejects
 cyclic inline shapes but allows named-reference recursion. Evolution beyond
-version 2 is a proposal. `DiffOutputSchemas` returns sorted added, removed,
+version 2 is a proposal. `Compare` returns sorted added, removed,
 or changed entries for types keyed by namespace-qualified type ID and rules
 keyed by rule name. It does not classify compatibility. The version-2 JSON
 envelope has this shape. This envelope-only illustration omits required rule
@@ -78,7 +81,7 @@ nil, and empty optional shape slices are equivalent.
 
 ## Semantic Schema Diff
 
-`DiffOutputSchemas(before, after)` validates both complete operands with
+`schema.Compare(before, after)` validates both complete operands with
 `Validate` before comparing version 2 type and rule contents by identity. It
 ignores type/rule entry order, struct-field order, and join-alternative order.
 It preserves child order and named references. Envelope fields such as `Start`
@@ -119,7 +122,7 @@ Structural queries are checked against the schema. The query compiler validates 
 
 ## Testing and Performance
 
-The tests cover the export, decoding and validation of the JSON contract, the semantic diff, the refusal of schema export by loaded compiled grammars and the backend agreement. They are in `internal/schema/*_test.go`, `internal/engine/output_schema_*_test.go`, `internal/engine/compiled_schema_test.go` and `schema_diff_test.go`. Export time and allocations are measured separately from parse and code generation, with `internal/engine/output_schema_export_bench_test.go`, `internal/engine/output_schema_validate_bench_test.go` and `schema_diff_bench_test.go`.
+The tests cover the export, decoding and validation of the JSON contract, the semantic diff, the refusal of schema export by loaded compiled grammars and the backend agreement. They are in `schema/*_test.go` (decoding, validation and the diff), `internal/schema/*_test.go` (the export), `internal/engine/output_schema_*_test.go` and `internal/engine/compiled_schema_test.go`. Export time and allocations are measured separately from parse and code generation, with `internal/engine/output_schema_export_bench_test.go`, `internal/engine/output_schema_validate_bench_test.go` and `schema/diff_bench_test.go`.
 
 ## Performance and Results
 

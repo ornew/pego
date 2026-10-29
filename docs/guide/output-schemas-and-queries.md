@@ -24,18 +24,18 @@ func main() {
 		log.Fatal(err)
 	}
 
-	schema, err := p.OutputSchema()
+	out, err := p.OutputSchema()
 	if err != nil {
 		log.Fatal(err)
 	}
-	encoded, err := json.Marshal(schema)
+	encoded, err := json.Marshal(out)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	query, err := pego.CompileStructuralQuery(pego.QueryPattern{
 		Category: "node", Value: &pego.QueryPattern{Category: "string"}, Capture: "name",
-	}, schema)
+	}, out)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,12 +51,12 @@ func main() {
 }
 ```
 
-To compile many queries against one schema, validate it once with `pego.PrepareQuerySchema(schema)` and compile with
+To compile many queries against one schema, validate it once with `pego.PrepareQuerySchema(out)` and compile with
 the result's `CompileStructuralQuery(pattern)`. With a 128-type schema, compiling a query takes about 80 µs without
 preparation and under 1 µs with it; preparing takes about as long as one unprepared compilation.
 
 ```go
-prepared, err := pego.PrepareQuerySchema(schema)
+prepared, err := pego.PrepareQuerySchema(out)
 if err != nil {
 	return err
 }
@@ -65,11 +65,11 @@ query, err := prepared.CompileStructuralQuery(pego.QueryPattern{
 })
 ```
 
-`pego.DiffOutputSchemas(before, after)` compares two schemas and returns the added, removed and changed entries, for
-example to review how a grammar change alters its output:
+`schema.Compare(before, after)` in package `github.com/ornew/pego/schema` compares two schemas and returns the added,
+removed and changed entries, for example to review how a grammar change alters its output:
 
 ```go
-diff, err := pego.DiffOutputSchemas(before, after)
+diff, err := schema.Compare(before, after)
 if err != nil {
 	return err
 }

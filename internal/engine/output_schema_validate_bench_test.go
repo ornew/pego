@@ -6,10 +6,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ornew/pego/internal/schema"
+	"github.com/ornew/pego/schema"
 )
 
-// outputSchemaUnvalidated has OutputSchema's fields and JSON tags but no
+// outputSchemaUnvalidated has schema.Output's fields and JSON tags but no
 // UnmarshalJSON method, isolating encoding/json's decoding cost from graph
 // validation.
 type outputSchemaUnvalidated schema.Output
