@@ -103,14 +103,4 @@ func (d *Document) DrainChanges() []DocumentChange {
 // Public callers enable tracking on Document instead.
 type ChangeDocument struct{ *Document }
 
-func (p *Program) NewChangeDocumentWith(start, text string, o ParseOptions, queueLimit int) (*ChangeDocument, error) {
-	d, err := p.NewDocumentWith(start, text, o)
-	if err != nil {
-		return nil, err
-	}
-	if err := d.EnableChanges(queueLimit); err != nil {
-		return nil, err
-	}
-	return &ChangeDocument{d}, nil
-}
 func (d *ChangeDocument) Snapshot() (*Snapshot, error) { return d.SnapshotWith(d.ParseDefaults()) }

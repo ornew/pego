@@ -31,7 +31,7 @@ type Document struct {
 	changes  *documentChanges
 	identity *documentIdentity
 	sequence uint64
-	prog     *Program
+	runner   documentRunner
 	start    string
 	back     Backend // resolved construction backend
 	defaults ParseOptions
@@ -49,53 +49,29 @@ type Document struct {
 	previousSnapshot weak.Pointer[snapshotGraph]
 }
 
+// documentRunner is the program a Document parses with. The engine's Program
+// implements it; the Document only resolves the backend, prepares the program
+// for one parse and runs it.
+type documentRunner interface {
+	// selectBackend returns the backend that a request for b runs on.
+	selectBackend(b Backend) Backend
+	// prepareDocumentRun returns the runner that parses on backend b under the work control c.
+	prepareDocumentRun(b Backend, c *workControl) (documentRunner, error)
+	// shared returns the program part that a parser for this runner reads.
+	shared() *sharedProgram
+	// run parses p's input from the rule start on backend b.
+	run(p *parser, b Backend, start string) (*value.Node, error)
+}
+
+// newDocument returns a Document that parses the text in from the rule start
+// with runner on backend back. o holds the construction options.
+func newDocument(runner documentRunner, start string, back Backend, o ParseOptions, in input) *Document {
+	return &Document{identity: new(documentIdentity), sequence: 1, runner: runner, start: start, back: back, defaults: o, in: in, memo: newMemoTable()}
+}
+
 // maxEdits bounds the edit log: when it is full, the memo is dropped and the log restarts. It is a
 // variable for tests.
 var maxEdits = 1 << 16
-
-// NewDocument creates a Document that parses text with the rule start. Positions are in code
-// points.
-func (prog *Program) NewDocument(start, text string) (*Document, error) {
-	return prog.NewDocumentWith(start, text, ParseOptions{})
-}
-
-// NewDocumentWith creates a Document with options such as the position unit. Positions passed
-// to Edit use the same unit.
-func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (d *Document, err error) {
-	if prog.HasMissing || o.MissingTokens != 0 {
-		return nil, compile.MissingUnsupported("Document parsing")
-	}
-	if err := o.validateStreamDiagnostics(false); err != nil {
-		return nil, err
-	}
-	defer func() {
-		if x := recover(); x != nil {
-			if f, ok := x.(fatal); ok {
-				d, err = nil, f.err
-			} else if cp, ok := x.(contextPanic); ok {
-				panic(cp.value)
-			} else {
-				panic(x)
-			}
-		}
-	}()
-	if o.Recognize {
-		return nil, fmt.Errorf("recognition is not supported for documents")
-	}
-	start = prog.ResolveStart(start) // an empty name selects the default start rule
-	if err := prog.checkMode(o, true); err != nil {
-		return nil, err
-	}
-	_, _, c, err := prog.admitParse(start, o, false)
-	if err != nil {
-		return nil, err
-	}
-	c.check()
-	in := newControlledDocumentInput(text, o.Unit, c)
-	c.check()
-	in.control = nil // construction counters never become parse defaults
-	return &Document{identity: new(documentIdentity), sequence: 1, prog: prog, start: start, back: prog.backend(o.Backend), defaults: o, in: in, memo: newMemoTable()}, nil
-}
 
 // ParseDefaults returns a copy of the construction options. Invocation counters
 // are separate from these defaults.
@@ -125,13 +101,13 @@ func (d *Document) ParseWith(o ParseOptions) (*value.Node, error) {
 // parseWithCapture keeps parsing and result capture inside one interruption and
 // cleanup boundary. capture uses the same controller as the parser.
 func (d *Document) parseWithCapture(o ParseOptions, capture func(*parser, *value.Node, error) error) (n *value.Node, err error) {
-	if d.prog.HasMissing || o.MissingTokens != 0 {
+	if d.runner.shared().HasMissing || o.MissingTokens != 0 {
 		return nil, compile.MissingUnsupported("Document parsing")
 	}
 	if err := o.validateStreamDiagnostics(false); err != nil {
 		return nil, err
 	}
-	if o.Unit != d.in.unit || d.prog.backend(o.Backend) != d.back || o.Recognize {
+	if o.Unit != d.in.unit || d.runner.selectBackend(o.Backend) != d.back || o.Recognize {
 		return nil, fmt.Errorf("document parse cannot change unit, backend or recognition mode")
 	}
 	var p *parser
@@ -166,7 +142,7 @@ func (d *Document) parseWithCapture(o ParseOptions, capture func(*parser, *value
 		return nil, fmt.Errorf("work controls are unavailable in the reference build")
 	}
 	c.check()
-	active, setupErr := d.prog.prepareControlledProgram(d.back, c)
+	active, setupErr := d.runner.prepareDocumentRun(d.back, c)
 	if setupErr != nil {
 		return nil, setupErr
 	}
@@ -179,7 +155,7 @@ func (d *Document) parseWithCapture(o ParseOptions, capture func(*parser, *value
 	} else {
 		runs = map[runKey]*runRecord{}
 	}
-	p = &parser{prog: &active.sharedProgram, input: d.in, memo: d.memo, memoAll: true, noPlain: true, maxDepth: o.maxDepth(d.back), gen: gen, edits: d.edits,
+	p = &parser{prog: active.shared(), input: d.in, memo: d.memo, memoAll: true, noPlain: true, maxDepth: o.maxDepth(d.back), gen: gen, edits: d.edits,
 		runs: runs, lastRuns: lastRuns, kidStack: d.kids}
 	p.control = c
 	p.setTrace(o.Trace)

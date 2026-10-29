@@ -43,7 +43,7 @@ func workDocumentAssertRetry(t *testing.T, d *Document) {
 	t.Helper()
 	o := d.ParseDefaults()
 	o.Context, o.WorkLimits, o.Trace = nil, limits.WorkLimits{}, nil
-	if got, want := resultJSON(d.ParseWith(o)), resultJSON(d.prog.ParseWith(d.start, d.Text(), o)); got != want {
+	if got, want := resultJSON(d.ParseWith(o)), resultJSON(d.runner.(*Program).ParseWith(d.start, d.Text(), o)); got != want {
 		t.Fatalf("retry %s; fresh %s", got, want)
 	}
 }

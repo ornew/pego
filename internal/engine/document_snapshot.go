@@ -304,7 +304,7 @@ func (d *Document) SnapshotWith(o ParseOptions) (*Snapshot, error) {
 }
 
 func (d *Document) snapshotWith(o ParseOptions, legacy **value.Node) (*Snapshot, error) {
-	if d.prog.HasMissing || o.MissingTokens != 0 {
+	if d.runner.shared().HasMissing || o.MissingTokens != 0 {
 		return nil, compile.MissingUnsupported("Document parsing")
 	}
 	var observed *snapshotContext
