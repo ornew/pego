@@ -364,6 +364,7 @@ func TsString(s string) string {
 	return string(b)
 }
 
+// TsStrings returns xs as a TypeScript array literal of strings.
 func TsStrings(xs []string) string {
 	q := make([]string, len(xs))
 	for i, x := range xs {
@@ -372,6 +373,7 @@ func TsStrings(xs []string) string {
 	return "[" + strings.Join(q, ", ") + "]"
 }
 
+// TsInts returns xs as a TypeScript array literal of numbers.
 func TsInts[T ~int32 | ~byte](xs []T) string {
 	q := make([]string, len(xs))
 	for i, x := range xs {

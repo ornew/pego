@@ -332,6 +332,9 @@ func CloneAST(value %s) %s {
 	return typedOutput{parser: parser.String(), types: tb.String(), needNodes: needNodes}, nil
 }
 
+// TypedGen writes the typed values of a generated Go parser for the generator G: the Go types of
+// the grammar's types and rules, from the type information Info, and the converters and helpers
+// that build typed values.
 type TypedGen struct {
 	G    *Generator
 	Info *compile.TypeInfo

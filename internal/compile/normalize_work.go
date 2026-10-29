@@ -17,6 +17,7 @@ func normalizationCopy[T any](dst, src []T, control *Control) {
 	}
 }
 
+// NormalizationClone returns a copy of src, polling control while copying.
 func NormalizationClone[T any](src []T, control *Control) []T {
 	if control == nil {
 		return append([]T(nil), src...)
@@ -30,6 +31,7 @@ func NormalizationClone[T any](src []T, control *Control) []T {
 	return out
 }
 
+// AppendNormalizedAttribute returns a copy of src with a appended, polling control while copying.
 func AppendNormalizedAttribute(src []*grammar.Attribute, a *grammar.Attribute, control *Control) []*grammar.Attribute {
 	if control == nil {
 		return append(append([]*grammar.Attribute(nil), src...), a)

@@ -11,13 +11,14 @@ import (
 // FieldType is a declared struct field type that a constructor checks a dynamically typed value
 // against at run time. Its text is the type as messages and bytecode write it.
 type FieldType struct {
-	Kind byte // see the ft constants
+	Kind byte // see the Ft constants
 	Name string
 	Elem *FieldType
 	Alts []*FieldType
 	Text string
 }
 
+// The kinds of a FieldType.
 const (
 	FtInt    = 'i'
 	FtString = 's'
@@ -25,9 +26,9 @@ const (
 	FtNil    = 'z'
 	FtNode   = 'n'
 	FtNamed  = 'N' // a struct type or a named node type
-	// FtStringNode is node[string], ftError error, the error value of recovery, and ftMissing
+	// FtStringNode is node[string], FtError error, the error value of recovery, and FtMissing
 	// missing, the error value of a missing token. Grammars that refer to missing run only on the
-	// Closure backend, so generated runtimes and the bytecode type text have no ftMissing.
+	// Closure backend, so generated runtimes and the bytecode type text have no FtMissing.
 	FtStringNode = 'S'
 	FtError      = 'E'
 	FtMissing    = 'M'

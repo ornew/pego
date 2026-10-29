@@ -46,6 +46,8 @@ func FirstTerminalControlled(prog *Program, e grammar.Expr, depth int, seen map[
 	return nil, 0
 }
 
+// CharClassStringControlled is CharClassString polling control for cancellation; a nil control
+// never cancels.
 func CharClassStringControlled(e *grammar.CharClass, control *Control) string {
 	if control == nil {
 		return CharClassString(e)
@@ -89,6 +91,9 @@ func CopyClassRanges(ranges []grammar.CharRange, control *Control) []grammar.Cha
 	return result
 }
 
+// ClassASCII returns the bitmap of the ASCII characters that ranges match, or that they do not
+// match if neg is set: bit r&63 of ascii[r>>6] is set for a matching r. A non-nil control polls
+// for cancellation.
 func ClassASCII(ranges []grammar.CharRange, neg bool, control *Control) (ascii [2]uint64) {
 	for r := rune(0); r < 128; r++ {
 		matched := false

@@ -13,6 +13,7 @@ type Ty interface{ String() string }
 // BasicTy is a built-in type.
 type BasicTy string
 
+// The basic types.
 const (
 	TyAny    BasicTy = "unknown" // type not known statically (compatible with every type); no type can be written to mean it
 	tyNever  BasicTy = "_|_"     // no value, and the initial value for inference
@@ -23,6 +24,7 @@ const (
 	TyNode   BasicTy = "node" // any node
 )
 
+// String returns the name of the type; TyNode prints as node[_].
 func (t BasicTy) String() string {
 	if t == TyNode {
 		return "node[_]" // node without a type argument is not a type
@@ -45,6 +47,7 @@ func (t NamedTy) String() string {
 	return t.Name
 }
 
+// The reserved node kinds as named types.
 var (
 	TyMatch   = NamedTy{value.TypeString, 'c'}
 	tySeq     = NamedTy{value.TypeTuple, 'c'}
@@ -53,16 +56,22 @@ var (
 	TyMissing = NamedTy{value.TypeMissing, 'c'}
 )
 
+// ListTy is the list type []Elem.
 type ListTy struct{ Elem Ty }
 
+// String returns the type as []T.
 func (t ListTy) String() string { return "[]" + typeTerm(t.Elem) }
 
+// OptTy is the optional type *Elem.
 type OptTy struct{ Elem Ty }
 
+// String returns the type as *T.
 func (t OptTy) String() string { return "*" + typeTerm(t.Elem) }
 
+// JoinTy is the join of the types Alts.
 type JoinTy struct{ Alts []Ty }
 
+// String returns the alternatives separated by |.
 func (t JoinTy) String() string {
 	parts := make([]string, len(t.Alts))
 	for i, a := range t.Alts {
@@ -75,6 +84,7 @@ func (t JoinTy) String() string {
 // node{k: T, ...}.
 type RecordTy struct{ fields map[string]Ty }
 
+// String returns the type as node{k: T, ...}, with the fields sorted by name.
 func (t RecordTy) String() string {
 	names := make([]string, 0, len(t.fields))
 	for n := range t.fields {

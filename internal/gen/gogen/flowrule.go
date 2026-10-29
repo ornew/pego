@@ -38,6 +38,7 @@ import (
 // Left-recursion leaders and rules that cut or recover are framed: they keep runtime growth and
 // finalization, and only their expression bodies are printed in place.
 
+// Dvar is a variable that a printed function declares: its name and Go type.
 type Dvar struct{ Name, Typ string }
 
 // markVar records, of the variable name of d.vars, that it is not declared (dead) or that it stays

@@ -129,6 +129,8 @@ func (c *Walker[M]) Expr(e grammar.Expr, s *Scope, build bool) M {
 	return c.Builder.Step(c.ExprForm(e, s, build))
 }
 
+// ExprForm walks the expression like Expr, without the step charge that Expr adds
+// (ExprBuilder.Step).
 func (c *Walker[M]) ExprForm(e grammar.Expr, s *Scope, build bool) M {
 	control := c.Control
 	switch e := e.(type) {

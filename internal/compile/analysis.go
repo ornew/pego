@@ -27,10 +27,14 @@ type Analysis struct {
 	positional map[string]bool
 }
 
+// Analyze computes the Analysis of rules without a compilation control (AnalyzeControlled).
 func Analyze(rules []*grammar.RuleDef) *Analysis {
 	return AnalyzeControlled(rules, nil)
 }
 
+// AnalyzeControlled computes the Analysis of rules: the nullable and always-succeeding rules,
+// the left-recursion cycles and their leaders, and the rules that read positions. A non-nil
+// control polls for cancellation.
 func AnalyzeControlled(rules []*grammar.RuleDef, control *Control) *Analysis {
 	a := &Analysis{
 		Control:    control,
@@ -490,6 +494,9 @@ func WalkTerm(t grammar.Term, f func(grammar.Term)) {
 	}
 }
 
+// Tarjan returns the strongly connected components of the graph of edges, starting from the
+// rules in order. A component comes after every component it reaches, so callees come before
+// their callers. A non-nil control polls for cancellation.
 func Tarjan(rules []*grammar.RuleDef, edges map[string][]string, control *Control) [][]string {
 	index := map[string]int{}
 	low := map[string]int{}
@@ -599,8 +606,7 @@ func propagate(rules []*grammar.RuleDef, calls map[string][]string, set map[stri
 	}
 }
 
-// walkRuleTerms visits every term in a rule's predicates and actions, including
-// Operators Rule operand and operator actions.
+// walkRuleTermsControlled is WalkRuleTerms polling control for cancellation.
 func walkRuleTermsControlled(r *grammar.RuleDef, f func(grammar.Term), control *Control) {
 	control.poll()
 	WalkTerm(r.Action, f)
@@ -643,6 +649,8 @@ func (a *Analysis) AlwaysSucceeds(e grammar.Expr) bool {
 	return grammaranalysis.AlwaysSucceedsWithPoll(e, a.succeeding, a.Control.poll)
 }
 
+// WalkExpr visits the expression and its subexpressions in preorder, including the expression
+// arguments of attributes and the operand and operator expressions of an Operators Rule.
 func WalkExpr(e grammar.Expr, f func(grammar.Expr)) {
 	if e == nil {
 		return
@@ -700,4 +708,6 @@ func WalkExpr(e grammar.Expr, f func(grammar.Expr)) {
 	}
 }
 
+// WalkRuleTerms visits every term in a rule's action and predicates, including Operators Rule
+// operand and operator actions.
 func WalkRuleTerms(r *grammar.RuleDef, f func(grammar.Term)) { walkRuleTermsControlled(r, f, nil) }

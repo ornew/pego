@@ -372,6 +372,7 @@ func usesItems(t grammar.Term, control *Control) bool {
 	return found
 }
 
+// RuleProjections returns the projected repetition captures of r (ruleProjectionsControlled).
 func RuleProjections(prog *Program, r *Rule) map[string]string {
 	return ruleProjectionsControlled(prog, r, nil)
 }

@@ -114,6 +114,7 @@ func (c *Compiler) CheckTerm(t grammar.Term, s *Scope, locals []string) {
 	}
 }
 
+// FieldOf returns the field name of the struct type st, or nil if st has no such field.
 func FieldOf(st *grammar.TypeDef, name string) *grammar.Field {
 	for _, f := range DefFields(st) {
 		if f.Name == name {

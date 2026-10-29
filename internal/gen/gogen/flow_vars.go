@@ -63,6 +63,7 @@ type VarStmt struct {
 	Text func(dead func(*flow.Var) bool) string
 }
 
+// NewFlowVars returns an empty FlowVars.
 func NewFlowVars() FlowVars {
 	return FlowVars{Hard: map[*flow.Var]bool{}, Stuck: map[*flow.Var]bool{}, Pinned: map[*flow.Var]bool{}}
 }

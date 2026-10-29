@@ -163,8 +163,10 @@ type Scope struct {
 	outer *Scope
 }
 
+// NewScope returns an empty scope.
 func NewScope() *Scope { return &Scope{Slots: map[string]int{}} }
 
+// Slot returns the slot of the capture name, adding one if the scope has none.
 func (s *Scope) Slot(name string) int {
 	if i, ok := s.Slots[name]; ok {
 		return i
@@ -180,6 +182,7 @@ type Error struct {
 	Msg string
 }
 
+// Error returns the message, prefixed with the line and column when the position is known.
 func (e *Error) Error() string {
 	if e.Pos.IsValid() {
 		return fmt.Sprintf("%d:%d: %s", e.Pos.Line, e.Pos.Col, e.Msg)
@@ -190,6 +193,7 @@ func (e *Error) Error() string {
 // ErrorList is a list of compile errors.
 type ErrorList []*Error
 
+// Error returns the messages of the errors, one per line.
 func (l ErrorList) Error() string {
 	msgs := make([]string, len(l))
 	for i, e := range l {
@@ -204,6 +208,9 @@ var builtinTypes = map[string]bool{
 	"Match": true, "Seq": true, "List": true, "Operator": true, "Error": true, "Missing": true, value.TypeMissing: true,
 }
 
+// Compiler holds the state of compiling one program: the program being built, its analysis,
+// options, expectation table and errors. Walker embeds it to walk rule bodies for a backend.
+// A nil Control never cancels.
 type Compiler struct {
 	Control        *Control
 	Prog           *Program
@@ -705,10 +712,11 @@ func visible(e grammar.Expr) bool {
 
 // hasCaptures reports whether the expression contains captures (excluding nested repetitions),
 // also inside positive lookaheads.
-// elementScoped reports whether the repetition element e gets a capture scope of its own per
-// iteration: when it contains captures (hasCaptures), or its predicates read captures, which can
-// then only be its own (made inside &) or, an error, those of the enclosing scope. Every backend
-// and generator must decide the same way, since the scope decides where captures are written.
+// elementScopedControlled reports whether the repetition element e gets a capture scope of its own
+// per iteration: when it contains captures (hasCaptures), or its predicates read captures, which
+// can then only be its own (made inside &) or, an error, those of the enclosing scope. Every
+// backend and generator must decide the same way, since the scope decides where captures are
+// written.
 func elementScopedControlled(e grammar.Expr, control *Control) bool {
 	control.poll()
 	return hasCapturesControlled(e, control) || predicatesReadCaptures(e, control)
@@ -832,6 +840,8 @@ func firstTerminal(prog *Program, e grammar.Expr, depth int, seen map[string]boo
 	return nil, 0
 }
 
+// CharClassString returns the character class as grammar syntax writes it, which names the class
+// in expectations.
 func CharClassString(e *grammar.CharClass) string {
 	var b strings.Builder
 	b.WriteString("[")
@@ -970,8 +980,11 @@ func SeeThrough(e grammar.Expr) grammar.Expr {
 	}
 }
 
+// ElementScoped reports whether the repetition element e gets a capture scope of its own per
+// iteration (elementScopedControlled).
 func ElementScoped(e grammar.Expr) bool { return elementScopedControlled(e, nil) }
 
+// HasCaptures reports whether e contains a capture.
 func HasCaptures(e grammar.Expr) bool { return hasCapturesControlled(e, nil) }
 
 // WhereName returns the text that names the rule in the message of a failed action.

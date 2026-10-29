@@ -65,6 +65,8 @@ type runtimeInfo struct {
 	Decls map[string]*runtimeDecl
 }
 
+// LoadRuntime parses the registered runtime source once and returns its files and exported
+// declarations.
 func LoadRuntime() (*runtimeInfo, error) {
 	runtimeSrc.mu.Lock()
 	defer runtimeSrc.mu.Unlock()

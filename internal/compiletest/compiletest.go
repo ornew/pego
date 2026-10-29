@@ -46,7 +46,8 @@ func Program(tb testing.TB, src string, opts compile.Options) *compile.Program {
 }
 
 // NoExprs is an expression builder that builds nothing: the compiler still walks every rule body
-// and decides its static facts.
+// and decides its static facts. Its methods implement compile.ExprBuilder, which documents them,
+// and return the zero form.
 type NoExprs struct{}
 
 var _ compile.ExprBuilder[struct{}] = NoExprs{}

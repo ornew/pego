@@ -116,6 +116,7 @@ const (
 	SingleTuple                   // the node of the tuple of the elements
 )
 
+// SingleModeOf returns how single takes the value of e.
 func SingleModeOf(p *Program, e grammar.Expr) SingleMode {
 	k := ValuedCount(p, e)
 	seq := isSeq(p, e)
@@ -144,6 +145,7 @@ type Shaper struct {
 	K      int  // the number of valued elements
 }
 
+// ShaperOf returns the Shaper of e.
 func ShaperOf(p *Program, e grammar.Expr) Shaper {
 	return Shaper{Elems: IsElems(p, e), Shared: SharesTuple(p, e), K: ValuedCount(p, e)}
 }

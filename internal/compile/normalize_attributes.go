@@ -20,6 +20,8 @@ func NormalizeAttributesWithCopies(g *grammar.Grammar, eager bool) (*grammar.Gra
 	return NormalizeAttributesControlled(g, eager, nil)
 }
 
+// NormalizeAttributesControlled is NormalizeAttributesWithCopies polling control for
+// cancellation; a nil control never cancels.
 func NormalizeAttributesControlled(g *grammar.Grammar, eager bool, control *Control) (*grammar.Grammar, error) {
 	control.check()
 	n := &AttributeNormalizer{eager: eager, control: control}
@@ -39,6 +41,8 @@ func NormalizeAttributesControlled(g *grammar.Grammar, eager bool, control *Cont
 	return &copy, nil
 }
 
+// AttributeNormalizer binds and lowers the attributes of a grammar, collecting the errors of
+// invalid ones. An eager normalizer copies every attribute it visits.
 type AttributeNormalizer struct {
 	errors  ErrorList
 	eager   bool
@@ -108,6 +112,8 @@ func (n *AttributeNormalizer) value(value any) (any, bool) {
 	return value, false
 }
 
+// Attribute returns a with its arguments normalized; it returns a itself when nothing changes and
+// the normalizer is not eager.
 func (n *AttributeNormalizer) Attribute(a *grammar.Attribute) *grammar.Attribute {
 	n.control.poll()
 	copy := *a
@@ -155,6 +161,8 @@ func (n *AttributeNormalizer) Attribute(a *grammar.Attribute) *grammar.Attribute
 	return &copy
 }
 
+// CloneAttributeKeywords returns a copy of the keyword arguments values, polling control per
+// entry.
 func CloneAttributeKeywords(values map[string]any, control *Control) map[string]any {
 	control.check()
 	copy := make(map[string]any, len(values))
@@ -165,6 +173,10 @@ func CloneAttributeKeywords(values map[string]any, control *Control) map[string]
 	return copy
 }
 
+// Bind moves the one positional argument of a to the keyword argument name. It reports an error
+// when a has more than one positional argument, an empty one, or a keyword argument name
+// already, and returns an attribute without positional arguments as it is. A normalizer that is
+// not eager binds into a copy of a.
 func (n *AttributeNormalizer) Bind(a *grammar.Attribute, name string) *grammar.Attribute {
 	if len(a.Args) == 0 {
 		return a
@@ -439,11 +451,13 @@ func (n *AttributeNormalizer) operator(o *grammar.OperatorsRuleOperator) *gramma
 	return &copy
 }
 
+// AttributeMessage returns the message argument of a normalized @error attribute.
 func AttributeMessage(a *grammar.Attribute) string {
 	value, _ := a.Arg("message")
 	return value.(*grammar.Literal).Value
 }
 
+// AttributeDiagnosticName returns the name argument of a normalized @diagnostic attribute.
 func AttributeDiagnosticName(a *grammar.Attribute) string {
 	value, _ := a.Arg("name")
 	return value.(*grammar.Literal).Value

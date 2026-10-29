@@ -85,6 +85,8 @@ func UseSparseMemo(opts GenOptions, prog, rec *compile.Program) bool {
 	return !opts.DisableSparseMemo && (prog.NSeen > 64 || rec != nil && rec.NSeen > 64)
 }
 
+// GeneratedMaxDepth returns the maximum depth that a generated parser enforces: o.MaxDepth, or the
+// default depth when it is zero.
 func GeneratedMaxDepth(o GenOptions) int {
 	if o.MaxDepth == 0 {
 		return limits.DefaultMaxDepth
@@ -158,6 +160,7 @@ func (g *Generator) Desc(s string) compile.ExpID {
 	return id
 }
 
+// Name returns a fresh name: prefix followed by a number unique within the generator.
 func (g *Generator) Name(prefix string) string {
 	g.n++
 	return fmt.Sprintf("%s%d", prefix, g.n)

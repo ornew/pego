@@ -108,6 +108,8 @@ func (prog *Program) markMissingRules(control *Control) {
 	}
 }
 
+// MissingUnsupported returns the error of an operation that does not support missing-token
+// recovery.
 func MissingUnsupported(operation string) error {
 	return fmt.Errorf("missing-token recovery is not supported for %s; use Closure whole-input parsing or recognition", operation)
 }

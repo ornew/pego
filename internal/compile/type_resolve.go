@@ -215,6 +215,8 @@ func (k *TypeResolver) resolveLocation(t grammar.TypeExpr, pos grammar.Pos, what
 	return r
 }
 
+// ResolveNamed resolves the type name written at pos: a built-in type, a reserved node kind or a
+// declared type, reporting names that are undefined or used without a required argument.
 func (k *TypeResolver) ResolveNamed(name string, pos grammar.Pos) Ty {
 	k.control.poll()
 	switch name {

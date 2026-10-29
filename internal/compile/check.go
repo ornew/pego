@@ -31,6 +31,8 @@ func CheckTypes(prog *Program, errs *ErrorList) {
 	CheckTypesControlled(prog, errs, nil)
 }
 
+// CheckTypesControlled is CheckTypes polling control for cancellation; a nil control never
+// cancels.
 func CheckTypesControlled(prog *Program, errs *ErrorList, control *Control) {
 	defer dropRepeatedErrors(errs, len(*errs))
 	k := &TypeResolver{control: control, Prog: prog, errs: errs, report: true}
@@ -159,6 +161,9 @@ func (prog *Program) concreteType(t grammar.TypeExpr) (string, grammar.TypeDecl)
 	return "", nil
 }
 
+// StructType returns the struct type definition that the type named name denotes, following
+// aliases, with the name of that definition; it returns "" and nil when name denotes no struct
+// type.
 func (prog *Program) StructType(name string) (string, *grammar.TypeDef) {
 	switch spec := prog.Types[name].(type) {
 	case *grammar.TypeDef:

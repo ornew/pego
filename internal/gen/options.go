@@ -121,6 +121,8 @@ func (opts GenOptions) ValidateDefaultValue() error {
 	return nil
 }
 
+// ValidateMaxDepth reports a negative MaxDepth and, for TypeScript output (ts), one above the
+// largest safe JavaScript integer.
 func (o GenOptions) ValidateMaxDepth(ts bool) error {
 	if o.MaxDepth < 0 {
 		return fmt.Errorf("generated max depth must be non-negative: %d", o.MaxDepth)
@@ -145,6 +147,7 @@ const (
 	RuntimeOnly
 )
 
+// String returns the lowercase name of the mode: embed, import or only.
 func (m RuntimeMode) String() string {
 	switch m {
 	case RuntimeEmbed:

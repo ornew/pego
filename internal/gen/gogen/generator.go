@@ -380,6 +380,8 @@ func goFieldType(t *compile.FieldType) string {
 	return b.String() + "}"
 }
 
+// Generator generates Go. It shares the expectation table, names and analyses with the
+// TypeScript generator through gen.Generator.
 type Generator struct {
 	gen.Generator
 	// hoist collects the statements the term being printed needs before its expression (see stmts); nil

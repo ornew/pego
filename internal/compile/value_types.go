@@ -26,6 +26,7 @@ const (
 // TupleTy is a tuple (T, U, ...).
 type TupleTy struct{ Elems []Ty }
 
+// String returns the type as (T, U, ...), with a trailing comma for one element.
 func (t TupleTy) String() string {
 	parts := make([]string, len(t.Elems))
 	for i, e := range t.Elems {
@@ -67,6 +68,7 @@ func (t NodeTy) Underlying() NodeTy {
 	return t
 }
 
+// String returns the name of a named node type, and the value-model term of another node type.
 func (t NodeTy) String() string {
 	if t.Name != "" {
 		return t.Name
@@ -110,6 +112,7 @@ func (t NodeTy) capsText() string {
 // RuleTy is the value type of a rule, referred to by the rule's name.
 type RuleTy struct{ Name string }
 
+// String returns the rule's name.
 func (t RuleTy) String() string { return t.Name }
 
 // Vjoin is the join of types in the value model: nested joins are flattened, duplicates and
@@ -181,6 +184,7 @@ func vopt(t Ty) Ty {
 	return Vjoin(OptTy{t})
 }
 
+// TyStringNode is node[string], the type of a match.
 var TyStringNode = NodeTy{Value: TyString}
 
 // valueElem is an element of the tuple an expression contributes to its scope.

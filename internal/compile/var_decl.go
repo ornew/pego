@@ -61,6 +61,7 @@ func (t *VarTable) ValuesOf(names []string) []any {
 	return vals
 }
 
+// NewVarTable returns an empty variable table.
 func NewVarTable() *VarTable {
 	return &VarTable{byName: map[string]*VarDecl{}, Bound: map[string]bool{}}
 }

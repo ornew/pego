@@ -21,6 +21,8 @@ func (prog *Program) BytecodeModule() *bytecode.Module {
 	return prog.Bytecode
 }
 
+// Bcompiler compiles a program to a bytecode module (Program.BytecodeModule): M is the module
+// it fills and Strs indexes the module's string table.
 type Bcompiler struct {
 	Prog *Program
 	cur  *Rule             // rule being compiled
@@ -106,6 +108,7 @@ func b2i(b bool) int32 {
 	return 0
 }
 
+// Compile fills M with the type table, the rule table and the code of the rules of Prog.
 func (c *Bcompiler) Compile() {
 	// Type table
 	for _, td := range c.Prog.Grammar.Types() {

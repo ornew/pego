@@ -12,6 +12,7 @@ import (
 // resolved value type, with references replaced, is ValueResolver.Vres[name].
 type Vrule struct{ Name string }
 
+// String returns the rule's name.
 func (r Vrule) String() string { return r.Name }
 
 // ValueResolver resolves the value types of the rules whose typed values come from them.
@@ -29,6 +30,8 @@ type ValueResolver struct {
 	ownType func(compile.Ty) bool
 }
 
+// NewValueResolver returns a resolver for the rules of p; ownType reports the legacy types that
+// have a typed representation of their own.
 func NewValueResolver(p *compile.Program, ownType func(compile.Ty) bool) ValueResolver {
 	r := ValueResolver{Prog: p, info: p.Typed, values: p.ValueTypes(), ruleDefs: map[string]*grammar.RuleDef{}, Vres: map[string]compile.Ty{}, resolving: map[string]bool{}, ownType: ownType}
 	for _, rl := range p.RuleList {
@@ -37,6 +40,9 @@ func NewValueResolver(p *compile.Program, ownType func(compile.Ty) bool) ValueRe
 	return r
 }
 
+// RuleRef returns the type of a reference to the rule name: its declared legacy type when its
+// typed value does not come from its value type, and otherwise a Vrule, resolving the rule's
+// value type into Vres first. A reference made while the rule is being resolved is TyTop.
 func (t *ValueResolver) RuleRef(name string) compile.Ty {
 	var legacy compile.Ty = compile.TyAny
 	if def := t.ruleDefs[name]; def != nil && def.Type != nil {

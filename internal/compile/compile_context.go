@@ -19,6 +19,8 @@ type Cancellation struct{ Err error }
 // millisecond (see design 042, "Compiler poll stride").
 const PollStride = 16
 
+// Control is the cancellation control of one compilation: Steps counts the steps taken, and Ctx
+// is checked every PollStride steps. A nil control never cancels.
 type Control struct {
 	Ctx   context.Context
 	Steps uint32
