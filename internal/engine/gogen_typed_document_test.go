@@ -40,7 +40,6 @@ import (
  "testing"
 )
 func TestTypedDocumentResultAndOwnership(t *testing.T) {
-	t.Parallel()
  for _, unit := range []PositionUnit{CodePoints, Bytes} {
   calls := 0
   d, err := NewDocument("é", func(o *pegort.X_parseOptions) { calls++; o.X_unit = unit })
@@ -70,7 +69,6 @@ func TestTypedDocumentResultAndOwnership(t *testing.T) {
 }
 
 func TestTypedDocumentConversionBudget(t *testing.T) {
-	t.Parallel()
  d, err := NewDocument("é")
  if err != nil { t.Fatal(err) }
  // The Node parse can reuse its result, while typed conversion must still be
@@ -128,7 +126,6 @@ import (
 )
 func isRecoveryError(v any) bool { _, ok := v.(*recoverytypes.Error); return ok }
 func TestNilAndRecovery(t *testing.T) {
-	t.Parallel()
  for _, unit := range []optional.PositionUnit{optional.CodePoints, optional.Bytes} {
   d, err := optional.NewDocument("", optional.WithUnit(unit))
   if err != nil { t.Fatal(err) }
@@ -202,7 +199,6 @@ import (
  "testing"
 )
 func TestOpenUnion(t *testing.T) {
-	t.Parallel()
  d, err := NewDocument("scds;cdscd")
  if err != nil { t.Fatal(err) }
  for _, edit := range []struct{ start, end int; text string }{{0, 0, ""}, {1, 1, "s"}, {6, 6, "cd"}, {0, 1, "cd"}} {
@@ -263,7 +259,6 @@ rule main Document = t:("a") #atomic => Document{Text: text($t)}`)
 		"fixture/parser_test.go": `package fixture
 import ("testing"; "typedcollision/fixture/types")
 func TestCollision(t *testing.T) {
-	t.Parallel()
  d, err := NewDocument("a")
  if err != nil { t.Fatal(err) }
  got, err := d.ParseAST()
@@ -320,7 +315,6 @@ rule main ErrDocumentBusy = t:("a") #atomic => ErrDocumentBusy{Text: text($t)}`)
 import pegort "github.com/ornew/pego/runtime"
 import ("errors"; "testing"; "observedcollision/fixture/types")
 func TestCollision(t *testing.T) {
-	t.Parallel()
  d, err := NewDocument("a")
  if err != nil { t.Fatal(err) }
  got, err := d.ParseAST()

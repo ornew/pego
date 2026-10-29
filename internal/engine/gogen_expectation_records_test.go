@@ -54,7 +54,6 @@ rule main N = ("é") #atomic`)
 			}
 			extra := `
 func TestExpectationPoolReuse(t *testing.T) {
-	t.Parallel()
  p := &Parser{}
  for id := ExpID(0); id < 160; id++ { p.Expect(0,id) }
  p.release()
@@ -70,7 +69,6 @@ func TestExpectationPoolReuse(t *testing.T) {
 			if mode == "direct" {
 				extra += `
 func TestTypedExpectationPoolReuse(t *testing.T) {
-	t.Parallel()
  p := &TParser{Parser:&Parser{}}
  for id := ExpID(0); id < 160; id++ { p.Expect(0,id|MsgBit) }
  p.recycle()

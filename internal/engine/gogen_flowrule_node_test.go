@@ -94,7 +94,6 @@ func encoded(n *Node, err error) string {
  b,_:=json.Marshal(out);return string(b)
 }
 func TestRetainedTrees(t *testing.T) {
-	t.Parallel()
  cases:=[]struct{rule,input string;unit PositionUnit;want string}{` + rows.String() + `}
  var saved []*Node;var snapshots []string
  for repeat:=0;repeat<3;repeat++ {for _,c:=range cases {

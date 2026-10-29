@@ -79,7 +79,6 @@ import (
 )
 
 func TestChunkValues(t *testing.T) {
-	t.Parallel()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		empty, err := ParseAST("", WithUnit(unit))
 		if err != nil || empty == nil || empty.Groups == nil || len(empty.Groups) != 0 { t.Fatal("empty root list") }

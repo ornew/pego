@@ -85,7 +85,6 @@ rule left = left "+" "é" / "é"
 	tests := `package depth
 import("fmt";"testing";pegort "github.com/ornew/pego/runtime")
 func TestRoutesAndReuse(t *testing.T) {
-	t.Parallel()
  cases:=[]struct{name,input string; unit PositionUnit; want string}{` + rows.String() + `}
  for repeat:=0;repeat<3;repeat++ { for _,c:=range cases {
   var selected *pegort.Rule

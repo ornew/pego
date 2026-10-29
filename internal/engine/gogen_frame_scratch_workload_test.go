@@ -122,7 +122,6 @@ func frameCleared(t *testing.T,p *pegort.Parser) {
  for _,v:=range p.X_saved[:cap(p.X_saved)] {if v!=nil {t.Fatal("released saved captures retain a value")}}
 }
 func TestFrameResults(t *testing.T) {
-	t.Parallel()
  small,large,invalid:=frameInputs()
  var saved []*Node;var snapshots []string;var savedErrors []error;var errorSnapshots []string
  for _,unit:=range []PositionUnit{CodePoints,Bytes} {
@@ -152,7 +151,6 @@ func TestFrameResults(t *testing.T) {
  }
 }
 func TestFrameAbortCleanup(t *testing.T) {
-	t.Parallel()
  var observed *pegort.Parser
  r:=&pegort.Rule{Name:"abort-test",Seen:-1,Scope:[]string{"x"},Body:func(p *pegort.Parser,_ int)(*Node,bool){
   observed=p;p.SetCapture(0,p.NewNode(Node{RawText:"abandoned"}));p.X_saved=append(p.X_saved,p.Frame.Vals[0]);panic(pegort.X_fatal{fmt.Errorf("fixture abort")})
@@ -162,7 +160,6 @@ func TestFrameAbortCleanup(t *testing.T) {
  frameCleared(t,observed)
 }
 func TestFrameDepthAbortCleanup(t *testing.T) {
-	t.Parallel()
  var observed *pegort.Parser
  r:=&pegort.Rule{Name:"depth-abort",Seen:-1,Scope:[]string{"x"}}
  r.Body=func(p *pegort.Parser,_ int)(*Node,bool){observed=p;p.SetCapture(0,p.NewNode(Node{RawText:"abandoned"}));p.Depth=FRAME_DEPTH_LIMIT;return p.Call(r,0)}
@@ -171,7 +168,6 @@ func TestFrameDepthAbortCleanup(t *testing.T) {
  frameCleared(t,observed)
 }
 func TestFrameConcurrentReuse(t *testing.T) {
-	t.Parallel()
  small,_,_:=frameInputs()
  var wg sync.WaitGroup
  for i:=0;i<6;i++ {wg.Add(1);go func(i int){defer wg.Done();unit:=CodePoints;if i%2!=0 {unit=Bytes}

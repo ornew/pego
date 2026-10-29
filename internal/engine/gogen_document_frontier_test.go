@@ -56,7 +56,6 @@ import (
 )
 
 func TestFrontier(t *testing.T) {
-	t.Parallel()
 	d, err := NewDocument("ab")
 	if err != nil {
 		t.Fatal(err)

@@ -148,7 +148,6 @@ rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: te
 			harness := `package ` + pkg + `
 import("fmt";"strings";"sync";"testing";pegort "github.com/ornew/pego/runtime")
 func TestLimitsAndReuse(t *testing.T) {
-	t.Parallel()
  rows:=[]struct{name,input string;unit PositionUnit;limit int;want,recWant string}{` + rows.String() + `}
  for repeat:=0;repeat<3;repeat++ {for _,c:=range rows {
   opts:=[]ParseOption{WithUnit(c.unit),WithMaxDepth(c.limit)}
@@ -183,7 +182,6 @@ func TestLimitsAndReuse(t *testing.T) {
  }}})};wg.Wait()
 }
 func TestConfiguration(t *testing.T) {
-	t.Parallel()
  bad:=WithMaxDepth(-7)
  for _,parse:=range []func(string,...ParseOption)(*Node,error){Parse,func(s string,o ...ParseOption)(*Node,error){return ParseRule("missing",s,o...)}} {
   n,err:=parse("?",bad);if n!=nil || err==nil || !strings.Contains(err.Error(),"max depth must be non-negative: -7") {t.Fatalf("config precedence: %v",err)}

@@ -75,7 +75,6 @@ import (
 func operatorsRuleInput(n int) string { return "a" + strings.Repeat(" [b,c,d,]", n) }
 
 func TestOperatorsRuleWorkload(t *testing.T) {
-	t.Parallel()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		saved, err := ParseAST(operatorsRuleInput(2), WithUnit(unit))
 		post, ok := saved.(*Post)

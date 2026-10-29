@@ -77,7 +77,6 @@ rule num = [0-9]+ ("." [0-9]+)?
 	tests := `package wc
 import("strings";"testing";"context";pegort "github.com/ornew/pego/runtime")
 func TestOptions(t *testing.T) {
-	t.Parallel()
  if _,err:=Parse("abc 12.5 x"); err!=nil {t.Fatal(err)}
  if err:=Recognize("abc 12.5 x"); err!=nil {t.Fatal(err)}
  if _,err:=Parse("abc ("); err==nil {t.Fatal("no error for bad input")}

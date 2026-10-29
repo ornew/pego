@@ -79,7 +79,6 @@ import (
 )
 ` + ordinaryOnlyShow + `
 func TestTranscript(t *testing.T) {
-	t.Parallel()
 	var b strings.Builder
 	for _, in := range INPUTS {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -148,7 +147,6 @@ func showAST(v any, err error) string {
 }
 
 func TestTranscript(t *testing.T) {
-	t.Parallel()
 	var b strings.Builder
 	for _, in := range INPUTS {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {

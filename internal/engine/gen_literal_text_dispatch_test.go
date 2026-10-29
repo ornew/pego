@@ -524,7 +524,6 @@ func loadInputs(b testing.TB, workload string) []fixtureInput {
 }
 
 func TestGeneratedFixtureParity(t *testing.T) {
-	t.Parallel()
 	const workload = "$WORKLOAD"
 	for _, input := range loadInputs(t, "inputs.json") {
 		for unitIndex, unitName := range []string{"codePoints", "bytes"} {

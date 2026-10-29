@@ -214,7 +214,6 @@ func controlResult(kind string, start int) any {
 }
 
 func TestTypedOutputOwnership(t *testing.T) {
-	t.Parallel()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, kind := range []string{"terminal", "match", "structure", "list", "slice"} {
 			t.Run(fmt.Sprintf("%s/%v", kind, unit), func(t *testing.T) {

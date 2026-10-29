@@ -47,7 +47,6 @@ import (
  "testing"
 )
 func TestPublicationOwnershipAndAliases(t *testing.T) {
-	t.Parallel()
  token := &types.Token{Text:"private"}
  label := "private"
  link := &types.Link{Label:&label}
@@ -69,7 +68,6 @@ func TestPublicationOwnershipAndAliases(t *testing.T) {
  if c.Control!=nil || c.Values!=nil || c.Slices!=nil || c.Tasks!=nil {t.Fatal("publication retained private metadata")}
 }
 func TestPublicationDeepGraph(t *testing.T) {
-	t.Parallel()
  var input *types.Link
  for i:=0;i<100001;i++ {input=&types.Link{Next:input}}
  c := &typedDocumentClone{}
@@ -89,7 +87,6 @@ func cloneWithControl(input *types.Box, c *typedDocumentClone,beforeFinish ...fu
  return output,nil
 }
 func TestPublicationControls(t *testing.T) {
-	t.Parallel()
  input:=&types.Box{First:&types.Token{Text:"private"},Items:make([]*types.Token,1000)}
  c:=&typedDocumentClone{TypedDocumentCloneBase: pegort.TypedDocumentCloneBase{Control: pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:1})}}
  if output,err:=cloneWithControl(input,c);output!=nil || !errors.Is(err,ErrWorkLimit) {t.Fatalf("budget: %v %v",output,err)}
@@ -103,7 +100,6 @@ func TestPublicationControls(t *testing.T) {
  if output,err:=cloneWithControl(input,&typedDocumentClone{});output==nil || err!=nil {t.Fatalf("retry: %v",err)}
 }
 func TestPublicationCollidingNames(t *testing.T) {
-	t.Parallel()
  c:=&typedDocumentClone{}
  if c.toTypeDocument(&types.Document{Text:"m"}).Text!="m" || c.toTypeParseStats(&types.ParseStats{Text:"e"}).Text!="e" || c.toTypeSpan(&types.Span{Text:"s"}).Text!="s" {t.Fatal("runtime name collision")}
  c.Finish();c.Release()

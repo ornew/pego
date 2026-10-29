@@ -55,7 +55,6 @@ import (
 )
 
 func TestTraceOptions(t *testing.T) {
-	t.Parallel()
 	observed := `+want+`
 	var events int
 	var profile pegort.Profile

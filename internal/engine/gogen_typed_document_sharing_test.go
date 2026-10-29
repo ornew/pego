@@ -177,7 +177,6 @@ func checkSlices(t *testing.T, v reflect.Value, name string) {
 }
 
 func TestSharedResultsAreImmutableAndFresh(t *testing.T) {
-	t.Parallel()
 	rng := rand.New(rand.NewSource(11))
 	letters := []string{"a", "b", "c"}
 	d, err := NewDocument(build(letters))
@@ -214,7 +213,6 @@ func TestSharedResultsAreImmutableAndFresh(t *testing.T) {
 }
 
 func TestSharedPrefixValuesAreTheSameValues(t *testing.T) {
-	t.Parallel()
 	d, err := NewDocument("a;b;c;d")
 	if err != nil {
 		t.Fatal(err)
@@ -250,7 +248,6 @@ func TestSharedPrefixValuesAreTheSameValues(t *testing.T) {
 // TestSharedResultMutationIsVisibleLater pins the contract: a caller that mutates a result changes
 // the values that later results share, as with Node.
 func TestSharedResultMutationIsVisibleLater(t *testing.T) {
-	t.Parallel()
 	d, err := NewDocument("a;b;c")
 	if err != nil {
 		t.Fatal(err)
@@ -276,7 +273,6 @@ func TestSharedResultMutationIsVisibleLater(t *testing.T) {
 // one iteration per item, each one a seed for the next. A result taken before an edit must still
 // equal its snapshot after the edit is parsed, so no iteration writes into a seed that was published.
 func TestSharedLeftRecursionSnapshotSurvivesEdit(t *testing.T) {
-	t.Parallel()
 	d, err := NewDocument("a;b;c;d;e")
 	if err != nil {
 		t.Fatal(err)
@@ -322,7 +318,6 @@ func pairTexts(p *Pair) string {
 }
 
 func TestSharedInterruptionDuringPublication(t *testing.T) {
-	t.Parallel()
 	d, err := NewDocument("a;b;c;d;e;f;g;h")
 	if err != nil {
 		t.Fatal(err)
@@ -438,7 +433,6 @@ func checkSlices(t *testing.T, v reflect.Value, name string) {
 // The outer slice of a top-level list result is fresh: appending to one result must not write
 // into another, because its capacity equals its length.
 func TestSharedOuterSliceIsFresh(t *testing.T) {
-	t.Parallel()
 	a, err := ParseAST("a;b;c")
 	if err != nil {
 		t.Fatal(err)
@@ -469,7 +463,6 @@ func listTexts(items []*Item) string {
 // one iteration per item, each one a seed for the next. A result taken before an edit must still
 // equal its snapshot after the edit is parsed, so no iteration writes into a seed that was published.
 func TestSharedLeftRecursionSnapshotSurvivesEdit(t *testing.T) {
-	t.Parallel()
 	d, err := NewDocument("a;b;c;d;e")
 	if err != nil {
 		t.Fatal(err)
@@ -502,7 +495,6 @@ func TestSharedLeftRecursionSnapshotSurvivesEdit(t *testing.T) {
 }
 
 func TestSharedListEditsKeepEarlierResults(t *testing.T) {
-	t.Parallel()
 	rng := rand.New(rand.NewSource(7))
 	letters := []string{"a", "b", "c"}
 	d, err := NewDocument(strings.Join(letters, ";"))
@@ -547,7 +539,6 @@ import (
 // The operators rule builds Sum nodes from fresh values. Replacing one letter at a time must keep
 // every earlier result as it was published.
 func TestSharedOperatorsKeepEarlierResults(t *testing.T) {
-	t.Parallel()
 	rng := rand.New(rand.NewSource(3))
 	text := []byte("a+(b+c)+d")
 	d, err := NewDocument(string(text))
@@ -616,7 +607,6 @@ import (
 )
 
 func TestSharedSlabOuterSliceHasNoSpareCapacity(t *testing.T) {
-	t.Parallel()
 	got, err := ParseAST("a;b;c;d")
 	if err != nil {
 		t.Fatal(err)
@@ -646,7 +636,6 @@ import (
 )
 
 func TestSharedAnyFieldIsDetachedFromParserState(t *testing.T) {
-	t.Parallel()
 	d, err := NewDocument("a;b;")
 	if err != nil {
 		t.Fatal(err)
@@ -717,7 +706,6 @@ func countErrors(v reflect.Value) int {
 }
 
 func TestSharedRecoverErrorValuesKeepEarlierResults(t *testing.T) {
-	t.Parallel()
 	pieces := []string{"a;", "b;", "a;x;", "cc;"}
 	rng := rand.New(rand.NewSource(37))
 	d, err := NewDocument(recText(pieces))

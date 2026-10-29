@@ -169,7 +169,6 @@ const namedASTConsumer = `package named_test
 import("encoding/json";"fmt";"reflect";"strings";"sync";"testing";p "namedfixture/named";g "namedfixture/named/types")
 func jsonValue(v any)string {b,err:=json.Marshal(v);if err!=nil {panic(err)};return string(b)}
 func TestNamedMappings(t *testing.T) {
-	t.Parallel()
  for _,unit:=range []p.PositionUnit{p.CodePoints,p.Bytes} {
   end:=1;if unit==p.Bytes {end=2}
   if FIELD_READ {v,err:=p.ParseRuleAST("fieldRead","é",p.WithUnit(unit));if err!=nil||v.(*g.T).End!=end {t.Fatal(v,err)}}
@@ -209,7 +208,6 @@ func counted(calls *int,opt p.ParseOption)p.ParseOption {
  f:=reflect.ValueOf(opt);return reflect.MakeFunc(f.Type(),func(args []reflect.Value)[]reflect.Value{*calls++;f.Call(args);return nil}).Interface().(p.ParseOption)
 }
 func TestNamedOptionsAndErrors(t *testing.T) {
-	t.Parallel()
  calls:=0
  v,err:=p.ParseRuleAST("missing","",counted(&calls,p.WithMaxDepth(-1)))
  if v!=nil||err==nil||!strings.Contains(err.Error(),"max depth")||calls!=1 {t.Fatalf("precedence or option replay: %v %v %d",v,err,calls)}
@@ -226,12 +224,10 @@ func TestNamedOptionsAndErrors(t *testing.T) {
  }
 }
 func TestStartUnchanged(t *testing.T) {
-	t.Parallel()
  name,input:="main","é";if START_CST {name,input="cst","xy"};var f func(string,...p.ParseOption)(START_TYPE,error)=p.ParseAST;_,_=f(input)
  v,err:=p.ParseRuleAST(name,input);if err!=nil {t.Fatal(err)};a,err:=p.ParseAST(input);if err!=nil||jsonValue(a)!=jsonValue(v) {t.Fatal(a,v,err)}
 }
 func TestNamedOwnership(t *testing.T) {
-	t.Parallel()
  v,err:=p.ParseRuleAST("items","éé");if err!=nil {t.Fatal(err)};before:=jsonValue(v)
  var wg sync.WaitGroup
  for i:=0;i<4;i++ {wg.Add(1);go func(){defer wg.Done();for j:=0;j<20;j++ {if _,err:=p.ParseRuleAST("structure","é");err!=nil {t.Error(err)}}}()};wg.Wait()
@@ -297,7 +293,6 @@ func normalized(v any,offset int)string {
  var shift func(any);shift=func(x any){switch x:=x.(type){case []any:for _,v:=range x {shift(v)};case map[string]any:if start,ok:=x["Start"].(float64);ok {x["Start"]=start-float64(offset);x["End"]=x["End"].(float64)-float64(offset)};for _,v:=range x {shift(v)}}};shift(x);data,_=json.Marshal(x);return string(data)
 }
 func TestXMLFragments(t *testing.T) {
-	t.Parallel()
  for _,unit:=range []p.PositionUnit{p.CodePoints,p.Bytes} {
   for _,c:=range []struct{name,fragment,prefix,suffix string;bad bool}{
    {"content","é<子>日本&amp;語</子><!--注-->","<r>","</r>",false},
@@ -378,7 +373,6 @@ rule nilUnion MaybeU = t:term? => $t
 const namedNilConsumer = `package named_test
 import("testing";p "namedfixture/named")
 func TestSuccessfulNil(t *testing.T) {
-	t.Parallel()
  for _,unit:=range []p.PositionUnit{p.CodePoints,p.Bytes} {
   for _,name:=range []string{"nilAny","nilNode","nilUnion"} {
    n,err:=p.ParseRule(name,"",p.WithUnit(unit));if err!=nil||n!=nil {t.Fatalf("%s generic nil success: %v %v",name,n,err)}

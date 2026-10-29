@@ -182,7 +182,6 @@ func interrupt(t *testing.T, unit PositionUnit, opts func(context.CancelFunc) []
 }
 
 func TestInterruptedGrowth(t *testing.T) {
-	t.Parallel()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, cause := range []string{"cancel", "panic"} {
 			grown := 0

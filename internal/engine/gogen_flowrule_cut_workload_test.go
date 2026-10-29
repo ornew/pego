@@ -88,7 +88,6 @@ import (
 func cutInput(n int) string { return strings.Repeat("let alpha:123;var beta:456;", n) }
 
 func TestCutWorkload(t *testing.T) {
-	t.Parallel()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		saved, err := ParseAST(cutInput(1), WithUnit(unit))
 		if err != nil || len(saved.Rows) != 2 || saved.Rows[0].Key.Value != "alpha" || saved.Rows[1].Value.Value != "456" {

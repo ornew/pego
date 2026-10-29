@@ -107,7 +107,6 @@ import (
 )
 
 func TestNames(t *testing.T) {
-	t.Parallel()
 	v, err := ParseAST("a")
 	if err != nil {
 		t.Fatal(err)
@@ -414,7 +413,6 @@ func TestGeneratedTypedFieldNamedRange(t *testing.T) {
 import "testing"
 
 func TestRange(t *testing.T) {
-	t.Parallel()
 	v, err := ParseAST("12")
 	if err != nil {
 		t.Fatal(err)

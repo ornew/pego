@@ -192,7 +192,6 @@ import (
 	"testing"
 )
 func TestBothWalkAPIs(t *testing.T) {
-	t.Parallel()
  node, err := Parse("é")
  if err != nil { t.Fatal(err) }
  generic := 0

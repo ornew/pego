@@ -74,7 +74,6 @@ func testGeneratedTypedFilterIdentity(t *testing.T) {
 			fmt.Fprintf(&imports, "\t%s \"filteridentity/%s\"\n", pkg, pkg)
 			body := `
 func TestPACKAGEIdentity(t *testing.T) {
-	t.Parallel()
  for _, unit := range []PACKAGE.PositionUnit{PACKAGE.CodePoints, PACKAGE.Bytes} {
   result, err := PACKAGE.ParseAST("é", PACKAGE.WithUnit(unit))
   if err != nil || result == nil { t.Fatalf("parse: %v", err) }
@@ -99,7 +98,6 @@ func TestPACKAGEIdentity(t *testing.T) {
 			if start == "empty" {
 				body = `
 func TestPACKAGEEmpty(t *testing.T) {
-	t.Parallel()
  for _, unit := range []PACKAGE.PositionUnit{PACKAGE.CodePoints, PACKAGE.Bytes} {
   result, err := PACKAGE.ParseAST("", PACKAGE.WithUnit(unit))
   if err != nil || result == nil { t.Fatalf("empty parse: %v", err) }

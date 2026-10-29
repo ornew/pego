@@ -132,7 +132,6 @@ func checkRecovery(v *Doc, err error, mode string, n int) bool {
 }
 
 func TestRecoveryWorkload(t *testing.T) {
-	t.Parallel()
     for _, unit := range []PositionUnit{CodePoints, Bytes} {
         saved, savedErr := ParseAST(recoveryInput("recovered", 2), WithUnit(unit))
         if !checkRecovery(saved, savedErr, "recovered", 2) { t.Fatalf("saved value %v %v", saved, savedErr) }
