@@ -28,8 +28,8 @@ a current layout assertion.
 
 Evidence records: [033](../033-smaller-vm-entries.md).
 
-Source owners: [`entry and label stack`](../../../internal/engine/vm.go),
-[`iterative VM entry execution`](../../../internal/engine/ivm.go).
+Source owners: [`entry and label stack`](../../../internal/engine/vm/vm.go),
+[`iterative VM entry execution`](../../../internal/engine/vm/ivm.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

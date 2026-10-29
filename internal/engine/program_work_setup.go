@@ -5,6 +5,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/engine/vm"
 )
 
 // admitParse validates fixed metadata before caller Context methods. Callers
@@ -109,9 +110,9 @@ func (prog *Program) prepareControlledRule(b Backend, name string, c *core.WorkC
 	c.Check() // Also the checkpoint immediately before VM preparation.
 	switch prog.backend(b) {
 	case Bytecode:
-		prog.vmOnce.Do(func() { prog.vm = newVMProgram(m) })
+		prog.vmOnce.Do(func() { prog.vm = vm.New(m) })
 	case BytecodeIterative:
-		prog.ivmOnce.Do(func() { prog.ivm = newIVMProgram(m) })
+		prog.ivmOnce.Do(func() { prog.ivm = vm.NewIterative(m) })
 	}
 	c.Check()
 	return prog.rule(b, name)

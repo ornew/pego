@@ -11,6 +11,7 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/engine/closure"
 	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/engine/vm"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -264,8 +265,8 @@ func BenchmarkDocumentVMValuesUnchanged(b *testing.B) {
 
 // documentVMValues returns the VM value stack that the Document d keeps for its next parse, or nil.
 func documentVMValues(d *Document) []any {
-	if mc, ok := d.machine.(*vmMachine); ok {
-		return mc.vals
+	if mc, ok := d.machine.(*vm.Machine); ok {
+		return mc.Values()
 	}
 	return nil
 }
@@ -291,8 +292,8 @@ rule line = [a-z]+ "\n"`)
 					t.Fatal(err)
 				}
 				switch mc := doc.machine.(type) {
-				case *vmMachine:
-					if mc.p != nil {
+				case *vm.Machine:
+					if mc.Parser() != nil {
 						t.Fatal("kept machine refers to the finished parser")
 					}
 				case *closure.Machine:

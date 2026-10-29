@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
@@ -56,45 +57,6 @@ func TestWorkResetRestoresRepeatedCaptureWritesInReverse(t *testing.T) {
 	assertUndoRestored(t, f, nodes)
 	if p.Pos != 4 || p.Env != nil || len(p.Recovered) != 0 || len(p.Trail) != 0 {
 		t.Fatalf("reset state: pos=%d env=%p recovered=%d trail=%d", p.Pos, p.Env, len(p.Recovered), len(p.Trail))
-	}
-}
-
-func TestWorkResetAndVMRestoreInterruptionIsFatal(t *testing.T) {
-	for _, name := range []string{"reset", "restore"} {
-		t.Run(name, func(t *testing.T) {
-			p := stateWorkParser(limits.WorkLimits{MaxSteps: 2})
-			f, nodes := undoFixture(p)
-			p.Frame = f
-			p.Pos = 99
-			p.Env = &core.Env{Name: "temporary", Val: 1}
-			p.Recovered = []*SyntaxError{{Messages: []string{"temporary"}}}
-			if name == "reset" {
-				m := core.Mark{Pos: 4, Trail: 0}
-				if err := catchFatal(t, func() { p.Reset(m) }); !errors.Is(err, limits.ErrWorkLimit) {
-					t.Fatalf("reset interruption = %v, want ErrWorkLimit", err)
-				}
-				if p.Pos != 4 || len(p.Trail) != 4 {
-					t.Fatalf("reset partial state: pos=%d trail=%d", p.Pos, len(p.Trail))
-				}
-			} else {
-				vmMachineOf(p).vals = []any{"keep", "discard-one", "discard-two"}
-				vmMachineOf(p).reps = []repState{{count: 1}, {count: 2}}
-				save := vmSave{pos: 4, vals: 1, reps: 1, trail: 0, recovered: 0, env: nil, frame: f}
-				if err := catchFatal(t, func() { vmMachineOf(p).restore(&save) }); !errors.Is(err, limits.ErrWorkLimit) {
-					t.Fatalf("VM restore interruption = %v, want ErrWorkLimit", err)
-				}
-				if p.Pos != 4 || len(vmMachineOf(p).vals) != 1 || len(vmMachineOf(p).reps) != 1 || len(p.Trail) != 4 {
-					t.Fatalf("restore partial state: pos=%d vals=%d reps=%d trail=%d", p.Pos, len(vmMachineOf(p).vals), len(vmMachineOf(p).reps), len(p.Trail))
-				}
-			}
-			// The budget permits the two newest undo records; the oldest remains pending.
-			if f.Vals[0] != nodes[4] || f.Vals[1] != nodes[2] {
-				t.Fatalf("partial reverse restore slots=(%p,%p), want (%p,%p)", f.Vals[0], f.Vals[1], nodes[4], nodes[2])
-			}
-			if value.D(nodes[0]).Text != "old-zero" || value.D(nodes[0]).Fields[0].Value != "zero" {
-				t.Fatal("partial rollback mutated retained node data")
-			}
-		})
 	}
 }
 
@@ -204,5 +166,65 @@ func TestWorkAttachCapturesInterruptsDiscoveryAndFieldWalk(t *testing.T) {
 	}
 	if len(value.D(retained).Fields) != 1 || value.D(retained).Fields[0].Name != "existing" || value.D(retained).Fields[0].Value != "stable" || value.D(retained).Text != "shared-retained" {
 		t.Fatal("interrupted capture assembly modified the retained nonfresh node")
+	}
+}
+
+func TestWorkStateBatchRollbackAndPoolRetry(t *testing.T) {
+	var body strings.Builder
+	body.WriteString(`c0:"a" `)
+	for i := 1; i < 320; i++ {
+		fmt.Fprintf(&body, "c%d:_ ", i)
+	}
+	var predicate strings.Builder
+	predicate.WriteString(`text($c0)=="a"`)
+	for i := 1; i < 320; i++ {
+		fmt.Fprintf(&predicate, ` && text($c%d)==""`, i)
+	}
+	src := `rule main = (` + body.String() + ` {` + predicate.String() + `} arm "!" / fallback) #recover(skip=.*) $$
+rule fallback = .* #atomic
+rule arm = _`
+	prog := mustCompile(t, src)
+	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		for _, u := range []PositionUnit{Bytes, CodePoints} {
+			for _, recognize := range []bool{false, true} {
+				armed := false
+				fallback := 0
+				var observed *core.Parser
+				n, err := prog.ParseWith("main", "a", ParseOptions{Backend: b, Unit: u, Recognize: recognize, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 50}, Trace: func(e TraceEvent) {
+					observed = core.TraceParser(e)
+					if e.Kind == TraceEnter && e.Rule == "fallback" {
+						fallback++
+					}
+					if e.Kind == TraceExit && e.Rule == "arm" && e.Matched {
+						if len(core.TraceParser(e).Trail) < 320 {
+							t.Fatalf("%v/%v recognize=%t: outer capture trail=%d", b, u, recognize, len(core.TraceParser(e).Trail))
+						}
+						armed = true
+						core.TraceParser(e).Control.Limits.MaxSteps = core.TraceParser(e).Control.StepsUsed + 20
+					}
+				}})
+				if !armed || n != nil || !errors.Is(err, limits.ErrWorkLimit) || fallback != 0 || observed == nil || observed.Scratch != nil || observed.Control != nil {
+					t.Fatalf("%v/%v recognize=%t: armed=%t returned=%t err=%v fallback=%d", b, u, recognize, armed, n != nil, err, fallback)
+				}
+				n, err = prog.ParseWith("main", "a", ParseOptions{Backend: b, Unit: u, Recognize: recognize})
+				if err != nil || (recognize && n != nil) || (!recognize && n == nil) {
+					t.Fatalf("%v/%v retry: %v", b, u, err)
+				}
+			}
+		}
+	}
+}
+
+func TestWorkStateProjectedFrameClear(t *testing.T) {
+	const count = 320
+	var items []grammar.Expr
+	for i := range count {
+		items = append(items, &grammar.Capture{Name: fmt.Sprintf("f%d", i), Expr: &grammar.Atomic{Expr: &grammar.Top{}}})
+	}
+	c := newClosureWalker(&compile.Compiler{}, false)
+	m := c.ProjectRepeat(&grammar.Repeat{Expr: &grammar.Seq{Items: items}, Min: 0, Max: 1}, "f0")
+	p := stateWorkParser(limits.WorkLimits{MaxSteps: 64})
+	if err := catchFatal(t, func() { m(p) }); !errors.Is(err, limits.ErrWorkLimit) || len(p.Trail) != 0 {
+		t.Fatalf("projected clear err=%v capture writes=%d", err, len(p.Trail))
 	}
 }

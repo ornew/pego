@@ -31,7 +31,7 @@ Evidence records:
 
 Source owners: [`inactive VM value
 cleanup`](../../../internal/engine/core/stream_stack.go),
-[`vmMachine.ClearInactive`](../../../internal/engine/vm.go), [`prune-batched
+[`vm.Machine.ClearInactive`](../../../internal/engine/vm/vm.go), [`prune-batched
 commit cleanup`](../../../internal/engine/core/input.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

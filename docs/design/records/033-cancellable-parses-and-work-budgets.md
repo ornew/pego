@@ -38,7 +38,7 @@ existing boundary:
 - [`Document.Parse`](../../../internal/engine/document.go) discards memo, repetition,
   and VM scratch state after an aborted parse because completed entries can depend
   on unfinished LR seeds. Ordinary failures retain reusable caches.
-- [VM execution](../../../internal/engine/vm.go), [iterative frames](../../../internal/engine/ivm.go),
+- [VM execution](../../../internal/engine/vm/vm.go), [iterative frames](../../../internal/engine/vm/ivm.go),
   [input loops](../../../internal/engine/core/input.go), and
   [repetition resumption](../../../internal/engine/core/resume.go) contain work outside a
   rule-entry depth check.

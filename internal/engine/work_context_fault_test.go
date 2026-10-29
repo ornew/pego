@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 )
@@ -20,21 +19,9 @@ func TestWorkContextAttributionPreservesVMFaults(t *testing.T) {
 			if _, err := prog.rule(backend, "main"); err != nil {
 				t.Fatal(err)
 			}
-			vm := prog.vmFor(backend)
-			ip := -1
-			for i, in := range vm.m.Code {
-				if in.Op == bytecode.OpStr {
-					ip = i
-					break
-				}
-			}
-			if ip < 0 {
-				t.Fatal("fixture did not emit a literal instruction")
-			}
 			// Corrupt the prepared VM, bypassing the saved-module validator, to
 			// exercise its execution recovery rather than a caller's panic.
-			original := vm.m.Code[ip]
-			vm.m.Code[ip].A = int32(len(vm.runes))
+			restore := corruptVMLiteral(t, prog)
 			var observed *core.Parser
 			n, err := prog.ParseWith("main", "z", ParseOptions{
 				Backend: backend, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 20},
@@ -46,7 +33,7 @@ func TestWorkContextAttributionPreservesVMFaults(t *testing.T) {
 			if observed == nil || !observed.Aborted || observed.Scratch != nil || observed.Control != nil {
 				t.Fatalf("VM fault cleanup parser=%v", observed)
 			}
-			vm.m.Code[ip] = original
+			restore()
 			if n, err := prog.ParseWith("main", "z", ParseOptions{Backend: backend}); n == nil || err != nil {
 				t.Fatalf("restored VM retry node=%v error=%v", n, err)
 			}

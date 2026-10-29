@@ -36,7 +36,7 @@ Evidence records:
 
 Source owners: [`constructor tracking
 cleanup`](../../../internal/engine/core/eval.go), [`VM evaluator
-cleanup`](../../../internal/engine/vm.go), [`generated construction
+cleanup`](../../../internal/engine/vm/vm.go), [`generated construction
 tracking`](../../../runtime/runtime.go), [`typed
 tracking`](../../../runtime/typed.go), [`TypeScript
 cleanup`](../../../internal/gen/tsgen/tsrt/runtime.ts).

@@ -35,7 +35,7 @@ Evidence records: [036](../036-comparing-texts-without-boxing-them.md),
 
 Source owners: [`text equality evaluator`](../../../internal/engine/core/eval.go),
 [`ETEXTCHK and ETEXTEQ`](../../../internal/compile/bcompile.go), [`native text
-comparison instructions`](../../../internal/engine/vm.go), [`text comparison
+comparison instructions`](../../../internal/engine/vm/vm.go), [`text comparison
 emission`](../../../internal/gen/gogen/generator.go), [`TypeScript text comparison
 emission`](../../../internal/gen/tsgen/generator.go).
 

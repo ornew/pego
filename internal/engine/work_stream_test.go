@@ -12,7 +12,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
@@ -471,45 +470,6 @@ func TestWorkStreamCommitAfterDelivery(t *testing.T) {
 	})
 }
 
-func TestWorkStreamDiscardAndStackClear(t *testing.T) {
-	for _, u := range []PositionUnit{Bytes, CodePoints} {
-		t.Run(u.String(), func(t *testing.T) {
-			in := core.Input{Unit: u, Eof: true, BaseLine: 1, BaseCol: 1, Lines: []int{0}, Control: core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 128})}
-			if u == Bytes {
-				in.Bs = []byte(strings.Repeat("a", 258))
-			} else {
-				in.In = []rune(strings.Repeat("a", 258))
-			}
-			got := catchStreamPanic(func() { in.Discard(129) })
-			if _, ok := got.(core.Fatal); !ok || in.Base != 0 || in.Control.StepsUsed != 128 {
-				t.Fatalf("discard interruption=%v base=%d steps=%d", got, in.Base, in.Control.StepsUsed)
-			}
-		})
-	}
-	for _, phase := range []string{"trail", "values"} {
-		t.Run(phase, func(t *testing.T) {
-			node := value.Ptr(value.Data{Text: "owned"})
-			p := &core.Parser{Input: core.Input{Unit: Bytes, Eof: true, Bs: []byte(strings.Repeat("a", 3000)), BaseLine: 1, BaseCol: 1, Lines: []int{0}, Control: core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 953 + 128})}, Memo: core.NewMemoTable()}
-			if phase == "trail" {
-				p.Trail = make([]core.Undo, 0, 129)
-			} else {
-				vmMachineOf(p).vals = make([]any, 1, 130)
-				vmMachineOf(p).vals[0] = node
-				for i := 1; i < cap(vmMachineOf(p).vals); i++ {
-					vmMachineOf(p).vals[:cap(vmMachineOf(p).vals)][i] = node
-				}
-			}
-			got := catchStreamPanic(func() { p.Commit(2048) })
-			if _, ok := got.(core.Fatal); !ok || p.Base != 2047 || p.Pruned != 0 || value.D(node).Text != "owned" {
-				t.Fatalf("commit %s interruption=%v base=%d pruned=%d", phase, got, p.Base, p.Pruned)
-			}
-			if phase == "values" && (vmMachineOf(p).vals[0] != node || vmMachineOf(p).vals[:cap(vmMachineOf(p).vals)][129] != node) {
-				t.Fatal("clear crossed reservation or live values")
-			}
-		})
-	}
-}
-
 func TestWorkStreamEmitBoundary(t *testing.T) {
 	for _, phase := range []string{"before", "after", "error"} {
 		t.Run(phase, func(t *testing.T) {
@@ -579,20 +539,8 @@ func TestWorkStreamVMFaultAttribution(t *testing.T) {
 			if _, err := prog.rule(b, "main"); err != nil {
 				t.Fatal(err)
 			}
-			vm := prog.vmFor(b)
-			ip := -1
-			for i, ins := range vm.m.Code {
-				if ins.Op == bytecode.OpStr {
-					ip = i
-					break
-				}
-			}
-			if ip < 0 {
-				t.Fatal("missing literal instruction")
-			}
-			old := vm.m.Code[ip]
-			vm.m.Code[ip].A = int32(len(vm.runes))
-			defer func() { vm.m.Code[ip] = old }()
+			restore := corruptVMLiteral(t, prog)
+			defer restore()
 			var saved TraceEvent
 			err := prog.ParseStreamWith("main", strings.NewReader("z"), func(*value.Node) error { t.Fatal("emitted from corrupt VM"); return nil }, ParseOptions{Backend: b, WorkLimits: limits.WorkLimits{MaxSteps: 1 << 20}, Trace: func(e TraceEvent) {
 				if core.TraceParser(saved) == nil {
@@ -603,7 +551,7 @@ func TestWorkStreamVMFaultAttribution(t *testing.T) {
 				t.Fatalf("VM error=%v", err)
 			}
 			assertTraceParserDetached(t, core.TraceParser(saved), false)
-			vm.m.Code[ip] = old
+			restore()
 			if err := prog.ParseStreamWith("main", strings.NewReader("z"), nil, ParseOptions{Backend: b}); err != nil {
 				t.Fatalf("restored VM: %v", err)
 			}

@@ -280,27 +280,6 @@ func TestWorkDocumentShiftReplayAndSharedEmptyGraph(t *testing.T) {
 	}
 }
 
-func TestWorkDocumentRunStateClearReservation(t *testing.T) {
-	marker := value.Ptr(value.Data{Text: "retained"})
-	r := &core.RunState{Old: []core.RunElem{{V: marker}}, Mid: make([]core.RunElem, 129), Post: []core.RunElem{{V: marker}}}
-	for i := range r.Mid {
-		r.Mid[i].V = marker
-	}
-	p := stateWorkParser(limits.WorkLimits{MaxSteps: 128})
-	mc := vmMachineOf(p)
-	if err := catchFatal(t, func() { mc.freeRunState(r) }); !errors.Is(err, limits.ErrWorkLimit) {
-		t.Fatalf("clear interruption = %v", err)
-	}
-	if len(mc.freeRuns) != 0 || r.Old != nil || r.Mid[128].V != marker || r.Post[0].V != marker || value.D(marker).Text != "retained" {
-		t.Fatal("incomplete clear was published or changed pointees")
-	}
-	p.Control = core.NewWorkControl(nil, limits.WorkLimits{MaxSteps: 130})
-	mc.freeRunState(r)
-	if len(mc.freeRuns) != 1 || r.Mid[128].V != nil || r.Post[0].V != nil {
-		t.Fatal("completed clear did not release references")
-	}
-}
-
 func TestWorkDocumentStaleMemoCallReplayIsBounded(t *testing.T) {
 	p := &core.Parser{Memo: core.NewMemoTable(), Pos: 19, Gen: 3, Edits: []core.DocEdit{{Start: 0, End: 1, Delta: 2}, {Start: 0, End: 1, Delta: 3}, {Start: 0, End: 1, Delta: 4}}}
 	r := &core.Rule{ID: 1}

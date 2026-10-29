@@ -34,7 +34,7 @@ Evidence records: [002](../002-frame-pooling-in-the-iterative-vm-8fab402.md),
 [034](../034-one-frame-per-plain-call-in-the-iterative-vm.md).
 
 Source owners: [`reuse, release and
-plainCallFrame`](../../../internal/engine/ivm.go).
+plainCallFrame`](../../../internal/engine/vm/ivm.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

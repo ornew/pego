@@ -75,7 +75,7 @@ func (prog *Program) runPrefix(p *core.Parser, b Backend, start string) (result 
 	p.Descs = prog.descs(b)
 	p.Memo.Stride = prog.NSeen
 	if be := prog.backend(b); be == Bytecode || be == BytecodeIterative {
-		p.Memo.Stride = prog.vmFor(be).nseen
+		p.Memo.Stride = prog.vmFor(be).NumSeen()
 	}
 	p.Memo.Sparse = core.SparseMemo && p.Memo.Stride > 64 && p.Loaded() > 1024
 	defer func() {

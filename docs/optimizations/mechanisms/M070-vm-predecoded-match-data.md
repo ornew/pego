@@ -34,9 +34,9 @@ Evidence records:
 [017](../017-ascii-bitmaps-for-character-classes-in-the-vms.md),
 [032](../032-matching-literals-against-loaded-input-in-one-loop.md).
 
-Source owners: [`buildVMProgram, vmProgram.runes, bytes and
-ascii`](../../../internal/engine/vm.go), [`iterative VM literal/class
-execution`](../../../internal/engine/ivm.go).
+Source owners: [`buildVMProgram, vm.Program.runes, bytes and
+ascii`](../../../internal/engine/vm/vm.go), [`iterative VM literal/class
+execution`](../../../internal/engine/vm/ivm.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

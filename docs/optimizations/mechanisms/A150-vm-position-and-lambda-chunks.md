@@ -30,10 +30,10 @@ established throughput improvement.
 Evidence records:
 [016](../016-start-positions-and-lambdas-from-chunks-in-the-vms.md).
 
-Source owners: [`vmMachine.newPos and
-newFunc`](../../../internal/engine/vm.go), [`PUSHPOS and EFUNC
-evaluation`](../../../internal/engine/vm.go), [`iterative value
-consumers`](../../../internal/engine/ivm.go).
+Source owners: [`vm.Machine.newPos and
+newFunc`](../../../internal/engine/vm/vm.go), [`PUSHPOS and EFUNC
+evaluation`](../../../internal/engine/vm/vm.go), [`iterative value
+consumers`](../../../internal/engine/vm/ivm.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

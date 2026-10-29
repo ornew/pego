@@ -10,6 +10,7 @@ import (
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/engine/closure"
 	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/engine/vm"
 )
 
 // sharedProgram names the part of a program that every backend shares, so that Program embeds it
@@ -30,9 +31,9 @@ type Program struct {
 	rec     *Program // program that builds no tree (recognizer)
 	recErr  error
 	vmOnce  sync.Once
-	vm      *vmProgram
+	vm      *vm.Program
 	ivmOnce sync.Once
-	ivm     *vmProgram
+	ivm     *vm.Program
 	// loaded reports that the program was loaded from a compiled grammar, whose module serves the
 	// parses of mode only (checkMode).
 	loaded bool

@@ -190,7 +190,7 @@ func (cm *Machine) Eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 			}
 			return c.ListNode(c.P.Kids(base)), nil
 		}
-		// The arguments are kept on the expression stack, as in vmProgram.eval: lambdas called by the
+		// The arguments are kept on the expression stack, as in vm.Program.eval: lambdas called by the
 		// built-in push above them, and built-ins do not retain args.
 		p := c.P
 		base := len(p.Estack)

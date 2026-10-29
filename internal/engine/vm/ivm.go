@@ -1,4 +1,4 @@
-package engine
+package vm
 
 import (
 	"github.com/ornew/pego/grammar"
@@ -8,11 +8,11 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-// newIVMProgram prepares a module for execution with the iterative model.
-func newIVMProgram(m *bytecode.Module) *vmProgram { return buildVMProgram(m, iterateBody) }
+// NewIterative prepares a module for execution with the iterative model.
+func NewIterative(m *bytecode.Module) *Program { return buildVMProgram(m, iterateBody) }
 
 // iterateBody runs a rule body with the iterative model: calls push frames instead of recursing.
-func iterateBody(vm *vmProgram, r *core.Rule, entry int) func(p *core.Parser, min int) (*value.Node, bool) {
+func iterateBody(vm *Program, r *core.Rule, entry int) func(p *core.Parser, min int) (*value.Node, bool) {
 	return func(p *core.Parser, min int) (*value.Node, bool) {
 		mc := ivmMachineOf(p)
 		res := mc.iterate(vm, mc.bodyFrame(entry, r, min, false))
@@ -29,10 +29,10 @@ func iterateBody(vm *vmProgram, r *core.Rule, entry int) func(p *core.Parser, mi
 
 // ivmMachine is the state of the iterative-model VM for one parse: the VM state it runs code
 // with, the pool of its frames and the result of the last longest match. It is the driver state
-// of the VM (vmMachine.driver): the parser's backend state is the embedded vmMachine, whose
+// of the VM (Machine.driver): the parser's backend state is the embedded Machine, whose
 // driver points back here.
 type ivmMachine struct {
-	vmMachine
+	Machine
 	pool    framePool                 // frames of the iterative-model VM
 	attempt core.OperatorsRuleAttempt // result of the longestFrame that just finished
 }
@@ -40,7 +40,7 @@ type ivmMachine struct {
 // ivmMachineOf returns the iterative-model VM state of the parse that p runs, making it on first
 // use.
 func ivmMachineOf(p *core.Parser) *ivmMachine {
-	if mc, ok := p.Backend.(*vmMachine); ok {
+	if mc, ok := p.Backend.(*Machine); ok {
 		if im, ok := mc.driver.(*ivmMachine); ok {
 			return im
 		}
@@ -53,11 +53,11 @@ func ivmMachineOf(p *core.Parser) *ivmMachine {
 // of a parse makes it, before any code holds the VM state that it replaces.
 func newIVMMachine(p *core.Parser) *ivmMachine {
 	im := &ivmMachine{}
-	if mc, ok := p.Backend.(*vmMachine); ok {
-		im.vmMachine = *mc
+	if mc, ok := p.Backend.(*Machine); ok {
+		im.Machine = *mc
 	}
 	im.p, im.driver = p, im
-	p.Backend = &im.vmMachine
+	p.Backend = &im.Machine
 	return im
 }
 
@@ -75,11 +75,11 @@ type iresult struct {
 // iframe is an element of the VM stack. next receives the child's result res (empty on the first
 // call) and either returns the next child to run, or sets done and returns its own result.
 type iframe interface {
-	next(mc *ivmMachine, vm *vmProgram, res iresult) (child iframe, out iresult, done bool)
+	next(mc *ivmMachine, vm *Program, res iresult) (child iframe, out iresult, done bool)
 }
 
 // iterate puts root at the bottom of the stack and runs until it finishes.
-func (mc *ivmMachine) iterate(vm *vmProgram, root iframe) iresult {
+func (mc *ivmMachine) iterate(vm *Program, root iframe) iresult {
 	p := mc.p
 	stack := []iframe{root}
 	var res iresult
@@ -112,7 +112,7 @@ type bodyFrame struct {
 	rec     int              // call: recovered errors before the call
 }
 
-func (f *bodyFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, iresult, bool) {
+func (f *bodyFrame) next(mc *ivmMachine, vm *Program, res iresult) (iframe, iresult, bool) {
 	p := mc.p
 	var ev int
 	var v *value.Node
@@ -310,7 +310,7 @@ const (
 	cInvoked
 )
 
-func (f *callFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, iresult, bool) {
+func (f *callFrame) next(mc *ivmMachine, vm *Program, res iresult) (iframe, iresult, bool) {
 	p := mc.p
 	r := f.r
 	switch f.state {
@@ -363,7 +363,7 @@ type skipFrame struct {
 	started bool
 }
 
-func (f *skipFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, iresult, bool) {
+func (f *skipFrame) next(mc *ivmMachine, vm *Program, res iresult) (iframe, iresult, bool) {
 	p := mc.p
 	if f.pr.SkipEntry < 0 {
 		return nil, iresult{ok: true}, true
@@ -394,7 +394,7 @@ type longestFrame struct {
 	f         *core.Frame
 }
 
-func (f *longestFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, iresult, bool) {
+func (f *longestFrame) next(mc *ivmMachine, vm *Program, res iresult) (iframe, iresult, bool) {
 	p := mc.p
 	if !f.started {
 		f.started = true
@@ -408,7 +408,7 @@ func (f *longestFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe,
 		}
 		if res.ok && (f.best.Op == nil || p.Pos > f.best.End) {
 			f.best = core.OperatorsRuleAttempt{Op: op, Frame: f.f, V: res.v, Start: f.m0.Pos, End: p.Pos, Env: p.Env, Cut: cut,
-				Errs: core.AppendWork(p, []*SyntaxError(nil), p.Recovered[f.m0.Recovered:])}
+				Errs: core.AppendWork(p, []*core.SyntaxError(nil), p.Recovered[f.m0.Recovered:])}
 		}
 		if !res.ok && cut {
 			f.cutFailed = true
@@ -453,7 +453,7 @@ const (
 	nOperandDone
 )
 
-func (f *nudFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, iresult, bool) {
+func (f *nudFrame) next(mc *ivmMachine, vm *Program, res iresult) (iframe, iresult, bool) {
 	p := mc.p
 	pr := f.r.OperatorsRule
 	for {
@@ -536,7 +536,7 @@ const (
 	pRHS
 )
 
-func (f *operatorsRuleFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, iresult, bool) {
+func (f *operatorsRuleFrame) next(mc *ivmMachine, vm *Program, res iresult) (iframe, iresult, bool) {
 	p := mc.p
 	pr := f.r.OperatorsRule
 	for {
@@ -619,7 +619,7 @@ type traceFrame struct {
 	started bool
 }
 
-func (f *traceFrame) next(mc *ivmMachine, vm *vmProgram, res iresult) (iframe, iresult, bool) {
+func (f *traceFrame) next(mc *ivmMachine, vm *Program, res iresult) (iframe, iresult, bool) {
 	p := mc.p
 	if !f.started {
 		f.started = true

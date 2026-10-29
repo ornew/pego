@@ -6,7 +6,7 @@ of allocating a new array on each parse that evaluates rules.
 ## Mechanism and Invariants
 
 A Document keeps the backend state of its last parse in one slot. For the VMs
-that state is the VM machine: `vmMachine.keep` retains only its cleared value
+that state is the VM machine: `vm.Machine.Keep` retains only its cleared value
 stack and its reset driver state, and lets go of the parser; `attach` binds it
 to the parser of the next parse. Finished evaluations clear stack slots; an
 unchanged whole-root memo hit skips redundant clearing. Interrupted parses
@@ -39,8 +39,8 @@ that keeps the stack is present in both variants.
 Evidence records: [086](../086-reuse-document-vm-values.md).
 
 Source owners: [`Document.finishParse and the kept backend
-state`](../../../internal/engine/document.go), [`vmMachine.keep and the capacity
-bound`](../../../internal/engine/vm.go), [`VM value cache
+state`](../../../internal/engine/document.go), [`vm.Machine.Keep and the capacity
+bound`](../../../internal/engine/vm/vm.go), [`VM value cache
 switch`](../../../internal/engine/document_vm_values.go), [`ownership and
 trimming checks`](../../../internal/engine/document_vm_values_test.go).
 

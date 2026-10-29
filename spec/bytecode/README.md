@@ -3,7 +3,7 @@
 This document specifies the bytecode (the *module*) that a PEGO grammar compiles to, and the behavior of the virtual machine (VM) that executes it.
 A runtime for another language must implement this document. The meaning of the language that the bytecode implements is defined by the [Grammar Language Specification](../language/README.md); for the results a parse must produce, see [Parsing](../runtime/parsing.md).
 
-The reference implementation is the Go package `internal/bytecode` (`bytecode.go`, the instruction set and module) with the bytecode compiler `bcompile.go` in `internal/compile` and the VMs `vm.go` and `ivm.go` in `internal/engine`. A bytecode VM must produce the same results as the closure backend.
+The reference implementation is the Go package `internal/bytecode` (`bytecode.go`, the instruction set and module) with the bytecode compiler `bcompile.go` in `internal/compile` and the VMs `vm.go` and `ivm.go` in `internal/engine/vm`. A bytecode VM must produce the same results as the closure backend.
 
 ## Terminology
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/value"
 )
@@ -193,10 +194,9 @@ func TestStreamNormalCallerReturnKeepsVMFaultAttribution(t *testing.T) {
 					if _, err := prog.rule(b, "main"); err != nil {
 						t.Fatal(err)
 					}
-					vm := prog.vmFor(b)
-					// Damage runtime lookup state after a normal caller return. This fault is
+					// Corrupt the prepared module after a normal caller return. This fault is
 					// engine-owned and must retain the VM's invalid-module classification.
-					damage := func() { vm.runes = nil; vm.bytes = nil; vm.literals = nil }
+					damage := func() { corruptVMLiteral(t, prog) }
 					r := &streamCallbackReader{text: "aa"}
 					if phase == "reader" {
 						r.onRead = damage
@@ -232,4 +232,20 @@ func TestStreamKeepsCallerBufferedReader(t *testing.T) {
 			t.Fatal("stream parser replaced caller's buffered reader")
 		}
 	}
+}
+
+// corruptVMLiteral points the first literal instruction of the module of prog past the string
+// table, bypassing the saved-module validator, so the VM faults when it runs that instruction. It
+// returns a function that restores the instruction.
+func corruptVMLiteral(t *testing.T, prog *Program) (restore func()) {
+	t.Helper()
+	m := prog.Module()
+	for i, in := range m.Code {
+		if in.Op == bytecode.OpStr {
+			m.Code[i].A = int32(len(m.Strings))
+			return func() { m.Code[i] = in }
+		}
+	}
+	t.Fatal("module has no literal instruction")
+	return nil
 }

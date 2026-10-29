@@ -41,7 +41,7 @@ Evidence records: [014](../014-one-operand-stack-for-vm-expression-code.md),
 [028](../028-field-lists-and-list-built-ins-without-allocation-in-the-generated-parsers.md).
 
 Source owners: [`evalCtx`](../../../internal/engine/core/eval.go), [`termEvaluator`](../../../internal/engine/closure/eval.go),
-[`vmProgram.eval`](../../../internal/engine/vm.go), [`parser.estack and operator
+[`vm.Program.eval`](../../../internal/engine/vm/vm.go), [`parser.estack and operator
 locals`](../../../internal/engine/core/runtime.go), [`generated
 ActCtx`](../../../runtime/runtime.go), [`typed evaluation
 scratch`](../../../runtime/typed.go), [`Parser action

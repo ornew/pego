@@ -110,7 +110,7 @@ type Parser struct {
 	// Backend is the state that the backend running the parse keeps beside the parser, or nil
 	// when it keeps none.
 	Backend BackendState
-	// Estack is the operand stack of expression code (vmProgram.eval), also used for the
+	// Estack is the operand stack of expression code (vm.Program.eval), also used for the
 	// arguments of built-ins and struct fields by the closure backend's evaluator.
 	Estack []any
 

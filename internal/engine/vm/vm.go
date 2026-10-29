@@ -1,4 +1,4 @@
-package engine
+package vm
 
 import (
 	"fmt"
@@ -10,10 +10,10 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-// vmProgram is a module prepared for execution. Rule calls, memoization, left recursion, and
+// Program is a module prepared for execution. Rule calls, memoization, left recursion, and
 // end-of-rule processing use the runtime shared with the closure engine (core/runtime.go), while rule
 // bodies, Operators Rule sections, actions, and predicates run as bytecode.
-type vmProgram struct {
+type Program struct {
 	m        *bytecode.Module
 	rules    []*core.Rule
 	byName   map[string]*core.Rule
@@ -49,7 +49,7 @@ type vmRunSite struct {
 // runSite returns how to resume the repetition whose REPEAT is at ip, or nil if it cannot be
 // resumed (as compiler.resumable): its element evaluates predicates or calls rules that read
 // variables.
-func (vm *vmProgram) runSite(ip int) *vmRunSite {
+func (vm *Program) runSite(ip int) *vmRunSite {
 	code := vm.m.Code
 	if ip+1 >= len(code) || code[ip+1].Op != bytecode.OpIter {
 		return nil
@@ -86,22 +86,33 @@ func (vm *vmProgram) runSite(ip int) *vmRunSite {
 // vmBodies returns the body of the rule r, whose code starts at entry in vm. Each driver of the
 // VM passes its own to buildVMProgram, deciding how a body runs the code: the recursive VM's
 // execBody calls exec, which recurses for each rule call.
-type vmBodies func(vm *vmProgram, r *core.Rule, entry int) func(p *core.Parser, min int) (*value.Node, bool)
+type vmBodies func(vm *Program, r *core.Rule, entry int) func(p *core.Parser, min int) (*value.Node, bool)
 
-// newVMProgram prepares a module for execution with the recursive model.
-func newVMProgram(m *bytecode.Module) *vmProgram { return buildVMProgram(m, execBody) }
+// New prepares a module for execution with the recursive model.
+func New(m *bytecode.Module) *Program { return buildVMProgram(m, execBody) }
+
+// Rule returns the rule called name, or nil when the module has none.
+func (vm *Program) Rule(name string) *core.Rule { return vm.byName[name] }
+
+// Descs returns the expectation table of the program: compile.FixedDescs followed by the string
+// table.
+func (vm *Program) Descs() []string { return vm.descs }
+
+// NumSeen returns the number of rules whose memoization a first call may defer
+// (compile.NumberSeen), which a parse uses as the stride of its memo table.
+func (vm *Program) NumSeen() int { return vm.nseen }
 
 // execBody runs a rule body with the recursive model: each call recurses into exec.
-func execBody(vm *vmProgram, r *core.Rule, entry int) func(p *core.Parser, min int) (*value.Node, bool) {
+func execBody(vm *Program, r *core.Rule, entry int) func(p *core.Parser, min int) (*value.Node, bool) {
 	return func(p *core.Parser, min int) (*value.Node, bool) {
-		v, ok, _ := vmMachineOf(p).exec(vm, entry, r, min)
+		v, ok, _ := machineOf(p).exec(vm, entry, r, min)
 		return v, ok
 	}
 }
 
 // buildVMProgram prepares a module for execution. bodies makes the rule bodies.
-func buildVMProgram(m *bytecode.Module, bodies vmBodies) *vmProgram {
-	vm := &vmProgram{m: m, byName: map[string]*core.Rule{}, descs: append(append([]string(nil), compile.FixedDescs...), m.Strings...)}
+func buildVMProgram(m *bytecode.Module, bodies vmBodies) *Program {
+	vm := &Program{m: m, byName: map[string]*core.Rule{}, descs: append(append([]string(nil), compile.FixedDescs...), m.Strings...)}
 	vm.literals = m.Strings
 	normalized := false
 	for i, s := range m.Strings {
@@ -196,11 +207,11 @@ func buildVMProgram(m *bytecode.Module, bodies vmBodies) *vmProgram {
 }
 
 // streams reports whether the rule body (from entry to RETURN) has a #stream repetition.
-func (vm *vmProgram) streams(entry int) bool {
+func (vm *Program) streams(entry int) bool {
 	return vm.m.RuleStreams(entry)
 }
 
-func (vm *vmProgram) names(ids []int) []string {
+func (vm *Program) names(ids []int) []string {
 	out := make([]string, len(ids))
 	for i, id := range ids {
 		out[i] = vm.m.Strings[id]
@@ -208,7 +219,7 @@ func (vm *vmProgram) names(ids []int) []string {
 	return out
 }
 
-func (vm *vmProgram) scope(ids []int) *compile.Scope {
+func (vm *Program) scope(ids []int) *compile.Scope {
 	s := compile.NewScope()
 	for _, n := range vm.names(ids) {
 		s.Slot(n)
@@ -218,9 +229,9 @@ func (vm *vmProgram) scope(ids []int) *compile.Scope {
 
 // block returns a matcher that runs the code of an Operators Rule section. It sets p.cut if a cut is passed
 // within the section.
-func (vm *vmProgram) block(entry int) core.Matcher {
+func (vm *Program) block(entry int) core.Matcher {
 	return func(p *core.Parser) (*value.Node, bool) {
-		v, ok, cut := vmMachineOf(p).exec(vm, entry, nil, 0)
+		v, ok, cut := machineOf(p).exec(vm, entry, nil, 0)
 		if cut {
 			p.Cut = true
 		}
@@ -228,7 +239,7 @@ func (vm *vmProgram) block(entry int) core.Matcher {
 	}
 }
 
-func (vm *vmProgram) line(l *bytecode.LineInfo, operator bool) *core.OperatorsRuleLine {
+func (vm *Program) line(l *bytecode.LineInfo, operator bool) *core.OperatorsRuleLine {
 	// The code pushes the line's value already: the value of an operand line's scope, or the
 	// operator's value, which is the node of its tuple if IsSeq (its captures are attached to it).
 	pl := &core.OperatorsRuleLine{Scope: vm.scope(l.Scope), M: vm.block(l.Entry), Entry: l.Entry, Single: compile.SinglePass,
@@ -243,7 +254,7 @@ func (vm *vmProgram) line(l *bytecode.LineInfo, operator bool) *core.OperatorsRu
 }
 
 // checkType returns the check type whose text is string i of the module.
-func (vm *vmProgram) checkType(i int) *compile.FieldType {
+func (vm *Program) checkType(i int) *compile.FieldType {
 	if vm.fieldTypes == nil {
 		vm.fieldTypes, vm.typeNames = make([]*compile.FieldType, len(vm.m.Strings)), compile.ModuleTypeNames(vm.m)
 	}
@@ -262,7 +273,7 @@ func (vm *vmProgram) checkType(i int) *compile.FieldType {
 // cast runs ECAST at ip on the value v, and returns v if it fits.
 //
 //go:noinline
-func (vm *vmProgram) cast(p *core.Parser, v any, pos, ip int) (any, error) {
+func (vm *Program) cast(p *core.Parser, v any, pos, ip int) (any, error) {
 	in := &vm.m.Exprs[ip]
 	if t := vm.fieldTypes[in.A]; t == nil || !p.FieldConforms(t, v) {
 		if t == nil {
@@ -276,7 +287,7 @@ func (vm *vmProgram) cast(p *core.Parser, v any, pos, ip int) (any, error) {
 // convert runs ENODE at ip on the value v, and returns it converted.
 //
 //go:noinline
-func (vm *vmProgram) convert(p *core.Parser, v any, ip int) (any, error) {
+func (vm *Program) convert(p *core.Parser, v any, ip int) (any, error) {
 	in := &vm.m.Exprs[ip]
 	name := vm.m.Strings[in.A]
 	var ks *value.NodeTypeKinds
@@ -293,7 +304,7 @@ func (vm *vmProgram) convert(p *core.Parser, v any, ip int) (any, error) {
 	return n, nil
 }
 
-func (vm *vmProgram) operatorsRule(pi *bytecode.OperatorsRuleInfo) *core.OperatorsRule {
+func (vm *Program) operatorsRule(pi *bytecode.OperatorsRuleInfo) *core.OperatorsRule {
 	pr := &core.OperatorsRule{SkipEntry: pi.Skip}
 	if pi.Skip >= 0 {
 		pr.Skip = vm.block(pi.Skip)
@@ -318,13 +329,13 @@ func (vm *vmProgram) operatorsRule(pi *bytecode.OperatorsRuleInfo) *core.Operato
 	return pr
 }
 
-// vmMachine is the state of the bytecode VM for one parse, beside the parser it runs on: the
+// Machine is the state of the bytecode VM for one parse, beside the parser it runs on: the
 // value, entry, label and repetition stacks of the running code, the starts of the lists being
 // gathered, the chunks that lambdas and pushed positions are allocated from, and the runStates of
-// finished repetitions for reuse. The parser holds it as its backend state (vmMachineOf). A
-// driver built on this VM that needs state of its own, such as frames, embeds vmMachine in that
+// finished repetitions for reuse. The parser holds it as its backend state (machineOf). A
+// driver built on this VM that needs state of its own, such as frames, embeds Machine in that
 // state and points driver at it.
-type vmMachine struct {
+type Machine struct {
 	p        *core.Parser
 	vals     []any      // value stack
 	ents     []vmEntry  // entry stack
@@ -337,32 +348,32 @@ type vmMachine struct {
 	driver   vmDriverState
 }
 
-// vmDriverState is the state that a driver built on the VM keeps beside vmMachine.
+// vmDriverState is the state that a driver built on the VM keeps beside Machine.
 type vmDriverState interface {
-	// reset drops the state of the last parse. vmMachine keeps the driver state for the next
+	// reset drops the state of the last parse. Machine keeps the driver state for the next
 	// parse only through keep, which resets it.
 	reset()
 }
 
-// vmMachineOf returns the VM state of the parse that p runs, making it on first use.
-func vmMachineOf(p *core.Parser) *vmMachine {
-	if mc, ok := p.Backend.(*vmMachine); ok {
+// machineOf returns the VM state of the parse that p runs, making it on first use.
+func machineOf(p *core.Parser) *Machine {
+	if mc, ok := p.Backend.(*Machine); ok {
 		return mc
 	}
-	mc := &vmMachine{p: p}
+	mc := &Machine{p: p}
 	p.Backend = mc
 	return mc
 }
 
-func (mc *vmMachine) SplitChunks() { mc.funcSlab = nil }
+func (mc *Machine) SplitChunks() { mc.funcSlab = nil }
 
-func (mc *vmMachine) ClearInactive() { core.ClearWork(mc.p, mc.vals[len(mc.vals):cap(mc.vals)]) }
+func (mc *Machine) ClearInactive() { core.ClearWork(mc.p, mc.vals[len(mc.vals):cap(mc.vals)]) }
 
-func (mc *vmMachine) Attach(p *core.Parser) { mc.p = p }
+func (mc *Machine) Attach(p *core.Parser) { mc.p = p }
 
 // Keep keeps only the value stack, whose capacity a Document reuses (reuseDocumentVMValues), and
 // the reset driver state.
-func (mc *vmMachine) Keep(n int, clearUsed bool) {
+func (mc *Machine) Keep(n int, clearUsed bool) {
 	vals := mc.vals[:0]
 	// A large document may have been replaced with a small input. Bound the kept capacity by
 	// the current size, with room for small grammars' fixed stack overhead. Division avoids int
@@ -376,23 +387,33 @@ func (mc *vmMachine) Keep(n int, clearUsed bool) {
 	if mc.driver != nil {
 		mc.driver.reset()
 	}
-	*mc = vmMachine{vals: vals, driver: mc.driver}
+	*mc = Machine{vals: vals, driver: mc.driver}
 }
 
-func (mc *vmMachine) Release() {
+func (mc *Machine) Release() {
 	clear(mc.vals[:cap(mc.vals)])
 	if mc.driver != nil {
 		mc.driver.reset()
 	}
-	*mc = vmMachine{driver: mc.driver}
+	*mc = Machine{driver: mc.driver}
 }
 
-func (mc *vmMachine) RetainedBytes() uint64 {
+func (mc *Machine) RetainedBytes() uint64 {
 	return uint64(cap(mc.vals)) * uint64(unsafe.Sizeof(any(nil)))
 }
 
+// NewMachine returns VM state that holds vals as its value stack, as a Document keeps it between
+// parses.
+func NewMachine(vals []any) *Machine { return &Machine{vals: vals} }
+
+// Values returns the live value stack of mc, not a copy.
+func (mc *Machine) Values() []any { return mc.vals }
+
+// Parser returns the parser that mc serves, or nil when it serves none.
+func (mc *Machine) Parser() *core.Parser { return mc.p }
+
 // newFunc allocates a copy of the lambda f from a chunk and returns it.
-func (mc *vmMachine) newFunc(f vmFunc) *vmFunc {
+func (mc *Machine) newFunc(f vmFunc) *vmFunc {
 	if len(mc.funcSlab) == 0 {
 		if mc.p.PrivatePrefixAlloc() {
 			n := new(vmFunc)
@@ -423,12 +444,12 @@ const (
 
 // vmEntry is an element of the entry stack (see the Failure section of spec/bytecode/README.md). It is
 // kept small, since a choice or an iteration pushes one: the state of the rarer label, recovery
-// and skip entries is on a separate stack (vmMachine.labs).
+// and skip entries is on a separate stack (Machine.labs).
 type vmEntry struct {
 	kind uint8
 	cut  bool
 	ip   int32
-	lab  int32 // eLabel, eRecover, eSkip: index of the entry's state in vmMachine.labs
+	lab  int32 // eLabel, eRecover, eSkip: index of the entry's state in Machine.labs
 	save vmSave
 }
 
@@ -443,13 +464,13 @@ type labState struct {
 }
 
 // pushLab pushes an entry of kind with the state l.
-func (mc *vmMachine) pushLab(kind uint8, ip int32, save vmSave, l labState) {
+func (mc *Machine) pushLab(kind uint8, ip int32, save vmSave, l labState) {
 	mc.labs = append(mc.labs, l)
 	mc.ents = append(mc.ents, vmEntry{kind: kind, ip: ip, lab: int32(len(mc.labs) - 1), save: save})
 }
 
 // popLab pops the state of the entry e, which has just been popped.
-func (mc *vmMachine) popLab(e *vmEntry) labState {
+func (mc *Machine) popLab(e *vmEntry) labState {
 	l := mc.labs[e.lab]
 	mc.labs = mc.labs[:e.lab]
 	return l
@@ -470,13 +491,13 @@ type repState struct {
 	run             *core.RunState // the run being recorded in a Document parse, or nil
 }
 
-func (mc *vmMachine) save() vmSave {
+func (mc *Machine) save() vmSave {
 	p := mc.p
 	return vmSave{pos: p.Pos, vals: int32(len(mc.vals)), reps: int32(len(mc.reps)), trail: int32(len(p.Trail)),
 		recovered: int32(len(p.Recovered)), env: p.Env, frame: p.Frame}
 }
 
-func (mc *vmMachine) restore(s *vmSave) {
+func (mc *Machine) restore(s *vmSave) {
 	p := mc.p
 	p.Pos = s.pos
 	mc.vals = mc.vals[:s.vals]
@@ -488,8 +509,8 @@ func (mc *vmMachine) restore(s *vmSave) {
 	p.Frame = s.frame
 }
 
-func (mc *vmMachine) push(v any) { mc.vals = append(mc.vals, v) }
-func (mc *vmMachine) pop() any {
+func (mc *Machine) push(v any) { mc.vals = append(mc.vals, v) }
+func (mc *Machine) pop() any {
 	v := mc.vals[len(mc.vals)-1]
 	mc.vals = mc.vals[:len(mc.vals)-1]
 	return v
@@ -506,7 +527,7 @@ func asNodeValue(v any) *value.Node {
 // returns the pushed value. cut reports whether a cut belonging to no choice was passed (used
 // in Operators Rule sections). Rule calls and Operators Rule expressions call the shared runtime (call,
 // OperatorsRuleParse) through host recursion.
-func (mc *vmMachine) exec(vm *vmProgram, ip int, r *core.Rule, min int) (result *value.Node, ok bool, cut bool) {
+func (mc *Machine) exec(vm *Program, ip int, r *core.Rule, min int) (result *value.Node, ok bool, cut bool) {
 	p := mc.p
 	bv := mc.newBody(ip, r, min)
 	b := &bv
@@ -538,7 +559,7 @@ type vmBody struct {
 	cut                 bool // a cut belonging to no choice was passed
 }
 
-func (mc *vmMachine) newBody(ip int, r *core.Rule, min int) vmBody {
+func (mc *Machine) newBody(ip int, r *core.Rule, min int) vmBody {
 	return vmBody{ip: ip, vbase: len(mc.vals), ebase: len(mc.ents), rbase: len(mc.reps), r: r, min: min}
 }
 
@@ -551,7 +572,7 @@ const (
 
 // step runs code until it finishes or reaches a rule call or an Operators Rule expression.
 // If resume is set, it resumes with the result (ok, v) of the suspended instruction.
-func (mc *vmMachine) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.Node) (ev int, result *value.Node, ok bool) {
+func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node) (ev int, result *value.Node, ok bool) {
 	p := mc.p
 	m := vm.m
 	code := m.Code
@@ -936,7 +957,7 @@ func (mc *vmMachine) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *value.
 
 // unwind unwinds the entry stack to ebase on failure and returns the index of the instruction to
 // resume at. ok is false if there is no entry to resume from.
-func (mc *vmMachine) unwind(m *bytecode.Module, ebase int) (ip int, ok bool) {
+func (mc *Machine) unwind(m *bytecode.Module, ebase int) (ip int, ok bool) {
 	p := mc.p
 	for {
 		if len(mc.ents) == ebase {
@@ -1005,7 +1026,7 @@ func newASCIISet(cl *bytecode.Class) asciiSet {
 }
 
 // has reports whether the character ch is in class a.
-func (vm *vmProgram) has(p *core.Parser, a int32, ch rune) bool {
+func (vm *Program) has(p *core.Parser, a int32, ch rune) bool {
 	if uint32(ch) < 128 {
 		return vm.ascii[a][ch>>6]&(1<<(ch&63)) != 0
 	}
@@ -1023,7 +1044,7 @@ func (vm *vmProgram) has(p *core.Parser, a int32, ch rune) bool {
 }
 
 // single advances one character (size units) and pushes a string node if b is set.
-func (mc *vmMachine) single(size int, b bool) {
+func (mc *Machine) single(size int, b bool) {
 	p := mc.p
 	start := p.Pos
 	p.Pos += size
@@ -1036,7 +1057,7 @@ func (mc *vmMachine) single(size int, b bool) {
 
 // vmFunc is a bytecode lambda.
 type vmFunc struct {
-	vm     *vmProgram
+	vm     *Program
 	entry  int
 	n      int
 	locals []any
@@ -1048,7 +1069,7 @@ func (f *vmFunc) Arity() int { return f.n }
 // The VM implements the interfaces of core for lambdas and backend state.
 var (
 	_ core.Function     = (*vmFunc)(nil)
-	_ core.BackendState = (*vmMachine)(nil)
+	_ core.BackendState = (*Machine)(nil)
 )
 
 func (f *vmFunc) Apply(x, y any) (any, error) {
@@ -1067,7 +1088,7 @@ func (f *vmFunc) Apply(x, y any) (any, error) {
 
 // evaluator returns an evaluator for an action in expression code. If operator is set, $lhs,
 // $rhs, and $op are locals.
-func (vm *vmProgram) evaluator(entry int, operator bool) core.Evaluator {
+func (vm *Program) evaluator(entry int, operator bool) core.Evaluator {
 	if !operator {
 		return func(ctx *core.EvalCtx) (any, error) { return vm.eval(ctx, entry, nil) }
 	}
@@ -1093,7 +1114,7 @@ func (vm *vmProgram) evaluator(entry int, operator bool) core.Evaluator {
 	}
 }
 
-func (vm *vmProgram) predicate(p *core.Parser, entry int) bool {
+func (vm *Program) predicate(p *core.Parser, entry int) bool {
 	ctx := p.UseCtx(core.EvalCtx{P: p, Frame: p.Frame, Start: p.Pos, End: p.Pos, Cbase: len(p.Created)})
 	v, err := vm.eval(ctx, entry, nil)
 	p.DropCreated(ctx.Cbase)
@@ -1106,7 +1127,7 @@ func (vm *vmProgram) predicate(p *core.Parser, entry int) bool {
 	return true
 }
 
-func (vm *vmProgram) bind(p *core.Parser, name string, entry int) bool {
+func (vm *Program) bind(p *core.Parser, name string, entry int) bool {
 	ctx := p.UseCtx(core.EvalCtx{P: p, Frame: p.Frame, Start: p.Pos, End: p.Pos, Cbase: len(p.Created)})
 	v, err := vm.eval(ctx, entry, nil)
 	p.DropCreated(ctx.Cbase)
@@ -1123,10 +1144,10 @@ func (vm *vmProgram) bind(p *core.Parser, name string, entry int) bool {
 // eval evaluates expression code from ip until ERET. The operands are kept on the parser's
 // expression stack (p.Estack) above its current top, so evaluations nested through lambdas
 // (vmFunc.apply) share one area; the stack is back at its original height when eval returns.
-func (vm *vmProgram) eval(ctx *core.EvalCtx, ip int, locals []any) (v any, err error) {
+func (vm *Program) eval(ctx *core.EvalCtx, ip int, locals []any) (v any, err error) {
 	m := vm.m
 	p := ctx.P
-	mc := vmMachineOf(p)
+	mc := machineOf(p)
 	stack := p.Estack
 	base := len(stack)
 	pop := func() any {
@@ -1306,7 +1327,7 @@ func (vm *vmProgram) eval(ctx *core.EvalCtx, ip int, locals []any) (v any, err e
 	}
 }
 
-func (vm *vmProgram) isStreamRepeat(ip int) bool {
+func (vm *Program) isStreamRepeat(ip int) bool {
 	code := vm.m.Code
 	if ip+1 >= len(code) || code[ip+1].Op != bytecode.OpIter {
 		return false
@@ -1318,7 +1339,7 @@ func (vm *vmProgram) isStreamRepeat(ip int) bool {
 // newPos allocates a copy of the position pos from a chunk and returns it. Start positions are
 // pushed onto the VM value stack as *int: converting an int to an interface would allocate each
 // time.
-func (mc *vmMachine) newPos(pos int) *int {
+func (mc *Machine) newPos(pos int) *int {
 	if len(mc.posSlab) == 0 {
 		mc.posSlab = make([]int, core.PtrChunk)
 	}
@@ -1329,7 +1350,7 @@ func (mc *vmMachine) newPos(pos int) *int {
 }
 
 // newRunState returns a RunState for a VM repetition, reusing a freed one.
-func (mc *vmMachine) newRunState() *core.RunState {
+func (mc *Machine) newRunState() *core.RunState {
 	if n := len(mc.freeRuns); n > 0 {
 		r := mc.freeRuns[n-1]
 		mc.freeRuns = mc.freeRuns[:n-1]
@@ -1339,7 +1360,7 @@ func (mc *vmMachine) newRunState() *core.RunState {
 }
 
 // freeRunState makes the RunState of a finished repetition available to later ones.
-func (mc *vmMachine) freeRunState(r *core.RunState) {
+func (mc *Machine) freeRunState(r *core.RunState) {
 	r.Old = nil
 	core.ClearWork(mc.p, r.Mid)
 	core.ClearWork(mc.p, r.Post)

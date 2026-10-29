@@ -7,6 +7,7 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/engine/vm"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -125,11 +126,11 @@ func (prog *Program) rule(b Backend, name string) (*core.Rule, error) {
 	var r *core.Rule
 	switch prog.backend(b) {
 	case Bytecode:
-		prog.vmOnce.Do(func() { prog.vm = newVMProgram(prog.Module()) })
-		r = prog.vm.byName[name]
+		prog.vmOnce.Do(func() { prog.vm = vm.New(prog.Module()) })
+		r = prog.vm.Rule(name)
 	case BytecodeIterative:
-		prog.ivmOnce.Do(func() { prog.ivm = newIVMProgram(prog.Module()) })
-		r = prog.ivm.byName[name]
+		prog.ivmOnce.Do(func() { prog.ivm = vm.NewIterative(prog.Module()) })
+		r = prog.ivm.Rule(name)
 	case Closure:
 		if prog.Grammar == nil {
 			return nil, errClosureNeedsSource
@@ -145,7 +146,7 @@ func (prog *Program) rule(b Backend, name string) (*core.Rule, error) {
 }
 
 // vmFor returns the prepared VM program of backend b (Bytecode or BytecodeIterative).
-func (prog *Program) vmFor(b Backend) *vmProgram {
+func (prog *Program) vmFor(b Backend) *vm.Program {
 	if b == BytecodeIterative {
 		return prog.ivm
 	}
@@ -156,9 +157,9 @@ func (prog *Program) vmFor(b Backend) *vmProgram {
 func (prog *Program) descs(b Backend) []string {
 	switch prog.backend(b) {
 	case Bytecode:
-		return prog.vm.descs
+		return prog.vm.Descs()
 	case BytecodeIterative:
-		return prog.ivm.descs
+		return prog.ivm.Descs()
 	}
 	return prog.DescTable
 }
@@ -196,7 +197,7 @@ func (prog *Program) run(p *core.Parser, b Backend, start string) (n *value.Node
 	p.Descs = prog.descs(b)
 	p.Memo.Stride = prog.NSeen
 	if be := prog.backend(b); be == Bytecode || be == BytecodeIterative {
-		p.Memo.Stride = prog.vmFor(be).nseen
+		p.Memo.Stride = prog.vmFor(be).NumSeen()
 	}
 	p.Memo.Sparse = core.SparseMemo && p.Memo.Stride > 64 && p.Loaded() > 1024
 	p.SeedVars()

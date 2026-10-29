@@ -39,7 +39,7 @@ Evidence records:
 
 Source owners: [`growState and seed
 growth`](../../../internal/engine/core/runtime.go), [`iterative growth
-frame`](../../../internal/engine/ivm.go),
+frame`](../../../internal/engine/vm/ivm.go),
 [`memoTable.alloc`](../../../internal/engine/core/memo.go), [`generated
 growth`](../../../runtime/runtime.go), [`typed
 growth`](../../../runtime/typed.go).

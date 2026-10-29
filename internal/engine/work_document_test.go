@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/engine/vm"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
@@ -320,8 +321,7 @@ func TestWorkDocumentPreservesVMFaultAttribution(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			vm := prog.vmFor(backend)
-			vm.runes, vm.bytes, vm.literals = nil, nil, nil
+			corruptVMLiteral(t, prog)
 			n, err := d.Parse()
 			if n != nil || err == nil || !strings.HasPrefix(err.Error(), "invalid bytecode:") {
 				t.Fatalf("%s/%s: node=%v error=%v", backend, unit, n, err)
@@ -344,7 +344,7 @@ func TestWorkDocumentPreRunPreservesOversizedValues(t *testing.T) {
 			}
 			// A large parse followed by a short replacement can leave this
 			// cleared storage for the next parse's capacity policy to trim.
-			d.machine = &vmMachine{vals: make([]any, 0, 2048)}
+			d.machine = vm.NewMachine(make([]any, 0, 2048))
 			before := *d
 			o := d.ParseDefaults()
 			o.Context = newPollingContext(2) // admission succeeds; pre-run cancels
