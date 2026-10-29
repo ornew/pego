@@ -243,8 +243,8 @@ Reference data kept in a parser's `testdata` refers to the upstream text by file
 | Done | | Attributes (`@...`) and behavioral pragmas (`#...`) |
 | Done | | Consuming skip recovery (`#recover`) and error messages (`@error`) |
 | Partial | | Opt-in nonempty-literal insertion ([`#missing`](../spec/language/pragmas.md#missing)): Closure whole-input Node parsing and recognition only; VM, generated parsers, Document, streams and binary serialization are unsupported |
-| Done | Actions | Single-statement Predicate Actions (`{term}` or `{name := term}`) and Value Actions (`=> term`) on ordinary rules; Operators Rule declaration actions use default CST behavior |
-| Not implemented | | Multiple-statement Predicate Actions and braced Value Actions (`=> { ... }`) parse/format/AST only; compilation rejects them |
+| Done | Actions | Predicate Actions (`{term}`, `{name := term}` and multi-statement blocks `{a; b}`) and Value Actions (`=> term`) on ordinary rules; Operators Rule declaration actions use default CST behavior |
+| Not implemented | | Braced Value Actions (`=> { ... }`) parse/format/AST only; compilation rejects them |
 | Done | | Inline Value Actions (`(expression => term)`, a hidden rule at its position; braced inline blocks are rejected) |
 | Done | | Typed variables (`var x int = 0` declarations; `{x}`, `{x := 1}`) |
 | Done | | Capture references (`$label`) |
