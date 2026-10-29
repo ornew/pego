@@ -40,6 +40,7 @@ This document describes the repository layout and architecture, how to run tests
 | `docs/tutorial/` | The ordered tutorial series ([index](tutorial/README.md)) |
 | `docs/guide/` | Task-oriented guides to each feature ([index](guide/README.md)) |
 | `docs/cookbook/` | Recipes: complete, runnable solutions to concrete tasks ([index](cookbook/README.md)) |
+| `docs/why-pego.md`, `docs/strategy.md` | Project positioning: [who PEGO is for and how it compares](why-pego.md), and the [project strategy](strategy.md) with its tracks and targets |
 | `docs/documentation-style.md` | How the documentation is organized and written: page kinds, link directions, titles, voice and examples |
 | `docs/design/` | How the system is built today: [architecture](design/architecture.md) and [Core and Flow IR](design/intermediate-representations.md) |
 | `docs/design/records/` | Design records; [template](design/records/000-template.md) for new proposals |

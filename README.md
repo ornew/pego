@@ -186,6 +186,7 @@ left-recursive), an indentation-based outline format and a small programming lan
 
 | | |
 |:--|:--|
+| [Why PEGO](docs/why-pego.md) | Who PEGO is for, what it offers today, its limits, and how it compares with other parser tools |
 | [Tutorial](docs/tutorial/README.md) | Ten lessons from a first grammar to a shipped, tested and debugged parser |
 | [Grammar ASTs and JSON](docs/guide/grammar-asts.md) | Constructing and validating grammars, structured error paths and JSON compatibility |
 | [Guides](docs/guide/README.md) | Trees and actions, expressions, errors and recovery, context-sensitive parsing, running parsers, using the ready-made parsers, compiled grammars, code generation (Go and TypeScript), streaming, incremental parsing, debugging and profiling, linting grammars, testing grammars, sampling inputs and fuzzing, editor support |
@@ -198,6 +199,7 @@ left-recursive), an indentation-based outline format and a small programming lan
 | [Bytecode specification](spec/bytecode/README.md) | Instruction set and VM semantics, for porting the runtime |
 | [Benchmarks](docs/benchmarks.md) · [Performance](docs/performance.md) · [Optimization catalog](docs/optimizations/README.md) | How fast, and how it got there |
 | [Design](docs/design/README.md) · [Design records](docs/design/records/) | How it is built, and the decisions and their rationale |
+| [Project strategy](docs/strategy.md) | Target users, competitive position, tracks and measurable targets |
 
 ## Contributing
 

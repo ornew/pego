@@ -468,6 +468,8 @@
         "docs/optimizations/mechanisms/*.md"
       ],
       "first": [
+        "docs/why-pego.md",
+        "docs/strategy.md",
         "examples/README.md",
         "docs/development.md",
         "docs/design/README.md",
@@ -555,6 +557,8 @@
   ],
   "pagerOrder": [
     "docs/design/records/README.md",
+    "docs/why-pego.md",
+    "docs/strategy.md",
     "examples/README.md",
     "docs/development.md",
     "docs/design/README.md",

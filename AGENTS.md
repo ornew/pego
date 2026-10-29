@@ -17,6 +17,8 @@ At the start of every development session, use the `onboarding` skill in
   `docs/design/records/`: decisions; `docs/optimizations/`: measured mechanisms.
 - `docs/development.md`, `docs/site.md`, `docs/performance.md`: development,
   site maintenance and performance method/status.
+- `docs/why-pego.md`, `docs/strategy.md`: positioning, comparison and project
+  strategy, including performance targets.
 - `site/`: Nanosite configuration and wrapper; `bench/`: benchmark sources.
 
 Use the `documentation`, `performance`, `backlog` and `nanosite` skills when
