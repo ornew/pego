@@ -33,7 +33,7 @@ behavior.
 Evidence records: [023](../023-splicing-the-text-of-a-document-in-place.md),
 [093](../093-chunked-document-input.md).
 
-Source owners: [`useDocumentPieces`](../../../internal/engine/document.go),
+Source owners: [`useDocumentPieces`](../../../internal/engine/input_pieces.go),
 [`piece input`](../../../internal/engine/input_pieces.go), [`storage
 contract`](../../design/records/051-chunked-document-input.md).
 

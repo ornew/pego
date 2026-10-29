@@ -278,3 +278,18 @@ func (d *documentPieces) text(start, end int) string {
 	}
 	return s
 }
+
+// Small Documents retain the flat representation: at 1 KiB, piece lookup and
+// descriptor updates cost more than copying, while the measured 4 KiB edit
+// cases improve in both position units.
+const documentPieceMinSize = 4 << 10
+
+func useDocumentPieces(text string, unit PositionUnit) bool {
+	if !documentPieceInput {
+		return false
+	}
+	if unit == Bytes {
+		return len(text) >= documentPieceMinSize
+	}
+	return utf8.RuneCountInString(text) >= documentPieceMinSize
+}

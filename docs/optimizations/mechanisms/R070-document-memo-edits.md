@@ -35,7 +35,7 @@ Evidence records: [020](../020-splicing-the-memo-table-on-document-edits.md),
 [056](../056-applying-a-document-edit-to-memo-entries-when-they-are-looked-up.md).
 
 Source owners: [`memoTable.splice`](../../../internal/engine/memo.go),
-[`advanceEntry`](../../../internal/engine/document.go), [`callBegin edit
+[`advanceEntry`](../../../internal/engine/work_document_checkpoints.go), [`callBegin edit
 advancement`](../../../internal/engine/runtime.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

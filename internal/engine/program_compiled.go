@@ -259,24 +259,3 @@ func moduleProgram(m *bytecode.Module) *Program {
 	prog.BytecodeOnce.Do(func() { prog.Bytecode = m })
 	return newProgram(prog, nil)
 }
-
-// moduleVarTable returns the variable table of the module m, or nil when it declares no variable.
-func moduleVarTable(m *bytecode.Module) *compile.VarTable {
-	var t *compile.VarTable
-	for _, v := range m.Vars {
-		d := &compile.VarDecl{Name: m.Strings[v.Name]}
-		switch v.Type {
-		case bytecode.VarInt:
-			d.Typ, d.Init = compile.TyInt, v.Int
-		case bytecode.VarString:
-			d.Typ, d.Init = compile.TyString, m.Strings[v.Str]
-		default:
-			d.Typ, d.Init = compile.TyBool, v.Int == 1
-		}
-		if t == nil {
-			t = compile.NewVarTable()
-		}
-		t.Add(d)
-	}
-	return t
-}

@@ -8,34 +8,6 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-// Backend is the backend used to run a parse.
-type Backend int
-
-const (
-	// Default is the default backend. It uses the closure engine if the grammar's AST is available,
-	// and bytecode otherwise.
-	Default Backend = iota
-	// Closure assembles parsing expressions into Go functions and runs them (the closure engine).
-	Closure
-	// Bytecode runs bytecode on the VM. Rule calls use host (Go) recursion (the recursive model).
-	Bytecode
-	// BytecodeIterative runs bytecode on the VM. Rule calls and Operators Rule expressions also run on the VM
-	// stack, so deeply nested input does not consume the host stack (the iterative model).
-	BytecodeIterative
-)
-
-func (b Backend) String() string {
-	switch b {
-	case Bytecode:
-		return "bytecode"
-	case BytecodeIterative:
-		return "bytecode-iterative"
-	case Closure:
-		return "closure"
-	}
-	return "default"
-}
-
 // vmProgram is a module prepared for execution. Rule calls, memoization, left recursion, and
 // end-of-rule processing use the runtime shared with the closure engine (runtime.go), while rule
 // bodies, Operators Rule sections, actions, and predicates run as bytecode.
@@ -1237,4 +1209,38 @@ func (vm *vmProgram) isStreamRepeat(ip int) bool {
 	}
 	end := int(code[ip+1].A)
 	return end > ip+2 && end < len(code) && code[end].Op == bytecode.OpEndRepeat && code[end-1].Op == bytecode.OpNext && code[end-1].B == 2
+}
+
+// moduleVarTable returns the variable table of the module m, or nil when it declares no variable.
+func moduleVarTable(m *bytecode.Module) *compile.VarTable {
+	var t *compile.VarTable
+	for _, v := range m.Vars {
+		d := &compile.VarDecl{Name: m.Strings[v.Name]}
+		switch v.Type {
+		case bytecode.VarInt:
+			d.Typ, d.Init = compile.TyInt, v.Int
+		case bytecode.VarString:
+			d.Typ, d.Init = compile.TyString, m.Strings[v.Str]
+		default:
+			d.Typ, d.Init = compile.TyBool, v.Int == 1
+		}
+		if t == nil {
+			t = compile.NewVarTable()
+		}
+		t.Add(d)
+	}
+	return t
+}
+
+// moduleStreams inspects rule bytecode metadata without building an executable VM.
+func moduleStreams(m *bytecode.Module, entry int) bool {
+	for _, in := range m.Code[entry:] {
+		switch {
+		case in.Op == bytecode.OpReturn:
+			return false
+		case in.Op == bytecode.OpNext && in.B == 2:
+			return true
+		}
+	}
+	return false
 }

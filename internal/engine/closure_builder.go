@@ -612,20 +612,6 @@ func (b *closureBuilder) Recover(e grammar.Expr, m, skip matcher, build bool) ma
 	return recoverAttr(m, skip, build)
 }
 
-// matcher tries to match at the current position and returns the value and whether it
-// succeeded. On failure the position is unspecified; the caller restores it.
-type matcher func(p *parser) (*value.Node, bool)
-
-// tracked runs m with a separate record of expectations. It returns the farthest position and
-// the expectations of that separate record (the expectations are valid only until the next
-// recording; see unisolate).
-func tracked(p *parser, m matcher) (v *value.Node, ok bool, far int, expected []expID) {
-	mark := p.isolate(p.pos)
-	v, ok = m(p)
-	far, expected = p.unisolate(mark)
-	return v, ok, far, expected
-}
-
 // errorAttr replaces the expectations of a failed expression with the message msg (an ID with
 // msgBit set). The message is reported at the farthest position reached within the expression.
 func errorAttr(m matcher, msg expID) matcher {
@@ -654,18 +640,6 @@ func diagnosticAttr(m matcher, name expID) matcher {
 	}
 }
 
-func renamedExpected(p *parser, expected []expID, name expID) []expID {
-	// unisolate leaves this record beyond the active expectation stack. Rename it
-	// before mergeExpected reuses the stack; this avoids an unbounded copy.
-	for i, id := range expected {
-		p.stepWork()
-		if id&msgBit == 0 {
-			expected[i] = name
-		}
-	}
-	return expected
-}
-
 // recoverAttr records an error when the expression fails, skips the input matched by skip, and
 // returns an Error node. If skip fails or skips no characters, it fails without recovering.
 func recoverAttr(m, skip matcher, build bool) matcher {
@@ -690,34 +664,6 @@ func recoverAttr(m, skip matcher, build bool) matcher {
 		}
 		return p.newNode(value.Data{Kind: value.ErrorKind, Start: int32(m0.pos), End: int32(p.pos), Text: p.text(m0.pos, p.pos), Fields: value.Fields{{Name: "message", Value: p.recoveryErrorText(e)}}, Fresh: true, Terminal: true}), true
 	}
-}
-
-// shapeTuple returns the tuple node, shaped by s, of the result v of a match of [start, p.pos).
-func shapeTuple(p *parser, s compile.Shaper, v *value.Node, start int) *value.Node {
-	if s.Elems {
-		if s.Shared && v != nil {
-			return p.newNode(value.Data{Kind: value.SeqKind, Start: value.D(v).Start, End: value.D(v).End, Children: value.D(v).Children, Fresh: true})
-		}
-		return v
-	}
-	var kids []*value.Node
-	if s.K == 1 {
-		kids = p.nodes(1)
-		kids[0] = v
-	}
-	return p.newNode(value.Data{Kind: value.SeqKind, Start: int32(start), End: int32(p.pos), Children: kids, Fresh: true})
-}
-
-// shapeSingle returns the value, shaped by s, of the result v where the expression takes one
-// element; ok is false when it has no value.
-func shapeSingle(p *parser, s compile.Shaper, mode compile.SingleMode, v *value.Node, start int) (*value.Node, bool) {
-	switch mode {
-	case compile.SinglePass:
-		return s.One(v), true
-	case compile.SingleTuple:
-		return shapeTuple(p, s, v, start), true
-	}
-	return nil, false
 }
 
 // singleMatcher returns a matcher of the value of e where it takes one element (an alternative or

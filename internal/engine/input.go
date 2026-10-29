@@ -824,3 +824,31 @@ func validBoundary(text string, unit PositionUnit, pos int) error {
 	}
 	return nil
 }
+
+// Backend is the backend used to run a parse.
+type Backend int
+
+const (
+	// Default is the default backend. It uses the closure engine if the grammar's AST is available,
+	// and bytecode otherwise.
+	Default Backend = iota
+	// Closure assembles parsing expressions into Go functions and runs them (the closure engine).
+	Closure
+	// Bytecode runs bytecode on the VM. Rule calls use host (Go) recursion (the recursive model).
+	Bytecode
+	// BytecodeIterative runs bytecode on the VM. Rule calls and Operators Rule expressions also run on the VM
+	// stack, so deeply nested input does not consume the host stack (the iterative model).
+	BytecodeIterative
+)
+
+func (b Backend) String() string {
+	switch b {
+	case Bytecode:
+		return "bytecode"
+	case BytecodeIterative:
+		return "bytecode-iterative"
+	case Closure:
+		return "closure"
+	}
+	return "default"
+}

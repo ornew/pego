@@ -3,7 +3,6 @@ package engine
 import (
 	"fmt"
 
-	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
 )
 
@@ -115,19 +114,6 @@ func (prog *Program) prepareControlledRule(b Backend, name string, c *workContro
 	}
 	c.check()
 	return prog.rule(b, name)
-}
-
-// moduleStreams inspects rule bytecode metadata without building an executable VM.
-func moduleStreams(m *bytecode.Module, entry int) bool {
-	for _, in := range m.Code[entry:] {
-		switch {
-		case in.Op == bytecode.OpReturn:
-			return false
-		case in.Op == bytecode.OpNext && in.B == 2:
-			return true
-		}
-	}
-	return false
 }
 
 // prepareControlledProgram builds the metered closure graph only when needed.

@@ -3,7 +3,6 @@ package engine
 import (
 	"fmt"
 
-	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -185,17 +184,4 @@ func missingLiteral(literal matcher, site int, expected string, build bool) matc
 		return p.newNode(value.Data{Kind: value.MissingKind, Start: int32(m0.pos), End: int32(m0.pos),
 			Fields: value.Fields{{Name: "expected", Value: expected}, {Name: "message", Value: p.recoveryErrorText(e)}}, Terminal: true, Fresh: true}), true
 	}
-}
-
-func (prog *Program) admitMissing(o ParseOptions, stream bool) error {
-	if o.MissingTokens < 0 {
-		return fmt.Errorf("missing token limit must be nonnegative")
-	}
-	if stream && (prog.HasMissing || o.MissingTokens > 0) {
-		return compile.MissingUnsupported("stream parsing")
-	}
-	if prog.backend(o.Backend) != Closure && (prog.HasMissing || o.MissingTokens > 0) {
-		return compile.MissingUnsupported("bytecode backends")
-	}
-	return nil
 }
