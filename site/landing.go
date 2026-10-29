@@ -119,7 +119,7 @@ func (s *Site) renderLanding() error {
 	if err := tmpl.Execute(&b, d); err != nil {
 		return err
 	}
-	p.Title = "PEGO: Grammar In. Bulletproof Parser Out."
+	p.Title = "PEGO: " + d.Tagline
 	p.Description = d.Subtitle
 	p.Body = template.HTML(b.String())
 	p.Scripts = []string{"assets/landing.js"}

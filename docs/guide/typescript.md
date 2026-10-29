@@ -1,10 +1,11 @@
 # Generated TypeScript Parsers
 
-`pego gen -lang ts` turns a grammar into TypeScript modules: a parser you commit next to your code and import like
-any other module. The modules have no dependencies, not even on Node.js: they run in Node.js, Deno, Bun and browsers,
-and they return **the same trees and the same errors** as the engine and the generated Go parsers. The output is a
-directory of up to three files: `parser.ts` (the parser of the grammar), `runtime.ts` (the runtime, which is the same
-for every grammar) and, with `-types`, `types.ts` (the types of the grammar).
+`pego gen -lang ts` turns a grammar into TypeScript modules: a parser you commit next to your code and import like any
+other module. The modules have no dependencies, not even on Node.js: they are written to run in Node.js, Deno, Bun and
+browsers, and the repository tests run them under Node.js only. They return **the same trees and the same errors** as
+the engine and the generated Go parsers. The output is a directory of up to three files: `parser.ts` (the parser of the
+grammar), `runtime.ts` (the runtime, which is the same for every grammar) and, with `-types`, `types.ts` (the types of
+the grammar).
 
 This guide shows how to generate a parser, how to call it, how it maps the engine's Go types to TypeScript, what is
 different in JavaScript (strings, ints, the stack), and how to keep it up to date. It assumes you know the Go
@@ -32,7 +33,7 @@ the other side would have built.
 
 | | Engine (Go) | Generated Go | Generated TypeScript |
 |:--|:--|:--|:--|
-| Runs in | Go programs | Go programs | Node.js, Deno, Bun, browsers |
+| Runs in | Go programs | Go programs | Node.js, Deno, Bun, browsers (tested under Node.js only) |
 | Dependencies | `github.com/ornew/pego` | Standard library | None |
 | Trees and errors | Reference | Identical | Identical (also as JSON, byte for byte) |
 | Recognition (no tree) | `RecognizeOnly` | `Recognize` | `recognize`, with `-recognize` |

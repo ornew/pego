@@ -593,7 +593,7 @@ for untrusted input; the goals below make it so.
 | Untrusted input is bounded by default | Default work budget (one fixed c·n budget, and a lint warning for grammars outside the sufficient conditions for linear work); `SECURITY.md`; work-limit flag in `pego parse` | Limits opt-in; no policy; no flag | Release |
 | Limits are simple | One work budget across Go API, engine, generated Go and TypeScript | Two counters | Release |
 | Errors are readable | Long expected lists capped or grouped, with a test on a large grammar | Full lists | Release |
-| Public claims match measurements | README and site claims match this document's limits (tagline, untrusted input, tested runtimes) and [Benchmark Results](benchmarks.md) | Figures match; the tagline and the runtime list do not | Release |
+| Public claims match measurements | README and site claims match this document's limits (tagline, untrusted input, tested runtimes) and [Benchmark Results](benchmarks.md) | The README's figures, tagline, runtime list and untrusted-input statement match; site pages not audited | Release |
 | The wedge is measured | Wedge benchmark against pigeon, participle and ANTLR Go published | None | Release (credibility work) |
 | Speed is comparable across tools | Cross-tool report on two machines | None | Credibility (gate) |
 | Recovery is measured | Repair rate and time on a corpus of invalid inputs, two languages first | Unmeasured | Credibility track |
