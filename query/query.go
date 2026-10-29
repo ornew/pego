@@ -1,4 +1,8 @@
-package schema
+// Package query matches structural patterns against parse results. A Pattern
+// describes values by category, type, rule, fields and elements and names the
+// values to capture; Compile checks it against an output schema (package
+// schema) and Query.Matches finds every place it matches in a result.
+package query
 
 import (
 	"context"
@@ -8,94 +12,110 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/ornew/pego"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 	"github.com/ornew/pego/schema"
 )
 
-// QueryPattern is the experimental programmatic structural pattern model. Empty Type, Rule and
-// Category are unconstrained. Categories are node, struct, tuple, list, int, string, bool, nil
-// and error. Type names a struct type, or error for the values of error recovery. Rule requires
-// a node produced by the rule, which only grammars compiled with source information record.
-// Fields require a struct or error value. Elements match the first elements of a tuple or list,
-// and see through a node to its value as the language's x[i] does; Value matches the value of a
-// node.
-type QueryPattern struct {
+// Pattern is a programmatic structural pattern. Empty Type, Rule and Category are
+// unconstrained. Categories are node, struct, tuple, list, int, string, bool, nil and error.
+// Type names a struct type, or error for the values of error recovery. Rule requires a node
+// produced by the rule, which only grammars compiled with source information record. Fields
+// require a struct or error value; extra fields are allowed. Elements match the first elements of
+// a tuple or list, and see through a node to its value as the language's x[i] does; extra
+// elements are allowed. Value matches the value of a node.
+type Pattern struct {
 	Type     string
 	Rule     string
 	Category string
 	Capture  string
-	Fields   []QueryFieldPattern
-	Value    *QueryPattern
-	Elements []QueryPattern
+	Fields   []FieldPattern
+	Value    *Pattern
+	Elements []Pattern
 }
 
-// QueryFieldPattern requires the field Name, whose value matches Pattern.
-type QueryFieldPattern struct {
+// FieldPattern requires the field Name, whose value matches Pattern.
+type FieldPattern struct {
 	Name    string
-	Pattern QueryPattern
+	Pattern Pattern
 }
 
-// StructuralQuery is a compiled pattern; it is immutable.
-type StructuralQuery struct{ pattern QueryPattern }
+// Query is a compiled pattern. It is immutable and safe for concurrent use.
+type Query struct{ pattern Pattern }
 
-// QueryEdge is one edge of the path from the root to a captured value (QueryCapture).
-type QueryEdge struct {
+// Edge is one edge of the path from the root to a captured value (Capture).
+type Edge struct {
 	Kind  string
 	Name  string
 	Index int
 }
 
-// QueryCapture borrows Value and Parent from the graph. Path identifies the edges from the root:
+// Capture borrows Value and Parent from the graph. Path identifies the edges from the root:
 // "element" (Index) into a tuple, a list or a node's value, "field" (Name) into a struct or
 // error, "capture" (Name) to a node's capture that is not an element, and "value" from a node to
 // its value. Shared occurrences remain distinct.
-type QueryCapture struct {
+type Capture struct {
 	Name, Category string
 	Value          any
-	Parent         *value.Node
-	Path           []QueryEdge
+	Parent         *pego.Node
+	Path           []Edge
 }
 
-// QueryMatch is one match of a pattern: the values its captures name.
-type QueryMatch struct{ Captures []QueryCapture }
+// Match is one match of a pattern: the values its captures name.
+type Match struct{ Captures []Capture }
 
-// QueryOptions configures one evaluation: cancellation and work limits.
-type QueryOptions struct {
-	Context    context.Context
-	WorkLimits limits.WorkLimits
+type options struct {
+	ctx    context.Context
+	limits limits.WorkLimits
 }
 
-// ErrQueryCycle reports a cycle on the active path through the values.
-var ErrQueryCycle = errors.New("structural query graph cycle")
+// Option configures one query evaluation.
+type Option func(*options)
 
-// ErrQueryNoSourceInfo reports a query with a rule constraint on values without rule names.
-var ErrQueryNoSourceInfo = errors.New("structural query: rule constraints need values with source information; compile the grammar with source information")
+// WithContext selects cooperative cancellation. Nil disables it.
+func WithContext(ctx context.Context) Option {
+	return func(o *options) { o.ctx = ctx }
+}
 
-// queryCategories lists the categories of query values.
-var queryCategories = [...]string{"node", "struct", "tuple", "list", "int", "string", "bool", "nil", "error"}
+// WithWorkLimits bounds query work. MaxSteps is charged for traversal, matching, paths and
+// results; MaxInputWork is unused by structural queries. A zero limit means unlimited work.
+func WithWorkLimits(limits pego.WorkLimits) Option {
+	return func(o *options) { o.limits = limits }
+}
 
-// CompileStructuralQuery copies a programmatic pattern and checks known schema
-// constraints. A nil schema defers all type/field checks to runtime. Text syntax,
-// predicates, highlighting and generated-runtime adapters are not implemented.
-func CompileStructuralQuery(pattern QueryPattern, out *schema.Output) (*StructuralQuery, error) {
-	var s *QuerySchema
+// ErrCycle reports a cycle on the active path through the values.
+var ErrCycle = errors.New("structural query graph cycle")
+
+// ErrNoSourceInfo reports a query with a rule constraint on values that record no rules, because
+// the grammar was compiled without source information.
+var ErrNoSourceInfo = errors.New("structural query: rule constraints need values with source information; compile the grammar with source information")
+
+// categories lists the categories of query values.
+var categories = [...]string{"node", "struct", "tuple", "list", "int", "string", "bool", "nil", "error"}
+
+// Compile validates and copies a pattern. A nil schema defers type and field checks until
+// evaluation; a supplied schema is validated first and rejects known impossibilities. To compile
+// many patterns with one schema, Prepare it once.
+func Compile(pattern Pattern, out *schema.Output) (*Query, error) {
+	var s *Schema
 	if out != nil {
 		if err := out.Validate(); err != nil {
 			return nil, fmt.Errorf("invalid query schema: %w", err)
 		}
-		s = indexQuerySchema(out)
+		s = indexSchema(out)
 	}
-	return s.CompileStructuralQuery(pattern)
+	return s.Compile(pattern)
 }
-func copyQueryPattern(p QueryPattern, s *QuerySchema, depth int) (QueryPattern, error) {
+
+func copyPattern(p Pattern, s *Schema, depth int) (Pattern, error) {
 	if depth >= 256 {
 		return p, fmt.Errorf("query pattern nesting exceeds prototype limit 256")
 	}
-	if p.Category != "" && !slices.Contains(queryCategories[:], p.Category) {
+	if p.Category != "" && !slices.Contains(categories[:], p.Category) {
 		return p, fmt.Errorf("unknown query category %q", p.Category)
 	}
-	if err := checkQueryConstraints(&p); err != nil {
+	if err := checkConstraints(&p); err != nil {
 		return p, err
 	}
 	if s != nil {
@@ -126,28 +146,28 @@ func copyQueryPattern(p QueryPattern, s *QuerySchema, depth int) (QueryPattern, 
 			}
 		}
 	}
-	p.Fields = append([]QueryFieldPattern(nil), p.Fields...)
+	p.Fields = append([]FieldPattern(nil), p.Fields...)
 	sort.Slice(p.Fields, func(i, j int) bool { return p.Fields[i].Name < p.Fields[j].Name })
 	for i := range p.Fields {
 		if i > 0 && p.Fields[i-1].Name == p.Fields[i].Name {
 			return p, fmt.Errorf("duplicate query field %q", p.Fields[i].Name)
 		}
-		c, err := copyQueryPattern(p.Fields[i].Pattern, s, depth+1)
+		c, err := copyPattern(p.Fields[i].Pattern, s, depth+1)
 		if err != nil {
 			return p, err
 		}
 		p.Fields[i].Pattern = c
 	}
 	if p.Value != nil {
-		c, err := copyQueryPattern(*p.Value, s, depth+1)
+		c, err := copyPattern(*p.Value, s, depth+1)
 		if err != nil {
 			return p, err
 		}
 		p.Value = &c
 	}
-	p.Elements = append([]QueryPattern(nil), p.Elements...)
+	p.Elements = append([]Pattern(nil), p.Elements...)
 	for i := range p.Elements {
-		c, err := copyQueryPattern(p.Elements[i], s, depth+1)
+		c, err := copyPattern(p.Elements[i], s, depth+1)
 		if err != nil {
 			return p, err
 		}
@@ -156,8 +176,8 @@ func copyQueryPattern(p QueryPattern, s *QuerySchema, depth int) (QueryPattern, 
 	return p, nil
 }
 
-// checkQueryConstraints reports constraints of p that no value can satisfy together.
-func checkQueryConstraints(p *QueryPattern) error {
+// checkConstraints reports constraints of p that no value can satisfy together.
+func checkConstraints(p *Pattern) error {
 	type constraint struct {
 		name       string
 		on         bool
@@ -175,7 +195,7 @@ func checkQueryConstraints(p *QueryPattern) error {
 		{"fields", len(p.Fields) > 0, []string{"struct", "error"}},
 		{"elements", len(p.Elements) > 0, []string{"node", "tuple", "list"}},
 	}
-	allowed := queryCategories[:]
+	allowed := categories[:]
 	var names []string
 	for _, c := range constraints {
 		if !c.on {
@@ -197,7 +217,7 @@ func checkQueryConstraints(p *QueryPattern) error {
 }
 
 // usesRule reports whether p or a pattern in it has a rule constraint.
-func (p *QueryPattern) usesRule() bool {
+func (p *Pattern) usesRule() bool {
 	if p.Rule != "" || (p.Value != nil && p.Value.usesRule()) {
 		return true
 	}
@@ -214,15 +234,15 @@ func (p *QueryPattern) usesRule() bool {
 	return false
 }
 
-// QueryBudget charges the steps of one evaluation against its work limits, checking its
+// budget charges the steps of one evaluation against its work limits, checking its
 // context for cancellation.
-type QueryBudget struct {
+type budget struct {
 	ctx    context.Context
 	limits limits.WorkLimits
 	steps  uint64
 }
 
-func (b *QueryBudget) charge(n uint64) error {
+func (b *budget) charge(n uint64) error {
 	if b.ctx != nil {
 		if err := b.ctx.Err(); err != nil {
 			return err
@@ -235,26 +255,34 @@ func (b *QueryBudget) charge(n uint64) error {
 	return nil
 }
 
-// Matches returns all results or an error, never partial results. Structural matching inspects
-// no source text and therefore consumes no input-work units. Every node, struct, tuple, list and
-// error value is a candidate. A query with a rule constraint reports ErrQueryNoSourceInfo when
-// the graph has nodes but none records a rule.
-func (q *StructuralQuery) Matches(root *value.Node, opts QueryOptions) ([]QueryMatch, error) {
+// Matches evaluates the pattern at every value reachable from root, per incoming edge, visiting
+// each value before its outgoing edges: the elements of a tuple, a list or a node's value by
+// index, then a node's captures that are not elements, by name, and the fields of a struct by
+// name. Every node, struct, tuple, list and error value is a candidate. Results borrow graph
+// values; callers must keep the graph stable. Structural matching inspects no source text and
+// therefore consumes no input work. Cancellation, work-limit exhaustion and cycles (ErrCycle)
+// return an error without partial results. A query with a rule constraint reports
+// ErrNoSourceInfo when the graph has nodes but none records a rule.
+func (q *Query) Matches(root *pego.Node, opts ...Option) ([]Match, error) {
 	if q == nil {
 		return nil, fmt.Errorf("nil structural query")
 	}
-	b := &QueryBudget{ctx: opts.Context, limits: opts.WorkLimits}
+	var o options
+	for _, opt := range opts {
+		opt(&o)
+	}
+	b := &budget{ctx: o.ctx, limits: o.limits}
 	if err := b.charge(0); err != nil {
 		return nil, err
 	}
-	results := []QueryMatch{}
+	results := []Match{}
 	sawNode, sawRule := false, false
-	err := VisitQueryGraph(root, b, func(v QueryVisit) error {
+	err := visitGraph(root, b, func(v graphVisit) error {
 		n, ok := v.Value.(*value.Node)
 		if !ok || n == nil {
 			return nil
 		}
-		if category, _ := QueryCategory(n); category == "node" {
+		if category, _ := valueCategory(n); category == "node" {
 			sawNode = true
 			sawRule = sawRule || n.Rule() != ""
 		}
@@ -268,14 +296,14 @@ func (q *StructuralQuery) Matches(root *value.Node, opts QueryOptions) ([]QueryM
 		if err := b.charge(1); err != nil {
 			return err
 		}
-		results = append(results, QueryMatch{Captures: captures})
+		results = append(results, Match{Captures: captures})
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 	if sawNode && !sawRule && q.pattern.usesRule() {
-		return nil, ErrQueryNoSourceInfo
+		return nil, ErrNoSourceInfo
 	}
 	if err := b.charge(0); err != nil {
 		return nil, err
@@ -283,14 +311,14 @@ func (q *StructuralQuery) Matches(root *value.Node, opts QueryOptions) ([]QueryM
 	return results, nil
 }
 
-type queryMatchTask struct {
-	pattern *QueryPattern
-	visit   QueryVisit
+type matchTask struct {
+	pattern *Pattern
+	visit   graphVisit
 }
 
-func (q *StructuralQuery) match(v QueryVisit, b *QueryBudget) ([]QueryCapture, bool, error) {
-	tasks := []queryMatchTask{{&q.pattern, v}}
-	captures := []QueryCapture{}
+func (q *Query) match(v graphVisit, b *budget) ([]Capture, bool, error) {
+	tasks := []matchTask{{&q.pattern, v}}
+	captures := []Capture{}
 	for len(tasks) > 0 {
 		if err := b.charge(1); err != nil {
 			return nil, false, err
@@ -299,7 +327,7 @@ func (q *StructuralQuery) match(v QueryVisit, b *QueryBudget) ([]QueryCapture, b
 		tasks = tasks[:len(tasks)-1]
 		p, v := task.pattern, task.visit
 		v.Value = value.UnboxValue(v.Value)
-		category, err := QueryCategory(v.Value)
+		category, err := valueCategory(v.Value)
 		if err != nil {
 			return nil, false, err
 		}
@@ -335,7 +363,7 @@ func (q *StructuralQuery) match(v QueryVisit, b *QueryBudget) ([]QueryCapture, b
 				if err := b.charge(uint64(len(v.path) + 1)); err != nil {
 					return nil, false, err
 				}
-				tasks = append(tasks, queryMatchTask{&f.Pattern, QueryVisit{val, n, appendQueryPath(v.path, QueryEdge{Kind: "field", Name: f.Name})}})
+				tasks = append(tasks, matchTask{&f.Pattern, graphVisit{val, n, appendPath(v.path, Edge{Kind: "field", Name: f.Name})}})
 			}
 		}
 		if p.Value != nil {
@@ -345,10 +373,10 @@ func (q *StructuralQuery) match(v QueryVisit, b *QueryBudget) ([]QueryCapture, b
 			if err := b.charge(uint64(len(v.path) + 1)); err != nil {
 				return nil, false, err
 			}
-			tasks = append(tasks, queryMatchTask{p.Value, QueryVisit{QueryNodeValue(n), n, appendQueryPath(v.path, QueryEdge{Kind: "value"})}})
+			tasks = append(tasks, matchTask{p.Value, graphVisit{nodeValue(n), n, appendPath(v.path, Edge{Kind: "value"})}})
 		}
 		if len(p.Elements) > 0 {
-			if !QueryHasElements(n) || len(value.D(n).Children) < len(p.Elements) {
+			if !hasElements(n) || len(value.D(n).Children) < len(p.Elements) {
 				return nil, false, nil
 			}
 			if err := b.charge(uint64(len(p.Elements))); err != nil {
@@ -358,21 +386,21 @@ func (q *StructuralQuery) match(v QueryVisit, b *QueryBudget) ([]QueryCapture, b
 				if err := b.charge(uint64(len(v.path) + 1)); err != nil {
 					return nil, false, err
 				}
-				tasks = append(tasks, queryMatchTask{&p.Elements[i], QueryVisit{value.D(n).Children[i], n, appendQueryPath(v.path, QueryEdge{Kind: "element", Index: i})}})
+				tasks = append(tasks, matchTask{&p.Elements[i], graphVisit{value.D(n).Children[i], n, appendPath(v.path, Edge{Kind: "element", Index: i})}})
 			}
 		}
 		if p.Capture != "" {
 			if err := b.charge(uint64(1 + len(v.path))); err != nil {
 				return nil, false, err
 			}
-			captures = append(captures, QueryCapture{p.Capture, category, v.Value, v.parent, append([]QueryEdge(nil), v.path...)})
+			captures = append(captures, Capture{p.Capture, category, v.Value, v.parent, append([]Edge(nil), v.path...)})
 		}
 	}
 	return captures, true, nil
 }
 
-// QueryHasElements reports whether n is a tuple or list, or a node whose value is one.
-func QueryHasElements(n *value.Node) bool {
+// hasElements reports whether n is a tuple or list, or a node whose value is one.
+func hasElements(n *value.Node) bool {
 	if n == nil {
 		return false
 	}
@@ -383,9 +411,9 @@ func QueryHasElements(n *value.Node) bool {
 	return false
 }
 
-// QueryNodeValue returns the value of the node n: its text, or a tuple or list value sharing its
+// nodeValue returns the value of the node n: its text, or a tuple or list value sharing its
 // elements.
-func QueryNodeValue(n *value.Node) any {
+func nodeValue(n *value.Node) any {
 	switch value.ShapeOf(n) {
 	case value.ShapeTuple:
 		return value.Ptr(value.Data{Kind: value.TupleValueKind, Start: value.D(n).Start, End: value.D(n).End, Children: value.D(n).Children})
@@ -395,15 +423,15 @@ func QueryNodeValue(n *value.Node) any {
 	return value.D(n).Text
 }
 
-func appendQueryPath(path []QueryEdge, e QueryEdge) []QueryEdge {
-	p := make([]QueryEdge, len(path)+1)
+func appendPath(path []Edge, e Edge) []Edge {
+	p := make([]Edge, len(path)+1)
 	copy(p, path)
 	p[len(path)] = e
 	return p
 }
 
-// QueryCategory returns the category of an unboxed value.
-func QueryCategory(v any) (string, error) {
+// valueCategory returns the category of an unboxed value.
+func valueCategory(v any) (string, error) {
 	switch v := v.(type) {
 	case nil:
 		return "nil", nil

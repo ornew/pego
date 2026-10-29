@@ -1,4 +1,4 @@
-package schema
+package query
 
 import (
 	"reflect"
@@ -11,11 +11,11 @@ import (
 func TestQuerySchemaRejectsInvalidSchema(t *testing.T) {
 	s := validInMemoryOutputSchema()
 	s.Types[1].Shape.Ref = "declared/Missing"
-	if q, err := PrepareQuerySchema(&s); q != nil || err == nil || !strings.Contains(err.Error(), "invalid query schema: unresolved") {
-		t.Fatalf("PrepareQuerySchema = %v, %v", q, err)
+	if q, err := Prepare(&s); q != nil || err == nil || !strings.Contains(err.Error(), "invalid query schema: unresolved") {
+		t.Fatalf("Prepare = %v, %v", q, err)
 	}
-	if q, err := PrepareQuerySchema(nil); q != nil || err == nil {
-		t.Fatalf("PrepareQuerySchema(nil) = %v, %v", q, err)
+	if q, err := Prepare(nil); q != nil || err == nil {
+		t.Fatalf("Prepare(nil) = %v, %v", q, err)
 	}
 }
 
@@ -24,7 +24,7 @@ func TestQuerySchemaRejectsInvalidSchema(t *testing.T) {
 func TestQuerySchemaOwnsCopy(t *testing.T) {
 	s := validInMemoryOutputSchema()
 	s.Types[0].Shape = schema.Shape{Kind: "struct", Fields: []schema.Field{{Name: "Value", Shape: schema.Shape{Kind: "optional", Element: &schema.Shape{Kind: "scalar", Scalar: "string"}}}}}
-	q, err := PrepareQuerySchema(&s)
+	q, err := Prepare(&s)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +32,7 @@ func TestQuerySchemaOwnsCopy(t *testing.T) {
 	if !reflect.DeepEqual(want, q.s) {
 		t.Fatalf("prepared schema differs from its source")
 	}
-	value := QueryPattern{Type: "Item", Fields: []QueryFieldPattern{{Name: "Value", Pattern: QueryPattern{Category: "string"}}}}
+	value := Pattern{Type: "Item", Fields: []FieldPattern{{Name: "Value", Pattern: Pattern{Category: "string"}}}}
 
 	s.Types[0].Name = "Renamed"
 	s.Types[0].Shape.Fields[0].Name = "Other"
@@ -42,10 +42,10 @@ func TestQuerySchemaOwnsCopy(t *testing.T) {
 	if !reflect.DeepEqual(want, q.s) {
 		t.Fatalf("changing the source changed the prepared schema")
 	}
-	if _, err := q.CompileStructuralQuery(value); err != nil {
+	if _, err := q.Compile(value); err != nil {
 		t.Fatalf("prepared schema followed the changed source: %v", err)
 	}
-	if _, err := q.CompileStructuralQuery(QueryPattern{Rule: s.Rules[0].Name}); err == nil {
+	if _, err := q.Compile(Pattern{Rule: s.Rules[0].Name}); err == nil {
 		t.Fatal("prepared schema knows the renamed rule")
 	}
 }
@@ -69,7 +69,7 @@ func TestQuerySchemaCopySharesDAG(t *testing.T) {
 		{Name: "B", Shape: schema.Shape{Kind: "join", Alternatives: alts}},
 	}}})
 
-	q, err := PrepareQuerySchema(&s)
+	q, err := Prepare(&s)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,19 +82,19 @@ func TestQuerySchemaCopySharesDAG(t *testing.T) {
 	if &got[0] != &fields[1].Shape.Alternatives[0] || &got[0] == &alts[0] {
 		t.Fatal("the copy does not share the slice")
 	}
-	if _, err := q.CompileStructuralQuery(QueryPattern{Type: "Item", Fields: []QueryFieldPattern{{Name: "Absent"}}}); err == nil || !strings.Contains(err.Error(), "has no field") {
+	if _, err := q.Compile(Pattern{Type: "Item", Fields: []FieldPattern{{Name: "Absent"}}}); err == nil || !strings.Contains(err.Error(), "has no field") {
 		t.Fatalf("shared DAG missing-field error = %v", err)
 	}
 }
 
 func TestQuerySchemaNil(t *testing.T) {
-	var q *QuerySchema
-	sq, err := q.CompileStructuralQuery(QueryPattern{Type: "Anything", Fields: []QueryFieldPattern{{Name: "X"}}})
+	var q *Schema
+	sq, err := q.Compile(Pattern{Type: "Anything", Fields: []FieldPattern{{Name: "X"}}})
 	if err != nil || sq == nil {
-		t.Fatalf("nil QuerySchema = %v, %v", sq, err)
+		t.Fatalf("nil Schema = %v, %v", sq, err)
 	}
-	if _, err := q.CompileStructuralQuery(QueryPattern{Category: "unknown"}); err == nil {
-		t.Fatal("nil QuerySchema accepted an unknown category")
+	if _, err := q.Compile(Pattern{Category: "unknown"}); err == nil {
+		t.Fatal("nil Schema accepted an unknown category")
 	}
 }
 
@@ -107,7 +107,7 @@ func TestQuerySchemaIndexesDeclaredNames(t *testing.T) {
 		{ID: "declared/Error", Name: "Error", Origin: "declared"},
 		{ID: "inferred/B", Name: "B", Origin: "inferred"},
 	}}
-	q := indexQuerySchema(s)
+	q := indexSchema(s)
 	if q.byName["A"] != &s.Types[0] || q.byName["Error"] != &s.Types[2] || q.byName["B"] != nil || len(q.byName) != 2 {
 		t.Fatalf("byName = %v", q.byName)
 	}

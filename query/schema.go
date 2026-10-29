@@ -1,4 +1,4 @@
-package schema
+package query
 
 import (
 	"fmt"
@@ -6,11 +6,11 @@ import (
 	"github.com/ornew/pego/schema"
 )
 
-// QuerySchema is a validated output schema indexed for compiling structural
-// queries. A prepared one owns a deep copy of the schema it was made from, so
-// later changes to that schema do not affect it, and it is never modified, so
-// it is safe for concurrent use.
-type QuerySchema struct {
+// Schema is an output schema validated once for compiling many queries. It owns a deep copy of
+// the schema it was prepared from, so later changes to that schema do not affect it. It is
+// immutable and safe for concurrent use. Obtain one from Prepare: a nil or zero Schema holds no
+// schema and defers type and field checks until evaluation.
+type Schema struct {
 	s     *schema.Output
 	rules map[string]bool
 	byID  map[string]*schema.Type
@@ -18,18 +18,18 @@ type QuerySchema struct {
 	byName map[string]*schema.Type
 }
 
-// PrepareQuerySchema validates out once and copies it, so that queries
-// compiled with the result skip validation.
-func PrepareQuerySchema(out *schema.Output) (*QuerySchema, error) {
+// Prepare validates and copies the schema. Compiling a pattern with the result performs the same
+// checks as Compile with the schema, but does not validate the schema again.
+func Prepare(out *schema.Output) (*Schema, error) {
 	if err := out.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid query schema: %w", err)
 	}
-	return indexQuerySchema(copyOutputSchema(out)), nil
+	return indexSchema(copyOutputSchema(out)), nil
 }
 
-// indexQuerySchema indexes a validated schema without copying it.
-func indexQuerySchema(s *schema.Output) *QuerySchema {
-	q := &QuerySchema{
+// indexSchema indexes a validated schema without copying it.
+func indexSchema(s *schema.Output) *Schema {
+	q := &Schema{
 		s:      s,
 		rules:  make(map[string]bool, len(s.Rules)),
 		byID:   make(map[string]*schema.Type, len(s.Types)),
@@ -48,19 +48,23 @@ func indexQuerySchema(s *schema.Output) *QuerySchema {
 	return q
 }
 
-// CompileStructuralQuery compiles pattern with the schema. A nil QuerySchema
-// defers type and field checks to evaluation, as a nil *schema.Output does.
-func (s *QuerySchema) CompileStructuralQuery(pattern QueryPattern) (*StructuralQuery, error) {
-	p, err := copyQueryPattern(pattern, s, 0)
+// Compile validates and copies a pattern, rejecting known impossibilities in the prepared
+// schema. A nil or zero Schema defers type and field checks until evaluation, as a nil
+// *schema.Output does.
+func (s *Schema) Compile(pattern Pattern) (*Query, error) {
+	if s != nil && s.s == nil {
+		s = nil
+	}
+	p, err := copyPattern(pattern, s, 0)
 	if err != nil {
 		return nil, err
 	}
 	if s != nil {
-		if err := checkQueryShapes(&p, s); err != nil {
+		if err := checkShapes(&p, s); err != nil {
 			return nil, err
 		}
 	}
-	return &StructuralQuery{pattern: p}, nil
+	return &Query{pattern: p}, nil
 }
 
 // copyOutputSchema copies a validated schema. Inline shapes may be shared, as

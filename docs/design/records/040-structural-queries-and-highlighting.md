@@ -22,17 +22,19 @@ The public Go API provides programmatic structural queries over `pego.Node`; gen
 
 ## Proposed API and Pattern Model
 
-The following text-query API is illustrative and is not implemented. The implemented Go API compiles a `QueryPattern` programmatically, as described under Implemented Go API below.
+The following text-query API is illustrative and is not implemented. The implemented Go API, package `query`, compiles a `query.Pattern` programmatically, as described under Implemented Go API below.
 
 ```go
-type QueryOption func(*queryOptions)
+package query
+
+type Option func(*options)
 type Query struct { /* compiled pattern */ }
-type QueryMatch struct { Captures []QueryCapture }
-func CompileQuery(source string, out *schema.Output) (*Query, error)
-func (q *Query) Matches(root *Node, opts ...QueryOption) ([]QueryMatch, error)
-func WithQueryUnit(unit Unit) QueryOption
-func WithQueryContext(ctx context.Context) QueryOption
-func WithQueryWorkLimits(limits WorkLimits) QueryOption
+type Match struct { Captures []Capture }
+func CompileText(source string, out *schema.Output) (*Query, error)
+func (q *Query) Matches(root *pego.Node, opts ...Option) ([]Match, error)
+func WithUnit(unit pego.PositionUnit) Option
+func WithContext(ctx context.Context) Option
+func WithWorkLimits(limits pego.WorkLimits) Option
 ```
 
 The implemented Go API accepts context and step-limit options. Structural matching inspects no source text, so it consumes no input-work units; its step budget covers traversal and result construction. Cancellation returns the context error, exhaustion matches `ErrWorkLimit`, and evaluation returns no partial result. Position predicates and highlight/range interpretation remain deferred; any future position-based behavior must require an explicit valid Unit rather than infer one from spans.
@@ -80,11 +82,11 @@ The syntax and initial text-predicate set need implementation review; recommenda
 
 ## Implemented Go API
 
-`CompileStructuralQuery(QueryPattern, *schema.Output)` accepts a programmatic
+`query.Compile(query.Pattern, *schema.Output)` accepts a programmatic
 pattern rather than adopting the illustrative text syntax. Validating the schema
-dominates its cost, so `PrepareQuerySchema` validates a schema once into an
+dominates its cost, so `query.Prepare` validates a schema once into an
 immutable handle that owns a deep copy, keeping inline DAGs shared, and indexes
-rules and types by name and ID; its `CompileStructuralQuery` method performs the
+rules and types by name and ID; its `Compile` method performs the
 same pattern checks without validating again. Patterns
 may constrain type, producing rule, runtime category, named fields, and an
 ordered child prefix. Required fields must exist; extra fields and children are
@@ -110,20 +112,20 @@ The runtime value is still checked because a `Node` may have changed since it wa
 parsed. Dynamic CST/`top` fields remain runtime checked. Pattern copies are independent of caller mutation. Compilation rejects
 nesting at 256 levels, including cyclic programmatic pattern containers.
 
-`StructuralQuery.Matches(root, QueryOptions)` returns all results or an error.
-Evaluation is iterative and visits each node occurrence before its outgoing
-edges: children in index order, then fields in lexicographic order, then nested
-`[]any` elements in index order. Pattern captures follow preorder with children
-before sorted fields. An optional child can be captured as nil. Scalar categories
-are `int`, `string`, and `bool`; `list` identifies an explicit `[]any` container,
-while ordinary parser repetition results remain `Node` values of type `List`.
-Unsupported runtime values return an error. Active-path node and list cycles
-return `ErrQueryCycle`, and shared DAG nodes are evaluated per incoming edge.
-Nonempty list identity uses its first element address and visible length; slice
-capacity does not affect cycle detection.
-The immediate parent is the containing Node even through nested list containers;
-a root has no parent. Each capture owns its root-relative edge-path slice but
-borrows its value and parent. Concurrent graph mutation is unsupported.
+`Query.Matches(root, opts...)` returns all results or an error.
+Evaluation is iterative and visits each value occurrence before its outgoing
+edges: the elements of a tuple, a list or a node's value in index order, then a
+node's captures that are not elements, by name, and the fields of a struct by
+name. Pattern captures follow preorder: elements, then the node value, then
+fields by name. An optional child can be captured as nil. Every node, struct,
+tuple, list and error value is a candidate. Scalar categories are `int`,
+`string`, and `bool`; `tuple` and `list` are the tuple and list values of the
+value model, while a node whose value is a tuple or list has the category
+`node`. Other runtime values, such as Go slices, return an error. A node that recurs on the active path returns `ErrCycle`, and shared
+values are evaluated per incoming edge.
+The immediate parent is the node that holds the value; a root has no parent.
+Each capture owns its root-relative edge-path slice but borrows its value and
+parent. Concurrent graph mutation is unsupported.
 
 Cancellation uses the supplied context error. Step exhaustion uses the existing
 `WorkLimitError`/`ErrWorkLimit`, and zero limits are unlimited. Structural queries
@@ -136,9 +138,8 @@ sort comparisons. Full edge paths currently incur quadratic copying on a deep
 chain, and these copies are charged before construction. No speed or allocation
 claims are made.
 
-The public Go facade exposes `CompileStructuralQuery`, `PrepareQuerySchema`,
-`QueryPattern`, capture/path types, `StructuralQuery.Matches`, and
-context/work-limit options. It preserves per-edge results and all-or-error
+Package `query` exposes `Compile`, `Prepare`, `Pattern`, capture/path types,
+`Query.Matches`, and context/work-limit options. It preserves per-edge results and all-or-error
 behavior. The implemented pattern language is
 programmatic; text syntax, text predicates, position/range queries, highlighting,
 TypeScript parity, and direct snapshot evaluation remain deferred. Discarded

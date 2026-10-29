@@ -1,5 +1,4 @@
-// Package schema exports the output schema of a checked program as a schema.Output, and holds the
-// structural queries that match patterns against parse results and check them against a schema.
+// Package schema exports the output schema of a checked program as a schema.Output.
 package schema
 
 import (

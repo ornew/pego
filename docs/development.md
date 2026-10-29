@@ -24,9 +24,10 @@ This document describes the repository layout and architecture, how to run tests
 | `internal/engine/vm/` | The bytecode backend: the recursive and iterative VMs, which run a compiled module over the same instruction loop |
 | `internal/engine/document/` | The incremental Document: edits and edit batches, reparsing that reuses what the edits did not touch, snapshots, change reports, diagnostics and the node cursor. It parses through a runner that `internal/engine` implements, and `internal/engine` re-exports its types |
 | `schema/` | Output schema: the description of the values a grammar can produce (`schema.Output`), its JSON form and validation, and `Compare`, which reports how two schemas differ. Public package; it imports only the standard library |
-| `internal/schema/` | The export of a checked program's output schema as a `schema.Output`; structural queries, which match patterns against parse results and check them against a schema |
+| `query/` | Structural queries: patterns that match values of parse results, checked against an output schema when they compile (`Compile`, `Prepare`, `Query.Matches`). Public package |
+| `internal/schema/` | The export of a checked program's output schema as a `schema.Output` |
 | `internal/value/` | `Node`, the value that parsing produces: kinds, fields, JSON form, traversal and the representation that the engine packages share |
-| `internal/limits/` | Work limits of a parse invocation, the error of an exhausted limit and overflow-safe work arithmetic, shared by the parser, the Document and structural queries |
+| `internal/limits/` | Work limits of a parse invocation, the error of an exhausted limit and overflow-safe work arithmetic, shared by the parser, the Document and package `query` |
 | `internal/bytecode/` | The bytecode instruction set and module, its disassembly, the encoding of modules in compiled grammars and the validation of loaded modules |
 | `internal/gen/` | What the Go and TypeScript generators share: generation options, the runtime mode of generated Go parsers, generated files, and the generator state both print with (the program and rule being printed, the expectation table, shared names, the Flow IR state of recognizer rules and the action value resolver) |
 | `runtime/` | Runtime package of generated Go parsers, imported by them or copied into them (`github.com/ornew/pego/runtime`) |

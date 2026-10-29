@@ -3,7 +3,7 @@ package schema
 import "github.com/ornew/pego/schema"
 
 // validInMemoryOutputSchema is a minimal valid schema built in memory. Package schema's tests
-// have the same helper; this copy serves the export and query tests here.
+// have the same helper; this copy serves the export tests here.
 func validInMemoryOutputSchema() schema.Output {
 	return schema.Output{
 		Format: "pego-output-schema", Version: 2, Start: "main", PositionUnitIndependent: true,

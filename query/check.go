@@ -1,4 +1,4 @@
-package schema
+package query
 
 import (
 	"fmt"
@@ -61,12 +61,12 @@ func (a queryAtom) describe() string {
 }
 
 type queryShapeKey struct {
-	pattern *QueryPattern
+	pattern *Pattern
 	shape   *schema.Shape
 }
 
 type queryShapeChecker struct {
-	s *QuerySchema
+	s *Schema
 	// done holds the results of checks already made, so shared shapes are checked once per
 	// pattern.
 	done map[queryShapeKey]error
@@ -78,9 +78,9 @@ var errorFields = []schema.Field{
 	{Name: "message", Shape: schema.Shape{Kind: "scalar", Scalar: "string"}},
 }
 
-// checkQueryShapes reports a pattern of p, a compiled copy, that matches no value the schema s
+// checkShapes reports a pattern of p, a compiled copy, that matches no value the schema s
 // admits where it is applied.
-func checkQueryShapes(p *QueryPattern, s *QuerySchema) error {
+func checkShapes(p *Pattern, s *Schema) error {
 	k := &queryShapeChecker{s: s, done: map[queryShapeKey]error{}}
 	if err := k.check(p, nil); err != nil {
 		return fmt.Errorf("query pattern matches no value of the schema: %w", err)
@@ -89,7 +89,7 @@ func checkQueryShapes(p *QueryPattern, s *QuerySchema) error {
 }
 
 // check reports whether p can match a value of shape (nil if unknown).
-func (k *queryShapeChecker) check(p *QueryPattern, shape *schema.Shape) error {
+func (k *queryShapeChecker) check(p *Pattern, shape *schema.Shape) error {
 	key := queryShapeKey{p, shape}
 	if err, ok := k.done[key]; ok {
 		return err
@@ -206,7 +206,7 @@ func (k *queryShapeChecker) patternAtom(name string) queryAtom {
 }
 
 // match reports whether p can match a value of atom a.
-func (k *queryShapeChecker) match(p *QueryPattern, a queryAtom) error {
+func (k *queryShapeChecker) match(p *Pattern, a queryAtom) error {
 	if a.kind == "top" {
 		if p.Type != "" {
 			if t := k.patternAtom(p.Type); t.kind != "top" {
@@ -267,7 +267,7 @@ func (k *queryShapeChecker) match(p *QueryPattern, a queryAtom) error {
 }
 
 // elements reports whether patterns can match the first elements of a value of atom a.
-func (k *queryShapeChecker) elements(patterns []QueryPattern, a queryAtom) error {
+func (k *queryShapeChecker) elements(patterns []Pattern, a queryAtom) error {
 	switch a.kind {
 	case "top":
 		for i := range patterns {
@@ -299,7 +299,7 @@ func (k *queryShapeChecker) elements(patterns []QueryPattern, a queryAtom) error
 
 // unknownParts checks the field, value and element patterns of p against values of unknown
 // shape.
-func (k *queryShapeChecker) unknownParts(p *QueryPattern) error {
+func (k *queryShapeChecker) unknownParts(p *Pattern) error {
 	for i := range p.Fields {
 		if err := k.check(&p.Fields[i].Pattern, nil); err != nil {
 			return fmt.Errorf("field %s: %w", p.Fields[i].Name, err)

@@ -1,4 +1,4 @@
-package schema
+package query
 
 import (
 	"context"
@@ -17,25 +17,25 @@ func TestStructuralQuerySharedEdgesAndCaptures(t *testing.T) {
 	tuple := value.Ptr(value.Data{Kind: value.TupleValueKind, Children: []*value.Node{leaf}})
 	list := value.Ptr(value.Data{Kind: value.ListValueKind, Children: []*value.Node{nil, leaf}})
 	root := value.Ptr(value.Data{Kind: value.KindOf("Pair", ""), Fields: value.Fields{{Name: "z", Value: list}, {Name: "a", Value: leaf}, {Name: "t", Value: tuple}}})
-	q, err := CompileStructuralQuery(QueryPattern{Rule: "identifier", Capture: "name", Value: &QueryPattern{Category: "string", Capture: "text"}}, nil)
+	q, err := Compile(Pattern{Rule: "identifier", Capture: "name", Value: &Pattern{Category: "string", Capture: "text"}}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := q.Matches(root, QueryOptions{})
+	got, err := q.Matches(root)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(got) != 3 {
 		t.Fatalf("matches %d", len(got))
 	}
-	want := [][]QueryEdge{{{Kind: "field", Name: "a"}}, {{Kind: "field", Name: "t"}, {Kind: "element", Index: 0}}, {{Kind: "field", Name: "z"}, {Kind: "element", Index: 1}}}
+	want := [][]Edge{{{Kind: "field", Name: "a"}}, {{Kind: "field", Name: "t"}, {Kind: "element", Index: 0}}, {{Kind: "field", Name: "z"}, {Kind: "element", Index: 1}}}
 	parents := []*value.Node{root, tuple, list}
 	for i, m := range got {
 		if len(m.Captures) != 2 || m.Captures[0].Value != leaf || m.Captures[0].Category != "node" || m.Captures[0].Parent != parents[i] || !reflect.DeepEqual(m.Captures[0].Path, want[i]) {
 			t.Fatalf("capture %d: %+v", i, m)
 		}
 		if m.Captures[1].Value != "hello" || m.Captures[1].Category != "string" || m.Captures[1].Parent != leaf ||
-			!reflect.DeepEqual(m.Captures[1].Path, append(append([]QueryEdge(nil), want[i]...), QueryEdge{Kind: "value"})) {
+			!reflect.DeepEqual(m.Captures[1].Path, append(append([]Edge(nil), want[i]...), Edge{Kind: "value"})) {
 			t.Fatalf("scalar capture %+v", m)
 		}
 	}
@@ -46,20 +46,20 @@ func TestStructuralQueryElementsSeeThroughNodes(t *testing.T) {
 	b := value.Ptr(value.Data{Kind: value.BoxKind, Box: 7})
 	look := value.Ptr(value.Data{Kind: value.MatchKind, Terminal: true, Text: "!"})
 	tuple := value.Ptr(value.Data{Kind: value.SeqKind, Children: []*value.Node{a, b}, Fields: value.Fields{{Name: "x", Value: a}, {Name: "y", Value: look}}})
-	elements := QueryPattern{Category: "node", Elements: []QueryPattern{{Value: &QueryPattern{Category: "string"}, Capture: "first"}, {Category: "int", Capture: "second"}}}
-	val := QueryPattern{Value: &QueryPattern{Category: "tuple", Elements: []QueryPattern{{}, {Category: "int"}}, Capture: "value"}}
+	elements := Pattern{Category: "node", Elements: []Pattern{{Value: &Pattern{Category: "string"}, Capture: "first"}, {Category: "int", Capture: "second"}}}
+	val := Pattern{Value: &Pattern{Category: "tuple", Elements: []Pattern{{}, {Category: "int"}}, Capture: "value"}}
 	for name, tc := range map[string]struct {
-		pattern QueryPattern
-		paths   [][]QueryEdge
+		pattern Pattern
+		paths   [][]Edge
 	}{
-		"elements": {elements, [][]QueryEdge{{{Kind: "element", Index: 0}}, {{Kind: "element", Index: 1}}}},
-		"value":    {val, [][]QueryEdge{{{Kind: "value"}}}},
+		"elements": {elements, [][]Edge{{{Kind: "element", Index: 0}}, {{Kind: "element", Index: 1}}}},
+		"value":    {val, [][]Edge{{{Kind: "value"}}}},
 	} {
-		q, err := CompileStructuralQuery(tc.pattern, nil)
+		q, err := Compile(tc.pattern, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
-		got, err := q.Matches(tuple, QueryOptions{})
+		got, err := q.Matches(tuple)
 		if err != nil || len(got) != 1 || len(got[0].Captures) != len(tc.paths) {
 			t.Fatalf("%s: %+v %v", name, got, err)
 		}
@@ -76,15 +76,15 @@ func TestStructuralQueryElementsSeeThroughNodes(t *testing.T) {
 		}
 	}
 	// The walk visits the elements and the capture that is not an element, not the capture of a.
-	q, err := CompileStructuralQuery(QueryPattern{Category: "node", Capture: "n"}, nil)
+	q, err := Compile(Pattern{Category: "node", Capture: "n"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := q.Matches(tuple, QueryOptions{})
+	got, err := q.Matches(tuple)
 	if err != nil || len(got) != 3 {
 		t.Fatalf("walk: %+v %v", got, err)
 	}
-	want := [][]QueryEdge{{}, {{Kind: "element", Index: 0}}, {{Kind: "capture", Name: "y"}}}
+	want := [][]Edge{{}, {{Kind: "element", Index: 0}}, {{Kind: "capture", Name: "y"}}}
 	for i, m := range got {
 		if len(m.Captures[0].Path) != len(want[i]) || len(want[i]) > 0 && !reflect.DeepEqual(m.Captures[0].Path, want[i]) {
 			t.Fatalf("walk path %d: %+v", i, m.Captures[0].Path)
@@ -93,43 +93,43 @@ func TestStructuralQueryElementsSeeThroughNodes(t *testing.T) {
 }
 
 func TestStructuralQueryConstraintConflicts(t *testing.T) {
-	for _, p := range []QueryPattern{
+	for _, p := range []Pattern{
 		{Category: "struct", Rule: "r"},
 		{Type: "T", Rule: "r"},
-		{Type: "T", Elements: []QueryPattern{{}}},
+		{Type: "T", Elements: []Pattern{{}}},
 		{Type: "error", Category: "struct"},
-		{Value: &QueryPattern{}, Fields: []QueryFieldPattern{{"x", QueryPattern{}}}},
-		{Category: "tuple", Value: &QueryPattern{}},
-		{Category: "int", Elements: []QueryPattern{{}}},
-		{Type: "error", Fields: []QueryFieldPattern{{"other", QueryPattern{}}}},
+		{Value: &Pattern{}, Fields: []FieldPattern{{"x", Pattern{}}}},
+		{Category: "tuple", Value: &Pattern{}},
+		{Category: "int", Elements: []Pattern{{}}},
+		{Type: "error", Fields: []FieldPattern{{"other", Pattern{}}}},
 		{Category: "number"},
 	} {
-		if _, err := CompileStructuralQuery(p, nil); err == nil {
+		if _, err := Compile(p, nil); err == nil {
 			t.Errorf("accepted %+v", p)
 		}
 	}
-	for _, p := range []QueryPattern{
-		{Category: "node", Rule: "r", Value: &QueryPattern{}, Elements: []QueryPattern{{}}},
-		{Type: "error", Fields: []QueryFieldPattern{{"expected", QueryPattern{}}, {"message", QueryPattern{}}}},
-		{Category: "list", Elements: []QueryPattern{{}}},
-		{Category: "tuple", Elements: []QueryPattern{{}}},
-		{Category: "struct", Type: "T", Fields: []QueryFieldPattern{{"x", QueryPattern{}}}},
+	for _, p := range []Pattern{
+		{Category: "node", Rule: "r", Value: &Pattern{}, Elements: []Pattern{{}}},
+		{Type: "error", Fields: []FieldPattern{{"expected", Pattern{}}, {"message", Pattern{}}}},
+		{Category: "list", Elements: []Pattern{{}}},
+		{Category: "tuple", Elements: []Pattern{{}}},
+		{Category: "struct", Type: "T", Fields: []FieldPattern{{"x", Pattern{}}}},
 	} {
-		if _, err := CompileStructuralQuery(p, nil); err != nil {
+		if _, err := Compile(p, nil); err != nil {
 			t.Errorf("rejected %+v: %v", p, err)
 		}
 	}
 }
 
 func TestStructuralQueryAllOrError(t *testing.T) {
-	q, err := CompileStructuralQuery(QueryPattern{Capture: "all"}, nil)
+	q, err := Compile(Pattern{Capture: "all"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	root := value.Ptr(value.Data{Kind: value.SeqKind})
 	value.D(root).Children = []*value.Node{root}
-	got, err := q.Matches(root, QueryOptions{})
-	if got != nil || !errors.Is(err, ErrQueryCycle) {
+	got, err := q.Matches(root)
+	if got != nil || !errors.Is(err, ErrCycle) {
 		t.Fatalf("cycle: %v %v", got, err)
 	}
 	list := value.Ptr(value.Data{Kind: value.ListValueKind})
@@ -137,30 +137,30 @@ func TestStructuralQueryAllOrError(t *testing.T) {
 	value.D(root).Children = nil
 	value.D(root).Fields = value.Fields{{Name: "cycle", Value: list}}
 	value.D(root).Kind = value.KindOf("S", "")
-	got, err = q.Matches(root, QueryOptions{})
-	if got != nil || !errors.Is(err, ErrQueryCycle) {
+	got, err = q.Matches(root)
+	if got != nil || !errors.Is(err, ErrCycle) {
 		t.Fatalf("list cycle: %v %v", got, err)
 	}
 	root = value.Ptr(value.Data{Kind: value.MatchKind, Terminal: true})
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	got, err = q.Matches(root, QueryOptions{Context: ctx})
+	got, err = q.Matches(root, WithContext(ctx))
 	if got != nil || !errors.Is(err, context.Canceled) {
 		t.Fatalf("cancel: %v %v", got, err)
 	}
 	// A leaf costs one visit, one pattern, one capture and one match.
-	got, err = q.Matches(root, QueryOptions{WorkLimits: limits.WorkLimits{MaxSteps: 4}})
+	got, err = q.Matches(root, WithWorkLimits(limits.WorkLimits{MaxSteps: 4}))
 	if err != nil || len(got) != 1 {
 		t.Fatalf("exact limit: %v %v", got, err)
 	}
-	got, err = q.Matches(root, QueryOptions{WorkLimits: limits.WorkLimits{MaxSteps: 3}})
+	got, err = q.Matches(root, WithWorkLimits(limits.WorkLimits{MaxSteps: 3}))
 	if got != nil || !errors.Is(err, limits.ErrWorkLimit) {
 		t.Fatalf("limit: %v %v", got, err)
 	}
 }
 
 func TestStructuralQueryCycleThroughValues(t *testing.T) {
-	q, err := CompileStructuralQuery(QueryPattern{Capture: "all"}, nil)
+	q, err := Compile(Pattern{Capture: "all"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,21 +168,21 @@ func TestStructuralQueryCycleThroughValues(t *testing.T) {
 	list := value.Ptr(value.Data{Kind: value.ListValueKind, Children: []*value.Node{root}})
 	value.D(root).Children = []*value.Node{list}
 	// The repeated node is rejected before its contents are reserved.
-	budget := &QueryBudget{limits: limits.WorkLimits{MaxSteps: 100}}
+	budget := &budget{limits: limits.WorkLimits{MaxSteps: 100}}
 	visits := 0
-	err = VisitQueryGraph(root, budget, func(QueryVisit) error {
+	err = visitGraph(root, budget, func(graphVisit) error {
 		visits++
 		return nil
 	})
-	if !errors.Is(err, ErrQueryCycle) || visits != 2 {
+	if !errors.Is(err, ErrCycle) || visits != 2 {
 		t.Fatalf("first back edge: visits=%d steps=%d err=%v", visits, budget.steps, err)
 	}
-	results, err := q.Matches(root, QueryOptions{WorkLimits: limits.WorkLimits{MaxSteps: 100}})
-	if results != nil || !errors.Is(err, ErrQueryCycle) {
+	results, err := q.Matches(root, WithWorkLimits(limits.WorkLimits{MaxSteps: 100}))
+	if results != nil || !errors.Is(err, ErrCycle) {
 		t.Fatalf("value cycle: %+v, %v", results, err)
 	}
 	// Go slices are not values of the value model.
-	results, err = q.Matches(value.Ptr(value.Data{Kind: value.KindOf("S", ""), Fields: value.Fields{{Name: "x", Value: []any{1}}}}), QueryOptions{})
+	results, err = q.Matches(value.Ptr(value.Data{Kind: value.KindOf("S", ""), Fields: value.Fields{{Name: "x", Value: []any{1}}}}))
 	if results != nil || err == nil || !strings.Contains(err.Error(), "unsupported query value") {
 		t.Fatalf("Go slice: %+v, %v", results, err)
 	}
@@ -192,31 +192,31 @@ func TestStructuralQueryValidationAndRuntimeMismatch(t *testing.T) {
 	sch := validInMemoryOutputSchema()
 	sch.Types[0].Shape.Fields = []schema.Field{{Name: "Value", Shape: schema.Shape{Kind: "scalar", Scalar: "string"}}}
 	s := &sch
-	if _, err := CompileStructuralQuery(QueryPattern{Type: "Item", Fields: []QueryFieldPattern{{"Absent", QueryPattern{}}}}, s); err == nil {
+	if _, err := Compile(Pattern{Type: "Item", Fields: []FieldPattern{{"Absent", Pattern{}}}}, s); err == nil {
 		t.Fatal("accepted impossible field")
 	}
-	if _, err := CompileStructuralQuery(QueryPattern{Rule: "main"}, s); err == nil || !strings.Contains(err.Error(), "source information") {
+	if _, err := Compile(Pattern{Rule: "main"}, s); err == nil || !strings.Contains(err.Error(), "source information") {
 		t.Fatalf("accepted a rule without source information: %v", err)
 	}
 	sch.SourceInfo = true
-	if _, err := CompileStructuralQuery(QueryPattern{Rule: "missing"}, s); err == nil || !strings.Contains(err.Error(), "unknown query rule") {
+	if _, err := Compile(Pattern{Rule: "missing"}, s); err == nil || !strings.Contains(err.Error(), "unknown query rule") {
 		t.Fatalf("accepted impossible rule: %v", err)
 	}
-	if _, err := CompileStructuralQuery(QueryPattern{Type: "Item", Fields: []QueryFieldPattern{{"Value", QueryPattern{Category: "bool"}}}}, s); err == nil {
+	if _, err := Compile(Pattern{Type: "Item", Fields: []FieldPattern{{"Value", Pattern{Category: "bool"}}}}, s); err == nil {
 		t.Fatal("accepted incompatible scalar category")
 	}
 
-	p := QueryPattern{Type: "Item", Fields: []QueryFieldPattern{{"Value", QueryPattern{Category: "string", Capture: "value"}}}}
-	q, err := CompileStructuralQuery(p, s)
+	p := Pattern{Type: "Item", Fields: []FieldPattern{{"Value", Pattern{Category: "string", Capture: "value"}}}}
+	q, err := Compile(p, s)
 	if err != nil {
 		t.Fatal(err)
 	}
 	p.Fields[0].Pattern.Category = "int"
-	got, err := q.Matches(value.Ptr(value.Data{Kind: value.KindOf("Item", ""), Fields: value.Fields{{Name: "Value", Value: false}}}), QueryOptions{})
+	got, err := q.Matches(value.Ptr(value.Data{Kind: value.KindOf("Item", ""), Fields: value.Fields{{Name: "Value", Value: false}}}))
 	if err != nil || len(got) != 0 {
 		t.Fatalf("runtime mismatch: %v %v", got, err)
 	}
-	got, err = q.Matches(value.Ptr(value.Data{Kind: value.KindOf("Item", ""), Fields: value.Fields{{Name: "Value", Value: "ok"}}}), QueryOptions{})
+	got, err = q.Matches(value.Ptr(value.Data{Kind: value.KindOf("Item", ""), Fields: value.Fields{{Name: "Value", Value: "ok"}}}))
 	if err != nil || len(got) != 1 {
 		t.Fatalf("pattern ownership: %v %v", got, err)
 	}
@@ -225,7 +225,7 @@ func TestStructuralQueryValidationAndRuntimeMismatch(t *testing.T) {
 func TestStructuralQueryRejectsMalformedInMemorySchema(t *testing.T) {
 	s := validInMemoryOutputSchema()
 	s.Types[1].Shape.Ref = "declared/Missing"
-	if _, err := CompileStructuralQuery(QueryPattern{Type: "Item"}, &s); err == nil || !strings.Contains(err.Error(), "unresolved") {
+	if _, err := Compile(Pattern{Type: "Item"}, &s); err == nil || !strings.Contains(err.Error(), "unresolved") {
 		t.Fatalf("invalid schema error = %v", err)
 	}
 }
@@ -240,11 +240,11 @@ func TestStructuralQuerySharedInlineDAGAbsentField(t *testing.T) {
 		}}
 	}
 	s.Types[0].Shape = schema.Shape{Kind: "struct", Fields: []schema.Field{{Name: "Deep", Shape: *shared}}}
-	if _, err := CompileStructuralQuery(QueryPattern{Type: "Item", Fields: []QueryFieldPattern{{Name: "Absent"}}}, &s); err == nil || !strings.Contains(err.Error(), "has no field") {
+	if _, err := Compile(Pattern{Type: "Item", Fields: []FieldPattern{{Name: "Absent"}}}, &s); err == nil || !strings.Contains(err.Error(), "has no field") {
 		t.Fatalf("shared DAG missing-field error = %v", err)
 	}
-	deep := QueryPattern{Type: "Item", Fields: []QueryFieldPattern{{Name: "Deep", Pattern: QueryPattern{Fields: []QueryFieldPattern{{Name: "Absent"}}}}}}
-	if _, err := CompileStructuralQuery(deep, &s); err == nil || !strings.Contains(err.Error(), "has no fields") {
+	deep := Pattern{Type: "Item", Fields: []FieldPattern{{Name: "Deep", Pattern: Pattern{Fields: []FieldPattern{{Name: "Absent"}}}}}}
+	if _, err := Compile(deep, &s); err == nil || !strings.Contains(err.Error(), "has no fields") {
 		t.Fatalf("shared DAG field error = %v", err)
 	}
 }
@@ -259,20 +259,20 @@ func TestStructuralQueryNamedReferenceCycleAbsentField(t *testing.T) {
 			{Name: "Present", Shape: schema.Shape{Kind: "scalar", Scalar: "string"}},
 		}}})
 	// Rules that only call each other have no values.
-	inF := func(p QueryPattern) QueryPattern {
-		return QueryPattern{Type: "Item", Fields: []QueryFieldPattern{{Name: "F", Pattern: p}}}
+	inF := func(p Pattern) Pattern {
+		return Pattern{Type: "Item", Fields: []FieldPattern{{Name: "F", Pattern: p}}}
 	}
-	if _, err := CompileStructuralQuery(inF(QueryPattern{Fields: []QueryFieldPattern{{Name: "Absent"}}}), &s); err == nil || !strings.Contains(err.Error(), "no values") {
+	if _, err := Compile(inF(Pattern{Fields: []FieldPattern{{Name: "Absent"}}}), &s); err == nil || !strings.Contains(err.Error(), "no values") {
 		t.Fatalf("named cycle error = %v", err)
 	}
 	s.Types[len(s.Types)-2].Shape = schema.Shape{Kind: "join", Alternatives: []schema.Shape{
 		{Kind: "ref", Ref: "inferred/a"},
 		{Kind: "ref", Ref: "declared/Other"},
 	}}
-	if _, err := CompileStructuralQuery(inF(QueryPattern{Type: "Other", Fields: []QueryFieldPattern{{Name: "Present"}}}), &s); err != nil {
+	if _, err := Compile(inF(Pattern{Type: "Other", Fields: []FieldPattern{{Name: "Present"}}}), &s); err != nil {
 		t.Fatalf("named cycle hid possible field: %v", err)
 	}
-	if _, err := CompileStructuralQuery(inF(QueryPattern{Fields: []QueryFieldPattern{{Name: "Absent"}}}), &s); err == nil || !strings.Contains(err.Error(), "has no field Absent") {
+	if _, err := Compile(inF(Pattern{Fields: []FieldPattern{{Name: "Absent"}}}), &s); err == nil || !strings.Contains(err.Error(), "has no field Absent") {
 		t.Fatalf("named cycle missing-field error = %v", err)
 	}
 }
@@ -282,18 +282,18 @@ func TestStructuralQueryOptionalScalarFieldCategory(t *testing.T) {
 	valid := validInMemoryOutputSchema()
 	valid.Types[0].Shape.Fields = []schema.Field{{Name: "Value", Shape: schema.Shape{Kind: "optional", Element: &scalar}}}
 	schema := &valid
-	pattern := func(category string) QueryPattern {
-		return QueryPattern{Type: "Item", Fields: []QueryFieldPattern{{
-			Name: "Value", Pattern: QueryPattern{Category: category, Capture: "value"},
+	pattern := func(category string) Pattern {
+		return Pattern{Type: "Item", Fields: []FieldPattern{{
+			Name: "Value", Pattern: Pattern{Category: category, Capture: "value"},
 		}}}
 	}
 	for _, category := range []string{"bool", "node", "list"} {
-		if _, err := CompileStructuralQuery(pattern(category), schema); err == nil {
+		if _, err := Compile(pattern(category), schema); err == nil {
 			t.Errorf("accepted impossible optional-scalar category %q", category)
 		}
 	}
 	for _, category := range []string{"string", "nil"} {
-		q, err := CompileStructuralQuery(pattern(category), schema)
+		q, err := Compile(pattern(category), schema)
 		if err != nil {
 			t.Fatalf("rejected possible category %q: %v", category, err)
 		}
@@ -301,7 +301,7 @@ func TestStructuralQueryOptionalScalarFieldCategory(t *testing.T) {
 		if category == "nil" {
 			val = nil
 		}
-		matches, err := q.Matches(value.Ptr(value.Data{Kind: value.KindOf("Item", ""), Fields: value.Fields{{Name: "Value", Value: val}}}), QueryOptions{})
+		matches, err := q.Matches(value.Ptr(value.Data{Kind: value.KindOf("Item", ""), Fields: value.Fields{{Name: "Value", Value: val}}}))
 		if err != nil || len(matches) != 1 || len(matches[0].Captures) != 1 || matches[0].Captures[0].Category != category {
 			t.Fatalf("category %q at runtime: %+v, %v", category, matches, err)
 		}

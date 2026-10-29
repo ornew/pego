@@ -11,7 +11,7 @@ serializing a result. This chapter defines both.
 ## Scope and Terminology
 
 A **schema** is a description of the output of a grammar: its declared struct types
-and the inferred value shape of each rule. A **pattern** (`QueryPattern`) is a
+and the inferred value shape of each rule. A **pattern** (`query.Pattern`) is a
 programmatic description of a value and of the values reachable from it. A **query**
 is a compiled pattern, evaluated against a parse result. A **match** is one occurrence
 of a value in the result that satisfies the pattern, together with its captures.
@@ -104,7 +104,7 @@ and `sourceInfo`; tuple element order and named references are significant. A di
 
 ### Patterns
 
-`QueryPattern` constrains a value and the values reachable from it.
+`query.Pattern` constrains a value and the values reachable from it.
 
 | Member | Constrains |
 |:--|:--|
@@ -126,7 +126,7 @@ and `sourceInfo`; tuple element order and named references are significant. A di
 
 ### Compiling Queries
 
-`pego.CompileStructuralQuery(pattern, schema)` compiles a query. A supplied schema is
+`query.Compile(pattern, schema)` compiles a query. A supplied schema is
 validated first, and the compilation rejects patterns that no described value can
 match: unknown type and rule names, fields that a type does not have and categories
 or types that a value cannot have. Nested patterns are checked against the shape of
@@ -148,31 +148,31 @@ the field, element or node value to which they apply.
 - A nil schema defers these checks to evaluation. Evaluation always checks the
   runtime values, because a caller MAY mutate a result after parsing.
 
-`pego.PrepareQuerySchema(schema)` validates a schema once and returns a prepared
-schema whose `CompileStructuralQuery(pattern)` performs the same pattern checks
+`query.Prepare(schema)` validates a schema once and returns a prepared
+schema whose `Compile(pattern)` performs the same pattern checks
 without validating again. A prepared schema owns a copy of the schema and is safe for
 concurrent use.
 
 ### Evaluation
 
-`StructuralQuery.Matches(root, opts...)` accepts a parse result and returns all
+`Query.Matches(root, opts...)` accepts a parse result and returns all
 matches or an error.
 
 - Matches visit each value before its outgoing edges: the elements of a tuple, of a
   list or of a node's value by index, then the captures of a node that are held
   beside its value, by name, and the fields of a struct by name. A shared value can
   produce several matches.
-- Each `QueryCapture` holds the captured value, its immediate containing `Parent`
-  and an owned `Path` relative to the root, made of `element`, `capture` and `field`
-  edges. Captured values and parents belong to the input graph. The graph MUST be
-  stable while results are used and MUST NOT be mutated concurrently.
-- A cycle on the active path matches `pego.ErrQueryCycle`. Sharing without a cycle
+- Each `query.Capture` holds the captured value, its immediate containing `Parent`
+  and an owned `Path` relative to the root, made of `element`, `capture`, `field`
+  and `value` edges. Captured values and parents belong to the input graph. The
+  graph MUST be stable while results are used and MUST NOT be mutated concurrently.
+- A cycle on the active path matches `query.ErrCycle`. Sharing without a cycle
   is allowed.
 - A pattern with a `Rule` constraint on a result that has nodes but records no rule,
   because the parser was compiled without source information, matches
-  `pego.ErrQueryNoSourceInfo`.
-- `pego.WithQueryContext(ctx)` supplies a context; cancellation returns the error of
-  the context. `pego.WithQueryWorkLimits(pego.WorkLimits{MaxSteps: n})` bounds
+  `query.ErrNoSourceInfo`.
+- `query.WithContext(ctx)` supplies a context; cancellation returns the error of
+  the context. `query.WithWorkLimits(pego.WorkLimits{MaxSteps: n})` bounds
   traversal, matching, path copies and result construction; exhaustion matches
   `pego.ErrWorkLimit`. Zero limits are unlimited. `MaxInputWork` is unused, because a
   query inspects no source text. The step count is abstract and MAY change between
@@ -186,10 +186,10 @@ matches or an error.
 | Condition | Result |
 |:--|:--|
 | Schema export from a parser loaded from a compiled grammar | `pego.ErrSchemaUnavailable` |
-| Invalid schema | An error from `Validate`, `CompileStructuralQuery`, `PrepareQuerySchema` or `schema.Compare` |
+| Invalid schema | An error from `Validate`, `query.Compile`, `query.Prepare` or `schema.Compare` |
 | Pattern that cannot match any value the schema describes | An error from compilation |
-| Cycle on the active path during evaluation | `pego.ErrQueryCycle` |
-| Rule constraint on a result without source information | `pego.ErrQueryNoSourceInfo` |
+| Cycle on the active path during evaluation | `query.ErrCycle` |
+| Rule constraint on a result without source information | `query.ErrNoSourceInfo` |
 | Cancelled context | The error of the context |
 | Exhausted work limit | `pego.ErrWorkLimit` |
 

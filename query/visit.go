@@ -1,4 +1,4 @@
-package schema
+package query
 
 import (
 	"sort"
@@ -6,25 +6,25 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-// QueryVisit is the adapter boundary for a future common graph walker. Each event contains a
+// graphVisit is the adapter boundary for a future common graph walker. Each event contains a
 // value, the carrier that immediately contains it and an owned root-relative path. Visits occur
 // in preorder per edge: the elements of a tuple, a list or a node's value, then a node's captures
 // that are not elements, by name, and the fields of a struct by name. Boxes are seen through. The
 // walker rejects active-path cycles and charges before discovery.
-type QueryVisit struct {
+type graphVisit struct {
 	Value  any
 	parent *value.Node
-	path   []QueryEdge
+	path   []Edge
 }
-type queryVisitFrame struct {
-	visit QueryVisit
+type visitFrame struct {
+	visit graphVisit
 	leave bool
 }
 
-// VisitQueryGraph calls visit for every value reachable from root, in the order QueryVisit
+// visitGraph calls visit for every value reachable from root, in the order graphVisit
 // describes, charging the work to b.
-func VisitQueryGraph(root *value.Node, b *QueryBudget, visit func(QueryVisit) error) error {
-	frames := []queryVisitFrame{{visit: QueryVisit{Value: value.UnboxNode(root)}}}
+func visitGraph(root *value.Node, b *budget, visit func(graphVisit) error) error {
+	frames := []visitFrame{{visit: graphVisit{Value: value.UnboxNode(root)}}}
 	nodes := map[*value.Node]bool{}
 	for len(frames) > 0 {
 		f := frames[len(frames)-1]
@@ -37,13 +37,13 @@ func VisitQueryGraph(root *value.Node, b *QueryBudget, visit func(QueryVisit) er
 		if err := b.charge(uint64(1 + len(v.path))); err != nil {
 			return err
 		}
-		if _, err := QueryCategory(v.Value); err != nil {
+		if _, err := valueCategory(v.Value); err != nil {
 			return err
 		}
 		x, ok := v.Value.(*value.Node)
 		if ok && x != nil {
 			if nodes[x] {
-				return ErrQueryCycle
+				return ErrCycle
 			}
 			nodes[x] = true
 		}
@@ -53,12 +53,12 @@ func VisitQueryGraph(root *value.Node, b *QueryBudget, visit func(QueryVisit) er
 		if !ok || x == nil {
 			continue
 		}
-		frames = append(frames, queryVisitFrame{visit: v, leave: true})
-		push := func(val any, e QueryEdge) error {
+		frames = append(frames, visitFrame{visit: v, leave: true})
+		push := func(val any, e Edge) error {
 			if err := b.charge(uint64(len(v.path) + 1)); err != nil {
 				return err
 			}
-			frames = append(frames, queryVisitFrame{visit: QueryVisit{value.UnboxValue(val), x, appendQueryPath(v.path, e)}})
+			frames = append(frames, visitFrame{visit: graphVisit{value.UnboxValue(val), x, appendPath(v.path, e)}})
 			return nil
 		}
 		switch value.ShapeOf(x) {
@@ -69,7 +69,7 @@ func VisitQueryGraph(root *value.Node, b *QueryBudget, visit func(QueryVisit) er
 			fields := append(value.Fields(nil), value.D(x).Fields...)
 			sort.SliceStable(fields, func(i, j int) bool { return fields[i].Name < fields[j].Name })
 			for i := len(fields) - 1; i >= 0; i-- {
-				if err := push(fields[i].Value, QueryEdge{Kind: "field", Name: fields[i].Name}); err != nil {
+				if err := push(fields[i].Value, Edge{Kind: "field", Name: fields[i].Name}); err != nil {
 					return err
 				}
 			}
@@ -81,14 +81,14 @@ func VisitQueryGraph(root *value.Node, b *QueryBudget, visit func(QueryVisit) er
 				locations := value.CaptureLocations(x)
 				for i := len(locations) - 1; i >= 0; i-- {
 					if c := locations[i]; c.Side {
-						if err := push(c.Value, QueryEdge{Kind: "capture", Name: c.Name}); err != nil {
+						if err := push(c.Value, Edge{Kind: "capture", Name: c.Name}); err != nil {
 							return err
 						}
 					}
 				}
 			}
 			for i := len(value.D(x).Children) - 1; i >= 0; i-- {
-				if err := push(value.D(x).Children[i], QueryEdge{Kind: "element", Index: i}); err != nil {
+				if err := push(value.D(x).Children[i], Edge{Kind: "element", Index: i}); err != nil {
 					return err
 				}
 			}

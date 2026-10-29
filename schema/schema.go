@@ -1,6 +1,7 @@
 // Package schema describes the values a grammar can produce, independently of a parse: the output
 // schema that pego.Parser.OutputSchema exports, its JSON form and its validation, and Compare,
-// which reports how two schemas differ.
+// which reports how two schemas differ. Package query matches patterns against parse results and
+// checks them against a schema.
 package schema
 
 import (

@@ -124,7 +124,7 @@ contract is [Observability](../../spec/runtime/observability.md).
 | The closure backend | `internal/engine/closure/` |
 | The bytecode VMs, recursive and iterative | `internal/engine/vm/` |
 | The incremental Document, its snapshots and change reports | `internal/engine/document/` |
-| Output schemas and structural queries | `schema/` (the types, their validation and `Compare`), `internal/schema/` (the export and the queries) |
+| Output schemas and structural queries | `schema/` (the types, their validation and `Compare`), `internal/schema/` (the export), `query/` (the queries) |
 | Core and Flow IR and their passes | `internal/ir/core/`, `internal/ir/flow/` |
 | Generated Go and TypeScript | The Go generator in `internal/gen/gogen/`, the TypeScript generator in `internal/gen/tsgen/` and the runtimes in `runtime/` and `internal/gen/tsgen/tsrt/` |
 | The public API | `pego.go`, `grammar/` |

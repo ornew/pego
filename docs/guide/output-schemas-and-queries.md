@@ -4,7 +4,7 @@
 rules it calls and the types their output references; `pego.WithAllSchemaRules()` also includes unreachable rules and all
 declared types. A structural query searches the values of an
 actual parse result. Together they let a tool inspect the shape of a grammar and find values without generating code or
-serializing a result. These Go APIs are experimental; the schema JSON format is versioned. The contract is defined in
+serializing a result. Structural queries are in package `github.com/ornew/pego/query`. These Go APIs are experimental; the schema JSON format is versioned. The contract is defined in
 [Output Schemas and Structural Queries](../../spec/runtime/schemas-and-queries.md).
 
 ```go
@@ -16,6 +16,7 @@ import (
 	"log"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/query"
 )
 
 func main() {
@@ -33,8 +34,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	query, err := pego.CompileStructuralQuery(pego.QueryPattern{
-		Category: "node", Value: &pego.QueryPattern{Category: "string"}, Capture: "name",
+	q, err := query.Compile(query.Pattern{
+		Category: "node", Value: &query.Pattern{Category: "string"}, Capture: "name",
 	}, out)
 	if err != nil {
 		log.Fatal(err)
@@ -43,7 +44,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	matches, err := query.Matches(tree)
+	matches, err := q.Matches(tree)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,17 +52,17 @@ func main() {
 }
 ```
 
-To compile many queries against one schema, validate it once with `pego.PrepareQuerySchema(out)` and compile with
-the result's `CompileStructuralQuery(pattern)`. With a 128-type schema, compiling a query takes about 80 µs without
+To compile many queries against one schema, validate it once with `query.Prepare(out)` and compile with
+the result's `Compile(pattern)`. With a 128-type schema, compiling a query takes about 80 µs without
 preparation and under 1 µs with it; preparing takes about as long as one unprepared compilation.
 
 ```go
-prepared, err := pego.PrepareQuerySchema(out)
+prepared, err := query.Prepare(out)
 if err != nil {
 	return err
 }
-query, err := prepared.CompileStructuralQuery(pego.QueryPattern{
-	Category: "node", Value: &pego.QueryPattern{Category: "string"}, Capture: "name",
+q, err := prepared.Compile(query.Pattern{
+	Category: "node", Value: &query.Pattern{Category: "string"}, Capture: "name",
 })
 ```
 
