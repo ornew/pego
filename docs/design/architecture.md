@@ -20,7 +20,7 @@ flowchart TD
   prog --> run["Run: closures or VM"]
   prog --> ir["Core and Flow IR"]
   ir --> gen["Generated Go"]
-  prog --> ts["Generated TypeScript"]
+  ir --> ts["Generated TypeScript"]
   prog --> bc["Bytecode, .pegoc"]
   bc --> run
 ```
