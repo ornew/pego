@@ -1125,6 +1125,7 @@ func (vm *Program) evaluator(entry int, names []string) core.Evaluator {
 			for i, name := range names {
 				if l.Name == name {
 					locals[i] = value.UnboxValue(l.Val)
+					break
 				}
 			}
 		}
