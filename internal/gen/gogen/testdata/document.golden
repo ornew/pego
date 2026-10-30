@@ -318,6 +318,12 @@ corpus/0/unicode scalar boundaries	cd79416fb57950b60f1b2120
 corpus/0/unreachable LR alias tail	f1e834f323d69b4585287a62
 corpus/0/unreachable LR tail	7d9b304d662ad6acdc5f56ff
 corpus/0/unreachable recovery chain	32b026194e44c9f29e6ab471
+corpus/0/whole Operators Rule action	f496d111ac6c66664162bd54
+corpus/0/whole Operators Rule action error	30b50f0ce899e74dacc83cd0
+corpus/0/whole Operators Rule action on level-restricted calls	be8d19c8f80f33650b42b0f2
+corpus/0/whole Operators Rule action passing the folded value	dbd1089b99d818e36475c7f3
+corpus/0/whole Operators Rule action with a named node type	ca7a23e5bba20a58ad23508a
+corpus/0/whole Operators Rule action with a recovered operand	7b52e28a789fcdbc9a7743ff
 corpus/0/wide any scan 2147483648	077c21701c498af47039b56a
 corpus/0/wide any scan 4294967296	077c21701c498af47039b56a
 corpus/0/wide any scan 9223372036854775807	077c21701c498af47039b56a
@@ -655,6 +661,12 @@ corpus/1/unicode scalar boundaries	cd79416fb57950b60f1b2120
 corpus/1/unreachable LR alias tail	f1e834f323d69b4585287a62
 corpus/1/unreachable LR tail	7d9b304d662ad6acdc5f56ff
 corpus/1/unreachable recovery chain	32b026194e44c9f29e6ab471
+corpus/1/whole Operators Rule action	f496d111ac6c66664162bd54
+corpus/1/whole Operators Rule action error	30b50f0ce899e74dacc83cd0
+corpus/1/whole Operators Rule action on level-restricted calls	be8d19c8f80f33650b42b0f2
+corpus/1/whole Operators Rule action passing the folded value	dbd1089b99d818e36475c7f3
+corpus/1/whole Operators Rule action with a named node type	ca7a23e5bba20a58ad23508a
+corpus/1/whole Operators Rule action with a recovered operand	7b52e28a789fcdbc9a7743ff
 corpus/1/wide any scan 2147483648	077c21701c498af47039b56a
 corpus/1/wide any scan 4294967296	077c21701c498af47039b56a
 corpus/1/wide any scan 9223372036854775807	077c21701c498af47039b56a
