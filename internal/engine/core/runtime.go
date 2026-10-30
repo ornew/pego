@@ -658,6 +658,9 @@ type GrowState struct {
 // evaluation. After seeding the memo with a failure, the body is evaluated repeatedly, and the
 // result at the point where the match stops growing is adopted.
 func (p *Parser) GrowBegin(key MemoKey) GrowState {
+	// One budget unit before each evaluation of the body, the seed's included; it is charged before
+	// the memo changes, so that a parse stopped by the budget publishes nothing.
+	p.Spend()
 	g := GrowState{Key: key, start: p.Pos, Rec: len(p.Recovered), missing: p.missingMark(), memoSeedUses: p.MemoSeedUses, prevSeed: p.ActiveSeed}
 	g.Best = p.Memo.Alloc()
 	*g.Best = MemoEntry{Ok: false, End: g.start, Examined: g.start, From: g.start, Growing: true, Gen: p.Gen, Vgen: p.Gen}
@@ -669,13 +672,13 @@ func (p *Parser) GrowBegin(key MemoKey) GrowState {
 	return g
 }
 
-// GrowStep receives the body's result; if the match grew, it stores the result in the memo,
-// prepares the next evaluation, and returns true.
+// GrowStep receives the body's result; if the match grew, it charges the next evaluation, stores the
+// result in the memo, prepares that evaluation, and returns true.
 func (p *Parser) GrowStep(g *GrowState, v *value.Node, ok bool) bool {
-	p.Spend()
 	if !ok || (g.Best.Ok && p.Pos <= g.Best.End) {
 		return false
 	}
+	p.Spend()
 	g.Best = p.Memo.Alloc()
 	*g.Best = MemoEntry{Node: v, Ok: true, End: p.Pos, Examined: p.Hw, From: p.lw, Growing: true, Gen: p.Gen, Vgen: p.Gen, Errs: AppendSpend(p, []*SyntaxError(nil), p.Recovered[g.Rec:])}
 	if p.Missing != nil {

@@ -425,3 +425,64 @@ rule atom = "a"`)
 		}
 	}
 }
+
+// TestBudgetGrowthStepBeforeEvaluation checks that a left-recursion leader charges its growth step
+// before each evaluation of its body, the seed's included, as the generated parsers do: a step that
+// does not grow, after which no evaluation follows, charges nothing, and the charge comes before the
+// memo changes, so that a growth stopped by the last unit it needs publishes nothing.
+func TestBudgetGrowthStepBeforeEvaluation(t *testing.T) {
+	t.Parallel()
+	prog := mustCompile(t, `rule main = expr $$
+
+rule expr = expr "a" / "a"`)
+	key := core.MemoKey{Rule: prog.ByName["expr"].ID}
+	retained := value.Ptr(value.Data{Text: "retained"})
+	// parser returns a parser whose budget has room for n more units.
+	parser := func(n uint64) *core.Parser {
+		p := core.AcquirePooledParser(&prog.sharedProgram)
+		p.Control = core.NewBudgetControl(nil, limits.Limits{Budget: 1 << 20})
+		p.Control.Used = 1<<20 - n
+		return p
+	}
+
+	// The units of a begun growth and of a growing step, with room for all.
+	p := parser(1 << 10)
+	g := p.GrowBegin(key)
+	begin := 1<<10 - (p.Control.Limits.Budget - p.Control.Used)
+	p.Pos = 1
+	used := p.Control.Used
+	if !p.GrowStep(&g, retained, true) {
+		t.Fatal("the seed did not grow")
+	}
+	step := p.Control.Used - used
+	p.Pos, used = 1, p.Control.Used
+	if p.GrowStep(&g, retained, true) || p.Control.Used != used {
+		t.Fatalf("a step that does not grow charged %d units, want 0: no evaluation follows it", p.Control.Used-used)
+	}
+	p.ReleaseScratch()
+	if begin < 2 || step < 2 {
+		t.Fatalf("a growth charges %d units to begin and %d to grow, want its memo put and the step", begin, step)
+	}
+
+	// Short of one unit, neither publishes.
+	p = parser(begin - 1)
+	if err := catchFatal(t, func() { p.GrowBegin(key) }); !errors.Is(err, limits.ErrLimit) {
+		t.Fatalf("growth begun short of a unit: %v", err)
+	}
+	if _, ok := p.Memo.Get(key); ok {
+		t.Fatal("a growth stopped before its seed published the seed")
+	}
+	p.ReleaseScratch()
+
+	p = parser(begin + step - 1)
+	g = p.GrowBegin(key)
+	seed := g.Best
+	p.Pos = 1
+	if err := catchFatal(t, func() { p.GrowStep(&g, retained, true) }); !errors.Is(err, limits.ErrLimit) {
+		t.Fatalf("growth step short of a unit: %v", err)
+	}
+	if stored, ok := p.Memo.Get(key); !ok || stored != seed || p.Pos != 1 {
+		t.Fatal("a growth step stopped short of a unit changed the memo or the position")
+	}
+	p.ReleaseScratch()
+}
