@@ -43,6 +43,8 @@ type Lowered struct {
 	// Vars are the locals of Func that are variables of the Flow IR function (Func.Vars); the other
 	// locals are its entry variables, which the caller declares.
 	Vars []string
+	// Labels maps the labels of Func to the labels of the Flow IR function.
+	Labels map[string]*flow.Label
 }
 
 // Flow lowers the function f. The body of the lowered function is a block labeled with f's Fail
@@ -93,6 +95,10 @@ func Flow(f *flow.Func) (*Lowered, error) {
 	}
 	if l.err != nil {
 		return nil, fmt.Errorf("lower %s: %w", f.Name, l.err)
+	}
+	out.Labels = map[string]*flow.Label{}
+	for x, name := range l.labels {
+		out.Labels[name] = x
 	}
 	l.m.Funcs = append(l.m.Funcs, fn)
 	if err := exec.Verify(l.m); err != nil {

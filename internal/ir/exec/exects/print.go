@@ -13,6 +13,9 @@
 // with BigInt.asUintN. A function with several results returns them as an array, except a pair of
 // the packed handle type and bool (Target.Packed), which is one value: the handle when the bool is
 // true and undefined when it is false.
+//
+// Body prints the grammar code lowered from Flow IR by the conventions of the TypeScript printer of
+// Flow IR instead (body.go).
 package exects
 
 import (
