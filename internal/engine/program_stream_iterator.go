@@ -49,7 +49,7 @@ func (prog *Program) Iterate(start string, r io.Reader, o ParseOptions) (it *Str
 	if err := prog.checkMode(o, false); err != nil {
 		return nil, err
 	}
-	if _, _, _, err = prog.admitParse(start, o, true, 0); err != nil {
+	if _, _, _, err = prog.admitParse(start, o, true, ""); err != nil {
 		return nil, err
 	}
 	it = &StreamIterator{}

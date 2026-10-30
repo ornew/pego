@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"unicode/utf8"
 
 	"github.com/ornew/pego/internal/limits"
@@ -33,6 +34,9 @@ type BudgetControl struct {
 // and grows with the furthest position the parser demands (BudgetControl.Demand), which adaptive reports. The reference
 // build has no controls to charge, so no default applies there.
 func ResolveLimits(l limits.Limits, n uint64, stream bool) (resolved limits.Limits, adaptive bool) {
+	if l.MaxInput == limits.Unlimited {
+		l.MaxInput = 0 // the default of MaxInput is Unlimited
+	}
 	switch l.Budget {
 	case limits.Unlimited:
 		l.Budget = 0
@@ -147,4 +151,38 @@ func InputUnits(s string, unit PositionUnit) uint64 {
 		return uint64(len(s))
 	}
 	return uint64(utf8.RuneCountInString(s))
+}
+
+// ErrNoControls is returned in the reference build when a context or a finite limit is requested.
+var ErrNoControls = errors.New("budget controls are unavailable in the reference build")
+
+// CheckInput rejects an input of s that is longer than the resolved MaxInput of l, in the position
+// unit. The check is O(1) unless the byte length passes the limit in CodePoints, where the exact
+// count decides: the byte length bounds the count from above.
+func CheckInput(l limits.Limits, s string, unit PositionUnit) error {
+	if l.MaxInput == 0 {
+		return nil
+	}
+	if !BudgetControlsEnabled {
+		return ErrNoControls
+	}
+	n := uint64(len(s))
+	if n > l.MaxInput && unit == CodePoints {
+		n = uint64(utf8.RuneCountInString(s))
+	}
+	return CheckInputUnits(l, n)
+}
+
+// CheckInputUnits rejects an input of n units that is longer than the resolved MaxInput of l.
+func CheckInputUnits(l limits.Limits, n uint64) error {
+	if l.MaxInput == 0 {
+		return nil
+	}
+	if !BudgetControlsEnabled {
+		return ErrNoControls
+	}
+	if n > l.MaxInput {
+		return &limits.LimitError{Kind: limits.LimitInput, Limit: l.MaxInput, Requested: n}
+	}
+	return nil
 }

@@ -40,7 +40,7 @@ func (prog *Program) ParsePrefixWith(start, input string, o ParseOptions) (resul
 	if err := prog.checkMode(o, false); err != nil {
 		return PrefixResult{}, err
 	}
-	active, _, control, err := prog.admitParse(start, o, false, core.InputUnits(input, o.Unit))
+	active, _, control, err := prog.admitParse(start, o, false, input)
 	if err != nil {
 		return PrefixResult{}, err
 	}

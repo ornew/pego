@@ -44,8 +44,14 @@ func DefaultBudget(n uint64) uint64 {
 // inspected, every rule call and loop iteration, and every unit of value
 // construction adds to one counter, so a bound on it bounds scanning,
 // recursion and value building alike.
+//
+// MaxInput bounds the length of the input in the position unit of the parse. The default is
+// Unlimited: the default budget already grows with the input. A parse of an input that is longer
+// fails before any work, with a LimitError of kind LimitInput; a stream fails when the parser
+// reaches a unit beyond the limit.
 type Limits struct {
-	Budget uint64
+	Budget   uint64
+	MaxInput uint64
 }
 
 // ErrLimit is matched by errors.Is for any LimitError.
@@ -55,12 +61,17 @@ var ErrLimit = errors.New("parse limit exceeded")
 type LimitKind uint8
 
 const (
+	// LimitBudget is the kind of an exhausted Budget.
 	LimitBudget LimitKind = iota
+	// LimitInput is the kind of an input longer than MaxInput.
+	LimitInput
 )
 
 // LimitError reports a reservation that would exceed a limit. Used is the
 // counter value before the rejected reservation; Requested is the complete
-// atomic reservation that could not be made.
+// atomic reservation that could not be made. For LimitInput, Limit is MaxInput, Used is zero and
+// Requested is the length of the input in the position unit; for a stream it is the number of
+// units the parser had asked for, or the length of the stream if that is shorter.
 type LimitError struct {
 	Kind      LimitKind
 	Limit     uint64
@@ -71,6 +82,9 @@ type LimitError struct {
 func (e *LimitError) Error() string {
 	if e == nil {
 		return ErrLimit.Error()
+	}
+	if e.Kind == LimitInput {
+		return fmt.Sprintf("parse input limit exceeded: limit %d, length %d", e.Limit, e.Requested)
 	}
 	return fmt.Sprintf("parse budget limit exceeded: limit %d, used %d, requested %d", e.Limit, e.Used, e.Requested)
 }

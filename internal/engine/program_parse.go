@@ -3,11 +3,13 @@ package engine
 import (
 	"fmt"
 	"io"
+	"math"
 	"runtime"
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/engine/vm"
+	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -42,7 +44,7 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *value.No
 	if err := prog.checkMode(o, false); err != nil {
 		return nil, err
 	}
-	active, _, control, err := prog.admitParse(start, o, false, core.InputUnits(input, o.Unit))
+	active, _, control, err := prog.admitParse(start, o, false, input)
 	if err != nil {
 		return nil, err
 	}
@@ -279,12 +281,16 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*value
 	if err := prog.checkMode(o, false); err != nil {
 		return err
 	}
-	_, rule, control, err := prog.admitParse(start, o, true, 0)
+	_, rule, control, err := prog.admitParse(start, o, true, "")
 	if err != nil {
 		return err
 	}
 	control.Check()
 	p := core.NewControlledStreamParser(&prog.sharedProgram, r, o.Unit, control)
+	// A limit beyond math.MaxInt bounds no stream.
+	if lim := o.Limits.MaxInput; lim != 0 && lim != limits.Unlimited && lim <= math.MaxInt {
+		p.Input.MaxInput = int(lim)
+	}
 	defer p.ReleaseTraceReferences() // after error recovery, including rethrown panics
 	control.Check()
 	p.MaxDepth = core.DepthLimit(o, o.Backend)

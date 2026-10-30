@@ -137,6 +137,10 @@ type ParseOption func(*engine.ParseOptions)
 // construction adds to one counter. The default is the larger of 2^20 and 1024
 // units for each unit of input in the position unit of the parse. Counts depend
 // on backend, input unit and version.
+//
+// MaxInput bounds the length of the input in the position unit of the parse. Its default is
+// Unlimited. A longer input fails before any work with a LimitError of kind LimitInput; a stream
+// fails when the parser reaches a unit beyond the limit.
 type Limits = limits.Limits
 
 // Unlimited is the value of a limit that disables it: Limits{Budget: pego.Unlimited}.
@@ -151,6 +155,8 @@ type LimitKind = limits.LimitKind
 const (
 	// LimitBudget is the kind of an exhausted Budget.
 	LimitBudget = limits.LimitBudget
+	// LimitInput is the kind of an input longer than MaxInput.
+	LimitInput = limits.LimitInput
 )
 
 // ErrLimit identifies limit failures through errors.Is.

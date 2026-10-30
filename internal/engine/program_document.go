@@ -41,7 +41,7 @@ func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (d *Doc
 	if err := prog.checkMode(o, true); err != nil {
 		return nil, err
 	}
-	_, _, c, err := prog.admitParse(start, o, false, core.InputUnits(text, o.Unit))
+	_, _, c, err := prog.admitParse(start, o, false, text)
 	if err != nil {
 		return nil, err
 	}

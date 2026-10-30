@@ -8,17 +8,20 @@ import (
 	"github.com/ornew/pego/internal/engine/vm"
 )
 
-// admitParse validates fixed metadata and resolves the limits (core.ResolveLimits) for an input of n units before caller Context methods. Callers
+// admitParse validates fixed metadata and resolves the limits (core.ResolveLimits) for the input text (empty for a stream) before caller Context methods. Callers
 // resolve an empty start to the default start rule first. Lazy setup
 // is not charged, but active calls check immediately around each component.
-func (prog *Program) admitParse(start string, o ParseOptions, stream bool, n uint64) (*Program, *core.Rule, *core.BudgetControl, error) {
+func (prog *Program) admitParse(start string, o ParseOptions, stream bool, text string) (*Program, *core.Rule, *core.BudgetControl, error) {
 	if err := prog.CheckStart(start); err != nil {
 		return nil, nil, nil, err
 	}
 	if err := prog.admitMissing(o, stream); err != nil {
 		return nil, nil, nil, err
 	}
-	lim, adaptive := core.ResolveLimits(o.Limits, n, stream)
+	lim, adaptive := core.ResolveLimits(o.Limits, core.InputUnits(text, o.Unit), stream)
+	if err := core.CheckInput(lim, text, o.Unit); err != nil {
+		return nil, nil, nil, err
+	}
 	if o.Context == nil && lim.Budget == 0 {
 		if o.Recognize {
 			if _, err := prog.preflightRule(o.Backend, start, stream); err != nil {
@@ -54,7 +57,7 @@ func (prog *Program) admitParse(start string, o ParseOptions, stream bool, n uin
 	}
 	c := core.NewBudgetControl(o.Context, lim)
 	if !core.BudgetControlsEnabled && c != nil {
-		return nil, nil, nil, fmt.Errorf("budget controls are unavailable in the reference build")
+		return nil, nil, nil, core.ErrNoControls
 	}
 	if c != nil {
 		c.Adaptive = adaptive

@@ -86,7 +86,10 @@ func DepthLimit(o ParseOptions, b Backend) int {
 // base. When parsing a stream, more input is read from reader as needed and the committed part is
 // discarded.
 type Input struct {
-	Control  *BudgetControl // invocation-local; never retained by results
+	Control *BudgetControl // invocation-local; never retained by results
+	// MaxInput, when positive, is the longest stream the parse accepts, in units: Fill fails the parse
+	// when the parser needs a unit beyond it and the stream has one.
+	MaxInput int
 	Unit     PositionUnit
 	In       []rune // for CodePoints
 	Bs       []byte // for Bytes
@@ -353,7 +356,13 @@ func (in *Input) Fill(n int) bool {
 	if BudgetControlsEnabled && in.Control != nil {
 		in.Control.Demand(n)
 	}
-	return in.fill(n)
+	ok := in.fill(n)
+	if in.MaxInput > 0 && n > in.MaxInput && in.Loaded() > in.MaxInput {
+		// The outcome does not depend on how the reader chunks the stream: the parser needed
+		// the unit at MaxInput and the stream holds it. Loaded is at least n unless the stream ended.
+		panic(Fatal{Err: &limits.LimitError{Kind: limits.LimitInput, Limit: uint64(in.MaxInput), Requested: uint64(min(n, in.Loaded()))}})
+	}
+	return ok
 }
 
 func (in *Input) fill(n int) bool {
