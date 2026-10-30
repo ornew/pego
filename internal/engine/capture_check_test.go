@@ -103,7 +103,12 @@ func BenchmarkCaptureChecking(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			p, err := captureCheckProgram(string(src))
+			g, err := parseTest(string(src))
+			if err != nil {
+				b.Fatal(err)
+			}
+			// The examples need the analysis of a full compile, which a hand-built program lacks.
+			p, err := Compile(g, compile.Options{})
 			if err != nil {
 				b.Fatal(err)
 			}
