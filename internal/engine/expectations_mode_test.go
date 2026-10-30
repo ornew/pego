@@ -123,3 +123,26 @@ func TestExpectationsDocumentFixesMode(t *testing.T) {
 		}
 	}
 }
+
+// #missing inside @error reports the message only when expectations are recorded: the message is
+// an expectation, so a parse without them reports a plain syntax error. Only the closure backend
+// supports missing-token recovery; the bytecode backends reject it.
+func TestExpectationsOffMissingTokenMessage(t *testing.T) {
+	t.Parallel()
+	prog := mustCompile(t, `rule main = ("a" #missing "b") @error("m1")`)
+	for _, recognize := range []bool{false, true} {
+		for _, on := range []bool{false, true} {
+			_, err := prog.ParseWith("main", "b", ParseOptions{Expectations: on, MissingTokens: 5, Recognize: recognize})
+			if err == nil {
+				t.Fatalf("recognize=%v expectations=%v: no error", recognize, on)
+			}
+			got := err.Error()
+			if on != strings.Contains(got, "m1") {
+				t.Errorf("recognize=%v expectations=%v: %q", recognize, on, got)
+			}
+			if !on && strings.Contains(got, "expected") {
+				t.Errorf("recognize=%v expectations=%v: %q lists an expectation", recognize, on, got)
+			}
+		}
+	}
+}

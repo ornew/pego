@@ -145,7 +145,7 @@ func (p *Parser) restoreMissing(events []MissingTokenEvent, errs []*SyntaxError,
 // grammars retain the existing errorAttr path, without scope/defer machinery.
 func MissingErrorScope(m Matcher, msg ExpID) Matcher {
 	return func(p *Parser) (*value.Node, bool) {
-		if p.Missing != nil && p.Missing.label == 0 {
+		if p.Expectations && p.Missing != nil && p.Missing.label == 0 {
 			p.Missing.label = msg
 			defer func() { p.Missing.label = 0 }()
 		}
