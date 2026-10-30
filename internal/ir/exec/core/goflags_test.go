@@ -139,3 +139,25 @@ func inherits(t *testing.T, root, dir string) bool {
 	inheritsFrom[dir] = v
 	return v
 }
+
+// TestTagFlags checks that TagFlags adds the tag of the printed runtime to the tags that the go
+// command uses, keeping the others.
+func TestTagFlags(t *testing.T) {
+	for _, c := range []struct{ flags, want string }{
+		{"", "-tags=" + RuntimeTag},
+		{"-trimpath", "-trimpath -tags=" + RuntimeTag},
+		{"-tags=foo", "-tags=foo," + RuntimeTag},
+		{"-trimpath -tags=foo -mod=mod", "-trimpath -tags=foo," + RuntimeTag + " -mod=mod"},
+		{"--tags=foo,bar", "-tags=foo,bar," + RuntimeTag},
+		{"-tags=", "-tags=" + RuntimeTag},
+		{"-tags=foo -tags=bar", "-tags=foo -tags=bar," + RuntimeTag},
+		{"-tags=" + RuntimeTag + ",foo", "-tags=" + RuntimeTag + ",foo"},
+		{"-tags=foo," + RuntimeTag, "-tags=foo," + RuntimeTag},
+		{"-tags=" + RuntimeTag, "-tags=" + RuntimeTag},
+		{"-tagsx=foo", "-tagsx=foo -tags=" + RuntimeTag},
+	} {
+		if got := TagFlags(c.flags); got != c.want {
+			t.Errorf("TagFlags(%q) = %q, want %q", c.flags, got, c.want)
+		}
+	}
+}

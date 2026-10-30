@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/ornew/pego/internal/ir/exec"
@@ -200,10 +201,22 @@ func GoFlags(flags string) string {
 
 // TagFlags returns the GOFLAGS flags with the build tag that selects the printed compositions,
 // whether this build prints them or not, for a test that runs generated Go parsers on the printed
-// runtime without the switch: the generated Go code is the same either way.
+// runtime without the switch: the generated Go code is the same either way. The tag joins the list
+// of the last -tags flag, which is the one the go command uses, and flags that already list it are
+// returned unchanged.
 func TagFlags(flags string) string {
-	if strings.Contains(" "+flags+" ", " -tags="+RuntimeTag+" ") {
-		return flags
+	fields := strings.Fields(flags)
+	for i := len(fields) - 1; i >= 0; i-- {
+		name, list, ok := strings.Cut(strings.TrimPrefix(fields[i], "-"), "=")
+		if !ok || (name != "tags" && name != "-tags") {
+			continue
+		}
+		tags := strings.FieldsFunc(list, func(r rune) bool { return r == ',' })
+		if slices.Contains(tags, RuntimeTag) {
+			return flags
+		}
+		fields[i] = "-tags=" + strings.Join(append(tags, RuntimeTag), ",")
+		return strings.Join(fields, " ")
 	}
-	return strings.TrimSpace(flags + " -tags=" + RuntimeTag)
+	return strings.Join(append(fields, "-tags="+RuntimeTag), " ")
 }
