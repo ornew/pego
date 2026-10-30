@@ -82,6 +82,7 @@ func (p *Parser) grow(r *Rule, min int, env []any) (*Node, bool) {
 	*best = memoEntry{end: start, growing: true}
 	p.memoPut(r.Id, start, min, env, best)
 	for {
+		p.Spend()
 		v, ok := p.invoke(r, min)
 		if !ok || best.ok && p.Pos <= best.end {
 			break
@@ -222,6 +223,7 @@ func (p *TParser) grow(r *TRule, min int, env []any) (any, bool) {
 	*best = tmemoEntry{end: start, growing: true}
 	p.memoPut(r.Id, start, min, env, best)
 	for {
+		p.Spend()
 		v, ok := p.invoke(r, min)
 		if !ok || best.ok && p.Pos <= best.end {
 			break

@@ -98,12 +98,10 @@ func goTarget(typed bool) *execgo.Target {
 			return fmt.Sprintf("p.callTracked(%s, %s)", a[0], a[1])
 		case "call.trackBody":
 			return fmt.Sprintf("p.DocumentCall(%s, 0, %s)", a[0], a[1])
-		case "call.spend":
+		case "call.spend", "call.growStep":
 			return "p.Spend()"
 		case "call.first":
 			return "p.FirstCall(" + rule(a[0]) + ")"
-		case "call.growStep":
-			return "" // the generated Go runtimes charge no growth step
 		case "rule.memo":
 			return a[0] + ".Memo"
 		case "rule.leader":
