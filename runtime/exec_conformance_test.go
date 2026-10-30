@@ -85,7 +85,7 @@ func (m *rtMachine) Call(o *exec.Op, args []any) (res []any) {
 	case "memo.store":
 		rule, pos, level, env := key()
 		e := p.memo.alloc()
-		*e = memoEntry{ok: args[4].(bool), end: i(5)}
+		*e = memoEntry{ok: args[4].(bool), end: i(5), silent: args[6].(bool)}
 		p.memoPut(rule, pos, level, env, e)
 		return []any{e}
 	case "memo.seed":
@@ -101,7 +101,8 @@ func (m *rtMachine) Call(o *exec.Op, args []any) (res []any) {
 		p.memoPut(rule, pos, level, env, e)
 		return []any{e}
 	case "memo.finishSeed":
-		args[0].(*memoEntry).growing = false
+		e := args[0].(*memoEntry)
+		e.growing, e.silent = false, args[1].(bool)
 		return nil
 	case "memo.ok":
 		return []any{args[0].(*memoEntry).ok}
@@ -109,6 +110,8 @@ func (m *rtMachine) Call(o *exec.Op, args []any) (res []any) {
 		return []any{int64(args[0].(*memoEntry).end)}
 	case "memo.growing":
 		return []any{args[0].(*memoEntry).growing}
+	case "memo.silent":
+		return []any{args[0].(*memoEntry).silent}
 	case "seen.first":
 		p.Pos = i(1)
 		return []any{p.FirstCall(m.rules[i(0)])}
@@ -122,7 +125,7 @@ func (m *rtMachine) Call(o *exec.Op, args []any) (res []any) {
 }
 
 var (
-	rtMemoOps   = []string{"memo.lookup", "memo.lookupGrowing", "memo.store", "memo.seed", "memo.reseed", "memo.finishSeed", "memo.ok", "memo.end", "memo.growing", "seen.first"}
+	rtMemoOps   = []string{"memo.lookup", "memo.lookupGrowing", "memo.store", "memo.seed", "memo.reseed", "memo.finishSeed", "memo.ok", "memo.end", "memo.growing", "memo.silent", "seen.first"}
 	rtBudgetOps = []string{"budget.charge", "budget.used"}
 )
 

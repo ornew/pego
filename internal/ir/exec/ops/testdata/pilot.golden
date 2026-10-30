@@ -21,11 +21,23 @@ component env
   // The variable environment. Its operations are not declared yet; Values handles
   // stand for the values of a rule's variables, compared by the host's value equality.
 
+component host
+  // The host: values and nodes, which the parser VM passes on without reading.
+
+component recovered
+  // The list of errors recovered so far in the parse.
+
 handle Entry of memo
   // A memo entry: the result of a rule call with its outcome and end.
 
 handle Values of env
   // The values of a rule's variables, as a memo key.
+
+handle Value of host
+  // The value of a rule's result: a node or a typed value.
+
+handle Errs of recovered
+  // The errors recovered in a rule call, kept with its memo entry.
 
 op memo.lookup(rule int, pos int, level int, key Values) (Entry, bool)
   component memo
@@ -49,14 +61,15 @@ op memo.lookupGrowing(rule int, pos int, level int) (Entry, bool)
     // was seeded with, and true; otherwise false. This is the left-recursion guard: while a rule grows at a
     // position, every call of it there reads the growing result.
 
-op memo.store(rule int, pos int, level int, key Values, ok bool, end int) Entry
+op memo.store(rule int, pos int, level int, key Values, ok bool, end int, silent bool, value Value, errs Errs) Entry
   component memo
   reads memo
   writes memo
   cost <= 2 + 1*key_scan + 1*slot_growth
   contract:
-    // Stores a complete entry with the outcome ok and the end under the key, replacing the
-    // entry stored under the same key, and returns it. Entries under other keys are unchanged.
+    // Stores a complete entry with the outcome ok, the end, whether it was computed in a silent
+    // context, its value and its recovered errors under the key, replacing the entry stored under the same
+    // key, and returns it. Entries under other keys are unchanged.
   requires:
     // No growing entry exists for the rule, position and level; end is at least pos.
 
@@ -67,28 +80,31 @@ op memo.seed(rule int, pos int, level int, key Values) Entry
   cost <= 2 + 1*key_scan + 1*slot_growth
   contract:
     // Starts the growth of a left-recursion leader: stores a growing entry that fails and ends
-    // at pos under the key, replacing the entry stored under the same key, and returns it.
+    // at pos, not silent, with no value and no recovered errors, under the key, replacing the entry stored
+    // under the same key, and returns it.
   requires:
     // No growing entry exists for the rule, position and level.
 
-op memo.reseed(rule int, pos int, level int, key Values, end int) Entry
+op memo.reseed(rule int, pos int, level int, key Values, end int, value Value, errs Errs) Entry
   component memo
   reads memo
   writes memo
   cost <= 2 + 1*key_scan + 1*slot_growth
   contract:
     // Records a longer seed: replaces the growing entry under the key by a growing entry that
-    // succeeds and ends at end, and returns it. The replaced entry is no longer found.
+    // succeeds and ends at end, not silent, with the value and the recovered errors, and returns it. The
+    // replaced entry is no longer found.
   requires:
     // The key has a growing entry; end is greater than pos.
 
-op memo.finishSeed(e Entry)
+op memo.finishSeed(e Entry, silent bool)
   component memo
   writes memo
   cost <= 0
   contract:
-    // Ends a growth: the growing entry e becomes complete, with its outcome and end. Lookups of
-    // its key return it as a complete entry, and memo.lookupGrowing no longer finds it.
+    // Ends a growth: the growing entry e becomes complete, with its outcome, end, value and
+    // recovered errors, and silent as given. Lookups of its key return it as a complete entry, and
+    // memo.lookupGrowing no longer finds it.
   requires:
     // e is the growing entry most recently seeded or reseeded under its key.
 
@@ -112,6 +128,27 @@ op memo.growing(e Entry) bool
   cost <= 0
   contract:
     // Returns whether entry e is the growing entry of a left-recursion leader.
+
+op memo.silent(e Entry) bool
+  component memo
+  reads memo
+  cost <= 0
+  contract:
+    // Returns whether entry e was computed in a silent context.
+
+op memo.value(e Entry) Value
+  component memo
+  reads memo
+  cost <= 0
+  contract:
+    // Returns the value of entry e.
+
+op memo.errs(e Entry) Errs
+  component memo
+  reads memo
+  cost <= 0
+  contract:
+    // Returns the recovered errors of entry e.
 
 op seen.first(rule int, pos int) bool
   component seen

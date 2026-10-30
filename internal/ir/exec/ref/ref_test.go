@@ -22,7 +22,7 @@ func TestMemoModel(t *testing.T) {
 	if r := call(m, "memo.lookup", k...); r[1].(bool) {
 		t.Fatal("empty memo found an entry")
 	}
-	e := call(m, "memo.store", append(k, true, int64(9))...)[0]
+	e := call(m, "memo.store", append(k, true, int64(9), false, nil, nil)...)[0]
 	if r := call(m, "memo.lookup", k...); r[0] != e || !r[1].(bool) {
 		t.Fatal("lookup after store")
 	}
@@ -38,8 +38,8 @@ func TestMemoModel(t *testing.T) {
 	if m.Allows(pilot.Op("memo.lookup"), k) {
 		t.Fatal("lookup of another key of a growing slot is allowed")
 	}
-	s2 := call(m, "memo.reseed", append(other, int64(6))...)[0]
-	call(m, "memo.finishSeed", s2)
+	s2 := call(m, "memo.reseed", append(other, int64(6), nil, nil)...)[0]
+	call(m, "memo.finishSeed", s2, false)
 	if r := call(m, "memo.lookupGrowing", other[:3]...); r[1].(bool) {
 		t.Fatal("finished seed still growing")
 	}
@@ -54,7 +54,7 @@ func TestMemoModel(t *testing.T) {
 func TestSlotGrowth(t *testing.T) {
 	m := New(Config{})
 	store := func(pos int64) int64 {
-		args := []any{int64(0), pos, int64(0), int64(0), true, pos}
+		args := []any{int64(0), pos, int64(0), int64(0), true, pos, false, nil, nil}
 		q := m.Quantity(ops.QSlotGrowth, nil, args)
 		call(m, "memo.store", args...)
 		return q

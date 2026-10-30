@@ -60,6 +60,9 @@ type Entry struct {
 	ok      bool
 	end     int64
 	growing bool
+	silent  bool
+	value   any
+	errs    any
 }
 
 type seenCounts struct {
@@ -144,7 +147,7 @@ func (m *Model) Call(o *exec.Op, args []any) []any {
 		e := m.growing[slot(args)]
 		return []any{e, e != nil}
 	case "memo.store":
-		return []any{m.put(&Entry{key: key(args), ok: args[4].(bool), end: args[5].(int64)})}
+		return []any{m.put(&Entry{key: key(args), ok: args[4].(bool), end: args[5].(int64), silent: args[6].(bool), value: args[7], errs: args[8]})}
 	case "memo.seed":
 		k := key(args)
 		e := m.put(&Entry{key: k, end: k.pos, growing: true})
@@ -152,12 +155,13 @@ func (m *Model) Call(o *exec.Op, args []any) []any {
 		return []any{e}
 	case "memo.reseed":
 		k := key(args)
-		e := m.put(&Entry{key: k, ok: true, end: args[4].(int64), growing: true})
+		e := m.put(&Entry{key: k, ok: true, end: args[4].(int64), growing: true, value: args[5], errs: args[6]})
 		m.growing[k.slotKey] = e
 		return []any{e}
 	case "memo.finishSeed":
 		e := args[0].(*Entry)
 		e.growing = false
+		e.silent = args[1].(bool)
 		delete(m.growing, e.key.slotKey)
 		return nil
 	case "memo.ok":
@@ -166,6 +170,12 @@ func (m *Model) Call(o *exec.Op, args []any) []any {
 		return []any{args[0].(*Entry).end}
 	case "memo.growing":
 		return []any{args[0].(*Entry).growing}
+	case "memo.silent":
+		return []any{args[0].(*Entry).silent}
+	case "memo.value":
+		return []any{args[0].(*Entry).value}
+	case "memo.errs":
+		return []any{args[0].(*Entry).errs}
 	case "seen.first":
 		return []any{m.first(args[0].(int64), args[1].(int64))}
 	case "budget.charge":

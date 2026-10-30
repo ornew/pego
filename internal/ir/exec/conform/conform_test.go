@@ -11,7 +11,7 @@ import (
 )
 
 var allOps = []string{"memo.lookup", "memo.lookupGrowing", "memo.store", "memo.seed", "memo.reseed", "memo.finishSeed",
-	"memo.ok", "memo.end", "memo.growing", "seen.first", "budget.charge", "budget.used",
+	"memo.ok", "memo.end", "memo.growing", "memo.silent", "seen.first", "budget.charge", "budget.used",
 	"depth.enter", "depth.exit", "depth.current"}
 
 // modelImpl is the reference model run as an implementation: every case must pass on it.
@@ -79,6 +79,9 @@ func TestMutantsFail(t *testing.T) {
 		"seen defers every call at position 100": {op: "seen.first", edit: func(m *ref.Model, a []any) []any {
 			fresh := m.Call(Module().Op("seen.first"), a)
 			return []any{fresh[0].(bool) || a[1].(int64) == 100}
+		}},
+		"finishing a seed keeps it not silent": {op: "memo.finishSeed", edit: func(m *ref.Model, a []any) []any {
+			return m.Call(Module().Op("memo.finishSeed"), []any{a[0], false})
 		}},
 		"budget charges one unit less": {op: "budget.charge", edit: func(m *ref.Model, a []any) []any {
 			n := a[0].(uint64)
