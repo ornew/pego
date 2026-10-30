@@ -59,6 +59,9 @@ func (b *Builder) nested(label string, body func(b *Builder)) *Block {
 	return blk
 }
 
+// Append appends the statement s as it is.
+func (b *Builder) Append(s Stmt) { b.add(s) }
+
 // Var declares a local of the function at its entry (Func.Locals) and returns a reference to it.
 func (b *Builder) Var(name string, t Type) Expr {
 	b.f.Locals = append(b.f.Locals, P(name, t))

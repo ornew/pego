@@ -190,6 +190,44 @@ func (v *verifier) fn(f *Func) {
 		return
 	}
 	v.block(f.Body, top, false)
+	if len(f.Results) > 0 && completes(f.Body) {
+		v.errorf("the end of a function with results is reachable")
+	}
+}
+
+// completes reports whether control may continue after the statement st: run to its end, or leave
+// it by an Exit to its own label.
+func completes(st Stmt) bool {
+	switch s := st.(type) {
+	case *Block:
+		for _, x := range s.Stmts {
+			if !completes(x) {
+				return s.Label != "" && leaves(s, s.Label)
+			}
+		}
+		return true
+	case *Loop:
+		return s.Cond != nil || leaves(s.Body, s.Label)
+	case *If:
+		return s.Else == nil || completes(s.Then) || completes(s.Else)
+	case *Exit, *Break, *Continue, *Return:
+		return false
+	}
+	return true
+}
+
+// leaves reports whether a statement in b exits or breaks to the label.
+func leaves(b *Block, label string) bool {
+	found := false
+	Walk(b, func(st Stmt) {
+		switch s := st.(type) {
+		case *Exit:
+			found = found || s.Label == label
+		case *Break:
+			found = found || s.Label == label
+		}
+	}, nil)
+	return found
 }
 
 func (v *verifier) block(b *Block, parent *scope, loop bool) {

@@ -126,6 +126,21 @@ func TestVerifyRejects(t *testing.T) {
 				b.Let("x", Int(1))
 			})
 		}, "local x shadows an enclosing local"},
+		{"end reachable", func(m *Module) {
+			m.AddFunc("f", nil, []Type{TInt}, nil, func(b *Builder) {
+				b.Block("out", func(b *Builder) {
+					b.If(BoolC(true), func(b *Builder) { b.Exit("out") })
+					b.Return(Int(1))
+				})
+			})
+		}, "the end of a function with results is reachable"},
+		{"loop left", func(m *Module) {
+			m.AddFunc("f", nil, []Type{TInt}, nil, func(b *Builder) {
+				b.Loop("l", func(b *Builder) {
+					b.Loop("m", func(b *Builder) { b.Break("l") })
+				})
+			})
+		}, "the end of a function with results is reachable"},
 		{"shadowing", func(m *Module) {
 			m.AddFunc("f", []Param{P("x", TInt)}, nil, nil, func(b *Builder) {
 				b.Block("", func(b *Builder) { b.Let("x", Int(1)) })
