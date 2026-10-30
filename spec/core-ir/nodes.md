@@ -72,4 +72,5 @@ records the same expectations at the same positions as the expression it replace
 | `Terminal` | A region of literals, classes, sequences, choices, options, negative lookaheads, `Text` and `Drop`, which a target may run as one table or program |
 
 A `Scan` records the expectation of the character where it stops, and fails only if it matched fewer than its minimum.
-No Core node charges a budget step on entry: a generated rule charges one budget unit when it is entered, a left-recursion leader charges one on each growth step and a repetition charges one on each iteration, while a `Scan` and a `ClassRun` charge one unit for each character they read.
+No Core node charges a budget step on entry: a generated rule charges one budget unit when it is entered, a left-recursion leader charges one before each evaluation of its body and a repetition charges one on each iteration, while a `Scan` and a `ClassRun` charge one unit for each character they read.
+The reference engine charges the unit of a leader after each evaluation of its body instead: a parse that completes charges the same total, but a budget can run out at a different point of the parse than in a generated parser, as budget units may differ between backends.

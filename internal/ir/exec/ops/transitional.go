@@ -80,8 +80,8 @@ seen.first for a rule whose memoization the target defers, false for one it memo
 stream, or for a rule without a seen index).`})
 	add(&exec.Op{Name: "call.growStep", Component: Call, Writes: []string{Call}, NoReturn: true,
 		Cost: exec.Cost{Const: 1},
-		Contract: `Charges a growth step of a left-recursion leader, before its body runs again: one unit,
-with the checks of the target's Spend.`})
+		Contract: `Charges a growth step of a left-recursion leader, before each evaluation of its body
+(the evaluation of the seed included): one unit, with the checks of the target's Spend.`})
 
 	for _, a := range []struct{ name, doc string }{
 		{"rule.memo", "Reports whether the rule is memoized."},
