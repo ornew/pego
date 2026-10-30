@@ -69,22 +69,27 @@ import pegort "github.com/ornew/pego/runtime"
 import("context";"errors";"fmt";"reflect";"strings";"testing")
 func catchMemoFatal(f func())(err error){defer func(){if x:=recover();x!=nil{v,ok:=x.(pegort.X_fatal);if !ok{panic(x)};err=v.X_err}}();f();return nil}
 func makeEnvParser(limit uint64)*pegort.Parser{
- p:=&pegort.Parser{X_bound:make(map[string]bool),Control:pegort.X_newBudgetControl(nil,Limits{Budget:limit})}
- for i:=0;i<300;i++{name:=fmt.Sprintf("v%d",i);p.Env=&pegort.Env{X_name:name,X_val:i,X_next:p.Env};p.X_bound[name]=true}
+ p:=&pegort.Parser{Control:pegort.X_newBudgetControl(nil,Limits{Budget:limit})}
+ vals:=make([]any,300);for i:=range vals{vals[i]=i}
+ p.X_envDepth=pegort.X_envDepthOf(300);p.Env=pegort.X_newEnv(vals,p.X_envDepth)
  return p
 }
 func TestEnvironmentWalksAndAtomicBind(t *testing.T){
  for _,run:=range []struct{name string;f func(*pegort.Parser)}{
-  {"key",func(p *pegort.Parser){p.X_envValues([]string{"v0"})}},
-  {"lookup",func(p *pegort.Parser){(&pegort.ActCtx{P:p}).Lookup("v0")}},
-  {"typed lookup",func(p *pegort.Parser){(&pegort.TActCtx{P:&pegort.TParser{Parser:p}}).Lookup("v0")}},
-  {"bind",func(p *pegort.Parser){p.X_bind("v0",777)}},
+  {"key",func(p *pegort.Parser){p.X_envValues([]int{0})}},
+  {"lookup",func(p *pegort.Parser){(&pegort.ActCtx{P:p}).Var(0)}},
+  {"typed lookup",func(p *pegort.Parser){(&pegort.TActCtx{P:&pegort.TParser{Parser:p}}).Var(0)}},
+  {"bind",func(p *pegort.Parser){p.X_bind(0,777)}},
  }{
-  p:=makeEnvParser(32);head:=p.Env;before:=head.X_next
+  // A key, a read and a bind each need more than two units: the levels of a 300-variable
+  // environment are charged.
+  p:=makeEnvParser(2);head:=p.Env;before:=append([]any(nil),head.X_vals...)
   if err:=catchMemoFatal(func(){run.f(p)});!errors.Is(err,ErrLimit){t.Errorf("%s unbounded: %T",run.name,err)}
-  if p.Env!=head || head.X_next!=before{t.Fatal("partial environment published")}
+  if p.Env!=head{t.Fatal("partial environment published")}
+  for i,v:=range before{if head.X_vals[i]!=v{t.Fatal("partial environment published")}}
   p.Control=pegort.X_newBudgetControl(nil,Limits{Budget:100000});run.f(p)
-  if run.name=="bind" {if (&pegort.ActCtx{P:p}).Lookup("v0")!=777 || head.X_val!=299{t.Fatal("binding changed saved environment")}} else {if (&pegort.ActCtx{P:p}).Lookup("v0")!=0{t.Fatal("lookup retry")}}
+  saved:=&pegort.Parser{Env:head,X_envDepth:p.X_envDepth}
+  if run.name=="bind" {if (&pegort.ActCtx{P:p}).Var(0)!=777 || saved.X_variable(0)!=0{t.Fatal("binding changed saved environment")}} else {if (&pegort.ActCtx{P:p}).Var(0)!=0{t.Fatal("lookup retry")}}
  }
 }
 func TestNodeMemoLookupWalk(t *testing.T){
@@ -164,7 +169,8 @@ func TestFirstCallStoragePublication(t *testing.T){
 func TestMemoCancellation(t *testing.T){
  p:=makeEnvParser(100000);ctx,cancel:=context.WithCancel(context.Background());cancel();p.Control=pegort.X_newBudgetControl(ctx,Limits{})
  before:=p.Env
- if err:=catchMemoFatal(func(){p.X_bind("v0",999)});!errors.Is(err,context.Canceled){t.Fatal("environment cancellation",err)}
+ p.Control.Charge(254) // the next units reach the poll
+ if err:=catchMemoFatal(func(){p.X_bind(0,999)});!errors.Is(err,context.Canceled){t.Fatal("environment cancellation",err)}
  if p.Env!=before{t.Fatal("cancelled bind published")}
  tail:=&pegort.X_memoEntry{X_rule:7};head:=tail;for i:=0;i<600;i++{head=&pegort.X_memoEntry{X_rule:8,X_next:head}}
  p=&pegort.Parser{Control:pegort.X_newBudgetControl(ctx,Limits{})};p.X_memo.X_slots=[]*pegort.X_memoEntry{head}

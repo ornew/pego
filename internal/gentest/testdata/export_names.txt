@@ -2,7 +2,7 @@ actionErrorText budgetUsed wrapEvalError recycle release setValueField setGramma
 captureScratch saved created memo bound slot old fields run
 f n name val next unit src ctx bs err msg value
 fatal evalError contextPanic tracePanic observation tfield parseOptions tundo
-maxDepth nseen newBudgetControl vals envDepth
+maxDepth nseen newBudgetControl vals envDepth newEnv envDepthOf variable
 slots slotOff slotCI frames frameN bitPages offs memoEntry tmemoEntry
 expBits expBase farthest exp
 rule ok node envValues bind trace

@@ -22,16 +22,18 @@ func TestGeneratedGoActionErrorBudget(t *testing.T) {
 	cases := []struct {
 		name, start, grammar, want string
 		recognize                  bool
+		// nameFree marks the grammar whose long variable name costs nothing: a variable is a slot.
+		nameFree bool
 	}{
 		{"prefix", rule, `type A = { N int }
- rule ` + rule + ` A = a:"a" #cut => A{N:1 / (len($a)-1)}`, "action in " + rule + ": division by zero", false},
+ rule ` + rule + ` A = a:"a" #cut => A{N:1 / (len($a)-1)}`, "action in " + rule + ": division by zero", false, false},
 		{"predicate", "main", `type Word = { Text string }
  var ` + variable + ` bool
  rule main Word = (({` + variable + `} x:leaf) / x:leaf) #cut => $x
- rule leaf Word = t:("a") #atomic => Word{Text: text($t)}`, "", true},
+ rule leaf Word = t:("a") #atomic => Word{Text: text($t)}`, "", true, true},
 		{"captured", "main", `type A = { N int }
  rule main A = x:` + rule + ` {$x != nil} $$ #cut => $x
- rule ` + rule + ` A = a:"a" #cut => A{N:1 / (len($a)-1)}`, "action in " + rule + ": division by zero", true},
+ rule ` + rule + ` A = a:"a" #cut => A{N:1 / (len($a)-1)}`, "action in " + rule + ": division by zero", true, false},
 	}
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("actionerrorfixture")), 0644); err != nil {
@@ -52,7 +54,7 @@ func TestGeneratedGoActionErrorBudget(t *testing.T) {
 			if err := os.Mkdir(path, 0755); err != nil {
 				t.Fatal(err)
 			}
-			consumer := strings.NewReplacer("PACKAGE", pkg, "WANT_ERROR", fmt.Sprintf("%q", c.want), "CHECK_RECOGNIZE", fmt.Sprint(c.recognize)).Replace(generatedGoActionErrorConsumer)
+			consumer := strings.NewReplacer("PACKAGE", pkg, "WANT_ERROR", fmt.Sprintf("%q", c.want), "CHECK_RECOGNIZE", fmt.Sprint(c.recognize), "NAME_FREE", fmt.Sprint(c.nameFree)).Replace(generatedGoActionErrorConsumer)
 			for name, data := range map[string][]byte{"parser.go": code, "action_test.go": []byte(consumer)} {
 				if err := os.WriteFile(filepath.Join(path, name), data, 0644); err != nil {
 					t.Fatal(err)
@@ -73,6 +75,7 @@ import pegort "github.com/ornew/pego/runtime"
 import("context";"errors";"reflect";"strings";"testing")
 const wantError=WANT_ERROR
 const recognize=CHECK_RECOGNIZE
+const nameFree=NAME_FREE
 func actionCall(mode int,opts...ParseOption)(any,error){switch mode{case 0:n,e:=Parse("a",opts...);return n,e;case 1:n,e:=ParseAST("a",opts...);return n,e;default:return nil,Recognize("a",opts...)}}
 func actionZero(v any)bool{return v==nil || reflect.ValueOf(v).IsZero()}
 func TestPublicActionErrorAccounting(t *testing.T){
@@ -80,7 +83,8 @@ func TestPublicActionErrorAccounting(t *testing.T){
  for _,mode:=range modes{
   n,e:=actionCall(mode);if wantError==""{if e!=nil || mode!=2 && actionZero(n){t.Fatal("predicate fallback baseline",n,e)}}else if e==nil || e.Error()!=wantError || !actionZero(n) || errors.Unwrap(e)!=nil{t.Fatal("baseline error contract",n,e)}
   _,large:=actionCall(mode,WithLimits(Limits{Budget:1<<50}));if (large==nil)!=(e==nil) || large!=nil && large.Error()!=e.Error(){t.Fatal("generous controls changed error",large,e)}
-  partial,limited:=actionCall(mode,WithLimits(Limits{Budget:256}));if !errors.Is(limited,ErrLimit) || !actionZero(partial){t.Errorf("long action message bypassed budget mode=%d result=%T error=%v",mode,partial,limited)}
+  partial,limited:=actionCall(mode,WithLimits(Limits{Budget:256}))
+  if nameFree{if limited!=nil || mode!=2 && actionZero(partial){t.Errorf("a long variable name cost budget mode=%d result=%T error=%v",mode,partial,limited)}}else if !errors.Is(limited,ErrLimit) || !actionZero(partial){t.Errorf("long action message bypassed budget mode=%d result=%T error=%v",mode,partial,limited)}
   ctx,cancel:=context.WithCancel(context.Background());cancel();partial,cancelled:=actionCall(mode,WithContext(ctx));if !errors.Is(cancelled,context.Canceled) || !actionZero(partial){t.Fatal("cancelled result",partial,cancelled)}
   retry,retryErr:=actionCall(mode);if (retryErr==nil)!=(e==nil) || retryErr!=nil && retryErr.Error()!=e.Error() || !reflect.DeepEqual(retry,n){t.Fatal("action error retry changed output",retryErr)}
  }
