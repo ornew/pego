@@ -20,7 +20,7 @@ the charges out of the text leaves residue in every action:
 A term is the expression itself in every form, with or without budget controls: the terms of an
 action and the fields of a typed constructor carry no charge, and nothing wraps them in a function
 literal. The generator knows that it writes no budget controls (`gen.Generator.NoBudget`: no
-`BudgetControls`) and emits no step charges at all: not the `Spend` and `SpendRead` statements of rules, constructors and list
+`BudgetControls`) and emits no step charges at all: not the `Spend` and input-read charge statements of rules, constructors and list
 converters. Budget-controlled output keeps the charges of rule entries, loops and list converters;
 the runtime built-ins that call lambdas charge one step per element.
 

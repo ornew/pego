@@ -15,9 +15,10 @@ as their first parameter) once, from Flow IR, in the form the options select:
   no budget charges, no control reads in conditions and class tests, and a compact
   peek. A parse that passes a control option fails.
 - With `-budget-controls` the parser holds the controlled form only: budget charges,
-  the general runtime helpers and class tests that consult the control. A parse that sets no
-  limit runs the same code; the few inline tests of `p.Control` (in literal and large-class
-  tests) take the unmetered path, and the helpers test the control themselves. The terms of an
+  the general runtime helpers and class tests that consult the control. A parse that sets
+  no limit and no cancelable context has no control and runs the same code: the inline charges
+  (`Spend`, `Control.Take`) accept a nil control and do nothing, the class tests of large classes
+  take the compact path, and the helpers test the control themselves. The terms of an
   action carry no charge, and neither do the generated constructors of typed values: only
   repetition is charged, by the runtime's loops over the elements of a list (`map`, `filter`,
   `foldl`, `foldr`), one step per element.
@@ -40,10 +41,12 @@ Closure and VM budget-control implementations do not use this Go mechanism.
 A parser generated with `-budget-controls` has one controlled form of its functions. The `parser.go` of
 the same parser generated without the option is 0.50 to 0.85 of its size (every grammar of `parsers/`,
 Node-only, with `-types`, with `-types -recognize` or with `-types -typed-only`; larger grammars save
-more, and duckdb with `-typed-only` is the smallest at 0.50). A parse that sets no limit runs
-the controlled form without a fast path: on the YAML and CSV benchmark inputs it is slower than a
-parse of a parser generated without `-budget-controls` by 17% (YAML `Parse`), 27% (YAML `Recognize`),
-27% (CSV `Parse`) and 69% (CSV `Recognize`). Records
+more, and duckdb with `-typed-only` is the smallest at 0.50). Against a parser generated without `-budget-controls`, a parse of the controlled form that passes no
+option takes 1.08 to 1.13 times as long (`Parse`) and 1.08 to 1.17 times (`ParseAST`) on the JSON, XML,
+YAML and CSV inputs, and one that passes a limit takes 1.25 to 1.33 times (`Parse`) and 1.26 to 1.45
+times (`ParseAST`). The aim of 1.15 times for a parse with a limit is not met; with every charge
+made free JSON still takes 1.15 times, so the rest is the shape of the controlled bodies. The
+table is in [103](../103-inline-the-common-budget-spend.md). Records
 [096](../096-specialize-generated-go-method-helpers.md) and
 [121](../121-inactive-budget-control-checks.md) hold earlier measurements of the ordinary body of a
 function and of the inlined runtime helpers.
