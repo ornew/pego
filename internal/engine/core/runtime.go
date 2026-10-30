@@ -381,7 +381,6 @@ func (p *Parser) Expect(pos int, id ExpID) {
 	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
 	if p.ExpBits&bit != 0 {
 		for _, e := range p.Exp[p.ExpBase:] {
-			p.Spend()
 			if e == id {
 				return
 			}
@@ -436,7 +435,6 @@ func (p *Parser) Keep(ids []ExpID) []ExpID {
 // stack beyond the current record (writes only happen before the position already read).
 func (p *Parser) MergeExpected(far int, ids []ExpID) {
 	for _, x := range ids {
-		p.Spend()
 		p.Expect(far, x)
 	}
 }

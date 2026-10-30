@@ -33,7 +33,6 @@ func NewControlledDocumentInput(text string, unit PositionUnit, c *BudgetControl
 		}
 		offset := 0
 		for i, r := range in.In {
-			in.spendRead(1)
 			if piece.LargeOffs != nil {
 				piece.LargeOffs[i] = offset
 			} else {

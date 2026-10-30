@@ -134,14 +134,11 @@ func TestBudgetTextStepBudgetAndLazyOffsets(t *testing.T) {
 			t.Fatalf("%v step error=%v", u, err)
 		}
 	}
+	// The lazy offset table of a source is built once and charges nothing, like the preparation of the input.
 	source := "aé😀z"
 	in := core.Input{Unit: CodePoints, Src: source, SrcOK: true, In: []rune(source), Control: core.NewBudgetControl(nil, limits.Limits{Budget: 1})}
-	if err := catchFatal(t, func() { _ = in.Text(1, 3) }); !errors.Is(err, limits.ErrLimit) || in.Offs != nil {
-		t.Fatalf("lazy offsets error=%v offsets=%v", err, in.Offs)
-	}
-	in.Control = core.NewBudgetControl(nil, limits.Limits{Budget: 100})
-	if got := in.Text(1, 3); got != "é😀" {
-		t.Fatalf("offset retry=%q", got)
+	if got := in.Text(1, 3); got != "é😀" || in.Offs == nil || in.Control.Used != 0 {
+		t.Fatalf("lazy offsets text=%q offsets=%v used=%d", got, in.Offs, in.Control.Used)
 	}
 }
 

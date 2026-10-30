@@ -19,7 +19,6 @@ func (in *Input) PrefixByteOffset(source string, end int) int {
 	off := 0
 	for i := 0; i < end; i++ {
 		_, size := utf8.DecodeRuneInString(source[off:])
-		in.spendRead(uint64(size))
 		off += size
 	}
 	return off

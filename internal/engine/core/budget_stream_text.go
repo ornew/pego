@@ -22,7 +22,9 @@ func (in *Input) controlledSnapshotText(start, end int) string {
 	for off := 0; off < len(candidate.Source); {
 		candidate.Offsets[i] = int32(off)
 		_, size := utf8.DecodeRuneInString(candidate.Source[off:])
-		in.spendRead(uint64(size))
+		if BudgetControlsEnabled && in.Control != nil {
+			in.Control.Charge(uint64(size)) // the offset table of a snapshot is rebuilt per snapshot
+		}
 		off += size
 		i++
 	}

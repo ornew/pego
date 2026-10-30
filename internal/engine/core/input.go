@@ -130,7 +130,6 @@ func (in *Input) buildOffs() {
 	for i := 0; i < len(in.Src); {
 		offs = append(offs, int32(i))
 		_, size := utf8.DecodeRuneInString(in.Src[i:])
-		in.spendRead(uint64(size))
 		i += size
 	}
 	in.Offs = append(offs, int32(len(in.Src)))
@@ -383,7 +382,6 @@ func (in *Input) fill(n int) bool {
 func (in *Input) read() {
 	if BudgetControlsEnabled && in.Control != nil {
 		in.Control.Check()
-		in.Control.Charge(1) // reading and staging one byte or code point
 	}
 	var err error
 	var b byte
@@ -415,7 +413,6 @@ func (in *Input) read() {
 // Decode returns the character at position i, its size (in units), and the end of the examined
 // range.
 func (in *Input) Decode(i int) (r rune, size, examined int, ok bool) {
-	in.spendRead(1)
 	if i < in.Base {
 		return 0, 0, i + 1, false
 	}
@@ -441,7 +438,6 @@ func (in *Input) Decode(i int) (r rune, size, examined int, ok bool) {
 		in.fill(in.Loaded() + 1)
 		b = in.Bs[i-in.Base:]
 	}
-	in.spendRead(uint64(min(utf8.UTFMax, len(b))))
 	r, size = utf8.DecodeRune(b)
 	examined = i + size
 	if r == utf8.RuneError && size == 1 {
@@ -458,7 +454,6 @@ func (in *Input) Decode(i int) (r rune, size, examined int, ok bool) {
 
 // byteAt returns the byte at position i when the unit is Bytes.
 func (in *Input) byteAt(i int) (byte, bool) {
-	in.spendRead(1)
 	if i < in.Base || !in.Fill(i+1) {
 		return 0, false
 	}
@@ -531,7 +526,6 @@ func (in *Input) lineCol(pos int) (int, int) {
 	line, col := in.BaseLine, in.BaseCol
 	n := in.Loaded()
 	for i := in.Base; i < pos && i < n; i++ {
-		in.spendRead(1)
 		var nl bool
 		if in.Unit == Bytes {
 			nl = in.Bs[i-in.Base] == '\n'
@@ -563,14 +557,12 @@ func (in *Input) buildLines() {
 		for _, p := range in.Pieces.Parts {
 			if in.Unit == Bytes {
 				for i := 0; i < len(p.Text); i++ {
-					in.spendRead(1)
 					if p.Text[i] == '\n' {
 						in.Lines = append(in.Lines, p.start+i+1)
 					}
 				}
 			} else {
 				for i, r := range p.Runes {
-					in.spendRead(1)
 					if r == '\n' {
 						in.Lines = append(in.Lines, p.start+i+1)
 					}
@@ -582,7 +574,6 @@ func (in *Input) buildLines() {
 	}
 	if in.Unit == Bytes {
 		for i := range in.Bs {
-			in.spendRead(1)
 			b := in.Bs[i]
 			if b == '\n' {
 				in.Lines = append(in.Lines, i+1)
@@ -592,7 +583,6 @@ func (in *Input) buildLines() {
 		return
 	}
 	for i := range in.In {
-		in.spendRead(1)
 		r := in.In[i]
 		if r == '\n' {
 			in.Lines = append(in.Lines, i+1)
@@ -682,7 +672,6 @@ func (p *Parser) MatchLiteral(rs []rune, bs []byte) bool {
 			in := p.Bs[p.Pos-p.Base:]
 			n = len(bs)
 			for k < n {
-				p.spendRead(1)
 				if k >= len(in) || in[k] != bs[k] {
 					break
 				}
@@ -692,7 +681,6 @@ func (p *Parser) MatchLiteral(rs []rune, bs []byte) bool {
 			in := p.In[p.Pos-p.Base:]
 			n = len(rs)
 			for k < n {
-				p.spendRead(1)
 				if k >= len(in) || in[k] != rs[k] {
 					break
 				}
@@ -728,7 +716,6 @@ func (p *Parser) MatchLiteral(rs []rune, bs []byte) bool {
 		return true
 	}
 	for _, r := range rs {
-		p.spendRead(1)
 		p.touch(p.Pos + 1)
 		if p.Pos < p.Base || !p.Fill(p.Pos+1) || p.In[p.Pos-p.Base] != r {
 			return false
@@ -743,7 +730,6 @@ func (p *Parser) MatchLiteral(rs []rune, bs []byte) bool {
 // It decodes the input rune by rune, as matchLiteralRunes does, so both position units agree.
 func (p *Parser) MatchLiteralFold(rs []rune) bool {
 	for _, want := range rs {
-		p.spendRead(1)
 		got, size, ok := p.Peek()
 		if !ok || compile.FoldASCIIRune(got) != want {
 			return false
@@ -753,19 +739,10 @@ func (p *Parser) MatchLiteralFold(rs []rune) bool {
 	return true
 }
 
-// LiteralHasReplacement bounds the grammar-side scan after a byte mismatch.
-// Only visited literal runes consume steps; they do not inspect input.
+// LiteralHasReplacement reports whether the literal contains a replacement character. It scans
+// the literal, not the input.
 func (p *Parser) LiteralHasReplacement(rs []rune) bool {
-	if !BudgetControlsEnabled || p.Control == nil {
-		return slices.Contains(rs, utf8.RuneError)
-	}
-	for _, r := range rs {
-		p.Spend()
-		if r == utf8.RuneError {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(rs, utf8.RuneError)
 }
 
 // LiteralText preserves matched input bytes when replacement decoding accepts
@@ -791,7 +768,6 @@ func (p *Parser) matchLiteralRunes(rs []rune) bool {
 }
 
 func (p *Parser) AtEOF() bool {
-	p.spendRead(1)
 	p.touch(p.Pos + 1)
 	return !p.Fill(p.Pos + 1)
 }

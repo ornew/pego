@@ -612,14 +612,14 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 			}
 		case bytecode.OpClass:
 			ch, size, ok := p.Peek()
-			if !ok || !vm.has(p, in.A, ch) {
+			if !ok || !vm.has(in.A, ch) {
 				p.Expect(p.Pos, compile.NumFixedDescs+core.ExpID(in.B))
 				goto fail
 			}
 			mc.single(size, in.C == 1)
 		case bytecode.OpGuard:
 			ch, _, ok := p.Peek()
-			if !(ok && vm.has(p, in.A, ch)) && p.Depth+int(in.B) <= p.MaxDepth {
+			if !(ok && vm.has(in.A, ch)) && p.Depth+int(in.B) <= p.MaxDepth {
 				p.Expect(p.Pos, compile.NumFixedDescs+core.ExpID(m.Classes[in.A].Desc))
 				ip = int(in.C)
 				continue
@@ -633,7 +633,7 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 			for max < 0 || count < max {
 				p.Spend()
 				ch, size, ok := p.Peek()
-				if !ok || in.A >= 0 && !vm.has(p, in.A, ch) {
+				if !ok || in.A >= 0 && !vm.has(in.A, ch) {
 					if in.A >= 0 {
 						p.Expect(p.Pos, compile.NumFixedDescs+core.ExpID(m.Classes[in.A].Desc))
 					} else {
@@ -1027,21 +1027,11 @@ func newASCIISet(cl *bytecode.Class) asciiSet {
 }
 
 // has reports whether the character ch is in class a.
-func (vm *Program) has(p *core.Parser, a int32, ch rune) bool {
+func (vm *Program) has(a int32, ch rune) bool {
 	if uint32(ch) < 128 {
 		return vm.ascii[a][ch>>6]&(1<<(ch&63)) != 0
 	}
-	cl := &vm.m.Classes[a]
-	if !core.BudgetControlsEnabled || p.Control == nil || len(cl.Ranges) <= 4 {
-		return cl.Has(ch)
-	}
-	for k := 0; k < len(cl.Ranges); k += 2 {
-		p.Spend()
-		if cl.Ranges[k] <= ch && ch <= cl.Ranges[k+1] {
-			return !cl.Negated
-		}
-	}
-	return cl.Negated
+	return vm.m.Classes[a].Has(ch)
 }
 
 // single advances one character (size units) and pushes a string node if b is set.
