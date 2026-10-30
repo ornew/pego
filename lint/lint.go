@@ -97,12 +97,14 @@ const (
 	CheckUselessLookahead   = "useless-lookahead"
 	CheckNullableRepetition = "nullable-repetition"
 	CheckRedundantOptional  = "redundant-optional"
+	CheckGrowingVariable    = "growing-variable"
 	CheckUnusedCapture      = "unused-capture"
 	CheckDuplicateCapture   = "duplicate-capture"
 	CheckCharClass          = "char-class"
 	CheckRightRecursion     = "right-recursion"
 	CheckPositions          = "positions"
 	CheckLongLookahead      = "long-lookahead"
+	CheckSuperLinear        = "super-linear"
 	CheckCaseInsensitive    = "case-insensitive-literal"
 	CheckDirective          = "lint-directive"
 )
@@ -114,6 +116,7 @@ var checks = []Check{
 	{CheckUselessLookahead, Error, "a lookahead whose result is known in advance (& that always succeeds, ! that never does)"},
 	{CheckNullableRepetition, Warning, "a repetition of an expression that can match without consuming input"},
 	{CheckRedundantOptional, Warning, "e? where e always succeeds"},
+	{CheckGrowingVariable, Warning, "a binding that can at least double the size of its variable on each recursion or iteration"},
 	{CheckUnusedCapture, Warning, "a capture whose value is discarded"},
 	{CheckDuplicateCapture, Warning, "the same name captured twice in one match, the second overwriting the first"},
 	{CheckCharClass, Warning, "a character class with overlapping ranges, or a range that spans punctuation between letters and digits"},
@@ -121,6 +124,7 @@ var checks = []Check{
 	{CheckRightRecursion, Hint, "a list written as right recursion instead of a repetition"},
 	{CheckPositions, Hint, ".Start or .End in a rule used repeatedly, which blocks reuse in incremental parsing"},
 	{CheckLongLookahead, Hint, "a lookahead that can examine input across lines, which blocks reuse in incremental parsing"},
+	{CheckSuperLinear, Hint, "a cause of cost that can grow faster than the input from the start rule (reported only when Config.Classify is set)"},
 	{CheckCaseInsensitive, Hint, "a run of [sS]-style classes that spells a word, which a literal with #ignorecase writes more clearly and faster"},
 	{CheckDirective, Warning, "a lint:ignore comment that names an unknown check or suppresses nothing"},
 }
@@ -133,17 +137,21 @@ func isCheck(name string) bool {
 	return slices.ContainsFunc(checks, func(c Check) bool { return c.Name == name })
 }
 
-// Config configures a lint run. The zero value runs every check.
+// Config configures a lint run. The zero value runs every check except super-linear.
 type Config struct {
 	// Disable holds the names of the checks not to run (see Checks).
 	Disable []string
+	// Classify requests the classification of the cost of the grammar from the start rule, and
+	// with it the super-linear check, which reports nothing without it.
+	Classify bool
 }
 
 // Run lints the grammar g from its start rule start: it reports rules the start rules never use,
 // alternatives and expressions that can never match or have no effect, captures that are never
-// read, and grammar shapes that slow down incremental parsing. The findings are sorted by
-// position. unreachable-rule reports the rules that neither start nor another @start rule
-// reaches. Comments of the form "// lint:ignore check reason" in the source
+// read, variables that can grow exponentially, grammar shapes that slow down incremental parsing
+// and, when c.Classify is set, the causes of a cost that can grow faster than the input. The
+// findings are sorted by position. unreachable-rule reports the rules that neither start nor
+// another @start rule reaches. Comments of the form "// lint:ignore check reason" in the source
 // suppress findings (see the directive syntax in docs/guide/linting.md).
 //
 // An empty start selects the default start rule. Run returns an error, and no findings, if g does
@@ -182,7 +190,7 @@ func (c Config) RunUnchecked(ctx context.Context, g *grammar.Grammar, start stri
 
 // options validates c.Disable and returns the options of the run.
 func (c Config) options() (options, error) {
-	var o options
+	o := options{Classify: c.Classify}
 	for _, name := range c.Disable {
 		if !isCheck(name) {
 			return options{}, fmt.Errorf("unknown check %q", name)
@@ -199,6 +207,8 @@ func (c Config) options() (options, error) {
 type options struct {
 	// Disable holds the names of the checks not to run.
 	Disable map[string]bool
+	// Classify runs the super-linear check.
+	Classify bool
 }
 
 // runUnchecked lints g from start without a cancellation control. g must compile; start may be "".
@@ -239,6 +249,8 @@ func run(g *grammar.Grammar, start string, opts options, control *lintControl) [
 			c.run(l)
 		}
 	}
+	control.check()
+	l.complexity(g, start)
 	control.check()
 	l.findings = l.written(names)
 	findings := l.suppress(g)

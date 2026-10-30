@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -137,5 +138,57 @@ func TestLintList(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in\n%s", want, out)
 		}
+	}
+}
+
+func TestLintClassify(t *testing.T) {
+	quadratic := writeFile(t, "q.pego", "@start\nrule main = (a / \"a\")* $$\nrule a = \"a\"* \"c\"\n")
+	// Without -classify there is no classification and no super-linear finding.
+	out, err := runCLI(t, "", "lint", "-g", quadratic)
+	if out != "" || err != nil {
+		t.Errorf("without -classify: %q %v", out, err)
+	}
+	out, err = runCLI(t, "", "lint", "-g", quadratic, "-classify")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(out, quadratic+":3:10: hint: the cost can grow as n^2") ||
+		!strings.Contains(out, " [super-linear]\n"+quadratic+": the cost from start rule main is polynomial (n^2)\n\twitness: "+quadratic+":3:10: the cost can grow as n^2") {
+		t.Errorf("got\n%s", out)
+	}
+
+	var doc lintOutput
+	out, err = runCLI(t, "", "lint", "-g", quadratic, "-classify", "-f", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal([]byte(out), &doc); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if c := doc.Classification; c == nil || c.Class != "polynomial" || c.Degree != 2 || len(c.Witnesses) != 1 ||
+		c.Witnesses[0].Line != 3 || c.Witnesses[0].Col != 10 || c.Witnesses[0].Rule != "a" || len(c.Reasons) != 0 {
+		t.Errorf("got %+v\n%s", doc.Classification, out)
+	}
+	out, _ = runCLI(t, "", "lint", "-g", quadratic, "-f", "json")
+	if strings.Contains(out, "classification") {
+		t.Errorf("classification without -classify:\n%s", out)
+	}
+
+	// A linear grammar shows only its class; the class unknown shows its first reasons and how
+	// many more there are, and no finding.
+	linear := writeFile(t, "l.pego", "@start\nrule main = (a / \"a\")* $$\nrule a = \"a\" \"c\"\n")
+	out, err = runCLI(t, "", "lint", "-g", linear, "-classify")
+	if want := linear + ": the cost from start rule main is linear\n"; out != want || err != nil {
+		t.Errorf("linear: got %q %v, want %q", out, err, want)
+	}
+	unknown := writeFile(t, "u.pego", "@start\nrule main = c $$\nrule a = c \"+\" / \"n\"\nrule c = \"(\" c \")\" \"y\" / \"(\" c \")\" \"z\" / a\n")
+	out, err = runCLI(t, "", "lint", "-g", unknown, "-classify")
+	if err != nil || !strings.HasPrefix(out, unknown+": the cost from start rule main is unknown\n\treason: ") || strings.Contains(out, "[super-linear]") {
+		t.Errorf("unknown: %v\n%s", err, out)
+	}
+	// Of more reasons, the first three are shown.
+	out, err = runCLI(t, "", "lint", "-g", "../../examples/minilang/minilang.pego", "-classify")
+	if err != nil || strings.Count(out, "\treason: ") != 3 || !regexp.MustCompile(`\n\t\.\.\. and \d+ more\n$`).MatchString(out) {
+		t.Errorf("minilang: %v\n%s", err, out)
 	}
 }

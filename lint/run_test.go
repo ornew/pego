@@ -114,6 +114,44 @@ func TestRunUnchecked(t *testing.T) {
 	}
 }
 
+// TestRunClassify checks the checks that come from the classification of the cost, through Run and
+// RunUnchecked, with and without a context that can end.
+func TestRunClassify(t *testing.T) {
+	g, err := pego.ParseGrammar("var s string = \"a\"\n@start\nrule main = (a / \"a\")* $$\nrule a = \"a\"* \"c\" / \"x\" {s := s + s} a\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	live, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	for _, ctx := range []context.Context{context.Background(), live} {
+		for _, tc := range []struct {
+			config lint.Config
+			want   []string
+		}{
+			{lint.Config{}, []string{lint.CheckGrowingVariable}},
+			// The growing binding is also an exponential cause, at the same position.
+			{lint.Config{Classify: true}, []string{lint.CheckSuperLinear, lint.CheckGrowingVariable, lint.CheckSuperLinear}},
+			{lint.Config{Classify: true, Disable: []string{lint.CheckGrowingVariable}}, []string{lint.CheckSuperLinear, lint.CheckSuperLinear}},
+		} {
+			checked, err := tc.config.Run(ctx, g, "main")
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got []string
+			for _, f := range checked {
+				got = append(got, f.Check)
+			}
+			if !slices.Equal(got, tc.want) {
+				t.Errorf("%+v: got %q, want %q", tc.config, got, tc.want)
+			}
+			unchecked, err := tc.config.RunUnchecked(ctx, g, "main")
+			if err != nil || !slices.Equal(unchecked, checked) {
+				t.Errorf("%+v: RunUnchecked = %v, %v; Run = %v", tc.config, unchecked, err, checked)
+			}
+		}
+	}
+}
+
 func TestChecksReturnsACopy(t *testing.T) {
 	checks := lint.Checks()
 	checks[0].Name = "changed"

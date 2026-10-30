@@ -91,24 +91,69 @@ type Complexity struct {
 // lowered to hidden rules and attributes are normalized. A non-nil control polls for
 // cancellation.
 func ClassifyComplexity(g *grammar.Grammar, start string, control *Control) (*Complexity, error) {
+	k, names, err := prepareClassifier(g, start, control)
+	if err != nil {
+		return nil, err
+	}
+	return k.classify().written(names), nil
+}
+
+// GrowingBindings returns the Growing member of the classification of g from start, without the
+// rest of the classification, which costs more. It has the preconditions of ClassifyComplexity.
+func GrowingBindings(g *grammar.Grammar, start string, control *Control) ([]GrowingBinding, error) {
+	k, names, err := prepareClassifier(g, start, control)
+	if err != nil {
+		return nil, err
+	}
+	k.collect()
+	c := &Complexity{Growing: k.growingBindings()}
+	return c.written(names).Growing, nil
+}
+
+// prepareClassifier lowers and normalizes g as the compiler does and returns a classifier of it
+// from start, with the names of the hidden rules of its inline actions.
+func prepareClassifier(g *grammar.Grammar, start string, control *Control) (*classifier, InlineNames, error) {
 	control.check()
+	names := InlineNames{}
 	if hasInlineAction(g, control) {
-		lowered, errs := lowerInlineActions(g, InlineNames{}, control)
+		lowered, errs := lowerInlineActions(g, names, control)
 		if errs != nil {
-			return nil, errs
+			return nil, nil, errs
 		}
 		g = lowered
 	}
 	g, err := NormalizeAttributesControlled(g, false, control)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	rules := control.rules(g)
 	if start == "" {
 		_, start, _ = resolveStarts(rules, control)
 	}
-	k := newClassifier(g, rules, start, control)
-	return k.classify(), nil
+	return newClassifier(g, rules, start, control), names, nil
+}
+
+// written describes the causes as the grammar is written: a cause in the hidden rule of an inline
+// action is in the rule that holds it, and the messages name the inline action.
+func (c *Complexity) written(names InlineNames) *Complexity {
+	if len(names) == 0 {
+		return c
+	}
+	rule := func(r string) string {
+		if site, ok := names[r]; ok {
+			return site.rule
+		}
+		return r
+	}
+	for _, cs := range [][]ComplexityCause{c.Causes, c.Reasons, c.Env} {
+		for i := range cs {
+			cs[i].Rule, cs[i].Message = rule(cs[i].Rule), names.Text(cs[i].Message)
+		}
+	}
+	for i := range c.Growing {
+		c.Growing[i].Rule = rule(c.Growing[i].Rule)
+	}
+	return c
 }
 
 // rhsLevel marks the synthetic call that stands for the right operand of an operator part of an
@@ -267,13 +312,7 @@ func (k *classifier) sameCycle(a, b string) bool {
 }
 
 func (k *classifier) classify() *Complexity {
-	k.computeBounded()
-	k.computeFirst()
-	for _, r := range k.rules {
-		if k.reach[r.Name] {
-			k.walkRule(r)
-		}
-	}
+	k.collect()
 	k.computeRuleSources()
 	k.computeFailRules()
 	k.computeFollow()
@@ -282,6 +321,17 @@ func (k *classifier) classify() *Complexity {
 	k.checkNesting()
 	k.checkValues()
 	return k.result()
+}
+
+// collect collects the units, sources and bindings of the rules that the start rule reaches.
+func (k *classifier) collect() {
+	k.computeBounded()
+	k.computeFirst()
+	for _, r := range k.rules {
+		if k.reach[r.Name] {
+			k.walkRule(r)
+		}
+	}
 }
 
 func (k *classifier) result() *Complexity {

@@ -3,6 +3,7 @@ package compile
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -145,6 +146,52 @@ func TestComplexityGrowingBindings(t *testing.T) {
 			c := classifySource(t, tc.src)
 			if len(c.Growing) != tc.want {
 				t.Errorf("growing %v, want %d", c.Growing, tc.want)
+			}
+		})
+	}
+}
+
+// TestGrowingBindingsAlone checks that GrowingBindings returns the Growing member of the full
+// classification, on the grammars of the repository and on bindings in inline actions, whose rule
+// is the rule that holds them.
+func TestGrowingBindingsAlone(t *testing.T) {
+	srcs := map[string]string{
+		"recursion":     "var s string = \"a\"\nrule main = r $$\nrule r = \"x\" {s := s + s} r / \"\"\n",
+		"inline action": "var s string = \"a\"\nrule main = r $$\nrule r = ((\"x\" {s := s + s})* => 1) \"y\"\n",
+		"variables":     "var s string = \"a\"\nvar t string\nrule main = (\"x\" {t := t + t} {s := s + s + \"b\"})* $$\n",
+	}
+	for _, pattern := range []string{"../../parsers/*/*.pego", "../../examples/*/*.pego"} {
+		paths, err := filepath.Glob(pattern)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, p := range paths {
+			b, err := os.ReadFile(p)
+			if err != nil {
+				t.Fatal(err)
+			}
+			srcs[p] = string(b)
+		}
+	}
+	for name, src := range srcs {
+		t.Run(name, func(t *testing.T) {
+			c := classifySource(t, src)
+			g, err := syntax.Parse(src)
+			if err != nil {
+				t.Fatal(err)
+			}
+			alone, err := GrowingBindings(starttest.MarkAll(g), "", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !slices.Equal(alone, c.Growing) {
+				t.Errorf("GrowingBindings %v, classification %v", alone, c.Growing)
+			}
+			if strings.HasPrefix(name, "inline") && (len(alone) != 1 || alone[0].Rule != "r") {
+				t.Errorf("inline action: %v, want one binding in r", alone)
+			}
+			if name == "variables" && len(alone) != 1 {
+				t.Errorf("variables: %v, want the binding of s", alone)
 			}
 		})
 	}
