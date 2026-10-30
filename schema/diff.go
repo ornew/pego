@@ -23,6 +23,9 @@ type TypeChange struct {
 	Kind   ChangeKind
 	Before *Type
 	After  *Type
+	// Class is Breaking if any impact is; Impacts say why.
+	Class   Class
+	Impacts []Impact
 }
 
 // RuleChange describes one rule, using the rule name as its ID.
@@ -32,10 +35,13 @@ type RuleChange struct {
 	Kind   ChangeKind
 	Before *Rule
 	After  *Rule
+	// Class is Breaking if any impact is; Impacts say why.
+	Class   Class
+	Impacts []Impact
 }
 
-// Diff contains type and rule changes sorted by ID. It does not
-// classify compatibility or compare envelope fields such as Start.
+// Diff contains type and rule changes sorted by ID, each classified from the consumer's side. It
+// does not compare envelope fields such as Start.
 type Diff struct {
 	Types []TypeChange
 	Rules []RuleChange
@@ -62,11 +68,12 @@ func Compare(before, after *Output) (*Diff, error) {
 		new, hasNew := right.types[id]
 		switch {
 		case !hadOld:
-			diff.Types = append(diff.Types, TypeChange{ID: id, Kind: Added, After: &new.value})
+			diff.Types = append(diff.Types, TypeChange{ID: id, Kind: Added, After: &new.value, Class: Compatible, Impacts: whole(RuleTypeAdded, Compatible)})
 		case !hasNew:
-			diff.Types = append(diff.Types, TypeChange{ID: id, Kind: Removed, Before: &old.value})
+			diff.Types = append(diff.Types, TypeChange{ID: id, Kind: Removed, Before: &old.value, Class: Breaking, Impacts: whole(RuleTypeRemoved, Breaking)})
 		case old.value.Origin != new.value.Origin || canonical.compare(old.shape, new.shape) != 0:
-			diff.Types = append(diff.Types, TypeChange{ID: id, Kind: Changed, Before: &old.value, After: &new.value})
+			impacts := changeImpacts(canonical, old.value.Origin != new.value.Origin, old.shape, new.shape)
+			diff.Types = append(diff.Types, TypeChange{ID: id, Kind: Changed, Before: &old.value, After: &new.value, Class: classOf(impacts), Impacts: impacts})
 		}
 	}
 	for _, id := range sortedSchemaKeys(left.rules, right.rules) {
@@ -74,14 +81,31 @@ func Compare(before, after *Output) (*Diff, error) {
 		new, hasNew := right.rules[id]
 		switch {
 		case !hadOld:
-			diff.Rules = append(diff.Rules, RuleChange{ID: id, Kind: Added, After: &new.value})
+			diff.Rules = append(diff.Rules, RuleChange{ID: id, Kind: Added, After: &new.value, Class: Compatible, Impacts: whole(RuleRuleAdded, Compatible)})
 		case !hasNew:
-			diff.Rules = append(diff.Rules, RuleChange{ID: id, Kind: Removed, Before: &old.value})
+			diff.Rules = append(diff.Rules, RuleChange{ID: id, Kind: Removed, Before: &old.value, Class: Breaking, Impacts: whole(RuleRuleRemoved, Breaking)})
 		case old.value.Origin != new.value.Origin || canonical.compare(old.shape, new.shape) != 0:
-			diff.Rules = append(diff.Rules, RuleChange{ID: id, Kind: Changed, Before: &old.value, After: &new.value})
+			impacts := changeImpacts(canonical, old.value.Origin != new.value.Origin, old.shape, new.shape)
+			diff.Rules = append(diff.Rules, RuleChange{ID: id, Kind: Changed, Before: &old.value, After: &new.value, Class: classOf(impacts), Impacts: impacts})
 		}
 	}
 	return diff, nil
+}
+
+// changeImpacts lists the impacts of a changed entry. A flipped origin with the same canonical
+// shape is compatible: the ID, and so the generated type name, is unchanged. If the shapes differ
+// and no rule explains it, the change is breaking.
+func changeImpacts(c *schemaCanonicalizer, originChanged bool, old, new *Shape) []Impact {
+	impacts := c.shapeImpacts(old, new, "$", nil)
+	// The shapes differ but the walk found no reason: report a break rather than a quiet change.
+	if len(impacts) == 0 && c.compare(old, new) != 0 {
+		impacts = whole(RuleKindChanged, Breaking)
+	}
+	if originChanged {
+		impacts = append(impacts, Impact{Path: "$", Class: Compatible, Rule: RuleOriginChanged})
+	}
+	sortImpacts(impacts)
+	return impacts
 }
 
 type indexedOutputSchema struct {

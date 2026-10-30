@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/ornew/pego"
 	"github.com/ornew/pego/schema"
@@ -21,18 +22,50 @@ type schemaDiffOutput struct {
 // schemaTypeChangeOutput is one type of a schema diff. Before and After are the entries in the two
 // schemas; one of them is absent for an addition or a removal.
 type schemaTypeChangeOutput struct {
-	ID     string            `json:"id"`
-	Kind   schema.ChangeKind `json:"kind"`
-	Before *schema.Type      `json:"before,omitempty"`
-	After  *schema.Type      `json:"after,omitempty"`
+	ID      string               `json:"id"`
+	Kind    schema.ChangeKind    `json:"kind"`
+	Class   schema.Class         `json:"class"`
+	Impacts []schemaImpactOutput `json:"impacts"`
+	Before  *schema.Type         `json:"before,omitempty"`
+	After   *schema.Type         `json:"after,omitempty"`
 }
 
 // schemaRuleChangeOutput is one rule of a schema diff, with the same convention as schemaTypeChangeOutput.
 type schemaRuleChangeOutput struct {
-	ID     string            `json:"id"`
-	Kind   schema.ChangeKind `json:"kind"`
-	Before *schema.Rule      `json:"before,omitempty"`
-	After  *schema.Rule      `json:"after,omitempty"`
+	ID      string               `json:"id"`
+	Kind    schema.ChangeKind    `json:"kind"`
+	Class   schema.Class         `json:"class"`
+	Impacts []schemaImpactOutput `json:"impacts"`
+	Before  *schema.Rule         `json:"before,omitempty"`
+	After   *schema.Rule         `json:"after,omitempty"`
+}
+
+// schemaImpactOutput is one reason for the class of a change: where in the entry, the class of that
+// reason and the rule that produced it.
+type schemaImpactOutput struct {
+	Path  string       `json:"path"`
+	Class schema.Class `json:"class"`
+	Rule  string       `json:"rule"`
+}
+
+func schemaImpacts(impacts []schema.Impact) []schemaImpactOutput {
+	out := make([]schemaImpactOutput, len(impacts))
+	for i, im := range impacts {
+		out[i] = schemaImpactOutput{Path: im.Path, Class: im.Class, Rule: im.Rule}
+	}
+	return out
+}
+
+// schemaImpactText lists the rules of impacts, with the path of those below the root.
+func schemaImpactText(impacts []schema.Impact) string {
+	parts := make([]string, len(impacts))
+	for i, im := range impacts {
+		parts[i] = im.Rule
+		if im.Path != "$" {
+			parts[i] += " at " + im.Path
+		}
+	}
+	return strings.Join(parts, "; ")
 }
 
 // schemaOptions returns the export options of the -all-rules flag.
@@ -147,10 +180,10 @@ func schemaDiffCmd(args []string, stdout io.Writer) error {
 	if *format == "json" {
 		out := schemaDiffOutput{Types: []schemaTypeChangeOutput{}, Rules: []schemaRuleChangeOutput{}}
 		for _, c := range diff.Types {
-			out.Types = append(out.Types, schemaTypeChangeOutput{ID: c.ID, Kind: c.Kind, Before: c.Before, After: c.After})
+			out.Types = append(out.Types, schemaTypeChangeOutput{ID: c.ID, Kind: c.Kind, Class: c.Class, Impacts: schemaImpacts(c.Impacts), Before: c.Before, After: c.After})
 		}
 		for _, c := range diff.Rules {
-			out.Rules = append(out.Rules, schemaRuleChangeOutput{ID: c.ID, Kind: c.Kind, Before: c.Before, After: c.After})
+			out.Rules = append(out.Rules, schemaRuleChangeOutput{ID: c.ID, Kind: c.Kind, Class: c.Class, Impacts: schemaImpacts(c.Impacts), Before: c.Before, After: c.After})
 		}
 		enc := json.NewEncoder(stdout)
 		enc.SetIndent("", "  ")
@@ -161,10 +194,10 @@ func schemaDiffCmd(args []string, stdout io.Writer) error {
 		return err
 	}
 	for _, c := range diff.Types {
-		fmt.Fprintf(stdout, "%s type %s\n", c.Kind, c.ID)
+		fmt.Fprintf(stdout, "%s type %s: %s (%s)\n", c.Kind, c.ID, c.Class, schemaImpactText(c.Impacts))
 	}
 	for _, c := range diff.Rules {
-		fmt.Fprintf(stdout, "%s rule %s\n", c.Kind, c.ID)
+		fmt.Fprintf(stdout, "%s rule %s: %s (%s)\n", c.Kind, c.ID, c.Class, schemaImpactText(c.Impacts))
 	}
 	return nil
 }

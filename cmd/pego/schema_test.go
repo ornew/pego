@@ -106,7 +106,7 @@ func TestSchemaDiff(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if out != "added type inferred/extra\nadded rule extra\n" {
+	if out != "added type inferred/extra: compatible (type-added)\nadded rule extra: compatible (rule-added)\n" {
 		t.Errorf("text diff: %q", out)
 	}
 	jsonOut, err := runCLI(t, "", "schema", "diff", "-all-rules", "-f", "json", before, after)
@@ -120,8 +120,24 @@ func TestSchemaDiff(t *testing.T) {
 	if len(doc.Types) != 1 || len(doc.Rules) != 1 || doc.Rules[0].ID != "extra" || doc.Rules[0].Kind != schema.Added || doc.Rules[0].Before != nil {
 		t.Errorf("rules: %+v", doc.Rules)
 	}
+	if doc.Rules[0].Class != schema.Compatible || len(doc.Rules[0].Impacts) != 1 || doc.Rules[0].Impacts[0] != (schemaImpactOutput{Path: "$", Class: schema.Compatible, Rule: schema.RuleRuleAdded}) {
+		t.Errorf("rule class: %+v", doc.Rules[0])
+	}
 	if doc.Types == nil || doc.Rules == nil {
 		t.Errorf("empty lists must be arrays: %s", jsonOut)
+	}
+
+	// A change to an existing type is classified with the paths of its impacts, in both formats.
+	const declTail = "@start\nrule main P = k:key => P{Key: $k}\nrule key = [a-z]+ #atomic\n"
+	declBefore := writeFile(t, "declbefore.pego", "type P = { Key node[string]; Old node[string] }\n"+strings.Replace(declTail, "$k}", "$k, Old: $k}", 1))
+	declAfter := writeFile(t, "declafter.pego", "type P = { Key node[string]; New node[string] }\n"+strings.Replace(declTail, "$k}", "$k, New: $k}", 1))
+	out, err = runCLI(t, "", "schema", "diff", declBefore, declAfter)
+	if err != nil || !strings.Contains(out, "changed type declared/P: breaking (field-added at $.fields.New; field-removed at $.fields.Old)\n") {
+		t.Errorf("classified text diff: %q %v", out, err)
+	}
+	jsonOut, err = runCLI(t, "", "schema", "diff", "-f", "json", declBefore, declAfter)
+	if err != nil || !strings.Contains(jsonOut, `"class": "breaking"`) || !strings.Contains(jsonOut, `"rule": "field-removed"`) || !strings.Contains(jsonOut, `"path": "$.fields.Old"`) {
+		t.Errorf("classified JSON diff: %s %v", jsonOut, err)
 	}
 
 	// A schema file is an operand too; its own start rule is used.
