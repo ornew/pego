@@ -12,14 +12,14 @@ func TestNullableRepetitionAnalysis(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := Analyze(g.Rules()).Nullable["main"]; got != (minimum <= 1) {
+		if got := analyze(g.Rules()).nullable["main"]; got != (minimum <= 1) {
 			t.Errorf("minimum %d: nullable=%v", minimum, got)
 		}
 		g, err = parseTest(fmt.Sprintf("rule main = _ #repeat(%d, ) r / \"a\"\nrule r = main", minimum))
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := Analyze(g.Rules()).Cyclic["main"]; got != (minimum <= 1) {
+		if got := analyze(g.Rules()).cyclic["main"]; got != (minimum <= 1) {
 			t.Errorf("minimum %d: left-call cycle=%v", minimum, got)
 		}
 	}

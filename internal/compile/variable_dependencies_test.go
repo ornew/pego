@@ -19,7 +19,7 @@ func ruleVariablesDFS(rules []*grammar.RuleDef) map[string][]string {
 	calls := map[string][]string{}
 	for _, r := range rules {
 		set := map[string]bool{}
-		WalkRuleTerms(r, func(t grammar.Term) {
+		walkRuleTerms(r, func(t grammar.Term) {
 			if v, ok := t.(*grammar.VarRef); ok {
 				set[v.Name] = true
 			}
@@ -120,7 +120,7 @@ func TestVariableDependencyGrowingSets(t *testing.T) {
 		for seed := range int64(10) {
 			rules := append([]*grammar.RuleDef(nil), g.Rules()...)
 			rand.New(rand.NewSource(seed)).Shuffle(len(rules), func(i, j int) { rules[i], rules[j] = rules[j], rules[i] })
-			if got := RuleVariables(rules); !reflect.DeepEqual(got, want) {
+			if got := ruleVariables(rules); !reflect.DeepEqual(got, want) {
 				t.Fatalf("cyclic=%v seed=%d: changed growing sets", cyclic, seed)
 			}
 		}
@@ -137,7 +137,7 @@ func TestVariableDependencyGraphs(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
-					got := RuleVariables(g.Rules())
+					got := ruleVariables(g.Rules())
 					if !reflect.DeepEqual(got, ruleVariablesDFS(g.Rules())) {
 						t.Fatal("changed transitive sets")
 					}
@@ -170,12 +170,12 @@ func TestVariableDependencyGraphs(t *testing.T) {
 		for seed := range int64(30) {
 			rules := append([]*grammar.RuleDef(nil), g.Rules()...)
 			rand.New(rand.NewSource(seed)).Shuffle(len(rules), func(i, j int) { rules[i], rules[j] = rules[j], rules[i] })
-			if got := RuleVariables(rules); !reflect.DeepEqual(got, want) {
+			if got := ruleVariables(rules); !reflect.DeepEqual(got, want) {
 				t.Fatalf("cyclic=%v seed=%d: changed sets", cyclic, seed)
 			}
 		}
 	}
-	if got := RuleVariables(nil); got == nil || len(got) != 0 {
+	if got := ruleVariables(nil); got == nil || len(got) != 0 {
 		t.Fatalf("empty grammar: %v", got)
 	}
 }
@@ -210,7 +210,7 @@ rule binding = {local := 9} "i"`
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := RuleVariables(g.Rules())
+	got := ruleVariables(g.Rules())
 	if want := ruleVariablesDFS(g.Rules()); !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %v; want %v", got, want)
 	}

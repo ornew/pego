@@ -445,13 +445,13 @@ func CompileProgram[M any](g *grammar.Grammar, opts Options, flags []RuleFlags, 
 		} else {
 			r.Leader = c.an.leaders[r.Name]
 			r.Positional = c.an.positional[r.Name]
-			r.Memo = !opts.DisableMemo && !c.an.Cyclic[r.Name]
+			r.Memo = !opts.DisableMemo && !c.an.cyclic[r.Name]
 		}
 		r.Transient = transient[r.Name]
 		r.Vars = vars[r.Name]
 		if flags == nil {
 			_, isOperatorsRule := r.Def.Expr.(*grammar.OperatorsRule)
-			twin = r.Action == nil && !isOperatorsRule && !c.an.Cyclic[r.Name] && !hasStream(r.Def.Expr, control)
+			twin = r.Action == nil && !isOperatorsRule && !c.an.cyclic[r.Name] && !hasStream(r.Def.Expr, control)
 		}
 		r.TwinOK = twin
 	}

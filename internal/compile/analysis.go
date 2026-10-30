@@ -11,13 +11,13 @@ import (
 // Analysis is the result of static analysis across rules.
 type Analysis struct {
 	Control    *Control
-	Nullable   map[string]bool
+	nullable   map[string]bool
 	succeeding map[string]bool
 	// leaders are the rules that break left-recursion cycles. These rules are evaluated with
 	// grow-the-seed.
 	leaders map[string]bool
-	// Cyclic are the rules that belong to a left-recursion cycle (including leaders).
-	Cyclic map[string]bool
+	// cyclic are the rules that belong to a left-recursion cycle (including leaders).
+	cyclic map[string]bool
 	// cycle numbers the left-recursion cycles: rules with the same number are in the same
 	// strongly connected component of the left-call graph. Only cyclic rules have an entry.
 	cycle map[string]int
@@ -27,8 +27,8 @@ type Analysis struct {
 	positional map[string]bool
 }
 
-// Analyze computes the Analysis of rules without a compilation control (AnalyzeControlled).
-func Analyze(rules []*grammar.RuleDef) *Analysis {
+// analyze computes the Analysis of rules without a compilation control (AnalyzeControlled).
+func analyze(rules []*grammar.RuleDef) *Analysis {
 	return AnalyzeControlled(rules, nil)
 }
 
@@ -38,9 +38,9 @@ func Analyze(rules []*grammar.RuleDef) *Analysis {
 func AnalyzeControlled(rules []*grammar.RuleDef, control *Control) *Analysis {
 	a := &Analysis{
 		Control:    control,
-		Nullable:   map[string]bool{},
+		nullable:   map[string]bool{},
 		leaders:    map[string]bool{},
-		Cyclic:     map[string]bool{},
+		cyclic:     map[string]bool{},
 		cycle:      map[string]int{},
 		positional: map[string]bool{},
 	}
@@ -56,8 +56,8 @@ func AnalyzeControlled(rules []*grammar.RuleDef, control *Control) *Analysis {
 		changed = false
 		for _, r := range rules {
 			control.poll()
-			if !a.Nullable[r.Name] && a.isNullable(r.Expr) {
-				a.Nullable[r.Name] = true
+			if !a.nullable[r.Name] && a.isNullable(r.Expr) {
+				a.nullable[r.Name] = true
 				changed = true
 			}
 		}
@@ -97,20 +97,20 @@ func AnalyzeControlled(rules []*grammar.RuleDef, control *Control) *Analysis {
 	for {
 		control.poll()
 		components = Tarjan(rules, left, control)
-		clear(a.Cyclic)
+		clear(a.cyclic)
 		for _, scc := range components {
 			control.poll()
 			if len(scc) > 1 || contains(left[scc[0]], scc[0]) {
 				for _, n := range scc {
 					control.poll()
-					a.Cyclic[n] = true
+					a.cyclic[n] = true
 				}
 			}
 		}
 		if control == nil {
-			a.succeeding = grammaranalysis.SucceedingRules(rules, a.Cyclic)
+			a.succeeding = grammaranalysis.SucceedingRules(rules, a.cyclic)
 		} else {
-			a.succeeding = grammaranalysis.SucceedingRulesWithPoll(rules, a.Cyclic, control.poll)
+			a.succeeding = grammaranalysis.SucceedingRulesWithPoll(rules, a.cyclic, control.poll)
 		}
 		next := map[string][]string{}
 		changed := false
@@ -138,7 +138,7 @@ func AnalyzeControlled(rules []*grammar.RuleDef, control *Control) *Analysis {
 		for _, n := range scc {
 			control.poll()
 			in[n] = true
-			a.Cyclic[n] = true
+			a.cyclic[n] = true
 			a.cycle[n] = i
 		}
 		// Until every cycle passes through some leader, make the first rule of a found cycle a leader.
@@ -174,7 +174,7 @@ func (a *Analysis) isNullable(e grammar.Expr) bool {
 	a.Control.poll()
 	switch e := e.(type) {
 	case *grammar.Ref:
-		return a.Nullable[e.Name]
+		return a.nullable[e.Name]
 	case *grammar.Literal:
 		return e.Value == ""
 	case *grammar.CharClass, *grammar.Any, *grammar.Bottom:
@@ -299,12 +299,12 @@ func allCallsControlled(e grammar.Expr, acc []string, control *Control) []string
 	return acc
 }
 
-// RuleVariables returns, for each rule, the sorted names of the variables read by
+// ruleVariables returns, for each rule, the sorted names of the variables read by
 // predicates and actions in the rule or in the rules it calls, directly or
 // indirectly. A rule's result depends on the environment
 // only through the values of these variables at the call: definitions made inside a rule are
 // undone when it returns.
-func RuleVariables(rules []*grammar.RuleDef) map[string][]string {
+func ruleVariables(rules []*grammar.RuleDef) map[string][]string {
 	return ruleVariablesControlled(rules, nil)
 }
 
@@ -708,6 +708,6 @@ func WalkExpr(e grammar.Expr, f func(grammar.Expr)) {
 	}
 }
 
-// WalkRuleTerms visits every term in a rule's action and predicates, including Operators Rule
+// walkRuleTerms visits every term in a rule's action and predicates, including Operators Rule
 // operand and operator actions.
-func WalkRuleTerms(r *grammar.RuleDef, f func(grammar.Term)) { walkRuleTermsControlled(r, f, nil) }
+func walkRuleTerms(r *grammar.RuleDef, f func(grammar.Term)) { walkRuleTermsControlled(r, f, nil) }
