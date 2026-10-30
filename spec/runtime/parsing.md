@@ -371,11 +371,16 @@ bound.
 The conditions below use these terms.
 
 - A **copying operation** is an operation of an action, predicate or binding
-  whose cost is charged in proportion to the size of what it builds: joining
-  strings, taking the text of a capture, converting a value to a string, and
-  building a list with `list`, `concat`, `map` or `filter`. The size of a
-  string is its number of characters, and the size of a list its number of
-  elements; the elements themselves are shared, not copied.
+  whose cost is charged in proportion to the size of the values it builds or
+  examines: joining strings, taking the text of a capture, converting a value
+  to a string, building a list with `list`, `concat`, `map` or `filter`, and
+  comparing two strings. The size of a string is its number of characters,
+  and the size of a list its number of elements; the elements themselves are
+  shared, not copied. So `list` copies one element for each argument, which
+  the grammar bounds; `concat`, `map` and `filter` copy the elements of the
+  lists they read, and the list of a repetition has one element for each
+  iteration; and a comparison examines no more than the shorter string, so
+  comparing with a literal costs a constant.
 - A **left call** is a call of a rule of a left-recursion cycle, in the body
   of a rule of the same cycle, that can run before that body consumes input.
   The rules that grow are the **leaders**, fixed by the grammar: until every
@@ -463,7 +468,8 @@ The conditions below use these terms.
   the seed.
 - A unit and a continuation **share** a call when, at the position where the
   unit starts examining the input, both evaluate the same call before
-  anything else that examines the input: a call of the same rule with the
+  anything else that examines the input, directly or as the first thing that
+  the bodies of the calls they start with evaluate: a call of the same rule with the
   same level restriction, or with none in both, of a rule that reads no
   variable and that is memoized or calls no rule, itself included. The call
   has the same result in both: the memo answers it the second time, or the
@@ -480,6 +486,12 @@ The conditions below use these terms.
   consumes the character at which the unit and the continuation part, so
   nothing starts again inside the input that the unit examined after its
   shared calls, and the shared calls are not repeated beyond their own cost.
+  A unit is also committing for a continuation when no scanning source
+  remains in it after those calls are removed: its scanning sources lie
+  entirely inside the shared calls. The input that the unit examines beyond
+  the shared calls is then bounded by the other conditions, as for a unit
+  without a scanning source, and the continuation pays for the shared calls
+  no more than the unit paid, so a restart repeats no scan.
 
 A grammar's cost from a start rule is at most proportional to n, times a
 constant that depends only on the grammar, when every rule that the start rule
@@ -500,16 +512,42 @@ necessary.
    caller. When every binding is a literal, a constant number of combinations
    of values occurs at a position. When a binding reads a capture or a
    variable, the cost is linear given an environment bound.
-2. **Repeated scans.** Every unit that contains a scanning source is
-   committing.
+2. **Repeated scans.** Every unit that contains a scanning source and can
+   fail after one of its scanning sources has examined input is committing. A
+   unit can fail after a source when something that can fail is evaluated
+   after the source: a later element of a sequence that contains the source, a
+   later required iteration of a repetition that contains it, or a negative
+   lookahead around it, in the unit or in the body of a rule that it calls. A
+   source that is a copying operation in a predicate can make the predicate
+   itself fail. A unit that
+   fails only before its sources have examined input, such as an iteration of
+   `([^"]+ / "\"\"")*`, gives back to its continuation no more input than its
+   parts before the sources examined, which the other conditions bound as for
+   a unit without a scanning source; a unit that succeeds is not restarted, and
+   a failure after it is a failure of an enclosing unit, which this condition
+   checks in turn. The expression of a lookahead is abandoned even when it
+   matches, and a growing unit and a unit of an Operators Rule are checked
+   whether or not they can fail after a source.
 3. **Growth.** No scanning source can be evaluated, outside the left call that
    grows, at the position where a left-recursive rule grows, in its body or in
    the body of another rule of its cycle, other than inside a call of a
    memoized rule that is not on the cycle. Each step of the growth evaluates
    these bodies again at that position.
-4. **Copies.** No copying operation copies a string or list that can contain a
-   capture or a value that contains a call on a recursion with the rule that
-   performs the operation, nor a fold accumulator. A copying operation in the
+4. **Copies.** No copying operation copies a string or list whose size can
+   include the size of the value of a call on a recursion with the rule that
+   performs the operation, nor a fold accumulator. The size is the one that the
+   operation copies: the characters of a string, or the elements of a list. A
+   value includes the value of such a call when it is the value of the call,
+   passes it on, as `$x` does, or is built from it by `+`, `text`, `concat`,
+   `map` or `filter`. So the text of a capture of the recursion includes the
+   text of the calls nested in it, while a list of nodes of the recursion, as
+   built by `list($x)`, has one element per node whatever the node contains;
+   `concat(list($x), $t)` with `t` the list of the rule's own recursion
+   includes it. A value of a rule on a cycle of such values, and the value of
+   an Operators Rule, are taken to include it. A copy whose size does not include
+   such a value does not add up over the levels of the recursion; when it is
+   not bounded by a constant, it is a scanning source, which condition 2
+   covers. A copying operation in the
    lambda of `map`, `filter`, `foldl` or `foldr` runs once for each element, as
    in a repetition: it copies nothing from outside the lambda that is not
    bounded in size by a constant of the grammar. A copying operation that
@@ -517,21 +555,25 @@ necessary.
 
 ### Classification
 
-`pego lint` classifies the cost of the start rule that it checks. The
-classes are ordered from best to worst: each class is a weaker claim than the
-classes before it. The classes linear and linear given an environment bound
-produce no finding. The classes polynomial and exponential produce a
+`pego lint -classify` (`lint.Config.Classify` in Go) classifies the cost of
+the start rule that it checks and shows the class. The classes are ordered
+from best to worst, as in the table: each is a weaker claim than the classes
+before it. A grammar has the worst class of its causes. A witnessed
+polynomial or exponential cause outranks a reason for the class unknown,
+because it is evidence of growth, while unknown is only the absence of a
+proof. The classes polynomial and exponential produce a
 [`super-linear`](lint.md#super-linear) hint at each cause, with its witness.
-The class unknown produces no finding; it is shown, with its reason, only when
-the classification is requested.
+The other classes produce no finding; the reasons for the class unknown are
+shown with the classification. Without the request, there is no
+classification and no `super-linear` finding.
 
 | Class | Promise |
 |:--|:--|
 | Linear | Every parse from the start rule has a cost of at most c · (n + 1) |
 | Linear given an environment bound | Every parse has a cost of at most c · K · (L + 1) · (n + 1) |
+| Unknown | None; the classifier cannot bound the cost |
 | Polynomial of degree k | None; an estimate |
 | Exponential | None; an estimate |
-| Unknown | None; the classifier cannot bound the cost |
 
 The constant c depends only on the grammar and on the backend. K is the largest
 number of distinct combinations of the values of the variables that memoized
@@ -543,8 +585,10 @@ feeding back into itself, so L is at most proportional to n, and the cost of
 the second class is at most proportional to K · n². A caller that needs a cost
 proportional to n needs the class Linear.
 
-The first two classes are guarantees, under the memoization of the
-implementation that runs the parse: the classifier reports them only when the
+The first two classes are guarantees under the memoization that
+[Evaluations of Rules](#evaluations-of-rules) describes; an implementation
+that memoizes fewer rules, as one can for testing, is outside them. The
+classifier reports them only when the
 conditions of [Conditions for Linear Cost](#conditions-for-linear-cost) hold,
 and it over-approximates where it cannot be exact. It assumes that every
 predicate can both succeed and fail, that every continuation is reachable, and
@@ -561,15 +605,15 @@ reason:
   continuation that can start again inside it, and the enclosing repetition or
   recursion. The estimated degree is one more than the number of such sources
   nested in one another through rule calls, so that a repetition restarted
-  inside a restarted repetition gives 3. A copying operation that copies a
-  capture or value containing a call on its own recursion, or a fold
-  accumulator, gives 2, and so does a scanning source evaluated in each step of
+  inside a restarted repetition gives 3. A copying operation whose size
+  includes the value of a call on its own recursion, or a fold accumulator,
+  gives 2, and so does a scanning source evaluated in each step of
   a growth.
 - **Exponential.** A binding that makes a variable depend on its own earlier
   value, or a copying operation that copies a value of its own recursion, or a
   fold accumulator, more than once, as `s + s` does.
-- **Unknown.** A condition for linear cost fails without a witness of the
-  classes above, as when sources that are not committing are nested in one
+- **Unknown.** A condition for linear cost fails without a witness of a
+  polynomial or exponential cause, as when sources that are not committing are nested in one
   another without bound through a recursion of rule calls. Memoized calls in
   the recursion can keep such a grammar linear, which the classifier does not
   decide. Its reason is the first unit that is not committing, or the

@@ -10,6 +10,7 @@ input. The linter finds them, and other likely mistakes, by reading the grammar 
 | Lint a grammar | `pego lint -g g.pego` | `lint.Config{}.Run(ctx, g, "main")` |
 | Machine-readable output | `-f json` | `[]lint.Finding` |
 | Turn checks off | `-disable check,...` | `lint.Config{Disable: []string{...}}` |
+| Classify the parse cost | `-classify` | `lint.Config{Classify: true}` |
 | Fail on warnings too | `-strict` | check `Finding.Severity` |
 | List the checks | `-list` | `lint.Checks()` |
 
@@ -18,6 +19,7 @@ design, and how the checks are kept free of false positives, is in
 [design record 018](../design/records/018-grammar-linting.md).
 
 - [On the command line](#on-the-command-line)
+- [Classifying the parse cost](#classifying-the-parse-cost)
 - [From Go](#from-go)
 - [Severities](#severities)
 - [The checks](#the-checks)
@@ -87,6 +89,45 @@ pego lint -g items.pego -f json
 `-disable` turns checks off (`-disable right-recursion,positions`, or the flag repeated), and `-list` prints every
 check with its severity.
 
+## Classifying the Parse Cost
+
+`-classify` asks the linter how the cost of a parse can grow with the length of the input, from the start rule. In this
+grammar a failed `A` gives its input back to the repetition in `main`, which tries `"a"` and then `A` again one
+character further on:
+
+```pego
+@start
+rule main = (A / "a")* $$
+
+rule A = "a"* "c"
+```
+
+```bash
+pego lint -g scan.pego -classify
+```
+
+```text
+scan.pego:4:10: hint: the cost can grow as n^2: after the alternative at 2:14 in rule main fails, the later alternative "a" at 2:18 in rule main can start again inside the input that the repetition "a"* at 4:10 in rule A examined; this repeats in the repetition (A / "a")* at 2:13 in rule main [super-linear]
+scan.pego: the cost from start rule main is polynomial (n^2)
+	witness: scan.pego:4:10: the cost can grow as n^2: after the alternative at 2:14 in rule main fails, the later alternative "a" at 2:18 in rule main can start again inside the input that the repetition "a"* at 4:10 in rule A examined; this repeats in the repetition (A / "a")* at 2:13 in rule main
+```
+
+On `a` repeated n times, `"a"*` scans to the end of the input from every position. Each cause is a
+[`super-linear`](#super-linear) hint, and the last lines give the class with its first witnesses. `A = "a" "c"` makes
+the grammar linear: a failed `A` then gives back one character, and the class line reads
+`the cost from start rule main is linear`.
+
+The classes are `linear`, `linear-env` (linear given a bound on the values of the variables), `unknown`, `polynomial`
+and `exponential`. Only the first two are promises; the conditions behind them, and what each class means, are in
+[Classification](../../spec/runtime/parsing.md#classification). A polynomial or exponential class is an estimate
+with a witness, and can be pessimistic: the input that makes it slow may not exist. The class `unknown` means that
+the linter could not establish linear cost and has no witness of growth either; its first reasons are shown in place
+of witnesses. With `-f json`, the document gets a `classification` member with the class, the degree, and every
+witness and reason.
+
+Without `-classify` the linter does not classify the cost and reports no `super-linear` hint, so the default output
+stays free of estimates. The [`growing-variable`](#growing-variable) warning needs no request.
+
 ## From Go
 
 Package `github.com/ornew/pego/lint` lints from Go. A `lint.Config` holds the settings of a run, and its `Run`
@@ -130,6 +171,8 @@ func TestGrammarLint(t *testing.T) {
 }
 ```
 
+`lint.Config{Classify: true}` reports the [`super-linear`](#super-linear) hints, as `-classify` does.
+
 A program that has already compiled the grammar, such as an editor that lints after each change, can skip the
 second compilation with `Config.RunUnchecked`. It does not check that the grammar compiles or that the start rule is
 one, and its findings for any other grammar are unspecified.
@@ -159,6 +202,7 @@ fail.
 | [`useless-lookahead`](#useless-lookahead) | error, warning | `!x` that never succeeds, `&x` or `!x` that always does |
 | [`nullable-repetition`](#nullable-repetition) | warning | A repetition whose element can match without consuming input |
 | [`redundant-optional`](#redundant-optional) | warning | `x?` where `x` always succeeds |
+| [`growing-variable`](#growing-variable) | warning | A binding that can double its variable on each recursion or iteration |
 | [`unused-capture`](#unused-capture) | warning | Captures whose values are discarded |
 | [`duplicate-capture`](#duplicate-capture) | warning | A name captured twice in one match |
 | [`char-class`](#char-class) | warning | Overlapping ranges; `[A-z]` and similar ranges |
@@ -166,6 +210,7 @@ fail.
 | [`right-recursion`](#right-recursion) | hint | Lists written as right recursion |
 | [`positions`](#positions) | hint | `.Start` and `.End` in rules used repeatedly |
 | [`long-lookahead`](#long-lookahead) | hint | Lookaheads that scan any character |
+| [`super-linear`](#super-linear) | hint | Causes of a parse cost that can grow faster than the input, with `-classify` |
 | [`case-insensitive-literal`](#case-insensitive-literal) | hint | `[sS][eE]...` spelling a word |
 | [`lint-directive`](#suppressing-findings) | warning | `lint:ignore` comments that name an unknown check or suppress nothing |
 
@@ -272,6 +317,25 @@ rule a = "x"*? y // "x"* always succeeds: the ? does nothing
 
 Remove the `?`. An optional lookahead (`(&x)?`) is not reported: it adds a `nil` child that `&x` does not have.
 
+### `growing-variable`
+
+```pego
+var s string = "a"
+
+@start
+rule main = "x" {s := s + s} main / ""
+```
+
+```text
+grow.pego:4:18: warning: s := s + s can at least double the size of s on each recursion or iteration, so that it can grow exponentially with the input [growing-variable]
+```
+
+Each call of `main` sees the value that the call before it bound, so after n characters `s` holds 2^n characters. A
+binding that adds a bounded piece, such as `indent := indent + "  "`, is not reported, nor is one whose value no later
+evaluation of it sees: a binding after the recursive call, or one in another alternative of the choice. Only `string`
+variables are checked; growth through `int` variables, and a fold accumulator that doubles, are matters of cost, which
+[`super-linear`](#super-linear) reports.
+
 ### `unused-capture`
 
 A capture is reported when nothing can read its value:
@@ -351,6 +415,15 @@ rule line = text "\n" &([^!]* ($$ / "!")) // looks ahead to the next "!", across
 A lookahead that repeats `.` or a negated class that admits line breaks can examine any amount of input, and an edit
 anywhere in what it examined invalidates the rule's results in a `Document`. Lookaheads through other rules
 (`&(ws ":")`) are not reported: those are usually whitespace and tokens, which end soon.
+
+### `super-linear`
+
+Reported only with `-classify` (see [Classifying the parse cost](#classifying-the-parse-cost)): one hint for each
+cause of a polynomial or exponential class, at the scan, binding or operation that causes it. A scan that can start
+again inside the input it examined is the most common cause: a repetition or a `#recover` skip in an alternative that
+can fail after it, when a later alternative or what follows can consume the same characters. Make the alternatives
+start differently, add a `#cut` after the part that decides, or move the scan out of the alternative. A copy of a value
+that grows with a recursion, such as `text` of a capture of the rule's own recursive call, is another cause.
 
 ### `case-insensitive-literal`
 

@@ -22,6 +22,7 @@ linter, identified by a name.
 | Lint a grammar | `pego lint -g g.pego` | `lint.Config.Run(ctx, g, start)` |
 | Machine-readable output | `-f json` | `[]lint.Finding` |
 | Turn checks off | `-disable check,...` (or the flag repeated) | `lint.Config.Disable` |
+| Classify the cost | `-classify` | `lint.Config.Classify` |
 | Fail on warnings too | `-strict` | Check `Finding.Severity` |
 | List the checks | `-list` | `lint.Checks()` |
 
@@ -44,6 +45,18 @@ linter, identified by a name.
 - `-f json` prints one JSON document with the members `grammar`, `start` and
   `findings`; each finding has `line`, `col`, `severity`, `check`, `rule`,
   `message` and, if present, `fix`.
+- `-classify` requests the [classification](parsing.md#classification) of the
+  cost from the start rule, and with it the `super-linear` check, which reports
+  nothing otherwise. After the findings, the text output prints
+  `file: the cost from start rule main is class`, where the class is `linear`,
+  `linear-env`, `unknown`, `polynomial (n^k)` or `exponential`, followed by
+  the first three witnesses of a polynomial or exponential class and the first
+  three reasons for the class unknown, each on a line
+  `witness: file:line:col: message` or `reason: file:line:col: message`, and a
+  line `... and N more` for those not shown. With `-f json` the document has a
+  member `classification` with `class`, `degree` (for a polynomial class), and
+  every witness and reason in `witnesses` and `reasons`, each with `line`,
+  `col`, `rule` and `message`.
 - `pego lint` exits with status 1 if there is a finding of severity `error`, and
   with 0 otherwise. With `-strict`, a warning also gives status 1. A hint never
   does.
@@ -80,7 +93,7 @@ than the nesting limit, which can make any call fail.
 | `right-recursion` | hint | A list written as right recursion |
 | `positions` | hint | `.Start` or `.End` read in a rule that is used repeatedly |
 | `long-lookahead` | hint | A lookahead that repeats `.` or a class that admits line breaks |
-| `super-linear` | hint | A cause of cost that can grow faster than the input from the start rule |
+| `super-linear` | hint | A cause of cost that can grow faster than the input from the start rule, when the classification is requested |
 | `case-insensitive-literal` | hint | A run of `[sS]`-style classes that spells a word |
 | `lint-directive` | warning | A directive that names an unknown check or suppresses nothing |
 
@@ -143,7 +156,8 @@ non-empty value and the bound value reaches a later evaluation of the same
 binding. That is so, outside a negative lookahead, when a sequence of the rule
 body has the binding in one element and a call that can reach its rule again
 in a later element, each at any depth of groups, options and choices, or when
-the binding is part of the element of a repetition in its rule. Each
+the binding is part of the element of a repetition in its rule. Captures, discards
+and `#atomic` do not change this, as groups do not. Each
 evaluation can then at least double the size of the variable, so that its size
 can grow exponentially with the input:
 
@@ -166,7 +180,10 @@ nor one in a different alternative of a choice from the call, as in
 `R = {s := s + s} "q" / "x" R / ""`, because a failed alternative undoes its
 bindings before the next is tried. Bindings of `int` and `bool` variables are
 not reported; their effect on the number of combinations of values is a matter
-of cost, which `super-linear` reports.
+of cost, which `super-linear` reports. A fold accumulator that doubles, as
+`acc + acc` or `concat(acc, acc)` does in the lambda of `foldl`, is not a
+binding (and a variable never holds a list); `super-linear` reports it as
+exponential, as it reports every growing binding.
 
 #### `unused-capture`
 
@@ -237,8 +254,13 @@ variable, a copy of a value of its own recursion, or a scan that can start
 again inside the input that it examined. The finding is a hint because these
 classes can be pessimistic: no slow input need exist. The class unknown is not
 reported, because the classifier then has no such witness, only a condition
-for linear cost that it cannot establish. It is shown, with that reason, only
-when the classification is requested.
+for linear cost that it cannot establish; its reasons are shown with the
+classification.
+
+The check runs only when the classification is requested, with `-classify` or
+`lint.Config.Classify`; otherwise it reports nothing, whatever the class. The
+bindings that `growing-variable` reports are also exponential causes here;
+that warning needs no request.
 
 #### `case-insensitive-literal`
 

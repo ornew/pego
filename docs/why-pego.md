@@ -235,10 +235,10 @@ These are goals, not results.
   `jsontext` baseline once it is measured.
 - **Budget limits on by default.** Every parse gets a budget proportional to the input length (c·n). At first, c
   is one fixed, large constant, calibrated on the repository grammars and ready-made parsers so that ordinary
-  grammars stay well below it, and a lint warns about grammars outside the specification's sufficient conditions for
-  linear cost. An unlimited parse has to be requested explicitly. From the first release, `pego gen` generates
-  parsers with budget controls by default (today `-budget-controls` turns them on), and published performance figures
-  are measured with the limits on. A complexity classifier, which is research, can later refine c per grammar. The
+  grammars stay well below it, and `pego lint -classify` reports grammars outside the specification's sufficient
+  conditions for linear cost. An unlimited parse has to be requested explicitly. From the first release, `pego gen`
+  generates parsers with budget controls by default (today `-budget-controls` turns them on), and published
+  performance figures are measured with the limits on. A complexity classifier, which is research, can later refine c per grammar. The
   overhead of the limits is to shrink alongside, but the default does not wait for it.
 - **One place for production limits.** Optional caps on input length and on estimated memory (memo entries and
   result trees) fail with the same kind of error as the budget limit.
@@ -273,8 +273,10 @@ planned to reach them.
   - There is no memory or input-size limit; a whole parse of 27 MiB of CSV peaked at about 1.0 GB. Budget limits do not
     bound memory.
   - `pego parse` has no flag for budget limits.
-- **No linear-time guarantee.** Some grammars take quadratic, cubic or exponential time, and no tool classifies a
-  grammar or warns about it yet ([design record 064](design/records/064-grammar-complexity.md), proposed).
+- **No linear-time guarantee.** Some grammars take quadratic, cubic or exponential time. `pego lint -classify` proves
+  linear cost only for grammars that meet the
+  [sufficient conditions](../spec/runtime/parsing.md#conditions-for-linear-cost), and estimates the growth of the
+  others; of the ready-made parsers, only JSON is classified linear today.
 - **Not the fastest yet.** Generated Go is slower than Go's hand-written parsers on every comparable workload
   measured, and no benchmark against another parser framework exists yet (see [Measured Today](#measured-today)).
 - **Two targets and one engine language.** Parsers are generated for Go and TypeScript only, and only the Go VMs
