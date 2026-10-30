@@ -95,6 +95,7 @@ test below found this case.
 | `useless-lookahead` | error, warning | `!x` never succeeds (x always does); `&x` always succeeds; `!x` always succeeds (x never matches) |
 | `nullable-repetition` | warning | The element of a repetition can match without consuming input |
 | `redundant-optional` | warning | `x?` where x always succeeds and has a value |
+| `growing-variable` | warning | A `string` binding joins its variable's own value twice and reaches a later evaluation of itself ([064](064-grammar-complexity.md)) |
 | `unused-capture` | warning | A capture whose value cannot be read |
 | `duplicate-capture` | warning | One match captures the same name twice |
 | `char-class` | warning | Overlapping ranges; a range between letters or digits of different kinds |
@@ -102,6 +103,7 @@ test below found this case.
 | `right-recursion` | hint | A rule continues a list by calling itself at its end |
 | `positions` | hint | A rule that is used repeatedly reads `startPos` or `endPos` |
 | `long-lookahead` | hint | A lookahead repeats over any character |
+| `super-linear` | hint | Nothing proven: a cause of a `Poly` or `Exp` cost class with its witness, only on request ([064](064-grammar-complexity.md)) |
 | `case-insensitive-literal` | hint | Consecutive `[sS]`-style classes spell a word |
 | `lint-directive` | warning | A `lint:ignore` comment names an unknown check or suppresses nothing |
 

@@ -558,10 +558,10 @@ for untrusted input; the goals below make it so.
   - A regression suite that asserts step ratios at n, 2n, 4n and 8n.
   - One budget.
   - A budget limit flag in `pego parse`.
-- **Research track.** A sound classifier that labels each start rule as linear, linear given an environment bound,
-  polynomial of degree k or exponential, with a witness
-  ([design record 064](design/records/064-grammar-complexity.md), proposed). It is not on the critical path to
-  release.
+- **Research track.** A sound classifier labels each start rule as linear, linear given an environment bound,
+  unknown, polynomial of degree k or exponential, with a witness, through `pego lint -classify`
+  ([design record 064](design/records/064-grammar-complexity.md)). Making it precise on the ready-made parsers is
+  not on the critical path to release.
 
 ### Typed, Portable Output
 

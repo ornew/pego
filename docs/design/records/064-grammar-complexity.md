@@ -1,6 +1,6 @@
 # 064. Grammar Complexity: a Cost Model, a Classifier and Safeguards
 
-- **Status**: Proposed
+- **Status**: Partially Implemented
 - **Author**: @ornew
 - **Date**: 2026-10-28
 
@@ -11,7 +11,8 @@ but parts of the language have a cost that the memo does not share, so a small g
 exponential time, or build values of exponential size. This record defines what a parse costs, per construct. It
 proposes:
 
-- a sound static classifier that labels each start rule `Linear`, `Linear·Env`, `Poly(k)` or `Exp`, with a witness;
+- a sound static classifier that labels each start rule `Linear`, `Linear·Env`, `Unknown`, `Poly(k)` or `Exp`, with a
+  witness or a reason;
 - two runtime changes that make linear what can be made linear: memoizing the members of left-recursion cycles, and
   reusing a repetition's run after backtracking;
 - a lint warning for variables that grow themselves;
@@ -169,7 +170,8 @@ A start rule is `Linear` when every rule reachable from it satisfies these four 
   A repetition after the run-reuse change below is not a scanning construct for L3, because a restart inside its run
   reuses the run.
 - **L4, bounded values.** No predicate or value action makes a value whose size can double per evaluation. Examples are
-  `s + s` or `concat(a, a)` on a value that flows back into the same binding or fold accumulator (E4, E5). An
+  `s + s` on a value that flows back into the same binding (E4), and `acc + acc` or `concat(acc, acc)` on a fold
+  accumulator (E5). An
   accumulator extended by bounded pieces (`acc + text(x)`) is quadratic in time because strings are copied, and gives
   `Poly(2)` for that action.
 
@@ -178,8 +180,12 @@ A start rule is `Linear` when every rule reachable from it satisfies these four 
 Verdicts form a chain, from best to worst:
 
 ```text
-Linear  <  Linear·Env(vars)  <  Poly(k, witness)  <  Exp(witness)
+Linear  <  Linear·Env(vars)  <  Unknown(reason)  <  Poly(k, witness)  <  Exp(witness)
 ```
+
+- `Unknown` is assigned when a condition fails without a witness of growth, as when units that are not committing nest
+  without bound through a recursion of rule calls. A witnessed `Poly` or `Exp` cause outranks it: a witness is evidence
+  of growth, while `Unknown` is only the absence of a proof.
 
 - `Poly(k)` is assigned when L3 or L4 fails. k is one more than the deepest nesting of unsafe scanning constructs along a
   path of the call graph: E1 has k = 2 and E7 has k = 3. Each unsafe level multiplies the input positions where an
@@ -189,9 +195,9 @@ Linear  <  Linear·Env(vars)  <  Poly(k, witness)  <  Exp(witness)
 - A start rule's verdict is the worst verdict of the rules it reaches. A rule's verdict also feeds the verdicts of its
   callers, because it is part of their local cost.
 
-For a `Linear` start rule the classifier also emits a constant c_G, an upper bound on cost per input position. It is
+The automatic budget needs, for a `Linear` start rule, a constant c_G, an upper bound on cost per input position. It is
 the sum, over memoized and transient rules, of twice the local cost of one body evaluation without loops, plus the
-per-iteration cost of each loop. The automatic budget uses c_G.
+per-iteration cost of each loop. The classifier does not compute c_G, because the automatic budget is not implemented.
 
 **Soundness argument (sketch).** The cost of a parse is the sum, over every body evaluation, of its local cost. For a
 grammar that satisfies L1–L4, with the left-recursion guard keyed by rule and position:
@@ -222,31 +228,22 @@ hint with a witness, not a proof that a slow input exists.
 
 ### Where It Plugs In
 
-- `internal/compile/analysis.go` already computes, over the grammar AST:
-  - nullability, rules that always succeed, the left-call graph, its SCCs and leaders, and the cycle members (`AnalyzeControlled`);
-  - the variables each rule reads (`ruleVariables`);
-  - the transient rules (`compile.go`).
-
-  The classifier is a further pass over the same data, run on demand and not at every compile. L1 extends
-  `ruleVariables` with the expressions each binding reads. L2 reads `cyclic` and `leaders`.
-- Core IR carries the facts that L3 needs, per node:
-  - first terminals and nullability ([Attributes and Effects](../../../spec/core-ir/attributes.md#first-terminals));
-  - effect summaries that say which nodes can fail and consume (`internal/ir/core/attrs.go`, `Analyze`);
-  - the call graph with SCCs (`internal/ir/core/graph.go`);
-  - the memo policy per rule (`Memo`, `Transient`, `Leader`, `Vars`: [Policy](../../../spec/core-ir/modules.md#policy),
-    `internal/ir/core/core.go:104-109`).
-
-  Core IR is built for generated parsers (`internal/ir/build/build.go`). The classifier runs as a Core analysis that
-  invalidates nothing. Its verdicts are attributes of rules, which the verifier ignores. Running on Core rather than
-  on the AST means it judges the module that is actually executed, after rewrites such as `Scans`.
-- `pego lint` reports the results through checks next to `long-lookahead` (`lint/checks.go:1186`) and
-  `right-recursion` (`lint/checks.go:996`):
-  - `growing-variable`, a warning: a binding that reads the variable it binds, along a recursion or a fold, and makes
-    it longer by a value that reads the variable itself (`s := s + s`, `n := n * 2`). Linear growth such as
-    `indent := indent + "  "` is not reported. This is a certain fact about the grammar, so it meets the warning
-    contract of [Severities](../../../spec/runtime/lint.md#severities).
-  - `super-linear`, a hint: the `Poly(k)` or `Exp` verdict of a start rule, with its witness path. A hint because the
-    slow input may not exist.
+- The classifier (`internal/compile/complexity*.go`) is a pass over the grammar that the compiler runs: inline actions
+  lowered to hidden rules and attributes normalized. It reuses the analyses of `internal/compile/analysis.go`
+  (nullability, rules that always succeed, the left-call graph, its SCCs, leaders and cycle members) and runs only when
+  asked, not at every compile. It assumes that the memo answers exactly the rules that every parse memoizes, and a test
+  compares that assumption with the flags of the compiled rules, so the two cannot drift apart. Findings in hidden rules
+  are reported in the rules that hold the inline actions.
+- `pego lint` reports the results through two checks:
+  - `growing-variable`, a warning on by default: a binding of a `string` variable that joins the variable's own value at
+    least twice (`s := s + s`), when the variable can hold a non-empty value there and the bound value reaches a later
+    evaluation of the same binding. Growth by a bounded piece, such as `indent := indent + "  "`, is not reported, nor
+    are `int` and `bool` bindings, whose effect is on cost. This is a certain fact about the grammar, so it meets the
+    warning contract of [Severities](../../../spec/runtime/lint.md#severities). It needs only the bindings that the
+    classifier collects, so a default lint run skips the rest of the classification.
+  - `super-linear`, a hint at each cause of a `Poly(k)` or `Exp` verdict, with its witness path. A hint because the
+    slow input may not exist. It runs only when the classification is requested, with `pego lint -classify` or
+    `lint.Config.Classify`, which also shows the verdict, its degree and the first witnesses or reasons.
 - The `right-recursion` hint gains a caveat. Right recursion stays linear under memoization in batch parses (E6 control).
   The repetition or left recursion it suggests is a scanning construct that L3 must check.
 
@@ -298,30 +295,12 @@ the option, parses stay unbounded, as today. Exhausting the automatic budget ret
 profiling is active, the error names the rule with the most repeated evaluations at one position, as `Profile` reports
 them (`internal/engine/profile.go:66-72`).
 
-### Proposed Specification Text
+### Specification
 
-The following section is proposed for [Parsing](../../../spec/runtime/parsing.md), after Memoization. It becomes
-normative when the classifier and the two runtime changes land; until then it is a draft.
-
-> ## Complexity
->
-> The **cost** of a parse is the number of body evaluations of rules, the input that terminals examine, the
-> iterations of repetitions and the size of the values that actions and predicates build. Budget bounds both the time and
-> the memory of a parse: memory never exceeds a constant times the cost.
->
-> - A rule is evaluated at most twice per position, binding level and combination of the values of the variables it
->   reads, except while a left-recursive rule grows at that position.
-> - A parse of a grammar that `pego lint` classifies as linear has a cost at most proportional to the length of the
->   input, with a constant that depends on the grammar only.
-> - Other grammars can do more. A repetition, a left-recursive rule or an Operators Rule whose match the grammar
->   abandons and then starts again inside it can make cost quadratic or worse. A variable bound, along a recursion,
->   from its own previous value can make the number of combinations, and so cost, exponential. An action can build a
->   value whose size is exponential in the input.
-> - Every parse terminates. A call of a left-recursive rule at a position where that rule is already being evaluated
->   fails, whatever the values of variables.
->
-> Budget limits ([Cancellation and budget limits](../../../spec/runtime/parsing.md#cancellation-and-budget-limits)) bound the cost of any parse. Values are
-> charged in proportion to their size, so a limit also bounds the memory that values occupy.
+[Time and Memory](../../../spec/runtime/parsing.md#time-and-memory) specifies the cost of a parse, the conditions for
+linear cost and the classification; [Grammar Lint](../../../spec/runtime/lint.md) specifies the two checks. The
+specification promises linear cost only for the classes `Linear` and `Linear·Env`, under the memoization that it
+describes.
 
 ### Compatibility and Backend Support
 
@@ -336,9 +315,12 @@ grammars carry the memo flag of cycle members, and the format may change before 
 1. The step-ratio regression suite, with the E-series as negative controls (no behavior change).
 2. Memoizing left-recursion cycle members; E2 moves to the positive set.
 3. Repetition-run reuse in batch parses; E1, E7, E8 and E9 move to the positive set.
-4. The classifier as a Core analysis, and the `growing-variable` and `super-linear` lint checks.
+4. The classifier over the grammar that the compiler runs, and the `growing-variable` and `super-linear` lint checks.
 5. The automatic budget option, after the single budget lands.
 6. The Complexity section of the specification, and corrected comments where the code claims linear time.
+
+Steps 1 and 4 and the specification of step 6 are implemented; the two runtime changes and the automatic budget are
+not, so E1, E2, E7, E8 and E9 remain negative controls.
 
 ## Alternatives Considered
 
@@ -353,23 +335,26 @@ grammars carry the memo flag of cycle members, and the format may change before 
   calibrate. A single budget plus a verdict naming the construct gives the same protection with one knob.
 - **Rejecting super-linear grammars.** Classification is pessimistic and many such grammars are fine on real inputs,
   so rejection would refuse correct grammars. Lint findings and budgets keep the choice with the author.
-- **Analysis only on the grammar AST.** Simpler, but it would judge a module different from the one that runs after
-  Core rewrites. The AST pass stays the source of L1 and L2, which need no rewriting.
+- **Analysis on Core IR.** It would judge the module after rewrites such as `Scans`, but Core IR is built only for
+  generated parsers, and the conditions are stated on the grammar. The grammar after lowering and normalization is
+  what every backend compiles; the memo-policy test keeps the classifier aligned with the compiled rules.
 
 ## Testing
 
-Proposed:
+- **Step-ratio suite** (`internal/complexitytest`). Each E-series control and each corpus grammar is measured at input
+  sizes n, 2n and 4n on the three backends, with steps found by bisection over the budget limit. A control must show
+  its order from the table above; a corpus grammar's worst cost per byte may grow by at most 1.1 from 2n to 4n. Steps
+  are deterministic, so the suite is stable without timing.
+- **Classifier verdicts on the controls.** Each control has an expected class: a positive control is classified
+  `Linear` or `Linear·Env`, a negative control never is, and a polynomial degree matches the measured order.
+- **Classifier soundness by differential testing.** Random grammars over a small alphabet, in the shapes of the
+  E-series, are classified, and every grammar classified linear is measured on several input families: its cost per
+  byte at 4n stays within 1.2 times that at n or 2n. A `Linear` verdict with super-linear growth is a classifier bug.
+  A negative control treats the grammars classified `Poly` or `Exp` as linear and must fail, so the test can catch a
+  classifier that claims too much.
 
-- **Step-ratio suite.** For each grammar of the shared corpora (`internal/corpora`) and each E-series grammar, generate
-  inputs of sizes n, 2n, 4n and 8n with the input generator. Measure steps with bisection over the budget limit, or with a
-  test-only counter. Assert:
-  - for a start rule classified `Linear`, a ratio ≤ 2.2 per doubling;
-  - for each negative control, the order in the table above.
+Not yet in place:
 
-  Steps are deterministic, so the suite is stable without timing. It runs per backend and for generated Go.
-- **Classifier soundness by differential testing.** Generate random grammars, classify them, and measure step growth on
-  generated and mutated inputs. A `Linear` verdict with super-linear growth is a classifier bug. The E-series must never
-  be classified `Linear` before its fix, and must become `Linear` after it.
 - **Worst-case search.** Mutate inputs to maximize steps per input length, in the manner of SlowFuzz and PerfFuzz
   [unverified citations], for corpus grammars classified non-linear. Confirmed witnesses become fixtures.
 - **Equivalence.** The runtime changes keep values, errors and recovered errors identical with and without them, on
@@ -411,12 +396,13 @@ blow-ups. That leaves unmemoized re-entry and diverging state as the exponential
 
 1. **The specification promises a bound only for certified grammars.** A parse of a grammar that the classifier
    certifies as linear has a cost proportional to the input length. Other grammars carry no promise beyond termination.
-   The classifier's soundness is therefore normative once it lands. The alternatives were no promise, which leaves
+   The classifier's soundness is therefore normative. The alternatives were no promise, which leaves
    users nothing to check, and a promise for every grammar, which restarted left-recursion growth and Operators Rule
    folds make impossible.
-2. **`super-linear` is a hint.** The lint contract requires a warning to be certain, and a `Poly` or `Exp` verdict
-   may be pessimistic. The finding carries the witness path. Neither a measurement-confirmed warning nor a separate
-   report command is used.
+2. **`super-linear` is a hint, shown only on request.** The lint contract requires a warning to be certain, and a
+   `Poly` or `Exp` verdict may be pessimistic. The finding carries the witness path. Because many grammars that work
+   well on real input are classified `Poly`, the hint and the verdict appear only with `pego lint -classify` or
+   `lint.Config.Classify`, and a default lint run stays free of estimates. `growing-variable` is certain and stays on.
 3. **Run reuse is on by default.** Recording is deferred until a site restarts inside an earlier run, and an
    optimization control disables it, as the memo has. It is adopted only if the corpora and benchmark grammars, which
    never restart inside runs, show no slowdown. Without that evidence it stays behind the control.
