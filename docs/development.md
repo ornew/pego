@@ -124,7 +124,7 @@ Generated Go typed-output cleanup is not implemented; the measured full-sweep an
 go test ./...
 ```
 
-The tests of `internal/engine` that build generated parsers build them in two forms. A parser generated with work controls charges work and accepts the options `WithContext` and `WithWorkLimits`. A parser generated without them is the form that most parsers have, and a different part of the generator prints it. Every test runs the form that it exists to check:
+The tests that build generated parsers (in `internal/gen/gogen`, `internal/gen/tsgen`, `internal/gen` and `internal/engine`) build them in two forms. A parser generated with work controls charges work and accepts the options `WithContext` and `WithWorkLimits`. A parser generated without them is the form that most parsers have, and a different part of the generator prints it. Every test runs the form that it exists to check:
 
 | Kind of test | Runs | How |
 |:--|:--|:--|

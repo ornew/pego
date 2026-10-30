@@ -1,4 +1,4 @@
-package engine
+package gen_test
 
 import (
 	"strings"

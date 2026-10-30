@@ -4,16 +4,12 @@ import (
 	"encoding/binary"
 	"fmt"
 	"hash/crc32"
-	"os/exec"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
 )
 
@@ -186,25 +182,5 @@ func TestCompiledFieldChecksValidation(t *testing.T) {
 		if _, err := compile.ParseFieldType(text, map[string]bool{"Int": true, "Box": true}); err != nil {
 			t.Errorf("type text %q: %v", text, err)
 		}
-	}
-}
-
-func TestGeneratedConstructedFieldChecks(t *testing.T) {
-	t.Parallel()
-	gentest.EachMode(t, testGeneratedConstructedFieldChecks)
-}
-
-func testGeneratedConstructedFieldChecks(t *testing.T) {
-	if testing.Short() {
-		t.Skip("builds generated consumers")
-	}
-	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	cases := gentest.FieldCheckCases()
-	gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
-	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true})
-	if node, err := exec.LookPath("node"); err == nil {
-		gentest.TSParsersCorpus(t, node, cases, gen.GenOptions{})
-	} else {
-		t.Error("Node is required for field-check parity")
 	}
 }

@@ -1,4 +1,4 @@
-package engine
+package gen_test
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
 )
@@ -39,7 +40,7 @@ func testGeneratedMaxDepthValidation(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, n := range []int{0, DefaultMaxDepth} {
+		for _, n := range []int{0, engine.DefaultMaxDepth} {
 			got, err := generate(g, gen.GenOptions{Package: "depth", Start: "main", MaxDepth: n})
 			if err != nil || !bytes.Equal(base, got) {
 				t.Fatalf("ts=%v depth=%d equivalent default differs: %v", ts, n, err)

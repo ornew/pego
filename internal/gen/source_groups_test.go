@@ -1,10 +1,11 @@
-package engine
+package gen_test
 
 import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
 )
@@ -46,14 +47,14 @@ rule number Alias = v1:[0-9]+ => Number{Text: text($v1)}
 				t.Fatal(err)
 			}
 		}
-		p, err := Compile(input, compile.Options{})
+		p, err := engine.Compile(input, compile.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, unit := range []PositionUnit{CodePoints, Bytes} {
+		for _, backend := range []engine.Backend{engine.Closure, engine.Bytecode, engine.BytecodeIterative} {
+			for _, unit := range []engine.PositionUnit{engine.CodePoints, engine.Bytes} {
 				for _, source := range []string{"123", "0", "", "x"} {
-					opts := ParseOptions{Backend: backend, Unit: unit}
+					opts := engine.ParseOptions{Backend: backend, Unit: unit}
 					if got, want := gentest.ResultJSON(p.ParseWith("main", source, opts)), gentest.ResultJSON(ref.ParseWith("main", source, opts)); got != want {
 						t.Fatalf("JSON=%v %s/%s %q: got %s want %s", fromJSON, backend, unit, source, got, want)
 					}

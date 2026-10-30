@@ -1,4 +1,4 @@
-package engine
+package gen_test
 
 import (
 	"crypto/sha256"
@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
 )
@@ -74,17 +75,17 @@ func TestGeneratedLiteralDispatchWorkload(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", workload.name, err)
 		}
-		prog, err := Compile(g, compile.Options{})
+		prog, err := engine.Compile(g, compile.Options{})
 		if err != nil {
 			t.Fatalf("%s compile engine reference: %v", workload.name, err)
 		}
 		for i := range workload.inputs {
 			input := &workload.inputs[i]
 			for _, unit := range []struct {
-				unit PositionUnit
+				unit engine.PositionUnit
 				key  string
-			}{{CodePoints, "codePoints"}, {Bytes, "bytes"}} {
-				_, parseErr := prog.ParseWith("main", input.Value, ParseOptions{Unit: unit.unit})
+			}{{engine.CodePoints, "codePoints"}, {engine.Bytes, "bytes"}} {
+				_, parseErr := prog.ParseWith("main", input.Value, engine.ParseOptions{Unit: unit.unit})
 				input.Expected = append(input.Expected, literalDispatchExpected{Unit: unit.key, Accepted: parseErr == nil})
 			}
 		}

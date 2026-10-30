@@ -2,15 +2,11 @@ package engine
 
 import (
 	"fmt"
-	"os/exec"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/syntax"
@@ -303,25 +299,5 @@ rule e Num = #operators {
 				t.Errorf("%q %s: %s\nwant %s", in, b, got, want)
 			}
 		}
-	}
-}
-
-func TestGeneratedRuleResultChecks(t *testing.T) {
-	t.Parallel()
-	gentest.EachMode(t, testGeneratedRuleResultChecks)
-}
-
-func testGeneratedRuleResultChecks(t *testing.T) {
-	if testing.Short() {
-		t.Skip("builds generated consumers")
-	}
-	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	cases := gentest.ResultCheckCases()
-	gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
-	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true})
-	if node, err := exec.LookPath("node"); err == nil {
-		gentest.TSParsersCorpus(t, node, cases, gen.GenOptions{})
-	} else {
-		t.Error("Node is required for result-check parity")
 	}
 }

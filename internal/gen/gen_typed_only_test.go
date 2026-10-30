@@ -1,4 +1,4 @@
-package engine
+package gen_test
 
 import (
 	"os"
@@ -9,10 +9,6 @@ import (
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
 )
-
-// A typed-only parser has the typed entry points and none of the Node family. These tests check what it
-// lacks, the messages of the combinations that are refused, and that its typed entry points return what
-// those of a parser with every entry point return.
 
 func TestGeneratedTypedOnly(t *testing.T) {
 	t.Parallel()

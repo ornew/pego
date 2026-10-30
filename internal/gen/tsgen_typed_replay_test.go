@@ -1,4 +1,4 @@
-package engine
+package gen_test
 
 import (
 	"bufio"
@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
 	"github.com/ornew/pego/internal/gentest"
@@ -128,7 +129,7 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, Inputs: []string{"", "a1", "a1b2"}
 			t.Fatalf("%s: %v", c.Name, err)
 		}
 		gentest.GeneratePackageIn(t, dir, "replay", fmt.Sprintf("g%d", i), g, gen.GenOptions{Start: "main", Types: true, ConvertTypes: true, Recognize: true})
-		prog, err := Compile(g, compile.Options{})
+		prog, err := engine.Compile(g, compile.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}

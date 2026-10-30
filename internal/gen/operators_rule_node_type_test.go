@@ -1,0 +1,39 @@
+package gen_test
+
+import (
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"testing"
+
+	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
+)
+
+// Generated Go parsers, plain and typed, and generated TypeScript parsers build the same trees as
+// the engine for Operators Rules with and without a named node type.
+func TestOperatorsRuleNamedNodeTypeGenerated(t *testing.T) {
+	t.Parallel()
+	gentest.EachMode(t, testOperatorsRuleNamedNodeTypeGenerated)
+}
+
+func testOperatorsRuleNamedNodeTypeGenerated(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds generated consumers")
+	}
+	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
+	cases := gentest.OperatorsNamedNodeCases()
+	t.Run("go", func(t *testing.T) { gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{}) })
+	t.Run("go source info", func(t *testing.T) { gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{SourceInfo: true}) })
+	t.Run("typed go", func(t *testing.T) {
+		gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, len(cases))
+	})
+	t.Run("typescript", func(t *testing.T) {
+		node, err := exec.LookPath("node")
+		if err != nil {
+			t.Skip("node not found")
+		}
+		gentest.TSParsersCorpus(t, node, cases, gen.GenOptions{})
+		gentest.TSParsersCorpus(t, node, cases, gen.GenOptions{SourceInfo: true})
+	})
+}
