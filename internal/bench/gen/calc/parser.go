@@ -243,7 +243,6 @@ func init() {
 	recRules[1].Body = func(p *rt.Parser, min int) (*rt.Node, bool) { return p.OperatorsRuleParse(recRules[1], min) }
 	pegoGrammar.Starts = []string{"main"}
 	pegoGrammar.DefaultStart = "main"
-	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "[0-9]", "\".\"", "[ \\t\\r\\n]", "\"(\"", "\")\"", "\"+\"", "\"-\"", "\"*\"", "\"/\"", "\"%\"", "\"^\""}
 	pegoRecGrammar.Share(pegoGrammar)
 	trules = rt.NewTRules(rules)
 	defer tinit()

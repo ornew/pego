@@ -18,7 +18,7 @@ rule value = [0-9]+ #atomic`, "main")
 	}
 	var calls []string
 	var exits int
-	_, err = p.Parse("a=1;b=x", pego.WithTrace(func(e pego.TraceEvent) {
+	_, err = p.Parse("a=1;b=x", pego.WithExpectations(), pego.WithTrace(func(e pego.TraceEvent) {
 		if e.Kind == pego.TraceEnter {
 			line, col := e.LineCol(e.Pos)
 			calls = append(calls, fmt.Sprintf("%s%s@%d:%d", strings.Repeat(" ", e.Depth-1), e.Rule, line, col))

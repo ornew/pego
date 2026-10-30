@@ -250,7 +250,6 @@ func init() {
 	recRules[0].Body = e16
 	pegoGrammar.Starts = []string{"main"}
 	pegoGrammar.DefaultStart = "main"
-	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"\\ufeff\"", "\",\"", "\"\\\"\"", "[^\"]", "\"\\\"\\\"\"", "[^,\"\\r\\n]", "\"\\r\"", "[^\\n]", "\"\\r\\n\"", "\"\\n\""}
 	pegoRecGrammar.Share(pegoGrammar)
 	trules = rt.NewTRules(rules)
 	defer tinit()

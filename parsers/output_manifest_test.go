@@ -47,6 +47,8 @@ var manifestModes = []struct {
 	config gen.Go
 }{
 	{"node", gen.Go{}},
+	{"node-exp", gen.Go{Expectations: true}},
+	{"typed-exp", gen.Go{Types: true, Expectations: true}},
 	{"node-rec", gen.Go{Recognize: true}},
 	{"node-wc", gen.Go{BudgetControls: true}},
 	{"node-rec-wc", gen.Go{Recognize: true, BudgetControls: true}},

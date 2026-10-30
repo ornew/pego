@@ -21,7 +21,7 @@ rule item = "ab" @error(message="record") #recover(skip=[^a]+)`, "main")
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
 				var events []string
 				var copies []*pego.SyntaxError
-				options := []pego.ParseOption{pego.WithBackend(backend), pego.WithUnit(unit), pego.WithDiagnosticCallback(func(e *pego.SyntaxError) error {
+				options := []pego.ParseOption{pego.WithExpectations(), pego.WithBackend(backend), pego.WithUnit(unit), pego.WithDiagnosticCallback(func(e *pego.SyntaxError) error {
 					events = append(events, "diagnostic")
 					copies = append(copies, e)
 					if len(e.Messages) != 1 || e.Messages[0] != "record" {
@@ -50,7 +50,7 @@ rule item = "ab" @error(message="record") #recover(skip=[^a]+)`, "main")
 
 				stop := errors.New("diagnostic stop")
 				var stopped []string
-				abort := []pego.ParseOption{pego.WithBackend(backend), pego.WithUnit(unit), pego.WithDiagnosticCallback(func(*pego.SyntaxError) error {
+				abort := []pego.ParseOption{pego.WithExpectations(), pego.WithBackend(backend), pego.WithUnit(unit), pego.WithDiagnosticCallback(func(*pego.SyntaxError) error {
 					stopped = append(stopped, "diagnostic")
 					return stop
 				})}

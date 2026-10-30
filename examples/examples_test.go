@@ -49,7 +49,7 @@ func TestExamples(t *testing.T) {
 				}
 				// Print the tree and the errors, including those recovered with #recover.
 				var got string
-				n, err := p.Parse(string(data))
+				n, err := p.Parse(string(data), pego.WithExpectations())
 				if n != nil {
 					got = n.String()
 				}

@@ -3,6 +3,8 @@ package sample
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/ornew/pego"
 )
 
 // Invalid is a near-miss invalid input: an input that the parser accepts, changed by one mutation so
@@ -28,7 +30,7 @@ func (g *Generator) Invalid() (Invalid, error) {
 			if in == base {
 				continue
 			}
-			if _, err := g.p.Parse(in); err != nil {
+			if _, err := g.p.Parse(in, pego.WithExpectations()); err != nil {
 				return Invalid{Input: in, Base: base, Mutation: desc, Err: err}, nil
 			}
 		}

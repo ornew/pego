@@ -18,7 +18,7 @@ rule item = "a;" @error(message="original") #recover(skip=[^;]+ ";")`, "main")
 		for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 			for _, changes := range []bool{false, true} {
 				t.Run(fmt.Sprintf("%s/%s/changes=%v", backend, unit, changes), func(t *testing.T) {
-					opts := []pego.ParseOption{pego.WithBackend(backend), pego.WithUnit(unit)}
+					opts := []pego.ParseOption{pego.WithBackend(backend), pego.WithUnit(unit), pego.WithExpectations()}
 					d, err := p.NewDocument("?é;", opts...)
 					if err != nil {
 						t.Fatal(err)

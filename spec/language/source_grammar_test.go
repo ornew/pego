@@ -343,7 +343,7 @@ func TestSourceGrammarRecovery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var want string
 			for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-				n, err := p.Parse(tc.src, pego.WithBackend(backend))
+				n, err := p.Parse(tc.src, pego.WithBackend(backend), pego.WithExpectations())
 				var syntaxErrors pego.SyntaxErrors
 				wantErrors := 1
 				if tc.name == "broken multiline group" {
@@ -537,7 +537,7 @@ func TestSourceGrammarPackageRecovery(t *testing.T) {
 	p, _ := sourceGrammar(t)
 	for _, src := range []string{"package\nrule after = \"ok\"", "// leading\npackage ; rule after = \"ok\""} {
 		for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
-			n, err := p.Parse(src, pego.WithBackend(backend))
+			n, err := p.Parse(src, pego.WithBackend(backend), pego.WithExpectations())
 			var syntaxErrors pego.SyntaxErrors
 			if !errors.As(err, &syntaxErrors) || len(syntaxErrors) != 1 || !strings.Contains(err.Error(), "expected package name") {
 				t.Fatalf("%v: %v", backend, err)
