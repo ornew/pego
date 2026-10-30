@@ -15,6 +15,7 @@ import (
 	"github.com/ornew/pego"
 	"github.com/ornew/pego/gen"
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/ir/exec/core"
 )
 
 func sourceGrammar(t *testing.T) (*pego.Parser, string) {
@@ -481,7 +482,7 @@ func TestSource(t *testing.T){
 	}
 	cmd := exec.Command(goBin, "test", "-count=1", "-timeout=3m", "./...")
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "GOWORK=off")
+	cmd.Env = append(os.Environ(), "GOWORK=off", "GOFLAGS="+core.GoFlags(os.Getenv("GOFLAGS")))
 	if output, err := cmd.CombinedOutput(); err != nil {
 		t.Fatal(fmt.Errorf("generated consumer: %w\n%s", err, output))
 	}

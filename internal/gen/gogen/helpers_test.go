@@ -112,7 +112,7 @@ func TestMain(m *testing.M) {
 	// build cache entries depend on the directory and are never reused, so every run would add
 	// tens of gigabytes of builds to the cache. Commands that set GOFLAGS add it themselves.
 	// -mod=mod lets the temporary modules that replace this module resolve it without a go.sum.
-	os.Setenv("GOFLAGS", strings.TrimSpace(os.Getenv("GOFLAGS")+" -trimpath -mod=mod"))
+	gentest.SetGoFlags()
 	code := m.Run()
 	if names := gentest.UnwrappedFixtureTests(); len(names) > 0 {
 		fmt.Fprintf(os.Stderr, "FAIL: tests build generated fixtures without choosing their form: %s\nWrap the test body in gentest.EachMode, or call gentest.NeedsBudgetControls, or pin the form with gentest.PinOrdinary\n", strings.Join(names, ", "))

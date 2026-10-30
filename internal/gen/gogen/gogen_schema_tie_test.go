@@ -11,6 +11,7 @@ import (
 
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/pego/internal/ir/exec/core"
 )
 
 // The parser package of a typed parser reinterprets a string node of a named node type as the type of
@@ -54,7 +55,7 @@ func schemaTieBuild(t *testing.T, root string) (string, error) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	cmd := exec.Command(goBin, "build", "-trimpath", "./...")
 	cmd.Dir = root
-	cmd.Env = append(os.Environ(), "GOWORK=off", "GOFLAGS=")
+	cmd.Env = append(os.Environ(), "GOWORK=off", "GOFLAGS="+core.GoFlags(""))
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }

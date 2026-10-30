@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/internal/bench/inputs"
+	"github.com/ornew/pego/internal/ir/exec/core"
 )
 
 // tsWorkload is a workload measured on the generated TypeScript parser: the grammar and the input
@@ -236,7 +237,7 @@ func main() {
 		}
 	}
 	out := filepath.Join(dir, "probe")
-	if _, err := execOut(dir, []string{"GOWORK=off", "GOFLAGS=-mod=mod"}, "go", "build", "-trimpath", "-ldflags=-s -w", "-o", out, "."); err != nil {
+	if _, err := execOut(dir, []string{"GOWORK=off", "GOFLAGS=" + core.GoFlags("-mod=mod")}, "go", "build", "-trimpath", "-ldflags=-s -w", "-o", out, "."); err != nil {
 		return 0, err
 	}
 	st, err := os.Stat(out)

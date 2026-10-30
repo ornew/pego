@@ -187,11 +187,15 @@ func goTarget(typed bool) *execgo.Target {
 }
 
 // GoFlags returns flags, the GOFLAGS of a go command that builds generated Go parsers, with the
-// build tag that selects the printed compositions if this build prints them, so that the parsers
-// run the runtime that the generators of this build emit.
+// build tag that selects the printed compositions if this build prints them and flags lack it, so
+// that the parsers run the runtime that the generators of this build emit. Every go command that
+// builds the runtime from a test or a tool of this module sets its GOFLAGS through GoFlags (see
+// TestGoFlagsEverywhere), and the tests that build generated programs set their own GOFLAGS so,
+// for the commands that inherit them: a tag given to go test as -tags reaches no subprocess
+// otherwise.
 func GoFlags(flags string) string {
-	if Enabled {
-		return flags + " -tags=" + RuntimeTag
+	if Enabled && !strings.Contains(" "+flags+" ", " -tags="+RuntimeTag+" ") {
+		return strings.TrimSpace(flags + " -tags=" + RuntimeTag)
 	}
 	return flags
 }

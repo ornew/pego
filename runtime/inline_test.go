@@ -1,9 +1,12 @@
 package runtime
 
 import (
+	"os"
 	"os/exec"
 	"regexp"
 	"testing"
+
+	"github.com/ornew/pego/internal/ir/exec/core"
 )
 
 // hotInline lists the methods and functions that generated parsers call on their hot paths. A
@@ -44,7 +47,9 @@ func TestHotPathHooksInline(t *testing.T) {
 	if testing.Short() {
 		t.Skip("runs the compiler")
 	}
-	out, err := exec.Command("go", "build", "-gcflags=-m=2", ".").CombinedOutput()
+	cmd := exec.Command("go", "build", "-gcflags=-m=2", ".")
+	cmd.Env = append(os.Environ(), "GOFLAGS="+core.GoFlags(os.Getenv("GOFLAGS")))
+	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("go build: %v\n%s", err, out)
 	}

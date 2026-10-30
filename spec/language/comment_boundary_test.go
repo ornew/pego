@@ -10,6 +10,7 @@ import (
 
 	"github.com/ornew/pego"
 	"github.com/ornew/pego/gen"
+	"github.com/ornew/pego/internal/ir/exec/core"
 )
 
 const commentOwnerExample = "// orphan\n\n// foo\npackage foo // trailing\n// trailing\n\n// B2\n// B2\n\n// B1\n// B1\nrule B = \"b\" // trailing\n// trailing\n"
@@ -165,7 +166,7 @@ func TestOwners(t *testing.T){
 	}
 	cmd := exec.Command("go", "test", "-timeout=3m", "./...")
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "GOWORK=off")
+	cmd.Env = append(os.Environ(), "GOWORK=off", "GOFLAGS="+core.GoFlags(os.Getenv("GOFLAGS")))
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("generated comment consumer: %v\n%s", err, out)
 	}
