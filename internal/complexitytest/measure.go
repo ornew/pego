@@ -4,8 +4,8 @@
 //
 // Steps reads the spend of an ordinary parse by bisection over Limits.Budget. StepsTraced reads
 // it from the counter of a traced parse and is cheaper, but a traced parse spends a little more
-// than an untraced one (a few percent in the tests), so it is only an upper estimate; the suites
-// use Steps.
+// than an untraced one (1 to 9% in the tests; the cause is not investigated), so it is only an
+// upper estimate; the suites use Steps.
 package complexitytest
 
 import (

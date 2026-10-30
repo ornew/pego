@@ -48,7 +48,12 @@ func parens(n int) string { return rep("(", n) + "n" + rep(")z", n) }
 
 func double(n int) []int { return []int{n, 2 * n, 4 * n} }
 
-// Controls returns the controls table. Each source is a grammar from the measured families of the
+// Controls returns the controls table. The negative controls record growth that the engine has
+// today: when a planned change makes one linear, its entry moves to the linear set by hand. E2
+// moves with the becomesLinearLanded switch; E1, E7, E8 and E9 move when repetition runs are
+// reused in batch parses; E6 and E10 stay quadratic. The rebinding variants of E6 are positive
+// controls: a binding after the left call adds no growth, and the restart in E6 is the negative
+// control. Each source is a grammar from the measured families of the
 // grammar complexity design record; "main" is the start rule.
 func Controls() []Control {
 	cs := []Control{
@@ -95,22 +100,16 @@ func Controls() []Control {
 			Sizes:  double(250), ShortSizes: double(100), Order: Poly(2), Class: ClassPoly,
 		},
 		{
-			Name: "LR rebinding after the left call, growing value", Family: "E6 variant",
+			Name: "LR rebinding after the left call, growing value", Family: "E6 variant", Positive: true,
 			Source: "var s string = \"a\"\nrule main = e $$\nrule e = e \"x\" {s := s + s} / \"x\" {len(s) > 0}\n",
 			Input:  func(n int) string { return rep("x", n) },
 			Sizes:  double(250), ShortSizes: double(100), Order: Linear, Class: ClassLinearEnv,
 		},
 		{
-			Name: "LR rebinding after the left call, counter", Family: "E6 variant",
+			Name: "LR rebinding after the left call, counter", Family: "E6 variant", Positive: true,
 			Source: "var k int\nrule main = e $$\nrule e = e \"x\" {k := k + 1} / \"x\" {k >= 0}\n",
 			Input:  func(n int) string { return rep("x", n) },
 			Sizes:  double(250), ShortSizes: double(100), Order: Linear, Class: ClassLinearEnv,
-		},
-		{
-			Name: "LR rebinding after the left call, restarted", Family: "E6 variant",
-			Source: "var s string = \"a\"\nrule main = (e \"q\" / \"x\")* $$\nrule e = e \"x\" {s := s + s} / \"x\" {len(s) > 0}\n",
-			Input:  func(n int) string { return rep("x", n) },
-			Sizes:  double(250), ShortSizes: double(100), Order: Poly(2), Class: ClassPoly,
 		},
 		{
 			Name: "E10 Operators Rule restarted", Family: "E10",
