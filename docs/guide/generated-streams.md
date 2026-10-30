@@ -18,7 +18,7 @@ hands each element of the start rule's `#stream` repetition to the callback as s
 element with the input and memo entries before it. Elements are final and own their text. A callback error stops the
 parse and is returned unchanged; a non-EOF reader error ends it as well. A nil callback parses the stream without
 handing elements over. Recovered diagnostics are returned together as `SyntaxErrors` at the end, and positions and
-lines stay absolute. With `-work-controls`, `WithContext` and `WithWorkLimits`, and `WithMaxDepth` and, with `-observability`, tracing and profiling
+lines stay absolute. With `-work-controls`, `WithContext` and `WithLimits`, and `WithMaxDepth` and, with `-observability`, tracing and profiling
 apply to the whole invocation; a cancelled or limited stream checks between reads and elements, and a reader blocked
 in `Read` is not interrupted. `-stream` cannot be combined with `-lang ts`. The measurements are in
 [design record 044](../design/records/044-generated-incremental-and-stream-parsers.md#local-measurements-for-generated-go-node-streams).
@@ -79,7 +79,7 @@ err := parser.ParseStreamAST(r, func(p *parser.Pair) error {
 ```
 
 Each element is converted on its own once it is committed, so values stay valid after the callback returns and share
-nothing with later elements. The conversion counts toward `WithWorkLimits` and observes `WithContext`.
+nothing with later elements. The conversion counts toward `WithLimits` and observes `WithContext`.
 
 ## Related Topics
 

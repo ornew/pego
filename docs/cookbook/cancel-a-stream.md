@@ -73,6 +73,6 @@ err: context deadline exceeded true
 
 ## Variations and Limits
 
-- To bound the work instead of the time, use `pego.WithWorkLimits`; exhaustion matches `pego.ErrWorkLimit`. See
+- To bound the work instead of the time, use `pego.WithLimits`; exhaustion matches `pego.ErrLimit`. See
   [Cancellation and Work Limits](../guide/cancellation-and-limits.md) and [Streaming](../guide/streaming.md#cancelling-a-stream).
 - Restarting requires replaying the input yourself: the reader offset is not a continuation token.

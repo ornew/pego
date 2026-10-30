@@ -24,7 +24,7 @@ the document is created; see [Positions](parsing.md#positions).
 
 | Operation | Behavior |
 |:--|:--|
-| `p.NewDocument(text, opts...)` | Returns a document holding `text`. `WithUnit` fixes the position unit (also the unit of edits) and `WithBackend` fixes the backend; `WithContext` and `WithWorkLimits` set defaults for initialization and later parses. It fails for `RecognizeOnly`, for an unavailable backend, for an unknown start rule and when initialization is interrupted. Nothing is parsed |
+| `p.NewDocument(text, opts...)` | Returns a document holding `text`. `WithUnit` fixes the position unit (also the unit of edits) and `WithBackend` fixes the backend; `WithContext` and `WithLimits` set defaults for initialization and later parses. It fails for `RecognizeOnly`, for an unavailable backend, for an unknown start rule and when initialization is interrupted. Nothing is parsed |
 | `doc.Text()` | The current text |
 | `doc.Unit()` | The fixed position unit |
 | `doc.Version()` | A comparable opaque token identifying the current text revision. A new document starts at sequence 1. Parsing does not advance the version. The token does not retain the document, the text or parse caches |
@@ -34,7 +34,7 @@ for concurrent use. A document is always parsed as a whole: `#stream` has no
 effect on it and it is not a stream parse. Grammars that use `#missing` are
 rejected.
 
-For `Bytes`, construction can charge zero input-work, because a large immutable
+For `Bytes`, construction can charge no work, because a large immutable
 input need not be scanned or copied. For `CodePoints`, initialization decodes and
 normalizes the input, and the inspected work is charged.
 
@@ -124,7 +124,7 @@ and allocator overhead; it is neither process heap use nor a limit.
 value graph in one immutable `Snapshot`. It resolves invocation overrides once
 over the construction defaults, with the same variable and fixed options as
 `Parse`. Parsing and freezing use the same cancellation context and the same
-cumulative input-work and execution-step counters. Copying the text, freezing
+cumulative work counter. Copying the text, freezing
 nodes and fields and copying diagnostics are part of that invocation.
 
 A normally returned parse outcome produces a snapshot, including an ordinary

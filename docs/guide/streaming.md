@@ -429,7 +429,7 @@ every line holds them all. Add `pego.WithDiagnosticLimit(n)` to retain only the 
 terminal error is a `*pego.TruncatedSyntaxErrors`, which you inspect with `errors.As` (`Errors`, `Total`, `Dropped`).
 The callback still receives every committed recovery, and errors that the callback stores itself are not bounded. The
 diagnostic options are for streams only; `Parse`, `ParsePrefix` and `Document` reject them. `WithContext` and
-`WithWorkLimits` cover the callbacks too, but a callback or reader that is blocked in your code cannot be preempted. The
+`WithLimits` cover the callbacks too, but a callback or reader that is blocked in your code cannot be preempted. The
 [specification](../../spec/runtime/streaming.md#recovered-errors) defines the counts, their saturation, tracing and the order of
 the reports.
 
@@ -567,17 +567,17 @@ number that does not grow with the input.
 ## Cancelling a Stream
 
 Pass `pego.WithContext(ctx)` to interrupt engine work cooperatively, or
-`pego.WithWorkLimits(pego.WorkLimits{MaxInputWork: ..., MaxSteps: ...})` to bound
+`pego.WithLimits(pego.Limits{MaxWork: ...})` to bound
 one invocation. A zero limit is unlimited. Work counts depend on the backend,
 position unit and implementation; reused or copied storage also consumes work.
-Exhaustion matches `pego.ErrWorkLimit` through `errors.Is`.
+Exhaustion matches `pego.ErrLimit` through `errors.Is`.
 Text materialization also consumes work, including building a cached stream
 snapshot and its CodePoints position table. Reading an already cached substring
 requires no additional materialization work; snapshot creation never reads ahead.
 
-Each underlying reader call consumes one step before entering the reader,
-including empty reads, EOF and retries for incomplete characters. When no steps
-remain, that next call is prevented. Bytes consumed by read-ahead do not count
+Each underlying reader call consumes one unit of work before entering the reader,
+including empty reads, EOF and retries for incomplete characters. When no work
+remains, that next call is prevented. Bytes consumed by read-ahead do not count
 as examined input until the engine examines them.
 
 The engine checks immediately before and after each underlying reader and emit
@@ -587,7 +587,7 @@ that same call, including a reader returning data together with an error.
 Elements already passed to emit remain caller-owned, including when cancellation
 is observed after emit succeeds. Restarting requires replaying the input yourself;
 the current reader offset is not a continuation token. Buffered read-ahead means
-an input-work limit does not cap bytes consumed from the reader.
+a work limit does not cap bytes consumed from the reader.
 
 First-use backend preparation is synchronous and outside work limits. A context
 cancelled before a valid call prevents that preparation; cancellation during it

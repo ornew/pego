@@ -87,7 +87,7 @@ counters halve before overflow, and the eager decision remains sticky for that p
 Nesting limits and tracing apply to rule calls. `Document` can reuse memo entries across edits and resume long
 repetitions; stream parsing emits elements and discards input already committed by the grammar.
 Core and generated Go/TypeScript parsing also support invocation-local cancellation and
-input-work/execution-step limits; streams and Documents use the same interruption
+a work limit; streams and Documents use the same interruption
 contract. See [design 033](design/records/033-cancellable-parses-and-work-budgets.md)
 for backend scope, cleanup and measured costs.
 
@@ -130,12 +130,12 @@ go test ./...
 go test -run '^$' -bench . -benchtime=1x ./...
 ```
 
-The tests that build generated parsers (in `internal/gen/gogen`, `internal/gen/tsgen`, `internal/gen` and `internal/engine`) build them in two forms. A parser generated with work controls charges work and accepts the options `WithContext` and `WithWorkLimits`. A parser generated without them is the form that most parsers have, and a different part of the generator prints it. Every test runs the form that it exists to check:
+The tests that build generated parsers (in `internal/gen/gogen`, `internal/gen/tsgen`, `internal/gen` and `internal/engine`) build them in two forms. A parser generated with work controls charges work and accepts the options `WithContext` and `WithLimits`. A parser generated without them is the form that most parsers have, and a different part of the generator prints it. Every test runs the form that it exists to check:
 
 | Kind of test | Runs | How |
 |:--|:--|:--|
 | Tests that build fixtures and check their behavior, output or equivalence with the engine | Both forms, as the subtests `controls` and `ordinary` | The test body runs under `gentest.EachMode`, as the test's last statement; the two subtests run in parallel |
-| Tests that pass a control option (`WithContext`, `WithWorkLimits`) | With controls only | `gentest.NeedsWorkControls` |
+| Tests that pass a control option (`WithContext`, `WithLimits`) | With controls only | `gentest.NeedsWorkControls` |
 | Tests of output that exists only without work controls (terminal programs, the Flow IR recognizer and Node rules, choice guards) | Without controls only | `gentest.PinOrdinary` |
 | Tests that do not build fixtures | Not form-specific | |
 
@@ -154,7 +154,7 @@ The behavior of package `pego` is tested from outside it by `internal/apitest`; 
 inputs, retained results, and error/retry reuse in both position units.
 
 The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for its type check, `tsc`; it is skipped when they are missing.
-The generated TypeScript has the same two forms, chosen by `-work-controls`. The TypeScript tests generate the form without work controls unless the test passes a control option (`signal`, `maxInputWork`, `maxSteps`), which generates with `WorkControls`. `TestGeneratedTSParsersMatchEngine` compares both forms with the engine, and `tsgen_work_forms_test.go` checks that the plain form has no charge, no control option and no cancellation export, and that the controlled form accepts the options.
+The generated TypeScript has the same two forms, chosen by `-work-controls`. The TypeScript tests generate the form without work controls unless the test passes a control option (`signal`, `maxWork`), which generates with `WorkControls`. `TestGeneratedTSParsersMatchEngine` compares both forms with the engine, and `tsgen_work_forms_test.go` checks that the plain form has no charge, no control option and no cancellation export, and that the controlled form accepts the options.
 TypeScript is printed from the same Flow IR as Go (`internal/gen/tsgen/flow.go`, `internal/gen/tsgen/outline.go`); `TestGeneratedTSPrintsLeanRulesFromFlow` and the frozen decision goldens cover what is chosen, and a rule that Flow IR does not print fails generation.
 
 `lint` tests every check with positive and negative cases, lints every example grammar against a hand-checked list of findings, and `TestSoundness` checks the certain findings against the engine on random grammars, exhaustively over short inputs (`-soundness=N` for a longer run).

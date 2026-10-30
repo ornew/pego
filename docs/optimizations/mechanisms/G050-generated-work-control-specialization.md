@@ -12,9 +12,9 @@ as their first parameter) once, from Flow IR, in the form the options select:
   16 runtime helpers that have a hand-written `Ordinary` form (`NewNode`, `NewTerminal`,
   `NewBranch`, `NewMatch`, `SetCapture`, `Expect`, `Peek`, `MatchLiteral`, `MatchLiteralFold`,
   `MatchAny`, `AtEnd`, `AtLineStart`, `AtEndBatch`, `AtLineStartBatch`, `AtLineEnd`, `InputWork`),
-  no step or input-work charges, no control reads in conditions and class tests, and a compact
+  no work charges, no control reads in conditions and class tests, and a compact
   peek. A parse that passes a control option fails.
-- With `-work-controls` the parser holds the controlled form only: step and input-work charges,
+- With `-work-controls` the parser holds the controlled form only: work charges,
   the general runtime helpers and class tests that consult the control. A parse that sets no
   limit runs the same code; the few inline tests of `p.Control` (in literal and large-class
   tests) take the unmetered path, and the helpers test the control themselves. The terms of an

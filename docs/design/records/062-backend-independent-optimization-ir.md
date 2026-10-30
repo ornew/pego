@@ -147,10 +147,10 @@ more times: the closure evaluator in `closure/eval.go`, bytecode expression code
     equals a parse from scratch and reuses results; a golden freezes the reuse and evaluation counts. Mutants that
     read the multi-character literals, the single-character literals, the peeks or all of them in place in a
     Document parse fail.
-  - Work controls: limit errors are well formed and fail at the limited counter, the least successful limit
-    succeeds, the context is polled at the runtime's cadence, steps are charged whenever input work is, and a parsed
-    input charges at least one unit of input work per character; a golden freezes the step and input work totals
-    (the engine's input work is not an oracle, because the closure and bytecode backends charge it differently),
+  - Work controls: limit errors are well formed, the least successful limit
+    succeeds, the context is polled at the runtime's cadence, and a parsed input charges at least one unit of work
+    per character; a golden freezes the work totals
+    (the engine's work is not an oracle, because the closure and bytecode backends charge it differently),
     and a mutant that drops one `Step` fails.
   - The generated text of the checked-in parsers is frozen by `parsers/testdata/output_manifest.txt`.
   - Guards: the decisions of the Core passes over the corpus (`Terminal`s, guards, class runs, scans, scopes, and

@@ -56,7 +56,7 @@ These behaviors are documented, so they are limits of PEGO today, not vulnerabil
   memory.
 - Memory use within the work limits that were set. Work limits are not a memory limit: their counters are not bytes,
   and their units differ between backends. The memory a parse allocates is at most proportional to its counted work
-  plus the input ([Time and Memory](spec/runtime/parsing.md#time-and-memory)), so `MaxSteps` bounds memory only
+  plus the input ([Time and Memory](spec/runtime/parsing.md#time-and-memory)), so `MaxWork` bounds memory only
   indirectly.
 - Slow parses of a grammar whose work grows faster than the input, when no work limit is set.
 - The time and memory that parsing with a grammar uses, including a grammar from an untrusted source: a grammar can do
@@ -79,10 +79,10 @@ These behaviors are documented, so they are limits of PEGO today, not vulnerabil
   and the TypeScript `maxDepth` option change it. On Node.js's default stack, generated TypeScript reaches a few
   hundred to a few thousand nested rule calls and then returns an error
   ([TypeScript](docs/guide/typescript.md#deep-nesting-and-the-javascript-stack)).
-- **Work, opt-in.** With both limits set, `pego.WithWorkLimits(pego.WorkLimits{MaxInputWork: ..., MaxSteps: ...})`
-  stops a parse once its counted work exceeds them, whatever the grammar's class of growth, and `pego.WithContext` adds
+- **Work, opt-in.** With `pego.WithLimits(pego.Limits{MaxWork: ...})` set,
+  a parse stops once its counted work exceeds the limit, whatever the grammar's class of growth, and `pego.WithContext` adds
   cancellation and deadlines. A zero limit is unlimited. Generated parsers offer these options only when generated
-  with `-work-controls` (TypeScript: `signal`, `maxInputWork` and `maxSteps`); this is planned to become the default
+  with `-work-controls` (TypeScript: `signal` and `maxWork`); this is planned to become the default
   at the first release ([Default Limits](#default-limits)). For a given artifact, input and options, the counts are
   the same on every run. `pego parse` has no work-limit flag
   ([Cancellation and Work Limits](docs/guide/cancellation-and-limits.md)).
@@ -113,9 +113,9 @@ for any grammar that parses untrusted input.
 
 ### Parsing Untrusted Input
 
-1. Set **both** work limits. `MaxSteps` alone does not bound a loop that only scans input; `MaxInputWork` does. A value
-   that grows without reading input is bounded by `MaxSteps`, not by `MaxInputWork`. Generate parsers with
-   `-work-controls`.
+1. Set `MaxWork`. It is one counter for the input a parse inspects, its rule calls and loop iterations, and the
+   values it builds, so it bounds a loop that only scans input and a value that grows without reading input alike.
+   Generate parsers with `-work-controls`.
 2. Set a context deadline.
 3. Limit the input length before parsing, and for a stream, the length the reader delivers.
 4. Keep the default nesting limit or lower it. For input that nests deeply, use the iterative VM instead of raising

@@ -404,13 +404,13 @@ condition 1 or 2 fails, or a value doubles, work can be exponential.
 ### Bounding Work
 
 [Work limits](#cancellation-and-work-limits) bound the work of any parse,
-whatever its class. In the engine backends, `MaxInputWork` counts the input
+whatever its class. `MaxWork` is one counter for all of it: it counts the input
 that terminals, repetitions of character classes and lookaheads examine,
-including input examined again, and `MaxSteps` counts rule calls, repetition
-iterations, growth steps, and the strings and lists that actions and
-predicates build, in proportion to their size. A value that grows without
-reading the input is therefore bounded by `MaxSteps` and not by
-`MaxInputWork`.
+including input examined again, rule calls, repetition iterations, growth
+steps, and the strings and lists that actions and predicates build, in
+proportion to their size. Each unit adds one to the counter, so a loop that
+only scans input, a deep recursion and a value that grows without reading the
+input are all bounded by it.
 
 ## Limits
 
@@ -425,11 +425,11 @@ like rule calls; chains of left-associative operators do not nest.
 
 ## Cancellation and Work Limits
 
-The reference Go API accepts invocation-local cancellation and input-work and
-execution-step limits through `WithContext` and `WithWorkLimits`; generated Go
-exposes corresponding package-local options.
-These controls are cooperative and backend-local. A zero limit disables that
-counter. Each counter is monotonic for one invocation and resets on the next
+The reference Go API accepts invocation-local cancellation and a work limit
+through `WithContext` and `WithLimits`; generated Go exposes corresponding
+package-local options.
+These controls are cooperative and backend-local. A zero limit disables the
+limit. The work counter is monotonic for one invocation and resets on the next
 call. A reservation is checked before the corresponding work begins; if it
 exceeds the remaining allowance, that work is not performed. Counts are
 implementation-specific and are not elapsed-time, memory, or buffered-input
@@ -452,19 +452,19 @@ published and are discarded. A retry with fresh invocation controls must produce
 the same result as parsing the current text from scratch.
 
 In the Go API, `WithContext(ctx)` supplies the context and
-`WithWorkLimits(WorkLimits{MaxInputWork, MaxSteps})` the limits. Input work
-counts inspected elements of the input representation; steps count backend
-execution work. Charges are not rolled back by backtracking, and their values
+`WithLimits(Limits{MaxWork})` the limit. The work counter adds the
+inspected elements of the input representation and the backend's execution
+work, one unit each. Charges are not rolled back by backtracking, and their values
 depend on the backend, the position unit and the generated artifact. For a given
 artifact, input and options they are the same on every run: the storage that an
 earlier parse left in a reused parser, and when a collection releases it, never
 change them. Reading
-input MAY charge only input work: a loop that only scans input, such as a
-repeated character class, can run without charging steps, so `MaxSteps` alone
-does not bound scanning and `MaxInputWork` is the limit that does. A cancelled
+input charges the work counter in proportion to the elements examined, so a
+loop that only scans input, such as a repeated character class, is bounded by
+`MaxWork`. A cancelled
 context returns the error of the context (`errors.Is(err, context.Canceled)` or
 `context.DeadlineExceeded`); an exhausted limit returns an error that matches
-`pego.ErrWorkLimit`, and `errors.As` with `*pego.WorkLimitError` gives the
+`pego.ErrLimit`, and `errors.As` with `*pego.LimitError` gives the
 details. Stream parses and documents are specified in [Streaming](streaming.md)
 and [Incremental Documents](documents.md).
 

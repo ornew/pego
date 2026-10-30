@@ -185,8 +185,8 @@ depth and tracing may be overridden; start rule, unit, backend and recognition
 mode retain the constructed Document contract. A fresh per-call context permits
 capture after cancellation of a previous task without retaining its controller.
 Parsing and freezing the text, tree, and diagnostics form one controlled
-invocation: they use the same context and controller, and input-work and
-execution-step counters accumulate across both phases. Freezing costs therefore
+invocation: they use the same context and controller, and the
+work counter accumulates across both phases. Freezing costs therefore
 count against the configured limits. It then freezes that exact parse outcome
 before returning. It does not silently return the previous successful result
 when current text fails. Taking another snapshot of the same version may reparse

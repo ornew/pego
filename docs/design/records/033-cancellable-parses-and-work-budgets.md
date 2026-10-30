@@ -6,8 +6,7 @@
 
 ## Summary
 
-Add invocation-local cancellation and optional input-work/execution-step limits
-to parsing. Start with the core Go API, including Document and streams, then
+Add invocation-local cancellation and an optional work limit to parsing. Start with the core Go API, including Document and streams, then
 apply the same interruption contract to generated Go and portable generated
 TypeScript. Existing depth limits remain independent. Ordinary calls with no
 controls keep their result and callback semantics.
@@ -82,35 +81,33 @@ Use the existing functional-options convention. The following additions and
 Document signature change are proposals:
 
 ```go
-type WorkLimits struct {
-    MaxInputWork uint64
-    MaxSteps     uint64
+type Limits struct {
+    MaxWork uint64
 }
 func WithContext(ctx context.Context) ParseOption
-func WithWorkLimits(limits WorkLimits) ParseOption
+func WithLimits(limits Limits) ParseOption
 
 // Existing Parse/ParseStream/RecognizeOnly calls accept the same options.
 func (d *Document) Parse(opts ...ParseOption) (*Node, error)
 
-var ErrWorkLimit error
+var ErrLimit error
 
-type WorkLimitKind uint8
+type LimitKind uint8
 const (
-    InputWorkLimit WorkLimitKind = iota
-    StepWorkLimit
+    LimitWork LimitKind = iota
 )
-type WorkLimitError struct {
-    Kind      WorkLimitKind
+type LimitError struct {
+    Kind      LimitKind
     Limit     uint64
     Used      uint64
     Requested uint64
 }
-func (e *WorkLimitError) Error() string
-func (e *WorkLimitError) Is(target error) bool // target == ErrWorkLimit
+func (e *LimitError) Error() string
+func (e *LimitError) Is(target error) bool // target == ErrLimit
 ```
 
 Nil context means context.Background; zero limits mean unlimited. Options apply
-once in order, and the last context or entire WorkLimits value wins. There is no
+once in order, and the last context or entire Limits value wins. There is no
 shared mutable counter, global cancellation token, deadline timer goroutine, or
 runtime polling-frequency option. Unsigned limits avoid a new negative-value
 interpretation. Existing option/depth validation remains unchanged.
@@ -140,7 +137,7 @@ existing meanings. Input work counts actual inspection and copying, not a
 logical source length merely because it is retained. CodePoints initialization
 decodes and normalizes input and charges that work. A large immutable Bytes
 source may be retained as an original string-backed piece without copying or
-scanning it, so zero construction input-work is valid when no input elements
+scanning it, so zero construction work is valid when no input elements
 were inspected. Parsing still charges probes, literal comparisons, text
 extraction and materialization across pieces. `Document.Edit` is not metered.
 
@@ -161,7 +158,7 @@ once in order. No-argument calls are unchanged. A stored method value typed as
 `func() (*Node, error)` needs a wrapper around `d.Parse()` after the variadic
 signature change; document this small source migration explicitly.
 
-Generated Go emits corresponding package-local WorkLimits/errors/options and
+Generated Go emits corresponding package-local Limits/errors/options and
 uses one resolved control instance across Parse, ParseRule, Recognize, ParseAST,
 and named ParseRuleAST where available. Named typed dispatch resolves options
 once before lookup, then shares the resolved state through direct execution or
@@ -183,7 +180,7 @@ execution and retains the existing Document rule/run-site/description identity
 used by its caches. Cache identity and retry behavior remain correctness
 requirements.
 
-Lazy construction is setup, outside input-work and step budgets. Check the
+Lazy construction is setup, outside the work budget. Check the
 invocation context immediately before and after setup; graph construction itself
 is synchronous and cannot be interrupted. Keep context method calls outside the
 `sync.Once` initializer so reentrant context methods cannot deadlock setup. An
@@ -199,33 +196,39 @@ Results; further generated-Go optimization is a separate follow-up.
 
 ### What the Limits Count
 
-Counters are cumulative per invocation and never rolled back on backtracking,
-failed lookahead, recovery, LR growth, or repeated work. Zero disables that
-counter. A charge is checked before the charged operation; limit N permits N
-charged units. If a next atomic operation requests more than the remaining
-allowance, abort before it, with Used unchanged and Requested explaining the
-failed reservation. Use subtraction/checks rather than overflowing counters.
+Work is one counter, cumulative per invocation and never rolled back on
+backtracking, failed lookahead, recovery, LR growth, or repeated work. Zero
+disables the limit. A charge is checked before the charged operation; limit N
+permits N charged units. If a next atomic operation requests more than the
+remaining allowance, abort before it, with Used unchanged and Requested
+explaining the failed reservation. Use subtraction/checks rather than
+overflowing counters.
 
-**Steps** are backend execution work events, not source characters or CPU
-instructions. Charge VM expression/action instruction dispatches; closure
-expression/action operations at their execution boundaries; generated rule entries
-and action operations at their emitted execution boundaries;
-rule/memo dispatch and LR/Operators Rule selection/growth iterations; repetition/resume
-iterations; and per-element work in unbounded engine loops. Include graph edges
-visited during position movement, collection construction, and typed conversion,
-so a memo hit or converter cannot bypass the limit by returning a large graph.
-Bulk copies/materialization use bounded chunks with explicit step charges.
+Every unit adds one to the counter, whatever its kind, so a bound on the counter
+bounds scanning, recursion and value construction alike:
 
-**Input work** counts cumulative inspected input representation elements, not
-unique positions, the farthest examined offset, or the current input length.
-Charge decoding/preparation, terminal scans/comparisons, lookahead rereads, text
-extraction copies, offset/line-table scans, and engine text comparisons. One byte
-access costs one in byte storage; one rune access costs one in decoded storage.
-An EOF probe costs one. A repeated probe is charged again. Bulk comparisons
-reserve their declared compared range; a fast mismatch need not refund that
-reservation. Scalar/action string work and graph work also consume steps, even
-when they do not read the original input. An O(1) existing substring reference
-or completed table lookup does not charge the substring/table's entire size.
+- **Execution events**, not source characters or CPU instructions, cost one unit
+  each. Charge VM expression/action instruction dispatches; closure
+  expression/action operations at their execution boundaries; generated rule
+  entries and action operations at their emitted execution boundaries;
+  rule/memo dispatch and LR/Operators Rule selection/growth iterations;
+  repetition/resume iterations; and per-element work in unbounded engine loops.
+  Include graph edges visited during position movement, collection
+  construction, and typed conversion, so a memo hit or converter cannot bypass
+  the limit by returning a large graph. Bulk copies/materialization use bounded
+  chunks with explicit charges in proportion to their size.
+- **Inspected input representation elements** cost one unit each, not unique
+  positions, the farthest examined offset, or the current input length. Charge
+  decoding/preparation, terminal scans/comparisons, lookahead rereads, text
+  extraction copies, offset/line-table scans, and engine text comparisons. One
+  byte access costs one in byte storage; one rune access costs one in decoded
+  storage. An EOF probe costs one. A repeated probe is charged again. Bulk
+  comparisons reserve their declared compared range; a fast mismatch need not
+  refund that reservation. An input charge is the elements it inspects and adds
+  nothing for the act of reading. Scalar/action string work and graph work are
+  charged by size even when they do not read the original input. An O(1)
+  existing substring reference or completed table lookup does not charge the
+  substring/table's entire size.
 
 These are deterministic abstract charges for a fixed backend, generated artifact,
 input representation, and version. Preparation may inspect raw bytes and later
@@ -234,7 +237,7 @@ between position units, backends, optimized/reference generation, memo state,
 and releases. They are not cross-backend instruction equivalence or a stable
 complexity score. Publish the charging table with the implementation and test
 its threshold behavior; do not claim equal budget success across implementations.
-A prepared Document can need less counted input work than a new batch parse.
+A prepared Document can need less counted work than a new batch parse.
 
 A resumed repetition charges the records/values actually processed, not all
 historical input it skips. A constant-time memo hit consumes dispatch work but
@@ -246,8 +249,7 @@ not the amount of data originally needed to construct a memo result.
 
 Check context before execution, before/after reader and user callback calls, and
 before result publication. Within controlled engine execution, target at most
-256 charged steps or 4,096 charged input elements between cancellation checks,
-whichever comes first. Budget checks apply to each charge/reservation regardless
+256 charged units between cancellation checks. Budget checks apply to each charge/reservation regardless
 of the cancellation polling interval. These initial internal constants are
 measurement targets, not a configurable API or a wall-clock latency guarantee.
 
@@ -260,7 +262,7 @@ work where possible; allocation, GC, stack growth, first-use setup, and caller
 code remain nonpreemptible intervals to measure and disclose.
 
 At a checkpoint where several conditions are observed together, cancellation
-wins, then input-work exhaustion, then step exhaustion. Otherwise the first
+wins, then work exhaustion. Otherwise the first
 observed terminal condition wins. A budget can win before cancellation is next
 polled; this is deterministic work accounting, not a race-resolution promise.
 Cancellation/limit failures take the fatal interruption route and cannot match
@@ -335,11 +337,11 @@ caller code and are evaluated exactly once before execution controls apply.
 ### Portable Generated Equivalent
 
 After core Go and generated Go meet their gates, extend existing TS options-aware
-entry points with optional `signal`, `maxInputWork`, and `maxSteps`. Preserve the
+entry points with optional `signal` and `maxWork`. Preserve the
 existing plain/default functions and typed conversion path. Use an exported
 structural cancellation-signal interface with readonly aborted/reason properties,
 so an AbortSignal fits without requiring a browser DOM typing dependency.
-Validate finite nonnegative safe-integer limits; zero means unlimited. Go uint64
+Validate a finite nonnegative safe-integer limit; zero means unlimited. Go uint64
 limits outside the TS safe-integer range are not portable literal settings.
 
 Return a distinct exported interruption error with cancellation/limit kind and

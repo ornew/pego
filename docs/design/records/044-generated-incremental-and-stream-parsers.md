@@ -191,7 +191,7 @@ of its captures when the element has a scope of its own; `StreamValue` is an ali
 element is converted with a converter of its own, so aliases within an element keep their identity and nothing is
 shared with later elements; Node, CST and text values are the committed element's, which `ParseStream` already
 detaches from the parser. The conversion runs inside the parse and is charged to its work control like batch
-conversion, so `WithWorkLimits` and `WithContext` cover it, and a nil element is passed as the zero value.
+conversion, so `WithLimits` and `WithContext` cover it, and a nil element is passed as the zero value.
 `StreamValue`, `ParseStream` and `ParseStreamAST` are reserved generated names. The direct typed matching of batch
 `ParseAST` is not used for streams: its values are built during matching, before an element is committed.
 `TestGeneratedTypedStreamMatchesBatch` compares the elements with the repetition of the batch `ParseAST` value, and

@@ -85,7 +85,7 @@ type ParseOption func(*parseOptions)
 func WithUnit(unit PositionUnit) ParseOption
 func WithMaxDepth(n int) ParseOption
 func WithContext(ctx context.Context) ParseOption       // with work controls
-func WithWorkLimits(limits WorkLimits) ParseOption      // with work controls
+func WithLimits(limits Limits) ParseOption      // with work controls
 
 type PositionUnit int
 const (
@@ -117,22 +117,22 @@ const (
   larger limit does not guarantee stack capacity. The default error is
   `nesting too deep: more than 100000 rule calls`.
 - A Go parser generated with work controls (`-work-controls`, `WorkControls`)
-  exports `WithContext`, `WithWorkLimits`, `WorkLimits`, `WorkLimitKind`,
-  `WorkLimitError`, `ErrWorkLimit`, `InputWorkLimit` and `StepWorkLimit`. A parser
+  exports `WithContext`, `WithLimits`, `Limits`, `LimitKind`,
+  `LimitError`, `ErrLimit` and `LimitWork`. A parser
   generated without them holds no code that charges work or reads a control: one
   form of each function; with `-document` it is the form that serves a Document, without
   charges. A parser generated with work controls has the controlled form only, and a parse that
   sets no limit runs it unchanged. A parse that passes either option with a context or a limit,
   from the runtime package, returns an error that the parser was generated without
-  work controls; no option is ignored. A nil context and a zero `WorkLimits` set no
+  work controls; no option is ignored. A nil context and a zero `Limits` set no
   control and are accepted.
-- `WithContext` and `WithWorkLimits` apply the semantics of
+- `WithContext` and `WithLimits` apply the semantics of
   [Cancellation and Work Limits](parsing.md#cancellation-and-work-limits) to each
   invocation, with counters that restart for every call. They apply to named rules,
   recognition, typed parsing and conversion. The last context and the last complete
-  `WorkLimits` win; a nil context means no cancellation; zero limits are unlimited.
-  An exhausted limit matches `ErrWorkLimit`, and `errors.As` retrieves a
-  `*WorkLimitError` with `Kind` (`InputWorkLimit` or `StepWorkLimit`), `Limit`, `Used`
+  `Limits` win; a nil context means no cancellation; zero limits are unlimited.
+  An exhausted limit matches `ErrLimit`, and `errors.As` retrieves a
+  `*LimitError` with `Kind` (`LimitWork`), `Limit`, `Used`
   and `Requested`. An interrupted entry point returns its zero result, and
   recovery does not turn an interruption into a successful partial tree.
   Cancellation is cooperative.
@@ -279,13 +279,12 @@ export interface ParseOptions {
   unit?: Unit;
   maxDepth?: number;
   signal?: CancellationSignal | null;      // with -work-controls only
-  maxInputWork?: number;                   // with -work-controls only
-  maxSteps?: number;                       // with -work-controls only
+  maxWork?: number;                        // with -work-controls only
 }
 export interface ParseResult { node: Node | null; error: Error | null }
 // With -work-controls:
 export interface CancellationSignal { readonly aborted: boolean; readonly reason?: unknown }
-export type ParseInterruptionKind = "canceled" | "input-work-limit" | "step-work-limit";
+export type ParseInterruptionKind = "canceled" | "work-limit";
 export class ParseInterruptionError extends Error {
   readonly kind: ParseInterruptionKind;
   readonly limit: number;
@@ -321,7 +320,7 @@ export function marshal(n: Node | null): string;
   infinity and unsafe integers return a configuration error in the result before
   matching. Omitted or zero selects the generated default.
 - A parser generated without `-work-controls` emits no code that charges work and sets no control, so a parse charges nothing, and its
-  `ParseOptions` has no `signal`, `maxInputWork` or `maxSteps`; it does not export
+  `ParseOptions` has no `signal` or `maxWork`; it does not export
   `CancellationSignal`, `ParseInterruptionKind` or `ParseInterruptionError`. A call
   that passes a signal or a nonzero limit anyway returns an error in the result, before
   matching, that says the parser was generated without work controls; no option is
@@ -329,12 +328,12 @@ export function marshal(n: Node | null): string;
   generated with `-work-controls` has the controlled form only, and a call that sets no
   limit runs it unchanged. The rest of this list describes the controlled form.
 - `signal` is a structural cancellation signal: any object with `aborted` and an optional
-  `reason`, such as an `AbortSignal`. `maxInputWork` and `maxSteps` MUST be finite
-  nonnegative safe integers, and zero means unlimited; other values return a
+  `reason`, such as an `AbortSignal`. `maxWork` MUST be a finite
+  nonnegative safe integer, and zero means unlimited; other values return a
   configuration error in the result. The units of the limits are those of
   [Cancellation and Work Limits](parsing.md#cancellation-and-work-limits).
 - An interrupted parse returns `node` as `null` and `error` as a `ParseInterruptionError`
-  whose `kind` is `"canceled"`, `"input-work-limit"` or `"step-work-limit"`. For a limit,
+  whose `kind` is `"canceled"` or `"work-limit"`. For a limit,
   `limit`, `used` and `requested` give the accounting; for cancellation, `cause` is the
   `reason` of the signal. Recovery does not turn an interruption into a partial result,
   and the parser keeps no reference to the signal after the call returns. Typed
@@ -410,7 +409,7 @@ program, so a TypeScript parser can reject nesting that the engine accepts.
 | Typed values | `ParseAST`, `ParseRuleAST` with `-types` | `parseAST`, `parseASTWithOptions` with `-types` |
 | Streaming | `ParseStream`, `Iterate` with `-stream` | None; `#stream` is an ordinary repetition |
 | Incremental documents | A subset with `-document` | None |
-| Cancellation and work limits | `WithContext`, `WithWorkLimits` | `signal`, `maxInputWork`, `maxSteps`; `ParseInterruptionError`; with `-work-controls` |
+| Cancellation and work limits | `WithContext`, `WithLimits` | `signal`, `maxWork`; `ParseInterruptionError`; with `-work-controls` |
 | Nested rule-call limit | `WithMaxDepth`, `-max-depth` | `maxDepth`, `-max-depth`; the host stack also bounds nesting |
 | Choice of backend, saved grammar, `Parser.Grammar()` | Not applicable | Not applicable |
 | Tracing and profiling | With `-observability` | With `-observability` (batch parsers) |

@@ -247,7 +247,7 @@ while preserving its failure position and explicit `@error` messages.
 
 A `*pego.Parser` is **safe for concurrent use**: share one among goroutines and call `Parse` on all of them (each call
 has its own state). A `Document`, in contrast, is not. Concurrent first use of different backends and of recognition
-mode is also safe. A call can be cancelled and bounded with `WithContext` and `WithWorkLimits`; see [Cancellation and
+mode is also safe. A call can be cancelled and bounded with `WithContext` and `WithLimits`; see [Cancellation and
 Work Limits](cancellation-and-limits.md).
 
 ## Compiled Grammars

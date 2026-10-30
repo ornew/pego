@@ -148,38 +148,38 @@ brackets or AST nodes, and raising the limit does not guarantee host-stack capac
 A Go parser generated with `-work-controls` also accepts invocation-local
 cancellation and work limits. Use the generated package's options and error
 types; a package generated without the flag exports none of them, and a parse
-that passes `WithContext` with a context or `WithWorkLimits` with a limit from the
+that passes `WithContext` with a context or `WithLimits` with a limit from the
 runtime returns an error saying that the parser was generated without work
-controls (a nil context and a zero `WorkLimits` set no control and are accepted):
+controls (a nil context and a zero `Limits` set no control and are accepted):
 
 ```go
 node, err := pairsparser.Parse(input,
     pairsparser.WithContext(ctx),
-    pairsparser.WithWorkLimits(pairsparser.WorkLimits{
-        MaxInputWork: 4_000_000,
-        MaxSteps:     1_000_000,
+    pairsparser.WithLimits(pairsparser.Limits{
+        MaxWork: 5_000_000,
     }))
 ```
 
 A nil context has no deadline or cancellation signal; zero limits are unlimited. Options apply once in
-order; the last context and the last complete `WorkLimits` value win. Counters
-reset for every call and remain independent during concurrent parsing. The
+order; the last context and the last complete `Limits` value win. The counter
+resets for every call and remain independent during concurrent parsing. The
 same options work with named rules, recognition, direct typed parsing, and
 Node-to-typed conversion.
 
-`MaxInputWork` counts cumulative inspected input elements, including input
-preparation, repeated scans and text extraction. `MaxSteps` counts execution
-and per-element work in actions, memo lookup, graph/list construction, capture
-rollback, diagnostics and typed conversion. A loop that only scans input, such
-as a repeated character class, charges input work and no steps, so only
-`MaxInputWork` bounds it. Counts depend on the generated
+`MaxWork` counts cumulative work in one counter, one unit each: inspected
+input elements, including input preparation, repeated scans and text
+extraction, and execution and per-element work in rule calls, loop iterations,
+actions, memo lookup, graph/list construction, capture rollback, diagnostics
+and typed conversion. A loop that only scans input, such as a repeated
+character class, charges for every element it reads, so `MaxWork` bounds it.
+Counts depend on the generated
 artifact and position unit; a limit is not a character count, memory cap, or
 elapsed-time limit. Backtracking never refunds work. Depth remains a separate
 limit.
 
 Use `errors.Is(err, context.Canceled)` or `context.DeadlineExceeded` for
-cancellation, and `errors.Is(err, pairsparser.ErrWorkLimit)` for an exhausted
-budget. `errors.As` can retrieve a `*pairsparser.WorkLimitError` with `Kind`,
+cancellation, and `errors.Is(err, pairsparser.ErrLimit)` for an exhausted
+budget. `errors.As` can retrieve a `*pairsparser.LimitError` with `Kind`,
 `Limit`, `Used` and `Requested`. Interrupted entry points return their zero
 result; recovery cannot turn an interruption into a successful partial tree.
 Previously returned results stay valid, and a later invocation can retry.

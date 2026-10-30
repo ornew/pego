@@ -22,7 +22,7 @@ Three changes shrink the output without changing what a parse does.
    and no control read (the typed constructors and the closures of actions
    charge nothing either), which is 7% smaller than the controlled form (a
    fixture of 3 rules: 41,179 bytes with controls, 38,138 without). The
-   package then exports none of `WithContext`, `WithWorkLimits` and their types,
+   package then exports none of `WithContext`, `WithLimits` and their types,
    and the runtime grammar records `NoWorkControls`, so a control option passed
    through the runtime returns an error instead of being ignored. Parsers that
    read untrusted input (JSON, YAML, XML, CSV) and the benchmark parsers keep

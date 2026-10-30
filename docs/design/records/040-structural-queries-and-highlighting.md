@@ -34,10 +34,10 @@ func CompileText(source string, out *schema.Output) (*Query, error)
 func (q *Query) Matches(root *pego.Node, opts ...Option) ([]Match, error)
 func WithUnit(unit pego.PositionUnit) Option
 func WithContext(ctx context.Context) Option
-func WithWorkLimits(limits pego.WorkLimits) Option
+func WithLimits(limits pego.Limits) Option
 ```
 
-The implemented Go API accepts context and step-limit options. Structural matching inspects no source text, so it consumes no input-work units; its step budget covers traversal and result construction. Cancellation returns the context error, exhaustion matches `ErrWorkLimit`, and evaluation returns no partial result. Position predicates and highlight/range interpretation remain deferred; any future position-based behavior must require an explicit valid Unit rather than infer one from spans.
+The implemented Go API accepts context and work-limit options. Structural matching inspects no source text, so its work budget covers traversal and result construction. Cancellation returns the context error, exhaustion matches `ErrLimit`, and evaluation returns no partial result. Position predicates and highlight/range interpretation remain deferred; any future position-based behavior must require an explicit valid Unit rather than infer one from spans.
 
 An illustrative pattern is:
 
@@ -127,9 +127,9 @@ The immediate parent is the node that holds the value; a root has no parent.
 Each capture owns its root-relative edge-path slice but borrows its value and
 parent. Concurrent graph mutation is unsupported.
 
-Cancellation uses the supplied context error. Step exhaustion uses the existing
-`WorkLimitError`/`ErrWorkLimit`, and zero limits are unlimited. Structural queries
-consume no input-work units because they inspect no source text. Steps charge
+Cancellation uses the supplied context error. Work exhaustion uses the existing
+`LimitError`/`ErrLimit`, and zero limits are unlimited. Structural queries
+charge no input because they inspect no source text. Work is charged for
 visited values, pattern checks, outgoing edge/field discovery, field indexing,
 path construction/copying, captures, and matches. Cancellation is checked at every
 reservation and before returning results. Field sorting is preceded by a linear

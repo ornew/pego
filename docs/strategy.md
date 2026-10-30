@@ -533,12 +533,11 @@ for untrusted input; the goals below make it so.
   - The specification defines work, the expressions that repeat it, classes of growth and sufficient conditions for
     linear work ([Time and Memory](../spec/runtime/parsing.md#time-and-memory)).
   - The nesting depth is capped by default.
-  - Work limits (`MaxInputWork`, `MaxSteps`) and context cancellation are opt-in. Generated parsers carry them only
+  - The work limit (`MaxWork`) and context cancellation are opt-in. Generated parsers carry them only
     when generated with `-work-controls`. They cost 1.30–1.47× on generated Go `Parse` and 1.45–1.79× on the engine
     backends.
-  - Both limits are needed: `MaxSteps` alone does not bound a loop that only scans input.
-  - For a given artifact, input and options, the counts are deterministic. With both limits set, a parse stops once
-    its counted work exceeds them, whatever its class of growth.
+  - For a given artifact, input and options, the counts are deterministic. With `MaxWork` set, a parse stops once
+    its counted work exceeds it, whatever its class of growth.
   - Cancellation follows the caller's clock, and a blocked reader or callback cannot be interrupted.
   - There is no memory or input-size limit. Work limits do not bound memory, and the specification has a grammar with
     a linear number of evaluations and exponential value size.

@@ -266,8 +266,9 @@ planned to reach them.
   - Work limits and cancellation are opt-in. Generated parsers carry them only when generated with `-work-controls`,
     which costs 1.30–1.47× on generated Go `Parse` (JSON and XML), and the three engine backends take 1.45–1.79× with
     a context or limits active ([Performance](performance.md)).
-  - Both limits are needed. `MaxSteps` alone does not bound a loop that only scans input; `MaxInputWork` does.
-  - The step and input-work counts are deterministic for a given artifact, input and options. Context cancellation is
+  - One limit, `MaxWork`, bounds the input a parse inspects, its rule calls and loop iterations, and the values it
+    builds.
+  - The work counts are deterministic for a given artifact, input and options. Context cancellation is
     as timely as the caller's clock, and a blocked reader or callback cannot be interrupted.
   - There is no memory or input-size limit; a whole parse of 27 MiB of CSV peaked at about 1.0 GB. Work limits do not
     bound memory.

@@ -65,7 +65,7 @@ reuse.
 
 | | |
 |:--|:--|
-| `p.NewDocument(text, opts...)` | A document holding `text`. `WithUnit` (also the unit of `Edit`) and `WithBackend` fix its mode; `WithContext` and `WithWorkLimits` set defaults for initialization and later parses. Fails for `RecognizeOnly`, an unavailable backend, an unknown start rule, or interrupted initialization. Nothing is parsed yet. |
+| `p.NewDocument(text, opts...)` | A document holding `text`. `WithUnit` (also the unit of `Edit`) and `WithBackend` fix its mode; `WithContext` and `WithLimits` set defaults for initialization and later parses. Fails for `RecognizeOnly`, an unavailable backend, an unknown start rule, or interrupted initialization. Nothing is parsed yet. |
 | `doc.Edit(start, end, text)` | Replace `[start, end)` with `text`, in the document's unit. `start == end` inserts, an empty `text` deletes. An error if the range is outside the text, and with `Bytes`, if `start` or `end` is inside a character. Does not parse. |
 | `doc.Parse(opts...)` | Parse the current text using construction defaults plus invocation overrides. Counters reset per call. Results and errors are those of `Parser.Parse`, including recovered `SyntaxErrors`. |
 | `doc.Snapshot(opts...)` | Parse and capture the current revision as an immutable read-only result. Ordinary syntax and recovered errors are stored in the Snapshot; interruption or an option that changes the fixed unit/backend/mode returns no Snapshot. |
@@ -115,7 +115,7 @@ their contiguous input paths. `Document.Text()` and `Node.Text()` keep their
 existing meanings. CodePoints initialization decodes and normalizes input, so
 that inspected work is charged. For Bytes, a large immutable input may be kept
 as an original string-backed piece without scanning or copying it; zero
-construction input-work is valid when no elements were inspected. Parsing still
+construction work is valid when no elements were inspected. Parsing still
 charges scans, literal comparisons and text materialization across pieces.
 
 A pre-execution option error or cancellation leaves existing reusable caches and
@@ -128,8 +128,8 @@ retry the parse; ordinary syntax errors and recovered errors are completed
 outcomes and keep their reusable caches. Trace panics still propagate after
 cleanup.
 
-`WithContext` cooperatively cancels engine work, and `WithWorkLimits` bounds
-per-invocation input work and execution steps. These are not elapsed-time or
+`WithContext` cooperatively cancels engine work, and `WithLimits` bounds
+per-invocation work. These are not elapsed-time or
 buffered-byte limits. A blocked reader or callback cannot be preempted by the
 parser; cancellation is observed after caller code returns. See [Streaming](streaming.md#cancelling-a-stream)
 for the reader ownership boundary and [Runtime](running-parsers.md) for option names and
@@ -142,7 +142,7 @@ must keep the exact tree, text, diagnostics, and revision visible while the
 Document advances, capture them together:
 
 ```go
-snapshot, err := doc.Snapshot(pego.WithContext(ctx), pego.WithWorkLimits(limits))
+snapshot, err := doc.Snapshot(pego.WithContext(ctx), pego.WithLimits(limits))
 if snapshot == nil {
     return err // cancellation or a work limit publishes no partial snapshot
 }

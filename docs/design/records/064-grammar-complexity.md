@@ -45,7 +45,7 @@ four ways:
 
 Revision `e71bf2f2`, Go 1.27.1, darwin/arm64, closure backend, code points. Each figure gives:
 
-- the exact step threshold of `WorkLimits.MaxSteps`, found by bisection to 0.5%;
+- the exact threshold of `Limits.MaxWork`, found by bisection to 0.5%;
 - the rule evaluations reported by `Profile.Evals`;
 - the bytes allocated per parse.
 
@@ -70,7 +70,7 @@ do not depend on timing noise.
 | E4 | `var s string = "a"; R = "x" {s := s + s} R / {len(s) > 0}` | `x^n` | n=16…22: 0.39M → 1.58M → 6.31M → 25.2M; evaluations linear | 2^n value size |
 | E5 | `main = xs:"x"* => len(foldl("a", $xs, (acc, x) => acc + acc))` | `x^n` | identical to E4, in one action | 2^n value size |
 
-E2 grows the same way on the bytecode and iterative backends. The step limit stops every case above in proportion to
+E2 grows the same way on the bytecode and iterative backends. The work limit stops every case above in proportion to
 the work done, because the closure backend charges value construction by size.
 
 A further case is a correctness defect rather than a cost. `var k int; R = {k := k + 1} R "x" / "x"` recurses
@@ -288,7 +288,7 @@ exponential by design, and are warned about.
 
 ### Work Budgets
 
-The single work budget, which replaces the separate input-work and step counters, keeps charges for value construction
+The single work budget keeps charges for value construction
 proportional to the size built: string concatenation, `concat` and `list` materialization, and fold accumulators. A
 per-call or per-iteration charge alone lets E4 cost 2^n while charging n.
 

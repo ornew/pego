@@ -9,23 +9,23 @@ The examples use a parser `p` compiled as in [Running Parsers](running-parsers.m
 
 ## Cancelling a Parse
 
-`Parse` accepts per-invocation `WithContext` and `WithWorkLimits` options. A zero
-limit is unlimited; each counter resets for the next call. Generated Go parsers offer them only when generated with
+`Parse` accepts per-invocation `WithContext` and `WithLimits` options. A zero
+limit is unlimited; the counter resets for the next call. Generated Go parsers offer them only when generated with
 `-work-controls`; see [the generated Go API](generated-go-api.md#cancellation-and-work-limits). Generated TypeScript parsers offer
-the `signal`, `maxInputWork` and `maxSteps` options only with `-work-controls` too; see [TypeScript](typescript.md#cancellation-and-work-limits).
+the `signal` and `maxWork` options only with `-work-controls` too; see [TypeScript](typescript.md#cancellation-and-work-limits).
 
 ```go
 ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 defer cancel()
 node, err := p.Parse(input,
     pego.WithContext(ctx),
-    pego.WithWorkLimits(pego.WorkLimits{MaxInputWork: 4_000_000, MaxSteps: 1_000_000}),
+    pego.WithLimits(pego.Limits{MaxWork: 5_000_000}),
 )
 switch {
 case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
     // The invocation was cancelled.
-case errors.Is(err, pego.ErrWorkLimit):
-    // A work limit was reached; use errors.As for *pego.WorkLimitError details.
+case errors.Is(err, pego.ErrLimit):
+    // A work limit was reached; use errors.As for *pego.LimitError details.
 case err != nil:
     // Syntax or another parse error.
 case node != nil:
@@ -33,9 +33,10 @@ case node != nil:
 }
 ```
 
-Input work counts inspected input elements and steps count backend execution work; neither is a time or memory
-limit, and backtracking never refunds them. Scanning input, such as a repeated character class, may charge only input
-work, so set `MaxInputWork` to bound the work on large input; `MaxSteps` alone does not. An interruption is fatal to the parse and `#recover` cannot consume it,
+`MaxWork` counts inspected input elements and backend execution work in one counter, one unit each; it is neither a
+time nor a memory limit, and backtracking never refunds it. Scanning input, such as a repeated character class,
+charges it in proportion to the elements examined, so one limit bounds the work on large input, rule calls and
+values that grow. An interruption is fatal to the parse and `#recover` cannot consume it,
 so a batch parse returns no partial result. Cancellation is cooperative: a parser cannot preempt a blocked reader or
 a callback of yours. The exact rules are in
 [Cancellation and Work Limits](../../spec/runtime/parsing.md#cancellation-and-work-limits); the
