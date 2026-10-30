@@ -4,7 +4,7 @@
 
 package runtime
 
-// call calls rule r at binding level min: unmemoized while its memoization is deferred, and
+// Call calls rule r at binding level min: unmemoized while its memoization is deferred, and
 // otherwise through the memo, growing the seed of a left-recursion leader.
 //
 // Printed from Exec IR function call of internal/ir/exec/core, specialized for document, stream.
@@ -100,7 +100,7 @@ func (p *Parser) grow(r *Rule, min int, env []any) (*Node, bool) {
 	return best.node, best.ok
 }
 
-// call calls rule r at binding level min: unmemoized while its memoization is deferred, and
+// callBody calls rule r at binding level min: unmemoized while its memoization is deferred, and
 // otherwise through the memo, growing the seed of a left-recursion leader.
 //
 // Printed from Exec IR function call of internal/ir/exec/core, specialized for document, observe, typed.
@@ -165,7 +165,7 @@ func (p *TParser) callBody(r *TRule, min int) (any, bool) {
 	return v, ok
 }
 
-// callMemo is the memoized part of call, for the rule r at binding level 0 invoked by inv:
+// CallMemo is the memoized part of call, for the rule r at binding level 0 invoked by inv:
 // the rule is called at the position again, or its memoization is no longer deferred.
 //
 // Printed from Exec IR function callMemo of internal/ir/exec/core, specialized for document, observe, typed.

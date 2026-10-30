@@ -227,7 +227,12 @@ func (p *printer) typ(t exec.Type) string {
 
 func (p *printer) fn() string {
 	f := p.f
-	for _, l := range strings.Split(strings.TrimSpace(f.Doc), "\n") {
+	// A doc that starts with the function's name starts with its printed name.
+	doc := strings.TrimSpace(f.Doc)
+	if rest, ok := strings.CutPrefix(doc, f.Name+" "); ok {
+		doc = p.name(f.Name) + " " + rest
+	}
+	for _, l := range strings.Split(doc, "\n") {
 		if l != "" {
 			p.w("// %s\n", l)
 		}
