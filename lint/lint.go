@@ -209,6 +209,9 @@ type options struct {
 	Disable map[string]bool
 	// Classify runs the super-linear check.
 	Classify bool
+	// values is the context of a run without cancellation, whose values the classification reads
+	// (see engine.WithComplexitySink); nil stands for context.Background().
+	values context.Context
 }
 
 // runUnchecked lints g from start without a cancellation control. g must compile; start may be "".

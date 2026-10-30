@@ -20,6 +20,8 @@ func (l *linter) complexity(g *grammar.Grammar, start string) {
 	ctx := context.Background()
 	if l.control != nil {
 		ctx = l.control.ctx
+	} else if l.opts.values != nil {
+		ctx = l.opts.values
 	}
 	var c *engine.Complexity
 	var err error

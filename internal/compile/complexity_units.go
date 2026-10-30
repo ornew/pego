@@ -2,6 +2,7 @@ package compile
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 
 	"github.com/ornew/pego/grammar"
@@ -591,7 +592,7 @@ func (k *classifier) computeRuleSources() {
 			u.hasSource = true
 			continue
 		}
-		for c := range u.calls {
+		for _, c := range slices.Sorted(maps.Keys(u.calls)) {
 			if s := k.ruleSrc[c]; s != nil {
 				u.src, u.hasSource = s, true
 				break
@@ -1340,8 +1341,8 @@ func (k *classifier) checkNesting() {
 		for _, v := range u.inner {
 			add(v)
 		}
-		for c := range u.calls {
-			for r := range k.reachable(c) {
+		for _, c := range slices.Sorted(maps.Keys(u.calls)) {
+			for _, r := range slices.Sorted(maps.Keys(k.reachable(c))) {
 				for _, v := range ncByRule[r] {
 					add(v)
 				}

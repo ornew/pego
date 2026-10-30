@@ -191,4 +191,20 @@ func TestLintClassify(t *testing.T) {
 	if err != nil || strings.Count(out, "\treason: ") != 3 || !regexp.MustCompile(`\n\t\.\.\. and \d+ more\n$`).MatchString(out) {
 		t.Errorf("minilang: %v\n%s", err, out)
 	}
+
+	// An exponential class has no degree, even with polynomial witnesses; with super-linear
+	// disabled, the classification is still shown.
+	exp := writeFile(t, "e.pego", "var s string = \"a\"\n@start\nrule main = r (a / \"a\")* $$\nrule r = \"x\" {s := s + s} r / {len(s) > 0}\nrule a = \"a\"* \"c\"\n")
+	out, _ = runCLI(t, "", "lint", "-g", exp, "-classify", "-disable", "super-linear,growing-variable")
+	if !strings.HasPrefix(out, exp+": the cost from start rule main is exponential\n\twitness: ") {
+		t.Errorf("exponential: got\n%s", out)
+	}
+	out, _ = runCLI(t, "", "lint", "-g", exp, "-classify", "-f", "json")
+	doc = lintOutput{}
+	if err := json.Unmarshal([]byte(out), &doc); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if c := doc.Classification; c == nil || c.Class != "exponential" || strings.Contains(out, "\"degree\"") {
+		t.Errorf("exponential: got %+v\n%s", doc.Classification, out)
+	}
 }

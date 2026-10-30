@@ -243,7 +243,8 @@ hint with a witness, not a proof that a slow input exists.
     classifier collects, so a default lint run skips the rest of the classification.
   - `super-linear`, a hint at each cause of a `Poly(k)` or `Exp` verdict, with its witness path. A hint because the
     slow input may not exist. It runs only when the classification is requested, with `pego lint -classify` or
-    `lint.Config.Classify`, which also shows the verdict, its degree and the first witnesses or reasons.
+    `lint.Config.Classify`, which also shows the verdict, the degree of a polynomial verdict and the first witnesses
+    or reasons.
 - The `right-recursion` hint gains a caveat. Right recursion stays linear under memoization in batch parses (E6 control).
   The repetition or left recursion it suggests is a scanning construct that L3 must check.
 

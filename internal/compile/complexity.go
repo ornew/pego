@@ -69,7 +69,7 @@ type GrowingBinding struct {
 // Complexity is the classification of the cost of a grammar from one start rule.
 type Complexity struct {
 	Class ComplexityClass
-	// Degree is the largest degree of the polynomial causes.
+	// Degree is the largest degree of the causes of a polynomial class, and zero for any other class.
 	Degree int
 	// Causes are the causes of the classes polynomial and exponential, sorted by position.
 	Causes []ComplexityCause
@@ -361,7 +361,7 @@ func (k *classifier) result() *Complexity {
 		c.Class = ClassLinearEnv
 	}
 	for _, x := range c.Causes {
-		if x.Class == ClassPoly {
+		if c.Class == ClassPoly {
 			c.Degree = max(c.Degree, x.Degree)
 		}
 	}

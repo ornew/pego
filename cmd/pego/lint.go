@@ -153,17 +153,23 @@ func lintCmd(args []string, stdout io.Writer) error {
 		}
 		*start = p.Start()
 	}
-	findings, err := (lint.Config{Disable: disable, Classify: *classify}).Run(context.Background(), g, *start)
+	// The super-linear check classifies the grammar; the class and its witnesses come from that
+	// classification, or from one of their own when the check is disabled.
+	var complexity *engine.Complexity
+	ctx := engine.WithComplexitySink(context.Background(), func(c *engine.Complexity) { complexity = c })
+	findings, err := (lint.Config{Disable: disable, Classify: *classify}).Run(ctx, g, *start)
 	if err != nil {
 		return fileError(*grammarPath, err)
 	}
 	var classification *lintClassification
 	if *classify {
-		c, err := engine.ClassifyComplexity(context.Background(), g, *start)
-		if err != nil {
-			return fileError(*grammarPath, err)
+		if complexity == nil {
+			complexity, err = engine.ClassifyComplexity(context.Background(), g, *start)
+			if err != nil {
+				return fileError(*grammarPath, err)
+			}
 		}
-		classification = lintClassificationOf(c)
+		classification = lintClassificationOf(complexity)
 	}
 	counts := map[lint.Severity]int{}
 	out := lintOutput{Grammar: *grammarPath, Start: *start, Findings: []lintFinding{}, Classification: classification}

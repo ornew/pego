@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/lint"
 )
 
@@ -149,6 +150,29 @@ func TestRunClassify(t *testing.T) {
 				t.Errorf("%+v: RunUnchecked = %v, %v; Run = %v", tc.config, unchecked, err, checked)
 			}
 		}
+	}
+}
+
+// TestRunClassifySink checks that a run with the classification requested classifies the grammar
+// once, and passes that classification, whose causes are the super-linear findings, to the sink
+// of its context.
+func TestRunClassifySink(t *testing.T) {
+	g, err := pego.ParseGrammar("@start\nrule main = (a / \"a\")* $$\nrule a = \"a\"* \"c\"\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []*engine.Complexity
+	ctx := engine.WithComplexitySink(context.Background(), func(c *engine.Complexity) { got = append(got, c) })
+	findings, err := (lint.Config{Classify: true}).Run(ctx, g, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].Class != engine.ClassPoly || len(got[0].Causes) != len(findings) {
+		t.Fatalf("sink got %+v, findings %v", got, findings)
+	}
+	got = nil
+	if _, err := (lint.Config{}).Run(ctx, g, "main"); err != nil || len(got) != 0 {
+		t.Errorf("without Classify: sink got %+v, %v", got, err)
 	}
 }
 

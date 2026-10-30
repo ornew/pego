@@ -19,6 +19,7 @@ func runContext(ctx context.Context, g *grammar.Grammar, start string, opts opti
 		return nil, err
 	}
 	if ctx.Done() == nil {
+		opts.values = ctx
 		return runUnchecked(g, start, opts), nil
 	}
 	defer func() {

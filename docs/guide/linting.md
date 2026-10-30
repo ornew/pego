@@ -122,7 +122,7 @@ and `exponential`. Only the first two are promises; the conditions behind them, 
 [Classification](../../spec/runtime/parsing.md#classification). A polynomial or exponential class is an estimate
 with a witness, and can be pessimistic: the input that makes it slow may not exist. The class `unknown` means that
 the linter could not establish linear cost and has no witness of growth either; its first reasons are shown in place
-of witnesses. With `-f json`, the document gets a `classification` member with the class, the degree, and every
+of witnesses. With `-f json`, the document gets a `classification` member with the class, the degree of a polynomial class, and every
 witness and reason.
 
 Without `-classify` the linter does not classify the cost and reports no `super-linear` hint, so the default output

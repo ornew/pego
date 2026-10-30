@@ -1,6 +1,7 @@
 package compile
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -125,6 +126,8 @@ func TestClassifyComplexity(t *testing.T) {
 		{"repetition of two below its minimum", "rule main = (p / \"a\")* $$\nrule p = (\"a\"*) #repeat(2)\n", ClassPoly, 2},
 		{"repetition below its minimum without a retry", "rule main = (\"a\"*) #repeat(3) $$\n", ClassLinear, 0},
 		{"self-growing variable", "var s string = \"a\"\nrule main = r $$\nrule r = \"x\" {s := s + s} r / {len(s) > 0}\n", ClassExp, 0},
+		// Only a polynomial class has a degree.
+		{"exponential with a polynomial cause", "var s string = \"a\"\nrule main = r (a / \"a\")* $$\nrule r = \"x\" {s := s + s} r / {len(s) > 0}\nrule a = \"a\"* \"c\"\n", ClassExp, 0},
 		{"rebinding after the left call", "var k int\nrule main = e $$\nrule e = e \"x\" {k := k + 1} / \"x\" {k >= 0}\n", ClassLinearEnv, 0},
 		{"non-leader cycle members", "rule main = c $$\nrule a = c \"+\" / \"n\"\nrule c = \"(\" c \")\" \"y\" / \"(\" c \")\" \"z\" / a\n", ClassUnknown, 0},
 	} {
@@ -142,6 +145,18 @@ func TestClassifyComplexity(t *testing.T) {
 				t.Error("no reason")
 			}
 		})
+	}
+}
+
+// TestClassifyComplexityDeterministic checks that classifying a grammar again gives the same
+// result, on a grammar whose units have several callees with sources.
+func TestClassifyComplexityDeterministic(t *testing.T) {
+	src := "rule main = (a b c d \"q\" / \"x\" / \"y\" / \"z\" / \"w\")* $$\nrule a = \"x\"*\nrule b = \"y\"*\nrule c = \"z\"*\nrule d = \"w\"*\n"
+	want := fmt.Sprintf("%+v", *classifySource(t, src))
+	for range 50 {
+		if got := fmt.Sprintf("%+v", *classifySource(t, src)); got != want {
+			t.Fatalf("classification\n%s\nthen\n%s", want, got)
+		}
 	}
 }
 
