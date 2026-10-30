@@ -110,6 +110,9 @@ func BenchmarkDistinctBindings(b *testing.B) {
 	for _, n := range []int{16, 128, 1024} {
 		b.Run(fmt.Sprint(n), func(b *testing.B) {
 			var src strings.Builder
+			for i := 0; i < n; i++ {
+				fmt.Fprintf(&src, "var v%d int\n", i)
+			}
 			src.WriteString("rule main = ")
 			for i := 0; i < n; i++ {
 				fmt.Fprintf(&src, "{v%d := 1} ", i)
