@@ -20,8 +20,8 @@ import (
 //go:embed tsrt/runtime.ts
 var tsRuntimeSource string
 
-//go:embed tsrt/work.ts
-var tsWorkSource string
+//go:embed tsrt/budget.ts
+var tsBudgetSource string
 
 //go:embed tsrt/trace.ts
 var tsTraceSource string
@@ -79,9 +79,9 @@ func Generate(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.Ge
 		return nil, err
 	}
 	tsg := &Generator{Generator: gen.Generator{Prog: prog, Table: "rules", Observability: opts.Observability, DisableMethodSharing: opts.DisableMethodSharing, DisableLiteralSharing: opts.DisableLiteralSharing || !opts.EnableTSLiteralSharing, DisableLiteralTextDispatch: opts.DisableLiteralTextDispatch}, plainUsed: map[*compile.Rule]bool{}}
-	tsg.NoWork = !opts.WorkControls
+	tsg.NoBudget = !opts.BudgetControls
 	tsg.optionsType = "ParseOptions"
-	if !opts.WorkControls {
+	if !opts.BudgetControls {
 		tsg.optionsType = "PlainParseOptions"
 	}
 	tsg.Desc(compile.FixedDescs[0]) // the fixed expectations come first
@@ -103,7 +103,7 @@ func Generate(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.Ge
 	}
 
 	var out strings.Builder
-	fmt.Fprintf(&out, "const G = mkGrammar(%d, %v, %v, %v);\n\n", gen.GeneratedMaxDepth(opts), gen.UseSparseMemo(opts, prog, rec), opts.Observability, opts.WorkControls)
+	fmt.Fprintf(&out, "const G = mkGrammar(%d, %v, %v, %v);\n\n", gen.GeneratedMaxDepth(opts), gen.UseSparseMemo(opts, prog, rec), opts.Observability, opts.BudgetControls)
 	fmt.Fprintf(&out, "/**\n * Parses the whole input with the rule %s. unit selects the position unit (CodePoints by default).\n", start.Name)
 	out.WriteString(" * A string is parsed as its UTF-8 encoding would be (lone surrogates as U+FFFD), and bytes are\n")
 	out.WriteString(" * decoded as UTF-8 (invalid sequences as U+FFFD, one per byte). If the parse recovered from errors\n")
@@ -207,8 +207,8 @@ var TsPrintRuns = sync.OnceValue(func() string {
 // declares them: tsFieldCheckSource with castValue if called.
 func (g *Generator) fieldCheckSource() string {
 	src := tsFieldCheckSource
-	if g.NoWork {
-		src = strings.ReplaceAll(src, "    p.work();\n", "")
+	if g.NoBudget {
+		src = strings.ReplaceAll(src, "    p.spend();\n", "")
 	}
 	for _, f := range []string{"castValue"} {
 		if strings.Contains(g.Init.String(), f+"(") || strings.Contains(g.Vars.String(), f+"(") || strings.Contains(g.Methods.String(), f+"(") {
@@ -318,7 +318,7 @@ function nodeValueConforms(p: Parser, t: FieldType, n: Node, shape: number): boo
 function elemsConform(p: Parser, t: FieldType, elems: readonly (Node | null)[]): boolean {
   if (t.kind === "_") return true;
   for (const k of elems) {
-    p.work();
+    p.spend();
     if (!fieldConforms(p, t, k)) return false;
   }
   return true;
@@ -329,7 +329,7 @@ function elemsConform(p: Parser, t: FieldType, elems: readonly (Node | null)[]):
 function tupleConforms(p: Parser, ts: readonly FieldType[], elems: readonly (Node | null)[]): boolean {
   if (elems.length !== ts.length) return false;
   for (let i = 0; i < elems.length; i++) {
-    p.work();
+    p.spend();
     if (!fieldConforms(p, ts[i]!, elems[i])) return false;
   }
   return true;
@@ -362,7 +362,7 @@ type Generator struct {
 	// plainUsed holds the plain rules whose function (plainCall) is called.
 	plainUsed map[*compile.Rule]bool
 	// optionsType is the name of the runtime's options type that the entry points take: ParseOptions
-	// with work controls, PlainParseOptions without.
+	// with budget controls, PlainParseOptions without.
 	optionsType string
 }
 
@@ -424,8 +424,8 @@ func (g *Generator) plainPrefix() string {
 //
 // fn turns a call expression into a function.
 func (g *Generator) Method(comment, body string) string {
-	if !g.NoWork {
-		body = "  p.work();\n" + body
+	if !g.NoBudget {
+		body = "  p.spend();\n" + body
 	}
 	name, shared := g.MethodName("Parser/R", body)
 	if shared {
@@ -566,8 +566,8 @@ func (g *Generator) plainCall(r *compile.Rule, body string) {
 	m := &g.Methods
 	name := g.tracePlainCall(r, fmt.Sprintf("%s%d", g.plainPrefix(), r.ID))
 	fmt.Fprintf(m, "// %s, called as by invokePlain\nfunction %s(p: Parser): R {\n", r.Name, name)
-	if !g.NoWork {
-		m.WriteString("  p.work();\n")
+	if !g.NoBudget {
+		m.WriteString("  p.spend();\n")
 	}
 	m.WriteString(`  const start = p.pos;
   const rec = p.recovered.length;
@@ -711,12 +711,12 @@ func tsInt(v int) string {
 }
 
 // term converts a value expression into a TypeScript expression of type Value, charging a step for
-// it with work controls. locals maps names, such as lambda parameters, to TypeScript expressions.
+// it with budget controls. locals maps names, such as lambda parameters, to TypeScript expressions.
 func (g *Generator) term(t grammar.Term, s *compile.Scope, locals map[string]string) string {
-	if g.NoWork {
+	if g.NoBudget {
 		return g.termBody(t, s, locals)
 	}
-	return "(c.work(), " + g.termBody(t, s, locals) + ")"
+	return "(c.spend(), " + g.termBody(t, s, locals) + ")"
 }
 
 func (g *Generator) termBody(t grammar.Term, s *compile.Scope, locals map[string]string) string {

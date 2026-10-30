@@ -927,9 +927,9 @@ type grammar struct {
 	// Observable reports that the parser was generated with observability: only then do the
 	// trace and profile options take effect, so only then does ResolveOptions accept them.
 	Observable bool
-	// NoWorkControls reports that the parser was generated without work controls, so that a parse
+	// NoBudgetControls reports that the parser was generated without budget controls, so that a parse
 	// asking for them fails.
-	NoWorkControls bool
+	NoBudgetControls bool
 	// MaxDepth is the default maximum nesting of rule calls.
 	maxDepth int
 	// initEnv is the environment every parse starts from, with each variable bound to its
@@ -1057,7 +1057,7 @@ type parseOptions struct {
 	maxDepth int
 	context  context.Context
 	limits   Limits
-	control  *WorkControl
+	control  *BudgetControl
 	prepared bool
 	// observe selects the observation of the parse (trace.go).
 	observe observeOptions
@@ -1081,7 +1081,7 @@ func WithMaxDepth(n int) ParseOption { return func(o *parseOptions) { o.maxDepth
 // A nil context is equivalent to context.Background.
 func WithContext(ctx context.Context) ParseOption { return func(o *parseOptions) { o.context = ctx } }
 
-// WithLimits bounds cumulative examined input and execution work.
+// WithLimits bounds cumulative examined input and execution steps.
 // Zero leaves a counter unlimited; counters are never rolled back.
 func WithLimits(limits Limits) ParseOption {
 	return func(o *parseOptions) { o.limits = limits }
@@ -1104,8 +1104,8 @@ func ResolveOptions(g *grammar, opts []ParseOption) (parseOptions, error) {
 	if o.maxDepth == 0 {
 		o.maxDepth = g.maxDepth
 	}
-	if g.NoWorkControls && (o.context != nil || o.limits != (Limits{})) {
-		return o, fmt.Errorf("this parser was generated without work controls (generate with -work-controls to use WithContext and WithLimits)")
+	if g.NoBudgetControls && (o.context != nil || o.limits != (Limits{})) {
+		return o, fmt.Errorf("this parser was generated without budget controls (generate with -budget-controls to use WithContext and WithLimits)")
 	}
 	if err := o.validateDiagnostics(); err != nil {
 		return o, err
@@ -1143,7 +1143,7 @@ func prepareOptions(o parseOptions) parseOptions {
 	if !o.prepared {
 		o.prepared = true
 		if o.context != nil || o.limits != (Limits{}) {
-			o.control = newWorkControl(o.context, o.limits)
+			o.control = newBudgetControl(o.context, o.limits)
 		}
 	}
 	o.control.Check()
@@ -1181,12 +1181,12 @@ func RunParse(r *Rule, input string, opts []ParseOption) (n *Node, err error) {
 // RunParseResolved is for generated parsers; not a stable API.
 func RunParseResolved(r *Rule, input string, o parseOptions) (n *Node, err error) {
 	defer recoverParse(&n, &err)
-	return parseResolvedWork(r, input, o)
+	return parseResolvedSpend(r, input, o)
 }
 
-// parseResolvedWork lets a conversion boundary distinguish engine interruption
+// parseResolvedSpend lets a conversion boundary distinguish engine interruption
 // from an ordinary nil result without inspecting caller-owned error values.
-func parseResolvedWork(r *Rule, input string, o parseOptions) (n *Node, err error) {
+func parseResolvedSpend(r *Rule, input string, o parseOptions) (n *Node, err error) {
 	o = prepareOptions(o)
 	p, _ := ppool.Get().(*Parser)
 	if p == nil {
@@ -1275,7 +1275,7 @@ const (
 
 // Parser is for generated parsers; not a stable API.
 type Parser struct {
-	Control *WorkControl
+	Control *BudgetControl
 	g       *grammar // the grammar of the rules being parsed (setGrammar)
 	// Observation observes the parse; it is nil unless the parse options select it.
 	Observation *observation
@@ -1739,7 +1739,7 @@ const (
 // NewNode returns a copy of v allocated from the node slab. A slab stays alive while any of its
 // nodes is referenced.
 func (p *Parser) NewNode(v Node) *Node {
-	p.Work()
+	p.Spend()
 	if len(p.nodeSlab) == 0 {
 		p.nodeSlab = make([]Node, nodeChunk)
 		if p.Stream != nil {
@@ -1769,7 +1769,7 @@ func (p *Parser) NewNodeOrdinary(v Node) *Node {
 // NewTerminal returns the node of text matched from start to the current position, allocated like
 // NewNode(Node{RawKind: RawKindMatch, ...}).
 func (p *Parser) NewTerminal(start int, text string) *Node {
-	p.Work()
+	p.Spend()
 	return p.NewTerminalOrdinary(start, text)
 }
 
@@ -1790,7 +1790,7 @@ func (p *Parser) NewTerminalOrdinary(start int, text string) *Node {
 // NewBranch returns the node of kind (RawKindSeq or RawKindList) with children from start to the
 // current position, allocated like NewNode(Node{RawKind: kind, ...}).
 func (p *Parser) NewBranch(kind *nodeKind, start int, children []*Node) *Node {
-	p.Work()
+	p.Spend()
 	return p.NewBranchOrdinary(kind, start, children)
 }
 
@@ -1841,7 +1841,7 @@ func (p *Parser) fields(n int) Fields {
 // Kids returns p.KidStack[base:] as a child list and pops it.
 func (p *Parser) Kids(base int) []*Node {
 	ks := p.Nodes(len(p.KidStack) - base)
-	copyWork(p, ks, p.KidStack[base:])
+	copySpend(p, ks, p.KidStack[base:])
 	p.DropKids(base)
 	return ks
 }
@@ -2017,7 +2017,7 @@ func (p *Parser) Reset(m Mark) {
 }
 
 func (p *Parser) SetCapture(slot int, v *Node) {
-	p.Work()
+	p.Spend()
 	p.Trail = append(p.Trail, undo{f: p.Frame, slot: slot, old: p.Frame.Vals[slot]})
 	p.Frame.Vals[slot] = v
 }
@@ -2074,7 +2074,7 @@ func (p *Parser) Peek() (rune, int, bool) {
 	if p.Stream != nil {
 		return p.streamPeek()
 	}
-	p.ReadWork(1)
+	p.SpendRead(1)
 	if p.Pos >= p.n {
 		p.documentTouch(p.Pos + 1)
 		return 0, 0, false
@@ -2084,7 +2084,7 @@ func (p *Parser) Peek() (rune, int, bool) {
 			p.documentTouch(p.Pos + 1)
 			return rune(c), 1, true
 		}
-		p.ReadWork(uint64(min(utf8.UTFMax, p.n-p.Pos)))
+		p.SpendRead(uint64(min(utf8.UTFMax, p.n-p.Pos)))
 		r, size := utf8.DecodeRuneInString(p.bs[p.Pos:])
 		p.documentTouch(p.Pos + size)
 		return r, size, true
@@ -2125,7 +2125,7 @@ func (p *Parser) unitLen(s string) int {
 	if p.Control != nil && p.unit != Bytes {
 		count := 0
 		for off := 0; off < len(s); {
-			p.valueWork(min(utf8.UTFMax, len(s)-off))
+			p.spendValue(min(utf8.UTFMax, len(s)-off))
 			_, size := utf8.DecodeRuneInString(s[off:])
 			off += size
 			count++
@@ -2153,7 +2153,7 @@ func (p *Parser) Expect(pos int, id ExpID) {
 	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
 	if p.expBits&bit != 0 {
 		for _, e := range p.exp[p.expBase:] {
-			p.Work()
+			p.Spend()
 			if e == id {
 				return
 			}
@@ -2163,9 +2163,9 @@ func (p *Parser) Expect(pos int, id ExpID) {
 	p.exp = append(p.exp, id)
 }
 
-// ExpectOrdinary is expect in an ordinary parse: one without work controls and outside a
+// ExpectOrdinary is expect in an ordinary parse: one without budget controls and outside a
 // Document (p.Control == nil && p.Document == nil). The generated rule bodies have a branch for
-// such parses that calls the Ordinary forms of the runtime helpers, which leave out the work
+// such parses that calls the Ordinary forms of the runtime helpers, which leave out the budget
 // charges and the Document's record of the examined input.
 func (p *Parser) ExpectOrdinary(pos int, id ExpID) {
 	if p.Silent > 0 || pos < p.farthest {
@@ -2226,7 +2226,7 @@ func (p *Parser) Keep(ids []ExpID) []ExpID {
 		p.arena = make([]ExpID, 0, max(1024, len(ids)))
 	}
 	off := len(p.arena)
-	p.arena = appendWork(p, p.arena, ids)
+	p.arena = appendSpend(p, p.arena, ids)
 	p.lastKept = p.arena[off:len(p.arena):len(p.arena)]
 	return p.lastKept
 }
@@ -2247,7 +2247,7 @@ func slicesEqual(a, b []ExpID) bool {
 // current record (writes only happen below the read position).
 func (p *Parser) MergeExpected(far int, ids []ExpID) {
 	for _, x := range ids {
-		p.Work()
+		p.Spend()
 		p.Expect(far, x)
 	}
 }
@@ -2312,7 +2312,7 @@ func (p *Parser) Call(r *Rule, min int) (*Node, bool) {
 	if p.Observation != nil || p.Document != nil {
 		return p.callTracked(r, min)
 	}
-	p.Work()
+	p.Spend()
 	start := p.Pos
 	if (!r.Memo && !r.Leader) || p.FirstCall(r) {
 		// Unmemoized call: no memo bookkeeping, and expectations need no isolation.
@@ -2430,7 +2430,7 @@ func (p *Parser) callObserved(r *Rule, min int) (*Node, bool) {
 // callBody is call with the Document bookkeeping and without observation. A
 // Document parse takes callDocument.
 func (p *Parser) callBody(r *Rule, min int) (*Node, bool) {
-	p.Work()
+	p.Spend()
 	if p.Document != nil {
 		return p.callDocument(r, min)
 	}
@@ -2714,7 +2714,7 @@ func (p *Parser) AttachCaptures(v *Node, names []string, f *CaptureFrame, start,
 	found := false
 	wrap := v == nil || !v.RawFresh
 	for _, c := range f.Vals {
-		p.Work()
+		p.Spend()
 		if c != nil {
 			found = true
 		}
@@ -2733,7 +2733,7 @@ func (p *Parser) AttachCaptures(v *Node, names []string, f *CaptureFrame, start,
 	}
 	v.labeled = p.sourceInfo
 	for i, name := range names {
-		p.Work()
+		p.Spend()
 		if f.Vals[i] != nil {
 			p.setValueField(&v.RawFields, name, f.Vals[i])
 		}
@@ -2865,7 +2865,7 @@ func (p *Parser) MatchLiteral(rs []rune, text string, desc ExpID, build bool) (*
 	} else {
 		p.documentTouch(start + len(rs))
 		for _, r := range rs {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			if p.Pos >= p.n || p.In[p.Pos] != r {
 				p.Expect(start, desc)
 				return nil, false
@@ -3138,7 +3138,7 @@ func RenamedExpected(p *Parser, expected []ExpID, name ExpID) []ExpID {
 	// The isolated record is no longer in the active expectation stack. Charge
 	// each conversion and reuse its storage before MergeExpected appends to it.
 	for i, id := range expected {
-		p.Work()
+		p.Spend()
 		if id&MsgBit == 0 {
 			expected[i] = name
 		}
@@ -3242,7 +3242,7 @@ func (c *ActCtx) result(action func(*ActCtx) any, where string) (n *Node) {
 		return c.P.NewNode(Node{RawKind: kindBox, box: v, RawStart: int32(c.start), RawEnd: int32(c.end)})
 	}
 	for _, x := range c.P.created[c.cbase:] {
-		c.P.Work()
+		c.P.Spend()
 		if x == n {
 			n.RawStart, n.RawEnd = int32(c.start), int32(c.end)
 			break
@@ -3356,7 +3356,7 @@ func (c *ActCtx) NewStruct(typ string, kv ...any) any {
 	n := c.P.NewNode(Node{RawKind: k, RawFields: c.P.fields(len(kv) / 2)})
 	first := true
 	for i := 0; i < len(kv); i += 2 {
-		c.P.Work()
+		c.P.Spend()
 		v := kv[i+1]
 		c.P.setValueField(&n.RawFields, kv[i].(string), v)
 		if child, ok := v.(*Node); ok && child != nil {
@@ -3378,7 +3378,7 @@ func (c *ActCtx) NewStruct(typ string, kv ...any) any {
 
 func (c *ActCtx) NewList(items []*Node) *Node {
 	kids := c.P.Nodes(len(items))
-	copyWork(c.P, kids, items)
+	copySpend(c.P, kids, items)
 	return c.listNode(kids)
 }
 
@@ -3390,7 +3390,7 @@ func (c *ActCtx) listNode(kids []*Node) *Node { return c.valueNode(kindListValue
 func (c *ActCtx) Tuple(args ...any) any {
 	base := len(c.P.KidStack)
 	for _, a := range args {
-		c.P.Work()
+		c.P.Spend()
 		c.P.KidStack = append(c.P.KidStack, c.asNode("tuple", a))
 	}
 	return c.valueNode(kindTupleValue, c.P.Kids(base))
@@ -3400,7 +3400,7 @@ func (c *ActCtx) valueNode(kind *nodeKind, kids []*Node) *Node {
 	n := c.P.NewNode(Node{RawKind: kind, RawChildren: kids, RawStart: int32(c.start), RawEnd: int32(c.start)})
 	first := true
 	for _, it := range kids {
-		c.P.Work()
+		c.P.Spend()
 		if it == nil {
 			continue
 		}
@@ -3669,7 +3669,7 @@ func (c *ActCtx) MapList(list any, f func(item any) any) any {
 func (c *ActCtx) FilterList(list any, f func(item any) any) any {
 	base := len(c.P.KidStack)
 	for _, item := range c.ListItems("filter", list) {
-		c.P.Work()
+		c.P.Spend()
 		value := f(UnboxNode(item))
 		keep, ok := value.(bool)
 		if !ok {
@@ -3691,7 +3691,7 @@ func (c *ActCtx) List(args ...any) any {
 func (c *ActCtx) Concat(args ...any) any {
 	base := len(c.P.KidStack)
 	for _, a := range args {
-		c.P.Work()
+		c.P.Spend()
 		c.PushItems(a)
 	}
 	return c.EndList(base)
@@ -3703,20 +3703,20 @@ func (c *ActCtx) Concat(args ...any) any {
 
 func (c *ActCtx) PushMap(list any, f func(item any) any) {
 	for _, it := range c.ListItems("map", list) {
-		c.P.Work()
+		c.P.Spend()
 		c.P.KidStack = append(c.P.KidStack, c.asNode("map", f(UnboxNode(it))))
 	}
 }
 
 func (c *ActCtx) PushList(args ...any) {
 	for _, a := range args {
-		c.P.Work()
+		c.P.Spend()
 		c.P.KidStack = append(c.P.KidStack, c.asNode("list", a))
 	}
 }
 
 func (c *ActCtx) PushItems(v any) {
-	c.P.KidStack = appendWork(c.P, c.P.KidStack, c.ListItems("concat", v))
+	c.P.KidStack = appendSpend(c.P, c.P.KidStack, c.ListItems("concat", v))
 }
 
 // EndList returns a list of the elements pushed since base.
@@ -3782,7 +3782,7 @@ func (p *Parser) skipTrivia(pr *OperatorsRule) {
 func (p *Parser) longest(ops []*OperatorsRuleOp) (best operatorsRuleAttempt, cutFailed bool) {
 	m0 := p.Mark()
 	for _, op := range ops {
-		p.Work()
+		p.Spend()
 		prevFrame, prevCut := p.Frame, p.Cut
 		f := p.NewFrame(len(op.Line.Scope))
 		p.Frame, p.Cut = f, false
@@ -3805,9 +3805,9 @@ func (p *Parser) longest(ops []*OperatorsRuleOp) (best operatorsRuleAttempt, cut
 		}
 		// reset undoes this candidate's captures; restore them. Nothing parses between saving
 		// and restoring, so one buffer per parser suffices.
-		p.saved = appendWork(p, p.saved[:0], f.Vals)
+		p.saved = appendSpend(p, p.saved[:0], f.Vals)
 		p.Reset(m0)
-		copyWork(p, f.Vals, p.saved)
+		copySpend(p, f.Vals, p.saved)
 	}
 	return best, cutFailed
 }
@@ -3914,7 +3914,7 @@ func (p *Parser) operatorsRuleNud(r *Rule) (*Node, bool) {
 		return nil, false
 	}
 	for _, o := range pr.Operands {
-		p.Work()
+		p.Spend()
 		prevFrame, prevCut := p.Frame, p.Cut
 		f := p.NewFrame(len(o.Scope))
 		p.Frame, p.Cut = f, false
@@ -4028,7 +4028,7 @@ func (p *Parser) operatorsRuleBuild(r *Rule, a *operatorsRuleAttempt, lhs, rhs *
 	return n
 }
 
-func rtUnaryWork(p *Parser, op string, x any) any {
+func rtUnarySpend(p *Parser, op string, x any) any {
 	switch op {
 	case "-":
 		if i, ok := x.(int); ok {
@@ -4043,7 +4043,7 @@ func rtUnaryWork(p *Parser, op string, x any) any {
 	return nil
 }
 
-func rtBoolWork(p *Parser, op string, v any) bool {
+func rtBoolSpend(p *Parser, op string, v any) bool {
 	b, ok := v.(bool)
 	if !ok {
 		p.evalErrorf("invalid operand %s for %s", typeName(v), op)
@@ -4051,14 +4051,14 @@ func rtBoolWork(p *Parser, op string, v any) bool {
 	return b
 }
 
-func rtBinaryWork(p *Parser, op string, l, r any) any {
+func rtBinarySpend(p *Parser, op string, l, r any) any {
 	switch op {
 	case "==":
 		return rtEqual(l, r)
 	case "!=":
 		return !rtEqual(l, r)
 	case "[]":
-		items := listItemsWork(p, "[]", l)
+		items := listItemsSpend(p, "[]", l)
 		return UnboxNode(items[rtIndex(p, r, len(items), typeName)])
 	}
 	switch l := l.(type) {
@@ -4109,7 +4109,7 @@ func rtBinaryWork(p *Parser, op string, l, r any) any {
 	return nil
 }
 
-func listItemsWork(p *Parser, fn string, v any) []*Node {
+func listItemsSpend(p *Parser, fn string, v any) []*Node {
 	switch x := v.(type) {
 	case nil:
 		return nil
@@ -4123,7 +4123,7 @@ func listItemsWork(p *Parser, fn string, v any) []*Node {
 	return nil
 }
 
-func asNodeWork(p *Parser, fn string, v any) *Node {
+func asNodeSpend(p *Parser, fn string, v any) *Node {
 	switch x := v.(type) {
 	case nil:
 		return nil

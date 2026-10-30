@@ -15,7 +15,7 @@ import (
 // DirectTypedDocument builds typed Document parsers generated with the options extra, which
 // may set private generator options, and checks them against parsers that convert Node values.
 func DirectTypedDocument(t *testing.T, extra gen.GenOptions) {
-	NeedsWorkControls(t)
+	NeedsBudgetControls(t)
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}
@@ -180,7 +180,7 @@ func TestControlsAndInvalidOptions(t *testing.T){
    func(){defer func(){if recover()!=token{t.Fatal("context panic identity changed")}}();d.ParseAST(WithContext(ctx));t.Fatal("context did not panic")}()
    unchanged();reused()
   }
-  if _,err:=d.ParseAST(WithLimits(Limits{MaxWork:1}));!errors.Is(err,ErrLimit)||d.X_typedMemo!=nil{t.Fatalf("execution budget cleanup: %v",err)}
+  if _,err:=d.ParseAST(WithLimits(Limits{Budget:1}));!errors.Is(err,ErrLimit)||d.X_typedMemo!=nil{t.Fatalf("execution steps cleanup: %v",err)}
   assertDirect(t,d,unit)
  }
 }

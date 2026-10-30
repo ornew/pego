@@ -82,15 +82,15 @@ func (p *Parser) Nodes(n int) []*value.Node {
 // Kids returns p.KidStack[base:] as a child slice and resets the stack to base.
 func (p *Parser) Kids(base int) []*value.Node {
 	ks := p.Nodes(len(p.KidStack) - base)
-	CopyWork(p, ks, p.KidStack[base:])
-	ClearWork(p, p.KidStack[base:])
+	CopySpend(p, ks, p.KidStack[base:])
+	ClearSpend(p, p.KidStack[base:])
 	p.KidStack = p.KidStack[:base]
 	return ks
 }
 
 // DropKids discards p.KidStack[base:].
 func (p *Parser) DropKids(base int) {
-	ClearWork(p, p.KidStack[base:])
+	ClearSpend(p, p.KidStack[base:])
 	p.KidStack = p.KidStack[:base]
 }
 
@@ -157,13 +157,13 @@ func (p *Parser) NewFrame(n int) *Frame {
 func (p *Parser) ResetStreamFrames() {
 	keep := 0
 	for i := range p.FrameSlab {
-		p.Work()
+		p.Spend()
 		if &p.FrameSlab[i] == p.Frame {
 			keep = i + 1
 			break
 		}
 	}
-	ClearWork(p, p.FrameSlab[keep:])
+	ClearSpend(p, p.FrameSlab[keep:])
 	p.FrameSlab = p.FrameSlab[:keep]
 }
 

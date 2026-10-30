@@ -109,7 +109,7 @@ func TestGeneratedTSOutlinedFunctionsAreShared(t *testing.T) {
 
 // A recovered error is a SyntaxError with its position, message and expectations, and it carries no stack
 // trace; the parser leaves Error.stackTraceLimit as it found it, also when the parse is interrupted at the
-// work limit while it builds the error, and an error that a parse returns keeps its stack trace.
+// budget limit while it builds the error, and an error that a parse returns keeps its stack trace.
 func TestGeneratedTSRecoveredErrorsCarryNoStack(t *testing.T) {
 	t.Parallel()
 	src := `rule main = item #recover(skip=[^;]+ ";")*
@@ -131,10 +131,10 @@ check((Error as { stackTraceLimit?: number }).stackTraceLimit === limit, "limit 
 const bad = p.parse("1", p.CodePoints);
 check(bad.error instanceof p.SyntaxErrors || bad.error instanceof p.SyntaxError, "bad input fails");
 for (let n = 1; n < 400; n++) {
-  p.parseWithOptions("a;1;b;", { unit: p.CodePoints, maxWork: n });
-  check((Error as { stackTraceLimit?: number }).stackTraceLimit === limit, "limit restored after the work limit " + n);
+  p.parseWithOptions("a;1;b;", { unit: p.CodePoints, budget: n });
+  check((Error as { stackTraceLimit?: number }).stackTraceLimit === limit, "limit restored after the budget limit " + n);
 }
-// Building the recovered error charges work (the expectations and the table of line starts), so a
+// Building the recovered error spends budget (the expectations and the table of line starts), so a
 // signal getter and an interruption run while it is built. Neither may see the lowered limit, and the
 // error of an interrupted parse keeps its stack.
 const long = "a;1;b;" + "x".repeat(20000) + ";";
@@ -157,13 +157,13 @@ proto.makeError = function (this: unknown, ...a: unknown[]): unknown {
 check(polled().some((x) => x === 0), "the control sees a lowered limit");
 proto.makeError = original;
 for (let n = 40050; n <= 60000; n += 61) {
-  const r = p.parseWithOptions(long, { unit: p.CodePoints, maxWork: n });
+  const r = p.parseWithOptions(long, { unit: p.CodePoints, budget: n });
   if (r.error instanceof p.ParseInterruptionError) {
     check(typeof r.error.stack === "string" && r.error.stack.includes("\n    at "), "an interruption keeps its stack at " + n);
   }
 }
 console.log("ok");
-`, gen.GenOptions{Start: "main", WorkControls: true})
+`, gen.GenOptions{Start: "main", BudgetControls: true})
 	if !strings.Contains(out, "ok") {
 		t.Fatalf("output %q", out)
 	}

@@ -141,7 +141,7 @@ type Alt struct {
 	// guard has already tested the class: the alternative runs only if the character is a member
 	// (a guard of depth 0 also requires p.Depth <= p.MaxDepth, which holds wherever generated code
 	// runs), so reading and testing it again is redundant. Where reading and testing charge no
-	// work, the guard keeps the size of the character it read and the class only consumes it; the
+	// budget, the guard keeps the size of the character it read and the class only consumes it; the
 	// class cannot fail there, so the expectation it would record is never recorded in either form.
 	// Only the first expression after the alternative itself may be that class: any other class
 	// of the alternative is matched as written.

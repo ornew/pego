@@ -7,7 +7,7 @@
 // Continue starts its next iteration; an If branches. The other statements and the expressions
 // are primitive operations on the parser state that mirror the runtime's helpers: reading and
 // moving the position, matching terminals, recording expectations, calling rules, building
-// values, evaluating terms and charging work.
+// values, evaluating terms and spending budget.
 //
 // A function is local or framed. The body of a local function, a whole rule, succeeds by running
 // to its end, with the rule's value in the Result variable, and fails by an Exit to the function's
@@ -49,16 +49,16 @@ type Func struct {
 	// NewBranchNode). A function builds the values of one runtime: a Node function has no typed value
 	// operation, and a typed function has no Node one (Verify).
 	Node bool
-	// Work reports a function lowered with work controls (Options.Work); Verify then checks the
-	// charging of work (verifyWork).
-	Work bool
+	// Budget reports a function lowered with budget controls (Options.Budget); Verify then checks the
+	// charging of work (verifySpend).
+	Budget bool
 	// Document reports a function lowered for a build with Documents (Options.Document); Verify then checks
 	// that every in-place read has the recording primitive as its alternative.
 	Document bool
-	// Entered reports a function lowered with work controls, whose entry the generator charges: the method
-	// that holds the function (g.method, flatMethod or plainCall) begins with one Work, for the body of
+	// Entered reports a function lowered with budget controls, whose entry the generator charges: the method
+	// that holds the function (g.method, flatMethod or plainCall) begins with one Spend, for the body of
 	// a rule, of a frame and of a line or the skip of an Operators Rule alike. The function charges nothing
-	// for its entry and verifyWork takes the entry as its first charge; TestGeneratedRuleEntryCharge checks
+	// for its entry and verifySpend takes the entry as its first charge; TestGeneratedRuleEntryCharge checks
 	// the methods of the checked-in parsers.
 	Entered bool
 }
@@ -150,7 +150,7 @@ type Set struct {
 // Inc adds one to V.
 type Inc struct{ V *Var }
 
-// Step charges one step of work.
+// Step charges one step of budget.
 type Step struct{}
 
 // Silent adds Delta to the silent depth: expectations are not recorded while it is positive.
@@ -159,10 +159,10 @@ type Silent struct{ Delta int }
 // Peek reads the character at the position without consuming it: its code point into Ch, its
 // size into Size and whether there is one into OK. Ch and Size may be nil (not kept).
 //
-// Peek reads as the runtime's Peek does, which also charges the work of the read and, in a
+// Peek reads as the runtime's Peek does, which also charges the budget for the read and, in a
 // Document parse, records how far the parse examined the input. A target that inlines the read of
-// a code point in memory must do the same: charge one unit of work unless the function is
-// lowered without work (Options.Work), and leave Document parses to the runtime's Peek.
+// a code point in memory must do the same: charge one budget unit unless the function is
+// lowered without budget controls (Options.Budget), and leave Document parses to the runtime's Peek.
 type Peek struct{ Ch, Size, OK *Var }
 
 // Advance moves the position forward by N.
@@ -349,7 +349,7 @@ type Cmp struct {
 }
 
 // HasLit reports that the input at the position begins with the literal, read in place without
-// charging work or recording anything; it is false where the input cannot be read in place.
+// spending budget or recording anything; it is false where the input cannot be read in place.
 type HasLit struct{ Lit *core.Lit }
 
 // MatchLit matches the literal, recording its expectation on failure. Its results are its value

@@ -13,7 +13,7 @@ func TestCacheControlsResetAfterFailureAndAbort(t *testing.T) {
 	t.Parallel()
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		p := mustCompile(t, `rule main = "a"* $$`)
-		for _, limits := range []limits.Limits{{}, {MaxWork: 1}} {
+		for _, limits := range []limits.Limits{{}, {Budget: 1}} {
 			d, err := p.NewDocumentWith("main", "aaa!", ParseOptions{Backend: b})
 			if err != nil {
 				t.Fatal(err)

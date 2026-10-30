@@ -66,7 +66,7 @@ func isIdentPart(c byte) bool { return isIdentStart(c) || c >= '0' && c <= '9' }
 
 // shakableVar matches the one-line package variables that generated code names by a number: the
 // capture layouts, literals, shapers, class tables and class steps of rule bodies.
-var shakableVar = regexp.MustCompile(`^var ((?:scope|lit|sh|cls|steps|workClass)[0-9]+) = `)
+var shakableVar = regexp.MustCompile(`^var ((?:scope|lit|sh|cls|steps|budgetClass)[0-9]+) = `)
 
 // shakeVars returns the source without the shakable variables that neither the rest of it nor the
 // variables that stay name. It runs after the passes that edit the text of the functions, which can

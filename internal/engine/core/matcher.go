@@ -23,7 +23,7 @@ func RenamedExpected(p *Parser, expected []ExpID, name ExpID) []ExpID {
 	// unisolate leaves this record beyond the active expectation stack. Rename it
 	// before MergeExpected reuses the stack; this avoids an unbounded copy.
 	for i, id := range expected {
-		p.Work()
+		p.Spend()
 		if id&MsgBit == 0 {
 			expected[i] = name
 		}

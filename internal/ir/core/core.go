@@ -5,7 +5,7 @@
 // A Module holds the rules of one program variant with what they share: the interned
 // expectations and character classes, the checked types, the declared variables and the call
 // graph. A rule's body is a tree of Nodes; each node carries Attrs: whether its value is wanted,
-// its value shape and the work it charges, set when it is built, and whether it is nullable, its
+// its value shape and the budget it spends, set when it is built, and whether it is nullable, its
 // first terminal and a summary of its effects, computed by Analyze. Actions, predicates and
 // bindings are Terms, whose names are resolved to capture slots, lambda parameters, Operators
 // Rule locals and variables, and which carry their checked types.

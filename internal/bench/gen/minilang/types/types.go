@@ -215,7 +215,7 @@ func (v *ArrayLit) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *ArrayLit) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *ArrayLit) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Elems":
 		return func() any {
@@ -224,7 +224,7 @@ func (v *ArrayLit) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Elems))
 			for i, x := range v.Elems {
-				p.Work()
+				p.Spend()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -249,7 +249,7 @@ func (v *Assign) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Assign) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Assign) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Target":
 		return rt.TBack(PegoHooks, v.Target), true
@@ -277,7 +277,7 @@ func (v *Binary) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Binary) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Binary) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Left":
 		return rt.TBack(PegoHooks, v.Left), true
@@ -312,7 +312,7 @@ func (v *Block) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Block) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Block) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Body":
 		return func() any {
@@ -321,7 +321,7 @@ func (v *Block) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Body))
 			for i, x := range v.Body {
-				p.Work()
+				p.Spend()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -355,7 +355,7 @@ func (v *Call) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Call) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Call) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Fn":
 		return rt.TBack(PegoHooks, v.Fn), true
@@ -366,7 +366,7 @@ func (v *Call) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Args))
 			for i, x := range v.Args {
-				p.Work()
+				p.Spend()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -393,7 +393,7 @@ func (v *Cond) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Cond) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Cond) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Cond":
 		return rt.TBack(PegoHooks, v.Cond), true
@@ -419,7 +419,7 @@ func (v *ExprStmt) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *ExprStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *ExprStmt) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "X":
 		return rt.TBack(PegoHooks, v.X), true
@@ -454,7 +454,7 @@ func (v *Func) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Func) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Func) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -465,7 +465,7 @@ func (v *Func) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Params))
 			for i, x := range v.Params {
-				p.Work()
+				p.Spend()
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -494,7 +494,7 @@ func (v *If) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *If) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *If) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Cond":
 		return rt.TBack(PegoHooks, v.Cond), true
@@ -522,7 +522,7 @@ func (v *Index) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Index) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Index) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "X":
 		return rt.TBack(PegoHooks, v.X), true
@@ -548,7 +548,7 @@ func (v *Let) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Let) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Let) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -574,7 +574,7 @@ func (v *Member) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Member) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Member) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "X":
 		return rt.TBack(PegoHooks, v.X), true
@@ -607,7 +607,7 @@ func (v *Program) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Program) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Program) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Body":
 		return func() any {
@@ -616,7 +616,7 @@ func (v *Program) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Body))
 			for i, x := range v.Body {
-				p.Work()
+				p.Spend()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -639,7 +639,7 @@ func (v *Return) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Return) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Return) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Value":
 		return rt.TBack(PegoHooks, v.Value), true
@@ -663,7 +663,7 @@ func (v *Unary) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Unary) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Unary) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Op":
 		return rt.TBack(PegoHooks, v.Op), true
@@ -689,7 +689,7 @@ func (v *While) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *While) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *While) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Cond":
 		return rt.TBack(PegoHooks, v.Cond), true
@@ -710,7 +710,7 @@ func tb0(v *Ident) any {
 // is no named node type. It is for generated parsers.
 var PegoNodeTypes [5]uint16
 
-// PegoSchema_3d42be48c1cce589 ties the parser package to this package: the parser refers to it once, so a
+// PegoSchema_d81c4b867513a08c ties the parser package to this package: the parser refers to it once, so a
 // parser and a types package generated from different schemas do not compile together.
 // It is for generated parsers; not a stable API.
-const PegoSchema_3d42be48c1cce589 = 0
+const PegoSchema_d81c4b867513a08c = 0

@@ -20,7 +20,7 @@ func TestGeneratedDocumentBenchmarkFixture(t *testing.T) {
 	if dir == "" {
 		t.Skip("set PEGO_GENERATED_DOCUMENT_BENCH_DIR to export the benchmark fixture")
 	}
-	// The exported fixture has work controls unless the run is restricted to the ordinary form.
+	// The exported fixture has budget controls unless the run is restricted to the ordinary form.
 	if gentest.EnvForm == "" {
 		gentest.SetFixtureForm(t, "0")
 	}

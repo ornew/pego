@@ -14,7 +14,7 @@ func (c *EvalCtx) pushFiltered(args []any) error {
 		return err
 	}
 	for _, item := range items {
-		c.P.Work()
+		c.P.Spend()
 		val, err := f.Apply(value.UnboxNode(item), nil)
 		if err != nil {
 			return err

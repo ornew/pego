@@ -160,7 +160,7 @@ func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, h *Ho
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.Name)
 		}
 	}
-	goGen := &Generator{typedOnly: opts.TypedOnly && !opts.KeepNodes, Observability: opts.Observability, Document: opts.Document, GoWorkControls: true, NoWork: !opts.WorkControls, Ordinary: !opts.WorkControls && !opts.Document, Prog: prog, Table: "rules", DisableMethodSharing: opts.DisableMethodSharing, DisableLiteralSharing: opts.DisableLiteralSharing, DisableLiteralTextDispatch: opts.DisableLiteralTextDispatch, disableTerminalPrograms: opts.DisableTerminalPrograms, DisableGuardedClasses: opts.DisableGuardedClasses, BoxedComparisons: opts.BoxedComparisons, disableTypedObjectSlabs: opts.DisableTypedObjectSlabs, disableTypedListSlabs: opts.DisableTypedListSlabs, disableTypedOutputBootstrap: opts.DisableTypedOutputBootstrap, hooks: *h, live: live, collect: collect, keepTableRules: opts.TypedOnly && !opts.KeepNodes}
+	goGen := &Generator{typedOnly: opts.TypedOnly && !opts.KeepNodes, Observability: opts.Observability, Document: opts.Document, GoBudgetControls: true, NoBudget: !opts.BudgetControls, Ordinary: !opts.BudgetControls && !opts.Document, Prog: prog, Table: "rules", DisableMethodSharing: opts.DisableMethodSharing, DisableLiteralSharing: opts.DisableLiteralSharing, DisableLiteralTextDispatch: opts.DisableLiteralTextDispatch, disableTerminalPrograms: opts.DisableTerminalPrograms, DisableGuardedClasses: opts.DisableGuardedClasses, BoxedComparisons: opts.BoxedComparisons, disableTypedObjectSlabs: opts.DisableTypedObjectSlabs, disableTypedListSlabs: opts.DisableTypedListSlabs, disableTypedOutputBootstrap: opts.DisableTypedOutputBootstrap, hooks: *h, live: live, collect: collect, keepTableRules: opts.TypedOnly && !opts.KeepNodes}
 	if live != nil {
 		goGen.SeedDescs()
 		for _, d := range live.descs[len(goGen.Descs):] {
@@ -235,8 +235,8 @@ func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, h *Ho
 	if opts.Observability {
 		goGen.Init.WriteString("\tpegoGrammar.Observable = true\n")
 	}
-	if !opts.WorkControls {
-		goGen.Init.WriteString("\tpegoGrammar.NoWorkControls = true\n")
+	if !opts.BudgetControls {
+		goGen.Init.WriteString("\tpegoGrammar.NoBudgetControls = true\n")
 	}
 	if prog.RecordsSourceInfo {
 		goGen.Init.WriteString("\tpegoGrammar.SourceInfo = true\n")
@@ -259,7 +259,7 @@ func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, h *Ho
 	}
 	out.WriteString("// --- Generated code ---\n\n")
 	if !opts.TypedOnly {
-		fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. Options select position units, depth, cancellation and work limits.\n", start.Name)
+		fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. Options select position units, depth, cancellation and budget limits.\n", start.Name)
 		out.WriteString("// If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.\n")
 		fmt.Fprintf(&out, "func Parse(input string, opts ...ParseOption) (*Node, error) { return RunParse(rules[%d], input, opts) }\n\n", start.ID)
 	}
@@ -426,12 +426,12 @@ type Generator struct {
 	// hoist collects the statements the term being printed needs before its expression (see stmts); nil
 	// outside a term.
 	hoist *[]string
-	// GoWorkControls emits work-control charging; Go output always has it, TypeScript output has
-	// its own runtime work controls.
-	GoWorkControls      bool
+	// GoBudgetControls emits budget-control charging; Go output always has it, TypeScript output has
+	// its own runtime budget controls.
+	GoBudgetControls    bool
 	directTypedDocument bool
-	workClassNames      map[string]string
-	workClassKeys       []string
+	budgetClassNames    map[string]string
+	budgetClassKeys     []string
 	shaperNames         map[string]string
 	shaperKeys          []string
 	recoveryProg        map[*compile.Program]bool // whether a program can recover from errors
@@ -1076,12 +1076,12 @@ func (g *Generator) operand(t grammar.Term, s *compile.Scope, locals map[string]
 	return "TOperand{V: " + g.term(t, s, locals) + "}"
 }
 
-// step returns the statement that charges one step to the work control of recv, if there is one.
+// step returns the statement that charges one step to the budget control of recv, if there is one.
 func (g *Generator) step(recv string) string {
-	if g.NoWork {
+	if g.NoBudget {
 		return ""
 	}
-	return recv + ".Work()\n"
+	return recv + ".Spend()\n"
 }
 
 func (g *Generator) frameVar() string { return g.pick("EmptyFrame", "EmptyTFrame") }
@@ -1499,13 +1499,13 @@ func (g *Generator) term(t grammar.Term, s *compile.Scope, locals map[string]str
 		case "text":
 			return "c.Text(" + args[0] + ")"
 		case "foldl", "foldr":
-			if g.GoWorkControls {
+			if g.GoBudgetControls {
 				return fmt.Sprintf("c.Fold(%q, %v, %s, %s, %s)", t.Func, t.Func == "foldr", args[0], args[1], g.lambda(t.Args[2], s, locals))
 			}
 			return fmt.Sprintf("%sFold(%q, %v, %s, %s, %s)", g.rt(), t.Func, t.Func == "foldr", args[0], args[1], g.lambda(t.Args[2], s, locals))
 		case "map":
 			if x, ok := g.Projected(t, locals); ok {
-				if g.GoWorkControls {
+				if g.GoBudgetControls {
 					return "c.NewList(c.ListItems(\"map\", " + g.term(x, s, locals) + "))"
 				}
 				return "c.NewList(" + g.pick("listItems", "tlistItems") + "(\"map\", " + g.term(x, s, locals) + "))"
@@ -1523,7 +1523,7 @@ func (g *Generator) term(t grammar.Term, s *compile.Scope, locals map[string]str
 			if rx, ok := compile.TextArg(t.R); ok {
 				// Compare the strings directly (see evalCtx.binary).
 				xs := g.terms([]grammar.Term{lx, rx}, s, locals)
-				if g.GoWorkControls {
+				if g.GoBudgetControls {
 					return fmt.Sprintf("any(c.P.TextEqual(c.TextStr(%s), c.TextStr(%s)) == %v)", xs[0], xs[1], t.Op == "==")
 				}
 				return fmt.Sprintf("any(c.TextStr(%s) %s c.TextStr(%s))", xs[0], t.Op, xs[1])
@@ -1538,14 +1538,14 @@ func (g *Generator) term(t grammar.Term, s *compile.Scope, locals map[string]str
 			// The right operand is evaluated only if the left one does not decide the result.
 			l, r := g.term(t.L, s, locals), g.closure(t.R, s, locals)
 			fn := map[string]string{"&&": "And", "||": "Or"}[t.Op]
-			if g.GoWorkControls {
+			if g.GoBudgetControls {
 				return fmt.Sprintf("c.%s(%s, %s)", fn, l, r)
 			}
 			return fmt.Sprintf("%s%s(%s, %s)", g.rt(), fn, l, r)
 		}
 		xs := g.terms([]grammar.Term{t.L, t.R}, s, locals)
 		l, r := xs[0], xs[1]
-		if g.GoWorkControls {
+		if g.GoBudgetControls {
 			return fmt.Sprintf("c.Binary(%q, %s, %s)", t.Op, l, r)
 		}
 		return fmt.Sprintf("%sBinary(%q, %s, %s)", g.rt(), t.Op, l, r)
@@ -1559,7 +1559,7 @@ func (g *Generator) term(t grammar.Term, s *compile.Scope, locals map[string]str
 		line, col := g.Prog.CastPos(t)
 		return fmt.Sprintf("c.Cast(%s, %s, %d, %d)", x, v, line, col)
 	case *grammar.Unary:
-		if g.GoWorkControls {
+		if g.GoBudgetControls {
 			return fmt.Sprintf("c.Unary(%q, %s)", t.Op, g.term(t.X, s, locals))
 		}
 		return fmt.Sprintf("%sUnary(%q, %s)", g.rt(), t.Op, g.term(t.X, s, locals))
@@ -1582,7 +1582,7 @@ func (g *Generator) predicateBody(t grammar.Term, s *compile.Scope, locals map[s
 			}
 			_, text := g.stmts(func() string { return g.term(&grammar.CaptureRef{Name: name}, s, locals) })
 			fast := fmt.Sprintf("switch c.TextStr(%s) { case %s: return true }; return false", text, strings.Join(cases, ", "))
-			if g.GoWorkControls {
+			if g.GoBudgetControls {
 				return "if c.P.Control != nil { " + g.termBody(t, s, locals) + " }; " + fast
 			}
 			return fast
@@ -1714,26 +1714,26 @@ func (g *Generator) lambda(t grammar.Term, s *compile.Scope, locals map[string]s
 // membership uses immutable generated range tables. TS keeps its own runtime.
 func (g *Generator) ControlledClassReject(e *grammar.CharClass) string {
 	ordinary := classReject(e)
-	if !g.GoWorkControls || g.NoWork || len(e.Ranges) <= 4 {
-		// Without work controls the class is tested without a control, so it has no range table.
+	if !g.GoBudgetControls || g.NoBudget || len(e.Ranges) <= 4 {
+		// Without budget controls the class is tested without a control, so it has no range table.
 		return ordinary
 	}
 	key := fmt.Sprintf("%#v", e.Ranges)
-	if g.workClassNames == nil {
-		g.workClassNames = map[string]string{}
+	if g.budgetClassNames == nil {
+		g.budgetClassNames = map[string]string{}
 	}
-	name := g.workClassNames[key]
+	name := g.budgetClassNames[key]
 	if name == "" {
-		name = g.Name("workClass")
-		g.workClassNames[key] = name
-		g.workClassKeys = append(g.workClassKeys, key)
-		fmt.Fprintf(&g.Vars, "var %s = []WorkRange{", name)
+		name = g.Name("budgetClass")
+		g.budgetClassNames[key] = name
+		g.budgetClassKeys = append(g.budgetClassKeys, key)
+		fmt.Fprintf(&g.Vars, "var %s = []BudgetRange{", name)
 		for _, r := range e.Ranges {
 			fmt.Fprintf(&g.Vars, "{Lo: %d, Hi: %d},", r.Lo, r.Hi)
 		}
 		g.Vars.WriteString("}\n")
 	}
-	return fmt.Sprintf("((p.Control != nil && p.RejectWorkClass(ch, %s, %v)) || (p.Control == nil && (%s)))", name, e.Negated, ordinary)
+	return fmt.Sprintf("((p.Control != nil && p.RejectBudgetClass(ch, %s, %v)) || (p.Control == nil && (%s)))", name, e.Negated, ordinary)
 }
 
 // atEnd and atLineStart name the runtime methods that test the anchors; a parser without
@@ -1753,7 +1753,7 @@ func (g *Generator) atLineStart() string {
 }
 
 // helper names the runtime method that a generated execution function calls on its parser. A
-// parser generated without work controls and without Documents has no controlled form of its
+// parser generated without budget controls and without Documents has no controlled form of its
 // bodies, so they call the Ordinary form of the method.
 func (g *Generator) helper(name string) string {
 	if g.Ordinary && ordinaryHelperName(name) {
@@ -1764,22 +1764,22 @@ func (g *Generator) helper(name string) string {
 
 // leanTyped reports whether typed rule bodies are emitted in their ordinary form only.
 func (g *Generator) leanTyped() bool {
-	return g.Ordinary && g.GoWorkControls && g.Table == "trules"
+	return g.Ordinary && g.GoBudgetControls && g.Table == "trules"
 }
 
 // classTable returns the name of the package variable that holds the membership table of e,
 // declaring it on first use.
 func (g *Generator) classTable(e *grammar.CharClass) string {
 	key := fmt.Sprintf("cls%v%#v", e.Negated, e.Ranges)
-	if g.workClassNames == nil {
-		g.workClassNames = map[string]string{}
+	if g.budgetClassNames == nil {
+		g.budgetClassNames = map[string]string{}
 	}
-	if name := g.workClassNames[key]; name != "" {
+	if name := g.budgetClassNames[key]; name != "" {
 		return name
 	}
 	name := g.Name("cls")
-	g.workClassNames[key] = name
-	g.workClassKeys = append(g.workClassKeys, key)
+	g.budgetClassNames[key] = name
+	g.budgetClassKeys = append(g.budgetClassKeys, key)
 	ascii, wideRunes := classBits(e)
 	var wide []string
 	for _, r := range wideRunes {
@@ -1806,12 +1806,12 @@ func (g *Generator) classSteps(items []grammar.Expr) string {
 	}
 	body := strings.Join(steps, ", ")
 	key := "steps" + body
-	if name := g.workClassNames[key]; name != "" {
+	if name := g.budgetClassNames[key]; name != "" {
 		return name
 	}
 	name := g.Name("steps")
-	g.workClassNames[key] = name
-	g.workClassKeys = append(g.workClassKeys, key)
+	g.budgetClassNames[key] = name
+	g.budgetClassKeys = append(g.budgetClassKeys, key)
 	fmt.Fprintf(&g.Vars, "var %s = []ClassStep{%s}\n", name, body)
 	return name
 }

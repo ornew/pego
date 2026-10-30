@@ -25,7 +25,7 @@ func hasCaptureOfRepeat(e grammar.Expr) (capture, repeated bool) {
 }
 
 // TestFlowRecognizerPrintsCapturesFromFlow checks the route of the rules with captures: over the corpus and the
-// ten grammars, in the ordinary and the work-controlled forms, every rule of the Node and recognizer tables is printed from Flow IR (a rule
+// ten grammars, in the ordinary and the budget-controlled forms, every rule of the Node and recognizer tables is printed from Flow IR (a rule
 // it does not print fails the generation), and the rules with captures (and with captured repetitions) take the Flow route.
 func TestFlowRecognizerPrintsCapturesFromFlow(t *testing.T) {
 	t.Parallel()
@@ -57,7 +57,7 @@ func TestFlowRecognizerPrintsCapturesFromFlow(t *testing.T) {
 				if err != nil {
 					continue
 				}
-				if _, err := gentest.Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
+				if _, err := gentest.Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, BudgetControls: controls}); err != nil {
 					t.Fatalf("%s: %v", c.Name, err)
 				}
 			}

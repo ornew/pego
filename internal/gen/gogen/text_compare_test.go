@@ -13,12 +13,12 @@ import (
 )
 
 // TestGeneratedTextFieldComparisons checks that generated parsers give the same results for
-// comparisons of string fields with and without work controls, in the node and typed runtimes,
+// comparisons of string fields with and without budget controls, in the node and typed runtimes,
 // and that the typed runtime's unboxed comparisons need the steps of comparisons that box the
 // strings: the least step limit that each parse succeeds with is the same.
 func TestGeneratedTextFieldComparisons(t *testing.T) {
 	t.Parallel()
-	gentest.NeedsWorkControls(t)
+	gentest.NeedsBudgetControls(t)
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
@@ -75,11 +75,11 @@ import("encoding/json";"errors";"fmt";"os";"strings";"testing")
 func show(v any, err error) string {b,_:=json.Marshal(v);return fmt.Sprintf("%s %v",b,err)}
 func least(f func(...ParseOption)(any,error)) uint64 {
  lo,hi:=uint64(1),uint64(1<<20)
- for lo<hi {mid:=lo+(hi-lo)/2;if _,err:=f(WithLimits(Limits{MaxWork:mid}));errors.Is(err,ErrLimit){lo=mid+1}else{hi=mid}}
+ for lo<hi {mid:=lo+(hi-lo)/2;if _,err:=f(WithLimits(Limits{Budget:mid}));errors.Is(err,ErrLimit){lo=mid+1}else{hi=mid}}
  return lo
 }
 func TestComparisons(t *testing.T){
- limits:=WithLimits(Limits{MaxWork: 1<<40})
+ limits:=WithLimits(Limits{Budget: 1<<40})
  var steps strings.Builder
  for _,in:=range INPUTS{
   for _,unit:=range []PositionUnit{CodePoints,Bytes}{

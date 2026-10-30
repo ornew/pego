@@ -6,7 +6,7 @@
 //	pego test -f suite.json [-format text|json] [-backend closure,bytecode] [-equivalence] [-update]
 //	pego fmt [-w] [-l] [-check] [-syntax] [grammar.pego ...]
 //	pego convert [-to pego|json] [-o output] grammar.pego|grammar.json
-//	pego gen -g grammar.pego -module path -o dir [-pkg name] [-runtime embed|import|only] [-s main] [-types] [-document] [-stream] [-recognize] [-observability] [-work-controls] [-typed-only] [-nodoc] [-max-depth n] [-source-info] [-default-value]
+//	pego gen -g grammar.pego -module path -o dir [-pkg name] [-runtime embed|import|only] [-s main] [-types] [-document] [-stream] [-recognize] [-observability] [-budget-controls] [-typed-only] [-nodoc] [-max-depth n] [-source-info] [-default-value]
 //	pego gen -lang ts -g grammar.pego -o dir [-runtime embed|import|only] [-runtime-module specifier] [-s main] [-types] [-recognize] [-observability]
 //	pego compile -g grammar.pego [-s main] [-mode parse|recognize|document] [-source-info] [-default-value] -o grammar.pegoc
 //	pego trace -g grammar.pego [-s main] [-i input] [-max-depth n] [-rule name] [-failures] [-f text|json]
@@ -78,7 +78,7 @@ Commands:
       other format of the input.
 
   gen -g <grammar> -module <import path> -o <dir> [-pkg <package>] [-runtime embed|import|only] [-s <rule>] [-types]
-        [-document] [-stream] [-recognize] [-observability] [-work-controls] [-typed-only] [-max-depth <n>] [-nodoc] [-source-info] [-default-value]
+        [-document] [-stream] [-recognize] [-observability] [-budget-controls] [-typed-only] [-max-depth <n>] [-nodoc] [-source-info] [-default-value]
   gen -runtime only -o <dir>
   gen -lang ts -g <grammar> -o <dir> [-runtime embed|import|only] [-runtime-module <specifier>] [-s <rule>] [-types]
         [-recognize] [-observability] [-max-depth <n>] [-source-info] [-default-value]
@@ -104,18 +104,18 @@ Commands:
       -types, types for the grammar's types and ParseAST (parseAST in TypeScript),
       which returns the result as typed values, are generated too.
       -document adds a Go incremental Document; with -types it also provides
-      Document.ParseAST. Without -work-controls the Document runs without
-      work charges. It cannot be combined with -lang ts.
+      Document.ParseAST. Without -budget-controls the Document runs without
+      budget charges. It cannot be combined with -lang ts.
       -stream adds Go ParseStream, which reads an io.Reader and passes each
       committed element of the start rule's #stream repetition to a callback.
       It cannot be combined with -types or -lang ts.
       -observability emits opt-in rule tracing and profiling for Go batch
       parsing and Documents, and TypeScript batch parsing, including typed
       entry points.
-      -work-controls generates the work-controlled form of the parser, which
-      supports WithContext and WithLimits (signal and maxWork in TypeScript);
+      -budget-controls generates the budget-controlled form of the parser, which
+      supports WithContext and WithLimits (signal and budget in TypeScript);
       without it those options are not exported, the
-      generated code does not charge work, and a parse that passes them
+      generated code does not spend budget, and a parse that passes them
       fails. The parser has this one form only: a parse that sets no limit
       runs the same code. Generate a second parser without the option to
       have the plain form too.
@@ -813,7 +813,7 @@ func genCmd(args []string, stdout io.Writer) error {
 	document := fs.Bool("document", false, "also generate a Go incremental Document (typed ParseAST with -types; incompatible with -lang ts)")
 	stream := fs.Bool("stream", false, "also generate Go ParseStream and Iterate for the start rule's #stream repetition (and their typed forms with -types; incompatible with -lang ts)")
 	observability := fs.Bool("observability", false, "emit opt-in rule tracing and profiling for Go batch/Documents and TypeScript batch parsing, including typed entry points")
-	workControls := fs.Bool("work-controls", false, "generate the work-controlled form of the parser, which supports WithContext and WithLimits (signal and maxWork in TypeScript)")
+	budgetControls := fs.Bool("budget-controls", false, "generate the budget-controlled form of the parser, which supports WithContext and WithLimits (signal and budget in TypeScript)")
 	typedOnly := fs.Bool("typed-only", false, "generate only the typed entry points (ParseAST and siblings), without Parse, ParseRule and Recognize (needs -types)")
 	recognize := fs.Bool("recognize", false, "also generate Recognize, which checks input without building a tree")
 	maxDepth := fs.Int("max-depth", 0, "generated default nested rule-call limit (0 selects 100000)")
@@ -837,7 +837,7 @@ func genCmd(args []string, stdout io.Writer) error {
 		}
 		switch mode {
 		case runtimeOnly:
-			for _, name := range []string{"g", "s", "pkg", "module", "types", "document", "stream", "observability", "work-controls", "typed-only", "recognize", "max-depth", "nodoc", "source-info", "default-value"} {
+			for _, name := range []string{"g", "s", "pkg", "module", "types", "document", "stream", "observability", "budget-controls", "typed-only", "recognize", "max-depth", "nodoc", "source-info", "default-value"} {
 				if isFlagSet(fs, name) {
 					return fmt.Errorf("-%s cannot be combined with -runtime only, which writes just the runtime", name)
 				}
@@ -866,7 +866,7 @@ func genCmd(args []string, stdout io.Writer) error {
 		}
 		switch mode {
 		case runtimeOnly:
-			for _, name := range []string{"g", "s", "types", "observability", "work-controls", "recognize", "max-depth", "source-info", "default-value", "runtime-module"} {
+			for _, name := range []string{"g", "s", "types", "observability", "budget-controls", "recognize", "max-depth", "source-info", "default-value", "runtime-module"} {
 				if isFlagSet(fs, name) {
 					return fmt.Errorf("-%s cannot be combined with -runtime only, which writes just the runtime", name)
 				}
@@ -892,15 +892,15 @@ func genCmd(args []string, stdout io.Writer) error {
 	var generator gen.Generator
 	if *lang == "ts" {
 		generator = gen.TypeScript{
-			Runtime:       mode.generated(),
-			RuntimeModule: *runtimeModule,
-			Types:         *types,
-			DefaultValue:  *defaultValue,
-			SourceInfo:    *sourceInfo,
-			Observability: *observability,
-			WorkControls:  *workControls,
-			Recognize:     *recognize,
-			MaxDepth:      *maxDepth,
+			Runtime:        mode.generated(),
+			RuntimeModule:  *runtimeModule,
+			Types:          *types,
+			DefaultValue:   *defaultValue,
+			SourceInfo:     *sourceInfo,
+			Observability:  *observability,
+			BudgetControls: *budgetControls,
+			Recognize:      *recognize,
+			MaxDepth:       *maxDepth,
 		}
 	} else {
 		generator = gen.Go{
@@ -911,7 +911,7 @@ func genCmd(args []string, stdout io.Writer) error {
 			DefaultValue:   *defaultValue,
 			SourceInfo:     *sourceInfo,
 			Observability:  *observability,
-			WorkControls:   *workControls,
+			BudgetControls: *budgetControls,
 			Recognize:      *recognize,
 			MaxDepth:       *maxDepth,
 			Document:       *document,

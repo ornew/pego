@@ -1,4 +1,4 @@
-//go:build !pego_work_controls_reference
+//go:build !pego_budget_controls_reference
 
 package document_test
 
@@ -15,7 +15,7 @@ import (
 )
 
 // TestDocumentLeftRecursionAbortedGrowth interrupts a Document parse while a
-// left-recursive rule is growing, by cancellation, a work limit or a trace
+// left-recursive rule is growing, by cancellation, a budget limit or a trace
 // panic, after an earlier parse left reusable results. The interrupted parse
 // must leave nothing reusable, and parsing again, before and after further
 // edits, must match a fresh parse.
@@ -36,7 +36,7 @@ rule t = t "*" "a" / "a"`, "a*a+a+a*a*a"},
 		prog := mustCompile(t, g.src)
 		for _, cause := range []string{"cancel", "steps", "panic"} {
 			t.Run(g.name+"/"+cause, func(t *testing.T) {
-				workDocumentVariants(t, func(t *testing.T, base ParseOptions) {
+				budgetDocumentVariants(t, func(t *testing.T, base ParseOptions) {
 					d, err := prog.NewDocumentWith("main", g.text, base)
 					if err != nil {
 						t.Fatal(err)
@@ -65,7 +65,7 @@ rule t = t "*" "a" / "a"`, "a*a+a+a*a*a"},
 						case "cancel":
 							cancel()
 						case "steps":
-							core.TraceParser(e).Control.Limits.MaxWork = core.TraceParser(e).Control.Used
+							core.TraceParser(e).Control.Limits.Budget = core.TraceParser(e).Control.Used
 						case "panic":
 							panic("interrupt growth")
 						}
@@ -95,8 +95,8 @@ rule t = t "*" "a" / "a"`, "a*a+a+a*a*a"},
 					if d.Memo().Len() != 0 || len(d.Runs()) != 0 || len(d.Kids()) != 0 || d.Machine() != nil {
 						t.Fatal("interrupted growth retained reusable state")
 					}
-					workDocumentAssertRetry(t, d)
-					workDocumentAssertRetry(t, d)
+					budgetDocumentAssertRetry(t, d)
+					budgetDocumentAssertRetry(t, d)
 					text := d.Text()
 					mid := strings.Index(text, "+")
 					for _, edit := range []struct {
@@ -106,7 +106,7 @@ rule t = t "*" "a" / "a"`, "a*a+a+a*a*a"},
 						if err := d.Edit(edit.start, edit.end, edit.text); err != nil {
 							t.Fatal(err)
 						}
-						workDocumentAssertRetry(t, d)
+						budgetDocumentAssertRetry(t, d)
 					}
 				})
 			})

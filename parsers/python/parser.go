@@ -1013,7 +1013,7 @@ func tmk_YieldFrom(c *rt.TActCtx, final bool, f0 any) any {
 }
 
 func tl0(a *tslabs, v any) []*types.Arg {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -1023,14 +1023,14 @@ func tl0(a *tslabs, v any) []*types.Arg {
 	}
 	out := rt.AllocSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[*types.Arg](c)
 	}
 	return out
 }
 
 func tl1(a *tslabs, v any) []types.Expr {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -1040,14 +1040,14 @@ func tl1(a *tslabs, v any) []types.Expr {
 	}
 	out := rt.AllocSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl2(a *tslabs, v any) []types.Stmt {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -1057,14 +1057,14 @@ func tl2(a *tslabs, v any) []types.Stmt {
 	}
 	out := rt.AllocSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[types.Stmt](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl3(a *tslabs, v any) []types.TypeParam {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -1074,14 +1074,14 @@ func tl3(a *tslabs, v any) []types.TypeParam {
 	}
 	out := rt.AllocSlice(&a.tl3Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[types.TypeParam](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl4(a *tslabs, v any) []*types.WithItem {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -1091,14 +1091,14 @@ func tl4(a *tslabs, v any) []*types.WithItem {
 	}
 	out := rt.AllocSlice(&a.tl4Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[*types.WithItem](c)
 	}
 	return out
 }
 
 func tl5(a *tslabs, v any) []*types.Keyword {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -1108,14 +1108,14 @@ func tl5(a *tslabs, v any) []*types.Keyword {
 	}
 	out := rt.AllocSlice(&a.tl5Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[*types.Keyword](c)
 	}
 	return out
 }
 
 func tl6(a *tslabs, v any) []*types.Op {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -1125,14 +1125,14 @@ func tl6(a *tslabs, v any) []*types.Op {
 	}
 	out := rt.AllocSlice(&a.tl6Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = tv4(a, c)
 	}
 	return out
 }
 
 func tl7(a *tslabs, v any) []*types.Comprehension {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -1142,14 +1142,14 @@ func tl7(a *tslabs, v any) []*types.Comprehension {
 	}
 	out := rt.AllocSlice(&a.tl7Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[*types.Comprehension](c)
 	}
 	return out
 }
 
 func tl8(a *tslabs, v any) []*types.Identifier {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -1159,14 +1159,14 @@ func tl8(a *tslabs, v any) []*types.Identifier {
 	}
 	out := rt.AllocSlice(&a.tl8Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = tv3(a, c)
 	}
 	return out
 }
 
 func tl9(a *tslabs, v any) []*types.Alias {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -1176,14 +1176,14 @@ func tl9(a *tslabs, v any) []*types.Alias {
 	}
 	out := rt.AllocSlice(&a.tl9Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[*types.Alias](c)
 	}
 	return out
 }
 
 func tl10(a *tslabs, v any) []types.StrPart {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -1193,14 +1193,14 @@ func tl10(a *tslabs, v any) []types.StrPart {
 	}
 	out := rt.AllocSlice(&a.tl10Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[types.StrPart](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl11(a *tslabs, v any) []types.Pattern {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -1210,14 +1210,14 @@ func tl11(a *tslabs, v any) []types.Pattern {
 	}
 	out := rt.AllocSlice(&a.tl11Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[types.Pattern](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl12(a *tslabs, v any) []*types.MatchCase {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -1227,14 +1227,14 @@ func tl12(a *tslabs, v any) []*types.MatchCase {
 	}
 	out := rt.AllocSlice(&a.tl12Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[*types.MatchCase](c)
 	}
 	return out
 }
 
 func tl13(a *tslabs, v any) []*types.ExceptHandler {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -1244,14 +1244,14 @@ func tl13(a *tslabs, v any) []*types.ExceptHandler {
 	}
 	out := rt.AllocSlice(&a.tl13Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[*types.ExceptHandler](c)
 	}
 	return out
 }
 
 func tv0(a *tslabs, v any) *types.Constant {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -1260,7 +1260,7 @@ func tv0(a *tslabs, v any) *types.Constant {
 }
 
 func tv1(a *tslabs, v any) *types.FStringMiddle {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
@@ -1269,7 +1269,7 @@ func tv1(a *tslabs, v any) *types.FStringMiddle {
 }
 
 func tv2(a *tslabs, v any) *types.FStringRawMiddle {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
@@ -1278,7 +1278,7 @@ func tv2(a *tslabs, v any) *types.FStringRawMiddle {
 }
 
 func tv3(a *tslabs, v any) *types.Identifier {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
@@ -1287,7 +1287,7 @@ func tv3(a *tslabs, v any) *types.Identifier {
 }
 
 func tv4(a *tslabs, v any) *types.Op {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[5] {
 		return nil
@@ -1296,7 +1296,7 @@ func tv4(a *tslabs, v any) *types.Op {
 }
 
 type tslabs struct {
-	control           *rt.WorkControl
+	control           *rt.BudgetControl
 	tAlias            rt.Chunk[types.Alias]
 	tAnnAssign        rt.Chunk[types.AnnAssign]
 	tArg              rt.Chunk[types.Arg]
@@ -1389,8 +1389,8 @@ type tslabs struct {
 	tl13Chunk         rt.Chunk[*types.ExceptHandler]
 }
 
-func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }
-func (a *tslabs) work() {
+func (a *tslabs) SetBudgetControl(c *rt.BudgetControl) { a.control = c }
+func (a *tslabs) spend() {
 	if a.control != nil {
 		a.control.Charge(1)
 	}
@@ -2347,7 +2347,7 @@ func init() {
 	pegoGrammar.NodeTypes["Op"] = rt.NewNodeTypeKinds("Op")
 	pegoGrammar.Starts = []string{"main"}
 	pegoGrammar.DefaultStart = "main"
-	pegoGrammar.NoWorkControls = true
+	pegoGrammar.NoBudgetControls = true
 	pegoGrammar.SetVars([]string{"lv", "ind", "isdict"}, []any{0, 0, false})
 	trules = rt.NewTRules(rules)
 	defer tinit()
@@ -28407,4 +28407,4 @@ fail:
 	return nil, false
 }
 
-const _ = types.PegoSchema_0f2f8cabc18b7430
+const _ = types.PegoSchema_e92298319564384f

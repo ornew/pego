@@ -75,7 +75,7 @@ func TestGeneratedTypedOnly(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("ordtest")), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	gentest.OrdinaryOnlyPackage(t, dir, "full", gentest.OrdinaryOnlyTyped, gen.GenOptions{Types: true, Recognize: true, Document: true, WorkControls: true}, gentest.OrdinaryOnlyTypedEntries, gentest.OrdinaryOnlyTypedInputs)
+	gentest.OrdinaryOnlyPackage(t, dir, "full", gentest.OrdinaryOnlyTyped, gen.GenOptions{Types: true, Recognize: true, Document: true, BudgetControls: true}, gentest.OrdinaryOnlyTypedEntries, gentest.OrdinaryOnlyTypedInputs)
 	gentest.OrdinaryOnlyPackage(t, dir, "only", gentest.OrdinaryOnlyTyped, gen.GenOptions{Types: true, TypedOnly: true}, gentest.OrdinaryOnlyTypedEntries, gentest.OrdinaryOnlyTypedInputs)
 	gentest.OrdinaryOnlyPackage(t, dir, "mutated", strings.Replace(gentest.OrdinaryOnlyTyped, `"+"`, `"-"`, 1), gen.GenOptions{Types: true, TypedOnly: true}, gentest.OrdinaryOnlyTypedEntries, gentest.OrdinaryOnlyTypedInputs)
 	out := gentest.RunTranscripts(t, dir, "full", "only", "mutated")

@@ -45,4 +45,3 @@ func TestNodeTypeCasts(t *testing.T) {
 		}
 	}
 }
-

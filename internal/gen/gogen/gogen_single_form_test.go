@@ -12,9 +12,9 @@ import (
 	"github.com/ornew/pego/internal/gentest"
 )
 
-// A generated parser has one form of its rule bodies. With work controls its bodies charge steps
+// A generated parser has one form of its rule bodies. With budget controls its bodies charge steps
 // and no body starts with a branch that chooses between forms at run time; without them no body
-// charges or mentions a control. A parser with work controls or a Document calls no helper that has
+// charges or mentions a control. A parser with budget controls or a Document calls no helper that has
 // an Ordinary form (NewNodeOrdinary, NextOrdinary, ...), which belongs to the form without both.
 func TestGeneratedRuleBodiesHaveOneForm(t *testing.T) {
 	t.Parallel()
@@ -30,7 +30,7 @@ rule expr Text = #operators {
 }`
 
 // oneFormProblems checks the rule bodies of the generated source src against the form that
-// controls (work controls) and document select, and reports the bodies it found, the bodies that
+// controls (budget controls) and document select, and reports the bodies it found, the bodies that
 // charge, and what contradicts the form.
 func oneFormProblems(t *testing.T, src []byte, controls, document bool) (problems []string, bodies, charging int) {
 	t.Helper()
@@ -62,7 +62,7 @@ func oneFormProblems(t *testing.T, src []byte, controls, document bool) (problem
 		charges, controlRead, ordinaryCall := false, false, ""
 		goast.Inspect(fn.Body, func(n goast.Node) bool {
 			if sel, ok := n.(*goast.SelectorExpr); ok {
-				charges = charges || sel.Sel.Name == "Work"
+				charges = charges || sel.Sel.Name == "Spend"
 				controlRead = controlRead || sel.Sel.Name == "Control"
 				if strings.HasSuffix(sel.Sel.Name, "Ordinary") {
 					ordinaryCall = sel.Sel.Name
@@ -74,14 +74,14 @@ func oneFormProblems(t *testing.T, src []byte, controls, document bool) (problem
 			charging++
 		}
 		if !controls && (charges || controlRead) {
-			problems = append(problems, fn.Name.Name+" charges or tests a control without work controls")
+			problems = append(problems, fn.Name.Name+" charges or tests a control without budget controls")
 		}
 		if !plain && ordinaryCall != "" {
-			problems = append(problems, fn.Name.Name+" calls the ordinary helper "+ordinaryCall+" in a form with work controls or a Document")
+			problems = append(problems, fn.Name.Name+" calls the ordinary helper "+ordinaryCall+" in a form with budget controls or a Document")
 		}
 	}
 	if controls && charging == 0 {
-		problems = append(problems, "no rule body charges a step with work controls")
+		problems = append(problems, "no rule body charges a step with budget controls")
 	}
 	return problems, bodies, charging
 }
@@ -98,7 +98,7 @@ func testGeneratedRuleBodiesHaveOneForm(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			problems, bodies, charging := oneFormProblems(t, src, gentest.FixtureWorkControls(t), document)
+			problems, bodies, charging := oneFormProblems(t, src, gentest.FixtureBudgetControls(t), document)
 			for _, p := range problems {
 				t.Errorf("types=%v document=%v: %s", types, document, p)
 			}
@@ -120,7 +120,7 @@ func TestGeneratedRuleBodiesHaveOneFormNegativeControls(t *testing.T) {
 		t.Fatal(err)
 	}
 	gen := func(controls, document bool) []byte {
-		files, err := gentest.Generate(t, g, gen.GenOptions{Package: "ordinaryfixture", Module: "example.com/generated", Runtime: gen.RuntimeImport, Types: true, Document: document, Recognize: true, Start: "main", WorkControls: controls})
+		files, err := gentest.Generate(t, g, gen.GenOptions{Package: "ordinaryfixture", Module: "example.com/generated", Runtime: gen.RuntimeImport, Types: true, Document: document, Recognize: true, Start: "main", BudgetControls: controls})
 		if err != nil {
 			t.Fatal(err)
 		}

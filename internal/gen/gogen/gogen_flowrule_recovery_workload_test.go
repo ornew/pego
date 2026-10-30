@@ -14,7 +14,7 @@ import (
 // alternating benchmark binaries; ordinary tests use a temporary directory.
 func TestGeneratedTypedRecoveryWorkloads(t *testing.T) {
 	t.Parallel()
-	gentest.NeedsWorkControls(t)
+	gentest.NeedsBudgetControls(t)
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

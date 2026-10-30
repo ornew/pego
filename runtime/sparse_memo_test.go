@@ -113,12 +113,12 @@ func TestSparseMemoTypedRetentionAndTrimming(t *testing.T) {
 		p.recycle()
 		if extra == 1 {
 			if p.memo.pages != nil || p.memo.bitPages.chunks != nil {
-				t.Fatal("typed pool retained sparse backing above its input budget")
+				t.Fatal("typed pool retained sparse backing above its input spend")
 			}
 			continue
 		}
 		if len(p.memo.pages) != 65 || len(p.memo.bitPages.chunks) != 1 {
-			t.Fatal("typed pool discarded sparse backing at its input budget")
+			t.Fatal("typed pool discarded sparse backing at its input spend")
 		}
 		dir := p.memo.pages[0]
 		// A directory keeps its storage but starts the next parse empty, so that the charges of growing

@@ -340,7 +340,7 @@ func testGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
 // types against the conversion of the Document's nodes, across edits.
 func TestGeneratedNamedNodeTypesDocument(t *testing.T) {
 	t.Parallel()
-	gentest.NeedsWorkControls(t)
+	gentest.NeedsBudgetControls(t)
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}

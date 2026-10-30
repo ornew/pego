@@ -731,7 +731,7 @@ func (v *Alias) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *Alias) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Alias) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return any(v.Name), true
@@ -761,7 +761,7 @@ func (v *AnnAssign) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *AnnAssign) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *AnnAssign) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Target":
 		return rt.TBack(PegoHooks, v.Target), true
@@ -799,7 +799,7 @@ func (v *Arg) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *Arg) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Arg) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Arg":
 		return any(v.Arg), true
@@ -880,7 +880,7 @@ func (v *Arguments) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Arguments) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Arguments) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "PosOnlyArgs":
 		return func() any {
@@ -961,7 +961,7 @@ func (v *Assert) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Assert) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Assert) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Test":
 		return rt.TBack(PegoHooks, v.Test), true
@@ -996,7 +996,7 @@ func (v *Assign) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Assign) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Assign) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Targets":
 		return func() any {
@@ -1053,7 +1053,7 @@ func (v *AsyncFor) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *AsyncFor) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *AsyncFor) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Target":
 		return rt.TBack(PegoHooks, v.Target), true
@@ -1144,7 +1144,7 @@ func (v *AsyncFunctionDef) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *AsyncFunctionDef) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *AsyncFunctionDef) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return any(v.Name), true
@@ -1223,7 +1223,7 @@ func (v *AsyncWith) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *AsyncWith) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *AsyncWith) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Items":
 		return func() any {
@@ -1279,7 +1279,7 @@ func (v *Attribute) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *Attribute) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Attribute) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Value":
 		return rt.TBack(PegoHooks, v.Value), true
@@ -1309,7 +1309,7 @@ func (v *AugAssign) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *AugAssign) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *AugAssign) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Target":
 		return rt.TBack(PegoHooks, v.Target), true
@@ -1335,7 +1335,7 @@ func (v *Await) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Await) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Await) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Value":
 		return rt.TBack(PegoHooks, v.Value), true
@@ -1361,7 +1361,7 @@ func (v *BinOp) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *BinOp) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *BinOp) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Left":
 		return rt.TBack(PegoHooks, v.Left), true
@@ -1398,7 +1398,7 @@ func (v *BoolOp) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *BoolOp) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *BoolOp) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Op":
 		return tb0(v.Op), true
@@ -1429,7 +1429,7 @@ func (v *Break) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Break) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Break) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	}
 	return nil, false
@@ -1471,7 +1471,7 @@ func (v *Call) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Call) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Call) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Func":
 		return rt.TBack(PegoHooks, v.Func), true
@@ -1578,7 +1578,7 @@ func (v *ClassDef) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *ClassDef) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *ClassDef) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return any(v.Name), true
@@ -1677,7 +1677,7 @@ func (v *Compare) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Compare) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Compare) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Left":
 		return rt.TBack(PegoHooks, v.Left), true
@@ -1736,7 +1736,7 @@ func (v *Comprehension) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Comprehension) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Comprehension) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Target":
 		return rt.TBack(PegoHooks, v.Target), true
@@ -1771,7 +1771,7 @@ func (v *Continue) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Continue) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Continue) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	}
 	return nil, false
@@ -1800,7 +1800,7 @@ func (v *Delete) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Delete) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Delete) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Targets":
 		return func() any {
@@ -1851,7 +1851,7 @@ func (v *Dict) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Dict) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Dict) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Keys":
 		return func() any {
@@ -1906,7 +1906,7 @@ func (v *DictComp) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *DictComp) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *DictComp) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Key":
 		return rt.TBack(PegoHooks, v.Key), true
@@ -1962,7 +1962,7 @@ func (v *ExceptHandler) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *ExceptHandler) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *ExceptHandler) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Type":
 		return rt.TBack(PegoHooks, v.Type), true
@@ -1997,7 +1997,7 @@ func (v *ExprStmt) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *ExprStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *ExprStmt) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Value":
 		return rt.TBack(PegoHooks, v.Value), true
@@ -2043,7 +2043,7 @@ func (v *For) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *For) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *For) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Target":
 		return rt.TBack(PegoHooks, v.Target), true
@@ -2109,7 +2109,7 @@ func (v *FormattedValue) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *FormattedValue) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *FormattedValue) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Value":
 		return rt.TBack(PegoHooks, v.Value), true
@@ -2184,7 +2184,7 @@ func (v *FunctionDef) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *FunctionDef) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *FunctionDef) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return any(v.Name), true
@@ -2254,7 +2254,7 @@ func (v *GeneratorExp) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *GeneratorExp) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *GeneratorExp) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Elt":
 		return rt.TBack(PegoHooks, v.Elt), true
@@ -2296,7 +2296,7 @@ func (v *Global) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Global) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Global) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Names":
 		return func() any {
@@ -2349,7 +2349,7 @@ func (v *If) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *If) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *If) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Test":
 		return rt.TBack(PegoHooks, v.Test), true
@@ -2397,7 +2397,7 @@ func (v *IfExp) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *IfExp) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *IfExp) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Test":
 		return rt.TBack(PegoHooks, v.Test), true
@@ -2432,7 +2432,7 @@ func (v *Import) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Import) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Import) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Names":
 		return func() any {
@@ -2484,7 +2484,7 @@ func (v *ImportFrom) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *ImportFrom) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *ImportFrom) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Module":
 		return any(v.Module), true
@@ -2539,7 +2539,7 @@ func (v *Interpolation) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *Interpolation) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Interpolation) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Value":
 		return rt.TBack(PegoHooks, v.Value), true
@@ -2578,7 +2578,7 @@ func (v *JoinedStr) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *JoinedStr) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *JoinedStr) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Values":
 		return func() any {
@@ -2619,7 +2619,7 @@ func (v *Keyword) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *Keyword) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Keyword) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Arg":
 		return any(v.Arg), true
@@ -2645,7 +2645,7 @@ func (v *Lambda) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Lambda) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Lambda) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Args":
 		return rt.TPtr(v.Args), true
@@ -2680,7 +2680,7 @@ func (v *ListComp) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *ListComp) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *ListComp) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Elt":
 		return rt.TBack(PegoHooks, v.Elt), true
@@ -2732,7 +2732,7 @@ func (v *ListExpr) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *ListExpr) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *ListExpr) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Elts":
 		return func() any {
@@ -2775,7 +2775,7 @@ func (v *MatchAs) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *MatchAs) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *MatchAs) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Pattern":
 		return rt.TBack(PegoHooks, v.Pattern), true
@@ -2812,7 +2812,7 @@ func (v *MatchCase) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *MatchCase) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *MatchCase) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Pattern":
 		return rt.TBack(PegoHooks, v.Pattern), true
@@ -2880,7 +2880,7 @@ func (v *MatchClass) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *MatchClass) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *MatchClass) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Cls":
 		return rt.TBack(PegoHooks, v.Cls), true
@@ -2965,7 +2965,7 @@ func (v *MatchMapping) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *MatchMapping) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *MatchMapping) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Keys":
 		return func() any {
@@ -3018,7 +3018,7 @@ func (v *MatchOr) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *MatchOr) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *MatchOr) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Patterns":
 		return func() any {
@@ -3058,7 +3058,7 @@ func (v *MatchSequence) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *MatchSequence) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *MatchSequence) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Patterns":
 		return func() any {
@@ -3089,7 +3089,7 @@ func (v *MatchSingleton) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *MatchSingleton) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *MatchSingleton) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Value":
 		return tb2(v.Value), true
@@ -3119,7 +3119,7 @@ func (v *MatchStar) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *MatchStar) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *MatchStar) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return any(v.Name), true
@@ -3152,7 +3152,7 @@ func (v *MatchStmt) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *MatchStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *MatchStmt) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Subject":
 		return rt.TBack(PegoHooks, v.Subject), true
@@ -3185,7 +3185,7 @@ func (v *MatchValue) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *MatchValue) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *MatchValue) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Value":
 		return rt.TBack(PegoHooks, v.Value), true
@@ -3216,7 +3216,7 @@ func (v *Module) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Module) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Module) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Body":
 		return func() any {
@@ -3259,7 +3259,7 @@ func (v *Name) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *Name) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Name) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Id":
 		return any(v.Id), true
@@ -3285,7 +3285,7 @@ func (v *NamedExpr) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *NamedExpr) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *NamedExpr) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Target":
 		return rt.TPtr(v.Target), true
@@ -3318,7 +3318,7 @@ func (v *Nonlocal) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Nonlocal) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Nonlocal) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Names":
 		return func() any {
@@ -3359,7 +3359,7 @@ func (v *ParamSpec) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *ParamSpec) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *ParamSpec) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return any(v.Name), true
@@ -3381,7 +3381,7 @@ func (v *Pass) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Pass) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Pass) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	}
 	return nil, false
@@ -3403,7 +3403,7 @@ func (v *Raise) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Raise) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Raise) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Exc":
 		return rt.TBack(PegoHooks, v.Exc), true
@@ -3427,7 +3427,7 @@ func (v *Return) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Return) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Return) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Value":
 		return rt.TBack(PegoHooks, v.Value), true
@@ -3458,7 +3458,7 @@ func (v *Set) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Set) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Set) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Elts":
 		return func() any {
@@ -3500,7 +3500,7 @@ func (v *SetComp) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *SetComp) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *SetComp) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Elt":
 		return rt.TBack(PegoHooks, v.Elt), true
@@ -3537,7 +3537,7 @@ func (v *Slice) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Slice) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Slice) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Lower":
 		return rt.TBack(PegoHooks, v.Lower), true
@@ -3573,7 +3573,7 @@ func (v *Starred) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *Starred) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Starred) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Value":
 		return rt.TBack(PegoHooks, v.Value), true
@@ -3609,7 +3609,7 @@ func (v *Subscript) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *Subscript) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Subscript) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Value":
 		return rt.TBack(PegoHooks, v.Value), true
@@ -3644,7 +3644,7 @@ func (v *TemplateStr) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *TemplateStr) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *TemplateStr) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Values":
 		return func() any {
@@ -3717,7 +3717,7 @@ func (v *Try) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Try) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Try) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Body":
 		return func() any {
@@ -3823,7 +3823,7 @@ func (v *TryStar) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *TryStar) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *TryStar) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Body":
 		return func() any {
@@ -3906,7 +3906,7 @@ func (v *Tuple) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *Tuple) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Tuple) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Elts":
 		return func() any {
@@ -3952,7 +3952,7 @@ func (v *TypeAlias) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *TypeAlias) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *TypeAlias) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return rt.TPtr(v.Name), true
@@ -3999,7 +3999,7 @@ func (v *TypeVar) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *TypeVar) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *TypeVar) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return any(v.Name), true
@@ -4035,7 +4035,7 @@ func (v *TypeVarTuple) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *TypeVarTuple) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *TypeVarTuple) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return any(v.Name), true
@@ -4061,7 +4061,7 @@ func (v *UnaryOp) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *UnaryOp) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *UnaryOp) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Op":
 		return tb0(v.Op), true
@@ -4107,7 +4107,7 @@ func (v *While) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *While) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *While) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Test":
 		return rt.TBack(PegoHooks, v.Test), true
@@ -4171,7 +4171,7 @@ func (v *With) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *With) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *With) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Items":
 		return func() any {
@@ -4215,7 +4215,7 @@ func (v *WithItem) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *WithItem) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *WithItem) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "ContextExpr":
 		return rt.TBack(PegoHooks, v.ContextExpr), true
@@ -4239,7 +4239,7 @@ func (v *Yield) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Yield) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Yield) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Value":
 		return rt.TBack(PegoHooks, v.Value), true
@@ -4261,7 +4261,7 @@ func (v *YieldFrom) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *YieldFrom) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *YieldFrom) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Value":
 		return rt.TBack(PegoHooks, v.Value), true
@@ -4294,7 +4294,7 @@ func tb2(v *Constant) any {
 // is no named node type. It is for generated parsers.
 var PegoNodeTypes [6]uint16
 
-// PegoSchema_0f2f8cabc18b7430 ties the parser package to this package: the parser refers to it once, so a
+// PegoSchema_e92298319564384f ties the parser package to this package: the parser refers to it once, so a
 // parser and a types package generated from different schemas do not compile together.
 // It is for generated parsers; not a stable API.
-const PegoSchema_0f2f8cabc18b7430 = 0
+const PegoSchema_e92298319564384f = 0

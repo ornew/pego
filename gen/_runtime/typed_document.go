@@ -12,7 +12,7 @@ import "fmt"
 //
 // TypedDocumentCloneBase is for generated parsers; not a stable API.
 type TypedDocumentCloneBase struct {
-	Control *WorkControl
+	Control *BudgetControl
 	Values  map[any]any
 	Slices  map[DocumentSliceKey]any
 	Tasks   []TypedDocumentCloneTask
@@ -23,7 +23,7 @@ type TypedDocumentCloneBase struct {
 // TypedDocumentCloneTask is for generated parsers; not a stable API.
 type TypedDocumentCloneTask struct{ Source, Target any }
 
-func (c *TypedDocumentCloneBase) Begin(control *WorkControl) { c.Control = control }
+func (c *TypedDocumentCloneBase) Begin(control *BudgetControl) { c.Control = control }
 
 func (c *TypedDocumentCloneBase) Step(n uint64) {
 	if c.Control != nil {
@@ -48,7 +48,7 @@ func (c *TypedDocumentCloneBase) ReleaseBase() {
 // code's allocation chunks.
 //
 // TypedDocumentParse is for generated parsers; not a stable API.
-func TypedDocumentParse[T any](d *Document, root *TRule, o parseOptions, a workControlSetter, publish func(any) T) (res T, err error) {
+func TypedDocumentParse[T any](d *Document, root *TRule, o parseOptions, a budgetControlSetter, publish func(any) T) (res T, err error) {
 	defer recoverParse(&res, &err)
 	if o.unit != d.State.unit {
 		return res, fmt.Errorf("document parse cannot change unit")
@@ -71,11 +71,11 @@ func TypedDocumentParse[T any](d *Document, root *TRule, o parseOptions, a workC
 	p.Observation = newObservation(&o.observe)
 	defer p.releaseObservation()
 	// Do not recycle p: memo values and expectations may refer into its arenas.
-	a.SetWorkControl(o.control)
-	defer a.SetWorkControl(nil)
+	a.SetBudgetControl(o.control)
+	defer a.SetBudgetControl(nil)
 	d.State.stats = documentStats{}
 	v, parseErr := p.run(root, d.State.text, o, a)
-	// Context implementations may return any public error type. Fatal work
+	// Context implementations may return any public error type. Fatal budget
 	// interruption must not be mistaken for a completed syntax failure.
 	if o.control != nil && o.control.interrupted {
 		return res, parseErr
@@ -100,7 +100,7 @@ func TypedDocumentParse[T any](d *Document, root *TRule, o parseOptions, a workC
 // typedDocumentError copies the diagnostics of err, charging c. Diagnostics are private memo data
 // too; publishing their original pointers or Expected/Messages slices would let caller mutation
 // alter a later parse.
-func typedDocumentError(err error, control *WorkControl) error {
+func typedDocumentError(err error, control *BudgetControl) error {
 	clone := func(e *SyntaxError) *SyntaxError {
 		control.Charge(1)
 		if e == nil {

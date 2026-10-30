@@ -131,7 +131,7 @@ type ParseOption func(*engine.ParseOptions)
 
 // Limits bounds one parse invocation. A zero limit is unlimited.
 //
-// MaxWork bounds the cumulative work of the parse: every input unit
+// Budget bounds the cumulative spend of the parse: every input unit
 // inspected, every rule call and loop iteration, and every unit of value
 // construction adds to one counter. Counts depend on backend, input unit and
 // version.
@@ -144,8 +144,8 @@ type LimitError = limits.LimitError
 type LimitKind = limits.LimitKind
 
 const (
-	// LimitWork is the kind of an exhausted MaxWork.
-	LimitWork = limits.LimitWork
+	// LimitBudget is the kind of an exhausted Budget.
+	LimitBudget = limits.LimitBudget
 )
 
 // ErrLimit identifies limit failures through errors.Is.
@@ -374,7 +374,7 @@ type SnapshotField = engine.SnapshotField
 type SnapshotCaptureError = engine.SnapshotCaptureError
 
 // Snapshot parses and freezes this revision using construction defaults plus
-// opts. Cancellation and work limits cover parsing, text, tree and diagnostics;
+// opts. Cancellation and budget limits cover parsing, text, tree and diagnostics;
 // interruption returns nil. Ordinary syntax errors retain the failed version.
 func (d *Document) Snapshot(opts ...ParseOption) (*Snapshot, error) {
 	o := d.doc.ParseDefaults()
@@ -389,7 +389,7 @@ type ParseStats = engine.Stats
 
 // NewDocument creates a Document for text. opts select its fixed unit and backend
 // and the defaults for later Parse calls. Construction and each Parse use fresh
-// work counters. Edit uses the same unit and is outside parse work controls.
+// budget counters. Edit uses the same unit and is outside parse budget controls.
 // It returns an error if the backend is unavailable (Closure on a loaded parser) or the parser
 // is loaded from a compiled grammar that is not in document mode.
 func (p *Parser) NewDocument(text string, opts ...ParseOption) (*Document, error) {
@@ -410,7 +410,7 @@ func (d *Document) Text() string { return d.doc.Text() }
 func (d *Document) Edit(start, end int, text string) error { return d.doc.Edit(start, end, text) }
 
 // Parse parses the current text. opts apply once over construction defaults and
-// may change context, work limits, depth and trace, but not unit, effective backend
+// may change context, budget limits, depth and trace, but not unit, effective backend
 // or recognition mode. Overrides do not change future defaults. Pre-execution
 // interruption preserves caches and statistics; execution or publication
 // interruption discards reusable state while preserving text for retry.

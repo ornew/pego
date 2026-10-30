@@ -56,10 +56,10 @@ func testGeneratedLeftRecursionGuardIgnoresVariables(t *testing.T) {
 	}
 	prog := compileBare(t, gentest.LRBindingSource, compile.Options{LeftRecursionBindings: true})
 	typed := compileBare(t, typedLRBindingSource, compile.Options{LeftRecursionBindings: true})
-	controls := gentest.FixtureWorkControls(t)
+	controls := gentest.FixtureBudgetControls(t)
 	var limited, typedLimited string
 	if controls {
-		limited, typedLimited = "g.WithLimits(g.Limits{MaxWork: 1 << 40})", "tg.WithLimits(tg.Limits{MaxWork: 1 << 40})"
+		limited, typedLimited = "g.WithLimits(g.Limits{Budget: 1 << 40})", "tg.WithLimits(tg.Limits{Budget: 1 << 40})"
 	}
 	var want strings.Builder
 	var quoted []string

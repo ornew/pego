@@ -15,8 +15,8 @@ import (
 )
 
 func TestSnapshotControlledFreezeBudgetAndRetry(t *testing.T) {
-	if !core.WorkControlsEnabled {
-		t.Skip("work controls reference")
+	if !core.BudgetControlsEnabled {
+		t.Skip("budget controls reference")
 	}
 	prog := mustCompile(t, `rule main = .* $$`)
 	snapshotVariants(t, func(t *testing.T, o ParseOptions) {
@@ -26,7 +26,7 @@ func TestSnapshotControlledFreezeBudgetAndRetry(t *testing.T) {
 		}
 		// A memo-hit parse succeeds with this allowance. Capturing its
 		// existing graph and text must still consume the same invocation.
-		o.Limits = limits.Limits{MaxWork: 100}
+		o.Limits = limits.Limits{Budget: 100}
 		if _, err := d.ParseWith(o); err != nil {
 			t.Fatal("memo-hit fixture", err)
 		}
@@ -43,18 +43,18 @@ func TestSnapshotControlledFreezeBudgetAndRetry(t *testing.T) {
 			t.Fatal("fresh mismatch")
 		}
 		// A cached parse fits, but copying all 8192 input bytes does not.
-		o.Limits = limits.Limits{MaxWork: 4096}
+		o.Limits = limits.Limits{Budget: 4096}
 		if _, err := d.ParseWith(o); err != nil {
-			t.Fatal("work-limit memo-hit fixture", err)
+			t.Fatal("budget limit memo-hit fixture", err)
 		}
 		s, err = d.SnapshotWith(o)
 		var limit *limits.LimitError
-		if s != nil || !errors.As(err, &limit) || limit.Kind != limits.LimitWork {
-			t.Fatal("text-freeze work limit", s, err)
+		if s != nil || !errors.As(err, &limit) || limit.Kind != limits.LimitBudget {
+			t.Fatal("text-freeze budget limit", s, err)
 		}
 		o.Limits = limits.Limits{}
 		if s, err = d.SnapshotWith(o); s == nil || err != nil {
-			t.Fatal("work-limit retry", err)
+			t.Fatal("budget limit retry", err)
 		}
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
@@ -146,8 +146,8 @@ rule item = [a-zé]`)
 }
 
 func TestSnapshotFreezeCancellationAndContextPanic(t *testing.T) {
-	if !core.WorkControlsEnabled {
-		t.Skip("work controls reference")
+	if !core.BudgetControlsEnabled {
+		t.Skip("budget controls reference")
 	}
 	prog := mustCompile(t, `rule main = .* $$`)
 	snapshotVariants(t, func(t *testing.T, o ParseOptions) {

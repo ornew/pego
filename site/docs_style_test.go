@@ -87,7 +87,7 @@ func TestTitleCase(t *testing.T) {
 		{"Generating Parsers with `pego gen`", "Generating Parsers With `pego gen`"},
 		{"Labels on Predicate Actions and On `_|_`", "Labels on Predicate Actions and on `_|_`"},
 		{"Why generate", "Why Generate"},
-		{"Cancellation and work limits", "Cancellation and Work Limits"},
+		{"Cancellation and budget limits", "Cancellation and Budget Limits"},
 		{"A Larger Example", "A Larger Example"},
 		{"What it is for", "What It Is For"},
 		{"Step: a thing", "Step: A Thing"},

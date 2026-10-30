@@ -16,7 +16,7 @@ import (
 )
 
 // flowModes are the generator options under which the default prints rules from Flow IR, lean and
-// with work controls; frames reports that it also prints the bodies and lines under runtime-owned
+// with budget controls; frames reports that it also prints the bodies and lines under runtime-owned
 // frames.
 var flowModes = []struct {
 	name   string
@@ -29,16 +29,16 @@ var flowModes = []struct {
 	{"lean unguarded", gen.GenOptions{Types: true, TypedOnly: true, DisableGuardedClasses: true}, true},
 	{"lean straight terminals", gen.GenOptions{Types: true, TypedOnly: true, DisableTerminalPrograms: true}, true},
 	{"lean boxed", gen.GenOptions{Types: true, TypedOnly: true, DisableLiteralTextDispatch: true, BoxedComparisons: true}, true},
-	{"controlled typed-only", gen.GenOptions{Types: true, TypedOnly: true, WorkControls: true}, true},
-	{"controlled with nodes", gen.GenOptions{Types: true, WorkControls: true}, true},
-	{"controlled recognizer", gen.GenOptions{Types: true, Recognize: true, WorkControls: true}, true},
-	{"controlled unguarded", gen.GenOptions{Types: true, TypedOnly: true, WorkControls: true, DisableGuardedClasses: true}, true},
-	{"controlled boxed", gen.GenOptions{Types: true, TypedOnly: true, WorkControls: true, DisableLiteralTextDispatch: true, BoxedComparisons: true}, true},
+	{"controlled typed-only", gen.GenOptions{Types: true, TypedOnly: true, BudgetControls: true}, true},
+	{"controlled with nodes", gen.GenOptions{Types: true, BudgetControls: true}, true},
+	{"controlled recognizer", gen.GenOptions{Types: true, Recognize: true, BudgetControls: true}, true},
+	{"controlled unguarded", gen.GenOptions{Types: true, TypedOnly: true, BudgetControls: true, DisableGuardedClasses: true}, true},
+	{"controlled boxed", gen.GenOptions{Types: true, TypedOnly: true, BudgetControls: true, DisableLiteralTextDispatch: true, BoxedComparisons: true}, true},
 	{"Document", gen.GenOptions{Types: true, Document: true}, true},
-	{"Document with work controls", gen.GenOptions{Types: true, Document: true, WorkControls: true}, true},
+	{"Document with budget controls", gen.GenOptions{Types: true, Document: true, BudgetControls: true}, true},
 	{"observable typed-only", gen.GenOptions{Types: true, TypedOnly: true, Observability: true}, true},
 	{"observable with nodes", gen.GenOptions{Types: true, Observability: true}, true},
-	{"observable controlled", gen.GenOptions{Types: true, TypedOnly: true, Observability: true, WorkControls: true}, true},
+	{"observable controlled", gen.GenOptions{Types: true, TypedOnly: true, Observability: true, BudgetControls: true}, true},
 	{"observable Document", gen.GenOptions{Types: true, Observability: true, Document: true}, true},
 }
 
@@ -209,7 +209,7 @@ func firstDiff(a, b string) string {
 	return out.String()
 }
 
-// TestFlowTypedCorpus builds the parsers of the typed corpus with and without work controls, with
+// TestFlowTypedCorpus builds the parsers of the typed corpus with and without budget controls, with
 // the default printing rules from Flow IR, and checks that they parse every input as the engine does.
 func TestFlowTypedCorpus(t *testing.T) {
 	t.Parallel()

@@ -14,7 +14,7 @@ import (
 
 func TestGeneratedGoProfile(t *testing.T) {
 	t.Parallel()
-	gentest.NeedsWorkControls(t)
+	gentest.NeedsBudgetControls(t)
 	if testing.Short() {
 		t.Skip("builds standalone generated profiling consumers")
 	}

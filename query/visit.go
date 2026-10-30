@@ -22,7 +22,7 @@ type visitFrame struct {
 }
 
 // visitGraph calls visit for every value reachable from root, in the order graphVisit
-// describes, charging the work to b.
+// describes, charging the spend to b.
 func visitGraph(root *value.Node, b *budget, visit func(graphVisit) error) error {
 	frames := []visitFrame{{visit: graphVisit{Value: value.UnboxNode(root)}}}
 	nodes := map[*value.Node]bool{}

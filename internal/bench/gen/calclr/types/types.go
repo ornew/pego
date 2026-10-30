@@ -79,7 +79,7 @@ func (v *Binary) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Binary) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Binary) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Left":
 		return rt.TBack(PegoHooks, v.Left), true
@@ -107,7 +107,7 @@ func (v *Unary) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Unary) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Unary) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Op":
 		return rt.TBack(PegoHooks, v.Op), true
@@ -121,7 +121,7 @@ func (v *Unary) TFieldWork(p *rt.TParser, name string) (any, bool) {
 // is no named node type. It is for generated parsers.
 var PegoNodeTypes [2]uint16
 
-// PegoSchema_b5289af4f541af11 ties the parser package to this package: the parser refers to it once, so a
+// PegoSchema_c0f408fafff51d6a ties the parser package to this package: the parser refers to it once, so a
 // parser and a types package generated from different schemas do not compile together.
 // It is for generated parsers; not a stable API.
-const PegoSchema_b5289af4f541af11 = 0
+const PegoSchema_c0f408fafff51d6a = 0

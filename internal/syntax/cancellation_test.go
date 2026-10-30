@@ -175,7 +175,7 @@ func expectLexCancelled(t *testing.T, run func()) {
 	run()
 }
 
-func TestCancellableCommentPostScanWork(t *testing.T) {
+func TestCancellableCommentPostScanBudget(t *testing.T) {
 	for _, tc := range []struct {
 		name, source string
 		// Extra checks performed while normalizing the comment content.
@@ -256,7 +256,7 @@ func TestCancellableLongTokenConversion(t *testing.T) {
 	}
 }
 
-func TestCancellableLongNumericWork(t *testing.T) {
+func TestCancellableLongNumericBudget(t *testing.T) {
 	for _, tc := range []struct {
 		name, source string
 		wantOffset   int

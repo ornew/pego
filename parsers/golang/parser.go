@@ -634,7 +634,7 @@ func tmk_ValueSpec(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 }
 
 func tl0(a *tslabs, v any) []types.Expr {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -644,14 +644,14 @@ func tl0(a *tslabs, v any) []types.Expr {
 	}
 	out := rt.AllocSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl1(a *tslabs, v any) []types.Stmt {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -661,14 +661,14 @@ func tl1(a *tslabs, v any) []types.Stmt {
 	}
 	out := rt.AllocSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[types.Stmt](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl2(a *tslabs, v any) []*types.Ident {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -678,14 +678,14 @@ func tl2(a *tslabs, v any) []*types.Ident {
 	}
 	out := rt.AllocSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = tv2(a, c)
 	}
 	return out
 }
 
 func tl3(a *tslabs, v any) []*types.Field {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -695,14 +695,14 @@ func tl3(a *tslabs, v any) []*types.Field {
 	}
 	out := rt.AllocSlice(&a.tl3Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[*types.Field](c)
 	}
 	return out
 }
 
 func tl4(a *tslabs, v any) []types.Decl {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -712,14 +712,14 @@ func tl4(a *tslabs, v any) []types.Decl {
 	}
 	out := rt.AllocSlice(&a.tl4Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[types.Decl](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl5(a *tslabs, v any) []types.Spec {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -729,14 +729,14 @@ func tl5(a *tslabs, v any) []types.Spec {
 	}
 	out := rt.AllocSlice(&a.tl5Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[types.Spec](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tv0(a *tslabs, v any) *types.CharLit {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -745,7 +745,7 @@ func tv0(a *tslabs, v any) *types.CharLit {
 }
 
 func tv1(a *tslabs, v any) *types.FloatLit {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
@@ -754,7 +754,7 @@ func tv1(a *tslabs, v any) *types.FloatLit {
 }
 
 func tv2(a *tslabs, v any) *types.Ident {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
@@ -763,7 +763,7 @@ func tv2(a *tslabs, v any) *types.Ident {
 }
 
 func tv3(a *tslabs, v any) *types.ImagLit {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
@@ -772,7 +772,7 @@ func tv3(a *tslabs, v any) *types.ImagLit {
 }
 
 func tv4(a *tslabs, v any) *types.IntLit {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[5] {
 		return nil
@@ -781,7 +781,7 @@ func tv4(a *tslabs, v any) *types.IntLit {
 }
 
 func tv5(a *tslabs, v any) *types.StringLit {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[6] {
 		return nil
@@ -790,7 +790,7 @@ func tv5(a *tslabs, v any) *types.StringLit {
 }
 
 type tslabs struct {
-	control         *rt.WorkControl
+	control         *rt.BudgetControl
 	tArrayType      rt.Chunk[types.ArrayType]
 	tAssignStmt     rt.Chunk[types.AssignStmt]
 	tBinaryExpr     rt.Chunk[types.BinaryExpr]
@@ -847,8 +847,8 @@ type tslabs struct {
 	tl5Chunk        rt.Chunk[types.Spec]
 }
 
-func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }
-func (a *tslabs) work() {
+func (a *tslabs) SetBudgetControl(c *rt.BudgetControl) { a.control = c }
+func (a *tslabs) spend() {
 	if a.control != nil {
 		a.control.Charge(1)
 	}
@@ -1643,7 +1643,7 @@ func init() {
 	pegoGrammar.NodeTypes["StringLit"] = rt.NewNodeTypeKinds("StringLit")
 	pegoGrammar.Starts = []string{"main"}
 	pegoGrammar.DefaultStart = "main"
-	pegoGrammar.NoWorkControls = true
+	pegoGrammar.NoBudgetControls = true
 	trules = rt.NewTRules(rules)
 	defer tinit()
 	trules[0].Entry = u0
@@ -26432,4 +26432,4 @@ fail:
 	return nil, false
 }
 
-const _ = types.PegoSchema_1a9ea340e05d483e
+const _ = types.PegoSchema_6c049f7738d0751e

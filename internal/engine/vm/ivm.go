@@ -84,7 +84,7 @@ func (mc *ivmMachine) iterate(vm *Program, root iframe) iresult {
 	stack := []iframe{root}
 	var res iresult
 	for {
-		p.Work()
+		p.Spend()
 		child, out, done := stack[len(stack)-1].next(mc, vm, res)
 		if !done {
 			stack = append(stack, child)
@@ -408,7 +408,7 @@ func (f *longestFrame) next(mc *ivmMachine, vm *Program, res iresult) (iframe, i
 		}
 		if res.ok && (f.best.Op == nil || p.Pos > f.best.End) {
 			f.best = core.OperatorsRuleAttempt{Op: op, Frame: f.f, V: res.v, Start: f.m0.Pos, End: p.Pos, Env: p.Env, Cut: cut,
-				Errs: core.AppendWork(p, []*core.SyntaxError(nil), p.Recovered[f.m0.Recovered:])}
+				Errs: core.AppendSpend(p, []*core.SyntaxError(nil), p.Recovered[f.m0.Recovered:])}
 		}
 		if !res.ok && cut {
 			f.cutFailed = true
@@ -416,9 +416,9 @@ func (f *longestFrame) next(mc *ivmMachine, vm *Program, res iresult) (iframe, i
 		if len(f.f.Vals) == 0 {
 			p.Reset(f.m0)
 		} else {
-			p.Saved = core.AppendWork(p, p.Saved[:0], f.f.Vals) // see Parser.Longest
+			p.Saved = core.AppendSpend(p, p.Saved[:0], f.f.Vals) // see Parser.Longest
 			p.Reset(f.m0)
-			core.CopyWork(p, f.f.Vals, p.Saved)
+			core.CopySpend(p, f.f.Vals, p.Saved)
 		}
 		f.i++
 	}

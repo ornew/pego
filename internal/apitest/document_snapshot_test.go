@@ -47,7 +47,7 @@ func TestDocumentSnapshotPublicContract(t *testing.T) {
 		}
 		_, parseErr := d.Parse(pego.WithContext(ctx))
 		if parseErr == nil || parseErr.Error() != err.Error() {
-			t.Fatalf("snapshot and Parse disagree on work-control availability: %v / %v", err, parseErr)
+			t.Fatalf("snapshot and Parse disagree on budget-control availability: %v / %v", err, parseErr)
 		}
 	}
 }

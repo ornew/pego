@@ -10,11 +10,11 @@ import (
 )
 
 // TestTextFieldComparisons checks that the backends agree on comparisons of string fields, with
-// and without work controls.
+// and without budget controls.
 func TestTextFieldComparisons(t *testing.T) {
 	t.Parallel()
 	prog := compileBare(t, gentest.TextCompareGrammar, compile.Options{})
-	limits := limits.Limits{MaxWork: 1 << 40}
+	limits := limits.Limits{Budget: 1 << 40}
 	for _, controlled := range []bool{false, true} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, input := range gentest.TextCompareInputs {
@@ -34,11 +34,11 @@ func TestTextFieldComparisons(t *testing.T) {
 	}
 }
 
-// parseSteps parses input as ParseWith does, under work controls, and returns the steps used and
+// parseSteps parses input as ParseWith does, under budget controls, and returns the steps used and
 // the result.
 func parseSteps(t *testing.T, prog *Program, backend Backend, unit PositionUnit, input string) (uint64, string) {
 	t.Helper()
-	o := ParseOptions{Backend: backend, Unit: unit, Limits: limits.Limits{MaxWork: 1 << 40}}
+	o := ParseOptions{Backend: backend, Unit: unit, Limits: limits.Limits{Budget: 1 << 40}}
 	active, _, control, err := prog.admitParse("main", o, false)
 	if err != nil {
 		t.Fatal(err)
@@ -67,7 +67,7 @@ rule word = [a-z]+
 rule name Name = t:([a-z]+) #atomic => Name{Text: text($t)}`
 
 // TestTextFieldComparisonEdges checks that the backends agree on the comparisons of
-// textCompareEdgeGrammar, including the errors, with and without work controls.
+// textCompareEdgeGrammar, including the errors, with and without budget controls.
 func TestTextFieldComparisonEdges(t *testing.T) {
 	t.Parallel()
 	inputs := []string{"?!", "?a!", "#a", "^ab", "^m", "~ab", "=a", "&x,y", "&a,b", "&b,a", "&ab,ab"}

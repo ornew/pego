@@ -43,4 +43,3 @@ rule main = ps any $$`)
 		t.Error("RuleType reported a type for a program loaded from a compiled grammar")
 	}
 }
-

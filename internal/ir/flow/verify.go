@@ -16,8 +16,8 @@ import (
 //     Vars;
 //   - a Set has as many places as values, or one value with that many results (Results);
 //   - a loop without a bound (Counter or While) can be left: its body exits to it;
-//   - a function lowered with work controls (Work) charges a step before it consumes input and in each
-//     iteration of a loop without a Counter (verifyWork).
+//   - a function lowered with budget controls (Budget) charges a step before it consumes input and in each
+//     iteration of a loop without a Counter (verifySpend).
 //
 // Variables are declared for the whole function, so that any statement may exit to any enclosing
 // label: the placement of each slot in the innermost block that holds its uses comes with slot
@@ -54,8 +54,8 @@ func Verify(f *Func) error {
 			return fmt.Errorf("%s: %w", f.Name, err)
 		}
 	}
-	if f.Work {
-		return verifyWork(f)
+	if f.Budget {
+		return verifySpend(f)
 	}
 	return nil
 }

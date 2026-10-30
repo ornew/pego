@@ -59,7 +59,7 @@ type ExprBuilder[M any] interface {
 	Diagnostic(m M, name ExpID) M
 	// Recover recovers a failure of m, the form of e, by skipping the input skip matches.
 	Recover(e grammar.Expr, m, skip M, build bool) M
-	// Step charges the work of running m once, if the forms charge it per expression.
+	// Step charges the budget for running m once, if the forms charge it per expression.
 	Step(m M) M
 	// RuleBody completes the rule r with its body.
 	RuleBody(r *Rule, body M)

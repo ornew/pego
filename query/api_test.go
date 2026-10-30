@@ -135,7 +135,7 @@ func TestPublicStructuralQuerySharedEdgesAndLimits(t *testing.T) {
 	if partial, err := q.Matches(root, query.WithContext(ctx)); partial != nil || !errors.Is(err, context.Canceled) {
 		t.Fatalf("cancelled query: %+v, %v", partial, err)
 	}
-	if partial, err := q.Matches(root, query.WithLimits(pego.Limits{MaxWork: 1})); partial != nil || !errors.Is(err, pego.ErrLimit) {
+	if partial, err := q.Matches(root, query.WithLimits(pego.Limits{Budget: 1})); partial != nil || !errors.Is(err, pego.ErrLimit) {
 		t.Fatalf("limited query: %+v, %v", partial, err)
 	}
 	var kids []*pego.Node

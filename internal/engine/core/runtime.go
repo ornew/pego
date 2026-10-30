@@ -286,7 +286,7 @@ func (e *Env) Lookup(name string) (any, bool) {
 // environment. A name bound only on an abandoned branch may be absent now;
 // that false positive only causes a search, not a different binding.
 func (p *Parser) Bind(name string, val any) {
-	if WorkControlsEnabled && p.Control != nil {
+	if BudgetControlsEnabled && p.Control != nil {
 		p.bindControlled(name, val)
 		return
 	}
@@ -381,7 +381,7 @@ func (p *Parser) Expect(pos int, id ExpID) {
 	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
 	if p.ExpBits&bit != 0 {
 		for _, e := range p.Exp[p.ExpBase:] {
-			p.Work()
+			p.Spend()
 			if e == id {
 				return
 			}
@@ -427,7 +427,7 @@ func (p *Parser) Keep(ids []ExpID) []ExpID {
 		p.Arena = make([]ExpID, 0, max(1024, len(ids)))
 	}
 	off := len(p.Arena)
-	p.Arena = AppendWork(p, p.Arena, ids)
+	p.Arena = AppendSpend(p, p.Arena, ids)
 	p.LastKept = p.Arena[off:len(p.Arena):len(p.Arena)]
 	return p.LastKept
 }
@@ -436,7 +436,7 @@ func (p *Parser) Keep(ids []ExpID) []ExpID {
 // stack beyond the current record (writes only happen before the position already read).
 func (p *Parser) MergeExpected(far int, ids []ExpID) {
 	for _, x := range ids {
-		p.Work()
+		p.Spend()
 		p.Expect(far, x)
 	}
 }
@@ -470,7 +470,7 @@ func StaticRuleOf(r *Rule) *staticRule { return &r.staticRule }
 // The work is split into CallBegin, GrowBegin/GrowStep/GrowEnd, invoke, and CallEnd, and the
 // iterative VM calls the same functions from its own stack.
 func (p *Parser) Call(r *Rule, min int) (*value.Node, bool) {
-	p.Work()
+	p.Spend()
 	if p.Tr != nil {
 		// A traced parse: report the call (tracedCall calls back here with direct set).
 		if !p.Tr.direct {
@@ -525,14 +525,14 @@ func (p *Parser) EnvValues(names []string) []any {
 		return noVals[:len(names):len(names)]
 	}
 	vals := make([]any, len(names))
-	if !WorkControlsEnabled || p.Control == nil {
+	if !BudgetControlsEnabled || p.Control == nil {
 		for i, name := range names {
 			vals[i], _ = p.Env.Lookup(name)
 		}
 		return vals
 	}
 	for i, name := range names {
-		p.Work()
+		p.Spend()
 		vals[i], _ = p.LookupValue(name)
 	}
 	return vals
@@ -542,7 +542,7 @@ func (p *Parser) EnvValues(names []string) []any {
 // nothing has been bound since the parse began they are the initial values, computed once: the
 // key only compares them, so the slice is shared instead of allocated for each call.
 func (p *Parser) memoEnv(r *Rule) []any {
-	if p.Env == p.initEnv && r.InitVals != nil && (!WorkControlsEnabled || p.Control == nil) {
+	if p.Env == p.initEnv && r.InitVals != nil && (!BudgetControlsEnabled || p.Control == nil) {
 		return r.InitVals
 	}
 	return p.EnvValues(r.Vars)
@@ -628,7 +628,7 @@ func (p *Parser) CallBegin(r *Rule, min int) (st CallState, v *value.Node, ok, h
 		}
 		p.Pos = e.End
 		if p.Missing == nil {
-			p.Recovered = AppendWork(p, p.Recovered, e.Errs)
+			p.Recovered = AppendSpend(p, p.Recovered, e.Errs)
 		} else {
 			p.ReplayMissing(p.MissingSeedEvents(e), e.Errs)
 		}
@@ -656,7 +656,7 @@ func (p *Parser) CallEnd(r *Rule, st *CallState, v *value.Node, ok bool) (*value
 		}
 		e = p.Memo.Alloc()
 		*e = MemoEntry{Node: v, Ok: ok, End: p.Pos, Examined: p.Hw, From: p.lw, silent: p.Silent > 0, Gen: p.Gen, Vgen: p.Gen,
-			Positional: r.Positional, Errs: AppendWork(p, []*SyntaxError(nil), p.Recovered[st.Rec:])}
+			Positional: r.Positional, Errs: AppendSpend(p, []*SyntaxError(nil), p.Recovered[st.Rec:])}
 		p.MemoPut(st.Key, e)
 	}
 	far, inner := p.Unisolate(st.exp)
@@ -707,12 +707,12 @@ func (p *Parser) GrowBegin(key MemoKey) GrowState {
 // GrowStep receives the body's result; if the match grew, it stores the result in the memo,
 // prepares the next evaluation, and returns true.
 func (p *Parser) GrowStep(g *GrowState, v *value.Node, ok bool) bool {
-	p.Work()
+	p.Spend()
 	if !ok || (g.Best.Ok && p.Pos <= g.Best.End) {
 		return false
 	}
 	g.Best = p.Memo.Alloc()
-	*g.Best = MemoEntry{Node: v, Ok: true, End: p.Pos, Examined: p.Hw, From: p.lw, Growing: true, Gen: p.Gen, Vgen: p.Gen, Errs: AppendWork(p, []*SyntaxError(nil), p.Recovered[g.Rec:])}
+	*g.Best = MemoEntry{Node: v, Ok: true, End: p.Pos, Examined: p.Hw, From: p.lw, Growing: true, Gen: p.Gen, Vgen: p.Gen, Errs: AppendSpend(p, []*SyntaxError(nil), p.Recovered[g.Rec:])}
 	if p.Missing != nil {
 		p.RecordMissingSeed(g.Best, g.missing)
 	}
@@ -745,7 +745,7 @@ func (p *Parser) GrowEnd(r *Rule, g *GrowState) (*value.Node, bool) {
 		p.ResetMissing(g.missing)
 	}
 	if p.Missing == nil {
-		p.Recovered = AppendWork(p, p.Recovered, best.Errs)
+		p.Recovered = AppendSpend(p, p.Recovered, best.Errs)
 	} else {
 		p.ReplayMissing(p.MissingSeedEvents(best), best.Errs)
 	}
@@ -763,7 +763,7 @@ func (p *Parser) invoke(r *Rule, min int) (*value.Node, bool) {
 // InvokeBegin and InvokeEnd inlined, minus the capture frame (the body never writes one, so the
 // caller's stays current), and with the failure handling of call.
 func (p *Parser) InvokePlain(r *Rule, min int) (*value.Node, bool) {
-	p.Work()
+	p.Spend()
 	start, rec, trail, missing := p.Pos, len(p.Recovered), len(p.Trail), p.missingMark()
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
@@ -800,7 +800,7 @@ type InvokeState struct {
 }
 
 func (p *Parser) InvokeBegin(r *Rule) InvokeState {
-	p.Work()
+	p.Spend()
 	st := InvokeState{f: p.NewFrame(len(r.Scope.Names)), prevFrame: p.Frame, PrevEnv: p.Env, PrevCut: p.Cut, Trail: len(p.Trail), Start: p.Pos}
 	p.Frame, p.Cut = st.f, false
 	p.Depth++
@@ -877,7 +877,7 @@ func (p *Parser) AttachCaptures(v *value.Node, s *compile.Scope, f *Frame, start
 	found := false
 	wrap := v == nil || !value.D(v).Fresh
 	for _, c := range f.Vals {
-		p.Work()
+		p.Spend()
 		if c != nil {
 			found = true
 		}
@@ -897,7 +897,7 @@ func (p *Parser) AttachCaptures(v *value.Node, s *compile.Scope, f *Frame, start
 	}
 	value.D(v).Labeled = p.Prog.RecordsSourceInfo
 	for i, name := range s.Names {
-		p.Work()
+		p.Spend()
 		if f.Vals[i] != nil {
 			p.SetValueField(&value.D(v).Fields, name, f.Vals[i])
 		}
@@ -969,7 +969,7 @@ func (p *Parser) SyntaxError() *SyntaxError {
 func (p *Parser) MakeError(pos int, expected []ExpID) *SyntaxError {
 	e := &SyntaxError{Pos: pos}
 	for _, x := range expected {
-		p.Work()
+		p.Spend()
 		if x&MsgBit != 0 {
 			e.Messages = append(e.Messages, p.Descs[x&^MsgBit])
 		} else {
@@ -1011,7 +1011,7 @@ func (p *Parser) moveResult(e *MemoEntry) {
 	} else if value.D(n).Gen < p.Gen {
 		p.MoveTree(n, p.ShiftOf(n))
 	}
-	p.ClearMovementWork()
+	p.ClearMovementSpend()
 }
 
 // ShiftOf returns how far the non-empty node n of the result being moved moves with the edits
@@ -1027,7 +1027,7 @@ func (p *Parser) ShiftOf(n *value.Node) int {
 	}
 	s := int(value.D(n).Start)
 	for _, ed := range p.Edits[value.D(n).Gen:p.Gen] {
-		p.Work()
+		p.Spend()
 		if s >= ed.End {
 			s += ed.Delta
 		}
@@ -1041,19 +1041,19 @@ func (p *Parser) ShiftOf(n *value.Node) int {
 
 // MoveTree moves the non-empty node n by shift (ShiftOf(n)), and its descendants, in place.
 func (p *Parser) MoveTree(n *value.Node, shift int) {
-	p.Work()
+	p.Spend()
 	gen := value.D(n).Gen
 	value.D(n).Start += int32(shift)
 	value.D(n).End += int32(shift)
 	value.D(n).Gen = p.Gen
 	for i, c := range value.D(n).Children {
-		p.Work()
+		p.Spend()
 		if c != nil && value.D(c).Gen < p.Gen {
 			value.D(n).Children[i] = p.moveChild(c, gen, shift)
 		}
 	}
 	for i := range value.D(n).Fields {
-		p.Work()
+		p.Spend()
 		if c, ok := value.D(n).Fields[i].Value.(*value.Node); ok && c != nil && value.D(c).Gen < p.Gen {
 			value.D(n).Fields[i].Value = p.moveChild(c, gen, shift)
 		}
@@ -1082,7 +1082,7 @@ func (p *Parser) moveChild(c *value.Node, gen uint32, shift int) *value.Node {
 // ones are copied the same way, and non-empty ones (captured in a lookahead) are moved in place.
 // Copies made in the same moveResult are shared.
 func (p *Parser) MoveEmpty(n *value.Node, shift int) *value.Node {
-	p.Work()
+	p.Spend()
 	if c, ok := p.Moved[n]; ok {
 		return c
 	}
@@ -1093,14 +1093,14 @@ func (p *Parser) MoveEmpty(n *value.Node, shift int) *value.Node {
 	if value.D(n).Children != nil {
 		value.D(c).Children = p.Nodes(len(value.D(n).Children))
 		for i, ch := range value.D(n).Children {
-			p.Work()
+			p.Spend()
 			value.D(c).Children[i] = p.moveDescendant(ch, value.D(n).Gen, shift)
 		}
 	}
 	if value.D(n).Fields != nil {
 		value.D(c).Fields = p.fields(len(value.D(n).Fields))[:len(value.D(n).Fields)]
 		for i, f := range value.D(n).Fields {
-			p.Work()
+			p.Spend()
 			if vn, ok := f.Value.(*value.Node); ok {
 				f.Value = p.moveDescendant(vn, value.D(n).Gen, shift)
 			}

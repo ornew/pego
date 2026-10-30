@@ -67,7 +67,7 @@ func (v *Item) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Item) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Item) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Text":
 		return rt.TBack(PegoHooks, v.Text), true
@@ -78,7 +78,7 @@ func (v *Item) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Children))
 			for i, x := range v.Children {
-				p.Work()
+				p.Spend()
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -87,7 +87,7 @@ func (v *Item) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	return nil, false
 }
 
-// PegoSchema_699b6f7866f485d5 ties the parser package to this package: the parser refers to it once, so a
+// PegoSchema_b000c9a8b52d56f3 ties the parser package to this package: the parser refers to it once, so a
 // parser and a types package generated from different schemas do not compile together.
 // It is for generated parsers; not a stable API.
-const PegoSchema_699b6f7866f485d5 = 0
+const PegoSchema_b000c9a8b52d56f3 = 0

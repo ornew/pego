@@ -128,8 +128,8 @@ rule item = .`)
 
 func TestSnapshotPositionOverlayCancellationDuringMetadataCopy(t *testing.T) {
 	t.Parallel()
-	if !workControlsEnabled {
-		t.Skip("work control reference")
+	if !budgetControlsEnabled {
+		t.Skip("budget control reference")
 	}
 	prog := mustCompile(t, `rule main = -[ ]* item* $$
 rule item = [a-z]`)

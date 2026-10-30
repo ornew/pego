@@ -352,7 +352,7 @@ func (p *tsFlowPrinter) stmts(ss []flow.Stmt) {
 				}
 				n++
 			}
-			p.write(tsWork(n))
+			p.write(tsSpend(n))
 			i += n - 1
 			continue
 		}
@@ -393,12 +393,12 @@ func (p *tsFlowPrinter) unisolateMerge(a, b flow.Stmt) bool {
 	return true
 }
 
-// tsWork returns the statement that charges n steps.
-func tsWork(n int) string {
+// tsSpend returns the statement that charges n steps.
+func tsSpend(n int) string {
 	if n == 1 {
-		return "p.work();\n"
+		return "p.spend();\n"
 	}
-	return fmt.Sprintf("p.work(%d);\n", n)
+	return fmt.Sprintf("p.spend(%d);\n", n)
 }
 
 // isRead reports whether v is read, by the previous pass.
@@ -507,7 +507,7 @@ func (p *tsFlowPrinter) stmt(s flow.Stmt) {
 			p.write(s.V.Name + "++;\n")
 		}
 	case *flow.Step:
-		p.write(tsWork(1))
+		p.write(tsSpend(1))
 	case *flow.Silent:
 		if s.Delta > 0 {
 			p.write("p.silent++;\n")
@@ -1141,7 +1141,7 @@ func tsUnisolate(s *flow.Set) (*flow.Unisolate, bool) {
 
 // flowLine prints the line l of the Operators Rule g.cur, whose expression is e, from Flow IR as a
 // function and returns the call expression that runs it, or false if the printer does not print
-// the line. It sets scope to the capture scope of the line. With work controls the runtime loop that
+// the line. It sets scope to the capture scope of the line. With budget controls the runtime loop that
 // runs the line charges its entry and the function charges each iteration of a repetition.
 func (g *Generator) flowLine(l *core.OpLine, e grammar.Expr, scope *compile.Scope, build bool) (string, bool) {
 	if g.Flow == nil || l == nil || !gen.FlowLineOK(e) || !flow.FramedBody(l.Body) {

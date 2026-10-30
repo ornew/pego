@@ -238,4 +238,3 @@ func TestNegativeMaximumWithWideMinimum(t *testing.T) {
 		}
 	}
 }
-

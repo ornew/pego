@@ -10,8 +10,8 @@ import (
 	"github.com/ornew/pego/internal/gentest"
 )
 
-// The parsers generated without work controls (the form most parsers have) and with typed-only entry
-// points are checked against the parsers generated with every entry point and the work-controlled form:
+// The parsers generated without budget controls (the form most parsers have) and with typed-only entry
+// points are checked against the parsers generated with every entry point and the budget-controlled form:
 // a program in each package prints what its entry points return for a set of inputs, and the prints
 // must be the same. A mutated grammar is the negative control: its print must differ.
 
@@ -191,7 +191,7 @@ func TestGeneratedOrdinaryOnlyMatchesControlled(t *testing.T) {
 				t.Fatal(err)
 			}
 			controlled, ordinary := tc.opts, tc.opts
-			controlled.WorkControls = true
+			controlled.BudgetControls = true
 			gentest.OrdinaryOnlyPackage(t, dir, "controlled", tc.src, controlled, tc.program, tc.inputs)
 			gentest.OrdinaryOnlyPackage(t, dir, "ordinary", tc.src, ordinary, tc.program, tc.inputs)
 			gentest.OrdinaryOnlyPackage(t, dir, "mutated", tc.mutated, ordinary, tc.program, tc.inputs)

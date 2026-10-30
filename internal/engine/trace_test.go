@@ -72,9 +72,9 @@ func checkTrace(t *testing.T, prog *Program, start, input string, o ParseOptions
 		if _, got := traceLines(prog, start, input, o); got != want {
 			t.Errorf("input %q (%v, unit %v, recognize %v): tracing changes the result\n without %s\n with    %s", input, b, o.Unit, o.Recognize, want, got)
 		}
-		w1, r1 := parseWork(prog, start, input, o)
+		w1, r1 := parseSpend(prog, start, input, o)
 		o.Trace = func(TraceEvent) {}
-		w2, r2 := parseWork(prog, start, input, o)
+		w2, r2 := parseSpend(prog, start, input, o)
 		o.Trace = nil
 		if r1 != want || r2 != want || w1 != w2 {
 			t.Errorf("input %q (%v, unit %v, recognize %v): tracing changes the work of the parse\n without %+v %s\n with    %+v %s", input, b, o.Unit, o.Recognize, w1, r1, w2, r2)
@@ -83,22 +83,22 @@ func checkTrace(t *testing.T, prog *Program, start, input string, o ParseOptions
 	}
 }
 
-// parseWorkStats is what a parse did: its counts, the memo entries it left, and the memoization
+// parseBudgetStats is what a parse did: its counts, the memo entries it left, and the memoization
 // decisions it made (the first calls recorded, and the rules memoized eagerly).
-type parseWorkStats struct {
+type parseBudgetStats struct {
 	Stats
 	entries, firstCalls int
 	eager               string
 }
 
-// parseWork parses as ParseWith does and returns what the parse did, with the result (as
+// parseSpend parses as ParseWith does and returns what the parse did, with the result (as
 // resultJSON).
-func parseWork(prog *Program, start, input string, o ParseOptions) (parseWorkStats, string) {
+func parseSpend(prog *Program, start, input string, o ParseOptions) (parseBudgetStats, string) {
 	target := prog
 	if o.Recognize {
 		rp, err := prog.Recognizer()
 		if err != nil {
-			return parseWorkStats{}, gentest.ResultJSON(nil, err)
+			return parseBudgetStats{}, gentest.ResultJSON(nil, err)
 		}
 		target = rp
 	}
@@ -110,7 +110,7 @@ func parseWork(prog *Program, start, input string, o ParseOptions) (parseWorkSta
 	if o.Recognize {
 		n = nil
 	}
-	w := parseWorkStats{Stats: p.Stats}
+	w := parseBudgetStats{Stats: p.Stats}
 	for _, e := range p.Memo.Slots {
 		for ; e != nil; e = e.Next {
 			w.entries++

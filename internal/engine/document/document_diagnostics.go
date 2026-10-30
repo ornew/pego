@@ -13,15 +13,15 @@ func copyDocumentDiagnostics(p *core.Parser, src core.SyntaxErrors) core.SyntaxE
 		if src == nil {
 			return nil
 		}
-		p.ValueWork(len(src))
+		p.SpendValue(len(src))
 		out := make([]string, len(src))
-		core.CopyWork(p, out, src)
+		core.CopySpend(p, out, src)
 		return out
 	}
-	p.ValueWork(len(src))
+	p.SpendValue(len(src))
 	out := make(core.SyntaxErrors, len(src))
 	for i, e := range src {
-		p.Work()
+		p.Spend()
 		if e == nil {
 			continue
 		}

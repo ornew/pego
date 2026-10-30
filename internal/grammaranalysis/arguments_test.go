@@ -23,7 +23,7 @@ func TestExpressionArgsPollingOrderAndOwnership(t *testing.T) {
 	}
 }
 
-func TestExpressionArgsPollingStopsDuringWork(t *testing.T) {
+func TestExpressionArgsPollingStopsDuringBudget(t *testing.T) {
 	for _, keywords := range []bool{false, true} {
 		t.Run(fmt.Sprint(keywords), func(t *testing.T) {
 			a := &grammar.Attribute{KwArgs: map[string]any{}}

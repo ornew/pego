@@ -31,7 +31,7 @@ func typeCheck(t *testing.T, src string) {
 }
 
 // Generated functions have no blank lines, stray semicolons or closures that
-// only wrap an expression when generated without work controls.
+// only wrap an expression when generated without budget controls.
 func TestGenerateStraightLineActions(t *testing.T) {
 	t.Parallel()
 	g, err := parseTest(`type Leaf = { N int }
@@ -58,7 +58,7 @@ rule leaf Leaf = d:[0-9]+ => Leaf{N: len($d)}
 			t.Errorf("line %d: blank line inside %s", i+1, fn)
 		}
 	}
-	for _, bad := range []string{"{ ;", ".Work()", ".ReadWork(", "func() any { return "} {
+	for _, bad := range []string{"{ ;", ".Spend()", ".SpendRead(", "func() any { return "} {
 		if strings.Contains(src, bad) {
 			t.Errorf("generated source contains %q", bad)
 		}
@@ -75,13 +75,13 @@ rule leaf Leaf = d:[0-9]+ => Leaf{N: len($d)}
 	if m == nil || m[1] != m[4] || m[2] != m[3] {
 		t.Errorf("fields out of order do not keep the order written:\n%s", src)
 	}
-	// Negative control: with work controls the steps are charged.
-	files, err = gentest.Generate(t, g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Types: true, Module: "example.com/p", WorkControls: true})
+	// Negative control: with budget controls the steps are charged.
+	files, err = gentest.Generate(t, g, gen.GenOptions{Package: "p", Start: "main", Runtime: gen.RuntimeImport, Types: true, Module: "example.com/p", BudgetControls: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(files[0].Content), ".Work()") {
-		t.Error("generated source with work controls charges no steps")
+	if !strings.Contains(string(files[0].Content), ".Spend()") {
+		t.Error("generated source with budget controls charges no steps")
 	}
 }
 

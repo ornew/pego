@@ -52,7 +52,7 @@ rule e = #operators { skip " "*; operand "a"; ` + c.levels + ` }`)
 	}
 }
 
-func TestOperatorsRuleStopSharedWorkBudget(t *testing.T) {
+func TestOperatorsRuleStopSharedBudgetBudget(t *testing.T) {
 	op := &grammar.OperatorsRuleOperator{Kind: grammar.Postfix, Expr: &grammar.Literal{Value: "!"}}
 	s := &operatorsRuleStop{pr: &grammar.OperatorsRule{}}
 	for range matchSteps + 1 {

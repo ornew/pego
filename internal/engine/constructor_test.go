@@ -126,4 +126,3 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 		}
 	}
 }
-

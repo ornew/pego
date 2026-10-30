@@ -98,4 +98,3 @@ func TestFilterCompiledInstructionSet(t *testing.T) {
 	}
 	t.Fatal("fixture emitted no filter call")
 }
-

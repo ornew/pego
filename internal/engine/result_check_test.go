@@ -109,7 +109,7 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 			if err != nil {
 				t.Fatal(err)
 			}
-			limits := limits.Limits{MaxWork: 1 << 30}
+			limits := limits.Limits{Budget: 1 << 30}
 			declared := checked.Typed.Fields["S"][0].T.String() // as the value checker resolves it
 			for _, in := range gentest.ResultCheckInputs() {
 				value := gentest.FieldCheckValues[in[:1]]
@@ -239,7 +239,7 @@ func TestOperatorResultChecks(t *testing.T) {
 		if got := strings.Contains(want, "cannot cast "); got != rejected {
 			t.Errorf("%q: %s", in, want)
 		}
-		limits := limits.Limits{MaxWork: 1 << 30}
+		limits := limits.Limits{Budget: 1 << 30}
 		for _, run := range []struct {
 			name string
 			prog *Program

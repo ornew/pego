@@ -17,7 +17,7 @@ func equalChangeDiagnostics(p *core.Parser, a, b error) bool {
 		if x == nil || y == nil {
 			return x == nil && y == nil
 		}
-		p.Work()
+		p.Spend()
 		if x.Pos != y.Pos || x.Line != y.Line || x.Col != y.Col {
 			return false
 		}
@@ -39,7 +39,7 @@ func equalChangeDiagnostics(p *core.Parser, a, b error) bool {
 			return false
 		}
 		for i := range x {
-			p.Work()
+			p.Spend()
 			if !equalChangeDiagnostics(p, x[i], y[i]) {
 				return false
 			}
@@ -51,7 +51,7 @@ func equalChangeDiagnostics(p *core.Parser, a, b error) bool {
 }
 
 func equalChangeText(p *core.Parser, a, b string) bool {
-	p.Work()
+	p.Spend()
 	if len(a) != len(b) {
 		return false
 	}
@@ -77,7 +77,7 @@ func equalChangeSnapshots(a, b *Snapshot) bool {
 // allocation or isomorphism search is needed to establish unchanged output.
 func equalChangeSnapshotsControlled(p *core.Parser, a, b *Snapshot) bool {
 	p.Control.Check()
-	p.Work()
+	p.Spend()
 	if a.Unit() != b.Unit() || !equalChangeDiagnostics(p, a.parseError, b.parseError) {
 		return false
 	}
@@ -86,7 +86,7 @@ func equalChangeSnapshotsControlled(p *core.Parser, a, b *Snapshot) bool {
 		return false
 	}
 	for i := 0; i < ag.count(); i++ {
-		p.Work()
+		p.Spend()
 		x, y := ag.at(i), bg.at(i)
 		xp, yp := ag.position(i, x), bg.position(i, y)
 		if !equalChangeText(p, x.kind.TypeName(), y.kind.TypeName()) || !equalChangeText(p, x.kind.RuleName(), y.kind.RuleName()) || xp.start != yp.start || xp.end != yp.end || !equalChangeText(p, x.text, y.text) || x.terminal != y.terminal || ag.hasChildren(x) != bg.hasChildren(y) || ag.childCount(x) != bg.childCount(y) {
@@ -96,7 +96,7 @@ func equalChangeSnapshotsControlled(p *core.Parser, a, b *Snapshot) bool {
 			return false
 		}
 		for j, field := range x.fields {
-			p.Work()
+			p.Spend()
 			other := y.fields[j]
 			if !equalChangeText(p, field.Name, other.Name) {
 				return false
@@ -116,7 +116,7 @@ func equalChangeSnapshotsControlled(p *core.Parser, a, b *Snapshot) bool {
 			}
 		}
 		for j := 0; j < ag.childCount(x); j++ {
-			p.Work()
+			p.Spend()
 			if ag.childID(x, j) != bg.childID(y, j) {
 				return false
 			}

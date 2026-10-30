@@ -34,18 +34,18 @@ import (
 
 // Options selects the forms the lowering writes.
 type Options struct {
-	// Work charges one unit of work on each loop iteration and for each character a Peek reads;
+	// Budget charges one budget unit on each loop iteration and for each character a Peek reads;
 	// the method that holds a rule's body charges its entry.
-	Work bool
+	Budget bool
 	// Recovers reports that the module can append recovered errors (Recovers), so backtracking
 	// points save their number.
 	Recovers bool
 	// ClassTables matches a class of more than four ranges through its membership table. It needs
-	// Work off: a table match charges no work for the input.
+	// Budget off: a table match charges no budget for the input.
 	ClassTables bool
 	// GuardedClasses keeps the size of the character a choice's guards read, for the classes
-	// that begin alternatives marked GuardedClass, which only consume it. It needs Work off: the
-	// consuming advance charges no work for the input.
+	// that begin alternatives marked GuardedClass, which only consume it. It needs Budget off: the
+	// consuming advance charges no budget for the input.
 	GuardedClasses bool
 	// InlineLiterals compares literals of at most this many code points in place first.
 	InlineLiterals int
@@ -121,7 +121,7 @@ func FramedBody(n core.Node) bool {
 
 // LowerFrame lowers the body n with the capture scope slots, building its value if build, to the
 // framed function name of the rule r: the body of a left-recursion leader or of a rule that
-// recovers, or a line of an Operators Rule of r. Analyze must have run on m. With Options.Work the
+// recovers, or a line of an Operators Rule of r. Analyze must have run on m. With Options.Budget the
 // function does not charge its entry: the method that calls it does (Func.Entered).
 func LowerFrame(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, build bool, name string, opts Options) (*Func, error) {
 	return lowerFrameBody(m, r, n, slots, build, name, opts)
@@ -157,7 +157,7 @@ func lowerFrameBody(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot
 	if !FramedBody(n) {
 		return nil, fmt.Errorf("a body of rule %s is not lowered to a framed function", r.Name)
 	}
-	f := &Func{Name: name, Rule: r, Fail: &Label{Name: "fail"}, Frame: true, Node: opts.Node, Work: opts.Work, Document: opts.Document, Entered: opts.Work, Binds: n.Attrs().Eff.Set&core.EffBind != 0}
+	f := &Func{Name: name, Rule: r, Fail: &Label{Name: "fail"}, Frame: true, Node: opts.Node, Budget: opts.Budget, Document: opts.Document, Entered: opts.Budget, Binds: n.Attrs().Eff.Set&core.EffBind != 0}
 	l := &lowerer{m: m, opts: opts, f: f, used: map[*Label]bool{}, frame: true}
 	l.top = n
 	l.stack = []*[]Stmt{&f.Body}
@@ -180,8 +180,8 @@ func lowerFrameBody(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot
 
 // checkOptions rejects the options that lower without work only.
 func checkOptions(opts Options) error {
-	if opts.Work && (opts.ClassTables || opts.GuardedClasses) {
-		return fmt.Errorf("ClassTables and GuardedClasses lower functions without work controls, but Options.Work is set")
+	if opts.Budget && (opts.ClassTables || opts.GuardedClasses) {
+		return fmt.Errorf("ClassTables and GuardedClasses lower functions without budget controls, but Options.Budget is set")
 	}
 	return nil
 }
@@ -200,9 +200,9 @@ func Lower(m *core.Module, r *core.Rule, name string, opts Options) (*Func, erro
 		Result:   &Var{Name: "v", Type: TypeValue, Entry: true},
 		Ctx:      &Var{Name: "c", Type: TypeCtx, Entry: true},
 		Node:     opts.Node,
-		Work:     opts.Work,
+		Budget:   opts.Budget,
 		Document: opts.Document,
-		Entered:  opts.Work, // the method that calls the function charges the step of entering the rule
+		Entered:  opts.Budget, // the method that calls the function charges the step of entering the rule
 		Binds:    r.Body.Attrs().Eff.Set&core.EffBind != 0}
 	l := &lowerer{m: m, opts: opts, f: f, used: map[*Label]bool{}}
 	l.stack = []*[]Stmt{&f.Body}
@@ -351,12 +351,12 @@ func (l *lowerer) set(dst LValue, x Expr) {
 	l.emit(&Set{Dst: []LValue{dst}, X: []Expr{x}})
 }
 
-// step charges one work step. A rule charges one on entering, which the method that holds the lowered
+// step charges one budget step. A rule charges one on entering, which the method that holds the lowered
 // function does (Func.Entered), and the lowered function charges one on each iteration of a repetition.
 // No other point of straight-line code charges: between two charges only the straight-line code of one
-// rule body runs, whose length is bounded by the size of the grammar, so the steps still bound the work.
+// rule body runs, whose length is bounded by the size of the grammar, so the steps still bound the spend.
 func (l *lowerer) step() {
-	if l.opts.Work {
+	if l.opts.Budget {
 		l.emit(&Step{})
 	}
 }

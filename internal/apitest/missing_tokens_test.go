@@ -1,4 +1,4 @@
-//go:build !pego_work_controls_reference
+//go:build !pego_budget_controls_reference
 
 package apitest_test
 

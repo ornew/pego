@@ -52,8 +52,8 @@ type Program struct {
 	Vars *VarTable
 	// fieldTypes caches the types of casts (castType).
 	fieldTypes sync.Map
-	// WorkRecognize and WorkRecognizer are Options.Recognize and Options.Recognizer.
-	WorkRecognize, WorkRecognizer bool
+	// BudgetRecognize and BudgetRecognizer are Options.Recognize and Options.Recognizer.
+	BudgetRecognize, BudgetRecognizer bool
 
 	BytecodeOnce sync.Once
 	Bytecode     *bytecode.Module
@@ -79,7 +79,7 @@ type Options struct {
 	// decide the match, and the rules that make the values predicates read keep their actions and
 	// types (defaultValueGrammar).
 	DefaultValue bool
-	// ControlledDispatch builds only the metered closure graph for lazy work setup.
+	// ControlledDispatch builds only the metered closure graph for lazy budget setup.
 	ControlledDispatch bool
 	// Recognize builds a program that only checks whether the input conforms to the grammar, without
 	// building a tree (the engine's Program.Recognizer).
@@ -391,7 +391,7 @@ func CompileProgram[M any](g *grammar.Grammar, opts Options, flags []RuleFlags, 
 		}()
 	}
 	prog.StartRules, prog.DefaultStartRule = starts, defaultStart
-	prog.WorkRecognize, prog.WorkRecognizer = opts.Recognize, opts.Recognizer
+	prog.BudgetRecognize, prog.BudgetRecognizer = opts.Recognize, opts.Recognizer
 	prog.NoProjections = opts.NoProjections
 	prog.RecordsSourceInfo = opts.SourceInfo
 	prog.MakesDefaultValue = opts.DefaultValue

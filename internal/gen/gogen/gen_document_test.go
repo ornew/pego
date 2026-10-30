@@ -13,7 +13,7 @@ import (
 
 func TestGenerateDocumentNode(t *testing.T) {
 	t.Parallel()
-	gentest.NeedsWorkControls(t)
+	gentest.NeedsBudgetControls(t)
 	g, err := parseTest("rule main = item+ $$\nrule item = \"a\"")
 	if err != nil {
 		t.Fatal(err)

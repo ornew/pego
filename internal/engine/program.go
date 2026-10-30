@@ -23,9 +23,9 @@ type Program struct {
 	// closureRules holds the rules the closure backend runs, by ID (rule.id).
 	closureRules []*core.Rule
 
-	workOnce    sync.Once
-	workProgram *Program
-	workErr     error
+	budgetOnce    sync.Once
+	budgetProgram *Program
+	budgetErr     error
 
 	recOnce sync.Once
 	rec     *Program // program that builds no tree (recognizer)

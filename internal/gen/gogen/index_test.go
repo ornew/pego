@@ -24,11 +24,11 @@ func testIndexGeneratedGoParity(t *testing.T) {
 	gentest.GeneratedTypesCorpus(t, goBin, gentest.IndexCases(), gen.GenOptions{})
 }
 
-// Generated parsers index the same with and without work limits, which select the
-// work-accounting runtime.
+// Generated parsers index the same with and without budget limits, which select the
+// budget-accounting runtime.
 func TestIndexGeneratedGoWork(t *testing.T) {
 	t.Parallel()
-	gentest.NeedsWorkControls(t)
+	gentest.NeedsBudgetControls(t)
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
@@ -68,7 +68,7 @@ rule item = [a-z]`)
 const generatedGoIndexConsumer = `package PACKAGE
 import("fmt";"strings";"testing")
 func TestIndex(t *testing.T){
- for _,opts:=range [][]ParseOption{nil,{WithLimits(Limits{MaxWork:1<<50})}}{
+ for _,opts:=range [][]ParseOption{nil,{WithLimits(Limits{Budget:1<<50})}}{
   n,err:=Parse("abc",opts...);if err!=nil || !strings.Contains(fmt.Sprintf("%+v",n),"b"){t.Fatal(n,err)}
   _,err=Parse("a",opts...);if err==nil || !strings.Contains(err.Error(),"index 1 out of range for 1 elements"){t.Fatal(err)}
  }

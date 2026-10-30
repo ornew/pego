@@ -37,7 +37,7 @@ type ParseOptions struct {
 	MissingTokens int
 	// Context cooperatively interrupts this invocation. Nil means no cancellation.
 	Context context.Context
-	// Limits optionally bound cumulative input inspections and execution work.
+	// Limits optionally bound cumulative input inspections and execution steps.
 	Limits limits.Limits
 	// Unit is the position unit. Matching is done per code point regardless of the unit.
 	Unit PositionUnit
@@ -86,7 +86,7 @@ func DepthLimit(o ParseOptions, b Backend) int {
 // base. When parsing a stream, more input is read from reader as needed and the committed part is
 // discarded.
 type Input struct {
-	Control  *WorkControl // invocation-local; never retained by results
+	Control  *BudgetControl // invocation-local; never retained by results
 	Unit     PositionUnit
 	In       []rune // for CodePoints
 	Bs       []byte // for Bytes
@@ -125,7 +125,7 @@ func (in *Input) setSource(s string) {
 func (in *Input) buildOffs() {
 	offs := make([]int32, 0, len(in.In)+1)
 	for i := 0; i < len(in.Src); {
-		in.readWork(uint64(min(utf8.UTFMax, len(in.Src)-i)))
+		in.spendRead(uint64(min(utf8.UTFMax, len(in.Src)-i)))
 		offs = append(offs, int32(i))
 		_, size := utf8.DecodeRuneInString(in.Src[i:])
 		i += size
@@ -323,9 +323,9 @@ func NewStreamParser(prog *SharedProgram, r io.Reader, unit PositionUnit) *Parse
 	return NewControlledStreamParser(prog, r, unit, nil)
 }
 
-func NewControlledStreamParser(prog *SharedProgram, r io.Reader, unit PositionUnit, control *WorkControl) *Parser {
+func NewControlledStreamParser(prog *SharedProgram, r io.Reader, unit PositionUnit, control *BudgetControl) *Parser {
 	p := &Parser{Prog: prog, Input: Input{Unit: unit, Control: control, BaseLine: 1, BaseCol: 1}, Memo: NewMemoTable(), MaxDepth: DefaultMaxDepth}
-	if WorkControlsEnabled && control != nil {
+	if BudgetControlsEnabled && control != nil {
 		r = &StreamReaderObserver{Reader: r, Result: &p.readerResult, Control: control}
 	}
 	p.Reader = bufio.NewReader(r)
@@ -365,7 +365,7 @@ func (in *Input) Fill(n int) bool {
 }
 
 func (in *Input) read() {
-	if WorkControlsEnabled && in.Control != nil {
+	if BudgetControlsEnabled && in.Control != nil {
 		in.Control.Check()
 		in.Control.Charge(1) // reading and staging one byte or code point
 	}
@@ -382,7 +382,7 @@ func (in *Input) read() {
 	if err != nil && err != io.EOF {
 		panic(Fatal{err})
 	}
-	if WorkControlsEnabled && in.Control != nil {
+	if BudgetControlsEnabled && in.Control != nil {
 		returned := in.readerResult
 		in.readerResult = nil
 		in.Control.checkAfterReader(returned)
@@ -399,7 +399,7 @@ func (in *Input) read() {
 // Decode returns the character at position i, its size (in units), and the end of the examined
 // range.
 func (in *Input) Decode(i int) (r rune, size, examined int, ok bool) {
-	in.readWork(1)
+	in.spendRead(1)
 	if i < in.Base {
 		return 0, 0, i + 1, false
 	}
@@ -425,7 +425,7 @@ func (in *Input) Decode(i int) (r rune, size, examined int, ok bool) {
 		in.Fill(in.Loaded() + 1)
 		b = in.Bs[i-in.Base:]
 	}
-	in.readWork(uint64(min(utf8.UTFMax, len(b))))
+	in.spendRead(uint64(min(utf8.UTFMax, len(b))))
 	r, size = utf8.DecodeRune(b)
 	examined = i + size
 	if r == utf8.RuneError && size == 1 {
@@ -442,7 +442,7 @@ func (in *Input) Decode(i int) (r rune, size, examined int, ok bool) {
 
 // byteAt returns the byte at position i when the unit is Bytes.
 func (in *Input) byteAt(i int) (byte, bool) {
-	in.readWork(1)
+	in.spendRead(1)
 	if i < in.Base || !in.Fill(i+1) {
 		return 0, false
 	}
@@ -458,7 +458,7 @@ func (in *Input) Text(start, end int) string {
 	// (possibly nothing).
 	start, end = max(start, in.Base), max(end, in.Base)
 	if DocumentPieceInput && in.Pieces != nil {
-		if WorkControlsEnabled && in.Control != nil {
+		if BudgetControlsEnabled && in.Control != nil {
 			return in.controlledPieceText(start, end)
 		}
 		return in.Pieces.Text(start, end)
@@ -475,7 +475,7 @@ func (in *Input) Text(start, end int) string {
 	if StreamTextSnapshots && in.Reader != nil {
 		return in.snapshotText(start, end)
 	}
-	if WorkControlsEnabled && in.Control != nil {
+	if BudgetControlsEnabled && in.Control != nil {
 		return in.detachedText(start-in.Base, end-in.Base)
 	}
 	if in.Unit == Bytes {
@@ -515,7 +515,7 @@ func (in *Input) lineCol(pos int) (int, int) {
 	line, col := in.BaseLine, in.BaseCol
 	n := in.Loaded()
 	for i := in.Base; i < pos && i < n; i++ {
-		in.readWork(1)
+		in.spendRead(1)
 		var nl bool
 		if in.Unit == Bytes {
 			nl = in.Bs[i-in.Base] == '\n'
@@ -547,14 +547,14 @@ func (in *Input) buildLines() {
 		for _, p := range in.Pieces.Parts {
 			if in.Unit == Bytes {
 				for i := 0; i < len(p.Text); i++ {
-					in.readWork(1)
+					in.spendRead(1)
 					if p.Text[i] == '\n' {
 						in.Lines = append(in.Lines, p.start+i+1)
 					}
 				}
 			} else {
 				for i, r := range p.Runes {
-					in.readWork(1)
+					in.spendRead(1)
 					if r == '\n' {
 						in.Lines = append(in.Lines, p.start+i+1)
 					}
@@ -566,7 +566,7 @@ func (in *Input) buildLines() {
 	}
 	if in.Unit == Bytes {
 		for i := range in.Bs {
-			in.readWork(1)
+			in.spendRead(1)
 			b := in.Bs[i]
 			if b == '\n' {
 				in.Lines = append(in.Lines, i+1)
@@ -576,7 +576,7 @@ func (in *Input) buildLines() {
 		return
 	}
 	for i := range in.In {
-		in.readWork(1)
+		in.spendRead(1)
 		r := in.In[i]
 		if r == '\n' {
 			in.Lines = append(in.Lines, i+1)
@@ -620,7 +620,7 @@ func (p *Parser) Commit(pos int) {
 		// Clear their inactive capacity along with memo pruning, so a large
 		// element's references do not survive indefinitely in small streams.
 		if StreamUndoCleanup {
-			ClearWork(p, p.Trail[:cap(p.Trail)])
+			ClearSpend(p, p.Trail[:cap(p.Trail)])
 		}
 		if StreamStackCleanup && p.Backend != nil {
 			p.Backend.ClearInactive()
@@ -637,7 +637,7 @@ func (p *Parser) Commit(pos int) {
 		// The active start-rule call saved an empty recovery prefix;
 		// speculative element marks are no longer active after emission.
 		if p.Tr == nil && cap(p.Recovered) <= streamRecoveryScratchMax {
-			ClearWork(p, p.Recovered[:cap(p.Recovered)])
+			ClearSpend(p, p.Recovered[:cap(p.Recovered)])
 			p.Recovered = p.Recovered[:0]
 		} else {
 			p.Recovered = nil
@@ -666,7 +666,7 @@ func (p *Parser) MatchLiteral(rs []rune, bs []byte) bool {
 			in := p.Bs[p.Pos-p.Base:]
 			n = len(bs)
 			for k < n {
-				p.readWork(1)
+				p.spendRead(1)
 				if k >= len(in) || in[k] != bs[k] {
 					break
 				}
@@ -676,7 +676,7 @@ func (p *Parser) MatchLiteral(rs []rune, bs []byte) bool {
 			in := p.In[p.Pos-p.Base:]
 			n = len(rs)
 			for k < n {
-				p.readWork(1)
+				p.spendRead(1)
 				if k >= len(in) || in[k] != rs[k] {
 					break
 				}
@@ -712,7 +712,7 @@ func (p *Parser) MatchLiteral(rs []rune, bs []byte) bool {
 		return true
 	}
 	for _, r := range rs {
-		p.readWork(1)
+		p.spendRead(1)
 		p.touch(p.Pos + 1)
 		if p.Pos < p.Base || !p.Fill(p.Pos+1) || p.In[p.Pos-p.Base] != r {
 			return false
@@ -727,7 +727,7 @@ func (p *Parser) MatchLiteral(rs []rune, bs []byte) bool {
 // It decodes the input rune by rune, as matchLiteralRunes does, so both position units agree.
 func (p *Parser) MatchLiteralFold(rs []rune) bool {
 	for _, want := range rs {
-		p.readWork(1)
+		p.spendRead(1)
 		got, size, ok := p.Peek()
 		if !ok || compile.FoldASCIIRune(got) != want {
 			return false
@@ -740,11 +740,11 @@ func (p *Parser) MatchLiteralFold(rs []rune) bool {
 // LiteralHasReplacement bounds the grammar-side scan after a byte mismatch.
 // Only visited literal runes consume steps; they do not inspect input.
 func (p *Parser) LiteralHasReplacement(rs []rune) bool {
-	if !WorkControlsEnabled || p.Control == nil {
+	if !BudgetControlsEnabled || p.Control == nil {
 		return slices.Contains(rs, utf8.RuneError)
 	}
 	for _, r := range rs {
-		p.Work()
+		p.Spend()
 		if r == utf8.RuneError {
 			return true
 		}
@@ -775,7 +775,7 @@ func (p *Parser) matchLiteralRunes(rs []rune) bool {
 }
 
 func (p *Parser) AtEOF() bool {
-	p.readWork(1)
+	p.spendRead(1)
 	p.touch(p.Pos + 1)
 	return !p.Fill(p.Pos + 1)
 }

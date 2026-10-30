@@ -71,8 +71,8 @@ func (prog *Program) SelectBackend(b Backend) Backend { return prog.backend(b) }
 // Shared returns the program part that a parser for prog reads.
 func (prog *Program) Shared() *core.SharedProgram { return &prog.sharedProgram }
 
-// PrepareRun returns the program that parses a Document on backend b under the work control c.
-func (prog *Program) PrepareRun(b Backend, c *core.WorkControl) (document.Runner, error) {
+// PrepareRun returns the program that parses a Document on backend b under the budget control c.
+func (prog *Program) PrepareRun(b Backend, c *core.BudgetControl) (document.Runner, error) {
 	active, err := prog.prepareControlledProgram(b, c)
 	if err != nil {
 		return nil, err

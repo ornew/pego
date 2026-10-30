@@ -21,7 +21,7 @@ func (in *Input) snapshotText(start, end int) string {
 		}
 		return c.Source[c.Offsets[start-c.Base]:c.Offsets[end-c.Base]]
 	}
-	if WorkControlsEnabled && in.Control != nil {
+	if BudgetControlsEnabled && in.Control != nil {
 		return in.controlledSnapshotText(start, end)
 	}
 	// Do not read ahead for text or repeatedly copy tiny reader fragments.

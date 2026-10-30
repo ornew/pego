@@ -56,8 +56,8 @@ type Document struct {
 type Runner interface {
 	// SelectBackend returns the backend that a request for b runs on.
 	SelectBackend(b core.Backend) core.Backend
-	// PrepareRun returns the runner that parses on backend b under the work control c.
-	PrepareRun(b core.Backend, c *core.WorkControl) (Runner, error)
+	// PrepareRun returns the runner that parses on backend b under the budget control c.
+	PrepareRun(b core.Backend, c *core.BudgetControl) (Runner, error)
 	// Shared returns the program part that a parser for this runner reads.
 	Shared() *core.SharedProgram
 	// Run parses p's input from the rule start on backend b.
@@ -138,9 +138,9 @@ func (d *Document) parseWithCapture(o core.ParseOptions, capture func(*core.Pars
 			}
 		}
 	}()
-	c := core.NewWorkControl(o.Context, o.Limits)
-	if !core.WorkControlsEnabled && c != nil {
-		return nil, fmt.Errorf("work controls are unavailable in the reference build")
+	c := core.NewBudgetControl(o.Context, o.Limits)
+	if !core.BudgetControlsEnabled && c != nil {
+		return nil, fmt.Errorf("budget controls are unavailable in the reference build")
 	}
 	c.Check()
 	active, setupErr := d.runner.PrepareRun(d.back, c)

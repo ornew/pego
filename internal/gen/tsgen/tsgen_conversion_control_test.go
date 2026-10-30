@@ -12,7 +12,7 @@ func TestGeneratedTSConversionControlCheckpoints(t *testing.T) {
  type Bag = { Items []Word }
  rule main Bag = x:word* #cut => Bag{Items: $x.Value}
  rule word Word = t:("a") #atomic => Word{Text: text($t)}`
-	runTypedTSFixture(t, src, tsConversionControlConsumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true}, "")
+	runTypedTSFixture(t, src, tsConversionControlConsumer, gen.GenOptions{Start: "main", BudgetControls: true, Types: true}, "")
 }
 
 const tsConversionControlConsumer = `import * as p from "./parser.ts";

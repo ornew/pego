@@ -209,4 +209,3 @@ rule ds = "s" => "str"
 		t.Errorf("loaded: got %v, %v; want 1", n, err)
 	}
 }
-

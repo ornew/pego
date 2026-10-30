@@ -33,7 +33,7 @@ type coreGenMode struct {
 var coreGenModes = []coreGenMode{
 	{"lean", gen.GenOptions{Types: true, TypedOnly: true}},
 	{"lean observable", gen.GenOptions{Types: true, TypedOnly: true, Observability: true}},
-	{"controlled", gen.GenOptions{Types: true, TypedOnly: true, WorkControls: true}},
+	{"controlled", gen.GenOptions{Types: true, TypedOnly: true, BudgetControls: true}},
 	{"lean boxed", gen.GenOptions{Types: true, TypedOnly: true, DisableLiteralTextDispatch: true, BoxedComparisons: true}},
 }
 
@@ -223,11 +223,11 @@ func opLines(o *core.OperatorsRule, e *grammar.OperatorsRule) ([]*core.OpLine, [
 	return o.Lines(), exprs, actions
 }
 
-// workClassName matches the name of a work class table, whose number is the generator's to assign.
-var workClassName = regexp.MustCompile(`workClass[0-9]+`)
+// budgetClassName matches the name of a budget class table, whose number is the generator's to assign.
+var budgetClassName = regexp.MustCompile(`budgetClass[0-9]+`)
 
 // guardString is the guard of a Core alternative as a Go condition: the condition on the
-// next character and the expectation. The numbers of work class tables are left out: they depend on
+// next character and the expectation. The numbers of budget class tables are left out: they depend on
 // the order in which the generator met the classes, and the ranges of the condition name the class.
 func guardString(g *gogen.Generator, m *core.Module, f *core.First) (string, string) {
 	if f.Lit {
@@ -241,7 +241,7 @@ func guardString(g *gogen.Generator, m *core.Module, f *core.First) (string, str
 		e.Ranges = append(e.Ranges, grammar.CharRange{Lo: r.Lo, Hi: r.Hi})
 	}
 	cond := gogen.NegateCondition(g.ControlledClassReject(e))
-	return workClassName.ReplaceAllString(cond, "workClass"), m.Exps[f.Exp]
+	return budgetClassName.ReplaceAllString(cond, "budgetClass"), m.Exps[f.Exp]
 }
 
 // coreDecisionCounts counts the decisions compared.
@@ -289,7 +289,7 @@ func coreDecisionLines(c *coreGenCase, n *coreDecisionCounts) (lines, problems [
 		}
 		names := func(s []core.Slot) string { return strings.Join(core.SlotNames(s), ",") }
 		term := func(at int, t core.Term) {
-			tree := coreTermTree(t, g.NoWork && c.table == "trules") // only the typed runtime takes fields in order
+			tree := coreTermTree(t, g.NoBudget && c.table == "trules") // only the typed runtime takes fields in order
 			if n.forms == nil {
 				n.forms = map[string]int{}
 			}
@@ -471,7 +471,7 @@ func compareCoreDecisions(c *coreGenCase, n *coreDecisionCounts) []string {
 // coreTermTree returns the structure and forms of a Core term as the decisions record them
 // (termTree): a struct constructor is in declaration order only where the generator writes it so,
 // in a parser without step charges.
-func coreTermTree(t core.Term, noWork bool) *termTree {
+func coreTermTree(t core.Term, noBudget bool) *termTree {
 	n := &termTree{}
 	kids := core.TermChildren(t)
 	switch t := t.(type) {
@@ -485,7 +485,7 @@ func coreTermTree(t core.Term, noWork bool) *termTree {
 		n.form = "member"
 	case *core.New:
 		n.form = "new"
-		if noWork && t.InOrder {
+		if noBudget && t.InOrder {
 			n.form = "new-in-order"
 		}
 	case *core.Convert:
@@ -516,13 +516,13 @@ func coreTermTree(t core.Term, noWork bool) *termTree {
 		for _, p := range t.Parts {
 			part := &termTree{form: [...]string{core.PartList: "part-list", core.PartMap: "part-map", core.PartItems: "part-items"}[p.Kind]}
 			for _, x := range p.Args {
-				part.kids = append(part.kids, coreTermTree(x, noWork))
+				part.kids = append(part.kids, coreTermTree(x, noBudget))
 			}
 			if p.X != nil {
-				part.kids = append(part.kids, coreTermTree(p.X, noWork))
+				part.kids = append(part.kids, coreTermTree(p.X, noBudget))
 			}
 			if p.Fn != nil {
-				part.kids = append(part.kids, coreTermTree(p.Fn, noWork))
+				part.kids = append(part.kids, coreTermTree(p.Fn, noBudget))
 			}
 			n.kids = append(n.kids, part)
 		}
@@ -530,7 +530,7 @@ func coreTermTree(t core.Term, noWork bool) *termTree {
 		n.form = fmt.Sprintf("%T", t)
 	}
 	for _, k := range kids {
-		n.kids = append(n.kids, coreTermTree(k, noWork))
+		n.kids = append(n.kids, coreTermTree(k, noBudget))
 	}
 	return n
 }
@@ -575,7 +575,7 @@ func TestCoreTypedDecisionsFrozen(t *testing.T) {
 	typedGolden.freeze(t, coreGenModes, func(t *testing.T, mode coreGenMode) []*coreGenCase {
 		return coreGenCases(t, mode, nil)
 	}, func(t *testing.T, mode coreGenMode, n *coreDecisionCounts) {
-		lean := !mode.opts.WorkControls
+		lean := !mode.opts.BudgetControls
 		terminals := lean && !mode.opts.Observability
 		if n.guards == 0 || n.scans == 0 || n.scopes == 0 || n.terms == 0 ||
 			(n.terminals > 0) != terminals || (n.classRuns > 0) != lean || (n.guardedClasses > 0) != lean {

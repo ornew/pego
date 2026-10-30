@@ -219,7 +219,7 @@ func tmk_Unary(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 }
 
 func tl0(a *tslabs, v any) []types.Expr {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -229,14 +229,14 @@ func tl0(a *tslabs, v any) []types.Expr {
 	}
 	out := rt.AllocSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl1(a *tslabs, v any) []*types.Entry {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -246,14 +246,14 @@ func tl1(a *tslabs, v any) []*types.Entry {
 	}
 	out := rt.AllocSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[*types.Entry](c)
 	}
 	return out
 }
 
 func tl2(a *tslabs, v any) []*types.Field {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -263,14 +263,14 @@ func tl2(a *tslabs, v any) []*types.Field {
 	}
 	out := rt.AllocSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[*types.Field](c)
 	}
 	return out
 }
 
 func tv0(a *tslabs, v any) *types.BoolLit {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -279,7 +279,7 @@ func tv0(a *tslabs, v any) *types.BoolLit {
 }
 
 func tv1(a *tslabs, v any) *types.BytesLit {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
@@ -288,7 +288,7 @@ func tv1(a *tslabs, v any) *types.BytesLit {
 }
 
 func tv2(a *tslabs, v any) *types.DoubleLit {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
@@ -297,7 +297,7 @@ func tv2(a *tslabs, v any) *types.DoubleLit {
 }
 
 func tv3(a *tslabs, v any) *types.Ident {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
@@ -306,7 +306,7 @@ func tv3(a *tslabs, v any) *types.Ident {
 }
 
 func tv4(a *tslabs, v any) *types.IntLit {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[5] {
 		return nil
@@ -315,7 +315,7 @@ func tv4(a *tslabs, v any) *types.IntLit {
 }
 
 func tv5(a *tslabs, v any) *types.Name {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[6] {
 		return nil
@@ -324,7 +324,7 @@ func tv5(a *tslabs, v any) *types.Name {
 }
 
 func tv6(a *tslabs, v any) *types.NullLit {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[7] {
 		return nil
@@ -333,7 +333,7 @@ func tv6(a *tslabs, v any) *types.NullLit {
 }
 
 func tv7(a *tslabs, v any) *types.StringLit {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[8] {
 		return nil
@@ -342,7 +342,7 @@ func tv7(a *tslabs, v any) *types.StringLit {
 }
 
 func tv8(a *tslabs, v any) *types.UintLit {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[9] {
 		return nil
@@ -351,7 +351,7 @@ func tv8(a *tslabs, v any) *types.UintLit {
 }
 
 type tslabs struct {
-	control      *rt.WorkControl
+	control      *rt.BudgetControl
 	tBinary      rt.Chunk[types.Binary]
 	tCall        rt.Chunk[types.Call]
 	tConditional rt.Chunk[types.Conditional]
@@ -370,8 +370,8 @@ type tslabs struct {
 	tl2Chunk     rt.Chunk[*types.Field]
 }
 
-func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }
-func (a *tslabs) work() {
+func (a *tslabs) SetBudgetControl(c *rt.BudgetControl) { a.control = c }
+func (a *tslabs) spend() {
 	if a.control != nil {
 		a.control.Charge(1)
 	}
@@ -656,7 +656,7 @@ func init() {
 	pegoGrammar.NodeTypes["UintLit"] = rt.NewNodeTypeKinds("UintLit")
 	pegoGrammar.Starts = []string{"main"}
 	pegoGrammar.DefaultStart = "main"
-	pegoGrammar.NoWorkControls = true
+	pegoGrammar.NoBudgetControls = true
 	trules = rt.NewTRules(rules)
 	defer tinit()
 	trules[0].Entry = u0
@@ -5475,4 +5475,4 @@ fail:
 	return nil, false
 }
 
-const _ = types.PegoSchema_cd86f1bf2128f16a
+const _ = types.PegoSchema_f99e251860c2a591

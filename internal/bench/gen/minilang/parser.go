@@ -8,7 +8,7 @@ import (
 	rt "github.com/ornew/pego/runtime"
 )
 
-// Parse parses the whole input with the rule main. Options select position units, depth, cancellation and work limits.
+// Parse parses the whole input with the rule main. Options select position units, depth, cancellation and budget limits.
 // If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.
 func Parse(input string, opts ...rt.ParseOption) (*rt.Node, error) {
 	return rt.RunParse(rules[0], input, opts)
@@ -262,7 +262,7 @@ func tmk_While(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 }
 
 func tl0(a *tslabs, v any) []types.Expr {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -272,14 +272,14 @@ func tl0(a *tslabs, v any) []types.Expr {
 	}
 	out := rt.AllocSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl1(a *tslabs, v any) []types.Stmt {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -289,14 +289,14 @@ func tl1(a *tslabs, v any) []types.Stmt {
 	}
 	out := rt.AllocSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = rt.TAs[types.Stmt](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl2(a *tslabs, v any) []*types.Ident {
-	a.work()
+	a.spend()
 	if v == nil {
 		return nil
 	}
@@ -306,14 +306,14 @@ func tl2(a *tslabs, v any) []*types.Ident {
 	}
 	out := rt.AllocSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.work()
+		a.spend()
 		out[i] = tv1(a, c)
 	}
 	return out
 }
 
 func tv0(a *tslabs, v any) *types.Bool {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -322,7 +322,7 @@ func tv0(a *tslabs, v any) *types.Bool {
 }
 
 func tv1(a *tslabs, v any) *types.Ident {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
@@ -331,7 +331,7 @@ func tv1(a *tslabs, v any) *types.Ident {
 }
 
 func tv2(a *tslabs, v any) *types.Number {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
@@ -340,7 +340,7 @@ func tv2(a *tslabs, v any) *types.Number {
 }
 
 func tv3(a *tslabs, v any) *types.String {
-	a.work()
+	a.spend()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
@@ -349,7 +349,7 @@ func tv3(a *tslabs, v any) *types.String {
 }
 
 type tslabs struct {
-	control   *rt.WorkControl
+	control   *rt.BudgetControl
 	tArrayLit rt.Chunk[types.ArrayLit]
 	tAssign   rt.Chunk[types.Assign]
 	tBinary   rt.Chunk[types.Binary]
@@ -371,8 +371,8 @@ type tslabs struct {
 	tl2Chunk  rt.Chunk[*types.Ident]
 }
 
-func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }
-func (a *tslabs) work() {
+func (a *tslabs) SetBudgetControl(c *rt.BudgetControl) { a.control = c }
+func (a *tslabs) spend() {
 	if a.control != nil {
 		a.control.Charge(1)
 	}
@@ -775,7 +775,7 @@ func init() {
 }
 
 func e1(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v2 *rt.Node
 	if v2, ok = p.Call(rules[1], 0); !ok {
@@ -795,7 +795,7 @@ fail:
 }
 
 func e3(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1, x2 int
 	var x3, x4 *rt.CaptureFrame
 	var x6 rt.Mark
@@ -804,7 +804,7 @@ func e3(p *rt.Parser, _ int) (*rt.Node, bool) {
 	x1, x2 = p.Pos, len(p.KidStack)
 	x3 = p.NewFrame(len(scope2))
 	for {
-		p.Work()
+		p.Spend()
 		clear(x3.Vals)
 		x6 = p.Mark()
 		x4 = p.Frame
@@ -833,7 +833,7 @@ func e3(p *rt.Parser, _ int) (*rt.Node, bool) {
 }
 
 func e6(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v2 *rt.Node
 	if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 123) {
@@ -859,7 +859,7 @@ fail:
 }
 
 func e8(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x4, size, x37 int
 	var x2, x9, x38 rt.Mark
 	var x3 rt.ExpMark
@@ -872,7 +872,7 @@ func e8(p *rt.Parser, _ int) (*rt.Node, bool) {
 	x3 = p.Isolate(p.Pos)
 	x9 = p.Mark()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x12, _, x13 = p.In[p.Pos], 1, true
 	} else {
 		x12, _, x13 = p.Peek()
@@ -976,7 +976,7 @@ L6:
 	x37 = 0
 	for {
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			ch, size, ok = p.In[p.Pos], 1, true
 		} else {
 			ch, size, ok = p.Peek()
@@ -1020,7 +1020,7 @@ fail:
 }
 
 func e10(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v2, v4 *rt.Node
 	if _, ok = r32(p); !ok {
@@ -1059,7 +1059,7 @@ fail:
 }
 
 func e11(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v2, v6 *rt.Node
 	var x3 rt.Mark
@@ -1106,7 +1106,7 @@ fail:
 }
 
 func e12(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v2, v4, v7, v10 *rt.Node
 	var x6 rt.Mark
@@ -1141,7 +1141,7 @@ fail:
 }
 
 func e13(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok, x6 bool
 	var x2 rt.Mark
 	var v3, v9, v12 *rt.Node
@@ -1157,7 +1157,7 @@ func e13(p *rt.Parser, _ int) (*rt.Node, bool) {
 	}
 	x2 = p.Mark()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x5, _, x6 = p.In[p.Pos], 1, true
 	} else {
 		x5, _, x6 = p.Peek()
@@ -1195,7 +1195,7 @@ fail:
 }
 
 func e14(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v2, v4 *rt.Node
 	if _, ok = r35(p); !ok {
@@ -1218,7 +1218,7 @@ fail:
 }
 
 func e15(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var x2 rt.Mark
 	var v3, v6 *rt.Node
@@ -1250,7 +1250,7 @@ fail:
 }
 
 func e18(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v2, v5, v8, v10 *rt.Node
 	var x4 rt.Mark
@@ -1304,7 +1304,7 @@ fail:
 }
 
 func e21(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x3, x4 int
 	var ok bool
 	var v2, v11, v12 *rt.Node
@@ -1317,7 +1317,7 @@ func e21(p *rt.Parser, _ int) (*rt.Node, bool) {
 	x3, x4 = p.Pos, len(p.KidStack)
 	x5 = p.NewFrame(len(scope19))
 	for {
-		p.Work()
+		p.Spend()
 		clear(x5.Vals)
 		x8 = p.Mark()
 		x6 = p.Frame
@@ -1356,7 +1356,7 @@ fail:
 }
 
 func e22(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v2 *rt.Node
 	if v2, ok = p.Call(rules[13], 0); !ok {
@@ -1377,7 +1377,7 @@ fail:
 }
 
 func e23(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x3 int
 	var x2 rt.ExpMark
 	var x4 []rt.ExpID
@@ -1402,7 +1402,7 @@ fail:
 }
 
 func e25(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x3, x4 int
 	var ok bool
 	var v2, v11, v12 *rt.Node
@@ -1415,7 +1415,7 @@ func e25(p *rt.Parser, _ int) (*rt.Node, bool) {
 	x3, x4 = p.Pos, len(p.KidStack)
 	x5 = p.NewFrame(len(scope24))
 	for {
-		p.Work()
+		p.Spend()
 		clear(x5.Vals)
 		x8 = p.Mark()
 		x6 = p.Frame
@@ -1451,7 +1451,7 @@ fail:
 }
 
 func e26(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1, size int
 	var x2, x5 rt.Mark
 	var ok bool
@@ -1470,7 +1470,7 @@ L3:
 	p.Silent--
 	p.Reset(x2)
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		ch, size, ok = p.In[p.Pos], 1, true
 	} else {
 		ch, size, ok = p.Peek()
@@ -1481,7 +1481,7 @@ L3:
 	}
 	p.Pos += size
 	for {
-		p.Work()
+		p.Spend()
 		x5 = p.Mark()
 		if _, ok = r39(p); !ok {
 			goto L6
@@ -1501,7 +1501,7 @@ fail:
 }
 
 func e27(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x3 int
 	var x2 rt.ExpMark
 	var x4 []rt.ExpID
@@ -1526,7 +1526,7 @@ fail:
 }
 
 func e29(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1, size, x2, x6 int
 	var ch rune
 	var ok bool
@@ -1536,7 +1536,7 @@ func e29(p *rt.Parser, _ int) (*rt.Node, bool) {
 	x2 = 0
 	for {
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			ch, size, ok = p.In[p.Pos], 1, true
 		} else {
 			ch, size, ok = p.Peek()
@@ -1560,7 +1560,7 @@ func e29(p *rt.Parser, _ int) (*rt.Node, bool) {
 	x6 = 0
 	for {
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			ch, size, ok = p.In[p.Pos], 1, true
 		} else {
 			ch, size, ok = p.Peek()
@@ -1586,7 +1586,7 @@ fail:
 }
 
 func e31(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v2 *rt.Node
 	if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 34) {
@@ -1609,7 +1609,7 @@ fail:
 }
 
 func e33(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1, size int
 	var x3, x5 rt.Mark
 	var x7, ch rune
@@ -1617,11 +1617,11 @@ func e33(p *rt.Parser, _ int) (*rt.Node, bool) {
 	var v13 *rt.Node
 	x1 = p.Pos
 	for {
-		p.Work()
+		p.Spend()
 		x3 = p.Mark()
 		x5 = p.Mark()
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			x7, _, x8 = p.In[p.Pos], 1, true
 		} else {
 			x7, _, x8 = p.Peek()
@@ -1631,7 +1631,7 @@ func e33(p *rt.Parser, _ int) (*rt.Node, bool) {
 			goto L9
 		}
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			ch, size, ok = p.In[p.Pos], 1, true
 		} else {
 			ch, size, ok = p.Peek()
@@ -1655,7 +1655,7 @@ func e33(p *rt.Parser, _ int) (*rt.Node, bool) {
 			goto L12
 		}
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			_, size, ok = p.In[p.Pos], 1, true
 		} else {
 			_, size, ok = p.Peek()
@@ -1684,7 +1684,7 @@ func e33(p *rt.Parser, _ int) (*rt.Node, bool) {
 }
 
 func e36(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1 int
 	var x2, x10 rt.Mark
 	var x4 rune
@@ -1693,7 +1693,7 @@ func e36(p *rt.Parser, _ int) (*rt.Node, bool) {
 	x1 = p.Pos
 	x2 = p.Mark()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x4, _, x5 = p.In[p.Pos], 1, true
 	} else {
 		x4, _, x5 = p.Peek()
@@ -1742,7 +1742,7 @@ fail:
 }
 
 func e40(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1, x2, size, x13, x17, x19, x21, x22, x26 int
 	var x4, x6, x24 rt.Mark
 	var v7, v14, v20, v27, v28, v29, v30, v31, v32, v33 *rt.Node
@@ -1751,11 +1751,11 @@ func e40(p *rt.Parser, _ int) (*rt.Node, bool) {
 	var x18 []*rt.Node
 	x1, x2 = p.Pos, len(p.KidStack)
 	for {
-		p.Work()
+		p.Spend()
 		x4 = p.Mark()
 		x6 = p.Mark()
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			x9, _, x10 = p.In[p.Pos], 1, true
 		} else {
 			x9, _, x10 = p.Peek()
@@ -1765,7 +1765,7 @@ func e40(p *rt.Parser, _ int) (*rt.Node, bool) {
 			goto L11
 		}
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			ch, size, ok = p.In[p.Pos], 1, true
 		} else {
 			ch, size, ok = p.Peek()
@@ -1798,10 +1798,10 @@ func e40(p *rt.Parser, _ int) (*rt.Node, bool) {
 		x18 = append(x18, v20)
 		x21, x22 = p.Pos, len(p.KidStack)
 		for {
-			p.Work()
+			p.Spend()
 			x24 = p.Mark()
 			if p.Pos < len(p.In) {
-				p.ReadWork(1)
+				p.SpendRead(1)
 				ch, size, ok = p.In[p.Pos], 1, true
 			} else {
 				ch, size, ok = p.Peek()
@@ -1849,7 +1849,7 @@ func e40(p *rt.Parser, _ int) (*rt.Node, bool) {
 }
 
 func e56(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	if _, ok = r31(p); !ok {
 		goto fail
@@ -1860,7 +1860,7 @@ fail:
 }
 
 func e57(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v1 *rt.Node
 	if v1, ok = r20(p); !ok {
@@ -1872,7 +1872,7 @@ fail:
 }
 
 func e58(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v1 *rt.Node
 	if v1, ok = p.Call(rules[21], 0); !ok {
@@ -1884,7 +1884,7 @@ fail:
 }
 
 func e59(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v1 *rt.Node
 	if v1, ok = r23(p); !ok {
@@ -1896,7 +1896,7 @@ fail:
 }
 
 func e60(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v1 *rt.Node
 	if v1, ok = p.Call(rules[16], 0); !ok {
@@ -1908,7 +1908,7 @@ fail:
 }
 
 func e61(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v2 *rt.Node
 	if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
@@ -1934,7 +1934,7 @@ fail:
 }
 
 func e64(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var x2 rt.Mark
 	var v3, v6 *rt.Node
@@ -1968,7 +1968,7 @@ fail:
 }
 
 func e67(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1, x3, x8 int
 	var x2 []*rt.Node
 	var ok bool
@@ -2007,7 +2007,7 @@ fail:
 }
 
 func e69(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1 int
 	var ok bool
 	var v2 *rt.Node
@@ -2024,7 +2024,7 @@ fail:
 }
 
 func e71(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1 int
 	var ok bool
 	var v2 *rt.Node
@@ -2041,7 +2041,7 @@ fail:
 }
 
 func e78(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1 rt.Mark
 	var v2, v9, v13, v17, v21, v25, v29 *rt.Node
 	var x4 rune
@@ -2049,7 +2049,7 @@ func e78(p *rt.Parser) (*rt.Node, bool) {
 	var x8, x12, x16, x20, x24, x28 int
 	x1 = p.Mark()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x4, _, x5 = p.In[p.Pos], 1, true
 	} else {
 		x4, _, x5 = p.Peek()
@@ -2158,7 +2158,7 @@ fail:
 }
 
 func e81(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1 rt.Mark
 	var v2, v9, v13 *rt.Node
 	var x4 rune
@@ -2166,7 +2166,7 @@ func e81(p *rt.Parser) (*rt.Node, bool) {
 	var x8, x12 int
 	x1 = p.Mark()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x4, _, x5 = p.In[p.Pos], 1, true
 	} else {
 		x4, _, x5 = p.Peek()
@@ -2211,7 +2211,7 @@ fail:
 }
 
 func e85(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1 rt.Mark
 	var v2, v9, v13, v17 *rt.Node
 	var x4 rune
@@ -2219,7 +2219,7 @@ func e85(p *rt.Parser) (*rt.Node, bool) {
 	var x8, x12, x16 int
 	x1 = p.Mark()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x4, _, x5 = p.In[p.Pos], 1, true
 	} else {
 		x4, _, x5 = p.Peek()
@@ -2280,7 +2280,7 @@ fail:
 }
 
 func e87(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1 rt.Mark
 	var v2, v9, v13 *rt.Node
 	var x4 rune
@@ -2288,7 +2288,7 @@ func e87(p *rt.Parser) (*rt.Node, bool) {
 	var x8, x12 int
 	x1 = p.Mark()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x4, _, x5 = p.In[p.Pos], 1, true
 	} else {
 		x4, _, x5 = p.Peek()
@@ -2333,7 +2333,7 @@ fail:
 }
 
 func e88(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1, x3, x12 int
 	var x2 []*rt.Node
 	var ok bool
@@ -2380,7 +2380,7 @@ fail:
 }
 
 func e89(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1, x3, x8 int
 	var x2 []*rt.Node
 	var ok bool
@@ -2419,7 +2419,7 @@ fail:
 }
 
 func e90(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1, x3 int
 	var x2 []*rt.Node
 	var ok bool
@@ -2450,7 +2450,7 @@ fail:
 }
 
 func r20(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
@@ -2469,7 +2469,7 @@ func r20(p *rt.Parser) (*rt.Node, bool) {
 }
 
 func r22(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
@@ -2488,7 +2488,7 @@ func r22(p *rt.Parser) (*rt.Node, bool) {
 }
 
 func r23(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
@@ -2507,7 +2507,7 @@ func r23(p *rt.Parser) (*rt.Node, bool) {
 }
 
 func r30(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
@@ -2526,18 +2526,18 @@ func r30(p *rt.Parser) (*rt.Node, bool) {
 }
 
 func r31(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var v *rt.Node
 	var x2, x3, x5, x6, size int
 	var x8, ch rune
 	var x9, ok bool
 	p.Enter()
 	for {
-		p.Work()
+		p.Spend()
 		x2, x3 = p.Pos, len(p.Recovered)
 		x5, x6 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			x8, _, x9 = p.In[p.Pos], 1, true
 		} else {
 			x8, _, x9 = p.Peek()
@@ -2547,7 +2547,7 @@ func r31(p *rt.Parser) (*rt.Node, bool) {
 			goto L10
 		}
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			ch, size, ok = p.In[p.Pos], 1, true
 		} else {
 			ch, size, ok = p.Peek()
@@ -2572,7 +2572,7 @@ func r31(p *rt.Parser) (*rt.Node, bool) {
 		}
 		for {
 			if p.Pos < len(p.In) {
-				p.ReadWork(1)
+				p.SpendRead(1)
 				ch, size, ok = p.In[p.Pos], 1, true
 			} else {
 				ch, size, ok = p.Peek()
@@ -2603,7 +2603,7 @@ func r31(p *rt.Parser) (*rt.Node, bool) {
 }
 
 func r32(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v *rt.Node
 	var ok bool
@@ -2635,7 +2635,7 @@ fail:
 }
 
 func r33(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v *rt.Node
 	var ok bool
@@ -2667,7 +2667,7 @@ fail:
 }
 
 func r34(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v *rt.Node
 	var ok bool
@@ -2699,7 +2699,7 @@ fail:
 }
 
 func r35(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v *rt.Node
 	var ok bool
@@ -2729,7 +2729,7 @@ fail:
 }
 
 func r36(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v *rt.Node
 	var ok bool
@@ -2759,7 +2759,7 @@ fail:
 }
 
 func r37(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v *rt.Node
 	var ok bool
@@ -2791,7 +2791,7 @@ fail:
 }
 
 func r38(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2, x22, x23 int
 	var v *rt.Node
 	var x4 rune
@@ -2800,7 +2800,7 @@ func r38(p *rt.Parser) (*rt.Node, bool) {
 	p.Enter()
 	x1, x2 = p.Pos, len(p.Recovered)
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x4, _, x5 = p.In[p.Pos], 1, true
 	} else {
 		x4, _, x5 = p.Peek()
@@ -2926,7 +2926,7 @@ fail:
 }
 
 func r39(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, size int
 	var v *rt.Node
 	var ch rune
@@ -2934,7 +2934,7 @@ func r39(p *rt.Parser) (*rt.Node, bool) {
 	start, rec = p.Pos, len(p.Recovered)
 	p.Enter()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		ch, size, ok = p.In[p.Pos], 1, true
 	} else {
 		ch, size, ok = p.Peek()
@@ -2954,7 +2954,7 @@ fail:
 }
 
 func e92(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var v *rt.Node
 	var ok bool
 	if _, ok = p.Call(recRules[1], 0); !ok {
@@ -2974,12 +2974,12 @@ fail:
 }
 
 func e94(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1, x2 *rt.CaptureFrame
 	var x4 rt.Mark
 	var ok bool
 	for {
-		p.Work()
+		p.Spend()
 		x4 = p.Mark()
 		x2 = p.Frame
 		x1 = p.NewFrame(len(scope93))
@@ -3004,7 +3004,7 @@ func e94(p *rt.Parser, _ int) (*rt.Node, bool) {
 }
 
 func e95(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 123) {
 		p.Pos++
@@ -3028,7 +3028,7 @@ fail:
 }
 
 func e96(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1, x7, x27 rt.Mark
 	var x2 rt.ExpMark
 	var x3, size, x26 int
@@ -3040,7 +3040,7 @@ func e96(p *rt.Parser, _ int) (*rt.Node, bool) {
 	x2 = p.Isolate(p.Pos)
 	x7 = p.Mark()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x9, _, x10 = p.In[p.Pos], 1, true
 	} else {
 		x9, _, x10 = p.Peek()
@@ -3135,7 +3135,7 @@ L5:
 	x26 = 0
 	for {
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			ch, size, ok = p.In[p.Pos], 1, true
 		} else {
 			ch, size, ok = p.Peek()
@@ -3177,7 +3177,7 @@ fail:
 }
 
 func e97(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var x1 rt.Mark
 	if _, ok = q26(p); !ok {
@@ -3206,7 +3206,7 @@ fail:
 }
 
 func e98(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1 rt.ExpMark
 	var x2 int
 	var x3 []rt.ExpID
@@ -3229,7 +3229,7 @@ fail:
 }
 
 func e100(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var x1, x2 *rt.CaptureFrame
 	var x4 rt.Mark
@@ -3237,7 +3237,7 @@ func e100(p *rt.Parser, _ int) (*rt.Node, bool) {
 		goto fail
 	}
 	for {
-		p.Work()
+		p.Spend()
 		x4 = p.Mark()
 		x2 = p.Frame
 		x1 = p.NewFrame(len(scope99))
@@ -3269,7 +3269,7 @@ fail:
 }
 
 func e101(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1, x4 rt.Mark
 	var ok bool
 	var ch rune
@@ -3286,7 +3286,7 @@ L2:
 	p.Silent--
 	p.Reset(x1)
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		ch, size, ok = p.In[p.Pos], 1, true
 	} else {
 		ch, size, ok = p.Peek()
@@ -3297,7 +3297,7 @@ L2:
 	}
 	p.Pos += size
 	for {
-		p.Work()
+		p.Spend()
 		x4 = p.Mark()
 		if _, ok = q19(p); !ok {
 			goto L5
@@ -3316,7 +3316,7 @@ fail:
 }
 
 func e102(p *rt.Parser, _ int) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1 rt.ExpMark
 	var x2 int
 	var x3 []rt.ExpID
@@ -3339,7 +3339,7 @@ fail:
 }
 
 func q3(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
@@ -3358,7 +3358,7 @@ func q3(p *rt.Parser) (*rt.Node, bool) {
 }
 
 func q4(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec int
 	var v *rt.Node
 	var ok bool
@@ -3402,7 +3402,7 @@ fail:
 }
 
 func q5(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v *rt.Node
 	var ok bool
@@ -3453,7 +3453,7 @@ fail:
 }
 
 func q7(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v *rt.Node
 	var ok, x5 bool
@@ -3471,7 +3471,7 @@ func q7(p *rt.Parser) (*rt.Node, bool) {
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x4, _, x5 = p.In[p.Pos], 1, true
 	} else {
 		x4, _, x5 = p.Peek()
@@ -3510,7 +3510,7 @@ fail:
 }
 
 func q8(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec int
 	var v *rt.Node
 	var ok bool
@@ -3538,7 +3538,7 @@ fail:
 }
 
 func q9(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v *rt.Node
 	var ok bool
@@ -3573,7 +3573,7 @@ fail:
 }
 
 func q10(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v *rt.Node
 	var ok bool
@@ -3628,7 +3628,7 @@ fail:
 }
 
 func q11(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x2, x3 int
 	var v *rt.Node
 	var ok bool
@@ -3638,7 +3638,7 @@ func q11(p *rt.Parser) (*rt.Node, bool) {
 		goto fail
 	}
 	for {
-		p.Work()
+		p.Spend()
 		x2, x3 = p.Pos, len(p.Recovered)
 		if _, ok = q30(p); !ok {
 			goto L4
@@ -3672,7 +3672,7 @@ fail:
 }
 
 func q12(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec int
 	var v *rt.Node
 	var ok bool
@@ -3699,7 +3699,7 @@ fail:
 }
 
 func e103(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	if _, ok = q30(p); !ok {
 		goto fail
@@ -3710,7 +3710,7 @@ fail:
 }
 
 func e104(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	if _, ok = q20(p); !ok {
 		goto fail
@@ -3721,7 +3721,7 @@ fail:
 }
 
 func e105(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	if _, ok = q21(p); !ok {
 		goto fail
@@ -3732,7 +3732,7 @@ fail:
 }
 
 func e106(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	if _, ok = q23(p); !ok {
 		goto fail
@@ -3743,7 +3743,7 @@ fail:
 }
 
 func e107(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	if _, ok = p.Call(recRules[16], 0); !ok {
 		goto fail
@@ -3754,7 +3754,7 @@ fail:
 }
 
 func e108(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
 		p.Pos++
@@ -3778,7 +3778,7 @@ fail:
 }
 
 func e109(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var x1 rt.Mark
 	if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 91) {
@@ -3808,7 +3808,7 @@ fail:
 }
 
 func e110(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 63) {
 		p.Pos++
@@ -3832,7 +3832,7 @@ fail:
 }
 
 func e111(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	if p.Control == nil && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 124 && p.In[p.Pos+1] == 124) {
 		p.Pos += 2
@@ -3845,7 +3845,7 @@ fail:
 }
 
 func e112(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	if p.Control == nil && (p.Pos+2 <= len(p.In) && p.In[p.Pos] == 38 && p.In[p.Pos+1] == 38) {
 		p.Pos += 2
@@ -3858,13 +3858,13 @@ fail:
 }
 
 func e113(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1 rt.Mark
 	var x3 rune
 	var x4, ok bool
 	x1 = p.Mark()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x3, _, x4 = p.In[p.Pos], 1, true
 	} else {
 		x3, _, x4 = p.Peek()
@@ -3955,13 +3955,13 @@ fail:
 }
 
 func e114(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1 rt.Mark
 	var x3 rune
 	var x4, ok bool
 	x1 = p.Mark()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x3, _, x4 = p.In[p.Pos], 1, true
 	} else {
 		x3, _, x4 = p.Peek()
@@ -4000,13 +4000,13 @@ fail:
 }
 
 func e115(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1 rt.Mark
 	var x3 rune
 	var x4, ok bool
 	x1 = p.Mark()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x3, _, x4 = p.In[p.Pos], 1, true
 	} else {
 		x3, _, x4 = p.Peek()
@@ -4058,13 +4058,13 @@ fail:
 }
 
 func e116(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var x1 rt.Mark
 	var x3 rune
 	var x4, ok bool
 	x1 = p.Mark()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x3, _, x4 = p.In[p.Pos], 1, true
 	} else {
 		x3, _, x4 = p.Peek()
@@ -4103,7 +4103,7 @@ fail:
 }
 
 func e117(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var x1 rt.Mark
 	if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
@@ -4133,7 +4133,7 @@ fail:
 }
 
 func e118(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 91) {
 		p.Pos++
@@ -4157,7 +4157,7 @@ fail:
 }
 
 func e119(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
 		p.Pos++
@@ -4176,7 +4176,7 @@ fail:
 }
 
 func q18(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2, x22, x23 int
 	var v *rt.Node
 	var x4 rune
@@ -4185,7 +4185,7 @@ func q18(p *rt.Parser) (*rt.Node, bool) {
 	p.Enter()
 	x1, x2 = p.Pos, len(p.Recovered)
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x4, _, x5 = p.In[p.Pos], 1, true
 	} else {
 		x4, _, x5 = p.Peek()
@@ -4311,7 +4311,7 @@ fail:
 }
 
 func q19(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, size int
 	var v *rt.Node
 	var ch rune
@@ -4319,7 +4319,7 @@ func q19(p *rt.Parser) (*rt.Node, bool) {
 	start, rec = p.Pos, len(p.Recovered)
 	p.Enter()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		ch, size, ok = p.In[p.Pos], 1, true
 	} else {
 		ch, size, ok = p.Peek()
@@ -4339,7 +4339,7 @@ fail:
 }
 
 func q20(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, size, x1, x2, x3, x6 int
 	var v *rt.Node
 	var ch rune
@@ -4349,7 +4349,7 @@ func q20(p *rt.Parser) (*rt.Node, bool) {
 	x1 = 0
 	for {
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			ch, size, ok = p.In[p.Pos], 1, true
 		} else {
 			ch, size, ok = p.Peek()
@@ -4373,7 +4373,7 @@ func q20(p *rt.Parser) (*rt.Node, bool) {
 	x6 = 0
 	for {
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			ch, size, ok = p.In[p.Pos], 1, true
 		} else {
 			ch, size, ok = p.Peek()
@@ -4402,7 +4402,7 @@ fail:
 }
 
 func q21(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec int
 	var v *rt.Node
 	var ok bool
@@ -4431,18 +4431,18 @@ fail:
 }
 
 func q22(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var v *rt.Node
 	var x2, x3, x5, x6, size int
 	var x8, ch rune
 	var x9, ok bool
 	p.Enter()
 	for {
-		p.Work()
+		p.Spend()
 		x2, x3 = p.Pos, len(p.Recovered)
 		x5, x6 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			x8, _, x9 = p.In[p.Pos], 1, true
 		} else {
 			x8, _, x9 = p.Peek()
@@ -4452,7 +4452,7 @@ func q22(p *rt.Parser) (*rt.Node, bool) {
 			goto L10
 		}
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			ch, size, ok = p.In[p.Pos], 1, true
 		} else {
 			ch, size, ok = p.Peek()
@@ -4476,7 +4476,7 @@ func q22(p *rt.Parser) (*rt.Node, bool) {
 			goto L13
 		}
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			_, size, ok = p.In[p.Pos], 1, true
 		} else {
 			_, size, ok = p.Peek()
@@ -4506,7 +4506,7 @@ func q22(p *rt.Parser) (*rt.Node, bool) {
 }
 
 func q23(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2, x10, x11 int
 	var v *rt.Node
 	var x4 rune
@@ -4515,7 +4515,7 @@ func q23(p *rt.Parser) (*rt.Node, bool) {
 	p.Enter()
 	x1, x2 = p.Pos, len(p.Recovered)
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x4, _, x5 = p.In[p.Pos], 1, true
 	} else {
 		x4, _, x5 = p.Peek()
@@ -4567,7 +4567,7 @@ fail:
 }
 
 func q24(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v *rt.Node
 	var ok bool
@@ -4599,7 +4599,7 @@ fail:
 }
 
 func q25(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v *rt.Node
 	var ok bool
@@ -4631,7 +4631,7 @@ fail:
 }
 
 func q26(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v *rt.Node
 	var ok bool
@@ -4663,7 +4663,7 @@ fail:
 }
 
 func q27(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v *rt.Node
 	var ok bool
@@ -4695,7 +4695,7 @@ fail:
 }
 
 func q28(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v *rt.Node
 	var ok bool
@@ -4725,7 +4725,7 @@ fail:
 }
 
 func q29(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v *rt.Node
 	var ok bool
@@ -4755,18 +4755,18 @@ fail:
 }
 
 func q30(p *rt.Parser) (*rt.Node, bool) {
-	p.Work()
+	p.Spend()
 	var v *rt.Node
 	var x2, x3, x5, x6, size int
 	var x8, ch rune
 	var x9, ok bool
 	p.Enter()
 	for {
-		p.Work()
+		p.Spend()
 		x2, x3 = p.Pos, len(p.Recovered)
 		x5, x6 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			x8, _, x9 = p.In[p.Pos], 1, true
 		} else {
 			x8, _, x9 = p.Peek()
@@ -4776,7 +4776,7 @@ func q30(p *rt.Parser) (*rt.Node, bool) {
 			goto L10
 		}
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			ch, size, ok = p.In[p.Pos], 1, true
 		} else {
 			ch, size, ok = p.Peek()
@@ -4801,7 +4801,7 @@ func q30(p *rt.Parser) (*rt.Node, bool) {
 		}
 		for {
 			if p.Pos < len(p.In) {
-				p.ReadWork(1)
+				p.SpendRead(1)
 				ch, size, ok = p.In[p.Pos], 1, true
 			} else {
 				ch, size, ok = p.Peek()
@@ -4832,7 +4832,7 @@ func q30(p *rt.Parser) (*rt.Node, bool) {
 }
 
 func e120(p *rt.TParser, _ int) (any, bool) {
-	p.Work()
+	p.Spend()
 	var x4, size, x37 int
 	var x2, x9, x38 rt.Mark
 	var x3 rt.ExpMark
@@ -4845,7 +4845,7 @@ func e120(p *rt.TParser, _ int) (any, bool) {
 	x3 = p.Isolate(p.Pos)
 	x9 = p.Mark()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x12, _, x13 = p.In[p.Pos], 1, true
 	} else {
 		x12, _, x13 = p.Peek()
@@ -4949,7 +4949,7 @@ L6:
 	x37 = 0
 	for {
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			ch, size, ok = p.In[p.Pos], 1, true
 		} else {
 			ch, size, ok = p.Peek()
@@ -5005,7 +5005,7 @@ func u0(p *rt.TParser) (any, bool) {
 }
 
 func i0(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
@@ -5047,7 +5047,7 @@ func u1(p *rt.TParser) (any, bool) {
 }
 
 func i1(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, x2, x3, x5, x6 int
 	var v, k1, k7, v10, v11 any
 	var c *rt.TActCtx
@@ -5056,7 +5056,7 @@ func i1(p *rt.TParser) (any, bool) {
 	p.Enter()
 	x2, x3, _ = p.Pos, len(p.KidStack), 0
 	for {
-		p.Work()
+		p.Spend()
 		x5, x6 = p.Pos, len(p.Recovered)
 		k7 = nil
 		if _, ok = s31(p); !ok {
@@ -5099,7 +5099,7 @@ func u2(p *rt.TParser) (any, bool) {
 }
 
 func i2(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
@@ -5176,7 +5176,7 @@ func u4(p *rt.TParser) (any, bool) {
 }
 
 func i4(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start int
 	var v, k1, v3, k4, v6 any
 	var c *rt.TActCtx
@@ -5234,7 +5234,7 @@ func u5(p *rt.TParser) (any, bool) {
 }
 
 func i5(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, x4, x5 int
 	var v, k1, v3, k7, v9 any
 	var c *rt.TActCtx
@@ -5302,7 +5302,7 @@ func u6(p *rt.TParser) (any, bool) {
 }
 
 func i6(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, x9, x10 int
 	var v, k1, v3, k4, v6, k7, v11, v14 any
 	var c *rt.TActCtx
@@ -5355,7 +5355,7 @@ func u7(p *rt.TParser) (any, bool) {
 }
 
 func i7(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, x3, x4 int
 	var v, k1, v5, v11, v14 any
 	var c *rt.TActCtx
@@ -5374,7 +5374,7 @@ func i7(p *rt.TParser) (any, bool) {
 	}
 	x3, x4 = p.Pos, len(p.Recovered)
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x7, _, x8 = p.In[p.Pos], 1, true
 	} else {
 		x7, _, x8 = p.Peek()
@@ -5428,7 +5428,7 @@ func u8(p *rt.TParser) (any, bool) {
 }
 
 func i8(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start int
 	var v, k1, v3, k4, v6 any
 	var c *rt.TActCtx
@@ -5470,7 +5470,7 @@ func u9(p *rt.TParser) (any, bool) {
 }
 
 func i9(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, x3, x4 int
 	var v, k1, v5, v8 any
 	var c *rt.TActCtx
@@ -5520,7 +5520,7 @@ func u10(p *rt.TParser) (any, bool) {
 }
 
 func i10(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, x6, x7 int
 	var v, k1, v3, k4, v8, v11, k12, v14 any
 	var c *rt.TActCtx
@@ -5592,7 +5592,7 @@ func u11(p *rt.TParser) (any, bool) {
 }
 
 func i11(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, x5, x6, x8, x9 int
 	var v, k1, v3, k4, k10, v13, v14 any
 	var c *rt.TActCtx
@@ -5605,7 +5605,7 @@ func i11(p *rt.TParser) (any, bool) {
 	k1 = v3
 	x5, x6, _ = p.Pos, len(p.KidStack), 0
 	for {
-		p.Work()
+		p.Spend()
 		x8, x9 = p.Pos, len(p.Recovered)
 		k10 = nil
 		if _, ok = s31(p); !ok {
@@ -5661,7 +5661,7 @@ func u12(p *rt.TParser) (any, bool) {
 }
 
 func i12(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
@@ -5704,7 +5704,7 @@ func u13(p *rt.TParser) (any, bool) {
 }
 
 func i13(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, x4 int
 	var v, k1, v8 any
 	var c *rt.TActCtx
@@ -5738,7 +5738,7 @@ fail:
 }
 
 func e123(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	if _, ok = s31(p); !ok {
 		goto fail
@@ -5749,7 +5749,7 @@ fail:
 }
 
 func e124(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v1 any
 	if v1, ok = s20(p); !ok {
@@ -5761,7 +5761,7 @@ fail:
 }
 
 func e125(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v1 any
 	if v1, ok = u21(p); !ok {
@@ -5773,7 +5773,7 @@ fail:
 }
 
 func e126(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v1 any
 	if v1, ok = s23(p); !ok {
@@ -5785,7 +5785,7 @@ fail:
 }
 
 func e127(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v1 any
 	if v1, ok = u16(p); !ok {
@@ -5797,7 +5797,7 @@ fail:
 }
 
 func e128(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var v2 any
 	if p.Control == nil && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
@@ -5823,7 +5823,7 @@ fail:
 }
 
 func e129(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var ok bool
 	var x2 rt.Mark
 	var v3, v6 any
@@ -5857,7 +5857,7 @@ fail:
 }
 
 func e130(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var x1, x3, x8 int
 	var x2 []any
 	var ok bool
@@ -5896,7 +5896,7 @@ fail:
 }
 
 func e131(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var x1 int
 	var ok bool
 	var v2 any
@@ -5913,7 +5913,7 @@ fail:
 }
 
 func e132(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var x1 int
 	var ok bool
 	var v2 any
@@ -5930,7 +5930,7 @@ fail:
 }
 
 func e133(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var x1 rt.Mark
 	var v2, v9, v13, v17, v21, v25, v29 any
 	var x4 rune
@@ -5938,7 +5938,7 @@ func e133(p *rt.TParser) (any, bool) {
 	var x8, x12, x16, x20, x24, x28 int
 	x1 = p.Mark()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x4, _, x5 = p.In[p.Pos], 1, true
 	} else {
 		x4, _, x5 = p.Peek()
@@ -6047,7 +6047,7 @@ fail:
 }
 
 func e134(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var x1 rt.Mark
 	var v2, v9, v13 any
 	var x4 rune
@@ -6055,7 +6055,7 @@ func e134(p *rt.TParser) (any, bool) {
 	var x8, x12 int
 	x1 = p.Mark()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x4, _, x5 = p.In[p.Pos], 1, true
 	} else {
 		x4, _, x5 = p.Peek()
@@ -6100,7 +6100,7 @@ fail:
 }
 
 func e135(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var x1 rt.Mark
 	var v2, v9, v13, v17 any
 	var x4 rune
@@ -6108,7 +6108,7 @@ func e135(p *rt.TParser) (any, bool) {
 	var x8, x12, x16 int
 	x1 = p.Mark()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x4, _, x5 = p.In[p.Pos], 1, true
 	} else {
 		x4, _, x5 = p.Peek()
@@ -6169,7 +6169,7 @@ fail:
 }
 
 func e136(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var x1 rt.Mark
 	var v2, v9, v13 any
 	var x4 rune
@@ -6177,7 +6177,7 @@ func e136(p *rt.TParser) (any, bool) {
 	var x8, x12 int
 	x1 = p.Mark()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x4, _, x5 = p.In[p.Pos], 1, true
 	} else {
 		x4, _, x5 = p.Peek()
@@ -6222,7 +6222,7 @@ fail:
 }
 
 func e137(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var x1, x3, x12 int
 	var x2 []any
 	var ok bool
@@ -6269,7 +6269,7 @@ fail:
 }
 
 func e138(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var x1, x3, x8 int
 	var x2 []any
 	var ok bool
@@ -6308,7 +6308,7 @@ fail:
 }
 
 func e139(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var x1, x3 int
 	var x2 []any
 	var ok bool
@@ -6352,7 +6352,7 @@ func u15(p *rt.TParser) (any, bool) {
 }
 
 func i15(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, x5, x6, x8, x9 int
 	var v, k1, v3, k4, k10, v13, v14 any
 	var c *rt.TActCtx
@@ -6365,7 +6365,7 @@ func i15(p *rt.TParser) (any, bool) {
 	k1 = v3
 	x5, x6, _ = p.Pos, len(p.KidStack), 0
 	for {
-		p.Work()
+		p.Spend()
 		x8, x9 = p.Pos, len(p.Recovered)
 		k10 = nil
 		if _, ok = s31(p); !ok {
@@ -6416,7 +6416,7 @@ func u16(p *rt.TParser) (any, bool) {
 }
 
 func v16(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2, x3, size, x6, x7 int
 	var v, v9, bv any
 	var ok bool
@@ -6436,7 +6436,7 @@ L4:
 	p.Silent--
 	p.Restore(x2, x3)
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		ch, size, ok = p.In[p.Pos], 1, true
 	} else {
 		ch, size, ok = p.Peek()
@@ -6447,7 +6447,7 @@ L4:
 	}
 	p.Pos += size
 	for {
-		p.Work()
+		p.Spend()
 		x6, x7 = p.Pos, len(p.Recovered)
 		if _, ok = s39(p); !ok {
 			goto L8
@@ -6489,7 +6489,7 @@ func u17(p *rt.TParser) (any, bool) {
 }
 
 func i17(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, x4 int
 	var v, k1, v8 any
 	var c *rt.TActCtx
@@ -6524,7 +6524,7 @@ fail:
 }
 
 func s20(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, size, x2, x3, x4, x7 int
 	var v, v8, bv any
 	var ch rune
@@ -6535,7 +6535,7 @@ func s20(p *rt.TParser) (any, bool) {
 	x2 = 0
 	for {
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			ch, size, ok = p.In[p.Pos], 1, true
 		} else {
 			ch, size, ok = p.Peek()
@@ -6559,7 +6559,7 @@ func s20(p *rt.TParser) (any, bool) {
 	x7 = 0
 	for {
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			ch, size, ok = p.In[p.Pos], 1, true
 		} else {
 			ch, size, ok = p.Peek()
@@ -6604,7 +6604,7 @@ func u21(p *rt.TParser) (any, bool) {
 }
 
 func i21(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
@@ -6637,7 +6637,7 @@ fail:
 }
 
 func s22(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, x1, x3, x4, x6, x7, size int
 	var v, v15, bv any
 	var x9, ch rune
@@ -6646,11 +6646,11 @@ func s22(p *rt.TParser) (any, bool) {
 	p.Enter()
 	x1 = p.Pos
 	for {
-		p.Work()
+		p.Spend()
 		x3, x4 = p.Pos, len(p.Recovered)
 		x6, x7 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			x9, _, x10 = p.In[p.Pos], 1, true
 		} else {
 			x9, _, x10 = p.Peek()
@@ -6660,7 +6660,7 @@ func s22(p *rt.TParser) (any, bool) {
 			goto L11
 		}
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			ch, size, ok = p.In[p.Pos], 1, true
 		} else {
 			ch, size, ok = p.Peek()
@@ -6684,7 +6684,7 @@ func s22(p *rt.TParser) (any, bool) {
 			goto L14
 		}
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			_, size, ok = p.In[p.Pos], 1, true
 		} else {
 			_, size, ok = p.Peek()
@@ -6720,7 +6720,7 @@ func s22(p *rt.TParser) (any, bool) {
 }
 
 func s23(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2, x3, x11, x12 int
 	var v, v14, bv any
 	var x5 rune
@@ -6730,7 +6730,7 @@ func s23(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	x2, x3 = p.Pos, len(p.Recovered)
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x5, _, x6 = p.In[p.Pos], 1, true
 	} else {
 		x5, _, x6 = p.Peek()
@@ -6788,7 +6788,7 @@ fail:
 }
 
 func s30(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, x1, x2, x4, x5, x7, x8, size, x15, x19, x21, x23, x24, x26, x27, x29 int
 	var v, v9, v16, v22, v30, v31, v32, v33, v34, v35, v36 any
 	var x11, ch rune
@@ -6798,11 +6798,11 @@ func s30(p *rt.TParser) (any, bool) {
 	p.Enter()
 	x1, x2 = p.Pos, len(p.KidStack)
 	for {
-		p.Work()
+		p.Spend()
 		x4, x5 = p.Pos, len(p.Recovered)
 		x7, x8 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			x11, _, x12 = p.In[p.Pos], 1, true
 		} else {
 			x11, _, x12 = p.Peek()
@@ -6812,7 +6812,7 @@ func s30(p *rt.TParser) (any, bool) {
 			goto L13
 		}
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			ch, size, ok = p.In[p.Pos], 1, true
 		} else {
 			ch, size, ok = p.Peek()
@@ -6845,10 +6845,10 @@ func s30(p *rt.TParser) (any, bool) {
 		x20 = append(x20, v22)
 		x23, x24 = p.Pos, len(p.KidStack)
 		for {
-			p.Work()
+			p.Spend()
 			x26, x27 = p.Pos, len(p.Recovered)
 			if p.Pos < len(p.In) {
-				p.ReadWork(1)
+				p.SpendRead(1)
 				ch, size, ok = p.In[p.Pos], 1, true
 			} else {
 				ch, size, ok = p.Peek()
@@ -6901,18 +6901,18 @@ func s30(p *rt.TParser) (any, bool) {
 }
 
 func s31(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var v any
 	var x2, x3, x5, x6, size int
 	var x8, ch rune
 	var x9, ok bool
 	p.Enter()
 	for {
-		p.Work()
+		p.Spend()
 		x2, x3 = p.Pos, len(p.Recovered)
 		x5, x6 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			x8, _, x9 = p.In[p.Pos], 1, true
 		} else {
 			x8, _, x9 = p.Peek()
@@ -6922,7 +6922,7 @@ func s31(p *rt.TParser) (any, bool) {
 			goto L10
 		}
 		if p.Pos < len(p.In) {
-			p.ReadWork(1)
+			p.SpendRead(1)
 			ch, size, ok = p.In[p.Pos], 1, true
 		} else {
 			ch, size, ok = p.Peek()
@@ -6947,7 +6947,7 @@ func s31(p *rt.TParser) (any, bool) {
 		}
 		for {
 			if p.Pos < len(p.In) {
-				p.ReadWork(1)
+				p.SpendRead(1)
 				ch, size, ok = p.In[p.Pos], 1, true
 			} else {
 				ch, size, ok = p.Peek()
@@ -6978,7 +6978,7 @@ func s31(p *rt.TParser) (any, bool) {
 }
 
 func s32(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v any
 	var ok bool
@@ -7010,7 +7010,7 @@ fail:
 }
 
 func s33(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v any
 	var ok bool
@@ -7042,7 +7042,7 @@ fail:
 }
 
 func s34(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v any
 	var ok bool
@@ -7074,7 +7074,7 @@ fail:
 }
 
 func s35(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v any
 	var ok bool
@@ -7104,7 +7104,7 @@ fail:
 }
 
 func s36(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v any
 	var ok bool
@@ -7134,7 +7134,7 @@ fail:
 }
 
 func s37(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2 int
 	var v any
 	var ok bool
@@ -7166,7 +7166,7 @@ fail:
 }
 
 func s38(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, x1, x2, x22, x23 int
 	var v any
 	var x4 rune
@@ -7175,7 +7175,7 @@ func s38(p *rt.TParser) (any, bool) {
 	p.Enter()
 	x1, x2 = p.Pos, len(p.Recovered)
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		x4, _, x5 = p.In[p.Pos], 1, true
 	} else {
 		x4, _, x5 = p.Peek()
@@ -7301,7 +7301,7 @@ fail:
 }
 
 func s39(p *rt.TParser) (any, bool) {
-	p.Work()
+	p.Spend()
 	var start, rec, size int
 	var v any
 	var ch rune
@@ -7309,7 +7309,7 @@ func s39(p *rt.TParser) (any, bool) {
 	start, rec = p.Pos, len(p.Recovered)
 	p.Enter()
 	if p.Pos < len(p.In) {
-		p.ReadWork(1)
+		p.SpendRead(1)
 		ch, size, ok = p.In[p.Pos], 1, true
 	} else {
 		ch, size, ok = p.Peek()
@@ -7328,4 +7328,4 @@ fail:
 	return nil, false
 }
 
-const _ = types.PegoSchema_3d42be48c1cce589
+const _ = types.PegoSchema_d81c4b867513a08c

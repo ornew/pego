@@ -16,19 +16,19 @@ import (
 )
 
 // TestGeneratedLoopCharge checks that every repetition of a list built-in is charged. The terms of an
-// action carry no charge, so the loops of the runtime are what bounds the work of an action: map, filter,
+// action carry no charge, so the loops of the runtime are what bounds the budget an action spends: map, filter,
 // foldl and foldr charge one step per element (map and filter also charge the elements of their result), and a lambda body, called once per element (nested lambdas:
 // once per element of each loop), charges nothing itself.
 //
 // For each built-in and for nested lambdas it generates a parser whose action uses the loop, and one
 // whose action is len($xs). It asserts that the first needs at least one step per lambda call more than the
-// second, that this grows by at least one per call from the input of N to that of 2N, and that a MaxWork
+// second, that this grows by at least one per call from the input of N to that of 2N, and that a Budget
 // halfway between ends the first with ErrLimit on the large input while the second completes.
 // The negative control runs the same checks against a copy of the runtime without the per-element charge of
 // the loops: every case has to violate them.
 func TestGeneratedLoopCharge(t *testing.T) {
 	t.Parallel()
-	gentest.NeedsWorkControls(t)
+	gentest.NeedsBudgetControls(t)
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
@@ -48,8 +48,8 @@ func TestGeneratedLoopCharge(t *testing.T) {
 		})
 		t.Run(form+"/negative control", func(t *testing.T) {
 			// Without the charge of the loops, a lambda call is not charged at all.
-			loop := regexp.MustCompile(`(func \(c \*T?ActCtx\) (?:PushMap|FilterList)\([^\n]*\{\n(?:[^\n]*\n)*?)\t*c\.P\.Work\(\)\n`)
-			fold := regexp.MustCompile(`(func \(c \*T?ActCtx\) foldControlled\([^\n]*\{\n(?:[^\n]*\n)*?)\t*c\.P\.Work\(\)\n`)
+			loop := regexp.MustCompile(`(func \(c \*T?ActCtx\) (?:PushMap|FilterList)\([^\n]*\{\n(?:[^\n]*\n)*?)\t*c\.P\.Spend\(\)\n`)
+			fold := regexp.MustCompile(`(func \(c \*T?ActCtx\) foldControlled\([^\n]*\{\n(?:[^\n]*\n)*?)\t*c\.P\.Spend\(\)\n`)
 			patched := 0
 			dir := gentest.RuntimeCopyWith(t, func(name, src string) string {
 				for _, re := range []*regexp.Regexp{loop, fold} {
@@ -190,8 +190,8 @@ func main() {
 	return problems
 }
 
-// loopChargeProbe is the consumer in each generated package: Need returns the smallest MaxWork with which
-// the parse of n bytes completes, and Limited runs it with the given MaxWork and reports "limit" for
+// loopChargeProbe is the consumer in each generated package: Need returns the smallest Budget with which
+// the parse of n bytes completes, and Limited runs it with the given Budget and reports "limit" for
 // ErrLimit, "ok" for completion and the error otherwise.
 const loopChargeProbe = `
 
@@ -205,7 +205,7 @@ func Need(n int) uint64 {
 	lo, hi := uint64(1), uint64(1)<<40
 	for lo < hi {
 		mid := (lo + hi) / 2
-		if _, err := Parse(in, WithLimits(Limits{MaxWork: mid})); err == nil {
+		if _, err := Parse(in, WithLimits(Limits{Budget: mid})); err == nil {
 			hi = mid
 		} else {
 			lo = mid + 1
@@ -215,7 +215,7 @@ func Need(n int) uint64 {
 }
 
 func Limited(n int, max uint64) string {
-	_, err := Parse(strings.Repeat("a", n), WithLimits(Limits{MaxWork: max}))
+	_, err := Parse(strings.Repeat("a", n), WithLimits(Limits{Budget: max}))
 	switch {
 	case err == nil:
 		return "ok"

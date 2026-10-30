@@ -34,7 +34,7 @@ func TestFlowLeadersPrintFromFlow(t *testing.T) {
 				if err != nil {
 					continue
 				}
-				if _, err := gentest.Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
+				if _, err := gentest.Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, BudgetControls: controls}); err != nil {
 					t.Fatalf("%s: %v", c.Name, err)
 				}
 			}

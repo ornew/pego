@@ -117,7 +117,7 @@ func testUnreachableBodiesAreLeftOut(t *testing.T) {
 		{"twin node", reachTwinGrammar, gen.GenOptions{}},
 		{"twin recognizer", reachTwinGrammar, gen.GenOptions{Recognize: true}},
 		{"twin document", reachTwinGrammar, gen.GenOptions{Document: true, Recognize: true}},
-		{"twin work controls", reachTwinGrammar, gen.GenOptions{WorkControls: true, Recognize: true}},
+		{"twin budget controls", reachTwinGrammar, gen.GenOptions{BudgetControls: true, Recognize: true}},
 		{"stream", reachStreamGrammar, gen.GenOptions{Stream: true}},
 		{"mixed", reachMixedGrammar, gen.GenOptions{Recognize: true}},
 		{"mixed document", reachMixedGrammar, gen.GenOptions{Recognize: true, Document: true}},
@@ -284,7 +284,7 @@ func testUnreachableBodiesRunLikeTheFullOutput(t *testing.T) {
 		{"stream", reachStreamGrammar, gen.GenOptions{Stream: true, Recognize: true}},
 		{"mixed", reachMixedGrammar, gen.GenOptions{Recognize: true}},
 		{"mixed document", reachMixedGrammar, gen.GenOptions{Recognize: true, Document: true}},
-		{"mixed work controls", reachMixedGrammar, gen.GenOptions{Recognize: true, WorkControls: true}},
+		{"mixed budget controls", reachMixedGrammar, gen.GenOptions{Recognize: true, BudgetControls: true}},
 		{"mixed observability", reachMixedGrammar, gen.GenOptions{Recognize: true, Observability: true}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

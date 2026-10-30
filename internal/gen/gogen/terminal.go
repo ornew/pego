@@ -102,12 +102,12 @@ func (g *Generator) terminalTable(e grammar.Expr) (string, bool) {
 	}
 	body += "}"
 	key := "term" + body
-	if name := g.workClassNames[key]; name != "" {
+	if name := g.budgetClassNames[key]; name != "" {
 		return name, true
 	}
 	name := g.Name("term")
-	g.workClassNames[key] = name
-	g.workClassKeys = append(g.workClassKeys, key)
+	g.budgetClassNames[key] = name
+	g.budgetClassKeys = append(g.budgetClassKeys, key)
 	// The program is static data; Prepare builds its dispatch tables at initialization.
 	fmt.Fprintf(&g.Vars, "var %sData = TerminalProgram%s\nvar %[1]s = %[1]sData.Prepare()\n", name, body)
 	return name, true

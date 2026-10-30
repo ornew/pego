@@ -248,4 +248,3 @@ func TestStreamCompileErrors(t *testing.T) {
 		t.Errorf("got %v", err)
 	}
 }
-

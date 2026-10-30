@@ -19,13 +19,13 @@ import (
 	"github.com/ornew/pego/internal/gen/gogen"
 )
 
-// The generated fixtures are built in two forms: with work controls, so that the tests of
+// The generated fixtures are built in two forms: with budget controls, so that the tests of
 // cancellation and limits can use them, and without, the form that most parsers have. Tests that
 // build fixtures run in both forms (EachMode); tests that use a control (WithContext,
-// WithLimits) run with controls only (NeedsWorkControls); tests of the ordinary-only output
+// WithLimits) run with controls only (NeedsBudgetControls); tests of the ordinary-only output
 // pin the ordinary form (PinOrdinary).
 //
-// A form is "0" with work controls and "1" without. Each test records its form by name, and its
+// A form is "0" with budget controls and "1" without. Each test records its form by name, and its
 // subtests inherit it, so that tests in either form run in parallel. Set in the environment of go
 // test, modeEnv restricts the run to one form: EachMode then runs its body once, in that form,
 // and the tests that need controls skip under "1".
@@ -86,10 +86,10 @@ func testGenHooks(t testing.TB) *gogen.Hooks {
 	return nil
 }
 
-// FixtureWorkControls reports whether the generated fixtures of t have work controls. A test that
-// builds fixtures reaches it inside EachMode, NeedsWorkControls or a pinned form; one that does
+// FixtureBudgetControls reports whether the generated fixtures of t have budget controls. A test that
+// builds fixtures reaches it inside EachMode, NeedsBudgetControls or a pinned form; one that does
 // not is recorded and fails the run (see TestMain), because it would exercise one form only.
-func FixtureWorkControls(t testing.TB) bool {
+func FixtureBudgetControls(t testing.TB) bool {
 	switch FixtureForm(t) {
 	case "0":
 		return true
@@ -145,17 +145,17 @@ func EachMode(t *testing.T, body func(t *testing.T)) {
 	}
 }
 
-// NeedsWorkControls makes the fixtures of a test that passes a control option have work
+// NeedsBudgetControls makes the fixtures of a test that passes a control option have budget
 // controls, and skips it when they are restricted to the ordinary form.
-func NeedsWorkControls(t testing.TB) {
+func NeedsBudgetControls(t testing.TB) {
 	t.Helper()
 	if EnvForm == "1" {
-		t.Skip("uses work controls; the fixtures are generated without them")
+		t.Skip("uses budget controls; the fixtures are generated without them")
 	}
 	SetFixtureForm(t, "0")
 }
 
-// PinOrdinary makes the fixtures of a test of the ordinary-only output have no work controls.
+// PinOrdinary makes the fixtures of a test of the ordinary-only output have no budget controls.
 func PinOrdinary(t testing.TB) {
 	SetFixtureForm(t, "1")
 }
@@ -262,7 +262,7 @@ func GeneratePackage(t testing.TB, dir, pkg string, g *grammar.Grammar, opts gen
 func GeneratePackageIn(t testing.TB, dir, root, pkg string, g *grammar.Grammar, opts gen.GenOptions) string {
 	t.Helper()
 	opts.Runtime = gen.RuntimeImport
-	opts.WorkControls = FixtureWorkControls(t)
+	opts.BudgetControls = FixtureBudgetControls(t)
 	opts.Package, opts.Module = pkg, root+"/"+pkg
 	opts.KeepComments = true
 	files, err := Generate(t, g, opts)
@@ -290,7 +290,7 @@ func GeneratePackageIn(t testing.TB, dir, root, pkg string, g *grammar.Grammar, 
 func GenerateCode(t testing.TB, g *grammar.Grammar, opts gen.GenOptions) ([]byte, error) {
 	opts.Runtime = gen.RuntimeImport
 	opts.KeepComments = true
-	opts.WorkControls = FixtureWorkControls(t)
+	opts.BudgetControls = FixtureBudgetControls(t)
 	if opts.Module == "" && opts.Types {
 		opts.Module = "example.com/generated"
 	}

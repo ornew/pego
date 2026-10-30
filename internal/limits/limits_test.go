@@ -12,13 +12,13 @@ func TestLimitError(t *testing.T) {
 		want string
 	}{
 		{nil, "parse limit exceeded"},
-		{&LimitError{Kind: LimitWork, Limit: 5, Used: 4, Requested: 2}, "parse work limit exceeded: limit 5, used 4, requested 2"},
+		{&LimitError{Kind: LimitBudget, Limit: 5, Used: 4, Requested: 2}, "parse budget limit exceeded: limit 5, used 4, requested 2"},
 	} {
 		if got := tc.err.Error(); got != tc.want {
 			t.Errorf("Error() = %q, want %q", got, tc.want)
 		}
 	}
-	var err error = &LimitError{Kind: LimitWork}
+	var err error = &LimitError{Kind: LimitBudget}
 	if !errors.Is(err, ErrLimit) {
 		t.Error("errors.Is(LimitError, ErrLimit) = false")
 	}

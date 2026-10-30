@@ -68,7 +68,7 @@ rule big = {big > 9007199254740992} "!"+ #atomic`, Inputs: []string{"", "a", "ab
 	}
 	t.Run("values", func(t *testing.T) { gentest.TSParsersCorpus(t, node, cases, gen.GenOptions{}) })
 	t.Run("source info", func(t *testing.T) { gentest.TSParsersCorpus(t, node, cases, gen.GenOptions{SourceInfo: true}) })
-	t.Run("work controls", func(t *testing.T) { gentest.TSParsersCorpus(t, node, cases, gen.GenOptions{WorkControls: true}) })
+	t.Run("budget controls", func(t *testing.T) { gentest.TSParsersCorpus(t, node, cases, gen.GenOptions{BudgetControls: true}) })
 }
 
 func TestGenerateTSErrors(t *testing.T) {

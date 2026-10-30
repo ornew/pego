@@ -17,7 +17,7 @@ func TestSnapshotPositionOverlayZeroAndOverflow(t *testing.T) {
 		previous.positions[i] = snapshotPositionDelta{start: -3, end: 4, gen: 9}
 		next.nodes[i] = snapshotRecord{start: 0, end: 9, gen: 9}
 	}
-	p := &parser{control: newWorkControl(nil, limits.Limits{})}
+	p := &parser{control: newBudgetControl(nil, limits.Limits{})}
 	shared := shareSnapshotGraph(p, &previous, next)
 	n := snapshotHandle(&shared, 1)
 	materialized := (&Snapshot{graph: shared}).Materialize()
@@ -82,19 +82,19 @@ func TestSnapshotPositionOverlayCyclesAndTypedNil(t *testing.T) {
 }
 
 func TestSnapshotPositionOverlayBudgetAndRetry(t *testing.T) {
-	if !workControlsEnabled {
-		t.Skip("work control reference")
+	if !budgetControlsEnabled {
+		t.Skip("budget control reference")
 	}
 	previous := snapshotGraph{nodes: make([]snapshotRecord, 128), root: 1}
 	next := snapshotGraph{nodes: make([]snapshotRecord, 128), root: 1}
 	for i := range next.nodes {
 		next.nodes[i] = snapshotRecord{start: 3, end: 5, gen: 1}
 	}
-	p := &parser{control: newWorkControl(nil, limits.Limits{MaxWork: 264})}
+	p := &parser{control: newBudgetControl(nil, limits.Limits{Budget: 264})}
 	err := catchFatal(t, func() { shareSnapshotGraph(p, &previous, next) })
 	var limit *limits.LimitError
-	if !errors.As(err, &limit) || limit.Kind != limits.LimitWork || limit.Requested != 3 {
-		t.Fatal("overlay metadata copy escaped work limit", err)
+	if !errors.As(err, &limit) || limit.Kind != limits.LimitBudget || limit.Requested != 3 {
+		t.Fatal("overlay metadata copy escaped budget limit", err)
 	}
 	if previous.positions != nil || next.positions != nil || previous.nodes[0].start != 0 || next.nodes[0].start != 3 {
 		t.Fatal("interrupted copy changed the input graphs")

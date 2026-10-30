@@ -144,7 +144,7 @@ func (v *Directive) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Directive) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Directive) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -155,7 +155,7 @@ func (v *Directive) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Params))
 			for i, x := range v.Params {
-				p.Work()
+				p.Spend()
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -193,7 +193,7 @@ func (v *Document) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Document) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Document) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Directives":
 		return func() any {
@@ -202,7 +202,7 @@ func (v *Document) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Directives))
 			for i, x := range v.Directives {
-				p.Work()
+				p.Spend()
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -244,7 +244,7 @@ func (v *Mapping) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Mapping) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Mapping) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Props":
 		return rt.TPtr(v.Props), true
@@ -257,7 +257,7 @@ func (v *Mapping) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Pairs))
 			for i, x := range v.Pairs {
-				p.Work()
+				p.Spend()
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -282,7 +282,7 @@ func (v *Pair) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Pair) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Pair) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Key":
 		return rt.TBack(PegoHooks, v.Key), true
@@ -308,7 +308,7 @@ func (v *Properties) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Properties) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Properties) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Tag":
 		return tb2(v.Tag), true
@@ -346,7 +346,7 @@ func (v *Scalar) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *Scalar) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Scalar) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Props":
 		return rt.TPtr(v.Props), true
@@ -387,7 +387,7 @@ func (v *Sequence) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Sequence) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Sequence) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Props":
 		return rt.TPtr(v.Props), true
@@ -400,7 +400,7 @@ func (v *Sequence) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-				p.Work()
+				p.Spend()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -432,7 +432,7 @@ func (v *Stream) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Stream) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Stream) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Documents":
 		return func() any {
@@ -441,7 +441,7 @@ func (v *Stream) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Documents))
 			for i, x := range v.Documents {
-				p.Work()
+				p.Spend()
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -482,7 +482,7 @@ func tb3(v *Anchor) any {
 // is no named node type. It is for generated parsers.
 var PegoNodeTypes [6]uint16
 
-// PegoSchema_0f71384db0fc76f6 ties the parser package to this package: the parser refers to it once, so a
+// PegoSchema_9336418e17074a6f ties the parser package to this package: the parser refers to it once, so a
 // parser and a types package generated from different schemas do not compile together.
 // It is for generated parsers; not a stable API.
-const PegoSchema_0f71384db0fc76f6 = 0
+const PegoSchema_9336418e17074a6f = 0

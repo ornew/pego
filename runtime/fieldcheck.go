@@ -123,7 +123,7 @@ func (p *Parser) elemsConform(t *FieldType, elems []*Node) bool {
 		return true
 	}
 	for _, c := range elems {
-		p.Work()
+		p.Spend()
 		if !p.fieldConforms(t, c) {
 			return false
 		}
@@ -138,7 +138,7 @@ func (p *Parser) tupleConforms(ts []*FieldType, elems []*Node) bool {
 		return false
 	}
 	for i, c := range elems {
-		p.Work()
+		p.Spend()
 		if !p.fieldConforms(ts[i], c) {
 			return false
 		}
@@ -234,7 +234,7 @@ func telemsConform(p *Parser, t *FieldType, elems []any) bool {
 		return true
 	}
 	for _, c := range elems {
-		p.Work()
+		p.Spend()
 		if !tfieldConforms(p, t, c) {
 			return false
 		}
@@ -248,7 +248,7 @@ func ttupleConforms(p *Parser, ts []*FieldType, elems []any) bool {
 		return false
 	}
 	for i, c := range elems {
-		p.Work()
+		p.Spend()
 		if !tfieldConforms(p, ts[i], c) {
 			return false
 		}

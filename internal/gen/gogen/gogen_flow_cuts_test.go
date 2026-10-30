@@ -22,7 +22,7 @@ func hasCut(e grammar.Expr) (found bool) {
 }
 
 // TestFlowCutsPrintFromFlow checks the route of the rules with cuts: over the corpus and the ten grammars, in
-// the ordinary and the work-controlled forms, a rule with a cut takes
+// the ordinary and the budget-controlled forms, a rule with a cut takes
 // the Flow route in the Node and recognizer tables (a rule Flow IR does not print fails the generation).
 func TestFlowCutsPrintFromFlow(t *testing.T) {
 	t.Parallel()
@@ -45,7 +45,7 @@ func TestFlowCutsPrintFromFlow(t *testing.T) {
 				if err != nil {
 					continue
 				}
-				if _, err := gentest.Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: controls}); err != nil {
+				if _, err := gentest.Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, BudgetControls: controls}); err != nil {
 					t.Fatalf("%s: %v", c.Name, err)
 				}
 			}

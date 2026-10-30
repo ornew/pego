@@ -5,7 +5,7 @@ import "github.com/ornew/pego/internal/value"
 // EmitStream marks only caller execution. Reset before handling a returned
 // error or committing the prefix, so later VM faults retain their attribution.
 func (p *Parser) EmitStream(n *value.Node) error {
-	if WorkControlsEnabled {
+	if BudgetControlsEnabled {
 		p.Control.Check()
 	}
 	if p.Diagnostic != nil || p.DiagnosticTail.Limit > 0 {
@@ -16,7 +16,7 @@ func (p *Parser) EmitStream(n *value.Node) error {
 	p.EmitCall = true
 	err := p.Emit(n)
 	p.EmitCall = false
-	if err == nil && WorkControlsEnabled {
+	if err == nil && BudgetControlsEnabled {
 		p.Control.Check()
 	}
 	return err
@@ -32,7 +32,7 @@ func (p *Parser) ReportRecovered() error {
 		p.Diagnosed = len(p.Recovered)
 	}
 	for p.Diagnosed < len(p.Recovered) {
-		if WorkControlsEnabled {
+		if BudgetControlsEnabled {
 			p.Control.Check()
 		}
 		original := p.Recovered[p.Diagnosed]
@@ -51,7 +51,7 @@ func (p *Parser) ReportRecovered() error {
 			p.DiagnosticTail.Add(original)
 		}
 		p.Diagnosed++
-		if WorkControlsEnabled {
+		if BudgetControlsEnabled {
 			p.Control.Check()
 		}
 	}

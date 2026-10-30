@@ -12,7 +12,7 @@ import (
 
 func TestGeneratedTypedRecoveryBodies(t *testing.T) {
 	t.Parallel()
-	gentest.NeedsWorkControls(t)
+	gentest.NeedsBudgetControls(t)
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

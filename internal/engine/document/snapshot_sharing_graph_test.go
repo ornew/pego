@@ -12,9 +12,9 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-func TestSnapshotSharedStringComparisonRespectsWorkLimit(t *testing.T) {
-	if !core.WorkControlsEnabled {
-		t.Skip("work controls reference")
+func TestSnapshotSharedStringComparisonRespectsBudgetLimit(t *testing.T) {
+	if !core.BudgetControlsEnabled {
+		t.Skip("budget controls reference")
 	}
 	long := strings.Repeat("a", 1<<16)
 	for _, tc := range []struct {
@@ -27,19 +27,19 @@ func TestSnapshotSharedStringComparisonRespectsWorkLimit(t *testing.T) {
 		{"field value", snapshotRecord{fields: value.Fields{{Name: "x", Value: long}}}, snapshotRecord{fields: value.Fields{{Name: "x", Value: strings.Clone(long)}}}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			p := &core.Parser{Control: core.NewWorkControl(nil, limits.Limits{MaxWork: 1024})}
+			p := &core.Parser{Control: core.NewBudgetControl(nil, limits.Limits{Budget: 1024})}
 			err := catchFatal(t, func() { sameSnapshotRecord(p, &snapshotGraph{}, &tc.a, &snapshotGraph{}, &tc.b) })
 			var limit *limits.LimitError
-			if !errors.As(err, &limit) || limit.Kind != limits.LimitWork {
-				t.Fatal("string comparison escaped work limit", err)
+			if !errors.As(err, &limit) || limit.Kind != limits.LimitBudget {
+				t.Fatal("string comparison escaped budget limit", err)
 			}
 		})
 	}
 }
 
-func TestSnapshotChildRunCopyRespectsWorkLimit(t *testing.T) {
-	if !snapshotChildChunksEnabled || !core.WorkControlsEnabled {
-		t.Skip("child run or work control reference")
+func TestSnapshotChildRunCopyRespectsBudgetLimit(t *testing.T) {
+	if !snapshotChildChunksEnabled || !core.BudgetControlsEnabled {
+		t.Skip("child run or budget control reference")
 	}
 	children := make([]int, 1025)
 	for i := range children {
@@ -52,16 +52,16 @@ func TestSnapshotChildRunCopyRespectsWorkLimit(t *testing.T) {
 	changed[512] = 9999
 	next := snapshotRecord{children: changed}
 	graph := snapshotGraph{nodes: []snapshotRecord{old}}
-	p := &core.Parser{Control: core.NewWorkControl(nil, limits.Limits{MaxWork: 1170})}
+	p := &core.Parser{Control: core.NewBudgetControl(nil, limits.Limits{Budget: 1170})}
 	err := catchFatal(t, func() { shareSnapshotChildren(p, &graph, &graph.nodes[0], &next) })
 	var limit *limits.LimitError
-	if !errors.As(err, &limit) || limit.Kind != limits.LimitWork {
-		t.Fatal("copy escaped work limit", err)
+	if !errors.As(err, &limit) || limit.Kind != limits.LimitBudget {
+		t.Fatal("copy escaped budget limit", err)
 	}
 	if next.childChunked || len(next.children) != 1025 || next.children[512] != 9999 {
 		t.Fatal("interrupted copy changed the source record")
 	}
-	p = &core.Parser{Control: core.NewWorkControl(nil, limits.Limits{})}
+	p = &core.Parser{Control: core.NewBudgetControl(nil, limits.Limits{})}
 	chunks := shareSnapshotChildren(p, &graph, &graph.nodes[0], &next)
 	if chunks == nil || !next.childChunked || next.children != nil || chunks.length != 1025 || len(chunks.parts[4]) != 1 {
 		t.Fatal("successful copy did not retain the exact child shape")
@@ -81,7 +81,7 @@ func TestSnapshotChunkedHandleIdentity(t *testing.T) {
 	children[0] = 1 // The wide child points back to the root.
 	wide := snapshotRecord{children: children}
 	previous := snapshotGraph{nodes: []snapshotRecord{wide}}
-	p := &core.Parser{Control: core.NewWorkControl(nil, limits.Limits{})}
+	p := &core.Parser{Control: core.NewBudgetControl(nil, limits.Limits{})}
 	chunks := shareSnapshotChildren(p, &previous, &previous.nodes[0], &wide)
 	if chunks == nil {
 		t.Fatal("wide child sequence did not share")

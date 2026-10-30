@@ -93,8 +93,8 @@ rule item = [a-z]`)
 }
 
 func TestSnapshotSharedRecordsAndInterruption(t *testing.T) {
-	if !core.WorkControlsEnabled {
-		t.Skip("work controls reference")
+	if !core.BudgetControlsEnabled {
+		t.Skip("budget controls reference")
 	}
 	prog := mustCompile(t, `rule main = item* $$
 rule item = [a-z]`)

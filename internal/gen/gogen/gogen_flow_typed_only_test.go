@@ -20,7 +20,7 @@ import (
 // the typed entry points of grammars whose entries really convert Nodes with those of the full parser.
 
 // TestFlowTypedOnlyNodeRulesPrintFromFlow generates the Node rules of a typed-only parser, in the ordinary
-// and the work-controlled forms, over the corpus, and checks that every rule and Operators Rule line takes
+// and the budget-controlled forms, over the corpus, and checks that every rule and Operators Rule line takes
 // the Flow route (a rule Flow IR does not print fails the generation).
 func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
 	t.Parallel()
@@ -49,7 +49,7 @@ func TestFlowTypedOnlyNodeRulesPrintFromFlow(t *testing.T) {
 					continue
 				}
 				_, err = gentest.Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport,
-					Types: true, TypedOnly: true, KeepNodes: true, WorkControls: form.controls})
+					Types: true, TypedOnly: true, KeepNodes: true, BudgetControls: form.controls})
 				if err != nil {
 					t.Fatalf("%s: %v", c.Name, err)
 				}
@@ -142,7 +142,7 @@ func TestFlowTypedOnlyEntriesMatchFull(t *testing.T) {
 			gh.OperatorsRoute = func(table string, r *compile.Rule) { taken++ }
 			var pkgs []string
 			for i, c := range gentest.TypedOnlyConverted {
-				base := gen.GenOptions{Types: true, WorkControls: form.controls}
+				base := gen.GenOptions{Types: true, BudgetControls: form.controls}
 				full, flowOnly, mutated := fmt.Sprintf("full%d", i), fmt.Sprintf("flow%d", i), fmt.Sprintf("mut%d", i)
 				before := taken
 				only := base

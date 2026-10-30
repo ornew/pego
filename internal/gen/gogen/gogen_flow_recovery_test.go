@@ -28,7 +28,7 @@ func hasRecovery(e grammar.Expr) (found bool) {
 }
 
 // TestFlowRecoveryPrintsFromFlow checks the route of the rules with recovery: over the corpus and the ten
-// grammars, in the ordinary and the work-controlled forms, every rule, Operators Rule line and stream start rule of the
+// grammars, in the ordinary and the budget-controlled forms, every rule, Operators Rule line and stream start rule of the
 // Node and recognizer tables is printed from Flow IR (otherwise the generation fails), and the rules with a recovery (alone, with a cut and
 // with a leader) take the Flow route.
 func TestFlowRecoveryPrintsFromFlow(t *testing.T) {
@@ -61,7 +61,7 @@ func TestFlowRecoveryPrintsFromFlow(t *testing.T) {
 					continue
 				}
 				for _, stream := range []bool{false, true} {
-					if _, err := gentest.Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, Stream: stream, WorkControls: controls}); err != nil && (!stream || strings.Contains(err.Error(), "Flow IR does not print")) {
+					if _, err := gentest.Generate(t, g, gen.GenOptions{Package: "x", Module: "example.com/x", Start: "main", Runtime: gen.RuntimeImport, Recognize: true, Stream: stream, BudgetControls: controls}); err != nil && (!stream || strings.Contains(err.Error(), "Flow IR does not print")) {
 						t.Fatalf("%s: %v", c.Name, err)
 					}
 				}

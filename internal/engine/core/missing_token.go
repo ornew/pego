@@ -43,7 +43,7 @@ func (p *Parser) ResetMissing(mark int) {
 	}
 	s := p.Missing
 	for _, event := range s.Path[mark:] {
-		p.Work()
+		p.Spend()
 		delete(s.installed, event.Site)
 	}
 	clear(s.Path[mark:])
@@ -55,7 +55,7 @@ func (p *Parser) MissingEvents(mark int) []MissingTokenEvent {
 	if p.Missing == nil {
 		return nil
 	}
-	return AppendWork(p, []MissingTokenEvent(nil), p.Missing.Path[mark:])
+	return AppendSpend(p, []MissingTokenEvent(nil), p.Missing.Path[mark:])
 }
 
 func (p *Parser) InsertMissing(event MissingTokenEvent) bool {
@@ -119,7 +119,7 @@ func (p *Parser) ReplayMissing(events []MissingTokenEvent, errs []*SyntaxError) 
 func (p *Parser) restoreMissing(events []MissingTokenEvent, errs []*SyntaxError, charge bool) {
 	var duplicate map[*SyntaxError]bool
 	for _, event := range events {
-		p.Work()
+		p.Spend()
 		if p.Missing.installed[event.Site] {
 			if duplicate == nil {
 				duplicate = make(map[*SyntaxError]bool)
@@ -130,11 +130,11 @@ func (p *Parser) restoreMissing(events []MissingTokenEvent, errs []*SyntaxError,
 		}
 	}
 	if duplicate == nil {
-		p.Recovered = AppendWork(p, p.Recovered, errs)
+		p.Recovered = AppendSpend(p, p.Recovered, errs)
 		return
 	}
 	for _, err := range errs {
-		p.Work()
+		p.Spend()
 		if !duplicate[err] {
 			p.Recovered = append(p.Recovered, err)
 		}

@@ -32,4 +32,3 @@ func TestTextStructsAcrossBackends(t *testing.T) {
 		}
 	}
 }
-

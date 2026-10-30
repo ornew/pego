@@ -99,8 +99,8 @@ type gen struct {
 	triedB  bitset
 	trail   []int // targets in tent, in the order they were added
 
-	m         matcher
-	matchWork int // steps of the matcher in the current attempt
+	m          matcher
+	matchSpend int // steps of the matcher in the current attempt
 
 	// checkCuts and predicateCuts count the ways that checks and predicates ruled out, over all
 	// attempts. cuts splits them by the rule whose body holds the check or predicate, and recent
@@ -137,7 +137,7 @@ func (g *gen) attempt() (string, []int, bool) {
 	g.caps, g.vars, g.sib = nil, g.in.initVars, nil
 	clear(g.active)
 	g.rule = -1
-	g.depth, g.steps, g.matchWork = 0, 0, 0
+	g.depth, g.steps, g.matchSpend = 0, 0, 0
 	for _, t := range g.trail {
 		g.tent.clear(t)
 	}
@@ -170,7 +170,7 @@ func (g *gen) finish() bool {
 // matcher can do far more work than the generation itself (with many pending lookaheads over a long
 // text); it gets a budget of its own, matchBudget times the generation budget.
 func (g *gen) exhausted() bool {
-	return g.steps > g.cfg.budget || g.matchWork > matchBudget*g.cfg.budget
+	return g.steps > g.cfg.budget || g.matchSpend > matchBudget*g.cfg.budget
 }
 
 // retry reports whether a decision that started at step s0 may try another option. A decision gives
@@ -265,7 +265,7 @@ func (g *gen) evalCheck(c *check, final bool) (violated, keep bool) {
 	} else {
 		st, end = g.m.run(c.e, g.text(), c.pos, final)
 	}
-	g.matchWork += g.m.steps
+	g.matchSpend += g.m.steps
 	switch st {
 	case matched:
 		violated = c.neg && (!c.progress || end > c.pos)

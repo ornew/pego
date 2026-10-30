@@ -95,8 +95,8 @@ func TestClassConstructionContextFacts(t *testing.T) {
 					for _, active := range []bool{false, true} {
 						p, q := &core.Parser{}, &core.Parser{}
 						if active {
-							p.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 1 << 30})
-							q.Control = core.NewWorkControl(nil, limits.Limits{MaxWork: 1 << 30})
+							p.Control = core.NewBudgetControl(nil, limits.Limits{Budget: 1 << 30})
+							q.Control = core.NewBudgetControl(nil, limits.Limits{Budget: 1 << 30})
 						}
 						expected := false
 						for _, rg := range rs {
@@ -107,7 +107,7 @@ func TestClassConstructionContextFacts(t *testing.T) {
 							t.Fatalf("membership rune %U active=%t", r, active)
 						}
 						if active && p.Control.Used != q.Control.Used {
-							t.Fatal("runtime work charge changed")
+							t.Fatal("runtime budget charge changed")
 						}
 					}
 				}
@@ -155,12 +155,12 @@ func TestClassConstructionCompileContextParity(t *testing.T) {
 				for _, recognize := range []bool{false, true} {
 					for _, active := range []bool{false, true} {
 						for _, s := range []string{"a", "β", "z", "?", "", "aβ1"} {
-							// Active work controls and Recognize lazily compile separate graphs.
+							// Active budget controls and Recognize lazily compile separate graphs.
 							// Their disabled cases exercise the controlled compiler's own matchers,
 							// including its directly compiled recognition-only graph.
 							opts := ParseOptions{Unit: unit, Recognize: recognize}
 							if active {
-								opts.Limits = limits.Limits{MaxWork: 1 << 30}
+								opts.Limits = limits.Limits{Budget: 1 << 30}
 							}
 							x, xe := a.ParseWith("main", s, opts)
 							y, ye := b.ParseWith("main", s, opts)

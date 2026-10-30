@@ -129,4 +129,3 @@ func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
 		t.Errorf("loaded filter and diagnostic: %s", got)
 	}
 }
-

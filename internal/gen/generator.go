@@ -18,10 +18,10 @@ import (
 // literals, methods and field type variables, and the Flow IR of the rules printed from it.
 type Generator struct {
 	Observability bool
-	// NoWork leaves the step charges out of Go output generated without work controls, where
+	// NoBudget leaves the step charges out of Go output generated without budget controls, where
 	// no control exists to charge: the statements, and the closures that only held one.
-	NoWork bool
-	// Ordinary prints the bodies in their ordinary form (no work controls and no Documents): the
+	NoBudget bool
+	// Ordinary prints the bodies in their ordinary form (no budget controls and no Documents): the
 	// helpers with an Ordinary form, no charges, inline class tests, and for typed rule bodies the
 	// lean lowering (terminal programs, class runs and tables, guarded classes).
 	Ordinary              bool
@@ -341,7 +341,7 @@ func (g *Generator) StartRecFlow(rec *compile.Program) error {
 		return fmt.Errorf("internal error: %w", err)
 	}
 	// Classes are inline tests, as the Node runtime's generated code writes them.
-	opts := flow.Options{Work: !g.NoWork, Recovers: flow.Recovers(m), GuardedClasses: g.Ordinary && !g.DisableGuardedClasses,
+	opts := flow.Options{Budget: !g.NoBudget, Recovers: flow.Recovers(m), GuardedClasses: g.Ordinary && !g.DisableGuardedClasses,
 		InlineLiterals: MaxInlineLiteral, Observe: g.Observability, Node: true, Document: g.Document}
 	g.Flow = &FlowState{M: m, Origin: origin, Opts: opts, Rules: append(append([]*compile.Rule(nil), rec.RuleList...), rec.Twins...)}
 	return nil

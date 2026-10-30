@@ -52,7 +52,7 @@ func (g *snapshotGraph) position(i int, r *snapshotRecord) snapshotPosition {
 func (g *snapshotGraph) setPositions(p *parser, next *snapshotGraph) {
 	g.positions = make([]snapshotPositionDelta, len(next.nodes))
 	for i := range next.nodes {
-		p.valueWork(3)
+		p.spendValue(3)
 		delta, fits := relativeSnapshotPosition(g.refs[i], next.position(i, &next.nodes[i]))
 		if !fits {
 			panic("snapshot position delta invariant")

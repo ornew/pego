@@ -86,4 +86,3 @@ func TestUnicodeScalarRangeBackends(t *testing.T) {
 		}
 	}
 }
-

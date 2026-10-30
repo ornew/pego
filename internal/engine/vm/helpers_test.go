@@ -31,10 +31,10 @@ func catchFatal(t *testing.T, f func()) error {
 
 func catchStreamPanic(f func()) (val any) { defer func() { val = recover() }(); f(); return }
 
-func stateWorkParser(lim limits.Limits) *core.Parser {
+func stateBudgetParser(lim limits.Limits) *core.Parser {
 	prog := &core.SharedProgram{}
 	core.InitSharedProgram(prog, &compile.Program{})
-	return &core.Parser{Prog: prog, Input: core.Input{Control: core.NewWorkControl(nil, lim)}}
+	return &core.Parser{Prog: prog, Input: core.Input{Control: core.NewBudgetControl(nil, lim)}}
 }
 
 func undoFixture(p *core.Parser) (*core.Frame, []*value.Node) {
@@ -49,7 +49,7 @@ func undoFixture(p *core.Parser) (*core.Frame, []*value.Node) {
 }
 
 func diagnosticParser(lim limits.Limits) *core.Parser {
-	return &core.Parser{Input: core.Input{Control: core.NewWorkControl(nil, lim)}}
+	return &core.Parser{Input: core.Input{Control: core.NewBudgetControl(nil, lim)}}
 }
 
 type pollingContext struct {

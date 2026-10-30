@@ -367,7 +367,7 @@ func machineOf(p *core.Parser) *Machine {
 
 func (mc *Machine) SplitChunks() { mc.funcSlab = nil }
 
-func (mc *Machine) ClearInactive() { core.ClearWork(mc.p, mc.vals[len(mc.vals):cap(mc.vals)]) }
+func (mc *Machine) ClearInactive() { core.ClearSpend(mc.p, mc.vals[len(mc.vals):cap(mc.vals)]) }
 
 func (mc *Machine) Attach(p *core.Parser) { mc.p = p }
 
@@ -590,7 +590,7 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 		}
 	}
 	for {
-		p.Work()
+		p.Spend()
 		in := &code[ip]
 		switch in.Op {
 		case bytecode.OpStr:
@@ -690,7 +690,7 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 		case bytecode.OpCut:
 			marked := false
 			for k := len(mc.ents) - 1; k >= ebase; k-- {
-				p.Work()
+				p.Spend()
 				e := &mc.ents[k]
 				if e.kind == eChoice || e.kind == eIter || e.kind == eRunIter {
 					e.cut = true
@@ -714,7 +714,7 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 			kids := p.Nodes(n)
 			top := len(mc.vals)
 			for k := 0; k < n; k++ {
-				p.Work()
+				p.Spend()
 				kids[k] = asNodeValue(mc.vals[top-n+k])
 			}
 			start := *mc.vals[top-n-1].(*int)
@@ -726,7 +726,7 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 			case in.B == 1:
 				if n := asNodeValue(v); n != nil {
 					for _, k := range value.D(n).Children {
-						p.Work()
+						p.Spend()
 						mc.push(k)
 					}
 				}
@@ -860,7 +860,7 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 			if in.A == 1 {
 				kids := p.Nodes(len(mc.vals) - rep.base)
 				for k := range kids {
-					p.Work()
+					p.Spend()
 					kids[k] = asNodeValue(mc.vals[rep.base+k])
 				}
 				start := *mc.vals[rep.base-1].(*int)
@@ -963,7 +963,7 @@ func (mc *Machine) unwind(m *bytecode.Module, ebase int) (ip int, ok bool) {
 		if len(mc.ents) == ebase {
 			return 0, false
 		}
-		p.Work()
+		p.Spend()
 		e := mc.ents[len(mc.ents)-1]
 		mc.ents = mc.ents[:len(mc.ents)-1]
 		switch e.kind {
@@ -1031,11 +1031,11 @@ func (vm *Program) has(p *core.Parser, a int32, ch rune) bool {
 		return vm.ascii[a][ch>>6]&(1<<(ch&63)) != 0
 	}
 	cl := &vm.m.Classes[a]
-	if !core.WorkControlsEnabled || p.Control == nil || len(cl.Ranges) <= 4 {
+	if !core.BudgetControlsEnabled || p.Control == nil || len(cl.Ranges) <= 4 {
 		return cl.Has(ch)
 	}
 	for k := 0; k < len(cl.Ranges); k += 2 {
-		p.Work()
+		p.Spend()
 		if cl.Ranges[k] <= ch && ch <= cl.Ranges[k+1] {
 			return !cl.Negated
 		}
@@ -1075,9 +1075,9 @@ var (
 func (f *vmFunc) Apply(x, y any) (any, error) {
 	// The locals are placed on the expression stack below the operands of the body.
 	p := f.ctx.P
-	p.Work()
+	p.Spend()
 	base := len(p.Estack)
-	p.Estack = append(core.AppendWork(p, p.Estack, f.locals), x)
+	p.Estack = append(core.AppendSpend(p, p.Estack, f.locals), x)
 	if f.n == 2 {
 		p.Estack = append(p.Estack, y)
 	}
@@ -1098,7 +1098,7 @@ func (vm *Program) evaluator(entry int, operator bool) core.Evaluator {
 		p.Estack = append(p.Estack, nil, nil, nil)
 		locals := p.Estack[base : base+3 : base+3]
 		for l := ctx.Locals; l != nil; l = l.Next {
-			p.Work()
+			p.Spend()
 			switch l.Name {
 			case "lhs":
 				locals[0] = l.Val
@@ -1164,7 +1164,7 @@ func (vm *Program) eval(ctx *core.EvalCtx, ip int, locals []any) (v any, err err
 		}
 	}()
 	for {
-		p.Work()
+		p.Spend()
 		in := &m.Exprs[ip]
 		switch in.Op {
 		case bytecode.EInt:
@@ -1261,7 +1261,7 @@ func (vm *Program) eval(ctx *core.EvalCtx, ip int, locals []any) (v any, err err
 			if len(locals) > 0 {
 				// The locals may be on the expression stack, and a function can outlive the lambda that
 				// created it (when the lambda returns it).
-				locals = core.AppendWork(p, []any(nil), locals)
+				locals = core.AppendSpend(p, []any(nil), locals)
 			}
 			stack = append(stack, mc.newFunc(vmFunc{vm: vm, entry: int(in.A), n: int(in.B), locals: locals, ctx: ctx}))
 		case bytecode.ECall:
@@ -1296,7 +1296,7 @@ func (vm *Program) eval(ctx *core.EvalCtx, ip int, locals []any) (v any, err err
 			top := len(stack) - int(in.A)
 			base := len(p.KidStack)
 			for _, v := range stack[top:] {
-				p.Work()
+				p.Spend()
 				n, err := ctx.Element("tuple", v)
 				if err != nil {
 					p.DropKids(base)
@@ -1362,7 +1362,7 @@ func (mc *Machine) newRunState() *core.RunState {
 // freeRunState makes the RunState of a finished repetition available to later ones.
 func (mc *Machine) freeRunState(r *core.RunState) {
 	r.Old = nil
-	core.ClearWork(mc.p, r.Mid)
-	core.ClearWork(mc.p, r.Post)
+	core.ClearSpend(mc.p, r.Mid)
+	core.ClearSpend(mc.p, r.Post)
 	mc.freeRuns = append(mc.freeRuns, r)
 }

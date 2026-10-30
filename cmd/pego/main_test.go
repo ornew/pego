@@ -414,25 +414,25 @@ func readTS(t *testing.T, dir string, names ...string) string {
 	return all.String()
 }
 
-func TestGenTypeScriptWorkControls(t *testing.T) {
+func TestGenTypeScriptBudgetControls(t *testing.T) {
 	g := writeFile(t, "kv.pego", kv)
 	plainDir, err := runGenTS(t, "-g", g)
 	if err != nil {
 		t.Fatal(err)
 	}
-	controlledDir, err := runGenTS(t, "-g", g, "-work-controls")
+	controlledDir, err := runGenTS(t, "-g", g, "-budget-controls")
 	if err != nil {
-		t.Fatalf("-lang ts -work-controls: %v", err)
+		t.Fatalf("-lang ts -budget-controls: %v", err)
 	}
 	plain, controlled := readTS(t, plainDir, "parser.ts"), readTS(t, controlledDir, "parser.ts")
-	if strings.Contains(plain, "work") || strings.Contains(plain, "CancellationSignal") || !strings.Contains(plain, "PlainParseOptions") {
-		t.Error("a parser generated without -work-controls has work controls")
+	if strings.Contains(plain, "budget") || strings.Contains(plain, "CancellationSignal") || !strings.Contains(plain, "PlainParseOptions") {
+		t.Error("a parser generated without -budget-controls has budget controls")
 	}
 	if !strings.Contains(controlled, "CancellationSignal") || strings.Contains(controlled, "PlainParseOptions") {
-		t.Error("a parser generated with -work-controls has no work controls")
+		t.Error("a parser generated with -budget-controls has no budget controls")
 	}
-	if _, err := runGenTS(t, "-runtime", "only", "-work-controls"); err == nil || !strings.Contains(err.Error(), "-work-controls cannot be combined with -runtime only") {
-		t.Errorf("-runtime only -work-controls: %v", err)
+	if _, err := runGenTS(t, "-runtime", "only", "-budget-controls"); err == nil || !strings.Contains(err.Error(), "-budget-controls cannot be combined with -runtime only") {
+		t.Errorf("-runtime only -budget-controls: %v", err)
 	}
 }
 

@@ -113,7 +113,7 @@ func (r *RunState) More() bool { return !r.done && (r.max < 0 || r.Count < r.max
 // NextPrefix reuses the next old element if it examined only input before the edit, and returns
 // it (its value is for the caller to push), or nil.
 func (p *Parser) NextPrefix(r *RunState) *RunElem {
-	p.Work()
+	p.Spend()
 	if r.moved || r.K >= len(r.Old) || r.Old[r.K].examined > r.edit.Start || r.done {
 		return nil
 	}
@@ -143,7 +143,7 @@ func (p *Parser) Resync(r *RunState) bool {
 // NextTail reuses the next old element after the edit (after resync), moved by the edit, and
 // returns it, or nil.
 func (p *Parser) NextTail(r *RunState) *RunElem {
-	p.Work()
+	p.Spend()
 	i := r.J + r.T
 	if r.J < 0 || i >= len(r.Old) || !r.More() {
 		return nil
@@ -202,13 +202,13 @@ func (p *Parser) EndElem(r *RunState, ok bool, v *value.Node) {
 	r.Count++
 	el := RunElem{Start: r.elemStart, end: p.Pos, From: from, examined: examined, far: far, exp: exp, V: v}
 	if r.J < 0 {
-		if WorkControlsEnabled && p.Control != nil {
-			r.Mid = GrowWork(p, r.Mid, 1)
+		if BudgetControlsEnabled && p.Control != nil {
+			r.Mid = GrowSpend(p, r.Mid, 1)
 		}
 		r.Mid = append(r.Mid, el)
 	} else {
-		if WorkControlsEnabled && p.Control != nil {
-			r.Post = GrowWork(p, r.Post, 1)
+		if BudgetControlsEnabled && p.Control != nil {
+			r.Post = GrowSpend(p, r.Post, 1)
 		}
 		r.Post = append(r.Post, el)
 	}
@@ -220,7 +220,7 @@ func (p *Parser) FinishRun(r *RunState) {
 		return
 	}
 	var elems []RunElem
-	if WorkControlsEnabled && p.Control != nil {
+	if BudgetControlsEnabled && p.Control != nil {
 		// Keep assembling storage private until every counted copy finishes.
 		// The ordinary path retains its in-place replacement and reuse.
 		total := r.K + len(r.Mid)
@@ -234,7 +234,7 @@ func (p *Parser) FinishRun(r *RunState) {
 			parts = append(parts, r.Old[r.J:r.J+r.T], r.Post)
 		}
 		for _, part := range parts {
-			CopyWork(p, elems[off:], part)
+			CopySpend(p, elems[off:], part)
 			off += len(part)
 		}
 	} else if r.J < 0 {
@@ -253,7 +253,7 @@ func (p *Parser) ResumeRepeat(rs *RunSite) (*value.Node, bool) {
 	p.StartRun(&r, rs.Id, rs.Min, rs.Max, rs.Shiftable)
 	base := len(p.KidStack)
 	if rs.Build {
-		p.KidStack = GrowWork(p, p.KidStack, len(r.Old))
+		p.KidStack = GrowSpend(p, p.KidStack, len(r.Old))
 	}
 	for el := p.NextPrefix(&r); el != nil; el = p.NextPrefix(&r) {
 		if rs.Build {
@@ -261,7 +261,7 @@ func (p *Parser) ResumeRepeat(rs *RunSite) (*value.Node, bool) {
 		}
 	}
 	for r.More() {
-		p.Work()
+		p.Spend()
 		if p.Resync(&r) {
 			for el := p.NextTail(&r); el != nil; el = p.NextTail(&r) {
 				if rs.Build {
@@ -340,6 +340,6 @@ func (p *Parser) moveValue(v *value.Node, shift int, base uint32) *value.Node {
 	} else if value.D(v).Gen < p.Gen {
 		p.MoveTree(v, p.ShiftOf(v))
 	}
-	p.ClearMovementWork()
+	p.ClearMovementSpend()
 	return v
 }

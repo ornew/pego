@@ -30,7 +30,7 @@ type DocumentChange = engine.DocumentChange
 // EnableChanges opts into bounded notifications and one retained comparison
 // snapshot. queueLimit bounds record count, not replacement or snapshot bytes.
 // It must be positive; enabling twice is rejected. Future Parse and Snapshot calls
-// capture and compare immutable outcomes inside their cumulative work budget.
+// capture and compare immutable outcomes inside their cumulative spend.
 // Comparison is conservative about aliases and nil-versus-empty collections;
 // this policy does not define language value equality. Interrupted invocations
 // return nil and notify unavailable, breaking the comparison chain.

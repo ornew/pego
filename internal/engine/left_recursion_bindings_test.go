@@ -22,8 +22,8 @@ func TestLeftRecursionGuardIgnoresVariables(t *testing.T) {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
-					// A work limit makes the parse take the controlled memo lookups.
-					for _, limits := range []limits.Limits{{}, {MaxWork: 1 << 40}} {
+					// A budget limit makes the parse take the controlled memo lookups.
+					for _, limits := range []limits.Limits{{}, {Budget: 1 << 40}} {
 						opts := ParseOptions{Backend: backend, Unit: unit, Recognize: recognize, MaxDepth: 400, Limits: limits}
 						for _, input := range inputs {
 							got := gentest.ResultJSON(prog.ParseWith("main", input, opts))

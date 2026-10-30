@@ -81,4 +81,3 @@ rule main (Alias) = {count := (1)} {(count == 1)} n:([0-9]+) => (Number{Text: (t
 		})
 	}
 }
-

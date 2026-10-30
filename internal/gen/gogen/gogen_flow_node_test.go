@@ -95,7 +95,7 @@ func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				o := gen.GenOptions{Package: "x", Module: "example.com/x", Runtime: gen.RuntimeImport, Recognize: true, WorkControls: form.controls, Observability: form.observe, Document: form.document}
+				o := gen.GenOptions{Package: "x", Module: "example.com/x", Runtime: gen.RuntimeImport, Recognize: true, BudgetControls: form.controls, Observability: form.observe, Document: form.document}
 				taken, framed, operators := 0, 0, 0
 				gh := &gogen.Hooks{}
 				gentest.SetGenHooks(t, gh)
@@ -131,7 +131,7 @@ func TestFlowNodeRulesPrintFromFlow(t *testing.T) {
 	}
 }
 
-// TestFlowNodeRulesAcceptStreamInWrappedSequence generates, without work controls, parsers whose start
+// TestFlowNodeRulesAcceptStreamInWrappedSequence generates, without budget controls, parsers whose start
 // rule has its #stream repetition in a sequence that an attribute or a group wraps. Core IR is built
 // for the whole Node program, so Verify must accept the stream there, as the grammar and the engine do.
 func TestFlowNodeRulesAcceptStreamInWrappedSequence(t *testing.T) {

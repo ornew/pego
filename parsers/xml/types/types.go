@@ -299,7 +299,7 @@ func (v *AttDef) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *AttDef) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *AttDef) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -338,7 +338,7 @@ func (v *AttlistDecl) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *AttlistDecl) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *AttlistDecl) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -349,7 +349,7 @@ func (v *AttlistDecl) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Defs))
 			for i, x := range v.Defs {
-				p.Work()
+				p.Spend()
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -374,7 +374,7 @@ func (v *Attribute) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Attribute) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Attribute) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -409,7 +409,7 @@ func (v *Choice) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Choice) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Choice) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Items":
 		return func() any {
@@ -418,7 +418,7 @@ func (v *Choice) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-				p.Work()
+				p.Spend()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -456,7 +456,7 @@ func (v *Doctype) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Doctype) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Doctype) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -469,7 +469,7 @@ func (v *Doctype) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Subset))
 			for i, x := range v.Subset {
-				p.Work()
+				p.Spend()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -518,7 +518,7 @@ func (v *Document) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Document) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Document) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Decl":
 		return rt.TPtr(v.Decl), true
@@ -529,7 +529,7 @@ func (v *Document) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Prolog))
 			for i, x := range v.Prolog {
-				p.Work()
+				p.Spend()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -545,7 +545,7 @@ func (v *Document) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Epilog))
 			for i, x := range v.Epilog {
-				p.Work()
+				p.Spend()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -590,7 +590,7 @@ func (v *Element) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Element) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Element) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -601,7 +601,7 @@ func (v *Element) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Attrs))
 			for i, x := range v.Attrs {
-				p.Work()
+				p.Spend()
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -613,7 +613,7 @@ func (v *Element) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Content))
 			for i, x := range v.Content {
-				p.Work()
+				p.Spend()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -638,7 +638,7 @@ func (v *ElementDecl) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *ElementDecl) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *ElementDecl) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -670,7 +670,7 @@ func (v *EntityDecl) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *EntityDecl) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *EntityDecl) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Parameter":
 		return any(v.Parameter), true
@@ -709,7 +709,7 @@ func (v *Enumeration) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Enumeration) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Enumeration) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Values":
 		return func() any {
@@ -718,7 +718,7 @@ func (v *Enumeration) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Values))
 			for i, x := range v.Values {
-				p.Work()
+				p.Spend()
 				kids[i] = tb5(x)
 			}
 			return p.ListField(kids)
@@ -743,7 +743,7 @@ func (v *ExternalID) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *ExternalID) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *ExternalID) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Public":
 		return tb6(v.Public), true
@@ -776,7 +776,7 @@ func (v *Mixed) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Mixed) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Mixed) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Names":
 		return func() any {
@@ -785,7 +785,7 @@ func (v *Mixed) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Names))
 			for i, x := range v.Names {
-				p.Work()
+				p.Spend()
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -810,7 +810,7 @@ func (v *NameParticle) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *NameParticle) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *NameParticle) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -836,7 +836,7 @@ func (v *NotationDecl) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *NotationDecl) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *NotationDecl) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -869,7 +869,7 @@ func (v *NotationType) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *NotationType) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *NotationType) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Names":
 		return func() any {
@@ -878,7 +878,7 @@ func (v *NotationType) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Names))
 			for i, x := range v.Names {
-				p.Work()
+				p.Spend()
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -903,7 +903,7 @@ func (v *PI) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *PI) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *PI) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Target":
 		return tb0(v.Target), true
@@ -938,7 +938,7 @@ func (v *Sequence) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Sequence) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Sequence) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Items":
 		return func() any {
@@ -947,7 +947,7 @@ func (v *Sequence) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-				p.Work()
+				p.Spend()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -976,7 +976,7 @@ func (v *XMLDecl) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *XMLDecl) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *XMLDecl) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Version":
 		return tb9(v.Version), true
@@ -1076,7 +1076,7 @@ func tb11(v *YesNo) any {
 // is no named node type. It is for generated parsers.
 var PegoNodeTypes [19]uint16
 
-// PegoSchema_1c0411e61fa78646 ties the parser package to this package: the parser refers to it once, so a
+// PegoSchema_20751942b402fb9b ties the parser package to this package: the parser refers to it once, so a
 // parser and a types package generated from different schemas do not compile together.
 // It is for generated parsers; not a stable API.
-const PegoSchema_1c0411e61fa78646 = 0
+const PegoSchema_20751942b402fb9b = 0

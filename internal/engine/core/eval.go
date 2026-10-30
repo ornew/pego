@@ -53,7 +53,7 @@ func (p *Parser) ActionResult(ctx *EvalCtx, act Evaluator, where string) *value.
 	n, ok := v.(*value.Node)
 	if err == nil && n != nil {
 		for _, c := range p.Created[ctx.Cbase:] {
-			p.Work()
+			p.Spend()
 			if c == n {
 				value.D(n).Start, value.D(n).End = int32(ctx.Start), int32(ctx.End)
 				break
@@ -84,7 +84,7 @@ func (p *Parser) ActionResult(ctx *EvalCtx, act Evaluator, where string) *value.
 
 // DropCreated releases tracking references without changing the created values.
 func (p *Parser) DropCreated(base int) {
-	ClearWork(p, p.Created[base:])
+	ClearSpend(p, p.Created[base:])
 	p.Created = p.Created[:base]
 }
 
@@ -153,7 +153,7 @@ func (c *EvalCtx) NewStruct(typ string, names []string, vals []any) (*value.Node
 	n := c.P.NewNode(value.Data{Kind: c.P.Prog.TypeKind(typ), Fields: c.P.fields(len(names))})
 	first := true
 	for i, name := range names {
-		c.P.Work()
+		c.P.Spend()
 		v := vals[i]
 		if _, isFn := v.(Function); isFn {
 			return nil, c.P.ActionError("field ", name, ": cannot store a function")
@@ -187,7 +187,7 @@ func (p *Parser) ValueUnary(op string, x any) (any, error) {
 			return !b, nil
 		}
 	}
-	if WorkControlsEnabled && p != nil && p.Control != nil {
+	if BudgetControlsEnabled && p != nil && p.Control != nil {
 		return nil, p.ActionError("invalid operand ", TypeName(x), " for unary ", op)
 	}
 	return nil, fmt.Errorf("invalid operand %s for unary %s", TypeName(x), op)
@@ -195,7 +195,7 @@ func (p *Parser) ValueUnary(op string, x any) (any, error) {
 
 func (c *EvalCtx) NewList(items []*value.Node) *value.Node {
 	kids := c.P.Nodes(len(items))
-	CopyWork(c.P, kids, items)
+	CopySpend(c.P, kids, items)
 	return c.ListNode(kids)
 }
 
@@ -214,7 +214,7 @@ func (c *EvalCtx) valueNode(kind *value.NodeKind, kids []*value.Node) *value.Nod
 	n := c.P.NewNode(value.Data{Kind: kind, Children: kids, Start: int32(c.Start), End: int32(c.Start)})
 	first := true
 	for _, it := range kids {
-		c.P.Work()
+		c.P.Spend()
 		if it == nil {
 			continue
 		}
@@ -287,7 +287,7 @@ func (p *Parser) binaryOperation(op string, l, r any) (any, error) {
 			}
 		}
 	}
-	if WorkControlsEnabled && p != nil && p.Control != nil {
+	if BudgetControlsEnabled && p != nil && p.Control != nil {
 		return nil, p.ActionError("invalid operands ", TypeName(l), " and ", TypeName(r), " for ", op)
 	}
 	return nil, fmt.Errorf("invalid operands %s and %s for %s", TypeName(l), TypeName(r), op)
@@ -347,7 +347,7 @@ func (c *EvalCtx) Builtin(fn string, args []any) (any, error) {
 		}
 		acc := args[0]
 		for i := range items {
-			c.P.Work()
+			c.P.Spend()
 			it := items[i]
 			if fn == "foldr" {
 				it = items[len(items)-1-i]
@@ -406,7 +406,7 @@ func (c *EvalCtx) PushElems(fn string, args []any) error {
 			return err
 		}
 		for _, it := range items {
-			c.P.Work()
+			c.P.Spend()
 			v, err := f.Apply(value.UnboxNode(it), nil)
 			if err != nil {
 				return err
@@ -419,7 +419,7 @@ func (c *EvalCtx) PushElems(fn string, args []any) error {
 		}
 	case "list":
 		for _, a := range args {
-			c.P.Work()
+			c.P.Spend()
 			n, err := c.Element("list", a)
 			if err != nil {
 				return err
@@ -428,12 +428,12 @@ func (c *EvalCtx) PushElems(fn string, args []any) error {
 		}
 	case "concat":
 		for _, a := range args {
-			c.P.Work()
+			c.P.Spend()
 			items, err := c.P.ValueListItems("concat", a)
 			if err != nil {
 				return err
 			}
-			c.P.KidStack = AppendWork(c.P, c.P.KidStack, items)
+			c.P.KidStack = AppendSpend(c.P, c.P.KidStack, items)
 		}
 	}
 	return nil
@@ -465,7 +465,7 @@ func (p *Parser) ValueListItems(fn string, v any) ([]*value.Node, error) {
 		}
 		return value.D(x).Children, nil
 	}
-	if WorkControlsEnabled && p != nil && p.Control != nil {
+	if BudgetControlsEnabled && p != nil && p.Control != nil {
 		return nil, p.ActionError(fn, ": expected a list, got ", TypeName(v))
 	}
 	return nil, fmt.Errorf("%s: expected a list, got %s", fn, TypeName(v))
@@ -495,7 +495,7 @@ func (c *EvalCtx) Keep() *EvalCtx {
 	k := *c
 	var head *Local
 	for l, link := c.Locals, &head; l != nil; l = l.Next {
-		c.P.Work()
+		c.P.Spend()
 		*link = &Local{Name: l.Name, Val: l.Val}
 		link = &(*link).Next
 	}

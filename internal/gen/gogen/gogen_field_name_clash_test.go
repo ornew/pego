@@ -23,8 +23,8 @@ func testGeneratedTypedFieldsNamedLikeRuntimeMethods(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}
-	const src = `type Pair = { TName string; TText string; TKids string; TStruct string; TFresh string; TSetFresh string; TField string; TFieldWork string; TSpan string; TSetSpan string; TStrField string }
-rule main Pair = a:"a" => Pair{TName: "n", TText: "t", TKids: "k", TStruct: "s", TFresh: "f", TSetFresh: "sf", TField: "fd", TFieldWork: "fw", TSpan: "sp", TSetSpan: "ss", TStrField: "sr"}`
+	const src = `type Pair = { TName string; TText string; TKids string; TStruct string; TFresh string; TSetFresh string; TField string; TFieldSpend string; TSpan string; TSetSpan string; TStrField string }
+rule main Pair = a:"a" => Pair{TName: "n", TText: "t", TKids: "k", TStruct: "s", TFresh: "f", TSetFresh: "sf", TField: "fd", TFieldSpend: "fw", TSpan: "sp", TSetSpan: "ss", TStrField: "sr"}`
 	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
@@ -72,8 +72,8 @@ func TestFieldNames(t *testing.T){
  v,err:=ParseAST("a")
  if err!=nil{t.Fatal(err)}
  p:=v
- if p.TName_!="n"||p.TText_!="t"||p.TKids_!="k"||p.TStruct_!="s"||p.TFresh_!="f"||p.TSetFresh_!="sf"||p.TField_!="fd"||p.TFieldWork_!="fw"||p.TSpan_!="sp"||p.TSetSpan_!="ss"||p.TStrField_!="sr"{t.Fatalf("fields %+v",p)}
- for name,w:=range map[string]string{"TName":"n","TText":"t","TKids":"k","TStruct":"s","TFresh":"f","TSetFresh":"sf","TField":"fd","TFieldWork":"fw","TSpan":"sp","TSetSpan":"ss","TStrField":"sr"}{
+ if p.TName_!="n"||p.TText_!="t"||p.TKids_!="k"||p.TStruct_!="s"||p.TFresh_!="f"||p.TSetFresh_!="sf"||p.TField_!="fd"||p.TFieldSpend_!="fw"||p.TSpan_!="sp"||p.TSetSpan_!="ss"||p.TStrField_!="sr"{t.Fatalf("fields %+v",p)}
+ for name,w:=range map[string]string{"TName":"n","TText":"t","TKids":"k","TStruct":"s","TFresh":"f","TSetFresh":"sf","TField":"fd","TFieldSpend":"fw","TSpan":"sp","TSetSpan":"ss","TStrField":"sr"}{
   got,ok:=p.TField(name)
   if !ok||got!=w{t.Fatalf("TField(%q) = %v, %v; want %q",name,got,ok,w)}
  }

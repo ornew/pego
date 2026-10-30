@@ -123,14 +123,14 @@ func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error { return 
 // A nil context is equivalent to context.Background.
 func WithContext(ctx context.Context) ParseOption { return rt.WithContext(ctx) }
 
-// WithLimits bounds cumulative examined input and execution work.
+// WithLimits bounds cumulative examined input and execution steps.
 // Zero leaves a counter unlimited; counters are never rolled back.
 func WithLimits(limits Limits) ParseOption { return rt.WithLimits(limits) }
 
 // Limits bounds one parse invocation. A zero limit leaves that limit
 // unlimited.
 //
-// MaxWork bounds the cumulative work of the parse: every input unit
+// Budget bounds the cumulative spend of the parse: every input unit
 // inspected, every rule call and loop iteration, and every unit of value
 // construction adds to one counter, so a bound on it bounds scanning,
 // recursion and value building alike.
@@ -147,7 +147,7 @@ type LimitError = rt.LimitError
 // ErrLimit is matched by errors.Is for any LimitError.
 var ErrLimit = rt.ErrLimit
 
-const LimitWork = rt.LimitWork
+const LimitBudget = rt.LimitBudget
 
 // Span is the range of input a typed value covers, in the parse's position unit (End is exclusive).
 //

@@ -38,11 +38,11 @@ func ClassAccept(e *grammar.CharClass) func(*core.Parser, rune) bool {
 		if uint32(r) < 128 {
 			return ascii[r>>6]&(1<<(r&63)) != 0
 		}
-		if !core.WorkControlsEnabled || p.Control == nil {
+		if !core.BudgetControlsEnabled || p.Control == nil {
 			return slow(r)
 		}
 		for _, rg := range ranges {
-			p.Work()
+			p.Spend()
 			if rg.Lo <= r && r <= rg.Hi {
 				return !neg
 			}
@@ -70,11 +70,11 @@ func ClassAcceptControlled(e *grammar.CharClass, control *compile.Control) func(
 		if uint32(r) < 128 {
 			return ascii[r>>6]&(1<<(r&63)) != 0
 		}
-		if !core.WorkControlsEnabled || p.Control == nil {
+		if !core.BudgetControlsEnabled || p.Control == nil {
 			return slow(r)
 		}
 		for _, rg := range ranges {
-			p.Work()
+			p.Spend()
 			if rg.Lo <= r && r <= rg.Hi {
 				return !neg
 			}

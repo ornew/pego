@@ -61,7 +61,7 @@ func testUnreachableCorpusGeneration(t *testing.T) {
 		{"plain", gen.GenOptions{}},
 		{"recognize", gen.GenOptions{Recognize: true}},
 		{"document", gen.GenOptions{Document: true}},
-		{"work controls", gen.GenOptions{WorkControls: true}},
+		{"budget controls", gen.GenOptions{BudgetControls: true}},
 		{"observability", gen.GenOptions{Observability: true}},
 		{"observability document", gen.GenOptions{Observability: true, Document: true}},
 		{"types", gen.GenOptions{Types: true}},

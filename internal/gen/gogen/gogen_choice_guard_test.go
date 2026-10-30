@@ -82,7 +82,7 @@ func TestGuardedClassDisabledParity(t *testing.T) {
 	gentest.GeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), guardedClassCases(), gen.GenOptions{DisableGuardedClasses: true}, 0)
 }
 
-// TestGuardedClassEligibility checks that parsers that charge work for reading (work controls or
+// TestGuardedClassEligibility checks that parsers that spend budget for reading (budget controls or
 // Documents) keep the class reading and testing the character again.
 func TestGuardedClassEligibility(t *testing.T) {
 	t.Parallel()
@@ -91,15 +91,15 @@ func TestGuardedClassEligibility(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, opts := range []gen.GenOptions{{TypedOnly: true}, {TypedOnly: true, WorkControls: true}, {Types: true, WorkControls: true}, {Types: true, Document: true}} {
-			want := !opts.WorkControls && !opts.Document
+		for _, opts := range []gen.GenOptions{{TypedOnly: true}, {TypedOnly: true, BudgetControls: true}, {Types: true, BudgetControls: true}, {Types: true, Document: true}} {
+			want := !opts.BudgetControls && !opts.Document
 			opts.Package, opts.Module, opts.Start, opts.Types, opts.Runtime = "guarded", "example.com/generated", "main", true, gen.RuntimeImport
 			files, err := gentest.Generate(t, g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if got := strings.Contains(string(gentest.MergeGenerated(files)), "p.Pos += x"); got != want {
-				t.Errorf("%s (work controls %v, document %v): a class consumes the guard's character: %v, want %v", c.Name, opts.WorkControls, opts.Document, got, want)
+				t.Errorf("%s (budget controls %v, document %v): a class consumes the guard's character: %v, want %v", c.Name, opts.BudgetControls, opts.Document, got, want)
 			}
 		}
 	}

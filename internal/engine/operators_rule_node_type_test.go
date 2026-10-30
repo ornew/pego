@@ -126,4 +126,3 @@ func TestOperatorsRuleWithoutNamedNodeTypeKeepsTuples(t *testing.T) {
 		t.Errorf("got %s, want %s", got, want)
 	}
 }
-

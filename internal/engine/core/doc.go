@@ -1,6 +1,6 @@
 // Package core is the part of the parse runtime that every backend of the engine shares: the
 // parser state (Parser), its input, memo table, expectation record, capture frames, values,
-// work limits, tracing and stream state, and the protocol by which rules are called and grown.
+// budget limits, tracing and stream state, and the protocol by which rules are called and grown.
 // It also declares the parse options, results, errors and trace events that the engine re-exports.
 //
 // # Backends
@@ -21,8 +21,8 @@
 // (or the steps CallBegin, GrowBegin, GrowStep, GrowEnd, InvokeBegin, InvokeEnd and CallEnd when
 // it keeps its own call stack, as the iterative VM does), records expectations (Parser.Expect,
 // Parser.Isolate, Parser.Unisolate), saves and restores the backtracking state (Parser.Mark,
-// Parser.Reset), allocates values and frames from the parser's chunks, and charges its work to
-// the parser's WorkControl. A backend does not change the memo table, the input or the
+// Parser.Reset), allocates values and frames from the parser's chunks, and spends its budget on
+// the parser's BudgetControl. A backend does not change the memo table, the input or the
 // expectation record by other means, so that every backend produces the same results, errors and
 // trace events for the same grammar and input.
 package core

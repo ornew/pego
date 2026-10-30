@@ -77,7 +77,7 @@ func r
   }
   v = nil
 `},
-		{"repetition with work and recovery", &core.Repeat{Min: 1, Max: -1, Body: &core.Lit{Text: "a"}}, Options{Work: true, Recovers: true}, `
+		{"repetition with work and recovery", &core.Repeat{Min: 1, Max: -1, Body: &core.Lit{Text: "a"}}, Options{Budget: true, Recovers: true}, `
 func r
   var x1 int
   var x2 int

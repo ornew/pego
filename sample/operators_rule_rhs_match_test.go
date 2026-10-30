@@ -152,7 +152,7 @@ rule atom = atom "a" / "a"`, "!a", true, unknown, 0},
 	}
 }
 
-func TestOperatorsRuleRHSRecursiveWorkBudget(t *testing.T) {
+func TestOperatorsRuleRHSRecursiveBudgetBudget(t *testing.T) {
 	for _, c := range []struct{ name, rules, text string }{
 		{"prefix", `rule e = #operators {
     operand "a"

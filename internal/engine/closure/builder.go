@@ -13,9 +13,9 @@ import (
 // bodies, values and actions of the rules.
 type Builder struct {
 	prog *compile.Program
-	// control is the work control of the compilation, or nil.
+	// control is the budget control of the compilation, or nil.
 	control *compile.Control
-	// plainDispatch leaves out the per-expression work charge (Options.ControlledDispatch builds
+	// plainDispatch leaves out the per-expression budget charge (Options.ControlledDispatch builds
 	// the metered closure graph).
 	plainDispatch bool
 	// rules holds the rules the parser runs, by ID (staticRule.ID). They are made when a body or a
@@ -61,10 +61,10 @@ func (b *Builder) Finish() []*core.Rule {
 }
 
 func (b *Builder) Step(m core.Matcher) core.Matcher {
-	if !core.WorkControlsEnabled || b.plainDispatch {
+	if !core.BudgetControlsEnabled || b.plainDispatch {
 		return m
 	}
-	return func(p *core.Parser) (*value.Node, bool) { p.Work(); return m(p) }
+	return func(p *core.Parser) (*value.Node, bool) { p.Spend(); return m(p) }
 }
 
 func (b *Builder) RuleBody(sr *compile.Rule, m core.Matcher) {
@@ -215,7 +215,7 @@ func (b *Builder) Choice(e *grammar.Choice, ms []core.Matcher, firsts []compile.
 						peeked = true
 					}
 					if !(more && g.accept(p, ch)) && p.Depth+g.depth <= p.MaxDepth {
-						p.Work()                // a skipped matcher still consumes dispatch work
+						p.Spend()               // a skipped matcher still spends budget on dispatch
 						p.Expect(p.Pos, g.desc) // what the alternative would record
 						continue
 					}
@@ -561,7 +561,7 @@ func (b *Builder) ProjectRepeat(e *grammar.Repeat, m core.Matcher, slot, n int) 
 		f := p.NewFrame(n)
 		count := 0
 		for i := 0; max < 0 || i < max; i++ {
-			core.ClearWork(p, f.Vals)
+			core.ClearSpend(p, f.Vals)
 			m0 := p.Mark()
 			prevCut, prevFrame := p.Cut, p.Frame
 			p.Cut, p.Frame = false, f

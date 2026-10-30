@@ -67,8 +67,8 @@ func generationsIn(t *testing.T, dir string) []generation {
 				g.config.Types = true
 			case "-recognize":
 				g.config.Recognize = true
-			case "-work-controls":
-				g.config.WorkControls = true
+			case "-budget-controls":
+				g.config.BudgetControls = true
 			case "-typed-only":
 				g.config.TypedOnly = true
 			case "-nodoc":

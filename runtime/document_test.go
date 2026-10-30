@@ -184,7 +184,7 @@ func TestDocumentDiagnosticPublicationBudget(t *testing.T) {
 		t.Fatalf("initial evaluations: %d", calls)
 	}
 	limited := normal
-	limited.limits = Limits{MaxWork: 64}
+	limited.limits = Limits{Budget: 64}
 	if out, err := d.parse(limited); out != nil || !errors.Is(err, ErrLimit) {
 		t.Fatalf("diagnostic budget: %v %v", out, err)
 	}
@@ -236,7 +236,7 @@ func TestDocumentDiagnosticPublicationCancellation(t *testing.T) {
 	o := normal
 	o.context = ctx
 	converted := false
-	out, err := DocumentParseConverted(d, o, func(n *Node, _ *WorkControl, _ error) *Node {
+	out, err := DocumentParseConverted(d, o, func(n *Node, _ *BudgetControl, _ error) *Node {
 		converted = true
 		return n
 	})

@@ -61,4 +61,3 @@ rule main (Alias) = n:([0-9]+) => (T{Text: (text($n))})`,
 		})
 	}
 }
-

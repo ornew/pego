@@ -146,7 +146,7 @@ func (t *Tracer) emit(ev TraceEvent) {
 	defer func() {
 		if x := recover(); x != nil {
 			if _, ok := x.(Fatal); ok {
-				panic(x) // a charged TraceEvent accessor interrupted engine work
+				panic(x) // a charged TraceEvent accessor interrupted engine execution
 			}
 			panic(TracePanic{x})
 		}
@@ -238,7 +238,7 @@ func (p *Parser) TraceExit(ok bool) {
 func ComposeTrace(prev, next func(TraceEvent)) func(TraceEvent) {
 	return func(ev TraceEvent) {
 		prev(ev)
-		if WorkControlsEnabled {
+		if BudgetControlsEnabled {
 			ev.p.Control.Check()
 		}
 		next(ev)

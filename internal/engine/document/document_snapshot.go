@@ -299,7 +299,7 @@ func (c *snapshotContext) Err() error {
 }
 
 // SnapshotWith parses and freezes the current text with fully resolved options.
-// Cancellation and work limits cover both phases; interruption returns nil.
+// Cancellation and budget limits cover both phases; interruption returns nil.
 func (d *Document) SnapshotWith(o core.ParseOptions) (*Snapshot, error) {
 	return d.snapshotWith(o, nil)
 }
@@ -382,7 +382,7 @@ func snapshotStrings(p *core.Parser, in []string) []string {
 	if p == nil {
 		copy(out, in)
 	} else {
-		core.CopyWork(p, out, in)
+		core.CopySpend(p, out, in)
 	}
 	return out
 }
@@ -392,7 +392,7 @@ func copySnapshotError(p *core.Parser, err error) error {
 			return nil
 		}
 		if p != nil {
-			p.Work()
+			p.Spend()
 		}
 		out := *e
 		out.Expected, out.Messages = snapshotStrings(p, e.Expected), snapshotStrings(p, e.Messages)
@@ -452,7 +452,7 @@ func freezeSnapshotGraph(p *core.Parser, root *value.Node) (snapshotGraph, *Snap
 		if id, ok := seen[n]; ok {
 			return id, false
 		}
-		p.Work()
+		p.Spend()
 		r := snapshotRecord{kind: value.D(n).Kind, start: value.D(n).Start, end: value.D(n).End, text: value.D(n).Text, fresh: value.D(n).Fresh, terminal: value.D(n).Terminal, gen: value.D(n).Gen}
 		if value.D(n).Children != nil {
 			r.children = make([]int, len(value.D(n).Children))
@@ -460,7 +460,7 @@ func freezeSnapshotGraph(p *core.Parser, root *value.Node) (snapshotGraph, *Snap
 		if value.D(n).Fields != nil {
 			r.fields = make(value.Fields, len(value.D(n).Fields))
 		}
-		g.nodes = core.GrowWork(p, g.nodes, 1)
+		g.nodes = core.GrowSpend(p, g.nodes, 1)
 		g.nodes = append(g.nodes, r)
 		id := len(g.nodes)
 		seen[n] = id
@@ -469,7 +469,7 @@ func freezeSnapshotGraph(p *core.Parser, root *value.Node) (snapshotGraph, *Snap
 	g.root, _ = register(root)
 	stack := []snapshotFrame{{node: root, id: g.root}}
 	for len(stack) > 0 {
-		p.Work()
+		p.Spend()
 		f := &stack[len(stack)-1]
 		var child *value.Node
 		var edge snapshotEdge
@@ -503,7 +503,7 @@ func freezeSnapshotGraph(p *core.Parser, root *value.Node) (snapshotGraph, *Snap
 		}
 		f.next++
 		if fresh {
-			stack = core.GrowWork(p, stack, 1)
+			stack = core.GrowSpend(p, stack, 1)
 			stack = append(stack, snapshotFrame{node: child, id: id, edge: edge})
 		}
 	}
@@ -513,7 +513,7 @@ func snapshotFieldPath(p *core.Parser, stack []snapshotFrame, edge snapshotEdge)
 	var out strings.Builder
 	out.WriteString("root")
 	write := func(e snapshotEdge) {
-		p.Work()
+		p.Spend()
 		if e.child {
 			out.WriteString(".Children[")
 			out.WriteString(strconv.Itoa(e.index))
@@ -527,7 +527,7 @@ func snapshotFieldPath(p *core.Parser, stack []snapshotFrame, edge snapshotEdge)
 		// remain interruptible while building the rejection path.
 		out.WriteByte('"')
 		for _, r := range e.name {
-			p.Work()
+			p.Spend()
 			q := strconv.QuoteRune(r)
 			if r == '\'' {
 				q = "'"
@@ -561,7 +561,7 @@ func shareSnapshotGraph(p *core.Parser, previous *snapshotGraph, next snapshotGr
 		relative := make([]uint64, len(matches))
 		relativeCount := 0
 		for i := range next.nodes {
-			p.Work()
+			p.Spend()
 			if i < previous.count() && sameSnapshotPayload(p, previous, previous.at(i), &next, &next.nodes[i]) {
 				old := previous.position(i, previous.at(i))
 				current := next.position(i, &next.nodes[i])
@@ -580,14 +580,14 @@ func shareSnapshotGraph(p *core.Parser, previous *snapshotGraph, next snapshotGr
 		// pointer to one record can keep its entire old backing array alive.
 		if uint64(relativeCount)*uint64(unsafe.Sizeof(snapshotRecord{})) > uint64(len(next.nodes))*uint64(unsafe.Sizeof(snapshotPositionDelta{}))*4/3 {
 			for i := range matches {
-				p.Work()
+				p.Spend()
 				matches[i] |= relative[i]
 			}
 			ownedCount -= relativeCount
 		}
 	} else if previous.childChunks == nil {
 		for i := range next.nodes {
-			p.Work()
+			p.Spend()
 			if i < previous.count() && sameFlatSnapshotRecord(p, previous.at(i), &next.nodes[i]) {
 				matches[i/64] |= 1 << uint(i%64)
 			} else {
@@ -596,7 +596,7 @@ func shareSnapshotGraph(p *core.Parser, previous *snapshotGraph, next snapshotGr
 		}
 	} else {
 		for i := range next.nodes {
-			p.Work()
+			p.Spend()
 			if i < previous.count() && sameSnapshotRecord(p, previous, previous.at(i), &next, &next.nodes[i]) {
 				matches[i/64] |= 1 << uint(i%64)
 			} else {
@@ -614,7 +614,7 @@ func shareSnapshotGraph(p *core.Parser, previous *snapshotGraph, next snapshotGr
 	ownedAt := 0
 	needsPositions := false
 	for i := range next.nodes {
-		p.Work()
+		p.Spend()
 		if matches[i/64]&(1<<uint(i%64)) != 0 {
 			ref := previous.at(i)
 			shared.refs[i] = ref
@@ -659,7 +659,7 @@ func sameSnapshotPayload(p *core.Parser, ag *snapshotGraph, a *snapshotRecord, b
 		return false
 	}
 	for i, f := range a.fields {
-		p.Work()
+		p.Spend()
 		other := b.fields[i]
 		if p.CompareText(f.Name, other.Name) != 0 || !sameSnapshotFieldValue(p, f.Value, other.Value) {
 			return false
@@ -694,14 +694,14 @@ func shareSnapshotChildren(p *core.Parser, previousGraph *snapshotGraph, previou
 	}
 	chunks := make([][]int, count)
 	for i := range chunks {
-		p.Work()
+		p.Spend()
 		start := i * snapshotChildChunkSize
 		end := min(start+snapshotChildChunkSize, len(next.children))
 		if equal[i] {
 			chunks[i] = previousGraph.childChunk(previous, i, end-start)
 		} else {
 			chunks[i] = make([]int, end-start)
-			core.CopyWork(p, chunks[i], next.children[start:end])
+			core.CopySpend(p, chunks[i], next.children[start:end])
 		}
 	}
 	length := len(next.children)
@@ -730,7 +730,7 @@ func sameSnapshotRecord(p *core.Parser, ag *snapshotGraph, a *snapshotRecord, bg
 		return false
 	}
 	for i, f := range a.fields {
-		p.Work()
+		p.Spend()
 		other := b.fields[i]
 		if p.CompareText(f.Name, other.Name) != 0 || !sameSnapshotFieldValue(p, f.Value, other.Value) {
 			return false
@@ -758,7 +758,7 @@ func sameFlatSnapshotRecord(p *core.Parser, a, b *snapshotRecord) bool {
 		}
 	}
 	for i, f := range a.fields {
-		p.Work()
+		p.Spend()
 		other := b.fields[i]
 		if p.CompareText(f.Name, other.Name) != 0 || !sameSnapshotFieldValue(p, f.Value, other.Value) {
 			return false

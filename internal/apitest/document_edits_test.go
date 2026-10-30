@@ -26,8 +26,8 @@ func TestDocumentVersionAndBatchAfterInterruption(t *testing.T) {
 		if d.Version() != base {
 			t.Fatal("cancellation advanced text version")
 		}
-		if n, err := d.Parse(pego.WithLimits(pego.Limits{MaxWork: 1})); n != nil || !errors.Is(err, pego.ErrLimit) {
-			t.Fatal("work limit", n, err)
+		if n, err := d.Parse(pego.WithLimits(pego.Limits{Budget: 1})); n != nil || !errors.Is(err, pego.ErrLimit) {
+			t.Fatal("budget limit", n, err)
 		}
 		if d.Version() != base {
 			t.Fatal("execution interruption advanced text version")

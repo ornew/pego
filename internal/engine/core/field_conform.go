@@ -105,7 +105,7 @@ func (p *Parser) elemsConform(t *compile.FieldType, elems []*value.Node) bool {
 		return true
 	}
 	for _, c := range elems {
-		p.Work()
+		p.Spend()
 		if !p.FieldConforms(t, c) {
 			return false
 		}
@@ -120,7 +120,7 @@ func (p *Parser) tupleConforms(ts []*compile.FieldType, elems []*value.Node) boo
 		return false
 	}
 	for i, c := range elems {
-		p.Work()
+		p.Spend()
 		if !p.FieldConforms(ts[i], c) {
 			return false
 		}

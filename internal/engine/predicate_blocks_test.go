@@ -93,4 +93,3 @@ func TestPredicateBlocksSourceAndSavedGrammar(t *testing.T) {
 		t.Fatalf("compilation mutated source: %v", err)
 	}
 }
-

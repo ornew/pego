@@ -8,7 +8,7 @@ import (
 	"github.com/ornew/pego/internal/gentest"
 )
 
-// Without work controls no function of the parser package or the types package charges steps, including the
+// Without budget controls no function of the parser package or the types package charges steps, including the
 // typed constructors, the conversions of typed values and the closures of actions, which the specialization of
 // the rule functions does not reach.
 func TestGeneratedNoStepChargesInTypedCode(t *testing.T) {
@@ -38,11 +38,11 @@ func TestGeneratedNoStepChargesInTypedCode(t *testing.T) {
 			return all
 		}
 		for _, opts := range []gen.GenOptions{{Types: true}, {Types: true, TypedOnly: true}, {Types: true, Document: true}, {Types: true, Recognize: true, Document: true}} {
-			if out := generated(opts); strings.Contains(out, ".Work()") {
-				t.Errorf("%+v: a parser without work controls charges steps", opts)
+			if out := generated(opts); strings.Contains(out, ".Spend()") {
+				t.Errorf("%+v: a parser without budget controls charges steps", opts)
 			}
 		}
-		if out := generated(gen.GenOptions{Types: true, Document: true, WorkControls: true}); !strings.Contains(out, ".Work()") {
+		if out := generated(gen.GenOptions{Types: true, Document: true, BudgetControls: true}); !strings.Contains(out, ".Spend()") {
 			t.Error("a controlled parser does not charge steps: the check is void")
 		}
 	}
@@ -51,13 +51,13 @@ func TestGeneratedNoStepChargesInTypedCode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := gentest.Generate(t, g, gen.GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: gen.RuntimeImport, Types: true, WorkControls: true})
+	files, err := gentest.Generate(t, g, gen.GenOptions{Package: "p", Module: "example.com/p", Start: "main", Runtime: gen.RuntimeImport, Types: true, BudgetControls: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	found := false
 	for _, f := range files {
-		if strings.HasSuffix(f.Path, "types.go") && strings.Contains(string(f.Content), ".Work()") {
+		if strings.HasSuffix(f.Path, "types.go") && strings.Contains(string(f.Content), ".Spend()") {
 			found = true
 		}
 	}

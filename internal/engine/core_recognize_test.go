@@ -68,7 +68,7 @@ func guardedClassCount(m *core.Module) int {
 // recognizerGenModes are the modes in which the Core IR of the recognizers is frozen.
 var recognizerGenModes = []coreGenMode{
 	{"lean", gen.GenOptions{Recognize: true}},
-	{"controlled", gen.GenOptions{Recognize: true, WorkControls: true}},
+	{"controlled", gen.GenOptions{Recognize: true, BudgetControls: true}},
 }
 
 // recognizerCorpus is the corpus grammars of the recognizer freeze.
@@ -112,7 +112,7 @@ func TestCoreRecognizerDecisionsFrozen(t *testing.T) {
 					continue
 				}
 				want := 0
-				if !mode.opts.WorkControls {
+				if !mode.opts.BudgetControls {
 					want = 1
 				}
 				if got := guardedClassCount(c.m); got != want {
@@ -123,7 +123,7 @@ func TestCoreRecognizerDecisionsFrozen(t *testing.T) {
 		}
 		return cases
 	}, func(t *testing.T, mode coreGenMode, n *coreDecisionCounts) {
-		lean := !mode.opts.WorkControls
+		lean := !mode.opts.BudgetControls
 		if n.guards == 0 || n.scans == 0 || n.scopes == 0 || (n.guardedClasses > 0) != lean {
 			t.Errorf("counts %+v", n)
 		}

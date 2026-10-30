@@ -928,11 +928,11 @@ func testGenerateStreamKeepsBatchBodies(t *testing.T) {
 }
 
 // TestGeneratedStreamAPI checks generated ParseStream behavior that the
-// differential test does not cover: observation, work controls, callback
+// differential test does not cover: observation, budget controls, callback
 // panics and bounded memory.
 func TestGeneratedStreamAPI(t *testing.T) {
 	t.Parallel()
-	gentest.NeedsWorkControls(t)
+	gentest.NeedsBudgetControls(t)
 	if testing.Short() {
 		t.Skip("builds a generated standalone stream consumer")
 	}
@@ -1208,15 +1208,15 @@ func TestParseStreamAST(t *testing.T) {
 	}
 }
 
-// Converting elements is charged to the work limits like parsing them.
-func TestParseStreamASTWorkControls(t *testing.T) {
+// Converting elements is charged to the budget limits like parsing them.
+func TestParseStreamASTBudgetControls(t *testing.T) {
 	input := strings.Repeat("a"+strings.Repeat("1", 50)+";", 200)
 	steps := func(f func(limits Limits) error) int {
 		lo, hi := 1, 1<<20
 		for lo < hi {
 			mid := (lo + hi) / 2
 			var limit *LimitError
-			if err := f(Limits{MaxWork: uint64(mid)}); errors.As(err, &limit) {
+			if err := f(Limits{Budget: uint64(mid)}); errors.As(err, &limit) {
 				lo = mid + 1
 			} else if err != nil {
 				t.Fatal(err)
@@ -1297,10 +1297,10 @@ func TestTraceAndProfile(t *testing.T) {
 	}
 }
 
-func TestWorkControls(t *testing.T) {
+func TestBudgetControls(t *testing.T) {
 	var limit *LimitError
 	n := 0
-	err := ParseStream(strings.NewReader(strings.Repeat(input, 1000)), func(*Node) error { n++; return nil }, WithLimits(Limits{MaxWork: 20000}))
+	err := ParseStream(strings.NewReader(strings.Repeat(input, 1000)), func(*Node) error { n++; return nil }, WithLimits(Limits{Budget: 20000}))
 	if !errors.As(err, &limit) || n == 0 || n >= 3000 {
 		t.Fatal(err, n)
 	}

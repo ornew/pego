@@ -182,7 +182,7 @@ func (e *ErrorLocation) UnmarshalJSON(data []byte) error {
 }
 
 // RunOptions overrides a suite's selected backends and equivalence setting,
-// and supplies invocation-local cancellation and work limits.
+// and supplies invocation-local cancellation and budget limits.
 type RunOptions struct {
 	Backends    []string
 	Equivalence *bool

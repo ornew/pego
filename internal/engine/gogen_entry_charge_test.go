@@ -11,9 +11,9 @@ import (
 	"testing"
 )
 
-// TestGeneratedRuleEntryCharge checks, on the checked-in parsers generated with work controls, that every
+// TestGeneratedRuleEntryCharge checks, on the checked-in parsers generated with budget controls, that every
 // matcher function of the Node and typed tables (rule bodies, framed bodies, flat-rule methods and the
-// lines and skips of Operators Rules) begins with one Work and has no other Work before its first
+// lines and skips of Operators Rules) begins with one Spend and has no other Spend before its first
 // loop; a typed wrapper u<N> or i<N> that only saves and restores state around a call of another matcher
 // function charges nothing itself. The lowered function of Flow IR charges no entry of its own (flow.Func.Entered); the method that holds it does, so a rule
 // whose method lost the charge would consume input uncharged without Verify noticing.
@@ -32,13 +32,13 @@ func TestGeneratedRuleEntryCharge(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if bytes.Contains(src, []byte(".Work()")) {
+			if bytes.Contains(src, []byte(".Spend()")) {
 				paths = append(paths, path)
 			}
 		}
 	}
 	if len(paths) == 0 {
-		t.Fatal("no checked-in parser with work controls found")
+		t.Fatal("no checked-in parser with budget controls found")
 	}
 	for _, path := range paths {
 		f, err := goparser.ParseFile(token.NewFileSet(), path, nil, 0)
@@ -53,7 +53,7 @@ func TestGeneratedRuleEntryCharge(t *testing.T) {
 			}
 			n++
 			if !startsWithStep(fn.Body) && !(wrapper.MatchString(fn.Name.Name) && delegates(fn.Body, name) && !hasStep(fn.Body)) {
-				t.Errorf("%s: %s does not begin with p.Work() or delegate to a matcher function that does", path, fn.Name.Name)
+				t.Errorf("%s: %s does not begin with p.Spend() or delegate to a matcher function that does", path, fn.Name.Name)
 			}
 			steps := 0
 			goast.Inspect(fn.Body, func(x goast.Node) bool {
@@ -81,7 +81,7 @@ func isStepCall(x goast.Node) bool {
 		return false
 	}
 	s, ok := c.Fun.(*goast.SelectorExpr)
-	return ok && s.Sel.Name == "Work"
+	return ok && s.Sel.Name == "Spend"
 }
 
 func startsWithStep(b *goast.BlockStmt) bool {
@@ -97,7 +97,7 @@ func startsWithStep(b *goast.BlockStmt) bool {
 	return false
 }
 
-// hasStep reports whether b contains a Work call.
+// hasStep reports whether b contains a Spend call.
 func hasStep(b *goast.BlockStmt) bool {
 	found := false
 	goast.Inspect(b, func(x goast.Node) bool {

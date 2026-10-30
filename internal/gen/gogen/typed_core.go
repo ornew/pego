@@ -24,7 +24,7 @@ func (g *Generator) TypedCore(origin map[core.Node]grammar.Expr) (*core.Module, 
 		hook = g.CoreHook
 	}
 	hook("build", m)
-	leanTyped := g.Ordinary && g.GoWorkControls
+	leanTyped := g.Ordinary && g.GoBudgetControls
 	if leanTyped && !g.Observability && !g.disableTerminalPrograms {
 		core.Terminals(m, CoreLocalRule)
 		hook("terminals", m)

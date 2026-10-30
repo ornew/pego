@@ -21,7 +21,7 @@ import (
 // for Node and typed Documents.
 func TestGeneratedDocumentLeftRecursionAbortedGrowth(t *testing.T) {
 	t.Parallel()
-	gentest.NeedsWorkControls(t)
+	gentest.NeedsBudgetControls(t)
 	if testing.Short() {
 		t.Skip("builds generated Documents")
 	}
@@ -206,7 +206,7 @@ func TestInterruptedGrowth(t *testing.T) {
 		limited := 0
 		for steps := uint64(1); ; steps++ {
 			completed, err := interrupt(t, unit, func(context.CancelFunc) []ParseOption {
-				return []ParseOption{WithLimits(Limits{MaxWork: steps})}
+				return []ParseOption{WithLimits(Limits{Budget: steps})}
 			})
 			if completed {
 				break

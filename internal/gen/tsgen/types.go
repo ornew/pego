@@ -97,7 +97,7 @@ func (g *Generator) typedTS(start *compile.Rule) (types, parser string, err erro
 	b.WriteString("\n// --- Typed values (pego gen -types) ---\n\n")
 	fmt.Fprintf(&b, tsTypedAPI, stType, start.ID, repr, g.optionsType)
 	runtime := tsTypedRuntime
-	if g.NoWork {
+	if g.NoBudget {
 		runtime = tsTypedCharge.ReplaceAllString(runtime, "")
 	}
 	b.WriteString(runtime)
@@ -458,7 +458,7 @@ const tsTypedValueDeclaration = "export type TypedValue = "
 const tsTypedRecipeTable = "\nconst astRecipes: readonly ASTRecipe[] = [\n"
 const tsTypedNodeRecipeTable = "];\nconst astNodeRecipes: ReadonlyMap<string, number> = new Map([\n"
 
-// tsTypedCharge matches the statements of tsTypedRuntime that charge the work control.
+// tsTypedCharge matches the statements of tsTypedRuntime that charge the budget control.
 var tsTypedCharge = regexp.MustCompile(`(?m)^[ \t]*control\?\.charge\([^\n]*\);\n`)
 
 const tsTypedRuntime = `interface ASTRecipe {
@@ -480,14 +480,14 @@ function astKid(n: Node, i: number): Value {
   return kid === undefined ? null : unboxNode(kid);
 }
 
-function astResult<T>(r: ParseResult, repr: number, control: WorkControl | null = null): Types.TypedParseResult<T> {
+function astResult<T>(r: ParseResult, repr: number, control: BudgetControl | null = null): Types.TypedParseResult<T> {
   return { value: astConvert(unboxNode(r.node), repr, control) as T | null, error: r.error };
 }
 
 // Cache canonical Node/representation pairs, including null, in this call only.
 // Register shells before filling edges: shared fold/LR DAGs stay shared and deep
 // output graphs do not consume the JavaScript call stack. Source Nodes stay intact.
-function astConvert(value: Value, repr: number, control: WorkControl | null = null): unknown {
+function astConvert(value: Value, repr: number, control: BudgetControl | null = null): unknown {
   const cache = new Map<Node, Map<number, unknown>>();
   const pending: ASTPending[] = [];
   const get = (v: Value, id: number): unknown => {
@@ -555,7 +555,7 @@ function astConvert(value: Value, repr: number, control: WorkControl | null = nu
         if (recipe.name === "string") obj["value"] = v.text;
         else if (recipe.kind !== "struct") obj["text"] = v.text;
         if (recipe.kind === "error") {
-          const msg = getFieldWork(v, "message", control);
+          const msg = getFieldSpend(v, "message", control);
           obj["message"] = typeof msg === "string" ? msg : "";
         }
         out = obj;
@@ -599,7 +599,7 @@ function astConvert(value: Value, repr: number, control: WorkControl | null = nu
       const obj = work.out as ASTObject;
       for (const f of recipe.fields!) {
         control?.charge(1);
-        obj[f.name] = get(getFieldWork(work.node, f.name, control), f.repr);
+        obj[f.name] = get(getFieldSpend(work.node, f.name, control), f.repr);
       }
     }
   }

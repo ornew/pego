@@ -20,19 +20,19 @@ rule expr = expr "+" "a" / "a"`
 		t.Fatal(err)
 	}
 	out := gentest.RunTSGrammarScriptWith(t, g, `import * as p from "./parser.ts";
-const proto = (p as unknown as { Parser: { prototype: { work(n?: number): void } } }).Parser.prototype;
-const original = proto.work;
+const proto = (p as unknown as { Parser: { prototype: { spend(n?: number): void } } }).Parser.prototype;
+const original = proto.spend;
 const by = new Map<string, number>();
-proto.work = function (this: unknown, n?: number): void {
+proto.spend = function (this: unknown, n?: number): void {
   const frame = (new Error().stack ?? "").split("\n")[2] ?? "";
   const name = /Parser\.(\w+)/.exec(frame)?.[1] ?? frame.trim();
   by.set(name, (by.get(name) ?? 0) + 1);
   original.call(this, n);
 };
-const r = p.parseWithOptions("a+a+a", { unit: p.CodePoints, maxWork: 100000 });
+const r = p.parseWithOptions("a+a+a", { unit: p.CodePoints, budget: 100000 });
 if (r.error !== null) throw new Error("parse failed");
 console.log((by.get("callBody") ?? 0) > 0 ? by.get("invokePlainBody") ?? 0 : "no call charged");
-`, gen.GenOptions{Start: "main", WorkControls: true})
+`, gen.GenOptions{Start: "main", BudgetControls: true})
 	if out != "0\n" {
 		t.Fatalf("the plain evaluation of a rule body charged %q steps under a call that charged its entry", out)
 	}

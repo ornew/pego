@@ -55,7 +55,7 @@ func (g *Generator) FlowOptions(m *core.Module) flow.Options {
 	// Node is false: the options of the Node and recognizer tables (gen.Generator.StartRecFlow) are
 	// built apart, and a function lowered with one set of options is never printed for the other
 	// runtime.
-	return flow.Options{Work: !g.NoWork, Recovers: flow.Recovers(m), ClassTables: g.leanTyped(),
+	return flow.Options{Budget: !g.NoBudget, Recovers: flow.Recovers(m), ClassTables: g.leanTyped(),
 		GuardedClasses: g.Ordinary && !g.DisableGuardedClasses, InlineLiterals: gen.MaxInlineLiteral, Observe: g.Observability, Document: g.Document}
 }
 
@@ -128,9 +128,9 @@ func (g *Generator) flowFrameBody(r *compile.Rule, scope *compile.Scope) string 
 // flowNodeFrameBody prints the body of the rule r of the Node table from Flow IR as the matcher of
 // its frame body, or returns "" if r takes another route. The rule is eligible
 // (gen.Generator.FlowNodeFrameOK) when its Core body is a framed body and its action reads only
-// captures of the frame; the runtime owns depth, memo, frame, action and finish. With work controls
-// (Options.Work) the method that holds the body charges one step on entry (Func.Entered) and the
-// body charges one on each iteration of a repetition, plus the input work of each Peek; the limits
+// captures of the frame; the runtime owns depth, memo, frame, action and finish. With budget controls
+// (Options.Budget) the method that holds the body charges one step on entry (Func.Entered) and the
+// body charges one on each iteration of a repetition, plus the input spend of each Peek; the limits
 // of a parse hold at these charges.
 func (g *Generator) flowNodeFrameBody(r *compile.Rule, scope *compile.Scope) string {
 	cr, ok := g.FlowNodeFrameOK(r)
@@ -175,8 +175,8 @@ func (g *Generator) flowStreamBody(r *compile.Rule, scope *compile.Scope) string
 // In the typed table every line is printed from Flow IR, as in the Node and recognizer tables (a line with
 // recovery builds its error node with NewErrorNode there). Nothing needs a check. The lines of an Operators
 // Rule have no projected repetitions (ruleProjections gives none for one), so Core IR and the tables agree
-// on the shape of every capture, and the checker lets an action name only captures of its line. With work
-// controls (Options.Work) the method that holds the function charges its entry and the function charges
+// on the shape of every capture, and the checker lets an action name only captures of its line. With budget
+// controls (Options.Budget) the method that holds the function charges its entry and the function charges
 // each iteration of a repetition, as Flow IR makes them explicit.
 func (g *Generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope *compile.Scope, build bool) string {
 	if g.Flow == nil || l == nil || !gen.FlowLineOK(e) || !flow.FramedBody(l.Body) {
@@ -439,7 +439,7 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 	case *flow.Inc:
 		p.incStmt(s.V)
 	case *flow.Step:
-		p.write("p.Work()\n")
+		p.write("p.Spend()\n")
 	case *flow.Silent:
 		if s.Delta > 0 {
 			p.write("p.Silent++\n")
@@ -667,10 +667,10 @@ func (p *flowPrinter) peekStmt(s *flow.Peek) {
 	if p.document {
 		guard = "p.Document == nil && " + guard
 	}
-	// The inlined read charges its input work and leaves a Document's examined range to Peek.
-	work := "p.ReadWork(1)\n"
-	if !p.g.Flow.Opts.Work {
-		work = ""
+	// The inlined read charges its input spend and leaves a Document's examined range to Peek.
+	spend := "p.SpendRead(1)\n"
+	if !p.g.Flow.Opts.Budget {
+		spend = ""
 	}
 	if p.dead {
 		return
@@ -684,7 +684,7 @@ func (p *flowPrinter) peekStmt(s *flow.Peek) {
 			return v.Name
 		}
 		ch, size, ok := name(s.Ch), name(s.Size), name(s.OK)
-		controlled := fmt.Sprintf("if %s {\n%s%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[3]s, %[4]s, %[5]s = p.Peek()\n}\n", guard, work, ch, size, ok)
+		controlled := fmt.Sprintf("if %s {\n%s%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[3]s, %[4]s, %[5]s = p.Peek()\n}\n", guard, spend, ch, size, ok)
 		// The inlined read and its fallback are one call of the runtime, which the compiler inlines.
 		if p.g.Ordinary {
 			return fmt.Sprintf("%s, %s, %s = p.NextOrdinary()\n", ch, size, ok)
@@ -793,13 +793,13 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 			}
 		}
 		if p.document {
-			if g.NoWork {
+			if g.NoBudget {
 				return "p.Document == nil && (" + cond + ")"
 			}
 			return "p.Document == nil && p.Control == nil && (" + cond + ")"
 		}
-		if p.untyped() && !g.Flow.Opts.Work {
-			// The Node runtime's generated code of a parser without work controls has no such check.
+		if p.untyped() && !g.Flow.Opts.Budget {
+			// The Node runtime's generated code of a parser without budget controls has no such check.
 			return cond
 		}
 		if g.Ordinary {

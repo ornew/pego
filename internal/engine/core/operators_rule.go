@@ -84,7 +84,7 @@ func (p *Parser) Longest(ops []*OperatorsRuleOp) (best OperatorsRuleAttempt, cut
 		}
 		if ok && (best.Op == nil || p.Pos > best.End) {
 			best = OperatorsRuleAttempt{Op: op, Frame: f, V: v, Start: m0.Pos, End: p.Pos, Env: p.Env, Cut: cut,
-				Errs: AppendWork(p, []*SyntaxError(nil), p.Recovered[m0.Recovered:]), missing: p.MissingEvents(m0.missing)}
+				Errs: AppendSpend(p, []*SyntaxError(nil), p.Recovered[m0.Recovered:]), missing: p.MissingEvents(m0.missing)}
 		}
 		if !ok && cut {
 			cutFailed = true
@@ -95,9 +95,9 @@ func (p *Parser) Longest(ops []*OperatorsRuleOp) (best OperatorsRuleAttempt, cut
 		}
 		// reset undoes this candidate's captures; restore them. Nothing is parsed between saving
 		// and restoring, so one buffer per parser suffices.
-		p.Saved = AppendWork(p, p.Saved[:0], f.Vals)
+		p.Saved = AppendSpend(p, p.Saved[:0], f.Vals)
 		p.Reset(m0)
-		CopyWork(p, f.Vals, p.Saved)
+		CopySpend(p, f.Vals, p.Saved)
 	}
 	return best, cutFailed
 }
@@ -114,7 +114,7 @@ func (p *Parser) Apply(a *OperatorsRuleAttempt) {
 // parse has neither.
 func (p *Parser) applyRecovered(a *OperatorsRuleAttempt) {
 	if p.Missing == nil {
-		p.Recovered = AppendWork(p, p.Recovered, a.Errs)
+		p.Recovered = AppendSpend(p, p.Recovered, a.Errs)
 	} else {
 		p.restoreMissing(a.missing, a.Errs, false)
 	}

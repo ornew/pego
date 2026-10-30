@@ -334,7 +334,7 @@ func (v *Alias) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Alias) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Alias) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Ident":
 		return tb0(v.Ident), true
@@ -362,7 +362,7 @@ func (v *BinaryExpr) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *BinaryExpr) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *BinaryExpr) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "X":
 		return rt.TBack(PegoHooks, v.X), true
@@ -399,7 +399,7 @@ func (v *CallExpr) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *CallExpr) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *CallExpr) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Fun":
 		return rt.TBack(PegoHooks, v.Fun), true
@@ -445,7 +445,7 @@ func (v *Comprehension) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Comprehension) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Comprehension) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Clauses":
 		return func() any {
@@ -480,7 +480,7 @@ func (v *Ellipsis) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Ellipsis) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Ellipsis) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Type":
 		return rt.TBack(PegoHooks, v.Type), true
@@ -504,7 +504,7 @@ func (v *EmbedDecl) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *EmbedDecl) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *EmbedDecl) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Expr":
 		return rt.TBack(PegoHooks, v.Expr), true
@@ -528,7 +528,7 @@ func (v *FallbackClause) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *FallbackClause) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *FallbackClause) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Body":
 		return rt.TPtr(v.Body), true
@@ -567,7 +567,7 @@ func (v *Field) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Field) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Field) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Label":
 		return rt.TBack(PegoHooks, v.Label), true
@@ -615,7 +615,7 @@ func (v *File) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *File) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *File) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Decls":
 		return func() any {
@@ -650,7 +650,7 @@ func (v *ForClause) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *ForClause) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *ForClause) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Key":
 		return tb0(v.Key), true
@@ -676,7 +676,7 @@ func (v *IfClause) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *IfClause) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *IfClause) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Condition":
 		return rt.TBack(PegoHooks, v.Condition), true
@@ -709,7 +709,7 @@ func (v *ImportDecl) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *ImportDecl) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *ImportDecl) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Lparen":
 		return rt.TBack(PegoHooks, v.Lparen), true
@@ -744,7 +744,7 @@ func (v *ImportSpec) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *ImportSpec) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *ImportSpec) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -772,7 +772,7 @@ func (v *IndexExpr) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *IndexExpr) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *IndexExpr) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "X":
 		return rt.TBack(PegoHooks, v.X), true
@@ -807,7 +807,7 @@ func (v *Interpolation) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Interpolation) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Interpolation) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Elts":
 		return func() any {
@@ -840,7 +840,7 @@ func (v *LetClause) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *LetClause) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *LetClause) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Ident":
 		return tb0(v.Ident), true
@@ -873,7 +873,7 @@ func (v *ListLit) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *ListLit) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *ListLit) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Elts":
 		return func() any {
@@ -904,7 +904,7 @@ func (v *Package) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Package) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Package) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -926,7 +926,7 @@ func (v *ParenExpr) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *ParenExpr) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *ParenExpr) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "X":
 		return rt.TBack(PegoHooks, v.X), true
@@ -950,7 +950,7 @@ func (v *PostfixAlias) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *PostfixAlias) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *PostfixAlias) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Label":
 		return tb0(v.Label), true
@@ -976,7 +976,7 @@ func (v *PostfixExpr) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *PostfixExpr) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *PostfixExpr) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "X":
 		return rt.TBack(PegoHooks, v.X), true
@@ -1002,7 +1002,7 @@ func (v *SelectorExpr) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *SelectorExpr) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *SelectorExpr) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "X":
 		return rt.TBack(PegoHooks, v.X), true
@@ -1030,7 +1030,7 @@ func (v *SliceExpr) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *SliceExpr) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *SliceExpr) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "X":
 		return rt.TBack(PegoHooks, v.X), true
@@ -1064,7 +1064,7 @@ func (v *String) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *String) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *String) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Text":
 		return any(v.Text), true
@@ -1095,7 +1095,7 @@ func (v *StructLit) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *StructLit) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *StructLit) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Elts":
 		return func() any {
@@ -1128,7 +1128,7 @@ func (v *TryClause) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *TryClause) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *TryClause) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Ident":
 		return tb0(v.Ident), true
@@ -1154,7 +1154,7 @@ func (v *UnaryExpr) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *UnaryExpr) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *UnaryExpr) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Op":
 		return rt.TBack(PegoHooks, v.Op), true
@@ -1182,7 +1182,7 @@ func tb1(v *Attribute) any {
 // is no named node type. It is for generated parsers.
 var PegoNodeTypes [8]uint16
 
-// PegoSchema_76a244927122db37 ties the parser package to this package: the parser refers to it once, so a
+// PegoSchema_4fc5c192d40e5b4d ties the parser package to this package: the parser refers to it once, so a
 // parser and a types package generated from different schemas do not compile together.
 // It is for generated parsers; not a stable API.
-const PegoSchema_76a244927122db37 = 0
+const PegoSchema_4fc5c192d40e5b4d = 0

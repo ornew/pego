@@ -1,6 +1,6 @@
 // Package limits defines the limits of one parse invocation, the error
 // that reports an exhausted limit, and the overflow-safe arithmetic used to
-// account work against them. The parser, the document and the structural
+// spend budget against them. The parser, the document and the structural
 // query share these definitions; the public API exposes them as aliases.
 package limits
 
@@ -20,12 +20,12 @@ const (
 // Limits bounds one parse invocation. A zero limit leaves that limit
 // unlimited.
 //
-// MaxWork bounds the cumulative work of the parse: every input unit
+// Budget bounds the cumulative spend of the parse: every input unit
 // inspected, every rule call and loop iteration, and every unit of value
 // construction adds to one counter, so a bound on it bounds scanning,
 // recursion and value building alike.
 type Limits struct {
-	MaxWork uint64
+	Budget uint64
 }
 
 // ErrLimit is matched by errors.Is for any LimitError.
@@ -35,7 +35,7 @@ var ErrLimit = errors.New("parse limit exceeded")
 type LimitKind uint8
 
 const (
-	LimitWork LimitKind = iota
+	LimitBudget LimitKind = iota
 )
 
 // LimitError reports a reservation that would exceed a limit. Used is the
@@ -52,7 +52,7 @@ func (e *LimitError) Error() string {
 	if e == nil {
 		return ErrLimit.Error()
 	}
-	return fmt.Sprintf("parse work limit exceeded: limit %d, used %d, requested %d", e.Limit, e.Used, e.Requested)
+	return fmt.Sprintf("parse budget limit exceeded: limit %d, used %d, requested %d", e.Limit, e.Used, e.Requested)
 }
 
 // Is reports whether target is the limit sentinel.

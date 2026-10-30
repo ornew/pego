@@ -99,13 +99,13 @@ type Go struct {
 	// Observability emits rule tracing and profiling for batch parsers and Documents, including
 	// their typed entry points. Collection is selected per invocation.
 	Observability bool
-	// WorkControls generates the work-controlled form of the parser, which supports cancellation
-	// and the work limit and re-exports the options WithContext and WithLimits.
+	// BudgetControls generates the budget-controlled form of the parser, which supports cancellation
+	// and the budget limit and re-exports the options WithContext and WithLimits.
 	// Without it the generated parser is smaller and faster to build, and a parse that passes a
 	// control option returns an error. The controlled form is the only form of the parser: a
 	// parse that sets no limit runs it too, and is slower than with a parser generated without
-	// work controls.
-	WorkControls bool
+	// budget controls.
+	BudgetControls bool
 	// Recognize also generates a function Recognize, which checks the input against the start
 	// rule without building a tree, like a parse with pego.RecognizeOnly.
 	Recognize bool
@@ -149,7 +149,7 @@ func (c Go) Generate(g *grammar.Grammar, start string) ([]File, error) {
 		DefaultValue:   c.DefaultValue,
 		SourceInfo:     c.SourceInfo,
 		Observability:  c.Observability,
-		WorkControls:   c.WorkControls,
+		BudgetControls: c.BudgetControls,
 		Recognize:      c.Recognize,
 		MaxDepth:       c.MaxDepth,
 		Document:       c.Document,
@@ -190,12 +190,12 @@ type TypeScript struct {
 	// Observability emits rule tracing and profiling for batch parsing, including the typed entry
 	// points. Collection is selected per invocation.
 	Observability bool
-	// WorkControls generates the work-controlled form of the parser, which supports the signal
-	// and maxWork options. Without it the generated parser is smaller, and a parse
+	// BudgetControls generates the budget-controlled form of the parser, which supports the signal
+	// and budget options. Without it the generated parser is smaller, and a parse
 	// that passes a control option returns an error. The controlled form is the only form of the
 	// parser: a parse that sets no limit runs it too, and is slower than with a parser generated
-	// without work controls.
-	WorkControls bool
+	// without budget controls.
+	BudgetControls bool
 	// Recognize also generates recognize, which checks the input against the start rule without
 	// building a tree, like a parse with pego.RecognizeOnly.
 	Recognize bool
@@ -221,16 +221,16 @@ func (c TypeScript) Generate(g *grammar.Grammar, start string) ([]File, error) {
 		return nil, err
 	}
 	return tsgen.Generate(g, compileForGenerator, gen.GenOptions{
-		Start:         start,
-		Runtime:       runtime,
-		RuntimeModule: c.RuntimeModule,
-		Types:         c.Types,
-		DefaultValue:  c.DefaultValue,
-		SourceInfo:    c.SourceInfo,
-		Observability: c.Observability,
-		WorkControls:  c.WorkControls,
-		Recognize:     c.Recognize,
-		MaxDepth:      c.MaxDepth,
+		Start:          start,
+		Runtime:        runtime,
+		RuntimeModule:  c.RuntimeModule,
+		Types:          c.Types,
+		DefaultValue:   c.DefaultValue,
+		SourceInfo:     c.SourceInfo,
+		Observability:  c.Observability,
+		BudgetControls: c.BudgetControls,
+		Recognize:      c.Recognize,
+		MaxDepth:       c.MaxDepth,
 	})
 }
 

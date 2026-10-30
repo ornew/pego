@@ -194,7 +194,7 @@ func ignoreCaseDocBody() string {
 // of folded literals, agrees with the closure backend after every edit.
 func TestIgnoreCaseGeneratedDocument(t *testing.T) {
 	t.Parallel()
-	gentest.NeedsWorkControls(t)
+	gentest.NeedsBudgetControls(t)
 	want := ignoreCaseDocWant(t)
 	runGeneratedProgramWith(t, gentest.IgnoreCaseGenGrammar, gen.GenOptions{Package: "p", Start: "main", Document: true}, ignoreCaseDocBody(), want)
 }
@@ -213,7 +213,7 @@ rule ws = " "*
 // with case-insensitive literals does not fail and agrees with the closure backend.
 func TestIgnoreCaseGeneratedTypedTerminal(t *testing.T) {
 	t.Parallel()
-	// Terminal programs are for parsers without work controls.
+	// Terminal programs are for parsers without budget controls.
 	gentest.PinOrdinary(t)
 	inputs := []string{"", "alpha", "ALPHA", "Beta", "BETA", "beta", "upsilon", "UPSILON", "xi", "Xi", "XI", "alpha BETA", "alphax", "ALPHAX", "tau Tau sigma", "SIGMA"}
 	prog := mustCompile(t, ignoreCaseTerminalGrammar)

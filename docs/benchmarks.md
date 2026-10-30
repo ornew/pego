@@ -409,51 +409,51 @@ Every benchmark of the run, by its name under `bench/` (median of the runs; the 
 | `ControlledParse/XML/generated_ast/codepoints` | 8.30 ms | 31.6 | 3.21 MB | 266 | – |
 | `ControlledParse/XML/generated/bytes` | 9.56 ms | 27.4 | 11.6 MB | 555 | – |
 | `ControlledParse/XML/generated_ast/bytes` | 7.72 ms | 34.0 | 3.19 MB | 265 | – |
-| `WorkControlModes/JSON/closure/codepoints/inactive` | 12.6 ms | 20.9 | 11.3 MB | 766 | – |
-| `WorkControlModes/JSON/closure/codepoints/context` | 21.0 ms | 12.5 | 11.3 MB | 767 | – |
-| `WorkControlModes/JSON/closure/codepoints/budget` | 22.5 ms | 11.7 | 11.3 MB | 767 | – |
-| `WorkControlModes/JSON/closure/codepoints/combined` | 22.4 ms | 11.7 | 11.3 MB | 767 | – |
-| `WorkControlModes/JSON/closure/bytes/inactive` | 12.5 ms | 21.1 | 11.3 MB | 766 | – |
-| `WorkControlModes/JSON/closure/bytes/context` | 19.5 ms | 13.4 | 11.3 MB | 767 | – |
-| `WorkControlModes/JSON/closure/bytes/budget` | 20.7 ms | 12.7 | 11.3 MB | 767 | – |
-| `WorkControlModes/JSON/closure/bytes/combined` | 20.7 ms | 12.7 | 11.3 MB | 767 | – |
-| `WorkControlModes/JSON/bytecode/codepoints/inactive` | 15.8 ms | 16.6 | 12.6 MB | 981 | – |
-| `WorkControlModes/JSON/bytecode/codepoints/context` | 24.2 ms | 10.8 | 12.6 MB | 982 | – |
-| `WorkControlModes/JSON/bytecode/codepoints/budget` | 26.6 ms | 9.87 | 12.6 MB | 982 | – |
-| `WorkControlModes/JSON/bytecode/codepoints/combined` | 26.8 ms | 9.80 | 12.6 MB | 982 | – |
-| `WorkControlModes/JSON/bytecode/bytes/inactive` | 15.7 ms | 16.7 | 12.6 MB | 981 | – |
-| `WorkControlModes/JSON/bytecode/bytes/context` | 23.0 ms | 11.4 | 12.6 MB | 982 | – |
-| `WorkControlModes/JSON/bytecode/bytes/budget` | 25.0 ms | 10.5 | 12.6 MB | 982 | – |
-| `WorkControlModes/JSON/bytecode/bytes/combined` | 24.9 ms | 10.5 | 12.6 MB | 982 | – |
-| `WorkControlModes/JSON/iterative/codepoints/inactive` | 17.6 ms | 14.9 | 12.6 MB | 1.0 k | – |
-| `WorkControlModes/JSON/iterative/codepoints/context` | 27.9 ms | 9.39 | 12.6 MB | 1.0 k | – |
-| `WorkControlModes/JSON/iterative/codepoints/budget` | 29.6 ms | 8.86 | 12.6 MB | 1.0 k | – |
-| `WorkControlModes/JSON/iterative/codepoints/combined` | 29.7 ms | 8.84 | 12.6 MB | 1.0 k | – |
-| `WorkControlModes/JSON/iterative/bytes/inactive` | 17.7 ms | 14.8 | 12.6 MB | 1.0 k | – |
-| `WorkControlModes/JSON/iterative/bytes/context` | 26.8 ms | 9.80 | 12.6 MB | 1.0 k | – |
-| `WorkControlModes/JSON/iterative/bytes/budget` | 27.9 ms | 9.39 | 12.6 MB | 1.0 k | – |
-| `WorkControlModes/JSON/iterative/bytes/combined` | 28.0 ms | 9.38 | 12.6 MB | 1.0 k | – |
-| `WorkControlModes/XML/closure/codepoints/inactive` | 13.0 ms | 20.2 | 13.5 MB | 834 | – |
-| `WorkControlModes/XML/closure/codepoints/context` | 21.8 ms | 12.0 | 13.5 MB | 835 | – |
-| `WorkControlModes/XML/closure/codepoints/budget` | 23.1 ms | 11.3 | 13.5 MB | 835 | – |
-| `WorkControlModes/XML/closure/codepoints/combined` | 23.1 ms | 11.3 | 13.5 MB | 835 | – |
-| `WorkControlModes/XML/closure/bytes/inactive` | 13.0 ms | 20.2 | 13.5 MB | 834 | – |
-| `WorkControlModes/XML/closure/bytes/context` | 20.4 ms | 12.8 | 13.5 MB | 835 | – |
-| `WorkControlModes/XML/closure/bytes/budget` | 21.3 ms | 12.3 | 13.5 MB | 835 | – |
-| `WorkControlModes/XML/closure/bytes/combined` | 21.4 ms | 12.3 | 13.5 MB | 835 | – |
-| `WorkControlModes/XML/bytecode/codepoints/inactive` | 15.7 ms | 16.6 | 15.0 MB | 1.1 k | – |
-| `WorkControlModes/XML/bytecode/codepoints/context` | 23.9 ms | 11.0 | 15.0 MB | 1.1 k | – |
-| `WorkControlModes/XML/bytecode/codepoints/budget` | 25.8 ms | 10.2 | 15.0 MB | 1.1 k | – |
-| `WorkControlModes/XML/bytecode/codepoints/combined` | 25.9 ms | 10.1 | 15.0 MB | 1.1 k | – |
-| `WorkControlModes/XML/bytecode/bytes/inactive` | 15.7 ms | 16.7 | 15.0 MB | 1.1 k | – |
-| `WorkControlModes/XML/bytecode/bytes/context` | 22.7 ms | 11.5 | 15.0 MB | 1.1 k | – |
-| `WorkControlModes/XML/bytecode/bytes/budget` | 24.3 ms | 10.8 | 15.0 MB | 1.1 k | – |
-| `WorkControlModes/XML/bytecode/bytes/combined` | 24.3 ms | 10.8 | 15.0 MB | 1.1 k | – |
-| `WorkControlModes/XML/iterative/codepoints/inactive` | 17.3 ms | 15.1 | 15.0 MB | 1.1 k | – |
-| `WorkControlModes/XML/iterative/codepoints/context` | 26.7 ms | 9.81 | 15.0 MB | 1.1 k | – |
-| `WorkControlModes/XML/iterative/codepoints/budget` | 28.2 ms | 9.28 | 15.0 MB | 1.1 k | – |
-| `WorkControlModes/XML/iterative/codepoints/combined` | 28.2 ms | 9.29 | 15.0 MB | 1.1 k | – |
-| `WorkControlModes/XML/iterative/bytes/inactive` | 17.3 ms | 15.2 | 15.0 MB | 1.1 k | – |
-| `WorkControlModes/XML/iterative/bytes/context` | 25.7 ms | 10.2 | 15.0 MB | 1.1 k | – |
-| `WorkControlModes/XML/iterative/bytes/budget` | 26.7 ms | 9.82 | 15.0 MB | 1.1 k | – |
-| `WorkControlModes/XML/iterative/bytes/combined` | 26.7 ms | 9.82 | 15.0 MB | 1.1 k | – |
+| `BudgetControlModes/JSON/closure/codepoints/inactive` | 12.6 ms | 20.9 | 11.3 MB | 766 | – |
+| `BudgetControlModes/JSON/closure/codepoints/context` | 21.0 ms | 12.5 | 11.3 MB | 767 | – |
+| `BudgetControlModes/JSON/closure/codepoints/budget` | 22.5 ms | 11.7 | 11.3 MB | 767 | – |
+| `BudgetControlModes/JSON/closure/codepoints/combined` | 22.4 ms | 11.7 | 11.3 MB | 767 | – |
+| `BudgetControlModes/JSON/closure/bytes/inactive` | 12.5 ms | 21.1 | 11.3 MB | 766 | – |
+| `BudgetControlModes/JSON/closure/bytes/context` | 19.5 ms | 13.4 | 11.3 MB | 767 | – |
+| `BudgetControlModes/JSON/closure/bytes/budget` | 20.7 ms | 12.7 | 11.3 MB | 767 | – |
+| `BudgetControlModes/JSON/closure/bytes/combined` | 20.7 ms | 12.7 | 11.3 MB | 767 | – |
+| `BudgetControlModes/JSON/bytecode/codepoints/inactive` | 15.8 ms | 16.6 | 12.6 MB | 981 | – |
+| `BudgetControlModes/JSON/bytecode/codepoints/context` | 24.2 ms | 10.8 | 12.6 MB | 982 | – |
+| `BudgetControlModes/JSON/bytecode/codepoints/budget` | 26.6 ms | 9.87 | 12.6 MB | 982 | – |
+| `BudgetControlModes/JSON/bytecode/codepoints/combined` | 26.8 ms | 9.80 | 12.6 MB | 982 | – |
+| `BudgetControlModes/JSON/bytecode/bytes/inactive` | 15.7 ms | 16.7 | 12.6 MB | 981 | – |
+| `BudgetControlModes/JSON/bytecode/bytes/context` | 23.0 ms | 11.4 | 12.6 MB | 982 | – |
+| `BudgetControlModes/JSON/bytecode/bytes/budget` | 25.0 ms | 10.5 | 12.6 MB | 982 | – |
+| `BudgetControlModes/JSON/bytecode/bytes/combined` | 24.9 ms | 10.5 | 12.6 MB | 982 | – |
+| `BudgetControlModes/JSON/iterative/codepoints/inactive` | 17.6 ms | 14.9 | 12.6 MB | 1.0 k | – |
+| `BudgetControlModes/JSON/iterative/codepoints/context` | 27.9 ms | 9.39 | 12.6 MB | 1.0 k | – |
+| `BudgetControlModes/JSON/iterative/codepoints/budget` | 29.6 ms | 8.86 | 12.6 MB | 1.0 k | – |
+| `BudgetControlModes/JSON/iterative/codepoints/combined` | 29.7 ms | 8.84 | 12.6 MB | 1.0 k | – |
+| `BudgetControlModes/JSON/iterative/bytes/inactive` | 17.7 ms | 14.8 | 12.6 MB | 1.0 k | – |
+| `BudgetControlModes/JSON/iterative/bytes/context` | 26.8 ms | 9.80 | 12.6 MB | 1.0 k | – |
+| `BudgetControlModes/JSON/iterative/bytes/budget` | 27.9 ms | 9.39 | 12.6 MB | 1.0 k | – |
+| `BudgetControlModes/JSON/iterative/bytes/combined` | 28.0 ms | 9.38 | 12.6 MB | 1.0 k | – |
+| `BudgetControlModes/XML/closure/codepoints/inactive` | 13.0 ms | 20.2 | 13.5 MB | 834 | – |
+| `BudgetControlModes/XML/closure/codepoints/context` | 21.8 ms | 12.0 | 13.5 MB | 835 | – |
+| `BudgetControlModes/XML/closure/codepoints/budget` | 23.1 ms | 11.3 | 13.5 MB | 835 | – |
+| `BudgetControlModes/XML/closure/codepoints/combined` | 23.1 ms | 11.3 | 13.5 MB | 835 | – |
+| `BudgetControlModes/XML/closure/bytes/inactive` | 13.0 ms | 20.2 | 13.5 MB | 834 | – |
+| `BudgetControlModes/XML/closure/bytes/context` | 20.4 ms | 12.8 | 13.5 MB | 835 | – |
+| `BudgetControlModes/XML/closure/bytes/budget` | 21.3 ms | 12.3 | 13.5 MB | 835 | – |
+| `BudgetControlModes/XML/closure/bytes/combined` | 21.4 ms | 12.3 | 13.5 MB | 835 | – |
+| `BudgetControlModes/XML/bytecode/codepoints/inactive` | 15.7 ms | 16.6 | 15.0 MB | 1.1 k | – |
+| `BudgetControlModes/XML/bytecode/codepoints/context` | 23.9 ms | 11.0 | 15.0 MB | 1.1 k | – |
+| `BudgetControlModes/XML/bytecode/codepoints/budget` | 25.8 ms | 10.2 | 15.0 MB | 1.1 k | – |
+| `BudgetControlModes/XML/bytecode/codepoints/combined` | 25.9 ms | 10.1 | 15.0 MB | 1.1 k | – |
+| `BudgetControlModes/XML/bytecode/bytes/inactive` | 15.7 ms | 16.7 | 15.0 MB | 1.1 k | – |
+| `BudgetControlModes/XML/bytecode/bytes/context` | 22.7 ms | 11.5 | 15.0 MB | 1.1 k | – |
+| `BudgetControlModes/XML/bytecode/bytes/budget` | 24.3 ms | 10.8 | 15.0 MB | 1.1 k | – |
+| `BudgetControlModes/XML/bytecode/bytes/combined` | 24.3 ms | 10.8 | 15.0 MB | 1.1 k | – |
+| `BudgetControlModes/XML/iterative/codepoints/inactive` | 17.3 ms | 15.1 | 15.0 MB | 1.1 k | – |
+| `BudgetControlModes/XML/iterative/codepoints/context` | 26.7 ms | 9.81 | 15.0 MB | 1.1 k | – |
+| `BudgetControlModes/XML/iterative/codepoints/budget` | 28.2 ms | 9.28 | 15.0 MB | 1.1 k | – |
+| `BudgetControlModes/XML/iterative/codepoints/combined` | 28.2 ms | 9.29 | 15.0 MB | 1.1 k | – |
+| `BudgetControlModes/XML/iterative/bytes/inactive` | 17.3 ms | 15.2 | 15.0 MB | 1.1 k | – |
+| `BudgetControlModes/XML/iterative/bytes/context` | 25.7 ms | 10.2 | 15.0 MB | 1.1 k | – |
+| `BudgetControlModes/XML/iterative/bytes/budget` | 26.7 ms | 9.82 | 15.0 MB | 1.1 k | – |
+| `BudgetControlModes/XML/iterative/bytes/combined` | 26.7 ms | 9.82 | 15.0 MB | 1.1 k | – |

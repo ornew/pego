@@ -34,11 +34,11 @@ var tsPublicRuntime = strings.Fields(`
 	ParseOptions
 	TraceKind TraceEvent Profile ProfileLocation SkipReasonCount RuleProfile ProfileSnapshot`)
 
-// tsPublicControls lists the runtime declarations of the work controls that parser.ts re-exports
-// only with -work-controls.
+// tsPublicControls lists the runtime declarations of the budget controls that parser.ts re-exports
+// only with -budget-controls.
 var tsPublicControls = strings.Fields(`CancellationSignal ParseInterruptionKind ParseInterruptionError`)
 
-// TsRuntimeText returns the source of runtime.ts: the runtime, the invocation work controls and the
+// TsRuntimeText returns the source of runtime.ts: the runtime, the invocation budget controls and the
 // observation code, as one module that exports every declaration the generated code uses.
 var TsRuntimeText = sync.OnceValue(func() string {
 	i := strings.Index(tsRuntimeSource, tsRuntimeMarker)
@@ -48,8 +48,8 @@ var TsRuntimeText = sync.OnceValue(func() string {
 	b.WriteString("// the controls of an invocation. It does not depend on a grammar; every parser imports it.\n\n")
 	b.WriteString("/* eslint-disable */\n\n")
 	b.WriteString(tsRuntimeSource[i+len(tsRuntimeMarker):])
-	b.WriteString("\n// --- Invocation work controls ---\n")
-	b.WriteString(tsWorkSource)
+	b.WriteString("\n// --- Invocation budget controls ---\n")
+	b.WriteString(tsBudgetSource)
 	b.WriteString("\n// --- Tracing ---\n")
 	b.WriteString(tsTraceSource)
 	b.WriteString("\n// --- Profiling ---\n")
@@ -106,13 +106,13 @@ func tsFiles(opts gen.GenOptions, body, types string) []gen.GeneratedFile {
 	parser.WriteString("\n// The names of the runtime that users of the parser need.\n")
 	var values, typs []string
 	public := slices.Clone(tsPublicRuntime)
-	if opts.WorkControls {
+	if opts.BudgetControls {
 		public = append(public, tsPublicControls...)
 	}
 	for _, name := range public {
 		export := name
-		if name == "ParseOptions" && !opts.WorkControls {
-			// Without work controls the options have no cancellation or limits.
+		if name == "ParseOptions" && !opts.BudgetControls {
+			// Without budget controls the options have no cancellation or limits.
 			export = "PlainParseOptions as ParseOptions"
 			name = "PlainParseOptions"
 		}

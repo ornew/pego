@@ -237,24 +237,24 @@ func assertTraceParserDetached(t *testing.T, p *core.Parser, aborted bool) {
 
 func traceLifecycleRecover(f func()) (got any) { defer func() { got = recover() }(); f(); return }
 
-type workContextAccessorContext struct {
+type budgetContextAccessorContext struct {
 	context.Context
 	done chan struct{}
 	fn   func() error
 }
 
-type workContextPanicToken struct{ phase string }
+type budgetContextPanicToken struct{ phase string }
 
-type workContextDonePanic struct {
+type budgetContextDonePanic struct {
 	context.Context
-	token *workContextPanicToken
+	token *budgetContextPanicToken
 }
 
 func newPollingContext(at int) *pollingContext {
 	return &pollingContext{Context: context.Background(), done: make(chan struct{}), at: at}
 }
 
-func workDocumentVariants(t *testing.T, run func(*testing.T, ParseOptions)) {
+func budgetDocumentVariants(t *testing.T, run func(*testing.T, ParseOptions)) {
 	t.Helper()
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{CodePoints, Bytes} {
@@ -318,36 +318,36 @@ func corruptVMLiteral(t *testing.T, prog *Program) (restore func()) {
 	return nil
 }
 
-func newWorkContextErrPanic(token *workContextPanicToken, panicAt int) *workContextErrPanic {
-	return &workContextErrPanic{Context: context.Background(), done: make(chan struct{}), token: token, panicAt: panicAt}
+func newBudgetContextErrPanic(token *budgetContextPanicToken, panicAt int) *budgetContextErrPanic {
+	return &budgetContextErrPanic{Context: context.Background(), done: make(chan struct{}), token: token, panicAt: panicAt}
 }
 
-func workContextRecover(run func()) (got any) {
+func budgetContextRecover(run func()) (got any) {
 	defer func() { got = recover() }()
 	run()
 	return nil
 }
 
-type workDocumentReuseContext struct {
+type budgetDocumentReuseContext struct {
 	context.Context
 	observe func()
 }
 
-type workContextErrPanic struct {
+type budgetContextErrPanic struct {
 	context.Context
 	done    chan struct{}
 	armed   bool
 	panicAt int
 	calls   int
-	token   *workContextPanicToken
-	control *core.WorkControl
+	token   *budgetContextPanicToken
+	control *core.BudgetControl
 	atPanic uint64
 	since   uint64
 }
 
-func (c *workContextErrPanic) Done() <-chan struct{} { return c.done }
+func (c *budgetContextErrPanic) Done() <-chan struct{} { return c.done }
 
-func (c *workContextErrPanic) Err() error {
+func (c *budgetContextErrPanic) Err() error {
 	if !c.armed {
 		return nil
 	}
@@ -397,15 +397,15 @@ func (c *snapshotPhaseContext) Err() error {
 	return nil
 }
 
-func (c *workContextAccessorContext) Done() <-chan struct{} { return c.done }
+func (c *budgetContextAccessorContext) Done() <-chan struct{} { return c.done }
 
-func (c *workContextAccessorContext) Err() error {
+func (c *budgetContextAccessorContext) Err() error {
 	if c.fn != nil {
 		return c.fn()
 	}
 	return nil
 }
 
-func (c *workContextDonePanic) Done() <-chan struct{} { panic(c.token) }
+func (c *budgetContextDonePanic) Done() <-chan struct{} { panic(c.token) }
 
-func (c *workDocumentReuseContext) Err() error { c.observe(); return c.Context.Err() }
+func (c *budgetDocumentReuseContext) Err() error { c.observe(); return c.Context.Err() }

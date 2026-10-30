@@ -75,7 +75,7 @@ func TestFlowRoutesPrinted(t *testing.T) {
 }
 
 // TestFlowRoutesBuild builds the route grammars with the default typed output and with the
-// reference options that convert types, with and without the ordinary work of the typed runtime.
+// reference options that convert types, with and without the ordinary budget accounting of the typed runtime.
 // It checks that the generated parsers parse every input the way the engine does: the same
 // values, and the same errors as the engine's. The route grammars depend on finishValue in
 // runtime/typed.go: reverting it fails this test.

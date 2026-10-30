@@ -24,7 +24,7 @@ func TestActionResultReleasesTracking(t *testing.T) {
 		{"node", value.Ptr(value.Data{Start: 90, End: 91, Fresh: true}), nil},
 		{"error", nil, errors.New("action failed")},
 		{"boxed value", 1, nil},
-		{"invalid result", workActionFunc{params: 1}, nil},
+		{"invalid result", budgetActionFunc{params: 1}, nil},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			prefix := value.Ptr(value.Data{Text: "keep"})

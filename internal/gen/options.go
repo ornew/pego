@@ -17,11 +17,11 @@ type GenOptions struct {
 	// siblings): no Parse, ParseRule or Recognize, and no function that builds an untyped Node.
 	// It needs Types and excludes Recognize, Document and Stream.
 	TypedOnly bool
-	// WorkControls emits the work-controlled form of the generated functions, which charges
-	// cancellation and the work limit (WithContext, WithLimits; signal and maxWork
+	// BudgetControls emits the budget-controlled form of the generated functions, which charges
+	// cancellation and the budget limit (WithContext, WithLimits; signal and budget
 	// in TypeScript), and re-exports those options. Without it the functions have no charges (the ordinary form, or with Document
 	// the form that serves a Document), and a parse with a control option fails with an error.
-	WorkControls bool
+	BudgetControls bool
 	// Observability emits opt-in tracing and profiling for generated Go batch
 	// and Document parsing, and for TypeScript batch parsing.
 	Observability bool

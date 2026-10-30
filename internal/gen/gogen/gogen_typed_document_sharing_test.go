@@ -56,7 +56,7 @@ rule atom Atom = t:([a-z]) #atomic => Atom{Text: text($t)}`
 // the given test files. The tests run in the generated module.
 func sharingPackages(t *testing.T, tests map[string]string) {
 	t.Helper()
-	gentest.NeedsWorkControls(t)
+	gentest.NeedsBudgetControls(t)
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}
@@ -333,7 +333,7 @@ func TestSharedInterruptionDuringPublication(t *testing.T) {
 	}
 	interrupted := 0
 	for limit := uint64(1); ; limit++ {
-		got, err := d.ParseAST(WithLimits(Limits{MaxWork: limit}))
+		got, err := d.ParseAST(WithLimits(Limits{Budget: limit}))
 		if err == nil {
 			if got == nil {
 				t.Fatal("successful parse returned nil")

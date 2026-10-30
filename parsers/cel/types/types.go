@@ -197,7 +197,7 @@ func (v *Binary) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Binary) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Binary) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Left":
 		return rt.TBack(PegoHooks, v.Left), true
@@ -236,7 +236,7 @@ func (v *Call) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Call) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Call) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Target":
 		return rt.TBack(PegoHooks, v.Target), true
@@ -275,7 +275,7 @@ func (v *Conditional) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Conditional) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Conditional) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Cond":
 		return rt.TBack(PegoHooks, v.Cond), true
@@ -305,7 +305,7 @@ func (v *Entry) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Entry) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Entry) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Key":
 		return rt.TBack(PegoHooks, v.Key), true
@@ -335,7 +335,7 @@ func (v *Field) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Field) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Field) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb1(v.Name), true
@@ -365,7 +365,7 @@ func (v *Index) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Index) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Index) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "X":
 		return rt.TBack(PegoHooks, v.X), true
@@ -400,7 +400,7 @@ func (v *ListLit) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *ListLit) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *ListLit) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Elems":
 		return func() any {
@@ -440,7 +440,7 @@ func (v *MapLit) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *MapLit) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *MapLit) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Entries":
 		return func() any {
@@ -482,7 +482,7 @@ func (v *MessageLit) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *MessageLit) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *MessageLit) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Type":
 		return tb0(v.Type), true
@@ -515,7 +515,7 @@ func (v *Optional) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Optional) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Optional) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "X":
 		return rt.TBack(PegoHooks, v.X), true
@@ -537,7 +537,7 @@ func (v *Paren) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Paren) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Paren) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "X":
 		return rt.TBack(PegoHooks, v.X), true
@@ -563,7 +563,7 @@ func (v *Select) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Select) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Select) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "X":
 		return rt.TBack(PegoHooks, v.X), true
@@ -591,7 +591,7 @@ func (v *Unary) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Unary) TFieldWork(p *rt.TParser, name string) (any, bool) {
+func (v *Unary) TFieldSpend(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Op":
 		return rt.TBack(PegoHooks, v.Op), true
@@ -619,7 +619,7 @@ func tb1(v *Name) any {
 // is no named node type. It is for generated parsers.
 var PegoNodeTypes [10]uint16
 
-// PegoSchema_cd86f1bf2128f16a ties the parser package to this package: the parser refers to it once, so a
+// PegoSchema_f99e251860c2a591 ties the parser package to this package: the parser refers to it once, so a
 // parser and a types package generated from different schemas do not compile together.
 // It is for generated parsers; not a stable API.
-const PegoSchema_cd86f1bf2128f16a = 0
+const PegoSchema_f99e251860c2a591 = 0

@@ -153,7 +153,7 @@ func TestMain(m *testing.M) {
 	os.Setenv("GOFLAGS", strings.TrimSpace(os.Getenv("GOFLAGS")+" -trimpath -mod=mod"))
 	code := m.Run()
 	if names := gentest.UnwrappedFixtureTests(); len(names) > 0 {
-		fmt.Fprintf(os.Stderr, "FAIL: tests build generated fixtures without choosing their form: %s\nWrap the test body in gentest.EachMode, or call gentest.NeedsWorkControls, or pin the form with gentest.PinOrdinary\n", strings.Join(names, ", "))
+		fmt.Fprintf(os.Stderr, "FAIL: tests build generated fixtures without choosing their form: %s\nWrap the test body in gentest.EachMode, or call gentest.NeedsBudgetControls, or pin the form with gentest.PinOrdinary\n", strings.Join(names, ", "))
 		code = 1
 	}
 	os.Exit(code)

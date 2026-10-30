@@ -84,7 +84,7 @@ rule e = #operators {
 	}
 }
 
-func TestOperatorsRuleScopeWorkBudget(t *testing.T) {
+func TestOperatorsRuleScopeBudgetBudget(t *testing.T) {
 	ast, err := pego.ParseGrammar(`rule main = e $$
 rule e = #operators {
     operand "a"

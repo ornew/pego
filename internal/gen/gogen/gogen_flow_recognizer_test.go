@@ -22,7 +22,7 @@ import (
 
 // TestGeneratedFlowRecognizerParity runs the generated recognizers printed from Flow IR against the
 // engine, on the generated-corpus harness. The route must be taken for some rule of the recognizer table,
-// so that the test cannot pass without exercising it. It runs for the fixtures with and without work
+// so that the test cannot pass without exercising it. It runs for the fixtures with and without budget
 // controls.
 func TestGeneratedFlowRecognizerParity(t *testing.T) {
 	t.Parallel()

@@ -29,7 +29,7 @@ export interface ObservationCall {
   memo: boolean;
 }
 
-// Remains wrapped until outside run and work-control error classification.
+// Remains wrapped until outside run and budget-control error classification.
 export class TraceFailure {
   readonly value: unknown;
   readonly scope: object;
@@ -101,11 +101,11 @@ export class Observation {
   }
 }
 
-// This outer boundary must not expose callback values to withWorkControl's
+// This outer boundary must not expose callback values to withBudgetControl's
 // private Fatal/SignalPanic catches. It also clears option-owned references.
-export function withObservedOptions<T>(o: ResolvedParseOptions, body: (control: WorkControl | null) => T, interrupted: (error: Error) => T): T {
+export function withObservedOptions<T>(o: ResolvedParseOptions, body: (control: BudgetControl | null) => T, interrupted: (error: Error) => T): T {
   try {
-    const value = withWorkControl(o, body, interrupted);
+    const value = withBudgetControl(o, body, interrupted);
     return value;
   } catch (x) {
     if (x instanceof TraceFailure && x.scope === o) throw x.value;

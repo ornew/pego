@@ -79,7 +79,7 @@ func blankLinesInFunctions(src string) []string {
 	return out
 }
 
-// The generated parsers of every test grammar, in the forms with and without work controls, declare
+// The generated parsers of every test grammar, in the forms with and without budget controls, declare
 // every local variable they use and use every local variable they declare.
 func TestGeneratedLocalVariables(t *testing.T) {
 	t.Parallel()
@@ -89,7 +89,7 @@ func TestGeneratedLocalVariables(t *testing.T) {
 		blank bool // the form has no blank lines inside functions
 	}{
 		{"ordinary", gen.GenOptions{Types: true}, true},
-		{"work controls", gen.GenOptions{Types: true, WorkControls: true}, false},
+		{"budget controls", gen.GenOptions{Types: true, BudgetControls: true}, false},
 		{"document", gen.GenOptions{Types: true, Document: true}, false},
 		{"nodes", gen.GenOptions{}, true},
 		{"typed only", gen.GenOptions{Types: true, TypedOnly: true}, true},
