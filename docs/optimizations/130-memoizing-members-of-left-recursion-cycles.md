@@ -61,13 +61,14 @@ there are depends only on the grammar.
 | Documents | Applied | Members are memoized under the same rules, and provisional results are not reused after an edit |
 
 A member that is called from one place is still transient, so a grammar like the left-recursive calculator
-(`add`, `mul`) generates the same ordinary code as before.
+(`add`, `mul`) keeps its call code; its generated parsers only carry the member flag of those rules.
 
 ## Reproduction
 
-Base `f52b6bd9`, Go 1.27.1, Apple silicon, benchlock with a load below 8. Two test binaries of the `bench`
-package, one per revision, ran interleaved for 12 rounds with `-benchtime=300ms -benchmem`; benchstat compared
-them. Tests: `TestLeftRecursionMemberMemoLinear`, `TestLeftRecursionMemberMemoMatchesNoMemo`,
+Base `f52b6bd9`, Go 1.27.1, Apple silicon, benchlock, started with a load below 8. Test binaries of the `bench`
+package, one per revision, ran interleaved for 10 rounds with `-benchtime=200ms -benchmem` over `Parse` and
+`Recognize` (left-recursive calculator, JSON, Minilang), `Incremental`, `IncrementalLong` and `Stream`; benchstat
+compared them. Tests: `TestLeftRecursionMemberMemoLinear`, `TestLeftRecursionMemberMemoMatchesNoMemo`,
 `TestLeftRecursionMemberMemoStale`, `TestLeftRecursionMemberMemoRandom`,
 `TestGeneratedLeftRecursionMemberMemoLinear`, `TestGeneratedLeftRecursionMemberMemoStale`,
 `TestGeneratedTSLeftRecursionMemberMemoLinear`, `TestGeneratedTSLeftRecursionMemberMemoStale`.
@@ -84,18 +85,20 @@ Rule evaluations on the example (`Profile.Evals`, the same on the three engine b
 Before the change the example runs out of the default budget (2^20 units) at n = 16. After it, generated Go
 (ordinary and controlled, untyped and typed) and generated TypeScript parse n = 300.
 
-Speed (medians of 12 interleaved samples, all differences within noise unless noted):
+Speed (medians of 10 interleaved samples against the base; differences within noise unless noted):
 
 | Workload | Change |
 |:--|:--|
-| Parse, left-recursive calculator, six engine backends, generated Go | within ±0.2% except one engine cell at +0.7% (p = 0.045) |
-| Recognize, left-recursive calculator, generated | +0.7% (p < 0.001), engine backends unchanged |
-| Parse and Recognize JSON (control) | no difference on any backend |
+| Parse, left-recursive calculator | +1.6% to +2.3% (p ≤ 0.043) on recursive and iterative bytecode in code points, iterative in bytes, generated Go in bytes and generated typed `ParseAST`; the other cells within noise |
+| Recognize, left-recursive calculator | +1.6% to +2.2% (p ≤ 0.035) on closure, iterative and generated Go; bytecode within noise |
+| Parse and Recognize JSON and Minilang | within noise, except iterative JSON parses 1.0% to 1.6% faster |
+| Incremental (Minilang), IncrementalLong (CSV), Stream (CSV) | within noise on every backend |
 
-Allocations are unchanged. Generated Go for the calculator is byte-identical outside Documents; the Document
-forms of the calculator parser grow by 26 bytes. Controlled and ordinary generated Go on the left-recursive
-calculator: 16.75 ms and 14.24 ms for the same input, the cost of the budget control that is paid with or
-without this change.
+The cost on the calculator comes from the bookkeeping of every memoized call and growth: saving and merging the
+least depth read, and the member check on a hit. Allocations are unchanged except +0.3% (7 of 2,291) on one
+iterative cell. The memo entry of the generated runtimes stays at 128 bytes, because one field holds both the depth
+of a growing result and the unstable mark of a final one. Generated Go for the calculator differs only in the
+member flags of `add` and `mul` in the rule tables: 24 to 58 bytes more per generated form.
 
 ## Correctness and Tradeoffs
 
@@ -115,6 +118,15 @@ Go (untyped and typed, ordinary and budget-controlled) and generated TypeScript 
 without a memo. Its inputs are the cases that a stored member result made stale, grammars found by a random search
 over small cycles with lookaheads, optional and repeated items, nested choices and cuts, and an Operators Rule leader
 read at two binding levels. Removing any one of the three rules makes the test fail on some backend.
+
+Budget totals of the controlled form change only on the grammars of the corpus that have memoized members. The
+budget-controlled generated parser defers memoization to the second call of a rule at a position, and charges the
+bitmap of first calls when a parse first defers a call: 64 words, once per parse
+(`controlledFirstCallPrepare` in `runtime/budget.go`). A grammar whose only memoized rules are leaders never builds
+the bitmap. In the corpus grammars `unreachable LR tail` and `unreachable LR alias tail`, the cycle of `r1 = r2?`
+is led by `r1`, and its member `r2` is called from three places, so it is now memoized, and each parse pays the bitmap plus the steps of the memoized call
+path: 65 to 82 units more per input (for example 51 to 130 on the empty input). Grammars that already memoize a rule
+other than a leader pay the bitmap with or without this change. The results of every case are unchanged.
 
 ## Decision and Limits
 
