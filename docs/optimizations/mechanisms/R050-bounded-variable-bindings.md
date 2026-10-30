@@ -6,12 +6,12 @@ per name.
 
 ## Mechanism and Invariants
 
-Replacing a changed non-head value copies the prefix and shares the unchanged
-suffix. Saved environments therefore preserve rule-scope and backtracking state.
-Equal scalar binding can reuse the old environment; a monotonic name hint
-avoids searches for first bindings. Live snapshots and memo keys still retain
-values required by their contracts. This bounds binding history, not arbitrary
-user values.
+Variables are numbered at compile time and held in a persistent vector: a flat
+copy-on-write array up to 16 variables, a 16-way trie above. Replacing a value
+copies one path and shares the rest, so saved environments preserve rule-scope
+and backtracking state. Equal scalar binding reuses the old environment. Live
+snapshots and memo keys still retain values required by their contracts. This
+bounds binding history, not arbitrary user values.
 
 ## Scope and State
 
@@ -27,10 +27,11 @@ documented comparison is historical.
 
 Record 069 measures a three-name stream environment staying at three bindings
 instead of growing to 180,001. It records near-flat retained growth and faster
-outer-variable reads, but changed non-head counters increase allocation volume.
+outer-variable reads. Record 128 removes the name walk and the prefix copy.
 Do not infer a universal allocation or speed reduction.
 
-Evidence records: [069](../069-bound-persistent-variable-binding-histories.md).
+Evidence records: [069](../069-bound-persistent-variable-binding-histories.md),
+[128](../128-indexed-variable-environments.md).
 
 Source owners: [`environment lookup and
 replacement`](../../../internal/engine/core/runtime.go), [`generated environment

@@ -366,10 +366,9 @@ ok
   call its own entry, so a rule that reads it is never reused. If a value is needed only to build the tree, capture it
   and use an action instead of a variable.
 
-Each current environment stores one value per distinct variable name. Repeated bindings do not lengthen lookup
-paths; backtracking and rule returns still restore the earlier values. Binding the same scalar value reuses the
-environment. Changing a value behind other names copies that prefix to preserve saved environments, so frequent
-changes to many distinct names can allocate more than a grammar with one variable. To measure this trade-off in your
+Every declared variable has a fixed slot, and the environment is a persistent vector of those slots. A read or a
+changed binding costs a few steps however many variables the grammar declares, and backtracking and rule returns still
+restore the earlier values. Binding the same scalar value reuses the environment. To measure the cost in your
 own grammar, see the [performance measurement method](../performance.md#how-to-measure).
 
 ## Recipes

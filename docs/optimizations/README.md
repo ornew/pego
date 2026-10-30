@@ -55,7 +55,7 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 | [R020](mechanisms/R020-deferred-memoization.md) | Defer memo allocation until a second same-position call | C/RVM/IVM/GN/TG/TS; no universal control | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
 | [R030](mechanisms/R030-sparse-seen-position-storage.md) | Sparse deferred-memo seen positions with dense small-input path | C/RVM/IVM/GN/TG/TS; core build-tag and generation controls differ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | pego_reference_sparse_memo; GenOptions.DisableSparseMemo (TypeScript) |
 | [R040](mechanisms/R040-memo-entry-retirement.md) | Retire obsolete memo entries | C/RVM/IVM only; active seed ownership preserved | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
-| [R050](mechanisms/R050-bounded-variable-bindings.md) | Bound variable binding histories | All six default; persistent prefix replacement | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
+| [R050](mechanisms/R050-bounded-variable-bindings.md) | Bound variable binding histories | All six default; slot-indexed persistent vector | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
 | [R060](mechanisms/R060-chunked-document-input.md) | Chunked Document text storage | C/RVM/IVM Document only | ✓ | ✓ | ✓ | — | — | — | Default | pego_reference_document_pieces |
 | [R070](mechanisms/R070-document-memo-edits.md) | Gap-buffer memo splice and lazy advancement | C/RVM/IVM Document only | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
 | [R080](mechanisms/R080-lazy-code-point-offsets.md) | On-demand code-point offsets | Core recognition and Document offset tables | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
@@ -265,6 +265,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [125. The cost of the default budget](125-default-budget-cost.md)
 - [126. Unreachable rule bodies in generated TypeScript](126-unreachable-rule-bodies-typescript.md)
 - [127. The depth limit counts recursion](127-depth-counted-by-recursion.md)
+- [128. Indexed variable environments](128-indexed-variable-environments.md)
 
 ## Experiments That Did Not Pay Off
 
