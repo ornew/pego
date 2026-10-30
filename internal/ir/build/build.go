@@ -222,6 +222,17 @@ func (b *coreBuilder) rule(r *compile.Rule) (*core.Rule, error) {
 		}
 		cr.Body = body
 		cr.Finish = core.Finish{Kind: core.FinishSplice}
+		if r.Action != nil && !r.Novalue {
+			// The whole-rule action runs once per call on the folded value, $value.
+			env := map[string]*core.Local{compile.OperatorsRuleValue: {Kind: core.LocalValue, Name: compile.OperatorsRuleValue}}
+			b.final = r.Action
+			cr.Finish.Action, err = b.term(r.Action, b.scope(nil, o), env)
+			b.final = nil
+			if err != nil {
+				return nil, err
+			}
+			cr.Finish.Kind, cr.Finish.NodeType = core.FinishAction, r.NodeType
+		}
 		return cr, nil
 	}
 	if !b.noProject {

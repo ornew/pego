@@ -942,68 +942,21 @@ func setType(c CapIndex) Ty {
 
 // operatorsRule is the join of the operand values and of the values of the operator lines: an
 // infix line without an action is node[(L, Op, R)], a prefix line node[(Op, R)] and a postfix line
-// node[(L, Op)], with the captures lhs, op and rhs.
+// node[(L, Op)], with the captures lhs, op and rhs. With a whole-rule action, it is the type of the
+// action instead, which sees the folded value as $value (operatorsFold).
 func (v *ValueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.OperatorsRule) Ty {
+	if rd.Action != nil {
+		fold := v.operatorsFold(rd, pr)
+		env := &valueEnv{locals: map[string]Ty{OperatorsRuleValue: fold}}
+		return v.declared(rd, v.term(rd.Action, env))
+	}
 	var self Ty = RuleTy{rd.Name}
 	if rd.Type != nil {
 		// The lhs and rhs captures are values of the rule, each of which is checked against the
 		// rule's declared type.
 		self = v.resolve(rd.Type)
 	}
-	var ts []Ty
-	tuples := map[int]bool{}    // the lines whose value is the tuple node of an operator without an action
-	operators := map[int]bool{} // the lines of operators, whose nodes a named node type converts
-	if pr.Skip != nil {
-		v.scope(pr.Skip, nil)
-		v.predicates(pr.Skip, &valueEnv{})
-	}
-	for _, o := range pr.Operands {
-		env := &valueEnv{caps: tupleNode(v.elems(o.Expr)).Caps}
-		v.scope(o.Expr, env.caps)
-		v.predicates(o.Expr, env)
-		if o.Action != nil {
-			ts = append(ts, v.term(o.Action, env))
-		} else {
-			ts = append(ts, v.ScopeValue(o.Expr))
-		}
-		v.checkResult(o, rd, ts[len(ts)-1])
-	}
-	for _, l := range pr.Levels {
-		for _, o := range l.Operators {
-			v.control.poll()
-			op, ok := v.single(o.Expr)
-			if !ok {
-				op = valueElem{t: NodeTy{Value: TupleTy{Elems: []Ty{}}}}
-			}
-			v.scope(o.Expr, op.caps)
-			v.predicates(o.Expr, &valueEnv{caps: op.caps})
-			if o.Action != nil {
-				locals := map[string]Ty{"op": op.t}
-				if o.Kind != grammar.Prefix {
-					locals["lhs"] = self
-				}
-				if o.Kind != grammar.Postfix {
-					locals["rhs"] = self
-				}
-				operators[len(ts)] = true
-				ts = append(ts, v.term(o.Action, &valueEnv{caps: op.caps, locals: locals}))
-				v.checkResult(o, rd, ts[len(ts)-1])
-				continue
-			}
-			var elems []valueElem
-			switch o.Kind {
-			case "prefix":
-				elems = []valueElem{{t: op.t, caps: []CapIndex{{Name: "op", Paths: [][]int{{}}, T: op.t}}}, {t: self, caps: []CapIndex{{Name: "rhs", Paths: [][]int{{}}, T: self}}}}
-			case "postfix":
-				elems = []valueElem{{t: self, caps: []CapIndex{{Name: "lhs", Paths: [][]int{{}}, T: self}}}, {t: op.t, caps: []CapIndex{{Name: "op", Paths: [][]int{{}}, T: op.t}}}}
-			default:
-				elems = []valueElem{{t: self, caps: []CapIndex{{Name: "lhs", Paths: [][]int{{}}, T: self}}}, {t: op.t, caps: []CapIndex{{Name: "op", Paths: [][]int{{}}, T: op.t}}}, {t: self, caps: []CapIndex{{Name: "rhs", Paths: [][]int{{}}, T: self}}}}
-			}
-			tuples[len(ts)] = true
-			operators[len(ts)] = true
-			ts = append(ts, tupleNode(elems))
-		}
-	}
+	ts, tuples, operators := v.operatorsLines(rd, pr, self, true)
 	if rd.Type != nil {
 		// Each line that does not fit is reported on its own.
 		d, bad := v.resolve(rd.Type), false
@@ -1039,6 +992,108 @@ func (v *ValueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.Operator
 		}
 	}
 	return v.declared(rd, Vjoin(ts...))
+}
+
+// operatorsFold returns the type of the folded value of the Operators Rule rd, which has a
+// whole-rule action: the join of its line values, where $lhs and $rhs have that join type. The
+// declared type of the rule is the type of the action's result, so the fold has no declared type
+// and no name to refer to itself by; its type is the least fixed point of the lines, computed from
+// _|_ round by round. A fold that is still growing after maxCycleRounds (the tuple nodes of
+// operators without actions nest without bound) gives $lhs and $rhs the widest type its values can
+// have: node[_] when every line makes a node, and any otherwise.
+func (v *ValueInference) operatorsFold(rd *grammar.RuleDef, pr *grammar.OperatorsRule) Ty {
+	quiet := v.Quiet
+	v.Quiet = true
+	var self Ty = TyBottom
+	stable := false
+	for round := 0; round <= maxCycleRounds; round++ {
+		ts, _, _ := v.operatorsLines(rd, pr, self, false)
+		next := Vjoin(ts...)
+		if reflect.DeepEqual(next, self) {
+			stable = true
+			break
+		}
+		self = next
+	}
+	if !stable {
+		ts, _, _ := v.operatorsLines(rd, pr, TyBottom, false)
+		self = NodeTy{Value: TyTop}
+		for _, t := range ts {
+			if !v.assignable(t, self) {
+				self = TyAny
+				break
+			}
+		}
+	}
+	v.Quiet = quiet
+	// The last typing reports the errors of the lines and records their types.
+	ts, _, _ := v.operatorsLines(rd, pr, self, false)
+	return Vjoin(ts...)
+}
+
+// operatorsLines types the skip and the lines of the Operators Rule rd, with $lhs and $rhs of type
+// self, and returns the value of each line, with the indexes of the lines that make the tuple node
+// of an operator without an action (tuples) and of the operator lines (operators). If checked, the
+// value of each line is checked against the rule's declared type.
+func (v *ValueInference) operatorsLines(rd *grammar.RuleDef, pr *grammar.OperatorsRule, self Ty, checked bool) (ts []Ty, tuples, operators map[int]bool) {
+	tuples = map[int]bool{}    // the lines whose value is the tuple node of an operator without an action
+	operators = map[int]bool{} // the lines of operators, whose nodes a named node type converts
+	if pr.Skip != nil {
+		v.scope(pr.Skip, nil)
+		v.predicates(pr.Skip, &valueEnv{})
+	}
+	for _, o := range pr.Operands {
+		env := &valueEnv{caps: tupleNode(v.elems(o.Expr)).Caps}
+		v.scope(o.Expr, env.caps)
+		v.predicates(o.Expr, env)
+		if o.Action != nil {
+			ts = append(ts, v.term(o.Action, env))
+		} else {
+			ts = append(ts, v.ScopeValue(o.Expr))
+		}
+		if checked {
+			v.checkResult(o, rd, ts[len(ts)-1])
+		}
+	}
+	for _, l := range pr.Levels {
+		for _, o := range l.Operators {
+			v.control.poll()
+			op, ok := v.single(o.Expr)
+			if !ok {
+				op = valueElem{t: NodeTy{Value: TupleTy{Elems: []Ty{}}}}
+			}
+			v.scope(o.Expr, op.caps)
+			v.predicates(o.Expr, &valueEnv{caps: op.caps})
+			if o.Action != nil {
+				locals := map[string]Ty{"op": op.t}
+				if o.Kind != grammar.Prefix {
+					locals["lhs"] = self
+				}
+				if o.Kind != grammar.Postfix {
+					locals["rhs"] = self
+				}
+				operators[len(ts)] = true
+				ts = append(ts, v.term(o.Action, &valueEnv{caps: op.caps, locals: locals}))
+				if checked {
+					v.checkResult(o, rd, ts[len(ts)-1])
+				}
+				continue
+			}
+			var elems []valueElem
+			switch o.Kind {
+			case "prefix":
+				elems = []valueElem{{t: op.t, caps: []CapIndex{{Name: "op", Paths: [][]int{{}}, T: op.t}}}, {t: self, caps: []CapIndex{{Name: "rhs", Paths: [][]int{{}}, T: self}}}}
+			case "postfix":
+				elems = []valueElem{{t: self, caps: []CapIndex{{Name: "lhs", Paths: [][]int{{}}, T: self}}}, {t: op.t, caps: []CapIndex{{Name: "op", Paths: [][]int{{}}, T: op.t}}}}
+			default:
+				elems = []valueElem{{t: self, caps: []CapIndex{{Name: "lhs", Paths: [][]int{{}}, T: self}}}, {t: op.t, caps: []CapIndex{{Name: "op", Paths: [][]int{{}}, T: op.t}}}, {t: self, caps: []CapIndex{{Name: "rhs", Paths: [][]int{{}}, T: self}}}}
+			}
+			tuples[len(ts)] = true
+			operators[len(ts)] = true
+			ts = append(ts, tupleNode(elems))
+		}
+	}
+	return ts, tuples, operators
 }
 
 // FromLegacy maps a legacy type (types.go) to the value model: reserved node kinds become nodes

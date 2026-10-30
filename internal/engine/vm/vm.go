@@ -164,7 +164,9 @@ func buildVMProgram(m *bytecode.Module, bodies vmBodies) *Program {
 		r.InitVals = vtable.ValuesOf(r.Vars)
 		r.VarSlots = vtable.Slots(r.Vars)
 		if ri.NodeType >= 0 {
-			if ri.OperatorsRule >= 0 {
+			if ri.OperatorsRule >= 0 && ri.Action < 0 {
+				// Without a whole-rule action, the node type of an Operators Rule is that of its
+				// operators; with one, it is that of the action's result.
 				r.OpNodeType, r.OpKinds = m.Strings[ri.NodeType], vm.nodeKinds[ri.NodeType]
 			} else {
 				r.NodeType, r.NodeKinds = m.Strings[ri.NodeType], vm.nodeKinds[ri.NodeType]
@@ -173,7 +175,11 @@ func buildVMProgram(m *bytecode.Module, bodies vmBodies) *Program {
 		r.Kinds = value.NewRuleKinds(r.Name)
 		r.Value = func(_ *core.Parser, v *value.Node, _ int) *value.Node { return v } // the code pushes the value of the body's scope
 		if ri.Action >= 0 {
-			r.Act = vm.evaluator(ri.Action, false)
+			var locals []string
+			if ri.OperatorsRule >= 0 {
+				locals = compile.OperatorsRuleActionLocals
+			}
+			r.Act = vm.evaluator(ri.Action, locals)
 		}
 		vm.rules = append(vm.rules, r)
 		if _, twin := vm.byName[r.Name]; !twin { // value-free twins follow the original rules
@@ -249,7 +255,11 @@ func (vm *Program) line(l *bytecode.LineInfo, operator bool) *core.OperatorsRule
 		pl.Single, pl.Shape = compile.SingleTuple, compile.Shaper{Elems: true}
 	}
 	if l.Action >= 0 {
-		pl.Act = vm.evaluator(l.Action, operator)
+		var locals []string
+		if operator {
+			locals = operatorLocals
+		}
+		pl.Act = vm.evaluator(l.Action, locals)
 	}
 	return pl
 }
@@ -1090,24 +1100,32 @@ func (f *vmFunc) Apply(x, y any) (any, error) {
 
 // evaluator returns an evaluator for an action in expression code. If operator is set, $lhs,
 // $rhs, and $op are locals.
-func (vm *Program) evaluator(entry int, operator bool) core.Evaluator {
-	if !operator {
+// operatorLocals are the locals of an operator line's action, in the order the compiler numbers
+// them.
+var operatorLocals = []string{"lhs", "rhs", "op"}
+
+// noLocals holds the initial values of the most locals an evaluator has.
+var noLocals [3]any
+
+// evaluator returns the evaluator of the expression code at entry, whose locals are named names
+// in the order the compiler numbers them: those of an Operators Rule operator line or whole-rule
+// action, or none.
+func (vm *Program) evaluator(entry int, names []string) core.Evaluator {
+	if len(names) == 0 {
 		return func(ctx *core.EvalCtx) (any, error) { return vm.eval(ctx, entry, nil) }
 	}
+	n := len(names)
 	return func(ctx *core.EvalCtx) (any, error) {
 		p := ctx.P
 		base := len(p.Estack)
-		p.Estack = append(p.Estack, nil, nil, nil)
-		locals := p.Estack[base : base+3 : base+3]
+		p.Estack = append(p.Estack, noLocals[:n]...)
+		locals := p.Estack[base : base+n : base+n]
 		for l := ctx.Locals; l != nil; l = l.Next {
 			p.Spend()
-			switch l.Name {
-			case "lhs":
-				locals[0] = l.Val
-			case "rhs":
-				locals[1] = l.Val
-			case "op":
-				locals[2] = l.Val
+			for i, name := range names {
+				if l.Name == name {
+					locals[i] = l.Val
+				}
 			}
 		}
 		v, err := vm.eval(ctx, entry, locals)

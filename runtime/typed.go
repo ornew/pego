@@ -1507,6 +1507,9 @@ func (p *TParser) finishValue(r *TRule, f *TCaptureFrame, v any, start int) any 
 	}
 	if r.Action != nil {
 		c := p.UseCtx(TActCtx{P: p, F: f, Start: start, End: p.Pos, Cbase: len(p.Created)})
+		if r.OperatorsRule != nil {
+			c.Value = v
+		}
 		return c.Result(r.Action, r.where())
 	}
 	if r.Splice {
@@ -1763,6 +1766,7 @@ type TActCtx struct {
 	Start, End   int
 	Cbase        int
 	Lhs, Rhs, Op any
+	Value        any // the folded value of an Operators Rule, in its whole-rule action
 }
 
 func (p *TParser) UseCtx(c TActCtx) *TActCtx {

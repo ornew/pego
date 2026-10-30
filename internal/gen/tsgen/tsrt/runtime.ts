@@ -2474,6 +2474,9 @@ export class Parser {
     }
     if (r.action !== null) {
       const c = this.useCtx(f, start, this.pos, null, null, null);
+      if (r.operatorsRule !== null) {
+        c.value = v; // the folded value, $value of the whole-rule action
+      }
       return c.result(r.action, r.where || r.name);
     }
     if (r.splice) {
@@ -2697,6 +2700,7 @@ export class Parser {
     c.lhs = lhs;
     c.rhs = rhs;
     c.op = op;
+    c.value = null;
     return c;
   }
 
@@ -3103,6 +3107,7 @@ export class Actx {
   lhs: Value = null;
   rhs: Value = null;
   op: Value = null;
+  value: Value = null; // the folded value of an Operators Rule, in its whole-rule action
 
   constructor(p: Parser) {
     this.p = p;

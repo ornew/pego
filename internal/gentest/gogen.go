@@ -377,6 +377,7 @@ rule e = #operators {
 	cases = append(cases, TypedLRBodyCases...)
 	cases = append(cases, TypedOperatorsRuleBodyCases...)
 	cases = append(cases, OperatorsRuleOperandActionCases...)
+	cases = append(cases, OperatorsRuleWholeActionCases...)
 	for _, c := range OperatorsLineRecoveryCases {
 		cases = append(cases, c.Case)
 	}

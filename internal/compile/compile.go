@@ -321,17 +321,6 @@ func CompileProgram[M any](g *grammar.Grammar, opts Options, flags []RuleFlags, 
 	for _, rd := range control.rules(g) {
 		control.poll()
 		checkBlocks(rd.Action)
-		root := rd.Expr
-		for {
-			group, ok := root.(*grammar.Group)
-			if !ok {
-				break
-			}
-			root = group.Expr
-		}
-		if pr, _ := grammar.RuleOperators(root); pr != nil && rd.Action != nil {
-			unsupported = append(unsupported, &Error{Pos: termPos(rd.Action, rd.Diagnostic()), Msg: "whole-rule actions are not supported for Operators Rules; use => ... or omit the action"})
-		}
 		walkExprControlled(rd.Expr, func(e grammar.Expr) {
 			control.poll()
 			switch e := e.(type) {

@@ -39,6 +39,8 @@ const (
 	LocalLhs
 	LocalRhs
 	LocalOp
+	// LocalValue is $value, the folded value, in the whole-rule action of an Operators Rule.
+	LocalValue
 )
 
 // Local reads a lambda parameter or an Operators Rule local.

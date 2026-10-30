@@ -435,8 +435,18 @@ func (c *Walker[M]) compileOperatorsRule(r *Rule, e *grammar.OperatorsRule) {
 			seen[l.Name] = true
 		}
 	}
+	if r.Action != nil {
+		// The whole-rule action sees only the final folded value, as $value.
+		c.CheckTerm(r.Action, r.Scope, OperatorsRuleActionLocals)
+	}
 	c.Builder.OperatorsRule(r, skip, e.Skip != nil, operands, operators)
 }
+
+// OperatorsRuleValue is the local name of the final folded value of an Operators Rule in its
+// whole-rule action, and OperatorsRuleActionLocals the locals of that action.
+const OperatorsRuleValue = "value"
+
+var OperatorsRuleActionLocals = []string{OperatorsRuleValue}
 
 func (c *Walker[M]) operatorsRuleLine(e grammar.Expr, action grammar.Term, locals []string, key any) OpLine[M] {
 	s := NewScope()

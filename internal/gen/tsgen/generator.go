@@ -575,6 +575,11 @@ func (g *Generator) rules() {
 		if pr, ok := r.Def.Expr.(*grammar.OperatorsRule); ok {
 			g.Cur = r
 			g.operatorsRule(r, pr)
+			if r.Action != nil && !r.Novalue {
+				// The whole-rule action, which the runtime runs on the folded value after each call.
+				locals := map[string]string{compile.OperatorsRuleValue: "c.value"}
+				fmt.Fprintf(init, "%s.action = %s;\n", g.ruleVar(r), g.action(r.Action, compile.NewScope(), locals))
+			}
 			continue
 		}
 		if g.slotReached(r) {

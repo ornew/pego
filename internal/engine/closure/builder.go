@@ -101,6 +101,10 @@ func (b *Builder) OperatorsRule(sr *compile.Rule, skip core.Matcher, hasSkip boo
 		}
 	}
 	r.Body = func(p *core.Parser, min int) (*value.Node, bool) { return p.OperatorsRuleParse(r, min) }
+	if sr.Action != nil {
+		// The whole-rule action runs once per call, after the fold (core.Parser.Finish).
+		r.Act = termEvaluator(sr.Action)
+	}
 }
 
 func (b *Builder) line(l compile.OpLine[core.Matcher]) *core.OperatorsRuleLine {

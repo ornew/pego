@@ -185,7 +185,11 @@ func (c *bcompiler) compile() {
 		}
 		ri.Scope = c.strs2(s.Names)
 		if r.Action != nil {
-			ri.Action = c.expr(r.Action, s, nil, true)
+			var locals []string
+			if ri.OperatorsRule >= 0 {
+				locals = OperatorsRuleActionLocals // $value is local 0
+			}
+			ri.Action = c.expr(r.Action, s, locals, true)
 		}
 	}
 }

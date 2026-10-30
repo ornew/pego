@@ -2844,6 +2844,9 @@ func (p *Parser) finishValue(r *Rule, f *CaptureFrame, v *Node, start int) (*Nod
 	}
 	if r.Action != nil {
 		c := p.useCtx(ActCtx{P: p, f: f, start: start, end: p.Pos, cbase: len(p.created)})
+		if r.OperatorsRule != nil {
+			c.Value = UnboxNode(v)
+		}
 		return c.result(r.Action, r.where()), false
 	}
 	if r.Splice {
@@ -3369,6 +3372,7 @@ type ActCtx struct {
 	start, end   int
 	cbase        int // start of p.Created made by this evaluation
 	Lhs, Rhs, Op any
+	Value        any // the folded value of an Operators Rule, in its whole-rule action
 }
 
 // UseCtx places the evaluation context in the parser's single context and returns it.

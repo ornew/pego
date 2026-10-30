@@ -318,7 +318,19 @@ func nonNil(prog *Program, e grammar.Expr, seen map[string]bool, control *Contro
 		seen[e.Name] = true
 		defer delete(seen, e.Name)
 		if pr, ok := r.Def.Expr.(*grammar.OperatorsRule); ok {
-			// Every line's value is never nil ($lhs and $rhs are values of the rule itself).
+			switch t := r.Def.Action.(type) {
+			case nil:
+			case *grammar.New, *grammar.ListConstructor, *grammar.TupleLit:
+				return true
+			case *grammar.CaptureRef:
+				if t.Name != OperatorsRuleValue {
+					return false
+				}
+				// $value is the folded value, which the lines below make.
+			default:
+				return false
+			}
+			// Every line's value is never nil ($lhs and $rhs are folded values).
 			for _, o := range pr.Operands {
 				control.poll()
 				if !lineNonNil(prog, o.Expr, o.Action, false, seen, control) {

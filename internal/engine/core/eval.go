@@ -43,8 +43,8 @@ type EvalCtx struct {
 }
 
 // runAction evaluates the rule's action.
-func (p *Parser) runAction(r *Rule, f *Frame, items []*value.Node, start, end int) *value.Node {
-	ctx := p.UseCtx(EvalCtx{P: p, Scope: r.Scope, Frame: f, Items: items, Start: start, End: end, Cbase: len(p.Created)})
+func (p *Parser) runAction(r *Rule, f *Frame, locals *Local, start, end int) *value.Node {
+	ctx := p.UseCtx(EvalCtx{P: p, Scope: r.Scope, Frame: f, Locals: locals, Start: start, End: end, Cbase: len(p.Created)})
 	return p.ActionResult(ctx, r.Act, r.WhereName())
 }
 

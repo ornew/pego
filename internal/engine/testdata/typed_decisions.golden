@@ -33321,6 +33321,78 @@ grammar	lean,lean observable,controlled,lean boxed	"unreachable recovery chain"
 guard	1	2	0	0	0	""	48
 guard	1	3	0	0	0	""	48
 guard	1	4	0	0	0	""	48
+grammar	lean,lean observable,lean boxed	"whole Operators Rule action"
+scope	1	1	
+scope	1	11	
+scope	1	12	
+scope	1	13	
+scope	1	14	
+scope	1	3	
+scope	1	4	x
+term	0	-1	capture
+term	1	-1	new-in-order(capture)
+term	1	-4	capture
+grammar	controlled	"whole Operators Rule action"
+scope	1	1	
+scope	1	11	
+scope	1	12	
+scope	1	13	
+scope	1	14	
+scope	1	3	
+scope	1	4	x
+term	0	-1	capture
+term	1	-1	new(capture)
+term	1	-4	capture
+grammar	lean,lean observable,lean boxed	"whole Operators Rule action error"
+scope	1	1	
+scope	1	2	
+term	1	-1	new-in-order(binary:/(const binary:-(call:len(call:text(capture)) const)))
+grammar	controlled	"whole Operators Rule action error"
+scope	1	1	
+scope	1	2	
+term	1	-1	new(binary:/(const binary:-(call:len(call:text(capture)) const)))
+grammar	lean,lean observable,lean boxed	"whole Operators Rule action on level-restricted calls"
+scope	0	5	x
+scope	1	1	
+scope	1	2	
+scope	1	3	
+scope	1	4	
+term	0	-1	concat-fused(part-list(capture) part-items(capture))
+term	1	-1	new-in-order(capture)
+grammar	controlled	"whole Operators Rule action on level-restricted calls"
+scope	0	5	x
+scope	1	1	
+scope	1	2	
+scope	1	3	
+scope	1	4	
+term	0	-1	concat-fused(part-list(capture) part-items(capture))
+term	1	-1	new(capture)
+grammar	lean,lean observable,controlled,lean boxed	"whole Operators Rule action passing the folded value"
+scope	1	1	
+scope	1	2	
+scope	1	3	
+term	1	-1	capture
+term	1	-3	capture
+grammar	lean,lean observable,controlled,lean boxed	"whole Operators Rule action with a named node type"
+scan	1	3
+scope	1	1	n
+scope	1	10	
+scope	1	11	
+scope	1	5	x
+term	0	-1	capture
+term	1	-1	convert(capture)
+term	1	-2	capture
+term	1	-3	capture
+grammar	lean,lean observable,lean boxed	"whole Operators Rule action with a recovered operand"
+scope	1	1	
+scope	1	6	
+term	0	-1	capture
+term	1	-1	new-in-order(capture)
+grammar	controlled	"whole Operators Rule action with a recovered operand"
+scope	1	1	
+scope	1	6	
+term	0	-1	capture
+term	1	-1	new(capture)
 grammar	lean,lean observable,controlled,lean boxed	"wide any scan 2147483648"
 scan	0	2
 grammar	lean,lean observable,controlled,lean boxed	"wide any scan 4294967296"

@@ -339,7 +339,7 @@ func TermString(t Term) string {
 	case *SlotRef:
 		return fmt.Sprintf("$%d:%s", t.Slot, t.Name)
 	case *Local:
-		return [...]string{"param:", "$lhs", "$rhs", "$op"}[t.Kind] + localName(t)
+		return [...]string{"param:", "$lhs", "$rhs", "$op", "$value"}[t.Kind] + localName(t)
 	case *VarRef:
 		return "var:" + t.Name
 	case *Member:

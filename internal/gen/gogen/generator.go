@@ -743,6 +743,15 @@ func (g *Generator) rules() {
 		if pr, ok := r.Def.Expr.(*grammar.OperatorsRule); ok {
 			g.Cur = r
 			g.operatorsRule(r, pr)
+			if r.Action != nil && !r.Novalue {
+				// The whole-rule action, which the runtime runs on the folded value after each call.
+				if g.Table == "trules" {
+					g.final = r.Action // re-ranged by TActCtx.Result, as an action's result
+				}
+				locals := map[string]string{compile.OperatorsRuleValue: "c.Value"}
+				fmt.Fprintf(init, "\t%s[%d].Action = func(c *%s) any { %s }\n", g.Table, r.ID, g.ctxType(), g.termBody(r.Action, compile.NewScope(), locals))
+				g.final = nil
+			}
 			continue
 		}
 		if d := flats[r]; d != nil && g.Table == "trules" {

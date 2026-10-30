@@ -195,7 +195,7 @@ func (v *ValueInference) declared(rd *grammar.RuleDef, t Ty) Ty {
 		v.errorf(rd.Diagnostic(), "rule %s produces %s, which is not assignable to %s%s", rd.Name, v.display(t), d, v.castHint(t, d))
 		return d
 	}
-	if _, ok := rd.Expr.(*grammar.OperatorsRule); !ok {
+	if _, ok := rd.Expr.(*grammar.OperatorsRule); !ok || rd.Action != nil {
 		v.checkResult(rd, rd, t)
 	}
 	if dn, ok := d.(NodeTy); ok && dn.Name == "" && !anyNode(d) && len(dn.Caps) == 0 {
@@ -449,10 +449,11 @@ func (prog *Program) NodeTypeOf(name string) (NodeTy, bool) {
 }
 
 // ruleNodeType returns the named node type that the value of rule rd is converted to: its declared
-// type, through aliases, when that is exactly a named node type. An Operators Rule converts the
-// nodes of its operators instead (operatorsNodeType), never its value as a whole.
+// type, through aliases, when that is exactly a named node type. An Operators Rule without a
+// whole-rule action converts the nodes of its operators instead (operatorsNodeType), never its
+// value as a whole; with one, it converts the action's result, as an ordinary rule does.
 func (prog *Program) ruleNodeType(rd *grammar.RuleDef) (NodeTy, bool) {
-	if _, ok := rd.Expr.(*grammar.OperatorsRule); ok {
+	if _, ok := rd.Expr.(*grammar.OperatorsRule); ok && rd.Action == nil {
 		return NodeTy{}, false
 	}
 	return prog.declaredNodeType(rd)
@@ -460,9 +461,10 @@ func (prog *Program) ruleNodeType(rd *grammar.RuleDef) (NodeTy, bool) {
 
 // operatorsNodeType returns the named node type that every operator node of the Operators Rule
 // rd is converted to: the rule's declared type, through aliases, when that is exactly a named node
-// type. The values of its operand lines are not converted.
+// type and the rule has no whole-rule action, whose result the declared type describes instead.
+// The values of its operand lines are not converted.
 func (prog *Program) operatorsNodeType(rd *grammar.RuleDef) (NodeTy, bool) {
-	if _, ok := rd.Expr.(*grammar.OperatorsRule); !ok {
+	if _, ok := rd.Expr.(*grammar.OperatorsRule); !ok || rd.Action != nil {
 		return NodeTy{}, false
 	}
 	return prog.declaredNodeType(rd)

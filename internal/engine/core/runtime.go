@@ -786,7 +786,13 @@ func (p *Parser) Finish(r *Rule, f *Frame, v *value.Node, start int) *value.Node
 		return nil
 	}
 	if r.Act != nil {
-		v = p.runAction(r, f, nil, start, p.Pos)
+		var locals *Local
+		if r.OperatorsRule != nil {
+			// The whole-rule action of an Operators Rule sees the folded value as $value.
+			p.oplocals[0] = Local{Name: compile.OperatorsRuleValue, Val: NodeOrNil(v)}
+			locals = &p.oplocals[0]
+		}
+		v = p.runAction(r, f, locals, start, p.Pos)
 		if r.NodeKinds != nil {
 			v = p.convertResult(r, v)
 		}

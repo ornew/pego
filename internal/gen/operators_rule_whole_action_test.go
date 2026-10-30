@@ -1,6 +1,9 @@
 package gen_test
 
 import (
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
@@ -75,4 +78,30 @@ func testOperatorsRuleExplicitDefaultAction(t *testing.T) {
 			}
 		}
 	}
+}
+
+// Generated Go parsers, plain, with source information and typed, and generated TypeScript parsers
+// build the same results as the engine for Operators Rules with whole-rule actions.
+func TestOperatorsRuleWholeActionGenerated(t *testing.T) {
+	t.Parallel()
+	gentest.EachMode(t, testOperatorsRuleWholeActionGenerated)
+}
+
+func testOperatorsRuleWholeActionGenerated(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds generated consumers")
+	}
+	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
+	cases := gentest.OperatorsRuleWholeActionCases
+	t.Run("go", func(t *testing.T) { gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{}) })
+	t.Run("go source info", func(t *testing.T) { gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{SourceInfo: true}) })
+	t.Run("typed go", func(t *testing.T) { gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}) })
+	t.Run("typescript", func(t *testing.T) {
+		node, err := exec.LookPath("node")
+		if err != nil {
+			t.Skip("node not found")
+		}
+		gentest.TSParsersCorpus(t, node, cases, gen.GenOptions{})
+		gentest.TSParsersCorpus(t, node, cases, gen.GenOptions{SourceInfo: true})
+	})
 }
