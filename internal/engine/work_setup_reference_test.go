@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -15,7 +16,7 @@ func TestWorkSetupReferenceAdmission(t *testing.T) {
 	for _, omitted := range []bool{false, true} {
 		for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 			for _, api := range []string{"batch", "document", "stream"} {
-				prog := mustCompile(t, records)
+				prog := mustCompile(t, gentest.Records)
 				if omitted {
 					prog = moduleProgram(prog.Module())
 				}

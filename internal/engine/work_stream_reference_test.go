@@ -7,13 +7,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/value"
 )
 
 func TestWorkStreamReferenceAdmission(t *testing.T) {
 	t.Parallel()
-	prog := mustCompile(t, records)
+	prog := mustCompile(t, gentest.Records)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	for _, o := range []ParseOptions{{Context: ctx}, {WorkLimits: limits.WorkLimits{MaxSteps: 1}}, {WorkLimits: limits.WorkLimits{MaxInputWork: 1}}} {
