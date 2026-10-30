@@ -38,8 +38,8 @@ func testGeneratedInvalidUTF8Literals(t *testing.T) {
 		}
 	}
 	write("go.mod", []byte(gentest.GoMod("literaltest")))
-	var imports, harness, want strings.Builder
-	harness.WriteString(`func main(){`)
+	var imports, want strings.Builder
+	var blocks []string
 	i := 0
 	for _, tc := range gentest.InvalidLiteralCorpus() {
 		g := gentest.LiteralCorpusGrammar(t, tc)
@@ -59,6 +59,7 @@ func testGeneratedInvalidUTF8Literals(t *testing.T) {
 			fmt.Fprintf(&imports, "%s %q\n", pkg, "literaltest/"+pkg)
 			for _, input := range tc.Inputs {
 				for _, unit := range []engine.PositionUnit{engine.CodePoints, engine.Bytes} {
+					var harness strings.Builder
 					n, err := prog.ParseWith("main", input, engine.ParseOptions{Unit: unit})
 					want.WriteString(gentest.ResultJSON(n, err) + "\n")
 					fmt.Fprintf(&harness, "{ input:=%q; unit:=%s.%s; n,err:=%s.Parse(input,%[4]s.WithUnit(unit)); rec:=%s.Recognize(input,%[4]s.WithUnit(unit)); if fmt.Sprint(rec)!=fmt.Sprint(err){panic(\"recognition differs\")}\n", input, pkg, map[engine.PositionUnit]string{engine.CodePoints: "CodePoints", engine.Bytes: "Bytes"}[unit], pkg, pkg)
@@ -66,11 +67,20 @@ func testGeneratedInvalidUTF8Literals(t *testing.T) {
 						fmt.Fprintf(&harness, `ast,ae:=%s.ParseAST(input,%[1]s.WithUnit(unit)); if fmt.Sprint(ae)!=fmt.Sprint(err){panic("typed error differs")}; if err==nil {child:=n.Field("T").(*%s.Node); wantText:=input; if unit==%s.CodePoints{wantText=string([]rune(input))};if child.Text()!=wantText{panic("matched text differs from input")}; if ast==nil || ast.T==nil || ast.T.Start!=child.Start() || ast.T.End!=child.End() || ast.T.Value!=child.Text() {panic("typed literal value differs")}}`+"\n", pkg, pkg, pkg)
 					}
 					harness.WriteString(`out:=map[string]any{"node":n};if err!=nil{out["err"]=err.Error()};data,_:=json.Marshal(out);fmt.Println(string(data))}` + "\n")
+					blocks = append(blocks, harness.String())
 				}
 			}
 		}
 	}
-	harness.WriteString("}\n")
+	// One function holding every block takes the compiler about a minute; functions of a bounded
+	// number of blocks build in about a second.
+	const blocksPerFunc = 40
+	var harness, calls strings.Builder
+	for i := 0; i < len(blocks); i += blocksPerFunc {
+		fmt.Fprintf(&harness, "func f%d(){\n%s}\n", i/blocksPerFunc, strings.Join(blocks[i:min(i+blocksPerFunc, len(blocks))], ""))
+		fmt.Fprintf(&calls, "f%d()\n", i/blocksPerFunc)
+	}
+	harness.WriteString("func main(){\n" + calls.String() + "}\n")
 	write("main.go", []byte("package main\nimport(\"encoding/json\";\"fmt\";\n"+imports.String()+")\n"+harness.String()))
 	cmd := exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), "run", ".")
 	cmd.Dir = dir
