@@ -1,16 +1,14 @@
-package engine
+package compile
 
 import (
 	"testing"
-
-	"github.com/ornew/pego/internal/compile"
 )
 
 func TestShapeSignatureShowsMovedDiscard(t *testing.T) {
 	t.Parallel()
 	compile := func(src string) *Program {
 		t.Helper()
-		p, err := Compile(mustParse(src), compile.Options{})
+		p, err := compileStatic(mustParse(src), Options{}, nil)
 		if err != nil {
 			t.Fatal(err)
 		}

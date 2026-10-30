@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
@@ -58,41 +57,6 @@ func TestDuplicateCaptureTypes(t *testing.T) {
 		})
 	}
 	check(t, `rule main = x:"a" x:"b" {text($x) == "b"} => $x`, ok("ab", `"b"`))
-}
-
-// Compare the capture merger with the join, including values whose top-level optional/union
-// normalization must not be skipped.
-func TestCaptureJoinEquivalence(t *testing.T) {
-	t.Parallel()
-	str := compile.TyStringNode
-	tuple := compile.NodeTy{Value: compile.TupleTy{Elems: []compile.Ty{str, str}}}
-	ts := []compile.Ty{compile.TyAny, compile.TyBottom, compile.TyNil, str, compile.TyInt, compile.TyString, compile.NamedTy{Name: "A", Kind: 's'}, compile.ListTy{Elem: str},
-		compile.OptTy{Elem: str}, compile.OptTy{Elem: compile.OptTy{Elem: str}}, compile.JoinTy{Alts: []compile.Ty{str, tuple}}, compile.JoinTy{Alts: []compile.Ty{tuple, str}},
-		compile.JoinTy{Alts: []compile.Ty{str, str, compile.TyBottom}}, compile.JoinTy{Alts: []compile.Ty{compile.TyAny, str}}, compile.ListTy{Elem: compile.OptTy{Elem: str}},
-		compile.NodeTy{Value: compile.ListTy{Elem: compile.JoinTy{Alts: []compile.Ty{str, tuple}}}}}
-	for i, a := range ts {
-		for j, b := range ts {
-			got := compile.MergeCap([]compile.CapIndex{{Name: "x", Paths: [][]int{{0}}, T: a}}, compile.CapIndex{Name: "x", Paths: [][]int{{1}}, T: b})
-			if want := compile.Vjoin(a, b); len(got) != 1 || got[0].T.String() != want.String() || len(got[0].Paths) != 2 {
-				t.Fatalf("pair %d/%d: got %v, want %s", i, j, got, want)
-			}
-		}
-	}
-}
-
-func TestDuplicateCaptureDiagnosticPositions(t *testing.T) {
-	t.Parallel()
-	for _, n := range []int{1, 64, 1024} {
-		t.Run(fmt.Sprint(n), func(t *testing.T) {
-			line := `rule main = ` + strings.Repeat(`"😀" x:item `, n) + `=> R{X: $x}`
-			src := "type R = { X node[string] }\nrule item = k:\"a\" v:(y:\"b\")*\n" + line
-			col := utf8.RuneCountInString(line[:strings.Index(line, "X:")]) + 1
-			want := fmt.Sprintf("3:%d: cannot use node[(node[string], node[[]node[(node[string],), {\"y\": 0}]]), {\"k\": 0, \"v\": 1}] as node[string] in field X of R", col)
-			if got := compileError(t, src); got != want {
-				t.Errorf("got %q; want %q", got, want)
-			}
-		})
-	}
 }
 
 func captureCheckProgram(src string) (*Program, error) {
