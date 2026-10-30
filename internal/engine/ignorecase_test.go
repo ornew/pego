@@ -6,9 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
-	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/value"
 )
 
@@ -296,22 +294,6 @@ func TestIgnoreCaseMissingSpellingBackends(t *testing.T) {
 	}
 }
 
-// TestIgnoreCasePragmaReachesArguments checks that the pragma folds the literals of a recovery
-// skip expression written in the annotated expression, and that the skip is not a called rule.
-func TestIgnoreCasePragmaReachesArguments(t *testing.T) {
-	t.Parallel()
-	prog := mustCompile(t, `rule main = ("ab" #recover(skip="x")) #ignorecase`)
-	found := map[string]bool{}
-	compile.WalkExpr(prog.ByName["main"].Def.Expr, func(e grammar.Expr) {
-		if l, ok := e.(*grammar.Literal); ok {
-			found[l.Value] = l.IgnoreCase
-		}
-	})
-	if !found["ab"] || !found["x"] {
-		t.Fatalf("literals under the pragma are not case-insensitive: %v", found)
-	}
-}
-
 // TestIgnoreCaseDocumentAndStream checks the incremental Document and the stream parse with
 // case-insensitive literals.
 func TestIgnoreCaseDocumentAndStream(t *testing.T) {
@@ -344,15 +326,6 @@ func TestIgnoreCaseDocumentAndStream(t *testing.T) {
 	}
 	if count != 2 {
 		t.Fatalf("stream emitted %d elements, want 2", count)
-	}
-}
-
-// TestIgnoreCaseAttributeFormRejected checks that the attribute spelling of the pragma is rejected
-// with the spelling to use.
-func TestIgnoreCaseAttributeFormRejected(t *testing.T) {
-	t.Parallel()
-	if msg := compileError(t, `rule main = "a" @ignorecase`); !strings.Contains(msg, "use #ignorecase") {
-		t.Fatalf("attribute form: %v", msg)
 	}
 }
 

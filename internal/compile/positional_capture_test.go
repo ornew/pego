@@ -1,10 +1,8 @@
-package engine
+package compile
 
 import (
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/compile"
 )
 
 // TestPositionalCaptureCompileErrors checks the diagnostics for positional captures. The grammar
@@ -26,7 +24,7 @@ rule b = "b"`, `1:19: positional capture $1 is removed; name the element with a 
 			if err != nil {
 				t.Fatalf("syntax error: %v\n%s", err, tc.src)
 			}
-			_, err = Compile(g, compile.Options{})
+			_, err = compileStatic(g, Options{}, nil)
 			if err == nil {
 				t.Fatalf("expected a compile error\n%s", tc.src)
 			}
