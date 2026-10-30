@@ -503,8 +503,8 @@ func (p *tsFlowPrinter) stmt(s flow.Stmt) {
 	case *flow.Set:
 		p.set(s)
 	case *flow.Inc:
+		// The increment's read of its variable does not keep the variable.
 		if p.isRead(s.V) {
-			p.next[s.V] = true
 			p.write(s.V.Name + "++;\n")
 		}
 	case *flow.Step:

@@ -168,3 +168,22 @@ console.log("ok");
 		t.Fatalf("output %q", out)
 	}
 }
+
+// A repetition counts its iterations only for what reads the count: the count of a repetition
+// without a minimum is neither declared nor incremented.
+func TestGeneratedTSLeavesOutUnreadCounts(t *testing.T) {
+	t.Parallel()
+	g, err := parseTest("rule main = item* \"b\"\nrule item = \"a\" / \"c\"")
+	if err != nil {
+		t.Fatal(err)
+	}
+	files, err := gentest.GenerateTS(g, gen.GenOptions{Start: "main"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range files {
+		if strings.HasSuffix(f.Path, "parser.ts") && strings.Contains(string(f.Content), "++;") {
+			t.Errorf("the parser increments a count:\n%s", f.Content)
+		}
+	}
+}
