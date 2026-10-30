@@ -13,8 +13,8 @@ form, which is the fast path measured before this change.
 
 The default is resolved once per entry point. Resolving it costs one input length: a byte count for
 `Bytes` or an input of at most 1024 units, and one pass over the string to count code points
-otherwise. A stream, which has no length, starts at the floor and raises it by 1024 for every unit
-the reader returns; the raise is a comparison on each read.
+otherwise. A stream, which has no length, starts at the floor and raises it to 1024 times the furthest position the
+parser has demanded; the raise is a comparison on each demand.
 
 ## Results
 

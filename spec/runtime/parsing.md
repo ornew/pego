@@ -453,8 +453,10 @@ meaning.
 
 The default is resolved once per entry point, from the input the entry point
 receives. For a `Document`, `n` is the length of the text at each `Parse`. A
-stream does not know `n` up front, so its default starts at `2^20` and grows
-to `1024 * r` as `r` units are read from the reader. A parser generated
+stream does not know `n` up front, so its default is `max(2^20, 1024 * d)`,
+where `d` is the number of units up to the furthest position the parser has
+demanded from the stream so far, and it never shrinks. `d` depends on the input
+and the grammar, not on how the reader splits the input into reads. A parser generated
 without budget controls spends no budget and accepts only a zero limit and
 `Unlimited`.
 

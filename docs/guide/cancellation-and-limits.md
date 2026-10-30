@@ -56,7 +56,8 @@ node, err := p.Parse(input, pego.WithLimits(pego.Limits{Budget: pego.Unlimited})
 ```
 
 A parse with `Unlimited` and no context runs without any control, which is the fastest form. A stream does not know
-its length in advance: its default starts at `2^20` and grows by 1024 for every unit read. A `Document` resolves the
+its length in advance: its default is `max(2^20, 1024 * d)`, where `d` is the furthest position the parser has asked the stream for, so it does not
+depend on how your reader splits the input. A `Document` resolves the
 default from the text at each `Parse`. Generated Go and TypeScript parsers apply the default when they are generated
 with `-budget-controls`; a parser generated without it spends no budget and accepts only a zero limit and
 `Unlimited`.
