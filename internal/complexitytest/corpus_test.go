@@ -14,8 +14,10 @@ const corpusCap = 2_000_000_000
 
 // ratioLimit is the largest growth of the worst cost per input byte from the input of size 2n to
 // the input of size 4n for a linear grammar. Linear growth keeps the ratio near 1, and a fixed
-// cost lowers it, so the limit admits growth up to n^1.14 at most. The ratio starts at 2n
-// because the cost per byte of the smallest input still carries the fixed cost.
+// cost lowers it. Without fixed cost the limit admits growth up to n^1.14; the fixed cost that
+// remains at 2n can lower the ratio of a linear grammar to about 0.97, and then the limit
+// admits up to about n^1.18. The ratio starts at 2n because the cost per byte of the smallest
+// input still carries the fixed cost.
 const ratioLimit = 1.1
 
 // corpusEntry is a grammar of the repository with a family of inputs that grow with n.

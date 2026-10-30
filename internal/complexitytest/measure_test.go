@@ -159,3 +159,43 @@ func TestStepsLenient(t *testing.T) {
 		}
 	}
 }
+
+// The tolerant search stops only when its interval is within 1/256 of the result: the result
+// exceeds the exact threshold by less than result/256. Inputs of many sizes vary where the
+// bisection ends, so a looser stopping rule shows on some of them.
+func TestStepsTolerance(t *testing.T) {
+	t.Parallel()
+	p := mustCompile(t, "rule main = (a / \"a\")* $$\nrule a = \"a\"* \"c\"\n")
+	for _, b := range Backends {
+		for n := 40; n <= 160; n += 4 {
+			in := rep("a", n)
+			exact, err := ExactSteps(p, in, b, 10_000_000)
+			if err != nil {
+				t.Fatalf("%s n=%d: %v", BackendName(b), n, err)
+			}
+			approx, err := Steps(p, in, b, 10_000_000)
+			if err != nil || approx.Steps < exact.Steps || approx.Steps-exact.Steps > approx.Steps/256 {
+				t.Errorf("%s n=%d: tolerant search %v (%v), exact %v", BackendName(b), n, approx, err, exact)
+			}
+		}
+	}
+}
+
+// An error of a finished parse that is not a syntax error, such as a run-time error of an action,
+// is a failure of the measurement, also for StepsLenient.
+func TestStepsLenientRejectsRuntimeError(t *testing.T) {
+	t.Parallel()
+	p := mustCompile(t, "rule main = xs:\"a\"* $$ => $xs[10]\n")
+	for _, b := range Backends {
+		c, err := StepsLenient(p, "aaa", b, 100_000)
+		if err == nil {
+			t.Errorf("%s: run-time error accepted as %T in %+v", BackendName(b), c.ParseErr, c)
+			continue
+		}
+		var se *pego.SyntaxError
+		var ses pego.SyntaxErrors
+		if errors.As(err, &se) || errors.As(err, &ses) {
+			t.Errorf("%s: error %v is a syntax error, want a run-time error", BackendName(b), err)
+		}
+	}
+}
