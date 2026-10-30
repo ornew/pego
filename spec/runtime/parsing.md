@@ -431,7 +431,9 @@ package-local options.
 These controls are cooperative and backend-local. A zero limit disables the
 limit. The budget counter is monotonic for one invocation and resets on the next
 call. A reservation is checked before the corresponding work begins; if it
-exceeds the remaining allowance, that work is not performed. Counts are
+exceeds the remaining allowance, that work is not performed. Decoding is the
+one exception: a reservation may follow the decode of at most one character (at
+most 4 bytes) and must precede storing or using that character. Counts are
 implementation-specific and are not elapsed-time, memory, or buffered-input
 limits.
 
