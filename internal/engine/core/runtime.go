@@ -381,7 +381,7 @@ func (p *Parser) Expect(pos int, id ExpID) {
 	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
 	if p.ExpBits&bit != 0 {
 		for _, e := range p.Exp[p.ExpBase:] {
-			p.StepWork()
+			p.Work()
 			if e == id {
 				return
 			}
@@ -436,7 +436,7 @@ func (p *Parser) Keep(ids []ExpID) []ExpID {
 // stack beyond the current record (writes only happen before the position already read).
 func (p *Parser) MergeExpected(far int, ids []ExpID) {
 	for _, x := range ids {
-		p.StepWork()
+		p.Work()
 		p.Expect(far, x)
 	}
 }
@@ -470,7 +470,7 @@ func StaticRuleOf(r *Rule) *staticRule { return &r.staticRule }
 // The work is split into CallBegin, GrowBegin/GrowStep/GrowEnd, invoke, and CallEnd, and the
 // iterative VM calls the same functions from its own stack.
 func (p *Parser) Call(r *Rule, min int) (*value.Node, bool) {
-	p.StepWork()
+	p.Work()
 	if p.Tr != nil {
 		// A traced parse: report the call (tracedCall calls back here with direct set).
 		if !p.Tr.direct {
@@ -532,7 +532,7 @@ func (p *Parser) EnvValues(names []string) []any {
 		return vals
 	}
 	for i, name := range names {
-		p.StepWork()
+		p.Work()
 		vals[i], _ = p.LookupValue(name)
 	}
 	return vals
@@ -707,7 +707,7 @@ func (p *Parser) GrowBegin(key MemoKey) GrowState {
 // GrowStep receives the body's result; if the match grew, it stores the result in the memo,
 // prepares the next evaluation, and returns true.
 func (p *Parser) GrowStep(g *GrowState, v *value.Node, ok bool) bool {
-	p.StepWork()
+	p.Work()
 	if !ok || (g.Best.Ok && p.Pos <= g.Best.End) {
 		return false
 	}
@@ -763,7 +763,7 @@ func (p *Parser) invoke(r *Rule, min int) (*value.Node, bool) {
 // InvokeBegin and InvokeEnd inlined, minus the capture frame (the body never writes one, so the
 // caller's stays current), and with the failure handling of call.
 func (p *Parser) InvokePlain(r *Rule, min int) (*value.Node, bool) {
-	p.StepWork()
+	p.Work()
 	start, rec, trail, missing := p.Pos, len(p.Recovered), len(p.Trail), p.missingMark()
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
@@ -800,7 +800,7 @@ type InvokeState struct {
 }
 
 func (p *Parser) InvokeBegin(r *Rule) InvokeState {
-	p.StepWork()
+	p.Work()
 	st := InvokeState{f: p.NewFrame(len(r.Scope.Names)), prevFrame: p.Frame, PrevEnv: p.Env, PrevCut: p.Cut, Trail: len(p.Trail), Start: p.Pos}
 	p.Frame, p.Cut = st.f, false
 	p.Depth++
@@ -877,7 +877,7 @@ func (p *Parser) AttachCaptures(v *value.Node, s *compile.Scope, f *Frame, start
 	found := false
 	wrap := v == nil || !value.D(v).Fresh
 	for _, c := range f.Vals {
-		p.StepWork()
+		p.Work()
 		if c != nil {
 			found = true
 		}
@@ -897,7 +897,7 @@ func (p *Parser) AttachCaptures(v *value.Node, s *compile.Scope, f *Frame, start
 	}
 	value.D(v).Labeled = p.Prog.RecordsSourceInfo
 	for i, name := range s.Names {
-		p.StepWork()
+		p.Work()
 		if f.Vals[i] != nil {
 			p.SetValueField(&value.D(v).Fields, name, f.Vals[i])
 		}
@@ -969,7 +969,7 @@ func (p *Parser) SyntaxError() *SyntaxError {
 func (p *Parser) MakeError(pos int, expected []ExpID) *SyntaxError {
 	e := &SyntaxError{Pos: pos}
 	for _, x := range expected {
-		p.StepWork()
+		p.Work()
 		if x&MsgBit != 0 {
 			e.Messages = append(e.Messages, p.Descs[x&^MsgBit])
 		} else {
@@ -1027,7 +1027,7 @@ func (p *Parser) ShiftOf(n *value.Node) int {
 	}
 	s := int(value.D(n).Start)
 	for _, ed := range p.Edits[value.D(n).Gen:p.Gen] {
-		p.StepWork()
+		p.Work()
 		if s >= ed.End {
 			s += ed.Delta
 		}
@@ -1041,19 +1041,19 @@ func (p *Parser) ShiftOf(n *value.Node) int {
 
 // MoveTree moves the non-empty node n by shift (ShiftOf(n)), and its descendants, in place.
 func (p *Parser) MoveTree(n *value.Node, shift int) {
-	p.StepWork()
+	p.Work()
 	gen := value.D(n).Gen
 	value.D(n).Start += int32(shift)
 	value.D(n).End += int32(shift)
 	value.D(n).Gen = p.Gen
 	for i, c := range value.D(n).Children {
-		p.StepWork()
+		p.Work()
 		if c != nil && value.D(c).Gen < p.Gen {
 			value.D(n).Children[i] = p.moveChild(c, gen, shift)
 		}
 	}
 	for i := range value.D(n).Fields {
-		p.StepWork()
+		p.Work()
 		if c, ok := value.D(n).Fields[i].Value.(*value.Node); ok && c != nil && value.D(c).Gen < p.Gen {
 			value.D(n).Fields[i].Value = p.moveChild(c, gen, shift)
 		}
@@ -1082,7 +1082,7 @@ func (p *Parser) moveChild(c *value.Node, gen uint32, shift int) *value.Node {
 // ones are copied the same way, and non-empty ones (captured in a lookahead) are moved in place.
 // Copies made in the same moveResult are shared.
 func (p *Parser) MoveEmpty(n *value.Node, shift int) *value.Node {
-	p.StepWork()
+	p.Work()
 	if c, ok := p.Moved[n]; ok {
 		return c
 	}
@@ -1093,14 +1093,14 @@ func (p *Parser) MoveEmpty(n *value.Node, shift int) *value.Node {
 	if value.D(n).Children != nil {
 		value.D(c).Children = p.Nodes(len(value.D(n).Children))
 		for i, ch := range value.D(n).Children {
-			p.StepWork()
+			p.Work()
 			value.D(c).Children[i] = p.moveDescendant(ch, value.D(n).Gen, shift)
 		}
 	}
 	if value.D(n).Fields != nil {
 		value.D(c).Fields = p.fields(len(value.D(n).Fields))[:len(value.D(n).Fields)]
 		for i, f := range value.D(n).Fields {
-			p.StepWork()
+			p.Work()
 			if vn, ok := f.Value.(*value.Node); ok {
 				f.Value = p.moveDescendant(vn, value.D(n).Gen, shift)
 			}

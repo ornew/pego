@@ -243,20 +243,20 @@ func saturatingAdd(a, b uint64) uint64 {
 
 // Work helpers keep long engine-owned scans between bounded reservations.
 //
-// InputWork has one guarded call so that it inlines into the matchers.
-func (p *Parser) InputWork(n uint64) {
+// ReadWork has one guarded call so that it inlines into the matchers.
+func (p *Parser) ReadWork(n uint64) {
 	if p.Document != nil {
-		p.inputWorkTracked(n)
+		p.readWorkTracked(n)
 	} else if p.Control != nil {
 		p.Control.Charge(n)
 	}
 }
 
-// inputWorkOrdinary is InputWork in an ordinary parse (ExpectOrdinary), which tracks no input.
-func (p *Parser) inputWorkOrdinary(uint64) {}
+// readWorkOrdinary is ReadWork in an ordinary parse (ExpectOrdinary), which tracks no input.
+func (p *Parser) readWorkOrdinary(uint64) {}
 
-// inputWorkTracked is InputWork in a Document or controlled parse.
-func (p *Parser) inputWorkTracked(n uint64) {
+// readWorkTracked is ReadWork in a Document or controlled parse.
+func (p *Parser) readWorkTracked(n uint64) {
 	if p.Document != nil {
 		// Generated matchers can read directly after charging the work of the read.
 		// Overestimating the dependency only discards a reusable memo entry.
@@ -270,13 +270,13 @@ func (p *Parser) inputWorkTracked(n uint64) {
 		p.Control.Charge(n)
 	}
 }
-func (p *Parser) StepWork() {
+func (p *Parser) Work() {
 	p.Control.chargeStep()
 }
 
 func (p *Parser) setControlledSource(s string) {
 	n, valid := 0, len(s) <= 1<<31-1
-	// Outside a Document, charge the control directly: InputWork is too large to inline.
+	// Outside a Document, charge the control directly: ReadWork is too large to inline.
 	c := p.Control
 	if p.Document != nil {
 		c = nil
@@ -285,7 +285,7 @@ func (p *Parser) setControlledSource(s string) {
 		if w := uint64(min(utf8.UTFMax, len(s)-off)); c != nil {
 			c.Charge(w)
 		} else {
-			p.InputWork(w)
+			p.ReadWork(w)
 		}
 		r, size := utf8.DecodeRuneInString(s[off:])
 		if r == utf8.RuneError && size == 1 {
@@ -310,7 +310,7 @@ func (p *Parser) setControlledSource(s string) {
 		offs[n] = int32(len(s))
 	}
 	for off, i := 0, 0; off < len(s); i++ {
-		p.InputWork(uint64(min(utf8.UTFMax, len(s)-off)))
+		p.ReadWork(uint64(min(utf8.UTFMax, len(s)-off)))
 		r, size := utf8.DecodeRuneInString(s[off:])
 		p.In[i] = r
 		if valid {
@@ -333,7 +333,7 @@ func (p *Parser) literalHasReplacement(rs []rune) bool {
 
 func (p *Parser) literalHasReplacementControlled(rs []rune) bool {
 	for _, r := range rs {
-		p.StepWork()
+		p.Work()
 		if r == utf8.RuneError {
 			return true
 		}
@@ -347,12 +347,12 @@ func (p *Parser) hasLiteralPrefix(text string) bool {
 		return strings.HasPrefix(src, text)
 	}
 	if len(src) < len(text) {
-		p.InputWork(1)
+		p.ReadWork(1)
 		return false
 	}
 	for off := 0; off < len(text); {
 		n := min(4096, len(text)-off)
-		p.InputWork(uint64(n))
+		p.ReadWork(uint64(n))
 		if src[off:off+n] != text[off:off+n] {
 			return false
 		}
@@ -395,7 +395,7 @@ type WorkRange struct{ Lo, Hi rune }
 
 func (p *Parser) RejectWorkClass(ch rune, ranges []WorkRange, negated bool) bool {
 	for _, r := range ranges {
-		p.StepWork()
+		p.Work()
 		if ch >= r.Lo && ch <= r.Hi {
 			return negated
 		}
@@ -621,7 +621,7 @@ func (p *Parser) equalExpectedControlled(a, b []ExpID) bool {
 		return false
 	}
 	for i, x := range a {
-		p.StepWork()
+		p.Work()
 		if x != b[i] {
 			return false
 		}
@@ -652,7 +652,7 @@ func (p *Parser) sortExpectedControlled(values []string) {
 			i, j, k := lo, mid, lo
 			for i < mid && j < hi {
 				order := p.compareText(src[i], src[j])
-				p.StepWork()
+				p.Work()
 				if order <= 0 {
 					dst[k] = src[i]
 					i++
@@ -702,7 +702,7 @@ func (p *Parser) recoveryErrorTextControlled(e *SyntaxError) string {
 	}
 	size := checkedDiagnosticSize(len(prefix), len(intro))
 	for i, part := range parts {
-		p.StepWork()
+		p.Work()
 		if i > 0 {
 			size = checkedDiagnosticSize(size, len(sep))
 		}
@@ -713,7 +713,7 @@ func (p *Parser) recoveryErrorTextControlled(e *SyntaxError) string {
 	p.writeDiagnosticText(&out, prefix)
 	p.writeDiagnosticText(&out, intro)
 	for i, part := range parts {
-		p.StepWork()
+		p.Work()
 		if i > 0 {
 			p.writeDiagnosticText(&out, sep)
 		}
@@ -743,7 +743,7 @@ func checkedDiagnosticSize(size, width int) int {
 func (p *Parser) makeControlledError(pos int, expected []ExpID) *SyntaxError {
 	e := &SyntaxError{Pos: pos}
 	for _, x := range expected {
-		p.StepWork()
+		p.Work()
 		if x&MsgBit != 0 {
 			e.Messages = append(e.Messages, p.g.Descs[x & ^MsgBit])
 		} else {
@@ -758,7 +758,7 @@ func (p *Parser) makeControlledError(pos int, expected []ExpID) *SyntaxError {
 	if p.lines == nil {
 		p.lines = append(p.lines, 0)
 		for i := 0; i < p.n; i++ {
-			p.InputWork(1)
+			p.ReadWork(1)
 			if p.unit == Bytes && p.bs[i] == '\n' || p.unit == CodePoints && p.In[i] == '\n' {
 				p.lines = append(p.lines, i+1)
 			}
@@ -767,7 +767,7 @@ func (p *Parser) makeControlledError(pos int, expected []ExpID) *SyntaxError {
 	pos = min(pos, p.n)
 	lo, hi := 0, len(p.lines)
 	for lo < hi {
-		p.StepWork()
+		p.Work()
 		mid := lo + (hi-lo)/2
 		if p.lines[mid] < pos+1 {
 			lo = mid + 1
@@ -798,7 +798,7 @@ func (p *Parser) memoKeyEqual(l, r []any) bool {
 		return false
 	}
 	for i, v := range l {
-		p.StepWork()
+		p.Work()
 		if !p.rawValueEqual(v, r[i]) {
 			return false
 		}
@@ -807,7 +807,7 @@ func (p *Parser) memoKeyEqual(l, r []any) bool {
 }
 
 func (p *Parser) bindControlled(name string, val any) {
-	p.StepWork()
+	p.Work()
 	e := p.Env
 	if p.bound == nil {
 		p.bound = make(map[string]bool)
@@ -832,7 +832,7 @@ func (p *Parser) bindControlled(name string, val any) {
 	}
 	old := e
 	for old != nil {
-		p.StepWork()
+		p.Work()
 		if p.rawValueEqual(old.name, name) {
 			break
 		}
@@ -848,7 +848,7 @@ func (p *Parser) bindControlled(name string, val any) {
 	head := &Env{name: name, val: val}
 	tail := head
 	for cur := e; cur != old; cur = cur.next {
-		p.StepWork()
+		p.Work()
 		tail.next = &Env{name: cur.name, val: cur.val}
 		tail = tail.next
 	}
@@ -875,7 +875,7 @@ func clearWorkControlled[T any](p *Parser, values []T) {
 }
 
 func (p *Parser) controlledEnvValues(names []string) []any {
-	p.StepWork()
+	p.Work()
 	if len(names) == 0 {
 		return nil
 	}
@@ -884,9 +884,9 @@ func (p *Parser) controlledEnvValues(names []string) []any {
 	}
 	vals := make([]any, len(names))
 	for i, name := range names {
-		p.StepWork()
+		p.Work()
 		for e := p.Env; e != nil; e = e.next {
-			p.StepWork()
+			p.Work()
 			if p.rawValueEqual(e.name, name) {
 				vals[i] = e.val
 				break
@@ -898,7 +898,7 @@ func (p *Parser) controlledEnvValues(names []string) []any {
 
 func (p *Parser) lookupEnvControlled(name string) (any, bool) {
 	for e := p.Env; e != nil; e = e.next {
-		p.StepWork()
+		p.Work()
 		if p.rawValueEqual(e.name, name) {
 			return e.val, true
 		}
@@ -921,12 +921,12 @@ func (p *Parser) memoGet(rule, pos, min int, key []any) *memoEntry {
 }
 
 func (p *Parser) memoGetControlled(rule, pos, min int, key []any) *memoEntry {
-	p.StepWork()
+	p.Work()
 	if pos >= len(p.memo.slots) {
 		return nil
 	}
 	for e := p.memo.slots[pos]; e != nil; e = e.next {
-		p.StepWork()
+		p.Work()
 		if e.rule == int32(rule) && e.min == int32(min) && (e.growing || p.memoKeyEqual(e.env, key)) {
 			return e
 		}
@@ -948,7 +948,7 @@ func (p *Parser) memoPut(rule, pos, min int, key []any, e *memoEntry) {
 }
 
 func (p *Parser) memoPutControlled(rule, pos, min int, key []any, e *memoEntry) {
-	p.StepWork()
+	p.Work()
 	slots := p.memo.slots
 	if pos >= len(slots) {
 		p.growthWork(len(slots), pos+1)
@@ -963,13 +963,13 @@ func (p *Parser) memoPutControlled(rule, pos, min int, key []any, e *memoEntry) 
 	link := &slots[pos]
 	var replaced *memoEntry
 	for x := *link; x != nil; link, x = &x.next, x.next {
-		p.StepWork()
+		p.Work()
 		if x == e || x.rule == int32(rule) && x.min == int32(min) && p.memoKeyEqual(x.env, key) {
 			replaced = x
 			break
 		}
 	}
-	p.StepWork()
+	p.Work()
 	// Commit the completed key/slot array and link together, with no further
 	// checkpoint between mutations. A resident self-entry retains its successor.
 	p.memo.slots = slots
@@ -989,7 +989,7 @@ func (p *Parser) controlledFirstCallPrepare(r *Rule) {
 	if r.Seen < 0 {
 		return
 	}
-	p.StepWork()
+	p.Work()
 	t := &p.memo
 	if t.calls == nil {
 		t.calls = make([]seenCalls, t.stride)
@@ -1007,7 +1007,7 @@ func (p *Parser) controlledFirstCallPrepare(r *Rule) {
 			dir.pages = slices.Grow(dir.pages, at+1-len(dir.pages))[:at+1]
 		}
 		if dir.pages[at] == nil {
-			p.StepWork()
+			p.Work()
 			// A page that starts a chunk is a demand of the parse; whether the chunk exists already
 			// is the pooled parser's state. Reserve the capacity alloc appends into here.
 			if n := t.bitPages.n; n%64 == 0 {
@@ -1049,7 +1049,7 @@ func (p *Parser) valueField(fs Fields, name string) (any, bool) {
 
 func (p *Parser) valueFieldControlled(fs Fields, name string) (any, bool) {
 	for _, f := range fs {
-		p.StepWork()
+		p.Work()
 		if p.rawValueEqual(f.Name, name) {
 			return f.Value, true
 		}
@@ -1066,19 +1066,19 @@ func (p *Parser) setValueField(fs *Fields, name string, v any) {
 
 func (p *Parser) setValueFieldControlled(fs *Fields, name string, v any) {
 	for i := range *fs {
-		p.StepWork()
+		p.Work()
 		if p.rawValueEqual((*fs)[i].Name, name) {
 			(*fs)[i].Value = v
 			return
 		}
 	}
-	p.StepWork()
+	p.Work()
 	*fs = append(*fs, NodeField{name, v})
 }
-func (p *Parser) pushKid(v *Node) { p.StepWork(); p.KidStack = append(p.KidStack, v) }
+func (p *Parser) pushKid(v *Node) { p.Work(); p.KidStack = append(p.KidStack, v) }
 func (p *Parser) undoCaptures(from int) {
 	for i := len(p.Trail) - 1; i >= from; i-- {
-		p.StepWork()
+		p.Work()
 		u := p.Trail[i]
 		u.f.Vals[u.slot] = u.old
 	}
@@ -1094,7 +1094,7 @@ func (c *ActCtx) Fold(fn string, right bool, acc, list any, f func(acc, item any
 func (c *ActCtx) foldControlled(fn string, right bool, acc, list any, f func(acc, item any) any) any {
 	items := c.ListItems(fn, list)
 	for i := range items {
-		c.P.StepWork()
+		c.P.Work()
 		item := items[i]
 		if right {
 			item = items[len(items)-1-i]
@@ -1109,13 +1109,13 @@ func (c *ActCtx) foldControlled(fn string, right bool, acc, list any, f func(acc
 func (p *Parser) actionErrorText(parts ...string) string {
 	size := 0
 	for _, part := range parts {
-		p.StepWork()
+		p.Work()
 		size = checkedDiagnosticSize(size, len(part))
 	}
 	var out strings.Builder
 	out.Grow(size)
 	for _, part := range parts {
-		p.StepWork()
+		p.Work()
 		p.writeDiagnosticText(&out, part)
 	}
 	return out.String()

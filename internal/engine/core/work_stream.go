@@ -67,9 +67,9 @@ func (p *Parser) PruneStreamMemo(pos int) {
 		return
 	}
 	for _, head := range t.Slots[:min(k, len(t.Slots))] {
-		p.StepWork()
+		p.Work()
 		for e := head; e != nil; {
-			p.StepWork()
+			p.Work()
 			next := e.Next
 			if !e.Growing {
 				t.Retire(e)

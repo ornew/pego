@@ -38,11 +38,11 @@ func TestGeneratedNoStepChargesInTypedCode(t *testing.T) {
 			return all
 		}
 		for _, opts := range []gen.GenOptions{{Types: true}, {Types: true, TypedOnly: true}, {Types: true, Document: true}, {Types: true, Recognize: true, Document: true}} {
-			if out := generated(opts); strings.Contains(out, "StepWork") {
+			if out := generated(opts); strings.Contains(out, ".Work()") {
 				t.Errorf("%+v: a parser without work controls charges steps", opts)
 			}
 		}
-		if out := generated(gen.GenOptions{Types: true, Document: true, WorkControls: true}); !strings.Contains(out, "StepWork") {
+		if out := generated(gen.GenOptions{Types: true, Document: true, WorkControls: true}); !strings.Contains(out, ".Work()") {
 			t.Error("a controlled parser does not charge steps: the check is void")
 		}
 	}
@@ -57,7 +57,7 @@ func TestGeneratedNoStepChargesInTypedCode(t *testing.T) {
 	}
 	found := false
 	for _, f := range files {
-		if strings.HasSuffix(f.Path, "types.go") && strings.Contains(string(f.Content), "StepWork") {
+		if strings.HasSuffix(f.Path, "types.go") && strings.Contains(string(f.Content), ".Work()") {
 			found = true
 		}
 	}

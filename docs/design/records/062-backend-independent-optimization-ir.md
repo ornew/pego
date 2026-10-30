@@ -177,7 +177,7 @@ The typed Go output measured at that commit was written directly as text. Becaus
 declares every variable of a rule at the top of the function in a `var` block, typed `any` for values. It
 tracks reads to avoid unused-variable errors, tracks reachability to satisfy `go vet`, and writes `_ = x`
 where a declared variable ends up unread. Actions become immediately invoked function literals
-(`func() any { c.P.StepWork(); return … }()`). The resulting text then passes through `go/format` and four
+(`func() any { c.P.Work(); return … }()`). The resulting text then passes through `go/format` and four
 `go/ast` passes: ordinary-method specialization, charge stripping, typed-entry pruning (`gen_prune.go`) and
 runtime-name qualification (`QualifyRuntime`). Removing the charges leaves `func() any { ; return … }()`
 behind, and blank lines, which the specialization deletes by replacing `"\n\n"` in the printed text.

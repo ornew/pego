@@ -460,10 +460,10 @@ func (p *Parser) streamDiscard(keep int) {
 	}
 	s.baseLine, s.baseCol = p.streamLineCol(keep)
 	if p.unit == Bytes {
-		p.InputWork(uint64(len(s.bs) - n))
+		p.ReadWork(uint64(len(s.bs) - n))
 		s.bs = s.bs[:copy(s.bs, s.bs[n:])]
 	} else {
-		p.InputWork(uint64(len(s.in) - n))
+		p.ReadWork(uint64(len(s.in) - n))
 		s.in = s.in[:copy(s.in, s.in[n:])]
 	}
 	s.base = keep
@@ -479,7 +479,7 @@ func (p *Parser) pruneStreamMemo(pos int) {
 	}
 	for _, head := range t.slots[:min(k, len(t.slots))] {
 		for e := head; e != nil; {
-			p.StepWork()
+			p.Work()
 			next := e.next
 			if !e.growing {
 				*e = memoEntry{next: t.free}
@@ -525,7 +525,7 @@ func (p *Parser) streamFill(n int) bool {
 
 func (p *Parser) streamRead() {
 	p.Control.Check()
-	p.StepWork()
+	p.Work()
 	s := p.Stream
 	var err error
 	if p.unit == Bytes {
@@ -549,7 +549,7 @@ func (p *Parser) streamRead() {
 // streamPeek is peek on a stream. A complete character never waits for more
 // input; an incomplete UTF-8 prefix waits for more bytes or the end of input.
 func (p *Parser) streamPeek() (rune, int, bool) {
-	p.InputWork(1)
+	p.ReadWork(1)
 	s := p.Stream
 	if p.Pos < s.base || !p.streamFill(p.Pos+1) {
 		return 0, 0, false
@@ -565,14 +565,14 @@ func (p *Parser) streamPeek() (rune, int, bool) {
 		p.streamFill(s.loaded() + 1)
 		b = s.bs[p.Pos-s.base:]
 	}
-	p.InputWork(uint64(min(utf8.UTFMax, len(b))))
+	p.ReadWork(uint64(min(utf8.UTFMax, len(b))))
 	r, size := utf8.DecodeRune(b)
 	return r, size, true
 }
 
 // streamByte returns the byte at position i (Bytes).
 func (p *Parser) streamByte(i int) (byte, bool) {
-	p.InputWork(1)
+	p.ReadWork(1)
 	s := p.Stream
 	if i < s.base || !p.streamFill(i+1) {
 		return 0, false
@@ -595,7 +595,7 @@ func (p *Parser) streamMatchLiteral(rs []rune, text string, desc ExpID, build bo
 		}
 	} else {
 		for _, r := range rs {
-			p.InputWork(1)
+			p.ReadWork(1)
 			if p.Pos < s.base || !p.streamFill(p.Pos+1) || s.in[p.Pos-s.base] != r {
 				p.Pos = start
 				p.Expect(start, desc)
@@ -624,7 +624,7 @@ func (p *Parser) streamAtLineStart() bool {
 }
 
 func (p *Parser) streamAtEnd() bool {
-	p.InputWork(1)
+	p.ReadWork(1)
 	return !p.streamFill(p.Pos + 1)
 }
 
@@ -666,7 +666,7 @@ func (p *Parser) streamText(start, end int) string {
 	i := 0
 	for off := range snap.source {
 		if i&127 == 0 {
-			p.InputWork(uint64(min(128, snap.end-snap.base-i)))
+			p.ReadWork(uint64(min(128, snap.end-snap.base-i)))
 		}
 		snap.offsets[i] = int32(off)
 		i++
@@ -701,7 +701,7 @@ func (p *Parser) streamLineCol(pos int) (int, int) {
 		if s.lines == nil {
 			s.lines = []int{0}
 			for i := range s.loaded() {
-				p.InputWork(1)
+				p.ReadWork(1)
 				if p.unit == Bytes && s.bs[i] == '\n' || p.unit == CodePoints && s.in[i] == '\n' {
 					s.lines = append(s.lines, i+1)
 				}
@@ -721,7 +721,7 @@ func (p *Parser) streamLineCol(pos int) (int, int) {
 	line, col := s.baseLine, s.baseCol
 	n := s.loaded()
 	for i := s.base; i < pos && i < n; i++ {
-		p.InputWork(1)
+		p.ReadWork(1)
 		var nl bool
 		if p.unit == Bytes {
 			nl = s.bs[i-s.base] == '\n'

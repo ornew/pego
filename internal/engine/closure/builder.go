@@ -64,7 +64,7 @@ func (b *Builder) Step(m core.Matcher) core.Matcher {
 	if !core.WorkControlsEnabled || b.plainDispatch {
 		return m
 	}
-	return func(p *core.Parser) (*value.Node, bool) { p.StepWork(); return m(p) }
+	return func(p *core.Parser) (*value.Node, bool) { p.Work(); return m(p) }
 }
 
 func (b *Builder) RuleBody(sr *compile.Rule, m core.Matcher) {
@@ -215,7 +215,7 @@ func (b *Builder) Choice(e *grammar.Choice, ms []core.Matcher, firsts []compile.
 						peeked = true
 					}
 					if !(more && g.accept(p, ch)) && p.Depth+g.depth <= p.MaxDepth {
-						p.StepWork()            // a skipped matcher still consumes dispatch work
+						p.Work()                // a skipped matcher still consumes dispatch work
 						p.Expect(p.Pos, g.desc) // what the alternative would record
 						continue
 					}

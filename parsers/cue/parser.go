@@ -389,7 +389,7 @@ func tmk_UnaryExpr(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 }
 
 func tl0(a *tslabs, v any) []types.Expr {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -399,14 +399,14 @@ func tl0(a *tslabs, v any) []types.Expr {
 	}
 	out := rt.AllocSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl1(a *tslabs, v any) []types.Clause {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -416,14 +416,14 @@ func tl1(a *tslabs, v any) []types.Clause {
 	}
 	out := rt.AllocSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[types.Clause](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl2(a *tslabs, v any) []*types.Attribute {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -433,14 +433,14 @@ func tl2(a *tslabs, v any) []*types.Attribute {
 	}
 	out := rt.AllocSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = tv0(a, c)
 	}
 	return out
 }
 
 func tl3(a *tslabs, v any) []types.Decl {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -450,14 +450,14 @@ func tl3(a *tslabs, v any) []types.Decl {
 	}
 	out := rt.AllocSlice(&a.tl3Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[types.Decl](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl4(a *tslabs, v any) []*types.ImportSpec {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -467,14 +467,14 @@ func tl4(a *tslabs, v any) []*types.ImportSpec {
 	}
 	out := rt.AllocSlice(&a.tl4Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.ImportSpec](c)
 	}
 	return out
 }
 
 func tv0(a *tslabs, v any) *types.Attribute {
-	a.stepWork()
+	a.work()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -483,7 +483,7 @@ func tv0(a *tslabs, v any) *types.Attribute {
 }
 
 func tv1(a *tslabs, v any) *types.Bool {
-	a.stepWork()
+	a.work()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
@@ -492,7 +492,7 @@ func tv1(a *tslabs, v any) *types.Bool {
 }
 
 func tv2(a *tslabs, v any) *types.Bottom {
-	a.stepWork()
+	a.work()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
@@ -501,7 +501,7 @@ func tv2(a *tslabs, v any) *types.Bottom {
 }
 
 func tv3(a *tslabs, v any) *types.Float {
-	a.stepWork()
+	a.work()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
@@ -510,7 +510,7 @@ func tv3(a *tslabs, v any) *types.Float {
 }
 
 func tv4(a *tslabs, v any) *types.Ident {
-	a.stepWork()
+	a.work()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[5] {
 		return nil
@@ -519,7 +519,7 @@ func tv4(a *tslabs, v any) *types.Ident {
 }
 
 func tv5(a *tslabs, v any) *types.Int {
-	a.stepWork()
+	a.work()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[6] {
 		return nil
@@ -528,7 +528,7 @@ func tv5(a *tslabs, v any) *types.Int {
 }
 
 func tv6(a *tslabs, v any) *types.Null {
-	a.stepWork()
+	a.work()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[7] {
 		return nil
@@ -573,7 +573,7 @@ type tslabs struct {
 }
 
 func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }
-func (a *tslabs) stepWork() {
+func (a *tslabs) work() {
 	if a.control != nil {
 		a.control.Charge(1)
 	}

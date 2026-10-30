@@ -53,7 +53,7 @@ func (p *Parser) ActionResult(ctx *EvalCtx, act Evaluator, where string) *value.
 	n, ok := v.(*value.Node)
 	if err == nil && n != nil {
 		for _, c := range p.Created[ctx.Cbase:] {
-			p.StepWork()
+			p.Work()
 			if c == n {
 				value.D(n).Start, value.D(n).End = int32(ctx.Start), int32(ctx.End)
 				break
@@ -153,7 +153,7 @@ func (c *EvalCtx) NewStruct(typ string, names []string, vals []any) (*value.Node
 	n := c.P.NewNode(value.Data{Kind: c.P.Prog.TypeKind(typ), Fields: c.P.fields(len(names))})
 	first := true
 	for i, name := range names {
-		c.P.StepWork()
+		c.P.Work()
 		v := vals[i]
 		if _, isFn := v.(Function); isFn {
 			return nil, c.P.ActionError("field ", name, ": cannot store a function")
@@ -214,7 +214,7 @@ func (c *EvalCtx) valueNode(kind *value.NodeKind, kids []*value.Node) *value.Nod
 	n := c.P.NewNode(value.Data{Kind: kind, Children: kids, Start: int32(c.Start), End: int32(c.Start)})
 	first := true
 	for _, it := range kids {
-		c.P.StepWork()
+		c.P.Work()
 		if it == nil {
 			continue
 		}
@@ -347,7 +347,7 @@ func (c *EvalCtx) Builtin(fn string, args []any) (any, error) {
 		}
 		acc := args[0]
 		for i := range items {
-			c.P.StepWork()
+			c.P.Work()
 			it := items[i]
 			if fn == "foldr" {
 				it = items[len(items)-1-i]
@@ -406,7 +406,7 @@ func (c *EvalCtx) PushElems(fn string, args []any) error {
 			return err
 		}
 		for _, it := range items {
-			c.P.StepWork()
+			c.P.Work()
 			v, err := f.Apply(value.UnboxNode(it), nil)
 			if err != nil {
 				return err
@@ -419,7 +419,7 @@ func (c *EvalCtx) PushElems(fn string, args []any) error {
 		}
 	case "list":
 		for _, a := range args {
-			c.P.StepWork()
+			c.P.Work()
 			n, err := c.Element("list", a)
 			if err != nil {
 				return err
@@ -428,7 +428,7 @@ func (c *EvalCtx) PushElems(fn string, args []any) error {
 		}
 	case "concat":
 		for _, a := range args {
-			c.P.StepWork()
+			c.P.Work()
 			items, err := c.P.ValueListItems("concat", a)
 			if err != nil {
 				return err
@@ -495,7 +495,7 @@ func (c *EvalCtx) Keep() *EvalCtx {
 	k := *c
 	var head *Local
 	for l, link := c.Locals, &head; l != nil; l = l.Next {
-		c.P.StepWork()
+		c.P.Work()
 		*link = &Local{Name: l.Name, Val: l.Val}
 		link = &(*link).Next
 	}

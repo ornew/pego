@@ -96,7 +96,7 @@ func (cm *Machine) convert(c *core.EvalCtx, t *grammar.New) (any, error) {
 }
 
 func (cm *Machine) Eval(c *core.EvalCtx, t grammar.Term) (any, error) {
-	c.P.StepWork()
+	c.P.Work()
 	switch t := t.(type) {
 	case *grammar.IntLit:
 		return t.Value, nil
@@ -109,7 +109,7 @@ func (cm *Machine) Eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 
 	case *grammar.CaptureRef:
 		for l := c.Locals; l != nil; l = l.Next {
-			c.P.StepWork()
+			c.P.Work()
 			if c.P.ValueEqual(l.Name, t.Name) {
 				return value.UnboxValue(l.Val), nil
 			}
@@ -145,7 +145,7 @@ func (cm *Machine) Eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 		p := c.P
 		base := len(p.Estack)
 		for _, fi := range t.Fields {
-			p.StepWork()
+			p.Work()
 			v, err := cm.Eval(c, fi.Value)
 			if err != nil {
 				p.Estack = p.Estack[:base]
@@ -155,7 +155,7 @@ func (cm *Machine) Eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 		}
 		cm.names = cm.names[:0]
 		for _, fi := range t.Fields {
-			p.StepWork()
+			p.Work()
 			cm.names = append(cm.names, fi.Name)
 		}
 		n, err := c.NewStruct(t.Type, cm.names, p.Estack[base:])
@@ -182,7 +182,7 @@ func (cm *Machine) Eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 		if t.Func == "concat" && c.P.Fusable(t) {
 			base := len(c.P.KidStack)
 			for _, a := range t.Args {
-				c.P.StepWork()
+				c.P.Work()
 				if err := cm.pushConcatArg(c, a); err != nil {
 					c.P.DropKids(base)
 					return nil, err
@@ -195,7 +195,7 @@ func (cm *Machine) Eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 		p := c.P
 		base := len(p.Estack)
 		for _, a := range t.Args {
-			c.P.StepWork()
+			c.P.Work()
 			v, err := cm.Eval(c, a)
 			if err != nil {
 				p.Estack = p.Estack[:base]
@@ -270,7 +270,7 @@ func (cm *Machine) evalTuple(c *core.EvalCtx, elems []grammar.Term) (any, error)
 	}
 	kb := len(p.KidStack)
 	for _, v := range p.Estack[base:] {
-		p.StepWork()
+		p.Work()
 		n, err := c.Element("tuple", v)
 		if err != nil {
 			p.DropKids(kb)
@@ -342,7 +342,7 @@ func (cm *Machine) textOf(c *core.EvalCtx, x grammar.Term) (string, error) {
 
 // pushConcatArg pushes onto KidStack the elements of t, an argument of a fusable concat call.
 func (cm *Machine) pushConcatArg(c *core.EvalCtx, t grammar.Term) error {
-	c.P.StepWork()
+	c.P.Work()
 	if call, ok := t.(*grammar.Call); ok && c.P.Prog.Projected[call] {
 		v, err := cm.Eval(c, call.Args[0])
 		if err != nil {
@@ -354,7 +354,7 @@ func (cm *Machine) pushConcatArg(c *core.EvalCtx, t grammar.Term) error {
 		p := c.P
 		base := len(p.Estack)
 		for _, a := range call.Args {
-			c.P.StepWork()
+			c.P.Work()
 			v, err := cm.Eval(c, a)
 			if err != nil {
 				p.Estack = p.Estack[:base]
@@ -368,7 +368,7 @@ func (cm *Machine) pushConcatArg(c *core.EvalCtx, t grammar.Term) error {
 	}
 	if call, ok := t.(*grammar.Call); ok && call.Func == "concat" {
 		for _, a := range call.Args {
-			c.P.StepWork()
+			c.P.Work()
 			if err := cm.pushConcatArg(c, a); err != nil {
 				return err
 			}
@@ -387,13 +387,13 @@ func (f *closure) Apply(x, y any) (any, error) {
 	// keeps a copy of them (keep).
 	cm := f.cm
 	p := f.ctx.P
-	p.StepWork()
+	p.Work()
 	mc, ml := cm.lctxs.N, cm.locals.N
 	ctx := cm.lctxs.Alloc()
 	*ctx = *f.ctx
 	args := [2]any{x, y}
 	for i, name := range f.params {
-		p.StepWork()
+		p.Work()
 		l := cm.locals.Alloc()
 		*l = core.Local{Name: name, Val: args[i], Next: ctx.Locals}
 		ctx.Locals = l

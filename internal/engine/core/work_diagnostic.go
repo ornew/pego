@@ -17,7 +17,7 @@ func (p *Parser) equalExpected(a, b []ExpID) bool {
 		return false
 	}
 	for i, x := range a {
-		p.StepWork()
+		p.Work()
 		if x != b[i] {
 			return false
 		}
@@ -44,7 +44,7 @@ func (p *Parser) sortExpected(values []string) {
 			i, j, k := lo, mid, lo
 			for i < mid && j < hi {
 				order := p.CompareText(src[i], src[j])
-				p.StepWork()
+				p.Work()
 				if order <= 0 {
 					dst[k] = src[i]
 					i++
@@ -90,7 +90,7 @@ func (p *Parser) RecoveryErrorText(e *SyntaxError) string {
 	}
 	size := checkedDiagnosticSize(len(prefix), len(intro))
 	for i, part := range parts {
-		p.StepWork()
+		p.Work()
 		if i > 0 {
 			size = checkedDiagnosticSize(size, len(sep))
 		}
@@ -101,7 +101,7 @@ func (p *Parser) RecoveryErrorText(e *SyntaxError) string {
 	p.writeDiagnosticText(&out, prefix)
 	p.writeDiagnosticText(&out, intro)
 	for i, part := range parts {
-		p.StepWork()
+		p.Work()
 		if i > 0 {
 			p.writeDiagnosticText(&out, sep)
 		}

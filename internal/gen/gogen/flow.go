@@ -439,7 +439,7 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 	case *flow.Inc:
 		p.incStmt(s.V)
 	case *flow.Step:
-		p.write("p.StepWork()\n")
+		p.write("p.Work()\n")
 	case *flow.Silent:
 		if s.Delta > 0 {
 			p.write("p.Silent++\n")
@@ -668,7 +668,7 @@ func (p *flowPrinter) peekStmt(s *flow.Peek) {
 		guard = "p.Document == nil && " + guard
 	}
 	// The inlined read charges its input work and leaves a Document's examined range to Peek.
-	work := "p.InputWork(1)\n"
+	work := "p.ReadWork(1)\n"
 	if !p.g.Flow.Opts.Work {
 		work = ""
 	}

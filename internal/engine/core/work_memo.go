@@ -16,7 +16,7 @@ func (p *Parser) memoKeyEqual(l, r []any) bool {
 		return false
 	}
 	for i, v := range l {
-		p.StepWork()
+		p.Work()
 		if !p.rawValueEqual(v, r[i]) {
 			return false
 		}
@@ -25,7 +25,7 @@ func (p *Parser) memoKeyEqual(l, r []any) bool {
 }
 
 func (p *Parser) bindControlled(name string, val any) {
-	p.StepWork()
+	p.Work()
 	e := p.Env
 	if p.Bound == nil {
 		p.Bound = make(map[string]bool)
@@ -50,7 +50,7 @@ func (p *Parser) bindControlled(name string, val any) {
 	}
 	old := e
 	for old != nil {
-		p.StepWork()
+		p.Work()
 		if p.rawValueEqual(old.Name, name) {
 			break
 		}
@@ -66,7 +66,7 @@ func (p *Parser) bindControlled(name string, val any) {
 	head := &Env{Name: name, Val: val}
 	tail := head
 	for cur := e; cur != old; cur = cur.Next {
-		p.StepWork()
+		p.Work()
 		tail.Next = &Env{Name: cur.Name, Val: cur.Val}
 		tail = tail.Next
 	}
@@ -79,7 +79,7 @@ func (p *Parser) MemoGet(k MemoKey) (*MemoEntry, bool) {
 	if !WorkControlsEnabled || p.Control == nil {
 		return p.Memo.Get(k)
 	}
-	p.StepWork()
+	p.Work()
 	t := p.Memo
 	i := k.Pos - t.Base
 	if i >= t.Gap {
@@ -89,7 +89,7 @@ func (p *Parser) MemoGet(k MemoKey) (*MemoEntry, bool) {
 		return nil, false
 	}
 	for e := t.Slots[i]; e != nil; e = e.Next {
-		p.StepWork()
+		p.Work()
 		if e.Rule == int32(k.Rule) && e.Min == int32(k.Min) && e.missingSilent == k.MissingSilent && p.memoKeyEqual(e.Env, k.Env) {
 			return e, true
 		}
@@ -101,7 +101,7 @@ func (p *Parser) memoGrowing(k MemoKey) (*MemoEntry, bool) {
 	if !WorkControlsEnabled || p.Control == nil {
 		return p.Memo.growing(k)
 	}
-	p.StepWork()
+	p.Work()
 	t := p.Memo
 	i := k.Pos - t.Base
 	if i >= t.Gap {
@@ -111,7 +111,7 @@ func (p *Parser) memoGrowing(k MemoKey) (*MemoEntry, bool) {
 		return nil, false
 	}
 	for e := t.Slots[i]; e != nil; e = e.Next {
-		p.StepWork()
+		p.Work()
 		if e.Growing && e.Rule == int32(k.Rule) && e.Min == int32(k.Min) && e.missingSilent == k.MissingSilent {
 			return e, true
 		}
@@ -124,7 +124,7 @@ func (p *Parser) MemoPut(k MemoKey, e *MemoEntry) {
 		p.Memo.Put(k, e)
 		return
 	}
-	p.StepWork()
+	p.Work()
 	t := p.Memo
 	i := k.Pos - t.Base
 	if i < 0 {
@@ -147,13 +147,13 @@ func (p *Parser) MemoPut(k MemoKey, e *MemoEntry) {
 	link := &slots[i]
 	var replaced *MemoEntry
 	for x := *link; x != nil; link, x = &x.Next, x.Next {
-		p.StepWork()
+		p.Work()
 		if x.Rule == int32(k.Rule) && x.Min == int32(k.Min) && x.missingSilent == k.MissingSilent && p.memoKeyEqual(x.Env, k.Env) {
 			replaced = x
 			break
 		}
 	}
-	p.StepWork()
+	p.Work()
 	// No checkpoint may separate the link swap from retiring its old entry.
 	// In particular, do not publish a partially copied slot array or key.
 	t.Slots = slots
@@ -175,7 +175,7 @@ func (p *Parser) memoFirstCall(pos, r int) bool {
 	if !WorkControlsEnabled || p.Control == nil {
 		return p.Memo.firstCall(pos, r)
 	}
-	p.StepWork()
+	p.Work()
 	t := p.Memo
 	if t.Calls == nil || !t.Calls[r].Eager {
 		i := pos*t.Stride + r

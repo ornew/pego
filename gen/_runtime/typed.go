@@ -841,7 +841,7 @@ func (p *TParser) DropTrail(base int) {
 }
 
 func (p *TParser) SetCapture(slot int, v any) {
-	p.StepWork()
+	p.Work()
 	p.Trail = append(p.Trail, tundo{f: p.Frame, slot: slot, old: p.Frame.Vals[slot]})
 	p.Frame.Vals[slot] = v
 }
@@ -856,14 +856,14 @@ func (p *TParser) SetCaptureOrdinary(slot int, v any) {
 // --- Allocation ---
 
 func (p *TParser) NewNode(typ string, start, end int, kids []any) *TSeq {
-	p.StepWork()
+	p.Work()
 	n := p.nodes.one()
 	*n = TSeq{Span: Span{start, end}, Typ: typ, Kids: kids, fresh: true}
 	return n
 }
 
 func (p *TParser) NewMatch(start, end int, text string, fresh bool) *TMatch {
-	p.StepWork()
+	p.Work()
 	if len(p.matches) == 0 {
 		p.matches = make([]TMatch, nodeChunk)
 	}
@@ -965,12 +965,12 @@ func (p *TParser) memoGet(rule, pos, min int, env []any) *tmemoEntry {
 }
 
 func (p *TParser) memoGetControlled(rule, pos, min int, key []any) *tmemoEntry {
-	p.StepWork()
+	p.Work()
 	if pos >= len(p.memoSlots) {
 		return nil
 	}
 	for e := p.memoSlots[pos]; e != nil; e = e.next {
-		p.StepWork()
+		p.Work()
 		if e.rule == int32(rule) && e.min == int32(min) && (e.growing || p.memoKeyEqual(e.env, key)) {
 			return e
 		}
@@ -1006,7 +1006,7 @@ func (p *TParser) memoPut(rule, pos, min int, env []any, e *tmemoEntry) {
 }
 
 func (p *TParser) memoPutControlled(rule, pos, min int, key []any, e *tmemoEntry) {
-	p.StepWork()
+	p.Work()
 	slots := p.memoSlots
 	if pos >= len(slots) {
 		p.growthWork(len(slots), pos+1)
@@ -1021,13 +1021,13 @@ func (p *TParser) memoPutControlled(rule, pos, min int, key []any, e *tmemoEntry
 	link := &slots[pos]
 	var replaced *tmemoEntry
 	for x := *link; x != nil; link, x = &x.next, x.next {
-		p.StepWork()
+		p.Work()
 		if x == e || x.rule == int32(rule) && x.min == int32(min) && p.memoKeyEqual(x.env, key) {
 			replaced = x
 			break
 		}
 	}
-	p.StepWork()
+	p.Work()
 	p.memoSlots = slots
 	e.rule, e.min, e.env = int32(rule), int32(min), key
 	if replaced != nil {
@@ -1086,7 +1086,7 @@ func (d *typedDocumentState) invalidate(start int) {
 // direct wrappers. Examined and provisional metadata stays outside batch memo
 // entries.
 func (p *TParser) DocumentCall(r *TRule, min int, inv func(*TParser) (any, bool)) (any, bool) {
-	p.StepWork()
+	p.Work()
 	start := p.Pos
 	oldHigh, oldProvisional := p.docHigh, p.docProvisional
 	p.docHigh, p.docProvisional = start+1, false
@@ -1187,7 +1187,7 @@ func (p *TParser) callBody(r *TRule, min int) (any, bool) {
 	if p.TypedDocument != nil {
 		return p.DocumentCall(r, min, nil)
 	}
-	p.StepWork()
+	p.Work()
 	start := p.Pos
 	if !r.Memo && !r.Leader || p.FirstCall(r.Rule) {
 		if len(r.Scope) == 0 {
@@ -1531,7 +1531,7 @@ func (p *TParser) AttachCaptures(v any, names []string, vals []any, start, end i
 	found := false
 	wrap := n == nil || !n.TFresh()
 	for _, c := range vals {
-		p.StepWork()
+		p.Work()
 		if c != nil {
 			found = true
 		}
@@ -1552,7 +1552,7 @@ func (p *TParser) AttachCaptures(v any, names []string, vals []any, start, end i
 		t.fields = p.tfields(len(names))
 	}
 	for i, name := range names {
-		p.StepWork()
+		p.Work()
 		if vals[i] != nil {
 			p.setValueField(t, name, vals[i])
 		}
@@ -1781,7 +1781,7 @@ func (c *TActCtx) Finish(v any) any {
 	t := AsTval(v)
 	if t != nil {
 		for _, x := range c.P.Created[c.Cbase:] {
-			c.P.StepWork()
+			c.P.Work()
 			if x == t {
 				t.TSetSpan(c.Start, c.End)
 				break
@@ -1936,7 +1936,7 @@ func (c *TActCtx) listNode(kids []any) *TSeq { return c.valueNode(TypeListValue,
 func (c *TActCtx) Tuple(args ...any) any {
 	base := len(c.P.KidStack)
 	for _, a := range args {
-		c.P.StepWork()
+		c.P.Work()
 		c.P.KidStack = append(c.P.KidStack, c.asNode("tuple", a))
 	}
 	return c.valueNode(TypeTupleValue, c.P.Kids(base))
@@ -1947,7 +1947,7 @@ func (c *TActCtx) valueNode(typ string, kids []any) *TSeq {
 	n.fresh = false
 	first := true
 	for _, it := range kids {
-		c.P.StepWork()
+		c.P.Work()
 		t := AsTval(it)
 		if t == nil {
 			continue
@@ -2226,7 +2226,7 @@ func (c *TActCtx) MapList(list any, f func(item any) any) any {
 func (c *TActCtx) FilterList(list any, f func(item any) any) any {
 	base := len(c.P.KidStack)
 	for _, item := range c.ListItems("filter", list) {
-		c.P.StepWork()
+		c.P.Work()
 		value := f(tvalOrNil(item))
 		keep, ok := value.(bool)
 		if !ok {
@@ -2248,7 +2248,7 @@ func (c *TActCtx) List(args ...any) any {
 func (c *TActCtx) Concat(args ...any) any {
 	base := len(c.P.KidStack)
 	for _, a := range args {
-		c.P.StepWork()
+		c.P.Work()
 		c.PushItems(a)
 	}
 	return c.EndList(base)
@@ -2256,14 +2256,14 @@ func (c *TActCtx) Concat(args ...any) any {
 
 func (c *TActCtx) PushMap(list any, f func(item any) any) {
 	for _, it := range c.ListItems("map", list) {
-		c.P.StepWork()
+		c.P.Work()
 		c.P.KidStack = append(c.P.KidStack, c.asNode("map", f(tvalOrNil(it))))
 	}
 }
 
 func (c *TActCtx) PushList(args ...any) {
 	for _, a := range args {
-		c.P.StepWork()
+		c.P.Work()
 		c.P.KidStack = append(c.P.KidStack, c.asNode("list", a))
 	}
 }
@@ -2331,7 +2331,7 @@ func (p *TParser) skipTrivia(pr *TOperatorsRule) {
 func (p *TParser) longest(ops []*TOperatorsRuleOp) (best toperatorsRuleAttempt, cutFailed bool) {
 	m0 := p.Mark()
 	for _, op := range ops {
-		p.StepWork()
+		p.Work()
 		prevFrame, prevCut := p.Frame, p.Cut
 		f := p.NewFrame(len(op.Line.Scope))
 		p.Frame, p.Cut = f, false
@@ -2461,7 +2461,7 @@ func (p *TParser) operatorsRuleNud(r *TRule) (any, int, bool) {
 		return nil, 0, false
 	}
 	for _, o := range pr.Operands {
-		p.StepWork()
+		p.Work()
 		prevFrame, prevCut := p.Frame, p.Cut
 		f := p.NewFrame(len(o.Scope))
 		p.Frame, p.Cut = f, false
@@ -2585,7 +2585,7 @@ func (c *TActCtx) Binary(op string, l, r any) any {
 	return trtBinary(op, l, r)
 }
 
-func (p *TParser) PushKid(v any) { p.StepWork(); p.KidStack = append(p.KidStack, v) }
+func (p *TParser) PushKid(v any) { p.Work(); p.KidStack = append(p.KidStack, v) }
 func (p *TParser) setValueField(n *TSeq, name string, v any) {
 	if p.Control != nil {
 		p.setValueFieldControlled(n, name, v)
@@ -2596,18 +2596,18 @@ func (p *TParser) setValueField(n *TSeq, name string, v any) {
 
 func (p *TParser) setValueFieldControlled(n *TSeq, name string, v any) {
 	for i := range n.fields {
-		p.StepWork()
+		p.Work()
 		if p.rawValueEqual(n.fields[i].name, name) {
 			n.fields[i].val = v
 			return
 		}
 	}
-	p.StepWork()
+	p.Work()
 	n.fields = append(n.fields, tfield{name, v})
 }
 func (p *TParser) undoCaptures(from int) {
 	for i := len(p.Trail) - 1; i >= from; i-- {
-		p.StepWork()
+		p.Work()
 		u := p.Trail[i]
 		u.f.Vals[u.slot] = u.old
 	}
@@ -2629,7 +2629,7 @@ func (p *TParser) valueFieldControlled(n TVal, name string) (any, bool) {
 		return n.TField(name)
 	}
 	for _, field := range t.fields {
-		p.StepWork()
+		p.Work()
 		if p.rawValueEqual(field.name, name) {
 			return field.val, true
 		}
@@ -2646,7 +2646,7 @@ func (c *TActCtx) Fold(fn string, right bool, acc, list any, f func(acc, item an
 func (c *TActCtx) foldControlled(fn string, right bool, acc, list any, f func(acc, item any) any) any {
 	items := c.ListItems(fn, list)
 	for i := range items {
-		c.P.StepWork()
+		c.P.Work()
 		item := items[i]
 		if right {
 			item = items[len(items)-1-i]
@@ -2662,7 +2662,7 @@ func (p *TParser) ListField(kids []any) any {
 	n := &TSeq{Typ: TypeListValue, Kids: kids}
 	first := true
 	for _, it := range kids {
-		p.StepWork()
+		p.Work()
 		t := AsTval(it)
 		if t == nil {
 			continue

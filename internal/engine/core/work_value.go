@@ -90,7 +90,7 @@ func ResetWork[T any](p *Parser, a *Arena[T], n int) {
 		return
 	}
 	for i := n; i < a.N; i++ {
-		p.StepWork()
+		p.Work()
 		var zero T
 		a.Chunks[i/64][i%64] = zero
 	}
@@ -185,7 +185,7 @@ func (p *Parser) ValueField(fs value.Fields, name string) (any, bool) {
 		return fs.Get(name)
 	}
 	for _, f := range fs {
-		p.StepWork()
+		p.Work()
 		if p.ValueEqual(f.Name, name) {
 			return f.Value, true
 		}
@@ -199,7 +199,7 @@ func (p *Parser) SetValueField(fs *value.Fields, name string, v any) {
 		return
 	}
 	for i := range *fs {
-		p.StepWork()
+		p.Work()
 		if p.ValueEqual((*fs)[i].Name, name) {
 			(*fs)[i].Value = v
 			return
@@ -213,7 +213,7 @@ func (p *Parser) HasValueField(st *grammar.TypeDef, name string) bool {
 		return compile.FieldOf(st, name) != nil
 	}
 	for _, f := range compile.DefFields(st) {
-		p.StepWork()
+		p.Work()
 		if p.ValueEqual(f.Name, name) {
 			return true
 		}
@@ -226,7 +226,7 @@ func (p *Parser) LookupValue(name string) (any, bool) {
 		return p.Env.Lookup(name)
 	}
 	for e := p.Env; e != nil; e = e.Next {
-		p.StepWork()
+		p.Work()
 		if p.ValueEqual(e.Name, name) {
 			return e.Val, true
 		}
@@ -241,7 +241,7 @@ func (p *Parser) Fusable(t *grammar.Call) bool {
 		return compile.Fusable(t)
 	}
 	for _, a := range t.Args {
-		p.StepWork()
+		p.Work()
 		call, ok := a.(*grammar.Call)
 		switch {
 		case ok && call.Func == "list", ok && call.Func == "map" && len(call.Args) == 2:

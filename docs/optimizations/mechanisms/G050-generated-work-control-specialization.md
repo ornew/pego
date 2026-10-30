@@ -11,7 +11,7 @@ as their first parameter) once, from Flow IR, in the form the options select:
 - Without `-work-controls` and without `-document` the parser holds the ordinary form only: the
   16 runtime helpers that have a hand-written `Ordinary` form (`NewNode`, `NewTerminal`,
   `NewBranch`, `NewMatch`, `SetCapture`, `Expect`, `Peek`, `MatchLiteral`, `MatchLiteralFold`,
-  `MatchAny`, `AtEnd`, `AtLineStart`, `AtEndBatch`, `AtLineStartBatch`, `AtLineEnd`, `InputWork`),
+  `MatchAny`, `AtEnd`, `AtLineStart`, `AtEndBatch`, `AtLineStartBatch`, `AtLineEnd`, `ReadWork`),
   no work charges, no control reads in conditions and class tests, and a compact
   peek. A parse that passes a control option fails.
 - With `-work-controls` the parser holds the controlled form only: work charges,

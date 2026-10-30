@@ -131,7 +131,7 @@ func (in *Input) decodePieces(i int) (r rune, size, examined int, ok bool) {
 	}
 	var buf [utf8.UTFMax]byte
 	available := min(utf8.UTFMax, in.Pieces.N-i)
-	in.inputWork(uint64(available))
+	in.readWork(uint64(available))
 	for j := 0; j < available; j++ {
 		b, _ := in.Pieces.At(i + j)
 		buf[j] = byte(b)
@@ -153,7 +153,7 @@ func (p *Parser) matchLiteralPieces(rs []rune, bs []byte) bool {
 	if p.Unit == Bytes {
 		n = len(bs)
 		for k < n {
-			p.inputWork(1)
+			p.readWork(1)
 			b, ok := p.Pieces.At(p.Pos + k)
 			if !ok || byte(b) != bs[k] {
 				break
@@ -163,7 +163,7 @@ func (p *Parser) matchLiteralPieces(rs []rune, bs []byte) bool {
 	} else {
 		n = len(rs)
 		for k < n {
-			p.inputWork(1)
+			p.readWork(1)
 			r, ok := p.Pieces.At(p.Pos + k)
 			if !ok || r != rs[k] {
 				break

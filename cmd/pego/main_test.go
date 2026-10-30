@@ -425,7 +425,7 @@ func TestGenTypeScriptWorkControls(t *testing.T) {
 		t.Fatalf("-lang ts -work-controls: %v", err)
 	}
 	plain, controlled := readTS(t, plainDir, "parser.ts"), readTS(t, controlledDir, "parser.ts")
-	if strings.Contains(plain, "stepWork") || strings.Contains(plain, "CancellationSignal") || !strings.Contains(plain, "PlainParseOptions") {
+	if strings.Contains(plain, "work") || strings.Contains(plain, "CancellationSignal") || !strings.Contains(plain, "PlainParseOptions") {
 		t.Error("a parser generated without -work-controls has work controls")
 	}
 	if !strings.Contains(controlled, "CancellationSignal") || strings.Contains(controlled, "PlainParseOptions") {

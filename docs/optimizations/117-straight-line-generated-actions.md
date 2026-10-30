@@ -10,17 +10,17 @@ parsers) has nothing to charge steps to. Emitting the work-controlled shape and 
 the charges out of the text leaves residue in every action:
 
 - blank lines inside function bodies and `{ ; return ...` statements;
-- every term of an action wrapped in `func() any { c.P.StepWork(); return E }()`, which
+- every term of an action wrapped in `func() any { c.P.Work(); return E }()`, which
   becomes `func() any { ; return E }()` after the cut;
 - `New` of a typed struct as a closure that assigns the fields to temporaries and then
-  calls the constructor, and constructors with a `StepWork` per field;
+  calls the constructor, and constructors with a `Work` per field;
 - variables that are assigned and never read, silenced with `_, _ = x5, x8`, and counters
   that are incremented and never read.
 
 A term is the expression itself in every form, with or without work controls: the terms of an
 action and the fields of a typed constructor carry no charge, and nothing wraps them in a function
 literal. The generator knows that it writes no work controls (`gen.Generator.NoWork`: no
-`WorkControls`) and emits no step charges at all: not the `StepWork` and `InputWork` statements of rules, constructors and list
+`WorkControls`) and emits no step charges at all: not the `Work` and `ReadWork` statements of rules, constructors and list
 converters. Work-controlled output keeps the charges of rule entries, loops and list converters;
 the runtime built-ins that call lambdas charge one step per element.
 

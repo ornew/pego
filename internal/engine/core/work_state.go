@@ -12,7 +12,7 @@ func (p *Parser) UndoCaptures(from int) {
 		return
 	}
 	for i := len(p.Trail) - 1; i >= from; i-- {
-		p.StepWork()
+		p.Work()
 		u := p.Trail[i]
 		u.F.Vals[u.Slot] = u.Old
 	}

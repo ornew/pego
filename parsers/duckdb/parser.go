@@ -2288,7 +2288,7 @@ func tmk_With(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 }
 
 func tl0(a *tslabs, v any) []*types.ColumnConstraint {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2298,14 +2298,14 @@ func tl0(a *tslabs, v any) []*types.ColumnConstraint {
 	}
 	out := rt.AllocSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.ColumnConstraint](c)
 	}
 	return out
 }
 
 func tl1(a *tslabs, v any) []types.Expr {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2315,14 +2315,14 @@ func tl1(a *tslabs, v any) []types.Expr {
 	}
 	out := rt.AllocSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[types.Expr](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl2(a *tslabs, v any) []*types.SortItem {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2332,14 +2332,14 @@ func tl2(a *tslabs, v any) []*types.SortItem {
 	}
 	out := rt.AllocSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.SortItem](c)
 	}
 	return out
 }
 
 func tl3(a *tslabs, v any) []*types.Reloption {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2349,14 +2349,14 @@ func tl3(a *tslabs, v any) []*types.Reloption {
 	}
 	out := rt.AllocSlice(&a.tl3Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.Reloption](c)
 	}
 	return out
 }
 
 func tl4(a *tslabs, v any) []*types.SeqOption {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2366,14 +2366,14 @@ func tl4(a *tslabs, v any) []*types.SeqOption {
 	}
 	out := rt.AllocSlice(&a.tl4Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.SeqOption](c)
 	}
 	return out
 }
 
 func tl5(a *tslabs, v any) []*types.GenericAlterOption {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2383,14 +2383,14 @@ func tl5(a *tslabs, v any) []*types.GenericAlterOption {
 	}
 	out := rt.AllocSlice(&a.tl5Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.GenericAlterOption](c)
 	}
 	return out
 }
 
 func tl6(a *tslabs, v any) []*types.AlterCmd {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2400,14 +2400,14 @@ func tl6(a *tslabs, v any) []*types.AlterCmd {
 	}
 	out := rt.AllocSlice(&a.tl6Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.AlterCmd](c)
 	}
 	return out
 }
 
 func tl7(a *tslabs, v any) []*types.Ident {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2417,14 +2417,14 @@ func tl7(a *tslabs, v any) []*types.Ident {
 	}
 	out := rt.AllocSlice(&a.tl7Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = tv3(a, c)
 	}
 	return out
 }
 
 func tl8(a *tslabs, v any) []*types.GenericOption {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2434,14 +2434,14 @@ func tl8(a *tslabs, v any) []*types.GenericOption {
 	}
 	out := rt.AllocSlice(&a.tl8Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.GenericOption](c)
 	}
 	return out
 }
 
 func tl9(a *tslabs, v any) []*types.When {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2451,14 +2451,14 @@ func tl9(a *tslabs, v any) []*types.When {
 	}
 	out := rt.AllocSlice(&a.tl9Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.When](c)
 	}
 	return out
 }
 
 func tl10(a *tslabs, v any) []*types.DefElem {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2468,14 +2468,14 @@ func tl10(a *tslabs, v any) []*types.DefElem {
 	}
 	out := rt.AllocSlice(&a.tl10Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.DefElem](c)
 	}
 	return out
 }
 
 func tl11(a *tslabs, v any) []*types.CopyOption {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2485,14 +2485,14 @@ func tl11(a *tslabs, v any) []*types.CopyOption {
 	}
 	out := rt.AllocSlice(&a.tl11Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.CopyOption](c)
 	}
 	return out
 }
 
 func tl12(a *tslabs, v any) []*types.IndexElem {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2502,14 +2502,14 @@ func tl12(a *tslabs, v any) []*types.IndexElem {
 	}
 	out := rt.AllocSlice(&a.tl12Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.IndexElem](c)
 	}
 	return out
 }
 
 func tl13(a *tslabs, v any) []*types.MacroDef {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2519,14 +2519,14 @@ func tl13(a *tslabs, v any) []*types.MacroDef {
 	}
 	out := rt.AllocSlice(&a.tl13Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.MacroDef](c)
 	}
 	return out
 }
 
 func tl14(a *tslabs, v any) []types.Statement {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2536,14 +2536,14 @@ func tl14(a *tslabs, v any) []types.Statement {
 	}
 	out := rt.AllocSlice(&a.tl14Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl15(a *tslabs, v any) []*types.SecretOption {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2553,14 +2553,14 @@ func tl15(a *tslabs, v any) []*types.SecretOption {
 	}
 	out := rt.AllocSlice(&a.tl15Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.SecretOption](c)
 	}
 	return out
 }
 
 func tl16(a *tslabs, v any) []*types.PartitionSorted {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2570,14 +2570,14 @@ func tl16(a *tslabs, v any) []*types.PartitionSorted {
 	}
 	out := rt.AllocSlice(&a.tl16Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.PartitionSorted](c)
 	}
 	return out
 }
 
 func tl17(a *tslabs, v any) []types.TableElement {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2587,14 +2587,14 @@ func tl17(a *tslabs, v any) []types.TableElement {
 	}
 	out := rt.AllocSlice(&a.tl17Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[types.TableElement](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl18(a *tslabs, v any) []*types.StringLit {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2604,14 +2604,14 @@ func tl18(a *tslabs, v any) []*types.StringLit {
 	}
 	out := rt.AllocSlice(&a.tl18Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = tv7(a, c)
 	}
 	return out
 }
 
 func tl19(a *tslabs, v any) []types.TableRef {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2621,14 +2621,14 @@ func tl19(a *tslabs, v any) []types.TableRef {
 	}
 	out := rt.AllocSlice(&a.tl19Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[types.TableRef](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
 func tl20(a *tslabs, v any) []*types.SelectItem {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2638,14 +2638,14 @@ func tl20(a *tslabs, v any) []*types.SelectItem {
 	}
 	out := rt.AllocSlice(&a.tl20Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.SelectItem](c)
 	}
 	return out
 }
 
 func tl21(a *tslabs, v any) []*types.Name {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2655,14 +2655,14 @@ func tl21(a *tslabs, v any) []*types.Name {
 	}
 	out := rt.AllocSlice(&a.tl21Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.Name](c)
 	}
 	return out
 }
 
 func tl22(a *tslabs, v any) []*types.ExplainOption {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2672,14 +2672,14 @@ func tl22(a *tslabs, v any) []*types.ExplainOption {
 	}
 	out := rt.AllocSlice(&a.tl22Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.ExplainOption](c)
 	}
 	return out
 }
 
 func tl23(a *tslabs, v any) []*types.RowsFromItem {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2689,14 +2689,14 @@ func tl23(a *tslabs, v any) []*types.RowsFromItem {
 	}
 	out := rt.AllocSlice(&a.tl23Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.RowsFromItem](c)
 	}
 	return out
 }
 
 func tl24(a *tslabs, v any) []*types.Type {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2706,14 +2706,14 @@ func tl24(a *tslabs, v any) []*types.Type {
 	}
 	out := rt.AllocSlice(&a.tl24Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.Type](c)
 	}
 	return out
 }
 
 func tl25(a *tslabs, v any) []*types.MacroParam {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2723,14 +2723,14 @@ func tl25(a *tslabs, v any) []*types.MacroParam {
 	}
 	out := rt.AllocSlice(&a.tl25Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.MacroParam](c)
 	}
 	return out
 }
 
 func tl26(a *tslabs, v any) []*types.MapEntry {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2740,14 +2740,14 @@ func tl26(a *tslabs, v any) []*types.MapEntry {
 	}
 	out := rt.AllocSlice(&a.tl26Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.MapEntry](c)
 	}
 	return out
 }
 
 func tl27(a *tslabs, v any) []*types.SetClause {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2757,14 +2757,14 @@ func tl27(a *tslabs, v any) []*types.SetClause {
 	}
 	out := rt.AllocSlice(&a.tl27Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.SetClause](c)
 	}
 	return out
 }
 
 func tl28(a *tslabs, v any) []*types.MergeWhen {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2774,14 +2774,14 @@ func tl28(a *tslabs, v any) []*types.MergeWhen {
 	}
 	out := rt.AllocSlice(&a.tl28Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.MergeWhen](c)
 	}
 	return out
 }
 
 func tl29(a *tslabs, v any) []*types.PivotColumn {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2791,14 +2791,14 @@ func tl29(a *tslabs, v any) []*types.PivotColumn {
 	}
 	out := rt.AllocSlice(&a.tl29Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.PivotColumn](c)
 	}
 	return out
 }
 
 func tl30(a *tslabs, v any) []*types.PivotValue {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2808,14 +2808,14 @@ func tl30(a *tslabs, v any) []*types.PivotValue {
 	}
 	out := rt.AllocSlice(&a.tl30Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.PivotValue](c)
 	}
 	return out
 }
 
 func tl31(a *tslabs, v any) []*types.ColDef {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2825,14 +2825,14 @@ func tl31(a *tslabs, v any) []*types.ColDef {
 	}
 	out := rt.AllocSlice(&a.tl31Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.ColDef](c)
 	}
 	return out
 }
 
 func tl32(a *tslabs, v any) []*types.LockClause {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2842,14 +2842,14 @@ func tl32(a *tslabs, v any) []*types.LockClause {
 	}
 	out := rt.AllocSlice(&a.tl32Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.LockClause](c)
 	}
 	return out
 }
 
 func tl33(a *tslabs, v any) []*types.WindowDef {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2859,14 +2859,14 @@ func tl33(a *tslabs, v any) []*types.WindowDef {
 	}
 	out := rt.AllocSlice(&a.tl33Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.WindowDef](c)
 	}
 	return out
 }
 
 func tl34(a *tslabs, v any) []*types.ReplaceItem {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2876,14 +2876,14 @@ func tl34(a *tslabs, v any) []*types.ReplaceItem {
 	}
 	out := rt.AllocSlice(&a.tl34Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.ReplaceItem](c)
 	}
 	return out
 }
 
 func tl35(a *tslabs, v any) []*types.RenameItem {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2893,14 +2893,14 @@ func tl35(a *tslabs, v any) []*types.RenameItem {
 	}
 	out := rt.AllocSlice(&a.tl35Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.RenameItem](c)
 	}
 	return out
 }
 
 func tl36(a *tslabs, v any) []*types.StructField {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2910,14 +2910,14 @@ func tl36(a *tslabs, v any) []*types.StructField {
 	}
 	out := rt.AllocSlice(&a.tl36Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.StructField](c)
 	}
 	return out
 }
 
 func tl37(a *tslabs, v any) []*types.TNode[string] {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2927,14 +2927,14 @@ func tl37(a *tslabs, v any) []*types.TNode[string] {
 	}
 	out := rt.AllocSlice(&a.tl37Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = (*types.TNode[string])(rt.TPubMatch(c))
 	}
 	return out
 }
 
 func tl38(a *tslabs, v any) []*types.TypeField {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2944,14 +2944,14 @@ func tl38(a *tslabs, v any) []*types.TypeField {
 	}
 	out := rt.AllocSlice(&a.tl38Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.TypeField](c)
 	}
 	return out
 }
 
 func tl39(a *tslabs, v any) []*types.ArrayDim {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2961,14 +2961,14 @@ func tl39(a *tslabs, v any) []*types.ArrayDim {
 	}
 	out := rt.AllocSlice(&a.tl39Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.ArrayDim](c)
 	}
 	return out
 }
 
 func tl40(a *tslabs, v any) []*types.UnpivotValue {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2978,14 +2978,14 @@ func tl40(a *tslabs, v any) []*types.UnpivotValue {
 	}
 	out := rt.AllocSlice(&a.tl40Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.UnpivotValue](c)
 	}
 	return out
 }
 
 func tl41(a *tslabs, v any) []*types.ValuesRow {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -2995,14 +2995,14 @@ func tl41(a *tslabs, v any) []*types.ValuesRow {
 	}
 	out := rt.AllocSlice(&a.tl41Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.ValuesRow](c)
 	}
 	return out
 }
 
 func tl42(a *tslabs, v any) []*types.CTE {
-	a.stepWork()
+	a.work()
 	if v == nil {
 		return nil
 	}
@@ -3012,14 +3012,14 @@ func tl42(a *tslabs, v any) []*types.CTE {
 	}
 	out := rt.AllocSlice(&a.tl42Chunk, len(n.Kids))
 	for i, c := range n.Kids {
-		a.stepWork()
+		a.work()
 		out[i] = rt.TAs[*types.CTE](c)
 	}
 	return out
 }
 
 func tv0(a *tslabs, v any) *types.BitLit {
-	a.stepWork()
+	a.work()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -3028,7 +3028,7 @@ func tv0(a *tslabs, v any) *types.BitLit {
 }
 
 func tv1(a *tslabs, v any) *types.BoolLit {
-	a.stepWork()
+	a.work()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
@@ -3037,7 +3037,7 @@ func tv1(a *tslabs, v any) *types.BoolLit {
 }
 
 func tv2(a *tslabs, v any) *types.DefaultExpr {
-	a.stepWork()
+	a.work()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
@@ -3046,7 +3046,7 @@ func tv2(a *tslabs, v any) *types.DefaultExpr {
 }
 
 func tv3(a *tslabs, v any) *types.Ident {
-	a.stepWork()
+	a.work()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
@@ -3055,7 +3055,7 @@ func tv3(a *tslabs, v any) *types.Ident {
 }
 
 func tv4(a *tslabs, v any) *types.IntervalUnit {
-	a.stepWork()
+	a.work()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[5] {
 		return nil
@@ -3064,7 +3064,7 @@ func tv4(a *tslabs, v any) *types.IntervalUnit {
 }
 
 func tv5(a *tslabs, v any) *types.NullLit {
-	a.stepWork()
+	a.work()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[6] {
 		return nil
@@ -3073,7 +3073,7 @@ func tv5(a *tslabs, v any) *types.NullLit {
 }
 
 func tv6(a *tslabs, v any) *types.Param {
-	a.stepWork()
+	a.work()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[7] {
 		return nil
@@ -3082,7 +3082,7 @@ func tv6(a *tslabs, v any) *types.Param {
 }
 
 func tv7(a *tslabs, v any) *types.StringLit {
-	a.stepWork()
+	a.work()
 	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[8] {
 		return nil
@@ -3299,7 +3299,7 @@ type tslabs struct {
 }
 
 func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }
-func (a *tslabs) stepWork() {
+func (a *tslabs) work() {
 	if a.control != nil {
 		a.control.Charge(1)
 	}

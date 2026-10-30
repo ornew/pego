@@ -157,7 +157,7 @@ func (p *Parser) NewFrame(n int) *Frame {
 func (p *Parser) ResetStreamFrames() {
 	keep := 0
 	for i := range p.FrameSlab {
-		p.StepWork()
+		p.Work()
 		if &p.FrameSlab[i] == p.Frame {
 			keep = i + 1
 			break

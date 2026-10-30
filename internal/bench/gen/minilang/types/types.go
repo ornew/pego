@@ -224,7 +224,7 @@ func (v *ArrayLit) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Elems))
 			for i, x := range v.Elems {
-				p.StepWork()
+				p.Work()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -321,7 +321,7 @@ func (v *Block) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Body))
 			for i, x := range v.Body {
-				p.StepWork()
+				p.Work()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -366,7 +366,7 @@ func (v *Call) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Args))
 			for i, x := range v.Args {
-				p.StepWork()
+				p.Work()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -465,7 +465,7 @@ func (v *Func) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Params))
 			for i, x := range v.Params {
-				p.StepWork()
+				p.Work()
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -616,7 +616,7 @@ func (v *Program) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Body))
 			for i, x := range v.Body {
-				p.StepWork()
+				p.Work()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -710,7 +710,7 @@ func tb0(v *Ident) any {
 // is no named node type. It is for generated parsers.
 var PegoNodeTypes [5]uint16
 
-// PegoSchema_78f68bfeef5022fb ties the parser package to this package: the parser refers to it once, so a
+// PegoSchema_3d42be48c1cce589 ties the parser package to this package: the parser refers to it once, so a
 // parser and a types package generated from different schemas do not compile together.
 // It is for generated parsers; not a stable API.
-const PegoSchema_78f68bfeef5022fb = 0
+const PegoSchema_3d42be48c1cce589 = 0

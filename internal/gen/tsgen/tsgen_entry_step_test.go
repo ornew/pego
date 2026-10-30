@@ -20,10 +20,10 @@ rule expr = expr "+" "a" / "a"`
 		t.Fatal(err)
 	}
 	out := gentest.RunTSGrammarScriptWith(t, g, `import * as p from "./parser.ts";
-const proto = (p as unknown as { Parser: { prototype: { stepWork(n?: number): void } } }).Parser.prototype;
-const original = proto.stepWork;
+const proto = (p as unknown as { Parser: { prototype: { work(n?: number): void } } }).Parser.prototype;
+const original = proto.work;
 const by = new Map<string, number>();
-proto.stepWork = function (this: unknown, n?: number): void {
+proto.work = function (this: unknown, n?: number): void {
   const frame = (new Error().stack ?? "").split("\n")[2] ?? "";
   const name = /Parser\.(\w+)/.exec(frame)?.[1] ?? frame.trim();
   by.set(name, (by.get(name) ?? 0) + 1);

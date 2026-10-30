@@ -113,7 +113,7 @@ func (r *RunState) More() bool { return !r.done && (r.max < 0 || r.Count < r.max
 // NextPrefix reuses the next old element if it examined only input before the edit, and returns
 // it (its value is for the caller to push), or nil.
 func (p *Parser) NextPrefix(r *RunState) *RunElem {
-	p.StepWork()
+	p.Work()
 	if r.moved || r.K >= len(r.Old) || r.Old[r.K].examined > r.edit.Start || r.done {
 		return nil
 	}
@@ -143,7 +143,7 @@ func (p *Parser) Resync(r *RunState) bool {
 // NextTail reuses the next old element after the edit (after resync), moved by the edit, and
 // returns it, or nil.
 func (p *Parser) NextTail(r *RunState) *RunElem {
-	p.StepWork()
+	p.Work()
 	i := r.J + r.T
 	if r.J < 0 || i >= len(r.Old) || !r.More() {
 		return nil
@@ -261,7 +261,7 @@ func (p *Parser) ResumeRepeat(rs *RunSite) (*value.Node, bool) {
 		}
 	}
 	for r.More() {
-		p.StepWork()
+		p.Work()
 		if p.Resync(&r) {
 			for el := p.NextTail(&r); el != nil; el = p.NextTail(&r) {
 				if rs.Build {

@@ -590,7 +590,7 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 		}
 	}
 	for {
-		p.StepWork()
+		p.Work()
 		in := &code[ip]
 		switch in.Op {
 		case bytecode.OpStr:
@@ -690,7 +690,7 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 		case bytecode.OpCut:
 			marked := false
 			for k := len(mc.ents) - 1; k >= ebase; k-- {
-				p.StepWork()
+				p.Work()
 				e := &mc.ents[k]
 				if e.kind == eChoice || e.kind == eIter || e.kind == eRunIter {
 					e.cut = true
@@ -714,7 +714,7 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 			kids := p.Nodes(n)
 			top := len(mc.vals)
 			for k := 0; k < n; k++ {
-				p.StepWork()
+				p.Work()
 				kids[k] = asNodeValue(mc.vals[top-n+k])
 			}
 			start := *mc.vals[top-n-1].(*int)
@@ -726,7 +726,7 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 			case in.B == 1:
 				if n := asNodeValue(v); n != nil {
 					for _, k := range value.D(n).Children {
-						p.StepWork()
+						p.Work()
 						mc.push(k)
 					}
 				}
@@ -860,7 +860,7 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 			if in.A == 1 {
 				kids := p.Nodes(len(mc.vals) - rep.base)
 				for k := range kids {
-					p.StepWork()
+					p.Work()
 					kids[k] = asNodeValue(mc.vals[rep.base+k])
 				}
 				start := *mc.vals[rep.base-1].(*int)
@@ -963,7 +963,7 @@ func (mc *Machine) unwind(m *bytecode.Module, ebase int) (ip int, ok bool) {
 		if len(mc.ents) == ebase {
 			return 0, false
 		}
-		p.StepWork()
+		p.Work()
 		e := mc.ents[len(mc.ents)-1]
 		mc.ents = mc.ents[:len(mc.ents)-1]
 		switch e.kind {
@@ -1035,7 +1035,7 @@ func (vm *Program) has(p *core.Parser, a int32, ch rune) bool {
 		return cl.Has(ch)
 	}
 	for k := 0; k < len(cl.Ranges); k += 2 {
-		p.StepWork()
+		p.Work()
 		if cl.Ranges[k] <= ch && ch <= cl.Ranges[k+1] {
 			return !cl.Negated
 		}
@@ -1075,7 +1075,7 @@ var (
 func (f *vmFunc) Apply(x, y any) (any, error) {
 	// The locals are placed on the expression stack below the operands of the body.
 	p := f.ctx.P
-	p.StepWork()
+	p.Work()
 	base := len(p.Estack)
 	p.Estack = append(core.AppendWork(p, p.Estack, f.locals), x)
 	if f.n == 2 {
@@ -1098,7 +1098,7 @@ func (vm *Program) evaluator(entry int, operator bool) core.Evaluator {
 		p.Estack = append(p.Estack, nil, nil, nil)
 		locals := p.Estack[base : base+3 : base+3]
 		for l := ctx.Locals; l != nil; l = l.Next {
-			p.StepWork()
+			p.Work()
 			switch l.Name {
 			case "lhs":
 				locals[0] = l.Val
@@ -1164,7 +1164,7 @@ func (vm *Program) eval(ctx *core.EvalCtx, ip int, locals []any) (v any, err err
 		}
 	}()
 	for {
-		p.StepWork()
+		p.Work()
 		in := &m.Exprs[ip]
 		switch in.Op {
 		case bytecode.EInt:
@@ -1296,7 +1296,7 @@ func (vm *Program) eval(ctx *core.EvalCtx, ip int, locals []any) (v any, err err
 			top := len(stack) - int(in.A)
 			base := len(p.KidStack)
 			for _, v := range stack[top:] {
-				p.StepWork()
+				p.Work()
 				n, err := ctx.Element("tuple", v)
 				if err != nil {
 					p.DropKids(base)

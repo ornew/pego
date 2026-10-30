@@ -352,7 +352,7 @@ func (p *tsFlowPrinter) stmts(ss []flow.Stmt) {
 				}
 				n++
 			}
-			p.write(tsStepWork(n))
+			p.write(tsWork(n))
 			i += n - 1
 			continue
 		}
@@ -393,12 +393,12 @@ func (p *tsFlowPrinter) unisolateMerge(a, b flow.Stmt) bool {
 	return true
 }
 
-// tsStepWork returns the statement that charges n steps.
-func tsStepWork(n int) string {
+// tsWork returns the statement that charges n steps.
+func tsWork(n int) string {
 	if n == 1 {
-		return "p.stepWork();\n"
+		return "p.work();\n"
 	}
-	return fmt.Sprintf("p.stepWork(%d);\n", n)
+	return fmt.Sprintf("p.work(%d);\n", n)
 }
 
 // isRead reports whether v is read, by the previous pass.
@@ -507,7 +507,7 @@ func (p *tsFlowPrinter) stmt(s flow.Stmt) {
 			p.write(s.V.Name + "++;\n")
 		}
 	case *flow.Step:
-		p.write(tsStepWork(1))
+		p.write(tsWork(1))
 	case *flow.Silent:
 		if s.Delta > 0 {
 			p.write("p.silent++;\n")

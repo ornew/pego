@@ -350,7 +350,7 @@ func (v *AttlistDecl) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Defs))
 			for i, x := range v.Defs {
-				p.StepWork()
+				p.Work()
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -419,7 +419,7 @@ func (v *Choice) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-				p.StepWork()
+				p.Work()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -470,7 +470,7 @@ func (v *Doctype) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Subset))
 			for i, x := range v.Subset {
-				p.StepWork()
+				p.Work()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -530,7 +530,7 @@ func (v *Document) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Prolog))
 			for i, x := range v.Prolog {
-				p.StepWork()
+				p.Work()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -546,7 +546,7 @@ func (v *Document) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Epilog))
 			for i, x := range v.Epilog {
-				p.StepWork()
+				p.Work()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -602,7 +602,7 @@ func (v *Element) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Attrs))
 			for i, x := range v.Attrs {
-				p.StepWork()
+				p.Work()
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -614,7 +614,7 @@ func (v *Element) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Content))
 			for i, x := range v.Content {
-				p.StepWork()
+				p.Work()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -719,7 +719,7 @@ func (v *Enumeration) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Values))
 			for i, x := range v.Values {
-				p.StepWork()
+				p.Work()
 				kids[i] = tb5(x)
 			}
 			return p.ListField(kids)
@@ -786,7 +786,7 @@ func (v *Mixed) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Names))
 			for i, x := range v.Names {
-				p.StepWork()
+				p.Work()
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -879,7 +879,7 @@ func (v *NotationType) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Names))
 			for i, x := range v.Names {
-				p.StepWork()
+				p.Work()
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -948,7 +948,7 @@ func (v *Sequence) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-				p.StepWork()
+				p.Work()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -1077,7 +1077,7 @@ func tb11(v *YesNo) any {
 // is no named node type. It is for generated parsers.
 var PegoNodeTypes [19]uint16
 
-// PegoSchema_0fed78518e45b9bb ties the parser package to this package: the parser refers to it once, so a
+// PegoSchema_1c0411e61fa78646 ties the parser package to this package: the parser refers to it once, so a
 // parser and a types package generated from different schemas do not compile together.
 // It is for generated parsers; not a stable API.
-const PegoSchema_0fed78518e45b9bb = 0
+const PegoSchema_1c0411e61fa78646 = 0

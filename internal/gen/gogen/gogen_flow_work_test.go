@@ -374,7 +374,7 @@ func workTotals(t *testing.T, group string, cases []gentest.Case, start string, 
 }
 
 // stepStatement is a charge of one step in generated code.
-const stepStatement = "p.StepWork()\n"
+const stepStatement = "p.Work()\n"
 
 // dropFirstStep removes the first step charge of the code, as a printer would if it lost the charge of a
 // Step of the IR; dropLastStep removes the last.

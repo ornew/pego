@@ -5,29 +5,27 @@
 
 ## Problem and Mechanism
 
-A generated parser charges its work control once per rule call (`stepWork`) and
-once per input unit a matcher reads (`inputWork`). Each charge called
-`workControl.charge`, whose body tests both limits and both poll intervals
-before adding to four counters; at an inline cost of 322 it never inlined, so a
-controlled parse paid a function call per step and per unit read. When the
-generated runtime stopped being rewritten per grammar, `inputWork` also kept its
-Document branch in grammars without Documents, grew past the inline budget
-itself, and controlled parses became about 4% slower.
+A generated parser charges its work control once per rule call, loop iteration
+or matcher step (`Parser.Work`) and once per input unit a matcher reads
+(`Parser.ReadWork`, which also records how far a Document parse examined the
+input). A charge that called `WorkControl.charge` directly would test the limit
+and the poll interval before adding to the counters; at that inline cost it
+never inlines, so a controlled parse would pay a function call per step and per
+unit read. `ReadWork` additionally keeps its Document branch out of the inlined
+path, so it stays under the inline budget in grammars without Documents.
 
-The work control now keeps, for input and for steps, a *room*: the smallest
-request that would reach the next poll boundary or exceed the limit. A charge
-smaller than both rooms only subtracts from them; any other charge takes the
-slow path, which folds what the rooms consumed into the counters, runs the
-former checks unchanged and computes new rooms. `chargeStep` (one step) and
-`chargeInput` (n units and one step) are the forms the hot paths use; both
-inline, and `stepWork` inlines with `chargeStep` inside it. The reserved totals
-are the counters plus what the rooms consumed (`inputUsed`, `stepsUsed`).
+The work control keeps a *room*: the smallest request that would reach the next
+poll boundary or exceed the limit. A charge smaller than the room only
+subtracts from it; any other charge takes the slow path, which folds what the
+room consumed into the counter, runs the limit and poll checks and computes a
+new room. `chargeStep` (one unit) and `Charge` (n units) are the forms the hot
+paths use; both inline, and `Work` inlines with `chargeStep` inside it. The
+reserved total is the counter plus what the room consumed (`workUsed`).
 
-Invariant: a fast-path charge is exactly a charge that the former code accepted
-without polling, because the room is the interval left before a poll, capped by
-the limit left plus one. Cancellation, poll cadence, the reported `Used` and
-`Requested` values and the priority of input over step exhaustion are those of
-the slow path, which is the former code.
+Invariant: a fast-path charge is exactly a charge that the slow path would
+accept without polling, because the room is the interval left before a poll,
+capped by the limit left plus one. Cancellation, poll cadence and the reported
+`Used` and `Requested` values are those of the slow path.
 
 ## Applicability
 

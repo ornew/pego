@@ -1461,7 +1461,7 @@ export class Parser {
 
   readonly control: WorkControl | null;
 
-  stepWork(n = 1): void { this.control?.charge(n); }
+  work(n = 1): void { this.control?.charge(n); }
 
   constructor(g: Grammar, input: string | Uint8Array, unit: Unit, stride: number, maxDepth: number, control: WorkControl | null = null) {
     this.g = g;
@@ -1754,7 +1754,7 @@ export class Parser {
   // entry of the rule at the position and level whatever its variable values.
   memoGet(rule: number, pos: number, min: number, env: Value[] | null): MemoEntry | null {
     for (let e = this.slots[pos]; e; e = e.next) {
-      this.stepWork();
+      this.work();
       if (e.rule === rule && e.min === min && (e.growing || sameValues(e.env, env, this.control))) {
         return e;
       }
@@ -1769,7 +1769,7 @@ export class Parser {
     e.env = env;
     let prev: MemoEntry | null = null;
     for (let x = this.slots[pos]; x; prev = x, x = x.next) {
-      this.stepWork();
+      this.work();
       if (x.rule === rule && x.min === min && sameValues(x.env, env, this.control)) {
         e.next = x.next;
         if (prev === null) {
@@ -1789,7 +1789,7 @@ export class Parser {
         const slots: (MemoEntry | null)[] = new Array(this.n + 1);
         for (let from = 0; from < slots.length; from += 128) {
           const end = Math.min(from + 128, slots.length);
-          this.stepWork(end - from);
+          this.work(end - from);
           slots.fill(null, from, end);
         }
         this.slots = slots;
@@ -1806,10 +1806,10 @@ export class Parser {
     }
     const vals: Value[] = new Array(names.length);
     for (let i = 0; i < names.length; i++) {
-      this.stepWork();
+      this.work();
       vals[i] = null;
       for (let e = this.env; e !== null; e = e.next) {
-        this.stepWork();
+        this.work();
         if (this.control === null ? e.name === names[i] : equalStringsWork(e.name, names[i]!, this.control)) {
           vals[i] = e.val;
           break;
@@ -1825,7 +1825,7 @@ export class Parser {
     }
     const f: Frame = new Array(n);
     for (let i = 0; i < n; i++) {
-      this.stepWork();
+      this.work();
       f[i] = null;
     }
     return f;
@@ -1850,7 +1850,7 @@ export class Parser {
     this.env = env;
     this.recovered.length = recovered;
     for (let i = this.trail.length - 1; i >= trail; i--) {
-      this.stepWork();
+      this.work();
       const u = this.trail[i]!;
       u.f[u.slot] = u.old;
     }
@@ -1918,7 +1918,7 @@ export class Parser {
       this.expTop = this.expBase;
     }
     for (let i = this.expBase; i < this.expTop; i++) {
-      this.stepWork();
+      this.work();
       if (this.exp[i] === id) {
         return;
       }
@@ -1935,7 +1935,7 @@ export class Parser {
     if (last.length === to - from) {
       let same = true;
       for (let i = 0; i < last.length; i++) {
-        this.stepWork();
+        this.work();
         if (last[i] !== this.exp[from + i]) {
           same = false;
           break;
@@ -1953,7 +1953,7 @@ export class Parser {
   // record (writes only happen below the read position).
   mergeExpected(far: number, from: number, to: number): void {
     for (let i = from; i < to; i++) {
-      this.stepWork();
+      this.work();
       this.expect(far, this.exp[i]!);
     }
   }
@@ -2003,7 +2003,7 @@ export class Parser {
   renameExpected(ids: number[], name: number): number[] {
     const out: number[] = [];
     for (const id of ids) {
-      this.stepWork();
+      this.work();
       out.push((id & msgBit) !== 0 ? id : name);
     }
     return out;
@@ -2011,7 +2011,7 @@ export class Parser {
 
   mergeKept(far: number, ids: number[]): void {
     for (const x of ids) {
-      this.stepWork();
+      this.work();
       this.expect(far, x);
     }
   }
@@ -2042,7 +2042,7 @@ export class Parser {
     const exp: string[] = [];
     const msgs: string[] = [];
     for (const x of expected) {
-      this.stepWork();
+      this.work();
       if ((x & msgBit) !== 0) {
         msgs.push(this.g.descs[x & ~msgBit]!);
       } else {
@@ -2069,7 +2069,7 @@ export class Parser {
     let lo = 0;
     let hi = this.lines.length;
     while (lo < hi) {
-      this.stepWork();
+      this.work();
       const mid = (lo + hi) >>> 1;
       if (this.lines[mid]! < pos + 1) {
         lo = mid + 1;
@@ -2095,7 +2095,7 @@ export class Parser {
       } else {
         for (let from = 0; from < this.seen.length; from += 128) {
           const end = Math.min(from + 128, this.seen.length);
-          this.stepWork(end - from);
+          this.work(end - from);
           grown.set(this.seen.subarray(from, end), from);
         }
       }
@@ -2111,21 +2111,21 @@ export class Parser {
   // Page directories hold integer arena offsets, avoiding one typed-array
   // object per page. Chunks contain 64 pages of 1,024 position bits each.
   markSparseSeen(pos: number, s: number): boolean {
-    this.stepWork();
+    this.work();
     if (this.seenPages === null) {
       this.seenPages = [];
       this.seenPageChunks = [];
     }
     let pages = this.seenPages[s];
     if (pages === undefined) {
-      this.stepWork();
+      this.work();
       pages = [];
       this.seenPages[s] = pages;
     }
     const at = Math.floor(pos / 1024);
     let page = pages[at];
     if (page === undefined) {
-      this.stepWork();
+      this.work();
       page = this.seenPageCount++;
       if (page % 64 === 0) {
         this.seenPageChunks!.push(new Int32Array(64 * 32));
@@ -2155,7 +2155,7 @@ export class Parser {
   }
 
   callBody(r: Rule, min: number): R {
-    this.stepWork();
+    this.work();
     const start = this.pos;
     if ((!r.memo && !r.leader) || this.firstCall(r)) {
       // Unmemoized call: no memo bookkeeping, and expectations need no isolation.
@@ -2187,7 +2187,7 @@ export class Parser {
       }
       this.pos = e.end;
       for (const x of e.errs) {
-        this.stepWork();
+        this.work();
         this.recovered.push(x);
       }
       return e.node;
@@ -2242,7 +2242,7 @@ export class Parser {
     let best = newEntry(undefined, false, start, false, true, noErrs);
     this.memoPut(r.id, start, min, env, best);
     for (;;) {
-      this.stepWork();
+      this.work();
       const v = this.invoke(r, min);
       if (v === undefined || (best.ok && this.pos <= best.end)) {
         break;
@@ -2257,7 +2257,7 @@ export class Parser {
     this.pos = best.end;
     this.recovered.length = rec;
     for (const x of best.errs) {
-      this.stepWork();
+      this.work();
       this.recovered.push(x);
     }
     return best.ok ? best.node : undefined;
@@ -2295,11 +2295,11 @@ export class Parser {
   invokePlain(r: Rule, min: number): R {
     const o = this.observation;
     if (o === null) {
-      this.stepWork();
+      this.work();
       return this.invokePlainBody(r, min);
     }
     o.enter(r.name, this.pos, min);
-    this.stepWork();
+    this.work();
     const v = this.invokePlainBody(r, min);
     o.exit(v !== undefined, this.pos);
     return v;
@@ -2391,7 +2391,7 @@ export class Parser {
     let found = false;
     let wrap = v === null || !v.fresh;
     for (const c of f) {
-      this.stepWork();
+      this.work();
       if (c !== null) {
         found = true;
         if (c === v) {
@@ -2408,7 +2408,7 @@ export class Parser {
     }
     n.labeled = this.sourceInfo;
     for (let i = 0; i < names.length; i++) {
-      this.stepWork();
+      this.work();
       const c = f[i]!;
       if (c !== null) {
         setField(n, names[i]!, c, this.control);
@@ -2475,7 +2475,7 @@ export class Parser {
   // --- Terminals ---
 
   matchLiteral(lit: Lit, desc: number, build: boolean): R {
-    this.stepWork();
+    this.work();
     const start = this.pos;
     if (this.unit === Bytes) {
       const b = lit.bytes;
@@ -2508,7 +2508,7 @@ export class Parser {
   // matchLiteralFold matches a case-insensitive literal. lit.cps holds the literal with each ASCII
   // letter lowercased; each input character is folded the same way before it is compared.
   matchLiteralFold(lit: Lit, desc: number, build: boolean): R {
-    this.stepWork();
+    this.work();
     const start = this.pos;
     for (const want of lit.cps) {
       const got = this.peek();
@@ -2532,7 +2532,7 @@ export class Parser {
       replacement = lit.cps.includes(0xfffd);
     } else {
       for (const cp of lit.cps) {
-        this.stepWork();
+        this.work();
         if (cp === 0xfffd) { replacement = true; break; }
       }
     }
@@ -2648,7 +2648,7 @@ export class Parser {
     }
     let old: Env | null = e;
     while (old !== null) {
-      this.stepWork();
+      this.work();
       if (control === null ? old.name === name : equalStringsWork(old.name, name, control)) break;
       old = old.next;
     }
@@ -2661,7 +2661,7 @@ export class Parser {
     const head: Env = { name, val, next: null };
     let tail = head;
     for (let cur: Env | null = e; cur !== old; cur = cur!.next) {
-      this.stepWork();
+      this.work();
       tail.next = { name: cur!.name, val: cur!.val, next: null };
       tail = tail.next;
     }
@@ -2697,7 +2697,7 @@ export class Parser {
     let best: OperatorsRuleAttempt | null = null;
     let cutFailed = false;
     for (const op of ops) {
-      this.stepWork();
+      this.work();
       const prevFrame = this.frame;
       const prevCut = this.cut;
       const f = this.newFrame(op.line.scope.length);
@@ -2734,12 +2734,12 @@ export class Parser {
       // and restoring, so one buffer per parser suffices.
       this.saved.length = 0;
       for (const x of f) {
-        this.stepWork();
+        this.work();
         this.saved.push(x);
       }
       this.reset(m0pos, m0env, m0trail, m0rec);
       for (let i = 0; i < f.length; i++) {
-        this.stepWork();
+        this.work();
         f[i] = this.saved[i]!;
       }
     }
@@ -2754,7 +2754,7 @@ export class Parser {
     this.pos = a.end;
     this.env = a.env;
     for (const x of a.errs) {
-      this.stepWork();
+      this.work();
       this.recovered.push(x);
     }
   }
@@ -2763,7 +2763,7 @@ export class Parser {
   // recursion (the operand of a prefix operator, the right operand of an infix operator) counts
   // against the nesting limit, like a rule call.
   operatorsRuleParse(r: Rule, min: number): R {
-    this.stepWork();
+    this.work();
     if (++this.depth > this.maxDepth) {
       this.tooDeep();
     }
@@ -2780,7 +2780,7 @@ export class Parser {
     }
     let lastNone = -1;
     for (;;) {
-      this.stepWork();
+      this.work();
       const m0pos = this.pos;
       const m0env = this.env;
       const m0trail = this.trail.length;
@@ -2857,7 +2857,7 @@ export class Parser {
       return undefined;
     }
     for (const o of pr.operands) {
-      this.stepWork();
+      this.work();
       const prevFrame = this.frame;
       const prevCut = this.cut;
       const f = this.newFrame(o.scope.length);
@@ -3024,7 +3024,7 @@ export class Actx {
     this.p = p;
   }
 
-  work(): void { this.p.stepWork(); }
+  work(): void { this.p.work(); }
 
   binary(op: string, l: Value, r: Value): Value {
     const control = this.p.control;
@@ -3087,7 +3087,7 @@ export class Actx {
 
   lookup(name: string): Value {
     for (let e = this.p.env; e !== null; e = e.next) {
-      this.p.stepWork();
+      this.p.work();
       if (this.p.control === null ? e.name === name : equalStringsWork(e.name, name, this.p.control)) {
         return e.val;
       }

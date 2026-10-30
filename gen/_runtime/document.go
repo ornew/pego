@@ -56,7 +56,7 @@ func MakeDocument(root *Rule, text string, opts []ParseOption) (d *Document, err
 	if o.unit == CodePoints {
 		p.setSource(text)
 	} else if o.control != nil {
-		p.InputWork(uint64(len(text)))
+		p.ReadWork(uint64(len(text)))
 	}
 	o.control.Check()
 	o.control, o.prepared = nil, false
@@ -403,7 +403,7 @@ func publishDocumentError(p *Parser, err error) error {
 }
 
 func cloneDocumentError(p *Parser, e *SyntaxError) *SyntaxError {
-	p.StepWork()
+	p.Work()
 	if e == nil {
 		return nil
 	}

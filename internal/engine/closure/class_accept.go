@@ -42,7 +42,7 @@ func ClassAccept(e *grammar.CharClass) func(*core.Parser, rune) bool {
 			return slow(r)
 		}
 		for _, rg := range ranges {
-			p.StepWork()
+			p.Work()
 			if rg.Lo <= r && r <= rg.Hi {
 				return !neg
 			}
@@ -74,7 +74,7 @@ func ClassAcceptControlled(e *grammar.CharClass, control *compile.Control) func(
 			return slow(r)
 		}
 		for _, rg := range ranges {
-			p.StepWork()
+			p.Work()
 			if rg.Lo <= r && r <= rg.Hi {
 				return !neg
 			}

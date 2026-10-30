@@ -155,7 +155,7 @@ func (v *Directive) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Params))
 			for i, x := range v.Params {
-				p.StepWork()
+				p.Work()
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -202,7 +202,7 @@ func (v *Document) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Directives))
 			for i, x := range v.Directives {
-				p.StepWork()
+				p.Work()
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -257,7 +257,7 @@ func (v *Mapping) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Pairs))
 			for i, x := range v.Pairs {
-				p.StepWork()
+				p.Work()
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -400,7 +400,7 @@ func (v *Sequence) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-				p.StepWork()
+				p.Work()
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -441,7 +441,7 @@ func (v *Stream) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Documents))
 			for i, x := range v.Documents {
-				p.StepWork()
+				p.Work()
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -482,7 +482,7 @@ func tb3(v *Anchor) any {
 // is no named node type. It is for generated parsers.
 var PegoNodeTypes [6]uint16
 
-// PegoSchema_020c95a1ea1f2613 ties the parser package to this package: the parser refers to it once, so a
+// PegoSchema_0f71384db0fc76f6 ties the parser package to this package: the parser refers to it once, so a
 // parser and a types package generated from different schemas do not compile together.
 // It is for generated parsers; not a stable API.
-const PegoSchema_020c95a1ea1f2613 = 0
+const PegoSchema_0f71384db0fc76f6 = 0

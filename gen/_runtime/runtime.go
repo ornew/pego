@@ -1739,7 +1739,7 @@ const (
 // NewNode returns a copy of v allocated from the node slab. A slab stays alive while any of its
 // nodes is referenced.
 func (p *Parser) NewNode(v Node) *Node {
-	p.StepWork()
+	p.Work()
 	if len(p.nodeSlab) == 0 {
 		p.nodeSlab = make([]Node, nodeChunk)
 		if p.Stream != nil {
@@ -1769,7 +1769,7 @@ func (p *Parser) NewNodeOrdinary(v Node) *Node {
 // NewTerminal returns the node of text matched from start to the current position, allocated like
 // NewNode(Node{RawKind: RawKindMatch, ...}).
 func (p *Parser) NewTerminal(start int, text string) *Node {
-	p.StepWork()
+	p.Work()
 	return p.NewTerminalOrdinary(start, text)
 }
 
@@ -1790,7 +1790,7 @@ func (p *Parser) NewTerminalOrdinary(start int, text string) *Node {
 // NewBranch returns the node of kind (RawKindSeq or RawKindList) with children from start to the
 // current position, allocated like NewNode(Node{RawKind: kind, ...}).
 func (p *Parser) NewBranch(kind *nodeKind, start int, children []*Node) *Node {
-	p.StepWork()
+	p.Work()
 	return p.NewBranchOrdinary(kind, start, children)
 }
 
@@ -2017,7 +2017,7 @@ func (p *Parser) Reset(m Mark) {
 }
 
 func (p *Parser) SetCapture(slot int, v *Node) {
-	p.StepWork()
+	p.Work()
 	p.Trail = append(p.Trail, undo{f: p.Frame, slot: slot, old: p.Frame.Vals[slot]})
 	p.Frame.Vals[slot] = v
 }
@@ -2074,7 +2074,7 @@ func (p *Parser) Peek() (rune, int, bool) {
 	if p.Stream != nil {
 		return p.streamPeek()
 	}
-	p.InputWork(1)
+	p.ReadWork(1)
 	if p.Pos >= p.n {
 		p.documentTouch(p.Pos + 1)
 		return 0, 0, false
@@ -2084,7 +2084,7 @@ func (p *Parser) Peek() (rune, int, bool) {
 			p.documentTouch(p.Pos + 1)
 			return rune(c), 1, true
 		}
-		p.InputWork(uint64(min(utf8.UTFMax, p.n-p.Pos)))
+		p.ReadWork(uint64(min(utf8.UTFMax, p.n-p.Pos)))
 		r, size := utf8.DecodeRuneInString(p.bs[p.Pos:])
 		p.documentTouch(p.Pos + size)
 		return r, size, true
@@ -2153,7 +2153,7 @@ func (p *Parser) Expect(pos int, id ExpID) {
 	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
 	if p.expBits&bit != 0 {
 		for _, e := range p.exp[p.expBase:] {
-			p.StepWork()
+			p.Work()
 			if e == id {
 				return
 			}
@@ -2247,7 +2247,7 @@ func slicesEqual(a, b []ExpID) bool {
 // current record (writes only happen below the read position).
 func (p *Parser) MergeExpected(far int, ids []ExpID) {
 	for _, x := range ids {
-		p.StepWork()
+		p.Work()
 		p.Expect(far, x)
 	}
 }
@@ -2312,7 +2312,7 @@ func (p *Parser) Call(r *Rule, min int) (*Node, bool) {
 	if p.Observation != nil || p.Document != nil {
 		return p.callTracked(r, min)
 	}
-	p.StepWork()
+	p.Work()
 	start := p.Pos
 	if (!r.Memo && !r.Leader) || p.FirstCall(r) {
 		// Unmemoized call: no memo bookkeeping, and expectations need no isolation.
@@ -2430,7 +2430,7 @@ func (p *Parser) callObserved(r *Rule, min int) (*Node, bool) {
 // callBody is call with the Document bookkeeping and without observation. A
 // Document parse takes callDocument.
 func (p *Parser) callBody(r *Rule, min int) (*Node, bool) {
-	p.StepWork()
+	p.Work()
 	if p.Document != nil {
 		return p.callDocument(r, min)
 	}
@@ -2714,7 +2714,7 @@ func (p *Parser) AttachCaptures(v *Node, names []string, f *CaptureFrame, start,
 	found := false
 	wrap := v == nil || !v.RawFresh
 	for _, c := range f.Vals {
-		p.StepWork()
+		p.Work()
 		if c != nil {
 			found = true
 		}
@@ -2733,7 +2733,7 @@ func (p *Parser) AttachCaptures(v *Node, names []string, f *CaptureFrame, start,
 	}
 	v.labeled = p.sourceInfo
 	for i, name := range names {
-		p.StepWork()
+		p.Work()
 		if f.Vals[i] != nil {
 			p.setValueField(&v.RawFields, name, f.Vals[i])
 		}
@@ -2865,7 +2865,7 @@ func (p *Parser) MatchLiteral(rs []rune, text string, desc ExpID, build bool) (*
 	} else {
 		p.documentTouch(start + len(rs))
 		for _, r := range rs {
-			p.InputWork(1)
+			p.ReadWork(1)
 			if p.Pos >= p.n || p.In[p.Pos] != r {
 				p.Expect(start, desc)
 				return nil, false
@@ -3138,7 +3138,7 @@ func RenamedExpected(p *Parser, expected []ExpID, name ExpID) []ExpID {
 	// The isolated record is no longer in the active expectation stack. Charge
 	// each conversion and reuse its storage before MergeExpected appends to it.
 	for i, id := range expected {
-		p.StepWork()
+		p.Work()
 		if id&MsgBit == 0 {
 			expected[i] = name
 		}
@@ -3242,7 +3242,7 @@ func (c *ActCtx) result(action func(*ActCtx) any, where string) (n *Node) {
 		return c.P.NewNode(Node{RawKind: kindBox, box: v, RawStart: int32(c.start), RawEnd: int32(c.end)})
 	}
 	for _, x := range c.P.created[c.cbase:] {
-		c.P.StepWork()
+		c.P.Work()
 		if x == n {
 			n.RawStart, n.RawEnd = int32(c.start), int32(c.end)
 			break
@@ -3356,7 +3356,7 @@ func (c *ActCtx) NewStruct(typ string, kv ...any) any {
 	n := c.P.NewNode(Node{RawKind: k, RawFields: c.P.fields(len(kv) / 2)})
 	first := true
 	for i := 0; i < len(kv); i += 2 {
-		c.P.StepWork()
+		c.P.Work()
 		v := kv[i+1]
 		c.P.setValueField(&n.RawFields, kv[i].(string), v)
 		if child, ok := v.(*Node); ok && child != nil {
@@ -3390,7 +3390,7 @@ func (c *ActCtx) listNode(kids []*Node) *Node { return c.valueNode(kindListValue
 func (c *ActCtx) Tuple(args ...any) any {
 	base := len(c.P.KidStack)
 	for _, a := range args {
-		c.P.StepWork()
+		c.P.Work()
 		c.P.KidStack = append(c.P.KidStack, c.asNode("tuple", a))
 	}
 	return c.valueNode(kindTupleValue, c.P.Kids(base))
@@ -3400,7 +3400,7 @@ func (c *ActCtx) valueNode(kind *nodeKind, kids []*Node) *Node {
 	n := c.P.NewNode(Node{RawKind: kind, RawChildren: kids, RawStart: int32(c.start), RawEnd: int32(c.start)})
 	first := true
 	for _, it := range kids {
-		c.P.StepWork()
+		c.P.Work()
 		if it == nil {
 			continue
 		}
@@ -3669,7 +3669,7 @@ func (c *ActCtx) MapList(list any, f func(item any) any) any {
 func (c *ActCtx) FilterList(list any, f func(item any) any) any {
 	base := len(c.P.KidStack)
 	for _, item := range c.ListItems("filter", list) {
-		c.P.StepWork()
+		c.P.Work()
 		value := f(UnboxNode(item))
 		keep, ok := value.(bool)
 		if !ok {
@@ -3691,7 +3691,7 @@ func (c *ActCtx) List(args ...any) any {
 func (c *ActCtx) Concat(args ...any) any {
 	base := len(c.P.KidStack)
 	for _, a := range args {
-		c.P.StepWork()
+		c.P.Work()
 		c.PushItems(a)
 	}
 	return c.EndList(base)
@@ -3703,14 +3703,14 @@ func (c *ActCtx) Concat(args ...any) any {
 
 func (c *ActCtx) PushMap(list any, f func(item any) any) {
 	for _, it := range c.ListItems("map", list) {
-		c.P.StepWork()
+		c.P.Work()
 		c.P.KidStack = append(c.P.KidStack, c.asNode("map", f(UnboxNode(it))))
 	}
 }
 
 func (c *ActCtx) PushList(args ...any) {
 	for _, a := range args {
-		c.P.StepWork()
+		c.P.Work()
 		c.P.KidStack = append(c.P.KidStack, c.asNode("list", a))
 	}
 }
@@ -3782,7 +3782,7 @@ func (p *Parser) skipTrivia(pr *OperatorsRule) {
 func (p *Parser) longest(ops []*OperatorsRuleOp) (best operatorsRuleAttempt, cutFailed bool) {
 	m0 := p.Mark()
 	for _, op := range ops {
-		p.StepWork()
+		p.Work()
 		prevFrame, prevCut := p.Frame, p.Cut
 		f := p.NewFrame(len(op.Line.Scope))
 		p.Frame, p.Cut = f, false
@@ -3914,7 +3914,7 @@ func (p *Parser) operatorsRuleNud(r *Rule) (*Node, bool) {
 		return nil, false
 	}
 	for _, o := range pr.Operands {
-		p.StepWork()
+		p.Work()
 		prevFrame, prevCut := p.Frame, p.Cut
 		f := p.NewFrame(len(o.Scope))
 		p.Frame, p.Cut = f, false

@@ -26,13 +26,13 @@ func (p *Parser) ActionError(parts ...string) error {
 func (p *Parser) actionErrorText(parts ...string) string {
 	size := 0
 	for _, part := range parts {
-		p.StepWork()
+		p.Work()
 		size = checkedDiagnosticSize(size, len(part))
 	}
 	var out strings.Builder
 	out.Grow(size)
 	for _, part := range parts {
-		p.StepWork()
+		p.Work()
 		p.writeDiagnosticText(&out, part)
 	}
 	return out.String()

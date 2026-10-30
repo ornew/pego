@@ -2,14 +2,14 @@ package core
 
 import "unicode/utf8"
 
-// inputWork and StepWork have a statically removable instrumentation boundary.
-func (in *Input) inputWork(n uint64) {
+// readWork and Work have a statically removable instrumentation boundary.
+func (in *Input) readWork(n uint64) {
 	if WorkControlsEnabled && in.Control != nil {
 		in.Control.Charge(n)
 	}
 }
 
-func (p *Parser) StepWork() {
+func (p *Parser) Work() {
 	if WorkControlsEnabled && p.Control != nil {
 		p.Control.Charge(1)
 	}

@@ -16,7 +16,7 @@ func (p *Parser) AdvanceEntry(e *MemoEntry, edits []DocEdit) bool {
 	}
 	from, examined, shift, shifted := e.From, e.Examined, 0, e.shifted
 	for _, ed := range edits[e.Vgen:] {
-		p.StepWork()
+		p.Work()
 		switch {
 		case examined <= ed.Start:
 		case from >= ed.End && !e.Positional && len(e.Errs) == 0:
@@ -44,7 +44,7 @@ func (p *Parser) RunSearch(elems []RunElem, start, at int) int {
 	}
 	lo, hi := start, len(elems)
 	for lo < hi {
-		p.StepWork()
+		p.Work()
 		mid := int(uint(lo+hi) >> 1)
 		if elems[mid].Start < at {
 			lo = mid + 1
@@ -60,7 +60,7 @@ func (p *Parser) RunAfter(elems []RunElem, end int) bool {
 		return after(elems, end)
 	}
 	for _, el := range elems {
-		p.StepWork()
+		p.Work()
 		if el.From < end {
 			return false
 		}
@@ -111,12 +111,12 @@ func (p *Parser) ClearMovementWork() {
 		p.Moved = nil
 	} else {
 		for key := range p.Moved {
-			p.StepWork()
+			p.Work()
 			delete(p.Moved, key)
 		}
 	}
 	for key := range p.Shifts {
-		p.StepWork()
+		p.Work()
 		delete(p.Shifts, key)
 	}
 }

@@ -14,7 +14,7 @@ The printer keeps the text small and the functions few:
 
 - Printing runs dry to a fixpoint of what is read, so a mark part (position, environment, trail,
   recovered count) is declared only as far as it is read, and an unread assignment is not printed.
-- Consecutive step charges merge into one `p.stepWork(n)`, and an expectation unisolate followed by a
+- Consecutive step charges merge into one `p.work(n)`, and an expectation unisolate followed by a
   merge of the same variables is one `p.unisolateMerge(mark)` that merges in place.
 - Functions whose printed bodies are equal share one method (`gen.Generator.MethodName`). The key of a function
   replaces each constant it names (a literal table, the capture names, a bind function) by the declaration

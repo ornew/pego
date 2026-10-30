@@ -84,7 +84,7 @@ func (mc *ivmMachine) iterate(vm *Program, root iframe) iresult {
 	stack := []iframe{root}
 	var res iresult
 	for {
-		p.StepWork()
+		p.Work()
 		child, out, done := stack[len(stack)-1].next(mc, vm, res)
 		if !done {
 			stack = append(stack, child)

@@ -125,7 +125,7 @@ func (in *Input) setSource(s string) {
 func (in *Input) buildOffs() {
 	offs := make([]int32, 0, len(in.In)+1)
 	for i := 0; i < len(in.Src); {
-		in.inputWork(uint64(min(utf8.UTFMax, len(in.Src)-i)))
+		in.readWork(uint64(min(utf8.UTFMax, len(in.Src)-i)))
 		offs = append(offs, int32(i))
 		_, size := utf8.DecodeRuneInString(in.Src[i:])
 		i += size
@@ -399,7 +399,7 @@ func (in *Input) read() {
 // Decode returns the character at position i, its size (in units), and the end of the examined
 // range.
 func (in *Input) Decode(i int) (r rune, size, examined int, ok bool) {
-	in.inputWork(1)
+	in.readWork(1)
 	if i < in.Base {
 		return 0, 0, i + 1, false
 	}
@@ -425,7 +425,7 @@ func (in *Input) Decode(i int) (r rune, size, examined int, ok bool) {
 		in.Fill(in.Loaded() + 1)
 		b = in.Bs[i-in.Base:]
 	}
-	in.inputWork(uint64(min(utf8.UTFMax, len(b))))
+	in.readWork(uint64(min(utf8.UTFMax, len(b))))
 	r, size = utf8.DecodeRune(b)
 	examined = i + size
 	if r == utf8.RuneError && size == 1 {
@@ -442,7 +442,7 @@ func (in *Input) Decode(i int) (r rune, size, examined int, ok bool) {
 
 // byteAt returns the byte at position i when the unit is Bytes.
 func (in *Input) byteAt(i int) (byte, bool) {
-	in.inputWork(1)
+	in.readWork(1)
 	if i < in.Base || !in.Fill(i+1) {
 		return 0, false
 	}
@@ -515,7 +515,7 @@ func (in *Input) lineCol(pos int) (int, int) {
 	line, col := in.BaseLine, in.BaseCol
 	n := in.Loaded()
 	for i := in.Base; i < pos && i < n; i++ {
-		in.inputWork(1)
+		in.readWork(1)
 		var nl bool
 		if in.Unit == Bytes {
 			nl = in.Bs[i-in.Base] == '\n'
@@ -547,14 +547,14 @@ func (in *Input) buildLines() {
 		for _, p := range in.Pieces.Parts {
 			if in.Unit == Bytes {
 				for i := 0; i < len(p.Text); i++ {
-					in.inputWork(1)
+					in.readWork(1)
 					if p.Text[i] == '\n' {
 						in.Lines = append(in.Lines, p.start+i+1)
 					}
 				}
 			} else {
 				for i, r := range p.Runes {
-					in.inputWork(1)
+					in.readWork(1)
 					if r == '\n' {
 						in.Lines = append(in.Lines, p.start+i+1)
 					}
@@ -566,7 +566,7 @@ func (in *Input) buildLines() {
 	}
 	if in.Unit == Bytes {
 		for i := range in.Bs {
-			in.inputWork(1)
+			in.readWork(1)
 			b := in.Bs[i]
 			if b == '\n' {
 				in.Lines = append(in.Lines, i+1)
@@ -576,7 +576,7 @@ func (in *Input) buildLines() {
 		return
 	}
 	for i := range in.In {
-		in.inputWork(1)
+		in.readWork(1)
 		r := in.In[i]
 		if r == '\n' {
 			in.Lines = append(in.Lines, i+1)
@@ -666,7 +666,7 @@ func (p *Parser) MatchLiteral(rs []rune, bs []byte) bool {
 			in := p.Bs[p.Pos-p.Base:]
 			n = len(bs)
 			for k < n {
-				p.inputWork(1)
+				p.readWork(1)
 				if k >= len(in) || in[k] != bs[k] {
 					break
 				}
@@ -676,7 +676,7 @@ func (p *Parser) MatchLiteral(rs []rune, bs []byte) bool {
 			in := p.In[p.Pos-p.Base:]
 			n = len(rs)
 			for k < n {
-				p.inputWork(1)
+				p.readWork(1)
 				if k >= len(in) || in[k] != rs[k] {
 					break
 				}
@@ -712,7 +712,7 @@ func (p *Parser) MatchLiteral(rs []rune, bs []byte) bool {
 		return true
 	}
 	for _, r := range rs {
-		p.inputWork(1)
+		p.readWork(1)
 		p.touch(p.Pos + 1)
 		if p.Pos < p.Base || !p.Fill(p.Pos+1) || p.In[p.Pos-p.Base] != r {
 			return false
@@ -727,7 +727,7 @@ func (p *Parser) MatchLiteral(rs []rune, bs []byte) bool {
 // It decodes the input rune by rune, as matchLiteralRunes does, so both position units agree.
 func (p *Parser) MatchLiteralFold(rs []rune) bool {
 	for _, want := range rs {
-		p.inputWork(1)
+		p.readWork(1)
 		got, size, ok := p.Peek()
 		if !ok || compile.FoldASCIIRune(got) != want {
 			return false
@@ -744,7 +744,7 @@ func (p *Parser) LiteralHasReplacement(rs []rune) bool {
 		return slices.Contains(rs, utf8.RuneError)
 	}
 	for _, r := range rs {
-		p.StepWork()
+		p.Work()
 		if r == utf8.RuneError {
 			return true
 		}
@@ -775,7 +775,7 @@ func (p *Parser) matchLiteralRunes(rs []rune) bool {
 }
 
 func (p *Parser) AtEOF() bool {
-	p.inputWork(1)
+	p.readWork(1)
 	p.touch(p.Pos + 1)
 	return !p.Fill(p.Pos + 1)
 }

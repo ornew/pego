@@ -738,7 +738,7 @@ func (t *TypedGen) converters(b *strings.Builder) {
 // was converted from. The typed value of a named node type's node is remembered by its own
 // converter, so the typed value as a plain node is not remembered.
 func (a *astConv) toMatch(n *Node) *TNode[string] {
-	a.stepWork()
+	a.work()
 	if n == nil || n.RawKind == nil || n.RawKind.Base != BaseString {
 		return nil
 	}
@@ -757,7 +757,7 @@ func (a *astConv) toMatch(n *Node) *TNode[string] {
 // toNode converts a node of a statically unknown Value: its Value is the text of a string node,
 // and a []any of the converted elements of a tuple or list node.
 func (a *astConv) toNode(n *Node) *TNode[any] {
-	a.stepWork()
+	a.work()
 	if n == nil || n.Type() == "error" {
 		return nil
 	}
@@ -780,14 +780,14 @@ func (a *astConv) toNode(n *Node) *TNode[any] {
 func (a *astConv) elems(n *Node) []any {
 	out := make([]any, len(n.RawChildren))
 	for i, c := range n.RawChildren {
-		a.stepWork()
+		a.work()
 		out[i] = a.anyValue(c)
 	}
 	return out
 }
 
 func (a *astConv) toError(n *Node) *Error {
-	a.stepWork()
+	a.work()
 	if n == nil || n.Type() != "error" {
 		return nil
 	}
@@ -800,7 +800,7 @@ func (a *astConv) toError(n *Node) *Error {
 }
 
 `, span)
-	b.WriteString("// anyValue converts a value of a statically unknown type into the typed value of its type (tuple\n// and list nodes become TNode[any], and tuple and list values []any).\nfunc (a *astConv) anyValue(v any) any {\n\ta.stepWork()\n\tn, ok := v.(*Node)\n\tif !ok {\n\t\treturn v\n\t}\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n")
+	b.WriteString("// anyValue converts a value of a statically unknown type into the typed value of its type (tuple\n// and list nodes become TNode[any], and tuple and list values []any).\nfunc (a *astConv) anyValue(v any) any {\n\ta.work()\n\tn, ok := v.(*Node)\n\tif !ok {\n\t\treturn v\n\t}\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n")
 	b.WriteString("\tcase \"string\":\n\t\treturn a.toMatch(n)\n\tcase \"error\":\n\t\treturn a.toError(n)\n\tcase \"tuple\", \"list\":\n\t\treturn a.toNode(n)\n\tcase \"(box)\":\n\t\treturn a.anyValue(UnboxNode(n))\n\tcase \"(tuple)\", \"(list)\":\n\t\treturn a.elems(n)\n")
 	for _, name := range append(append([]string(nil), t.structs...), t.NodeTypes...) {
 		fmt.Fprintf(b, "\tcase %q:\n\t\treturn a.%s(n)\n", name, convName(name))
@@ -809,10 +809,10 @@ func (a *astConv) toError(n *Node) *Error {
 	for _, name := range t.NodeTypes {
 		// A node of a named node type converts as the node it was converted from (baseNode).
 		n, _ := t.G.Prog.NodeTypeOf(name)
-		fmt.Fprintf(b, "func (a *astConv) %[4]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tu := %[3]s\n\tif u == nil {\n\t\treturn nil\n\t}\n\tv := &%[1]s{*u}\n\ta.remember(n, v)\n\treturn v\n}\n\n", t.ref(name), name, t.conv(n.Underlying(), "n.BaseNode()"), convName(name))
+		fmt.Fprintf(b, "func (a *astConv) %[4]s(n *Node) *%[1]s {\n\ta.work()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tu := %[3]s\n\tif u == nil {\n\t\treturn nil\n\t}\n\tv := &%[1]s{*u}\n\ta.remember(n, v)\n\treturn v\n}\n\n", t.ref(name), name, t.conv(n.Underlying(), "n.BaseNode()"), convName(name))
 	}
 	for _, name := range t.structs {
-		fmt.Fprintf(b, "func (a *astConv) %[4]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tv := astNew(&a.t%[5]s)\n\ta.remember(n, v)\n\tv.%[3]s = %[3]s{Start: int(n.RawStart), End: int(n.RawEnd)}\n", t.ref(name), name, span, convName(name), name)
+		fmt.Fprintf(b, "func (a *astConv) %[4]s(n *Node) *%[1]s {\n\ta.work()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tv := astNew(&a.t%[5]s)\n\ta.remember(n, v)\n\tv.%[3]s = %[3]s{Start: int(n.RawStart), End: int(n.RawEnd)}\n", t.ref(name), name, span, convName(name), name)
 		if len(t.Info.Fields[name]) > 0 {
 			// Fields are set in the order the action set them; look each one up.
 			for _, f := range t.Info.Fields[name] {
@@ -823,7 +823,7 @@ func (a *astConv) toError(n *Node) *Error {
 	}
 	for _, name := range t.aliases {
 		u := t.joinOf(name)
-		fmt.Fprintf(b, "func (a *astConv) %s(n *Node) %s {\n\ta.stepWork()\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n\tcase \"error\":\n\t\treturn a.toError(n)\n", convName(name), t.ref(name))
+		fmt.Fprintf(b, "func (a *astConv) %s(n *Node) %s {\n\ta.work()\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n\tcase \"error\":\n\t\treturn a.toError(n)\n", convName(name), t.ref(name))
 		for _, m := range u.Alts {
 			if m, ok := m.(compile.NodeTy); ok && m.Name != "" {
 				fmt.Fprintf(b, "\tcase %q:\n\t\treturn a.%s(n)\n", m.Name, convName(m.Name))
@@ -852,7 +852,7 @@ func (a *astConv) toError(n *Node) *Error {
 			l := t.listOrder[i]
 			elem := t.goType(l.elem)
 			conv := t.conv(l.elem, "UnboxNode(c)")
-			fmt.Fprintf(b, "func (a *astConv) %[1]s(n *Node) []%[2]s {\n\ta.stepWork()\n\tif n == nil {\n\t\treturn nil\n\t}\n\tout := astSlice(&a.%[1]sChunk, len(n.RawChildren))\n\tfor i, c := range n.RawChildren {\n\t\ta.stepWork()\n\t\tout[i] = %[3]s\n\t}\n\treturn out\n}\n\n", l.name, elem, conv)
+			fmt.Fprintf(b, "func (a *astConv) %[1]s(n *Node) []%[2]s {\n\ta.work()\n\tif n == nil {\n\t\treturn nil\n\t}\n\tout := astSlice(&a.%[1]sChunk, len(n.RawChildren))\n\tfor i, c := range n.RawChildren {\n\t\ta.work()\n\t\tout[i] = %[3]s\n\t}\n\treturn out\n}\n\n", l.name, elem, conv)
 		}
 		if !t.nodeHelpers(b, &helpers) && i == len(t.listOrder) {
 			break
@@ -872,14 +872,14 @@ func (a *astConv) toError(n *Node) *Error {
  if a.values == nil { a.values = make(map[*Node]any) }
  a.values[n] = v
 }
-func (a *astConv) stepWork() {
+func (a *astConv) work() {
  if a.control != nil { a.control.Charge(1) }
 }
 func (a *astConv) field(n *Node, name string) any {
  if a.control == nil { return n.RawField(name) }
  if n == nil { return nil }
  for _, f := range n.RawFields {
-  a.stepWork()
+  a.work()
   if f.Name == name { return f.Value }
  }
  return nil
@@ -1306,7 +1306,7 @@ func (t *TypedGen) typedRuntime(b *strings.Builder) {
 		for ; i < len(t.tlistOrder); i++ {
 			l := t.tlistOrder[i]
 			elem := t.goType(l.elem)
-			fmt.Fprintf(&convs, "func %s(a *tslabs, v any) []%s {\n\ta.stepWork()\n\tif v == nil {\n\t\treturn nil\n\t}\n\tn, _ := v.(*TSeq)\n\tif n == nil {\n\t\treturn []%[2]s{} // another node (an Error), as conversion makes an empty list of it\n\t}\n\tout := astSlice(&a.%sChunk, len(n.Kids))\n\tfor i, c := range n.Kids {\n\t\ta.stepWork()\n\t\tout[i] = %s\n\t}\n\treturn out\n}\n\n", l.name, elem, l.name, t.dconv(l.elem, "c", "a"))
+			fmt.Fprintf(&convs, "func %s(a *tslabs, v any) []%s {\n\ta.work()\n\tif v == nil {\n\t\treturn nil\n\t}\n\tn, _ := v.(*TSeq)\n\tif n == nil {\n\t\treturn []%[2]s{} // another node (an Error), as conversion makes an empty list of it\n\t}\n\tout := astSlice(&a.%sChunk, len(n.Kids))\n\tfor i, c := range n.Kids {\n\t\ta.work()\n\t\tout[i] = %s\n\t}\n\treturn out\n}\n\n", l.name, elem, l.name, t.dconv(l.elem, "c", "a"))
 		}
 		if !t.typedHelpers(&convs, &helpers) && i == len(t.tlistOrder) {
 			break
@@ -1336,7 +1336,7 @@ func (t *TypedGen) typedRuntime(b *strings.Builder) {
 	for _, l := range t.tlistOrder {
 		fmt.Fprintf(b, "\t%sChunk astChunk[%s]\n", l.name, t.goType(l.elem))
 	}
-	b.WriteString("}\n\nfunc (a *tslabs) SetWorkControl(c *WorkControl) { a.control = c }\nfunc (a *tslabs) stepWork() { if a.control != nil { a.control.Charge(1) } }\n\n")
+	b.WriteString("}\n\nfunc (a *tslabs) SetWorkControl(c *WorkControl) { a.control = c }\nfunc (a *tslabs) work() { if a.control != nil { a.control.Charge(1) } }\n\n")
 }
 
 // chunkNames rewrites the names of the local chunk helpers (astChunk, astNew, astSlice) to those of the

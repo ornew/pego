@@ -78,7 +78,7 @@ func (v *Item) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Children))
 			for i, x := range v.Children {
-				p.StepWork()
+				p.Work()
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -87,7 +87,7 @@ func (v *Item) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	return nil, false
 }
 
-// PegoSchema_d57df39084dc5045 ties the parser package to this package: the parser refers to it once, so a
+// PegoSchema_699b6f7866f485d5 ties the parser package to this package: the parser refers to it once, so a
 // parser and a types package generated from different schemas do not compile together.
 // It is for generated parsers; not a stable API.
-const PegoSchema_d57df39084dc5045 = 0
+const PegoSchema_699b6f7866f485d5 = 0

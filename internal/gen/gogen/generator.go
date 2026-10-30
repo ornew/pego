@@ -1081,7 +1081,7 @@ func (g *Generator) step(recv string) string {
 	if g.NoWork {
 		return ""
 	}
-	return recv + ".StepWork()\n"
+	return recv + ".Work()\n"
 }
 
 func (g *Generator) frameVar() string { return g.pick("EmptyFrame", "EmptyTFrame") }

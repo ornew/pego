@@ -208,7 +208,7 @@ var TsPrintRuns = sync.OnceValue(func() string {
 func (g *Generator) fieldCheckSource() string {
 	src := tsFieldCheckSource
 	if g.NoWork {
-		src = strings.ReplaceAll(src, "    p.stepWork();\n", "")
+		src = strings.ReplaceAll(src, "    p.work();\n", "")
 	}
 	for _, f := range []string{"castValue"} {
 		if strings.Contains(g.Init.String(), f+"(") || strings.Contains(g.Vars.String(), f+"(") || strings.Contains(g.Methods.String(), f+"(") {
@@ -318,7 +318,7 @@ function nodeValueConforms(p: Parser, t: FieldType, n: Node, shape: number): boo
 function elemsConform(p: Parser, t: FieldType, elems: readonly (Node | null)[]): boolean {
   if (t.kind === "_") return true;
   for (const k of elems) {
-    p.stepWork();
+    p.work();
     if (!fieldConforms(p, t, k)) return false;
   }
   return true;
@@ -329,7 +329,7 @@ function elemsConform(p: Parser, t: FieldType, elems: readonly (Node | null)[]):
 function tupleConforms(p: Parser, ts: readonly FieldType[], elems: readonly (Node | null)[]): boolean {
   if (elems.length !== ts.length) return false;
   for (let i = 0; i < elems.length; i++) {
-    p.stepWork();
+    p.work();
     if (!fieldConforms(p, ts[i]!, elems[i])) return false;
   }
   return true;
@@ -425,7 +425,7 @@ func (g *Generator) plainPrefix() string {
 // fn turns a call expression into a function.
 func (g *Generator) Method(comment, body string) string {
 	if !g.NoWork {
-		body = "  p.stepWork();\n" + body
+		body = "  p.work();\n" + body
 	}
 	name, shared := g.MethodName("Parser/R", body)
 	if shared {
@@ -567,7 +567,7 @@ func (g *Generator) plainCall(r *compile.Rule, body string) {
 	name := g.tracePlainCall(r, fmt.Sprintf("%s%d", g.plainPrefix(), r.ID))
 	fmt.Fprintf(m, "// %s, called as by invokePlain\nfunction %s(p: Parser): R {\n", r.Name, name)
 	if !g.NoWork {
-		m.WriteString("  p.stepWork();\n")
+		m.WriteString("  p.work();\n")
 	}
 	m.WriteString(`  const start = p.pos;
   const rec = p.recovered.length;

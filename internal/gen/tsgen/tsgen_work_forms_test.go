@@ -43,12 +43,12 @@ func TestGeneratedTSWorkControlForms(t *testing.T) {
 			}
 		}
 	}
-	for _, charge := range []string{"stepWork", "c.work(", "charge("} {
+	for _, charge := range []string{"p.work(", "c.work(", "charge("} {
 		if strings.Contains(plain, charge) {
 			t.Errorf("a parser generated without work controls mentions %q:\n%s", charge, plain)
 		}
 	}
-	for _, charge := range []string{"stepWork", "c.work("} {
+	for _, charge := range []string{"p.work(", "c.work("} {
 		if !strings.Contains(controlled, charge) {
 			t.Errorf("a parser generated with work controls has no %q", charge)
 		}

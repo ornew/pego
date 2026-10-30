@@ -48,8 +48,8 @@ func TestGeneratedLoopCharge(t *testing.T) {
 		})
 		t.Run(form+"/negative control", func(t *testing.T) {
 			// Without the charge of the loops, a lambda call is not charged at all.
-			loop := regexp.MustCompile(`(func \(c \*T?ActCtx\) (?:PushMap|FilterList)\([^\n]*\{\n(?:[^\n]*\n)*?)\t*c\.P\.StepWork\(\)\n`)
-			fold := regexp.MustCompile(`(func \(c \*T?ActCtx\) foldControlled\([^\n]*\{\n(?:[^\n]*\n)*?)\t*c\.P\.StepWork\(\)\n`)
+			loop := regexp.MustCompile(`(func \(c \*T?ActCtx\) (?:PushMap|FilterList)\([^\n]*\{\n(?:[^\n]*\n)*?)\t*c\.P\.Work\(\)\n`)
+			fold := regexp.MustCompile(`(func \(c \*T?ActCtx\) foldControlled\([^\n]*\{\n(?:[^\n]*\n)*?)\t*c\.P\.Work\(\)\n`)
 			patched := 0
 			dir := gentest.RuntimeCopyWith(t, func(name, src string) string {
 				for _, re := range []*regexp.Regexp{loop, fold} {

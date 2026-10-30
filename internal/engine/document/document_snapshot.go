@@ -392,7 +392,7 @@ func copySnapshotError(p *core.Parser, err error) error {
 			return nil
 		}
 		if p != nil {
-			p.StepWork()
+			p.Work()
 		}
 		out := *e
 		out.Expected, out.Messages = snapshotStrings(p, e.Expected), snapshotStrings(p, e.Messages)
@@ -452,7 +452,7 @@ func freezeSnapshotGraph(p *core.Parser, root *value.Node) (snapshotGraph, *Snap
 		if id, ok := seen[n]; ok {
 			return id, false
 		}
-		p.StepWork()
+		p.Work()
 		r := snapshotRecord{kind: value.D(n).Kind, start: value.D(n).Start, end: value.D(n).End, text: value.D(n).Text, fresh: value.D(n).Fresh, terminal: value.D(n).Terminal, gen: value.D(n).Gen}
 		if value.D(n).Children != nil {
 			r.children = make([]int, len(value.D(n).Children))
@@ -469,7 +469,7 @@ func freezeSnapshotGraph(p *core.Parser, root *value.Node) (snapshotGraph, *Snap
 	g.root, _ = register(root)
 	stack := []snapshotFrame{{node: root, id: g.root}}
 	for len(stack) > 0 {
-		p.StepWork()
+		p.Work()
 		f := &stack[len(stack)-1]
 		var child *value.Node
 		var edge snapshotEdge
@@ -513,7 +513,7 @@ func snapshotFieldPath(p *core.Parser, stack []snapshotFrame, edge snapshotEdge)
 	var out strings.Builder
 	out.WriteString("root")
 	write := func(e snapshotEdge) {
-		p.StepWork()
+		p.Work()
 		if e.child {
 			out.WriteString(".Children[")
 			out.WriteString(strconv.Itoa(e.index))
@@ -527,7 +527,7 @@ func snapshotFieldPath(p *core.Parser, stack []snapshotFrame, edge snapshotEdge)
 		// remain interruptible while building the rejection path.
 		out.WriteByte('"')
 		for _, r := range e.name {
-			p.StepWork()
+			p.Work()
 			q := strconv.QuoteRune(r)
 			if r == '\'' {
 				q = "'"
@@ -561,7 +561,7 @@ func shareSnapshotGraph(p *core.Parser, previous *snapshotGraph, next snapshotGr
 		relative := make([]uint64, len(matches))
 		relativeCount := 0
 		for i := range next.nodes {
-			p.StepWork()
+			p.Work()
 			if i < previous.count() && sameSnapshotPayload(p, previous, previous.at(i), &next, &next.nodes[i]) {
 				old := previous.position(i, previous.at(i))
 				current := next.position(i, &next.nodes[i])
@@ -580,14 +580,14 @@ func shareSnapshotGraph(p *core.Parser, previous *snapshotGraph, next snapshotGr
 		// pointer to one record can keep its entire old backing array alive.
 		if uint64(relativeCount)*uint64(unsafe.Sizeof(snapshotRecord{})) > uint64(len(next.nodes))*uint64(unsafe.Sizeof(snapshotPositionDelta{}))*4/3 {
 			for i := range matches {
-				p.StepWork()
+				p.Work()
 				matches[i] |= relative[i]
 			}
 			ownedCount -= relativeCount
 		}
 	} else if previous.childChunks == nil {
 		for i := range next.nodes {
-			p.StepWork()
+			p.Work()
 			if i < previous.count() && sameFlatSnapshotRecord(p, previous.at(i), &next.nodes[i]) {
 				matches[i/64] |= 1 << uint(i%64)
 			} else {
@@ -596,7 +596,7 @@ func shareSnapshotGraph(p *core.Parser, previous *snapshotGraph, next snapshotGr
 		}
 	} else {
 		for i := range next.nodes {
-			p.StepWork()
+			p.Work()
 			if i < previous.count() && sameSnapshotRecord(p, previous, previous.at(i), &next, &next.nodes[i]) {
 				matches[i/64] |= 1 << uint(i%64)
 			} else {
@@ -614,7 +614,7 @@ func shareSnapshotGraph(p *core.Parser, previous *snapshotGraph, next snapshotGr
 	ownedAt := 0
 	needsPositions := false
 	for i := range next.nodes {
-		p.StepWork()
+		p.Work()
 		if matches[i/64]&(1<<uint(i%64)) != 0 {
 			ref := previous.at(i)
 			shared.refs[i] = ref
@@ -659,7 +659,7 @@ func sameSnapshotPayload(p *core.Parser, ag *snapshotGraph, a *snapshotRecord, b
 		return false
 	}
 	for i, f := range a.fields {
-		p.StepWork()
+		p.Work()
 		other := b.fields[i]
 		if p.CompareText(f.Name, other.Name) != 0 || !sameSnapshotFieldValue(p, f.Value, other.Value) {
 			return false
@@ -694,7 +694,7 @@ func shareSnapshotChildren(p *core.Parser, previousGraph *snapshotGraph, previou
 	}
 	chunks := make([][]int, count)
 	for i := range chunks {
-		p.StepWork()
+		p.Work()
 		start := i * snapshotChildChunkSize
 		end := min(start+snapshotChildChunkSize, len(next.children))
 		if equal[i] {
@@ -730,7 +730,7 @@ func sameSnapshotRecord(p *core.Parser, ag *snapshotGraph, a *snapshotRecord, bg
 		return false
 	}
 	for i, f := range a.fields {
-		p.StepWork()
+		p.Work()
 		other := b.fields[i]
 		if p.CompareText(f.Name, other.Name) != 0 || !sameSnapshotFieldValue(p, f.Value, other.Value) {
 			return false
@@ -758,7 +758,7 @@ func sameFlatSnapshotRecord(p *core.Parser, a, b *snapshotRecord) bool {
 		}
 	}
 	for i, f := range a.fields {
-		p.StepWork()
+		p.Work()
 		other := b.fields[i]
 		if p.CompareText(f.Name, other.Name) != 0 || !sameSnapshotFieldValue(p, f.Value, other.Value) {
 			return false

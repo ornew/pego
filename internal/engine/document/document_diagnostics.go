@@ -21,7 +21,7 @@ func copyDocumentDiagnostics(p *core.Parser, src core.SyntaxErrors) core.SyntaxE
 	p.ValueWork(len(src))
 	out := make(core.SyntaxErrors, len(src))
 	for i, e := range src {
-		p.StepWork()
+		p.Work()
 		if e == nil {
 			continue
 		}
