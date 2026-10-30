@@ -3,14 +3,12 @@ package engine
 import (
 	"encoding/binary"
 	"hash/crc32"
-	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
 )
 
@@ -138,14 +136,4 @@ func TestCastSyntax(t *testing.T) {
 	if err != nil || data[isaOffset] != bytecode.ISAVersion {
 		t.Fatalf("cast to any ISA: %v %d", err, data[isaOffset])
 	}
-}
-
-func TestCastGeneratedTypeScriptParity(t *testing.T) {
-	t.Parallel()
-	node, err := exec.LookPath("node")
-	if err != nil {
-		t.Skip("node not found")
-	}
-	testGeneratedTSParsersCorpus(t, node, gentest.CastCases(), gen.GenOptions{})
-	testGeneratedTSParsersCorpus(t, node, gentest.CastCases(), gen.GenOptions{SourceInfo: true})
 }

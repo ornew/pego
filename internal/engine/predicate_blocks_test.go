@@ -2,13 +2,11 @@ package engine
 
 import (
 	"bytes"
-	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
 )
 
@@ -123,13 +121,4 @@ rule main = {x := 1; len(true)} "a"`,
 			t.Fatalf("unsupported boundary %s: %v", source, err)
 		}
 	}
-}
-
-func TestPredicateBlocksGeneratedTypeScriptParity(t *testing.T) {
-	t.Parallel()
-	node, err := exec.LookPath("node")
-	if err != nil {
-		t.Skip("node not found")
-	}
-	testGeneratedTSParsersCorpus(t, node, gentest.PredicateBlockGeneratedCases(), gen.GenOptions{})
 }

@@ -3,13 +3,11 @@ package engine
 import (
 	"bytes"
 	"encoding/json"
-	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
 )
 
@@ -281,13 +279,4 @@ func TestTopBottomSchema(t *testing.T) {
 	if data, _ := json.Marshal(schema); !strings.Contains(string(data), `{"name":"A","shape":{"kind":"node","value":{"kind":"scalar","scalar":"string"}}}`) {
 		t.Fatalf("bottom union schema:\n%s", data)
 	}
-}
-
-func TestTopBottomGeneratedTypeScriptParity(t *testing.T) {
-	t.Parallel()
-	node, err := exec.LookPath("node")
-	if err != nil {
-		t.Skip("node not found")
-	}
-	testGeneratedTSParsersCorpus(t, node, gentest.TopBottomCases(), gen.GenOptions{})
 }

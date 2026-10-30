@@ -1,12 +1,10 @@
 package engine
 
 import (
-	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
 )
 
@@ -67,13 +65,4 @@ func TestNodeTypesCheckedAtCompileTime(t *testing.T) {
 			t.Errorf("%q: got %v, want %q", tc.src, err, tc.static)
 		}
 	}
-}
-
-func TestNodeTypesGeneratedTypeScriptParity(t *testing.T) {
-	t.Parallel()
-	node, err := exec.LookPath("node")
-	if err != nil {
-		t.Skip("node not found")
-	}
-	testGeneratedTSParsersCorpus(t, node, gentest.NodeTypeCases(), gen.GenOptions{})
 }

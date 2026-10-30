@@ -3,13 +3,11 @@ package engine
 import (
 	"encoding/binary"
 	"hash/crc32"
-	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
@@ -128,15 +126,6 @@ func TestFilterCompiledInstructionSet(t *testing.T) {
 		}
 	}
 	t.Fatal("fixture emitted no filter call")
-}
-
-func TestFilterGeneratedTypeScriptParity(t *testing.T) {
-	t.Parallel()
-	node, err := exec.LookPath("node")
-	if err != nil {
-		t.Skip("node not found")
-	}
-	testGeneratedTSParsersCorpus(t, node, gentest.FilterCases(), gen.GenOptions{})
 }
 
 // The checker rejects a predicate of type _, so a predicate that produces another value than a

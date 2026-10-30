@@ -1,6 +1,8 @@
 package gentest
 
 import (
+	"bufio"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -9,8 +11,11 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/compiletest"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/tsgen"
 	"github.com/ornew/pego/internal/value"
@@ -206,4 +211,145 @@ func RunTSGrammarScriptWith(t *testing.T, g *grammar.Grammar, script string, opt
 		t.Fatalf("node: %v\n%s", err, Clip(stderr.String(), 0))
 	}
 	return string(out)
+}
+
+// TSParsersCorpus generates a TypeScript parser for each case with opts, runs them with the Node
+// executable node (and checks their types with tsc if there is one), and compares the results on the
+// inputs of the case, in positions of code points and of bytes, with those of the engine.
+func TSParsersCorpus(t *testing.T, node string, cases []Case, opts gen.GenOptions) {
+	t.Helper()
+	dir := t.TempDir()
+	write := func(name, content string) {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("package.json", `{"type": "module"}`+"\n")
+	write("harness.mjs", TSHarness)
+	type input struct {
+		B64   string `json:"b64"`
+		Valid bool   `json:"valid"`
+	}
+	type want struct{ out, str, rec string }
+	var inputs [][]input
+	var wants []want
+	var files []string
+	for i, c := range cases {
+		g, err := compiletest.Parse(c.Src)
+		if err != nil {
+			t.Fatalf("%s: %v", c.Name, err)
+		}
+		opts.Start, opts.Recognize = "main", true
+		code, err := GenerateTSBundle(g, opts)
+		if err != nil {
+			t.Fatalf("%s: %v", c.Name, err)
+		}
+		name := fmt.Sprintf("g%d.ts", i)
+		write(name, string(code))
+		files = append(files, name)
+		var in []input
+		// The generated code projects (internal/compile/project.go), and records source information as asked.
+		prog := refProgram(t, c.Src, compile.Options{NoProjections: true, SourceInfo: opts.SourceInfo})
+		for _, s := range c.Inputs {
+			in = append(in, input{base64.StdEncoding.EncodeToString([]byte(s)), utf8.ValidString(s)})
+			for _, bytes := range []bool{false, true} {
+				n, err := prog(s, bytes, false)
+				w := want{out: DeepResultJSON(t, n, err)}
+				if n != nil {
+					w.str = n.String()
+				}
+				_, err = prog(s, bytes, true)
+				w.rec = fmt.Sprint(err)
+				wants = append(wants, w)
+			}
+		}
+		inputs = append(inputs, in)
+	}
+	data, _ := json.Marshal(inputs)
+	write("inputs.json", string(data))
+
+	if tsc, err := exec.LookPath("tsc"); err == nil {
+		// The strictest checks there are, so that the code compiles in any project; ES2020 is the
+		// oldest target it supports (bigint).
+		args := append([]string{"--noEmit", "--target", "es2020", "--lib", "es2020", "--strict",
+			"--noUnusedLocals", "--noUnusedParameters", "--noImplicitReturns", "--noFallthroughCasesInSwitch",
+			"--noImplicitOverride", "--exactOptionalPropertyTypes", "--noUncheckedIndexedAccess",
+			"--noPropertyAccessFromIndexSignature", "--erasableSyntaxOnly", "--verbatimModuleSyntax"}, files...)
+		cmd := exec.Command(tsc, args...)
+		cmd.Dir = dir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Errorf("tsc: %v\n%s", err, out)
+		}
+	} else {
+		t.Log("tsc not found: not type-checking the generated code")
+	}
+
+	cmd := exec.Command(node, "harness.mjs", "inputs.json", "out.jsonl")
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("node: %v\n%s", err, out)
+	}
+	f, err := os.Open(filepath.Join(dir, "out.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	results := bufio.NewReader(f)
+	k, w := 0, 0
+	for _, c := range cases {
+		for _, s := range c.Inputs {
+			for _, unit := range []string{"codepoints", "bytes"} {
+				forms := []string{"bytes"}
+				if utf8.ValidString(s) {
+					forms = append(forms, "string")
+				}
+				for _, form := range forms {
+					line, err := results.ReadString('\n')
+					if err != nil {
+						t.Fatalf("got %d results, want more: %v", k, err)
+					}
+					var got struct {
+						Node string
+						Err  *string
+						Str  string
+						Rec  string
+					}
+					if err := json.Unmarshal([]byte(line), &got); err != nil {
+						t.Fatalf("%v: %s", err, line)
+					}
+					k++
+					// The result as resultJSON encodes it, with the node as marshal encoded it.
+					res := `{"node":` + got.Node + `}`
+					if got.Err != nil {
+						e, _ := json.Marshal(*got.Err)
+						res = `{"err":` + string(e) + `,"node":` + got.Node + `}`
+					}
+					in := s
+					if len(in) > 200 {
+						in = in[:200] + "..."
+					}
+					if res != wants[w].out {
+						at := DiffAt(res, wants[w].out)
+						t.Errorf("%s (%v, %s): input %q\n generated %s\n engine    %s", c.Name, unit, form, in, Clip(res, at), Clip(wants[w].out, at))
+					}
+					str, err := base64.StdEncoding.DecodeString(got.Str)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if string(str) != wants[w].str {
+						at := DiffAt(string(str), wants[w].str)
+						t.Errorf("%s (%v, %s): input %q: String\n generated %s\n engine    %s", c.Name, unit, form, in, Clip(string(str), at), Clip(wants[w].str, at))
+					}
+					if got.Rec != wants[w].rec {
+						t.Errorf("%s (%v, %s): input %q: recognize\n generated %s\n engine    %s", c.Name, unit, form, in, got.Rec, wants[w].rec)
+					}
+				}
+				w++
+			}
+		}
+	}
+	t.Logf("compared %d results of %d grammars", k, len(cases))
+	if rest, _ := results.ReadString('\n'); rest != "" {
+		t.Errorf("got more than %d results", k)
+	}
 }

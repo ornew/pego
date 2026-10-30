@@ -3,7 +3,6 @@ package engine
 import (
 	"bytes"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -105,18 +104,6 @@ rule a = ("é" / "ab")+ #atomic`)
 			}
 		})
 	}
-}
-
-func TestGeneratedUnsharedTSParsersMatchEngine(t *testing.T) {
-	t.Parallel()
-	if testing.Short() {
-		t.Skip("runs generated TypeScript")
-	}
-	node, err := exec.LookPath("node")
-	if err != nil {
-		t.Skip("node not found")
-	}
-	testGeneratedTSParsersCorpus(t, node, gentest.GenCorpus(t), gen.GenOptions{DisableMethodSharing: true, DisableLiteralSharing: true})
 }
 
 // PEGO_GENERATED_SHARING selects generation-only controls: combined also

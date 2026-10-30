@@ -3,14 +3,12 @@ package engine
 import (
 	"encoding/binary"
 	"hash/crc32"
-	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/value"
 )
@@ -199,13 +197,4 @@ rule item = [a-z]`
 			t.Fatalf("under-declared index ISA accepted: %v", err)
 		}
 	}
-}
-
-func TestIndexGeneratedTypeScriptParity(t *testing.T) {
-	t.Parallel()
-	node, err := exec.LookPath("node")
-	if err != nil {
-		t.Skip("node not found")
-	}
-	testGeneratedTSParsersCorpus(t, node, gentest.IndexCases(), gen.GenOptions{})
 }

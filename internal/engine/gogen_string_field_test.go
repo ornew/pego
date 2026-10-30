@@ -114,6 +114,6 @@ func testGeneratedStringFieldReads(t *testing.T) {
 	gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
 	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, direct)
 	if node, err := exec.LookPath("node"); err == nil {
-		testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{})
+		gentest.TSParsersCorpus(t, node, cases, gen.GenOptions{})
 	}
 }

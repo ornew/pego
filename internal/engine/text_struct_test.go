@@ -53,7 +53,7 @@ func testGeneratedTextStructs(t *testing.T) {
 	gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
 	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, 1)
 	if node, err := exec.LookPath("node"); err == nil {
-		testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{})
+		gentest.TSParsersCorpus(t, node, cases, gen.GenOptions{})
 	}
 }
 

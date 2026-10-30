@@ -141,8 +141,8 @@ func testOperatorsRuleNamedNodeTypeGenerated(t *testing.T) {
 		if err != nil {
 			t.Skip("node not found")
 		}
-		testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{})
-		testGeneratedTSParsersCorpus(t, node, cases, gen.GenOptions{SourceInfo: true})
+		gentest.TSParsersCorpus(t, node, cases, gen.GenOptions{})
+		gentest.TSParsersCorpus(t, node, cases, gen.GenOptions{SourceInfo: true})
 	})
 }
 

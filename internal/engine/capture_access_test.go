@@ -3,14 +3,12 @@ package engine
 import (
 	"encoding/binary"
 	"hash/crc32"
-	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
 	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/syntax"
 )
@@ -148,13 +146,4 @@ func TestCaptureAccessSyntax(t *testing.T) {
 	if _, _, err := LoadProgram(data); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 		t.Fatalf("under-declared capture access ISA accepted: %v", err)
 	}
-}
-
-func TestCaptureAccessGeneratedTypeScriptParity(t *testing.T) {
-	t.Parallel()
-	node, err := exec.LookPath("node")
-	if err != nil {
-		t.Skip("node not found")
-	}
-	testGeneratedTSParsersCorpus(t, node, gentest.CaptureAccessCases(), gen.GenOptions{})
 }

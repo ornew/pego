@@ -1,12 +1,10 @@
 package engine
 
 import (
-	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/compile"
-	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
 )
 
@@ -74,13 +72,4 @@ func TestMemberAccessOnJoinValues(t *testing.T) {
 			}
 		}
 	}
-}
-
-func TestMemberAccessOnJoinGeneratedTypeScriptParity(t *testing.T) {
-	t.Parallel()
-	node, err := exec.LookPath("node")
-	if err != nil {
-		t.Skip("node not found")
-	}
-	testGeneratedTSParsersCorpus(t, node, append(gentest.JoinMemberCases(), gentest.TypedJoinMemberCases()...), gen.GenOptions{})
 }
