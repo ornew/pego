@@ -35,7 +35,7 @@ rule num = [0-9]+ ("." [0-9]+)?
 		return string(gentest.MergeGenerated(files))
 	}
 	with, without := gen(true), gen(false)
-	for _, want := range []string{"p.Spend()", "p.Control == nil", "func WithLimits", "func WithContext"} {
+	for _, want := range []string{"p.Spend()", "p.Control.Take(", "func WithLimits", "func WithContext"} {
 		if !strings.Contains(with, want) {
 			t.Errorf("with budget controls: missing %q", want)
 		}

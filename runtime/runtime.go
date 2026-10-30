@@ -2163,6 +2163,32 @@ func (p *Parser) Expect(pos int, id ExpID) {
 	p.exp = append(p.exp, id)
 }
 
+// ExpectBudget is Expect in a parse that has no Document: it charges the budget and leaves out the
+// Document's record of the examined input.
+//
+// ExpectBudget is for generated parsers; not a stable API.
+func (p *Parser) ExpectBudget(pos int, id ExpID) {
+	if p.Silent > 0 || pos < p.farthest {
+		return
+	}
+	if pos > p.farthest {
+		p.farthest = pos
+		p.exp = p.exp[:p.expBase]
+		p.expBits = 0
+	}
+	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
+	if p.expBits&bit != 0 {
+		for _, e := range p.exp[p.expBase:] {
+			p.Spend()
+			if e == id {
+				return
+			}
+		}
+	}
+	p.expBits |= bit
+	p.exp = append(p.exp, id)
+}
+
 // ExpectOrdinary is expect in an ordinary parse: one without budget controls and outside a
 // Document (p.Control == nil && p.Document == nil). The generated rule bodies have a branch for
 // such parses that calls the Ordinary forms of the runtime helpers, which leave out the budget

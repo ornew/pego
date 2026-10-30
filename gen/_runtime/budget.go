@@ -79,12 +79,14 @@ type BudgetControl struct {
 }
 
 // newBudgetControl returns nil when neither cancellation nor a finite budget is
-// active. A nil context is equivalent to context.Background.
+// active. Without a cancelable context the control never polls, so a parse with
+// only a budget reaches the slow path of a charge only at its limit. A nil
+// context is equivalent to context.Background.
 func newBudgetControl(ctx context.Context, limits Limits) *BudgetControl {
-	if ctx == nil {
-		ctx = context.Background()
+	if ctx != nil && ctx.Done() == nil {
+		ctx = nil // it can never be canceled
 	}
-	if ctx.Done() == nil && limits.Budget == 0 {
+	if ctx == nil && limits.Budget == 0 {
 		return nil
 	}
 	c := &BudgetControl{ctx: ctx, limits: limits}
@@ -106,9 +108,17 @@ func (c *BudgetControl) settle() {
 
 // refill grants the fast path of charge the room left by the settled counters.
 func (c *BudgetControl) refill() {
-	c.grant = budgetRoom(c.base, c.sinceCheck, c.limits.Budget, budgetCheckInterval)
+	interval := budgetCheckInterval
+	if c.ctx == nil {
+		interval, c.sinceCheck = unpolledGrant, 0
+	}
+	c.grant = budgetRoom(c.base, c.sinceCheck, c.limits.Budget, interval)
 	c.room = c.grant
 }
+
+// unpolledGrant is the room granted at a time when nothing observes the context.
+// It is far below the overflow of the counters.
+const unpolledGrant = uint64(1) << 62
 
 // budgetRoom returns the smallest request that reaches the poll interval
 // (reachesInterval) or exceeds the limit (exceedsLimit).
@@ -172,6 +182,28 @@ func (c *BudgetControl) Charge(n uint64) {
 	c.chargeSlow(n)
 }
 
+// Take is Charge for a condition: it reserves n units and returns true. It
+// does nothing on a nil receiver.
+func (c *BudgetControl) Take(n uint64) bool {
+	if c == nil {
+		return true
+	}
+	if n < c.room {
+		c.room -= n
+		return true
+	}
+	c.takeSlow(n)
+	return true
+}
+
+// takeSlow charges n units one at a time, the reference charge, so that exhaustion and polls
+// fall where they do for the matcher that charges its input unit by unit.
+func (c *BudgetControl) takeSlow(n uint64) {
+	for ; n > 0; n-- {
+		c.chargeStep()
+	}
+}
+
 // chargeStep reserves one unit for a rule call, a loop iteration or a matcher
 // step; it does nothing on a nil receiver. n < room is room > 1 for n = 1.
 func (c *BudgetControl) chargeStep() {
@@ -193,7 +225,7 @@ func (c *BudgetControl) chargeSlow(n uint64) {
 	c.settle()
 
 	exceeded := exceedsLimit(c.base, n, c.limits.Budget)
-	poll := reachesInterval(c.sinceCheck, n, budgetCheckInterval)
+	poll := c.ctx != nil && reachesInterval(c.sinceCheck, n, budgetCheckInterval)
 
 	// Check on each poll boundary and on a failed reservation so an already
 	// canceled invocation wins over a simultaneously exhausted budget.
@@ -274,6 +306,26 @@ func (p *Parser) Spend() {
 	p.Control.chargeStep()
 }
 
+// asciiRunMin is the shortest run of ASCII characters that setControlledSource charges at once.
+const asciiRunMin = 8
+
+// asciiRun returns the length of the ASCII run at s[off:] whose characters each charge a full
+// UTFMax units and whose total charge, one reservation of UTFMax each, all take the fast path of
+// charge with room units left. Charging the run in one subtraction is then exactly what
+// charging its characters one by one does.
+func asciiRun(s string, off int, room uint64) int {
+	// The character at i charges UTFMax units while at least UTFMax bytes remain from i.
+	end := min(len(s)-utf8.UTFMax+1, off+256)
+	k := 0
+	for off+k < end && s[off+k] < utf8.RuneSelf {
+		k++
+	}
+	if k > 0 && uint64(utf8.UTFMax*k) >= room {
+		return 0
+	}
+	return k
+}
+
 func (p *Parser) setControlledSource(s string) {
 	n, valid := 0, len(s) <= 1<<31-1
 	// Outside a Document, charge the control directly: SpendRead is too large to inline.
@@ -282,6 +334,14 @@ func (p *Parser) setControlledSource(s string) {
 		c = nil
 	}
 	for off := 0; off < len(s); {
+		if c != nil {
+			if k := asciiRun(s, off, c.room); k >= asciiRunMin {
+				c.room -= uint64(utf8.UTFMax * k)
+				n += k
+				off += k
+				continue
+			}
+		}
 		if w := uint64(min(utf8.UTFMax, len(s)-off)); c != nil {
 			c.Charge(w)
 		} else {
@@ -310,6 +370,20 @@ func (p *Parser) setControlledSource(s string) {
 		offs[n] = int32(len(s))
 	}
 	for off, i := 0, 0; off < len(s); i++ {
+		if c != nil {
+			if k := asciiRun(s, off, c.room); k >= asciiRunMin {
+				c.room -= uint64(utf8.UTFMax * k)
+				for j := range k {
+					p.In[i+j] = rune(s[off+j])
+					if valid {
+						offs[i+j] = int32(off + j)
+					}
+				}
+				off += k
+				i += k - 1
+				continue
+			}
+		}
 		p.SpendRead(uint64(min(utf8.UTFMax, len(s)-off)))
 		r, size := utf8.DecodeRuneInString(s[off:])
 		p.In[i] = r
@@ -393,14 +467,54 @@ func parseConversionInput(r *Rule, input string, o parseOptions) (n *Node, err e
 // BudgetRange is for generated parsers; not a stable API.
 type BudgetRange struct{ Lo, Hi rune }
 
-func (p *Parser) RejectBudgetClass(ch rune, ranges []BudgetRange, negated bool) bool {
-	for _, r := range ranges {
-		p.Spend()
-		if ch >= r.Lo && ch <= r.Hi {
-			return negated
+// BudgetClass is a character class with more ranges than a matcher tests inline. Testing a
+// character charges one unit per range tried, up to the range that holds it.
+//
+// BudgetClass is for generated parsers; not a stable API.
+type BudgetClass struct {
+	ranges  []BudgetRange
+	negated bool
+	// ascii holds, for each character below 128, the units its test charges
+	// shifted left by one, with the result of the test in bit 0.
+	ascii [128]uint16
+}
+
+// NewBudgetClass returns the class of ranges, negated or not.
+func NewBudgetClass(ranges []BudgetRange, negated bool) *BudgetClass {
+	c := &BudgetClass{ranges: ranges, negated: negated}
+	if len(ranges) >= 1<<15 {
+		return c
+	}
+	for ch := rune(0); ch < 128; ch++ {
+		cost, reject := len(ranges), !negated
+		for i, r := range ranges {
+			if ch >= r.Lo && ch <= r.Hi {
+				cost, reject = i+1, negated
+				break
+			}
+		}
+		c.ascii[ch] = uint16(cost) << 1
+		if reject {
+			c.ascii[ch] |= 1
 		}
 	}
-	return !negated
+	return c
+}
+
+// Reject charges the test of ch and reports whether the class rejects it.
+func (p *Parser) RejectBudgetClass(ch rune, c *BudgetClass) bool {
+	if uint32(ch) < 128 && len(c.ranges) < 1<<15 {
+		t := c.ascii[ch]
+		p.Control.Take(uint64(t >> 1))
+		return t&1 != 0
+	}
+	for _, r := range c.ranges {
+		p.Spend()
+		if ch >= r.Lo && ch <= r.Hi {
+			return c.negated
+		}
+	}
+	return !c.negated
 }
 
 // Value strings may be action-created, so their scans consume steps alone.

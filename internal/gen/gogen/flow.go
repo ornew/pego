@@ -458,9 +458,9 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 	case *flow.Expect:
 		p.read(s.At)
 		if s.Message {
-			p.write(fmt.Sprintf("p.%s(%s, MsgBit|%d)\n", p.g.helper("Expect"), p.expr(s.At), p.desc(s.Exp)))
+			p.write(fmt.Sprintf("p.%s(%s, MsgBit|%d)\n", p.expectHelper(), p.expr(s.At), p.desc(s.Exp)))
 		} else {
-			p.write(fmt.Sprintf("p.%s(%s, %s)\n", p.g.helper("Expect"), p.expr(s.At), p.exp(s.Exp)))
+			p.write(fmt.Sprintf("p.%s(%s, %s)\n", p.expectHelper(), p.expr(s.At), p.exp(s.Exp)))
 		}
 	case *flow.Restore:
 		p.read(s.Pos, s.Rec)
@@ -660,6 +660,15 @@ func (p *flowPrinter) incStmt(v *flow.Var) {
 	}}))
 }
 
+// expectHelper names the runtime method that records an expectation. A function without a
+// Document records no examined input, so it calls the form that only charges the budget.
+func (p *flowPrinter) expectHelper() string {
+	if name := p.g.helper("Expect"); name == "Expect" && !p.document && p.g.Flow.Opts.Budget {
+		return "ExpectBudget"
+	}
+	return p.g.helper("Expect")
+}
+
 // peekStmt writes the read of the next character into the variables of s, with the blank identifier
 // for those nothing reads.
 func (p *flowPrinter) peekStmt(s *flow.Peek) {
@@ -668,7 +677,10 @@ func (p *flowPrinter) peekStmt(s *flow.Peek) {
 		guard = "p.Document == nil && " + guard
 	}
 	// The inlined read charges its input spend and leaves a Document's examined range to Peek.
-	spend := "p.SpendRead(1)\n"
+	spend := "p.Control.Take(1)\n"
+	if p.document {
+		spend = "p.SpendRead(1)\n"
+	}
 	if !p.g.Flow.Opts.Budget {
 		spend = ""
 	}
@@ -796,7 +808,7 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 			if g.NoBudget {
 				return "p.Document == nil && (" + cond + ")"
 			}
-			return "p.Document == nil && p.Control == nil && (" + cond + ")"
+			return "p.Document == nil && (" + cond + ") && p.Control.Take(" + strconv.Itoa(len(rs)) + ")"
 		}
 		if p.untyped() && !g.Flow.Opts.Budget {
 			// The Node runtime's generated code of a parser without budget controls has no such check.
@@ -804,6 +816,10 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 		}
 		if g.Ordinary {
 			return cond
+		}
+		if g.Flow.Opts.Budget {
+			// The literal is charged one unit per code point, as MatchLiteral does when every one matches.
+			return "(" + cond + ") && p.Control.Take(" + strconv.Itoa(len(rs)) + ")"
 		}
 		return "p.Control == nil && (" + cond + ")"
 	case *flow.MatchLit:

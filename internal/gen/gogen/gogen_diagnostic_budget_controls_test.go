@@ -86,8 +86,7 @@ func TestDiagnosticTextParityAndBudget(t *testing.T){
   p.RecoveryErrorText(&SyntaxError{Line:1,Col:2,Messages:[]string{"other"}})
   if retained!=want || e.Error()!=want{t.Fatal("retained message overwritten")}
  })}
- p:=diagnosticParser(Limits{Budget:100000})
- p.Control.X_ctx=&pollingContext{Context:context.Background()}
+ p:=&pegort.Parser{Control:pegort.X_newBudgetControl(&pollingContext{Context:context.Background()},Limits{Budget:100000})}
  var partial string
  if err:=catchFatal(t,func(){partial=p.RecoveryErrorText(rows[5])});!errors.Is(err,context.Canceled)||partial!=""{t.Fatal("format cancellation published partial",partial,err)}
 }

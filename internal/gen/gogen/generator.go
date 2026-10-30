@@ -1718,7 +1718,7 @@ func (g *Generator) ControlledClassReject(e *grammar.CharClass) string {
 		// Without budget controls the class is tested without a control, so it has no range table.
 		return ordinary
 	}
-	key := fmt.Sprintf("%#v", e.Ranges)
+	key := fmt.Sprintf("%v%#v", e.Negated, e.Ranges)
 	if g.budgetClassNames == nil {
 		g.budgetClassNames = map[string]string{}
 	}
@@ -1727,13 +1727,13 @@ func (g *Generator) ControlledClassReject(e *grammar.CharClass) string {
 		name = g.Name("budgetClass")
 		g.budgetClassNames[key] = name
 		g.budgetClassKeys = append(g.budgetClassKeys, key)
-		fmt.Fprintf(&g.Vars, "var %s = []BudgetRange{", name)
+		fmt.Fprintf(&g.Vars, "var %s = NewBudgetClass([]BudgetRange{", name)
 		for _, r := range e.Ranges {
 			fmt.Fprintf(&g.Vars, "{Lo: %d, Hi: %d},", r.Lo, r.Hi)
 		}
-		g.Vars.WriteString("}\n")
+		fmt.Fprintf(&g.Vars, "}, %v)\n", e.Negated)
 	}
-	return fmt.Sprintf("((p.Control != nil && p.RejectBudgetClass(ch, %s, %v)) || (p.Control == nil && (%s)))", name, e.Negated, ordinary)
+	return fmt.Sprintf("((p.Control != nil && p.RejectBudgetClass(ch, %s)) || (p.Control == nil && (%s)))", name, ordinary)
 }
 
 // atEnd and atLineStart name the runtime methods that test the anchors; a parser without
