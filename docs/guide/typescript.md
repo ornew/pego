@@ -500,13 +500,13 @@ The existing `parse`, `parseRule` and `recognize` unit signatures keep their beh
 const result = parseWithOptions(input, { unit: Bytes, maxDepth: 600_000 });
 ```
 
-A larger limit does not guarantee host-stack capacity. A a JavaScript stack is far smaller than a goroutine's: Node.js's default stack (about 1 MB) holds some
+A larger limit does not guarantee host-stack capacity. A JavaScript stack is far smaller than a goroutine's: Node.js's default stack (about 1 MB) holds some
 hundreds to a few thousand nested rule calls, depending on the grammar and on how warm the code is. Measured on
-Node.js 24: `rule n = "(" n ")" / "x"` parses about 1,100 levels of parentheses, and the JSON grammar about 390 levels of
-nested arrays (each level is several rule calls). Beyond that, the parse returns an error instead of crashing:
+Node.js 24: `rule n = "(" n ")" / "x"` parses about 2,100 to 3,600 levels of parentheses, and the JSON grammar about 360 to 390 levels of
+nested arrays (each level is three recursive rule calls). Beyond that, the parse returns an error instead of crashing:
 
 ```text
-nesting too deep: the JavaScript stack overflowed at 2292 nested recursive rule calls
+nesting too deep: the JavaScript stack overflowed at 1089 nested recursive rule calls
 ```
 
 That is the way in which a TypeScript parser differs from the engine in practice: input the engine accepts can exhaust
