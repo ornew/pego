@@ -173,7 +173,7 @@ corpus/0/recovery in a statement list	dd33d3a7cb89695045bae86c
 corpus/0/recovery inside a leader body	35b595c8c9e25dd693afb1b8
 corpus/0/recovery of a leader	31b7fbb04456394dfb2ca394
 corpus/0/recovery under a lookahead	22b1cfb92cc44a92b891cb99
-corpus/0/recovery under a negative lookahead	ebb8812572daa4682390c681
+corpus/0/recovery under a negative lookahead	b39f0bc39f0ec640047a1e98
 corpus/0/recovery whose skip fails after consuming	80e832843a312ad417194675
 corpus/0/recovery with a far failing choice	b2daeba1754ef7593f163847
 corpus/0/recovery with a zero-consumption skip	fd1ff4ec3af14754a6ba4944

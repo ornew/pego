@@ -48,7 +48,7 @@ func MakeDocument(root *Rule, text string, opts []ParseOption) (d *Document, err
 		return nil, err
 	}
 	defer recoverParse(&d, &err)
-	o = prepareOptions(o)
+	o = prepareOptions(o, inputUnits(text, o.unit), false)
 	// Construction performs the same input decoding and budget checks as a parse,
 	// but its counters do not carry into subsequent invocations.
 	p := &Parser{unit: o.unit, Control: o.control}
@@ -106,7 +106,7 @@ func (d *Document) ResolveParseOptions(opts []ParseOption) (parseOptions, error)
 	if o.maxDepth == 0 {
 		o.maxDepth = d.State.root.g.maxDepth
 	}
-	if d.State.root.g.NoBudgetControls && (o.context != nil || o.limits != (Limits{})) {
+	if d.State.root.g.NoBudgetControls && (o.context != nil || o.limits != (Limits{}) && o.limits != (Limits{Budget: Unlimited})) {
 		return o, fmt.Errorf("this parser was generated without budget controls (generate with -budget-controls to use WithContext and WithLimits)")
 	}
 	if err := o.validateDiagnostics(); err != nil {
@@ -342,7 +342,7 @@ func DocumentParseConverted[T any](d *documentState, o parseOptions, convert fun
 	if d.root == nil {
 		return res, fmt.Errorf("document start rule is missing")
 	}
-	o = prepareOptions(o)
+	o = prepareOptions(o, inputUnits(d.text, d.unit), false)
 	p := &Parser{unit: d.unit, MaxDepth: o.maxDepth, Control: o.control}
 	p.setGrammar(d.root.g)
 	p.Observation = newObservation(&o.observe)

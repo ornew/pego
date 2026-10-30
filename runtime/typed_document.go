@@ -53,7 +53,7 @@ func TypedDocumentParse[T any](d *Document, root *TRule, o parseOptions, a budge
 	if o.unit != d.State.unit {
 		return res, fmt.Errorf("document parse cannot change unit")
 	}
-	o = prepareOptions(o)
+	o = prepareOptions(o, inputUnits(d.State.text, d.State.unit), false)
 	cache, ok := d.typedMemo.(*typedDocumentState)
 	if !ok {
 		cache = &typedDocumentState{owner: d.State, meta: make(map[*tmemoEntry]typedDocumentMeta)}

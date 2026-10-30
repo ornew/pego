@@ -127,8 +127,8 @@ func WithContext(ctx context.Context) ParseOption { return rt.WithContext(ctx) }
 // Zero leaves a counter unlimited; counters are never rolled back.
 func WithLimits(limits Limits) ParseOption { return rt.WithLimits(limits) }
 
-// Limits bounds one parse invocation. A zero limit leaves that limit
-// unlimited.
+// Limits bounds one parse invocation. A zero limit selects the default of that limit, and
+// Unlimited disables it.
 //
 // Budget bounds the cumulative spend of the parse: every input unit
 // inspected, every rule call and loop iteration, and every unit of value
@@ -148,6 +148,10 @@ type LimitError = rt.LimitError
 var ErrLimit = rt.ErrLimit
 
 const LimitBudget = rt.LimitBudget
+
+// Unlimited is the value of a limit that disables it. Every field of Limits is a uint64 and
+// takes it, so one constant serves them all.
+const Unlimited = rt.Unlimited
 
 // Span is the range of input a typed value covers, in the parse's position unit (End is exclusive).
 //

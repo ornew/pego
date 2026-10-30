@@ -13,8 +13,38 @@ import (
 	"unicode/utf8"
 )
 
-// Limits bounds one parse invocation. A zero limit leaves that limit
-// unlimited.
+// Unlimited is the value of a limit that disables it. Every field of Limits is a uint64 and
+// takes it, so one constant serves them all.
+const Unlimited = math.MaxUint64
+
+// The default budget of a parse is defaultBudgetPerUnit for each unit of input, and at least
+// defaultBudgetFloor.
+const (
+	defaultBudgetFloor   = 1 << 20
+	defaultBudgetPerUnit = 1024
+)
+
+// defaultBudget returns the budget of a parse whose Budget is zero, for an input of n units of the
+// position unit of the parse.
+func defaultBudget(n uint64) uint64 {
+	if n > math.MaxUint64/defaultBudgetPerUnit {
+		return math.MaxUint64 - 1
+	}
+	return max(defaultBudgetFloor, n*defaultBudgetPerUnit)
+}
+
+// inputUnits returns the length of s in units of the position unit. Below the size at which the
+// default budget leaves its floor the byte length stands in for the count of code points, which it
+// bounds from above.
+func inputUnits(s string, unit PositionUnit) uint64 {
+	if unit == Bytes || len(s) <= defaultBudgetFloor/defaultBudgetPerUnit {
+		return uint64(len(s))
+	}
+	return uint64(utf8.RuneCountInString(s))
+}
+
+// Limits bounds one parse invocation. A zero limit selects the default of that limit, and
+// Unlimited disables it.
 //
 // Budget bounds the cumulative spend of the parse: every input unit
 // inspected, every rule call and loop iteration, and every unit of value
@@ -76,6 +106,25 @@ type BudgetControl struct {
 
 	sinceCheck  uint64
 	interrupted bool // distinguishes budget interruptions from ordinary parse errors
+
+	// adaptive is set for a stream whose budget is the default: the budget follows the bytes
+	// read (growDefault), which are read.
+	adaptive bool
+	read     uint64
+}
+
+// growDefault raises the default budget of a stream for k more bytes read. It does nothing for
+// any other budget.
+func (c *BudgetControl) growDefault(k int) {
+	if c == nil || !c.adaptive || k <= 0 {
+		return
+	}
+	c.read += uint64(k)
+	if b := defaultBudget(c.read); b > c.limits.Budget {
+		c.settle()
+		c.limits.Budget = b
+		c.refill()
+	}
 }
 
 // newBudgetControl returns nil when neither cancellation nor a finite budget is
@@ -439,7 +488,7 @@ func (p *Parser) hasLiteralPrefix(text string) bool {
 // RunParseConverted is for generated parsers; not a stable API.
 func RunParseConverted[T any](r *Rule, input string, o parseOptions, conv func(*Node, *BudgetControl, error) T) (res T, err error) {
 	defer recoverParse(&res, &err)
-	o = prepareOptions(o)
+	o = prepareOptions(o, inputUnits(input, o.unit), false)
 	n, err := parseConversionInput(r, input, o)
 	o.control.Check()
 	res = conv(n, o.control, err)

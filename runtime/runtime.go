@@ -1059,6 +1059,9 @@ type parseOptions struct {
 	limits   Limits
 	control  *BudgetControl
 	prepared bool
+	// controls is set when the parser was generated with budget controls, which alone can apply the
+	// default budget.
+	controls bool
 	// observe selects the observation of the parse (trace.go).
 	observe observeOptions
 	// streaming is set by the stream entry points, which alone accept the
@@ -1092,9 +1095,9 @@ func WithLimits(limits Limits) ParseOption {
 // ResolveOptions is for generated parsers; not a stable API.
 func ResolveOptions(g *grammar, opts []ParseOption) (parseOptions, error) {
 	if len(opts) == 0 {
-		return parseOptions{maxDepth: g.maxDepth}, nil
+		return parseOptions{maxDepth: g.maxDepth, controls: !g.NoBudgetControls}, nil
 	}
-	o := parseOptions{maxDepth: g.maxDepth}
+	o := parseOptions{maxDepth: g.maxDepth, controls: !g.NoBudgetControls}
 	for _, opt := range opts {
 		opt(&o)
 	}
@@ -1104,7 +1107,7 @@ func ResolveOptions(g *grammar, opts []ParseOption) (parseOptions, error) {
 	if o.maxDepth == 0 {
 		o.maxDepth = g.maxDepth
 	}
-	if g.NoBudgetControls && (o.context != nil || o.limits != (Limits{})) {
+	if g.NoBudgetControls && (o.context != nil || o.limits != (Limits{}) && o.limits != (Limits{Budget: Unlimited})) {
 		return o, fmt.Errorf("this parser was generated without budget controls (generate with -budget-controls to use WithContext and WithLimits)")
 	}
 	if err := o.validateDiagnostics(); err != nil {
@@ -1137,13 +1140,28 @@ func (o *parseOptions) validateDiagnostics() error {
 	return nil
 }
 
-// prepareOptions is called after fixed option and rule-name validation.
+// prepareOptions is called after fixed option and rule-name validation. n is the length of the
+// input in units of the position unit; a stream, whose length is not known, passes stream instead.
+// A zero Budget selects the default budget of n (or the floor, growing with the input read, for a
+// stream) in a parser generated with budget controls, and Unlimited disables the budget.
 // The resolved state can be shared with a result converter without new counters.
-func prepareOptions(o parseOptions) parseOptions {
+func prepareOptions(o parseOptions, n uint64, stream bool) parseOptions {
 	if !o.prepared {
 		o.prepared = true
-		if o.context != nil || o.limits != (Limits{}) {
-			o.control = newBudgetControl(o.context, o.limits)
+		l, adaptive := o.limits, false
+		switch {
+		case l.Budget == Unlimited:
+			l.Budget = 0
+		case l.Budget == 0 && o.controls && stream:
+			l.Budget, adaptive = defaultBudgetFloor, true
+		case l.Budget == 0 && o.controls:
+			l.Budget = defaultBudget(n)
+		}
+		if o.context != nil || l != (Limits{}) {
+			o.control = newBudgetControl(o.context, l)
+			if o.control != nil {
+				o.control.adaptive = adaptive
+			}
 		}
 	}
 	o.control.Check()
@@ -1187,7 +1205,7 @@ func RunParseResolved(r *Rule, input string, o parseOptions) (n *Node, err error
 // parseResolvedSpend lets a conversion boundary distinguish engine interruption
 // from an ordinary nil result without inspecting caller-owned error values.
 func parseResolvedSpend(r *Rule, input string, o parseOptions) (n *Node, err error) {
-	o = prepareOptions(o)
+	o = prepareOptions(o, inputUnits(input, o.unit), false)
 	p, _ := ppool.Get().(*Parser)
 	if p == nil {
 		p = &Parser{}

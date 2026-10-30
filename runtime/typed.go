@@ -624,7 +624,7 @@ func TParse[T any](r *TRule, input string, opts []ParseOption, ext any, conv fun
 // TParseResolved is for generated parsers; not a stable API.
 func TParseResolved[T any](r *TRule, input string, o parseOptions, ext any, conv func(any) T) (res T, err error) {
 	defer recoverParse(&res, &err)
-	o = prepareOptions(o)
+	o = prepareOptions(o, inputUnits(input, o.unit), false)
 	p, _ := tpool.Get().(*TParser)
 	if p == nil {
 		p = &TParser{Parser: &Parser{}}

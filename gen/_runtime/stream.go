@@ -93,6 +93,7 @@ func (r *streamReader) Read(dst []byte) (int, error) {
 	r.control.Check()
 	r.control.Charge(1)
 	n, err := r.reader.Read(dst)
+	r.control.growDefault(n)
 	if r.control.ctx != nil {
 		if cerr := contextErr(r.control.ctx); cerr != nil {
 			if err != nil && err != io.EOF {
@@ -132,7 +133,7 @@ func RunParseStreamWithBudget(r *Rule, reader io.Reader, emit func(*Node, *Budge
 	}
 	var n *Node
 	defer recoverParse(&n, &err)
-	o = prepareOptions(o)
+	o = prepareOptions(o, 0, true)
 	if o.control != nil {
 		reader = &streamReader{reader: reader, control: o.control}
 	}
