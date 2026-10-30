@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/starttest"
 )
 
 func BenchmarkClassCompileCancellation(b *testing.B) {
@@ -14,6 +15,7 @@ func BenchmarkClassCompileCancellation(b *testing.B) {
 	}
 	class := &grammar.CharClass{Ranges: ranges}
 	g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: &grammar.Choice{Alts: []grammar.Expr{class, &grammar.Discard{Expr: &grammar.Repeat{Expr: class, Min: 1, Max: -1}}}}}}}}
+	starttest.MarkAll(g)
 	for _, controlled := range []bool{false, true} {
 		name := "ordinary"
 		if controlled {
