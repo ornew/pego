@@ -958,7 +958,16 @@ func (g *grammar) SetVars(names []string, vals []any) {
 
 // indexInitVals computes the slots and the initial values of the variables each rule reads, so
 // that the memo key of a call made before any binding shares the values instead of allocating.
+// Names are resolved through a map when there are many variables, so that the cost is linear in
+// the names the rules read.
 func (g *grammar) indexInitVals() {
+	var slotOf map[string]int
+	if len(g.varNames) > 8 {
+		slotOf = make(map[string]int, len(g.varNames))
+		for slot, v := range g.varNames {
+			slotOf[v] = slot
+		}
+	}
 	for _, r := range g.rules {
 		r.initVals, r.varSlots = nil, nil
 		if len(r.Vars) == 0 {
@@ -968,10 +977,16 @@ func (g *grammar) indexInitVals() {
 		r.varSlots = make([]int, len(r.Vars))
 		for i, name := range r.Vars {
 			r.varSlots[i] = -1
-			for slot, v := range g.varNames {
-				if v == name {
+			if slotOf != nil {
+				if slot, ok := slotOf[name]; ok {
 					r.varSlots[i] = slot
-					break
+				}
+			} else {
+				for slot, v := range g.varNames {
+					if v == name {
+						r.varSlots[i] = slot
+						break
+					}
 				}
 			}
 			if r.varSlots[i] >= 0 {
