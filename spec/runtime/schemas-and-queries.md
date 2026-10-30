@@ -100,7 +100,31 @@ compares their contents by type ID and rule name. It returns the added, removed 
 changed entries in sorted order; for equal schemas its `Types` and `Rules` slices are
 empty. The comparison ignores the order of entries, of struct fields, of join
 alternatives, of captures and of capture paths, and envelope fields such as `Start`
-and `sourceInfo`; tuple element order and named references are significant. A diff is descriptive: it does not classify compatibility.
+and `sourceInfo`; tuple element order and named references are significant.
+
+Each change has a class from the consumer's side. A reader reads the output through generated types (Go structs, `*T`
+for optional values, interfaces for joins, TypeScript types), so a change is `Breaking` when code written against
+those types may stop compiling or a value may stop being handled, and `Compatible` when a reader can ignore it. The
+class of a change is `Breaking` if any of its impacts is. Each impact has a path into the entry's shape (`$` is the
+root; `.fields.<name>`, `.captures.<name>`, `[<i>]`, `.element`, `.value`, `.alternatives`) and the rule that
+produced it:
+
+| Rule | Class | Applies to |
+|:--|:--|:--|
+| `type-added`, `rule-added` | Compatible | a type or rule only in `after` |
+| `field-added`, `capture-added` | Compatible | a struct field or capture only in `after` |
+| `origin-changed` | Compatible | a rule whose origin flips; its ID and canonical shape are unchanged |
+| `type-removed`, `rule-removed` | Breaking | a type or rule only in `before`, referenced or not |
+| `field-removed`, `capture-removed` | Breaking | a struct field or capture only in `before` |
+| `capture-location-changed` | Breaking | a capture whose paths or `side` flag differ |
+| `alternative-added`, `alternative-removed` | Breaking | a join alternative without an equal on the other side, including `error` and `missing` |
+| `tuple-arity-changed` | Breaking | a tuple with another number of elements |
+| `kind-changed`, `scalar-changed`, `reference-changed` | Breaking | a shape of another kind, scalar or referenced type ID |
+
+Changes inside list and optional elements, node values, tuple elements, fields and captures are classified
+recursively. Every other change to an existing shape is `Breaking`, including narrowing (`join[int, string]` to `int`,
+optional to required) and widening (a value to optional, to a join or to `top`), because generated type names and
+shapes follow the ID and the shape.
 
 ### Patterns
 

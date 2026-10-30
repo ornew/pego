@@ -6,7 +6,7 @@
 
 ## Summary
 
-Expose a deterministic, versioned description of grammar-declared types and inferred rule output shapes for tooling and query consumers. The format distinguishes declared typed values, inferred shapes, CST nodes, captures, and dynamic `any`; it does not promise Tree-sitter JSON compatibility. The Go export of schema version 2 and the deterministic semantic diff are implemented; the schema is exported from the grammar source. The version-2 validation contract includes canonical rule/type relationships, reserved CST identities and strict JSON decoding. Structural queries are checked against the schema, including nested and join shapes.
+Expose a deterministic, versioned description of grammar-declared types and inferred rule output shapes for tooling and query consumers. The format distinguishes declared typed values, inferred shapes, CST nodes, captures, and dynamic `any`; it does not promise Tree-sitter JSON compatibility. The Go export of schema version 2 and the deterministic semantic diff with its compatibility classification are implemented; the schema is exported from the grammar source. The version-2 validation contract includes canonical rule/type relationships, reserved CST identities and strict JSON decoding. Structural queries are checked against the schema, including nested and join shapes.
 
 ## Motivation
 
@@ -90,12 +90,39 @@ changed results are sorted by type ID or rule name; unchanged inputs return
 non-nil empty change slices.
 
 Both operands must pass the full version 2 validation contract, including reference
-resolution and canonical rule/type and reserved-CST relationships. The diff
-does not classify source or binary compatibility. After validation, comparison
+resolution and canonical rule/type and reserved-CST relationships. After validation, comparison
 canonicalizes each graph while memoizing visited shape identities, then compares
 the canonical forms. This preserves shared DAG structure instead of serializing
 or recursively expanding each reference path, which could multiply work for a
 valid graph with extensive sharing.
+
+## Compatibility Classification
+
+Each change of the diff has a class, `Breaking` or `Compatible`, with the impacts and rules that
+produced it; the rule table is in the
+[runtime specification](../../../spec/runtime/schemas-and-queries.md#comparing-schemas).
+
+The criterion: a change is breaking when an existing reader, including code written against the generated types,
+may stop compiling or stop handling a value. It is compatible only when it adds something a reader can ignore.
+
+The reason is the generated types. A reader of the output holds Go structs, `*T` for optional values, interfaces for
+joins and TypeScript types, and the generator derives them from the type IDs and shapes. A judgment by the set of
+values alone would call narrowing safe, because every old value still fits. But `join[int, string]` to `int` or
+`optional[T]` to `T` changes the generated Go type, and the reader no longer compiles. Widening breaks readers at run
+time, because they meet a value they do not handle, for example a new join alternative that an exhaustive switch does
+not cover. So every change to an existing shape is breaking, in both directions: narrowing, widening, optional to
+required and back, a changed scalar, kind or referenced type ID, a tuple with another arity, and a changed
+capture location. Removals are breaking, referenced or not.
+
+Only additions are compatible: a type, a rule, a struct field or a capture that an existing reader does not read. A
+rule whose origin flips while its ID and canonical shape stay the same is compatible, because the generated type name
+follows the ID. A rule's result always refers to its own inferred type, so a change in what a rule produces appears as
+a change of that type.
+
+An alternative that was considered is a class by value set, with narrowing compatible. It would pass a schema that
+breaks the compilation of its consumers, so it was rejected.
+
+The exit status of `pego schema diff` does not depend on the class; a script reads the class from the output.
 
 ## Implementation and Determinism
 
@@ -122,7 +149,7 @@ Structural queries are checked against the schema. The query compiler validates 
 
 ## Testing and Performance
 
-The tests cover the export, decoding and validation of the JSON contract, the semantic diff, the refusal of schema export by loaded compiled grammars and the backend agreement. They are in `schema/*_test.go` (decoding, validation and the diff), `internal/schema/*_test.go` (the export), `internal/engine/output_schema_*_test.go` and `internal/engine/compiled_schema_test.go`. Export time and allocations are measured separately from parse and code generation, with `internal/engine/output_schema_export_bench_test.go`, `internal/engine/output_schema_validate_bench_test.go` and `schema/diff_bench_test.go`.
+The tests cover the export, decoding and validation of the JSON contract, the semantic diff, the refusal of schema export by loaded compiled grammars and the backend agreement. They are in `schema/*_test.go` (decoding, validation, the diff and its classification), `internal/schema/*_test.go` (the export), `internal/engine/output_schema_*_test.go` and `internal/engine/compiled_schema_test.go`. Export time and allocations are measured separately from parse and code generation, with `internal/engine/output_schema_export_bench_test.go`, `internal/engine/output_schema_validate_bench_test.go` and `schema/diff_bench_test.go`.
 
 ## Performance and Results
 
@@ -173,7 +200,7 @@ for retaining the runtime `List` identity, not a parser-path measurement.
 
 The Go API uses a start-reachable default with an explicit all-rules option.
 Cross-grammar schema identity is not defined until canonicalization is specified;
-compatibility classification for diffs is open. Traversal details used by queries follow [design 031](031-iterative-tree-traversal.md);
+Traversal details used by queries follow [design 031](031-iterative-tree-traversal.md);
 schema types are supplied explicitly to the programmatic query compiler described
 in [design 040](040-structural-queries-and-highlighting.md).
 

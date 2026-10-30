@@ -331,13 +331,16 @@ selects the start rule as it does for the other commands, and an empty name sele
 holds the start rule and the rules it calls, as `Parser.OutputSchema()` does; `-all-rules` adds the unreachable rules
 and every declared type, as `pego.WithAllSchemaRules()` does. `-o` writes the file.
 
-`schema diff` compares two schemas and prints one line per added, removed or changed type and rule, for example
-`changed rule main`. Each operand is either a schema JSON file, as written by `schema -o`, or a grammar. A file is
-recognized by its `"format": "pego-output-schema"` member, so a grammar in JSON is never mistaken for a schema. `-s` and
-`-all-rules` apply to the grammar operands only; a schema file already holds the rules it was exported with. With
-`-f json`, the output lists the changes with the entries of both sides. The command exits with status 0 whenever both
-operands are valid, even when they differ, so a script must compare the output to detect a change. The diff does not
-classify whether a change is compatible.
+`schema diff` compares two schemas and prints one line per added, removed or changed type and rule with its
+compatibility class and the rules behind it, for example `changed type declared/Pair: breaking (field-removed at
+$.fields.Old)`. Each operand is either a schema JSON file, as written by `schema -o`, or a grammar. A file is recognized
+by its `"format": "pego-output-schema"` member, so a grammar in JSON is never mistaken for a schema. `-s` and
+`-all-rules` apply to the grammar operands only; a schema file already holds the rules it was exported with. With `-f
+json`, the output lists the changes with their `class`, their `impacts` (`path`, `class` and `rule`) and the entries of
+both sides. The command exits with status 0 whenever both operands are valid, even when they differ, so a script must
+read the output to detect a change or a `breaking` class. A change is `breaking` when an existing reader may stop
+compiling against the generated types or stop handling a value, and `compatible` when it only adds a type, rule, struct
+field or capture; see [the compatibility criterion](../../spec/runtime/schemas-and-queries.md#comparing-schemas).
 
 ```bash
 pego schema -g pairs.pego -o before.json

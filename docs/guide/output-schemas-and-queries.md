@@ -75,9 +75,16 @@ if err != nil {
 	return err
 }
 for _, change := range diff.Types {
-	fmt.Println(change.ID, change.Kind)
+	fmt.Println(change.ID, change.Kind, change.Class)
 }
 ```
+
+Each change also has a `Class`, which tells whether an existing reader of the output can break. A change is
+`schema.Breaking` when code written against the generated types may stop compiling or a value may stop being handled:
+every removal, and every change to an existing shape, including narrowing a type or making a value optional or
+required. It is `schema.Compatible` when it only adds something a reader can ignore: a type, a rule, a struct field or
+a capture. `change.Impacts` lists the reasons, each with a path into the shape and the name of the rule that produced
+it, such as `field-removed` at `$.fields.Old`.
 
 ## The Command Line
 
