@@ -274,7 +274,7 @@ func TestParseConversionSharesCounter(t *testing.T){
  input:=strings.Repeat("é",100)
  before:=uint64(0)
  conv:=func(n *Node,c *pegort.BudgetControl,parseErr error)*types.Branch{before=c.X_budgetUsed();v:=(&astConv{control:c}).toTypeBranch(n);if c.X_budgetUsed()!=before+303{t.Fatal("conversion counter changed independently")};return v}
- o:=pegort.X_parseOptions{X_maxDepth:pegoGrammar.X_maxDepth,X_limits:Limits{Budget:100000}}
+ o:=pegort.X_parseOptions{X_expectations: true, X_maxDepth:pegoGrammar.X_maxDepth,X_limits:Limits{Budget:100000}}
  retained,err:=pegort.RunParseConverted(rules[0],input,o,conv)
  if err!=nil || retained==nil{t.Fatal(err)}
  snapshot:=*retained.Leaves[0]

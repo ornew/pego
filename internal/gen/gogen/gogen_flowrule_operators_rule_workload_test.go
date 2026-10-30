@@ -85,7 +85,7 @@ func TestOperatorsRuleWorkload(t *testing.T) {
 		before, _ := json.Marshal(saved)
 		p := &pegort.TParser{Parser: &pegort.Parser{}}
 		for _, input := range []string{operatorsRuleInput(1), operatorsRuleInput(128), "a", "a[b,c,]", "a[b,c,d,", "a[b,c,d,e,]", "a[b,é,d,]", "", "a[b,c,d,]?"} {
-			v, err := p.X_run(trules[0], input, pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
+			v, err := p.X_run(trules[0], input, pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
 			data, _ := json.Marshal(struct { Value any; Error string }{v, fmt.Sprint(err)})
 			pooled, pooledErr := ParseAST(input, WithUnit(unit))
 			pooledData, _ := json.Marshal(struct { Value any; Error string }{pooled, fmt.Sprint(pooledErr)})

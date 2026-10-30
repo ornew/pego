@@ -58,7 +58,7 @@ func main() {
         // Clearing tracking must preserve the returned result and its fields.
         if _, err := n.MarshalJSON(); err != nil { panic(err) }
         tp := &pegort.TParser{Parser: &pegort.Parser{}}
-        v, err := tp.X_run(trules[0], %[1]q, pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
+        v, err := tp.X_run(trules[0], %[1]q, pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
         if err != nil || v == nil { panic(fmt.Sprintf("typed parse: %%v", err)) }
         if len(tp.X_created) != 0 { panic("typed tracking length") }
         for _, n := range tp.X_created[:cap(tp.X_created)] { if n != nil { panic("typed tracking tail") } }

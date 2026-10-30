@@ -203,7 +203,7 @@ func checkTrail(t *testing.T, p *pegort.TParser) {
 func TestTypedPoolRules(t *testing.T) {
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		p := &pegort.TParser{Parser: &pegort.Parser{MaxDepth: pegoGrammar.X_maxDepth}}
-		v, err := p.X_run(trules[0], strings.Repeat("a", 2<<20)+"b", pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
+		v, err := p.X_run(trules[0], strings.Repeat("a", 2<<20)+"b", pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
 		if err != nil || v.(*A).Text != "b" {
 			t.Fatalf("large parse: %v", err)
 		}
@@ -217,16 +217,16 @@ func TestTypedPoolRules(t *testing.T) {
 		if v.(*A).Text != "b" {
 			t.Fatal("returned value changed")
 		}
-		if _, err := p.X_run(trules[0], "", pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{}); err == nil {
+		if _, err := p.X_run(trules[0], "", pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{}); err == nil {
 			t.Fatal("empty parse accepted")
 		}
 		p.X_recycle()
 		checkTrail(t, p)
-		if v, err := p.X_run(trules[0], "ab", pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{}); err != nil || v.(*A).Text != "b" {
+		if v, err := p.X_run(trules[0], "ab", pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{}); err != nil || v.(*A).Text != "b" {
 			t.Fatalf("small followup: %v", err)
 		}
 		p.X_recycle()
-		if v, err := p.X_run(trules[3], "bb", pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{}); err != nil || v.(*A).Text != "bb" {
+		if v, err := p.X_run(trules[3], "bb", pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{}); err != nil || v.(*A).Text != "bb" {
 			t.Fatalf("repeated capture: %v", err)
 		}
 		checkTrail(t, p)
@@ -291,7 +291,7 @@ func TestTypedPoolUndoAndSaved(t *testing.T) {
 // sync.Pool. Returned terminals are dropped before measuring scratch retention.
 func retainedTypedParser(unit PositionUnit, n int) *pegort.TParser {
 	p := &pegort.TParser{Parser: &pegort.Parser{MaxDepth: pegoGrammar.X_maxDepth}}
-	v, err := p.X_run(trules[0], strings.Repeat("a", n)+"b", pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
+	v, err := p.X_run(trules[0], strings.Repeat("a", n)+"b", pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
 	if err != nil || v.(*A).Text != "b" {
 		panic(err)
 	}

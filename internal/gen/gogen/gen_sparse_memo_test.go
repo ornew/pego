@@ -116,7 +116,7 @@ func TestSparseGeneratedInputSelection(t *testing.T) {
         "/*" + strings.Repeat("a", 1020) + "*/",
     } {
         for _, unit := range []PositionUnit{CodePoints, Bytes} {
-            _, err := p.X_run(trules[0], input, pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
+            _, err := p.X_run(trules[0], input, pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
             if err != nil { t.Fatal(err) }
             want := len([]rune(input)) > 1024
             if unit == Bytes { want = len(input) > 1024 }
@@ -135,7 +135,7 @@ func TestSparseGeneratedRealCorpusReuse(t *testing.T) {
     for _, unit := range []PositionUnit{CodePoints, Bytes} {
         p := &pegort.TParser{Parser: &pegort.Parser{}}
         for i, input := range []string{string(data), "const x=1;", string(data)+"\nfunction (", "const x=1;", string(data)} {
-            _, err := p.X_run(trules[0], input, pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
+            _, err := p.X_run(trules[0], input, pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
             if (err != nil) != (i == 2) { t.Fatalf("unit=%d step=%d err=%v", unit, i, err) }
             p.X_recycle()
             if p.X_memo.X_bitPages.X_n != 0 { t.Fatal("used pages survived recycle") }

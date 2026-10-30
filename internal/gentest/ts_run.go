@@ -43,8 +43,11 @@ var (
 // hooks append code that reaches the runtime's internals and parsers' own names this way. The tests
 // of the real file split (tsgen_split_test.go) compile and run the files as they are written.
 func GenerateTSBundle(g *grammar.Grammar, opts gen.GenOptions) ([]byte, error) {
-	opts.Expectations = true
-	return GenerateTSBundleRaw(g, opts)
+	files, err := GenerateTS(g, opts)
+	if err != nil {
+		return nil, err
+	}
+	return bundleTS(files), nil
 }
 
 // GenerateTSBundleRaw is GenerateTSBundle with the options as given.
@@ -53,6 +56,11 @@ func GenerateTSBundleRaw(g *grammar.Grammar, opts gen.GenOptions) ([]byte, error
 	if err != nil {
 		return nil, err
 	}
+	return bundleTS(files), nil
+}
+
+// bundleTS joins the generated files into one module.
+func bundleTS(files []gen.GeneratedFile) []byte {
 	contents := map[string]string{}
 	for _, f := range files {
 		contents[f.Path] = string(f.Content)
@@ -77,7 +85,7 @@ func GenerateTSBundleRaw(g *grammar.Grammar, opts gen.GenOptions) ([]byte, error
 		b.WriteString("\n// --- " + name + " ---\n\n")
 		b.WriteString(src)
 	}
-	return []byte(b.String()), nil
+	return []byte(b.String())
 }
 
 // TSHarness runs the generated TypeScript parsers g<i>.ts on the inputs in inputs.json and writes
@@ -191,13 +199,17 @@ func RunTSGrammarScript(t *testing.T, g *grammar.Grammar, script string) string 
 // RunTSGrammarScriptWith is RunTSGrammarScript with the generator options opts.
 func RunTSGrammarScriptWith(t *testing.T, g *grammar.Grammar, script string, opts gen.GenOptions) string {
 	t.Helper()
-	opts.Expectations = true
-	return RunTSGrammarScriptRaw(t, g, script, opts)
+	return runTSGrammarScript(t, g, script, opts, GenerateTSBundle)
 }
 
 // RunTSGrammarScriptRaw is RunTSGrammarScriptWith with the options as given: the parser records
 // expectations only with opts.Expectations.
 func RunTSGrammarScriptRaw(t *testing.T, g *grammar.Grammar, script string, opts gen.GenOptions) string {
+	t.Helper()
+	return runTSGrammarScript(t, g, script, opts, GenerateTSBundleRaw)
+}
+
+func runTSGrammarScript(t *testing.T, g *grammar.Grammar, script string, opts gen.GenOptions, bundle func(*grammar.Grammar, gen.GenOptions) ([]byte, error)) string {
 	t.Helper()
 	if testing.Short() {
 		t.Skip("runs generated code")
@@ -206,7 +218,7 @@ func RunTSGrammarScriptRaw(t *testing.T, g *grammar.Grammar, script string, opts
 	if err != nil {
 		t.Skip("node not found")
 	}
-	code, err := GenerateTSBundleRaw(g, opts)
+	code, err := bundle(g, opts)
 	if err != nil {
 		t.Fatal(err)
 	}

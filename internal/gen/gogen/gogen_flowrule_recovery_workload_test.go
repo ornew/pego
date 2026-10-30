@@ -141,7 +141,7 @@ func TestRecoveryWorkload(t *testing.T) {
         for _, n := range []int{1,128,1} {
             for _, mode := range []string{"accepted","recovered","rejected"} {
                 input := recoveryInput(mode,n)
-                value, err := p.X_run(trules[0],input,pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth},&tslabs{})
+                value, err := p.X_run(trules[0],input,pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth},&tslabs{})
                 v := pegort.TAs[*Doc](value)
                 if !checkRecovery(v,err,mode,n) { t.Fatalf("%s/%d: %v %v",mode,n,v,err) }
                 data, _ := json.Marshal(struct { Value any; Error any }{v,err})

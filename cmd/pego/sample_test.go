@@ -200,7 +200,7 @@ func TestSampleInvalid(t *testing.T) {
 		t.Fatalf("got %s", out)
 	}
 	for _, inv := range doc.Invalid {
-		_, err := p.Parse(inv.Input)
+		_, err := p.Parse(inv.Input, pego.WithExpectations())
 		if err == nil || err.Error() != inv.Error || inv.Mutation == "" {
 			t.Errorf("got %+v", inv)
 		}

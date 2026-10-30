@@ -92,7 +92,7 @@ func TestRoutesAndReuse(t *testing.T) {
   var selected *pegort.Rule
   for _,r:=range recRules {if r.Name==c.name {selected=r;break}}
   if selected==nil {t.Fatal(c.name)}
-  n,err:=pegort.RunParse(selected,c.input,[]ParseOption{WithUnit(c.unit)})
+  n,err:=pegort.RunParse(selected,c.input,[]ParseOption{WithExpectations(), WithUnit(c.unit)})
   if n!=nil {t.Fatalf("recognition built a value for %s",c.name)}
   if got:=fmt.Sprint(err);got!=c.want {t.Fatalf("%s %q unit%d: got %s want %s",c.name,c.input,c.unit,got,c.want)}
  }}

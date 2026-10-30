@@ -128,7 +128,7 @@ func TestLocalLayoutWorkload(t *testing.T) {
         for _, n := range []int{1,128,1} {
             for _, rejected := range []bool{false,true} {
                 input := localInput(n,rejected)
-                value, err := p.X_run(trules[0],input,pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth},&tslabs{})
+                value, err := p.X_run(trules[0],input,pegort.X_parseOptions{X_expectations: true, X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth},&tslabs{})
                 v := pegort.TAs[*Doc](value)
                 if !checkLocal(v,err,n,rejected,unit) { t.Fatalf("%d/%v: %v %v",n,rejected,v,err) }
                 data, _ := json.Marshal(struct { Value any; Error string }{v,fmt.Sprint(err)})

@@ -155,7 +155,7 @@ process.stdout.write("ok\n");
 			g    *grammar.Grammar
 			opts gen.GenOptions
 		}{{g, gen.GenOptions{Start: "main", Types: true}}, {g2, gen.GenOptions{Start: "main", Observability: true}}} {
-			files, err := gentest.GenerateTS(gr.g, gr.opts)
+			files, err := gentest.GenerateTSRaw(gr.g, gr.opts)
 			if err != nil {
 				t.Fatal(err)
 			}
