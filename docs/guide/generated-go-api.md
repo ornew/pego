@@ -140,7 +140,7 @@ No options preserves CodePoints and the generated depth default, normally 100,00
 overrides that default for one invocation, including typed direct parsing and node conversion. Zero resets the
 field to the generated default. Options apply in order; only a negative final limit returns a configuration error,
 before matching, actions or named-rule lookup. A nil option panics when applied, as engine options do.
-Parser pooling and concurrent calls keep their limits independent. Limits count nested rule calls rather than
+Parser pooling and concurrent calls keep their limits independent. Limits count nested recursive rule calls rather than
 brackets or AST nodes, and raising the limit does not guarantee host-stack capacity.
 
 ## Cancellation and Budget Limits

@@ -75,9 +75,9 @@ the median time of each backend over five parses of the same input.
 In the browser, the Go code runs on the JavaScript engine's stack, which is far smaller than the stack of a native Go
 program. The playground therefore limits nesting more than the engine does:
 
-- With the closure and bytecode backends (and the default), rule calls may nest at most **600** deep, instead of
-  100,000 (`pego.WithMaxDepth`). Deeper input ends with the engine's error `nesting too deep: more than 600 rule calls`.
-  A JSON array nests three rule calls per level, so this allows about 200 nested arrays, where `pego parse` handles
+- With the closure and bytecode backends (and the default), recursive rule calls may nest at most **600** deep, instead of
+  100,000 (`pego.WithMaxDepth`). Deeper input ends with the engine's error `nesting too deep: more than 600 nested recursive rule calls`.
+  A JSON array nests three recursive rule calls per level, so this allows about 200 nested arrays, where `pego parse` handles
   thousands. The bytecode-iterative backend keeps rule calls on its own stack and has no such limit.
 - Trees nested more than **400** levels deep are not shown: the input matches, and the status says how deep the tree
   is. Encoding a tree as JSON or an S-expression takes stack for each level.

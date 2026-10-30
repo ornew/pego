@@ -62,22 +62,24 @@ inside a Go program for speed.
 
 ### Deep Nesting and `WithMaxDepth`
 
-Recursive grammars (parentheses, nested arrays, nested blocks) use one rule call per level of nesting. The closure and
-recursive bytecode backends use the Go stack for those calls. To keep runaway input from exhausting memory, a parse
-fails with an error once rule calls nest deeper than a limit: **100,000 by default, 10,000,000 for
-`BytecodeIterative`**. `WithMaxDepth(n)` changes it. This is the grammar `rule main = nested $$` with
-`rule nested = "(" nested ")" / "x"` (one rule call per level of parentheses, plus the calls of `main` and of the
-innermost `x`):
+Recursive grammars (parentheses, nested arrays, nested blocks) use rule calls that nest as deep as the input. The
+closure and recursive bytecode backends use the Go stack for those calls. To keep runaway input from exhausting
+memory, a parse fails with an error once calls of recursive rules nest deeper than a limit: **100,000 by default,
+10,000,000 for `BytecodeIterative`**. `WithMaxDepth(n)` changes it. A rule is recursive when it is on a cycle of the
+call graph, directly or through other rules. Only entries of recursive rules count; a rule that is on no cycle,
+such as `main` below or a helper for whitespace, can sit on the stack only a bounded number of times and does not.
+This is the grammar `rule main = nested $$` with `rule nested = "(" nested ")" / "x"` (one counted call per level
+of parentheses, plus the innermost one):
 
 | Input (parentheses around `x`) | Closure | Bytecode | Iterative |
 |:--|:--|:--|:--|
 | 50,000 deep | ok | ok | ok |
-| 200,000 deep | `nesting too deep: more than 100000 rule calls` | same error | ok |
+| 200,000 deep | `nesting too deep: more than 100000 nested recursive rule calls` | same error | ok |
 | 1,000,000 deep | same error | same error | ok |
 
 ```go
 n, err := p.Parse(input, pego.WithBackend(pego.BytecodeIterative), pego.WithMaxDepth(100))
-// nesting too deep: more than 100 rule calls
+// nesting too deep: more than 100 nested recursive rule calls
 ```
 
 An Operators Rule adds one active call level, and reading a prefix operand or an infix right operand adds another

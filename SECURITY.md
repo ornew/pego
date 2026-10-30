@@ -35,7 +35,7 @@ vulnerability database cannot see that copy; regenerate generated parsers after 
 ## What Counts as a Vulnerability
 
 - **Resource use beyond an enabled limit.** A parse that keeps running after its spent budget exceeds the budget limits
-  that were set, or that nests rule calls past the nesting limit without the nesting error, on any backend or
+  that were set, or that nests recursive rule calls past the nesting limit without the nesting error, on any backend or
   generated parser that supports the limit.
 - **A crash or panic on any input.** A panic from PEGO's code that escapes a parse, a fatal Go runtime error such as a
   stack overflow at the default nesting limit, or a generated TypeScript parser that throws instead of returning an
@@ -73,11 +73,11 @@ These behaviors are documented, so they are limits of PEGO today, not vulnerabil
 
 ### What a Parse Bounds Today
 
-- **Nesting, on by default.** A parse fails with `nesting too deep: more than N rule calls` once rule calls nest deeper
+- **Nesting, on by default.** A parse fails with `nesting too deep: more than N nested recursive rule calls` once recursive rule calls (rules on a cycle of calls) nest deeper
   than 100,000, or 10,000,000 on the iterative VM (`pego.BytecodeIterative`), which keeps rule calls on its own stack.
   Generated Go and generated TypeScript have the same default of 100,000. `pego.WithMaxDepth`, `pego gen -max-depth`
   and the TypeScript `maxDepth` option change it. On Node.js's default stack, generated TypeScript reaches a few
-  hundred to a few thousand nested rule calls and then returns an error
+  hundred to a few thousand nested recursive rule calls and then returns an error
   ([TypeScript](docs/guide/typescript.md#deep-nesting-and-the-javascript-stack)).
 - **Budget, opt-in.** With `pego.WithLimits(pego.Limits{Budget: ...})` set,
   a parse stops once its spent budget exceeds the limit, whatever the grammar's class of growth, and `pego.WithContext` adds

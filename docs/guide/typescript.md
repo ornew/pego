@@ -437,8 +437,8 @@ The errors are those of the engine, with the same messages:
 | Syntax error | The input does not match | `SyntaxError`: `pos`, `line`, `col`, `expected`, `messages` |
 | Recovered errors | `#recover` skipped parts of the input | `SyntaxErrors` (and `node` is set) |
 | Runtime error in an action | e.g. `action in main: division by zero` | `Error` |
-| Too deep nesting | more than the configured nested rule-call limit (100,000 by default) | `Error`: `nesting too deep: more than 100000 rule calls` |
-| JavaScript stack exhausted | before the limit, see below | `Error`: `nesting too deep: the JavaScript stack overflowed at N rule calls` |
+| Too deep nesting | more than the configured nested recursive rule-call limit (100,000 by default) | `Error`: `nesting too deep: more than 100000 nested recursive rule calls` |
+| JavaScript stack exhausted | before the limit, see below | `Error`: `nesting too deep: the JavaScript stack overflowed at N nested recursive rule calls` |
 
 With the grammar `rec.pego` of the Go guide, generated with `-recognize` into the directory `recparser`:
 
@@ -489,7 +489,7 @@ that you terminate for cancellation. The units of the limits are explained in
 ## Deep Nesting and the JavaScript Stack
 
 The generated parser calls rules recursively, like the generated Go parser, and defaults to the same limit of 100,000 nested
-rule calls. `-max-depth` / `gen.TypeScript.MaxDepth` set a generated default; `parseWithOptions`,
+recursive rule calls. `-max-depth` / `gen.TypeScript.MaxDepth` set a generated default; `parseWithOptions`,
 `parseRuleWithOptions` and `recognizeWithOptions` accept `maxDepth` for one invocation. Omitted or zero selects the
 generated default; a positive safe integer overrides it. Negative values, fractions, NaN, infinity and unsafe
 integers return a configuration error through the normal result, before matching or named-rule lookup. Options are
@@ -506,7 +506,7 @@ Node.js 24: `rule n = "(" n ")" / "x"` parses about 1,100 levels of parentheses,
 nested arrays (each level is several rule calls). Beyond that, the parse returns an error instead of crashing:
 
 ```text
-nesting too deep: the JavaScript stack overflowed at 2292 rule calls
+nesting too deep: the JavaScript stack overflowed at 2292 nested recursive rule calls
 ```
 
 That is the way in which a TypeScript parser differs from the engine in practice: input the engine accepts can exhaust
