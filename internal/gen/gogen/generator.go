@@ -470,7 +470,7 @@ type Generator struct {
 	plainCalled map[*compile.Rule]bool
 	wrappers    []wrapperSpan
 	// live and collect are the passes of GenerateParser (reach.go): live leaves out the unreachable
-	// rules of the Node and recognizer tables, collect records the calls that reach them.
+	// rules of the Node and recognizer tables, collect records the rules that the first pass reaches.
 	live, collect *liveRules
 	// keepTableRules marks a typed-only parser without Node rules: its Node and recognizer tables
 	// have no rule bodies to check; the typed table leaves its unreached rules out as usual.
@@ -481,8 +481,6 @@ type Generator struct {
 	// typedRoots are the typed rules whose Entry a typed entry point runs, and typedEntry their IDs.
 	typedRoots []ruleKey
 	typedEntry map[int]bool
-	emitting   ruleKey
-	emittingOK bool
 	bodySet    map[ruleKey]bool
 	reachErr   error
 }
@@ -587,7 +585,6 @@ func (g *Generator) rules() {
 			s.Names = append(s.Names, g.live.scopes[ruleKey{g.Table, r.ID, false}]...)
 			continue
 		}
-		g.beginRule(r)
 		if g.Table == "trules" {
 			// Typed flat rules need no separate body; Flow IR prints every typed rule.
 			if d := g.flowTypedRule(r); d != nil {
@@ -625,7 +622,6 @@ func (g *Generator) rules() {
 			g.FailFlow("the body of rule " + r.Name)
 		}
 	}
-	g.endRule()
 	if g.collect != nil && g.Table != "trules" {
 		if g.collect.scopes == nil {
 			g.collect.scopes = map[ruleKey][]string{}
@@ -741,7 +737,6 @@ func (g *Generator) rules() {
 		if g.pruned(r) {
 			continue
 		}
-		g.beginRule(r)
 		if pr, ok := r.Def.Expr.(*grammar.OperatorsRule); ok {
 			g.Cur = r
 			g.operatorsRule(r, pr)
@@ -778,7 +773,6 @@ func (g *Generator) rules() {
 			g.wrappers = append(g.wrappers, wrapperSpan{r: r, start: start, end: g.Methods.Len()})
 		}
 	}
-	g.endRule()
 	if r := g.streamStart; r != nil && g.Table == "rules" {
 		// ParseStream calls a copy of the start rule whose body emits the
 		// #stream elements, generated last so that the batch code is the same
@@ -1350,17 +1344,16 @@ func (g *Generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, opera
 // ruleCall returns the call of the rule r from Operators Rule level min.
 func (g *Generator) ruleCall(r *compile.Rule, min int) string {
 	_, operatorsRule := r.Def.Expr.(*grammar.OperatorsRule)
+	wrapper := g.callWrapper(g.Table, r)
+	g.checkCall(r, wrapper)
 	switch {
 	case g.Document && g.Table == "rules":
 		// Document parses route every call through call, which memoizes per rule.docMemo,
 		// including otherwise plain rules.
-		g.noteCall(r, false)
 		return fmt.Sprintf("p.Call(%s[%d], %d)", g.Table, r.ID, min)
 	case g.directTypedDocument && g.Table == "trules" && operatorsRule:
-		g.noteCall(r, false)
 		return fmt.Sprintf("p.Call(%s[%d], %d)", g.Table, r.ID, min)
 	case r.Plain && !operatorsRule:
-		g.noteCall(r, true)
 		// Never memoized and without captures: call does nothing but invokePlain, which a
 		// method of its own does with a direct call of the body (see plainCalls).
 		if g.plainCalled == nil {
@@ -1370,13 +1363,10 @@ func (g *Generator) ruleCall(r *compile.Rule, min int) string {
 		return fmt.Sprintf("%s%d(p)", g.plainPrefix(), r.ID)
 	case g.Table == "trules" && !operatorsRule && !r.Leader:
 		// The typed runtime calls a method of the rule's own (typedCall).
-		g.noteCall(r, true)
 		return fmt.Sprintf("u%d(p)", r.ID)
 	case r.Plain:
-		g.noteCall(r, false)
 		return fmt.Sprintf("p.InvokePlain(%s[%d], %d)", g.Table, r.ID, min)
 	}
-	g.noteCall(r, false)
 	return fmt.Sprintf("p.Call(%s[%d], %d)", g.Table, r.ID, min)
 }
 

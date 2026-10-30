@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	irbuild "github.com/ornew/pego/internal/ir/build"
+	"github.com/ornew/pego/internal/ir/core"
 )
 
 // A rule of the Node table (rules), the recognizer table (recRules) or the typed table (trules) has
@@ -16,8 +19,9 @@ import (
 // so a rule referenced only from value-free contexts has an original body that nothing calls, and
 // so on transitively.
 //
-// GenerateParser finds the reachable rules with a first pass whose calls (ruleCall) are the edges, and a
-// second pass leaves out the others. The rule tables still list every rule: only the Body, Action,
+// GenerateParser finds the reachable rules with a first pass, which takes the calls of the rules from the
+// Core IR (core.Module.Reach) and how a call of each rule is printed (callWrapper), and a second pass
+// leaves out the others. The rule tables still list every rule: only the Body, Action,
 // Entry and OperatorsRule assignments and the functions of an unreachable rule are left out. What a
 // left-out rule would have declared (its expectations, literals, class tables and typed helpers) is
 // not declared either, so the IDs of what remains are those of the second pass.
@@ -35,54 +39,44 @@ type ruleKey struct {
 	Wrapper bool
 }
 
-// rule returns the key of the rule that k enters part of.
-func (k ruleKey) rule() ruleKey { k.Wrapper = false; return k }
-
-// rootKey is the origin of the calls that are not generated for the body of a rule: the stream
-// body and the entry points.
-var rootKey = ruleKey{"", -1, false}
-
 // liveRules is what the first pass of GenerateParser records for the second.
 type liveRules struct {
-	log    []ruleEdge                   // the calls generated so far, which a rolled back attempt truncates
-	Edges  map[ruleKey]map[ruleKey]bool // the rules a rule's printed body calls, from log
-	scopes map[ruleKey][]string         // the capture layout of each rule, which its table row lists
-	descs  []string                     // the expectation table, whose IDs the printed bodies keep
-	Roots  []ruleKey                    // the start rules of the tables and the entries of the typed table
+	scopes map[ruleKey][]string // the capture layout of each rule, which its table row lists
+	descs  []string             // the expectation table, whose IDs the printed bodies keep
+	Roots  []ruleKey            // the start rules of the tables and the entries of the typed table
 	Reach  map[ruleKey]bool
+	mods   map[string]*core.Module         // the Core IR of each table, whose calls reachFrom follows
+	enter  func(table string, id int) bool // whether a call of a rule is printed as a call of its wrapper
 }
 
-// ruleEdge is a call of rule to from the body of rule from.
-type ruleEdge struct{ from, to ruleKey }
-
-// buildEdges sets l.edges to the calls of l.log.
-func (l *liveRules) buildEdges() {
-	l.Edges = map[ruleKey]map[ruleKey]bool{}
-	for _, e := range l.log {
-		if l.Edges[e.from] == nil {
-			l.Edges[e.from] = map[ruleKey]bool{}
-		}
-		l.Edges[e.from][e.to] = true
-	}
-}
-
-// reachFrom sets l.reach to the rules that the roots and the calls outside rule bodies reach
-// through the recorded edges.
+// reachFrom sets l.Reach to the rules that the roots enter, with the reachability of the Core IR
+// (core.Module.Reach) of each table, in the way enter prints a call of a rule.
 func (l *liveRules) reachFrom(roots []ruleKey) {
 	l.Reach = map[ruleKey]bool{}
-	work := append([]ruleKey(nil), roots...)
-	for to := range l.Edges[rootKey] {
-		work = append(work, to)
-	}
-	for len(work) > 0 {
-		k := work[len(work)-1]
-		work = work[:len(work)-1]
-		if l.Reach[k] {
-			continue
+	for table, m := range l.mods {
+		var rs []core.Root
+		for _, k := range roots {
+			if k.Table == table {
+				e := core.EnterSlot
+				if k.Wrapper {
+					e = core.EnterWrapper
+				}
+				rs = append(rs, core.Root{Rule: k.ID, Entry: e})
+			}
 		}
-		l.Reach[k] = true
-		for to := range l.Edges[k.rule()] {
-			work = append(work, to)
+		reach := m.Reach(rs, func(id int) core.Entry {
+			if l.enter(table, id) {
+				return core.EnterWrapper
+			}
+			return core.EnterSlot
+		})
+		for id, e := range reach {
+			if e&core.EnterSlot != 0 {
+				l.Reach[ruleKey{table, id, false}] = true
+			}
+			if e&core.EnterWrapper != 0 {
+				l.Reach[ruleKey{table, id, true}] = true
+			}
 		}
 	}
 }
@@ -113,24 +107,27 @@ func (g *Generator) slotReached(r *compile.Rule) bool {
 	return g.live == nil || g.Table == "trules" || g.live.Reach[ruleKey{g.Table, r.ID, false}]
 }
 
-// beginRule and endRule attribute the calls generated between them to the body of r.
-func (g *Generator) beginRule(r *compile.Rule) {
-	g.emitting, g.emittingOK = ruleKey{g.Table, r.ID, false}, true
+// callWrapper reports whether a call of the rule r of the table is printed as a call of its wrapper
+// function, which does not run the Body of its table entry, rather than through the entry (ruleCall).
+func (g *Generator) callWrapper(table string, r *compile.Rule) bool {
+	_, operatorsRule := r.Def.Expr.(*grammar.OperatorsRule)
+	switch {
+	case g.Document && table == "rules":
+		return false
+	case g.directTypedDocument && table == "trules" && operatorsRule:
+		return false
+	case r.Plain && !operatorsRule:
+		return true
+	case table == "trules" && !operatorsRule && !r.Leader:
+		return true
+	}
+	return false
 }
 
-func (g *Generator) endRule() { g.emittingOK = false }
-
-// noteCall records a call of r from the body being generated, through its wrapper or its slot, and
-// checks in the second pass that the callee was not left out.
-func (g *Generator) noteCall(r *compile.Rule, wrapper bool) {
+// checkCall checks in the second pass that the callee of a printed call, through its wrapper or its
+// slot, was not left out.
+func (g *Generator) checkCall(r *compile.Rule, wrapper bool) {
 	to := ruleKey{g.Table, r.ID, wrapper}
-	if g.collect != nil {
-		from := rootKey
-		if g.emittingOK {
-			from = g.emitting
-		}
-		g.collect.log = append(g.collect.log, ruleEdge{from, to})
-	}
 	if g.live != nil && !g.live.Reach[to] && g.reachErr == nil && (g.Table == "trules" || !g.keepTableRules) {
 		g.reachErr = fmt.Errorf("internal error: a generated call reaches the rule %s of %s, whose body is left out", r.Name, g.Table)
 	}
@@ -158,7 +155,25 @@ func (g *Generator) finishReach(prog, rec *compile.Program) error {
 		}
 		roots = append(roots, g.typedRoots...)
 		g.collect.Roots = roots
-		g.collect.buildEdges()
+		mods := map[string]*core.Module{}
+		progs := map[string]*compile.Program{"rules": prog, "trules": prog}
+		if rec != nil {
+			progs["recRules"] = rec
+		}
+		byID := map[string][]*compile.Rule{}
+		for table, pr := range progs {
+			if table == "trules" && len(g.typedRoots) == 0 {
+				continue
+			}
+			m, err := irbuild.CoreFrom(pr, nil)
+			if err != nil {
+				return err
+			}
+			mods[table] = m
+			byID[table] = append(append([]*compile.Rule(nil), pr.RuleList...), pr.Twins...)
+		}
+		g.collect.mods = mods
+		g.collect.enter = func(table string, id int) bool { return g.callWrapper(table, byID[table][id]) }
 		g.collect.reachFrom(roots)
 	}
 	if g.keepTableRules && g.convertsNodes {

@@ -25,7 +25,6 @@ var (
 	LoadRuntime        = loadRuntime
 	NewFlowVars        = newFlowVars
 	QualifyRuntime     = qualifyRuntime
-	RootKey            = rootKey
 	RuleTableLimits    = ruleTableLimits
 	ShakableVar        = shakableVar
 	ShakeVars          = shakeVars

@@ -404,18 +404,17 @@ func testUnreachableCalleeFailsGeneration(t *testing.T) {
 	}
 
 	// The stream body is a copy of the start rule's body, so its calls repeat the start rule's. With
-	// the calls of both left out, the stream body is the only caller of item, and generation must
-	// notice that it calls a rule that was left out.
+	// the rules the start rule calls left out, generation must notice that the stream body calls one.
 	gs, err := syntax.Parse(reachStreamGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}
 	gh.Reach = func(l *gogen.LiveRules) {
-		delete(l.Edges, gogen.RootKey)
-		for _, k := range l.Roots {
-			delete(l.Edges, k)
+		for k := range l.Reach {
+			if k.Table == "rules" && !isRoot(l, k) {
+				delete(l.Reach, k)
+			}
 		}
-		l.ReachFrom(l.Roots)
 	}
 	_, err = gentest.GenerateCode(t, gs, gen.GenOptions{Start: "main", Package: "p", Stream: true})
 	if err == nil || !strings.Contains(err.Error(), "left out") {
