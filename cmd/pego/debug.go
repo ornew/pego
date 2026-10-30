@@ -21,11 +21,12 @@ type debugFlags struct {
 	input   *string
 	unit    *string
 	backend *string
+	limits  limitFlags
 }
 
 func newDebugFlags(name string) *debugFlags {
 	fs := flag.NewFlagSet(name, flag.ContinueOnError)
-	return &debugFlags{
+	f := &debugFlags{
 		fs:      fs,
 		grammar: fs.String("g", "", "grammar file (.pego, .json, or .pegoc)"),
 		start:   fs.String("s", "", "start rule name (default: the one saved in a .pegoc, otherwise the grammar's default start rule)"),
@@ -33,6 +34,8 @@ func newDebugFlags(name string) *debugFlags {
 		unit:    fs.String("unit", "codepoints", "unit of positions: codepoints or bytes"),
 		backend: fs.String("backend", "", "execution backend: closure, bytecode, or bytecode-iterative (default: chosen for the grammar)"),
 	}
+	f.limits.register(fs)
+	return f
 }
 
 // load parses args and returns the parser, the input and the parse options the flags select.
@@ -66,6 +69,7 @@ func (f *debugFlags) load(args []string, stdin io.Reader) (*pego.Parser, string,
 	default:
 		return nil, "", nil, fmt.Errorf("unknown backend %q", *f.backend)
 	}
+	opts = append(opts, f.limits.option())
 	p, err := loadParser(*f.grammar, *f.start, compileFlags{})
 	if err != nil {
 		return nil, "", nil, err

@@ -28,6 +28,8 @@ func editFuzzCmd(args []string, stdout io.Writer) error {
 	save := fs.String("save-failures", "", "directory where a failing sequence is saved, required with -minimize (with -replay -minimize: default the replayed file's directory)")
 	replay := fs.String("replay", "", "replay a saved sequence instead of generating sequences")
 	minimize := fs.Bool("minimize", false, "minimize a failing sequence and save the result too")
+	var lim limitFlags
+	lim.register(fs)
 	maxAttempts := fs.Int("max-attempts", editfuzz.DefaultMaxAttempts, "replays that -minimize tries at most")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -50,7 +52,7 @@ func editFuzzCmd(args []string, stdout io.Writer) error {
 		var ignored []string
 		fs.Visit(func(f *flag.Flag) {
 			switch f.Name {
-			case "g", "replay", "minimize", "max-attempts", "save-failures":
+			case "g", "replay", "minimize", "max-attempts", "save-failures", "budget", "max-input":
 			default:
 				ignored = append(ignored, "-"+f.Name)
 			}
@@ -61,7 +63,7 @@ func editFuzzCmd(args []string, stdout io.Writer) error {
 		if *save != "" && !*minimize {
 			return fmt.Errorf("-replay takes -save-failures only with -minimize")
 		}
-		return editFuzzReplay(src, *replay, *save, *minimize, *maxAttempts, stdout)
+		return editFuzzReplay(src, *replay, *save, *minimize, *maxAttempts, lim.limits(), stdout)
 	}
 	if *minimize && *save == "" {
 		return fmt.Errorf("-minimize needs -save-failures")
@@ -91,7 +93,7 @@ func editFuzzCmd(args []string, stdout io.Writer) error {
 	for _, b := range bs {
 		for _, u := range us {
 			err := editfuzz.Fuzz(src, editfuzz.Options{Start: *start, Backend: b, Unit: u, Seed: *seed, Corpus: texts,
-				Sequences: *sequences, Operations: *operations, SaveFailures: *save, Minimize: *minimize, MaxAttempts: *maxAttempts})
+				Limits: lim.limits(), Sequences: *sequences, Operations: *operations, SaveFailures: *save, Minimize: *minimize, MaxAttempts: *maxAttempts})
 			if err != nil {
 				return fmt.Errorf("%s (seed %d): %w", *grammarPath, *seed, err)
 			}
@@ -101,11 +103,12 @@ func editFuzzCmd(args []string, stdout io.Writer) error {
 	return nil
 }
 
-func editFuzzReplay(src []byte, path, save string, minimize bool, maxAttempts int, stdout io.Writer) error {
+func editFuzzReplay(src []byte, path, save string, minimize bool, maxAttempts int, limits pego.Limits, stdout io.Writer) error {
 	seq, err := editfuzz.Load(path)
 	if err != nil {
 		return err
 	}
+	seq.Limits = limits
 	err = editfuzz.Replay(src, seq)
 	var m *editfuzz.Mismatch
 	if !errors.As(err, &m) {

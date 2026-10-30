@@ -29,6 +29,9 @@ type Options struct {
 	// Unit is the position unit of the Documents, the fresh parses and the edits. The zero value is
 	// CodePoints.
 	Unit pego.PositionUnit
+	// Limits bound the Documents and the fresh parses; see Sequence.Limits. The zero value selects
+	// the defaults.
+	Limits pego.Limits
 	// Seed selects the generated sequences. The same seed, options and package version generate the same
 	// sequences with the same Go release, but a saved Sequence, not a seed, is the reproducer.
 	Seed uint64
@@ -120,7 +123,7 @@ func Fuzz(src []byte, opts Options) error {
 	}
 	rng := rand.New(rand.NewPCG(opts.Seed, 0x9e3779b97f4a7c15))
 	for range opts.Sequences {
-		seq := &Sequence{GrammarSHA256: GrammarHash(src), Start: p.Start(), Backend: opts.Backend, Unit: opts.Unit,
+		seq := &Sequence{GrammarSHA256: GrammarHash(src), Start: p.Start(), Backend: opts.Backend, Unit: opts.Unit, Limits: opts.Limits,
 			Seed: opts.Seed, Initial: initial(rng, texts)}
 		err := run(p, seq, &generator{rng: rng, texts: texts}, opts.Operations)
 		if sequenceDone != nil {

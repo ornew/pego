@@ -19,6 +19,8 @@ func testCmd(args []string, stdout io.Writer) error {
 	backendNames := fs.String("backend", "", "comma-separated execution backends (default: those in the suite)")
 	equivalence := fs.Bool("equivalence", false, "compare selected backends independently of fixture expectations")
 	update := fs.Bool("update", false, "update node and location goldens for one selected backend")
+	var lim limitFlags
+	lim.register(fs)
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -48,7 +50,7 @@ func testCmd(args []string, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
-	options := fixture.RunOptions{Backends: backends}
+	options := fixture.RunOptions{Backends: backends, Limits: lim.limits()}
 	if isFlagSet(fs, "equivalence") {
 		options.Equivalence = equivalence
 	}

@@ -2,24 +2,24 @@
 //
 // Usage:
 //
-//	pego parse -g grammar.pego [-s main] [-i input] [-f json|sexpr] [-stream] [-unit u] [-backend b] [-source-info] [-default-value]
-//	pego test -f suite.json [-format text|json] [-backend closure,bytecode] [-equivalence] [-update]
+//	pego parse -g grammar.pego [-s main] [-i input] [-f json|sexpr] [-stream] [-unit u] [-backend b] [-source-info] [-default-value] [-budget n] [-max-input n]
+//	pego test -f suite.json [-format text|json] [-backend closure,bytecode] [-equivalence] [-update] [-budget n] [-max-input n]
 //	pego fmt [-w] [-l] [-check] [-syntax] [grammar.pego ...]
 //	pego convert [-to pego|json] [-o output] grammar.pego|grammar.json
 //	pego gen -g grammar.pego -module path -o dir [-pkg name] [-runtime embed|import|only] [-s main] [-types] [-document] [-stream] [-recognize] [-observability] [-budget-controls] [-typed-only] [-nodoc] [-max-depth n] [-source-info] [-default-value]
 //	pego gen -lang ts -g grammar.pego -o dir [-runtime embed|import|only] [-runtime-module specifier] [-s main] [-types] [-recognize] [-observability]
 //	pego compile -g grammar.pego [-s main] [-mode parse|recognize|document] [-source-info] [-default-value] -o grammar.pegoc
-//	pego trace -g grammar.pego [-s main] [-i input] [-max-depth n] [-rule name] [-failures] [-f text|json]
-//	pego profile -g grammar.pego [-s main] [-i input] [-sort column] [-n rows] [-f text|json]
-//	pego explain -g grammar.pego [-s main] [-i input] [-n calls]
+//	pego trace -g grammar.pego [-s main] [-i input] [-max-depth n] [-rule name] [-failures] [-f text|json] [-budget n] [-max-input n]
+//	pego profile -g grammar.pego [-s main] [-i input] [-sort column] [-n rows] [-f text|json] [-budget n] [-max-input n]
+//	pego explain -g grammar.pego [-s main] [-i input] [-n calls] [-budget n] [-max-input n]
 //	pego lint -g grammar.pego [-s main] [-f text|json] [-disable checks] [-strict] [-list]
 //	pego sample -g grammar.pego [-s main] [-n 10] [-seed N] [-max-depth D] [-max-repeat R] [-max-len L] [-budget B]
 //	            [-coverage] [-invalid] [-f lines|json]
 //	pego schema -g grammar.pego [-s main] [-all-rules] [-o schema.json]
 //	pego schema diff [-s main] [-all-rules] [-f text|json] before after
 //	pego edit-fuzz -g grammar.pego [-s main] [-backend names] [-unit names] [-seed N] [-corpus path] [-sequences n]
-//	               [-operations n] [-save-failures dir] [-minimize] [-max-attempts n]
-//	pego edit-fuzz -g grammar.pego -replay sequence.json [-minimize] [-save-failures dir]
+//	               [-operations n] [-save-failures dir] [-minimize] [-max-attempts n] [-budget n] [-max-input n]
+//	pego edit-fuzz -g grammar.pego -replay sequence.json [-minimize] [-save-failures dir] [-budget n] [-max-input n]
 //	pego lsp
 package main
 
@@ -47,14 +47,16 @@ Commands:
 
   parse -g <grammar> [-s <rule>] [-i <input>] [-f json|sexpr] [-stream] [-check]
         [-unit codepoints|bytes] [-backend closure|bytecode|bytecode-iterative] [-source-info]
-        [-default-value]
+        [-default-value] [-budget <n>] [-max-input <n>]
       Parse the input with a grammar and print the syntax tree. Without -i,
       the input is read from standard input. -source-info also prints the
       rule of each node and the names of captures. -default-value drops
       value actions and declared rule types (predicates still run) and
-      prints the default node tree.
+      prints the default node tree. -budget and -max-input bound the parse:
+      see Limits below.
 
   test -f <suite.json> [-format text|json] [-backend <names>] [-equivalence] [-update]
+       [-budget <n>] [-max-input <n>]
       Run a versioned JSON fixture suite. Outcomes distinguish accepted,
       recovered, and rejected parses; selected backend equivalence is reported
       separately. -update refreshes node and location goldens for one backend.
@@ -146,16 +148,17 @@ Commands:
       run), so its parses return the default node tree.
 
   trace -g <grammar> [-s <rule>] [-i <input>] [-max-depth <n>] [-rule <name>]
-        [-failures] [-f text|json] [-unit u] [-backend b]
+        [-failures] [-f text|json] [-unit u] [-backend b] [-budget <n>] [-max-input <n>]
       Parse the input and print every rule call as an indented call tree
       with positions, results and memo hits (-f json: one event per line).
 
   profile -g <grammar> [-s <rule>] [-i <input>] [-sort <column>] [-n <rows>]
-        [-f text|json] [-unit u] [-backend b]
+        [-f text|json] [-unit u] [-backend b] [-budget <n>] [-max-input <n>]
       Parse the input and print the cost of each rule, with hints on where
       the grammar does more work than it needs to.
 
   explain -g <grammar> [-s <rule>] [-i <input>] [-n <calls>] [-unit u] [-backend b]
+          [-budget <n>] [-max-input <n>]
       Parse the input and, for a syntax error, print the rule calls that
       recorded what it says was expected, each with the calls it was
       nested in.
@@ -187,18 +190,28 @@ Commands:
 
   edit-fuzz -g <grammar.pego> [-s <rule>] [-backend <names>] [-unit <names>] [-seed <n>]
             [-corpus <path>] [-sequences <n>] [-operations <n>] [-save-failures <dir>]
-            [-minimize] [-max-attempts <n>]
+            [-minimize] [-max-attempts <n>] [-budget <n>] [-max-input <n>]
   edit-fuzz -g <grammar.pego> -replay <sequence.json> [-minimize] [-save-failures <dir>]
+            [-budget <n>] [-max-input <n>]
       Apply generated edit, undo and redo sequences to incremental Documents
       and compare each checkpoint with a fresh parse, on every backend and
       unit unless limited. A failing sequence is saved as a JSON file that
       -replay runs exactly; -minimize also saves a shortened sequence that
-      fails the same way.
+      fails the same way. The limits apply to every Document and fresh parse; a
+      saved sequence does not record them, so pass them again to -replay.
 
   lsp
       Run a Language Server Protocol server for .pego files on standard
       input and output, for editors: diagnostics, formatting, go to
       definition, references, hover, rename and completion.
+
+Limits: parse, test, trace, profile, explain and edit-fuzz take -budget and
+-max-input. -budget bounds the cost of a parse in units; 0, the default,
+selects max(2^20, 1024 times the input length). -max-input bounds the length
+of the input in the position unit; 0, the default, sets no bound. Both also
+take the word unlimited, which disables the limit. A parse that reaches a limit
+prints the message of the limit error and exits with status 1, like any other
+failure.
 
 A <grammar> is PEGO source (.pego), a grammar in JSON (.json), or, for
 parse, trace, profile, explain and compile, a grammar compiled with pego
@@ -688,6 +701,8 @@ func parse(args []string, stdin io.Reader, stdout io.Writer) error {
 	backendName := fs.String("backend", "", "execution backend: closure, bytecode, or bytecode-iterative (default: chosen for the grammar)")
 	sourceInfo := fs.Bool("source-info", false, "record the rule of each node and the names of captures, and print them")
 	defaultValue := fs.Bool("default-value", false, "drop value actions and declared rule types, and print the default node tree (predicates still run)")
+	var lim limitFlags
+	lim.register(fs)
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -737,7 +752,7 @@ func parse(args []string, stdin io.Reader, stdout io.Writer) error {
 				return err
 			}
 			return json.NewEncoder(stdout).Encode(n)
-		}, unit, backend)
+		}, unit, backend, lim.option())
 	}
 	src := *input
 	if !isFlagSet(fs, "i") {
@@ -748,13 +763,13 @@ func parse(args []string, stdin io.Reader, stdout io.Writer) error {
 		src = string(b)
 	}
 	if *check {
-		if _, err := p.Parse(src, unit, backend, pego.RecognizeOnly()); err != nil {
+		if _, err := p.Parse(src, unit, backend, lim.option(), pego.RecognizeOnly()); err != nil {
 			return err
 		}
 		fmt.Fprintln(stdout, "ok")
 		return nil
 	}
-	node, perr := p.Parse(src, unit, backend)
+	node, perr := p.Parse(src, unit, backend, lim.option())
 	if node == nil {
 		return perr
 	}

@@ -167,7 +167,7 @@ func replay(p *pego.Parser, seq *Sequence) error {
 
 // start creates the Document of seq's initial text and checks it.
 func start(p *pego.Parser, seq *Sequence) (r *replayer, err error) {
-	r = &replayer{p: p, seq: seq, opts: []pego.ParseOption{pego.WithBackend(seq.Backend), pego.WithUnit(seq.Unit)}}
+	r = &replayer{p: p, seq: seq, opts: []pego.ParseOption{pego.WithBackend(seq.Backend), pego.WithUnit(seq.Unit), pego.WithLimits(seq.Limits)}}
 	initial := string(seq.Initial)
 	defer func() {
 		if x := recover(); x != nil {
