@@ -84,6 +84,20 @@ stream fails when the parser asks for a unit beyond the limit and the stream has
 input, and the error reports the number of units the parser asked for. A finite `MaxInput` needs no budget: with
 `Budget: pego.Unlimited` and no context the parse still runs without a control.
 
+## Limits on the Command Line
+
+The `pego` commands that run a parse (`parse`, `test`, `trace`, `profile`, `explain` and `edit-fuzz`) take `-budget` and
+`-max-input`, which set `Limits.Budget` and `Limits.MaxInput`. Each takes a number, `0` for the default, or `unlimited`:
+
+```bash
+pego parse -g grammar.pego -budget unlimited -max-input 1048576 -i "$input"
+```
+
+A parse that reaches a limit prints the `*pego.LimitError` message and exits with status 1. `pego test` reports it as
+the runtime error of the case. A saved `edit-fuzz` sequence does not record the limits, so `edit-fuzz -replay` takes
+`-budget` and `-max-input` again. A `Document` reuses earlier work and spends less than a fresh parse, so `edit-fuzz`
+compares nothing at a check where either parse exhausts its budget.
+
 ## Related Topics
 
 - [Running Parsers](running-parsers.md): results, errors and concurrency.

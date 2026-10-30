@@ -46,6 +46,7 @@ rule ws = [ \t\n]*
 ```bash
 pego parse -g <grammar> [-s <rule>] [-i <input>] [-f json|sexpr] [-stream] [-check]
            [-unit codepoints|bytes] [-backend closure|bytecode|bytecode-iterative] [-source-info] [-default-value]
+           [-budget <n|unlimited>] [-max-input <n|unlimited>]
 ```
 
 | Flag | Default | Meaning |
@@ -60,6 +61,10 @@ pego parse -g <grammar> [-s <rule>] [-i <input>] [-f json|sexpr] [-stream] [-che
 | `-source-info` | off | Record the rule of each node and the names of captures, and print them |
 | `-default-value` | off | Drop value actions and declared rule types, so the parse returns the default node tree; predicates still run (see [Default Values](../../spec/language/actions.md#default-values)) |
 | `-stream` | off | Print each `#stream` element as soon as it matches, one per line (see [streaming.md](streaming.md)) |
+| `-budget` | `0` | `Limits.Budget`: the cost a parse may spend, in budget units. `0` selects the default budget and `unlimited` disables the limit |
+| `-max-input` | `0` | `Limits.MaxInput`: the longest input accepted, in the position unit. `0` and `unlimited` accept any length |
+
+A parse that reaches a limit prints the message of the `*pego.LimitError` (for example `parse budget limit exceeded: limit 1048576, used 1048576, requested 1`) to standard error and exits with status 1, like any other failed parse. See [cancellation-and-limits.md](cancellation-and-limits.md).
 
 ```bash
 pego parse -g pairs.pego -f sexpr -i 'abc=12; あい=3'
@@ -349,10 +354,10 @@ pego trace -g <grammar> [-s <rule>] [-i <input>] [-max-depth <n>] [-rule <name>]
 pego profile -g <grammar> [-s <rule>] [-i <input>] [-sort <column>] [-n <rows>] [-f text|json]
 ```
 
-Debugging tools; all three also take `-unit` and `-backend`, and read the input from standard input without `-i`.
+Debugging tools; all three also take `-unit`, `-backend`, `-budget` and `-max-input` (as in `parse`), and read the input from standard input without `-i`.
 `explain` shows which rule calls recorded what a syntax error says was expected, `trace` prints every rule call of a
 parse as an indented tree, and `profile` prints the cost of each rule with hints. In Go, the same information comes
-from `pego.WithTrace` and `pego.WithProfile`. See [debugging.md](debugging.md).
+from `pego.WithTrace` and `pego.WithProfile`. A parse that reaches a limit ends the trace or profile at that point; `profile` prints the limit error as its `result`. See [debugging.md](debugging.md).
 
 ## `sample`
 

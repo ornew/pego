@@ -510,6 +510,8 @@ saved to failures/editfuzz-0be4ccb60eadff90.json
 minimized to 4 operations in failures/editfuzz-9d0bcab55578f1b5.json
 ```
 
+`edit-fuzz` also takes `-budget` and `-max-input` (see [cancellation-and-limits.md](cancellation-and-limits.md)). A saved sequence does not record them, so pass them again to `-replay`.
+
 Replaying the minimized sequence fails the same way:
 
 ```bash
