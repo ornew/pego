@@ -32,6 +32,11 @@ column is a Go parser generated with budget controls from the same grammar:
 The ratio is the cost of the controlled form that a parse with a limit already paid. A caller who
 trusts the input and wants the earlier speed passes `Unlimited`.
 
+A `Document` parse with default options also runs controlled. The controlled form records the
+examined extent of a result conservatively, so a reparse can reuse slightly fewer results: on the
+generated-parser Document corpus one case reuses 249 results where the uncontrolled form reuses
+253, with the same results. `Unlimited` keeps the uncontrolled reuse.
+
 ## Headroom
 
 The smallest budget that parses the JSON and XML inputs is about 8 units per input unit and the YAML

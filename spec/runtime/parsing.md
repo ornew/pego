@@ -483,7 +483,9 @@ steps, one unit each. Charges are not rolled back by backtracking, and their val
 depend on the backend, the position unit and the generated artifact. For a given
 artifact, input and options they are the same on every run: the storage that an
 earlier parse left in a reused parser, and when a collection releases it, never
-change them. Reading
+change them. A stream also charges one unit for each call to its reader's
+`Read`, so its spend depends on how the reader splits the input as well; its
+default limit does not. Reading
 input charges the budget counter in proportion to the elements examined, so a
 loop that only scans input, such as a repeated character class, is bounded by
 `Budget`. A cancelled

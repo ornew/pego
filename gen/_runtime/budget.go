@@ -304,7 +304,8 @@ func (c *BudgetControl) chargeSlow(n uint64) {
 }
 
 // exceedsLimit checks a reservation without computing a potentially
-// overflowing used+requested sum. A zero limit is unlimited.
+// overflowing used+requested sum. The limit is already resolved: zero, which
+// Unlimited resolves to, sets no bound.
 func exceedsLimit(used, requested, limit uint64) bool {
 	return limit != 0 && (used > limit || requested > limit-used)
 }
