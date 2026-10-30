@@ -226,10 +226,10 @@ func TPubError(v any) *Error {
 // SetBudgetControl is for generated parsers; not a stable API.
 type budgetControlSetter interface{ SetBudgetControl(*BudgetControl) }
 
-// tfieldWorker is implemented by struct values that read a field while spending budget.
+// tfieldSpender is implemented by struct values that read a field while spending budget.
 //
 // TFieldSpend is for generated parsers; not a stable API.
-type tfieldWorker interface {
+type tfieldSpender interface {
 	TFieldSpend(*TParser, string) (any, bool)
 }
 
@@ -2623,7 +2623,7 @@ func (p *TParser) valueField(n TVal, name string) (any, bool) {
 func (p *TParser) valueFieldControlled(n TVal, name string) (any, bool) {
 	t, transient := n.(*TSeq)
 	if !transient {
-		if controlled, ok := n.(tfieldWorker); ok {
+		if controlled, ok := n.(tfieldSpender); ok {
 			return controlled.TFieldSpend(p, name)
 		}
 		return n.TField(name)

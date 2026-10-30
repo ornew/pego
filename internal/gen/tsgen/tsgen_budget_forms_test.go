@@ -86,10 +86,10 @@ for (const unit of [p.CodePoints, p.Bytes]) {
   // @ts-expect-error The options of a parser without budget controls have no signal.
   const withSignal = p.parseWithOptions(input, { unit, signal: { aborted: false } });
   // @ts-expect-error The options of a parser without budget controls have no budget limit.
-  const withSpend = p.parseASTWithOptions(input, { unit, budget: 1 });
+  const withBudget = p.parseASTWithOptions(input, { unit, budget: 1 });
   // @ts-expect-error The options of a parser without budget controls have no budget limit.
   const withRecognize = p.recognizeWithOptions(input, { unit, budget: 1 });
-  for (const error of [withSignal.error, withSpend.error, withRecognize]) {
+  for (const error of [withSignal.error, withBudget.error, withRecognize]) {
     check(error !== null && error.message.includes("generated without budget controls"), "a control option is rejected");
   }
   const rejected = [{ signal: { aborted: false } }, { budget: 1 }] as unknown as p.ParseOptions[];

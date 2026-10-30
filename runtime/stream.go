@@ -114,14 +114,14 @@ func RunParseStream(r *Rule, reader io.Reader, emit func(*Node) error, opts []Pa
 	if emit != nil {
 		e = func(n *Node, _ *BudgetControl) error { return emit(n) }
 	}
-	return RunParseStreamSpend(r, reader, e, opts)
+	return RunParseStreamWithBudget(r, reader, e, opts)
 }
 
-// RunParseStreamSpend is RunParseStream with emit also given the parse's budget
+// RunParseStreamWithBudget is RunParseStream with emit also given the parse's budget
 // control, so that converting elements to typed values is charged to it.
 //
-// RunParseStreamSpend is for generated parsers; not a stable API.
-func RunParseStreamSpend(r *Rule, reader io.Reader, emit func(*Node, *BudgetControl) error, opts []ParseOption) (err error) {
+// RunParseStreamWithBudget is for generated parsers; not a stable API.
+func RunParseStreamWithBudget(r *Rule, reader io.Reader, emit func(*Node, *BudgetControl) error, opts []ParseOption) (err error) {
 	o, err := ResolveOptions(r.g, append(opts[:len(opts):len(opts)], streaming))
 	if err != nil {
 		return err

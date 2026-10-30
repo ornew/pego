@@ -1,7 +1,7 @@
 # Cancellation and Budget Limits
 
 A parse of untrusted or very large input should be able to stop: when a caller gives up, when a deadline passes, or when
-the spend exceeds a budget. This guide shows the per-call options that do that and what a stopped parse returns. The
+the cost exceeds a budget. This guide shows the per-call options that do that and what a stopped parse returns. The
 nesting limit, which bounds rule calls, is described with the [backends](backends.md#deep-nesting-and-withmaxdepth).
 
 The examples use a parser `p` compiled as in [Running Parsers](running-parsers.md). The repository's security policy,
@@ -35,7 +35,7 @@ case node != nil:
 
 `Budget` counts inspected input elements and backend execution steps in one counter, one unit each; it is neither a
 time nor a memory limit, and backtracking never refunds it. Scanning input, such as a repeated character class,
-charges it in proportion to the elements examined, so one limit bounds the budget spent on large input, rule calls and
+charges it in proportion to the elements examined, so one limit bounds the cost of large input, rule calls and
 values that grow. An interruption is fatal to the parse and `#recover` cannot consume it,
 so a batch parse returns no partial result. Cancellation is cooperative: a parser cannot preempt a blocked reader or
 a callback of yours. The exact rules are in

@@ -164,7 +164,7 @@ func ParseStreamAST(r io.Reader, emit func(StreamValue) error, opts ...ParseOpti
 %[3]s			return emit(%[4]s)
 		}
 	}
-	return RunParseStreamSpend(streamRule, r, e, opts)
+	return RunParseStreamWithBudget(streamRule, r, e, opts)
 }
 
 // StreamASTIterator returns the typed elements of a stream one at a time, like StreamIterator.

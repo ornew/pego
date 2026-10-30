@@ -50,7 +50,7 @@ type Func struct {
 	// operation, and a typed function has no Node one (Verify).
 	Node bool
 	// Budget reports a function lowered with budget controls (Options.Budget); Verify then checks the
-	// charging of work (verifySpend).
+	// charging of the budget (verifySpend).
 	Budget bool
 	// Document reports a function lowered for a build with Documents (Options.Document); Verify then checks
 	// that every in-place read has the recording primitive as its alternative.

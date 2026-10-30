@@ -145,7 +145,8 @@ steps per attempt, and the defaults are a good compromise for the grammars in [e
 `New` first analyzes the grammar's minimum derivation depths, text lengths and coverage reach sets. It processes
 acyclic callees before callers and propagates changed estimates through a bounded worklist for recursive grammars.
 This avoids repeated whole-grammar sweeps caused by declaration order. `WithBudget` bounds generation attempts;
-it does not bound constructor analysis. Dense coverage sets still grow with the number of rules and targets.
+it does not bound constructor analysis, and it is unrelated to the parse budget of `WithLimits`. Dense coverage
+sets still grow with the number of rules and targets.
 Minimum-length estimates saturate at 2³⁰ bytes on both Go integer widths, so
 recursive dependencies and large repetition bounds cannot wrap into negative estimates.
 
