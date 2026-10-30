@@ -84,8 +84,10 @@ Likewise, a rule value whose Type is unknown, from an action, a called rule or
 an Operators Rule line, is reported when the rule declares a Type it does not fit:
 `rule term produces _, which is not assignable to Expr: the type of the value is not
 known; convert it with a cast, as in value.(Expr)` (see [Types and
-Errors](actions.md#types-and-errors)). In an Operators Rule with a declared Type, the captures
-`lhs` and `rhs` have that Type.
+Errors](actions.md#types-and-errors)). In an Operators Rule with a declared Type and no
+whole-rule action, the captures `lhs` and `rhs` have that Type; with a
+whole-rule action, they have the folded type (see [Operators Rule
+Types](operators-rule.md#types)).
 
 Diagnostics print a type as written in a grammar: `node[string]` for a string
 node, `node[(node[string], node[string])]` for a tuple node of two string nodes,
@@ -121,7 +123,8 @@ its action if it has one. Dependencies are inferred before their callers, so
 finite acyclic chains do not depend on definition order or an iteration cap.
 Recursive dependency groups are iterated until their types no longer change;
 join-member ordering does not count as a type change. Operators Rule operator actions
-also depend on their rule's type through the `lhs` and `rhs` values.
+also depend on their rule's type through the `lhs` and `rhs` values, or on the
+folded type when the rule has a whole-rule action.
 
 The implementation bounds changing recursive types conservatively. After an
 initial inferred result, further growth beyond 2,048 bytes in the written type

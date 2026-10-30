@@ -448,7 +448,6 @@ formatter, say), capture them instead of discarding them.
 | `T has no field F` | A typo, or the struct does not declare the field |
 | `cannot access .F of *T` | The value may be `nil` (for example `n:name?`). Read the field in a rule where the value is always present |
 | `an inline action is not allowed in a lookahead or a discard` | The value of the group is not used there; move the action to a rule or out of the `&`, `!` or `-` |
-| `whole-rule actions are not supported for Operators Rules` | Omit the action, write `=> ...`, or put the action on an operand or operator entry |
 | `undefined capture $z` | The capture is not made in this rule; captures are not visible across rules |
 
 ## Related Topics

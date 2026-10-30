@@ -54,8 +54,8 @@ The finish of a rule selects how it makes its value.
 | Finish | The value is |
 |:--|:--|
 | None | Nil. A value-free twin |
-| Action | The value of the rule's action term |
-| Splice | The value of the body, which the rule does not wrap |
+| Action | The value of the rule's action term. For an Operators Rule, the term reads the folded value of the body as `$value` |
+| Splice | The value of the body, which the rule does not wrap. An Operators Rule without an action has this finish |
 | Scope | The scope value of the body, with the captures attached, converted to the rule's node type if it names one |
 
 ### Policy

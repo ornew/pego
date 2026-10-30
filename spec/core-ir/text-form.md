@@ -42,8 +42,8 @@ shape; `nullable`; `first=` and the first terminal; and the effects, separated b
 
 ## Terms
 
-A term is printed as follows: a string constant quoted; `$slot:name` for a slot; `param:name`, `$lhs`, `$rhs` and `$op`
-for locals; `var:name`; `x.Name` for a member; `Type{Field: term, ...}` for a struct, with `!` after the closing brace
+A term is printed as follows: a string constant quoted; `$slot:name` for a slot; `param:name`, `$lhs`, `$rhs`, `$op` and
+`$value` for locals; `var:name`; `x.Name` for a member; `Type{Field: term, ...}` for a struct, with `!` after the closing brace
 for the final struct of a rule or line; `Node(term)` for a conversion; `(a, b)` for a tuple; `f(args)` for a built-in;
 `fn(params) body` for a lambda; `(a op b)` and `opx` for operations; `text-eq(...)`, `field-cmp(...)`, `text-in(...)`,
 `concat-fused(...)` and `projected-map(...)` for the rewritten forms.

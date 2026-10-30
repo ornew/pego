@@ -634,6 +634,44 @@ pego parse -g operand-captures.pego -s e -f sexpr -i '((1))'
 Paren{X: Paren{X: "1"}}
 ```
 
+### A Whole-Rule Action
+
+An action after the closing `}` computes the rule's value from the complete expression. It runs once per call of the
+rule, after the last operator is applied, and reads the folded value as `$value`. Building the right operand of an
+operator is part of the same call, so the action never sees an intermediate result:
+
+```pego
+// whole-action.pego
+type Expr = { Root _ }
+
+@start
+rule e Expr = #operators {
+    skip " "*
+    operand [0-9]+ #atomic
+    operand "(" x:e " "* ")" => $x
+    level additive { infix left "+" }
+} => Expr{Root: $value}
+```
+
+```bash
+pego parse -g whole-action.pego -s e -f sexpr -i '1 + 2 + 3'
+pego parse -g whole-action.pego -s e -f sexpr -i '(1 + 2) + 3'
+```
+
+```text
+Expr{Root: (("1" "+" "2") "+" "3")}
+Expr{Root: (Expr{Root: ("1" "+" "2")} "+" "3")}
+```
+
+Every call of the rule runs the action, including a call inside an operand or an operator part and a level-restricted
+call. The parenthesized operand above calls `e`, so its value is wrapped too. To wrap an expression only once, put the
+action on a separate rule that calls the Operators Rule.
+
+The declared type is the type of the action's result. `$lhs`, `$rhs` and `$value` have the type of the fold, which is
+inferred from the operand and operator lines. A struct made by the action covers the rule's whole match, including the
+text that `skip` consumed before the first operand. With a named node type `N`, the action's result is converted to `N`
+and the operators are not.
+
 ## Choosing Between the Three
 
 | | Operators Rule | Left-recursive rules | Precedence chain |

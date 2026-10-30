@@ -209,8 +209,8 @@ Captures inside the operator part (`then:expr` and so on) can also be referenced
 
 ## Types
 
-- For `rule e T = #operators { ... }`, the results of `operand` and of every operator action must be of type `T`.
-- `$lhs` and `$rhs` have type `T`.
+- For `rule e T = #operators { ... }` without a whole-rule action, the results of `operand` and of every operator action must be of type `T`.
+- `$lhs` and `$rhs` have type `T`. With a whole-rule action, `T` is the type of the action's result instead (Decision 6).
 - If the rule has no type (`node`), an operator without an action produces the default CST node (next section). If the rule has a type, every operator must have an action.
 
 ## CST
@@ -286,6 +286,24 @@ This section records the options considered and the reasons for the choices made
 - Rejected: separate reserved fields (`_$Lhs`, `_$Op`, `_$Rhs`). This adds reserved fields.
 - Rejected: making the operator a string field and keeping only the operands as children. The operator's position would be lost.
 - **Adopted**: the node has the same shape as a `Seq` node, so generic traversal works, and the operator's position, which editor use cases need, is kept. The operator is identified by `_$OperatorID`.
+
+### 6. A Whole-Rule Action Runs Once per Call on `$value`
+
+An action after the closing `}` computes the value of the complete expression, as in `} => Expr{Root: $value}`.
+
+- **Adopted**: the action runs at rule completion, once per call, where the action of an ordinary rule runs. The
+  recursion over levels belongs to one call, so the action never sees an intermediate reduction. Every rule call runs
+  it, including level-restricted calls and calls from the rule's own operand and operator parts, so each parenthesized
+  expression is wrapped by its own call. A call's value then does not depend on its caller, which keeps memoization
+  keyed by rule and position, and recovery, cuts, errors and ranges follow the rules of ordinary actions.
+- Rejected: running the action only for calls from outside the rule. A call's value would depend on its caller.
+- **Adopted**: the folded value is the reserved local `$value`, like `$lhs` and `$rhs`. Positional references do not
+  exist, and a label on the body would need new syntax around `#operators`.
+- **Adopted**: the declared type is the type of the action's result, as for any rule. The fold has its own type,
+  inferred from the lines as a least fixed point, because the fold has no name to refer to itself by; `$lhs`, `$rhs`
+  and `$value` have that type. A named node type converts the action's result, not the operators.
+- Rejected: requiring the fold to have the declared type. A rule that wraps its expression in a struct could not be
+  written.
 
 ## Open Questions
 

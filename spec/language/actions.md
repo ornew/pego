@@ -8,10 +8,9 @@ have a whole-rule Value Action after its complete expression:
 `rule name [Type] = expression => term`. A Value Action may also stand inside
 parentheses as an inline Value Action, `(expression => term)`, which is
 described [below](#inline-value-actions). An Operators Rule has specialized
-Value Actions on its operand and operator entries. A declaration-level action
-is accepted only when it selects the default value behavior; omitting
-it or writing the explicit `=> ...` default form preserves that behavior. Any
-other declaration-level action on an Operators Rule is a compile-time error.
+Value Actions on its operand and operator entries, and its declaration-level
+action is a [whole-rule action](operators-rule.md#whole-rule-action) that runs
+once per call on the folded value, `$value`.
 
 A Predicate Action block may contain several statements; its semantics are
 defined in [Predicate Actions](predicates.md#predicate-actions).

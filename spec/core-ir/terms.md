@@ -10,7 +10,7 @@ term carries its checked type, which is the type of its value. A lambda has no t
 |:--|:--|
 | `Const` | A constant: an integer, a string, a boolean or nil |
 | `SlotRef` | Reads a capture slot of the enclosing scope, by index and name |
-| `Local` | Reads a lambda parameter, or `$lhs`, `$rhs` or `$op` of an Operators Rule operator line |
+| `Local` | Reads a lambda parameter, `$lhs`, `$rhs` or `$op` of an Operators Rule operator line, or `$value` in the whole-rule action of an Operators Rule |
 | `VarRef` | Reads a variable |
 | `Member` | Reads a field or a node member of a value |
 | `New` | Makes a struct of a type from the fields given. Final marks the struct that is the result of the rule or line, whose range is the rule's. InOrder records that the fields are given in declaration order |

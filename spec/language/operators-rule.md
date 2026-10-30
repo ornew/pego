@@ -61,7 +61,7 @@ rule <name> [<Type Expression>] = #operators {
         postfix <operator part> [=> <action>]
         infix (left | right | none) <operator part> [=> <action>]
     }
-} [#ignorecase]
+} [#ignorecase] [=> <action>]
 ```
 
 - An Operators Rule uses a dedicated
@@ -73,9 +73,10 @@ rule <name> [<Type Expression>] = #operators {
   [`#ignorecase`](pragmas.md#ignorecase)). No other pragma may follow it.
 - An action after an `operand` or operator declaration uses `=>` and applies to
   that complete operand or operator entry.
-- A rule-level Value Action after the closing `}` may be omitted or use the
-  explicit `=> ...` default form. Any other rule-level Value Action is a
-  compile-time error.
+- A rule-level Value Action after the closing `}` (and after `#ignorecase`,
+  if present) is a [whole-rule action](#whole-rule-action). Omitting it or
+  writing the explicit `=> ...` default form keeps the folded value as the
+  rule's value.
 - Semicolons separate Declaration Statement items when needed; line boundaries may also make the separation unambiguous. Struct fields use semicolons or newlines; constructor fields and arguments use commas.
 - An Operators Rule has at most one `skip`, at least one `operand`, and any
   number of `level`s. A `level` contains any number of operators.
@@ -230,9 +231,53 @@ The node created by an operator action covers the operator expression: from the
 start of the left operand (or of the prefix operator) to the end of the right
 operand (or of the postfix operator).
 
+## Whole-Rule Action
+
+A whole-rule action runs once per call of the rule, after the call has applied
+its last operator, and its result is the value of the call. It reads the folded
+value, the value that the call would have without the action, as the local
+`$value`. Parsing the operand of a prefix operator and the right operand of an
+infix operator is part of the same call, so the action never runs on an
+intermediate result. Every call of the rule runs it, including a
+[level-restricted call](#level-restricted-calls) and a call of the rule from
+inside one of its own operand or operator parts: in
+`operand "(" x:e ")" => $x`, the value of `$x` is the result of the action of
+that inner call, so each parenthesized expression is wrapped by the action of
+its own call.
+
+```pego
+type Expr = { Root _ }
+rule e Expr = #operators {
+    skip " "*
+    operand [0-9]+ #atomic
+    operand "(" x:e " "* ")" => $x
+    level additive { infix left "+" }
+} => Expr{Root: $value}
+```
+
+With this rule, `(1 + 2) + 3` produces
+`Expr{Root: (Expr{Root: ("1" "+" "2")} "+" "3")}`.
+
+- `$value` is in scope only in the whole-rule action of an Operators Rule.
+  The captures of operand and operator lines are local to their lines and are
+  not visible to it, and `$lhs`, `$rhs` and `$op` are not defined there.
+- A struct node created by the action and returned directly covers the
+  complete match of the call, from its start position, including the text
+  `skip` consumes before the first operand, to its end, as for the action of an
+  ordinary rule (see [Value and Range Details](actions.md#value-and-range-details)).
+  The folded value keeps its own range.
+- The action does not run when the call fails, so it changes no syntax error,
+  expectation or error position. A call that recovers inside its lines runs the
+  action on the recovered value. A runtime error in the action fails the parse,
+  as for any whole-rule Value Action (see [Types and Errors](actions.md#types-and-errors)).
+- A call whose value nothing uses, as in a
+  [recognition](../runtime/parsing.md) that no predicate reads, does not run
+  the action, as for an ordinary rule, and
+  [default values](actions.md#default-values) drop it.
+
 ## Types
 
-If the rule is declared with type `T`, the values of all `operand` items and of
+If the rule is declared with type `T` and has no whole-rule action, the values of all `operand` items and of
 all operators MUST be assignable to `T`, and `$lhs` and `$rhs` have type `T`.
 An operator without an action produces a tuple node of its operands and its
 operator part: `node[(T, O, T)]` for an infix operator and `node[(O, T)]` for a
@@ -241,13 +286,26 @@ prefix operator, where `O` is the type of the operator part, with the captures
 needs an action; a recursive alias cannot name them, so a join that accepts
 them includes `node[_]`.
 
-If the rule has no declared type, its type is the join of the types of all
-`operand` items and operators.
+If the rule has no declared type and no whole-rule action, its type is the
+join of the types of all `operand` items and operators.
+
+With a whole-rule action, the declared type `T`, if any, is the type of the
+action's result: the result MUST be assignable to `T`, and the rule's type is
+`T`, or the type of the action's result when the rule declares none. The
+**folded type** is the join of the types of all `operand` items and operators,
+where `$lhs` and `$rhs` have the folded type; `$value` has it as well. The
+values of the lines are not checked against `T`. The folded type has no name,
+so it is inferred as a least fixed point from `_|_`. When it keeps growing,
+as the nested tuple nodes of operators without actions do, `$lhs` and `$rhs`
+are widened to `node[_]` if every line produces a node, and to a type that is
+not known otherwise.
 
 ### Named Node Types
 
 If the declared type is exactly a [named node type](types.md#named-node-types)
-`N` (also through aliases), the rule converts the value of every operator it
+`N` (also through aliases) and the rule has a whole-rule action, the rule
+converts the action's result to `N`, as an ordinary rule converts its value,
+and converts no operator. Otherwise, the rule converts the value of every operator it
 applies to `N`, as an ordinary rule converts its value (see
 [Types and Errors](actions.md#types-and-errors)):
 
