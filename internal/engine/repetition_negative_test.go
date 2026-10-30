@@ -2,7 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -240,32 +239,3 @@ func TestNegativeMaximumWithWideMinimum(t *testing.T) {
 	}
 }
 
-// BenchmarkBytecodeLowering isolates construction of the module from an
-// already analyzed grammar; source parsing, AST checking and VM setup are out.
-func BenchmarkBytecodeLowering(b *testing.B) {
-	for _, c := range []struct{ name, path string }{
-		{"JSON", "../../parsers/json/json.pego"},
-		{"Minilang", "../../examples/minilang/minilang.pego"},
-	} {
-		b.Run(c.name, func(b *testing.B) {
-			source, err := os.ReadFile(c.path)
-			if err != nil {
-				b.Fatal(err)
-			}
-			g, err := parseTest(string(source))
-			if err != nil {
-				b.Fatal(err)
-			}
-			p, err := Compile(g, compile.Options{})
-			if err != nil {
-				b.Fatal(err)
-			}
-			b.ReportAllocs()
-			b.ResetTimer()
-			for b.Loop() {
-				compiler := &compile.Bcompiler{Prog: p.Static(), M: &bytecode.Module{}, Strs: map[string]int{}}
-				compiler.Compile()
-			}
-		})
-	}
-}
