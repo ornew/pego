@@ -1,0 +1,483 @@
+module parser
+features budget, document, observe, missing, stream, typed
+
+component memo
+  // The memo table: results of rule calls by key. A key is a rule, a position,
+  // a binding level and the values of the rule's variables.
+
+component seen
+  // The record of deferred memoization: which rules were called at which positions,
+  // and per rule the counts that decide when it is memoized eagerly. It is created with the number of
+  // rules whose memoization is deferred.
+
+component budget
+  // The work budget of the parse: the units charged so far and the limit, zero for
+  // none.
+
+component depth
+  // The nesting depth of rule calls and its limit.
+
+component env
+  // The variable environment. Its operations are not declared yet; Values handles
+  // stand for the values of a rule's variables, compared by the host's value equality.
+
+component host
+  // The host: values and nodes, which the parser VM passes on without reading.
+
+component recovered
+  // The list of errors recovered so far in the parse.
+
+component rules
+  // The rules of the grammar: their descriptors and bodies.
+
+component expected
+  // The expectation record: the expectations at the farthest position.
+
+component call
+  // The call bookkeeping of the target outside the call protocol: the tracked path of
+  // Documents and observation, and the work charged per call.
+
+component observe
+  // The observation of a parse.
+
+register pos int
+  // The position of the parse in the input.
+
+register silent int
+  // The depth of lookaheads, inside which expectations are not recorded.
+
+handle Entry of memo
+  // A memo entry: the result of a rule call with its outcome and end.
+
+handle Values of env
+  // The values of a rule's variables, as a memo key.
+
+handle Value of host
+  // The value of a rule's result: a node or a typed value.
+
+handle Errs of recovered
+  // The errors recovered in a rule call, kept with its memo entry.
+
+handle Rule of rules
+  // A rule's descriptor.
+
+handle Body of rules
+  // The invocation of a rule's body that a generated call passes.
+
+handle ExpMark of expected
+  // The record that an isolation set aside.
+
+handle ExpSet of expected
+  // The expectations an isolation recorded, valid until the next record.
+
+handle ExpKept of expected
+  // Expectations kept beyond the record, as a memo entry keeps them.
+
+op memo.lookup(rule int, pos int, level int, key Values) (Entry, bool)
+  component memo
+  reads memo
+  cost <= 1 + 1*key_scan
+  contract:
+    // Returns the entry stored or seeded under the key, if one is there and not replaced, and
+    // true; otherwise false and an entry that must not be used. Two keys are equal when their rules,
+    // positions and levels are equal and the host's value equality holds for their values.
+  requires:
+    // If a growing entry exists for the rule, position and level, the key is the one it was
+    // seeded with. Compositions look a left-recursion leader up with memo.lookupGrowing first.
+  law: two lookups with no write of memo between them return the same result
+
+op memo.lookupGrowing(rule int, pos int, level int) (Entry, bool)
+  component memo
+  reads memo
+  cost <= 1 + 1*key_scan
+  contract:
+    // Returns the growing entry of the rule at the position and level, whatever key values it
+    // was seeded with, and true; otherwise false. This is the left-recursion guard: while a rule grows at a
+    // position, every call of it there reads the growing result.
+
+op memo.store(rule int, pos int, level int, key Values, ok bool, end int, silent bool, value Value, errs Errs) Entry
+  component memo
+  reads memo
+  writes memo
+  cost <= 2 + 1*key_scan + 1*slot_growth
+  contract:
+    // Stores a complete entry with the outcome ok, the end, whether it was computed in a silent
+    // context, its value and its recovered errors under the key, replacing the entry stored under the same
+    // key, and returns it. Entries under other keys are unchanged.
+  requires:
+    // No growing entry exists for the rule, position and level; end is at least pos.
+
+op memo.seed(rule int, pos int, level int, key Values) Entry
+  component memo
+  reads memo
+  writes memo
+  cost <= 2 + 1*key_scan + 1*slot_growth
+  contract:
+    // Starts the growth of a left-recursion leader: stores a growing entry that fails and ends
+    // at pos, not silent, with no value and no recovered errors, under the key, replacing the entry stored
+    // under the same key, and returns it.
+  requires:
+    // No growing entry exists for the rule, position and level.
+
+op memo.reseed(rule int, pos int, level int, key Values, end int, value Value, errs Errs) Entry
+  component memo
+  reads memo
+  writes memo
+  cost <= 2 + 1*key_scan + 1*slot_growth
+  contract:
+    // Records a longer seed: replaces the growing entry under the key by a growing entry that
+    // succeeds and ends at end, not silent, with the value and the recovered errors, and returns it. The
+    // replaced entry is no longer found.
+  requires:
+    // The key has a growing entry; end is greater than pos.
+
+op memo.finishSeed(e Entry, silent bool)
+  component memo
+  writes memo
+  cost <= 0
+  contract:
+    // Ends a growth: the growing entry e becomes complete, with its outcome, end, value and
+    // recovered errors, and silent as given. Lookups of its key return it as a complete entry, and
+    // memo.lookupGrowing no longer finds it.
+  requires:
+    // e is the growing entry most recently seeded or reseeded under its key.
+
+op memo.ok(e Entry) bool
+  component memo
+  reads memo
+  cost <= 0
+  contract:
+    // Returns whether the call of entry e succeeded.
+
+op memo.end(e Entry) int
+  component memo
+  reads memo
+  cost <= 0
+  contract:
+    // Returns the end of the match of entry e; for a failure, the position of the call.
+
+op memo.growing(e Entry) bool
+  component memo
+  reads memo
+  cost <= 0
+  contract:
+    // Returns whether entry e is the growing entry of a left-recursion leader.
+
+op memo.silent(e Entry) bool
+  component memo
+  reads memo
+  cost <= 0
+  contract:
+    // Returns whether entry e was computed in a silent context.
+
+op memo.value(e Entry) Value
+  component memo
+  reads memo
+  cost <= 0
+  contract:
+    // Returns the value of entry e.
+
+op memo.errs(e Entry) Errs
+  component memo
+  reads memo
+  cost <= 0
+  contract:
+    // Returns the recovered errors of entry e.
+
+op seen.first(rule int, pos int) bool
+  component seen
+  reads seen
+  writes seen
+  cost <= 66 + 1*page_index + 1*pages + 1*seen_index
+  contract:
+    // Records a call of the rule at pos and reports whether its memoization is deferred: true
+    // when the rule is not eager and has not been called at pos before. Each rule counts its calls and its
+    // repeated calls, the calls at a position where it was called before. A call that finds the rule eager
+    // returns false and records nothing. Otherwise the call count grows by one, and when it reaches 2^31
+    // both counts are halved (rounding down); a repeated call then grows the repeat count, and when the
+    // repeats exceed the calls divided by 16 (rounding down), the rule becomes eager for the rest of the
+    // parse. The policy decides how
+    // many rule bodies run, which the statistics report, so every target follows it exactly.
+  requires:
+    // 0 <= rule < the number of rules the component was created with; pos >= 0.
+
+op budget.charge(n u64)
+  component budget
+  reads budget
+  writes budget
+  features budget
+  noreturn
+  cost <= 0 + 1*n
+  contract:
+    // Charges n units. When the limit is not zero and the units used plus n exceed it, the parse
+    // ends with a limit interruption and the units used are unchanged; otherwise n is added to them.
+    // Charges are never rolled back. A target may also observe cancellation here, at intervals of its
+    // choice, and end the parse with a cancellation interruption.
+  law: charge(a); charge(b) may merge into charge(a+b) when nothing observable lies between them and no commit separates them
+
+op budget.used() u64
+  component budget
+  reads budget
+  features budget
+  cost <= 0
+  contract:
+    // Returns the units charged so far: by budget.charge and inside other operations.
+
+op depth.enter()
+  component depth
+  reads depth
+  writes depth
+  noreturn
+  cost <= 0
+  contract:
+    // Enters a rule call: adds one to the depth. When the depth then exceeds the limit, the parse
+    // ends with a nesting interruption.
+
+op depth.exit()
+  component depth
+  reads depth
+  writes depth
+  cost <= 0
+  contract:
+    // Leaves a rule call: subtracts one from the depth.
+  requires:
+    // The depth is greater than zero.
+
+op depth.current() int
+  component depth
+  reads depth
+  cost <= 0
+  contract:
+    // Returns the depth.
+
+transitional op call.tracked() bool
+  component call
+  reads call
+  features document
+  cost <= 0
+  contract:
+    // Reports whether a rule call takes the target's tracked path: in a Document parse, and in the
+    // node runtime also in an observed parse.
+
+transitional op call.track(r Rule, min int) (Value, bool)
+  component call
+  writes call, pos, silent
+  features document
+  noreturn
+  cost <= 0
+  contract:
+    // Calls the rule at the binding level min on the target's tracked path and returns its result.
+
+transitional op call.trackBody(r Rule, inv Body) (Value, bool)
+  component call
+  writes call, pos, silent
+  features document
+  noreturn
+  cost <= 0
+  contract:
+    // Calls the rule through the invocation inv on the target's tracked path and returns its
+    // result.
+
+transitional op call.spend()
+  component call
+  writes call
+  noreturn
+  cost <= 1
+  contract:
+    // Charges the work of a rule call: one unit, with the checks of the target's Spend.
+
+transitional op call.first(r Rule) bool
+  component call
+  reads call
+  writes call
+  cost <= 0
+  contract:
+    // Records a call of the rule at the position and reports whether its memoization is deferred:
+    // seen.first for a rule whose memoization the target defers, false for one it memoizes eagerly (in a
+    // stream, or for a rule without a seen index).
+
+transitional op call.growStep()
+  component call
+  writes call
+  noreturn
+  cost <= 1
+  contract:
+    // Charges a growth step of a left-recursion leader, before its body runs again. The
+    // generated Go runtimes charge nothing; the TypeScript runtime and the engine charge one unit.
+
+transitional op rule.memo(r Rule) bool
+  component rules
+  cost <= 0
+  contract:
+    // Reports whether the rule is memoized.
+
+transitional op rule.leader(r Rule) bool
+  component rules
+  cost <= 0
+  contract:
+    // Reports whether the rule leads a left-recursive cycle.
+
+transitional op rule.plain(r Rule) bool
+  component rules
+  cost <= 0
+  contract:
+    // Reports whether the rule has no captures, so that its plain body serves its invocation.
+
+transitional op rule.id(r Rule) int
+  component rules
+  cost <= 0
+  contract:
+    // Returns the rule's index, the rule of its memo keys.
+
+transitional op rule.invoke(r Rule, min int) (Value, bool)
+  component rules
+  writes rules, pos, silent
+  noreturn
+  cost <= 0
+  contract:
+    // Runs the rule's body at the binding level min in a frame of its own and makes the rule's
+    // value; on failure the position is unspecified.
+
+transitional op rule.invokePlain(r Rule, min int) (Value, bool)
+  component rules
+  writes rules, pos, silent
+  noreturn
+  cost <= 0
+  contract:
+    // Runs the plain body of a rule without captures and returns its result, at the start
+    // position on failure.
+
+transitional op rule.run(inv Body) (Value, bool)
+  component rules
+  writes rules, pos, silent
+  noreturn
+  cost <= 0
+  contract:
+    // Runs the invocation inv of a rule at binding level 0 and returns its result.
+
+transitional op env.memoKey(r Rule) Values
+  component env
+  reads env
+  cost <= 0
+  contract:
+    // Returns the values of the variables the rule reads, as its memo key.
+
+transitional op rec.mark() int
+  component recovered
+  reads recovered
+  cost <= 0
+  contract:
+    // Returns the number of recovered errors, which rec.truncate and rec.since take.
+
+transitional op rec.truncate(mark int)
+  component recovered
+  writes recovered
+  cost <= 0
+  contract:
+    // Drops the errors recovered after the mark.
+
+transitional op rec.since(mark int) Errs
+  component recovered
+  reads recovered
+  writes recovered
+  noreturn
+  cost <= 0
+  contract:
+    // Returns a copy of the errors recovered after the mark, charging their copy as the target does.
+
+transitional op rec.add(errs Errs)
+  component recovered
+  writes recovered
+  noreturn
+  cost <= 0
+  contract:
+    // Records the errors again, after the recovered errors, charging as the target does.
+
+transitional op rec.none(errs Errs) bool
+  component recovered
+  cost <= 0
+  contract:
+    // Reports whether the list of errors is empty.
+
+transitional op exp.isolate(pos int) ExpMark
+  component expected
+  writes expected
+  cost <= 0
+  contract:
+    // Sets the record aside and starts an empty one at pos.
+
+transitional op exp.unisolate(m ExpMark) (int, ExpSet)
+  component expected
+  writes expected
+  cost <= 0
+  contract:
+    // Ends the record that the isolation m started and restores the one set aside; returns the
+    // farthest position of the ended record and its expectations.
+
+transitional op exp.keep(s ExpSet) ExpKept
+  component expected
+  cost <= 0
+  contract:
+    // Returns the expectations of s as a set that outlives the record.
+
+transitional op exp.merge(far int, s ExpSet)
+  component expected
+  writes expected
+  noreturn
+  cost <= 0
+  contract:
+    // Adds the expectations of s at far to the record.
+
+transitional op exp.mergeKept(far int, k ExpKept)
+  component expected
+  writes expected
+  noreturn
+  cost <= 0
+  contract:
+    // Adds the kept expectations k at far to the record.
+
+transitional op memo.far(e Entry) int
+  component memo
+  reads memo
+  cost <= 0
+  contract:
+    // Returns the farthest position of the expectations of entry e.
+
+transitional op memo.expected(e Entry) ExpKept
+  component memo
+  reads memo
+  cost <= 0
+  contract:
+    // Returns the expectations of entry e.
+
+transitional op memo.setExpected(e Entry, far int, k ExpKept)
+  component memo
+  writes memo
+  cost <= 0
+  contract:
+    // Records the expectations k at far of the call that computed entry e.
+
+transitional op memo.grown(rule int, pos int, level int, key Values) Entry
+  component memo
+  reads memo
+  cost <= 0
+  contract:
+    // Returns the entry that a finished growth left under the key, or the null entry when a
+    // stream commit pruned it.
+  requires:
+    // A growth under the key has just finished; outside streams it left its entry.
+
+transitional op memo.detached() Entry
+  component memo
+  features stream
+  cost <= 0
+  contract:
+    // Returns a new entry under no key, which no lookup finds.
+
+transitional op obs.memoHit()
+  component observe
+  writes observe
+  features observe
+  cost <= 0
+  contract:
+    // Counts a reuse of a memo entry in the observation, if the parse is observed.
