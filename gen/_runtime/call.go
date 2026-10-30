@@ -161,7 +161,7 @@ func (p *TParser) callBody(r *TRule, min int) (any, bool) {
 	return v, ok
 }
 
-// CallMemo is the memoized part of call, for the rule r invoked by inv (the generated i<id>):
+// CallMemo is the memoized part of callBody, for the rule r invoked by inv (the generated i<id>):
 // the rule is called at the position again, or its memoization is no longer deferred.
 func (p *TParser) CallMemo(r *TRule, inv func(*TParser) (any, bool)) (any, bool) {
 	if p.TypedDocument != nil {

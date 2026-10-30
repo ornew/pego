@@ -166,7 +166,7 @@ func (p *TParser) callBody(r *TRule, min int) (any, bool) {
 	return v, ok
 }
 
-// CallMemo is the memoized part of call, for the rule r at binding level 0 invoked by inv:
+// CallMemo is the memoized part of a rule call, for the rule r at binding level 0 invoked by inv:
 // the rule is called at the position again, or its memoization is no longer deferred.
 //
 // Printed from Exec IR function callMemo of internal/ir/exec/core, specialized for document, observe, typed.

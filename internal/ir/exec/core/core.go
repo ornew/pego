@@ -124,7 +124,7 @@ otherwise through the memo, growing the seed of a left-recursion leader.`
 			store(b, Int(0))
 			finish(b)
 		})
-	callMemo.Doc = `callMemo is the memoized part of call, for the rule r at binding level 0 invoked by inv:
+	callMemo.Doc = `callMemo is the memoized part of a rule call, for the rule r at binding level 0 invoked by inv:
 the rule is called at the position again, or its memoization is no longer deferred.`
 
 	grow := m.AddFunc("grow", []Param{P("r", rule), P("min", TInt), P("env", THandle(ops.Values))}, result,
