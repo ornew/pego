@@ -139,3 +139,17 @@ func TestStepsCapAndErrors(t *testing.T) {
 		}
 	}
 }
+
+func TestStepsLenient(t *testing.T) {
+	t.Parallel()
+	p := mustCompile(t, "rule main = \"a\"* $$\n")
+	for _, b := range Backends {
+		c, err := StepsLenient(p, "aaab", b, 100_000)
+		if err != nil || c.ParseErr == nil || c.Capped || c.Steps == 0 {
+			t.Errorf("%s: lenient cost %+v, %v", BackendName(b), c, err)
+		}
+		if _, err := Steps(p, "aaab", b, 100_000); err == nil {
+			t.Errorf("%s: strict Steps accepted a syntax error", BackendName(b))
+		}
+	}
+}

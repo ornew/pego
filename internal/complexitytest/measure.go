@@ -51,49 +51,59 @@ type Cost struct {
 	Steps uint64
 	// Capped reports that the parse exhausted the cap.
 	Capped bool
+	// ParseErr is the error of a parse that finished within the budget but reported a syntax
+	// error. Only StepsLenient returns a Cost with it; Steps returns the error instead.
+	ParseErr error
 }
 
-// Parses reports whether the parse of input succeeds within budget. A budget error is not a
-// failure; any other error is returned.
+// parses reports whether the parse of input finishes within budget, with or without a syntax
+// error. It returns the error of a parse that finished; an exhausted budget is not one.
 func parses(p *pego.Parser, input string, b pego.Backend, budget uint64) (bool, error) {
 	_, err := p.Parse(input, pego.WithBackend(b), pego.WithLimits(pego.Limits{Budget: budget}))
 	var le *pego.LimitError
 	if errors.As(err, &le) && le.Kind == pego.LimitBudget {
 		return false, nil
 	}
-	return err == nil, err
+	return true, err
 }
 
 // Steps returns the spend of the untraced parse of input: the smallest budget with which the
-// parse does not exhaust, to within the tolerance below. A parse that still exhausts cap returns Cost{cap, true}. Any other
-// parse error is returned.
+// parse finishes, to within the tolerance below. A parse that still exhausts cap returns
+// Cost{cap, true}. A parse that reports a syntax error is returned as an error.
 //
 // The search stops when the interval is within 0.4% of the result, which moves a slope by less
 // than 0.01. ExactSteps searches to the unit.
 func Steps(p *pego.Parser, input string, b pego.Backend, cap uint64) (Cost, error) {
-	return steps(p, input, b, cap, 256)
+	return strict(steps(p, input, b, cap, 256))
 }
 
 // ExactSteps is Steps with a search to the unit.
 func ExactSteps(p *pego.Parser, input string, b pego.Backend, cap uint64) (Cost, error) {
-	return steps(p, input, b, cap, 0)
+	return strict(steps(p, input, b, cap, 0))
+}
+
+// StepsLenient is Steps for an input that the grammar reports syntax errors for, such as one
+// that exercises error recovery: the cost of a parse that finishes with a syntax error carries
+// the error in Cost.ParseErr instead of failing.
+func StepsLenient(p *pego.Parser, input string, b pego.Backend, cap uint64) (Cost, error) {
+	return steps(p, input, b, cap, 256)
+}
+
+func strict(c Cost, err error) (Cost, error) {
+	if err == nil && c.ParseErr != nil {
+		return Cost{}, c.ParseErr
+	}
+	return c, err
 }
 
 func steps(p *pego.Parser, input string, b pego.Backend, cap, tolDiv uint64) (Cost, error) {
-	ok, err := parses(p, input, b, cap)
-	if err != nil {
-		return Cost{}, err
-	}
+	ok, parseErr := parses(p, input, b, cap)
 	if !ok {
 		return Cost{Steps: cap, Capped: true}, nil
 	}
-	lo, hi := uint64(0), cap // budget lo fails (or is zero), budget hi succeeds
+	lo, hi := uint64(0), cap // budget lo fails (or is zero), budget hi finishes
 	for step := uint64(1024); step < hi; step *= 4 {
-		ok, err := parses(p, input, b, step)
-		if err != nil {
-			return Cost{}, err
-		}
-		if ok {
+		if ok, _ := parses(p, input, b, step); ok {
 			hi = step
 			break
 		}
@@ -101,17 +111,13 @@ func steps(p *pego.Parser, input string, b pego.Backend, cap, tolDiv uint64) (Co
 	}
 	for hi-lo > 1 && (tolDiv == 0 || hi-lo > hi/tolDiv) {
 		mid := lo + (hi-lo)/2
-		ok, err := parses(p, input, b, mid)
-		if err != nil {
-			return Cost{}, err
-		}
-		if ok {
+		if ok, _ := parses(p, input, b, mid); ok {
 			hi = mid
 		} else {
 			lo = mid
 		}
 	}
-	return Cost{Steps: hi}, nil
+	return Cost{Steps: hi, ParseErr: parseErr}, nil
 }
 
 // StepsTraced returns the spend of a traced parse, read from the counter at the last event. It
