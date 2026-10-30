@@ -26,6 +26,11 @@ func (c *Compiler) CheckTerm(t grammar.Term, s *Scope, locals []string) {
 					return
 				}
 			}
+			if t.Name == OperatorsRuleValue {
+				// The name is a local only in the whole-rule action of an Operators Rule.
+				c.errorf(t.Diagnostic(), "$%s is only available in the whole-rule action of an Operators Rule", t.Name)
+				return
+			}
 			c.errorf(t.Diagnostic(), "undefined capture $%s", t.Name)
 		}
 	case *grammar.IndexRef:

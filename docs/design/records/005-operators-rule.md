@@ -304,6 +304,9 @@ An action after the closing `}` computes the value of the complete expression, a
   and `$value` have that type. A named node type converts the action's result, not the operators.
 - Rejected: requiring the fold to have the declared type. A rule that wraps its expression in a struct could not be
   written.
+- **Adopted**: a capture named `value` is reserved in operand and operator lines, and `$value` outside the whole-rule
+  action is a compile-time error. Captures are local to their line, so a `value:` capture there could not be read by the
+  action; allowing it would only let a name shadow the folded value without any way to read it.
 
 ## Open Questions
 

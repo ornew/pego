@@ -395,7 +395,9 @@ func (c *Walker[M]) compileOperatorsRule(r *Rule, e *grammar.OperatorsRule) {
 		if c.an != nil && contains(c.an.leftCalls(o.Expr, nil), r.Name) {
 			c.errorf(e.Diagnostic(), "operand of %s calls %s at its start (left recursion); use infix or postfix instead", r.Name, r.Name)
 		}
-		operands = append(operands, c.operatorsRuleLine(o.Expr, o.Action, nil, o))
+		line := c.operatorsRuleLine(o.Expr, o.Action, nil, o)
+		c.checkValueCaptures(o.Diagnostic(), line)
+		operands = append(operands, line)
 	}
 	id := 0
 	for i, l := range e.Levels {
@@ -421,6 +423,7 @@ func (c *Walker[M]) compileOperatorsRule(r *Rule, e *grammar.OperatorsRule) {
 					c.errorf(op.Diagnostic(), "capture name %s is reserved in operatorsRule operators", name)
 				}
 			}
+			c.checkValueCaptures(op.Diagnostic(), line)
 			line.ID, line.Kind, line.Assoc, line.Level = id, op.Kind, op.Assoc, i+1
 			id++
 			operators = append(operators, line)
@@ -440,6 +443,16 @@ func (c *Walker[M]) compileOperatorsRule(r *Rule, e *grammar.OperatorsRule) {
 		c.CheckTerm(r.Action, r.Scope, OperatorsRuleActionLocals)
 	}
 	c.Builder.OperatorsRule(r, skip, e.Skip != nil, operands, operators)
+}
+
+// checkValueCaptures reports a capture named value in the operand or operator line at d: the name
+// is reserved for the folded value, which the whole-rule action reads as $value.
+func (c *Walker[M]) checkValueCaptures(d grammar.Pos, line OpLine[M]) {
+	for _, name := range line.Scope.Names {
+		if name == OperatorsRuleValue {
+			c.errorf(d, "capture name %s is reserved for the whole-rule action of an Operators Rule, which reads the folded value as $%s", name, name)
+		}
+	}
 }
 
 // OperatorsRuleValue is the local name of the final folded value of an Operators Rule in its

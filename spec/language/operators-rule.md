@@ -225,7 +225,15 @@ An operator Value Action can refer to the following names.
 
 Captures inside the operator part (such as `then:expr`) can be referred to as
 well. `lhs`, `rhs` and `op` MUST NOT be used as capture names in operator
-parts.
+parts. `value` MUST NOT be used as a capture name in an operand or operator
+part either: it names the folded value in the [whole-rule action](#whole-rule-action),
+and a capture of that name is a compile-time error, `capture name value is
+reserved for the whole-rule action of an Operators Rule`.
+
+A local reads a value that is not a node, such as the string that `text($n)`
+returns, as that value, as an ordinary capture does. It is not the node that
+carries the value: in `operand "(" n:[0-9] ")" => text($n)`, `$lhs` of `(1)+2`
+is `1`, not the text `(1)` of the node that carries it.
 
 The node created by an operator action covers the operator expression: from the
 start of the left operand (or of the prefix operator) to the end of the right
@@ -261,6 +269,11 @@ With this rule, `(1 + 2) + 3` produces
 - `$value` is in scope only in the whole-rule action of an Operators Rule.
   The captures of operand and operator lines are local to their lines and are
   not visible to it, and `$lhs`, `$rhs` and `$op` are not defined there.
+  Elsewhere `$value` is a compile-time error, `$value is only available in the
+  whole-rule action of an Operators Rule`, including in an operand or operator
+  action and in an ordinary rule. An ordinary rule may declare a capture named
+  `value`, which is an ordinary capture there; an operand or operator line may
+  not (see [Value Actions](#value-actions)).
 - A struct node created by the action and returned directly covers the
   complete match of the call, from its start position, including the text
   `skip` consumes before the first operand, to its end, as for the action of an

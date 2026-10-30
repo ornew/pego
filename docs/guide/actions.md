@@ -449,6 +449,8 @@ formatter, say), capture them instead of discarding them.
 | `cannot access .F of *T` | The value may be `nil` (for example `n:name?`). Read the field in a rule where the value is always present |
 | `an inline action is not allowed in a lookahead or a discard` | The value of the group is not used there; move the action to a rule or out of the `&`, `!` or `-` |
 | `undefined capture $z` | The capture is not made in this rule; captures are not visible across rules |
+| `$value is only available in the whole-rule action of an Operators Rule` | The folded value exists only in the action written after the rule's closing `}`; an operator action reads `$lhs` or `$rhs` |
+| `capture name value is reserved for the whole-rule action of an Operators Rule` | The name `value` is the folded value of an Operators Rule; rename the capture in the operand or operator line |
 
 ## Related Topics
 

@@ -203,10 +203,10 @@ rule main = #operators {
 	if err := compileError(t, `rule main = #operators {
     operand "a"
     level { infix left "+" => $value }
-}`); !strings.Contains(err, "undefined capture $value") {
+}`); !strings.Contains(err, "$value is only available in the whole-rule action of an Operators Rule") {
 		t.Errorf("$value in an operator action: %s", err)
 	}
-	if err := compileError(t, `rule main = "a" => $value`); !strings.Contains(err, "undefined capture $value") {
+	if err := compileError(t, `rule main = "a" => $value`); !strings.Contains(err, "$value is only available in the whole-rule action of an Operators Rule") {
 		t.Errorf("$value in an ordinary rule: %s", err)
 	}
 }
@@ -291,5 +291,35 @@ rule main Expr = #operators {
 } => Expr{$value}`,
 	} {
 		checkCompiledRoundTrip(t, mustCompile(t, src), []string{"a", "a+(b+c)", "1+2", "", "a+"})
+	}
+}
+
+// $value is the folded value only in the whole-rule action of an Operators Rule: a capture named
+// value is reserved there, and $value anywhere else is an error that says where it is available.
+// An ordinary rule's value capture is an ordinary capture.
+func TestOperatorsRuleValueNameReserved(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct{ name, src, want string }{
+		{"operand capture", "rule main = #operators {\n    operand value:\"a\"\n    level { infix left \"+\" }\n}", "capture name value is reserved for the whole-rule action of an Operators Rule"},
+		{"operator capture", "rule main = #operators {\n    operand \"a\"\n    level { infix left value:\"+\" }\n}", "capture name value is reserved for the whole-rule action of an Operators Rule"},
+		{"operand action", "rule main = #operators {\n    operand \"a\" => $value\n}", "$value is only available in the whole-rule action of an Operators Rule"},
+		{"operator action", "rule main = #operators {\n    operand \"a\"\n    level { infix left \"+\" => $value }\n}", "$value is only available in the whole-rule action of an Operators Rule"},
+		{"ordinary rule", "rule main = \"a\" => $value", "$value is only available in the whole-rule action of an Operators Rule"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := compileError(t, tc.src); !strings.Contains(err, tc.want) {
+				t.Errorf("error %q; want it to contain %q", err, tc.want)
+			}
+		})
+	}
+	// An ordinary rule's value capture stays an ordinary capture, and so does a value capture of a
+	// rule that calls an Operators Rule.
+	prog := mustCompile(t, `rule main = value:"a" => $value
+rule e = #operators {
+    operand "b"
+    level { infix left "+" }
+} => text($value)`)
+	if got := result(prog, "a"); got != `"a"` {
+		t.Errorf("ordinary value capture: %s", got)
 	}
 }

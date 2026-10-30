@@ -667,6 +667,10 @@ Every call of the rule runs the action, including a call inside an operand or an
 call. The parenthesized operand above calls `e`, so its value is wrapped too. To wrap an expression only once, put the
 action on a separate rule that calls the Operators Rule.
 
+`$value` exists only in the whole-rule action. An operand or operator action that uses it is a compile error, and so is
+a capture named `value` in an operand or operator line, because the name is reserved for the folded value. Name such a
+capture differently (`v:`, say).
+
 The declared type is the type of the action's result. `$lhs`, `$rhs` and `$value` have the type of the fold, which is
 inferred from the operand and operator lines. A struct made by the action covers the rule's whole match, including the
 text that `skip` consumed before the first operand. With a named node type `N`, the action's result is converted to `N`
