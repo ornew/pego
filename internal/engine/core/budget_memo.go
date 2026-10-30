@@ -24,55 +24,19 @@ func (p *Parser) memoKeyEqual(l, r []any) bool {
 	return true
 }
 
-func (p *Parser) bindControlled(name string, val any) {
+// bindControlled is Bind under budget controls. It charges one unit for the lookup of the old
+// value and one for each node that a rebind copies, which are the levels+1 nodes on the path to
+// the slot; comparing the values is charged by rawValueEqual.
+func (p *Parser) bindControlled(slot int, val any) {
 	p.Spend()
-	e := p.Env
-	if p.Bound == nil {
-		p.Bound = make(map[string]bool)
-	}
-	if e == nil {
-		p.Bound[name] = true
-		p.Env = &Env{Name: name, Val: val}
+	if p.rawValueEqual(p.Env.Get(slot, p.envLevels), val) {
 		return
 	}
-	if p.rawValueEqual(e.Name, name) {
-		if !p.rawValueEqual(e.Val, val) {
-			p.Env = &Env{Name: name, Val: val, Next: e.Next}
-		}
-		return
-	}
-	// Map hashing and allocation are runtime operations that cannot be split
-	// into engine checkpoints. Explicit name comparisons above/below can be.
-	if !p.Bound[name] {
-		p.Bound[name] = true
-		p.Env = &Env{Name: name, Val: val, Next: e}
-		return
-	}
-	old := e
-	for old != nil {
+	for l := 0; l <= p.envLevels; l++ {
 		p.Spend()
-		if p.rawValueEqual(old.Name, name) {
-			break
-		}
-		old = old.Next
 	}
-	if old == nil {
-		p.Env = &Env{Name: name, Val: val, Next: e}
-		return
-	}
-	if p.rawValueEqual(old.Val, val) {
-		return
-	}
-	head := &Env{Name: name, Val: val}
-	tail := head
-	for cur := e; cur != old; cur = cur.Next {
-		p.Spend()
-		tail.Next = &Env{Name: cur.Name, Val: cur.Val}
-		tail = tail.Next
-	}
-	tail.Next = old.Next
-	// Saved environments are immutable; only publish a completed prefix.
-	p.Env = head
+	// Saved environments are immutable; only publish a completed path.
+	p.Env = p.Env.Set(slot, p.envLevels, val)
 }
 
 func (p *Parser) MemoGet(k MemoKey) (*MemoEntry, bool) {

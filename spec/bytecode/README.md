@@ -111,7 +111,7 @@ Operator kinds are encoded as 0 = prefix, 1 = postfix, 2 = infix. Associativity 
 | Entry stack | Points to return to on failure (see [Failure](#failure)). Each rule body has its own base. |
 | Frame | The capture slots of the current scope |
 | Capture trail | Writes to captures (frame, slot, previous value) |
-| Environment | Variables, as a persistent list. A parse starts from the environment built from the variable table, so every declared variable is bound before the start rule runs. |
+| Environment | The values of the declared variables, as a persistent vector indexed by variable slot (the position in the variable table). Saved environments are never modified: rebinding a variable copies only the path to its slot. A parse starts from the environment built from the variable table, so every declared variable is bound before the start rule runs. |
 | Recovered errors | Syntax errors recovered by `#recover` |
 | `silent` | While positive, expectations are not recorded |
 | Farthest failure | A position and the set of expectations recorded there |
@@ -176,7 +176,7 @@ When an instruction fails, the VM pops entries from the entry stack of the curre
 | 22 | `CALL` | A rule, B level, C keep | Call rule A at level B ([Rule calls](#rule-calls)). On success, push the value if keep is 1. |
 | 23 | `OPERATORS_RULE` | A table | Parse Operators Rule table A at level `min` and push its value. `min` is the level of the `CALL` that invoked this body. |
 | 24 | `PRED` | A expression | Evaluate expression code A. Fail if evaluation produces an error or `false`. |
-| 25 | `BIND` | A name, B expression, C 0 | Evaluate expression code B. Fail on error; otherwise add variable A (a string index) to the environment. The value is not checked: the compiler has proved it assignable to the declared type of variable A, so a module is trusted to bind values of that type, and a variable holds any value, so a module that does not cannot break memory safety. C is 0. |
+| 25 | `BIND` | A variable, B expression, C 0 | Evaluate expression code B. Fail on error; otherwise bind variable A (an index into the variable table) in the environment. The value is not checked: the compiler has proved it assignable to the declared type of variable A, so a module is trusted to bind values of that type, and a variable holds any value, so a module that does not cannot break memory safety. C is 0. |
 | 26 | `LABEL` | A message, B mode | Save the farthest failure, reset it to (current position, empty), and push a label entry. B=0 applies `@error`; B=1 applies `@diagnostic` and renames ordinary expected items from the wrapped failure. |
 | 27 | `ENDLABEL` | | Remove the entry, add the expectations recorded inside to the saved farthest failure, and make that the farthest failure again. |
 | 28 | `RECOVER` | A target | Save the state, save the farthest failure and reset it to (current position, empty), and push a recovery entry with target A (the skip code). |
@@ -269,7 +269,7 @@ Actions and predicates are evaluated by stack-based expression code. An evaluati
 | 104 | `ECAP` | A slot | Push the value of a capture slot. |
 | 105 | `EITEM` | A n | Push `$n`. For n = 0, push a list value of all items. An out-of-range n is an error. |
 | 106 | `ELOCAL` | A index | Push a local (a lambda parameter, or `$lhs`, `$rhs`, `$op`). |
-| 107 | `EVAR` | A name | Push the value of a variable. An undefined variable is an error. |
+| 107 | `EVAR` | A variable | Push the value of variable A, an index into the variable table. |
 | 108 | `EMEMBER` | A name | Pop a value and push its field. `Start`, `End` and `Value` are built in for a node with a range: the range, and the text of a string node or the elements of a tuple or list node. A field not declared by the struct type is an error; a declared field that is absent yields nil. A name `$y` reads capture `y`: it is an error on a struct value, and an unmatched capture yields nil. |
 | 109 | `ENEW` | A type, B field list | Pop as many values as the field list has names, and push a struct node. |
 | 110 | `EBIN` | A operator | Pop two values and push the result of the operation. The operator `[]` indexes the list below with the `int` on top. |
@@ -291,7 +291,7 @@ Actions and predicates are evaluated by stack-based expression code. An evaluati
 | 127 | `ENODE` | A type, B 0 | Pop a node and push it converted to the named node type A, for a conversion `N{x}`: a copy of the node with the same range, value and captures, whose type is A and which has no rule name. A node that already has type A is pushed unchanged. A value that is not a string, tuple or list node raises the evaluation error `cannot convert <value type> to <A>`; whether the value fits the underlying type of A is decided when the grammar is compiled. |
 | 128 | `ETUPLE` | A n | Pop n values and push a tuple value of them, in order, for a tuple literal `(x, y)`. As in `list`, a value that is not a node, `nil`, an int, a string or a bool raises an evaluation error, and an int, string or bool becomes a box element. |
 
-Names (`EVAR`, `EMEMBER`), operators (`EBIN`, `EUNARY`, `EBOOLCHK`, written as their source symbol such as `+` or `&&`) and type names (`ENEW`) are string-table indices.
+Names (`EMEMBER`), operators (`EBIN`, `EUNARY`, `EBOOLCHK`, written as their source symbol such as `+` or `&&`) and type names (`ENEW`) are string-table indices.
 
 Typed list constructors use `ECALL` with the `list` built-in; their element
 types are checked at compilation and require no additional VM instruction or
@@ -317,7 +317,7 @@ A compiled grammar uses container version 7. It stores one execution-only compil
 | Magic | `PEGOC\x00` (6 bytes) |
 | Version | 1 byte: 6. A loader refuses any other value. |
 | Mode | 1 byte: 0 parse, 1 recognize, 2 document. The module serves the operations of this mode only. A parse-mode or document-mode module is the module of the grammar; a recognize-mode module is the module of its recognizer. A loader refuses any other value. |
-| Instruction-set version | Unsigned integer for this module: 26. Every module uses this version, whatever instructions it contains. Earlier versions built the syntax trees that preceded the value model, held terminal types, wrote field types with the earlier node type names, had no named node types, had no default-value flag, had no tuple values, carried text struct node types and the text flag of `EMEMBER` and `EBIN`, did not give the node type of an Operators Rule its meaning, had no variable table, had no start rules, or checked field values, rule results and bindings when they ran (the `ECHECK` instruction, the check operands of `BIND` and `ENODE`, and the checks of rules and lines); a runtime rejects them and asks for the grammar to be compiled again. |
+| Instruction-set version | Unsigned integer for this module: 27. Every module uses this version, whatever instructions it contains. Earlier versions built the syntax trees that preceded the value model, held terminal types, wrote field types with the earlier node type names, had no named node types, had no default-value flag, had no tuple values, carried text struct node types and the text flag of `EMEMBER` and `EBIN`, did not give the node type of an Operators Rule its meaning, had no variable table, had no start rules, or checked field values, rule results and bindings when they ran (the `ECHECK` instruction, the check operands of `BIND` and `ENODE`, and the checks of rules and lines); a runtime rejects them and asks for the grammar to be compiled again. |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned: the start rule the saved parser uses. It is a start rule of the module, or the empty string for the module's default start rule. |
 | Module | See below |

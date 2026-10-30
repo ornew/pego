@@ -21,9 +21,13 @@ type VarDecl struct {
 type VarTable struct {
 	List   []*VarDecl
 	byName map[string]*VarDecl
-	// Bound is the initial set of names that have been bound (parser.bound).
-	Bound map[string]bool
+	// slots maps a name to its position in List once the table is large enough that a scan of
+	// List is slower than a map lookup.
+	slots map[string]int
 }
+
+// slotMapMin is the number of variables from which Index uses a map.
+const slotMapMin = 8
 
 // All returns the variables in declaration order.
 func (t *VarTable) All() []*VarDecl {
@@ -45,7 +49,47 @@ func (t *VarTable) lookup(name string) *VarDecl {
 func (t *VarTable) Add(d *VarDecl) {
 	t.List = append(t.List, d)
 	t.byName[d.Name] = d
-	t.Bound[d.Name] = true
+	if len(t.List) >= slotMapMin {
+		if t.slots == nil {
+			t.slots = make(map[string]int, len(t.List))
+			for i, v := range t.List {
+				t.slots[v.Name] = i
+			}
+		} else {
+			t.slots[d.Name] = len(t.List) - 1
+		}
+	}
+}
+
+// Index returns the slot of the variable name, its position in declaration order, or -1.
+func (t *VarTable) Index(name string) int {
+	if t == nil {
+		return -1
+	}
+	if t.slots != nil {
+		if i, ok := t.slots[name]; ok {
+			return i
+		}
+		return -1
+	}
+	for i, d := range t.List {
+		if d.Name == name {
+			return i
+		}
+	}
+	return -1
+}
+
+// Slots returns the slots of the variables names, in the same order (-1 for an undeclared name).
+func (t *VarTable) Slots(names []string) []int {
+	if len(names) == 0 {
+		return nil
+	}
+	slots := make([]int, len(names))
+	for i, name := range names {
+		slots[i] = t.Index(name)
+	}
+	return slots
 }
 
 // ValuesOf returns the initial values of the variables names, or nil for no names.
@@ -64,7 +108,7 @@ func (t *VarTable) ValuesOf(names []string) []any {
 
 // newVarTable returns an empty variable table.
 func newVarTable() *VarTable {
-	return &VarTable{byName: map[string]*VarDecl{}, Bound: map[string]bool{}}
+	return &VarTable{byName: map[string]*VarDecl{}}
 }
 
 // zeroValue returns the initial value of a variable of type t that has no initializer.

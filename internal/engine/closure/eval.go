@@ -122,11 +122,11 @@ func (cm *Machine) Eval(c *core.EvalCtx, t grammar.Term) (any, error) {
 		return nil, c.P.ActionError("positional captures are removed")
 
 	case *grammar.VarRef:
-		v, ok := c.P.LookupValue(t.Name)
-		if !ok {
+		slot := c.P.Prog.Vars.Index(t.Name)
+		if slot < 0 {
 			return nil, c.P.ActionError("variable ", t.Name, " is not defined")
 		}
-		return v, nil
+		return c.P.VarValue(slot), nil
 
 	case *grammar.Member:
 		x, err := cm.Eval(c, t.X)

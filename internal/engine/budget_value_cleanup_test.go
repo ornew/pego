@@ -52,12 +52,12 @@ func TestBudgetValueFieldAndEnvironmentWalks(t *testing.T) {
 	t.Parallel()
 	fields := make(value.Fields, 300)
 	st := &grammar.TypeDef{Type: &grammar.StructType{}}
-	var bindings *core.Env
+	values := make([]any, len(fields))
 	for i := range fields {
 		name := fmt.Sprintf("v%d", i)
 		fields[i] = value.NodeField{Name: name, Value: i}
 		st.Struct().Fields = append(st.Struct().Fields, &grammar.Field{Name: name})
-		bindings = &core.Env{Name: name, Val: i, Next: bindings}
+		values[i] = i
 	}
 	for _, run := range []struct {
 		name string
@@ -66,10 +66,15 @@ func TestBudgetValueFieldAndEnvironmentWalks(t *testing.T) {
 		{"get", func(p *core.Parser) { p.ValueField(fields, "absent") }},
 		{"set", func(p *core.Parser) { p.SetValueField(&fields, "absent", 42) }},
 		{"type fields", func(p *core.Parser) { p.HasValueField(st, "absent") }},
-		{"environment", func(p *core.Parser) { p.LookupValue("absent") }},
+		{"environment", func(p *core.Parser) {
+			for range 300 {
+				p.VarValue(299)
+			}
+		}},
 	} {
 		t.Run(run.name, func(t *testing.T) {
-			p := &core.Parser{Env: bindings}
+			p := &core.Parser{}
+			p.SetVars(values)
 			p.Control = core.NewBudgetControl(nil, limits.Limits{Budget: 128})
 			if err := catchFatal(t, func() { run.fn(p) }); !errors.Is(err, limits.ErrLimit) {
 				t.Fatalf("walk interruption = %v", err)

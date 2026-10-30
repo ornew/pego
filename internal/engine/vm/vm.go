@@ -162,6 +162,7 @@ func buildVMProgram(m *bytecode.Module, bodies vmBodies) *Program {
 			r.Where = m.Strings[ri.Where]
 		}
 		r.InitVals = vtable.ValuesOf(r.Vars)
+		r.VarSlots = vtable.Slots(r.Vars)
 		if ri.NodeType >= 0 {
 			if ri.OperatorsRule >= 0 {
 				r.OpNodeType, r.OpKinds = m.Strings[ri.NodeType], vm.nodeKinds[ri.NodeType]
@@ -896,7 +897,7 @@ func (mc *Machine) step(vm *Program, b *vmBody, resume, rok bool, rv *value.Node
 				goto fail
 			}
 		case bytecode.OpBind:
-			if !vm.bind(p, m.Strings[in.A], int(in.B)) {
+			if !vm.bind(p, int(in.A), int(in.B)) {
 				goto fail
 			}
 		case bytecode.OpLabel:
@@ -1128,7 +1129,7 @@ func (vm *Program) predicate(p *core.Parser, entry int) bool {
 	return true
 }
 
-func (vm *Program) bind(p *core.Parser, name string, entry int) bool {
+func (vm *Program) bind(p *core.Parser, slot, entry int) bool {
 	ctx := p.UseCtx(core.EvalCtx{P: p, Frame: p.Frame, Start: p.Pos, End: p.Pos, Cbase: len(p.Created)})
 	v, err := vm.eval(ctx, entry, nil)
 	p.DropCreated(ctx.Cbase)
@@ -1138,7 +1139,7 @@ func (vm *Program) bind(p *core.Parser, name string, entry int) bool {
 	if _, isFn := v.(core.Function); isFn {
 		return false
 	}
-	p.Bind(name, v)
+	p.Bind(slot, v)
 	return true
 }
 
@@ -1189,11 +1190,7 @@ func (vm *Program) eval(ctx *core.EvalCtx, ip int, locals []any) (v any, err err
 		case bytecode.ELocal:
 			stack = append(stack, locals[in.A])
 		case bytecode.EVar:
-			v, ok := ctx.P.LookupValue(m.Strings[in.A])
-			if !ok {
-				return nil, p.ActionError("variable ", m.Strings[in.A], " is not defined")
-			}
-			stack = append(stack, v)
+			stack = append(stack, ctx.P.VarValue(int(in.A)))
 		case bytecode.EMember:
 			x := pop()
 			o, err := ctx.Member(x, m.Strings[in.A])

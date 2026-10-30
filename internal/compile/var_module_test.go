@@ -8,7 +8,8 @@ import (
 )
 
 // TestModuleVariableValidation checks that a module whose code names a variable that its table
-// does not declare is rejected, wherever the name appears.
+// does not declare is rejected, wherever the variable appears: an operand is a slot of the table,
+// and a rule lists names.
 func TestModuleVariableValidation(t *testing.T) {
 	t.Parallel()
 	fresh := func() *bytecode.Module {
@@ -28,27 +29,28 @@ func TestModuleVariableValidation(t *testing.T) {
 	}
 	for _, tc := range []struct {
 		name   string
+		want   string
 		mutate func(m *bytecode.Module) bool
 	}{
-		{"read", func(m *bytecode.Module) bool {
+		{"read", "variable 3 out of range", func(m *bytecode.Module) bool {
 			for i := range m.Exprs {
 				if m.Exprs[i].Op == bytecode.EVar {
-					m.Exprs[i].A = int32(undeclared(m))
+					m.Exprs[i].A = int32(len(m.Vars))
 					return true
 				}
 			}
 			return false
 		}},
-		{"binding", func(m *bytecode.Module) bool {
+		{"binding", "variable 3 out of range", func(m *bytecode.Module) bool {
 			for i := range m.Code {
 				if m.Code[i].Op == bytecode.OpBind {
-					m.Code[i].A = int32(undeclared(m))
+					m.Code[i].A = int32(len(m.Vars))
 					return true
 				}
 			}
 			return false
 		}},
-		{"rule variables", func(m *bytecode.Module) bool {
+		{"rule variables", `variable "ghost" is not declared`, func(m *bytecode.Module) bool {
 			for i := range m.Rules {
 				if len(m.Rules[i].Vars) != 0 {
 					m.Rules[i].Vars = []int{undeclared(m)}
@@ -63,7 +65,7 @@ func TestModuleVariableValidation(t *testing.T) {
 			if !tc.mutate(m) {
 				t.Fatal("nothing to mutate")
 			}
-			if err := ValidateModule(m); err == nil || !strings.Contains(err.Error(), `variable "ghost" is not declared`) {
+			if err := ValidateModule(m); err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("got %v", err)
 			}
 		})

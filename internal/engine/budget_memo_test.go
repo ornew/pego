@@ -16,40 +16,45 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-func memoTestEnv(n int, prefix string) (*core.Env, map[string]bool) {
-	var head *core.Env
-	bound := make(map[string]bool, n)
-	for i := 0; i < n; i++ {
-		name := fmt.Sprintf("%s%d", prefix, i)
-		head = &core.Env{Name: name, Val: i, Next: head}
-		bound[name] = true
+// memoTestVars returns n variable values: slot i holds i.
+func memoTestVars(n int) []any {
+	vals := make([]any, n)
+	for i := range vals {
+		vals[i] = i
 	}
-	return head, bound
+	return vals
+}
+
+// memoTestParser returns a parser whose variables are memoTestVars(n).
+func memoTestParser(n int) *core.Parser {
+	p := &core.Parser{}
+	p.SetVars(memoTestVars(n))
+	return p
 }
 
 func TestBudgetMemoEnvValuesDeepLookup(t *testing.T) {
 	t.Parallel()
-	const count = 320
-	const prefix = "shared_environment_name_with_long_prefix_"
-	root, _ := memoTestEnv(count, prefix)
-	p := &core.Parser{Env: root, Input: core.Input{Control: core.NewBudgetControl(nil, limits.Limits{Budget: 1_000_000})}}
-	last := fmt.Sprintf("%s%d", prefix, 0) // The first inserted binding is deepest.
-	vals := p.EnvValues([]string{last, "missing"})
-	if len(vals) != 2 || vals[0] != 0 || vals[1] != nil {
-		t.Fatalf("envValues = %#v, want [0 nil]", vals)
+	const count = 320 // three levels: two inner nodes and a leaf on every path
+	p := memoTestParser(count)
+	p.Control = core.NewBudgetControl(nil, limits.Limits{Budget: 1_000_000})
+	vals := p.EnvValues([]int{count - 1, -1})
+	if len(vals) != 2 || vals[0] != count-1 || vals[1] != nil {
+		t.Fatalf("envValues = %#v, want [%d nil]", vals, count-1)
 	}
-	if p.Control.Used <= count {
-		t.Fatalf("deep lookup used %d steps, want key and lookup spend beyond %d", p.Control.Used, count)
+	// Each variable costs a key unit; a declared one also costs a unit for every node on its path.
+	if want := uint64(1 + 3 + 1); p.Control.Used != want {
+		t.Fatalf("lookups used %d steps, want %d", p.Control.Used, want)
 	}
 
-	limited := &core.Parser{Env: root, Input: core.Input{Control: core.NewBudgetControl(nil, limits.Limits{Budget: 80})}}
-	if err := catchFatal(t, func() { limited.EnvValues([]string{last}) }); !errors.Is(err, limits.ErrLimit) {
+	limited := memoTestParser(count)
+	limited.Control = core.NewBudgetControl(nil, limits.Limits{Budget: 3})
+	if err := catchFatal(t, func() { limited.EnvValues([]int{0}) }); !errors.Is(err, limits.ErrLimit) {
 		t.Fatalf("deep envValues error = %v, want ErrLimit", err)
 	}
 
 	// The nil-environment key remains a shared all-nil slice and resolves missing variables.
 	nilParser := &core.Parser{Input: core.Input{Control: core.NewBudgetControl(nil, limits.Limits{Budget: 8})}}
-	got := nilParser.EnvValues([]string{"undefined", "also_undefined"})
+	got := nilParser.EnvValues([]int{-1, -1})
 	if len(got) != 2 || got[0] != nil || got[1] != nil {
 		t.Fatalf("nil envValues = %#v, want two nil values", got)
 	}
@@ -57,49 +62,46 @@ func TestBudgetMemoEnvValuesDeepLookup(t *testing.T) {
 
 func TestBudgetMemoBindPreservesSnapshotsOnInterruption(t *testing.T) {
 	t.Parallel()
-	root, bound := memoTestEnv(48, "binding_")
-	// Build a saved snapshot with a target at the tail and force the replacement path.
-	p := &core.Parser{Env: root, Bound: bound, Input: core.Input{Control: core.NewBudgetControl(nil, limits.Limits{Budget: 56})}}
+	const count = 48 // two levels: an inner node and a leaf on every path
+	// A rebind costs a unit for the old value and one for each node it copies.
+	p := memoTestParser(count)
+	p.Control = core.NewBudgetControl(nil, limits.Limits{Budget: 2})
 	before := p.Env
-	oldValues := make([]any, 0, 48)
-	for e := before; e != nil; e = e.Next {
-		oldValues = append(oldValues, e.Val)
-	}
-	target := "binding_0"
-	if err := catchFatal(t, func() { p.Bind(target, "replacement") }); !errors.Is(err, limits.ErrLimit) {
-		t.Fatalf("tail replacement error = %v, want ErrLimit", err)
+	if err := catchFatal(t, func() { p.Bind(0, "replacement") }); !errors.Is(err, limits.ErrLimit) {
+		t.Fatalf("replacement error = %v, want ErrLimit", err)
 	}
 	if p.Env != before {
 		t.Fatal("interrupted bind published a partial environment")
 	}
-	for i, e := 0, before; e != nil; i, e = i+1, e.Next {
-		if i >= len(oldValues) || e.Val != oldValues[i] {
-			t.Fatalf("saved environment changed at index %d", i)
+	for i := 0; i < count; i++ {
+		if got := before.Get(i, p.EnvDepth()); got != i {
+			t.Fatalf("saved environment changed at slot %d: %v", i, got)
 		}
 	}
 
-	// Equal head and non-head bindings keep the persistent snapshot identity.
-	stable := &core.Parser{Env: before, Bound: bound, Input: core.Input{Control: core.NewBudgetControl(nil, limits.Limits{Budget: 1_000_000})}}
-	head := before
-	stable.Bind(head.Name, head.Val)
+	// Equal bindings keep the persistent snapshot identity.
+	stable := memoTestParser(count)
+	stable.Control = core.NewBudgetControl(nil, limits.Limits{Budget: 1_000_000})
+	head := stable.Env
+	stable.Bind(count-1, count-1)
+	stable.Bind(0, 0)
 	if stable.Env != head {
-		t.Fatal("equal head bind changed environment identity")
-	}
-	stable.Bind(target, 0) // binding_0 is the tail and has value zero.
-	if stable.Env != head {
-		t.Fatal("equal non-head bind changed environment identity")
+		t.Fatal("equal bind changed environment identity")
 	}
 
-	// A completed tail update copies only the prefix and leaves the old snapshot intact.
-	stable.Bind(target, "replacement")
-	if stable.Env == before {
-		t.Fatal("changed tail bind reused the old environment")
+	// A completed update copies only the path and leaves the old snapshot intact.
+	stable.Bind(0, "replacement")
+	if stable.Env == head {
+		t.Fatal("changed bind reused the old environment")
 	}
-	if got, ok := stable.Env.Lookup(target); !ok || got != "replacement" {
-		t.Fatalf("replacement lookup = %v, %t", got, ok)
+	if got := stable.Env.Get(0, stable.EnvDepth()); got != "replacement" {
+		t.Fatalf("replacement lookup = %v", got)
 	}
-	if got, ok := before.Lookup(target); !ok || got != 0 {
-		t.Fatalf("saved tail lookup = %v, %t; want 0", got, ok)
+	if got := head.Get(0, stable.EnvDepth()); got != 0 {
+		t.Fatalf("saved lookup = %v; want 0", got)
+	}
+	if got := stable.Env.Get(count-1, stable.EnvDepth()); got != count-1 {
+		t.Fatalf("replacement lost slot %d: %v", count-1, got)
 	}
 }
 
@@ -164,7 +166,8 @@ func TestBudgetMemoParseBudgetPoolRetryAndRetainedResult(t *testing.T) {
 		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			// The memo keys of 280 variables cost more than the default budget of a one-character
 			// input: the fixture's cost comes from the grammar, so the setup parse disables the
-			// budget.
+			// budget. The limit below falls inside the key of the first call of r, which reads
+			// every variable (four units each).
 			opts := ParseOptions{Backend: backend, Unit: unit, Limits: limits.Limits{Budget: limits.Unlimited}}
 			retained, err := prog.ParseWith("main", input, opts)
 			if err != nil || retained == nil {
@@ -186,7 +189,7 @@ func TestBudgetMemoParseBudgetPoolRetryAndRetainedResult(t *testing.T) {
 				if !armed && e.Kind == TraceEnter && e.Rule == "r" {
 					armed = true
 					core.TraceParser(e).DeferMemo = false
-					core.TraceParser(e).Control.Limits.Budget = core.TraceParser(e).Control.Used + 10_000
+					core.TraceParser(e).Control.Limits.Budget = core.TraceParser(e).Control.Used + 500
 				}
 			}
 			if node, parseErr := prog.ParseWith("main", input, limited); node != nil || !errors.Is(parseErr, limits.ErrLimit) {
@@ -211,33 +214,36 @@ func TestBudgetMemoParseBudgetPoolRetryAndRetainedResult(t *testing.T) {
 
 func TestBudgetMemoBindCopyAndCancellation(t *testing.T) {
 	t.Parallel()
-	root, bound := memoTestEnv(320, "v")
-	// An equal tail binding performs the same search but does not copy a prefix.
-	probe := &core.Parser{Env: root, Bound: bound}
+	// An equal binding performs the lookup but does not copy a path.
+	probe := memoTestParser(320)
+	root := probe.Env
 	probe.Control = core.NewBudgetControl(nil, limits.Limits{Budget: 1 << 30})
-	probe.Bind("v0", 0)
+	probe.Bind(0, 0)
 	searchSteps := probe.Control.Used
-	p := &core.Parser{Env: root, Bound: bound}
-	p.Control = core.NewBudgetControl(nil, limits.Limits{Budget: searchSteps + 5})
-	if err := catchFatal(t, func() { p.Bind("v0", 999) }); !errors.Is(err, limits.ErrLimit) {
-		t.Fatalf("prefix-copy error=%v", err)
+	p := memoTestParser(320)
+	root = p.Env
+	p.Control = core.NewBudgetControl(nil, limits.Limits{Budget: searchSteps + 2})
+	if err := catchFatal(t, func() { p.Bind(0, 999) }); !errors.Is(err, limits.ErrLimit) {
+		t.Fatalf("path-copy error=%v", err)
 	}
-	if p.Env != root || p.Control.Used != searchSteps+5 {
-		t.Fatal("interrupted prefix was published or search did not complete")
+	if p.Env != root || p.Control.Used != searchSteps+2 {
+		t.Fatal("interrupted path was published or the lookup did not complete")
 	}
 	p.Control = nil
-	p.Bind("v0", 999)
-	if got, _ := p.Env.Lookup("v0"); got != 999 {
+	p.Bind(0, 999)
+	if got := p.Env.Get(0, p.EnvDepth()); got != 999 {
 		t.Fatal("retry lost changed binding")
 	}
-	if got, _ := root.Lookup("v0"); got != 0 {
-		t.Fatal("prefix copy changed saved snapshot")
+	if got := root.Get(0, p.EnvDepth()); got != 0 {
+		t.Fatal("path copy changed saved snapshot")
 	}
-	for _, run := range []func(*core.Parser){func(p *core.Parser) { p.EnvValues([]string{"absent"}) }, func(p *core.Parser) { p.Bind("v0", 999) }} {
-		p := &core.Parser{Env: root, Bound: bound}
+	for _, run := range []func(*core.Parser){func(p *core.Parser) { p.EnvValues([]int{0}) }, func(p *core.Parser) { p.Bind(0, 999) }} {
+		p := memoTestParser(320)
+		root := p.Env
 		p.Control = core.NewBudgetControl(newPollingContext(1), limits.Limits{})
+		p.Control.Charge(core.BudgetCheckInterval - 2) // the next units reach the poll
 		if err := catchFatal(t, func() { run(p) }); !errors.Is(err, context.Canceled) {
-			t.Fatalf("environment walk cancellation=%v", err)
+			t.Fatalf("environment cancellation=%v", err)
 		}
 		if p.Env != root {
 			t.Fatal("cancellation changed current environment")

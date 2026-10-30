@@ -464,7 +464,7 @@ func (c *bcompiler) void(e grammar.Expr, s *Scope) {
 		c.emit(bytecode.OpAssert, 3, 0, 0)
 	case *grammar.Predicate:
 		if a, ok := e.Term.(*grammar.Bind); ok {
-			c.emit(bytecode.OpBind, c.str(a.Name), int32(c.expr(a.Value, s, nil, false)), 0)
+			c.emit(bytecode.OpBind, int32(c.prog.Vars.Index(a.Name)), int32(c.expr(a.Value, s, nil, false)), 0)
 		} else {
 			c.emit(bytecode.OpPred, int32(c.expr(e.Term, s, nil, false)), 0, 0)
 		}
@@ -785,7 +785,7 @@ func (c *bcompiler) term(t grammar.Term, s *Scope, locals []string) {
 	case *grammar.IndexRef:
 		c.eemit(bytecode.EItem, int32(t.Index), 0)
 	case *grammar.VarRef:
-		c.eemit(bytecode.EVar, c.str(t.Name), 0)
+		c.eemit(bytecode.EVar, int32(c.prog.Vars.Index(t.Name)), 0)
 	case *grammar.Member:
 		c.term(t.X, s, locals)
 		c.eemit(bytecode.EMember, c.str(t.Name), 0)

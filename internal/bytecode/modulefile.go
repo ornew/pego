@@ -462,7 +462,7 @@ func ValidateModule(m *Module, fieldType func(text string) error) error {
 		case OpPred:
 			in("expression", int(x.A), len(m.Exprs))
 		case OpBind:
-			declared(int(x.A))
+			in("variable", int(x.A), len(m.Vars))
 			in("expression", int(x.B), len(m.Exprs))
 			flag(x.C, 0)
 		case OpLabel:
@@ -495,7 +495,7 @@ func ValidateModule(m *Module, fieldType func(text string) error) error {
 		case EBool:
 			flag(x.A, 1)
 		case EVar:
-			declared(int(x.A))
+			in("variable", int(x.A), len(m.Vars))
 		case EStr, EUnary, EBoolChk, EMember, EBin:
 			str(int(x.A))
 		case ECap, EItem, ELocal:

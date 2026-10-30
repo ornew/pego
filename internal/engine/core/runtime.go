@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"maps"
 	"strings"
 	"sync"
 
@@ -20,15 +19,21 @@ type SharedProgram struct {
 	// initEnv is the environment of the declared variables that every parse starts from
 	// (Parser.SeedVars). Environments are persistent, so every parse shares it.
 	initEnv *Env
+	// envLevels is the depth of the environment trie (EnvLevels of the variable count).
+	envLevels int
 }
 
 // InitSharedProgram makes s the shared part of a program that runs the static program sp, with
 // the declared variables of sp at their initial values.
 func InitSharedProgram(s *SharedProgram, sp *staticProgram) {
 	s.staticProgram = sp
-	for _, d := range sp.Vars.All() {
-		s.initEnv = &Env{Name: d.Name, Val: d.Init, Next: s.initEnv}
+	vars := sp.Vars.All()
+	vals := make([]any, len(vars))
+	for i, d := range vars {
+		vals[i] = d.Init
 	}
+	s.envLevels = EnvLevels(len(vals))
+	s.initEnv = NewEnv(vals, s.envLevels)
 }
 
 // StaticProgramOf returns the static program that s runs.
@@ -53,7 +58,7 @@ type Parser struct {
 	DiagnosticTail StreamDiagnosticTail
 
 	Env     *Env            // predicate variables
-	Bound   map[string]bool // names bound anywhere in this parse (a lookup hint)
+	envLevels int          // the depth of Env (Prog.envLevels)
 	initEnv *Env            // the initial environment of the variables (Parser.SeedVars), or nil
 	Frame   *Frame          // current capture frame
 	Trail   []Undo          // capture writes to undo on backtracking
@@ -266,73 +271,18 @@ type Undo struct {
 	Old  *value.Node
 }
 
-// Env is a persistent list with one current binding per predicate variable.
-// Older environments saved for rollback are never modified.
-type Env struct {
-	Name string
-	Val  any
-	Next *Env
-}
-
-func (e *Env) Lookup(name string) (any, bool) {
-	for ; e != nil; e = e.Next {
-		if e.Name == name {
-			return e.Val, true
-		}
-	}
-	return nil, false
-}
-
-// Bind keeps one current binding per name. Replacing a non-head binding copies
-// only the prefix before it, so environments saved for rollback stay immutable.
-// bound is monotonic: a name never bound before cannot occur in the current
-// environment. A name bound only on an abandoned branch may be absent now;
-// that false positive only causes a search, not a different binding.
-func (p *Parser) Bind(name string, val any) {
+// Bind rebinds the variable in slot i. Binding the value it has already is a no-op. Saved
+// environments are persistent, so a rebind copies the path to the slot (see Env).
+func (p *Parser) Bind(slot int, val any) {
 	if BudgetControlsEnabled && p.Control != nil {
-		p.bindControlled(name, val)
-		return
-	}
-	e := p.Env
-	if p.Bound == nil {
-		p.Bound = make(map[string]bool)
-	}
-	if e == nil {
-		p.Bound[name] = true
-		p.Env = &Env{Name: name, Val: val}
-		return
-	}
-	if e.Name == name {
-		if e.Val != val {
-			p.Env = &Env{Name: name, Val: val, Next: e.Next}
-		}
-		return
-	}
-	if !p.Bound[name] {
-		p.Bound[name] = true
-		p.Env = &Env{Name: name, Val: val, Next: e}
-		return
-	}
-	old := e
-	for old != nil && old.Name != name {
-		old = old.Next
-	}
-	if old == nil {
-		p.Env = &Env{Name: name, Val: val, Next: e}
+		p.bindControlled(slot, val)
 		return
 	}
 	// Variables are checked scalar values; an equal binding has no effect.
-	if old.Val == val {
+	if p.Env.Get(slot, p.envLevels) == val {
 		return
 	}
-	head := &Env{Name: name, Val: val}
-	tail := head
-	for cur := e; cur != old; cur = cur.Next {
-		tail.Next = &Env{Name: cur.Name, Val: cur.Val}
-		tail = tail.Next
-	}
-	tail.Next = old.Next
-	p.Env = head
+	p.Env = p.Env.Set(slot, p.envLevels, val)
 }
 
 // Mark is the state restored on backtracking.
@@ -464,6 +414,8 @@ type Rule struct {
 	Entry int
 	// InitVals are the initial values of vars, in the same order (nil when vars is empty).
 	InitVals []any
+	// VarSlots are the slots of vars, in the same order (-1 for a name that no variable declares).
+	VarSlots []int
 }
 
 // StaticRuleOf returns the compiled rule that r runs.
@@ -522,21 +474,21 @@ func (p *Parser) Call(r *Rule, min int) (*value.Node, bool) {
 // entries only compare their keys, so nothing writes to it.
 var noVals [16]any
 
-// EnvValues returns the current values of the variables names (nil for an undefined variable).
-func (p *Parser) EnvValues(names []string) []any {
-	if p.Env == nil && len(names) <= len(noVals) {
-		return noVals[:len(names):len(names)]
+// EnvValues returns the current values of the variables in slots (nil for a slot below zero, an
+// undeclared variable).
+func (p *Parser) EnvValues(slots []int) []any {
+	if p.Env == nil && len(slots) <= len(noVals) {
+		return noVals[:len(slots):len(slots)]
 	}
-	vals := make([]any, len(names))
-	if !BudgetControlsEnabled || p.Control == nil {
-		for i, name := range names {
-			vals[i], _ = p.Env.Lookup(name)
+	vals := make([]any, len(slots))
+	controlled := BudgetControlsEnabled && p.Control != nil
+	for i, slot := range slots {
+		if controlled {
+			p.Spend()
 		}
-		return vals
-	}
-	for i, name := range names {
-		p.Spend()
-		vals[i], _ = p.LookupValue(name)
+		if slot >= 0 {
+			vals[i] = p.VarValue(slot)
+		}
 	}
 	return vals
 }
@@ -548,7 +500,7 @@ func (p *Parser) memoEnv(r *Rule) []any {
 	if p.Env == p.initEnv && r.InitVals != nil && (!BudgetControlsEnabled || p.Control == nil) {
 		return r.InitVals
 	}
-	return p.EnvValues(r.Vars)
+	return p.EnvValues(r.VarSlots)
 }
 
 // Memoizes reports whether the results of rule r are memoized.
@@ -1165,7 +1117,6 @@ func (p *Parser) nodeValue(n *value.Node) any {
 // calls it once, before it enters the start rule.
 func (p *Parser) SeedVars() {
 	if t := p.Prog.Vars; t != nil {
-		p.Env, p.initEnv = p.Prog.initEnv, p.Prog.initEnv
-		p.Bound = maps.Clone(t.Bound)
+		p.Env, p.initEnv, p.envLevels = p.Prog.initEnv, p.Prog.initEnv, p.Prog.envLevels
 	}
 }

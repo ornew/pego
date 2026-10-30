@@ -221,17 +221,15 @@ func (p *Parser) HasValueField(st *grammar.TypeDef, name string) bool {
 	return false
 }
 
-func (p *Parser) LookupValue(name string) (any, bool) {
-	if !BudgetControlsEnabled || p.Control == nil {
-		return p.Env.Lookup(name)
-	}
-	for e := p.Env; e != nil; e = e.Next {
-		p.Spend()
-		if p.ValueEqual(e.Name, name) {
-			return e.Val, true
+// VarValue returns the value of the variable in slot i. Under budget controls it charges one
+// unit for each node on the path to the slot (the levels of the environment, and the leaf).
+func (p *Parser) VarValue(slot int) any {
+	if BudgetControlsEnabled && p.Control != nil {
+		for l := 0; l <= p.envLevels; l++ {
+			p.Spend()
 		}
 	}
-	return nil, false
+	return p.Env.Get(slot, p.envLevels)
 }
 
 // Fusable is also called at runtime by closure actions, unlike the bytecode

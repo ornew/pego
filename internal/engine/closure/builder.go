@@ -49,6 +49,7 @@ func (b *Builder) Finish() []*core.Rule {
 			r := b.rule(sr)
 			*core.StaticRuleOf(r) = *sr
 			r.InitVals = b.prog.Vars.ValuesOf(sr.Vars)
+			r.VarSlots = b.prog.Vars.Slots(sr.Vars)
 			if sr.NodeType != "" {
 				r.NodeKinds = value.NewNodeTypeKinds(sr.NodeType)
 			}
@@ -418,6 +419,7 @@ func single(build bool, desc core.ExpID, accept func(*core.Parser, rune) bool) c
 
 func (b *Builder) Predicate(e *grammar.Predicate, s *compile.Scope) core.Matcher {
 	if a, ok := e.Term.(*grammar.Bind); ok {
+		slot := b.prog.Vars.Index(a.Name)
 		return func(p *core.Parser) (*value.Node, bool) {
 			ctx := p.UseCtx(core.EvalCtx{P: p, Scope: s, Frame: p.Frame, Start: p.Pos, End: p.Pos, Cbase: len(p.Created)})
 			v, err := evalTerm(ctx, a.Value)
@@ -428,7 +430,7 @@ func (b *Builder) Predicate(e *grammar.Predicate, s *compile.Scope) core.Matcher
 			if _, isFn := v.(*closure); isFn {
 				return nil, false
 			}
-			p.Bind(a.Name, v)
+			p.Bind(slot, v)
 			return nil, true
 		}
 	}

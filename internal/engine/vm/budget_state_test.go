@@ -150,7 +150,7 @@ func TestBudgetResetAndVMRestoreInterruptionIsFatal(t *testing.T) {
 			f, nodes := undoFixture(p)
 			p.Frame = f
 			p.Pos = 99
-			p.Env = &core.Env{Name: "temporary", Val: 1}
+			p.SetVars([]any{1})
 			p.Recovered = []*core.SyntaxError{{Messages: []string{"temporary"}}}
 			if name == "reset" {
 				m := core.Mark{Pos: 4, Trail: 0}

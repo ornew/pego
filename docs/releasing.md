@@ -16,7 +16,7 @@ Go modules give a v0 version no compatibility guarantee. PEGO states its intent 
 | The API of generated Go parsers (`Parse`, `ParseAST`, the options and the error types) | Stable in intent. A generated parser carries the runtime of the generator that produced it, so regenerate it after upgrading PEGO |
 | The module API, including the `pego` and `grammar` packages | May change in any release; changes are announced |
 | The `runtime` package, as generated code uses it with `pego gen -runtime import` | Unstable: matches only a generator of the same PEGO version, so regenerate the parsers on every upgrade |
-| Compiled grammars (`.pegoc`) and the bytecode: container version 7, instruction-set version 26 ([bytecode specification](../spec/bytecode/README.md)) | Unstable: may change in any release. A loader accepts only its own versions and asks for the grammar to be compiled again |
+| Compiled grammars (`.pegoc`) and the bytecode: container version 7, instruction-set version 27 ([bytecode specification](../spec/bytecode/README.md)) | Unstable: may change in any release. A loader accepts only its own versions and asks for the grammar to be compiled again |
 | The JSON forms of grammars and nodes | Unstable: may change in any release |
 | Ready-made parsers under `parsers/` | Not part of a release: they are used from a checkout of the repository, and `go get` does not fetch them from another module |
 

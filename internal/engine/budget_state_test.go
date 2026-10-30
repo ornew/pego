@@ -50,7 +50,7 @@ func TestBudgetResetRestoresRepeatedCaptureWritesInReverse(t *testing.T) {
 	f, nodes := undoFixture(p)
 	p.Pos = 71
 	p.Frame = f
-	p.Env = &core.Env{Name: "temporary", Val: 1}
+	p.SetVars([]any{1})
 	p.Recovered = []*SyntaxError{{Messages: []string{"temporary"}}}
 	m := core.Mark{Pos: 4, Env: nil, Trail: 0, Recovered: 0}
 

@@ -33,7 +33,7 @@ start rules may have no such twin. Matching a full module with CALL.keep=0 or di
 executes actions and builds intermediate values. A recognizer must preserve predicate capture dependencies,
 variable reads and diagnostics, not simply jump to an arbitrary duplicate name in the rule table.
 
-A container stores the instruction-set version 26, the main module and optional AST, as
+A container stores the instruction-set version 27, the main module and optional AST, as
 [spec/bytecode/README.md](../../../spec/bytecode/README.md) defines. Loading validates
 checksum, tables, operands and recovery regions; it does not establish general termination or recheck all
 type/stack behavior. Recognition bundles keep the trusted-module restriction.
@@ -84,7 +84,7 @@ ordering and local string interning make repeated serialization and load/save by
 writer-emitted form. A file with the AST has no recognition bundle, and the loader rejects one that has both.
 
 Store the full semantic recognition program, including predicate-required expression code/type tables. There is
-no need for new match opcodes just to execute the second program. Every module declares instruction-set version 26;
+no need for new match opcodes just to execute the second program. Every module declares instruction-set version 27;
 validation and runtime ISA support apply independently to the main module and to the bundle. A NoValue flag
 in the recognizer denotes execution semantics, while the explicit entry map denotes public start eligibility.
 

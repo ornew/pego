@@ -169,13 +169,15 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 	case OpPred:
 		return fmt.Sprintf("expr=%d", a)
 	case OpBind:
-		return fmt.Sprintf("%s expr=%d", m.Strings[a], bb)
+		return fmt.Sprintf("%s expr=%d", varName(m, a), bb)
 	case OpLabel:
 		if bb == 1 {
 			return str(a) + " mode=diagnostic"
 		}
 		return str(a)
-	case EStr, EVar, EUnary, EBoolChk, EMember, EBin:
+	case EVar:
+		return varName(m, a)
+	case EStr, EUnary, EBoolChk, EMember, EBin:
 		return str(a)
 	case EInt:
 		return strconv.FormatInt(int64(a)+int64(bb)<<32, 10)
@@ -203,4 +205,12 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 		return fmt.Sprintf("%s argc=%d", BuiltinNames[a], bb)
 	}
 	return ""
+}
+
+// varName returns the name of the variable in slot i.
+func varName(m *Module, i int) string {
+	if i < 0 || i >= len(m.Vars) {
+		return fmt.Sprintf("var%d", i)
+	}
+	return m.Strings[m.Vars[i].Name]
 }
