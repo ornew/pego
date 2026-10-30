@@ -61,6 +61,9 @@ type Expr ~ W | B
 rule main Expr = l:level(expr, product) "+" r:expr => B{Left:$l,Right:$r}
 rule expr Expr = #operators {operand num;level sum {infix left "+" => B{Left:$lhs,Right:$rhs}};level product {infix left "*" => B{Left:$lhs,Right:$rhs}}}
 rule num W = t:([0-9]+) #atomic => W{Text: text($t)}`, "1+2*3", `check(events.some(e=>e.rule==="expr"&&e.kind==="enter"&&e.level>0),"named level");`},
+		{"nested", `type W = { Text string }
+rule main W = t:(expr) #atomic => W{Text: text($t)}
+rule expr = "(" expr ")" / "a"`, "((a))", `check(count("expr","enter")>=1,"nested calls");`},
 		{"unicode", `type W = { Text string }
 rule main W = t:(part part) #atomic => W{Text: text($t)}
 rule part W = t:("é") #atomic => W{Text: text($t)}`, "éé", `check(events[events.length-1]!.end===(unit===p.Bytes?4:2),"position units");`},
@@ -119,8 +122,8 @@ rule part W = t:("input, o.unit, o.maxDepth, control)") #atomic => W{Text: text(
 			}
 			// Only rules in a call cycle count toward the depth limit, so a limit of 1 raises no depth error here. The depth option tests check the limit on recursive grammars.
 			deepCheck := `tooDeep.error===null||!tooDeep.error.message.includes("nesting too deep")`
-			if fixture.name == "operators" {
-				// Every level of an operators rule counts, whether or not the rule recurses.
+			if fixture.name == "operators" || fixture.name == "nested" {
+				// Recursion deeper than the limit raises the depth error; every level of an operators rule counts, whether or not the rule recurses.
 				deepCheck = `tooDeep.error!==null&&tooDeep.error.message.includes("nesting too deep")`
 			}
 			consumer := strings.NewReplacer("DEEPCHECK", deepCheck, "PARSER", name, "INPUT", fmt.Sprintf("%q", fixture.input), "RULES", strings.Join(names, ","), "CHECKS", fixture.checks, "TYPEDCHECKS", typedConsumer, "TYPEDROUTE", typedRoute).Replace(tsTraceConsumer)
