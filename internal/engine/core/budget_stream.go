@@ -17,7 +17,6 @@ func (r *StreamReaderObserver) Read(dst []byte) (int, error) {
 	r.Control.Check()
 	r.Control.Charge(1) // one step per underlying reader attempt, including empty refills
 	n, err := r.Reader.Read(dst)
-	r.Control.GrowDefault(n)
 	*r.Result = err
 	r.Control.checkAfterReader(err)
 	return n, err

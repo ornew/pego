@@ -107,20 +107,20 @@ type BudgetControl struct {
 	sinceCheck  uint64
 	interrupted bool // distinguishes budget interruptions from ordinary parse errors
 
-	// adaptive is set for a stream whose budget is the default: the budget follows the bytes
-	// read (growDefault), which are read.
+	// adaptive is set for a stream whose budget is the default: the budget follows the furthest
+	// position the parser has demanded from the stream (demand).
 	adaptive bool
-	read     uint64
 }
 
-// growDefault raises the default budget of a stream for k more bytes read. It does nothing for
-// any other budget.
-func (c *BudgetControl) growDefault(k int) {
-	if c == nil || !c.adaptive || k <= 0 {
+// demand raises the default budget of a stream to that of n units, where n is the number of units up
+// to the furthest position the parser has asked the stream for. It depends on the input and the
+// grammar only, not on how the reader chunks the input. It does nothing for any other budget, and
+// the budget never shrinks.
+func (c *BudgetControl) demand(n int) {
+	if c == nil || !c.adaptive || n <= 0 {
 		return
 	}
-	c.read += uint64(k)
-	if b := defaultBudget(c.read); b > c.limits.Budget {
+	if b := defaultBudget(uint64(n)); b > c.limits.Budget {
 		c.settle()
 		c.limits.Budget = b
 		c.refill()

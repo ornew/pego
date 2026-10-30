@@ -26,7 +26,7 @@ func TestDefaultBudget(t *testing.T) {
 }
 
 // A zero budget resolves per unit of input when the parser has controls; Unlimited leaves no control, and
-// a stream starts at the floor and grows with what it reads.
+// a stream starts at the floor and follows what the parser demands.
 func TestPrepareOptionsDefault(t *testing.T) {
 	o := prepareOptions(parseOptions{controls: true}, 5000, false)
 	if o.control == nil || o.control.limits.Budget != 5000*1024 {
@@ -52,7 +52,7 @@ func TestPrepareOptionsDefault(t *testing.T) {
 	if o.control == nil || o.control.limits.Budget != 1<<20 || !o.control.adaptive {
 		t.Fatalf("stream: %+v", o.control)
 	}
-	o.control.growDefault(3 << 20)
+	o.control.demand(3 << 20)
 	if o.control.limits.Budget != 3<<30 {
 		t.Fatalf("grown: %d", o.control.limits.Budget)
 	}

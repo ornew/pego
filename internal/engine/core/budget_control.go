@@ -22,16 +22,15 @@ type BudgetControl struct {
 	Used       uint64
 	SinceCheck uint64
 
-	// Adaptive is set for a stream whose budget is the default: the budget follows the units read
-	// (GrowDefault), which are Read.
+	// Adaptive is set for a stream whose budget is the default: the budget follows the furthest
+	// position the parser has demanded from the stream (Demand).
 	Adaptive bool
-	Read     uint64
 }
 
 // ResolveLimits returns the limits a parse runs under for an input of n units of its position
 // unit: a zero Budget selects the default (limits.DefaultBudget), and Unlimited disables the
 // budget, which the result leaves zero. A stream does not know n: its default starts at the floor
-// and grows with the input (BudgetControl.GrowDefault), which adaptive reports. The reference
+// and grows with the furthest position the parser demands (BudgetControl.Demand), which adaptive reports. The reference
 // build has no controls to charge, so no default applies there.
 func ResolveLimits(l limits.Limits, n uint64, stream bool) (resolved limits.Limits, adaptive bool) {
 	switch l.Budget {
@@ -49,14 +48,15 @@ func ResolveLimits(l limits.Limits, n uint64, stream bool) (resolved limits.Limi
 	return l, adaptive
 }
 
-// GrowDefault raises the default budget of a stream for k more units read. It does nothing for
-// any other budget, and on a nil receiver.
-func (c *BudgetControl) GrowDefault(k int) {
-	if c == nil || !c.Adaptive || k <= 0 {
+// Demand raises the default budget of a stream to that of n units, where n is the number of
+// units up to the furthest position the parser has asked the stream for. The number depends on the
+// input and the grammar only, not on how the reader chunks the input. It does nothing for any
+// other budget, and on a nil receiver; the budget never shrinks.
+func (c *BudgetControl) Demand(n int) {
+	if c == nil || !c.Adaptive || n <= 0 {
 		return
 	}
-	c.Read += uint64(k)
-	if b := limits.DefaultBudget(c.Read); b > c.Limits.Budget {
+	if b := limits.DefaultBudget(uint64(n)); b > c.Limits.Budget {
 		c.Limits.Budget = b
 	}
 }

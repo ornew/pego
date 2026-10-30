@@ -350,6 +350,13 @@ func (in *Input) Loaded() int {
 // Once the required amount has been read, it reads only what is already buffered and does not
 // wait for more.
 func (in *Input) Fill(n int) bool {
+	if BudgetControlsEnabled && in.Control != nil {
+		in.Control.Demand(n)
+	}
+	return in.fill(n)
+}
+
+func (in *Input) fill(n int) bool {
 	for in.Loaded() < n && !in.Eof {
 		in.read()
 		for in.Reader.Buffered() > 0 {
@@ -422,7 +429,7 @@ func (in *Input) Decode(i int) (r rune, size, examined int, ok bool) {
 	// A complete rune (including an invalid prefix) needs no future bytes.
 	// Wait only while the available UTF-8 prefix is genuinely incomplete.
 	for !in.Eof && !utf8.FullRune(b) {
-		in.Fill(in.Loaded() + 1)
+		in.fill(in.Loaded() + 1)
 		b = in.Bs[i-in.Base:]
 	}
 	in.spendRead(uint64(min(utf8.UTFMax, len(b))))

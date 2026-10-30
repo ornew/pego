@@ -28,27 +28,31 @@ func TestResolveLimits(t *testing.T) {
 	}
 }
 
-// A stream's default budget grows by 1024 for every unit read, and never shrinks.
-func TestGrowDefault(t *testing.T) {
+// A stream's default budget follows the furthest position demanded, and never shrinks.
+func TestDemand(t *testing.T) {
 	l, adaptive := ResolveLimits(limits.Limits{}, 0, true)
 	c := NewBudgetControl(nil, l)
 	c.Adaptive = adaptive
-	c.GrowDefault(100)
+	c.Demand(100)
 	if c.Limits.Budget != limits.DefaultBudgetFloor {
 		t.Fatalf("below the floor: %d", c.Limits.Budget)
 	}
-	c.GrowDefault(3<<20 - 100)
+	c.Demand(3 << 20)
 	if c.Limits.Budget != 3<<30 {
 		t.Fatalf("grown: %d", c.Limits.Budget)
 	}
-	c.GrowDefault(1)
-	if c.Limits.Budget != 3<<30+1024 {
+	c.Demand(5)
+	if c.Limits.Budget != 3<<30 {
+		t.Fatalf("shrunk: %d", c.Limits.Budget)
+	}
+	c.Demand(3<<20 + 1)
+	if c.Limits.Budget != (3<<20+1)*1024 {
 		t.Fatalf("grown again: %d", c.Limits.Budget)
 	}
 	var none *BudgetControl
-	none.GrowDefault(5)
+	none.Demand(5)
 	fixed := NewBudgetControl(nil, limits.Limits{Budget: 9})
-	fixed.GrowDefault(1 << 30)
+	fixed.Demand(1 << 30)
 	if fixed.Limits.Budget != 9 {
 		t.Fatalf("explicit budget grew: %d", fixed.Limits.Budget)
 	}

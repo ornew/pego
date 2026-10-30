@@ -93,7 +93,6 @@ func (r *streamReader) Read(dst []byte) (int, error) {
 	r.control.Check()
 	r.control.Charge(1)
 	n, err := r.reader.Read(dst)
-	r.control.growDefault(n)
 	if r.control.ctx != nil {
 		if cerr := contextErr(r.control.ctx); cerr != nil {
 			if err != nil && err != io.EOF {
@@ -509,6 +508,11 @@ func (s *streamInput) loaded() int {
 // it is available. Once the required amount has been read, it reads only what
 // is already buffered and does not wait for more.
 func (p *Parser) streamFill(n int) bool {
+	p.Control.demand(n)
+	return p.streamFillTo(n)
+}
+
+func (p *Parser) streamFillTo(n int) bool {
 	s := p.Stream
 	for s.loaded() < n && !s.eof {
 		p.streamRead()
@@ -563,7 +567,7 @@ func (p *Parser) streamPeek() (rune, int, bool) {
 		return rune(b[0]), 1, true
 	}
 	for !s.eof && !utf8.FullRune(b) {
-		p.streamFill(s.loaded() + 1)
+		p.streamFillTo(s.loaded() + 1)
 		b = s.bs[p.Pos-s.base:]
 	}
 	p.SpendRead(uint64(min(utf8.UTFMax, len(b))))
