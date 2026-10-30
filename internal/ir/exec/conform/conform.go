@@ -127,69 +127,11 @@ func provides(s Suite, m *exec.Module, f *exec.Func, visited map[string]bool) bo
 }
 
 func walkCalls(b *exec.Block, visit func(*exec.Call)) {
-	var expr func(exec.Expr)
-	expr = func(x exec.Expr) {
-		switch x := x.(type) {
-		case *exec.Call:
-			visit(x)
-			for _, a := range x.Args {
-				expr(a)
-			}
-		case *exec.Unary:
-			expr(x.X)
-		case *exec.Binary:
-			expr(x.X)
-			expr(x.Y)
-		case *exec.Convert:
-			expr(x.X)
+	exec.Walk(b, nil, func(x exec.Expr) {
+		if c, ok := x.(*exec.Call); ok {
+			visit(c)
 		}
-	}
-	for _, st := range b.Stmts {
-		switch st := st.(type) {
-		case *exec.Block:
-			walkCalls(st, visit)
-		case *exec.Loop:
-			if st.Init != nil {
-				for _, x := range st.Init.Values {
-					expr(x)
-				}
-			}
-			if st.Cond != nil {
-				expr(st.Cond)
-			}
-			if st.Post != nil {
-				for _, x := range st.Post.Values {
-					expr(x)
-				}
-			}
-			walkCalls(st.Body, visit)
-		case *exec.If:
-			if st.Init != nil {
-				for _, x := range st.Init.Values {
-					expr(x)
-				}
-			}
-			expr(st.Cond)
-			walkCalls(st.Then, visit)
-			if st.Else != nil {
-				walkCalls(st.Else, visit)
-			}
-		case *exec.Let:
-			expr(st.Value)
-		case *exec.Set:
-			for _, x := range st.Values {
-				expr(x)
-			}
-		case *exec.Do:
-			expr(st.Call)
-		case *exec.Return:
-			for _, x := range st.Values {
-				expr(x)
-			}
-		case *exec.Assert:
-			expr(st.Cond)
-		}
-	}
+	})
 }
 
 // mismatch is the panic value of a difference found during a call.

@@ -274,6 +274,31 @@ func (r *runner) eval(fr *frame, x Expr) any {
 	panic(fmt.Sprintf("exec: cannot evaluate %T", x))
 }
 
+// Apply applies the binary operator op to the values a and b, which have one type and are not
+// short-circuited ("&&" and "||" are not applied by it), as Run does.
+func Apply(op string, a, b any) any {
+	switch op {
+	case "==":
+		return a == b
+	case "!=":
+		return a != b
+	}
+	switch a := a.(type) {
+	case int64:
+		return intOp(op, a, b.(int64))
+	case int32:
+		return intOp(op, a, b.(int32))
+	case uint32:
+		return intOp(op, a, b.(uint32))
+	case uint64:
+		return intOp(op, a, b.(uint64))
+	}
+	panic(fmt.Sprintf("exec: operator %s on %T", op, a))
+}
+
+// ConvertValue converts the integer value v to the representation of t, as Run does.
+func ConvertValue(v any, t Type) any { return convert(v, t) }
+
 // convert converts an integer value to the representation of t, wrapping at its width.
 func convert(v any, t Type) any {
 	var i int64
@@ -305,24 +330,7 @@ func (r *runner) binary(fr *frame, x *Binary) any {
 	case "||":
 		return r.eval(fr, x.X).(bool) || r.eval(fr, x.Y).(bool)
 	}
-	a, b := r.eval(fr, x.X), r.eval(fr, x.Y)
-	switch x.Op {
-	case "==":
-		return a == b
-	case "!=":
-		return a != b
-	}
-	switch a := a.(type) {
-	case int64:
-		return intOp(x.Op, a, b.(int64))
-	case int32:
-		return intOp(x.Op, a, b.(int32))
-	case uint32:
-		return intOp(x.Op, a, b.(uint32))
-	case uint64:
-		return intOp(x.Op, a, b.(uint64))
-	}
-	panic(fmt.Sprintf("exec: operator %s on %T", x.Op, a))
+	return Apply(x.Op, r.eval(fr, x.X), r.eval(fr, x.Y))
 }
 
 // intOp applies an operator to two integers of one type; arithmetic wraps at its width.
