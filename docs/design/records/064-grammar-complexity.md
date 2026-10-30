@@ -224,11 +224,11 @@ hint with a witness, not a proof that a slow input exists.
 
 - `internal/compile/analysis.go` already computes, over the grammar AST:
   - nullability, rules that always succeed, the left-call graph, its SCCs and leaders, and the cycle members (`AnalyzeControlled`);
-  - the variables each rule reads (`RuleVariables`);
+  - the variables each rule reads (`ruleVariables`);
   - the transient rules (`compile.go`).
 
   The classifier is a further pass over the same data, run on demand and not at every compile. L1 extends
-  `RuleVariables` with the expressions each binding reads. L2 reads `cyclic` and `leaders`.
+  `ruleVariables` with the expressions each binding reads. L2 reads `cyclic` and `leaders`.
 - Core IR carries the facts that L3 needs, per node:
   - first terminals and nullability ([Attributes and Effects](../../../spec/core-ir/attributes.md#first-terminals));
   - effect summaries that say which nodes can fail and consume (`internal/ir/core/attrs.go`, `Analyze`);

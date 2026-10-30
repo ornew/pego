@@ -56,11 +56,11 @@ attribute-heavy slowdown. Ordinary host noise is possible; retained peak heap
 was not measured. These comparisons do not establish a universal timing effect.
 
 The candidate test suite includes `BenchmarkAttributeNormalization` in
-`internal/engine/normalize_attributes_test.go`. From the repository root, build
+`internal/compile/normalize_attributes_test.go`. From the repository root, build
 the candidate test binary with:
 
 ```sh
-go test -c -o /tmp/pego-copy-candidate.test ./internal/engine
+go test -c -o /tmp/pego-copy-candidate.test ./internal/compile
 ```
 
 Build the baseline binary from a candidate checkout using a Go overlay. The
@@ -75,16 +75,16 @@ physically overwriting the checkout. Build the baseline binary with:
 
 ```sh
 go test -overlay=/tmp/pego-copy-baseline-overlay.json -c \
-  -o /tmp/pego-copy-baseline.test ./internal/engine
+  -o /tmp/pego-copy-baseline.test ./internal/compile
 ```
 
 After building both binaries, run each filtered invocation from
-`internal/engine` so benchmark fixtures resolve relative to the package. Use a
+`internal/compile` so benchmark fixtures resolve relative to the package. Use a
 fresh process per invocation, alternate baseline and candidate order across
 five rounds, and keep the corpus and environment fixed:
 
 ```sh
-cd internal/engine
+cd internal/compile
 GOMAXPROCS=16 GOGC=100 GOMEMLIMIT=off /tmp/pego-copy-baseline.test \
   -test.run='^$' \
   -test.bench='^BenchmarkAttributeNormalization$/^attributes$/^eager$/^compile$' \

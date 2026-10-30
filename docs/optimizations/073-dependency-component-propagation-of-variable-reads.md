@@ -67,7 +67,7 @@
   source review verifies callee-first order, missing/duplicate definitions and
   read-only use of shared metadata.
 - Reproduce with
-  `go test ./internal/engine -run '^$' -bench '^BenchmarkVariableDependencies$' -benchtime=200ms -benchmem`.
+  `go test ./internal/compile -run '^$' -bench '^BenchmarkVariableDependencies$' -benchtime=200ms -benchmem`.
   Build both binaries with identical benchmark source, restoring only
   `analysis.go` from `a1424e5` via a Go overlay for the parent. Alternate five
   pairs with no concurrent tests/builds/probes. For allocation attribution,

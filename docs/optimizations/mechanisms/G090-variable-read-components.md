@@ -32,7 +32,7 @@ parser-throughput estimates.
 Evidence records:
 [073](../073-dependency-component-propagation-of-variable-reads.md).
 
-Source owners: [`RuleVariables and dependency
+Source owners: [`ruleVariables and dependency
 components`](../../../internal/compile/analysis.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

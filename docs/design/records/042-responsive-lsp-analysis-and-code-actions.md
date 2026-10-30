@@ -448,7 +448,7 @@ source case they were 31,216 for ordinary compilation and 31,181–31,182 for
 context-aware compilation; B/op differences were at most 28 bytes out of about
 3.6 MB. These are whole compile/lint calls, not proof-only cost, parser runtime,
 cancellation latency, peak memory, or real-editor behavior. Sources are
-`internal/engine/normalize_context_bench_test.go` and
+`internal/compile/normalize_context_bench_test.go` and
 `lint/context_bench_test.go`.
 
 ### Lint Metadata Cancellation
@@ -532,7 +532,7 @@ matched except for source-grammar compile variation (ordinary −1 to +3,
 context −1 to 0); B/op varied by −64 to +182 for ordinary and −4 to 0 for
 context compilation. Other B/op differences were at most 4 bytes. The
 benchmarks use the existing compiler/lint drivers and
-`internal/engine/class_context_bench_test.go` plus
+`internal/compile/class_context_bench_test.go` plus
 `lint/class_context_bench_test.go`; baseline overlays add the same
 drivers. These results measure whole compile/lint calls, not parser execution,
 cancellation latency, peak memory or real-editor behavior. They do not support

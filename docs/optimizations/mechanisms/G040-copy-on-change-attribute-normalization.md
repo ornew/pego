@@ -6,7 +6,7 @@ paths.
 
 ## Mechanism and Invariants
 
-`NormalizeAttributes` returns an original node when no supported child or
+`normalizeAttributes` returns an original node when no supported child or
 attribute changes. A changed descendant requires copying each modified ancestor
 before replacement, preserving the source AST. Attribute order, binding,
 validation, diagnostics and legacy nil/empty container shapes remain exact.
@@ -35,10 +35,10 @@ preparation speedup or a matching benefit.
 Evidence records: [095](../095-attribute-copy-on-change.md).
 
 Source owners:
-[`NormalizeAttributes`](../../../internal/compile/normalize_attributes.go),
+[`normalizeAttributes`](../../../internal/compile/normalize_attributes.go),
 [`Options.EagerAttributeCopies`](../../../internal/compile/compile.go), [`source
 immutability and reference
-checks`](../../../internal/engine/normalize_attributes_test.go).
+checks`](../../../internal/compile/normalize_attributes_test.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
