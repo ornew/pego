@@ -36,6 +36,7 @@ export interface ResolvedParseOptions {
   readonly traceMaxDepth: number;
   readonly unit: Unit;
   readonly maxDepth: number;
+  readonly expectations: boolean;
   signal: CancellationSignal | null;
   readonly budget: number;
 }

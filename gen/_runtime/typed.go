@@ -654,6 +654,7 @@ func (p *TParser) run(r *TRule, input string, o parseOptions, ext any) (v any, e
 	p.MaxDepth = o.maxDepth
 	p.Ext = ext
 	p.setGrammar(r.g)
+	p.Expectations = o.expectations
 	if o.unit == Bytes {
 		// p.In stays empty: direct rules read code points from it while p.Pos < len(p.In).
 		p.unit, p.bs, p.n, p.In = Bytes, input, len(input), p.In[:0]

@@ -919,9 +919,9 @@ type grammar struct {
 	// Descs maps expectation IDs to their descriptions. It starts with the fixed expectations
 	// below. A grammar without Expectations has none.
 	Descs []string
-	// Expectations reports that the parser was generated to record expectations: what a syntax
-	// error expects and the messages of @error. Without it a parse records the farthest failure
-	// position only.
+	// Expectations reports that the parser was generated with the means to record expectations (the
+	// Descs table). A parse records them only when it asks with WithExpectations; otherwise it records
+	// the farthest failure position only.
 	Expectations bool
 	// StructFields holds the field names of each struct type.
 	StructFields map[string]map[string]bool
@@ -1088,6 +1088,9 @@ type parseOptions struct {
 	limits   Limits
 	control  *BudgetControl
 	prepared bool
+	// expectations selects the recording of expectations; only a parser generated with them can
+	// record (WithExpectations, grammar.Expectations).
+	expectations bool
 	// maxInput is the resolved MaxInput of a stream, in units; zero sets no bound.
 	maxInput int
 	// controls is set when the parser was generated with budget controls, which alone can apply the
@@ -1105,6 +1108,11 @@ type parseOptions struct {
 
 // WithUnit selects the unit of input positions (CodePoints by default).
 func WithUnit(unit PositionUnit) ParseOption { return func(o *parseOptions) { o.unit = unit } }
+
+// WithExpectations makes the parse record what a syntax error expects and the messages of @error,
+// which the SyntaxError then lists. Without it the error carries the farthest failure position only.
+// A parser generated without expectations has no WithExpectations.
+func WithExpectations() ParseOption { return func(o *parseOptions) { o.expectations = true } }
 
 // WithMaxDepth limits nested recursive rule calls (rules on a cycle of calls). Zero selects the generated default;
 // a negative effective limit returns an error before parsing.
@@ -1266,6 +1274,7 @@ func parseResolvedSpend(r *Rule, input string, o parseOptions) (n *Node, err err
 	}
 	defer p.release()
 	p.setGrammar(r.g)
+	p.Expectations = o.expectations
 	p.Control = o.control
 	p.Observation = newObservation(&o.observe)
 	p.MaxDepth = o.maxDepth
@@ -1419,11 +1428,13 @@ type Parser struct {
 // documentState owns reusable memo entries. The regular Parse path never sets
 // parser.Document.
 type documentState struct {
-	root  *Rule
-	text  string
-	unit  PositionUnit
-	memo  memoTable
-	stats documentStats
+	root *Rule
+	text string
+	unit PositionUnit
+	// expectations is the recording mode of the Document, fixed at its construction.
+	expectations bool
+	memo         memoTable
+	stats        documentStats
 }
 
 type documentStats struct {
@@ -1434,7 +1445,6 @@ type documentStats struct {
 // setGrammar prepares p to parse with the rules of g.
 func (p *Parser) setGrammar(g *grammar) {
 	p.g, p.sourceInfo, p.memo.stride = g, g.SourceInfo, g.nseen
-	p.Expectations = g.Expectations
 	p.Env, p.envDepth = g.initEnv, g.envDepth
 	if len(p.memo.calls) != g.nseen {
 		p.memo.calls = nil // kept from a parse with another rule table

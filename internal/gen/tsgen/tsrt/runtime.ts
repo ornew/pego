@@ -980,9 +980,9 @@ export interface Grammar {
   envDepth: number;
   // descs maps expectation IDs to their descriptions. A grammar without expectations has none.
   descs: string[];
-  // expectations reports that the parser was generated to record expectations: what a syntax
-  // error expects and the messages of @error. Without it a parse records the farthest failure
-  // position only.
+  // expectations reports that the parser was generated with the means to record expectations (the
+  // descs table). A parse records them only when it asks with ParseOptions.expectations; otherwise
+  // it records the farthest failure position only.
   expectations: boolean;
   // structFields holds the field names of each struct type.
   readonly structFields: Map<string, Set<string>>;
@@ -1026,6 +1026,8 @@ export interface ParseOptions {
   traceMaxDepth?: number;
   unit?: Unit;
   maxDepth?: number;
+  /** Records what a syntax error expects and the messages of @error; requires a parser generated with expectations. Without it an error carries the farthest failure position only. */
+  expectations?: boolean;
   signal?: CancellationSignal | null;
   /** Budget limit. Zero selects the default of max(2^20, 1024 times the input length in the position unit); Unlimited disables the limit. */
   budget?: number;
@@ -1101,6 +1103,9 @@ export function resolveOptions(g: Grammar, options: ParseOptions | undefined, in
   if (profile !== null && (!(profile instanceof Profile) || !profileData.has(profile))) return new Error("profile must be a Profile");
   const profileClock = profile === null ? null : resolveProfileClock();
   if (profileClock instanceof Error) return profileClock;
+  if (options?.expectations === true && !g.expectations) {
+    return new Error("this parser was generated without expectations (generate with expectations to use the expectations option)");
+  }
   const trace = options?.trace ?? null;
   const traceMaxDepth = options?.traceMaxDepth ?? 0;
   if (trace !== null && typeof trace !== "function") return new Error("trace must be a function");
@@ -1125,7 +1130,7 @@ export function resolveOptions(g: Grammar, options: ParseOptions | undefined, in
     if (over !== null) return new ParseInterruptionError("input-limit", maxInput, 0, over);
   }
   const budget = requested === Unlimited ? 0 : requested !== 0 ? requested : g.controlled ? defaultBudget(inputUnits(input, unit)) : 0;
-  return { unit, maxDepth: depth === 0 ? g.maxDepth : depth, signal, budget, trace, traceRules, traceMaxDepth, profile, profileClock };
+  return { unit, maxDepth: depth === 0 ? g.maxDepth : depth, expectations: options?.expectations === true, signal, budget, trace, traceRules, traceMaxDepth, profile, profileClock };
 }
 
 // run parses the whole input of the grammar g with rule r of a rule table with seen rules that have rule.seen set.
@@ -1134,6 +1139,7 @@ export function run(g: Grammar, r: Rule, seen: number, input: string | Uint8Arra
   try {
     // Made inside the try, so that decoding the input fails as parsing does.
     p = new Parser(g, input, unit === Bytes ? Bytes : CodePoints, seen, maxDepth, control);
+    p.expectations = traceOptions?.expectations === true;
     p.observation = traceOptions?.profile != null ? new ProfileObservation(traceOptions) : traceOptions?.trace == null ? null : new Observation(traceOptions);
     return result(p, p.call(r, 0));
   } catch (x) {
@@ -1562,9 +1568,9 @@ export class Parser {
   // silent is positive inside lookaheads, where expectations are not recorded.
   silent = 0;
   farthest = 0;
-  // expectations makes expect record expectations (Grammar.expectations). Without it a record
+  // expectations makes expect record expectations (ParseOptions.expectations). Without it a record
   // holds at most expFar.
-  readonly expectations: boolean;
+  expectations = false;
   // exp[expBase:expTop] are the current expectations, all expected at farthest. The records of
   // enclosing isolated calls are below expBase.
   exp: number[] = [];
@@ -1588,7 +1594,6 @@ export class Parser {
   constructor(g: Grammar, input: string | Uint8Array, unit: Unit, stride: number, maxDepth: number, control: BudgetControl | null = null) {
     this.g = g;
     this.sourceInfo = g.sourceInfo;
-    this.expectations = g.expectations;
     this.control = control;
     this.unit = unit;
     this.maxDepth = maxDepth;

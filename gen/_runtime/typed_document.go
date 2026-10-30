@@ -53,6 +53,9 @@ func TypedDocumentParse[T any](d *Document, root *TRule, o parseOptions, a budge
 	if o.unit != d.State.unit {
 		return res, fmt.Errorf("document parse cannot change unit")
 	}
+	if o.expectations != d.State.expectations {
+		return res, fmt.Errorf("document parse cannot change expectations")
+	}
 	o = prepareText(o, d.State.text)
 	cache, ok := d.typedMemo.(*typedDocumentState)
 	if !ok {

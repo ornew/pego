@@ -1855,8 +1855,8 @@ func classBits(e *grammar.CharClass) (ascii [2]uint64, wide []rune) {
 	return ascii, wide
 }
 
-// writeDescs makes the generated parser record expectations, with the table of their
-// descriptions, when the options ask for it.
+// writeDescs gives the generated parser the table of expectation descriptions, which a parse
+// records only when it passes WithExpectations, when the options ask for it.
 func (g *Generator) writeDescs(opts gen.GenOptions) {
 	if !opts.Expectations {
 		return

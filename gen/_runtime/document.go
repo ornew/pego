@@ -53,6 +53,7 @@ func MakeDocument(root *Rule, text string, opts []ParseOption) (d *Document, err
 	// but its counters do not carry into subsequent invocations.
 	p := &Parser{unit: o.unit, Control: o.control}
 	p.setGrammar(root.g)
+	p.Expectations = o.expectations
 	if o.unit == CodePoints {
 		p.setSource(text)
 	} else if o.control != nil {
@@ -60,7 +61,9 @@ func MakeDocument(root *Rule, text string, opts []ParseOption) (d *Document, err
 	}
 	o.control.Check()
 	o.control, o.prepared = nil, false
-	return &Document{State: newDocumentState(root, text, o.unit), defaults: o}, nil
+	state := newDocumentState(root, text, o.unit)
+	state.expectations = o.expectations
+	return &Document{State: state, defaults: o}, nil
 }
 
 // Text returns the current exact input, including invalid UTF-8 bytes.
@@ -339,12 +342,16 @@ func DocumentParseConverted[T any](d *documentState, o parseOptions, convert fun
 	if o.unit != d.unit {
 		return res, fmt.Errorf("document parse cannot change unit")
 	}
+	if o.expectations != d.expectations {
+		return res, fmt.Errorf("document parse cannot change expectations")
+	}
 	if d.root == nil {
 		return res, fmt.Errorf("document start rule is missing")
 	}
 	o = prepareText(o, d.text)
 	p := &Parser{unit: d.unit, MaxDepth: o.maxDepth, Control: o.control}
 	p.setGrammar(d.root.g)
+	p.Expectations = o.expectations
 	p.Observation = newObservation(&o.observe)
 	defer p.releaseObservation()
 	if d.unit == Bytes {
