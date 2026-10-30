@@ -609,7 +609,7 @@ func runCase(p *pego.Parser, backend string, unit pego.PositionUnit, input strin
 	case "bytecode-iterative":
 		b = pego.BytecodeIterative
 	}
-	options := []pego.ParseOption{pego.WithUnit(unit), pego.WithBackend(b), pego.WithLimits(limits)}
+	options := []pego.ParseOption{pego.WithExpectations(), pego.WithUnit(unit), pego.WithBackend(b), pego.WithLimits(limits)}
 	if ctx != nil {
 		options = append(options, pego.WithContext(ctx))
 	}

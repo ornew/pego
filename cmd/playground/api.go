@@ -370,7 +370,8 @@ func parse(req parseRequest) parseResult {
 	if c.parser == nil {
 		return res
 	}
-	var opts []pego.ParseOption
+	// The playground shows what a syntax error expected.
+	opts := []pego.ParseOption{pego.WithExpectations()}
 	switch req.Unit {
 	case "", "codepoints":
 	case "bytes":

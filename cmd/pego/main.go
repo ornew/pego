@@ -752,7 +752,7 @@ func parse(args []string, stdin io.Reader, stdout io.Writer) error {
 				return err
 			}
 			return json.NewEncoder(stdout).Encode(n)
-		}, unit, backend, lim.option())
+		}, unit, backend, lim.option(), pego.WithExpectations())
 	}
 	src := *input
 	if !isFlagSet(fs, "i") {
@@ -763,13 +763,13 @@ func parse(args []string, stdin io.Reader, stdout io.Writer) error {
 		src = string(b)
 	}
 	if *check {
-		if _, err := p.Parse(src, unit, backend, lim.option(), pego.RecognizeOnly()); err != nil {
+		if _, err := p.Parse(src, unit, backend, lim.option(), pego.WithExpectations(), pego.RecognizeOnly()); err != nil {
 			return err
 		}
 		fmt.Fprintln(stdout, "ok")
 		return nil
 	}
-	node, perr := p.Parse(src, unit, backend, lim.option())
+	node, perr := p.Parse(src, unit, backend, lim.option(), pego.WithExpectations())
 	if node == nil {
 		return perr
 	}
@@ -828,6 +828,7 @@ func genCmd(args []string, stdout io.Writer) error {
 	document := fs.Bool("document", false, "also generate a Go incremental Document (typed ParseAST with -types; incompatible with -lang ts)")
 	stream := fs.Bool("stream", false, "also generate Go ParseStream and Iterate for the start rule's #stream repetition (and their typed forms with -types; incompatible with -lang ts)")
 	observability := fs.Bool("observability", false, "emit opt-in rule tracing and profiling for Go batch/Documents and TypeScript batch parsing, including typed entry points")
+	expectations := fs.Bool("expectations", false, "generate a parser that records what a syntax error expects (the expected list and @error messages); without it the error reports only the farthest failure position")
 	budgetControls := fs.Bool("budget-controls", false, "generate the budget-controlled form of the parser, which supports WithContext and WithLimits (signal, budget and maxInput in TypeScript)")
 	typedOnly := fs.Bool("typed-only", false, "generate only the typed entry points (ParseAST and siblings), without Parse, ParseRule and Recognize (needs -types)")
 	recognize := fs.Bool("recognize", false, "also generate Recognize, which checks input without building a tree")
@@ -914,6 +915,7 @@ func genCmd(args []string, stdout io.Writer) error {
 			SourceInfo:     *sourceInfo,
 			Observability:  *observability,
 			BudgetControls: *budgetControls,
+			Expectations:   *expectations,
 			Recognize:      *recognize,
 			MaxDepth:       *maxDepth,
 		}
@@ -927,6 +929,7 @@ func genCmd(args []string, stdout io.Writer) error {
 			SourceInfo:     *sourceInfo,
 			Observability:  *observability,
 			BudgetControls: *budgetControls,
+			Expectations:   *expectations,
 			Recognize:      *recognize,
 			MaxDepth:       *maxDepth,
 			Document:       *document,

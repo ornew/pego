@@ -49,7 +49,8 @@ func (f *debugFlags) load(args []string, stdin io.Reader) (*pego.Parser, string,
 	if *f.grammar == "" {
 		return nil, "", nil, fmt.Errorf("-g is required")
 	}
-	var opts []pego.ParseOption
+	// The commands show what the grammar expected, so the parse records it.
+	opts := []pego.ParseOption{pego.WithExpectations()}
 	switch *f.unit {
 	case "codepoints":
 		opts = append(opts, pego.WithUnit(pego.CodePoints))
