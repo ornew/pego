@@ -442,7 +442,7 @@ so cutting it comes first in the Performance track.
 | Budget limit overhead, generated Go `Parse` and `ParseAST`, limits on ÷ off | ≤ 1.15×; ≤ 1.05× (stretch) | ≤ 1.05×; ≤ 1.02× (stretch) | One budget; charging input by position change at rewinds and rule exits instead of per unit read; one charge per straight-line block; context polls only on recursive cycles and loop back-edges |
 | Typed `ParseAST` ÷ standard library, JSON and XML (typed values with spans) | < 1.0× | < 1.0× | Statically typed generated Go; byte positions; smaller string nodes |
 | Typed `ParseAST` ÷ standard library, JSON and XML (typed values without spans, byte positions) | ≤ 1.0× | ≤ 0.6× (stretch) | The above; an option to generate values without spans |
-| Typed `ParseAST` ÷ standard library, CSV (without spans) and arithmetic (with spans, against `go/parser`'s positioned AST) | ≤ 2.0× | ≤ 1.0× | Byte-search scans for character runs; memoizing members of left-recursion cycles; cross-rule optimization; statically typed generated Go |
+| Typed `ParseAST` ÷ standard library, CSV (without spans) and arithmetic (with spans, against `go/parser`'s positioned AST) | ≤ 2.0× | ≤ 1.0× | Byte-search scans for character runs; cross-rule optimization; statically typed generated Go |
 | Generated `Parse` ÷ standard library, comparable workloads (a positioned tree with rule names, a richer output than the baselines) | ≤ 2.0× | ≤ 1.5×; ≤ 1.0× (stretch) | Cross-rule optimization; expected sets on request; depth checks only where recursion is possible; smaller nodes; optional arenas |
 | Generated `Recognize` ÷ `json.Valid` (acceptance and error offset, no expected sets) | ≤ 3.0× | ≤ 1.5×; ≤ 1.0× (stretch) | Expected sets on request; depth checks only where recursion is possible; byte positions; a table-driven scanner for lexical rules (not yet designed) |
 | Allocations per generated `Recognize`, pooled parser in steady state | 0 on JSON, CSV and arithmetic (met today) | 0 on all eight workloads (stretch) | Pooled scratch; zero-copy captured text; pooled left-recursion and recovery state |
@@ -487,9 +487,8 @@ A target that the first cross-tool baseline shows to be wrong is revised in this
 - **A configurable pass pipeline with `speed`, `memory` and `size` profiles**
   ([design record 063](design/records/063-configurable-optimization-pass-pipeline.md)), so that each trade-off is a
   measured option instead of a fixed choice.
-- **Linear behavior where it can be linear.** Two changes remove quadratic and exponential families that also cost
-  time on ordinary grammars: memoizing members of left-recursion cycles, and reusing repetition runs after
-  backtracking ([design record 064](design/records/064-grammar-complexity.md)).
+- **Linear behavior where it can be linear.** Reusing repetition runs after backtracking removes quadratic families
+  that also cost time on ordinary grammars ([design record 064](design/records/064-grammar-complexity.md)).
 - **Document input tables reused across parses.** In code points, a warm, unedited typed `Document` parse takes about
   12× the time it takes in bytes, because it rebuilds the source table
   ([design record 044](design/records/044-generated-incremental-and-stream-parsers.md)).

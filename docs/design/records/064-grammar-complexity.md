@@ -34,8 +34,9 @@ four ways:
 - Repetitions are loops inside a rule body ([Repetition](../../../spec/language/parser-expressions.md#repetition)). One
   evaluation of a body can scan any amount of input, and the memo does not share that scan with evaluations that start
   at later positions.
-- Rules on a left-recursion cycle that are not its leader are not memoized
-  (`CompileProgram` in `internal/compile/compile.go`: `memo = !DisableMemo && !cyclic`).
+- Rules on a left-recursion cycle that are not its leader are not memoized while a growth at their position can
+  change their result ([Evaluations of Rules](../../../spec/runtime/parsing.md#evaluations-of-rules)); they are
+  evaluated again at each step of that growth.
 - A left-recursion leader grows a seed at each position, and Operators Rules fold operators at each position. The
   result at p shares nothing with the result at p+1.
 - Rules that read variables are memoized per combination of values
@@ -151,8 +152,8 @@ A start rule is `Linear` when every rule reachable from it satisfies these four 
   is `indent := len($s)`, whose values are bounded by the line length. A binding such as `v := v + "0"` along a recursion
   (E3) violates L1 and gives `Exp`.
 - **L2, memoized cycles.** Every rule that can be evaluated twice at one position, outside its own left-recursion
-  growth, is memoized. Today a non-leader member of a left-recursion cycle with two call sites that can reach the same
-  later position violates L2 (E2). The runtime change below removes this case.
+  growth, is memoized. A non-leader member of a left-recursion cycle with two call sites that can reach the same
+  later position (E2) satisfies L2 because members are memoized outside the growth at their position.
 - **L3, non-overlapping scans.** No scanning construct stands in a **backtracking context**. A backtracking context is
   one where its evaluation can be abandoned and the parser can then start another evaluation of the same construct
   strictly inside the span it covered:
@@ -250,18 +251,18 @@ hint with a witness, not a proof that a slow input exists.
 
 ### Runtime Improvements
 
-**Memoizing left-recursion cycle members.** A non-leader member of a left-recursion cycle is evaluated again in every
-growth step of its leader, and its result can depend on the leader's growing seed. It is therefore not memoized today.
-The proposal memoizes it with an entry stamped by the growth generation of the leader at the position where the cycle
-was entered:
+**Memoizing left-recursion cycle members.** A non-leader member of a left-recursion cycle is memoized
+([optimization record 130](../../optimizations/130-memoizing-members-of-left-recursion-cycles.md)). Instead of
+stamping entries with a growth generation, the parser never stores a result that depends on a seed that can still
+change:
 
-- an entry is reused only while that generation is current;
-- outside any active growth at that position, the entry is a plain memo entry.
+- a result that read the seed of a growth in progress when its call started is not stored;
+- while a leader grows at a position, a member result there is evaluated again instead of reused;
+- a result that read the result of a leader that can grow again at its position with another result is not stored.
 
-This is the "involved set" of Warth et al. [2008], restricted to positions with active growth. Documents and
-interruption already discard state that depends on unfinished growth, and keep doing so. Cost: one memo entry per call
-of a cycle member, and a generation comparison on lookup. Grammars without left recursion pay nothing. E2 becomes
-linear.
+Documents and interruption already discard state that depends on unfinished growth, and keep doing so. Cost: one
+memo entry per stored call of a cycle member, and the depth bookkeeping of each memoized call, which grammars without
+left recursion also pay. E2 is linear.
 
 **Reusing a repetition's run after backtracking.** A Document already records the run of a repetition of 16 or more
 elements: positions, examined range, expectations and values per element, about 80 bytes per element. It reuses the
