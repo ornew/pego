@@ -121,7 +121,7 @@ The named-prefix API is implemented independently of the position map. It uses
 an invocation-local runtime entry, records the successful cursor before returning
 the rule value, and does not change the parser's configured start rule. Normal
 code-point parses reuse the byte-offset table. Recognition and malformed input
-may require a second, work-limited decoding pass over the consumed prefix. The
+may require a second, budget-limited decoding pass over the consumed prefix. The
 cursor-to-byte conversion uses the original source bytes, so a valid U+FFFD
 occupies three bytes while each malformed byte remains one byte. The guide
 [Parsing a Named Prefix](../../guide/prefix-parsing.md) covers its public contract.

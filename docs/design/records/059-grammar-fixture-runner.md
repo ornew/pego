@@ -177,7 +177,7 @@ fixture.RunOptions)`, and `fixture.UpdateGoldens(suite, report, backend)`. `Run`
 returns the same structured report used by the CLI. File loading and execution
 options are sufficient for the initial capability; a programmatic in-memory
 suite builder is not required for v1. `RunOptions` carries a context and work
-limits. Context cancellation stops the invocation, while a work-limit error is
+limits. Context cancellation stops the invocation, while a budget limit error is
 recorded for its case/backend and later cases continue.
 
 ### Golden Updates

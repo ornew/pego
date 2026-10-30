@@ -39,7 +39,7 @@
   4–7 allocations and 2.5–9.2% B/op. The one-rule median rises roughly
   0.655 → 0.712 µs. These are constructor-analysis results, excluding source
   compilation, generation attempts and parsing; they do not claim a runtime
-  parsing speedup or a limit on constructor work from `WithBudget`.
+  parsing speedup or a limit on constructor budget from `WithBudget`.
 - Reordered 128/2,048-depth chains and 30 shuffled shared/recursive graphs agree
   with an independent whole-sweep scheduling oracle for every rule's height,
   length and reach set. Tests preserve impossible/missing-reference estimates,

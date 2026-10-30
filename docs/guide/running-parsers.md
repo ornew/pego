@@ -2,7 +2,7 @@
 
 Turn a grammar into a parser in Go, call it, and read what comes back. This guide covers the pipeline from source to
 parser, start rules, results and errors, concurrency and how to choose among the features of the engine. Cancellation
-and work limits, parsing a prefix, position units, backends and recognition mode have guides of their own. It assumes you
+and budget limits, parsing a prefix, position units, backends and recognition mode have guides of their own. It assumes you
 can write a grammar; the [language specification](../../spec/README.md) defines the language, and
 [Parsing](../../spec/runtime/parsing.md) defines what a parse returns.
 
@@ -248,7 +248,7 @@ while preserving its failure position and explicit `@error` messages.
 A `*pego.Parser` is **safe for concurrent use**: share one among goroutines and call `Parse` on all of them (each call
 has its own state). A `Document`, in contrast, is not. Concurrent first use of different backends and of recognition
 mode is also safe. A call can be cancelled and bounded with `WithContext` and `WithLimits`; see [Cancellation and
-Work Limits](cancellation-and-limits.md).
+Budget limits](cancellation-and-limits.md).
 
 ## Compiled Grammars
 
@@ -264,7 +264,7 @@ covers the modes, sizes, embedding, versions and loading files you did not produ
 
 - [Generating Parsers](code-generation.md), [Incremental Parsing](incremental.md) and [Streaming](streaming.md): the other ways to
   run a grammar, when a plain `Parse` does not fit.
-- [Cancellation and Work Limits](cancellation-and-limits.md), [Parsing a Prefix](prefix-parsing.md), [Position
+- [Cancellation and Budget Limits](cancellation-and-limits.md), [Parsing a Prefix](prefix-parsing.md), [Position
   Units](position-units.md) and [Choosing a Backend](backends.md): the options of a parse.
 - [Reading Trees](reading-trees.md): what to do with the result.
 - [Error Messages](error-messages.md): reporting syntax errors.

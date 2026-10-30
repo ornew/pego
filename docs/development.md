@@ -18,8 +18,8 @@ This document describes the repository layout and architecture, how to run tests
 | `pego.pego` | Typed source grammar and recoverable syntax tree; the generated source-parser integration is [proposed](design/records/054-generated-grammar-source-parser.md). |
 | `internal/syntax/` | Lexer and parser for PEGO source code (source → `grammar.Grammar`) |
 | `internal/compile/` | Compiler and static analysis: type checking, call and dependency analysis, the walk of rule bodies that decides their static facts, and the bytecode compiler |
-| `internal/engine/` | Parser runtime: `Compile`, compiled grammars, streams and work controls, built on `internal/engine/core/`, the closure backend of `internal/engine/closure/`, the bytecode VMs of `internal/engine/vm/` and the Document of `internal/engine/document/`. It does not import the generators or the output schema: package `gen` joins the generators to it, and the root package the schema export |
-| `internal/engine/core/` | The part of the parser runtime that every backend shares: the parser state, input, memo table, expectations, values, built-ins of actions, work controls, tracing and stream state, and the parse options, results and errors that `internal/engine` re-exports. Its package documentation states what a backend provides and what it may use |
+| `internal/engine/` | Parser runtime: `Compile`, compiled grammars, streams and budget controls, built on `internal/engine/core/`, the closure backend of `internal/engine/closure/`, the bytecode VMs of `internal/engine/vm/` and the Document of `internal/engine/document/`. It does not import the generators or the output schema: package `gen` joins the generators to it, and the root package the schema export |
+| `internal/engine/core/` | The part of the parser runtime that every backend shares: the parser state, input, memo table, expectations, values, built-ins of actions, budget controls, tracing and stream state, and the parse options, results and errors that `internal/engine` re-exports. Its package documentation states what a backend provides and what it may use |
 | `internal/engine/closure/` | The closure backend: builds a closure graph for each rule body and evaluates actions on the grammar AST |
 | `internal/engine/vm/` | The bytecode backend: the recursive and iterative VMs, which run a compiled module over the same instruction loop |
 | `internal/engine/document/` | The incremental Document: edits and edit batches, reparsing that reuses what the edits did not touch, snapshots, change reports, diagnostics and the node cursor. It parses through a runner that `internal/engine` implements, and `internal/engine` re-exports its types |
@@ -28,13 +28,13 @@ This document describes the repository layout and architecture, how to run tests
 | `internal/schema/` | The export of a checked program's output schema as a `schema.Output` |
 | `internal/value/` | `Node`, the value that parsing produces: kinds, fields, JSON form, traversal and the representation that the engine packages share |
 | `internal/apitest/` | The behavior tests of package `pego`, from outside it: they call its public API, with internal packages only to build values, to mark start rules and to count how often options apply; the root package keeps its source and its documentation examples |
-| `internal/limits/` | Work limits of a parse invocation, the error of an exhausted limit and overflow-safe work arithmetic, shared by the parser, the Document and package `query` |
+| `internal/limits/` | Budget limits of a parse invocation, the error of an exhausted limit and overflow-safe budget arithmetic, shared by the parser, the Document and package `query` |
 | `internal/bytecode/` | The bytecode instruction set and module, its disassembly, the encoding of modules in compiled grammars and the validation of loaded modules |
 | `internal/gen/` | What the Go and TypeScript generators share: generation options, the runtime mode of generated Go parsers, generated files, and the generator state both print with (the program and rule being printed, the expectation table, shared names, the Flow IR state of recognizer rules and the action value resolver) |
 | `runtime/` | Runtime package of generated Go parsers, imported by them or copied into them (`github.com/ornew/pego/runtime`) |
 | `internal/gen/gogen/` | Go generator: prints the parser, its types package and the runtime copy from the compiled program and Flow IR, and leaves out what the entry points cannot reach |
 | `internal/gen/tsgen/` | TypeScript generator: prints the parser, its types and its runtime files from the compiled program and Flow IR |
-| `internal/gen/tsgen/tsrt/` | Source of `runtime.ts`, the runtime that generated TypeScript parsers import (joined from `runtime.ts`, `work.ts`, `trace.ts` and `profile.ts`) |
+| `internal/gen/tsgen/tsrt/` | Source of `runtime.ts`, the runtime that generated TypeScript parsers import (joined from `runtime.ts`, `budget.ts`, `trace.ts` and `profile.ts`) |
 | `cmd/pego/` | Command-line tool |
 | `examples/` | Small example grammars that show the features, with golden tests |
 | `parsers/` | Ready-made parsers for common languages, each a Go module of its own (`parsers/<language>/`, with the grammar, the generated parser and conformance tests); `generate.go` and `parsers_test.go` (main module) generate them and check them on every backend ([README](../parsers/README.md)) |
@@ -73,7 +73,7 @@ This document describes the repository layout and architecture, how to run tests
 | Language tools | `lint/`, `internal/lsp/`, `editors/vscode/` | Provides static checks, editor requests and the VS Code client. |
 | Input generation | `sample/` | Generates accepted inputs and coverage; generated inputs are checked by the parser. |
 
-Files without a directory are in `internal/engine/`. There, a file's prefix names the part it belongs to: `program` for the entry points of a program (compilation, compiled grammars, the parse drivers and the runner that a Document parses through). `compile_api.go` and `core_api.go` hold the names that the engine exposes from the compiler and from `internal/engine/core`, and `profile.go` reads parse results. What every backend shares is in `internal/engine/core/`: the parser state, the input, memo and stream state (`input_`, `stream_` and `work_` files and `runtime.go`), the built-ins of actions (`eval.go`, `filter.go`) and the tracer (`trace.go`). The closure backend is in `internal/engine/closure/`, the recursive and iterative bytecode VMs are in `internal/engine/vm/`, and the Document with its snapshots, change reports and node cursor is in `internal/engine/document/`, which `document_api.go` re-exports. Tests of the Go generator that compare its parsers with the engine are in `internal/gen/gogen/`, with `internal/gentest` holding the shared corpus and helpers; those that also run TypeScript parsers, and those that need engine internals, stay here, named after the generator they check: `gogen_` for Go, `tsgen_` for TypeScript and `gen_` for both. Optimization evidence is in the [catalog](optimizations/README.md); contracts and proposals are in `spec/` and `docs/design/records/`.
+Files without a directory are in `internal/engine/`. There, a file's prefix names the part it belongs to: `program` for the entry points of a program (compilation, compiled grammars, the parse drivers and the runner that a Document parses through). `compile_api.go` and `core_api.go` hold the names that the engine exposes from the compiler and from `internal/engine/core`, and `profile.go` reads parse results. What every backend shares is in `internal/engine/core/`: the parser state, the input, memo and stream state (`input_`, `stream_` and `spend_` files and `runtime.go`), the built-ins of actions (`eval.go`, `filter.go`) and the tracer (`trace.go`). The closure backend is in `internal/engine/closure/`, the recursive and iterative bytecode VMs are in `internal/engine/vm/`, and the Document with its snapshots, change reports and node cursor is in `internal/engine/document/`, which `document_api.go` re-exports. Tests of the Go generator that compare its parsers with the engine are in `internal/gen/gogen/`, with `internal/gentest` holding the shared corpus and helpers; those that also run TypeScript parsers, and those that need engine internals, stay here, named after the generator they check: `gogen_` for Go, `tsgen_` for TypeScript and `gen_` for both. Optimization evidence is in the [catalog](optimizations/README.md); contracts and proposals are in `spec/` and `docs/design/records/`.
 
 ### Runtime
 
@@ -87,8 +87,8 @@ counters halve before overflow, and the eager decision remains sticky for that p
 Nesting limits and tracing apply to rule calls. `Document` can reuse memo entries across edits and resume long
 repetitions; stream parsing emits elements and discards input already committed by the grammar.
 Core and generated Go/TypeScript parsing also support invocation-local cancellation and
-a work limit; streams and Documents use the same interruption
-contract. See [design 033](design/records/033-cancellable-parses-and-work-budgets.md)
+a budget limit; streams and Documents use the same interruption
+contract. See [design 033](design/records/033-cancellable-parses-and-budgets.md)
 for backend scope, cleanup and measured costs.
 
 ### Code Generation
@@ -130,18 +130,18 @@ go test ./...
 go test -run '^$' -bench . -benchtime=1x ./...
 ```
 
-The tests that build generated parsers (in `internal/gen/gogen`, `internal/gen/tsgen`, `internal/gen` and `internal/engine`) build them in two forms. A parser generated with work controls charges work and accepts the options `WithContext` and `WithLimits`. A parser generated without them is the form that most parsers have, and a different part of the generator prints it. Every test runs the form that it exists to check:
+The tests that build generated parsers (in `internal/gen/gogen`, `internal/gen/tsgen`, `internal/gen` and `internal/engine`) build them in two forms. A parser generated with budget controls spends budget and accepts the options `WithContext` and `WithLimits`. A parser generated without them is the form that most parsers have, and a different part of the generator prints it. Every test runs the form that it exists to check:
 
 | Kind of test | Runs | How |
 |:--|:--|:--|
 | Tests that build fixtures and check their behavior, output or equivalence with the engine | Both forms, as the subtests `controls` and `ordinary` | The test body runs under `gentest.EachMode`, as the test's last statement; the two subtests run in parallel |
-| Tests that pass a control option (`WithContext`, `WithLimits`) | With controls only | `gentest.NeedsWorkControls` |
-| Tests of output that exists only without work controls (terminal programs, the Flow IR recognizer and Node rules, choice guards) | Without controls only | `gentest.PinOrdinary` |
+| Tests that pass a control option (`WithContext`, `WithLimits`) | With controls only | `gentest.NeedsBudgetControls` |
+| Tests of output that exists only without budget controls (terminal programs, the Flow IR recognizer and Node rules, choice guards) | Without controls only | `gentest.PinOrdinary` |
 | Tests that do not build fixtures | Not form-specific | |
 
 Each test records its form by name and its subtests inherit it, so tests of either form can run in parallel. A test that builds a fixture without any of these fails the run when it finishes, because it would check one form only. `go test ./...` therefore covers both forms and needs no setting.
 
-`PEGO_TEST_ORDINARY` restricts a run to one form: `0` runs everything that builds fixtures with work controls, and `1` runs it without, skipping the tests that pass a control. Use it to reproduce a failure of one form; it does not widen coverage.
+`PEGO_TEST_ORDINARY` restricts a run to one form: `0` runs everything that builds fixtures with budget controls, and `1` runs it without, skipping the tests that pass a control. Use it to reproduce a failure of one form; it does not widen coverage.
 
 The top-level tests of `internal/engine` call `t.Parallel()`. A test stays sequential when it measures heap or time in the test process, changes a process-wide setting such as `debug.SetMaxStack` or `core.MinRecorded`, or shares mutable fixtures with other tests (the generators cached by `coreGenerations`); Go runs every sequential test before it releases the parallel ones, so these run alone. A test that observes or changes the Go generator passes `gogen.Hooks` to the generation, directly or for itself and its subtests with `gentest.SetGenHooks`, instead of setting package state.
 
@@ -154,7 +154,7 @@ The behavior of package `pego` is tested from outside it by `internal/apitest`; 
 inputs, retained results, and error/retry reuse in both position units.
 
 The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for its type check, `tsc`; it is skipped when they are missing.
-The generated TypeScript has the same two forms, chosen by `-work-controls`. The TypeScript tests generate the form without work controls unless the test passes a control option (`signal`, `maxWork`), which generates with `WorkControls`. `TestGeneratedTSParsersMatchEngine` compares both forms with the engine, and `tsgen_work_forms_test.go` checks that the plain form has no charge, no control option and no cancellation export, and that the controlled form accepts the options.
+The generated TypeScript has the same two forms, chosen by `-budget-controls`. The TypeScript tests generate the form without budget controls unless the test passes a control option (`signal`, `budget`), which generates with `BudgetControls`. `TestGeneratedTSParsersMatchEngine` compares both forms with the engine, and `tsgen_budget_forms_test.go` checks that the plain form has no charge, no control option and no cancellation export, and that the controlled form accepts the options.
 TypeScript is printed from the same Flow IR as Go (`internal/gen/tsgen/flow.go`, `internal/gen/tsgen/outline.go`); `TestGeneratedTSPrintsLeanRulesFromFlow` and the frozen decision goldens cover what is chosen, and a rule that Flow IR does not print fails generation.
 
 `lint` tests every check with positive and negative cases, lints every example grammar against a hand-checked list of findings, and `TestSoundness` checks the certain findings against the engine on random grammars, exhaustively over short inputs (`-soundness=N` for a longer run).
@@ -184,10 +184,10 @@ Explicit expansion at the cap compacts materialized branches; paths that cannot 
 control. Controlled row-count, reference/focus and boundary tests cover these resource limits. The tree benchmark
 distinguishes equivalent small-tree work from wide-tree display reduction; real browser checks cover DOM/WASM wiring.
 
-The same-source work-control reference build compiles and tests the engine packages without core work-control
+The same-source budget-control reference build compiles and tests the engine packages without core budget-control
 instrumentation. After changing test files of `internal/engine` or `internal/apitest`, check that both builds compile
 with `go vet ./internal/engine/... ./internal/apitest` and
-`go vet -tags pego_work_controls_reference ./internal/engine/... ./internal/apitest`; test files that use helpers
+`go vet -tags pego_budget_controls_reference ./internal/engine/... ./internal/apitest`; test files that use helpers
 defined in untagged files keep both builds compiling.
 
 GitHub Actions runs the root module and `parsers/test.sh` (including `go vet` for every parser module), site tests, and
@@ -214,7 +214,7 @@ The guides show how to test a grammar in an application. The repository uses the
 | Reference-implementation and conformance tests with fuzz targets | Each parser module's tests, for example [`parsers/json/json_test.go`](../parsers/json/json_test.go) |
 | Generated inputs and backend comparisons | [`sample/example_test.go`](../sample/example_test.go) |
 | Compiled grammars, Documents and backend equivalence | `internal/engine/` tests such as `compiled_test.go` and `document_test.go`, and the tests of `internal/engine/document/` |
-| Generated Go against the engine and regression freezes of what the engine cannot say (observation, Documents, work, streams, lowering decisions) | `internal/gen/gogen/` tests such as `gogen_flow_*_test.go` with `internal/gen/gogen/testdata/*.golden`, and `internal/engine/` tests `core_*_test.go` with `internal/engine/testdata/*.golden`; a change of what a golden freezes is rewritten with `go test <package> -run <test> -update` and its diff reviewed |
+| Generated Go against the engine and regression freezes of what the engine cannot say (observation, Documents, budget, streams, lowering decisions) | `internal/gen/gogen/` tests such as `gogen_flow_*_test.go` with `internal/gen/gogen/testdata/*.golden`, and `internal/engine/` tests `core_*_test.go` with `internal/engine/testdata/*.golden`; a change of what a golden freezes is rewritten with `go test <package> -run <test> -update` and its diff reviewed |
 
 Root `go test ./...` covers the main module. Run [`parsers/test.sh`](../parsers/test.sh) to vet and test all standalone parser modules; `cd site && go test ./...` covers the site module.
 

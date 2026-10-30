@@ -1,26 +1,26 @@
-# 103. Inline the Common Work Charge
+# 103. Inline the Common Budget Charge
 
 - **Status**: Implemented
 - **Date**: 2026-10-20
 
 ## Problem and Mechanism
 
-A generated parser charges its work control once per rule call, loop iteration
-or matcher step (`Parser.Work`) and once per input unit a matcher reads
-(`Parser.ReadWork`, which also records how far a Document parse examined the
-input). A charge that called `WorkControl.charge` directly would test the limit
+A generated parser charges its budget control once per rule call, loop iteration
+or matcher step (`Parser.Spend`) and once per input unit a matcher reads
+(`Parser.SpendRead`, which also records how far a Document parse examined the
+input). A charge that called `BudgetControl.charge` directly would test the limit
 and the poll interval before adding to the counters; at that inline cost it
 never inlines, so a controlled parse would pay a function call per step and per
-unit read. `ReadWork` additionally keeps its Document branch out of the inlined
+unit read. `SpendRead` additionally keeps its Document branch out of the inlined
 path, so it stays under the inline budget in grammars without Documents.
 
-The work control keeps a *room*: the smallest request that would reach the next
+The budget control keeps a *room*: the smallest request that would reach the next
 poll boundary or exceed the limit. A charge smaller than the room only
 subtracts from it; any other charge takes the slow path, which folds what the
 room consumed into the counter, runs the limit and poll checks and computes a
 new room. `chargeStep` (one unit) and `Charge` (n units) are the forms the hot
-paths use; both inline, and `Work` inlines with `chargeStep` inside it. The
-reserved total is the counter plus what the room consumed (`workUsed`).
+paths use; both inline, and `Spend` inlines with `chargeStep` inside it. The
+reserved total is the counter plus what the room consumed (`budgetUsed`).
 
 Invariant: a fast-path charge is exactly a charge that the slow path would
 accept without polling, because the room is the interval left before a poll,
@@ -33,7 +33,7 @@ capped by the limit left plus one. Cancellation, poll cadence and the reported
 |:--|:--|:--|
 | Generated Go Node and recognition | Applied | Shared generated runtime |
 | Generated Go typed output | Applied | Shared generated runtime |
-| Closure, bytecode and iterative VMs | Not applied | Engine work control is separate |
+| Closure, bytecode and iterative VMs | Not applied | Engine budget control is separate |
 | Generated TypeScript | Not applied | Separate runtime |
 
 ## Reproduction
@@ -65,7 +65,7 @@ from the shared-runtime change.
 
 ## Correctness and Tradeoffs
 
-The generated work-control tests pass; with rooms forced to unlimited, eight of
+The generated budget-control tests pass; with rooms forced to unlimited, eight of
 them fail, so they exercise the slow path's limits. Generated-code tests read
 the reserved totals through `inputUsed()` and `stepsUsed()`. `chargeInput`
 requires a non-nil control; `chargeStep` and `charge` accept nil. The fast path

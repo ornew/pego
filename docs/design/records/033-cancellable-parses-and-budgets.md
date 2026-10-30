@@ -1,4 +1,4 @@
-# 033. Cancellable Parses and Work Budgets
+# 033. Cancellable Parses and Budgets
 
 - **Status**: Implemented
 - **Author**: @ornew
@@ -6,12 +6,12 @@
 
 ## Summary
 
-Add invocation-local cancellation and an optional work limit to parsing. Start with the core Go API, including Document and streams, then
+Add invocation-local cancellation and an optional budget limit to parsing. Start with the core Go API, including Document and streams, then
 apply the same interruption contract to generated Go and portable generated
 TypeScript. Existing depth limits remain independent. Ordinary calls with no
 controls keep their result and callback semantics.
 
-The limits bound counted engine work, not elapsed time, memory, compilation, or
+The limits bound the budget spent by the engine, not elapsed time, memory, compilation, or
 arbitrary caller code. Cancellation is cooperative at defined engine checkpoints;
 it cannot make a blocking io.Reader or callback return. Interrupted parses
 publish no partial batch result and release their mutable execution state.
@@ -82,7 +82,7 @@ Document signature change are proposals:
 
 ```go
 type Limits struct {
-    MaxWork uint64
+    Budget uint64
 }
 func WithContext(ctx context.Context) ParseOption
 func WithLimits(limits Limits) ParseOption
@@ -94,7 +94,7 @@ var ErrLimit error
 
 type LimitKind uint8
 const (
-    LimitWork LimitKind = iota
+    LimitBudget LimitKind = iota
 )
 type LimitError struct {
     Kind      LimitKind
@@ -133,11 +133,11 @@ until the Document is released. `Document.Edit` remains outside parse controls.
 
 Piece-backed storage is internal to `Document`; batch parsing and `ParseStream`
 keep their contiguous input paths. `Document.Text()` and `Node.Text` keep their
-existing meanings. Input work counts actual inspection and copying, not a
+existing meanings. Input spend counts actual inspection and copying, not a
 logical source length merely because it is retained. CodePoints initialization
-decodes and normalizes input and charges that work. A large immutable Bytes
+decodes and normalizes input and charges that spend. A large immutable Bytes
 source may be retained as an original string-backed piece without copying or
-scanning it, so zero construction work is valid when no input elements
+scanning it, so zero construction spend is valid when no input elements
 were inspected. Parsing still charges probes, literal comparisons, text
 extraction and materialization across pieces. `Document.Edit` is not metered.
 
@@ -167,7 +167,7 @@ Node conversion; it must not reevaluate callbacks to establish a budget.
 ### Lazy Controlled Closure Setup
 
 The closure backend keeps the ordinary compiled program as its default. When a
-parse has active cancellation or a finite work limit, the first controlled
+parse has active cancellation or a finite budget limit, the first controlled
 Closure invocation lazily builds and caches a separate metered closure program.
 Later controlled invocations reuse it; ordinary invocations continue to use the
 plain program. Bytecode backends use their existing invocation-control path and
@@ -180,24 +180,24 @@ execution and retains the existing Document rule/run-site/description identity
 used by its caches. Cache identity and retry behavior remain correctness
 requirements.
 
-Lazy construction is setup, outside the work budget. Check the
+Lazy construction is setup, outside the budget. Check the
 invocation context immediately before and after setup; graph construction itself
 is synchronous and cannot be interrupted. Keep context method calls outside the
 `sync.Once` initializer so reentrant context methods cannot deadlock setup. An
 inactive context such as `context.Background()` with zero limits produces no
-work control and does not materialize the second graph.
+budget control and does not materialize the second graph.
 
 Ordinary Closure parsers retain only the plain graph until a controlled call;
 after activation, the parser may retain both graphs. Measure default parsing,
 first controlled-call latency and allocations, and post-activation retained
-heap separately. The lazy setup and generated-Go work-control implementations
+heap separately. The lazy setup and generated-Go budget-control implementations
 are implemented with the measured costs summarized under Performance and
 Results; further generated-Go optimization is a separate follow-up.
 
 ### What the Limits Count
 
-Work is one counter, cumulative per invocation and never rolled back on
-backtracking, failed lookahead, recovery, LR growth, or repeated work. Zero
+The budget is one counter, cumulative per invocation and never rolled back on
+backtracking, failed lookahead, recovery, LR growth, or repeated spending. Zero
 disables the limit. A charge is checked before the charged operation; limit N
 permits N charged units. If a next atomic operation requests more than the
 remaining allowance, abort before it, with Used unchanged and Requested
@@ -212,7 +212,7 @@ bounds scanning, recursion and value construction alike:
   expression/action operations at their execution boundaries; generated rule
   entries and action operations at their emitted execution boundaries;
   rule/memo dispatch and LR/Operators Rule selection/growth iterations;
-  repetition/resume iterations; and per-element work in unbounded engine loops.
+  repetition/resume iterations; and per-element spend in unbounded engine loops.
   Include graph edges visited during position movement, collection
   construction, and typed conversion, so a memo hit or converter cannot bypass
   the limit by returning a large graph. Bulk copies/materialization use bounded
@@ -225,7 +225,7 @@ bounds scanning, recursion and value construction alike:
   storage. An EOF probe costs one. A repeated probe is charged again. Bulk
   comparisons reserve their declared compared range; a fast mismatch need not
   refund that reservation. An input charge is the elements it inspects and adds
-  nothing for the act of reading. Scalar/action string work and graph work are
+  nothing for the act of reading. Scalar/action string spend and graph spend are
   charged by size even when they do not read the original input. An O(1)
   existing substring reference or completed table lookup does not charge the
   substring/table's entire size.
@@ -237,12 +237,12 @@ between position units, backends, optimized/reference generation, memo state,
 and releases. They are not cross-backend instruction equivalence or a stable
 complexity score. Publish the charging table with the implementation and test
 its threshold behavior; do not claim equal budget success across implementations.
-A prepared Document can need less counted work than a new batch parse.
+A prepared Document can need less spent budget than a new batch parse.
 
 A resumed repetition charges the records/values actually processed, not all
-historical input it skips. A constant-time memo hit consumes dispatch work but
+historical input it skips. A constant-time memo hit spends dispatch budget but
 no fictional scan of its whole examined range. Position/diagnostic updates and
-actual traversal of a reused graph are still charged. Limits bound current work,
+actual traversal of a reused graph are still charged. Limits bound current spend,
 not the amount of data originally needed to construct a memo result.
 
 ### Cancellation Checkpoints and Long Operations
@@ -262,9 +262,9 @@ work where possible; allocation, GC, stack growth, first-use setup, and caller
 code remain nonpreemptible intervals to measure and disclose.
 
 At a checkpoint where several conditions are observed together, cancellation
-wins, then work exhaustion. Otherwise the first
+wins, then budget exhaustion. Otherwise the first
 observed terminal condition wins. A budget can win before cancellation is next
-polled; this is deterministic work accounting, not a race-resolution promise.
+polled; this is deterministic budget accounting, not a race-resolution promise.
 Cancellation/limit failures take the fatal interruption route and cannot match
 an alternative or be swallowed by predicate/action error recovery or #recover.
 Do not construct ordinary syntax diagnostics after the terminal interruption
@@ -291,7 +291,7 @@ Mandatory unwind/recycle after a terminal interruption runs to completion withou
 further cancellation or budget failures; otherwise a second interruption could
 leave unsafe state in a pool. This cleanup is outside the exhausted budget and
 is a separately measured nonpreemptible interval before the error returns.
-Normal backtracking/rollback work during execution remains charged and polled.
+Normal backtracking/rollback spend during execution remains charged and polled.
 
 For an interruption after Document execution starts, drop the whole memo and
 repetition maps and clear VM/value/kid/undo scratch. Completed entries can depend
@@ -299,7 +299,7 @@ on unfinished LR seeds; dropping only growing entries is insufficient. Preserve
 fully completed input tables, but discard any partial table rather than publish
 it. A pre-execution option rejection or cancellation, before reusable state is
 touched, leaves the existing caches and last stats intact. Stats describes an
-entered attempt with its existing meaning; work counters appear on limit errors,
+entered attempt with its existing meaning; budget counters appear on limit errors,
 not in rule-evaluation statistics. Retry with a fresh context/budget must match
 fresh parsing.
 
@@ -318,7 +318,7 @@ No further call starts after interruption has been observed.
 Preserve a reader's returned non-EOF error; it wins over cancellation newly
 observed after that same Read returns, just as an emit error does below.
 
-Buffered reading may consume ahead of the parsed position. Input-work limits
+Buffered reading may consume ahead of the parsed position. Input-budget limits
 are not a maximum reader-byte-consumption promise, and cancellation cannot unread
 prefetched data. After stream interruption, restart requires caller-managed input
 replay; starting another parser at the current reader offset is not a promised
@@ -337,7 +337,7 @@ caller code and are evaluated exactly once before execution controls apply.
 ### Portable Generated Equivalent
 
 After core Go and generated Go meet their gates, extend existing TS options-aware
-entry points with optional `signal` and `maxWork`. Preserve the
+entry points with optional `signal` and `budget`. Preserve the
 existing plain/default functions and typed conversion path. Use an exported
 structural cancellation-signal interface with readonly aborted/reason properties,
 so an AbortSignal fits without requiring a browser DOM typing dependency.
@@ -357,7 +357,7 @@ ordinary nil success still has no error. Generated recognition reports it too.
 A synchronous TS parse does not yield to event-loop timers: AbortController on
 the same thread cannot acquire new cancellation while a long parse monopolizes
 that thread. Pre-aborted or externally changing host signals can be observed at
-polls; deterministic work limits remain effective without event-loop scheduling.
+polls; deterministic budget limits remain effective without event-loop scheduling.
 Do not promise timer-driven responsiveness or add async yields implicitly.
 Direct typed/Node conversion and recognition controls require their own actual
 consumer/runtime tests. New helper names participate in the existing deterministic
@@ -387,14 +387,14 @@ streaming, code-generation and TypeScript guides with the applicable stage.
 - **Depth limits only.** Existing compatibility baseline, but shallow scans and
   backtracking can perform broad work. Keep depth plus optional independent limits.
 - **Only context, checked at rule entry.** Small change but misses terminal/action
-  loops, reused graph work, and blocked I/O. Poll long engine work and document
+  loops, reused graph spend, and blocked I/O. Poll long engine execution and document
   the caller-code boundary instead.
 - **Wall-clock timeout goroutine or forced reader Close.** Can interrupt some I/O
   but introduces reader ownership, races, and goroutine leaks for arbitrary
   readers/callbacks. Prefer caller-owned I/O cancellation and cooperative checks.
 - **One universal backend-independent instruction count.** Attractive for portable
   settings but would require a new normalized evaluator and charge optimized
-  skipped work artificially. Use documented backend-local abstract work events.
+  skipped spend artificially. Use documented backend-local abstract spend events.
 - **Lifetime Document budget.** Can cap an editor session, but becomes exhausted
   after earlier unrelated edits and makes retry stateful. Reset per invocation;
   callers can apply their own session policy.
@@ -439,7 +439,7 @@ suite passes across 18 packages. The validation covers the following cases:
 
 ## Performance and Results
 
-The lazy Closure setup and generated-Go work-control implementation are
+The lazy Closure setup and generated-Go budget-control implementation are
 implemented with the measured costs below. Piece-backed `Document` input is
 already adopted independently. Measurements compared main `77f12f2`,
 the eager-graph prototype `2ae994f`, and the lazy implementation described in
@@ -492,10 +492,10 @@ exact main ranged as follows:
 | Generated Go typed parse (8 profiles) | 1.192–1.402× |
 
 The exact-parent comparison captures total implementation cost, including state
-layout. The same-source `pego_work_controls_reference` disables core
+layout. The same-source `pego_budget_controls_reference` disables core
 instrumentation checks but retains core state layout. It does not isolate
 generated-Go instrumentation: the generated sources are identical across those
-variants and retain `workControlsEnabled=true`. The generated-Go results above
+variants and retain `budgetControlsEnabled=true`. The generated-Go results above
 are valid exact-parent comparisons, not a generated-instrumentation ablation.
 Improve the generated-Go inactive path and repeat the affected comparison
 before adoption.
@@ -534,7 +534,7 @@ Generated source grew 37.61–58.71% against the ablation. This trades code size
 for ordinary throughput; total feature cost remains above pre-feature main.
 Broader runtime-helper and separate ordinary-method alternatives were measured
 and rejected. Prescribed local checks and independent source/evidence review
-passed. The residual work-control costs are accepted; further
+passed. The residual budget-control costs are accepted; further
 ordinary-path generated-Go optimization is a separate follow-up. These local
 checks do not imply remote CI or deployed behavior. No zero-cost or general
 speedup claim follows.
@@ -543,7 +543,7 @@ Use ordinary small/large batch Node, recognition, direct typed and conversion
 workloads; shallow scanning/backtracking; Document no-edit/edit/reparse/resume;
 streams; LR/Operators Rule and capture-heavy results. Separate initialization, evaluation,
 conversion, cleanup, and first-use setup. Report paired time, B/op, allocations,
-peak/post-GC heap, retained context/input release, and work charged. Include runs
+peak/post-GC heap, retained context/input release, and budget spent. Include runs
 that cross normal GC phases; an inactive parser field can change object size,
 allocation cadence and scanning costs even without an executed poll. Do not
 change production GC settings to mask those costs.
@@ -558,7 +558,7 @@ record actual results with the implementation, without claiming zero overhead.
 ## Limitations and Open Questions
 
 The proposed defaults form one coherent contract: no controls unless requested,
-per-invocation counters, cooperative context/signal polling, backend-local work
+per-invocation counters, cooperative context/signal polling, backend-local budget
 charges, zero results on interruption, and caller-owned blocking operations.
 No owner approval choice is required to draft or test those defaults. Measured
 coverage and latency must determine internal polling/chunk sizes and state

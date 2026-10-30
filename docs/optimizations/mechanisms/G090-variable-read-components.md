@@ -26,7 +26,7 @@ No maintained same-source per-rule DFS comparator exists.
 Historical record 073 measures full compilation of a 512-rule no-read chain from
 10.114 to 1.003 ms and 13.414 to 1.711 MB. Read-bearing/cyclic cases have
 separately scoped results; other analyses and distinct transitive sets still
-consume work. Matching memo keys are unchanged, so compilation gains are not
+consume budget. Matching memo keys are unchanged, so compilation gains are not
 parser-throughput estimates.
 
 Evidence records:

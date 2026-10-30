@@ -30,7 +30,7 @@ catches what is not.
 
 | Part | Contents |
 |:--|:--|
-| `runtime.ts` | `tsrt/runtime.ts` after its `--- Runtime ---` line, with the invocation work controls, tracing and profiling (`work.ts`, `trace.ts`, `profile.ts`). The same for every grammar and every option, so that one copy can be shared (`-runtime import`). It type-checks on its own. Every top-level declaration is exported. |
+| `runtime.ts` | `tsrt/runtime.ts` after its `--- Runtime ---` line, with the invocation budget controls, tracing and profiling (`budget.ts`, `trace.ts`, `profile.ts`). The same for every grammar and every option, so that one copy can be shared (`-runtime import`). It type-checks on its own. Every top-level declaration is exported. |
 | `types.ts` | With `-types`: the declarations of the grammar's types. |
 | `parser.ts` | The parts below, importing `./runtime.ts` (or the module of `-runtime-module`) and `./types.ts`, and re-exporting the names a user needs (`Node`, `SyntaxError`, `marshal`, ...). |
 | Rule table | A constant per rule (`R0`, `R1`, ...; `Q0`, ... for the recognizer) with the engine's analysis results, and the table `rules` for `parseRule` |

@@ -84,8 +84,8 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error)
 type ParseOption func(*parseOptions)
 func WithUnit(unit PositionUnit) ParseOption
 func WithMaxDepth(n int) ParseOption
-func WithContext(ctx context.Context) ParseOption       // with work controls
-func WithLimits(limits Limits) ParseOption      // with work controls
+func WithContext(ctx context.Context) ParseOption       // with budget controls
+func WithLimits(limits Limits) ParseOption      // with budget controls
 
 type PositionUnit int
 const (
@@ -116,23 +116,23 @@ const (
   return plain errors as in the engine. The depth limit counts nested rule calls; a
   larger limit does not guarantee stack capacity. The default error is
   `nesting too deep: more than 100000 rule calls`.
-- A Go parser generated with work controls (`-work-controls`, `WorkControls`)
+- A Go parser generated with budget controls (`-budget-controls`, `BudgetControls`)
   exports `WithContext`, `WithLimits`, `Limits`, `LimitKind`,
-  `LimitError`, `ErrLimit` and `LimitWork`. A parser
-  generated without them holds no code that charges work or reads a control: one
+  `LimitError`, `ErrLimit` and `LimitBudget`. A parser
+  generated without them holds no code that spends budget or reads a control: one
   form of each function; with `-document` it is the form that serves a Document, without
-  charges. A parser generated with work controls has the controlled form only, and a parse that
+  charges. A parser generated with budget controls has the controlled form only, and a parse that
   sets no limit runs it unchanged. A parse that passes either option with a context or a limit,
   from the runtime package, returns an error that the parser was generated without
-  work controls; no option is ignored. A nil context and a zero `Limits` set no
+  budget controls; no option is ignored. A nil context and a zero `Limits` set no
   control and are accepted.
 - `WithContext` and `WithLimits` apply the semantics of
-  [Cancellation and Work Limits](parsing.md#cancellation-and-work-limits) to each
+  [Cancellation and Budget Limits](parsing.md#cancellation-and-budget-limits) to each
   invocation, with counters that restart for every call. They apply to named rules,
   recognition, typed parsing and conversion. The last context and the last complete
   `Limits` win; a nil context means no cancellation; zero limits are unlimited.
   An exhausted limit matches `ErrLimit`, and `errors.As` retrieves a
-  `*LimitError` with `Kind` (`LimitWork`), `Limit`, `Used`
+  `*LimitError` with `Kind` (`LimitBudget`), `Limit`, `Used`
   and `Requested`. An interrupted entry point returns its zero result, and
   recovery does not turn an interruption into a successful partial tree.
   Cancellation is cooperative.
@@ -232,7 +232,7 @@ With `-document`, the Go package gains `NewDocument(text string, opts ...ParseOp
   rejects an invalid range, and a position inside a UTF-8 character in `Bytes`
   mode, without changing the text. `Text()` returns the exact current input.
 - Construction options become the defaults of later calls. A call MAY set the
-  depth, the context and the work limits; it MUST NOT change the unit.
+  depth, the context and the budget limits; it MUST NOT change the unit.
 - `ParseStats` has the fields `Evaluated` and `Reused`.
 - A parse returns what a parse of the whole current text returns. An interruption
   discards memo history so that a later call can retry.
@@ -246,7 +246,7 @@ With `-document`, the Go package gains `NewDocument(text string, opts ...ParseOp
   equal to its length, so `append` on a result cannot write into another result.
 - The returned `SyntaxError` values and their `Expected` and `Messages` slices are
   owned by the caller. Parsing, diagnostic copying and typed publication share one
-  work budget.
+  budget.
 - It supports a subset of the engine's [Incremental Documents](documents.md): there
   is no `EditBatch`, no `Version`, no snapshots and no change notifications.
 
@@ -265,7 +265,7 @@ With `-types` as well, the package gains `StreamValue`, `ParseStreamAST` and
 `IterateAST` with `StreamASTIterator`. `StreamValue` is the Go type of one element
 of the `#stream` repetition, not of the start rule. Each element is converted on
 its own when it is committed, so the value stays valid after the callback returns.
-The conversion counts toward the work limits and observes the context.
+The conversion counts toward the budget limits and observes the context.
 
 ### Generated TypeScript API
 
@@ -278,13 +278,13 @@ export function parseRuleWithOptions(name: string, input: string | Uint8Array, o
 export interface ParseOptions {
   unit?: Unit;
   maxDepth?: number;
-  signal?: CancellationSignal | null;      // with -work-controls only
-  maxWork?: number;                        // with -work-controls only
+  signal?: CancellationSignal | null;      // with -budget-controls only
+  budget?: number;                        // with -budget-controls only
 }
 export interface ParseResult { node: Node | null; error: Error | null }
-// With -work-controls:
+// With -budget-controls:
 export interface CancellationSignal { readonly aborted: boolean; readonly reason?: unknown }
-export type ParseInterruptionKind = "canceled" | "work-limit";
+export type ParseInterruptionKind = "canceled" | "budget-limit";
 export class ParseInterruptionError extends Error {
   readonly kind: ParseInterruptionKind;
   readonly limit: number;
@@ -319,28 +319,28 @@ export function marshal(n: Node | null): string;
 - `maxDepth` MUST be a positive safe integer or zero; negative values, fractions, NaN,
   infinity and unsafe integers return a configuration error in the result before
   matching. Omitted or zero selects the generated default.
-- A parser generated without `-work-controls` emits no code that charges work and sets no control, so a parse charges nothing, and its
-  `ParseOptions` has no `signal` or `maxWork`; it does not export
+- A parser generated without `-budget-controls` emits no code that spends budget and sets no control, so a parse charges nothing, and its
+  `ParseOptions` has no `signal` or `budget`; it does not export
   `CancellationSignal`, `ParseInterruptionKind` or `ParseInterruptionError`. A call
   that passes a signal or a nonzero limit anyway returns an error in the result, before
-  matching, that says the parser was generated without work controls; no option is
+  matching, that says the parser was generated without budget controls; no option is
   ignored. An absent or null signal and zero limits set no control and are accepted. A parser
-  generated with `-work-controls` has the controlled form only, and a call that sets no
+  generated with `-budget-controls` has the controlled form only, and a call that sets no
   limit runs it unchanged. The rest of this list describes the controlled form.
 - `signal` is a structural cancellation signal: any object with `aborted` and an optional
-  `reason`, such as an `AbortSignal`. `maxWork` MUST be a finite
+  `reason`, such as an `AbortSignal`. `budget` MUST be a finite
   nonnegative safe integer, and zero means unlimited; other values return a
   configuration error in the result. The units of the limits are those of
-  [Cancellation and Work Limits](parsing.md#cancellation-and-work-limits).
+  [Cancellation and Budget Limits](parsing.md#cancellation-and-budget-limits).
 - An interrupted parse returns `node` as `null` and `error` as a `ParseInterruptionError`
-  whose `kind` is `"canceled"` or `"work-limit"`. For a limit,
+  whose `kind` is `"canceled"` or `"budget-limit"`. For a limit,
   `limit`, `used` and `requested` give the accounting; for cancellation, `cause` is the
   `reason` of the signal. Recovery does not turn an interruption into a partial result,
   and the parser keeps no reference to the signal after the call returns. Typed
   conversion (`parseAST`) and recognition report interruptions the same way.
 - A synchronous parse does not yield to the event loop: a signal that changes only
   through timers or other tasks of the same thread is not observed during the call. A
-  signal that is already aborted is observed at the first poll, and the work limits do not
+  signal that is already aborted is observed at the first poll, and the budget limits do not
   depend on the event loop.
 - With `-recognize`, `recognize` and `recognizeWithOptions` return `null` if the
   input matches and an `Error` otherwise. With `-observability`, the batch entry
@@ -409,7 +409,7 @@ program, so a TypeScript parser can reject nesting that the engine accepts.
 | Typed values | `ParseAST`, `ParseRuleAST` with `-types` | `parseAST`, `parseASTWithOptions` with `-types` |
 | Streaming | `ParseStream`, `Iterate` with `-stream` | None; `#stream` is an ordinary repetition |
 | Incremental documents | A subset with `-document` | None |
-| Cancellation and work limits | `WithContext`, `WithLimits` | `signal`, `maxWork`; `ParseInterruptionError`; with `-work-controls` |
+| Cancellation and budget limits | `WithContext`, `WithLimits` | `signal`, `budget`; `ParseInterruptionError`; with `-budget-controls` |
 | Nested rule-call limit | `WithMaxDepth`, `-max-depth` | `maxDepth`, `-max-depth`; the host stack also bounds nesting |
 | Choice of backend, saved grammar, `Parser.Grammar()` | Not applicable | Not applicable |
 | Tracing and profiling | With `-observability` | With `-observability` (batch parsers) |

@@ -89,7 +89,7 @@ depth; exceeding the limit aborts the parse and discards its execution state.
 Two things to know:
 
 - Lowering the limit is safe on every backend and bounds active nested calls and Operators Rule frames. Input length and
-  total parsing work require separate limits. A nesting error is an ordinary `error`, so treat it like any parse failure.
+  total parsing budget require separate limits. A nesting error is an ordinary `error`, so treat it like any parse failure.
 - **Raising the limit on the closure and recursive bytecode backends is limited by the Go stack.** Go's goroutine
   stack is capped at 1 GB by default; running past it is not a recoverable error but a fatal `stack overflow` that
   kills the process. In a trial with the grammar above, the closure backend parsed 300,000 levels with

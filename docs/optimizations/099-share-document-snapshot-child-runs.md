@@ -102,7 +102,7 @@ Historical materialization ratios were noisy, ranging 0.90–1.28 at 4 KiB and
 ## Correctness and Tradeoffs
 
 Child IDs are compared exactly; one equal hash or matching span is not enough.
-Changed runs are private, and copy work is charged in bounded units so a work
+Changed runs are private, and copy spend is charged in bounded units so a budget
 limit or cancellation cannot publish a partial snapshot. Indexed access,
 nil child slots, prior versions, cycles and later mutable materialization keep
 their existing semantics. A reused run can retain its older flat backing

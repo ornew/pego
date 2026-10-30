@@ -35,7 +35,7 @@ largest of them, a 1,300-leaf trie, took 142 KB on its own.
 - produce no value (a discard, a lookahead, or a rule whose value is unused).
 
 Such an expression needs no state but the position. In the typed body of a lean typed Go
-parser (no work controls, no Document, no observability), the generator lowers it to a
+parser (no budget controls, no Document, no observability), the generator lowers it to a
 `TerminalProgram` (`runtime/terminal.go`), which `SkipTerminal` interprets. Frame bodies,
 which left-recursive rules and Operators Rules use, keep straight-line code.
 
@@ -136,7 +136,7 @@ The tests do the following:
   lookaheads, contain invalid UTF-8, and reach a keyword choice both in a lookahead and
   behind the farthest failure.
 - Pin the eligibility rule: values, frame bodies, small or choice-free expressions,
-  observability, work controls and Documents keep straight-line code. They also pin that a
+  observability, budget controls and Documents keep straight-line code. They also pin that a
   program is static data prepared at initialization.
 - Check the dispatch tables directly, including a choice at the 65,535-entry limit and one
   past it, and run a grammar with a 1,200-alternative choice that gets no table.
@@ -151,7 +151,7 @@ test fail.
 
 ## Decision and Limits
 
-Adopted for lean typed Go parsers. Parsers with work controls or Documents still charge work
+Adopted for lean typed Go parsers. Parsers with budget controls or Documents still spend budget
 for each expression, and keep the straight-line code. The TypeScript generator is unchanged.
 
 The dispatch tables and the guards that consume their class are what keep parse speed

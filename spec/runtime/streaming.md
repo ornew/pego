@@ -103,7 +103,7 @@ element. No construct of the language looks further back.
 | Option | Effect in a stream parse |
 |:--|:--|
 | `WithUnit`, `WithBackend`, `WithMaxDepth` | Apply |
-| `WithContext`, `WithLimits` | Apply to the whole stream invocation, including diagnostic callbacks and the work to copy a bounded tail |
+| `WithContext`, `WithLimits` | Apply to the whole stream invocation, including diagnostic callbacks and the budget spent copying a bounded tail |
 | `RecognizeOnly` | An error |
 | `WithDiagnosticCallback`, `WithDiagnosticLimit` | Stream-only; see [Recovered errors](#recovered-errors) |
 
@@ -129,7 +129,7 @@ A stream parse ends in one of the following ways.
 | `emit` returns an error | Parsing stops at once, no further element is delivered and `ParseStream` returns that error unchanged (`errors.Is` and `==` both work) |
 | The reader fails | A non-EOF error from `Read` is returned as it is. Elements completed before the failure are delivered; an element cut by the failure is not |
 | Errors were recovered | `ParseStream` returns the recorded errors as `SyntaxErrors` after every element was delivered |
-| Cancellation or a work limit | The interruption error is returned instead of a completed diagnostic result; elements already delivered remain delivered. A reader or callback blocked in caller code cannot be preempted |
+| Cancellation or a budget limit | The interruption error is returned instead of a completed diagnostic result; elements already delivered remain delivered. A reader or callback blocked in caller code cannot be preempted |
 | `emit` or the reader panics | The panic propagates with its original value on every backend, including values that implement `runtime.Error`. Delivered elements stay valid; the parser does not close the reader |
 
 ### Recovered Errors

@@ -193,7 +193,7 @@ loudly on a Core construct it does not support rather than guess, and a verifier
 tests.
 
 Optimization at this level only chooses representation: what state to save and restore, which variables to use and where
-the work charges go. It never changes meaning. Decisions about meaning are made on Core IR, and Flow IR optimizations may
+the budget charges go. It never changes meaning. Decisions about meaning are made on Core IR, and Flow IR optimizations may
 use the effects that Core IR computed to know what must be kept.
 
 ## How Targets Use the Result

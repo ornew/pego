@@ -72,4 +72,4 @@ records the same expectations at the same positions as the expression it replace
 | `Terminal` | A region of literals, classes, sequences, choices, options, negative lookaheads, `Text` and `Drop`, which a target may run as one table or program |
 
 A `Scan` records the expectation of the character where it stops, and fails only if it matched fewer than its minimum.
-No Core node charges a work step on entry: a generated rule charges one unit of work when it is entered and a repetition charges one on each iteration, while a `Scan` and a `ClassRun` charge one unit for each character they read.
+No Core node charges a budget step on entry: a generated rule charges one budget unit when it is entered and a repetition charges one on each iteration, while a `Scan` and a `ClassRun` charge one unit for each character they read.

@@ -29,9 +29,9 @@ The passes run as follows today, and this is the inventory the proposal starts f
   nowhere declared: `Guards` reads what the first `Analyze` computes, and a missing `Analyze` leaves choices unguarded
   without an error (`StartRecFlow` carries a comment about 84,000 calls on the DuckDB grammar that the wrong order
   caused).
-- Applicability is derived in several places: `lean` (no work controls and no Documents), `leanTyped`, `observability`
+- Applicability is derived in several places: `lean` (no budget controls and no Documents), `leanTyped`, `observability`
   and the private `disable*` fields of `GenOptions`. A pass such as `ClassRuns` is sound only in lean builds, because
-  work controls and Documents charge for reading; that obligation is encoded by an `if`, not stated.
+  budget controls and Documents charge for reading; that obligation is encoded by an `if`, not stated.
 - Only some optimizations have a switch (`disableTerminalPrograms`, `disableGuardedClasses`,
   `disableLiteralTextDispatch`, `boxedComparisons`). `Guards`, `Scans` and `ClassRuns` have no switch, so no test
   checks that generation without them equals the engine.
@@ -80,7 +80,7 @@ A pass is a value with the following fields. The names are those of the pipeline
 | `Requires` | Analyses that must be valid when the pass starts |
 | `Invalidates` | Analyses that the pass makes stale |
 | `After` | Passes that must precede it when both are enabled (an ordering constraint with no data dependence) |
-| `Applies` | A predicate over the generation mode (work controls, Documents, observability, table) |
+| `Applies` | A predicate over the generation mode (budget controls, Documents, observability, table) |
 | `Obligation` | One sentence stating what the pass preserves, as a comment and in the test name |
 | `Run` | The function over `*core.Module` |
 
@@ -114,7 +114,7 @@ Applied to the typed table with every optimization enabled, the manager performs
 `terminals` and `class-runs`, and `Scan` origins are followed as `build.FollowRepeats` does.
 
 The manager lives in `internal/ir/core` next to the passes and depends on nothing of the engine. The mode
-predicate is a value the generator passes in (`Mode`), so `core` keeps no knowledge of work controls or Documents.
+predicate is a value the generator passes in (`Mode`), so `core` keeps no knowledge of budget controls or Documents.
 
 ### Flags
 
@@ -134,7 +134,7 @@ Each optimization has a flag with the pass name. Variants of one pass have their
 | `inline-literals` | `flow.Options.InlineLiterals` (a count, 0 turns it off) | the constant `gen.MaxInlineLiteral` |
 
 A flag can only turn an optimization off. Turning it on never overrides `Applies`: `class-runs` stays off in a build
-with work controls whatever the flag says, because the pass is unsound there. The mode facts of `flow.Options` (`Work`,
+with budget controls whatever the flag says, because the pass is unsound there. The mode facts of `flow.Options` (`Spend`,
 `Recovers`, `Observe`) are not optimizations and have no flag.
 
 `guards` off implies `guarded-classes` off and makes `class-runs` convert every class run, which `After` allows.
@@ -282,7 +282,7 @@ documented; until then they do not ship.
   Flow printer takes terms from Core.
 - **Flow passes.** When Flow IR gains passes, the manager runs them, and the flag and profile tables grow. Whether
   Flow lowering's options (`class-tables`, `inline-literals`) become passes is decided with them.
-- **Observability and work controls as passes.** They are modes, not optimizations, so they stay out of the flag set;
+- **Observability and budget controls as passes.** They are modes, not optimizations, so they stay out of the flag set;
   generated parsers keep fixing them at generation time.
 - **Missing negative controls.** `guards`, `scans` and `class-runs` have none today; whether a build without them equals
   the engine is expected but unverified, and is the first result this design needs.

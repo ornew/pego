@@ -163,7 +163,7 @@ A zero result alone cannot distinguish failure from a successful zero-width rule
 that returns nil; the error does.
 
 `ParsePrefix` accepts position units, backends, recognition, tracing, nesting
-limits, context and work limits. Stream diagnostic options are rejected, as for
+limits, context and budget limits. Stream diagnostic options are rejected, as for
 `Parse`. A grammar that contains `#missing` is rejected, even if insertion is not
 enabled; a positive `WithMissingTokens` limit is rejected for every grammar. Zero
 keeps strict prefix matching. Options resolve in order. An explicit `$$` sees the
@@ -278,7 +278,7 @@ The **work** of a parse is the sum of the following:
 Time is proportional to work. The memory that a parse allocates is at most
 proportional to its work plus the input, because each memo entry, node and
 value is built by work that is counted. Work is a model of cost: the counters
-of [work limits](#cancellation-and-work-limits) measure it in units that differ
+of [budget limits](#cancellation-and-budget-limits) measure it in units that differ
 between backends.
 
 ### Termination
@@ -403,8 +403,8 @@ condition 1 or 2 fails, or a value doubles, work can be exponential.
 
 ### Bounding Work
 
-[Work limits](#cancellation-and-work-limits) bound the work of any parse,
-whatever its class. `MaxWork` is one counter for all of it: it counts the input
+[Budget limits](#cancellation-and-budget-limits) bound the work of any parse,
+whatever its class. `Budget` is one counter for all of it: it counts the input
 that terminals, repetitions of character classes and lookaheads examine,
 including input examined again, rule calls, repetition iterations, growth
 steps, and the strings and lists that actions and predicates build, in
@@ -423,13 +423,13 @@ VM), and the Go API changes it with `pego.WithMaxDepth`. The operand of a prefix
 operator and the right operand of an infix operator of an Operators Rule nest
 like rule calls; chains of left-associative operators do not nest.
 
-## Cancellation and Work Limits
+## Cancellation and Budget Limits
 
-The reference Go API accepts invocation-local cancellation and a work limit
+The reference Go API accepts invocation-local cancellation and a budget limit
 through `WithContext` and `WithLimits`; generated Go exposes corresponding
 package-local options.
 These controls are cooperative and backend-local. A zero limit disables the
-limit. The work counter is monotonic for one invocation and resets on the next
+limit. The budget counter is monotonic for one invocation and resets on the next
 call. A reservation is checked before the corresponding work begins; if it
 exceeds the remaining allowance, that work is not performed. Counts are
 implementation-specific and are not elapsed-time, memory, or buffered-input
@@ -452,16 +452,16 @@ published and are discarded. A retry with fresh invocation controls must produce
 the same result as parsing the current text from scratch.
 
 In the Go API, `WithContext(ctx)` supplies the context and
-`WithLimits(Limits{MaxWork})` the limit. The work counter adds the
+`WithLimits(Limits{Budget})` the limit. The budget counter adds the
 inspected elements of the input representation and the backend's execution
 work, one unit each. Charges are not rolled back by backtracking, and their values
 depend on the backend, the position unit and the generated artifact. For a given
 artifact, input and options they are the same on every run: the storage that an
 earlier parse left in a reused parser, and when a collection releases it, never
 change them. Reading
-input charges the work counter in proportion to the elements examined, so a
+input charges the budget counter in proportion to the elements examined, so a
 loop that only scans input, such as a repeated character class, is bounded by
-`MaxWork`. A cancelled
+`Budget`. A cancelled
 context returns the error of the context (`errors.Is(err, context.Canceled)` or
 `context.DeadlineExceeded`); an exhausted limit returns an error that matches
 `pego.ErrLimit`, and `errors.As` with `*pego.LimitError` gives the

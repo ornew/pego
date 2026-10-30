@@ -14,8 +14,8 @@ the character.
 
 ## Mechanism
 
-In a parser without work controls and without Documents, where reading and testing a character
-charge no work, the guards of a choice keep the size of the character they read. When an
+In a parser without budget controls and without Documents, where reading and testing a character
+charge no budget, the guards of a choice keep the size of the character they read. When an
 alternative begins with a class (the class itself, or the first item of a sequence), that class
 consumes the character by the kept size and does nothing else. The rest of a run of classes is
 matched by `ClassesSkip` as before.
@@ -28,8 +28,8 @@ Values, positions, errors and expected sets are unchanged.
 
 Only the first expression written for the alternative may consume the guard's character: the
 generator forgets the guarded class at any other expression, so a class elsewhere in the
-alternative or after it is matched as written. Parsers with work controls or Documents keep the
-second read, which charges its input work.
+alternative or after it is matched as written. Parsers with budget controls or Documents keep the
+second read, which charges its input spend.
 
 ## Results
 
@@ -83,12 +83,12 @@ The tests do the following:
   truncated sequences at the end of the input and empty remaining input, against a class
   that contains U+FFFD and a negated class that admits it: the guard reads the character
   with the same decoder as the class, so the kept size is the size the class would consume.
-- Check that every case uses a guarded class, and that parsers with work controls or
+- Check that every case uses a guarded class, and that parsers with budget controls or
   Documents do not.
 
 Mutants that consume a fixed size, let the guard decode an invalid byte with its trailing
 continuation bytes or reject a truncated sequence at the end of the input, take another item as the guarded class, match the guarded
-class inside a run, apply the change with work controls, or forget the guarded class at the
+class inside a run, apply the change with budget controls, or forget the guarded class at the
 alternative itself make a test fail. Removing the rule that forgets the guarded class at other
 expressions changes no generated parser in the repository, because each class node is written
 once; the rule keeps a node written a second time from consuming a character that no guard
@@ -96,5 +96,5 @@ read.
 
 ## Decision and Limits
 
-Adopted for Go parsers without work controls and Documents. The TypeScript generator is
+Adopted for Go parsers without budget controls and Documents. The TypeScript generator is
 unchanged. A class behind a capture or a rule call is not consumed by the guard.

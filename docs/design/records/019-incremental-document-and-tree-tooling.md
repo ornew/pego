@@ -82,7 +82,7 @@ The proposed architecture separates storage, parsing and tree consumers:
    and output changes; cursors/queries use a defined child/field graph and can restrict work to safe changed regions.
    A schema exposes what the compiler knows without inventing types for dynamic output.
 
-Existing memo dependency tracking and repetition resumption stay in the parser, with cancellation/work budgets as
+Existing memo dependency tracking and repetition resumption stay in the parser, with cancellation/budgets as
 shared execution controls. Replayable edit fuzzing verifies storage/parsing equivalence before consumers rely on
 notifications. Strict parsing stays available; bounded missing-token insertion is a separate optional recovery design.
 The current Node API cannot serve as an immutable snapshot simply by sharing pointers: reuse moves those Nodes.
@@ -98,7 +98,7 @@ implemented language features; the backlog and execution order live in
 
 | Stage | Work and prerequisite | Acceptance evidence |
 |:--|:--|:--|
-| 1 | Cancellation and work budgets; reuse interruption cleanup | Bound cancellation latency in calls, scans, repeats and LR; retry/edited Document equals fresh parse; quantify uncancelled overhead |
+| 1 | Cancellation and budgets; reuse interruption cleanup | Bound cancellation latency in calls, scans, repeats and LR; retry/edited Document equals fresh parse; quantify uncancelled overhead |
 | 2 | Grammar-author edit-fuzz CLI/API, then reusable fixtures | Corpus + seed + replayable/minimized failures; compare values, spans and errors against fresh parsing after edits/undo/redo on every backend/unit |
 | 3 | Iterative Walker/Cursor and versioned output schema | Define child/field order, shared identities, cycles, scalar fields and range filtering; schema marks unknown/dynamic output explicitly |
 | 4 | Chunked Document input, initially internal | Edit-only and parse benchmarks at multiple sizes/positions; UTF-8/chunk boundaries, invalid bytes and position conversion; retain fast contiguous batch path |
@@ -113,7 +113,7 @@ without waiting for exact tree differencing; safe invalidation matters more than
 
 ### Contracts to Carry into Feature Designs
 
-**Cancellation.** Start with the Go API and specify deterministic work units separately from wall-clock deadlines.
+**Cancellation.** Start with the Go API and specify deterministic budget units separately from wall-clock deadlines.
 Define errors, nil results, recovery diagnostics and callback ownership. Cancellation checks must cover long
 terminal scans, not just rule calls. Cancelling a blocked arbitrary `io.Reader` requires a separate reader ownership
 contract; a context check in the parser cannot promise that. Generated equivalents follow their own portable design.
@@ -182,7 +182,7 @@ Document abstraction; compare a built-in piece table with caller-owned input bef
   at one position without progress and gives typed results no missing-token contract. Use explicit bounded insertion
   rather than weakening the existing consuming recovery guarantee.
 - **Use deadlines alone or check cancellation only at rule entry.** Deadlines suit interactive tasks but do not make
-  replay deterministic; rule-only checks may not interrupt a long scan. Design work budgets and polling in long loops
+  replay deterministic; rule-only checks may not interrupt a long scan. Design budgets and polling in long loops
   as well, and measure the cost with cancellation disabled.
 - **Leave edit fuzzing as repository-only tests.** It avoids maintaining a CLI, but grammar authors cannot readily
   reproduce the same checks for their own grammars. A reusable CLI/API should share the oracle and persisted failure
@@ -197,8 +197,8 @@ for a demonstrated gap with a separate design and compatibility decision.
 
 ## Limitations and Open Questions
 
-- API signatures, deterministic work units and cancellation polling intervals proposed in
-  [cancellable parses and work budgets](033-cancellable-parses-and-work-budgets.md) still require full implementation
+- API signatures, deterministic budget units and cancellation polling intervals proposed in
+  [cancellable parses and budgets](033-cancellable-parses-and-budgets.md) still require full implementation
   and latency validation. Blocking reader interruption is a separate ownership problem.
 - A chunk/piece-table implementation may reduce edits while slowing character reads or text materialization. The
   representation and public input boundary remain open until size/position benchmarks and malformed-UTF-8 tests pass.

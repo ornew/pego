@@ -122,7 +122,7 @@ position deltas when a handle reads `Start` or `End`. It retains graph identity,
 child/field edges, cycles and materialization semantics. The default root-module suite, enabled Snapshot suite and race checks, and
 independent source review passed. Checks cover scalar action positions, Unicode
 and invalid UTF-8 in both units, cycles, typed nils, zero spans, delta overflow,
-partial work-budget exhaustion and cancellation during metadata construction.
+partial budget exhaustion and cancellation during metadata construction.
 Generation produced no parser changes. These are local checks; remote CI and
 deployed behavior were not verified.
 

@@ -20,7 +20,7 @@ first tested whether the receiver was a node, then looked the struct type up by 
 (in the program's type table, or in the generated `structFields` map) to reject an
 undeclared field, before reaching the text. A text struct has exactly the field
 `Text`, so a read of `Text` from a text struct needs none of that: the closure, both
-VMs and generated Go Node parsers now return the text first. Under work controls the
+VMs and generated Go Node parsers now return the text first. Under budget controls the
 read still takes the full route, which charges the field lookup as before, so step
 counts are unchanged. Typed generated Go already read string fields directly.
 
@@ -32,7 +32,7 @@ counts are unchanged. Typed generated Go already read string fields directly.
 | Generated Go Node parsers and recognizers | Applied | `actx.memberOperand` in the runtime template |
 | Generated typed Go | Not applicable | String fields are already read without a lookup |
 | TypeScript | Not applied | `member` still looks the struct up in `structFields`; not measured |
-| Work-controlled parses | Not applied | Keeps the charged lookup |
+| Budget-controlled parses | Not applied | Keeps the charged lookup |
 
 ## Reproduction
 
@@ -96,8 +96,8 @@ the terminal-based grammar did not need.
 
 The fast path applies only to a node marked as a text struct and only to the name
 `Text`, which such a struct always declares, so it cannot accept a read that the full
-route rejects. Results, errors and work-control step counts are unchanged; the
-equivalence suites, the generated-parser tests and the work-control accounting tests
+route rejects. Results, errors and budget-control step counts are unchanged; the
+equivalence suites, the generated-parser tests and the budget-control accounting tests
 pass.
 
 ## Decision and Limits

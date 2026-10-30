@@ -24,7 +24,7 @@ complete, runnable examples, and points to the [specification](../../spec/README
 | [Choosing a Backend](backends.md) | The closure, bytecode and iterative backends and how to choose one, the nesting limit |
 | [Recognition Mode](recognition-mode.md) | `RecognizeOnly`: checking input without building a tree, what it still evaluates and where it does not apply |
 | [Memoization](memoization.md) | What the packrat memo table remembers, when, and what it means for memory, streaming and incremental parsing |
-| [Cancellation and Work Limits](cancellation-and-limits.md) | `WithContext` and `WithLimits`: stopping a parse and what it returns |
+| [Cancellation and Budget Limits](cancellation-and-limits.md) | `WithContext` and `WithLimits`: stopping a parse and what it returns |
 | [Position Units](position-units.md) | Code points or bytes: what the unit changes, how to choose it, invalid UTF-8 |
 | [Parsing a Prefix](prefix-parsing.md) | `ParsePrefix`: parsing a fragment of a larger text and reading how much it consumed |
 | [Building Grammars as ASTs and JSON](grammar-asts.md) | Structural validation, formatting, source metadata and JSON loading for tools that build grammars in Go |
@@ -53,7 +53,7 @@ complete, runnable examples, and points to the [specification](../../spec/README
 |:--|:--|
 | [Compiled Grammars](compiled-grammars.md) | Saving a grammar as a `.pegoc` file and loading it: the modes and what each serves, sizes and load times, `go:embed`, versions, untrusted data, and when to use it instead of generated code |
 | [Generating Parsers](code-generation.md) | Standalone parsers with `pego gen`: why generate, the command and its options, what is supported, keeping generated code up to date, trade-offs |
-| [The Generated Go API](generated-go-api.md) | The Go package `pego gen` writes: `Parse`, `ParseRule`, nodes and errors, recognition, call options, cancellation and work limits |
+| [The Generated Go API](generated-go-api.md) | The Go package `pego gen` writes: `Parse`, `ParseRule`, nodes and errors, recognition, call options, cancellation and budget limits |
 | [Typed Values in Generated Go](generated-typed-values.md) | `-types`: a Go type for each grammar type, `ParseAST`, the type mapping, speed and named rules |
 | [Incremental Documents in Generated Go](generated-documents.md) | `-document`: the generated `Document`, `Edit` and reparse, what is kept, diagnostics and limits |
 | [Streams in Generated Go](generated-streams.md) | `-stream`: `ParseStream`, `Iterate`, diagnostic controls and typed elements |

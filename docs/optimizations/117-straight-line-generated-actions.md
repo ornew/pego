@@ -5,23 +5,23 @@
 
 ## Problem and Mechanism
 
-A parser generated without work controls (`NoWorkControls`, the form of the checked-in
-parsers) has nothing to charge steps to. Emitting the work-controlled shape and cutting
+A parser generated without budget controls (`NoBudgetControls`, the form of the checked-in
+parsers) has nothing to charge steps to. Emitting the budget-controlled shape and cutting
 the charges out of the text leaves residue in every action:
 
 - blank lines inside function bodies and `{ ; return ...` statements;
-- every term of an action wrapped in `func() any { c.P.Work(); return E }()`, which
+- every term of an action wrapped in `func() any { c.P.Spend(); return E }()`, which
   becomes `func() any { ; return E }()` after the cut;
 - `New` of a typed struct as a closure that assigns the fields to temporaries and then
-  calls the constructor, and constructors with a `Work` per field;
+  calls the constructor, and constructors with a `Spend` per field;
 - variables that are assigned and never read, silenced with `_, _ = x5, x8`, and counters
   that are incremented and never read.
 
-A term is the expression itself in every form, with or without work controls: the terms of an
+A term is the expression itself in every form, with or without budget controls: the terms of an
 action and the fields of a typed constructor carry no charge, and nothing wraps them in a function
-literal. The generator knows that it writes no work controls (`gen.Generator.NoWork`: no
-`WorkControls`) and emits no step charges at all: not the `Work` and `ReadWork` statements of rules, constructors and list
-converters. Work-controlled output keeps the charges of rule entries, loops and list converters;
+literal. The generator knows that it writes no budget controls (`gen.Generator.NoBudget`: no
+`BudgetControls`) and emits no step charges at all: not the `Spend` and `SpendRead` statements of rules, constructors and list
+converters. Budget-controlled output keeps the charges of rule entries, loops and list converters;
 the runtime built-ins that call lambdas charge one step per element.
 
 A typed `New` whose fields are written in declaration order, the common case, is a direct
@@ -75,27 +75,27 @@ cel +0.9% (control 0.0%); the differences to the control are inside the noise.
 `TestGenerateStraightLineActions` pins the generated form (no blank lines inside
 functions, no `{ ;`, no step charges, no function literal around a term, the constructor call
 for fields in declaration order and the temporaries before the call for fields out of order;
-work-controlled output still charges steps). `TestGeneratedTypedConstructorEvaluationOrder` compares the
+budget-controlled output still charges steps). `TestGeneratedTypedConstructorEvaluationOrder` compares the
 generated parser with the engine for constructors with the fields in and out of
 declaration order, where the two fields fail with different errors, so a swapped
 evaluation order fails the test. `TestGeneratedTermStatementsEvaluationOrder` does the same for
 an operand that needs statements (the fused `concat`) behind an operand that fails first.
 `TestGeneratedLoopCharge` checks that each call of a lambda is charged at least one step by the
-runtime's loops and that the loop built-ins and nested lambdas reach a work limit on a large
+runtime's loops and that the loop built-ins and nested lambdas reach a budget limit on a large
 input; its negative control runs a runtime without the per-element charge of the loops.
 
 `TestFlowVars*` test the decision on assignments formed by hand: the cascade of an
 assignment whose reader is left out, an effect that stays with the blank identifier, a variable that
 stays silenced, a pair of variables that only read each other (they stay), and a variable read
 only at an unreachable point. `TestGeneratedLocalVariables` type-checks the output for every test
-grammar in the forms with and without work controls, with Documents and as Nodes, fails on any
+grammar in the forms with and without budget controls, with Documents and as Nodes, fails on any
 generation error and reports any type error, which includes an unused variable and a use of one that
 was not declared; `TestLocalErrorsDetectsUnusedVariable` is its negative control, and
 `TestFlowVarsMutantFailsToCompile` shows that treating every variable as unread fails the check. The
-same test checks that the forms without work controls have no blank line inside a function.
+same test checks that the forms without budget controls have no blank line inside a function.
 
 The engine suite passes in both fixture modes (`PEGO_TEST_ORDINARY=1` generates without
-work controls, which the default run does not exercise).
+budget controls, which the default run does not exercise).
 
 ## Decision and Limits
 

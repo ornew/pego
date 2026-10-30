@@ -143,20 +143,20 @@ before matching, actions or named-rule lookup. A nil option panics when applied,
 Parser pooling and concurrent calls keep their limits independent. Limits count nested rule calls rather than
 brackets or AST nodes, and raising the limit does not guarantee host-stack capacity.
 
-## Cancellation and Work Limits
+## Cancellation and Budget Limits
 
-A Go parser generated with `-work-controls` also accepts invocation-local
-cancellation and work limits. Use the generated package's options and error
+A Go parser generated with `-budget-controls` also accepts invocation-local
+cancellation and budget limits. Use the generated package's options and error
 types; a package generated without the flag exports none of them, and a parse
 that passes `WithContext` with a context or `WithLimits` with a limit from the
-runtime returns an error saying that the parser was generated without work
+runtime returns an error saying that the parser was generated without budget
 controls (a nil context and a zero `Limits` set no control and are accepted):
 
 ```go
 node, err := pairsparser.Parse(input,
     pairsparser.WithContext(ctx),
     pairsparser.WithLimits(pairsparser.Limits{
-        MaxWork: 5_000_000,
+        Budget: 5_000_000,
     }))
 ```
 
@@ -166,15 +166,15 @@ resets for every call and remain independent during concurrent parsing. The
 same options work with named rules, recognition, direct typed parsing, and
 Node-to-typed conversion.
 
-`MaxWork` counts cumulative work in one counter, one unit each: inspected
+`Budget` counts cumulative spend in one counter, one unit each: inspected
 input elements, including input preparation, repeated scans and text
-extraction, and execution and per-element work in rule calls, loop iterations,
+extraction, and execution and per-element spend in rule calls, loop iterations,
 actions, memo lookup, graph/list construction, capture rollback, diagnostics
 and typed conversion. A loop that only scans input, such as a repeated
-character class, charges for every element it reads, so `MaxWork` bounds it.
+character class, charges for every element it reads, so `Budget` bounds it.
 Counts depend on the generated
 artifact and position unit; a limit is not a character count, memory cap, or
-elapsed-time limit. Backtracking never refunds work. Depth remains a separate
+elapsed-time limit. Backtracking never refunds spend. Depth remains a separate
 limit.
 
 Use `errors.Is(err, context.Canceled)` or `context.DeadlineExceeded` for
@@ -183,7 +183,7 @@ budget. `errors.As` can retrieve a `*pairsparser.LimitError` with `Kind`,
 `Limit`, `Used` and `Requested`. Interrupted entry points return their zero
 result; recovery cannot turn an interruption into a successful partial tree.
 Previously returned results stay valid, and a later invocation can retry.
-Cancellation is cooperative during engine work and is checked before input
+Cancellation is cooperative during engine execution and is checked before input
 preparation and before publishing a result.
 
 ## Type Names

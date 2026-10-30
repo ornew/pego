@@ -17,7 +17,7 @@ The public Go API provides programmatic structural queries over `pego.Node`; gen
 - Match node type/rule, named fields, ordered children, and node or scalar captures.
 - Type-check known patterns against an explicit schema; retain dynamic `top` as runtime-checked.
 - Define deterministic match/capture order, parent paths, shared-edge behavior, and cycle errors.
-- Bound traversal, predicates, and result construction with cancellation and work limits.
+- Bound traversal, predicates, and result construction with cancellation and budget limits.
 - Do not promise Tree-sitter query compatibility, semantic resolution, or punctuation/comment visibility absent from results.
 
 ## Proposed API and Pattern Model
@@ -37,7 +37,7 @@ func WithContext(ctx context.Context) Option
 func WithLimits(limits pego.Limits) Option
 ```
 
-The implemented Go API accepts context and work-limit options. Structural matching inspects no source text, so its work budget covers traversal and result construction. Cancellation returns the context error, exhaustion matches `ErrLimit`, and evaluation returns no partial result. Position predicates and highlight/range interpretation remain deferred; any future position-based behavior must require an explicit valid Unit rather than infer one from spans.
+The implemented Go API accepts context and budget limit options. Structural matching inspects no source text, so its budget covers traversal and result construction. Cancellation returns the context error, exhaustion matches `ErrLimit`, and evaluation returns no partial result. Position predicates and highlight/range interpretation remain deferred; any future position-based behavior must require an explicit valid Unit rather than infer one from spans.
 
 An illustrative pattern is:
 
@@ -46,7 +46,7 @@ An illustrative pattern is:
 (Binary left: (Identifier @lhs) right: (Identifier @rhs))
 ```
 
-Patterns constrain a node by type or rule, require child/field structure, and bind captures. Initial syntax should avoid arbitrary host callbacks, unbounded regex, or other operations without a charging rule. The exact grammar and text-predicate operators remain proposed. Text predicates inspect only Node text or a caller-supplied source snapshot; they cannot see discarded punctuation/comments. A TypeScript counterpart could expose `compileQuery(source, schema)` and `query.matches(root, options)`, with position unit, safe-integer work limits, and an optional structural cancellation signal following design 033.
+Patterns constrain a node by type or rule, require child/field structure, and bind captures. Initial syntax should avoid arbitrary host callbacks, unbounded regex, or other operations without a charging rule. The exact grammar and text-predicate operators remain proposed. Text predicates inspect only Node text or a caller-supplied source snapshot; they cannot see discarded punctuation/comments. A TypeScript counterpart could expose `compileQuery(source, schema)` and `query.matches(root, options)`, with position unit, safe-integer budget limits, and an optional structural cancellation signal following design 033.
 
 Compilation may receive a `schema.Output`. The implemented Go subset performs a narrow scalar check when a query names a declared struct field directly and its shape is scalar or optional scalar: for example, `Value *string` permits `string` and `nil` categories and rejects other known categories. It follows declared type-alias chains that resolve to those shapes. Nested patterns are checked against the shapes of the values they apply to; a join needs one alternative that the pattern can match. Unresolved references remain runtime-checked. Dynamic or unknown types remain runtime-checked. Since schema v1 has no cross-grammar digest, the compiled query is tied to the schema content supplied at compilation; it does not claim portable identity across grammars. Without a schema, type and field checks are deferred to evaluation. Captures are always checked against their runtime value categories, even with a schema: mutable Nodes carry no certification that they came from that grammar or still conform to its shape. Mismatches are ordinary nonmatches or explicit query errors according to the operator contract, never unsafe type assertions.
 
@@ -127,19 +127,19 @@ The immediate parent is the node that holds the value; a root has no parent.
 Each capture owns its root-relative edge-path slice but borrows its value and
 parent. Concurrent graph mutation is unsupported.
 
-Cancellation uses the supplied context error. Work exhaustion uses the existing
+Cancellation uses the supplied context error. Budget exhaustion uses the existing
 `LimitError`/`ErrLimit`, and zero limits are unlimited. Structural queries
-charge no input because they inspect no source text. Work is charged for
+charge no input because they inspect no source text. Budget is spent for
 visited values, pattern checks, outgoing edge/field discovery, field indexing,
 path construction/copying, captures, and matches. Cancellation is checked at every
 reservation and before returning results. Field sorting is preceded by a linear
-reservation; the budget is a deterministic abstract-work bound, not a count of
+reservation; the budget is a deterministic abstract-budget bound, not a count of
 sort comparisons. Full edge paths currently incur quadratic copying on a deep
 chain, and these copies are charged before construction. No speed or allocation
 claims are made.
 
 Package `query` exposes `Compile`, `Prepare`, `Pattern`, capture/path types,
-`Query.Matches`, and context/work-limit options. It preserves per-edge results and all-or-error
+`Query.Matches`, and context/budget limit options. It preserves per-edge results and all-or-error
 behavior. The implemented pattern language is
 programmatic; text syntax, text predicates, position/range queries, highlighting,
 TypeScript parity, and direct snapshot evaluation remain deferred. Discarded

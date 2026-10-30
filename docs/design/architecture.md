@@ -91,7 +91,7 @@ These three mechanisms change how the engine treats input and results, so they c
 
 ## Observability
 
-Tracing, profiling, explanations and work limits are not afterthoughts bolted on at run time; every backend that can
+Tracing, profiling, explanations and budget limits are not afterthoughts bolted on at run time; every backend that can
 run a program also has a way to report what it did. The design rule is that the cost when observation is off must be
 a single predictable check, and that observation never changes what the parser accepts or returns. Generated code gets
 the same features through variants of the generated text, so the plain build stays free of them. The user-facing
@@ -119,7 +119,7 @@ contract is [Observability](../../spec/runtime/observability.md).
 |:--|:--|
 | Grammar syntax, text and JSON forms | `internal/syntax/`, `grammar/` |
 | Compilation, analysis, checking and the bytecode compiler | `internal/compile/` |
-| The parser runtime: compilation entry points, streams and work controls, over the backends and the Document | `internal/engine/` |
+| The parser runtime: compilation entry points, streams and budget controls, over the backends and the Document | `internal/engine/` |
 | The parse state that every backend shares, and what a backend provides | `internal/engine/core/` |
 | The closure backend | `internal/engine/closure/` |
 | The bytecode VMs, recursive and iterative | `internal/engine/vm/` |

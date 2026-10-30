@@ -27,13 +27,13 @@ document describes the benchmarks, analyzes the results, and records how they ca
 ## Where PEGO Stands
 
 This analysis describes the generated full-suite snapshot in [benchmarks.md](benchmarks.md), measured on 2026-10-29 at commit `13b3d186` (Go 1.27.1, Apple M3 Max, darwin/arm64, 16 cores, `GOMAXPROCS=16`). It contains 253 benchmark cases, three samples per case, and the Go benchmarks took 892.334 seconds; the generated TypeScript timings and the parser sizes were captured in the same run. This is one revision's snapshot, not a before-and-after comparison; ratios below compare operations within this run and do not attribute changes to a particular mechanism.
-Work-control behavior and its generated-Go cost are described in
-[design 033](design/records/033-cancellable-parses-and-work-budgets.md) and
+Budget-control behavior and its generated-Go cost are described in
+[design 033](design/records/033-cancellable-parses-and-budgets.md) and
 [optimization record 096](optimizations/096-specialize-generated-go-method-helpers.md).
-The snapshot measures active controls on JSON and XML (`WorkControlModes`, `ControlledParse`); the ordinary parsing
+The snapshot measures active controls on JSON and XML (`BudgetControlModes`, `ControlledParse`); the ordinary parsing
 benchmarks run with the controls inactive. Relative to the inactive mode on the three interpreters in both position
-units, a cancelable context takes 1.45–1.68× the time, finite work limits 1.54–1.79× and both together 1.54–1.79×, with
-the same allocation counts. Generated Go with finite work limits takes 1.30–1.47× its ordinary `Parse` time and
+units, a cancelable context takes 1.45–1.68× the time, finite budget limits 1.54–1.79× and both together 1.54–1.79×, with
+the same allocation counts. Generated Go with finite budget limits takes 1.30–1.47× its ordinary `Parse` time and
 1.47–1.61× its ordinary (CodePoints) `ParseAST` time. Neither this snapshot nor these records imply deployed behavior.
 
 **Backends.** Across all eight parsing workloads, generated Go Node parsing takes 0.44–0.61× closure time in CodePoints and 0.50–0.66× in Bytes. Recursive VM parsing takes 1.14–1.32× closure time in CodePoints and 1.13–1.35× in Bytes. Iterative VM parsing takes 1.33–1.76× closure time in CodePoints and 1.35–1.76× in Bytes. The slowest relative case is iterative Operators Rule arithmetic at 1.76× closure in both units. Closure remains the default (see the [Choosing a Backend](guide/backends.md)); the VMs serve loaded compiled grammars (a `.pegoc` file holds one bytecode module of one mode and loads on the bytecode backends only) and, iteratively, deep nesting.
@@ -222,7 +222,7 @@ entry points that [benchmarks.md](benchmarks.md) reports, captured by `go run ./
 workloads that `TestGeneratedTSTypedWorkloads` and `TestGeneratedTSTypedSharedDAG` write when
 `PEGO_TS_TYPED_DIR` is set, and `bench/ts-literal.mjs` for literal matching. Compare two generators by
 alternating them in each round, run at least six rounds, and compare medians and ranges. The form without
-`-work-controls` is the default, so compare it with the controlled form separately. Results are in
+`-budget-controls` is the default, so compare it with the controlled form separately. Results are in
 [record 122](optimizations/122-typescript-from-flow-ir.md).
 
 ## Mechanism Catalog

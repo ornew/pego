@@ -11,7 +11,7 @@ construction of the terminal. A case-insensitive keyword such as `[uU] [nN] [iI]
 [oO] [nN]` repeated that for every letter. These lines were the largest repeated
 pattern in the large generated parsers.
 
-A parser generated without work controls and without Documents now declares one
+A parser generated without budget controls and without Documents now declares one
 immutable `Class` per distinct class (a 128-bit ASCII membership set, the pairs of
 wider ranges, and the negation flag) and uses it in two places:
 
@@ -60,5 +60,5 @@ suite and `parsers/test.sh` pass.
 
 ## Decision and Limits
 
-Adopted for Go parsers without work controls and Documents. The helpers are
+Adopted for Go parsers without budget controls and Documents. The helpers are
 generated-code support, not a stable API.

@@ -92,7 +92,7 @@ on the earlier decoding, including a prefix completed by an insertion at EOF. In
 have already been replaced with U+FFFD; editing that normalized text does not reassemble the original bytes.
 
 A `Document` is not safe for concurrent use; a `Parser` is, so use one `Document` per goroutine and share the `Parser`.
-Several `Edit` calls can precede one `Parse`. Each successful `Edit` advances `Version` once, including a no-op; parsing does not. Both `Edit` and `EditBatch` are outside parse-work limits.
+Several `Edit` calls can precede one `Parse`. Each successful `Edit` advances `Version` once, including a no-op; parsing does not. Both `Edit` and `EditBatch` are outside parse-budget limits.
 
 Use `EditBatch` when one editor transaction contains several replacements. All ranges are measured in the unchanged base text, not adjusted after earlier edits in the batch. Starts must be strictly increasing and ranges nonoverlapping; insertions at the same position are rejected. A failed batch changes nothing. A successful nonempty batch advances the version once, clears reusable parse state, and leaves parsing to the next `Parse` call. It preserves the existing `Node` behavior: previously returned Nodes are not moved until a later parse. Cache reset means batches do not promise the reuse cost of a sequence of `Edit` calls.
 
@@ -113,9 +113,9 @@ The example assumes `doc` and the `pego` import are already in scope. The insert
 Piece-backed storage is internal to `Document`; batch parsing and streaming keep
 their contiguous input paths. `Document.Text()` and `Node.Text()` keep their
 existing meanings. CodePoints initialization decodes and normalizes input, so
-that inspected work is charged. For Bytes, a large immutable input may be kept
+that inspected input is charged. For Bytes, a large immutable input may be kept
 as an original string-backed piece without scanning or copying it; zero
-construction work is valid when no elements were inspected. Parsing still
+construction spend is valid when no elements were inspected. Parsing still
 charges scans, literal comparisons and text materialization across pieces.
 
 A pre-execution option error or cancellation leaves existing reusable caches and
@@ -128,7 +128,7 @@ retry the parse; ordinary syntax errors and recovered errors are completed
 outcomes and keep their reusable caches. Trace panics still propagate after
 cleanup.
 
-`WithContext` cooperatively cancels engine work, and `WithLimits` bounds
+`WithContext` cooperatively cancels engine execution, and `WithLimits` bounds
 per-invocation work. These are not elapsed-time or
 buffered-byte limits. A blocked reader or callback cannot be preempted by the
 parser; cancellation is observed after caller code returns. See [Streaming](streaming.md#cancelling-a-stream)
@@ -144,7 +144,7 @@ Document advances, capture them together:
 ```go
 snapshot, err := doc.Snapshot(pego.WithContext(ctx), pego.WithLimits(limits))
 if snapshot == nil {
-    return err // cancellation or a work limit publishes no partial snapshot
+    return err // cancellation or a budget limit publishes no partial snapshot
 }
 
 text := snapshot.Text()
@@ -158,10 +158,10 @@ if root.Valid() {
 
 A normal syntax failure still returns a Snapshot with its text and version, a
 zero root, and the copied syntax error. A recovered parse keeps its root and
-recovered errors. Cancellation or work-limit exhaustion during parsing or
+recovered errors. Cancellation or budget limit exhaustion during parsing or
 capture returns a nil Snapshot. The same invocation budget covers parsing,
 copying text, freezing the graph, and copying diagnostics. Snapshot getters and
-`Materialize` run after capture and have no inherited controller or work limit.
+`Materialize` run after capture and have no inherited controller or budget limit.
 
 `SnapshotNode` is a read-only handle. Its zero value represents a nil Node;
 `ChildCount` includes nil child slots. `Field(name)` returns both a value and a

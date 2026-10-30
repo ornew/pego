@@ -68,11 +68,11 @@ err: context deadline exceeded true
 
 - `context.AfterFunc` runs `cancelRead` when the context ends. For a pipe, `CloseWithError` makes the blocked `Read` return
   the error; for a connection, close it or set a read deadline.
-- `WithContext(ctx)` covers the work between reads: the engine stops at the next check with the context's error.
+- `WithContext(ctx)` covers the engine execution between reads: the engine stops at the next check with the context's error.
 - The records delivered before the deadline are caller-owned and remain valid.
 
 ## Variations and Limits
 
-- To bound the work instead of the time, use `pego.WithLimits`; exhaustion matches `pego.ErrLimit`. See
-  [Cancellation and Work Limits](../guide/cancellation-and-limits.md) and [Streaming](../guide/streaming.md#cancelling-a-stream).
+- To bound the budget instead of the time, use `pego.WithLimits`; exhaustion matches `pego.ErrLimit`. See
+  [Cancellation and Budget Limits](../guide/cancellation-and-limits.md) and [Streaming](../guide/streaming.md#cancelling-a-stream).
 - Restarting requires replaying the input yourself: the reader offset is not a continuation token.

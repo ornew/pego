@@ -84,7 +84,7 @@ The iterator and reader remain caller-owned. The iterator is single-owner and is
 
 Factor the current synchronous stream parser into state that can pause at an element boundary and resume on request. `ParseStream` can drive the same state repeatedly and invoke `emit`; its no-option behavior must retain the full recovered-error list. Keep diagnostic options in the existing functional parse-option path but mark them stream-only, validating that boundary before parsing a non-stream input.
 
-The parser reports diagnostics only at a recovery commit point, after the parser knows the recovery was not rolled back. It copies error slices before invoking user callbacks. One bounded collector serves callback and iterator modes; an explicit dropped count makes incomplete retention visible in the final wrapper. Terminal state records EOF, parse failure, callback failure, input failure or explicit close and returns the same terminal result on repeated calls. `WithContext` and `WithLimits` apply to the invocation, including callback boundaries and bounded-tail copying. If a work check observes cancellation or a work limit before completion, that interruption error is returned instead of a completed diagnostic result.
+The parser reports diagnostics only at a recovery commit point, after the parser knows the recovery was not rolled back. It copies error slices before invoking user callbacks. One bounded collector serves callback and iterator modes; an explicit dropped count makes incomplete retention visible in the final wrapper. Terminal state records EOF, parse failure, callback failure, input failure or explicit close and returns the same terminal result on repeated calls. `WithContext` and `WithLimits` apply to the invocation, including callback boundaries and bounded-tail copying. If a budget check observes cancellation or a budget limit before completion, that interruption error is returned instead of a completed diagnostic result.
 
 ### Compatibility and Backend Support
 
@@ -100,7 +100,7 @@ This is an additive Go API for the stream-capable closure and bytecode backends;
    metadata.
 3. `ParseStream` uses the same commit boundaries while preserving the complete
    legacy result when no positive limit is selected. Reader ownership, read-ahead,
-   cancellation and work limits are documented for both stream entry points.
+   cancellation and budget limits are documented for both stream entry points.
 
 ## Alternatives Considered
 
@@ -111,7 +111,7 @@ This is an additive Go API for the stream-capable closure and bytecode backends;
 
 ## Testing
 
-Public and engine tests cover both position units and all stream-capable backends for element order, nil elements, spans, recovered and terminal errors, EOF, callback and emit failures, backtracking, positive and zero limits, invalid options, repeated `Next`, early `Close`, stable terminal results, defensive callback copies, panic propagation and `errors.As` through truncated results. Long faulty streams verify bounded retention, callback delivery of every committed recovery, dropped counts and saturating counters. Tests also cover trace preview, work-limit interruption, blocking-reader ownership, read-ahead, empty-element termination and Unicode.
+Public and engine tests cover both position units and all stream-capable backends for element order, nil elements, spans, recovered and terminal errors, EOF, callback and emit failures, backtracking, positive and zero limits, invalid options, repeated `Next`, early `Close`, stable terminal results, defensive callback copies, panic propagation and `errors.As` through truncated results. Long faulty streams verify bounded retention, callback delivery of every committed recovery, dropped counts and saturating counters. Tests also cover trace preview, budget limit interruption, blocking-reader ownership, read-ahead, empty-element termination and Unicode.
 
 ## Performance and Results
 
@@ -180,6 +180,6 @@ recoveries from a successful suffix. Truncation counts are available only from
 the terminal `TruncatedSyntaxErrors`. The
 public and engine tests cover both position units and all stream-capable
 backends, including ordering, bounded retention, callback errors, truncation,
-trace preview and work-limit interruption. The iterator delivery and bounded-tail measurements are reported above; they
+trace preview and budget limit interruption. The iterator delivery and bounded-tail measurements are reported above; they
 show the tested allocation and timing ranges, not retained-heap or broad
 workload performance.

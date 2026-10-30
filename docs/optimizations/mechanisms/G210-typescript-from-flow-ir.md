@@ -14,7 +14,7 @@ The printer keeps the text small and the functions few:
 
 - Printing runs dry to a fixpoint of what is read, so a mark part (position, environment, trail,
   recovered count) is declared only as far as it is read, and an unread assignment is not printed.
-- Consecutive step charges merge into one `p.work(n)`, and an expectation unisolate followed by a
+- Consecutive step charges merge into one `p.spend(n)`, and an expectation unisolate followed by a
   merge of the same variables is one `p.unisolateMerge(mark)` that merges in place.
 - Functions whose printed bodies are equal share one method (`gen.Generator.MethodName`). The key of a function
   replaces each constant it names (a literal table, the capture names, a bind function) by the declaration
@@ -27,8 +27,8 @@ The printer keeps the text small and the functions few:
   `Error.stackTraceLimit` while it builds the error, because capturing a stack per recovered error
   dominated recovery time. The error of a failed parse keeps its stack.
 
-Work charges follow the work model of the IR: one at rule entry and one per loop iteration, printed only
-with `-work-controls`.
+Budget charges follow the budget model of the IR: one at rule entry and one per loop iteration, printed only
+with `-budget-controls`.
 
 ## Scope and State
 
@@ -42,9 +42,9 @@ None. The generated parsers are compared with the engine oracle over the corpus 
 ## Evidence and Implementation
 
 Record 122 measures the printer against the grammar-tree printer it replaced, in six rotated rounds
-on Node 24. The old printer always charges work, so its output is the controlled form; the comparison
-below sets it against the new default form, without work controls, and the like-for-like comparison with
-`-work-controls` is in the record.
+on Node 24. The old printer always spends budget, so its output is the controlled form; the comparison
+below sets it against the new default form, without budget controls, and the like-for-like comparison with
+`-budget-controls` is in the record.
 
 - Speed: parse and recognition of JSON, CSV and XML are 17% to 46% faster (parse 0.83x, 0.83x and 0.68x,
   recognition 0.70x, 0.61x and 0.54x).
@@ -57,7 +57,7 @@ below sets it against the new default form, without work controls, and the like-
   Python +19%, DuckDB +46%): the printed text is shorter and less repetitive. Sharing outlined functions
   of equal structure removes 691 of the 1,924 outlined functions of DuckDB and 3.8% of its bytes; the
   rest of its growth is not explained.
-- Work controls: the plain form is at most 5.5% from the controlled form in time (CSV recognition is faster
+- Budget controls: the plain form is at most 5.5% from the controlled form in time (CSV recognition is faster
   plain; XML parsing is 4.6% slower plain with overlapping ranges) and 0.9% to 3.1% smaller.
 
 Evidence records: [122](../122-typescript-from-flow-ir.md).
@@ -67,6 +67,6 @@ Source owners: [`Flow IR printer`](../../../internal/gen/tsgen/flow.go), [`outli
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
 
-Related mechanisms: [G050](G050-generated-work-control-specialization.md), [G190](G190-typed-recovery-bodies.md).
+Related mechanisms: [G050](G050-generated-budget-control-specialization.md), [G190](G190-typed-recovery-bodies.md).
 
 [Optimization Catalog](../README.md)

@@ -163,8 +163,8 @@ export function recognize(input: string | Uint8Array, unit?: Unit): Error | null
 export interface ParseOptions {
   unit?: Unit;
   maxDepth?: number;
-  signal?: CancellationSignal | null;  // with -work-controls only
-  maxWork?: number;                     // with -work-controls only
+  signal?: CancellationSignal | null;  // with -budget-controls only
+  budget?: number;                     // with -budget-controls only
 }
 export function parseWithOptions(input: string | Uint8Array, options?: ParseOptions): ParseResult;
 export function parseRuleWithOptions(name: string, input: string | Uint8Array, options?: ParseOptions): ParseResult;
@@ -463,26 +463,26 @@ console.log(recognize("let a;"));
 null
 ```
 
-## Cancellation and Work Limits
+## Cancellation and Budget Limits
 
-A parser generated with `-work-controls` accepts `signal` and `maxWork` in the options-aware entry points to
-stop a parse of input you do not control. Without the option the parser emits no code that charges work and sets no control, its options type has
+A parser generated with `-budget-controls` accepts `signal` and `budget` in the options-aware entry points to
+stop a parse of input you do not control. Without the option the parser emits no code that spends budget and sets no control, its options type has
 neither, and a call that passes one returns an error. A parser has one form: with the option it is the controlled one, and a
 parse that sets no limit runs the same code, so generate two parsers if you need the plain form as well. `signal` is any object with `aborted` and an optional `reason`, so an `AbortSignal` fits; the limit is a
 nonnegative safe integer, and zero means unlimited. An interrupted parse returns no tree and a
 `ParseInterruptionError` whose `kind` says what happened:
 
 ```ts
-const result = parseWithOptions(input, { maxWork: 5_000_000, signal: AbortSignal.timeout(2000) });
+const result = parseWithOptions(input, { budget: 5_000_000, signal: AbortSignal.timeout(2000) });
 if (result.error instanceof ParseInterruptionError) {
   console.log(result.error.kind, result.error.used);
 }
 ```
 
 A parse is synchronous and does not yield to the event loop, so a timer such as `AbortSignal.timeout` cannot fire during
-the call: use `maxWork` for a bound that holds, and a signal that is already aborted or a worker
+the call: use `budget` for a bound that holds, and a signal that is already aborted or a worker
 that you terminate for cancellation. The units of the limits are explained in
-[Cancellation and Work Limits](../../spec/runtime/parsing.md#cancellation-and-work-limits).
+[Cancellation and Budget Limits](../../spec/runtime/parsing.md#cancellation-and-budget-limits).
 
 ## Deep Nesting and the JavaScript Stack
 
@@ -539,7 +539,7 @@ The parity tests parse in a worker with a 1 GB stack, so that they also check th
 
 Generated TypeScript supports every feature of the grammar language: Rule Expressions, Operators Rules, left recursion, Predicates and variables, actions, built-in functions, `@error` and
 `#recover`. It adds `parseRule` for another start rule, a `unit` argument for the position unit, `recognize` (with
-`-recognize`) for matching without a tree, and `maxDepth`, and with `-work-controls` `signal` and `maxWork`, in the options-aware
+`-recognize`) for matching without a tree, and `maxDepth`, and with `-budget-controls` `signal` and `budget`, in the options-aware
 entry points. It has no `#stream` and `ParseStream`, and no `Document`: `#stream` is an ordinary repetition, as in Go.
 Typed values (`-types`) give interfaces and aliases and `parseAST`/`parseASTWithOptions` for the configured start rule,
 while `parse` still returns Nodes. The [specification](../../spec/runtime/generated-parsers.md#compatibility-and-support) has

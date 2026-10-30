@@ -16,9 +16,9 @@ proposes:
   reusing a repetition's run after backtracking;
 - a lint warning for variables that grow themselves;
 - a regression suite that measures work at n, 2n, 4n and 8n;
-- an opt-in automatic work budget of c·n.
+- an opt-in automatic budget of c·n.
 
-The remaining super-linear constructs are reported and bounded by the work budget instead.
+The remaining super-linear constructs are reported and bounded by the budget instead.
 
 ## Motivation
 
@@ -45,12 +45,12 @@ four ways:
 
 Revision `e71bf2f2`, Go 1.27.1, darwin/arm64, closure backend, code points. Each figure gives:
 
-- the exact threshold of `Limits.MaxWork`, found by bisection to 0.5%;
+- the exact threshold of `Limits.Budget`, found by bisection to 0.5%;
 - the rule evaluations reported by `Profile.Evals`;
 - the bytes allocated per parse.
 
 Steps are deterministic for a fixed artifact, input and options
-([Cancellation and work limits](../../../spec/runtime/parsing.md#cancellation-and-work-limits)). The ratios therefore
+([Cancellation and budget limits](../../../spec/runtime/parsing.md#cancellation-and-budget-limits)). The ratios therefore
 do not depend on timing noise.
 
 | | Grammar | Input family | Steps as n grows | Order |
@@ -70,7 +70,7 @@ do not depend on timing noise.
 | E4 | `var s string = "a"; R = "x" {s := s + s} R / {len(s) > 0}` | `x^n` | n=16…22: 0.39M → 1.58M → 6.31M → 25.2M; evaluations linear | 2^n value size |
 | E5 | `main = xs:"x"* => len(foldl("a", $xs, (acc, x) => acc + acc))` | `x^n` | identical to E4, in one action | 2^n value size |
 
-E2 grows the same way on the bytecode and iterative backends. The work limit stops every case above in proportion to
+E2 grows the same way on the bytecode and iterative backends. The budget limit stops every case above in proportion to
 the work done, because the closure backend charges value construction by size.
 
 A further case is a correctness defect rather than a cost. `var k int; R = {k := k + 1} R "x" / "x"` recurses
@@ -87,7 +87,7 @@ below assumes both.
 
 A server that parses untrusted input with a fixed grammar cannot tell from the grammar whether an attacker controls
 the exponent of its running time. The same is true of an editor that parses every keystroke with a user's grammar.
-Work limits stop a runaway parse. They do not tell the grammar author that the grammar is the cause, or which rule to
+Budget limits stop a runaway parse. They do not tell the grammar author that the grammar is the cause, or which rule to
 change.
 
 ## Goals
@@ -98,7 +98,7 @@ change.
 - Make the constructs linear that can be made linear without changing results: repetitions re-scanned after
   backtracking, and left-recursion cycle members.
 - Warn about variables whose binding grows from their own previous value.
-- Offer an opt-in work budget derived from the input length.
+- Offer an opt-in budget derived from the input length.
 - Prove the classifier's soundness on paper, and check it by measurement with deterministic step counts.
 
 ## Non-Goals
@@ -117,7 +117,7 @@ A parse is a tree of rule evaluations. Its time is the sum, over every body eval
 work**: the terminals it matches, its loop iterations, the actions and predicates it evaluates and the memo lookups
 it makes, excluding the bodies of the rules it calls. Its memory is the memo table, plus the values it builds, plus
 the call stack. Memory never exceeds a constant times time, because every entry and every value costs at least one
-unit of work to create.
+budget unit to create.
 
 Per construct:
 
@@ -283,18 +283,18 @@ is growing; such runs are not recorded.
 
 **What stays super-linear.** Left-recursion growth and Operators Rule folds that a grammar abandons and restarts (E6,
 E10) build a different result at each position. They stay `Poly(2)`. The classifier names the rule and the
-backtracking context, and the work budget bounds them. Variables violating L1 and doubling values violating L4 stay
+backtracking context, and the budget bounds them. Variables violating L1 and doubling values violating L4 stay
 exponential by design, and are warned about.
 
-### Work Budgets
+### Budgets
 
-The single work budget keeps charges for value construction
+The single budget keeps charges for value construction
 proportional to the size built: string concatenation, `concat` and `list` materialization, and fold accumulators. A
 per-call or per-iteration charge alone lets E4 cost 2^n while charging n.
 
 The automatic budget is opt-in: a parse option sets the budget to c · (n + 1) + k for the input length n. The default
 c is c_G of a `Linear` start rule, times a safety factor. For other verdicts the caller must give c explicitly. Without
-the option, parses stay unbounded, as today. Exhausting the automatic budget returns the ordinary work-limit error. When
+the option, parses stay unbounded, as today. Exhausting the automatic budget returns the ordinary budget limit error. When
 profiling is active, the error names the rule with the most repeated evaluations at one position, as `Profile` reports
 them (`internal/engine/profile.go:66-72`).
 
@@ -306,7 +306,7 @@ normative when the classifier and the two runtime changes land; until then it is
 > ## Complexity
 >
 > The **work** of a parse is the number of body evaluations of rules, the input that terminals examine, the
-> iterations of repetitions and the size of the values that actions and predicates build. Work bounds both the time and
+> iterations of repetitions and the size of the values that actions and predicates build. Budget bounds both the time and
 > the memory of a parse: memory never exceeds a constant times the work.
 >
 > - A rule is evaluated at most twice per position, binding level and combination of the values of the variables it
@@ -320,7 +320,7 @@ normative when the classifier and the two runtime changes land; until then it is
 > - Every parse terminates. A call of a left-recursive rule at a position where that rule is already being evaluated
 >   fails, whatever the values of variables.
 >
-> Work limits ([Cancellation and work limits](../../../spec/runtime/parsing.md#cancellation-and-work-limits)) bound the work of any parse. Values are
+> Budget limits ([Cancellation and budget limits](../../../spec/runtime/parsing.md#cancellation-and-budget-limits)) bound the work of any parse. Values are
 > charged in proportion to their size, so a limit also bounds the memory that values occupy.
 
 ### Compatibility and Backend Support
@@ -337,7 +337,7 @@ grammars carry the memo flag of cycle members, and the format may change before 
 2. Memoizing left-recursion cycle members; E2 moves to the positive set.
 3. Repetition-run reuse in batch parses; E1, E7, E8 and E9 move to the positive set.
 4. The classifier as a Core analysis, and the `growing-variable` and `super-linear` lint checks.
-5. The automatic budget option, after the single work budget lands.
+5. The automatic budget option, after the single budget lands.
 6. The Complexity section of the specification, and corrected comments where the code claims linear time.
 
 ## Alternatives Considered
@@ -361,7 +361,7 @@ grammars carry the memo flag of cycle members, and the format may change before 
 Proposed:
 
 - **Step-ratio suite.** For each grammar of the shared corpora (`internal/corpora`) and each E-series grammar, generate
-  inputs of sizes n, 2n, 4n and 8n with the input generator. Measure steps with bisection over the work limit, or with a
+  inputs of sizes n, 2n, 4n and 8n with the input generator. Measure steps with bisection over the budget limit, or with a
   test-only counter. Assert:
   - for a start rule classified `Linear`, a ratio ≤ 2.2 per doubling;
   - for each negative control, the order in the table above.
@@ -420,14 +420,14 @@ blow-ups. That leaves unmemoized re-entry and diverging state as the exponential
 3. **Run reuse is on by default.** Recording is deferred until a site restarts inside an earlier run, and an
    optimization control disables it, as the memo has. It is adopted only if the corpora and benchmark grammars, which
    never restart inside runs, show no slowdown. Without that evidence it stays behind the control.
-4. **Memory has no bound beyond work.** Work bounds memory linearly. A memo-entry cap with eviction, which is
+4. **Memory has no bound beyond work.** Budget bounds memory linearly. A memo-entry cap with eviction, which is
    semantically safe except for growing seeds and Documents, is reconsidered when a Document or stream workload
    shows memo memory as the limit. A byte budget for values is not added.
 5. **The automatic budget uses c_G times a safety factor.** The factor is documented, and the caller can override c.
    For grammars that are not certified linear, the caller must give c. A corpus-measured constant was rejected
    because it is wrong for unusual grammars.
 6. **Restarted left-recursion growth and Operators Rule folds are classified and budgeted.** E6 and E10 stay
-   `Poly(2)`, reported with a witness and bounded by the work budget. Reusing end positions in recognition mode was
+   `Poly(2)`, reported with a witness and bounded by the budget. Reusing end positions in recognition mode was
    rejected: it would be linear only without values, and would add a second growth path to maintain.
 
 ## Limitations

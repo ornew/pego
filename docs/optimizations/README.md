@@ -108,7 +108,7 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 | [G020](mechanisms/G020-lazy-backend-preparation.md) | Lazy one-time setup of optional engine recognizer/VM backends | First-use engine setup; closure recognition only, ordinary closure graph is eager | Partial | Partial | Partial | — | — | — | Default on demand | None maintained |
 | [G030](mechanisms/G030-constructor-dependency-analysis.md) | Sample constructor dependency propagation | Shared sampling analysis, runtime cells N/A | — | — | — | — | — | — | Default setup path | None maintained |
 | [G040](mechanisms/G040-copy-on-change-attribute-normalization.md) | Reuse unchanged AST paths during attribute normalization | Shared compile/generation preprocessing only, not runtime matching | — | — | — | — | — | — | Default setup path | Compile Options.EagerAttributeCopies |
-| [G050](mechanisms/G050-generated-work-control-specialization.md) | Print one form of the generated Go functions per option set | GN/TG only; adopted; effect scope from record 096 | — | — | — | ✓ | ✓ | — | Default | — |
+| [G050](mechanisms/G050-generated-budget-control-specialization.md) | Print one form of the generated Go functions per option set | GN/TG only; adopted; effect scope from record 096 | — | — | — | ✓ | ✓ | — | Default | — |
 | [G060](mechanisms/G060-ordinary-typed-direct-rules.md) | Ordinary typed direct bodies | TG eligible default; later extensions separately keyed | — | — | — | — | Partial | — | Default | None maintained |
 | [G070](mechanisms/G070-literal-text-predicates.md) | Pure literal-text disjunction lowering | GN/TG/TS eligible default | — | — | — | Partial | Partial | Partial | Default | GenOptions.DisableLiteralTextDispatch |
 | [G080](mechanisms/G080-equal-capture-type-reuse.md) | Reuse structurally equal capture types | Shared type analysis, runtime cells N/A | — | — | — | — | — | — | Default setup path | None maintained |
@@ -230,7 +230,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [093. Chunked input storage for Document edits](093-chunked-document-input.md)
 - [094. Generation-only typed-output liveness cleanup](094-generated-typed-output-liveness.md)
 - [095. Copy-on-change attribute normalization](095-attribute-copy-on-change.md)
-- [096. Specialize generated Go work-control methods](096-specialize-generated-go-method-helpers.md)
+- [096. Specialize generated Go budget-control methods](096-specialize-generated-go-method-helpers.md)
 - [097. Exact Document Snapshot record sharing](097-exact-document-snapshot-record-sharing.md)
 - [098. Bootstrap generated typed output allocations](098-bootstrap-generated-typed-output-allocations.md)
 
@@ -240,7 +240,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [100. Relative Snapshot Position Overlays](100-relative-snapshot-position-overlays.md)
 - [101. Skip positional items for action-free rules](101-skip-positional-items-for-action-free-rules.md)
 - [102. Read text struct fields without a struct lookup](102-read-text-struct-fields-without-a-struct-lookup.md)
-- [103. Inline the common work charge](103-inline-the-common-work-charge.md)
+- [103. Inline the common budget charge](103-inline-the-common-budget-spend.md)
 - [104. Smaller generated Go parsers](104-smaller-generated-go-parsers.md)
 - [105. Character class tables in generated Go parsers](105-character-class-tables.md)
 - [106. Dropping what only non-start rule entries reach](106-start-rule-reachability.md)
@@ -258,7 +258,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [118. TypeScript operator nodes are built directly](118-typescript-operator-nodes-built-directly.md)
 - [119. Case-insensitive literals in generated parsers](119-case-insensitive-literals.md)
 - [120. Unreachable rule bodies in generated parsers](120-unreachable-rule-bodies.md)
-- [121. Inactive work-control checks in the generated Go runtime](121-inactive-work-control-checks.md)
+- [121. Inactive budget-control checks in the generated Go runtime](121-inactive-budget-control-checks.md)
 - [122. Generated TypeScript printed from Flow IR](122-typescript-from-flow-ir.md)
 - [123. Smaller boilerplate in generated Go](123-smaller-generated-go-boilerplate.md)
 

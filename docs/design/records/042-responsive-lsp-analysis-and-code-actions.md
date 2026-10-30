@@ -224,7 +224,7 @@ The server computes each fix from `lint.Rewrites` and then verifies it on a copy
 - Every other declared rule has the same type and the same shape signature (`Program.ShapeSignature`). The signature records, for every subexpression except lookaheads and what they hold, the elements and captures it contributes to the tuple of its scope. The type of a rule can hide a change inside it, such as a discard that moved to another element, but the signature shows it.
 - Every inline action has the same type and shape signature. An inline action is a rule that the compiler generates, so it is not among the declared rules. Both grammars are lowered, so that each inline action is a hidden rule named by its holder and number, which an edit does not change, and the lowered rules are compared like the declared ones. The inline actions of a deleted rule are not compared.
 
-It does not parse inputs. That the edit leaves the language and the values unchanged rests on the proof of each kind above, with these comparisons as the check on it. The work polls the request context, so a newer edit cancels it, and the edit is a versioned `documentChanges` edit for the analyzed version. The VS Code client applies it under the same synchronous version check as a suppression (see "VS Code Suppression").
+It does not parse inputs. That the edit leaves the language and the values unchanged rests on the proof of each kind above, with these comparisons as the check on it. The budget polls the request context, so a newer edit cancels it, and the edit is a versioned `documentChanges` edit for the analyzed version. The VS Code client applies it under the same synchronous version check as a suppression (see "VS Code Suppression").
 
 ### Resolved Edits
 

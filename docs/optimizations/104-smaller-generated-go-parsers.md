@@ -6,7 +6,7 @@
 ## Problem and Mechanism
 
 A generated Go function was emitted twice: a specialization for parses without a
-work control, and the full body that charges steps and input. The charged copy was
+budget control, and the full body that charges steps and input. The charged copy was
 about half of every generated parser, though only parsers that cancel or bound
 work run it. Inside the ordinary copy, three forms repeated at every site: the
 node literal of a match or sequence, the five-line read of the next character,
@@ -15,15 +15,15 @@ and the clauses of the removed control in class tests. Together they made the
 
 Three changes shrink the output without changing what a parse does.
 
-1. **Work controls on request.** The generation flag `-work-controls`
-   (`WorkControls` in `gen.Go`) emits the work-controlled form. Without it the
+1. **Budget controls on request.** The generation flag `-budget-controls`
+   (`BudgetControls` in `gen.Go`) emits the budget-controlled form. Without it the
    ordinary specialization replaces each body, so a function exists once; with
    `-document` the function is the form that serves a Document, with no charge
    and no control read (the typed constructors and the closures of actions
    charge nothing either), which is 7% smaller than the controlled form (a
    fixture of 3 rules: 41,179 bytes with controls, 38,138 without). The
    package then exports none of `WithContext`, `WithLimits` and their types,
-   and the runtime grammar records `NoWorkControls`, so a control option passed
+   and the runtime grammar records `NoBudgetControls`, so a control option passed
    through the runtime returns an error instead of being ignored. Parsers that
    read untrusted input (JSON, YAML, XML, CSV) and the benchmark parsers keep
    the flag.
@@ -40,15 +40,15 @@ Three changes shrink the output without changing what a parse does.
    effects; blank lines left by removed charges are dropped.
 
 Invariant: the ordinary form builds the same nodes in the same order, and a
-parser generated with work controls behaves as before.
+parser generated with budget controls behaves as before.
 
 ## Applicability
 
 | Execution profile | Status | Reason |
 |:--|:--|:--|
 | Generated Go Node, recognition and typed output | Applied | Same generator |
-| Generated Go with `-work-controls` | Partial | One controlled form; helpers 2 and 3 apply |
-| Generated Go with `-document`, without `-work-controls` | Partial | One form that serves a Document, without charges and control reads |
+| Generated Go with `-budget-controls` | Partial | One controlled form; helpers 2 and 3 apply |
+| Generated Go with `-document`, without `-budget-controls` | Partial | One form that serves a Document, without charges and control reads |
 | Closure, bytecode and iterative VMs | Not applicable | No generated source |
 | Generated TypeScript | Not applied | Separate generator and runtime |
 
@@ -66,7 +66,7 @@ serialized with the shared lock.
 
 ## Results
 
-| Parser | Baseline | Work controls on request | With helpers |
+| Parser | Baseline | Budget controls on request | With helpers |
 |:--|--:|--:|--:|
 | duckdb | 35.40 MB, 1,648,359 lines | 17.10 MB, 737,985 | 13.88 MB, 614,553 |
 | typescript | 12.36 MB, 553,302 | 6.12 MB, 255,948 | 5.60 MB, 246,648 |
@@ -88,7 +88,7 @@ serialized with the shared lock.
 
 | Benchmark | Change | Uncertainty |
 |:--|--:|:--|
-| `./bench` generated, geomean, work controls on request only | −0.35% | six rounds, no row above +2.7% |
+| `./bench` generated, geomean, budget controls on request only | −0.35% | six rounds, no row above +2.7% |
 | `./bench` generated, geomean, with helpers | −1.6% | Recognize XML −9.9%, Parse XML ast −6.7% |
 | duckdb Statements and Parse (all rows) | −2% to −8% | p ≤ 0.04, six rounds |
 | cue ParseAST | −3.4% to −3.9% | p = 0.04 |
@@ -98,9 +98,9 @@ serialized with the shared lock.
 ## Correctness and Tradeoffs
 
 The root suite (the differential tests of every backend against generated code,
-the generation checks and the work-control tests), the tests of each parser module
+the generation checks and the budget-control tests), the tests of each parser module
 and the up-to-date check of the generated files pass. A new test generates a
-parser without work controls, checks that no charge, control read or work type is
+parser without budget controls, checks that no charge, control read or budget type is
 left (with and without `-document`), that it is smaller than the controlled
 parser, that it compiles and that each entry point (`Parse`, `Recognize`, `ParseAST`,
 `ParseRule`) rejects both control options. A second test builds a parser with every
@@ -108,7 +108,7 @@ entry point, a Document, a stream, left recursion and recovery both ways and
 compares what the entry points return for inputs that include invalid UTF-8, byte
 positions, error positions and a depth limit; a parser of a mutated grammar shows
 that the comparison can fail. The engine tests can also run with their fixtures
-generated without work controls (`PEGO_TEST_ORDINARY=1`); the tests that pass a
+generated without budget controls (`PEGO_TEST_ORDINARY=1`); the tests that pass a
 control skip.
 
 In functions the compiler considers very large, calls to the inlinable helpers
@@ -116,11 +116,11 @@ stay calls (about 45% of the `NextOrdinary` sites of `duckdb`); the benchmarks
 above include those parsers and show no loss, since the code that no longer
 spells the forms out is smaller to fetch.
 
-The generated work-control tests keep their coverage because the test fixtures
+The generated budget-control tests keep their coverage because the test fixtures
 generate with the flag unless `PEGO_TEST_ORDINARY=1` is set.
 
 ## Decision and Limits
 
-Adopted. TypeScript output has its own copies of the work-control charge, and
-`-work-controls` selects its form independently: the Go output of this entry is
+Adopted. TypeScript output has its own copies of the budget-control charge, and
+`-budget-controls` selects its form independently: the Go output of this entry is
 not affected.

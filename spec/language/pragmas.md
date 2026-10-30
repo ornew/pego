@@ -206,7 +206,7 @@ costs attempts unless already installed on the path. Returning a selected seed
 can exhaust the budget. A selected Operators Rule candidate restores its already
 charged synthesis without charging again. Budget exhaustion is a fatal
 `MissingTokenLimitError` with `Limit` and `Position`; it returns no tree and is
-never ordinary syntax failure. The limit bounds work, not the final missing-node
+never ordinary syntax failure. The limit bounds budget, not the final missing-node
 count, so abandoned alternatives can exhaust it.
 
 Lookahead always disables insertion, including rule calls. Insertion consumes no

@@ -566,16 +566,16 @@ number that does not grow with the input.
 
 ## Cancelling a Stream
 
-Pass `pego.WithContext(ctx)` to interrupt engine work cooperatively, or
-`pego.WithLimits(pego.Limits{MaxWork: ...})` to bound
-one invocation. A zero limit is unlimited. Work counts depend on the backend,
-position unit and implementation; reused or copied storage also consumes work.
+Pass `pego.WithContext(ctx)` to interrupt engine execution cooperatively, or
+`pego.WithLimits(pego.Limits{Budget: ...})` to bound
+one invocation. A zero limit is unlimited. Budget counts depend on the backend,
+position unit and implementation; reused or copied storage also consumes budget.
 Exhaustion matches `pego.ErrLimit` through `errors.Is`.
-Text materialization also consumes work, including building a cached stream
+Text materialization also consumes budget, including building a cached stream
 snapshot and its CodePoints position table. Reading an already cached substring
 requires no additional materialization work; snapshot creation never reads ahead.
 
-Each underlying reader call consumes one unit of work before entering the reader,
+Each underlying reader call consumes one budget unit before entering the reader,
 including empty reads, EOF and retries for incomplete characters. When no work
 remains, that next call is prevented. Bytes consumed by read-ahead do not count
 as examined input until the engine examines them.
@@ -587,9 +587,9 @@ that same call, including a reader returning data together with an error.
 Elements already passed to emit remain caller-owned, including when cancellation
 is observed after emit succeeds. Restarting requires replaying the input yourself;
 the current reader offset is not a continuation token. Buffered read-ahead means
-a work limit does not cap bytes consumed from the reader.
+a budget limit does not cap bytes consumed from the reader.
 
-First-use backend preparation is synchronous and outside work limits. A context
+First-use backend preparation is synchronous and outside budget limits. A context
 cancelled before a valid call prevents that preparation; cancellation during it
 is observed after preparation finishes. Compilation through `CompileSource`
 remains separate from the parse invocation.

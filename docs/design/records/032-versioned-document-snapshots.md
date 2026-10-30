@@ -180,20 +180,20 @@ concurrent use; version tokens do not implement compare-and-swap synchronization
 Snapshot parses the current version, including every edit pending since the last
 parse. Construction settings provide defaults; invocation options are resolved
 once with the same restrictions and order as Document.Parse in
-[design 033](033-cancellable-parses-and-work-budgets.md). Context, work limits,
+[design 033](033-cancellable-parses-and-budgets.md). Context, budget limits,
 depth and tracing may be overridden; start rule, unit, backend and recognition
 mode retain the constructed Document contract. A fresh per-call context permits
 capture after cancellation of a previous task without retaining its controller.
 Parsing and freezing the text, tree, and diagnostics form one controlled
 invocation: they use the same context and controller, and the
-work counter accumulates across both phases. Freezing costs therefore
+budget counter accumulates across both phases. Freezing costs therefore
 count against the configured limits. It then freezes that exact parse outcome
 before returning. It does not silently return the previous successful result
 when current text fails. Taking another snapshot of the same version may reparse
 and change statistics, but not text or version; snapshots themselves are
 immutable. No promise is made to reuse an outcome solely because a version is
 unchanged, especially with tracing. Materialize and snapshot getters run after
-this invocation and do not accept or inherit its context or work limits.
+this invocation and do not accept or inherit its context or budget limits.
 
 ### Atomic Batch Semantics
 
@@ -244,17 +244,17 @@ version and are available for all normally returned parse outcomes:
 | ordinary syntax failure | zero handle, as current Parse | copied SyntaxError |
 | consuming recovery | exact current root, possibly nil | copied SyntaxErrors |
 | action/depth/module error returned by Parse | zero handle, as current Parse | corresponding error |
-| work-limit exhaustion or cancellation during Parse or freezing | no snapshot | interruption error |
+| budget limit exhaustion or cancellation during Parse or freezing | no snapshot | interruption error |
 | unsupported legacy field value during capture | no snapshot | SnapshotCaptureError |
 | trace callback panic | no newly returned snapshot | original panic propagates |
 
 Ordinary syntax and recovered errors do not make the snapshot pointer nil. Callers
 can display the failed version's text and diagnostics; they separately retain a
-previous successful snapshot if desired. Cancellation or work-limit exhaustion
+previous successful snapshot if desired. Cancellation or budget limit exhaustion
 in either controlled phase returns no snapshot and publishes no partial text,
 tree, or diagnostic capture. If invocation execution has begun, clear reusable
 parser state as for an interrupted parse; preserve current text and version for
-retry. Cleanup is not charged to the exhausted work budget. Cancellation and
+retry. Cleanup is not charged to the exhausted budget. Cancellation and
 deadline errors retain their normal `errors.Is` identity, and a trace callback
 panic propagates as the original panic after cleanup. A subsequent retry must
 match fresh parsing.
@@ -282,7 +282,7 @@ Store diagnostic/error data independently of mutable SyntaxError pointers and
 Expected/Messages slices. Error returns a defensive copy; the error returned by
 Snapshot also cannot mutate stored data. Preserve existing error messages and
 public errors.As classifications. Current fatal errors have immutable messages;
-The work-limit diagnostics proposed in design 033 are copied by value, including
+The budget limit diagnostics proposed in design 033 are copied by value, including
 kind, limit, used and requested counters. Context cancellation and deadline
 identity remain observable through errors.Is; capture does not retain a context,
 controller or cancellation token. Custom context.Cause remains caller-owned and

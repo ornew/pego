@@ -104,7 +104,7 @@ Focused normal and snapshot-directory-ID comparison tests cover same-shape edits
 
 Enabling tracking applies to future `Parse` and `Snapshot` calls. Both capture a
 complete immutable outcome and compare with the last retained outcome inside the
-same cumulative context and work budget as parsing. Node traversal, diagnostic
+same cumulative context and budget as parsing. Node traversal, diagnostic
 comparison, field inspection and bounded text comparisons charge that controller.
 `Parse` still returns its ordinary legacy Node, with its existing mutable reuse
 contract; tracking does not make that result safe to retain across edits.

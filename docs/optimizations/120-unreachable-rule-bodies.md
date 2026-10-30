@@ -101,10 +101,10 @@ printed now): cel 117,685 and 117,673; csv 48,274 and 48,273; cue 409,807 and 40
 golang 540,810 and 540,772; json 116,593 and 116,592; python 626,651 and 626,610; typescript 984,343 and 984,251; xml
 636,623 and 636,622; yaml 1,171,445 and 1,171,435. The tables change little because the removal already took the code;
 what changes is the numbering and one pass over the source, which is gone. The Node outputs of the manifest shrink where
-the scan finds an unused one-line variable (cue node: 16 unused work-class range tables, 409,246 to 388,932 bytes).
+the scan finds an unused one-line variable (cue node: 16 unused budget-class range tables, 409,246 to 388,932 bytes).
 
 Generation time of `pego gen` (five runs each, medians, same machine and session), compared with that generator:
-duckdb typed-only 2.71 s before, 1.90 s after; yaml with types, recognizer and work controls 1.09 s before,
+duckdb typed-only 2.71 s before, 1.90 s after; yaml with types, recognizer and budget controls 1.09 s before,
 0.61 s after.
 
 Speed was checked on the generated yaml and duckdb parsers and on the benchmarks of `bench` that do not use

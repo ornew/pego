@@ -111,7 +111,7 @@ in required actions retain the existing evaluation/fatal rules.
 Compile a source #stream repetition into the recognition batch behavior (NEXT mode 0 where appropriate), never
 stream commitment or callbacks. Keep the empty-iteration stop/count and finite bounds unchanged. Consuming recovery
 still requires a nonempty skip, and emits diagnostics without an unnecessary public Error tree. Any future missing
-token/cancellation/work-budget feature must version its own instructions if needed and be compiled into both
+token/cancellation/budget feature must version its own instructions if needed and be compiled into both
 bundles; omission cannot silently change recognition acceptance.
 
 On fatal depth, action failure or cancellation, release capture/value/environment/expectation scratch and discard

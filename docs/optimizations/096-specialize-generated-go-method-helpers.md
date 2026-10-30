@@ -1,20 +1,20 @@
-# 096. Specialize Generated Go Work-Control Methods
+# 096. Specialize Generated Go Budget-Control Methods
 
-- **Status**: Superseded by [G050](mechanisms/G050-generated-work-control-specialization.md): a generated parser has one form of each function, so the branch this record measures is not in the output
+- **Status**: Superseded by [G050](mechanisms/G050-generated-budget-control-specialization.md): a generated parser has one form of each function, so the branch this record measures is not in the output
 - **Date**: 2026-10-14
 
 ## Problem and Mechanism
 
-Work-control checks add measurable cost to generated Go ordinary parsing and
+Budget-control checks add measurable cost to generated Go ordinary parsing and
 recognition. A broader ordinary-method specialization reduced part of that
-cost, but retained a sizable gap to the pre-work-control baseline. The selected variant specializes emitted ordinary methods and clones only the
+cost, but retained a sizable gap to the pre-budget-control baseline. The selected variant specializes emitted ordinary methods and clones only the
 `newNode`, `newMatch`, `setCapture` and `expect` helpers. It hardens the
 generated-method registry and adds a generation-only ablation control. The
 internal emitter uses synchronous callbacks and preserves parser/call-local
 state rather than introducing escaping aliases or unrelated shadow state. It
 does not change the public API or matching semantics.
 
-The specialization is adopted with the work-control implementation. A broader runtime-helper variant was rejected: it gained about 1–2%
+The specialization is adopted with the budget-control implementation. A broader runtime-helper variant was rejected: it gained about 1–2%
 in recognition but made controlled XML parsing about 3% slower. A separate
 ordinary-method split experiment was also rejected after three paired 500 ms
 samples: JSON/XML recognition was about 2% slower and Outline about 4% slower
@@ -36,8 +36,8 @@ adopted.
 The 131-profile comparison used Go 1.27.1 on an Apple M3 Max
 (darwin/arm64), with `GOMAXPROCS=16`, `GOGC=100` and `GOMEMLIMIT=off`.
 Three alternating 500 ms samples compared main `77f12f2` with the source-pinned
-candidate in this implementation, based on work-control baseline `186e1b0`. The candidate included a source-format fix and regression
-tests. Samples were serialized. The same-source ablation disabled only the specializer while leaving work controls enabled.
+candidate in this implementation, based on budget-control baseline `186e1b0`. The candidate included a source-format fix and regression
+tests. Samples were serialized. The same-source ablation disabled only the specializer while leaving budget controls enabled.
 The fixed-allocation check uses 100 iterations and five alternating pairs.
 Build benchmark binaries before timing and alternate processes under the same
 environment; the existing active-control harnesses do not pre-parse before
@@ -56,9 +56,9 @@ Runtime helpers outside the four families retain their existing nil checks.
 ## Results
 
 The short focused run used three alternating 500 ms pairs against the stable
-default-off work-control candidate. On the sampled JSON and XML profiles,
+default-off budget-control candidate. On the sampled JSON and XML profiles,
 generated recognition was 20–24% faster and typed parsing was 17–18% faster.
-That comparison did not establish parity with the pre-work-control baseline.
+That comparison did not establish parity with the pre-budget-control baseline.
 
 The subsequent 131-profile comparison used three paired 500 ms samples against
 the exact main baseline. In the 24 generated Go Node parse/recognition profiles,
@@ -68,7 +68,7 @@ recognition at 1.083×/1.183×, Minilang recognition at 1.259×, JSON/XML Node
 parsing at 1.161–1.184×/1.163–1.172×, and JSON/XML typed parsing at
 1.082×/1.191×. These are descriptive paired medians, not a general estimate
 for other workloads. The candidate includes the source-format fix and
-regression tests. This comparison measures total work-control feature cost;
+regression tests. This comparison measures total budget-control feature cost;
 the separate enabled/disabled comparison isolates this mechanism.
 
 The same-source ablation comparison used three alternating 500 ms pairs over
@@ -101,7 +101,7 @@ points. These size results are limited to the listed consumers.
 ## Decision and Limits
 
 Adopted with the measured residual costs. Against pre-feature
-main, the selected work-control implementation still has generated Go ordinary-
+main, the selected budget-control implementation still has generated Go ordinary-
 path overhead; the selected specialization reduces part of it, at the measured
 code-size cost. Further ordinary-path improvement is separate follow-up work and
 does not change the cancellation or budget contract. The ordinary-method split

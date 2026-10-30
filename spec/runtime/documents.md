@@ -34,9 +34,9 @@ for concurrent use. A document is always parsed as a whole: `#stream` has no
 effect on it and it is not a stream parse. Grammars that use `#missing` are
 rejected.
 
-For `Bytes`, construction can charge no work, because a large immutable
+For `Bytes`, construction can charge no budget, because a large immutable
 input need not be scanned or copied. For `CodePoints`, initialization decodes and
-normalizes the input, and the inspected work is charged.
+normalizes the input, and the inspected input is charged.
 
 ### Edits
 
@@ -78,12 +78,12 @@ completed by an insertion at the end of the text. In `CodePoints`, invalid bytes
 have already been replaced with U+FFFD, and editing the normalized text does not
 reassemble the original bytes.
 
-`Edit` and `EditBatch` are outside parse work limits.
+`Edit` and `EditBatch` are outside parse budget limits.
 
 ### Parsing
 
 `doc.Parse(opts...)` parses the current text using the construction defaults
-overridden by the options of the call. Context, work limits, maximum depth and
+overridden by the options of the call. Context, budget limits, maximum depth and
 tracing MAY vary per call; the unit, backend, start rule and non-recognition mode
 MUST NOT, and an option that tries to change them is an error. Counters reset on
 each call. Results and errors are those of `Parser.Parse`, including recovered
@@ -124,14 +124,14 @@ and allocator overhead; it is neither process heap use nor a limit.
 value graph in one immutable `Snapshot`. It resolves invocation overrides once
 over the construction defaults, with the same variable and fixed options as
 `Parse`. Parsing and freezing use the same cancellation context and the same
-cumulative work counter. Copying the text, freezing
+cumulative spend counter. Copying the text, freezing
 nodes and fields and copying diagnostics are part of that invocation.
 
 A normally returned parse outcome produces a snapshot, including an ordinary
 syntax error and a recovered error. For an ordinary syntax failure the snapshot
 keeps the text and version, has a zero root as `Document.Parse` does, and exposes
 a defensive copy of the `SyntaxError`. A recovered outcome keeps its root and
-`SyntaxErrors`. Cancellation or an exhausted work limit during parsing or
+`SyntaxErrors`. Cancellation or an exhausted budget limit during parsing or
 freezing returns a nil snapshot and a fatal interruption error, which grammar
 choice, predicates and recovery cannot absorb. No partial graph, text or
 diagnostics are published. If execution began, reusable execution state is
@@ -139,7 +139,7 @@ cleared before retry; completed input tables MAY remain and partial tables are
 discarded. An error before execution keeps existing caches and statistics.
 Cleanup is not charged. A trace callback panic propagates unchanged after
 cleanup. Snapshot accessors and `Materialize` run after capture and do not
-inherit its context or work limits.
+inherit its context or budget limits.
 
 | Accessor | Meaning |
 |:--|:--|
@@ -215,7 +215,7 @@ Unknown non-syntax diagnostic types count as changed. Source text and parse
 statistics are not part of output equality.
 
 With tracking enabled, both `Parse` and `Snapshot` capture and compare, using the
-invocation's cumulative context and work limits. A cancellation or work-limit
+invocation's cumulative context and budget limits. A cancellation or budget limit
 interruption returns nil and emits `OutputUnavailable`, which clears comparison
 continuity: the next successful capture reports `OutputMayHaveChanged`. Completed
 syntax failures stay comparable. Unsupported captures also report unavailable.
@@ -236,8 +236,8 @@ edit: edits that follow an outcome are not part of it.
 | `Edit` range outside the text, or inside a character in `Bytes` | Error; text and version unchanged |
 | `EditBatch` with a foreign or stale version, unordered or overlapping edits, repeated starts or invalid ranges | The whole batch is rejected |
 | Parse option that changes unit, backend, start rule or mode | Error before execution; caches and statistics kept |
-| Cancellation or work limit during `Parse` | Error and no result; execution state cleared |
-| Cancellation or work limit during `Snapshot` | Nil snapshot and a fatal error |
+| Cancellation or budget limit during `Parse` | Error and no result; execution state cleared |
+| Cancellation or budget limit during `Snapshot` | Nil snapshot and a fatal error |
 | Unsupported field value type while freezing | Nil snapshot and `*SnapshotCaptureError` |
 | `EnableChanges` twice | Error |
 | Stream diagnostic options (`WithDiagnosticCallback`, `WithDiagnosticLimit`) | Rejected |
@@ -256,6 +256,6 @@ Generated TypeScript parsers have no document. See
 
 The behavior is established by the tests of `internal/engine/document` (among
 them `document_edits_test.go`, `snapshot_test.go`, `document_changes_test.go`
-and `work_document_test.go`), by `internal/engine/document_test.go`, which
+and `budget_document_test.go`), by `internal/engine/document_test.go`, which
 compares random edits with fresh parses, and by the edit fuzzer of
 `pego edit-fuzz`, which compares every reparse with a fresh parse.

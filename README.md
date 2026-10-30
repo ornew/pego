@@ -67,7 +67,7 @@ pego: 1:5: syntax error: expected "(", [0-9]
   the generated code. Incremental parsing reuses everything an edit did not touch, so a fresh tree is ready between
   keystrokes.
 - **Safe on any input.** PEGO analyzes your grammar to bound the time and memory a parse can take, and built-in
-  limits on work and nesting mean hostile input can never hang the parser or blow its stack.
+  budget and nesting limits mean hostile input can never hang the parser or blow its stack.
 - **Complete support for building your language.** A built-in language server brings completion, diagnostics,
   navigation and formatting to any editor. Trace, profile, lint and debug show exactly what the parser does, so you
   never have to guess.

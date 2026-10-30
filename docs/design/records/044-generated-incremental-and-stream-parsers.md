@@ -60,7 +60,7 @@ func (d *Document) Stats() ParseStats
 Constructor options resolve and validate once, without retaining the option functions. The unit and effective
 depth become Document-local settings; Edit and positional actions use that unit. No backend selector is needed
 for a standalone generated runtime. New APIs use functional options. Constructor settings provide defaults for
-each parse; invocation overrides follow [design 033](033-cancellable-parses-and-work-budgets.md),
+each parse; invocation overrides follow [design 033](033-cancellable-parses-and-budgets.md),
 including ordered once-only resolution, context/limits/depth overrides and rejection of incompatible unit changes.
 A fresh per-call context supports retries; memo state never retains an invocation controller.
 For direct typed `ParseAST`, cancellation or a caller-context panic detected
@@ -190,7 +190,7 @@ final element type of each rule's `#stream` repetition, which is the type of the
 of its captures when the element has a scope of its own; `StreamValue` is an alias of that type's Go mapping. Each
 element is converted with a converter of its own, so aliases within an element keep their identity and nothing is
 shared with later elements; Node, CST and text values are the committed element's, which `ParseStream` already
-detaches from the parser. The conversion runs inside the parse and is charged to its work control like batch
+detaches from the parser. The conversion runs inside the parse and is charged to its budget control like batch
 conversion, so `WithLimits` and `WithContext` cover it, and a nil element is passed as the zero value.
 `StreamValue`, `ParseStream` and `ParseStreamAST` are reserved generated names. The direct typed matching of batch
 `ParseAST` is not used for streams: its values are built during matching, before an element is committed.
@@ -267,7 +267,7 @@ emitted once and stops before checking the minimum, as the engine does; delivery
 The TS lowering requires explicit frames for rule calls, LR growth, Operators Rule candidates, choices, repeats, captures,
 recovery and actions. Suspension at an input read saves the exact continuation and performs no speculative EOF
 failure, action rerun or error replay. Distinguish awaiting bytes from completed parse failure at every caller.
-Feed suspends at demand reads and returns only when waiting or terminal; a work-limit interruption is a terminal
+Feed suspends at demand reads and returns only when waiting or terminal; a budget limit interruption is a terminal
 error, not an implicit scheduling yield. A future cooperative scheduling API needs an explicit additional state.
 Interrupted callbacks/read adapters and cancellation release pointer-bearing state without clearing published
 values; no pooled parser or conversion arena is shared between concurrent invocations.
@@ -295,7 +295,7 @@ stream with its typed elements, pull iteration and diagnostic controls. Remainin
 continuations. Snapshot/versioned-tree work is a
 separate dependency only if immutable views are exposed; do not block the mutable Document compatibility path on it.
 Chunked input storage is a separate measured experiment: start with the current contiguous edit contract.
-Cancellation/work budgets need matching cleanup points when introduced, not an ad hoc hidden API in this feature.
+Cancellation/budgets need matching cleanup points when introduced, not an ad hoc hidden API in this feature.
 
 ## Alternatives, Validation and Performance
 

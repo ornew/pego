@@ -23,7 +23,7 @@ No maintained same-source large-entry layout comparator exists.
 
 Record 033 reports historical entry size from 112 to 56 bytes and sampled VM
 improvements of 1–5% for full parsing and 2–6% recognition. Later
-recovery/filter/work-control state changes mean those sizes are historical, not
+recovery/filter/budget-control state changes mean those sizes are historical, not
 a current layout assertion.
 
 Evidence records: [033](../033-smaller-vm-entries.md).

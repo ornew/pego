@@ -43,7 +43,7 @@ override permits that distinction without regenerating or changing concurrent ca
 ## Non-Goals
 
 - Matching a reference parser's maximum syntactic nesting or changing distributed ready-made parser defaults.
-- Adding a mutable global setter, cancellation, work budgets, or changing the grammar/serialized program format.
+- Adding a mutable global setter, cancellation, budgets, or changing the grammar/serialized program format.
 - Removing dependence on the host call stack. A larger resource ceiling cannot guarantee acceptance at that depth.
 
 ## Design
@@ -305,5 +305,5 @@ results stay outside Git.
 The generation-time plus per-invocation scope and preserved 100,000-call default are selected. The Go functional-option form and TypeScript options-aware form are selected;
 compatibility/collision handling, runtime ownership, regression tests and serialized measurements
 are complete. Functional options have the measured allocation/callsite costs above. Raising an override
-does not guarantee host-stack capacity or reference-parser nesting parity. Broader per-invocation cancellation/work
-budgets can extend these APIs in their own designs without changing this depth contract.
+does not guarantee host-stack capacity or reference-parser nesting parity. Broader per-invocation cancellation/budget
+limits can extend these APIs in their own designs without changing this depth contract.

@@ -12,7 +12,7 @@ form to be case-insensitive at all, and the grammar grew with the keyword list.
 The generated parser matches a folded literal through `MatchLiteralFold`: the literal is
 stored with each ASCII letter lowercased, and each input character is folded the same way
 before it is compared. The matcher reads characters through `Peek`, as the runtime's other
-non-exact paths do, so streams, Document parsing and work accounting use the same code as
+non-exact paths do, so streams, Document parsing and budget accounting use the same code as
 exact literals on those paths. The node text is the consumed input. The class form and the
 folded form accept the same inputs (`TestIgnoreCaseGeneratedGo` and
 `TestIgnoreCaseGeneratedTS` check them against the closure backend).

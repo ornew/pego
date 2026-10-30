@@ -165,7 +165,7 @@ positions and clock reads) dominates.
 - `check`, which nearly every engine test uses, now also parses each input with a trace on every backend, for the
   grammar and its unmemoized variant, and compares the results (trees, positions, errors) with untraced parses. It also
   checks that the events nest, that each exit matches its enter, and that `Memo` and `Evals` agree.
-  Each parse is also repeated through a copy of `ParseWith` that exposes the parser (`parseWork`), and the work it did
+  Each parse is also repeated through a copy of `ParseWith` that exposes the parser (`parseSpend`), and the work it did
   must be the same traced and untraced: `Stats` (evaluations and memo reuses), the number of memo entries, the first
   calls recorded and the rules memoized eagerly, that is, the memoization decisions.
 - `TestTraceKeepsResults` does the same for the backend corpus (`gentest.GenCorpus`: the example grammars with their test

@@ -172,10 +172,10 @@ matches or an error.
   because the parser was compiled without source information, matches
   `query.ErrNoSourceInfo`.
 - `query.WithContext(ctx)` supplies a context; cancellation returns the error of
-  the context. `query.WithLimits(pego.Limits{MaxWork: n})` bounds
+  the context. `query.WithLimits(pego.Limits{Budget: n})` bounds
   traversal, matching, path copies and result construction; exhaustion matches
   `pego.ErrLimit`. Zero limits are unlimited. A query inspects no source text, so
-  its work counts only traversal and result construction. The count is abstract
+  its budget counts only traversal and result construction. The count is abstract
   and MAY change between versions.
 - A query sees only the values that the result retains. Actions and discard
   operators remove punctuation and comments; a query does not recover them, interpret
@@ -191,7 +191,7 @@ matches or an error.
 | Cycle on the active path during evaluation | `query.ErrCycle` |
 | Rule constraint on a result without source information | `query.ErrNoSourceInfo` |
 | Cancelled context | The error of the context |
-| Exhausted work limit | `pego.ErrLimit` |
+| Exhausted budget limit | `pego.ErrLimit` |
 
 ## Compatibility and Support
 

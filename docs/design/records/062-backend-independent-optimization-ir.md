@@ -116,8 +116,8 @@ more times: the closure evaluator in `closure/eval.go`, bytecode expression code
 - An observability build prints the same rules with the same observation hooks: the enter and exit events of rule
   calls come from the runtime and the rule wrappers, and the one report the matchers write, the skipped report of an
   alternative that a choice guard skips (`ObserveSkip`), is a Flow statement printed by `traceSkip`.
-- A work-control build prints the same rules with the charges Flow IR makes explicit: one `Step` for each iteration
-  of a repetition, and the input work of each `Peek`. The entry of a rule is one step charged by the method that
+- A budget-control build prints the same rules with the charges Flow IR makes explicit: one `Step` for each iteration
+  of a repetition, and the input spend of each `Peek`. The entry of a rule is one step charged by the method that
   holds the lowered function (`Func.Entered`), and no other point of straight-line code charges: between two
   charges only the code of one rule body runs, whose length is bounded by the grammar, so the steps still bound
   the work of a parse. These need not equal the counts of the engine's backends, because the spec lets the work
@@ -125,8 +125,8 @@ more times: the closure evaluator in `closure/eval.go`, bytecode expression code
   other backends try and charge, and it charges one step per rule and per iteration where they charge one per
   expression. `Verify` counts the entry as the first charge of a function. The charge model that every build keeps
   is checked instead of the counts:
-  `Verify` rejects a function lowered with work controls that consumes input, or ends an iteration of a loop
-  without a counter, on a path that has charged neither a step, a rule call nor the input work of a `Peek`.
+  `Verify` rejects a function lowered with budget controls that consumes input, or ends an iteration of a loop
+  without a counter, on a path that has charged neither a step, a rule call nor the input spend of a `Peek`.
 - What the generated parsers do is checked against the engine where the engine can say it, and against goldens
   where it cannot; the goldens are regression freezes, rewritten with `-update` after a reviewed change.
   - Results, errors with positions and expected sets, and the cut, leader, recovery, capture and Operators Rule
@@ -147,10 +147,10 @@ more times: the closure evaluator in `closure/eval.go`, bytecode expression code
     equals a parse from scratch and reuses results; a golden freezes the reuse and evaluation counts. Mutants that
     read the multi-character literals, the single-character literals, the peeks or all of them in place in a
     Document parse fail.
-  - Work controls: limit errors are well formed, the least successful limit
-    succeeds, the context is polled at the runtime's cadence, and a parsed input charges at least one unit of work
-    per character; a golden freezes the work totals
-    (the engine's work is not an oracle, because the closure and bytecode backends charge it differently),
+  - Budget controls: limit errors are well formed, the least successful limit
+    succeeds, the context is polled at the runtime's cadence, and a parsed input charges at least one budget unit
+    per character; a golden freezes the budget totals
+    (the engine's spend is not an oracle, because the closure and bytecode backends charge it differently),
     and a mutant that drops one `Step` fails.
   - The generated text of the checked-in parsers is frozen by `parsers/testdata/output_manifest.txt`.
   - Guards: the decisions of the Core passes over the corpus (`Terminal`s, guards, class runs, scans, scopes, and
@@ -160,9 +160,9 @@ more times: the closure evaluator in `closure/eval.go`, bytecode expression code
     at a character that its guard rejects (`TestCoreGuardsAreSound`), and a mutant that narrows the guards fails.
   The recognizer's Core pipeline runs `Analyze` before `Guards`, as the table's pipeline does: `Guards` reads the
   first terminals that `Analyze` computes, so the reverse order leaves the alternatives of choices unguarded.
-- Work-control specialization exists twice in the compilers that duplicate code: the closure backend compiles a
+- Budget-control specialization exists twice in the compilers that duplicate code: the closure backend compiles a
   second, metered closure graph (`controlledDispatch`), and TypeScript rewrote printed conditions with regular
-  expressions (`tsWorkCond`). Generated Go and TypeScript print one form of each function, chosen by the options.
+  expressions (`tsBudgetCond`). Generated Go and TypeScript print one form of each function, chosen by the options.
 - Code is shared as strings. TypeScript reused the Go conditions of `gogen.Generator.first` and
   `controlledClassReject` after rewriting `==` to `===` and rebalancing `&&`/`||` by parenthesis counting
   (`tsCond`, `tsBalancedCondition`). Helper sharing
@@ -177,7 +177,7 @@ The typed Go output measured at that commit was written directly as text. Becaus
 declares every variable of a rule at the top of the function in a `var` block, typed `any` for values. It
 tracks reads to avoid unused-variable errors, tracks reachability to satisfy `go vet`, and writes `_ = x`
 where a declared variable ends up unread. Actions become immediately invoked function literals
-(`func() any { c.P.Work(); return … }()`). The resulting text then passes through `go/format` and four
+(`func() any { c.P.Spend(); return … }()`). The resulting text then passes through `go/format` and four
 `go/ast` passes: ordinary-method specialization, charge stripping, typed-entry pruning (`gen_prune.go`) and
 runtime-name qualification (`QualifyRuntime`). Removing the charges leaves `func() any { ; return … }()`
 behind, and blank lines, which the specialization deletes by replacing `"\n\n"` in the printed text.
@@ -261,15 +261,15 @@ such as node identity and the number of times an action runs, is free
 | Recovered errors and their order | Recover nodes; the recovered-errors part of saved state; rule-call scopes |
 | Whether an action or conversion error, a nesting-limit error or a missing-token-limit error occurs, and which first | The raise effect, ordered by evaluation order |
 | Positions in both units | Positions are opaque; primitives advance by characters, never by a unit count fixed at build time |
-| Stream elements already delivered | The commit effect: a delivered element stays delivered. Which prefix is delivered before an interruption depends on work counts, which are implementation-specific |
+| Stream elements already delivered | The commit effect: a delivered element stays delivered. Which prefix is delivered before an interruption depends on budget counts, which are implementation-specific |
 | Engine trace and profile events: an enter and an exit event for every rule call, with `Failure`, `Recovered`, `Text` and `Examined`, and the `Profile` counts ([Engine Tracing](../../../spec/runtime/observability.md#engine-tracing)) | `Call` nodes; in closures and the VMs these parses run the call-preserving family, which keeps every call (see [Rule Calls in Each Target](#rule-calls-in-each-target)) |
 | Generated trace and profile events: the rule calls of the generated route and `TraceSkipped` ([Generated Go Batch Tracing](../../../spec/runtime/observability.md#generated-go-batch-tracing)); in Documents, the known examined frontier ([Generated Go Document Tracing and Profiling](../../../spec/runtime/observability.md#generated-go-document-tracing-and-profiling)) | `Call` nodes and the trace points of `Nest` in observable builds; guard peeks and `Nest` bodies in Document variants read input through recording primitives |
 | Document results equal those of a parse from scratch; statistics are implementation-specific ([Reuse](../../../spec/runtime/documents.md#reuse)) | Input reads happen only in primitives, which record what they examined |
-| Work interruption | Fatal, never absorbed; counts are implementation-specific ([Cancellation and Work Limits](../../../spec/runtime/parsing.md#cancellation-and-work-limits)) |
+| Budget interruption | Fatal, never absorbed; counts are implementation-specific ([Cancellation and Budget Limits](../../../spec/runtime/parsing.md#cancellation-and-budget-limits)) |
 
 Some existing optimizations are not equivalences but specializations that the contract allows only in a
 mode: recognition drops actions whose values predicates do not need, and with them their errors
-([Modes](../../../spec/runtime/parsing.md#modes)); a parse without work controls charges nothing; a parse that neither
+([Modes](../../../spec/runtime/parsing.md#modes)); a parse without budget controls charges nothing; a parse that neither
 reuses results nor reports examined input, such as a generated batch parse (which reports `ExaminedKnown`
 false), needs no examined-range recording. Core IR keeps the two apart: **rewrites** preserve every
 observable above in every mode, and **mode specializations** produce a rule variant for one mode and may
@@ -284,7 +284,7 @@ types, the declared variables, and the rules. A rule holds its name, its value t
 (slots with checked types), its finish (Value Action, capture attachment and named-node conversion, as in
 [Rule Completion](../../../spec/bytecode/README.md#rule-completion)), its Operators Rule table if it has one, and its call
 policy: memoized, transient, plain, left-recursion leader, splice, the variables it reads, and its variant
-key (value or value-free, recognition, work-control and Document modes, observability, and for closures
+key (value or value-free, recognition, budget-control and Document modes, observability, and for closures
 and bytecode the family). These are the
 attributes that `Rule` in `internal/compile/compile.go` holds today; Core IR makes them the input of every backend instead of
 flags that each backend interprets.
@@ -387,14 +387,14 @@ VMs share one program between these parses and all others and decide at every ca
 plain path (`r.plain && !p.noPlain` in `closure/builder.go`, `vm.go` and `ivm.go`; `setTrace` in `trace.go` and
 every Document parse in `document.go` set `noPlain`). Recognition and, in the closure backend, work
 controls already select separate programs, built on first use under a `sync.Once` of the shared
-`Program` (`Program.Recognizer` in `program_parse.go`, `prepareControlledProgram` in `program_work_setup.go`); a program
+`Program` (`Program.Recognizer` in `program_parse.go`, `prepareControlledProgram` in `program_budget_setup.go`); a program
 saved in recognize mode stores the recognizer's module.
 
 Closures and bytecode therefore compile each program in two **families**:
 
 | Family | Serves | Rule calls |
 |:--|:--|:--|
-| Inlined | Parses without tracing, profiling or a Document: batch parses, streams, recognition and work-controlled parses | Inlining produces `Nest`; a plain rule that is not inlined is called on the plain path, without the memo and trace checks of a call |
+| Inlined | Parses without tracing, profiling or a Document: batch parses, streams, recognition and budget-controlled parses | Inlining produces `Nest`; a plain rule that is not inlined is called on the plain path, without the memo and trace checks of a call |
 | Call-preserving | Traced and profiled parses, and Document parses | Every rule reference stays a full `Call` |
 
 A parse selects its family from its options when it starts, so no rule call checks the mode, and
@@ -407,18 +407,18 @@ family. Every compile error, such as `undefined rule`, which the closure lowerin
 (`compiler.errorf` in `compile.go`), is reported by the checker or the Core IR builder inside `Compile`, so
 building a family cannot fail on a grammar that compiled; an inconsistency found while building one is an
 internal error, not a user error. A first-use build runs inside the parse that needs it, which checks its
-context and work control before and after the build, outside the `sync.Once`, as
+context and budget control before and after the build, outside the `sync.Once`, as
 `prepareControlledProgram` does today. The build itself is not interrupted, so a cancelled parse never
 leaves an interrupted build cached in the shared `Program`; its duration is part of the first-use cost
-that [Performance and Results](#performance-and-results) measures. In the work-controlled program, entering a `Nest` charges at least one step, as a call does, so the
+that [Performance and Results](#performance-and-results) measures. In the budget-controlled program, entering a `Nest` charges at least one step, as a call does, so the
 progress invariants of [Flow IR](#flow-ir) hold.
 
 The family is independent of the other variants, which gives this matrix:
 
 | Target | Variants | Count |
 |:--|:--|--:|
-| Closures | family × work control × recognition | up to 8 closure graphs, each built on first use |
-| VMs | family × recognition (work controls do not select a separate program) | up to 4 modules |
+| Closures | family × budget control × recognition | up to 8 closure graphs, each built on first use |
+| VMs | family × recognition (budget controls do not select a separate program) | up to 4 modules |
 | Saved programs | one mode per file: parse (inlined family), recognize (recognition in the inlined family) or document (call-preserving family) | 1 module per file |
 
 [Performance and Results](#performance-and-results) measures the first-use cost of each family and the
@@ -467,7 +467,7 @@ emitters. A function has:
   from the checked types;
 - structured blocks with an exit label; `exit L` leaves block `L` (success or failure continuation), `loop`
   and `if` are the only other control; primitive operations (peek, literal and class tests, expect, call,
-  build, evaluate term, charge work, trace) mirror runtime helpers.
+  build, evaluate term, spend budget, trace) mirror runtime helpers.
 
 Lowering threads a failure exit through each Core node: a `Choice` is a block per alternative whose failure
 exit restores and falls to the next, a `Repeat` is a loop whose element failure restores and leaves the
@@ -495,13 +495,13 @@ Flow IR passes:
 - **Block merging and jump threading**: an exit to a block that only exits again goes to the outer label;
   empty blocks and unused labels disappear.
 - **Charge placement**: charges coalesce within straight-line code, under the invariants that each loop
-  iteration charges a step or the input work of a character it reads, that each call charges at least one step,
-  that input work is charged before the input is inspected, and that no charge moves across a commit. Without work controls, charges are not lowered at
+  iteration charges a step or the input spend of a character it reads, that each call charges at least one step,
+  that input spend is charged before the input is inspected, and that no charge moves across a commit. Without budget controls, charges are not lowered at
   all. The terms of an action are straight-line code run once per matched rule, so they carry no charge;
   only repetition is charged, by the runtime built-ins that call lambdas (`map`, `filter`, `foldl`,
   `foldr`): each charges one step per element, so nested lambdas charge once per call.
 - **Mode lowering**: a generated parser has one form of each function, chosen by the options: the ordinary
-  form without work controls and Documents, the controlled form otherwise. The places where they differ
+  form without budget controls and Documents, the controlled form otherwise. The places where they differ
   (charges, control reads, the helper names, peeks) are printed from the same Flow IR by the one printer;
   a parser that needs both forms is two generated parsers. Batch and Document input
   access and position-unit fast paths (such as reading decoded code points in place) are lowered as
@@ -545,7 +545,7 @@ and `Nest` to two scope instructions:
 
 | Instruction | Operands | Semantics |
 |:--|:--|:--|
-| `NEST` | A rule | Begin an inlined call of rule A. Charge one work step; increment the call depth and end the parse with the nesting-limit error if it exceeds the limit; save the state and the start position; push a nest entry; create a new frame sized for rule A's scope. |
+| `NEST` | A rule | Begin an inlined call of rule A. Charge one budget step; increment the call depth and end the parse with the nesting-limit error if it exceeds the limit; save the state and the start position; push a nest entry; create a new frame sized for rule A's scope. |
 | `ENDNEST` | A rule, B keep | The body succeeded. If rule A's body is valued (not a value-free twin or value-free body; see [Rule Table](../../../spec/bytecode/README.md#rule-table)), pop the body value; otherwise the body value is nil. Remove the nest entry, keep the nest's frame for completion, and restore the caller's frame and the capture trail as [Body Evaluation](../../../spec/bytecode/README.md#body-evaluation) does; perform [Rule Completion](../../../spec/bytecode/README.md#rule-completion) of rule A with the body value and the nest's frame from the saved start position; restore the environment, decrement the depth, and push the value if B is 1. |
 
 On failure, a nest entry restores the state, which resets the position and removes the errors recovered
@@ -604,7 +604,7 @@ document-mode file the call-preserving family's, and a recognize-mode file the r
 of the inlined family. Loaders reject earlier versions, which are compiled again; the format keeps no compatibility before the first
 release. `spec/bytecode/README.md` specifies the two instructions, their failure handling and cut base, the
 families and which parses use each, the derivation of `plain`, the file layout and the load-time checks.
-Generated Go and TypeScript change in internal names and shape, not in API. Work counts may change, which
+Generated Go and TypeScript change in internal names and shape, not in API. Budget counts may change, which
 the specification allows.
 
 ### Implementation Sequence
@@ -617,7 +617,7 @@ Core IR or Flow IR passes; the AST lowerings that remain receive fixes only. Eac
 stage of its first consumer, so its differential tests and negative controls run from the start.
 
 1. **Core IR and typed Go.** The builder, verifier, printer and term sublanguage; Flow IR and the Go
-   emitter for the typed rules of every `-types` output (typed-only, work-controlled, Document and
+   emitter for the typed rules of every `-types` output (typed-only, budget-controlled, Document and
    observable), covering every construct the typed path supports, including those that fall back today
    (Operators Rule lines, left-recursion bodies, recovery, cuts); the Core and Flow IR passes that typed
    Go uses. The Node rules that such outputs keep and the recognizer's rules stay on their current
@@ -725,8 +725,8 @@ the hoisted `any` variables or the missing analyses behind them.
   the two checks, run at the nesting limit; an elided value with a raising conversion; a `NEST` without
   its cut base; and a Document family that inlines a transient rule that Documents memoize, which the
   Document reuse statistics and the rule events of a traced Document parse must expose.
-- **Work controls.** The charge invariants are tested directly (`Verify` for lowered functions): limits stop every looping and recursive
-  grammar in the work tests, and interruptions stay fatal in every mode.
+- **Budget controls.** The charge invariants are tested directly (`Verify` for lowered functions): limits stop every looping and recursive
+  grammar in the budget tests, and interruptions stay fatal in every mode.
 
 ## Performance and Results
 
@@ -734,7 +734,7 @@ The baseline for each stage is the commit before it, measured on the same machin
 [record 122](../../optimizations/122-typescript-from-flow-ir.md): parse and recognition of JSON, CSV and XML are
 17% to 46% faster, the typed workloads are equal or faster except recovery (4% to 6% slower), and
 `parser.ts` is 16% to 23% smaller except DuckDB (14% larger) but 6% to 46% larger after gzip for every grammar. The
-comparison sets the old printer, which always charges work, against the new form without work controls. The measured quantities of every stage are:
+comparison sets the old printer, which always spends budget, against the new form without budget controls. The measured quantities of every stage are:
 
 - **Generation:** wall time, CPU and allocations of `pego gen` for each repository parser with its
   `parsers/generate.go` options, plus DuckDB and Python with Node and typed output. The `QualifyRuntime`
@@ -742,7 +742,7 @@ comparison sets the old printer, which always charges work, against the new form
 - **Generated code:** `parser.go` bytes, lines and functions; `go build` time and binary size of each
   generated package.
 - **Parsing:** for stages 1 and 2, the typed, Node, recognition, Document and stream benchmarks in `bench`
-  in both position units, with and without work controls; for stage 3, the TypeScript benchmarks; time and
+  in both position units, with and without budget controls; for stage 3, the TypeScript benchmarks; time and
   allocations with at least six samples compared by `benchstat`.
 - **Closure and bytecode:** `Compile` time and allocations, which the closure backend pays at run time and
   the language server pays on edits; the time and allocations of building each family on its first use,
@@ -781,7 +781,7 @@ Each enabled pass records its measured effect in the [optimization catalog](../.
 7. **Stages before the first release.** All five stages precede the first release, so that no AST
    lowering ships and every backend has the Core passes. The stages are ordered so that a release can be
    cut after any completed stage.
-8. **Work counts.** Charge placement may change the work counts of generated artifacts under the progress
+8. **Budget counts.** Charge placement may change the budget counts of generated artifacts under the progress
    invariants of [Flow IR](#flow-ir), as the specification makes counts implementation-specific; tests that
    pin counts are updated. The step counts of generated parsers do not include the terms of actions and the
    fields of typed constructors, and the closure backend and the bytecode VMs charge them differently.

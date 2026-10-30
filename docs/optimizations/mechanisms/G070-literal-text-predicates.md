@@ -12,7 +12,7 @@ collapses duplicate literals and emits a switch. Mixed expressions, aliases,
 bindings and different captures remain general, preserving short-circuit
 order and side effects. Helper/literal-table sharing is independent of this
 shape specialization. Generated Go and TypeScript use the switch on ordinary
-nil-control calls; active work-controlled calls keep the general charged
+nil-control calls; active budget-controlled calls keep the general charged
 evaluator.
 
 ## Scope and State

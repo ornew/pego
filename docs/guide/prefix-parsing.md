@@ -90,7 +90,7 @@ zero-width rule returning nil; use the error.
 ## Options and Boundaries
 
 `ParsePrefix` accepts the options for position units, backends, recognition, tracing, nesting limits, context and
-work limits. It does not change the start rule of the parser, and it can run concurrently on one parser. Two things
+budget limits. It does not change the start rule of the parser, and it can run concurrently on one parser. Two things
 catch people out:
 
 - An explicit `$$` still sees the end of the entire string you supplied. To confine it to a fragment, slice both the

@@ -25,7 +25,7 @@ _ = stats
 `Edit(start, end, replacement)` replaces the half-open range in the unit selected at construction. It rejects
 invalid ranges and positions inside a UTF-8 character in `Bytes` mode without changing the text. `Text()` returns
 the exact current input. Construction options become defaults for later `Parse` calls; per-call options can change
-depth, context and work limits, but cannot change the unit. An interruption during execution discards memo history so a
+depth, context and budget limits, but cannot change the unit. An interruption during execution discards memo history so a
 later call can retry. `Document` is single-goroutine, and results can share nodes with later parses. Call
 `tree.Clone()` if an earlier tree must remain detached from the Document. It copies Node graphs, including Node
 values in `[]any` and `[]*Node` fields, while preserving cycles and repeated references to the same slice view.
@@ -53,7 +53,7 @@ requiring PEGO nodes, or actions and predicates that read struct fields.
 Both `Document.Parse` and `Document.ParseAST` return owned syntax diagnostics: recovered `SyntaxError` values and
 their `Expected` and `Messages` slices are copied; ordinary failures are freshly constructed. Mutating a returned
 error cannot affect memoized errors or a later parse. Parsing, diagnostic copying and typed publication share one
-work budget; interruption returns the result type's zero value and clears reusable state as needed for a retry.
+budget; interruption returns the result type's zero value and clears reusable state as needed for a retry.
 `-document` cannot be combined with `-lang ts`; engine-only Document controls such as `EditBatch` are separate work. See the [direct typed measurements](../design/records/044-generated-incremental-and-stream-parsers.md#local-measurements-for-direct-typed-document-matching)
 and the [conversion fallback measurements](../design/records/044-generated-incremental-and-stream-parsers.md#local-measurements-for-typed-go-document-conversion).
 

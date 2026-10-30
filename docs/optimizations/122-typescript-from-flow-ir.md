@@ -24,8 +24,8 @@ print fails generation.
 ## Results
 
 Node 24.13.0 on darwin/arm64, medians of six rounds that rotate three generators: the grammar-tree
-printer (before; its output always charges work, so it is the controlled form), and the printer of
-this change in the default form (after, without work controls) and with `-work-controls`. Inputs of
+printer (before; its output always spends budget, so it is the controlled form), and the printer of
+this change in the default form (after, without budget controls) and with `-budget-controls`. Inputs of
 `bench/` (`ts-parse.mjs`; recognition by a harness that runs `recognize` in a loop). The comparison of
 the before column with the after column sets the old controlled form against the new plain form; the
 column with controls compares like with like:
@@ -77,7 +77,7 @@ slows warm-up); this removes 691 of the 1,924 outlined functions of DuckDB and 3
 (`outlineLarge=24`, `outlineChild=4`) makes DuckDB 0.8% smaller than the default and leaves speed within
 noise on JSON, CSV and XML, and is not the default.
 
-Without `-work-controls` the rules, actions and the typed runtime emit no charge. Against the
+Without `-budget-controls` the rules, actions and the typed runtime emit no charge. Against the
 controlled form of the same grammar the plain `parser.ts` is 0.9% smaller for DuckDB, 1.2% for CEL,
 1.3% for JSON, 1.5% for CSV, 1.8% for XML and 3.1% for Python. Parse and recognition time of the plain
 form are within 1% of the controlled form for JSON and for XML recognition; CSV recognition is 5.5%
@@ -87,6 +87,6 @@ and 22.4 to 22.7 ms), so the gap is at most 5.5% and below noise except for CSV 
 ## Tests
 
 The generated parsers match the engine over the corpus (330 grammars, 29,252 results, both position
-units) with values, with source information and with work controls; a sweep of mutated inputs shows no
-difference from the engine. The typed, replay, work-control, observation and profile tests, the Core and
+units) with values, with source information and with budget controls; a sweep of mutated inputs shows no
+difference from the engine. The typed, replay, budget-control, observation and profile tests, the Core and
 Flow IR goldens and `parsers/test.sh` pass.

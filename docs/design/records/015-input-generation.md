@@ -118,7 +118,7 @@ The generator prunes candidates that the parser would read differently from how 
   text grows, and finally at the end of the input. A violated check fails the decision that wrote the text.
 - **The partial matcher.** Checks are evaluated by a small backtracking matcher over the AST with three outcomes:
   matched, failed, and *more* (the answer depends on text not generated yet). It answers *unknown* for predicates, Operators Rule
-  expressions, left recursion (a rule called again at the same position), cuts, `#recover` and work over a bound; such
+  expressions, left recursion (a rule called again at the same position), cuts, `#recover` and budget over a bound; such
   a check is dropped and the parser decides. The matcher's answers are heuristics: a wrong answer costs a retry, never
   a wrong result. An expression that matches anywhere, if only the empty string (`"a"?`, `x*`, sequences and choices of
   such, without cuts), violates a check that it must not match at once: the matcher would answer *more* until the text
@@ -165,7 +165,7 @@ The generator prunes candidates that the parser would read differently from how 
   empty infix parts can represent juxtaposition, with a whole-application progress guard.
   Skip, operator comparisons, scope traversal and every recursive RHS invocation share one matcher allowance.
   Incomplete input retains a pending check; cuts, predicates, Operators Rule references, left recursion, recovery and
-  exhausted work are inconclusive and leave acceptance to the real parser. A completed primary can still fail
+  exhausted budget are inconclusive and leave acceptance to the real parser. A completed primary can still fail
   when a later tighter operator commits, so primary success alone is insufficient. When every led part is
   structurally proven uncommitted, an unresolved future tail cannot invalidate an established primary; the
   matcher can prove success early without claiming its final extent. Such witness endpoints are propagated
