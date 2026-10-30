@@ -5,8 +5,8 @@ generated Go uses, so a rewrite of the Core or Flow IR reaches both.
 
 ## Mechanism and Invariants
 
-Every rule of the Node and recognizer tables is lowered by `flow.Lower`, `flow.LowerFrame` or
-`flow.LowerOutline` and printed by `internal/gen/tsgen/flow.go`: a block becomes a labeled block, a loop `for (;;)`,
+Every rule of the Node and recognizer tables is lowered by `lower.Lower`, `lower.LowerFrame` or
+`lower.LowerOutline` and printed by `internal/gen/tsgen/flow.go`: a block becomes a labeled block, a loop `for (;;)`,
 a condition a Flow IR expression. A rule that Flow IR does not print fails generation; there is no second
 printer.
 
@@ -62,7 +62,7 @@ below sets it against the new default form, without budget controls, and the lik
 
 Evidence records: [122](../122-typescript-from-flow-ir.md).
 
-Source owners: [`Flow IR printer`](../../../internal/gen/tsgen/flow.go), [`outlining`](../../../internal/gen/tsgen/outline.go), [`Flow IR lowering`](../../../internal/ir/flow/lower.go).
+Source owners: [`Flow IR printer`](../../../internal/gen/tsgen/flow.go), [`outlining`](../../../internal/gen/tsgen/outline.go), [`Flow IR lowering`](../../../internal/ir/flow/lower/lower.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

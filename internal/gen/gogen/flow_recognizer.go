@@ -6,12 +6,13 @@ import (
 
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/ir/flow"
+	flowlower "github.com/ornew/pego/internal/ir/flow/lower"
 )
 
 // Value-free rules of the Node runtime printed from Flow IR.
 //
 // The rules of a recognizer (recRules) and the lean rules of the Node table (rules) that
-// gen.RecFlowEligible accepts are built as Core IR, lowered by flow.Lower and printed by
+// gen.RecFlowEligible accepts are built as Core IR, lowered by flowlower.Lower and printed by
 // flowPrinter for the untyped Node runtime. The other rules print their framed body from Flow IR as
 // well (flowNodeFrameBody), in the same output. Both tables share the helpers whose printed text is
 // equal. The text passes run on the whole output afterwards.
@@ -20,7 +21,7 @@ import (
 // nil in three cases, and the caller (generator.rules) then prints the rule's framed body from Flow IR
 // (flowNodeFrameBody) and calls it through the rule table (plainCall); the generation fails if that
 // does not print it either:
-//   - flow.LocalRule rejects the rule, which needs the runtime-owned frame of a framed function;
+//   - flowlower.LocalRule rejects the rule, which needs the runtime-owned frame of a framed function;
 //   - the printed function would read its start or its context, which a value-free flat rule has
 //     no parameters for;
 //   - a variable of the function has a type that untypedGoType cannot name.
@@ -29,10 +30,10 @@ func (g *Generator) flowRecRule(r *compile.Rule) *flatRule {
 		return nil
 	}
 	cr := g.Flow.M.Rules[r.ID]
-	if !flow.LocalRule(cr) {
+	if !flowlower.LocalRule(cr) {
 		return nil
 	}
-	f, err := flow.Lower(g.Flow.M, cr, r.Name, g.Flow.Opts)
+	f, err := flowlower.Lower(g.Flow.M, cr, r.Name, g.Flow.Opts)
 	if err != nil {
 		panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.Table, err)) // LocalRule holds
 	}

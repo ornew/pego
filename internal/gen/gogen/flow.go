@@ -11,16 +11,17 @@ import (
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
 	"github.com/ornew/pego/internal/ir/flow"
+	flowlower "github.com/ornew/pego/internal/ir/flow/lower"
 	"github.com/ornew/pego/internal/value"
 )
 
 // Typed Go rules printed from Flow IR.
 //
 // The typed rules are built as Core IR (TypedCore) and printed from Flow IR here. The rules that
-// flow.LocalRule accepts are lowered to local functions (flow.Lower) and printed into the flat
+// flowlower.LocalRule accepts are lowered to local functions (flowlower.Lower) and printed into the flat
 // rule that typedCall and flatMethod wrap. The bodies of left-recursion leaders and of rules
 // that recover, and the lines of Operators Rules, are lowered to framed functions
-// (flow.LowerFrame) and printed into the matcher methods that the runtime calls under the frames
+// (flowlower.LowerFrame) and printed into the matcher methods that the runtime calls under the frames
 // it owns (finishFrameBody). A construct that neither form accepts is reported as an error
 // (failFlow): no table has another route.
 //
@@ -51,11 +52,11 @@ func (g *Generator) startFlow() error {
 
 // FlowOptions returns the options of lowering the typed rules of the Core IR m, while the typed
 // table is generated.
-func (g *Generator) FlowOptions(m *core.Module) flow.Options {
+func (g *Generator) FlowOptions(m *core.Module) flowlower.Options {
 	// Node is false: the options of the Node and recognizer tables (gen.Generator.StartRecFlow) are
 	// built apart, and a function lowered with one set of options is never printed for the other
 	// runtime.
-	return flow.Options{Budget: !g.NoBudget, Recovers: flow.Recovers(m), ClassTables: g.leanTyped(),
+	return flowlower.Options{Budget: !g.NoBudget, Recovers: flowlower.Recovers(m), ClassTables: g.leanTyped(),
 		GuardedClasses: g.Ordinary && !g.DisableGuardedClasses, InlineLiterals: gen.MaxInlineLiteral, Observe: g.Observability, Document: g.Document}
 }
 
@@ -66,10 +67,10 @@ func (g *Generator) flowTypedRule(r *compile.Rule) *flatRule {
 		return nil
 	}
 	cr := g.Flow.M.Rules[r.ID]
-	if !flow.LocalRule(cr) {
+	if !flowlower.LocalRule(cr) {
 		return nil
 	}
-	f, err := flow.Lower(g.Flow.M, cr, r.Name, g.Flow.Opts)
+	f, err := flowlower.Lower(g.Flow.M, cr, r.Name, g.Flow.Opts)
 	if err != nil {
 		panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.Table, err)) // LocalRule holds
 	}
@@ -110,13 +111,13 @@ func (g *Generator) flowFrameBody(r *compile.Rule, scope *compile.Scope) string 
 	comment, ok := g.typedFrameComment(r)
 	cr := g.Flow.M.Rules[r.ID]
 	// The runtime-owned frame has the slots of the Node rule's scope.
-	if !ok || !flow.FramedBody(cr.Body) || !slices.Equal(core.SlotNames(cr.Scope), g.NodeScopes[r]) {
+	if !ok || !flowlower.FramedBody(cr.Body) || !slices.Equal(core.SlotNames(cr.Scope), g.NodeScopes[r]) {
 		return ""
 	}
 	if g.Flow.Opts.Node {
 		panic("internal error: a typed rule is lowered with the options of the Node tables")
 	}
-	f, err := flow.LowerFrame(g.Flow.M, cr, cr.Body, cr.Scope, cr.Want, r.Name, g.Flow.Opts)
+	f, err := flowlower.LowerFrame(g.Flow.M, cr, cr.Body, cr.Scope, cr.Want, r.Name, g.Flow.Opts)
 	if err != nil {
 		panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.Table, err)) // FramedBody holds
 	}
@@ -140,7 +141,7 @@ func (g *Generator) flowNodeFrameBody(r *compile.Rule, scope *compile.Scope) str
 	if !g.Flow.Opts.Node {
 		panic("internal error: a Node rule is lowered with the options of the typed table")
 	}
-	f, err := flow.LowerFrame(g.Flow.M, cr, cr.Body, cr.Scope, !r.Lean, r.Name, g.Flow.Opts)
+	f, err := flowlower.LowerFrame(g.Flow.M, cr, cr.Body, cr.Scope, !r.Lean, r.Name, g.Flow.Opts)
 	if err != nil {
 		panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.Table, err)) // FramedBody holds
 	}
@@ -150,7 +151,7 @@ func (g *Generator) flowNodeFrameBody(r *compile.Rule, scope *compile.Scope) str
 }
 
 // flowStreamBody prints the body of the start rule r of ParseStream from Flow IR as the matcher of its
-// frame body, with the repetition of its #stream delivering the elements (flow.Options.Stream), or
+// frame body, with the repetition of its #stream delivering the elements (flowlower.Options.Stream), or
 // returns "" if the rule is not printed that way: a rule is eligible as for flowNodeFrameBody. The
 // capture layout of the printed body must be the batch body's, which the action addresses by slot.
 func (g *Generator) flowStreamBody(r *compile.Rule, scope *compile.Scope) string {
@@ -160,7 +161,7 @@ func (g *Generator) flowStreamBody(r *compile.Rule, scope *compile.Scope) string
 	}
 	opts := g.Flow.Opts
 	opts.Stream = true
-	f, err := flow.LowerFrame(g.Flow.M, cr, cr.Body, cr.Scope, !r.Lean, r.Name, opts)
+	f, err := flowlower.LowerFrame(g.Flow.M, cr, cr.Body, cr.Scope, !r.Lean, r.Name, opts)
 	if err != nil {
 		panic(fmt.Errorf("stream body of rule %s: %w", r.Name, err)) // FramedBody holds
 	}
@@ -179,13 +180,13 @@ func (g *Generator) flowStreamBody(r *compile.Rule, scope *compile.Scope) string
 // controls (Options.Budget) the method that holds the function charges its entry and the function charges
 // each iteration of a repetition, as Flow IR makes them explicit.
 func (g *Generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope *compile.Scope, build bool) string {
-	if g.Flow == nil || l == nil || !gen.FlowLineOK(e) || !flow.FramedBody(l.Body) {
+	if g.Flow == nil || l == nil || !gen.FlowLineOK(e) || !flowlower.FramedBody(l.Body) {
 		return ""
 	}
 	if g.Table != "trules" && !gen.FlowBodyOK(e, true, true) {
 		return ""
 	}
-	f, err := flow.LowerFrame(g.Flow.M, g.Flow.M.Rules[g.Cur.ID], l.Body, l.Scope, build, g.Cur.Name, g.Flow.Opts)
+	f, err := flowlower.LowerFrame(g.Flow.M, g.Flow.M.Rules[g.Cur.ID], l.Body, l.Scope, build, g.Cur.Name, g.Flow.Opts)
 	if err != nil {
 		panic(fmt.Errorf("line of Operators Rule %s in table %s: %w", g.Cur.Name, g.Table, err)) // FramedBody holds
 	}

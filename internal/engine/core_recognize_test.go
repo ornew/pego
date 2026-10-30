@@ -9,7 +9,7 @@ import (
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gen/gogen"
 	"github.com/ornew/pego/internal/gentest"
-	irbuild "github.com/ornew/pego/internal/ir/build"
+	irbuild "github.com/ornew/pego/internal/ir/core/build"
 	"github.com/ornew/pego/internal/ir/core"
 )
 

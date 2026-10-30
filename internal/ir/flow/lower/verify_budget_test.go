@@ -1,24 +1,25 @@
-package flow
+package lower
 
 import (
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/ir/core"
+	"github.com/ornew/pego/internal/ir/flow"
 )
 
 // stripSteps returns ss without the Step statements, at any depth.
-func stripSteps(ss []Stmt) []Stmt {
-	var out []Stmt
+func stripSteps(ss []flow.Stmt) []flow.Stmt {
+	var out []flow.Stmt
 	for _, s := range ss {
 		switch s := s.(type) {
-		case *Step:
+		case *flow.Step:
 			continue
-		case *Block:
+		case *flow.Block:
 			s.Body = stripSteps(s.Body)
-		case *Loop:
+		case *flow.Loop:
 			s.Body = stripSteps(s.Body)
-		case *If:
+		case *flow.If:
 			s.Then, s.Else = stripSteps(s.Then), stripSteps(s.Else)
 		}
 		out = append(out, s)
@@ -53,7 +54,7 @@ func TestVerifyBudgetCharges(t *testing.T) {
 			}
 			f.Body = stripSteps(f.Body)
 			f.Entered = false // without the step the caller charges, nothing charges the entry
-			err = Verify(f)
+			err = flow.Verify(f)
 			if err == nil || !strings.Contains(err.Error(), "spend:") {
 				t.Errorf("Verify of the function without its steps: got %v, want a spend error", err)
 			}
@@ -74,55 +75,55 @@ func TestVerifyBudgetCharges(t *testing.T) {
 			t.Fatal("the framed function does not take its entry as charged by its caller")
 		}
 		for _, s := range f.Body {
-			if lp, ok := s.(*Loop); ok {
-				if _, ok := lp.Body[0].(*Step); !ok {
-					t.Errorf("a repetition does not charge first in its iteration:\n%s", String(f))
+			if lp, ok := s.(*flow.Loop); ok {
+				if _, ok := lp.Body[0].(*flow.Step); !ok {
+					t.Errorf("a repetition does not charge first in its iteration:\n%s", flow.String(f))
 				}
 				lp.Body = stripSteps(lp.Body)
 			}
 		}
-		if err := Verify(f); err == nil || !strings.Contains(err.Error(), "spend:") {
+		if err := flow.Verify(f); err == nil || !strings.Contains(err.Error(), "spend:") {
 			t.Errorf("Verify of a repetition without its iteration step: got %v, want a spend error", err)
 		}
 	}
-	loop := &Label{Name: "loop"}
-	newFunc := func(body ...Stmt) *Func {
-		return &Func{Name: "f", Budget: true, Body: body, Fail: &Label{Name: "fail"},
-			Start: &Var{Name: "start", Type: TypeInt, Entry: true}, Result: &Var{Name: "v", Type: TypeValue, Entry: true},
-			Ctx: &Var{Name: "c", Type: TypeCtx, Entry: true}}
+	loop := &flow.Label{Name: "loop"}
+	newFunc := func(body ...flow.Stmt) *flow.Func {
+		return &flow.Func{Name: "f", Budget: true, Body: body, Fail: &flow.Label{Name: "fail"},
+			Start: &flow.Var{Name: "start", Type: flow.TypeInt, Entry: true}, Result: &flow.Var{Name: "v", Type: flow.TypeValue, Entry: true},
+			Ctx: &flow.Var{Name: "c", Type: flow.TypeCtx, Entry: true}}
 	}
-	ok := &Var{Name: "ok", Type: TypeBool}
-	oneSided := newFunc(&Loop{Label: loop, Body: []Stmt{
-		&If{Cond: &Use{V: ok}, Then: []Stmt{&Exit{To: loop}}},
-		&If{Cond: &Use{V: ok}, Then: []Stmt{&Step{}, &Continue{To: loop}}, Else: []Stmt{&Continue{To: loop}}},
+	ok := &flow.Var{Name: "ok", Type: flow.TypeBool}
+	oneSided := newFunc(&flow.Loop{Label: loop, Body: []flow.Stmt{
+		&flow.If{Cond: &flow.Use{V: ok}, Then: []flow.Stmt{&flow.Exit{To: loop}}},
+		&flow.If{Cond: &flow.Use{V: ok}, Then: []flow.Stmt{&flow.Step{}, &flow.Continue{To: loop}}, Else: []flow.Stmt{&flow.Continue{To: loop}}},
 	}})
-	oneSided.Vars = []*Var{ok}
-	if err := Verify(oneSided); err == nil || !strings.Contains(err.Error(), "continues without charging") {
+	oneSided.Vars = []*flow.Var{ok}
+	if err := flow.Verify(oneSided); err == nil || !strings.Contains(err.Error(), "continues without charging") {
 		t.Errorf("a loop that charges on one path: got %v", err)
 	}
-	always := newFunc(&Loop{Label: loop, Body: []Stmt{
-		&If{Cond: &Use{V: ok}, Then: []Stmt{&Exit{To: loop}}},
-		&Step{}, &Continue{To: loop}}})
-	always.Vars = []*Var{ok}
-	if err := Verify(always); err != nil {
+	always := newFunc(&flow.Loop{Label: loop, Body: []flow.Stmt{
+		&flow.If{Cond: &flow.Use{V: ok}, Then: []flow.Stmt{&flow.Exit{To: loop}}},
+		&flow.Step{}, &flow.Continue{To: loop}}})
+	always.Vars = []*flow.Var{ok}
+	if err := flow.Verify(always); err != nil {
 		t.Errorf("a loop that charges before it continues: %v", err)
 	}
-	early := newFunc(&Advance{N: &Int{N: 1}})
-	if err := Verify(early); err == nil || !strings.Contains(err.Error(), "Advance before a charge") {
+	early := newFunc(&flow.Advance{N: &flow.Int{N: 1}})
+	if err := flow.Verify(early); err == nil || !strings.Contains(err.Error(), "Advance before a charge") {
 		t.Errorf("an Advance before a charge: got %v", err)
 	}
-	entered := newFunc(&Advance{N: &Int{N: 1}})
+	entered := newFunc(&flow.Advance{N: &flow.Int{N: 1}})
 	entered.Entered = true
-	if err := Verify(entered); err != nil {
+	if err := flow.Verify(entered); err != nil {
 		t.Errorf("a function whose caller charged its entry: %v", err)
 	}
 	// A loop that ends by its bound, perhaps before any iteration, leaves the state uncharged even when
 	// its only exit has charged.
-	bounded := newFunc(&Loop{Label: loop, Counter: ok, Max: 3, Body: []Stmt{
-		&If{Cond: &Use{V: ok}, Then: []Stmt{&Step{}, &Exit{To: loop}}},
-		&Step{}}}, &Advance{N: &Int{N: 1}})
-	bounded.Vars = []*Var{ok}
-	if err := Verify(bounded); err == nil || !strings.Contains(err.Error(), "Advance before a charge") {
+	bounded := newFunc(&flow.Loop{Label: loop, Counter: ok, Max: 3, Body: []flow.Stmt{
+		&flow.If{Cond: &flow.Use{V: ok}, Then: []flow.Stmt{&flow.Step{}, &flow.Exit{To: loop}}},
+		&flow.Step{}}}, &flow.Advance{N: &flow.Int{N: 1}})
+	bounded.Vars = []*flow.Var{ok}
+	if err := flow.Verify(bounded); err == nil || !strings.Contains(err.Error(), "Advance before a charge") {
 		t.Errorf("an Advance after a bounded loop that may run no iteration: got %v", err)
 	}
 }
@@ -146,8 +147,8 @@ func TestLowerRejectsBudgetWithLeanClasses(t *testing.T) {
 func TestLowerFrameRejectsBudgetWithLeanClasses(t *testing.T) {
 	for _, opts := range []Options{{Budget: true, ClassTables: true}, {Budget: true, GuardedClasses: true}} {
 		m, r := valueFree(&core.Lit{Text: "a"})
-		for name, lower := range map[string]func() (*Func, error){
-			"LowerFrame": func() (*Func, error) { return LowerFrame(m, r, r.Body, nil, false, "r", opts) },
+		for name, lower := range map[string]func() (*flow.Func, error){
+			"LowerFrame": func() (*flow.Func, error) { return LowerFrame(m, r, r.Body, nil, false, "r", opts) },
 		} {
 			if _, err := lower(); err == nil || !strings.Contains(err.Error(), "Options.Budget") {
 				t.Errorf("%s accepted %+v: %v", name, opts, err)

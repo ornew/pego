@@ -11,12 +11,13 @@ import (
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/ir/core"
 	"github.com/ornew/pego/internal/ir/flow"
+	flowlower "github.com/ornew/pego/internal/ir/flow/lower"
 	"github.com/ornew/pego/internal/value"
 )
 
 // Value-free rules of the TypeScript runtime printed from Flow IR.
 //
-// The rules are lowered by flow.Lower (with the options of the untyped tables, except for the
+// The rules are lowered by flowlower.Lower (with the options of the untyped tables, except for the
 // Go-only forms: in-place literal reads and class tables) and printed by tsFlowPrinter as one
 // function each. A block becomes a labeled block and a loop a labeled
 // for statement, so that an exit leaves the construct it names with break or continue. A rule
@@ -49,7 +50,7 @@ func (g *Generator) startTSFlow() bool {
 
 // flowRule prints the rule r from Flow IR as a function of its own and returns the call
 // expression that runs it, or false if r is not printed from Flow IR. A lean value-free rule that
-// flow.LocalRule accepts prints as a flat function; a rule whose body is a framed body prints under the
+// flowlower.LocalRule accepts prints as a flat function; a rule whose body is a framed body prints under the
 // frame the runtime owns, which also runs its action and finish. On success it sets scope to the
 // capture scope of the printed body.
 func (g *Generator) flowRule(r *compile.Rule, scope *compile.Scope) (call string, ok bool) {
@@ -59,9 +60,9 @@ func (g *Generator) flowRule(r *compile.Rule, scope *compile.Scope) (call string
 	var f *flow.Func
 	var slots []core.Slot
 	cr := g.Flow.M.Rules[r.ID]
-	if gen.RecFlowEligible(r) && flow.LocalRule(cr) {
+	if gen.RecFlowEligible(r) && flowlower.LocalRule(cr) {
 		var err error
-		if f, err = flow.Lower(g.Flow.M, cr, r.Name, g.Flow.Opts); err != nil {
+		if f, err = flowlower.Lower(g.Flow.M, cr, r.Name, g.Flow.Opts); err != nil {
 			panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.Table, err)) // LocalRule holds
 		}
 		if f.Binds {
@@ -73,7 +74,7 @@ func (g *Generator) flowRule(r *compile.Rule, scope *compile.Scope) (call string
 			return "", false
 		}
 		var err error
-		if f, err = flow.LowerFrame(g.Flow.M, cr, cr.Body, cr.Scope, !r.Lean, r.Name, g.Flow.Opts); err != nil {
+		if f, err = flowlower.LowerFrame(g.Flow.M, cr, cr.Body, cr.Scope, !r.Lean, r.Name, g.Flow.Opts); err != nil {
 			panic(fmt.Errorf("rule %s of table %s: %w", r.Name, g.Table, err)) // FramedBody holds
 		}
 		slots = cr.Scope
@@ -1145,10 +1146,10 @@ func tsUnisolate(s *flow.Set) (*flow.Unisolate, bool) {
 // the line. It sets scope to the capture scope of the line. With budget controls the runtime loop that
 // runs the line charges its entry and the function charges each iteration of a repetition.
 func (g *Generator) flowLine(l *core.OpLine, e grammar.Expr, scope *compile.Scope, build bool) (string, bool) {
-	if g.Flow == nil || l == nil || !gen.FlowLineOK(e) || !flow.FramedBody(l.Body) {
+	if g.Flow == nil || l == nil || !gen.FlowLineOK(e) || !flowlower.FramedBody(l.Body) {
 		return "", false
 	}
-	f, err := flow.LowerFrame(g.Flow.M, g.Flow.M.Rules[g.Cur.ID], l.Body, l.Scope, build, g.Cur.Name, g.Flow.Opts)
+	f, err := flowlower.LowerFrame(g.Flow.M, g.Flow.M.Rules[g.Cur.ID], l.Body, l.Scope, build, g.Cur.Name, g.Flow.Opts)
 	if err != nil {
 		panic(fmt.Errorf("line of Operators Rule %s in table %s: %w", g.Cur.Name, g.Table, err)) // FramedBody holds
 	}
@@ -1168,7 +1169,7 @@ func (p *tsFlowPrinter) outline(x *flow.CallOutline) string {
 		return call
 	}
 	g := p.g
-	f, err := flow.LowerOutline(g.Flow.M, g.Flow.M.Rules[g.Cur.ID], x.Node, x.Slots, x.Build, g.Cur.Name, g.Flow.Opts)
+	f, err := flowlower.LowerOutline(g.Flow.M, g.Flow.M.Rules[g.Cur.ID], x.Node, x.Slots, x.Build, g.Cur.Name, g.Flow.Opts)
 	if err != nil {
 		panic(fmt.Errorf("outlined node of rule %s in table %s: %w", g.Cur.Name, g.Table, err)) // Outlinable holds
 	}

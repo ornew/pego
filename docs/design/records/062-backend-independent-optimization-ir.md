@@ -75,7 +75,7 @@ more times: the closure evaluator in `closure/eval.go`, bytecode expression code
   recognizer (`gen.Generator.StartRecFlow`). A direct rule whose printed function would read its start
   or context, or whose variables have a type the printer cannot name, prints its framed body instead, as every
   other rule does: the rules that `gen.Generator.FlowNodeFrameOK` accepts print as the matcher of their framed body, which the
-  runtime calls under the frame, memo, depth, action and finish it owns (`flow.FramedBody` accepts no Nest,
+  runtime calls under the frame, memo, depth, action and finish it owns (`lower.FramedBody` accepts no Nest,
   Operators Rule or Terminal node). A typed-only build has Node rules only when a typed entry point converts the
   Node result of a rule (`keepNodes`); they print like those of any Node build. Both tables print through the same
   Flow printer, so a rule with the same text in the two tables is one shared helper by exact-text sharing. A Node
@@ -629,7 +629,7 @@ stage of its first consumer, so its differential tests and negative controls run
    them and the Go compiler still reports unused variables. In the checked-in parsers and benchmark generators, no
    typed rule reaches a fallback of the typed dispatch (measured at 92050aae at the four exits: the direct rule,
    the framed body, the rule body and the Operators Rule lines). Left-recursion leaders, `#recover`, nested calls
-   and Operators Rules are rejected by `flow.LocalRule`, but they are printed through the framed-body and
+   and Operators Rules are rejected by `lower.LocalRule`, but they are printed through the framed-body and
    Operators Rule lowering. The typed dispatch does not fall back: a typed rule or Operators Rule line that Flow
    IR does not print makes generation fail. Then remove the typed parts of the Go term
    lowering and the typed uses of the ordinary-method passes.

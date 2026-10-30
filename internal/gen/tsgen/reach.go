@@ -5,8 +5,8 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
-	irbuild "github.com/ornew/pego/internal/ir/build"
 	"github.com/ornew/pego/internal/ir/core"
+	irbuild "github.com/ornew/pego/internal/ir/core/build"
 )
 
 // A generated parser prints only the rules that a parse can enter: the start rules, which parseRule

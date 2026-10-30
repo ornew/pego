@@ -7,9 +7,10 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
-	irbuild "github.com/ornew/pego/internal/ir/build"
 	"github.com/ornew/pego/internal/ir/core"
+	irbuild "github.com/ornew/pego/internal/ir/core/build"
 	"github.com/ornew/pego/internal/ir/flow"
+	flowlower "github.com/ornew/pego/internal/ir/flow/lower"
 	"github.com/ornew/pego/internal/limits"
 )
 
@@ -227,7 +228,7 @@ func LiteralTextMembership(t grammar.Term) (string, []string, bool) {
 type FlowState struct {
 	M      *core.Module
 	Origin map[core.Node]grammar.Expr
-	Opts   flow.Options
+	Opts   flowlower.Options
 	// Rules holds the rules of the program by ID, value-free twins included.
 	Rules []*compile.Rule
 }
@@ -271,7 +272,7 @@ func (g *Generator) FlowNodeFrameOK(r *compile.Rule) (*core.Rule, bool) {
 		return nil, false
 	}
 	cr := g.Flow.M.Rules[r.ID]
-	if !flow.FramedBody(cr.Body) {
+	if !flowlower.FramedBody(cr.Body) {
 		return nil, false
 	}
 	if r.Action != nil {
@@ -341,7 +342,7 @@ func (g *Generator) StartRecFlow(rec *compile.Program) error {
 		return fmt.Errorf("internal error: %w", err)
 	}
 	// Classes are inline tests, as the Node runtime's generated code writes them.
-	opts := flow.Options{Budget: !g.NoBudget, Recovers: flow.Recovers(m), GuardedClasses: g.Ordinary && !g.DisableGuardedClasses,
+	opts := flowlower.Options{Budget: !g.NoBudget, Recovers: flowlower.Recovers(m), GuardedClasses: g.Ordinary && !g.DisableGuardedClasses,
 		InlineLiterals: MaxInlineLiteral, Observe: g.Observability, Node: true, Document: g.Document}
 	g.Flow = &FlowState{M: m, Origin: origin, Opts: opts, Rules: append(append([]*compile.Rule(nil), rec.RuleList...), rec.Twins...)}
 	return nil

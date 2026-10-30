@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/ornew/pego/grammar"
-	irbuild "github.com/ornew/pego/internal/ir/build"
 	"github.com/ornew/pego/internal/ir/core"
+	irbuild "github.com/ornew/pego/internal/ir/core/build"
 )
 
 // TypedCore builds the Core IR of the typed Go rules and runs the passes of the typed Go backend:

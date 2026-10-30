@@ -1,13 +1,11 @@
-package flow
+package lower
 
 import (
 	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/ir/core"
-	"go/ast"
-	"go/parser"
-	"go/token"
+	"github.com/ornew/pego/internal/ir/flow"
 )
 
 // valueFree makes a module of one value-free rule with the body, as the builder does: the
@@ -133,10 +131,10 @@ func r
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := Verify(f); err != nil {
+			if err := flow.Verify(f); err != nil {
 				t.Fatal(err)
 			}
-			if got := String(f); got != strings.TrimPrefix(c.want, "\n") {
+			if got := flow.String(f); got != strings.TrimPrefix(c.want, "\n") {
 				t.Errorf("got\n%s\nwant\n%s", got, strings.TrimPrefix(c.want, "\n"))
 			}
 		})
@@ -264,96 +262,13 @@ func r framed
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := Verify(f); err != nil {
+			if err := flow.Verify(f); err != nil {
 				t.Fatal(err)
 			}
-			if got := String(f); got != strings.TrimPrefix(c.want, "\n") {
+			if got := flow.String(f); got != strings.TrimPrefix(c.want, "\n") {
 				t.Errorf("got\n%s\nwant\n%s", got, strings.TrimPrefix(c.want, "\n"))
 			}
 		})
-	}
-}
-
-// TestVerifyRejects checks that Verify rejects functions that break each invariant it checks.
-func TestVerifyRejects(t *testing.T) {
-	newFunc := func(body ...Stmt) *Func {
-		return &Func{Name: "f", Body: body, Fail: &Label{Name: "fail"},
-			Start: &Var{Name: "start", Type: TypeInt, Entry: true}, Result: &Var{Name: "v", Type: TypeValue, Entry: true},
-			Ctx: &Var{Name: "c", Type: TypeCtx, Entry: true}}
-	}
-	inner, outer := &Label{Name: "L1"}, &Label{Name: "L2"}
-	stray := &Var{Name: "x9", Type: TypeInt}
-	for _, c := range []struct {
-		name string
-		f    *Func
-		want string
-	}{
-		{"exit to a block that does not enclose it", newFunc(&Block{Label: inner}, &Exit{To: inner}), "does not enclose"},
-		{"continue outside its loop", newFunc(&Block{Label: outer, Body: []Stmt{&Continue{To: outer}}}), "continue"},
-		// The printer writes break and continue without labels, which reach the innermost loop only.
-		{"exit to an outer loop", newFunc(&Loop{Label: outer, Body: []Stmt{
-			&Loop{Label: inner, Body: []Stmt{&Exit{To: outer}, &Continue{To: outer}, &Exit{To: inner}}}}}), "not the innermost"},
-		{"continue of an outer loop", newFunc(&Loop{Label: outer, Body: []Stmt{
-			&Loop{Label: inner, Body: []Stmt{&Continue{To: outer}, &Exit{To: inner}}}, &Exit{To: outer}}}), "continue of a loop that is not the innermost"},
-		{"undeclared variable", newFunc(&Set{Dst: []LValue{RegPos}, X: []Expr{&Use{V: stray}}}), "not declared"},
-		{"assignment arity", newFunc(&Set{Dst: []LValue{RegPos, &Discard{}}, X: []Expr{&Int{N: 1}}}), "1 values to 2 places"},
-		{"label used twice", newFunc(&Block{Label: inner}, &Block{Label: inner}), "label of its own"},
-		{"unbounded loop that never exits", newFunc(&Loop{Label: &Label{}, Body: []Stmt{&Step{}}}), "never exits"},
-		{"framed function with entry variables", func() *Func { f := newFunc(); f.Frame = true; return f }(), "entry variable"},
-		{"local function with a value", func() *Func { f := newFunc(); f.Value = &Nil{}; return f }(), "local function"},
-		{"typed match in a Node function", func() *Func {
-			f := newFunc(&Set{Dst: []LValue{RegPos}, X: []Expr{&NewMatch{Start: &Int{}, Text: &Str{}}}})
-			f.Node = true
-			return f
-		}(), "typed match in a Node function"},
-		{"typed node nested in a Node function", func() *Func {
-			f := newFunc(&Set{Dst: []LValue{RegPos}, X: []Expr{&Kids{Base: &NewNode{Start: &Int{}, Kids: &Nil{}}}}})
-			f.Node = true
-			return f
-		}(), "typed node in a Node function"},
-		{"Node terminal in a typed function", newFunc(&Set{Dst: []LValue{RegPos}, X: []Expr{&NewTerminalNode{Start: &Int{}, Text: &Str{}}}}), "Node terminal in a typed function"},
-		{"Node branch nested in a typed function", newFunc(&Set{Dst: []LValue{RegPos}, X: []Expr{&Kids{Base: &NewBranchNode{Start: &Int{}, Kids: &Nil{}}}}}), "Node branch in a typed function"},
-		{"local capture values in a Node function", func() *Func {
-			f := newFunc(&Set{Dst: []LValue{RegPos}, X: []Expr{&AttachCaptures{X: &Nil{}, Names: &Names{}, Vals: []*Var{}, Start: &Int{}}}})
-			f.Node = true
-			return f
-		}(), "typed capture values of local variables in a Node function"},
-		{"frame trail drop in a Node function", func() *Func {
-			f := newFunc(&DropTrail{M: &Nil{}})
-			f.Node = true
-			return f
-		}(), "frame trail in a Node function"},
-		{"frame release in a Node function", func() *Func {
-			f := newFunc(&FreeFrame{F: &Var{Name: "fr", Type: TypeValue}})
-			f.Node = true
-			return f
-		}(), "frame release in a Node function"},
-		{"stream start in a typed function", newFunc(&StreamStart{}), "stream start outside a framed Node function"},
-		{"stream element in a local Node function", func() *Func {
-			f := newFunc(&EmitStream{X: &Nil{}})
-			f.Node = true
-			return f
-		}(), "stream element outside a framed Node function"},
-		{"undeclared cut flag", func() *Func {
-			return &Func{Name: "f", Fail: &Label{Name: "fail"}, Frame: true, Cut: &Var{Name: "cut1", Type: TypeBool}}
-		}(), "not declared"},
-	} {
-		t.Run(c.name, func(t *testing.T) {
-			err := Verify(c.f)
-			if err == nil || !strings.Contains(err.Error(), c.want) {
-				t.Errorf("got %v, want an error containing %q", err, c.want)
-			}
-		})
-	}
-	// A valid function of the same parts verifies; an Exit may leave a loop for a block that
-	// encloses it, which the printer writes as a goto.
-	block := &Label{Name: "L3"}
-	ok := newFunc(&Block{Label: inner, Body: []Stmt{&Set{Dst: []LValue{RegPos}, X: []Expr{&Int{N: 1}}}, &Exit{To: inner}}},
-		&Loop{Label: outer, Body: []Stmt{&Step{}, &Continue{To: outer}, &Exit{To: outer}}},
-		&Block{Label: block, Body: []Stmt{&Loop{Label: &Label{}, While: &Cmp{Op: "<", L: &Int{}, R: &Int{N: 1}}, Body: []Stmt{&Exit{To: block}}}}})
-	ok.Body = append(ok.Body, &Exit{To: ok.Fail})
-	if err := Verify(ok); err != nil {
-		t.Errorf("a valid function: %v", err)
 	}
 }
 
@@ -366,10 +281,10 @@ func TestLowerNodeValues(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := Verify(f); err != nil {
+		if err := flow.Verify(f); err != nil {
 			t.Fatalf("node %v: %v", node, err)
 		}
-		got := String(f)
+		got := flow.String(f)
 		hasNode := strings.Contains(got, "branchlist(") || strings.Contains(got, "terminal(")
 		hasTyped := strings.Contains(got, "list(") && !strings.Contains(got, "branchlist(") || strings.Contains(got, "match(") && !strings.Contains(got, "terminal(")
 		if f.Node != node || hasNode != node || hasTyped == node {
@@ -378,96 +293,15 @@ func TestLowerNodeValues(t *testing.T) {
 	}
 }
 
-// TestSubexprsCoversExprFields checks that Subexprs reports every field of an expression that is itself
-// an expression: Verify reaches nested value operations through it, so a field it missed would let a
-// typed operation hide from the check of a Node function.
-func TestSubexprsCoversExprFields(t *testing.T) {
-	fset := token.NewFileSet()
-	file, err := parser.ParseFile(fset, "flow.go", nil, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	isExpr := map[string]bool{}
-	fields := map[string][]string{}
-	var subexprs *ast.FuncDecl
-	for _, d := range file.Decls {
-		switch d := d.(type) {
-		case *ast.FuncDecl:
-			if d.Name.Name == "expr" && d.Recv != nil {
-				if star, ok := d.Recv.List[0].Type.(*ast.StarExpr); ok {
-					isExpr[star.X.(*ast.Ident).Name] = true
-				}
-			}
-			if d.Name.Name == "Subexprs" {
-				subexprs = d
-			}
-		case *ast.GenDecl:
-			for _, sp := range d.Specs {
-				ts, ok := sp.(*ast.TypeSpec)
-				if !ok {
-					continue
-				}
-				st, ok := ts.Type.(*ast.StructType)
-				if !ok {
-					continue
-				}
-				for _, f := range st.Fields.List {
-					if id, ok := f.Type.(*ast.Ident); ok && id.Name == "Expr" {
-						for _, n := range f.Names {
-							fields[ts.Name.Name] = append(fields[ts.Name.Name], n.Name)
-						}
-					}
-				}
-			}
-		}
-	}
-	if subexprs == nil {
-		t.Fatal("Subexprs not found")
-	}
-	// The fields each case of Subexprs passes on, by the name of the case's type.
-	covered := map[string]map[string]bool{}
-	ast.Inspect(subexprs, func(n ast.Node) bool {
-		cc, ok := n.(*ast.CaseClause)
-		if !ok || len(cc.List) != 1 {
-			return true
-		}
-		star, ok := cc.List[0].(*ast.StarExpr)
-		if !ok {
-			return true
-		}
-		name := star.X.(*ast.Ident).Name
-		covered[name] = map[string]bool{}
-		for _, st := range cc.Body {
-			ast.Inspect(st, func(n ast.Node) bool {
-				if sel, ok := n.(*ast.SelectorExpr); ok {
-					covered[name][sel.Sel.Name] = true
-				}
-				return true
-			})
-		}
-		return true
-	})
-	for typ, fs := range fields {
-		if !isExpr[typ] {
-			continue
-		}
-		for _, f := range fs {
-			if !covered[typ][f] {
-				t.Errorf("Subexprs does not report the field %s of %s", f, typ)
-			}
-		}
-	}
-}
-
 // TestLowerVerifies checks that lowering returns an error, rather than a function, when Verify rejects
 // the function it built: a Node function that holds a typed value operation is not printed.
 func TestLowerVerifies(t *testing.T) {
-	newFunc := func(body ...Stmt) *Func {
-		return &Func{Name: "f", Body: body, Fail: &Label{Name: "fail"},
-			Start: &Var{Name: "start", Type: TypeInt, Entry: true}, Result: &Var{Name: "v", Type: TypeValue, Entry: true},
-			Ctx: &Var{Name: "c", Type: TypeCtx, Entry: true}}
+	newFunc := func(body ...flow.Stmt) *flow.Func {
+		return &flow.Func{Name: "f", Body: body, Fail: &flow.Label{Name: "fail"},
+			Start: &flow.Var{Name: "start", Type: flow.TypeInt, Entry: true}, Result: &flow.Var{Name: "v", Type: flow.TypeValue, Entry: true},
+			Ctx: &flow.Var{Name: "c", Type: flow.TypeCtx, Entry: true}}
 	}
-	f := newFunc(&Set{Dst: []LValue{RegPos}, X: []Expr{&NewMatch{Start: &Int{}, Text: &Str{}}}})
+	f := newFunc(&flow.Set{Dst: []flow.LValue{flow.RegPos}, X: []flow.Expr{&flow.NewMatch{Start: &flow.Int{}, Text: &flow.Str{}}}})
 	f.Node = true
 	if g, err := verified(f); err == nil || g != nil || !strings.Contains(err.Error(), "typed match in a Node function") {
 		t.Errorf("verified: got %v, %v", g, err)
@@ -492,10 +326,10 @@ func TestLowerStream(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := Verify(f); err != nil {
+		if err := flow.Verify(f); err != nil {
 			t.Fatal(err)
 		}
-		return String(f)
+		return flow.String(f)
 	}
 	batch, stream := lower(false), lower(true)
 	for _, op := range []string{"stream start", "emit ", "streaming"} {
@@ -517,7 +351,7 @@ func TestLowerStream(t *testing.T) {
 func TestVerifyDocumentReads(t *testing.T) {
 	lit := &core.Lit{Text: "ab"}
 	m, r := valueFree(lit)
-	build := func(document bool) *Func {
+	build := func(document bool) *flow.Func {
 		f, err := Lower(m, r, "r", Options{InlineLiterals: 4, Document: document})
 		if err != nil {
 			t.Fatal(err)
@@ -525,16 +359,16 @@ func TestVerifyDocumentReads(t *testing.T) {
 		return f
 	}
 	f := build(true)
-	if err := Verify(f); err != nil {
+	if err := flow.Verify(f); err != nil {
 		t.Fatalf("a Document function with the primitive as the alternative of its in-place read: %v", err)
 	}
 	// find returns the If whose condition is the in-place read.
-	var find func(ss []Stmt) *If
-	find = func(ss []Stmt) *If {
+	var find func(ss []flow.Stmt) *flow.If
+	find = func(ss []flow.Stmt) *flow.If {
 		for _, s := range ss {
 			switch s := s.(type) {
-			case *If:
-				if _, ok := s.Cond.(*HasLit); ok {
+			case *flow.If:
+				if _, ok := s.Cond.(*flow.HasLit); ok {
 					return s
 				}
 				if x := find(s.Then); x != nil {
@@ -543,11 +377,11 @@ func TestVerifyDocumentReads(t *testing.T) {
 				if x := find(s.Else); x != nil {
 					return x
 				}
-			case *Block:
+			case *flow.Block:
 				if x := find(s.Body); x != nil {
 					return x
 				}
-			case *Loop:
+			case *flow.Loop:
 				if x := find(s.Body); x != nil {
 					return x
 				}
@@ -557,12 +391,12 @@ func TestVerifyDocumentReads(t *testing.T) {
 	}
 	read := find(f.Body)
 	if read == nil {
-		t.Fatalf("no in-place read in:\n%s", String(f))
+		t.Fatalf("no in-place read in:\n%s", flow.String(f))
 	}
 	saved := *read
 	check := func(name, want string) {
 		t.Run(name, func(t *testing.T) {
-			err := Verify(f)
+			err := flow.Verify(f)
 			if err == nil || !strings.Contains(err.Error(), want) {
 				t.Errorf("got %v, want an error containing %q", err, want)
 			}
@@ -571,18 +405,18 @@ func TestVerifyDocumentReads(t *testing.T) {
 	}
 	read.Else = nil
 	check("no primitive", "without the recording primitive")
-	read.Cond = &Or{X: saved.Cond, Y: &Not{X: saved.Cond}}
+	read.Cond = &flow.Or{X: saved.Cond, Y: &flow.Not{X: saved.Cond}}
 	check("larger condition", "part of a larger condition")
-	if err := Verify(f); err != nil {
+	if err := flow.Verify(f); err != nil {
 		t.Fatalf("restored: %v", err)
 	}
 	// Outside a Document function the same read stands alone.
 	g := build(false)
 	if read := find(g.Body); read == nil {
-		t.Fatalf("no in-place read in:\n%s", String(g))
+		t.Fatalf("no in-place read in:\n%s", flow.String(g))
 	} else {
 		read.Else = nil
-		if err := Verify(g); err != nil && strings.Contains(err.Error(), "recording primitive") {
+		if err := flow.Verify(g); err != nil && strings.Contains(err.Error(), "recording primitive") {
 			t.Errorf("a function that is not a Document function: %v", err)
 		}
 	}

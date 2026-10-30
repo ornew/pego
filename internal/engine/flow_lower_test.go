@@ -6,6 +6,7 @@ import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/ir/core"
 	"github.com/ornew/pego/internal/ir/flow"
+	flowlower "github.com/ornew/pego/internal/ir/flow/lower"
 )
 
 // TestFlowVerifiesCorpus lowers every typed rule of the corpus that Flow IR covers, from the Core
@@ -44,20 +45,20 @@ func TestFlowVerifiesCorpus(t *testing.T) {
 					}
 				}
 				for _, r := range m.Rules {
-					if flow.LocalRule(r) {
-						check(flow.Lower(m, r, r.Name, opts))
+					if flowlower.LocalRule(r) {
+						check(flowlower.Lower(m, r, r.Name, opts))
 						lowered++
 						continue
 					}
 					if o, ok := r.Body.(*core.OperatorsRule); ok {
 						for _, l := range o.Lines() {
-							if flow.FramedBody(l.Body) {
-								check(flow.LowerFrame(m, r, l.Body, l.Scope, l.Body.Attrs().Want, r.Name, opts))
+							if flowlower.FramedBody(l.Body) {
+								check(flowlower.LowerFrame(m, r, l.Body, l.Scope, l.Body.Attrs().Want, r.Name, opts))
 								framed++
 							}
 						}
-					} else if flow.FramedBody(r.Body) {
-						check(flow.LowerFrame(m, r, r.Body, r.Scope, r.Want, r.Name, opts))
+					} else if flowlower.FramedBody(r.Body) {
+						check(flowlower.LowerFrame(m, r, r.Body, r.Scope, r.Want, r.Name, opts))
 						framed++
 					}
 				}

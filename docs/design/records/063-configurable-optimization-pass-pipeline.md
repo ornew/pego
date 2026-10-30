@@ -127,14 +127,14 @@ Each optimization has a flag with the pass name. Variants of one pass have their
 | `text-dispatch` | `TextDispatch` of `term-rewrites` | `disableLiteralTextDispatch` |
 | `field-compare` | `FieldCompare` of `term-rewrites` | `boxedComparisons` |
 | `guards` | `guards` | none |
-| `guarded-classes` | The `classes` argument of `guards`, and `flow.Options.GuardedClasses` | `disableGuardedClasses` |
+| `guarded-classes` | The `classes` argument of `guards`, and `lower.Options.GuardedClasses` | `disableGuardedClasses` |
 | `scans` | `scans` | none |
 | `class-runs` | `class-runs` | none |
-| `class-tables` | `flow.Options.ClassTables` | the `leanTyped` condition |
-| `inline-literals` | `flow.Options.InlineLiterals` (a count, 0 turns it off) | the constant `gen.MaxInlineLiteral` |
+| `class-tables` | `lower.Options.ClassTables` | the `leanTyped` condition |
+| `inline-literals` | `lower.Options.InlineLiterals` (a count, 0 turns it off) | the constant `gen.MaxInlineLiteral` |
 
 A flag can only turn an optimization off. Turning it on never overrides `Applies`: `class-runs` stays off in a build
-with budget controls whatever the flag says, because the pass is unsound there. The mode facts of `flow.Options` (`Spend`,
+with budget controls whatever the flag says, because the pass is unsound there. The mode facts of `lower.Options` (`Spend`,
 `Recovers`, `Observe`) are not optimizations and have no flag.
 
 `guards` off implies `guarded-classes` off and makes `class-runs` convert every class run, which `After` allows.

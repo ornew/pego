@@ -31,7 +31,7 @@ Evidence records:
 [062](../062-comparing-short-literals-in-place-in-direct-rules.md).
 
 Source owners: [`Flow literal comparison
-lowering`](../../../internal/ir/flow/lower.go),
+lowering`](../../../internal/ir/flow/lower/lower.go),
 [`parser.matchLiteral`](../../../runtime/runtime.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

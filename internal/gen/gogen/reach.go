@@ -6,8 +6,8 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
-	irbuild "github.com/ornew/pego/internal/ir/build"
 	"github.com/ornew/pego/internal/ir/core"
+	irbuild "github.com/ornew/pego/internal/ir/core/build"
 )
 
 // A rule of the Node table (rules), the recognizer table (recRules) or the typed table (trules) has

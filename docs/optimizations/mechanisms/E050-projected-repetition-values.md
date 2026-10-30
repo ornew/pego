@@ -42,7 +42,7 @@ Source owners: [`RuleProjections`](../../../internal/compile/project.go),
 [`Walker.ProjectRepeat`](../../../internal/compile/compile_walk.go),
 [`closure.Builder.ProjectRepeat`](../../../internal/engine/closure/builder.go), [`projected
 repetition lowering`](../../../internal/compile/bcompile.go),
-[`Flow projectRepeat`](../../../internal/ir/flow/lower.go), which lowers the
+[`Flow projectRepeat`](../../../internal/ir/flow/lower/lower.go), which lowers the
 projected repetitions of generated Go and TypeScript.
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)

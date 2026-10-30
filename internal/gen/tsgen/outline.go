@@ -2,7 +2,7 @@ package tsgen
 
 import (
 	"github.com/ornew/pego/internal/ir/core"
-	"github.com/ornew/pego/internal/ir/flow"
+	flowlower "github.com/ornew/pego/internal/ir/flow/lower"
 )
 
 // Outlining of the generated TypeScript.
@@ -70,7 +70,7 @@ func outlineNodes(m *core.Module, build bool) map[core.Node]bool {
 		}
 	}
 	chosen := map[core.Node]bool{}
-	candidate := func(in *info) bool { return flow.Outlinable(in.n) }
+	candidate := func(in *info) bool { return flowlower.Outlinable(in.n) }
 	var dup map[string]bool
 	if build {
 		count := map[string]int{}
