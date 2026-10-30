@@ -266,6 +266,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [126. Unreachable rule bodies in generated TypeScript](126-unreachable-rule-bodies-typescript.md)
 - [127. The depth limit counts recursion](127-depth-counted-by-recursion.md)
 - [128. Indexed variable environments](128-indexed-variable-environments.md)
+- [129. Expected-token sets are recorded on request](129-opt-in-expectations.md)
 
 ## Experiments That Did Not Pay Off
 
@@ -273,7 +274,6 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 |:--|:--|:--|
 | Delay the variable-name hint until a second name occurs in the current environment | A snapshot with a different single name can be saved before the hint exists; restoring it later produces a false negative and retains duplicate bindings | Rejected for correctness. Record names from the first assignment, including branches that are later abandoned |
 | Go arenas (`GOEXPERIMENT=arenas`) for per-parse scratch memory (memo entries, memo slots, expectation chunks), freed at the end of `Parse` | No measurable change in time or allocation: memo entries were already slab-allocated, and the tree must stay on the heap because it is returned | Not adopted. Requires an experimental build flag for no gain |
-| Option to skip recording expected sets (report only the failure position) | After change 4: about −10% time on minilang, no change on JSON and CSV | Not adopted. Not worth an API knob; the full information is cheap enough |
 | ASCII bitmap for character classes in the closure engine (instead of scanning the ranges) | No measurable change when measured against the unmodified code in alternating runs (JSON, CSV); classes in practice have one to three ranges, which scan as fast as a bitmap lookup | Not adopted then; change 31 specializes small classes instead, which does pay |
 | Freeing capture frames when their rule invocation returns (LIFO arenas for frames and their slots, marked in `invokeBegin` and freed in `invokeEnd`) | −16 to −23% bytes per parse, but 1–6% slower on every workload and backend (recognition included), even with a fast path that skips freeing when nothing was allocated: the per-call bookkeeping and the clearing of freed slots cost more than the garbage collector saved | Not adopted |
 | Storing all-ASCII input in code points as bytes (positions are the same in both units), with `len` of strings still counting code points | −9% bytes per parse on ASCII versions of the JSON, CSV and XML inputs (no rune array or offset table), but 0–4% slower: matching bytes checks for multi-byte characters at every step, which indexing code points does not | Not adopted |
