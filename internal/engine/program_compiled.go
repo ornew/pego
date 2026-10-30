@@ -27,7 +27,7 @@ import (
 
 const (
 	compiledMagic   = "PEGOC\x00"
-	compiledVersion = 6
+	compiledVersion = 7
 )
 
 // CompiledMode is the mode of a compiled grammar file: the one kind of parse its module serves.

@@ -84,7 +84,7 @@ returns no tree and skips value and action work that predicates do not need; pre
 can still evaluate actions.
 Adaptive memoization enters eager mode when repeated calls exceed one sixteenth of a rule's calls. Its compact
 counters halve before overflow, and the eager decision remains sticky for that parse.
-Nesting limits and tracing apply to rule calls. `Document` can reuse memo entries across edits and resume long
+The nesting limit applies to recursive rule calls, and tracing to every rule call. `Document` can reuse memo entries across edits and resume long
 repetitions; stream parsing emits elements and discards input already committed by the grammar.
 Core and generated Go/TypeScript parsing also support invocation-local cancellation and
 a budget limit; streams and Documents use the same interruption

@@ -128,7 +128,7 @@ Commands:
       building a tree.
       -nodoc leaves out the package comment
       of the Go code, for a package documented in another file. -max-depth
-      sets the generated default nested rule-call limit (0 selects 100000).
+      sets the generated default nested recursive rule-call limit (0 selects 100000).
       -source-info makes the parser record the rule of each node and the
       names of captures. -default-value drops value actions and declared
       rule types, so the parser returns the default node tree; it cannot be
@@ -831,7 +831,7 @@ func genCmd(args []string, stdout io.Writer) error {
 	budgetControls := fs.Bool("budget-controls", false, "generate the budget-controlled form of the parser, which supports WithContext and WithLimits (signal, budget and maxInput in TypeScript)")
 	typedOnly := fs.Bool("typed-only", false, "generate only the typed entry points (ParseAST and siblings), without Parse, ParseRule and Recognize (needs -types)")
 	recognize := fs.Bool("recognize", false, "also generate Recognize, which checks input without building a tree")
-	maxDepth := fs.Int("max-depth", 0, "generated default nested rule-call limit (0 selects 100000)")
+	maxDepth := fs.Int("max-depth", 0, "generated default nested recursive rule-call limit (0 selects 100000)")
 	nodoc := fs.Bool("nodoc", false, "leave out the package comment (Go)")
 	sourceInfo := fs.Bool("source-info", false, "make the generated parser record the rule of each node and the names of captures")
 	defaultValue := fs.Bool("default-value", false, "make the generated parser drop value actions and declared rule types and return the default node tree (incompatible with -types)")

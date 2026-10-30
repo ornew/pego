@@ -90,8 +90,8 @@ type Parser struct {
 	// StreamID is the ID of the start rule of a stream parse, the one rule whose #stream repetition
 	// streams.
 	StreamID int
-	// Depth is the rule call depth (1 for the start rule). The parse is aborted when it exceeds
-	// MaxDepth.
+	// Depth is the depth of nested recursive rule calls (0 outside them, so a start rule outside every
+	// call cycle has depth 0). The parse is aborted when it exceeds MaxDepth.
 	Depth    int
 	MaxDepth int
 	// Pruned is the position at which the memo was last pruned.

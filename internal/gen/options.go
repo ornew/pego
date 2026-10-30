@@ -50,7 +50,7 @@ type GenOptions struct {
 	// RuntimeModule is the specifier from which TypeScript parsers import the runtime with RuntimeImport,
 	// such as "@scope/pego-runtime" or "../shared/runtime.ts".
 	RuntimeModule string
-	// MaxDepth is the generated default rule-call limit. Zero selects 100,000.
+	// MaxDepth is the generated default limit on nested recursive rule calls. Zero selects 100,000.
 	MaxDepth int
 	// Start is the start rule of the generated Parse function, a rule marked @start. Empty
 	// selects the default start rule.

@@ -186,7 +186,7 @@ pego gen -g <grammar> -module <import path> [-pkg <package>] [-runtime embed|imp
 | `-recognize` | off | Also generate `Recognize`, which checks input without building a tree (see [recognition](generated-go-api.md#recognition--recognize)) |
 | `-budget-controls` | off | Generate the budget-controlled form of the parser, which supports `WithContext` and `WithLimits` and exports them from the package; in TypeScript it supports the `signal` and `budget` options (see [TypeScript](typescript.md#cancellation-and-budget-limits)). Without it the Go parser holds the ordinary form of its functions and nothing that spends budget, which makes `parser.go` 15% to 50% smaller (the plain `parser.go` is 0.50 to 0.85 of the controlled one for the grammars of `parsers/`; larger grammars save more), and a parse that passes a control option returns an error (see [cancellation and budget limits](generated-go-api.md#cancellation-and-budget-limits)). A parser has one form: with the option it is the controlled one, and a parse that sets no limit runs the same code (a few inline tests of the control take the unmetered path), so generate two parsers if you need the faster plain form as well. A TypeScript parser generated without the option emits no code that spends budget and sets no control, and its options type and exports have no cancellation or limits. With `-document` and without the option, the Document form has no charges |
 | `-observability` | off | Emit opt-in tracing and profiling for Go or TypeScript parsers; combines with `-types`, `-recognize`, and Go `-document` and `-stream` (see [generated parser tracing and profiling](debugging.md#generated-go-node-and-typed-traces)) |
-| `-max-depth` | `0` | Default nested rule-call limit in the generated parser; zero selects 100,000, a positive value overrides it, and negatives fail generation |
+| `-max-depth` | `0` | Default nested recursive rule-call limit in the generated parser; zero selects 100,000, a positive value overrides it, and negatives fail generation |
 | `-default-value` | off | Make the parser return the default node tree: value actions and declared rule types are dropped, predicates still run (see [Default Values](../../spec/language/actions.md#default-values)). Cannot be combined with `-types` |
 | `-nodoc` | off | Leave out the package comment (`// Package p is a parser generated from a PEGO grammar.`), for a package that has its own documentation in another file |
 
@@ -322,7 +322,7 @@ The [specification](../../spec/runtime/generated-parsers.md#compatibility-and-su
 Notes:
 
 - **Depth.** Generated code uses the Go stack for rule calls and fails with
-  `nesting too deep: more than 100000 rule calls` at the default limit. `WithMaxDepth` changes the limit for one
+  `nesting too deep: more than 100000 nested recursive rule calls` at the default limit. `WithMaxDepth` changes the limit for one
   invocation, and `-max-depth` changes the generated default. With the nested-parentheses grammar
   `rule nested = "(" nested ")" / "x"`, 50,000 levels parse and 200,000 levels fail with that error. If you must accept
   deeper nesting beyond the host stack, the engine's `BytecodeIterative` backend with `WithMaxDepth` is the tool

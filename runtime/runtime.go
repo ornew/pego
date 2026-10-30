@@ -974,7 +974,7 @@ func (g *grammar) indexInitVals() {
 	}
 }
 
-// NewGrammar returns an empty grammar with the default rule-call limit MaxDepth.
+// NewGrammar returns an empty grammar with the default limit MaxDepth on nested recursive rule calls.
 //
 // NewGrammar is for generated parsers; not a stable API.
 func NewGrammar(maxDepth int) *grammar {
@@ -1343,7 +1343,7 @@ type Parser struct {
 	Pos  int
 
 	MaxDepth int     // invocation-local maximum nesting
-	Depth    int     // nesting of rule calls
+	Depth    int     // nesting of recursive rule calls
 	created  []*Node // struct nodes made by the action being evaluated (from ActCtx.Cbase)
 	Env      *Env
 	bound    map[string]bool // names bound anywhere in this parse (a lookup hint)

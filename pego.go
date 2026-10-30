@@ -223,7 +223,7 @@ func RecognizeOnly() ParseOption {
 // prefix operator and the right operand of an infix operator of an Operators Rule expression nest like
 // recursive rule calls, and so does the entry of an Operators Rule.
 // The default is 100,000 (10,000,000 for BytecodeIterative). The limit keeps runaway recursion from
-// exhausting the stack or memory. The Closure and Bytecode backends nest rule calls on the goroutine
+// exhausting the stack or memory. The Closure and Bytecode backends nest recursive rule calls on the goroutine
 // stack, so raising the limit far above the default can exceed Go's maximum stack size, which aborts
 // the program; use BytecodeIterative for deeper nesting. A call answered from the memo does not nest,
 // so whether a parse that comes close to the limit succeeds can depend on memoization.

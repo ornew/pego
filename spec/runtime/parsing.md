@@ -606,8 +606,9 @@ unbounded nesting cannot exhaust the memory of the host. A rule is
 **recursive** if it is on a cycle of the call graph: it can reach itself through
 rule references, directly or through other rules (a rule that references only
 itself is on a cycle). The nesting depth is the number of entries of recursive
-rules that are active at once; the entry of any other rule does not count. A
-rule outside every cycle appears at most once on the call stack of a parse, so
+rules that are active at once, plus the entries of Operators Rules (below),
+whether or not they are recursive; the entry of any other rule does not count.
+A rule outside every cycle appears at most once on the call stack of a parse, so
 the rules that do not count add a bounded depth that depends only on the
 grammar. The value-free twin of a rule is as recursive as the rule.
 

@@ -51,7 +51,7 @@ grammar and input.
 |:--|:--|:--|
 | The best default for a Go program that loads a grammar at start-up | Closure (the default) | It is faster than both VMs on every benchmarked workload. |
 | The fastest parsing, with a fixed grammar | [Generated Go](code-generation.md) | Current benchmarks show it at 0.44–0.61× closure time in CodePoints and 0.50–0.66× in Bytes; direct typed values are 0.69–0.98× generated `Parse`. |
-| Input that can nest very deeply (untrusted JSON-like data, generated code) | Bytecode (iterative) | Rule calls live on the VM's own stack, not the Go stack. |
+| Input that can nest very deeply (untrusted JSON-like data, generated code) | Bytecode (iterative) | Recursive rule calls live on the VM's own stack, not the Go stack. |
 | A grammar distributed as a data file, not source | Bytecode, from a `.pegoc` | See the [compiled grammars guide](compiled-grammars.md). |
 | Checking validity only | Any backend with [`RecognizeOnly`](recognition-mode.md) | No tree is built. |
 
@@ -62,7 +62,7 @@ inside a Go program for speed.
 
 ### Deep Nesting and `WithMaxDepth`
 
-Recursive grammars (parentheses, nested arrays, nested blocks) use rule calls that nest as deep as the input. The
+Recursive grammars (parentheses, nested arrays, nested blocks) use recursive rule calls that nest as deep as the input. The
 closure and recursive bytecode backends use the Go stack for those calls. To keep runaway input from exhausting
 memory, a parse fails with an error once calls of recursive rules nest deeper than a limit: **100,000 by default,
 10,000,000 for `BytecodeIterative`**. `WithMaxDepth(n)` changes it. A rule is recursive when it is on a cycle of the

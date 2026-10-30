@@ -37,7 +37,7 @@ competitors, it is checked against the versions listed under [Sources](#sources)
 | A small Go grammar whose types are the grammar | participle | The grammar is struct tags on your Go types, with no generated parser |
 | An existing grammar for a mainstream language, or many target languages | ANTLR 4 | A large grammar library, ten runtime targets (the Go runtime is pure Go) and automatic error recovery |
 | A parser for a language you own (a DSL, configuration, query or policy language), with typed values, declared recovery and no cgo | PEGO | One grammar gives typed values in Go or TypeScript, `#recover`, a default depth cap and a stdlib-only parser. Budget limits are opt-in: generate with `-budget-controls`, then set them per call |
-| The same parser in a Go backend and in a browser or Node | PEGO, ANTLR (Go, JavaScript and TypeScript targets) or tree-sitter (Go binding or gotreesitter, plus `web-tree-sitter`) | PEGO's generated Go and TypeScript need no runtime dependency and are tested against one engine. Its TypeScript has no incremental parsing or streaming, counts positions in code points or UTF-8 bytes (not UTF-16), and reaches a few hundred to a few thousand nested rule calls on Node's default stack. The repository tests run it under Node; Deno, Bun and browsers are documented but not exercised by the tests |
+| The same parser in a Go backend and in a browser or Node | PEGO, ANTLR (Go, JavaScript and TypeScript targets) or tree-sitter (Go binding or gotreesitter, plus `web-tree-sitter`) | PEGO's generated Go and TypeScript need no runtime dependency and are tested against one engine. Its TypeScript has no incremental parsing or streaming, counts positions in code points or UTF-8 bytes (not UTF-16), and reaches a few hundred to a few thousand nested recursive rule calls on Node's default stack. The repository tests run it under Node; Deno, Bun and browsers are documented but not exercised by the tests |
 | A Go tool that reparses a grammar you write after small edits, on inputs that usually parse | PEGO | `Document` reuses rule results with no grammar annotations. Recovery must be declared: an unclosed construct that no `#recover` rule covers yields an error, not a tree. There is no language server for your language |
 | Highlighting and structural editing for many existing languages | tree-sitter, or gotreesitter in pure Go | Hundreds of community grammars with highlight and injection queries, a tree for every input, and editors that load them |
 | Language support inside CodeMirror 6 | Lezer | It is CodeMirror's parser system, with incremental parsing, recovery and step-wise parsing built for the editor |
@@ -342,7 +342,7 @@ tables describe documented behavior; they are not benchmarks.
 | grmtools 0.15.0 | Rust | No Go runtime | Not applicable | Not documented; recovery stops at a timeout | Recovery timeout | None |
 
 PEGO's closure backend and recursive VM use the Go stack for rule calls, and generated TypeScript uses the JavaScript
-stack, which is why PEGO caps nesting depth by default; the iterative VM keeps rule calls on its own stack
+stack, which is why PEGO caps the depth of nested recursive rule calls by default; the iterative VM keeps rule calls on its own stack
 ([Choosing a Backend](guide/backends.md)).
 
 **Who covers which part today.** Typed values built from a grammar: ANTLR
