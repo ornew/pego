@@ -122,8 +122,8 @@ For example, generate fixtures and run one measurement mode with:
 
 ```sh
 PEGO_GENERATED_SHARING_DIR=/tmp/pego-generated-sharing \
-  go test ./internal/engine -run '^TestGeneratedSharingWorkloads$' -count=1
-PEGO_GENERATED_SHARING=literals go test ./internal/engine -run '^$' \
+  go test ./internal/gen -run '^TestGeneratedSharingWorkloads$' -count=1
+PEGO_GENERATED_SHARING=literals go test ./internal/gen -run '^$' \
   -bench '^BenchmarkGeneratedSharing$' -benchmem
 ```
 

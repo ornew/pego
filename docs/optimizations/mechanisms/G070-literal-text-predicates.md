@@ -40,7 +40,7 @@ Evidence records: [091](../091-specialize-pure-literal-text-disjunctions.md).
 Source owners: [`literal text dispatch
 recognition/emission`](../../../internal/gen/gogen/generator.go), [`TypeScript literal
 switch emission`](../../../internal/gen/tsgen/generator.go), [`route and unsafe-shape
-checks`](../../../internal/engine/gen_literal_text_dispatch_test.go).
+checks`](../../../internal/gen/gen_literal_text_dispatch_test.go).
 
 The [comparison policy](../../design/records/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

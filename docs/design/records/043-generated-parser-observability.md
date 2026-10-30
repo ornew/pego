@@ -473,13 +473,13 @@ ordinary generated Node/typed sources were byte-identical to baseline
 calculator Node/typed, 7.455%/7.147% for JSON and 8.541%/8.187% for XML.
 Allocations, retained memory, binary size and generation time were not measured
 for this TypeScript slice. Benchmark sources are
-`internal/engine/tsgen_observe_bench_test.go` and the generated
+`internal/gen/tsgen/tsgen_observe_bench_test.go` and the generated
 `bench.mjs`; raw results and generated fixtures are not repository artifacts.
 Export the controls, then alternate ordinary and observed processes across
 three pairs for each fixture:
 
 ```sh
-PEGO_TS_TRACE_BENCH_DIR=/tmp/pego-ts-trace go test ./internal/engine -run '^TestExportGeneratedTSTraceBenchmarks$' -count=1
+PEGO_TS_TRACE_BENCH_DIR=/tmp/pego-ts-trace go test ./internal/gen/tsgen -run '^TestExportGeneratedTSTraceBenchmarks$' -count=1
 cd /tmp/pego-ts-trace/json/typed/ordinary || exit 1
 node --expose-gc bench.mjs
 # Repeat from json/typed/observed, then alternate order for xml and calc.
@@ -521,7 +521,7 @@ package in a separate Node process, alternating ordinary and observed order
 for three pairs:
 
 ```sh
-PEGO_TS_TRACE_BENCH_DIR=/tmp/pego-ts-profile go test ./internal/engine -run '^TestExportGeneratedTSTraceBenchmarks$' -count=1
+PEGO_TS_TRACE_BENCH_DIR=/tmp/pego-ts-profile go test ./internal/gen/tsgen -run '^TestExportGeneratedTSTraceBenchmarks$' -count=1
 cd /tmp/pego-ts-profile/json/node/ordinary || exit 1
 node --expose-gc profile-bench.mjs
 cd /tmp/pego-ts-profile/json/node/observed || exit 1
@@ -531,7 +531,7 @@ PEGO_PROFILE_MODES=none,trace,profile node --expose-gc profile-bench.mjs
 Repeat for typed JSON, XML and calculator fixtures. The driver defaults to
 75 ms warmup and 150 ms timing; `PEGO_PROFILE_WARM_MS` and
 `PEGO_PROFILE_BENCH_MS` override these durations. The exporter is
-`TestExportGeneratedTSTraceBenchmarks`; the benchmark source is committed in `internal/engine/tsgen_profile_bench_test.go`. Exported
+`TestExportGeneratedTSTraceBenchmarks`; the benchmark source is committed in `internal/gen/tsgen/tsgen_profile_bench_test.go`. Exported
 sources and raw results are not repository artifacts.
 
 ## Limitations and Open Questions

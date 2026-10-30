@@ -42,7 +42,7 @@ exercise the specialization.
 Run the focused checks with:
 
 ```sh
-go test ./internal/engine -run '^TestLiteralTextPredicateDispatch' -count=1
+go test ./internal/gen/... -run '^TestLiteralTextPredicateDispatch' -count=1
 ```
 
 Focused generated-Go and strict TypeScript checks pass. Measurements used Go
@@ -73,7 +73,7 @@ The reproducible fixture exporter is:
 
 ```sh
 PEGO_LITERAL_DISPATCH_DIR=/tmp/pego-literal-dispatch \
-  go test ./internal/engine -run '^TestGeneratedLiteralDispatchWorkload$' -count=1
+  go test ./internal/gen -run '^TestGeneratedLiteralDispatchWorkload$' -count=1
 ```
 
 The measured revision was based on `7f20034` with the literal-dispatch change.

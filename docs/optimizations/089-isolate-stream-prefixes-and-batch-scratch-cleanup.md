@@ -114,8 +114,8 @@ cleanup shares the existing 1,024-position pruning cadence instead.
 Run focused tests and stream controls with:
 
 ```sh
-go test ./internal/engine -run '^(TestStream(Storage|Prefix|Frame)|TestVMStreamRepeat|TestFiniteStreamRepetitions)' -count=1
-go test -tags=pego_reference_stream_storage ./internal/engine -run '^(TestStream(Storage|Prefix|Frame)|TestVMStreamRepeat|TestFiniteStreamRepetitions)' -count=1
+go test ./internal/engine/... -run '^(TestStream(Storage|Prefix|Frame)|TestVMStreamRepeat|TestFiniteStreamRepetitions)' -count=1
+go test -tags=pego_reference_stream_storage ./internal/engine/... -run '^(TestStream(Storage|Prefix|Frame)|TestVMStreamRepeat|TestFiniteStreamRepetitions)' -count=1
 go test ./internal/engine -run '^$' -bench '^(BenchmarkStreamPrefixSize|BenchmarkStreamFrameScratch|BenchmarkStreamRetentionWorkload)$' -benchtime=500ms -count=1 -benchmem
 go test -tags=pego_reference_stream_storage ./internal/engine -run '^$' -bench '^(BenchmarkStreamPrefixSize|BenchmarkStreamFrameScratch|BenchmarkStreamRetentionWorkload)$' -benchtime=500ms -count=1 -benchmem
 ```
