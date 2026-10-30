@@ -132,9 +132,9 @@ func BenchmarkGenerateAliasExports(b *testing.B) {
 			var src strings.Builder
 			src.WriteString("type Word = { Text string }\n")
 			for i := range n {
-				fmt.Fprintf(&src, "type Alias%d = Word\n", i)
+				fmt.Fprintf(&src, "type Alias%d ~ Word\n", i)
 			}
-			src.WriteString("rule main Word = \"a\"\n")
+			src.WriteString("rule main Word = t:(\"a\") #atomic => Word{Text: text($t)}\n")
 			g, err := parseTest(src.String())
 			if err != nil {
 				b.Fatal(err)
