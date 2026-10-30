@@ -43,6 +43,23 @@ const tsRuntimeMarker = "// --- Runtime ---\n"
 // expressions, as in the Go generator; the embedded runtime (tsrt) mirrors runtime. opts.Package
 // is not used. opts.Types adds declarations and Node-to-value conversion entry points.
 func Generate(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.GeneratedFile, error) {
+	return GenerateParser(g, c, opts, nil)
+}
+
+// Hooks change how GenerateParser generates, for tests.
+type Hooks struct {
+	// ExecRoute prints the functions that the Exec IR switch routes through Exec IR that way even
+	// with the switch off (core.Enabled), so that a test compares the code of both routes.
+	ExecRoute bool
+	// Generator, if not nil, is called with the generator once it has generated.
+	Generator func(*Generator)
+}
+
+// GenerateParser generates the files of Generate with the hooks h, which may be nil.
+func GenerateParser(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, h *Hooks) ([]gen.GeneratedFile, error) {
+	if h == nil {
+		h = &Hooks{}
+	}
 	if opts.Runtime == gen.RuntimeOnly {
 		return TsRuntimeFiles(), nil
 	}
@@ -90,6 +107,10 @@ func Generate(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions) ([]gen.Ge
 	}
 	tsg := &Generator{Generator: gen.Generator{Prog: prog, Table: "rules", Observability: opts.Observability, DisableMethodSharing: opts.DisableMethodSharing, DisableLiteralSharing: opts.DisableLiteralSharing || !opts.EnableTSLiteralSharing, DisableLiteralTextDispatch: opts.DisableLiteralTextDispatch}, plainUsed: map[*compile.Rule]bool{}, live: live}
 	tsg.NoBudget = !opts.BudgetControls
+	tsg.execHook = h.ExecRoute
+	if h.Generator != nil {
+		defer h.Generator(tsg)
+	}
 	tsg.optionsType = "ParseOptions"
 	if !opts.BudgetControls {
 		tsg.optionsType = "PlainParseOptions"
@@ -400,6 +421,10 @@ type Generator struct {
 	// live holds the rules that a parse can enter (reach.go).
 	live     *tsLive
 	reachErr error
+	// execHook routes the functions of execRoute through Exec IR with the switch off (Hooks).
+	execHook bool
+	// ExecFuncs counts the functions printed from Exec IR (execRoute).
+	ExecFuncs int
 }
 
 // TsString returns s as a TypeScript string literal (JSON is valid TypeScript).

@@ -94,7 +94,14 @@ func (g *Generator) flowFunc(f *flow.Func, slots []core.Slot, scope *compile.Sco
 			call, ok = "", false
 		}
 	}()
-	body, vars, decls := g.printTSFlow(f)
+	var body string
+	var vars []string
+	var decls []tsDecl
+	if g.execRoute() {
+		body, vars, decls = g.printTSFlowExec(f)
+	} else {
+		body, vars, decls = g.printTSFlow(f)
+	}
 	var b strings.Builder
 	for _, v := range vars {
 		b.WriteString(v)
@@ -589,13 +596,7 @@ func (p *tsFlowPrinter) ifStmt(s *flow.If) {
 	dead := p.dead
 	var init, cond string
 	if call, v, ok := tsTestedCall(s); ok {
-		// The call and its test in one condition: nothing else reads the flag it sets.
-		p.read(call)
-		cond = p.expr(call) + " === undefined"
-		if v != nil && p.isRead(v) {
-			p.note(v)
-			cond = fmt.Sprintf("(%s = %s as Node | null) === undefined", v.Name, p.expr(call))
-		}
+		cond = p.testedCond(call, v)
 	} else {
 		if s.Init != nil {
 			init = p.setText(s.Init, true)
@@ -623,6 +624,19 @@ func (p *tsFlowPrinter) ifStmt(s *flow.If) {
 		p.b.WriteString(" else {\n" + indent(els) + "}")
 	}
 	p.b.WriteString("\n")
+}
+
+// testedCond returns the condition that the call, which has two results, fails: the call and its
+// test in one condition, since nothing else reads the flag it sets. The condition assigns the value
+// of the call to v if something reads v.
+func (p *tsFlowPrinter) testedCond(call flow.Expr, v *flow.Var) string {
+	p.read(call)
+	cond := p.expr(call) + " === undefined"
+	if v != nil && p.isRead(v) {
+		p.note(v)
+		cond = fmt.Sprintf("(%s = %s as Node | null) === undefined", v.Name, p.expr(call))
+	}
+	return cond
 }
 
 // set writes the assignment s.
