@@ -62,6 +62,10 @@ type ParseOptions struct {
 	// DiagnosticLimitSet records an explicit zero limit, which is stream-only too.
 	DiagnosticLimit    int
 	DiagnosticLimitSet bool
+	// Expectations records the expectations of syntax errors: what was expected at the farthest
+	// failure and the messages of @error. Without it, a syntax error has the farthest failure
+	// position, no expectations and no messages. A Document fixes it at construction.
+	Expectations bool
 }
 
 // Default limits on call nesting depth. Backends that run recursively use the host stack, so

@@ -68,6 +68,9 @@ type Parser struct {
 	// While silent is positive (inside a lookahead), expectations are not recorded.
 	Silent   int
 	Farthest int
+	// Expectations makes Expect record expectations. Without it only Farthest advances, and a
+	// record holds at most the placeholder ExpFar, which stands for a failure at its position.
+	Expectations bool
 	// Exp is the stack of expectation records. The current record is Exp[ExpBase:], the
 	// expectations at Farthest. An expectation is an index into the expectation descriptions; an
 	// @error message is an index with MsgBit set (ExpID).
@@ -330,6 +333,13 @@ func (p *Parser) Expect(pos int, id ExpID) {
 		p.Farthest = pos
 		p.Exp = p.Exp[:p.ExpBase]
 		p.ExpBits = 0
+	}
+	if !p.Expectations {
+		// The record keeps one placeholder, so that merging it still carries the position.
+		if len(p.Exp) == p.ExpBase {
+			p.Exp = append(p.Exp, ExpFar)
+		}
+		return
 	}
 	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
 	if p.ExpBits&bit != 0 {
@@ -954,6 +964,9 @@ func (p *Parser) MakeError(pos int, expected []ExpID) *SyntaxError {
 	e := &SyntaxError{Pos: pos}
 	for _, x := range expected {
 		p.Spend()
+		if x == ExpFar {
+			continue
+		}
 		if x&MsgBit != 0 {
 			e.Messages = append(e.Messages, p.Descs[x&^MsgBit])
 		} else {

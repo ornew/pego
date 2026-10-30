@@ -182,6 +182,14 @@ func WithMissingTokens(limit int) ParseOption {
 	return func(o *engine.ParseOptions) { o.MissingTokens = limit }
 }
 
+// WithExpectations records what a syntax error expects. A syntax error then lists the
+// expectations at the farthest failure and carries the messages of @error. Without it the error
+// reports the farthest failure position, an empty Expected list and no Messages, and parsing does
+// not record expectations. A Document fixes it at construction.
+func WithExpectations() ParseOption {
+	return func(o *engine.ParseOptions) { o.Expectations = true }
+}
+
 // WithUnit selects the position unit. Matching always proceeds by code point, whatever the unit.
 func WithUnit(u PositionUnit) ParseOption {
 	return func(o *engine.ParseOptions) { o.Unit = u }

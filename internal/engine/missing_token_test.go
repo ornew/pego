@@ -56,7 +56,7 @@ func TestMissingTokensLiteralAndUnits(t *testing.T) {
 			if controlled && !core.BudgetControlsEnabled {
 				continue
 			}
-			o := ParseOptions{Unit: unit, MissingTokens: 8}
+			o := ParseOptions{Expectations: true, Unit: unit, MissingTokens: 8}
 			if controlled {
 				o.Context = context.Background()
 				o.Limits.Budget = 1 << 20
@@ -97,13 +97,13 @@ func TestMissingTokensLiteralAndUnits(t *testing.T) {
 		}
 	}
 	partial := mustCompile(t, `rule main = "ab" #missing "a" $$`)
-	n, _ := requireInsertions(t, partial, "a", ParseOptions{MissingTokens: 2}, 1)
+	n, _ := requireInsertions(t, partial, "a", ParseOptions{Expectations: true, MissingTokens: 2}, 1)
 	if m := missingNodes(t, n)[0]; value.D(m).Start != 0 || value.D(m).End != 0 {
 		t.Fatal("partial prefix was consumed", m)
 	}
 	invalid := mustCompile(t, `rule main = . ";" #missing $$`)
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
-		n, errs := requireInsertions(t, invalid, "\xff", ParseOptions{Unit: unit, MissingTokens: 2}, 1)
+		n, errs := requireInsertions(t, invalid, "\xff", ParseOptions{Expectations: true, Unit: unit, MissingTokens: 2}, 1)
 		if value.D(missingNodes(t, n)[0]).Start != 1 || errs[0].Pos != 1 {
 			t.Fatal("invalid UTF-8 position")
 		}
@@ -118,7 +118,7 @@ rule token = ";" #missing`)
 		if controlled && !core.BudgetControlsEnabled {
 			continue
 		}
-		o := ParseOptions{MissingTokens: 2}
+		o := ParseOptions{Expectations: true, MissingTokens: 2}
 		if controlled {
 			o.Context = context.Background()
 		}
@@ -132,26 +132,26 @@ rule token = ";" #missing`)
 		if n != nil || !errors.As(err, &limit) || limit.Limit != 1 || limit.Position != 0 {
 			t.Fatal("rollback refunded budget or reused a completed insertion", n, err)
 		}
-		if _, err := prog.ParseWith("main", ";y", ParseOptions{}); err != nil {
+		if _, err := prog.ParseWith("main", ";y", ParseOptions{Expectations: true}); err != nil {
 			t.Fatal("retry inherited insertion state", err)
 		}
 	}
 	captures := mustCompile(t, `rule main = (x:(";" #missing) "a" / ";" #missing "b") $$`)
-	n, _ := requireInsertions(t, captures, "b", ParseOptions{MissingTokens: 2}, 1)
+	n, _ := requireInsertions(t, captures, "b", ParseOptions{Expectations: true, MissingTokens: 2}, 1)
 	if _, ok := value.D(n).Fields.Get("x"); ok {
 		t.Fatal("abandoned capture survived")
 	}
 	cut := mustCompile(t, `rule main = (";" #missing #cut "x" / "y") $$`)
-	if n, err := cut.ParseWith("main", "y", ParseOptions{MissingTokens: 2}); n != nil || err == nil {
+	if n, err := cut.ParseWith("main", "y", ParseOptions{Expectations: true, MissingTokens: 2}); n != nil || err == nil {
 		t.Fatal("insertion changed cut scope", n, err)
 	}
 	chain := mustCompile(t, `rule main = ";" #missing ")" #missing $$`)
-	_, errs := requireInsertions(t, chain, "", ParseOptions{MissingTokens: 2}, 2)
+	_, errs := requireInsertions(t, chain, "", ParseOptions{Expectations: true, MissingTokens: 2}, 2)
 	if errs[0].Expected[0] != `";"` || errs[1].Expected[0] != `")"` {
 		t.Fatal("diagnostic encounter order", errs)
 	}
 	// A whole-input failure exposes only its final ordinary syntax error.
-	if n, err := chain.ParseWith("main", "x", ParseOptions{MissingTokens: 2}); n != nil {
+	if n, err := chain.ParseWith("main", "x", ParseOptions{Expectations: true, MissingTokens: 2}); n != nil {
 		t.Fatal(n, err)
 	} else {
 		var ordinary *SyntaxError
@@ -172,24 +172,24 @@ rule token = ";" #missing`,
 rule token = ";" #missing`,
 	} {
 		prog := mustCompile(t, source)
-		requireInsertions(t, prog, "", ParseOptions{MissingTokens: 8}, 1)
+		requireInsertions(t, prog, "", ParseOptions{Expectations: true, MissingTokens: 8}, 1)
 	}
 	for _, expression := range []string{`(";" #missing)*`, `(";" #missing)+`, `((";" #missing)*)*`} {
 		prog := mustCompile(t, `rule main = `+expression+` $$`)
-		n, _ := requireInsertions(t, prog, "", ParseOptions{MissingTokens: 4}, 1)
+		n, _ := requireInsertions(t, prog, "", ParseOptions{Expectations: true, MissingTokens: 4}, 1)
 		if len(missingNodes(t, n)) != 1 {
 			t.Fatal("zero-progress repetition did not stop once")
 		}
 	}
 	minimum := mustCompile(t, `rule main = (";" #missing) #repeat(2) $$`)
-	if n, err := minimum.ParseWith("main", "", ParseOptions{MissingTokens: 4}); n != nil || err == nil {
+	if n, err := minimum.ParseWith("main", "", ParseOptions{Expectations: true, MissingTokens: 4}); n != nil || err == nil {
 		t.Fatal("nullable insertion met a two-iteration minimum", n, err)
 	}
 	// Atomic use invokes token's value-free twin. It must share the same site
 	// identity as the later value-producing call at the same position.
 	twins := mustCompile(t, `rule main = token #atomic token $$
 rule token = ";" #missing`)
-	if n, err := twins.ParseWith("main", "", ParseOptions{MissingTokens: 4}); n != nil || err == nil {
+	if n, err := twins.ParseWith("main", "", ParseOptions{Expectations: true, MissingTokens: 4}); n != nil || err == nil {
 		t.Fatal("value-free twin supplied a second insertion site", n, err)
 	}
 }
@@ -200,7 +200,7 @@ func TestMissingTokensLeftRecursion(t *testing.T) {
 		if controlled && !core.BudgetControlsEnabled {
 			continue
 		}
-		o := ParseOptions{MissingTokens: 64}
+		o := ParseOptions{Expectations: true, MissingTokens: 64}
 		if controlled {
 			o.Context = context.Background()
 			o.Limits.Budget = 1 << 20
@@ -243,7 +243,7 @@ rule e = #operators {
     operand "a"
     level { infix left "+" #missing }
 }`)
-	n, _ := requireInsertions(t, infix, "aa", ParseOptions{MissingTokens: 64}, 1)
+	n, _ := requireInsertions(t, infix, "aa", ParseOptions{Expectations: true, MissingTokens: 64}, 1)
 	if len(missingNodes(t, n)) != 1 {
 		t.Fatal("discarded operator candidate leaked")
 	}
@@ -252,7 +252,7 @@ rule e = #operators {
     operand "a"
     level { postfix "!" #missing }
 }`)
-	if n, err := postfix.ParseWith("main", "a", ParseOptions{MissingTokens: 8}); err != nil || len(missingNodes(t, n)) != 0 {
+	if n, err := postfix.ParseWith("main", "a", ParseOptions{Expectations: true, MissingTokens: 8}); err != nil || len(missingNodes(t, n)) != 0 {
 		t.Fatal("empty postfix was applied", n, err)
 	}
 	nullable := mustCompile(t, `rule main = e $$
@@ -260,7 +260,7 @@ rule e = #operators {
     operand ""
     level { infix left "+" #missing }
 }`)
-	requireInsertions(t, nullable, "", ParseOptions{MissingTokens: 8}, 1)
+	requireInsertions(t, nullable, "", ParseOptions{Expectations: true, MissingTokens: 8}, 1)
 }
 
 func TestMissingTokensLabelsAndConsumingRecovery(t *testing.T) {
@@ -272,13 +272,13 @@ func TestMissingTokensLabelsAndConsumingRecovery(t *testing.T) {
 		`(";" #missing) #recover(skip="!") @error("semicolon")`,
 	} {
 		prog := mustCompile(t, `rule main = `+expression+` $$`)
-		n, errs := requireInsertions(t, prog, "", ParseOptions{MissingTokens: 4}, 1)
+		n, errs := requireInsertions(t, prog, "", ParseOptions{Expectations: true, MissingTokens: 4}, 1)
 		if errs[0].Message() != "semicolon" || len(missingNodes(t, n)) != 1 {
 			t.Fatal("outer label or recovery composition", n, errs)
 		}
 	}
 	ordinary := mustCompile(t, `rule main = (";" #recover(skip="!")) @error("outer") $$`)
-	_, err := ordinary.ParseWith("main", "!", ParseOptions{MissingTokens: 4})
+	_, err := ordinary.ParseWith("main", "!", ParseOptions{Expectations: true, MissingTokens: 4})
 	var errs SyntaxErrors
 	if !errors.As(err, &errs) || errs[0].Message() == "outer" {
 		t.Fatal("ordinary consuming recovery label changed", err)
@@ -300,7 +300,7 @@ rule main = "a"`); !strings.Contains(message, "type Missing is reserved") {
 type Root = { Token Item }
 rule main Root = x:(";" #missing) => Root{Token: $x}`
 	prog := mustCompile(t, source)
-	n, _ := requireInsertions(t, prog, "", ParseOptions{MissingTokens: 1}, 1)
+	n, _ := requireInsertions(t, prog, "", ParseOptions{Expectations: true, MissingTokens: 1}, 1)
 	if len(missingNodes(t, n)) != 1 {
 		t.Fatal("declared join lost Missing identity")
 	}
@@ -321,7 +321,7 @@ rule main Root = x:(";" #missing) => Root{Token: $x}`
 	if err != nil {
 		t.Fatal(err)
 	}
-	requireInsertions(t, reloaded, "", ParseOptions{MissingTokens: 1}, 1)
+	requireInsertions(t, reloaded, "", ParseOptions{Expectations: true, MissingTokens: 1}, 1)
 	sch, err := outputSchemaPrototype(prog, "main", false)
 	if err != nil {
 		t.Fatal(err)
@@ -372,7 +372,7 @@ func TestMissingTokensPredicateRecognitionAndMemoDependencies(t *testing.T) {
 	prog := mustCompile(t, `rule main = x:(token #atomic) {len($x) == 0} $$
 rule token = ";" #missing`)
 	for _, recognize := range []bool{false, true} {
-		requireInsertions(t, prog, "", ParseOptions{MissingTokens: 4, Recognize: recognize}, 1)
+		requireInsertions(t, prog, "", ParseOptions{Expectations: true, MissingTokens: 4, Recognize: recognize}, 1)
 	}
 	dependent := mustCompile(t, `rule main = (outer "x" / outer "y") $$
 rule outer = inner
@@ -384,7 +384,7 @@ rule inner = ";" #missing`)
 	}
 	// The budget must still be spent when completed nested rule results would
 	// otherwise be reused after an alternative restores the same source position.
-	if n, err := dependent.ParseWith("main", "y", ParseOptions{MissingTokens: 1}); n != nil {
+	if n, err := dependent.ParseWith("main", "y", ParseOptions{Expectations: true, MissingTokens: 1}); n != nil {
 		t.Fatal(n, err)
 	} else {
 		var limit *MissingTokenLimitError
@@ -396,24 +396,24 @@ rule inner = ";" #missing`)
 	// parse runs its unrelated action, while recognition may skip that action.
 	actions := mustCompile(t, `type R = { N int }
 rule main = ";" #missing => R{N: 1/0}`)
-	if n, err := actions.ParseWith("main", "", ParseOptions{MissingTokens: 2}); n != nil || err == nil {
+	if n, err := actions.ParseWith("main", "", ParseOptions{Expectations: true, MissingTokens: 2}); n != nil || err == nil {
 		t.Fatal("ordinary action was skipped", n, err)
 	}
-	requireInsertions(t, actions, "", ParseOptions{MissingTokens: 2, Recognize: true}, 1)
+	requireInsertions(t, actions, "", ParseOptions{Expectations: true, MissingTokens: 2, Recognize: true}, 1)
 }
 
 func TestMissingTokensRetainedResultsAndLiteralRecursion(t *testing.T) {
 	t.Parallel()
 	prog := mustCompile(t, `rule main = e $$
 rule e = ";" #missing e / "x"`)
-	n, errs := requireInsertions(t, prog, "x", ParseOptions{MissingTokens: 8}, 1)
+	n, errs := requireInsertions(t, prog, "x", ParseOptions{Expectations: true, MissingTokens: 8}, 1)
 	before, err := json.Marshal(n)
 	if err != nil {
 		t.Fatal(err)
 	}
 	retained := n.Clone()
 	for i := 0; i < 4; i++ {
-		requireInsertions(t, prog, "x", ParseOptions{MissingTokens: 8}, 1)
+		requireInsertions(t, prog, "x", ParseOptions{Expectations: true, MissingTokens: 8}, 1)
 	}
 	after, err := json.Marshal(n)
 	if err != nil {
@@ -466,7 +466,7 @@ func TestMissingTokensMemoSeedContextAndRecycledPointers(t *testing.T) {
 // value of recovery is an error but not a missing.
 func TestMissingTypeChecked(t *testing.T) {
 	t.Parallel()
-	o := ParseOptions{MissingTokens: 8}
+	o := ParseOptions{Expectations: true, MissingTokens: 8}
 	inserted := mustCompile(t, "type P = { M missing }\nrule main = \"a\" m:(\";\" #missing) $$ => P{M: $m.(_).(missing)}")
 	n, err := inserted.ParseWith("main", "a", o)
 	if n == nil || err == nil || strings.Contains(err.Error(), "cannot") {

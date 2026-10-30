@@ -19,8 +19,8 @@ func TestHiddenRulesSpliceTheirExpression(t *testing.T) {
 						matched = true
 					}
 					for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-						want := gentest.ResultJSON(inlined.ParseWith("main", input, ParseOptions{Backend: backend}))
-						got := gentest.ResultJSON(hidden.ParseWith("main", input, ParseOptions{Backend: backend}))
+						want := gentest.ResultJSON(inlined.ParseWith("main", input, ParseOptions{Expectations: true, Backend: backend}))
+						got := gentest.ResultJSON(hidden.ParseWith("main", input, ParseOptions{Expectations: true, Backend: backend}))
 						if got != want {
 							t.Errorf("%+v %q on %s:\nhidden:  %s\ninlined: %s", opts, input, backend, got, want)
 						}

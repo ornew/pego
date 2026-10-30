@@ -19,7 +19,7 @@ func TestOperatorsRulePrefixPartCuts(t *testing.T) {
 			t.Run(fmt.Sprintf("%s/memo=%t", c.Input, !disableMemo), func(t *testing.T) {
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 					for _, unit := range []PositionUnit{CodePoints, Bytes} {
-						n, err := prog.ParseWith("main", c.Input, ParseOptions{Backend: backend, Unit: unit})
+						n, err := prog.ParseWith("main", c.Input, ParseOptions{Expectations: true, Backend: backend, Unit: unit})
 						if c.Kind == "" {
 							if n != nil || err == nil || !strings.Contains(err.Error(), "syntax error") {
 								t.Fatalf("%v/%v: expected syntax failure, got %v, %v", backend, unit, n, err)
@@ -81,7 +81,7 @@ func BenchmarkOperatorsRulePrefixPartCut(b *testing.B) {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				b.Run(fmt.Sprintf("%s/%s/unit=%d", c.name, backend, unit), func(b *testing.B) {
-					opts := ParseOptions{Backend: backend, Unit: unit}
+					opts := ParseOptions{Expectations: true, Backend: backend, Unit: unit}
 					b.ReportAllocs()
 					for b.Loop() {
 						if _, err := prog.ParseWith("main", c.input, opts); err != nil {

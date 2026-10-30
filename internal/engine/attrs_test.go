@@ -30,7 +30,7 @@ func TestRecoverAttribute(t *testing.T) {
 	t.Parallel()
 	prog := mustCompile(t, `rule main = stmt* $$
 rule stmt = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")`)
-	n, err := prog.Parse("main", "ab;1x;cd;9;")
+	n, err := prog.ParseWith("main", "ab;1x;cd;9;", ParseOptions{Expectations: true})
 	if n == nil {
 		t.Fatalf("no tree: %v", err)
 	}
@@ -47,7 +47,7 @@ rule stmt = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")`)
 	}
 
 	// If the whole parse fails, only the final error is returned.
-	_, err = prog.Parse("main", "1x;ab")
+	_, err = prog.ParseWith("main", "1x;ab", ParseOptions{Expectations: true})
 	var se *SyntaxError
 	if !errors.As(err, &se) || se.Error() != `1:6: syntax error: expected ";", [^;], [a-z]` {
 		t.Errorf("got %v", err)
@@ -61,7 +61,7 @@ func TestRecoverBacktracking(t *testing.T) {
 rule item = ("a" #atomic ";") #recover(skip=[^;]+ ";")`
 	for _, opts := range []compile.Options{{}, {DisableMemo: true}} {
 		prog := mustCompile(t, src, opts)
-		n, err := prog.Parse("main", "x;?")
+		n, err := prog.ParseWith("main", "x;?", ParseOptions{Expectations: true})
 		if n == nil {
 			t.Fatalf("no tree: %v", err)
 		}
@@ -100,7 +100,7 @@ func TestRecoverWithoutValue(t *testing.T) {
 	} {
 		prog := mustCompile(t, src)
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			n, err := prog.ParseWith("main", "x;b", ParseOptions{Backend: b})
+			n, err := prog.ParseWith("main", "x;b", ParseOptions{Expectations: true, Backend: b})
 			var errs SyntaxErrors
 			if n == nil || !errors.As(err, &errs) || len(errs) != 1 {
 				t.Errorf("%v: got %v, %v\n%s", b, n, err, src)
@@ -123,7 +123,7 @@ rule e = #operators {
     operand [0-9]+ #atomic
     level { postfix "(" [0-9]+ #recover(skip=[^)\n]+) #atomic ")" }
 }`)
-	n, err := prog.Parse("main", "1(x)")
+	n, err := prog.ParseWith("main", "1(x)", ParseOptions{Expectations: true})
 	var errs SyntaxErrors
 	if n == nil || !errors.As(err, &errs) || len(errs) != 1 || errs[0].Col != 3 {
 		t.Errorf("got %v, %v", n, err)

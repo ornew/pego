@@ -28,8 +28,8 @@ func TestBackendsMatchOnCorpus(t *testing.T) {
 			prog, plain := mustCompile(t, c.Src), mustCompile(t, c.Src, compile.Options{NoProjections: true})
 			for _, in := range c.Inputs {
 				for _, u := range []PositionUnit{CodePoints, Bytes} {
-					n1, err1 := prog.ParseWith("main", in, ParseOptions{Unit: u})
-					n2, err2 := plain.ParseWith("main", in, ParseOptions{Unit: u})
+					n1, err1 := prog.ParseWith("main", in, ParseOptions{Expectations: true, Unit: u})
+					n2, err2 := plain.ParseWith("main", in, ParseOptions{Expectations: true, Unit: u})
 					if a, b := gentest.ResultJSON(n1, err1), gentest.ResultJSON(n2, err2); a != b {
 						t.Errorf("input %q (%v): projected repetitions differ\n projected %s\n plain     %s", in, u, a, b)
 					}
@@ -52,7 +52,7 @@ func TestBackendsMatchOnStream(t *testing.T) {
 				err := prog.ParseStreamWith("main", strings.NewReader(in), func(n *value.Node) error {
 					got = append(got, fmt.Sprintf("%s [%d,%d)", n, value.D(n).Start, value.D(n).End))
 					return nil
-				}, ParseOptions{Unit: u, Backend: b})
+				}, ParseOptions{Expectations: true, Unit: u, Backend: b})
 				out[i] = fmt.Sprint(strings.Join(got, "\n"), " ", err)
 			}
 			if out[0] != out[1] || out[0] != out[2] {
@@ -81,11 +81,11 @@ rule x = #operators {
 	prev := debug.SetMaxStack(1 << 20) // too small for the recursive model
 	defer debug.SetMaxStack(prev)
 	for _, in := range inputs {
-		n, err := prog.ParseWith("main", in, ParseOptions{Backend: BytecodeIterative})
+		n, err := prog.ParseWith("main", in, ParseOptions{Expectations: true, Backend: BytecodeIterative})
 		if err != nil || int(value.D(n).End) != len(in) {
 			t.Errorf("input %.10q...: %v", in, err)
 		}
-		if _, err := prog.ParseWith("main", in[:len(in)-1], ParseOptions{Backend: BytecodeIterative}); err == nil && in[len(in)-1] == ')' {
+		if _, err := prog.ParseWith("main", in[:len(in)-1], ParseOptions{Expectations: true, Backend: BytecodeIterative}); err == nil && in[len(in)-1] == ')' {
 			t.Errorf("input %.10q...: expected an error", in)
 		}
 	}
@@ -105,14 +105,14 @@ rule x = #operators {
 	const depth = 3 * DefaultMaxDepth
 	for _, in := range []string{strings.Repeat("-", depth) + "x", strings.Repeat("x^", depth) + "x"} {
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			if _, err := prog.ParseWith("main", in, ParseOptions{Backend: b, MaxDepth: DefaultMaxDepth}); err == nil || !strings.Contains(err.Error(), "nesting too deep") {
+			if _, err := prog.ParseWith("main", in, ParseOptions{Expectations: true, Backend: b, MaxDepth: DefaultMaxDepth}); err == nil || !strings.Contains(err.Error(), "nesting too deep") {
 				t.Errorf("%v, input %.10q...: got %v, want a nesting error", b, in, err)
 			}
 		}
 		// Within the limit, the recursive backends parse such chains.
 		short := in[len(in)-2*(DefaultMaxDepth/4)-1:]
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			if n, err := prog.ParseWith("main", short, ParseOptions{Backend: b}); err != nil || int(value.D(n).End) != len(short) {
+			if n, err := prog.ParseWith("main", short, ParseOptions{Expectations: true, Backend: b}); err != nil || int(value.D(n).End) != len(short) {
 				t.Errorf("%v, input %.10q...: %v", b, short, err)
 			}
 		}
@@ -148,7 +148,7 @@ rule e = #operators {
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, recognize := range []bool{false, true} {
-						opts := ParseOptions{Backend: backend, Unit: unit, MaxDepth: tc.depth, Recognize: recognize}
+						opts := ParseOptions{Expectations: true, Backend: backend, Unit: unit, MaxDepth: tc.depth, Recognize: recognize}
 						n, err := prog.ParseWith("main", tc.input, opts)
 						if (err == nil) != tc.ok {
 							t.Errorf("memo disabled %v, %s/%s, recognize %v depth %d input %.20q: %v, %v", disableMemo, backend, unit, recognize, tc.depth, tc.input, n, err)
@@ -186,7 +186,7 @@ rule e = #operators {
 				err := prog.ParseStreamWith("main", strings.NewReader(tc.input), func(*value.Node) error {
 					count++
 					return nil
-				}, ParseOptions{Backend: backend, Unit: unit, MaxDepth: 2})
+				}, ParseOptions{Expectations: true, Backend: backend, Unit: unit, MaxDepth: 2})
 				if count != tc.count || (err == nil) != tc.ok {
 					t.Errorf("%s/%s input %.20q: emitted %d, err %v; want %d, success %v", backend, unit, tc.input, count, err, tc.count, tc.ok)
 				}
@@ -223,11 +223,11 @@ rule expr Node = l:[0-9]+ #atomic rest:("+" r:[0-9]+ #atomic)* => foldl($l, $res
 			for i := 0; i < 50; i++ {
 				in := inputs[(g+i)%len(inputs)]
 				for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-					if got := resultWith(prog, in, ParseOptions{Backend: b}); got != want[in] {
+					if got := resultWith(prog, in, ParseOptions{Expectations: true, Backend: b}); got != want[in] {
 						errs <- fmt.Sprintf("%v %q: got %s, want %s", b, in, got, want[in])
 						return
 					}
-					_, err := prog.ParseWith("main", in, ParseOptions{Backend: b, Recognize: true})
+					_, err := prog.ParseWith("main", in, ParseOptions{Expectations: true, Backend: b, Recognize: true})
 					if (err == nil) != !strings.HasPrefix(want[in], "error: ") {
 						errs <- fmt.Sprintf("%v %q: recognition gave %v", b, in, err)
 						return

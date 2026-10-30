@@ -108,8 +108,8 @@ func (d *Document) parseWithCapture(o core.ParseOptions, capture func(*core.Pars
 	if err := core.ValidateStreamDiagnostics(o, false); err != nil {
 		return nil, err
 	}
-	if o.Unit != d.in.Unit || d.runner.SelectBackend(o.Backend) != d.back || o.Recognize {
-		return nil, fmt.Errorf("document parse cannot change unit, backend or recognition mode")
+	if o.Unit != d.in.Unit || d.runner.SelectBackend(o.Backend) != d.back || o.Recognize || o.Expectations != d.defaults.Expectations {
+		return nil, fmt.Errorf("document parse cannot change unit, backend, recognition mode or expectations")
 	}
 	var p *core.Parser
 	executionStarted := false
@@ -160,7 +160,7 @@ func (d *Document) parseWithCapture(o core.ParseOptions, capture func(*core.Pars
 	} else {
 		runs = map[core.RunKey]*core.RunRecord{}
 	}
-	p = &core.Parser{Prog: active.Shared(), Input: d.in, Memo: d.memo, MemoAll: true, NoPlain: true, MaxDepth: core.DepthLimit(o, d.back), Gen: gen, Edits: d.edits,
+	p = &core.Parser{Prog: active.Shared(), Input: d.in, Memo: d.memo, MemoAll: true, NoPlain: true, MaxDepth: core.DepthLimit(o, d.back), Gen: gen, Edits: d.edits, Expectations: o.Expectations,
 		Runs: runs, LastRuns: lastRuns, KidStack: d.kids}
 	p.Control = c
 	p.SetTrace(o.Trace)

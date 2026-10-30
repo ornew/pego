@@ -103,6 +103,7 @@ func parseSpend(prog *Program, start, input string, o ParseOptions) (parseBudget
 		target = rp
 	}
 	p := core.NewParser(&target.sharedProgram, input, o.Unit, !o.Recognize)
+	p.Expectations = o.Expectations
 	p.MaxDepth = core.DepthLimit(o, o.Backend)
 	p.DeferMemo = true
 	p.SetTrace(o.Trace)
@@ -190,8 +191,8 @@ func TestTraceKeepsResults(t *testing.T) {
 		prog := mustCompile(t, c.Src)
 		for _, in := range c.Inputs {
 			for _, u := range []PositionUnit{CodePoints, Bytes} {
-				checkTrace(t, prog, "main", in, ParseOptions{Unit: u})
-				checkTrace(t, prog, "main", in, ParseOptions{Unit: u, Recognize: true})
+				checkTrace(t, prog, "main", in, ParseOptions{Expectations: true, Unit: u})
+				checkTrace(t, prog, "main", in, ParseOptions{Expectations: true, Unit: u, Recognize: true})
 			}
 			checkTraceDocument(t, prog, in)
 		}
@@ -209,8 +210,8 @@ func checkTraceDocument(t *testing.T, prog *Program, input string) {
 		text       string
 	}{{mid, mid, "x"}, {mid, mid + 1, ""}, {0, min(1, len(runes)), "a"}}
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		plain, err1 := prog.NewDocumentWith("main", input, ParseOptions{Backend: b})
-		traced, err2 := prog.NewDocumentWith("main", input, ParseOptions{Backend: b, Trace: func(TraceEvent) {}})
+		plain, err1 := prog.NewDocumentWith("main", input, ParseOptions{Expectations: true, Backend: b})
+		traced, err2 := prog.NewDocumentWith("main", input, ParseOptions{Expectations: true, Backend: b, Trace: func(TraceEvent) {}})
 		if err1 != nil || err2 != nil {
 			t.Fatal(err1, err2)
 		}
@@ -370,7 +371,7 @@ rule word = [a-z]+ #atomic`,
 		t.Run(tt.name, func(t *testing.T) {
 			prog := mustCompile(t, tt.src)
 			for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-				lines, res := traceLines(prog, "main", tt.input, ParseOptions{Backend: b})
+				lines, res := traceLines(prog, "main", tt.input, ParseOptions{Expectations: true, Backend: b})
 				if got, want := strings.Join(lines, "\n"), strings.Join(tt.want, "\n"); got != want {
 					t.Errorf("%v: trace\n%s\nwant\n%s", b, got, want)
 				}
@@ -378,7 +379,7 @@ rule word = [a-z]+ #atomic`,
 					t.Errorf("%v: result %s, want error %q", b, res, tt.err)
 				}
 			}
-			checkTrace(t, prog, "main", tt.input, ParseOptions{})
+			checkTrace(t, prog, "main", tt.input, ParseOptions{Expectations: true})
 		})
 	}
 }
@@ -393,9 +394,9 @@ rule line = [a-z]* #atomic "\n"`)
 		emit := func(dst *[]string) func(*value.Node) error {
 			return func(n *value.Node) error { *dst = append(*dst, n.String()); return nil }
 		}
-		err1 := prog.ParseStreamWith("main", strings.NewReader("ab\ncd\n"), emit(&lines), ParseOptions{Backend: b})
+		err1 := prog.ParseStreamWith("main", strings.NewReader("ab\ncd\n"), emit(&lines), ParseOptions{Expectations: true, Backend: b})
 		calls := 0
-		err2 := prog.ParseStreamWith("main", strings.NewReader("ab\ncd\n"), emit(&traced), ParseOptions{Backend: b, Trace: func(e TraceEvent) {
+		err2 := prog.ParseStreamWith("main", strings.NewReader("ab\ncd\n"), emit(&traced), ParseOptions{Expectations: true, Backend: b, Trace: func(e TraceEvent) {
 			if e.Kind == TraceExit && e.Rule == "line" && e.Matched {
 				calls++
 			}
@@ -405,7 +406,7 @@ rule line = [a-z]* #atomic "\n"`)
 		}
 
 		var evals, memo int
-		d, err := prog.NewDocumentWith("main", "ab\ncd\n", ParseOptions{Backend: b, Trace: func(e TraceEvent) {
+		d, err := prog.NewDocumentWith("main", "ab\ncd\n", ParseOptions{Expectations: true, Backend: b, Trace: func(e TraceEvent) {
 			if e.Kind == TraceExit {
 				evals += e.Evals
 				if e.Memo {
@@ -425,7 +426,7 @@ rule line = [a-z]* #atomic "\n"`)
 		}
 		evals, memo = 0, 0
 		n2, _ := d.Parse()
-		plain, _ := prog.ParseWith("main", "xb\ncd\n", ParseOptions{Backend: b})
+		plain, _ := prog.ParseWith("main", "xb\ncd\n", ParseOptions{Expectations: true, Backend: b})
 		if n2.String() != plain.String() || n1 == nil {
 			t.Errorf("%v: document %v, parse %v", b, n2, plain)
 		}
@@ -447,7 +448,7 @@ func TestTracePanic(t *testing.T) {
 		func() {
 			defer func() { got = recover() }()
 			var m map[string]int
-			_, err = prog.ParseWith("main", "abc", ParseOptions{Backend: b, Trace: func(TraceEvent) {
+			_, err = prog.ParseWith("main", "abc", ParseOptions{Expectations: true, Backend: b, Trace: func(TraceEvent) {
 				m["x"]++ // a runtime error
 			}})
 		}()
@@ -466,7 +467,7 @@ rule stmt = (word ";") #recover(skip=[^;]+ ";")
 rule word = [a-z]+ #atomic`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		var got []string
-		_, err := prog.ParseWith("main", "ab1;cd;", ParseOptions{Backend: b, Trace: func(e TraceEvent) {
+		_, err := prog.ParseWith("main", "ab1;cd;", ParseOptions{Expectations: true, Backend: b, Trace: func(e TraceEvent) {
 			if e.Kind == TraceExit && len(e.Recovered()) > 0 {
 				got = append(got, fmt.Sprintf("%s@%d %v; failure %v", e.Rule, e.Pos, e.Recovered(), e.Failure()))
 			}
@@ -530,7 +531,7 @@ func TestTracesAgreeAcrossBackends(t *testing.T) {
 	for _, c := range gentest.GenCorpus(t) {
 		prog := mustCompile(t, c.Src)
 		for _, in := range c.Inputs {
-			for _, o := range []ParseOptions{{Unit: CodePoints}, {Unit: Bytes}, {Unit: CodePoints, Recognize: true}} {
+			for _, o := range []ParseOptions{{Expectations: true, Unit: CodePoints}, {Unit: Bytes}, {Unit: CodePoints, Recognize: true}} {
 				o.Backend = Closure
 				want, wantResult := dispatchFreeTrace(prog, in, o)
 				for _, b := range []Backend{Bytecode, BytecodeIterative} {

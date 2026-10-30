@@ -47,20 +47,20 @@ func TestDiagnosticAttributeStructuredErrors(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		t.Run(backend.String(), func(t *testing.T) {
 			mixed := mustCompile(t, `rule main = ("a" @error(message="explicit") @diagnostic(name="ordinary") / "b" @diagnostic(name="bee"))`)
-			_, err := mixed.ParseWith("main", "c", ParseOptions{Backend: backend})
+			_, err := mixed.ParseWith("main", "c", ParseOptions{Expectations: true, Backend: backend})
 			var syntax *SyntaxError
 			if !errors.As(err, &syntax) || !slices.Equal(syntax.Expected, []string{"bee"}) || !slices.Equal(syntax.Messages, []string{"explicit"}) {
 				t.Fatalf("mixed diagnostic = %#v, err %v", syntax, err)
 			}
 
 			farther := mustCompile(t, `rule main = "a" "b" / "c" @diagnostic(name="cee")`)
-			_, err = farther.ParseWith("main", "ax", ParseOptions{Backend: backend})
+			_, err = farther.ParseWith("main", "ax", ParseOptions{Expectations: true, Backend: backend})
 			if !errors.As(err, &syntax) || !slices.Equal(syntax.Expected, []string{`"b"`}) || len(syntax.Messages) != 0 || syntax.Col != 2 {
 				t.Fatalf("farther diagnostic = %#v, err %v", syntax, err)
 			}
 
 			recovered := mustCompile(t, `rule main = ("a" @diagnostic(name="letter") #recover(skip=[^!]* "!") "b")`)
-			_, err = recovered.ParseWith("main", "x!b", ParseOptions{Backend: backend})
+			_, err = recovered.ParseWith("main", "x!b", ParseOptions{Expectations: true, Backend: backend})
 			var recoveries SyntaxErrors
 			if !errors.As(err, &recoveries) || len(recoveries) != 1 || !slices.Equal(recoveries[0].Expected, []string{"letter"}) || len(recoveries[0].Messages) != 0 {
 				t.Fatalf("recovered diagnostic = %#v, err %v", recoveries, err)
@@ -97,7 +97,7 @@ func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := resultWith(loaded, "b", servedBy(mode, ParseOptions{Backend: Bytecode})); got != "error: 1:1: syntax error: expected letter" {
+		if got := resultWith(loaded, "b", servedBy(mode, ParseOptions{Expectations: true, Backend: Bytecode})); got != "error: 1:1: syntax error: expected letter" {
 			t.Errorf("loaded diagnostic in %s mode: %s", mode, got)
 		}
 		oldISA := append([]byte(nil), data...)
@@ -125,7 +125,7 @@ func TestDiagnosticAttributeInstructionSetVersion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := resultWith(loaded, "b", ParseOptions{Backend: Bytecode}); got != "error: 1:1: syntax error: expected letter" {
+	if got := resultWith(loaded, "b", ParseOptions{Expectations: true, Backend: Bytecode}); got != "error: 1:1: syntax error: expected letter" {
 		t.Errorf("loaded filter and diagnostic: %s", got)
 	}
 }

@@ -20,7 +20,7 @@ type ignoreCaseCase struct {
 // consumed input. A rule without an action has no text of its own, so the span is read from the input.
 func ignoreCaseOutcome(t *testing.T, program *Program, input string, unit PositionUnit) string {
 	t.Helper()
-	n, err := program.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit})
+	n, err := program.ParseWith("main", input, ParseOptions{Expectations: true, Backend: Closure, Unit: unit})
 	if err != nil {
 		return "error"
 	}
@@ -111,7 +111,7 @@ func TestIgnoreCaseExpectations(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			program := mustCompile(t, c.src)
-			_, err := program.ParseWith("main", c.input, ParseOptions{Backend: Closure})
+			_, err := program.ParseWith("main", c.input, ParseOptions{Expectations: true, Backend: Closure})
 			if err == nil {
 				t.Fatal("the parse succeeded")
 			}
@@ -256,7 +256,7 @@ func TestIgnoreCaseRandomAgreement(t *testing.T) {
 func TestIgnoreCaseMissingSpelling(t *testing.T) {
 	t.Parallel()
 	prog := mustCompile(t, `rule main = "Sel"i #missing $$`)
-	n, errs := requireInsertions(t, prog, "", ParseOptions{MissingTokens: 2}, 1)
+	n, errs := requireInsertions(t, prog, "", ParseOptions{Expectations: true, MissingTokens: 2}, 1)
 	insertions := missingNodes(t, n)
 	if len(insertions) != 1 {
 		t.Fatalf("missing nodes: %v", insertions)
@@ -279,7 +279,7 @@ func TestIgnoreCaseMissingSpellingBackends(t *testing.T) {
 	} {
 		prog := mustCompile(t, src)
 		for _, backend := range []Backend{Closure, Default} {
-			n, errs := requireInsertions(t, prog, "", ParseOptions{MissingTokens: 2, Backend: backend}, 1)
+			n, errs := requireInsertions(t, prog, "", ParseOptions{Expectations: true, MissingTokens: 2, Backend: backend}, 1)
 			insertions := missingNodes(t, n)
 			if len(insertions) != 1 {
 				t.Fatalf("%s: backend %v: missing nodes: %v", src, backend, insertions)
@@ -334,7 +334,7 @@ func TestIgnoreCaseDocumentAndStream(t *testing.T) {
 func TestIgnoreCaseMissingInPragmaScope(t *testing.T) {
 	t.Parallel()
 	prog := mustCompile(t, `rule main = ("Sel" #missing $$) #ignorecase`)
-	n, errs := requireInsertions(t, prog, "", ParseOptions{MissingTokens: 2}, 1)
+	n, errs := requireInsertions(t, prog, "", ParseOptions{Expectations: true, MissingTokens: 2}, 1)
 	insertions := missingNodes(t, n)
 	if len(insertions) != 1 {
 		t.Fatalf("missing nodes: %v", insertions)
@@ -353,7 +353,7 @@ func TestIgnoreCaseDocumentAndStreamBackends(t *testing.T) {
 	t.Parallel()
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		prog := mustCompile(t, `rule main = "select"i " " "x" $$`)
-		doc, err := prog.NewDocumentWith("main", "SELECT x", ParseOptions{Backend: b})
+		doc, err := prog.NewDocumentWith("main", "SELECT x", ParseOptions{Expectations: true, Backend: b})
 		if err != nil {
 			t.Fatal(b, err)
 		}
@@ -375,7 +375,7 @@ func TestIgnoreCaseDocumentAndStreamBackends(t *testing.T) {
 
 		stream := mustCompile(t, `rule main = ("ab"i #atomic)* #stream`)
 		count := 0
-		if err := stream.ParseStreamWith("main", strings.NewReader("ABab"), func(*value.Node) error { count++; return nil }, ParseOptions{Backend: b}); err != nil {
+		if err := stream.ParseStreamWith("main", strings.NewReader("ABab"), func(*value.Node) error { count++; return nil }, ParseOptions{Expectations: true, Backend: b}); err != nil {
 			t.Fatal(b, "stream: ", err)
 		}
 		if count != 2 {
@@ -397,7 +397,7 @@ func TestIgnoreCaseExpectationBackends(t *testing.T) {
 			{`rule main = "select"`, `"select"`},
 		} {
 			prog := mustCompile(t, c.src)
-			_, err := prog.ParseWith("main", "x", ParseOptions{Backend: b})
+			_, err := prog.ParseWith("main", "x", ParseOptions{Expectations: true, Backend: b})
 			if err == nil || !strings.Contains(err.Error(), c.want) {
 				t.Fatalf("%v %q: error %v, want the expectation %s", b, c.src, err, c.want)
 			}

@@ -14,7 +14,7 @@ import (
 )
 
 func diagnosticParser(limits limits.Limits) *core.Parser {
-	return &core.Parser{Input: core.Input{Control: core.NewBudgetControl(nil, limits)}}
+	return &core.Parser{Expectations: true, Input: core.Input{Control: core.NewBudgetControl(nil, limits)}}
 }
 
 func diagnosticHash(id core.ExpID) uint32 {

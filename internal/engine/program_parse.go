@@ -53,6 +53,7 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *value.No
 	defer p.ReleaseBatchScratch()
 	p.Input = core.NewControlledTextInput(input, o.Unit, !o.Recognize, p.Scratch, control)
 	p.MaxDepth = core.DepthLimit(o, o.Backend)
+	p.Expectations = o.Expectations
 	p.DeferMemo = true
 	if o.MissingTokens > 0 && active.HasMissing {
 		p.Missing, p.MissingLen = &core.MissingTokenState{Limit: o.MissingTokens}, 0
@@ -294,6 +295,7 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*value
 	defer p.ReleaseTraceReferences() // after error recovery, including rethrown panics
 	control.Check()
 	p.MaxDepth = core.DepthLimit(o, o.Backend)
+	p.Expectations = o.Expectations
 	p.Emit, p.StreamID = emit, rule.ID
 	p.Diagnostic = o.DiagnosticCallback
 	p.DiagnosticTail.Limit = o.DiagnosticLimit

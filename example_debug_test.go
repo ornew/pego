@@ -16,7 +16,7 @@ rule value = [0-9]+ #atomic`, "main")
 	if err != nil {
 		panic(err)
 	}
-	_, err = p.Parse("a=1;b=x", pego.WithTrace(func(e pego.TraceEvent) {
+	_, err = p.Parse("a=1;b=x", pego.WithExpectations(), pego.WithTrace(func(e pego.TraceEvent) {
 		indent := strings.Repeat("  ", e.Depth-1)
 		line, col := e.LineCol(e.Pos)
 		switch {

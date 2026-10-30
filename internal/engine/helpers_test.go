@@ -100,7 +100,7 @@ func compileError(t *testing.T, src string) string {
 
 // result returns the parse result as an S-expression, or "error: ..." on error.
 func result(prog *Program, input string) string {
-	return resultWith(prog, input, ParseOptions{})
+	return resultWith(prog, input, ParseOptions{Expectations: true})
 }
 
 func resultWith(prog *Program, input string, o ParseOptions) string {
@@ -135,8 +135,8 @@ func check(t *testing.T, src string, cases ...parseCase) {
 		checkUnits(t, prog, "main", c.input, Closure)
 		checkUnits(t, prog, "main", c.input, Bytecode)
 		checkUnits(t, prog, "main", c.input, BytecodeIterative)
-		checkTrace(t, prog, "main", c.input, ParseOptions{})
-		checkTrace(t, noMemo, "main", c.input, ParseOptions{})
+		checkTrace(t, prog, "main", c.input, ParseOptions{Expectations: true})
+		checkTrace(t, noMemo, "main", c.input, ParseOptions{Expectations: true})
 	}
 }
 
@@ -175,8 +175,8 @@ func mustParse(src string) *grammar.Grammar {
 // points, matches the result of parsing in code points.
 func checkUnits(t *testing.T, prog *Program, start, input string, b Backend) {
 	t.Helper()
-	n1, err1 := prog.ParseWith(start, input, ParseOptions{Unit: CodePoints, Backend: b})
-	n2, err2 := prog.ParseWith(start, input, ParseOptions{Unit: Bytes, Backend: b})
+	n1, err1 := prog.ParseWith(start, input, ParseOptions{Expectations: true, Unit: CodePoints, Backend: b})
+	n2, err2 := prog.ParseWith(start, input, ParseOptions{Expectations: true, Unit: Bytes, Backend: b})
 	n2, err2 = toCodePoints(input, n2, err2)
 	if a, b := gentest.ResultJSON(n1, err1), gentest.ResultJSON(n2, err2); a != b {
 		t.Errorf("input %q: results differ between units\n codepoints %s\n bytes      %s", input, a, b)
@@ -187,18 +187,18 @@ func checkUnits(t *testing.T, prog *Program, start, input string, b Backend) {
 func checkBackends(t *testing.T, prog *Program, start, input string) {
 	t.Helper()
 	for _, u := range []PositionUnit{CodePoints, Bytes} {
-		n1, err1 := prog.ParseWith(start, input, ParseOptions{Unit: u})
+		n1, err1 := prog.ParseWith(start, input, ParseOptions{Expectations: true, Unit: u})
 		want := gentest.ResultJSON(n1, err1)
 		checkRecognize(t, prog, start, input, u, err1)
 		// The default budget runs the controlled form; Unlimited runs the uncontrolled one, which must
 		// give the same result on inputs within the default.
-		if n0, err0 := prog.ParseWith(start, input, ParseOptions{Unit: u, Limits: limits.Limits{Budget: limits.Unlimited}}); !errors.Is(err1, limits.ErrLimit) {
+		if n0, err0 := prog.ParseWith(start, input, ParseOptions{Expectations: true, Unit: u, Limits: limits.Limits{Budget: limits.Unlimited}}); !errors.Is(err1, limits.ErrLimit) {
 			if got := gentest.ResultJSON(n0, err0); got != want {
 				t.Errorf("input %q (unit %v): Unlimited differs from the default budget\n default   %s\n unlimited %s", input, u, want, got)
 			}
 		}
 		for _, b := range []Backend{Bytecode, BytecodeIterative} {
-			n2, err2 := prog.ParseWith(start, input, ParseOptions{Unit: u, Backend: b})
+			n2, err2 := prog.ParseWith(start, input, ParseOptions{Expectations: true, Unit: u, Backend: b})
 			if got := gentest.ResultJSON(n2, err2); got != want {
 				t.Errorf("input %q (unit %v): %v differs from closure\n closure %s\n %v %s", input, u, b, want, b, got)
 			}
@@ -218,7 +218,7 @@ func checkRecognize(t *testing.T, prog *Program, start, input string, u Position
 		return
 	}
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		n, err := prog.ParseWith(start, input, ParseOptions{Unit: u, Backend: b, Recognize: true})
+		n, err := prog.ParseWith(start, input, ParseOptions{Expectations: true, Unit: u, Backend: b, Recognize: true})
 		if n != nil || fmt.Sprint(err) != fmt.Sprint(want) {
 			t.Errorf("input %q (unit %v, %v): recognition gives %v, %v; want %v", input, u, b, n, err, want)
 		}

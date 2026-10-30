@@ -49,7 +49,7 @@ func TestBudgetDiagnosticBatchFailureAndTraceAccessor(t *testing.T) {
 						var observed *core.Parser
 						var c *core.BudgetControl
 						var at uint64
-						n, err := active.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Recognize: recognize, Limits: limits.Limits{Budget: 1 << 50}, Trace: func(e TraceEvent) {
+						n, err := active.ParseWith("main", "x", ParseOptions{Expectations: true, Backend: b, Unit: u, Recognize: recognize, Limits: limits.Limits{Budget: 1 << 50}, Trace: func(e TraceEvent) {
 							observed = core.TraceParser(e)
 							if e.Kind == TraceEnter && e.Rule == "fallback" {
 								fallback++
@@ -85,7 +85,7 @@ func TestBudgetDiagnosticBatchFailureAndTraceAccessor(t *testing.T) {
 						if !accessor && c.Used <= at+16*17 {
 							t.Fatal("budget exhausted before diagnostic sorting")
 						}
-						n, err = active.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Recognize: recognize})
+						n, err = active.ParseWith("main", "x", ParseOptions{Expectations: true, Backend: b, Unit: u, Recognize: recognize})
 						if accessor {
 							if err != nil || (recognize && n != nil) || (!recognize && n == nil) {
 								t.Fatalf("accessor fresh retry differs: %v", err)
@@ -113,7 +113,7 @@ rule bad = "a" @error(message=` + strconv.Quote(message) + `)`
 	prog := mustCompile(t, src)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, u := range []PositionUnit{Bytes, CodePoints} {
-			retained, retainedErr := prog.ParseWith("main", "x!", ParseOptions{Backend: b, Unit: u})
+			retained, retainedErr := prog.ParseWith("main", "x!", ParseOptions{Expectations: true, Backend: b, Unit: u})
 			if retained == nil || retainedErr == nil {
 				t.Fatal("recovery setup did not produce node and errors")
 			}
@@ -122,7 +122,7 @@ rule bad = "a" @error(message=` + strconv.Quote(message) + `)`
 			for _, recognize := range []bool{false, true} {
 				armed, fallback := false, 0
 				var observed *core.Parser
-				n, err := prog.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Recognize: recognize, Limits: limits.Limits{Budget: 1 << 50}, Trace: func(e TraceEvent) {
+				n, err := prog.ParseWith("main", "x", ParseOptions{Expectations: true, Backend: b, Unit: u, Recognize: recognize, Limits: limits.Limits{Budget: 1 << 50}, Trace: func(e TraceEvent) {
 					observed = core.TraceParser(e)
 					if e.Kind == TraceEnter && e.Rule == "fallback" {
 						fallback++
@@ -145,7 +145,7 @@ rule bad = "a" @error(message=` + strconv.Quote(message) + `)`
 				}
 				if !recognize {
 					armed, fallback = false, 0
-					n, err = prog.ParseWith("main", "x", ParseOptions{Backend: b, Unit: u, Limits: limits.Limits{Budget: 1 << 50}, Trace: func(e TraceEvent) {
+					n, err = prog.ParseWith("main", "x", ParseOptions{Expectations: true, Backend: b, Unit: u, Limits: limits.Limits{Budget: 1 << 50}, Trace: func(e TraceEvent) {
 						observed = core.TraceParser(e)
 						if e.Kind == TraceEnter && e.Rule == "fallback" {
 							fallback++
@@ -161,7 +161,7 @@ rule bad = "a" @error(message=` + strconv.Quote(message) + `)`
 						t.Fatalf("recovery message cancellation entered alternative or retained scratch: %v fallback=%d", err, fallback)
 					}
 				}
-				_, retryErr := prog.ParseWith("main", "x!", ParseOptions{Backend: b, Unit: u, Recognize: recognize})
+				_, retryErr := prog.ParseWith("main", "x!", ParseOptions{Expectations: true, Backend: b, Unit: u, Recognize: recognize})
 				var recovered SyntaxErrors
 				if !errors.As(retryErr, &recovered) || len(recovered) != 1 || !reflect.DeepEqual(recovered[0].Messages, []string{message}) {
 					t.Fatalf("recovery retry differs: %v", retryErr)

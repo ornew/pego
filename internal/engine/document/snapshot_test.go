@@ -88,6 +88,7 @@ func TestSnapshotDocumentVersionsAndConcurrentReads(t *testing.T) {
 	prog := mustCompile(t, `rule main = item* $$
 rule item = [a-zé]`)
 	snapshotVariants(t, func(t *testing.T, o ParseOptions) {
+		o = withExpectations(o)
 		d, err := prog.NewDocumentWith("main", "aé", o)
 		if err != nil {
 			t.Fatal(err)
@@ -266,4 +267,10 @@ rule x = x "a" / "a"`)
 			t.Fatal("trace panic retry", err)
 		}
 	})
+}
+
+// withExpectations returns o with expectation recording on.
+func withExpectations(o ParseOptions) ParseOptions {
+	o.Expectations = true
+	return o
 }

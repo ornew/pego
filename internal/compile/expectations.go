@@ -6,6 +6,11 @@ type ExpID int32
 // MsgBit marks an ExpID that is an @error message rather than an expectation.
 const MsgBit ExpID = 1 << 30
 
+// ExpFar is the only entry of an expectation record in a parse that does not record
+// expectations. It marks that a failure happened at the position of the record and describes
+// nothing.
+const ExpFar ExpID = 1 << 29
+
 // Expectations placed at the start of descs regardless of backend
 const (
 	IDAny ExpID = iota

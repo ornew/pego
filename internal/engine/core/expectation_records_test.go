@@ -10,7 +10,7 @@ import (
 // stack aliases, nested scopes, silence and retained memo/recovery copies.
 // This file also runs unchanged inside generated plain and typed packages.
 func TestExpectationRecords(t *testing.T) {
-	p := &Parser{}
+	p := &Parser{Expectations: true}
 	var expected []ExpID
 	base, far := 0, 0
 	type mark struct {

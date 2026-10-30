@@ -64,7 +64,7 @@ func TestBudgetCoarseChargesPerIteration(t *testing.T) {
 		prog := mustCompile(t, c.src)
 		for bi, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, recognize := range []bool{false, true} {
-				o := ParseOptions{Backend: backend, Recognize: recognize}
+				o := ParseOptions{Expectations: true, Backend: backend, Recognize: recognize}
 				want := c.parse[bi]
 				if recognize {
 					want = c.recogn[bi]

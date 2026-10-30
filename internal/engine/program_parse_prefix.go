@@ -49,6 +49,7 @@ func (prog *Program) ParsePrefixWith(start, input string, o ParseOptions) (resul
 	defer p.ReleaseBatchScratch()
 	p.Input = core.NewControlledTextInput(input, o.Unit, !o.Recognize, p.Scratch, control)
 	p.MaxDepth = core.DepthLimit(o, o.Backend)
+	p.Expectations = o.Expectations
 	p.DeferMemo = true
 	p.SetTrace(o.Trace)
 	result, err = active.runPrefix(p, o.Backend, start)
