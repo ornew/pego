@@ -124,6 +124,12 @@ Generated Go typed-output cleanup is not implemented; the measured full-sweep an
 go test ./...
 ```
 
+`go test ./...` does not run benchmarks, so a change to the language rules can leave a benchmark's grammar invalid without failing the suite. After such a change, run every benchmark once (about 80 s):
+
+```bash
+go test -run '^$' -bench . -benchtime=1x ./...
+```
+
 The tests that build generated parsers (in `internal/gen/gogen`, `internal/gen/tsgen`, `internal/gen` and `internal/engine`) build them in two forms. A parser generated with work controls charges work and accepts the options `WithContext` and `WithWorkLimits`. A parser generated without them is the form that most parsers have, and a different part of the generator prints it. Every test runs the form that it exists to check:
 
 | Kind of test | Runs | How |
