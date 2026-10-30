@@ -21,7 +21,8 @@ var testTarget = &Target{
 		return "this." + name + "(" + strings.Join(args, ", ") + ")"
 	},
 	Reg:    func(name string) string { return "this." + name },
-	Handle: func(string) string { return "Box" },
+	Handle: func(string) string { return "Box | null | undefined" },
+	Packed: "Box",
 }
 
 // program returns the TypeScript test program: a class with the operations and the printed
@@ -51,7 +52,7 @@ class P {
   newBox(x: number): Box {
     return new Box(x);
   }
-  get(b: Box | null): number {
+  get(b: Box | null | undefined): number {
     return b!.x;
   }
 
@@ -132,6 +133,9 @@ func TestPrintedForms(t *testing.T) {
 	m := printtest.Build()
 	checks := map[string][]string{
 		"exits":           {"  out: {\n", "      in_: {\n", "break in_;\n", "    outer:\n    for (;;) {\n", "continue outer;\n", "break outer;\n", "twin_2: {\n"},
+		"find":            {"find(x: number): Box | null | undefined {\n", "return undefined;\n", "return this.newBox(x);\n"},
+		"relay":           {"const v = this.find(x);\n", "      return v;\n", "return v !== null ? v : undefined;\n"},
+		"pairs":           {"let v: Box | null | undefined = null;\n", "v = this.find(-1);\n", "if (v === undefined) {\n", "if (v !== undefined) {\n", "const w = this.find(2);\n"},
 		"scopes":          {"    blk: {\n      const a = 10;\n", "sum = sum + c;\n      let written = 6;\n", "      void written;\n", "break blk;\n"},
 		"clauses":         {"for (i = 0; i < 6; i++) {\n", "while (s < 20) {\n", "[this.pos, ] = this.pair(4);\n", "s = s + 100;\n    if (0 < s) {\n", "} else if (s === 0) {\n"},
 		"special_x_extra": {"  // Printed from Exec IR function special_x_extra of printtest, specialized for extra.\n"},
@@ -146,6 +150,39 @@ func TestPrintedForms(t *testing.T) {
 			if !strings.Contains(s, w) {
 				t.Errorf("%s lacks %q:\n%s", name, w, s)
 			}
+		}
+	}
+}
+
+// TestOpStatements checks operations printed as statements of their own and as nothing.
+func TestOpStatements(t *testing.T) {
+	m := printtest.Build()
+	tg := *testTarget
+	tg.Op = func(c *ir.Call, args []string) string {
+		if c.Callee == "log.note" {
+			return ""
+		}
+		return testTarget.Op(c, args)
+	}
+	tg.Stmt = func(c *ir.Call, args []string, dst []string, decl string) (string, bool) {
+		if c.Callee != "box.new" {
+			return "", false
+		}
+		return fmt.Sprintf("%s %s = this.newBox(%s);\nthis.newBox(0);", decl, strings.Join(dst, ", "), args[0]), true
+	}
+	for name, want := range map[string]string{
+		"handles": "    x = this.newBox(42);\n    this.newBox(0);\n    const y = this.newBox(42);\n    this.newBox(0);\n",
+		"exits":   "      }\n      for (;;) {\n",
+	} {
+		s, err := Method(m, m.Func(name), &tg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(s, want) {
+			t.Errorf("%s lacks %q:\n%s", name, want, s)
+		}
+		if strings.Contains(s, "note") {
+			t.Errorf("%s prints a note:\n%s", name, s)
 		}
 	}
 }

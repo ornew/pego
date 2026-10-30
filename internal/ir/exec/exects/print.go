@@ -10,7 +10,9 @@
 // Values follow the representation that keeps engines on small integers: bool is boolean, int is
 // number (exact up to 2^53), i32 and u32 are numbers normalized with "| 0" and ">>> 0" after
 // every operation that can leave their range (Math.imul for products), and u64 is bigint reduced
-// with BigInt.asUintN. A function with several results returns them as an array.
+// with BigInt.asUintN. A function with several results returns them as an array, except a pair of
+// the packed handle type and bool (Target.Packed), which is one value: the handle when the bool is
+// true and undefined when it is false.
 package exects
 
 import (
@@ -25,12 +27,24 @@ import (
 // implementation.
 type Target struct {
 	// Op returns the TypeScript expression of a call of an operation, given the call (with its
-	// immediate operand) and its printed arguments.
+	// immediate operand) and its printed arguments. A call without results may print as any
+	// statement without its semicolon, or as nothing when Op returns "".
 	Op func(c *exec.Call, args []string) string
+	// Stmt, if not nil, prints a call of an operation as statements of its own, given the call, its
+	// printed arguments, the places it sets ("_" for a discarded result, none for a call without
+	// results) and the declaration keyword of a Let ("const" or "let"; empty for a Set or a call
+	// without results). Lines are separated by newlines and indented relative to the first. It
+	// reports false to print the call with Op.
+	Stmt func(c *exec.Call, args []string, dst []string, decl string) (string, bool)
+	// Packed, if not empty, is the handle type whose pairs with bool print as one value: the handle
+	// when the bool is true, undefined when it is false. No handle of the type is undefined, and the
+	// handle of a pair whose bool is false is read only to return or bind it with its bool. The bool
+	// of a pair that a Let or a Set binds reads as a test of its handle and is not declared.
+	Packed string
 	// Reg returns the TypeScript expression of the register name, which must be assignable.
 	Reg func(name string) string
-	// Handle returns the TypeScript type of the handle type name, without null; a handle may be
-	// null.
+	// Handle returns the TypeScript type of the handle type name. It includes null (or undefined
+	// for the packed type) when a handle of the type may be null.
 	Handle func(name string) string
 	// FuncName returns the name of the printed method name; nil keeps the name.
 	FuncName func(name string) string
@@ -41,9 +55,12 @@ type Target struct {
 // Method returns the TypeScript method of the function f of the verified module m, indented for
 // a class body by two spaces. Functions of the module are called as methods of this.
 func Method(m *exec.Module, f *exec.Func, t *Target) (string, error) {
-	p := &printer{m: m, t: t, f: f, labels: map[string]int{}, depth: 1, types: map[string]exec.Type{}}
+	p := &printer{m: m, t: t, f: f, labels: map[string]int{}, depth: 1, types: map[string]exec.Type{}, partner: map[string]string{}}
 	for _, x := range append(append([]exec.Param(nil), f.Params...), f.Locals...) {
 		p.types[x.Name] = x.Type
+	}
+	if err := p.pairs(); err != nil {
+		return "", fmt.Errorf("exects: function %s: %v", f.Name, err)
 	}
 	if err := p.fn(); err != nil {
 		return "", fmt.Errorf("exects: function %s: %v", f.Name, err)
@@ -63,6 +80,64 @@ type printer struct {
 	labels map[string]int
 	scope  []*frame
 	err    error
+	// partner maps the bool of a packed pair to the handle it tests.
+	partner map[string]string
+}
+
+// packed reports whether the types are a packed pair.
+func (p *printer) packed(ts []exec.Type) bool {
+	return p.t.Packed != "" && len(ts) == 2 && ts[0] == exec.THandle(p.t.Packed) && ts[1] == exec.TBool
+}
+
+// packedCall reports whether x is a call whose results are a packed pair.
+func (p *printer) packedCall(x exec.Expr) bool {
+	c, ok := x.(*exec.Call)
+	return ok && p.packed(p.results(c))
+}
+
+// pairs finds the bools of the packed pairs that Lets and Sets bind and checks that nothing else
+// assigns them.
+func (p *printer) pairs() error {
+	var err error
+	bind := func(h, b string) {
+		if h == "" || b == "" {
+			err = fmt.Errorf("a packed pair binds both its handle and its bool")
+		} else if q, ok := p.partner[b]; ok && q != h {
+			err = fmt.Errorf("the bool %s of a packed pair tests both %s and %s", b, q, h)
+		}
+		p.partner[b] = h
+	}
+	exec.Walk(p.f.Body, func(st exec.Stmt) {
+		switch s := st.(type) {
+		case *exec.Let:
+			if len(s.Names) == 2 && p.packedCall(s.Value) {
+				bind(s.Names[0], s.Names[1])
+			}
+		case *exec.Set:
+			if len(s.Dst) == 2 && len(s.Values) == 1 && p.packedCall(s.Values[0]) {
+				if s.Dst[0].Reg || s.Dst[1].Reg {
+					err = fmt.Errorf("a packed pair is set to a register")
+					return
+				}
+				bind(s.Dst[0].Name, s.Dst[1].Name)
+			}
+		}
+	}, nil)
+	exec.Walk(p.f.Body, func(st exec.Stmt) {
+		if s, ok := st.(*exec.Set); ok && !(len(s.Dst) == 2 && len(s.Values) == 1 && p.packedCall(s.Values[0])) {
+			for _, d := range s.Dst {
+				if _, ok := p.partner[d.Name]; ok && !d.Reg {
+					err = fmt.Errorf("the bool %s of a packed pair is assigned alone", d.Name)
+				}
+			}
+		}
+	}, nil)
+	for _, x := range p.f.Params {
+		if _, ok := p.partner[x.Name]; ok {
+			err = fmt.Errorf("the bool %s of a packed pair is a parameter", x.Name)
+		}
+	}
+	return err
 }
 
 type frame struct {
@@ -93,7 +168,7 @@ func (p *printer) typ(t exec.Type) string {
 	case exec.KU64:
 		return "bigint"
 	case exec.KHandle:
-		return p.t.Handle(t.Handle) + " | null"
+		return p.t.Handle(t.Handle)
 	}
 	panic("exects: invalid type")
 }
@@ -123,6 +198,9 @@ func (p *printer) resultType() string {
 	case 0:
 		return "void"
 	case 1:
+		return p.typ(p.f.Results[0])
+	}
+	if p.packed(p.f.Results) {
 		return p.typ(p.f.Results[0])
 	}
 	rs := make([]string, len(p.f.Results))
@@ -157,6 +235,9 @@ func (p *printer) fn() error {
 	p.line("%s(%s): %s {", p.name(f.Name), strings.Join(params, ", "), p.resultType())
 	p.depth++
 	for _, l := range f.Locals {
+		if _, ok := p.partner[l.Name]; ok {
+			continue
+		}
 		p.line("let %s: %s = %s;", l.Name, p.typ(l.Type), zero(l.Type))
 		if !reads(f.Body.Stmts, l.Name) {
 			p.line("void %s;", l.Name)
@@ -316,6 +397,10 @@ func exitsTo(ss []exec.Stmt, label string) bool {
 }
 
 func (p *printer) let(l *exec.Let, rest []exec.Stmt) {
+	if len(l.Names) == 2 && p.packedCall(l.Value) {
+		p.letPacked(l, rest)
+		return
+	}
 	kw := "const"
 	names := make([]string, len(l.Names))
 	bound := false
@@ -341,6 +426,21 @@ func (p *printer) let(l *exec.Let, rest []exec.Stmt) {
 	} else {
 		p.types[l.Names[0]] = p.typeOf(l.Value)
 	}
+	if c, ok := l.Value.(*exec.Call); ok && bound {
+		dst := make([]string, len(names))
+		for i, n := range names {
+			dst[i] = n
+			if n == "" {
+				dst[i] = "_"
+			}
+		}
+		if p.opStmt(c, dst, kw) {
+			for _, n := range unread {
+				p.line("void %s;", n)
+			}
+			return
+		}
+	}
 	switch {
 	case !bound && !hasCall(l.Value):
 		// Nothing reads the value and computing it has no effect.
@@ -356,6 +456,57 @@ func (p *printer) let(l *exec.Let, rest []exec.Stmt) {
 	}
 }
 
+// letPacked prints a Let of a packed pair as a declaration of its handle.
+func (p *printer) letPacked(l *exec.Let, rest []exec.Stmt) {
+	h, b := l.Names[0], l.Names[1]
+	p.types[h], p.types[b] = exec.THandle(p.t.Packed), exec.TBool
+	read := reads(rest, h) || reads(rest, b)
+	assigned := assigns(rest, h) || assigns(rest, b)
+	v := p.expr(l.Value, 0)
+	switch {
+	case !read && !assigned:
+		p.line("%s;", v)
+	case assigned:
+		p.line("let %s = %s;", h, v)
+		if !read {
+			p.line("void %s;", h)
+		}
+	default:
+		p.line("const %s = %s;", h, v)
+	}
+}
+
+// opStmt prints the call c of an operation with Target.Stmt, if it takes the call, and reports
+// whether it did.
+func (p *printer) opStmt(c *exec.Call, dst []string, decl string) bool {
+	if p.t.Stmt == nil || p.m.Op(c.Callee) == nil {
+		return false
+	}
+	s, ok := p.t.Stmt(c, p.args(c), dst, decl)
+	if ok {
+		p.lines(s)
+	}
+	return ok
+}
+
+// lines prints the lines of s at the current depth.
+func (p *printer) lines(s string) {
+	if s == "" {
+		return
+	}
+	for _, l := range strings.Split(s, "\n") {
+		p.line("%s", l)
+	}
+}
+
+func (p *printer) args(c *exec.Call) []string {
+	args := make([]string, len(c.Args))
+	for i, a := range c.Args {
+		args[i] = p.expr(a, 0)
+	}
+	return args
+}
+
 func (p *printer) stmt(st exec.Stmt) {
 	switch s := st.(type) {
 	case *exec.Block:
@@ -368,9 +519,17 @@ func (p *printer) stmt(st exec.Stmt) {
 		}
 		p.ifStmt(s, "if")
 	case *exec.Set:
+		if c, ok := s.Values[0].(*exec.Call); ok && len(s.Values) == 1 && !p.packedCall(c) && p.opStmt(c, p.places(s), "") {
+			return
+		}
 		p.line("%s;", p.set(s))
 	case *exec.Do:
-		p.line("%s;", p.expr(s.Call, 0))
+		if p.opStmt(s.Call, nil, "") {
+			return
+		}
+		if x := p.expr(s.Call, 0); x != "" {
+			p.lines(x + ";")
+		}
 	case *exec.Exit:
 		p.jump(s.Label, "")
 	case *exec.Break:
@@ -378,6 +537,10 @@ func (p *printer) stmt(st exec.Stmt) {
 	case *exec.Continue:
 		p.jump(s.Label, "continue")
 	case *exec.Return:
+		if p.packed(p.f.Results) {
+			p.line("return %s;", p.packedValue(s.Values[0], s.Values[1]))
+			return
+		}
 		switch len(s.Values) {
 		case 0:
 			p.line("return;")
@@ -494,7 +657,34 @@ func (p *printer) ifStmt(s *exec.If, kw string) {
 	p.line("}")
 }
 
-func (p *printer) set(s *exec.Set) string {
+// packedValue returns the packed value of the pair h, b.
+func (p *printer) packedValue(h, b exec.Expr) string {
+	if c, ok := exec.Fold(b); ok {
+		if c.Value.(bool) {
+			return p.expr(h, 0)
+		}
+		return "undefined"
+	}
+	if lb, ok := b.(*exec.Local); ok {
+		if lh, ok := h.(*exec.Local); ok && p.partner[lb.Name] == lh.Name {
+			return lh.Name
+		}
+	}
+	return p.expr(b, 2) + " ? " + p.expr(h, 2) + " : undefined"
+}
+
+// places returns the printed places of the Set s, with "_" for a discarded result.
+func (p *printer) places(s *exec.Set) []string {
+	dst := p.dst(s)
+	for i, d := range dst {
+		if d == "" {
+			dst[i] = "_"
+		}
+	}
+	return dst
+}
+
+func (p *printer) dst(s *exec.Set) []string {
 	dst := make([]string, len(s.Dst))
 	for i, d := range s.Dst {
 		switch {
@@ -504,6 +694,14 @@ func (p *printer) set(s *exec.Set) string {
 		default:
 			dst[i] = d.Name
 		}
+	}
+	return dst
+}
+
+func (p *printer) set(s *exec.Set) string {
+	dst := p.dst(s)
+	if len(dst) == 2 && len(s.Values) == 1 && p.packedCall(s.Values[0]) {
+		return dst[0] + " = " + p.expr(s.Values[0], 0)
 	}
 	vals := make([]string, len(s.Values))
 	for i, x := range s.Values {
@@ -588,6 +786,9 @@ func (p *printer) expr(x exec.Expr, outer int) string {
 		}
 		return s
 	case *exec.Local:
+		if h, ok := p.partner[x.Name]; ok {
+			return paren(h+" !== undefined", 6, outer)
+		}
 		return x.Name
 	case *exec.Reg:
 		return p.t.Reg(x.Name)
@@ -595,6 +796,11 @@ func (p *printer) expr(x exec.Expr, outer int) string {
 		panic("exects: feature " + x.Name + " in a printed function; specialize it first")
 	case *exec.Unary:
 		if x.Op == "!" {
+			if l, ok := x.X.(*exec.Local); ok {
+				if h, ok := p.partner[l.Name]; ok {
+					return paren(h+" === undefined", 6, outer)
+				}
+			}
 			return "!" + p.expr(x.X, 12)
 		}
 		t := p.typeOf(x.X)
@@ -613,12 +819,13 @@ func (p *printer) expr(x exec.Expr, outer int) string {
 	case *exec.Convert:
 		return p.convert(p.typeOf(x.X), x.To, x.X, outer)
 	case *exec.Call:
-		args := make([]string, len(x.Args))
-		for i, a := range x.Args {
-			args[i] = p.expr(a, 0)
-		}
+		args := p.args(x)
 		if p.m.Op(x.Callee) != nil {
-			return p.t.Op(x, args)
+			s := p.t.Op(x, args)
+			if outer > 0 && !exec.Atomic(s) {
+				s = "(" + s + ")"
+			}
+			return s
 		}
 		return "this." + p.name(x.Callee) + "(" + strings.Join(args, ", ") + ")"
 	}

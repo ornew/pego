@@ -148,3 +148,45 @@ func TestPrintedForms(t *testing.T) {
 		}
 	}
 }
+
+// TestOpStatements checks operations printed as statements of their own and as nothing, and an
+// operation printed as an operator expression inside another expression.
+func TestOpStatements(t *testing.T) {
+	m := printtest.Build()
+	tg := *testTarget
+	tg.Op = func(c *ir.Call, args []string) string {
+		switch c.Callee {
+		case "log.note":
+			return ""
+		case "log.flag":
+			return args[0] + " == true"
+		}
+		return testTarget.Op(c, args)
+	}
+	tg.Stmt = func(c *ir.Call, args []string, dst []string, define bool) (string, bool) {
+		if c.Callee != "box.new" {
+			return "", false
+		}
+		op := "="
+		if define {
+			op = ":="
+		}
+		return fmt.Sprintf("%s %s p.newBox(%s)\np.newBox(0)", strings.Join(dst, ", "), op, args[0]), true
+	}
+	for name, want := range map[string]string{
+		"handles":      "\tx = p.newBox(42)\n\tp.newBox(0)\n\ty := p.newBox(42)\n\tp.newBox(0)\n",
+		"exits":        "\t\tgoto in\n\t}\nin:\n\tfor {\n",
+		"shortcircuit": "a := (false == true) && (true == true)\n",
+	} {
+		s, err := Func(m, m.Func(name), &tg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(s, want) {
+			t.Errorf("%s lacks %q:\n%s", name, want, s)
+		}
+		if strings.Contains(s, "note") {
+			t.Errorf("%s prints a note:\n%s", name, s)
+		}
+	}
+}

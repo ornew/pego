@@ -28,8 +28,13 @@ type Target struct {
 	Recv string
 	// Op returns the Go expression of a call of an operation, given the call (with its immediate
 	// operand) and its printed arguments. A call of an operation without results is printed as a
-	// statement, so its expression must be a call.
+	// statement, which may be any simple statement, or nothing when Op returns "".
 	Op func(c *exec.Call, args []string) string
+	// Stmt, if not nil, prints a call of an operation as statements of its own, given the call, its
+	// printed arguments and the places it sets: the names of a Let (define is true) or the places of
+	// a Set, with "_" for a discarded result, or none for a call without results. It reports false
+	// to print the call with Op.
+	Stmt func(c *exec.Call, args []string, dst []string, define bool) (string, bool)
 	// Reg returns the Go expression of the register name, which must be assignable.
 	Reg func(name string) string
 	// Handle returns the Go type of the handle type name.
@@ -263,6 +268,9 @@ func (p *printer) let(l *exec.Let, rest []exec.Stmt) {
 		}
 		op = " = "
 	}
+	if c, ok := l.Value.(*exec.Call); ok && p.opStmt(c, names, declared) {
+		return
+	}
 	p.w("%s%s%s\n", strings.Join(names, ", "), op, p.expr(l.Value, 0))
 	for _, n := range unread {
 		p.w("_ = %s\n", n)
@@ -304,9 +312,17 @@ func (p *printer) stmt(st exec.Stmt) {
 	case *exec.If:
 		p.ifStmt(s, "if ")
 	case *exec.Set:
+		if c, ok := s.Values[0].(*exec.Call); ok && len(s.Values) == 1 && p.opStmt(c, p.places(s), false) {
+			return
+		}
 		p.w("%s\n", p.set(s))
 	case *exec.Do:
-		p.w("%s\n", p.expr(s.Call, 0))
+		if p.opStmt(s.Call, nil, false) {
+			return
+		}
+		if x := p.expr(s.Call, 0); x != "" {
+			p.w("%s\n", x)
+		}
 	case *exec.Exit:
 		p.jump(s.Label, "")
 	case *exec.Break:
@@ -415,7 +431,21 @@ func (p *printer) ifStmt(s *exec.If, kw string) {
 	p.w("}\n")
 }
 
-func (p *printer) set(s *exec.Set) string {
+// opStmt prints the call c of an operation with Target.Stmt, if it takes the call, and reports
+// whether it did.
+func (p *printer) opStmt(c *exec.Call, dst []string, define bool) bool {
+	if p.t.Stmt == nil || p.m.Op(c.Callee) == nil {
+		return false
+	}
+	s, ok := p.t.Stmt(c, p.args(c), dst, define)
+	if ok && s != "" {
+		p.w("%s\n", s)
+	}
+	return ok
+}
+
+// places returns the printed places of the Set s.
+func (p *printer) places(s *exec.Set) []string {
 	dst := make([]string, len(s.Dst))
 	for i, d := range s.Dst {
 		switch {
@@ -427,6 +457,11 @@ func (p *printer) set(s *exec.Set) string {
 			dst[i] = d.Name
 		}
 	}
+	return dst
+}
+
+func (p *printer) set(s *exec.Set) string {
+	dst := p.places(s)
 	vals := make([]string, len(s.Values))
 	for i, x := range s.Values {
 		vals[i] = p.expr(x, 0)
@@ -484,12 +519,13 @@ func (p *printer) expr(x exec.Expr, outer int) string {
 	case *exec.Convert:
 		return p.typ(x.To) + "(" + p.expr(x.X, 0) + ")"
 	case *exec.Call:
-		args := make([]string, len(x.Args))
-		for i, a := range x.Args {
-			args[i] = p.expr(a, 0)
-		}
+		args := p.args(x)
 		if p.m.Op(x.Callee) != nil {
-			return p.t.Op(x, args)
+			s := p.t.Op(x, args)
+			if outer > 0 && !exec.Atomic(s) {
+				s = "(" + s + ")"
+			}
+			return s
 		}
 		name := p.name(x.Callee)
 		if p.t.Recv != "" {
@@ -498,6 +534,14 @@ func (p *printer) expr(x exec.Expr, outer int) string {
 		return name + "(" + strings.Join(args, ", ") + ")"
 	}
 	panic(fmt.Sprintf("execgo: expression %T", x))
+}
+
+func (p *printer) args(c *exec.Call) []string {
+	args := make([]string, len(c.Args))
+	for i, a := range c.Args {
+		args[i] = p.expr(a, 0)
+	}
+	return args
 }
 
 func constant(c *exec.Const) string {

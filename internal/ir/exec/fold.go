@@ -48,3 +48,28 @@ func Fold(x Expr) (*Const, bool) {
 	}
 	return nil, false
 }
+
+// Atomic reports whether the printed expression s needs no parentheses as an operand: it has no
+// space outside parentheses, brackets, braces and quotes. Backends use it for the text of an
+// operation that a target prints as an operator expression.
+func Atomic(s string) bool {
+	depth := 0
+	var quote rune
+	for _, c := range s {
+		switch {
+		case quote != 0:
+			if c == quote {
+				quote = 0
+			}
+		case c == '"' || c == '\'' || c == '`':
+			quote = c
+		case c == '(' || c == '[' || c == '{':
+			depth++
+		case c == ')' || c == ']' || c == '}':
+			depth--
+		case c == ' ' && depth == 0:
+			return false
+		}
+	}
+	return true
+}

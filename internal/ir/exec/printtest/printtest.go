@@ -174,6 +174,32 @@ func Build() *Module {
 		b.Let("y", C("box.new", Int(42)))
 		b.Return(C("box.get", x), L("wasNull"), Bin("!=", x, L("y")))
 	})
+	// Pairs of a handle and a bool that tells whether the handle is there, which a backend may print
+	// as one value: from functions, bound by Lets and Sets, tested, negated and returned.
+	m.AddFunc("find", []Param{P("x", TInt)}, []Type{box, TBool}, nil, func(b *Builder) {
+		b.If(Lt(L("x"), Int(0)), func(b *Builder) { b.Return(Null(box), BoolC(false)) })
+		b.Return(C("box.new", L("x")), BoolC(true))
+	})
+	m.AddFunc("relay", []Param{P("x", TInt)}, []Type{box, TBool}, nil, func(b *Builder) {
+		b.LetN([]string{"v", "ok"}, C("find", L("x")))
+		b.If(Lt(L("x"), Int(3)), func(b *Builder) { b.Return(L("v"), L("ok")) })
+		b.Return(L("v"), Bin("!=", L("v"), Null(box)))
+	})
+	m.AddFunc("pairs", nil, []Type{TInt, TBool}, nil, func(b *Builder) {
+		v, ok := b.Var("v", box), b.Var("ok", TBool)
+		b.Let("n", Int(0))
+		pair := []Place{{Name: "v"}, {Name: "ok"}}
+		b.SetN(pair, C("find", Int(-1)))
+		b.If(Not(ok), func(b *Builder) { b.Set("n", Int(1)) })
+		b.SetN(pair, C("find", Int(5)))
+		b.If(ok, func(b *Builder) { b.Set("n", Add(L("n"), C("box.get", v))) })
+		b.LetN([]string{"w", "found"}, C("find", Int(2)))
+		b.LetN([]string{"r", "rok"}, C("relay", Int(-1)))
+		b.LetN([]string{"r2", "rok2"}, C("relay", Int(7)))
+		b.If(L("rok"), func(b *Builder) { b.Set("n", Add(L("n"), C("box.get", L("r")))) })
+		b.Return(Add(Add(L("n"), C("box.get", L("w"))), C("box.get", L("r2"))),
+			And(And(L("found"), ok), And(Not(L("rok")), L("rok2"))))
+	})
 	// Specialization: one function printed for two sets of features.
 	spec := m.AddFunc("special", nil, []Type{TInt}, []string{"extra"}, func(b *Builder) {
 		b.Let("n", Int(1))
