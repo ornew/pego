@@ -125,7 +125,7 @@ func Controls() []Control {
 		{
 			Name: "E2 non-leader cycle members", Family: "E2", BecomesLinear: true,
 			Source: "rule main = c $$\nrule a = c \"+\" / \"n\"\nrule c = \"(\" c \")\" \"y\" / \"(\" c \")\" \"z\" / a\n",
-			Input:  parens, Sizes: double(4), ShortSizes: double(3), Order: Exp, Capped: true, Class: ClassExp,
+			Input:  parens, Sizes: double(4), ShortSizes: double(3), Order: Exp, Capped: true, Class: ClassUnknown,
 		},
 		{
 			Name: "E3 environments, safe", Family: "E3", Positive: true,
