@@ -15,12 +15,12 @@ every call through the rule slot, so there the twins and originals follow the ca
 same way. On the 14 grammars of the output manifest, between 34% and 44% of the generated Node
 source belonged to such bodies.
 
-The generator runs twice. The first pass records, for each rule table (`rules`,
-`recRules`, and `trules` of typed output), the rule slots and wrapper functions that each printed body calls (`ruleCall`),
-dropping the calls of attempts that were rolled back. The roots are the start rules of the Node and recognizer
-tables, which the generated entry points and `Starts` reach, the typed rules whose `Entry` a typed entry point runs,
-and the calls generated outside a rule body, which are those of the stream body. A worklist over the recorded calls gives the
-entered (rule, slot or wrapper) pairs. The second pass prints only those:
+The generator runs twice. The first pass computes, for each rule table (`rules`, `recRules`, and `trules` of typed
+output), the rule slots and wrapper functions that a parse can enter, with `core.Module.Reach` on the call graph of the
+Core IR: it follows the calls of the rule bodies, and `callWrapper` says whether a call of a rule is printed through its
+wrapper or its slot. The roots are the start rules of the Node and recognizer tables, which the generated entry points and
+`Starts` reach, and the typed rules whose `Entry` a typed entry point runs; the stream body copies the start rule's
+calls. The second pass prints only the entered (rule, slot or wrapper) pairs:
 
 - a rule with neither its slot nor its wrapper entered has no body, no helper functions and no
   `Body`, `Action` or `OperatorsRule` assignment;
