@@ -176,13 +176,18 @@ func TestSetControlledSourceChargesLikeOneByOne(t *testing.T) {
 				if ctx {
 					cx = &pollCounter{Context: context.Background(), done: make(chan struct{})}
 				}
-				want := newBudgetControl(cx, Limits{Budget: limit})
+				wantCtx, gotCtx := cx, cx
+				if ctx {
+					wantCtx = &pollCounter{Context: context.Background(), done: make(chan struct{})}
+					gotCtx = &pollCounter{Context: context.Background(), done: make(chan struct{})}
+				}
+				want := newBudgetControl(wantCtx, Limits{Budget: limit})
 				if want == nil {
 					want = &BudgetControl{}
 					want.refill()
 				}
 				wantErr := referenceSourceCharge(want, s)
-				got := newBudgetControl(cx, Limits{Budget: limit})
+				got := newBudgetControl(gotCtx, Limits{Budget: limit})
 				if got == nil {
 					got = &BudgetControl{}
 					got.refill()
@@ -203,6 +208,90 @@ func TestSetControlledSourceChargesLikeOneByOne(t *testing.T) {
 				}
 				if got.budgetUsed() != want.budgetUsed() {
 					t.Fatalf("len %d limit %d ctx %v: used %d, reference %d", len(s), limit, ctx, got.budgetUsed(), want.budgetUsed())
+				}
+				if ctx && gotCtx.(*pollCounter).polls != wantCtx.(*pollCounter).polls {
+					t.Fatalf("len %d limit %d: %d polls, reference %d", len(s), limit, gotCtx.(*pollCounter).polls, wantCtx.(*pollCounter).polls)
+				}
+				if ctx && len(s) > 300 && limit == 0 && wantCtx.(*pollCounter).polls < 2 {
+					t.Fatalf("len %d: the reference crosses no poll boundary", len(s))
+				}
+			}
+		}
+	}
+}
+
+// pollsOf runs f against a control with a counting context and returns the context polls and the
+// units used, with the error of a fatal interruption.
+func pollsOf(limit uint64, f func(*BudgetControl)) (polls int, used uint64, err error) {
+	ctx := &pollCounter{Context: context.Background(), done: make(chan struct{})}
+	c := newBudgetControl(ctx, Limits{Budget: limit})
+	defer func() {
+		if x := recover(); x != nil {
+			err = x.(fatal).err
+		}
+		polls, used = ctx.polls, c.budgetUsed()
+	}()
+	f(c)
+	return
+}
+
+func TestTakeAndClassPollLikeOneByOne(t *testing.T) {
+	// Charges that start at every offset in a poll interval and cross one or more boundaries.
+	for _, prefix := range []uint64{0, 1, 100, 250, 255, 256, 257, 300} {
+		for _, n := range []uint64{1, 2, 7, 255, 256, 257, 600} {
+			for _, limit := range []uint64{0, prefix + n, prefix + n - 1, prefix + n + 300} {
+				steps := func(c *BudgetControl, k uint64) {
+					for ; k > 0; k-- {
+						c.chargeStep()
+					}
+				}
+				wp, wu, we := pollsOf(limit, func(c *BudgetControl) { steps(c, prefix); steps(c, n) })
+				gp, gu, ge := pollsOf(limit, func(c *BudgetControl) { steps(c, prefix); c.Take(n) })
+				if gp != wp || gu != wu || (we == nil) != (ge == nil) {
+					t.Fatalf("prefix %d n %d limit %d: Take polls %d used %d err %v, reference %d %d %v", prefix, n, limit, gp, gu, ge, wp, wu, we)
+				}
+				if prefix+n >= 2*budgetCheckInterval && limit == 0 && wp < 2 {
+					t.Fatalf("prefix %d n %d: no boundary crossed", prefix, n)
+				}
+			}
+		}
+	}
+	// A class of 300 ranges charges 300 units for a character in the last one and for none.
+	var ranges []BudgetRange
+	for i := range 300 {
+		ranges = append(ranges, BudgetRange{Lo: rune(0x200 + 2*i), Hi: rune(0x200 + 2*i)})
+	}
+	ranges[299] = BudgetRange{Lo: 'q', Hi: 'q'}
+	for _, negated := range []bool{false, true} {
+		cls := NewBudgetClass(ranges, negated)
+		for _, ch := range []rune{'q', 'r', 0x200 + 2*10, 0x10ffff} {
+			for _, prefix := range []uint64{0, 100, 250, 300} {
+				for _, limit := range []uint64{0, prefix + 300, prefix + 299} {
+					var gotReject bool
+					wp, wu, we := pollsOf(limit, func(c *BudgetControl) {
+						for range prefix {
+							c.chargeStep()
+						}
+						gotReject = !negated
+						for _, r := range ranges {
+							c.chargeStep()
+							if ch >= r.Lo && ch <= r.Hi {
+								gotReject = negated
+								break
+							}
+						}
+					})
+					wantReject := gotReject
+					gp, gu, ge := pollsOf(limit, func(c *BudgetControl) {
+						for range prefix {
+							c.chargeStep()
+						}
+						p := &Parser{Control: c}
+						gotReject = p.RejectBudgetClass(ch, cls)
+					})
+					if (ge == nil && gotReject != wantReject) || gp != wp || gu != wu || (we == nil) != (ge == nil) {
+						t.Fatalf("negated %v %U prefix %d limit %d: polls %d used %d err %v, reference %d %d %v", negated, ch, prefix, limit, gp, gu, ge, wp, wu, we)
+					}
 				}
 			}
 		}
