@@ -1,0 +1,180 @@
+module parser
+features budget, document, observe, missing, stream, typed
+
+component memo
+  // The memo table: results of rule calls by key. A key is a rule, a position,
+  // a binding level and the values of the rule's variables.
+
+component seen
+  // The record of deferred memoization: which rules were called at which positions,
+  // and per rule the counts that decide when it is memoized eagerly. It is created with the number of
+  // rules whose memoization is deferred.
+
+component budget
+  // The work budget of the parse: the units charged so far and the limit, zero for
+  // none.
+
+component depth
+  // The nesting depth of rule calls and its limit.
+
+component env
+  // The variable environment. Its operations are not declared yet; Values handles
+  // stand for the values of a rule's variables, compared by the host's value equality.
+
+handle Entry of memo
+  // A memo entry: the result of a rule call with its outcome and end.
+
+handle Values of env
+  // The values of a rule's variables, as a memo key.
+
+op memo.lookup(rule int, pos int, level int, key Values) (Entry, bool)
+  component memo
+  reads memo
+  cost <= 1 + 1*entries_at_pos
+  contract:
+    // Returns the entry stored or seeded under the key, if one is there and not replaced, and
+    // true; otherwise false and an entry that must not be used. Two keys are equal when their rules,
+    // positions and levels are equal and the host's value equality holds for their values.
+  requires:
+    // If a growing entry exists for the rule, position and level, the key is the one it was
+    // seeded with. Compositions look a left-recursion leader up with memo.lookupGrowing first.
+  law: two lookups with no write of memo between them return the same result
+
+op memo.lookupGrowing(rule int, pos int, level int) (Entry, bool)
+  component memo
+  reads memo
+  cost <= 1 + 1*entries_at_pos
+  contract:
+    // Returns the growing entry of the rule at the position and level, whatever key values it
+    // was seeded with, and true; otherwise false. This is the left-recursion guard: while a rule grows at a
+    // position, every call of it there reads the growing result.
+
+op memo.store(rule int, pos int, level int, key Values, ok bool, end int) Entry
+  component memo
+  reads memo
+  writes memo
+  cost <= 2 + 1*entries_at_pos + 1*slot_growth
+  contract:
+    // Stores a complete entry with the outcome ok and the end under the key, replacing the
+    // entry stored under the same key, and returns it. Entries under other keys are unchanged.
+  requires:
+    // No growing entry exists for the rule, position and level; end is at least pos.
+
+op memo.seed(rule int, pos int, level int, key Values) Entry
+  component memo
+  reads memo
+  writes memo
+  cost <= 2 + 1*entries_at_pos + 1*slot_growth
+  contract:
+    // Starts the growth of a left-recursion leader: stores a growing entry that fails and ends
+    // at pos under the key, replacing the entry stored under the same key, and returns it.
+  requires:
+    // No growing entry exists for the rule, position and level.
+
+op memo.reseed(rule int, pos int, level int, key Values, end int) Entry
+  component memo
+  reads memo
+  writes memo
+  cost <= 2 + 1*entries_at_pos + 1*slot_growth
+  contract:
+    // Records a longer seed: replaces the growing entry under the key by a growing entry that
+    // succeeds and ends at end, and returns it. The replaced entry is no longer found.
+  requires:
+    // The key has a growing entry; end is greater than pos.
+
+op memo.finishSeed(e Entry)
+  component memo
+  writes memo
+  cost <= 0
+  contract:
+    // Ends a growth: the growing entry e becomes complete, with its outcome and end. Lookups of
+    // its key return it as a complete entry, and memo.lookupGrowing no longer finds it.
+  requires:
+    // e is the growing entry most recently seeded or reseeded under its key.
+
+op memo.ok(e Entry) bool
+  component memo
+  reads memo
+  cost <= 0
+  contract:
+    // Returns whether the call of entry e succeeded.
+
+op memo.end(e Entry) int
+  component memo
+  reads memo
+  cost <= 0
+  contract:
+    // Returns the end of the match of entry e; for a failure, the position of the call.
+
+op memo.growing(e Entry) bool
+  component memo
+  reads memo
+  cost <= 0
+  contract:
+    // Returns whether entry e is the growing entry of a left-recursion leader.
+
+op seen.first(rule int, pos int) bool
+  component seen
+  reads seen
+  writes seen
+  cost <= 2 + 1*page_index + 1*pages
+  contract:
+    // Records a call of the rule at pos and reports whether its memoization is deferred: true
+    // when the rule is not eager and has not been called at pos before. Each rule counts its calls and its
+    // repeated calls, the calls at a position where it was called before. A call that finds the rule eager
+    // returns false and records nothing. Otherwise the call count grows by one, and when it reaches 2^31
+    // both counts are halved (rounding down); a repeated call then grows the repeat count, and when the
+    // repeats exceed the calls divided by 16 (rounding down), the rule becomes eager for the rest of the
+    // parse. The policy decides how
+    // many rule bodies run, which the statistics report, so every target follows it exactly.
+  requires:
+    // 0 <= rule < the number of rules the component was created with; pos >= 0.
+
+op budget.charge(n u64)
+  component budget
+  reads budget
+  writes budget
+  features budget
+  noreturn
+  cost <= 0 + 1*n
+  contract:
+    // Charges n units. When the limit is not zero and the units used plus n exceed it, the parse
+    // ends with a limit interruption and the units used are unchanged; otherwise n is added to them.
+    // Charges are never rolled back. A target may also observe cancellation here, at intervals of its
+    // choice, and end the parse with a cancellation interruption.
+  law: charge(a); charge(b) may merge into charge(a+b) when nothing observable lies between them and no commit separates them
+
+op budget.used() u64
+  component budget
+  reads budget
+  features budget
+  cost <= 0
+  contract:
+    // Returns the units charged so far.
+
+op depth.enter()
+  component depth
+  reads depth
+  writes depth
+  noreturn
+  cost <= 0
+  contract:
+    // Enters a rule call: adds one to the depth. When the depth then exceeds the limit, the parse
+    // ends with a nesting interruption.
+
+op depth.exit()
+  component depth
+  reads depth
+  writes depth
+  cost <= 0
+  contract:
+    // Leaves a rule call: subtracts one from the depth.
+  requires:
+    // The depth is greater than zero.
+
+op depth.current() int
+  component depth
+  reads depth
+  cost <= 0
+  contract:
+    // Returns the depth.
