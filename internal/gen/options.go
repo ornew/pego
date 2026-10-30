@@ -22,6 +22,11 @@ type GenOptions struct {
 	// in TypeScript), and re-exports those options. Without it the functions have no charges (the ordinary form, or with Document
 	// the form that serves a Document), and a parse with a control option fails with an error.
 	BudgetControls bool
+	// Expectations makes the generated parser record what a syntax error expects: the expectations
+	// at the farthest failure and the messages of @error. Without it the generated code keeps
+	// no table of expectations, and a syntax error reports the farthest failure position with an
+	// empty Expected list and no Messages.
+	Expectations bool
 	// Observability emits opt-in tracing and profiling for generated Go batch
 	// and Document parsing, and for TypeScript batch parsing.
 	Observability bool

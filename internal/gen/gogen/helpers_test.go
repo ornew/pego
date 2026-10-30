@@ -64,7 +64,7 @@ func referenceProgram(t *testing.T, src string, opts compile.Options) gentest.Re
 		if bytes {
 			unit = engine.Bytes
 		}
-		return prog.ParseWith("main", input, engine.ParseOptions{Unit: unit, Recognize: recognize})
+		return prog.ParseWith("main", input, engine.ParseOptions{Unit: unit, Recognize: recognize, Expectations: true})
 	}
 }
 

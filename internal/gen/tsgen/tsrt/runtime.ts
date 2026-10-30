@@ -978,14 +978,18 @@ export interface Grammar {
   // builds them (undefined until then).
   initEnv: Env | null | undefined;
   envDepth: number;
-  // descs maps expectation IDs to their descriptions.
+  // descs maps expectation IDs to their descriptions. A grammar without expectations has none.
   descs: string[];
+  // expectations reports that the parser was generated to record expectations: what a syntax
+  // error expects and the messages of @error. Without it a parse records the farthest failure
+  // position only.
+  expectations: boolean;
   // structFields holds the field names of each struct type.
   readonly structFields: Map<string, Set<string>>;
 }
 
 export function mkGrammar(maxDepth: number, sparse: boolean, observable: boolean, controlled = true): Grammar {
-  return { maxDepth, sparse, observable, controlled, sourceInfo: false, initialVars: [], initEnv: undefined, envDepth: 0, descs: [], structFields: new Map() };
+  return { maxDepth, sparse, observable, controlled, sourceInfo: false, initialVars: [], initEnv: undefined, envDepth: 0, descs: [], expectations: false, structFields: new Map() };
 }
 
 function ruleIn(table: Rule[], name: string): Rule | null {
@@ -1389,6 +1393,9 @@ export function compareStrings(a: string, b: string): number {
 
 // An expectation is an index into descs; with msgBit set, it is an @error message.
 export const msgBit = 1 << 30;
+// expFar is the only entry of an expectation record in a parse that does not record expectations.
+// It stands for a failure at the position of the record and describes nothing.
+export const expFar = 1 << 29;
 
 // Expectations at the start of every descs table.
 export const idAny = 0;
@@ -1555,6 +1562,9 @@ export class Parser {
   // silent is positive inside lookaheads, where expectations are not recorded.
   silent = 0;
   farthest = 0;
+  // expectations makes expect record expectations (Grammar.expectations). Without it a record
+  // holds at most expFar.
+  readonly expectations: boolean;
   // exp[expBase:expTop] are the current expectations, all expected at farthest. The records of
   // enclosing isolated calls are below expBase.
   exp: number[] = [];
@@ -1578,6 +1588,7 @@ export class Parser {
   constructor(g: Grammar, input: string | Uint8Array, unit: Unit, stride: number, maxDepth: number, control: BudgetControl | null = null) {
     this.g = g;
     this.sourceInfo = g.sourceInfo;
+    this.expectations = g.expectations;
     this.control = control;
     this.unit = unit;
     this.maxDepth = maxDepth;
@@ -2030,6 +2041,10 @@ export class Parser {
       this.farthest = pos;
       this.expTop = this.expBase;
     }
+    if (!this.expectations) {
+      if (this.expTop === this.expBase) this.exp[this.expTop++] = expFar;
+      return;
+    }
     for (let i = this.expBase; i < this.expTop; i++) {
       this.spend();
       if (this.exp[i] === id) {
@@ -2156,6 +2171,7 @@ export class Parser {
     const msgs: string[] = [];
     for (const x of expected) {
       this.spend();
+      if (x === expFar) continue;
       if ((x & msgBit) !== 0) {
         msgs.push(this.g.descs[x & ~msgBit]!);
       } else {

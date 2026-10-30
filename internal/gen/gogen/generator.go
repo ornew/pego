@@ -230,7 +230,7 @@ func generateOnce(g *grammar.Grammar, c gen.Compiler, opts gen.GenOptions, h *Ho
 	fmt.Fprintf(&goGen.Init, "\tpegoGrammar.Starts = %s\n", goStrings(prog.StartRules))
 	fmt.Fprintf(&goGen.Init, "\tpegoGrammar.DefaultStart = %q\n", prog.DefaultStartRule)
 	if !opts.TypedOnly {
-		fmt.Fprintf(&goGen.Init, "\tpegoGrammar.Descs = %s\n", goStrings(goGen.Descs))
+		goGen.writeDescs(opts)
 	}
 	if opts.Observability {
 		goGen.Init.WriteString("\tpegoGrammar.Observable = true\n")
@@ -327,7 +327,7 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		}
 		if opts.TypedOnly {
 			// The expectations of the typed bodies are known only now.
-			fmt.Fprintf(&goGen.Init, "\tpegoGrammar.Descs = %s\n", goStrings(goGen.Descs))
+			goGen.writeDescs(opts)
 		}
 		out.WriteString("\n// --- Typed values ---\n\n")
 		if opts.Document {
@@ -1853,4 +1853,14 @@ func classBits(e *grammar.CharClass) (ascii [2]uint64, wide []rune) {
 		}
 	}
 	return ascii, wide
+}
+
+// writeDescs makes the generated parser record expectations, with the table of their
+// descriptions, when the options ask for it.
+func (g *Generator) writeDescs(opts gen.GenOptions) {
+	if !opts.Expectations {
+		return
+	}
+	fmt.Fprintf(&g.Init, "\tpegoGrammar.Descs = %s\n", goStrings(g.Descs))
+	g.Init.WriteString("\tpegoGrammar.Expectations = true\n")
 }

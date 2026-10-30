@@ -42,7 +42,7 @@ rule main N = ("é") #atomic`)
 			}
 			extra := `
 func TestExpectationPoolReuse(t *testing.T) {
- p := &Parser{}
+ p := &Parser{Expectations: true}
  for id := ExpID(0); id < 160; id++ { p.Expect(0,id) }
  p.release()
  if p.expBits != 0 || len(p.exp) != 0 { t.Fatal("plain release retained record") }
@@ -57,7 +57,7 @@ func TestExpectationPoolReuse(t *testing.T) {
 			if mode == "direct" {
 				extra += `
 func TestTypedExpectationPoolReuse(t *testing.T) {
- p := &TParser{Parser:&Parser{}}
+ p := &TParser{Parser:&Parser{Expectations: true}}
  for id := ExpID(0); id < 160; id++ { p.Expect(0,id|MsgBit) }
  p.recycle()
  if p.expBits != 0 || len(p.exp) != 0 { t.Fatal("typed recycle retained record") }

@@ -96,6 +96,11 @@ type Go struct {
 	// SourceInfo makes the generated parser record source information, as pego.WithSourceInfo
 	// does for a compiled parser.
 	SourceInfo bool
+	// Expectations makes the generated parser record what a syntax error expects: the expectations
+	// at the farthest failure and the messages of @error, as pego.WithExpectations does for a
+	// compiled parser. Without it the parser keeps no table of expectations, and a syntax error
+	// reports the farthest failure position with an empty Expected list and no Messages.
+	Expectations bool
 	// Observability emits rule tracing and profiling for batch parsers and Documents, including
 	// their typed entry points. Collection is selected per invocation.
 	Observability bool
@@ -150,6 +155,7 @@ func (c Go) Generate(g *grammar.Grammar, start string) ([]File, error) {
 		SourceInfo:     c.SourceInfo,
 		Observability:  c.Observability,
 		BudgetControls: c.BudgetControls,
+		Expectations:   c.Expectations,
 		Recognize:      c.Recognize,
 		MaxDepth:       c.MaxDepth,
 		Document:       c.Document,
@@ -187,6 +193,11 @@ type TypeScript struct {
 	// SourceInfo makes the generated parser record source information, as pego.WithSourceInfo
 	// does for a compiled parser.
 	SourceInfo bool
+	// Expectations makes the generated parser record what a syntax error expects: the expectations
+	// at the farthest failure and the messages of @error, as pego.WithExpectations does for a
+	// compiled parser. Without it the parser keeps no table of expectations, and a syntax error
+	// reports the farthest failure position with an empty expected list and no messages.
+	Expectations bool
 	// Observability emits rule tracing and profiling for batch parsing, including the typed entry
 	// points. Collection is selected per invocation.
 	Observability bool
@@ -229,6 +240,7 @@ func (c TypeScript) Generate(g *grammar.Grammar, start string) ([]File, error) {
 		SourceInfo:     c.SourceInfo,
 		Observability:  c.Observability,
 		BudgetControls: c.BudgetControls,
+		Expectations:   c.Expectations,
 		Recognize:      c.Recognize,
 		MaxDepth:       c.MaxDepth,
 	})

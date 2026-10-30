@@ -261,11 +261,23 @@ func GeneratePackage(t testing.TB, dir, pkg string, g *grammar.Grammar, opts gen
 // GeneratePackageIn is GeneratePackage for a test module whose path is root.
 func GeneratePackageIn(t testing.TB, dir, root, pkg string, g *grammar.Grammar, opts gen.GenOptions) string {
 	t.Helper()
+	return generatePackage(t, dir, root, pkg, g, opts, Generate)
+}
+
+// GeneratePackageRaw is GeneratePackage with the options as given: the parser records
+// expectations only with opts.Expectations.
+func GeneratePackageRaw(t testing.TB, dir, pkg string, g *grammar.Grammar, opts gen.GenOptions) string {
+	t.Helper()
+	return generatePackage(t, dir, "gentest", pkg, g, opts, GenerateRaw)
+}
+
+func generatePackage(t testing.TB, dir, root, pkg string, g *grammar.Grammar, opts gen.GenOptions, generate func(testing.TB, *grammar.Grammar, gen.GenOptions) ([]gen.GeneratedFile, error)) string {
+	t.Helper()
 	opts.Runtime = gen.RuntimeImport
 	opts.BudgetControls = FixtureBudgetControls(t)
 	opts.Package, opts.Module = pkg, root+"/"+pkg
 	opts.KeepComments = true
-	files, err := Generate(t, g, opts)
+	files, err := generate(t, g, opts)
 	if err != nil {
 		t.Fatal(err)
 	}

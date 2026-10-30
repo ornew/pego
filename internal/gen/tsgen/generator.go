@@ -193,7 +193,9 @@ export function recognizeWithOptions(input: string | Uint8Array, options?: %[1]s
 		out.WriteString(tsg.fieldCheckSource())
 	}
 	out.WriteString(tsg.Vars.String())
-	fmt.Fprintf(&out, "\nG.descs = %s;\n", TsStrings(tsg.Descs))
+	if opts.Expectations {
+		fmt.Fprintf(&out, "\nG.descs = %s;\nG.expectations = true;\n", TsStrings(tsg.Descs))
+	}
 	if prog.RecordsSourceInfo {
 		out.WriteString("G.sourceInfo = true;\n")
 	}

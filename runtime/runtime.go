@@ -917,8 +917,12 @@ type grammar struct {
 	// DefaultStart is the default start rule, which an empty start rule name selects.
 	DefaultStart string
 	// Descs maps expectation IDs to their descriptions. It starts with the fixed expectations
-	// below.
+	// below. A grammar without Expectations has none.
 	Descs []string
+	// Expectations reports that the parser was generated to record expectations: what a syntax
+	// error expects and the messages of @error. Without it a parse records the farthest failure
+	// position only.
+	Expectations bool
 	// StructFields holds the field names of each struct type.
 	StructFields map[string]map[string]bool
 	// TypeKinds holds the node kinds of the struct types.
@@ -1331,6 +1335,10 @@ type ExpID int32
 // MsgBit is for generated parsers; not a stable API.
 const MsgBit ExpID = 1 << 30
 
+// ExpFar is the only entry of an expectation record in a parse that does not record expectations.
+// It stands for a failure at the position of the record and describes nothing.
+const ExpFar ExpID = 1 << 29
+
 // Expectations at the start of every descs table. They are for generated parsers; not a
 // stable API.
 const (
@@ -1377,6 +1385,9 @@ type Parser struct {
 	// Silent is positive inside lookaheads, where expectations are not recorded.
 	Silent   int
 	farthest int
+	// Expectations makes Expect record expectations (grammar.Expectations). Without it a record
+	// holds at most the placeholder ExpFar, which stands for a failure at its position.
+	Expectations bool
 	// exp is the stack of expectations; the current record is exp[expBase:], all expected at
 	// farthest.
 	exp     []ExpID
@@ -1423,6 +1434,7 @@ type documentStats struct {
 // setGrammar prepares p to parse with the rules of g.
 func (p *Parser) setGrammar(g *grammar) {
 	p.g, p.sourceInfo, p.memo.stride = g, g.SourceInfo, g.nseen
+	p.Expectations = g.Expectations
 	p.Env, p.envDepth = g.initEnv, g.envDepth
 	if len(p.memo.calls) != g.nseen {
 		p.memo.calls = nil // kept from a parse with another rule table
@@ -2282,6 +2294,12 @@ func (p *Parser) Expect(pos int, id ExpID) {
 		p.exp = p.exp[:p.expBase]
 		p.expBits = 0
 	}
+	if !p.Expectations {
+		if len(p.exp) == p.expBase {
+			p.exp = append(p.exp, ExpFar)
+		}
+		return
+	}
 	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
 	if p.expBits&bit != 0 {
 		for _, e := range p.exp[p.expBase:] {
@@ -2308,6 +2326,12 @@ func (p *Parser) ExpectBudget(pos int, id ExpID) {
 		p.exp = p.exp[:p.expBase]
 		p.expBits = 0
 	}
+	if !p.Expectations {
+		if len(p.exp) == p.expBase {
+			p.exp = append(p.exp, ExpFar)
+		}
+		return
+	}
 	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
 	if p.expBits&bit != 0 {
 		for _, e := range p.exp[p.expBase:] {
@@ -2333,6 +2357,12 @@ func (p *Parser) ExpectOrdinary(pos int, id ExpID) {
 		p.farthest = pos
 		p.exp = p.exp[:p.expBase]
 		p.expBits = 0
+	}
+	if !p.Expectations {
+		if len(p.exp) == p.expBase {
+			p.exp = append(p.exp, ExpFar)
+		}
+		return
 	}
 	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
 	if p.expBits&bit != 0 {
@@ -2434,6 +2464,9 @@ func (p *Parser) MakeError(pos int, expected []ExpID) *SyntaxError {
 	}
 	e := &SyntaxError{Pos: pos}
 	for _, x := range expected {
+		if x == ExpFar {
+			continue
+		}
 		if x&MsgBit != 0 {
 			e.Messages = append(e.Messages, p.g.Descs[x&^MsgBit])
 		} else {

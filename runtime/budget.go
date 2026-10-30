@@ -926,6 +926,9 @@ func (p *Parser) makeControlledError(pos int, expected []ExpID) *SyntaxError {
 	e := &SyntaxError{Pos: pos}
 	for _, x := range expected {
 		p.Spend()
+		if x == ExpFar {
+			continue
+		}
 		if x&MsgBit != 0 {
 			e.Messages = append(e.Messages, p.g.Descs[x & ^MsgBit])
 		} else {

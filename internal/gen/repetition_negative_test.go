@@ -40,7 +40,7 @@ func testGeneratedNegativeMaximum(t *testing.T) {
 	var expected []string
 	for _, input := range []string{"", "é", "ééé", "x", "éx"} {
 		for _, unit := range []engine.PositionUnit{engine.CodePoints, engine.Bytes} {
-			n, err := p.ParseWith("main", input, engine.ParseOptions{Unit: unit})
+			n, err := p.ParseWith("main", input, engine.ParseOptions{Unit: unit, Expectations: true})
 			expected = append(expected, gentest.ResultJSON(n, err))
 		}
 	}
