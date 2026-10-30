@@ -93,7 +93,7 @@ func TestDefaultValueValidationReportsTheGrammarAsWritten(t *testing.T) {
 // The messages of the compiler describe an inline action by the rule that holds it.
 func TestInlineActionNamesInMessages(t *testing.T) {
 	t.Parallel()
-	names := InlineNames{"_main_1": {Rule: "main", N: 1}, "_main_10": {Rule: "main", N: 10}}
+	names := InlineNames{"_main_1": {rule: "main", n: 1}, "_main_10": {rule: "main", n: 10}}
 	for _, c := range []struct{ in, want string }{
 		{"rule _main_1 produces int", "the inline action in rule main produces int"},
 		{"result of rule _main_10: _main_1", "result of the inline action in rule main: the inline action in rule main"},
@@ -103,7 +103,7 @@ func TestInlineActionNamesInMessages(t *testing.T) {
 			t.Errorf("%q: %q, want %q", c.in, got, c.want)
 		}
 	}
-	if got, ok := names.Describe("main"); ok {
+	if got, ok := names.describe("main"); ok {
 		t.Errorf("describes a declared rule: %q", got)
 	}
 }
@@ -145,11 +145,11 @@ func TestPruneSpliceTypesFollowsTheStructureOfTypes(t *testing.T) {
 		{"list", ListTy{Elem: RuleTy{Name: "_m"}}, true},
 		{"join", JoinTy{Alts: []Ty{TyStringNode, RuleTy{Name: "_m"}}}, true},
 		{"capture", NodeTy{Value: TyStringNode, Caps: []CapIndex{{Name: "x", Paths: [][]int{{0}}, T: RuleTy{Name: "_m"}}}}, true},
-		{"capture set", NodeTy{Value: TyStringNode, Caps: []CapIndex{{Name: "x", Paths: [][]int{{0}}, T: TyStringNode, Maybe: true, Set: RuleTy{Name: "_m"}}}}, true},
+		{"capture set", NodeTy{Value: TyStringNode, Caps: []CapIndex{{Name: "x", Paths: [][]int{{0}}, T: TyStringNode, maybe: true, set: RuleTy{Name: "_m"}}}}, true},
 		{"no reference", TupleTy{Elems: []Ty{TyStringNode}}, false},
 		{"a name that holds the rule's", RuleTy{Name: "x_m"}, false},
 	} {
-		out := PruneSpliceTypes(p, rules, map[string]Ty{"main": c.main, "_m": TyStringNode})
+		out := pruneSpliceTypes(p, rules, map[string]Ty{"main": c.main, "_m": TyStringNode})
 		if _, got := out["_m"]; got != c.kept {
 			t.Errorf("%s: kept %v, want %v", c.name, got, c.kept)
 		}

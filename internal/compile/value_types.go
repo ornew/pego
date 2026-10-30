@@ -50,8 +50,8 @@ type CapIndex struct {
 	Paths [][]int
 	Side  bool
 	T     Ty
-	Maybe bool
-	Set   Ty
+	maybe bool
+	set   Ty
 }
 
 // NodeTy is node[T, C]: a node whose Value has type value, with the captures caps. A named node
@@ -306,13 +306,13 @@ func valueTypesChecked(p *Program, control *Control, nodeMembers map[*grammar.Me
 	if rec != nil {
 		rec.Rules = maps.Clone(v.Out)
 	}
-	return PruneSpliceTypes(p, rules, v.Out), v.final
+	return pruneSpliceTypes(p, rules, v.Out), v.final
 }
 
-// PruneSpliceTypes returns the value types of the rules that have a type of their own: a splice
+// pruneSpliceTypes returns the value types of the rules that have a type of their own: a splice
 // rule makes no node, so it has a type only where a recursive call of it is an element of its own,
 // and then only because another type refers to it.
-func PruneSpliceTypes(p *Program, rules []*grammar.RuleDef, out map[string]Ty) map[string]Ty {
+func pruneSpliceTypes(p *Program, rules []*grammar.RuleDef, out map[string]Ty) map[string]Ty {
 	var queue []string
 	kept := map[string]bool{}
 	for _, rd := range rules {
@@ -362,8 +362,8 @@ func walkTy(t Ty, visit func(Ty)) {
 			if c.T != nil {
 				walkTy(c.T, visit)
 			}
-			if c.Set != nil {
-				walkTy(c.Set, visit)
+			if c.set != nil {
+				walkTy(c.set, visit)
 			}
 		}
 	case ListTy:
@@ -690,7 +690,7 @@ func tupleNode(elems []valueElem) NodeTy {
 			for _, path := range c.Paths {
 				paths = append(paths, append([]int{len(ts)}, path...))
 			}
-			n.Caps = append(n.Caps, CapIndex{c.Name, paths, c.Side, c.T, c.Maybe, c.Set})
+			n.Caps = append(n.Caps, CapIndex{c.Name, paths, c.Side, c.T, c.maybe, c.set})
 		}
 		ts = append(ts, el.t)
 	}
@@ -817,7 +817,7 @@ func (v *ValueInference) elems(e grammar.Expr) []valueElem {
 			if count[c.Name] < alts {
 				c = maybeCap(c)
 			}
-			caps = MergeCap(caps, c)
+			caps = mergeCap(caps, c)
 		}
 		return []valueElem{{t: t, caps: caps}}
 	case *grammar.Optional:
@@ -902,22 +902,22 @@ func neverMatches(e grammar.Expr) bool {
 
 // maybeCap returns c for a capture that may not be made.
 func maybeCap(c CapIndex) CapIndex {
-	if !c.Maybe {
-		c.Maybe, c.Set = true, c.T
+	if !c.maybe {
+		c.maybe, c.set = true, c.T
 	}
 	c.T = vopt(c.T)
 	return c
 }
 
-// MergeCap adds c to caps, joining the types and locations of captures of the same name.
-func MergeCap(caps []CapIndex, c CapIndex) []CapIndex {
+// mergeCap adds c to caps, joining the types and locations of captures of the same name.
+func mergeCap(caps []CapIndex, c CapIndex) []CapIndex {
 	for i, o := range caps {
 		if o.Name != c.Name {
 			continue
 		}
 		caps[i].T = Vjoin(o.T, c.T)
-		if o.Maybe || c.Maybe {
-			caps[i].Maybe, caps[i].Set = true, Vjoin(setType(o), setType(c))
+		if o.maybe || c.maybe {
+			caps[i].maybe, caps[i].set = true, Vjoin(setType(o), setType(c))
 		}
 		paths := slices.Clone(o.Paths)
 		for _, p := range c.Paths {
@@ -934,8 +934,8 @@ func MergeCap(caps []CapIndex, c CapIndex) []CapIndex {
 
 // setType is the type of the capture c when it is made.
 func setType(c CapIndex) Ty {
-	if c.Maybe {
-		return c.Set
+	if c.maybe {
+		return c.set
 	}
 	return c.T
 }

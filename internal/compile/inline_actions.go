@@ -35,8 +35,8 @@ func EntryError(name string) error {
 
 // inlineSite is the place of an inline action in the grammar as written.
 type inlineSite struct {
-	Rule string // the rule that holds the inline action
-	N    int    // its number among the inline actions of the rule, from 1
+	rule string // the rule that holds the inline action
+	n    int    // its number among the inline actions of the rule, from 1
 	node *grammar.InlineAction
 }
 
@@ -55,21 +55,21 @@ func inlineActionName(rule string, n int, taken map[string]bool) string {
 	return name
 }
 
-// Describe names the inline action of the generated rule name as a user sees it. ok is false for
+// describe names the inline action of the generated rule name as a user sees it. ok is false for
 // any other name.
-func (names InlineNames) Describe(name string) (string, bool) {
+func (names InlineNames) describe(name string) (string, bool) {
 	site, ok := names[name]
 	if !ok {
 		return "", false
 	}
-	return "the inline action in rule " + site.Rule, true
+	return "the inline action in rule " + site.rule, true
 }
 
 // where names the rule name in the text of a failed action: an ordinary rule by its name and the
 // hidden rule of an inline action by its place.
 func (names InlineNames) where(name string) string {
 	if site, ok := names[name]; ok {
-		return fmt.Sprintf("%s (inline action %d)", site.Rule, site.N)
+		return fmt.Sprintf("%s (inline action %d)", site.rule, site.n)
 	}
 	return name
 }
@@ -94,7 +94,7 @@ func (names InlineNames) Rewrite(err error) error {
 // Text replaces the generated names in s, and the word "rule" before one.
 func (names InlineNames) Text(s string) string {
 	return names.substitute(s, true, func(name string) string {
-		desc, _ := names.Describe(name)
+		desc, _ := names.describe(name)
 		return desc
 	})
 }
@@ -260,7 +260,7 @@ func (l *inlineLowerer) expr(e grammar.Expr) grammar.Expr {
 		l.count++
 		name := inlineActionName(l.rule, l.count, l.taken)
 		if l.names != nil {
-			l.names[name] = inlineSite{Rule: l.rule, N: l.count, node: e}
+			l.names[name] = inlineSite{rule: l.rule, n: l.count, node: e}
 		}
 		l.hidden = append(l.hidden, &grammar.RuleDef{SourceInfo: e.SourceInfo, Name: name, Expr: inner, Action: e.Action, DefaultAction: e.DefaultAction})
 		return &grammar.Ref{SourceInfo: e.SourceInfo, Name: name}
@@ -430,7 +430,7 @@ func LowerInlineActions(g *grammar.Grammar) (*grammar.Grammar, *InlineActionName
 	}
 	counts := map[string]int{}
 	for _, site := range names {
-		counts[site.Rule]++
+		counts[site.rule]++
 	}
 	return lowered, &InlineActionNames{names: names, counts: counts}, nil
 }
@@ -453,10 +453,10 @@ func (n *InlineActionNames) Rule(name string) string {
 	if !ok {
 		return name
 	}
-	if n.counts[site.Rule] > 1 {
-		return fmt.Sprintf("inline action %d in rule %s", site.N, site.Rule)
+	if n.counts[site.rule] > 1 {
+		return fmt.Sprintf("inline action %d in rule %s", site.n, site.rule)
 	}
-	return "the inline action in rule " + site.Rule
+	return "the inline action in rule " + site.rule
 }
 
 // Expr returns the text of an expression of the lowered grammar with each reference to the rule of an
@@ -477,7 +477,7 @@ func (n *InlineActionNames) Holder(name string) (rule string, ok bool) {
 		return "", false
 	}
 	site, ok := n.names[name]
-	return site.Rule, ok
+	return site.rule, ok
 }
 
 // Message returns the message s, written for the lowered grammar, with each generated rule named as

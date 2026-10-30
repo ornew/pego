@@ -50,7 +50,7 @@ func (p *Program) ShapeSignature(name string, poll func()) (string, bool) {
 				b.WriteString(el.t.String())
 			}
 			for _, c := range el.caps {
-				fmt.Fprintf(&b, "<%s %v %v %v>", c.Name, c.Paths, c.Side, c.Maybe)
+				fmt.Fprintf(&b, "<%s %v %v %v>", c.Name, c.Paths, c.Side, c.maybe)
 				if c.T != nil {
 					b.WriteString(c.T.String())
 				}

@@ -856,7 +856,7 @@ func CapType(caps []CapIndex, name string) (Ty, bool) {
 		if c.Name == name {
 			ts = append(ts, c.T)
 			sets = append(sets, setType(c))
-			always = always || !c.Maybe
+			always = always || !c.maybe
 		}
 	}
 	if len(ts) == 0 {
