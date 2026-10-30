@@ -103,7 +103,7 @@ element. No construct of the language looks further back.
 | Option | Effect in a stream parse |
 |:--|:--|
 | `WithUnit`, `WithBackend`, `WithMaxDepth` | Apply |
-| `WithContext`, `WithLimits` | Apply to the whole stream invocation, including diagnostic callbacks and the budget spent copying a bounded tail. A zero `Budget` selects the [default budget of a stream](parsing.md#default-limits): `max(2^20, 1024 * d)` for the furthest demanded position `d`, which does not depend on how the reader chunks the input; `Unlimited` disables it |
+| `WithContext`, `WithLimits` | Apply to the whole stream invocation, including diagnostic callbacks and the budget spent copying a bounded tail. A zero `Budget` selects the [default budget of a stream](parsing.md#default-limits): `max(2^20, 1024 * d)` for the furthest demanded position `d`, which does not depend on how the reader chunks the input; `Unlimited` disables it. A finite `MaxInput` fails the stream with `LimitInput` when the parser asks for a unit beyond it and the stream has one |
 | `RecognizeOnly` | An error |
 | `WithDiagnosticCallback`, `WithDiagnosticLimit` | Stream-only; see [Recovered errors](#recovered-errors) |
 

@@ -471,7 +471,7 @@ neither, and a call that passes one returns an error. A parser has one form: wit
 parse that sets no limit runs the same code, so generate two parsers if you need the plain form as well. `signal` is any object with `aborted` and an optional `reason`, so an `AbortSignal` fits; the limit is a
 nonnegative safe integer. Zero (or omitting it) selects the default of `max(2^20, 1024 * n)` for an input of `n` units
 (code points, or bytes with `Bytes`), which also applies to `parse` and the other entry points without options; the
-exported `Unlimited` (`Number.MAX_SAFE_INTEGER`) disables the limit. An interrupted parse returns no tree and a
+exported `Unlimited` (`Number.MAX_SAFE_INTEGER`) disables the limit. `maxInput` bounds the input in the same unit (default `Unlimited`): a longer input is rejected before parsing with kind `"input-limit"`. An interrupted parse returns no tree and a
 `ParseInterruptionError` whose `kind` says what happened:
 
 ```ts

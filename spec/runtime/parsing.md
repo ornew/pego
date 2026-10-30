@@ -440,9 +440,18 @@ limits.
 
 ### Default Limits
 
-Every parse has a budget. A `Budget` of zero selects the default
-`max(2^20, 1024 * n)`, where `n` is the length of the input in the position
-unit of the parse: bytes for `Bytes`, code points for `CodePoints`. A
+`Limits` has two fields, and a zero value selects the default of its field:
+
+| Field | Bounds | Default |
+| --- | --- | --- |
+| `Budget` | the cost of the parse | `max(2^20, 1024 * n)` |
+| `MaxInput` | the length of the input | `Unlimited` |
+
+Here `n` is the length of the input in the position unit of the parse: bytes
+for `Bytes`, code points for `CodePoints`. `MaxInput` has no finite default
+because the default `Budget` already grows with `n`.
+
+Every parse has a budget. A
 parse that has neither a limit nor a context therefore runs controlled. The
 value `Unlimited` (the largest `uint64` in Go, `Number.MAX_SAFE_INTEGER` in
 TypeScript) disables the budget; with no context either, the parse runs
@@ -450,6 +459,26 @@ without a control. `LimitError.Limit` reports the resolved limit, and the
 default is `Unlimited - 1` at most. One constant disables every field of
 `Limits`, and a field added to `Limits` takes the same zero and `Unlimited`
 meaning.
+
+`MaxInput` bounds the length of the input in the position unit. A batch parse,
+a recognition and the creation of a Document compare the length of the input
+with it before any parsing work; a Document does so again at every `Parse`, for
+the text it holds after its edits. An input of exactly `MaxInput` units is
+accepted. A longer input fails with a `LimitError` of kind `LimitInput`: `Limit`
+is `MaxInput`, `Used` is zero and `Requested` is the length of the input. The
+check costs O(1), except that `CodePoints` counts the code points of an input
+whose byte length passes the limit. It needs no budget and no context: a
+finite `MaxInput` alone does not make a parse controlled. It is checked before
+a context is consulted, so an input over the limit fails with `LimitInput` even
+if the context is already canceled. A parser that has no budget controls
+accepts only a zero `MaxInput` and `Unlimited`.
+
+A stream does not know its length. With a finite `MaxInput`, it fails when the
+parser asks for a unit beyond the limit and the stream has one, and `Requested`
+is the number of units the parser asked for, or the length of the stream if that
+is shorter. A stream of exactly `MaxInput` units completes. As with the default
+budget, the outcome does not depend on how the reader splits the input into
+reads. With `MaxInput` at its default, a stream tracks no length.
 
 The default is resolved once per entry point, from the input the entry point
 receives. For a `Document`, `n` is the length of the text at each `Parse`. A

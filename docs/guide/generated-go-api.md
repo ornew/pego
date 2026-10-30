@@ -150,7 +150,7 @@ cancellation and budget limits. Use the generated package's options and error
 types; a package generated without the flag exports none of them, and a parse
 that passes `WithContext` with a context or `WithLimits` with a limit from the
 runtime returns an error saying that the parser was generated without budget
-controls (a nil context, a zero `Limits` and `Limits{Budget: Unlimited}` set no control and are accepted):
+controls (a nil context, a zero `Limits` and a `Limits` whose fields are `Unlimited` set no control and are accepted):
 
 ```go
 node, err := pairsparser.Parse(input,
@@ -163,7 +163,8 @@ node, err := pairsparser.Parse(input,
 A nil context has no deadline or cancellation signal. A zero limit selects its default: a zero `Budget` is
 `max(2^20, 1024 * n)` for an input of `n` units, so every parse of a controlled parser has a budget. The generated
 package exports `Unlimited`, which disables a limit; `Limits{Budget: Unlimited}` with no context runs without
-a control. Options apply once in
+a control. `Limits.MaxInput` bounds the input length in the position unit; its default is `Unlimited`, and a longer input fails
+before any parsing with a `*LimitError` of kind `LimitInput` (a generated stream fails when the parser reaches a unit beyond it). Options apply once in
 order; the last context and the last complete `Limits` value win. The counter
 resets for every call and remain independent during concurrent parsing. The
 same options work with named rules, recognition, direct typed parsing, and

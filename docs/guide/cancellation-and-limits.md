@@ -13,7 +13,7 @@ The examples use a parser `p` compiled as in [Running Parsers](running-parsers.m
 limit selects the default described [below](#the-default-budget); `pego.Unlimited` disables the limit. The counter
 resets for the next call. Generated Go parsers offer them only when generated with
 `-budget-controls`; see [the generated Go API](generated-go-api.md#cancellation-and-budget-limits). Generated TypeScript parsers offer
-the `signal` and `budget` options only with `-budget-controls` too; see [TypeScript](typescript.md#cancellation-and-budget-limits).
+the `signal`, `budget` and `maxInput` options only with `-budget-controls` too; see [TypeScript](typescript.md#cancellation-and-budget-limits).
 
 ```go
 ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -61,6 +61,27 @@ depend on how your reader splits the input. A `Document` resolves the
 default from the text at each `Parse`. Generated Go and TypeScript parsers apply the default when they are generated
 with `-budget-controls`; a parser generated without it spends no budget and accepts only a zero limit and
 `Unlimited`.
+
+## Bounding the Input Length
+
+`Limits.MaxInput` bounds the length of the input in the position unit. Its default is `pego.Unlimited`: the default
+budget already grows with the input, so a long input costs in proportion to its length. Set it when you want to
+refuse input above a size before spending any work on it:
+
+```go
+node, err := p.Parse(input, pego.WithLimits(pego.Limits{MaxInput: 1 << 20}))
+var le *pego.LimitError
+if errors.As(err, &le) && le.Kind == pego.LimitInput {
+    // le.Limit is MaxInput and le.Requested is the length of the input.
+}
+```
+
+An input of exactly `MaxInput` units is accepted; a longer one fails at once with `LimitInput`, before the parser
+runs and even before a canceled context is noticed. A `Document` checks the text it holds at each `Parse`, so an edit
+that makes the text too long fails the next `Parse` and a later edit that shortens it makes the `Parse` succeed. A
+stream fails when the parser asks for a unit beyond the limit and the stream has one, however your reader chunks the
+input, and the error reports the number of units the parser asked for. A finite `MaxInput` needs no budget: with
+`Budget: pego.Unlimited` and no context the parse still runs without a control.
 
 ## Related Topics
 

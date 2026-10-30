@@ -118,7 +118,7 @@ const (
   `nesting too deep: more than 100000 rule calls`.
 - A Go parser generated with budget controls (`-budget-controls`, `BudgetControls`)
   exports `WithContext`, `WithLimits`, `Limits`, `LimitKind`,
-  `LimitError`, `ErrLimit`, `LimitBudget` and `Unlimited`. A parser
+  `LimitError`, `ErrLimit`, `LimitBudget`, `LimitInput` and `Unlimited`. A parser
   generated without them holds no code that spends budget or reads a control: one
   form of each function; with `-document` it is the form that serves a Document, without
   charges. A parser generated with budget controls has the controlled form only, and a parse that
@@ -133,8 +133,10 @@ const (
   `Limits` win; a nil context means no cancellation; a zero limit selects the
   [default](parsing.md#default-limits) and `Unlimited` disables it.
   An exhausted limit matches `ErrLimit`, and `errors.As` retrieves a
-  `*LimitError` with `Kind` (`LimitBudget`), `Limit`, `Used`
-  and `Requested`. An interrupted entry point returns its zero result, and
+  `*LimitError` with `Kind` (`LimitBudget` or `LimitInput`), `Limit`, `Used`
+  and `Requested`. An input longer than `MaxInput` fails with `LimitInput` before any
+  matching, in every entry point, and a generated stream fails when the parser reaches a
+  unit beyond it. An interrupted entry point returns its zero result, and
   recovery does not turn an interruption into a successful partial tree.
   Cancellation is cooperative.
 
@@ -321,7 +323,7 @@ export function marshal(n: Node | null): string;
   infinity and unsafe integers return a configuration error in the result before
   matching. Omitted or zero selects the generated default.
 - A parser generated without `-budget-controls` emits no code that spends budget and sets no control, so a parse charges nothing, and its
-  `ParseOptions` has no `signal` or `budget`; it does not export
+  `ParseOptions` has no `signal`, `budget` or `maxInput`; it does not export
   `CancellationSignal`, `ParseInterruptionKind` or `ParseInterruptionError`. A call
   that passes a signal or a finite nonzero limit anyway returns an error in the result, before
   matching, that says the parser was generated without budget controls; no option is
@@ -329,13 +331,16 @@ export function marshal(n: Node | null): string;
   accepted. A parser generated with `-budget-controls` has the controlled form only, and a call
   that sets no limit runs it with the [default budget](parsing.md#default-limits). The rest of this list describes the controlled form.
 - `signal` is a structural cancellation signal: any object with `aborted` and an optional
-  `reason`, such as an `AbortSignal`. `budget` MUST be a finite
-  nonnegative safe integer; zero selects the [default](parsing.md#default-limits) and
+  `reason`, such as an `AbortSignal`. `budget` and `maxInput` MUST be finite
+  nonnegative safe integers; zero selects the [default](parsing.md#default-limits) and
   `Unlimited` (`Number.MAX_SAFE_INTEGER`) disables the limit; other values return a
-  configuration error in the result. The units of the limits are those of
+  configuration error in the result. A finite `maxInput` bounds the input in the position unit
+  and is checked before any matching; a longer input returns a `ParseInterruptionError` whose
+  `kind` is `"input-limit"`, with `limit` the `maxInput`, `used` zero and `requested` the length
+  of the input. The units of the limits are those of
   [Cancellation and Budget Limits](parsing.md#cancellation-and-budget-limits).
 - An interrupted parse returns `node` as `null` and `error` as a `ParseInterruptionError`
-  whose `kind` is `"canceled"` or `"budget-limit"`. For a limit,
+  whose `kind` is `"canceled"`, `"budget-limit"` or `"input-limit"`. For a limit,
   `limit`, `used` and `requested` give the accounting; for cancellation, `cause` is the
   `reason` of the signal. Recovery does not turn an interruption into a partial result,
   and the parser keeps no reference to the signal after the call returns. Typed

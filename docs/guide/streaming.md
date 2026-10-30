@@ -569,7 +569,7 @@ number that does not grow with the input.
 Pass `pego.WithContext(ctx)` to interrupt engine execution cooperatively, or
 `pego.WithLimits(pego.Limits{Budget: ...})` to bound
 one invocation. A zero budget selects the default, which is `max(2^20, 1024 * d)` for the furthest position `d` that the parser has
-asked the stream for, however the reader chunks the input; `pego.Unlimited` disables the limit. Budget counts depend on the backend,
+asked the stream for, however the reader chunks the input; `pego.Unlimited` disables the limit. `Limits.MaxInput` bounds the length of the stream: with a finite value the stream fails with `pego.LimitInput` when the parser asks for a unit beyond it and the stream has one, whichever way the reader chunks the input. Budget counts depend on the backend,
 position unit and implementation; reused or copied storage also consumes budget.
 Exhaustion matches `pego.ErrLimit` through `errors.Is`.
 Text materialization also consumes budget, including building a cached stream
