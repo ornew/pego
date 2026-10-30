@@ -244,7 +244,7 @@ func workGuardedChoiceFatalAndRetry(t *testing.T, prog *Program, backend Backend
 		} else {
 			var limit *limits.LimitError
 			if !errors.As(gotErr, &limit) || limit.Kind != limits.LimitWork {
-				t.Fatalf("budgeted parse error=%v, want step LimitError", gotErr)
+				t.Fatalf("budgeted parse error=%v, want work LimitError", gotErr)
 			}
 		}
 		if fallbackEntries != 0 || exits != 0 {

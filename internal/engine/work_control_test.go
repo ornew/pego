@@ -47,7 +47,7 @@ func TestNewWorkControlDisabled(t *testing.T) {
 		})
 	}
 	if got := core.NewWorkControl(nil, limits.Limits{MaxWork: 1}); got == nil {
-		t.Fatal("finite step limit returned nil control")
+		t.Fatal("finite work limit returned nil control")
 	}
 }
 

@@ -62,7 +62,7 @@ func requireClassWorkLimit(t *testing.T, p *Program, input string, backend Backe
 	}
 	var limit *limits.LimitError
 	if !errors.As(err, &limit) || limit.Kind != limits.LimitWork {
-		t.Fatalf("%v/%v input %q: error=%T %v, want step LimitError", backend, unit, input, err, err)
+		t.Fatalf("%v/%v input %q: error=%T %v, want work LimitError", backend, unit, input, err, err)
 	}
 	if limit.Requested != 1 || limit.Used != limit.Limit {
 		t.Fatalf("range reservation=%+v, want one rejected step at the limit", limit)

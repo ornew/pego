@@ -127,7 +127,7 @@ func TestVerifyWorkCharges(t *testing.T) {
 	}
 }
 
-// TestLowerRejectsWorkWithLeanClasses checks that the class options that charge no input work
+// TestLowerRejectsWorkWithLeanClasses checks that the class options that charge no work for the input
 // cannot be combined with Options.Work.
 func TestLowerRejectsWorkWithLeanClasses(t *testing.T) {
 	for _, opts := range []Options{{Work: true, ClassTables: true}, {Work: true, GuardedClasses: true}} {

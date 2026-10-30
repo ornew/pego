@@ -27,7 +27,7 @@ import (
 // totals in testdata/work.golden, so that a change of the charges shows up as a reviewed diff.
 
 // workProbe is the consumer of one generated parser. For each input it prints, per entry (Parse and
-// Recognize) and per counter (steps, input work), the least limit that does not fail, a digest of the
+// Recognize), the least work limit that does not fail, a digest of the
 // outcomes at the limits around it and at a spread of lower ones, and the number of polls of the
 // context of an unlimited run.
 const workProbeMain = `package main
@@ -297,7 +297,7 @@ var workGoldenFile = gentest.GoldenFile{
 }
 
 // TestFlowNodeWorkInvariants checks, for the parsers of the generated corpus with work controls built with
-// the rules printed from Flow IR, the invariants every build keeps whichever way it charges steps:
+// the rules printed from Flow IR, the invariants every build keeps whichever way it charges work:
 //
 //   - a limit below the total fails with a work-limit error whose reservation went
 //     past the limit, and the least limit that does not fail succeeds (the bad counts of the reports);
@@ -306,7 +306,7 @@ var workGoldenFile = gentest.GoldenFile{
 //   - a run that parses the whole input without error charged at least one unit of work for each character;
 //   - the totals equal those of testdata/work.golden.
 //
-// The engine's input work is not an oracle for the input work of a generated parser: for the same grammar
+// The engine's work is not an oracle for the work of a generated parser: for the same grammar
 // and input the closure engine, the bytecode VM and the generated parser charge different amounts (they agree
 // on about a third of the corpus reports and the generated charge is between 0.33 and 1.37 times the
 // engine's), and the charges depend on the backend and artifact by contract (spec/runtime/parsing.md).

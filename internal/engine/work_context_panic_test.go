@@ -24,16 +24,14 @@ var _ runtime.Error = (*workContextPanicToken)(nil)
 
 type workContextErrPanic struct {
 	context.Context
-	done         chan struct{}
-	armed        bool
-	panicAt      int
-	calls        int
-	token        *workContextPanicToken
-	control      *core.WorkControl
-	stepsAtPanic uint64
-	stepsSince   uint64
-	inputAtPanic uint64
-	inputSince   uint64
+	done    chan struct{}
+	armed   bool
+	panicAt int
+	calls   int
+	token   *workContextPanicToken
+	control *core.WorkControl
+	atPanic uint64
+	since   uint64
 }
 
 func newWorkContextErrPanic(token *workContextPanicToken, panicAt int) *workContextErrPanic {
@@ -49,8 +47,7 @@ func (c *workContextErrPanic) Err() error {
 	c.calls++
 	if c.calls == c.panicAt {
 		if c.control != nil {
-			c.stepsAtPanic, c.stepsSince = c.control.Used, c.control.SinceCheck
-			c.inputAtPanic, c.inputSince = c.control.Used, c.control.SinceCheck
+			c.atPanic, c.since = c.control.Used, c.control.SinceCheck
 		}
 		panic(c.token)
 	}
@@ -242,7 +239,7 @@ func TestWorkContextErrPanicIdentityAtPublicationAndFailedReservation(t *testing
 					}
 				}})
 			})
-			if got != token || node != nil || returnedErr != nil || ctx.calls != 2 || ctx.control == nil || ctx.stepsAtPanic != ctx.control.Used || ctx.stepsAtPanic != ctx.control.Limits.MaxWork {
+			if got != token || node != nil || returnedErr != nil || ctx.calls != 2 || ctx.control == nil || ctx.atPanic != ctx.control.Used || ctx.atPanic != ctx.control.Limits.MaxWork {
 				t.Fatalf("panic=%#v node=%v error=%v Err calls=%d control=%v, want context panic on rejected reservation", got, node, returnedErr, ctx.calls, ctx.control)
 			}
 			workContextAssertCleanup(t, observed)
@@ -285,8 +282,8 @@ func TestWorkContextErrPanicIdentityAtCountedWorkAndRetry(t *testing.T) {
 					if got != token || node != nil || returnedErr != nil {
 						t.Fatalf("panic=%#v node=%v error=%v, want exact panic during counted work", got, node, returnedErr)
 					}
-					if ctx.calls != 2 || ctx.stepsSince != core.WorkCheckInterval-1 || ctx.stepsAtPanic < core.WorkCheckInterval-1 {
-						t.Fatalf("Err calls=%d steps=%d since check=%d, want callback postcheck then next counted-work poll", ctx.calls, ctx.stepsAtPanic, ctx.stepsSince)
+					if ctx.calls != 2 || ctx.since != core.WorkCheckInterval-1 || ctx.atPanic < core.WorkCheckInterval-1 {
+						t.Fatalf("Err calls=%d steps=%d since check=%d, want callback postcheck then next counted-work poll", ctx.calls, ctx.atPanic, ctx.since)
 					}
 					workContextAssertCleanup(t, observed)
 
@@ -342,8 +339,8 @@ func TestWorkContextErrPanicIdentityLoadedASTOmittedProgram(t *testing.T) {
 				if got != token || node != nil || returnedErr != nil || ctx.calls != 2 {
 					t.Fatalf("panic=%#v node=%v error=%v Err calls=%d, want exact loaded-VM panic", got, node, returnedErr, ctx.calls)
 				}
-				if ctx.stepsSince != core.WorkCheckInterval-1 || ctx.stepsAtPanic < core.WorkCheckInterval-1 {
-					t.Fatalf("steps at panic=%d since check=%d, want counted-work polling boundary", ctx.stepsAtPanic, ctx.stepsSince)
+				if ctx.since != core.WorkCheckInterval-1 || ctx.atPanic < core.WorkCheckInterval-1 {
+					t.Fatalf("steps at panic=%d since check=%d, want counted-work polling boundary", ctx.atPanic, ctx.since)
 				}
 				workContextAssertCleanup(t, observed)
 

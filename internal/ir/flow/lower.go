@@ -41,11 +41,11 @@ type Options struct {
 	// points save their number.
 	Recovers bool
 	// ClassTables matches a class of more than four ranges through its membership table. It needs
-	// Work off: a table match charges no input work.
+	// Work off: a table match charges no work for the input.
 	ClassTables bool
 	// GuardedClasses keeps the size of the character a choice's guards read, for the classes
 	// that begin alternatives marked GuardedClass, which only consume it. It needs Work off: the
-	// consuming advance charges no input work.
+	// consuming advance charges no work for the input.
 	GuardedClasses bool
 	// InlineLiterals compares literals of at most this many code points in place first.
 	InlineLiterals int

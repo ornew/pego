@@ -10,7 +10,7 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-// Value work consumes steps, not input-work units: strings and collections can
+// Value work is charged like any other work, though strings and collections can
 // come from actions without referring to the input. Keep explicit copies and
 // comparisons bounded; allocation, buffer growth, and GC remain nonpreemptible.
 const valueWorkChunk = 128

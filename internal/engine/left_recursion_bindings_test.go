@@ -22,7 +22,7 @@ func TestLeftRecursionGuardIgnoresVariables(t *testing.T) {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {
-					// A step limit makes the parse take the controlled memo lookups.
+					// A work limit makes the parse take the controlled memo lookups.
 					for _, limits := range []limits.Limits{{}, {MaxWork: 1 << 40}} {
 						opts := ParseOptions{Backend: backend, Unit: unit, Recognize: recognize, MaxDepth: 400, Limits: limits}
 						for _, input := range inputs {

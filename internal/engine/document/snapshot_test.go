@@ -45,16 +45,16 @@ func TestSnapshotControlledFreezeBudgetAndRetry(t *testing.T) {
 		// A cached parse fits, but copying all 8192 input bytes does not.
 		o.Limits = limits.Limits{MaxWork: 4096}
 		if _, err := d.ParseWith(o); err != nil {
-			t.Fatal("input-work memo-hit fixture", err)
+			t.Fatal("work-limit memo-hit fixture", err)
 		}
 		s, err = d.SnapshotWith(o)
 		var limit *limits.LimitError
 		if s != nil || !errors.As(err, &limit) || limit.Kind != limits.LimitWork {
-			t.Fatal("text-freeze input-work limit", s, err)
+			t.Fatal("text-freeze work limit", s, err)
 		}
 		o.Limits = limits.Limits{}
 		if s, err = d.SnapshotWith(o); s == nil || err != nil {
-			t.Fatal("input-work retry", err)
+			t.Fatal("work-limit retry", err)
 		}
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()

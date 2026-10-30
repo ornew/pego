@@ -175,7 +175,7 @@ func TestStructuralQueryCycleThroughValues(t *testing.T) {
 		return nil
 	})
 	if !errors.Is(err, ErrCycle) || visits != 2 {
-		t.Fatalf("first back edge: visits=%d steps=%d err=%v", visits, budget.steps, err)
+		t.Fatalf("first back edge: visits=%d steps=%d err=%v", visits, budget.used, err)
 	}
 	results, err := q.Matches(root, WithLimits(limits.Limits{MaxWork: 100}))
 	if results != nil || !errors.Is(err, ErrCycle) {

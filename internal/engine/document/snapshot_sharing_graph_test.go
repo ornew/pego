@@ -31,7 +31,7 @@ func TestSnapshotSharedStringComparisonRespectsWorkLimit(t *testing.T) {
 			err := catchFatal(t, func() { sameSnapshotRecord(p, &snapshotGraph{}, &tc.a, &snapshotGraph{}, &tc.b) })
 			var limit *limits.LimitError
 			if !errors.As(err, &limit) || limit.Kind != limits.LimitWork {
-				t.Fatal("string comparison escaped step limit", err)
+				t.Fatal("string comparison escaped work limit", err)
 			}
 		})
 	}
@@ -56,7 +56,7 @@ func TestSnapshotChildRunCopyRespectsWorkLimit(t *testing.T) {
 	err := catchFatal(t, func() { shareSnapshotChildren(p, &graph, &graph.nodes[0], &next) })
 	var limit *limits.LimitError
 	if !errors.As(err, &limit) || limit.Kind != limits.LimitWork {
-		t.Fatal("copy escaped step limit", err)
+		t.Fatal("copy escaped work limit", err)
 	}
 	if next.childChunked || len(next.children) != 1025 || next.children[512] != 9999 {
 		t.Fatal("interrupted copy changed the source record")

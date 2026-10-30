@@ -335,16 +335,14 @@ type workDocumentReuseContext struct {
 
 type workContextErrPanic struct {
 	context.Context
-	done         chan struct{}
-	armed        bool
-	panicAt      int
-	calls        int
-	token        *workContextPanicToken
-	control      *core.WorkControl
-	stepsAtPanic uint64
-	stepsSince   uint64
-	inputAtPanic uint64
-	inputSince   uint64
+	done    chan struct{}
+	armed   bool
+	panicAt int
+	calls   int
+	token   *workContextPanicToken
+	control *core.WorkControl
+	atPanic uint64
+	since   uint64
 }
 
 func (c *workContextErrPanic) Done() <-chan struct{} { return c.done }
@@ -356,8 +354,7 @@ func (c *workContextErrPanic) Err() error {
 	c.calls++
 	if c.calls == c.panicAt {
 		if c.control != nil {
-			c.stepsAtPanic, c.stepsSince = c.control.Used, c.control.SinceCheck
-			c.inputAtPanic, c.inputSince = c.control.Used, c.control.SinceCheck
+			c.atPanic, c.since = c.control.Used, c.control.SinceCheck
 		}
 		panic(c.token)
 	}

@@ -258,7 +258,7 @@ func (p *Parser) inputWorkOrdinary(uint64) {}
 // inputWorkTracked is InputWork in a Document or controlled parse.
 func (p *Parser) inputWorkTracked(n uint64) {
 	if p.Document != nil {
-		// Generated matchers can read directly after charging input work.
+		// Generated matchers can read directly after charging the work of the read.
 		// Overestimating the dependency only discards a reusable memo entry.
 		if n > uint64(int(^uint(0)>>1)-p.Pos) {
 			p.documentTouch(int(^uint(0) >> 1))

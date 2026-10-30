@@ -159,9 +159,9 @@ type Silent struct{ Delta int }
 // Peek reads the character at the position without consuming it: its code point into Ch, its
 // size into Size and whether there is one into OK. Ch and Size may be nil (not kept).
 //
-// Peek reads as the runtime's Peek does, which also charges the input work of the read and, in a
+// Peek reads as the runtime's Peek does, which also charges the work of the read and, in a
 // Document parse, records how far the parse examined the input. A target that inlines the read of
-// a code point in memory must do the same: charge one unit of input work unless the function is
+// a code point in memory must do the same: charge one unit of work unless the function is
 // lowered without work (Options.Work), and leave Document parses to the runtime's Peek.
 type Peek struct{ Ch, Size, OK *Var }
 

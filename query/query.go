@@ -234,12 +234,12 @@ func (p *Pattern) usesRule() bool {
 	return false
 }
 
-// budget charges the steps of one evaluation against its work limits, checking its
+// budget charges the work of one evaluation against its work limits, checking its
 // context for cancellation.
 type budget struct {
 	ctx    context.Context
 	limits limits.Limits
-	steps  uint64
+	used   uint64
 }
 
 func (b *budget) charge(n uint64) error {
@@ -248,10 +248,10 @@ func (b *budget) charge(n uint64) error {
 			return err
 		}
 	}
-	if limits.ExceedsLimit(b.steps, n, b.limits.MaxWork) {
-		return &limits.LimitError{Kind: limits.LimitWork, Limit: b.limits.MaxWork, Used: b.steps, Requested: n}
+	if limits.ExceedsLimit(b.used, n, b.limits.MaxWork) {
+		return &limits.LimitError{Kind: limits.LimitWork, Limit: b.limits.MaxWork, Used: b.used, Requested: n}
 	}
-	b.steps = limits.SaturatingAdd(b.steps, n)
+	b.used = limits.SaturatingAdd(b.used, n)
 	return nil
 }
 
