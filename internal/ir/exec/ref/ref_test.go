@@ -46,8 +46,8 @@ func TestMemoModel(t *testing.T) {
 	if r := call(m, "memo.lookup", other...); r[0] != s2 || !call(m, "memo.ok", s2)[0].(bool) || call(m, "memo.end", s2)[0] != int64(6) {
 		t.Fatal("finished seed is not the complete entry")
 	}
-	if got := m.Quantity(ops.QEntriesAt, nil, k); got != 2 {
-		t.Fatalf("entries at 5 = %d, want 2", got)
+	if got := m.Quantity(ops.QKeyScan, nil, k); got != 4 {
+		t.Fatalf("key scan at 5 = %d, want 4 (two entries of one value)", got)
 	}
 }
 

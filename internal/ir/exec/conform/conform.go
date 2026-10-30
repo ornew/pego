@@ -242,12 +242,26 @@ func (p *pair) Call(o *exec.Op, args []any) []any {
 	}
 	want := call(p.model, o, refArgs)
 	got := call(p.impl, o, implArgs)
+	charges := metered && o.Name != "budget.charge"
+	if charges && want.interrupted == "" && got.interrupted == "limit" {
+		// The implementation's own charges may exhaust the budget inside the operation, provided
+		// that charges within the bound could.
+		if !p.model.Exceeds(uint64(bound)) {
+			panic(mismatch(fmt.Sprintf("interrupted by the limit, but charges within the bound %s = %d would not exceed it", o.Cost, bound)))
+		}
+		p.trace[len(p.trace)-1] += " -> interrupted inside: limit"
+		panic(exec.Interrupt{Reason: "limit"})
+	}
 	if want.interrupted != got.interrupted {
 		panic(mismatch(fmt.Sprintf("interrupted: model %q, implementation %q", want.interrupted, got.interrupted)))
 	}
 	if metered && want.interrupted == "" {
-		if used := meter.Used() - before; used > uint64(bound) {
+		used := meter.Used() - before
+		if used > uint64(bound) {
 			panic(mismatch(fmt.Sprintf("charged %d units, more than the bound %s = %d", used, o.Cost, bound)))
+		}
+		if charges && p.model.Absorb(used) {
+			panic(mismatch(fmt.Sprintf("charged %d units past the limit without interrupting", used)))
 		}
 	}
 	if want.interrupted != "" {

@@ -74,7 +74,7 @@ func New(cfg Config) *Model {
 }
 
 // Values returns the model's Values handle for the conformance identifier id: the identifier itself.
-// Two Values are equal when their identifiers are.
+// Two Values are equal when their identifiers are; each stands for a single value.
 func (m *Model) Values(id int64) any { return id }
 
 func key(args []any) memoKey {
@@ -113,8 +113,9 @@ func (m *Model) Allows(o *exec.Op, args []any) bool {
 // Quantity returns the cost quantity name for a call of o with args, in the state before the call.
 func (m *Model) Quantity(name string, o *exec.Op, args []any) int64 {
 	switch name {
-	case ops.QEntriesAt:
-		return int64(m.at[args[1].(int64)])
+	case ops.QKeyScan:
+		// Every Values of a conformance case is one value.
+		return 2 * int64(m.at[args[1].(int64)])
 	case ops.QSlotGrowth:
 		pos := args[1].(int64)
 		if m.covered > 0 && pos >= m.covered && bits.Len64(uint64(pos+1)) > bits.Len64(uint64(m.covered)) {
@@ -125,6 +126,8 @@ func (m *Model) Quantity(name string, o *exec.Op, args []any) int64 {
 		return args[1].(int64) >> 10
 	case ops.QPages:
 		return int64(len(m.pages))
+	case ops.QSeenIndex:
+		return (args[1].(int64)*int64(m.cfg.Rules) + args[0].(int64)) / 64
 	case ops.QN:
 		return int64(min(args[0].(uint64), math.MaxInt64))
 	}
@@ -167,14 +170,10 @@ func (m *Model) Call(o *exec.Op, args []any) []any {
 		return []any{m.first(args[0].(int64), args[1].(int64))}
 	case "budget.charge":
 		n := args[0].(uint64)
-		if l := m.cfg.Limit; l != 0 && (m.used > l || n > l-m.used) {
+		if m.Exceeds(n) {
 			panic(exec.Interrupt{Reason: "limit"})
 		}
-		if math.MaxUint64-m.used < n {
-			m.used = math.MaxUint64
-		} else {
-			m.used += n
-		}
+		m.charge(n)
 		return nil
 	case "budget.used":
 		return []any{m.used}
@@ -191,6 +190,32 @@ func (m *Model) Call(o *exec.Op, args []any) []any {
 		return []any{m.depth}
 	}
 	panic(fmt.Sprintf("ref: no model of %s", o.Name))
+}
+
+// Exceeds reports whether charging n units would exceed the budget limit.
+func (m *Model) Exceeds(n uint64) bool {
+	l := m.cfg.Limit
+	return l != 0 && (m.used > l || n > l-m.used)
+}
+
+// Absorb adds the n units that an implementation charged inside another operation to the budget
+// and reports whether they exceed the limit (then the units used are unchanged). The conformance
+// suite calls it, because the charges inside operations are the implementation's: within the
+// operation's cost bound, they join the budget that budget.charge and budget.used see.
+func (m *Model) Absorb(n uint64) (exceeded bool) {
+	if m.Exceeds(n) {
+		return true
+	}
+	m.charge(n)
+	return false
+}
+
+func (m *Model) charge(n uint64) {
+	if math.MaxUint64-m.used < n {
+		m.used = math.MaxUint64
+	} else {
+		m.used += n
+	}
 }
 
 // put stores e under its key, replacing the entry there.

@@ -32,8 +32,9 @@ const (
 
 // Cost quantities: abstract measures of the state before a call, computed by the reference model.
 const (
-	// QEntriesAt is the number of entries stored at the call's position, for any rule.
-	QEntriesAt = "entries_at_pos"
+	// QKeyScan is the sum, over the entries stored at the call's position for any rule, of one more
+	// than the number of their key values: what scanning the position and comparing keys inspects.
+	QKeyScan = "key_scan"
 	// QSlotGrowth is the number of positions the memo covers before the call when storing at the
 	// call's position makes that number cross a power of two, and 0 otherwise: the copy that doubling
 	// a position-indexed table stands for.
@@ -43,6 +44,9 @@ const (
 	// QPages is the number of 1,024-position regions of all rules that deferred memoization has
 	// recorded calls in.
 	QPages = "pages"
+	// QSeenIndex is the call's position times the number of rules plus its rule, divided by 64: the
+	// size of a record that keeps one bit per call in position order.
+	QSeenIndex = "seen_index"
 	// QN is the argument n of budget.charge.
 	QN = "n"
 )
@@ -70,8 +74,8 @@ stand for the values of a rule's variables, compared by the host's value equalit
 	entry := m.AddHandle(Entry, Memo, "A memo entry: the result of a rule call with its outcome and end.")
 	values := m.AddHandle(Values, Env, "The values of a rule's variables, as a memo key.")
 	key := []exec.Param{exec.P("rule", exec.TInt), exec.P("pos", exec.TInt), exec.P("level", exec.TInt), exec.P("key", values)}
-	scan := exec.Cost{Const: 1, Terms: []exec.CostTerm{{Coef: 1, Quantity: QEntriesAt}}}
-	write := exec.Cost{Const: 2, Terms: []exec.CostTerm{{Coef: 1, Quantity: QEntriesAt}, {Coef: 1, Quantity: QSlotGrowth}}}
+	scan := exec.Cost{Const: 1, Terms: []exec.CostTerm{{Coef: 1, Quantity: QKeyScan}}}
+	write := exec.Cost{Const: 2, Terms: []exec.CostTerm{{Coef: 1, Quantity: QKeyScan}, {Coef: 1, Quantity: QSlotGrowth}}}
 	with := func(ps []exec.Param, more ...exec.Param) []exec.Param {
 		return append(append([]exec.Param(nil), ps...), more...)
 	}
@@ -125,7 +129,7 @@ its key return it as a complete entry, and memo.lookupGrowing no longer finds it
 	m.AddOp(&exec.Op{Name: "seen.first", Component: Seen,
 		Params:  []exec.Param{exec.P("rule", exec.TInt), exec.P("pos", exec.TInt)},
 		Results: []exec.Type{exec.TBool}, Reads: []string{Seen}, Writes: []string{Seen},
-		Cost: exec.Cost{Const: 2, Terms: []exec.CostTerm{{Coef: 1, Quantity: QPageIndex}, {Coef: 1, Quantity: QPages}}},
+		Cost: exec.Cost{Const: 66, Terms: []exec.CostTerm{{Coef: 1, Quantity: QPageIndex}, {Coef: 1, Quantity: QPages}, {Coef: 1, Quantity: QSeenIndex}}},
 		Contract: `Records a call of the rule at pos and reports whether its memoization is deferred: true
 when the rule is not eager and has not been called at pos before. Each rule counts its calls and its
 repeated calls, the calls at a position where it was called before. A call that finds the rule eager
@@ -146,7 +150,7 @@ choice, and end the parse with a cancellation interruption.`,
 		Laws: []string{"charge(a); charge(b) may merge into charge(a+b) when nothing observable lies between them and no commit separates them"}})
 	m.AddOp(&exec.Op{Name: "budget.used", Component: Bud, Results: []exec.Type{exec.TU64},
 		Reads: []string{Bud}, Features: []string{Budget},
-		Contract: `Returns the units charged so far.`})
+		Contract: `Returns the units charged so far: by budget.charge and inside other operations.`})
 
 	m.AddOp(&exec.Op{Name: "depth.enter", Component: Depth, Reads: []string{Depth}, Writes: []string{Depth}, NoReturn: true,
 		Contract: `Enters a rule call: adds one to the depth. When the depth then exceeds the limit, the parse

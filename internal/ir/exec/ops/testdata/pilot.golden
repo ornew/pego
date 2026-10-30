@@ -30,7 +30,7 @@ handle Values of env
 op memo.lookup(rule int, pos int, level int, key Values) (Entry, bool)
   component memo
   reads memo
-  cost <= 1 + 1*entries_at_pos
+  cost <= 1 + 1*key_scan
   contract:
     // Returns the entry stored or seeded under the key, if one is there and not replaced, and
     // true; otherwise false and an entry that must not be used. Two keys are equal when their rules,
@@ -43,7 +43,7 @@ op memo.lookup(rule int, pos int, level int, key Values) (Entry, bool)
 op memo.lookupGrowing(rule int, pos int, level int) (Entry, bool)
   component memo
   reads memo
-  cost <= 1 + 1*entries_at_pos
+  cost <= 1 + 1*key_scan
   contract:
     // Returns the growing entry of the rule at the position and level, whatever key values it
     // was seeded with, and true; otherwise false. This is the left-recursion guard: while a rule grows at a
@@ -53,7 +53,7 @@ op memo.store(rule int, pos int, level int, key Values, ok bool, end int) Entry
   component memo
   reads memo
   writes memo
-  cost <= 2 + 1*entries_at_pos + 1*slot_growth
+  cost <= 2 + 1*key_scan + 1*slot_growth
   contract:
     // Stores a complete entry with the outcome ok and the end under the key, replacing the
     // entry stored under the same key, and returns it. Entries under other keys are unchanged.
@@ -64,7 +64,7 @@ op memo.seed(rule int, pos int, level int, key Values) Entry
   component memo
   reads memo
   writes memo
-  cost <= 2 + 1*entries_at_pos + 1*slot_growth
+  cost <= 2 + 1*key_scan + 1*slot_growth
   contract:
     // Starts the growth of a left-recursion leader: stores a growing entry that fails and ends
     // at pos under the key, replacing the entry stored under the same key, and returns it.
@@ -75,7 +75,7 @@ op memo.reseed(rule int, pos int, level int, key Values, end int) Entry
   component memo
   reads memo
   writes memo
-  cost <= 2 + 1*entries_at_pos + 1*slot_growth
+  cost <= 2 + 1*key_scan + 1*slot_growth
   contract:
     // Records a longer seed: replaces the growing entry under the key by a growing entry that
     // succeeds and ends at end, and returns it. The replaced entry is no longer found.
@@ -117,7 +117,7 @@ op seen.first(rule int, pos int) bool
   component seen
   reads seen
   writes seen
-  cost <= 2 + 1*page_index + 1*pages
+  cost <= 66 + 1*page_index + 1*pages + 1*seen_index
   contract:
     // Records a call of the rule at pos and reports whether its memoization is deferred: true
     // when the rule is not eager and has not been called at pos before. Each rule counts its calls and its
@@ -150,7 +150,7 @@ op budget.used() u64
   features budget
   cost <= 0
   contract:
-    // Returns the units charged so far.
+    // Returns the units charged so far: by budget.charge and inside other operations.
 
 op depth.enter()
   component depth
