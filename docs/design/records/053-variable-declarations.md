@@ -71,7 +71,8 @@ value when nothing has bound the variable.
 
 The compiler collects the declarations into a table of names, types and initial values, and every program carries the
 table. Each parse begins by giving the parser the environment built from the table, once, before the start rule is
-entered. The environment is a persistent list, so parses share the initial one and bind on top of it without copying.
+entered. The environment is a persistent vector indexed by the variables' slots (their declaration order), so parses share the
+initial one and a bind copies only the path to its slot.
 Because every declared variable is bound from the start, a rule that depends on a variable has the same memo key
 whether or not an earlier rule bound it.
 

@@ -92,7 +92,7 @@ Because the stack does not depend on the host, parsing can stop while waiting fo
 | Backtrack stack | Choice points and similar within a rule body (below) |
 | Capture frames | Capture slots for a rule body and for each repetition element |
 | Write history (trail) | Writes to captures, undone on backtracking |
-| Variable environment | A persistent list (as now) |
+| Variable environment | A persistent vector indexed by variable slot |
 | Memo | (rule, position, level) → result, end position, examined range, recovered errors, expectations |
 | Error records | Farthest failure position, expectations, `silent`, recovered errors |
 

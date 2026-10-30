@@ -13,11 +13,13 @@ parse charged the same walk to the budget.
 
 The compiler now numbers the variables in declaration order and every backend addresses them by
 that slot. The environment is a persistent vector: a flat copy-on-write array for up to 16
-variables, and above that a 16-way trie of depth 1 (up to 256 variables) or 2 (up to 4096). A read
+variables, and above that a 16-way trie whose depth grows by one for each factor of 16 (depth 1 up
+to 256 variables, 2 up to 4096, 3 up to 65536, and so on). A read
 walks `levels+1` nodes; a bind copies the same number of nodes and shares the rest, so saved
 environments, rollback, memo keys and `Document` reuse behave as before. Bytecode instructions carry
 the slot as their operand (`ISAVersion` 27). The closure engine resolves a bind's slot when the
-graph is built, generated Go and TypeScript emit slot numbers, and a memo key is still the values of
+graph is built and a variable read through the declaration table when it evaluates (a scan below
+8 variables, a map from 8); generated Go and TypeScript emit slot numbers for binds and reads, and a memo key is still the values of
 the variables a rule reads, now fetched by slot.
 
 ## Budget Charges
@@ -29,7 +31,7 @@ names are not charged, so a cost no longer depends on name length or on the posi
 the environment.
 
 The smallest budget that parses a 280-variable grammar with a shared 28-character name prefix falls
-from 9,974,231 to 1,971 (closure), 1,973 (bytecode) and 1,973 (generated Go). Grammars that bind
+from 9,974,231 to 1,971 (closure), 1,973 (bytecode) and 1,973 (generated Go). Grammars that declare
 variables change their recorded budget (`budget.golden`); grammars without variables do not.
 
 ## Results
