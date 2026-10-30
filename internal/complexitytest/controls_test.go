@@ -1,8 +1,13 @@
 package complexitytest
 
 import (
+	"context"
 	"math"
 	"testing"
+
+	"github.com/ornew/pego"
+	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/starttest"
 )
 
 // TestControls measures every control on every backend and checks its growth order. Controls
@@ -75,8 +80,35 @@ func TestControlsTable(t *testing.T) {
 				t.Errorf("%s: sizes %v do not double", c.Name, sz)
 			}
 		}
-		if c.Class == "" {
-			t.Errorf("%s: no expected class", c.Name)
+		// The class of a positive control is a claim of linear cost, and that of a negative one is
+		// not.
+		if linear := c.Class == ClassLinear || c.Class == ClassLinearEnv; linear != c.Positive {
+			t.Errorf("%s: expected class %v for a control with Positive %v", c.Name, c.Class, c.Positive)
 		}
+	}
+}
+
+// TestControlClasses checks the class that the complexity classifier assigns to the start rule of
+// every control: a negative control is never classified linear, with or without an environment
+// bound, and a positive control is.
+func TestControlClasses(t *testing.T) {
+	t.Parallel()
+	for _, c := range Controls() {
+		t.Run(c.Name, func(t *testing.T) {
+			g, err := pego.ParseGrammar(c.Source)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := engine.ClassifyComplexity(context.Background(), starttest.MarkAll(g), "main")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Class != c.Class {
+				t.Errorf("classified %v (degree %d), want %v\ncauses %v\nreasons %v", got.Class, got.Degree, c.Class, got.Causes, got.Reasons)
+			}
+			if c.Order.Kind == KindPoly && got.Class == ClassPoly && got.Degree != c.Order.Degree {
+				t.Errorf("degree %d, measured order %v", got.Degree, c.Order)
+			}
+		})
 	}
 }

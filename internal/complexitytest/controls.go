@@ -1,15 +1,14 @@
 package complexitytest
 
-// Class is the class that the complexity classifier assigns to a start rule. The classifier is
-// not built yet; Control.Class records the expected verdict as data.
-type Class string
+import "github.com/ornew/pego/internal/engine"
 
+// The classes that the complexity classifier assigns to a start rule.
 const (
-	ClassLinear    Class = "Linear"
-	ClassLinearEnv Class = "LinearEnv"
-	ClassPoly      Class = "Poly"
-	ClassExp       Class = "Exp"
-	ClassUnknown   Class = "Unknown"
+	ClassLinear    = engine.ClassLinear
+	ClassLinearEnv = engine.ClassLinearEnv
+	ClassPoly      = engine.ClassPoly
+	ClassExp       = engine.ClassExp
+	ClassUnknown   = engine.ClassUnknown
 )
 
 // Control is a grammar family with a known growth order.
@@ -25,8 +24,8 @@ type Control struct {
 	Order Order
 	// Capped lets the 4n point reach Cap steps. Only Exp entries may be capped.
 	Capped bool
-	// Class is the expected classifier verdict. It is not asserted.
-	Class Class
+	// Class is the class that the complexity classifier assigns to main (see TestControlClasses).
+	Class engine.ComplexityClass
 	// Positive marks a control that is linear and guards against a classifier or runtime that
 	// reports growth where there is none.
 	Positive bool
