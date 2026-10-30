@@ -129,7 +129,8 @@ func Controls() []Control {
 		{
 			Name: "E3 environments, safe", Family: "E3", Positive: true,
 			Source: "var v string\nrule main = r $$\nrule r = \"(\" {v := \"0\"} r \")\" \"y\" / \"(\" {v := \"1\"} r \")\" \"z\" / \"n\" {len(v) >= 0}\n",
-			Input:  parens, Sizes: double(64), ShortSizes: double(32), Order: Linear, Class: ClassLinear,
+			// len examines all of v, whose size the classifier bounds only by its value.
+			Input: parens, Sizes: double(64), ShortSizes: double(32), Order: Linear, Class: ClassLinearEnv,
 		},
 		{
 			Name: "E3 diverging environments", Family: "E3",

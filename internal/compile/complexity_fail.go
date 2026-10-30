@@ -80,7 +80,9 @@ func (k *classifier) failsAfterSource(e grammar.Expr) bool {
 		if x.Min == 0 || x.Max == 0 {
 			return false
 		}
-		return k.failsAfterSource(x.Expr) || x.Min > 1 && k.containsSource(x.Expr) && !k.an.AlwaysSucceeds(x.Expr)
+		// A repetition ends at its first empty iteration, so one with a minimum above one can
+		// fail after an iteration ran a source even when its expression always succeeds.
+		return k.failsAfterSource(x.Expr) || x.Min > 1 && k.containsSource(x.Expr) && !k.an.AlwaysSucceeds(x)
 	case *grammar.Optional:
 		return false
 	case *grammar.And:

@@ -373,13 +373,15 @@ The conditions below use these terms.
 - A **copying operation** is an operation of an action, predicate or binding
   whose cost is charged in proportion to the size of the values it builds or
   examines: joining strings, taking the text of a capture, converting a value
-  to a string, building a list with `list`, `concat`, `map` or `filter`, and
-  comparing two strings. The size of a string is its number of characters,
+  to a string, building a list with `list`, `concat`, `map` or `filter`,
+  taking the length of a string or a list with `len`, and comparing two
+  strings. The size of a string is its number of characters,
   and the size of a list its number of elements; the elements themselves are
   shared, not copied. So `list` copies one element for each argument, which
   the grammar bounds; `concat`, `map` and `filter` copy the elements of the
   lists they read, and the list of a repetition has one element for each
-  iteration; and a comparison examines no more than the shorter string, so
+  iteration; `len` is charged for all of its operand, whatever the position
+  unit; and a comparison examines no more than the shorter string, so
   comparing with a literal costs a constant.
 - A **left call** is a call of a rule of a left-recursion cycle, in the body
   of a rule of the same cycle, that can run before that body consumes input.
@@ -538,8 +540,8 @@ necessary.
    performs the operation, nor a fold accumulator. The size is the one that the
    operation copies: the characters of a string, or the elements of a list. A
    value includes the value of such a call when it is the value of the call,
-   passes it on, as `$x` does, or is built from it by `+`, `text`, `concat`,
-   `map` or `filter`. So the text of a capture of the recursion includes the
+   passes it on, as `$x` does, is an element of it, as `$x[0]` is, or is built
+   from it by `+`, `text`, `concat`, `map` or `filter`. So the text of a capture of the recursion includes the
    text of the calls nested in it, while a list of nodes of the recursion, as
    built by `list($x)`, has one element per node whatever the node contains;
    `concat(list($x), $t)` with `t` the list of the rule's own recursion

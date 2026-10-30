@@ -111,6 +111,19 @@ func TestClassifyComplexity(t *testing.T) {
 		// two values of the recursion it is not.
 		{"comparison with a literal", "rule main = l $$\nrule l string = (\"(\" x:l \")\" {$x != \"\"} => $x) / a\nrule a string = \"a\" => \"a\"\n", ClassLinear, 0},
 		{"comparison of recursive values", "rule main = l $$\nrule l string = (\"(\" x:l y:l \")\" {$x == $y} => $x) / a\nrule a string = \"a\" => \"a\"\n", ClassPoly, 2},
+		// An element of a list holds anything the list can, so indexing keeps the size.
+		{"element of a recursive list", "rule main = r $$\nrule r []string = (\"a\" x:r => list($x[0] + \"a\")) / (\"\" => list(\"\"))\n", ClassPoly, 2},
+		{"list of literal elements", "rule main = r $$\nrule r []string = (\"a\" x:r => list(\"a\")) / (\"\" => list(\"\"))\n", ClassLinear, 0},
+		{"comparison of recursive elements", "rule main = l $$\nrule l []string = (\"(\" x:l y:l \")\" {$x[0] == $y[0]} => $x) / (t:[a-z]+ => list(text($t)))\n", ClassPoly, 2},
+		// len examines all of a string or a list.
+		{"len of a failing unit", "rule main = (x:e #atomic {len($x) > 0} \"q\" / \"x\")* $$\nrule e = \"x\" e / \"x\"\n", ClassPoly, 2},
+		{"len of a recursive capture", "rule main = r $$\nrule r = x:(\"a\" r / \"\") #atomic {len($x) >= 0}\n", ClassPoly, 2},
+		{"nil test of a recursive capture", "rule main = r $$\nrule r = x:(\"a\" r / \"\") #atomic {$x != nil}\n", ClassLinear, 0},
+		// A repetition ends at its first empty iteration, so it can fail after scanning even
+		// when its expression always succeeds.
+		{"repetition below its minimum", "rule main = (p / \"a\")* $$\nrule p = (\"a\"*) #repeat(3)\n", ClassPoly, 2},
+		{"repetition of two below its minimum", "rule main = (p / \"a\")* $$\nrule p = (\"a\"*) #repeat(2)\n", ClassPoly, 2},
+		{"repetition below its minimum without a retry", "rule main = (\"a\"*) #repeat(3) $$\n", ClassLinear, 0},
 		{"self-growing variable", "var s string = \"a\"\nrule main = r $$\nrule r = \"x\" {s := s + s} r / {len(s) > 0}\n", ClassExp, 0},
 		{"rebinding after the left call", "var k int\nrule main = e $$\nrule e = e \"x\" {k := k + 1} / \"x\" {k >= 0}\n", ClassLinearEnv, 0},
 		{"non-leader cycle members", "rule main = c $$\nrule a = c \"+\" / \"n\"\nrule c = \"(\" c \")\" \"y\" / \"(\" c \")\" \"z\" / a\n", ClassUnknown, 0},

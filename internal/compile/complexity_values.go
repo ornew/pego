@@ -69,9 +69,14 @@ func (c *content) add(d content) {
 // compareOps are the operators that compare two strings character by character.
 var compareOps = map[string]bool{"==": true, "!=": true, "<": true, "<=": true, ">": true, ">=": true}
 
+// scalarOps are the binary operators other than + whose value is an int or a Boolean.
+var scalarOps = map[string]bool{"==": true, "!=": true, "<": true, "<=": true, ">": true, ">=": true,
+	"-": true, "*": true, "/": true, "%": true, "&&": true, "||": true}
+
 // copyFuncs are the built-in functions that build a value in proportion to its size. list builds
-// one element for each argument, which is bounded by the grammar.
-var copyFuncs = map[string]bool{"text": true, "concat": true, "map": true, "filter": true}
+// one element for each argument, which is bounded by the grammar. len examines its operand, which
+// for a string is charged per character; it is counted for a list too.
+var copyFuncs = map[string]bool{"text": true, "concat": true, "map": true, "filter": true, "len": true}
 
 func (k *classifier) walkTerm(t grammar.Term, tc termCtx) {
 	if t == nil {
@@ -136,7 +141,15 @@ func (k *classifier) walkTerm(t grammar.Term, tc termCtx) {
 			}
 			k.walkTerm(a, tc)
 		}
-		if copyFuncs[t.Func] {
+		switch {
+		case t.Func == "len":
+			// len builds an int, but examines all of its operand.
+			var size content
+			for _, a := range t.Args {
+				size.add(k.sizeOf(a, tc, textSize))
+			}
+			k.copied(t, termPosOf(t), tc, size)
+		case copyFuncs[t.Func]:
 			k.copyOp(t, termPosOf(t), tc)
 		}
 	case *grammar.Lambda:
@@ -290,9 +303,17 @@ func (k *classifier) sizeOf(t grammar.Term, tc termCtx, mode sizeMode) content {
 		}
 		c.outer = tc.lambda && !param && c.unbounded
 	case *grammar.Binary:
-		if t.Op == "+" && !k.isInt(t.L, tc) && !k.isInt(t.R, tc) {
-			c.add(k.sizeOf(t.L, tc, textSize))
-			c.add(k.sizeOf(t.R, tc, textSize))
+		switch {
+		case t.Op == "+":
+			if !k.isInt(t.L, tc) && !k.isInt(t.R, tc) {
+				c.add(k.sizeOf(t.L, tc, textSize))
+				c.add(k.sizeOf(t.R, tc, textSize))
+			}
+		case scalarOps[t.Op]:
+			// An int or a Boolean.
+		default:
+			// An element of a list, as x[i], can hold anything that the list can.
+			return k.sizeOfAny(t, tc)
 		}
 	case *grammar.Call:
 		switch t.Func {
