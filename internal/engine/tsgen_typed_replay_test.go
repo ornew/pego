@@ -57,7 +57,7 @@ type WE ~ Word | error
 type R = { A Mixed; B U; C WE; D _; E []WE; O *int; I int }
 rule main R = x:word #recover(skip=[^;]+ ";") xs:word #recover(skip=[^;]+ ";")* => R{A: $x, B: $x, C: $x, D: $x, E: $xs.Value, I: 7}
 rule word Word = t:([a-z😀]+ ";") #atomic => Word{Text: text($t)}`, Inputs: []string{"😀;abc;", "1;abc;2;", "", "x;"}})
-	cases = append(cases, gentest.Case{Name: "shared fold", Src: tsTypedDAGTypes + `rule main Tree = first:leaf rest:leaf* => foldl($first, $rest, (acc, i) => Branch{Left: acc, Right: acc})`, Inputs: []string{"x", "xxxxxxxx"}}, gentest.Case{Name: "shared LR", Src: tsTypedDAGTypes + `rule main Tree = branch / leaf
+	cases = append(cases, gentest.Case{Name: "shared fold", Src: gentest.TSTypedDAGTypes + `rule main Tree = first:leaf rest:leaf* => foldl($first, $rest, (acc, i) => Branch{Left: acc, Right: acc})`, Inputs: []string{"x", "xxxxxxxx"}}, gentest.Case{Name: "shared LR", Src: gentest.TSTypedDAGTypes + `rule main Tree = branch / leaf
 rule branch Branch = prev:main "x" => Branch{Left: $prev, Right: $prev}`, Inputs: []string{"x", "xxxxxxxx"}}, gentest.Case{Name: "raw Unicode text", Src: `type R = { Text string; Token node[string] }
 rule main R = x:.* #atomic => R{Text: text($x), Token: $x}`, Inputs: []string{"😀é", string([]byte{0x61, 0xff, 0xe2, 0x82})}})
 	cases = append(cases, gentest.Case{Name: "inferred nil recovery", Src: `rule leaf = "a" => nil
@@ -176,7 +176,7 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, Inputs: []string{"", "a1", "a1b2"}
 	if err != nil {
 		t.Fatalf("Go oracle: %v\n%s", err, want)
 	}
-	cmd = exec.Command(node, nodeTSArgs("replay.mjs")...)
+	cmd = exec.Command(node, gentest.NodeTSArgs("replay.mjs")...)
 	cmd.Dir = dir
 	got, err := cmd.CombinedOutput()
 	if err != nil {

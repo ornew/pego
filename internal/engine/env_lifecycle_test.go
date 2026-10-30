@@ -12,11 +12,6 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-const boundStream = `var limit int
-var i int
-var j int
-rule main = {limit := 1} ({i := 1} {j := 2} {i := 3} -"a")* #stream {limit == 1} $$`
-
 func TestEnvironmentRollback(t *testing.T) {
 	t.Parallel()
 	for i, c := range gentest.EnvBindingCases {
@@ -32,7 +27,7 @@ func TestEnvironmentRollback(t *testing.T) {
 }
 
 func TestBoundStreamMemoryIsBounded(t *testing.T) {
-	prog := mustCompile(t, boundStream)
+	prog := mustCompile(t, gentest.BoundStream)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {

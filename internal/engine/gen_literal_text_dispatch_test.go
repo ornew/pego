@@ -41,14 +41,14 @@ func testLiteralTextPredicateDispatchGeneration(t *testing.T) {
 	if strings.Contains(string(baseline), `switch c.TextStr(`) || strings.Contains(string(code), "disableLiteralTextDispatch") {
 		t.Fatal("generation-only control did not preserve the general baseline")
 	}
-	ts, err := generateTSBundle(g, gen.GenOptions{Start: "main"})
+	ts, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(ts), `switch (c.textStr(`) || !strings.Contains(string(ts), `case "a": case "b":`) {
 		t.Fatal("TypeScript generator did not emit literal text dispatch")
 	}
-	tsBaseline, err := generateTSBundle(g, gen.GenOptions{Start: "main", DisableLiteralTextDispatch: true})
+	tsBaseline, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main", DisableLiteralTextDispatch: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,11 +116,11 @@ func TestLiteralTextPredicateDispatchTSDisabledParity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	optimized, err := generateTSBundle(g, gen.GenOptions{Start: "main"})
+	optimized, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	reference, err := generateTSBundle(g, gen.GenOptions{Start: "main", DisableLiteralTextDispatch: true})
+	reference, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main", DisableLiteralTextDispatch: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -397,11 +397,11 @@ func writeLiteralDispatchTypeScript(t *testing.T, dir string, workload literalDi
 	if err != nil {
 		return err
 	}
-	candidate, err := generateTSBundle(g, gen.GenOptions{Start: "main"})
+	candidate, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main"})
 	if err != nil {
 		return err
 	}
-	reference, err := generateTSBundle(g, gen.GenOptions{Start: "main", DisableLiteralTextDispatch: true})
+	reference, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main", DisableLiteralTextDispatch: true})
 	if err != nil {
 		return err
 	}

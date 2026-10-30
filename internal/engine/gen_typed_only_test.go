@@ -14,61 +14,6 @@ import (
 // lacks, the messages of the combinations that are refused, and that its typed entry points return what
 // those of a parser with every entry point return.
 
-// ordinaryOnlyTypedEntries prints only the typed entry points, which a typed-only parser has.
-const ordinaryOnlyTypedEntries = `package PKG
-
-import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
-	"testing"
-)
-
-func errText(err error) string {
-	if err == nil {
-		return "ok"
-	}
-	e := err.Error()
-	var se *SyntaxError
-	if errors.As(err, &se) {
-		e += fmt.Sprintf(" @%d:%d:%d", se.Line, se.Col, se.Pos)
-	}
-	return e
-}
-
-func showAST(v any, err error) string {
-	j, jerr := json.Marshal(v)
-	if jerr != nil {
-		return "marshal: " + jerr.Error()
-	}
-	return string(j) + " | " + errText(err)
-}
-
-func TestTranscript(t *testing.T) {
-	var b strings.Builder
-	for _, in := range INPUTS {
-		for _, unit := range []PositionUnit{CodePoints, Bytes} {
-			v, err := ParseAST(in, WithUnit(unit))
-			fmt.Fprintf(&b, "ast %q %v: %s\n", in, unit, showAST(v, err))
-			w, err := ParseRuleAST("sum", in, WithUnit(unit))
-			fmt.Fprintf(&b, "rule sum %q %v: %s\n", in, unit, showAST(w, err))
-			w, err = ParseRuleAST("a", in, WithUnit(unit))
-			fmt.Fprintf(&b, "rule a %q %v: %s\n", in, unit, showAST(w, err))
-		}
-		v, err := ParseAST(in, WithMaxDepth(5))
-		fmt.Fprintf(&b, "depth %q: %s\n", in, showAST(v, err))
-		_, err = ParseRuleAST("nope", in)
-		fmt.Fprintf(&b, "unknown rule: %s\n", errText(err))
-	}
-	if err := os.WriteFile(filepath.Join(os.Getenv("TRANSCRIPT_DIR"), "PKG.txt"), []byte(b.String()), 0o644); err != nil {
-		t.Fatal(err)
-	}
-}
-`
-
 func TestGeneratedTypedOnly(t *testing.T) {
 	t.Parallel()
 	g, err := parseTest(gentest.OrdinaryOnlyTyped)
@@ -134,9 +79,9 @@ func TestGeneratedTypedOnly(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("ordtest")), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	gentest.OrdinaryOnlyPackage(t, dir, "full", gentest.OrdinaryOnlyTyped, gen.GenOptions{Types: true, Recognize: true, Document: true, WorkControls: true}, ordinaryOnlyTypedEntries, gentest.OrdinaryOnlyTypedInputs)
-	gentest.OrdinaryOnlyPackage(t, dir, "only", gentest.OrdinaryOnlyTyped, gen.GenOptions{Types: true, TypedOnly: true}, ordinaryOnlyTypedEntries, gentest.OrdinaryOnlyTypedInputs)
-	gentest.OrdinaryOnlyPackage(t, dir, "mutated", strings.Replace(gentest.OrdinaryOnlyTyped, `"+"`, `"-"`, 1), gen.GenOptions{Types: true, TypedOnly: true}, ordinaryOnlyTypedEntries, gentest.OrdinaryOnlyTypedInputs)
+	gentest.OrdinaryOnlyPackage(t, dir, "full", gentest.OrdinaryOnlyTyped, gen.GenOptions{Types: true, Recognize: true, Document: true, WorkControls: true}, gentest.OrdinaryOnlyTypedEntries, gentest.OrdinaryOnlyTypedInputs)
+	gentest.OrdinaryOnlyPackage(t, dir, "only", gentest.OrdinaryOnlyTyped, gen.GenOptions{Types: true, TypedOnly: true}, gentest.OrdinaryOnlyTypedEntries, gentest.OrdinaryOnlyTypedInputs)
+	gentest.OrdinaryOnlyPackage(t, dir, "mutated", strings.Replace(gentest.OrdinaryOnlyTyped, `"+"`, `"-"`, 1), gen.GenOptions{Types: true, TypedOnly: true}, gentest.OrdinaryOnlyTypedEntries, gentest.OrdinaryOnlyTypedInputs)
 	out := gentest.RunTranscripts(t, dir, "full", "only", "mutated")
 	if out["full"] != out["only"] {
 		t.Errorf("the typed-only parser differs from the full one:\n%s", gentest.FirstTranscriptDifference(out["full"], out["only"]))
@@ -158,7 +103,7 @@ func testGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	program := strings.NewReplacer(`"sum"`, `"main"`, `"a"`, `"item"`).Replace(ordinaryOnlyTypedEntries)
+	program := strings.NewReplacer(`"sum"`, `"main"`, `"a"`, `"item"`).Replace(gentest.OrdinaryOnlyTypedEntries)
 	g, err := parseTest(gentest.OrdinaryOnlyConverted)
 	if err != nil {
 		t.Fatal(err)
@@ -221,7 +166,7 @@ func TestGeneratedTypedOnlyHiddenRules(t *testing.T) {
 		t.Skip("builds generated code")
 	}
 	// The entries start at main and at the hidden rule _t.
-	program := strings.NewReplacer(`"sum"`, `"main"`, `"a"`, `"_t"`).Replace(ordinaryOnlyTypedEntries)
+	program := strings.NewReplacer(`"sum"`, `"main"`, `"a"`, `"_t"`).Replace(gentest.OrdinaryOnlyTypedEntries)
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("ordtest")), 0o644); err != nil {
 		t.Fatal(err)

@@ -15,26 +15,9 @@ import (
 	"github.com/ornew/pego/internal/gentest"
 )
 
-const topBottomRules = "type Num = { Text string }\nrule n Num = t:([0-9]+) #atomic => Num{Text: text($t)}\nrule w = [a-z]+\n"
-
-func topBottomCases() []gentest.Case {
-	return []gentest.Case{
-		{Name: "top field", Src: "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: $x}\n" + topBottomRules, Inputs: []string{"1", "a"}},
-		// text applies to nodes of string values, so both alternatives are plain nodes here.
-		{Name: "top primitive", Src: "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: len(text($x))}\nrule n = [0-9]+ #atomic\nrule w = [a-z]+\n", Inputs: []string{"12", "a"}},
-		{Name: "top cast", Src: "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: $x}.A.(Num)\n" + topBottomRules, Inputs: []string{"1", "a"}},
-		{Name: "top compare", Src: "type T = { A _ }\nrule main = x:(n / w) {T{A: $x}.A == $x} $$\n" + topBottomRules, Inputs: []string{"1", "a"}},
-		// A struct is not a node, so the meet is node[string].
-		{Name: "meet field", Src: "type T = { A (Num | node[string] | int) & node[_] }\nrule main = x:([a-z]+ #atomic) $$ => T{A: $x}\n" + topBottomRules, Inputs: []string{"a", "1"}},
-		{Name: "top list", Src: "type T = { A []_ }\ntype U = { F _ }\nrule main = x:(n / w)+ $$ => T{A: U{F: $x}.F.([]_)}\n" + topBottomRules, Inputs: []string{"1", "1a"}},
-		{Name: "top list mismatch", Src: "type T = { A []_ | int }\ntype U = { F _ }\nrule main = x:(n / w) $$ => T{A: U{F: $x}.F.([]_ | int)}\n" + topBottomRules, Inputs: []string{"1", "a"}},
-		{Name: "meet list", Src: "type T = { A [](Num | node[string]) & []node[_] }\nrule main = xs:[a-z]+ $$ => T{A: $xs.Value}\n" + topBottomRules, Inputs: []string{"ab", ""}},
-	}
-}
-
 func TestTopBottomAcrossBackends(t *testing.T) {
 	t.Parallel()
-	for _, fixture := range topBottomCases() {
+	for _, fixture := range gentest.TopBottomCases() {
 		t.Run(fixture.Name, func(t *testing.T) {
 			program := mustCompile(t, fixture.Src)
 			for _, input := range fixture.Inputs {
@@ -309,9 +292,9 @@ func TestTopBottomGeneratedGoParity(t *testing.T) {
 
 func testTopBottomGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	gentest.GeneratedParsersCorpus(t, goBin, topBottomCases(), gen.GenOptions{})
+	gentest.GeneratedParsersCorpus(t, goBin, gentest.TopBottomCases(), gen.GenOptions{})
 	// A field of type _, like one of type any, keeps the reference runtime.
-	gentest.GeneratedTypesCorpus(t, goBin, topBottomCases(), gen.GenOptions{ConvertTypes: true}, 2)
+	gentest.GeneratedTypesCorpus(t, goBin, gentest.TopBottomCases(), gen.GenOptions{ConvertTypes: true}, 2)
 }
 
 func TestTopBottomGeneratedTypeScriptParity(t *testing.T) {
@@ -320,5 +303,5 @@ func TestTopBottomGeneratedTypeScriptParity(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	testGeneratedTSParsersCorpus(t, node, topBottomCases(), gen.GenOptions{})
+	testGeneratedTSParsersCorpus(t, node, gentest.TopBottomCases(), gen.GenOptions{})
 }

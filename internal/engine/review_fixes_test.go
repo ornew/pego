@@ -30,7 +30,7 @@ func TestFoldAccumulatorMustConverge(t *testing.T) {
 // Compiled bytes depend on the grammar, not on its layout, unless source information is recorded.
 func TestCompiledBytesIgnoreLayoutWithoutSourceInfo(t *testing.T) {
 	t.Parallel()
-	const a = "rule main = x:(n / w) $$ => $x.(Num)\n" + castRules
+	const a = "rule main = x:(n / w) $$ => $x.(Num)\n" + gentest.CastRules
 	b := "\n\n  " + strings.ReplaceAll(a, " => ", "   =>   ")
 	bytesOf := func(src string, opts ...compile.Options) []byte {
 		t.Helper()

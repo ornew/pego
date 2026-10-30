@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedTSProfile(t *testing.T) {
@@ -55,16 +56,16 @@ func TestGeneratedTSProfile(t *testing.T) {
 				name += "_typed"
 			}
 			options := gen.GenOptions{Start: "main", WorkControls: true, Types: typed, Recognize: true}
-			reference, err := generateTSBundle(g, options)
+			reference, err := gentest.GenerateTSBundle(g, options)
 			if err != nil {
 				t.Fatal(name, err)
 			}
 			options.Observability = true
-			code, err := generateTSBundle(g, options)
+			code, err := gentest.GenerateTSBundle(g, options)
 			if err != nil {
 				t.Fatal(name, err)
 			}
-			again, err := generateTSBundle(g, options)
+			again, err := gentest.GenerateTSBundle(g, options)
 			if err != nil || string(again) != string(code) {
 				t.Fatal(name, "unstable source", err)
 			}

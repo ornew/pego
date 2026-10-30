@@ -51,7 +51,7 @@ rule n = ("(" n ")" / "é") #recover(skip="?")`, Inputs: []string{"é", "(é)", 
 		if err != nil {
 			t.Fatal(err)
 		}
-		code, err := generateTSBundle(g, gen.GenOptions{Start: "main", Recognize: true, MaxDepth: 4})
+		code, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main", Recognize: true, MaxDepth: 4})
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -44,7 +44,7 @@ func testStreamRecoveryRejected(t *testing.T) {
 				_, err := gentest.GenerateCode(t, g, gen.GenOptions{Start: "main", Package: "test", Types: true})
 				return err
 			},
-			"TS": func() error { _, err := generateTSBundle(g, gen.GenOptions{Start: "main"}); return err },
+			"TS": func() error { _, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main"}); return err },
 		} {
 			if err := generate(); err == nil || !strings.Contains(err.Error(), streamRecoveryError) {
 				t.Errorf("%s generation: %v", name, err)

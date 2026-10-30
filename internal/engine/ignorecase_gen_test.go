@@ -14,17 +14,6 @@ import (
 	"github.com/ornew/pego/internal/gentest"
 )
 
-// ignoreCaseGenGrammar has case-insensitive literals in a choice, whose alternatives the generated
-// parsers dispatch on their first character, and in a sequence.
-const ignoreCaseGenGrammar = `rule main = ("select"i / "from"i / "Sel"i "ect"i) " " "xy"i`
-
-// ignoreCaseGenInputs are parsed by every backend. They include a non-ASCII letter and the Kelvin
-// sign, which the folding must not match.
-var ignoreCaseGenInputs = []string{
-	"SELECT xY", "from XY", "selEct xy", "SEL ect xy", "select", "fRoM xy", "SELECT xz",
-	"SELECX xy", "selecté xy", "SeLeCt xy", "KEL", "", "Sel ect XY", "FROM xy",
-}
-
 // ignoreCaseLines is the expected output of a program that parses each input and prints "ok" with
 // the consumed input, or "error".
 func ignoreCaseLines(t *testing.T, src string, inputs []string) string {
@@ -117,23 +106,23 @@ func TestIgnoreCaseGeneratedGo(t *testing.T) {
 }
 
 func testIgnoreCaseGeneratedGo(t *testing.T) {
-	want := ignoreCaseLines(t, ignoreCaseGenGrammar, ignoreCaseGenInputs)
-	runGeneratedUntypedProgram(t, ignoreCaseGenGrammar, ignoreCaseGoBody(ignoreCaseGenInputs), want)
+	want := ignoreCaseLines(t, gentest.IgnoreCaseGenGrammar, gentest.IgnoreCaseGenInputs)
+	runGeneratedUntypedProgram(t, gentest.IgnoreCaseGenGrammar, ignoreCaseGoBody(gentest.IgnoreCaseGenInputs), want)
 }
 
 // TestIgnoreCaseGeneratedTS checks that the generated TypeScript parser agrees with the closure
 // backend on case-insensitive literals.
 func TestIgnoreCaseGeneratedTS(t *testing.T) {
 	t.Parallel()
-	want := ignoreCaseLines(t, ignoreCaseGenGrammar, ignoreCaseGenInputs)
+	want := ignoreCaseLines(t, gentest.IgnoreCaseGenGrammar, gentest.IgnoreCaseGenInputs)
 	var list strings.Builder
-	for _, in := range ignoreCaseGenInputs {
+	for _, in := range gentest.IgnoreCaseGenInputs {
 		fmt.Fprintf(&list, "  %s,\n", strconv.Quote(in))
 	}
 	script := "import { parse } from \"./parser.ts\";\nfor (const s of [\n" + list.String() + "]) {\n" +
 		"  const r = parse(s);\n  if (r.error !== null) {\n    console.log(\"error\");\n    continue;\n  }\n" +
 		"  console.log(\"ok \" + Array.from(s).slice(r.node.start, r.node.end).join(\"\"));\n}\n"
-	if got := runTSScript(t, ignoreCaseGenGrammar, script); got != want {
+	if got := runTSScript(t, gentest.IgnoreCaseGenGrammar, script); got != want {
 		t.Errorf("got\n%s\nwant\n%s", got, want)
 	}
 }
@@ -146,9 +135,9 @@ func TestIgnoreCaseGeneratedTypedGo(t *testing.T) {
 }
 
 func testIgnoreCaseGeneratedTypedGo(t *testing.T) {
-	prog := mustCompile(t, ignoreCaseGenGrammar)
+	prog := mustCompile(t, gentest.IgnoreCaseGenGrammar)
 	var want strings.Builder
-	for _, in := range ignoreCaseGenInputs {
+	for _, in := range gentest.IgnoreCaseGenInputs {
 		if _, err := prog.ParseWith("main", in, ParseOptions{Backend: Closure}); err != nil {
 			want.WriteString("error\n")
 		} else {
@@ -156,13 +145,13 @@ func testIgnoreCaseGeneratedTypedGo(t *testing.T) {
 		}
 	}
 	var list strings.Builder
-	for _, in := range ignoreCaseGenInputs {
+	for _, in := range gentest.IgnoreCaseGenInputs {
 		fmt.Fprintf(&list, "\t\t%s,\n", strconv.Quote(in))
 	}
 	body := "func main() {\n\tfor _, s := range []string{\n" + list.String() + "\t} {\n" +
 		"\t\t_, err := p.ParseAST(s)\n\t\tif err != nil {\n\t\t\tfmt.Println(\"error\")\n\t\t\tcontinue\n\t\t}\n" +
 		"\t\tfmt.Println(\"ok\")\n\t}\n}\n"
-	runGeneratedNamedNodeProgram(t, ignoreCaseGenGrammar, body, want.String())
+	runGeneratedNamedNodeProgram(t, gentest.IgnoreCaseGenGrammar, body, want.String())
 }
 
 // TestIgnoreCaseGeneratedExpectation checks that the generated Go parser reports the same error as
@@ -173,12 +162,12 @@ func TestIgnoreCaseGeneratedExpectation(t *testing.T) {
 }
 
 func testIgnoreCaseGeneratedExpectation(t *testing.T) {
-	_, err := mustCompile(t, ignoreCaseGenGrammar).ParseWith("main", "x", ParseOptions{Backend: Closure})
+	_, err := mustCompile(t, gentest.IgnoreCaseGenGrammar).ParseWith("main", "x", ParseOptions{Backend: Closure})
 	if err == nil {
 		t.Fatal("the closure backend parsed x")
 	}
 	body := "func main() {\n\t_, err := p.Parse(\"x\")\n\tfmt.Println(err)\n}\n"
-	runGeneratedUntypedProgram(t, ignoreCaseGenGrammar, body, err.Error()+"\n")
+	runGeneratedUntypedProgram(t, gentest.IgnoreCaseGenGrammar, body, err.Error()+"\n")
 }
 
 // ignoreCaseDocEdit is one edit replacing runes [start, end) of the document text with text.
@@ -199,7 +188,7 @@ var ignoreCaseDocEdits = []ignoreCaseDocEdit{
 // initial parse and after each edit.
 func ignoreCaseDocWant(t *testing.T) string {
 	t.Helper()
-	prog := mustCompile(t, ignoreCaseGenGrammar)
+	prog := mustCompile(t, gentest.IgnoreCaseGenGrammar)
 	var b strings.Builder
 	show := func(text []rune) {
 		n, err := prog.ParseWith("main", string(text), ParseOptions{Backend: Closure})
@@ -241,7 +230,7 @@ func TestIgnoreCaseGeneratedDocument(t *testing.T) {
 	t.Parallel()
 	gentest.NeedsWorkControls(t)
 	want := ignoreCaseDocWant(t)
-	runGeneratedProgramWith(t, ignoreCaseGenGrammar, gen.GenOptions{Package: "p", Start: "main", Document: true}, ignoreCaseDocBody(), want)
+	runGeneratedProgramWith(t, gentest.IgnoreCaseGenGrammar, gen.GenOptions{Package: "p", Start: "main", Document: true}, ignoreCaseDocBody(), want)
 }
 
 // ignoreCaseTerminalGrammar holds a value-free choice with more literals than a terminal program

@@ -15,31 +15,15 @@ import (
 	"github.com/ornew/pego/internal/limits"
 )
 
-// textCompareGrammar compares string fields of structs with each other, with literals and in
-// predicates.
-const textCompareGrammar = `type Name = { Text string }
-type Tag = { Text string; N int }
-type Ops = { Eq bool; Ne bool; Lt bool; Le bool; Gt bool; Ge bool }
-type Out = { Items node[_] }
-rule main = items:(-" "* item)* $$ => Out{Items: $items}
-rule item = cmp / mixed / pred
-rule cmp = a:name "," b:name => Ops{Eq: $a.Text == $b.Text, Ne: $a.Text != $b.Text, Lt: $a.Text < $b.Text, Le: $a.Text <= $b.Text, Gt: $a.Text > $b.Text, Ge: $a.Text >= $b.Text}
-rule mixed = "%" a:name ":" t:tag => Ops{Eq: $a.Text == $t.Text, Ne: $t.Text != "x", Lt: "m" < $a.Text, Le: $a.Text <= "m", Gt: $t.Text > $a.Text, Ge: $t.N >= 1}
-rule pred = "?" a:name {$a.Text != "no"} {"a" <= $a.Text} => $a
-rule tag = "<" t:([a-z]+ #atomic) ">" => Tag{Text: text($t), N: 1}
-rule name Name = t:([a-z]+) #atomic => Name{Text: text($t)}`
-
-var textCompareInputs = []string{"", "a,b", "b,a", "ab,ab", "%ab:<ab>", "%z:<a>", "%a:<x>", "?no", "?yes", "a,b %c:<d> ?x", "?", "a,"}
-
 // TestTextFieldComparisons checks that the backends agree on comparisons of string fields, with
 // and without work controls.
 func TestTextFieldComparisons(t *testing.T) {
 	t.Parallel()
-	prog := compileBare(t, textCompareGrammar, compile.Options{})
+	prog := compileBare(t, gentest.TextCompareGrammar, compile.Options{})
 	limits := limits.WorkLimits{MaxInputWork: 1 << 40, MaxSteps: 1 << 40}
 	for _, controlled := range []bool{false, true} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
-			for _, input := range textCompareInputs {
+			for _, input := range gentest.TextCompareInputs {
 				opts := ParseOptions{Backend: Closure, Unit: unit}
 				if controlled {
 					opts.WorkLimits = limits
@@ -66,7 +50,7 @@ func TestGeneratedTextFieldComparisons(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	g, err := parseTest(textCompareGrammar)
+	g, err := parseTest(gentest.TextCompareGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +58,7 @@ func TestGeneratedTextFieldComparisons(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(gentest.GoMod("comparefixture")), 0644); err != nil {
 		t.Fatal(err)
 	}
-	inputs := fmt.Sprintf("%#v", textCompareInputs)
+	inputs := fmt.Sprintf("%#v", gentest.TextCompareInputs)
 	pkg := func(convert, boxed bool) string { return fmt.Sprintf("compare_%v_%v", convert, boxed) }
 	for _, convert := range []bool{false, true} {
 		for _, boxed := range []bool{false, true} {

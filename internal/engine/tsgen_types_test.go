@@ -78,7 +78,7 @@ func runTypedTSFixtureWithLib(t *testing.T, src, consumer string, opts gen.GenOp
 	if err != nil || !strings.Contains(string(decl), "export declare function parseAST(") || !strings.Contains(string(decl), "export declare function parseASTWithOptions(") {
 		t.Fatalf("typed declaration exports missing: %v", err)
 	}
-	cmd = exec.Command(node, nodeTSArgs("consumer.ts")...)
+	cmd = exec.Command(node, gentest.NodeTSArgs("consumer.ts")...)
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("typed Node consumer: %v\n%s", err, out)
@@ -211,12 +211,6 @@ check(parseAST(new Uint8Array([0xff]), CodePoints).value?.Text === "�", "decod
 	runTypedTSFixture(t, src, consumer, gen.GenOptions{}, "")
 }
 
-const tsTypedDAGTypes = `type Leaf = { Text string }
-type Tree ~ Branch | Leaf
-type Branch = { Left Tree; Right Tree }
-rule leaf Leaf = t:("x") #atomic => Leaf{Text: text($t)}
-`
-
 func TestGeneratedTSTypedSharedDAG(t *testing.T) {
 	t.Parallel()
 	for name, body := range map[string]string{
@@ -240,7 +234,7 @@ check(stable(parseAST("xx").value).includes("Branch"), "small DAG value");
 			if out := os.Getenv("PEGO_TS_TYPED_DIR"); out != "" {
 				keep = filepath.Join(out, name)
 			}
-			runTypedTSFixture(t, tsTypedDAGTypes+body, consumer, gen.GenOptions{Recognize: true}, keep)
+			runTypedTSFixture(t, gentest.TSTypedDAGTypes+body, consumer, gen.GenOptions{Recognize: true}, keep)
 			if keep != "" {
 				inputs := tsgen.TsStrings([]string{"x", strings.Repeat("x", 8), strings.Repeat("x", 6000)})
 				if err := os.WriteFile(filepath.Join(keep, "inputs.json"), []byte(inputs), 0o644); err != nil {
@@ -275,7 +269,7 @@ rule n = "(" n ")" / "x"`, `import {parseAST, parseASTWithOptions} from "./parse
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := generateTSBundle(g, gen.GenOptions{Start: "main", Types: true}); err == nil {
+		if _, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main", Types: true}); err == nil {
 			t.Errorf("top-level scalar %s unexpectedly accepted", scalar)
 		}
 	}

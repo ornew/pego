@@ -126,7 +126,7 @@ func BenchmarkStreamCaptureRecognition(b *testing.B) {
 // builds none.
 func TestStreamRecognitionCompiled(t *testing.T) {
 	t.Parallel()
-	g, err := syntax.Parse(startRestrictionSource)
+	g, err := syntax.Parse(gentest.StartRestrictionSource)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,7 +158,7 @@ func TestStreamRecognitionCompiled(t *testing.T) {
 		}
 	}
 	// The recognizer of an ordinary program only recognizes.
-	g, err = syntax.Parse(startRestrictionSource)
+	g, err = syntax.Parse(gentest.StartRestrictionSource)
 	if err != nil {
 		t.Fatal(err)
 	}

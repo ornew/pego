@@ -165,7 +165,7 @@ func testGenerateDocumentCombinations(t *testing.T) {
 	if err != nil || !strings.Contains(string(typed), "func (d *Document) ParseAST(") {
 		t.Fatalf("typed Document generation: %v", err)
 	}
-	if _, err := generateTSBundle(g, gen.GenOptions{Start: "main", Document: true}); err == nil {
+	if _, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main", Document: true}); err == nil {
 		t.Fatal("TypeScript Document generation was accepted")
 	}
 }

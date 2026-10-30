@@ -60,14 +60,6 @@ func TestLeftRecursionBindingErrors(t *testing.T) {
 	}
 }
 
-// lrBindingSource re-enters a left-recursive rule with another variable environment: the
-// binding before the left call changes k, which the rule reads. Only compiling it with
-// leftRecursionBindings accepts it. plainLRSource is the same rule without the binding.
-const (
-	lrBindingSource = "var k int\n@start\nrule main = R $$\nrule R = {k := k + 1} R \"x\" / {k < 1000} \"x\""
-	plainLRSource   = "var k int\n@start\nrule main = R $$\nrule R = R \"x\" / {k < 1000} \"x\""
-)
-
 // TestLeftRecursionGuardIgnoresVariables checks that a left-recursive re-entry at the same
 // position gets the growing result even when its variable environment differs from that of
 // the call being grown, on every backend and in Documents: the parse matches the same rule
@@ -77,8 +69,8 @@ func TestLeftRecursionGuardIgnoresVariables(t *testing.T) {
 	inputs := []string{"x", "xxx", "xxxxxxxxxx", "", "y"}
 	for _, options := range []compile.Options{{}, {DisableMemo: true}} {
 		options.LeftRecursionBindings = true
-		prog := mustCompile(t, lrBindingSource, options)
-		plain := mustCompile(t, plainLRSource, options)
+		prog := mustCompile(t, gentest.LRBindingSource, options)
+		plain := mustCompile(t, gentest.PlainLRSource, options)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				for _, recognize := range []bool{false, true} {

@@ -13,30 +13,13 @@ import (
 	"github.com/ornew/pego/internal/gentest"
 )
 
-// textStructGrammar has rules whose actions make structs with a field Text from the text they
-// match.
-const textStructGrammar = `type Name = { Text string }
-type Num = { Text string }
-type Pair = { Text string; N int }
-type Other = { Text string }
-type Out = { Items node[_] }
-rule main = items:(-" "* item)* $$ => Out{Items: $items}
-rule item = tag / name / num / pair / plain / spaced / other
-rule tag = "[" a:name "]" b:name {$b.Text == $a.Text} => $b
-rule name Name = t:([a-z]+) #atomic => Name{Text: text($t)}
-rule num = t:([0-9]+ ("." [0-9]+)?) #atomic => Num{Text: text($t)}
-rule pair = "<" t:([a-z]+ #atomic) ">" => Pair{Text: text($t)}
-rule plain = t:"!" => Other{Text: text($t)}
-rule spaced Name = t:("#" [a-z]*) #atomic => Name{Text: text($t) + "#"}
-rule other = t:("@" [a-z]*) #atomic => Other{Text: text($t)}`
-
 // TestTextStructsAcrossBackends checks that the backends agree on the structs actions make from
 // the text a rule matches.
 func TestTextStructsAcrossBackends(t *testing.T) {
 	t.Parallel()
 	inputs := []string{"", "ab", "ab 12 3.5", "<x> ! #a # @b @", "ab ?", "12.", "<x", "! ab <yz> 7", "[ab]ab", "[ab]cd 1"}
 	for _, sourceInfo := range []bool{false, true} {
-		prog := compileBare(t, textStructGrammar, compile.Options{SourceInfo: sourceInfo})
+		prog := compileBare(t, gentest.TextStructGrammar, compile.Options{SourceInfo: sourceInfo})
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, input := range inputs {
 				want := gentest.ResultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit}))
@@ -65,7 +48,7 @@ func testGeneratedTextStructs(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	cases := []gentest.Case{{Name: "text structs", Src: textStructGrammar, Inputs: []string{"", "ab", "ab 12 3.5", "<x> ! #a # @b @", "ab ?", "12.", "! ab <yz> 7", "[ab]ab", "[ab]cd 1"}}}
+	cases := []gentest.Case{{Name: "text structs", Src: gentest.TextStructGrammar, Inputs: []string{"", "ab", "ab 12 3.5", "<x> ! #a # @b @", "ab ?", "12.", "! ab <yz> 7", "[ab]ab", "[ab]cd 1"}}}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	gentest.GeneratedParsersCorpus(t, goBin, cases, gen.GenOptions{})
 	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, 1)

@@ -167,7 +167,7 @@ rule main A = x:"a" => A{$x}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	tsCode, err := generateTSBundle(g, gen.GenOptions{Start: "main"})
+	tsCode, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}

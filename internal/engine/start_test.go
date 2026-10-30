@@ -133,14 +133,6 @@ func testStartHiddenRule(t *testing.T) {
 	}
 }
 
-const startRestrictionSource = `@start(default)
-rule main = item* #stream $$
-@start
-rule item = "a"
-rule other = "b" _h?
-rule _h = "c"
-`
-
 // checkStartRestriction checks that every way into prog parses only from start rules. Streams
 // and documents do not recognize, so they are left out with o.Recognize.
 func checkStartRestriction(t *testing.T, prog *Program, o ParseOptions) {
@@ -253,7 +245,7 @@ func checkStartRestriction(t *testing.T, prog *Program, o ParseOptions) {
 func TestStartRestriction(t *testing.T) {
 	t.Parallel()
 	for _, recognition := range []bool{false, true} {
-		g, err := syntax.Parse(startRestrictionSource)
+		g, err := syntax.Parse(gentest.StartRestrictionSource)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -275,7 +267,7 @@ func TestStartRoundTrip(t *testing.T) {
 	t.Parallel()
 	for _, recognition := range []bool{false, true} {
 		for _, mode := range allModes {
-			g, err := syntax.Parse(startRestrictionSource)
+			g, err := syntax.Parse(gentest.StartRestrictionSource)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -327,7 +319,7 @@ func TestStartRoundTrip(t *testing.T) {
 func TestStartModuleValidation(t *testing.T) {
 	t.Parallel()
 	fresh := func() *bytecode.Module {
-		prog, err := compileStarts(t, startRestrictionSource)
+		prog, err := compileStarts(t, gentest.StartRestrictionSource)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -73,7 +73,7 @@ var recognizerGenModes = []coreGenMode{
 
 // recognizerCorpus is the corpus grammars of the recognizer freeze.
 func recognizerCorpus(t *testing.T) []gentest.Case {
-	return append(append(gentest.CorpusWithParsers(t), coreExtraGrammars...), recognizerKnownDifferences...)
+	return append(append(gentest.CorpusWithParsers(t), gentest.CoreExtraGrammars...), recognizerKnownDifferences...)
 }
 
 // recognizerKnownDifferences are grammars where the Core IR guards differently from what the

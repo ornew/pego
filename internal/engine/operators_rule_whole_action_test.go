@@ -48,9 +48,9 @@ func testOperatorsRuleWholeActionRejection(t *testing.T) {
 							_, err := gentest.GenerateCode(t, input.g, gen.GenOptions{Start: "main", Package: "p", Types: true})
 							return err
 						},
-						"TS generator": func() error { _, err := generateTSBundle(input.g, gen.GenOptions{Start: "main"}); return err },
+						"TS generator": func() error { _, err := gentest.GenerateTSBundle(input.g, gen.GenOptions{Start: "main"}); return err },
 						"typed TS generator": func() error {
-							_, err := generateTSBundle(input.g, gen.GenOptions{Start: "main", Types: true})
+							_, err := gentest.GenerateTSBundle(input.g, gen.GenOptions{Start: "main", Types: true})
 							return err
 						},
 					} {
@@ -139,8 +139,11 @@ func testOperatorsRuleExplicitDefaultAction(t *testing.T) {
 				_, err := gentest.GenerateCode(t, g, gen.GenOptions{Start: "main", Package: "p", Types: true})
 				return err
 			},
-			"TS generator":       func() error { _, err := generateTSBundle(g, gen.GenOptions{Start: "main"}); return err },
-			"typed TS generator": func() error { _, err := generateTSBundle(g, gen.GenOptions{Start: "main", Types: true}); return err },
+			"TS generator": func() error { _, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main"}); return err },
+			"typed TS generator": func() error {
+				_, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main", Types: true})
+				return err
+			},
 		} {
 			if err := run(); err != nil {
 				t.Fatalf("%s rejected explicit default: %v", name, err)

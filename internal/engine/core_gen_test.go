@@ -146,18 +146,6 @@ type coreGenerated1 struct {
 	gen  *gogen.Generator
 }
 
-// coreExtraGrammars are grammars with term forms that the typed rules of the corpus lack: text
-// comparisons of two captures and comparisons of fields.
-var coreExtraGrammars = []gentest.Case{
-	{Name: "text equality", Src: `rule main = a:[a-z]+ "=" b:[a-z]+ => text($a) != text($b) || text($a) == text($b)
-`},
-	{Name: "field comparison", Src: `type P = { N int; S string }
-type R = { A bool; B bool; C bool }
-rule main R = p:pair q:pair => R{A: $p.N == 1, B: $p.S != "x", C: $p.N < $q.N}
-rule pair P = n:[0-9]+ s:[a-z] => P{N: len($n), S: text($s)}
-`},
-}
-
 // coreGenerations generates every corpus grammar in the mode, once for all tests: those that the
 // generator accepts and whose typed rules have a Core IR. The grammars are generated concurrently,
 // since the tests that read them run before the parallel tests and would otherwise wait for each.
@@ -166,7 +154,7 @@ func coreGenerations(t *testing.T, mode coreGenMode) []coreGenerated1 {
 	if out, ok := coreGenerated[mode.name]; ok {
 		return out
 	}
-	cases := append(gentest.CorpusWithParsers(t), coreExtraGrammars...)
+	cases := append(gentest.CorpusWithParsers(t), gentest.CoreExtraGrammars...)
 	gens := make([]*gogen.Generator, len(cases))
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, runtime.GOMAXPROCS(0))

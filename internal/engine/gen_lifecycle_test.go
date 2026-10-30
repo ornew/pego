@@ -93,7 +93,7 @@ func TestGeneratedTSActionTracking(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateTSBundle(g, gen.GenOptions{Start: "main"})
+	code, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +149,7 @@ func testGeneratedEnvironmentBindings(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := parseTest(boundStream)
+	g, err := parseTest(gentest.BoundStream)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,11 +200,11 @@ func TestGeneratedTSEnvironmentBindings(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	g, err := parseTest(boundStream)
+	g, err := parseTest(gentest.BoundStream)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateTSBundle(g, gen.GenOptions{Start: "main"})
+	code, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}

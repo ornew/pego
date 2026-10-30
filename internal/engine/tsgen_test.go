@@ -12,73 +12,11 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
 	"github.com/ornew/pego/internal/gen"
 	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/syntax"
-	"github.com/ornew/pego/internal/value"
 )
-
-// tsHarness runs the generated TypeScript parsers g<i>.ts on the inputs in inputs.json and writes
-// one JSON line per input, unit and form of the input (bytes, and a string when the input is valid
-// UTF-8) to out.jsonl. It parses in a worker thread with a large stack, so that nesting reaches the
-// limit of 100,000 rule calls (Node's default stack holds far fewer).
-const tsHarness = `import { Worker, isMainThread, workerData } from "node:worker_threads";
-import { closeSync, openSync, readFileSync, writeSync } from "node:fs";
-
-if (isMainThread) {
-  const w = new Worker(new URL(import.meta.url), {
-    workerData: { inputs: process.argv[2], out: process.argv[3] },
-    resourceLimits: { stackSizeMb: 1024 },
-  });
-  w.on("error", (e) => {
-    console.error(e);
-    process.exit(1);
-  });
-  w.on("exit", (code) => process.exit(code));
-} else {
-  // The bytes of a string in base64, with the surrogates that stand for invalid bytes (in text
-  // of byte mode) as those bytes, so that strings with them can be compared with Go's.
-  const bytesOf = (s) => {
-    const out = [];
-    for (const ch of s) {
-      const c = ch.codePointAt(0);
-      if (c >= 0xdc80 && c <= 0xdcff) {
-        out.push(c & 0xff);
-      } else {
-        out.push(...Buffer.from(ch, "utf8"));
-      }
-    }
-    return Buffer.from(out).toString("base64");
-  };
-  const inputs = JSON.parse(readFileSync(workerData.inputs, "utf8"));
-  const out = openSync(workerData.out, "w");
-  for (let i = 0; i < inputs.length; i++) {
-    const m = await import("./g" + i + ".ts");
-    for (const input of inputs[i]) {
-      const bytes = new Uint8Array(Buffer.from(input.b64, "base64"));
-      for (const unit of [m.CodePoints, m.Bytes]) {
-        const forms = [bytes];
-        if (input.valid) {
-          forms.push(Buffer.from(bytes).toString("utf8"));
-        }
-        for (const x of forms) {
-          const r = m.parse(x, unit);
-          const rec = m.recognize(x, unit);
-          writeSync(out, JSON.stringify({
-            node: m.marshal(r.node),
-            err: r.error === null ? null : r.error.message,
-            str: r.node === null ? "" : bytesOf(r.node.toString()),
-            rec: rec === null ? "<nil>" : rec.message,
-          }) + "\n");
-        }
-      }
-    }
-  }
-  closeSync(out);
-}
-`
 
 // tsVariantLen is the length up to which TestGeneratedTSParsersMatchEngine also parses variants of
 // an input.
@@ -147,7 +85,7 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []gentest.Cas
 		}
 	}
 	write("package.json", `{"type": "module"}`+"\n")
-	write("harness.mjs", tsHarness)
+	write("harness.mjs", gentest.TSHarness)
 	type input struct {
 		B64   string `json:"b64"`
 		Valid bool   `json:"valid"`
@@ -162,7 +100,7 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []gentest.Cas
 			t.Fatalf("%s: %v", c.Name, err)
 		}
 		opts.Start, opts.Recognize = "main", true
-		code, err := generateTSBundle(g, opts)
+		code, err := gentest.GenerateTSBundle(g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
@@ -176,7 +114,7 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []gentest.Cas
 			in = append(in, input{base64.StdEncoding.EncodeToString([]byte(s)), utf8.ValidString(s)})
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				n, err := prog.ParseWith("main", s, ParseOptions{Unit: unit})
-				w := want{out: deepResultJSON(t, n, err)}
+				w := want{out: gentest.DeepResultJSON(t, n, err)}
 				if n != nil {
 					w.str = n.String()
 				}
@@ -251,16 +189,16 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []gentest.Cas
 						in = in[:200] + "..."
 					}
 					if res != wants[w].out {
-						at := diffAt(res, wants[w].out)
-						t.Errorf("%s (%v, %s): input %q\n generated %s\n engine    %s", c.Name, unit, form, in, clip(res, at), clip(wants[w].out, at))
+						at := gentest.DiffAt(res, wants[w].out)
+						t.Errorf("%s (%v, %s): input %q\n generated %s\n engine    %s", c.Name, unit, form, in, gentest.Clip(res, at), gentest.Clip(wants[w].out, at))
 					}
 					str, err := base64.StdEncoding.DecodeString(got.Str)
 					if err != nil {
 						t.Fatal(err)
 					}
 					if string(str) != wants[w].str {
-						at := diffAt(string(str), wants[w].str)
-						t.Errorf("%s (%v, %s): input %q: String\n generated %s\n engine    %s", c.Name, unit, form, in, clip(string(str), at), clip(wants[w].str, at))
+						at := gentest.DiffAt(string(str), wants[w].str)
+						t.Errorf("%s (%v, %s): input %q: String\n generated %s\n engine    %s", c.Name, unit, form, in, gentest.Clip(string(str), at), gentest.Clip(wants[w].str, at))
 					}
 					if got.Rec != wants[w].rec {
 						t.Errorf("%s (%v, %s): input %q: recognize\n generated %s\n engine    %s", c.Name, unit, form, in, got.Rec, wants[w].rec)
@@ -279,17 +217,17 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []gentest.Cas
 func TestGenerateTSErrors(t *testing.T) {
 	t.Parallel()
 	g, _ := syntax.Parse("@start\nrule main = \"a\" b\nrule b = \"b\"")
-	if _, err := generateTSBundle(g, gen.GenOptions{Start: "nope"}); err == nil || err.Error() != "rule nope is not defined" {
+	if _, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "nope"}); err == nil || err.Error() != "rule nope is not defined" {
 		t.Errorf("got %v", err)
 	}
-	if _, err := generateTSBundle(g, gen.GenOptions{Start: "b"}); err == nil || err.Error() != "rule b is not a start rule; parsing can begin only at a rule marked @start" {
+	if _, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "b"}); err == nil || err.Error() != "rule b is not a start rule; parsing can begin only at a rule marked @start" {
 		t.Errorf("not a start rule: got %v", err)
 	}
-	if code, err := generateTSBundle(g, gen.GenOptions{Start: "main", Types: true}); err != nil || !strings.Contains(string(code), "export function parseAST(") {
+	if code, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main", Types: true}); err != nil || !strings.Contains(string(code), "export function parseAST(") {
 		t.Errorf("Types: %v", err)
 	}
 	bad, _ := parseTest(`rule main = x`)
-	if _, err := generateTSBundle(bad, gen.GenOptions{Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
+	if _, err := gentest.GenerateTSBundle(bad, gen.GenOptions{Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
 		t.Errorf("got %v", err)
 	}
 	// Generating is deterministic.
@@ -298,56 +236,14 @@ func TestGenerateTSErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := generateTSBundle(jg, gen.GenOptions{Start: "main", Recognize: true})
+	a, err := gentest.GenerateTSBundle(jg, gen.GenOptions{Start: "main", Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, _ := generateTSBundle(jg, gen.GenOptions{Start: "main", Recognize: true})
+	b, _ := gentest.GenerateTSBundle(jg, gen.GenOptions{Start: "main", Recognize: true})
 	if string(a) != string(b) {
 		t.Error("generating twice gives different code")
 	}
-}
-
-// deepResultJSON returns gentest.ResultJSON(n, err), also for trees nested too deeply for encoding/json
-// (which fails beyond 10,000 levels, and then resultJSON returns ""): it writes the node with
-// WriteJSON, which keeps its own stack, and checks that it agrees with resultJSON where that
-// succeeds.
-func deepResultJSON(t *testing.T, n *value.Node, err error) string {
-	var b strings.Builder
-	if err != nil {
-		e, _ := json.Marshal(err.Error())
-		b.WriteString(`{"err":` + string(e) + `,"node":`)
-	} else {
-		b.WriteString(`{"node":`)
-	}
-	if err := n.WriteJSON(&b); err != nil {
-		t.Fatal(err)
-	}
-	b.WriteByte('}')
-	if std := gentest.ResultJSON(n, err); std != "" && std != b.String() {
-		t.Fatalf("deepResultJSON differs from resultJSON:\n %s\n %s", b.String(), std)
-	}
-	return b.String()
-}
-
-// clip shortens long results for error messages: s around offset at, where it differs from the
-// other result.
-func clip(s string, at int) string {
-	if len(s) <= 300 {
-		return s
-	}
-	from := max(0, at-100)
-	to := min(len(s), at+200)
-	return fmt.Sprintf("...(%d bytes)...%s...(%d bytes)", from, s[from:to], len(s)-to)
-}
-
-// diffAt returns the offset of the first difference between a and b.
-func diffAt(a, b string) int {
-	i := 0
-	for i < len(a) && i < len(b) && a[i] == b[i] {
-		i++
-	}
-	return i
 }
 
 // runTSScript generates a TypeScript parser for the grammar src as parser.ts and runs script, a
@@ -359,42 +255,7 @@ func runTSScript(t *testing.T, src, script string) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return runTSGrammarScript(t, g, script)
-}
-
-func runTSGrammarScript(t *testing.T, g *grammar.Grammar, script string) string {
-	t.Helper()
-	return runTSGrammarScriptWith(t, g, script, gen.GenOptions{Start: "main"})
-}
-
-func runTSGrammarScriptWith(t *testing.T, g *grammar.Grammar, script string, opts gen.GenOptions) string {
-	t.Helper()
-	if testing.Short() {
-		t.Skip("runs generated code")
-	}
-	node, err := exec.LookPath("node")
-	if err != nil {
-		t.Skip("node not found")
-	}
-	code, err := generateTSBundle(g, opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	dir := t.TempDir()
-	for name, content := range map[string]string{"package.json": `{"type": "module"}`, "parser.ts": string(code), "main.ts": script} {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
-			t.Fatal(err)
-		}
-	}
-	cmd := exec.Command(node, "main.ts")
-	cmd.Dir = dir
-	var stderr strings.Builder
-	cmd.Stderr = &stderr
-	out, err := cmd.Output()
-	if err != nil {
-		t.Fatalf("node: %v\n%s", err, clip(stderr.String(), 0))
-	}
-	return string(out)
+	return gentest.RunTSGrammarScript(t, g, script)
 }
 
 // TestGeneratedTSLoneSurrogates checks that strings with many lone surrogates, which the parser
@@ -413,7 +274,7 @@ for (const s of ["\uDC00".repeat(7000), "x\uDC00".repeat(15000), "\uD800", "aðŸ˜
 `)
 	want := "7000 7000 " + strings.Repeat("1", 7000) + "\n30000 15000 " + strings.Repeat("1", 30000) + "\n1 1 1\n3 1 121\n"
 	if out != want {
-		t.Errorf("got\n%s\nwant\n%s", clip(out, diffAt(out, want)), clip(want, diffAt(out, want)))
+		t.Errorf("got\n%s\nwant\n%s", gentest.Clip(out, gentest.DiffAt(out, want)), gentest.Clip(want, gentest.DiffAt(out, want)))
 	}
 }
 
@@ -435,10 +296,10 @@ console.log(marshal(r.node));
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "ok\n" + n.String() + "\n" + strings.TrimSuffix(strings.TrimPrefix(deepResultJSON(t, n, nil), `{"node":`), "}") + "\n"
+	want := "ok\n" + n.String() + "\n" + strings.TrimSuffix(strings.TrimPrefix(gentest.DeepResultJSON(t, n, nil), `{"node":`), "}") + "\n"
 	if out != want {
-		at := diffAt(out, want)
-		t.Errorf("got\n%s\nwant\n%s", clip(out, at), clip(want, at))
+		at := gentest.DiffAt(out, want)
+		t.Errorf("got\n%s\nwant\n%s", gentest.Clip(out, at), gentest.Clip(want, at))
 	}
 }
 
@@ -468,8 +329,8 @@ process.stdout.write(r.error === null ? String(r.node) : r.error.message);
 		t.Fatal(err)
 	}
 	if want := n.String(); out != want {
-		at := diffAt(out, want)
-		t.Errorf("got\n%s\nwant\n%s", clip(out, at), clip(want, at))
+		at := gentest.DiffAt(out, want)
+		t.Errorf("got\n%s\nwant\n%s", gentest.Clip(out, at), gentest.Clip(want, at))
 	}
 }
 
@@ -483,7 +344,7 @@ func TestGeneratedTSFieldNames(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Capture names appear in the source information.
-	out := runTSGrammarScriptWith(t, g, `import { parse } from "./parser.ts";
+	out := gentest.RunTSGrammarScriptWith(t, g, `import { parse } from "./parser.ts";
 console.log(JSON.stringify(parse("abcd").node));
 `, gen.GenOptions{Start: "main", SourceInfo: true})
 	n, err := mustCompile(t, src).Parse("main", "abcd")

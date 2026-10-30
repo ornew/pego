@@ -16,27 +16,9 @@ import (
 	"github.com/ornew/pego/internal/gentest"
 )
 
-const castRules = "type Num = { Text string }\ntype P = { N Num }\nrule n Num = t:([0-9]+) #atomic => Num{Text: text($t)}\nrule w = [a-z]+\nrule pair = n:n \"=\" => P{N: $n}\n"
-
-func castCases() []gentest.Case {
-	return []gentest.Case{
-		{Name: "terminal", Src: "rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, Inputs: []string{"12", "ab", ""}},
-		{Name: "list", Src: "rule main = x:(n+ / w) $$ => $x.([]Num)\n" + castRules, Inputs: []string{"1", "ab", ""}},
-		{Name: "optional", Src: "rule main = x:(n / w)? $$ => $x.(*Num)\n" + castRules, Inputs: []string{"1", "", "ab"}},
-		{Name: "union", Src: "rule main = x:(n / w / pair) $$ => $x.(Num | P)\n" + castRules, Inputs: []string{"1", "1=", "ab"}},
-		{Name: "field", Src: "rule main = x:(pair / w) $$ => $x.(P).N\n" + castRules, Inputs: []string{"1=", "ab"}},
-		{Name: "predicate", Src: "rule main = x:(n / w) ({$x.(Num) == $x} \"!\" / \"?\") $$\n" + castRules, Inputs: []string{"1!", "a?", "a!", "1?"}},
-		{Name: "constructor", Src: "rule main = x:(n / w) $$ => P{N: $x.(Num)}\n" + castRules, Inputs: []string{"1", "a"}},
-		{Name: "top", Src: "rule main = x:(n / w) $$ => $x.(_)\n" + castRules, Inputs: []string{"1", "a"}},
-		// The error names where the action started, after a newline, in code points and bytes.
-		{Name: "position", Src: "rule main = \"\\u00e9\\n\" r\nrule r = x:(n / w) $$ => $x.(Num)\n" + castRules, Inputs: []string{"\u00e9\n1", "\u00e9\nab"}},
-		{Name: "int", Src: "rule main = x:w $$ {len(text($x)).(int) > 1} => $x\n" + castRules, Inputs: []string{"ab", "a"}},
-	}
-}
-
 func TestCastAcrossBackends(t *testing.T) {
 	t.Parallel()
-	for _, fixture := range castCases() {
+	for _, fixture := range gentest.CastCases() {
 		t.Run(fixture.Name, func(t *testing.T) {
 			program := mustCompile(t, fixture.Src)
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -59,13 +41,13 @@ func TestCastAcrossBackends(t *testing.T) {
 func TestCastValues(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct{ src, input, want string }{
-		{"rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, "12", `"type":"Num","start":0,"end":2,"fields":{"Text":"12"}`},
-		{"rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, "ab", "cannot cast node[[]_] to Num"},
-		{"rule main = x:(n+ / w) $$ => $x.([]Num)\n" + castRules, "ab", "cannot cast node[[]_] to []Num"},
-		{"rule main = x:(n / w)? $$ => $x.(*Num)\n" + castRules, "", "null"},
-		{"rule main = x:(pair / w) $$ => $x.(P).N\n" + castRules, "1=", `"type":"Num","start":0,"end":1,"fields":{"Text":"1"}`},
-		{"rule main = \"\\n\" r\nrule r = x:(n / w) $$ => $x.(Num)\n" + castRules, "\nab", "cannot cast node[[]_] to Num at input position 1 (line 2, column 1); cast at grammar position 2:29"},
-		{"rule main = x:(n / w) ({$x.(Num) == $x} \"!\" / \"?\") $$\n" + castRules, "a?", `"value":"?"`},
+		{"rule main = x:(n / w) $$ => $x.(Num)\n" + gentest.CastRules, "12", `"type":"Num","start":0,"end":2,"fields":{"Text":"12"}`},
+		{"rule main = x:(n / w) $$ => $x.(Num)\n" + gentest.CastRules, "ab", "cannot cast node[[]_] to Num"},
+		{"rule main = x:(n+ / w) $$ => $x.([]Num)\n" + gentest.CastRules, "ab", "cannot cast node[[]_] to []Num"},
+		{"rule main = x:(n / w)? $$ => $x.(*Num)\n" + gentest.CastRules, "", "null"},
+		{"rule main = x:(pair / w) $$ => $x.(P).N\n" + gentest.CastRules, "1=", `"type":"Num","start":0,"end":1,"fields":{"Text":"1"}`},
+		{"rule main = \"\\n\" r\nrule r = x:(n / w) $$ => $x.(Num)\n" + gentest.CastRules, "\nab", "cannot cast node[[]_] to Num at input position 1 (line 2, column 1); cast at grammar position 2:29"},
+		{"rule main = x:(n / w) ({$x.(Num) == $x} \"!\" / \"?\") $$\n" + gentest.CastRules, "a?", `"value":"?"`},
 	} {
 		program := mustCompile(t, tc.src)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -81,8 +63,8 @@ func TestCastErrors(t *testing.T) {
 	for _, tc := range []struct{ src, want string }{
 		{`rule main = x:"a" => $x.(int)`, "cannot cast node[string] to int"},
 		{`rule main = x:"a" => $x.(Nope)`, "Nope"},
-		{"rule main = x:n => $x.(P)\n" + castRules, "cannot cast Num to P"},
-		{"rule main = x:n => $x.(Num).N\n" + castRules, "N"},
+		{"rule main = x:n => $x.(P)\n" + gentest.CastRules, "cannot cast Num to P"},
+		{"rule main = x:n => $x.(Num).N\n" + gentest.CastRules, "N"},
 		{`rule main = "a" => (1).(string)`, "cannot cast int to string"},
 	} {
 		g, err := parseTest(tc.src)
@@ -128,7 +110,7 @@ func TestCastSyntax(t *testing.T) {
 		t.Fatalf("JSON AST: %v %s", err, data)
 	}
 
-	program := mustCompile(t, "rule main = x:(n / w) $$ => $x.(Num)\n"+castRules)
+	program := mustCompile(t, "rule main = x:(n / w) $$ => $x.(Num)\n"+gentest.CastRules)
 	// A cast survives a compiled file.
 	data, err := program.MarshalBinary("main")
 	if err != nil {
@@ -154,7 +136,7 @@ func TestCastSyntax(t *testing.T) {
 		t.Fatalf("under-declared cast ISA accepted: %v", err)
 	}
 	// A cast to any checks nothing; it uses the same instruction set.
-	data, err = mustCompile(t, "rule main = x:(n / w) $$ => $x.(_)\n"+castRules).MarshalBinary("main")
+	data, err = mustCompile(t, "rule main = x:(n / w) $$ => $x.(_)\n"+gentest.CastRules).MarshalBinary("main")
 	if err != nil || data[isaOffset] != bytecode.ISAVersion {
 		t.Fatalf("cast to any ISA: %v %d", err, data[isaOffset])
 	}
@@ -167,9 +149,9 @@ func TestCastGeneratedGoParity(t *testing.T) {
 
 func testCastGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	gentest.GeneratedParsersCorpus(t, goBin, castCases(), gen.GenOptions{})
-	gentest.GeneratedParsersCorpus(t, goBin, castCases(), gen.GenOptions{SourceInfo: true})
-	gentest.GeneratedTypesCorpus(t, goBin, castCases(), gen.GenOptions{ConvertTypes: true})
+	gentest.GeneratedParsersCorpus(t, goBin, gentest.CastCases(), gen.GenOptions{})
+	gentest.GeneratedParsersCorpus(t, goBin, gentest.CastCases(), gen.GenOptions{SourceInfo: true})
+	gentest.GeneratedTypesCorpus(t, goBin, gentest.CastCases(), gen.GenOptions{ConvertTypes: true})
 }
 
 func TestCastGeneratedTypeScriptParity(t *testing.T) {
@@ -178,6 +160,6 @@ func TestCastGeneratedTypeScriptParity(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	testGeneratedTSParsersCorpus(t, node, castCases(), gen.GenOptions{})
-	testGeneratedTSParsersCorpus(t, node, castCases(), gen.GenOptions{SourceInfo: true})
+	testGeneratedTSParsersCorpus(t, node, gentest.CastCases(), gen.GenOptions{})
+	testGeneratedTSParsersCorpus(t, node, gentest.CastCases(), gen.GenOptions{SourceInfo: true})
 }

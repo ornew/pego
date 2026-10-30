@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 func TestGeneratedTSTrace(t *testing.T) {
@@ -91,16 +92,16 @@ rule part W = t:("input, o.unit, o.maxDepth, control)") #atomic => W{Text: text(
 				name += "_typed"
 			}
 			opts := gen.GenOptions{Start: "main", WorkControls: true, Types: typed, Recognize: true}
-			reference, err := generateTSBundle(g, opts)
+			reference, err := gentest.GenerateTSBundle(g, opts)
 			if err != nil {
 				t.Fatal(name, err)
 			}
 			opts.Observability = true
-			code, err := generateTSBundle(g, opts)
+			code, err := gentest.GenerateTSBundle(g, opts)
 			if err != nil {
 				t.Fatal(name, err)
 			}
-			again, err := generateTSBundle(g, opts)
+			again, err := gentest.GenerateTSBundle(g, opts)
 			if err != nil || string(again) != string(code) {
 				t.Fatal(name, "nondeterministic trace source", err)
 			}

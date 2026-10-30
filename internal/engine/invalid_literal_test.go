@@ -124,26 +124,6 @@ func TestInvalidUTF8LiteralStream(t *testing.T) {
 	}
 }
 
-func invalidLiteralCorpus() []gentest.Case {
-	cases := []gentest.Case{
-		{Name: "text predicate", Src: `type N = { T node[string] }
-rule main N = t:"�" {len(text($t)) == len($t)} $$ => N{T: $t}`, Inputs: []string{"\xff", "\x80", "\xc3", "�", "é"}},
-		{Name: "replacement", Src: `type N = { T node[string] }
-rule main N = t:"�" $$ => N{T: $t}`, Inputs: []string{"\xff", "\x80", "\xc3", "�", "é", "", "\xffx"}},
-		{Name: "multiple", Src: `type N = { T node[string] }
-rule main N = t:"���" $$ => N{T: $t}`, Inputs: []string{"\xed\xa0\x80", "\xe0\x80\x80", "���", "\xff", "\xff\x80\x80x"}},
-		{Name: "mixed", Src: `type N = { T node[string] }
-rule main N = t:"é�x" $$ => N{T: $t}`, Inputs: []string{"é\xffx", "é\xc3x", "é�x", "é\xffy", "é\xff", "éx"}},
-		{Name: "long", Src: `type N = { T node[string] }
-rule main N = t:"abcdefghijk�xyz" $$ => N{T: $t}`, Inputs: []string{"abcdefghijk\xffxyz", "abcdefghijk�xyz", "abcdefghijk\xc3xyz", "abcdefghijk\xffxyq"}},
-		{Name: "choice", Src: `type N = { T node[string] }
-rule main N = t:("x" / "�") $$ => N{T: $t}`, Inputs: []string{"\xff", "\x80", "\xc3", "�", "x", "y"}},
-		{Name: "class", Src: `type N = { T node[string] }
-rule main N = t:[�] $$ => N{T: $t}`, Inputs: []string{"\xff", "\x80", "\xc3", "�", "é"}},
-	}
-	return append(cases, rawLiteralGenCorpus()...)
-}
-
 // Go string literals preserve invalid bytes; JSON input fixtures would replace
 // them before the generated parser sees them.
 func TestGeneratedInvalidUTF8Literals(t *testing.T) {
@@ -170,8 +150,8 @@ func testGeneratedInvalidUTF8Literals(t *testing.T) {
 	var imports, harness, want strings.Builder
 	harness.WriteString(`func main(){`)
 	i := 0
-	for _, tc := range invalidLiteralCorpus() {
-		g := literalCorpusGrammar(t, tc)
+	for _, tc := range gentest.InvalidLiteralCorpus() {
+		g := gentest.LiteralCorpusGrammar(t, tc)
 		prog, err := Compile(g, compile.Options{})
 		if err != nil {
 			t.Fatal(err)
@@ -231,14 +211,14 @@ func literalTextUnits(input string, unit PositionUnit) []rune {
 
 func TestGeneratedTSInvalidUTF8Literals(t *testing.T) {
 	t.Parallel()
-	for _, tc := range invalidLiteralCorpus() {
+	for _, tc := range gentest.InvalidLiteralCorpus() {
 		t.Run(tc.Name, func(t *testing.T) {
-			g := literalCorpusGrammar(t, tc)
+			g := gentest.LiteralCorpusGrammar(t, tc)
 			prog, err := Compile(g, compile.Options{})
 			if err != nil {
 				t.Fatal(err)
 			}
-			code, err := generateTSBundle(g, gen.GenOptions{Start: "main", Recognize: true})
+			code, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main", Recognize: true})
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -60,7 +60,7 @@ func testMalformedASTEntryPointsAndPosition(t *testing.T) {
 			_, err := gentest.GenerateCode(t, g, gen.GenOptions{Start: "p", Package: "p", Types: true})
 			return err
 		},
-		"TS generator": func() error { _, err := generateTSBundle(g, gen.GenOptions{Start: "p"}); return err },
+		"TS generator": func() error { _, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "p"}); return err },
 	} {
 		t.Run(name, func(t *testing.T) {
 			err := run()

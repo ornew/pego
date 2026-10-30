@@ -24,7 +24,7 @@ func TestGeneratedSparseMemoSmallTable(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, recognize := range []bool{false, true} {
-		for _, generate := range []func(*grammar.Grammar, gen.GenOptions) ([]byte, error){generateTSBundle} {
+		for _, generate := range []func(*grammar.Grammar, gen.GenOptions) ([]byte, error){gentest.GenerateTSBundle} {
 			opts := gen.GenOptions{Package: "smallmemo", Start: "main", Recognize: recognize}
 			code, err := generate(g, opts)
 			if err != nil {
@@ -128,7 +128,7 @@ func TestGeneratedTSSparseMemoControls(t *testing.T) {
 	}
 	var results [2]string
 	for i, name := range []string{"optimized", "reference"} {
-		code, err := generateTSBundle(g, gen.GenOptions{Start: "main", Recognize: true, DisableSparseMemo: i == 1})
+		code, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main", Recognize: true, DisableSparseMemo: i == 1})
 		if err != nil {
 			t.Fatal(err)
 		}

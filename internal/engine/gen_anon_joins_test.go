@@ -11,39 +11,11 @@ import (
 	"github.com/ornew/pego/internal/gentest"
 )
 
-const anonJoinGrammar = `type Leaf = { Text string }
-type Pair = { L Leaf; R Leaf }
-type Box = { Else *(Leaf | Pair); Items [](Pair | Leaf); Same *(Leaf | Pair) }
-rule main Box = e:alt? xs:item* => Box{Else: $e, Items: $xs.Value, Same: $e}
-rule alt = leaf / pair
-rule item = pair / leaf
-rule leaf Leaf = t:[a-z]+ ";" => Leaf{Text: text($t)}
-rule pair Pair = "(" l:leaf r:leaf ")" => Pair{L: $l, R: $r}`
-
-func goTypesOf(t *testing.T, src string) (string, error) {
-	t.Helper()
-	g, err := parseTest(src)
-	if err != nil {
-		t.Fatal(err)
-	}
-	files, err := gentest.Generate(t, g, gen.GenOptions{Start: "main", Types: true, Module: "example.com/m", Package: "p"})
-	if err != nil {
-		return "", err
-	}
-	for _, f := range files {
-		if strings.HasSuffix(f.Path, "types.go") {
-			return strings.Join(strings.Fields(string(f.Content)), " "), nil
-		}
-	}
-	t.Fatal("no types.go")
-	return "", nil
-}
-
 // An anonymous join of declared node types is an interface named after its members; the same
 // members in another order, in a field, a list element or the value of a rule, are one interface.
 func TestGeneratedTypedAnonymousJoinInterface(t *testing.T) {
 	t.Parallel()
-	types, err := goTypesOf(t, anonJoinGrammar)
+	types, err := gentest.GoTypesOf(t, gentest.AnonJoinGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +44,7 @@ func TestGeneratedTypedAnonymousJoinInterface(t *testing.T) {
 // member that is no declared node type keeps its Go type.
 func TestGeneratedTypedAnonymousJoinReusesAlias(t *testing.T) {
 	t.Parallel()
-	types, err := goTypesOf(t, `type A = { X string }
+	types, err := gentest.GoTypesOf(t, `type A = { X string }
 type B = { Y string }
 type AB ~ A | B
 type R = { F *(B | A); G *(A | node[string]) }
@@ -95,7 +67,7 @@ rule a A = t:[a-z] => A{X: text($t)}`)
 // The interface name is a generation error if a type of the grammar has it.
 func TestGeneratedTypedAnonymousJoinNameCollision(t *testing.T) {
 	t.Parallel()
-	_, err := goTypesOf(t, `type A = { X string }
+	_, err := gentest.GoTypesOf(t, `type A = { X string }
 type B = { Y string }
 type AOrB = { Z string }
 type R = { F *(A | B) }
@@ -105,7 +77,7 @@ rule a A = t:[a-z] => A{X: text($t)}`)
 		t.Fatalf("got %v, want an error naming AOrB", err)
 	}
 	// The error names a join of one declared node type as written, with error.
-	_, err = goTypesOf(t, `type A = { X string }
+	_, err = gentest.GoTypesOf(t, `type A = { X string }
 type AOrError = { Z string }
 type R = { F *(A | error) }
 rule main R = a:a $$ => R{F: $a}
@@ -119,7 +91,7 @@ rule a A = t:[a-z] => A{X: text($t)}`)
 // element and the start value.
 func TestGeneratedTypedAnonymousJoinTypeScript(t *testing.T) {
 	t.Parallel()
-	g, err := parseTest(anonJoinGrammar)
+	g, err := parseTest(gentest.AnonJoinGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -160,7 +132,7 @@ func testGeneratedTypedAnonymousJoinValues(t *testing.T) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
-	cases := []gentest.Case{{Name: "anonymous joins", Src: anonJoinGrammar, Inputs: []string{"", "a;", "(a;b;)", "a;(a;b;)c;", "(a;"}}}
+	cases := []gentest.Case{{Name: "anonymous joins", Src: gentest.AnonJoinGrammar, Inputs: []string{"", "a;", "(a;b;)", "a;(a;b;)c;", "(a;"}}}
 	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, len(cases))
 }
 
@@ -178,7 +150,7 @@ rule a A = t:[a-z] => A{X: text($t)}`
 	}
 	// Zed is declared before Alpha, and sorts after it.
 	for _, names := range [][2]string{{"Zed", "Alpha"}, {"Alpha", "Zed"}, {"Mid", "Beta"}} {
-		types, err := goTypesOf(t, grammar(names[0], names[1]))
+		types, err := gentest.GoTypesOf(t, grammar(names[0], names[1]))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -188,16 +160,11 @@ rule a A = t:[a-z] => A{X: text($t)}`
 	}
 }
 
-const anonErrorJoinGrammar = `type Block = { Text string }
-type R = { Else *(Block | error); Rest []Block; Last *(Block | error) }
-rule main R = e:alt? xs:alt* => R{Else: $e, Rest: $xs.Value, Last: $e}
-rule alt Block = t:[a-z]+ ";" #recover(skip=[^;]+ ";") => Block{Text: text($t)}`
-
 // One declared node type and error, the value of a rule that recovers, is a join with an interface
 // named after the type and Error, implemented by *Block and *Error, and a union in TypeScript.
 func TestGeneratedTypedAnonymousJoinOneNodeAndError(t *testing.T) {
 	t.Parallel()
-	types, err := goTypesOf(t, anonErrorJoinGrammar)
+	types, err := gentest.GoTypesOf(t, gentest.AnonErrorJoinGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,7 +185,7 @@ func TestGeneratedTypedAnonymousJoinOneNodeAndError(t *testing.T) {
 		t.Errorf("%d interfaces, want 1", n)
 	}
 	// An alias of the same members is the type of the field.
-	types, err = goTypesOf(t, `type Block = { Text string }
+	types, err = gentest.GoTypesOf(t, `type Block = { Text string }
 type S ~ Block | error
 type R = { Else *(Block | error) }
 rule main R = e:alt $$ => R{Else: $e}
@@ -229,7 +196,7 @@ rule alt Block = t:[a-z]+ ";" => Block{Text: text($t)}`)
 	if !strings.Contains(types, "Else S") || strings.Contains(types, "BlockOrError") {
 		t.Errorf("the field is not the alias S:\n%s", types)
 	}
-	g, err := parseTest(anonErrorJoinGrammar)
+	g, err := parseTest(gentest.AnonErrorJoinGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -247,7 +214,7 @@ rule alt Block = t:[a-z]+ ";" => Block{Text: text($t)}`)
 // Two different sets of members that get the same interface name are a generation error.
 func TestGeneratedTypedAnonymousJoinSameNameDifferentSets(t *testing.T) {
 	t.Parallel()
-	_, err := goTypesOf(t, `type A = { X string }
+	_, err := gentest.GoTypesOf(t, `type A = { X string }
 type B = { Y string }
 type C = { Z string }
 type AOrB = { W string }
@@ -273,6 +240,6 @@ func testGeneratedTypedAnonymousJoinOneNodeAndErrorValues(t *testing.T) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
-	cases := []gentest.Case{{Name: "one node and error", Src: anonErrorJoinGrammar, Inputs: []string{"", "a;", "a;b;", "1;a;", "a;2;b;"}}}
+	cases := []gentest.Case{{Name: "one node and error", Src: gentest.AnonErrorJoinGrammar, Inputs: []string{"", "a;", "a;b;", "1;a;", "a;2;b;"}}}
 	gentest.GeneratedTypesCorpus(t, goBin, cases, gen.GenOptions{ConvertTypes: true}, len(cases))
 }

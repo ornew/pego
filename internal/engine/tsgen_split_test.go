@@ -42,11 +42,6 @@ func writeTSFiles(t *testing.T, dir string, files []gen.GeneratedFile) {
 	}
 }
 
-// nodeTSArgs are the arguments that run a .ts script of a directory written by writeTSFiles.
-func nodeTSArgs(script string, args ...string) []string {
-	return append([]string{script}, args...)
-}
-
 // TestGeneratedTSSplitFiles compiles the files as generate writes them (runtime.ts, types.ts and
 // parser.ts) with the strictest checks, and parses through them with Node.js, in each runtime mode.
 // Most other tests join the files into one module; this one proves that the files fit together.
@@ -96,7 +91,7 @@ process.stdout.write("ok\n");
 			t.Fatalf("tsc: %v\n%s", err, out)
 		}
 		// Node.js runs the files as generated, by type stripping, with no resolve hook.
-		cmd = exec.Command(node, nodeTSArgs("consumer.ts")...)
+		cmd = exec.Command(node, gentest.NodeTSArgs("consumer.ts")...)
 		cmd.Dir = dir
 		if out, err := cmd.CombinedOutput(); err != nil || strings.TrimSpace(string(out)) != "ok" {
 			t.Fatalf("node: %v\n%s", err, out)
@@ -238,7 +233,7 @@ func runTSSplit(t *testing.T, src string, opts gen.GenOptions, consumer string) 
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("tsc: %v\n%s", err, out)
 	}
-	cmd = exec.Command(node, nodeTSArgs("consumer.ts")...)
+	cmd = exec.Command(node, gentest.NodeTSArgs("consumer.ts")...)
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil || strings.TrimSpace(string(out)) != "ok" {
 		t.Fatalf("node: %v\n%s", err, out)

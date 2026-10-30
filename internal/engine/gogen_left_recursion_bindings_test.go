@@ -27,8 +27,6 @@ rule step Doc = {k := k + 1} p:R "x" => Doc{N: $p.N + 1}
 rule seed Doc = {k < 1000} "x" => Doc{N: 1}
 `
 
-var lrBindingInputs = []string{"x", "xxx", "xxxxxxxxxx", "", "y"}
-
 // TestGeneratedLeftRecursionGuardIgnoresVariables is TestLeftRecursionGuardIgnoresVariables
 // for generated Go parsers: Parse, Recognize and the typed ParseAST of a left-recursive rule
 // re-entered with other variable values match the engine instead of nesting until the limit.
@@ -50,12 +48,12 @@ func testGeneratedLeftRecursionGuardIgnoresVariables(t *testing.T) {
 		t.Fatal(err)
 	}
 	opts := gen.GenOptions{Start: "main", Recognize: true, MaxDepth: 400, LeftRecursionBindings: true}
-	gentest.GeneratePackage(t, dir, "g", mustParse(lrBindingSource), opts)
+	gentest.GeneratePackage(t, dir, "g", mustParse(gentest.LRBindingSource), opts)
 	opts.Types = true
 	if code := gentest.GeneratePackage(t, dir, "tg", mustParse(typedLRBindingSource), opts); !strings.Contains(code, "TParse(trules") {
 		t.Fatal("typed runtime is not exercised")
 	}
-	prog := compileBare(t, lrBindingSource, compile.Options{LeftRecursionBindings: true})
+	prog := compileBare(t, gentest.LRBindingSource, compile.Options{LeftRecursionBindings: true})
 	typed := compileBare(t, typedLRBindingSource, compile.Options{LeftRecursionBindings: true})
 	controls := gentest.FixtureWorkControls(t)
 	var limited, typedLimited string
@@ -64,7 +62,7 @@ func testGeneratedLeftRecursionGuardIgnoresVariables(t *testing.T) {
 	}
 	var want strings.Builder
 	var quoted []string
-	for _, in := range lrBindingInputs {
+	for _, in := range gentest.LRBindingInputs {
 		quoted = append(quoted, strconv.Quote(in))
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			o := ParseOptions{Unit: unit, MaxDepth: 400}
@@ -155,8 +153,8 @@ func TestGeneratedTSLeftRecursionGuardIgnoresVariables(t *testing.T) {
 	var script strings.Builder
 	script.WriteString("import { parse, recognize } from \"./parser.ts\";\n")
 	var want strings.Builder
-	prog := compileBare(t, lrBindingSource, compile.Options{LeftRecursionBindings: true})
-	for _, in := range lrBindingInputs {
+	prog := compileBare(t, gentest.LRBindingSource, compile.Options{LeftRecursionBindings: true})
+	for _, in := range gentest.LRBindingInputs {
 		fmt.Fprintf(&script, "{ const r = parse(%q); const e = recognize(%[1]q); console.log(r.error === null ? String(r.node) : \"error: \" + r.error.message, e === null ? \"null\" : e.message); }\n", in)
 		n, err := prog.ParseWith("main", in, ParseOptions{MaxDepth: 400})
 		_, recErr := prog.ParseWith("main", in, ParseOptions{MaxDepth: 400, Recognize: true})
@@ -166,7 +164,7 @@ func TestGeneratedTSLeftRecursionGuardIgnoresVariables(t *testing.T) {
 			fmt.Fprintf(&want, "%s null\n", n.String())
 		}
 	}
-	out := runTSGrammarScriptWith(t, mustParse(lrBindingSource), script.String(), gen.GenOptions{Start: "main", Recognize: true, MaxDepth: 400, LeftRecursionBindings: true})
+	out := gentest.RunTSGrammarScriptWith(t, mustParse(gentest.LRBindingSource), script.String(), gen.GenOptions{Start: "main", Recognize: true, MaxDepth: 400, LeftRecursionBindings: true})
 	if out != want.String() {
 		t.Fatalf("generated\n%s\nengine\n%s", out, want.String())
 	}

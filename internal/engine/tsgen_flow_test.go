@@ -118,7 +118,7 @@ rule item = [a-z]+ ";"`
 	if err != nil {
 		t.Fatal(err)
 	}
-	out := runTSGrammarScriptWith(t, g, `import * as p from "./parser.ts";
+	out := gentest.RunTSGrammarScriptWith(t, g, `import * as p from "./parser.ts";
 const check = (x: boolean, why: string): void => { if (!x) throw new Error(why); };
 const limit = (Error as { stackTraceLimit?: number }).stackTraceLimit;
 const r = p.parse("a;1;b;", p.CodePoints);

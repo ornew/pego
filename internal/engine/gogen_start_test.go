@@ -14,19 +14,15 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-// startEntryNames are the names the start-rule entry tests try: two start rules, a rule that is
-// not one, a hidden rule, an undefined rule and no name.
-var startEntryNames = []string{"main", "item", "other", "_h", "nope", ""}
-
 // startEntryWant is what the interpreter reports for each of startEntryNames, one line each.
 func startEntryWant(t *testing.T) string {
 	t.Helper()
-	prog, err := compileStarts(t, startRestrictionSource)
+	prog, err := compileStarts(t, gentest.StartRestrictionSource)
 	if err != nil {
 		t.Fatal(err)
 	}
 	var b strings.Builder
-	for _, name := range startEntryNames {
+	for _, name := range gentest.StartEntryNames {
 		if err := prog.CheckStart(name); err != nil {
 			fmt.Fprintf(&b, "%s: %v\n", name, err)
 		} else {
@@ -54,7 +50,7 @@ func testGeneratedGoStartRules(t *testing.T) {
 	if !strings.Contains(want, "other: rule other is not a start rule") || !strings.Contains(want, "_h: rule _h is hidden") || !strings.Contains(want, "item: ok") {
 		t.Fatalf("unexpected interpreter results:\n%s", want)
 	}
-	g, err := syntax.Parse(startRestrictionSource)
+	g, err := syntax.Parse(gentest.StartRestrictionSource)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +62,7 @@ func testGeneratedGoStartRules(t *testing.T) {
 	}
 }
 `
-	names := fmt.Sprintf("%#v", startEntryNames)
+	names := fmt.Sprintf("%#v", gentest.StartEntryNames)
 	for _, tc := range []struct {
 		name string
 		opts gen.GenOptions
@@ -186,7 +182,7 @@ func testGeneratedGoStartRules(t *testing.T) {
 func TestGeneratedTSStartRules(t *testing.T) {
 	t.Parallel()
 	want := startEntryWant(t)
-	g, err := syntax.Parse(startRestrictionSource)
+	g, err := syntax.Parse(gentest.StartRestrictionSource)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +200,7 @@ console.log("empty: " + (parseRule("", "aa").error === null) + " " + (parseRuleW
 	for _, start := range []string{"", "item"} {
 		// An empty name selects the declared default start rule main, which matches "aa",
 		// even in a parser generated for item.
-		out := runTSGrammarScriptWith(t, g, script, gen.GenOptions{Start: start})
+		out := gentest.RunTSGrammarScriptWith(t, g, script, gen.GenOptions{Start: start})
 		parse := "default: true true\n"
 		if start == "item" {
 			parse = "default: true false\n"

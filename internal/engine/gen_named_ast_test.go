@@ -12,40 +12,6 @@ import (
 	"github.com/ornew/pego/internal/gentest"
 )
 
-const namedASTGrammar = `type T = { Text string }
-type S = { T T }
-type U ~ S | T
-type Alias ~ T
-type Mixed ~ S | node[_]
-type Number ~ int
-type Values = { N Number; Text string; Flag bool }
-type Recovery = { T T | error }
-type Items ~ []S
-type ParseRuleAST = { T T }
-type ParseRuleAST_ ~ ParseRuleAST
-rule main = t:term => ParseRuleAST{T: $t}
-rule term T = t:("é") #atomic => T{Text: text($t)}
-rule aliased Alias = t:("é") #atomic => T{Text: text($t)}
-rule mixed Mixed = cst
-rule structure = t:term => S{T: $t}
-rule values = "v" => Values{N: 42, Text: "yes", Flag: true}
-rule optional = t:term? => $t
-rule items Items = xs:(s:structure)* => map($xs, (x) => x.$s)
-rule union U = structure / term
-rule cst = "x" "y"
-rule open node[_] = "z"
-rule arbitrary _ = "a" => S{}
-rule abstract node[string] = "t"
-rule recursive S = "(" s:recursive ")" / s:structure => $s
-rule abort = x:"a"* #atomic => Values{N: 10 / len($x)}
-rule recoverStruct S | error = structure #recover(skip="?")
-rule recoverTerminal = t:term #recover(skip="?") => Recovery{T: $t}
-rule recoverUnion U | error = union #recover(skip="?")
-rule nonemptyItems Items = xs:(s:structure)+ => map($xs, (x) => x.$s)
-rule recoverList Items | error = nonemptyItems #recover(skip="?")
-rule recoveryElements [](S | error) = xs:(s:structure #recover(skip="?"))+ => map($xs, (x) => x.$s)
-`
-
 func TestGeneratedNamedAST(t *testing.T) {
 	t.Parallel()
 	gentest.EachMode(t, testGeneratedNamedAST)
@@ -65,7 +31,7 @@ func testGeneratedNamedAST(t *testing.T) {
 		{"mixed-start", "", "cst", false},
 	} {
 		t.Run(variant.name, func(t *testing.T) {
-			g, err := parseTest(namedASTGrammar + variant.extra)
+			g, err := parseTest(gentest.NamedASTGrammar + variant.extra)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -112,7 +78,7 @@ func TestGeneratedNamedASTUntypedAndTS(t *testing.T) {
 }
 
 func testGeneratedNamedASTUntypedAndTS(t *testing.T) {
-	g, err := parseTest(namedASTGrammar)
+	g, err := parseTest(gentest.NamedASTGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +89,7 @@ func testGeneratedNamedASTUntypedAndTS(t *testing.T) {
 	if strings.Contains(string(plain), "func ParseRuleAST(") {
 		t.Fatal("typed entry point in untyped parser")
 	}
-	ts, err := generateTSBundle(g, gen.GenOptions{Package: "plain", Start: "main"})
+	ts, err := gentest.GenerateTSBundle(g, gen.GenOptions{Package: "plain", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}

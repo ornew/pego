@@ -40,10 +40,10 @@ func testGeneratedTraceOptions(t *testing.T) {
 			t.Fatal("Document observability:", err)
 		}
 	}
-	if code, err := generateTSBundle(g, gen.GenOptions{Start: "main", Observability: true}); err != nil || !strings.Contains(string(code), "export interface TraceEvent") {
+	if code, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main", Observability: true}); err != nil || !strings.Contains(string(code), "export interface TraceEvent") {
 		t.Fatal("TypeScript observability:", err)
 	}
-	if _, err := generateTSBundle(g, gen.GenOptions{Start: "main", Observability: true, Document: true}); err == nil {
+	if _, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main", Observability: true, Document: true}); err == nil {
 		t.Fatal("TypeScript accepted unsupported Document")
 	}
 }

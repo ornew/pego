@@ -73,7 +73,7 @@ console.log(JSON.stringify(rows));
 	if err := os.WriteFile(filepath.Join(dir, "consumer.ts"), []byte(consumer), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	cmd := exec.Command(node, nodeTSArgs("consumer.ts")...)
+	cmd := exec.Command(node, gentest.NodeTSArgs("consumer.ts")...)
 	cmd.Dir = dir
 	var stderr strings.Builder
 	cmd.Stderr = &stderr

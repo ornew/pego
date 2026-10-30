@@ -105,7 +105,7 @@ func testGenerateTypedDocumentNilAndRecovery(t *testing.T) {
 	// The union S | node does not generate in Document mode: its conversion returns any, which does
 	// not implement the union interface (S | Seq did). This test is about nil results and
 	// recovery, so the grammar uses a string node member instead.
-	source := strings.NewReplacer("type Mixed ~ S | node[_]\n", "type Mixed ~ S | node[string]\n", "rule mixed Mixed = cst\n", "rule mixed Mixed = \"t\"\n").Replace(namedASTGrammar)
+	source := strings.NewReplacer("type Mixed ~ S | node[_]\n", "type Mixed ~ S | node[string]\n", "rule mixed Mixed = cst\n", "rule mixed Mixed = \"t\"\n").Replace(gentest.NamedASTGrammar)
 	g, err := parseTest(source)
 	if err != nil {
 		t.Fatal(err)

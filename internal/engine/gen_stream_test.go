@@ -585,7 +585,7 @@ rule other = "b"`)
 			t.Errorf("%+v: %v, want %q", tc.opts, err, tc.want)
 		}
 	}
-	if _, err := generateTSBundle(g, gen.GenOptions{Start: "main", Stream: true}); err == nil {
+	if _, err := gentest.GenerateTSBundle(g, gen.GenOptions{Start: "main", Stream: true}); err == nil {
 		t.Error("TypeScript accepted stream generation")
 	}
 	typed, err := gentest.GenerateCode(t, g, gen.GenOptions{Package: "fixture", Start: "main", Stream: true, Types: true})

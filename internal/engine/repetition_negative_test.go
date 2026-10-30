@@ -27,22 +27,6 @@ func negativeMaxima() []int {
 	return values
 }
 
-func grammarWithNegativeMaximum(t testing.TB, src string, maximum int) *grammar.Grammar {
-	t.Helper()
-	g, err := parseTest(src)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, r := range g.Rules() {
-		compile.WalkExpr(r.Expr, func(e grammar.Expr) {
-			if rep, ok := e.(*grammar.Repeat); ok {
-				rep.Max = maximum
-			}
-		})
-	}
-	return g
-}
-
 func TestNegativeRepetitionMaxima(t *testing.T) {
 	t.Parallel()
 	for _, c := range []struct {
@@ -56,7 +40,7 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 	} {
 		for _, maximum := range negativeMaxima() {
 			t.Run(fmt.Sprintf("%s/%d", c.name, maximum), func(t *testing.T) {
-				g := grammarWithNegativeMaximum(t, c.src, maximum)
+				g := gentest.GrammarWithNegativeMaximum(t, c.src, maximum)
 				before, err := grammar.MarshalJSON(g)
 				if err != nil {
 					t.Fatal(err)
@@ -221,7 +205,7 @@ func TestNegativeMaximumWithWideMinimum(t *testing.T) {
 	}
 	for _, body := range []string{`"é" #repeat(2147483648, ) $$`, `[é] #repeat(2147483648, ) #atomic $$`} {
 		for _, maximum := range negativeMaxima() {
-			g := grammarWithNegativeMaximum(t, "rule main = "+body, maximum)
+			g := gentest.GrammarWithNegativeMaximum(t, "rule main = "+body, maximum)
 			p, err := Compile(g, compile.Options{})
 			if err != nil {
 				t.Fatal(err)
@@ -276,7 +260,7 @@ func testGeneratedNegativeMaximum(t *testing.T) {
 	if strconv.IntSize < 64 {
 		maximum = -2
 	}
-	g := grammarWithNegativeMaximum(t, `rule main []node[string] = v1:"é"* $$ => $v1.Value`, maximum)
+	g := gentest.GrammarWithNegativeMaximum(t, `rule main []node[string] = v1:"é"* $$ => $v1.Value`, maximum)
 	p, err := Compile(g, compile.Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -328,7 +312,7 @@ func main() {
 		})
 	}
 	t.Run("TypeScript", func(t *testing.T) {
-		got := runTSGrammarScript(t, g, `import { parse, CodePoints, Bytes } from "./parser.ts";
+		got := gentest.RunTSGrammarScript(t, g, `import { parse, CodePoints, Bytes } from "./parser.ts";
 for (const input of ["","é","ééé","x","éx"]) {
  for (const unit of [CodePoints, Bytes]) {
   const result=parse(input,unit);

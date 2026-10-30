@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 // A rule call costs one step at its entry. A rule that reads no captures and takes callBody's unmemoized
@@ -18,7 +19,7 @@ rule expr = expr "+" "a" / "a"`
 	if err != nil {
 		t.Fatal(err)
 	}
-	out := runTSGrammarScriptWith(t, g, `import * as p from "./parser.ts";
+	out := gentest.RunTSGrammarScriptWith(t, g, `import * as p from "./parser.ts";
 const proto = (p as unknown as { Parser: { prototype: { stepWork(n?: number): void } } }).Parser.prototype;
 const original = proto.stepWork;
 const by = new Map<string, number>();

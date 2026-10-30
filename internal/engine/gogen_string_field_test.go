@@ -68,7 +68,7 @@ type B = { Text int }
 rule main = x:(a / b) $$ => Out{B: $x.Text == 1}
 rule a = t:[a-z]+ #atomic => A{Text: text($t)}
 rule b = [0-9]+ => B{Text: 1}`, Inputs: []string{"ab", "12", ""}}, false},
-		{gentest.Case{Name: "text struct comparisons", Src: textCompareGrammar, Inputs: textCompareInputs}, true},
+		{gentest.Case{Name: "text struct comparisons", Src: gentest.TextCompareGrammar, Inputs: gentest.TextCompareInputs}, true},
 		{gentest.Case{Name: "list field", Src: `type Out = { V string; N int; B bool }
 type A = { Items node[_] }
 rule main = x:a $$ => Out{N: len($x.Items)}

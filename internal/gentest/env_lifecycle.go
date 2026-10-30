@@ -23,3 +23,9 @@ var x int
 var y int
 rule main = {x := 1} {y := 2} !({x := 3} {y := 4} "b") {x == 1} {y == 2} "a" $$ => V{X: x, Y: y}`, []string{"a", "b", ""}},
 }
+
+// BoundStream is the grammar of the test that streams a long input through bound variables.
+const BoundStream = `var limit int
+var i int
+var j int
+rule main = {limit := 1} ({i := 1} {j := 2} {i := 3} -"a")* #stream {limit == 1} $$`

@@ -85,7 +85,7 @@ func testGeneratedSharingWorkloads(t *testing.T) {
 					t.Fatalf("%s: Node, typed or recognition output differs", mode)
 				}
 				opts.Types = false
-				ts, err := generateTSBundle(g, opts)
+				ts, err := gentest.GenerateTSBundle(g, opts)
 				if err != nil {
 					t.Fatal(err)
 				}

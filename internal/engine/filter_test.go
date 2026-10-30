@@ -16,29 +16,9 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-const filterIdentitySource = `type Out = { First node[string]; Kept []node[string]; Empty []node[string] }
-rule main = first:"a" second:"b" $$ => Out{First: $first, Kept: filter(list($first, $second, $first), (x) => text(x) == "a"), Empty: filter(nil, (x) => true)}`
-
-func filterCases() []gentest.Case {
-	return []gentest.Case{
-		{Name: "identity and nil input", Src: filterIdentitySource, Inputs: []string{"ab", "a", "ac", ""}},
-		{Name: "nil elements", Src: `type Out = { Items []*node[string] }
-rule main = x:"é" $$ => Out{Items: filter(list(nil, $x, nil, $x), (item) => item == nil || text(item) == "é")}`, Inputs: []string{"é", "a", ""}},
-		{Name: "remove all", Src: `rule main = v1:"é" $$ => filter(list($v1), (item) => false)`, Inputs: []string{"é", "", "a"}},
-		{Name: "keep order", Src: `rule main = x:[a-z]* #atomic $$ => filter(list($x, nil, $x), (item) => item != nil)`, Inputs: []string{"ab", "", "é"}},
-		{Name: "nested lambda", Src: `rule main = v1:"a" $$ => filter(list($v1), (item) => len(filter(list(item, nil), (inner) => inner != nil)) == 1)`, Inputs: []string{"a", "", "ab"}},
-		{Name: "predicate error rollback", Src: `rule main = a:"a" ({len(filter(list($a), (item) => 1 / 0 == 0)) == 1} "!" / "?") $$`, Inputs: []string{"a?", "a!", "a", ""}},
-		{Name: "value error", Src: `rule main = v1:"a" $$ => filter(list($v1), (item) => 1 / 0 == 0)`, Inputs: []string{"a", "", "ab"}},
-		{Name: "dynamic nonbool", Src: `rule main = v1:"a" d:one $$ => filter(list($v1), (item) => $d.(bool))
-rule one _ = _ => 1`, Inputs: []string{"a", "", "ab"}},
-		{Name: "dynamic nonbool predicate", Src: `rule main = a:"a" d:one ({len(filter(list($a), (item) => $d.(bool))) == 1} "!" / "?") $$
-rule one _ = _ => 1`, Inputs: []string{"a?", "a!", "a", ""}},
-	}
-}
-
 func TestFilterNodeIdentityAndEmptyInput(t *testing.T) {
 	t.Parallel()
-	program := mustCompile(t, filterIdentitySource)
+	program := mustCompile(t, gentest.FilterIdentitySource)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			node, err := program.ParseWith("main", "ab", ParseOptions{Backend: backend, Unit: unit})
@@ -60,7 +40,7 @@ func TestFilterNodeIdentityAndEmptyInput(t *testing.T) {
 
 func TestFilterAcrossBackends(t *testing.T) {
 	t.Parallel()
-	for _, fixture := range filterCases() {
+	for _, fixture := range gentest.FilterCases() {
 		t.Run(fixture.Name, func(t *testing.T) {
 			program := mustCompile(t, fixture.Src)
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -111,7 +91,7 @@ rule main = v1:"a" => Out{Items: filter(list($v1, nil), (x) => x != nil)}`,
 
 func TestFilterCompiledInstructionSet(t *testing.T) {
 	t.Parallel()
-	program := mustCompile(t, filterIdentitySource)
+	program := mustCompile(t, gentest.FilterIdentitySource)
 	for _, mode := range valueModes {
 		data, err := program.Marshal("main", mode)
 		if err != nil || data[isaOffset] != bytecode.ISAVersion {
@@ -139,7 +119,7 @@ func TestFilterCompiledInstructionSet(t *testing.T) {
 	if ordinary.Module().InstructionSetVersion() != bytecode.ISAVersion {
 		t.Fatal("filter support changed the ordinary instruction set")
 	}
-	module := mustCompile(t, filterIdentitySource).Module()
+	module := mustCompile(t, gentest.FilterIdentitySource).Module()
 	for i := range module.Exprs {
 		if module.Exprs[i].Op == bytecode.ECall && module.Exprs[i].A == bytecode.BuiltinFilter {
 			module.Exprs[i].B = 0
@@ -159,8 +139,8 @@ func TestFilterGeneratedGoParity(t *testing.T) {
 
 func testFilterGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	gentest.GeneratedParsersCorpus(t, goBin, filterCases(), gen.GenOptions{})
-	gentest.GeneratedTypesCorpus(t, goBin, filterCases(), gen.GenOptions{})
+	gentest.GeneratedParsersCorpus(t, goBin, gentest.FilterCases(), gen.GenOptions{})
+	gentest.GeneratedTypesCorpus(t, goBin, gentest.FilterCases(), gen.GenOptions{})
 }
 
 func TestFilterGeneratedTypeScriptParity(t *testing.T) {
@@ -169,7 +149,7 @@ func TestFilterGeneratedTypeScriptParity(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	testGeneratedTSParsersCorpus(t, node, filterCases(), gen.GenOptions{})
+	testGeneratedTSParsersCorpus(t, node, gentest.FilterCases(), gen.GenOptions{})
 }
 
 // The checker rejects a predicate of type _, so a predicate that produces another value than a

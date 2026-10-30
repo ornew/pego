@@ -100,7 +100,7 @@ func TestFlowDiffDetectsMutations(t *testing.T) {
 	for _, m := range mutations {
 		t.Run(m.name, func(t *testing.T) {
 			applied := 0
-			for _, gc := range append(gentest.CorpusWithParsers(t), coreExtraGrammars...)[:60] {
+			for _, gc := range append(gentest.CorpusWithParsers(t), gentest.CoreExtraGrammars...)[:60] {
 				want, _, _, ok := flowGenerate(gc.Src, opts)
 				if !ok {
 					continue
@@ -157,7 +157,7 @@ func flowGenerate(src string, opts gen.GenOptions) (string, int, int, bool) {
 // frames where the mode inlines them.
 func TestFlowPrintsTypedRules(t *testing.T) {
 	t.Parallel()
-	cases := append(gentest.CorpusWithParsers(t), coreExtraGrammars...)
+	cases := append(gentest.CorpusWithParsers(t), gentest.CoreExtraGrammars...)
 	for _, mode := range flowModes {
 		t.Run(mode.name, func(t *testing.T) {
 			t.Parallel()

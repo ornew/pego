@@ -3,7 +3,6 @@ package engine
 import (
 	"bytes"
 	"fmt"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -13,52 +12,14 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-// Replace a source-valid placeholder with a public-AST value. Only matching
-// expressions are visited: string constants in actions have separate semantics.
-func firstLiteral(e grammar.Expr) *grammar.Literal {
-	switch e := e.(type) {
-	case *grammar.Group:
-		return firstLiteral(e.Expr)
-	case *grammar.Literal:
-		return e
-	case *grammar.Seq:
-		for _, item := range e.Items {
-			if lit := firstLiteral(item); lit != nil {
-				return lit
-			}
-		}
-	case *grammar.Choice:
-		for _, item := range e.Alts {
-			if lit := firstLiteral(item); lit != nil {
-				return lit
-			}
-		}
-	case *grammar.Capture:
-		return firstLiteral(e.Expr)
-	case *grammar.Atomic:
-		return firstLiteral(e.Expr)
-	case *grammar.Repeat:
-		return firstLiteral(e.Expr)
-	}
-	return nil
-}
-
-func replaceFirstLiteral(e grammar.Expr, val string) *grammar.Literal {
-	lit := firstLiteral(e)
-	if lit != nil {
-		lit.Value = val
-	}
-	return lit
-}
-
 func TestRawInvalidASTLiterals(t *testing.T) {
 	t.Parallel()
-	for _, raw := range rawLiteralValues() {
+	for _, raw := range gentest.RawLiteralValues() {
 		for _, shape := range []string{`t:"�"`, `t:"�" .`, `t:("�" / "other")`, `t:("�" #repeat(2)) #atomic`} {
 			t.Run(fmt.Sprintf("%x/%s", raw, shape), func(t *testing.T) {
 				src := "type N = { T node[string]; S string }\nrule main N = " + shape + ` $$ => N{T:$t, S:"constant"}`
 				g := mustParse(src)
-				lit := replaceFirstLiteral(g.Rules()[0].Expr, raw)
+				lit := gentest.ReplaceFirstLiteral(g.Rules()[0].Expr, raw)
 				if lit == nil {
 					t.Fatal("missing placeholder")
 				}
@@ -73,7 +34,7 @@ func TestRawInvalidASTLiterals(t *testing.T) {
 					t.Fatal("Compile mutated the AST")
 				}
 				canonical := mustParse(src)
-				replaceFirstLiteral(canonical.Rules()[0].Expr, string([]rune(raw)))
+				gentest.ReplaceFirstLiteral(canonical.Rules()[0].Expr, string([]rune(raw)))
 				canonical.Rules()[0].Action.(*grammar.New).Fields[1].Value.(*grammar.StringLit).Value = raw
 				want, err := Compile(canonical, compile.Options{})
 				if err != nil {
@@ -146,7 +107,7 @@ func TestRawInvalidASTLiterals(t *testing.T) {
 						}
 					}
 					if prog.Grammar != nil {
-						if first := firstLiteral(prog.Grammar.Rules()[0].Expr); first == nil || first.Value != raw {
+						if first := gentest.FirstLiteral(prog.Grammar.Rules()[0].Expr); first == nil || first.Value != raw {
 							t.Fatal("loaded AST changed literal bytes")
 						}
 					}
@@ -160,48 +121,4 @@ func TestRawInvalidASTLiterals(t *testing.T) {
 			})
 		}
 	}
-}
-
-func rawLiteralValues() []string {
-	return []string{"\xc3", "\x80", "\xff", "\xc0\xaf", "\xed\xa0\x80", "é\xc3x", "abcdefghijk\xffxyz"}
-}
-
-func rawLiteralGenCorpus() []gentest.Case {
-	var cases []gentest.Case
-	for _, raw := range rawLiteralValues() {
-		canonical := string([]rune(raw))
-		for _, shape := range []string{"exact", "suffix", "choice", "predicate"} {
-			expr := strconv.Quote(canonical)
-			predicate := ""
-			switch shape {
-			case "suffix":
-				expr = "(" + expr + " .) #atomic"
-			case "predicate":
-				predicate = " {text($t)==" + strconv.Quote(canonical) + "}"
-			case "choice":
-				expr = "(" + expr + ` / "other")`
-			}
-			cases = append(cases, gentest.Case{Name: fmt.Sprintf("raw AST/%x/%s", raw, shape),
-				Src:    "type N = { T node[string] }\nrule main N = t:" + expr + predicate + " $$ => N{T:$t}",
-				Inputs: []string{raw, canonical, raw + "x", canonical + "x", "é", "éx", "other", "", "\xffx", "\x80x"}})
-		}
-	}
-	return cases
-}
-
-func literalCorpusGrammar(t *testing.T, tc gentest.Case) *grammar.Grammar {
-	t.Helper()
-	g := mustParse(tc.Src)
-	if strings.HasPrefix(tc.Name, "raw AST/") {
-		for _, raw := range rawLiteralValues() {
-			if strings.HasPrefix(tc.Name, fmt.Sprintf("raw AST/%x/", raw)) {
-				if replaceFirstLiteral(g.Rules()[0].Expr, raw) == nil {
-					t.Fatal("missing literal")
-				}
-				return g
-			}
-		}
-		t.Fatal("unknown raw literal case")
-	}
-	return g
 }

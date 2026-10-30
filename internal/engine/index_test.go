@@ -19,33 +19,9 @@ import (
 	"github.com/ornew/pego/internal/value"
 )
 
-func indexCases() []gentest.Case {
-	return []gentest.Case{
-		{Name: "first and last", Src: `rule main = xs:item+ $$ => list($xs[0], $xs[len($xs) - 1])
-rule item = [a-z]`, Inputs: []string{"abc", "a", "", "1"}},
-		{Name: "out of range", Src: `rule main = xs:item* $$ => $xs[2]
-rule item = [a-z]`, Inputs: []string{"abc", "ab", ""}},
-		{Name: "negative", Src: `rule main = xs:item* $$ => $xs[0 - 1]
-rule item = [a-z]`, Inputs: []string{"a", ""}},
-		{Name: "nil list", Src: `rule main = xs:(item+)? $$ => list($xs)[0]
-rule item = [a-z]`, Inputs: []string{"a", ""}},
-		{Name: "nested", Src: `rule main = xs:item+ $$ => list($xs, list($xs[0]))[1][0]
-rule item = [a-z]`, Inputs: []string{"ab", ""}},
-		{Name: "lambda parameter", Src: `rule main = xs:item+ $$ => map(list($xs), (l) => l[0])
-rule item = [a-z]`, Inputs: []string{"ab", ""}},
-		{Name: "predicate", Src: `rule main = xs:item+ ({text($xs[0]) == "a"} "!" / "?") $$
-rule item = [a-z]`, Inputs: []string{"ab!", "ab?", "ba!", "ba?", ""}},
-		{Name: "predicate error rollback", Src: `rule main = xs:item+ ({$xs[5] == nil} "!" / "?") $$
-rule item = [a-z]`, Inputs: []string{"ab!", "ab?", ""}},
-		{Name: "dynamic index", Src: `var i int
-rule main = {i := 1} xs:item+ $$ => $xs[i]
-rule item = [a-z]`, Inputs: []string{"ab", "a", ""}},
-	}
-}
-
 func TestIndexAcrossBackends(t *testing.T) {
 	t.Parallel()
-	for _, fixture := range indexCases() {
+	for _, fixture := range gentest.IndexCases() {
 		t.Run(fixture.Name, func(t *testing.T) {
 			program := mustCompile(t, fixture.Src)
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -236,8 +212,8 @@ func TestIndexGeneratedGoParity(t *testing.T) {
 
 func testIndexGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	gentest.GeneratedParsersCorpus(t, goBin, indexCases(), gen.GenOptions{})
-	gentest.GeneratedTypesCorpus(t, goBin, indexCases(), gen.GenOptions{})
+	gentest.GeneratedParsersCorpus(t, goBin, gentest.IndexCases(), gen.GenOptions{})
+	gentest.GeneratedTypesCorpus(t, goBin, gentest.IndexCases(), gen.GenOptions{})
 }
 
 func TestIndexGeneratedTypeScriptParity(t *testing.T) {
@@ -246,7 +222,7 @@ func TestIndexGeneratedTypeScriptParity(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	testGeneratedTSParsersCorpus(t, node, indexCases(), gen.GenOptions{})
+	testGeneratedTSParsersCorpus(t, node, gentest.IndexCases(), gen.GenOptions{})
 }
 
 // Generated parsers index the same with and without work limits, which select the
