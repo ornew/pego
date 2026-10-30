@@ -78,6 +78,9 @@ func (g *Generator) flowTypedRule(r *compile.Rule) *flatRule {
 	defer func() { g.Proj = nil }()
 	p := newFlowPrinter(g, false)
 	p.document = f.Document
+	if g.execRoute() {
+		return g.execFlatRule(p, f)
+	}
 	p.stmts(f.Body)
 	res := p.vars.Resolve(f.Vars, p.b.String())
 	g.flowVarsErr(res)
@@ -219,6 +222,9 @@ func (g *Generator) flowOperatorsRule(r *compile.Rule) *core.OperatorsRule {
 func (g *Generator) flowFramed(f *flow.Func, slots []core.Slot, scope *compile.Scope, comment string, ruleBody bool) string {
 	p := newFlowPrinter(g, true)
 	p.document = f.Document
+	if g.execRoute() {
+		return g.execFramed(p, f, slots, scope, comment, ruleBody)
+	}
 	p.stmts(f.Body)
 	// The function publishes the cut flag of its outermost scope on return.
 	publish := func() {
@@ -673,6 +679,28 @@ func (p *flowPrinter) expectHelper() string {
 // peekStmt writes the read of the next character into the variables of s, with the blank identifier
 // for those nothing reads.
 func (p *flowPrinter) peekStmt(s *flow.Peek) {
+	if p.dead {
+		return
+	}
+	st := &varStmt{Targets: []*flow.Var{s.Ch, s.Size, s.OK}}
+	st.Text = func(dead func(*flow.Var) bool) string {
+		name := func(v *flow.Var) string {
+			if v == nil || dead(v) {
+				return "_"
+			}
+			return v.Name
+		}
+		return p.peekText(name(s.Ch), name(s.Size), name(s.OK))
+	}
+	p.b.WriteString(p.vars.Add(st))
+}
+
+// peekText returns the read of the next character into the places ch, size and ok.
+func (p *flowPrinter) peekText(ch, size, ok string) string {
+	// The inlined read and its fallback are one call of the runtime, which the compiler inlines.
+	if p.g.Ordinary {
+		return fmt.Sprintf("%s, %s, %s = p.NextOrdinary()\n", ch, size, ok)
+	}
 	guard := "p.Pos < len(p.In)"
 	if p.document {
 		guard = "p.Document == nil && " + guard
@@ -685,26 +713,7 @@ func (p *flowPrinter) peekStmt(s *flow.Peek) {
 	if !p.g.Flow.Opts.Budget {
 		spend = ""
 	}
-	if p.dead {
-		return
-	}
-	st := &varStmt{Targets: []*flow.Var{s.Ch, s.Size, s.OK}}
-	st.Text = func(dead func(*flow.Var) bool) string {
-		name := func(v *flow.Var) string {
-			if v == nil || dead(v) {
-				return "_"
-			}
-			return v.Name
-		}
-		ch, size, ok := name(s.Ch), name(s.Size), name(s.OK)
-		controlled := fmt.Sprintf("if %s {\n%s%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[3]s, %[4]s, %[5]s = p.Peek()\n}\n", guard, spend, ch, size, ok)
-		// The inlined read and its fallback are one call of the runtime, which the compiler inlines.
-		if p.g.Ordinary {
-			return fmt.Sprintf("%s, %s, %s = p.NextOrdinary()\n", ch, size, ok)
-		}
-		return controlled
-	}
-	p.b.WriteString(p.vars.Add(st))
+	return fmt.Sprintf("if %s {\n%s%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[3]s, %[4]s, %[5]s = p.Peek()\n}\n", guard, spend, ch, size, ok)
 }
 
 // fixedExpNames names the expectations of the runtime that every parser has, by ID.
