@@ -50,7 +50,9 @@ rule e = (e "+" n) #recover(skip=[^+;.]+) / n
 rule n = [0-9]+
 `, Inputs: []string{"1+2;", "1+x;", "1+x+3.", "1+", "x", "", "1+2+x"}},
 		// A memoized call that fails after consuming input leaves the position where it started:
-		// the repetition after the second call of r continues from there.
+		// the repetition after the second call of r continues from there. The generated code
+		// restores the position after a failed call itself, so only the model test of the
+		// composition (TestCallFailureRestoresState) checks that the composition restores it.
 		{Name: "failed memoized call restores the position", Src: `rule main = (r "!" / r)* "q" $$
 rule r = l "b"
 rule l = "a"
