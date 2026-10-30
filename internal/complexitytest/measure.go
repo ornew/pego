@@ -1,0 +1,267 @@
+// Package complexitytest measures how the parse cost of a grammar grows with the input and
+// classifies the growth. The cost is the budget spend of a parse, which is deterministic for a
+// grammar, an input and a backend.
+//
+// Steps reads the spend of an ordinary parse by bisection over Limits.Budget. StepsTraced reads
+// it from the counter of a traced parse and is cheaper, but a traced parse spends a little more
+// than an untraced one (a few percent in the tests), so it is only an upper estimate; the suites
+// use Steps.
+package complexitytest
+
+import (
+	"errors"
+	"fmt"
+	"math"
+	"strings"
+
+	"github.com/ornew/pego"
+	"github.com/ornew/pego/internal/engine/core"
+	"github.com/ornew/pego/internal/starttest"
+)
+
+// Backends are the backends whose cost is measured.
+var Backends = []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative}
+
+// BackendName names b for test output.
+func BackendName(b pego.Backend) string {
+	switch b {
+	case pego.Closure:
+		return "closure"
+	case pego.Bytecode:
+		return "bytecode"
+	case pego.BytecodeIterative:
+		return "iterative"
+	}
+	return fmt.Sprint(int(b))
+}
+
+// Compile compiles the PEGO source with every rule a start rule and main as the default start
+// rule.
+func Compile(src string) (*pego.Parser, error) {
+	g, err := pego.ParseGrammar(src)
+	if err != nil {
+		return nil, err
+	}
+	return pego.Compile(starttest.MarkAll(g), "")
+}
+
+// Cost is the measured cost of one parse.
+type Cost struct {
+	// Steps is the budget spend. For a Capped cost it is the cap, a lower bound.
+	Steps uint64
+	// Capped reports that the parse exhausted the cap.
+	Capped bool
+}
+
+// Parses reports whether the parse of input succeeds within budget. A budget error is not a
+// failure; any other error is returned.
+func parses(p *pego.Parser, input string, b pego.Backend, budget uint64) (bool, error) {
+	_, err := p.Parse(input, pego.WithBackend(b), pego.WithLimits(pego.Limits{Budget: budget}))
+	var le *pego.LimitError
+	if errors.As(err, &le) && le.Kind == pego.LimitBudget {
+		return false, nil
+	}
+	return err == nil, err
+}
+
+// Steps returns the spend of the untraced parse of input: the smallest budget with which the
+// parse does not exhaust, to within the tolerance below. A parse that still exhausts cap returns Cost{cap, true}. Any other
+// parse error is returned.
+//
+// The search stops when the interval is within 0.4% of the result, which moves a slope by less
+// than 0.01. ExactSteps searches to the unit.
+func Steps(p *pego.Parser, input string, b pego.Backend, cap uint64) (Cost, error) {
+	return steps(p, input, b, cap, 256)
+}
+
+// ExactSteps is Steps with a search to the unit.
+func ExactSteps(p *pego.Parser, input string, b pego.Backend, cap uint64) (Cost, error) {
+	return steps(p, input, b, cap, 0)
+}
+
+func steps(p *pego.Parser, input string, b pego.Backend, cap, tolDiv uint64) (Cost, error) {
+	ok, err := parses(p, input, b, cap)
+	if err != nil {
+		return Cost{}, err
+	}
+	if !ok {
+		return Cost{Steps: cap, Capped: true}, nil
+	}
+	lo, hi := uint64(0), cap // budget lo fails (or is zero), budget hi succeeds
+	for step := uint64(1024); step < hi; step *= 4 {
+		ok, err := parses(p, input, b, step)
+		if err != nil {
+			return Cost{}, err
+		}
+		if ok {
+			hi = step
+			break
+		}
+		lo = step
+	}
+	for hi-lo > 1 && (tolDiv == 0 || hi-lo > hi/tolDiv) {
+		mid := lo + (hi-lo)/2
+		ok, err := parses(p, input, b, mid)
+		if err != nil {
+			return Cost{}, err
+		}
+		if ok {
+			hi = mid
+		} else {
+			lo = mid
+		}
+	}
+	return Cost{Steps: hi}, nil
+}
+
+// StepsTraced returns the spend of a traced parse, read from the counter at the last event. It
+// stops at cap like Steps. A traced parse spends more than an untraced one; see the tests.
+func StepsTraced(p *pego.Parser, input string, b pego.Backend, cap uint64) (Cost, error) {
+	var used uint64
+	seen := false
+	_, err := p.Parse(input, pego.WithBackend(b), pego.WithLimits(pego.Limits{Budget: cap}),
+		pego.WithTrace(func(e pego.TraceEvent) {
+			if c := core.TraceParser(e).Control; c != nil {
+				used, seen = c.Used, true
+			}
+		}))
+	var le *pego.LimitError
+	if errors.As(err, &le) && le.Kind == pego.LimitBudget {
+		return Cost{Steps: cap, Capped: true}, nil
+	}
+	if err != nil {
+		return Cost{}, err
+	}
+	if !seen {
+		return Cost{}, errors.New("complexitytest: the parse reported no counter")
+	}
+	return Cost{Steps: used}, nil
+}
+
+// Series is the cost at doubling input sizes: Sizes[i] = Sizes[0] * 2^i.
+type Series struct {
+	Sizes []int
+	Costs []Cost
+}
+
+// Measure builds the input of every size with build, checks that it parses, and measures the
+// cost with the untraced Steps. The sizes are n, 2n and 4n for the three-point series of the
+// suite; any number of doubling sizes is accepted.
+func Measure(p *pego.Parser, build func(n int) string, sizes []int, b pego.Backend, cap uint64) (Series, error) {
+	s := Series{Sizes: sizes}
+	for _, n := range sizes {
+		c, err := Steps(p, build(n), b, cap)
+		if err != nil {
+			return s, fmt.Errorf("size %d: %w", n, err)
+		}
+		s.Costs = append(s.Costs, c)
+	}
+	return s, nil
+}
+
+// Slopes returns the growth exponents log2(cost(2n)/cost(n)) between consecutive sizes. A
+// capped cost is taken as its cap, so a slope that ends in a capped point is a lower bound.
+func (s Series) Slopes() []float64 {
+	var out []float64
+	for i := 1; i < len(s.Costs); i++ {
+		out = append(out, math.Log2(float64(s.Costs[i].Steps)/float64(max(s.Costs[i-1].Steps, 1))))
+	}
+	return out
+}
+
+// CappedPoints reports whether any cost of s is capped.
+func (s Series) CappedPoints() bool {
+	for _, c := range s.Costs {
+		if c.Capped {
+			return true
+		}
+	}
+	return false
+}
+
+// Order is a growth class of the cost.
+type Order struct {
+	// Kind is KindLinear, KindPoly or KindExp.
+	Kind OrderKind
+	// Degree is k of a KindPoly order.
+	Degree int
+}
+
+// OrderKind is the kind of an Order.
+type OrderKind int
+
+const (
+	KindUnknown OrderKind = iota
+	KindLinear
+	KindPoly
+	KindExp
+)
+
+// Linear, Exp and Unknown are the orders without a degree.
+var (
+	Linear  = Order{Kind: KindLinear}
+	Exp     = Order{Kind: KindExp}
+	Unknown = Order{}
+)
+
+// Poly returns the polynomial order of degree k.
+func Poly(k int) Order { return Order{Kind: KindPoly, Degree: k} }
+
+func (o Order) String() string {
+	switch o.Kind {
+	case KindLinear:
+		return "Linear"
+	case KindPoly:
+		return fmt.Sprintf("Poly(%d)", o.Degree)
+	case KindExp:
+		return "Exp"
+	}
+	return "Unknown"
+}
+
+// Bands of Classify.
+const (
+	linearMax    = 1.15 // slopes of a linear series stay at or below this
+	polyBelow    = 0.35 // Poly(k) accepts s2 from k-polyBelow
+	polyAbove    = 0.20 // to k+polyAbove
+	expMinSlope  = 4.0  // Exp needs s2 at least this and s1+1
+	maxPolyKnown = 6
+)
+
+// Classify returns the order of a series of at least three doubling sizes, from its last two
+// slopes s1 (between the first two sizes) and s2 (between the last two): Linear if s1 and s2
+// are at most 1.15; Poly(k) if k-0.35 <= s2 <= k+0.2; Exp if s2 >= max(4, s1+1). A capped last
+// point counts as a cost of at least the cap, so its slope is a lower bound and only Exp can
+// follow from it. A series that fits no band is Unknown.
+func Classify(s Series) Order {
+	sl := s.Slopes()
+	if len(sl) < 2 {
+		return Unknown
+	}
+	s1, s2 := sl[len(sl)-2], sl[len(sl)-1]
+	last := s.Costs[len(s.Costs)-1]
+	if last.Capped {
+		if s2 >= math.Max(expMinSlope, s1+1) {
+			return Exp
+		}
+		return Unknown
+	}
+	if s.CappedPoints() {
+		return Unknown // a capped earlier point makes the slopes lower bounds
+	}
+	if s1 <= linearMax && s2 <= linearMax {
+		return Linear
+	}
+	if s2 >= math.Max(expMinSlope, s1+1) {
+		return Exp
+	}
+	for k := 2; k <= maxPolyKnown; k++ {
+		if float64(k)-polyBelow <= s2 && s2 <= float64(k)+polyAbove {
+			return Poly(k)
+		}
+	}
+	return Unknown
+}
+
+// rep repeats s n times.
+func rep(s string, n int) string { return strings.Repeat(s, n) }
