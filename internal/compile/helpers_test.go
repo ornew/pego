@@ -1,6 +1,7 @@
 package compile
 
 import (
+	"context"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
@@ -135,3 +136,26 @@ var b bool
 rule main = {n := n + 1} {s := s + "y"} {n > 2 && s != "" && !b} item "a"
 rule item = {n > 0} "b"?
 `
+
+// compileContext is compileStatic under ctx, as the engine's CompileContext is: cancellation
+// discards the program and returns the context's error.
+func compileContext(ctx context.Context, g *grammar.Grammar, opts Options) (prog *Program, err error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	defer func() {
+		if failure := recover(); failure != nil {
+			if cancelled, ok := failure.(Cancellation); ok {
+				prog, err = nil, cancelled.Err
+			} else {
+				panic(failure)
+			}
+		}
+	}()
+	names := InlineNames{}
+	prog, err = CompileProgram(g, opts, nil, names, &Control{Ctx: ctx}, func(*Compiler) ExprBuilder[struct{}] { return noExprs{} })
+	if err != nil {
+		return nil, names.Rewrite(err)
+	}
+	return prog, nil
+}

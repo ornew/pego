@@ -1,12 +1,10 @@
-package engine
+package compile
 
 import (
 	"context"
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/compile"
 )
 
 func BenchmarkNormalizationCompileCancellation(b *testing.B) {
@@ -36,9 +34,9 @@ func BenchmarkNormalizationCompileCancellation(b *testing.B) {
 				for b.Loop() {
 					var err error
 					if controlled {
-						normalizationBenchmarkProgram, err = CompileContext(ctx, g, compile.Options{})
+						normalizationBenchmarkProgram, err = compileContext(ctx, g, Options{})
 					} else {
-						normalizationBenchmarkProgram, err = Compile(g, compile.Options{})
+						normalizationBenchmarkProgram, err = compileStatic(g, Options{}, nil)
 					}
 					if err != nil {
 						b.Fatal(err)
