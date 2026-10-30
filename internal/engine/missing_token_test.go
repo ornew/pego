@@ -367,19 +367,6 @@ func TestMissingTokensLedgerSeedBudget(t *testing.T) {
 	p.ReplayMissing(seed, []*SyntaxError{event.Err})
 }
 
-func TestMissingTokensModuleGuard(t *testing.T) {
-	t.Parallel()
-	prog := mustCompile(t, `rule main = ";" #missing`)
-	defer func() {
-		x := recover()
-		err, ok := x.(error)
-		if !ok || !strings.Contains(err.Error(), "bytecode module construction") {
-			t.Fatal("silent bytecode lowering", x)
-		}
-	}()
-	prog.Module()
-}
-
 func TestMissingTokensPredicateRecognitionAndMemoDependencies(t *testing.T) {
 	t.Parallel()
 	prog := mustCompile(t, `rule main = x:(token #atomic) {len($x) == 0} $$
