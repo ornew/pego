@@ -81,7 +81,7 @@ func variableGraph(n int, cyclic bool) string {
 	src.WriteString("type V = { N int }\nvar z int\nvar a int\nvar m int\nrule main = {z := 1} {a := 2} {m := 3} r0\nrule leaf = \"b\" => V{N: z + a + m}\n")
 	for i := range n {
 		if cyclic {
-			fmt.Fprintf(&src, "rule r%d node[_] = \"a\" r%d / leaf\n", i, (i+1)%n)
+			fmt.Fprintf(&src, "rule r%d = \"a\" r%d / leaf\n", i, (i+1)%n)
 		} else if i+2 < n {
 			fmt.Fprintf(&src, "rule r%d = r%d / r%d / r%d\n", i, i+1, i+2, i+1)
 		} else {
@@ -93,14 +93,18 @@ func variableGraph(n int, cyclic bool) string {
 
 func variableManyReads(n int, cyclic bool) string {
 	var src strings.Builder
-	src.WriteString("type V = { N int }\nrule main = r0\n")
+	src.WriteString("type V = { N int }\n")
+	for i := range n {
+		fmt.Fprintf(&src, "var v%d int\n", i)
+	}
+	src.WriteString("rule main = r0\n")
 	for i := range n {
 		if cyclic {
-			fmt.Fprintf(&src, "rule r%d node[_] = \"a\" r%d / \"b\" => V{N: v%d}\n", i, (i+1)%n, i)
+			fmt.Fprintf(&src, "rule r%d = \"a\" r%d / \"b\" => V{N: v%d}\n", i, (i+1)%n, i)
 		} else if i+1 < n {
-			fmt.Fprintf(&src, "rule r%d node[_] = r%d / \"b\" => V{N: v%d}\n", i, i+1, i)
+			fmt.Fprintf(&src, "rule r%d = r%d / \"b\" => V{N: v%d}\n", i, i+1, i)
 		} else {
-			fmt.Fprintf(&src, "rule r%d node[_] = \"b\" => V{N: v%d}\n", i, i)
+			fmt.Fprintf(&src, "rule r%d = \"b\" => V{N: v%d}\n", i, i)
 		}
 	}
 	return src.String()
