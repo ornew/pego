@@ -309,7 +309,9 @@ type Unary struct {
 // and wraps at its width, and "/" and "%" truncate toward zero; the bit operators ("&", "|", "^",
 // "<<", ">>") take two integers of one sized type (i32, u32, u64), because int has no fixed width;
 // comparisons ("==", "!=", "<", "<=", ">", ">=") give bool, and "==" and "!=" also compare bools and
-// handles; "&&" and "||" take bools and short-circuit.
+// handles; "&&" and "||" take bools and short-circuit. A division or remainder by zero and a shift
+// count that is negative or not less than the width are unspecified: a program must not reach them,
+// and backends may differ there (Go panics on a zero divisor, JavaScript does not).
 type Binary struct {
 	Op   string
 	X, Y Expr

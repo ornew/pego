@@ -14,6 +14,7 @@ package execgo
 import (
 	"fmt"
 	"go/format"
+	"go/token"
 	"strconv"
 	"strings"
 
@@ -186,13 +187,18 @@ func (p *printer) stmts(b *exec.Block) {
 	}
 }
 
-// label returns a Go label for the Exec IR label l that no other block or loop of the function has.
+// label returns a Go label for the Exec IR label l that no other block or loop of the function has
+// and that is not a keyword.
 func (p *printer) label(l string) string {
 	p.labels[l]++
-	if n := p.labels[l]; n > 1 {
-		return l + "_" + strconv.Itoa(n)
+	name := l
+	if token.IsKeyword(l) {
+		name += "_"
 	}
-	return l
+	if n := p.labels[l]; n > 1 {
+		return name + "_" + strconv.Itoa(n)
+	}
+	return name
 }
 
 func jumps(st exec.Stmt) bool {
@@ -252,12 +258,26 @@ func (p *printer) let(l *exec.Let, rest []exec.Stmt) {
 	}
 	op := " := "
 	if !declared {
+		if !hasCall(l.Value) {
+			return // nothing reads the value and computing it has no effect
+		}
 		op = " = "
 	}
 	p.w("%s%s%s\n", strings.Join(names, ", "), op, p.expr(l.Value, 0))
 	for _, n := range unread {
 		p.w("_ = %s\n", n)
 	}
+}
+
+// hasCall reports whether x calls an operation or a function.
+func hasCall(x exec.Expr) bool {
+	found := false
+	exec.Walk(&exec.Block{Stmts: []exec.Stmt{&exec.Assert{Cond: x}}}, nil, func(e exec.Expr) {
+		if _, ok := e.(*exec.Call); ok {
+			found = true
+		}
+	})
+	return found
 }
 
 // assigns reports whether the statements assign the local name.
@@ -436,7 +456,7 @@ var prec = map[string]int{
 // operator or a conversion of constants prints as its value: Go evaluates constant expressions
 // exactly and rejects one that overflows, where Exec IR wraps.
 func (p *printer) expr(x exec.Expr, outer int) string {
-	if c, ok := fold(x); ok {
+	if c, ok := exec.Fold(x); ok {
 		x = c
 	}
 	switch x := x.(type) {
@@ -478,53 +498,6 @@ func (p *printer) expr(x exec.Expr, outer int) string {
 		return name + "(" + strings.Join(args, ", ") + ")"
 	}
 	panic(fmt.Sprintf("execgo: expression %T", x))
-}
-
-// fold returns the value of x if x is an operator or a conversion whose operands are constants,
-// evaluated as Exec IR evaluates it. A division by zero is not folded.
-func fold(x exec.Expr) (*exec.Const, bool) {
-	switch x := x.(type) {
-	case *exec.Const:
-		return x, true
-	case *exec.Unary:
-		c, ok := fold(x.X)
-		if !ok {
-			return nil, false
-		}
-		if x.Op == "!" {
-			return &exec.Const{Type: exec.TBool, Value: !c.Value.(bool)}, true
-		}
-		return &exec.Const{Type: c.Type, Value: exec.Apply("-", exec.ConvertValue(int64(0), c.Type), c.Value)}, true
-	case *exec.Binary:
-		a, ok1 := fold(x.X)
-		b, ok2 := fold(x.Y)
-		if !ok1 || !ok2 || a.Type.Kind == exec.KHandle {
-			return nil, false
-		}
-		switch x.Op {
-		case "&&":
-			return &exec.Const{Type: exec.TBool, Value: a.Value.(bool) && b.Value.(bool)}, true
-		case "||":
-			return &exec.Const{Type: exec.TBool, Value: a.Value.(bool) || b.Value.(bool)}, true
-		case "/", "%":
-			if b.Value == exec.ConvertValue(int64(0), b.Type) {
-				return nil, false
-			}
-		}
-		v := exec.Apply(x.Op, a.Value, b.Value)
-		t := a.Type
-		if _, isBool := v.(bool); isBool {
-			t = exec.TBool
-		}
-		return &exec.Const{Type: t, Value: v}, true
-	case *exec.Convert:
-		c, ok := fold(x.X)
-		if !ok {
-			return nil, false
-		}
-		return &exec.Const{Type: x.To, Value: exec.ConvertValue(c.Value, x.To)}, true
-	}
-	return nil, false
 }
 
 func constant(c *exec.Const) string {

@@ -1,6 +1,7 @@
 package execgo
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -8,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	ir "github.com/ornew/pego/internal/ir/exec"
 	"github.com/ornew/pego/internal/ir/exec/printtest"
@@ -94,7 +96,10 @@ func TestPrintedFunctionsRun(t *testing.T) {
 	if out, err := vet.CombinedOutput(); err != nil {
 		t.Fatalf("go vet: %v\n%s\n%s", err, out, numbered(program(t, m)))
 	}
-	run := exec.Command(goBin, "run", "main.go")
+	// A printed loop that does not end as the interpreter's does must fail, not hang.
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	run := exec.CommandContext(ctx, goBin, "run", "main.go")
 	run.Dir, run.Env = dir, env
 	out, err := run.Output()
 	if err != nil {
@@ -127,7 +132,7 @@ func TestPrintedForms(t *testing.T) {
 	}
 	checks := map[string][]string{
 		"exits":  {"goto in\n", "\nin:\n", "outer:\n\tfor {\n", "continue outer\n", "break outer\n", "twin_2:\n"},
-		"scopes": {"\t{\n\t\ta := 10\n", "\t}\nblk:\n", "_ = 5\n", "written := 6\n", "_ = written\n"},
+		"scopes": {"\t{\n\t\ta := 10\n", "\t}\nblk:\n", "sum = sum + c\n\t\twritten := 6\n", "written := 6\n", "_ = written\n"},
 		"clauses": {"for i = 0; i < 6; i++ {\n", "for s < 20 {\n", "p.Pos, _ = p.pair(4)\n", "if s = s + 100; 0 < s {\n",
 			"} else if s == 0 {\n", "// a comment\n"},
 		"special_x_extra": {"// Printed from Exec IR function special_x_extra of printtest, specialized for extra.\n"},
