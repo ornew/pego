@@ -89,35 +89,35 @@ func TestGeneratedTSEnvironmentBindings(t *testing.T) {
 for (const unit of [CodePoints, Bytes]) {
  const p = new Parser(G, "a".repeat(10000), unit, nseen, G.maxDepth);
  if (rules[0]!.body(p,0) === undefined || p.pos !== p.n) throw new Error("parse failed");
- const names = new Set<string>();
- for (let e = p.env; e !== null; e = e.next) {
-  if (names.has(e.name)) throw new Error("retained shadowed binding");
-  names.add(e.name);
+ // The environment holds one value for each of the three declared variables, however many
+ // bindings the parse made.
+ if (p.env === null || p.env.length !== 3 || p.envDepth !== 0) throw new Error("lost binding");
+ const base = newEnv([0, 1, 2], 0)!;
+ p.env = base;
+ p.bindValue(0, 0);
+ if (p.env !== base) throw new Error("equal binding replaced state");
+ p.bindValue(1, true);
+ const saved = p.env;
+ p.bindValue(1, true);
+ if (p.env !== saved) throw new Error("equal rebinding replaced state");
+ p.env = base;
+ p.bindValue(1, false);
+ p.bindValue(2, 2);
+ if (saved![1] !== true || base[1] !== 1 || base[2] !== 2) throw new Error("saved environment mutated");
+ // A large environment copies only the path to a slot.
+ const vals: number[] = [];
+ for (let i = 0; i < 280; i++) vals.push(i);
+ const big = newEnv(vals, envDepthOf(280))!;
+ p.env = big;
+ p.envDepth = envDepthOf(280);
+ p.bindValue(279, -1);
+ const changed = p.env;
+ p.env = big;
+ p.bindValue(0, -2);
+ for (let i = 0; i < 280; i++) {
+  if (envGet(big, i, p.envDepth) !== i) throw new Error("large saved environment mutated");
+  if (envGet(changed, i, p.envDepth) !== (i === 279 ? -1 : i)) throw new Error("large environment lost a value");
  }
- if (names.size !== 3) throw new Error("lost binding");
- p.env = null;
- p.bindValue("z", 1);
- const saved = p.env as Env | null;
- p.bindValue("z", 1);
- if (p.env !== saved) throw new Error("equal binding replaced state");
- p.bindValue("w", true);
- p.env = saved;
- p.bindValue("w", false);
- p.bindValue("z", 2);
- if (saved!.val !== 1) throw new Error("saved environment mutated");
- const q = new Parser(G, "", unit, nseen, G.maxDepth);
- q.env = null; // the parser starts from the declared variables
- q.bindValue("x",1);
- const first = q.env as Env | null;
- q.env = null;
- q.bindValue("y",2);
- q.bindValue("z",3);
- q.env = first;
- q.bindValue("w",4);
- q.bindValue("x",5);
- let count = 0;
- for (let e = q.env; e !== null; e = e.next) count++;
- if (count !== 2 || first!.val !== 1) throw new Error("early snapshot restore");
 }
 `)...)
 	dir := t.TempDir()

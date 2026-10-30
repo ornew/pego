@@ -4298,7 +4298,7 @@ func i0(p *rt.TParser) (any, bool) {
 	} else if _, ok = p.Parser.MatchLiteral(lit1, "\x00", 5, false); !ok {
 		goto L7
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any { return any(64) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return any(64) }) {
 		goto L7
 	}
 	goto L3
@@ -4306,7 +4306,7 @@ L7:
 	p.Pos = x1
 	p.Env = x2
 L6:
-	if !p.Bind("ctx", func(c *rt.TActCtx) any { return any(0) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return any(0) }) {
 		goto L8
 	}
 	goto L3
@@ -4322,7 +4322,7 @@ L3:
 	} else if _, ok = p.Parser.MatchLiteral(lit2, "\x01", 6, false); !ok {
 		goto L11
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("ctx"), any(2)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("+", c.Var(0), any(2)) }) {
 		goto L11
 	}
 	goto L12
@@ -4464,7 +4464,7 @@ func i3(p *rt.TParser) (any, bool) {
 	x1 = p.Pos
 	p.Silent++
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(2)), any(2)), any(1))
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Var(0), any(2)), any(2)), any(1))
 	}) {
 		goto L2
 	}
@@ -4509,7 +4509,7 @@ func i4(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(2)), any(2)), any(1))
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Var(0), any(2)), any(2)), any(1))
 	}) {
 		goto fail
 	}
@@ -4526,7 +4526,7 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-	if !p.Bind("ctx", func(c *rt.TActCtx) any { return c.Binary("-", c.Lookup("ctx"), any(2)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("-", c.Var(0), any(2)) }) {
 		goto fail
 	}
 	if v6, ok = u8(p); !ok {
@@ -6120,8 +6120,8 @@ func i33(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(2)), any(4))), any(4))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("+", c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(4)), any(2)), any(4))), any(4))
 	}) {
 		goto fail
 	}
@@ -8367,7 +8367,7 @@ func i64(p *rt.TParser) (any, bool) {
 	x10 = p.Pos
 	x11 = k4
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(2)), any(0))
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Var(0), any(4)), any(2)), any(0))
 	}) {
 		goto L12
 	}
@@ -8715,8 +8715,8 @@ func i69(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(2)), any(4)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(4)), any(2)), any(4)))
 	}) {
 		goto fail
 	}
@@ -8951,8 +8951,8 @@ func i73(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(2)), any(4)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(4)), any(2)), any(4)))
 	}) {
 		goto fail
 	}
@@ -9199,8 +9199,8 @@ L45:
 	}) {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("+", c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32))), c.Length(k27)), c.Binary("*", c.Binary("/", c.Length(k12), any(5)), any(2)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("+", c.Binary("+", c.Binary("-", c.Var(0), c.Binary("%", c.Var(0), any(32))), c.Length(k27)), c.Binary("*", c.Binary("/", c.Length(k12), any(5)), any(2)))
 	}) {
 		goto fail
 	}
@@ -9901,8 +9901,8 @@ func i85(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(32)), any(2)), any(32)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(32)), any(2)), any(32)))
 	}) {
 		goto fail
 	}
@@ -11015,8 +11015,8 @@ L7:
 	p.Pos = x6
 	goto fail
 L8:
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32))), any(2))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("+", c.Binary("-", c.Var(0), c.Binary("%", c.Var(0), any(32))), any(2))
 	}) {
 		goto fail
 	}
@@ -11098,9 +11098,7 @@ L8:
 		goto fail
 	}
 	k9 = v11
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32)))
-	}) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("-", c.Var(0), c.Binary("%", c.Var(0), any(32))) }) {
 		goto fail
 	}
 	x12 = p.Pos
@@ -11247,9 +11245,7 @@ L8:
 		goto fail
 	}
 	k9 = v11
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32)))
-	}) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("-", c.Var(0), c.Binary("%", c.Var(0), any(32))) }) {
 		goto fail
 	}
 	x12 = p.Pos
@@ -11360,9 +11356,7 @@ func i109(p *rt.TParser) (any, bool) {
 	if _, ok = u504(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32)))
-	}) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("-", c.Var(0), c.Binary("%", c.Var(0), any(32))) }) {
 		goto fail
 	}
 	x4 = p.Pos
@@ -11671,8 +11665,8 @@ L44:
 	p.Pos = x41
 	goto fail
 L42:
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("+", c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32))), c.Length(k17)), c.Binary("*", c.Binary("/", c.Length(k2), any(5)), any(2)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("+", c.Binary("+", c.Binary("-", c.Var(0), c.Binary("%", c.Var(0), any(32))), c.Length(k17)), c.Binary("*", c.Binary("/", c.Length(k2), any(5)), any(2)))
 	}) {
 		goto fail
 	}
@@ -11874,7 +11868,7 @@ L40:
 	if _, ok = s480(p); !ok {
 		goto L37
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any { return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(8))) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("-", c.Var(0), c.Binary("%", c.Var(0), any(8))) }) {
 		goto L37
 	}
 	if v42, ok = u187(p); !ok {
@@ -12230,7 +12224,7 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any { return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(4))) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("-", c.Var(0), c.Binary("%", c.Var(0), any(4))) }) {
 		goto fail
 	}
 	x11 = p.Pos
@@ -14744,8 +14738,8 @@ L10:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(2)), any(2)), any(2))), any(2))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("+", c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(2)), any(2)), any(2))), any(2))
 	}) {
 		goto fail
 	}
@@ -15018,8 +15012,8 @@ L29:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(2)), any(2)), any(2))), any(2))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("+", c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(2)), any(2)), any(2))), any(2))
 	}) {
 		goto fail
 	}
@@ -15155,8 +15149,8 @@ L28:
 	if _, ok = s480(p); !ok {
 		goto L25
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(2)), any(2)), any(2))), any(2))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("+", c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(2)), any(2)), any(2))), any(2))
 	}) {
 		goto L25
 	}
@@ -17048,8 +17042,8 @@ func i183(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(8)), any(2)), any(8))), any(8))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("+", c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(8)), any(2)), any(8))), any(8))
 	}) {
 		goto fail
 	}
@@ -17091,8 +17085,8 @@ func i184(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(8)), any(4)), any(8)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(8)), any(4)), any(8)))
 	}) {
 		goto fail
 	}
@@ -17135,8 +17129,8 @@ func i185(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(8)), any(4)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(4)), any(8)), any(4)))
 	}) {
 		goto fail
 	}
@@ -17254,8 +17248,8 @@ func i187(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(8)), any(4)), any(8)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(8)), any(4)), any(8)))
 	}) {
 		goto fail
 	}
@@ -17298,8 +17292,8 @@ func i188(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(8)), any(4)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(4)), any(8)), any(4)))
 	}) {
 		goto fail
 	}
@@ -17529,7 +17523,7 @@ L2:
 	p.Silent--
 	p.Pos = x1
 	x3 = p.Pos
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Binary("%", c.Lookup("ctx"), any(2)), any(1)) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Binary("%", c.Var(0), any(2)), any(1)) }) {
 		goto L5
 	}
 	goto L4
@@ -17795,8 +17789,8 @@ func i196(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(8)), any(4))), any(16))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("+", c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(4)), any(8)), any(4))), any(16))
 	}) {
 		goto fail
 	}
@@ -17955,8 +17949,8 @@ L6:
 L9:
 	p.Silent--
 	p.Pos = x8
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(4))), c.Binary("*", c.Length(k1), any(2)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("+", c.Binary("-", c.Var(0), c.Binary("%", c.Var(0), any(4))), c.Binary("*", c.Length(k1), any(2)))
 	}) {
 		goto fail
 	}
@@ -18020,7 +18014,7 @@ L28:
 	k33 = v35
 	x36 = p.Pos
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(16)), any(2)), any(0))
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Var(0), any(16)), any(2)), any(0))
 	}) {
 		goto L38
 	}
@@ -18227,7 +18221,7 @@ L2:
 	goto fail
 L3:
 	x13 = p.Pos
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<", c.Lookup("ctx"), any(64)) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<", c.Var(0), any(64)) }) {
 		goto L15
 	}
 	goto L14
@@ -18299,7 +18293,7 @@ func i205(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any { return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(4))) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("-", c.Var(0), c.Binary("%", c.Var(0), any(4))) }) {
 		goto fail
 	}
 	if v9, ok = u208(p); !ok {
@@ -18404,8 +18398,8 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(4))), any(2))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("+", c.Binary("-", c.Var(0), c.Binary("%", c.Var(0), any(4))), any(2))
 	}) {
 		goto fail
 	}
@@ -19455,7 +19449,7 @@ L13:
 	p.Pos = x12
 	x14 = p.Pos
 	p.Silent++
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Lookup("ctx"), any(64)) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Var(0), any(64)) }) {
 		goto L15
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 47 {
@@ -19536,7 +19530,7 @@ L23:
 	p.Pos = x2
 L22:
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(2)), any(0))
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Var(0), any(4)), any(2)), any(0))
 	}) {
 		goto L26
 	}
@@ -20431,7 +20425,7 @@ L2:
 	p.Pos = x1
 	x3 = p.Pos
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(2)), any(2)), any(1))
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Var(0), any(2)), any(2)), any(1))
 	}) {
 		goto L5
 	}
@@ -20494,7 +20488,7 @@ func i230(p *rt.TParser) (any, bool) {
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<", c.Lookup("ctx"), any(64)) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<", c.Var(0), any(64)) }) {
 		goto fail
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
@@ -20565,7 +20559,7 @@ func i231(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Lookup("ctx"), any(64)) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Var(0), any(64)) }) {
 		goto fail
 	}
 	x1 = p.Pos
@@ -20645,7 +20639,7 @@ L8:
 L5:
 	p.Pos = x1
 	k2 = x3
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Lookup("ctx"), any(64)) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Var(0), any(64)) }) {
 		goto L11
 	}
 	x12 = p.Pos
@@ -20874,7 +20868,7 @@ func i235(p *rt.TParser) (any, bool) {
 	var x7, ch rune
 	start = p.Pos
 	p.Enter()
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Lookup("ctx"), any(64)) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Var(0), any(64)) }) {
 		goto fail
 	}
 	x1 = p.Pos
@@ -21143,7 +21137,7 @@ L6:
 		goto fail
 	}
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(8)), any(2)), any(0))
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Var(0), any(8)), any(2)), any(0))
 	}) {
 		goto fail
 	}
@@ -21763,7 +21757,7 @@ func i241(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any { return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(4))) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("-", c.Var(0), c.Binary("%", c.Var(0), any(4))) }) {
 		goto fail
 	}
 	x3 = p.Pos
@@ -21855,8 +21849,8 @@ func i244(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(8)), any(4)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(4)), any(8)), any(4)))
 	}) {
 		goto fail
 	}
@@ -22906,8 +22900,8 @@ func i260(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(8)), any(4)), any(8)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(8)), any(4)), any(8)))
 	}) {
 		goto fail
 	}
@@ -23340,9 +23334,7 @@ L8:
 		goto fail
 	}
 	k9 = v11
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32)))
-	}) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("-", c.Var(0), c.Binary("%", c.Var(0), any(32))) }) {
 		goto fail
 	}
 	x12 = p.Pos
@@ -23489,9 +23481,7 @@ L8:
 		goto fail
 	}
 	k9 = v11
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32)))
-	}) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("-", c.Var(0), c.Binary("%", c.Var(0), any(32))) }) {
 		goto fail
 	}
 	x12 = p.Pos
@@ -23718,8 +23708,8 @@ L49:
 	p.Pos = x46
 	goto fail
 L47:
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("+", c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32))), c.Length(k15)), c.Binary("*", c.Binary("/", c.Length(k2), any(5)), any(2)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("+", c.Binary("+", c.Binary("-", c.Var(0), c.Binary("%", c.Var(0), any(32))), c.Length(k15)), c.Binary("*", c.Binary("/", c.Length(k2), any(5)), any(2)))
 	}) {
 		goto fail
 	}
@@ -23890,8 +23880,8 @@ L22:
 	if _, ok = s480(p); !ok {
 		goto L29
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(2)), any(4)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(4)), any(2)), any(4)))
 	}) {
 		goto L29
 	}
@@ -23984,8 +23974,8 @@ L18:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(2)), any(4)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(4)), any(2)), any(4)))
 	}) {
 		goto fail
 	}
@@ -24083,8 +24073,8 @@ L15:
 	k11 = x12
 	k13 = x14
 L16:
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("+", c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32))), c.Length(k11)), c.Binary("*", c.Length(k1), any(2)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("+", c.Binary("+", c.Binary("-", c.Var(0), c.Binary("%", c.Var(0), any(32))), c.Length(k11)), c.Binary("*", c.Length(k1), any(2)))
 	}) {
 		goto fail
 	}
@@ -26431,7 +26421,7 @@ func i315(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	if !p.Bind("ctx", func(c *rt.TActCtx) any { return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(4))) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("-", c.Var(0), c.Binary("%", c.Var(0), any(4))) }) {
 		goto fail
 	}
 	if v3, ok = u316(p); !ok {
@@ -26523,8 +26513,8 @@ func i317(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(32)), any(2)), any(32))), any(32))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("+", c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(32)), any(2)), any(32))), any(32))
 	}) {
 		goto fail
 	}
@@ -26567,8 +26557,8 @@ func i318(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(32)), any(2)), any(32)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(32)), any(2)), any(32)))
 	}) {
 		goto fail
 	}
@@ -26620,7 +26610,7 @@ func i319(p *rt.TParser) (any, bool) {
 		x14 = p.Pos
 		x15 = p.NewVals(6)[:0]
 		if !p.Predicate(func(c *rt.TActCtx) any {
-			return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(32)), any(2)), any(0))
+			return c.Binary("==", c.Binary("%", c.Binary("/", c.Var(0), any(32)), any(2)), any(0))
 		}) {
 			goto L13
 		}
@@ -27158,8 +27148,8 @@ func i326(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(32)), any(2)), any(32)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(32)), any(2)), any(32)))
 	}) {
 		goto fail
 	}
@@ -27924,8 +27914,8 @@ func i334(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(32)), any(2)), any(32)))
+	if !p.Bind(0, func(c *rt.TActCtx) any {
+		return c.Binary("-", c.Var(0), c.Binary("*", c.Binary("%", c.Binary("/", c.Var(0), any(32)), any(2)), any(32)))
 	}) {
 		goto fail
 	}
@@ -28129,7 +28119,7 @@ L10:
 	k5 = v12
 	x13 = p.Pos
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(32)), any(2)), any(1))
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Var(0), any(32)), any(2)), any(1))
 	}) {
 		goto L15
 	}
@@ -33446,7 +33436,7 @@ L2:
 L9:
 	p.Silent--
 	p.Pos = x8
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Binary("%", c.Lookup("ctx"), any(2)), any(1)) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Binary("%", c.Var(0), any(2)), any(1)) }) {
 		goto L7
 	}
 	p.Silent--
@@ -33472,7 +33462,7 @@ L13:
 	p.Silent--
 	p.Pos = x12
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(2)), any(2)), any(1))
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Var(0), any(2)), any(2)), any(1))
 	}) {
 		goto L11
 	}
@@ -40303,7 +40293,7 @@ func s515(p *rt.TParser) (any, bool) {
 L8:
 	p.Silent--
 	p.Pos = x7
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Binary("%", c.Lookup("ctx"), any(2)), any(1)) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Binary("%", c.Var(0), any(2)), any(1)) }) {
 		goto L6
 	}
 	goto L2
@@ -40329,7 +40319,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(2)), any(2)), any(1))
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Var(0), any(2)), any(2)), any(1))
 	}) {
 		goto L10
 	}
@@ -40892,7 +40882,7 @@ L33:
 	goto L5
 L19:
 	p.Pos = x4
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<", c.Lookup("ctx"), any(64)) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<", c.Var(0), any(64)) }) {
 		goto L34
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
@@ -44703,7 +44693,7 @@ L12:
 	p.Pos = x11
 	x13 = p.Pos
 	p.Silent++
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Lookup("ctx"), any(64)) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Var(0), any(64)) }) {
 		goto L14
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 47 {
@@ -44784,7 +44774,7 @@ L22:
 	p.Pos = x1
 L21:
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(2)), any(0))
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Var(0), any(4)), any(2)), any(0))
 	}) {
 		goto L25
 	}

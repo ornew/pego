@@ -1411,7 +1411,7 @@ func (g *Generator) term(t grammar.Term, s *compile.Scope, locals map[string]str
 		}
 		return fmt.Sprintf("c.Cap(%d)", s.Slots[t.Name])
 	case *grammar.VarRef:
-		return fmt.Sprintf("c.Lookup(%q)", t.Name)
+		return fmt.Sprintf("c.Var(%d)", g.Prog.Vars.Index(t.Name))
 	case *grammar.Member:
 		return fmt.Sprintf("c.Member(%s, %q)", g.term(t.X, s, locals), t.Name)
 	case *grammar.New:

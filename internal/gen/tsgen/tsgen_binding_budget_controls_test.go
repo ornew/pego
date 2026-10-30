@@ -14,43 +14,52 @@ func TestGeneratedTSBudgetControlBindings(t *testing.T) {
 	cases := []struct {
 		name, src, baseline string
 		isolated            bool
+		// nameFree marks the cases of long identifiers: a variable is a slot, so its name costs
+		// nothing and the parse stays within the budget of the baseline plus the margin.
+		nameFree bool
 	}{
 		{"head-equal", `type Box = { S string }
  var v string
  rule main Box = {v := "` + key + `"} {v := "` + key + `"} {v != ""} "z" => Box{S:v}
- rule fast = {v := "` + key + `"} "z"`, "fast", false},
+ rule fast = {v := "` + key + `"} "z"`, "fast", false, false},
 		{"head-different", `type Box = { S string }
  var v string
  rule main Box = {v := "` + key + `x"} {v := "` + key + `y"} {v != ""} "z" => Box{S:v}
- rule fast = {v := "` + key + `x"} "z"`, "fast", false},
+ rule fast = {v := "` + key + `x"} "z"`, "fast", false, false},
 		{"nonhead-equal", `type Box = { S string }
  var v string
  var other bool
  rule main Box = {v := "` + key + `"} {other := true} {v := "` + key + `"} {v != ""} "z" => Box{S:v}
- rule fast = {v := "` + key + `"} {other := true} "z"`, "fast", false},
+ rule fast = {v := "` + key + `"} {other := true} "z"`, "fast", false, false},
 		{"nonhead-different", `type Box = { S string }
  var v string
  var other bool
  rule main Box = {v := "` + key + `x"} {other := true} {v := "` + key + `y"} {v != ""} "z" => Box{S:v}
- rule fast = {v := "` + key + `x"} {other := true} "z"`, "fast", false},
+ rule fast = {v := "` + key + `x"} {other := true} "z"`, "fast", false, false},
 		{"identifier-hashing", `var ` + longName + ` int
  rule main = {` + longName + ` := 1} "z"
- rule fast = "z"`, "fast", false},
+ rule fast = "z"`, "fast", false, true},
 		{"identifier-lookup", `type Box = { N int }
  var ` + longName + ` int
  rule main Box = {` + longName + ` := 1} {` + longName + ` == 1} "z" => Box{N:` + longName + `}
- rule fast = {` + longName + ` := 1} "z"`, "fast", false},
+ rule fast = {` + longName + ` := 1} "z"`, "fast", false, true},
 		// The first helper call skips memoization, and silent memo entries cannot
-		// serve the normal call. Both routes therefore perform six lookups.
+		// serve the normal call. Both routes therefore perform six lookups, each of which
+		// costs a unit however long the name is.
 		{"environment-snapshot", `type Box = { N int }
  var ` + longName + ` int
  rule main Box = {` + longName + ` := 1} &helper &helper x:helper => $x
  rule helper Box = {` + longName + ` == 1} letter => Box{N:` + longName + `}
  rule inline Box = {` + longName + ` := 1} ` + strings.Repeat("{"+longName+" == 1} ", 5) + `letter => Box{N:` + longName + `}
- rule letter = "z"`, "inline", true},
+ rule letter = "z"`, "inline", true, true},
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			limitCheck := `check(stopped.node===null&&stopped.error instanceof p.ParseInterruptionError&&stopped.error.kind==="budget-limit","` + tt.name + ` spend exceeds baseline");
+ check(p.parseASTWithOptions(input,{unit,budget:limit}).error instanceof p.ParseInterruptionError,"typed routes share binding budget");`
+			if tt.nameFree {
+				limitCheck = `check(stopped.error===null&&p.parseASTWithOptions(input,{unit,budget:limit}).error===null,"` + tt.name + ` costs more than its baseline");`
+			}
 			consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + `
 function minimum(fits:(n:number)=>boolean):number {
@@ -65,12 +74,13 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ["z",new Uint8Array(
  const baseline=minimum(n=>p.parseRuleWithOptions("` + tt.baseline + `",input,{unit,budget:n}).error===null);
  const limit=baseline+128;
  const stopped=p.parseWithOptions(input,{unit,budget:limit});
- check(stopped.node===null&&stopped.error instanceof p.ParseInterruptionError&&stopped.error.kind==="budget-limit","` + tt.name + ` spend exceeds baseline");
- check(p.parseASTWithOptions(input,{unit,budget:limit}).error instanceof p.ParseInterruptionError,"typed routes share binding budget");
+ ` + limitCheck + `
  check(p.parseASTWithOptions(input,{unit,budget:0}).error===null,"fresh binding retry");
 }
 `
-			if !tt.isolated {
+			if !tt.isolated && tt.nameFree {
+				consumer += `const stop=p.recognizeWithOptions("z",{budget:128});check(!(stop instanceof p.ParseInterruptionError),"a long variable name costs no more than a short one");`
+			} else if !tt.isolated {
 				consumer += `const stop=p.recognizeWithOptions("z",{budget:128});check(stop instanceof p.ParseInterruptionError&&stop.kind==="budget-limit","predicate-dependent recognition counts binding spend");`
 			}
 			runTypedTSFixture(t, tt.src, consumer, gen.GenOptions{Start: "main", BudgetControls: true, Types: true, Recognize: true}, "")

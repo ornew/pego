@@ -2,143 +2,139 @@ package runtime
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 )
 
+// variableCounts cover a single leaf, the full leaf, and the trie of two and three levels.
+var variableCounts = []int{1, 2, 3, 4, 5, 16, 17, 256, 257, 280}
+
+func testParser(n int) *Parser {
+	vals := make([]any, n)
+	for i := range vals {
+		vals[i] = i
+	}
+	p := &Parser{envDepth: envDepthOf(n)}
+	p.Env = newEnv(vals, p.envDepth)
+	return p
+}
+
 func TestBindingSnapshots(t *testing.T) {
-	p := &Parser{}
-	p.bind("x", 1)
-	first := p.Env
-	for i := 0; i < 100; i++ {
-		p.bind("x", 1)
-	}
-	if p.Env != first {
-		t.Fatal("equal head binding allocates state")
-	}
-	p.bind("y", "two")
-	second := p.Env
-	p.bind("x", 1)
-	if p.Env != second {
-		t.Fatal("equal non-head binding replaces state")
-	}
-	p.bind("x", 3)
-	if got, _ := lookupBinding(second, "x"); got != 1 {
-		t.Fatal("replacement changed saved environment")
-	}
-	if got, _ := lookupBinding(p.Env, "y"); got != "two" {
-		t.Fatal("replacement lost prefix")
-	}
-	p.Env = first
-	p.bind("y", false)
-	if got, _ := lookupBinding(p.Env, "y"); got != false {
-		t.Fatal("seen name absent after rollback was not bound")
-	}
-	p.Env = nil
-	p.bind("z", true)
-	p.bind("w", "four")
-	p.bind("z", false)
-	names := make(map[string]bool)
-	for e := p.Env; e != nil; e = e.next {
-		if names[e.name] {
-			t.Fatalf("duplicate binding %s", e.name)
-		}
-		names[e.name] = true
-	}
-	if len(names) != 2 {
-		t.Fatalf("have %d bindings", len(names))
-	}
-	if got, _ := lookupBinding(first, "x"); got != 1 {
-		t.Fatal("first environment changed")
-	}
-}
-
-func lookupBinding(e *Env, name string) (any, bool) {
-	for ; e != nil; e = e.next {
-		if e.name == name {
-			return e.val, true
-		}
-	}
-	return nil, false
-}
-
-// Compare persistent environments with independent value maps through changes
-// and restores, including names first seen only in abandoned branches.
-func TestBindingRestoresReferenceValues(t *testing.T) {
-	type snapshot struct {
-		env    *Env
-		values map[string]any
-	}
-	p := &Parser{}
-	values := map[string]any{}
-	saved := []snapshot{{}}
-	clone := func(m map[string]any) map[string]any {
-		n := make(map[string]any, len(m))
-		for k, v := range m {
-			n[k] = v
-		}
-		return n
-	}
-	verify := func(e *Env, want map[string]any) {
-		t.Helper()
-		seen := make(map[string]bool)
-		for ; e != nil; e = e.next {
-			if seen[e.name] || want[e.name] != e.val {
-				t.Fatalf("wrong binding %s=%v", e.name, e.val)
+	for _, n := range variableCounts {
+		t.Run(fmt.Sprint(n), func(t *testing.T) {
+			p := testParser(n)
+			d := p.envDepth
+			first := p.Env
+			last := n - 1
+			for i := 0; i < 100; i++ {
+				p.bind(last, last)
+				p.bind(0, 0)
 			}
-			seen[e.name] = true
-		}
-		if len(seen) != len(want) {
-			t.Fatalf("%d bindings, want %d", len(seen), len(want))
-		}
-	}
-	for i := 0; i < 500; i++ {
-		if i%5 == 0 {
-			s := saved[(i*13)%len(saved)]
-			p.Env = s.env
-			values = clone(s.values)
-		}
-		name := fmt.Sprintf("v%d", (i*7)%16)
-		var value any
-		switch i % 3 {
-		case 0:
-			value = i % 11
-		case 1:
-			value = name
-		case 2:
-			value = i%2 == 0
-		}
-		p.bind(name, value)
-		values[name] = value
-		verify(p.Env, values)
-		if i%7 == 0 {
-			saved = append(saved, snapshot{p.Env, clone(values)})
-		}
-		for _, s := range saved {
-			verify(s.env, s.values)
-		}
+			if p.Env != first {
+				t.Fatal("equal binding allocates state")
+			}
+			p.bind(0, "two")
+			second := p.Env
+			p.bind(0, "two")
+			if p.Env != second {
+				t.Fatal("equal rebinding replaces state")
+			}
+			if n > 1 {
+				p.bind(last, "three")
+				if got := second.get(last, d); got != last {
+					t.Fatal("replacement changed saved environment")
+				}
+				if got := p.Env.get(0, d); got != "two" {
+					t.Fatal("replacement lost an earlier binding")
+				}
+			}
+			p.Env = first
+			p.bind(0, false)
+			if got := p.Env.get(0, d); got != false {
+				t.Fatal("binding after rollback was lost")
+			}
+			if got := second.get(0, d); got != "two" {
+				t.Fatal("rollback binding changed another environment")
+			}
+			for i := 0; i < n; i++ {
+				if got := first.get(i, d); got != i {
+					t.Fatalf("first environment changed at slot %d: %v", i, got)
+				}
+			}
+		})
 	}
 }
 
-// A hint created after switching between single-name snapshots must still know
-// names from the earlier snapshot when it is restored behind another binding.
-func TestBindingRestoresBeforeSecondName(t *testing.T) {
-	p := &Parser{}
-	p.bind("x", 1)
-	saved := p.Env
-	p.Env = nil
-	p.bind("y", 2)
-	p.bind("z", 3)
-	p.Env = saved
-	p.bind("w", 4)
-	p.bind("x", 5)
-	count := 0
-	for e := p.Env; e != nil; e = e.next {
-		count++
+// Compare persistent environments with independent value slices through changes
+// and restores.
+func TestBindingRestoresReferenceValues(t *testing.T) {
+	for _, n := range variableCounts {
+		t.Run(fmt.Sprint(n), func(t *testing.T) {
+			type snapshot struct {
+				env    *Env
+				values []any
+			}
+			p := testParser(n)
+			d := p.envDepth
+			values := make([]any, n)
+			for i := range values {
+				values[i] = i
+			}
+			saved := []snapshot{{p.Env, slices.Clone(values)}}
+			verify := func(e *Env, want []any) {
+				t.Helper()
+				for i, w := range want {
+					if got := e.get(i, d); got != w {
+						t.Fatalf("wrong binding in slot %d: %v, want %v", i, got, w)
+					}
+				}
+			}
+			for i := 0; i < 500; i++ {
+				if i%5 == 0 {
+					s := saved[(i*13)%len(saved)]
+					p.Env = s.env
+					values = slices.Clone(s.values)
+				}
+				slot := (i * 7) % n
+				var value any
+				switch i % 3 {
+				case 0:
+					value = i % 11
+				case 1:
+					value = fmt.Sprint("v", slot)
+				case 2:
+					value = i%2 == 0
+				}
+				p.bind(slot, value)
+				values[slot] = value
+				verify(p.Env, values)
+				if i%7 == 0 {
+					saved = append(saved, snapshot{p.Env, slices.Clone(values)})
+				}
+				for _, s := range saved {
+					verify(s.env, s.values)
+				}
+			}
+		})
 	}
-	if count != 2 {
-		t.Fatalf("%d bindings for two names", count)
-	}
-	if saved.val != 1 {
-		t.Fatal("saved binding changed")
+}
+
+// Two branches that continue from one saved environment do not see each other's bindings.
+func TestBindingBranchesFromOneSnapshot(t *testing.T) {
+	for _, n := range variableCounts {
+		p := testParser(n)
+		d := p.envDepth
+		saved := p.Env
+		p.bind(0, "a")
+		left := p.Env
+		p.Env = saved
+		p.bind(n-1, "b")
+		right := p.Env
+		if n > 1 && (left.get(n-1, d) != n-1 || right.get(0, d) != 0) {
+			t.Fatalf("%d variables: a branch saw the binding of another", n)
+		}
+		if saved.get(0, d) != 0 || saved.get(n-1, d) != n-1 {
+			t.Fatalf("%d variables: the saved environment changed", n)
+		}
 	}
 }

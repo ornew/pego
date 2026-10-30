@@ -897,6 +897,8 @@ type Rule struct {
 	Vars []string
 	// initVals are the initial values of Vars (grammar.SetVars), or nil when Vars is empty.
 	initVals []any
+	// varSlots are the slots of Vars (-1 for a name that no variable declares).
+	varSlots []int
 	g        *grammar // the grammar whose rule table holds the rule (grammar.SetRules)
 }
 
@@ -936,9 +938,11 @@ type grammar struct {
 	// MaxDepth is the default maximum nesting of recursive rule calls.
 	maxDepth int
 	// initEnv is the environment every parse starts from, with each variable bound to its
-	// initial value, and initBound holds the names of those variables (Parser.bound).
-	initEnv   *Env
-	initBound map[string]bool
+	// initial value. A variable's slot is its position in varNames, and envDepth is the depth of
+	// the environment (envDepthOf the number of variables).
+	initEnv  *Env
+	varNames []string
+	envDepth int
 }
 
 // SetVars makes the variables names, with the initial values vals, the starting environment of
@@ -946,29 +950,32 @@ type grammar struct {
 //
 // SetVars is for generated parsers; not a stable API.
 func (g *grammar) SetVars(names []string, vals []any) {
-	g.initEnv, g.initBound = nil, map[string]bool{}
-	for i, name := range names {
-		g.initEnv = &Env{name: name, val: vals[i], next: g.initEnv}
-		g.initBound[name] = true
-	}
+	g.varNames = names
+	g.envDepth = envDepthOf(len(vals))
+	g.initEnv = newEnv(vals, g.envDepth)
 	g.indexInitVals()
 }
 
-// indexInitVals computes the initial values of the variables each rule reads, so that the memo
-// key of a call made before any binding shares them instead of allocating.
+// indexInitVals computes the slots and the initial values of the variables each rule reads, so
+// that the memo key of a call made before any binding shares the values instead of allocating.
 func (g *grammar) indexInitVals() {
 	for _, r := range g.rules {
-		r.initVals = nil
+		r.initVals, r.varSlots = nil, nil
 		if len(r.Vars) == 0 {
 			continue
 		}
 		r.initVals = make([]any, len(r.Vars))
+		r.varSlots = make([]int, len(r.Vars))
 		for i, name := range r.Vars {
-			for e := g.initEnv; e != nil; e = e.next {
-				if e.name == name {
-					r.initVals[i] = e.val
+			r.varSlots[i] = -1
+			for slot, v := range g.varNames {
+				if v == name {
+					r.varSlots[i] = slot
 					break
 				}
+			}
+			if r.varSlots[i] >= 0 {
+				r.initVals[i] = g.initEnv.get(r.varSlots[i], g.envDepth)
 			}
 		}
 	}
@@ -1346,7 +1353,7 @@ type Parser struct {
 	Depth    int     // nesting of recursive rule calls
 	created  []*Node // struct nodes made by the action being evaluated (from ActCtx.Cbase)
 	Env      *Env
-	bound    map[string]bool // names bound anywhere in this parse (a lookup hint)
+	envDepth int             // the depth of Env (grammar.envDepth)
 	Frame    *CaptureFrame
 	Trail    []undo
 	Cut      bool
@@ -1401,13 +1408,7 @@ type documentStats struct {
 // setGrammar prepares p to parse with the rules of g.
 func (p *Parser) setGrammar(g *grammar) {
 	p.g, p.sourceInfo, p.memo.stride = g, g.SourceInfo, g.nseen
-	p.Env, p.bound = g.initEnv, nil
-	if g.initEnv != nil {
-		p.bound = make(map[string]bool, len(g.initBound))
-		for name := range g.initBound {
-			p.bound[name] = true
-		}
-	}
+	p.Env, p.envDepth = g.initEnv, g.envDepth
 	if len(p.memo.calls) != g.nseen {
 		p.memo.calls = nil // kept from a parse with another rule table
 	}
@@ -1718,25 +1719,23 @@ func sameValues(a, b []any) bool {
 // entries only compare their keys, so nothing writes to it.
 var noVals [16]any
 
-// envValues returns the current values of the variables names (nil for an undefined variable).
-func (p *Parser) envValues(names []string) []any {
+// envValues returns the current values of the variables in slots (nil for a slot below zero, an
+// undeclared variable).
+func (p *Parser) envValues(slots []int) []any {
 	if p.Control != nil {
-		return p.controlledEnvValues(names)
+		return p.controlledEnvValues(slots)
 	}
 
-	if len(names) == 0 {
+	if len(slots) == 0 {
 		return nil
 	}
-	if p.Env == nil && len(names) <= len(noVals) {
-		return noVals[:len(names):len(names)]
+	if p.Env == nil && len(slots) <= len(noVals) {
+		return noVals[:len(slots):len(slots)]
 	}
-	vals := make([]any, len(names))
-	for i, name := range names {
-		for e := p.Env; e != nil; e = e.next {
-			if e.name == name {
-				vals[i] = e.val
-				break
-			}
+	vals := make([]any, len(slots))
+	for i, slot := range slots {
+		if slot >= 0 {
+			vals[i] = p.Env.get(slot, p.envDepth)
 		}
 	}
 	return vals
@@ -1749,7 +1748,7 @@ func (p *Parser) memoEnv(r *Rule) []any {
 	if p.Env != nil && p.Env == p.g.initEnv && r.initVals != nil && p.Control == nil {
 		return r.initVals
 	}
-	return p.envValues(r.Vars)
+	return p.envValues(r.varSlots)
 }
 
 func (t *memoTable) alloc() *memoEntry {
@@ -1986,62 +1985,134 @@ type undo struct {
 	old  *Node
 }
 
-// Env is for generated parsers; not a stable API.
+// Env is for generated parsers; not a stable API. It is a persistent vector with one current
+// value per declared variable, indexed by the variable's slot (its position in declaration
+// order). A vector of at most envWidth variables is one node holding the values; a larger one
+// is a trie of nodes with envWidth children, whose depth (the levels above the leaves) every
+// holder knows from the variable count. Environments saved for rollback are never modified: a
+// rebind copies the nodes on the path to its slot and shares the rest.
 type Env struct {
-	name string
-	val  any
-	next *Env
+	// vals holds the values of a leaf; in an inner node every element is the *Env of a child.
+	vals []any
 }
 
-// bind replaces a binding by copying its prefix, preserving saved environments.
-// bound tracks names ever bound, so first bindings need no linear search.
-// Names from abandoned branches may be absent now; that only causes a search.
-func (p *Parser) bind(name string, val any) {
-	if p.Control != nil {
-		p.bindControlled(name, val)
-		return
-	}
+const (
+	envBits  = 4
+	envWidth = 1 << envBits
+	envMask  = envWidth - 1
+)
 
-	e := p.Env
-	if p.bound == nil {
-		p.bound = make(map[string]bool)
+// envDepthOf returns the number of levels above the leaves of an environment of n variables.
+func envDepthOf(n int) int {
+	levels := 0
+	for limit := envWidth; n > limit; limit <<= envBits {
+		levels++
 	}
-	if e == nil {
-		p.bound[name] = true
-		p.Env = &Env{name: name, val: val}
-		return
+	return levels
+}
+
+// newEnv returns the environment that holds vals; levels is envDepthOf(len(vals)).
+func newEnv(vals []any, levels int) *Env {
+	if len(vals) == 0 {
+		return nil
 	}
-	if e.name == name {
-		if e.val != val {
-			p.Env = &Env{name: name, val: val, next: e.next}
-		}
-		return
+	if levels == 0 {
+		return &Env{vals: append([]any(nil), vals...)}
 	}
-	if !p.bound[name] {
-		p.bound[name] = true
-		p.Env = &Env{name: name, val: val, next: e}
-		return
+	span := 1 << (envBits * levels)
+	kids := make([]any, 0, (len(vals)+span-1)/span)
+	for lo := 0; lo < len(vals); lo += span {
+		hi := min(lo+span, len(vals))
+		kids = append(kids, newEnv(vals[lo:hi], levels-1))
 	}
-	old := e
-	for old != nil && old.name != name {
-		old = old.next
+	return &Env{vals: kids}
+}
+
+// get returns the value of the variable in slot i.
+func (e *Env) get(i, levels int) any {
+	for l := levels; l > 0; l-- {
+		e = e.vals[i>>(envBits*l)&envMask].(*Env)
 	}
-	if old == nil {
-		p.Env = &Env{name: name, val: val, next: e}
+	return e.vals[i&envMask]
+}
+
+// set returns the environment that differs from e in the value of slot i. The copied nodes are
+// those on the path to the slot: levels+1 of them.
+func (e *Env) set(i, levels int, v any) *Env {
+	if levels == 0 {
+		return e.setLeaf(i, v)
+	}
+	k := i >> (envBits * levels) & envMask
+	kids := make([]any, len(e.vals))
+	copy(kids, e.vals)
+	kids[k] = e.vals[k].(*Env).set(i&(1<<(envBits*levels)-1), levels-1, v)
+	return &Env{vals: kids}
+}
+
+// setLeaf copies a leaf. The leaves of up to four variables, the common case, are allocated
+// together with their values.
+func (e *Env) setLeaf(i int, v any) *Env {
+	switch len(e.vals) {
+	case 1:
+		n := &struct {
+			Env
+			a [1]any
+		}{a: [1]any{v}}
+		n.vals = n.a[:]
+		return &n.Env
+	case 2:
+		n := &struct {
+			Env
+			a [2]any
+		}{a: [2]any(e.vals)}
+		n.a[i] = v
+		n.vals = n.a[:]
+		return &n.Env
+	case 3:
+		n := &struct {
+			Env
+			a [3]any
+		}{a: [3]any(e.vals)}
+		n.a[i] = v
+		n.vals = n.a[:]
+		return &n.Env
+	case 4:
+		n := &struct {
+			Env
+			a [4]any
+		}{a: [4]any(e.vals)}
+		n.a[i] = v
+		n.vals = n.a[:]
+		return &n.Env
+	}
+	vals := make([]any, len(e.vals))
+	copy(vals, e.vals)
+	vals[i] = v
+	return &Env{vals: vals}
+}
+
+// bind rebinds the variable in slot i, copying the path to the slot and preserving saved
+// environments. Binding the value it has already is a no-op.
+func (p *Parser) bind(slot int, val any) {
+	if p.Control != nil {
+		p.bindControlled(slot, val)
 		return
 	}
 	// Variables are checked scalar values; an equal binding has no effect.
-	if old.val == val {
+	if p.Env.get(slot, p.envDepth) == val {
 		return
 	}
-	head := &Env{name: name, val: val}
-	tail := head
-	for cur := e; cur != old; cur = cur.next {
-		tail.next = &Env{name: cur.name, val: cur.val}
-		tail = tail.next
+	p.Env = p.Env.set(slot, p.envDepth, val)
+}
+
+// variable returns the value of the variable in slot i.
+func (p *Parser) variable(slot int) any {
+	if p.Control != nil {
+		for l := 0; l <= p.envDepth; l++ {
+			p.Spend()
+		}
 	}
-	tail.next = old.next
-	p.Env = head
+	return p.Env.get(slot, p.envDepth)
 }
 
 // Mark is for generated parsers; not a stable API.
@@ -3357,7 +3428,7 @@ func (p *Parser) Predicate(t func(*ActCtx) any) (ok bool) {
 
 // Bind evaluates the value of a binding and binds it to the variable name. The compiler has
 // checked that the value fits the variable.
-func (p *Parser) Bind(name string, t func(*ActCtx) any) (ok bool) {
+func (p *Parser) Bind(slot int, t func(*ActCtx) any) (ok bool) {
 	base, kids := len(p.created), len(p.KidStack)
 	defer func() {
 		p.dropCreated(base)
@@ -3374,29 +3445,14 @@ func (p *Parser) Bind(name string, t func(*ActCtx) any) (ok bool) {
 	if _, isFn := v.(func(...any) any); isFn {
 		return false
 	}
-	p.bind(name, v)
+	p.bind(slot, v)
 	return true
 }
 
 func (c *ActCtx) Cap(slot int) any { return UnboxNode(c.f.Vals[slot]) }
 
-func (c *ActCtx) Lookup(name string) any {
-	if c.P.Control != nil {
-		if v, ok := c.P.lookupEnvControlled(name); ok {
-			return v
-		}
-		c.P.evalErrorf("variable %s is not defined", name)
-		return nil
-	}
-
-	for e := c.P.Env; e != nil; e = e.next {
-		if e.name == name {
-			return e.val
-		}
-	}
-	c.P.evalErrorf("variable %s is not defined", name)
-	return nil
-}
+// Var returns the value of the variable in slot i.
+func (c *ActCtx) Var(slot int) any { return c.P.variable(slot) }
 
 func typeName(v any) string {
 	switch v := v.(type) {

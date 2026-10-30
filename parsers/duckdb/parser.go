@@ -64761,7 +64761,7 @@ func i1042(p *rt.TParser) (any, bool) {
 	} else if _, ok = p.Parser.MatchLiteral(lit37, "$", 38, false); !ok {
 		goto fail
 	}
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Text(k1), c.Lookup("tag")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Text(k1), c.Var(0)) }) {
 		goto fail
 	}
 	v = nil
@@ -64981,7 +64981,7 @@ func i1045(p *rt.TParser) (any, bool) {
 	} else if _, ok = p.Parser.MatchLiteral(lit37, "$", 38, false); !ok {
 		goto fail
 	}
-	if !p.Bind("tag", func(c *rt.TActCtx) any { return c.Text(k1) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Text(k1) }) {
 		goto fail
 	}
 	for {

@@ -230,7 +230,7 @@ func e1(p *rt.Parser, _ int) (*rt.Node, bool) {
 	var ok bool
 	var v2 *rt.Node
 	var x4 rt.Mark
-	if !p.Bind("indent", func(c *rt.ActCtx) any { return any(0) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return any(0) }) {
 		goto fail
 	}
 	if v2, ok = p.Call(rules[1], 0); !ok {
@@ -326,7 +326,7 @@ func e4(p *rt.Parser, _ int) (*rt.Node, bool) {
 		goto fail
 	}
 	p.SetCapture(0, v2)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Length(c.Cap(0)), c.Lookup("indent")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto fail
 	}
 	if v4, ok = r5(p); !ok {
@@ -386,10 +386,10 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("indent")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto fail
 	}
-	if !p.Bind("indent", func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
 		goto fail
 	}
 	if v10, ok = p.Call(rules[1], 0); !ok {
@@ -572,7 +572,7 @@ func e15(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.Spend()
 	var ok bool
 	var x2 rt.Mark
-	if !p.Bind("indent", func(c *rt.ActCtx) any { return any(0) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return any(0) }) {
 		goto fail
 	}
 	if _, ok = p.Call(recRules[1], 0); !ok {
@@ -659,7 +659,7 @@ func e18(p *rt.Parser, _ int) (*rt.Node, bool) {
 		goto fail
 	}
 	p.SetCapture(0, v2)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Length(c.Cap(0)), c.Lookup("indent")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto fail
 	}
 	if _, ok = q5(p); !ok {
@@ -715,10 +715,10 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("indent")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto fail
 	}
-	if !p.Bind("indent", func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
 		goto fail
 	}
 	if _, ok = p.Call(recRules[1], 0); !ok {
@@ -874,7 +874,7 @@ func i0(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
-	if !p.Bind("indent", func(c *rt.TActCtx) any { return any(0) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return any(0) }) {
 		goto fail
 	}
 	if v3, ok = u1(p); !ok {
@@ -1003,7 +1003,7 @@ func i2(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Length(k1), c.Lookup("indent")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Length(k1), c.Var(0)) }) {
 		goto fail
 	}
 	if v6, ok = s5(p); !ok {
@@ -1082,10 +1082,10 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k7), c.Lookup("indent")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k7), c.Var(0)) }) {
 		goto fail
 	}
-	if !p.Bind("indent", func(c *rt.TActCtx) any { return c.Length(k7) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Length(k7) }) {
 		goto fail
 	}
 	if v12, ok = u1(p); !ok {

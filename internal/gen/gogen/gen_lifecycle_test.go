@@ -113,12 +113,9 @@ func main() {
   p.X_setGrammar(pegoGrammar)
   p.Frame = p.NewFrame(len(rules[0].Scope))
   if _, ok := rules[0].Body(p, 0); !ok || p.Pos != p.X_n { panic("parse failed") }
-  names := make(map[string]bool)
-  for e := p.Env; e != nil; e = e.X_next {
-   if names[e.X_name] { panic("retained shadowed binding") }
-   names[e.X_name] = true
-  }
-  if len(names) != 3 { panic("lost binding") }
+  // The environment holds one value for each of the three declared variables, however many
+  // bindings the parse made.
+  if p.Env == nil || len(p.Env.X_vals) != 3 || p.X_envDepth != 0 { panic("lost binding") }
  }
 }`
 	for name, contents := range map[string][]byte{"parser.go": code, "main.go": []byte(main), "go.mod": []byte(gentest.GoMod("lifecycle"))} {

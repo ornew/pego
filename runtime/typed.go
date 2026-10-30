@@ -1834,7 +1834,7 @@ func (p *TParser) Predicate(t func(*TActCtx) any) (ok bool) {
 }
 
 // Bind is Parser.Bind for the typed runtime.
-func (p *TParser) Bind(name string, t func(*TActCtx) any) (ok bool) {
+func (p *TParser) Bind(slot int, t func(*TActCtx) any) (ok bool) {
 	base, kids := len(p.Created), len(p.KidStack)
 	defer func() {
 		p.DropCreated(base)
@@ -1851,7 +1851,7 @@ func (p *TParser) Bind(name string, t func(*TActCtx) any) (ok bool) {
 	if _, isFn := v.(func(...any) any); isFn {
 		return false
 	}
-	p.bind(name, v)
+	p.bind(slot, v)
 	return true
 }
 
@@ -1860,23 +1860,8 @@ func tvalOrNil(v any) any { return v }
 
 func (c *TActCtx) Cap(slot int) any { return tvalOrNil(c.F.Vals[slot]) }
 
-func (c *TActCtx) Lookup(name string) any {
-	if c.P.Control != nil {
-		if v, ok := c.P.lookupEnvControlled(name); ok {
-			return v
-		}
-		c.P.evalErrorf("variable %s is not defined", name)
-		return nil
-	}
-
-	for e := c.P.Env; e != nil; e = e.next {
-		if e.name == name {
-			return e.val
-		}
-	}
-	c.P.evalErrorf("variable %s is not defined", name)
-	return nil
-}
+// Var returns the value of the variable in slot i.
+func (c *TActCtx) Var(slot int) any { return c.P.variable(slot) }
 
 // ttypeName is typeName for values of the typed runtime.
 func ttypeName(v any) string {

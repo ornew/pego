@@ -887,7 +887,7 @@ export interface Rule {
   where: string;
   // vars are the variables the rule or its callees read, sorted. Memo entries are keyed by their
   // values at the call, since definitions inside the rule are undone when it returns.
-  vars: string[];
+  vars: number[];
   // nodeType, if not "", is the named node type the rule's value is converted to.
   nodeType: string;
   // opNodeType, if not "", is the named node type every operator node of an Operators Rule is
@@ -932,7 +932,7 @@ export function mkRule(
   leader: boolean,
   seen: number,
   novalue: boolean,
-  vars: string[],
+  vars: number[],
 ): Rule {
   return {
     id,
@@ -974,6 +974,10 @@ export interface Grammar {
   // initialVars holds the declared parser variables with their initial values, in declaration
   // order; every parse starts from them.
   readonly initialVars: [string, Value][];
+  // initEnv is the environment of the initial values, and envDepth its depth; the first parse
+  // builds them (undefined until then).
+  initEnv: Env | null | undefined;
+  envDepth: number;
   // descs maps expectation IDs to their descriptions.
   descs: string[];
   // structFields holds the field names of each struct type.
@@ -981,7 +985,7 @@ export interface Grammar {
 }
 
 export function mkGrammar(maxDepth: number, sparse: boolean, observable: boolean, controlled = true): Grammar {
-  return { maxDepth, sparse, observable, controlled, sourceInfo: false, initialVars: [], descs: [], structFields: new Map() };
+  return { maxDepth, sparse, observable, controlled, sourceInfo: false, initialVars: [], initEnv: undefined, envDepth: 0, descs: [], structFields: new Map() };
 }
 
 function ruleIn(table: Rule[], name: string): Rule | null {
@@ -1393,10 +1397,52 @@ export const idEndInput = 2;
 export const idBeginLine = 3;
 export const idEndLine = 4;
 
-export interface Env {
-  name: string;
-  val: Value;
-  next: Env | null;
+// Env is a persistent vector with one current value per declared variable, indexed by the
+// variable's slot (its position in declaration order). A vector of at most envWidth variables is
+// one array of values (a leaf); a larger one is a trie of arrays whose elements are the child
+// arrays, whose depth (the levels above the leaves) every holder knows from the variable count.
+// Environments saved for rollback are never modified: a rebind copies the arrays on the path to
+// its slot and shares the rest.
+export type Env = unknown[];
+
+const envBits = 4;
+const envWidth = 1 << envBits;
+const envMask = envWidth - 1;
+
+// envDepthOf returns the number of levels above the leaves of an environment of n variables.
+export function envDepthOf(n: number): number {
+  let levels = 0;
+  for (let limit = envWidth; n > limit; limit *= envWidth) levels++;
+  return levels;
+}
+
+// newEnv returns the environment that holds vals, with depth envDepthOf(vals.length).
+export function newEnv(vals: Value[], depth: number): Env | null {
+  if (vals.length === 0) return null;
+  if (depth === 0) return vals.slice();
+  const span = 2 ** (envBits * depth);
+  const kids: Env[] = [];
+  for (let lo = 0; lo < vals.length; lo += span) kids.push(newEnv(vals.slice(lo, lo + span), depth - 1)!);
+  return kids;
+}
+
+// envGet returns the value of the variable in slot i.
+export function envGet(e: Env, i: number, depth: number): Value {
+  for (let l = depth; l > 0; l--) e = e[Math.floor(i / 2 ** (envBits * l)) & envMask] as Env;
+  return e[i & envMask] as Value;
+}
+
+// envSet returns the environment that differs from e in the value of slot i. The copied arrays
+// are those on the path to the slot: depth+1 of them.
+export function envSet(e: Env, i: number, depth: number, v: Value): Env {
+  const out = e.slice();
+  if (depth === 0) {
+    out[i] = v;
+    return out;
+  }
+  const k = Math.floor(i / 2 ** (envBits * depth)) & envMask;
+  out[k] = envSet(e[k] as Env, i % 2 ** (envBits * depth), depth - 1, v);
+  return out;
 }
 
 export interface MemoEntry {
@@ -1485,7 +1531,7 @@ export class Parser {
   depth = 0; // nesting of recursive rule calls
   created: Node[] = []; // struct nodes made by the action being evaluated (from Actx.cbase)
   env: Env | null = null;
-  bound: Set<string> | null = null; // names bound anywhere in this parse (a lookup hint)
+  envDepth = 0; // the depth of env (Grammar.envDepth)
   frame: Frame = emptyFrame;
   trail: { f: Frame; slot: number; old: Node | null }[] = [];
   cut = false;
@@ -1535,11 +1581,12 @@ export class Parser {
     this.control = control;
     this.unit = unit;
     this.maxDepth = maxDepth;
-    for (const [name, val] of g.initialVars) {
-      this.env = { name, val, next: this.env };
-      if (this.bound === null) this.bound = new Set();
-      this.bound.add(name);
+    if (g.initEnv === undefined) {
+      g.envDepth = envDepthOf(g.initialVars.length);
+      g.initEnv = newEnv(g.initialVars.map(([, val]) => val), g.envDepth);
     }
+    this.env = g.initEnv;
+    this.envDepth = g.envDepth;
     this.stride = stride;
     this.calls = new Int32Array(stride);
     this.repeats = new Int32Array(stride);
@@ -1865,24 +1912,24 @@ export class Parser {
     this.slots[pos] = e;
   }
 
-  // envValues returns the current values of the variables names (null for an undefined variable).
-  envValues(names: string[]): Value[] | null {
-    if (names.length === 0) {
+  // envValues returns the current values of the variables in slots (null for none).
+  envValues(slots: number[]): Value[] | null {
+    if (slots.length === 0) {
       return null;
     }
-    const vals: Value[] = new Array(names.length);
-    for (let i = 0; i < names.length; i++) {
+    const vals: Value[] = new Array(slots.length);
+    for (let i = 0; i < slots.length; i++) {
       this.spend();
-      vals[i] = null;
-      for (let e = this.env; e !== null; e = e.next) {
-        this.spend();
-        if (this.control === null ? e.name === names[i] : equalStringsSpend(e.name, names[i]!, this.control)) {
-          vals[i] = e.val;
-          break;
-        }
-      }
+      vals[i] = this.variable(slots[i]!);
     }
     return vals;
+  }
+
+  // variable returns the value of the variable in slot i. Under budget controls it costs one
+  // unit for each array on the path to the slot (the levels of the environment, and the leaf).
+  variable(slot: number): Value {
+    this.spend(this.envDepth + 1);
+    return envGet(this.env!, slot, this.envDepth);
   }
 
   newFrame(n: number): Frame {
@@ -2670,9 +2717,9 @@ export class Parser {
     }
   }
 
-  // bind binds the value of t to the variable name. The compiler has checked that the value
+  // bind binds the value of t to the variable in slot. The compiler has checked that the value
   // fits the variable.
-  bind(name: string, t: Action): boolean {
+  bind(slot: number, t: Action): boolean {
     const base = this.created.length;
     const kids = this.kidStack.length;
     try {
@@ -2680,7 +2727,7 @@ export class Parser {
       if (typeof v === "function") {
         return false;
       }
-      this.bindValue(name, v);
+      this.bindValue(slot, v);
       return true;
     } catch (x) {
       if (!(x instanceof EvalError)) {
@@ -2693,46 +2740,17 @@ export class Parser {
     }
   }
 
-  // Preserve environments saved for rollback; first bindings skip searching.
-  bindValue(name: string, val: Value): void {
-    const e = this.env;
+  // bindValue rebinds the variable in slot i, copying the path to the slot and preserving
+  // environments saved for rollback. Binding the value it has already is a no-op. Under budget
+  // controls it costs one unit for the old value and one for each array that a rebind copies.
+  bindValue(slot: number, val: Value): void {
     const control = this.control;
-    if (this.bound === null) this.bound = new Set();
-    if (e === null) {
-      this.env = { name, val, next: null };
-      this.bound.add(control === null ? name : stringKeySpend(name, control));
-      return;
-    }
-    if (control === null ? e.name === name : equalStringsSpend(e.name, name, control)) {
-      if (!(control === null ? e.val === val : equalValuesSpend(e.val, val, control))) this.env = { name, val, next: e.next };
-      return;
-    }
-    if (!this.bound.has(control === null ? name : stringKeySpend(name, control))) {
-      this.bound.add(control === null ? name : stringKeySpend(name, control));
-      this.env = { name, val, next: e };
-      return;
-    }
-    let old: Env | null = e;
-    while (old !== null) {
-      this.spend();
-      if (control === null ? old.name === name : equalStringsSpend(old.name, name, control)) break;
-      old = old.next;
-    }
-    if (old === null) {
-      this.env = { name, val, next: e };
-      return;
-    }
+    this.spend();
+    const old = envGet(this.env!, slot, this.envDepth);
     // Variables are checked scalar values; an equal binding has no effect.
-    if (control === null ? old.val === val : equalValuesSpend(old.val, val, control)) return;
-    const head: Env = { name, val, next: null };
-    let tail = head;
-    for (let cur: Env | null = e; cur !== old; cur = cur!.next) {
-      this.spend();
-      tail.next = { name: cur!.name, val: cur!.val, next: null };
-      tail = tail.next;
-    }
-    tail.next = old.next;
-    this.env = head;
+    if (control === null ? old === val : equalValuesSpend(old, val, control)) return;
+    this.spend(this.envDepth + 1);
+    this.env = envSet(this.env!, slot, this.envDepth, val);
   }
 
   // --- OperatorsRule expressions ---
@@ -3151,14 +3169,9 @@ export class Actx {
     return unboxValue(this.f[slot]!);
   }
 
-  lookup(name: string): Value {
-    for (let e = this.p.env; e !== null; e = e.next) {
-      this.p.spend();
-      if (this.p.control === null ? e.name === name : equalStringsSpend(e.name, name, this.p.control)) {
-        return e.val;
-      }
-    }
-    return evalError(`variable ${name} is not defined`);
+  // variable returns the value of the variable in slot i.
+  variable(slot: number): Value {
+    return this.p.variable(slot);
   }
 
   // convert evaluates a node type constructor T{v}: it converts v to the named node type typ.

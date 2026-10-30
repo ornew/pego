@@ -985,10 +985,10 @@ func (p *flowPrinter) not(x flow.Expr) string {
 	case *flow.Bind:
 		b := p.term(x.Node).(*grammar.Bind)
 		if x.Caps.Vars == nil {
-			return fmt.Sprintf("!p.Bind(%q, func(c *%s) any { %s })", b.Name, g.ctxType(), g.termBody(b.Value, gen.FrameScope(x.Caps), nil))
+			return fmt.Sprintf("!p.Bind(%d, func(c *%s) any { %s })", g.Prog.Vars.Index(b.Name), g.ctxType(), g.termBody(b.Value, gen.FrameScope(x.Caps), nil))
 		}
 		defer p.caps(x.Caps)()
-		return fmt.Sprintf("!p.Bind(%q, func(c *TActCtx) any { %s })", b.Name, g.termBody(b.Value, compile.NewScope(), nil))
+		return fmt.Sprintf("!p.Bind(%d, func(c *TActCtx) any { %s })", g.Prog.Vars.Index(b.Name), g.termBody(b.Value, compile.NewScope(), nil))
 	}
 	return "!" + p.expr(x)
 }

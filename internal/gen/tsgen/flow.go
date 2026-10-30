@@ -1023,7 +1023,7 @@ func (p *tsFlowPrinter) expr(x flow.Expr) string {
 		name := p.g.Name("a")
 		val := p.g.term(b.Value, gen.FrameScope(x.Caps), nil)
 		p.decl(name, fmt.Sprintf("function %s(%s: Actx): Value {\n  return %s;\n}\n\n", name, tsActxParam(val), val))
-		return fmt.Sprintf("p.bind(%s, %s)", TsString(b.Name), name)
+		return fmt.Sprintf("p.bind(%d, %s)", p.g.Prog.Vars.Index(b.Name), name)
 	case *flow.CallOutline:
 		return p.outline(x)
 	case *flow.MarkPos:

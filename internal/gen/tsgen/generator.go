@@ -541,7 +541,7 @@ func (g *Generator) rules() {
 			value = 0 // the lines build the rule's value
 		}
 		fmt.Fprintf(init, "const %s = mkRule(%d, %s, %s, %d, %v, %v, %d, %v, %s);\n", g.ruleVar(r),
-			r.ID, TsString(r.Name), TsStrings(scopes[r].Names), value, r.Memo && !r.Transient, r.Leader, r.Seen, r.Novalue, TsStrings(r.Vars))
+			r.ID, TsString(r.Name), TsStrings(scopes[r].Names), value, r.Memo && !r.Transient, r.Leader, r.Seen, r.Novalue, tsIntList(g.Prog.Vars.Slots(r.Vars)))
 		vars = append(vars, g.ruleVar(r))
 		if r.Splice {
 			fmt.Fprintf(init, "%s.splice = true;\n", g.ruleVar(r))
@@ -789,7 +789,7 @@ func (g *Generator) termBody(t grammar.Term, s *compile.Scope, locals map[string
 		}
 		return fmt.Sprintf("c.cap(%d)", s.Slots[t.Name])
 	case *grammar.VarRef:
-		return fmt.Sprintf("c.lookup(%s)", TsString(t.Name))
+		return fmt.Sprintf("c.variable(%d)", g.Prog.Vars.Index(t.Name))
 	case *grammar.Member:
 		return fmt.Sprintf("c.member(%s, %s)", g.term(t.X, s, locals), TsString(t.Name))
 	case *grammar.New:
@@ -935,4 +935,13 @@ func (g *Generator) lambda(t grammar.Term, s *compile.Scope, locals map[string]s
 		params[i] += ": Value"
 	}
 	return fmt.Sprintf("(%s): Value => %s", strings.Join(params, ", "), g.term(l.Body, s, inner))
+}
+
+// tsIntList returns xs as a TypeScript array literal of numbers.
+func tsIntList(xs []int) string {
+	q := make([]string, len(xs))
+	for i, x := range xs {
+		q[i] = strconv.Itoa(x)
+	}
+	return "[" + strings.Join(q, ", ") + "]"
 }

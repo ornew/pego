@@ -24,8 +24,9 @@ func TestSharedGrammarInitialValues(t *testing.T) {
 		if !reflect.DeepEqual(r.initVals, want) {
 			t.Errorf("%s: initial values %v; want %v", name, r.initVals, want)
 		}
-		initial := &Parser{g: g, Env: g.initEnv}
-		bound := &Parser{g: g, Env: &Env{name: "n", val: 3, next: &Env{name: "s", val: "x"}}}
+		initial := &Parser{g: g, Env: g.initEnv, envDepth: g.envDepth}
+		bound := &Parser{g: g, envDepth: g.envDepth}
+		bound.Env = g.initEnv.set(0, g.envDepth, 3).set(1, g.envDepth, "x") // equal values in new nodes
 		if got := initial.memoEnv(r); !reflect.DeepEqual(got, bound.memoEnv(r)) {
 			t.Errorf("%s: initial key %v differs from the key of the same values bound: %v", name, got, bound.memoEnv(r))
 		}

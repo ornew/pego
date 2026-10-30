@@ -988,55 +988,19 @@ func (p *Parser) memoKeyEqual(l, r []any) bool {
 	return true
 }
 
-func (p *Parser) bindControlled(name string, val any) {
+// bindControlled is bind under budget controls. It charges one unit for the lookup of the old
+// value and one for each node that a rebind copies, which are the levels+1 nodes on the path to
+// the slot; comparing the values is charged by rawValueEqual.
+func (p *Parser) bindControlled(slot int, val any) {
 	p.Spend()
-	e := p.Env
-	if p.bound == nil {
-		p.bound = make(map[string]bool)
-	}
-	if e == nil {
-		p.bound[name] = true
-		p.Env = &Env{name: name, val: val}
+	if p.rawValueEqual(p.Env.get(slot, p.envDepth), val) {
 		return
 	}
-	if p.rawValueEqual(e.name, name) {
-		if !p.rawValueEqual(e.val, val) {
-			p.Env = &Env{name: name, val: val, next: e.next}
-		}
-		return
-	}
-	// Map hashing and allocation are runtime operations that cannot be split
-	// into engine checkpoints. Explicit name comparisons above/below can be.
-	if !p.bound[name] {
-		p.bound[name] = true
-		p.Env = &Env{name: name, val: val, next: e}
-		return
-	}
-	old := e
-	for old != nil {
+	for l := 0; l <= p.envDepth; l++ {
 		p.Spend()
-		if p.rawValueEqual(old.name, name) {
-			break
-		}
-		old = old.next
 	}
-	if old == nil {
-		p.Env = &Env{name: name, val: val, next: e}
-		return
-	}
-	if p.rawValueEqual(old.val, val) {
-		return
-	}
-	head := &Env{name: name, val: val}
-	tail := head
-	for cur := e; cur != old; cur = cur.next {
-		p.Spend()
-		tail.next = &Env{name: cur.name, val: cur.val}
-		tail = tail.next
-	}
-	tail.next = old.next
-	// Saved environments are immutable; only publish a completed prefix.
-	p.Env = head
+	// Saved environments are immutable; only publish a completed path.
+	p.Env = p.Env.set(slot, p.envDepth, val)
 }
 
 func clearSpend[T any](p *Parser, values []T) {
@@ -1056,36 +1020,22 @@ func clearBudgetControlled[T any](p *Parser, values []T) {
 	}
 }
 
-func (p *Parser) controlledEnvValues(names []string) []any {
+func (p *Parser) controlledEnvValues(slots []int) []any {
 	p.Spend()
-	if len(names) == 0 {
+	if len(slots) == 0 {
 		return nil
 	}
-	if p.Env == nil && len(names) <= len(noVals) {
-		return noVals[:len(names):len(names)]
+	if p.Env == nil && len(slots) <= len(noVals) {
+		return noVals[:len(slots):len(slots)]
 	}
-	vals := make([]any, len(names))
-	for i, name := range names {
+	vals := make([]any, len(slots))
+	for i, slot := range slots {
 		p.Spend()
-		for e := p.Env; e != nil; e = e.next {
-			p.Spend()
-			if p.rawValueEqual(e.name, name) {
-				vals[i] = e.val
-				break
-			}
+		if slot >= 0 {
+			vals[i] = p.variable(slot)
 		}
 	}
 	return vals
-}
-
-func (p *Parser) lookupEnvControlled(name string) (any, bool) {
-	for e := p.Env; e != nil; e = e.next {
-		p.Spend()
-		if p.rawValueEqual(e.name, name) {
-			return e.val, true
-		}
-	}
-	return nil, false
 }
 
 func (p *Parser) memoGet(rule, pos, min int, key []any) *memoEntry {

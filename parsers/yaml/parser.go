@@ -976,7 +976,7 @@ func init() {
 	rules[61].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
 	rules[62].Body = e94
 	rules[62].Action = func(c *rt.ActCtx) any {
-		return c.NewStruct("Scalar", "Props", c.Cap(0), "Style", c.Binary("+", any(3), c.Length(c.Cap(2))), "Indent", c.Lookup("n"), "Text", c.Text(c.Cap(1)))
+		return c.NewStruct("Scalar", "Props", c.Cap(0), "Style", c.Binary("+", any(3), c.Length(c.Cap(2))), "Indent", c.Var(0), "Text", c.Text(c.Cap(1)))
 	}
 	rules[64].Body = e95
 	rules[64].Action = func(c *rt.ActCtx) any { return c.Cap(0) }
@@ -1609,10 +1609,10 @@ func e16(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.Spend()
 	var ok bool
 	var v2 *rt.Node
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Unary("-", any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Unary("-", any(1)) }) {
 		goto fail
 	}
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-in") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("block-in") }) {
 		goto fail
 	}
 	if v2, ok = p.Call(rules[34], 0); !ok {
@@ -2508,7 +2508,7 @@ func e44(p *rt.Parser, _ int) (*rt.Node, bool) {
 	var size, x4, x21 int
 	var ok bool
 	var v12, v15, v17 *rt.Node
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto fail
 	}
 	x1 = p.Mark()
@@ -2661,7 +2661,7 @@ func e45(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.Spend()
 	var ok bool
 	var v2 *rt.Node
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-out") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("flow-out") }) {
 		goto fail
 	}
 	if v2, ok = p.Call(rules[69], 0); !ok {
@@ -2835,7 +2835,7 @@ func e51(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.Spend()
 	var ok bool
 	var v2 *rt.Node
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto fail
 	}
 	if _, ok = p.Call(rules[150], 0); !ok {
@@ -2856,7 +2856,7 @@ func e52(p *rt.Parser, _ int) (*rt.Node, bool) {
 	var x1 rt.Mark
 	var v5, v11 *rt.Node
 	var x6 rune
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto fail
 	}
 	if _, ok = p.Call(rules[150], 0); !ok {
@@ -2944,16 +2944,16 @@ L2:
 	goto fail
 L3:
 	x9 = p.Mark()
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-out")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("block-out")) }) {
 		goto L11
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("-", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("-", c.Var(0), any(1)) }) {
 		goto L11
 	}
 	goto L10
 L11:
 	p.Reset(x9)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-in")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("block-in")) }) {
 		goto L12
 	}
 	goto L10
@@ -3001,10 +3001,10 @@ func e57(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.SetCapture(0, v9)
 	p.Silent--
 	p.Pos = x1
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto fail
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
 		goto fail
 	}
 	x11, x12 = p.Pos, len(p.KidStack)
@@ -3072,7 +3072,7 @@ func e58(p *rt.Parser, _ int) (*rt.Node, bool) {
 L2:
 	p.Silent--
 	p.Reset(x1)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-in") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("block-in") }) {
 		goto fail
 	}
 	if v4, ok = p.Call(rules[48], 0); !ok {
@@ -3144,7 +3144,7 @@ func e60(p *rt.Parser, _ int) (*rt.Node, bool) {
 	}
 	v6 = p.NewTerminal(x2, p.Text(x2, p.Pos))
 	p.SetCapture(0, v6)
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Binary("+", c.Lookup("n"), any(1)), c.Length(c.Cap(0))) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Binary("+", c.Var(0), any(1)), c.Length(c.Cap(0))) }) {
 		goto fail
 	}
 	x8 = p.Mark()
@@ -3261,10 +3261,10 @@ func e64(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.SetCapture(0, v9)
 	p.Silent--
 	p.Pos = x1
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto fail
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
 		goto fail
 	}
 	x10, x11 = p.Pos, len(p.KidStack)
@@ -3442,7 +3442,7 @@ func e70(p *rt.Parser, _ int) (*rt.Node, bool) {
 L2:
 	p.Silent--
 	p.Reset(x1)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-out") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("block-out") }) {
 		goto fail
 	}
 	if v4, ok = p.Call(rules[48], 0); !ok {
@@ -3478,7 +3478,7 @@ func e72(p *rt.Parser, _ int) (*rt.Node, bool) {
 L2:
 	p.Silent--
 	p.Reset(x1)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-out") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("block-out") }) {
 		goto fail
 	}
 	if v4, ok = p.Call(rules[48], 0); !ok {
@@ -3537,7 +3537,7 @@ func e75(p *rt.Parser, _ int) (*rt.Node, bool) {
 	goto L2
 L3:
 	p.Reset(x1)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-key") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("block-key") }) {
 		goto L6
 	}
 	x7 = p.Mark()
@@ -3699,7 +3699,7 @@ L6:
 	goto L2
 L3:
 	p.Reset(x1)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-out") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("block-out") }) {
 		goto L10
 	}
 	if v12, ok = p.Call(rules[34], 0); !ok {
@@ -3828,7 +3828,7 @@ L28:
 	}
 	v41 = p.NewTerminal(x40, "1")
 	x39 = append(x39, v41)
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto L37
 	}
 	v42 = p.NewBranch(rt.RawKindSeq, x38, x39)
@@ -3852,7 +3852,7 @@ L36:
 	}
 	v49 = p.NewTerminal(x48, "2")
 	x47 = append(x47, v49)
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(2)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(2)) }) {
 		goto L45
 	}
 	v50 = p.NewBranch(rt.RawKindSeq, x46, x47)
@@ -3876,7 +3876,7 @@ L44:
 	}
 	v57 = p.NewTerminal(x56, "3")
 	x55 = append(x55, v57)
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(3)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(3)) }) {
 		goto L53
 	}
 	v58 = p.NewBranch(rt.RawKindSeq, x54, x55)
@@ -3900,7 +3900,7 @@ L52:
 	}
 	v65 = p.NewTerminal(x64, "4")
 	x63 = append(x63, v65)
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(4)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(4)) }) {
 		goto L61
 	}
 	v66 = p.NewBranch(rt.RawKindSeq, x62, x63)
@@ -3924,7 +3924,7 @@ L60:
 	}
 	v73 = p.NewTerminal(x72, "5")
 	x71 = append(x71, v73)
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(5)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(5)) }) {
 		goto L69
 	}
 	v74 = p.NewBranch(rt.RawKindSeq, x70, x71)
@@ -3948,7 +3948,7 @@ L68:
 	}
 	v81 = p.NewTerminal(x80, "6")
 	x79 = append(x79, v81)
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(6)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(6)) }) {
 		goto L77
 	}
 	v82 = p.NewBranch(rt.RawKindSeq, x78, x79)
@@ -3972,7 +3972,7 @@ L76:
 	}
 	v89 = p.NewTerminal(x88, "7")
 	x87 = append(x87, v89)
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(7)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(7)) }) {
 		goto L85
 	}
 	v90 = p.NewBranch(rt.RawKindSeq, x86, x87)
@@ -3996,7 +3996,7 @@ L84:
 	}
 	v97 = p.NewTerminal(x96, "8")
 	x95 = append(x95, v97)
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(8)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(8)) }) {
 		goto L93
 	}
 	v98 = p.NewBranch(rt.RawKindSeq, x94, x95)
@@ -4020,7 +4020,7 @@ L92:
 	}
 	v105 = p.NewTerminal(x104, "9")
 	x103 = append(x103, v105)
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(9)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(9)) }) {
 		goto L101
 	}
 	v106 = p.NewBranch(rt.RawKindSeq, x102, x103)
@@ -4102,10 +4102,10 @@ L113:
 	x130 = p.Mark()
 	x134 = p.Pos
 	x135 = p.Nodes(0)[:0]
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(4)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(4)), c.Var(0)) }) {
 		goto L133
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Length(c.Cap(4)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Length(c.Cap(4)) }) {
 		goto L133
 	}
 	x136 = p.Pos
@@ -4138,7 +4138,7 @@ L113:
 		}
 		v149 = p.NewTerminal(x145, p.Text(x145, p.Pos))
 		p.SetCapture(0, v149)
-		if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+		if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(0)), c.Var(0)) }) {
 			goto L143
 		}
 		if _, ok = r151(p); !ok {
@@ -4196,10 +4196,10 @@ L133:
 	p.Reset(x130)
 	x158 = p.Pos
 	x159 = p.Nodes(0)[:0]
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(4)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(4)), c.Var(0)) }) {
 		goto L157
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto L157
 	}
 	x160 = p.Pos
@@ -4261,10 +4261,10 @@ L133:
 		goto L167
 	L177:
 		x180 = p.Mark()
-		if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+		if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Var(0)) }) {
 			goto L181
 		}
-		if !p.Bind("n", func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
+		if !p.Bind(0, func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
 			goto L181
 		}
 		goto L182
@@ -4360,7 +4360,7 @@ func e95(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.Spend()
 	var ok bool
 	var v2 *rt.Node
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto fail
 	}
 	if v2, ok = p.Call(rules[25], 0); !ok {
@@ -4530,7 +4530,7 @@ L12:
 	p.SetCapture(0, v18)
 	x2 = append(x2, v18)
 	x19 = p.Mark()
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto L22
 	}
 	v23, _ = p.ShapeSingle(sh97, nil, x19.Pos)
@@ -4540,7 +4540,7 @@ L22:
 	p.Reset(x19)
 	x25 = p.Pos
 	x26 = p.Nodes(1)[:0]
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto L24
 	}
 	if v27, ok = r139(p); !ok {
@@ -4622,7 +4622,7 @@ L4:
 	v10 = p.NewTerminal(x6, p.Text(x6, p.Pos))
 	p.SetCapture(0, v10)
 	x2 = append(x2, v10)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto fail
 	}
 	x11 = p.Mark()
@@ -4913,23 +4913,23 @@ L10:
 L11:
 	x12 = p.Mark()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-in")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L14
 	}
 	goto L13
 L14:
 	p.Reset(x12)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("flow-out")) }) {
 		goto L15
 	}
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-in") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("flow-in") }) {
 		goto L15
 	}
 	goto L13
 L15:
 	p.Reset(x12)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-key") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("flow-key") }) {
 		goto L16
 	}
 	goto L13
@@ -5131,23 +5131,23 @@ L10:
 L11:
 	x12 = p.Mark()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-in")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L14
 	}
 	goto L13
 L14:
 	p.Reset(x12)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("flow-out")) }) {
 		goto L15
 	}
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-in") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("flow-in") }) {
 		goto L15
 	}
 	goto L13
 L15:
 	p.Reset(x12)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-key") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("flow-key") }) {
 		goto L16
 	}
 	goto L13
@@ -5762,13 +5762,13 @@ func e138(p *rt.Parser, _ int) (*rt.Node, bool) {
 	var ok bool
 	var v6 *rt.Node
 	x1 = p.Mark()
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("flow-key")) }) {
 		goto L3
 	}
 	goto L2
 L3:
 	p.Reset(x1)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-key") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("flow-key") }) {
 		goto L4
 	}
 	goto L2
@@ -5839,13 +5839,13 @@ L2:
 	goto fail
 L3:
 	x4 = p.Mark()
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("flow-key")) }) {
 		goto L6
 	}
 	goto L5
 L6:
 	p.Reset(x4)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-key") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("flow-key") }) {
 		goto L7
 	}
 	goto L5
@@ -6651,7 +6651,7 @@ func e164(p *rt.Parser, _ int) (*rt.Node, bool) {
 	var ok bool
 	x1 = p.Mark()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("block-key")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L3
 	}
@@ -6662,7 +6662,7 @@ func e164(p *rt.Parser, _ int) (*rt.Node, bool) {
 L3:
 	p.Reset(x1)
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.And(c.Binary("!=", c.Lookup("c"), any("block-key")), func() any { return c.Binary("!=", c.Lookup("c"), any("flow-key")) })
+		return c.And(c.Binary("!=", c.Var(1), any("block-key")), func() any { return c.Binary("!=", c.Var(1), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -6881,7 +6881,7 @@ func e169(p *rt.Parser, _ int) (*rt.Node, bool) {
 	}
 	v6 = p.NewTerminal(x2, p.Text(x2, p.Pos))
 	p.SetCapture(0, v6)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto fail
 	}
 	return nil, true
@@ -6977,7 +6977,7 @@ fail:
 func e172(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.Spend()
 	var ok bool
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto fail
 	}
 	if _, ok = p.Call(rules[150], 0); !ok {
@@ -7041,7 +7041,7 @@ func e174(p *rt.Parser, _ int) (*rt.Node, bool) {
 	}
 	v6 = p.NewTerminal(x2, p.Text(x2, p.Pos))
 	p.SetCapture(0, v6)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto fail
 	}
 	if _, ok = r172(p); !ok {
@@ -7075,7 +7075,7 @@ func e175(p *rt.Parser, _ int) (*rt.Node, bool) {
 	var ok bool
 	x1 = p.Mark()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("block-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-out")), func() any { return c.Binary("==", c.Var(1), any("block-key")) })
 	}) {
 		goto L3
 	}
@@ -7086,7 +7086,7 @@ func e175(p *rt.Parser, _ int) (*rt.Node, bool) {
 L3:
 	p.Reset(x1)
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-in")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -7108,7 +7108,7 @@ func e176(p *rt.Parser, _ int) (*rt.Node, bool) {
 	var x1 rt.Mark
 	var ok bool
 	x1 = p.Mark()
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("flow-out")) }) {
 		goto L3
 	}
 	if _, ok = p.Call(rules[152], 0); !ok {
@@ -7117,7 +7117,7 @@ func e176(p *rt.Parser, _ int) (*rt.Node, bool) {
 	goto L2
 L3:
 	p.Reset(x1)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-key")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("block-key")) }) {
 		goto L4
 	}
 	if _, ok = p.Call(rules[154], 0); !ok {
@@ -7126,7 +7126,7 @@ L3:
 	goto L2
 L4:
 	p.Reset(x1)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-in")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("flow-in")) }) {
 		goto L5
 	}
 	if _, ok = r174(p); !ok {
@@ -7135,7 +7135,7 @@ L4:
 	goto L2
 L5:
 	p.Reset(x1)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("flow-key")) }) {
 		goto L6
 	}
 	if _, ok = p.Call(rules[175], 0); !ok {
@@ -7162,7 +7162,7 @@ func e178(p *rt.Parser, _ int) (*rt.Node, bool) {
 	}
 	x1 = p.Mark()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-in")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-out")), func() any { return c.Binary("==", c.Var(1), any("flow-in")) })
 	}) {
 		goto L3
 	}
@@ -7173,7 +7173,7 @@ func e178(p *rt.Parser, _ int) (*rt.Node, bool) {
 L3:
 	p.Reset(x1)
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("block-key")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -7256,7 +7256,7 @@ func e181(p *rt.Parser, _ int) (*rt.Node, bool) {
 	}
 	x1 = p.Mark()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-in")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-out")), func() any { return c.Binary("==", c.Var(1), any("flow-in")) })
 	}) {
 		goto L3
 	}
@@ -7267,7 +7267,7 @@ func e181(p *rt.Parser, _ int) (*rt.Node, bool) {
 L3:
 	p.Reset(x1)
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("block-key")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -7350,7 +7350,7 @@ func e184(p *rt.Parser, _ int) (*rt.Node, bool) {
 	}
 	v6 = p.NewTerminal(x2, p.Text(x2, p.Pos))
 	p.SetCapture(0, v6)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">=", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">=", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto fail
 	}
 	for {
@@ -7818,7 +7818,7 @@ func e196(p *rt.Parser, _ int) (*rt.Node, bool) {
 	v6 = p.NewTerminal(x2, p.Text(x2, p.Pos))
 	p.SetCapture(0, v6)
 	x7 = p.Mark()
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">=", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">=", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto L9
 	}
 	for {
@@ -7837,7 +7837,7 @@ func e196(p *rt.Parser, _ int) (*rt.Node, bool) {
 	goto L8
 L9:
 	p.Reset(x7)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto L10
 	}
 	goto L8
@@ -9809,10 +9809,10 @@ fail:
 func e217(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.Spend()
 	var ok bool
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Unary("-", any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Unary("-", any(1)) }) {
 		goto fail
 	}
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-in") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("block-in") }) {
 		goto fail
 	}
 	if _, ok = p.Call(recRules[34], 0); !ok {
@@ -10327,7 +10327,7 @@ func e225(p *rt.Parser, _ int) (*rt.Node, bool) {
 	var ch rune
 	var size, x4, x17 int
 	var ok bool
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto fail
 	}
 	x1 = p.Mark()
@@ -10476,7 +10476,7 @@ fail:
 func e226(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.Spend()
 	var ok bool
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-out") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("flow-out") }) {
 		goto fail
 	}
 	if _, ok = p.Call(recRules[69], 0); !ok {
@@ -10514,7 +10514,7 @@ fail:
 func e228(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.Spend()
 	var ok bool
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto fail
 	}
 	if _, ok = p.Call(recRules[129], 0); !ok {
@@ -10533,7 +10533,7 @@ func e229(p *rt.Parser, _ int) (*rt.Node, bool) {
 	var ok, x5 bool
 	var x1 rt.Mark
 	var x4 rune
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto fail
 	}
 	if _, ok = p.Call(recRules[129], 0); !ok {
@@ -10618,16 +10618,16 @@ L2:
 	goto fail
 L3:
 	x9 = p.Mark()
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-out")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("block-out")) }) {
 		goto L11
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("-", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("-", c.Var(0), any(1)) }) {
 		goto L11
 	}
 	goto L10
 L11:
 	p.Reset(x9)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-in")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("block-in")) }) {
 		goto L12
 	}
 	goto L10
@@ -10673,10 +10673,10 @@ func e232(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.SetCapture(0, v9)
 	p.Silent--
 	p.Pos = x1
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto fail
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
 		goto fail
 	}
 	x12 = 0
@@ -10731,7 +10731,7 @@ func e233(p *rt.Parser, _ int) (*rt.Node, bool) {
 L2:
 	p.Silent--
 	p.Reset(x1)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-in") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("block-in") }) {
 		goto fail
 	}
 	if _, ok = p.Call(recRules[48], 0); !ok {
@@ -10798,7 +10798,7 @@ func e235(p *rt.Parser, _ int) (*rt.Node, bool) {
 	}
 	v6 = p.NewTerminal(x2, p.Text(x2, p.Pos))
 	p.SetCapture(0, v6)
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Binary("+", c.Lookup("n"), any(1)), c.Length(c.Cap(0))) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Binary("+", c.Var(0), any(1)), c.Length(c.Cap(0))) }) {
 		goto fail
 	}
 	x7 = p.Mark()
@@ -10862,10 +10862,10 @@ func e237(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.SetCapture(0, v9)
 	p.Silent--
 	p.Pos = x1
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto fail
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
 		goto fail
 	}
 	x12 = 0
@@ -10956,7 +10956,7 @@ func e239(p *rt.Parser, _ int) (*rt.Node, bool) {
 L2:
 	p.Silent--
 	p.Reset(x1)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-out") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("block-out") }) {
 		goto fail
 	}
 	if _, ok = p.Call(recRules[48], 0); !ok {
@@ -10990,7 +10990,7 @@ func e240(p *rt.Parser, _ int) (*rt.Node, bool) {
 L2:
 	p.Silent--
 	p.Reset(x1)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-out") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("block-out") }) {
 		goto fail
 	}
 	if _, ok = p.Call(recRules[48], 0); !ok {
@@ -11014,7 +11014,7 @@ func e241(p *rt.Parser, _ int) (*rt.Node, bool) {
 	goto L2
 L3:
 	p.Reset(x1)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-key") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("block-key") }) {
 		goto L4
 	}
 	x5 = p.Mark()
@@ -11123,7 +11123,7 @@ L6:
 	goto L2
 L3:
 	p.Reset(x1)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("block-out") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("block-out") }) {
 		goto L8
 	}
 	if _, ok = p.Call(recRules[34], 0); !ok {
@@ -11230,7 +11230,7 @@ L16:
 	} else if _, ok = p.MatchLiteral(lit81, "1", 39, false); !ok {
 		goto L24
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto L24
 	}
 	goto L20
@@ -11246,7 +11246,7 @@ L23:
 	} else if _, ok = p.MatchLiteral(lit82, "2", 40, false); !ok {
 		goto L26
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(2)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(2)) }) {
 		goto L26
 	}
 	goto L20
@@ -11262,7 +11262,7 @@ L25:
 	} else if _, ok = p.MatchLiteral(lit83, "3", 41, false); !ok {
 		goto L28
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(3)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(3)) }) {
 		goto L28
 	}
 	goto L20
@@ -11278,7 +11278,7 @@ L27:
 	} else if _, ok = p.MatchLiteral(lit84, "4", 42, false); !ok {
 		goto L30
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(4)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(4)) }) {
 		goto L30
 	}
 	goto L20
@@ -11294,7 +11294,7 @@ L29:
 	} else if _, ok = p.MatchLiteral(lit85, "5", 43, false); !ok {
 		goto L32
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(5)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(5)) }) {
 		goto L32
 	}
 	goto L20
@@ -11310,7 +11310,7 @@ L31:
 	} else if _, ok = p.MatchLiteral(lit86, "6", 44, false); !ok {
 		goto L34
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(6)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(6)) }) {
 		goto L34
 	}
 	goto L20
@@ -11326,7 +11326,7 @@ L33:
 	} else if _, ok = p.MatchLiteral(lit87, "7", 45, false); !ok {
 		goto L36
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(7)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(7)) }) {
 		goto L36
 	}
 	goto L20
@@ -11342,7 +11342,7 @@ L35:
 	} else if _, ok = p.MatchLiteral(lit88, "8", 46, false); !ok {
 		goto L38
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(8)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(8)) }) {
 		goto L38
 	}
 	goto L20
@@ -11358,7 +11358,7 @@ L37:
 	} else if _, ok = p.MatchLiteral(lit89, "9", 47, false); !ok {
 		goto L40
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(9)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(9)) }) {
 		goto L40
 	}
 	goto L20
@@ -11428,10 +11428,10 @@ L43:
 	goto L41
 L44:
 	x57 = p.Mark()
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(1)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(1)), c.Var(0)) }) {
 		goto L59
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Length(c.Cap(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Length(c.Cap(1)) }) {
 		goto L59
 	}
 	x60 = p.Pos
@@ -11464,7 +11464,7 @@ L44:
 		}
 		v73 = p.NewTerminal(x69, p.Text(x69, p.Pos))
 		p.SetCapture(0, v73)
-		if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+		if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(0)), c.Var(0)) }) {
 			goto L67
 		}
 		if _, ok = q137(p); !ok {
@@ -11518,10 +11518,10 @@ L62:
 	goto L58
 L59:
 	p.Reset(x57)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(1)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(1)), c.Var(0)) }) {
 		goto L79
 	}
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto L79
 	}
 	x80 = p.Pos
@@ -11583,10 +11583,10 @@ L59:
 		goto L87
 	L97:
 		x100 = p.Mark()
-		if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+		if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Var(0)) }) {
 			goto L101
 		}
-		if !p.Bind("n", func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
+		if !p.Bind(0, func(c *rt.ActCtx) any { return c.Length(c.Cap(0)) }) {
 			goto L101
 		}
 		goto L102
@@ -11669,7 +11669,7 @@ fail:
 func e246(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.Spend()
 	var ok bool
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto fail
 	}
 	if _, ok = p.Call(recRules[129], 0); !ok {
@@ -11683,7 +11683,7 @@ fail:
 func e247(p *rt.Parser, _ int) (*rt.Node, bool) {
 	p.Spend()
 	var ok bool
-	if !p.Bind("n", func(c *rt.ActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.ActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto fail
 	}
 	if _, ok = p.Call(recRules[25], 0); !ok {
@@ -11748,13 +11748,13 @@ L5:
 	v11 = p.NewTerminal(x7, p.Text(x7, p.Pos))
 	p.SetCapture(0, v11)
 	x12 = p.Mark()
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto L14
 	}
 	goto L13
 L14:
 	p.Reset(x12)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto L15
 	}
 	if _, ok = q139(p); !ok {
@@ -11821,7 +11821,7 @@ L2:
 	}
 	v8 = p.NewTerminal(x4, p.Text(x4, p.Pos))
 	p.SetCapture(0, v8)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<=", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto fail
 	}
 	x9 = p.Mark()
@@ -11870,7 +11870,7 @@ func e250(p *rt.Parser, _ int) (*rt.Node, bool) {
 	}
 	v6 = p.NewTerminal(x2, p.Text(x2, p.Pos))
 	p.SetCapture(0, v6)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto fail
 	}
 	if _, ok = q134(p); !ok {
@@ -12101,23 +12101,23 @@ L8:
 L9:
 	x10 = p.Mark()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-in")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L12
 	}
 	goto L11
 L12:
 	p.Reset(x10)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("flow-out")) }) {
 		goto L13
 	}
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-in") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("flow-in") }) {
 		goto L13
 	}
 	goto L11
 L13:
 	p.Reset(x10)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-key") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("flow-key") }) {
 		goto L14
 	}
 	goto L11
@@ -12217,23 +12217,23 @@ L8:
 L9:
 	x10 = p.Mark()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-in")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L12
 	}
 	goto L11
 L12:
 	p.Reset(x10)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("flow-out")) }) {
 		goto L13
 	}
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-in") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("flow-in") }) {
 		goto L13
 	}
 	goto L11
 L13:
 	p.Reset(x10)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-key") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("flow-key") }) {
 		goto L14
 	}
 	goto L11
@@ -12432,13 +12432,13 @@ func e265(p *rt.Parser, _ int) (*rt.Node, bool) {
 	var x1, x5 rt.Mark
 	var ok bool
 	x1 = p.Mark()
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("flow-key")) }) {
 		goto L3
 	}
 	goto L2
 L3:
 	p.Reset(x1)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-key") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("flow-key") }) {
 		goto L4
 	}
 	goto L2
@@ -12490,13 +12490,13 @@ L2:
 	goto fail
 L3:
 	x4 = p.Mark()
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("flow-key")) }) {
 		goto L6
 	}
 	goto L5
 L6:
 	p.Reset(x4)
-	if !p.Bind("c", func(c *rt.ActCtx) any { return any("flow-key") }) {
+	if !p.Bind(1, func(c *rt.ActCtx) any { return any("flow-key") }) {
 		goto L7
 	}
 	goto L5
@@ -12525,7 +12525,7 @@ func e267(p *rt.Parser, _ int) (*rt.Node, bool) {
 	var x1 rt.Mark
 	var ok bool
 	x1 = p.Mark()
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("flow-out")) }) {
 		goto L3
 	}
 	if _, ok = p.Call(recRules[107], 0); !ok {
@@ -12534,7 +12534,7 @@ func e267(p *rt.Parser, _ int) (*rt.Node, bool) {
 	goto L2
 L3:
 	p.Reset(x1)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-key")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("block-key")) }) {
 		goto L4
 	}
 	if _, ok = p.Call(recRules[105], 0); !ok {
@@ -12543,7 +12543,7 @@ L3:
 	goto L2
 L4:
 	p.Reset(x1)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-in")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("flow-in")) }) {
 		goto L5
 	}
 	if _, ok = q110(p); !ok {
@@ -12552,7 +12552,7 @@ L4:
 	goto L2
 L5:
 	p.Reset(x1)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("==", c.Var(1), any("flow-key")) }) {
 		goto L6
 	}
 	if _, ok = p.Call(recRules[108], 0); !ok {
@@ -12574,7 +12574,7 @@ func e268(p *rt.Parser, _ int) (*rt.Node, bool) {
 	var ok bool
 	x1 = p.Mark()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("block-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-out")), func() any { return c.Binary("==", c.Var(1), any("block-key")) })
 	}) {
 		goto L3
 	}
@@ -12585,7 +12585,7 @@ func e268(p *rt.Parser, _ int) (*rt.Node, bool) {
 L3:
 	p.Reset(x1)
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-in")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -13181,7 +13181,7 @@ func e274(p *rt.Parser, _ int) (*rt.Node, bool) {
 	}
 	x1 = p.Mark()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-in")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-out")), func() any { return c.Binary("==", c.Var(1), any("flow-in")) })
 	}) {
 		goto L3
 	}
@@ -13192,7 +13192,7 @@ func e274(p *rt.Parser, _ int) (*rt.Node, bool) {
 L3:
 	p.Reset(x1)
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("block-key")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -13510,7 +13510,7 @@ func e278(p *rt.Parser, _ int) (*rt.Node, bool) {
 	}
 	x1 = p.Mark()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-in")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-out")), func() any { return c.Binary("==", c.Var(1), any("flow-in")) })
 	}) {
 		goto L3
 	}
@@ -13521,7 +13521,7 @@ func e278(p *rt.Parser, _ int) (*rt.Node, bool) {
 L3:
 	p.Reset(x1)
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("block-key")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -13711,7 +13711,7 @@ func e281(p *rt.Parser, _ int) (*rt.Node, bool) {
 	v6 = p.NewTerminal(x2, p.Text(x2, p.Pos))
 	p.SetCapture(0, v6)
 	x7 = p.Mark()
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">=", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary(">=", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto L9
 	}
 	for {
@@ -13730,7 +13730,7 @@ func e281(p *rt.Parser, _ int) (*rt.Node, bool) {
 	goto L8
 L9:
 	p.Reset(x7)
-	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<", c.Length(c.Cap(0)), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.ActCtx) any { return c.Binary("<", c.Length(c.Cap(0)), c.Var(0)) }) {
 		goto L10
 	}
 	goto L8
@@ -13752,7 +13752,7 @@ func e282(p *rt.Parser, _ int) (*rt.Node, bool) {
 	var ok bool
 	x1 = p.Mark()
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("block-key")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L3
 	}
@@ -13763,7 +13763,7 @@ func e282(p *rt.Parser, _ int) (*rt.Node, bool) {
 L3:
 	p.Reset(x1)
 	if !p.Predicate(func(c *rt.ActCtx) any {
-		return c.And(c.Binary("!=", c.Lookup("c"), any("block-key")), func() any { return c.Binary("!=", c.Lookup("c"), any("flow-key")) })
+		return c.And(c.Binary("!=", c.Var(1), any("block-key")), func() any { return c.Binary("!=", c.Var(1), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -17859,10 +17859,10 @@ func i12(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Unary("-", any(1)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Unary("-", any(1)) }) {
 		goto fail
 	}
-	if !p.Bind("c", func(c *rt.TActCtx) any { return any("block-in") }) {
+	if !p.Bind(1, func(c *rt.TActCtx) any { return any("block-in") }) {
 		goto fail
 	}
 	if v3, ok = u34(p); !ok {
@@ -19031,7 +19031,7 @@ func i35(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto fail
 	}
 	x1 = p.Pos
@@ -19205,7 +19205,7 @@ func i36(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
-	if !p.Bind("c", func(c *rt.TActCtx) any { return any("flow-out") }) {
+	if !p.Bind(1, func(c *rt.TActCtx) any { return any("flow-out") }) {
 		goto fail
 	}
 	if v3, ok = u69(p); !ok {
@@ -19594,7 +19594,7 @@ func i43(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto fail
 	}
 	if _, ok = u150(p); !ok {
@@ -19638,7 +19638,7 @@ func i44(p *rt.TParser) (any, bool) {
 	var x10 rune
 	start = p.Pos
 	prevEnv = p.Env
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto fail
 	}
 	if _, ok = u150(p); !ok {
@@ -19752,17 +19752,17 @@ L2:
 L3:
 	x9 = p.Pos
 	x10 = p.Env
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-out")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Var(1), any("block-out")) }) {
 		goto L12
 	}
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("-", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("-", c.Var(0), any(1)) }) {
 		goto L12
 	}
 	goto L11
 L12:
 	p.Pos = x9
 	p.Env = x10
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-in")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Var(1), any("block-in")) }) {
 		goto L13
 	}
 	goto L11
@@ -19832,10 +19832,10 @@ func i46(p *rt.TParser) (any, bool) {
 	k4 = v10
 	p.Silent--
 	p.Pos = x1
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k4), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k4), c.Var(0)) }) {
 		goto fail
 	}
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Length(k4) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Length(k4) }) {
 		goto fail
 	}
 	x13, x14 = p.Pos, len(p.KidStack)
@@ -19925,7 +19925,7 @@ func i47(p *rt.TParser) (any, bool) {
 L2:
 	p.Silent--
 	p.Pos = x1
-	if !p.Bind("c", func(c *rt.TActCtx) any { return any("block-in") }) {
+	if !p.Bind(1, func(c *rt.TActCtx) any { return any("block-in") }) {
 		goto fail
 	}
 	if v5, ok = u48(p); !ok {
@@ -20036,7 +20036,7 @@ func i49(p *rt.TParser) (any, bool) {
 	}
 	v7 = p.NewMatch(x3, p.Pos, p.Text(x3, p.Pos), true)
 	k1 = v7
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Binary("+", c.Lookup("n"), any(1)), c.Length(k1)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("+", c.Binary("+", c.Var(0), any(1)), c.Length(k1)) }) {
 		goto fail
 	}
 	x10 = p.Pos
@@ -20191,10 +20191,10 @@ func i51(p *rt.TParser) (any, bool) {
 	k4 = v10
 	p.Silent--
 	p.Pos = x1
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k4), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k4), c.Var(0)) }) {
 		goto fail
 	}
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Length(k4) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Length(k4) }) {
 		goto fail
 	}
 	x12, x13, x14 = p.Pos, len(p.KidStack), 0
@@ -20440,7 +20440,7 @@ func i55(p *rt.TParser) (any, bool) {
 L2:
 	p.Silent--
 	p.Pos = x1
-	if !p.Bind("c", func(c *rt.TActCtx) any { return any("block-out") }) {
+	if !p.Bind(1, func(c *rt.TActCtx) any { return any("block-out") }) {
 		goto fail
 	}
 	if v5, ok = u48(p); !ok {
@@ -20499,7 +20499,7 @@ func i56(p *rt.TParser) (any, bool) {
 L2:
 	p.Silent--
 	p.Pos = x1
-	if !p.Bind("c", func(c *rt.TActCtx) any { return any("block-out") }) {
+	if !p.Bind(1, func(c *rt.TActCtx) any { return any("block-out") }) {
 		goto fail
 	}
 	if v5, ok = u48(p); !ok {
@@ -20601,7 +20601,7 @@ L6:
 	p.Pos = x1
 	p.Env = x2
 	k3 = x4
-	if !p.Bind("c", func(c *rt.TActCtx) any { return any("block-key") }) {
+	if !p.Bind(1, func(c *rt.TActCtx) any { return any("block-key") }) {
 		goto L9
 	}
 	x10 = p.Pos
@@ -20826,7 +20826,7 @@ L6:
 	p.Pos = x1
 	p.Env = x2
 	k3 = x4
-	if !p.Bind("c", func(c *rt.TActCtx) any { return any("block-out") }) {
+	if !p.Bind(1, func(c *rt.TActCtx) any { return any("block-out") }) {
 		goto L13
 	}
 	if v15, ok = u34(p); !ok {
@@ -20985,7 +20985,7 @@ L33:
 	}
 	v49 = p.NewMatch(x48, p.Pos, "1", true)
 	x47 = append(x47, v49)
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto L45
 	}
 	v50 = p.NewNode("tuple", x46, p.Pos, x47)
@@ -21011,7 +21011,7 @@ L44:
 	}
 	v57 = p.NewMatch(x56, p.Pos, "2", true)
 	x55 = append(x55, v57)
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(2)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("+", c.Var(0), any(2)) }) {
 		goto L53
 	}
 	v58 = p.NewNode("tuple", x54, p.Pos, x55)
@@ -21037,7 +21037,7 @@ L52:
 	}
 	v65 = p.NewMatch(x64, p.Pos, "3", true)
 	x63 = append(x63, v65)
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(3)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("+", c.Var(0), any(3)) }) {
 		goto L61
 	}
 	v66 = p.NewNode("tuple", x62, p.Pos, x63)
@@ -21063,7 +21063,7 @@ L60:
 	}
 	v73 = p.NewMatch(x72, p.Pos, "4", true)
 	x71 = append(x71, v73)
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(4)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("+", c.Var(0), any(4)) }) {
 		goto L69
 	}
 	v74 = p.NewNode("tuple", x70, p.Pos, x71)
@@ -21089,7 +21089,7 @@ L68:
 	}
 	v81 = p.NewMatch(x80, p.Pos, "5", true)
 	x79 = append(x79, v81)
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(5)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("+", c.Var(0), any(5)) }) {
 		goto L77
 	}
 	v82 = p.NewNode("tuple", x78, p.Pos, x79)
@@ -21115,7 +21115,7 @@ L76:
 	}
 	v89 = p.NewMatch(x88, p.Pos, "6", true)
 	x87 = append(x87, v89)
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(6)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("+", c.Var(0), any(6)) }) {
 		goto L85
 	}
 	v90 = p.NewNode("tuple", x86, p.Pos, x87)
@@ -21141,7 +21141,7 @@ L84:
 	}
 	v97 = p.NewMatch(x96, p.Pos, "7", true)
 	x95 = append(x95, v97)
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(7)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("+", c.Var(0), any(7)) }) {
 		goto L93
 	}
 	v98 = p.NewNode("tuple", x94, p.Pos, x95)
@@ -21167,7 +21167,7 @@ L92:
 	}
 	v105 = p.NewMatch(x104, p.Pos, "8", true)
 	x103 = append(x103, v105)
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(8)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("+", c.Var(0), any(8)) }) {
 		goto L101
 	}
 	v106 = p.NewNode("tuple", x102, p.Pos, x103)
@@ -21193,7 +21193,7 @@ L100:
 	}
 	v113 = p.NewMatch(x112, p.Pos, "9", true)
 	x111 = append(x111, v113)
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(9)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("+", c.Var(0), any(9)) }) {
 		goto L109
 	}
 	v114 = p.NewNode("tuple", x110, p.Pos, x111)
@@ -21278,10 +21278,10 @@ L121:
 	x139 = p.Env
 	x143 = p.Pos
 	x144 = p.NewVals(0)[:0]
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k38), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k38), c.Var(0)) }) {
 		goto L142
 	}
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Length(k38) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Length(k38) }) {
 		goto L142
 	}
 	x145 = p.Pos
@@ -21312,7 +21312,7 @@ L121:
 		}
 		v157 = p.NewMatch(x153, p.Pos, p.Text(x153, p.Pos), true)
 		k150 = v157
-		if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<=", c.Length(k150), c.Lookup("n")) }) {
+		if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<=", c.Length(k150), c.Var(0)) }) {
 			goto L151
 		}
 		if _, ok = s151(p); !ok {
@@ -21369,10 +21369,10 @@ L142:
 	p.Env = x139
 	x166 = p.Pos
 	x167 = p.NewVals(0)[:0]
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<=", c.Length(k38), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<=", c.Length(k38), c.Var(0)) }) {
 		goto L165
 	}
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto L165
 	}
 	x168 = p.Pos
@@ -21434,10 +21434,10 @@ L142:
 	L185:
 		x188 = p.Pos
 		x189 = p.Env
-		if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k174), c.Lookup("n")) }) {
+		if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k174), c.Var(0)) }) {
 			goto L190
 		}
-		if !p.Bind("n", func(c *rt.TActCtx) any { return c.Length(k174) }) {
+		if !p.Bind(0, func(c *rt.TActCtx) any { return c.Length(k174) }) {
 			goto L190
 		}
 		goto L191
@@ -21527,7 +21527,7 @@ L209:
 L210:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "s_l_block_scalar"
-	v = tmk_Scalar(c, true, k1, c.Binary("+", any(3), c.Length(k13)), c.Lookup("n"), c.Text(k8))
+	v = tmk_Scalar(c, true, k1, c.Binary("+", any(3), c.Length(k13)), c.Var(0), c.Text(k8))
 	p.Env = prevEnv
 	return v, true
 fail:
@@ -21554,7 +21554,7 @@ func i64(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto fail
 	}
 	if v3, ok = u25(p); !ok {
@@ -21747,7 +21747,7 @@ L12:
 	k13 = v19
 	x2 = append(x2, v19)
 	x20 = p.Pos
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k13), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k13), c.Var(0)) }) {
 		goto L23
 	}
 	v24, _ = p.ShapeSingle(sh97, nil, x20)
@@ -21757,7 +21757,7 @@ L23:
 	p.Pos = x20
 	x26 = p.Pos
 	x27 = p.NewVals(1)[:0]
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Length(k13), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Length(k13), c.Var(0)) }) {
 		goto L25
 	}
 	if v28, ok = s139(p); !ok {
@@ -21857,7 +21857,7 @@ L4:
 	v11 = p.NewMatch(x7, p.Pos, p.Text(x7, p.Pos), true)
 	k5 = v11
 	x2 = append(x2, v11)
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<=", c.Length(k5), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<=", c.Length(k5), c.Var(0)) }) {
 		goto fail
 	}
 	x12 = p.Pos
@@ -22287,7 +22287,7 @@ L13:
 	x14 = p.Pos
 	x15 = p.Env
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-in")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L17
 	}
@@ -22295,17 +22295,17 @@ L13:
 L17:
 	p.Pos = x14
 	p.Env = x15
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Var(1), any("flow-out")) }) {
 		goto L18
 	}
-	if !p.Bind("c", func(c *rt.TActCtx) any { return any("flow-in") }) {
+	if !p.Bind(1, func(c *rt.TActCtx) any { return any("flow-in") }) {
 		goto L18
 	}
 	goto L16
 L18:
 	p.Pos = x14
 	p.Env = x15
-	if !p.Bind("c", func(c *rt.TActCtx) any { return any("flow-key") }) {
+	if !p.Bind(1, func(c *rt.TActCtx) any { return any("flow-key") }) {
 		goto L19
 	}
 	goto L16
@@ -22567,7 +22567,7 @@ L13:
 	x14 = p.Pos
 	x15 = p.Env
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-in")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L17
 	}
@@ -22575,17 +22575,17 @@ L13:
 L17:
 	p.Pos = x14
 	p.Env = x15
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Var(1), any("flow-out")) }) {
 		goto L18
 	}
-	if !p.Bind("c", func(c *rt.TActCtx) any { return any("flow-in") }) {
+	if !p.Bind(1, func(c *rt.TActCtx) any { return any("flow-in") }) {
 		goto L18
 	}
 	goto L16
 L18:
 	p.Pos = x14
 	p.Env = x15
-	if !p.Bind("c", func(c *rt.TActCtx) any { return any("flow-key") }) {
+	if !p.Bind(1, func(c *rt.TActCtx) any { return any("flow-key") }) {
 		goto L19
 	}
 	goto L16
@@ -23546,14 +23546,14 @@ func i98(p *rt.TParser) (any, bool) {
 	prevEnv = p.Env
 	x1 = p.Pos
 	x2 = p.Env
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Var(1), any("flow-key")) }) {
 		goto L4
 	}
 	goto L3
 L4:
 	p.Pos = x1
 	p.Env = x2
-	if !p.Bind("c", func(c *rt.TActCtx) any { return any("flow-key") }) {
+	if !p.Bind(1, func(c *rt.TActCtx) any { return any("flow-key") }) {
 		goto L5
 	}
 	goto L3
@@ -23665,14 +23665,14 @@ L2:
 L3:
 	x4 = p.Pos
 	x5 = p.Env
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Var(1), any("flow-key")) }) {
 		goto L7
 	}
 	goto L6
 L7:
 	p.Pos = x4
 	p.Env = x5
-	if !p.Bind("c", func(c *rt.TActCtx) any { return any("flow-key") }) {
+	if !p.Bind(1, func(c *rt.TActCtx) any { return any("flow-key") }) {
 		goto L8
 	}
 	goto L6
@@ -24796,7 +24796,7 @@ func v148(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	x1 = p.Pos
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("block-key")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L3
 	}
@@ -24807,7 +24807,7 @@ func v148(p *rt.TParser) (any, bool) {
 L3:
 	p.Pos = x1
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.And(c.Binary("!=", c.Lookup("c"), any("block-key")), func() any { return c.Binary("!=", c.Lookup("c"), any("flow-key")) })
+		return c.And(c.Binary("!=", c.Var(1), any("block-key")), func() any { return c.Binary("!=", c.Var(1), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -25146,7 +25146,7 @@ func i153(p *rt.TParser) (any, bool) {
 	}
 	v7 = p.NewMatch(x3, p.Pos, p.Text(x3, p.Pos), true)
 	k1 = v7
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Length(k1), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Length(k1), c.Var(0)) }) {
 		goto fail
 	}
 	v = nil
@@ -25259,7 +25259,7 @@ func s155(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
-	if !p.Bind("n", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("n"), any(1)) }) {
+	if !p.Bind(0, func(c *rt.TActCtx) any { return c.Binary("+", c.Var(0), any(1)) }) {
 		goto fail
 	}
 	if _, ok = u150(p); !ok {
@@ -25348,7 +25348,7 @@ func i157(p *rt.TParser) (any, bool) {
 	}
 	v7 = p.NewMatch(x3, p.Pos, p.Text(x3, p.Pos), true)
 	k1 = v7
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<", c.Length(k1), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<", c.Length(k1), c.Var(0)) }) {
 		goto fail
 	}
 	if _, ok = s172(p); !ok {
@@ -25473,7 +25473,7 @@ func s159(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	x1 = p.Pos
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("block-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-out")), func() any { return c.Binary("==", c.Var(1), any("block-key")) })
 	}) {
 		goto L3
 	}
@@ -25484,7 +25484,7 @@ func s159(p *rt.TParser) (any, bool) {
 L3:
 	p.Pos = x1
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-in")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-in")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -25510,7 +25510,7 @@ func s160(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	x1 = p.Pos
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-out")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Var(1), any("flow-out")) }) {
 		goto L3
 	}
 	if _, ok = u152(p); !ok {
@@ -25519,7 +25519,7 @@ func s160(p *rt.TParser) (any, bool) {
 	goto L2
 L3:
 	p.Pos = x1
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("block-key")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Var(1), any("block-key")) }) {
 		goto L4
 	}
 	if _, ok = u154(p); !ok {
@@ -25528,7 +25528,7 @@ L3:
 	goto L2
 L4:
 	p.Pos = x1
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-in")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Var(1), any("flow-in")) }) {
 		goto L5
 	}
 	if _, ok = s174(p); !ok {
@@ -25537,7 +25537,7 @@ L4:
 	goto L2
 L5:
 	p.Pos = x1
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Lookup("c"), any("flow-key")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Var(1), any("flow-key")) }) {
 		goto L6
 	}
 	if _, ok = u175(p); !ok {
@@ -25593,7 +25593,7 @@ func s162(p *rt.TParser) (any, bool) {
 	}
 	x1 = p.Pos
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-in")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-out")), func() any { return c.Binary("==", c.Var(1), any("flow-in")) })
 	}) {
 		goto L3
 	}
@@ -25604,7 +25604,7 @@ func s162(p *rt.TParser) (any, bool) {
 L3:
 	p.Pos = x1
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("block-key")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -25702,7 +25702,7 @@ func s164(p *rt.TParser) (any, bool) {
 	}
 	x1 = p.Pos
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("flow-out")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-in")) })
+		return c.Or(c.Binary("==", c.Var(1), any("flow-out")), func() any { return c.Binary("==", c.Var(1), any("flow-in")) })
 	}) {
 		goto L3
 	}
@@ -25713,7 +25713,7 @@ func s164(p *rt.TParser) (any, bool) {
 L3:
 	p.Pos = x1
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return c.Or(c.Binary("==", c.Lookup("c"), any("block-key")), func() any { return c.Binary("==", c.Lookup("c"), any("flow-key")) })
+		return c.Or(c.Binary("==", c.Var(1), any("block-key")), func() any { return c.Binary("==", c.Var(1), any("flow-key")) })
 	}) {
 		goto L4
 	}
@@ -25917,7 +25917,7 @@ func i169(p *rt.TParser) (any, bool) {
 	}
 	v7 = p.NewMatch(x3, p.Pos, p.Text(x3, p.Pos), true)
 	k1 = v7
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Length(k1), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Length(k1), c.Var(0)) }) {
 		goto fail
 	}
 	for {
@@ -26936,7 +26936,7 @@ func i181(p *rt.TParser) (any, bool) {
 	v7 = p.NewMatch(x3, p.Pos, p.Text(x3, p.Pos), true)
 	k1 = v7
 	x8 = p.Pos
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Length(k1), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Length(k1), c.Var(0)) }) {
 		goto L10
 	}
 	for {
@@ -26955,7 +26955,7 @@ func i181(p *rt.TParser) (any, bool) {
 	goto L9
 L10:
 	p.Pos = x8
-	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<", c.Length(k1), c.Lookup("n")) }) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<", c.Length(k1), c.Var(0)) }) {
 		goto L11
 	}
 	goto L9
