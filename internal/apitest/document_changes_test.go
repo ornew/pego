@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/internal/engine/core"
 )
 
 func TestDocumentChangesPublicOptIn(t *testing.T) {
@@ -64,19 +65,22 @@ rule main Entry = x:([a-zé]+ #atomic) $$ => Entry{Name: text($x)}`, "main")
 			if got := d.DrainChanges()[0].Output; got != pego.OutputUnchanged {
 				t.Fatal(got)
 			}
-			ctx, cancel := context.WithCancel(context.Background())
-			cancel()
-			if s, err := d.Snapshot(pego.WithContext(ctx)); s != nil || !errors.Is(err, context.Canceled) {
-				t.Fatal(s, err)
-			}
-			if got := d.DrainChanges()[0].Output; got != pego.OutputUnavailable {
-				t.Fatal(got)
-			}
-			if _, err := d.Snapshot(); err != nil {
-				t.Fatal(err)
-			}
-			if got := d.DrainChanges()[0].Output; got != pego.OutputMayHaveChanged {
-				t.Fatal("comparison bridged interruption", got)
+			// The reference build has no cancellation to interrupt the Snapshot.
+			if core.BudgetControlsEnabled {
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+				if s, err := d.Snapshot(pego.WithContext(ctx)); s != nil || !errors.Is(err, context.Canceled) {
+					t.Fatal(s, err)
+				}
+				if got := d.DrainChanges()[0].Output; got != pego.OutputUnavailable {
+					t.Fatal(got)
+				}
+				if _, err := d.Snapshot(); err != nil {
+					t.Fatal(err)
+				}
+				if got := d.DrainChanges()[0].Output; got != pego.OutputMayHaveChanged {
+					t.Fatal("comparison bridged interruption", got)
+				}
 			}
 		}
 	}

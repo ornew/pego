@@ -12,6 +12,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/bytecode"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/limits"
 )
@@ -208,17 +209,20 @@ rule other = "é" $$`)
 	p := saveLoad(t, src, "main", CompiledRecognize)
 	parsing := saveLoad(t, src, "main", CompiledParse)
 	for _, backend := range []Backend{Default, Bytecode, BytecodeIterative} {
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel()
-		n, err := p.ParseWith("main", "abc", ParseOptions{Backend: backend, Recognize: true, Context: ctx})
-		if n != nil || !errors.Is(err, context.Canceled) {
-			t.Fatalf("cancel node=%v error=%v", n, err)
+		// The reference build has no cancellation or limits.
+		if core.BudgetControlsEnabled {
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			n, err := p.ParseWith("main", "abc", ParseOptions{Backend: backend, Recognize: true, Context: ctx})
+			if n != nil || !errors.Is(err, context.Canceled) {
+				t.Fatalf("cancel node=%v error=%v", n, err)
+			}
+			n, err = p.ParseWith("main", "abc", ParseOptions{Backend: backend, Recognize: true, Limits: limits.Limits{Budget: 1}})
+			if n != nil || err == nil {
+				t.Fatalf("budget node=%v error=%v", n, err)
+			}
 		}
-		n, err = p.ParseWith("main", "abc", ParseOptions{Backend: backend, Recognize: true, Limits: limits.Limits{Budget: 1}})
-		if n != nil || err == nil {
-			t.Fatalf("budget node=%v error=%v", n, err)
-		}
-		n, err = p.ParseWith("main", "abc", ParseOptions{Backend: backend, Recognize: true})
+		n, err := p.ParseWith("main", "abc", ParseOptions{Backend: backend, Recognize: true})
 		if n != nil || err != nil {
 			t.Fatalf("retry node=%v error=%v", n, err)
 		}

@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/internal/engine/core"
 )
 
 func writeFixtureFile(t *testing.T, dir, name, body string) string {
@@ -83,6 +84,9 @@ func TestRunClassifiesNilNodeRecoveryAndRejection(t *testing.T) {
 }
 
 func TestRunRecordsRuntimeErrorAndContinues(t *testing.T) {
+	if !core.BudgetControlsEnabled {
+		t.Skip("the reference build has no limits to produce the runtime error")
+	}
 	dir := t.TempDir()
 	writeFixtureFile(t, dir, "grammar.pego", "@start\nrule main = [a-z]+ #atomic $$")
 	long := strings.Repeat("a", 10000)

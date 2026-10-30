@@ -8,10 +8,14 @@ import (
 	"testing"
 
 	. "github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/limits"
 )
 
 func TestDocumentChangesComparisonInterruptionPublication(t *testing.T) {
+	if !core.BudgetControlsEnabled {
+		t.Skip("the reference build has no limits to interrupt the snapshot")
+	}
 	prog := mustCompile(t, `rule main = .* #atomic $$`)
 	snapshotVariants(t, func(t *testing.T, o ParseOptions) {
 		d, err := prog.NewDocumentWith("main", strings.Repeat("x", 8192), o)
@@ -165,21 +169,24 @@ rule main Entry = x:([a-z]+ #atomic) $$ => Entry{Name: text($x), At: $x.Start}`)
 		if got := d.DrainChanges()[1].Output; got != OutputUnchanged {
 			t.Fatal("identity replacement", got)
 		}
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel()
-		cancelled := o
-		cancelled.Context = ctx
-		if s, err := d.SnapshotWith(cancelled); s != nil || !errors.Is(err, context.Canceled) {
-			t.Fatal("cancelled snapshot", s, err)
-		}
-		if got := d.DrainChanges()[0].Output; got != OutputUnavailable {
-			t.Fatal("unavailable status", got)
-		}
-		if _, err := d.Snapshot(); err != nil {
-			t.Fatal(err)
-		}
-		if got := d.DrainChanges()[0].Output; got != OutputMayHaveChanged {
-			t.Fatal("retry bridged unavailable outcome", got)
+		// The reference build has no cancellation to interrupt the snapshot.
+		if core.BudgetControlsEnabled {
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			cancelled := o
+			cancelled.Context = ctx
+			if s, err := d.SnapshotWith(cancelled); s != nil || !errors.Is(err, context.Canceled) {
+				t.Fatal("cancelled snapshot", s, err)
+			}
+			if got := d.DrainChanges()[0].Output; got != OutputUnavailable {
+				t.Fatal("unavailable status", got)
+			}
+			if _, err := d.Snapshot(); err != nil {
+				t.Fatal(err)
+			}
+			if got := d.DrainChanges()[0].Output; got != OutputMayHaveChanged {
+				t.Fatal("retry bridged unavailable outcome", got)
+			}
 		}
 	})
 }

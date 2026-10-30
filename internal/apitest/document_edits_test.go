@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/internal/engine/core"
 	"testing"
 )
 
@@ -18,19 +19,22 @@ func TestDocumentVersionAndBatchAfterInterruption(t *testing.T) {
 			t.Fatal(err)
 		}
 		base := d.Version()
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel()
-		if n, err := d.Parse(pego.WithContext(ctx)); n != nil || !errors.Is(err, context.Canceled) {
-			t.Fatal("cancellation", n, err)
-		}
-		if d.Version() != base {
-			t.Fatal("cancellation advanced text version")
-		}
-		if n, err := d.Parse(pego.WithLimits(pego.Limits{Budget: 1})); n != nil || !errors.Is(err, pego.ErrLimit) {
-			t.Fatal("budget limit", n, err)
-		}
-		if d.Version() != base {
-			t.Fatal("execution interruption advanced text version")
+		// The reference build has no cancellation or limits to interrupt the parse.
+		if core.BudgetControlsEnabled {
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			if n, err := d.Parse(pego.WithContext(ctx)); n != nil || !errors.Is(err, context.Canceled) {
+				t.Fatal("cancellation", n, err)
+			}
+			if d.Version() != base {
+				t.Fatal("cancellation advanced text version")
+			}
+			if n, err := d.Parse(pego.WithLimits(pego.Limits{Budget: 1})); n != nil || !errors.Is(err, pego.ErrLimit) {
+				t.Fatal("budget limit", n, err)
+			}
+			if d.Version() != base {
+				t.Fatal("execution interruption advanced text version")
+			}
 		}
 		if err := d.EditBatch(base, pego.TextEdit{Start: 0, End: 0, Text: "x"}); err != nil {
 			t.Fatal(err)

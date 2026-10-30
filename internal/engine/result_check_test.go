@@ -7,6 +7,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/compile"
+	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/gentest"
 	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/syntax"
@@ -134,6 +135,9 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 				var want string
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, run := range runs {
+						if run.o.Limits.Budget != 0 && !core.BudgetControlsEnabled {
+							continue // the reference build has no limits
+						}
 						o := run.o
 						o.Unit = unit
 						mode, isLoaded := run.prog.Mode()
@@ -253,6 +257,9 @@ func TestOperatorResultChecks(t *testing.T) {
 			{"loaded iterative", loaded, ParseOptions{Backend: BytecodeIterative}},
 			{"limited loaded bytecode", loaded, ParseOptions{Backend: Bytecode, Limits: limits}},
 		} {
+			if run.o.Limits.Budget != 0 && !core.BudgetControlsEnabled {
+				continue // the reference build has no limits
+			}
 			if got := resultWith(run.prog, in, run.o); got != want {
 				t.Errorf("%q %s: %s\nwant %s", in, run.name, got, want)
 			}

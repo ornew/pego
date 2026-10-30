@@ -74,11 +74,17 @@ func TestTextFieldComparisonEdges(t *testing.T) {
 	prog := compileBare(t, textCompareEdgeGrammar, compile.Options{})
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
 		for _, input := range inputs {
-			_, wantResult := parseSteps(t, prog, Closure, unit, input)
+			// The reference build has no budget controls to compare against.
+			var wantResult string
+			if core.BudgetControlsEnabled {
+				_, wantResult = parseSteps(t, prog, Closure, unit, input)
+			}
 			wantUncontrolled := gentest.ResultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure, Unit: unit}))
 			for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-				if _, gotResult := parseSteps(t, prog, backend, unit, input); gotResult != wantResult {
-					t.Errorf("%s/%s %q: %s\nwant %s", backend, unit, input, gotResult, wantResult)
+				if core.BudgetControlsEnabled {
+					if _, gotResult := parseSteps(t, prog, backend, unit, input); gotResult != wantResult {
+						t.Errorf("%s/%s %q: %s\nwant %s", backend, unit, input, gotResult, wantResult)
+					}
 				}
 				if got := gentest.ResultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit})); got != wantUncontrolled {
 					t.Errorf("%s/%s %q uncontrolled:\n got %s\nwant %s", backend, unit, input, got, wantUncontrolled)
