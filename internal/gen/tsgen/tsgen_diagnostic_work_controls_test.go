@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/gen"
+	"github.com/ornew/pego/internal/gentest"
 )
 
 const tsDiagnosticMinimum = `function minimum(fits:(n:number)=>boolean):number {
@@ -25,7 +26,8 @@ rule early = "!"`
 for(const unit of [p.CodePoints,p.Bytes]) {
  const input="z".repeat(2048),ordinary=p.parse(input,unit),active=p.parseWithOptions(input,{unit,signal:{aborted:false}});
  check(ordinary.node===null&&ordinary.error instanceof p.SyntaxError&&active.error instanceof p.SyntaxError&&stable(active.error)===stable(ordinary.error)&&active.error.message===ordinary.error.message&&active.error.line===1&&active.error.col===2049,"diagnostic line scan parity");
- // The budget a failure at the start of the input needs grows by one unit for each unit the line scan reads.
+ // A failure at the start of the input costs at least one unit per character: the preparation of the
+ // input and the line scan together; TestGeneratedTSWorkControlDiagnosticLineScanPerRoute isolates the scan.
  const failing=(text:string)=>minimum(n=>p.parseRuleWithOptions("early",text,{unit,maxWork:n}).error instanceof p.SyntaxError);
  check(failing(input)>=failing("z")+input.length-1,"diagnostic line reads consume budget beyond matching");
  const stopped=p.parseRuleWithOptions("early",input,{unit,maxWork:failing(input)-1}).error;
@@ -122,5 +124,53 @@ for(const unit of [p.CodePoints,p.Bytes])for(const rule of ["main","custom"]) {
 `
 			runTypedTSFixture(t, src, consumer, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true}, "")
 		})
+	}
+}
+
+// On each route the diagnostic of a failure reads the whole input once, to find the line and column of
+// the error. The work charged inside makeError, measured per route, is at least the length of the input
+// and grows with it, whatever else the route charges, and a budget one unit short of the whole failure
+// interrupts it.
+func TestGeneratedTSWorkControlDiagnosticLineScanPerRoute(t *testing.T) {
+	t.Parallel()
+	g, err := parseTest(`rule main = "z"+ "!"`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := gentest.RunTSGrammarScriptWith(t, g, `import * as p from "./parser.ts";
+type Hooked = { makeError(...a: unknown[]): unknown; control: { workUsed: number } | null };
+const proto = (p as unknown as { Parser: { prototype: Hooked } }).Parser.prototype;
+const original = proto.makeError;
+let scanned = -1;
+proto.makeError = function (this: Hooked, ...a: unknown[]) {
+  const before = this.control?.workUsed ?? 0;
+  try { return original.apply(this, a); } finally { scanned = (this.control?.workUsed ?? 0) - before; }
+};
+const routes: [string, (text: string, n: number) => Error | null][] = [
+  ["parse", (text, n) => p.parseWithOptions(text, { maxWork: n }).error],
+  ["parseAST", (text, n) => p.parseASTWithOptions(text, { maxWork: n }).error],
+  ["recognize", (text, n) => p.recognizeWithOptions(text, { maxWork: n })],
+];
+function fail(why: string): never { throw new Error(why); }
+for (const [name, run] of routes) {
+  const charged = (len: number): number => {
+    scanned = -1;
+    if (!(run("z".repeat(len), Number.MAX_SAFE_INTEGER) instanceof p.SyntaxError)) fail(name + " does not fail at the end");
+    return scanned;
+  };
+  const short = charged(256), long = charged(2048);
+  if (short < 256 || long < 2048 || long - short < 2048 - 256) fail(name + " charges " + short + " then " + long + " for the line scan");
+  const input = "z".repeat(512);
+  let lo = 0, hi = 1;
+  while (run(input, hi) instanceof p.ParseInterruptionError) { lo = hi; hi *= 2; }
+  while (lo + 1 < hi) { const mid = Math.floor((lo + hi) / 2); if (run(input, mid) instanceof p.ParseInterruptionError) lo = mid; else hi = mid; }
+  const stopped = run(input, hi - 1);
+  if (!(stopped instanceof p.ParseInterruptionError) || stopped.kind !== "work-limit") fail(name + " does not stop one unit short of its budget");
+  if (hi < 512) fail(name + " needs only " + hi + " for 512 characters");
+}
+console.log("ok");
+`, gen.GenOptions{Start: "main", WorkControls: true, Types: true, Recognize: true})
+	if out != "ok\n" {
+		t.Fatalf("got %q", out)
 	}
 }
