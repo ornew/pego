@@ -13,7 +13,7 @@ func normalizeAttributes(g *grammar.Grammar) (*grammar.Grammar, error) {
 	return NormalizeAttributesWithCopies(g, false)
 }
 
-// NormalizeAttributesWithCopies is NormalizeAttributes where eager preserves the
+// NormalizeAttributesWithCopies is normalizeAttributes where eager preserves the
 // allocation-heavy normalization path for counterfactual measurements. It affects compilation
 // only, never generated parser execution.
 func NormalizeAttributesWithCopies(g *grammar.Grammar, eager bool) (*grammar.Grammar, error) {

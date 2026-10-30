@@ -606,7 +606,7 @@ func propagate(rules []*grammar.RuleDef, calls map[string][]string, set map[stri
 	}
 }
 
-// walkRuleTermsControlled is WalkRuleTerms polling control for cancellation.
+// walkRuleTermsControlled is walkRuleTerms polling control for cancellation.
 func walkRuleTermsControlled(r *grammar.RuleDef, f func(grammar.Term), control *Control) {
 	control.poll()
 	WalkTerm(r.Action, f)
