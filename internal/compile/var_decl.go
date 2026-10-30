@@ -62,8 +62,8 @@ func (t *VarTable) ValuesOf(names []string) []any {
 	return vals
 }
 
-// NewVarTable returns an empty variable table.
-func NewVarTable() *VarTable {
+// newVarTable returns an empty variable table.
+func newVarTable() *VarTable {
 	return &VarTable{byName: map[string]*VarDecl{}, Bound: map[string]bool{}}
 }
 
@@ -118,7 +118,7 @@ func (c *Compiler) declareVars(g *grammar.Grammar) {
 			continue
 		}
 		if c.Prog.Vars == nil {
-			c.Prog.Vars = NewVarTable()
+			c.Prog.Vars = newVarTable()
 		}
 		if c.Prog.Vars.lookup(vd.Name) != nil {
 			c.errorf(vd.Diagnostic(), "variable %s is already defined", vd.Name)
@@ -199,7 +199,7 @@ func ModuleVarTable(m *bytecode.Module) *VarTable {
 			d.Typ, d.Init = TyBool, v.Int == 1
 		}
 		if t == nil {
-			t = NewVarTable()
+			t = newVarTable()
 		}
 		t.Add(d)
 	}
