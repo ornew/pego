@@ -327,11 +327,60 @@ func TestFlowNodeBudgetInvariants(t *testing.T) {
 // invariants of TestFlowNodeBudgetInvariants and the golden.
 func checkBudgetInvariants(t *testing.T, group string, cases []gentest.Case, start string) {
 	t.Helper()
+	checkBudgetInvariantsIn(t, budgetGoldenFile, group, cases, start)
+}
+
+// checkBudgetInvariantsIn is checkBudgetInvariants against the golden file golden.
+func checkBudgetInvariantsIn(t *testing.T, golden gentest.GoldenFile, group string, cases []gentest.Case, start string) {
+	t.Helper()
 	got, problems := budgetTotals(t, group, cases, start, nil)
 	for _, p := range problems {
 		t.Error(p)
 	}
-	budgetGoldenFile.Check(t, group+"/", got)
+	golden.Check(t, group+"/", got)
+}
+
+// budgetOffGolden holds the totals of the parsers generated without expectations, which charge less
+// than the recording ones because they do not record expectations.
+const budgetOffGolden = "testdata/budget_off.golden"
+
+var budgetOffGoldenFile = gentest.GoldenFile{
+	Path: budgetOffGolden, CaseOf: budgetGoldenFile.CaseOf, TotalNames: budgetGoldenFile.TotalNames, Totals: budgetGoldenFile.Totals,
+	Header: "# Budget totals of the generated parsers with budget controls and without expectations: budget, context polls\n" +
+		"# and result of each input and entry. The charges of parses that do not record expectations are part of the\n" +
+		"# contract of the default mode.\n" + gentest.GoldenRules,
+}
+
+// TestFlowNodeBudgetInvariantsWithoutExpectations checks the invariants and a golden for the parsers of the
+// generated corpus built without expectations, the default of a generated parser, and that the totals
+// of two builds and runs are equal.
+func TestFlowNodeBudgetInvariantsWithoutExpectations(t *testing.T) {
+	t.Parallel()
+	gentest.NeedsBudgetControls(t)
+	if testing.Short() {
+		t.Skip("builds generated consumers")
+	}
+	gentest.OmitExpectations(t)
+	cases := gentest.GenCorpus(t)
+	first, problems := budgetTotals(t, "corpus-off", cases, "main", nil)
+	for _, p := range problems {
+		t.Error(p)
+	}
+	second, _ := budgetTotals(t, "corpus-off", cases, "main", nil)
+	if len(first) != len(second) {
+		t.Fatalf("two runs report %d and %d entries", len(first), len(second))
+	}
+	for k, v := range first {
+		if second[k] != v {
+			t.Errorf("%s is not deterministic: %q then %q", k, v, second[k])
+		}
+	}
+	for k, v := range first {
+		if strings.Contains(v, "expected ") {
+			t.Errorf("%s: a parse without expectations reports one: %s", k, v)
+		}
+	}
+	budgetOffGoldenFile.Check(t, "corpus-off/", first)
 }
 
 // budgetTotals builds the cases (the code of each parser changed by mutate if not nil), runs the consumer and
