@@ -97,6 +97,9 @@ for (const [unit, n] of [[p.CodePoints, 301], [p.Bytes, 302]] as const) {
     if (error.message !== "input-limit exceeded: limit " + (n - 1) + ", length " + n) fail("message " + error.message);
   }
 }
+const invalid = new Uint8Array(100).fill(0x80);
+const bad = p.parseWithOptions(invalid, { unit: p.CodePoints, maxInput: 99 }).error;
+if (!(bad instanceof p.ParseInterruptionError) || bad.kind !== "input-limit" || bad.requested !== 100) fail("invalid UTF-8: " + bad);
 const cancelled = { aborted: true } as p.CancellationSignal;
 const first = p.parseWithOptions(text, { signal: cancelled, maxInput: 1 }).error;
 if (!(first instanceof p.ParseInterruptionError) || first.kind !== "input-limit") fail("input limit comes before the signal: " + first);

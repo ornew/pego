@@ -1048,7 +1048,11 @@ function inputUnits(input: string | Uint8Array, unit: Unit, exact = false): numb
     return units;
   }
   if (unit === Bytes) return n;
-  for (let i = 0; i < n; i++) if (((input[i] as number) & 0xc0) !== 0x80) units++;
+  // Decode as the parser does: each invalid byte is one U+FFFD code point.
+  for (let i = 0; i < n; i += decodedSize) {
+    decodeRune(input, i, n);
+    units++;
+  }
   return units;
 }
 
