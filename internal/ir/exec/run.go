@@ -99,6 +99,9 @@ func (r *runner) call(f *Func, args []any) []any {
 	for i, p := range f.Params {
 		fr.locals[p.Name] = args[i]
 	}
+	for _, l := range f.Locals {
+		fr.locals[l.Name] = zero(l.Type)
+	}
 	s := r.block(fr, f.Body)
 	if s.kind == sigReturn {
 		return s.values
@@ -132,10 +135,16 @@ func (r *runner) stmt(fr *frame, st Stmt, declared *[]string) signal {
 	case *Block:
 		return r.block(fr, st)
 	case *Loop:
-		for {
+		if st.Init != nil {
+			r.set(fr, st.Init)
+		}
+		for st.Cond == nil || r.eval(fr, st.Cond).(bool) {
 			s := r.block(fr, st.Body)
 			switch {
 			case s.kind == sigNone, s.kind == sigContinue && s.label == st.Label:
+				if st.Post != nil {
+					r.set(fr, st.Post)
+				}
 				continue
 			case (s.kind == sigBreak || s.kind == sigExit) && s.label == st.Label:
 				return signal{}
@@ -143,6 +152,9 @@ func (r *runner) stmt(fr *frame, st Stmt, declared *[]string) signal {
 			return s
 		}
 	case *If:
+		if st.Init != nil {
+			r.set(fr, st.Init)
+		}
 		if r.eval(fr, st.Cond).(bool) {
 			return r.block(fr, st.Then)
 		} else if st.Else != nil {
@@ -160,12 +172,8 @@ func (r *runner) stmt(fr *frame, st Stmt, declared *[]string) signal {
 			*declared = append(*declared, n)
 		}
 	case *Set:
-		v := r.eval(fr, st.Value)
-		if st.Reg {
-			r.regs[st.Name] = v
-		} else {
-			fr.locals[st.Name] = v
-		}
+		r.set(fr, st)
+	case *Comment:
 	case *Do:
 		r.invoke(fr, st.Call)
 	case *Exit:
@@ -188,6 +196,27 @@ func (r *runner) stmt(fr *frame, st Stmt, declared *[]string) signal {
 		panic(fmt.Sprintf("exec: unknown statement %T", st))
 	}
 	return signal{}
+}
+
+// set runs an assignment: every value is evaluated before any place is assigned.
+func (r *runner) set(fr *frame, st *Set) {
+	var vals []any
+	if len(st.Values) == 1 && len(st.Dst) > 1 {
+		vals = r.invoke(fr, st.Values[0].(*Call))
+	} else {
+		for _, x := range st.Values {
+			vals = append(vals, r.eval(fr, x))
+		}
+	}
+	for i, d := range st.Dst {
+		switch {
+		case d.Name == "":
+		case d.Reg:
+			r.regs[d.Name] = vals[i]
+		default:
+			fr.locals[d.Name] = vals[i]
+		}
+	}
 }
 
 func (r *runner) invoke(fr *frame, c *Call) []any {

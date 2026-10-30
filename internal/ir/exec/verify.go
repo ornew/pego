@@ -12,9 +12,10 @@ import (
 //     declared components, registers, handle types and features; an operation writes only its own
 //     component and registers; cost terms have a positive coefficient and a quantity;
 //   - functions: every expression has a type and every operator, call, assignment and return
-//     matches the declared types; a local is declared before it is read or assigned and is not
-//     declared twice in one scope; an Exit names an enclosing block, a Break or a Continue an
-//     enclosing loop; a function calls only operations of the features it is specialized for.
+//     matches the declared types; a local is declared before it is read or assigned, and is
+//     neither declared twice in one scope nor shadows another; an Exit names an enclosing block,
+//     a Break or a Continue an enclosing loop; a function calls only operations of the features
+//     it is specialized for, with an immediate operand exactly where the operation declares one.
 func Verify(m *Module) error {
 	v := &verifier{m: m}
 	v.decls()
@@ -177,6 +178,13 @@ func (v *verifier) fn(f *Func) {
 	for _, t := range f.Results {
 		v.typ(t, "result")
 	}
+	for _, l := range f.Locals {
+		v.typ(l.Type, "local "+l.Name)
+		if _, dup := top.locals[l.Name]; dup {
+			v.errorf("local %s declared twice", l.Name)
+		}
+		top.locals[l.Name] = l.Type
+	}
 	if f.Body == nil {
 		v.errorf("no body")
 		return
@@ -199,8 +207,20 @@ func (v *verifier) stmt(st Stmt, s *scope) {
 		if st.Label == "" {
 			v.errorf("loop without a label")
 		}
+		if st.Init != nil {
+			v.stmt(st.Init, s)
+		}
+		if st.Cond != nil {
+			v.want(st.Cond, s, TBool, "loop condition")
+		}
+		if st.Post != nil {
+			v.stmt(st.Post, s)
+		}
 		v.block(&Block{Label: st.Label, Stmts: st.Body.Stmts}, s, true)
 	case *If:
+		if st.Init != nil {
+			v.stmt(st.Init, s)
+		}
 		v.want(st.Cond, s, TBool, "if condition")
 		v.block(st.Then, s, false)
 		if st.Else != nil {
@@ -234,22 +254,7 @@ func (v *verifier) stmt(st Stmt, s *scope) {
 			s.locals[n] = t
 		}
 	case *Set:
-		var t Type
-		if st.Reg {
-			r := v.m.register(st.Name)
-			if r == nil {
-				v.errorf("set of undeclared register %s", st.Name)
-				return
-			}
-			t = r.Type
-		} else {
-			var ok bool
-			if t, ok = s.lookup(st.Name); !ok {
-				v.errorf("set of undeclared local %s", st.Name)
-				return
-			}
-		}
-		v.want(st.Value, s, t, "set "+st.Name)
+		v.set(st, s)
 	case *Do:
 		v.call(st.Call, s)
 	case *Exit:
@@ -274,8 +279,65 @@ func (v *verifier) stmt(st Stmt, s *scope) {
 		}
 	case *Assert:
 		v.want(st.Cond, s, TBool, "assert")
+	case *Comment:
 	default:
 		v.errorf("unknown statement %T", st)
+	}
+}
+
+// set checks an assignment.
+func (v *verifier) set(st *Set, s *scope) {
+	types := make([]Type, len(st.Dst)) // the types of the places; invalid for a discarded value
+	for i, d := range st.Dst {
+		switch {
+		case d.Name == "":
+		case d.Reg:
+			if r := v.m.register(d.Name); r != nil {
+				types[i] = r.Type
+			} else {
+				v.errorf("set of undeclared register %s", d.Name)
+			}
+		default:
+			if t, ok := s.lookup(d.Name); ok {
+				types[i] = t
+			} else {
+				v.errorf("set of undeclared local %s", d.Name)
+			}
+		}
+	}
+	check := func(i int, t Type) {
+		if types[i].Kind != KInvalid && t != types[i] {
+			v.errorf("set %s: %s, want %s", st.Dst[i].Name, t, types[i])
+		}
+	}
+	switch {
+	case len(st.Dst) == 0:
+		v.errorf("set without places")
+	case len(st.Values) == len(st.Dst):
+		for i, x := range st.Values {
+			if t, ok := v.expr(x, s); ok {
+				check(i, t)
+			}
+		}
+	case len(st.Values) == 1:
+		c, ok := st.Values[0].(*Call)
+		if !ok {
+			v.errorf("set of %d places from one value that is not a call", len(st.Dst))
+			return
+		}
+		rs := v.call(c, s)
+		if rs == nil {
+			return
+		}
+		if len(rs) != len(st.Dst) {
+			v.errorf("set of %d places: %s has %d results", len(st.Dst), c.Callee, len(rs))
+			return
+		}
+		for i, t := range rs {
+			check(i, t)
+		}
+	default:
+		v.errorf("set of %d places from %d values", len(st.Dst), len(st.Values))
 	}
 }
 
@@ -296,8 +358,14 @@ func (v *verifier) call(c *Call, s *scope) []Type {
 			}
 		}
 		params, results = o.Params, o.Results
+		if (o.Imm != "") != (c.Imm != nil) {
+			v.errorf("call of %s: immediate operand %v, want %q", o.Name, c.Imm, o.Imm)
+		}
 	} else if f := v.m.Func(c.Callee); f != nil {
 		params, results = f.Params, f.Results
+		if c.Imm != nil {
+			v.errorf("call of function %s with an immediate operand", f.Name)
+		}
 	} else {
 		v.errorf("call of undeclared %s", c.Callee)
 		return nil
@@ -342,6 +410,13 @@ func (v *verifier) expr(x Expr, s *scope) (Type, bool) {
 				v.errorf("%s constant holds %T", x.Type, x.Value)
 			}
 			return x.Type, ok
+		case x.Type.Kind == KHandle:
+			v.typ(x.Type, "null constant")
+			if x.Value != nil {
+				v.errorf("%s constant holds %T; a handle constant is null", x.Type, x.Value)
+				return x.Type, false
+			}
+			return x.Type, true
 		}
 		v.errorf("constant of type %s", x.Type)
 	case *Local:
@@ -391,8 +466,12 @@ func (v *verifier) expr(x Expr, s *scope) (Type, bool) {
 			if tx.integer() {
 				return TBool, true
 			}
-		case "+", "-", "*", "/", "%", "&", "|", "^", "<<", ">>":
+		case "+", "-", "*", "/", "%":
 			if tx.integer() {
+				return tx, true
+			}
+		case "&", "|", "^", "<<", ">>":
+			if tx.integer() && tx != TInt {
 				return tx, true
 			}
 		default:

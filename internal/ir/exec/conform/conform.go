@@ -149,8 +149,26 @@ func walkCalls(b *exec.Block, visit func(*exec.Call)) {
 		case *exec.Block:
 			walkCalls(st, visit)
 		case *exec.Loop:
+			if st.Init != nil {
+				for _, x := range st.Init.Values {
+					expr(x)
+				}
+			}
+			if st.Cond != nil {
+				expr(st.Cond)
+			}
+			if st.Post != nil {
+				for _, x := range st.Post.Values {
+					expr(x)
+				}
+			}
 			walkCalls(st.Body, visit)
 		case *exec.If:
+			if st.Init != nil {
+				for _, x := range st.Init.Values {
+					expr(x)
+				}
+			}
 			expr(st.Cond)
 			walkCalls(st.Then, visit)
 			if st.Else != nil {
@@ -159,7 +177,9 @@ func walkCalls(b *exec.Block, visit func(*exec.Call)) {
 		case *exec.Let:
 			expr(st.Value)
 		case *exec.Set:
-			expr(st.Value)
+			for _, x := range st.Values {
+				expr(x)
+			}
 		case *exec.Do:
 			expr(st.Call)
 		case *exec.Return:

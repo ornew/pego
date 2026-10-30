@@ -15,7 +15,8 @@
 // Break or an Exit leaves it, and a Continue starts its next iteration; an If branches. Locals are
 // scalars and handles; data structures live inside operations, where targets choose them. A Func
 // has no exceptions: an operation marked NoReturn ends the parse when it does not return (for
-// example when the budget is exhausted).
+// example when the budget is exhausted). Statements after an Exit, Break, Continue or Return are
+// unreachable; Exec IR may hold them, and a backend leaves them out.
 //
 // Modules are built with the functions of build.go, checked by Verify, listed by String and run by
 // Run, which executes a Func against a Machine that implements the operations. Run is how Go runs
@@ -147,6 +148,11 @@ type Op struct {
 	// Transitional reports an operation that stands for an existing runtime function with its
 	// current behavior and no conformance cases, until its mechanism migrates.
 	Transitional bool
+	// Imm describes the immediate operand of the operation, a static datum of the call that is not
+	// a value of Exec IR (a literal, a character class, an expectation, a term of the grammar), or
+	// is empty when the operation takes none. A call of the operation holds it in Call.Imm, which
+	// backends read and passes keep.
+	Imm string
 }
 
 // Cost bounds the units of budget that one call of an operation charges: at most Const plus, for
@@ -178,9 +184,15 @@ type Func struct {
 	Name    string
 	Params  []Param
 	Results []Type
+	// Locals are declared at the function's entry, with the zero value of their type (false, 0,
+	// the null handle), and are visible in the whole body. Code lowered from a lower level
+	// declares its variables here; compositions declare theirs with Let where they are needed.
+	Locals []Param
 	// Features are the features the function is specialized for.
 	Features []string
 	Body     *Block
+	// Doc describes the function; backends print it as the comment of the printed function.
+	Doc string
 }
 
 // Stmt is a statement.
@@ -193,14 +205,20 @@ type Block struct {
 }
 
 // Loop repeats Body. A Break or an Exit to Label leaves it; a Continue to Label starts the next
-// iteration.
+// iteration. Init, if not nil, runs once before the loop; Cond, if not nil, is checked before each
+// iteration, and the loop ends when it does not hold; Post, if not nil, runs after each iteration,
+// including one that a Continue ends.
 type Loop struct {
 	Label string
+	Init  *Set
+	Cond  Expr
+	Post  *Set
 	Body  *Block
 }
 
-// If runs Then when Cond holds, and Else (which may be nil) otherwise.
+// If runs Init, if not nil, and then Then when Cond holds, and Else (which may be nil) otherwise.
 type If struct {
+	Init       *Set
 	Cond       Expr
 	Then, Else *Block
 }
@@ -212,12 +230,22 @@ type Let struct {
 	Value Expr
 }
 
-// Set assigns a local or, if Reg, a register.
+// Set assigns the places Dst: with one value per place, the values in order (all are evaluated
+// first); with one call of as many results as places, its results.
 type Set struct {
-	Name  string
-	Reg   bool
-	Value Expr
+	Dst    []Place
+	Values []Expr
 }
+
+// Place is what a Set assigns: a local, a register if Reg, or nothing if Name is empty (the value
+// is discarded).
+type Place struct {
+	Name string
+	Reg  bool
+}
+
+// Comment is a comment for readers of printed code; it does nothing.
+type Comment struct{ Text string }
 
 // Do calls an operation or a function for its effects and discards its results.
 type Do struct{ Call *Call }
@@ -249,12 +277,14 @@ func (*Break) stmt()    {}
 func (*Continue) stmt() {}
 func (*Return) stmt()   {}
 func (*Assert) stmt()   {}
+func (*Comment) stmt()  {}
 
 // Expr is an expression.
 type Expr interface{ expr() }
 
-// Const is a constant of a scalar type. Value holds a bool for KBool, an int64 for KInt, an int32
-// for KI32, a uint32 for KU32 and a uint64 for KU64.
+// Const is a constant: Value holds a bool for KBool, an int64 for KInt, an int32 for KI32, a
+// uint32 for KU32 and a uint64 for KU64. The only constant of a handle type is the null handle,
+// whose Value is nil.
 type Const struct {
 	Type  Type
 	Value any
@@ -275,10 +305,11 @@ type Unary struct {
 	X  Expr
 }
 
-// Binary is a binary operator. Arithmetic ("+", "-", "*", "/", "%", "&", "|", "^", "<<", ">>")
-// takes two integers of one type and wraps at its width; comparisons ("==", "!=", "<", "<=", ">",
-// ">=") give bool, and "==" and "!=" also compare bools and handles; "&&" and "||" take bools and
-// short-circuit.
+// Binary is a binary operator. Arithmetic ("+", "-", "*", "/", "%") takes two integers of one type
+// and wraps at its width, and "/" and "%" truncate toward zero; the bit operators ("&", "|", "^",
+// "<<", ">>") take two integers of one sized type (i32, u32, u64), because int has no fixed width;
+// comparisons ("==", "!=", "<", "<=", ">", ">=") give bool, and "==" and "!=" also compare bools and
+// handles; "&&" and "||" take bools and short-circuit.
 type Binary struct {
 	Op   string
 	X, Y Expr
@@ -291,10 +322,12 @@ type Convert struct {
 }
 
 // Call calls the operation or function Callee. As an expression it must have exactly one result,
-// except as the Value of a Let with as many names as results.
+// except as the value of a Let or a Set with as many names or places as results. Imm is the
+// immediate operand of an operation that declares one (Op.Imm).
 type Call struct {
 	Callee string
 	Args   []Expr
+	Imm    any
 }
 
 func (*Const) expr()   {}

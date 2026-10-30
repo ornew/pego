@@ -127,7 +127,11 @@ func (p *printer) fn(f *Func) {
 	if len(f.Features) > 0 {
 		feat = " [" + strings.Join(f.Features, ", ") + "]"
 	}
+	p.doc(0, f.Doc)
 	p.line(0, "func %s(%s)%s%s {", f.Name, params(f.Params), results(f.Results), feat)
+	for _, l := range f.Locals {
+		p.line(1, "var %s %s", l.Name, l.Type)
+	}
 	p.stmts(f.Body.Stmts, 1)
 	p.line(0, "}")
 }
@@ -149,11 +153,29 @@ func (p *printer) stmt(s Stmt, depth int) {
 		p.stmts(s.Stmts, depth+1)
 		p.line(depth, "}")
 	case *Loop:
-		p.line(depth, "loop %s {", s.Label)
+		var clauses []string
+		if s.Init != nil {
+			clauses = append(clauses, "init "+setString(s.Init))
+		}
+		if s.Cond != nil {
+			clauses = append(clauses, "while "+expr(s.Cond))
+		}
+		if s.Post != nil {
+			clauses = append(clauses, "post "+setString(s.Post))
+		}
+		head := ""
+		if len(clauses) > 0 {
+			head = " " + strings.Join(clauses, "; ")
+		}
+		p.line(depth, "loop %s%s {", s.Label, head)
 		p.stmts(s.Body.Stmts, depth+1)
 		p.line(depth, "}")
 	case *If:
-		p.line(depth, "if %s {", expr(s.Cond))
+		init := ""
+		if s.Init != nil {
+			init = setString(s.Init) + "; "
+		}
+		p.line(depth, "if %s%s {", init, expr(s.Cond))
 		p.stmts(s.Then.Stmts, depth+1)
 		if s.Else != nil {
 			p.line(depth, "} else {")
@@ -163,11 +185,9 @@ func (p *printer) stmt(s Stmt, depth int) {
 	case *Let:
 		p.line(depth, "let %s = %s", strings.Join(s.Names, ", "), expr(s.Value))
 	case *Set:
-		name := s.Name
-		if s.Reg {
-			name = "$" + name
-		}
-		p.line(depth, "%s = %s", name, expr(s.Value))
+		p.line(depth, "%s", setString(s))
+	case *Comment:
+		p.line(depth, "// %s", s.Text)
 	case *Do:
 		p.line(depth, "%s", expr(s.Call))
 	case *Exit:
@@ -189,9 +209,31 @@ func (p *printer) stmt(s Stmt, depth int) {
 	}
 }
 
+func setString(s *Set) string {
+	dst := make([]string, len(s.Dst))
+	for i, d := range s.Dst {
+		switch {
+		case d.Name == "":
+			dst[i] = "_"
+		case d.Reg:
+			dst[i] = "$" + d.Name
+		default:
+			dst[i] = d.Name
+		}
+	}
+	vals := make([]string, len(s.Values))
+	for i, x := range s.Values {
+		vals[i] = expr(x)
+	}
+	return strings.Join(dst, ", ") + " = " + strings.Join(vals, ", ")
+}
+
 func expr(x Expr) string {
 	switch x := x.(type) {
 	case *Const:
+		if x.Type.Kind == KHandle {
+			return "null(" + x.Type.Handle + ")"
+		}
 		switch x.Type {
 		case TInt, TBool:
 			return fmt.Sprint(x.Value)
@@ -213,6 +255,9 @@ func expr(x Expr) string {
 		as := make([]string, len(x.Args))
 		for i, a := range x.Args {
 			as[i] = expr(a)
+		}
+		if x.Imm != nil {
+			as = append([]string{fmt.Sprintf("[%v]", x.Imm)}, as...)
 		}
 		return x.Callee + "(" + strings.Join(as, ", ") + ")"
 	}

@@ -94,6 +94,38 @@ func TestVerifyRejects(t *testing.T) {
 		{"return type", func(m *Module) {
 			m.AddFunc("f", nil, []Type{TBool}, nil, func(b *Builder) { b.Return(Int(1)) })
 		}, "return: int, want bool"},
+		{"bit operator on int", func(m *Module) {
+			m.AddFunc("f", nil, nil, nil, func(b *Builder) { b.Let("x", Bin("&", Int(1), Int(2))) })
+		}, "operator & on int"},
+		{"missing immediate", func(m *Module) {
+			m.AddOp(&Op{Name: "counter.lit", Component: "counter", Imm: "literal", Contract: "lit"})
+			m.AddFunc("f", nil, nil, nil, func(b *Builder) { b.Do("counter.lit") })
+		}, `immediate operand <nil>, want "literal"`},
+		{"unexpected immediate", func(m *Module) {
+			m.AddFunc("f", nil, nil, nil, func(b *Builder) { b.add(&Do{Call: CI("counter.next", "x")}) })
+		}, `immediate operand x, want ""`},
+		{"set arity", func(m *Module) {
+			m.AddFunc("f", nil, nil, nil, func(b *Builder) {
+				b.Var("x", TInt)
+				b.SetN([]Place{{Name: "x"}, {}, {}}, C("counter.next"))
+			})
+		}, "set of 3 places: counter.next has 2 results"},
+		{"set type", func(m *Module) {
+			m.AddFunc("f", nil, nil, nil, func(b *Builder) {
+				b.Var("x", TInt)
+				b.Var("y", TInt)
+				b.SetN([]Place{{Name: "x"}, {Name: "y"}}, C("counter.next"))
+			})
+		}, "set y: Token, want int"},
+		{"null of a scalar", func(m *Module) {
+			m.AddFunc("f", nil, nil, nil, func(b *Builder) { b.Let("x", &Const{Type: TInt}) })
+		}, "int constant holds <nil>"},
+		{"let shadows a declared local", func(m *Module) {
+			m.AddFunc("f", nil, nil, nil, func(b *Builder) {
+				b.Var("x", TInt)
+				b.Let("x", Int(1))
+			})
+		}, "local x shadows an enclosing local"},
 		{"shadowing", func(m *Module) {
 			m.AddFunc("f", []Param{P("x", TInt)}, nil, nil, func(b *Builder) {
 				b.Block("", func(b *Builder) { b.Let("x", Int(1)) })

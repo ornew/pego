@@ -56,8 +56,27 @@ func TestRun(t *testing.T) {
 		b.LetN([]string{"x", "p"}, C("sum", Int(3)))
 		b.Assert(Eq(L("x"), Int(99)), "x is 99")
 	})
+	// Locals at entry, loop clauses (Post also after a Continue), an If with Init, an assignment of
+	// several places from one call (with a register and a discarded result) and the null handle.
+	clauses := m.AddFunc("clauses", nil, []Type{TInt, TInt, TBool}, nil, func(b *Builder) {
+		i, s := b.Var("i", TInt), b.Var("s", TInt)
+		tok := b.Var("tok", THandle("Token"))
+		b.Var("null", TBool)
+		b.Set("null", Eq(tok, Null(THandle("Token"))))
+		b.For("l", Assign("i", Int(0)), Lt(i, Int(5)), Assign("i", Add(i, Int(1))), func(b *Builder) {
+			b.If(Eq(i, Int(2)), func(b *Builder) { b.Continue("l") })
+			b.Set("s", Add(s, i))
+		})
+		b.SetN([]Place{{Name: "pos", Reg: true}, {}}, C("counter.next"))
+		b.add(&If{Init: Assign("s", Add(s, Int(100))), Cond: Lt(s, Int(0)), Then: &Block{}})
+		b.Comment("does nothing")
+		b.Return(Add(s, i), R("pos"), L("null"))
+	})
 	if err := Verify(m); err != nil {
 		t.Fatal(err)
+	}
+	if res, err := Run(m, clauses, &counter{n: 4}); err != nil || res[0] != int64(0+1+3+4+100+5) || res[1] != int64(4) || res[2] != true {
+		t.Fatalf("clauses = %v, %v", res, err)
 	}
 	res, err := Run(m, sum, &counter{}, int64(6))
 	if err != nil || res[0] != int64(0+2+4) || res[1] != int64(7) {
