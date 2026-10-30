@@ -116,6 +116,8 @@ func TestClassifyComplexity(t *testing.T) {
 		{"element of a recursive list", "rule main = r $$\nrule r []string = (\"a\" x:r => list($x[0] + \"a\")) / (\"\" => list(\"\"))\n", ClassPoly, 2},
 		{"list of literal elements", "rule main = r $$\nrule r []string = (\"a\" x:r => list(\"a\")) / (\"\" => list(\"\"))\n", ClassLinear, 0},
 		{"comparison of recursive elements", "rule main = l $$\nrule l []string = (\"(\" x:l y:l \")\" {$x[0] == $y[0]} => $x) / (t:[a-z]+ => list(text($t)))\n", ClassPoly, 2},
+		// A comparison examines no more than one of its operands.
+		{"comparison of a recursive element with itself", "rule main = l $$\nrule l []string = (\"(\" x:l \")\" {$x[0] == $x[0]} => $x) / (t:[a-z]+ => list(text($t)))\n", ClassPoly, 2},
 		// len examines all of a string or a list.
 		{"len of a failing unit", "rule main = (x:e #atomic {len($x) > 0} \"q\" / \"x\")* $$\nrule e = \"x\" e / \"x\"\n", ClassPoly, 2},
 		{"len of a recursive capture", "rule main = r $$\nrule r = x:(\"a\" r / \"\") #atomic {len($x) >= 0}\n", ClassPoly, 2},

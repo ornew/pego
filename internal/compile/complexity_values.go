@@ -2,6 +2,7 @@ package compile
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -66,6 +67,30 @@ func (c *content) add(d content) {
 	}
 }
 
+// lighter reports whether c weighs less than d as a bound on a size: it has fewer counts of fold
+// accumulators, then of recursion captures, then fewer of the outer, unbounded and variable parts.
+// Either of two operands bounds the shorter of them, so the choice only keeps the class tighter.
+func (c content) lighter(d content) bool {
+	sum := func(m map[string]int) int {
+		n := 0
+		for _, v := range m {
+			n += v
+		}
+		return n
+	}
+	b := func(x bool) int {
+		if x {
+			return 1
+		}
+		return 0
+	}
+	key := func(x content) [5]int {
+		return [5]int{sum(x.acc), sum(x.rec), b(x.outer), b(x.unbounded), b(x.vars)}
+	}
+	kc, kd := key(c), key(d)
+	return slices.Compare(kc[:], kd[:]) < 0
+}
+
 // compareOps are the operators that compare two strings character by character.
 var compareOps = map[string]bool{"==": true, "!=": true, "<": true, "<=": true, ">": true, ">=": true}
 
@@ -124,10 +149,13 @@ func (k *classifier) walkTerm(t grammar.Term, tc termCtx) {
 			return
 		}
 		if compareOps[t.Op] && !k.isInt(t.L, tc) && !k.isInt(t.R, tc) {
-			// Comparing two strings examines the characters of the shorter one.
+			// Comparing two strings examines the characters of the shorter one, which is no
+			// larger than either: count the operand that weighs less.
 			l, r := k.sizeOf(t.L, tc, textSize), k.sizeOf(t.R, tc, textSize)
 			if !l.bounded() && !r.bounded() {
-				l.add(r)
+				if r.lighter(l) {
+					l = r
+				}
 				k.copied(t, termPosOf(t), tc, l)
 			}
 		}

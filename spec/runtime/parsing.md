@@ -361,28 +361,32 @@ The following grammars have the class shown on the inputs shown.
 | `main = xs:"x"* => len(foldl("a", $xs, (acc, x) => acc + acc))` | `x` n times | Linear evaluations, exponential value size | The accumulator doubles for each element |
 
 The same grammars with `A = "n"`, or with the bindings `{v := "0"}` and
-`{v := "1"}`, are linear. The [classification](#classification) reports the
-first exponential grammar as unknown, not exponential: its cause is a growth
-restarted inside a recursion of rule calls, which the classifier does not
-bound.
+`{v := "1"}`, grow linearly. The classification reports the second of them as
+linear given an environment bound, since it counts `len(v)` as copying all of
+`v`, whose size only the values of the variables bound. The
+[classification](#classification) reports the first exponential grammar as
+unknown, not exponential: its cause is a growth restarted inside a recursion of
+rule calls, which the classifier does not bound.
 
 ### Conditions for Linear Cost
 
 The conditions below use these terms.
 
 - A **copying operation** is an operation of an action, predicate or binding
-  whose cost is charged in proportion to the size of the values it builds or
-  examines: joining strings, taking the text of a capture, converting a value
-  to a string, building a list with `list`, `concat`, `map` or `filter`,
-  taking the length of a string or a list with `len`, and comparing two
-  strings. The size of a string is its number of characters,
+  whose cost the classifier counts in proportion to the size of the values it
+  builds or examines: joining strings, taking the text of a capture,
+  converting a value to a string, building a list with `list`, `concat`, `map`
+  or `filter`, taking the length of a string or a list with `len`, and
+  comparing two strings. The size of a string is its number of characters,
   and the size of a list its number of elements; the elements themselves are
   shared, not copied. So `list` copies one element for each argument, which
   the grammar bounds; `concat`, `map` and `filter` copy the elements of the
   lists they read, and the list of a repetition has one element for each
-  iteration; `len` is charged for all of its operand, whatever the position
-  unit; and a comparison examines no more than the shorter string, so
-  comparing with a literal costs a constant.
+  iteration; `len` is counted as copying all of its operand, whatever the
+  position unit, a conservative reading, since the engine can take some lengths
+  in constant time; and a comparison examines no more than the shorter string,
+  so it is counted as copying only one of its operands, and comparing with a
+  literal costs a constant.
 - A **left call** is a call of a rule of a left-recursion cycle, in the body
   of a rule of the same cycle, that can run before that body consumes input.
   The rules that grow are the **leaders**, fixed by the grammar: until every
