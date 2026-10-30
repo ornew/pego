@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/ornew/pego/internal/engine/closure"
 	"github.com/ornew/pego/internal/engine/core"
 	"github.com/ornew/pego/internal/gentest"
+	"github.com/ornew/pego/internal/limits"
 	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/syntax"
 	"github.com/ornew/pego/internal/value"
@@ -188,6 +190,13 @@ func checkBackends(t *testing.T, prog *Program, start, input string) {
 		n1, err1 := prog.ParseWith(start, input, ParseOptions{Unit: u})
 		want := gentest.ResultJSON(n1, err1)
 		checkRecognize(t, prog, start, input, u, err1)
+		// The default budget runs the controlled form; Unlimited runs the uncontrolled one, which must
+		// give the same result on inputs within the default.
+		if n0, err0 := prog.ParseWith(start, input, ParseOptions{Unit: u, Limits: limits.Limits{Budget: limits.Unlimited}}); !errors.Is(err1, limits.ErrLimit) {
+			if got := gentest.ResultJSON(n0, err0); got != want {
+				t.Errorf("input %q (unit %v): Unlimited differs from the default budget\n default   %s\n unlimited %s", input, u, want, got)
+			}
+		}
 		for _, b := range []Backend{Bytecode, BytecodeIterative} {
 			n2, err2 := prog.ParseWith(start, input, ParseOptions{Unit: u, Backend: b})
 			if got := gentest.ResultJSON(n2, err2); got != want {
